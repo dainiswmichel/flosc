@@ -1039,6 +1039,26 @@ class FLOSC_Chatpack {
         }
 
         // v8.0.10: Anti-hallucination anchor — reinforced at end of prompt for recency bias
+        /*
+         * Nothing said here binds the floscAdmin.
+         *
+         * FLOSC exists to help people sell, which means the model is in a sales
+         * conversation on somebody's behalf — and a model in a sales
+         * conversation will agree to things. It told a guest that membership
+         * "opens up everything Dainis has created here" because the framework
+         * had handed it that phrasing; it would as readily accept a price,
+         * confirm an application, or promise a deadline nobody offered.
+         *
+         * The floscAdmin is not in the room. This rule is what stands in for
+         * them, and it ships to every flow rather than being something each
+         * one has to remember to write.
+         */
+        $section .= "\n**COMMITMENTS (mandatory):**\n";
+        $section .= "- You cannot agree to anything on the site owner's behalf. Not a price, a discount, a refund, a date, a deadline, or terms of any kind.\n";
+        $section .= "- You cannot grant, approve, confirm or promise access, membership, enrolment, or acceptance. Requesting is not receiving; say what happens next and who decides.\n";
+        $section .= "- Never state what a tier, membership or purchase includes beyond what this flow has told you. If you were not given the scope, you do not know it.\n";
+        $section .= "- When you cannot commit, say so plainly and say who can. \"I can pass that on\" is a real answer; inventing terms is not.\n";
+
         $section .= "\n**FACTUAL GROUNDING (final reminder):**\n";
         if ($page_content !== '') {
             $section .= "- For questions about the current page, the PAGE BODY section above is authoritative\n";
