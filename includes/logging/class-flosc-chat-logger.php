@@ -677,8 +677,8 @@ class FLOSC_Chat_Logger {
         if ($personality_name === '' && function_exists('flosc_personality_library_resolve_field')) {
             $personality_name = sanitize_text_field((string) flosc_personality_library_resolve_field('ai_personality_name', '', (string) ($data['flow_id'] ?? '')));
         }
-        if ($profile_hash === '' && function_exists('flosc_personality_library_resolve_field')) {
-            $profile_hash = sanitize_text_field((string) flosc_personality_library_resolve_field('profile_hash', '', (string) ($data['flow_id'] ?? '')));
+        if ($profile_hash === '' && function_exists('flosc_personality_resolved_fingerprint')) {
+            $profile_hash = sanitize_text_field((string) flosc_personality_resolved_fingerprint((string) ($data['flow_id'] ?? '')));
         }
 
         // Explicit, never inferred from absence: an empty surface used to mean

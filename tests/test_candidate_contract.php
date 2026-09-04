@@ -59,7 +59,9 @@ echo "\nThe compiled character is fingerprinted and counted\n";
 ok( 'a deployment hash is stored',
 	strpos( $library, "'profile_hash'" ) !== false, true );
 ok( 'over the genome and the runtime profile together',
-	strpos( $library, "hash( 'sha256', \$genome" ) !== false, true );
+	strpos( $library, 'flosc_personality_fingerprint( $genome, $profile )' ) !== false, true );
+ok( '  from one definition, so a read and a write cannot disagree',
+	substr_count( $library, "hash( 'sha256', (string) \$genome" ), 1 );
 ok( 'the version counts changes rather than saves',
 	strpos( $library, '$prior_hash === $hash' ) !== false, true );
 ok( '  so a version is never hardcoded',

@@ -1056,8 +1056,8 @@ trait FLOSC_Chat_Turn_Trait {
             'personality_name'=> function_exists('flosc_personality_library_resolve_field')
                 ? (string) flosc_personality_library_resolve_field('ai_personality_name', '', $flow_id)
                 : '',
-            'profile_hash'    => function_exists('flosc_personality_library_resolve_field')
-                ? (string) flosc_personality_library_resolve_field('profile_hash', '', $flow_id)
+            'profile_hash'    => function_exists('flosc_personality_resolved_fingerprint')
+                ? (string) flosc_personality_resolved_fingerprint($flow_id)
                 : '',
             'response_time_ms'=> $flosc_chat_elapsed,
             'billing_source'  => (string) ($billing_meta['source'] ?? ''),

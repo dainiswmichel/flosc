@@ -77,6 +77,20 @@ foreach ( array( 'personality_id', 'personality_name', 'profile_hash' ) as $key 
 ok( 'and the logger resolves it for paths that build no prompt',
 	strpos( $logger, "flosc_personality_library_id_for_flow((string) (\$data['flow_id'] ?? ''))" ) !== false, true );
 
+// profile_hash is written when a personality is saved, so a row never saved
+// since the field existed has none — which is every shipped default on a fresh
+// install. The first live log came back with the column empty on every row:
+// the mechanism was right and had nothing to read.
+$library = (string) file_get_contents( $root . '/includes/flosc-personality-library.php' );
+ok( 'the fingerprint formula has one definition',
+	substr_count( $library, "hash( 'sha256', (string) \$genome" ), 1 );
+ok( '  and it is computed when the stored field is empty',
+	strpos( $library, 'function flosc_personality_resolved_fingerprint' ) !== false, true );
+ok( 'the chat turn reads it through that resolver',
+	strpos( $turn, 'flosc_personality_resolved_fingerprint($flow_id)' ) !== false, true );
+ok( '  and so does the logger',
+	strpos( $logger, 'flosc_personality_resolved_fingerprint(' ) !== false, true );
+
 // Absence used to be ambiguous: full page, or the client never said.
 echo "\nSurface is explicit, never inferred from an empty field\n";
 ok( "an unset surface is recorded as 'unknown'",

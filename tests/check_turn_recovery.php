@@ -82,6 +82,16 @@ echo "\nThe same turn is never answered twice\n";
 ok( 'a turn id already written is replayed, not re-dispatched',
 	strpos( $turn, "'replayed'        => true," ) !== false, true );
 
+// The recovered answer must not be shown twice, and which half of the pair is
+// already on screen depends on who is asking.
+echo "\nA recovered answer is never shown twice\n";
+ok( 'the thread is checked before the answer is appended',
+	strpos( $client, 'if (this.floscAssistantAlreadyInThread(String(data.message))) {' ) !== false, true );
+ok( '  comparing normalised plain text, not markup',
+	strpos( $client, 'const candidate = this._normalizeAssistantPlain(text);' ) !== false, true );
+ok( 'because a signed-in turn is written to the session by PHP before the browser sees it',
+	strpos( $turn, "\$this->session_manager->add_flosc_message(\$session_id, 'assistant'" ) !== false, true );
+
 echo "\nBoth kinds of visitor recover\n";
 ok( 'the anonymous path resumes after restoring its thread',
 	strpos( $client, "this.restoreVisitorMessages();\n                    // After the thread is back, so a recovered answer lands" ) !== false, true );
