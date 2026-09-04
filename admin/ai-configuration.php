@@ -1053,28 +1053,92 @@ jQuery(document).ready(function($) {
         ivr: '<?php echo esc_js( $GLOBALS['flosc_current_ivr'] ?? '' ); ?>',
         fallback: '<?php echo esc_js( __( 'Could not attach automatically — scroll down and click Save Settings.', 'flosc' ) ); ?>'
     };
+    /*
+     * The confirmation has to outlive the reload that this control triggers.
+     *
+     * It used to set the note to "Attached X. Reloading…" and call
+     * location.reload() on the next statement. The browser never painted it, so
+     * what a floscAdmin saw was "Attaching…" and then a page reload — an
+     * indefinite state with no outcome, on the one control where being sure
+     * matters most. The reload itself is needed: the designer below is rendered
+     * from the attached row.
+     *
+     * So the confirmation is stashed before reloading and shown afterwards,
+     * beside a dropdown that now reads the same name. Choose DadJokeDan, reload,
+     * see DadJokeDan attached and a line saying when it was written.
+     */
+    var floscAttachStash = 'flosc_attach_confirmation';
+
+    function floscShowStashedAttachConfirmation() {
+        if (!attachNote.length) {
+            return;
+        }
+        var raw = null;
+        try {
+            raw = window.sessionStorage.getItem(floscAttachStash);
+            window.sessionStorage.removeItem(floscAttachStash);
+        } catch (e) {
+            raw = null;
+        }
+        if (!raw) {
+            return;
+        }
+        try {
+            var stash = JSON.parse(raw);
+            if (stash && stash.text) {
+                attachNote.removeClass('flosc-hidden').addClass('flosc-attach-ok').text(stash.text);
+            }
+        } catch (e) {
+            // A confirmation we cannot read is not worth a broken page.
+        }
+    }
+    floscShowStashedAttachConfirmation();
+
     attachSel.on('change', function () {
         var nextVal = attachSel.val();
         var nextLabel = attachSel.find('option:selected').text().trim();
         if (!attachNote.length || nextVal === attachSaved) {
             return;
         }
-        attachNote.removeClass('flosc-hidden').text('<?php echo esc_js( __( 'Attaching…', 'flosc' ) ); ?>');
+        attachSel.prop('disabled', true);
+        attachNote.removeClass('flosc-hidden flosc-attach-ok flosc-attach-bad').text('<?php echo esc_js( __( 'Attaching…', 'flosc' ) ); ?>');
         $.post(ajaxurl, {
             action: 'flosc_attach_personality',
             nonce: floscAttach.nonce,
             ivr: floscAttach.ivr,
             persona: nextVal
         }).done(function (res) {
-            if (res && res.success) {
-                attachSaved = nextVal;
-                attachNote.text((nextLabel ? '<?php echo esc_js( __( 'Attached', 'flosc' ) ); ?> ' + nextLabel : '<?php echo esc_js( __( 'Attachment cleared', 'flosc' ) ); ?>') + '. Reloading…');
+            if (res && res.success && res.data) {
+                attachSaved = res.data.persona;
+                var confirmed = res.data.persona
+                    ? '<?php echo esc_js( __( 'Attached', 'flosc' ) ); ?> ' + (res.data.label || nextLabel || res.data.persona)
+                    : '<?php echo esc_js( __( 'Attachment cleared', 'flosc' ) ); ?>';
+                if (res.data.saved_at) {
+                    confirmed += ' · <?php echo esc_js( __( 'saved', 'flosc' ) ); ?> ' + res.data.saved_at;
+                }
+                try {
+                    window.sessionStorage.setItem(floscAttachStash, JSON.stringify({ text: confirmed }));
+                } catch (e) {
+                    // Without storage the reload eats the confirmation, which is
+                    // where this started — so say it here and pause long enough
+                    // to be read before reloading.
+                    attachNote.addClass('flosc-attach-ok').text(confirmed);
+                    window.setTimeout(function () { window.location.reload(); }, 1200);
+                    return;
+                }
                 window.location.reload();
             } else {
-                attachNote.text(floscAttach.fallback);
+                attachSel.prop('disabled', false);
+                var failed = (res && res.data && res.data.message) ? res.data.message : floscAttach.fallback;
+                attachNote.addClass('flosc-attach-bad').text(failed);
             }
-        }).fail(function () {
-            attachNote.text(floscAttach.fallback);
+        }).fail(function (xhr) {
+            attachSel.prop('disabled', false);
+            var msg = floscAttach.fallback;
+            if (xhr && xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.message) {
+                msg = xhr.responseJSON.data.message;
+            }
+            attachNote.addClass('flosc-attach-bad').text(msg);
         });
     });
 

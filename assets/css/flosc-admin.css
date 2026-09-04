@@ -7839,3 +7839,10 @@ details.flosc-flow-block:not([open]) > summary.flosc-flow-block__header { margin
 .flosc-last-save:empty { display: none; }
 .flosc-param-clash { border-left: 3px solid #d63638; padding-left: 10px; margin-bottom: 8px; color: #8a2424; }
 .flosc-param-clash .flosc-param-help__meta { color: #8a2424; }
+
+/* Attaching a personality. The same green as Step 2b's save, because it
+   answers the same question — did that take? — and the answer should look the
+   same wherever it is asked. This one has to survive a page reload, so it is
+   stashed and re-shown rather than painted and navigated away from. */
+#flosc-personality-attach-note.flosc-attach-ok { color: #2c6349; font-weight: 600; }
+#flosc-personality-attach-note.flosc-attach-bad { color: #8a2424; font-weight: 600; }

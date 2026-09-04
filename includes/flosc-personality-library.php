@@ -1570,6 +1570,28 @@ if ( ! function_exists( 'flosc_ajax_attach_personality' ) ) {
 			}
 		}
 
+		/*
+		 * Read the row back before reporting success.
+		 *
+		 * update_option() returns false for a failed write and for a write that
+		 * changed nothing, so its return value cannot tell them apart and this
+		 * handler was ignoring it either way — every attach reported success,
+		 * including one that never landed. What the floscAdmin needs to hear is
+		 * not "the request was sent" but "this is what is stored".
+		 */
+		$stored_settings = get_option( $option_key, array() );
+		$stored          = is_array( $stored_settings ) ? (string) ( $stored_settings['personality_library_id'] ?? '' ) : '';
+
+		if ( $stored !== $persona ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'The attachment was not saved. Choose the personality again, or use Save Settings at the foot of this page.', 'flosc' ),
+					'stored'  => $stored,
+				),
+				500
+			);
+		}
+
 		$label = '';
 		if ( $persona !== '' && function_exists( 'flosc_personality_library_get' ) ) {
 			$entry = flosc_personality_library_get( $persona );
@@ -1580,8 +1602,12 @@ if ( ! function_exists( 'flosc_ajax_attach_personality' ) ) {
 
 		wp_send_json_success(
 			array(
-				'persona' => $persona,
-				'label'   => $label,
+				'persona'   => $stored,
+				'label'     => $label,
+				'flow'      => $option_key,
+				// Same stamp the page-wide Save writes, so the two agree about
+				// when something happened.
+				'saved_at'  => function_exists( 'flosc_mts_utc' ) ? flosc_mts_utc() : gmdate( 'Y-m-d H:i:s' ),
 			)
 		);
 	}
