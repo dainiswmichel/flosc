@@ -6,6 +6,9 @@
 # redeclare core functions — so they must never reach a running site.
 tests/
 
+# Deployment candidates: whole plugin trees kept for comparison, not shipped.
+pre-release-candidates/
+
 # VCS and local editor state
 .git/
 .github/
