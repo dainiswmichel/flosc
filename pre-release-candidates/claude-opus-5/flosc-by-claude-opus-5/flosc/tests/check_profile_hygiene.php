@@ -80,9 +80,53 @@ ok( '  and what leaving them out means',
 
 // The footer explains the file to whoever finds it. It must never be part of
 // what is saved to the library or sent to a provider.
+// The shipped four all open the same way. A profile built here has to be the
+// same kind of document, not a near-relative — and by the density rule the top
+// of the document is the most privileged position in it.
+echo "\nA built profile opens the way the shipped ones do\n";
+ok( 'it carries the # Personality profile heading',
+	strpos( (string) $compile, 'out.push("# Personality profile: " + s.name);' ) !== false, true );
+ok( '  then the identity line as prose',
+	strpos( (string) $compile, '"You are " + s.name + ", "' ) !== false, true );
+ok( '  then the speak-as line',
+	strpos( (string) $compile, 'out.push("Speak as this person. Do not discuss how you were made.");' ) !== false, true );
+
+$library = (string) file_get_contents( $root . '/includes/flosc-personality-library.php' );
+preg_match_all( "/'ai_base_prompt'\s*=>\s*<<<'PROMPT'\n(.*?)\nPROMPT,/s", $library, $shipped );
+foreach ( $shipped[1] as $body ) {
+	$lines = explode( "\n", $body );
+	$who   = isset( $lines[0] ) ? trim( str_replace( '# Personality profile:', '', $lines[0] ) ) : '?';
+	ok( $who . ': opens with the heading',
+		strpos( (string) ( $lines[0] ?? '' ), '# Personality profile: ' ) === 0, true );
+	ok( '  and its third line is the speak-as line',
+		trim( (string) ( $lines[2] ?? '' ) ), 'Speak as this person. Do not discuss how you were made.' );
+}
+
+// The framing line is for a file that has left FLOSC. Inside it, the chatpack
+// already frames the profile, and none of the shipped four carry it.
+echo "\nThe portability line is on the download, not in what is stored\n";
+ok( 'compilePrompt() does not emit it',
+	strpos( (string) $compile, 'If you are an AI reading this' ) !== false, false );
+ok( 'the downloaded file does',
+	strpos( $builder, 'const portable = "This is a personality profile.' ) !== false, true );
+
+// Provenance was only ever inside a downloaded file, so a profile on screen
+// could not say which build made it, which edit it was, or when it was written.
+echo "\nProvenance is visible where the profile is\n";
+ok( 'the chips carry it',
+	strpos( $builder, 'provenanceChips();' ) !== false, true );
+foreach ( array(
+	'b.edition ? b.edition + " edition" : ""' => 'builder, edition and version',
+	'>profile v\' + esc(String(e.version))'   => 'which edit this is',
+	'>sha256 \' + esc(String(e.hash).slice(0, 12))' => 'the deployment fingerprint',
+	'>saved \' + esc(String(e.modifiedGmt))'  => 'when it was last written',
+) as $needle => $what ) {
+	ok( '  ' . $what, strpos( $builder, $needle ) !== false, true );
+}
+
 echo "\nThe provenance footer travels with downloads only\n";
 ok( 'soul.md downloads carry it',
-	strpos( $builder, 'return compilePrompt() + "\n\n" + profileFooter();' ) !== false, true );
+	(bool) preg_match( '/function promptFile\(\) \{.*?profileFooter\(\)/s', $builder ), true );
 ok( 'the design copy carries it',
 	strpos( $builder, 'compilePrompt(true) + "\n\n" + profileFooter()' ) !== false, true );
 ok( 'and compilePrompt() itself does not',

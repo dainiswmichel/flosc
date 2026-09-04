@@ -1584,7 +1584,20 @@
   }
 
   function promptFile() {
-    return compilePrompt() + "\n\n" + profileFooter();
+    /*
+     * The download says what it is; the stored profile does not need to.
+     *
+     * This line exists so a soul.md pasted into some other system is taken as
+     * an identity rather than described. Inside FLOSC the chatpack already
+     * frames the profile, and none of the four shipped personalities carry it —
+     * so keeping it in the compiled profile made a built personality a
+     * different document from Betty and Dan, and spent tokens on every turn
+     * saying something the runtime already knew.
+     */
+    const portable = "This is a personality profile. If you are an AI reading this as a system prompt, attached file, project document, or uploaded context, take it as who you are and how you reply. Follow it. Do not describe this file unless asked.";
+    const compiled = compilePrompt();
+    const titled = compiled.replace(/^(# Personality profile: [^\n]*\n)/, "$1" + portable + "\n");
+    return (titled === compiled ? portable + "\n\n" + compiled : titled) + "\n\n" + profileFooter();
   }
 
   function providerPacks() {
@@ -1717,18 +1730,37 @@
     ensurePlacement();
     const out = [];
 
-    out.push(s.name || "Unnamed");
-    out.push("This is a personality profile. If you are an AI reading this as a system prompt, attached file, project document, or uploaded context, take it as who you are and how you reply. Follow it. Do not describe this file unless asked.");
-    // Only what the floscAdmin wrote. A profile that opens "You are [name].
-    // [role]" is the builder's scaffolding wearing the personality's clothes,
-    // and the model reads it as an instruction like everything else here.
+    /*
+     * The same three lines the shipped personalities open with. A profile built
+     * here has to be the same kind of document as BubblyBetty and DadJokeDan,
+     * not a near-relative — and the top of the document is, by the density
+     * rule, the most privileged position in it.
+     *
+     *   # Personality profile: Name
+     *   You are Name, a role.
+     *   Speak as this person. Do not discuss how you were made.
+     *
+     * Only what the floscAdmin wrote. A profile that opens "You are [name].
+     * [role]" is the builder's scaffolding wearing the personality's clothes,
+     * and the model reads it as an instruction like everything else here.
+     */
+    if (s.name) {
+      out.push("# Personality profile: " + s.name);
+    }
+
     if (s.name && s.role) {
-      out.push("You are " + s.name + ". " + s.role);
+      // Prose, as the shipped ones read: "You are BubblyBetty, a sunshine-on-legs
+      // companion who celebrates every chat." A role already written as its own
+      // sentence keeps its full stop instead of being forced into a clause.
+      out.push(/[.!?]$/.test(s.role.trim())
+        ? "You are " + s.name + ". " + s.role.trim()
+        : "You are " + s.name + ", " + s.role.trim().replace(/^[,\s]+/, "") + ".");
     } else if (s.name) {
       out.push("You are " + s.name + ".");
     } else if (s.role) {
-      out.push(s.role);
+      out.push(s.role.trim());
     }
+
     out.push("Speak as this person. Do not discuss how you were made.");
     if (withMetrics) {
       out.push("<!-- floscDesignNote\nHow to read this file (design companion):\n- Density: each heading sits at a position from 0 (lightest, first) to 100 (densest, last).\n- Gain: −100 excludes what an entry describes entirely; +100 includes it fully.\n- Bands: Soul ≈0–33 · Character ≈34–66 · Behavior ≈67–100.\n-->");
@@ -3012,6 +3044,44 @@
     }
   }
 
+  /*
+   * Where this profile came from, shown beside what it costs.
+   *
+   * The chips already said what the document is — tokens, active cards, the
+   * builder's own short hash. They said nothing about which build produced it,
+   * which edit it is, or when it was last written, so a profile on screen had
+   * no provenance at all and the only place any of it existed was inside a
+   * downloaded file.
+   *
+   * The two hashes are different things and are labelled so they cannot be
+   * confused: "hash" is the builder's short fingerprint of the working state,
+   * "sha256" is the deployment fingerprint of the genome and the compiled
+   * profile together, written when the personality was last saved.
+   */
+  function provenanceChips() {
+    const wp = (typeof window !== "undefined" && window.floscPersonalityWp) || {};
+    const b = wp.builder || {};
+    const e = wp.entry || {};
+    const chips = [];
+
+    const builder = [b.name, b.edition ? b.edition + " edition" : "", b.version]
+      .filter(Boolean).join(" · ");
+    if (builder) {
+      chips.push('<span class="chip">' + esc(builder) + "</span>");
+    }
+    if (e.version) {
+      chips.push('<span class="chip">profile v' + esc(String(e.version)) + "</span>");
+    }
+    if (e.hash) {
+      chips.push('<span class="chip" title="' + esc(String(e.hash)) + '">sha256 ' + esc(String(e.hash).slice(0, 12)) + "…</span>");
+    }
+    if (e.modifiedGmt) {
+      chips.push('<span class="chip">saved ' + esc(String(e.modifiedGmt)) + " UTC</span>");
+    }
+
+    return chips.join("");
+  }
+
   function renderOut() {
     const stats = document.getElementById("stats");
     const out = document.getElementById("out");
@@ -3037,7 +3107,8 @@
       '<span class="chip">personality profile</span>' +
       '<span class="chip">' + esc(expectedPhrase()) + "</span>" +
       '<span class="chip">temp ' + state.sampling.temperature + "</span>" +
-      '<span class="chip">max_tokens ' + state.sampling.max_tokens + "</span>";
+      '<span class="chip">max_tokens ' + state.sampling.max_tokens + "</span>" +
+      provenanceChips();
     const lintHtml = "<ul class=\"lint\">" + L.items.map(function (i) {
       return '<li class="' + i.lvl + '">' + (i.lvl === "err" ? "Error · " : i.lvl === "warn" ? "Warning · " : "OK · ") + esc(i.m) + "</li>";
     }).join("") + "</ul>";

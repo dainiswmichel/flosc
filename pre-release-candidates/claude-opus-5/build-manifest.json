@@ -4,7 +4,7 @@
   "status": "ASSEMBLED_AWAITING_FRESH_INSTALL_ACCEPTANCE",
   "branch": "claude/ready-to-help-jsw2li",
   "baseline_commit": "477f252",
-  "head_commit": "bc94b4da575775c550f3cc7e64caf2b9415ba73a",
+  "head_commit": "24b99316ff958b3d1f7f6c6e9e3d948dd7d91f7e",
   "version": "8.0.0",
   "artifact": null,
   "artifact_note": "The full tree is here, same as the other candidates. No flosc.zip: build with ./flosc-ship.sh from this tree or from the branch — they are identical at this commit. pre-release-candidates/ is excluded from the artifact by .distignore and by the build's hard deny list.",
@@ -42,13 +42,20 @@
   ],
   "harness": "tests/journey-harness.php (WP-CLI, --require, never shipped)",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
-  "tree_files": 275,
-  "candidate_version": "v3",
-  "artifact_sha256": "3e509710ac6f306aa7b49f267f29599316ddcc3b1d464c8cc6cde9bac9638574",
+  "tree_files": 277,
+  "candidate_version": "v4",
+  "artifact_sha256": "6cad4ffbce65d6573d68cc1a12412c555fde59513fca2a3859f7616e598a1ae1",
   "artifact_files": 276,
   "v3_fixes": [
     "Recovered answer no longer shown twice after a signed-in reload mid-response.",
     "profile_hash computed on read when the stored field is empty, so the chat log column is never blank.",
     "Chat log export filename carries a full MTS to the millisecond instead of the date alone."
+  ],
+  "v4_fixes": [
+    "The framework no longer claims membership grants 'full access to all content'.",
+    "A personality built in the builder opens with the same header the shipped ones do.",
+    "The portability line moved to the download; provenance is visible beside the profile.",
+    "The site index reads whichever post types the flow selects, not only 'post'.",
+    "BuddyBoss group directory indexed, catalogued on every turn, and fail-closed by tier and group privacy."
   ]
 }

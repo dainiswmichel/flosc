@@ -1,18 +1,29 @@
 # Home run candidate — Claude Opus 5
 
-**v3.** Three fixes from the first live test on dainis.net:
+**v4.** BuddyBoss awareness, plus four fixes from live testing.
 
-- A reload while the assistant was still typing showed the reply twice. A
-  signed-in turn is written to the session by PHP before the browser receives
-  the response, so the reload already restored it and recovery appended a
-  second copy. The thread is now checked before anything is appended.
-- `profile_hash` was empty on every chat log row. The column was right and had
-  nothing to read — the hash is written when a personality is saved, and no
-  shipped default had been saved since the field existed. It is computed on
-  read when absent.
-- The chat log export was named by date alone, so two exports in one day
-  collided in the downloads folder. Full MTS now, to the millisecond.
+- The framework was telling the model, every turn, that membership means "full
+  access to all content". A guest asked how to become a member and was told
+  exactly that. FLOSC does not know what any membership contains; the phase list
+  now names access tiers and nothing else.
+- A personality built in the builder now opens with the same three lines the
+  shipped ones do. It was producing a bare name with no heading — a different
+  kind of document at the top, which by the density rule is the most privileged
+  position in it.
+- Provenance is visible beside the profile — builder, edition, version, which
+  edit it is, the sha256, when it was saved — instead of only inside a
+  downloaded file.
+- A reload while the assistant was still typing showed the reply twice on a
+  signed-in turn. profile_hash was empty on every chat log row. The log export
+  filename now carries a full MTS instead of the date alone.
 
+BuddyBoss: the site index read one hardcoded post type, so products, pages and
+forum topics were invisible although all of them are WP_Post. It now reads
+whichever types the flow selects. The group directory, which really does live in
+the BuddyPress tables, has an adapter and rides on every turn as a catalogue —
+fail-closed by tier, by exclusion, and by BuddyBoss privacy, which FLOSC can
+tighten and never loosen. Every BuddyPress call is guarded; a site without it
+pays nothing and sees a plain note on the panel.
 
 Assembled from the four tested candidates. Version held at **8.0.0** — this is
 a resubmission, not a release.
