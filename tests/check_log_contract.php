@@ -63,7 +63,11 @@ echo "\nThe insert's placeholders match its columns\n";
 preg_match( "/\\\$result = \\\$wpdb->insert\(\s*\\\$this->table_name,\s*\[(.*?)\],\s*(\[[^\]]*\])\s*\);/s", $logger, $m );
 $cols = isset( $m[1] ) ? preg_match_all( "/'[a-z_]+'\s*=>/", $m[1] ) : 0;
 $fmts = isset( $m[2] ) ? preg_match_all( "/'%[sd]'/", $m[2] ) : 0;
-ok( 'one placeholder per column', array( $cols, $fmts ), array( 26, 26 ) );
+ok( 'the insert was found at all', $cols > 0, true );
+// Counted, not asserted against a number: a hardcoded total goes stale the
+// next time a column is added, which fails the build for the wrong reason and
+// teaches whoever hits it to edit the number rather than check the pairing.
+ok( 'one placeholder per column', $fmts, $cols );
 
 echo "\nThe personality is read from the row the prompt was built from\n";
 foreach ( array( 'personality_id', 'personality_name', 'profile_hash' ) as $key ) {
