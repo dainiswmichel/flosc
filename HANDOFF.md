@@ -161,7 +161,7 @@ Ask before spending.
 ## 8. The home-run assembly (2026-09-04)
 
 Fourteen commits on `claude/ready-to-help-jsw2li`, from `477f252` to the branch
-head. Record in `pre-release-candidates/home-run/`. **No ZIP and no copied
+head. Record in `pre-release-candidates/claude-opus-5/`. **No ZIP and no copied
 tree** — the candidate is the plugin at the repository root on this branch, and
 `pre-release-candidates/` is excluded from the artifact by `.distignore` and by
 the build's hard deny list.

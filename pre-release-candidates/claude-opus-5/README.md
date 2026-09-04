@@ -1,4 +1,4 @@
-# Home run candidate
+# Home run candidate — Claude Opus 5
 
 Assembled from the four tested candidates. Version held at **8.0.0** — this is
 a resubmission, not a release.
