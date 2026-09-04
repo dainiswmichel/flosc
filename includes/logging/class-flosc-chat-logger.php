@@ -179,6 +179,7 @@ class FLOSC_Chat_Logger {
             personality_name VARCHAR(120) DEFAULT '',
             profile_hash VARCHAR(64) DEFAULT '',
             turn_status VARCHAR(20) DEFAULT 'complete',
+            turn_id VARCHAR(64) DEFAULT '',
             response_time_ms INT UNSIGNED DEFAULT 0,
             billing_source VARCHAR(50) DEFAULT '',
             billing_model VARCHAR(120) DEFAULT '',
@@ -198,7 +199,8 @@ class FLOSC_Chat_Logger {
             KEY idx_flosc_chat_phase (phase),
             KEY idx_flosc_chat_session (session_id),
             KEY idx_flosc_chat_journey (journey_id),
-            KEY idx_flosc_chat_personality (personality_id)
+            KEY idx_flosc_chat_personality (personality_id),
+            KEY idx_flosc_chat_turn (turn_id)
         ) $charset_collate;";
 
         require_once ABSPATH . 'wp-admin/includes/upgrade.php';
@@ -558,6 +560,75 @@ class FLOSC_Chat_Logger {
      * }
      * @return int|false Insert ID on success, false on failure
      */
+    /**
+     * A turn id is opaque and browser-minted; accept only what we mint.
+     */
+    public static function flosc_sanitize_turn_id($raw) {
+        $raw = strtolower(trim((string) $raw));
+        return preg_match('/^[a-f0-9-]{8,64}$/', $raw) ? $raw : '';
+    }
+
+    /**
+     * The row a turn id wrote, if it wrote one.
+     *
+     * A visitor who reloads while the assistant is still typing leaves the
+     * request in flight: the browser drops the connection, PHP runs to
+     * completion and writes the answer, and nobody reads it. The reply exists.
+     * This is how the reloaded page finds it.
+     */
+    public function flosc_find_turn($turn_id) {
+        global $wpdb;
+
+        $turn_id = self::flosc_sanitize_turn_id($turn_id);
+        if ($turn_id === '') {
+            return null;
+        }
+
+        $this->flosc_ensure_table();
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table, single indexed row, must not be cached across a turn.
+        $row = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT id, ai_response, response_source, turn_status, personality_name FROM {$this->table_name} WHERE turn_id = %s ORDER BY id DESC LIMIT 1",
+                $turn_id
+            ),
+            ARRAY_A
+        );
+
+        return is_array($row) ? $row : null;
+    }
+
+    /**
+     * Mark a turn abandoned. An abandoned turn is not conversation history:
+     * replaying it makes the next prompt look like a question nobody answered,
+     * which is how a normal follow-up came back as scripted IVR copy.
+     */
+    public function flosc_mark_turn_abandoned($turn_id) {
+        global $wpdb;
+
+        $turn_id = self::flosc_sanitize_turn_id($turn_id);
+        if ($turn_id === '') {
+            return false;
+        }
+
+        $this->flosc_ensure_table();
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table, targeted update.
+        $updated = $wpdb->update(
+            $this->table_name,
+            ['turn_status' => 'abandoned'],
+            ['turn_id' => $turn_id],
+            ['%s'],
+            ['%s']
+        );
+
+        if ($updated) {
+            $this->flosc_bust_log_caches();
+        }
+
+        return (bool) $updated;
+    }
+
     public function flosc_log_chat($data) {
         global $wpdb;
 
@@ -624,6 +695,11 @@ class FLOSC_Chat_Logger {
             $turn_status = 'complete';
         }
 
+        // Minted in the browser before the request leaves. It is what lets a
+        // reload find the answer that was written while the tab was gone, and
+        // what stops the same turn being billed twice.
+        $turn_id = self::flosc_sanitize_turn_id($data['turn_id'] ?? '');
+
         $result = $wpdb->insert(
             $this->table_name,
             [
@@ -646,6 +722,7 @@ class FLOSC_Chat_Logger {
                 'personality_name'=> $personality_name,
                 'profile_hash'    => $profile_hash,
                 'turn_status'     => $turn_status,
+                'turn_id'         => $turn_id,
                 'response_time_ms'=> intval($data['response_time_ms'] ?? 0),
                 'billing_source'  => sanitize_text_field($data['billing_source'] ?? ''),
                 'billing_model'   => sanitize_text_field($data['billing_model'] ?? ''),
@@ -654,7 +731,7 @@ class FLOSC_Chat_Logger {
                 'billing_total_tokens' => max(0, intval($data['billing_total_tokens'] ?? 0)),
                 'billing_real_millicents' => max(0, intval($data['billing_real_millicents'] ?? 0)),
             ],
-            ['%s', '%s', '%s', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%d', '%d', '%d', '%d']
+            ['%s', '%s', '%s', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%d', '%d', '%d', '%d']
         );
 
         if ( $result ) {

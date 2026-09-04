@@ -409,9 +409,19 @@ class floscApp {
                 } else {
                     this.log('[FLOSC] Continuing session - restoring visitor messages');
                     this.restoreVisitorMessages();
+                    // After the thread is back, so a recovered answer lands
+                    // under the message it answers.
+                    this.floscResumePendingTurn().catch(() => {});
                 }
             }
-            
+
+            if (this.state !== 'visitor') {
+                // A signed-in thread restores from the server, so there is no
+                // orphaned message to drop — the server wrote both halves. The
+                // answer is simply unread, and this is how it arrives.
+                this.floscResumePendingTurn().catch(() => {});
+            }
+
             // Member magic-link login: show confirmation as first message, with fresh chat
             if (this.config.memberLinkLogin) {
                 this.currentSession = null;          // ensure new session on first message
@@ -1141,6 +1151,144 @@ class floscApp {
             localStorage.setItem(this.visitorJourneyKey(base), String(value));
         } catch (e) {
             // Ignore storage failures.
+        }
+    }
+
+    /*
+     * A turn that was in flight when the page went away.
+     *
+     * /flosc/v1/chat is an ordinary POST. Reloading mid-answer drops the
+     * browser's end of it while PHP runs to completion and writes the reply.
+     * The reply exists and nobody read it, and the restored thread held a
+     * visitor message with no assistant reply — which then went to the server
+     * as history, so the next turn read as a question the assistant had
+     * ignored and came back as scripted IVR copy on the same subject.
+     *
+     * The id is minted before the request leaves and cleared when the answer
+     * arrives. Anything still marked pending on the next page load is a turn
+     * whose outcome we do not know yet.
+     */
+    floscMintTurnId() {
+        try {
+            if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+                return window.crypto.randomUUID();
+            }
+        } catch (e) {
+            // Fall through to the manual form below.
+        }
+        const rand = () => Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
+        return `${rand()}${rand()}-${rand()}-${rand()}-${rand()}-${rand()}${rand()}${rand()}`;
+    }
+
+    floscMarkTurnPending(turnId, message) {
+        if (!turnId) return;
+        try {
+            this.writeVisitorJourneyItem('flosc_pending_turn', JSON.stringify({
+                turn_id: turnId,
+                message: String(message || '').substring(0, 2000),
+                at: Date.now(),
+            }));
+        } catch (e) {
+            // Storage is a convenience here; a turn that cannot be marked
+            // simply behaves the way it did before.
+        }
+    }
+
+    floscClearTurnPending() {
+        this._floscTurnId = null;
+        try {
+            this.removeVisitorJourneyItem('flosc_pending_turn');
+        } catch (e) {
+            // Ignore storage failures.
+        }
+    }
+
+    floscReadPendingTurn() {
+        try {
+            const raw = this.readVisitorJourneyItem('flosc_pending_turn');
+            if (!raw) return null;
+            const pending = JSON.parse(raw);
+            if (!pending || !pending.turn_id) return null;
+            // Older than a day is not a turn anyone is still waiting on.
+            if (pending.at && (Date.now() - Number(pending.at)) > 86400000) {
+                this.removeVisitorJourneyItem('flosc_pending_turn');
+                return null;
+            }
+            return pending;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    /*
+     * Ask the server what became of a turn we stopped listening to.
+     *
+     * Recovered: the answer was written, so show it and save it — the visitor
+     * gets the reply they reloaded away from. Not recovered: nothing was
+     * written, so drop the orphaned visitor message rather than sending half a
+     * turn as history on the next request.
+     */
+    async floscResumePendingTurn() {
+        const pending = this.floscReadPendingTurn();
+        if (!pending) return;
+
+        this.removeVisitorJourneyItem('flosc_pending_turn');
+
+        let data = null;
+        try {
+            const response = await this.authFetch(this.config.apiUrl + '/chat', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-WP-Nonce': this.config.nonce
+                },
+                body: JSON.stringify({
+                    resume_turn_id: pending.turn_id,
+                    flow_id: this.config?.flowId || '',
+                    journey_id: this.readVisitorJourneyItem('flosc_journey_id') || '',
+                })
+            });
+            data = await response.json();
+        } catch (e) {
+            this.logWarn('[FLOSC] Could not resolve the interrupted turn:', e);
+            // Unresolved is the one case where the orphan must still go, or the
+            // next request carries the half-turn this whole path exists to stop.
+            this.floscDropOrphanVisitorMessage(pending.message);
+            return;
+        }
+
+        if (data && data.recovered && data.message) {
+            this.log('[FLOSC] Recovered the answer written while the page was reloading.');
+            const html = this.formatMarkdown(String(data.message));
+            this.addMessage('assistant', html, true);
+            if (this.state === 'visitor') {
+                this.saveVisitorMessage('assistant', html);
+            }
+            return;
+        }
+
+        this.log('[FLOSC] The interrupted turn never completed; dropping its unanswered message.');
+        this.floscDropOrphanVisitorMessage(pending.message);
+    }
+
+    /*
+     * Remove a trailing visitor message that never got an answer. Only the
+     * last one, and only if it is the message we were waiting on — an earlier
+     * unanswered message is somebody else's problem and not ours to rewrite.
+     */
+    floscDropOrphanVisitorMessage(message) {
+        if (this.state !== 'visitor' || !message) return;
+        try {
+            const stored = JSON.parse(this.readVisitorJourneyItem('flosc_visitor_messages') || '[]');
+            if (!Array.isArray(stored) || !stored.length) return;
+            const last = stored[stored.length - 1];
+            if (last && last.role === 'user' && String(last.content || '') === String(message)) {
+                stored.pop();
+                this.writeVisitorJourneyItem('flosc_visitor_messages', JSON.stringify(stored));
+            }
+        } catch (e) {
+            this.logWarn('[FLOSC] Could not drop the unanswered message:', e);
         }
     }
 
@@ -10958,6 +11106,14 @@ Purchased: ${ctx.purchased}
                 this.log('FLOSC: IVR match found, routing through AI:', ivrGuidance.name);
             }
 
+            // A turn id, minted before the request leaves and remembered until
+            // the answer arrives. If the visitor reloads while the assistant is
+            // still typing, this is what the next page load uses to ask for the
+            // answer it missed — and what stops the same turn being billed
+            // twice if the message is resent.
+            this._floscTurnId = this.floscMintTurnId();
+            this.floscMarkTurnPending(this._floscTurnId, message);
+
             try {
                 let response;
                 try {
@@ -10980,6 +11136,7 @@ Purchased: ${ctx.purchased}
                     response = await this.callAPI(message, ivrGuidance, { allowSessionAutoCreate: true });
                 }
                 this.hideTyping();
+                this.floscClearTurnPending();
 
                 if (response) {
                     // v3.0.5: Extract [ACTION:...] tags from AI response (for AI-interpretation offer triggers)
@@ -11866,6 +12023,10 @@ Purchased: ${ctx.purchased}
             payload.request_guest_account = options.requestGuestAccount ? 1 : 0;
         }
         
+        if (this._floscTurnId) {
+            payload.turn_id = this._floscTurnId;
+        }
+
         // v2.0.7: Send visitor conversation history so AI has memory across messages.
         // Visitors have no server-side session, so we send localStorage history.
         // This prevents AI from repeating itself and enables conversation-awareness.

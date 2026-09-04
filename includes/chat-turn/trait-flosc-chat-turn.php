@@ -55,6 +55,74 @@ trait FLOSC_Chat_Turn_Trait {
         $flosc_response_source = 'ivr'; // Track how response was generated
 
         $message = sanitize_text_field($request->get_param('message'));
+
+        /*
+         * Refresh while the assistant is still typing.
+         *
+         * /flosc/v1/chat is an ordinary POST, so a reload drops the browser's
+         * end of it while PHP runs to completion and writes the answer. The
+         * reply exists; nobody ever read it. The reloaded page then held a
+         * visitor message with no assistant reply, and sent that as history —
+         * so the next turn looked like a question the assistant had ignored,
+         * and came back as scripted IVR copy on the same subject.
+         *
+         * The browser mints a turn id before the request leaves. Two things
+         * follow from it: a reload can ask for the answer it missed, and the
+         * same turn can never be billed twice.
+         */
+        $turn_id = class_exists('FLOSC_Chat_Logger')
+            ? FLOSC_Chat_Logger::flosc_sanitize_turn_id($request->get_param('turn_id'))
+            : '';
+        $resume_turn_id = class_exists('FLOSC_Chat_Logger')
+            ? FLOSC_Chat_Logger::flosc_sanitize_turn_id($request->get_param('resume_turn_id'))
+            : '';
+
+        if ($resume_turn_id !== '') {
+            $resumed = FLOSC_Chat_Logger::instance()->flosc_find_turn($resume_turn_id);
+
+            if (is_array($resumed) && trim((string) ($resumed['ai_response'] ?? '')) !== '') {
+                return new WP_REST_Response([
+                    'success'         => true,
+                    'recovered'       => true,
+                    'message'         => (string) $resumed['ai_response'],
+                    'response'        => (string) $resumed['ai_response'],
+                    'response_source' => (string) ($resumed['response_source'] ?? ''),
+                    'personality_name' => (string) ($resumed['personality_name'] ?? ''),
+                    'turn_id'         => $resume_turn_id,
+                ], 200);
+            }
+
+            // Nothing was written, so the turn never completed. Say so plainly:
+            // the client drops its orphaned message rather than sending a
+            // half-turn as history.
+            FLOSC_Chat_Logger::instance()->flosc_mark_turn_abandoned($resume_turn_id);
+
+            return new WP_REST_Response([
+                'success'   => true,
+                'recovered' => false,
+                'message'   => '',
+                'response'  => '',
+                'turn_id'   => $resume_turn_id,
+            ], 200);
+        }
+
+        // The same turn arriving twice — a resend after a reload, a double tap,
+        // a client retry — answers from what was written rather than calling
+        // the provider again and billing for it.
+        if ($turn_id !== '') {
+            $already = FLOSC_Chat_Logger::instance()->flosc_find_turn($turn_id);
+            if (is_array($already) && trim((string) ($already['ai_response'] ?? '')) !== '') {
+                return new WP_REST_Response([
+                    'success'         => true,
+                    'replayed'        => true,
+                    'message'         => (string) $already['ai_response'],
+                    'response'        => (string) $already['ai_response'],
+                    'response_source' => (string) ($already['response_source'] ?? ''),
+                    'turn_id'         => $turn_id,
+                ], 200);
+            }
+        }
+
         $session_id_raw = sanitize_text_field((string) ($request->get_param('session_id') ?? ''));
         $session_id = $this->flosc_normalize_session_id($session_id_raw);
         // Opaque per-conversation id minted in the browser and kept across login.
@@ -978,6 +1046,7 @@ trait FLOSC_Chat_Turn_Trait {
             // switching test needs and the log could not previously supply.
             // Resolved from the same library row the prompt was built from, so
             // a row records the character that produced the text.
+            'turn_id'         => $turn_id,
             'surface'         => $flosc_ctx_surface !== '' ? $flosc_ctx_surface : 'full_page',
             'page_url'        => $flosc_ctx_url,
             'page_title'      => $flosc_ctx_title,
