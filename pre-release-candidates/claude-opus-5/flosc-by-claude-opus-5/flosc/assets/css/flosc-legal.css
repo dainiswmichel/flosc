@@ -1,0 +1,84 @@
+body {
+    margin: 0;
+    font-family: Georgia, "Times New Roman", serif;
+    background: #f7f4ec;
+    color: #1d1b19;
+    line-height: 1.6;
+}
+
+.flosc-legal-shell {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 48px 24px 72px;
+}
+
+.flosc-legal-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    margin-bottom: 32px;
+    font: 600 14px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.flosc-legal-nav a {
+    color: #7a4b12;
+    text-decoration: none;
+}
+
+.flosc-legal-nav a:hover,
+.flosc-legal-nav a:focus {
+    text-decoration: underline;
+}
+
+h1 {
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    line-height: 1.1;
+    margin: 0 0 16px;
+}
+
+h2 {
+    font-size: 1.25rem;
+    margin: 32px 0 12px;
+}
+
+p,
+li {
+    font-size: 1.05rem;
+}
+
+ul,
+ol {
+    padding-left: 24px;
+}
+
+a {
+    color: #8b3f00;
+}
+
+.flosc-legal-card {
+    background: #fffdf8;
+    border: 1px solid #e8dcc8;
+    border-radius: 20px;
+    padding: 32px;
+    box-shadow: 0 24px 60px rgba(74, 44, 11, 0.08);
+}
+
+.flosc-legal-meta {
+    margin: 0 0 24px;
+    font: 600 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #7f6a54;
+}
+
+@media (max-width: 640px) {
+    .flosc-legal-shell {
+        padding: 28px 16px 48px;
+    }
+
+    .flosc-legal-card {
+        padding: 24px;
+    }
+}

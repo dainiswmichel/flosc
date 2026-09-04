@@ -1,0 +1,180 @@
+{
+  "categories": [
+    {
+      "slug": "vegan_latvian_recipes",
+      "name": "Vegan Latvian Recipes",
+      "description": "Fourteen classic Latvian dishes, fully plant-based, plus the cookbook PDF.",
+      "parent": null,
+      "term_meta": {
+        "_flosc_protected": "yes"
+      }
+    }
+  ],
+  "posts": [
+    {
+      "title": "Pelēkie zirņi ar “speķi”",
+      "content": "<p><strong>Grey peas with smoky onions, mushrooms and tofu</strong></p>\n<p>Latvia’s national dish — veganized. Smoky “speķis” from mushrooms and tofu over tender grey peas.</p>\n<p><em>Access tier: Visitor freeline. Part of Vegan Latvian Kitchen (14 recipes · 2 visitor · 2 guest · all for members + PDF).</em></p>\n\n<!--flosc_read_more-->\n\n<h2>Ingredients</h2>\n<ul>\n<li>500 g dried Latvian grey peas</li>\n<li>2 large onions, diced</li>\n<li>250 g mushrooms, preferably brown</li>\n<li>150 g smoked tofu</li>\n<li>2 tbsp rapeseed or sunflower oil</li>\n<li>1 tsp smoked paprika</li>\n<li>1–2 tsp liquid smoke</li>\n<li>Black pepper, salt</li>\n</ul>\n\n<h2>Method</h2>\n<ol>\n<li>Soak the grey peas overnight.</li>\n<li>Boil in fresh salted water until tender, about 45–60 minutes.</li>\n<li>Dice mushrooms and smoked tofu small.</li>\n<li>Fry onions slowly in oil until golden.</li>\n<li>Add mushrooms; cook until browned.</li>\n<li>Add tofu, smoked paprika and liquid smoke.</li>\n<li>Season with black pepper; fry until dark and slightly crisp.</li>\n<li>Spoon the smoky mixture over hot peas.</li>\n</ol>\n<p><em>Key:</em> the topping should be salty, rich and strongly smoky — the contrast speķis used to give.</p>\n\n<p><em>Fully plant-based adaptation for FLOSC client UAT. Adjust salt, smoke, and timing to taste.</em></p>\n",
+      "excerpt": "Grey peas with smoky onions, mushrooms and tofu",
+      "slug": "pelekie-zirni-ar-speki",
+      "item": 1,
+      "access": "visitor",
+      "starter_access": "freeline",
+      "protection_mode": "full",
+      "category": "vegan_latvian_recipes"
+    },
+    {
+      "title": "Kartupeļu pankūkas",
+      "content": "<p><strong>Latvian potato pancakes</strong></p>\n<p>Crispy grated potato pancakes — everyday comfort, member library.</p>\n<p><em>Access tier: Member / full cookbook. Part of Vegan Latvian Kitchen (14 recipes · 2 visitor · 2 guest · all for members + PDF).</em></p>\n\n<p><em>Open to everyone — visitor freeline recipe 2 of 2.</em></p>\n\n<!--flosc_read_more-->\n\n<h2>Ingredients</h2>\n<ul>\n<li>1 kg potatoes</li>\n<li>1 small onion</li>\n<li>3 tbsp flour</li>\n<li>1 tbsp potato starch</li>\n<li>1 tsp salt, black pepper</li>\n<li>Oil for frying</li>\n</ul>\n\n<h2>Method</h2>\n<ol>\n<li>Finely grate potatoes and onion; squeeze only some liquid so mixture stays moist.</li>\n<li>Stir in flour, potato starch, salt and pepper.</li>\n<li>Fry thin pancakes in hot oil until deeply golden and crispy.</li>\n<li>Serve with vegan sour cream, mushroom sauce or applesauce.</li>\n</ol>\n\n<p><em>Fully plant-based adaptation for FLOSC client UAT. Adjust salt, smoke, and timing to taste.</em></p>\n",
+      "excerpt": "Latvian potato pancakes",
+      "slug": "kartupelu-pankukas",
+      "item": 2,
+      "access": "visitor",
+      "starter_access": "freeline",
+      "protection_mode": "full",
+      "category": "vegan_latvian_recipes"
+    },
+    {
+      "title": "Ķimeņu siers (Jāņu siers)",
+      "content": "<p><strong>Plant-based caraway cheese for Midsummer</strong></p>\n<p>Jāņi on a plate — caraway “cheese” without dairy. Login freeline sample.</p>\n<p><em>Access tier: Guest freeline (login). Part of Vegan Latvian Kitchen (14 recipes · 2 visitor · 2 guest · all for members + PDF).</em></p>\n\n<!--flosc_read_more-->\n\n<h2>Ingredients</h2>\n<ul>\n<li>500 g firm tofu</li>\n<li>250 g unsweetened soy yogurt</li>\n<li>3 tbsp tapioca starch</li>\n<li>2 tbsp potato starch</li>\n<li>3 tbsp nutritional yeast</li>\n<li>3 tbsp vegan butter</li>\n<li>2 tbsp lemon juice</li>\n<li>2–3 tsp caraway seeds</li>\n<li>1½ tsp salt</li>\n<li>¼ tsp turmeric</li>\n</ul>\n\n<h2>Method</h2>\n<ol>\n<li>Blend everything except caraway until completely smooth.</li>\n<li>Stir in caraway seeds.</li>\n<li>Cook in a heavy saucepan, stirring constantly, until very thick and stretchy.</li>\n<li>Transfer into a cheesecloth-lined bowl; fold cloth; weight lightly.</li>\n<li>Refrigerate overnight; unmold and slice.</li>\n</ol>\n\n<p><em>Fully plant-based adaptation for FLOSC client UAT. Adjust salt, smoke, and timing to taste.</em></p>\n",
+      "excerpt": "Plant-based caraway cheese for Midsummer",
+      "slug": "kimenu-siers-janu-siers",
+      "item": 3,
+      "access": "guest",
+      "starter_access": "guest",
+      "protection_mode": "protected",
+      "category": "vegan_latvian_recipes"
+    },
+    {
+      "title": "Aukstā zupa",
+      "content": "<p><strong>Latvian cold beet soup</strong></p>\n<p>Pink summer classic — plant kefir, beets, cucumber, dill. Second guest freeline recipe.</p>\n<p><em>Access tier: Guest freeline (login). Part of Vegan Latvian Kitchen (14 recipes · 2 visitor · 2 guest · all for members + PDF).</em></p>\n\n<!--flosc_read_more-->\n\n<h2>Ingredients</h2>\n<ul>\n<li>500 g cooked or pickled beetroot, grated</li>\n<li>750 ml unsweetened plant kefir, or 500 g plain soy yogurt plus 250 ml cold water</li>\n<li>1 large cucumber, diced</li>\n<li>5 spring onions</li>\n<li>A large handful of fresh dill</li>\n<li>1 tbsp mustard</li>\n<li>1–2 tbsp beet pickle liquid or vinegar</li>\n<li>Salt and black pepper</li>\n<li>½ tsp sugar, optional</li>\n<li>Firm tofu and kala namak, optional egg stand-in</li>\n</ul>\n\n<h2>Method</h2>\n<ol>\n<li>Combine all ingredients in a large bowl.</li>\n<li>Season to taste.</li>\n<li>Refrigerate at least one hour.</li>\n<li>Serve very cold with boiled new potatoes.</li>\n</ol>\n\n<p><em>Fully plant-based adaptation for FLOSC client UAT. Adjust salt, smoke, and timing to taste.</em></p>\n",
+      "excerpt": "Latvian cold beet soup",
+      "slug": "auksta-zupa",
+      "item": 4,
+      "access": "guest",
+      "starter_access": "guest",
+      "protection_mode": "protected",
+      "category": "vegan_latvian_recipes"
+    },
+    {
+      "title": "Rasols",
+      "content": "<p><strong>Latvian potato salad (vegan)</strong></p>\n<p>Party salad — potatoes, pickles, peas, smoky tofu, vegan mayo. Full cookbook unlock.</p>\n<p><em>Access tier: Member / full cookbook. Part of Vegan Latvian Kitchen (14 recipes · 2 visitor · 2 guest · all for members + PDF).</em></p>\n\n<!--flosc_read_more-->\n\n<h2>Ingredients</h2>\n<ul>\n<li>Diced potatoes and carrots, boiled tender</li>\n<li>Peas</li>\n<li>Chopped dill pickles</li>\n<li>Diced smoked tofu or marinated tempeh</li>\n<li>Turmeric-seasoned crumbled firm tofu (“egg”)</li>\n<li>Vegan mayo, salt, pepper, pickle brine</li>\n</ul>\n\n<h2>Method</h2>\n<ol>\n<li>Boil diced potatoes and carrots until tender; cool.</li>\n<li>Fold in peas, pickles, smoked tofu, and turmeric tofu crumble.</li>\n<li>Bind with vegan mayo; season with salt, pepper, and a little pickle brine.</li>\n<li>Chill before serving.</li>\n</ol>\n\n<p><em>Fully plant-based adaptation for FLOSC client UAT. Adjust salt, smoke, and timing to taste.</em></p>\n",
+      "excerpt": "Latvian potato salad (vegan)",
+      "slug": "rasols",
+      "item": 5,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "vegan_latvian_recipes"
+    },
+    {
+      "title": "Vegānie pīrāgi",
+      "content": "<p><strong>Latvian crescent buns with smoky filling</strong></p>\n<p>Classic celebration buns — yeast dough, smoky mushroom–tofu filling, no bacon required.</p>\n<p><em>Member access — full site recipe 6 of 14. Members also get the cookbook PDF.</em></p>\n\n<!--flosc_read_more-->\n\n<h2>Ingredients</h2>\n<h4>Dough</h4><ul>\n<li>500 ml unsweetened soy milk</li>\n<li>100 g vegan butter</li>\n<li>2 tbsp sugar</li>\n<li>10 g dry yeast</li>\n<li>100 g unsweetened soy yogurt</li>\n<li>About 850–950 g wheat flour</li>\n<li>1 tbsp salt</li>\n</ul>\n<h4>Filling</h4><ul>\n<li>300 g smoked tofu</li>\n<li>250 g mushrooms</li>\n<li>2 onions</li>\n<li>2 tbsp oil</li>\n<li>Black pepper</li>\n<li>1 tsp liquid smoke, optional</li>\n</ul>\n\n<h2>Method</h2>\n<ol>\n<li>Warm soy milk until lukewarm; add sugar and yeast; rest ~10 minutes.</li>\n<li>Mix in melted vegan butter, yogurt and salt.</li>\n<li>Knead in flour to a soft dough; rise until doubled.</li>\n<li>Finely dice filling; fry until browned and fairly dry.</li>\n<li>Roll dough into small circles; add about a tablespoon of filling.</li>\n<li>Fold into crescent pīrāgs shapes; pinch shut.</li>\n<li>Brush with soy milk; bake at 200°C about 15–18 minutes until golden.</li>\n</ol>\n\n<p><em>Fully plant-based adaptation for FLOSC client UAT. Adjust salt, smoke, and timing to taste.</em></p>\n",
+      "excerpt": "Latvian crescent buns with smoky filling",
+      "slug": "vegan-piragi",
+      "item": 6,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "vegan_latvian_recipes"
+    },
+    {
+      "title": "Sklandrausis",
+      "content": "<p><strong>Kurzeme rye tarts with potato and carrot filling</strong></p>\n<p>Open rye tarts — potato layer, sweet carrot top. Livonian classic, full access.</p>\n<p><em>Access tier: Member / full cookbook. Part of Vegan Latvian Kitchen (14 recipes · 2 visitor · 2 guest · all for members + PDF).</em></p>\n\n<!--flosc_read_more-->\n\n<h2>Ingredients</h2>\n<h4>Rye shells</h4><ul>\n<li>250 g rye flour</li>\n<li>50 g wheat flour</li>\n<li>40 ml oil or melted vegan butter</li>\n<li>150–170 ml warm water</li>\n<li>½ tsp salt</li>\n</ul>\n<h4>Potato layer</h4><ul>\n<li>400 g potatoes</li>\n<li>60 ml unsweetened soy milk</li>\n<li>Salt</li>\n</ul>\n<h4>Carrot layer</h4><ul>\n<li>500 g carrots</li>\n<li>2–3 tbsp sugar</li>\n<li>100 g soy yogurt or vegan sour cream</li>\n<li>½ tsp caraway seeds</li>\n<li>Pinch of cinnamon</li>\n</ul>\n\n<h2>Method</h2>\n<ol>\n<li>Boil potatoes and carrots separately.</li>\n<li>Mash potatoes with soy milk and salt.</li>\n<li>Purée carrots with sugar, yogurt, caraway and cinnamon.</li>\n<li>Mix rye-shell ingredients into a firm dough; form tart shells with raised edges.</li>\n<li>Potato layer first, then carrot mixture.</li>\n<li>Bake at 190°C about 20–25 minutes; serve cool or slightly warm.</li>\n</ol>\n\n<p><em>Fully plant-based adaptation for FLOSC client UAT. Adjust salt, smoke, and timing to taste.</em></p>\n",
+      "excerpt": "Kurzeme rye tarts with potato and carrot filling",
+      "slug": "sklandrausis",
+      "item": 7,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "vegan_latvian_recipes"
+    },
+    {
+      "title": "Rupjmaizes kārtojums",
+      "content": "<p><strong>Layered Latvian rye-bread dessert</strong></p>\n<p>Dark rye crumbs, berry jam, plant cream — layered and chilled.</p>\n<p><em>Access tier: Member / full cookbook. Part of Vegan Latvian Kitchen (14 recipes · 2 visitor · 2 guest · all for members + PDF).</em></p>\n\n<!--flosc_read_more-->\n\n<h2>Ingredients</h2>\n<ul>\n<li>300 g dark Latvian rye bread</li>\n<li>3 tbsp brown sugar</li>\n<li>1 tsp cinnamon</li>\n<li>300 g lingonberry, cranberry or blackcurrant jam</li>\n<li>400 ml vegan whipping cream</li>\n<li>2 tbsp icing sugar, vanilla</li>\n</ul>\n\n<h2>Method</h2>\n<ol>\n<li>Dry rye bread in the oven until crisp; grind into coarse crumbs.</li>\n<li>Mix crumbs with brown sugar and cinnamon.</li>\n<li>Whip vegan cream with icing sugar and vanilla.</li>\n<li>Layer rye crumbs, berry jam and cream; repeat.</li>\n<li>Refrigerate several hours or overnight.</li>\n</ol>\n<p><em>Use genuine dark Latvian rupjmaize when you can.</em></p>\n\n<p><em>Fully plant-based adaptation for FLOSC client UAT. Adjust salt, smoke, and timing to taste.</em></p>\n",
+      "excerpt": "Layered Latvian rye-bread dessert",
+      "slug": "rupjmaizes-kartojums",
+      "item": 8,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "vegan_latvian_recipes"
+    },
+    {
+      "title": "Skābeņu zupa",
+      "content": "<p><strong>Latvian sorrel soup</strong></p>\n<p>Spring green soup — sorrel, potatoes, smoky tofu, plant cream finish.</p>\n<p><em>Access tier: Member / full cookbook. Part of Vegan Latvian Kitchen (14 recipes · 2 visitor · 2 guest · all for members + PDF).</em></p>\n\n<!--flosc_read_more-->\n\n<h2>Ingredients</h2>\n<ul>\n<li>400–500 g sorrel</li>\n<li>5 potatoes</li>\n<li>1 onion</li>\n<li>150 g smoked tofu</li>\n<li>2 litres vegetable stock</li>\n<li>1 bay leaf, black pepper, salt</li>\n<li>1 tbsp oil</li>\n<li>Vegan sour cream, fresh dill</li>\n</ul>\n\n<h2>Method</h2>\n<ol>\n<li>Dice and fry smoked tofu until browned; remove.</li>\n<li>Fry onion briefly; add stock, bay leaf and diced potatoes.</li>\n<li>Cook until potatoes are tender.</li>\n<li>Chop sorrel; add for final 3–5 minutes.</li>\n<li>Return tofu; season; serve with vegan sour cream and dill.</li>\n</ol>\n\n<p><em>Fully plant-based adaptation for FLOSC client UAT. Adjust salt, smoke, and timing to taste.</em></p>\n",
+      "excerpt": "Latvian sorrel soup",
+      "slug": "skabenu-zupa",
+      "item": 9,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "vegan_latvian_recipes"
+    },
+    {
+      "title": "Debesmanna",
+      "content": "<p><strong>Whipped semolina berry dessert</strong></p>\n<p>Cloud-light berry dessert — aquafaba instead of egg whites.</p>\n<p><em>Access tier: Member / full cookbook. Part of Vegan Latvian Kitchen (14 recipes · 2 visitor · 2 guest · all for members + PDF).</em></p>\n\n<!--flosc_read_more-->\n\n<h2>Ingredients</h2>\n<ul>\n<li>Semolina</li>\n<li>Cranberry or lingonberry juice</li>\n<li>Aquafaba (chickpea brine)</li>\n<li>Sugar</li>\n<li>Berry sauce for serving</li>\n</ul>\n\n<h2>Method</h2>\n<ol>\n<li>Cook semolina with berry juice until thickened; cool slightly.</li>\n<li>Whip aquafaba to stiff peaks with a little sugar.</li>\n<li>Fold together and whip until light and fluffy.</li>\n<li>Chill; serve with berry sauce.</li>\n</ol>\n\n<p><em>Fully plant-based adaptation for FLOSC client UAT. Adjust salt, smoke, and timing to taste.</em></p>\n",
+      "excerpt": "Whipped semolina berry dessert",
+      "slug": "debesmanna",
+      "item": 10,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "vegan_latvian_recipes"
+    },
+    {
+      "title": "Kotletes",
+      "content": "<p><strong>Plant-based Latvian-style patties</strong></p>\n<p>Home-style kotletes — lentils, mushrooms, herbs, pan-fried crisp.</p>\n<p><em>Access tier: Member / full cookbook. Part of Vegan Latvian Kitchen (14 recipes · 2 visitor · 2 guest · all for members + PDF).</em></p>\n\n<!--flosc_read_more-->\n\n<h2>Ingredients</h2>\n<ul>\n<li>400 g cooked lentils, mushrooms, or mix + cooked potato or oats for binding</li>\n<li>1–2 onions, grated/sautéed</li>\n<li>Flour or breadcrumbs</li>\n<li>Salt, pepper, dill, parsley, optional smoked paprika</li>\n<li>Oil for frying</li>\n</ul>\n\n<h2>Method</h2>\n<ol>\n<li>Mash or pulse into a firm mixture that holds shape.</li>\n<li>Form patties; coat lightly in flour/breadcrumbs if desired.</li>\n<li>Pan-fry until crisp and browned.</li>\n<li>Serve with potatoes, vegan gravy, or mushroom sauce.</li>\n</ol>\n\n<p><em>Fully plant-based adaptation for FLOSC client UAT. Adjust salt, smoke, and timing to taste.</em></p>\n",
+      "excerpt": "Plant-based Latvian-style patties",
+      "slug": "vegan-kotletes",
+      "item": 11,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "vegan_latvian_recipes"
+    },
+    {
+      "title": "Bukstiņbiezputra",
+      "content": "<p><strong>Barley and potato porridge</strong></p>\n<p>Comfort porridge — pearl barley, potatoes, plant cream, dill.</p>\n<p><em>Access tier: Member / full cookbook. Part of Vegan Latvian Kitchen (14 recipes · 2 visitor · 2 guest · all for members + PDF).</em></p>\n\n<!--flosc_read_more-->\n\n<h2>Ingredients</h2>\n<ul>\n<li>Pearl barley</li>\n<li>Potatoes, diced</li>\n<li>Onion</li>\n<li>Plant milk or cream + oil/vegan butter</li>\n<li>Salt, pepper, dill</li>\n</ul>\n\n<h2>Method</h2>\n<ol>\n<li>Cook barley until nearly tender.</li>\n<li>Add diced potatoes and onion; cook until soft.</li>\n<li>Stir in plant milk/cream and fat for richness.</li>\n<li>Season; finish with dill.</li>\n</ol>\n\n<p><em>Fully plant-based adaptation for FLOSC client UAT. Adjust salt, smoke, and timing to taste.</em></p>\n",
+      "excerpt": "Barley and potato porridge",
+      "slug": "bukstinbiezputra",
+      "item": 12,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "vegan_latvian_recipes"
+    },
+    {
+      "title": "Burkānlaša smalkmaizītes ar paštaisītu burkānlasi",
+      "content": "<p><strong>Canapés with homemade carrot “lox”</strong></p>\n<p>Modern café classic — silky smoked carrot on rye or smalkmaizītes.</p>\n<p><em>Access tier: Member / full cookbook. Part of Vegan Latvian Kitchen (14 recipes · 2 visitor · 2 guest · all for members + PDF).</em></p>\n\n<!--flosc_read_more-->\n\n<h2>Ingredients</h2>\n<h4>Burkānlaša</h4><ul>\n<li>3–4 large carrots</li>\n<li>2 tbsp soy sauce or tamari</li>\n<li>1 tbsp maple syrup or sugar</li>\n<li>1–2 tsp liquid smoke</li>\n<li>1 tbsp oil</li>\n<li>Nori flakes or dulse optional (sea note)</li>\n<li>Black pepper</li>\n</ul>\n<h4>To serve</h4><ul>\n<li>Dark rye or smalkmaizītes</li>\n<li>Vegan cream cheese or cashew cream</li>\n<li>Dill, capers, red onion</li>\n</ul>\n\n<h2>Method</h2>\n<ol>\n<li>Peel carrots into long ribbons with a peeler.</li>\n<li>Toss with soy sauce, maple, liquid smoke, oil, nori, pepper.</li>\n<li>Marinate 30+ minutes (better overnight); optionally roast or pan-warm briefly until pliable.</li>\n<li>Spread cream on bread; fold carrot “lox” on top.</li>\n<li>Finish with dill, capers, onion.</li>\n</ol>\n\n<p><em>Fully plant-based adaptation for FLOSC client UAT. Adjust salt, smoke, and timing to taste.</em></p>\n",
+      "excerpt": "Canapés with homemade carrot “lox”",
+      "slug": "burkanlasa-smalkmaizites",
+      "item": 13,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "vegan_latvian_recipes"
+    },
+    {
+      "title": "Tofu–mushroom “roast beef”",
+      "content": "<p><strong>Smoky seared tofu–mushroom roast</strong></p>\n<p>Ridiculously delicious plant roast — umami, smoke, sliceable centerpiece.</p>\n<p><em>Access tier: Member / full cookbook. Part of Vegan Latvian Kitchen (14 recipes · 2 visitor · 2 guest · all for members + PDF).</em></p>\n\n<!--flosc_read_more-->\n\n<h2>Ingredients</h2>\n<ul>\n<li>400 g firm or extra-firm tofu, pressed</li>\n<li>300 g mushrooms (brown or mixed), finely chopped</li>\n<li>2 tbsp soy sauce or tamari</li>\n<li>1–2 tsp liquid smoke</li>\n<li>1 tbsp tomato paste</li>\n<li>1 tsp smoked paprika</li>\n<li>2 tbsp oil</li>\n<li>1 small onion or shallot, minced</li>\n<li>2 cloves garlic</li>\n<li>1–2 tbsp nutritional yeast optional</li>\n<li>Black pepper, salt</li>\n<li>Optional: beet juice or paprika for “roast” colour</li>\n</ul>\n\n<h2>Method</h2>\n<ol>\n<li>Sauté mushrooms and onion until deeply browned and dry; add garlic.</li>\n<li>Crumble or pulse tofu; mix with mushrooms, soy, smoke, tomato paste, paprika, yeast, pepper.</li>\n<li>Pack into a loaf shape or tightly wrapped log; rest 20 minutes.</li>\n<li>Sear in oil on all sides until dark crust forms; finish in oven ~180°C 15–25 min if needed.</li>\n<li>Rest, slice thin; serve with potatoes, horseradish-style cashew cream, or pickle.</li>\n</ol>\n<p><em>Member showpiece — full cookbook unlock.</em></p>\n\n<p><em>Fully plant-based adaptation for FLOSC client UAT. Adjust salt, smoke, and timing to taste.</em></p>\n",
+      "excerpt": "Smoky seared tofu–mushroom roast",
+      "slug": "tofu-mushroom-roast-beef",
+      "item": 14,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "vegan_latvian_recipes"
+    },
+    {
+      "title": "Cookbook PDF — full pack",
+      "content": "<p><strong>Member pack:</strong> full 14-recipe bilingual cookbook (PDF).</p>\n<p>After import: upload <code>vegan-latvian-kitchen-cookbook.pdf</code> to Media Library, then replace the link below with that Media URL (or insert the Media file into this post).</p>\n<p><a class=\"flosc-member-pdf\" href=\"https://www.vlat.lv/wp-content/uploads/2026/08/vegan-latvian-kitchen-cookbook-r.pdf\">Download Vegan Latvian Kitchen cookbook (PDF)</a></p>\n<!--flosc_read_more-->\n<p>This post is <code>protected</code> in the FLOSC content category. Visitors and unpaid guests do not get the file. Members (purchase / member grant for this flow) do.</p>\n",
+      "excerpt": "Member pack: full 14-recipe bilingual cookbook (PDF).",
+      "slug": "vegan-latvian-kitchen-pdf",
+      "item": 15,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "vegan_latvian_recipes"
+    }
+  ]
+}

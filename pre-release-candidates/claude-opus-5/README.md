@@ -11,13 +11,20 @@ a resubmission, not a release.
 
 https://github.com/dainiswmichel/flosc/tree/claude/ready-to-help-jsw2li
 
-**There is no ZIP and no copied tree in this folder, on purpose.** The other
-four candidates carry full trees because they arrived from elsewhere and had to
-be preserved as snapshots. This one is the trunk itself — copying it here would
-create a second copy that starts drifting from the branch the moment either
-changes, and the wrong one would eventually get deployed.
+`flosc-by-claude-opus-5/flosc/` is the complete tree at that commit, same as
+the other four candidates carry, so this folder can be deployed from directly
+without pulling the branch first.
 
-Pull the branch and build with the usual `./flosc-ship.sh`.
+`flosc.zip` is built from that tree using its own `.distignore` and the build
+script's deny list — 236 files, one `flosc/` root, no `tests/`, no
+`HANDOFF.md`, nothing internal. Checksum in `SHA256SUMS`. Upload it to a fresh
+WordPress install and activate.
+
+**If you keep both the branch and this tree, one will drift.** The branch is the trunk and this tree is a
+snapshot of it. When the branch moves, this does not. Deploy from whichever you
+choose, but do not rsync one over a site built from the other, and never with
+`--delete` — that is how live repairs get wiped by an older snapshot.
+
 `pre-release-candidates/` is excluded from the artifact by `.distignore` and by
 the build's hard deny list, so none of these folders can ride along into a ZIP.
 
