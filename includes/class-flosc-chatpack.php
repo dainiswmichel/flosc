@@ -853,13 +853,30 @@ class FLOSC_Chatpack {
             $section .= "- Phase: **{$phase}**\n";
         }
 
-        // Phase descriptions (the 5 FLOSC phases)
+        /*
+         * The five phases describe the journey, not the product.
+         *
+         * This list used to say "Sale — Member (purchased). Full access to all
+         * content." A guest asked how to become a member and was told that
+         * membership "opens up everything Dainis has created here", which is
+         * not true of that site and is not true of most flows. The model was
+         * reporting faithfully: it had been handed a claim about what a tier
+         * includes, on every turn, by the framework.
+         *
+         * FLOSC does not know what any particular membership contains. The
+         * floscAdmin does, and says so in Product facts and the phase
+         * instructions. Nothing here may promise on their behalf.
+         */
         $section .= "\n**FLOSC Phases:**\n";
-        $section .= "1. **Freeline** — Visitor (not logged in). Goal: get them to take the quiz.\n";
-        $section .= "2. **Login** — Guest (logged in, quiz done). Goal: show score, deliver free lesson.\n";
-        $section .= "3. **Offer** — Guest (free lesson viewed). Goal: present upgrade offer.\n";
-        $section .= "4. **Sale** — Member (purchased). Full access to all content.\n";
+        $section .= "1. **Freeline** — Visitor, not logged in. Goal: earn a first step.\n";
+        $section .= "2. **Login** — Guest, logged in. Goal: deliver what registering opened.\n";
+        $section .= "3. **Offer** — Guest who has seen the free content. Goal: name the next step and ask.\n";
+        $section .= "4. **Sale** — Member. They hold the member tier on this flow.\n";
         $section .= "5. **Content** — Ongoing member engagement, support, encouragement.\n";
+        $section .= "\nThese name access tiers, not what any tier contains. Never state or imply\n";
+        $section .= "what membership includes beyond what this flow has told you — no \"everything\",\n";
+        $section .= "no \"full access\", no scope you were not given. If you do not know what a tier\n";
+        $section .= "opens, say what you do know and invite the question.\n";
 
         $phase_outcomes = self::get_phase_outcomes($phase, $eval_context, $flow_id);
         if (!empty($phase_outcomes)) {

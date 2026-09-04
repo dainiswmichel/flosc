@@ -67,6 +67,25 @@ ok( 'the version counts changes rather than saves',
 ok( '  so a version is never hardcoded',
 	preg_match( "/\\\$entry\\['profile_version'\\]\s*=\s*'1'\s*;/", $library ), 0 );
 
+// A guest asked how to become a member and was told membership "opens up
+// everything Dainis has created here". Not the personality — the framework had
+// been handing the model "Sale — Member (purchased). Full access to all
+// content." on every turn. FLOSC does not know what any membership contains.
+echo "\nThe framework promises nothing on the floscAdmin's behalf\n";
+$pack = (string) file_get_contents( $root . '/includes/class-flosc-chatpack.php' );
+// The five numbered lines only. The guard sentence below them names the very
+// words it forbids, so scanning the whole block would match the prohibition
+// and report it as the claim.
+preg_match_all( '/\$section \.= "\d\. \*\*(?:Freeline|Login|Offer|Sale|Content)\*\*[^;]*;/', $pack, $phases );
+$phase_text = implode( "\n", $phases[0] );
+ok( 'all five phase lines were found', count( $phases[0] ), 5 );
+foreach ( array( 'full access', 'everything', 'all content' ) as $claim ) {
+	ok( 'no "' . $claim . '" claimed in a phase line',
+		stripos( $phase_text, $claim ) !== false, false );
+}
+ok( 'and the model is told these are tiers, not contents',
+	strpos( $pack, 'These name access tiers, not what any tier contains' ) !== false, true );
+
 // The flow section sends the five phases, their outcomes and the floscAdmin's
 // phase prompt on every turn. A personality that repeats that text does not
 // reinforce it — it crowds out the character that was the reason to attach a
