@@ -1,16 +1,25 @@
 # Home run candidate
 
-Assembled from the four tested candidates onto this trunk, on branch
-`claude/ready-to-help-jsw2li`. Version held at **8.0.0** — this is a
-resubmission, not a release.
+Assembled from the four tested candidates. Version held at **8.0.0** — this is
+a resubmission, not a release.
 
-**There is no ZIP and no copied tree here.** The candidate *is* the plugin at
-the repository root on that branch. Pull the branch and build with the usual
-`./flosc-ship.sh`; `pre-release-candidates/` is excluded from the artifact by
-`.distignore` and by the build's hard deny list, so it cannot ride along.
+## Where the code is
 
-The four comparison candidates keep their full trees because they came from
-elsewhere. This one did not.
+    branch:  claude/ready-to-help-jsw2li
+    tree:    the plugin at the repository root on that branch
+    commits: 15, from 477f252 to the branch head
+
+https://github.com/dainiswmichel/flosc/tree/claude/ready-to-help-jsw2li
+
+**There is no ZIP and no copied tree in this folder, on purpose.** The other
+four candidates carry full trees because they arrived from elsewhere and had to
+be preserved as snapshots. This one is the trunk itself — copying it here would
+create a second copy that starts drifting from the branch the moment either
+changes, and the wrong one would eventually get deployed.
+
+Pull the branch and build with the usual `./flosc-ship.sh`.
+`pre-release-candidates/` is excluded from the artifact by `.distignore` and by
+the build's hard deny list, so none of these folders can ride along into a ZIP.
 
 ## What went in, and from where
 
