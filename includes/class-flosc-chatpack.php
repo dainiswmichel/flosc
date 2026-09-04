@@ -315,9 +315,12 @@ class FLOSC_Chatpack {
         // That switch is the demonstration this release is built around.
         //
         // Identity can change between any two turns, so it cannot be inferred
-        // from an earlier one. The answer to a 23KB profile is a smaller
+        // from an earlier one. The answer to an expensive profile is a smaller
         // profile, decided when it is compiled — not a prompt that leaves out
-        // the part that makes the personality a personality.
+        // the part that makes the personality a personality. The four shipped
+        // profiles went from ~6.3KB to ~1KB each by moving the sales trajectory
+        // back to the flow section that already sends it, which costs less per
+        // turn than the anchor did and keeps the character.
         $sections[] = self::build_identity_section((string) ($eval_context['flow_id'] ?? ''), false);
         $followup_flow = (string) ($eval_context['flow_id'] ?? '');
         $sections[] = self::build_user_section($eval_context);

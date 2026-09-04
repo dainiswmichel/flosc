@@ -823,18 +823,11 @@ trait FLOSC_Chat_Turn_Trait {
                         ];
                         $flosc_response_source = 'rag';
                     } else {
-                        // RAG failed — try quiz fallback before falling through to dispatch
-                        $quiz_fallback = $this->build_quiz_fallback_response($message, $eval_context);
-                        if ($quiz_fallback) {
-                            $response_message = [
-                                'content' => $quiz_fallback,
-                                'user_autoprompts' => $this->get_user_autoprompts_for_phase($phase, $eval_context, $ivr_config),
-                                'phase_change' => null,
-                            ];
-                            $flosc_response_source = 'quiz_fallback';
-                        } else {
-                            $flosc_use_rag = false;
-                        }
+                        // Retrieval is optional. A RAG failure must fall through to
+                        // the ordinary provider before any scripted fallback: a
+                        // scripted reply to a question the model could have answered
+                        // reads to the visitor as the chatbot having nothing to say.
+                        $flosc_use_rag = false;
                     }
                 }
 
@@ -848,20 +841,35 @@ trait FLOSC_Chat_Turn_Trait {
                     if ($concierge_guidance !== '') { $chatpack_prompt .= $concierge_guidance; }
                     if ($flosc_engagement_prompt_block !== '') { $chatpack_prompt .= $flosc_engagement_prompt_block; }
                     if ($flosc_prior_opening_block !== '') { $chatpack_prompt .= $flosc_prior_opening_block; }
-                    $ai_response = $this->ai_chat_dispatch->get_response($message, $chatpack_prompt, $chatpack_conv_history);
+                    // A dispatch that reports why it failed lets response_source say
+                    // 'fallback' honestly. Reading success from a non-empty string
+                    // cannot tell a real answer from a canned apology.
+                    $dispatch_result = method_exists($this->ai_chat_dispatch, 'get_response_result')
+                        ? $this->ai_chat_dispatch->get_response_result($message, $chatpack_prompt, $chatpack_conv_history)
+                        : [
+                            'content' => $this->ai_chat_dispatch->get_response($message, $chatpack_prompt, $chatpack_conv_history),
+                            'source' => 'ai',
+                            'error_code' => '',
+                            'error' => '',
+                        ];
+                    $ai_response = trim((string) ($dispatch_result['content'] ?? ''));
+                    $dispatch_source = (string) ($dispatch_result['source'] ?? 'fallback');
 
-                    // v5.0.2: When AI fails, provide a useful fallback instead of generic error.
-                    // If user asked about quiz results and we have quiz data, give them that.
-                    if (!$ai_response) {
-                        $quiz_fallback = $this->build_quiz_fallback_response($message, $eval_context);
-                        $ai_response = $quiz_fallback ?: null;
+                    if ($dispatch_source === 'fallback') {
+                        /*
+                         * Provider failure detail goes to capability-gated admin
+                         * monitors and redacted log listeners. Never to the visitor:
+                         * an API error message in a chat bubble is a support ticket
+                         * and, if it carries a key fragment, worse than that.
+                         */
+                        do_action('flosc_ai_dispatch_failed', $dispatch_result, $phase, $flow_id);
                     }
                     $response_message = [
                         'content' => $ai_response ?: 'I apologize, but I\'m having trouble responding right now. Please try again.',
                         'user_autoprompts' => $this->get_user_autoprompts_for_phase($phase, $eval_context, $ivr_config),
                         'phase_change' => null,
                     ];
-                    $flosc_response_source = $ai_response ? 'ai' : 'fallback';
+                    $flosc_response_source = ($dispatch_source === 'ai' && $ai_response !== '') ? 'ai' : 'fallback';
                 }
             } else {
                 // IVR mode or no AI - use phase default + autoprompts
