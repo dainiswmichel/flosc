@@ -1,0 +1,44 @@
+{
+  "candidate": "claude-opus-5",
+  "creator": "Claude Opus 5 — Chief Engineer",
+  "status": "ASSEMBLED_AWAITING_FRESH_INSTALL_ACCEPTANCE",
+  "branch": "claude/ready-to-help-jsw2li",
+  "baseline_commit": "477f252",
+  "head_commit": "333e8d9564261ff270ec1a50db8e26fd434723d2",
+  "version": "8.0.0",
+  "artifact": null,
+  "artifact_note": "No ZIP and no copied tree. The candidate is the plugin at the repository root on this branch; build with ./flosc-ship.sh. pre-release-candidates/ is excluded by .distignore and by the build's hard deny list.",
+  "assembled_from": {
+    "codex-gpt5": "full profile every turn, RAG fallthrough, get_response_result(), personality boilerplate removal, genome/profile fingerprint",
+    "opencode-big-pickle": "no-hedge method pair and the method_exists guards",
+    "grok-4-6": "public request protection, IVR greeting variables, line-break forms, Public Title placement",
+    "github-copilot": "nothing advanced"
+  },
+  "verification": {
+    "php_syntax_all_files": "passed",
+    "javascript_syntax": "passed",
+    "test_suite": "passed (24 files)",
+    "starter_pack_manifest": "passed",
+    "packaging_gates": "passed",
+    "version_held_at_8_0_0": "passed",
+    "wordpress_runtime": "DEFERRED — fresh install required",
+    "wordpress_plugin_check": "DEFERRED — fresh install required",
+    "live_ai_provider_calls": "DEFERRED — fresh install required",
+    "journey_harness": "DEFERRED — needs WP-CLI on the target site",
+    "contract_acceptance": "DEFERRED — personality built from scratch, attached to a pack, carrying that flow to its outcome"
+  },
+  "new_gates": [
+    "check_method_contract.php",
+    "test_candidate_contract.php",
+    "check_ivr_variables.php",
+    "check_request_protection.php",
+    "check_action_handlers.php",
+    "check_log_contract.php",
+    "check_turn_recovery.php",
+    "check_attachment_save.php",
+    "check_profile_hygiene.php",
+    "check_starter_pack_assets.php",
+    "check_packaging.php"
+  ],
+  "harness": "tests/journey-harness.php (WP-CLI, --require, never shipped)"
+}
