@@ -7851,3 +7851,9 @@ details.flosc-flow-block:not([open]) > summary.flosc-flow-block__header { margin
    nobody can tell is stale. */
 .flosc-doc-stamp { color: #646970; font-size: 12px; margin-top: -4px; }
 .flosc-personality-builder-ref { margin-left: 10px; font-size: 13px; }
+
+/* One post type per line on the site index panel, so a site with a dozen
+   registered types stays readable. */
+.flosc-sci-type { display: block; margin: 0 0 4px; }
+.flosc-sci-type code { margin-left: 4px; color: #646970; }
+.flosc-sci-type em { margin-left: 6px; color: #646970; font-style: normal; }

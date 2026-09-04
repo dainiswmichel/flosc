@@ -2945,6 +2945,50 @@ if ( $flosc_sci_action === 'rebuilt' ) {
 <?php endif; ?>
 
 <?php
+/*
+ * Which post types the index reads.
+ *
+ * It read the literal string 'post', which is why the chatbot could not see
+ * the shop: WooCommerce products, pages and bbPress forum topics are all
+ * WP_Post and would have gone through this indexer untouched — the query never
+ * asked for them. Posts stay in whatever is chosen, so turning this on adds to
+ * a working library rather than replacing it.
+ *
+ * This sits inside the settings form on purpose: the page-wide Save writes it,
+ * and the form closes a few lines below for the rebuild control.
+ */
+$flosc_sci_types_selected = FLOSC_Site_Content_Index::indexed_post_types( sanitize_key( pathinfo( (string) $flosc_current_ivr, PATHINFO_FILENAME ) ) );
+$flosc_sci_types_available = get_post_types( array( 'public' => true ), 'objects' );
+unset( $flosc_sci_types_available['attachment'] );
+?>
+<table class="form-table flosc-admin-form-table">
+	<tr>
+		<th scope="row"><?php echo esc_html__( 'Content to index', 'flosc' ); ?></th>
+		<td>
+			<?php foreach ( $flosc_sci_types_available as $flosc_sci_type ) :
+				$flosc_sci_is_post = ( 'post' === $flosc_sci_type->name );
+				?>
+				<label class="flosc-sci-type">
+					<input type="checkbox"
+						name="flow_site_index_post_types[]"
+						value="<?php echo esc_attr( $flosc_sci_type->name ); ?>"
+						<?php checked( in_array( $flosc_sci_type->name, $flosc_sci_types_selected, true ) ); ?>
+						<?php disabled( $flosc_sci_is_post ); ?>>
+					<?php echo esc_html( $flosc_sci_type->labels->name ); ?>
+					<code><?php echo esc_html( $flosc_sci_type->name ); ?></code>
+					<?php if ( $flosc_sci_is_post ) : ?>
+						<em><?php echo esc_html__( 'always', 'flosc' ); ?></em>
+						<input type="hidden" name="flow_site_index_post_types[]" value="post">
+					<?php endif; ?>
+				</label>
+			<?php endforeach; ?>
+			<p class="description">
+				<?php echo esc_html__( 'Anything ticked here is read into the library on the next rebuild — products, pages, forum topics, any public type this site registers. Posts are always included. Save this page, then rebuild below.', 'flosc' ); ?>
+			</p>
+		</td>
+	</tr>
+</table>
+<?php
 // The rebuild control below is its own form posting to admin-post.php, so the
 // settings form has to end before it. That end tag has to be emitted HERE,
 // outside the table — a </form> written inside a <td>, for a form opened

@@ -240,6 +240,42 @@ class FLOSC_Site_Content_Index {
 	 * @param string $flow_stem Unused for path; kept for call-site compatibility.
 	 * @return array{ok:bool,message:string,count:int}
 	 */
+	/**
+	 * Post types this flow indexes. Always at least 'post'.
+	 *
+	 * @param string $flow_stem Flow being rebuilt.
+	 * @return array
+	 */
+	public static function indexed_post_types( $flow_stem = '' ) {
+		$types = array();
+
+		if ( function_exists( 'flosc_get_setting' ) ) {
+			$saved = flosc_get_setting( 'site_index_post_types', array(), $flow_stem !== '' ? $flow_stem : null );
+			if ( is_string( $saved ) ) {
+				$saved = preg_split( '/[\s,]+/', $saved );
+			}
+			$types = array_map( 'sanitize_key', (array) $saved );
+		}
+
+		// 'post' is not optional: the index has always held posts, and removing
+		// them on upgrade would empty a working library without anyone asking.
+		$types[] = 'post';
+
+		$types = array_values( array_unique( array_filter( $types ) ) );
+
+		// Only types this site actually registers. A stale saved value for a
+		// plugin that has since been deactivated must not break the rebuild.
+		$types = array_values( array_filter( $types, static function ( $type ) {
+			return post_type_exists( $type );
+		} ) );
+
+		if ( empty( $types ) ) {
+			$types = array( 'post' );
+		}
+
+		return (array) apply_filters( 'flosc_site_content_index_post_types', $types, $flow_stem );
+	}
+
 	public function rebuild( $flow_stem = '' ) {
 		$previous   = $this->load( $flow_stem );
 		$prev_posts = is_array( $previous['posts'] ) ? $previous['posts'] : array();
@@ -250,9 +286,25 @@ class FLOSC_Site_Content_Index {
 			$max_posts = 1000;
 		}
 
+		/*
+		 * Which post types the index reads.
+		 *
+		 * This was the literal string 'post', which is why the chatbot could not
+		 * see the shop: WooCommerce products, pages and bbPress forum topics are
+		 * all WP_Post and would have flowed through this indexer untouched — the
+		 * query simply never asked for them. Nothing downstream cares about the
+		 * type. The row builder reads ID, title, body, permalink and modified
+		 * date, and exclusions and manual keywords key on the numeric post id,
+		 * so every type behaves the same once it is indexed.
+		 *
+		 * Default stays 'post' so no existing install changes on upgrade. The
+		 * floscAdmin adds types on the Site content index panel.
+		 */
+		$types = self::indexed_post_types( $flow_stem );
+
 		$posts = get_posts(
 			array(
-				'post_type'              => 'post',
+				'post_type'              => $types,
 				'post_status'            => 'publish',
 				'posts_per_page'         => $max_posts,
 				'orderby'                => 'date',
