@@ -909,6 +909,27 @@ class FLOSC_Chatpack {
     private static function build_knowledge_section($eval_context) {
         $section = '';
 
+        /*
+         * BuddyBoss groups, when this flow indexes them.
+         *
+         * Keyword retrieval over post bodies will never produce
+         * /groups/lesaep-learners/, so the groups this person is allowed to
+         * hear about ride on the turn as a short list. The index does the
+         * filtering — tier, exclusions, and BuddyBoss privacy, which FLOSC can
+         * tighten and never loosen.
+         *
+         * Empty string when the flow does not index groups, so a site without
+         * BuddyBoss pays nothing for this.
+         */
+        if (class_exists('FLOSC_Site_Content_Index')) {
+            $flosc_group_flow = (string) ($eval_context['flow_id'] ?? '');
+            $flosc_group_tier = (string) ($eval_context['access_level'] ?? $eval_context['user_level'] ?? 'visitor');
+            $flosc_groups = FLOSC_Site_Content_Index::instance()->format_groups_for_ai($flosc_group_flow, $flosc_group_tier);
+            if ($flosc_groups !== '') {
+                $section .= "## 5c. GROUPS\n\n" . $flosc_groups . "\n";
+            }
+        }
+
         // Feedback (floscAdmin-flagged bad responses)
         $feedback_items = flosc_get_setting('ai_feedback', []);
         if (!empty($feedback_items) && is_array($feedback_items)) {

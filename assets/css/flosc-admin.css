@@ -7857,3 +7857,5 @@ details.flosc-flow-block:not([open]) > summary.flosc-flow-block__header { margin
 .flosc-sci-type { display: block; margin: 0 0 4px; }
 .flosc-sci-type code { margin-left: 4px; color: #646970; }
 .flosc-sci-type em { margin-left: 6px; color: #646970; font-style: normal; }
+.flosc-sci-subhead { margin: 12px 0 4px; font-weight: 600; }
+.flosc-sci-tier { display: inline-block; margin-right: 14px; }

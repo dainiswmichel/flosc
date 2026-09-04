@@ -657,6 +657,37 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
                 $flosc_new_settings[$flosc_setting_key] = flosc_sanitize_personality_profile_text(is_string($flosc_value) ? $flosc_value : '');
             } elseif ($flosc_is_textarea) {
                 $flosc_new_settings[$flosc_setting_key] = sanitize_textarea_field($flosc_value);
+            } elseif ('buddyboss_index' === $flosc_setting_key && is_array($flosc_value)) {
+                /*
+                 * Nested, so it cannot go through the flat array branch below —
+                 * array_map('sanitize_text_field', …) over a nested array turns
+                 * each inner array into the string "Array" and emits a notice.
+                 *
+                 * Which groups a chatbot may mention is stored on the flow, not
+                 * on the group: the same group can be open on one flow and
+                 * withheld on another.
+                 */
+                $flosc_bb_tiers = array('visitor', 'guest', 'member');
+                $flosc_bb_rows  = array();
+                foreach ((array) ($flosc_value['vgm_rows'] ?? []) as $flosc_bb_key => $flosc_bb_vgm) {
+                    $flosc_bb_key = FLOSC_Site_Content_Index::normalize_row_id($flosc_bb_key);
+                    if ('' === $flosc_bb_key) {
+                        continue;
+                    }
+                    $flosc_bb_rows[$flosc_bb_key] = implode(' ', array_intersect(
+                        $flosc_bb_tiers,
+                        array_map('sanitize_key', (array) $flosc_bb_vgm)
+                    ));
+                }
+                $flosc_new_settings[$flosc_setting_key] = array(
+                    'enabled'     => !empty($flosc_value['enabled']),
+                    'group_ids'   => array_values(array_filter(array_map('absint', (array) ($flosc_value['group_ids'] ?? [])))),
+                    'vgm_default' => implode(' ', array_intersect(
+                        $flosc_bb_tiers,
+                        array_map('sanitize_key', (array) ($flosc_value['vgm_default'] ?? $flosc_bb_tiers))
+                    )),
+                    'vgm_rows'    => $flosc_bb_rows,
+                );
             } elseif (is_array($flosc_value)) {
                 $flosc_new_settings[$flosc_setting_key] = array_map('sanitize_text_field', $flosc_value);
             } else {

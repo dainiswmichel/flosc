@@ -102,18 +102,40 @@ class FLOSC_Site_Content_Index {
 			return $empty;
 		}
 		$posts = isset( $data['posts'] ) && is_array( $data['posts'] ) ? $data['posts'] : array();
-		// Normalize keys to string post IDs.
+		/*
+		 * Row keys are strings, not post IDs.
+		 *
+		 * This cast every key to (int) and dropped anything that came out <= 0,
+		 * which is correct for WordPress posts and fatal for anything else: a
+		 * BuddyBoss row keyed "bb_group:52" became 0 and was silently discarded
+		 * on the first save, with no error and no missing-row warning. The
+		 * adapter would have appeared to work and the library would have been
+		 * empty of groups.
+		 *
+		 * post_id stays an int for WordPress rows because exclusions, manual
+		 * keywords and the offer wiring all key on it. A group row carries
+		 * post_id 0 and identifies itself by id and kind.
+		 */
 		$normalized = array();
 		foreach ( $posts as $key => $row ) {
 			if ( ! is_array( $row ) ) {
 				continue;
 			}
-			$id = isset( $row['post_id'] ) ? (int) $row['post_id'] : (int) $key;
-			if ( $id <= 0 ) {
+
+			$row_id = isset( $row['id'] ) ? self::normalize_row_id( $row['id'] ) : '';
+			if ( '' === $row_id ) {
+				$post_id = isset( $row['post_id'] ) ? (int) $row['post_id'] : (int) $key;
+				$row_id  = $post_id > 0 ? (string) $post_id : self::normalize_row_id( $key );
+			}
+			if ( '' === $row_id ) {
 				continue;
 			}
-			$row['post_id'] = $id;
-			$normalized[ (string) $id ] = $row;
+
+			$row['id']      = $row_id;
+			$row['kind']    = isset( $row['kind'] ) ? sanitize_key( (string) $row['kind'] ) : 'post';
+			$row['post_id'] = isset( $row['post_id'] ) ? (int) $row['post_id'] : ( ctype_digit( $row_id ) ? (int) $row_id : 0 );
+
+			$normalized[ $row_id ] = $row;
 		}
 		return array(
 			'built_at'       => sanitize_text_field( (string) ( $data['built_at'] ?? '' ) ),
@@ -241,6 +263,267 @@ class FLOSC_Site_Content_Index {
 	 * @return array{ok:bool,message:string,count:int}
 	 */
 	/**
+	 * The group catalogue for one turn, filtered to what this person may see.
+	 *
+	 * Retrieval by keyword will not produce "/groups/lesaep-learners/" from a
+	 * blog post, so the groups a visitor is allowed to hear about ride on the
+	 * turn as a short list. Thirteen rows is one or two kilobytes.
+	 *
+	 * Fail closed, in this order:
+	 *
+	 *   1. the person's tier must appear in that row's VGM string
+	 *   2. an excluded row is never shown
+	 *   3. a private or hidden group is never given to somebody who is not a
+	 *      member of it — it may be named as a gated next step, never described
+	 *
+	 * FLOSC can tighten BuddyBoss privacy. It can never loosen it.
+	 *
+	 * @param string $flow_stem  Flow.
+	 * @param string $user_level visitor | guest | member.
+	 * @return string Empty when there is nothing this person may be shown.
+	 */
+	public function format_groups_for_ai( $flow_stem = '', $user_level = 'visitor' ) {
+		$policy = self::buddyboss_policy( $flow_stem );
+		if ( empty( $policy['enabled'] ) ) {
+			return '';
+		}
+
+		$doc  = $this->load( $flow_stem );
+		$rows = isset( $doc['posts'] ) && is_array( $doc['posts'] ) ? $doc['posts'] : array();
+		$tier = in_array( $user_level, array( 'visitor', 'guest', 'member' ), true ) ? $user_level : 'visitor';
+
+		$open   = array();
+		$gated  = array();
+
+		foreach ( $rows as $row ) {
+			if ( ! is_array( $row ) || 'bb_group' !== ( $row['kind'] ?? '' ) ) {
+				continue;
+			}
+			if ( ! empty( $row['excluded'] ) ) {
+				continue;
+			}
+
+			$allowed = preg_split( '/\s+/', (string) ( $row['access'] ?? '' ) ) ?: array();
+			if ( ! in_array( $tier, $allowed, true ) ) {
+				continue;
+			}
+
+			$name   = (string) ( $row['title'] ?? '' );
+			$url    = (string) ( $row['url'] ?? '' );
+			$status = (string) ( $row['bb_status'] ?? 'public' );
+
+			if ( '' === $name ) {
+				continue;
+			}
+
+			if ( 'public' === $status ) {
+				$desc    = (string) ( $row['snippet'] ?? '' );
+				$open[]  = '- ' . $name . ( '' !== $desc ? ' — ' . $desc : '' ) . ' Public.'
+					. ( '' !== $url ? "\n  " . $url : '' );
+				continue;
+			}
+
+			// Not public. Naming it is a choice the floscAdmin already made by
+			// putting this tier in the row's VGM. Describing it is not.
+			if ( self::viewer_is_group_member( (int) ( $row['group_id'] ?? 0 ) ) ) {
+				$open[] = '- ' . $name . ' — you are a member. '
+					. ( '' !== $url ? "\n  " . $url : '' );
+			} else {
+				$gated[] = '- ' . $name . ' — members only. Name it if it fits what they want; do not describe it and do not give a link.';
+			}
+		}
+
+		if ( empty( $open ) && empty( $gated ) ) {
+			return '';
+		}
+
+		$out = "**Groups this person may be pointed to:**\n";
+		if ( ! empty( $open ) ) {
+			$out .= implode( "\n", $open ) . "\n";
+		}
+		if ( ! empty( $gated ) ) {
+			$out .= "\nMentionable but closed to them:\n" . implode( "\n", $gated ) . "\n";
+		}
+		$out .= "\nUse these URLs exactly as written. Never invent a group, a URL, or terms of entry.\n";
+
+		return $out;
+	}
+
+	/**
+	 * Is the person on this turn actually in that group?
+	 *
+	 * @param int $group_id Group.
+	 * @return bool
+	 */
+	public static function viewer_is_group_member( $group_id ) {
+		if ( $group_id <= 0 || ! function_exists( 'groups_is_user_member' ) || ! is_user_logged_in() ) {
+			return false;
+		}
+		return (bool) groups_is_user_member( get_current_user_id(), $group_id );
+	}
+
+	/**
+	 * Is a BuddyPress/BuddyBoss group directory available on this install?
+	 *
+	 * Guarded everywhere. FLOSC ships to sites that have never heard of
+	 * BuddyBoss, and an unguarded groups_get_groups() is a white screen.
+	 *
+	 * @return bool
+	 */
+	public static function groups_available() {
+		return function_exists( 'groups_get_groups' ) && function_exists( 'bp_get_group_permalink' );
+	}
+
+	/**
+	 * This flow's BuddyBoss index policy.
+	 *
+	 * Stored on the flow, not on the group: which groups a chatbot may mention
+	 * is a decision about that conversation, and the same group can be open on
+	 * one flow and withheld on another.
+	 *
+	 * @param string $flow_stem Flow.
+	 * @return array
+	 */
+	public static function buddyboss_policy( $flow_stem = '' ) {
+		$defaults = array(
+			'enabled'     => false,
+			'group_ids'   => array(),
+			'vgm_default' => 'visitor guest member',
+			'vgm_rows'    => array(),
+		);
+
+		$saved = array();
+		if ( function_exists( 'flosc_get_setting' ) ) {
+			$saved = flosc_get_setting( 'buddyboss_index', array(), $flow_stem !== '' ? $flow_stem : null );
+		}
+		if ( ! is_array( $saved ) ) {
+			$saved = array();
+		}
+
+		$policy                = array_merge( $defaults, $saved );
+		$policy['enabled']     = ! empty( $policy['enabled'] );
+		$policy['group_ids']   = array_values( array_filter( array_map( 'absint', (array) $policy['group_ids'] ) ) );
+		$policy['vgm_default'] = strtolower( trim( (string) $policy['vgm_default'] ) );
+		$policy['vgm_rows']    = is_array( $policy['vgm_rows'] ) ? $policy['vgm_rows'] : array();
+
+		if ( '' === $policy['vgm_default'] ) {
+			$policy['vgm_default'] = 'visitor guest member';
+		}
+
+		return $policy;
+	}
+
+	/**
+	 * One index row per BuddyBoss group in this flow's scope.
+	 *
+	 * @param string $flow_stem  Flow.
+	 * @param array  $prev_posts Previous rows, so exclusions and manual keywords survive.
+	 * @return array
+	 */
+	private function build_group_rows( $flow_stem, array $prev_posts ) {
+		$policy = self::buddyboss_policy( $flow_stem );
+		if ( empty( $policy['enabled'] ) || ! self::groups_available() ) {
+			return array();
+		}
+
+		$args = array(
+			'per_page'    => 200,
+			'show_hidden' => false,
+			'type'        => 'alphabetical',
+		);
+		if ( ! empty( $policy['group_ids'] ) ) {
+			$args['include'] = $policy['group_ids'];
+		}
+
+		$found = groups_get_groups( $args );
+		$list  = isset( $found['groups'] ) && is_array( $found['groups'] ) ? $found['groups'] : array();
+
+		$rows = array();
+		foreach ( $list as $group ) {
+			if ( empty( $group->id ) ) {
+				continue;
+			}
+
+			$key  = 'bb_group:' . (int) $group->id;
+			$prev = isset( $prev_posts[ $key ] ) && is_array( $prev_posts[ $key ] ) ? $prev_posts[ $key ] : array();
+
+			$name = sanitize_text_field( (string) ( $group->name ?? '' ) );
+			$desc = wp_strip_all_tags( (string) ( $group->description ?? '' ) );
+			$desc = trim( preg_replace( '/\s+/', ' ', $desc ) );
+			$slug = sanitize_title( (string) ( $group->slug ?? '' ) );
+
+			$manual  = isset( $prev['keywords_manual'] ) ? (string) $prev['keywords_manual'] : '';
+			$snippet = function_exists( 'mb_substr' ) ? mb_substr( $desc, 0, 160 ) : substr( $desc, 0, 160 );
+
+			$rows[ $key ] = array(
+				'id'              => $key,
+				'kind'            => 'bb_group',
+				'source'          => 'buddyboss',
+				'post_id'         => 0,
+				'group_id'        => (int) $group->id,
+				'bb_status'       => sanitize_key( (string) ( $group->status ?? 'public' ) ),
+				'title'           => $name,
+				'content'         => $desc,
+				'snippet'         => sanitize_text_field( $snippet ),
+				'keywords'        => trim( $name . ' ' . $slug . ' ' . $desc . ' ' . $manual ),
+				'keywords_manual' => $manual,
+				'access'          => self::group_vgm( $policy, (int) $group->id ),
+				'excluded'        => ! empty( $prev['excluded'] ),
+				'parent'          => '',
+				'categories'      => array(),
+				'modified'        => sanitize_text_field( (string) ( $group->date_created ?? '' ) ),
+				'indexed_at'      => gmdate( 'c' ),
+				'url'             => esc_url_raw( (string) bp_get_group_permalink( $group ) ),
+				'lesson_number'   => '',
+			);
+		}
+
+		return $rows;
+	}
+
+	/**
+	 * Which tiers this flow lets a group be shown to.
+	 *
+	 * @param array $policy   Flow policy.
+	 * @param int   $group_id Group.
+	 * @return string Space-separated tiers.
+	 */
+	public static function group_vgm( array $policy, $group_id ) {
+		$key = 'bb_group:' . (int) $group_id;
+		$raw = isset( $policy['vgm_rows'][ $key ] ) ? $policy['vgm_rows'][ $key ] : $policy['vgm_default'];
+		$raw = strtolower( trim( (string) $raw ) );
+
+		$allowed = array_values( array_intersect(
+			array( 'visitor', 'guest', 'member' ),
+			preg_split( '/[\s,]+/', $raw ) ?: array()
+		) );
+
+		return empty( $allowed ) ? '' : implode( ' ', $allowed );
+	}
+
+	/**
+	 * A library row key: digits for a WordPress post, "kind:id" for anything else.
+	 *
+	 * @param mixed $raw Candidate id.
+	 * @return string Empty when it is not usable as a key.
+	 */
+	public static function normalize_row_id( $raw ) {
+		$raw = trim( (string) $raw );
+		if ( '' === $raw ) {
+			return '';
+		}
+		if ( ctype_digit( $raw ) ) {
+			return (int) $raw > 0 ? $raw : '';
+		}
+		// kind:id — both halves restricted, so a key can never carry markup or
+		// a path separator into the library file.
+		if ( preg_match( '/^([a-z0-9_]+):([a-z0-9_-]+)$/i', $raw, $m ) ) {
+			return strtolower( $m[1] ) . ':' . strtolower( $m[2] );
+		}
+		return '';
+	}
+
+	/**
 	 * Post types this flow indexes. Always at least 'post'.
 	 *
 	 * @param string $flow_stem Flow being rebuilt.
@@ -327,6 +610,21 @@ class FLOSC_Site_Content_Index {
 
 			$indexed[ $id_key ] = $this->build_row_from_post( $post, $manual, $excluded );
 		}
+
+		/*
+		 * BuddyBoss groups.
+		 *
+		 * These are the one thing on a BuddyBoss site that genuinely does not
+		 * live in wp_posts — the directory is in the BuddyPress tables, reached
+		 * through groups_get_groups(). Forum topics and replies are bbPress
+		 * CPTs and come through the post query above once their types are
+		 * ticked; only the group directory needs an adapter.
+		 *
+		 * The directory alone is enough to route somebody to the right group.
+		 * Activity, media and forum bodies are a later slice and are not
+		 * indexed here.
+		 */
+		$indexed = $indexed + $this->build_group_rows( $flow_stem, $prev_posts );
 
 		$doc = array(
 			'built_at'       => gmdate( 'c' ),
@@ -425,6 +723,13 @@ class FLOSC_Site_Content_Index {
 		$snippet = function_exists( 'mb_substr' ) ? mb_substr( $body, 0, 160 ) : substr( $body, 0, 160 );
 
 		return array(
+			// Every row now carries an id and a kind. For a WordPress post the
+			// id is the post id as a string, so nothing that keyed on post_id
+			// changes meaning.
+			'id'               => (string) (int) $post->ID,
+			'kind'             => 'post',
+			'source'           => 'wordpress',
+			'post_type'        => sanitize_key( (string) $post->post_type ),
 			'post_id'          => (int) $post->ID,
 			'title'            => sanitize_text_field( get_the_title( $post ) ),
 			'content'          => $body,
@@ -641,7 +946,7 @@ class FLOSC_Site_Content_Index {
 		foreach ( $scored as $hit ) {
 			$row = $hit['row'];
 			$out .= '**' . (string) ( $row['title'] ?? '' ) . "**\n";
-			$out .= 'ID: ' . (int) ( $row['post_id'] ?? 0 );
+			$out .= 'ID: ' . (string) ( $row['id'] ?? (int) ( $row['post_id'] ?? 0 ) );
 			if ( ! empty( $row['url'] ) ) {
 				$out .= ' | URL: ' . (string) $row['url'];
 			}
@@ -680,7 +985,10 @@ class FLOSC_Site_Content_Index {
 	 */
 	public function set_excluded( $flow_stem, $post_id, $excluded ) {
 		$doc = $this->load( $flow_stem );
-		$key = (string) (int) $post_id;
+		$key = self::normalize_row_id( $post_id );
+		if ( '' === $key ) {
+			return false;
+		}
 		if ( ! isset( $doc['posts'][ $key ] ) ) {
 			return false;
 		}
@@ -696,7 +1004,10 @@ class FLOSC_Site_Content_Index {
 	 */
 	public function set_manual_keywords( $flow_stem, $post_id, $manual_keywords ) {
 		$doc = $this->load( $flow_stem );
-		$key = (string) (int) $post_id;
+		$key = self::normalize_row_id( $post_id );
+		if ( '' === $key ) {
+			return false;
+		}
 		if ( ! isset( $doc['posts'][ $key ] ) ) {
 			return false;
 		}
