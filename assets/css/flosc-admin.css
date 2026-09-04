@@ -7846,3 +7846,8 @@ details.flosc-flow-block:not([open]) > summary.flosc-flow-block__header { margin
    stashed and re-shown rather than painted and navigated away from. */
 #flosc-personality-attach-note.flosc-attach-ok { color: #2c6349; font-weight: 600; }
 #flosc-personality-attach-note.flosc-attach-bad { color: #8a2424; font-weight: 600; }
+
+/* When a reference page was written. A document with no date is a document
+   nobody can tell is stale. */
+.flosc-doc-stamp { color: #646970; font-size: 12px; margin-top: -4px; }
+.flosc-personality-builder-ref { margin-left: 10px; font-size: 13px; }

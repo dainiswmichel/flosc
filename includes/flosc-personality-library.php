@@ -1795,6 +1795,17 @@ if ( ! function_exists( 'flosc_render_personality_designer_accordion' ) ) {
 			?>
 		</button>
 		<span id="flosc-personality-builder-status" class="flosc-personality-builder-status" role="status" aria-live="polite"></span>
+		<?php
+		/*
+		 * The map belongs where someone is building. The structure was always
+		 * there — eleven stations, three bands, prohibitions split between Soul
+		 * and Behavior on purpose — and nothing said so, so anyone arriving with
+		 * the soul.md pattern in mind had to infer it from the station labels.
+		 */
+		?>
+		<a class="flosc-personality-builder-ref" href="<?php echo esc_url( admin_url( 'admin.php?page=flosc-settings&tab=documentation&doc=ref-personality' ) ); ?>">
+			<?php esc_html_e( 'What goes where', 'flosc' ); ?>
+		</a>
 	</p>
 		<?php
 		flosc_render_personality_designer_canvas( $persona_id, $ivr );
