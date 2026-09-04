@@ -7,7 +7,7 @@
   "head_commit": "333e8d9564261ff270ec1a50db8e26fd434723d2",
   "version": "8.0.0",
   "artifact": null,
-  "artifact_note": "No ZIP and no copied tree. The candidate is the plugin at the repository root on this branch; build with ./flosc-ship.sh. pre-release-candidates/ is excluded by .distignore and by the build's hard deny list.",
+  "artifact_note": "The full tree is here, same as the other candidates. No flosc.zip: build with ./flosc-ship.sh from this tree or from the branch — they are identical at this commit. pre-release-candidates/ is excluded from the artifact by .distignore and by the build's hard deny list.",
   "assembled_from": {
     "codex-gpt5": "full profile every turn, RAG fallthrough, get_response_result(), personality boilerplate removal, genome/profile fingerprint",
     "opencode-big-pickle": "no-hedge method pair and the method_exists guards",
@@ -40,5 +40,7 @@
     "check_starter_pack_assets.php",
     "check_packaging.php"
   ],
-  "harness": "tests/journey-harness.php (WP-CLI, --require, never shipped)"
+  "harness": "tests/journey-harness.php (WP-CLI, --require, never shipped)",
+  "plugin_source": "flosc-by-claude-opus-5/flosc",
+  "tree_files": 275
 }

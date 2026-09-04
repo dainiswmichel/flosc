@@ -9,6 +9,11 @@ tests/
 # Deployment candidates: whole plugin trees kept for comparison, not shipped.
 pre-release-candidates/
 
+# Session handoff notes. Internal: it carries the operator's local ship path,
+# their machine's username, and context about the project that has no business
+# in a public plugin directory. Nothing in it is needed to run FLOSC.
+HANDOFF.md
+
 # VCS and local editor state
 .git/
 .github/
