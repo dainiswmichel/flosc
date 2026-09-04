@@ -1642,6 +1642,19 @@ if ( ! function_exists( 'flosc_personality_builder_boot_json' ) ) {
 			}
 		}
 		return array(
+			/*
+			 * Who made the file, so a profile in the wild can say where it came
+			 * from and how someone gets one of their own. Edition is a label,
+			 * not part of the number: a version with a letter on the front is
+			 * not comparable, and FLOSC and DA1 are one builder in two wrappers.
+			 */
+			'builder'           => array(
+				'name'    => 'DA1 AI Personality Builder',
+				'edition' => 'FLOSC',
+				'version' => defined( 'FLOSC_DA1_BUILDER_VERSION' ) ? FLOSC_DA1_BUILDER_VERSION : '3.1.2',
+				'home'    => 'https://da1.fm',
+				'host'    => 'https://flosc.ai',
+			),
 			'ajaxUrl'           => admin_url( 'admin-ajax.php' ),
 			'nonce'             => wp_create_nonce( 'flosc_personality_design' ),
 			'personaId'         => $persona_id,
@@ -1658,6 +1671,13 @@ if ( ! function_exists( 'flosc_personality_builder_boot_json' ) ) {
 				'name'    => isset( $entry['ai_personality_name'] ) ? (string) $entry['ai_personality_name'] : '',
 				'role'    => isset( $entry['ai_personality_role'] ) ? (string) $entry['ai_personality_role'] : '',
 				'profile' => isset( $entry['ai_base_prompt'] ) ? (string) $entry['ai_base_prompt'] : '',
+				// From the last save. The version counts changes, not saves, and
+				// the hash covers the genome and the runtime profile together —
+				// so an exported file can be checked against a running site
+				// without reading both documents side by side.
+				'version'     => isset( $entry['profile_version'] ) ? (string) $entry['profile_version'] : '',
+				'hash'        => isset( $entry['profile_hash'] ) ? (string) $entry['profile_hash'] : '',
+				'modifiedGmt' => isset( $entry['profile_modified_gmt'] ) ? (string) $entry['profile_modified_gmt'] : '',
 			),
 			'workshop'          => $workshop,
 		);

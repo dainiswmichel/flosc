@@ -18,6 +18,14 @@ if (!defined('ABSPATH')) exit;
 
 // Plugin constants
 define('FLOSC_VERSION', '8.0.0');
+
+/*
+ * The personality builder versions independently of the plugin. It ships here
+ * as the FLOSC edition and will ship standalone at da1.fm as the DA1 edition —
+ * one builder, one number, the edition named separately. A version with a
+ * letter on the front is not a version anything can compare.
+ */
+define('FLOSC_DA1_BUILDER_VERSION', '3.1.2');
 // v8.0.1: Runtime debug mode override from Administration tab.
 // Modes: inherit (follow WP_DEBUG), on (force), off (disable).
 $flosc_debug_mode = function_exists('get_option') ? get_option('flosc_debug_mode', 'inherit') : 'inherit';

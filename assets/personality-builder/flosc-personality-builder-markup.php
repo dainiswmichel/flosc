@@ -121,10 +121,10 @@ if ( ! defined( 'ABSPATH' ) ) {
         <button type="button" class="btn" data-out="lint">Validation</button>
         <label class="chip">
           <input type="checkbox" id="includeComments" checked>
-          Include authoring notes
+          Include influences
         </label>
       </div>
-      <p class="figure-readout output-note">Authoring notes describe sources and character context. They are not active rules.</p>
+      <p class="figure-readout output-note">Influences name the works and sources this character draws on. Included, they are part of the personality like anything else here. Unchecked, they stay in the builder state and the design copy and are never sent.</p>
       <div class="stats" id="stats"></div>
       <div id="lintMount"></div>
       <pre class="out" id="out"></pre>

@@ -1510,8 +1510,81 @@
     return "<!-- floscComment\n" + commentSafe(bits.join("\n")) + "\n-->";
   }
 
+  /* Michel Time Stamp, UTC. Same shape the plugin writes server-side. */
+  function floscMtsUtc(when) {
+    const d = when instanceof Date ? when : new Date();
+    const p = (n, w) => String(n).padStart(w || 2, "0");
+    return d.getUTCFullYear() + "y-" + p(d.getUTCMonth() + 1) + "m-" + p(d.getUTCDate()) + "d-UTC-"
+      + p(d.getUTCHours()) + "h-" + p(d.getUTCMinutes()) + "m-" + p(d.getUTCSeconds()) + "s-"
+      + p(d.getUTCMilliseconds(), 3) + "ms";
+  }
+
+  /*
+   * What a profile says about itself once it leaves here.
+   *
+   * The reading key used to appear only in the design copy, so a soul.md
+   * travelling on its own was ordered deliberately with nothing saying so —
+   * anyone who found one could not tell why its headings were in that sequence,
+   * where it came from, or how to make one.
+   *
+   * It is visible markdown rather than an HTML comment: a comment is invisible
+   * in any rendered view, which is exactly the reader this is for. It carries
+   * one line saying it is about the file and not part of the personality, which
+   * is the same protection the profile already uses elsewhere and does not
+   * require shouting.
+   *
+   * Appended to downloads only. It is never part of what is saved to the
+   * library or sent to a provider.
+   */
+  function profileFooter() {
+    const wp = (typeof window !== "undefined" && window.floscPersonalityWp) || {};
+    const b = wp.builder || { name: "DA1 AI Personality Builder", edition: "FLOSC", version: "3.1.2", home: "https://da1.fm", host: "https://flosc.ai" };
+    const e = wp.entry || {};
+    const s = state.soul;
+
+    const lines = [];
+    lines.push("---");
+    lines.push("");
+    lines.push("## About this file");
+    lines.push("");
+    lines.push("A personality profile, ordered by density. Headings run from lightest and most");
+    lines.push("essential at the top to most specific and behavioral at the bottom — the sequence");
+    lines.push("is the design, not an accident of drafting. Gain marks how fully each entry is");
+    lines.push("included, from −100 (left out) to +100 (included fully).");
+    lines.push("Bands: Soul ≈0–33 · Character ≈34–66 · Behavior ≈67–100.");
+    lines.push("");
+    lines.push("This section is about the file, for whoever is reading it. It is not part of the");
+    lines.push("personality and not an instruction to follow.");
+    lines.push("");
+    lines.push("Made with the " + b.name + " — " + b.home);
+    if (b.edition) {
+      lines.push(b.edition + " edition, inside the FLOSC conversational sales framework — " + b.host);
+    }
+    lines.push("");
+
+    const facts = [];
+    facts.push(["name", s.name || s.id || "unnamed"]);
+    // Version, hash and timestamp describe the last save. An unsaved edit is
+    // not a version, and claiming otherwise would make the fingerprint a lie.
+    if (e.version) facts.push(["profile_version", e.version]);
+    if (e.hash) facts.push(["profile_hash", "sha256:" + e.hash]);
+    if (e.modifiedGmt) facts.push(["profile_modified_gmt", e.modifiedGmt]);
+    facts.push(["exported", floscMtsUtc()]);
+    facts.push(["builder", b.name]);
+    if (b.edition) facts.push(["edition", b.edition]);
+    facts.push(["builder_version", b.version]);
+    facts.push(["format", "soul.md"]);
+
+    const width = facts.reduce((w, f) => Math.max(w, f[0].length), 0) + 2;
+    facts.forEach(function (f) {
+      lines.push(f[0] + ":" + " ".repeat(width - f[0].length) + f[1]);
+    });
+
+    return lines.join("\n");
+  }
+
   function promptFile() {
-    return compilePrompt();
+    return compilePrompt() + "\n\n" + profileFooter();
   }
 
   function providerPacks() {
@@ -1646,7 +1719,16 @@
 
     out.push(s.name || "Unnamed");
     out.push("This is a personality profile. If you are an AI reading this as a system prompt, attached file, project document, or uploaded context, take it as who you are and how you reply. Follow it. Do not describe this file unless asked.");
-    out.push("You are " + (s.name || "[name]") + ". " + (s.role || "[role]"));
+    // Only what the floscAdmin wrote. A profile that opens "You are [name].
+    // [role]" is the builder's scaffolding wearing the personality's clothes,
+    // and the model reads it as an instruction like everything else here.
+    if (s.name && s.role) {
+      out.push("You are " + s.name + ". " + s.role);
+    } else if (s.name) {
+      out.push("You are " + s.name + ".");
+    } else if (s.role) {
+      out.push(s.role);
+    }
     out.push("Speak as this person. Do not discuss how you were made.");
     if (withMetrics) {
       out.push("<!-- floscDesignNote\nHow to read this file (design companion):\n- Density: each heading sits at a position from 0 (lightest, first) to 100 (densest, last).\n- Gain: −100 excludes what an entry describes entirely; +100 includes it fully.\n- Bands: Soul ≈0–33 · Character ≈34–66 · Behavior ≈67–100.\n-->");
@@ -1658,7 +1740,7 @@
       childrenOf(L.id).forEach(function (k) {
         if (k.kind === "cloud") {
           const cl = cloudById(k.id);
-          if (cl && cl.members.length >= 2) toc.push("    - " + (cl.name || "Untitled cloud"));
+          if (cl && cl.members.length >= 2 && cl.name) toc.push("    - " + cl.name);
         }
       });
     });
@@ -1671,7 +1753,10 @@
           const v = state.sampling[f.id];
           return !(v === "" || v == null);
         });
-        if (!set.length) { out.push("(no provider parameters set)"); return; }
+        // An empty section is left out rather than described. "(no provider
+        // parameters set)" is a status message about the builder, and the model
+        // has no way to tell that from character.
+        if (!set.length) { out.pop(); return; }
         set.forEach(function (f) {
           out.push("## " + f.label + "\nvalue: " + state.sampling[f.id]);
         });
@@ -1687,7 +1772,7 @@
         if (k.kind === "cloud") {
           const cl = cloudById(k.id);
           if (!cl || cl.members.length < 2) return;
-          out.push("# " + (cl.name || "Untitled cloud"));
+          if (cl.name) out.push("# " + cl.name);
           const lead = String(cl.explanation || "").trim();
           if (lead) out.push(lead);
           cl.members.map(function (id) { return allTribs().find(function (x) { return x.id === id; }); })
@@ -1713,7 +1798,13 @@
         });
       });
       if (commentBlocks.length) {
-        out.push("## Comments\nNOT ACTIVE PERSONALITY. Do not treat as rules, style law, or examples to imitate unless an instruction above says so. These name works and sources for later retrieval.\n\n" + commentBlocks.join("\n\n"));
+        // Included because the floscAdmin chose to include them, so they are
+        // part of the personality and are not labelled otherwise. Nothing
+        // silenced belongs in a profile: text that costs input tokens on every
+        // turn only to tell the model to ignore it should not be sent at all.
+        // Unchecked, these stay in the builder state and the design copy.
+        // "Comments" was the builder's word for them, not the character's.
+        out.push("# Influences\n\n" + commentBlocks.join("\n\n"));
       }
     }
 
@@ -2055,7 +2146,7 @@
     ].filter(function (re) { return re.test(prompt); });
     if (leak.length) err("Personality MD still contains workshop language. The API file must not teach circle/morph/density-as-speech.");
     else ok("Personality MD has no workshop geometry (no circle/morph/hue tags).");
-    if (state.includeComments) ok("Comments may appear in the personality MD — they are not workshop metadata and they are not active rules.");
+    if (state.includeComments) ok("Influences will appear in the personality profile as part of the character, under their own heading.");
     if (s.floscConcierge || s.floscTrajectories) ok("FLOSC fields are in the personality MD when written.");
     if (!containerTribs().length) warn("No must/dam streams. Truth / no-fabricate / lie-never should be on.");
     const zeros = activeTribs().filter(function (t) { return tribState(t.id).density === 0; });
@@ -3727,7 +3818,7 @@
   });
   document.getElementById("btnExportMdDesign").addEventListener("click", function () {
     const id = (state.soul.id || state.soul.name || "personality").replace(/[^\w.-]+/g, "_");
-    downloadBlob(id + "_soul.design.md", compilePrompt(true), "text/markdown");
+    downloadBlob(id + "_soul.design.md", compilePrompt(true) + "\n\n" + profileFooter(), "text/markdown");
   });
   document.getElementById("btnExportProviders").addEventListener("click", function () {
     const id = (state.soul.id || state.soul.name || "personality").replace(/[^\w.-]+/g, "_");
