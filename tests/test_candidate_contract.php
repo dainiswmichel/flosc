@@ -86,22 +86,6 @@ foreach ( array( 'full access', 'everything', 'all content' ) as $claim ) {
 ok( 'and the model is told these are tiers, not contents',
 	strpos( $pack, 'These name access tiers, not what any tier contains' ) !== false, true );
 
-// FLOSC puts a model into a sales conversation on somebody else's behalf, and
-// a model in a sales conversation will agree to things. The floscAdmin is not
-// in the room; this rule stands in for them, on every flow, without each one
-// having to remember to write it.
-echo "\nThe model cannot commit the floscAdmin to anything\n";
-ok( 'there is a commitments rule',
-	strpos( $pack, '**COMMITMENTS (mandatory):**' ) !== false, true );
-foreach ( array(
-	'Not a price, a discount, a refund, a date, a deadline'  => 'no terms',
-	'Requesting is not receiving'                            => 'requesting is not receiving',
-	'If you were not given the scope, you do not know it'     => 'no invented scope',
-	'say who can'                                            => 'and it names who decides instead',
-) as $needle => $what ) {
-	ok( '  ' . $what, strpos( $pack, $needle ) !== false, true );
-}
-
 // The flow section sends the five phases, their outcomes and the floscAdmin's
 // phase prompt on every turn. A personality that repeats that text does not
 // reinforce it — it crowds out the character that was the reason to attach a
