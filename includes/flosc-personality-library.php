@@ -1122,7 +1122,7 @@ if ( ! function_exists( 'flosc_personality_builder_request_context' ) ) {
 
 if ( ! function_exists( 'flosc_personality_builder_url' ) ) {
 	/**
-	 * Admin URL for Personality Designer on the AI tab.
+	 * Admin URL for the DA1 AI Personality Builder on the AI tab.
 	 *
 	 * @param string $persona_id Library id.
 	 * @param string $ivr        Optional current IVR filename.
@@ -1745,7 +1745,7 @@ if ( ! function_exists( 'flosc_enqueue_personality_builder_assets' ) ) {
 
 if ( ! function_exists( 'flosc_render_personality_designer_accordion' ) ) {
 	/**
-	 * Personality Designer workshop as an AI-tab accordion.
+	 * DA1 AI Personality Builder workshop as an AI-tab accordion.
 	 *
 	 * @param string $persona_id Library id.
 	 * @param string $ivr        Optional IVR filename.
@@ -1773,7 +1773,7 @@ if ( ! function_exists( 'flosc_render_personality_designer_accordion' ) ) {
 		?>
 <details class="flosc-ai-acc flosc-ai-acc--designer" id="flosc-personality-designer" open>
 <summary class="flosc-ai-acc__summary">
-	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'Personality Designer', 'flosc' ); ?></span>
+	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'DA1 AI Personality Builder', 'flosc' ); ?></span>
 	<span class="flosc-ai-acc__hint"><?php
 	if ( $label !== '' ) {
 		echo $flow_name !== ''

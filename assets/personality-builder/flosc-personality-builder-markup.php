@@ -8,6 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) {
   <header class="top flosc-admin-builder__header">
     <div>
       <h1>Personality profile</h1>
+      <p class="builder-attribution">DA1 AI Personality Builder · FLOSC edition · <?php echo esc_html( defined( 'FLOSC_DA1_BUILDER_VERSION' ) ? FLOSC_DA1_BUILDER_VERSION : '3.1.2' ); ?></p>
       <p>Build the personality by selecting aspects, placing them on the density sequence, and defining how the AI expresses them.</p>
       <div class="meta">
         <span class="chip">Aspect palette</span>

@@ -1898,7 +1898,7 @@ if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_fe
 <li><strong>Admin tab:</strong> AI</li>
 </ul>
 <h4 id="field-personality_library_id"><code>personality_library_id</code></h4>
-<p>Install personality library entry id attached to this floscFlow. Empty string means custom fields on this flow only. Exactly one personality per flow — not a chain. Library entries themselves live on the install (All Flows AI API Management → Personalities, plus Personality Designer). YAML carries the id only — never the compiled profile or workshop JSON. Stored as <code>personality_library_id</code>.</p>
+<p>Install personality library entry id attached to this floscFlow. Empty string means custom fields on this flow only. Exactly one personality per flow — not a chain. Library entries themselves live on the install (All Flows AI API Management → Personalities, plus the DA1 AI Personality Builder). YAML carries the id only — never the compiled profile or workshop JSON. Stored as <code>personality_library_id</code>.</p>
 <ul>
 <li><strong>Portable:</strong> yes (Settings YAML) — id only; target install must already have that library entry or use custom fields</li>
 <li><strong>Admin tab:</strong> AI → This flow: AI settings → Attached personality</li>

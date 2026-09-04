@@ -78,7 +78,7 @@
 <p>Admin suite on <strong>AI → This flow: AI settings</strong>: template rows with placeholders (<code>{flow_name}</code> operator floscFlow name, <code>{title}</code> Public Title, <code>{tagline}</code> one-line expansion of Title, <code>{topic_scope}</code>, <code>{site_name}</code>). Expanded text is the userMessage sent to the model; each result column is the assistantMessage. One completed row = one floscTurn. Stored as <code>ai_accuracy_test_questions</code>.</p>
 
 <h3 id="term-personality-library">Personality library</h3>
-<p>Install-scoped reusable floscFlowPersonality rows (label plus compiled profile and optional workshop JSON). Authored in Personality Designer; listed under All Flows AI API Management → Personalities. Each floscFlow attaches exactly one via <code>personality_library_id</code>, or uses custom fields on that flow only. Personalities do not chain; only API providers chain.</p>
+<p>Install-scoped reusable floscFlowPersonality rows (label plus compiled profile and optional workshop JSON). Authored in the DA1 AI Personality Builder; listed under All Flows AI API Management → Personalities. Each floscFlow attaches exactly one via <code>personality_library_id</code>, or uses custom fields on that flow only. Personalities do not chain; only API providers chain.</p>
 
 <h3 id="term-access-controller">Access Controller</h3>
 <p><code>class-flosc-rag-access-controller.php</code>. The class that decides what content the AI is permitted to deliver to the current user. Enforces lesson access rules: visitors get nothing, guests get the free lesson, members get all lessons.</p>
@@ -112,7 +112,7 @@
 
 <h3 id="term-personality-packs">Personality profile field maps</h3>
 <p>One compiled Markdown profile. Chat send path: WordPress AI Client for Anthropic, OpenAI, and Gemini; FLOSC HTTP for xAI. The workshop also maps that same profile for Mistral, Cohere, Together (Meta), Fireworks (Meta), AWS Bedrock, Azure OpenAI, OpenRouter, and Perplexity (field shapes only — not extra FLOSC HTTP adapters, and no provider-pack picker in FLOSC).</p>
-<p>Current pocket-by-pocket intricacies are dated <strong>MTS 26_08m_20d</strong> and listed on the Personality Designer file panel (and in <code>flosc_provider_intricacies()</code>). Re-date that snapshot when a vendor moves the field. Sampling stays on This flow, not in the soul.</p>
+<p>Current pocket-by-pocket intricacies are dated <strong>MTS 26_08m_20d</strong> and listed on the DA1 AI Personality Builder file panel (and in <code>flosc_provider_intricacies()</code>). Re-date that snapshot when a vendor moves the field. Sampling stays on This flow, not in the soul.</p>
 
 <h3 id="term-app-slug">App Slug</h3>
 <p>The URL segment at which the FLOSC app lives, e.g. <code>learn</code> makes the app accessible at <code>yoursite.com/learn</code>. Configurable per flow. WordPress rewrite rules redirect this slug to the virtual page rendered by <code>render_flosc_app()</code>. Changing the slug triggers an automatic permalink flush.</p>
