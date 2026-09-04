@@ -892,14 +892,16 @@ trait FLOSC_Chat_Turn_Trait {
         }
 
         // Reputation guard: never return self-undermining hedge language.
-        $response_message['content'] = $this->flosc_enforce_no_hedge_response(
-            $response_message['content'] ?? '',
-            $message,
-            $flow_id,
-            $ivr_file,
-            $phase,
-            $eval_context
-        );
+        if (method_exists($this, 'flosc_enforce_no_hedge_response')) {
+            $response_message['content'] = $this->flosc_enforce_no_hedge_response(
+                $response_message['content'] ?? '',
+                $message,
+                $flow_id,
+                $ivr_file,
+                $phase,
+                $eval_context
+            );
+        }
 
         // Store message in session if user is logged in (guarded to this flow).
         if (is_user_logged_in() && $session_id) {
@@ -1284,14 +1286,16 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC SECURITY: Violations
             }
         }
         
-        $safe_rag_response = $this->flosc_enforce_no_hedge_response(
-            $validation_result['response'] ?? '',
-            $message,
-            $flow_id,
-            $ivr_file,
-            $user_context['phase'] ?? 'freeline',
-            $user_context
-        );
+        $safe_rag_response = method_exists($this, 'flosc_enforce_no_hedge_response')
+            ? $this->flosc_enforce_no_hedge_response(
+                $validation_result['response'] ?? '',
+                $message,
+                $flow_id,
+                $ivr_file,
+                $user_context['phase'] ?? 'freeline',
+                $user_context
+            )
+            : (string) ($validation_result['response'] ?? '');
 
         FLOSC_Chat_Logger::instance()->flosc_log_chat([
             'flow_id'         => $flow_id ?: $flow_stem,

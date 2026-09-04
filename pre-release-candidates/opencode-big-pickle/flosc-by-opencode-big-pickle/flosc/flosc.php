@@ -3946,6 +3946,34 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
         return $this->da1_catalogs->limit_chat_response_length($text);
     }
 
+    private function flosc_enforce_no_hedge_response($response_text, $user_message, $flow_id, $ivr_file, $phase, $eval_context) {
+        $response_text = trim((string) $response_text);
+
+        if ($response_text === '' || $this->flosc_contains_forbidden_hedge($response_text)) {
+            return $this->flosc_build_professional_replacement($user_message, $flow_id, $ivr_file, $phase, $eval_context);
+        }
+
+        return $response_text;
+    }
+
+    private function flosc_contains_forbidden_hedge($text) {
+        $patterns = [
+            '/\bi\s+don\'t\s+have\b[^\n]{0,160}\b(information|info|context|details|data|catalog|count|biography|bio|configured|system)\b/i',
+            '/\bi\s+do\s+not\s+have\b[^\n]{0,160}\b(information|info|context|details|data|catalog|count|biography|bio|configured|system)\b/i',
+            '/\bnot\s+configured\b[^\n]{0,80}\b(system|right\s+now)?\b/i',
+            '/\bconfigured\s+in\s+my\s+system\b/i',
+            '/\bmissing\s+(catalog|biography|bio|context|data)\b/i',
+        ];
+
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, (string) $text)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private function flosc_build_professional_replacement($user_message, $flow_id, $ivr_file, $phase, $eval_context) {
         $user_message = (string) $user_message;
 

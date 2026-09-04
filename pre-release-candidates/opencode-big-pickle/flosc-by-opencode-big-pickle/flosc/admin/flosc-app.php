@@ -9,6 +9,9 @@ $flosc_visitor_name = function_exists( 'flosc_personality_name' )
 if ( $flosc_visitor_name === '' ) {
     $flosc_visitor_name = 'FLOSC';
 }
+$flosc_visitor_role = function_exists( 'flosc_personality_library_resolve_field' )
+    ? trim( (string) flosc_personality_library_resolve_field( 'ai_personality_role', '' ) )
+    : '';
 
 // v9.0.8: Chat styling data attributes (font, theme, preset, scale)
 $flosc_chat_font   = get_option('flosc_chat_style_font', 'system');
@@ -1172,9 +1175,11 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
             // productName is an alias of personalityName so older JS does not read identity.name as the speaker.
             'productName' => $flosc_visitor_name,
             'personalityName' => $flosc_visitor_name,
+            'personalityRole' => $flosc_visitor_role,
             'flowDisplayName' => function_exists( 'flosc_flow_name' )
                 ? flosc_flow_name()
                 : ( is_array( $identity ) ? (string) ( $identity['name'] ?? '' ) : '' ),
+            'siteName' => get_bloginfo( 'name' ),
             'offers' => array_values($offers),
             'appUrl' => $flosc_app_url,
             // Dock/collapse handoff when companion mode is companion|both and enabled.

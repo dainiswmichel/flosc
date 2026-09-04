@@ -12,7 +12,7 @@
   },
   "artifact": {
     "filename": "flosc.zip",
-    "sha256": "2b2fc16e3849b0fa0e66d9476dd21f5626645bbab0d34bd992b044f6b3befda3",
+    "sha256": "33e26af890231666094601fb4200e2f9b83918e894c3e185c4b1f1d127983cc6",
     "entry_count": 275,
     "top_level_dirs": [
       "flosc"
@@ -35,8 +35,14 @@
   "files_subsystems_changed": [
     "includes/flosc-personality-library.php",
     "includes/class-flosc-chatpack.php",
-    "includes/chat-turn/trait-flosc-chat-turn.php"
+    "includes/chat-turn/trait-flosc-chat-turn.php",
+    "flosc.php",
+    "admin/flosc-app.php",
+    "admin/ivr-messages.php",
+    "assets/js/flosc-app.js"
   ],
+  "public_chat_repair": "hedge methods + guarded calls; IVR personality/flow variable substitution; newline normalization",
+  "live_rating_after_repair": "8/10",
   "tests": {
     "checks_run": [
       "php -l (syntax) on all three changed files",
