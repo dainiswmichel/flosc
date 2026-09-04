@@ -10,6 +10,14 @@ if ( $flosc_visitor_name === '' ) {
     $flosc_visitor_name = 'FLOSC';
 }
 
+// Resolved at render time from the personality attached right now, so an IVR
+// greeting written once introduces whoever is currently attached. The welcome
+// bubble is flow-owned, not model-generated: without this a flow that switched
+// from Br3nda to DadJokeDan still opened in Br3nda's name.
+$flosc_visitor_role = function_exists( 'flosc_personality_library_resolve_field' )
+    ? trim( (string) flosc_personality_library_resolve_field( 'ai_personality_role', '' ) )
+    : '';
+
 // v9.0.8: Chat styling data attributes (font, theme, preset, scale)
 $flosc_chat_font   = get_option('flosc_chat_style_font', 'system');
 $flosc_chat_theme  = get_option('flosc_chat_style_theme', 'default');
@@ -551,9 +559,6 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
                     ?>
                         <img src="<?php echo esc_url($flosc_landing_logo); ?>" alt="" class="landing-icon" width="36" height="36" decoding="async">
                     <span class="landing-title"><?php echo esc_html($flosc_visitor_name); ?></span>
-                    <?php if (!empty($identity['title'])): ?>
-                        <span class="landing-subtitle"><?php echo esc_html($identity['title']); ?></span>
-                    <?php endif; ?>
                 </div>
                 <?php if (!empty($identity['tagline'])): ?>
                     <div class="landing-tagline"><?php echo esc_html($identity['tagline']); ?></div>
@@ -1172,9 +1177,11 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
             // productName is an alias of personalityName so older JS does not read identity.name as the speaker.
             'productName' => $flosc_visitor_name,
             'personalityName' => $flosc_visitor_name,
+            'personalityRole' => $flosc_visitor_role,
             'flowDisplayName' => function_exists( 'flosc_flow_name' )
                 ? flosc_flow_name()
                 : ( is_array( $identity ) ? (string) ( $identity['name'] ?? '' ) : '' ),
+            'siteName' => get_bloginfo( 'name' ),
             'offers' => array_values($offers),
             'appUrl' => $flosc_app_url,
             // Dock/collapse handoff when companion mode is companion|both and enabled.

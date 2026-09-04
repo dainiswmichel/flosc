@@ -3123,6 +3123,16 @@ class floscApp {
         content = content.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
         content = content.replace(/~~([^~]+)~~/g, '<del>$1</del>');
 
+        // Line breaks arrive three ways and must all render. Catalog rows and
+        // IVR messages store a literal backslash-n; the admin editor produces
+        // real newlines; older saved messages contain <br>. A visitor reading
+        // "\n" in a chat bubble is seeing a renderer bug, not a model mistake.
+        content = content
+            .replace(/\\n/g, '\n')
+            .replace(/<br\s*\/?>/gi, '\n')
+            .replace(/\r\n?/g, '\n')
+            .replace(/\n/g, '<br>');
+
         const isWelcomeMessage = !!(msg && msg.name && String(msg.name).includes('welcome'));
         if (this.state === 'visitor' && isWelcomeMessage && !/flosc-welcome-badge/i.test(content)) {
             const productName = this.config.personalityName || this.config.productName || 'FLOSC';
@@ -4675,10 +4685,15 @@ class floscApp {
         
         return text
             .replace(/{name}/g, ctx.name || 'there')
+            .replace(/{personality_name}/g, this.config?.personalityName || 'FLOSC')
+            .replace(/{personality_role}/g, this.config?.personalityRole || '')
+            .replace(/{flow_name}/g, this.config?.flowDisplayName || '')
+            .replace(/{public_title}/g, ctx.title || '')
             .replace(/{score}/g, ctx.score || '0')
             .replace(/{product_name}/g, ctx.product_name || 'the course')
             .replace(/{title}/g, ctx.title || ctx.product_name || 'the course')
             .replace(/{tagline}/g, ctx.tagline || '')
+            .replace(/{site_name}/g, this.config?.siteName || '')
             .replace(/{price}/g, ctx.price || '')
             .replace(/{discount_price}/g, ctx.discount_price || '')
             .replace(/{timer_remaining}/g, ctx.timer_remaining || '60:00')
