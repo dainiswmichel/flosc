@@ -1297,59 +1297,31 @@ function floscTestAPI() {
         });
 }
 
-document.addEventListener('click', function(event) {
-    const trigger = event.target.closest('[data-flosc-action]');
-    if (!trigger) {
-        return;
-    }
+/*
+ * There is no click listener here on purpose.
+ *
+ * This page used to carry its own document-level [data-flosc-action] handler
+ * alongside the shared one in assets/js/flosc-admin-events.js, which is
+ * enqueued on every FLOSC admin screen. Both matched the same element and both
+ * called the same function, so one click ran floscToggleMsg() twice: the card
+ * opened and closed in the same frame and the accordion looked dead. The same
+ * double-fire hit toggle-new-editor and test-api-endpoint.
+ *
+ * flosc-admin-events.js handles all three, plus delete-message generically via
+ * data-confirm-message and data-stop-propagation. The change listener for
+ * toggle-offer-fields was doubled the same way; it never showed because
+ * floscToggleOfferFields() sets the class from an explicit boolean and running
+ * it twice lands in the same place. It was one refactor away from behaving
+ * like the accordion.
+ *
+ * The submit listener went the same way, and that one was visible: a form
+ * carrying data-confirm-message asked twice, because both handlers called
+ * confirm(). Two dialogs for one Delete.
+ *
+ * Adding a second listener for an action or attribute that
+ * flosc-admin-events.js already owns is how all of this returns.
+ */
 
-    const action = trigger.dataset.floscAction;
-    if (action === 'test-api-endpoint') {
-        event.preventDefault();
-        floscTestAPI();
-        return;
-    }
-
-    if (action === 'toggle-msg-card') {
-        event.preventDefault();
-        floscToggleMsg(trigger.dataset.msgId || '');
-        return;
-    }
-
-    if (action === 'toggle-new-editor') {
-        event.preventDefault();
-        floscToggleNewEditor(trigger.dataset.phaseId || '', '1' === String(trigger.dataset.open || '0'));
-        return;
-    }
-
-    if (action === 'delete-message') {
-        if (!confirm(trigger.dataset.confirmMessage || 'Delete this message?')) {
-            event.preventDefault();
-            event.stopPropagation();
-        }
-    }
-});
-
-document.addEventListener('change', function(event) {
-    const trigger = event.target.closest('[data-flosc-action="toggle-offer-fields"]');
-    if (!trigger) {
-        return;
-    }
-
-    floscToggleOfferFields(trigger, trigger.dataset.msgId || '');
-});
-
-document.addEventListener('submit', function(event) {
-    const form = event.target.closest('form[data-confirm-message]');
-    if (!form) {
-        return;
-    }
-
-    if (!confirm(form.dataset.confirmMessage || 'Are you sure?')) {
-        event.preventDefault();
-        event.stopPropagation();
-    }
-});
 <?php wp_add_inline_script('flosc-admin', ob_get_clean()); ?>
 
 <h2><?php echo esc_html( $flosc_ivr_management_view === 'all' ? 'IVR Management - All Flows File Management' : 'IVR Management - Single Flow Message Editing' ); ?></h2>
