@@ -10542,11 +10542,16 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             $tsv_body .= $to_tsv_line($ordered_row);
         }
 
-        $datestamp = gmdate('Y') . '-' . gmdate('m') . 'm-' . gmdate('d') . 'd';
+        // Full MTS, not just the date. Two exports taken on the same day were
+        // landing on the same filename, so the second silently replaced the
+        // first in the downloads folder — and a log export is evidence.
+        $stamp = function_exists('flosc_mts_utc')
+            ? flosc_mts_utc()
+            : gmdate('Y') . 'y-' . gmdate('m') . 'm-' . gmdate('d') . 'd-UTC-' . gmdate('H') . 'h-' . gmdate('i') . 'm-' . gmdate('s') . 's';
         $this->filesystem->stream_plain_download_and_exit(
             $tsv_body,
             'text/tab-separated-values; charset=utf-8',
-            'flosc-chat-logs-' . $datestamp . '.tsv'
+            'flosc-chat-logs-' . $stamp . '.tsv'
         );
     }
 

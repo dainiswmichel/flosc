@@ -4,10 +4,10 @@
   "status": "ASSEMBLED_AWAITING_FRESH_INSTALL_ACCEPTANCE",
   "branch": "claude/ready-to-help-jsw2li",
   "baseline_commit": "477f252",
-  "head_commit": "333e8d9564261ff270ec1a50db8e26fd434723d2",
+  "head_commit": "bc94b4da575775c550f3cc7e64caf2b9415ba73a",
   "version": "8.0.0",
-  "artifact": "flosc.zip",
-  "artifact_note": "Built from flosc-by-claude-opus-5/flosc using that tree's own .distignore and the build script's deny list. HANDOFF.md is excluded: it carries the operator's local ship path and project context that does not belong in a public plugin directory.",
+  "artifact": null,
+  "artifact_note": "The full tree is here, same as the other candidates. No flosc.zip: build with ./flosc-ship.sh from this tree or from the branch — they are identical at this commit. pre-release-candidates/ is excluded from the artifact by .distignore and by the build's hard deny list.",
   "assembled_from": {
     "codex-gpt5": "full profile every turn, RAG fallthrough, get_response_result(), personality boilerplate removal, genome/profile fingerprint",
     "opencode-big-pickle": "no-hedge method pair and the method_exists guards",
@@ -43,7 +43,12 @@
   "harness": "tests/journey-harness.php (WP-CLI, --require, never shipped)",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "tree_files": 275,
-  "artifact_sha256": "9f3cbace588a34d32266780bb62d349f560e596cf371e0f767867deec34909eb",
-  "artifact_root": "flosc/",
-  "artifact_files": 276
+  "candidate_version": "v3",
+  "artifact_sha256": "3e509710ac6f306aa7b49f267f29599316ddcc3b1d464c8cc6cde9bac9638574",
+  "artifact_files": 276,
+  "v3_fixes": [
+    "Recovered answer no longer shown twice after a signed-in reload mid-response.",
+    "profile_hash computed on read when the stored field is empty, so the chat log column is never blank.",
+    "Chat log export filename carries a full MTS to the millisecond instead of the date alone."
+  ]
 }

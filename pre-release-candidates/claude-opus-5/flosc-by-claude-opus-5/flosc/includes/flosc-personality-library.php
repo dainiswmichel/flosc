@@ -22,6 +22,59 @@ if ( ! function_exists( 'flosc_personality_library_option_key' ) ) {
 	}
 }
 
+if ( ! function_exists( 'flosc_personality_fingerprint' ) ) {
+	/**
+	 * The deployment fingerprint: genome and runtime profile as one unit.
+	 *
+	 * Kept in one place because it is written on save and read back on every
+	 * turn, and a hash computed two slightly different ways is worse than no
+	 * hash at all — it reports a mismatch that is not there.
+	 *
+	 * @param string $genome  workshop_json as stored.
+	 * @param string $profile ai_base_prompt as stored.
+	 * @return string 64 hex characters.
+	 */
+	function flosc_personality_fingerprint( $genome, $profile ) {
+		return hash( 'sha256', (string) $genome . "\n--FLOSC-RUNTIME--\n" . trim( (string) $profile ) );
+	}
+}
+
+if ( ! function_exists( 'flosc_personality_resolved_fingerprint' ) ) {
+	/**
+	 * The fingerprint of whatever personality this flow resolves to now.
+	 *
+	 * profile_hash is written when a personality is saved, so a row that has
+	 * not been saved since the field existed has none — which is every shipped
+	 * default on a fresh install. The live chat log showed an empty column for
+	 * exactly that reason: the mechanism was right and had nothing to read.
+	 *
+	 * Computing it when it is absent costs one sha256 over about a kilobyte and
+	 * makes the column mean the same thing on every row.
+	 *
+	 * @param string|null $flow_id Flow to resolve for.
+	 * @return string 64 hex characters, or '' when no personality is attached.
+	 */
+	function flosc_personality_resolved_fingerprint( $flow_id = null ) {
+		if ( ! function_exists( 'flosc_personality_library_resolve_field' ) ) {
+			return '';
+		}
+
+		$stored = trim( (string) flosc_personality_library_resolve_field( 'profile_hash', '', $flow_id ) );
+		if ( $stored !== '' ) {
+			return $stored;
+		}
+
+		$profile = (string) flosc_personality_library_resolve_field( 'ai_base_prompt', '', $flow_id );
+		$genome  = (string) flosc_personality_library_resolve_field( 'workshop_json', '', $flow_id );
+
+		if ( trim( $profile ) === '' && trim( $genome ) === '' ) {
+			return '';
+		}
+
+		return flosc_personality_fingerprint( $genome, $profile );
+	}
+}
+
 if ( ! function_exists( 'flosc_personality_library_field_keys' ) ) {
 	/**
 	 * Fields stored on each library entry (and mirrored on the flow when custom).
@@ -694,7 +747,7 @@ if ( ! function_exists( 'flosc_personality_library_save_all' ) ) {
 			// exact compiled character public chat will resolve.
 			$profile = trim( (string) ( $entry['ai_base_prompt'] ?? '' ) );
 			$genome  = (string) ( $entry['workshop_json'] ?? '' );
-			$hash    = hash( 'sha256', $genome . "\n--FLOSC-RUNTIME--\n" . $profile );
+			$hash    = flosc_personality_fingerprint( $genome, $profile );
 
 			// The version counts edits that changed something. A save that
 			// rewrote nothing keeps its number and its timestamp, so "version 3"

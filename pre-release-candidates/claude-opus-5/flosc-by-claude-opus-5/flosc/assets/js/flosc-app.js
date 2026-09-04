@@ -1259,6 +1259,28 @@ class floscApp {
         }
 
         if (data && data.recovered && data.message) {
+            /*
+             * The reply exists on the server. Whether it is already on screen
+             * depends on who is asking.
+             *
+             * A signed-in turn is written to the session by PHP — both halves,
+             * together, before the browser ever receives the response — so a
+             * reload restores the complete pair and appending the recovered
+             * reply says the same thing twice. That is what a live tester saw:
+             * "you glitched a tiny bit refreshing while waiting", and the model
+             * itself noticed, calling it an echo.
+             *
+             * An anonymous turn has no server session. The client writes the
+             * assistant message only after the fetch resolves, so a reload
+             * loses it and recovery is the only way it arrives.
+             *
+             * One check covers both: if it is already in the thread, leave it.
+             */
+            if (this.floscAssistantAlreadyInThread(String(data.message))) {
+                this.log('[FLOSC] The interrupted answer was already restored; not repeating it.');
+                return;
+            }
+
             this.log('[FLOSC] Recovered the answer written while the page was reloading.');
             const html = this.formatMarkdown(String(data.message));
             this.addMessage('assistant', html, true);
@@ -1270,6 +1292,31 @@ class floscApp {
 
         this.log('[FLOSC] The interrupted turn never completed; dropping its unanswered message.');
         this.floscDropOrphanVisitorMessage(pending.message);
+    }
+
+    /*
+     * Is this assistant text already on screen?
+     *
+     * Compared as normalised plain text, because the same reply renders
+     * differently depending on how it arrived — markdown converted here,
+     * HTML restored from a session, entities decoded by the browser.
+     */
+    floscAssistantAlreadyInThread(text) {
+        const candidate = this._normalizeAssistantPlain(text);
+        if (!candidate) {
+            return false;
+        }
+        const root = this.chatMessages || document.getElementById('flosc_app_messages');
+        if (!root) {
+            return false;
+        }
+        const nodes = root.querySelectorAll('.message-content, .flosc-message-content, .message.assistant, [data-role="assistant"]');
+        for (const el of nodes) {
+            if (this._normalizeAssistantPlain(el.textContent || el.innerText || '') === candidate) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /*

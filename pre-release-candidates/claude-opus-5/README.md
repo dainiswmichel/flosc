@@ -1,5 +1,19 @@
 # Home run candidate — Claude Opus 5
 
+**v3.** Three fixes from the first live test on dainis.net:
+
+- A reload while the assistant was still typing showed the reply twice. A
+  signed-in turn is written to the session by PHP before the browser receives
+  the response, so the reload already restored it and recovery appended a
+  second copy. The thread is now checked before anything is appended.
+- `profile_hash` was empty on every chat log row. The column was right and had
+  nothing to read — the hash is written when a personality is saved, and no
+  shipped default had been saved since the field existed. It is computed on
+  read when absent.
+- The chat log export was named by date alone, so two exports in one day
+  collided in the downloads folder. Full MTS now, to the millisecond.
+
+
 Assembled from the four tested candidates. Version held at **8.0.0** — this is
 a resubmission, not a release.
 
@@ -15,12 +29,10 @@ https://github.com/dainiswmichel/flosc/tree/claude/ready-to-help-jsw2li
 the other four candidates carry, so this folder can be deployed from directly
 without pulling the branch first.
 
-`flosc.zip` is built from that tree using its own `.distignore` and the build
-script's deny list — 236 files, one `flosc/` root, no `tests/`, no
-`HANDOFF.md`, nothing internal. Checksum in `SHA256SUMS`. Upload it to a fresh
-WordPress install and activate.
+**No `flosc.zip` here** — the Captain builds those with `./flosc-ship.sh`. Build
+from either copy; they are identical.
 
-**If you keep both the branch and this tree, one will drift.** The branch is the trunk and this tree is a
+**If you keep both, one will drift.** The branch is the trunk and this tree is a
 snapshot of it. When the branch moves, this does not. Deploy from whichever you
 choose, but do not rsync one over a site built from the other, and never with
 `--delete` — that is how live repairs get wiped by an older snapshot.
