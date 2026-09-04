@@ -973,6 +973,23 @@ trait FLOSC_Chat_Turn_Trait {
             'provider'        => $flosc_provider_used,
             'chain_detail'    => $flosc_chain_detail,
             'response_source' => $flosc_response_source,
+            // Columns, not tokens inside chain_detail. Which personality
+            // answered, on which surface, over which page — the three facts a
+            // switching test needs and the log could not previously supply.
+            // Resolved from the same library row the prompt was built from, so
+            // a row records the character that produced the text.
+            'surface'         => $flosc_ctx_surface !== '' ? $flosc_ctx_surface : 'full_page',
+            'page_url'        => $flosc_ctx_url,
+            'page_title'      => $flosc_ctx_title,
+            'personality_id'  => function_exists('flosc_personality_library_id_for_flow')
+                ? (string) flosc_personality_library_id_for_flow($flow_id)
+                : '',
+            'personality_name'=> function_exists('flosc_personality_library_resolve_field')
+                ? (string) flosc_personality_library_resolve_field('ai_personality_name', '', $flow_id)
+                : '',
+            'profile_hash'    => function_exists('flosc_personality_library_resolve_field')
+                ? (string) flosc_personality_library_resolve_field('profile_hash', '', $flow_id)
+                : '',
             'response_time_ms'=> $flosc_chat_elapsed,
             'billing_source'  => (string) ($billing_meta['source'] ?? ''),
             'billing_model'   => (string) ($billing_meta['model'] ?? ''),

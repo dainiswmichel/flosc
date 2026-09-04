@@ -828,12 +828,23 @@ function flosc_render_chat_session($flosc_s) {
         // Admin posted AS the bot — renders like a normal assistant message.
         if ($src === 'admin_bot') {
             $b_seq++;
+            $admin_bot_name = trim((string) ($r['personality_name'] ?? ''));
             $thread .= flosc_render_msg_bubbles(
                 $code, 'b', str_pad((string) $b_seq, 3, '0', STR_PAD_LEFT),
-                $ar, 'AI', $t, $rid, 'flosc-msg-ai'
+                $ar, ($admin_bot_name !== '' ? $admin_bot_name : 'AI'), $t, $rid, 'flosc-msg-ai'
             );
             $shown++;
             continue;
+        }
+
+        // Who actually answered this turn, from the row itself. Bot bubbles used
+        // to be labelled with the literal string 'AI', so a transcript could not
+        // show that the personality changed mid-conversation — the one thing a
+        // switching test needs to read back. Older rows have no name and keep
+        // the old label.
+        $speaker = trim((string) ($r['personality_name'] ?? ''));
+        if ($speaker === '') {
+            $speaker = 'AI';
         }
 
         $is_system = (strncmp($um, '[SYSTEM:', 8) === 0); // the auto-welcome row
@@ -841,7 +852,10 @@ function flosc_render_chat_session($flosc_s) {
         // The visitor's message — hidden only for the auto-welcome's "[SYSTEM:…]" prompt.
         if (!$is_system) {
             $u_seq++;
-            $visitor_context_url = flosc_get_chain_context_value((string) ($r['chain_detail'] ?? ''), 'ctx_url');
+            $visitor_context_url = trim((string) ($r['page_url'] ?? ''));
+            if ($visitor_context_url === '') {
+                $visitor_context_url = flosc_get_chain_context_value((string) ($r['chain_detail'] ?? ''), 'ctx_url');
+            }
             $thread .= flosc_render_msg_bubbles(
                 $code, 'u', str_pad((string) $u_seq, 3, '0', STR_PAD_LEFT),
                 $um, $label_raw, $t, $rid, 'flosc-msg-user', $visitor_context_url
@@ -853,7 +867,7 @@ function flosc_render_chat_session($flosc_s) {
         $b_seq++;
         $thread .= flosc_render_msg_bubbles(
             $code, 'b', str_pad((string) $b_seq, 3, '0', STR_PAD_LEFT),
-            $ar, 'AI', ($is_system ? $t : ''), $rid, 'flosc-msg-ai'
+            $ar, $speaker, ($is_system ? $t : ''), $rid, 'flosc-msg-ai'
         );
         $shown++;
     }

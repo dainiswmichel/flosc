@@ -172,6 +172,13 @@ class FLOSC_Chat_Logger {
             provider VARCHAR(50) DEFAULT 'ivr',
             chain_detail VARCHAR(255) DEFAULT '',
             response_source VARCHAR(50) DEFAULT 'ivr',
+            surface VARCHAR(20) DEFAULT '',
+            page_url VARCHAR(255) DEFAULT '',
+            page_title VARCHAR(255) DEFAULT '',
+            personality_id VARCHAR(100) DEFAULT '',
+            personality_name VARCHAR(120) DEFAULT '',
+            profile_hash VARCHAR(64) DEFAULT '',
+            turn_status VARCHAR(20) DEFAULT 'complete',
             response_time_ms INT UNSIGNED DEFAULT 0,
             billing_source VARCHAR(50) DEFAULT '',
             billing_model VARCHAR(120) DEFAULT '',
@@ -190,7 +197,8 @@ class FLOSC_Chat_Logger {
             KEY idx_flosc_chat_flow (flow_id),
             KEY idx_flosc_chat_phase (phase),
             KEY idx_flosc_chat_session (session_id),
-            KEY idx_flosc_chat_journey (journey_id)
+            KEY idx_flosc_chat_journey (journey_id),
+            KEY idx_flosc_chat_personality (personality_id)
         ) $charset_collate;";
 
         require_once ABSPATH . 'wp-admin/includes/upgrade.php';
@@ -571,6 +579,51 @@ class FLOSC_Chat_Logger {
             $chain_detail = implode(' → ', $data['chain_detail']);
         }
 
+        /*
+         * Who answered, on which surface, over which page.
+         *
+         * None of this was a column. Surface and page id were tokens packed
+         * into chain_detail, a shared VARCHAR(255) that a long page note can
+         * push them out of — so they went missing from exactly the turns worth
+         * investigating. The personality was not recorded at all: the Chat Logs
+         * screen printed whichever personality is attached *now*, so after a
+         * Betty-to-Dan switch every historical Betty row read as Dan. The log
+         * did not merely fail to record the switch, it hid it.
+         *
+         * personality_id, its name and the profile hash are read from the same
+         * library row the prompt was built from, so a row says which compiled
+         * character produced that text rather than which one is attached today.
+         */
+        $personality_id   = isset($data['personality_id']) ? sanitize_key((string) $data['personality_id']) : '';
+        $personality_name = isset($data['personality_name']) ? sanitize_text_field((string) $data['personality_name']) : '';
+        $profile_hash     = isset($data['profile_hash']) ? sanitize_text_field((string) $data['profile_hash']) : '';
+
+        // Paths that do not build a prompt — IVR replies, scripted fallbacks —
+        // still record who was attached for the turn, resolved from the flow.
+        if ($personality_id === '' && function_exists('flosc_personality_library_id_for_flow')) {
+            $personality_id = sanitize_key((string) flosc_personality_library_id_for_flow((string) ($data['flow_id'] ?? '')));
+        }
+        if ($personality_name === '' && function_exists('flosc_personality_library_resolve_field')) {
+            $personality_name = sanitize_text_field((string) flosc_personality_library_resolve_field('ai_personality_name', '', (string) ($data['flow_id'] ?? '')));
+        }
+        if ($profile_hash === '' && function_exists('flosc_personality_library_resolve_field')) {
+            $profile_hash = sanitize_text_field((string) flosc_personality_library_resolve_field('profile_hash', '', (string) ($data['flow_id'] ?? '')));
+        }
+
+        // Explicit, never inferred from absence: an empty surface used to mean
+        // either full page or "the client did not say".
+        $surface = sanitize_key((string) ($data['surface'] ?? ''));
+        if ($surface === '') {
+            $surface = 'unknown';
+        }
+
+        // complete | abandoned. An abandoned turn is one whose request the
+        // visitor dropped, so it must not be replayed as conversation history.
+        $turn_status = sanitize_key((string) ($data['turn_status'] ?? 'complete'));
+        if (!in_array($turn_status, ['complete', 'abandoned'], true)) {
+            $turn_status = 'complete';
+        }
+
         $result = $wpdb->insert(
             $this->table_name,
             [
@@ -586,6 +639,13 @@ class FLOSC_Chat_Logger {
                 'provider'        => sanitize_text_field($data['provider'] ?? 'ivr'),
                 'chain_detail'    => sanitize_text_field($chain_detail),
                 'response_source' => sanitize_text_field($data['response_source'] ?? 'ivr'),
+                'surface'         => $surface,
+                'page_url'        => esc_url_raw((string) ($data['page_url'] ?? '')),
+                'page_title'      => sanitize_text_field((string) ($data['page_title'] ?? '')),
+                'personality_id'  => $personality_id,
+                'personality_name'=> $personality_name,
+                'profile_hash'    => $profile_hash,
+                'turn_status'     => $turn_status,
                 'response_time_ms'=> intval($data['response_time_ms'] ?? 0),
                 'billing_source'  => sanitize_text_field($data['billing_source'] ?? ''),
                 'billing_model'   => sanitize_text_field($data['billing_model'] ?? ''),
@@ -594,7 +654,7 @@ class FLOSC_Chat_Logger {
                 'billing_total_tokens' => max(0, intval($data['billing_total_tokens'] ?? 0)),
                 'billing_real_millicents' => max(0, intval($data['billing_real_millicents'] ?? 0)),
             ],
-            ['%s', '%s', '%s', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%d', '%d', '%d', '%d']
+            ['%s', '%s', '%s', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%d', '%d', '%d', '%d']
         );
 
         if ( $result ) {
