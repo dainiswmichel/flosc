@@ -4,12 +4,42 @@ if (!defined('ABSPATH')) {
 }
 
 trait FLOSC_REST_Trait {
+
+    /*
+     * Public throttles, owned by the floscAdmin instead of the source.
+     *
+     * These were fixed numbers in this file. A live visitor hit "Rate limit
+     * reached. Please try again later." after one message and it read as the
+     * AI provider refusing the request — it was FLOSC's own per-IP bucket at
+     * 30/hour, and the client's nonce-refresh retry could spend two of those
+     * on a single send. A limit nobody can see or change is indistinguishable
+     * from a broken site.
+     *
+     * Global for this installation, not per floscFlow.
+     */
+    private function flosc_public_request_protection() {
+        $defaults = [
+            'enabled'                  => '1',
+            'anonymous_chat_limit'     => 60,
+            'authenticated_chat_limit' => 120,
+            'anonymous_ivr_limit'      => 120,
+            'metered_compute_limit'    => 20,
+            'visitor_compute_limit'    => 5,
+            'retry_after_429'          => '0',
+        ];
+        $settings = get_option('flosc_public_request_protection', []);
+        return is_array($settings) ? array_merge($defaults, $settings) : $defaults;
+    }
     /**
      * Permission Callbacks for REST API
      */
     public function check_metered_visitor_compute_permission($request) {
+        $protection = $this->flosc_public_request_protection();
+        if ($protection['enabled'] !== '1') {
+            return true;
+        }
         // Check rate limit first
-        if (!$this->check_rate_limit('metered_compute', 20, 3600)) {
+        if (!$this->check_rate_limit('metered_compute', absint($protection['metered_compute_limit']), HOUR_IN_SECONDS)) {
             return new WP_Error('rate_limit', __('Too many requests. Please try again later.', 'flosc'), ['status' => 429]);
         }
 
@@ -19,7 +49,7 @@ trait FLOSC_REST_Trait {
         }
 
         // For visitors: strict rate limit
-        if (!$this->check_rate_limit('visitor_metered_compute', 5, 3600)) {
+        if (!$this->check_rate_limit('visitor_metered_compute', absint($protection['visitor_compute_limit']), HOUR_IN_SECONDS)) {
             return new WP_Error('rate_limit', __('Free tier limit reached. Please log in.', 'flosc'), ['status' => 429]);
         }
 
@@ -37,16 +67,23 @@ trait FLOSC_REST_Trait {
      */
     public function check_public_endpoint_permission($request) {
         $endpoint = $request->get_route();
+        $protection = $this->flosc_public_request_protection();
+        if ($protection['enabled'] !== '1') {
+            return true;
+        }
 
         if (is_user_logged_in()) {
-            if (!$this->check_rate_limit('public_auth_' . $endpoint, 60, 3600)) {
+            if (!$this->check_rate_limit('public_auth_' . $endpoint, absint($protection['authenticated_chat_limit']), HOUR_IN_SECONDS)) {
                 return new WP_Error('rate_limit', __('Too many requests. Please slow down.', 'flosc'), ['status' => 429]);
             }
             return true;
         }
 
-        // Visitors get stricter limits.
-        if (!$this->check_rate_limit('public_visitor_' . $endpoint, 30, 3600)) {
+        // Visitors get stricter limits. Chat carries its own budget: a
+        // conversation costs more requests than reading IVR content does, and
+        // sharing one bucket meant a talkative visitor exhausted both.
+        $limit = $endpoint === '/flosc/v1/chat' ? absint($protection['anonymous_chat_limit']) : absint($protection['anonymous_ivr_limit']);
+        if (!$this->check_rate_limit('public_visitor_' . $endpoint, $limit, HOUR_IN_SECONDS)) {
             return new WP_Error('rate_limit', __('Rate limit reached. Please try again later.', 'flosc'), ['status' => 429]);
         }
 

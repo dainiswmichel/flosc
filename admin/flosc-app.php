@@ -1099,6 +1099,13 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
             'restUrl' => $flosc_rest_base . '/',
             'apiUrl' => $flosc_rest_base,
             'nonce' => wp_create_nonce('wp_rest'),
+            // Off by default. A 429 is the site saying "slow down"; retrying
+            // it immediately spends a second request from the same bucket and
+            // makes the limit arrive twice as fast.
+            'retryAfter429' => (static function () {
+                $protection = get_option('flosc_public_request_protection', []);
+                return is_array($protection) && ($protection['retry_after_429'] ?? '0') === '1';
+            })(),
             // Stripe publishable key from Payments tab (WPDB per-flow) — first-class, not disabled.
             'stripeKey' => (static function () {
                 $stripe = FLOSC_Sale_Manager::instance()->get_provider('stripe');

@@ -628,8 +628,6 @@ function flosc_portable_settings_bootstrap_allowlist() {
         'feedback_user_message',
         'file_access_level',
         'file_content',
-        'flosc_account_plan',
-        'flosc_account_purchases_manual',
         'flosc_add_feedback',
         'flosc_add_praise',
         'flosc_clear_ivr_db',

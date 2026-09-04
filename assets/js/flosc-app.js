@@ -10966,6 +10966,13 @@ Purchased: ${ctx.purchased}
                     if (firstErr?.floscCode === 'visitor_tokens_depleted') {
                         throw firstErr;
                     }
+                    // A 429 is FLOSC's own per-visitor bucket, not a stale
+                    // nonce. Refreshing and resending spends a second request
+                    // from the bucket that just refused, so the limit lands
+                    // twice as fast. Opt in under Public Request Protection.
+                    if (firstErr?.httpStatus === 429 && !this.config?.retryAfter429) {
+                        throw firstErr;
+                    }
                     // v8.0.0 FIX: Retry once with fresh nonce — handles stale-nonce after
                     // registration page reload or long idle sessions.
                     this.log('[FLOSC] Chat failed, refreshing nonce and retrying:', firstErr.message);
@@ -11918,6 +11925,7 @@ Purchased: ${ctx.purchased}
             const err = new Error(`Server error (${response.status})`);
             err.floscCode = 'invalid_json';
             err.floscPayload = null;
+            err.httpStatus = response.status;
             throw err;
         }
 
@@ -11929,6 +11937,7 @@ Purchased: ${ctx.purchased}
             const err = new Error(errorMsg);
             err.floscCode = String(data.error_code || data.code || data.error || '');
             err.floscPayload = data;
+            err.httpStatus = response.status;
             throw err;
         }
 
@@ -11937,6 +11946,7 @@ Purchased: ${ctx.purchased}
             const err = new Error(errorMsg);
             err.floscCode = String(data.error_code || data.code || data.error || '');
             err.floscPayload = data;
+            err.httpStatus = response.status;
             throw err;
         }
 

@@ -2649,16 +2649,20 @@ if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_fe
 </ul>
 <h3 id="settings-tab-administration">Administration <code>administration</code></h3>
 <p><a href="<?php echo esc_url( add_query_arg( array( 'page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'administration' ), admin_url( 'admin.php' ) ) ); ?>">Open admin tab</a></p>
-<h4 id="field-flosc_account_plan"><code>flosc_account_plan</code></h4>
-<p>Flow option used on the <strong>Administration</strong> admin tab. Stored as <code>flosc_account_plan</code> on the flow settings array.</p>
+<h4 id="field-flosc_public_request_protection"><code>flosc_public_request_protection</code></h4>
+<p>How often one visitor may call the public REST endpoints. Set on the <strong>Administration</strong> admin tab and stored as the WordPress option <code>flosc_public_request_protection</code>.</p>
+<p><strong>Global for this FLOSC installation, not per floscFlow.</strong> The counters are keyed by visitor IP and endpoint, so a per-flow limit would be a promise the storage cannot keep.</p>
 <ul>
-<li><strong>Portable:</strong> yes (Settings YAML)</li>
-<li><strong>Admin tab:</strong> Administration</li>
+<li><code>enabled</code> — <code>'1'</code> or <code>'0'</code>. Off removes every limit below; public endpoints are then bounded only by your host.</li>
+<li><code>anonymous_chat_limit</code> — chat requests an hour from a visitor who is not logged in. Default 60. Chat has its own budget because a conversation costs more requests than reading does.</li>
+<li><code>authenticated_chat_limit</code> — chat requests an hour from a logged-in person. Default 120.</li>
+<li><code>anonymous_ivr_limit</code> — requests an hour to the other public endpoints. Default 120.</li>
+<li><code>metered_compute_limit</code> — requests an hour to endpoints that spend tokens. Default 20.</li>
+<li><code>visitor_compute_limit</code> — the stricter ceiling for metered compute from someone not logged in. Default 5.</li>
+<li><code>retry_after_429</code> — <code>'1'</code> lets the chat client retry once after a refused request. Default <code>'0'</code>: a refusal means the visitor is already at the limit, so retrying spends a second request from the same bucket.</li>
 </ul>
-<h4 id="field-flosc_account_purchases_manual"><code>flosc_account_purchases_manual</code></h4>
-<p>Flow option used on the <strong>Administration</strong> admin tab. Stored as <code>flosc_account_purchases_manual</code> on the flow settings array.</p>
 <ul>
-<li><strong>Portable:</strong> yes (Settings YAML)</li>
+<li><strong>Portable:</strong> no (install-wide, not carried in Settings YAML)</li>
 <li><strong>Admin tab:</strong> Administration</li>
 </ul>
 <h4 id="field-flosc_debug_mode"><code>flosc_debug_mode</code></h4>

@@ -22,13 +22,29 @@ $flosc_first_name = $flosc_user_id > 0 ? (string) get_user_meta($flosc_user_id, 
 $flosc_last_name = $flosc_user_id > 0 ? (string) get_user_meta($flosc_user_id, 'last_name', true) : '';
 $flosc_roles = (!empty($flosc_user->roles) && is_array($flosc_user->roles)) ? implode(', ', $flosc_user->roles) : '';
 
-$flosc_account_plan = get_option('flosc_account_plan', 'free');
-if (!in_array($flosc_account_plan, ['free', 'paid', 'enterprise'], true)) {
-    $flosc_account_plan = 'free';
-}
+// Public Request Protection. These were fixed numbers inside includes/flosc-rest.php
+// until a live visitor was refused after one message and read "Rate limit reached"
+// as the AI provider saying no. It was FLOSC's own per-IP bucket. A limit nobody
+// can see or change is indistinguishable from a broken site.
+$flosc_protection_defaults = [
+    'enabled'                  => '1',
+    'anonymous_chat_limit'     => 60,
+    'authenticated_chat_limit' => 120,
+    'anonymous_ivr_limit'      => 120,
+    'metered_compute_limit'    => 20,
+    'visitor_compute_limit'    => 5,
+    'retry_after_429'          => '0',
+];
+$flosc_protection = get_option('flosc_public_request_protection', []);
+$flosc_protection = is_array($flosc_protection) ? array_merge($flosc_protection_defaults, $flosc_protection) : $flosc_protection_defaults;
 
-$flosc_manual_purchases_raw = (string) get_option('flosc_account_purchases_manual', '');
-$flosc_manual_purchase_lines = array_values(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $flosc_manual_purchases_raw))));
+$flosc_protection_fields = [
+    'anonymous_chat_limit'     => ['Anonymous chat', 'Chat requests an hour from one visitor who is not logged in. A conversation costs more requests than reading does, so chat has its own budget.'],
+    'authenticated_chat_limit' => ['Signed-in chat', 'Chat requests an hour from one logged-in person.'],
+    'anonymous_ivr_limit'      => ['Anonymous content reads', 'Requests an hour to the other public endpoints — IVR content, offers, page context.'],
+    'metered_compute_limit'    => ['Metered compute', 'Requests an hour to endpoints that spend tokens.'],
+    'visitor_compute_limit'    => ['Visitor compute', 'The stricter ceiling for metered compute from someone who is not logged in.'],
+];
 
 $flosc_debug_mode = get_option('flosc_debug_mode', 'inherit');
 if (!in_array($flosc_debug_mode, ['inherit', 'on', 'off'], true)) {
@@ -90,12 +106,12 @@ if ($flosc_can_assign_editors) {
                 <td><?php echo esc_html(ucfirst($flosc_runtime_access)); ?></td>
             </tr>
             <tr>
-                <td>Configured account plan</td>
-                <td><?php echo esc_html(ucfirst($flosc_account_plan)); ?></td>
+                <td>Public request protection</td>
+                <td><?php echo esc_html($flosc_protection['enabled'] === '1' ? 'On' : 'Off'); ?></td>
             </tr>
             <tr>
-                <td>Configured purchased items</td>
-                <td><?php echo esc_html((string)count($flosc_manual_purchase_lines)); ?></td>
+                <td>Anonymous chat requests an hour</td>
+                <td><?php echo esc_html((string) absint($flosc_protection['anonymous_chat_limit'])); ?></td>
             </tr>
             <tr>
                 <td>WP_DEBUG</td>
@@ -175,40 +191,48 @@ if ($flosc_can_assign_editors) {
         </tbody>
     </table>
 
-    <h3 class="flosc-admin-section-title flosc-admin-section-title-topless">Account Management</h3>
+    <h3 class="flosc-admin-section-title flosc-admin-section-title-topless">Public Request Protection</h3>
+    <p class="description flosc-admin-subtitle">
+        Global for this FLOSC installation, not per floscFlow. The buckets are keyed by
+        visitor IP and endpoint, so a per-flow setting would be a promise the storage
+        cannot keep. Counted per hour, per visitor.
+    </p>
     <table class="form-table flosc-admin-form-table">
         <tr>
-            <th scope="row"><label for="flosc_account_plan">Account plan</label></th>
+            <th scope="row">Protection</th>
             <td>
-                <select id="flosc_account_plan" name="flosc_account_plan">
-                    <option value="free" <?php selected($flosc_account_plan, 'free'); ?>>Free</option>
-                    <option value="paid" <?php selected($flosc_account_plan, 'paid'); ?>>Paid</option>
-                    <option value="enterprise" <?php selected($flosc_account_plan, 'enterprise'); ?>>Enterprise</option>
-                </select>
-                <p class="description">Stored as FLOSC account metadata.</p>
+                <label for="flosc_protection_enabled">
+                    <input type="checkbox" id="flosc_protection_enabled" name="flosc_public_request_protection[enabled]" value="1" <?php checked($flosc_protection['enabled'], '1'); ?>>
+                    Limit how often one visitor can call the public endpoints
+                </label>
+                <p class="description">Turning this off removes every limit below. Public endpoints are then bounded only by your host.</p>
             </td>
         </tr>
+        <?php foreach ($flosc_protection_fields as $flosc_protection_key => $flosc_protection_field): ?>
+            <tr>
+                <th scope="row"><label for="flosc_protection_<?php echo esc_attr($flosc_protection_key); ?>"><?php echo esc_html($flosc_protection_field[0]); ?></label></th>
+                <td>
+                    <input type="number" min="1" max="10000" step="1"
+                           id="flosc_protection_<?php echo esc_attr($flosc_protection_key); ?>"
+                           name="flosc_public_request_protection[<?php echo esc_attr($flosc_protection_key); ?>]"
+                           value="<?php echo esc_attr((string) absint($flosc_protection[$flosc_protection_key])); ?>"
+                           class="small-text">
+                    <span class="description">an hour</span>
+                    <p class="description"><?php echo esc_html($flosc_protection_field[1]); ?></p>
+                </td>
+            </tr>
+        <?php endforeach; ?>
         <tr>
-            <th scope="row"><label for="flosc_account_purchases_manual">Purchased items (manual)</label></th>
+            <th scope="row">After a refusal</th>
             <td>
-                <textarea id="flosc_account_purchases_manual" name="flosc_account_purchases_manual" rows="6" class="large-text" placeholder="One item per line, e.g.&#10;Pronunciation Advanced Bundle&#10;Member Access"><?php echo esc_textarea($flosc_manual_purchases_raw); ?></textarea>
-                <p class="description">Enter one item per line.</p>
+                <label for="flosc_protection_retry_after_429">
+                    <input type="checkbox" id="flosc_protection_retry_after_429" name="flosc_public_request_protection[retry_after_429]" value="1" <?php checked($flosc_protection['retry_after_429'], '1'); ?>>
+                    Let the chat client retry once after a refused request
+                </label>
+                <p class="description">Off by default. A refusal means the visitor is already at the limit, so retrying spends a second request from the same bucket and the limit arrives twice as fast.</p>
             </td>
         </tr>
     </table>
-
-    <h3 class="flosc-admin-section-title">Configured Purchased Items</h3>
-    <div class="card flosc-admin-purchases-card">
-        <?php if (!empty($flosc_manual_purchase_lines)): ?>
-            <ol class="flosc-admin-purchases-list">
-                <?php foreach ($flosc_manual_purchase_lines as $flosc_item): ?>
-                    <li><?php echo esc_html($flosc_item); ?></li>
-                <?php endforeach; ?>
-            </ol>
-        <?php else: ?>
-            <p class="flosc-admin-purchases-empty">No items listed.</p>
-        <?php endif; ?>
-    </div>
 
     <?php if ($flosc_can_assign_editors): ?>
         <h3 class="flosc-admin-section-title flosc-admin-editors-title">Assign floscEditors for This Flow</h3>
