@@ -46,6 +46,16 @@ $flosc_protection_fields = [
     'visitor_compute_limit'    => ['Visitor compute', 'The stricter ceiling for metered compute from someone who is not logged in.'],
 ];
 
+// What FLOSC tells an AI provider about itself. Both on by default; both are
+// one click to turn off. Nothing here reaches flosc.ai or da1.fm — it rides on
+// the request the floscAdmin's own key is already paying for, and nowhere else.
+$flosc_identity_defaults = [
+    'enabled'   => '1',
+    'send_site' => '1',
+];
+$flosc_identity = get_option('flosc_provider_identity', []);
+$flosc_identity = is_array($flosc_identity) ? array_merge($flosc_identity_defaults, $flosc_identity) : $flosc_identity_defaults;
+
 $flosc_debug_mode = get_option('flosc_debug_mode', 'inherit');
 if (!in_array($flosc_debug_mode, ['inherit', 'on', 'off'], true)) {
     $flosc_debug_mode = 'inherit';
@@ -230,6 +240,50 @@ if ($flosc_can_assign_editors) {
                     Let the chat client retry once after a refused request
                 </label>
                 <p class="description">Off by default. A refusal means the visitor is already at the limit, so retrying spends a second request from the same bucket and the limit arrives twice as fast.</p>
+            </td>
+        </tr>
+    </table>
+
+    <h3 class="flosc-admin-section-title">What FLOSC Tells Your AI Provider</h3>
+    <p class="description flosc-admin-subtitle">
+        Two headers on each call to the AI provider you configured. They never reach
+        FLOSC, da1.fm or flosc.ai — only the provider your own API key already pays,
+        on a request that is already carrying the whole conversation.
+    </p>
+    <table class="form-table flosc-admin-form-table">
+        <tr>
+            <th scope="row">Identify FLOSC</th>
+            <td>
+                <label for="flosc_identity_enabled">
+                    <input type="checkbox" id="flosc_identity_enabled" name="flosc_provider_identity[enabled]" value="1" <?php checked($flosc_identity['enabled'], '1'); ?>>
+                    Tell the provider which software is calling
+                </label>
+                <p class="description">
+                    A <code>User-Agent</code> naming FLOSC, the personality builder, WordPress and PHP,
+                    plus one <code>X-DA1-Trace</code> line: this install, this floscFlow, this
+                    personality, which knowledge base, whether the person was a Visitor, Guest or
+                    Member, and which message pair. The flow, personality and knowledge base ride as
+                    scrambled short codes, so two turns from the same flow match each other without
+                    the provider learning what the flow is called.
+                </p>
+                <p class="description">
+                    <strong>Never sent:</strong> who the visitor is — no id, name, email, IP, or the page
+                    they were reading. Nothing that narrows a turn to one person.
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <th scope="row">Site address</th>
+            <td>
+                <label for="flosc_identity_send_site">
+                    <input type="checkbox" id="flosc_identity_send_site" name="flosc_provider_identity[send_site]" value="1" <?php checked($flosc_identity['send_site'], '1'); ?>>
+                    Include this site's domain
+                </label>
+                <p class="description">
+                    On by default. A provider that cannot tell which site it is serving cannot help you
+                    when something goes wrong. Turn it off and the install code still identifies this
+                    copy of FLOSC — just not where it lives.
+                </p>
             </td>
         </tr>
     </table>

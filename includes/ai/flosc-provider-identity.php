@@ -18,20 +18,29 @@
  *               (FLOSC edition) WordPress/7.0.4 PHP/8.2.0
  *
  *   X-DA1-Trace: v=1;app=flosc/8.0.0;bld=da1pb/3.1.2;ed=flosc;
- *                inst=<12 hex>;flow=<8 hex>;prof=<8 hex>;pair=<n>
+ *                inst=<12 hex>;site=<domain>;flow=<8 hex>;prof=<8 hex>;
+ *                kb=<8 hex>;tier=<v|g|m>;pair=<n>
  *
- * WHAT IS NOT SENT: the site's domain, the visitor, their tier, their IP,
- * their name, the page they are on, or anything derived from them. The
- * install id is random and generated once — it is not derived from the domain,
- * so it cannot be reversed into one. A floscAdmin who *wants* the provider to
- * know the domain can turn that on; it is off by default, because a plugin
- * that quietly tells four companies where every copy of it lives is not a
- * plugin anyone should install.
+ * WHAT IS NOT SENT: the visitor's id, name, email, IP, or the page they are
+ * on. Nothing that narrows a turn to one person. `tier` says what KIND of
+ * turn it was — visitor, guest or member — and stops there.
  *
- * The flow and profile ids are salted hashes of the flow stem and the
- * personality's profile_hash. They let a provider see that two requests came
- * from the same flow or the same personality without learning what either is
- * called.
+ * The install id is random and generated once. It is NOT derived from the
+ * domain, so it survives a site moving house and cannot be reversed into one.
+ * The domain, when sent, is sent plainly; a hashed domain is not anonymous,
+ * because there are only so many domains and anyone can hash all of them.
+ *
+ * flow, prof and kb are salted hashes — HMACs under a secret this install
+ * generated and keeps. Every correlation the floscAdmin wants survives: the
+ * same flow, personality or corpus matches itself forever, on this install.
+ * What does not survive is a stranger turning `4d81ac09` back into a name,
+ * and two installs running the same shipped personality looking like one
+ * install.
+ *
+ * FLOSC PHONES NOTHING HOME. None of this reaches Anthropic's authors, da1.fm
+ * or flosc.ai. It goes to the AI host the floscAdmin configured with their own
+ * key, on a request already carrying the entire conversation, and nowhere
+ * else.
  *
  * @package FLOSC
  */
@@ -148,7 +157,7 @@ if ( ! function_exists( 'flosc_provider_identity_context' ) ) {
 	 * serves one turn, and a leftover value would mislabel the next one.
 	 *
 	 * @param array|null $set Values to store, or null to read.
-	 * @return array{flow:string,profile:string,pair:int,surface:string}
+	 * @return array{flow:string,profile:string,pair:int,surface:string,kb:string,tier:string}
 	 */
 	function flosc_provider_identity_context( $set = null ) {
 		static $context = array(
@@ -156,6 +165,8 @@ if ( ! function_exists( 'flosc_provider_identity_context' ) ) {
 			'profile' => '',
 			'pair'    => 0,
 			'surface' => '',
+			'kb'      => '',
+			'tier'    => '',
 		);
 
 		if ( is_array( $set ) ) {
@@ -164,6 +175,8 @@ if ( ! function_exists( 'flosc_provider_identity_context' ) ) {
 				'profile' => isset( $set['profile'] ) ? (string) $set['profile'] : '',
 				'pair'    => isset( $set['pair'] ) ? (int) $set['pair'] : 0,
 				'surface' => isset( $set['surface'] ) ? (string) $set['surface'] : '',
+				'kb'      => isset( $set['kb'] ) ? (string) $set['kb'] : '',
+				'tier'    => isset( $set['tier'] ) ? (string) $set['tier'] : '',
 			);
 		}
 
@@ -233,14 +246,39 @@ if ( ! function_exists( 'flosc_provider_trace_header' ) ) {
 			$pairs['prof'] = $profile;
 		}
 
+		// Which knowledge base was in play. Salted like the rest: a provider
+		// can see that two turns drew on the same corpus without learning
+		// what the corpus is called.
+		$kb = flosc_provider_identity_digest( $context['kb'] );
+		if ( $kb !== '' ) {
+			$pairs['kb'] = $kb;
+		}
+
+		// v | g | m. One letter, and the only field here about the person on
+		// the other end — no id, no name, no address, nothing that narrows it
+		// to one of them. It says what KIND of turn this was, which is what
+		// makes "guests are burning tokens and never buying" visible as a
+		// shape in a provider's traffic as well as in the floscAdmin's log.
+		$tier = strtolower( trim( $context['tier'] ) );
+		if ( in_array( $tier, array( 'visitor', 'guest', 'member' ), true ) ) {
+			$pairs['tier'] = substr( $tier, 0, 1 );
+		}
+
 		if ( $context['pair'] > 0 ) {
 			$pairs['pair'] = (string) $context['pair'];
 		}
 
-		// Off by default. On, this is the one field that names the site — so it
-		// is the site's own URL, plainly, rather than a hash pretending not to
-		// be one. A hashed domain is not anonymous: there are only so many
-		// domains, and anyone can hash all of them.
+		// The one field that names the site, and it names it plainly rather
+		// than as a hash pretending not to be one — a hashed domain is not
+		// anonymous, there are only so many domains and anyone can hash all
+		// of them.
+		//
+		// On by default. The request it rides on already carries the entire
+		// conversation to a provider the floscAdmin configured with their own
+		// key and pays for; the domain adds nothing material beside that, and
+		// a provider that cannot tell which site it is serving cannot help
+		// when something goes wrong. Off in one click for anyone who
+		// disagrees.
 		if ( flosc_provider_identity_site_enabled() ) {
 			$host = function_exists( 'wp_parse_url' ) ? wp_parse_url( get_bloginfo( 'url' ), PHP_URL_HOST ) : '';
 			if ( is_string( $host ) && $host !== '' ) {
@@ -286,13 +324,15 @@ if ( ! function_exists( 'flosc_provider_identity_enabled' ) ) {
 
 if ( ! function_exists( 'flosc_provider_identity_site_enabled' ) ) {
 	/**
-	 * Whether the site's own domain rides along. Off by default.
+	 * Whether the site's own domain rides along. On by default.
 	 *
 	 * @return bool
 	 */
 	function flosc_provider_identity_site_enabled() {
 		$settings = get_option( 'flosc_provider_identity', array() );
-		$enabled  = is_array( $settings ) && ! empty( $settings['send_site'] );
+		$enabled  = is_array( $settings ) && array_key_exists( 'send_site', $settings )
+			? (bool) $settings['send_site']
+			: true;
 
 		/**
 		 * Filter whether the site domain is disclosed to AI providers.

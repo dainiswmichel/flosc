@@ -193,6 +193,16 @@ FLOSC core flow logic runs locally in WordPress. The services below power specif
 
 Note on "Ask the model what it does": in Settings -> AI, an administrator can ask the flow's own configured model what one of that provider's request parameters means. This sends a one-sentence question containing the parameter name to whichever provider is selected below, through the same chat path that provider's row already describes. It is never automatic; it happens only on that button click, and no visitor or site content is included.
 
+Note on how FLOSC identifies itself: every call to the providers below carries two headers so the provider can tell which software is calling. Administrators can turn both off in Settings -> Administration -> What FLOSC Tells Your AI Provider.
+
+`User-Agent` names FLOSC and its version, the DA1 AI Personality Builder and its version, WordPress and PHP.
+
+`X-DA1-Trace` is a single line of `key=value` pairs: `v` (header format version), `app` (FLOSC version), `bld` (builder version), `ed` (edition), `inst` (a random code identifying this FLOSC installation, generated once and not derived from the site address), `site` (this site's domain — included by default, and the only field naming the site), `flow` (the floscFlow), `prof` (the personality profile), `kb` (the knowledge bases in use), `tier` (whether the person was a Visitor, Guest or Member, as one letter), and `pair` (which message pair of the conversation this is). The `flow`, `prof` and `kb` values are one-way codes computed with a secret this installation generates and keeps, so a provider can see that two requests came from the same flow, personality or knowledge base without learning what any of them is named.
+
+Not sent in these headers: the visitor's user id, name, email address, IP address, or the page they were reading. Nothing that identifies an individual visitor. These headers go only to the AI provider the administrator configured; FLOSC sends nothing to flosc.ai, da1.fm, or any FLOSC-operated service.
+
+Note on what FLOSC records locally: when a provider returns an identifier for a request (`request-id`, `x-request-id`), FLOSC stores it in its own chat log table in this site's database, alongside the model and token counts it already records. It lets an administrator ask their provider to look up one specific call. It is stored only, never transmitted anywhere.
+
 1. OpenAI (via WordPress AI Client + AI Provider for OpenAI, and FLOSC Whisper STT)
 Chat: when this flow attaches OpenAI, FLOSC sends prompts through `wp_ai_client_prompt()` to the official AI Provider for OpenAI plugin, which communicates with OpenAI. FLOSC does not call OpenAI chat endpoints itself.
 Model list: when an administrator clicks "Fetch models this key can use", or runs the AI connection test, FLOSC requests https://api.openai.com/v1/models directly so the saved key can be offered the models it is entitled to. Only the API key is sent; no visitor or site content is included.
