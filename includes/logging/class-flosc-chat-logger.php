@@ -188,6 +188,7 @@ class FLOSC_Chat_Logger {
             billing_output_tokens INT UNSIGNED DEFAULT 0,
             billing_total_tokens INT UNSIGNED DEFAULT 0,
             billing_real_millicents INT UNSIGNED DEFAULT 0,
+            provider_request_id VARCHAR(128) DEFAULT '',
             admin_rating TINYINT NOT NULL DEFAULT 0,
             admin_note TEXT DEFAULT NULL,
             rated_at DATETIME DEFAULT NULL,
@@ -723,6 +724,22 @@ class FLOSC_Chat_Logger {
             $user_tier = '';
         }
 
+        /*
+         * The provider's own id for the request that produced this answer.
+         *
+         * Everything FLOSC sends outward lands in a provider's logs and can
+         * never be read back. This is the reverse direction, and the only
+         * identifier that exists on both sides of the wire: a floscAdmin
+         * holding it can ask the provider to look up that exact call.
+         *
+         * Kept here, sent nowhere. It is the floscAdmin's operational record
+         * of their own paid API calls, in their own database.
+         */
+        $provider_request_id = sanitize_text_field((string) ($data['provider_request_id'] ?? ''));
+        if (strlen($provider_request_id) > 128) {
+            $provider_request_id = substr($provider_request_id, 0, 128);
+        }
+
         $result = $wpdb->insert(
             $this->table_name,
             [
@@ -754,12 +771,13 @@ class FLOSC_Chat_Logger {
                 'billing_output_tokens'=> max(0, intval($data['billing_output_tokens'] ?? 0)),
                 'billing_total_tokens' => max(0, intval($data['billing_total_tokens'] ?? 0)),
                 'billing_real_millicents' => max(0, intval($data['billing_real_millicents'] ?? 0)),
+                'provider_request_id'  => $provider_request_id,
             ],
             // One specifier per column, in column order. A format list shorter
             // than the column list makes $wpdb->insert() write the right values
             // into the wrong columns, silently and with no error — so this line
             // is edited in the same breath as the array above, never after.
-            ['%s', '%s', '%s', '%s', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%d', '%d', '%d', '%d']
+            ['%s', '%s', '%s', '%s', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%d', '%d', '%d', '%d', '%s']
         );
 
         if ( $result ) {

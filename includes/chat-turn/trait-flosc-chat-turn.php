@@ -1037,6 +1037,14 @@ trait FLOSC_Chat_Turn_Trait {
             'flow_id'         => $flow_id,
             'phase'           => $phase,
             'user_tier'       => (string) ($eval_context['access_level'] ?? ''),
+            // The provider's own id for the call that produced this answer,
+            // read from the http_response filter that saw it. Empty when the
+            // turn was answered without calling a provider — an IVR reply has
+            // no provider request to point at, and inventing one would put a
+            // value in the ledger that no provider can look up.
+            'provider_request_id' => function_exists('flosc_provider_last_request_id')
+                ? flosc_provider_last_request_id()
+                : '',
             'user_id'         => is_user_logged_in() ? get_current_user_id() : 0,
             'session_id'      => $session_id ?? 0,
             'journey_id'      => $journey_id,
@@ -1389,6 +1397,9 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC SECURITY: Violations
             'flow_id'         => $flow_id ?: $flow_stem,
             'phase'           => $phase,
             'user_tier'       => (string) ($user_context['access_level'] ?? ''),
+            'provider_request_id' => function_exists('flosc_provider_last_request_id')
+                ? flosc_provider_last_request_id()
+                : '',
             'user_id'         => is_user_logged_in() ? get_current_user_id() : 0,
             'session_id'      => $session_id,
             'journey_id'      => $journey_id,

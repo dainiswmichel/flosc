@@ -359,4 +359,81 @@ if ( ! function_exists( 'flosc_provider_identity_http_args' ) ) {
 	}
 }
 
+if ( ! function_exists( 'flosc_provider_last_request_id' ) ) {
+	/**
+	 * The provider's own id for the most recent AI request, or ''.
+	 *
+	 * This is the one identifier that exists on BOTH sides of the wire.
+	 * Everything FLOSC sends outward lands in a provider's logs and can never
+	 * be read back — there is no API to ask Anthropic "show me requests
+	 * tagged inst=9f3c". The id they return is the reverse direction: a
+	 * floscAdmin holding it can ask the provider to look up that exact call.
+	 * Without it, our ledger and theirs can never be joined.
+	 *
+	 * Captured rather than passed through, because three of the four chat
+	 * providers answer inside the WordPress AI Client, whose response object
+	 * FLOSC never sees. The http_response filter does see it.
+	 *
+	 * @param array|null $set Internal: the value to store.
+	 * @return string
+	 */
+	function flosc_provider_last_request_id( $set = null ) {
+		static $request_id = '';
+
+		if ( is_array( $set ) ) {
+			$request_id = (string) $set[0];
+		}
+
+		return $request_id;
+	}
+}
+
+if ( ! function_exists( 'flosc_provider_capture_request_id' ) ) {
+	/**
+	 * Remember the provider's request id from an AI response.
+	 *
+	 * Providers do not agree on the header name, so all the known spellings
+	 * are checked in order. An unrecognised provider simply leaves the id
+	 * empty, which is the honest outcome — a blank column says "not recorded",
+	 * and inventing one would put a value in the ledger that no provider can
+	 * look up.
+	 *
+	 * @param array  $response HTTP response.
+	 * @param array  $args     Request arguments.
+	 * @param string $url      Request URL.
+	 * @return array The response, unchanged.
+	 */
+	function flosc_provider_capture_request_id( $response, $args, $url ) {
+		$host = function_exists( 'wp_parse_url' ) ? wp_parse_url( (string) $url, PHP_URL_HOST ) : '';
+		if ( ! is_string( $host ) || $host === '' ) {
+			return $response;
+		}
+		if ( ! in_array( strtolower( $host ), array_map( 'strtolower', flosc_provider_identity_hosts() ), true ) ) {
+			return $response;
+		}
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+
+		// request-id: Anthropic. x-request-id: OpenAI and xAI.
+		// x-guploader-uploadid: the closest Google returns on generativelanguage.
+		foreach ( array( 'request-id', 'x-request-id', 'x-guploader-uploadid' ) as $header ) {
+			$value = wp_remote_retrieve_header( $response, $header );
+			if ( is_array( $value ) ) {
+				$value = reset( $value );
+			}
+			$value = trim( (string) $value );
+			if ( $value !== '' ) {
+				// Stored in a VARCHAR(128) column; providers stay well under
+				// that, but a header is whatever the far end chose to send.
+				flosc_provider_last_request_id( array( substr( sanitize_text_field( $value ), 0, 128 ) ) );
+				return $response;
+			}
+		}
+
+		return $response;
+	}
+}
+
 add_filter( 'http_request_args', 'flosc_provider_identity_http_args', 10, 2 );
+add_filter( 'http_response', 'flosc_provider_capture_request_id', 10, 3 );
