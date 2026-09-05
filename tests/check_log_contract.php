@@ -110,5 +110,25 @@ ok( '  falling back to the old label for rows written before the column',
 ok( 'and the visitor bubble prefers the page_url column',
 	strpos( $screen, "\$visitor_context_url = trim((string) (\$r['page_url'] ?? ''));" ) !== false, true );
 
+// Plugin Check, 2026-09-05: one query still built its FROM clause by string
+// interpolation while every other query in the file used %i. $wpdb->prepare()
+// treats %i as an identifier and quotes it; interpolation is how a table name
+// reaches SQL unquoted. The rest of the file was already right — this asserts
+// the next query written here is too.
+echo "\nNo query interpolates the table name into SQL\n";
+$interpolated = array();
+foreach ( preg_split( "/\r?\n/", $logger ) as $n => $line ) {
+	// CREATE TABLE is dbDelta's own schema string: prepare() cannot build it.
+	if ( strpos( $line, 'CREATE TABLE' ) !== false ) {
+		continue;
+	}
+	if ( strpos( $line, '{$this->table_name}' ) !== false ) {
+		$interpolated[] = ( $n + 1 ) . ': ' . trim( $line );
+	}
+}
+ok( 'every table name reaches SQL as a %i placeholder', $interpolated, array() );
+ok( '  and prepare() is given the name to quote',
+	substr_count( $logger, 'FROM %i' ) > 0, true );
+
 echo $fail ? "\n$fail FAILURES\n" : "\nA row says who answered, where, and over what\n";
 exit( $fail ? 1 : 0 );

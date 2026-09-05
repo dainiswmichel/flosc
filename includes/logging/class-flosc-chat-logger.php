@@ -589,7 +589,8 @@ class FLOSC_Chat_Logger {
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table, single indexed row, must not be cached across a turn.
         $row = $wpdb->get_row(
             $wpdb->prepare(
-                "SELECT id, ai_response, response_source, turn_status, personality_name FROM {$this->table_name} WHERE turn_id = %s ORDER BY id DESC LIMIT 1",
+                'SELECT id, ai_response, response_source, turn_status, personality_name FROM %i WHERE turn_id = %s ORDER BY id DESC LIMIT 1',
+                $this->table_name,
                 $turn_id
             ),
             ARRAY_A
