@@ -122,6 +122,78 @@ ok( 'the site-address toggle is rendered',
 ok( 'and both are written explicitly, so unticking sticks',
 	strpos( $save, "\$flosc_identity[\$flosc_identity_key] = isset(\$flosc_post['flosc_provider_identity'][\$flosc_identity_key])" ) !== false, true );
 
+// Plugin Check flags every literal LLM-provider hostname it finds and points
+// at wp_ai_client_prompt(). Five of ours are model DISCOVERY — listing what an
+// administrator's own key may use, and reading one model's context window — and
+// the AI Client cannot do either: it sends prompts, it does not enumerate a
+// provider's catalogue. Two more are a chat provider and a transcription
+// endpoint the AI Client has no path for at all.
+//
+// Each therefore carries phpcs:ignore with its own reason. This asserts none
+// is added later without one, because an unexplained suppression is how a real
+// finding gets hidden behind a habit.
+echo "\nEvery direct provider call explains itself\n";
+$llm_hosts   = array( 'api.anthropic.com', 'api.openai.com', 'api.x.ai', 'generativelanguage.googleapis.com' );
+$unexplained = array();
+$explained   = 0;
+$php_files   = array();
+$walker      = new RecursiveIteratorIterator( new RecursiveDirectoryIterator( $root . '/includes' ) );
+foreach ( $walker as $file ) {
+	if ( $file->isFile() && substr( $file->getFilename(), -4 ) === '.php' ) {
+		$php_files[] = $file->getPathname();
+	}
+}
+$php_files[] = $root . '/flosc.php';
+
+foreach ( $php_files as $file ) {
+	// The identity module lists these hosts to know which requests are ours.
+	// It is an allowlist, not a call.
+	if ( strpos( $file, 'flosc-provider-identity.php' ) !== false ) {
+		continue;
+	}
+	$lines = explode( "\n", (string) file_get_contents( $file ) );
+	foreach ( $lines as $n => $line ) {
+		$trimmed = ltrim( $line );
+		if ( $trimmed === '' || $trimmed[0] === '*' || strpos( $trimmed, '//' ) === 0 || strpos( $trimmed, '/*' ) === 0 ) {
+			continue;
+		}
+		$hit = false;
+		foreach ( $llm_hosts as $host ) {
+			if ( strpos( $line, $host ) !== false ) {
+				$hit = true;
+				break;
+			}
+		}
+		if ( ! $hit ) {
+			continue;
+		}
+		$previous = $n > 0 ? $lines[ $n - 1 ] : '';
+		if ( strpos( $previous, 'phpcs:ignore PluginCheck.CodeAnalysis.AIProvider' ) === false ) {
+			$unexplained[] = basename( $file ) . ':' . ( $n + 1 );
+			continue;
+		}
+		// "-- reason" is the part that makes a suppression reviewable.
+		if ( ! preg_match( '/AIProvider\.DirectIntegration\s+--\s+\S/', $previous ) ) {
+			$unexplained[] = basename( $file ) . ':' . ( $n + 1 ) . ' (no reason given)';
+			continue;
+		}
+		++$explained;
+	}
+}
+ok( 'every one carries a reason', $unexplained, array() );
+ok( '  and there are the seven we know about', $explained, 7 );
+
+// wp.org truncates the Description at 2500 characters and warns. Nothing was
+// rewritten to fit: the subsections past the limit moved whole into their own
+// section, so the copy still exists and is still read.
+echo "\nreadme.txt fits what wp.org will actually show\n";
+preg_match( '/^== Description ==\s*\n(.*?)(?=^== )/ms', $readme, $description );
+$description_length = isset( $description[1] ) ? strlen( $description[1] ) : 0;
+ok( 'the Description section was found', $description_length > 0, true );
+ok( '  and fits in 2500 characters', $description_length <= 2500, true );
+ok( '  with the rest kept, not deleted',
+	strpos( $readme, '== More About FLOSC ==' ) !== false, true );
+
 echo "\nThe prompt is untouched\n";
 // The whole point of the header is that it costs no tokens. If this file ever
 // reaches into the chatpack, the change has been made in the wrong place.

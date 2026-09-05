@@ -71,6 +71,7 @@ if ( ! function_exists( 'flosc_model_catalog_request' ) ) {
 				}
 
 				return array(
+					// phpcs:ignore PluginCheck.CodeAnalysis.AIProvider.DirectIntegration -- model discovery, not a prompt: this lists the models the administrator's own key is entitled to, so the model dropdown offers real ids instead of a hardcoded list that goes stale. wp_ai_client_prompt() sends prompts and cannot enumerate a provider's catalogue. Declared in readme.txt External Services.
 					'url'  => add_query_arg( $query, 'https://api.anthropic.com/v1/models' ),
 					'args' => array(
 						'headers' => array(
@@ -82,12 +83,14 @@ if ( ! function_exists( 'flosc_model_catalog_request' ) ) {
 
 			case 'openai':
 				return array(
+					// phpcs:ignore PluginCheck.CodeAnalysis.AIProvider.DirectIntegration -- model discovery, not a prompt: lists what this key may use. wp_ai_client_prompt() cannot enumerate a provider's catalogue. Declared in readme.txt External Services.
 					'url'  => 'https://api.openai.com/v1/models',
 					'args' => array( 'headers' => array( 'Authorization' => 'Bearer ' . $api_key ) ),
 				);
 
 			case 'xai':
 				return array(
+					// phpcs:ignore PluginCheck.CodeAnalysis.AIProvider.DirectIntegration -- model discovery, not a prompt, and WordPress has no official xAI provider plugin in any case. Declared in readme.txt External Services.
 					'url'  => 'https://api.x.ai/v1/language-models',
 					'args' => array( 'headers' => array( 'Authorization' => 'Bearer ' . $api_key ) ),
 				);
@@ -100,6 +103,7 @@ if ( ! function_exists( 'flosc_model_catalog_request' ) ) {
 				}
 
 				return array(
+					// phpcs:ignore PluginCheck.CodeAnalysis.AIProvider.DirectIntegration -- model discovery, not a prompt: the response is filtered to ids that support generateContent, which is a question about the catalogue rather than a use of it. Declared in readme.txt External Services.
 					'url'  => add_query_arg( $query, 'https://generativelanguage.googleapis.com/v1beta/models' ),
 					'args' => array( 'headers' => array( 'x-goog-api-key' => $api_key ) ),
 				);
