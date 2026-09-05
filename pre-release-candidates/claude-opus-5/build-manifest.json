@@ -4,7 +4,7 @@
   "status": "ASSEMBLED_AWAITING_FRESH_INSTALL_ACCEPTANCE",
   "branch": "claude/ready-to-help-jsw2li",
   "baseline_commit": "477f252",
-  "head_commit": "a5afa76446b598167711b91554f47b6eac85efe2",
+  "head_commit": "f0676e4",
   "version": "8.0.0",
   "artifact": "flosc.zip",
   "artifact_note": "Built from this tree with its own build-dist-zip.sh, which fails closed: .distignore plus a hard deny list, then a scan of the staged tree that refuses to write the zip if a forbidden path survived. sha256 in SHA256SUMS.",
@@ -49,7 +49,7 @@
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "tree_files": 280,
   "candidate_version": "v7",
-  "artifact_sha256": "e95a77e91dd09e577f15f259cf273ee80e94fcf2eaea997a140ae0d599563038",
+  "artifact_sha256": "72264214235429b43e4f281dcdc00b84851c84467240d28db33799fa0639428f",
   "artifact_files": 237,
   "v3_fixes": [
     "Recovered answer no longer shown twice after a signed-in reload mid-response.",
@@ -83,6 +83,7 @@
   ],
   "v7_fixes": [
     "v6 hung the AI tab. profileFooter() read the builder state hash off fullSpec(), and the new provenance block in workshopFile() called profileFooter()'s row builder — closing fullSpec() -> workshopFile() -> provenanceRows() -> fullSpec(). renderOut() enters that chain on every redraw and each turn rebuilt the whole workshop object, so the page died before the stack overflowed. No console error; node --check parses it fine.",
-    "provenanceRows() now computes the hash itself rather than reading it back off a caller. check_builder_cycles.php parses the builder's functions, builds a call graph over the eleven that produce a document, and fails on any route back to where it started."
+    "provenanceRows() now computes the hash itself rather than reading it back off a caller. check_builder_cycles.php parses the builder's functions, builds a call graph over the eleven that produce a document, and fails on any route back to where it started.",
+    "From Grok's independent diagnosis, which found the same loop by a different route: builder_state_hash is now guarded, not only wrapped. hashText('') returns 811c9dc5, the FNV offset basis — a real-looking fingerprint for a profile with nothing in it. No profile, no fingerprint."
   ]
 }

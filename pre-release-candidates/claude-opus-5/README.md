@@ -18,6 +18,12 @@ function declarations, brace-matches each body, builds a call graph over the
 eleven functions that turn builder state into a document, and fails on any route
 back to where it started.
 
+One thing came back from Grok's independent diagnosis, which reached the same
+loop by a different route and had a better guard than mine: `hashText("")`
+returns `811c9dc5`, the FNV offset basis — a real-looking eight-hex fingerprint
+for a profile with nothing in it. It would have sat in the footer and in
+`workshop.json` looking like a measurement. No profile, no fingerprint.
+
 Everything else is v6, unchanged:
 
 **The ledger.** FLOSC computed the VGM tier on every turn and threw it away at
@@ -58,7 +64,7 @@ Version held at **8.0.0** — this is a resubmission, not a release.
 
     branch:  claude/ready-to-help-jsw2li
     tree:    the plugin at the repository root on that branch
-    commits: 35, from 477f252 to the branch head
+    commits: 36, from 477f252 to the branch head
 
 https://github.com/dainiswmichel/flosc/tree/claude/ready-to-help-jsw2li
 

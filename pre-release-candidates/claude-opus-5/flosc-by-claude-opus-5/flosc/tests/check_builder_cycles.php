@@ -185,8 +185,16 @@ echo "\nThe row builder stays a leaf\n";
 $rows_body = isset( $bodies['provenanceRows'] ) ? flosc_builder_strip_comments( $bodies['provenanceRows'] ) : '';
 ok( 'it does not call fullSpec()', strpos( $rows_body, 'fullSpec(' ) !== false, false );
 ok( 'it does not call workshopFile()', strpos( $rows_body, 'workshopFile(' ) !== false, false );
-ok( 'it computes the state hash itself',
-	strpos( $rows_body, 'hashText(compilePrompt())' ) !== false, true );
+// Asserted as behaviour, not as a spelling. The first version of this line
+// matched the literal "hashText(compilePrompt())" and went red the moment the
+// call was split across two statements to guard an empty profile — a gate
+// failing on formatting teaches you to edit the gate.
+ok( 'it hashes the compiled profile itself',
+	(bool) preg_match( '/\bcompilePrompt\s*\(/', $rows_body ) && (bool) preg_match( '/\bhashText\s*\(/', $rows_body ), true );
+// hashText("") returns 811c9dc5, the FNV offset basis: a real-looking
+// fingerprint for a profile with nothing in it.
+ok( '  and only when there is a profile to hash',
+	(bool) preg_match( '/if\s*\(\s*md\s*\)\s*rows\.push/', $rows_body ), true );
 
 echo $fail ? "\n$fail FAILURES\n" : "\nThe builder cannot hang itself on a redraw\n";
 exit( $fail ? 1 : 0 );

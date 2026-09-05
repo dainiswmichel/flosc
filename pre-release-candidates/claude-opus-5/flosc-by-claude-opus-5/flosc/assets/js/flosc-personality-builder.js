@@ -1623,7 +1623,12 @@
      * workshopFile() or fullSpec(); both of them call this one.
      */
     try {
-      rows.push(["builder_state_hash", hashText(compilePrompt())]);
+      // Guarded, not just wrapped: hashText("") returns 811c9dc5, the FNV
+      // offset basis. That is a real-looking eight-hex fingerprint for a
+      // profile with nothing in it, and it would sit in the footer and in
+      // workshop.json looking like a measurement. No profile, no fingerprint.
+      const md = compilePrompt();
+      if (md) rows.push(["builder_state_hash", hashText(md)]);
     } catch (err) { /* a profile that will not compile still gets a footer */ }
     if (e.modifiedGmt) rows.push(["profile_modified_gmt", e.modifiedGmt]);
     rows.push(["exported", floscMtsUtc()]);
