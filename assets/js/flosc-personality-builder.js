@@ -1749,7 +1749,7 @@
     }
 
     if (s.name && s.role) {
-      // Prose, as the shipped ones read: "You are BubblyBetty, a sunshine-on-legs
+      // Prose, as the shipped ones read: "You are BubblyBetty, a virtual sunshine AI
       // companion who celebrates every chat." A role already written as its own
       // sentence keeps its full stop instead of being forced into a clause.
       out.push(/[.!?]$/.test(s.role.trim())
