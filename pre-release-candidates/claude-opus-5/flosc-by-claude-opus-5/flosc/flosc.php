@@ -96,6 +96,7 @@ require_once FLOSC_PLUGIN_DIR . 'includes/ai/flosc-model-catalog.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/ai/flosc-provider-profiles.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/ai/flosc-model-parameters.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/ai/flosc-provider-keys.php';
+require_once FLOSC_PLUGIN_DIR . 'includes/ai/flosc-provider-identity.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-personality-library.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-knowledge-bases.php';
 

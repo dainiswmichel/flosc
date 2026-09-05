@@ -297,7 +297,7 @@ if ( ! function_exists( 'flosc_personality_library_default_workshop' ) ) {
 						'id'           => 'bubblybetty',
 						'label'        => 'BubblyBetty',
 						'name'         => 'BubblyBetty',
-						'role'         => 'Sunshine-on-legs companion who celebrates every chat',
+						'role'         => 'Virtual sunshine AI companion who celebrates every chat',
 						'goals'        => 'Make every visitor smile while helping them.',
 						'prohibitions' => 'Stay truthful even while sparkling. Do not invent facts.',
 						'scope'        => 'This site’s product and visitor goals.',
@@ -477,7 +477,7 @@ if ( ! function_exists( 'flosc_personality_library_defaults' ) ) {
 				'ai_personality_role'    => 'Warm host who is genuinely glad you came',
 				'ai_personality_traits'  => 'Warm, inviting, caring, unhurried; light humor when it fits',
 				'ai_base_prompt'         => <<<'PROMPT'
-# Personality profile: Friendly Guide
+# DA1/FLOSC AI Personality Profile Name: Friendly Guide
 You are Friendly Guide, a warm host who is genuinely glad someone came.
 Speak as this person. Do not discuss how you were made.
 
@@ -520,7 +520,7 @@ PROMPT,
 				'ai_personality_role'    => 'Direct technical answers agent',
 				'ai_personality_traits'  => 'Terse, exact, technical only. Answers in one to three sentences.',
 				'ai_base_prompt'         => <<<'PROMPT'
-# Personality profile: Tech Agent
+# DA1/FLOSC AI Personality Profile Name: Tech Agent
 You are Tech Agent. You answer technical questions. Nothing else.
 Speak as this person. Do not discuss how you were made.
 
@@ -560,11 +560,11 @@ PROMPT,
 				'id'                     => 'bubblybetty',
 				'label'                  => 'BubblyBetty',
 				'ai_personality_name'    => 'BubblyBetty',
-				'ai_personality_role'    => 'Sunshine-on-legs companion who celebrates every chat',
+				'ai_personality_role'    => 'Virtual sunshine AI companion who celebrates every chat',
 				'ai_personality_traits'  => 'Bubbly, warm, playful, emoji-rich',
 				'ai_base_prompt'         => <<<'PROMPT'
-# Personality profile: BubblyBetty
-You are BubblyBetty, a sunshine-on-legs companion who celebrates every chat.
+# DA1/FLOSC AI Personality Profile Name: BubblyBetty
+You are BubblyBetty, a virtual sunshine AI companion who celebrates every chat.
 Speak as this person. Do not discuss how you were made.
 
 ## Sparkle squad
@@ -604,7 +604,7 @@ PROMPT,
 				'ai_personality_role'    => 'Pun-powered dad who always has a joke at the ready',
 				'ai_personality_traits'  => 'Warm, punny, wholesome groan-inducing',
 				'ai_base_prompt'         => <<<'PROMPT'
-# Personality profile: Dad Joke Dan
+# DA1/FLOSC AI Personality Profile Name: Dad Joke Dan
 You are DadJokeDan, a pun-powered dad who always has a joke at the ready.
 Speak as this person. Do not discuss how you were made.
 
@@ -1708,6 +1708,14 @@ if ( ! function_exists( 'flosc_personality_builder_boot_json' ) ) {
 				'home'    => 'https://da1.fm',
 				'host'    => 'https://flosc.ai',
 			),
+			/*
+			 * The site's own host, for the optional source_site line in a
+			 * downloaded profile's footer. Sent to the browser so the builder
+			 * can offer it; written into a file only when the floscAdmin ticks
+			 * the box, because a profile emailed to a collaborator carries that
+			 * line to everyone they pass it on to.
+			 */
+			'siteHost'          => (string) wp_parse_url( get_bloginfo( 'url' ), PHP_URL_HOST ),
 			'ajaxUrl'           => admin_url( 'admin-ajax.php' ),
 			'nonce'             => wp_create_nonce( 'flosc_personality_design' ),
 			'personaId'         => $persona_id,

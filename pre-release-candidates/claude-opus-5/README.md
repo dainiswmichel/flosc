@@ -1,29 +1,39 @@
 # Home run candidate — Claude Opus 5
 
-**v5.** A personality can be renamed, and the one Plugin Check warning that
-named a defect is gone.
+**v6.** The chat log can now answer questions it could not ask, FLOSC tells its
+AI provider who is calling, and a personality profile says where it came from.
 
-- **Renaming worked nowhere.** `state.soul.name` was read in six places in the
-  builder — the profile heading, the identity line, the save payload and four
-  export filenames — and written in none. No field existed. The name seeded from
-  the library at boot was posted back unchanged on every save, so DadJokeDan
-  could never become DadJokes Dan. The role had the same hole. Both are now
-  editable, and the name also writes `label` so the dropdown cannot disagree
-  with the profile. The `id` is deliberately untouched: it is the key a flow
-  attaches by, and renaming must not detach a personality from its flow.
-- **`WordPress.DB.PreparedSQL.InterpolatedNotPrepared`** — the turn-recovery
-  query built its `FROM` clause by string interpolation while all 23 other
-  queries in the logger passed the table name to `prepare()` as `%i`. Same
-  value, but reaching SQL unquoted. Fixed, and gated.
+**The ledger.** FLOSC computed the VGM tier on every turn and threw it away at
+logging time — a Guest and a Member both rendered as `User #7`, so "is anyone
+registering repeatedly to farm Guest content?" had no column to ask. It has one
+now. And every provider returns an id for each call, which FLOSC was discarding:
+that id is the only identifier that exists on *both* sides of the wire, so a
+floscAdmin holding it can ask their provider to look up one specific call.
+Captured through an `http_response` filter, which covers all four providers
+rather than only the one FLOSC calls directly.
 
-The five remaining Plugin Check warnings are all
-`PluginCheck.CodeAnalysis.AIProvider.DirectIntegration`, which suggests
-WordPress 7.0's `wp_ai_client_prompt()` wherever it sees a provider hostname.
-The flagged lines are the model-catalogue and model-detail endpoints: they
-enumerate what a floscAdmin's own key can use, so the admin dropdown lists real
-models. The AI Client sends prompts; it does not list a provider's catalogue for
-a key. They are left visible rather than annotated away — see
-`plugin_check_ai_provider_note` in the manifest.
+**What we tell the provider.** Until now, nothing — a provider receiving FLOSC
+traffic saw an API key, a model name and a prompt. Now a `User-Agent` and one
+`X-DA1-Trace` line: install, site, flow, personality, knowledge base, tier, and
+message pair. Flow, personality and knowledge base ride as per-install HMACs, so
+correlation survives and names do not. Nothing that identifies an individual
+visitor. Both headers switchable in Settings, every key disclosed in
+`readme.txt`, and **FLOSC phones nothing home** — it goes to the provider the
+floscAdmin already pays, on a request already carrying the whole conversation.
+
+**Two prompt defects.** v4 removed "full access to all content" from the phase
+list and missed the same claim in the follow-up chatpack's state updates, where
+it fired on the turn straight after a purchase — exactly when the model is
+asked what was just bought. And two prompt sections were both numbered `5c`.
+
+**The builder.** A profile can be given a filename; the five downloads named
+themselves five different ways, one of them with two dots. Profiles now open
+`# DA1/FLOSC AI Personality Profile Name: <name>`, identical across the builder
+and all four shipped personalities. The footer is rewritten — density bands,
+both hashes named apart, and the chain from the file to the turns it produced to
+the provider's record of each call. Seven Trajectory wellsprings join the
+palette, each carrying a literal `{url}` placeholder, gated so none can ever
+ship a real address.
 
 Version held at **8.0.0** — this is a resubmission, not a release.
 
@@ -31,7 +41,7 @@ Version held at **8.0.0** — this is a resubmission, not a release.
 
     branch:  claude/ready-to-help-jsw2li
     tree:    the plugin at the repository root on that branch
-    commits: 27, from 477f252 to the branch head
+    commits: 34, from 477f252 to the branch head
 
 https://github.com/dainiswmichel/flosc/tree/claude/ready-to-help-jsw2li
 
@@ -40,7 +50,7 @@ the other four candidates carry, so this folder can be deployed from directly
 without pulling the branch first.
 
 `flosc.zip` is here, built from this tree by its own `build-dist-zip.sh` —
-236 files, one `flosc/` root, sha256 in `SHA256SUMS`. The build fails closed:
+237 files, one `flosc/` root, sha256 in `SHA256SUMS`. The build fails closed:
 `.distignore` plus a hard deny list, then a scan of the staged tree that refuses
 to write the zip if a forbidden path survived. `tests/`, `sample-data/`,
 `HANDOFF.md` and `pre-release-candidates/` are all out.

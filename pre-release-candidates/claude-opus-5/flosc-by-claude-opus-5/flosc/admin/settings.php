@@ -1813,6 +1813,24 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
             }
             update_option('flosc_public_request_protection', $flosc_protection, false);
 
+            /*
+             * What FLOSC tells the AI provider about itself.
+             *
+             * Both keys are written explicitly as '1' or '0' rather than left
+             * absent when unticked. An unchecked checkbox posts nothing, and
+             * both of these default to on when the key is missing — so a
+             * missing key would silently mean "on" and the floscAdmin could
+             * never turn either of them off.
+             */
+            $flosc_identity = get_option('flosc_provider_identity', []);
+            $flosc_identity = is_array($flosc_identity) ? $flosc_identity : [];
+            foreach (['enabled', 'send_site'] as $flosc_identity_key) {
+                $flosc_identity[$flosc_identity_key] = isset($flosc_post['flosc_provider_identity'][$flosc_identity_key])
+                    ? '1'
+                    : '0';
+            }
+            update_option('flosc_provider_identity', $flosc_identity, false);
+
             $flosc_allowed_debug_modes = ['inherit', 'on', 'off'];
             $flosc_debug_mode = sanitize_key($flosc_post['flosc_debug_mode'] ?? 'inherit');
             if (!in_array($flosc_debug_mode, $flosc_allowed_debug_modes, true)) {

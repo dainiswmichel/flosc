@@ -85,7 +85,7 @@ ok( '  and what leaving them out means',
 // of the document is the most privileged position in it.
 echo "\nA built profile opens the way the shipped ones do\n";
 ok( 'it carries the # Personality profile heading',
-	strpos( (string) $compile, 'out.push("# Personality profile: " + s.name);' ) !== false, true );
+	strpos( (string) $compile, 'out.push("# DA1/FLOSC AI Personality Profile Name: " + s.name);' ) !== false, true );
 ok( '  then the identity line as prose',
 	strpos( (string) $compile, '"You are " + s.name + ", "' ) !== false, true );
 ok( '  then the speak-as line',
@@ -97,7 +97,7 @@ foreach ( $shipped[1] as $body ) {
 	$lines = explode( "\n", $body );
 	$who   = isset( $lines[0] ) ? trim( str_replace( '# Personality profile:', '', $lines[0] ) ) : '?';
 	ok( $who . ': opens with the heading',
-		strpos( (string) ( $lines[0] ?? '' ), '# Personality profile: ' ) === 0, true );
+		strpos( (string) ( $lines[0] ?? '' ), '# DA1/FLOSC AI Personality Profile Name: ' ) === 0, true );
 	ok( '  and its third line is the speak-as line',
 		trim( (string) ( $lines[2] ?? '' ) ), 'Speak as this person. Do not discuss how you were made.' );
 }
@@ -165,15 +165,17 @@ foreach ( array(
 echo "\nThe provenance footer travels with downloads only\n";
 ok( 'soul.md downloads carry it',
 	(bool) preg_match( '/function promptFile\(\) \{.*?profileFooter\(\)/s', $builder ), true );
-ok( 'the design copy carries it',
-	strpos( $builder, 'compilePrompt(true) + "\n\n" + profileFooter()' ) !== false, true );
+// The design copy puts the block at the TOP: that file is explicitly for a
+// human reading the design, and a human wants the key before the material.
+ok( 'the design copy carries it, at the top',
+	strpos( $builder, 'return profileFooter() + "\n\n" + compilePrompt(true);' ) !== false, true );
 ok( 'and compilePrompt() itself does not',
 	strpos( (string) $compile, 'profileFooter' ) !== false, false );
 
 echo "\nThe footer says how to read the file and where it came from\n";
 foreach ( array(
-	'ordered by density'   => 'the ordering is stated',
-	'not part of the'      => 'it says it is not the personality',
+	'from lightest and most essential' => 'the ordering is stated',
+	'never sent to a model and never billed' => 'it says it is not the personality',
 	'https://da1.fm'       => 'the builder is reachable',
 	'https://flosc.ai'     => 'so is the framework',
 	'builder_version'      => 'the builder version is named',
@@ -181,6 +183,81 @@ foreach ( array(
 ) as $needle => $what ) {
 	ok( $what, strpos( $builder, $needle ) !== false, true );
 }
+
+// Five sources write the first line of a profile. A built personality and a
+// shipped one have to be the same kind of document at the top, which by the
+// density rule is the most privileged position in it.
+echo "\nOne title line, in every source that writes one\n";
+$title = '# DA1/FLOSC AI Personality Profile Name: ';
+ok( 'the compiler writes it',
+	strpos( $builder, 'out.push("' . $title . '" + s.name);' ) !== false, true );
+ok( '  and all four shipped profiles open with it',
+	substr_count( $library, $title ), 4 );
+// The travel copy injects the AI-reader paragraph after the heading by
+// matching it. A heading the pattern no longer matches does not error — the
+// paragraph silently moves to the top of the file instead.
+ok( '  and the download injector still matches it',
+	strpos( $builder, '/^(# DA1\/FLOSC AI Personality Profile Name: [^\n]*\n)/' ) !== false, true );
+
+// Five exports used to name themselves five different ways, including one
+// with two dots in it.
+echo "\nEvery download is named the same way\n";
+ok( 'one helper builds the stem',
+	strpos( $builder, 'function fileBase()' ) !== false, true );
+ok( '  used by all five downloads', substr_count( $builder, 'downloadBlob(fileBase() + "' ), 5 );
+ok( '  and no export builds its own name',
+	(bool) preg_match( '/downloadBlob\(\s*id \+/', $builder ), false );
+$multi_dot = array();
+foreach ( array( '_soul.md', '_soul_design.md', '_workshop.json', '_preview.html', '_provider_packs.json' ) as $suffix ) {
+	if ( strpos( $builder, '"' . $suffix . '"' ) === false ) {
+		$multi_dot[] = $suffix . ' missing';
+	}
+	if ( substr_count( $suffix, '.' ) !== 1 ) {
+		$multi_dot[] = $suffix . ' has more than one dot';
+	}
+}
+ok( '  one dot per filename, before the extension', $multi_dot, array() );
+
+echo "\nThe footer and the workshop file cannot disagree\n";
+// Both are built from provenanceRows(), so a field added to one is in the
+// other. Two hand-maintained lists would drift the first time one was edited.
+ok( 'both read the same rows',
+	substr_count( $builder, 'provenanceRows()' ) >= 3, true );
+ok( 'the two hashes are named apart',
+	strpos( $builder, '"builder_state_hash"' ) !== false && strpos( $builder, '"profile_hash"' ) !== false, true );
+ok( 'the workshop format is unchanged',
+	strpos( $builder, 'format: "flosc_workshop/2"' ) !== false, true );
+ok( 'the chain from file to provider is stated',
+	strpos( $builder, 'the turns it produced' ) !== false, true );
+
+echo "\nA download names this site only when asked to\n";
+ok( 'off by default', strpos( $builder, 'include_source_site: false' ) !== false, true );
+ok( '  and written only under the flag',
+	strpos( $builder, 'if (state.include_source_site && wp.siteHost)' ) !== false, true );
+ok( '  with a control to turn it on',
+	strpos( $markup, 'id="includeSourceSite"' ) !== false, true );
+
+echo "\nThe trajectory wellsprings carry a placeholder, not a URL\n";
+preg_match_all( '/trajectoryAspect\(\s*"([a-z_]+)"/', $builder, $traj );
+ok( 'seven of them', count( $traj[1] ), 7 );
+// A personality shipping with a plausible-looking URL gets sent to visitors
+// with that URL in it.
+preg_match_all( '/trajectoryAspect\((.*?)\n\n/s', $builder, $traj_bodies );
+$hardcoded = array();
+foreach ( $traj_bodies[1] as $body ) {
+	if ( preg_match( '#https?://#', $body ) ) {
+		$hardcoded[] = trim( substr( $body, 0, 40 ) );
+	}
+}
+ok( '  and none of them names a real address', $hardcoded, array() );
+
+// A version printed into an exported artefact is exactly the kind that goes
+// stale unnoticed: the preview claimed "v33" long after that was true.
+echo "\nThe preview names the real builder version\n";
+ok( 'read from the boot data, not typed in',
+	strpos( $builder, 'function builderLine()' ) !== false, true );
+ok( '  and no hardcoded version remains',
+	strpos( $builder, 'FLOSC Personality Builder v33' ) !== false, false );
 
 echo "\nEdition is a label beside the version, never part of it\n";
 ok( 'the builder version is a plain number',

@@ -366,8 +366,15 @@ class FLOSC_Chatpack {
         }
 
         // Just purchased?
+        //
+        // What the purchase contains is the flow's to say, never the
+        // framework's. v4 removed "full access to all content" from the phase
+        // list in build_flow_section(); this line said the same thing on the
+        // turn straight after a purchase and was missed. A Member of a flow
+        // selling one PDF bought that PDF — FLOSC has no idea what any
+        // membership includes, and a model told otherwise will promise it.
         if (!empty($eval_context['first_message_after_purchase'])) {
-            $state_updates[] = "User just purchased — now a member with full access";
+            $state_updates[] = "User just completed a purchase in this flow — they are now a Member. What that grants is whatever this flow's own content and offers say; do not describe it in wider terms.";
         }
 
         if (!empty($state_updates)) {
@@ -969,7 +976,7 @@ class FLOSC_Chatpack {
         $kb_content = self::load_knowledge_files($eval_context);
         if ($kb_content) {
             // Fix 7: Authoritative framing — AI must use these files as source of truth
-            $section .= "## 5c. KNOWLEDGE BASE — AUTHORITATIVE CONTENT\n\n";
+            $section .= "## 5d. KNOWLEDGE BASE — AUTHORITATIVE CONTENT\n\n";
             // Fix 12: Inject ai_context_awareness — FloscAdmin describes what the KB contains
             $context_awareness = flosc_get_setting('ai_context_awareness', '');
             if ($context_awareness) {

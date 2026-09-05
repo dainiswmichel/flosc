@@ -4,7 +4,7 @@
   "status": "ASSEMBLED_AWAITING_FRESH_INSTALL_ACCEPTANCE",
   "branch": "claude/ready-to-help-jsw2li",
   "baseline_commit": "477f252",
-  "head_commit": "526603316ffaf93888c41b5dd9fe40c2fd011d0a",
+  "head_commit": "0d87c01dc5a440339f0d53bbc3b5f123e32573c4",
   "version": "8.0.0",
   "artifact": "flosc.zip",
   "artifact_note": "Built from this tree with its own build-dist-zip.sh, which fails closed: .distignore plus a hard deny list, then a scan of the staged tree that refuses to write the zip if a forbidden path survived. sha256 in SHA256SUMS.",
@@ -15,14 +15,14 @@
     "github-copilot": "nothing advanced"
   },
   "verification": {
-    "php_syntax_all_files": "passed (147 files in the artifact)",
+    "php_syntax_all_files": "passed (148 files in the artifact)",
     "javascript_syntax": "passed",
-    "test_suite": "passed (24 files)",
+    "test_suite": "passed (25 files)",
     "starter_pack_manifest": "passed",
     "packaging_gates": "passed",
     "version_held_at_8_0_0": "passed",
     "wordpress_runtime": "DEFERRED — fresh install required",
-    "wordpress_plugin_check": "one WARNING repaired, 2026-09-05: WordPress.DB.PreparedSQL.InterpolatedNotPrepared in the chat logger. Five PluginCheck.CodeAnalysis.AIProvider.DirectIntegration warnings remain and are design, not defect — see plugin_check_ai_provider_note.",
+    "wordpress_plugin_check": "The one warning naming a defect (WordPress.DB.PreparedSQL.InterpolatedNotPrepared) was repaired in v5. A full WordPress-standard PHPCS scan reports no security-, escaping-, sanitisation-, nonce- or prepared-SQL findings.",
     "live_ai_provider_calls": "DEFERRED — fresh install required",
     "journey_harness": "DEFERRED — needs WP-CLI on the target site",
     "contract_acceptance": "DEFERRED — personality built from scratch, attached to a pack, carrying that flow to its outcome"
@@ -41,14 +41,15 @@
     "check_packaging.php",
     "check_identity_every_turn.php",
     "check_site_index_types.php",
-    "check_buddyboss_index.php"
+    "check_buddyboss_index.php",
+    "check_provider_identity.php"
   ],
   "harness": "tests/journey-harness.php (WP-CLI, --require, never shipped)",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
-  "tree_files": 277,
-  "candidate_version": "v5",
-  "artifact_sha256": "88751c4845a35701aab0c49419e11b2c8ce9230f3c09987802ff6f7372a743e6",
-  "artifact_files": 236,
+  "tree_files": 279,
+  "candidate_version": "v6",
+  "artifact_sha256": "26410fa8418615e9b18344a487140e8a9e839c8067556387b2ef6860e26e2ca5",
+  "artifact_files": 237,
   "v3_fixes": [
     "Recovered answer no longer shown twice after a signed-in reload mid-response.",
     "profile_hash computed on read when the stored field is empty, so the chat log column is never blank.",
@@ -66,5 +67,17 @@
   "v5_fixes": [
     "A personality can be renamed. state.soul.name was read in six places in the builder — the profile heading, the identity line, the save payload and four export filenames — and written in none. No field existed, so the name seeded from the library at boot was the only name a personality could ever have. Same for the role. The id is untouched: it is the key a flow attaches by.",
     "The chat logger quotes its table name with a %i placeholder instead of interpolating it into the SQL string (Plugin Check, WordPress.DB.PreparedSQL.InterpolatedNotPrepared), and check_log_contract.php now fails on any line that interpolates it."
+  ],
+  "v6_fixes": [
+    "user_tier column: the VGM tier FLOSC computed on every turn and never wrote down. A Guest and a Member were indistinguishable in the chat log, so \"is anyone registering repeatedly to farm Guest content?\" had no column to ask.",
+    "provider_request_id column: the id the provider returns, captured through an http_response filter so it covers all four providers rather than only the one FLOSC calls directly. Stored, never sent. It is the only identifier that exists on both sides of the wire.",
+    "FLOSC now identifies itself to AI providers: a User-Agent and one X-DA1-Trace header carrying install, site, flow, personality, knowledge base, tier and message pair. Flow, personality and knowledge base ride as per-install HMACs. Nothing identifying an individual visitor. Both switchable in Settings, disclosed in readme.txt External Services, and FLOSC phones nothing home.",
+    "The follow-up chatpack no longer tells the model a buyer has \"full access\" — v4 fixed the phase list and missed the state-update line. Two chatpack sections both numbered 5c are now 5c and 5d.",
+    "A profile can be given a filename. The five downloads named themselves five different ways, one with two dots; they now share one fileBase() and underscores throughout.",
+    "Profiles open with \"# DA1/FLOSC AI Personality Profile Name: <name>\", byte-identical across the builder and all four shipped personalities.",
+    "The download footer is rewritten: density bands, both hashes named apart, and the chain from the file to the turns it produced to the provider’s record of each call. The About block moves to the top of the design copy, and workshop.json carries the same facts as real JSON keys.",
+    "Optional source_site line in downloads, off by default.",
+    "Seven Trajectory wellsprings in the aspect palette, each carrying a literal {url} placeholder, gated so none can ship a real address.",
+    "BubblyBetty no longer describes herself with an idiom built on having legs."
   ]
 }

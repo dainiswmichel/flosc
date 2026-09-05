@@ -19,8 +19,13 @@ if ( ! defined( 'ABSPATH' ) ) {
           <label for="soulRole">Role</label>
           <input id="soulRole" type="text" placeholder="e.g. a pun-powered dad who always has a joke at the ready" autocomplete="off">
         </div>
+        <div class="field">
+          <label for="soulFilename">Filename</label>
+          <input id="soulFilename" type="text" autocomplete="off" spellcheck="false">
+        </div>
       </div>
-      <p class="figure-readout identity-note">The first two lines of the profile: <code># Personality profile: Name</code> and <code>You are Name, role.</code> Changing the name here renames the personality everywhere it is shown; the id a floscFlow attaches to does not change.</p>
+      <p class="figure-readout identity-note">The filename names every download — <code>soul.md</code>, the design copy, the builder state, the preview. Leave it empty to use the personality id. Dots are removed; each file gets one, before its extension.</p>
+      <p class="figure-readout identity-note">The first two lines of the profile: <code># DA1/FLOSC AI Personality Profile Name: Name</code> and <code>You are Name, role.</code> Changing the name here renames the personality everywhere it is shown; the id a floscFlow attaches to does not change.</p>
       <div class="meta">
         <span class="chip">Aspect palette</span>
         <span class="chip">Density-ordered profile</span>
@@ -149,6 +154,9 @@ if ( ! defined( 'ABSPATH' ) ) {
         <button type="button" class="btn" id="btnExportMdDesign" title="Same document plus a legend explaining density, gain, bands, and clouds.">Download design copy</button>
         <button type="button" class="btn" id="btnExportProviders" hidden>Download provider packs</button>
         <button type="button" class="btn primary" id="btnCopy">Copy this file</button>
+        <label class="chip export-toggle" for="includeSourceSite">
+          <input type="checkbox" id="includeSourceSite"> Name this site in downloads
+        </label>
       </div>
     </div>
   </section>

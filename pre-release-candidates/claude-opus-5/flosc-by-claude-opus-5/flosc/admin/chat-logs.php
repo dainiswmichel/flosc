@@ -449,7 +449,12 @@ $flosc_sessions_archived_url = add_query_arg([
         function buildRow(log) {
             var time = log.timestamp ? log.timestamp.substring(11, 19) : '';
             var date = log.timestamp ? log.timestamp.substring(0, 10) : '';
-            var user = log.user_id > 0 ? ('User #' + log.user_id) : ('Visitor');
+            // user_tier is the VGM tier the turn was answered at. Rows written
+            // before the column existed have none, and are shown exactly as
+            // they were before: a blank tier is unknown, not a Visitor.
+            var tier = log.user_tier || '';
+            var user = log.user_id > 0 ? ('User #' + log.user_id) : 'Visitor';
+            if (tier) { user += ' \u00b7 ' + tier.charAt(0).toUpperCase() + tier.slice(1); }
             var source = log.response_source || 'ivr';
             var provider = log.provider || '';
             var chain = log.chain_detail || '';
@@ -570,7 +575,15 @@ $flosc_sessions_archived_url = add_query_arg([
 function flosc_render_chat_log_row($log) {
     $time = substr($log['timestamp'] ?? '', 11, 8);
     $date = substr($log['timestamp'] ?? '', 0, 10);
+    // Same rule as the JS row builder: the tier is appended when the row
+    // recorded one, and a row from before the column keeps the old label.
+    // user_id alone cannot tell a Guest from a Member, which is why the
+    // question "is anyone farming Guest access?" had no column to ask.
     $user = $log['user_id'] > 0 ? ('User #' . intval($log['user_id'])) : 'Visitor';
+    $tier = sanitize_key((string) ($log['user_tier'] ?? ''));
+    if (in_array($tier, array('visitor', 'guest', 'member'), true)) {
+        $user .= ' · ' . ucfirst($tier);
+    }
     $phase = esc_html($log['phase'] ?? '');
     $msg = esc_html($log['user_message'] ?? '');
     $resp = esc_html(mb_substr($log['ai_response'] ?? '', 0, 200));
