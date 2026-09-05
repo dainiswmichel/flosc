@@ -4,7 +4,7 @@
   "status": "ASSEMBLED_AWAITING_FRESH_INSTALL_ACCEPTANCE",
   "branch": "claude/ready-to-help-jsw2li",
   "baseline_commit": "477f252",
-  "head_commit": "0d87c01dc5a440339f0d53bbc3b5f123e32573c4",
+  "head_commit": "a5afa76446b598167711b91554f47b6eac85efe2",
   "version": "8.0.0",
   "artifact": "flosc.zip",
   "artifact_note": "Built from this tree with its own build-dist-zip.sh, which fails closed: .distignore plus a hard deny list, then a scan of the staged tree that refuses to write the zip if a forbidden path survived. sha256 in SHA256SUMS.",
@@ -17,7 +17,7 @@
   "verification": {
     "php_syntax_all_files": "passed (148 files in the artifact)",
     "javascript_syntax": "passed",
-    "test_suite": "passed (25 files)",
+    "test_suite": "passed (26 files)",
     "starter_pack_manifest": "passed",
     "packaging_gates": "passed",
     "version_held_at_8_0_0": "passed",
@@ -42,13 +42,14 @@
     "check_identity_every_turn.php",
     "check_site_index_types.php",
     "check_buddyboss_index.php",
-    "check_provider_identity.php"
+    "check_provider_identity.php",
+    "check_builder_cycles.php"
   ],
   "harness": "tests/journey-harness.php (WP-CLI, --require, never shipped)",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
-  "tree_files": 279,
-  "candidate_version": "v6",
-  "artifact_sha256": "26410fa8418615e9b18344a487140e8a9e839c8067556387b2ef6860e26e2ca5",
+  "tree_files": 280,
+  "candidate_version": "v7",
+  "artifact_sha256": "e95a77e91dd09e577f15f259cf273ee80e94fcf2eaea997a140ae0d599563038",
   "artifact_files": 237,
   "v3_fixes": [
     "Recovered answer no longer shown twice after a signed-in reload mid-response.",
@@ -79,5 +80,9 @@
     "Optional source_site line in downloads, off by default.",
     "Seven Trajectory wellsprings in the aspect palette, each carrying a literal {url} placeholder, gated so none can ship a real address.",
     "BubblyBetty no longer describes herself with an idiom built on having legs."
+  ],
+  "v7_fixes": [
+    "v6 hung the AI tab. profileFooter() read the builder state hash off fullSpec(), and the new provenance block in workshopFile() called profileFooter()'s row builder — closing fullSpec() -> workshopFile() -> provenanceRows() -> fullSpec(). renderOut() enters that chain on every redraw and each turn rebuilt the whole workshop object, so the page died before the stack overflowed. No console error; node --check parses it fine.",
+    "provenanceRows() now computes the hash itself rather than reading it back off a caller. check_builder_cycles.php parses the builder's functions, builds a call graph over the eleven that produce a document, and fails on any route back to where it started."
   ]
 }

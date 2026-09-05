@@ -1,7 +1,24 @@
 # Home run candidate — Claude Opus 5
 
-**v6.** The chat log can now answer questions it could not ask, FLOSC tells its
-AI provider who is calling, and a personality profile says where it came from.
+**v7.** v6 hung. This is v6 with the hang fixed and a gate that would have
+caught it.
+
+`profileFooter()` read the builder's state hash back off `fullSpec()`, and the
+new provenance block in `workshopFile()` called that same row builder — closing
+a loop: `fullSpec() → workshopFile() → provenanceRows() → fullSpec()`.
+`renderOut()` enters that chain on every redraw, and each turn of the loop
+rebuilt the entire workshop object, so the AI tab went Page Unresponsive long
+before the stack overflowed. No console error. `node --check` parses it happily
+and a grep sees five ordinary calls.
+
+The footer *was* rendered and read before v6 shipped — against a stubbed
+`fullSpec()`. The stub was the bug's hiding place. So the new gate is structural
+rather than textual: `check_builder_cycles.php` parses the builder's own
+function declarations, brace-matches each body, builds a call graph over the
+eleven functions that turn builder state into a document, and fails on any route
+back to where it started.
+
+Everything else is v6, unchanged:
 
 **The ledger.** FLOSC computed the VGM tier on every turn and threw it away at
 logging time — a Guest and a Member both rendered as `User #7`, so "is anyone
@@ -41,7 +58,7 @@ Version held at **8.0.0** — this is a resubmission, not a release.
 
     branch:  claude/ready-to-help-jsw2li
     tree:    the plugin at the repository root on that branch
-    commits: 34, from 477f252 to the branch head
+    commits: 35, from 477f252 to the branch head
 
 https://github.com/dainiswmichel/flosc/tree/claude/ready-to-help-jsw2li
 
