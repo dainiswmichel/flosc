@@ -1001,3 +1001,7 @@
    only place it changes anything. */
 .export-toggle { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
 .export-toggle input { margin: 0; }
+/* Says which of the four views is on screen, and whether it is the one that
+   reaches the AI provider. Marked with a rule so it reads as a statement about
+   the panel below rather than as more prose in the column. */
+.output-view-note { border-left: 3px solid currentColor; padding-left: 10px; opacity: .85; margin: 8px 0 6px; }

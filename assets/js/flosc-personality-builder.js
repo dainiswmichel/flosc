@@ -3233,6 +3233,13 @@
     return chips.join("");
   }
 
+  const OUT_VIEW_NOTES = {
+    prompt: "This is the personality itself — saved to the FLOSC library and sent to your AI provider on every turn. It carries no About this file footer: that would be billed on every turn. Download soul.md and Copy this file carry it.",
+    spec: "The designer's own record — every aspect, its density and its gain. Never sent to a provider. This is what Import workshop state reads back.",
+    lint: "Checks on this personality before it goes anywhere. Not part of the profile and never sent.",
+    providers: "The same personality mapped into each provider's expected fields. Sampling values are not included."
+  };
+
   function renderOut() {
     const stats = document.getElementById("stats");
     const out = document.getElementById("out");
@@ -3272,6 +3279,22 @@
     if (state.outTab === "spec") text = JSON.stringify(workshopFile(), null, 2);
     if (state.outTab === "lint") text = L.items.map(function (i) { return i.lvl.toUpperCase() + "  " + i.m; }).join("\n");
     out.textContent = text;
+
+    /*
+     * What the floscAdmin is looking at.
+     *
+     * The four views are four different documents, and the panel gave no clue
+     * which. That matters most on the profile tab: it shows the runtime
+     * profile, which deliberately carries no About-this-file footer, and the
+     * absence read as something missing rather than as a decision. A
+     * floscAdmin deciding what reaches their AI provider has to be able to see
+     * which of these does.
+     */
+    const viewNote = document.getElementById("outViewNote");
+    if (viewNote) {
+      viewNote.textContent = OUT_VIEW_NOTES[state.outTab] || OUT_VIEW_NOTES.prompt;
+    }
+
     document.querySelectorAll("[data-out]").forEach(function (b) {
       b.classList.toggle("primary", b.getAttribute("data-out") === state.outTab);
     });
