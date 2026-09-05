@@ -40,6 +40,7 @@ $turn   = (string) file_get_contents( $root . '/includes/chat-turn/trait-flosc-c
 $screen = (string) file_get_contents( $root . '/admin/chat-logs.php' );
 
 $columns = array(
+	'user_tier'        => 'VARCHAR(10)',
 	'surface'          => "VARCHAR(20)",
 	'page_url'         => 'VARCHAR(255)',
 	'page_title'       => 'VARCHAR(255)',
@@ -60,9 +61,19 @@ foreach ( $columns as $column => $type ) {
 // A wpdb->insert whose placeholder list is shorter than its column list
 // silently writes the wrong values into the wrong columns.
 echo "\nThe insert's placeholders match its columns\n";
-preg_match( "/\\\$result = \\\$wpdb->insert\(\s*\\\$this->table_name,\s*\[(.*?)\],\s*(\[[^\]]*\])\s*\);/s", $logger, $m );
-$cols = isset( $m[1] ) ? preg_match_all( "/'[a-z_]+'\s*=>/", $m[1] ) : 0;
-$fmts = isset( $m[2] ) ? preg_match_all( "/'%[sd]'/", $m[2] ) : 0;
+// Extracted in two steps rather than one regex spanning both lists. The
+// single-regex version required the format list to follow the array with
+// nothing between them but whitespace, so putting a comment there made it
+// run past the end of the insert and count 41 placeholders against 13
+// columns — a false failure, and the kind that teaches you to distrust the
+// gate rather than the code.
+$insert_at    = strpos( $logger, '$wpdb->insert(', (int) strpos( $logger, 'function flosc_log_chat' ) );
+$insert_end   = $insert_at !== false ? strpos( $logger, "\n        );", $insert_at ) : false;
+$insert_block = ( $insert_at !== false && $insert_end !== false )
+	? substr( $logger, $insert_at, $insert_end - $insert_at )
+	: '';
+$cols = $insert_block !== '' ? preg_match_all( "/'[a-z_]+'\s*=>/", $insert_block ) : 0;
+$fmts = $insert_block !== '' ? preg_match_all( "/'%[sd]'/", $insert_block ) : 0;
 ok( 'the insert was found at all', $cols > 0, true );
 // Counted, not asserted against a number: a hardcoded total goes stale the
 // next time a column is added, which fails the build for the wrong reason and
@@ -97,6 +108,29 @@ ok( "an unset surface is recorded as 'unknown'",
 	strpos( $logger, "\$surface = 'unknown';" ) !== false, true );
 ok( 'and the chat turn names the surface it was on',
 	strpos( $turn, "'surface'         => \$flosc_ctx_surface !== '' ? \$flosc_ctx_surface : 'full_page'" ) !== false, true );
+
+// FLOSC computed the VGM tier on every turn and threw it away at logging
+// time: $eval_context['access_level'] built the prompt, gated the content and
+// picked the user-status reply, but never reached a column. The Chat Logs
+// screen guessed from user_id alone, which renders a Guest and a Member
+// identically, so "is anyone registering repeatedly to farm Guest content?"
+// had nothing to query.
+echo "\nThe row records which VGM tier answered\n";
+ok( 'only visitor, guest or member is stored',
+	strpos( $logger, "in_array(\$user_tier, ['visitor', 'guest', 'member'], true)" ) !== false, true );
+ok( '  and anything else is left blank rather than guessed',
+	strpos( $logger, "\$user_tier = '';" ) !== false, true );
+
+// Six call sites write a chat row. A tier recorded on some of them and not
+// others is worse than none: the gaps look like Visitors.
+$turn_src = (string) file_get_contents( $root . '/includes/chat-turn/trait-flosc-chat-turn.php' );
+ok( 'every flosc_log_chat call site names a tier',
+	substr_count( $turn_src, "'user_tier'" ),
+	substr_count( $turn_src, 'flosc_log_chat([' ) );
+
+// A row from before the column has no tier, and must still render as it did.
+ok( 'the screen appends the tier only when the row has one',
+	strpos( $screen, "in_array(\$tier, array('visitor', 'guest', 'member'), true)" ) !== false, true );
 
 echo "\nturn_status can only be one of the two things it means\n";
 ok( 'complete or abandoned, nothing else',

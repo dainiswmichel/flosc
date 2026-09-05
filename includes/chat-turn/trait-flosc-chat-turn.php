@@ -454,6 +454,7 @@ trait FLOSC_Chat_Turn_Trait {
                 FLOSC_Chat_Logger::instance()->flosc_log_chat([
                     'flow_id'         => $flow_id,
                     'phase'           => $phase,
+                    'user_tier'       => (string) ($eval_context['access_level'] ?? ''),
                     'user_id'         => 0,
                     'session_id'      => $session_id,
                     'journey_id'      => $journey_id,
@@ -523,6 +524,7 @@ trait FLOSC_Chat_Turn_Trait {
             FLOSC_Chat_Logger::instance()->flosc_log_chat([
                 'flow_id'         => $flow_id,
                 'phase'           => $phase,
+                'user_tier'       => (string) ($eval_context['access_level'] ?? ''),
                 'user_id'         => 0,
                 'session_id'      => $session_id,
                 'journey_id'      => $journey_id,
@@ -571,6 +573,7 @@ trait FLOSC_Chat_Turn_Trait {
             FLOSC_Chat_Logger::instance()->flosc_log_chat([
                 'flow_id'         => $flow_id,
                 'phase'           => $phase,
+                'user_tier'       => (string) ($eval_context['access_level'] ?? ''),
                 'user_id'         => 0,
                 'session_id'      => $session_id,
                 'journey_id'      => $journey_id,
@@ -1033,6 +1036,7 @@ trait FLOSC_Chat_Turn_Trait {
         FLOSC_Chat_Logger::instance()->flosc_log_chat([
             'flow_id'         => $flow_id,
             'phase'           => $phase,
+            'user_tier'       => (string) ($eval_context['access_level'] ?? ''),
             'user_id'         => is_user_logged_in() ? get_current_user_id() : 0,
             'session_id'      => $session_id ?? 0,
             'journey_id'      => $journey_id,
@@ -1299,6 +1303,7 @@ trait FLOSC_Chat_Turn_Trait {
                             FLOSC_Chat_Logger::instance()->flosc_log_chat([
                                 'flow_id'         => $flow_id ?: $flow_stem,
                                 'phase'           => $phase,
+                                'user_tier'       => (string) ($user_context['access_level'] ?? ''),
                                 'user_id'         => is_user_logged_in() ? get_current_user_id() : 0,
                                 'session_id'      => $session_id,
                                 'journey_id'      => $journey_id,
@@ -1383,6 +1388,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC SECURITY: Violations
         FLOSC_Chat_Logger::instance()->flosc_log_chat([
             'flow_id'         => $flow_id ?: $flow_stem,
             'phase'           => $phase,
+            'user_tier'       => (string) ($user_context['access_level'] ?? ''),
             'user_id'         => is_user_logged_in() ? get_current_user_id() : 0,
             'session_id'      => $session_id,
             'journey_id'      => $journey_id,

@@ -163,6 +163,7 @@ class FLOSC_Chat_Logger {
             timestamp DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             flow_id VARCHAR(100) DEFAULT '',
             phase VARCHAR(50) DEFAULT 'freeline',
+            user_tier VARCHAR(10) DEFAULT '',
             user_id BIGINT UNSIGNED DEFAULT 0,
             session_id BIGINT UNSIGNED DEFAULT 0,
             journey_id VARCHAR(64) NOT NULL DEFAULT '',
@@ -197,6 +198,7 @@ class FLOSC_Chat_Logger {
             KEY idx_flosc_chat_user (user_id),
             KEY idx_flosc_chat_flow (flow_id),
             KEY idx_flosc_chat_phase (phase),
+            KEY idx_flosc_chat_tier (user_tier),
             KEY idx_flosc_chat_session (session_id),
             KEY idx_flosc_chat_journey (journey_id),
             KEY idx_flosc_chat_personality (personality_id),
@@ -701,12 +703,33 @@ class FLOSC_Chat_Logger {
         // what stops the same turn being billed twice.
         $turn_id = self::flosc_sanitize_turn_id($data['turn_id'] ?? '');
 
+        /*
+         * visitor | guest | member — the VGM tier this turn was answered at.
+         *
+         * FLOSC has always computed this: trait-flosc-chat-turn.php sets
+         * $eval_context['access_level'] on every turn and the prompt, the
+         * content gates and the user-status reply all read it. It was simply
+         * never written down. The Chat Logs screen reconstructed a guess from
+         * user_id alone, which cannot tell a Guest from a Member — so a
+         * question like "are people registering repeatedly to farm Guest
+         * content?" had no column to ask.
+         *
+         * Blank is honest, not a default: rows written before this column
+         * existed genuinely do not know, and guessing 'guest' for all of them
+         * would put fiction in the ledger.
+         */
+        $user_tier = sanitize_key((string) ($data['user_tier'] ?? ''));
+        if (!in_array($user_tier, ['visitor', 'guest', 'member'], true)) {
+            $user_tier = '';
+        }
+
         $result = $wpdb->insert(
             $this->table_name,
             [
                 'timestamp'       => current_time('mysql'),
                 'flow_id'         => sanitize_text_field($data['flow_id'] ?? ''),
                 'phase'           => sanitize_text_field($data['phase'] ?? 'freeline'),
+                'user_tier'       => $user_tier,
                 'user_id'         => intval($data['user_id'] ?? 0),
                 'session_id'      => intval($data['session_id'] ?? 0),
                 'journey_id'      => self::flosc_sanitize_journey_id($data['journey_id'] ?? ''),
@@ -732,7 +755,11 @@ class FLOSC_Chat_Logger {
                 'billing_total_tokens' => max(0, intval($data['billing_total_tokens'] ?? 0)),
                 'billing_real_millicents' => max(0, intval($data['billing_real_millicents'] ?? 0)),
             ],
-            ['%s', '%s', '%s', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%d', '%d', '%d', '%d']
+            // One specifier per column, in column order. A format list shorter
+            // than the column list makes $wpdb->insert() write the right values
+            // into the wrong columns, silently and with no error — so this line
+            // is edited in the same breath as the array above, never after.
+            ['%s', '%s', '%s', '%s', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%d', '%d', '%d', '%d']
         );
 
         if ( $result ) {
