@@ -1609,13 +1609,21 @@
     // not a version, and claiming otherwise would make the fingerprint a lie.
     if (e.version) rows.push(["profile_version", e.version]);
     if (e.hash) rows.push(["profile_hash", "sha256:" + e.hash]);
-    // Two hashes, deliberately named apart. builder_state_hash fingerprints
-    // the working state in this browser — the "hash" chip above the panel.
-    // profile_hash fingerprints what was deployed. Confusing them is how a
-    // profile gets declared unchanged because its draft happens to match.
+    /*
+     * Two hashes, deliberately named apart. builder_state_hash fingerprints
+     * the working state in this browser — the "hash" chip above the panel.
+     * profile_hash fingerprints what was deployed. Confusing them is how a
+     * profile gets declared unchanged because its draft happens to match.
+     *
+     * Computed here the same way workshopFile() computes it, rather than read
+     * back off fullSpec(). Reading it from there closed a loop —
+     * fullSpec() -> workshopFile() -> provenanceRows() -> fullSpec() — and
+     * every turn of it rebuilt the entire workshop object, so the builder hung
+     * before the stack ever overflowed. Nothing in this function may call
+     * workshopFile() or fullSpec(); both of them call this one.
+     */
     try {
-      const spec = fullSpec();
-      if (spec && spec.personality_hash) rows.push(["builder_state_hash", spec.personality_hash]);
+      rows.push(["builder_state_hash", hashText(compilePrompt())]);
     } catch (err) { /* a profile that will not compile still gets a footer */ }
     if (e.modifiedGmt) rows.push(["profile_modified_gmt", e.modifiedGmt]);
     rows.push(["exported", floscMtsUtc()]);
