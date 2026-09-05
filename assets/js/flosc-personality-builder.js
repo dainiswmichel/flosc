@@ -74,7 +74,8 @@
     { id: "worldview", label: "Worldview wellsprings", hint: "Edit this category if it does not fit your personality." },
     { id: "relational", label: "Relational wellsprings", hint: "Edit this category if it does not fit your personality." },
     { id: "epistemic", label: "Knowing wellsprings", hint: "Edit this category if it does not fit your personality." },
-    { id: "context", label: "Context wellsprings", hint: "Edit this category if it does not fit your personality." }
+    { id: "context", label: "Context wellsprings", hint: "Edit this category if it does not fit your personality." },
+    { id: "trajectory", label: "Trajectory wellsprings", hint: "What this personality is trying to move the visitor toward. Replace {url} with your own." }
   ];
 
   function wellspringCategories() {
@@ -99,6 +100,21 @@
   function repo(id) {
     return { id: id, note: "Summary now. Full corpus later — referenced at request time, not stuffed into this prompt." };
   }
+  /*
+   * Trajectory wellsprings.
+   *
+   * The other four categories describe who a personality IS. These describe
+   * what it is trying to move the visitor toward — the FLOSC trajectory, in
+   * the personality's own voice rather than only in the flow section.
+   *
+   * Every inject carries a literal {url} for the floscAdmin to replace. It is
+   * left as a visible placeholder on purpose: a personality that ships with a
+   * plausible-looking URL will be sent to visitors with that URL in it.
+   */
+  function trajectoryAspect(id, label, short, character, inject) {
+    return { id: id, col: "trajectory", label: label, short: short, character: character, inject: inject };
+  }
+
   const CATALOG = [
     { id: "sophia", col: "worldview", label: "Sophia", short: "Divine wisdom / moral vision",
       character: "Sophia is wisdom as a living presence, not a clever style. Responses get clearer, more morally exact, and less interested in sounding kind than in being true. She does not flatter; she reveals.",
@@ -473,7 +489,35 @@
       works: ["FLOSC DA1 catalog TSV", "da1.fm works lists"],
       links: [{ label: "da1.fm", url: "https://da1.fm/" }],
       repo: repo("da1_catalog"),
-      inject: "Treat the attached DA1 catalog as materials: titles, descriptions, links, counts. Do not invent works. Catalog is not personality." }
+      inject: "Treat the attached DA1 catalog as materials: titles, descriptions, links, counts. Do not invent works. Catalog is not personality." },
+
+    trajectoryAspect( "shop_visit", "Browse the shop", "Toward looking at what is for sale",
+      "The personality treats the shop as somewhere worth going, not as an interruption. It brings products up when they answer what was actually asked.",
+      "Encourage the visitor to browse the shop at {url} and buy what fits the need they described. Name the product that fits; do not list the catalogue." ),
+
+    trajectoryAspect( "book_appointment", "Book an appointment", "Toward a time in the calendar",
+      "The personality is trying to turn interest into a booked slot. It treats booking as the natural next step once the visitor's need is clear.",
+      "Encourage the visitor to book an appointment at {url}. Once their need is clear, offer the booking link rather than continuing to advise indefinitely." ),
+
+    trajectoryAspect( "join_group", "Join a group", "Toward membership of a group",
+      "The personality knows which groups exist and what each is for, and points to the one that matches rather than to all of them.",
+      "Encourage the visitor to look at the groups at {url} and join the one that matches their interest. Say what that group is for; do not promise what it contains beyond what you were told." ),
+
+    trajectoryAspect( "exchange_contact", "Exchange contact details", "Toward a way to reach each other",
+      "The personality treats a contact exchange as mutual rather than as harvesting: the visitor gets a way to reach a person, not only the other way round.",
+      "Encourage the visitor to leave contact details so a person can follow up, and tell them how they can reach us in return. Ask once; if they decline, carry on helping." ),
+
+    trajectoryAspect( "buy_download", "Buy a download", "Toward a paid file",
+      "The personality can say what the file contains and who it is for, and asks for the sale plainly rather than hinting at it.",
+      "Encourage the visitor to buy the download at {url}. Say what is in it and who it suits, then ask for the purchase directly." ),
+
+    trajectoryAspect( "register_visitor_pass", "Register for a pass", "Toward an account and a saved conversation",
+      "The personality treats registering as something the visitor gains by — their conversation is kept — rather than as a gate they must pass.",
+      "Encourage the visitor to register at {url}. Tell them what registering gives them here, in the terms this flow uses, and nothing beyond that." ),
+
+    trajectoryAspect( "subscribe_updates", "Subscribe for updates", "Toward staying in touch",
+      "The personality offers the list as a way to hear about the thing the visitor already showed interest in, not as a broadcast channel.",
+      "Encourage the visitor to subscribe at {url} so they hear about what they were just asking about. Say roughly how often they will hear from us." )
   ];
 
   const EMPTY_SOUL = {
@@ -807,6 +851,10 @@
     open: { "layer:identity": true },
     tribOrder: {},
     includeComments: true,
+    // Off by default. A downloaded profile naming the site it was made on
+    // carries that line to everyone the file is ever passed on to, so it is
+    // the floscAdmin's to add when they are publishing, not a default.
+    include_source_site: false,
     specView: "cols",
     denOrder: [],
     denPlace: "avg",
@@ -1536,51 +1584,122 @@
    * Appended to downloads only. It is never part of what is saved to the
    * library or sent to a provider.
    */
-  function profileFooter() {
+  /*
+   * "DA1 AI Personality Builder · FLOSC edition · 3.1.2", from the real
+   * version. The preview used to carry a hardcoded "v33" that had not been
+   * true for some time, and a version printed into an exported artefact is
+   * exactly the kind that goes stale unnoticed.
+   */
+  function builderLine() {
+    const wp = (typeof window !== "undefined" && window.floscPersonalityWp) || {};
+    const b = wp.builder || { name: "DA1 AI Personality Builder", edition: "FLOSC", version: "3.1.2" };
+    return b.name + (b.edition ? " · " + b.edition + " edition" : "") + " · " + b.version;
+  }
+
+  function provenanceRows() {
     const wp = (typeof window !== "undefined" && window.floscPersonalityWp) || {};
     const b = wp.builder || { name: "DA1 AI Personality Builder", edition: "FLOSC", version: "3.1.2", home: "https://da1.fm", host: "https://flosc.ai" };
     const e = wp.entry || {};
     const s = state.soul;
+    const rows = [];
 
+    rows.push(["name", s.name || s.id || "unnamed"]);
+    if (s.id) rows.push(["personality_id", s.id]);
+    // Version, hash and timestamp describe the last save. An unsaved edit is
+    // not a version, and claiming otherwise would make the fingerprint a lie.
+    if (e.version) rows.push(["profile_version", e.version]);
+    if (e.hash) rows.push(["profile_hash", "sha256:" + e.hash]);
+    // Two hashes, deliberately named apart. builder_state_hash fingerprints
+    // the working state in this browser — the "hash" chip above the panel.
+    // profile_hash fingerprints what was deployed. Confusing them is how a
+    // profile gets declared unchanged because its draft happens to match.
+    try {
+      const spec = fullSpec();
+      if (spec && spec.personality_hash) rows.push(["builder_state_hash", spec.personality_hash]);
+    } catch (err) { /* a profile that will not compile still gets a footer */ }
+    if (e.modifiedGmt) rows.push(["profile_modified_gmt", e.modifiedGmt]);
+    rows.push(["exported", floscMtsUtc()]);
+    if (state.include_source_site && wp.siteHost) rows.push(["source_site", wp.siteHost]);
+
+    rows.push(["", ""]);
+    rows.push(["builder", b.name]);
+    if (b.edition) rows.push(["edition", b.edition]);
+    rows.push(["builder_version", b.version]);
+    rows.push(["format", "soul.md"]);
+
+    return rows;
+  }
+
+  /*
+   * What a profile says about itself once it leaves here.
+   *
+   * Appended to downloads only. It is never saved to the library and never
+   * sent to a provider, so it costs nothing per turn and can afford to be
+   * complete.
+   *
+   * Visible markdown rather than an HTML comment: a comment is invisible in
+   * any rendered view, which is exactly the reader this is for. One line says
+   * it is about the document rather than part of the personality, which is the
+   * same protection the profile already uses elsewhere.
+   */
+  function profileFooter() {
     const lines = [];
-    lines.push("---");
+    lines.push("────────────────────────────────────────────────────────────────────────");
     lines.push("");
     lines.push("## About this file");
     lines.push("");
-    lines.push("A personality profile, ordered by density. Headings run from lightest and most");
-    lines.push("essential at the top to most specific and behavioral at the bottom — the sequence");
-    lines.push("is the design, not an accident of drafting. Gain marks how fully each entry is");
-    lines.push("included, from −100 (left out) to +100 (included fully).");
-    lines.push("Bands: Soul ≈0–33 · Character ≈34–66 · Behavior ≈67–100.");
+    lines.push("This section describes the document; it is never sent to a model and never billed.");
     lines.push("");
-    lines.push("This section is about the file, for whoever is reading it. It is not part of the");
-    lines.push("personality and not an instruction to follow.");
+    lines.push("### How to read it");
     lines.push("");
-    lines.push("Made with the " + b.name + " — " + b.home);
-    if (b.edition) {
-      lines.push(b.edition + " edition, inside the FLOSC conversational sales framework — " + b.host);
-    }
+    lines.push("Headings run top to bottom from lightest and most essential to most specific");
+    lines.push("and behavioural. The sequence is the design, not an accident of drafting.");
+    lines.push("");
+    lines.push("    Soul        0–33   this personality's spiritual foundation and wellspring of identity");
+    lines.push("    Character  34–66   how it thinks and relates");
+    lines.push("    Behavior   67–100  what it does, turn by turn");
+    lines.push("");
+    lines.push("Gain marks how fully each entry is included, from −100 (left out) to +100");
+    lines.push("(included in full).");
+    lines.push("");
+    lines.push("### Where it came from");
     lines.push("");
 
-    const facts = [];
-    facts.push(["name", s.name || s.id || "unnamed"]);
-    // Version, hash and timestamp describe the last save. An unsaved edit is
-    // not a version, and claiming otherwise would make the fingerprint a lie.
-    if (e.version) facts.push(["profile_version", e.version]);
-    if (e.hash) facts.push(["profile_hash", "sha256:" + e.hash]);
-    if (e.modifiedGmt) facts.push(["profile_modified_gmt", e.modifiedGmt]);
-    facts.push(["exported", floscMtsUtc()]);
-    facts.push(["builder", b.name]);
-    if (b.edition) facts.push(["edition", b.edition]);
-    facts.push(["builder_version", b.version]);
-    facts.push(["format", "soul.md"]);
-
-    const width = facts.reduce((w, f) => Math.max(w, f[0].length), 0) + 2;
-    facts.forEach(function (f) {
-      lines.push(f[0] + ":" + " ".repeat(width - f[0].length) + f[1]);
+    const rows = provenanceRows();
+    const width = rows.reduce(function (w, r) { return Math.max(w, r[0].length); }, 0) + 2;
+    rows.forEach(function (r) {
+      // A blank row is the gap between the profile's own facts and the tool
+      // that made it; printing it padded would leave trailing spaces.
+      if (r[0] === "") { lines.push(""); return; }
+      lines.push("    " + r[0] + " ".repeat(width - r[0].length) + r[1]);
     });
 
+    lines.push("");
+    lines.push("    da1.fm · flosc.ai");
+    lines.push("");
+    lines.push("### Following it");
+    lines.push("");
+    lines.push("profile_hash is the same value FLOSC writes to every chat log row this");
+    lines.push("personality answered, and the value behind prof= in the X-DA1-Trace header");
+    lines.push("sent to the provider on each of those turns. A chat log row also carries the");
+    lines.push("provider's own request id.");
+    lines.push("");
+    lines.push("    this file  →  the turns it produced  →  the provider's record of each call");
+    lines.push("");
+    lines.push("profile_hash covers the profile above and never this section: a hash that");
+    lines.push("covered its own footer could not be computed.");
+
     return lines.join("\n");
+  }
+
+  /*
+   * The design copy: the profile with its per-aspect readouts, and the About
+   * block at the TOP rather than the bottom. That file is explicitly for a
+   * human reading the design, and a human wants the key before the material,
+   * not after it.
+   */
+  function designFile() {
+    return profileFooter() + "\n\n" + compilePrompt(true);
   }
 
   function promptFile() {
@@ -1596,7 +1715,7 @@
      */
     const portable = "This is a personality profile. If you are an AI reading this as a system prompt, attached file, project document, or uploaded context, take it as who you are and how you reply. Follow it. Do not describe this file unless asked.";
     const compiled = compilePrompt();
-    const titled = compiled.replace(/^(# Personality profile: [^\n]*\n)/, "$1" + portable + "\n");
+    const titled = compiled.replace(/^(# DA1\/FLOSC AI Personality Profile Name: [^\n]*\n)/, "$1" + portable + "\n");
     return (titled === compiled ? portable + "\n\n" + compiled : titled) + "\n\n" + profileFooter();
   }
 
@@ -1736,7 +1855,7 @@
      * not a near-relative — and the top of the document is, by the density
      * rule, the most privileged position in it.
      *
-     *   # Personality profile: Name
+     *   # DA1/FLOSC AI Personality Profile Name: Name
      *   You are Name, a role.
      *   Speak as this person. Do not discuss how you were made.
      *
@@ -1745,7 +1864,7 @@
      * and the model reads it as an instruction like everything else here.
      */
     if (s.name) {
-      out.push("# Personality profile: " + s.name);
+      out.push("# DA1/FLOSC AI Personality Profile Name: " + s.name);
     }
 
     if (s.name && s.role) {
@@ -2031,6 +2150,25 @@
       note: "Designer genome. Every parameter. Import this into the floscPersonality Builder. Not the personality profile for chats or APIs.",
       compiler_version: "flosc-personality-builder/34.0",
       written_at: new Date().toISOString(),
+      /*
+       * The same facts the soul.md footer carries, as real JSON keys rather
+       * than a block of text a reader would have to parse back out. Built from
+       * provenanceRows(), so the two cannot say different things about the
+       * same file.
+       *
+       * flosc_workshop/2 is unchanged: this adds a key, it does not alter one.
+       */
+      provenance: (function () {
+        const out = {};
+        provenanceRows().forEach(function (r) {
+          if (r[0] === "") return;
+          // The footer prints the hash with its algorithm inline for a human
+          // reading markdown; JSON already has a field name for that.
+          out[r[0]] = (r[0] === "profile_hash") ? String(r[1]).replace(/^sha256:/, "") : r[1];
+        });
+        out.format = "flosc_workshop/2";
+        return out;
+      })(),
       personality: {
         id: s.id || "",
         name: s.name || "",
@@ -2213,7 +2351,7 @@
     }
     try {
       const payload = JSON.stringify({
-        preset: state.preset, soul: state.soul, sampling: state.sampling, trib: state.trib, custom: state.custom, clouds: cloudList(), categories: state.categories, tribOrder: state.tribOrder, denOrder: state.denOrder, denPlace: state.denPlace, includeComments: state.includeComments, open: state.open,
+        preset: state.preset, soul: state.soul, sampling: state.sampling, trib: state.trib, custom: state.custom, clouds: cloudList(), categories: state.categories, tribOrder: state.tribOrder, denOrder: state.denOrder, denPlace: state.denPlace, includeComments: state.includeComments, include_source_site: state.include_source_site, open: state.open,
         layers: ensureContainers(), tribParent: state.tribParent || {}
       });
       localStorage.setItem("flosc_personality_builder_v33_autosave", payload);
@@ -3151,6 +3289,15 @@
       roleIn.value = (state.soul && state.soul.role) || "";
     }
 
+    // Empty means "use the personality id", so the computed stem is shown as
+    // a placeholder rather than filled in — a filled field would make the
+    // default look like a choice the floscAdmin had already made.
+    const fileIn = document.getElementById("soulFilename");
+    if (fileIn && document.activeElement !== fileIn) {
+      fileIn.value = (state.soul && state.soul.filename) || "";
+      fileIn.placeholder = fileBase();
+    }
+
     renderSpec();
   }
 
@@ -3183,6 +3330,8 @@
     if (hide) hide.checked = !!state.hideOff;
     const inc = document.getElementById("includeComments");
     if (inc) inc.checked = !!state.includeComments;
+    const src = document.getElementById("includeSourceSite");
+    if (src) src.checked = !!state.include_source_site;
     renderCols();
     renderSpine();
     renderEditor();
@@ -3803,6 +3952,21 @@
     renderOut();
   });
 
+  document.getElementById("soulFilename").addEventListener("input", function () {
+    if (!state.soul) return;
+    // Stored as typed; fileBase() does the cleaning. Sanitising on keystroke
+    // fights the person typing — a dot removed mid-word moves their cursor.
+    state.soul.filename = this.value;
+    persistSoft();
+    renderOut();
+  });
+
+  document.getElementById("includeSourceSite").addEventListener("change", function () {
+    state.include_source_site = this.checked;
+    persistSoft();
+    renderOut();
+  });
+
   document.getElementById("preset").addEventListener("change", function () {
     applyPreset(this.value);
     persistSoft();
@@ -3897,7 +4061,28 @@
     const plate = esc(s.content_plate || "No content plate defined.");
     return '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>' + title + ' · FLOSC personality preview</title><style>' +
       ':root{--ink:#17211b;--muted:#66716a;--paper:#f5f1e8;--card:#fffdf8;--line:#d9d0bf;--green:#155b3a;--gold:#c27a1a;--shadow:0 14px 36px rgba(23,33,27,.10)}*{box-sizing:border-box}body{margin:0;color:var(--ink);background:linear-gradient(135deg,#f5f1e8,#e8efe7);font:16px/1.6 Georgia,"Times New Roman",serif}.page{max-width:980px;margin:0 auto;padding:42px 22px 70px}.hero,.section{background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow)}.hero{padding:34px;border-radius:22px;margin-bottom:20px}.eyebrow,.layer-label,.tags{font:700 11px/1.3 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:.12em;text-transform:uppercase}.eyebrow{color:var(--gold)}h1{margin:8px 0 4px;font-size:clamp(2rem,5vw,4rem);line-height:1.02}h2{margin:0 0 12px;font-size:1.35rem}h3{margin:0 0 6px;font-size:1rem}.role{color:var(--muted);font-size:1.1rem}.hero-grid{display:grid;grid-template-columns:1.3fr .7fr;gap:24px;margin-top:26px}.signal{border-left:3px solid var(--green);padding-left:15px}.signal strong{display:block;color:var(--green)}.section{padding:24px;border-radius:16px;margin-top:20px}.layer{display:grid;grid-template-columns:130px 1fr;gap:18px;padding:18px 0;border-top:1px solid var(--line)}.layer:first-child{border-top:0;padding-top:4px}.layer-label{color:var(--green);padding-top:5px}.layer-items{display:grid;gap:10px}.layer article{border:1px solid var(--line);border-radius:10px;padding:13px 15px;background:#fff}.layer article p{margin:0;color:#435047}.tags{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px;color:var(--muted);letter-spacing:.04em;text-transform:none}.tags span{border:1px solid var(--line);border-radius:999px;padding:3px 8px}.empty{margin:0;color:var(--muted)}.plate,.profile{white-space:normal;background:#f1f5f0;border-left:3px solid var(--green);padding:16px;overflow:auto}.profile{font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace}.footer{margin-top:24px;color:var(--muted);font:12px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}@media(max-width:700px){.hero-grid,.layer{grid-template-columns:1fr}.page{padding:20px 12px 45px}.hero,.section{padding:20px}}' +
-      '</style></head><body><main class="page"><header class="hero"><div class="eyebrow">FLOSC · HTML AI personality preview</div><h1>' + title + '</h1><div class="role">' + role + '</div><div class="hero-grid"><div><p>' + esc(s.identity_lock || s.character || "This personality is generated from the active builder configuration.") + '</p><div class="signal"><strong>Current trajectory</strong>' + trajectory + '</div></div><div class="signal"><strong>Content plate</strong>' + plate + '</div></div></header><section class="section"><h2>Personality layers</h2>' + layers + '</section><section class="section"><h2>Test questions</h2><p>Run these through the configured FLOSC agent to compare live behavior with this preview.</p><ul>' + questions + '</ul></section><section class="section"><h2>Compiled personality profile</h2><div class="profile">' + profile + '</div></section><div class="footer">Generated by FLOSC Personality Builder v33. This preview is derived from the current workshop state; it is not a second source of truth.</div></main></body></html>';
+      '</style></head><body><main class="page"><header class="hero"><div class="eyebrow">FLOSC · HTML AI personality preview</div><h1>' + title + '</h1><div class="role">' + role + '</div><div class="hero-grid"><div><p>' + esc(s.identity_lock || s.character || "This personality is generated from the active builder configuration.") + '</p><div class="signal"><strong>Current trajectory</strong>' + trajectory + '</div></div><div class="signal"><strong>Content plate</strong>' + plate + '</div></div></header><section class="section"><h2>Personality layers</h2>' + layers + '</section><section class="section"><h2>Test questions</h2><p>Run these through the configured FLOSC agent to compare live behavior with this preview.</p><ul>' + questions + '</ul></section><section class="section"><h2>Compiled personality profile</h2><div class="profile">' + profile + '</div></section><div class="footer">Generated by ' + esc(builderLine()) + '. This preview is derived from the current workshop state; it is not a second source of truth.</div></main></body></html>';
+  }
+
+  /*
+   * The stem every download shares.
+   *
+   * The five exports used to build their own names and disagreed about it:
+   * ".personality-preview.html", ".workshop.json", "-soul.md",
+   * "_soul.design.md", ".provider-packs.json" — three separators and, in one
+   * case, two dots in one filename. One helper, underscores throughout, one
+   * dot immediately before the extension.
+   *
+   * The floscAdmin can override the stem in the filename field. Dots are
+   * stripped from whatever they type, so a typed name cannot reintroduce the
+   * second dot this exists to remove.
+   */
+  function fileBase() {
+    const typed = String((state.soul && state.soul.filename) || "").trim();
+    const fallback = (state.soul && (state.soul.id || state.soul.name)) || "personality";
+    const base = typed !== "" ? typed : String(fallback);
+    const clean = base.replace(/[^\w-]+/g, "_").replace(/^_+|_+$/g, "");
+    return clean !== "" ? clean : "personality";
   }
 
   function downloadBlob(name, text, type) {
@@ -3918,24 +4103,19 @@
     }
   });
   document.getElementById("btnExportPreview").addEventListener("click", function () {
-    const id = (state.soul.id || state.soul.name || "personality").replace(/[^\w.-]+/g, "_");
-    downloadBlob(id + ".personality-preview.html", personalityPreviewHtml(), "text/html");
+    downloadBlob(fileBase() + "_preview.html", personalityPreviewHtml(), "text/html");
   });
   document.getElementById("btnExportWorkshop").addEventListener("click", function () {
-    const id = (state.soul.id || state.soul.name || "personality").replace(/[^\w.-]+/g, "_");
-    downloadBlob(id + ".workshop.json", JSON.stringify(workshopFile(), null, 2), "application/json");
+    downloadBlob(fileBase() + "_workshop.json", JSON.stringify(workshopFile(), null, 2), "application/json");
   });
   document.getElementById("btnExportMd").addEventListener("click", function () {
-    const id = (state.soul.id || state.soul.name || "personality").replace(/[^\w.-]+/g, "_");
-    downloadBlob(id + "-soul.md", promptFile(), "text/markdown");
+    downloadBlob(fileBase() + "_soul.md", promptFile(), "text/markdown");
   });
   document.getElementById("btnExportMdDesign").addEventListener("click", function () {
-    const id = (state.soul.id || state.soul.name || "personality").replace(/[^\w.-]+/g, "_");
-    downloadBlob(id + "_soul.design.md", compilePrompt(true) + "\n\n" + profileFooter(), "text/markdown");
+    downloadBlob(fileBase() + "_soul_design.md", designFile(), "text/markdown");
   });
   document.getElementById("btnExportProviders").addEventListener("click", function () {
-    const id = (state.soul.id || state.soul.name || "personality").replace(/[^\w.-]+/g, "_");
-    downloadBlob(id + ".provider-packs.json", JSON.stringify(providerPacks(), null, 2), "application/json");
+    downloadBlob(fileBase() + "_provider_packs.json", JSON.stringify(providerPacks(), null, 2), "application/json");
   });
   document.getElementById("btnImport").addEventListener("click", function () {
     document.getElementById("fileIn").click();
@@ -4074,6 +4254,10 @@
         state.denOrder = parsed.denOrder || [];
         if (parsed.denPlace) state.denPlace = parsed.denPlace;
         if (typeof parsed.includeComments === "boolean") state.includeComments = parsed.includeComments;
+        // Restored only when it was actually stored as a boolean, so an older
+        // autosave without the key keeps the off default rather than reading
+        // undefined as a choice.
+        if (typeof parsed.include_source_site === "boolean") state.include_source_site = parsed.include_source_site;
         /* Container model: restore when present; otherwise ensure* reseeds
            the standards and migration assigns every topic a parent. */
         if (Array.isArray(parsed.layers) && parsed.layers.length) {

@@ -994,3 +994,10 @@
 .identity-row label { font-size: 12px; opacity: .75; }
 .identity-row input { padding: 6px 8px; font: inherit; }
 .identity-note { margin: 0 0 10px; }
+/* The filename is a stem, not prose: monospace so a typed underscore or a
+   stray dot is visible rather than something the reader has to squint at. */
+.identity-row #soulFilename { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+/* Sits in the Export row beside the download buttons, because that is the
+   only place it changes anything. */
+.export-toggle { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.export-toggle input { margin: 0; }

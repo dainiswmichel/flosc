@@ -127,7 +127,7 @@ preg_match_all( "/'ai_base_prompt'\s*=>\s*<<<'PROMPT'\n(.*?)\nPROMPT,/s", $libra
 ok( 'four shipped profiles found', count( $prompts[1] ), 4 );
 
 foreach ( $prompts[1] as $body ) {
-	preg_match( '/# Personality profile: (.+)/', $body, $who );
+	preg_match( '/# DA1\/FLOSC AI Personality Profile Name: (.+)/', $body, $who );
 	$name = isset( $who[1] ) ? trim( $who[1] ) : 'unnamed';
 
 	foreach ( array( '## How you sell', '## Always' ) as $heading ) {
