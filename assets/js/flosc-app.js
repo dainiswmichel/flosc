@@ -11542,17 +11542,17 @@ Purchased: ${ctx.purchased}
         this.syncVisitorTokenBalanceFromPayload(data);
 
         if (!response.ok) {
-            const errorMsg = data.error || data.message || `Server error (${response.status})`;
+            const errorMsg = data.response || data.message || data.error || `Server error (${response.status})`;
             const err = new Error(errorMsg);
-            err.floscCode = String(data.error_code || data.code || '');
+            err.floscCode = String(data.error_code || data.code || data.error || '');
             err.floscPayload = data;
             throw err;
         }
 
         if (!data.success) {
-            const errorMsg = data.error || data.message || 'Unknown API error';
+            const errorMsg = data.response || data.message || data.error || 'Unknown API error';
             const err = new Error(errorMsg);
-            err.floscCode = String(data.error_code || '');
+            err.floscCode = String(data.error_code || data.code || data.error || '');
             err.floscPayload = data;
             throw err;
         }
