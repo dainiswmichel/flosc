@@ -86,6 +86,38 @@ foreach ( array( 'full access', 'everything', 'all content' ) as $claim ) {
 ok( 'and the model is told these are tiers, not contents',
 	strpos( $pack, 'These name access tiers, not what any tier contains' ) !== false, true );
 
+// The same claim had a second home. The phase list was fixed; the STATE UPDATES
+// block in the follow-up chatpack still said "now a member with full access" on
+// the turn straight after a purchase, which is when the model is most likely to
+// be asked what was just bought.
+preg_match_all( '/\$state_updates\[\] = "([^"]*)"/', $pack, $updates );
+ok( 'the state-update lines were found', count( $updates[1] ) >= 3, true );
+$update_text = implode( "\n", $updates[1] );
+foreach ( array( 'full access', 'everything', 'all content' ) as $claim ) {
+	ok( 'no "' . $claim . '" claimed in a state update',
+		stripos( $update_text, $claim ) !== false, false );
+}
+
+// Two blocks both numbered 5c is not a cosmetic problem: the section number is
+// how the prompt tells the model one block ended and another began.
+// One number, one title. The same number appearing twice in the source is
+// fine — build_identity_section() writes "## 1. IDENTITY" in both of its
+// branches, and only one of them runs. Two different titles under one number
+// is the defect: GROUPS and KNOWLEDGE BASE were both 5c, and a section number
+// is how the prompt tells the model one block ended and another began.
+preg_match_all( '/## (\d[a-z]?)\. ([A-Z][A-Z ]+)/', $pack, $numbers, PREG_SET_ORDER );
+$titles_by_number = array();
+foreach ( $numbers as $m ) {
+	$titles_by_number[ $m[1] ][ trim( $m[2] ) ] = true;
+}
+$collisions = array();
+foreach ( $titles_by_number as $number => $titles ) {
+	if ( count( $titles ) > 1 ) {
+		$collisions[] = $number . ': ' . implode( ' / ', array_keys( $titles ) );
+	}
+}
+ok( 'no chatpack section number carries two different titles', $collisions, array() );
+
 // The flow section sends the five phases, their outcomes and the floscAdmin's
 // phase prompt on every turn. A personality that repeats that text does not
 // reinforce it — it crowds out the character that was the reason to attach a
