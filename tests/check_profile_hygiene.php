@@ -218,6 +218,20 @@ foreach ( array( '_soul.md', '_soul_design.md', '_workshop.json', '_preview.html
 }
 ok( '  one dot per filename, before the extension', $multi_dot, array() );
 
+// "Copy this file" sits in the Export row, so it is for sending a personality
+// somewhere — and a personality that arrives somewhere with nothing saying
+// what made it is the thing the footer exists to prevent. It used to copy the
+// panel, which shows the runtime profile and carries no footer.
+echo "\nCopying the file copies the file, not the panel\n";
+ok( 'the profile tab copies the travelling copy',
+	strpos( $builder, 'const text = (state.outTab === "prompt")' ) !== false, true );
+ok( '  which is the same bytes as the soul.md download',
+	substr_count( $builder, 'promptFile()' ) >= 3, true );
+// Builder state and Validation show something else; copying the panel is right
+// there.
+ok( '  and the other tabs still copy what they show',
+	strpos( $builder, 'pane && pane.textContent ? pane.textContent : promptFile()' ) !== false, true );
+
 echo "\nThe footer and the workshop file cannot disagree\n";
 // Both are built from provenanceRows(), so a field added to one is in the
 // other. Two hand-maintained lists would drift the first time one was edited.

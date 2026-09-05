@@ -4019,7 +4019,23 @@
   }
   document.getElementById("btnCopy").addEventListener("click", function () {
     const pane = document.getElementById("out");
-    const text = pane && pane.textContent ? pane.textContent : promptFile();
+    /*
+     * On the profile tab this copies the travelling file — the same bytes as
+     * Download soul.md, footer and all — not the panel.
+     *
+     * The panel shows what is saved to the library and sent on every turn,
+     * which carries no footer on purpose: provenance in a document billed
+     * every turn is paying rent forever. But a button in the Export row named
+     * "Copy this file" is for sending the personality somewhere, and a
+     * personality that arrives somewhere with nothing saying what made it is
+     * the thing the footer exists to prevent.
+     *
+     * The other tabs copy what they show: on Builder state you want the JSON
+     * you are looking at.
+     */
+    const text = (state.outTab === "prompt")
+      ? promptFile()
+      : (pane && pane.textContent ? pane.textContent : promptFile());
     const b = document.getElementById("btnCopy");
     copyText(text).then(function () {
       const prev = b.textContent;
