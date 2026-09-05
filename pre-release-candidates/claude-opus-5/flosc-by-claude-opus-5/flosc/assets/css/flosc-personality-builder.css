@@ -985,3 +985,12 @@
 /* What made this. Shown where someone is building, so the name on the tool and
    the name in a downloaded profile's footer are the same name. */
 .builder-attribution { margin: 2px 0 0; font-size: 12px; opacity: .7; }
+
+/* Name and role. The first two lines of every profile, and until now the only
+   two things about a personality that could not be changed here. */
+.identity-row { display: flex; gap: 12px; margin: 10px 0 6px; flex-wrap: wrap; }
+.identity-row .field { display: flex; flex-direction: column; gap: 3px; min-width: 180px; }
+.identity-row .field--wide { flex: 1 1 320px; }
+.identity-row label { font-size: 12px; opacity: .75; }
+.identity-row input { padding: 6px 8px; font: inherit; }
+.identity-note { margin: 0 0 10px; }

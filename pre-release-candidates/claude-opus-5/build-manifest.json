@@ -4,10 +4,10 @@
   "status": "ASSEMBLED_AWAITING_FRESH_INSTALL_ACCEPTANCE",
   "branch": "claude/ready-to-help-jsw2li",
   "baseline_commit": "477f252",
-  "head_commit": "24b99316ff958b3d1f7f6c6e9e3d948dd7d91f7e",
+  "head_commit": "526603316ffaf93888c41b5dd9fe40c2fd011d0a",
   "version": "8.0.0",
-  "artifact": null,
-  "artifact_note": "The full tree is here, same as the other candidates. No flosc.zip: build with ./flosc-ship.sh from this tree or from the branch — they are identical at this commit. pre-release-candidates/ is excluded from the artifact by .distignore and by the build's hard deny list.",
+  "artifact": "flosc.zip",
+  "artifact_note": "Built from this tree with its own build-dist-zip.sh, which fails closed: .distignore plus a hard deny list, then a scan of the staged tree that refuses to write the zip if a forbidden path survived. sha256 in SHA256SUMS.",
   "assembled_from": {
     "codex-gpt5": "full profile every turn, RAG fallthrough, get_response_result(), personality boilerplate removal, genome/profile fingerprint",
     "opencode-big-pickle": "no-hedge method pair and the method_exists guards",
@@ -15,14 +15,14 @@
     "github-copilot": "nothing advanced"
   },
   "verification": {
-    "php_syntax_all_files": "passed",
+    "php_syntax_all_files": "passed (147 files in the artifact)",
     "javascript_syntax": "passed",
     "test_suite": "passed (24 files)",
     "starter_pack_manifest": "passed",
     "packaging_gates": "passed",
     "version_held_at_8_0_0": "passed",
     "wordpress_runtime": "DEFERRED — fresh install required",
-    "wordpress_plugin_check": "DEFERRED — fresh install required",
+    "wordpress_plugin_check": "one WARNING repaired, 2026-09-05: WordPress.DB.PreparedSQL.InterpolatedNotPrepared in the chat logger. Five PluginCheck.CodeAnalysis.AIProvider.DirectIntegration warnings remain and are design, not defect — see plugin_check_ai_provider_note.",
     "live_ai_provider_calls": "DEFERRED — fresh install required",
     "journey_harness": "DEFERRED — needs WP-CLI on the target site",
     "contract_acceptance": "DEFERRED — personality built from scratch, attached to a pack, carrying that flow to its outcome"
@@ -38,14 +38,17 @@
     "check_attachment_save.php",
     "check_profile_hygiene.php",
     "check_starter_pack_assets.php",
-    "check_packaging.php"
+    "check_packaging.php",
+    "check_identity_every_turn.php",
+    "check_site_index_types.php",
+    "check_buddyboss_index.php"
   ],
   "harness": "tests/journey-harness.php (WP-CLI, --require, never shipped)",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "tree_files": 277,
-  "candidate_version": "v4",
-  "artifact_sha256": "6cad4ffbce65d6573d68cc1a12412c555fde59513fca2a3859f7616e598a1ae1",
-  "artifact_files": 276,
+  "candidate_version": "v5",
+  "artifact_sha256": "88751c4845a35701aab0c49419e11b2c8ce9230f3c09987802ff6f7372a743e6",
+  "artifact_files": 236,
   "v3_fixes": [
     "Recovered answer no longer shown twice after a signed-in reload mid-response.",
     "profile_hash computed on read when the stored field is empty, so the chat log column is never blank.",
@@ -56,6 +59,12 @@
     "A personality built in the builder opens with the same header the shipped ones do.",
     "The portability line moved to the download; provenance is visible beside the profile.",
     "The site index reads whichever post types the flow selects, not only 'post'.",
-    "BuddyBoss group directory indexed, catalogued on every turn, and fail-closed by tier and group privacy."
+    "BuddyBoss group directory indexed, catalogued on every turn, and fail-closed by tier and group privacy.",
+    "The compiled profile is sent on every turn, not only the first. Recorded here after the fact: it shipped in v4 and was first written up in v5."
+  ],
+  "plugin_check_ai_provider_note": "Plugin Check suggests WordPress 7.0 wp_ai_client_prompt() wherever it sees a provider hostname. The five flagged lines are the model-catalog and model-detail endpoints, which enumerate what a floscAdmin key can use so the admin dropdown shows real models. The AI Client sends prompts; it does not list a provider catalogue for a key, so the suggested replacement does not cover these calls. Left visible rather than annotated away. Adopting the AI Client for the prompt path is a real feature decision, not a lint fix.",
+  "v5_fixes": [
+    "A personality can be renamed. state.soul.name was read in six places in the builder — the profile heading, the identity line, the save payload and four export filenames — and written in none. No field existed, so the name seeded from the library at boot was the only name a personality could ever have. Same for the role. The id is untouched: it is the key a flow attaches by.",
+    "The chat logger quotes its table name with a %i placeholder instead of interpolating it into the SQL string (Plugin Check, WordPress.DB.PreparedSQL.InterpolatedNotPrepared), and check_log_contract.php now fails on any line that interpolates it."
   ]
 }

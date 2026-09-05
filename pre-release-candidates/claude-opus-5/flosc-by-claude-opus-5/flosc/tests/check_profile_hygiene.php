@@ -104,6 +104,44 @@ foreach ( $shipped[1] as $body ) {
 
 // The framing line is for a file that has left FLOSC. Inside it, the chatpack
 // already frames the profile, and none of the shipped four carry it.
+// state.soul.name was read in six places and assigned in none, so a personality
+// could be redesigned station by station and never renamed. The role is half of
+// the second line of every profile and had the same problem.
+echo "\nA personality can be renamed\n";
+$markup = (string) file_get_contents( $root . '/assets/personality-builder/flosc-personality-builder-markup.php' );
+$bridge = (string) file_get_contents( $root . '/assets/js/flosc-personality-builder-wp.js' );
+
+ok( 'there is a name field',
+	strpos( $markup, 'id="soulName"' ) !== false, true );
+ok( '  and a role field',
+	strpos( $markup, 'id="soulRole"' ) !== false, true );
+ok( 'typing a name writes it to the state',
+	strpos( $builder, 'state.soul.name = this.value;' ) !== false, true );
+ok( '  and the label follows it, so the dropdown cannot disagree',
+	strpos( $builder, 'state.soul.label = this.value;' ) !== false, true );
+ok( 'typing a role writes it too',
+	strpos( $builder, 'state.soul.role = this.value;' ) !== false, true );
+ok( 'both are reflected back without stealing the caret',
+	substr_count( $builder, 'document.activeElement !== nameIn' )
+	+ substr_count( $builder, 'document.activeElement !== roleIn' ), 2 );
+
+echo "\nAnd the rename survives the round trip\n";
+ok( 'the save sends the name',
+	strpos( $bridge, 'body.append("ai_personality_name", bits.name);' ) !== false, true );
+ok( '  the role',
+	strpos( $bridge, 'body.append("ai_personality_role", bits.role);' ) !== false, true );
+ok( '  and the label',
+	strpos( $bridge, 'body.append("label", bits.label);' ) !== false, true );
+foreach ( array( 'label', 'ai_personality_name', 'ai_personality_role' ) as $field ) {
+	ok( '  the server accepts ' . $field,
+		strpos( $library, "\$fields['" . $field . "'] = sanitize_text_field( wp_unslash(" ) !== false, true );
+}
+
+// The id is the key a floscFlow attaches by. Renaming must never move it, or
+// every flow pointing at that personality loses it.
+ok( 'and the id is never rewritten from the name',
+	(bool) preg_match( '/state\.soul\.id = this\.value/', $builder ), false );
+
 echo "\nThe portability line is on the download, not in what is stored\n";
 ok( 'compilePrompt() does not emit it',
 	strpos( (string) $compile, 'If you are an AI reading this' ) !== false, false );

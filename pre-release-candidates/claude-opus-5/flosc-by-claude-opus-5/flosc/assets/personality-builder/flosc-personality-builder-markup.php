@@ -10,6 +10,17 @@ if ( ! defined( 'ABSPATH' ) ) {
       <h1>Personality profile</h1>
       <p class="builder-attribution">DA1 AI Personality Builder · FLOSC edition · <?php echo esc_html( defined( 'FLOSC_DA1_BUILDER_VERSION' ) ? FLOSC_DA1_BUILDER_VERSION : '3.1.2' ); ?></p>
       <p>Build the personality by selecting aspects, placing them on the density sequence, and defining how the AI expresses them.</p>
+      <div class="identity-row">
+        <div class="field">
+          <label for="soulName">Name</label>
+          <input id="soulName" type="text" placeholder="e.g. DadJokeDan" autocomplete="off">
+        </div>
+        <div class="field field--wide">
+          <label for="soulRole">Role</label>
+          <input id="soulRole" type="text" placeholder="e.g. a pun-powered dad who always has a joke at the ready" autocomplete="off">
+        </div>
+      </div>
+      <p class="figure-readout identity-note">The first two lines of the profile: <code># Personality profile: Name</code> and <code>You are Name, role.</code> Changing the name here renames the personality everywhere it is shown; the id a floscFlow attaches to does not change.</p>
       <div class="meta">
         <span class="chip">Aspect palette</span>
         <span class="chip">Density-ordered profile</span>

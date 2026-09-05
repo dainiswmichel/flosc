@@ -1,38 +1,37 @@
 # Home run candidate — Claude Opus 5
 
-**v4.** BuddyBoss awareness, plus four fixes from live testing.
+**v5.** A personality can be renamed, and the one Plugin Check warning that
+named a defect is gone.
 
-- The framework was telling the model, every turn, that membership means "full
-  access to all content". A guest asked how to become a member and was told
-  exactly that. FLOSC does not know what any membership contains; the phase list
-  now names access tiers and nothing else.
-- A personality built in the builder now opens with the same three lines the
-  shipped ones do. It was producing a bare name with no heading — a different
-  kind of document at the top, which by the density rule is the most privileged
-  position in it.
-- Provenance is visible beside the profile — builder, edition, version, which
-  edit it is, the sha256, when it was saved — instead of only inside a
-  downloaded file.
-- A reload while the assistant was still typing showed the reply twice on a
-  signed-in turn. profile_hash was empty on every chat log row. The log export
-  filename now carries a full MTS instead of the date alone.
+- **Renaming worked nowhere.** `state.soul.name` was read in six places in the
+  builder — the profile heading, the identity line, the save payload and four
+  export filenames — and written in none. No field existed. The name seeded from
+  the library at boot was posted back unchanged on every save, so DadJokeDan
+  could never become DadJokes Dan. The role had the same hole. Both are now
+  editable, and the name also writes `label` so the dropdown cannot disagree
+  with the profile. The `id` is deliberately untouched: it is the key a flow
+  attaches by, and renaming must not detach a personality from its flow.
+- **`WordPress.DB.PreparedSQL.InterpolatedNotPrepared`** — the turn-recovery
+  query built its `FROM` clause by string interpolation while all 23 other
+  queries in the logger passed the table name to `prepare()` as `%i`. Same
+  value, but reaching SQL unquoted. Fixed, and gated.
 
-BuddyBoss: the site index read one hardcoded post type, so products, pages and
-forum topics were invisible although all of them are WP_Post. It now reads
-whichever types the flow selects. The group directory, which really does live in
-the BuddyPress tables, has an adapter and rides on every turn as a catalogue —
-fail-closed by tier, by exclusion, and by BuddyBoss privacy, which FLOSC can
-tighten and never loosen. Every BuddyPress call is guarded; a site without it
-pays nothing and sees a plain note on the panel.
+The five remaining Plugin Check warnings are all
+`PluginCheck.CodeAnalysis.AIProvider.DirectIntegration`, which suggests
+WordPress 7.0's `wp_ai_client_prompt()` wherever it sees a provider hostname.
+The flagged lines are the model-catalogue and model-detail endpoints: they
+enumerate what a floscAdmin's own key can use, so the admin dropdown lists real
+models. The AI Client sends prompts; it does not list a provider's catalogue for
+a key. They are left visible rather than annotated away — see
+`plugin_check_ai_provider_note` in the manifest.
 
-Assembled from the four tested candidates. Version held at **8.0.0** — this is
-a resubmission, not a release.
+Version held at **8.0.0** — this is a resubmission, not a release.
 
 ## Where the code is
 
     branch:  claude/ready-to-help-jsw2li
     tree:    the plugin at the repository root on that branch
-    commits: 15, from 477f252 to the branch head
+    commits: 27, from 477f252 to the branch head
 
 https://github.com/dainiswmichel/flosc/tree/claude/ready-to-help-jsw2li
 
@@ -40,8 +39,11 @@ https://github.com/dainiswmichel/flosc/tree/claude/ready-to-help-jsw2li
 the other four candidates carry, so this folder can be deployed from directly
 without pulling the branch first.
 
-**No `flosc.zip` here** — the Captain builds those with `./flosc-ship.sh`. Build
-from either copy; they are identical.
+`flosc.zip` is here, built from this tree by its own `build-dist-zip.sh` —
+236 files, one `flosc/` root, sha256 in `SHA256SUMS`. The build fails closed:
+`.distignore` plus a hard deny list, then a scan of the staged tree that refuses
+to write the zip if a forbidden path survived. `tests/`, `sample-data/`,
+`HANDOFF.md` and `pre-release-candidates/` are all out.
 
 **If you keep both, one will drift.** The branch is the trunk and this tree is a
 snapshot of it. When the branch moves, this does not. Deploy from whichever you
