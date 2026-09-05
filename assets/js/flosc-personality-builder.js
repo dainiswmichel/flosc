@@ -3128,6 +3128,29 @@
     if (plateIn && document.activeElement !== plateIn) {
       plateIn.value = (state.soul && state.soul.content_plate) || "";
     }
+
+    /*
+     * Name and role.
+     *
+     * state.soul.name was read in six places — the profile heading, the
+     * identity line, the save payload, four export filenames — and assigned in
+     * none. The builder loaded the stored name, held it, and sent it back
+     * unchanged, so a personality could be redesigned station by station and
+     * could never be renamed. Same for the role, which is half of the second
+     * line of every profile.
+     *
+     * Skipped while the field has focus, so a redraw does not move the caret
+     * mid-word.
+     */
+    const nameIn = document.getElementById("soulName");
+    if (nameIn && document.activeElement !== nameIn) {
+      nameIn.value = (state.soul && state.soul.name) || "";
+    }
+    const roleIn = document.getElementById("soulRole");
+    if (roleIn && document.activeElement !== roleIn) {
+      roleIn.value = (state.soul && state.soul.role) || "";
+    }
+
     renderSpec();
   }
 
@@ -3759,6 +3782,25 @@
     state.soul.content_plate = this.value;
     persistSoft();
     renderSpec();
+  });
+
+  document.getElementById("soulName").addEventListener("input", function () {
+    if (!state.soul) return;
+    state.soul.name = this.value;
+    // The label is what a floscAdmin picks from the Attached personality
+    // dropdown. It follows the name, so the two cannot drift apart and leave
+    // somebody choosing "Dad Joke Dan" and getting a profile that says
+    // something else. The id is untouched — that is what a flow attaches to.
+    state.soul.label = this.value;
+    persistSoft();
+    renderOut();
+  });
+
+  document.getElementById("soulRole").addEventListener("input", function () {
+    if (!state.soul) return;
+    state.soul.role = this.value;
+    persistSoft();
+    renderOut();
   });
 
   document.getElementById("preset").addEventListener("change", function () {
