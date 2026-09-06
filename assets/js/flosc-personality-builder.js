@@ -50,19 +50,19 @@
     behavior: { label: "Behavior", hint: "density band ≈ 67–100 · more dense. Create aspect pools below." }
   };
   const SOUL_LAYERS = [
-    { id: "identity", band: "soul", label: "Soul · identity", hint: "Who remains, under probe", density: 6 },
-    { id: "goals", band: "soul", label: "Soul · purpose", hint: "What this conversation is for", density: 12 },
-    { id: "rules", band: "soul", label: "Soul · rules & scope", hint: "Invariants, defaults, who is served", density: 18 },
-    { id: "epistemics", band: "soul", label: "Soul · knowing", hint: "How this personality knows, doubts, corrects", density: 24 },
-    { id: "expression", band: "character", label: "Character · thought / feeling / will", hint: "Tone, cadence, conditionals", density: 40 },
-    { id: "relation", band: "character", label: "Character · stance", hint: "How it orients toward this human", density: 48 },
-    { id: "initiative", band: "character", label: "Character · initiative", hint: "When to answer, ask, lead, stay quiet", density: 56 },
-    { id: "adaptation", band: "character", label: "Character · adaptation", hint: "Same soul, fitting intensity", density: 62 },
-    { id: "behavior", band: "behavior", label: "Behavior · selection", hint: "Decisions, edge cases, recipes", density: 74 },
-    { id: "language", band: "behavior", label: "Behavior · language / planning", hint: "Length, examples, phrase banks", density: 84 },
-    { id: "action", band: "behavior", label: "Behavior · manifested action + sampling", hint: "Output now; body/robot later. Sampling sits here.", density: 94 }
+    { id: "identity", band: "soul", label: "Name and Core Role", hint: "Who remains, under probe", density: 6 },
+    { id: "goals", band: "soul", label: "Philosophy and Values", hint: "What this conversation is for", density: 12 },
+    { id: "rules", band: "soul", label: "Hard Boundaries and Prohibitions", hint: "Invariants, defaults, who is served", density: 18 },
+    { id: "epistemics", band: "soul", label: "Knowledge, Doubt and Correction", hint: "How this personality knows, doubts, corrects", density: 24 },
+    { id: "expression", band: "character", label: "Tone and Communication Style", hint: "Tone, cadence, conditionals", density: 40 },
+    { id: "relation", band: "character", label: "Stance Toward the Human", hint: "How it orients toward this human", density: 48 },
+    { id: "initiative", band: "character", label: "Behavior in Ambiguity", hint: "When to answer, ask, lead, stay quiet", density: 56 },
+    { id: "adaptation", band: "character", label: "Adaptation", hint: "Same soul, fitting intensity", density: 62 },
+    { id: "behavior", band: "behavior", label: "Decisions including Infrequent Cases", hint: "Decisions, infrequent cases, recipes", density: 74 },
+    { id: "language", band: "behavior", label: "Banned Words and Fillers to Avoid", hint: "Length, examples, words this personality never uses", density: 84 },
+    { id: "action", band: "behavior", label: "Output and Delivery", hint: "What actually leaves the model, and how it is shaped", density: 94 }
   ];
-  const SHAPE2 = ["circle", "square", "triangle", "star", "diamond", "hexagon", "pentagon", "ellipse", "none"];
+  const SHAPE2 = ["circle", "ellipse", "triangle", "square", "diamond", "pentagon", "hexagon", "star", "none"];
   const SHAPE3 = ["sphere", "cube", "tetrahedron", "stellated", "cylinder", "cone", "none"];
   const SHAPE_PAIR = {
     circle: "sphere", square: "cube", triangle: "tetrahedron", star: "stellated",
@@ -648,7 +648,7 @@
 
   const PRESETS = {
     blank: {
-      meta: { title: "Blank", note: "Empty soul. Tributaries exist, mostly off.", kind: "template", status: "example / template", source: "built into this builder", type: "template" },
+      meta: { title: "Standard structure", note: "The eleven stations of AI personality architecture, in density order, with the invariant aspects on. Name the personality and write into it.", kind: "template", status: "starting structure", source: "built into this builder", type: "template" },
       soul: Object.assign({}, EMPTY_SOUL, { id: "new_personality", label: "New personality", name: "", role: "" }),
       sampling: Object.assign({}, EMPTY_SAMPLING),
       trib: catalogState({ user_input: on(100), memory: on(70), flow_product: on(80), no_fabricate: on(100), one_reality: on(100), lie: ban(-100) })
@@ -1090,6 +1090,14 @@
     if (st && st.shape3) return st.shape3;
     return SHAPE_PAIR[shape2] || "none";
   }
+  /* "star" alone is not a shape a reader can draw. A point count makes it one. */
+  function shapeLabel(st) {
+    const sh = st && st.shape2;
+    if (!sh || sh === "none") return "";
+    const pts = Number(st.starPoints);
+    if (sh === "star" && isFinite(pts) && pts >= 3) return Math.round(pts) + "-pointed star";
+    return sh;
+  }
   function formatDensity(d) {
     const n = Number(d);
     if (!isFinite(n)) return "0";
@@ -1201,7 +1209,40 @@
     st.merge = inferMerge(id, st, st.binding);
     st.density = inferDensity(id, st, role);
     st.trajectory = inferTrajectory(id, st);
+    st.branches = normalizeBranches(st);
     return st;
+  }
+
+  /*
+   * A branch is the if/then/else the floscAdmin never has to write. Stage one
+   * opens with a situational context; every later stage opens with an "after:"
+   * count of that situation holding. A stage overrides only what it states —
+   * anything it leaves out it inherits from the stage above it, and the aspect
+   * default is the else.
+   *
+   * Shape is deliberately not overridable: one aspect, one glyph.
+   */
+  function normalizeBranches(st) {
+    let raw = Array.isArray(st.branches) ? st.branches : null;
+    if (!raw) {
+      /* The old single WHEN clause is stage one of a branch whose response has
+         not been written yet. Nothing an existing floscAdmin authored is lost. */
+      const cond = String(st.condition || "").trim();
+      raw = (st.mode === "conditional" && cond) ? [{ situation: cond, response: "" }] : [];
+    }
+    const out = [];
+    raw.forEach(function (b, i) {
+      const stage = {
+        situation: i === 0 ? String(b.situation || "").trim() : "",
+        after: i === 0 ? "" : String(b.after || "").trim(),
+        response: String(b.response || "").trim()
+      };
+      if (b.gain !== "" && b.gain != null && isFinite(Number(b.gain))) stage.gain = gainNum(b.gain);
+      if (b.density !== "" && b.density != null && isFinite(Number(b.density))) stage.density = clampDensity(b.density);
+      if (b.binding) stage.binding = String(b.binding);
+      out.push(stage);
+    });
+    return out;
   }
   function ensureDenOrder() {
     const ids = allTribs().map(function (t) { return t.id; });
@@ -1430,11 +1471,99 @@
     render();
   }
 
+  /*
+   * The gain ladder. da1_gain is frequency of expression: how often the
+   * aspect's instruction governs. frequency ≈ (gain + 100) / 2.
+   *
+   * "never" and "always" are reserved for exactly -100 and +100, which are the
+   * invariants. Every other value rounds INWARD, never to an absolute — because
+   * a value short of the extreme means an exception exists, and an exception
+   * that reads as "never" is an exception nobody can see. -98 is "almost
+   * never", and the situation block below it names the case it does not cover.
+   */
+  const GAIN_LADDER = [
+    { g: -100, word: "never" },
+    { g: -75, word: "almost never" },
+    { g: -50, word: "rarely" },
+    { g: -25, word: "less often than not" },
+    { g: 0, word: "no preference" },
+    { g: 25, word: "more often than not" },
+    { g: 50, word: "often" },
+    { g: 75, word: "usually" },
+    { g: 100, word: "always" }
+  ];
+  function gainNum(g) {
+    const n = Number(g);
+    if (!isFinite(n)) return 0;
+    return Math.max(-100, Math.min(100, Math.round(n)));
+  }
+  function gainWord(g) {
+    const n = gainNum(g);
+    if (n === -100) return "never";
+    if (n === 100) return "always";
+    let best = "no preference";
+    let bestD = Infinity;
+    GAIN_LADDER.forEach(function (r) {
+      if (r.g === -100 || r.g === 100) return;
+      const d = Math.abs(r.g - n);
+      if (d < bestD) { bestD = d; best = r.word; }
+    });
+    return best;
+  }
+  /* The number ships exactly as stored, with its sign. 0, never +0. */
+  function gainSigned(g) {
+    const n = gainNum(g);
+    return n > 0 ? "+" + n : String(n);
+  }
+  function gainPercent(g) {
+    return Math.round((gainNum(g) + 100) / 2);
+  }
+  function gainReading(g) {
+    return gainSigned(g) + " = frequency: " + gainWord(g) + ";";
+  }
+  function branchesOf(id) {
+    return tribState(id).branches.map(function (b) { return Object.assign({}, b); });
+  }
+  function writeBranches(id, arr) {
+    state.trib[id] = Object.assign({}, tribState(id), { branches: arr });
+    persistSoft();
+  }
+  function setBranchField(id, idx, field, value) {
+    const arr = branchesOf(id);
+    if (!arr[idx]) return;
+    if (field === "gain" || field === "density") {
+      /* Blank means inherit. It is not the same as zero, and storing it as
+         zero would silently author a value the floscAdmin never chose. */
+      if (String(value).trim() === "") delete arr[idx][field];
+      else arr[idx][field] = field === "gain" ? gainNum(value) : clampDensity(value);
+    } else if (field === "binding") {
+      if (!value) delete arr[idx].binding; else arr[idx].binding = value;
+    } else {
+      arr[idx][field] = value;
+    }
+    writeBranches(id, arr);
+    renderOut();
+  }
+  function addBranchStage(id) {
+    const arr = branchesOf(id);
+    arr.push(arr.length ? { after: "", response: "" } : { situation: "", response: "" });
+    writeBranches(id, arr);
+    render();
+  }
+  function removeBranchStage(id, idx) {
+    const arr = branchesOf(id);
+    arr.splice(idx, 1);
+    writeBranches(id, arr);
+    render();
+  }
+
   function gainMeaning(t) {
     const st = tribState(t.id);
-    return st.weight < 0
-      ? "suppresses the named behavior; it is a dam, not an instruction to do the opposite"
-      : "reinforces the named behavior";
+    const n = gainNum(st.weight);
+    if (n === 0) return "no preference — yes and no depend on context";
+    return (n < 0 ? "suppresses" : "reinforces") + " the named behavior · "
+      + gainSigned(n) + " ≈ " + gainPercent(n) + "% · " + gainWord(n)
+      + (Math.abs(n) === 100 ? " · invariant within its situation" : "");
   }
 
   function activeTribs() {
@@ -1834,10 +1963,40 @@
     return bits.join("\n");
   }
 
-  /* One TopicBody: the structured fields of one aspect/post. */
-  function topicBody(t) {
+  /*
+   * The DA1 parameters of one stage, in the document's own two dialects.
+   *
+   * Explanatory marks every parameter with da1_. That prefix is the whole
+   * point: prefixed lines are the apparatus, unprefixed lines are the
+   * character, and a floscAdmin reading the file can tell them apart without
+   * being told. Sequential drops the prefix and the gain number, because the
+   * runtime document has no apparatus layer to separate from — the position in
+   * the document IS the density, and the model needs the word, not the scale.
+   */
+  function paramLines(src, withMetrics, want) {
+    const out = [];
+    if (want.density && src.density != null) {
+      out.push(withMetrics ? "da1_density " + formatDensity(src.density) : "density: " + formatDensity(src.density));
+    }
+    if (want.gain && src.gain != null) {
+      out.push(withMetrics ? "da1_gain: " + gainReading(src.gain) : "frequency: " + gainWord(src.gain));
+    }
+    if (want.binding && src.binding) {
+      out.push(withMetrics ? "da1_binding: " + src.binding : "binding: " + src.binding);
+    }
+    if (want.shape && src.shape) {
+      out.push(withMetrics ? "da1_shape: " + src.shape : "shape: " + src.shape);
+    }
+    return out;
+  }
+
+  /* One TopicBody: the structured fields of one aspect, then its branches. */
+  function topicBody(t, withMetrics) {
     const st = tribState(t.id);
     const bits = [];
+    /* Sequential carries the density in the heading number; explanatory gives
+       it its own line under the heading rather than crowding the heading. */
+    if (withMetrics) bits.push("da1_density " + formatDensity(st.density));
     if (t.short) bits.push("short: " + t.short);
     const inject = yamlish(tribInject(t));
     if (inject) bits.push("instruction: " + inject);
@@ -1845,13 +2004,40 @@
     if (t.works && t.works.length) bits.push("works: " + t.works.join("; "));
     if (t.links && t.links.length) bits.push("resources: " + t.links.map(function (l) { return l.label + " <" + l.url + ">"; }).join(" · "));
     if (t.repo) bits.push("repo: " + t.repo.id + (t.repo.note ? " — " + t.repo.note : ""));
-    let meta = "binding: " + st.binding + " · gain " + ((st.weight >= 0 ? "+" : "") + st.weight) + " · density " + formatDensity(st.density);
-    if (st.shape2 && st.shape2 !== "none") meta += " · shapes " + st.shape2 + "/" + st.shape3;
-    if (st.trajectory) meta += " · trajectory";
-    bits.push(meta);
+    paramLines({ gain: st.weight, binding: st.binding, shape: shapeLabel(st) }, withMetrics,
+      { gain: true, binding: true, shape: true }).forEach(function (l) { bits.push(l); });
+
+    /* A blank line opens each branch block and closes the one before it. */
+    st.branches.forEach(function (b) {
+      /* A stage with neither a condition nor a response is one being written.
+         It belongs in the editor, not in the document. */
+      if (!b.situation && !b.after && !b.response) return;
+      const seg = [];
+      seg.push(b.situation ? "situational context: " + b.situation : "after: " + b.after);
+      if (b.response) seg.push("response: " + b.response);
+      paramLines(b, withMetrics, { gain: true, binding: true, density: true })
+        .forEach(function (l) { seg.push(l); });
+      bits.push("");
+      bits.push(seg.join("\n"));
+    });
+
     if (!st.on) bits.push("status: off");
-    else if (st.mode === "conditional" && String(st.condition || "").trim()) bits.push("status: when " + String(st.condition).trim());
     return bits.join("\n");
+  }
+
+  /* A station heading names itself; the density gets its own line beneath it
+     rather than riding the heading. Sequential numbers the heading instead. */
+  function stationHeading(label, density, withMetrics) {
+    const d = Number(density);
+    if (!isFinite(d)) return "# " + label;
+    return withMetrics
+      ? "# " + label + "\nda1_density " + formatDensity(d)
+      : "# " + formatDensity(d) + " " + label;
+  }
+  function aspectHeading(label, density, withMetrics) {
+    const d = Number(density);
+    if (withMetrics || !isFinite(d)) return "## " + label;
+    return "## " + formatDensity(d) + " " + label;
   }
 
   /* The compiled document walks the container tree: Title (never a
@@ -1895,7 +2081,23 @@
 
     out.push("Speak as this person. Do not discuss how you were made.");
     if (withMetrics) {
-      out.push("<!-- floscDesignNote\nHow to read this file (design companion):\n- Density: each heading sits at a position from 0 (lightest, first) to 100 (densest, last).\n- Gain: −100 excludes what an entry describes entirely; +100 includes it fully.\n- Bands: Soul ≈0–33 · Character ≈34–66 · Behavior ≈67–100.\n-->");
+      out.push("<!-- floscDesignNote\n" +
+        "How to read this file (design companion):\n" +
+        "- Lines beginning da1_ are apparatus. Every other line is the character.\n" +
+        "- da1_density is SEQUENCE: 0 is first and lightest, 100 is last and densest.\n" +
+        "  Position in the document is the value. Order is what resolves conflict.\n" +
+        "- da1_gain is frequency of expression, -100 to +100. frequency = (gain + 100) / 2.\n" +
+        "    -100 never | -75 almost never | -50 rarely | -25 less often than not\n" +
+        "       0 no preference \u2014 yes and no depend on context\n" +
+        "     +25 more often than not | +50 often | +75 usually | +100 always\n" +
+        "  never and always are reserved for exactly \u00b1100, which are invariants.\n" +
+        "  Any other value rounds inward: an exception exists, and it is named below.\n" +
+        "  Negative gain suppresses the named behavior. It never means the opposite.\n" +
+        "- A situational context block is the exception. It states the condition, the\n" +
+        "  response, and any parameter that changes while it holds. A stage opening\n" +
+        "  with after: N turns runs once that situation has held that long. A stage\n" +
+        "  overrides only what it states; everything else it inherits.\n" +
+        "- Bands: Soul \u22480\u201333 \u00b7 Character \u224834\u201366 \u00b7 Behavior \u224867\u2013100.\n-->");
     }
 
     const toc = [];
@@ -1912,7 +2114,7 @@
 
     containersSorted().forEach(function (L) {
       if (L.kind === "providers") {
-        out.push("# " + L.label);
+        out.push(stationHeading(L.label, L.density, withMetrics));
         const set = PROVIDER_FIELDS.filter(function (f) {
           const v = state.sampling[f.id];
           return !(v === "" || v == null);
@@ -1922,11 +2124,11 @@
         // has no way to tell that from character.
         if (!set.length) { out.pop(); return; }
         set.forEach(function (f) {
-          out.push("## " + f.label + "\nvalue: " + state.sampling[f.id]);
+          out.push(aspectHeading(f.label, L.density, withMetrics) + "\nvalue: " + state.sampling[f.id]);
         });
         return;
       }
-      out.push("# " + L.label);
+      out.push(stationHeading(L.label, L.density, withMetrics));
       if (L.desc) out.push(yamlish(L.desc));
       (SOUL_SECTIONS[L.id] || []).forEach(function (pair) {
         const body = yamlish(pair[1](s));
@@ -1936,16 +2138,22 @@
         if (k.kind === "cloud") {
           const cl = cloudById(k.id);
           if (!cl || cl.members.length < 2) return;
-          if (cl.name) out.push("# " + cl.name);
+          const members = cl.members.map(function (id) { return allTribs().find(function (x) { return x.id === id; }); })
+            .filter(Boolean)
+            .sort(function (a, b) { return tribState(a.id).density - tribState(b.id).density; });
+          /* A cloud is a grouping inside a station, not a station of its own.
+             It takes the density of its first member so that every heading in
+             the sequential document carries a number. */
+          const clDen = members.length ? tribState(members[0].id).density : L.density;
+          if (cl.name) out.push(stationHeading(cl.name, clDen, withMetrics));
           const lead = String(cl.explanation || "").trim();
           if (lead) out.push(lead);
-          cl.members.map(function (id) { return allTribs().find(function (x) { return x.id === id; }); })
-            .filter(Boolean)
-            .sort(function (a, b) { return tribState(a.id).density - tribState(b.id).density; })
-            .forEach(function (t) { out.push("## " + t.label + "\n" + topicBody(t)); });
+          members.forEach(function (t) {
+            out.push(aspectHeading(t.label, tribState(t.id).density, withMetrics) + "\n" + topicBody(t, withMetrics));
+          });
         } else {
           const t = allTribs().find(function (x) { return x.id === k.id; });
-          if (t) out.push("## " + t.label + "\n" + topicBody(t));
+          if (t) out.push(aspectHeading(t.label, tribState(t.id).density, withMetrics) + "\n" + topicBody(t, withMetrics));
         }
       });
     });
@@ -2645,11 +2853,44 @@
       return '<button type="button" data-' + attr + '="' + id + '" data-val="' + v + '"' + (current === v ? ' class="on"' : "") + ">" + v + "</button>";
     }).join("") + "</div>";
   }
+  /*
+   * The if/then/else, authored. Stage one names the situation; later stages
+   * open with an "after:" count of that situation holding. Every override is
+   * optional — an empty field inherits, which is what makes the aspect default
+   * the else without anyone writing the word.
+   */
+  function branchEditor(t, st) {
+    const rows = st.branches.map(function (b, i) {
+      const key = t.id + "|" + i + "|";
+      const head = i === 0
+        ? '<label class="excerpt-lab">Situational context · when this aspect behaves differently</label>' +
+          '<input class="cond-in" data-br="' + key + 'situation" placeholder="e.g. visitor is distressed, grieving, or reporting a fault" value="' + esc(b.situation) + '">'
+        : '<label class="excerpt-lab">After · how long that situation has held</label>' +
+          '<input class="cond-in" data-br="' + key + 'after" placeholder="e.g. 3 turns" value="' + esc(b.after) + '">';
+      return '<div class="branch-stage">' + head +
+        '<label class="excerpt-lab">Response · what to do while it holds</label>' +
+        '<textarea class="traj-phrase" data-br="' + key + 'response" placeholder="e.g. answer plainly, no play">' + esc(b.response) + '</textarea>' +
+        '<div class="param-row">' +
+        '<div class="param-group"><span>Gain</span><input type="number" min="-100" max="100" step="5" data-br="' + key + 'gain" placeholder="inherit" value="' + esc(b.gain == null ? "" : String(b.gain)) + '" style="width:6rem"></div>' +
+        '<div class="param-group"><span>Density</span><input type="number" min="0" max="100" step="any" data-br="' + key + 'density" placeholder="inherit" value="' + esc(b.density == null ? "" : formatDensity(b.density)) + '" style="width:6rem"></div>' +
+        '<div class="param-group"><span>Binding</span><select data-br="' + key + 'binding">' +
+        ["", "must", "should", "may", "dam"].map(function (v) {
+          return '<option value="' + v + '"' + ((b.binding || "") === v ? " selected" : "") + ">" + (v || "inherit") + "</option>";
+        }).join("") + "</select></div>" +
+        "</div>" +
+        '<button type="button" class="btn ghost danger" data-br-remove="' + t.id + "|" + i + '">Remove this stage</button>' +
+        "</div>";
+    }).join("");
+    return '<div class="branch-block">' + rows +
+      '<button type="button" class="btn ghost" data-br-add="' + t.id + '">' +
+      (st.branches.length ? "Add a further stage" : "Add a situational context") + "</button>" +
+      '<p class="figure-readout">A stage overrides only what you fill in. Anything left blank it inherits from the stage above, and the aspect itself is the else. Shape is set once per aspect and is not overridden here.</p>' +
+      "</div>";
+  }
+
   function wellspringEditor(t) {
     const st = tribState(t.id);
-    const cond = st.mode === "conditional"
-      ? '<input class="cond-in" data-cond="' + t.id + '" placeholder="WHEN this source applies…" value="' + esc(st.condition) + '">'
-      : "";
+    const cond = branchEditor(t, st);
     const role = tribRole(t);
     return teachHtml(t) +
       '<div class="color-row"><label>Hue</label><input type="color" data-color="' + t.id + '" value="' + esc(tribColor(t)) + '"><code class="color-hex">' + esc(tribColor(t)) + "</code><span>tag only · not a mix</span></div>" +
@@ -2668,8 +2909,10 @@
       '<div class="param-group"><span>Binding</span><div class="seg binding">' + ["must", "should", "may", "dam"].map(function (v) {
         return '<button type="button" data-binding="' + t.id + '" data-val="' + v + '"' + (st.binding === v ? ' class="on"' : "") + ">" + v + "</button>";
       }).join("") + "</div></div>" +
-      '<div class="param-group"><span>Shape 2D</span>' + segButtons(t.id, "shape2", SHAPE2, st.shape2) + "</div>" +
-      '<div class="param-group"><span>Shape 3D</span>' + segButtons(t.id, "shape3", SHAPE3, st.shape3) + "</div>" +
+      '<div class="param-group"><span>Shape 2D</span>' + segButtons(t.id, "shape2", SHAPE2, st.shape2) +
+      (st.shape2 === "star"
+        ? '<label class="star-points">points <input type="number" min="3" max="24" step="1" data-star-points="' + t.id + '" value="' + esc(String(st.starPoints || 5)) + '" style="width:4.5rem"></label>'
+        : "") + "</div>" +
       '<div class="param-group"><span>In the figure</span>' + segButtons(t.id, "merge", ["morph", "excluded"], st.merge) + "</div>" +
       "</div>" +
       '<label class="excerpt-lab">Trajectory · desired impact on the future</label>' +
@@ -3512,6 +3755,17 @@
       setTrib(s3.getAttribute("data-shape3"), { shape3: s3.getAttribute("data-val") });
       return;
     }
+    const brAdd = e.target.closest && e.target.closest("[data-br-add]");
+    if (brAdd) {
+      addBranchStage(brAdd.getAttribute("data-br-add"));
+      return;
+    }
+    const brDel = e.target.closest && e.target.closest("[data-br-remove]");
+    if (brDel) {
+      const parts = String(brDel.getAttribute("data-br-remove")).split("|");
+      removeBranchStage(parts[0], Number(parts[1]));
+      return;
+    }
     const mg = e.target.closest("[data-merge]");
     if (mg) {
       setTrib(mg.getAttribute("data-merge"), { merge: mg.getAttribute("data-val") });
@@ -3698,15 +3952,18 @@
       renderMorphViz();
       return;
     }
-    if (e.target.matches("[data-cond]")) {
-      const id = e.target.getAttribute("data-cond");
-      state.trib[id] = Object.assign({}, tribState(id), {
-        condition: e.target.value,
-        mode: "conditional",
-        on: true
-      });
+    if (e.target.matches("[data-br]")) {
+      const parts = String(e.target.getAttribute("data-br")).split("|");
+      setBranchField(parts[0], Number(parts[1]), parts[2], e.target.value);
+      return;
+    }
+    if (e.target.matches("[data-star-points]")) {
+      const id = e.target.getAttribute("data-star-points");
+      const n = Math.max(3, Math.min(24, Math.round(Number(e.target.value) || 5)));
+      state.trib[id] = Object.assign({}, tribState(id), { starPoints: n });
       persistSoft();
       renderOut();
+      renderMorphViz();
       return;
     }
     if (e.target.matches("[data-inject]")) {
@@ -3756,13 +4013,38 @@
   function importPersonalityProfile(md, filename) {
     const text = String(md || "");
     if (!text.trim()) return;
-    const nameLine = text.match(/^#\s*(?:Personality profile:\s*)?(.+)$/m);
+    /* The document's own title line, in either of the two shapes FLOSC has
+       written: the current "# DA1/FLOSC AI Personality Profile Name: X" and the
+       older "# Personality profile: X". A bare "# X" is still accepted, but the
+       prefix has to come off first or the personality imports called
+       "DA1/FLOSC AI Personality Profile Name: X". */
+    const nameLine = text.match(/^#\s*(?:DA1\/FLOSC AI Personality Profile Name:\s*|Personality profile:\s*)?(.+)$/m);
     const name = nameLine ? nameLine[1].trim() : (filename || "imported").replace(/\.(md|txt)$/i, "");
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "") || "imported";
+    /*
+     * A titled block, in every shape the compiler has emitted it:
+     *
+     *   **Goals**            the sub-labels inside a station (what compilePrompt
+     *                        actually writes, and what the old "##" pattern here
+     *                        could never match)
+     *   ## Goals             a heading
+     *   ## 12 Goals          a heading in sequential form, where the density
+     *                        leads the heading
+     *
+     * A block ends at the next heading or the next bold sub-label.
+     */
     function section(title) {
-      const re = new RegExp("##\\s*" + title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*\\n([\\s\\S]*?)(?=\\n##\\s|$)");
-      const m = text.match(re);
-      return m ? m[1].trim() : "";
+      const lit = title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const stop = "(?=\\n#{1,2}\\s|\\n\\*\\*|$)";
+      const pats = [
+        "\\*\\*" + lit + "\\*\\*\\s*\\n([\\s\\S]*?)" + stop,
+        "#{1,2}\\s*(?:[0-9]+(?:\\.[0-9]+)?\\s+)?" + lit + "\\s*\\n([\\s\\S]*?)" + stop
+      ];
+      for (let i = 0; i < pats.length; i++) {
+        const m = text.match(new RegExp(pats[i]));
+        if (m && m[1].trim()) return m[1].trim();
+      }
+      return "";
     }
     const you = text.match(/^You are\s+(.+?)\.\s*(.+)$/m);
     state.soul = Object.assign({}, EMPTY_SOUL, state.soul, {

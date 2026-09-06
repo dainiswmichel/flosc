@@ -66,7 +66,7 @@ ok( 'the identity line is written only from what exists',
 ok( 'an empty parameter section is dropped, heading and all',
 	strpos( (string) $compile, 'if (!set.length) { out.pop(); return; }' ) !== false, true );
 ok( 'an unnamed group keeps its members and loses its heading',
-	strpos( (string) $compile, 'if (cl.name) out.push("# " + cl.name);' ) !== false, true );
+	strpos( (string) $compile, 'if (cl.name) out.push(stationHeading(cl.name, clDen, withMetrics));' ) !== false, true );
 
 echo "\nIncluded influences are character, not disowned text\n";
 ok( 'they compile under a heading the character owns',
