@@ -3576,6 +3576,7 @@
       fileIn.value = (state.soul && state.soul.filename) || "";
       fileIn.placeholder = fileBase();
     }
+    renderFilenameNote();
 
     renderSpec();
   }
@@ -4276,6 +4277,7 @@
     // fights the person typing — a dot removed mid-word moves their cursor.
     state.soul.filename = this.value;
     persistSoft();
+    renderFilenameNote();
     renderOut();
   });
 
@@ -4411,6 +4413,39 @@
    * stripped from whatever they type, so a typed name cannot reintroduce the
    * second dot this exists to remove.
    */
+  /*
+   * Every file this builder writes, named once. The readout under the Filename
+   * field is built from this list, so it cannot promise a name the download
+   * buttons do not produce.
+   */
+  const FILE_SUFFIXES = ["_soul.md", "_soul_design.md", "_workshop.json", "_provider_packs.json", "_preview.html"];
+
+  /*
+   * A placeholder reads as a value. "dadjokedan" sitting in an empty field
+   * looks like a choice already made, and nothing on the page said what files
+   * it would actually produce. The note says which of the two it is, shows the
+   * cleaning when the typed stem is not the stem used, and lists the real
+   * filenames.
+   */
+  function renderFilenameNote() {
+    const el = document.getElementById("filenameNote");
+    if (!el) return;
+    const typed = String((state.soul && state.soul.filename) || "").trim();
+    const base = fileBase();
+    const bits = [];
+    if (typed === "") {
+      bits.push("Empty, so every download is named from the personality id: <code>" + esc(base) + "</code>.");
+    } else if (typed !== base) {
+      bits.push("You typed <code>" + esc(typed) + "</code>. Filenames cannot carry dots or spaces, so downloads use <code>" + esc(base) + "</code>.");
+    } else {
+      bits.push("Every download is named <code>" + esc(base) + "</code>.");
+    }
+    bits.push("<br>" + FILE_SUFFIXES.map(function (sfx) {
+      return "<code>" + esc(base + sfx) + "</code>";
+    }).join(" · "));
+    el.innerHTML = bits.join(" ");
+  }
+
   function fileBase() {
     const typed = String((state.soul && state.soul.filename) || "").trim();
     const fallback = (state.soul && (state.soul.id || state.soul.name)) || "personality";

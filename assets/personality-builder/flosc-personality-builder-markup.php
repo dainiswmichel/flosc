@@ -24,7 +24,7 @@ if ( ! defined( 'ABSPATH' ) ) {
           <input id="soulFilename" type="text" autocomplete="off" spellcheck="false">
         </div>
       </div>
-      <p class="figure-readout identity-note">The filename names every download — <code>soul.md</code>, the design copy, the builder state, the preview. Leave it empty to use the personality id. Dots are removed; each file gets one, before its extension.</p>
+      <p class="figure-readout identity-note" id="filenameNote"></p>
       <p class="figure-readout identity-note">The first two lines of the profile: <code># DA1/FLOSC AI Personality Profile Name: Name</code> and <code>You are Name, role.</code> Changing the name here renames the personality everywhere it is shown; the id a floscFlow attaches to does not change.</p>
       <div class="meta">
         <span class="chip">Aspect palette</span>
