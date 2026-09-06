@@ -130,6 +130,19 @@ ok( '  and each carries its own response',
 ok( 'a stage overrides only what it states',
 	strpos( $code, 'if (String(value).trim() === "") delete arr[idx][field];' ) !== false, true );
 
+echo "\nWhat the builder renders, it also saves\n";
+// Situations rendered on screen and nowhere else: branches and the star's point
+// count were written into the editor and left out of the workshop file, so a
+// save and reload silently dropped them.
+ok( 'the workshop row carries the branches',
+	strpos( $code, 'branches: (st.branches || []).map(' ) !== false, true );
+ok( '  and the star point count',
+	strpos( $code, 'star_points: st.starPoints || null,' ) !== false, true );
+ok( 'import reads the branches back',
+	strpos( $code, 'branches: Array.isArray(t.branches) ? t.branches : null,' ) !== false, true );
+ok( '  and the point count',
+	strpos( $code, 'starPoints: t.star_points || t.starPoints || null,' ) !== false, true );
+
 echo "\nThe shipped four use station headings and nothing else\n";
 preg_match_all( "/'ai_base_prompt'\s*=>\s*<<<'PROMPT'\n(.*?)\nPROMPT,/s", $library, $shipped );
 ok( 'four profiles found', count( $shipped[1] ), 4 );

@@ -2348,6 +2348,14 @@
       hue: tribColor(t),
       shape_2d: st.shape2,
       shape_3d: st.shape3,
+      star_points: st.starPoints || null,
+      branches: (st.branches || []).map(function (b) {
+        const row = { situation: b.situation || "", after: b.after || "", response: b.response || "" };
+        if (b.gain != null) row.gain = b.gain;
+        if (b.density != null) row.density = b.density;
+        if (b.binding) row.binding = b.binding;
+        return row;
+      }),
       compose: st.merge,
       role: tribRole(t),
       trajectory: st.trajectory || "",
@@ -2930,7 +2938,8 @@
       '<button type="button" data-mode="' + t.id + '" data-val="on"' + (st.mode === "on" ? ' class="on"' : "") + ">on</button>" +
       '<button type="button" data-mode="' + t.id + '" data-val="conditional"' + (st.mode === "conditional" ? ' class="on"' : "") + ">when</button>" +
       "</div>" +
-      '<button type="button" class="btn ghost danger" data-remove-trib="' + t.id + '">Remove from personality</button>' + cond;
+      cond +
+      '<button type="button" class="btn ghost danger" data-remove-trib="' + t.id + '">Remove from personality</button>';
   }
 
   function renderTrajectories() {
@@ -4136,6 +4145,8 @@
           binding: t.binding || "",
           shape2: t.shape_2d || t.shape2 || "",
           shape3: t.shape_3d || t.shape3 || "",
+          starPoints: t.star_points || t.starPoints || null,
+          branches: Array.isArray(t.branches) ? t.branches : null,
           merge: (t.compose === "stack" || t.compose === "contains" || t.merge === "stack" || t.merge === "contains")
             ? "morph" : (t.compose || t.merge || ""),
           density: t.density == null ? "" : t.density,
