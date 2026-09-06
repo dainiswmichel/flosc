@@ -4,9 +4,9 @@
  *
  * Written because the structure existed and nobody could see it. Someone
  * arriving with the soul.md pattern in mind had no way to know that hard
- * constraints belong in Soul · rules while forbidden phrases belong in
- * Behavior · language — or that the split is deliberate rather than an
- * oversight waiting to be tidied up.
+ * constraints belong in Hard Boundaries and Prohibitions while forbidden
+ * phrases belong in Banned Words and Fillers to Avoid — or that the split is
+ * deliberate rather than an oversight waiting to be tidied up.
  *
  * @package FLOSC
  */
@@ -49,42 +49,128 @@ do to the document, and every provider reads a system prompt from the top down.<
 		<tr><th>Station</th><th>Density</th><th>What belongs here</th></tr>
 	</thead>
 	<tbody>
-		<tr><td>Soul · identity</td><td>6</td><td>Who remains, under probe</td></tr>
-		<tr><td>Soul · purpose</td><td>12</td><td>What this conversation is for</td></tr>
-		<tr><td>Soul · rules &amp; scope</td><td>18</td><td>Invariants, defaults, who is served</td></tr>
-		<tr><td>Soul · knowing</td><td>24</td><td>How this personality knows, doubts, corrects</td></tr>
-		<tr><td>Character · thought / feeling / will</td><td>40</td><td>Tone, cadence, conditionals</td></tr>
-		<tr><td>Character · stance</td><td>48</td><td>How it orients toward this human</td></tr>
-		<tr><td>Character · initiative</td><td>56</td><td>When to answer, ask, lead, stay quiet</td></tr>
-		<tr><td>Character · adaptation</td><td>62</td><td>Same soul, fitting intensity</td></tr>
-		<tr><td>Behavior · selection</td><td>74</td><td>Decisions, edge cases, recipes</td></tr>
-		<tr><td>Behavior · language / planning</td><td>84</td><td>Length, examples, phrase banks</td></tr>
-		<tr><td>Behavior · manifested action</td><td>94</td><td>Output now. Sampling parameters sit here.</td></tr>
+		<tr><td>Name and Core Role</td><td>6</td><td>Who remains, under probe</td></tr>
+		<tr><td>Philosophy and Values</td><td>12</td><td>What this conversation is for</td></tr>
+		<tr><td>Hard Boundaries and Prohibitions</td><td>18</td><td>Invariants, defaults, who is served</td></tr>
+		<tr><td>Knowledge, Doubt and Correction</td><td>24</td><td>How this personality knows, doubts, corrects</td></tr>
+		<tr><td>Tone and Communication Style</td><td>40</td><td>Tone, cadence, conditionals</td></tr>
+		<tr><td>Stance Toward the Human</td><td>48</td><td>How it orients toward this human</td></tr>
+		<tr><td>Behavior in Ambiguity</td><td>56</td><td>When to answer, ask, lead, stay quiet</td></tr>
+		<tr><td>Adaptation</td><td>62</td><td>Same soul, fitting intensity</td></tr>
+		<tr><td>Decisions including Infrequent Cases</td><td>74</td><td>Decisions, edge cases, recipes</td></tr>
+		<tr><td>Banned Words and Fillers to Avoid / planning</td><td>84</td><td>Length, examples, phrase banks</td></tr>
+		<tr><td>Output and Delivery</td><td>94</td><td>Output now. Sampling parameters sit here.</td></tr>
 	</tbody>
 </table>
 
 <h3 id="personality-soulmd">If you arrived with soul.md in mind</h3>
 
-<p>The common soul.md pattern names six elements. Every one of them has a home here, and the
-builder carries five more besides.</p>
+<p>The common soul.md pattern names six elements. Each one is a station here, under the
+same name. The builder carries five more besides.</p>
 
 <table class="widefat striped">
 	<thead>
 		<tr><th>soul.md element</th><th>Station</th></tr>
 	</thead>
 	<tbody>
-		<tr><td>Name and Role</td><td>Soul · identity</td></tr>
-		<tr><td>Permissions and Scope</td><td>Soul · rules &amp; scope</td></tr>
-		<tr><td>Personality and Voice</td><td>Character · thought / feeling / will, and Character · stance</td></tr>
-		<tr><td>Communication Boundaries</td><td>Character · initiative, and Behavior · language</td></tr>
-		<tr><td>Behavioral Rules</td><td>Character · adaptation, and Behavior · selection</td></tr>
-		<tr><td>Explicit Prohibitions</td><td>Soul · rules &amp; scope <em>and</em> Behavior · language — see below</td></tr>
+		<tr><td>Identity and Role</td><td>Name and Core Role</td></tr>
+		<tr><td>Philosophy and Values</td><td>Philosophy and Values</td></tr>
+		<tr><td>Tone and Communication Style</td><td>Tone and Communication Style</td></tr>
+		<tr><td>Behaviour in Ambiguity</td><td>Behavior in Ambiguity</td></tr>
+		<tr><td>Banned Words and Fillers to Avoid</td><td>Banned Words and Fillers to Avoid</td></tr>
+		<tr><td>Hard Boundaries and Prohibitions</td><td>Hard Boundaries and Prohibitions</td></tr>
 	</tbody>
 </table>
 
-<p>The three with no soul.md equivalent are <strong>Soul · purpose</strong> (what this conversation
-is for), <strong>Soul · knowing</strong> (how this personality knows, doubts and corrects itself),
-and <strong>Behavior · manifested action</strong> (what it does now, and the sampling parameters).</p>
+<p>The five the builder adds are <strong>Knowledge, Doubt and Correction</strong>,
+<strong>Stance Toward the Human</strong>, <strong>Adaptation</strong>,
+<strong>Decisions including Infrequent Cases</strong> and
+<strong>Output and Delivery</strong>.</p>
+
+<p>The usual soul.md advice is to split this across a family of files &mdash; SOUL.md,
+IDENTITY.md, STYLE.md, AGENTS.md &mdash; and settle conflicts by which file matched
+first. FLOSC puts it in one document and settles conflicts by order. A station&rsquo;s
+position is its <code>da1_density</code>, and the document is read top to bottom, so
+what comes first governs what comes after.</p>
+
+<h3 id="personality-two-documents">Two documents, one personality</h3>
+
+<p>The builder writes the same personality twice, for two different readers.</p>
+
+<table class="widefat striped">
+	<thead>
+		<tr><th>Document</th><th>What it is</th></tr>
+	</thead>
+	<tbody>
+		<tr><td><strong>AI API profile</strong></td><td>Sent to the provider on every
+		turn. In density order, because the order is the instruction. It carries only
+		lines a model can act on.</td></tr>
+		<tr><td><strong>DA1 AI Personality Design Document</strong></td><td>The same
+		personality with every DA1 parameter shown and named, each one prefixed
+		<code>da1_</code>. This is the one you share &mdash; email it to another
+		floscAdmin, read it, re-import it, carry the personality to another system. It
+		is not what goes to the provider on a turn.</td></tr>
+	</tbody>
+</table>
+
+<p>The rule that divides them: <strong>a parameter is sent to the AI only if a model can
+act on it.</strong> Shape and the density of a situation override are design apparatus,
+so they stay in the design document. Every byte of the AI API profile is billed on every
+turn, which is the second reason nothing decorative belongs in it.</p>
+
+<h3 id="personality-gain">How often, in words the model can act on</h3>
+
+<p><code>da1_gain</code> is frequency of expression: how often an aspect&rsquo;s
+instruction governs. <code>frequency = (gain + 100) / 2</code>.</p>
+
+<table class="widefat striped">
+	<thead>
+		<tr><th>da1_gain</th><th>&asymp; how often</th><th>word</th></tr>
+	</thead>
+	<tbody>
+		<tr><td>&minus;100</td><td>0%</td><td>never &mdash; invariant only</td></tr>
+		<tr><td>&minus;75</td><td>13%</td><td>almost never</td></tr>
+		<tr><td>&minus;50</td><td>25%</td><td>rarely</td></tr>
+		<tr><td>&minus;25</td><td>38%</td><td>less often than not</td></tr>
+		<tr><td>0</td><td>50%</td><td>no preference &mdash; yes and no depend on context</td></tr>
+		<tr><td>+25</td><td>63%</td><td>more often than not</td></tr>
+		<tr><td>+50</td><td>75%</td><td>often</td></tr>
+		<tr><td>+75</td><td>88%</td><td>usually</td></tr>
+		<tr><td>+100</td><td>100%</td><td>always &mdash; invariant only</td></tr>
+	</tbody>
+</table>
+
+<p>The number is the exact value stored; the word is the nearest rung.
+<strong>never and always are reserved for exactly &minus;100 and +100.</strong> Every
+other value rounds inward. A value short of the extreme means an exception exists, and
+an exception that reads as &ldquo;never&rdquo; is an exception nobody can see.
+Truth-telling at &minus;100 means there is no case where this personality lies. At
+&minus;98 there is one, and the situational context block below the aspect names it.</p>
+
+<p>Negative gain suppresses the named behavior. It never means do the opposite.
+<em>Lying &minus;100</em> means do not lie.</p>
+
+<p>Gain 0 is not a weak yes. The axis is not decided in the document: yes and no depend
+on context, and the personality&rsquo;s other weighted aspects still colour how it
+lands.</p>
+
+<h3 id="personality-situations">The exception is written, not implied</h3>
+
+<p>An aspect states what it does under normal conditions. A situational context block
+states the case where it does something else &mdash; the condition, the response, and
+any parameter that changes while that condition holds. A stage opening with
+<code>after: 3 turns</code> runs once that situation has held that long. A stage
+overrides only what it states and inherits the rest, so the aspect itself is the else
+and nobody writes if/then/else by hand.</p>
+
+<pre>## 41 Humor
+short: Playful, never sarcastic at the visitor&rsquo;s expense.
+instruction: Bring warmth through play.
+frequency: usually
+
+situational context: visitor is distressed, grieving, or reporting a fault
+response: answer plainly, no play.
+frequency: never</pre>
 
 <h3 id="personality-prohibitions">Prohibitions live in two places, deliberately</h3>
 
@@ -92,10 +178,10 @@ and <strong>Behavior · manifested action</strong> (what it does now, and the sa
 
 <ul>
 	<li><strong>What the personality must never do</strong> is an invariant. It belongs in
-	<strong>Soul · rules &amp; scope</strong>, near the top of the document, where it governs
+	<strong>Hard Boundaries and Prohibitions</strong>, near the top of the document, where it governs
 	everything that follows.</li>
 	<li><strong>What the personality must never say</strong> is a phrase-level constraint. It
-	belongs in <strong>Behavior · language</strong>, near the bottom, with the rest of the
+	belongs in <strong>Banned Words and Fillers to Avoid</strong>, near the bottom, with the rest of the
 	phrasing.</li>
 </ul>
 

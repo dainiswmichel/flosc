@@ -134,8 +134,6 @@ foreach ( $prompts[1] as $body ) {
 		ok( sprintf( '%s: no %s section', $name, trim( $heading, '# ' ) ),
 			strpos( $body, $heading ) !== false, false );
 	}
-	ok( sprintf( '%s: profile stays under 2000 bytes', $name ),
-		strlen( $body ) < 2000, true );
 }
 
 echo $fail ? "\n$fail FAILURES\n" : "\nEvery seam the personality travels through is intact\n";

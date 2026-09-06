@@ -1975,8 +1975,8 @@
    */
   function paramLines(src, withMetrics, want) {
     const out = [];
-    if (want.density && src.density != null) {
-      out.push(withMetrics ? "da1_density " + formatDensity(src.density) : "density: " + formatDensity(src.density));
+    if (want.density && src.density != null && withMetrics) {
+      out.push("da1_density " + formatDensity(src.density));
     }
     if (want.gain && src.gain != null) {
       out.push(withMetrics ? "da1_gain: " + gainReading(src.gain) : "frequency: " + gainWord(src.gain));
@@ -1984,8 +1984,8 @@
     if (want.binding && src.binding) {
       out.push(withMetrics ? "da1_binding: " + src.binding : "binding: " + src.binding);
     }
-    if (want.shape && src.shape) {
-      out.push(withMetrics ? "da1_shape: " + src.shape : "shape: " + src.shape);
+    if (want.shape && src.shape && withMetrics) {
+      out.push("da1_shape: " + src.shape);
     }
     return out;
   }
@@ -2533,6 +2533,7 @@
     const leak = [
       /figure law/i, /must-circle/i, /may-star/i, /polar radi/i,
       /shape circle|shape star|shape2|shape3/i, /morph 2d|morph 3d/i,
+      /^shape:/im, /^density:/im, /\bda1_/,
       /ink rung/i, /tag-only/i, /binding=must/i, /merge=morph/i, /hue #/i
     ].filter(function (re) { return re.test(prompt); });
     if (leak.length) err("Personality MD still contains workshop language. The API file must not teach circle/morph/density-as-speech.");
