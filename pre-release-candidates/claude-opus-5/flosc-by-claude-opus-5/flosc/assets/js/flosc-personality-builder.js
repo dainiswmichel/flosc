@@ -3339,8 +3339,8 @@
            broken rather than as empty. */
         '<div class="list" data-drop-col="' + c.id + '">' +
         (items ? items : '<p class="figure-readout col-empty">' +
-          (state.hideOff ? "Nothing active here. Untick Hide inactive aspects to see what is available."
-                         : "Nothing here yet. + Aspect makes one, or drag an aspect in.") + "</p>") +
+          (state.hideOff ? "Place aspects here. Untick Hide inactive aspects to see what is available."
+                         : "Place aspects here. + Aspect makes one, or drag an aspect in.") + "</p>") +
         "</div></details>";
     }).join("");
     /* A wellspring is an aspect, so the button says aspect. It makes the card
@@ -3838,7 +3838,7 @@
           body += '<div class="nest" data-drop-layer="' + L.id + '">';
           body += '<div class="row-gap row-gap--first" data-drop-layer-top="' + L.id + '"></div>';
           if (!kids.length) {
-            body += '<p class="figure-readout nest-empty">Nothing here yet. Tick an aspect in the palette, or drag one onto this heading.</p>';
+            body += '<p class="figure-readout nest-empty">Place aspects here. Tick one in the palette, or drag one onto this heading.</p>';
           }
           kids.forEach(function (k) {
             if (k.kind === "cloud") {
