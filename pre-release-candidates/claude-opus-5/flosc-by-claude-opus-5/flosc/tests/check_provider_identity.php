@@ -183,16 +183,44 @@ foreach ( $php_files as $file ) {
 ok( 'every one carries a reason', $unexplained, array() );
 ok( '  and there are the seven we know about', $explained, 7 );
 
-// wp.org truncates the Description at 2500 characters and warns. Nothing was
-// rewritten to fit: the subsections past the limit moved whole into their own
-// section, so the copy still exists and is still read.
+/*
+ * wp.org truncates the Description at 2500 characters and warns. Nothing was
+ * rewritten to fit: the subsections past the limit live in their own section,
+ * so the copy still exists and is still read.
+ *
+ * That section has to carry a name the wp.org readme parser recognises. It
+ * knows seven: Description, Installation, Frequently Asked Questions,
+ * Screenshots, Changelog, Upgrade Notice, Other Notes. Anything else is folded
+ * into the section above it — which is how "== More About FLOSC ==" put its
+ * 4,494 characters inside a Description that was already complete at 2,194,
+ * and how Plugin Check came to report the Description as truncated.
+ */
 echo "\nreadme.txt fits what wp.org will actually show\n";
 preg_match( '/^== Description ==\s*\n(.*?)(?=^== )/ms', $readme, $description );
 $description_length = isset( $description[1] ) ? strlen( $description[1] ) : 0;
 ok( 'the Description section was found', $description_length > 0, true );
 ok( '  and fits in 2500 characters', $description_length <= 2500, true );
-ok( '  with the rest kept, not deleted',
-	strpos( $readme, '== More About FLOSC ==' ) !== false, true );
+
+preg_match_all( '/^== (.+?) ==$/m', $readme, $sections );
+$known = array(
+	'Description', 'Installation', 'Frequently Asked Questions', 'Screenshots',
+	'Changelog', 'Upgrade Notice', 'Other Notes',
+);
+$folds = array_values( array_diff( $sections[1], $known ) );
+ok( 'the overflow section has a name wp.org recognises',
+	in_array( 'Other Notes', $sections[1], true ), true );
+ok( '  and the copy is still there, not deleted',
+	strpos( $readme, '= Starter Packs =' ) !== false
+	&& strpos( $readme, '= How It Works =' ) !== false
+	&& strpos( $readme, '= Technical Details =' ) !== false, true );
+/*
+ * These fold into Changelog. No character limit applies there so nothing is
+ * truncated; their headings simply do not render on wordpress.org. Listed
+ * rather than failed, so the next person can see the trade rather than
+ * rediscover it.
+ */
+ok( '  sections that fold, and are allowed to', $folds,
+	array( 'External Services', 'Code standard', 'Support & Contribution', 'Stay Connected' ) );
 
 echo "\nThe prompt is untouched\n";
 // The whole point of the header is that it costs no tokens. If this file ever

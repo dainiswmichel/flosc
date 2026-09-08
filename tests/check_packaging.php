@@ -118,17 +118,20 @@ ok( 'readme.txt stable tag', isset( $t[1] ) ? $t[1] : '', '8.0.0' );
 ok( '  and they agree', ( $v[1] ?? 'a' ) === ( $t[1] ?? 'b' ), true );
 
 /*
- * Requires at least and Tested up to are WordPress versions, and this plugin
- * targets 7.0.4 — the current release — for both. Tested up to once read 7.1,
- * a version that does not exist; wp.org rejects a Tested up to above the
- * latest release, and Plugin Check fails it before the submission is looked at.
+ * Requires at least and Tested up to are WordPress versions. This plugin needs
+ * 7.0.4 and is tested against 7.1, the current release.
+ *
+ * Tested up to reads major.minor only — a value of 7.0.4 is read as 7.0, and
+ * Plugin Check then reports outdated_tested_upto_header against 7.1. That is
+ * an ERROR, and wp.org will not list a plugin whose Tested up to is behind the
+ * current release.
  */
 echo "\nThe WordPress version headers name a real release\n";
 preg_match( '/^Requires at least:\s*(\S+)/m', $readme, $rmin );
 preg_match( '/^Tested up to:\s*(\S+)/m', $readme, $rmax );
 preg_match( '/^ \* Requires at least:\s*(\S+)/m', $main, $pmin );
 ok( 'readme.txt Requires at least', $rmin[1] ?? '', '7.0.4' );
-ok( 'readme.txt Tested up to', $rmax[1] ?? '', '7.0.4' );
+ok( 'readme.txt Tested up to', $rmax[1] ?? '', '7.1' );
 ok( 'flosc.php Requires at least', $pmin[1] ?? '', '7.0.4' );
 ok( '  and Tested up to is never ahead of Requires at least',
 	version_compare( $rmax[1] ?? '0', $rmin[1] ?? '0', '>=' ), true );
