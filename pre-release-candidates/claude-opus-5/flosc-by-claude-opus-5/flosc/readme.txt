@@ -4,7 +4,7 @@ Donate link: https://dainis.net/donate/
 Tags: leads, sales, access, ai, chatbot
 Requires at least: 7.0.4
 Requires PHP: 7.4
-Tested up to: 7.1
+Tested up to: 7.0.4
 Stable tag: 8.0.0
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html

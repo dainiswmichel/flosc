@@ -7,7 +7,7 @@
   "head_commit": "a62220c67b9a6f3c773b8a2974a95cd3a1338b8b",
   "version": "8.0.0",
   "artifact": "flosc.zip",
-  "artifact_note": "Built from this tree with ./build-dist-zip.sh at head_commit. SHA256SUMS covers it. pre-release-candidates/ is excluded from the artifact by .distignore and by the build's hard deny list, so none of these folders can ride along into a ZIP.",
+  "artifact_note": "Built from this tree with ./build-dist-zip.sh at head_commit. sha256sums covers it. pre-release-candidates/ is excluded from the artifact by .distignore and by the build's hard deny list, so none of these folders can ride along into a ZIP.",
   "assembled_from": {
     "codex-gpt5": "full profile every turn, RAG fallthrough, get_response_result(), personality boilerplate removal, genome/profile fingerprint",
     "opencode-big-pickle": "no-hedge method pair and the method_exists guards",
@@ -26,7 +26,8 @@
     "live_ai_provider_calls": "DEFERRED \u2014 fresh install required",
     "journey_harness": "DEFERRED \u2014 needs WP-CLI on the target site",
     "contract_acceptance": "DEFERRED \u2014 personality built from scratch, attached to a pack, carrying that flow to its outcome",
-    "zip_gates": "passed (277 files, 2.6M, forbidden-path scan clean)"
+    "zip_gates": "passed (277 files, 2.6M, forbidden-path scan clean)",
+    "wordpress_version_headers": "passed (Requires at least 7.0.4, Tested up to 7.0.4, gated by check_packaging.php)"
   },
   "new_gates": [
     "check_method_contract.php",
@@ -75,7 +76,7 @@
     "one_list": "The thirteen soul.md headings ARE the aspect palette's shelves. wellspringCategories() derives from the container list, so renaming a shelf renames its heading and a card waits on the shelf it will be written under.",
     "headings": "Identity and Role 6 | Philosophy and Values 12 | Boundaries and Prohibitions 18 | Knowledge, Doubt and Correction 24 | Opinions and Preferences 30 | Tone and Communication Style 40 | Stance Toward the Human 48 | Behavior in Ambiguity 56 | Adaptation 62 | Resourcefulness 68 | Decisions including Infrequent Cases 74 | Banned Words and Fillers to Avoid 84 | Output and Delivery 94"
   },
-  "candidate_iteration": 12,
+  "candidate_iteration": 14,
   "iterations": {
     "v7": {
       "commit": "7d329fa",
@@ -100,6 +101,14 @@
     "v12": {
       "commit": "this commit",
       "what": "the row summary's label was landing in the 18px swatch column and printing across its own meta line; three columns, each child placed by name"
+    },
+    "v13": {
+      "commit": "this commit",
+      "what": "filenames stop shouting: readme.md, sha256sums, handoff.md"
+    },
+    "v14": {
+      "commit": "this commit",
+      "what": "Tested up to was 7.1, a WordPress version that does not exist; both headers are 7.0.4 and a gate holds them there"
     }
   },
   "iteration_note": "candidate_iteration counts rebuilds of this folder. It is not the plugin version, which is held at 8.0.0 and does not move. v8 and v9 landed with subject lines that broke the 'Home run candidate v<N>' pattern; the iterations map is the mapping."

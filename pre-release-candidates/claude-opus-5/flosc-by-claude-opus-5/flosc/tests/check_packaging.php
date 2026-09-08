@@ -101,12 +101,12 @@ ok( '  and in the hard deny list, which .distignore cannot undo',
 ok( 'tests/ too — they stub WordPress and redeclare core functions',
 	strpos( $distignore, 'tests/' ) !== false, true );
 
-// Internal notes are not plugin content. HANDOFF.md carries the operator's
+// Internal notes are not plugin content. handoff.md carries the operator's
 // local ship path, their machine's username, and project context that has no
 // business in a public plugin directory — and nothing in it is needed to run
 // FLOSC. It shipped until someone read the artifact's file list.
 ok( 'and the session handoff notes stay out of the artifact',
-	strpos( $distignore, 'HANDOFF.md' ) !== false, true );
+	strpos( $distignore, 'handoff.md' ) !== false, true );
 
 echo "\nThe version has not moved\n";
 $main   = (string) file_get_contents( $root . '/flosc.php' );
@@ -116,6 +116,22 @@ preg_match( '/^Stable tag:\s*(\S+)/m', $readme, $t );
 ok( 'flosc.php header', isset( $v[1] ) ? $v[1] : '', '8.0.0' );
 ok( 'readme.txt stable tag', isset( $t[1] ) ? $t[1] : '', '8.0.0' );
 ok( '  and they agree', ( $v[1] ?? 'a' ) === ( $t[1] ?? 'b' ), true );
+
+/*
+ * Requires at least and Tested up to are WordPress versions, and this plugin
+ * targets 7.0.4 — the current release — for both. Tested up to once read 7.1,
+ * a version that does not exist; wp.org rejects a Tested up to above the
+ * latest release, and Plugin Check fails it before the submission is looked at.
+ */
+echo "\nThe WordPress version headers name a real release\n";
+preg_match( '/^Requires at least:\s*(\S+)/m', $readme, $rmin );
+preg_match( '/^Tested up to:\s*(\S+)/m', $readme, $rmax );
+preg_match( '/^ \* Requires at least:\s*(\S+)/m', $main, $pmin );
+ok( 'readme.txt Requires at least', $rmin[1] ?? '', '7.0.4' );
+ok( 'readme.txt Tested up to', $rmax[1] ?? '', '7.0.4' );
+ok( 'flosc.php Requires at least', $pmin[1] ?? '', '7.0.4' );
+ok( '  and Tested up to is never ahead of Requires at least',
+	version_compare( $rmax[1] ?? '0', $rmin[1] ?? '0', '>=' ), true );
 
 echo $fail ? "\n$fail FAILURES\n" : "\nThe tree is shippable\n";
 exit( $fail ? 1 : 0 );
