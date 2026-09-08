@@ -108,8 +108,11 @@ the AI. An aspect's trajectory can be `412`, `?post=412`, or a permalink.
 6. **A trajectory that is a post.** Type `412`, `?post=412`, or the permalink.
    It compiles to that post's title and excerpt.
 7. **Edit on a palette category.** Fields in place, not two browser prompt
-   boxes — plus a button that puts the category into the personality as a
-   group card with its aspects inside it.
+   boxes. A category is a heading, so its Edit panel carries its density, and
+   renaming it renames the heading in the document.
+8. **The card footer.** Open any card: the summary stays one clipped line, and
+   the bottom of the card carries the same line whole and wrapped, with the
+   trajectory resolved and the heading it is written under.
 
 ## Where the code is
 
