@@ -41,6 +41,22 @@ if ( ! defined( 'ABSPATH' ) ) {
         </select>
       </label>
     </div>
+    <?php
+    /*
+     * Naming a new personality. It is its own library row, so it needs a name
+     * before it exists — and nothing is written into the personality currently
+     * open. Hidden until New or a template is chosen.
+     */
+    ?>
+    <div class="new-personality" id="newPersonality" hidden>
+      <label class="cadmin-field" for="newPersonalityName"><span>Name this personality</span>
+        <input type="text" id="newPersonalityName" placeholder="e.g. Vegan Kitchen Host" autocomplete="off" spellcheck="false">
+      </label>
+      <span class="new-personality__from" id="newPersonalityFrom"></span>
+      <button type="button" class="btn primary" id="btnNewCreate">Create</button>
+      <button type="button" class="btn ghost" id="btnNewCancel">Cancel</button>
+      <p class="figure-readout" id="newPersonalityNote">A new personality is a new file in the FLOSC library. The one you have open is not changed.</p>
+    </div>
   </header>
 
   <p id="builderNotice" class="builder-notice" role="status" aria-live="polite" hidden></p>

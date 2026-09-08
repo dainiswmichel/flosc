@@ -76,7 +76,7 @@
     "one_list": "The thirteen soul.md headings ARE the aspect palette's shelves. wellspringCategories() derives from the container list, so renaming a shelf renames its heading and a card waits on the shelf it will be written under.",
     "headings": "Identity and Role 6 | Philosophy and Values 12 | Boundaries and Prohibitions 18 | Knowledge, Doubt and Correction 24 | Opinions and Preferences 30 | Tone and Communication Style 40 | Stance Toward the Human 48 | Behavior in Ambiguity 56 | Adaptation 62 | Resourcefulness 68 | Decisions including Infrequent Cases 74 | Banned Words and Fillers to Avoid 84 | Output and Delivery 94"
   },
-  "candidate_iteration": 21,
+  "candidate_iteration": 22,
   "iterations": {
     "v7": {
       "commit": "7d329fa",
@@ -137,6 +137,10 @@
     "v21": {
       "commit": "this commit",
       "what": "New and New from template; 30s autosave with blue/green save button and a UTC last-saved line; a new aspect is unfiled; Remove on every category; the Written under list is built from the live headings; the density box accepts a colon path"
+    },
+    "v22": {
+      "commit": "this commit",
+      "what": "New writes a NEW library row, named first; a save can no longer write one personality into another's row"
     }
   },
   "iteration_note": "candidate_iteration counts rebuilds of this folder. It is not the plugin version, which is held at 8.0.0 and does not move. v8 and v9 landed with subject lines that broke the 'Home run candidate v<N>' pattern; the iterations map is the mapping."
