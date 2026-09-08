@@ -1732,7 +1732,9 @@
     }
     const dPrev = prev != null ? Number(tribState(prev).density) : 0;
     const dNext = next != null ? Number(tribState(next).density) : 100;
-    const mode = state.denPlace || "avg";
+    /* Always the average of the two neighbours. The three-button control that
+       used to offer "same as above" and "same as below" is gone. */
+    const mode = "avg";
     let d;
     if (prev == null && next == null) d = 0;
     else if (dPrev === dNext) d = dPrev;
@@ -3734,14 +3736,19 @@
     ensurePlacement();
     const parts = [];
     parts.push('<p class="note">The personality document, live. Headings sort by density: 0 = top = white, 100 = bottom = ink. Every heading holds its topics; a cloud inside a heading groups topics under one name. Removed aspects return to the palette on the left, under the same heading.</p>');
-    const place = state.denPlace || "avg";
-    parts.push('<div class="density-label"><span>Drop between</span><span>working sort = density</span></div>' +
-      '<div class="seg" style="margin:0 0 8px">' +
-      [["avg", "average"], ["above", "same as above"], ["below", "same as below"]].map(function (p) {
-        return '<button type="button" data-den-place="' + p[0] + '"' + (place === p[0] ? ' class="on"' : "") + ">" + p[1] + "</button>";
-      }).join("") +
-      '</div><button type="button" class="btn ghost" data-add-heading="1" title="Add an H1 container">+ Heading</button>' +
-      '<p class="figure-readout" style="margin:0 0 8px">Average of the two neighbors. Or match above / below. If both neighbors are 55, you stay at 55 and take a visible place on that rung. Type 47 and it stays 47. Midpoints keep up to 3 decimal places, no float garbage.</p>');
+    /*
+     * The Drop between control is gone. A drop between two rows takes the
+     * average of its neighbours, and when both sit at the same density the
+     * cards sort alphabetically — which needs no setting and no explaining.
+     * Three buttons offering a choice nobody has to make are three buttons.
+     *
+     * + Heading is gone with it: a category IS a heading, so + Category in the
+     * palette already makes one. This button adds an aspect, which is what
+     * someone standing in the sequence actually wants.
+     */
+    parts.push('<div class="density-label"><span>Working sort</span><span>density, then alphabetical</span></div>' +
+      '<button type="button" class="btn ghost" data-add-aspect="1" title="Add an aspect to this personality">+ Aspect</button>' +
+      '<p class="figure-readout" style="margin:0 0 8px">Drop an aspect between two rows and it takes the average of the two. If both neighbours are 55 it stays 55 and sorts alphabetically among them. Type 47 and it stays 47. Densities keep up to 3 decimal places, no float garbage.</p>');
     parts.push('<div class="seq-den"><div class="seq-den-rail"><div class="cap">0</div><div class="rail-body"><div class="rail-bands"><span>Soul</span><span>Character</span><span>Behavior</span></div><div class="den-rail" id="denRail" title="0 white at top · 100 ink at bottom"></div></div><div class="cap">100</div></div><div class="seq-den-items" data-drop-den="1">');
 
     const seq = containersSorted().map(function (L) {
@@ -4333,13 +4340,16 @@
   }
 
   function onTribClick(e) {
-    const addHeading = e.target.closest("[data-add-heading]");
-    if (addHeading) {
+    const addAspect = e.target.closest("[data-add-aspect]");
+    if (addAspect) {
       e.preventDefault();
       e.stopPropagation();
-      ensureContainers();
-      const c = addContainer("New heading", 50);
-      focusItem("layer", c.id);
+      const id = addCard("New aspect", { prefix: "aspect" });
+      persistSoft();
+      render();
+      focusItem("trib", id);
+      showBuilderNotice("New aspect added to " + (parentLabelOf(id) || "this personality") +
+        " at density " + formatDensity(tribState(id).density) + ". Name it and write its instruction.");
       return;
     }
     const layerRestore = e.target.closest("[data-layer-restore]");
@@ -4482,13 +4492,7 @@
       setTrib(mg.getAttribute("data-merge"), { merge: mg.getAttribute("data-val") });
       return;
     }
-    const denPlace = e.target.closest("[data-den-place]");
-    if (denPlace) {
-      state.denPlace = denPlace.getAttribute("data-den-place");
-      persistSoft();
-      render();
-      return;
-    }
+
 
     /*
      * Opening a palette row's editor. This is handled rather than left to the
@@ -5299,12 +5303,25 @@
    * why + Category did nothing at all.
    */
   document.getElementById("btnAddCategory").addEventListener("click", function () {
-    const id = addCard("New group", { prefix: "group" });
+    /*
+     * A category is a heading, so this makes a heading — not an aspect card.
+     * It used to call addCard() at nextFreeDensity(), which put a card called
+     * "New group" at d98, past everything, off the bottom of the sequence and
+     * filed on no shelf at all.
+     *
+     * Density 0: a category you just made belongs at the top of the palette
+     * and the top of the document, where you can see it. Nothing is ticked —
+     * a new shelf is empty, and adding one adds no aspect to the personality.
+     */
+    ensureContainers();
+    const c = addContainer("New category", 0);
+    state.tribOrder[c.id] = [];
+    state.open["fam:" + c.id] = true;
+    state.open["layer:" + c.id] = true;
+    state.editCategory = c.id;
     persistSoft();
     render();
-    focusItem("trib", id);
-    showBuilderNotice("New group added at density " + formatDensity(tribState(id).density) +
-      ". Drop aspects onto it to fill it.");
+    showBuilderNotice("New category added at density 0, at the top. It is a heading in the document too — name it, then tick aspects into it.");
   });
 
   applyFloscHostChrome();
