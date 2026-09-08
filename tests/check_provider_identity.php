@@ -195,11 +195,26 @@ ok( '  and there are the seven we know about', $explained, 7 );
  * 4,494 characters inside a Description that was already complete at 2,194,
  * and how Plugin Check came to report the Description as truncated.
  */
+/*
+ * wp.org stores each section as RENDERED HTML and trims that, not the markdown
+ * source. This gate measured the source, so it passed at 2,194 characters
+ * while Plugin Check failed the same section: **bold** becomes
+ * <strong></strong>, "* item" becomes <li></li>, "= X =" becomes <h4></h4>,
+ * and the markup put it past 2,500. Measure what is measured.
+ */
 echo "\nreadme.txt fits what wp.org will actually show\n";
 preg_match( '/^== Description ==\s*\n(.*?)(?=^== )/ms', $readme, $description );
-$description_length = isset( $description[1] ) ? strlen( $description[1] ) : 0;
-ok( 'the Description section was found', $description_length > 0, true );
-ok( '  and fits in 2500 characters', $description_length <= 2500, true );
+$description_src = isset( $description[1] ) ? trim( $description[1] ) : '';
+$rendered        = $description_src;
+$rendered        = preg_replace( '/^= (.+?) =$/m', '<h4>$1</h4>', $rendered );
+$rendered        = preg_replace( '/\*\*(.+?)\*\*/', '<strong>$1</strong>', $rendered );
+$rendered        = preg_replace( '/\[([^\]]+)\]\(([^)]+)\)/', '<a href="$2">$1</a>', $rendered );
+$rendered        = preg_replace( '/`([^`]+)`/', '<code>$1</code>', $rendered );
+$rendered        = preg_replace( '/^\* (.+)$/m', '<li>$1</li>', $rendered );
+$description_length = strlen( (string) $rendered ) + 25; // <p>, <ul> wrappers
+ok( 'the Description section was found', strlen( $description_src ) > 0, true );
+ok( '  and fits in 2500 characters once rendered', $description_length <= 2500, true );
+ok( '  with room to edit it later', $description_length <= 2200, true );
 
 preg_match_all( '/^== (.+?) ==$/m', $readme, $sections );
 $known = array(

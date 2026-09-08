@@ -29,6 +29,8 @@ Instead of "Are you interested in buying?" FLOSC asks "What should I help you wi
 * **AI-Ready** - Bring-your-own-key chat with Anthropic, OpenAI, xAI, or Gemini (or IVR scripted only). OpenAI, Anthropic, and Gemini chat use the WordPress 7.0 AI Client — install the official provider plugin for the agent this flow attaches. Speech-to-text: AssemblyAI, OpenAI Whisper, or a custom endpoint.
 * **WordPress Native** - Built as a standard WordPress plugin; no external platform required
 
+== Other Notes ==
+
 = Included Features =
 
 * Create and manage unlimited FloscFlows — FLOSC chatbots served across unlimited domains
@@ -39,8 +41,6 @@ Instead of "Are you interested in buying?" FLOSC asks "What should I help you wi
 * Bring-Your-Own-Key AI provider setup
 * Personality Designer — visual workshop for authoring a reusable voice (wellsprings, density, morph, spectrograph); save to the install library and attach one personality per flow
 * Pre-configured example flows for pronunciation, music, and other use cases
-
-== Other Notes ==
 
 = Use Cases =
 
