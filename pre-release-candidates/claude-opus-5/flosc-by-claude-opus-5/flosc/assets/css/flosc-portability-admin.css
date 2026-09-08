@@ -1,0 +1,361 @@
+/**
+ * Flow Portability kit drop zone — admin only.
+ *
+ * Sole owner of every rule the Portability kit form needs: the form's own
+ * block layout, the drop surface, the staged-file panel, and the action row.
+ * flosc-admin.css deliberately carries none of these, so there is one cascade
+ * and no !important arbitration between two sheets.
+ *
+ * Delivery: wp_enqueue_style( 'flosc-portability-admin' ) in
+ * includes/flosc-admin.php, dependent on the 'flosc-admin' handle so it always
+ * cascades after the base admin sheet. Markup lives in admin/flow.php under
+ * $flosc_flow_view === 'all'.
+ *
+ * The visually hidden <input type="file"> plus a full-size <label for="…"> is
+ * the whole click mechanism — no opacity overlay, no second control, and the
+ * browser never paints its native file-picker button.
+ */
+
+/* ==========================================================================
+   Form shell
+   ========================================================================== */
+
+/*
+ * The kit form stacks: drop zone, then staged files, then the action buttons.
+ * Stating display/width here means the form does not inherit a row layout from
+ * any broader admin form rule, which is what previously collapsed the drop
+ * surface to the width of its own text.
+ */
+.flosc-portability-kit-form {
+	display: block;
+	width: 100%;
+	margin: 0;
+}
+
+/*
+ * The file input still carries the POST payload, so it stays in the DOM and
+ * stays focusable — it is only removed from view. Sizing to 1px with a clip
+ * region is the pattern WP core uses for .screen-reader-text; repeating it here
+ * means the zone renders correctly even if core's admin sheet changes.
+ */
+.flosc-portability-kit-form .flosc-sr-only,
+.flosc-portability-kit-form input.flosc-sr-only#flosc-kit-file-input {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	clip-path: inset(50%);
+	white-space: nowrap;
+	border: 0;
+}
+
+/* ==========================================================================
+   Drop surface
+   ========================================================================== */
+
+.flosc-portability-kit-form .flosc-dropzone--kit {
+	position: relative;
+	display: block;
+	box-sizing: border-box;
+	min-height: 140px;
+	margin: 10px 0 0;
+	border: 2px dashed #8c8f94;
+	border-radius: 12px;
+	background: #fff;
+	cursor: pointer;
+	transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+/*
+ * The label fills the zone, so a click anywhere inside it reaches the hidden
+ * input and opens the picker. This is the only click target — the zone itself
+ * binds no click handler.
+ */
+.flosc-portability-kit-form .flosc-dropzone__label {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
+	width: 100%;
+	min-height: 136px;
+	padding: 24px 20px;
+	margin: 0;
+	cursor: pointer;
+	text-align: center;
+}
+
+/*
+ * pointer-events: none keeps the glyph and text from becoming the drag target,
+ * so dragenter/dragleave fire against the zone and the highlight cannot flicker
+ * as the cursor crosses child elements.
+ */
+.flosc-portability-kit-form .flosc-dropzone__surface {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	width: 100%;
+	pointer-events: none;
+}
+
+.flosc-portability-kit-form .flosc-dropzone__glyph {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	color: #646970;
+}
+
+.flosc-portability-kit-form .flosc-dropzone__title {
+	display: block;
+	font-size: 14px;
+	font-weight: 600;
+	line-height: 1.35;
+	color: #1d2327;
+}
+
+.flosc-portability-kit-form .flosc-dropzone__hint {
+	display: block;
+	max-width: 36em;
+	margin: 0;
+	font-size: 12px;
+	line-height: 1.45;
+	color: #646970;
+}
+
+/* ==========================================================================
+   Drop surface states
+   ========================================================================== */
+
+/* :focus-within covers keyboard arrival, since the input itself is off-screen. */
+.flosc-portability-kit-form .flosc-dropzone--kit:hover,
+.flosc-portability-kit-form .flosc-dropzone--kit:focus-within {
+	border-color: #2271b1;
+	background: #f0f6fc;
+}
+
+.flosc-portability-kit-form .flosc-dropzone--kit:hover .flosc-dropzone__glyph {
+	color: #2271b1;
+}
+
+.flosc-portability-kit-form .flosc-dropzone--kit:focus-within {
+	box-shadow: 0 0 0 2px #fff, 0 0 0 4px #2271b1;
+}
+
+/* Dragging over the zone: solid border, filled background, ring — unmistakable. */
+.flosc-portability-kit-form .flosc-dropzone--kit.is-dragover {
+	border: 3px solid #063a5c;
+	background: #4da3e0;
+	box-shadow: 0 0 0 5px rgba(6, 58, 92, 0.55);
+	color: #063a5c;
+}
+
+.flosc-portability-kit-form .flosc-dropzone--kit.is-dragover .flosc-dropzone__glyph,
+.flosc-portability-kit-form .flosc-dropzone--kit.is-dragover .flosc-dropzone__title,
+.flosc-portability-kit-form .flosc-dropzone--kit.is-dragover .flosc-dropzone__hint {
+	color: #063a5c;
+}
+
+/* Files staged and idle: green, matching the WP admin success hue. */
+.flosc-portability-kit-form .flosc-dropzone--kit.is-has-file:not(.is-dragover) {
+	border-style: solid;
+	border-color: #00a32a;
+	background: #edfaef;
+}
+
+.flosc-portability-kit-form .flosc-dropzone--kit.is-has-file:not(.is-dragover) .flosc-dropzone__glyph {
+	color: #00a32a;
+}
+
+/* ==========================================================================
+   Staged file panel
+   ========================================================================== */
+
+.flosc-portability-file-panel {
+	margin: 12px 0 14px;
+	padding: 12px 14px;
+	border: 1px solid #c3c4c7;
+	border-radius: 8px;
+	background: #fff;
+}
+
+.flosc-portability-file-panel__head {
+	display: flex;
+	align-items: baseline;
+	flex-wrap: wrap;
+	gap: 8px 12px;
+	margin-bottom: 8px;
+}
+
+/* Pushes Clear to the far edge of the heading row. */
+.flosc-portability-file-panel__head .button-link {
+	margin-left: auto;
+}
+
+/* min-height reserves the empty row so the panel does not jump on first drop. */
+.flosc-portability-file-list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	min-height: 1.5em;
+}
+
+.flosc-portability-file-list__item {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 8px;
+	padding: 6px 0;
+	border-bottom: 1px solid #f0f0f1;
+	font-size: 13px;
+}
+
+.flosc-portability-file-list__item:last-child {
+	border-bottom: 0;
+}
+
+.flosc-portability-file-list__item code {
+	font-size: 12px;
+	word-break: break-all;
+}
+
+/* ==========================================================================
+   Action row
+   ========================================================================== */
+
+.flosc-flow-portability-actions-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	margin: 12px 0 6px;
+}
+
+.flosc-flow-portability-primary-btn {
+	min-width: 180px;
+}
+
+/* ==========================================================================
+   Personality vs data set (labels + section chrome)
+   ========================================================================== */
+
+.flosc-portability-split {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 12px;
+	margin: 12px 0 14px;
+}
+
+@media screen and (min-width: 782px) {
+	.flosc-portability-split {
+		grid-template-columns: 1fr 1fr;
+	}
+}
+
+.flosc-portability-split__card {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 12px 14px;
+	border-radius: 8px;
+	border: 1px solid #c3c4c7;
+	background: #fff;
+}
+
+.flosc-portability-split__card--personality {
+	border-color: #c5b3e6;
+	background: #f7f3fc;
+}
+
+.flosc-portability-split__card--dataset {
+	border-color: #b5d4a8;
+	background: #f3faf0;
+}
+
+.flosc-portability-split__heading {
+	margin: 0 0 6px;
+	font-size: 13px;
+	font-weight: 600;
+	line-height: 1.3;
+	color: #1d2327;
+}
+
+.flosc-portability-split__body {
+	margin: 0 0 8px;
+	font-size: 12px;
+	line-height: 1.45;
+	color: #3c434a;
+}
+
+.flosc-portability-split__meta {
+	margin: 0;
+	font-size: 12px;
+	line-height: 1.5;
+	color: #50575e;
+}
+
+.flosc-portability-chip {
+	display: inline-block;
+	margin: 0 4px 2px 0;
+	padding: 1px 8px;
+	border-radius: 999px;
+	font-size: 11px;
+	font-weight: 600;
+	line-height: 1.6;
+	vertical-align: middle;
+	white-space: nowrap;
+}
+
+.flosc-portability-chip--personality {
+	color: #5b2c8a;
+	background: #e9ddf7;
+	border: 1px solid #c5b3e6;
+}
+
+.flosc-portability-chip--dataset {
+	color: #1e4620;
+	background: #d6edd0;
+	border: 1px solid #8ec58a;
+}
+
+.flosc-portability-section {
+	margin: 18px 0 8px;
+	padding: 12px 14px 14px;
+	border-radius: 8px;
+	border: 1px solid #dcdcde;
+	background: #fcfcfc;
+}
+
+.flosc-portability-section--personality {
+	border-color: #d4c4ef;
+	background: #fbf9fe;
+}
+
+.flosc-portability-section--dataset {
+	border-color: #c5e0bc;
+	background: #f8fcf6;
+}
+
+.flosc-portability-section__title-block {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 2px;
+	min-width: 0;
+}
+
+.flosc-portability-section__title-block .description {
+	margin: 0;
+}
+
+.flosc-portability-section .flosc-ivr-file-actions--table-toolbar {
+	margin-top: 0;
+}
+
+.flosc-portability-file-list__item .flosc-portability-chip {
+	flex: 0 0 auto;
+}

@@ -1,0 +1,124 @@
+/* Claude Style Preset (v1.6.1) — Complete 90-Variable Preset
+ * ===========================================================
+ * Warm parchment palette with violet accents. Literary feel.
+ */
+:root {
+    /* ─── Global ──────────────────────────────── */
+    --flosc-bg: #f8f7f4;
+    --flosc-text: #1a1a2e;
+    --flosc-text-muted: #6b6b80;
+    --flosc-border: #e2e0d8;
+    --flosc-accent: #6c47ff;
+    --flosc-accent-hover: #5635d4;
+    --flosc-accent-subtle: rgba(108, 71, 255, 0.06);
+
+    /* ─── User Message ────────────────────────── */
+    --flosc-user-message-bg: linear-gradient(135deg, #6c47ff 0%, #5635d4 100%);
+    --flosc-user-message-text: #ffffff;
+    --flosc-user-message-radius: 20px 20px 4px 20px;
+    --flosc-user-avatar-bg: #6c47ff;
+    --flosc-user-avatar-text: #ffffff;
+
+    /* ─── Assistant Message ────────────────────── */
+    --flosc-assistant-message-bg: #fffdf5;
+    --flosc-assistant-message-text: #1a1a2e;
+    --flosc-assistant-message-border: 1px solid #f0eacc;
+    --flosc-assistant-message-radius: 4px 20px 20px 20px;
+    --flosc-assistant-avatar-bg: #f0eacc;
+    --flosc-assistant-avatar-text: #6b6b80;
+
+    /* ─── Input ────────────────────────────────── */
+    --flosc-input-bg: #ffffff;
+    --flosc-input-field-bg: #f8f7f4;
+    --flosc-input-field-border: #e2e0d8;
+    --flosc-input-field-text: #1a1a2e;
+    --flosc-input-placeholder: #b0b0b8;
+    --flosc-send-btn-bg: #6c47ff;
+    --flosc-send-btn-text: #ffffff;
+
+    /* ─── Sidebar ──────────────────────────────── */
+    --flosc-sidebar-bg: #f0eacc;
+    --flosc-sidebar-text: #1a1a2e;
+    --flosc-sidebar-text-muted: #6b6b80;
+    --flosc-sidebar-hover: #f8f7f4;
+    --flosc-sidebar-active: #e2e0d8;
+    --flosc-sidebar-border: #e2e0d8;
+
+    /* ─── Pills / Autoprompts ──────────────────── */
+    --flosc-pill-bg: #ffffff;
+    --flosc-pill-text: #6c47ff;
+    --flosc-pill-border: #e2e0d8;
+    --flosc-pill-hover-bg: #f0eacc;
+    --flosc-pill-hover-text: #5635d4;
+    --flosc-pill-hover-border: #6c47ff;
+
+    /* ─── Visitor Bar (v1.7.9) ─────────────────── */
+    --flosc-visitor-bar-bg: #f5f3f0;
+    --flosc-visitor-bar-border: #d4c5a9;
+    --flosc-visitor-bar-text: #9b6d3a;
+
+    /* ─── Cards ────────────────────────────────── */
+    --flosc-card-bg: #ffffff;
+    --flosc-card-text: #1a1a2e;
+    --flosc-card-border: #e2e0d8;
+    --flosc-card-hover-bg: #f8f7f4;
+    --flosc-card-hover-text: #5635d4;
+    --flosc-card-hover-border: #6c47ff;
+    --flosc-card-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
+    --flosc-card-hover-shadow: 0 8px 25px rgba(0,0,0,0.06), 0 4px 10px rgba(0,0,0,0.03);
+
+    /* ─── Panels ───────────────────────────────── */
+    --flosc-panel-bg: rgba(248, 247, 244, 0.85);
+    --flosc-panel-border: rgba(0, 0, 0, 0.04);
+    --flosc-panel-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+    --flosc-panel-header-text: #1a1a2e;
+    --flosc-panel-eyebrow-text: #6b6b80;
+    --flosc-panel-close-bg: rgba(248, 247, 244, 0.9);
+    --flosc-panel-close-border: rgba(0, 0, 0, 0.06);
+    --flosc-panel-close-text: #6b6b80;
+    --flosc-panel-close-hover-bg: #ffffff;
+    --flosc-panel-close-hover-border: rgba(0, 0, 0, 0.12);
+
+    /* ─── Content Formatting ───────────────────── */
+    --flosc-content-link: #6c47ff;
+    --flosc-content-link-hover: #5635d4;
+    --flosc-content-blockquote-border: #6c47ff;
+    --flosc-content-blockquote-bg: rgba(108, 71, 255, 0.04);
+    --flosc-content-blockquote-text: #6b6b80;
+    --flosc-content-hr: #e2e0d8;
+    --flosc-content-table-border: #e2e0d8;
+    --flosc-content-table-header-bg: #f0eacc;
+    --flosc-content-table-stripe-bg: #f8f7f4;
+    --flosc-content-list-marker: #6b6b80;
+
+    /* ─── Code ─────────────────────────────────── */
+    --flosc-code-bg: #f0eacc;
+    --flosc-code-text: #1a1a2e;
+
+    /* ─── Quiz Modal ───────────────────────────── */
+    --flosc-quiz-prompt-bg: #f8f7f4;
+    --flosc-quiz-prompt-border: #e2e0d8;
+    --flosc-quiz-sequence-text: #1a1a2e;
+    --flosc-quiz-tab-bg: #ffffff;
+    --flosc-quiz-tab-border: #e2e0d8;
+    --flosc-quiz-tab-text: #6b6b80;
+    --flosc-quiz-tab-active-bg: #6c47ff;
+    --flosc-quiz-tab-active-text: #ffffff;
+    --flosc-quiz-input-bg: #ffffff;
+    --flosc-quiz-input-border: #e2e0d8;
+    --flosc-quiz-input-focus-border: #6c47ff;
+    --flosc-quiz-record-bg: #dc2626;
+    --flosc-quiz-record-hover-bg: #b91c1c;
+    --flosc-quiz-stop-bg: #52525b;
+    --flosc-quiz-stop-hover-bg: #3f3f46;
+    --flosc-quiz-waveform-bg: #f8f7f4;
+    --flosc-quiz-success: #059669;
+    --flosc-quiz-warning: #d97706;
+    --flosc-quiz-error-bg: #fef2f2;
+    --flosc-quiz-error-text: #991b1b;
+    --flosc-quiz-error-border: #fecaca;
+
+    /* ─── Scrollbar ────────────────────────────── */
+    --flosc-scrollbar-thumb: #e2e0d8;
+    --flosc-scrollbar-thumb-hover: #b0b0b8;
+}

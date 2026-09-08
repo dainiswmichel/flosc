@@ -6,8 +6,8 @@
   "baseline_commit": "477f252",
   "head_commit": "f526b57aa71d3ec9c94057bba75b7ca891403659",
   "version": "8.0.0",
-  "artifact": null,
-  "artifact_note": "The full tree is here, same as the other candidates. No flosc.zip: build with ./flosc-ship.sh from this tree or from the branch \u2014 they are identical at this commit. pre-release-candidates/ is excluded from the artifact by .distignore and by the build's hard deny list.",
+  "artifact": "flosc.zip",
+  "artifact_note": "Built from this tree with ./build-dist-zip.sh at head_commit. SHA256SUMS covers it. pre-release-candidates/ is excluded from the artifact by .distignore and by the build's hard deny list, so none of these folders can ride along into a ZIP.",
   "assembled_from": {
     "codex-gpt5": "full profile every turn, RAG fallthrough, get_response_result(), personality boilerplate removal, genome/profile fingerprint",
     "opencode-big-pickle": "no-hedge method pair and the method_exists guards",
@@ -25,7 +25,8 @@
     "wordpress_plugin_check": "DEFERRED \u2014 fresh install required",
     "live_ai_provider_calls": "DEFERRED \u2014 fresh install required",
     "journey_harness": "DEFERRED \u2014 needs WP-CLI on the target site",
-    "contract_acceptance": "DEFERRED \u2014 personality built from scratch, attached to a pack, carrying that flow to its outcome"
+    "contract_acceptance": "DEFERRED \u2014 personality built from scratch, attached to a pack, carrying that flow to its outcome",
+    "zip_gates": "passed (277 files, 2.6M, forbidden-path scan clean)"
   },
   "new_gates": [
     "check_method_contract.php",
@@ -42,7 +43,7 @@
   ],
   "harness": "tests/journey-harness.php (WP-CLI, --require, never shipped)",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
-  "tree_files": 275,
+  "tree_files": 283,
   "designer_pass": {
     "note": "The DA1 AI Personality Designer, made usable. Version held at 8.0.0.",
     "one_card": "A wellspring is an aspect; a category is a group of aspects; both are the same card. Drop an aspect onto a card and that card becomes the heading it sits under, keeping density, gain, binding, hue, star and trajectory.",

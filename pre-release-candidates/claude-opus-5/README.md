@@ -59,8 +59,9 @@ https://github.com/dainiswmichel/flosc/tree/claude/ready-to-help-jsw2li
 the other four candidates carry, so this folder can be deployed from directly
 without pulling the branch first.
 
-**No `flosc.zip` here** — the Captain builds those with `./flosc-ship.sh`. Build
-from either copy; they are identical.
+**`flosc.zip` is here**, built from this tree with `./build-dist-zip.sh` at the
+head commit — 277 files, 2.6 MB, forbidden-path scan clean. `SHA256SUMS` covers
+it. Build your own from either copy if you prefer; they are identical.
 
 **If you keep both, one will drift.** The branch is the trunk and this tree is a
 snapshot of it. When the branch moves, this does not. Deploy from whichever you

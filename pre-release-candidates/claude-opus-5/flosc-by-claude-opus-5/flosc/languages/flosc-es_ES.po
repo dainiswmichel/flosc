@@ -1,0 +1,647 @@
+# Copyright (C) 2026 Dainis Michel
+# This file is distributed under the GPL v2 or later.
+msgid ""
+msgstr ""
+"Project-Id-Version: FLOSC 8.0.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/flosc\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-07-07T13:27:07+00:00\n"
+"PO-Revision-Date: 2026-07-07T13:27:07+00:00\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: flosc\n"
+"Language: es\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. Plugin Name of the plugin
+#: flosc.php
+msgid "FLOSC"
+msgstr ""
+
+#. Plugin URI of the plugin
+#: flosc.php
+msgid "https://flosc.ai"
+msgstr ""
+
+#. Description of the plugin
+#: flosc.php
+msgid ""
+"Freeline --> Login --> Offer --> Sale --> Content: Providing try-before-you-"
+"buy experiences for everyone from your local poet to the world's largest "
+"corporations."
+msgstr ""
+
+#. Author of the plugin
+#: flosc.php
+msgid "Dainis Michel"
+msgstr ""
+
+#. Author URI of the plugin
+#: flosc.php
+msgid "https://dainis.net"
+msgstr ""
+
+#: admin/companion.php:67 flosc.php:12528 flosc.php:12582
+msgid "Open Chat"
+msgstr ""
+
+#: admin/companion.php:68 flosc.php:12532 flosc.php:12583 flosc.php:12623
+#: flosc.php:12644
+msgid "Collapse Chat"
+msgstr ""
+
+#: admin/da1.php:323 admin/da1.php:347
+msgid "Invalid DA1 catalog path."
+msgstr ""
+
+#: admin/da1.php:328
+msgid "DA1 catalog content cannot be empty."
+msgstr ""
+
+#: admin/da1.php:334
+msgid "Could not write temporary DA1 catalog file."
+msgstr ""
+
+#: admin/da1.php:339
+msgid "Could not finalize DA1 catalog file."
+msgstr ""
+
+#: admin/da1.php:357
+msgid "Could not read DA1 catalog file."
+msgstr ""
+
+#: admin/settings.php:283
+msgid ""
+"No accessible FLOSC flows were found for your account. Ask a site admin to "
+"assign you as a floscEditor for a flow."
+msgstr ""
+
+#: admin/settings.php:313
+msgid "You do not have access to this FLOSC flow."
+msgstr ""
+
+#: admin/settings.php:353
+msgid "You do not have permission to set a default FLOSC flow."
+msgstr ""
+
+#: admin/settings.php:374
+msgid "You do not have permission to create concierge posts."
+msgstr ""
+
+#: admin/settings.php:452
+msgid "You do not have permission to save this FLOSC flow."
+msgstr ""
+
+#: flosc.php:2486
+msgid "Newsletter"
+msgstr ""
+
+#: flosc.php:2488
+msgid "Newsletter subscription"
+msgstr ""
+
+#: flosc.php:2489
+msgid "Subscribed to the newsletter"
+msgstr ""
+
+#: flosc.php:7665
+msgid "Message is required"
+msgstr ""
+
+#: flosc.php:7678
+msgid "AI query limit reached. Upgrade for more!"
+msgstr ""
+
+#: flosc.php:7707
+msgid "No audio file provided"
+msgstr ""
+
+#: flosc.php:7797
+msgid "No input provided"
+msgstr ""
+
+#: flosc.php:7803
+msgid "Quiz type not found"
+msgstr ""
+
+#: flosc.php:8043
+msgid "You must be logged in to make a purchase"
+msgstr ""
+
+#: flosc.php:8049
+msgid "Security token invalid. Please refresh."
+msgstr ""
+
+#: flosc.php:8065 flosc.php:8819 flosc.php:8886 flosc.php:9424
+#: includes/sale/class-offer-manager.php:143
+#: includes/sale/class-offer-manager.php:167
+#: includes/sale/class-sale-manager.php:114
+msgid "Offer not found"
+msgstr ""
+
+#: flosc.php:8069
+msgid "This offer requires payment"
+msgstr ""
+
+#: flosc.php:8087
+msgid "Free access granted"
+msgstr ""
+
+#: flosc.php:8118
+msgid "No access code provided"
+msgstr ""
+
+#: flosc.php:8127
+msgid "Invalid access code"
+msgstr ""
+
+#: flosc.php:8133
+msgid "User not found"
+msgstr ""
+
+#: flosc.php:8812
+msgid "Stripe payments are not currently available"
+msgstr ""
+
+#: flosc.php:8824 flosc.php:8892
+msgid "Stripe is not configured"
+msgstr ""
+
+#: flosc.php:8867
+msgid "Missing payment_intent_id or offer_id"
+msgstr ""
+
+#: flosc.php:8902
+msgid "Payment not completed"
+msgstr ""
+
+#: flosc.php:8907 flosc.php:9449
+msgid "Payment does not belong to this user"
+msgstr ""
+
+#: flosc.php:9005 flosc.php:9126 flosc.php:9431
+msgid "PayPal is not configured"
+msgstr ""
+
+#: flosc.php:9032
+msgid "PayPal subscription is missing a plan_id."
+msgstr ""
+
+#: flosc.php:9043
+msgid "PayPal subscription plan is not recognized."
+msgstr ""
+
+#: flosc.php:9047
+msgid "Requested plan does not match the verified PayPal subscription."
+msgstr ""
+
+#: flosc.php:9099
+msgid "Missing subscription_id"
+msgstr ""
+
+#: flosc.php:9111
+msgid "Missing or invalid checkout binding token."
+msgstr ""
+
+#: flosc.php:9160
+msgid "Could not retrieve email from PayPal subscription."
+msgstr ""
+
+#: flosc.php:9409
+msgid "Missing order_id or offer_id"
+msgstr ""
+
+#: flosc.php:9505
+msgid "Unknown provider"
+msgstr ""
+
+#: flosc.php:9559
+msgid "Affiliate system not configured"
+msgstr ""
+
+#: flosc.php:9580 includes/sale/providers/class-affiliate-provider.php:258
+msgid "Intent not found"
+msgstr ""
+
+#: flosc.php:9862
+msgid "Upgrade to access this lesson"
+msgstr ""
+
+#: flosc.php:9868
+msgid "Lesson not found"
+msgstr ""
+
+#: flosc.php:9945
+msgid "No audio file received"
+msgstr ""
+
+#: flosc.php:9950
+msgid "Audio file exceeds 2MB limit"
+msgstr ""
+
+#: flosc.php:9955
+msgid "Invalid phrase number"
+msgstr ""
+
+#: flosc.php:9983
+msgid "Invalid session"
+msgstr ""
+
+#: flosc.php:10003
+msgid "Invalid uploaded audio"
+msgstr ""
+
+#: flosc.php:10008
+msgid "Could not save audio"
+msgstr ""
+
+#: flosc.php:10036
+msgid "Could not update session metadata"
+msgstr ""
+
+#: flosc.php:10795
+msgid "User must be logged in"
+msgstr ""
+
+#: flosc.php:11113 includes/flosc-rest.php:361
+msgid "Invalid session id."
+msgstr ""
+
+#: flosc.php:11117 includes/flosc-rest.php:334 includes/flosc-rest.php:365
+msgid "Session ownership check failed."
+msgstr ""
+
+#: flosc.php:11706
+msgid "LeSAEp"
+msgstr ""
+
+#: flosc.php:12584 flosc.php:12621 flosc.php:12642
+msgid "FLOSC Assistant"
+msgstr ""
+
+#: flosc.php:12585
+msgid "Processing..."
+msgstr ""
+
+#: includes/class-stt-dispatch.php:67
+msgid "Invalid STT provider"
+msgstr ""
+
+#: includes/class-stt-dispatch.php:87
+msgid "AssemblyAI API key not configured"
+msgstr ""
+
+#: includes/class-stt-dispatch.php:110
+msgid "Failed to upload audio to AssemblyAI"
+msgstr ""
+
+#: includes/class-stt-dispatch.php:134
+msgid "Failed to start transcription"
+msgstr ""
+
+#: includes/class-stt-dispatch.php:162
+msgid "Transcription failed"
+msgstr ""
+
+#: includes/class-stt-dispatch.php:166
+msgid "Transcription timed out"
+msgstr ""
+
+#: includes/class-stt-dispatch.php:178
+msgid "OpenAI API key not configured"
+msgstr ""
+
+#: includes/class-stt-dispatch.php:235
+msgid "Custom STT endpoint not configured"
+msgstr ""
+
+#: includes/flosc-admin.php:567
+msgid "You do not have permission to access FLOSC settings."
+msgstr ""
+
+#: includes/flosc-admin.php:572
+msgid ""
+"You do not have FLOSC flow assignments yet. Ask a site admin to assign you "
+"in Administration for a flow."
+msgstr ""
+
+#: includes/flosc-rest.php:13
+msgid "Too many requests. Please try again later."
+msgstr ""
+
+#: includes/flosc-rest.php:23
+msgid "Free tier limit reached. Please log in."
+msgstr ""
+
+#: includes/flosc-rest.php:43
+msgid "Too many requests. Please slow down."
+msgstr ""
+
+#: includes/flosc-rest.php:50
+msgid "Rate limit reached. Please try again later."
+msgstr ""
+
+#: includes/flosc-rest.php:64
+msgid "Login is required."
+msgstr ""
+
+#: includes/flosc-rest.php:76
+msgid "Administrator privileges required."
+msgstr ""
+
+#: includes/flosc-rest.php:93
+msgid "Invalid or missing security token."
+msgstr ""
+
+#: includes/flosc-rest.php:115
+msgid "Checkout binding token and session_id are required."
+msgstr ""
+
+#: includes/flosc-rest.php:121
+msgid "Invalid checkout binding token."
+msgstr ""
+
+#: includes/flosc-rest.php:126
+msgid "Checkout session mismatch."
+msgstr ""
+
+#: includes/flosc-rest.php:140
+msgid "Checkout provider mismatch."
+msgstr ""
+
+#: includes/flosc-rest.php:146
+msgid "Checkout flow mismatch."
+msgstr ""
+
+#: includes/flosc-rest.php:152
+msgid "Checkout offer mismatch."
+msgstr ""
+
+#: includes/flosc-rest.php:176
+msgid "Invalid webhook provider."
+msgstr ""
+
+#: includes/flosc-rest.php:197
+msgid "Invalid FLOSC phase."
+msgstr ""
+
+#: includes/flosc-rest.php:230
+msgid "Not entitled to this content."
+msgstr ""
+
+#: includes/flosc-rest.php:326
+msgid "Missing session token."
+msgstr ""
+
+#: includes/flosc-rest.php:330
+msgid "Invalid session token."
+msgstr ""
+
+#: includes/flosc-rest.php:338
+msgid "Too many requests."
+msgstr ""
+
+#: includes/quiz-types/class-flosc-sample-audio-quiz.php:55
+msgid "No audio input received."
+msgstr ""
+
+#: includes/quiz-types/class-flosc-sample-text-based-quiz.php:72
+#: includes/quiz-types/class-multiplechoice-quiz.php:54
+#: includes/quiz-types/class-truefalse-quiz.php:54
+msgid "Please enter your answers."
+msgstr ""
+
+#: includes/quiz-types/class-flosc-sample-text-based-quiz.php:79
+msgid "No valid answers found."
+msgstr ""
+
+#: includes/quiz-types/class-wordmatching-quiz.php:54
+msgid "Please enter your matches."
+msgstr ""
+
+#: includes/sale/class-payment-provider.php:72
+msgid "Refunds not supported by this provider"
+msgstr ""
+
+#: includes/sale/class-payment-provider.php:86
+msgid "Webhooks not supported by this provider"
+msgstr ""
+
+#: includes/sale/class-payment-provider.php:114
+msgid "Subscriptions not supported by this provider"
+msgstr ""
+
+#: includes/sale/class-sale-manager.php:120
+msgid "Payment provider not found"
+msgstr ""
+
+#: includes/sale/class-sale-manager.php:124
+msgid "Payment provider not configured"
+msgstr ""
+
+#. translators: 1: usage event name (e.g. a quiz or chat request), 2: remaining quota count.
+#: includes/sale/class-usage-tracker.php:216
+#, php-format
+msgid "Usage limit exceeded for %1$s. Remaining: %2$d"
+msgstr ""
+
+#: includes/sale/providers/class-affiliate-provider.php:430
+msgid "Invalid conversion data"
+msgstr ""
+
+#: includes/sale/providers/class-affiliate-provider.php:505
+msgid "Insufficient credits"
+msgstr ""
+
+#. translators: %s: name of the missing ClickBank webhook field.
+#: includes/sale/providers/class-clickbank-provider.php:147
+#, php-format
+msgid "Missing required field: %s"
+msgstr ""
+
+#: includes/sale/providers/class-clickbank-provider.php:154
+msgid "Vendor does not match"
+msgstr ""
+
+#: includes/sale/providers/class-clickbank-provider.php:160
+msgid "ClickBank secret is not configured"
+msgstr ""
+
+#: includes/sale/providers/class-clickbank-provider.php:164
+msgid "Missing IPN signature"
+msgstr ""
+
+#: includes/sale/providers/class-clickbank-provider.php:168
+msgid "Invalid IPN signature"
+msgstr ""
+
+#. translators: %s: product name.
+#: includes/sale/providers/class-clickbank-provider.php:374
+#, php-format
+msgid "Welcome to %s - Your Account Details"
+msgstr ""
+
+#: includes/sale/providers/class-clickbank-provider.php:378
+#, php-format
+msgid ""
+"Hi %1$s,\n"
+"\n"
+"Thank you for your purchase!\n"
+"\n"
+"Your account has been created:\n"
+"\n"
+"Username: %2$s\n"
+"Password: %3$s\n"
+"Login: %4$s\n"
+"\n"
+"Please change your password after first login.\n"
+"\n"
+"Best regards,\n"
+"%5$s"
+msgstr ""
+
+#: includes/sale/providers/class-paypal-provider.php:205
+msgid "HTTP"
+msgstr ""
+
+#: includes/sale/providers/class-paypal-provider.php:206
+msgid "PayPal OAuth failed: "
+msgstr ""
+
+#: includes/sale/providers/class-paypal-provider.php:303
+msgid "PayPal order creation failed (HTTP "
+msgstr ""
+
+#: includes/sale/providers/class-paypal-provider.php:379
+msgid "PayPal capture failed (HTTP "
+msgstr ""
+
+#: includes/sale/providers/class-paypal-provider.php:419
+msgid ""
+"PayPal uses the order creation flow. Use create_order() and capture_order() "
+"instead."
+msgstr ""
+
+#: includes/sale/providers/class-paypal-provider.php:452
+msgid "Failed to create product (HTTP "
+msgstr ""
+
+#: includes/sale/providers/class-paypal-provider.php:505
+msgid "Failed to create plan (HTTP "
+msgstr ""
+
+#: includes/sale/providers/class-stripe-provider.php:133
+msgid "No Stripe Price ID configured for this offer"
+msgstr ""
+
+#: includes/sale/providers/class-stripe-provider.php:248
+msgid "Payment failed: "
+msgstr ""
+
+#: includes/sale/providers/class-stripe-provider.php:248
+msgid "Unknown error"
+msgstr ""
+
+#: includes/sale/providers/class-stripe-provider.php:307
+msgid "Failed to create subscription"
+msgstr ""
+
+#: includes/sale/providers/class-stripe-provider.php:368
+msgid "Stripe webhook secret required"
+msgstr ""
+
+#: includes/sale/providers/class-stripe-provider.php:373
+msgid "Missing Stripe signature header"
+msgstr ""
+
+#: includes/sale/providers/class-stripe-provider.php:390
+msgid "Webhook timestamp too old or invalid"
+msgstr ""
+
+#: includes/sale/providers/class-stripe-provider.php:398
+msgid "Invalid webhook signature"
+msgstr ""
+
+#: includes/sale/providers/class-token-provider.php:134
+#: includes/sale/providers/class-token-provider.php:162
+msgid "Amount must be positive"
+msgstr ""
+
+#: includes/sale/providers/class-token-provider.php:168
+msgid "Insufficient token balance"
+msgstr ""
+
+#: includes/sso/class-sso-manager.php:413
+msgid "Social Login Settings"
+msgstr ""
+
+#: includes/sso/class-sso-manager.php:469
+msgid ""
+"Configure social login providers. You will need to create OAuth applications "
+"with each provider."
+msgstr ""
+
+#. translators: %s: provider name.
+#: includes/sso/class-sso-manager.php:546
+#, php-format
+msgid "%s account unlinked successfully."
+msgstr ""
+
+#. translators: %s: provider name.
+#: includes/sso/class-sso-provider-base.php:306
+#, php-format
+msgid "Enable %s"
+msgstr ""
+
+#. translators: %s: provider name.
+#: includes/sso/class-sso-provider-base.php:310
+#, php-format
+msgid "Allow users to log in with %s"
+msgstr ""
+
+#: includes/sso/class-sso-provider-base.php:314
+msgid "Client ID"
+msgstr ""
+
+#. translators: %s: provider name.
+#: includes/sso/class-sso-provider-base.php:318
+#, php-format
+msgid "%s OAuth Client ID"
+msgstr ""
+
+#: includes/sso/class-sso-provider-base.php:322
+msgid "Client Secret"
+msgstr ""
+
+#. translators: %s: provider name.
+#: includes/sso/class-sso-provider-base.php:326
+#, php-format
+msgid "%s OAuth Client Secret"
+msgstr ""
+
+#: includes/sso/providers/class-apple-provider.php:424
+msgid "Team ID"
+msgstr ""
+
+#: includes/sso/providers/class-apple-provider.php:427
+msgid "Your Apple Developer Team ID (10 characters)"
+msgstr ""
+
+#: includes/sso/providers/class-apple-provider.php:431
+msgid "Key ID"
+msgstr ""
+
+#: includes/sso/providers/class-apple-provider.php:434
+msgid "The Key ID from your Apple Sign In key"
+msgstr ""
+
+#: includes/sso/providers/class-apple-provider.php:438
+msgid "Private Key"
+msgstr ""
+
+#: includes/sso/providers/class-apple-provider.php:441
+msgid "Contents of the .p8 private key file (include BEGIN/END lines)"
+msgstr ""

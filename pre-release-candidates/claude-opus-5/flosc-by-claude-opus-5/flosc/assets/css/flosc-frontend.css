@@ -1,0 +1,166 @@
+/* ========================================
+   FLOSC FRONTEND STYLES
+   TOS, Privacy, public landing pages,
+   any non-chat served content (public or protected)
+   ======================================== */
+
+.flosc-frontend-page {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 0 20px;
+    line-height: 1.7;
+    color: #374151;
+}
+
+.flosc-frontend-page h1,
+.flosc-frontend-page h2 {
+    color: #111827;
+    margin-top: 2em;
+}
+
+.flosc-frontend-page a {
+    color: #2563eb;
+    text-decoration: underline;
+}
+
+.flosc-frontend-page a:hover {
+    color: #1e40af;
+}
+
+/* TOS / Privacy specific */
+.flosc-legal-section {
+    margin-bottom: 48px;
+}
+
+.flosc-legal-section h2 {
+    border-bottom: 2px solid #e5e7eb;
+    padding-bottom: 12px;
+}
+
+/* General non-chat content */
+.flosc-content-wrapper {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.flosc-cncrg-confirm {
+    margin-top: 24px;
+    border: 1px dashed #999;
+    background: #fafafa;
+    padding: 12px 16px;
+}
+
+.flosc-cncrg-confirm-title {
+    font: 600 12px/1.2 ui-monospace, Menlo, Consolas, monospace;
+    color: #444;
+    margin-bottom: 6px;
+}
+
+.flosc-cncrg-confirm-body {
+    font: 13px/1.6 ui-monospace, Menlo, Consolas, monospace;
+    color: #222;
+    margin: 0;
+    white-space: pre-wrap;
+}
+
+.flosc-cncrg-confirm-foot {
+    font: 11px/1.4 ui-monospace, Menlo, Consolas, monospace;
+    color: #777;
+    margin-top: 8px;
+}
+
+/* ========================================
+   LEGACY LEGAL RENDER BRIDGE (INLINE FOLD-IN)
+   Flattened from flosc-legal.css to remove
+   @import usage on standalone legal pages.
+   ======================================== */
+
+
+/* ===== BEGIN FLOSC LEGACY: flosc-legal.css ===== */
+
+body {
+    margin: 0;
+    font-family: Georgia, "Times New Roman", serif;
+    background: #f7f4ec;
+    color: #1d1b19;
+    line-height: 1.6;
+}
+
+.flosc-legal-shell {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 48px 24px 72px;
+}
+
+.flosc-legal-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    margin-bottom: 32px;
+    font: 600 14px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.flosc-legal-nav a {
+    color: #7a4b12;
+    text-decoration: none;
+}
+
+.flosc-legal-nav a:hover,
+.flosc-legal-nav a:focus {
+    text-decoration: underline;
+}
+
+h1 {
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    line-height: 1.1;
+    margin: 0 0 16px;
+}
+
+h2 {
+    font-size: 1.25rem;
+    margin: 32px 0 12px;
+}
+
+p,
+li {
+    font-size: 1.05rem;
+}
+
+ul,
+ol {
+    padding-left: 24px;
+}
+
+a {
+    color: #8b3f00;
+}
+
+.flosc-legal-card {
+    background: #fffdf8;
+    border: 1px solid #e8dcc8;
+    border-radius: 20px;
+    padding: 32px;
+    box-shadow: 0 24px 60px rgba(74, 44, 11, 0.08);
+}
+
+.flosc-legal-meta {
+    margin: 0 0 24px;
+    font: 600 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #7f6a54;
+}
+
+@media (max-width: 640px) {
+    .flosc-legal-shell {
+        padding: 28px 16px 48px;
+    }
+
+    .flosc-legal-card {
+        padding: 24px;
+    }
+}
+
+/* ===== END FLOSC LEGACY: flosc-legal.css ===== */

@@ -1,0 +1,127 @@
+/* ========================================
+   FLOSC EMAIL ADMIN
+   Email tab only
+   ======================================== */
+
+.flosc-email-followup-title {
+    margin: 12px 0 4px;
+}
+
+.flosc-email-followup-desc {
+    margin-bottom: 8px;
+}
+
+.flosc-email-fu-table {
+    max-width: 980px;
+}
+
+.flosc-email-col-days {
+    width: 110px;
+}
+
+.flosc-email-col-subject {
+    width: 30%;
+}
+
+.flosc-email-col-remove {
+    width: 60px;
+    text-align: center;
+}
+
+.flosc-email-hr-top {
+    margin: 28px 0;
+}
+
+.flosc-email-hr {
+    margin: 40px 0;
+}
+
+.flosc-email-hr-divider {
+    margin: 24px 0 16px;
+    border: 0;
+    border-top: 1px solid #e0e0e0;
+}
+
+.flosc-email-status-badge {
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.flosc-email-status-badge--optional {
+    background: #6b7280;
+}
+
+.flosc-email-status-badge--ready,
+.flosc-email-status-badge--live {
+    background: #10b981;
+}
+
+.flosc-email-status-badge--backend {
+    background: #ffc107;
+    color: #000;
+}
+
+.flosc-email-inline-label-left {
+    margin-left: 15px;
+}
+
+.flosc-email-inline-label-right {
+    margin-right: 10px;
+}
+
+.flosc-email-section-subtitle {
+    margin: 0 0 4px;
+}
+
+.flosc-email-subdesc {
+    margin-bottom: 12px;
+}
+
+.flosc-email-level-title {
+    margin: 28px 0 0;
+}
+
+.flosc-email-template-card {
+    background: #f9f9f9;
+    padding: 15px;
+    margin: 20px 0;
+    border-left: 4px solid #4f46e5;
+}
+
+.flosc-email-template-card--congrats {
+    border-left-color: #4f46e5;
+}
+
+.flosc-email-template-card--encouragement {
+    border-left-color: #f59e0b;
+}
+
+.flosc-email-template-card--welcome {
+    border-left-color: #10b981;
+}
+
+.flosc-email-template-card--reengagement {
+    border-left-color: #ec4899;
+}
+
+.flosc-email-template-card--upgrade {
+    border-left-color: #8b5cf6;
+}
+
+.flosc-email-template-card--weekly {
+    border-left-color: #0ea5e9;
+}
+
+.flosc-email-template-title {
+    margin-top: 0;
+}
+
+.flosc-email-template-pre {
+    background: #fff;
+    padding: 10px;
+    overflow-x: auto;
+    font-size: 13px;
+}
