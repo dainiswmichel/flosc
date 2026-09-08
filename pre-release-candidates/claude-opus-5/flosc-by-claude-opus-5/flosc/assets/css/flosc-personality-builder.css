@@ -389,7 +389,9 @@
    */
   .flosc-personality-workshop .acc > summary.row-sum{
     display: grid;
-    grid-template-columns: 22px minmax(0, 1fr) minmax(0, auto);
+    /* The label keeps a floor of 7rem, so a long meta line can never squeeze
+       it to nothing the way it did when the meta column was plain auto. */
+    grid-template-columns: 22px minmax(7rem, 1fr) minmax(0, auto);
     justify-content: stretch;
     align-items: center;
     padding-left: 8px;
@@ -574,7 +576,19 @@
   .flosc-personality-workshop .app.drag-active .row-gap--first{
     min-height: 16px; background: rgba(34,113,177,.10);
   }
-  .flosc-personality-workshop .acc > summary.row-sum .meta-bit{ justify-self: end; white-space: nowrap; }
+  /*
+   * justify-self: end lived here and broke the row.
+   *
+   * A grid item with justify-self:end is sized to its content rather than
+   * stretched to its track, and then its right edge is pinned to the track's
+   * right edge — so a meta line longer than its column grew LEFTWARD, out of
+   * the row, across the panel beside it, and overflow:hidden never got a
+   * chance because the box itself was the wrong size. text-align:right on a
+   * stretched item does the same job without leaving the box.
+   *
+   * Same specificity as the rule that sets the column and clip, and later in
+   * the file, so it won. Removing it is the fix; nothing replaces it.
+   */
   /* Aspect cloud: two or more related aspects on one coloured ground. */
   .flosc-personality-workshop .cloud{
     border: 1px solid var(--line); border-radius: 12px; margin: 8px 0;
