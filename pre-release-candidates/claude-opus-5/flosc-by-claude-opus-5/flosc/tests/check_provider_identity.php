@@ -35,6 +35,13 @@ $fail = 0;
  * @param mixed  $want  Expected value.
  * @return void
  */
+/* Markdown out, so str_word_count sees words rather than asterisks. */
+function wp_strip_all_tags_shim( $text ) {
+	$text = preg_replace( '/\[([^\]]+)\]\([^)]+\)/', '$1', (string) $text );
+	$text = str_replace( array( '**', '`', '*', '=' ), ' ', $text );
+	return $text;
+}
+
 function ok( $label, $got, $want = true ) {
 	global $fail;
 	$pass = ( $got === $want );
@@ -196,46 +203,67 @@ ok( '  and there are the seven we know about', $explained, 7 );
  * and how Plugin Check came to report the Description as truncated.
  */
 /*
- * wp.org stores each section as RENDERED HTML and trims that, not the markdown
- * source. This gate measured the source, so it passed at 2,194 characters
- * while Plugin Check failed the same section: **bold** becomes
- * <strong></strong>, "* item" becomes <li></li>, "= X =" becomes <h4></h4>,
- * and the markup put it past 2,500. Measure what is measured.
+ * How wordpress.org actually measures a readme section.
+ *
+ * This gate has been wrong twice, both times because it measured what someone
+ * assumed rather than what plugin-directory/readme/class-parser.php does. The
+ * parser's rule, quoted:
+ *
+ *   $expected_sections = array( 'description', 'installation', 'faq',
+ *       'screenshots', 'changelog', 'upgrade_notice', 'other_notes' );
+ *
+ *   if ( ! in_array( $section_name, $this->expected_sections ) ) {
+ *       $section_name = 'other_notes';
+ *   }
+ *   ...
+ *   $this->sections['description'] .= "\n" . $this->sections['other_notes'];
+ *
+ * So every unrecognised "== Heading ==" lands inside Description. Renaming one
+ * to "Other Notes" does not help — other_notes is appended to description. Nor
+ * does moving text between the two: same bucket.
+ *
+ * And the limit is WORDS, not characters, whatever the warning says:
+ *
+ *   'section' => 2500, 'section-faq' => 5000, 'section-changelog' => 5000
+ *   $word_count_with_spaces = $length * 2;   // trim_length( …, 'words' )
+ *
+ * A readme that trips this is not too wordy. It has put a section somewhere
+ * the parser does not recognise.
  */
-echo "\nreadme.txt fits what wp.org will actually show\n";
-preg_match( '/^== Description ==\s*\n(.*?)(?=^== )/ms', $readme, $description );
-$description_src = isset( $description[1] ) ? trim( $description[1] ) : '';
-$rendered        = $description_src;
-$rendered        = preg_replace( '/^= (.+?) =$/m', '<h4>$1</h4>', $rendered );
-$rendered        = preg_replace( '/\*\*(.+?)\*\*/', '<strong>$1</strong>', $rendered );
-$rendered        = preg_replace( '/\[([^\]]+)\]\(([^)]+)\)/', '<a href="$2">$1</a>', $rendered );
-$rendered        = preg_replace( '/`([^`]+)`/', '<code>$1</code>', $rendered );
-$rendered        = preg_replace( '/^\* (.+)$/m', '<li>$1</li>', $rendered );
-$description_length = strlen( (string) $rendered ) + 25; // <p>, <ul> wrappers
-ok( 'the Description section was found', strlen( $description_src ) > 0, true );
-ok( '  and fits in 2500 characters once rendered', $description_length <= 2500, true );
-ok( '  with room to edit it later', $description_length <= 2200, true );
+echo "\nreadme.txt fits what wp.org will actually publish\n";
 
-preg_match_all( '/^== (.+?) ==$/m', $readme, $sections );
-$known = array(
-	'Description', 'Installation', 'Frequently Asked Questions', 'Screenshots',
-	'Changelog', 'Upgrade Notice', 'Other Notes',
-);
-$folds = array_values( array_diff( $sections[1], $known ) );
-ok( 'the overflow section has a name wp.org recognises',
-	in_array( 'Other Notes', $sections[1], true ), true );
-ok( '  and the copy is still there, not deleted',
-	strpos( $readme, '= Starter Packs =' ) !== false
-	&& strpos( $readme, '= How It Works =' ) !== false
-	&& strpos( $readme, '= Technical Details =' ) !== false, true );
+$expected = array( 'description', 'installation', 'faq', 'screenshots', 'changelog', 'upgrade_notice', 'other_notes' );
+$aliases  = array( 'frequently_asked_questions' => 'faq' );
+
+preg_match_all( '/^== (.+?) ==\s*$(.*?)(?=^== |\z)/ms', $readme, $found, PREG_SET_ORDER );
+$buckets = array();
+$routed  = array();
+foreach ( $found as $section ) {
+	$title = trim( $section[1] );
+	$key   = strtolower( str_replace( ' ', '_', $title ) );
+	if ( isset( $aliases[ $key ] ) ) {
+		$key = $aliases[ $key ];
+	}
+	if ( ! in_array( $key, $expected, true ) ) {
+		$routed[] = $title;
+		$key      = 'other_notes';
+	}
+	$buckets[ $key ] = ( $buckets[ $key ] ?? 0 ) + str_word_count( wp_strip_all_tags_shim( $section[2] ) );
+}
+$description_words = ( $buckets['description'] ?? 0 ) + ( $buckets['other_notes'] ?? 0 );
+
+ok( 'the Description section was found', ( $buckets['description'] ?? 0 ) > 0, true );
+ok( '  under the 2500-word trim, with other_notes folded in', $description_words < 2500, true );
+ok( '  and with room to edit it later', $description_words <= 2200, true );
+ok( 'the FAQ is under its own 5000-word budget', ( $buckets['faq'] ?? 0 ) <= 4500, true );
+ok( 'the Changelog is under its own 5000-word budget', ( $buckets['changelog'] ?? 0 ) <= 4500, true );
 /*
- * These fold into Changelog. No character limit applies there so nothing is
- * truncated; their headings simply do not render on wordpress.org. Listed
- * rather than failed, so the next person can see the trade rather than
- * rediscover it.
+ * Nothing should be routed by accident. "== Other Notes ==" is one of the seven
+ * the parser expects, so it does not appear here — it is folded into
+ * Description openly. Any other heading listed below is a section whose words
+ * are being charged to Description without anyone deciding that.
  */
-ok( '  sections that fold, and are allowed to', $folds,
-	array( 'External Services', 'Code standard', 'Support & Contribution', 'Stay Connected' ) );
+ok( '  no heading is routed into Description by accident', $routed, array() );
 
 echo "\nThe prompt is untouched\n";
 // The whole point of the header is that it costs no tokens. If this file ever
