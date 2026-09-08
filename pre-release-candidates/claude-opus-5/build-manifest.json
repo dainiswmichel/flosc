@@ -48,7 +48,7 @@
     "note": "The DA1 AI Personality Designer, made usable. Version held at 8.0.0.",
     "one_card": "A wellspring is an aspect; a category is a group of aspects; both are the same card. Drop an aspect onto a card and that card becomes the heading it sits under, keeping density, gain, binding, hue, star and trajectory.",
     "group_noun": "heading | wellspring | cloud | rain cloud | pool | category \u2014 defaults from density: cloud in soul, rain cloud in character, pool in behavior.",
-    "nested_density": "16 inside 95 reads 95.016; 100 inside 95 reads 95.100. Any depth. Derived, never stored. Ties sort alphabetically.",
+    "nested_density": "A colon separates levels, a period separates decimals. 16 inside 95 reads 95:016; 100 inside 95 reads 95:100; a nested card keeps its decimals, 95:016.5. Any depth, 95:025:100. Root and nested alike run 0-100 to three decimal places. Derived, never stored. Ties sort alphabetically.",
     "dialogs_removed": "Both <dialog> blocks opened a <form> inside WordPress's settings form. The browser dropped the inner tag, #tribForm was null, and the listener on it threw \u2014 killing every line of setup after it, which is why + Category did nothing.",
     "placement_round_trip": "workshopFile() wrote placement and importSpec() never read it. It does now, so a group survives a save.",
     "soul_section": "Shown on every card, read from the placement rather than recalculated. Default is the last heading at or below the card's density.",
