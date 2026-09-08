@@ -481,6 +481,34 @@
     border-bottom: 1px solid var(--line);
   }
   .flosc-personality-workshop .cat-edit .figure-readout{ flex: 1 1 100%; margin: 0; }
+
+  /* The card editor, on the palette side. Same editor as the sequence uses. */
+  .flosc-personality-workshop .trib-edit{ margin: 4px 0 0; }
+  .flosc-personality-workshop .trib-edit > summary{
+    cursor: pointer; list-style: none;
+    font-family: var(--ui); font-size: 0.72rem; font-weight: 700;
+    letter-spacing: .03em; text-transform: uppercase; color: var(--accent-2);
+    padding: 4px 0 4px 18px; position: relative;
+  }
+  .flosc-personality-workshop .trib-edit > summary::-webkit-details-marker,
+  .flosc-personality-workshop .trib-edit > summary::marker{ display: none; content: ""; }
+  .flosc-personality-workshop .trib-edit > summary::before{
+    content: "\25B8"; position: absolute; left: 4px; transition: transform .12s ease;
+  }
+  .flosc-personality-workshop .trib-edit[open] > summary::before{ transform: rotate(90deg); }
+  .flosc-personality-workshop .trib-edit > .acc-body{
+    padding: 8px 0 4px; border-top: 1px solid var(--line); margin-top: 2px;
+  }
+
+  /* A heading with nothing in it is still a place you can drop an aspect. */
+  .flosc-personality-workshop .nest-empty{ margin: 4px 0 6px; opacity: .8; }
+  .flosc-personality-workshop .row-gap--first{ min-height: 6px; }
+  .flosc-personality-workshop .app.drag-active [data-drop-layer]{
+    outline: 1px dashed var(--accent-2); outline-offset: 2px;
+  }
+  .flosc-personality-workshop .app.drag-active .row-gap--first{
+    min-height: 16px; background: rgba(34,113,177,.10);
+  }
   .flosc-personality-workshop .acc > summary.row-sum .meta-bit{ justify-self: end; white-space: nowrap; }
   /* Aspect cloud: two or more related aspects on one coloured ground. */
   .flosc-personality-workshop .cloud{
@@ -546,8 +574,17 @@
   }
   .flosc-personality-workshop .spec h3{ margin: 0 0 6px; font-size: 0.95rem; }
   .flosc-personality-workshop .spec-views{ display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 8px; }
-  .flosc-personality-workshop .spec-stage{ min-height: 56px; border-radius: 8px; border: 1px solid var(--line); overflow: hidden; }
-  .flosc-personality-workshop .spec-cols{ display: flex; align-items: stretch; height: 72px; }
+  /*
+   * Twice the height, and it grows with what is in it. Vertical scroll when a
+   * personality outgrows even that; never horizontal — the bars are flex
+   * children sharing the width, so the panel must never widen instead.
+   */
+  .flosc-personality-workshop .spec-stage{
+    min-height: 56px; max-height: min(60vh, 440px);
+    border-radius: 8px; border: 1px solid var(--line);
+    overflow-x: hidden; overflow-y: auto;
+  }
+  .flosc-personality-workshop .spec-cols{ display: flex; align-items: stretch; height: auto; min-height: 150px; }
   .flosc-personality-workshop .spec-cols .bar{
     flex: 1; min-width: 4px; display: flex; align-items: flex-end; justify-content: center;
     position: relative;
@@ -555,9 +592,11 @@
   .flosc-personality-workshop .spec-cols .bar i{
     position: absolute; bottom: 2px; font-style: normal; font-size: 9px;
     color: #1d2327; text-shadow: 0 0 3px #fff; writing-mode: vertical-rl; transform: rotate(180deg);
-    max-height: 68px; overflow: hidden;
+    /* Follows the column's height instead of a fixed 68px, which cut every
+       aspect name longer than about twelve characters. */
+    max-height: calc(100% - 8px); overflow: hidden;
   }
-  .flosc-personality-workshop .spec-blend{ height: 72px; }
+  .flosc-personality-workshop .spec-blend{ height: auto; min-height: 150px; }
   .flosc-personality-workshop .spec-calc{
     height: 88px; display: flex; align-items: flex-end; justify-content: space-between;
     padding: 8px 10px; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.45);
@@ -792,9 +831,11 @@
     font-size: 0.82rem; line-height: 1.35;
   }
   .flosc-personality-workshop .traj-pair{ margin-top: 14px; }
-  .flosc-personality-workshop .traj-pair #trajPanel{ border-radius: 14px 14px 0 0; }
+  /* #trajPanel was the pair's first child and carried the top corners. It is
+     gone with the Trajectories panel, so the Spectrograph carries them. */
+  .flosc-personality-workshop .traj-pair .spec-panel{ border-radius: 14px 14px 0 0; }
   .flosc-personality-workshop .traj-pair .viz-below{ margin-top: 0; border-top: 0; border-radius: 0 0 14px 14px; }
-  .flosc-personality-workshop .traj-pair #trajPanel h2{ border-radius: 14px 14px 0 0; }
+  .flosc-personality-workshop .traj-pair .spec-panel h2{ border-radius: 14px 14px 0 0; }
   .flosc-personality-workshop .traj-ex{ display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; }
   .flosc-personality-workshop .traj-ex span{
     font-family: var(--ui); font-size: 0.74rem; color: var(--ink-soft);
@@ -853,7 +894,7 @@
   }
   .flosc-personality-workshop .builder-workspace .panel h2,
   .flosc-personality-workshop #savePanel h2,
-  .flosc-personality-workshop .traj-pair #trajPanel h2{
+  .flosc-personality-workshop .traj-pair .spec-panel h2{
     border-radius: 0;
     background: #f6f7f7;
     color: #1d2327;

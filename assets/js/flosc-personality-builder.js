@@ -68,12 +68,25 @@
     sphere: "circle", cube: "square", tetrahedron: "triangle", stellated: "star", cylinder: "hexagon", cone: "pentagon"
   };
 
+  /*
+   * The palette's shelves. A wellspring is an aspect, so a shelf holding
+   * aspects cannot be called one — the word named the wrong level and made
+   * every category read as a thing rather than a group of things.
+   *
+   * The hints used to read "Edit this category if it does not fit your
+   * personality", which is an instruction to the builder rather than a
+   * description of what belongs on the shelf. The Edit panel asks that
+   * question directly now, so the hint is the answer or it is nothing.
+   *
+   * There is no Trajectory shelf. A trajectory is a parameter of an aspect
+   * and a post in WordPress with an id, managed on the Trajectories tab —
+   * not a kind of aspect.
+   */
   const DEFAULT_COLUMNS = [
-    { id: "worldview", label: "Worldview wellsprings", hint: "Edit this category if it does not fit your personality." },
-    { id: "relational", label: "Relational wellsprings", hint: "Edit this category if it does not fit your personality." },
-    { id: "epistemic", label: "Knowing wellsprings", hint: "Edit this category if it does not fit your personality." },
-    { id: "context", label: "Context wellsprings", hint: "Edit this category if it does not fit your personality." },
-    { id: "trajectory", label: "Trajectory wellsprings", hint: "What this personality is trying to move the visitor toward. Replace {url} with your own." }
+    { id: "worldview", label: "Worldview aspects", hint: "" },
+    { id: "relational", label: "Relational aspects", hint: "" },
+    { id: "epistemic", label: "Knowing aspects", hint: "" },
+    { id: "context", label: "Contextual aspects", hint: "" }
   ];
 
   function wellspringCategories() {
@@ -97,20 +110,6 @@
 
   function repo(id) {
     return { id: id, note: "Summary now. Full corpus later — referenced at request time, not stuffed into this prompt." };
-  }
-  /*
-   * Trajectory wellsprings.
-   *
-   * The other four categories describe who a personality IS. These describe
-   * what it is trying to move the visitor toward — the FLOSC trajectory, in
-   * the personality's own voice rather than only in the flow section.
-   *
-   * Every inject carries a literal {url} for the floscAdmin to replace. It is
-   * left as a visible placeholder on purpose: a personality that ships with a
-   * plausible-looking URL will be sent to visitors with that URL in it.
-   */
-  function trajectoryAspect(id, label, short, character, inject) {
-    return { id: id, col: "trajectory", label: label, short: short, character: character, inject: inject };
   }
 
   const CATALOG = [
@@ -487,36 +486,69 @@
       works: ["FLOSC DA1 catalog TSV", "da1.fm works lists"],
       links: [{ label: "da1.fm", url: "https://da1.fm/" }],
       repo: repo("da1_catalog"),
-      inject: "Treat the attached DA1 catalog as materials: titles, descriptions, links, counts. Do not invent works. Catalog is not personality." },
+      inject: "Treat the attached DA1 catalog as materials: titles, descriptions, links, counts. Do not invent works. Catalog is not personality." }
+  ];
 
-    trajectoryAspect( "shop_visit", "Browse the shop", "Toward looking at what is for sale",
+  /*
+   * Retired. These seven were a Trajectory shelf in the palette — aspects
+   * whose whole content was "move the visitor toward X". A trajectory is a
+   * parameter of an aspect and a WordPress post with an id, so a shelf of
+   * them was the wrong level twice over.
+   *
+   * They are kept here, out of the palette, only so that a personality which
+   * already had one switched on does not lose it: migrateRetiredCards() turns
+   * such a card into an ordinary aspect the floscAdmin owns and can edit.
+   */
+  function retiredTrajectoryCard(id, label, short, character, inject) {
+    return { id: id, col: "context", label: label, short: short, character: character, inject: inject };
+  }
+  const RETIRED_CARDS = [
+    retiredTrajectoryCard( "shop_visit", "Browse the shop", "Toward looking at what is for sale",
       "The personality treats the shop as somewhere worth going, not as an interruption. It brings products up when they answer what was actually asked.",
       "Encourage the visitor to browse the shop at {url} and buy what fits the need they described. Name the product that fits; do not list the catalogue." ),
 
-    trajectoryAspect( "book_appointment", "Book an appointment", "Toward a time in the calendar",
+    retiredTrajectoryCard( "book_appointment", "Book an appointment", "Toward a time in the calendar",
       "The personality is trying to turn interest into a booked slot. It treats booking as the natural next step once the visitor's need is clear.",
       "Encourage the visitor to book an appointment at {url}. Once their need is clear, offer the booking link rather than continuing to advise indefinitely." ),
 
-    trajectoryAspect( "join_group", "Join a group", "Toward membership of a group",
+    retiredTrajectoryCard( "join_group", "Join a group", "Toward membership of a group",
       "The personality knows which groups exist and what each is for, and points to the one that matches rather than to all of them.",
       "Encourage the visitor to look at the groups at {url} and join the one that matches their interest. Say what that group is for; do not promise what it contains beyond what you were told." ),
 
-    trajectoryAspect( "exchange_contact", "Exchange contact details", "Toward a way to reach each other",
+    retiredTrajectoryCard( "exchange_contact", "Exchange contact details", "Toward a way to reach each other",
       "The personality treats a contact exchange as mutual rather than as harvesting: the visitor gets a way to reach a person, not only the other way round.",
       "Encourage the visitor to leave contact details so a person can follow up, and tell them how they can reach us in return. Ask once; if they decline, carry on helping." ),
 
-    trajectoryAspect( "buy_download", "Buy a download", "Toward a paid file",
+    retiredTrajectoryCard( "buy_download", "Buy a download", "Toward a paid file",
       "The personality can say what the file contains and who it is for, and asks for the sale plainly rather than hinting at it.",
       "Encourage the visitor to buy the download at {url}. Say what is in it and who it suits, then ask for the purchase directly." ),
 
-    trajectoryAspect( "register_visitor_pass", "Register for a pass", "Toward an account and a saved conversation",
+    retiredTrajectoryCard( "register_visitor_pass", "Register for a pass", "Toward an account and a saved conversation",
       "The personality treats registering as something the visitor gains by — their conversation is kept — rather than as a gate they must pass.",
       "Encourage the visitor to register at {url}. Tell them what registering gives them here, in the terms this flow uses, and nothing beyond that." ),
 
-    trajectoryAspect( "subscribe_updates", "Subscribe for updates", "Toward staying in touch",
+    retiredTrajectoryCard( "subscribe_updates", "Subscribe for updates", "Toward staying in touch",
       "The personality offers the list as a way to hear about the thing the visitor already showed interest in, not as a broadcast channel.",
       "Encourage the visitor to subscribe at {url} so they hear about what they were just asking about. Say roughly how often they will hear from us." )
   ];
+
+  function migrateRetiredCards() {
+    let moved = 0;
+    RETIRED_CARDS.forEach(function (card) {
+      const st = state.trib && state.trib[card.id];
+      if (!st || st.on === false || st.mode === "off") return;
+      if ((state.custom || []).some(function (c) { return c.id === card.id; })) return;
+      state.custom.push({
+        id: card.id, col: categoryExists(card.col) ? card.col : firstCategoryId(),
+        label: card.label, short: card.short, character: card.character, inject: card.inject
+      });
+      const col = categoryExists(card.col) ? card.col : firstCategoryId();
+      if (!state.tribOrder[col]) state.tribOrder[col] = [];
+      if (state.tribOrder[col].indexOf(card.id) === -1) state.tribOrder[col].push(card.id);
+      moved++;
+    });
+    return moved;
+  }
 
   const EMPTY_SOUL = {
     id: "",
@@ -1222,15 +1254,63 @@
   function trajectoryReading(text) {
     const post = postFromTrajectory(text);
     if (!post) return String(text || "").trim();
-    const head = (post.type === "page" ? "page " : "post ") + post.id;
+    const kind = post.type === "trajectory" ? "trajectory" : (post.type === "page" ? "page" : "post");
+    const head = kind + " " + post.id;
     if (!post.title) return head;
     return head + " — " + post.title + (post.excerpt ? ". " + post.excerpt : "");
+  }
+
+  /* The first shelf that actually exists. "uncategorized" was the fallback and
+     it is not one of the palette's categories, so a card filed there was filed
+     into a column renderCols() never draws — created, switched on, announced,
+     and invisible. */
+  function firstCategoryId() {
+    const cats = wellspringCategories();
+    return cats.length ? cats[0].id : "worldview";
+  }
+  /*
+   * Drop an aspect onto a heading. The density lands inside that heading's
+   * stretch of the sequence — between the heading and the next one — so the
+   * card is where it was released and the ordering still means what it says.
+   */
+  function placeUnderLayer(id, layerId, atTop) {
+    ensurePlacement();
+    const L = containerById(layerId);
+    if (!L) return;
+    const base = clampDensity(L.density);
+    let nextLayer = 100;
+    containersSorted().forEach(function (x) {
+      if (x.kind !== "layer") return;
+      const d = clampDensity(x.density);
+      if (d > base && d < nextLayer) nextLayer = d;
+    });
+    const kids = childrenOf(layerId).filter(function (k) { return k.id !== id; });
+    let d;
+    if (atTop || !kids.length) {
+      const ceiling = kids.length ? Math.min(kids[0].density, nextLayer) : nextLayer;
+      d = (base + ceiling) / 2;
+    } else {
+      const last = Math.max(base, kids[kids.length - 1].density);
+      d = (last + nextLayer) / 2;
+    }
+    cloudLeave(id);
+    if (state.tribParent[id] && state.tribParent[id].kind === "trib") delete state.tribParent[id];
+    const st = tribState(id);
+    state.trib[id] = Object.assign({}, st, {
+      density: clampDensity(d),
+      on: true,
+      mode: st.mode === "off" ? "on" : st.mode,
+      /* Released here deliberately, so it stays here: without this the band
+         fallback would re-derive a heading from density on the next load. */
+      soulSection: layerId
+    });
+    state.tribParent[id] = { kind: "layer", id: layerId };
   }
 
   function addCard(label, opts) {
     const o = opts || {};
     const id = newCardId(o.prefix || "aspect");
-    const col = categoryExists(o.col) ? o.col : "uncategorized";
+    const col = categoryExists(o.col) ? o.col : firstCategoryId();
     state.custom.push({ id: id, col: col, label: label, short: "", inject: "" });
     state.trib[id] = blankCardState(o.density == null ? nextFreeDensity() : o.density);
     if (!state.tribOrder[col]) state.tribOrder[col] = [];
@@ -1399,7 +1479,20 @@
   function isContainerBinding(b) {
     return b === "must" || b === "dam";
   }
-  function soulTrajectories() {
+  /*
+   * The builder used to keep its own list of trajectories, in its own panel,
+   * compiled into the profile under Output and Delivery. FLOSC already has
+   * trajectories: WordPress posts in the trajectory category, carrying
+   * keywords, priority, off-ramps and instructions, keyword-matched per turn
+   * by FLOSC_Trajectory. Two systems, one name, and a floscAdmin writing in
+   * whichever one they happened to find.
+   *
+   * The panel is gone. What anyone wrote in it is not: on load each row
+   * becomes an aspect card at the density of Output and Delivery, carrying
+   * the same words. Nothing that was in the personality stops reaching the
+   * AI — it arrives as a card, with the five parameters it never had.
+   */
+  function legacySoulTrajectories() {
     const raw = state.soul && state.soul.trajectories;
     if (Array.isArray(raw) && raw.length) return raw;
     if (state.soul && typeof state.soul.trajectory === "string" && state.soul.trajectory.trim()) {
@@ -1407,8 +1500,33 @@
     }
     return [];
   }
-  function activeTrajectories() {
-    return soulTrajectories().filter(function (t) { return t && t.on !== false && String(t.text || t.label || "").trim(); });
+  function migrateSoulTrajectories() {
+    const rows = legacySoulTrajectories();
+    if (!rows.length) return 0;
+    const outLayer = SOUL_LAYERS.find(function (L) { return L.id === "action"; });
+    const density = outLayer ? outLayer.density : 94;
+    let made = 0;
+    rows.forEach(function (row, i) {
+      const text = String((row && row.text) || "").trim();
+      const label = String((row && row.label) || "").trim() || text.slice(0, 60) || ("Desired impact " + (i + 1));
+      if (!text && !label) return;
+      const id = "traj_" + (String(label).toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "") || String(i + 1));
+      if (allTribs().some(function (t) { return t.id === id; })) return;
+      state.custom.push({ id: id, col: firstCategoryId(), label: label, short: "", inject: text || label });
+      state.trib[id] = Object.assign(blankCardState(density), {
+        on: row && row.on === false ? false : true,
+        mode: row && row.on === false ? "off" : "on",
+        inject: text || label
+      });
+      const col = firstCategoryId();
+      if (!state.tribOrder[col]) state.tribOrder[col] = [];
+      state.tribOrder[col].push(id);
+      made++;
+    });
+    /* Emptied, not deleted: the key stays in the saved file so an older
+       importer still finds the shape it expects. */
+    if (state.soul) { state.soul.trajectories = []; state.soul.trajectory = ""; }
+    return made;
   }
 
   function tribsInCol(colId) {
@@ -2589,12 +2707,10 @@
     ],
     action: [
       ["Action", function () { return "Today you speak in language, and you may use tools when that is the task. The same person remains if later action includes voice, gesture, or a body. Chat text is not the whole of you."; }],
-      ["Desired impact of the replies", function (s) {
-        const tr = activeTrajectories();
-        if (!tr.length) return "";
-        return "After the reply, this is what should be true of the human or the record.\n" +
-          tr.map(function (t) { return "### " + (t.label || "Untitled") + "\n" + String(t.text || "").trim(); }).join("\n\n");
-      }]
+      /* The builder's own trajectory list used to compile here. Those rows are
+         aspect cards now, so they arrive through the ordinary card path with
+         their density, gain and binding — and the real trajectories, the ones
+         with post ids, are injected per turn by FLOSC_Trajectory. */
     ]
   };
 
@@ -2713,7 +2829,9 @@
         return acc;
       }, {}),
       clouds: cloudList(),
-      trajectories: soulTrajectories(),
+      /* Emptied by migrateSoulTrajectories(); the key stays so an older
+         importer still finds the shape it expects. */
+      trajectories: [],
       content_plate: s.content_plate || "",
       density: {
         axis: "0 = white = top = least dense; 100 = black = bottom = ink",
@@ -2829,8 +2947,6 @@
     else warn("No contrastive examples. Add at least one wrong/right pair.");
     if (s.character && /when uncertain/i.test(s.character)) ok("Character includes an uncertainty conditional.");
     if (s.name && s.role && activeTribs().length) ok("Minimum compile contract can run.");
-    if (!activeTrajectories().length) warn("No soul-level trajectories written. The floscAdmin may still set per-element trajectory phrases.");
-    else ok(activeTrajectories().length + " soul-level trajectory paragraph(s) will compile.");
     const phrased = activeTribs().filter(function (t) { return String(tribState(t.id).trajectory || "").trim(); });
     if (phrased.length) ok(phrased.length + " element trajectory phrase(s).");
     else warn("No per-element trajectory phrases. Each wellspring can name the desired impact on the future.");
@@ -3051,12 +3167,27 @@
           st.mode === "off" ? "off" : (st.mode === "conditional" ? "cond" : ""),
           (state.focus.kind === "trib" && state.focus.id === t.id) ? "sel" : ""
         ].filter(Boolean).join(" ");
+        /*
+         * The palette row opens into the same editor the sequence uses — one
+         * function, so the two can never drift. The body is built only when
+         * the row is open: seventy cards' worth of editor on every render is
+         * a page that stutters.
+         *
+         * The disclosure is its own <details> below the checkbox rather than
+         * wrapping it: a checkbox inside a <summary> toggles the panel as well
+         * as the box, and the only way to stop that also stops the tick.
+         */
+        const paletteOpen = state.open["palette:" + t.id] === true;
         return '<div class="trib ' + cls + '" data-focus-trib="' + t.id + '" data-drag-trib="' + t.id + '" data-drop-before="' + t.id + '" draggable="true">' +
           '<div class="trib-top">' +
           '<span class="drag-handle" title="Drag to insert or reorder" draggable="true" data-drag-trib="' + t.id + '">⋮⋮</span>' +
           '<input type="checkbox" data-toggle="' + t.id + '"' + (st.on ? " checked" : "") + ">" +
-          '<label><span><i class="swatch" style="background:' + esc(tribColor(t)) + '"></i>' + esc(t.label) + "</span><small>" + (st.on ? "on · " + rungLabel(t.id) + " · G" + st.weight + " · " + st.binding : "off") + (t.character ? " · " + esc(t.character.split(". ")[0] + ".") : "") + "</small></label>" +
-          "</div></div>";
+          '<label><span><i class="swatch" style="background:' + esc(tribColor(t)) + '"></i>' + esc(t.label) + "</span><small>" + (st.on ? "on · d" + esc(composedDensity(t.id)) + " · G" + gainSigned(gainNum(st.weight)) + " · " + st.binding : "off") + (t.character ? " · " + esc(t.character.split(". ")[0] + ".") : "") + "</small></label>" +
+          "</div>" +
+          '<details class="trib-edit" data-open-key="palette:' + t.id + '"' + (paletteOpen ? " open" : "") + ">" +
+          "<summary>Edit this aspect</summary>" +
+          '<div class="acc-body">' + (paletteOpen ? wellspringEditor(t) : "") + "</div></details>" +
+          "</div>";
       }).join("");
       const colSel = (state.focus.kind === "col" && state.focus.id === c.id) ||
         (state.focus.kind === "trib" && allTribs().some(function (t) { return t.id === state.focus.id && tribColOf(t) === c.id; }));
@@ -3168,14 +3299,41 @@
     }
   }
 
+  /*
+   * Open every container between a card and the top of the page.
+   *
+   * Ticking a card in the palette placed it correctly and then left it inside
+   * a collapsed heading, where scrollIntoView scrolls to an element that is in
+   * the DOM and not on screen. A card the floscAdmin cannot see is a card that
+   * did not appear.
+   */
+  function openAncestorsOf(id) {
+    let cur = id;
+    for (let guard = 0; guard < 64; guard++) {
+      const p = state.tribParent && state.tribParent[cur];
+      if (!p) return;
+      if (p.kind === "trib" && p.id !== cur) { state.open["trib:" + p.id] = true; cur = p.id; continue; }
+      if (p.kind === "cloud") {
+        const c = cloudById(p.id);
+        if (c && c.parent) state.open["layer:" + c.parent] = true;
+        return;
+      }
+      if (p.kind === "layer") { state.open["layer:" + p.id] = true; return; }
+      return;
+    }
+  }
   function focusItem(kind, id) {
     state.focus = { kind: kind, id: id };
     if (kind === "trib") {
       const t = allTribs().find(function (x) { return x.id === id; });
-      if (t) state.open["col:" + tribColOf(t)] = true;
+      /* The palette column's open key is "fam:", written by renderCols(). It
+         was "col:" here, which opened nothing at all. */
+      if (t) state.open["fam:" + tribColOf(t)] = true;
+      ensurePlacement();
+      openAncestorsOf(id);
       state.open["trib:" + id] = true;
     } else if (kind === "col") {
-      state.open["col:" + id] = true;
+      state.open["fam:" + id] = true;
     } else if (kind === "layer") {
       state.layer = id;
       state.open["layer:" + id] = true;
@@ -3345,7 +3503,7 @@
       '<div class="card-param"><label class="excerpt-lab" for="traj-' + t.id + '">Trajectory · desired impact on the future</label>' +
       '<textarea class="traj-phrase" id="traj-' + t.id + '" data-traj-phrase="' + t.id + '" placeholder="e.g. leave them able to retell the fact tomorrow — or a post: 412, ?post=412, or its permalink">' + esc(st.trajectory || "") + "</textarea>" +
       (post
-        ? '<p class="figure-readout"><strong>' + esc((post.type === "page" ? "Page " : "Post ") + post.id) + "</strong>" +
+        ? '<p class="figure-readout"><strong>' + esc((post.type === "trajectory" ? "Trajectory " : post.type === "page" ? "Page " : "Post ") + post.id) + "</strong>" +
           (post.title ? " · " + esc(post.title) : " · not found on this site — the id is written through as typed") +
           (post.excerpt ? "<br>" + esc(post.excerpt) : "") + "</p>"
         : "") +
@@ -3374,26 +3532,9 @@
       '<button type="button" class="btn ghost danger" data-remove-trib="' + t.id + '">Remove from personality</button>';
   }
 
-  function renderTrajectories() {
-    const mount = document.getElementById("trajMount");
-    if (!mount) return;
-    const trajs = soulTrajectories();
-    let html = '<p class="figure-readout">Desired impact after the reply — not a shape, not a menu of pills. A word, a sentence, or a long brief. They compile as Markdown.</p>' +
-      '<div class="traj-ex">' +
-      "<span>User can accurately retell the key fact tomorrow.</span>" +
-      "<span>User leaves calmer and clearer about the next step.</span>" +
-      "<span>User understands the distinction without being pressured.</span>" +
-      "</div>";
-    trajs.forEach(function (tr, i) {
-      html += '<div class="field" style="margin-top:8px">' +
-        '<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-traj-on="' + i + '"' + (tr.on !== false ? " checked" : "") + "> On</label>" +
-        '<input type="text" data-traj-label="' + i + '" value="' + esc(tr.label || "") + '" placeholder="Short name (optional)">' +
-        '<textarea data-traj-text="' + i + '" placeholder="e.g. User can accurately retell the key fact tomorrow.">' + esc(tr.text || "") + "</textarea>" +
-        '<button type="button" class="btn ghost" data-traj-del="' + i + '">Remove</button></div>';
-    });
-    html += '<button type="button" class="btn" data-traj-add="1">+ Add trajectory</button>';
-    mount.innerHTML = html;
-  }
+  /* renderTrajectories() is gone with its panel. A trajectory is a parameter
+     of an aspect and, when it names a post id, a real WordPress trajectory
+     post — never a second list kept beside the first. */
 
   /* One aspect row. Used both loose in the sequence and inside a cloud. */
   function tribRowHtml(t) {
@@ -3527,8 +3668,19 @@
         body += editorHtml();
         state.layer = prev;
         const kids = childrenOf(L.id);
-        if (kids.length) {
-          body += '<div class="nest">';
+        /*
+         * The nest renders whether or not the heading has children, and opens
+         * with a drop strip. Before this, an empty heading carried no drop
+         * target at all and a full one had gaps only between existing rows —
+         * so there was nowhere to release an aspect at the top of a heading,
+         * and nothing whatever to release onto an empty one.
+         */
+        {
+          body += '<div class="nest" data-drop-layer="' + L.id + '">';
+          body += '<div class="row-gap row-gap--first" data-drop-layer-top="' + L.id + '"></div>';
+          if (!kids.length) {
+            body += '<p class="figure-readout nest-empty">Nothing here yet. Tick an aspect in the palette, or drag one onto this heading.</p>';
+          }
           kids.forEach(function (k) {
             if (k.kind === "cloud") {
               const cl = cloudById(k.id);
@@ -3545,7 +3697,7 @@
       }
       parts.push(
         '<details class="acc' + (sel ? " sel" : "") + '"' + (open ? " open" : "") + ' data-acc="layer:' + L.id + '" data-open-key="layer:' + L.id + '">' +
-        "<summary><span class=\"row-lab\">" + esc(L.label) + "</span>" +
+        '<summary data-drop-layer="' + L.id + '"><span class="row-lab">' + esc(L.label) + "</span>" +
         '<span class="meta-bit">d' + (Number(L.density) || 0) + " \u00b7 G" + (Number(L.gain) || 0) + " \u00b7 " + esc(L.desc || "") + "</span></summary>" +
         '<div class="acc-body">' + body + "</div></details>"
       );
@@ -3753,7 +3905,6 @@
       }).join("");
     }
     const trajs = activeTribs().filter(function (t) { return String(tribState(t.id).trajectory || "").trim(); });
-    const soulT = activeTrajectories();
     let html = "";
     if (trajs.length) {
       html += "<div class=\"density-label\"><span>Element trajectories</span><span>desired impact on the future</span></div><ul>" +
@@ -3761,13 +3912,7 @@
           return "<li><strong>" + esc(t.label) + "</strong> — " + esc(String(tribState(t.id).trajectory).trim()) + "</li>";
         }).join("") + "</ul>";
     }
-    if (soulT.length) {
-      html += "<div class=\"density-label\"><span>Soul trajectories</span><span>admin briefs</span></div><ul>" +
-        soulT.map(function (tr) {
-          return "<li><strong>" + esc(tr.label || "Untitled") + "</strong> — " + esc(String(tr.text || "").trim()) + "</li>";
-        }).join("") + "</ul>";
-    }
-    if (!html) html = '<p class="figure-readout">No trajectory phrases yet. Each wellspring can name the impact it should have on the future.</p>';
+    if (!html) html = '<p class="figure-readout">No trajectories yet. Each aspect can name the impact it should have on the future, in words or as a post id.</p>';
     phrases.innerHTML = html;
   }
 
@@ -3957,7 +4102,6 @@
       '<span class="chip">~' + L.tokens + " tokens</span>" +
       '<span class="chip">hash ' + spec.personality_hash + "</span>" +
       '<span class="chip">' + activeTribs().length + " active cards</span>" +
-      '<span class="chip">traj ' + activeTrajectories().length + "</span>" +
       '<span class="chip">figure ' + esc(outerFigure().shape2) + "</span>" +
       '<span class="chip">personality profile</span>' +
       '<span class="chip">' + esc(expectedPhrase()) + "</span>" +
@@ -4055,7 +4199,6 @@
     renderSpine();
     renderEditor();
     renderDenRail();
-    renderTrajectories();
     renderOut();
     renderMorphViz();
   }
@@ -4260,31 +4403,23 @@
       return;
     }
 
-    const addT = e.target.closest("[data-traj-add]");
-    if (addT) {
-      const list = soulTrajectories().slice();
-      list.push({ id: "t_" + Date.now().toString(36), on: true, label: "", text: "" });
-      state.soul.trajectories = list;
-      persistSoft();
-      render();
-      return;
-    }
-    const delT = e.target.closest("[data-traj-del]");
-    if (delT) {
-      const list = soulTrajectories().slice();
-      list.splice(Number(delT.getAttribute("data-traj-del")), 1);
-      state.soul.trajectories = list;
-      persistSoft();
-      render();
-      return;
-    }
-    if (e.target.matches("[data-traj-on]")) {
-      const list = soulTrajectories().slice();
-      const i = Number(e.target.getAttribute("data-traj-on"));
-      if (list[i]) list[i] = Object.assign({}, list[i], { on: e.target.checked });
-      state.soul.trajectories = list;
-      persistSoft();
-      renderOut();
+    /*
+     * Opening a palette row's editor. This is handled rather than left to the
+     * browser because the click also reaches [data-focus-trib] below, whose
+     * focusItem() re-renders — rebuilding the DOM before the native toggle
+     * event lands, so the panel would appear not to open at all.
+     */
+    const paletteEdit = e.target.closest(".trib-edit > summary");
+    if (paletteEdit) {
+      e.preventDefault();
+      const wrap = paletteEdit.closest("[data-focus-trib]");
+      const pid = wrap && wrap.getAttribute("data-focus-trib");
+      if (pid) {
+        const nowOpen = state.open["palette:" + pid] !== true;
+        state.open["palette:" + pid] = nowOpen;
+        if (nowOpen) focusItem("trib", pid);
+        else render();
+      }
       return;
     }
     if (e.target.closest("[data-toggle]") || e.target.closest("textarea") || e.target.closest("input") || e.target.closest("select")) {
@@ -4445,20 +4580,6 @@
       persistSoft();
       renderOut();
       renderMorphViz();
-      return;
-    }
-    if (e.target.matches("[data-traj-label]") || e.target.matches("[data-traj-text]")) {
-      const list = soulTrajectories().slice();
-      const isLab = e.target.matches("[data-traj-label]");
-      const i = Number(e.target.getAttribute(isLab ? "data-traj-label" : "data-traj-text"));
-      if (list[i]) {
-        const patch = {};
-        patch[isLab ? "label" : "text"] = e.target.value;
-        list[i] = Object.assign({}, list[i], patch);
-      }
-      state.soul.trajectories = list;
-      persistSoft();
-      renderOut();
       return;
     }
     if (e.target.matches("[data-density]") || e.target.matches("[data-density-num]")) {
@@ -4750,6 +4871,8 @@
     }
 
     state.preset = "blank";
+    migrateSoulTrajectories();
+    migrateRetiredCards();
     ensurePlacement();
     persistSoft();
     render();
@@ -5188,7 +5311,12 @@
     const cardEl = e.target.closest("[data-card-body]");
     const cardId = cardEl && cardEl.getAttribute("data-card-body");
     const cardOk = !!cardId && cardId !== state._drag && cardAncestors(cardId).indexOf(state._drag) < 0;
-    if (!before && !col && !denList && !cloudEl && !cardOk) return;
+    /* A heading itself, and the strip at the top of its body. Before this a
+       heading had no drop target at all, so there was nowhere to release an
+       aspect onto an empty one. */
+    const layerTop = e.target.closest("[data-drop-layer-top]");
+    const layerEl = layerTop || e.target.closest("[data-drop-layer]");
+    if (!before && !col && !denList && !cloudEl && !cardOk && !layerEl) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
     document.querySelectorAll(".drop-aim, .drop-line, .drop-beside").forEach(function (n) {
@@ -5197,7 +5325,9 @@
     if (before && before.getAttribute("data-drop-before") !== state._drag) {
       before.classList.add("drop-line");
     } else if (cardOk) cardEl.classList.add("drop-aim");
+    else if (layerTop) layerTop.classList.add("drop-line");
     else if (cloudEl) cloudEl.classList.add("drop-aim");
+    else if (layerEl) layerEl.classList.add("drop-aim");
     else if (col) col.classList.add("drop-aim");
   });
   app.addEventListener("drop", function (e) {
@@ -5207,7 +5337,9 @@
     const colEl = e.target.closest("[data-drop-col]");
     const cloudEl = e.target.closest("[data-drop-cloud]");
     const cardEl = e.target.closest("[data-card-body]");
-    if (!before && !denList && !colEl && !cloudEl && !cardEl) return;
+    const layerTopEl = e.target.closest("[data-drop-layer-top]");
+    const layerEl = layerTopEl || e.target.closest("[data-drop-layer]");
+    if (!before && !denList && !colEl && !cloudEl && !cardEl && !layerEl) return;
     e.preventDefault();
     const beforeId = (before && before.getAttribute("data-drop-before") !== state._drag)
       ? before.getAttribute("data-drop-before")
@@ -5239,6 +5371,19 @@
       }
       return;
     }
+    /* Onto a heading, or the strip at the top of its body. */
+    if (layerEl && !before) {
+      const layerId = layerEl.getAttribute("data-drop-layer-top") || layerEl.getAttribute("data-drop-layer");
+      const card = allTribs().find(function (x) { return x.id === id; });
+      placeUnderLayer(id, layerId, !!layerTopEl);
+      persistSoft();
+      render();
+      focusItem("trib", id);
+      const L = containerById(layerId);
+      showBuilderNotice(((card && card.label) || "Aspect") + " placed under " +
+        ((L && L.label) || "that heading") + " at density " + formatDensity(tribState(id).density) + ".");
+      return;
+    }
     /* Any drop that is not onto a card leaves whatever group it was in. */
     if (state.tribParent && state.tribParent[id] && state.tribParent[id].kind === "trib") {
       delete state.tribParent[id];
@@ -5265,6 +5410,8 @@
     moveTrib(id, toCol, beforeId);
   });
 
+  migrateSoulTrajectories();
+  migrateRetiredCards();
   render();
 
   } catch (e) {
@@ -5282,8 +5429,7 @@
     tribState: tribState,
     outerFigure: outerFigure,
     nestedFigures: nestedFigures,
-    soulTrajectories: soulTrajectories,
-    activeTrajectories: activeTrajectories,
+
     densityGray: densityGray,
     rungLabel: rungLabel,
     rungOf: rungOf,
