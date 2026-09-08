@@ -1,9 +1,9 @@
-# Home run candidate v13 — Claude Opus 5
+# Home run candidate v14 — Claude Opus 5
 
 Assembled from the four tested candidates. Version held at **8.0.0** — this is
 a resubmission, not a release.
 
-**Two numbers, and they are not the same number.** `v13` is this candidate's
+**Two numbers, and they are not the same number.** `v14` is this candidate's
 iteration — how many times this folder has been rebuilt. `8.0.0` is the
 plugin's version, and it does not move: 8.0.0 is what goes to wordpress.org.
 
@@ -15,7 +15,8 @@ plugin's version, and it does not move: 8.0.0 is what goes to wordpress.org.
 | v10 | The headings are the palette; ticking reveals; shelves open on one click | `9fbd41b` |
 | v11 | Summary keeps its ellipsis; the full line is a wrapped card footer | `de0c82e` |
 | v12 | The row label was landing in the swatch column and printing over its own meta line | `228a041` |
-| v13 | Filenames stop shouting | this commit |
+| v13 | Filenames stop shouting | `498a147` |
+| v14 | Tested up to named a WordPress version that does not exist | this commit |
 
 v8 and v9 were committed before this counter was picked back up, so their
 subject lines read `Candidate claude-opus-5 …` rather than `Home run candidate
@@ -23,7 +24,7 @@ v8 / v9`. The table is the mapping; the history is not being rewritten.
 
 ## The designer pass — read this first
 
-Candidate iteration **v13**. Plugin version still **8.0.0**, and it stays there.
+Candidate iteration **v14**. Plugin version still **8.0.0**, and it stays there.
 
 The DA1 AI Personality Designer now works on one idea instead of three.
 
