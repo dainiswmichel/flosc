@@ -170,11 +170,14 @@ foreach ( $flosc_key_catalog as $flosc_slug => $flosc_meta ) {
 		</td>
 	</tr>
 	<tr>
-		<th scope="row"><label for="flow_ai_brand_facts"><?php echo esc_html__( 'Product facts', 'flosc' ); ?></label></th>
+		<th scope="row"><label for="flow_ai_brand_facts"><?php echo esc_html__( 'Sticky aspects', 'flosc' ); ?></label></th>
 		<td>
-			<textarea name="flow_ai_brand_facts" id="flow_ai_brand_facts" rows="5" class="large-text code" placeholder="<?php echo esc_attr__( 'e.g. FLOSC always stands for Freeline, Login, Offer, Sale, Content.', 'flosc' ); ?>"><?php echo esc_textarea( (string) ( $GLOBALS['flosc_current_settings']['ai_brand_facts'] ?? '' ) ); ?></textarea>
+			<textarea name="flow_ai_brand_facts" id="flow_ai_brand_facts" rows="5" class="large-text code" placeholder="<?php echo esc_attr__( "e.g. A cleaning is 45 minutes. We do not treat under-6s. Dr Vaida is the only endodontist on staff.", 'flosc' ); ?>"><?php echo esc_textarea( (string) ( $GLOBALS['flosc_current_settings']['ai_brand_facts'] ?? '' ) ); ?></textarea>
 			<p class="description">
-				<?php echo esc_html__( 'Optional. Hard guarantees about what this product is — injected verbatim into every AI prompt. Leave empty for none; nothing is assumed on your behalf.', 'flosc' ); ?>
+				<?php echo esc_html__( 'Aspects and facts that belong to this flow rather than to the personality. They stay put when you attach a different personality, and the same personality can carry different sticky aspects on another flow — so BubblyBetty can sell dental cleanings here and legal consultations somewhere else.', 'flosc' ); ?>
+			</p>
+			<p class="description">
+				<?php echo esc_html__( 'Written into every AI prompt exactly as you type them, under a standing instruction never to invent alternatives. Leave empty for none; nothing is assumed on your behalf.', 'flosc' ); ?>
 			</p>
 		</td>
 	</tr>
