@@ -4,7 +4,7 @@ Donate link: https://dainis.net/donate/
 Tags: leads, sales, access, ai, chatbot
 Requires at least: 7.0.4
 Requires PHP: 7.4
-Tested up to: 7.0.4
+Tested up to: 7.1
 Stable tag: 8.0.0
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -40,7 +40,7 @@ Instead of "Are you interested in buying?" FLOSC asks "What should I help you wi
 * Personality Designer — visual workshop for authoring a reusable voice (wellsprings, density, morph, spectrograph); save to the install library and attach one personality per flow
 * Pre-configured example flows for pronunciation, music, and other use cases
 
-== More About FLOSC ==
+== Other Notes ==
 
 = Use Cases =
 
