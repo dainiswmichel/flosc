@@ -1270,13 +1270,6 @@
       groupNoun: defaultGroupNoun(d), soulSection: ""
     };
   }
-  /* A new card lands where the floscAdmin is looking: just past the densest
-     card already placed, so it is visible rather than filed at zero. */
-  function nextFreeDensity() {
-    const ds = activeTribs().map(function (t) { return Number(tribState(t.id).density) || 0; });
-    const max = ds.length ? Math.max.apply(null, ds) : 0;
-    return clampDensity(Math.min(100, max + 2));
-  }
   /* ---------------------------------------------------------------
      A trajectory that is a WordPress post
 
@@ -1368,7 +1361,10 @@
     const id = newCardId(o.prefix || "aspect");
     const col = categoryExists(o.col) ? o.col : firstCategoryId();
     state.custom.push({ id: id, col: col, label: label, short: "", inject: "" });
-    state.trib[id] = blankCardState(o.density == null ? nextFreeDensity() : o.density);
+    /* Density 0. A new card belongs at the top of the sequence, where it is in
+       view and where the floscAdmin decides its real position. The old rule
+       was densest-card + 2, which filed a new aspect at d98, off the bottom. */
+    state.trib[id] = blankCardState(o.density == null ? 0 : o.density);
     if (!state.tribOrder[col]) state.tribOrder[col] = [];
     state.tribOrder[col].push(id);
     ensurePlacement();
@@ -5312,9 +5308,9 @@
   document.getElementById("btnAddCategory").addEventListener("click", function () {
     /*
      * A category is a heading, so this makes a heading — not an aspect card.
-     * It used to call addCard() at nextFreeDensity(), which put a card called
-     * "New group" at d98, past everything, off the bottom of the sequence and
-     * filed on no shelf at all.
+     * It used to call addCard() with a density of densest-card + 2, which put
+     * a card called "New group" at d98, past everything, off the bottom of the
+     * sequence and filed on no shelf at all.
      *
      * Density 0: a category you just made belongs at the top of the palette
      * and the top of the document, where you can see it. Nothing is ticked —
