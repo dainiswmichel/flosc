@@ -101,12 +101,12 @@ ok( '  and in the hard deny list, which .distignore cannot undo',
 ok( 'tests/ too — they stub WordPress and redeclare core functions',
 	strpos( $distignore, 'tests/' ) !== false, true );
 
-// Internal notes are not plugin content. HANDOFF.md carries the operator's
+// Internal notes are not plugin content. handoff.md carries the operator's
 // local ship path, their machine's username, and project context that has no
 // business in a public plugin directory — and nothing in it is needed to run
 // FLOSC. It shipped until someone read the artifact's file list.
 ok( 'and the session handoff notes stay out of the artifact',
-	strpos( $distignore, 'HANDOFF.md' ) !== false, true );
+	strpos( $distignore, 'handoff.md' ) !== false, true );
 
 echo "\nThe version has not moved\n";
 $main   = (string) file_get_contents( $root . '/flosc.php' );

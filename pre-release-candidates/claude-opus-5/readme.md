@@ -1,9 +1,9 @@
-# Home run candidate v12 — Claude Opus 5
+# Home run candidate v13 — Claude Opus 5
 
 Assembled from the four tested candidates. Version held at **8.0.0** — this is
 a resubmission, not a release.
 
-**Two numbers, and they are not the same number.** `v12` is this candidate's
+**Two numbers, and they are not the same number.** `v13` is this candidate's
 iteration — how many times this folder has been rebuilt. `8.0.0` is the
 plugin's version, and it does not move: 8.0.0 is what goes to wordpress.org.
 
@@ -14,7 +14,8 @@ plugin's version, and it does not move: 8.0.0 is what goes to wordpress.org.
 | v9 | A colon for nesting levels, a period for decimals | `c5364b5` |
 | v10 | The headings are the palette; ticking reveals; shelves open on one click | `9fbd41b` |
 | v11 | Summary keeps its ellipsis; the full line is a wrapped card footer | `de0c82e` |
-| v12 | The row label was landing in the swatch column and printing over its own meta line | this commit |
+| v12 | The row label was landing in the swatch column and printing over its own meta line | `228a041` |
+| v13 | Filenames stop shouting | this commit |
 
 v8 and v9 were committed before this counter was picked back up, so their
 subject lines read `Candidate claude-opus-5 …` rather than `Home run candidate
@@ -22,7 +23,7 @@ v8 / v9`. The table is the mapping; the history is not being rewritten.
 
 ## The designer pass — read this first
 
-Candidate iteration **v12**. Plugin version still **8.0.0**, and it stays there.
+Candidate iteration **v13**. Plugin version still **8.0.0**, and it stays there.
 
 The DA1 AI Personality Designer now works on one idea instead of three.
 
@@ -86,7 +87,7 @@ posts in the `trajectory` category, managed on the Trajectories tab. Anything
 written in the old panel migrates to aspect cards, so nothing stops reaching
 the AI. An aspect's trajectory can be `412`, `?post=412`, or a permalink.
 
-### What to try on the site
+### Check these on the site
 
 1. **+ Category.** It did nothing at all before. Both dialogs opened a
    `<form>` inside WordPress's own settings form, which is invalid — the
@@ -127,7 +128,7 @@ the other four candidates carry, so this folder can be deployed from directly
 without pulling the branch first.
 
 **`flosc.zip` is here**, built from this tree with `./build-dist-zip.sh` at the
-head commit — 277 files, 2.6 MB, forbidden-path scan clean. `SHA256SUMS` covers
+head commit — 277 files, 2.6 MB, forbidden-path scan clean. `sha256sums` covers
 it. Build your own from either copy if you prefer; they are identical.
 
 **If you keep both, one will drift.** The branch is the trunk and this tree is a
