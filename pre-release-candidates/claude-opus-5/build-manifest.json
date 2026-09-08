@@ -65,5 +65,21 @@
       27,
       28
     ]
-  }
+  },
+  "candidate_iteration": 9,
+  "iterations": {
+    "v7": {
+      "commit": "7d329fa",
+      "what": "assembled candidate, then rebuilt with the empty-profile guard"
+    },
+    "v8": {
+      "commit": "48b951b",
+      "what": "the designer pass: one card, nested density, both dialogs removed, placement round-trip, post-id trajectories"
+    },
+    "v9": {
+      "commit": "c5364b5",
+      "what": "a colon separates nesting levels, a period separates decimals; nested cards keep their decimals"
+    }
+  },
+  "iteration_note": "candidate_iteration counts rebuilds of this folder. It is not the plugin version, which is held at 8.0.0 and does not move. v8 and v9 landed with subject lines that broke the 'Home run candidate v<N>' pattern; the iterations map is the mapping."
 }
