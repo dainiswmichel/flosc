@@ -1813,8 +1813,53 @@ if ( ! function_exists( 'flosc_personality_builder_boot_json' ) ) {
 				'hash'        => isset( $entry['profile_hash'] ) ? (string) $entry['profile_hash'] : '',
 				'modifiedGmt' => isset( $entry['profile_modified_gmt'] ) ? (string) $entry['profile_modified_gmt'] : '',
 			),
+			/*
+			 * Published posts and pages, so a trajectory can be one of them.
+			 * The floscAdmin types what WordPress already shows them — 412,
+			 * ?post=412, or the permalink — and the builder resolves it here
+			 * rather than inventing an identifier of its own.
+			 *
+			 * Capped: this rides in the page as inline JSON, and a site with
+			 * ten thousand posts should not pay for all of them to design a
+			 * personality. Anything past the cap still resolves by id, it
+			 * just does not appear in the type-ahead.
+			 */
+			'trajectoryPosts'   => flosc_personality_trajectory_posts(),
 			'workshop'          => $workshop,
 		);
+	}
+}
+
+if ( ! function_exists( 'flosc_personality_trajectory_posts' ) ) {
+	/**
+	 * Published posts and pages a trajectory can point at.
+	 *
+	 * @param int $limit Maximum entries.
+	 * @return array<int,array<string,string|int>>
+	 */
+	function flosc_personality_trajectory_posts( $limit = 200 ) {
+		$rows  = array();
+		$posts = get_posts(
+			array(
+				'post_type'        => array( 'post', 'page' ),
+				'post_status'      => 'publish',
+				'numberposts'      => (int) $limit,
+				'orderby'          => 'modified',
+				'order'            => 'DESC',
+				'suppress_filters' => false,
+			)
+		);
+		foreach ( $posts as $post ) {
+			$excerpt = has_excerpt( $post ) ? get_the_excerpt( $post ) : wp_trim_words( wp_strip_all_tags( (string) $post->post_content ), 40, '…' );
+			$rows[]  = array(
+				'id'      => (int) $post->ID,
+				'type'    => (string) $post->post_type,
+				'title'   => (string) get_the_title( $post ),
+				'excerpt' => trim( (string) $excerpt ),
+				'url'     => (string) get_permalink( $post ),
+			);
+		}
+		return $rows;
 	}
 }
 

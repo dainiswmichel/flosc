@@ -28,6 +28,7 @@ function ok( $label, $actual, $expected ) {
 
 $builder = (string) file_get_contents( $root . '/assets/js/flosc-personality-builder.js' );
 $library = (string) file_get_contents( $root . '/includes/flosc-personality-library.php' );
+$markup  = (string) file_get_contents( $root . '/assets/personality-builder/flosc-personality-builder-markup.php' );
 
 /*
  * Comments are stripped before any search. Two earlier gates in this suite
@@ -118,7 +119,33 @@ ok( 'the design document gives it its own line under the heading',
 ok( 'the AI API profile leads the heading with it',
 	strpos( $code, '"# " + formatDensity(d) + " " + label' ) !== false, true );
 ok( '  and aspects the same way',
-	strpos( $code, '"## " + formatDensity(d) + " " + label' ) !== false, true );
+	strpos( $code, 'return hashes + " " + formatDensity(d) + " " + label;' ) !== false, true );
+ok( '  an aspect heading starts at ## and deepens with nesting',
+	strpos( $code, '"#".repeat(Math.min(6, 2 + (Number(depth) || 0)))' ) !== false, true );
+ok( '  a card inside another card leads with its composed density',
+	strpos( $code, '" " + composedDensity(t.id) + " " + t.label' ) !== false, true );
+
+echo "\nNested density: parent, then the member padded to three digits\n";
+ok( 'the member segment is a three-digit integer',
+	strpos( $code, 'String(Math.round(d)).padStart(3, "0")' ) !== false, true );
+ok( '  never stored — the chain is read from the parent map',
+	strpos( $code, 'function densityChain(id)' ) !== false, true );
+ok( '  and segments compare as numbers, not as text',
+	strpos( $code, 'if (x !== y) return x - y;' ) !== false, true );
+ok( 'same density sorts alphabetically',
+	strpos( $code, 'return String(a.label || a.id).localeCompare(String(b.label || b.id));' ) !== false, true );
+
+echo "\nOne card: a group is an aspect with aspects inside it\n";
+ok( 'a card can be the parent of another card',
+	strpos( $code, 'state.tribParent[id] = { kind: "trib", id: host };' ) !== false, true );
+ok( '  placement is read back on import, so a group survives a save',
+	strpos( $code, 'if (spec.placement && typeof spec.placement === "object")' ) !== false, true );
+ok( '  and what to call the group is stored with the card',
+	strpos( $code, 'group_noun: st.groupNoun' ) !== false, true );
+ok( 'no browser prompt boxes remain in the builder',
+	strpos( $code, 'window.prompt' ) !== false, false );
+ok( 'no dialog opens a form inside WordPress\'s settings form',
+	strpos( $markup, '<dialog' ) !== false, false );
 
 echo "\nA situation is written, not implied\n";
 ok( 'stage one opens with the situational context',

@@ -432,6 +432,55 @@
     color: var(--accent-2);
   }
   .flosc-personality-workshop .cadmin-field input{ font-weight: 400; text-transform: none; letter-spacing: 0; }
+
+  /* One card parameter, one line. These used to share rows, which made a
+     screenful of controls read as one undifferentiated block. */
+  .flosc-personality-workshop .card-param{
+    display: block;
+    margin: 0 0 10px;
+    padding: 0 0 8px;
+    border-bottom: 1px solid var(--line);
+  }
+  .flosc-personality-workshop .card-param:last-of-type{ border-bottom: 0; }
+  .flosc-personality-workshop .card-param > .excerpt-lab{ display: block; margin-bottom: 4px; }
+  .flosc-personality-workshop .card-param .wrow{ display: flex; align-items: center; gap: 8px; }
+  .flosc-personality-workshop .card-param .wrow input[type="range"]{ flex: 1 1 auto; min-width: 0; }
+  .flosc-personality-workshop .card-param input[type="text"],
+  .flosc-personality-workshop .card-param select{ width: 100%; max-width: 26rem; }
+
+  /* Where this field goes: the AI's copy, the design document, or neither. */
+  .flosc-personality-workshop .field-dest{
+    display: block;
+    margin-top: 4px;
+    font-family: var(--ui);
+    font-size: 0.72rem;
+    color: var(--ink-soft);
+  }
+
+  /*
+   * A card with aspects inside it. One step of indent and a rule in the
+   * card's own hue — enough to see the grouping, not so much that a nested
+   * personality marches off the right-hand edge.
+   */
+  .flosc-personality-workshop .card-members{
+    margin: 6px 0 6px 14px;
+    padding-left: 10px;
+    border-left: 3px solid var(--member-rule, var(--line));
+  }
+  .flosc-personality-workshop .acc.is-group > summary.row-sum{ font-weight: 700; }
+
+  /* Renaming a palette category, in place. This replaced two browser prompt
+     boxes that could reach the name and the description and nothing else. */
+  .flosc-personality-workshop .cat-edit{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: flex-end;
+    padding: 8px 10px;
+    background: var(--paper-2);
+    border-bottom: 1px solid var(--line);
+  }
+  .flosc-personality-workshop .cat-edit .figure-readout{ flex: 1 1 100%; margin: 0; }
   .flosc-personality-workshop .acc > summary.row-sum .meta-bit{ justify-self: end; white-space: nowrap; }
   /* Aspect cloud: two or more related aspects on one coloured ground. */
   .flosc-personality-workshop .cloud{

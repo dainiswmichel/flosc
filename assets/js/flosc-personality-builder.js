@@ -858,7 +858,10 @@
     denPlace: "avg",
     clouds: [],
     layers: [],
-    tribParent: {}
+    tribParent: {},
+    /* Which palette category is open for renaming. Screen state, not part of
+       the personality — it is not written to the saved workshop. */
+    editCategory: ""
   };
 
   function deepClone(x) { return JSON.parse(JSON.stringify(x)); }
@@ -941,23 +944,50 @@
   /* Every active topic belongs to exactly one parent heading. When the
      parent is a cloud, its order among siblings is that cloud's
      subdensity reading of the same stored value. */
+  /*
+   * The heading a card at this density is written under: the last heading at
+   * or below it in the sequence. Density is the sequence, so a card at 44 is
+   * printed after the Tone heading (40) and before the Stance heading (48) —
+   * which means it belongs to Tone. Nothing else can be true and still call
+   * density an ordering.
+   *
+   * This replaces a band lookup that returned the first heading of the band,
+   * so every card between 0 and 33 landed under Name and Core Role however
+   * far down the band it sat. Placements already saved are restored from the
+   * file and are not re-derived, so no existing personality moves.
+   */
+  function layerForDensity(density) {
+    const d = Math.max(0, Math.min(100, Number(density) || 0));
+    const layers = containersSorted().filter(function (l) { return l.kind === "layer"; });
+    if (!layers.length) return "identity";
+    let chosen = layers[0];
+    layers.forEach(function (l) {
+      if ((Number(l.density) || 0) <= d && (Number(l.density) || 0) >= (Number(chosen.density) || 0)) chosen = l;
+    });
+    return chosen.id;
+  }
   function fallbackLayerForTrib(tribId) {
-    const t = allTribs().find(function (x) { return x.id === tribId; });
-    const d = t ? (tribState(tribId).density || 0) : 0;
-    const band = bandOfDensity(d);
-    const seedIds = SOUL_LAYERS.filter(function (s) { return s.band === band; }).map(function (s) { return s.id; });
-    const present = containersSorted().filter(function (l) { return l.kind === "layer" && seedIds.indexOf(l.id) >= 0; });
-    const pool = present.length ? present : containersSorted().filter(function (l) { return l.kind === "layer"; });
-    return pool.length ? pool[0].id : "identity";
+    /* A card that names its soul.md section goes there. */
+    const named = (state.trib && state.trib[tribId] && state.trib[tribId].soulSection) || "";
+    if (named && containerById(named)) return named;
+    return layerForDensity(tribState(tribId).density);
   }
   function ensurePlacement() {
     ensureContainers();
     if (!state.tribParent || typeof state.tribParent !== "object") state.tribParent = {};
+    const live = {};
+    activeTribs().forEach(function (t) { live[t.id] = true; });
     activeTribs().forEach(function (t) {
       const p = state.tribParent[t.id];
-      if (!p || (p.kind === "layer" && !containerById(p.id)) || (p.kind === "cloud" && !cloudById(p.id))) {
-        state.tribParent[t.id] = { kind: "layer", id: fallbackLayerForTrib(t.id) };
-      }
+      /* A card parented to another card is a member of that group. It stays
+         one only while the host is still here and still on — a host switched
+         off would otherwise take its members out of the document with it,
+         silently. */
+      const orphan = !p ||
+        (p.kind === "layer" && !containerById(p.id)) ||
+        (p.kind === "cloud" && !cloudById(p.id)) ||
+        (p.kind === "trib" && (!live[p.id] || p.id === t.id || cardAncestors(p.id).indexOf(t.id) >= 0));
+      if (orphan) state.tribParent[t.id] = { kind: "layer", id: fallbackLayerForTrib(t.id) };
     });
     cloudList().forEach(function (c) {
       if (!c.parent || !containerById(c.parent)) c.parent = fallbackLayerForTrib(c.members[0]);
@@ -971,15 +1001,19 @@
     activeTribs().forEach(function (t) {
       const p = state.tribParent[t.id];
       if (p && p.kind === "layer" && p.id === layerId) {
-        items.push({ kind: "topic", id: t.id, density: tribState(t.id).density });
+        items.push({ kind: "topic", id: t.id, label: t.label, density: tribState(t.id).density });
       }
     });
     cloudList().forEach(function (c) {
       if (c.parent === layerId) {
-        items.push({ kind: "cloud", id: c.id, density: (typeof c.density === "number") ? c.density : minMemberDensity(c) });
+        items.push({ kind: "cloud", id: c.id, label: c.name || "", density: (typeof c.density === "number") ? c.density : minMemberDensity(c) });
       }
     });
-    return items.sort(function (a, b) { return a.density - b.density; });
+    /* Density first, then alphabetically on a tie. */
+    return items.sort(function (a, b) {
+      if (a.density !== b.density) return a.density - b.density;
+      return String(a.label || a.id).localeCompare(String(b.label || b.id));
+    });
   }
   function minMemberDensity(c) {
     const ds = (c.members || []).map(function (id) { return tribState(id).density; });
@@ -988,6 +1022,206 @@
   function cloudAutoName(density) {
     const band = bandOfDensity(density);
     return band === "behavior" ? "Pool" : band === "character" ? "RainCloud" : "Cloud";
+  }
+
+  /* ---------------------------------------------------------------
+     One card
+
+     A wellspring is an aspect. A category is a group of aspects. Both
+     are the same object: a card. Drop aspects onto a card and that
+     card becomes the heading they sit under — it keeps its density,
+     gain, binding, hue, star and trajectory, and gains one field a
+     plain aspect does not have: what to call the group.
+     --------------------------------------------------------------- */
+
+  const GROUP_NOUNS = ["heading", "wellspring", "cloud", "rain cloud", "pool", "category"];
+
+  /* The default noun follows density, on the same axis everything else
+     does: soul is a cloud, character is a rain cloud, behavior is a
+     pool — because a pool is denser than a cloud. Overridable per card. */
+  function defaultGroupNoun(density) {
+    const band = bandOfDensity(density);
+    return band === "behavior" ? "pool" : band === "character" ? "rain cloud" : "cloud";
+  }
+
+  /* Aspects whose parent is this card, in composed-density order,
+     alphabetical on a tie. */
+  function tribChildren(hostId) {
+    if (!state.tribParent) return [];
+    return activeTribs().filter(function (t) {
+      const p = state.tribParent[t.id];
+      return p && p.kind === "trib" && p.id === hostId;
+    }).sort(compareCards);
+  }
+  function isGroupCard(id) {
+    return tribChildren(id).length > 0;
+  }
+
+  /* Walk up the card chain. Used to stop a card being dropped into its
+     own descendant, which would orphan the whole branch. */
+  function cardAncestors(id) {
+    const out = [];
+    let cur = id;
+    let guard = 0;
+    while (guard++ < 64) {
+      const p = state.tribParent && state.tribParent[cur];
+      if (!p || p.kind !== "trib") break;
+      if (out.indexOf(p.id) >= 0) break;
+      out.push(p.id);
+      cur = p.id;
+    }
+    return out;
+  }
+
+  /*
+   * Nested density. An aspect at 16 dropped into a card at 95 reads as
+   * 95.016 — parent, then the child's own value zero-padded to three
+   * digits so that 95.100 sorts after 95.016. Any depth: 95.016.025.100,
+   * like an IP address.
+   *
+   * Never stored. The card still holds density 16; drag it out and it is
+   * 16 again, with nothing to restore.
+   */
+  function densityChain(id) {
+    const chain = cardAncestors(id).reverse();
+    chain.push(id);
+    return chain.map(function (cid) { return clampDensity(tribState(cid).density); });
+  }
+  /* The reading. The outermost card keeps its own decimals; every nested
+     segment is a three-digit integer, so a card at 16 inside one at 95
+     reads 95.016 and one at 100 inside it reads 95.100 — which is the
+     larger of the two, on the page and in the sort. */
+  function composedDensity(id) {
+    return densityChain(id).map(function (d, i) {
+      return i === 0 ? formatDensity(d) : String(Math.round(d)).padStart(3, "0");
+    }).join(".");
+  }
+  /*
+   * Compared segment by segment as numbers, not as text — a root density of
+   * 95.5 has a decimal point of its own, and a string compare would read
+   * that as a nesting level.
+   *
+   * A card sorts before its own members: the shorter chain runs out first
+   * and -1 loses to any real density.
+   *
+   * Same density sorts alphabetically. Dragging still overrides, because
+   * dragging writes a density.
+   */
+  function compareCards(a, b) {
+    const ca = densityChain(a.id);
+    const cb = densityChain(b.id);
+    const n = Math.max(ca.length, cb.length);
+    for (let i = 0; i < n; i++) {
+      const x = i < ca.length ? ca[i] : -1;
+      const y = i < cb.length ? cb[i] : -1;
+      if (x !== y) return x - y;
+    }
+    return String(a.label || a.id).localeCompare(String(b.label || b.id));
+  }
+
+  /* The soul.md section a card lands in: the nearest standard heading at
+     or below its density. This is the default the card shows; the card
+     can name a different one. */
+  function soulSectionForDensity(density) {
+    return containerById(layerForDensity(density)) || SOUL_LAYERS[0];
+  }
+  /*
+   * Where this card is actually written. Read from the placement, not
+   * recalculated — a readout that computes its own answer is a readout that
+   * can disagree with the document it claims to describe.
+   */
+  function soulSectionOf(id) {
+    const st = tribState(id);
+    if (st.soulSection) {
+      const named = containerById(st.soulSection);
+      if (named) return named;
+    }
+    const p = state.tribParent && state.tribParent[id];
+    /* Inside a group: the group's section. That is what being inside means. */
+    if (p && p.kind === "trib" && p.id !== id) return soulSectionOf(p.id);
+    if (p && p.kind === "layer") {
+      const L = containerById(p.id);
+      if (L) return L;
+    }
+    if (p && p.kind === "cloud") {
+      const c = cloudById(p.id);
+      const L = c && c.parent ? containerById(c.parent) : null;
+      if (L) return L;
+    }
+    return soulSectionForDensity(st.density);
+  }
+
+  /* A fresh card. Everything a card has, nothing a dialog had to ask for. */
+  function newCardId(prefix) {
+    let id = (prefix || "c") + "_" + Date.now().toString(36);
+    let n = 2;
+    while (allTribs().some(function (t) { return t.id === id; })) id = (prefix || "c") + "_" + Date.now().toString(36) + "_" + n++;
+    return id;
+  }
+  function blankCardState(density) {
+    const d = clampDensity(density);
+    return {
+      on: true, mode: "on", weight: 50, density: d, condition: "", inject: "",
+      binding: "may", shape2: "none", shape3: "none", merge: "morph",
+      role: "manner", trajectory: "", cloud: "", branches: [],
+      groupNoun: defaultGroupNoun(d), soulSection: ""
+    };
+  }
+  /* A new card lands where the floscAdmin is looking: just past the densest
+     card already placed, so it is visible rather than filed at zero. */
+  function nextFreeDensity() {
+    const ds = activeTribs().map(function (t) { return Number(tribState(t.id).density) || 0; });
+    const max = ds.length ? Math.max.apply(null, ds) : 0;
+    return clampDensity(Math.min(100, max + 2));
+  }
+  /* ---------------------------------------------------------------
+     A trajectory that is a WordPress post
+
+     WordPress already gives the floscAdmin an id — post=412 in the
+     editor's own address bar. The builder reads that rather than
+     inventing an identifier of its own, so free text and a post both
+     go in the same field.
+     --------------------------------------------------------------- */
+  function trajectoryPosts() {
+    const wp = (typeof window !== "undefined" && window.floscPersonalityWp) || {};
+    return Array.isArray(wp.trajectoryPosts) ? wp.trajectoryPosts : [];
+  }
+  function postFromTrajectory(text) {
+    const s = String(text || "").trim();
+    if (!s) return null;
+    const posts = trajectoryPosts();
+    let id = null;
+    let m = s.match(/^(\d{1,12})$/);
+    if (!m) m = s.match(/[?&](?:post|p|page_id)=(\d{1,12})(?:&|$)/);
+    if (m) id = Number(m[1]);
+    if (id == null && /^https?:\/\//i.test(s)) {
+      const bare = s.replace(/\/+$/, "");
+      const hit = posts.find(function (p) { return String(p.url || "").replace(/\/+$/, "") === bare; });
+      return hit || null;
+    }
+    if (id == null) return null;
+    /* An id we cannot look up is still an id. Better to write "post 412"
+       into the document than to silently drop what was typed. */
+    return posts.find(function (p) { return Number(p.id) === id; }) || { id: id, type: "post", title: "", excerpt: "", url: "" };
+  }
+  function trajectoryReading(text) {
+    const post = postFromTrajectory(text);
+    if (!post) return String(text || "").trim();
+    const head = (post.type === "page" ? "page " : "post ") + post.id;
+    if (!post.title) return head;
+    return head + " — " + post.title + (post.excerpt ? ". " + post.excerpt : "");
+  }
+
+  function addCard(label, opts) {
+    const o = opts || {};
+    const id = newCardId(o.prefix || "aspect");
+    const col = categoryExists(o.col) ? o.col : "uncategorized";
+    state.custom.push({ id: id, col: col, label: label, short: "", inject: "" });
+    state.trib[id] = blankCardState(o.density == null ? nextFreeDensity() : o.density);
+    if (!state.tribOrder[col]) state.tribOrder[col] = [];
+    state.tribOrder[col].push(id);
+    ensurePlacement();
+    return id;
   }
 
   function applyPreset(name) {
@@ -1208,6 +1442,13 @@
     st.density = inferDensity(id, st, role);
     st.trajectory = inferTrajectory(id, st);
     st.branches = normalizeBranches(st);
+    /* What to call this card once aspects are dropped onto it. Defaults from
+       density and is only shown, or compiled, when the card has members. */
+    st.groupNoun = GROUP_NOUNS.indexOf(st.groupNoun) >= 0 ? st.groupNoun : defaultGroupNoun(st.density);
+    /* Which soul.md section this card lands in. Empty means "follow density",
+       which is what almost every card should say. */
+    st.soulSection = (st.soulSection && SOUL_LAYERS.some(function (L) { return L.id === st.soulSection; }))
+      ? st.soulSection : "";
     return st;
   }
 
@@ -1576,9 +1817,7 @@
   }
 
   function activeSequenceTribs() {
-    return activeTribs().slice().sort(function (a, b) {
-      return tribState(a.id).density - tribState(b.id).density;
-    });
+    return activeTribs().slice().sort(compareCards);
   }
 
   /* ---------------------------------------------------------------
@@ -2006,7 +2245,7 @@
     if (t.repo && withMetrics) bits.push("repo: " + t.repo.id + (t.repo.note ? " — " + t.repo.note : ""));
     /* 20 — the floscAdmin's own sentence. The card row printed the bare word
        "traj" and this document printed nothing at all. */
-    if (st.trajectory) bits.push("trajectory: " + st.trajectory);
+    if (st.trajectory) bits.push("trajectory: " + trajectoryReading(st.trajectory));
     paramLines({ gain: st.weight, binding: st.binding, shape: shapeLabel(st) }, withMetrics,
       { gain: true, binding: true, shape: true }).forEach(function (l) { bits.push(l); });
 
@@ -2037,10 +2276,39 @@
       ? "# " + label + "\nda1_density " + formatDensity(d)
       : "# " + formatDensity(d) + " " + label;
   }
-  function aspectHeading(label, density, withMetrics) {
+  function aspectHeading(label, density, withMetrics, depth) {
+    /* Depth 0 is an aspect under a station. A card with members is still a
+       card, so its members go one level below it — capped at Markdown's
+       last real heading level. */
+    const hashes = "#".repeat(Math.min(6, 2 + (Number(depth) || 0)));
     const d = Number(density);
-    if (withMetrics || !isFinite(d)) return "## " + label;
-    return "## " + formatDensity(d) + " " + label;
+    if (withMetrics || !isFinite(d)) return hashes + " " + label;
+    return hashes + " " + formatDensity(d) + " " + label;
+  }
+
+  /*
+   * One card and everything inside it. A group card compiles exactly like an
+   * aspect — it has all the same parameters — and its members follow it, one
+   * heading level down, in composed-density order.
+   */
+  function cardBlocks(t, withMetrics, depth, out) {
+    const st = tribState(t.id);
+    const d = depth || 0;
+    /* Sequential form carries the density in the heading, and inside a group
+       that density is the composed reading: 95.016, not 16. */
+    const heading = withMetrics
+      ? aspectHeading(t.label, st.density, true, d)
+      : "#".repeat(Math.min(6, 2 + d)) + " " + composedDensity(t.id) + " " + t.label;
+    const kids = tribChildren(t.id);
+    /* What the group is called is the floscAdmin's word for their own
+       structure. The heading levels already tell a model what is inside what,
+       so the noun stays in the design document. */
+    out.push(heading + "\n" +
+      (kids.length && withMetrics
+        ? "da1_group: " + st.groupNoun + " of " + kids.length + " aspect" + (kids.length === 1 ? "" : "s") + "\n"
+        : "") +
+      topicBody(t, withMetrics));
+    kids.forEach(function (k) { cardBlocks(k, withMetrics, d + 1, out); });
   }
 
   /* The compiled document walks the container tree: Title (never a
@@ -2110,6 +2378,13 @@
         if (k.kind === "cloud") {
           const cl = cloudById(k.id);
           if (cl && cl.members.length >= 2 && cl.name) toc.push("    - " + cl.name);
+          return;
+        }
+        /* A card with members is a heading, so it belongs in the contents. */
+        const kids = tribChildren(k.id);
+        if (kids.length) {
+          const t = allTribs().find(function (x) { return x.id === k.id; });
+          if (t) toc.push("    - " + t.label);
         }
       });
     });
@@ -2151,12 +2426,10 @@
           if (cl.name) out.push(stationHeading(cl.name, clDen, withMetrics));
           const lead = String(cl.explanation || "").trim();
           if (lead) out.push(lead);
-          members.forEach(function (t) {
-            out.push(aspectHeading(t.label, tribState(t.id).density, withMetrics) + "\n" + topicBody(t, withMetrics));
-          });
+          members.forEach(function (t) { cardBlocks(t, withMetrics, 0, out); });
         } else {
           const t = allTribs().find(function (x) { return x.id === k.id; });
-          if (t) out.push(aspectHeading(t.label, tribState(t.id).density, withMetrics) + "\n" + topicBody(t, withMetrics));
+          if (t) cardBlocks(t, withMetrics, 0, out);
         }
       });
     });
@@ -2362,6 +2635,11 @@
       compose: st.merge,
       role: tribRole(t),
       trajectory: st.trajectory || "",
+      /* What this card is called once aspects sit inside it, and which
+         soul.md heading it is written under. Both default from density; both
+         are stored so a saved personality reopens exactly as it was left. */
+      group_noun: st.groupNoun,
+      soul_section: st.soulSection || "",
       cloud: st.cloud || "",
       instruction: tribInject(t),
       comments: {
@@ -2766,15 +3044,39 @@
       const colSel = (state.focus.kind === "col" && state.focus.id === c.id) ||
         (state.focus.kind === "trib" && allTribs().some(function (t) { return t.id === state.focus.id && tribColOf(t) === c.id; }));
       const famOpen = state.open["fam:" + c.id] !== false;
-      return '<details class="col' + (colSel ? " sel" : "") + '" data-col="' + c.id + '" data-open-key="fam:' + c.id + '"' + (famOpen ? " open" : "") + ">" +
-        '<summary data-focus-col="' + c.id + '"><strong>' + esc(c.label) + '</strong><span class="fam-hint">' + esc(c.hint || "") + '</span><button type="button" class="btn ghost" data-edit-category="' + c.id + '">Edit</button>' + (c.id === "uncategorized" ? "" : '<button type="button" class="btn ghost danger" data-remove-category="' + c.id + '">Remove</button>') + '</summary>' +
+      /* Renaming a shelf happens on the shelf. It used to happen in two
+         browser prompt boxes, which could reach the name and the description
+         and nothing else, and looked like an error dialog while doing it. */
+      const editing = state.editCategory === c.id;
+      const head = editing
+        ? '<div class="cat-edit">' +
+          '<label class="cadmin-field"><span>Category name</span>' +
+          '<input type="text" data-cat-label="' + c.id + '" value="' + esc(c.label) + '"></label>' +
+          '<label class="cadmin-field"><span>What belongs here</span>' +
+          '<input type="text" data-cat-hint="' + c.id + '" value="' + esc(c.hint || "") + '"></label>' +
+          '<button type="button" class="btn ghost" data-cat-done="' + c.id + '">Done</button>' +
+          '<button type="button" class="btn ghost" data-cat-to-card="' + c.id + '">Add to the personality as a group</button>' +
+          '<p class="figure-readout">A category on this shelf holds dormant aspect cards. Adding it as a group puts a card in the personality carrying this name, and every aspect on this shelf that is on goes inside it.</p>' +
+          '</div>'
+        : "";
+      return '<details class="col' + (colSel ? " sel" : "") + '" data-col="' + c.id + '" data-open-key="fam:' + c.id + '"' + (famOpen || editing ? " open" : "") + ">" +
+        '<summary data-focus-col="' + c.id + '"><strong>' + esc(c.label) + '</strong><span class="fam-hint">' + esc(c.hint || "") + '</span><button type="button" class="btn ghost" data-edit-category="' + c.id + '">' + (editing ? "Close" : "Edit") + '</button>' + (c.id === "uncategorized" ? "" : '<button type="button" class="btn ghost danger" data-remove-category="' + c.id + '">Remove</button>') + '</summary>' +
+        head +
         '<div class="list" data-drop-col="' + c.id + '">' + items + "</div></details>";
     }).join("");
-    const oldAdd = document.getElementById("btnAddWellspring");
+    /* A wellspring is an aspect, so the button says aspect. It makes the card
+       outright — there is nothing to ask for first that the card cannot say
+       better once it exists. */
+    const oldAdd = document.getElementById("btnAddWellspring") || document.getElementById("btnAddAspect");
     if (oldAdd) oldAdd.remove();
-    root.insertAdjacentHTML("afterend", '<button type="button" class="btn add-trib" id="btnAddWellspring">+ Wellspring</button>');
-    document.getElementById("btnAddWellspring").addEventListener("click", function () {
-      openAdd(wellspringCategories()[0].id);
+    root.insertAdjacentHTML("afterend", '<button type="button" class="btn add-trib" id="btnAddAspect">+ Aspect</button>');
+    document.getElementById("btnAddAspect").addEventListener("click", function () {
+      const id = addCard("New aspect", { prefix: "aspect" });
+      persistSoft();
+      render();
+      focusItem("trib", id);
+      showBuilderNotice("New aspect added to " + (parentLabelOf(id) || "this personality") +
+        " at density " + formatDensity(tribState(id).density) + ". Name it and write its instruction.");
     });
     root.querySelectorAll("details[data-open-key]").forEach(function (d) {
       d.addEventListener("toggle", function () {
@@ -2821,6 +3123,11 @@
     const p = state.tribParent && state.tribParent[id];
     if (!p) return "";
     if (p.kind === "cloud") { const c = cloudById(p.id); return c ? c.name : ""; }
+    /* Inside another card: the group's name is that card's name. */
+    if (p.kind === "trib") {
+      const host = allTribs().find(function (x) { return x.id === p.id; });
+      return host ? host.label : "";
+    }
     const L = containerById(p.id);
     return L ? L.label : "";
   }
@@ -2925,42 +3232,122 @@
       "</div>";
   }
 
+  /*
+   * Where a card's parameters go. Nothing on this page used to say whether a
+   * field reached the AI, was kept for the design document, or was only ever
+   * for the eye — so every field was read as equally consequential, and hue
+   * and star were tuned as if the model could see them.
+   */
+  function destinationLine(text) {
+    return '<span class="field-dest">' + esc(text) + "</span>";
+  }
+
+  /* The one field a plain aspect does not have. It appears once a card has
+     members, because until then there is no group to name. */
+  function groupNounRow(t, st) {
+    const kids = tribChildren(t.id);
+    if (!kids.length) return "";
+    return '<div class="card-param"><label class="excerpt-lab" for="noun-' + t.id + '">Called a</label>' +
+      '<select id="noun-' + t.id + '" data-group-noun="' + t.id + '">' +
+      GROUP_NOUNS.map(function (n) {
+        return '<option value="' + esc(n) + '"' + (st.groupNoun === n ? " selected" : "") + ">" + esc(n) + "</option>";
+      }).join("") + "</select>" +
+      destinationLine("Default from density — " + defaultGroupNoun(st.density) + ". Prints as the group's heading in both documents.") +
+      '<p class="figure-readout"><strong>Members (' + kids.length + ")</strong> " +
+      kids.map(function (k) { return esc(k.label) + " d" + composedDensity(k.id); }).join(" · ") + "</p>" +
+      "</div>";
+  }
+
+  function soulSectionRow(t, st) {
+    const resolved = soulSectionOf(t.id);
+    return '<div class="card-param"><label class="excerpt-lab" for="soulsec-' + t.id + '">Soul section</label>' +
+      '<select id="soulsec-' + t.id + '" data-soul-section="' + t.id + '">' +
+      '<option value=""' + (st.soulSection ? "" : " selected") + ">Follow density — " + esc(resolved.label) + "</option>" +
+      SOUL_LAYERS.map(function (L) {
+        return '<option value="' + L.id + '"' + (st.soulSection === L.id ? " selected" : "") + ">" + esc(L.label) + " (d" + L.density + ")</option>";
+      }).join("") + "</select>" +
+      destinationLine("The soul.md heading this card is written under. Reaches the AI.") +
+      "</div>";
+  }
+
   function wellspringEditor(t) {
     const st = tribState(t.id);
     const cond = branchEditor(t, st);
     const role = tribRole(t);
+    const post = postFromTrajectory(st.trajectory);
+    /* A card you made is a card you can rename. Catalog cards keep the name
+       they ship with, so the palette and a shared personality still agree. */
+    const own = (state.custom || []).some(function (c) { return c.id === t.id; });
     return teachHtml(t) +
-      '<div class="color-row"><label>Hue</label><input type="color" data-color="' + t.id + '" value="' + esc(tribColor(t)) + '"><code class="color-hex">' + esc(tribColor(t)) + "</code><span>tag only · not a mix</span></div>" +
-      '<div class="wrow"><label style="font-family:var(--ui);font-size:0.68rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--accent-2)">Gain</label><input type="range" min="-100" max="100" step="5" data-weight="' + t.id + '" value="' + st.weight + '"' + (st.on ? "" : " disabled") + '><span class="wn">' + st.weight + "</span></div>" +
-      '<p class="figure-readout"><strong>How to name it:</strong> name the behavior positively. <em>Truth-telling +50</em> means reinforce truthfulness, so it supports “do not lie.” Use <em>Lying -100</em> when you want a dam against lying. Negative Gain suppresses the named behavior; it never reverses the instruction.</p>' +
-      '<label class="excerpt-lab">Aspect explanation · plain text meaning of this aspect</label>' +
-      '<textarea class="traj-phrase" data-cloud="' + t.id + '" placeholder="e.g. do not lie">' + esc(st.cloud || "") + "</textarea>" +
-      '<p class="figure-readout">This explains the single aspect in plain words. For example, “do not lie” explains “tell the truth.” To group related aspects, start a cloud below, then drop further aspects onto that cloud. Aspects are never drop targets — only clouds, pools, and bands accept drops.</p>' +
-      '<button type="button" class="btn ghost" data-cloud-new="' + t.id + '"' + (cloudOfTrib(t.id) ? " disabled" : "") + '>Start a cloud with this aspect</button>' +
-      '<p class="figure-readout">' + esc(gainMeaning(t)) + '. Negative Gain never means “perform the opposite.” For example, <em>Lying</em> −100 means do not lie.</p>' +
+      (own
+        ? '<div class="card-param"><label class="excerpt-lab" for="name-' + t.id + '">Name</label>' +
+          '<input type="text" id="name-' + t.id + '" data-card-label="' + t.id + '" value="' + esc(t.label) + '" placeholder="e.g. Kindness">' +
+          destinationLine("The heading this card writes. Reaches the AI.") + "</div>"
+        : "") +
+      soulSectionRow(t, st) +
+      groupNounRow(t, st) +
+
+      '<div class="card-param"><label class="excerpt-lab">Density</label>' +
       '<div class="den-row"><div class="den-slider-wrap"><input class="den-vert" type="range" min="0" max="100" step="any" data-density="' + t.id + '" value="' + st.density + '" title="Density: 0 at top (white / least dense) to 100 at bottom (black / ink). Not Gain."></div>' +
       '<div class="den-lab"><span class="den-swatch" style="background:' + densityGray(st.density) + '"></span><b>Density <input type="number" min="0" max="100" step="any" data-density-num="' + t.id + '" value="' + formatDensity(st.density) + '" style="width:7.5rem"></b>' +
+      (composedDensity(t.id) !== formatDensity(st.density)
+        ? "<br><strong>Reads as " + esc(composedDensity(t.id)) + "</strong> — inside " + esc(parentLabelOf(t.id) || "a group") + ". Drag it out and it is " + formatDensity(st.density) + " again."
+        : "") +
       (rungOf(t.id).of > 1 ? '<br><strong>On this rung: ' + rungLabel(t.id) + "</strong> — place among cards that share this ink. Not a new axis. Drag among them to change # only." : "") +
       "<br>0 = top = white = least dense. 100 = bottom = black = ink.<br>Not hue. Not Gain. Enter or leave the number to place the card. Soul ≈ 0–33 · Character ≈ 33–67 · Behavior ≈ 67–100 — bands, not separate architecture.</div></div>" +
-      '<div class="param-row">' +
-      '<div class="param-group"><span>Binding</span><div class="seg binding">' + ["must", "should", "may", "dam"].map(function (v) {
+      destinationLine("The heading number. Reaches the AI — position in the document is the instruction.") +
+      "</div>" +
+
+      '<div class="card-param"><label class="excerpt-lab">Gain</label>' +
+      '<div class="wrow"><input type="range" min="-100" max="100" step="5" data-weight="' + t.id + '" value="' + st.weight + '"' + (st.on ? "" : " disabled") + '><span class="wn">' + gainSigned(gainNum(st.weight)) + "</span></div>" +
+      '<p class="figure-readout">' + esc(gainMeaning(t)) + '. Name the behavior positively: <em>Truth-telling +50</em> reinforces truthfulness. Use <em>Lying −100</em> when you want a dam against lying. Negative Gain suppresses the named behavior; it never means perform the opposite.</p>' +
+      destinationLine("Compiles as frequency: " + gainWord(gainNum(st.weight)) + ". Reaches the AI.") +
+      "</div>" +
+
+      '<div class="card-param"><label class="excerpt-lab">Binding</label>' +
+      '<div class="seg binding">' + ["must", "should", "may", "dam"].map(function (v) {
         return '<button type="button" data-binding="' + t.id + '" data-val="' + v + '"' + (st.binding === v ? ' class="on"' : "") + ">" + v + "</button>";
-      }).join("") + "</div></div>" +
-      '<div class="param-group"><span>Shape 2D</span>' + segButtons(t.id, "shape2", SHAPE2, st.shape2) +
+      }).join("") + "</div>" +
+      destinationLine("Compiles as binding: " + st.binding + ". Reaches the AI.") +
+      "</div>" +
+
+      '<div class="card-param"><label class="excerpt-lab">Hue</label>' +
+      '<div class="color-row"><input type="color" data-color="' + t.id + '" value="' + esc(tribColor(t)) + '"><code class="color-hex">' + esc(tribColor(t)) + "</code></div>" +
+      destinationLine("A tag for your eye, so related cards read as one question. Never sent to the AI.") +
+      "</div>" +
+
+      '<div class="card-param"><label class="excerpt-lab">Shape</label>' +
+      segButtons(t.id, "shape2", SHAPE2, st.shape2) +
       (st.shape2 === "star"
         ? '<label class="star-points">points <input type="number" min="3" max="24" step="1" data-star-points="' + t.id + '" value="' + esc(String(st.starPoints || 5)) + '" style="width:4.5rem"></label>'
-        : "") + "</div>" +
+        : "") +
       '<div class="param-group"><span>In the figure</span>' + segButtons(t.id, "merge", ["morph", "excluded"], st.merge) + "</div>" +
+      destinationLine("Drawn in the Visual summary. Kept in the design document. Never sent to the AI.") +
       "</div>" +
-      '<label class="excerpt-lab">Trajectory · desired impact on the future</label>' +
-      '<textarea class="traj-phrase" data-traj-phrase="' + t.id + '" placeholder="e.g. leave them able to retell the fact tomorrow">' + esc(st.trajectory || "") + "</textarea>" +
+
+      '<div class="card-param"><label class="excerpt-lab" for="traj-' + t.id + '">Trajectory · desired impact on the future</label>' +
+      '<textarea class="traj-phrase" id="traj-' + t.id + '" data-traj-phrase="' + t.id + '" placeholder="e.g. leave them able to retell the fact tomorrow — or a post: 412, ?post=412, or its permalink">' + esc(st.trajectory || "") + "</textarea>" +
+      (post
+        ? '<p class="figure-readout"><strong>' + esc((post.type === "page" ? "Page " : "Post ") + post.id) + "</strong>" +
+          (post.title ? " · " + esc(post.title) : " · not found on this site — the id is written through as typed") +
+          (post.excerpt ? "<br>" + esc(post.excerpt) : "") + "</p>"
+        : "") +
+      destinationLine("Written under this card. Reaches the AI. A post id compiles to that post's title and excerpt.") +
+      "</div>" +
+
+      '<label class="excerpt-lab">Aspect explanation · plain text meaning of this aspect</label>' +
+      '<textarea class="traj-phrase" data-cloud="' + t.id + '" placeholder="e.g. do not lie">' + esc(st.cloud || "") + "</textarea>" +
+      '<p class="figure-readout">This explains the single aspect in plain words. For example, “do not lie” explains “tell the truth.” To group aspects under this one, drop them onto its body in the sequence — it becomes the heading they sit under and keeps everything it already had.</p>' +
+      '<button type="button" class="btn ghost" data-cloud-new="' + t.id + '"' + (cloudOfTrib(t.id) ? " disabled" : "") + '>Start a cloud with this aspect</button>' +
       '<div class="color-row"><label>Role</label><select data-role="' + t.id + '">' +
       ["constraint", "manner", "charge", "content"].map(function (r) {
         return '<option value="' + r + '"' + (role === r ? " selected" : "") + ">" + r + "</option>";
       }).join("") +
       "</select><span>constraint binds · manner adds · charge is landing · content is paper</span></div>" +
       '<p class="excerpt-lab">Active instruction · compiles when on · first draft</p>' +
-      '<textarea class="trib-inject" data-inject="' + t.id + '" placeholder="What this wellspring means in the personality…">' + esc(tribInject(t)) + "</textarea>" +
+      '<textarea class="trib-inject" data-inject="' + t.id + '" placeholder="What this aspect means in the personality…">' + esc(tribInject(t)) + "</textarea>" +
+      destinationLine("The instruction itself. Reaches the AI every turn.") +
+      '<p class="figure-readout">Saved to the FLOSC library when you press Save changes at the top of this panel. Nothing here is saved by the browser.</p>' +
       '<div class="mode">' +
       '<button type="button" data-mode="' + t.id + '" data-val="off"' + (st.mode === "off" ? ' class="on"' : "") + ">off</button>" +
       '<button type="button" data-mode="' + t.id + '" data-val="on"' + (st.mode === "on" ? ' class="on"' : "") + ">on</button>" +
@@ -3001,16 +3388,27 @@
     const bg = densityGray(st.density);
     const ink = densityInk(st.density);
     const light = ink === "#ffffff";
-    return '<details class="acc' + (sel ? " sel" : "") + '"' + (open ? " open" : "") + ' data-acc="trib:' + t.id + '" data-open-key="trib:' + t.id + '" data-drag-trib="' + t.id + '">' +
-      '<summary class="row-sum' + (light ? " ink-light" : "") + '" style="background:' + bg + ';color:' + ink + '" title="Density ' + formatDensity(st.density) + ' · gain ' + st.weight + ' · marker at far left is -100, centre is 0, far right is 100">' +
+    const kids = tribChildren(t.id);
+    /* Members render one step in, on this card's hue, so that a group is
+       visible as a group without the sequence marching off the right edge. */
+    const nested = kids.length
+      ? '<div class="card-members" style="--member-rule:' + esc(tribColor(t)) + '">' +
+        kids.map(function (k) {
+          return '<div class="row-gap" data-drop-before="' + k.id + '"></div>' + tribRowHtml(k);
+        }).join("") + "</div>"
+      : "";
+    const reads = composedDensity(t.id);
+    return '<details class="acc' + (sel ? " sel" : "") + (kids.length ? " is-group" : "") + '"' + (open ? " open" : "") + ' data-acc="trib:' + t.id + '" data-open-key="trib:' + t.id + '" data-drag-trib="' + t.id + '">' +
+      '<summary class="row-sum' + (light ? " ink-light" : "") + '" style="background:' + bg + ';color:' + ink + '" data-card-body="' + t.id + '" title="Density ' + reads + ' · gain ' + st.weight + ' · drop an aspect here to put it inside this card">' +
       '<span class="gain-mark" style="left:calc((100% - 10px) * ' + frac.toFixed(4) + ')"></span>' +
-      '<span class="drag-handle" title="Drag to reorder by density · drop between rows or onto a cloud. Aspects are not drop targets." draggable="true" data-drag-trib="' + t.id + '">\u22ee\u22ee</span>' +
+      '<span class="drag-handle" title="Drag to reorder by density · drop between rows, or onto a card to put this one inside it." draggable="true" data-drag-trib="' + t.id + '">⋮⋮</span>' +
       '<span class="row-lab">' + esc(t.label) + '</span>' +
-      '<span class="meta-bit ' + (st.on ? "on-dot" : "off-dot") + '">' + rungLabel(t.id) +
-        (parentLabelOf(t.id) ? " \u00b7 inside " + esc(parentLabelOf(t.id)) : "") + " \u00b7 " +
-        (st.on ? "G" + st.weight + " \u00b7 " + st.binding + " \u00b7 " + esc(st.shape2) : "off") +
-        (st.trajectory ? " \u00b7 " + esc(String(st.trajectory).slice(0, 40)) : "") + "</span></summary>" +
-      '<div class="acc-body">' + wellspringEditor(t) + "</div></details>";
+      '<span class="meta-bit ' + (st.on ? "on-dot" : "off-dot") + '">d' + esc(reads) +
+        (kids.length ? " · " + esc(st.groupNoun) + " · " + kids.length + " member" + (kids.length === 1 ? "" : "s") : "") +
+        (parentLabelOf(t.id) ? " · inside " + esc(parentLabelOf(t.id)) : "") + " · " +
+        (st.on ? "G" + gainSigned(gainNum(st.weight)) + " · " + st.binding + " · " + esc(shapeLabel(st) || "no star") : "off") +
+        (st.trajectory ? " · " + esc(String(st.trajectory).slice(0, 40)) : "") + "</span></summary>" +
+      '<div class="acc-body">' + wellspringEditor(t) + nested + "</div></details>";
   }
 
   /* One cloud: coloured ground, name, explanation, members in one
@@ -3732,15 +4130,49 @@
     if (editCategory) {
       e.preventDefault();
       e.stopPropagation();
-      const category = wellspringCategories().find(function (c) { return c.id === editCategory.getAttribute("data-edit-category"); });
-      if (!category) return;
-      const label = window.prompt("Category name", category.label);
-      if (label == null || !label.trim()) return;
-      const hint = window.prompt("Category description", category.hint || "") || "";
-      category.label = label.trim();
-      category.hint = hint.trim();
+      const cid = editCategory.getAttribute("data-edit-category");
+      state.editCategory = state.editCategory === cid ? "" : cid;
+      render();
+      return;
+    }
+    const catDone = e.target.closest("[data-cat-done]");
+    if (catDone) {
+      e.preventDefault();
+      e.stopPropagation();
+      state.editCategory = "";
       persistSoft();
       render();
+      return;
+    }
+    /*
+     * A shelf becomes a card. The category's name and description go onto a
+     * group card in the personality, and every aspect on that shelf that is on
+     * moves inside it — which is the same relationship the shelf already
+     * described, now expressed where it compiles.
+     */
+    const catToCard = e.target.closest("[data-cat-to-card]");
+    if (catToCard) {
+      e.preventDefault();
+      e.stopPropagation();
+      const cid = catToCard.getAttribute("data-cat-to-card");
+      const category = wellspringCategories().find(function (c) { return c.id === cid; });
+      if (!category) return;
+      const members = tribsInCol(cid).filter(function (t) { return tribState(t.id).on; });
+      const hostId = addCard(category.label, { col: cid, density: nextFreeDensity() });
+      setTrib(hostId, { cloud: category.hint || "", inject: category.hint || "" });
+      ensurePlacement();
+      members.forEach(function (t) {
+        if (t.id === hostId) return;
+        cloudLeave(t.id);
+        state.tribParent[t.id] = { kind: "trib", id: hostId };
+      });
+      state.editCategory = "";
+      persistSoft();
+      render();
+      focusItem("trib", hostId);
+      showBuilderNotice(category.label + " added as a group at density " +
+        formatDensity(tribState(hostId).density) + " with " + members.length +
+        " member" + (members.length === 1 ? "" : "s") + ".");
       return;
     }
     const remove = e.target.closest("[data-remove-trib]");
@@ -3753,7 +4185,14 @@
     }
     const add = e.target.closest("[data-add]");
     if (add) {
-      openAdd(add.getAttribute("data-add"));
+      e.preventDefault();
+      e.stopPropagation();
+      const id = addCard("New aspect", { col: add.getAttribute("data-add"), prefix: "aspect" });
+      persistSoft();
+      render();
+      focusItem("trib", id);
+      showBuilderNotice("New aspect added to " + (parentLabelOf(id) || "this personality") +
+        " at density " + formatDensity(tribState(id).density) + ". Name it and write its instruction.");
       return;
     }
     const mode = e.target.closest("[data-mode]");
@@ -3914,9 +4353,49 @@
       state.trib[id] = Object.assign({}, tribState(id), { role: e.target.value });
       persistSoft();
       render();
+      return;
+    }
+    /* What a card with members is called. Stored, so it survives a density
+       change that would otherwise re-default it. */
+    if (e.target.matches("[data-group-noun]")) {
+      setTrib(e.target.getAttribute("data-group-noun"), { groupNoun: e.target.value });
+      return;
+    }
+    /* Which soul.md heading this card is written under. Empty means follow
+       density, which is what almost every card should say. */
+    if (e.target.matches("[data-soul-section]")) {
+      const id = e.target.getAttribute("data-soul-section");
+      state.trib[id] = Object.assign({}, tribState(id), { soulSection: e.target.value });
+      ensurePlacement();
+      /* Naming a section moves the card there. A card inside a group stays
+         where it is — it takes the group's section, because that is what
+         being inside a group means. */
+      const p = state.tribParent[id];
+      if (!p || p.kind !== "trib") state.tribParent[id] = { kind: "layer", id: soulSectionOf(id).id };
+      persistSoft();
+      render();
+      showBuilderNotice((allTribs().find(function (x) { return x.id === id; }) || {}).label +
+        " is written under " + soulSectionOf(id).label + ".");
+      return;
     }
   }
   function onTribInput(e) {
+    if (e.target.matches("[data-card-label]")) {
+      const id = e.target.getAttribute("data-card-label");
+      const card = (state.custom || []).find(function (c) { return c.id === id; });
+      if (card) { card.label = e.target.value; persistSoft(); renderOut(); }
+      return;
+    }
+    if (e.target.matches("[data-cat-label]") || e.target.matches("[data-cat-hint]")) {
+      const cid = e.target.getAttribute("data-cat-label") || e.target.getAttribute("data-cat-hint");
+      const category = wellspringCategories().find(function (c) { return c.id === cid; });
+      if (!category) return;
+      if (e.target.hasAttribute("data-cat-label")) category.label = e.target.value;
+      else category.hint = e.target.value;
+      persistSoft();
+      renderOut();
+      return;
+    }
     if (e.target.matches("[data-layer-label]")) {
       const L = containerById(e.target.getAttribute("data-layer-label"));
       if (L) { L.label = e.target.value; persistSoft(); renderOut(); }
@@ -4180,6 +4659,8 @@
             ? "morph" : (t.compose || t.merge || ""),
           density: t.density == null ? "" : t.density,
           trajectory: t.trajectory || "",
+          groupNoun: t.group_noun || t.groupNoun || "",
+          soulSection: t.soul_section || t.soulSection || "",
           cloud: t.cloud || ""
         };
         if (!known && comments.character) {
@@ -4228,6 +4709,28 @@
       }
       if (typeof c.gain !== "number") c.gain = 0;
     });
+
+    /*
+     * Where every card sits: under a heading, inside a cloud, or inside
+     * another card. workshopFile() has always written this out and nothing
+     * ever read it back, so every placement a floscAdmin made was rebuilt
+     * from density on the next load — and a group made by dropping one card
+     * onto another would not have survived a save at all.
+     */
+    state.tribParent = {};
+    if (spec.placement && typeof spec.placement === "object") {
+      Object.keys(spec.placement).forEach(function (tid) {
+        const raw = String(spec.placement[tid] || "");
+        const cut = raw.indexOf(":");
+        if (cut < 1) return;
+        const kind = raw.slice(0, cut);
+        const pid = raw.slice(cut + 1);
+        if (!pid) return;
+        if (kind === "layer" || kind === "cloud" || kind === "trib") {
+          state.tribParent[tid] = { kind: kind, id: pid };
+        }
+      });
+    }
 
     state.preset = "blank";
     ensurePlacement();
@@ -4552,71 +5055,22 @@
 
 
 
-  function openAdd(col) {
-    const d = document.getElementById("tribDialog");
-    const input = document.getElementById("newColInput");
-    const options = document.getElementById("categoryOptions");
-    const categories = wellspringCategories().slice().sort(function (a, b) {
-      return String(a.label || a.id).localeCompare(String(b.label || b.id));
-    });
-    options.innerHTML = categories.map(function (c) {
-      return '<option value="' + esc(c.label) + '"></option>';
-    }).join("");
-    const selected = categories.find(function (c) { return c.id === col; }) || categories[0];
-    input.value = selected ? selected.label : "";
-    document.getElementById("newName").value = "";
-    document.getElementById("newInject").value = "";
-    d.showModal();
-  }
-  document.getElementById("cancelTrib").addEventListener("click", function () {
-    document.getElementById("tribDialog").close();
-  });
-  document.getElementById("tribForm").addEventListener("submit", function (e) {
-    if (e.submitter && e.submitter.value === "cancel") return;
-    const name = document.getElementById("newName").value.trim();
-    const inject = document.getElementById("newInject").value.trim();
-    const categoryLabel = document.getElementById("newColInput").value.trim();
-    if (!categoryLabel || !name || !inject) return;
-    let category = wellspringCategories().find(function (c) {
-      return c.label.toLowerCase() === categoryLabel.toLowerCase() || c.id === categoryLabel;
-    });
-    if (!category) {
-      const base = categoryLabel.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "") || "category";
-      let id = base;
-      let n = 2;
-      while (wellspringCategories().some(function (c) { return c.id === id; })) id = base + "_" + n++;
-      category = { id: id, label: categoryLabel, hint: "Created while adding a wellspring." };
-      state.categories.push(category);
-      state.tribOrder[id] = [];
-    }
-    const col = category.id;
-    const id = "c_" + name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "") + "_" + Date.now().toString(36);
-    state.custom.push({ id: id, col: col, label: name, short: inject.slice(0, 72), inject: inject });
-    state.trib[id] = { on: true, mode: "on", weight: 70, density: 20, condition: "", inject: inject, col: col, binding: "may", shape2: "none", shape3: "none", merge: "morph", role: "manner", trajectory: "" };
-    if (!state.tribOrder[col]) state.tribOrder[col] = [];
-    state.tribOrder[col].push(id);
-    persistSoft();
-    render();
-  });
-
+  /*
+   * Adding a card. There is no dialog: a dialog can only ask for the three
+   * fields someone thought of in advance, and the card itself asks for all
+   * fourteen in the place they are edited. The two dialogs this replaced also
+   * opened a <form> inside WordPress's own settings form, which is invalid —
+   * the browser dropped the inner tag, #tribForm came back null, and the
+   * listener on it threw and killed every line of setup after it, which is
+   * why + Category did nothing at all.
+   */
   document.getElementById("btnAddCategory").addEventListener("click", function () {
-    document.getElementById("categoryLabel").value = "";
-    document.getElementById("categoryHint").value = "";
-    document.getElementById("categoryDialog").showModal();
-  });
-  document.getElementById("categoryForm").addEventListener("submit", function (e) {
-    if (e.submitter && e.submitter.value === "cancel") return;
-    const label = document.getElementById("categoryLabel").value.trim();
-    const hint = document.getElementById("categoryHint").value.trim();
-    if (!label) return;
-    const base = label.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "") || "category";
-    let id = base;
-    let n = 2;
-    while (wellspringCategories().some(function (category) { return category.id === id; })) id = base + "_" + n++;
-    state.categories.push({ id: id, label: label, hint: hint });
-    state.tribOrder[id] = [];
+    const id = addCard("New group", { prefix: "group" });
     persistSoft();
     render();
+    focusItem("trib", id);
+    showBuilderNotice("New group added at density " + formatDensity(tribState(id).density) +
+      ". Drop aspects onto it to fill it.");
   });
 
   applyFloscHostChrome();
@@ -4712,7 +5166,12 @@
     const col = e.target.closest("[data-drop-col]");
     const denList = e.target.closest("[data-drop-den]");
     const cloudEl = e.target.closest("[data-drop-cloud]");
-    if (!before && !col && !denList && !cloudEl) return;
+    /* A card's own body is a drop target: releasing there puts the dragged
+       aspect inside it. Not itself, and not one of its own members. */
+    const cardEl = e.target.closest("[data-card-body]");
+    const cardId = cardEl && cardEl.getAttribute("data-card-body");
+    const cardOk = !!cardId && cardId !== state._drag && cardAncestors(cardId).indexOf(state._drag) < 0;
+    if (!before && !col && !denList && !cloudEl && !cardOk) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
     document.querySelectorAll(".drop-aim, .drop-line, .drop-beside").forEach(function (n) {
@@ -4720,7 +5179,8 @@
     });
     if (before && before.getAttribute("data-drop-before") !== state._drag) {
       before.classList.add("drop-line");
-    } else if (cloudEl) cloudEl.classList.add("drop-aim");
+    } else if (cardOk) cardEl.classList.add("drop-aim");
+    else if (cloudEl) cloudEl.classList.add("drop-aim");
     else if (col) col.classList.add("drop-aim");
   });
   app.addEventListener("drop", function (e) {
@@ -4729,13 +5189,43 @@
     const denList = e.target.closest("[data-drop-den]");
     const colEl = e.target.closest("[data-drop-col]");
     const cloudEl = e.target.closest("[data-drop-cloud]");
-    if (!before && !denList && !colEl && !cloudEl) return;
+    const cardEl = e.target.closest("[data-card-body]");
+    if (!before && !denList && !colEl && !cloudEl && !cardEl) return;
     e.preventDefault();
     const beforeId = (before && before.getAttribute("data-drop-before") !== state._drag)
       ? before.getAttribute("data-drop-before")
       : null;
     const id = state._drag;
     state._drag = null;
+    /*
+     * Onto a card's own body: that card becomes the heading and this one goes
+     * inside it. This is how a group is made — there is no separate group
+     * object to create first, because the card already is one.
+     *
+     * Not onto itself, and not onto its own member, which would take the whole
+     * branch out of the document.
+     */
+    if (cardEl && !before) {
+      const host = cardEl.getAttribute("data-card-body");
+      if (host && host !== id && cardAncestors(host).indexOf(id) < 0) {
+        ensurePlacement();
+        cloudLeave(id);
+        state.tribParent[id] = { kind: "trib", id: host };
+        const hostCard = allTribs().find(function (x) { return x.id === host; });
+        setTrib(id, { on: true, mode: tribState(id).mode === "off" ? "on" : tribState(id).mode });
+        showBuilderNotice((allTribs().find(function (x) { return x.id === id; }) || {}).label +
+          " is now inside " + ((hostCard && hostCard.label) || "that card") +
+          ", reading d" + composedDensity(id) + ".");
+        persistSoft();
+        render();
+        focusItem("trib", id);
+      }
+      return;
+    }
+    /* Any drop that is not onto a card leaves whatever group it was in. */
+    if (state.tribParent && state.tribParent[id] && state.tribParent[id].kind === "trib") {
+      delete state.tribParent[id];
+    }
     /* On a cloud's own ground: join it. */
     if (cloudEl && !before) {
       cloudJoin(cloudEl.getAttribute("data-drop-cloud"), id);
