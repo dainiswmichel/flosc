@@ -25,22 +25,15 @@ if ( ! defined( 'ABSPATH' ) ) {
         </div>
       </div>
       <p class="figure-readout identity-note" id="filenameNote"></p>
-      <p class="figure-readout identity-note">The first two lines of the profile: <code># DA1/FLOSC AI Personality Profile Name: Name</code> and <code>You are Name, role.</code> Changing the name here renames the personality everywhere it is shown; the id a floscFlow attaches to does not change.</p>
-      <div class="meta">
-        <span class="chip">Aspect palette</span>
-        <span class="chip">Density-ordered profile</span>
-        <span class="chip">Provider-ready output</span>
-      </div>
     </div>
     <div class="toolbar flosc-admin-builder__tools">
       <select id="preset" class="btn" title="Choose a starting personality profile"></select>
-      <span class="save-state" id="saveState" title="Saved in this browser until saved to the FLOSC library.">Saved</span>
       <button type="button" class="btn" id="btnImport">Import workshop state</button>
       <button type="button" class="btn" id="btnImportProfile">Import profile</button>
     </div>
-    <p class="preset-where">Use a palette aspect as an ingredient. Included aspects define this personality.</p>
-    <p class="preset-where" id="presetWhere"></p>
   </header>
+
+  <p id="builderNotice" class="builder-notice" role="status" aria-live="polite" hidden></p>
 
   <section class="builder-workspace" aria-label="Personality builder">
     <section class="panel palette-panel" aria-labelledby="palette-title">

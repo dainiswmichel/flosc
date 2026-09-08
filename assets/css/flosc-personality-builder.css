@@ -382,6 +382,56 @@
   }
   .flosc-personality-workshop .acc > summary.row-sum .drag-handle, .flosc-personality-workshop .acc > summary.row-sum .den-swatch, .flosc-personality-workshop .acc > summary.row-sum .row-lab, .flosc-personality-workshop .acc > summary.row-sum .meta-bit{ position: relative; z-index: 1; }
   .flosc-personality-workshop .acc > summary .row-lab{ min-width: 0; }
+
+  /*
+   * A heading row is a summary WITHOUT .row-sum, so the nowrap guard below —
+   * which only covers aspect rows — never applied to it. A paragraph-length
+   * description then grew the meta span, crushed .row-lab to nothing, and the
+   * heading's own name overflowed and printed across the description.
+   */
+  .flosc-personality-workshop .acc > summary:not(.row-sum) .row-lab{
+    flex: 0 0 auto;
+    max-width: 45%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .flosc-personality-workshop .acc > summary:not(.row-sum) .meta-bit{
+    flex: 1 1 auto;
+    min-width: 0;
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* The line that says what the builder just did. */
+  .flosc-personality-workshop .builder-notice{
+    margin: 8px 0 10px;
+    padding: 7px 10px;
+    border-left: 3px solid var(--accent-2);
+    background: #f0f6fc;
+    font-family: var(--ui);
+    font-size: 0.8rem;
+  }
+  .flosc-personality-workshop .builder-notice.is-error{
+    border-left-color: var(--bad);
+    background: #fcf0f1;
+  }
+
+  /* Heading boxes carry a visible label instead of a hover title. */
+  .flosc-personality-workshop .cadmin-field{
+    display: inline-flex;
+    flex-direction: column;
+    gap: 2px;
+    font-family: var(--ui);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    color: var(--accent-2);
+  }
+  .flosc-personality-workshop .cadmin-field input{ font-weight: 400; text-transform: none; letter-spacing: 0; }
   .flosc-personality-workshop .acc > summary.row-sum .meta-bit{ justify-self: end; white-space: nowrap; }
   /* Aspect cloud: two or more related aspects on one coloured ground. */
   .flosc-personality-workshop .cloud{

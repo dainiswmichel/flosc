@@ -187,7 +187,7 @@ if ( function_exists( 'flosc_render_personality_designer_accordion' ) ) {
 }
 ?>
 
-<details class="flosc-ai-acc" open>
+<details class="flosc-ai-acc">
 <summary class="flosc-ai-acc__summary">
 	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'Provider, keys, and test', 'flosc' ); ?></span>
 	<span class="flosc-ai-acc__hint"><?php echo esc_html__( 'This flow’s API. Install-wide keys live under All Flows.', 'flosc' ); ?></span>
@@ -3281,7 +3281,7 @@ if ( empty( $GLOBALS['flosc_settings_form_closed_early'] ) ) {
 </div>
 </details>
 
-<details class="flosc-ai-acc" id="flosc-kb-section" open>
+<details class="flosc-ai-acc" id="flosc-kb-section">
 <summary class="flosc-ai-acc__summary">
 	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'Knowledge Base', 'flosc' ); ?></span>
 	<span class="flosc-ai-acc__hint"><?php echo esc_html__( 'Attached on the Knowledge Base tab.', 'flosc' ); ?></span>

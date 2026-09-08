@@ -1283,7 +1283,7 @@
     const r = rungOf(id);
     const d = formatDensity(r.density);
     if (r.of < 2) return "d" + d;
-    return "d" + d + " · #" + r.n + "/" + r.of;
+    return "d" + d + " · " + r.n + " of " + r.of + " at this density";
   }
   function placeByDensity(id, beforeId) {
     const visual = tribsByDensity().map(function (t) { return t.id; }).filter(function (x) { return x !== id; });
@@ -2003,7 +2003,12 @@
     if (t.character) bits.push("character note: " + t.character);
     if (t.works && t.works.length) bits.push("works: " + t.works.join("; "));
     if (t.links && t.links.length) bits.push("resources: " + t.links.map(function (l) { return l.label + " <" + l.url + ">"; }).join(" · "));
-    if (t.repo) bits.push("repo: " + t.repo.id + (t.repo.note ? " — " + t.repo.note : ""));
+    /* 23 — a note to ourselves about a corpus feature that does not exist,
+       billed on every turn. Design copy only now. */
+    if (t.repo && withMetrics) bits.push("repo: " + t.repo.id + (t.repo.note ? " — " + t.repo.note : ""));
+    /* 20 — the floscAdmin's own sentence. The card row printed the bare word
+       "traj" and this document printed nothing at all. */
+    if (st.trajectory) bits.push("trajectory: " + st.trajectory);
     paramLines({ gain: st.weight, binding: st.binding, shape: shapeLabel(st) }, withMetrics,
       { gain: true, binding: true, shape: true }).forEach(function (l) { bits.push(l); });
 
@@ -2571,14 +2576,11 @@
 
   function persistSoft() {
     queueLiveFiles();
-    if (floscHosted()) {
-      const hosted = document.getElementById("saveState");
-      if (hosted) {
-        hosted.textContent = "Save in FLOSC";
-        hosted.classList.remove("saving", "flash");
-      }
-      return;
-    }
+    /* Inside WordPress there is no browser autosave — the personality is saved
+       to the library by the Save button at the top of the page. This used to
+       overwrite a status pill with the words "Save in FLOSC", which read as a
+       button, did nothing, and told nobody anything. The pill is gone. */
+    if (floscHosted()) return;
     try {
       const payload = JSON.stringify({
         preset: state.preset, soul: state.soul, sampling: state.sampling, trib: state.trib, custom: state.custom, clouds: cloudList(), categories: state.categories, tribOrder: state.tribOrder, denOrder: state.denOrder, denPlace: state.denPlace, includeComments: state.includeComments, include_source_site: state.include_source_site, open: state.open,
@@ -2816,6 +2818,34 @@
   function isFocus(kind, id) {
     return state.focus && state.focus.kind === kind && state.focus.id === id;
   }
+  /* Which heading or cloud this aspect currently sits inside. */
+  function parentLabelOf(id) {
+    const p = state.tribParent && state.tribParent[id];
+    if (!p) return "";
+    if (p.kind === "cloud") { const c = cloudById(p.id); return c ? c.name : ""; }
+    const L = containerById(p.id);
+    return L ? L.label : "";
+  }
+
+  /*
+   * One line under the header saying what just happened. Ticking a card,
+   * removing one — the builder used to do all of it silently.
+   */
+  let builderNoticeTimer = null;
+  function showBuilderNotice(message, isError) {
+    const el = document.getElementById("builderNotice");
+    if (!el) return;
+    el.textContent = String(message || "");
+    el.hidden = !message;
+    el.classList.toggle("is-error", !!isError);
+    clearTimeout(builderNoticeTimer);
+    if (message) {
+      builderNoticeTimer = setTimeout(function () {
+        el.hidden = true; el.textContent = ""; el.classList.remove("is-error");
+      }, 5000);
+    }
+  }
+
   function focusItem(kind, id) {
     state.focus = { kind: kind, id: id };
     if (kind === "trib") {
@@ -2978,7 +3008,10 @@
       '<span class="gain-mark" style="left:calc((100% - 10px) * ' + frac.toFixed(4) + ')"></span>' +
       '<span class="drag-handle" title="Drag to reorder by density · drop between rows or onto a cloud. Aspects are not drop targets." draggable="true" data-drag-trib="' + t.id + '">\u22ee\u22ee</span>' +
       '<span class="row-lab">' + esc(t.label) + '</span>' +
-      '<span class="meta-bit ' + (st.on ? "on-dot" : "off-dot") + '">' + rungLabel(t.id) + " \u00b7 " + (st.on ? "G" + st.weight + " \u00b7 " + st.binding + " \u00b7 " + st.shape2 + "/" + st.shape3 : "off") + (st.trajectory ? " \u00b7 traj" : "") + "</span></summary>" +
+      '<span class="meta-bit ' + (st.on ? "on-dot" : "off-dot") + '">' + rungLabel(t.id) +
+        (parentLabelOf(t.id) ? " \u00b7 inside " + esc(parentLabelOf(t.id)) : "") + " \u00b7 " +
+        (st.on ? "G" + st.weight + " \u00b7 " + st.binding + " \u00b7 " + esc(st.shape2) : "off") +
+        (st.trajectory ? " \u00b7 " + esc(String(st.trajectory).slice(0, 40)) : "") + "</span></summary>" +
       '<div class="acc-body">' + wellspringEditor(t) + "</div></details>";
   }
 
@@ -3028,10 +3061,13 @@
   function containerAdminHtml(L) {
     const removable = L.origin !== "seed" && L.kind !== "providers";
     return '<div class="cadmin">' +
-      '<input type="text" data-layer-label="' + L.id + '" value="' + esc(L.label) + '" title="Heading name">' +
-      '<input type="number" data-layer-den="' + L.id + '" min="0" max="100" step="1" value="' + (Number(L.density) || 0) + '" title="Density 0–100">' +
-      '<input type="number" data-layer-gain="' + L.id + '" min="-100" max="100" step="1" value="' + (Number(L.gain) || 0) + '" title="Gain −100 dam · +100 reinforce">' +
-      '<button type="button" class="btn ghost" data-layer-restore="' + L.id + '">Standard wording</button>' +
+      '<label class="cadmin-field"><span>Heading name</span>' +
+      '<input type="text" data-layer-label="' + L.id + '" value="' + esc(L.label) + '"></label>' +
+      '<label class="cadmin-field"><span>Density 0–100</span>' +
+      '<input type="number" data-layer-den="' + L.id + '" min="0" max="100" step="any" value="' + (Number(L.density) || 0) + '"></label>' +
+      /* The heading Gain box is gone: it was stored and exported and read by no
+         compile path, so setting it changed nothing that reached the AI. */
+      '<button type="button" class="btn ghost" data-layer-restore="' + L.id + '">Restore original name</button>' +
       (removable ? '<button type="button" class="btn ghost" data-layer-remove="' + L.id + '">Remove</button>' : "") +
       "</div>" +
       '<textarea class="traj-phrase" data-layer-desc="' + L.id + '" placeholder="Description paragraph · what this heading holds">' + esc(L.desc || "") + "</textarea>";
@@ -3280,31 +3316,27 @@
   }
   function renderMorphViz() {
     const v2 = document.getElementById("viz2d");
-    const v3 = document.getElementById("viz3d");
     const ings = document.getElementById("vizIngredients");
     const phrases = document.getElementById("vizTrajectories");
-    if (!v2 || !v3) return;
+    /*
+     * 8.0.0 draws in 2D only. The guard here used to require #viz3d as well,
+     * and that element left the markup when the 3D card did — so every call
+     * returned on this line and the whole Visual summary stopped drawing.
+     * Nothing was wrong with the shapes or the hues; nothing was showing them.
+     */
+    if (!v2 || !ings || !phrases) return;
     v2.innerHTML = morphSvg("shape2", false) +
       '<p class="figure-readout"><strong>' + esc(morphHint("shape2")) + "</strong><br>" + esc(morphReadout("shape2")) + "</p>";
-    v3.innerHTML = morphSvg("shape3", true) +
-      '<p class="figure-readout"><strong>' + esc(morphHint("shape3")) + "</strong><br>" + esc(morphReadout("shape3")) + "</p>";
-    const seen = {};
-    const cards = shapedTribs("shape2").concat(shapedTribs("shape3")).filter(function (t) {
-      if (seen[t.id]) return false;
-      seen[t.id] = true;
-      return true;
-    });
+    const cards = shapedTribs("shape2");
     if (!cards.length) {
-      ings.innerHTML = '<span class="chip">No shaped wellsprings on yet. Open a card, pick a 2D and a 3D shape, leave it on morph.</span>';
+      ings.innerHTML = '<span class="chip">No shapes chosen yet. Open an aspect and pick one.</span>';
     } else {
       ings.innerHTML = cards.map(function (t) {
         const st = tribState(t.id);
         const mini2 = svgFigure(st.shape2, 18, 18, 13, tribColor(t), "#132117", 1.2);
-        const mini3 = svgFigure(st.shape3, 18, 18, 13, densityGray(st.density), "#132117", 1.2);
         return '<div class="viz-ing">' +
           '<svg viewBox="0 0 36 36">' + mini2 + "</svg>" +
-          '<svg viewBox="0 0 36 36">' + mini3 + "</svg>" +
-          "<div><b>" + esc(t.label) + "</b><i>G" + st.weight + " · d" + formatDensity(st.density) + " · " + esc(st.shape2) + " / " + esc(st.shape3) + "</i></div></div>";
+          "<div><b>" + esc(t.label) + "</b><i>G" + st.weight + " · d" + formatDensity(st.density) + " · " + esc(st.shape2) + "</i></div></div>";
       }).join("");
     }
     const trajs = activeTribs().filter(function (t) { return String(tribState(t.id).trajectory || "").trim(); });
@@ -3400,7 +3432,6 @@
     if (view === "morph" || view === "layers" || view === "side") {
       stage.innerHTML = '<div class="viz-grid">' +
         '<div>' + morphSvg("shape2", false) + '<p class="figure-readout"><strong>2D · ' + esc(morphHint("shape2")) + "</strong><br>" + esc(morphReadout("shape2")) + "</p></div>" +
-        '<div>' + morphSvg("shape3", true) + '<p class="figure-readout"><strong>3D · ' + esc(morphHint("shape3")) + "</strong><br>" + esc(morphReadout("shape3")) + "</p></div>" +
         "</div>";
     } else if (view === "cols") {
       if (!pigment.length) {
@@ -3877,7 +3908,18 @@
     }
     if (e.target.matches("[data-toggle]")) {
       const id = e.target.getAttribute("data-toggle");
-      setTrib(id, { on: e.target.checked, mode: e.target.checked ? "on" : "off" });
+      const on = e.target.checked;
+      const t = allTribs().find(function (x) { return x.id === id; });
+      setTrib(id, { on: on, mode: on ? "on" : "off" });
+      if (on) {
+        ensurePlacement();
+        showBuilderNotice((t ? t.label : "Aspect") + " added to " +
+          (parentLabelOf(id) || "this personality") +
+          " at density " + formatDensity(tribState(id).density) + ".");
+        focusItem("trib", id);
+      } else {
+        showBuilderNotice((t ? t.label : "Aspect") + " removed from this personality.");
+      }
       return;
     }
     if (e.target.matches("[data-density]") || e.target.matches("[data-density-num]")) {
@@ -4005,6 +4047,10 @@
     persistSoft();
     if (doRender) {
       render();
+      /* The row moves when the list re-sorts. Follow it, or the card being
+         edited flies out of view the moment the floscAdmin presses Tab. */
+      const row = document.querySelector('[data-acc="trib:' + id + '"], [data-focus-trib="' + id + '"]');
+      if (row && row.scrollIntoView) row.scrollIntoView({ block: "center" });
     } else {
       renderOut();
       renderDenRail();
