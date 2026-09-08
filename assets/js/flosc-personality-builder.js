@@ -47,15 +47,27 @@
     character: { label: "Character", hint: "density band ≈ 34–66. Create aspect rainclouds below." },
     behavior: { label: "Behavior", hint: "density band ≈ 67–100 · more dense. Create aspect pools below." }
   };
+  /*
+   * The headings of a soul.md file, in density order — and the palette's
+   * shelves, because they are the same thing. An aspect goes under a heading,
+   * so the shelf it waits on is that heading. Two lists meant a floscAdmin
+   * filing a card in one vocabulary and finding it in another.
+   *
+   * Every one of these is editable: rename it, move its density, add your own.
+   * The ids never change, so a saved personality keeps its placement whatever
+   * the labels become.
+   */
   const SOUL_LAYERS = [
-    { id: "identity", band: "soul", label: "Name and Core Role", hint: "Who remains, under probe", density: 6 },
+    { id: "identity", band: "soul", label: "Identity and Role", hint: "Who remains, under probe", density: 6 },
     { id: "goals", band: "soul", label: "Philosophy and Values", hint: "What this conversation is for", density: 12 },
-    { id: "rules", band: "soul", label: "Hard Boundaries and Prohibitions", hint: "Invariants, defaults, who is served", density: 18 },
+    { id: "rules", band: "soul", label: "Boundaries and Prohibitions", hint: "Invariants, defaults, who is served", density: 18 },
     { id: "epistemics", band: "soul", label: "Knowledge, Doubt and Correction", hint: "How this personality knows, doubts, corrects", density: 24 },
+    { id: "opinions", band: "soul", label: "Opinions and Preferences", hint: "What it leans toward when nothing forces the choice", density: 30 },
     { id: "expression", band: "character", label: "Tone and Communication Style", hint: "Tone, cadence, conditionals", density: 40 },
     { id: "relation", band: "character", label: "Stance Toward the Human", hint: "How it orients toward this human", density: 48 },
     { id: "initiative", band: "character", label: "Behavior in Ambiguity", hint: "When to answer, ask, lead, stay quiet", density: 56 },
     { id: "adaptation", band: "character", label: "Adaptation", hint: "Same soul, fitting intensity", density: 62 },
+    { id: "resource", band: "behavior", label: "Resourcefulness", hint: "What it does when the direct route is closed", density: 68 },
     { id: "behavior", band: "behavior", label: "Decisions including Infrequent Cases", hint: "Decisions, infrequent cases, recipes", density: 74 },
     { id: "language", band: "behavior", label: "Banned Words and Fillers to Avoid", hint: "Length, examples, words this personality never uses", density: 84 },
     { id: "action", band: "behavior", label: "Output and Delivery", hint: "What actually leaves the model, and how it is shaped", density: 94 }
@@ -82,6 +94,12 @@
    * and a post in WordPress with an id, managed on the Trajectories tab —
    * not a kind of aspect.
    */
+  /*
+   * Legacy. The palette's shelves are the headings now — wellspringCategories()
+   * derives them from the container list. This array survives only so that a
+   * workshop saved under the old scheme still imports without throwing; nothing
+   * renders from it.
+   */
   const DEFAULT_COLUMNS = [
     { id: "worldview", label: "Worldview aspects", hint: "" },
     { id: "relational", label: "Relational aspects", hint: "" },
@@ -89,12 +107,48 @@
     { id: "context", label: "Contextual aspects", hint: "" }
   ];
 
+  /*
+   * The palette's shelves ARE the document's headings. There is one list, not
+   * two: a card waits on the shelf it will be written under, and renaming the
+   * shelf renames the heading, because they are the same object.
+   *
+   * The provider container is a heading with no aspects of its own, so it does
+   * not appear as a shelf.
+   */
   function wellspringCategories() {
-    return state.categories && state.categories.length ? state.categories : DEFAULT_COLUMNS;
+    return containersSorted()
+      .filter(function (l) { return l.kind === "layer"; })
+      .map(function (l) { return { id: l.id, label: l.label, hint: l.desc || "", density: l.density }; });
   }
 
   function categoryExists(id) {
-    return wellspringCategories().some(function (category) { return category.id === id; });
+    const c = containerById(id);
+    return !!c && c.kind === "layer";
+  }
+
+  /*
+   * Where a card built before the shelves were the headings belongs now.
+   * A constraint is a boundary wherever it was filed; the rest follow their
+   * old shelf. Nothing here is meant to be final — every card ships unticked,
+   * and dragging one moves it for good.
+   */
+  const LEGACY_COLUMNS = {
+    worldview: "goals",
+    relational: "relation",
+    epistemic: "epistemics",
+    context: "behavior",
+    trajectory: "behavior",
+    uncategorized: "goals"
+  };
+  function headingForCard(t) {
+    const st = (state.trib && state.trib[t.id]) || {};
+    const role = st.role || t.role || CARD_ROLES[t.id] || "manner";
+    if (role === "constraint") return "rules";
+    if (role === "charge") return "relation";
+    /* A named figure with a real bibliography is a philosophy. One without is
+       a stance the personality takes on, so it belongs with who it is. */
+    if ((t.col === "worldview" || LEGACY_COLUMNS[t.col] === "goals") && !(t.works && t.works.length)) return "identity";
+    return LEGACY_COLUMNS[t.col] || "goals";
   }
 
   function isLegacyTaxonomy(categories) {
@@ -567,6 +621,8 @@
     invariants: "",
     defaults: "",
     preferences: "",
+    opinions: "",
+    resourcefulness: "",
     scope: "",
     off_topic_message: "",
     uncertainty: "",
@@ -1366,7 +1422,12 @@
   function tribColOf(t) {
     const st = state.trib && state.trib[t.id];
     const requested = (st && st.col) || t.col;
-    return categoryExists(requested) ? requested : "uncategorized";
+    if (categoryExists(requested)) return requested;
+    /* A stored column from before the shelves were the headings, or one whose
+       heading has since been removed. Either way it resolves to a shelf that
+       exists — a card filed nowhere is a card renderCols() never draws. */
+    const mapped = headingForCard(t);
+    return categoryExists(mapped) ? mapped : firstCategoryId();
   }
 
   const CARD_ROLES = {
@@ -2167,7 +2228,7 @@
     lines.push("Headings run top to bottom from lightest and most essential to most specific");
     lines.push("and behavioural. The sequence is the design, not an accident of drafting.");
     lines.push("");
-    lines.push("    Soul        0–33   this personality's spiritual foundation and wellspring of identity");
+    lines.push("    Soul        0–33   this personality's foundation and the source of its identity");
     lines.push("    Character  34–66   how it thinks and relates");
     lines.push("    Behavior   67–100  what it does, turn by turn");
     lines.push("");
@@ -2627,6 +2688,16 @@
       ["Off-scope reply", function (s) { return s.off_topic_message; }],
       ["Subject matter plate", function (s) { return s.content_plate ? "This is the subject matter — not who you are.\n" + s.content_plate : ""; }]
     ],
+    /* What it leans toward when nothing forces the choice. Softer than a value
+       and softer than a boundary, so it is read after both. */
+    opinions: [
+      ["Opinions", function (s) { return s.opinions; }],
+      ["Preferences", function (s) { return s.preferences ? "Adapt freely. The visitor may override these.\n" + s.preferences : ""; }]
+    ],
+    /* What it does when the direct route is closed. */
+    resource: [
+      ["Resourcefulness", function (s) { return s.resourcefulness; }]
+    ],
     epistemics: [
       ["Epistemics", function (s) {
         return [
@@ -2926,7 +2997,7 @@
     if (!s.goals) warn("Goals are empty.");
     if (!s.prohibitions) warn("Prohibitions are empty.");
     if (!s.scope) warn("Scope is empty.");
-    if (!activeTribs().length) err("No wellsprings are on. The soul has no sources.");
+    if (!activeTribs().length) err("No aspects are on. This personality has nothing to say yet.");
     wellspringCategories().forEach(function (c) {
       const n = activeTribs().filter(function (t) { return t.col === c.id; }).length;
       if (!n) warn("Column “" + c.label + "” has no active tributary.");
@@ -2941,7 +3012,7 @@
     if (Number(state.sampling.temperature) > 0.5 && s.install_private) warn("Temperature " + state.sampling.temperature + " is high for a high-stakes / private profile. FLOSC default is 0.3.");
     if (Number(state.sampling.temperature) > 0.7) warn("Temperature above 0.7 raises fabrication risk.");
     if (tokens > Number(s.token_hard || 2500)) err("Compiled prompt ~" + tokens + " tokens exceeds hard budget " + s.token_hard + ".");
-    else if (tokens > Number(s.token_soft || 700)) warn("Compiled prompt ~" + tokens + " tokens is over the soft target " + s.token_soft + ". Turn off low-weight wellsprings or shorten Specifics.");
+    else if (tokens > Number(s.token_soft || 700)) warn("Compiled prompt ~" + tokens + " tokens is over the soft target " + s.token_soft + ". Turn off low-gain aspects or shorten the longer instructions.");
     else ok("Token estimate " + tokens + " is inside the soft target.");
     if (s.examples_contrastive) ok("Contrastive examples present — good behavioral definition.");
     else warn("No contrastive examples. Add at least one wrong/right pair.");
@@ -2949,7 +3020,7 @@
     if (s.name && s.role && activeTribs().length) ok("Minimum compile contract can run.");
     const phrased = activeTribs().filter(function (t) { return String(tribState(t.id).trajectory || "").trim(); });
     if (phrased.length) ok(phrased.length + " element trajectory phrase(s).");
-    else warn("No per-element trajectory phrases. Each wellspring can name the desired impact on the future.");
+    else warn("No aspect names a trajectory. Each aspect can name the impact it should have on the future, in words or as a post id.");
     const morph2 = shapedTribs("shape2");
     if (morph2.length) ok("Workshop figure: 2D morph of " + morph2.length + " shape(s) — workshop spec only, not in the personality MD.");
     const leak = [
@@ -3064,9 +3135,15 @@
         field("interaction_policy", "Interaction policy", "", "textarea") +
         field("invariants", "Invariants", "user usually cannot override", "textarea") +
         field("defaults", "Defaults", "user may override", "textarea") +
-        field("preferences", "Preferences", "weak tendencies", "textarea") +
         field("scope", "Scope", "who is served / who is not", "textarea") +
         field("off_topic_message", "Off-scope message", "optional", "textarea");
+    }
+    if (id === "opinions") {
+      return field("opinions", "Opinions", "what it thinks, where it is allowed an opinion at all", "textarea", "tall") +
+        field("preferences", "Preferences", "weak tendencies — overridable by the visitor", "textarea");
+    }
+    if (id === "resource") {
+      return field("resourcefulness", "Resourcefulness", "what it does when the direct route is closed: what it tries, what it refuses to fake", "textarea", "tall");
     }
     if (id === "epistemics") {
       return field("uncertainty", "When I don't know", "", "textarea") +
@@ -3202,13 +3279,16 @@
           '<input type="text" data-cat-label="' + c.id + '" value="' + esc(c.label) + '"></label>' +
           '<label class="cadmin-field"><span>What belongs here</span>' +
           '<input type="text" data-cat-hint="' + c.id + '" value="' + esc(c.hint || "") + '"></label>' +
+          '<label class="cadmin-field"><span>Density 0\u2013100</span>' +
+          '<input type="number" data-layer-den="' + c.id + '" min="0" max="100" step="any" value="' + formatDensity(c.density) + '"></label>' +
           '<button type="button" class="btn ghost" data-cat-done="' + c.id + '">Done</button>' +
-          '<button type="button" class="btn ghost" data-cat-to-card="' + c.id + '">Add to the personality as a group</button>' +
-          '<p class="figure-readout">A category on this shelf holds dormant aspect cards. Adding it as a group puts a card in the personality carrying this name, and every aspect on this shelf that is on goes inside it.</p>' +
+          /* "Add to the personality as a group" is gone: this category IS a
+             heading in the personality. There is nothing to add it to. */
+          '<p class="figure-readout">This category is a heading in the document. Its density is where that heading sits in the sequence, and every aspect ticked on this shelf is written under it.</p>' +
           '</div>'
         : "";
       return '<details class="col' + (colSel ? " sel" : "") + '" data-col="' + c.id + '" data-open-key="fam:' + c.id + '"' + (famOpen || editing ? " open" : "") + ">" +
-        '<summary data-focus-col="' + c.id + '"><strong>' + esc(c.label) + '</strong><span class="fam-hint">' + esc(c.hint || "") + '</span><button type="button" class="btn ghost" data-edit-category="' + c.id + '">' + (editing ? "Close" : "Edit") + '</button>' + (c.id === "uncategorized" ? "" : '<button type="button" class="btn ghost danger" data-remove-category="' + c.id + '">Remove</button>') + '</summary>' +
+        '<summary data-focus-col="' + c.id + '"><strong>' + esc(c.label) + '</strong><span class="fam-hint">' + esc(c.hint || "") + '</span><span class="fam-den">d' + formatDensity(c.density) + '</span><button type="button" class="btn ghost" data-edit-category="' + c.id + '">' + (editing ? "Close" : "Edit") + '</button>' + ((containerById(c.id) || {}).origin === "user" ? '<button type="button" class="btn ghost danger" data-remove-category="' + c.id + '">Remove</button>' : "") + '</summary>' +
         head +
         '<div class="list" data-drop-col="' + c.id + '">' + items + "</div></details>";
     }).join("");
@@ -3360,7 +3440,7 @@
       }).join(" · ") + "</p>";
     }
     if (repo) {
-      h += '<p class="teach-repo"><strong>Comment · wellspring repository.</strong> Slot <code>' + esc(repo.id) + "</code>. " +
+      h += '<p class="teach-repo"><strong>Comment · source repository.</strong> Slot <code>' + esc(repo.id) + "</code>. " +
         esc(repo.note || "Summary now. Full corpus later — referenced at request time, not stuffed into this prompt.") + "</p>";
     }
     h += "</div>";
@@ -3630,7 +3710,7 @@
   function renderEditor() {
     ensurePlacement();
     const parts = [];
-    parts.push('<p class="note">The personality document, live. Headings sort by density: 0 = top = white, 100 = bottom = ink. Every heading holds its topics; a cloud inside a heading groups topics under one name. Removed aspects return to the unused wellsprings palette on the left.</p>');
+    parts.push('<p class="note">The personality document, live. Headings sort by density: 0 = top = white, 100 = bottom = ink. Every heading holds its topics; a cloud inside a heading groups topics under one name. Removed aspects return to the palette on the left, under the same heading.</p>');
     const place = state.denPlace || "avg";
     parts.push('<div class="density-label"><span>Drop between</span><span>working sort = density</span></div>' +
       '<div class="seg" style="margin:0 0 8px">' +
@@ -4279,11 +4359,20 @@
       e.preventDefault();
       e.stopPropagation();
       const id = removeCategory.getAttribute("data-remove-category");
-      state.categories = wellspringCategories().filter(function (category) { return category.id !== id; });
-      if (!categoryExists("uncategorized")) state.categories.unshift(deepClone(DEFAULT_COLUMNS[0]));
+      const L = containerById(id);
+      /* A seeded heading is part of the soul.md shape. Rename it, move it,
+         empty it — but removing it would take a section of the document with
+         it, and every card filed there. */
+      if (!L || L.origin === "seed") {
+        showBuilderNotice("A standard heading can be renamed and moved, but not removed.", true);
+        return;
+      }
+      state.layers = ensureContainers().filter(function (x) { return x.id !== id; });
       delete state.tribOrder[id];
+      if (state.editCategory === id) state.editCategory = "";
       persistSoft();
       render();
+      showBuilderNotice(L.label + " removed. Its aspects return to the palette.");
       return;
     }
     const editCategory = e.target.closest("[data-edit-category]");
@@ -4310,31 +4399,6 @@
      * moves inside it — which is the same relationship the shelf already
      * described, now expressed where it compiles.
      */
-    const catToCard = e.target.closest("[data-cat-to-card]");
-    if (catToCard) {
-      e.preventDefault();
-      e.stopPropagation();
-      const cid = catToCard.getAttribute("data-cat-to-card");
-      const category = wellspringCategories().find(function (c) { return c.id === cid; });
-      if (!category) return;
-      const members = tribsInCol(cid).filter(function (t) { return tribState(t.id).on; });
-      const hostId = addCard(category.label, { col: cid, density: nextFreeDensity() });
-      setTrib(hostId, { cloud: category.hint || "", inject: category.hint || "" });
-      ensurePlacement();
-      members.forEach(function (t) {
-        if (t.id === hostId) return;
-        cloudLeave(t.id);
-        state.tribParent[t.id] = { kind: "trib", id: hostId };
-      });
-      state.editCategory = "";
-      persistSoft();
-      render();
-      focusItem("trib", hostId);
-      showBuilderNotice(category.label + " added as a group at density " +
-        formatDensity(tribState(hostId).density) + " with " + members.length +
-        " member" + (members.length === 1 ? "" : "s") + ".");
-      return;
-    }
     const remove = e.target.closest("[data-remove-trib]");
     if (remove) {
       const id = remove.getAttribute("data-remove-trib");
@@ -4427,7 +4491,14 @@
     }
     const col = e.target.closest("[data-focus-col]");
     if (col) {
-      focusItem("col", col.getAttribute("data-focus-col"));
+      /*
+       * Native <details> toggling owns this click. focusItem() used to run
+       * here, and its render() rebuilt the panel from the open state as it was
+       * BEFORE the browser's toggle event landed — so the shelf sprang shut
+       * again and opening one took two clicks. Record the focus, render
+       * nothing, and let the browser do what it was already doing.
+       */
+      state.focus = { kind: "col", id: col.getAttribute("data-focus-col") };
       return;
     }
     const trib = e.target.closest("[data-focus-trib]");

@@ -364,19 +364,43 @@
     border-radius: 10px;
     position: relative;
   }
+  /*
+   * Two lines, not four columns. The meta line was a fourth column sized auto,
+   * so a long one crushed the label to nothing and then printed across it —
+   * unreadable on exactly the cards that have the most to say. It gets its own
+   * full-width line now and wraps there; nothing is cut, so nothing needs an
+   * ellipsis to admit that it was.
+   */
   .flosc-personality-workshop .acc > summary.row-sum{
-    display: grid;
-    grid-template-columns: 22px 18px minmax(0, 1fr) auto;
-    justify-content: stretch;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 3px 8px;
     padding-left: 8px;
     position: relative;
     isolation: isolate;
+  }
+  .flosc-personality-workshop .acc > summary.row-sum .row-lab{
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .flosc-personality-workshop .acc > summary.row-sum .meta-bit{
+    flex: 1 1 100%;
+    text-align: left;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+    font-weight: 400;
+    line-height: 1.35;
   }
   /* Gain meter. Position along the title bar IS the value:
      hard left = -100, centre = 0, hard right = +100. Inset by its own
      width so the marker never hangs off either end. */
   .flosc-personality-workshop .gain-mark{
-    position: absolute; top: 3px; bottom: 3px; width: 10px;
+    position: absolute; top: 3px; height: 1.2em; width: 10px;
     border-radius: 2px; background: rgba(31, 27, 22, .26);
     z-index: 0; pointer-events: none;
   }
@@ -389,20 +413,26 @@
    * description then grew the meta span, crushed .row-lab to nothing, and the
    * heading's own name overflowed and printed across the description.
    */
-  .flosc-personality-workshop .acc > summary:not(.row-sum) .row-lab{
-    flex: 0 0 auto;
-    max-width: 45%;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  .flosc-personality-workshop .acc > summary:not(.row-sum){
+    flex-wrap: wrap;
+    align-items: flex-start;
+    row-gap: 3px;
   }
-  .flosc-personality-workshop .acc > summary:not(.row-sum) .meta-bit{
+  .flosc-personality-workshop .acc > summary:not(.row-sum) .row-lab{
     flex: 1 1 auto;
     min-width: 0;
-    text-align: right;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow-wrap: anywhere;
+  }
+  .flosc-personality-workshop .acc > summary:not(.row-sum) .meta-bit{
+    flex: 1 1 100%;
+    min-width: 0;
+    text-align: left;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+    font-weight: 400;
+    line-height: 1.35;
   }
 
   /* The line that says what the builder just did. */
@@ -481,6 +511,11 @@
     border-bottom: 1px solid var(--line);
   }
   .flosc-personality-workshop .cat-edit .figure-readout{ flex: 1 1 100%; margin: 0; }
+  /* A shelf is a heading, so it carries the heading's density. */
+  .flosc-personality-workshop .fam-den{
+    font-family: var(--ui); font-size: 0.7rem; font-weight: 700;
+    color: var(--accent-2); margin-left: auto; padding-right: 6px; white-space: nowrap;
+  }
 
   /* The card editor, on the palette side. Same editor as the sequence uses. */
   .flosc-personality-workshop .trib-edit{ margin: 4px 0 0; }

@@ -4,7 +4,7 @@
  *
  * Written because the structure existed and nobody could see it. Someone
  * arriving with the soul.md pattern in mind had no way to know that hard
- * constraints belong in Hard Boundaries and Prohibitions while forbidden
+ * constraints belong in Boundaries and Prohibitions while forbidden
  * phrases belong in Banned Words and Fillers to Avoid — or that the split is
  * deliberate rather than an oversight waiting to be tidied up.
  *
@@ -42,48 +42,45 @@ describes entirely, to +100, which includes it fully. Density says <em>where</em
 <p>No AI provider takes a density parameter. None needs to — ordering a document is something you
 do to the document, and every provider reads a system prompt from the top down.</p>
 
-<h3 id="personality-stations">The eleven stations</h3>
+<h3 id="personality-stations">The thirteen headings</h3>
+
+<p>These are also the shelves of the aspect palette. One list, not two: an aspect waits on the
+shelf it will be written under, and renaming a heading renames its shelf.</p>
 
 <table class="widefat striped">
 	<thead>
-		<tr><th>Station</th><th>Density</th><th>What belongs here</th></tr>
+		<tr><th>Heading</th><th>Density</th><th>What belongs here</th></tr>
 	</thead>
 	<tbody>
-		<tr><td>Name and Core Role</td><td>6</td><td>Who remains, under probe</td></tr>
+		<tr><td>Identity and Role</td><td>6</td><td>Who remains, under probe</td></tr>
 		<tr><td>Philosophy and Values</td><td>12</td><td>What this conversation is for</td></tr>
-		<tr><td>Hard Boundaries and Prohibitions</td><td>18</td><td>Invariants, defaults, who is served</td></tr>
+		<tr><td>Boundaries and Prohibitions</td><td>18</td><td>Invariants, defaults, who is served</td></tr>
 		<tr><td>Knowledge, Doubt and Correction</td><td>24</td><td>How this personality knows, doubts, corrects</td></tr>
+		<tr><td>Opinions and Preferences</td><td>30</td><td>What it leans toward when nothing forces the choice</td></tr>
 		<tr><td>Tone and Communication Style</td><td>40</td><td>Tone, cadence, conditionals</td></tr>
 		<tr><td>Stance Toward the Human</td><td>48</td><td>How it orients toward this human</td></tr>
 		<tr><td>Behavior in Ambiguity</td><td>56</td><td>When to answer, ask, lead, stay quiet</td></tr>
 		<tr><td>Adaptation</td><td>62</td><td>Same soul, fitting intensity</td></tr>
+		<tr><td>Resourcefulness</td><td>68</td><td>What it does when the direct route is closed</td></tr>
 		<tr><td>Decisions including Infrequent Cases</td><td>74</td><td>Decisions, edge cases, recipes</td></tr>
-		<tr><td>Banned Words and Fillers to Avoid / planning</td><td>84</td><td>Length, examples, phrase banks</td></tr>
+		<tr><td>Banned Words and Fillers to Avoid</td><td>84</td><td>Length, examples, phrase banks</td></tr>
 		<tr><td>Output and Delivery</td><td>94</td><td>Output now. Sampling parameters sit here.</td></tr>
 	</tbody>
 </table>
 
 <h3 id="personality-soulmd">If you arrived with soul.md in mind</h3>
 
-<p>The common soul.md pattern names six elements. Each one is a station here, under the
-same name. The builder carries five more besides.</p>
+<p>The common soul.md pattern names six elements. Each one is a heading here, under the same
+name. The builder carries seven more besides.</p>
 
-<table class="widefat striped">
-	<thead>
-		<tr><th>soul.md element</th><th>Station</th></tr>
-	</thead>
-	<tbody>
-		<tr><td>Identity and Role</td><td>Name and Core Role</td></tr>
-		<tr><td>Philosophy and Values</td><td>Philosophy and Values</td></tr>
-		<tr><td>Tone and Communication Style</td><td>Tone and Communication Style</td></tr>
-		<tr><td>Behaviour in Ambiguity</td><td>Behavior in Ambiguity</td></tr>
-		<tr><td>Banned Words and Fillers to Avoid</td><td>Banned Words and Fillers to Avoid</td></tr>
-		<tr><td>Hard Boundaries and Prohibitions</td><td>Hard Boundaries and Prohibitions</td></tr>
-	</tbody>
-</table>
+<p><strong>Identity and Role</strong>, <strong>Philosophy and Values</strong>,
+<strong>Tone and Communication Style</strong>, <strong>Behavior in Ambiguity</strong>,
+<strong>Banned Words and Fillers to Avoid</strong> and
+<strong>Boundaries and Prohibitions</strong> are the six.</p>
 
-<p>The five the builder adds are <strong>Knowledge, Doubt and Correction</strong>,
-<strong>Stance Toward the Human</strong>, <strong>Adaptation</strong>,
+<p>The seven the builder adds are <strong>Knowledge, Doubt and Correction</strong>,
+<strong>Opinions and Preferences</strong>, <strong>Stance Toward the Human</strong>,
+<strong>Adaptation</strong>, <strong>Resourcefulness</strong>,
 <strong>Decisions including Infrequent Cases</strong> and
 <strong>Output and Delivery</strong>.</p>
 
@@ -178,7 +175,7 @@ frequency: never</pre>
 
 <ul>
 	<li><strong>What the personality must never do</strong> is an invariant. It belongs in
-	<strong>Hard Boundaries and Prohibitions</strong>, near the top of the document, where it governs
+	<strong>Boundaries and Prohibitions</strong>, near the top of the document, where it governs
 	everything that follows.</li>
 	<li><strong>What the personality must never say</strong> is a phrase-level constraint. It
 	belongs in <strong>Banned Words and Fillers to Avoid</strong>, near the bottom, with the rest of the
