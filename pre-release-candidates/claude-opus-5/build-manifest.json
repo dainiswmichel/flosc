@@ -1,13 +1,13 @@
 {
   "candidate": "claude-opus-5",
-  "creator": "Claude Opus 5 — Chief Engineer",
-  "status": "ASSEMBLED_AWAITING_FRESH_INSTALL_ACCEPTANCE",
+  "creator": "Claude Opus 5 \u2014 Chief Engineer",
+  "status": "DESIGNER_PASS_AWAITING_CAPTAIN_TEST",
   "branch": "claude/ready-to-help-jsw2li",
   "baseline_commit": "477f252",
-  "head_commit": "333e8d9564261ff270ec1a50db8e26fd434723d2",
+  "head_commit": "f526b57aa71d3ec9c94057bba75b7ca891403659",
   "version": "8.0.0",
   "artifact": null,
-  "artifact_note": "The full tree is here, same as the other candidates. No flosc.zip: build with ./flosc-ship.sh from this tree or from the branch — they are identical at this commit. pre-release-candidates/ is excluded from the artifact by .distignore and by the build's hard deny list.",
+  "artifact_note": "The full tree is here, same as the other candidates. No flosc.zip: build with ./flosc-ship.sh from this tree or from the branch \u2014 they are identical at this commit. pre-release-candidates/ is excluded from the artifact by .distignore and by the build's hard deny list.",
   "assembled_from": {
     "codex-gpt5": "full profile every turn, RAG fallthrough, get_response_result(), personality boilerplate removal, genome/profile fingerprint",
     "opencode-big-pickle": "no-hedge method pair and the method_exists guards",
@@ -17,15 +17,15 @@
   "verification": {
     "php_syntax_all_files": "passed",
     "javascript_syntax": "passed",
-    "test_suite": "passed (24 files)",
+    "test_suite": "passed (25 files + tests/check_density_nesting.js)",
     "starter_pack_manifest": "passed",
     "packaging_gates": "passed",
     "version_held_at_8_0_0": "passed",
-    "wordpress_runtime": "DEFERRED — fresh install required",
-    "wordpress_plugin_check": "DEFERRED — fresh install required",
-    "live_ai_provider_calls": "DEFERRED — fresh install required",
-    "journey_harness": "DEFERRED — needs WP-CLI on the target site",
-    "contract_acceptance": "DEFERRED — personality built from scratch, attached to a pack, carrying that flow to its outcome"
+    "wordpress_runtime": "DEFERRED \u2014 fresh install required",
+    "wordpress_plugin_check": "DEFERRED \u2014 fresh install required",
+    "live_ai_provider_calls": "DEFERRED \u2014 fresh install required",
+    "journey_harness": "DEFERRED \u2014 needs WP-CLI on the target site",
+    "contract_acceptance": "DEFERRED \u2014 personality built from scratch, attached to a pack, carrying that flow to its outcome"
   },
   "new_gates": [
     "check_method_contract.php",
@@ -42,5 +42,27 @@
   ],
   "harness": "tests/journey-harness.php (WP-CLI, --require, never shipped)",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
-  "tree_files": 275
+  "tree_files": 275,
+  "designer_pass": {
+    "note": "The DA1 AI Personality Designer, made usable. Version held at 8.0.0.",
+    "one_card": "A wellspring is an aspect; a category is a group of aspects; both are the same card. Drop an aspect onto a card and that card becomes the heading it sits under, keeping density, gain, binding, hue, star and trajectory.",
+    "group_noun": "heading | wellspring | cloud | rain cloud | pool | category \u2014 defaults from density: cloud in soul, rain cloud in character, pool in behavior.",
+    "nested_density": "16 inside 95 reads 95.016; 100 inside 95 reads 95.100. Any depth. Derived, never stored. Ties sort alphabetically.",
+    "dialogs_removed": "Both <dialog> blocks opened a <form> inside WordPress's settings form. The browser dropped the inner tag, #tribForm was null, and the listener on it threw \u2014 killing every line of setup after it, which is why + Category did nothing.",
+    "placement_round_trip": "workshopFile() wrote placement and importSpec() never read it. It does now, so a group survives a save.",
+    "soul_section": "Shown on every card, read from the placement rather than recalculated. Default is the last heading at or below the card's density.",
+    "trajectory_posts": "412, ?post=412, or a permalink resolves to that post's title and excerpt. Boot list from flosc_personality_trajectory_posts().",
+    "items_closed": [
+      9,
+      10,
+      11,
+      18,
+      "20b",
+      21,
+      25,
+      26,
+      27,
+      28
+    ]
+  }
 }

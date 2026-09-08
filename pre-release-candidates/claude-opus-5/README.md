@@ -3,11 +3,55 @@
 Assembled from the four tested candidates. Version held at **8.0.0** — this is
 a resubmission, not a release.
 
+## The designer pass — read this first
+
+Version is still **8.0.0**. This is the resubmission candidate, not a v9.
+
+The DA1 AI Personality Designer now works on one idea instead of three.
+
+**A wellspring is an aspect. A category is a group of aspects. Both are the
+same card.** Drop an aspect onto a card and that card becomes the heading the
+aspect sits under — keeping its density, gain, binding, hue, star and
+trajectory, and gaining the one field a plain aspect has no use for: what to
+call the group. `heading · wellspring · cloud · rain cloud · pool · category`,
+defaulting from density — cloud in the soul band, rain cloud in character,
+pool in behavior.
+
+**Nested density.** An aspect at 16 dropped into a card at 95 reads `95.016`;
+one at 100 reads `95.100`, so the larger number sorts last. Any depth:
+`95.025.100`. Never stored — the card still holds 16, and dragging it out is
+16 again with nothing to restore. Equal densities sort alphabetically.
+
+### What to try on the site
+
+1. **+ Category.** It did nothing at all before. Both dialogs opened a
+   `<form>` inside WordPress's own settings form, which is invalid — the
+   browser dropped the inner tag, `#tribForm` came back null, and the listener
+   on it threw, taking every line of setup after it including + Category's own
+   listener. Both dialogs are gone; the buttons make the card outright.
+2. **Drag an aspect onto another aspect's coloured bar.** The lower one goes
+   inside the upper one, which becomes the heading. Its row says
+   `pool · 3 members`, and each member reads `95.016`.
+3. **Save and reload.** The group survives. It would not have before:
+   `workshopFile()` wrote the placement map and `importSpec()` never read it,
+   so every placement was rebuilt from density on load.
+4. **Open any card.** Gain, binding, hue and shape each on their own line, and
+   every field says where it goes — the AI's copy, the design document, or
+   neither.
+5. **Soul section**, on every card, read from where the card actually is
+   rather than recalculated. Default is the last heading at or below the
+   card's density.
+6. **A trajectory that is a post.** Type `412`, `?post=412`, or the permalink.
+   It compiles to that post's title and excerpt.
+7. **Edit on a palette category.** Fields in place, not two browser prompt
+   boxes — plus a button that puts the category into the personality as a
+   group card with its aspects inside it.
+
 ## Where the code is
 
     branch:  claude/ready-to-help-jsw2li
     tree:    the plugin at the repository root on that branch
-    commits: 15, from 477f252 to the branch head
+    commits: 19, from 477f252 to the branch head
 
 https://github.com/dainiswmichel/flosc/tree/claude/ready-to-help-jsw2li
 
