@@ -1015,6 +1015,31 @@
   function containerById(id) {
     return ensureContainers().find(function (l) { return l.id === id; }) || null;
   }
+  /*
+   * Does this heading have anything in it?
+   *
+   * A heading with no aspects, no description, no trajectory and no soul prose
+   * is a shelf waiting to be filled. It belongs in the palette, where you can
+   * see it and put something on it — not in the document, where it would be an
+   * empty heading the model has to read past. Creating a category used to put
+   * one on both sides at once.
+   */
+  function containerHasContent(L) {
+    if (!L) return false;
+    if (L.kind === "providers") {
+      return PROVIDER_FIELDS.some(function (f) {
+        const v = state.sampling ? state.sampling[f.id] : "";
+        return !(v === "" || v == null);
+      });
+    }
+    if (childrenOf(L.id).length) return true;
+    if (String(L.desc || "").trim()) return true;
+    if (String(L.trajectory || "").trim()) return true;
+    return (SOUL_SECTIONS[L.id] || []).some(function (pair) {
+      return String(pair[1](state.soul) || "").trim() !== "";
+    });
+  }
+
   function containersSorted() {
     return ensureContainers().slice().sort(function (a, b) {
       return (Number(a.density) || 0) - (Number(b.density) || 0);
@@ -1093,6 +1118,17 @@
     /* A card that names its soul.md section goes there. */
     const named = (state.trib && state.trib[tribId] && state.trib[tribId].soulSection) || "";
     if (named && containerById(named)) return named;
+    /*
+     * Otherwise: the shelf it was ticked from. The shelf IS the heading now,
+     * so a card belongs under the one it was sitting on — not under whichever
+     * heading its density happens to fall past. Ticking an aspect on a shelf
+     * you just made would otherwise file it somewhere else entirely.
+     */
+    const t = allTribs().find(function (x) { return x.id === tribId; });
+    if (t) {
+      const col = tribColOf(t);
+      if (categoryExists(col)) return col;
+    }
     return layerForDensity(tribState(tribId).density);
   }
   function ensurePlacement() {
@@ -2602,6 +2638,7 @@
 
     const toc = [];
     containersSorted().forEach(function (L) {
+      if (!containerHasContent(L)) return;
       toc.push("- " + L.label);
       childrenOf(L.id).forEach(function (k) {
         if (k.kind === "cloud") {
@@ -2635,8 +2672,15 @@
         });
         return;
       }
+      /* An empty heading is not written. A bare "# 30 Opinions and Preferences"
+         with nothing under it costs input tokens on every turn and tells the
+         model nothing. */
+      if (!containerHasContent(L)) return;
       out.push(stationHeading(L.label, L.density, withMetrics));
       if (L.desc) out.push(yamlish(L.desc));
+      /* A grouping can name what it moves the visitor toward, the same as an
+         aspect can. Hue and shape stay out: a model cannot act on either. */
+      if (L.trajectory) out.push("trajectory: " + trajectoryReading(L.trajectory));
       (SOUL_SECTIONS[L.id] || []).forEach(function (pair) {
         const body = yamlish(pair[1](s));
         if (body) out.push("**" + pair[0] + "**\n" + body);
@@ -2926,6 +2970,7 @@
       containers: ensureContainers().map(function (l) {
         return { id: l.id, kind: l.kind, origin: l.origin, band: l.band,
                  label: l.label, desc: l.desc, density: l.density, gain: l.gain,
+                 trajectory: l.trajectory || "", color: l.color || "", shape_2d: l.shape2 || "none",
                  /* True only where the floscAdmin typed the name themselves.
                     Without it, a later standard-heading rename would silently
                     overwrite their wording. */
@@ -3766,19 +3811,57 @@
 
   /* Inline admin row for one container: name, density, gain, restore,
      remove. Naming happens on the element itself, never a pull-down. */
+  /*
+   * A category is a card, so it gets a card — not a name box and a number.
+   * The fields are the ones a heading can actually carry: its name, what
+   * belongs in it, where it sits, what it moves the visitor toward, and the
+   * two that are for the eye. Gain and binding are still absent, and still on
+   * purpose: they reach no compile path from a heading, and a control that
+   * changes nothing is worse than no control.
+   */
   function containerAdminHtml(L) {
     const removable = L.origin !== "seed" && L.kind !== "providers";
+    const kids = childrenOf(L.id);
+    const hue = L.color || "#eef2f8";
+    const post = postFromTrajectory(L.trajectory);
     return '<div class="cadmin">' +
-      '<label class="cadmin-field"><span>Heading name</span>' +
+      '<label class="cadmin-field"><span>Name</span>' +
       '<input type="text" data-layer-label="' + L.id + '" value="' + esc(L.label) + '"></label>' +
       '<label class="cadmin-field"><span>Density 0–100</span>' +
-      '<input type="number" data-layer-den="' + L.id + '" min="0" max="100" step="any" value="' + (Number(L.density) || 0) + '"></label>' +
-      /* The heading Gain box is gone: it was stored and exported and read by no
-         compile path, so setting it changed nothing that reached the AI. */
+      '<input type="number" data-layer-den="' + L.id + '" min="0" max="100" step="any" value="' + formatDensity(L.density) + '"></label>' +
       '<button type="button" class="btn ghost" data-layer-restore="' + L.id + '">Restore original name</button>' +
       (removable ? '<button type="button" class="btn ghost" data-layer-remove="' + L.id + '">Remove</button>' : "") +
       "</div>" +
-      '<textarea class="traj-phrase" data-layer-desc="' + L.id + '" placeholder="Description paragraph · what this heading holds">' + esc(L.desc || "") + "</textarea>";
+
+      '<div class="card-param"><label class="excerpt-lab">What belongs here</label>' +
+      '<textarea class="traj-phrase" data-layer-desc="' + L.id + '" placeholder="What this heading holds">' + esc(L.desc || "") + "</textarea>" +
+      destinationLine("Written under the heading, before its aspects. Reaches the AI.") +
+      "</div>" +
+
+      '<div class="card-param"><label class="excerpt-lab" for="ltraj-' + L.id + '">Trajectory · desired impact on the future</label>' +
+      '<textarea class="traj-phrase" id="ltraj-' + L.id + '" data-layer-traj="' + L.id + '" placeholder="e.g. leave them able to act on this section — or a post: 412, ?post=412, or its permalink">' + esc(L.trajectory || "") + "</textarea>" +
+      (post
+        ? '<p class="figure-readout"><strong>' + esc((post.type === "trajectory" ? "Trajectory " : post.type === "page" ? "Page " : "Post ") + post.id) + "</strong>" +
+          (post.title ? " · " + esc(post.title) : " · not found on this site — the id is written through as typed") +
+          (post.excerpt ? "<br>" + esc(post.excerpt) : "") + "</p>"
+        : "") +
+      destinationLine("Written under this heading. Reaches the AI. A post id compiles to that post's title and excerpt.") +
+      "</div>" +
+
+      '<div class="card-param"><label class="excerpt-lab">Hue</label>' +
+      '<div class="color-row"><input type="color" data-layer-color="' + L.id + '" value="' + esc(hue) + '"><code class="color-hex">' + esc(hue) + "</code></div>" +
+      destinationLine("A tag for your eye. Never sent to the AI.") +
+      "</div>" +
+
+      '<div class="card-param"><label class="excerpt-lab">Shape</label>' +
+      segButtons(L.id, "layer-shape", SHAPE2, L.shape2 || "none") +
+      destinationLine("Drawn in the Visual summary. Never sent to the AI.") +
+      "</div>" +
+
+      '<p class="card-footer"><b>' + esc(L.label) + "</b> \u00b7 d" + formatDensity(L.density) +
+      " \u00b7 " + kids.length + " aspect" + (kids.length === 1 ? "" : "s") +
+      (L.trajectory ? " \u00b7 trajectory: " + esc(trajectoryReading(L.trajectory)) : "") +
+      " \u00b7 saved to the FLOSC library by Save changes at the top of this panel.</p>";
   }
 
   function renderEditor() {
@@ -3800,7 +3883,9 @@
       '<p class="figure-readout" style="margin:0 0 8px">Drop an aspect between two rows and it takes the average of the two. If both neighbours are 55 it stays 55 and sorts alphabetically among them. Type 47 and it stays 47. Densities keep up to 3 decimal places, no float garbage.</p>');
     parts.push('<div class="seq-den"><div class="seq-den-rail"><div class="cap">0</div><div class="rail-body"><div class="rail-bands"><span>Soul</span><span>Character</span><span>Behavior</span></div><div class="den-rail" id="denRail" title="0 white at top · 100 ink at bottom"></div></div><div class="cap">100</div></div><div class="seq-den-items" data-drop-den="1">');
 
-    const seq = containersSorted().map(function (L) {
+    /* Only headings that hold something. An empty one lives in the palette
+       until an aspect is placed on it. */
+    const seq = containersSorted().filter(containerHasContent).map(function (L) {
       return { kind: "layer", density: Number(L.density) || 0, c: L };
     });
     seq.sort(function (a, b) {
@@ -4401,6 +4486,14 @@
         " at density " + formatDensity(tribState(id).density) + ". Name it and write its instruction.");
       return;
     }
+    const layerShape = e.target.closest("[data-layer-shape]");
+    if (layerShape) {
+      e.preventDefault();
+      e.stopPropagation();
+      const L = containerById(layerShape.getAttribute("data-layer-shape"));
+      if (L) { L.shape2 = layerShape.getAttribute("data-val"); persistSoft(); render(); }
+      return;
+    }
     const layerRestore = e.target.closest("[data-layer-restore]");
     if (layerRestore) {
       e.preventDefault();
@@ -4709,6 +4802,16 @@
       if (L) { L.desc = e.target.value; L.renamed = true; persistSoft(); renderOut(); }
       return;
     }
+    if (e.target.matches("[data-layer-traj]")) {
+      const L = containerById(e.target.getAttribute("data-layer-traj"));
+      if (L) { L.trajectory = e.target.value; persistSoft(); renderOut(); }
+      return;
+    }
+    if (e.target.matches("[data-layer-color]")) {
+      const L = containerById(e.target.getAttribute("data-layer-color"));
+      if (L) { L.color = e.target.value; persistSoft(); renderOut(); }
+      return;
+    }
     if (e.target.matches("[data-pv-text]")) {
       state.sampling[e.target.getAttribute("data-pv-text")] = e.target.value;
       persistSoft();
@@ -4978,6 +5081,9 @@
           desc: String(c.desc || ""),
           density: Number(c.density) || 0,
           gain: Number(c.gain) || 0,
+          trajectory: String(c.trajectory || ""),
+          color: String(c.color || ""),
+          shape2: String(c.shape_2d || c.shape2 || "none"),
           renamed: !!c.renamed
         };
       }).filter(function (c) { return c.id; });
