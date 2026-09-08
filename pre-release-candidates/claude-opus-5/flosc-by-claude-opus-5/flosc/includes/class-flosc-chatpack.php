@@ -871,7 +871,7 @@ class FLOSC_Chatpack {
          * includes, on every turn, by the framework.
          *
          * FLOSC does not know what any particular membership contains. The
-         * floscAdmin does, and says so in Product facts and the phase
+         * floscAdmin does, and says so in Sticky aspects and the phase
          * instructions. Nothing here may promise on their behalf.
          */
         $section .= "\n**FLOSC Phases:**\n";

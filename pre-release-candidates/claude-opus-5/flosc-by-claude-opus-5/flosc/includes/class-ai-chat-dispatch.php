@@ -290,14 +290,18 @@ class FLOSC_AI_Chat_Dispatch {
         $prompt = "# Your Identity\n\n";
 
         // v8.0.1: Content-agnostic. Nothing about the product is hardcoded
-        // here. Admins write optional Product facts on the AI tab; those are
+        // here. Admins write optional Sticky aspects on the AI tab; those are
         // injected verbatim. Empty means none — never invent substitutes.
         $brand_facts = trim( (string) ( function_exists( 'flosc_get_setting' )
             ? flosc_get_setting( 'ai_brand_facts', '' )
             : '' ) );
         if ( $brand_facts !== '' ) {
-            $prompt .= "## Product facts\n";
-            $prompt .= "Configured facts about this product. These override any guess you could make. Never invent or substitute expansions, categories, or claims.\n\n";
+            /* The heading matches the field's name on the AI tab, so a
+               floscAdmin reading the compiled prompt finds what they typed
+               under the label they typed it under. The storage key stays
+               ai_brand_facts: renaming it would orphan every existing flow. */
+            $prompt .= "## Sticky aspects\n";
+            $prompt .= "Facts and aspects configured for this flow. These override any guess you could make. Never invent or substitute expansions, categories, or claims.\n\n";
             $prompt .= $brand_facts . "\n\n";
         }
         $prompt .= "**NEVER invent facts about this flow.** Use only configured flow settings and the attached personality profile.\n\n";

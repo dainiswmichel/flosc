@@ -382,6 +382,105 @@
   }
   .flosc-personality-workshop .acc > summary.row-sum .drag-handle, .flosc-personality-workshop .acc > summary.row-sum .den-swatch, .flosc-personality-workshop .acc > summary.row-sum .row-lab, .flosc-personality-workshop .acc > summary.row-sum .meta-bit{ position: relative; z-index: 1; }
   .flosc-personality-workshop .acc > summary .row-lab{ min-width: 0; }
+
+  /*
+   * A heading row is a summary WITHOUT .row-sum, so the nowrap guard below —
+   * which only covers aspect rows — never applied to it. A paragraph-length
+   * description then grew the meta span, crushed .row-lab to nothing, and the
+   * heading's own name overflowed and printed across the description.
+   */
+  .flosc-personality-workshop .acc > summary:not(.row-sum) .row-lab{
+    flex: 0 0 auto;
+    max-width: 45%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .flosc-personality-workshop .acc > summary:not(.row-sum) .meta-bit{
+    flex: 1 1 auto;
+    min-width: 0;
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* The line that says what the builder just did. */
+  .flosc-personality-workshop .builder-notice{
+    margin: 8px 0 10px;
+    padding: 7px 10px;
+    border-left: 3px solid var(--accent-2);
+    background: #f0f6fc;
+    font-family: var(--ui);
+    font-size: 0.8rem;
+  }
+  .flosc-personality-workshop .builder-notice.is-error{
+    border-left-color: var(--bad);
+    background: #fcf0f1;
+  }
+
+  /* Heading boxes carry a visible label instead of a hover title. */
+  .flosc-personality-workshop .cadmin-field{
+    display: inline-flex;
+    flex-direction: column;
+    gap: 2px;
+    font-family: var(--ui);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    color: var(--accent-2);
+  }
+  .flosc-personality-workshop .cadmin-field input{ font-weight: 400; text-transform: none; letter-spacing: 0; }
+
+  /* One card parameter, one line. These used to share rows, which made a
+     screenful of controls read as one undifferentiated block. */
+  .flosc-personality-workshop .card-param{
+    display: block;
+    margin: 0 0 10px;
+    padding: 0 0 8px;
+    border-bottom: 1px solid var(--line);
+  }
+  .flosc-personality-workshop .card-param:last-of-type{ border-bottom: 0; }
+  .flosc-personality-workshop .card-param > .excerpt-lab{ display: block; margin-bottom: 4px; }
+  .flosc-personality-workshop .card-param .wrow{ display: flex; align-items: center; gap: 8px; }
+  .flosc-personality-workshop .card-param .wrow input[type="range"]{ flex: 1 1 auto; min-width: 0; }
+  .flosc-personality-workshop .card-param input[type="text"],
+  .flosc-personality-workshop .card-param select{ width: 100%; max-width: 26rem; }
+
+  /* Where this field goes: the AI's copy, the design document, or neither. */
+  .flosc-personality-workshop .field-dest{
+    display: block;
+    margin-top: 4px;
+    font-family: var(--ui);
+    font-size: 0.72rem;
+    color: var(--ink-soft);
+  }
+
+  /*
+   * A card with aspects inside it. One step of indent and a rule in the
+   * card's own hue — enough to see the grouping, not so much that a nested
+   * personality marches off the right-hand edge.
+   */
+  .flosc-personality-workshop .card-members{
+    margin: 6px 0 6px 14px;
+    padding-left: 10px;
+    border-left: 3px solid var(--member-rule, var(--line));
+  }
+  .flosc-personality-workshop .acc.is-group > summary.row-sum{ font-weight: 700; }
+
+  /* Renaming a palette category, in place. This replaced two browser prompt
+     boxes that could reach the name and the description and nothing else. */
+  .flosc-personality-workshop .cat-edit{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: flex-end;
+    padding: 8px 10px;
+    background: var(--paper-2);
+    border-bottom: 1px solid var(--line);
+  }
+  .flosc-personality-workshop .cat-edit .figure-readout{ flex: 1 1 100%; margin: 0; }
   .flosc-personality-workshop .acc > summary.row-sum .meta-bit{ justify-self: end; white-space: nowrap; }
   /* Aspect cloud: two or more related aspects on one coloured ground. */
   .flosc-personality-workshop .cloud{
@@ -1001,3 +1100,7 @@
    only place it changes anything. */
 .export-toggle { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
 .export-toggle input { margin: 0; }
+/* Says which of the four views is on screen, and whether it is the one that
+   reaches the AI provider. Marked with a rule so it reads as a statement about
+   the panel below rather than as more prose in the column. */
+.output-view-note { border-left: 3px solid currentColor; padding-left: 10px; opacity: .85; margin: 8px 0 6px; }

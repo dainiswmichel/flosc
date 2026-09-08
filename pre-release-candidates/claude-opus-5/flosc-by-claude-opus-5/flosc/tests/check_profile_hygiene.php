@@ -66,7 +66,7 @@ ok( 'the identity line is written only from what exists',
 ok( 'an empty parameter section is dropped, heading and all',
 	strpos( (string) $compile, 'if (!set.length) { out.pop(); return; }' ) !== false, true );
 ok( 'an unnamed group keeps its members and loses its heading',
-	strpos( (string) $compile, 'if (cl.name) out.push("# " + cl.name);' ) !== false, true );
+	strpos( (string) $compile, 'if (cl.name) out.push(stationHeading(cl.name, clDen, withMetrics));' ) !== false, true );
 
 echo "\nIncluded influences are character, not disowned text\n";
 ok( 'they compile under a heading the character owns',
@@ -217,6 +217,40 @@ foreach ( array( '_soul.md', '_soul_design.md', '_workshop.json', '_preview.html
 	}
 }
 ok( '  one dot per filename, before the extension', $multi_dot, array() );
+
+// "Copy this file" sits in the Export row, so it is for sending a personality
+// somewhere — and a personality that arrives somewhere with nothing saying
+// what made it is the thing the footer exists to prevent. It used to copy the
+// panel, which shows the runtime profile and carries no footer.
+// The four output views are four different documents and the panel said which
+// only by the tab it was on. That matters most on the profile tab, which shows
+// the runtime profile and deliberately carries no footer — the absence read as
+// something missing rather than as a decision. A floscAdmin deciding what
+// reaches their AI provider has to be able to see which of these does.
+echo "\nThe panel says what it is showing\n";
+ok( 'there is a line for each of the four views',
+	count( array_filter( array( 'prompt:', 'spec:', 'lint:', 'providers:' ), function ( $key ) use ( $builder ) {
+		return strpos( $builder, "\n    " . $key . ' "' ) !== false;
+	} ) ), 4 );
+ok( '  and it is redrawn with the panel',
+	strpos( $builder, 'viewNote.textContent = OUT_VIEW_NOTES[state.outTab]' ) !== false, true );
+ok( '  with somewhere to put it',
+	strpos( $markup, 'id="outViewNote"' ) !== false, true );
+// The two facts a floscAdmin needs from the profile view.
+ok( 'the profile view says it is sent every turn',
+	strpos( $builder, 'sent to your AI provider on every turn' ) !== false, true );
+ok( '  and says where the footer went instead',
+	strpos( $builder, 'Download soul.md and Copy this file carry it' ) !== false, true );
+
+echo "\nCopying the file copies the file, not the panel\n";
+ok( 'the profile tab copies the travelling copy',
+	strpos( $builder, 'const text = (state.outTab === "prompt")' ) !== false, true );
+ok( '  which is the same bytes as the soul.md download',
+	substr_count( $builder, 'promptFile()' ) >= 3, true );
+// Builder state and Validation show something else; copying the panel is right
+// there.
+ok( '  and the other tabs still copy what they show',
+	strpos( $builder, 'pane && pane.textContent ? pane.textContent : promptFile()' ) !== false, true );
 
 echo "\nThe footer and the workshop file cannot disagree\n";
 // Both are built from provenanceRows(), so a field added to one is in the

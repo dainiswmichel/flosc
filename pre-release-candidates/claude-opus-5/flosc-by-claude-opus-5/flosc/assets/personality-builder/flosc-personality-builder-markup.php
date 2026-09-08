@@ -24,23 +24,15 @@ if ( ! defined( 'ABSPATH' ) ) {
           <input id="soulFilename" type="text" autocomplete="off" spellcheck="false">
         </div>
       </div>
-      <p class="figure-readout identity-note">The filename names every download — <code>soul.md</code>, the design copy, the builder state, the preview. Leave it empty to use the personality id. Dots are removed; each file gets one, before its extension.</p>
-      <p class="figure-readout identity-note">The first two lines of the profile: <code># DA1/FLOSC AI Personality Profile Name: Name</code> and <code>You are Name, role.</code> Changing the name here renames the personality everywhere it is shown; the id a floscFlow attaches to does not change.</p>
-      <div class="meta">
-        <span class="chip">Aspect palette</span>
-        <span class="chip">Density-ordered profile</span>
-        <span class="chip">Provider-ready output</span>
-      </div>
+      <p class="figure-readout identity-note" id="filenameNote"></p>
     </div>
     <div class="toolbar flosc-admin-builder__tools">
-      <select id="preset" class="btn" title="Choose a starting personality profile"></select>
-      <span class="save-state" id="saveState" title="Saved in this browser until saved to the FLOSC library.">Saved</span>
       <button type="button" class="btn" id="btnImport">Import workshop state</button>
       <button type="button" class="btn" id="btnImportProfile">Import profile</button>
     </div>
-    <p class="preset-where">Use a palette aspect as an ingredient. Included aspects define this personality.</p>
-    <p class="preset-where" id="presetWhere"></p>
   </header>
+
+  <p id="builderNotice" class="builder-notice" role="status" aria-live="polite" hidden></p>
 
   <section class="builder-workspace" aria-label="Personality builder">
     <section class="panel palette-panel" aria-labelledby="palette-title">
@@ -54,7 +46,7 @@ if ( ! defined( 'ABSPATH' ) ) {
       <div class="pad">
         <label class="palette-filter"><span class="screen-reader-text">Filter palette</span><input type="search" id="paletteSearch" placeholder="Search aspects"></label>
         <label class="chip palette-toggle"><input type="checkbox" id="hideOff"> Hide inactive aspects</label>
-        <p class="small-note">Add an aspect with its Add control, or drag it into the sequence. Categories can be renamed.</p>
+        <p class="small-note">Tick an aspect to add it to the personality, or drag it into the sequence. <strong>+ Aspect</strong> makes a new card; <strong>+ Category</strong> makes a card that other aspects go inside. A category is a group of aspects — drop aspects onto any card and that card becomes the heading they sit under.</p>
         <div id="cols" class="cols"></div>
       </div>
     </section>
@@ -131,6 +123,16 @@ if ( ! defined( 'ABSPATH' ) ) {
           flosc_render_provider_intricacies_html();
       }
       ?>
+      <?php
+      /*
+       * Sampling is set on the flow's AI tab, not here — but it decides how
+       * much of the personality survives the trip. A character designed at
+       * one temperature and run at another is a different character, and
+       * nothing on either page said so.
+       */
+      ?>
+      <p class="note"><strong><?php echo esc_html__( 'Model settings and this personality', 'flosc' ); ?></strong><br>
+        <?php echo esc_html__( 'Temperature above about 0.9 loosens what you designed here: gain and binding still reach the model, but it wanders further from them. Below about 0.3 it flattens — the character reads as correct and lifeless. Between 0.6 and 0.8 is where a designed personality holds. Top-P is a second loosening knob; move one or the other, not both, and leave it at 1.0 while you tune temperature. Top-K is offered by some providers only, and 40 is a sane value where it exists. These are set on the flow AI tab, not in the builder.', 'flosc' ); ?></p>
       <div class="tabs output-tabs">
         <button type="button" class="btn primary" data-out="prompt">Canonical profile</button>
         <button type="button" class="btn" data-out="providers" hidden>Provider output</button>
@@ -141,6 +143,7 @@ if ( ! defined( 'ABSPATH' ) ) {
           Include influences
         </label>
       </div>
+      <p class="figure-readout output-view-note" id="outViewNote"></p>
       <p class="figure-readout output-note">Influences name the works and sources this character draws on. Included, they are part of the personality like anything else here. Unchecked, they stay in the builder state and the design copy and are never sent.</p>
       <div class="stats" id="stats"></div>
       <div id="lintMount"></div>
@@ -164,25 +167,5 @@ if ( ! defined( 'ABSPATH' ) ) {
   <footer class="foot">Save the personality to the FLOSC library after reviewing the profile and validation output.</footer>
 </div>
 
-<dialog id="tribDialog">
-  <form method="dialog" id="tribForm">
-    <h3 class="dialog-title">Add wellspring</h3>
-    <div class="field"><label for="newColInput">Category</label><input type="text" id="newColInput" list="categoryOptions" required placeholder="Choose or write a category"><datalist id="categoryOptions"></datalist></div>
-    <div class="field"><label>Name</label><input type="text" id="newName" required placeholder="e.g. Christian world-view"></div>
-    <div class="field"><label>Instruction (compiles when this source is on)</label><textarea id="newInject" required placeholder="e.g. Frequently quote the New Testament, KJV."></textarea></div>
-    <div class="toolbar">
-      <button class="btn ghost" type="button" id="cancelTrib">Cancel</button>
-      <button class="btn primary" value="ok">Add</button>
-    </div>
-  </form>
-</dialog>
 <input type="file" id="fileIn" accept="application/json,.json,.workshop.json,.flosc-workshop.json" hidden>
 <input type="file" id="fileInProfile" accept=".md,.txt,text/markdown,text/plain" hidden>
-<dialog id="categoryDialog">
-  <form method="dialog" id="categoryForm">
-    <h3 class="dialog-title">Add wellspring category</h3>
-    <div class="field"><label for="categoryLabel">Category name</label><input id="categoryLabel" required placeholder="e.g. Craft, Memory, Ethics"></div>
-    <div class="field"><label for="categoryHint">Short description</label><input id="categoryHint" placeholder="What belongs here?"></div>
-    <div class="toolbar"><button class="btn ghost" value="cancel">Cancel</button><button class="btn primary" value="ok">Add category</button></div>
-  </form>
-</dialog>

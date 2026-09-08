@@ -40,6 +40,8 @@ Instead of "Are you interested in buying?" FLOSC asks "What should I help you wi
 * Personality Designer — visual workshop for authoring a reusable voice (wellsprings, density, morph, spectrograph); save to the install library and attach one personality per flow
 * Pre-configured example flows for pronunciation, music, and other use cases
 
+== More About FLOSC ==
+
 = Use Cases =
 
 * **Assessments & lessons** - Guide learners through quizzes, topic feedback, and gated content

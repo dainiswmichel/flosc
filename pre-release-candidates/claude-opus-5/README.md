@@ -1,70 +1,57 @@
 # Home run candidate — Claude Opus 5
 
-**v7.** v6 hung. This is v6 with the hang fixed and a gate that would have
-caught it.
+Assembled from the four tested candidates. Version held at **8.0.0** — this is
+a resubmission, not a release.
 
-`profileFooter()` read the builder's state hash back off `fullSpec()`, and the
-new provenance block in `workshopFile()` called that same row builder — closing
-a loop: `fullSpec() → workshopFile() → provenanceRows() → fullSpec()`.
-`renderOut()` enters that chain on every redraw, and each turn of the loop
-rebuilt the entire workshop object, so the AI tab went Page Unresponsive long
-before the stack overflowed. No console error. `node --check` parses it happily
-and a grep sees five ordinary calls.
+## The designer pass — read this first
 
-The footer *was* rendered and read before v6 shipped — against a stubbed
-`fullSpec()`. The stub was the bug's hiding place. So the new gate is structural
-rather than textual: `check_builder_cycles.php` parses the builder's own
-function declarations, brace-matches each body, builds a call graph over the
-eleven functions that turn builder state into a document, and fails on any route
-back to where it started.
+Version is still **8.0.0**. This is the resubmission candidate, not a v9.
 
-One thing came back from Grok's independent diagnosis, which reached the same
-loop by a different route and had a better guard than mine: `hashText("")`
-returns `811c9dc5`, the FNV offset basis — a real-looking eight-hex fingerprint
-for a profile with nothing in it. It would have sat in the footer and in
-`workshop.json` looking like a measurement. No profile, no fingerprint.
+The DA1 AI Personality Designer now works on one idea instead of three.
 
-Everything else is v6, unchanged:
+**A wellspring is an aspect. A category is a group of aspects. Both are the
+same card.** Drop an aspect onto a card and that card becomes the heading the
+aspect sits under — keeping its density, gain, binding, hue, star and
+trajectory, and gaining the one field a plain aspect has no use for: what to
+call the group. `heading · wellspring · cloud · rain cloud · pool · category`,
+defaulting from density — cloud in the soul band, rain cloud in character,
+pool in behavior.
 
-**The ledger.** FLOSC computed the VGM tier on every turn and threw it away at
-logging time — a Guest and a Member both rendered as `User #7`, so "is anyone
-registering repeatedly to farm Guest content?" had no column to ask. It has one
-now. And every provider returns an id for each call, which FLOSC was discarding:
-that id is the only identifier that exists on *both* sides of the wire, so a
-floscAdmin holding it can ask their provider to look up one specific call.
-Captured through an `http_response` filter, which covers all four providers
-rather than only the one FLOSC calls directly.
+**Nested density.** An aspect at 16 dropped into a card at 95 reads `95.016`;
+one at 100 reads `95.100`, so the larger number sorts last. Any depth:
+`95.025.100`. Never stored — the card still holds 16, and dragging it out is
+16 again with nothing to restore. Equal densities sort alphabetically.
 
-**What we tell the provider.** Until now, nothing — a provider receiving FLOSC
-traffic saw an API key, a model name and a prompt. Now a `User-Agent` and one
-`X-DA1-Trace` line: install, site, flow, personality, knowledge base, tier, and
-message pair. Flow, personality and knowledge base ride as per-install HMACs, so
-correlation survives and names do not. Nothing that identifies an individual
-visitor. Both headers switchable in Settings, every key disclosed in
-`readme.txt`, and **FLOSC phones nothing home** — it goes to the provider the
-floscAdmin already pays, on a request already carrying the whole conversation.
+### What to try on the site
 
-**Two prompt defects.** v4 removed "full access to all content" from the phase
-list and missed the same claim in the follow-up chatpack's state updates, where
-it fired on the turn straight after a purchase — exactly when the model is
-asked what was just bought. And two prompt sections were both numbered `5c`.
-
-**The builder.** A profile can be given a filename; the five downloads named
-themselves five different ways, one of them with two dots. Profiles now open
-`# DA1/FLOSC AI Personality Profile Name: <name>`, identical across the builder
-and all four shipped personalities. The footer is rewritten — density bands,
-both hashes named apart, and the chain from the file to the turns it produced to
-the provider's record of each call. Seven Trajectory wellsprings join the
-palette, each carrying a literal `{url}` placeholder, gated so none can ever
-ship a real address.
-
-Version held at **8.0.0** — this is a resubmission, not a release.
+1. **+ Category.** It did nothing at all before. Both dialogs opened a
+   `<form>` inside WordPress's own settings form, which is invalid — the
+   browser dropped the inner tag, `#tribForm` came back null, and the listener
+   on it threw, taking every line of setup after it including + Category's own
+   listener. Both dialogs are gone; the buttons make the card outright.
+2. **Drag an aspect onto another aspect's coloured bar.** The lower one goes
+   inside the upper one, which becomes the heading. Its row says
+   `pool · 3 members`, and each member reads `95.016`.
+3. **Save and reload.** The group survives. It would not have before:
+   `workshopFile()` wrote the placement map and `importSpec()` never read it,
+   so every placement was rebuilt from density on load.
+4. **Open any card.** Gain, binding, hue and shape each on their own line, and
+   every field says where it goes — the AI's copy, the design document, or
+   neither.
+5. **Soul section**, on every card, read from where the card actually is
+   rather than recalculated. Default is the last heading at or below the
+   card's density.
+6. **A trajectory that is a post.** Type `412`, `?post=412`, or the permalink.
+   It compiles to that post's title and excerpt.
+7. **Edit on a palette category.** Fields in place, not two browser prompt
+   boxes — plus a button that puts the category into the personality as a
+   group card with its aspects inside it.
 
 ## Where the code is
 
     branch:  claude/ready-to-help-jsw2li
     tree:    the plugin at the repository root on that branch
-    commits: 36, from 477f252 to the branch head
+    commits: 19, from 477f252 to the branch head
 
 https://github.com/dainiswmichel/flosc/tree/claude/ready-to-help-jsw2li
 
@@ -72,11 +59,9 @@ https://github.com/dainiswmichel/flosc/tree/claude/ready-to-help-jsw2li
 the other four candidates carry, so this folder can be deployed from directly
 without pulling the branch first.
 
-`flosc.zip` is here, built from this tree by its own `build-dist-zip.sh` —
-237 files, one `flosc/` root, sha256 in `SHA256SUMS`. The build fails closed:
-`.distignore` plus a hard deny list, then a scan of the staged tree that refuses
-to write the zip if a forbidden path survived. `tests/`, `sample-data/`,
-`HANDOFF.md` and `pre-release-candidates/` are all out.
+**`flosc.zip` is here**, built from this tree with `./build-dist-zip.sh` at the
+head commit — 277 files, 2.6 MB, forbidden-path scan clean. `SHA256SUMS` covers
+it. Build your own from either copy if you prefer; they are identical.
 
 **If you keep both, one will drift.** The branch is the trunk and this tree is a
 snapshot of it. When the branch moves, this does not. Deploy from whichever you
