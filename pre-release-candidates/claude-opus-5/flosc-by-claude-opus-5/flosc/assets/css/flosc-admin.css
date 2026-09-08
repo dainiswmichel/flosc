@@ -7535,6 +7535,33 @@ label[for^="flosc_acc_q_"] {
 .flosc-personality-builder-status.is-err {
 	color: #b32d2e;
 }
+
+/*
+ * The Save button carries the state. Blue while there is something to save,
+ * green once it is saved — dark enough that the white label stays readable
+ * (#1e7e34 on white text is 4.9:1).
+ */
+#flosc-personality-builder-save.is-saved,
+#flosc-personality-builder-save.is-saved:hover,
+#flosc-personality-builder-save.is-saved:focus {
+	background: #1e7e34;
+	border-color: #1a6e2e;
+	color: #fff;
+	box-shadow: none;
+	text-shadow: none;
+}
+#flosc-personality-builder-save.is-saving,
+#flosc-personality-builder-save.is-saving:hover {
+	background: #50575e;
+	border-color: #50575e;
+	color: #fff;
+}
+.flosc-personality-builder-mts {
+	color: #50575e;
+	font-size: 12px;
+	display: block;
+	margin-top: 2px;
+}
 .flosc-personality-workshop .app {
 	max-width: none;
 	padding: 8px 12px 24px;
