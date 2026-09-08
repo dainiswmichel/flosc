@@ -189,7 +189,7 @@ No. Install only the plugin for the provider this flow attaches. IVR-only sites 
 Put it in FLOSC (this flow's AI tab, or All Flows AI API Management). FLOSC binds that key onto the WordPress AI Client for the prompt. Do not rely on Settings → Connectors for FLOSC chat.
 
 
-== External Services ==
+= External Services =
 
 FLOSC core flow logic runs locally in WordPress. The services below power specific FLOSC features. When those features are enabled, calling these services is intentional and required for full functionality.
 
@@ -341,11 +341,11 @@ Production-ready 8.x release with guided IVR flows, offer gating, BYOK AI suppor
 * Payment providers (including Stripe, PayPal, and ClickBank) and social sign-in
 * Included admin documentation updates for WordPress.org submission
 
-== Code standard ==
+= Code standard =
 
 FLOSC follows WordPress coding and security practices. Inputs are sanitized at read points using type-appropriate sanitizers, and output is escaped at render points. Runtime file writes are designed for uploads-based storage rather than the plugin directory. State-changing admin actions use nonce and capability checks. REST endpoints use explicit permission callbacks aligned to login state, capability, or metered public access. The codebase is sectioned and commented for maintainability.
 
-== Support & Contribution ==
+= Support & Contribution =
 
 For support, feature requests, or bug reports, visit:
 * [FLOSC.ai](https://flosc.ai)
@@ -353,7 +353,7 @@ For support, feature requests, or bug reports, visit:
 
 FLOSC is an open-source project. Contributions welcome!
 
-== Stay Connected ==
+= Stay Connected =
 
 * Author: [solopreneur Dainis W. Michel](https://dainis.net)
 * Project: [FLOSC.ai](https://flosc.ai)
