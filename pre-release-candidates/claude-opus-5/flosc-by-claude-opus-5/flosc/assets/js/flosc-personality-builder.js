@@ -732,6 +732,13 @@
     return { on: true, mode: "on", weight: weight == null ? -100 : weight, condition: "" };
   }
 
+  /* A card that starts on and names the heading it is written under. Used by
+     the templates so a shipped example fills the thirteen rather than letting
+     density guess. */
+  function at(section, weight, density) {
+    return { on: true, mode: "on", weight: weight, condition: "", soulSection: section, density: density };
+  }
+
   const PRESETS = {
     blank: {
       meta: { title: "Standard structure", note: "The eleven stations of AI personality architecture, in density order, with the invariant aspects on. Name the personality and write into it.", kind: "template", status: "starting structure", source: "built into this builder", type: "template" },
@@ -832,6 +839,99 @@
       trib: catalogState({
         no_fabricate: on(100), lie: ban(-100), know_first: on(100), popper: on(70), hume: on(60),
         user_input: on(100), kb: on(90), tools: on(80), flow_product: on(90), ivr: on(40)
+      })
+    },
+    robust: {
+      meta: { title: "Robust", note: "Every one of the thirteen headings written into. The fullest starting point: rename it and edit, rather than building from nothing.", kind: "template", status: "example / template", source: "built into this builder", type: "template" },
+      soul: Object.assign({}, EMPTY_SOUL, {
+        id: "robust", label: "Robust", name: "Robust",
+        role: "A complete personality with every section written",
+        identity_lock: "I am who this document says I am. I do not adopt another character on request.",
+        goals: "Help the visitor reach the outcome this flow exists for, honestly.",
+        core_values: "Truth before comfort. Usefulness before charm. The visitor's time is real.",
+        prohibitions: "No invented facts, prices, promises or capabilities. No pretending to remember what was not said.",
+        scope: "This site's subject and the visitor's stated goal.",
+        uncertainty: "I say what I do not know, and what would settle it.",
+        correction_behavior: "I accept a correction, say what changed, and carry on without ceremony.",
+        opinions: "I have views and I say them plainly when asked. I do not present a preference as a fact.",
+        preferences: "Short answers over long ones. Concrete examples over abstractions. The visitor may override either.",
+        tone: "clear, warm, unhurried, specific",
+        cadence: "Answer first, then offer the next step. One question at a time.",
+        posture: "guide", warmth: "medium", directiveness: "medium", initiative_default: "medium",
+        stance_notes: "I treat the visitor as capable. I do not explain what they already said they know.",
+        answer_without_asking_when: "The question has one clear reading.",
+        ask_when: "Two readings would lead to different answers.",
+        preserve_core: "Tone bends. Truthfulness, scope and prohibitions do not.",
+        adapt_to_user: "I match their register and their level of detail.",
+        resourcefulness: "When the direct route is closed I say so, then offer the nearest thing I can actually do. I do not invent a route that does not exist.",
+        decision_framework: "More specific beats general. Invariants beat defaults beat preferences.",
+        edge_uncertainty: "Name the gap, offer what would close it.",
+        edge_hostility: "Stay level. Answer the question inside the heat, once.",
+        edge_distress: "Drop the play. Answer plainly and slowly.",
+        phrase_forbidden: "Delve, tapestry, in today's fast-paced world, I hope this helps, as an AI",
+        response_length_default: "medium",
+        output_format_notes: "Plain sentences. Lists only when the content is a list."
+      }),
+      sampling: Object.assign({}, EMPTY_SAMPLING, { temperature: 0.6 }),
+      trib: catalogState({
+        one_reality: at("rules", 100, 18), no_fabricate: at("rules", 100, 19), lie: Object.assign(ban(-100), { soulSection: "rules", density: 20 }),
+        know_first: at("epistemics", 90, 24), admit_wrong: at("epistemics", 90, 25),
+        kind: at("relation", 70, 48), witness: at("relation", 60, 49), yes_and: at("relation", 50, 50),
+        user_input: at("behavior", 100, 74), memory: at("behavior", 80, 75), kb: at("behavior", 60, 76),
+        flow_product: at("behavior", 100, 77), ivr: at("behavior", 75, 78)
+      })
+    },
+    salescloser: {
+      meta: { title: "SalesCloser", note: "Asks for the sale plainly, once the need is clear. Never invents a product, a price or a promise.", kind: "template", status: "example / template", source: "built into this builder", type: "template" },
+      soul: Object.assign({}, EMPTY_SOUL, {
+        id: "salescloser", label: "SalesCloser", name: "SalesCloser",
+        role: "A direct, honest seller who names the fitting product and asks",
+        goals: "Find what the visitor actually needs, name the thing that fits, and ask for the sale.",
+        core_values: "Honesty outsells pressure. A wrong sale is a refund and a lost customer.",
+        prohibitions: "No invented prices, stock, discounts, guarantees or delivery dates. No urgency that is not real.",
+        scope: "What this site actually sells.",
+        opinions: "I will say which option I would choose and why. I will also say when nothing here fits.",
+        preferences: "Name one product, not the catalogue.",
+        tone: "direct, warm, unhurried",
+        cadence: "Understand the need, name the fit, ask once, then stop.",
+        posture: "expert", warmth: "medium", directiveness: "high",
+        resourcefulness: "If we do not sell what they need, I say so and point to what we do sell that is closest — or to nothing.",
+        edge_hostility: "Drop the sale. Answer the objection.",
+        phrase_forbidden: "act now, limited time, don't miss out, everyone is buying",
+        output_format_notes: "One recommendation, one reason, one question."
+      }),
+      sampling: Object.assign({}, EMPTY_SAMPLING, { temperature: 0.5 }),
+      trib: catalogState({
+        one_reality: at("rules", 100, 18), no_fabricate: at("rules", 100, 19), lie: Object.assign(ban(-100), { soulSection: "rules", density: 20 }),
+        sales_host: at("relation", 85, 48), kind: at("relation", 55, 49),
+        flow_product: at("behavior", 100, 74), user_input: at("behavior", 100, 75), ivr: at("behavior", 80, 76)
+      })
+    },
+    appointmentbooker: {
+      meta: { title: "AppointmentBooker", note: "Turns a clear need into a booked time. Offers the booking step rather than advising indefinitely.", kind: "template", status: "example / template", source: "built into this builder", type: "template" },
+      soul: Object.assign({}, EMPTY_SOUL, {
+        id: "appointmentbooker", label: "AppointmentBooker", name: "AppointmentBooker",
+        role: "A calm scheduler who gets the visitor to a time",
+        goals: "Establish what they need, then offer the booking step.",
+        core_values: "Their time matters. A booking they keep beats a booking they cancel.",
+        prohibitions: "No invented availability, durations, prices or staff names. No booking on their behalf.",
+        scope: "What can actually be booked here.",
+        opinions: "I will say which appointment type fits and why.",
+        preferences: "Offer the booking once the need is clear, not before.",
+        tone: "calm, brief, practical",
+        cadence: "Clarify, confirm, offer the link, stop.",
+        posture: "support", warmth: "medium", directiveness: "medium",
+        answer_without_asking_when: "They have already said what they want booked.",
+        ask_when: "The appointment type is genuinely ambiguous.",
+        resourcefulness: "If nothing bookable fits, I say so and offer the contact route instead.",
+        edge_distress: "Book the soonest thing that helps, and say what happens next.",
+        output_format_notes: "The next step, in one sentence, with the link."
+      }),
+      sampling: Object.assign({}, EMPTY_SAMPLING, { temperature: 0.4 }),
+      trib: catalogState({
+        one_reality: at("rules", 100, 18), no_fabricate: at("rules", 100, 19),
+        kind: at("relation", 60, 48), relax: at("relation", 55, 49),
+        user_input: at("behavior", 100, 74), flow_product: at("behavior", 90, 75), ivr: at("behavior", 80, 76)
       })
     },
     brenda: {
@@ -949,7 +1049,10 @@
     tribParent: {},
     /* Which palette category is open for renaming. Screen state, not part of
        the personality — it is not written to the saved workshop. */
-    editCategory: ""
+    editCategory: "",
+    /* Standard headings the floscAdmin removed. Without this they would be
+       re-seeded on the next render. */
+    removedContainers: []
   };
 
   function deepClone(x) { return JSON.parse(JSON.stringify(x)); }
@@ -1000,9 +1103,11 @@
     }
     const have = {};
     state.layers.forEach(function (l) { if (l && l.id) have[l.id] = l; });
+    const gone = state.removedContainers || [];
     seededContainers().forEach(function (seed) {
       const cur = have[seed.id];
       if (!cur) {
+        if (gone.indexOf(seed.id) >= 0) return;
         state.layers.push(deepClone(seed));
         return;
       }
@@ -1430,12 +1535,24 @@
   function addCard(label, opts) {
     const o = opts || {};
     const id = newCardId(o.prefix || "aspect");
-    const col = categoryExists(o.col) ? o.col : firstCategoryId();
+    /*
+     * A new aspect has no category. It used to be filed on the first shelf,
+     * so + Aspect dropped one under whatever heading happened to be at the
+     * lowest density — "shoved under Consistency". Unfiled, it sits at the top
+     * of the palette until it is dragged onto a heading.
+     */
+    const col = o.col === "" ? "" : (categoryExists(o.col) ? o.col : "");
     state.custom.push({ id: id, col: col, label: label, short: "", inject: "" });
-    /* Density 0. A new card belongs at the top of the sequence, where it is in
-       view and where the floscAdmin decides its real position. The old rule
-       was densest-card + 2, which filed a new aspect at d98, off the bottom. */
-    state.trib[id] = blankCardState(o.density == null ? 0 : o.density);
+    /* Off until placed: an unfiled card has no heading to be written under. */
+    if (o.on !== true) { state.trib[id] = null; }
+    /* Density 0. A new card belongs at the top, where it is in view and where
+       the floscAdmin decides its real position. The old rule was
+       densest-card + 2, which filed a new aspect at d98, off the bottom. */
+    state.trib[id] = Object.assign(blankCardState(o.density == null ? 0 : o.density), {
+      col: col,
+      on: o.on === true,
+      mode: o.on === true ? "on" : "off"
+    });
     if (!state.tribOrder[col]) state.tribOrder[col] = [];
     state.tribOrder[col].push(id);
     ensurePlacement();
@@ -1486,8 +1603,13 @@
     });
   }
 
+  const UNFILED = "__unfiled";
   function tribColOf(t) {
     const st = state.trib && state.trib[t.id];
+    /* An explicit empty column is a card the floscAdmin has not filed yet.
+       Only a MISSING column falls through to the legacy mapping below. */
+    if (st && st.col === "") return UNFILED;
+    if (!st && t.col === "") return UNFILED;
     const requested = (st && st.col) || t.col;
     if (categoryExists(requested)) return requested;
     /* A stored column from before the shelves were the headings, or one whose
@@ -1681,7 +1803,15 @@
     wellspringCategories().forEach(function (c) {
       state.tribOrder[c.id] = (state.tribOrder[c.id] || []).filter(function (x) { return x !== id; });
     });
-    state.trib[id] = Object.assign({}, tribState(id), { col: toCol });
+    state.tribOrder[UNFILED] = (state.tribOrder[UNFILED] || []).filter(function (x) { return x !== id; });
+    /* The Unfiled shelf is not a heading, so a card dropped there stores an
+       empty column rather than the shelf's own id. Filing it also clears any
+       named soul section, and takes it out of the document until it is placed. */
+    const filed = toCol !== UNFILED;
+    state.trib[id] = Object.assign({}, tribState(id), filed
+      ? { col: toCol, soulSection: "" }
+      : { col: "", soulSection: "", on: false, mode: "off" });
+    if (!filed && state.tribParent) delete state.tribParent[id];
     const list = state.tribOrder[toCol] || [];
     const idx = beforeId ? list.indexOf(beforeId) : -1;
     if (idx >= 0) list.splice(idx, 0, id);
@@ -3322,6 +3452,11 @@
       if (da !== db) return da - db;
       return String(a.label || a.id).localeCompare(String(b.label || b.id));
     });
+    /* Aspects with no category, above the headings. A card lives here until it
+       is dragged onto one; it is in no heading, so it is in no document. */
+    if (allTribs().some(function (t) { return tribColOf(t) === UNFILED; })) {
+      categories.unshift({ id: UNFILED, label: "Unfiled aspects", hint: "Not in any category yet. Drag one onto a heading.", density: -1 });
+    }
     root.innerHTML = categories.map(function (c) {
       const items = tribsInCol(c.id).slice().sort(function (a, b) {
         return String(a.label || a.id).localeCompare(String(b.label || b.id));
@@ -3361,7 +3496,7 @@
       /* Renaming a shelf happens on the shelf. It used to happen in two
          browser prompt boxes, which could reach the name and the description
          and nothing else, and looked like an error dialog while doing it. */
-      const editing = state.editCategory === c.id;
+      const editing = state.editCategory === c.id && c.id !== UNFILED;
       const head = editing
         ? '<div class="cat-edit">' +
           '<label class="cadmin-field"><span>Category name</span>' +
@@ -3377,15 +3512,19 @@
           '</div>'
         : "";
       return '<details class="col' + (colSel ? " sel" : "") + '" data-col="' + c.id + '" data-open-key="fam:' + c.id + '"' + (famOpen || editing ? " open" : "") + ">" +
-        '<summary data-focus-col="' + c.id + '"><strong>' + esc(c.label) + '</strong><span class="fam-hint">' + esc(c.hint || "") + '</span><span class="fam-den">d' + formatDensity(c.density) + '</span><button type="button" class="btn ghost" data-edit-category="' + c.id + '">' + (editing ? "Close" : "Edit") + '</button>' + ((containerById(c.id) || {}).origin === "user" ? '<button type="button" class="btn ghost danger" data-remove-category="' + c.id + '">Remove</button>' : "") + '</summary>' +
+        '<summary data-focus-col="' + c.id + '"><strong>' + esc(c.label) + '</strong><span class="fam-hint">' + esc(c.hint || "") + "</span>" +
+        (c.id === UNFILED
+          ? ""
+          : '<span class="fam-den">d' + formatDensity(c.density) + '</span><button type="button" class="btn ghost" data-edit-category="' + c.id + '">' + (editing ? "Close" : "Edit") + '</button><button type="button" class="btn ghost danger" data-remove-category="' + c.id + '">Remove</button>') +
+        "</summary>" +
         head +
         /* Every heading shows, filled or not. A shelf with nothing on it is
            still part of the shape of a soul.md file, and a blank box reads as
            broken rather than as empty. */
         '<div class="list" data-drop-col="' + c.id + '">' +
         (items ? items : '<p class="figure-readout col-empty">' +
-          (state.hideOff ? "Place aspects here. Untick Hide inactive aspects to see what is available."
-                         : "Place aspects here. + Aspect makes one, or drag an aspect in.") + "</p>") +
+          (state.hideOff ? "Drag aspects here. Untick Hide inactive aspects to see what is available."
+                         : "Drag aspects here.") + "</p>") +
         "</div></details>";
     }).join("");
     /* A wellspring is an aspect, so the button says aspect. It makes the card
@@ -3609,15 +3748,27 @@
       "</div>";
   }
 
+  /*
+   * Which heading this card is written under.
+   *
+   * The list was built from SOUL_LAYERS — the shipped thirteen — so a category
+   * the floscAdmin made themselves never appeared in it, and picking one was
+   * impossible. It is built from the live container list now, in density
+   * order, exactly what the palette shows.
+   *
+   * The dropdown is a convenience, not the mechanism: dragging a card onto a
+   * heading is what places it, and typing a density does the same. Both write
+   * the same two fields.
+   */
   function soulSectionRow(t, st) {
     const resolved = soulSectionOf(t.id);
-    return '<div class="card-param"><label class="excerpt-lab" for="soulsec-' + t.id + '">Soul section</label>' +
+    return '<div class="card-param"><label class="excerpt-lab" for="soulsec-' + t.id + '">Written under</label>' +
       '<select id="soulsec-' + t.id + '" data-soul-section="' + t.id + '">' +
       '<option value=""' + (st.soulSection ? "" : " selected") + ">Follow density — " + esc(resolved.label) + "</option>" +
-      SOUL_LAYERS.map(function (L) {
-        return '<option value="' + L.id + '"' + (st.soulSection === L.id ? " selected" : "") + ">" + esc(L.label) + " (d" + L.density + ")</option>";
+      containersSorted().filter(function (L) { return L.kind === "layer"; }).map(function (L) {
+        return '<option value="' + esc(L.id) + '"' + (st.soulSection === L.id ? " selected" : "") + ">" + esc(L.label) + " (d" + formatDensity(L.density) + ")</option>";
       }).join("") + "</select>" +
-      destinationLine("The soul.md heading this card is written under. Reaches the AI.") +
+      destinationLine("The heading this card is written under. Reaches the AI. Dragging the card onto a heading, or typing a density with a colon, does the same thing.") +
       "</div>";
   }
 
@@ -3666,7 +3817,7 @@
 
       '<div class="card-param"><label class="excerpt-lab">Density</label>' +
       '<div class="den-row"><div class="den-slider-wrap"><input class="den-vert" type="range" min="0" max="100" step="any" data-density="' + t.id + '" value="' + st.density + '" title="Density: 0 at top (white / least dense) to 100 at bottom (black / ink). Not Gain."></div>' +
-      '<div class="den-lab"><span class="den-swatch" style="background:' + densityGray(st.density) + '"></span><b>Density <input type="number" min="0" max="100" step="any" data-density-num="' + t.id + '" value="' + formatDensity(st.density) + '" style="width:7.5rem"></b>' +
+      '<div class="den-lab"><span class="den-swatch" style="background:' + densityGray(st.density) + '"></span><b>Density <input type="text" inputmode="decimal" data-density-num="' + t.id + '" value="' + esc(composedDensity(t.id)) + '" style="width:9rem" title="A number, or a colon path such as 95:016 to place this card inside the card at 95"></b>' +
       (composedDensity(t.id) !== formatDensity(st.density)
         ? "<br><strong>Reads as " + esc(composedDensity(t.id)) + "</strong> — inside " + esc(parentLabelOf(t.id) || "a group") + ". Drag it out and it is " + formatDensity(st.density) + " again."
         : "") +
@@ -3839,7 +3990,7 @@
       "</div>" +
 
       '<div class="card-param"><label class="excerpt-lab" for="ltraj-' + L.id + '">Trajectory · desired impact on the future</label>' +
-      '<textarea class="traj-phrase" id="ltraj-' + L.id + '" data-layer-traj="' + L.id + '" placeholder="e.g. leave them able to act on this section — or a post: 412, ?post=412, or its permalink">' + esc(L.trajectory || "") + "</textarea>" +
+      '<textarea class="traj-phrase" id="ltraj-' + L.id + '" data-layer-traj="' + L.id + '" placeholder="A post id — 412, ?post=412, or a permalink — or the impact in your own words">' + esc(L.trajectory || "") + "</textarea>" +
       (post
         ? '<p class="figure-readout"><strong>' + esc((post.type === "trajectory" ? "Trajectory " : post.type === "page" ? "Page " : "Post ") + post.id) + "</strong>" +
           (post.title ? " · " + esc(post.title) : " · not found on this site — the id is written through as typed") +
@@ -3923,7 +4074,7 @@
           body += '<div class="nest" data-drop-layer="' + L.id + '">';
           body += '<div class="row-gap row-gap--first" data-drop-layer-top="' + L.id + '"></div>';
           if (!kids.length) {
-            body += '<p class="figure-readout nest-empty">Place aspects here. Tick one in the palette, or drag one onto this heading.</p>';
+            body += '<p class="figure-readout nest-empty">Drag aspects here.</p>';
           }
           kids.forEach(function (k) {
             if (k.kind === "cloud") {
@@ -4535,14 +4686,21 @@
       e.stopPropagation();
       const id = removeCategory.getAttribute("data-remove-category");
       const L = containerById(id);
-      /* A seeded heading is part of the soul.md shape. Rename it, move it,
-         empty it — but removing it would take a section of the document with
-         it, and every card filed there. */
-      if (!L || L.origin === "seed") {
-        showBuilderNotice("A standard heading can be renamed and moved, but not removed.", true);
-        return;
-      }
+      if (!L || L.kind === "providers") return;
+      /* Every category can be removed, standard ones included: it is the
+         floscAdmin's document. Its aspects are not deleted with it — they lose
+         their shelf and reappear unfiled, so nothing written is lost. */
+      allTribs().forEach(function (t) {
+        if (tribColOf(t) !== id) return;
+        state.trib[t.id] = Object.assign({}, tribState(t.id), { col: "", soulSection: "" });
+        if (state.tribParent && state.tribParent[t.id] && state.tribParent[t.id].id === id) {
+          delete state.tribParent[t.id];
+        }
+      });
       state.layers = ensureContainers().filter(function (x) { return x.id !== id; });
+      /* Remembered, or ensureContainers() would seed a standard heading back on
+         the next render and the button would look broken. */
+      state.removedContainers = (state.removedContainers || []).concat([id]);
       delete state.tribOrder[id];
       if (state.editCategory === id) state.editCategory = "";
       persistSoft();
@@ -4895,9 +5053,64 @@
       return;
     }
   }
+  /*
+   * A density typed as a colon path places the card as well as setting its
+   * number: "95:016" means the aspect at 16 inside the card at 95. The last
+   * segment is this card's own density; everything before it names the card it
+   * sits inside, by the density that card reads at.
+   *
+   * A plain number is unchanged — it sets the density and nothing else.
+   */
+  function parseDensityPath(raw) {
+    const text = String(raw == null ? "" : raw).trim();
+    if (text.indexOf(":") < 0) return { density: clampDensity(text), path: null };
+    const parts = text.split(":").map(function (x) { return x.trim(); }).filter(function (x) { return x !== ""; });
+    if (!parts.length) return { density: 0, path: null };
+    const own = clampDensity(parts.pop());
+    return { density: own, path: parts.map(function (x) { return clampDensity(x); }) };
+  }
+  /* Walk a colon path down the card tree and return the card it lands inside. */
+  function cardAtDensityPath(path, skipId) {
+    if (!path || !path.length) return null;
+    let hostId = null;
+    for (let i = 0; i < path.length; i++) {
+      const want = path[i];
+      const pool = hostId
+        ? tribChildren(hostId)
+        : activeTribs().filter(function (t) {
+            const p = state.tribParent && state.tribParent[t.id];
+            return !p || p.kind !== "trib";
+          });
+      const hit = pool.find(function (t) {
+        return t.id !== skipId && clampDensity(tribState(t.id).density) === want;
+      });
+      if (!hit) return null;
+      hostId = hit.id;
+    }
+    return hostId;
+  }
+
   function commitDensity(id, raw, doRender) {
-    const density = clampDensity(raw);
+    const parsed = parseDensityPath(raw);
+    const density = parsed.density;
     state.trib[id] = Object.assign({}, tribState(id), { density: density });
+    /* A colon path places the card as well as numbering it. An unresolvable
+       path sets the density and says so, rather than moving the card somewhere
+       the floscAdmin did not name. */
+    if (parsed.path && parsed.path.length) {
+      ensurePlacement();
+      const host = cardAtDensityPath(parsed.path, id);
+      if (host && host !== id && cardAncestors(host).indexOf(id) < 0) {
+        cloudLeave(id);
+        state.tribParent[id] = { kind: "trib", id: host };
+        const hostCard = allTribs().find(function (x) { return x.id === host; });
+        showBuilderNotice("Placed inside " + ((hostCard && hostCard.label) || "that card") +
+          ", reading d" + composedDensity(id) + ".");
+      } else {
+        showBuilderNotice("No card at " + parsed.path.map(formatDensity).join(":") +
+          ". The density is set to " + formatDensity(density) + "; the card has not moved.", true);
+      }
+    }
     persistSoft();
     if (doRender) {
       render();
@@ -5422,6 +5635,35 @@
   document.getElementById("btnExportProviders").addEventListener("click", function () {
     downloadBlob(fileBase() + "_provider_packs.json", JSON.stringify(providerPacks(), null, 2), "application/json");
   });
+  /*
+   * New, and New from template. Both replace what is on screen, so both ask
+   * first — this is the one control in the builder that discards work.
+   */
+  function startFrom(name, label) {
+    if (!window.confirm("Replace what is in the builder with " + label + "? Anything unsaved is lost.")) return;
+    applyPreset(name);
+    ensureContainers();
+    ensurePlacement();
+    persistSoft();
+    render();
+    showBuilderNotice(label + " loaded. Name it, then edit. Nothing is saved to the library until you press Save.");
+  }
+  const btnNewBlank = document.getElementById("btnNewBlank");
+  if (btnNewBlank) {
+    btnNewBlank.addEventListener("click", function () {
+      startFrom("blank", "a blank skeleton");
+    });
+  }
+  const templatePick = document.getElementById("templatePick");
+  if (templatePick) {
+    templatePick.addEventListener("change", function () {
+      const name = this.value;
+      this.value = "";
+      if (!name) return;
+      const preset = PRESETS[name];
+      startFrom(name, (preset && preset.meta && preset.meta.title) || name);
+    });
+  }
   document.getElementById("btnImport").addEventListener("click", function () {
     document.getElementById("fileIn").click();
   });

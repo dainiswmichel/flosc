@@ -39,6 +39,71 @@
     el.classList.add(ok ? "is-ok" : "is-err");
   }
 
+  /* ---------------------------------------------------------------
+     Autosave
+
+     There was none: Save was bound to the button and to nothing else, so
+     every change sat in the browser until someone remembered to press it.
+
+     A change marks the personality dirty and starts a 30-second timer, which
+     any further change restarts — so typing a sentence saves once, at the end,
+     not once per keystroke. The button carries the state: blue while there is
+     something to save, green once it is saved.
+     --------------------------------------------------------------- */
+  var AUTOSAVE_MS = 30000;
+  var autosaveTimer = null;
+  var dirty = false;
+  var saving = false;
+
+  function saveButton() {
+    return document.getElementById("flosc-personality-builder-save");
+  }
+  function markState(next) {
+    var btn = saveButton();
+    if (!btn) { return; }
+    btn.classList.remove("is-dirty", "is-saved", "is-saving");
+    btn.classList.add(next);
+  }
+  function setSavedStamp(stamp) {
+    var el = document.getElementById("flosc-personality-builder-mts");
+    if (!el) { return; }
+    el.textContent = stamp ? "Last saved " + stamp + " UTC" : "Not saved yet";
+  }
+  function markDirty() {
+    if (saving) { return; }
+    dirty = true;
+    markState("is-dirty");
+    if (autosaveTimer) { clearTimeout(autosaveTimer); }
+    autosaveTimer = setTimeout(function () {
+      autosaveTimer = null;
+      if (dirty) { saveToLibrary(); }
+    }, AUTOSAVE_MS);
+  }
+  function watchForChanges() {
+    var root = document.querySelector(".flosc-personality-workshop");
+    if (!root) { return; }
+    ["input", "change", "drop"].forEach(function (evt) {
+      root.addEventListener(evt, markDirty, true);
+    });
+    /* Only buttons that alter the design. The Save button itself, the export
+       buttons and the accordion summaries change nothing worth saving. */
+    root.addEventListener("click", function (e) {
+      var el = e.target.closest("button, input[type=checkbox]");
+      if (!el) { return; }
+      if (el.id === "flosc-personality-builder-save") { return; }
+      if (el.id && el.id.indexOf("btnExport") === 0) { return; }
+      if (el.id === "btnViewPreview" || el.id === "btnImport" || el.id === "btnImportProfile") { return; }
+      markDirty();
+    }, true);
+    /* A tab closed with unsaved work is work lost. */
+    window.addEventListener("beforeunload", function (e) {
+      if (!dirty) { return undefined; }
+      e.preventDefault();
+      e.returnValue = "";
+      return "";
+    });
+  }
+
   function saveToLibrary() {
     if (!wp.nonce || !wp.personaId) {
       setStatus((wp.i18n && wp.i18n.error) || "Could not save. Try again.", false);
@@ -60,6 +125,9 @@
     body.append("ai_personality_role", bits.role);
     body.append("ai_base_prompt", profile);
     body.append("workshop_json", JSON.stringify(workshopForSave(api)));
+    saving = true;
+    markState("is-saving");
+    if (autosaveTimer) { clearTimeout(autosaveTimer); autosaveTimer = null; }
     setStatus(wp.i18n.saving, true);
     fetch(wp.ajaxUrl, {
       method: "POST",
@@ -70,14 +138,21 @@
         return r.json();
       })
       .then(function (json) {
+        saving = false;
         if (json && json.success) {
+          dirty = false;
+          markState("is-saved");
+          setSavedStamp(json.data && json.data.saved_at ? json.data.saved_at : "");
           setStatus((json.data && json.data.message) || wp.i18n.saved, true);
         } else {
           var msg = json && json.data && json.data.message ? json.data.message : wp.i18n.error;
+          markState("is-dirty");
           setStatus(msg, false);
         }
       })
       .catch(function () {
+        saving = false;
+        markState("is-dirty");
         setStatus(wp.i18n.error, false);
       });
   }
@@ -263,6 +338,8 @@
     var save = document.getElementById("flosc-personality-builder-save");
     if (save) {
       save.addEventListener("click", saveToLibrary);
+      markState("is-saved");
+      watchForChanges();
     }
     hideProviderPacks();
     var paletteSearch = document.getElementById("paletteSearch");

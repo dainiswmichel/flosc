@@ -1626,10 +1626,19 @@ if ( ! function_exists( 'flosc_ajax_save_personality_design' ) ) {
 			wp_send_json_error( array( 'message' => __( 'Could not save that personality.', 'flosc' ) ), 500 );
 		}
 
+		/* The stamp the toolbar prints, in UTC like every other MTS line in
+		   FLOSC. Read back from the row so it is the value that was stored,
+		   not one the browser guessed. */
+		$saved_row = flosc_personality_library_get( $id );
+		$saved_at  = is_array( $saved_row ) && isset( $saved_row['profile_modified_gmt'] )
+			? (string) $saved_row['profile_modified_gmt']
+			: gmdate( 'Y-m-d H:i:s' );
 		wp_send_json_success(
 			array(
-				'message' => __( 'Personality saved to the FLOSC library.', 'flosc' ),
-				'id'      => $id,
+				'message'  => __( 'Personality saved to the FLOSC library.', 'flosc' ),
+				'id'       => $id,
+				'saved_at' => $saved_at,
+				'version'  => is_array( $saved_row ) && isset( $saved_row['profile_version'] ) ? (string) $saved_row['profile_version'] : '',
 			)
 		);
 	}
@@ -2021,6 +2030,19 @@ if ( ! function_exists( 'flosc_render_personality_designer_accordion' ) ) {
 			?>
 		</button>
 		<span id="flosc-personality-builder-status" class="flosc-personality-builder-status" role="status" aria-live="polite"></span>
+		<?php
+		/*
+		 * Last save, in UTC, as everywhere else in FLOSC. Seeded from the row so
+		 * the line is right before anything is saved in this session; the bridge
+		 * rewrites it after each save.
+		 */
+		$saved_mts = isset( $entry['profile_modified_gmt'] ) ? trim( (string) $entry['profile_modified_gmt'] ) : '';
+		?>
+		<span id="flosc-personality-builder-mts" class="flosc-personality-builder-mts"><?php
+		echo $saved_mts !== ''
+			? esc_html( sprintf( /* translators: %s: UTC timestamp */ __( 'Last saved %s UTC', 'flosc' ), $saved_mts ) )
+			: esc_html__( 'Not saved yet', 'flosc' );
+		?></span>
 		<?php
 		/*
 		 * The map belongs where someone is building. The structure was always

@@ -29,6 +29,17 @@ if ( ! defined( 'ABSPATH' ) ) {
     <div class="toolbar flosc-admin-builder__tools">
       <button type="button" class="btn" id="btnImport">Import workshop state</button>
       <button type="button" class="btn" id="btnImportProfile">Import profile</button>
+      <button type="button" class="btn" id="btnNewBlank" title="A blank skeleton: every heading, nothing written">New</button>
+      <label class="chip template-pick" for="templatePick">New from template
+        <select id="templatePick">
+          <option value="">Choose…</option>
+          <option value="robust">Robust</option>
+          <option value="friendly">Friendly</option>
+          <option value="tech">Technical</option>
+          <option value="salescloser">SalesCloser</option>
+          <option value="appointmentbooker">AppointmentBooker</option>
+        </select>
+      </label>
     </div>
   </header>
 
