@@ -37,16 +37,20 @@ $markup  = (string) file_get_contents( $root . '/assets/personality-builder/flos
 $code = preg_replace( '#/\*.*?\*/#s', '', $builder );
 $code = (string) preg_replace( '#(^|\s)//.*$#m', '$1', (string) $code );
 
-echo "The eleven stations, in density order\n";
+// These are also the aspect palette's shelves. One list, not two: an aspect
+// waits on the shelf it will be written under.
+echo "The thirteen headings, in density order\n";
 $stations = array(
-	'Name and Core Role'                   => 6,
+	'Identity and Role'                    => 6,
 	'Philosophy and Values'                => 12,
-	'Hard Boundaries and Prohibitions'     => 18,
+	'Boundaries and Prohibitions'          => 18,
 	'Knowledge, Doubt and Correction'      => 24,
+	'Opinions and Preferences'             => 30,
 	'Tone and Communication Style'         => 40,
 	'Stance Toward the Human'              => 48,
 	'Behavior in Ambiguity'                => 56,
 	'Adaptation'                           => 62,
+	'Resourcefulness'                      => 68,
 	'Decisions including Infrequent Cases' => 74,
 	'Banned Words and Fillers to Avoid'    => 84,
 	'Output and Delivery'                  => 94,
@@ -61,7 +65,15 @@ foreach ( $stations as $label => $density ) {
 	ok( '  ' . $label . ' at ' . $density, $found, true );
 	if ( $found ) { $seen[] = $label; }
 }
-ok( 'eleven and no more', substr_count( $layers, 'label: "' ), 11 );
+ok( 'thirteen and no more', substr_count( $layers, 'label: "' ), 13 );
+
+echo "\nThe palette's shelves are those headings\n";
+ok( 'derived from the container list, not a second array',
+	strpos( $code, 'return containersSorted()' ) !== false, true );
+ok( '  a card filed under an old shelf resolves to a heading',
+	strpos( $code, 'function headingForCard(t)' ) !== false, true );
+ok( '  and never to a column that does not exist',
+	strpos( $code, 'return categoryExists(mapped) ? mapped : firstCategoryId();' ) !== false, true );
 
 echo "\nThe gain ladder\n";
 $rungs = array(
@@ -176,7 +188,7 @@ ok( 'import reads the branches back',
 ok( '  and the point count',
 	strpos( $code, 'starPoints: t.star_points || t.starPoints || null,' ) !== false, true );
 
-echo "\nThe shipped four use station headings and nothing else\n";
+echo "\nThe shipped four use the document's headings and nothing else\n";
 preg_match_all( "/'ai_base_prompt'\s*=>\s*<<<'PROMPT'\n(.*?)\nPROMPT,/s", $library, $shipped );
 ok( 'four profiles found', count( $shipped[1] ), 4 );
 foreach ( $shipped[1] as $body ) {
@@ -192,7 +204,7 @@ foreach ( $shipped[1] as $body ) {
 			$bad[] = $line;
 		}
 	}
-	ok( $who . ': every heading is one of the eleven', $bad, array() );
+	ok( $who . ': every heading is one of the thirteen', $bad, array() );
 }
 
 echo $fail ? "\n$fail FAILURES\n" : "\nThe document keeps the shape it ships with\n";

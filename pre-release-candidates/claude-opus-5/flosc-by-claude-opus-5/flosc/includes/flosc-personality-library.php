@@ -670,7 +670,7 @@ frequency: usually
 short: Tell the truth.
 frequency: usually
 
-# 18 Hard Boundaries and Prohibitions
+# 18 Boundaries and Prohibitions
 
 ## 18 Clean and family-friendly
 short: Keep jokes clean and family-friendly. The joke never overrides the help.
@@ -1838,8 +1838,36 @@ if ( ! function_exists( 'flosc_personality_trajectory_posts' ) ) {
 	 * @return array<int,array<string,string|int>>
 	 */
 	function flosc_personality_trajectory_posts( $limit = 200 ) {
-		$rows  = array();
-		$posts = get_posts(
+		$rows = array();
+		$seen = array();
+
+		/*
+		 * A trajectory in FLOSC is a post in the trajectory category, carrying
+		 * keywords, priority, off-ramps and instructions, and matched per turn
+		 * by FLOSC_Trajectory. Those come first, because that is what the word
+		 * means here. Ordinary posts and pages follow, so an aspect can also
+		 * point at plain content — but they are not what a trajectory is.
+		 */
+		$trajectory_posts = get_posts(
+			array(
+				'post_type'        => 'post',
+				'post_status'      => array( 'publish', 'private', 'draft' ),
+				'numberposts'      => (int) $limit,
+				'category_name'    => 'flosc-internal-trajectories,trajectory,trajectories',
+				'orderby'          => 'modified',
+				'order'            => 'DESC',
+				'suppress_filters' => false,
+			)
+		);
+		foreach ( $trajectory_posts as $post ) {
+			if ( class_exists( 'FLOSC_Trajectory' ) && ! FLOSC_Trajectory::is_trajectory_post( $post ) ) {
+				continue;
+			}
+			$seen[ (int) $post->ID ] = true;
+			$rows[]                  = flosc_personality_trajectory_row( $post, 'trajectory' );
+		}
+
+		$content_posts = get_posts(
 			array(
 				'post_type'        => array( 'post', 'page' ),
 				'post_status'      => 'publish',
@@ -1849,17 +1877,36 @@ if ( ! function_exists( 'flosc_personality_trajectory_posts' ) ) {
 				'suppress_filters' => false,
 			)
 		);
-		foreach ( $posts as $post ) {
-			$excerpt = has_excerpt( $post ) ? get_the_excerpt( $post ) : wp_trim_words( wp_strip_all_tags( (string) $post->post_content ), 40, '…' );
-			$rows[]  = array(
-				'id'      => (int) $post->ID,
-				'type'    => (string) $post->post_type,
-				'title'   => (string) get_the_title( $post ),
-				'excerpt' => trim( (string) $excerpt ),
-				'url'     => (string) get_permalink( $post ),
-			);
+		foreach ( $content_posts as $post ) {
+			if ( isset( $seen[ (int) $post->ID ] ) ) {
+				continue;
+			}
+			$rows[] = flosc_personality_trajectory_row( $post, (string) $post->post_type );
 		}
+
 		return $rows;
+	}
+}
+
+if ( ! function_exists( 'flosc_personality_trajectory_row' ) ) {
+	/**
+	 * One row for the builder's trajectory lookup.
+	 *
+	 * @param WP_Post $post Post.
+	 * @param string  $type Row type: trajectory, post or page.
+	 * @return array<string,string|int>
+	 */
+	function flosc_personality_trajectory_row( $post, $type ) {
+		$excerpt = has_excerpt( $post )
+			? get_the_excerpt( $post )
+			: wp_trim_words( wp_strip_all_tags( (string) $post->post_content ), 40, '…' );
+		return array(
+			'id'      => (int) $post->ID,
+			'type'    => $type,
+			'title'   => (string) get_the_title( $post ),
+			'excerpt' => trim( (string) $excerpt ),
+			'url'     => (string) get_permalink( $post ),
+		);
 	}
 }
 
