@@ -1,9 +1,9 @@
-# Home run candidate v10 — Claude Opus 5
+# Home run candidate v12 — Claude Opus 5
 
 Assembled from the four tested candidates. Version held at **8.0.0** — this is
 a resubmission, not a release.
 
-**Two numbers, and they are not the same number.** `v10` is this candidate's
+**Two numbers, and they are not the same number.** `v12` is this candidate's
 iteration — how many times this folder has been rebuilt. `8.0.0` is the
 plugin's version, and it does not move: 8.0.0 is what goes to wordpress.org.
 
@@ -12,7 +12,9 @@ plugin's version, and it does not move: 8.0.0 is what goes to wordpress.org.
 | v7 | The assembled candidate, plus the empty-profile guard | `8734efe`, `7d329fa` |
 | v8 | The designer pass — one card, nested density, both dialogs gone | `48b951b` |
 | v9 | A colon for nesting levels, a period for decimals | `c5364b5` |
-| v10 | The headings are the palette; ticking reveals; rows wrap instead of overprinting | this commit |
+| v10 | The headings are the palette; ticking reveals; shelves open on one click | `9fbd41b` |
+| v11 | Summary keeps its ellipsis; the full line is a wrapped card footer | `de0c82e` |
+| v12 | The row label was landing in the swatch column and printing over its own meta line | this commit |
 
 v8 and v9 were committed before this counter was picked back up, so their
 subject lines read `Candidate claude-opus-5 …` rather than `Home run candidate
@@ -20,7 +22,7 @@ v8 / v9`. The table is the mapping; the history is not being rewritten.
 
 ## The designer pass — read this first
 
-Candidate iteration **v10**. Plugin version still **8.0.0**, and it stays there.
+Candidate iteration **v12**. Plugin version still **8.0.0**, and it stays there.
 
 The DA1 AI Personality Designer now works on one idea instead of three.
 
@@ -72,10 +74,12 @@ template defaults, not decisions. Drag one and it moves for good.
    so the shelf sprang shut. The click belongs to `<details>` now.
 2. Ticking a card left it inside a collapsed heading, scrolled to and
    invisible. Every container between the card and the top opens.
-3. A card row printed over itself. The summary was a four-column grid whose
-   last column was sized `auto`, so a long meta line crushed the label and
-   overflowed across it. The meta line takes its own full-width line and wraps
-   there — no ellipsis anywhere in the stylesheet now.
+3. A card row printed over itself. The summary's last grid column was sized
+   `auto`, which cannot shrink, so a long meta line crushed the label and
+   overflowed across it. It is `minmax(0, auto)` now, so the column gives way
+   and the ellipsis does what an ellipsis is for. The full line is not lost:
+   it is the footer at the bottom of the opened card, wrapped, and it names
+   the heading the card is written under.
 
 **The builder's own trajectory list is gone.** FLOSC already has trajectories:
 posts in the `trajectory` category, managed on the Trajectories tab. Anything
