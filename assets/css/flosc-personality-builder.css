@@ -544,6 +544,18 @@
   }
   .flosc-personality-workshop .card-footer b{ color: var(--ink); }
 
+  /* Naming a new personality, in the header, before the row exists. */
+  .flosc-personality-workshop .new-personality{
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;
+    margin: 10px 0 0; padding: 10px 12px;
+    border: 1px solid var(--accent-2); border-radius: 10px; background: #f0f6fc;
+  }
+  .flosc-personality-workshop .new-personality input[type="text"]{ min-width: 18rem; }
+  .flosc-personality-workshop .new-personality__from{
+    font-family: var(--ui); font-size: 0.78rem; color: var(--ink-soft); padding-bottom: 6px;
+  }
+  .flosc-personality-workshop .new-personality .figure-readout{ flex: 1 1 100%; margin: 0; }
+
   .flosc-personality-workshop .col-empty{ margin: 6px 8px 8px; opacity: .8; }
 
   .flosc-personality-workshop .fam-den{

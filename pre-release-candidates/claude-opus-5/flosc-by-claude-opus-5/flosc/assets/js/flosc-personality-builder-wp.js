@@ -76,7 +76,9 @@
     if (autosaveTimer) { clearTimeout(autosaveTimer); }
     autosaveTimer = setTimeout(function () {
       autosaveTimer = null;
-      if (dirty) { saveToLibrary(); }
+      if (!dirty) { return; }
+      if (saveTargetMismatch(builderApi())) { return; }
+      saveToLibrary();
     }, AUTOSAVE_MS);
   }
   function watchForChanges() {
@@ -104,6 +106,24 @@
     });
   }
 
+  /*
+   * Refuse to write one personality into another's row.
+   *
+   * persona_id is fixed at page load — it is the personality attached to this
+   * flow. state.soul.id is whatever is in the builder. They agree while you
+   * edit the attached personality, and they diverge the moment New or New from
+   * template loads something else. Saving in that state wrote the new content
+   * into the attached row, keeping only its id: on 8 September the row named
+   * bubblybetty ended up holding a complete SalesCloser, prompt and workshop
+   * both. The 30-second autosave made that automatic rather than merely
+   * possible.
+   */
+  function saveTargetMismatch(api) {
+    var soulId = api && api.state && api.state.soul ? String(api.state.soul.id || "") : "";
+    if (!soulId || !wp.personaId) { return ""; }
+    return soulId === String(wp.personaId) ? "" : soulId;
+  }
+
   function saveToLibrary() {
     if (!wp.nonce || !wp.personaId) {
       setStatus((wp.i18n && wp.i18n.error) || "Could not save. Try again.", false);
@@ -112,6 +132,15 @@
     var api = builderApi();
     if (!api) {
       setStatus(wp.i18n.error, false);
+      return;
+    }
+    var mismatch = saveTargetMismatch(api);
+    if (mismatch) {
+      dirty = false;
+      if (autosaveTimer) { clearTimeout(autosaveTimer); autosaveTimer = null; }
+      markState("is-dirty");
+      setStatus("Not saved. The builder is holding \u201c" + mismatch + "\u201d and this flow is attached to \u201c" +
+        wp.personaId + "\u201d. Use New to create it as its own personality.", false);
       return;
     }
     var bits = soulBits(api);
@@ -156,6 +185,71 @@
         setStatus(wp.i18n.error, false);
       });
   }
+
+  /* ---------------------------------------------------------------
+     New
+
+     A new personality is a new library row, named before it is written.
+     Nothing touches the row that is open.
+     --------------------------------------------------------------- */
+  function slugify(text) {
+    return String(text || "").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 48);
+  }
+  function freeId(base) {
+    var taken = {};
+    (wp.existingIds || []).forEach(function (id) { taken[String(id)] = true; });
+    var id = base || "personality";
+    var n = 2;
+    while (taken[id]) { id = base + "_" + n++; }
+    return id;
+  }
+
+  window.floscCreatePersonality = function (label, profile, workshopJson, name, role, done) {
+    var id = freeId(slugify(label));
+    var body = new FormData();
+    body.append("action", "flosc_save_personality_design");
+    body.append("nonce", wp.nonce);
+    body.append("persona_id", id);
+    body.append("label", label);
+    body.append("ai_personality_name", name || label);
+    body.append("ai_personality_role", role || "");
+    body.append("ai_base_prompt", profile);
+    body.append("workshop_json", workshopJson);
+    setStatus("Creating " + label + "\u2026", true);
+    fetch(wp.ajaxUrl, { method: "POST", credentials: "same-origin", body: body })
+      .then(function (r) { return r.json(); })
+      .then(function (json) {
+        if (!json || !json.success) {
+          setStatus((json && json.data && json.data.message) || wp.i18n.error, false);
+          if (done) { done(false); }
+          return;
+        }
+        /* Created. Attach it to this flow so the builder opens it on reload —
+           the builder always edits the personality this flow is attached to. */
+        if (!wp.attachNonce || !wp.ivr) {
+          setStatus("Created " + label + ". Attach it on this tab to edit it.", true);
+          if (done) { done(true, id); }
+          return;
+        }
+        var att = new FormData();
+        att.append("action", "flosc_attach_personality");
+        att.append("nonce", wp.attachNonce);
+        att.append("ivr", wp.ivr);
+        att.append("persona", id);
+        return fetch(wp.ajaxUrl, { method: "POST", credentials: "same-origin", body: att })
+          .then(function (r) { return r.json(); })
+          .then(function () {
+            dirty = false;
+            if (autosaveTimer) { clearTimeout(autosaveTimer); autosaveTimer = null; }
+            setStatus("Created " + label + ". Opening it\u2026", true);
+            window.location.reload();
+          });
+      })
+      .catch(function () {
+        setStatus(wp.i18n.error, false);
+        if (done) { done(false); }
+      });
+  };
 
   function hideProviderPacks() {
     if (!wp.hideProviderPacks) {

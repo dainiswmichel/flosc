@@ -5635,35 +5635,111 @@
   document.getElementById("btnExportProviders").addEventListener("click", function () {
     downloadBlob(fileBase() + "_provider_packs.json", JSON.stringify(providerPacks(), null, 2), "application/json");
   });
-  /*
-   * New, and New from template. Both replace what is on screen, so both ask
-   * first — this is the one control in the builder that discards work.
-   */
-  function startFrom(name, label) {
-    if (!window.confirm("Replace what is in the builder with " + label + "? Anything unsaved is lost.")) return;
+  /* ---------------------------------------------------------------
+     New
+
+     A new personality is a NEW library row, named before it exists. It is
+     never written into the personality that is open — persona_id is fixed at
+     page load, so loading a template into the current canvas and saving wrote
+     the template into whichever row happened to be attached. That is how the
+     row named bubblybetty came to hold a complete SalesCloser.
+     --------------------------------------------------------------- */
+  let pendingTemplate = "";
+  function openNewPanel(name, label) {
+    const panel = document.getElementById("newPersonality");
+    const from = document.getElementById("newPersonalityFrom");
+    const input = document.getElementById("newPersonalityName");
+    if (!panel || !input) return;
+    pendingTemplate = name;
+    if (from) from.textContent = name === "blank" ? "from a blank skeleton" : "from the " + label + " template";
+    panel.hidden = false;
+    input.value = "";
+    input.focus();
+  }
+  function closeNewPanel() {
+    const panel = document.getElementById("newPersonality");
+    if (panel) panel.hidden = true;
+    pendingTemplate = "";
+    const pick = document.getElementById("templatePick");
+    if (pick) pick.value = "";
+  }
+  function createNewPersonality() {
+    const input = document.getElementById("newPersonalityName");
+    const label = input ? String(input.value || "").trim() : "";
+    if (!label) {
+      showBuilderNotice("Give the personality a name first. It becomes its own file in the library.", true);
+      if (input) input.focus();
+      return;
+    }
+    const name = pendingTemplate || "blank";
+    const preset = PRESETS[name] || PRESETS.blank;
+
+    /* Compile the new personality without disturbing what is open: snapshot,
+       build, read off the two documents, then put the canvas back exactly as
+       it was. Whether the row is created or not, nothing here is lost. */
+    const snapshot = JSON.stringify({
+      soul: state.soul, sampling: state.sampling, trib: state.trib, custom: state.custom,
+      clouds: cloudList(), layers: ensureContainers(), tribParent: state.tribParent,
+      tribOrder: state.tribOrder, denOrder: state.denOrder, preset: state.preset,
+      removedContainers: state.removedContainers
+    });
     applyPreset(name);
+    state.soul.label = label;
+    state.soul.name = label;
+    state.soul.id = label.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "personality";
     ensureContainers();
     ensurePlacement();
+    const profile = promptFile();
+    const workshop = JSON.stringify(workshopFile());
+    const role = state.soul.role || "";
+
+    const restore = JSON.parse(snapshot);
+    state.soul = restore.soul; state.sampling = restore.sampling; state.trib = restore.trib;
+    state.custom = restore.custom; state.clouds = restore.clouds; state.layers = restore.layers;
+    state.tribParent = restore.tribParent; state.tribOrder = restore.tribOrder;
+    state.denOrder = restore.denOrder; state.preset = restore.preset;
+    state.removedContainers = restore.removedContainers || [];
+    render();
+
+    if (typeof window.floscCreatePersonality === "function") {
+      closeNewPanel();
+      window.floscCreatePersonality(label, profile, workshop, label, role);
+      return;
+    }
+    /* Standalone: there is no library, so New simply loads the template. */
+    applyPreset(name);
+    state.soul.label = label;
+    state.soul.name = label;
+    closeNewPanel();
     persistSoft();
     render();
-    showBuilderNotice(label + " loaded. Name it, then edit. Nothing is saved to the library until you press Save.");
+    showBuilderNotice(label + " loaded from the " + ((preset.meta && preset.meta.title) || name) + " template.");
   }
   const btnNewBlank = document.getElementById("btnNewBlank");
   if (btnNewBlank) {
-    btnNewBlank.addEventListener("click", function () {
-      startFrom("blank", "a blank skeleton");
-    });
+    btnNewBlank.addEventListener("click", function () { openNewPanel("blank", "blank"); });
   }
   const templatePick = document.getElementById("templatePick");
   if (templatePick) {
     templatePick.addEventListener("change", function () {
       const name = this.value;
-      this.value = "";
       if (!name) return;
       const preset = PRESETS[name];
-      startFrom(name, (preset && preset.meta && preset.meta.title) || name);
+      openNewPanel(name, (preset && preset.meta && preset.meta.title) || name);
     });
   }
+  const btnNewCreate = document.getElementById("btnNewCreate");
+  if (btnNewCreate) btnNewCreate.addEventListener("click", createNewPersonality);
+  const btnNewCancel = document.getElementById("btnNewCancel");
+  if (btnNewCancel) btnNewCancel.addEventListener("click", closeNewPanel);
+  const newNameInput = document.getElementById("newPersonalityName");
+  if (newNameInput) {
+    newNameInput.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") { e.preventDefault(); createNewPersonality(); }
+      if (e.key === "Escape") { e.preventDefault(); closeNewPanel(); }
+    });
+  }
+
   document.getElementById("btnImport").addEventListener("click", function () {
     document.getElementById("fileIn").click();
   });

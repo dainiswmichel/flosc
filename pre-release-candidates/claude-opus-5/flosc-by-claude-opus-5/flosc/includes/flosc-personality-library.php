@@ -1800,6 +1800,12 @@ if ( ! function_exists( 'flosc_personality_builder_boot_json' ) ) {
 			'siteHost'          => (string) wp_parse_url( get_bloginfo( 'url' ), PHP_URL_HOST ),
 			'ajaxUrl'           => admin_url( 'admin-ajax.php' ),
 			'nonce'             => wp_create_nonce( 'flosc_personality_design' ),
+			/* Creating a personality writes a new library row and then attaches
+			   it to this flow, which is a different capability and a different
+			   nonce. Without the flow file there is nothing to attach it to. */
+			'attachNonce'       => wp_create_nonce( 'flosc_attach_personality' ),
+			'ivr'               => (string) $ivr,
+			'existingIds'       => array_keys( flosc_personality_library_get_all() ),
 			'personaId'         => $persona_id,
 			'libraryUrl'        => flosc_personality_library_url( $ivr ),
 			'hideProviderPacks' => true,
