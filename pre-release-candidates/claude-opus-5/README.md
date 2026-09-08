@@ -1,9 +1,9 @@
-# Home run candidate v9 — Claude Opus 5
+# Home run candidate v10 — Claude Opus 5
 
 Assembled from the four tested candidates. Version held at **8.0.0** — this is
 a resubmission, not a release.
 
-**Two numbers, and they are not the same number.** `v9` is this candidate's
+**Two numbers, and they are not the same number.** `v10` is this candidate's
 iteration — how many times this folder has been rebuilt. `8.0.0` is the
 plugin's version, and it does not move: 8.0.0 is what goes to wordpress.org.
 
@@ -12,6 +12,7 @@ plugin's version, and it does not move: 8.0.0 is what goes to wordpress.org.
 | v7 | The assembled candidate, plus the empty-profile guard | `8734efe`, `7d329fa` |
 | v8 | The designer pass — one card, nested density, both dialogs gone | `48b951b` |
 | v9 | A colon for nesting levels, a period for decimals | `c5364b5` |
+| v10 | The headings are the palette; ticking reveals; rows wrap instead of overprinting | this commit |
 
 v8 and v9 were committed before this counter was picked back up, so their
 subject lines read `Candidate claude-opus-5 …` rather than `Home run candidate
@@ -19,7 +20,7 @@ v8 / v9`. The table is the mapping; the history is not being rewritten.
 
 ## The designer pass — read this first
 
-Candidate iteration **v9**. Plugin version still **8.0.0**, and it stays there.
+Candidate iteration **v10**. Plugin version still **8.0.0**, and it stays there.
 
 The DA1 AI Personality Designer now works on one idea instead of three.
 
@@ -40,6 +41,46 @@ both jobs could not carry. Any depth: `95:025:100`. Root and nested alike run
 
 Never stored — the card still holds 16, and dragging it out is 16 again with
 nothing to restore. Equal densities sort alphabetically.
+
+### New in v10
+
+**The thirteen headings are the palette's shelves.** One list, not two: an
+aspect waits on the shelf it will be written under, and renaming a shelf
+renames its heading, because they are the same object.
+
+    Identity and Role             6      (was Name and Core Role)
+    Philosophy and Values        12
+    Boundaries and Prohibitions  18      (was Hard Boundaries and Prohibitions)
+    Knowledge, Doubt, Correction 24
+    Opinions and Preferences     30      new
+    Tone and Communication Style 40
+    Stance Toward the Human      48
+    Behavior in Ambiguity        56
+    Adaptation                   62
+    Resourcefulness              68      new
+    Decisions incl. Infrequent   74
+    Banned Words and Fillers     84
+    Output and Delivery          94
+
+The 58 catalog cards are re-shelved by rule, and all still ship unticked —
+template defaults, not decisions. Drag one and it moves for good.
+
+**Three things that were broken on v9 and are fixed here.**
+
+1. Opening a shelf took two clicks. Clicking its summary re-rendered the panel
+   from the open state as it stood *before* the browser's own toggle landed,
+   so the shelf sprang shut. The click belongs to `<details>` now.
+2. Ticking a card left it inside a collapsed heading, scrolled to and
+   invisible. Every container between the card and the top opens.
+3. A card row printed over itself. The summary was a four-column grid whose
+   last column was sized `auto`, so a long meta line crushed the label and
+   overflowed across it. The meta line takes its own full-width line and wraps
+   there — no ellipsis anywhere in the stylesheet now.
+
+**The builder's own trajectory list is gone.** FLOSC already has trajectories:
+posts in the `trajectory` category, managed on the Trajectories tab. Anything
+written in the old panel migrates to aspect cards, so nothing stops reaching
+the AI. An aspect's trajectory can be `412`, `?post=412`, or a permalink.
 
 ### What to try on the site
 

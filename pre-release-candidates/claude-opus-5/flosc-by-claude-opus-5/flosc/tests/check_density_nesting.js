@@ -37,7 +37,7 @@ function containerById(id) { return containersSorted().find(function (l) { retur
 function soulSectionForDensity(d) { return containerById(layerForDensity(d)) || SOUL_LAYERS[0]; }
 function tribState(id) { return state.trib[id] || { density: 0 }; }
 const window = { floscPersonalityWp: { trajectoryPosts: [
-  { id: 412, type: "post", title: "How head and flow combine", excerpt: "Head is the vertical drop.", url: "https://example.com/head-and-flow/" }
+  { id: 412, type: "trajectory", title: "How head and flow combine", excerpt: "Head is the vertical drop.", url: "https://example.com/head-and-flow/" }
 ] } };
 
 eval(names.map(grab).join("\n"));
@@ -98,9 +98,9 @@ is("density 95 lands in Output and Delivery", soulSectionForDensity(95).label, "
 is("density 0 lands in Name and Core Role", soulSectionForDensity(0).label, "Name and Core Role");
 
 /* WordPress-native trajectories. */
-is("a bare id", trajectoryReading("412"), "post 412 — How head and flow combine. Head is the vertical drop.");
-is("the editor's own address", trajectoryReading("post.php?post=412&action=edit"), "post 412 — How head and flow combine. Head is the vertical drop.");
-is("a permalink", trajectoryReading("https://example.com/head-and-flow/"), "post 412 — How head and flow combine. Head is the vertical drop.");
+is("a bare id", trajectoryReading("412"), "trajectory 412 — How head and flow combine. Head is the vertical drop.");
+is("the editor's own address", trajectoryReading("post.php?post=412&action=edit"), "trajectory 412 — How head and flow combine. Head is the vertical drop.");
+is("a permalink", trajectoryReading("https://example.com/head-and-flow/"), "trajectory 412 — How head and flow combine. Head is the vertical drop.");
 is("an id we cannot look up", trajectoryReading("999"), "post 999");
 is("free text is left alone", trajectoryReading("leave them feeling heard"), "leave them feeling heard");
 

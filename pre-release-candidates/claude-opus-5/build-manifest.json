@@ -4,7 +4,7 @@
   "status": "DESIGNER_PASS_AWAITING_CAPTAIN_TEST",
   "branch": "claude/ready-to-help-jsw2li",
   "baseline_commit": "477f252",
-  "head_commit": "f526b57aa71d3ec9c94057bba75b7ca891403659",
+  "head_commit": "a62220c67b9a6f3c773b8a2974a95cd3a1338b8b",
   "version": "8.0.0",
   "artifact": "flosc.zip",
   "artifact_note": "Built from this tree with ./build-dist-zip.sh at head_commit. SHA256SUMS covers it. pre-release-candidates/ is excluded from the artifact by .distignore and by the build's hard deny list, so none of these folders can ride along into a ZIP.",
@@ -63,10 +63,19 @@
       25,
       26,
       27,
-      28
-    ]
+      28,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      37
+    ],
+    "one_list": "The thirteen soul.md headings ARE the aspect palette's shelves. wellspringCategories() derives from the container list, so renaming a shelf renames its heading and a card waits on the shelf it will be written under.",
+    "headings": "Identity and Role 6 | Philosophy and Values 12 | Boundaries and Prohibitions 18 | Knowledge, Doubt and Correction 24 | Opinions and Preferences 30 | Tone and Communication Style 40 | Stance Toward the Human 48 | Behavior in Ambiguity 56 | Adaptation 62 | Resourcefulness 68 | Decisions including Infrequent Cases 74 | Banned Words and Fillers to Avoid 84 | Output and Delivery 94"
   },
-  "candidate_iteration": 9,
+  "candidate_iteration": 10,
   "iterations": {
     "v7": {
       "commit": "7d329fa",
@@ -79,6 +88,10 @@
     "v9": {
       "commit": "c5364b5",
       "what": "a colon separates nesting levels, a period separates decimals; nested cards keep their decimals"
+    },
+    "v10": {
+      "commit": "a62220c",
+      "what": "the headings are the palette shelves (thirteen, two renamed, two new); ticking reveals; a heading is a drop target; the card editor on the palette side; the builder's own trajectory list removed and migrated; shelves open on one click; card rows wrap instead of printing over themselves; Spectrograph expands"
     }
   },
   "iteration_note": "candidate_iteration counts rebuilds of this folder. It is not the plugin version, which is held at 8.0.0 and does not move. v8 and v9 landed with subject lines that broke the 'Home run candidate v<N>' pattern; the iterations map is the mapping."

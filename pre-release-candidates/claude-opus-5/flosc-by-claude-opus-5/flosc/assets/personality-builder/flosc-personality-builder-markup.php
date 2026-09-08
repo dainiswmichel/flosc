@@ -64,11 +64,15 @@ if ( ! defined( 'ABSPATH' ) ) {
     </section>
   </section>
 
+  <?php
+  /*
+   * The Trajectories panel that stood here is gone. FLOSC already has
+   * trajectories — WordPress posts in the trajectory category, managed on the
+   * Trajectories tab and keyword-matched per turn by FLOSC_Trajectory. A
+   * trajectory is a parameter of an aspect, and the aspect card carries it.
+   */
+  ?>
   <div class="traj-pair">
-  <section class="panel" id="trajPanel">
-    <h2>Trajectories · desired outcome</h2>
-    <div class="pad" id="trajMount"></div>
-  </section>
   <section class="panel spec-panel" id="spec">
     <h2>Spectrograph</h2>
     <div class="pad">

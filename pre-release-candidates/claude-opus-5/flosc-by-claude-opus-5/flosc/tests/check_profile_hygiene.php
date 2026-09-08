@@ -271,12 +271,24 @@ ok( '  and written only under the flag',
 ok( '  with a control to turn it on',
 	strpos( $markup, 'id="includeSourceSite"' ) !== false, true );
 
-echo "\nThe trajectory wellsprings carry a placeholder, not a URL\n";
-preg_match_all( '/trajectoryAspect\(\s*"([a-z_]+)"/', $builder, $traj );
-ok( 'seven of them', count( $traj[1] ), 7 );
+// The Trajectory shelf is gone from the palette: a trajectory is a parameter of
+// an aspect and a WordPress post with an id, not a kind of aspect. The seven
+// cards are kept out of the palette so that a personality which already had one
+// switched on keeps it — migrated to an ordinary aspect the floscAdmin owns.
+echo "\nThe retired trajectory cards keep a placeholder, not a URL\n";
+ok( 'no Trajectory shelf in the palette',
+	strpos( $builder, 'id: "trajectory", label:' ) !== false, false );
+ok( 'the builder keeps no trajectory list of its own',
+	strpos( $builder, 'function activeTrajectories' ) !== false, false );
+ok( '  and nothing written in it is dropped',
+	strpos( $builder, 'function migrateSoulTrajectories()' ) !== false, true );
+ok( '  nor is a retired card that was switched on',
+	strpos( $builder, 'function migrateRetiredCards()' ) !== false, true );
+preg_match_all( '/retiredTrajectoryCard\(\s*"([a-z_]+)"/', $builder, $traj );
+ok( 'seven of them, held out of the palette', count( $traj[1] ), 7 );
 // A personality shipping with a plausible-looking URL gets sent to visitors
 // with that URL in it.
-preg_match_all( '/trajectoryAspect\((.*?)\n\n/s', $builder, $traj_bodies );
+preg_match_all( '/retiredTrajectoryCard\((.*?)\n\n/s', $builder, $traj_bodies );
 $hardcoded = array();
 foreach ( $traj_bodies[1] as $body ) {
 	if ( preg_match( '#https?://#', $body ) ) {
