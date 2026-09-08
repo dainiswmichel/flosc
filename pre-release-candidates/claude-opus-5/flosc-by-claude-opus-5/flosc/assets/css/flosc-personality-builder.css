@@ -365,42 +365,41 @@
     position: relative;
   }
   /*
-   * Two lines, not four columns. The meta line was a fourth column sized auto,
-   * so a long one crushed the label to nothing and then printed across it —
-   * unreadable on exactly the cards that have the most to say. It gets its own
-   * full-width line now and wraps there; nothing is cut, so nothing needs an
-   * ellipsis to admit that it was.
+   * One line, clipped. The summary is a title bar, so it stays a title bar.
+   *
+   * The last column used to be sized auto, which cannot shrink — a long meta
+   * line crushed the label to nothing and then printed across it. minmax(0,
+   * auto) lets it give way, and the ellipsis then does what an ellipsis is
+   * for. The full text is not lost: it is the footer at the bottom of the
+   * opened card.
    */
   .flosc-personality-workshop .acc > summary.row-sum{
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: 22px 18px minmax(0, 1fr) minmax(0, auto);
+    justify-content: stretch;
     align-items: center;
-    justify-content: flex-start;
-    gap: 3px 8px;
     padding-left: 8px;
     position: relative;
     isolation: isolate;
   }
   .flosc-personality-workshop .acc > summary.row-sum .row-lab{
-    flex: 1 1 auto;
     min-width: 0;
-    overflow-wrap: anywhere;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .flosc-personality-workshop .acc > summary.row-sum .meta-bit{
-    flex: 1 1 100%;
-    text-align: left;
-    white-space: normal;
-    overflow: visible;
-    text-overflow: clip;
-    overflow-wrap: anywhere;
-    font-weight: 400;
-    line-height: 1.35;
+    min-width: 0;
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   /* Gain meter. Position along the title bar IS the value:
      hard left = -100, centre = 0, hard right = +100. Inset by its own
      width so the marker never hangs off either end. */
   .flosc-personality-workshop .gain-mark{
-    position: absolute; top: 3px; height: 1.2em; width: 10px;
+    position: absolute; top: 3px; bottom: 3px; width: 10px;
     border-radius: 2px; background: rgba(31, 27, 22, .26);
     z-index: 0; pointer-events: none;
   }
@@ -413,26 +412,20 @@
    * description then grew the meta span, crushed .row-lab to nothing, and the
    * heading's own name overflowed and printed across the description.
    */
-  .flosc-personality-workshop .acc > summary:not(.row-sum){
-    flex-wrap: wrap;
-    align-items: flex-start;
-    row-gap: 3px;
-  }
   .flosc-personality-workshop .acc > summary:not(.row-sum) .row-lab{
-    flex: 1 1 auto;
-    min-width: 0;
-    overflow-wrap: anywhere;
+    flex: 0 0 auto;
+    max-width: 45%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .flosc-personality-workshop .acc > summary:not(.row-sum) .meta-bit{
-    flex: 1 1 100%;
+    flex: 1 1 auto;
     min-width: 0;
-    text-align: left;
-    white-space: normal;
-    overflow: visible;
-    text-overflow: clip;
-    overflow-wrap: anywhere;
-    font-weight: 400;
-    line-height: 1.35;
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   /* The line that says what the builder just did. */
@@ -512,6 +505,26 @@
   }
   .flosc-personality-workshop .cat-edit .figure-readout{ flex: 1 1 100%; margin: 0; }
   /* A shelf is a heading, so it carries the heading's density. */
+  /*
+   * The card's footer. The summary clips its meta line to one row, which is
+   * right for a title bar and wrong as the only place that text exists. This
+   * is the same line, whole and wrapped, at the bottom of the opened card.
+   */
+  .flosc-personality-workshop .card-footer{
+    margin: 10px 0 0;
+    padding: 7px 9px;
+    border-top: 1px solid var(--line);
+    background: var(--paper-2);
+    border-radius: 0 0 8px 8px;
+    font-family: var(--ui);
+    font-size: 0.76rem;
+    line-height: 1.45;
+    color: var(--ink-soft);
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .flosc-personality-workshop .card-footer b{ color: var(--ink); }
+
   .flosc-personality-workshop .fam-den{
     font-family: var(--ui); font-size: 0.7rem; font-weight: 700;
     color: var(--accent-2); margin-left: auto; padding-right: 6px; white-space: nowrap;

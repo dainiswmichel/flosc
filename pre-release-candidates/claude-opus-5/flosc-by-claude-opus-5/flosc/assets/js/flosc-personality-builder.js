@@ -3525,6 +3525,32 @@
       "</div>";
   }
 
+  /*
+   * The card's own line: density, group, parent, gain, binding, star,
+   * trajectory. The summary shows it clipped to one row because a title bar is
+   * a title bar; the footer at the bottom of the opened card shows the same
+   * line whole. One function, so the two can never say different things.
+   */
+  function cardMetaLine(t, full) {
+    const st = tribState(t.id);
+    const kids = tribChildren(t.id);
+    const parent = parentLabelOf(t.id);
+    const traj = String(st.trajectory || "").trim();
+    const bits = ["d" + composedDensity(t.id)];
+    if (kids.length) bits.push(st.groupNoun + " \u00b7 " + kids.length + " member" + (kids.length === 1 ? "" : "s"));
+    if (parent) bits.push("inside " + parent);
+    if (st.on) {
+      bits.push("G" + gainSigned(gainNum(st.weight)));
+      bits.push(st.binding);
+      bits.push(shapeLabel(st) || "no star");
+    } else {
+      bits.push("off");
+    }
+    if (traj) bits.push(full ? "trajectory: " + trajectoryReading(traj) : traj.slice(0, 40));
+    if (full) bits.push("written under " + soulSectionOf(t.id).label);
+    return bits.join(" \u00b7 ");
+  }
+
   function wellspringEditor(t) {
     const st = tribState(t.id);
     const cond = branchEditor(t, st);
@@ -3609,7 +3635,8 @@
       '<button type="button" data-mode="' + t.id + '" data-val="conditional"' + (st.mode === "conditional" ? ' class="on"' : "") + ">when</button>" +
       "</div>" +
       cond +
-      '<button type="button" class="btn ghost danger" data-remove-trib="' + t.id + '">Remove from personality</button>';
+      '<button type="button" class="btn ghost danger" data-remove-trib="' + t.id + '">Remove from personality</button>' +
+      '<p class="card-footer"><b>' + esc(t.label) + "</b> \u00b7 " + esc(cardMetaLine(t, true)) + "</p>";
   }
 
   /* renderTrajectories() is gone with its panel. A trajectory is a parameter
@@ -3641,11 +3668,7 @@
       '<span class="gain-mark" style="left:calc((100% - 10px) * ' + frac.toFixed(4) + ')"></span>' +
       '<span class="drag-handle" title="Drag to reorder by density · drop between rows, or onto a card to put this one inside it." draggable="true" data-drag-trib="' + t.id + '">⋮⋮</span>' +
       '<span class="row-lab">' + esc(t.label) + '</span>' +
-      '<span class="meta-bit ' + (st.on ? "on-dot" : "off-dot") + '">d' + esc(reads) +
-        (kids.length ? " · " + esc(st.groupNoun) + " · " + kids.length + " member" + (kids.length === 1 ? "" : "s") : "") +
-        (parentLabelOf(t.id) ? " · inside " + esc(parentLabelOf(t.id)) : "") + " · " +
-        (st.on ? "G" + gainSigned(gainNum(st.weight)) + " · " + st.binding + " · " + esc(shapeLabel(st) || "no star") : "off") +
-        (st.trajectory ? " · " + esc(String(st.trajectory).slice(0, 40)) : "") + "</span></summary>" +
+      '<span class="meta-bit ' + (st.on ? "on-dot" : "off-dot") + '">' + esc(cardMetaLine(t, false)) + "</span></summary>" +
       '<div class="acc-body">' + wellspringEditor(t) + nested + "</div></details>";
   }
 
