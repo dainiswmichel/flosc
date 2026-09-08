@@ -975,8 +975,41 @@
     });
     return arr;
   }
+  /*
+   * A saved personality carries its own container list, and this used to seed
+   * only when that list was empty — so an existing personality kept the labels
+   * an older build wrote ("Soul · identity", "Behavior · selection") and never
+   * received a heading added since. Opinions and Preferences and
+   * Resourcefulness were invisible to every personality that already existed.
+   *
+   * Two rules on load:
+   *   - a seeded heading missing from the saved list is added;
+   *   - a seeded heading that is present takes the current standard label and
+   *     description, unless the floscAdmin renamed it themselves.
+   *
+   * Density is never touched: moving a heading is a design decision and stays
+   * where it was put. `renamed` is set by the label and description handlers
+   * and cleared by Restore original name, so a deliberate rename survives every
+   * later upgrade. Data written before this flag existed has none, which is
+   * correct — those labels were seeded, not chosen.
+   */
   function ensureContainers() {
-    if (!Array.isArray(state.layers) || !state.layers.length) state.layers = seededContainers();
+    if (!Array.isArray(state.layers) || !state.layers.length) {
+      state.layers = seededContainers();
+      return state.layers;
+    }
+    const have = {};
+    state.layers.forEach(function (l) { if (l && l.id) have[l.id] = l; });
+    seededContainers().forEach(function (seed) {
+      const cur = have[seed.id];
+      if (!cur) {
+        state.layers.push(deepClone(seed));
+        return;
+      }
+      if (cur.origin !== "seed" || cur.renamed) return;
+      cur.label = seed.label;
+      cur.desc = seed.desc;
+    });
     return state.layers;
   }
   function containerById(id) {
@@ -1022,11 +1055,13 @@
     if (c.id === PROVIDERS_CONTAINER_ID) {
       const seed = seededContainers().find(function (s) { return s.id === PROVIDERS_CONTAINER_ID; });
       c.label = seed.label; c.desc = seed.desc; c.density = seed.density;
+      delete c.renamed;
       return;
     }
     const seed = SOUL_LAYERS.find(function (s) { return s.id === id; });
     if (!seed) return;
     c.label = seed.label; c.desc = seed.hint; c.density = seed.density;
+    delete c.renamed;
   }
 
   /* Every active topic belongs to exactly one parent heading. When the
@@ -2890,7 +2925,11 @@
       soul: s,
       containers: ensureContainers().map(function (l) {
         return { id: l.id, kind: l.kind, origin: l.origin, band: l.band,
-                 label: l.label, desc: l.desc, density: l.density, gain: l.gain };
+                 label: l.label, desc: l.desc, density: l.density, gain: l.gain,
+                 /* True only where the floscAdmin typed the name themselves.
+                    Without it, a later standard-heading rename would silently
+                    overwrite their wording. */
+                 renamed: !!l.renamed };
       }),
       placement: Object.keys(state.tribParent || {}).reduce(function (acc, tid) {
         const p = state.tribParent[tid];
@@ -3295,7 +3334,14 @@
       return '<details class="col' + (colSel ? " sel" : "") + '" data-col="' + c.id + '" data-open-key="fam:' + c.id + '"' + (famOpen || editing ? " open" : "") + ">" +
         '<summary data-focus-col="' + c.id + '"><strong>' + esc(c.label) + '</strong><span class="fam-hint">' + esc(c.hint || "") + '</span><span class="fam-den">d' + formatDensity(c.density) + '</span><button type="button" class="btn ghost" data-edit-category="' + c.id + '">' + (editing ? "Close" : "Edit") + '</button>' + ((containerById(c.id) || {}).origin === "user" ? '<button type="button" class="btn ghost danger" data-remove-category="' + c.id + '">Remove</button>' : "") + '</summary>' +
         head +
-        '<div class="list" data-drop-col="' + c.id + '">' + items + "</div></details>";
+        /* Every heading shows, filled or not. A shelf with nothing on it is
+           still part of the shape of a soul.md file, and a blank box reads as
+           broken rather than as empty. */
+        '<div class="list" data-drop-col="' + c.id + '">' +
+        (items ? items : '<p class="figure-readout col-empty">' +
+          (state.hideOff ? "Nothing active here. Untick Hide inactive aspects to see what is available."
+                         : "Nothing here yet. + Aspect makes one, or drag an aspect in.") + "</p>") +
+        "</div></details>";
     }).join("");
     /* A wellspring is an aspect, so the button says aspect. It makes the card
        outright — there is nothing to ask for first that the card cannot say
@@ -4641,22 +4687,26 @@
     }
     if (e.target.matches("[data-cat-label]") || e.target.matches("[data-cat-hint]")) {
       const cid = e.target.getAttribute("data-cat-label") || e.target.getAttribute("data-cat-hint");
-      const category = wellspringCategories().find(function (c) { return c.id === cid; });
-      if (!category) return;
-      if (e.target.hasAttribute("data-cat-label")) category.label = e.target.value;
-      else category.hint = e.target.value;
+      /* wellspringCategories() maps the containers into fresh objects, so
+         writing to one of those threw the edit away. The shelf IS the heading;
+         write to the heading. */
+      const L = containerById(cid);
+      if (!L) return;
+      if (e.target.hasAttribute("data-cat-label")) L.label = e.target.value;
+      else L.desc = e.target.value;
+      L.renamed = true;
       persistSoft();
       renderOut();
       return;
     }
     if (e.target.matches("[data-layer-label]")) {
       const L = containerById(e.target.getAttribute("data-layer-label"));
-      if (L) { L.label = e.target.value; persistSoft(); renderOut(); }
+      if (L) { L.label = e.target.value; L.renamed = true; persistSoft(); renderOut(); }
       return;
     }
     if (e.target.matches("[data-layer-desc]")) {
       const L = containerById(e.target.getAttribute("data-layer-desc"));
-      if (L) { L.desc = e.target.value; persistSoft(); renderOut(); }
+      if (L) { L.desc = e.target.value; L.renamed = true; persistSoft(); renderOut(); }
       return;
     }
     if (e.target.matches("[data-pv-text]")) {
@@ -4927,7 +4977,8 @@
           label: String(c.label || c.id || "Container"),
           desc: String(c.desc || ""),
           density: Number(c.density) || 0,
-          gain: Number(c.gain) || 0
+          gain: Number(c.gain) || 0,
+          renamed: !!c.renamed
         };
       }).filter(function (c) { return c.id; });
       if (!state.layers.some(function (c) { return c.kind === "providers"; })) {
