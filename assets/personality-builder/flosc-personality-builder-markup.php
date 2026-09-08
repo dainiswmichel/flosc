@@ -27,7 +27,6 @@ if ( ! defined( 'ABSPATH' ) ) {
       <p class="figure-readout identity-note" id="filenameNote"></p>
     </div>
     <div class="toolbar flosc-admin-builder__tools">
-      <select id="preset" class="btn" title="Choose a starting personality profile"></select>
       <button type="button" class="btn" id="btnImport">Import workshop state</button>
       <button type="button" class="btn" id="btnImportProfile">Import profile</button>
     </div>

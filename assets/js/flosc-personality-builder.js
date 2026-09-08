@@ -11,8 +11,6 @@
     document.querySelectorAll(".preset-where").forEach(function (el) {
       el.hidden = true;
     });
-    var preset = document.getElementById("preset");
-    if (preset) preset.hidden = true;
     var saveState = document.getElementById("saveState");
     if (saveState) saveState.hidden = true;
     var saveHead = document.querySelector("#savePanel h2");
@@ -3623,30 +3621,15 @@
   }
 
   function render() {
-    const sel = document.getElementById("preset");
-    if (!sel) {
-      return;
-    }
-    if (!sel.options.length) {
-      Object.keys(PRESETS).forEach(function (k) {
-        const o = document.createElement("option");
-        o.value = k;
-        o.textContent = PRESETS[k].meta.title;
-        sel.appendChild(o);
-      });
-    }
-    sel.value = state.preset;
-    const where = document.getElementById("presetWhere");
-    if (where) {
-      const meta = (PRESETS[state.preset] && PRESETS[state.preset].meta) || {};
-      if (state.preset === "brenda") {
-        where.innerHTML = "Loaded <strong>Brenda 5.7</strong> from this builder. Her long written profile lives in <code>brenda_personality_profile_deployables_and_reference/</code>. Download a workshop file if you want this mix of knobs on disk.";
-      } else if (meta.kind === "template") {
-        where.innerHTML = "<strong>" + esc(meta.title || state.preset) + "</strong> is a starting example in this builder — not a file on disk. Download a workshop file to keep your work.";
-      } else {
-        where.innerHTML = "Working copy in this browser. Import a workshop file to load knobs; import a personality profile to load written sections.";
-      }
-    }
+    /*
+     * The starting-template dropdown is gone. The flow — and the personality
+     * attached to it — are chosen above this builder, so a second list of
+     * personality names here read as a duplicate of that control.
+     *
+     * This function used to open with `const sel = document.getElementById(
+     * "preset"); if (!sel) return;`, which would have stopped the entire
+     * builder from drawing the moment that element left the page.
+     */
     const hide = document.getElementById("hideOff");
     if (hide) hide.checked = !!state.hideOff;
     const inc = document.getElementById("includeComments");
@@ -4343,12 +4326,6 @@
     state.include_source_site = this.checked;
     persistSoft();
     renderOut();
-  });
-
-  document.getElementById("preset").addEventListener("change", function () {
-    applyPreset(this.value);
-    persistSoft();
-    render();
   });
 
   document.querySelector("[data-out]").parentElement.addEventListener("click", function (e) {
