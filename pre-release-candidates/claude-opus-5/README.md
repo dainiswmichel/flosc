@@ -1,11 +1,25 @@
-# Home run candidate — Claude Opus 5
+# Home run candidate v9 — Claude Opus 5
 
 Assembled from the four tested candidates. Version held at **8.0.0** — this is
 a resubmission, not a release.
 
+**Two numbers, and they are not the same number.** `v9` is this candidate's
+iteration — how many times this folder has been rebuilt. `8.0.0` is the
+plugin's version, and it does not move: 8.0.0 is what goes to wordpress.org.
+
+| Iteration | What went in | Commit on `main` |
+|---|---|---|
+| v7 | The assembled candidate, plus the empty-profile guard | `8734efe`, `7d329fa` |
+| v8 | The designer pass — one card, nested density, both dialogs gone | `48b951b` |
+| v9 | A colon for nesting levels, a period for decimals | `c5364b5` |
+
+v8 and v9 were committed before this counter was picked back up, so their
+subject lines read `Candidate claude-opus-5 …` rather than `Home run candidate
+v8 / v9`. The table is the mapping; the history is not being rewritten.
+
 ## The designer pass — read this first
 
-Version is still **8.0.0**. This is the resubmission candidate, not a v9.
+Candidate iteration **v9**. Plugin version still **8.0.0**, and it stays there.
 
 The DA1 AI Personality Designer now works on one idea instead of three.
 
