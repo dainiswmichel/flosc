@@ -1087,19 +1087,34 @@
     chain.push(id);
     return chain.map(function (cid) { return clampDensity(tribState(cid).density); });
   }
-  /* The reading. The outermost card keeps its own decimals; every nested
-     segment is a three-digit integer, so a card at 16 inside one at 95
-     reads 95.016 and one at 100 inside it reads 95.100 — which is the
-     larger of the two, on the page and in the sort. */
+  /*
+   * The reading. Levels are separated by a colon, decimals by a period, so
+   * the two can never be confused: 95:016 is the aspect at 16 inside the card
+   * at 95, and 95.5 is a card at ninety-five and a half. Chapter and verse.
+   *
+   * Under a period doing both jobs, a root density of 95.5 was indisting-
+   * uishable on the page from a nested 95.500, and a nested card could not
+   * carry decimals at all without reading as a third level.
+   */
+  const DENSITY_NEST = ":";
   function composedDensity(id) {
     return densityChain(id).map(function (d, i) {
-      return i === 0 ? formatDensity(d) : String(Math.round(d)).padStart(3, "0");
-    }).join(".");
+      return i === 0 ? formatDensity(d) : nestedSegment(d);
+    }).join(DENSITY_NEST);
+  }
+  /* A nested segment pads its whole part to three digits, so a column of
+     members scans straight down and 100 reads as larger than 016 at a glance.
+     Decimals show exactly as the root shows them — trimmed, not padded. */
+  function nestedSegment(value) {
+    const n = clampDensity(value);
+    const text = formatDensity(n);
+    const dot = text.indexOf(".");
+    return String(Math.floor(n)).padStart(3, "0") + (dot >= 0 ? text.slice(dot) : "");
   }
   /*
-   * Compared segment by segment as numbers, not as text — a root density of
-   * 95.5 has a decimal point of its own, and a string compare would read
-   * that as a nesting level.
+   * Compared segment by segment as numbers, not as text. The colon removed
+   * the reading ambiguity; comparing numbers removes the sorting one, so a
+   * card at 95.5 and a card at 95.125 order by value rather than by digit.
    *
    * A card sorts before its own members: the shorter chain runs out first
    * and -1 loses to any real density.
@@ -2357,6 +2372,8 @@
         "- Lines beginning da1_ are apparatus. Every other line is the character.\n" +
         "- da1_density is SEQUENCE: 0 is first and lightest, 100 is last and densest.\n" +
         "  Position in the document is the value. Order is what resolves conflict.\n" +
+        "  A colon means nesting, a period means decimals. 95:016 is the aspect at\n" +
+        "  16 inside the card at 95: read after 95 itself, before 95:100.\n" +
         "- da1_gain is frequency of expression, -100 to +100. frequency = (gain + 100) / 2.\n" +
         "    -100 never | -75 almost never | -50 rarely | -25 less often than not\n" +
         "       0 no preference \u2014 yes and no depend on context\n" +

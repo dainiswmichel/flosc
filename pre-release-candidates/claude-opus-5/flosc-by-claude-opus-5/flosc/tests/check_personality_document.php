@@ -125,9 +125,15 @@ ok( '  an aspect heading starts at ## and deepens with nesting',
 ok( '  a card inside another card leads with its composed density',
 	strpos( $code, '" " + composedDensity(t.id) + " " + t.label' ) !== false, true );
 
-echo "\nNested density: parent, then the member padded to three digits\n";
-ok( 'the member segment is a three-digit integer',
-	strpos( $code, 'String(Math.round(d)).padStart(3, "0")' ) !== false, true );
+echo "\nNested density: a colon for levels, a period for decimals\n";
+ok( 'levels join with a colon, never a period',
+	strpos( $code, 'const DENSITY_NEST = ":";' ) !== false, true );
+ok( '  the member segment pads its whole part to three digits',
+	strpos( $code, 'String(Math.floor(n)).padStart(3, "0")' ) !== false, true );
+ok( '  and keeps its decimals, trimmed the way the root shows them',
+	strpos( $code, 'dot >= 0 ? text.slice(dot) : ""' ) !== false, true );
+ok( 'the compiled document says what the colon means',
+	strpos( $builder, 'A colon means nesting, a period means decimals.' ) !== false, true );
 ok( '  never stored — the chain is read from the parent map',
 	strpos( $code, 'function densityChain(id)' ) !== false, true );
 ok( '  and segments compare as numbers, not as text',

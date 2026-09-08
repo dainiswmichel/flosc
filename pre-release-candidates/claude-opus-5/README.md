@@ -17,10 +17,15 @@ call the group. `heading · wellspring · cloud · rain cloud · pool · categor
 defaulting from density — cloud in the soul band, rain cloud in character,
 pool in behavior.
 
-**Nested density.** An aspect at 16 dropped into a card at 95 reads `95.016`;
-one at 100 reads `95.100`, so the larger number sorts last. Any depth:
-`95.025.100`. Never stored — the card still holds 16, and dragging it out is
-16 again with nothing to restore. Equal densities sort alphabetically.
+**Nested density.** A colon separates levels, a period separates decimals, so
+the two can never be read for each other. An aspect at 16 dropped into a card
+at 95 reads `95:016`; one at 100 reads `95:100`, so the larger number sorts
+last. A nested card keeps its own decimals — `95:016.5` — which a period doing
+both jobs could not carry. Any depth: `95:025:100`. Root and nested alike run
+0–100 to three decimal places, 100,001 positions per level.
+
+Never stored — the card still holds 16, and dragging it out is 16 again with
+nothing to restore. Equal densities sort alphabetically.
 
 ### What to try on the site
 
@@ -31,7 +36,7 @@ one at 100 reads `95.100`, so the larger number sorts last. Any depth:
    listener. Both dialogs are gone; the buttons make the card outright.
 2. **Drag an aspect onto another aspect's coloured bar.** The lower one goes
    inside the upper one, which becomes the heading. Its row says
-   `pool · 3 members`, and each member reads `95.016`.
+   `pool · 3 members`, and each member reads `95:016`.
 3. **Save and reload.** The group survives. It would not have before:
    `workshopFile()` wrote the placement map and `importSpec()` never read it,
    so every placement was rebuilt from density on load.

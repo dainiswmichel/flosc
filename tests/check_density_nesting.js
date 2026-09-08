@@ -14,7 +14,7 @@ function grab(name) {
 }
 
 const names = ["clampDensity", "formatDensity", "cardAncestors", "densityChain",
-               "composedDensity", "compareCards", "bandOfDensity", "defaultGroupNoun",
+               "nestedSegment", "composedDensity", "compareCards", "bandOfDensity", "defaultGroupNoun",
                "layerForDensity", "trajectoryPosts", "postFromTrajectory", "trajectoryReading"];
 const SOUL_LAYERS = [
   { id: "identity", density: 6, label: "Name and Core Role" },
@@ -30,6 +30,7 @@ const SOUL_LAYERS = [
   { id: "action", density: 94, label: "Output and Delivery" }
 ];
 const DENSITY_BANDS = { soul: 0, character: 34, behavior: 67 };
+const DENSITY_NEST = ":";
 const state = { tribParent: {}, trib: {} };
 function containersSorted() { return SOUL_LAYERS.map(function (L) { return { id: L.id, kind: "layer", density: L.density, label: L.label }; }); }
 function containerById(id) { return containersSorted().find(function (l) { return l.id === id; }) || null; }
@@ -51,15 +52,15 @@ function is(label, got, want) {
 /* The Captain's own worked example. */
 state.trib = { kindness: { density: 95 }, warmth: { density: 16 }, direct: { density: 100 }, patience: { density: 25 } };
 state.tribParent = { warmth: { kind: "trib", id: "kindness" }, direct: { kind: "trib", id: "kindness" }, patience: { kind: "trib", id: "kindness" } };
-is("16 dropped into 95", composedDensity("warmth"), "95.016");
-is("100 dropped into 95", composedDensity("direct"), "95.100");
+is("16 dropped into 95", composedDensity("warmth"), "95:016");
+is("100 dropped into 95", composedDensity("direct"), "95:100");
 is("95.100 sorts after 95.016", compareCards({ id: "direct", label: "D" }, { id: "warmth", label: "W" }) > 0, "true");
 is("the group sorts before its members", compareCards({ id: "kindness", label: "K" }, { id: "warmth", label: "W" }) < 0, "true");
 
 /* Arbitrary depth, IP-address style. */
 state.trib.deep = { density: 100 };
 state.tribParent.deep = { kind: "trib", id: "patience" };
-is("arbitrary depth, IP-address style", composedDensity("deep"), "95.025.100");
+is("arbitrary depth", composedDensity("deep"), "95:025:100");
 
 /* Drag out and it is 16 again — nothing stored, nothing to restore. */
 delete state.tribParent.warmth;
@@ -69,6 +70,12 @@ is("dragged out of the group", composedDensity("warmth"), "16");
 state.trib.half = { density: 95.5 };
 state.trib.tiny = { density: 1 };
 is("fractional root keeps its decimals", composedDensity("half"), "95.5");
+state.trib.hair = { density: 16.5 };
+state.tribParent.hair = { kind: "trib", id: "kindness" };
+is("a nested card keeps its decimals too", composedDensity("hair"), "95:016.5");
+is("  which the period alone could never carry", composedDensity("hair").split(":").length, "2");
+state.trib.q = { density: 95.125 };
+is("95.5 sorts before 95.125? no — by value", compareCards({ id: "half", label: "H" }, { id: "q", label: "Q" }) > 0, "true");
 is("  and still sorts above a card at 1", compareCards({ id: "half", label: "H" }, { id: "tiny", label: "T" }) > 0, "true");
 
 /* Ties sort alphabetically. */
