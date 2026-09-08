@@ -3232,7 +3232,14 @@
   function renderCols() {
     const root = document.getElementById("cols");
     root.classList.toggle("single", wellspringCategories().length === 1);
+    /* Density order, the same order the document uses — a shelf is a heading,
+       so the palette and the sequence read top to bottom the same way. This
+       sorted alphabetically, which put a new category at density 0 somewhere
+       under N instead of at the top where it was made. */
     const categories = wellspringCategories().slice().sort(function (a, b) {
+      const da = clampDensity(a.density);
+      const db = clampDensity(b.density);
+      if (da !== db) return da - db;
       return String(a.label || a.id).localeCompare(String(b.label || b.id));
     });
     root.innerHTML = categories.map(function (c) {
