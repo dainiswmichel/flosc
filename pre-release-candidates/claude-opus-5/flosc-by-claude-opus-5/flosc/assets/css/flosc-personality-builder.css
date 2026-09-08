@@ -373,22 +373,39 @@
    * for. The full text is not lost: it is the footer at the bottom of the
    * opened card.
    */
+  /*
+   * Three columns: handle, label, meta. It declared four — 22px 18px 1fr auto,
+   * for a handle, a density swatch, the label and the meta line — but a row
+   * summary has no swatch (.den-swatch lives in the density editor) and
+   * .gain-mark is absolutely positioned, so it takes no cell either. Three
+   * children fell into four columns and everything shifted one place left:
+   * the label landed in the 18px column and printed straight across the meta
+   * line beside it. "Deborah" over her own row.
+   *
+   * Every child is placed by name now, so adding or removing one cannot shift
+   * the others again. The last column is minmax(0, auto) rather than auto so
+   * that a long meta line gives way to the label instead of crushing it, and
+   * the ellipsis gets to do its job.
+   */
   .flosc-personality-workshop .acc > summary.row-sum{
     display: grid;
-    grid-template-columns: 22px 18px minmax(0, 1fr) minmax(0, auto);
+    grid-template-columns: 22px minmax(0, 1fr) minmax(0, auto);
     justify-content: stretch;
     align-items: center;
     padding-left: 8px;
     position: relative;
     isolation: isolate;
   }
-  .flosc-personality-workshop .acc > summary.row-sum .row-lab{
+  .flosc-personality-workshop .acc > summary.row-sum > .drag-handle{ grid-column: 1; }
+  .flosc-personality-workshop .acc > summary.row-sum > .row-lab{
+    grid-column: 2;
     min-width: 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .flosc-personality-workshop .acc > summary.row-sum .meta-bit{
+  .flosc-personality-workshop .acc > summary.row-sum > .meta-bit{
+    grid-column: 3;
     min-width: 0;
     text-align: right;
     white-space: nowrap;
@@ -592,7 +609,10 @@
     background: #fff;
   }
   .flosc-personality-workshop .acc:not([open]) > summary ~ *{ display: none; }
-  .flosc-personality-workshop .acc .meta-bit{ font-weight: 600; font-size: 0.72rem; color: var(--ink-soft); text-transform: none; letter-spacing: 0; }
+  /* The row sits on a density-grey ground that can be nearly white, so the
+     meta line needs the darker ink to stay readable there. .ink-light above
+     still flips it for the dark end of the scale. */
+  .flosc-personality-workshop .acc .meta-bit{ font-weight: 600; font-size: 0.72rem; color: #3c434a; text-transform: none; letter-spacing: 0; }
   .flosc-personality-workshop .acc.on-dot{ color: var(--good); }
   .flosc-personality-workshop .acc.off-dot{ color: var(--off); }
   .flosc-personality-workshop .acc-nest{ padding: 6px 6px 8px; }

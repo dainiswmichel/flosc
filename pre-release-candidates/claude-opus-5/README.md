@@ -1,9 +1,9 @@
-# Home run candidate v11 — Claude Opus 5
+# Home run candidate v12 — Claude Opus 5
 
 Assembled from the four tested candidates. Version held at **8.0.0** — this is
 a resubmission, not a release.
 
-**Two numbers, and they are not the same number.** `v11` is this candidate's
+**Two numbers, and they are not the same number.** `v12` is this candidate's
 iteration — how many times this folder has been rebuilt. `8.0.0` is the
 plugin's version, and it does not move: 8.0.0 is what goes to wordpress.org.
 
@@ -13,7 +13,8 @@ plugin's version, and it does not move: 8.0.0 is what goes to wordpress.org.
 | v8 | The designer pass — one card, nested density, both dialogs gone | `48b951b` |
 | v9 | A colon for nesting levels, a period for decimals | `c5364b5` |
 | v10 | The headings are the palette; ticking reveals; shelves open on one click | `9fbd41b` |
-| v11 | Summary keeps its ellipsis; the full line is a wrapped card footer | this commit |
+| v11 | Summary keeps its ellipsis; the full line is a wrapped card footer | `de0c82e` |
+| v12 | The row label was landing in the swatch column and printing over its own meta line | this commit |
 
 v8 and v9 were committed before this counter was picked back up, so their
 subject lines read `Candidate claude-opus-5 …` rather than `Home run candidate
@@ -21,7 +22,7 @@ v8 / v9`. The table is the mapping; the history is not being rewritten.
 
 ## The designer pass — read this first
 
-Candidate iteration **v11**. Plugin version still **8.0.0**, and it stays there.
+Candidate iteration **v12**. Plugin version still **8.0.0**, and it stays there.
 
 The DA1 AI Personality Designer now works on one idea instead of three.
 
