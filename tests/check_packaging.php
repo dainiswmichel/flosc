@@ -101,12 +101,37 @@ ok( '  and in the hard deny list, which .distignore cannot undo',
 ok( 'tests/ too — they stub WordPress and redeclare core functions',
 	strpos( $distignore, 'tests/' ) !== false, true );
 
-// Internal notes are not plugin content. handoff.md carries the operator's
+// Internal notes are not plugin content. A handoff carries the operator's
 // local ship path, their machine's username, and project context that has no
 // business in a public plugin directory — and nothing in it is needed to run
 // FLOSC. It shipped until someone read the artifact's file list.
+// Checked by enumeration, not by string: a second handoff file under a new
+// name is exactly how this leaks back in, so every handoff*.md in the root
+// must be matched by some .distignore pattern.
+$dist_patterns = array();
+foreach ( preg_split( '/\R/', $distignore ) as $dist_line ) {
+	$dist_line = trim( preg_replace( '/#.*$/', '', $dist_line ) );
+	if ( '' !== $dist_line ) {
+		$dist_patterns[] = rtrim( $dist_line, '/' );
+	}
+}
+$handoffs = glob( $root . '/[Hh][Aa][Nn][Dd][Oo][Ff][Ff]*.md' );
+$unshielded = array();
+foreach ( (array) $handoffs as $handoff ) {
+	$base    = basename( $handoff );
+	$shielded = false;
+	foreach ( $dist_patterns as $dist_pattern ) {
+		if ( fnmatch( $dist_pattern, $base ) ) {
+			$shielded = true;
+			break;
+		}
+	}
+	if ( ! $shielded ) {
+		$unshielded[] = $base;
+	}
+}
 ok( 'and the session handoff notes stay out of the artifact',
-	strpos( $distignore, 'handoff.md' ) !== false, true );
+	$unshielded ? implode( ', ', $unshielded ) : 'all excluded', 'all excluded' );
 
 echo "\nThe version has not moved\n";
 $main   = (string) file_get_contents( $root . '/flosc.php' );
