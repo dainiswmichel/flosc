@@ -1,51 +1,37 @@
-# FLOSC — Grok 4.6 v27 candidate
+# FLOSC — Grok 4.6 v28 candidate
 
-**Status:** Deployed to the authorized live test site after packaging.
+**Status:** Packed from the local working tree and shipped to ChemiCloud for Captain testing at dainis.net.
 
-This is the complete **v27 pre-release candidate** prepared by **Grok 4.6**. Baseline is Codex GPT-5.6 Sol **v26** at `main` commit `7cdda1c`. Plugin version remains `8.0.0`; `v27` counts candidate iterations and is not a plugin version bump.
+**Agent:** Grok 4.6  
+**Plugin version:** 8.0.0 (not bumped)  
+**Baseline:** v26 Codex `7cdda1c` + local A4 + MagicLink small set.
 
-## Remediation in this candidate
+## In this candidate
 
-- WordPress core oEmbed / in-chat media players are disclosed under FAQ External Services item 17: YouTube, TikTok, Spotify, SoundCloud, Apple Music, Vimeo. Purpose, media URL sent, visitor browser loads the provider player, terms and privacy links. No new runtime feature.
-- `handoff-resubmission.md` is not in this candidate tree and is not in the zip (already matched by `.distignore` `handoff*.md`).
+- FAQ External Services item 17: WordPress core oEmbed (YouTube, TikTok, Spotify, SoundCloud, Apple Music, Vimeo).
+- MagicLink small set in `includes/magic-link/class-flosc-magic-link-trait.php`:
+  1. Consume rate-limit via existing `FLOSC_Request_Guard` (`magic_consume`, 30 / 15 min).
+  2. Two-places fuse (`last_ip` + `last_at`, 15 min). No geo vendor.
+  3. Guest use cap unchanged. Members not one-timed.
+  4. Hashed transient key + `hash_equals`. Legacy raw key still loads.
+  5. Kind fallback (HTTP 200): log in the regular way. Not a 403. Not a ban.
+- `handoff-resubmission.md` not in the zip.
 
-v26 repairs are unchanged: requested-flow IVR entitlement, destination-symlink rejection, byte-preserving secret callbacks, PayPal/IVR diagnostic `textContent`, shipped HEREDOC/NOWDOC conversion.
-
-## Verification completed
-
-- `tests/check_provider_identity.php` passed (FAQ word budget, no accidental `==` heading, identity disclosure intact).
-- Zip integrity: 277 entries, 237 files, single top-level `flosc/`. No `tests/`, no `handoff*.md`.
-- Plugin version 8.0.0 in `flosc.php` and `readme.txt` Stable tag.
-
-## Captain acceptance remaining
-
-1. Install `flosc.zip` on a fresh WordPress installation.
-2. Connect an AI provider and exercise the shipped Starter Packs.
-3. Select shipped personalities and confirm voices in real conversations.
-4. Build, save, select, and converse with a new personality in the AI Personality Designer.
-5. Resubmit only after those checks pass.
-
-## Candidate contents
+## Artifact
 
 ```text
-pre-release-candidates/grok-4-6/
-├── README.md
-├── build-manifest.json
-├── SHA256SUMS
-├── flosc.zip
-└── flosc-by-grok-4-6/
-    └── flosc/
-        └── complete candidate source and non-shipping test suite
+pre-release-candidates/grok-4-6/flosc.zip
+sha256  79eaab383aa132e472af6e6b4e270205b9de3b36a51ed1d01a6cbf0e641678f5
+entries 277 (237 files)
+root    flosc/
 ```
-
-To verify the download:
 
 ```sh
 shasum -a 256 -c SHA256SUMS
 unzip -t flosc.zip
 ```
 
-## Ship to ChemiCloud
+## Ship
 
 ```bash
 cd /Users/dainismichel/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0
