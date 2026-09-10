@@ -241,6 +241,9 @@ class FLOSC_Chatpack {
         // ── 1. FLOSC IDENTITY ───────────────────────────────
         $sections[] = self::build_identity_section((string) $flow_id);
 
+        // ── USER-SPECIFIC GUIDANCE ──────────────────────────
+        $sections[] = self::build_user_sticky_section($eval_context);
+
         // ── 2. WORDPRESS ENVIRONMENT ────────────────────────
         $sections[] = self::build_wordpress_section();
 
@@ -322,6 +325,7 @@ class FLOSC_Chatpack {
         // back to the flow section that already sends it, which costs less per
         // turn than the anchor did and keeps the character.
         $sections[] = self::build_identity_section((string) ($eval_context['flow_id'] ?? ''), false);
+        $sections[] = self::build_user_sticky_section($eval_context);
         $followup_flow = (string) ($eval_context['flow_id'] ?? '');
         $sections[] = self::build_user_section($eval_context);
         $sections[] = self::build_flow_section($phase, $eval_context, $followup_flow);
@@ -708,6 +712,18 @@ class FLOSC_Chatpack {
         $section .= "- FLOSC Version: {$flosc_version}\n";
 
         return $section;
+    }
+
+    /**
+     * Administrator-authored guidance for this authenticated user only.
+     *
+     * @param array $eval_context Backend-authoritative evaluation context.
+     * @return string Prompt section, or an empty string.
+     */
+    private static function build_user_sticky_section($eval_context) {
+        return function_exists('flosc_get_user_sticky_prompt')
+            ? flosc_get_user_sticky_prompt($eval_context['user_id'] ?? 0, $eval_context)
+            : '';
     }
 
     /**

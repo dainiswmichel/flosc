@@ -1380,7 +1380,7 @@ trait FLOSC_Chat_Turn_Trait {
         
         // Build system prompt for AI
         $system_prompt = $this->build_rag_system_prompt($user_context);
-        
+
         // Get available lessons list (for AI to know what exists)
         $lessons_list = $this->rag_manager->get_available_lessons($user_context['access_level']);
         

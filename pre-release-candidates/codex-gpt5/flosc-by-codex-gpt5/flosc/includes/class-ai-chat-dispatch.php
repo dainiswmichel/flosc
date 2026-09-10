@@ -44,6 +44,12 @@ class FLOSC_AI_Chat_Dispatch {
         // v1.9.5: Unified admin feedback — reads rated chat logs from DB
         $feedback_prompt = $this->build_feedback_prompt();
 
+        // Administrator-authored context for this authenticated user only.
+        // The backend supplies user_id; browser input never selects another user.
+        $user_sticky_section = function_exists('flosc_get_user_sticky_prompt')
+            ? flosc_get_user_sticky_prompt($context['user_id'] ?? 0, $context)
+            : '';
+
         // v3.0.5: AI-interpretation offer phrases — when the user's message
         // semantically matches one of these phrases, AI should include the action tag.
         $offer_phrase_section = '';
@@ -238,6 +244,7 @@ class FLOSC_AI_Chat_Dispatch {
         // 6. Merge all sections
         $sections = array_filter([
             $identity_prompt,
+            $user_sticky_section,
             $flosc_process,
             $phase_prompt,
             $orientation_content ? "## Knowledge Base\n" . $orientation_content : '',

@@ -124,14 +124,14 @@ class FLOSC_Member_Access {
         
         // Grant specific membership level if offer specifies one (v1.0.1)
         if (!empty($purchase_data['grants_level'])) {
-            $this->grant_level($user_id, $purchase_data['grants_level']);
+            $this->grant_level($user_id, $purchase_data['grants_level'], $stem);
         } elseif (!empty($purchase_data['offer_id'])) {
             // Look up offer to get grants_level
             $offers = get_option('flosc_offers', []);
             if (isset($offers[$purchase_data['offer_id']]['grants_level'])) {
                 $level = $offers[$purchase_data['offer_id']]['grants_level'];
                 if (!empty($level)) {
-                    $this->grant_level($user_id, $level);
+                    $this->grant_level($user_id, $level, $stem);
                 }
             }
         }
@@ -251,7 +251,7 @@ class FLOSC_Member_Access {
      * Checks _flosc_memberlevel_{level} user meta, WP role, and legacy aliases.
      *
      * @param int $user_id
-     * @param string $level e.g. 'samplecourse', 'spanishcourse', 'pronunciation_learners'
+     * @param string $level e.g. 'samplecourse', 'spanishcourse', 'course_members'
      * @return bool
      */
     public function has_level($user_id, $level) {
@@ -280,10 +280,12 @@ class FLOSC_Member_Access {
     /**
      * Grant a specific membership level to user
      * 
-     * @param int $user_id
-     * @param string $level
+     * @param int    $user_id User ID.
+     * @param string $level Membership-level role slug.
+     * @param string $flow_id Optional flow whose guest tier should be replaced.
+     * @return bool
      */
-    public function grant_level($user_id, $level) {
+    public function grant_level($user_id, $level, $flow_id = '') {
         if (!$user_id || !$level) {
             return false;
         }
@@ -300,13 +302,27 @@ class FLOSC_Member_Access {
                 if (!in_array($sanitized_level, $user->roles, true)) {
                     $user->add_role($sanitized_level);
                 }
-                // Remove guest-tier roles on member-level grant when instance defines pairs.
-                $guest_aliases = apply_filters('flosc_guest_level_slugs_to_clear_on_member_grant', [], $sanitized_level);
+                // Roles describe the current tier. Content access remains
+                // cumulative (Member receives V + G + M) through access checks.
+                $guest_aliases = [];
+                $flow_id       = sanitize_key(pathinfo(basename((string) $flow_id), PATHINFO_FILENAME));
+                if ($flow_id !== '') {
+                    $flow_member = sanitize_key((string) flosc_get_setting('default_member_level', '', $flow_id));
+                    $flow_guest  = sanitize_key((string) flosc_get_setting('default_guest_level', '', $flow_id));
+                    if ($flow_member === $sanitized_level && $flow_guest !== '') {
+                        $guest_aliases[] = $flow_guest;
+                    }
+                }
+
+                $guest_aliases = apply_filters('flosc_guest_level_slugs_to_clear_on_member_grant', $guest_aliases, $sanitized_level, $flow_id);
                 if (is_array($guest_aliases)) {
                     foreach ($guest_aliases as $guest_alias) {
                         $guest_alias = sanitize_key((string) $guest_alias);
                         if ($guest_alias !== '' && in_array($guest_alias, $user->roles, true)) {
                             $user->remove_role($guest_alias);
+                        }
+                        if ($guest_alias !== '') {
+                            delete_user_meta($user_id, '_flosc_memberlevel_' . $guest_alias);
                         }
                     }
                 }
