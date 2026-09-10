@@ -401,23 +401,31 @@ $flosc_companion_extension_hooks = [
     ['hook' => 'flosc_companion_numeric_limits', 'type' => 'filter', 'purpose' => 'Set min/max numeric bounds for companion controls and sanitization.'],
 ];
 
-$flosc_companion_snippet_numeric_limits = <<<'FLOSC_COMPANION_SNIPPET_NUMERIC_LIMITS'
-add_filter('flosc_companion_numeric_limits', function ($limits) {
-    $limits['panel_width_min'] = 320;
-    $limits['panel_width_max'] = 640;
-    $limits['trigger_cooldown_min_ms'] = 15000;
-    $limits['trigger_cooldown_max_ms'] = 3600000;
-    return $limits;
-});
-FLOSC_COMPANION_SNIPPET_NUMERIC_LIMITS;
+$flosc_companion_snippet_numeric_limits = implode(
+	"\n",
+	array(
+		'add_filter(\'flosc_companion_numeric_limits\', function ($limits) {',
+		'    $limits[\'panel_width_min\'] = 320;',
+		'    $limits[\'panel_width_max\'] = 640;',
+		'    $limits[\'trigger_cooldown_min_ms\'] = 15000;',
+		'    $limits[\'trigger_cooldown_max_ms\'] = 3600000;',
+		'    return $limits;',
+		'});',
+		'',
+	)
+);
 
-$flosc_companion_snippet_frontend_config = <<<'FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG'
-add_filter('flosc_companion_frontend_config', function ($config, $framework) {
-    $config['autoOpenDelayMs'] = max(2000, (int) ($config['autoOpenDelayMs'] ?? 0));
-    $config['launcherAriaLabel'] = 'Open chat companion';
-    return $config;
-}, 10, 2);
-FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
+$flosc_companion_snippet_frontend_config = implode(
+	"\n",
+	array(
+		'add_filter(\'flosc_companion_frontend_config\', function ($config, $framework) {',
+		'    $config[\'autoOpenDelayMs\'] = max(2000, (int) ($config[\'autoOpenDelayMs\'] ?? 0));',
+		'    $config[\'launcherAriaLabel\'] = \'Open chat companion\';',
+		'    return $config;',
+		'}, 10, 2);',
+		'',
+	)
+);
 ?>
 
 <h2>Display Mode</h2>

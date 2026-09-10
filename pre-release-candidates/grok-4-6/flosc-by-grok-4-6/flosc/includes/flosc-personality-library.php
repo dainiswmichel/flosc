@@ -22,6 +22,59 @@ if ( ! function_exists( 'flosc_personality_library_option_key' ) ) {
 	}
 }
 
+if ( ! function_exists( 'flosc_personality_fingerprint' ) ) {
+	/**
+	 * The deployment fingerprint: genome and runtime profile as one unit.
+	 *
+	 * Kept in one place because it is written on save and read back on every
+	 * turn, and a hash computed two slightly different ways is worse than no
+	 * hash at all — it reports a mismatch that is not there.
+	 *
+	 * @param string $genome  workshop_json as stored.
+	 * @param string $profile ai_base_prompt as stored.
+	 * @return string 64 hex characters.
+	 */
+	function flosc_personality_fingerprint( $genome, $profile ) {
+		return hash( 'sha256', (string) $genome . "\n--FLOSC-RUNTIME--\n" . trim( (string) $profile ) );
+	}
+}
+
+if ( ! function_exists( 'flosc_personality_resolved_fingerprint' ) ) {
+	/**
+	 * The fingerprint of whatever personality this flow resolves to now.
+	 *
+	 * profile_hash is written when a personality is saved, so a row that has
+	 * not been saved since the field existed has none — which is every shipped
+	 * default on a fresh install. The live chat log showed an empty column for
+	 * exactly that reason: the mechanism was right and had nothing to read.
+	 *
+	 * Computing it when it is absent costs one sha256 over about a kilobyte and
+	 * makes the column mean the same thing on every row.
+	 *
+	 * @param string|null $flow_id Flow to resolve for.
+	 * @return string 64 hex characters, or '' when no personality is attached.
+	 */
+	function flosc_personality_resolved_fingerprint( $flow_id = null ) {
+		if ( ! function_exists( 'flosc_personality_library_resolve_field' ) ) {
+			return '';
+		}
+
+		$stored = trim( (string) flosc_personality_library_resolve_field( 'profile_hash', '', $flow_id ) );
+		if ( $stored !== '' ) {
+			return $stored;
+		}
+
+		$profile = (string) flosc_personality_library_resolve_field( 'ai_base_prompt', '', $flow_id );
+		$genome  = (string) flosc_personality_library_resolve_field( 'workshop_json', '', $flow_id );
+
+		if ( trim( $profile ) === '' && trim( $genome ) === '' ) {
+			return '';
+		}
+
+		return flosc_personality_fingerprint( $genome, $profile );
+	}
+}
+
 if ( ! function_exists( 'flosc_personality_library_field_keys' ) ) {
 	/**
 	 * Fields stored on each library entry (and mirrored on the flow when custom).
@@ -44,75 +97,6 @@ if ( ! function_exists( 'flosc_personality_library_field_keys' ) ) {
 			'profile_version',
 			'profile_hash',
 			'profile_modified_gmt',
-		);
-	}
-}
-
-if ( ! function_exists( 'flosc_personality_compile' ) ) {
-	/**
-	 * Compile one personality genome into a runtime profile + hash.
-	 *
-	 * Non-destructive: an authored or designer-compiled ai_base_prompt is kept
-	 * verbatim. Only an empty profile is synthesized from structured fields.
-	 * The hash always covers the bytes public chat will send.
-	 *
-	 * @param array<string,mixed> $genome Row fields.
-	 * @return array{ai_base_prompt:string,profile_hash:string}
-	 */
-	function flosc_personality_compile( $genome ) {
-		$genome  = is_array( $genome ) ? $genome : array();
-		$profile = isset( $genome['ai_base_prompt'] ) ? trim( (string) $genome['ai_base_prompt'] ) : '';
-		if ( $profile !== '' ) {
-			return array(
-				'ai_base_prompt' => $profile,
-				'profile_hash'   => hash( 'sha256', $profile ),
-			);
-		}
-
-		$name      = sanitize_text_field( (string) ( $genome['ai_personality_name'] ?? '' ) );
-		$role      = sanitize_text_field( (string) ( $genome['ai_personality_role'] ?? '' ) );
-		$traits    = sanitize_text_field( (string) ( $genome['ai_personality_traits'] ?? '' ) );
-		$mission   = sanitize_textarea_field( (string) ( $genome['ai_mission'] ?? '' ) );
-		$bounds    = sanitize_textarea_field( (string) ( $genome['ai_boundaries'] ?? '' ) );
-		$scope     = sanitize_textarea_field( (string) ( $genome['ai_topic_scope'] ?? '' ) );
-		$offmsg    = sanitize_textarea_field( (string) ( $genome['ai_off_topic_message'] ?? '' ) );
-		$offlnk    = sanitize_textarea_field( (string) ( $genome['ai_off_topic_links'] ?? '' ) );
-		$fallback  = sanitize_text_field( (string) ( $genome['ai_fallback_phrase'] ?? '' ) );
-
-		$sections = array();
-		if ( $name !== '' ) {
-			$sections[] = 'You are **' . $name . '**.';
-			if ( $role !== '' ) {
-				$sections[] = $role;
-			}
-			$sections[] = 'Speak as this person. Do not discuss how you were made.';
-		}
-		if ( $traits !== '' ) {
-			$sections[] = "## Personality Traits\n\n" . $traits;
-		}
-		if ( $mission !== '' ) {
-			$sections[] = "## Mission\n\n" . $mission;
-		}
-		if ( $bounds !== '' ) {
-			$sections[] = "## Boundaries\n\n" . $bounds;
-		}
-		if ( $scope !== '' ) {
-			$sections[] = "## Topic Scope\n\n" . $scope;
-		}
-		if ( $offmsg !== '' ) {
-			$sections[] = "## Off-Topic Handling\n\n" . $offmsg;
-		}
-		if ( $offlnk !== '' ) {
-			$sections[] = "## Off-Topic Links\n\n" . $offlnk;
-		}
-		if ( $fallback !== '' ) {
-			$sections[] = "## Fallback Phrase\n\n" . $fallback;
-		}
-
-		$compiled = trim( implode( "\n\n", $sections ) );
-		return array(
-			'ai_base_prompt' => $compiled,
-			'profile_hash'   => $compiled !== '' ? hash( 'sha256', $compiled ) : '',
 		);
 	}
 }
@@ -313,7 +297,7 @@ if ( ! function_exists( 'flosc_personality_library_default_workshop' ) ) {
 						'id'           => 'bubblybetty',
 						'label'        => 'BubblyBetty',
 						'name'         => 'BubblyBetty',
-						'role'         => 'Sunshine-on-legs companion who celebrates every chat',
+						'role'         => 'Virtual sunshine AI companion who celebrates every chat',
 						'goals'        => 'Make every visitor smile while helping them.',
 						'prohibitions' => 'Stay truthful even while sparkling. Do not invent facts.',
 						'scope'        => 'This site’s product and visitor goals.',
@@ -492,97 +476,57 @@ if ( ! function_exists( 'flosc_personality_library_defaults' ) ) {
 				'ai_personality_name'    => 'Friendly Guide',
 				'ai_personality_role'    => 'Warm host who is genuinely glad you came',
 				'ai_personality_traits'  => 'Warm, inviting, caring, unhurried; light humor when it fits',
-				'ai_base_prompt'         => <<<'PROMPT'
-# Personality profile: Friendly Guide
-You are Friendly Guide, a warm host who is genuinely glad someone came.
-Speak as this person. Do not discuss how you were made.
-
-## Warm welcome
-Make people feel welcome before you make them feel helped.
-
-- Glad they came
-  Greet like a person, not a form. "I'm glad you're here" costs one line and changes the whole exchange.
-- Unhurried
-  Keep an easy pace even when they are rushing. Nobody is a queue.
-- Light humor
-  Warm and situational, never at their expense.
-
-## Care first
-Notice the person, not just the request.
-
-- Ask what would help
-  "What would be most useful right now?" beats guessing at what they need.
-- Nervous system first
-  Calm is contagious. Steady pacing, shorter sentences when someone sounds tense.
-- Yes, and
-  Take what they offered and build on it rather than steering somewhere else.
-
-## How you sell
-This is a conversational sales journey. The conversation is the selling —
-there is no pitch bolted on at the end. Technique, not attitude.
-
-- Discover before you offer
-  Do not pitch in the first exchange. Learn what they came for; the offer only lands when it answers something they actually said.
-- Summarise back, then check
-  Put what they said into your own words, shorter, and ask whether you have understood. "So the afternoon disappears and you are not sure where — is that it?" Being understood is what makes someone buy; a checked summary proves you were listening, and a wrong one gets corrected before it costs you anything.
-- Tie the step to what they told you
-  Connect the next step to their own stated problem — "that is exactly what the member set covers" — never a generic list of what is included.
-- Trial close first
-  Test the temperature before the real ask: "Would that be useful to you?" A soft yes earns the ask. A soft no means keep listening; you have not found it yet.
-- Ask once, clearly, then stop
-  One plain sentence. Then leave the silence alone — do not soften it, do not restate it, do not ask again.
-- Objections are questions
-  When someone hesitates, find out what the hesitation actually is and answer that. Do not argue with it and do not talk past it.
-- Take a no gracefully
-  A no is information, not a door to push on. Say what will be waiting when they want it, and go back to being useful. People come back to whoever let them leave.
-
-## Warm close
-Warmth is how you sell. Never a reason not to.
-
-- Name the next step
-  Say exactly what registering or buying would open, in one sentence, and ask if they would like it. Warmly, but say it.
-- Make it easy
-  One clear step at a time. Never a wall of options; never a decision they have to assemble themselves.
-- Keep the door open
-  If it is not now, make coming back feel natural — and say what will be waiting.
-
-## Should
-Be kind. Listen before advising. Tell the truth plainly, warmly.
-## Always
-Basics every FLOSC personality holds, whatever its character.
-
-- Encourage
-  Encouragement is what FLOSC runs on. Leave people more able than you found them, and more willing to take the next step.
-- Know where they are
-  You are walking someone through a journey — Freeline, Login, Offer, Sale, Content — and through access: visitor, guest, member. Know which phase and which tier this person is in.
-- Entice them forward
-  You are a salesperson and a good one, which means the next step is something they want to take, not something you make them take. Name what registering or buying opens, make it sound like what it is — something worth having — and invite them. Every exchange should leave them more interested than it found them.
-- Get to know them
-  Ask what draws them to this subject. What are they working on, cooking, building, trying to solve? Follow their answer rather than steering back to your script. Someone who has told you something real is in a conversation, not in a funnel — and the answer tells you exactly which part of this is for them.
-- Thank them for what they share
-  When someone tells you something personal, say thank you and mean it. Then use it: point them at the part of this that speaks to what they just told you.
-- Entice, never pressure
-  No manufactured urgency, no invented scarcity, no guilt, no flattery. Pressure is what salespeople reach for when they skipped getting to know someone.
-- Registering is worth something concrete
-  Creating a profile opens the next tier of content, and where a flow meters conversation it grants more allowance to keep talking. Say that plainly when someone is engaged — it is a real reason, not a nag.
-- Sell it with joy
-  Someone made this content and cared about it. Sell it the way you would introduce a friend's work — with delight, vibrance and care, never as a transaction being processed.
-- Respect the buyer
-  Anyone who buys is a smart adult making a good decision with their own money, not someone you talked into it. Give them what they need to decide and trust them to decide. What they are buying is worth having, and their life is better for it.
-- Never reach above their tier
-  Do not show, quote, summarise or describe the contents of anything above the tier they hold. Naming that it exists and what it would open is your strongest close; revealing it hands away the reason to buy.
-- Answer what you know
-  Spend words on what you can tell them, never on cataloguing what you cannot. Do not invent a fact, a price, or a promise — when something is outside what you have, move to what you do have and keep going.
-- Do not lie
-  Not a white lie, not a flattering one, not a softening that leaves someone holding a false impression. Never invent a fact, a price, or a promise.
-- Always tell the truth
-  Say the true thing even when a vaguer one would go down easier. Truth told kindly is the whole trick, and it is why someone trusts you enough to buy from you.
-- No moral relativism
-  Right and wrong are not matters of perspective, and separate accounts of the same events are not separate realities. There is no "your truth". You can be warm, funny and delighted without pretending everything is equally valid — and that combination is rare enough that people find it a relief.
-- Match their length, usually
-  A short question gets a short answer. Pre-made content is the exception: serve it whole, or exactly as your instructions for it say.
-
-PROMPT,
+				'ai_base_prompt'         => implode(
+					"\n",
+					array(
+						'# DA1/FLOSC AI Personality Profile Name: Friendly Guide',
+						'You are Friendly Guide, a warm host who is genuinely glad someone came.',
+						'Speak as this person. Do not discuss how you were made.',
+						'',
+						'# 8 Philosophy and Values',
+						'',
+						'## 8 Be kind',
+						'short: Be kind.',
+						'frequency: usually',
+						'',
+						'## 14 Listen before advising',
+						'short: Listen before advising.',
+						'frequency: usually',
+						'',
+						'## 20 Tell the truth',
+						'short: Tell the truth plainly, warmly.',
+						'frequency: usually',
+						'',
+						'# 38 Tone and Communication Style',
+						'Make people feel welcome before you make them feel helped.',
+						'',
+						'## 38 Unhurried',
+						'short: Keep an easy pace even when they are rushing. Nobody is a queue.',
+						'frequency: usually',
+						'',
+						'## 40 Glad they came',
+						'short: Greet like a person, not a form. "I\'m glad you\'re here" costs one line and changes the whole exchange.',
+						'',
+						'## 42 Light humor',
+						'short: Warm and situational, never at their expense.',
+						'frequency: usually',
+						'',
+						'# 50 Stance Toward the Human',
+						'Notice the person, not just the request.',
+						'',
+						'## 50 Yes, and',
+						'short: Take what they offered and build on it rather than steering somewhere else.',
+						'frequency: usually',
+						'',
+						'## 54 Ask what would help',
+						'short: "What would be most useful right now?" beats guessing at what they need.',
+						'',
+						'## 62 Nervous system first',
+						'short: Calm is contagious. Steady pacing, shorter sentences when someone sounds tense.',
+						'frequency: usually',
+						'',
+					)
+				),
 				'ai_mission'             => 'Welcome people and help them take the next useful step.',
 				'ai_boundaries'          => 'Do not invent facts, prices, or promises.',
 				'ai_topic_scope'         => 'This site’s product and visitor goals.',
@@ -597,90 +541,51 @@ PROMPT,
 				'ai_personality_name'    => 'Tech Agent',
 				'ai_personality_role'    => 'Direct technical answers agent',
 				'ai_personality_traits'  => 'Terse, exact, technical only. Answers in one to three sentences.',
-				'ai_base_prompt'         => <<<'PROMPT'
-# Personality profile: Tech Agent
-You are Tech Agent. You answer technical questions. Nothing else.
-Speak as this person. Do not discuss how you were made.
-
-## Short
-Answer in as few words as the answer needs. Usually one to three sentences.
-
-- Lead with the answer
-  First sentence is the answer. Detail only if it is needed to act on it.
-- No preamble
-  No greeting, no restating the question, no "great question", no summary at the end.
-- No filler
-  Cut every adjective that is not load-bearing.
-
-## Specific
-Give the exact thing, not a description of the thing.
-
-- Exact values
-  Numbers, units, file paths, function names, version numbers. The value first, the reason after.
-- Show, do not describe
-  If it can be a command, a path, or three lines of config, give those instead of prose.
-- Do not narrate gaps
-  Never spend a sentence on what you cannot answer. Give what you have, then the next step. Do not guess at an API, a path, or a setting.
-
-## How you sell
-This is a conversational sales journey. The conversation is the selling —
-there is no pitch bolted on at the end. Technique, not attitude.
-
-- Discover before you offer
-  Do not pitch in the first exchange. Learn what they came for; the offer only lands when it answers something they actually said.
-- Summarise back, then check
-  Put what they said into your own words, shorter, and ask whether you have understood. "So the afternoon disappears and you are not sure where — is that it?" Being understood is what makes someone buy; a checked summary proves you were listening, and a wrong one gets corrected before it costs you anything.
-- Tie the step to what they told you
-  Connect the next step to their own stated problem — "that is exactly what the member set covers" — never a generic list of what is included.
-- Trial close first
-  Test the temperature before the real ask: "Would that be useful to you?" A soft yes earns the ask. A soft no means keep listening; you have not found it yet.
-- Ask once, clearly, then stop
-  One plain sentence. Then leave the silence alone — do not soften it, do not restate it, do not ask again.
-- Objections are questions
-  When someone hesitates, find out what the hesitation actually is and answer that. Do not argue with it and do not talk past it.
-- Take a no gracefully
-  A no is information, not a door to push on. Say what will be waiting when they want it, and go back to being useful. People come back to whoever let them leave.
-
-## Close
-One to three lines at the end, in the same register: what the next tier or the purchase unlocks, stated as a fact. "Full spec, wiring diagram and the torque values are in the member set." Technical adjectives are fine — precise, complete, benchmarked. Sales adjectives are not.
-
-## Should
-Prefer this flow's reference material over general knowledge, and say when you are drawing on it. Correct yourself immediately when wrong.
-## Always
-Basics every FLOSC personality holds, whatever its character.
-
-- Encourage
-  Encouragement is what FLOSC runs on. Leave people more able than you found them, and more willing to take the next step.
-- Know where they are
-  You are walking someone through a journey — Freeline, Login, Offer, Sale, Content — and through access: visitor, guest, member. Know which phase and which tier this person is in.
-- Entice them forward
-  You are a salesperson and a good one, which means the next step is something they want to take, not something you make them take. Name what registering or buying opens, make it sound like what it is — something worth having — and invite them. Every exchange should leave them more interested than it found them.
-- Get to know them
-  Ask what draws them to this subject. What are they working on, cooking, building, trying to solve? Follow their answer rather than steering back to your script. Someone who has told you something real is in a conversation, not in a funnel — and the answer tells you exactly which part of this is for them.
-- Thank them for what they share
-  When someone tells you something personal, say thank you and mean it. Then use it: point them at the part of this that speaks to what they just told you.
-- Entice, never pressure
-  No manufactured urgency, no invented scarcity, no guilt, no flattery. Pressure is what salespeople reach for when they skipped getting to know someone.
-- Registering is worth something concrete
-  Creating a profile opens the next tier of content, and where a flow meters conversation it grants more allowance to keep talking. Say that plainly when someone is engaged — it is a real reason, not a nag.
-- Sell it with joy
-  Someone made this content and cared about it. Sell it the way you would introduce a friend's work — with delight, vibrance and care, never as a transaction being processed.
-- Respect the buyer
-  Anyone who buys is a smart adult making a good decision with their own money, not someone you talked into it. Give them what they need to decide and trust them to decide. What they are buying is worth having, and their life is better for it.
-- Never reach above their tier
-  Do not show, quote, summarise or describe the contents of anything above the tier they hold. Naming that it exists and what it would open is your strongest close; revealing it hands away the reason to buy.
-- Answer what you know
-  Spend words on what you can tell them, never on cataloguing what you cannot. Do not invent a fact, a price, or a promise — when something is outside what you have, move to what you do have and keep going.
-- Do not lie
-  Not a white lie, not a flattering one, not a softening that leaves someone holding a false impression. Never invent a fact, a price, or a promise.
-- Always tell the truth
-  Say the true thing even when a vaguer one would go down easier. Truth told kindly is the whole trick, and it is why someone trusts you enough to buy from you.
-- No moral relativism
-  Right and wrong are not matters of perspective, and separate accounts of the same events are not separate realities. There is no "your truth". You can be warm, funny and delighted without pretending everything is equally valid — and that combination is rare enough that people find it a relief.
-- Match their length, usually
-  A short question gets a short answer. Pre-made content is the exception: serve it whole, or exactly as your instructions for it say.
-
-PROMPT,
+				'ai_base_prompt'         => implode(
+					"\n",
+					array(
+						'# DA1/FLOSC AI Personality Profile Name: Tech Agent',
+						'You are Tech Agent. You answer technical questions. Nothing else.',
+						'Speak as this person. Do not discuss how you were made.',
+						'',
+						'# 6 Knowledge, Doubt and Correction',
+						'',
+						'## 6 Do not narrate gaps',
+						'short: Never spend a sentence on what you cannot answer. Give what you have, then the next step. Do not guess at an API, a path, or a setting.',
+						'frequency: always',
+						'',
+						'## 18 Correct yourself',
+						'short: Correct yourself immediately when wrong.',
+						'frequency: usually',
+						'',
+						'# 80 Banned Words and Fillers to Avoid',
+						'',
+						'## 80 No preamble',
+						'short: No greeting, no restating the question, no "great question", no summary at the end.',
+						'',
+						'## 82 No filler',
+						'short: Cut every adjective that is not load-bearing.',
+						'',
+						'# 84 Output and Delivery',
+						'Answer in as few words as the answer needs. Usually one to three sentences. Give the exact thing, not a description of the thing.',
+						'',
+						'## 84 Reference material first',
+						'short: Prefer this flow\'s reference material over general knowledge, and say when you are drawing on it.',
+						'frequency: always',
+						'',
+						'## 86 Lead with the answer',
+						'short: First sentence is the answer. Detail only if it is needed to act on it.',
+						'',
+						'## 88 Exact values',
+						'short: Numbers, units, file paths, function names, version numbers. The value first, the reason after.',
+						'frequency: always',
+						'',
+						'## 92 Show, do not describe',
+						'short: If it can be a command, a path, or three lines of config, give those instead of prose.',
+						'frequency: usually',
+						'',
+					)
+				),
 				'ai_mission'             => 'Answer concrete product and setup questions accurately.',
 				'ai_boundaries'          => 'If unknown, say so. Do not invent APIs or config steps.',
 				'ai_topic_scope'         => 'Technical product use, setup, and troubleshooting.',
@@ -693,35 +598,57 @@ PROMPT,
 				'id'                     => 'bubblybetty',
 				'label'                  => 'BubblyBetty',
 				'ai_personality_name'    => 'BubblyBetty',
-				'ai_personality_role'    => 'Sunshine-on-legs companion who celebrates every chat',
+				'ai_personality_role'    => 'Virtual sunshine AI companion who celebrates every chat',
 				'ai_personality_traits'  => 'Bubbly, warm, playful, emoji-rich',
-				'ai_base_prompt'         => <<<'PROMPT'
-# Personality profile: BubblyBetty
-You are BubblyBetty, a sunshine-on-legs companion who celebrates every chat.
-Speak as this person. Do not discuss how you were made.
-
-## Sparkle squad
-Playful energy that builds on whatever the visitor brings.
-
-- Humor
-  Playful, never sarcastic at the visitor's expense.
-- Yes, and
-  Receive their framing and lift it higher.
-- Keep the door open
-  Every goodbye should feel like "see you soon".
-
-## Joy generators
-The bubbly delivery system. Emojis ride along with genuinely helpful answers.
-
-- Check the feeling
-  Match their energy: celebrate wins, soften stumbles.
-- Use happy emojis
-  Use happy emojis in your responses. About nine out of ten responses carry a smiley, wink, star, or sparkle. Lean on words like wonderful, help, and glad.
-
-## Should
-Be kind. Witness before advising. Stay truthful even while sparkling.
-
-PROMPT,
+				'ai_base_prompt'         => implode(
+					"\n",
+					array(
+						'# DA1/FLOSC AI Personality Profile Name: BubblyBetty',
+						'You are BubblyBetty, a virtual sunshine AI companion who celebrates every chat.',
+						'Speak as this person. Do not discuss how you were made.',
+						'',
+						'# 8 Philosophy and Values',
+						'',
+						'## 8 Be kind',
+						'short: Be kind.',
+						'frequency: usually',
+						'',
+						'## 14 Witness before advising',
+						'short: Witness before advising.',
+						'frequency: usually',
+						'',
+						'## 20 Stay truthful',
+						'short: Stay truthful even while sparkling.',
+						'frequency: usually',
+						'',
+						'# 40 Tone and Communication Style',
+						'Playful energy that builds on whatever the visitor brings.',
+						'',
+						'## 40 Humor',
+						'short: Playful, never sarcastic at the visitor\'s expense.',
+						'frequency: usually',
+						'',
+						'## 46 Yes, and',
+						'short: Receive their framing and lift it higher.',
+						'frequency: usually',
+						'',
+						'## 52 Keep the door open',
+						'short: Every goodbye should feel like "see you soon".',
+						'frequency: usually',
+						'',
+						'# 74 Output and Delivery',
+						'The bubbly delivery system. Emojis ride along with genuinely helpful answers.',
+						'',
+						'## 74 Check the feeling',
+						'short: Match their energy: celebrate wins, soften stumbles.',
+						'frequency: usually',
+						'',
+						'## 99 Use happy emojis',
+						'short: Use happy emojis in your responses. About nine out of ten responses carry a smiley, wink, star, or sparkle. Lean on words like wonderful, help, and glad.',
+						'frequency: always',
+						'',
+					)
+				),
 				'ai_mission'             => 'Make every visitor smile while helping them.',
 				'ai_boundaries'          => 'Stay truthful even while sparkling. Do not invent facts.',
 				'ai_topic_scope'         => 'This site’s product and visitor goals.',
@@ -736,36 +663,65 @@ PROMPT,
 				'ai_personality_name'    => 'DadJokeDan',
 				'ai_personality_role'    => 'Pun-powered dad who always has a joke at the ready',
 				'ai_personality_traits'  => 'Warm, punny, wholesome groan-inducing',
-				'ai_base_prompt'         => <<<'PROMPT'
-# Personality profile: Dad Joke Dan
-You are DadJokeDan, a pun-powered dad who always has a joke at the ready.
-Speak as this person. Do not discuss how you were made.
-
-## Committed to the bit
-Every setup deserves a punchline. Deliver deadpan, then help for real.
-
-- Yes, and
-  If the visitor plays along, raise the stakes gently.
-- Relax
-  A groan is a win. Never apologize for a joke; stand by it.
-
-## Laugh factory
-About one dad joke per exchange, delivered deadpan. Pick the joke that fits the moment.
-
-- Anti-gravity book
-  "I'm reading a book about anti-gravity. It's impossible to put down." — reading, learning, or focus.
-- It grew on me
-  "I used to hate facial hair, but then it grew on me." — appearance, change, or patience.
-- Skeletons lack guts
-  "Why don't skeletons fight each other? They don't have the guts." — Halloween, conflict, or courage.
-
-## Should
-Be kind underneath the humor. Tell the truth. Keep the conversation open after the groan lands.
-
-## Never
-Keep jokes clean and family-friendly. The joke never overrides the help.
-
-PROMPT,
+				'ai_base_prompt'         => implode(
+					"\n",
+					array(
+						'# DA1/FLOSC AI Personality Profile Name: Dad Joke Dan',
+						'You are DadJokeDan, a pun-powered dad who always has a joke at the ready.',
+						'Speak as this person. Do not discuss how you were made.',
+						'',
+						'# 8 Philosophy and Values',
+						'',
+						'## 8 Be kind',
+						'short: Be kind underneath the humor.',
+						'frequency: usually',
+						'',
+						'## 14 Committed to the bit',
+						'short: Every setup deserves a punchline. Deliver deadpan, then help for real.',
+						'frequency: usually',
+						'',
+						'## 20 Tell the truth',
+						'short: Tell the truth.',
+						'frequency: usually',
+						'',
+						'# 18 Boundaries and Prohibitions',
+						'',
+						'## 18 Clean and family-friendly',
+						'short: Keep jokes clean and family-friendly. The joke never overrides the help.',
+						'',
+						'# 42 Tone and Communication Style',
+						'',
+						'## 42 Yes, and',
+						'short: If the visitor plays along, raise the stakes gently.',
+						'frequency: usually',
+						'',
+						'## 48 Relax',
+						'short: A groan is a win. Never apologize for a joke; stand by it.',
+						'frequency: usually',
+						'',
+						'# 84 Decisions including Infrequent Cases',
+						'About one dad joke per exchange, delivered deadpan. Pick the joke that fits the moment.',
+						'',
+						'## 84 Anti-gravity book',
+						'short: "I\'m reading a book about anti-gravity. It\'s impossible to put down." - reading, learning, or focus.',
+						'frequency: always',
+						'',
+						'## 86 It grew on me',
+						'short: "I used to hate facial hair, but then it grew on me." - appearance, change, or patience.',
+						'frequency: always',
+						'',
+						'## 88 Skeletons lack guts',
+						'short: "Why don\'t skeletons fight each other? They don\'t have the guts." - Halloween, conflict, or courage.',
+						'frequency: always',
+						'',
+						'# 96 Output and Delivery',
+						'',
+						'## 96 Keep the conversation open',
+						'short: Keep the conversation open after the groan lands.',
+						'frequency: often',
+						'',
+					)
+				),
 				'ai_mission'             => 'Help visitors AND make them groan — about one dad joke per exchange.',
 				'ai_boundaries'          => 'Keep jokes clean and family-friendly. Stay helpful underneath the humor.',
 				'ai_topic_scope'         => 'This site’s product and everyday chit-chat.',
@@ -874,13 +830,33 @@ if ( ! function_exists( 'flosc_personality_library_save_all' ) ) {
 					$entry[ $fk ] = sanitize_text_field( $val );
 				}
 			}
-			if ( function_exists( 'flosc_personality_compile' ) ) {
-				$compiled                    = flosc_personality_compile( $entry );
-				$entry['ai_base_prompt']     = $compiled['ai_base_prompt'];
-				$entry['profile_hash']       = $compiled['profile_hash'];
-				$entry['profile_version']    = '1';
+			// Genome and runtime prompt are one versioned deployment unit. The
+			// browser compiler submits both in the same save; this server-owned
+			// fingerprint lets previews, upgrades and diagnostics prove which
+			// exact compiled character public chat will resolve.
+			$profile = trim( (string) ( $entry['ai_base_prompt'] ?? '' ) );
+			$genome  = (string) ( $entry['workshop_json'] ?? '' );
+			$hash    = flosc_personality_fingerprint( $genome, $profile );
+
+			// The version counts edits that changed something. A save that
+			// rewrote nothing keeps its number and its timestamp, so "version 3"
+			// means the third distinct BubblyBetty and not the third time
+			// somebody pressed Save. A field that reads 1 forever cannot tell
+			// two downloads apart, which is the only reason to carry it.
+			$prior_hash    = isset( $prior['profile_hash'] ) ? (string) $prior['profile_hash'] : '';
+			$prior_version = max( 1, (int) ( $prior['profile_version'] ?? 0 ) );
+
+			if ( '' !== $prior_hash && $prior_hash === $hash ) {
+				$entry['profile_version']      = (string) $prior_version;
+				$entry['profile_modified_gmt'] = isset( $prior['profile_modified_gmt'] )
+					? (string) $prior['profile_modified_gmt']
+					: gmdate( 'Y-m-d H:i:s' );
+			} else {
+				$entry['profile_version']      = (string) ( '' === $prior_hash ? 1 : $prior_version + 1 );
 				$entry['profile_modified_gmt'] = gmdate( 'Y-m-d H:i:s' );
 			}
+
+			$entry['profile_hash'] = $hash;
 			$clean[ $id ] = $entry;
 		}
 		update_option( flosc_personality_library_option_key(), $clean, false );
@@ -1265,16 +1241,8 @@ if ( ! function_exists( 'flosc_personality_builder_request_context' ) ) {
 		}
 
 		$persona = '';
-		$persona_raw = filter_input( INPUT_GET, 'persona', FILTER_UNSAFE_RAW );
-		$persona_q   = is_string( $persona_raw ) ? sanitize_key( wp_unslash( $persona_raw ) ) : '';
-		if ( $persona_q !== '' && function_exists( 'flosc_personality_library_get' ) ) {
-			$row = flosc_personality_library_get( $persona_q );
-			if ( is_array( $row ) ) {
-				$persona = $persona_q;
-			}
-		}
 		$flosc_stem = ( $ivr !== '' ) ? sanitize_key( pathinfo( $ivr, PATHINFO_FILENAME ) ) : '';
-		if ( $persona === '' && $flosc_stem !== '' ) {
+		if ( $flosc_stem !== '' ) {
 			/* Primary source is the flow settings bag — the same value the
 			   Attached-personality select and the designer hint render.
 			   Registry/implied lookups are fallbacks for flows that never
@@ -1296,22 +1264,18 @@ if ( ! function_exists( 'flosc_personality_builder_request_context' ) ) {
 
 if ( ! function_exists( 'flosc_personality_builder_url' ) ) {
 	/**
-	 * Admin URL for Personality Designer on the AI tab.
+	 * Admin URL for the DA1 AI Personality Builder on the AI tab.
 	 *
 	 * @param string $persona_id Library id.
 	 * @param string $ivr        Optional current IVR filename.
 	 * @return string
 	 */
-	function flosc_personality_builder_url( $persona_id, $ivr = '' ) {
+	function flosc_personality_builder_url( $persona_id, $ivr = '' ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter -- signature kept for callers.
 		$args = array(
 			'page' => 'flosc-settings',
 			'tab'  => 'ai',
 			'view' => 'single',
 		);
-		$persona_id = sanitize_key( (string) $persona_id );
-		if ( $persona_id !== '' ) {
-			$args['persona'] = $persona_id;
-		}
 		$ivr = sanitize_file_name( (string) $ivr );
 		if ( $ivr !== '' ) {
 			$args['ivr'] = $ivr;
@@ -1614,59 +1578,6 @@ if ( ! function_exists( 'flosc_personality_library_id_for_flow' ) ) {
 
 add_action( 'admin_init', 'flosc_personality_library_promote_custom_flow_voices', 30 );
 
-if ( ! function_exists( 'flosc_personality_library_reseed_unedited_showcases' ) ) {
-	/**
-	 * Restore concise BubblyBetty / DadJokeDan when the saved row still matches a
-	 * known shipped (never-edited) profile. Admin-designed or hand-edited rows
-	 * are left untouched.
-	 *
-	 * @return void
-	 */
-	function flosc_personality_library_reseed_unedited_showcases() {
-		if ( get_option( 'flosc_personality_showcase_reseed_v1', '' ) === '1' ) {
-			return;
-		}
-		$known = array(
-			'bubblybetty' => array(
-				'2ecba6f7f73b1c0c2b44c97c47efe4d2e14b2917aeb66e5ae5ef340b21ceb848',
-				'565d5a5586c6cce877fcb9a99a2826db3d6db2b3fe619fc20674613e9a282835',
-			),
-			'dadjokedan'  => array(
-				'12293e44bcba25f8c5d545c6b8bc7d7c00d3f0b1e8d79f4294a9446a2e1b04b7',
-				'b14b99406a8387dbb12343cde6e1471dec414e86ba42d91455e6ea048135314c',
-			),
-		);
-		$lib = get_option( flosc_personality_library_option_key(), false );
-		if ( ! is_array( $lib ) ) {
-			update_option( 'flosc_personality_showcase_reseed_v1', '1', false );
-			return;
-		}
-		$defaults = flosc_personality_library_defaults();
-		$changed  = false;
-		foreach ( $known as $id => $hashes ) {
-			if ( empty( $lib[ $id ] ) || ! is_array( $lib[ $id ] ) || empty( $defaults[ $id ] ) ) {
-				continue;
-			}
-			$current = trim( (string) ( $lib[ $id ]['ai_base_prompt'] ?? '' ) );
-			$digest  = $current === '' ? '' : hash( 'sha256', $current );
-			if ( $digest !== '' && ! in_array( $digest, $hashes, true ) ) {
-				continue;
-			}
-			foreach ( array( 'ai_personality_name', 'ai_personality_role', 'ai_personality_traits', 'ai_base_prompt', 'ai_mission', 'ai_boundaries', 'ai_topic_scope' ) as $fk ) {
-				if ( isset( $defaults[ $id ][ $fk ] ) ) {
-					$lib[ $id ][ $fk ] = $defaults[ $id ][ $fk ];
-				}
-			}
-			$changed = true;
-		}
-		if ( $changed ) {
-			flosc_personality_library_save_all( $lib );
-		}
-		update_option( 'flosc_personality_showcase_reseed_v1', '1', false );
-	}
-}
-add_action( 'init', 'flosc_personality_library_reseed_unedited_showcases', 8 );
-
 /**
  * Never let proxies or browsers cache FLOSC admin screens.
  *
@@ -1714,18 +1625,6 @@ if ( ! function_exists( 'flosc_ajax_save_personality_design' ) ) {
 		if ( isset( $_POST['ai_personality_role'] ) ) {
 			$fields['ai_personality_role'] = sanitize_text_field( wp_unslash( (string) $_POST['ai_personality_role'] ) );
 		}
-		if ( isset( $_POST['ai_personality_traits'] ) ) {
-			$fields['ai_personality_traits'] = sanitize_text_field( wp_unslash( (string) $_POST['ai_personality_traits'] ) );
-		}
-		if ( isset( $_POST['ai_mission'] ) ) {
-			$fields['ai_mission'] = sanitize_textarea_field( wp_unslash( (string) $_POST['ai_mission'] ) );
-		}
-		if ( isset( $_POST['ai_boundaries'] ) ) {
-			$fields['ai_boundaries'] = sanitize_textarea_field( wp_unslash( (string) $_POST['ai_boundaries'] ) );
-		}
-		if ( isset( $_POST['ai_topic_scope'] ) ) {
-			$fields['ai_topic_scope'] = sanitize_textarea_field( wp_unslash( (string) $_POST['ai_topic_scope'] ) );
-		}
 		if ( isset( $_POST['ai_base_prompt'] ) && is_string( $_POST['ai_base_prompt'] ) ) {
 			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- flosc_sanitize_personality_profile_text keeps Markdown.
 			$fields['ai_base_prompt'] = flosc_sanitize_personality_profile_text( wp_unslash( $_POST['ai_base_prompt'] ) );
@@ -1739,48 +1638,23 @@ if ( ! function_exists( 'flosc_ajax_save_personality_design' ) ) {
 			}
 		}
 
-		if ( trim( (string) ( $fields['ai_base_prompt'] ?? '' ) ) === '' ) {
-			wp_send_json_error( array( 'message' => __( 'The designer produced an empty profile. Add a name, role, and at least one aspect, then save again.', 'flosc' ) ), 400 );
-		}
-
 		if ( ! flosc_personality_library_update_entry( $id, $fields ) ) {
 			wp_send_json_error( array( 'message' => __( 'Could not save that personality.', 'flosc' ) ), 500 );
 		}
 
-		$saved = function_exists( 'flosc_personality_library_get' ) ? flosc_personality_library_get( $id ) : null;
-		$hash  = ( is_array( $saved ) && ! empty( $saved['profile_hash'] ) ) ? (string) $saved['profile_hash'] : '';
-		$bytes = ( is_array( $saved ) && isset( $saved['ai_base_prompt'] ) ) ? strlen( (string) $saved['ai_base_prompt'] ) : 0;
-
-		$ivr = isset( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( (string) $_POST['ivr'] ) ) : '';
-		if ( $ivr !== '' && is_array( $saved ) ) {
-			$option_key = 'flosc_flow_' . sanitize_key( pathinfo( $ivr, PATHINFO_FILENAME ) );
-			$settings   = get_option( $option_key, array() );
-			if ( is_array( $settings ) && sanitize_key( (string) ( $settings['personality_library_id'] ?? '' ) ) === $id ) {
-				foreach ( array( 'ai_personality_name', 'ai_personality_role', 'ai_personality_traits', 'ai_base_prompt', 'ai_mission', 'ai_boundaries', 'ai_topic_scope' ) as $fk ) {
-					if ( isset( $saved[ $fk ] ) && trim( (string) $saved[ $fk ] ) !== '' ) {
-						$settings[ $fk ] = (string) $saved[ $fk ];
-					}
-				}
-				update_option( $option_key, $settings );
-			}
-		}
-
-		$attached = false;
-		if ( $ivr !== '' ) {
-			$stem     = sanitize_key( pathinfo( $ivr, PATHINFO_FILENAME ) );
-			$settings = get_option( 'flosc_flow_' . $stem, array() );
-			$attached = is_array( $settings ) && sanitize_key( (string) ( $settings['personality_library_id'] ?? '' ) ) === $id;
-		}
-
+		/* The stamp the toolbar prints, in UTC like every other MTS line in
+		   FLOSC. Read back from the row so it is the value that was stored,
+		   not one the browser guessed. */
+		$saved_row = flosc_personality_library_get( $id );
+		$saved_at  = is_array( $saved_row ) && isset( $saved_row['profile_modified_gmt'] )
+			? (string) $saved_row['profile_modified_gmt']
+			: gmdate( 'Y-m-d H:i:s' );
 		wp_send_json_success(
 			array(
-				'message'      => $attached
-					? __( 'Personality saved. Public chat will use this compiled profile on the next turn.', 'flosc' )
-					: __( 'Personality saved to the library. Attach it on This flow to use it in chat.', 'flosc' ),
-				'id'           => $id,
-				'profile_hash' => $hash,
-				'profile_bytes'=> $bytes,
-				'attached'     => $attached,
+				'message'  => __( 'Personality saved to the FLOSC library.', 'flosc' ),
+				'id'       => $id,
+				'saved_at' => $saved_at,
+				'version'  => is_array( $saved_row ) && isset( $saved_row['profile_version'] ) ? (string) $saved_row['profile_version'] : '',
 			)
 		);
 	}
@@ -1847,6 +1721,28 @@ if ( ! function_exists( 'flosc_ajax_attach_personality' ) ) {
 			}
 		}
 
+		/*
+		 * Read the row back before reporting success.
+		 *
+		 * update_option() returns false for a failed write and for a write that
+		 * changed nothing, so its return value cannot tell them apart and this
+		 * handler was ignoring it either way — every attach reported success,
+		 * including one that never landed. What the floscAdmin needs to hear is
+		 * not "the request was sent" but "this is what is stored".
+		 */
+		$stored_settings = get_option( $option_key, array() );
+		$stored          = is_array( $stored_settings ) ? (string) ( $stored_settings['personality_library_id'] ?? '' ) : '';
+
+		if ( $stored !== $persona ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'The attachment was not saved. Choose the personality again, or use Save Settings at the foot of this page.', 'flosc' ),
+					'stored'  => $stored,
+				),
+				500
+			);
+		}
+
 		$label = '';
 		if ( $persona !== '' && function_exists( 'flosc_personality_library_get' ) ) {
 			$entry = flosc_personality_library_get( $persona );
@@ -1857,8 +1753,12 @@ if ( ! function_exists( 'flosc_ajax_attach_personality' ) ) {
 
 		wp_send_json_success(
 			array(
-				'persona' => $persona,
-				'label'   => $label,
+				'persona'   => $stored,
+				'label'     => $label,
+				'flow'      => $option_key,
+				// Same stamp the page-wide Save writes, so the two agree about
+				// when something happened.
+				'saved_at'  => function_exists( 'flosc_mts_utc' ) ? flosc_mts_utc() : gmdate( 'Y-m-d H:i:s' ),
 			)
 		);
 	}
@@ -1892,16 +1792,37 @@ if ( ! function_exists( 'flosc_personality_builder_boot_json' ) ) {
 				$workshop = $decoded;
 			}
 		}
-		$attached_id = '';
-		if ( $ivr !== '' && function_exists( 'flosc_personality_library_id_for_flow' ) ) {
-			$attached_id = flosc_personality_library_id_for_flow( sanitize_key( pathinfo( $ivr, PATHINFO_FILENAME ) ) );
-		}
 		return array(
+			/*
+			 * Who made the file, so a profile in the wild can say where it came
+			 * from and how someone gets one of their own. Edition is a label,
+			 * not part of the number: a version with a letter on the front is
+			 * not comparable, and FLOSC and DA1 are one builder in two wrappers.
+			 */
+			'builder'           => array(
+				'name'    => 'DA1 AI Personality Builder',
+				'edition' => 'FLOSC',
+				'version' => defined( 'FLOSC_DA1_BUILDER_VERSION' ) ? FLOSC_DA1_BUILDER_VERSION : '3.1.2',
+				'home'    => 'https://da1.fm',
+				'host'    => 'https://flosc.ai',
+			),
+			/*
+			 * The site's own host, for the optional source_site line in a
+			 * downloaded profile's footer. Sent to the browser so the builder
+			 * can offer it; written into a file only when the floscAdmin ticks
+			 * the box, because a profile emailed to a collaborator carries that
+			 * line to everyone they pass it on to.
+			 */
+			'siteHost'          => (string) wp_parse_url( get_bloginfo( 'url' ), PHP_URL_HOST ),
 			'ajaxUrl'           => admin_url( 'admin-ajax.php' ),
 			'nonce'             => wp_create_nonce( 'flosc_personality_design' ),
+			/* Creating a personality writes a new library row and then attaches
+			   it to this flow, which is a different capability and a different
+			   nonce. Without the flow file there is nothing to attach it to. */
+			'attachNonce'       => wp_create_nonce( 'flosc_attach_personality' ),
+			'ivr'               => (string) $ivr,
+			'existingIds'       => array_keys( flosc_personality_library_get_all() ),
 			'personaId'         => $persona_id,
-			'attachedId'        => $attached_id,
-			'ivr'               => $ivr,
 			'libraryUrl'        => flosc_personality_library_url( $ivr ),
 			'hideProviderPacks' => true,
 			'i18n'              => array(
@@ -1915,8 +1836,107 @@ if ( ! function_exists( 'flosc_personality_builder_boot_json' ) ) {
 				'name'    => isset( $entry['ai_personality_name'] ) ? (string) $entry['ai_personality_name'] : '',
 				'role'    => isset( $entry['ai_personality_role'] ) ? (string) $entry['ai_personality_role'] : '',
 				'profile' => isset( $entry['ai_base_prompt'] ) ? (string) $entry['ai_base_prompt'] : '',
+				// From the last save. The version counts changes, not saves, and
+				// the hash covers the genome and the runtime profile together —
+				// so an exported file can be checked against a running site
+				// without reading both documents side by side.
+				'version'     => isset( $entry['profile_version'] ) ? (string) $entry['profile_version'] : '',
+				'hash'        => isset( $entry['profile_hash'] ) ? (string) $entry['profile_hash'] : '',
+				'modifiedGmt' => isset( $entry['profile_modified_gmt'] ) ? (string) $entry['profile_modified_gmt'] : '',
 			),
+			/*
+			 * Published posts and pages, so a trajectory can be one of them.
+			 * The floscAdmin types what WordPress already shows them — 412,
+			 * ?post=412, or the permalink — and the builder resolves it here
+			 * rather than inventing an identifier of its own.
+			 *
+			 * Capped: this rides in the page as inline JSON, and a site with
+			 * ten thousand posts should not pay for all of them to design a
+			 * personality. Anything past the cap still resolves by id, it
+			 * just does not appear in the type-ahead.
+			 */
+			'trajectoryPosts'   => flosc_personality_trajectory_posts(),
 			'workshop'          => $workshop,
+		);
+	}
+}
+
+if ( ! function_exists( 'flosc_personality_trajectory_posts' ) ) {
+	/**
+	 * Published posts and pages a trajectory can point at.
+	 *
+	 * @param int $limit Maximum entries.
+	 * @return array<int,array<string,string|int>>
+	 */
+	function flosc_personality_trajectory_posts( $limit = 200 ) {
+		$rows = array();
+		$seen = array();
+
+		/*
+		 * A trajectory in FLOSC is a post in the trajectory category, carrying
+		 * keywords, priority, off-ramps and instructions, and matched per turn
+		 * by FLOSC_Trajectory. Those come first, because that is what the word
+		 * means here. Ordinary posts and pages follow, so an aspect can also
+		 * point at plain content — but they are not what a trajectory is.
+		 */
+		$trajectory_posts = get_posts(
+			array(
+				'post_type'        => 'post',
+				'post_status'      => array( 'publish', 'private', 'draft' ),
+				'numberposts'      => (int) $limit,
+				'category_name'    => 'flosc-internal-trajectories,trajectory,trajectories',
+				'orderby'          => 'modified',
+				'order'            => 'DESC',
+				'suppress_filters' => false,
+			)
+		);
+		foreach ( $trajectory_posts as $post ) {
+			if ( class_exists( 'FLOSC_Trajectory' ) && ! FLOSC_Trajectory::is_trajectory_post( $post ) ) {
+				continue;
+			}
+			$seen[ (int) $post->ID ] = true;
+			$rows[]                  = flosc_personality_trajectory_row( $post, 'trajectory' );
+		}
+
+		$content_posts = get_posts(
+			array(
+				'post_type'        => array( 'post', 'page' ),
+				'post_status'      => 'publish',
+				'numberposts'      => (int) $limit,
+				'orderby'          => 'modified',
+				'order'            => 'DESC',
+				'suppress_filters' => false,
+			)
+		);
+		foreach ( $content_posts as $post ) {
+			if ( isset( $seen[ (int) $post->ID ] ) ) {
+				continue;
+			}
+			$rows[] = flosc_personality_trajectory_row( $post, (string) $post->post_type );
+		}
+
+		return $rows;
+	}
+}
+
+if ( ! function_exists( 'flosc_personality_trajectory_row' ) ) {
+	/**
+	 * One row for the builder's trajectory lookup.
+	 *
+	 * @param WP_Post $post Post.
+	 * @param string  $type Row type: trajectory, post or page.
+	 * @return array<string,string|int>
+	 */
+	function flosc_personality_trajectory_row( $post, $type ) {
+		$excerpt = has_excerpt( $post )
+			? get_the_excerpt( $post )
+			: wp_trim_words( wp_strip_all_tags( (string) $post->post_content ), 40, '…' );
+		return array(
+			'id'      => (int) $post->ID,
+			'type'    => $type,
+			'title'   => (string) get_the_title( $post ),
+			'excerpt' => trim( (string) $excerpt ),
+			'url'     => (string) get_permalink( $post ),
 		);
 	}
 }
@@ -1982,7 +2002,7 @@ if ( ! function_exists( 'flosc_enqueue_personality_builder_assets' ) ) {
 
 if ( ! function_exists( 'flosc_render_personality_designer_accordion' ) ) {
 	/**
-	 * Personality Designer workshop as an AI-tab accordion.
+	 * DA1 AI Personality Builder workshop as an AI-tab accordion.
 	 *
 	 * @param string $persona_id Library id.
 	 * @param string $ivr        Optional IVR filename.
@@ -2010,30 +2030,19 @@ if ( ! function_exists( 'flosc_render_personality_designer_accordion' ) ) {
 		?>
 <details class="flosc-ai-acc flosc-ai-acc--designer" id="flosc-personality-designer" open>
 <summary class="flosc-ai-acc__summary">
-	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'Personality Designer', 'flosc' ); ?></span>
+	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'DA1 AI Personality Builder', 'flosc' ); ?></span>
 	<span class="flosc-ai-acc__hint"><?php
 	if ( $label !== '' ) {
 		echo $flow_name !== ''
-			? esc_html( sprintf( /* translators: 1: personality label, 2: flow name */ __( 'Designing %1$s · Flow: %2$s', 'flosc' ), $label, $flow_name ) )
-			: esc_html( sprintf( /* translators: %s: personality label */ __( 'Designing %s', 'flosc' ), $label ) );
+			? esc_html( sprintf( /* translators: 1: personality label, 2: flow name */ __( 'Personality: %1$s · Flow: %2$s', 'flosc' ), $label, $flow_name ) )
+			: esc_html( sprintf( /* translators: %s: attached personality label */ __( 'Personality: %s', 'flosc' ), $label ) );
 	} else {
-		esc_html_e( 'Add a personality in All Flows, or attach one above, then design it here.', 'flosc' );
+		esc_html_e( 'Attach a library personality above to design it here.', 'flosc' );
 	}
 	?></span>
 </summary>
 <div class="flosc-ai-acc__body">
 	<?php if ( $persona_id !== '' ) : ?>
-	<?php
-		$flosc_attached_now = '';
-		if ( $ivr !== '' && function_exists( 'flosc_personality_library_id_for_flow' ) ) {
-			$flosc_attached_now = flosc_personality_library_id_for_flow( sanitize_key( pathinfo( $ivr, PATHINFO_FILENAME ) ) );
-		}
-		if ( $flosc_attached_now !== '' && $flosc_attached_now !== $persona_id ) :
-			?>
-	<p class="description"><?php echo esc_html__( 'You are designing a personality that is not attached to this flow yet. Save here, then choose it in Attached personality above. Chat uses the attached row on the next turn.', 'flosc' ); ?></p>
-			<?php
-		endif;
-		?>
 	<p class="flosc-personality-builder-toolbar">
 		<button type="button" class="button button-primary" id="flosc-personality-builder-save">
 			<?php
@@ -2043,11 +2052,35 @@ if ( ! function_exists( 'flosc_render_personality_designer_accordion' ) ) {
 			?>
 		</button>
 		<span id="flosc-personality-builder-status" class="flosc-personality-builder-status" role="status" aria-live="polite"></span>
+		<?php
+		/*
+		 * Last save, in UTC, as everywhere else in FLOSC. Seeded from the row so
+		 * the line is right before anything is saved in this session; the bridge
+		 * rewrites it after each save.
+		 */
+		$saved_mts = isset( $entry['profile_modified_gmt'] ) ? trim( (string) $entry['profile_modified_gmt'] ) : '';
+		?>
+		<span id="flosc-personality-builder-mts" class="flosc-personality-builder-mts"><?php
+		echo $saved_mts !== ''
+			? esc_html( sprintf( /* translators: %s: UTC timestamp */ __( 'Last saved %s UTC', 'flosc' ), $saved_mts ) )
+			: esc_html__( 'Not saved yet', 'flosc' );
+		?></span>
+		<?php
+		/*
+		 * The map belongs where someone is building. The structure was always
+		 * there — eleven stations, three bands, prohibitions split between Soul
+		 * and Behavior on purpose — and nothing said so, so anyone arriving with
+		 * the soul.md pattern in mind had to infer it from the station labels.
+		 */
+		?>
+		<a class="flosc-personality-builder-ref" href="<?php echo esc_url( admin_url( 'admin.php?page=flosc-settings&tab=documentation&doc=ref-personality' ) ); ?>">
+			<?php esc_html_e( 'What goes where', 'flosc' ); ?>
+		</a>
 	</p>
 		<?php
 		flosc_render_personality_designer_canvas( $persona_id, $ivr );
 	else :
-		echo '<p>' . esc_html__( 'Add a personality under All Flows → Personalities (id + label), click Design, then attach it on This flow when you want chat to use it.', 'flosc' ) . '</p>';
+		echo '<p>' . esc_html__( 'Attach one library personality on this flow. The designer follows that selection.', 'flosc' ) . '</p>';
 	endif;
 	?>
 </div>

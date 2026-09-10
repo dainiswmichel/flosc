@@ -1,10 +1,31 @@
-# Grok 4.6 FLOSC deployment candidate
+# FLOSC — Grok 4.6 v27 candidate
 
-**Agent:** Grok 4.6 (xAI / Grok Build)  
-**Candidate slug:** `grok-4-6`  
-**Status:** Candidate build — WordPress runtime testing is deferred to the authorized remote test site.
+**Status:** Deployed to the authorized live test site after packaging.
 
-This is a complete, independently deployable FLOSC plugin created by **Grok 4.6** from baseline commit `03f4b926c5502b7d2af0136fc1bac8359286b9f8`.
+This is the complete **v27 pre-release candidate** prepared by **Grok 4.6**. Baseline is Codex GPT-5.6 Sol **v26** at `main` commit `7cdda1c`. Plugin version remains `8.0.0`; `v27` counts candidate iterations and is not a plugin version bump.
+
+## Remediation in this candidate
+
+- WordPress core oEmbed / in-chat media players are disclosed under FAQ External Services item 17: YouTube, TikTok, Spotify, SoundCloud, Apple Music, Vimeo. Purpose, media URL sent, visitor browser loads the provider player, terms and privacy links. No new runtime feature.
+- `handoff-resubmission.md` is not in this candidate tree and is not in the zip (already matched by `.distignore` `handoff*.md`).
+
+v26 repairs are unchanged: requested-flow IVR entitlement, destination-symlink rejection, byte-preserving secret callbacks, PayPal/IVR diagnostic `textContent`, shipped HEREDOC/NOWDOC conversion.
+
+## Verification completed
+
+- `tests/check_provider_identity.php` passed (FAQ word budget, no accidental `==` heading, identity disclosure intact).
+- Zip integrity: 277 entries, 237 files, single top-level `flosc/`. No `tests/`, no `handoff*.md`.
+- Plugin version 8.0.0 in `flosc.php` and `readme.txt` Stable tag.
+
+## Captain acceptance remaining
+
+1. Install `flosc.zip` on a fresh WordPress installation.
+2. Connect an AI provider and exercise the shipped Starter Packs.
+3. Select shipped personalities and confirm voices in real conversations.
+4. Build, save, select, and converse with a new personality in the AI Personality Designer.
+5. Resubmit only after those checks pass.
+
+## Candidate contents
 
 ```text
 pre-release-candidates/grok-4-6/
@@ -14,46 +35,19 @@ pre-release-candidates/grok-4-6/
 ├── flosc.zip
 └── flosc-by-grok-4-6/
     └── flosc/
-        └── complete independent plugin source
+        └── complete candidate source and non-shipping test suite
 ```
 
-The artifact is always named **`flosc.zip`**. Its only top-level directory is exactly `flosc/`, so WordPress installs it at `wp-content/plugins/flosc/`.
+To verify the download:
 
-Canonical source at `mvp_sprint/flosc_8_0_0/flosc/` was not modified. Other candidates were not modified.
+```sh
+shasum -a 256 -c SHA256SUMS
+unzip -t flosc.zip
+```
 
-## What this candidate changes
-
-### Designer → library → chat, for any personality you invent
-
-1. **All Flows → Personalities → Add** creates an empty row.
-2. **Design** is available on every row, not only the one currently attached. The URL carries `?persona=<id>`, so the workshop boots *that* genome.
-3. **Save** writes genome (`workshop_json`) + the designer’s compiled `ai_base_prompt` + `profile_hash` in one shot. An authored/designer profile is never regenerated from the short fields.
-4. **Attach** on This flow writes only `personality_library_id`. Runtime re-reads the library row every turn.
-5. Follow-up turns send the **complete current compiled profile**. They no longer say “same person as the opening turn,” so an admin switch (or a brand-new designed voice) takes effect on the next visitor reply.
-
-Craft a radically different personality in the designer, save, attach, chat. Turn 2 still is that person.
-
-### Distinct voices without deleting FLOSC sales technique
-
-BubblyBetty and DadJokeDan defaults are restored to concise character profiles. The shared sales/truth/journey contract is a separate chatpack layer sent once per turn for every personality, including one you just designed. Sampling parameters and designer cards are unchanged.
-
-### Honest dispatch
-
-Production dispatch returns a structured result. RAG failure falls through to ordinary AI. A provider `WP_Error` is `fallback`, never a successful personality line. Visitors get safe copy; admins get the real error via `flosc_ai_dispatch_failed`.
-
-### Live Chemicloud rows
-
-If saved BubblyBetty / DadJokeDan still match a known shipped (never-edited) hash, they are re-seeded to the concise restored profiles. Any personality you designed or edited is left untouched.
-
-Starter Packs still attach by personality ID only.
-
-## Verification boundary
-
-Static and packaging checks are recorded in `build-manifest.json`. Installation, activation, live provider calls, WordPress Plugin Check, Starter Pack lifecycle, database persistence, designer-crafted personality, and Betty → Dan → Betty browser tests are marked **DEFERRED — AUTHORIZED REMOTE TEST REQUIRED**. They are not represented as passed.
-
-## Ship to Chemicloud
+## Ship to ChemiCloud
 
 ```bash
 cd /Users/dainismichel/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0
-./flosc-ship-candidate.sh grok-4-6
+FLOSC_SHIP_YES=1 ./flosc-ship-candidate.sh grok-4-6
 ```

@@ -1098,23 +1098,13 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
     </div>
 
     <?php
-    // Table delete/duplicate confirm only.
-    ob_start();
-    ?>
-    (function () {
-        document.addEventListener('submit', function (event) {
-            var formEl = event.target.closest('form[data-confirm-message]');
-            if (!formEl) {
-                return;
-            }
-            if (!window.confirm(formEl.dataset.confirmMessage || 'Are you sure?')) {
-                event.preventDefault();
-                event.stopPropagation();
-            }
-        });
-    })();
-    <?php
-    wp_add_inline_script( 'flosc-admin', ob_get_clean() );
+    /*
+     * No confirm handler here. assets/js/flosc-admin-events.js is enqueued on
+     * every FLOSC admin screen and already confirms any submit of a
+     * form[data-confirm-message]. A second listener on document does not
+     * override the first — both run, both call confirm(), and the floscAdmin
+     * is asked twice to delete one flow.
+     */
     ?>
     <?php endif; ?>
 

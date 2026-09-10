@@ -18,6 +18,14 @@ if (!defined('ABSPATH')) exit;
 
 // Plugin constants
 define('FLOSC_VERSION', '8.0.0');
+
+/*
+ * The personality builder versions independently of the plugin. It ships here
+ * as the FLOSC edition and will ship standalone at da1.fm as the DA1 edition —
+ * one builder, one number, the edition named separately. A version with a
+ * letter on the front is not a version anything can compare.
+ */
+define('FLOSC_DA1_BUILDER_VERSION', '3.1.2');
 // v8.0.1: Runtime debug mode override from Administration tab.
 // Modes: inherit (follow WP_DEBUG), on (force), off (disable).
 $flosc_debug_mode = function_exists('get_option') ? get_option('flosc_debug_mode', 'inherit') : 'inherit';
@@ -88,6 +96,7 @@ require_once FLOSC_PLUGIN_DIR . 'includes/ai/flosc-model-catalog.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/ai/flosc-provider-profiles.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/ai/flosc-model-parameters.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/ai/flosc-provider-keys.php';
+require_once FLOSC_PLUGIN_DIR . 'includes/ai/flosc-provider-identity.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-personality-library.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-knowledge-bases.php';
 
@@ -3946,6 +3955,13 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
         return $this->da1_catalogs->limit_chat_response_length($text);
     }
 
+    /*
+     * Reputation guard. The chat-turn trait calls this on the ordinary and the
+     * RAG path; the class that uses the trait has to own it. Absent, every
+     * public visitor turn died inside handle_chat()'s Throwable catch and the
+     * visitor saw "Something went wrong on our side just then" — the fatal was
+     * invisible because the catch swallowed it. Keep the pair and the guards.
+     */
     private function flosc_enforce_no_hedge_response($response_text, $user_message, $flow_id, $ivr_file, $phase, $eval_context) {
         $response_text = trim((string) $response_text);
 
@@ -3956,6 +3972,11 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
         return $response_text;
     }
 
+    /*
+     * Self-undermining language: the model announcing its own missing context
+     * instead of answering. A visitor reads "I don't have that information in
+     * my system" as the site being broken, not as the model being careful.
+     */
     private function flosc_contains_forbidden_hedge($text) {
         $patterns = [
             '/\bi\s+don\'t\s+have\b[^\n]{0,160}\b(information|info|context|details|data|catalog|count|biography|bio|configured|system)\b/i',
@@ -8439,12 +8460,12 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
         }
         
         // v1.3.8: Get flow context from request (same pattern as handle_chat)
-        $flow_id = sanitize_text_field($request->get_param('flow_id') ?? '');
+        $flow_id = $this->flosc_request_flow_stem($request);
         $ivr_file = sanitize_file_name($request->get_param('ivr_file') ?? '');
         $ivr_source = 'unknown'; // Track source for debugging
         
         // Get user context
-        $user_context = $this->user_access_manager->get_user_context();
+        $user_context = $this->user_access_manager->get_user_context(null, $flow_id);
         
         // v9.2.7: Add session-based defaults (frontend handles actual session logic)
         // Backend is permissive - returns messages that COULD show
@@ -8468,7 +8489,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
         $is_member = !empty($user_context['is_member'])
             || (isset($user_context['access_level']) && in_array((string) $user_context['access_level'], ['member', 'full'], true));
         if (!$is_member && is_user_logged_in() && $this->member_access) {
-            $is_member = (bool) $this->member_access->is_member(get_current_user_id());
+            $is_member = (bool) $this->member_access->is_member(get_current_user_id(), $flow_id);
         }
         $is_admin = current_user_can('manage_options');
 
@@ -10522,11 +10543,16 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             $tsv_body .= $to_tsv_line($ordered_row);
         }
 
-        $datestamp = gmdate('Y') . '-' . gmdate('m') . 'm-' . gmdate('d') . 'd';
+        // Full MTS, not just the date. Two exports taken on the same day were
+        // landing on the same filename, so the second silently replaced the
+        // first in the downloads folder — and a log export is evidence.
+        $stamp = function_exists('flosc_mts_utc')
+            ? flosc_mts_utc()
+            : gmdate('Y') . 'y-' . gmdate('m') . 'm-' . gmdate('d') . 'd-UTC-' . gmdate('H') . 'h-' . gmdate('i') . 'm-' . gmdate('s') . 's';
         $this->filesystem->stream_plain_download_and_exit(
             $tsv_body,
             'text/tab-separated-values; charset=utf-8',
-            'flosc-chat-logs-' . $datestamp . '.tsv'
+            'flosc-chat-logs-' . $stamp . '.tsv'
         );
     }
 
@@ -10952,12 +10978,15 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             return $phase;
         }
         $type = sanitize_text_field($request->get_param('type')); // auto, suggested_user_autoprompt, offer
+        $flow_id = $this->flosc_request_flow_stem($request);
+        $ivr_file = sanitize_file_name($request->get_param('ivr_file') ?? '');
 
         // Build context
         require_once FLOSC_PLUGIN_DIR . 'includes/class-condition-evaluator.php';
         $context = FLOSC_Condition_Evaluator::build_context(
             is_user_logged_in() ? get_current_user_id() : null,
             [
+                'flow_id' => $flow_id,
                 'message_count' => intval($request->get_param('message_count') ?? 0),
                 'inactive_seconds' => intval($request->get_param('inactive_seconds') ?? 0),
                 'session_seconds' => intval($request->get_param('session_seconds') ?? 0),
@@ -10975,8 +11004,6 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             );
         }
 
-        $flow_id = sanitize_text_field($request->get_param('flow_id') ?? '');
-        $ivr_file = sanitize_file_name($request->get_param('ivr_file') ?? '');
         $config = flosc_resolve_flow_runtime($flow_id, $ivr_file);
         $messages = flosc_flow_phase_messages($config, $phase);
 
@@ -12416,5 +12443,4 @@ function flosc_resolve_chatlogo_url( $flow_settings = null, $use_plugin_default 
 function flosc_get_chatlogo_url() {
     return flosc_resolve_chatlogo_url( null, true );
 }
-
 

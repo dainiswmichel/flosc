@@ -290,14 +290,18 @@ class FLOSC_AI_Chat_Dispatch {
         $prompt = "# Your Identity\n\n";
 
         // v8.0.1: Content-agnostic. Nothing about the product is hardcoded
-        // here. Admins write optional Product facts on the AI tab; those are
+        // here. Admins write optional Sticky aspects on the AI tab; those are
         // injected verbatim. Empty means none — never invent substitutes.
         $brand_facts = trim( (string) ( function_exists( 'flosc_get_setting' )
             ? flosc_get_setting( 'ai_brand_facts', '' )
             : '' ) );
         if ( $brand_facts !== '' ) {
-            $prompt .= "## Product facts\n";
-            $prompt .= "Configured facts about this product. These override any guess you could make. Never invent or substitute expansions, categories, or claims.\n\n";
+            /* The heading matches the field's name on the AI tab, so a
+               floscAdmin reading the compiled prompt finds what they typed
+               under the label they typed it under. The storage key stays
+               ai_brand_facts: renaming it would orphan every existing flow. */
+            $prompt .= "## Sticky aspects\n";
+            $prompt .= "Facts and aspects configured for this flow. These override any guess you could make. Never invent or substitute expansions, categories, or claims.\n\n";
             $prompt .= $brand_facts . "\n\n";
         }
         $prompt .= "**NEVER invent facts about this flow.** Use only configured flow settings and the attached personality profile.\n\n";
@@ -865,9 +869,13 @@ class FLOSC_AI_Chat_Dispatch {
     /**
      * Production dispatch with an explicit, inspectable outcome.
      *
-     * Unlike test mode, this keeps production caching/chaining decisions intact.
-     * Provider details remain internal; the chat-turn layer chooses visitor copy,
-     * administrator diagnostics and logging independently.
+     * get_response() answers with a string, so an empty answer and a provider
+     * that refused the request are indistinguishable at the call site. That is
+     * how a 400 could read as a working chatbot with nothing to say. This keeps
+     * production caching and chaining intact and reports what happened.
+     *
+     * Provider detail stays internal. The chat-turn layer decides separately
+     * what a visitor sees, what an administrator sees, and what is logged.
      *
      * @return array{content:string,source:string,provider:string,error_code:string,error:string}
      */

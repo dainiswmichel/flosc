@@ -1,40 +1,42 @@
 {
   "candidate": "grok-4-6",
-  "creator": "Grok 4.6 (xAI / Grok Build)",
-  "status": "BUILD_COMPLETE_AWAITING_REMOTE_WORDPRESS_VALIDATION",
-  "baseline_commit": "03f4b926c5502b7d2af0136fc1bac8359286b9f8",
+  "candidate_iteration": 27,
+  "creator": "Grok 4.6",
+  "status": "DEPLOYED_AWAITING_CAPTAIN_ACCEPTANCE",
+  "plugin_version": "8.0.0",
+  "baseline_candidate": "codex-gpt5 v26 at main commit 7cdda1c20d4badcd553721839effe339103d32da",
+  "candidate_commit": "this commit",
   "plugin_source": "flosc-by-grok-4-6/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "002de167b3bedd4b4742c788e12a444a2cf3332fca60f6ecf12cae3719917f25",
-  "artifact_files": 275,
-  "implemented": {
-    "designer_any_row": "Design is available on every library row; URL carries persona id so a new genome boots even when it is not yet attached",
-    "atomic_save": "designer save writes workshop_json + compiled ai_base_prompt + profile_hash together; authored profiles are never regenerated",
-    "per_turn_personality_delivery": "complete current compiled profile is resolved by flow ID on every turn, including follow-ups",
-    "shared_policy_layer": "sales/truth/journey contract lives in chatpack Layer 2, not inside each voice",
-    "dispatch_truthfulness": "RAG failure falls through to ordinary AI; provider errors are labeled fallback",
-    "showcase_reseed": "unedited BubblyBetty/DadJokeDan rows matching known shipped hashes are restored to concise profiles",
-    "public_request_protection": "Administration settings replace account-plan metadata and control public and metered request limits; HTTP 429 retry is off by default",
-    "ivr_personality_variables": "IVR content can resolve the current personality name and role plus flow, title, tagline, and site variables",
-    "public_chat_method_contract": "FLOSC_Framework defines the no-hedge methods called by ordinary and RAG chat turns"
+  "artifact_sha256": "a06894865506ad9071f5550dbf6f2d12a6f7c8a0dfd87aefe7db0666084a9f7b",
+  "artifact_size_bytes": 2714835,
+  "artifact_entries": 277,
+  "artifact_files": 237,
+  "runtime_delta_from_v26_files": 1,
+  "remediation": {
+    "oembed_external_services": "FAQ External Services item 17 names YouTube, TikTok, Spotify, SoundCloud, Apple Music, Vimeo; purpose, media URL, visitor player, terms/privacy",
+    "handoff_resubmission_md": "absent from candidate tree and zip"
   },
   "verification": {
-    "php_syntax_changed_files": "passed",
-    "javascript_syntax_wp_bridge": "passed",
-    "isolated_personality_contract_test": "passed",
-    "request_protection_settings_contract": "passed",
-    "ivr_personality_variable_contract": "passed",
-    "public_chat_framework_method_contract": "passed",
+    "check_provider_identity": "passed",
+    "plugin_version": "8.0.0",
     "zip_integrity": "passed",
+    "zip_forbidden_path_scan": "passed",
     "zip_single_top_level_flosc": "passed",
-    "zip_prohibited_path_scan": "passed",
-    "wordpress_runtime": "DEFERRED - AUTHORIZED REMOTE TEST REQUIRED",
-    "wordpress_plugin_check": "DEFERRED - AUTHORIZED REMOTE TEST REQUIRED",
-    "live_ai_provider_calls": "DEFERRED - AUTHORIZED REMOTE TEST REQUIRED",
-    "designer_crafted_personality_browser": "DEFERRED - AUTHORIZED REMOTE TEST REQUIRED",
-    "betty_dan_mid_chat_switch": "DEFERRED - AUTHORIZED REMOTE TEST REQUIRED"
+    "zip_no_tests": "passed",
+    "zip_no_handoff": "passed"
   },
-  "canonical_source_modified": false,
-  "other_candidates_modified": false
+  "live_deployment": {
+    "source": "flosc-ship-candidate.sh grok-4-6 after this commit is on origin/main",
+    "remote": "chemicloud:public_html/wp-content/plugins/flosc"
+  },
+  "captain_acceptance": {
+    "fresh_install": "pending",
+    "live_ai_provider_and_starter_packs": "pending",
+    "shipped_personalities": "pending",
+    "new_personality_designer_round_trip": "pending",
+    "resubmission": "pending"
+  },
+  "scope_boundary": "MagicLink abuse-prevention small set not in this candidate. A1-A3 and nowdoc conversion remain as shipped in v26."
 }

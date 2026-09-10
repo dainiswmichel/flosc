@@ -241,9 +241,6 @@ class FLOSC_Chatpack {
         // ── 1. FLOSC IDENTITY ───────────────────────────────
         $sections[] = self::build_identity_section((string) $flow_id);
 
-        // ── 1b. SHARED JOURNEY POLICY (once, not inside each voice) ──
-        $sections[] = self::build_shared_policy_section();
-
         // ── 2. WORDPRESS ENVIRONMENT ────────────────────────
         $sections[] = self::build_wordpress_section();
 
@@ -306,12 +303,26 @@ class FLOSC_Chatpack {
         // a generic FLOSC voice, i.e. one flow bleeding into another. The identity
         // section is flow-scoped, so re-sending it on every turn keeps each chatbot
         // firmly inside its own flow. (Cheap insurance; flow isolation is the point.)
-        // Personality is authoritative system context, not conversation memory.
-        // Resolve and send the complete CURRENT compiled profile every turn so
-        // an admin mid-chat switch takes effect on the very next visitor reply.
+        // The full compiled profile goes on EVERY turn, including this one.
+        //
+        // Sending a short anchor instead saved input tokens and cost the product
+        // its point. Two things broke at once. The character thinned from turn 2
+        // — name, role and traits are a label, not a voice, and Betty stopped
+        // being bubbly the moment the profile stopped arriving. And switching
+        // personality mid-conversation became impossible: the anchor told the
+        // model it was "the same person as the opening turn", so changing the
+        // attached personality changed the name on the bubble and nothing else.
+        // That switch is the demonstration this release is built around.
+        //
+        // Identity can change between any two turns, so it cannot be inferred
+        // from an earlier one. The answer to an expensive profile is a smaller
+        // profile, decided when it is compiled — not a prompt that leaves out
+        // the part that makes the personality a personality. The four shipped
+        // profiles went from ~6.3KB to ~1KB each by moving the sales trajectory
+        // back to the flow section that already sends it, which costs less per
+        // turn than the anchor did and keeps the character.
+        $sections[] = self::build_identity_section((string) ($eval_context['flow_id'] ?? ''), false);
         $followup_flow = (string) ($eval_context['flow_id'] ?? '');
-        $sections[] = self::build_identity_section($followup_flow, false);
-        $sections[] = self::build_shared_policy_section();
         $sections[] = self::build_user_section($eval_context);
         $sections[] = self::build_flow_section($phase, $eval_context, $followup_flow);
         $kb_section = self::build_knowledge_section($eval_context);
@@ -355,8 +366,15 @@ class FLOSC_Chatpack {
         }
 
         // Just purchased?
+        //
+        // What the purchase contains is the flow's to say, never the
+        // framework's. v4 removed "full access to all content" from the phase
+        // list in build_flow_section(); this line said the same thing on the
+        // turn straight after a purchase and was missed. A Member of a flow
+        // selling one PDF bought that PDF — FLOSC has no idea what any
+        // membership includes, and a model told otherwise will promise it.
         if (!empty($eval_context['first_message_after_purchase'])) {
-            $state_updates[] = "User just purchased — now a member with full access";
+            $state_updates[] = "User just completed a purchase in this flow — they are now a Member. What that grants is whatever this flow's own content and offers say; do not describe it in wider terms.";
         }
 
         if (!empty($state_updates)) {
@@ -477,73 +495,13 @@ class FLOSC_Chatpack {
     }
 
     /**
-     * Shared FLOSC journey policy. One copy for every personality.
-     * Character-specific voice stays in the compiled profile (Layer 1).
-     *
-     * @return string
-     */
-    private static function build_shared_policy_section() {
-        return "## 2. SHARED FLOSC JOURNEY POLICY\n"
-            . "This policy is the same for every personality. The identity section above is who you are; this is how FLOSC conversations work.\n\n"
-            . "## How you sell\n"
-            . "This is a conversational sales journey. The conversation is the selling — there is no pitch bolted on at the end. Technique, not attitude.\n\n"
-            . "- Discover before you offer\n"
-            . "  Do not pitch in the first exchange. Learn what they came for; the offer only lands when it answers something they actually said.\n"
-            . "- Summarise back, then check\n"
-            . "  Put what they said into your own words, shorter, and ask whether you have understood.\n"
-            . "- Tie the step to what they told you\n"
-            . "  Connect the next step to their own stated problem — never a generic list of what is included.\n"
-            . "- Trial close first\n"
-            . "  Test the temperature before the real ask: \"Would that be useful to you?\" A soft yes earns the ask. A soft no means keep listening.\n"
-            . "- Ask once, clearly, then stop\n"
-            . "  One plain sentence. Then leave the silence alone.\n"
-            . "- Objections are questions\n"
-            . "  When someone hesitates, find out what the hesitation actually is and answer that.\n"
-            . "- Take a no gracefully\n"
-            . "  A no is information, not a door to push on. People come back to whoever let them leave.\n\n"
-            . "## Always\n"
-            . "Basics every FLOSC personality holds, whatever its character.\n\n"
-            . "- Encourage\n"
-            . "  Leave people more able than you found them, and more willing to take the next step.\n"
-            . "- Know where they are\n"
-            . "  Freeline, Login, Offer, Sale, Content — and access: visitor, guest, member. Know which phase and which tier this person is in.\n"
-            . "- Entice them forward\n"
-            . "  The next step is something they want to take. Name what registering or buying opens, and invite them.\n"
-            . "- Get to know them\n"
-            . "  Ask what draws them to this subject. Follow their answer rather than steering back to a script.\n"
-            . "- Thank them for what they share\n"
-            . "  When someone tells you something personal, say thank you and mean it. Then use it.\n"
-            . "- Entice, never pressure\n"
-            . "  No manufactured urgency, no invented scarcity, no guilt, no flattery.\n"
-            . "- Registering is worth something concrete\n"
-            . "  Creating a profile opens the next tier of content, and where a flow meters conversation it grants more allowance to keep talking.\n"
-            . "- Sell it with joy\n"
-            . "  Sell it the way you would introduce a friend's work — with delight, never as a transaction being processed.\n"
-            . "- Respect the buyer\n"
-            . "  Anyone who buys is a smart adult making a good decision with their own money.\n"
-            . "- Never reach above their tier\n"
-            . "  Do not show, quote, summarise or describe the contents of anything above the tier they hold.\n"
-            . "- Answer what you know\n"
-            . "  Spend words on what you can tell them. Do not invent a fact, a price, or a promise.\n"
-            . "- Do not lie\n"
-            . "  Not a white lie, not a flattering one, not a softening that leaves someone holding a false impression.\n"
-            . "- Always tell the truth\n"
-            . "  Say the true thing even when a vaguer one would go down easier.\n"
-            . "- No moral relativism\n"
-            . "  Right and wrong are not matters of perspective. There is no \"your truth\".\n"
-            . "- Match their length, usually\n"
-            . "  A short question gets a short answer. Pre-made content is the exception: serve it whole, or exactly as your instructions for it say.\n";
-    }
-
-    /**
      * Section 1: FLOSC Identity — what FLOSC is, product info, AI persona.
      * Reads from floscAdmin-configurable settings.
      *
      * @param string $flow_id  Flow stem.
-     * @param bool   $compact  Unused. Kept so older call sites keep working.
-     *                         Follow-ups must send the full current profile.
+     * @param bool   $compact  True on follow-ups: name/role/scope only, not the compiled profile.
      */
-    private static function build_identity_section($flow_id = '', $compact = false) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
+    private static function build_identity_section($flow_id = '', $compact = false) {
         $flow_id = ($flow_id !== null && $flow_id !== '') ? $flow_id : null;
         // Fix 12: Library attach (one personality) or flow bag / legacy keys.
         $res = function_exists( 'flosc_personality_library_resolve_field' ) ? 'flosc_personality_library_resolve_field' : null;
@@ -576,7 +534,40 @@ class FLOSC_Chatpack {
             ? flosc_flow_public_tagline( $flow_id )
             : '';
 
-        $section = "## 1. IDENTITY (current — resolved fresh this turn)\n\n";
+        if ( $compact ) {
+            // No claim about an earlier turn: the attached personality may have
+            // been changed since, and asserting continuity would tell the model
+            // to keep being whoever it was before the switch.
+            $section  = "## 1. IDENTITY\n\n";
+            $section .= "You are {$ai_name}";
+            if ( $ai_role ) {
+                $section .= " — {$ai_role}";
+            }
+            $section .= ".\n";
+            if ( $ai_traits ) {
+                $section .= "Traits: {$ai_traits}\n";
+            }
+            if ( $ai_mission ) {
+                $section .= "Mission: {$ai_mission}\n";
+            }
+            if ( $public_title !== '' ) {
+                $section .= "Public title: {$public_title}\n";
+            } else {
+                $section .= "Public title: (none).\n";
+            }
+            if ( $public_tagline !== '' ) {
+                $section .= "Tagline: {$public_tagline}\n";
+            }
+            if ( $ai_topic_scope ) {
+                $section .= "Topic scope: {$ai_topic_scope}\n";
+            }
+            $section .= "FLOSC = Freeline, Login, Offer, Sale, Content only when the software is the topic.\n";
+            $section .= "Never invent facts, titles, URLs, prices, or contact details. Never guess.\n";
+            $section .= "Do not leak contact details until name + email + phone are in this conversation.\n";
+            return $section;
+        }
+
+        $section = "## 1. IDENTITY\n\n";
 
         if ( $compiled_profile !== '' ) {
             $section .= "This chat is on a FLOSC flow";
@@ -869,13 +860,30 @@ class FLOSC_Chatpack {
             $section .= "- Phase: **{$phase}**\n";
         }
 
-        // Phase descriptions (the 5 FLOSC phases)
+        /*
+         * The five phases describe the journey, not the product.
+         *
+         * This list used to say "Sale — Member (purchased). Full access to all
+         * content." A guest asked how to become a member and was told that
+         * membership "opens up everything Dainis has created here", which is
+         * not true of that site and is not true of most flows. The model was
+         * reporting faithfully: it had been handed a claim about what a tier
+         * includes, on every turn, by the framework.
+         *
+         * FLOSC does not know what any particular membership contains. The
+         * floscAdmin does, and says so in Sticky aspects and the phase
+         * instructions. Nothing here may promise on their behalf.
+         */
         $section .= "\n**FLOSC Phases:**\n";
-        $section .= "1. **Freeline** — Visitor (not logged in). Goal: get them to take the quiz.\n";
-        $section .= "2. **Login** — Guest (logged in, quiz done). Goal: show score, deliver free lesson.\n";
-        $section .= "3. **Offer** — Guest (free lesson viewed). Goal: present upgrade offer.\n";
-        $section .= "4. **Sale** — Member (purchased). Full access to all content.\n";
+        $section .= "1. **Freeline** — Visitor, not logged in. Goal: earn a first step.\n";
+        $section .= "2. **Login** — Guest, logged in. Goal: deliver what registering opened.\n";
+        $section .= "3. **Offer** — Guest who has seen the free content. Goal: name the next step and ask.\n";
+        $section .= "4. **Sale** — Member. They hold the member tier on this flow.\n";
         $section .= "5. **Content** — Ongoing member engagement, support, encouragement.\n";
+        $section .= "\nThese name access tiers, not what any tier contains. Never state or imply\n";
+        $section .= "what membership includes beyond what this flow has told you — no \"everything\",\n";
+        $section .= "no \"full access\", no scope you were not given. If you do not know what a tier\n";
+        $section .= "opens, say what you do know and invite the question.\n";
 
         $phase_outcomes = self::get_phase_outcomes($phase, $eval_context, $flow_id);
         if (!empty($phase_outcomes)) {
@@ -907,6 +915,27 @@ class FLOSC_Chatpack {
      */
     private static function build_knowledge_section($eval_context) {
         $section = '';
+
+        /*
+         * BuddyBoss groups, when this flow indexes them.
+         *
+         * Keyword retrieval over post bodies will never produce
+         * /groups/lesaep-learners/, so the groups this person is allowed to
+         * hear about ride on the turn as a short list. The index does the
+         * filtering — tier, exclusions, and BuddyBoss privacy, which FLOSC can
+         * tighten and never loosen.
+         *
+         * Empty string when the flow does not index groups, so a site without
+         * BuddyBoss pays nothing for this.
+         */
+        if (class_exists('FLOSC_Site_Content_Index')) {
+            $flosc_group_flow = (string) ($eval_context['flow_id'] ?? '');
+            $flosc_group_tier = (string) ($eval_context['access_level'] ?? $eval_context['user_level'] ?? 'visitor');
+            $flosc_groups = FLOSC_Site_Content_Index::instance()->format_groups_for_ai($flosc_group_flow, $flosc_group_tier);
+            if ($flosc_groups !== '') {
+                $section .= "## 5c. GROUPS\n\n" . $flosc_groups . "\n";
+            }
+        }
 
         // Feedback (floscAdmin-flagged bad responses)
         $feedback_items = flosc_get_setting('ai_feedback', []);
@@ -947,7 +976,7 @@ class FLOSC_Chatpack {
         $kb_content = self::load_knowledge_files($eval_context);
         if ($kb_content) {
             // Fix 7: Authoritative framing — AI must use these files as source of truth
-            $section .= "## 5c. KNOWLEDGE BASE — AUTHORITATIVE CONTENT\n\n";
+            $section .= "## 5d. KNOWLEDGE BASE — AUTHORITATIVE CONTENT\n\n";
             // Fix 12: Inject ai_context_awareness — FloscAdmin describes what the KB contains
             $context_awareness = flosc_get_setting('ai_context_awareness', '');
             if ($context_awareness) {

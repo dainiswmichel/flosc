@@ -657,6 +657,37 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
                 $flosc_new_settings[$flosc_setting_key] = flosc_sanitize_personality_profile_text(is_string($flosc_value) ? $flosc_value : '');
             } elseif ($flosc_is_textarea) {
                 $flosc_new_settings[$flosc_setting_key] = sanitize_textarea_field($flosc_value);
+            } elseif ('buddyboss_index' === $flosc_setting_key && is_array($flosc_value)) {
+                /*
+                 * Nested, so it cannot go through the flat array branch below —
+                 * array_map('sanitize_text_field', …) over a nested array turns
+                 * each inner array into the string "Array" and emits a notice.
+                 *
+                 * Which groups a chatbot may mention is stored on the flow, not
+                 * on the group: the same group can be open on one flow and
+                 * withheld on another.
+                 */
+                $flosc_bb_tiers = array('visitor', 'guest', 'member');
+                $flosc_bb_rows  = array();
+                foreach ((array) ($flosc_value['vgm_rows'] ?? []) as $flosc_bb_key => $flosc_bb_vgm) {
+                    $flosc_bb_key = FLOSC_Site_Content_Index::normalize_row_id($flosc_bb_key);
+                    if ('' === $flosc_bb_key) {
+                        continue;
+                    }
+                    $flosc_bb_rows[$flosc_bb_key] = implode(' ', array_intersect(
+                        $flosc_bb_tiers,
+                        array_map('sanitize_key', (array) $flosc_bb_vgm)
+                    ));
+                }
+                $flosc_new_settings[$flosc_setting_key] = array(
+                    'enabled'     => !empty($flosc_value['enabled']),
+                    'group_ids'   => array_values(array_filter(array_map('absint', (array) ($flosc_value['group_ids'] ?? [])))),
+                    'vgm_default' => implode(' ', array_intersect(
+                        $flosc_bb_tiers,
+                        array_map('sanitize_key', (array) ($flosc_value['vgm_default'] ?? $flosc_bb_tiers))
+                    )),
+                    'vgm_rows'    => $flosc_bb_rows,
+                );
             } elseif (is_array($flosc_value)) {
                 $flosc_new_settings[$flosc_setting_key] = array_map('sanitize_text_field', $flosc_value);
             } else {
@@ -1752,6 +1783,9 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
 
     if ($flosc_active_tab === 'administration') {
         if (current_user_can('manage_options')) {
+            // Public Request Protection. Global for this installation, not per
+            // floscFlow: the buckets are keyed by visitor IP and endpoint, so a
+            // per-flow setting would be a promise the storage cannot keep.
             $flosc_protection_defaults = [
                 'enabled'                  => '1',
                 'anonymous_chat_limit'     => 60,
@@ -1770,12 +1804,32 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
                         : '0';
                     continue;
                 }
+                // Clamped rather than trusted: a zero would lock every visitor
+                // out of the site, and an unbounded value is not a limit.
                 $flosc_protection[$flosc_protection_key] = max(
                     1,
                     min(10000, absint($flosc_post['flosc_public_request_protection'][$flosc_protection_key] ?? $flosc_protection_default))
                 );
             }
             update_option('flosc_public_request_protection', $flosc_protection, false);
+
+            /*
+             * What FLOSC tells the AI provider about itself.
+             *
+             * Both keys are written explicitly as '1' or '0' rather than left
+             * absent when unticked. An unchecked checkbox posts nothing, and
+             * both of these default to on when the key is missing — so a
+             * missing key would silently mean "on" and the floscAdmin could
+             * never turn either of them off.
+             */
+            $flosc_identity = get_option('flosc_provider_identity', []);
+            $flosc_identity = is_array($flosc_identity) ? $flosc_identity : [];
+            foreach (['enabled', 'send_site'] as $flosc_identity_key) {
+                $flosc_identity[$flosc_identity_key] = isset($flosc_post['flosc_provider_identity'][$flosc_identity_key])
+                    ? '1'
+                    : '0';
+            }
+            update_option('flosc_provider_identity', $flosc_identity, false);
 
             $flosc_allowed_debug_modes = ['inherit', 'on', 'off'];
             $flosc_debug_mode = sanitize_key($flosc_post['flosc_debug_mode'] ?? 'inherit');
@@ -3036,7 +3090,7 @@ if (function_exists('wp_add_inline_style')) {
                 } elseif ($flosc_save_ran) {
                     echo esc_html__( 'Saved, but this site did not keep the time it happened.', 'flosc' );
                 } else {
-                    echo esc_html__( 'Not saved from this page yet.', 'flosc' );
+                    echo esc_html__( 'Not saved from this button yet.', 'flosc' );
                 }
                 ?>
             </span>

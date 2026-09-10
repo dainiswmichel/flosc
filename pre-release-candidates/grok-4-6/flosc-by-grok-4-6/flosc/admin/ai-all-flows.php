@@ -35,7 +35,7 @@ if ( is_array( $flosc_ai_all_notice ) ) {
 
 <div class="flosc-info-box flosc-margin-bottom-20">
 	<p class="flosc-text-zero-margin">
-		<?php echo esc_html__( 'Install API keys here. Chat: Anthropic, OpenAI, xAI, Gemini. OpenAI, Anthropic, and Gemini chat use the WordPress 7.0 AI Client — register the official plugin for each of those you will Test. Speech-to-text: AssemblyAI (and OpenAI Whisper on This flow). Author a personality in Personality Designer. Attach one personality and one chat API on This flow.', 'flosc' ); ?>
+		<?php echo esc_html__( 'Install API keys here. Chat: Anthropic, OpenAI, xAI, Gemini. OpenAI, Anthropic, and Gemini chat use the WordPress 7.0 AI Client — register the official plugin for each of those you will Test. Speech-to-text: AssemblyAI (and OpenAI Whisper on This flow). Author a personality in the DA1 AI Personality Builder. Attach one personality and one chat API on This flow.', 'flosc' ); ?>
 	</p>
 	<?php
 	if ( class_exists( 'FLOSC_WP_AI_Client' ) ) {
@@ -142,11 +142,13 @@ if ( is_array( $flosc_ai_all_notice ) ) {
 					<td><code><?php echo esc_html( $flosc_pid ); ?></code></td>
 					<td><?php echo $flosc_on_file ? esc_html__( 'On file', 'flosc' ) : esc_html__( 'Empty', 'flosc' ); ?></td>
 					<td>
-						<a class="button <?php echo $flosc_pid === $flosc_attached_pid ? 'button-primary' : ''; ?>" href="<?php echo esc_url( flosc_personality_builder_url( $flosc_pid, $flosc_current_ivr ) ); ?>">
-							<?php echo $flosc_pid === $flosc_attached_pid
-								? esc_html__( 'Design this flow', 'flosc' )
-								: esc_html__( 'Design', 'flosc' ); ?>
+						<?php if ( current_user_can( 'manage_options' ) && $flosc_pid === $flosc_attached_pid ) : ?>
+						<a class="button button-primary" href="<?php echo esc_url( flosc_personality_builder_url( $flosc_pid, $flosc_current_ivr ) ); ?>">
+							<?php echo esc_html__( 'Design this flow', 'flosc' ); ?>
 						</a>
+						<?php else : ?>
+						<span class="description"><?php echo esc_html__( 'Attach on This flow', 'flosc' ); ?></span>
+						<?php endif; ?>
 					</td>
 					<td>
 						<label>
@@ -171,7 +173,7 @@ if ( is_array( $flosc_ai_all_notice ) ) {
 					<td><input type="text" class="regular-text" id="new_persona_label" name="new_persona_label" placeholder="e.g. Support host"></td>
 				</tr>
 			</table>
-			<p class="description"><?php echo esc_html__( 'Adds an empty row. Click Design on that row, craft the personality, Save, then attach it on This flow. Chat uses the compiled profile on every turn, including after you switch voices mid-conversation.', 'flosc' ); ?></p>
+			<p class="description"><?php echo esc_html__( 'Adds an empty row. Open Design to author it, then attach it on This flow.', 'flosc' ); ?></p>
 		</div>
 
 		<p>

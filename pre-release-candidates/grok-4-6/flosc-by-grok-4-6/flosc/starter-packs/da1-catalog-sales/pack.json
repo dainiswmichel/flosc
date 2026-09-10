@@ -29,5 +29,13 @@
       "description": "All fifty Extremely Ordinary Instruction Manuals compiled into one PDF."
     }
   ],
-  "needs_configuration": "The $10 UberManual offer ships priced but unpaid-for: add PayPal credentials under Payments, and connect UberManual.pdf to your post-purchase delivery."
+  "needs_configuration": "The $10 UberManual offer ships priced but unpaid-for: add PayPal credentials under Payments, and connect UberManual.pdf to your post-purchase delivery.",
+  "ships": [
+    "README.txt",
+    "UberManual.pdf",
+    "catalog.tsv",
+    "content.json",
+    "flow_ivr.md",
+    "pack.json"
+  ]
 }

@@ -9,6 +9,11 @@ $flosc_visitor_name = function_exists( 'flosc_personality_name' )
 if ( $flosc_visitor_name === '' ) {
     $flosc_visitor_name = 'FLOSC';
 }
+
+// Resolved at render time from the personality attached right now, so an IVR
+// greeting written once introduces whoever is currently attached. The welcome
+// bubble is flow-owned, not model-generated: without this a flow that switched
+// from Br3nda to DadJokeDan still opened in Br3nda's name.
 $flosc_visitor_role = function_exists( 'flosc_personality_library_resolve_field' )
     ? trim( (string) flosc_personality_library_resolve_field( 'ai_personality_role', '' ) )
     : '';
@@ -1094,6 +1099,9 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
             'restUrl' => $flosc_rest_base . '/',
             'apiUrl' => $flosc_rest_base,
             'nonce' => wp_create_nonce('wp_rest'),
+            // Off by default. A 429 is the site saying "slow down"; retrying
+            // it immediately spends a second request from the same bucket and
+            // makes the limit arrive twice as fast.
             'retryAfter429' => (static function () {
                 $protection = get_option('flosc_public_request_protection', []);
                 return is_array($protection) && ($protection['retry_after_429'] ?? '0') === '1';

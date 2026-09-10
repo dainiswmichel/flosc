@@ -5,6 +5,18 @@ if (!defined('ABSPATH')) {
 
 trait FLOSC_REST_Trait {
 
+    /*
+     * Public throttles, owned by the floscAdmin instead of the source.
+     *
+     * These were fixed numbers in this file. A live visitor hit "Rate limit
+     * reached. Please try again later." after one message and it read as the
+     * AI provider refusing the request — it was FLOSC's own per-IP bucket at
+     * 30/hour, and the client's nonce-refresh retry could spend two of those
+     * on a single send. A limit nobody can see or change is indistinguishable
+     * from a broken site.
+     *
+     * Global for this installation, not per floscFlow.
+     */
     private function flosc_public_request_protection() {
         $defaults = [
             'enabled'                  => '1',
@@ -18,7 +30,6 @@ trait FLOSC_REST_Trait {
         $settings = get_option('flosc_public_request_protection', []);
         return is_array($settings) ? array_merge($defaults, $settings) : $defaults;
     }
-
     /**
      * Permission Callbacks for REST API
      */
@@ -68,7 +79,9 @@ trait FLOSC_REST_Trait {
             return true;
         }
 
-        // Visitors get stricter limits.
+        // Visitors get stricter limits. Chat carries its own budget: a
+        // conversation costs more requests than reading IVR content does, and
+        // sharing one bucket meant a talkative visitor exhausted both.
         $limit = $endpoint === '/flosc/v1/chat' ? absint($protection['anonymous_chat_limit']) : absint($protection['anonymous_ivr_limit']);
         if (!$this->check_rate_limit('public_visitor_' . $endpoint, $limit, HOUR_IN_SECONDS)) {
             return new WP_Error('rate_limit', __('Rate limit reached. Please try again later.', 'flosc'), ['status' => 429]);
@@ -260,17 +273,10 @@ trait FLOSC_REST_Trait {
         // Content phase is member-entitled only (sale stays public for guest purchase).
         if ($phase === 'content') {
             $user_id = get_current_user_id();
-            // The meta is stored as the string 'true' / 'false' (see
-            // FLOSC_Member_Access). A (bool) cast would treat the revoked value
-            // 'false' as truthy and let a revoked member through — compare the
-            // string explicitly.
-            $has_member_access = $user_id && 'true' === get_user_meta($user_id, '_flosc_member_access', true);
-            // Also honor flow-scoped membership when available.
-            if (!$has_member_access && $user_id && function_exists('flosc') && is_object(flosc()) && method_exists(flosc(), 'sale')) {
-                $sale = flosc()->sale();
-                if ($sale && method_exists($sale, 'access') && method_exists($sale->access(), 'is_member')) {
-                    $has_member_access = (bool) $sale->access()->is_member($user_id);
-                }
+            $flow_id = $this->flosc_request_flow_stem($request);
+            $has_member_access = current_user_can('manage_options');
+            if (!$has_member_access && $user_id && $this->member_access && method_exists($this->member_access, 'is_member')) {
+                $has_member_access = (bool) $this->member_access->is_member($user_id, $flow_id);
             }
             if (!$has_member_access) {
                 return new WP_Error('forbidden', __('Not entitled to this content.', 'flosc'), ['status' => 403]);
