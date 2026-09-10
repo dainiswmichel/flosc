@@ -593,7 +593,7 @@ class FLOSC_Condition_Evaluator {
             // Per-flow access_level for is_guest / is_visitor / is_member.
             // Global _flosc_member_access alone must not make a member on one
             // flow appear as a member on another flow.
-            $flow_for_level = (string) ($context['flow_id'] ?? '');
+            $flow_for_level = (string) ($additional['flow_id'] ?? $context['flow_id'] ?? '');
             if ($flow_for_level === '' && function_exists('flosc') && is_object(flosc()) && method_exists(flosc(), 'get_current_flow')) {
                 $cf = flosc()->get_current_flow();
                 if (is_array($cf)) {

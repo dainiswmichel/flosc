@@ -306,8 +306,6 @@ trait FLOSC_Admin_Trait {
             'flosc_share_text' => 'text',
             'flosc_email_subject' => 'text',
             'flosc_email_body' => 'textarea',
-            'flosc_account_plan' => 'text',
-            'flosc_account_purchases_manual' => 'text',
             'flosc_ai_provider' => 'text',
             'flosc_openai_api_key' => 'secret',
             'flosc_anthropic_api_key' => 'secret',
@@ -626,7 +624,6 @@ trait FLOSC_Admin_Trait {
             return $option_name !== '' ? (string) get_option($option_name, '') : '';
         }
 
-        $value = wp_unslash($value);
         if ('' === $value) {
             return $option_name !== '' ? (string) get_option($option_name, '') : '';
         }

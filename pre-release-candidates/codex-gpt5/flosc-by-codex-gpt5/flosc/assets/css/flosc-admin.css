@@ -7535,6 +7535,33 @@ label[for^="flosc_acc_q_"] {
 .flosc-personality-builder-status.is-err {
 	color: #b32d2e;
 }
+
+/*
+ * The Save button carries the state. Blue while there is something to save,
+ * green once it is saved — dark enough that the white label stays readable
+ * (#1e7e34 on white text is 4.9:1).
+ */
+#flosc-personality-builder-save.is-saved,
+#flosc-personality-builder-save.is-saved:hover,
+#flosc-personality-builder-save.is-saved:focus {
+	background: #1e7e34;
+	border-color: #1a6e2e;
+	color: #fff;
+	box-shadow: none;
+	text-shadow: none;
+}
+#flosc-personality-builder-save.is-saving,
+#flosc-personality-builder-save.is-saving:hover {
+	background: #50575e;
+	border-color: #50575e;
+	color: #fff;
+}
+.flosc-personality-builder-mts {
+	color: #50575e;
+	font-size: 12px;
+	display: block;
+	margin-top: 2px;
+}
 .flosc-personality-workshop .app {
 	max-width: none;
 	padding: 8px 12px 24px;
@@ -7837,3 +7864,25 @@ details.flosc-flow-block:not([open]) > summary.flosc-flow-block__header { margin
 .flosc-tight-line { margin: .2em 0; }
 .flosc-last-save { display: block; margin-top: 8px; font-size: 13px; color: #2c6349; font-weight: 600; }
 .flosc-last-save:empty { display: none; }
+.flosc-param-clash { border-left: 3px solid #d63638; padding-left: 10px; margin-bottom: 8px; color: #8a2424; }
+.flosc-param-clash .flosc-param-help__meta { color: #8a2424; }
+
+/* Attaching a personality. The same green as Step 2b's save, because it
+   answers the same question — did that take? — and the answer should look the
+   same wherever it is asked. This one has to survive a page reload, so it is
+   stashed and re-shown rather than painted and navigated away from. */
+#flosc-personality-attach-note.flosc-attach-ok { color: #2c6349; font-weight: 600; }
+#flosc-personality-attach-note.flosc-attach-bad { color: #8a2424; font-weight: 600; }
+
+/* When a reference page was written. A document with no date is a document
+   nobody can tell is stale. */
+.flosc-doc-stamp { color: #646970; font-size: 12px; margin-top: -4px; }
+.flosc-personality-builder-ref { margin-left: 10px; font-size: 13px; }
+
+/* One post type per line on the site index panel, so a site with a dozen
+   registered types stays readable. */
+.flosc-sci-type { display: block; margin: 0 0 4px; }
+.flosc-sci-type code { margin-left: 4px; color: #646970; }
+.flosc-sci-type em { margin-left: 6px; color: #646970; font-style: normal; }
+.flosc-sci-subhead { margin: 12px 0 4px; font-weight: 600; }
+.flosc-sci-tier { display: inline-block; margin-right: 14px; }

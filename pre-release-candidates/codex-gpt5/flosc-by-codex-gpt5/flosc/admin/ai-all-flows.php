@@ -35,7 +35,7 @@ if ( is_array( $flosc_ai_all_notice ) ) {
 
 <div class="flosc-info-box flosc-margin-bottom-20">
 	<p class="flosc-text-zero-margin">
-		<?php echo esc_html__( 'Install API keys here. Chat: Anthropic, OpenAI, xAI, Gemini. OpenAI, Anthropic, and Gemini chat use the WordPress 7.0 AI Client — register the official plugin for each of those you will Test. Speech-to-text: AssemblyAI (and OpenAI Whisper on This flow). Author a personality in Personality Designer. Attach one personality and one chat API on This flow.', 'flosc' ); ?>
+		<?php echo esc_html__( 'Install API keys here. Chat: Anthropic, OpenAI, xAI, Gemini. OpenAI, Anthropic, and Gemini chat use the WordPress 7.0 AI Client — register the official plugin for each of those you will Test. Speech-to-text: AssemblyAI (and OpenAI Whisper on This flow). Author a personality in the DA1 AI Personality Builder. Attach one personality and one chat API on This flow.', 'flosc' ); ?>
 	</p>
 	<?php
 	if ( class_exists( 'FLOSC_WP_AI_Client' ) ) {

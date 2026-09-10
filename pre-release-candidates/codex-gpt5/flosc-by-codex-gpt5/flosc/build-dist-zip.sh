@@ -77,6 +77,10 @@ DENY_PATTERNS=(
   'build-dist-zip.sh'
   '.distignore'
   'tests'
+  # Four full plugin trees plus their ZIPs live here on main. They are
+  # comparison candidates, not runtime code, and a ZIP that carried them would
+  # be four times the size and contain three other people's builds.
+  'pre-release-candidates'
 )
 
 rsync_excludes=()

@@ -1251,13 +1251,47 @@ flosc_tab_header('💬', 'IVR Management');
 </div>
 
 <?php ob_start(); ?>
+function floscAppendAPIResultNode(parent, tagName, text) {
+    const node = tagName ? document.createElement(tagName) : document.createTextNode(String(text));
+    if (tagName) {
+        node.textContent = String(text);
+    }
+    parent.appendChild(node);
+    return node;
+}
+
+function floscAppendAPIResultBreaks(parent, count) {
+    for (let i = 0; i < count; i++) {
+        parent.appendChild(document.createElement('br'));
+    }
+}
+
+function floscBeginAPIResult(parent, icon, title) {
+    parent.textContent = '';
+    floscAppendAPIResultNode(parent, '', icon + ' ');
+    floscAppendAPIResultNode(parent, 'strong', title);
+}
+
+function floscAppendAPIResultLine(parent, label, value) {
+    floscAppendAPIResultNode(parent, 'strong', label);
+    floscAppendAPIResultNode(parent, '', ' ' + String(value));
+    floscAppendAPIResultBreaks(parent, 1);
+}
+
+function floscAppendAPIResponseDetails(parent, data) {
+    const details = document.createElement('details');
+    floscAppendAPIResultNode(details, 'summary', 'Full response');
+    floscAppendAPIResultNode(details, 'pre', JSON.stringify(data, null, 2));
+    parent.appendChild(details);
+}
+
 function floscTestAPI() {
     const resultDiv = document.getElementById('flosc-api-test-result');
     const btn = document.getElementById('flosc-test-api');
     
     resultDiv.style.display = 'block';
     resultDiv.style.background = '#e9ecef';
-    resultDiv.innerHTML = '⏳ Testing API endpoint...';
+    resultDiv.textContent = '⏳ Testing API endpoint...';
     btn.disabled = true;
     
     const apiUrl = '<?php echo esc_js(rest_url('flosc/v1/ivr-messages?phase=freeline')); ?>';
@@ -1273,83 +1307,63 @@ function floscTestAPI() {
                 
                 if (msgCount > 0) {
                     resultDiv.style.background = '#d4edda';
-                    resultDiv.innerHTML = `✅ <strong>API Working!</strong><br><br>` +
-                        `<strong>Messages returned:</strong> ${msgCount}<br>` +
-                        `<strong>Names:</strong> ${msgNames}<br>` +
-                        `<strong>User context:</strong> ${JSON.stringify(data.user_context)}<br><br>` +
-                        `<details><summary>Full response</summary><pre>${JSON.stringify(data, null, 2)}</pre></details>`;
+                    floscBeginAPIResult(resultDiv, '✅', 'API Working!');
+                    floscAppendAPIResultBreaks(resultDiv, 2);
+                    floscAppendAPIResultLine(resultDiv, 'Messages returned:', msgCount);
+                    floscAppendAPIResultLine(resultDiv, 'Names:', msgNames);
+                    floscAppendAPIResultLine(resultDiv, 'User context:', JSON.stringify(data.user_context));
+                    floscAppendAPIResultBreaks(resultDiv, 1);
+                    floscAppendAPIResponseDetails(resultDiv, data);
                 } else {
                     resultDiv.style.background = '#fff3cd';
-                    resultDiv.innerHTML = `⚠️ <strong>API responded but returned 0 messages</strong><br><br>` +
-                        `This usually means condition evaluation is filtering everything out.<br>` +
-                        `<strong>User context:</strong> ${JSON.stringify(data.user_context)}<br><br>` +
-                        `Check that conditions like "is_visitor" are being evaluated correctly.`;
+                    floscBeginAPIResult(resultDiv, '⚠️', 'API responded but returned 0 messages');
+                    floscAppendAPIResultBreaks(resultDiv, 2);
+                    floscAppendAPIResultNode(resultDiv, '', 'This usually means condition evaluation is filtering everything out.');
+                    floscAppendAPIResultBreaks(resultDiv, 1);
+                    floscAppendAPIResultLine(resultDiv, 'User context:', JSON.stringify(data.user_context));
+                    floscAppendAPIResultBreaks(resultDiv, 1);
+                    floscAppendAPIResultNode(resultDiv, '', 'Check that conditions like "is_visitor" are being evaluated correctly.');
                 }
             } else {
                 resultDiv.style.background = '#f8d7da';
-                resultDiv.innerHTML = `❌ <strong>API Error</strong><br><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                floscBeginAPIResult(resultDiv, '❌', 'API Error');
+                floscAppendAPIResultBreaks(resultDiv, 1);
+                floscAppendAPIResultNode(resultDiv, 'pre', JSON.stringify(data, null, 2));
             }
         })
         .catch(error => {
             btn.disabled = false;
             resultDiv.style.background = '#f8d7da';
-            resultDiv.innerHTML = `❌ <strong>Fetch failed:</strong> ${error.message}`;
+            floscBeginAPIResult(resultDiv, '❌', 'Fetch failed:');
+            floscAppendAPIResultNode(resultDiv, '', ' ' + error.message);
         });
 }
 
-document.addEventListener('click', function(event) {
-    const trigger = event.target.closest('[data-flosc-action]');
-    if (!trigger) {
-        return;
-    }
+/*
+ * There is no click listener here on purpose.
+ *
+ * This page used to carry its own document-level [data-flosc-action] handler
+ * alongside the shared one in assets/js/flosc-admin-events.js, which is
+ * enqueued on every FLOSC admin screen. Both matched the same element and both
+ * called the same function, so one click ran floscToggleMsg() twice: the card
+ * opened and closed in the same frame and the accordion looked dead. The same
+ * double-fire hit toggle-new-editor and test-api-endpoint.
+ *
+ * flosc-admin-events.js handles all three, plus delete-message generically via
+ * data-confirm-message and data-stop-propagation. The change listener for
+ * toggle-offer-fields was doubled the same way; it never showed because
+ * floscToggleOfferFields() sets the class from an explicit boolean and running
+ * it twice lands in the same place. It was one refactor away from behaving
+ * like the accordion.
+ *
+ * The submit listener went the same way, and that one was visible: a form
+ * carrying data-confirm-message asked twice, because both handlers called
+ * confirm(). Two dialogs for one Delete.
+ *
+ * Adding a second listener for an action or attribute that
+ * flosc-admin-events.js already owns is how all of this returns.
+ */
 
-    const action = trigger.dataset.floscAction;
-    if (action === 'test-api-endpoint') {
-        event.preventDefault();
-        floscTestAPI();
-        return;
-    }
-
-    if (action === 'toggle-msg-card') {
-        event.preventDefault();
-        floscToggleMsg(trigger.dataset.msgId || '');
-        return;
-    }
-
-    if (action === 'toggle-new-editor') {
-        event.preventDefault();
-        floscToggleNewEditor(trigger.dataset.phaseId || '', '1' === String(trigger.dataset.open || '0'));
-        return;
-    }
-
-    if (action === 'delete-message') {
-        if (!confirm(trigger.dataset.confirmMessage || 'Delete this message?')) {
-            event.preventDefault();
-            event.stopPropagation();
-        }
-    }
-});
-
-document.addEventListener('change', function(event) {
-    const trigger = event.target.closest('[data-flosc-action="toggle-offer-fields"]');
-    if (!trigger) {
-        return;
-    }
-
-    floscToggleOfferFields(trigger, trigger.dataset.msgId || '');
-});
-
-document.addEventListener('submit', function(event) {
-    const form = event.target.closest('form[data-confirm-message]');
-    if (!form) {
-        return;
-    }
-
-    if (!confirm(form.dataset.confirmMessage || 'Are you sure?')) {
-        event.preventDefault();
-        event.stopPropagation();
-    }
-});
 <?php wp_add_inline_script('flosc-admin', ob_get_clean()); ?>
 
 <h2><?php echo esc_html( $flosc_ivr_management_view === 'all' ? 'IVR Management - All Flows File Management' : 'IVR Management - Single Flow Message Editing' ); ?></h2>
@@ -1890,7 +1904,7 @@ $flosc_total_count = count($flosc_messages);
                         <th>Chatbot Response Content</th>
                         <td>
                             <textarea name="message_content" rows="4" class="large-text"><?php echo esc_textarea($flosc_msg['content'] ?? ''); ?></textarea>
-                            <p class="description">Variables: {name}, {score}, {product_name}, {title}, {tagline}, {price}</p>
+                            <p class="description">Personality and flow variables: <code>{personality_name}</code>, <code>{personality_role}</code>, <code>{flow_name}</code>, <code>{public_title}</code>, <code>{tagline}</code>, <code>{site_name}</code>. Other variables: <code>{name}</code>, <code>{score}</code>, <code>{product_name}</code>, <code>{title}</code>, <code>{price}</code>. Use a new line, <code>\n</code>, or <code>&lt;br&gt;</code> for a visible line break.</p>
                         </td>
                     </tr>
                     <tr>

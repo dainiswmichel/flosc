@@ -364,13 +364,55 @@
     border-radius: 10px;
     position: relative;
   }
+  /*
+   * One line, clipped. The summary is a title bar, so it stays a title bar.
+   *
+   * The last column used to be sized auto, which cannot shrink — a long meta
+   * line crushed the label to nothing and then printed across it. minmax(0,
+   * auto) lets it give way, and the ellipsis then does what an ellipsis is
+   * for. The full text is not lost: it is the footer at the bottom of the
+   * opened card.
+   */
+  /*
+   * Three columns: handle, label, meta. It declared four — 22px 18px 1fr auto,
+   * for a handle, a density swatch, the label and the meta line — but a row
+   * summary has no swatch (.den-swatch lives in the density editor) and
+   * .gain-mark is absolutely positioned, so it takes no cell either. Three
+   * children fell into four columns and everything shifted one place left:
+   * the label landed in the 18px column and printed straight across the meta
+   * line beside it. "Deborah" over her own row.
+   *
+   * Every child is placed by name now, so adding or removing one cannot shift
+   * the others again. The last column is minmax(0, auto) rather than auto so
+   * that a long meta line gives way to the label instead of crushing it, and
+   * the ellipsis gets to do its job.
+   */
   .flosc-personality-workshop .acc > summary.row-sum{
     display: grid;
-    grid-template-columns: 22px 18px minmax(0, 1fr) auto;
+    /* The label keeps a floor of 7rem, so a long meta line can never squeeze
+       it to nothing the way it did when the meta column was plain auto. */
+    grid-template-columns: 22px minmax(7rem, 1fr) minmax(0, auto);
     justify-content: stretch;
+    align-items: center;
     padding-left: 8px;
     position: relative;
     isolation: isolate;
+  }
+  .flosc-personality-workshop .acc > summary.row-sum > .drag-handle{ grid-column: 1; }
+  .flosc-personality-workshop .acc > summary.row-sum > .row-lab{
+    grid-column: 2;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .flosc-personality-workshop .acc > summary.row-sum > .meta-bit{
+    grid-column: 3;
+    min-width: 0;
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   /* Gain meter. Position along the title bar IS the value:
      hard left = -100, centre = 0, hard right = +100. Inset by its own
@@ -382,7 +424,185 @@
   }
   .flosc-personality-workshop .acc > summary.row-sum .drag-handle, .flosc-personality-workshop .acc > summary.row-sum .den-swatch, .flosc-personality-workshop .acc > summary.row-sum .row-lab, .flosc-personality-workshop .acc > summary.row-sum .meta-bit{ position: relative; z-index: 1; }
   .flosc-personality-workshop .acc > summary .row-lab{ min-width: 0; }
-  .flosc-personality-workshop .acc > summary.row-sum .meta-bit{ justify-self: end; white-space: nowrap; }
+
+  /*
+   * A heading row is a summary WITHOUT .row-sum, so the nowrap guard below —
+   * which only covers aspect rows — never applied to it. A paragraph-length
+   * description then grew the meta span, crushed .row-lab to nothing, and the
+   * heading's own name overflowed and printed across the description.
+   */
+  .flosc-personality-workshop .acc > summary:not(.row-sum) .row-lab{
+    flex: 0 0 auto;
+    max-width: 45%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .flosc-personality-workshop .acc > summary:not(.row-sum) .meta-bit{
+    flex: 1 1 auto;
+    min-width: 0;
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* The line that says what the builder just did. */
+  .flosc-personality-workshop .builder-notice{
+    margin: 8px 0 10px;
+    padding: 7px 10px;
+    border-left: 3px solid var(--accent-2);
+    background: #f0f6fc;
+    font-family: var(--ui);
+    font-size: 0.8rem;
+  }
+  .flosc-personality-workshop .builder-notice.is-error{
+    border-left-color: var(--bad);
+    background: #fcf0f1;
+  }
+
+  /* Heading boxes carry a visible label instead of a hover title. */
+  .flosc-personality-workshop .cadmin-field{
+    display: inline-flex;
+    flex-direction: column;
+    gap: 2px;
+    font-family: var(--ui);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    color: var(--accent-2);
+  }
+  .flosc-personality-workshop .cadmin-field input{ font-weight: 400; text-transform: none; letter-spacing: 0; }
+
+  /* One card parameter, one line. These used to share rows, which made a
+     screenful of controls read as one undifferentiated block. */
+  .flosc-personality-workshop .card-param{
+    display: block;
+    margin: 0 0 10px;
+    padding: 0 0 8px;
+    border-bottom: 1px solid var(--line);
+  }
+  .flosc-personality-workshop .card-param:last-of-type{ border-bottom: 0; }
+  .flosc-personality-workshop .card-param > .excerpt-lab{ display: block; margin-bottom: 4px; }
+  .flosc-personality-workshop .card-param .wrow{ display: flex; align-items: center; gap: 8px; }
+  .flosc-personality-workshop .card-param .wrow input[type="range"]{ flex: 1 1 auto; min-width: 0; }
+  .flosc-personality-workshop .card-param input[type="text"],
+  .flosc-personality-workshop .card-param select{ width: 100%; max-width: 26rem; }
+
+  /* Where this field goes: the AI's copy, the design document, or neither. */
+  .flosc-personality-workshop .field-dest{
+    display: block;
+    margin-top: 4px;
+    font-family: var(--ui);
+    font-size: 0.72rem;
+    color: var(--ink-soft);
+  }
+
+  /*
+   * A card with aspects inside it. One step of indent and a rule in the
+   * card's own hue — enough to see the grouping, not so much that a nested
+   * personality marches off the right-hand edge.
+   */
+  .flosc-personality-workshop .card-members{
+    margin: 6px 0 6px 14px;
+    padding-left: 10px;
+    border-left: 3px solid var(--member-rule, var(--line));
+  }
+  .flosc-personality-workshop .acc.is-group > summary.row-sum{ font-weight: 700; }
+
+  /* Renaming a palette category, in place. This replaced two browser prompt
+     boxes that could reach the name and the description and nothing else. */
+  .flosc-personality-workshop .cat-edit{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: flex-end;
+    padding: 8px 10px;
+    background: var(--paper-2);
+    border-bottom: 1px solid var(--line);
+  }
+  .flosc-personality-workshop .cat-edit .figure-readout{ flex: 1 1 100%; margin: 0; }
+  /* A shelf is a heading, so it carries the heading's density. */
+  /*
+   * The card's footer. The summary clips its meta line to one row, which is
+   * right for a title bar and wrong as the only place that text exists. This
+   * is the same line, whole and wrapped, at the bottom of the opened card.
+   */
+  .flosc-personality-workshop .card-footer{
+    margin: 10px 0 0;
+    padding: 7px 9px;
+    border-top: 1px solid var(--line);
+    background: var(--paper-2);
+    border-radius: 0 0 8px 8px;
+    font-family: var(--ui);
+    font-size: 0.76rem;
+    line-height: 1.45;
+    color: var(--ink-soft);
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .flosc-personality-workshop .card-footer b{ color: var(--ink); }
+
+  /* Naming a new personality, in the header, before the row exists. */
+  .flosc-personality-workshop .new-personality{
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;
+    margin: 10px 0 0; padding: 10px 12px;
+    border: 1px solid var(--accent-2); border-radius: 10px; background: #f0f6fc;
+  }
+  .flosc-personality-workshop .new-personality input[type="text"]{ min-width: 18rem; }
+  .flosc-personality-workshop .new-personality__from{
+    font-family: var(--ui); font-size: 0.78rem; color: var(--ink-soft); padding-bottom: 6px;
+  }
+  .flosc-personality-workshop .new-personality .figure-readout{ flex: 1 1 100%; margin: 0; }
+
+  .flosc-personality-workshop .col-empty{ margin: 6px 8px 8px; opacity: .8; }
+
+  .flosc-personality-workshop .fam-den{
+    font-family: var(--ui); font-size: 0.7rem; font-weight: 700;
+    color: var(--accent-2); margin-left: auto; padding-right: 6px; white-space: nowrap;
+  }
+
+  /* The card editor, on the palette side. Same editor as the sequence uses. */
+  .flosc-personality-workshop .trib-edit{ margin: 4px 0 0; }
+  .flosc-personality-workshop .trib-edit > summary{
+    cursor: pointer; list-style: none;
+    font-family: var(--ui); font-size: 0.72rem; font-weight: 700;
+    letter-spacing: .03em; text-transform: uppercase; color: var(--accent-2);
+    padding: 4px 0 4px 18px; position: relative;
+  }
+  .flosc-personality-workshop .trib-edit > summary::-webkit-details-marker,
+  .flosc-personality-workshop .trib-edit > summary::marker{ display: none; content: ""; }
+  .flosc-personality-workshop .trib-edit > summary::before{
+    content: "\25B8"; position: absolute; left: 4px; transition: transform .12s ease;
+  }
+  .flosc-personality-workshop .trib-edit[open] > summary::before{ transform: rotate(90deg); }
+  .flosc-personality-workshop .trib-edit > .acc-body{
+    padding: 8px 0 4px; border-top: 1px solid var(--line); margin-top: 2px;
+  }
+
+  /* A heading with nothing in it is still a place you can drop an aspect. */
+  .flosc-personality-workshop .nest-empty{ margin: 4px 0 6px; opacity: .8; }
+  .flosc-personality-workshop .row-gap--first{ min-height: 6px; }
+  .flosc-personality-workshop .app.drag-active [data-drop-layer]{
+    outline: 1px dashed var(--accent-2); outline-offset: 2px;
+  }
+  .flosc-personality-workshop .app.drag-active .row-gap--first{
+    min-height: 16px; background: rgba(34,113,177,.10);
+  }
+  /*
+   * justify-self: end lived here and broke the row.
+   *
+   * A grid item with justify-self:end is sized to its content rather than
+   * stretched to its track, and then its right edge is pinned to the track's
+   * right edge — so a meta line longer than its column grew LEFTWARD, out of
+   * the row, across the panel beside it, and overflow:hidden never got a
+   * chance because the box itself was the wrong size. text-align:right on a
+   * stretched item does the same job without leaving the box.
+   *
+   * Same specificity as the rule that sets the column and clip, and later in
+   * the file, so it won. Removing it is the fix; nothing replaces it.
+   */
   /* Aspect cloud: two or more related aspects on one coloured ground. */
   .flosc-personality-workshop .cloud{
     border: 1px solid var(--line); border-radius: 12px; margin: 8px 0;
@@ -417,7 +637,10 @@
     background: #fff;
   }
   .flosc-personality-workshop .acc:not([open]) > summary ~ *{ display: none; }
-  .flosc-personality-workshop .acc .meta-bit{ font-weight: 600; font-size: 0.72rem; color: var(--ink-soft); text-transform: none; letter-spacing: 0; }
+  /* The row sits on a density-grey ground that can be nearly white, so the
+     meta line needs the darker ink to stay readable there. .ink-light above
+     still flips it for the dark end of the scale. */
+  .flosc-personality-workshop .acc .meta-bit{ font-weight: 600; font-size: 0.72rem; color: #3c434a; text-transform: none; letter-spacing: 0; }
   .flosc-personality-workshop .acc.on-dot{ color: var(--good); }
   .flosc-personality-workshop .acc.off-dot{ color: var(--off); }
   .flosc-personality-workshop .acc-nest{ padding: 6px 6px 8px; }
@@ -447,8 +670,17 @@
   }
   .flosc-personality-workshop .spec h3{ margin: 0 0 6px; font-size: 0.95rem; }
   .flosc-personality-workshop .spec-views{ display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 8px; }
-  .flosc-personality-workshop .spec-stage{ min-height: 56px; border-radius: 8px; border: 1px solid var(--line); overflow: hidden; }
-  .flosc-personality-workshop .spec-cols{ display: flex; align-items: stretch; height: 72px; }
+  /*
+   * Twice the height, and it grows with what is in it. Vertical scroll when a
+   * personality outgrows even that; never horizontal — the bars are flex
+   * children sharing the width, so the panel must never widen instead.
+   */
+  .flosc-personality-workshop .spec-stage{
+    min-height: 56px; max-height: min(60vh, 440px);
+    border-radius: 8px; border: 1px solid var(--line);
+    overflow-x: hidden; overflow-y: auto;
+  }
+  .flosc-personality-workshop .spec-cols{ display: flex; align-items: stretch; height: auto; min-height: 150px; }
   .flosc-personality-workshop .spec-cols .bar{
     flex: 1; min-width: 4px; display: flex; align-items: flex-end; justify-content: center;
     position: relative;
@@ -456,9 +688,11 @@
   .flosc-personality-workshop .spec-cols .bar i{
     position: absolute; bottom: 2px; font-style: normal; font-size: 9px;
     color: #1d2327; text-shadow: 0 0 3px #fff; writing-mode: vertical-rl; transform: rotate(180deg);
-    max-height: 68px; overflow: hidden;
+    /* Follows the column's height instead of a fixed 68px, which cut every
+       aspect name longer than about twelve characters. */
+    max-height: calc(100% - 8px); overflow: hidden;
   }
-  .flosc-personality-workshop .spec-blend{ height: 72px; }
+  .flosc-personality-workshop .spec-blend{ height: auto; min-height: 150px; }
   .flosc-personality-workshop .spec-calc{
     height: 88px; display: flex; align-items: flex-end; justify-content: space-between;
     padding: 8px 10px; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.45);
@@ -693,9 +927,11 @@
     font-size: 0.82rem; line-height: 1.35;
   }
   .flosc-personality-workshop .traj-pair{ margin-top: 14px; }
-  .flosc-personality-workshop .traj-pair #trajPanel{ border-radius: 14px 14px 0 0; }
+  /* #trajPanel was the pair's first child and carried the top corners. It is
+     gone with the Trajectories panel, so the Spectrograph carries them. */
+  .flosc-personality-workshop .traj-pair .spec-panel{ border-radius: 14px 14px 0 0; }
   .flosc-personality-workshop .traj-pair .viz-below{ margin-top: 0; border-top: 0; border-radius: 0 0 14px 14px; }
-  .flosc-personality-workshop .traj-pair #trajPanel h2{ border-radius: 14px 14px 0 0; }
+  .flosc-personality-workshop .traj-pair .spec-panel h2{ border-radius: 14px 14px 0 0; }
   .flosc-personality-workshop .traj-ex{ display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; }
   .flosc-personality-workshop .traj-ex span{
     font-family: var(--ui); font-size: 0.74rem; color: var(--ink-soft);
@@ -754,7 +990,7 @@
   }
   .flosc-personality-workshop .builder-workspace .panel h2,
   .flosc-personality-workshop #savePanel h2,
-  .flosc-personality-workshop .traj-pair #trajPanel h2{
+  .flosc-personality-workshop .traj-pair .spec-panel h2{
     border-radius: 0;
     background: #f6f7f7;
     color: #1d2327;
@@ -981,3 +1217,27 @@
     border-color: #8c8f94;
     box-shadow: none;
   }
+
+/* What made this. Shown where someone is building, so the name on the tool and
+   the name in a downloaded profile's footer are the same name. */
+.builder-attribution { margin: 2px 0 0; font-size: 12px; opacity: .7; }
+
+/* Name and role. The first two lines of every profile, and until now the only
+   two things about a personality that could not be changed here. */
+.identity-row { display: flex; gap: 12px; margin: 10px 0 6px; flex-wrap: wrap; }
+.identity-row .field { display: flex; flex-direction: column; gap: 3px; min-width: 180px; }
+.identity-row .field--wide { flex: 1 1 320px; }
+.identity-row label { font-size: 12px; opacity: .75; }
+.identity-row input { padding: 6px 8px; font: inherit; }
+.identity-note { margin: 0 0 10px; }
+/* The filename is a stem, not prose: monospace so a typed underscore or a
+   stray dot is visible rather than something the reader has to squint at. */
+.identity-row #soulFilename { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+/* Sits in the Export row beside the download buttons, because that is the
+   only place it changes anything. */
+.export-toggle { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.export-toggle input { margin: 0; }
+/* Says which of the four views is on screen, and whether it is the one that
+   reaches the AI provider. Marked with a rule so it reads as a statement about
+   the panel below rather than as more prose in the column. */
+.output-view-note { border-left: 3px solid currentColor; padding-left: 10px; opacity: .85; margin: 8px 0 6px; }

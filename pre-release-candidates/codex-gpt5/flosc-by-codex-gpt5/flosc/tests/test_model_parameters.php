@@ -212,6 +212,23 @@ foreach ( array( 'openai', 'xai', 'gemini' ) as $p ) {
 
 ok( 'a provider FLOSC knows nothing about still links nowhere', flosc_provider_param_doc_url( 'not_a_provider', 'top_p' ), '' );
 
+echo "Sampling controls a provider refuses together\n";
+// The break this closes: temperature and top_p on one Anthropic request answer
+// 400, so visitor chat never reached the model and the flow fell back to
+// scripted copy — which read as the personality being gone.
+ok( 'top_p is held back when temperature is already applied',
+	flosc_sampling_conflicts_with_applied( 'anthropic', 'top_p', array( 'temperature' ) ), true );
+ok( '  and temperature when top_p went first',
+	flosc_sampling_conflicts_with_applied( 'anthropic', 'temperature', array( 'top_p' ) ), true );
+ok( '  neither is held back on its own',
+	flosc_sampling_conflicts_with_applied( 'anthropic', 'top_p', array() ), false );
+ok( '  and an unrelated parameter is never held back',
+	flosc_sampling_conflicts_with_applied( 'anthropic', 'top_k', array( 'temperature' ) ), false );
+ok( 'a provider with no measured pair holds nothing back',
+	flosc_sampling_conflicts_with_applied( 'openai', 'top_p', array( 'temperature' ) ), false );
+ok( '  and an unknown provider does not invent a rule',
+	flosc_sampling_conflicts_with_applied( 'not_a_provider', 'top_p', array( 'temperature' ) ), false );
+
 echo "Capability belongs to the model wherever a model has been measured\n";
 // The bug this closes: asking "does Anthropic take temperature" and suppressing
 // it everywhere, when Sonnet 4.5 accepts it and only the newer models do not.

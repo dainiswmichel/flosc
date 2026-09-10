@@ -34,6 +34,25 @@ class FLOSC_Page_Context {
             return;
         }
 
+        /*
+         * A BuddyBoss group page is not a WordPress post, so resolving a post
+         * id for https://dainis.net/groups/lesaep-learners/ returns nothing and
+         * the companion arrives on that page knowing nothing about it.
+         *
+         * Record the group instead. The chatpack's group catalogue already
+         * carries the row; this just says which one the person is looking at.
+         */
+        if (function_exists('bp_is_group') && function_exists('bp_get_current_group_id') && bp_is_group()) {
+            $flosc_group_id = (int) bp_get_current_group_id();
+            if ($flosc_group_id > 0) {
+                $eval_context['browsing_row_id'] = 'bb_group:' . $flosc_group_id;
+                if (empty($eval_context['browsing_page_title']) && function_exists('bp_get_current_group_name')) {
+                    $eval_context['browsing_page_title'] = sanitize_text_field((string) bp_get_current_group_name());
+                }
+                return;
+            }
+        }
+
         $current_id = $this->resolve_current_browsing_post_id($eval_context);
         if ($current_id <= 0) {
             return;

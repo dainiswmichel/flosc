@@ -17,5 +17,12 @@
   "content": {
     "file": "content.json"
   },
-  "needs_configuration": "The membership offer ships without a price. Set price, currency and processor under Offers, then activate it."
+  "needs_configuration": "The membership offer ships without a price. Set price, currency and processor under Offers, then activate it.",
+  "ships": [
+    "100-content-items.xml",
+    "README.txt",
+    "content.json",
+    "flow_ivr.md",
+    "pack.json"
+  ]
 }

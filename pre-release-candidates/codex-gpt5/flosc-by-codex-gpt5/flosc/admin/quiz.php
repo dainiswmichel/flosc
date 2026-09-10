@@ -55,25 +55,29 @@ $flosc_quiz_demos = [
         [
             'name' => 'Sample 10-topic assessment',
             'desc' => 'Generic placeholders for 10 topics. Replace with your own questions; map CorrectContent to real posts.',
-            'content' => <<<'DEMO'
-Sample question for Topic 1 — Getting started. (Replace this quiz in FLOSC → Quiz.) Which statement is true?
-A: This is a placeholder wrong answer.
-B: This is the sample correct answer for this topic.
-C: Another placeholder wrong answer.
-D: Another placeholder wrong answer.
-CORRECT: B
-TOPIC: topic-1-getting-started
-CorrectContent: post:sample-topic-1-getting-started
-
-Sample question for Topic 2 — Core ideas. Which statement is true?
-A: This is a placeholder wrong answer.
-B: This is the sample correct answer for this topic.
-C: Another placeholder wrong answer.
-D: Another placeholder wrong answer.
-CORRECT: B
-TOPIC: topic-2-core-ideas
-CorrectContent: post:sample-topic-2-core-ideas
-DEMO,
+            'content' => implode(
+                "\n",
+                array(
+                    'Sample question for Topic 1 — Getting started. (Replace this quiz in FLOSC → Quiz.) Which statement is true?',
+                    'A: This is a placeholder wrong answer.',
+                    'B: This is the sample correct answer for this topic.',
+                    'C: Another placeholder wrong answer.',
+                    'D: Another placeholder wrong answer.',
+                    'CORRECT: B',
+                    'TOPIC: topic-1-getting-started',
+                    'CorrectContent: post:sample-topic-1-getting-started',
+                    '',
+                    'Sample question for Topic 2 — Core ideas. Which statement is true?',
+                    'A: This is a placeholder wrong answer.',
+                    'B: This is the sample correct answer for this topic.',
+                    'C: Another placeholder wrong answer.',
+                    'D: Another placeholder wrong answer.',
+                    'CORRECT: B',
+                    'TOPIC: topic-2-core-ideas',
+                    'CorrectContent: post:sample-topic-2-core-ideas',
+                    '',
+                )
+            ),
         ],
 
     ],
@@ -84,35 +88,43 @@ DEMO,
         [
             'name' => 'American Idioms',
             'desc' => '10 common American English idioms with 4 choices each.',
-            'content' => <<<'DEMO'
-What does "break a leg" mean?|A) Get injured|B) Good luck|C) Work very hard|D) Stop trying|Correct: B
-To "hit the sack" means to:|A) Win a fight|B) Pack for travel|C) Go to bed|D) Lose something|Correct: C
-What does "under the weather" mean?|A) It's raining|B) Feeling sick|C) Working outdoors|D) Running late|Correct: B
-"Bite the bullet" means to:|A) Lose a fight|B) Eat something tough|C) Endure pain without complaining|D) Give up|Correct: C
-What does "cost an arm and a leg" mean?|A) Injury compensation|B) Very expensive|C) A fair trade|D) Worth the price|Correct: B
-To "spill the beans" means to:|A) Make a mess|B) Cook a meal|C) Reveal a secret|D) Waste food|Correct: C
-"Hit the nail on the head" means to:|A) Use tools correctly|B) Be exactly right|C) Work in construction|D) Get lucky|Correct: B
-To "burn the midnight oil" means to:|A) Forget to turn off lights|B) Cook late at night|C) Work late into the night|D) Waste energy|Correct: C
-What does "bite off more than you can chew" mean?|A) Eat too fast|B) Take on more than you can handle|C) Be greedy|D) Speak with a full mouth|Correct: B
-To "get cold feet" means to:|A) Need warmer socks|B) Go swimming|C) Feel nervous and hesitate|D) Feel physically cold|Correct: C
-DEMO,
+            'content' => implode(
+                "\n",
+                array(
+                    'What does "break a leg" mean?|A) Get injured|B) Good luck|C) Work very hard|D) Stop trying|Correct: B',
+                    'To "hit the sack" means to:|A) Win a fight|B) Pack for travel|C) Go to bed|D) Lose something|Correct: C',
+                    'What does "under the weather" mean?|A) It\'s raining|B) Feeling sick|C) Working outdoors|D) Running late|Correct: B',
+                    '"Bite the bullet" means to:|A) Lose a fight|B) Eat something tough|C) Endure pain without complaining|D) Give up|Correct: C',
+                    'What does "cost an arm and a leg" mean?|A) Injury compensation|B) Very expensive|C) A fair trade|D) Worth the price|Correct: B',
+                    'To "spill the beans" means to:|A) Make a mess|B) Cook a meal|C) Reveal a secret|D) Waste food|Correct: C',
+                    '"Hit the nail on the head" means to:|A) Use tools correctly|B) Be exactly right|C) Work in construction|D) Get lucky|Correct: B',
+                    'To "burn the midnight oil" means to:|A) Forget to turn off lights|B) Cook late at night|C) Work late into the night|D) Waste energy|Correct: C',
+                    'What does "bite off more than you can chew" mean?|A) Eat too fast|B) Take on more than you can handle|C) Be greedy|D) Speak with a full mouth|Correct: B',
+                    'To "get cold feet" means to:|A) Need warmer socks|B) Go swimming|C) Feel nervous and hesitate|D) Feel physically cold|Correct: C',
+                    '',
+                )
+            ),
         ],
 
         [
             'name' => 'Business English Communication',
             'desc' => '10 questions on professional American English vocabulary and email etiquette.',
-            'content' => <<<'DEMO'
-"Please advise" in a business email typically means:|A) Give me your address|B) Let me know your thoughts or decision|C) Tell me what to do immediately|D) Send me an invoice|Correct: B
-To "circle back" in business jargon means to:|A) Return to an earlier topic or person|B) Walk around the office|C) Send a follow-up invoice|D) Cancel a meeting|Correct: A
-What does "let's take this offline" mean in a meeting?|A) Turn off the internet|B) Discuss privately, outside the group|C) Stop working|D) Schedule a video call later|Correct: B
-"Moving the needle" means:|A) Sewing a garment|B) Making measurable progress|C) Changing a policy|D) Starting a new project|Correct: B
-A "pain point" in business refers to:|A) Back pain from desk work|B) A specific problem that frustrates customers|C) A budget shortfall|D) A difficult employee|Correct: B
-"Low-hanging fruit" means:|A) Fruit from short trees|B) Easy tasks or opportunities with quick results|C) A summer sale|D) Entry-level employees|Correct: B
-To "get everyone on the same page" means:|A) Use the same document format|B) Ensure all team members share the same understanding|C) Work on one project at a time|D) Agree on a meeting date|Correct: B
-"bandwidth" in a business context usually means:|A) Internet connection speed|B) Available time and capacity to take on new work|C) The width of a presentation screen|D) Budget allocation|Correct: B
-A "deliverable" is:|A) A package shipped to a client|B) A specific result or output expected from a project|C) An employee ready to work remotely|D) A promised discount|Correct: B
-"Touch base" means to:|A) Play baseball at work|B) Briefly check in or make contact with someone|C) Review the basics|D) Start from the beginning|Correct: B
-DEMO,
+            'content' => implode(
+                "\n",
+                array(
+                    '"Please advise" in a business email typically means:|A) Give me your address|B) Let me know your thoughts or decision|C) Tell me what to do immediately|D) Send me an invoice|Correct: B',
+                    'To "circle back" in business jargon means to:|A) Return to an earlier topic or person|B) Walk around the office|C) Send a follow-up invoice|D) Cancel a meeting|Correct: A',
+                    'What does "let\'s take this offline" mean in a meeting?|A) Turn off the internet|B) Discuss privately, outside the group|C) Stop working|D) Schedule a video call later|Correct: B',
+                    '"Moving the needle" means:|A) Sewing a garment|B) Making measurable progress|C) Changing a policy|D) Starting a new project|Correct: B',
+                    'A "pain point" in business refers to:|A) Back pain from desk work|B) A specific problem that frustrates customers|C) A budget shortfall|D) A difficult employee|Correct: B',
+                    '"Low-hanging fruit" means:|A) Fruit from short trees|B) Easy tasks or opportunities with quick results|C) A summer sale|D) Entry-level employees|Correct: B',
+                    'To "get everyone on the same page" means:|A) Use the same document format|B) Ensure all team members share the same understanding|C) Work on one project at a time|D) Agree on a meeting date|Correct: B',
+                    '"bandwidth" in a business context usually means:|A) Internet connection speed|B) Available time and capacity to take on new work|C) The width of a presentation screen|D) Budget allocation|Correct: B',
+                    'A "deliverable" is:|A) A package shipped to a client|B) A specific result or output expected from a project|C) An employee ready to work remotely|D) A promised discount|Correct: B',
+                    '"Touch base" means to:|A) Play baseball at work|B) Briefly check in or make contact with someone|C) Review the basics|D) Start from the beginning|Correct: B',
+                    '',
+                )
+            ),
         ],
     ],
 
@@ -122,35 +134,43 @@ DEMO,
         [
             'name' => 'Pronunciation Myths vs Facts',
             'desc' => '10 True/False statements debunking common American English pronunciation myths.',
-            'content' => <<<'DEMO'
-In American English, the "r" in "car" is silent.|False
-The TH sound in "think" (/θ/) is the same as in "this" (/ð/).|False
-In natural connected speech, Americans often link words together smoothly.|True
-Every syllable in an English word should be pronounced with equal stress.|False
-The word "butter" contains the same /t/ sound as the /t/ in "stop".|False
-Reducing unstressed vowels to schwa /ə/ is considered poor pronunciation.|False
-The word "comfortable" is commonly pronounced as 3 syllables in American English.|True
-In American English, the letter "p" in "spin" sounds slightly different from "p" in "pin".|True
-Rhotic accents (like General American) fully pronounce the "r" after vowels.|True
-Slowing down your speech is the only technique needed to improve American English clarity.|False
-DEMO,
+            'content' => implode(
+                "\n",
+                array(
+                    'In American English, the "r" in "car" is silent.|False',
+                    'The TH sound in "think" (/θ/) is the same as in "this" (/ð/).|False',
+                    'In natural connected speech, Americans often link words together smoothly.|True',
+                    'Every syllable in an English word should be pronounced with equal stress.|False',
+                    'The word "butter" contains the same /t/ sound as the /t/ in "stop".|False',
+                    'Reducing unstressed vowels to schwa /ə/ is considered poor pronunciation.|False',
+                    'The word "comfortable" is commonly pronounced as 3 syllables in American English.|True',
+                    'In American English, the letter "p" in "spin" sounds slightly different from "p" in "pin".|True',
+                    'Rhotic accents (like General American) fully pronounce the "r" after vowels.|True',
+                    'Slowing down your speech is the only technique needed to improve American English clarity.|False',
+                    '',
+                )
+            ),
         ],
 
         [
             'name' => 'Grammar Confidence Check',
             'desc' => '10 True/False statements about common American English grammar points.',
-            'content' => <<<'DEMO'
-"I have been living here for five years" is grammatically correct.|True
-"Could you please send me the report?" is a polite and grammatically correct request.|True
-"Between you and I" is grammatically correct in standard American English.|False
-The sentence "She don't know" uses standard American English grammar.|False
-"I look forward to hearing from you" is correct American business English.|True
-"Me and my friend went to the store" is considered standard formal English.|False
-In American English, collective nouns like "team" and "staff" take singular verbs.|True
-"I could care less" and "I couldn't care less" mean the same thing in American usage.|False
-The Oxford comma (final comma in a list) is widely used in American English writing.|True
-"Literally" is only used in American English to describe things that are factually true.|False
-DEMO,
+            'content' => implode(
+                "\n",
+                array(
+                    '"I have been living here for five years" is grammatically correct.|True',
+                    '"Could you please send me the report?" is a polite and grammatically correct request.|True',
+                    '"Between you and I" is grammatically correct in standard American English.|False',
+                    'The sentence "She don\'t know" uses standard American English grammar.|False',
+                    '"I look forward to hearing from you" is correct American business English.|True',
+                    '"Me and my friend went to the store" is considered standard formal English.|False',
+                    'In American English, collective nouns like "team" and "staff" take singular verbs.|True',
+                    '"I could care less" and "I couldn\'t care less" mean the same thing in American usage.|False',
+                    'The Oxford comma (final comma in a list) is widely used in American English writing.|True',
+                    '"Literally" is only used in American English to describe things that are factually true.|False',
+                    '',
+                )
+            ),
         ],
     ],
 

@@ -170,11 +170,14 @@ foreach ( $flosc_key_catalog as $flosc_slug => $flosc_meta ) {
 		</td>
 	</tr>
 	<tr>
-		<th scope="row"><label for="flow_ai_brand_facts"><?php echo esc_html__( 'Product facts', 'flosc' ); ?></label></th>
+		<th scope="row"><label for="flow_ai_brand_facts"><?php echo esc_html__( 'Sticky aspects', 'flosc' ); ?></label></th>
 		<td>
-			<textarea name="flow_ai_brand_facts" id="flow_ai_brand_facts" rows="5" class="large-text code" placeholder="<?php echo esc_attr__( 'e.g. FLOSC always stands for Freeline, Login, Offer, Sale, Content.', 'flosc' ); ?>"><?php echo esc_textarea( (string) ( $GLOBALS['flosc_current_settings']['ai_brand_facts'] ?? '' ) ); ?></textarea>
+			<textarea name="flow_ai_brand_facts" id="flow_ai_brand_facts" rows="5" class="large-text code" placeholder="<?php echo esc_attr__( "e.g. A cleaning is 45 minutes. We do not treat under-6s. Dr Vaida is the only endodontist on staff.", 'flosc' ); ?>"><?php echo esc_textarea( (string) ( $GLOBALS['flosc_current_settings']['ai_brand_facts'] ?? '' ) ); ?></textarea>
 			<p class="description">
-				<?php echo esc_html__( 'Optional. Hard guarantees about what this product is — injected verbatim into every AI prompt. Leave empty for none; nothing is assumed on your behalf.', 'flosc' ); ?>
+				<?php echo esc_html__( 'Aspects and facts that belong to this flow rather than to the personality. They stay put when you attach a different personality, and the same personality can carry different sticky aspects on another flow — so BubblyBetty can sell dental cleanings here and legal consultations somewhere else.', 'flosc' ); ?>
+			</p>
+			<p class="description">
+				<?php echo esc_html__( 'Written into every AI prompt exactly as you type them, under a standing instruction never to invent alternatives. Leave empty for none; nothing is assumed on your behalf.', 'flosc' ); ?>
 			</p>
 		</td>
 	</tr>
@@ -187,7 +190,7 @@ if ( function_exists( 'flosc_render_personality_designer_accordion' ) ) {
 }
 ?>
 
-<details class="flosc-ai-acc" open>
+<details class="flosc-ai-acc">
 <summary class="flosc-ai-acc__summary">
 	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'Provider, keys, and test', 'flosc' ); ?></span>
 	<span class="flosc-ai-acc__hint"><?php echo esc_html__( 'This flow’s API. Install-wide keys live under All Flows.', 'flosc' ); ?></span>
@@ -962,6 +965,24 @@ jQuery(document).ready(function($) {
     // Which provider refuses which setting is data, declared once in
     // includes/ai/flosc-provider-profiles.php. The tab reads it rather than
     // naming a provider here, so filling in a row there is all it takes.
+    // Sampling controls a provider refuses on the same request. Anthropic takes
+    // temperature alone and top_p alone, and answers 400 to both together —
+    // which is how visitor chat came to fail while the panel showed a request
+    // that looked fine. The runtime holds one back; this is so the page says so
+    // rather than displaying a request it knows will not be sent as written.
+    var floscSamplingExclusive = <?php
+        $flosc_excl = array();
+        foreach ( array( 'anthropic', 'openai', 'xai', 'gemini' ) as $flosc_excl_provider ) {
+            $flosc_excl_profile = function_exists( 'flosc_provider_api_profile' )
+                ? flosc_provider_api_profile( $flosc_excl_provider )
+                : null;
+            $flosc_excl[ $flosc_excl_provider ] = is_array( $flosc_excl_profile )
+                ? array_values( (array) ( $flosc_excl_profile['sampling_exclusive'] ?? array() ) )
+                : array();
+        }
+        echo wp_json_encode( $flosc_excl );
+    ?>;
+
     var floscProviderRejects = <?php
         $flosc_rejects = array();
         foreach ( array( 'anthropic', 'openai', 'xai', 'gemini' ) as $flosc_slug ) {
@@ -1035,28 +1056,92 @@ jQuery(document).ready(function($) {
         ivr: '<?php echo esc_js( $GLOBALS['flosc_current_ivr'] ?? '' ); ?>',
         fallback: '<?php echo esc_js( __( 'Could not attach automatically — scroll down and click Save Settings.', 'flosc' ) ); ?>'
     };
+    /*
+     * The confirmation has to outlive the reload that this control triggers.
+     *
+     * It used to set the note to "Attached X. Reloading…" and call
+     * location.reload() on the next statement. The browser never painted it, so
+     * what a floscAdmin saw was "Attaching…" and then a page reload — an
+     * indefinite state with no outcome, on the one control where being sure
+     * matters most. The reload itself is needed: the designer below is rendered
+     * from the attached row.
+     *
+     * So the confirmation is stashed before reloading and shown afterwards,
+     * beside a dropdown that now reads the same name. Choose DadJokeDan, reload,
+     * see DadJokeDan attached and a line saying when it was written.
+     */
+    var floscAttachStash = 'flosc_attach_confirmation';
+
+    function floscShowStashedAttachConfirmation() {
+        if (!attachNote.length) {
+            return;
+        }
+        var raw = null;
+        try {
+            raw = window.sessionStorage.getItem(floscAttachStash);
+            window.sessionStorage.removeItem(floscAttachStash);
+        } catch (e) {
+            raw = null;
+        }
+        if (!raw) {
+            return;
+        }
+        try {
+            var stash = JSON.parse(raw);
+            if (stash && stash.text) {
+                attachNote.removeClass('flosc-hidden').addClass('flosc-attach-ok').text(stash.text);
+            }
+        } catch (e) {
+            // A confirmation we cannot read is not worth a broken page.
+        }
+    }
+    floscShowStashedAttachConfirmation();
+
     attachSel.on('change', function () {
         var nextVal = attachSel.val();
         var nextLabel = attachSel.find('option:selected').text().trim();
         if (!attachNote.length || nextVal === attachSaved) {
             return;
         }
-        attachNote.removeClass('flosc-hidden').text('<?php echo esc_js( __( 'Attaching…', 'flosc' ) ); ?>');
+        attachSel.prop('disabled', true);
+        attachNote.removeClass('flosc-hidden flosc-attach-ok flosc-attach-bad').text('<?php echo esc_js( __( 'Attaching…', 'flosc' ) ); ?>');
         $.post(ajaxurl, {
             action: 'flosc_attach_personality',
             nonce: floscAttach.nonce,
             ivr: floscAttach.ivr,
             persona: nextVal
         }).done(function (res) {
-            if (res && res.success) {
-                attachSaved = nextVal;
-                attachNote.text((nextLabel ? '<?php echo esc_js( __( 'Attached', 'flosc' ) ); ?> ' + nextLabel : '<?php echo esc_js( __( 'Attachment cleared', 'flosc' ) ); ?>') + '. Reloading…');
+            if (res && res.success && res.data) {
+                attachSaved = res.data.persona;
+                var confirmed = res.data.persona
+                    ? '<?php echo esc_js( __( 'Attached', 'flosc' ) ); ?> ' + (res.data.label || nextLabel || res.data.persona)
+                    : '<?php echo esc_js( __( 'Attachment cleared', 'flosc' ) ); ?>';
+                if (res.data.saved_at) {
+                    confirmed += ' · <?php echo esc_js( __( 'saved', 'flosc' ) ); ?> ' + res.data.saved_at;
+                }
+                try {
+                    window.sessionStorage.setItem(floscAttachStash, JSON.stringify({ text: confirmed }));
+                } catch (e) {
+                    // Without storage the reload eats the confirmation, which is
+                    // where this started — so say it here and pause long enough
+                    // to be read before reloading.
+                    attachNote.addClass('flosc-attach-ok').text(confirmed);
+                    window.setTimeout(function () { window.location.reload(); }, 1200);
+                    return;
+                }
                 window.location.reload();
             } else {
-                attachNote.text(floscAttach.fallback);
+                attachSel.prop('disabled', false);
+                var failed = (res && res.data && res.data.message) ? res.data.message : floscAttach.fallback;
+                attachNote.addClass('flosc-attach-bad').text(failed);
             }
-        }).fail(function () {
-            attachNote.text(floscAttach.fallback);
+        }).fail(function (xhr) {
+            attachSel.prop('disabled', false);
+            var msg = floscAttach.fallback;
+            if (xhr && xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.message) {
+                msg = xhr.responseJSON.data.message;
+            }
+            attachNote.addClass('flosc-attach-bad').text(msg);
         });
     });
 
@@ -2380,6 +2465,32 @@ jQuery(document).ready(function($) {
             .text('For more on this parameter, see ' + label + '\u2019s own API reference.');
     }
 
+    // Two sampling controls the provider will not take together. Named in the
+    // order they appear, because that is the order the request applies them in:
+    // the first one reaches the model and the rest are held back.
+    function floscExplainSamplingClash($help, names) {
+        var provider = floscCurrentProvider();
+        var group = floscSamplingExclusive[provider] || [];
+
+        if (group.length < 2) { return; }
+
+        var present = names.filter(function (n) { return group.indexOf(n) !== -1; });
+
+        if (present.length < 2) { return; }
+
+        var kept = present[0];
+        var held = present.slice(1);
+        var label = floscProviderLabels[provider] || provider;
+        var $row = $('<div>').addClass('flosc-param-help__row flosc-param-clash').prependTo($help);
+
+        $('<strong>').text(label + ' will not take ' + present.join(' and ') + ' on the same request.').appendTo($row);
+        $('<div>').addClass('flosc-param-help__meta').text(
+            'It answers 400 to both, so FLOSC sends ' + kept + ' and holds back ' +
+            held.join(', ') + '. Remove ' + held.join(' and ') +
+            ' to make this request say what is actually sent.'
+        ).appendTo($row);
+    }
+
     function floscExplainParams(names) {
         var $help = $('#flosc-param-help').empty();
 
@@ -2418,6 +2529,8 @@ jQuery(document).ready(function($) {
 
             if ($link) { $link.appendTo($meta); }
         });
+
+        floscExplainSamplingClash($help, names);
 
         $help.removeAttr('hidden');
     }
@@ -2835,6 +2948,114 @@ if ( $flosc_sci_action === 'rebuilt' ) {
 <?php endif; ?>
 
 <?php
+/*
+ * Which post types the index reads.
+ *
+ * It read the literal string 'post', which is why the chatbot could not see
+ * the shop: WooCommerce products, pages and bbPress forum topics are all
+ * WP_Post and would have gone through this indexer untouched — the query never
+ * asked for them. Posts stay in whatever is chosen, so turning this on adds to
+ * a working library rather than replacing it.
+ *
+ * This sits inside the settings form on purpose: the page-wide Save writes it,
+ * and the form closes a few lines below for the rebuild control.
+ */
+$flosc_sci_types_selected = FLOSC_Site_Content_Index::indexed_post_types( sanitize_key( pathinfo( (string) $flosc_current_ivr, PATHINFO_FILENAME ) ) );
+$flosc_sci_types_available = get_post_types( array( 'public' => true ), 'objects' );
+unset( $flosc_sci_types_available['attachment'] );
+?>
+<table class="form-table flosc-admin-form-table">
+	<tr>
+		<th scope="row"><?php echo esc_html__( 'Content to index', 'flosc' ); ?></th>
+		<td>
+			<?php foreach ( $flosc_sci_types_available as $flosc_sci_type ) :
+				$flosc_sci_is_post = ( 'post' === $flosc_sci_type->name );
+				?>
+				<label class="flosc-sci-type">
+					<input type="checkbox"
+						name="flow_site_index_post_types[]"
+						value="<?php echo esc_attr( $flosc_sci_type->name ); ?>"
+						<?php checked( in_array( $flosc_sci_type->name, $flosc_sci_types_selected, true ) ); ?>
+						<?php disabled( $flosc_sci_is_post ); ?>>
+					<?php echo esc_html( $flosc_sci_type->labels->name ); ?>
+					<code><?php echo esc_html( $flosc_sci_type->name ); ?></code>
+					<?php if ( $flosc_sci_is_post ) : ?>
+						<em><?php echo esc_html__( 'always', 'flosc' ); ?></em>
+						<input type="hidden" name="flow_site_index_post_types[]" value="post">
+					<?php endif; ?>
+				</label>
+			<?php endforeach; ?>
+			<p class="description">
+				<?php echo esc_html__( 'Anything ticked here is read into the library on the next rebuild — products, pages, forum topics, any public type this site registers. Posts are always included. Save this page, then rebuild below.', 'flosc' ); ?>
+			</p>
+		</td>
+	</tr>
+	<?php
+	/*
+	 * BuddyBoss groups.
+	 *
+	 * The one part of a BuddyBoss site that genuinely is not in wp_posts — the
+	 * group directory lives in the BuddyPress tables. Forum topics and replies
+	 * are bbPress post types and are ticked above like anything else.
+	 *
+	 * Which groups a chatbot may mention is stored on this flow, not on the
+	 * group: the same group can be open on one flow and withheld on another.
+	 */
+	$flosc_bb_stem   = sanitize_key( pathinfo( (string) $flosc_current_ivr, PATHINFO_FILENAME ) );
+	$flosc_bb_policy = FLOSC_Site_Content_Index::buddyboss_policy( $flosc_bb_stem );
+	$flosc_bb_ready  = FLOSC_Site_Content_Index::groups_available();
+	$flosc_bb_groups = array();
+	if ( $flosc_bb_ready ) {
+		$flosc_bb_found  = groups_get_groups( array( 'per_page' => 200, 'show_hidden' => false, 'type' => 'alphabetical' ) );
+		$flosc_bb_groups = isset( $flosc_bb_found['groups'] ) ? (array) $flosc_bb_found['groups'] : array();
+	}
+	$flosc_bb_default = preg_split( '/\s+/', (string) $flosc_bb_policy['vgm_default'] ) ?: array();
+	?>
+	<tr>
+		<th scope="row"><?php echo esc_html__( 'BuddyBoss groups', 'flosc' ); ?></th>
+		<td>
+			<?php if ( ! $flosc_bb_ready ) : ?>
+				<p class="description">
+					<?php echo esc_html__( 'No BuddyBoss or BuddyPress group directory was found on this site, so there is nothing to index here. Everything else on this panel works as usual.', 'flosc' ); ?>
+				</p>
+			<?php else : ?>
+				<label class="flosc-sci-type">
+					<input type="checkbox" name="flow_buddyboss_index[enabled]" value="1" <?php checked( ! empty( $flosc_bb_policy['enabled'] ) ); ?>>
+					<?php echo esc_html__( 'Index the group directory for this flow', 'flosc' ); ?>
+				</label>
+				<p class="description">
+					<?php echo esc_html__( 'Name, description and link for each group, so the chatbot can send someone to the right one. Activity, forums and media are not indexed.', 'flosc' ); ?>
+				</p>
+
+				<p class="flosc-sci-subhead"><?php echo esc_html__( 'Which groups', 'flosc' ); ?></p>
+				<?php foreach ( $flosc_bb_groups as $flosc_bb_group ) : ?>
+					<label class="flosc-sci-type">
+						<input type="checkbox" name="flow_buddyboss_index[group_ids][]" value="<?php echo esc_attr( (int) $flosc_bb_group->id ); ?>"
+							<?php checked( in_array( (int) $flosc_bb_group->id, $flosc_bb_policy['group_ids'], true ) ); ?>>
+						<?php echo esc_html( (string) $flosc_bb_group->name ); ?>
+						<code><?php echo esc_html( (string) $flosc_bb_group->status ); ?></code>
+					</label>
+				<?php endforeach; ?>
+				<p class="description">
+					<?php echo esc_html__( 'Tick none to index every group. A private group is never linked to somebody who is not a member of it, whatever is set here — FLOSC can tighten BuddyBoss privacy, never loosen it.', 'flosc' ); ?>
+				</p>
+
+				<p class="flosc-sci-subhead"><?php echo esc_html__( 'Who may be told about a group', 'flosc' ); ?></p>
+				<?php foreach ( array( 'visitor' => __( 'Visitor', 'flosc' ), 'guest' => __( 'Guest', 'flosc' ), 'member' => __( 'Member', 'flosc' ) ) as $flosc_bb_tier => $flosc_bb_label ) : ?>
+					<label class="flosc-sci-tier">
+						<input type="checkbox" name="flow_buddyboss_index[vgm_default][]" value="<?php echo esc_attr( $flosc_bb_tier ); ?>"
+							<?php checked( in_array( $flosc_bb_tier, $flosc_bb_default, true ) ); ?>>
+						<?php echo esc_html( $flosc_bb_label ); ?>
+					</label>
+				<?php endforeach; ?>
+				<p class="description">
+					<?php echo esc_html__( 'Save this page, then rebuild below.', 'flosc' ); ?>
+				</p>
+			<?php endif; ?>
+		</td>
+	</tr>
+</table>
+<?php
 // The rebuild control below is its own form posting to admin-post.php, so the
 // settings form has to end before it. That end tag has to be emitted HERE,
 // outside the table — a </form> written inside a <td>, for a form opened
@@ -3063,7 +3284,7 @@ if ( empty( $GLOBALS['flosc_settings_form_closed_early'] ) ) {
 </div>
 </details>
 
-<details class="flosc-ai-acc" id="flosc-kb-section" open>
+<details class="flosc-ai-acc" id="flosc-kb-section">
 <summary class="flosc-ai-acc__summary">
 	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'Knowledge Base', 'flosc' ); ?></span>
 	<span class="flosc-ai-acc__hint"><?php echo esc_html__( 'Attached on the Knowledge Base tab.', 'flosc' ); ?></span>

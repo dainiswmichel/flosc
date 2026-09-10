@@ -409,9 +409,19 @@ class floscApp {
                 } else {
                     this.log('[FLOSC] Continuing session - restoring visitor messages');
                     this.restoreVisitorMessages();
+                    // After the thread is back, so a recovered answer lands
+                    // under the message it answers.
+                    this.floscResumePendingTurn().catch(() => {});
                 }
             }
-            
+
+            if (this.state !== 'visitor') {
+                // A signed-in thread restores from the server, so there is no
+                // orphaned message to drop — the server wrote both halves. The
+                // answer is simply unread, and this is how it arrives.
+                this.floscResumePendingTurn().catch(() => {});
+            }
+
             // Member magic-link login: show confirmation as first message, with fresh chat
             if (this.config.memberLinkLogin) {
                 this.currentSession = null;          // ensure new session on first message
@@ -1141,6 +1151,191 @@ class floscApp {
             localStorage.setItem(this.visitorJourneyKey(base), String(value));
         } catch (e) {
             // Ignore storage failures.
+        }
+    }
+
+    /*
+     * A turn that was in flight when the page went away.
+     *
+     * /flosc/v1/chat is an ordinary POST. Reloading mid-answer drops the
+     * browser's end of it while PHP runs to completion and writes the reply.
+     * The reply exists and nobody read it, and the restored thread held a
+     * visitor message with no assistant reply — which then went to the server
+     * as history, so the next turn read as a question the assistant had
+     * ignored and came back as scripted IVR copy on the same subject.
+     *
+     * The id is minted before the request leaves and cleared when the answer
+     * arrives. Anything still marked pending on the next page load is a turn
+     * whose outcome we do not know yet.
+     */
+    floscMintTurnId() {
+        try {
+            if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+                return window.crypto.randomUUID();
+            }
+        } catch (e) {
+            // Fall through to the manual form below.
+        }
+        const rand = () => Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
+        return `${rand()}${rand()}-${rand()}-${rand()}-${rand()}-${rand()}${rand()}${rand()}`;
+    }
+
+    floscMarkTurnPending(turnId, message) {
+        if (!turnId) return;
+        try {
+            this.writeVisitorJourneyItem('flosc_pending_turn', JSON.stringify({
+                turn_id: turnId,
+                message: String(message || '').substring(0, 2000),
+                at: Date.now(),
+            }));
+        } catch (e) {
+            // Storage is a convenience here; a turn that cannot be marked
+            // simply behaves the way it did before.
+        }
+    }
+
+    floscClearTurnPending() {
+        this._floscTurnId = null;
+        try {
+            this.removeVisitorJourneyItem('flosc_pending_turn');
+        } catch (e) {
+            // Ignore storage failures.
+        }
+    }
+
+    floscReadPendingTurn() {
+        try {
+            const raw = this.readVisitorJourneyItem('flosc_pending_turn');
+            if (!raw) return null;
+            const pending = JSON.parse(raw);
+            if (!pending || !pending.turn_id) return null;
+            // Older than a day is not a turn anyone is still waiting on.
+            if (pending.at && (Date.now() - Number(pending.at)) > 86400000) {
+                this.removeVisitorJourneyItem('flosc_pending_turn');
+                return null;
+            }
+            return pending;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    /*
+     * Ask the server what became of a turn we stopped listening to.
+     *
+     * Recovered: the answer was written, so show it and save it — the visitor
+     * gets the reply they reloaded away from. Not recovered: nothing was
+     * written, so drop the orphaned visitor message rather than sending half a
+     * turn as history on the next request.
+     */
+    async floscResumePendingTurn() {
+        const pending = this.floscReadPendingTurn();
+        if (!pending) return;
+
+        this.removeVisitorJourneyItem('flosc_pending_turn');
+
+        let data = null;
+        try {
+            const response = await this.authFetch(this.config.apiUrl + '/chat', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-WP-Nonce': this.config.nonce
+                },
+                body: JSON.stringify({
+                    resume_turn_id: pending.turn_id,
+                    flow_id: this.config?.flowId || '',
+                    journey_id: this.readVisitorJourneyItem('flosc_journey_id') || '',
+                })
+            });
+            data = await response.json();
+        } catch (e) {
+            this.logWarn('[FLOSC] Could not resolve the interrupted turn:', e);
+            // Unresolved is the one case where the orphan must still go, or the
+            // next request carries the half-turn this whole path exists to stop.
+            this.floscDropOrphanVisitorMessage(pending.message);
+            return;
+        }
+
+        if (data && data.recovered && data.message) {
+            /*
+             * The reply exists on the server. Whether it is already on screen
+             * depends on who is asking.
+             *
+             * A signed-in turn is written to the session by PHP — both halves,
+             * together, before the browser ever receives the response — so a
+             * reload restores the complete pair and appending the recovered
+             * reply says the same thing twice. That is what a live tester saw:
+             * "you glitched a tiny bit refreshing while waiting", and the model
+             * itself noticed, calling it an echo.
+             *
+             * An anonymous turn has no server session. The client writes the
+             * assistant message only after the fetch resolves, so a reload
+             * loses it and recovery is the only way it arrives.
+             *
+             * One check covers both: if it is already in the thread, leave it.
+             */
+            if (this.floscAssistantAlreadyInThread(String(data.message))) {
+                this.log('[FLOSC] The interrupted answer was already restored; not repeating it.');
+                return;
+            }
+
+            this.log('[FLOSC] Recovered the answer written while the page was reloading.');
+            const html = this.formatMarkdown(String(data.message));
+            this.addMessage('assistant', html, true);
+            if (this.state === 'visitor') {
+                this.saveVisitorMessage('assistant', html);
+            }
+            return;
+        }
+
+        this.log('[FLOSC] The interrupted turn never completed; dropping its unanswered message.');
+        this.floscDropOrphanVisitorMessage(pending.message);
+    }
+
+    /*
+     * Is this assistant text already on screen?
+     *
+     * Compared as normalised plain text, because the same reply renders
+     * differently depending on how it arrived — markdown converted here,
+     * HTML restored from a session, entities decoded by the browser.
+     */
+    floscAssistantAlreadyInThread(text) {
+        const candidate = this._normalizeAssistantPlain(text);
+        if (!candidate) {
+            return false;
+        }
+        const root = this.chatMessages || document.getElementById('flosc_app_messages');
+        if (!root) {
+            return false;
+        }
+        const nodes = root.querySelectorAll('.message-content, .flosc-message-content, .message.assistant, [data-role="assistant"]');
+        for (const el of nodes) {
+            if (this._normalizeAssistantPlain(el.textContent || el.innerText || '') === candidate) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /*
+     * Remove a trailing visitor message that never got an answer. Only the
+     * last one, and only if it is the message we were waiting on — an earlier
+     * unanswered message is somebody else's problem and not ours to rewrite.
+     */
+    floscDropOrphanVisitorMessage(message) {
+        if (this.state !== 'visitor' || !message) return;
+        try {
+            const stored = JSON.parse(this.readVisitorJourneyItem('flosc_visitor_messages') || '[]');
+            if (!Array.isArray(stored) || !stored.length) return;
+            const last = stored[stored.length - 1];
+            if (last && last.role === 'user' && String(last.content || '') === String(message)) {
+                stored.pop();
+                this.writeVisitorJourneyItem('flosc_visitor_messages', JSON.stringify(stored));
+            }
+        } catch (e) {
+            this.logWarn('[FLOSC] Could not drop the unanswered message:', e);
         }
     }
 
@@ -3123,6 +3318,16 @@ class floscApp {
         content = content.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
         content = content.replace(/~~([^~]+)~~/g, '<del>$1</del>');
 
+        // Line breaks arrive three ways and must all render. Catalog rows and
+        // IVR messages store a literal backslash-n; the admin editor produces
+        // real newlines; older saved messages contain <br>. A visitor reading
+        // "\n" in a chat bubble is seeing a renderer bug, not a model mistake.
+        content = content
+            .replace(/\\n/g, '\n')
+            .replace(/<br\s*\/?>/gi, '\n')
+            .replace(/\r\n?/g, '\n')
+            .replace(/\n/g, '<br>');
+
         const isWelcomeMessage = !!(msg && msg.name && String(msg.name).includes('welcome'));
         if (this.state === 'visitor' && isWelcomeMessage && !/flosc-welcome-badge/i.test(content)) {
             const productName = this.config.personalityName || this.config.productName || 'FLOSC';
@@ -4675,10 +4880,15 @@ class floscApp {
         
         return text
             .replace(/{name}/g, ctx.name || 'there')
+            .replace(/{personality_name}/g, this.config?.personalityName || 'FLOSC')
+            .replace(/{personality_role}/g, this.config?.personalityRole || '')
+            .replace(/{flow_name}/g, this.config?.flowDisplayName || '')
+            .replace(/{public_title}/g, ctx.title || '')
             .replace(/{score}/g, ctx.score || '0')
             .replace(/{product_name}/g, ctx.product_name || 'the course')
             .replace(/{title}/g, ctx.title || ctx.product_name || 'the course')
             .replace(/{tagline}/g, ctx.tagline || '')
+            .replace(/{site_name}/g, this.config?.siteName || '')
             .replace(/{price}/g, ctx.price || '')
             .replace(/{discount_price}/g, ctx.discount_price || '')
             .replace(/{timer_remaining}/g, ctx.timer_remaining || '60:00')
@@ -10943,12 +11153,27 @@ Purchased: ${ctx.purchased}
                 this.log('FLOSC: IVR match found, routing through AI:', ivrGuidance.name);
             }
 
+            // A turn id, minted before the request leaves and remembered until
+            // the answer arrives. If the visitor reloads while the assistant is
+            // still typing, this is what the next page load uses to ask for the
+            // answer it missed — and what stops the same turn being billed
+            // twice if the message is resent.
+            this._floscTurnId = this.floscMintTurnId();
+            this.floscMarkTurnPending(this._floscTurnId, message);
+
             try {
                 let response;
                 try {
                     response = await this.callAPI(message, ivrGuidance, { allowSessionAutoCreate: true });
                 } catch (firstErr) {
                     if (firstErr?.floscCode === 'visitor_tokens_depleted') {
+                        throw firstErr;
+                    }
+                    // A 429 is FLOSC's own per-visitor bucket, not a stale
+                    // nonce. Refreshing and resending spends a second request
+                    // from the bucket that just refused, so the limit lands
+                    // twice as fast. Opt in under Public Request Protection.
+                    if (firstErr?.httpStatus === 429 && !this.config?.retryAfter429) {
                         throw firstErr;
                     }
                     // v8.0.0 FIX: Retry once with fresh nonce — handles stale-nonce after
@@ -10958,6 +11183,7 @@ Purchased: ${ctx.purchased}
                     response = await this.callAPI(message, ivrGuidance, { allowSessionAutoCreate: true });
                 }
                 this.hideTyping();
+                this.floscClearTurnPending();
 
                 if (response) {
                     // v3.0.5: Extract [ACTION:...] tags from AI response (for AI-interpretation offer triggers)
@@ -11844,6 +12070,10 @@ Purchased: ${ctx.purchased}
             payload.request_guest_account = options.requestGuestAccount ? 1 : 0;
         }
         
+        if (this._floscTurnId) {
+            payload.turn_id = this._floscTurnId;
+        }
+
         // v2.0.7: Send visitor conversation history so AI has memory across messages.
         // Visitors have no server-side session, so we send localStorage history.
         // This prevents AI from repeating itself and enables conversation-awareness.
@@ -11903,6 +12133,7 @@ Purchased: ${ctx.purchased}
             const err = new Error(`Server error (${response.status})`);
             err.floscCode = 'invalid_json';
             err.floscPayload = null;
+            err.httpStatus = response.status;
             throw err;
         }
 
@@ -11914,6 +12145,7 @@ Purchased: ${ctx.purchased}
             const err = new Error(errorMsg);
             err.floscCode = String(data.error_code || data.code || data.error || '');
             err.floscPayload = data;
+            err.httpStatus = response.status;
             throw err;
         }
 
@@ -11922,6 +12154,7 @@ Purchased: ${ctx.purchased}
             const err = new Error(errorMsg);
             err.floscCode = String(data.error_code || data.code || data.error || '');
             err.floscPayload = data;
+            err.httpStatus = response.status;
             throw err;
         }
 

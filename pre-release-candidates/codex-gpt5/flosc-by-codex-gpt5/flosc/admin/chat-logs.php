@@ -449,7 +449,12 @@ $flosc_sessions_archived_url = add_query_arg([
         function buildRow(log) {
             var time = log.timestamp ? log.timestamp.substring(11, 19) : '';
             var date = log.timestamp ? log.timestamp.substring(0, 10) : '';
-            var user = log.user_id > 0 ? ('User #' + log.user_id) : ('Visitor');
+            // user_tier is the VGM tier the turn was answered at. Rows written
+            // before the column existed have none, and are shown exactly as
+            // they were before: a blank tier is unknown, not a Visitor.
+            var tier = log.user_tier || '';
+            var user = log.user_id > 0 ? ('User #' + log.user_id) : 'Visitor';
+            if (tier) { user += ' \u00b7 ' + tier.charAt(0).toUpperCase() + tier.slice(1); }
             var source = log.response_source || 'ivr';
             var provider = log.provider || '';
             var chain = log.chain_detail || '';
@@ -570,7 +575,15 @@ $flosc_sessions_archived_url = add_query_arg([
 function flosc_render_chat_log_row($log) {
     $time = substr($log['timestamp'] ?? '', 11, 8);
     $date = substr($log['timestamp'] ?? '', 0, 10);
+    // Same rule as the JS row builder: the tier is appended when the row
+    // recorded one, and a row from before the column keeps the old label.
+    // user_id alone cannot tell a Guest from a Member, which is why the
+    // question "is anyone farming Guest access?" had no column to ask.
     $user = $log['user_id'] > 0 ? ('User #' . intval($log['user_id'])) : 'Visitor';
+    $tier = sanitize_key((string) ($log['user_tier'] ?? ''));
+    if (in_array($tier, array('visitor', 'guest', 'member'), true)) {
+        $user .= ' · ' . ucfirst($tier);
+    }
     $phase = esc_html($log['phase'] ?? '');
     $msg = esc_html($log['user_message'] ?? '');
     $resp = esc_html(mb_substr($log['ai_response'] ?? '', 0, 200));
@@ -828,12 +841,23 @@ function flosc_render_chat_session($flosc_s) {
         // Admin posted AS the bot — renders like a normal assistant message.
         if ($src === 'admin_bot') {
             $b_seq++;
+            $admin_bot_name = trim((string) ($r['personality_name'] ?? ''));
             $thread .= flosc_render_msg_bubbles(
                 $code, 'b', str_pad((string) $b_seq, 3, '0', STR_PAD_LEFT),
-                $ar, 'AI', $t, $rid, 'flosc-msg-ai'
+                $ar, ($admin_bot_name !== '' ? $admin_bot_name : 'AI'), $t, $rid, 'flosc-msg-ai'
             );
             $shown++;
             continue;
+        }
+
+        // Who actually answered this turn, from the row itself. Bot bubbles used
+        // to be labelled with the literal string 'AI', so a transcript could not
+        // show that the personality changed mid-conversation — the one thing a
+        // switching test needs to read back. Older rows have no name and keep
+        // the old label.
+        $speaker = trim((string) ($r['personality_name'] ?? ''));
+        if ($speaker === '') {
+            $speaker = 'AI';
         }
 
         $is_system = (strncmp($um, '[SYSTEM:', 8) === 0); // the auto-welcome row
@@ -841,7 +865,10 @@ function flosc_render_chat_session($flosc_s) {
         // The visitor's message — hidden only for the auto-welcome's "[SYSTEM:…]" prompt.
         if (!$is_system) {
             $u_seq++;
-            $visitor_context_url = flosc_get_chain_context_value((string) ($r['chain_detail'] ?? ''), 'ctx_url');
+            $visitor_context_url = trim((string) ($r['page_url'] ?? ''));
+            if ($visitor_context_url === '') {
+                $visitor_context_url = flosc_get_chain_context_value((string) ($r['chain_detail'] ?? ''), 'ctx_url');
+            }
             $thread .= flosc_render_msg_bubbles(
                 $code, 'u', str_pad((string) $u_seq, 3, '0', STR_PAD_LEFT),
                 $um, $label_raw, $t, $rid, 'flosc-msg-user', $visitor_context_url
@@ -853,7 +880,7 @@ function flosc_render_chat_session($flosc_s) {
         $b_seq++;
         $thread .= flosc_render_msg_bubbles(
             $code, 'b', str_pad((string) $b_seq, 3, '0', STR_PAD_LEFT),
-            $ar, 'AI', ($is_system ? $t : ''), $rid, 'flosc-msg-ai'
+            $ar, $speaker, ($is_system ? $t : ''), $rid, 'flosc-msg-ai'
         );
         $shown++;
     }

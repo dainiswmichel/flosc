@@ -61,6 +61,7 @@ if ( ! function_exists( 'flosc_provider_api_profile' ) ) {
 	function flosc_provider_api_profile( $provider ) {
 		$profiles = array(
 			'anthropic' => array(
+				// phpcs:ignore PluginCheck.CodeAnalysis.AIProvider.DirectIntegration -- model metadata, not a prompt: this reads one model's context window, maximum reply length and capabilities so the admin screen can show them. wp_ai_client_prompt() sends prompts and cannot describe a model. Requested only when an administrator clicks "Describe this model"; declared in readme.txt External Services.
 				'model_detail_url' => 'https://api.anthropic.com/v1/models/%s',
 				// Measured 2026-08-30 against a live key: of the ten models it
 				// lists, Opus 5, Sonnet 5, Fable 5, Opus 4.8 and Opus 4.7 answer

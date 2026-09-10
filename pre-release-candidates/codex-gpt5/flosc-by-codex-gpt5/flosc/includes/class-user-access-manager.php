@@ -24,7 +24,7 @@ class FLOSC_User_Access_Manager {
      * 
      * @return string 'visitor', 'guest', or 'member'
      */
-    public function get_access_level($user_id = null) {
+    public function get_access_level($user_id = null, $flow_id = null) {
         
         if ($user_id === null) {
             $user_id = get_current_user_id();
@@ -41,7 +41,7 @@ class FLOSC_User_Access_Manager {
         }
         
         // Check if member
-        if ($this->is_member($user_id)) {
+        if ($this->is_member($user_id, $flow_id)) {
             return 'member';
         }
         
@@ -147,16 +147,17 @@ class FLOSC_User_Access_Manager {
      * Get user context for AI
      * Returns all relevant user data
      * 
-     * @param int $user_id
+     * @param int         $user_id
+     * @param string|null $flow_id Per-flow stem when known.
      * @return array
      */
-    public function get_user_context($user_id = null) {
+    public function get_user_context($user_id = null, $flow_id = null) {
         
         if ($user_id === null) {
             $user_id = get_current_user_id();
         }
         
-        $access_level = $this->get_access_level($user_id);
+        $access_level = $this->get_access_level($user_id, $flow_id);
         
         $context = [
             'user_id' => $user_id,
@@ -225,7 +226,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC WishList Member API 
             // v1.6.7: Condition evaluator fields — matches JS buildIVRContext
             $context['quiz_taken'] = !empty($quiz_score) || !empty(get_user_meta($user_id, '_flosc_quiz_completed_at', true));
             $context['score'] = intval($quiz_score ?: 0);
-            $context['purchased'] = $this->is_member($user_id);
+            $context['purchased'] = $this->is_member($user_id, $flow_id);
             $context['lesson_viewed'] = (bool) get_user_meta($user_id, '_flosc_free_content_item_delivered', true);
             $context['lessons_completed'] = intval(get_user_meta($user_id, '_flosc_lessons_completed', true));
             $context['onboarded'] = (bool) get_user_meta($user_id, '_flosc_funnel_completed', true);

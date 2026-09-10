@@ -163,6 +163,7 @@ class FLOSC_Chat_Logger {
             timestamp DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             flow_id VARCHAR(100) DEFAULT '',
             phase VARCHAR(50) DEFAULT 'freeline',
+            user_tier VARCHAR(10) DEFAULT '',
             user_id BIGINT UNSIGNED DEFAULT 0,
             session_id BIGINT UNSIGNED DEFAULT 0,
             journey_id VARCHAR(64) NOT NULL DEFAULT '',
@@ -172,6 +173,14 @@ class FLOSC_Chat_Logger {
             provider VARCHAR(50) DEFAULT 'ivr',
             chain_detail VARCHAR(255) DEFAULT '',
             response_source VARCHAR(50) DEFAULT 'ivr',
+            surface VARCHAR(20) DEFAULT '',
+            page_url VARCHAR(255) DEFAULT '',
+            page_title VARCHAR(255) DEFAULT '',
+            personality_id VARCHAR(100) DEFAULT '',
+            personality_name VARCHAR(120) DEFAULT '',
+            profile_hash VARCHAR(64) DEFAULT '',
+            turn_status VARCHAR(20) DEFAULT 'complete',
+            turn_id VARCHAR(64) DEFAULT '',
             response_time_ms INT UNSIGNED DEFAULT 0,
             billing_source VARCHAR(50) DEFAULT '',
             billing_model VARCHAR(120) DEFAULT '',
@@ -179,6 +188,7 @@ class FLOSC_Chat_Logger {
             billing_output_tokens INT UNSIGNED DEFAULT 0,
             billing_total_tokens INT UNSIGNED DEFAULT 0,
             billing_real_millicents INT UNSIGNED DEFAULT 0,
+            provider_request_id VARCHAR(128) DEFAULT '',
             admin_rating TINYINT NOT NULL DEFAULT 0,
             admin_note TEXT DEFAULT NULL,
             rated_at DATETIME DEFAULT NULL,
@@ -189,8 +199,11 @@ class FLOSC_Chat_Logger {
             KEY idx_flosc_chat_user (user_id),
             KEY idx_flosc_chat_flow (flow_id),
             KEY idx_flosc_chat_phase (phase),
+            KEY idx_flosc_chat_tier (user_tier),
             KEY idx_flosc_chat_session (session_id),
-            KEY idx_flosc_chat_journey (journey_id)
+            KEY idx_flosc_chat_journey (journey_id),
+            KEY idx_flosc_chat_personality (personality_id),
+            KEY idx_flosc_chat_turn (turn_id)
         ) $charset_collate;";
 
         require_once ABSPATH . 'wp-admin/includes/upgrade.php';
@@ -550,6 +563,76 @@ class FLOSC_Chat_Logger {
      * }
      * @return int|false Insert ID on success, false on failure
      */
+    /**
+     * A turn id is opaque and browser-minted; accept only what we mint.
+     */
+    public static function flosc_sanitize_turn_id($raw) {
+        $raw = strtolower(trim((string) $raw));
+        return preg_match('/^[a-f0-9-]{8,64}$/', $raw) ? $raw : '';
+    }
+
+    /**
+     * The row a turn id wrote, if it wrote one.
+     *
+     * A visitor who reloads while the assistant is still typing leaves the
+     * request in flight: the browser drops the connection, PHP runs to
+     * completion and writes the answer, and nobody reads it. The reply exists.
+     * This is how the reloaded page finds it.
+     */
+    public function flosc_find_turn($turn_id) {
+        global $wpdb;
+
+        $turn_id = self::flosc_sanitize_turn_id($turn_id);
+        if ($turn_id === '') {
+            return null;
+        }
+
+        $this->flosc_ensure_table();
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table, single indexed row, must not be cached across a turn.
+        $row = $wpdb->get_row(
+            $wpdb->prepare(
+                'SELECT id, ai_response, response_source, turn_status, personality_name FROM %i WHERE turn_id = %s ORDER BY id DESC LIMIT 1',
+                $this->table_name,
+                $turn_id
+            ),
+            ARRAY_A
+        );
+
+        return is_array($row) ? $row : null;
+    }
+
+    /**
+     * Mark a turn abandoned. An abandoned turn is not conversation history:
+     * replaying it makes the next prompt look like a question nobody answered,
+     * which is how a normal follow-up came back as scripted IVR copy.
+     */
+    public function flosc_mark_turn_abandoned($turn_id) {
+        global $wpdb;
+
+        $turn_id = self::flosc_sanitize_turn_id($turn_id);
+        if ($turn_id === '') {
+            return false;
+        }
+
+        $this->flosc_ensure_table();
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table, targeted update.
+        $updated = $wpdb->update(
+            $this->table_name,
+            ['turn_status' => 'abandoned'],
+            ['turn_id' => $turn_id],
+            ['%s'],
+            ['%s']
+        );
+
+        if ($updated) {
+            $this->flosc_bust_log_caches();
+        }
+
+        return (bool) $updated;
+    }
+
     public function flosc_log_chat($data) {
         global $wpdb;
 
@@ -571,12 +654,99 @@ class FLOSC_Chat_Logger {
             $chain_detail = implode(' → ', $data['chain_detail']);
         }
 
+        /*
+         * Who answered, on which surface, over which page.
+         *
+         * None of this was a column. Surface and page id were tokens packed
+         * into chain_detail, a shared VARCHAR(255) that a long page note can
+         * push them out of — so they went missing from exactly the turns worth
+         * investigating. The personality was not recorded at all: the Chat Logs
+         * screen printed whichever personality is attached *now*, so after a
+         * Betty-to-Dan switch every historical Betty row read as Dan. The log
+         * did not merely fail to record the switch, it hid it.
+         *
+         * personality_id, its name and the profile hash are read from the same
+         * library row the prompt was built from, so a row says which compiled
+         * character produced that text rather than which one is attached today.
+         */
+        $personality_id   = isset($data['personality_id']) ? sanitize_key((string) $data['personality_id']) : '';
+        $personality_name = isset($data['personality_name']) ? sanitize_text_field((string) $data['personality_name']) : '';
+        $profile_hash     = isset($data['profile_hash']) ? sanitize_text_field((string) $data['profile_hash']) : '';
+
+        // Paths that do not build a prompt — IVR replies, scripted fallbacks —
+        // still record who was attached for the turn, resolved from the flow.
+        if ($personality_id === '' && function_exists('flosc_personality_library_id_for_flow')) {
+            $personality_id = sanitize_key((string) flosc_personality_library_id_for_flow((string) ($data['flow_id'] ?? '')));
+        }
+        if ($personality_name === '' && function_exists('flosc_personality_library_resolve_field')) {
+            $personality_name = sanitize_text_field((string) flosc_personality_library_resolve_field('ai_personality_name', '', (string) ($data['flow_id'] ?? '')));
+        }
+        if ($profile_hash === '' && function_exists('flosc_personality_resolved_fingerprint')) {
+            $profile_hash = sanitize_text_field((string) flosc_personality_resolved_fingerprint((string) ($data['flow_id'] ?? '')));
+        }
+
+        // Explicit, never inferred from absence: an empty surface used to mean
+        // either full page or "the client did not say".
+        $surface = sanitize_key((string) ($data['surface'] ?? ''));
+        if ($surface === '') {
+            $surface = 'unknown';
+        }
+
+        // complete | abandoned. An abandoned turn is one whose request the
+        // visitor dropped, so it must not be replayed as conversation history.
+        $turn_status = sanitize_key((string) ($data['turn_status'] ?? 'complete'));
+        if (!in_array($turn_status, ['complete', 'abandoned'], true)) {
+            $turn_status = 'complete';
+        }
+
+        // Minted in the browser before the request leaves. It is what lets a
+        // reload find the answer that was written while the tab was gone, and
+        // what stops the same turn being billed twice.
+        $turn_id = self::flosc_sanitize_turn_id($data['turn_id'] ?? '');
+
+        /*
+         * visitor | guest | member — the VGM tier this turn was answered at.
+         *
+         * FLOSC has always computed this: trait-flosc-chat-turn.php sets
+         * $eval_context['access_level'] on every turn and the prompt, the
+         * content gates and the user-status reply all read it. It was simply
+         * never written down. The Chat Logs screen reconstructed a guess from
+         * user_id alone, which cannot tell a Guest from a Member — so a
+         * question like "are people registering repeatedly to farm Guest
+         * content?" had no column to ask.
+         *
+         * Blank is honest, not a default: rows written before this column
+         * existed genuinely do not know, and guessing 'guest' for all of them
+         * would put fiction in the ledger.
+         */
+        $user_tier = sanitize_key((string) ($data['user_tier'] ?? ''));
+        if (!in_array($user_tier, ['visitor', 'guest', 'member'], true)) {
+            $user_tier = '';
+        }
+
+        /*
+         * The provider's own id for the request that produced this answer.
+         *
+         * Everything FLOSC sends outward lands in a provider's logs and can
+         * never be read back. This is the reverse direction, and the only
+         * identifier that exists on both sides of the wire: a floscAdmin
+         * holding it can ask the provider to look up that exact call.
+         *
+         * Kept here, sent nowhere. It is the floscAdmin's operational record
+         * of their own paid API calls, in their own database.
+         */
+        $provider_request_id = sanitize_text_field((string) ($data['provider_request_id'] ?? ''));
+        if (strlen($provider_request_id) > 128) {
+            $provider_request_id = substr($provider_request_id, 0, 128);
+        }
+
         $result = $wpdb->insert(
             $this->table_name,
             [
                 'timestamp'       => current_time('mysql'),
                 'flow_id'         => sanitize_text_field($data['flow_id'] ?? ''),
                 'phase'           => sanitize_text_field($data['phase'] ?? 'freeline'),
+                'user_tier'       => $user_tier,
                 'user_id'         => intval($data['user_id'] ?? 0),
                 'session_id'      => intval($data['session_id'] ?? 0),
                 'journey_id'      => self::flosc_sanitize_journey_id($data['journey_id'] ?? ''),
@@ -586,6 +756,14 @@ class FLOSC_Chat_Logger {
                 'provider'        => sanitize_text_field($data['provider'] ?? 'ivr'),
                 'chain_detail'    => sanitize_text_field($chain_detail),
                 'response_source' => sanitize_text_field($data['response_source'] ?? 'ivr'),
+                'surface'         => $surface,
+                'page_url'        => esc_url_raw((string) ($data['page_url'] ?? '')),
+                'page_title'      => sanitize_text_field((string) ($data['page_title'] ?? '')),
+                'personality_id'  => $personality_id,
+                'personality_name'=> $personality_name,
+                'profile_hash'    => $profile_hash,
+                'turn_status'     => $turn_status,
+                'turn_id'         => $turn_id,
                 'response_time_ms'=> intval($data['response_time_ms'] ?? 0),
                 'billing_source'  => sanitize_text_field($data['billing_source'] ?? ''),
                 'billing_model'   => sanitize_text_field($data['billing_model'] ?? ''),
@@ -593,8 +771,13 @@ class FLOSC_Chat_Logger {
                 'billing_output_tokens'=> max(0, intval($data['billing_output_tokens'] ?? 0)),
                 'billing_total_tokens' => max(0, intval($data['billing_total_tokens'] ?? 0)),
                 'billing_real_millicents' => max(0, intval($data['billing_real_millicents'] ?? 0)),
+                'provider_request_id'  => $provider_request_id,
             ],
-            ['%s', '%s', '%s', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%d', '%d', '%d', '%d']
+            // One specifier per column, in column order. A format list shorter
+            // than the column list makes $wpdb->insert() write the right values
+            // into the wrong columns, silently and with no error — so this line
+            // is edited in the same breath as the array above, never after.
+            ['%s', '%s', '%s', '%s', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%d', '%d', '%d', '%d', '%s']
         );
 
         if ( $result ) {
