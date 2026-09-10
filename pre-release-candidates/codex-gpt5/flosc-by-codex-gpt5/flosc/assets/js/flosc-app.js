@@ -7128,8 +7128,16 @@ class floscApp {
             scoreMessage = "Thanks for completing the assessment! Based on your answers, we can personalize your learning path.";
         }
 
-        // Store quiz results via /quiz-result (sets flosc_quiz_result cookie)
-        this.storeQuizResults(scorePercent);
+        // Both storage endpoints describe the same completion. Give them one
+        // opaque id and run /store-score after /quiz-result settles so the
+        // canonical completion observers cannot race each other.
+        const quizCompletion = {
+            id: this.floscMintTurnId(),
+            completedAt: this.quiz.completedAt,
+            flowId: this.config?.flowId || '',
+            journeyId: this.getJourneyId()
+        };
+        const quizResultStore = this.storeQuizResults(scorePercent, quizCompletion);
 
         // v3.0.7: ALSO call /store-score with numeric lesson positions.
         // /store-score sets the flosc_prelogin_score signed cookie that
@@ -7139,7 +7147,7 @@ class floscApp {
         if (scoredQuestions.length > 0) {
             const correctLessons  = this.quiz.answers.map((a, i) => a.correct === true  ? i + 1 : null).filter(n => n !== null);
             const incorrectLessons = this.quiz.answers.map((a, i) => a.correct === false ? i + 1 : null).filter(n => n !== null);
-            this.authFetch(this.config.apiUrl + '/store-score', {
+            quizResultStore.then(() => this.authFetch(this.config.apiUrl + '/store-score', {
                 method: 'POST',
                 credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': this.config.nonce },
@@ -7149,8 +7157,12 @@ class floscApp {
                     quiz_type: 'multiple_choice',
                     correct: correctLessons,
                     incorrect: incorrectLessons,
+                    completed_at: quizCompletion.completedAt,
+                    completion_id: quizCompletion.id,
+                    flow_id: quizCompletion.flowId,
+                    journey_id: quizCompletion.journeyId
                 })
-            }).catch(e => this.logWarn('[FLOSC] store-score failed (non-fatal):', e));
+            })).catch(e => this.logWarn('[FLOSC] store-score failed (non-fatal):', e));
         }
 
         // Update IVR context
@@ -7201,21 +7213,24 @@ class floscApp {
         this.log('[FLOSC Quiz] Completed. Score:', scorePercent, '% Answers:', this.quiz.answers);
     }
 
-    async storeQuizResults(score) {
+    async storeQuizResults(score, completion = {}) {
         try {
             // Store in session/localStorage
             // v1.4.6: Use 'flosc_quiz_result' key to match checkPendingQuizResults()
             const correct = this.quiz.answers.filter(a => a.correct).length;
             const total = this.quiz.answers.length;
             const quizResult = {
-                id: this.quiz.id,
+                id: this.quiz.id || 'default',
                 score: score,
                 correct: correct,
                 total: total,
                 answers: this.quiz.answers,
-                completedAt: this.quiz.completedAt,
+                completedAt: completion.completedAt || this.quiz.completedAt,
                 duration: this.quiz.completedAt - this.quiz.startedAt,
-                timestamp: Date.now()
+                timestamp: completion.completedAt || this.quiz.completedAt,
+                completionId: completion.id || this.floscMintTurnId(),
+                flowId: completion.flowId || this.config?.flowId || '',
+                journeyId: completion.journeyId || this.getJourneyId()
             };
 
             localStorage.setItem(this.flowStorageKey('flosc_quiz_result'), JSON.stringify(quizResult));
@@ -7393,6 +7408,12 @@ class floscApp {
         }
 
         const tempId = parsed.tempId || this.ipaQuiz?.tempId || null;
+        const eventContext = {
+            flowId: parsed.flowId || this.config?.flowId || '',
+            journeyId: parsed.journeyId || this.getJourneyId(),
+            timestamp: Number(parsed.timestamp || parsed.completedAt || parsed.completed_at) || Date.now(),
+            completionId: parsed.completionId || parsed.completion_id || ''
+        };
 
         if (parsed.phraseResults) {
             return {
@@ -7401,8 +7422,9 @@ class floscApp {
                 wordIpa: parsed.wordIpa || null,
                 rankedPhonemes: parsed.rankedPhonemes || null,
                 quizType: parsed.quizType || 'ipa_audio',
-                quizId: parsed.quizId || null,
-                tempId
+                quizId: parsed.quizId || parsed.id || null,
+                tempId,
+                ...eventContext
             };
         }
 
@@ -7415,8 +7437,9 @@ class floscApp {
                 total: parsed.total,
                 passed: parsed.passed,
                 quizType: parsed.quizType || 'sequence',
-                quizId: parsed.quizId || null,
-                tempId
+                quizId: parsed.quizId || parsed.id || null,
+                tempId,
+                ...eventContext
             };
         }
 
@@ -7424,8 +7447,9 @@ class floscApp {
             return {
                 score: parsed.score,
                 quizType: parsed.quizType || 'sequence',
-                quizId: parsed.quizId || null,
-                tempId
+                quizId: parsed.quizId || parsed.id || null,
+                tempId,
+                ...eventContext
             };
         }
 
@@ -9636,9 +9660,9 @@ Purchased: ${ctx.purchased}
         const messageEl = document.getElementById('floscQuizResultMessage');
         if (messageEl) {
             if (result.passed) {
-                messageEl.innerHTML = `<strong>Great job!</strong> You got ${result.correct} out of ${result.total} correct.<br>Continue to see your personalized learning path.`;
+                messageEl.textContent = `Great job! You got ${result.correct} out of ${result.total} correct. Continue to see your personalized learning path.`;
             } else {
-                messageEl.innerHTML = `You got ${result.correct} out of ${result.total} correct.<br>Don't worry - we'll help you improve! Continue to get started.`;
+                messageEl.textContent = `You got ${result.correct} out of ${result.total} correct. Don't worry - we'll help you improve! Continue to get started.`;
             }
         }
     }
@@ -9654,7 +9678,10 @@ Purchased: ${ctx.purchased}
             passed: result.passed,
             timestamp: Date.now(),
             userAnswer: result.userAnswer,
-            quizId: this.quiz.id || ''
+            quizId: this.quiz.id || '',
+            flowId: this.config?.flowId || '',
+            journeyId: this.getJourneyId(),
+            completionId: this.floscMintTurnId()
         };
         if (result.quizType) quizData.quizType = result.quizType;
         if (result.phraseResults) quizData.phraseResults = result.phraseResults;
@@ -9702,7 +9729,11 @@ Purchased: ${ctx.purchased}
                     correct: result.incorrect ? [] : correctPositions,
                     incorrect: result.incorrect || missedPositions,
                     ranked_worst_lessons: result.ranked_worst_lessons || [],
-                    details: quizData
+                    details: quizData,
+                    completion_id: quizData.completionId,
+                    completed_at: quizData.timestamp,
+                    flow_id: quizData.flowId,
+                    journey_id: quizData.journeyId
                 })
             });
         } catch (e) {

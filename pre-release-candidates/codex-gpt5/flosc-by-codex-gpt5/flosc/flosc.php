@@ -961,6 +961,133 @@ class FLOSC_Framework {
         FLOSC_Chat_Logger::flosc_queue_journey_mark((int) $user_id, '+M', $flow_raw);
     }
 
+	/**
+	 * Record a completed quiz as a flow-scoped activity in Chat Logs.
+	 *
+	 * Quiz screens render and store their results without passing through the
+	 * normal /chat endpoints. Observing the canonical completion action keeps
+	 * every successful storage path covered, including email registration and
+	 * SSO restore, while the deterministic turn id prevents retry duplicates.
+	 *
+	 * @param array $quiz_result Stored quiz result.
+	 * @param int   $user_id     WordPress user ID.
+	 * @return int|false Inserted row ID, existing row ID, or false.
+	 */
+	public function flosc_log_quiz_completion( $quiz_result, $user_id ) {
+		$user_id = absint( $user_id );
+		if ( 0 >= $user_id || ! is_array( $quiz_result ) || ! class_exists( 'FLOSC_Chat_Logger' ) ) {
+			return false;
+		}
+
+		$quiz_id = sanitize_key( (string) ( $quiz_result['quiz_id'] ?? $quiz_result['quizId'] ?? '' ) );
+		if ( '' === $quiz_id && isset( $quiz_result['external_quiz_id'] ) ) {
+			$quiz_id = sanitize_key( 'external_' . (string) $quiz_result['external_quiz_id'] );
+		}
+		if ( '' === $quiz_id ) {
+			$quiz_id = 'quiz';
+		}
+
+		$flow_raw = (string) ( $quiz_result['flow_id'] ?? $quiz_result['flowId'] ?? '' );
+		if ( '' === $flow_raw ) {
+			$flow = $this->get_current_flow();
+			if ( is_array( $flow ) ) {
+				$flow_raw = (string) ( $flow['ivr_file'] ?? $flow['ivr'] ?? $flow['id'] ?? '' );
+			}
+		}
+		if ( '' === $flow_raw ) {
+			$flow_raw = (string) get_user_meta( $user_id, '_flosc_registration_flow', true );
+		}
+		if ( '' === $flow_raw ) {
+			$flow_raw = (string) get_user_meta( $user_id, '_flosc_last_flow', true );
+		}
+		$flow_id = FLOSC_Chat_Logger::flosc_journey_flow_stem( $flow_raw );
+		if ( '' === $flow_id ) {
+			return false;
+		}
+
+		$completed_at = $quiz_result['timestamp'] ?? $quiz_result['completed_at'] ?? time();
+		if ( is_numeric( $completed_at ) ) {
+			$completed_at = (int) $completed_at;
+			if ( 20000000000 < $completed_at ) {
+				$completed_at = (int) floor( $completed_at / 1000 );
+			}
+		} else {
+			$completed_at = strtotime( (string) $completed_at );
+		}
+		if ( 946684800 > $completed_at || ( time() + DAY_IN_SECONDS ) < $completed_at ) {
+			$completed_at = time();
+		}
+
+		$journey_id    = FLOSC_Chat_Logger::flosc_sanitize_journey_id(
+			$quiz_result['journey_id'] ?? $quiz_result['journeyId'] ?? ''
+		);
+		$completion_id = FLOSC_Chat_Logger::flosc_sanitize_turn_id(
+			$quiz_result['completion_id'] ?? $quiz_result['completionId'] ?? ''
+		);
+		$quiz_session  = sanitize_text_field( (string) ( $quiz_result['session_id'] ?? '' ) );
+		$score         = max( 0, min( 100, (int) round( (float) ( $quiz_result['score'] ?? 0 ) ) ) );
+		if ( '' !== $completion_id ) {
+			$turn_identity = implode( '|', array( 'quiz_completion', $user_id, $completion_id ) );
+		} else {
+			$turn_identity = implode(
+				'|',
+				array( 'quiz_completion', $user_id, $flow_id, $journey_id, $quiz_id, $score, $completed_at, $quiz_session )
+			);
+		}
+		$turn_id = hash( 'sha256', $turn_identity );
+
+		$logger   = FLOSC_Chat_Logger::instance();
+		$existing = $logger->flosc_find_turn( $turn_id );
+		if ( is_array( $existing ) ) {
+			return (int) ( $existing['id'] ?? 0 );
+		}
+
+		$summary = sprintf(
+			/* translators: 1: quiz identifier, 2: score percentage. */
+			__( 'Quiz completed · %1$s · Score: %2$d%%', 'flosc' ),
+			$quiz_id,
+			$score
+		);
+
+		$lesson_quiz = sanitize_key( (string) get_user_meta( $user_id, '_flosc_free_content_item_quiz_id', true ) );
+		$lessons     = get_user_meta( $user_id, '_flosc_free_content_item_numbers', true );
+		if ( ( '' === $lesson_quiz || $quiz_id === $lesson_quiz ) && is_array( $lessons ) ) {
+			$lessons = array_values( array_unique( array_filter( array_map( 'absint', $lessons ) ) ) );
+			if ( array() !== $lessons ) {
+				$summary .= ' · ' . sprintf(
+					/* translators: %s: comma-separated lesson numbers. */
+					__( 'Complimentary lessons: %s', 'flosc' ),
+					implode( ', ', $lessons )
+				);
+			}
+		}
+
+		$user_tier = '';
+		if ( $this->member_access instanceof FLOSC_Member_Access ) {
+			$user_tier = $this->member_access->get_access_level( $user_id, $flow_id );
+		}
+
+		return $logger->flosc_log_chat(
+			array(
+				'flow_id'          => $flow_id,
+				'phase'            => 'content',
+				'user_tier'        => $user_tier,
+				'user_id'          => $user_id,
+				'session_id'       => 0,
+				'journey_id'       => $journey_id,
+				'user_message'     => '',
+				'ai_response'      => $summary,
+				'provider'         => 'flosc',
+				'chain_detail'     => array( 'completed_at:' . gmdate( 'c', $completed_at ) ),
+				'response_source'  => 'quiz_completion',
+				'surface'          => 'unknown',
+				'turn_id'          => $turn_id,
+				'response_time_ms' => 0,
+				'billing_source'   => 'none',
+			)
+		);
+	}
+
     public function flosc_user_should_receive_guest_tokens($user_id, $flow_id = '') {
         return $this->token_ledger->flosc_user_should_receive_guest_tokens($user_id, $flow_id);
     }
@@ -1440,6 +1567,7 @@ class FLOSC_Framework {
         // purchase-driven creates without touching any of them.
         add_action('user_register', [$this, 'flosc_mark_journey_account_created'], 20, 1);
         add_action('flosc_member_access_granted', [$this, 'flosc_mark_journey_member_granted'], 20, 2);
+        add_action('flosc_quiz_completed', [$this, 'flosc_log_quiz_completion'], 30, 2);
         // Newsletter opt-in profile checkbox (optional lead-gen)
         add_action('show_user_profile', [$this, 'render_newsletter_profile_field']);
         add_action('edit_user_profile', [$this, 'render_newsletter_profile_field']);
@@ -1935,11 +2063,15 @@ The Team',
                 $parts[] = esc_html($method);
             }
 
-            $chat_logs_url = add_query_arg([
+            $chat_logs_args = [
                 'page' => 'flosc-settings',
                 'tab' => 'chat-logs',
                 'flosc_user_id' => intval($user_id),
-            ], admin_url('admin.php'));
+            ];
+            if ($flow !== '') {
+                $chat_logs_args['ivr'] = FLOSC_Chat_Logger::flosc_journey_flow_stem($flow) . '.md';
+            }
+            $chat_logs_url = add_query_arg($chat_logs_args, admin_url('admin.php'));
 
             $time_html = $at !== '' ? '<br><small class="flosc-muted-meta">' . esc_html($at) . '</small>' : '';
             return implode(' | ', $parts) . $time_html . '<br><a href="' . esc_url($chat_logs_url) . '">View chats</a>';
@@ -5037,6 +5169,15 @@ Example good response:
         $answers = $request->get_param('answers') ?? [];
         $completed_at = intval($request->get_param('completedAt') ?? time() * 1000);
         $duration = intval($request->get_param('duration') ?? 0);
+        $flow_id = FLOSC_Chat_Logger::flosc_journey_flow_stem(
+            $request->get_param('flow_id') ?? $request->get_param('flowId') ?? ''
+        );
+        $journey_id = FLOSC_Chat_Logger::flosc_sanitize_journey_id(
+            $request->get_param('journey_id') ?? $request->get_param('journeyId') ?? ''
+        );
+        $completion_id = FLOSC_Chat_Logger::flosc_sanitize_turn_id(
+            $request->get_param('completion_id') ?? $request->get_param('completionId') ?? ''
+        );
         
         // v1.0.7 TASK-603: Store in signed cookie for visitors (not PHP session - avoids "headers sent" errors)
         if (!is_user_logged_in()) {
@@ -5046,6 +5187,9 @@ Example good response:
                 'answers' => $answers,
                 'completed_at' => $completed_at,
                 'duration' => $duration,
+                'flow_id' => $flow_id,
+                'journey_id' => $journey_id,
+                'completion_id' => $completion_id,
             ];
             $this->set_signed_cookie('flosc_quiz_result', $quiz_data, HOUR_IN_SECONDS);
         }
@@ -5074,24 +5218,48 @@ Example good response:
             $quiz_result = [
                 'quiz_id' => $quiz_id,
                 'score' => $score,
-                'user_answer' => is_array($answers) ? implode(',', $answers) : $answers,
+                'user_answer' => is_array($answers) ? wp_json_encode($answers) : $answers,
                 'correct_answer' => '1,2,3,4,5,6,7,8,9,10', // Default for sample quizzes; quiz types override via incorrect/missed
                 'correct' => [],
                 'incorrect' => [],
                 'completed_at' => $completed_at,
+                'flow_id' => $flow_id,
+                'journey_id' => $journey_id,
+                'completion_id' => $completion_id,
             ];
             
             // Parse answers to determine correct/incorrect
             // NOTE: This is a generic fallback. Quiz types with their own grade() method
             // produce structured incorrect/missed arrays that the Free Lesson Manager
             // checks first (see get_missed_lessons() in class-free-content-item-manager.php).
-            $user_nums = array_filter(array_map('trim', is_array($answers) ? $answers : explode(',', $answers)), 'is_numeric');
+            $user_nums = [];
+            $answer_rows = is_array($answers) ? array_values($answers) : explode(',', (string) $answers);
+            foreach ($answer_rows as $answer_index => $answer) {
+                if (is_array($answer) && array_key_exists('correct', $answer) && $answer['correct'] !== null) {
+                    $lesson_number = $answer_index + 1;
+                    if ($answer['correct'] === true) {
+                        $quiz_result['correct'][] = $lesson_number;
+                    } else {
+                        $quiz_result['incorrect'][] = $lesson_number;
+                    }
+                    continue;
+                }
+
+                if (is_scalar($answer)) {
+                    $candidate = trim((string) $answer);
+                    if (is_numeric($candidate)) {
+                        $user_nums[] = $candidate;
+                    }
+                }
+            }
             $expected_nums = ['1','2','3','4','5','6','7','8','9','10'];
-            foreach ($expected_nums as $num) {
-                if (in_array($num, $user_nums)) {
-                    $quiz_result['correct'][] = $num;
-                } else {
-                    $quiz_result['incorrect'][] = $num;
+            if (!empty($user_nums)) {
+                foreach ($expected_nums as $num) {
+                    if (in_array($num, $user_nums)) {
+                        $quiz_result['correct'][] = $num;
+                    } else {
+                        $quiz_result['incorrect'][] = $num;
+                    }
                 }
             }
             
@@ -6685,6 +6853,18 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("[FLOSC v8.0.7] score_visit
             'phraseResults' => array_slice(array_values($quiz_data['phraseResults']), 0, 20),
             'tempId'        => '',
             'score'         => isset($quiz_data['score']) ? floatval($quiz_data['score']) : null,
+            'quizId'        => sanitize_key((string) ($quiz_data['quizId'] ?? $quiz_data['quiz_id'] ?? '')),
+            'quizType'      => sanitize_key((string) ($quiz_data['quizType'] ?? $quiz_data['quiz_type'] ?? 'ipa_audio')),
+            'flowId'        => FLOSC_Chat_Logger::flosc_journey_flow_stem(
+                $quiz_data['flowId'] ?? $quiz_data['flow_id'] ?? ''
+            ),
+            'journeyId'     => FLOSC_Chat_Logger::flosc_sanitize_journey_id(
+                $quiz_data['journeyId'] ?? $quiz_data['journey_id'] ?? ''
+            ),
+            'completionId'  => FLOSC_Chat_Logger::flosc_sanitize_turn_id(
+                $quiz_data['completionId'] ?? $quiz_data['completion_id'] ?? ''
+            ),
+            'timestamp'     => absint($quiz_data['timestamp'] ?? time()),
         );
         if (!empty($quiz_data['tempId']) && preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', (string) $quiz_data['tempId'])) {
             $safe['tempId'] = (string) $quiz_data['tempId'];
@@ -6867,12 +7047,22 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("[FLOSC v8.0.7] score_visit
                         $incorrect[] = $lesson;
                     }
                 }
+                $completed_at = absint( $raw['completed_at'] ?? $raw['timestamp'] ?? time() );
+                if ( 20000000000 < $completed_at ) {
+                    $completed_at = (int) floor( $completed_at / 1000 );
+                }
+                if ( 946684800 > $completed_at || ( time() + DAY_IN_SECONDS ) < $completed_at ) {
+                    $completed_at = time();
+                }
                 $score_data = [
-                    'quiz_id'   => $raw['quiz_id']      ?? flosc_get_setting('default_text_quiz_id', 'sample_assessment_quiz'),
-                    'score'     => intval( $raw['score'] ),
-                    'correct'   => $correct,
-                    'incorrect' => $incorrect,
-                    'timestamp' => isset( $raw['completed_at'] ) ? intval( $raw['completed_at'] / 1000 ) : time(),
+                    'quiz_id'       => $raw['quiz_id'] ?? flosc_get_setting('default_text_quiz_id', 'sample_assessment_quiz'),
+                    'score'         => intval( $raw['score'] ),
+                    'correct'       => $correct,
+                    'incorrect'     => $incorrect,
+                    'timestamp'     => $completed_at,
+                    'flow_id'       => FLOSC_Chat_Logger::flosc_journey_flow_stem( $raw['flow_id'] ?? $raw['flowId'] ?? '' ),
+                    'journey_id'    => FLOSC_Chat_Logger::flosc_sanitize_journey_id( $raw['journey_id'] ?? $raw['journeyId'] ?? '' ),
+                    'completion_id' => FLOSC_Chat_Logger::flosc_sanitize_turn_id( $raw['completion_id'] ?? $raw['completionId'] ?? '' ),
                 ];
                 if ( FLOSC_DEBUG ) {
 if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log( "FLOSC v3.0.7: Using flosc_quiz_result fallback cookie for user {$user_id}" );
@@ -6919,6 +7109,11 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log( "FLOSC v3.0.7: Using flosc
 
             // Clear the cookie after transfer
             setcookie('flosc_prelogin_score', '', [
+                'expires' => time() - 3600,
+                'path' => '/',
+                'samesite' => 'Lax'
+            ]);
+            setcookie('flosc_quiz_result', '', [
                 'expires' => time() - 3600,
                 'path' => '/',
                 'samesite' => 'Lax'
@@ -8748,6 +8943,25 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
      * v9.4.2: Uses signed cookies to prevent score forgery
      */
     public function store_prelogin_score($request) {
+        $flow_id = $this->flosc_request_flow_stem($request);
+        $journey_id = FLOSC_Chat_Logger::flosc_sanitize_journey_id(
+            $request->get_param('journey_id') ?? $request->get_param('journeyId') ?? ''
+        );
+        $completion_id = FLOSC_Chat_Logger::flosc_sanitize_turn_id(
+            $request->get_param('completion_id') ?? $request->get_param('completionId') ?? ''
+        );
+        $completed_at = absint(
+            $request->get_param('completed_at')
+                ?? $request->get_param('completedAt')
+                ?? $request->get_param('timestamp')
+                ?? time()
+        );
+        if ($completed_at > 20000000000) {
+            $completed_at = (int) floor($completed_at / 1000);
+        }
+        if ($completed_at < 946684800 || $completed_at > (time() + DAY_IN_SECONDS)) {
+            $completed_at = time();
+        }
         $score_data = [
             'score' => intval($request->get_param('score')),
             'quiz_id' => sanitize_key((string) ($request->get_param('quiz_id') ?? '')),
@@ -8755,7 +8969,10 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
             'incorrect' => $request->get_param('incorrect') ?? [],
             'quiz_type' => sanitize_text_field($request->get_param('quiz_type') ?? ''),
             'ranked_worst_lessons' => $request->get_param('ranked_worst_lessons') ?? [],
-            'timestamp' => time(),
+            'timestamp' => $completed_at,
+            'flow_id' => $flow_id,
+            'journey_id' => $journey_id,
+            'completion_id' => $completion_id,
         ];
         
         // v9.4.2: Store in SIGNED cookie to prevent forgery
@@ -8772,7 +8989,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
             // Store quiz meta (mirrors store_quiz_result)
             update_user_meta($user_id, '_flosc_last_quiz_id', $quiz_id);
             update_user_meta($user_id, '_flosc_last_quiz_score', $score);
-            update_user_meta($user_id, '_flosc_quiz_completed_at', time() * 1000);
+            update_user_meta($user_id, '_flosc_quiz_completed_at', $completed_at * 1000);
             
             $completed = get_user_meta($user_id, '_flosc_completed_quizzes', true) ?: [];
             if (!in_array($quiz_id, $completed)) {
@@ -8928,6 +9145,27 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
         $score = intval($quiz_data['score'] ?? 0);
         if ($score < 0 || $score > 100) return false;
         $default_audio_quiz_id = flosc_get_setting('default_audio_quiz_id', '');
+        $flow_raw = (string) ($quiz_data['flowId'] ?? $quiz_data['flow_id'] ?? '');
+        if ($flow_raw === '') {
+            $flow_raw = (string) get_user_meta($user_id, '_flosc_registration_flow', true);
+        }
+        if ($flow_raw === '') {
+            $flow_raw = (string) get_user_meta($user_id, '_flosc_last_flow', true);
+        }
+        $flow_id = FLOSC_Chat_Logger::flosc_journey_flow_stem($flow_raw);
+        $journey_id = FLOSC_Chat_Logger::flosc_sanitize_journey_id(
+            $quiz_data['journeyId'] ?? $quiz_data['journey_id'] ?? ''
+        );
+        $completion_id = FLOSC_Chat_Logger::flosc_sanitize_turn_id(
+            $quiz_data['completionId'] ?? $quiz_data['completion_id'] ?? ''
+        );
+        $completed_at = absint($quiz_data['timestamp'] ?? $quiz_data['completedAt'] ?? time());
+        if ($completed_at > 20000000000) {
+            $completed_at = (int) floor($completed_at / 1000);
+        }
+        if ($completed_at < 946684800 || $completed_at > (time() + DAY_IN_SECONDS)) {
+            $completed_at = time();
+        }
 
         $score_data = [
             'quiz_id'              => sanitize_key($quiz_data['quizId'] ?? $quiz_data['quiz_id'] ?? $default_audio_quiz_id),
@@ -8936,8 +9174,11 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
             'correct'              => [],
             'incorrect'            => [],
             'ranked_worst_lessons' => [],
-            'timestamp'            => time(),
+            'timestamp'            => $completed_at,
             'session_id'           => $temp_id,
+            'flow_id'              => $flow_id,
+            'journey_id'           => $journey_id,
+            'completion_id'        => $completion_id,
             'ranked_phonemes'      => [],
             'phrase_results'       => [],
         ];
@@ -10303,7 +10544,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         ];
 
         $logs = $logger->flosc_get_logs($filters);
-        $total = $logger->flosc_get_log_count($filters['flow_id']);
+        $total = $logger->flosc_get_log_count($filters['flow_id'], $filters['user_id']);
 
         wp_send_json_success([
             'logs'  => $logs,
@@ -12443,4 +12684,3 @@ function flosc_resolve_chatlogo_url( $flow_settings = null, $use_plugin_default 
 function flosc_get_chatlogo_url() {
     return flosc_resolve_chatlogo_url( null, true );
 }
-

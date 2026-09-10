@@ -1,55 +1,53 @@
-# FLOSC — Codex v26 candidate
+# Home Run Candidate v29 — Codex GPT-5.6 Sol
 
-**Status:** Deployed to the authorized live test site and ready for Captain acceptance testing.
+**Status:** Build complete; ready for the Captain's pre-resubmission acceptance tests.
 
-This is the complete **v26 pre-release candidate** prepared by **Codex, the `/root` lead coder in the GPT-5.6 Sol session**. The WordPress plugin version remains `8.0.0`; `v26` counts candidate iterations and is not a plugin version bump.
+**Built by:** Codex (OpenAI), GPT-5.6 Sol  
+**Build record:** `2026-09-10d-UTC12h:58m27s`  
+**Baseline:** Home Run Candidate v28 by Grok 4.6, commit `c3711af`
 
-## Remediation in this candidate
+This candidate is isolated under `pre-release-candidates/codex-gpt5`. Grok's v28 candidate and the local v28 baseline were not modified.
 
-- Every IVR content entitlement decision now evaluates membership against the requested `flow_id`, including the permission callback and both message handlers. A global membership flag or membership in another flow cannot disclose the requested flow's content.
-- Uploads writes and moves reject an existing destination symlink before invoking WordPress filesystem operations.
-- The two secret-setting callbacks no longer unslash credential bytes a second time. Quotes, backslashes, percent signs, and multiline private keys survive the Settings API callback unchanged; blank submissions still preserve the stored value.
-- The PayPal and IVR diagnostic panels render remote response values with `textContent`, text nodes, and created elements. They no longer place response data into `innerHTML`.
-- All thirteen shipped PHP heredoc/NOWDOC declarations were converted to ordinary string arrays joined by newlines. The four shipped personality profiles retain their exact v25 bytes.
+The installable artifact is `flosc.zip`. It contains one top-level `flosc/` directory and installs as `wp-content/plugins/flosc/`.
 
-The runtime delta from the Claude Opus 5 v25 ZIP is exactly fourteen files: the files needed for these five remediation groups and no unrelated runtime files.
+## Proven defect and repair
 
-## Verification completed
+Tim's LeSAEp quiz data and entitlements were present, but no LeSAEp Chat Logs row existed. Quiz completion did not pass through the chat endpoints, and the successful quiz storage paths never wrote a Chat Logs activity row. The admin's displayed user filter also was not applied to grouped sessions and was lost while navigating between views and flows.
 
-- All 12 `test_*.php`, all 20 `check_*.php`, and `check_density_nesting.js` passed.
-- All 148 PHP files and all 9 standalone JavaScript files in the release artifact passed syntax checks. The edited inline admin JavaScript blocks also passed `node --check` after PHP interpolation was isolated.
-- Plugin Check 2.1.0 on WordPress 7.1 passed its complete check set with no errors, including `plugin_review_phpcs`.
-- WordPress runtime probes passed all 15 assertions for REST permissions, cross-flow content isolation, settings registration, and filesystem containment. Secret-setting runtime probes also preserved both test credentials byte for byte and preserved stored values on blank input.
-- The ZIP passed integrity, forbidden-path, single-root, packaging, provider-disclosure, and all four Starter Pack asset gates.
-- A clean rebuild from the candidate tree matched all 277 ZIP entries by filename, uncompressed size, and CRC-32: zero missing, extra, or changed entries.
-- The extracted artifact was mirrored to the authorized live test site, the remote hygiene check passed, and WP-CLI reports FLOSC active at version 8.0.0.
+v29 makes these bounded repairs:
 
-## Captain acceptance remaining
+- Future successful quiz completions write a flow-scoped `quiz_completion` activity marker after bridge data and complimentary lessons are processed.
+- Browser quiz storage, signed-cookie recovery, email registration, and SSO recovery retain the originating flow, journey, completion ID, and completion time.
+- The two multiple-choice storage requests run sequentially with one completion ID; deterministic server-side identity prevents a retry from creating a second activity row.
+- Nested multiple-choice answer rows are parsed as structured data instead of being passed to string functions.
+- A selected user is filtered in SQL before the grouped-session row cap. Their anonymous pre-login rows from the same journey remain visible, while rows belonging to another signed-in user do not.
+- The user filter persists across grouped/flat views, active/archived scopes, and flow switching.
+- Quiz result copy uses `textContent` at the two remediated DOM sinks.
 
-1. Install `flosc.zip` on a fresh WordPress installation.
-2. Connect an AI provider and exercise the shipped Starter Packs.
-3. Select one or more shipped personalities and confirm their voices and behavior in real conversations.
-4. Build, save, select, and converse with an entirely new personality through the AI Personality Designer.
-5. Resubmit only after those four product checks pass and the team closes any separately assigned documentation items.
+This repair records future completions. It does not invent Tim's missing historical log row. Any one-time backfill and account change will be reviewed jointly from his stored quiz data.
 
-## Candidate contents
+## Exact-artifact verification
 
-```text
-pre-release-candidates/codex-gpt5/
-├── README.md
-├── build-manifest.json
-├── SHA256SUMS
-├── flosc.zip
-└── flosc-by-codex-gpt5/
-    └── flosc/
-        └── complete candidate source and non-shipping test suite
-```
+The final `flosc.zip` passed:
 
-The ZIP contains one top-level `flosc/` directory and excludes tests, development tooling, internal handoffs, nested candidates, Composer dependencies, and sample data.
+- all 184 source/test PHP files parsed by PHP 8.4;
+- all 34 PHP regression scripts;
+- JavaScript syntax and density-nesting checks;
+- WordPress 7.1 installation and activation in an isolated SQLite-backed site;
+- an isolated database behavior test covering quiz activity insertion, deterministic retry deduplication, flow/journey persistence, SQL-before-LIMIT user filtering, pre-login context, cross-user exclusion, and activity turn counts;
+- WordPress Plugin Check 2.1.0, both the full correctly initialized run and an explicit `plugin_review_phpcs` run, with no errors;
+- PHPCompatibility 9.3.5 for PHP 7.4 and newer across all 148 PHP files in the artifact, with zero errors and zero warnings;
+- ZIP integrity, one-root validation, forbidden-path scanning, duplicate and symlink scanning, and source-byte CRC comparison;
+- an independent rebuild that matched all 277 ZIP entries and the final archive byte for byte.
 
-To verify the download:
+SHA-256: `544f39cd6f9c2f367d47fff8c68331e8b1e573fcebb9b671d8f121a336de6126`
 
-```sh
-shasum -a 256 -c SHA256SUMS
-unzip -t flosc.zip
-```
+Machine-readable results and logs are in `evidence/`.
+
+## Verification boundary
+
+Plugin Check's WordPress.org review profile is clean. A broader raw whole-tree WordPress PHPCS scan still reports substantial inherited formatting debt, so this candidate must not be described as universally WPCS-clean. Formatting the entire legacy tree was outside this targeted repair and would create high-risk churn.
+
+The remaining acceptance work is the Captain's fresh-install test, real AI API connection, shipped-personality test, AI Personality Designer test, and final resubmission decision. No live AI-provider call is represented as passed here.
+
+No production account, membership, post, token balance, or email was changed while building and verifying this candidate.

@@ -2118,7 +2118,24 @@ if (function_exists('wp_add_inline_style')) {
     function switchIVR(ivr) {
         const tab = '<?php echo esc_js($flosc_active_tab); ?>';
         const view = '<?php echo esc_js($flosc_identity_view); ?>';
-        window.location.href = '<?php echo esc_js( admin_url('admin.php?page=flosc-settings') ); ?>&ivr=' + encodeURIComponent(ivr) + '&tab=' + tab + '&view=' + encodeURIComponent(view);
+        const target = new URL('<?php echo esc_js(admin_url('admin.php?page=flosc-settings')); ?>');
+        target.searchParams.set('ivr', ivr);
+        target.searchParams.set('tab', tab);
+        target.searchParams.set('view', view);
+
+        // A Users-screen "View chats" investigation remains tied to that user
+        // while the administrator switches between the user's FLOSC flows.
+        if (tab === 'chat-logs') {
+            const current = new URLSearchParams(window.location.search);
+            ['flosc_user_id', 'logview', 'session_scope'].forEach(function (key) {
+                const value = current.get(key);
+                if (value) {
+                    target.searchParams.set(key, value);
+                }
+            });
+        }
+
+        window.location.href = target.toString();
     }
 
     (function () {

@@ -1,56 +1,80 @@
 {
+  "schema_version": 2,
   "candidate": "codex-gpt5",
-  "candidate_iteration": 26,
-  "creator": "Codex — /root lead coder (GPT-5.6 Sol session)",
-  "status": "DEPLOYED_AWAITING_CAPTAIN_ACCEPTANCE",
-  "plugin_version": "8.0.0",
-  "baseline_candidate": "claude-opus-5 v25 at main commit a1ff23e729935fd1c31f7eb8e99faefcacbe0405",
-  "local_source_baseline": "ad39fc09a261fa9fb167c5dcce7e6134ce9833d0",
-  "candidate_commit": "this commit",
+  "candidate_label": "Home Run Candidate v29",
+  "creator": "Codex (OpenAI), GPT-5.6 Sol",
+  "created_at_mts": "2026-09-10d-UTC12h:58m27s",
+  "status": "BUILD_COMPLETE_AWAITING_CAPTAIN_ACCEPTANCE",
+  "baseline": {
+    "candidate": "Home Run Candidate v28",
+    "creator": "Grok 4.6",
+    "commit": "c3711af",
+    "modified": false
+  },
   "plugin_source": "flosc-by-codex-gpt5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "2ecd5ab44762415ff0e5a66dd71c43b8200a69e45ae6bf8a451ec794fadcc84b",
-  "artifact_size_bytes": 2714496,
+  "artifact_sha256": "544f39cd6f9c2f367d47fff8c68331e8b1e573fcebb9b671d8f121a336de6126",
+  "artifact_bytes": 2719575,
   "artifact_entries": 277,
   "artifact_files": 237,
-  "runtime_delta_from_v25_files": 14,
-  "remediation": {
-    "requested_flow_entitlement": "implemented at the REST permission callback and both IVR message handlers",
-    "uploads_destination_symlink": "write and move destinations reject pre-existing symlinks",
-    "secret_callback_double_unslash": "removed from both Settings API callbacks; blank preservation retained",
-    "admin_response_innerhtml": "removed from PayPal and IVR diagnostic result rendering",
-    "shipped_heredoc_nowdoc": "all 13 converted; four shipped profile hashes pinned to their exact v25 bytes"
+  "artifact_directories": 40,
+  "artifact_php_files": 148,
+  "scope": {
+    "quiz_completion_activity": "implemented",
+    "flow_and_journey_context": "implemented across browser, REST, signed-cookie, email-registration, and SSO restore paths",
+    "completion_retry_deduplication": "implemented and runtime verified",
+    "grouped_sessions_user_filter": "implemented in SQL before LIMIT",
+    "filter_navigation_persistence": "implemented",
+    "nested_multiple_choice_answer_parsing": "repaired",
+    "quiz_result_dom_sinks": "textContent",
+    "historical_tim_backfill": "deferred for joint account review"
   },
   "verification": {
-    "php_test_files": "passed: 12 test_*.php and 20 check_*.php",
-    "javascript_test_files": "passed: check_density_nesting.js",
-    "artifact_php_syntax": "passed: 148 files",
-    "artifact_javascript_syntax": "passed: 9 standalone files plus edited inline admin blocks",
-    "wordpress_core": "7.1 disposable test installation",
-    "plugin_check": "Plugin Check 2.1.0 complete check set: no errors found",
-    "plugin_review_phpcs": "enabled explicitly: no errors found",
-    "wordpress_runtime_probes": "passed: 15 of 15",
-    "secret_settings_runtime_probes": "passed: byte-exact save and blank preservation for both callbacks",
-    "starter_pack_assets": "passed: all four packs",
+    "php_syntax": {
+      "status": "passed",
+      "files": 184
+    },
+    "php_regression_scripts": {
+      "status": "passed",
+      "scripts": 34
+    },
+    "javascript_syntax": "passed",
+    "density_nesting": "passed",
+    "wordpress_runtime": {
+      "status": "passed",
+      "wordpress": "7.1",
+      "database": "SQLite isolated test site",
+      "warnings_or_fatals": 0
+    },
+    "plugin_check_2_1_0_full": "passed; no errors",
+    "plugin_check_2_1_0_plugin_review_phpcs": "passed; no errors",
+    "phpcompatibility_9_3_5_php_7_4_plus": {
+      "status": "passed",
+      "files": 148,
+      "errors": 0,
+      "warnings": 0
+    },
     "zip_integrity": "passed",
-    "zip_forbidden_path_scan": "passed",
-    "zip_single_top_level_flosc": "passed",
-    "rebuild_crc_comparison": "passed: 277 entries; 0 missing, 0 extra, 0 changed"
+    "zip_forbidden_paths": "passed",
+    "zip_duplicates": 0,
+    "zip_symlinks": 0,
+    "source_crc_match": "passed",
+    "independent_rebuild_crc_match": "passed",
+    "independent_rebuild_sha256_match": "passed"
   },
-  "live_deployment": {
-    "deployed_at_utc": "2026-09-10T07:36:14Z",
-    "source": "extracted validated artifact",
-    "remote_hygiene": "passed",
-    "wordpress_plugin_status": "active, version 8.0.0",
-    "note": "The established live mirror policy excludes flosc_documentation; the installable ZIP contains it."
+  "standards_boundary": {
+    "wordpress_org_plugin_check": "passed",
+    "raw_full_tree_wordpress_phpcs": "inherited formatting diagnostics remain; universal WPCS cleanliness is not claimed"
   },
   "captain_acceptance": {
-    "fresh_install": "pending",
-    "live_ai_provider_and_starter_packs": "pending",
+    "fresh_wordpress_install": "pending",
+    "real_ai_api_connection_and_starter_packs": "pending",
     "shipped_personalities": "pending",
-    "new_personality_designer_round_trip": "pending",
+    "ai_personality_designer": "pending",
     "resubmission": "pending"
   },
-  "scope_boundary": "Separately assigned documentation and session-tooling items are not represented as completed by this coding candidate."
+  "production_user_data_changed": false,
+  "email_sent": false,
+  "roadmap_updated": false
 }
