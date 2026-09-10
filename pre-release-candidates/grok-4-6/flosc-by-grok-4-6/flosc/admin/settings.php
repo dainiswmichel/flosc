@@ -746,6 +746,15 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
     // The AI tab's parameter box is the request; Temperature and Max Tokens are
     // a way of writing into it. So after a save the fields must show what the
     // text says, or the page displays one number and sends another.
+    if ($flosc_active_tab === 'ai') {
+        $flosc_sticky_pid = sanitize_key( (string) ( $flosc_new_settings['personality_library_id'] ?? '' ) );
+        if ( $flosc_sticky_pid !== '' && function_exists( 'flosc_personality_library_update_entry' ) ) {
+            $flosc_sticky_on = ! empty( $flosc_post['flosc_personality_enable_user_sticky'] ) ? '1' : '';
+            flosc_personality_library_update_entry( $flosc_sticky_pid, array( 'enable_user_sticky' => $flosc_sticky_on ) );
+        }
+        unset( $flosc_new_settings['enable_user_sticky'] );
+    }
+
     if ($flosc_active_tab === 'ai' && function_exists('flosc_reconcile_model_parameters')) {
         $flosc_param_provider = sanitize_key((string) ($flosc_new_settings['ai_provider'] ?? ''));
 

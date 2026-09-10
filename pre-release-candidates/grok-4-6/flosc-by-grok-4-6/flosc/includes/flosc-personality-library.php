@@ -97,6 +97,7 @@ if ( ! function_exists( 'flosc_personality_library_field_keys' ) ) {
 			'profile_version',
 			'profile_hash',
 			'profile_modified_gmt',
+			'enable_user_sticky',
 		);
 	}
 }

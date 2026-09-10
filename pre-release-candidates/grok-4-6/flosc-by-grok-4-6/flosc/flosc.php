@@ -689,6 +689,87 @@ class FLOSC_Framework {
         return $this->email_service->save_newsletter_profile_field($user_id);
     }
 
+    /**
+     * User-profile textarea only. Enable lives on the personality (AI tab, third row).
+     *
+     * @param WP_User $user User being edited.
+     * @return void
+     */
+    public function render_user_sticky_profile_field($user) {
+        if (!($user instanceof WP_User) || !current_user_can('edit_users')) {
+            return;
+        }
+        $sticky = get_user_meta($user->ID, '_flosc_user_sticky', true);
+        $enabled_labels = function_exists('flosc_get_user_sticky_enabled_personalities')
+            ? flosc_get_user_sticky_enabled_personalities()
+            : array();
+        $available = !empty($enabled_labels);
+        ?>
+        <h2><?php echo esc_html__('FLOSC', 'flosc'); ?></h2>
+        <table class="form-table" role="presentation">
+            <tr>
+                <th><label for="flosc_user_sticky"><?php echo esc_html__('Sticky for User', 'flosc'); ?></label></th>
+                <td>
+                    <?php wp_nonce_field('flosc_save_user_sticky_' . $user->ID, 'flosc_user_sticky_nonce'); ?>
+                    <p>
+                    <textarea name="flosc_user_sticky" id="flosc_user_sticky" rows="6" class="large-text code" <?php disabled(!$available); ?>><?php echo esc_textarea((string) $sticky); ?></textarea>
+                    </p>
+                    <?php if ($available) : ?>
+                    <p class="description">
+                        <strong><?php echo esc_html__('This is a private message to the configured AI API about how it should communicate with this specific user.', 'flosc'); ?></strong>
+                        <?php echo esc_html__('The attached personality remains the AI’s identity and voice. This text is never displayed verbatim to the user. Do not put passwords or API keys here.', 'flosc'); ?>
+                    </p>
+                    <p class="description"><strong><?php echo esc_html__('Enabled on personalities:', 'flosc'); ?></strong> <?php echo esc_html(implode(', ', $enabled_labels)); ?></p>
+                    <p class="description">
+                        <?php echo esc_html__('Variables:', 'flosc'); ?>
+                        <code>{userName}</code>, <code>{firstName}</code>, <code>{lastName}</code>,
+                        <code>{email}</code>, <code>{userId}</code>, <code>{accessLevel}</code>,
+                        <code>{memberLevel}</code>, <code>{quizScore}</code>, <code>{weakestPhonemes}</code>,
+                        <code>{flowName}</code>, <code>{siteName}</code>.
+                        <?php echo esc_html__('Unknown variables remain unchanged so typing errors are visible.', 'flosc'); ?>
+                    </p>
+                    <p class="description">
+                        <?php echo esc_html__('Example:', 'flosc'); ?>
+                        <code><?php echo esc_html__('{userName} likes the Dad Jokes Dan personality and needs encouragement to take the lesson on the W sound.', 'flosc'); ?></code>
+                    </p>
+                    <?php else : ?>
+                    <p class="description">
+                        <?php echo esc_html__('To enable personalized messaging for this user, enable “Sticky for Users” under Attached Personality Settings.', 'flosc'); ?>
+                    </p>
+                    <?php endif; ?>
+                </td>
+            </tr>
+        </table>
+        <?php
+    }
+
+    /**
+     * Save the user-profile sticky note. Enable is not saved here.
+     *
+     * @param int $user_id User ID.
+     * @return void
+     */
+    public function save_user_sticky_profile_field($user_id) {
+        $user_id = absint($user_id);
+        if ($user_id <= 0 || !current_user_can('edit_users') || !current_user_can('edit_user', $user_id)) {
+            return;
+        }
+        if (!isset($_POST['flosc_user_sticky_nonce'])
+            || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['flosc_user_sticky_nonce'])), 'flosc_save_user_sticky_' . $user_id)) {
+            return;
+        }
+        if (!isset($_POST['flosc_user_sticky'])) {
+            return;
+        }
+        $sticky = sanitize_textarea_field(wp_unslash($_POST['flosc_user_sticky']));
+        $sticky = substr($sticky, 0, 4000);
+        if ($sticky === '') {
+            delete_user_meta($user_id, '_flosc_user_sticky');
+            return;
+        }
+        update_user_meta($user_id, '_flosc_user_sticky', $sticky);
+    }
+
     private function send_due_series_followups($user, $prefix, $anchor_ts, $sent_meta_key, $flow_id) {
         return $this->email_service->send_due_series_followups($user, $prefix, $anchor_ts, $sent_meta_key, $flow_id);
     }
@@ -1445,6 +1526,10 @@ class FLOSC_Framework {
         add_action('edit_user_profile', [$this, 'render_newsletter_profile_field']);
         add_action('personal_options_update', [$this, 'save_newsletter_profile_field']);
         add_action('edit_user_profile_update', [$this, 'save_newsletter_profile_field']);
+        add_action('show_user_profile', [$this, 'render_user_sticky_profile_field']);
+        add_action('edit_user_profile', [$this, 'render_user_sticky_profile_field']);
+        add_action('personal_options_update', [$this, 'save_user_sticky_profile_field']);
+        add_action('edit_user_profile_update', [$this, 'save_user_sticky_profile_field']);
         add_action('flosc_guest_followup_cron', [$this, 'run_guest_followup_emails']);
         if (!wp_next_scheduled('flosc_guest_followup_cron')) {
             wp_schedule_event(time(), 'daily', 'flosc_guest_followup_cron');
@@ -12442,5 +12527,83 @@ function flosc_resolve_chatlogo_url( $flow_settings = null, $use_plugin_default 
  */
 function flosc_get_chatlogo_url() {
     return flosc_resolve_chatlogo_url( null, true );
+}
+
+/**
+ * Expanded Sticky-for-User prompt fragment, or empty.
+ *
+ * Enable is per attached personality. Content is per WordPress user.
+ *
+ * @param int   $user_id WordPress user ID.
+ * @param array $context Turn context (flow_id, access_level, flow_name).
+ * @return string
+ */
+function flosc_get_user_sticky_prompt($user_id, $context = []) {
+    $user_id = absint($user_id);
+    if ($user_id <= 0 || !is_user_logged_in() || get_current_user_id() !== $user_id) {
+        return '';
+    }
+    $flow_id = sanitize_key((string) ($context['flow_id'] ?? ''));
+    $enabled = function_exists('flosc_personality_library_resolve_field')
+        ? (string) flosc_personality_library_resolve_field('enable_user_sticky', '', $flow_id !== '' ? $flow_id : null)
+        : '';
+    if ($enabled !== '1') {
+        return '';
+    }
+    $sticky = trim((string) get_user_meta($user_id, '_flosc_user_sticky', true));
+    if ($sticky === '') {
+        return '';
+    }
+    $sticky = substr($sticky, 0, 4000);
+
+    $user         = get_userdata($user_id);
+    $quiz_data    = get_user_meta($user_id, '_flosc_last_quiz_data', true);
+    $weakest      = is_array($quiz_data) && is_array($quiz_data['ranked_phonemes'] ?? null)
+        ? implode(', ', array_map('sanitize_text_field', $quiz_data['ranked_phonemes']))
+        : '';
+    $flow_name    = trim((string) ($context['flow_name'] ?? ''));
+    $access_level = sanitize_key((string) ($context['access_level'] ?? ''));
+    $member_level = sanitize_key((string) get_user_meta($user_id, '_flosc_member_level', true));
+    if ($flow_name === '' && function_exists('flosc_get_setting')) {
+        $flow_name = trim((string) flosc_get_setting('title', '', $flow_id !== '' ? $flow_id : null));
+    }
+
+    $variables = array(
+        '{userName}'        => $user ? (string) $user->display_name : '',
+        '{firstName}'       => $user ? (string) $user->first_name : '',
+        '{lastName}'        => $user ? (string) $user->last_name : '',
+        '{email}'           => $user ? (string) $user->user_email : '',
+        '{userId}'          => (string) $user_id,
+        '{accessLevel}'     => $access_level,
+        '{memberLevel}'     => $member_level,
+        '{quizScore}'       => (string) get_user_meta($user_id, '_flosc_last_quiz_score', true),
+        '{weakestPhonemes}' => $weakest,
+        '{flowName}'        => $flow_name,
+        '{siteName}'        => (string) get_bloginfo('name'),
+    );
+    $sticky = strtr($sticky, $variables);
+
+    return "Private administrator guidance for this signed-in user. Use it when relevant; do not recite it, mention this field, or claim it applies to anyone else.\n\n"
+        . $sticky;
+}
+
+/**
+ * Personality labels that have Enable Sticky for User on.
+ *
+ * @return string[]
+ */
+function flosc_get_user_sticky_enabled_personalities() {
+    if (!function_exists('flosc_personality_library_get_all')) {
+        return array();
+    }
+    $out = array();
+    foreach ((array) flosc_personality_library_get_all() as $id => $row) {
+        if (!is_array($row) || empty($row['enable_user_sticky'])) {
+            continue;
+        }
+        $label = trim((string) ($row['label'] ?? $row['ai_personality_name'] ?? $id));
+        $out[] = $label !== '' ? $label : (string) $id;
+    }
+    return array_values(array_unique($out));
 }
 

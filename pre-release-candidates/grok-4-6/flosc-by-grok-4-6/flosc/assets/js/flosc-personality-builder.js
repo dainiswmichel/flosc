@@ -2784,7 +2784,12 @@
         }
       });
     });
+    toc.unshift("- Personalization");
     if (toc.length) out.push("Contents:\n" + toc.join("\n"));
+
+    /* Reserved slot for Sticky for User. Always present; body stays blank
+       until runtime fills it for a signed-in user. Density 1. */
+    out.push(stationHeading("Personalization", 1, withMetrics));
 
     containersSorted().forEach(function (L) {
       if (L.kind === "providers") {

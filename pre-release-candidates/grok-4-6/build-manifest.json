@@ -1,32 +1,25 @@
 {
   "candidate": "grok-4-6",
-  "candidate_iteration": 28,
+  "candidate_iteration": 30,
   "creator": "Grok 4.6",
   "status": "DEPLOYED_AWAITING_CAPTAIN_ACCEPTANCE",
   "plugin_version": "8.0.0",
   "source": "local mvp_sprint/flosc_8_0_0/flosc",
-  "baseline_candidate": "codex-gpt5 v26 7cdda1c plus local A4 and MagicLink small set",
   "plugin_source": "flosc-by-grok-4-6/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "79eaab383aa132e472af6e6b4e270205b9de3b36a51ed1d01a6cbf0e641678f5",
-  "artifact_size_bytes": 2715871,
+  "artifact_sha256": "802aaaee06c4de3a42dd9af7452a4c6721b84ae279f516b152782d6b2f3d6d96",
+  "artifact_size_bytes": 2719009,
   "artifact_entries": 277,
   "artifact_files": 237,
-  "remediation": {
-    "oembed_external_services": "FAQ item 17",
-    "magic_link_rate_limit": "check_rate_limit magic_consume 30/15min",
-    "magic_link_two_places": "last_ip last_at 15min",
-    "magic_link_guest_cap": "unchanged; members not one-time",
-    "magic_link_hash_at_rest": "HMAC-SHA256 transient key; hash_equals; legacy key load",
-    "magic_link_kind_fallback": "flosc_magic_unrecognized HTTP 200"
-  },
   "verification": {
-    "php_lint_magic_link_trait": "passed",
-    "check_provider_identity": "passed",
+    "php_lint": "passed on edited files",
     "zip_entries": 277,
     "zip_no_tests": true,
-    "zip_no_handoff": true
+    "zip_no_handoff": true,
+    "oembed_faq_item_17": true,
+    "sticky_enable_on_ai_tab": true,
+    "personalization_density": 1
   },
   "live_deployment": {
     "remote": "chemicloud:public_html/wp-content/plugins/flosc",

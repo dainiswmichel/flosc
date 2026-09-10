@@ -527,6 +527,11 @@ class FLOSC_Chatpack {
             ? flosc_personality_compiled_profile( $flow_id )
             : trim( (string) $ai_base_prompt );
 
+        $personalization = self::build_user_sticky_section($eval_context);
+        if ($compiled_profile !== '' && $personalization !== '') {
+            $compiled_profile = self::insert_user_personalization($compiled_profile, $personalization);
+        }
+
         $public_title = function_exists( 'flosc_flow_public_title' )
             ? flosc_flow_public_title( $flow_id )
             : '';
@@ -677,6 +682,45 @@ class FLOSC_Chatpack {
         }
 
         return $section;
+    }
+
+    /**
+     * Administrator-authored guidance for this authenticated user only.
+     *
+     * @param array $eval_context Backend-authoritative evaluation context.
+     * @return string
+     */
+    private static function build_user_sticky_section($eval_context) {
+        return function_exists('flosc_get_user_sticky_prompt')
+            ? flosc_get_user_sticky_prompt($eval_context['user_id'] ?? 0, $eval_context)
+            : '';
+    }
+
+    /**
+     * Add runtime-only personalization near the top of a compiled personality.
+     *
+     * @param string $profile         Compiled personality Markdown.
+     * @param string $personalization Expanded per-user guidance.
+     * @return string
+     */
+    private static function insert_user_personalization($profile, $personalization) {
+        if (preg_match('/^#\s*1\s+Personalization\s*$/m', $profile)) {
+            return preg_replace(
+                '/^(#\s*1\s+Personalization)[ \t]*\n(?:(?!^# ).*\n?)*/m',
+                "$1\n\n" . $personalization . "\n\n",
+                $profile,
+                1
+            );
+        }
+        if (strpos($profile, '- Personalization') === false) {
+            $profile = preg_replace('/^(Contents:\s*)$/m', "$1\n- Personalization", $profile, 1);
+        }
+        $section = "# 1 Personalization\n\n" . $personalization . "\n\n";
+        if (preg_match('/^#\s+\d+\s+/m', $profile, $first, PREG_OFFSET_CAPTURE)) {
+            $offset = (int) $first[0][1];
+            return substr($profile, 0, $offset) . $section . substr($profile, $offset);
+        }
+        return rtrim($profile) . "\n\n" . $section;
     }
 
     /**
