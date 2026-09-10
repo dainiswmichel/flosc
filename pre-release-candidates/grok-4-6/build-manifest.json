@@ -1,6 +1,6 @@
 {
   "candidate": "grok-4-6",
-  "candidate_iteration": 30,
+  "candidate_iteration": 31,
   "creator": "Grok 4.6",
   "status": "DEPLOYED_AWAITING_CAPTAIN_ACCEPTANCE",
   "plugin_version": "8.0.0",
@@ -8,18 +8,20 @@
   "plugin_source": "flosc-by-grok-4-6/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "802aaaee06c4de3a42dd9af7452a4c6721b84ae279f516b152782d6b2f3d6d96",
-  "artifact_size_bytes": 2719009,
+  "artifact_sha256": "6b40ca27c2cb69425fe83a54f7b5fe3cd34e7f24e91bbbd3018431406553cd29",
+  "artifact_size_bytes": 2721620,
   "artifact_entries": 277,
   "artifact_files": 237,
   "verification": {
-    "php_lint": "passed on edited files",
+    "php_lint": "passed on overlay files",
     "zip_entries": 277,
     "zip_no_tests": true,
     "zip_no_handoff": true,
+    "zip_no_users_list_css": true,
     "oembed_faq_item_17": true,
-    "sticky_enable_on_ai_tab": true,
-    "personalization_density": 1
+    "sticky_eval_context": true,
+    "quiz_audio_flosc_sid": true,
+    "members_only_playback": true
   },
   "live_deployment": {
     "remote": "chemicloud:public_html/wp-content/plugins/flosc",

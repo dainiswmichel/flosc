@@ -1,22 +1,25 @@
-# FLOSC — Grok 4.6 v30 candidate
+# FLOSC — Grok 4.6 v31 candidate
 
 **Agent:** Grok 4.6  
 **Plugin version:** 8.0.0  
-**Source:** local `mvp_sprint/flosc_8_0_0/flosc`
+**Source:** local `mvp_sprint/flosc_8_0_0/flosc` (three files over v30)
 
 ## In this candidate
 
-- FAQ External Services item 17 (oEmbed).
-- MagicLink small set (rate-limit, two-places, hashed transients, kind fallback). Default off.
-- Sticky for Users: enable is a third row under Sticky aspects on the AI tab, per attached personality. User profile has the note textarea only; greyed out until a personality enables it.
-- Compiled profile reserved slot: `# 1 Personalization` (blank until runtime fills it). Density 0 left free.
+v30, plus:
+
+- Sticky: `build_identity_section` receives `$eval_context` so per-user notes inject.
+- Quiz audio: recover `session_id` from phrase payload; fetch recordings; stream via `flosc_sid`.
+- Members-only playback. Guests see scores. Visitors take the quiz and log in for results.
+
+Not in this candidate: Users-list CSS, core admin restyle, Korboc changes.
 
 ## Artifact
 
 ```text
 pre-release-candidates/grok-4-6/flosc.zip
-sha256  802aaaee06c4de3a42dd9af7452a4c6721b84ae279f516b152782d6b2f3d6d96
-size    2719009
+sha256  6b40ca27c2cb69425fe83a54f7b5fe3cd34e7f24e91bbbd3018431406553cd29
+size    2721620
 entries 277 (237 files)
 root    flosc/
 ```
