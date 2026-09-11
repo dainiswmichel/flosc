@@ -524,27 +524,47 @@ class FLOSC_Chatpack {
         $ai_referral_links = $res ? call_user_func( $res, 'ai_off_topic_links', '', $flow_id ) : flosc_get_setting( 'ai_off_topic_links', '', $flow_id );
         $ai_base_prompt    = $res ? call_user_func( $res, 'ai_base_prompt', '', $flow_id ) : flosc_get_setting( 'ai_base_prompt', '', $flow_id );
         $site_url = function_exists('get_bloginfo') ? get_bloginfo('url') : '';
-        /* Variables expand on this copy, this turn. The stored document keeps
-           the tokens the floscAdmin wrote, and a personality switched between
-           two turns expands against the context of the turn it speaks on. */
-        $profile_context = function_exists( 'flosc_personality_variable_context' )
-            ? flosc_personality_variable_context( $eval_context )
-            : array();
-        $compiled_profile = function_exists( 'flosc_personality_compiled_profile' )
-            ? flosc_personality_compiled_profile( $flow_id, $profile_context )
-            : trim( (string) $ai_base_prompt );
-
-        $personalization = self::build_user_sticky_section($eval_context);
-        if ($compiled_profile !== '' && $personalization !== '') {
-            $compiled_profile = self::insert_user_personalization($compiled_profile, $personalization);
-        }
-
         $public_title = function_exists( 'flosc_flow_public_title' )
             ? flosc_flow_public_title( $flow_id )
             : '';
         $public_tagline = function_exists( 'flosc_flow_public_tagline' )
             ? flosc_flow_public_tagline( $flow_id )
             : '';
+        $compiled_profile = function_exists( 'flosc_personality_compiled_profile' )
+            ? flosc_personality_compiled_profile( $flow_id )
+            : trim( (string) $ai_base_prompt );
+
+        // Expand only the request copy and only when the profile uses a token.
+        // User, page, quiz, and session values come from the context FLOSC has
+        // already built for this turn; this path performs no second user lookup.
+        $profile_tokens = function_exists( 'flosc_personality_variable_tokens' )
+            ? flosc_personality_variable_tokens( $compiled_profile )
+            : array();
+        if ( ! empty( $profile_tokens ) && function_exists( 'flosc_personality_expand_variables' ) ) {
+            $flow_variables = function_exists( 'flosc_personality_flow_variable_context' )
+                ? flosc_personality_flow_variable_context(
+                    $flow_id,
+                    array(
+                        'site_url'         => $site_url,
+                        'public_title'     => $public_title,
+                        'tagline'          => $public_tagline,
+                        'topic_scope'      => $ai_topic_scope,
+                        'personality_name' => $ai_name,
+                        'personality_role' => $ai_role,
+                    ),
+                    $profile_tokens
+                )
+                : array();
+            $turn_variables = function_exists( 'flosc_personality_turn_variable_context' )
+                ? flosc_personality_turn_variable_context( $eval_context )
+                : array();
+            $compiled_profile = flosc_personality_expand_variables( $compiled_profile, array_merge( $flow_variables, $turn_variables ) );
+        }
+
+        $personalization = self::build_user_sticky_section($eval_context);
+        if ($compiled_profile !== '' && $personalization !== '') {
+            $compiled_profile = self::insert_user_personalization($compiled_profile, $personalization);
+        }
 
         if ( $compact ) {
             // No claim about an earlier turn: the attached personality may have

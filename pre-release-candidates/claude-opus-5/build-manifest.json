@@ -1,49 +1,45 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": 32,
+  "candidate_iteration": 34,
   "creator": "Claude Opus 5",
   "status": "BUILT_AWAITING_CAPTAIN_TEST",
   "plugin_version": "8.0.0",
-  "base": "grok-4-6 v31 (8a6b3f5)",
-  "base_note": "Built from the v31 candidate tree, not from an older branch. v31's Sticky for User, oEmbed FAQ entry, Personalization station and flosc.php work are all carried forward unchanged.",
+  "base": "codex-gpt5 v33 (db55a20)",
+  "base_note": "Built from the v33 candidate tree. Everything Codex landed — the variable expander, the token scanner, current_url from browsing_page_url, the designer's variables panel — is carried forward and extended, not replaced.",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "dd647e8ba0f3cace069a56118ebd5bd24253fd346ea3a0bc235e1a8a7646a7b0",
-  "artifact_size_bytes": 2725873,
+  "artifact_sha256": "fe3767b731d28108e22f7b7c4966e6b2e80a2feb0ed63093495229b191f6a7db",
+  "artifact_bytes": 2727148,
   "artifact_entries": 277,
   "tree_files": 289,
-  "what_v32_adds": {
-    "one_line": "Variables in the personality designer: a floscAdmin can type {flow_name} or {score} into any aspect card and it becomes the value when the personality is sent to the model.",
-    "why": "Typing a token used to send the literal seven characters. It matters most on a cross-domain flow, where a personality that says 'this site' names nothing.",
-    "expansion": "On the request copy, every turn, because the attached personality can be switched mid-session and the next turn must read the new one. The stored ai_base_prompt keeps the tokens the floscAdmin wrote.",
-    "no_extra_queries": "flosc_personality_variable_context() maps the evaluation context the chatpack and dispatch already assembled. The four tokens naming the visitor share one get_userdata(), cached, and only when the document contains one of them.",
-    "fast_exit": "A document with no brace returns before any work. Only recognised tokens actually present are resolved. A floscAdmin's own braces are left alone.",
-    "safety": "A value is prompt text, not markup, so escaping is not the protection that matters: braces are stripped so a value cannot introduce a token, control characters are stripped, length is capped at 500.",
-    "unresolved": "An unresolved token substitutes empty. The literal reaching a model is the failure mode that once put \"I'm {personality_name}\" in front of a visitor.",
-    "designer": "A Variables panel above the output pane lists every token with what it resolves to for the flow being edited. Visitor tokens say they resolve at chat time rather than showing a value invented for a screen where no visitor exists. Reuses the existing flosc-acc-var-chip styling — no new CSS."
+  "what_v34_adds": {
+    "unresolved_is_empty": "A recognized variable with no value now leaves nothing behind. v33 substituted the literal 'not available', which the model reads aloud as if it were the answer. Three stand-in strings are gone: 'not available', 'not provided', 'not signed in'.",
+    "kept_deliberately": "'Visitor', 'User', '0' for message_count, and 'guest'/'visitor' for access level stay. Those are answers, not unknowns — a logged-out person really is a Visitor.",
+    "quiz_can_name_its_quiz": "{score:ipa_basics} reads that quiz. Unnamed, {score} means the most recent quiz this person took. Any of the six quiz tokens takes a qualifier, and the same base token can name two different quizzes in one document.",
+    "quiz_identity": "{quiz_id} and {quiz_title} name which quiz the unqualified values came from.",
+    "cost": "A qualified token reads through FLOSC_Bridge_Data_Manager::get_flosc_bridge_data(), which already does per-quiz and most-recent. One lookup per distinct quiz per request, cached, and only reached when such a token is actually in the document.",
+    "malformed": "{score:} matches nothing and is left exactly as written, the same rule already applied to any unrecognized brace."
   },
-  "v31_gate_fixed": "test_candidate_contract.php was RED in v31. It pins the follow-up chatpack call by exact string, and v31 added a third argument to build_identity_section() for Sticky for User without updating it. v32 matches up to the comma. What the gate asserts — compact false, the whole profile every turn — is unchanged.",
-  "files_changed_from_v31": [
+  "files_changed_from_v33": [
     "includes/flosc-personality-library.php",
-    "includes/class-flosc-chatpack.php",
-    "includes/class-ai-chat-dispatch.php",
     "assets/js/flosc-personality-builder.js",
-    "assets/personality-builder/flosc-personality-builder-markup.php",
-    "tests/check_profile_variables.php",
-    "tests/test_candidate_contract.php"
+    "tests/check_profile_variables.php"
   ],
   "verification": {
-    "test_suite": "passed — 28 files, including the new check_profile_variables.php",
+    "test_suite": "passed — 28 files",
     "php_syntax_all_files": "passed",
     "javascript_syntax": "passed",
     "density_nesting": "passed",
-    "readme_wporg_budgets": "passed",
-    "starter_pack_manifest": "passed against the artifact",
     "zip_gates": "passed (277 entries, forbidden-path scan clean, single flosc/ root)",
-    "version_held_at_8_0_0": "passed (flosc.php, FLOSC_VERSION, readme.txt Stable tag)",
+    "version_held_at_8_0_0": "passed",
     "wordpress_plugin_check": "DEFERRED — needs a WordPress install",
-    "live_variable_expansion": "DEFERRED — type a token into a card, save, ask the chat",
+    "live_quiz_qualifier": "DEFERRED — needs a flow with two quizzes and a person who took both",
     "personality_revision": "NOT IN THIS BUILD — the four shipped profiles are unchanged from v31"
+  },
+  "still_open": {
+    "heading_set": "The fourteen slots are agreed and not yet coded: five relabels and two density swaps in SOUL_LAYERS, builder.js. Mission at 12, Traits at 30, Decisions at 56, Exceptions at 62, Workflow at 68, Banned Words to 74, Prosody and Syntax at 84.",
+    "title_alias": "{title}, {public_title}, {product_name} and {app_name} all resolve to the same string on most flows.",
+    "library_entry_gap": "builder.js libraryEntry() computes traits, mission, boundaries and topic_scope; saveToLibrary() sends four keys and not those. That is why those fields have no editor."
   }
 }

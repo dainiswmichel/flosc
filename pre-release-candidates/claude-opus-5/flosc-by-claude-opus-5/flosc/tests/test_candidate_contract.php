@@ -56,14 +56,9 @@ if ( ! function_exists( 'wp_json_encode' ) ) {
 }
 require_once $root . '/includes/flosc-personality-library.php';
 
-/* The compact flag is what this asserts: false means the whole compiled
-   profile goes on a follow-up, not a name-and-role summary. The call carries a
-   third argument now — the turn's context, for Sticky for User and for
-   variable expansion — so the match stops at the comma rather than pinning the
-   whole argument list. Pinning it is why this gate went red in v31. */
 echo "The personality reaches the model whole, every turn\n";
 ok( 'follow-ups send the complete current profile',
-	strpos( $chatpack, "build_identity_section((string) (\$eval_context['flow_id'] ?? ''), false," ) !== false, true );
+	strpos( $chatpack, "build_identity_section((string) (\$eval_context['flow_id'] ?? ''), false, \$eval_context)" ) !== false, true );
 
 echo "\nA failed provider call is distinguishable from a quiet one\n";
 ok( 'dispatch reports a structured outcome',

@@ -4579,39 +4579,74 @@
     renderSpec();
   }
 
-  /*
-   * The variables a card may carry, and what each becomes.
-   *
-   * A floscAdmin typing {flow_name} has no way to know what it resolves to
-   * without this. Flow-scoped tokens show their current value for the flow
-   * being edited; visitor-scoped tokens say they resolve at chat time rather
-   * than showing a value invented for an admin screen where no visitor exists.
-   */
+  /* Show the exact runtime variable contract beside the compiled profile. */
   function renderVariables() {
     const mount = document.getElementById("varMount");
     if (!mount) return;
     const wp = window.floscPersonalityBuilder || {};
     const rows = Array.isArray(wp.variables) ? wp.variables : [];
+    mount.textContent = "";
+
+    const paragraph = function (text, strong) {
+      const p = document.createElement("p");
+      p.className = "figure-readout";
+      if (strong) {
+        const b = document.createElement("strong");
+        b.textContent = text;
+        p.appendChild(b);
+      } else {
+        p.textContent = text;
+      }
+      mount.appendChild(p);
+    };
+
     if (!rows.length) {
-      mount.innerHTML = '<p class="figure-readout">No variables are available for this flow.</p>';
+      paragraph("No variables are available for this flow.", false);
       return;
     }
-    const chip = function (r) {
-      const val = r.scope === "flow"
-        ? (r.value ? esc(r.value) : '<em>empty for this flow</em>')
-        : '<em>resolved at chat time</em>';
-      return '<span class="flosc-acc-var-chip"><code>' + esc(r.token) + '</code> = ' + val +
-        '<span class="small-note"> · ' + esc(r.label) + '</span></span>';
+
+    paragraph(
+      "Type any variable into a card. FLOSC replaces it on the request copy sent to the AI, every turn; the saved personality keeps the variable. A recognized variable with no value becomes nothing at all, so the sentence around it still reads. Unrecognized braces remain unchanged.",
+      false
+    );
+    paragraph(
+      "A quiz variable can name one quiz: {score:ipa_basics} reads that quiz. Unnamed, {score} means the most recent quiz this person took.",
+      false
+    );
+
+    const appendGroup = function (title, group, atRuntime) {
+      paragraph(title, true);
+      const chips = document.createElement("div");
+      chips.className = "flosc-acc-var-chips";
+      group.forEach(function (row) {
+        const chip = document.createElement("span");
+        chip.className = "flosc-acc-var-chip";
+        const code = document.createElement("code");
+        code.textContent = row.token || "";
+        chip.appendChild(code);
+        chip.appendChild(document.createTextNode(" = "));
+        if (atRuntime) {
+          const em = document.createElement("em");
+          em.textContent = "resolved from this turn";
+          chip.appendChild(em);
+        } else {
+          chip.appendChild(document.createTextNode(row.value || "not configured"));
+        }
+        const note = document.createElement("span");
+        note.className = "small-note";
+        note.textContent = " · " + (row.label || "");
+        chip.appendChild(note);
+        chips.appendChild(chip);
+      });
+      mount.appendChild(chips);
     };
-    const flow = rows.filter(function (r) { return r.scope === "flow"; });
-    const visitor = rows.filter(function (r) { return r.scope !== "flow"; });
-    mount.innerHTML =
-      '<p class="figure-readout">Type any of these into a card. They are replaced when the ' +
-      'personality is sent to the model, every turn. What you save keeps the token.</p>' +
-      '<p class="figure-readout"><strong>This flow and this site</strong></p>' +
-      '<div class="flosc-acc-var-chips">' + flow.map(chip).join("") + '</div>' +
-      '<p class="figure-readout"><strong>This visitor, this turn</strong></p>' +
-      '<div class="flosc-acc-var-chips">' + visitor.map(chip).join("") + '</div>';
+
+    appendGroup("This flow and this site", rows.filter(function (row) {
+      return row.scope === "flow";
+    }), false);
+    appendGroup("This visitor, this turn", rows.filter(function (row) {
+      return row.scope !== "flow";
+    }), true);
   }
 
   function render() {

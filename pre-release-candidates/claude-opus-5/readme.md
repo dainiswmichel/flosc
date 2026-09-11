@@ -1,78 +1,65 @@
-# FLOSC 8.0.0 — candidate v32
+# FLOSC 8.0.0 — candidate v34
 
-Built from the v31 candidate tree. Version is 8.0.0 and does not move.
+Built from the v33 candidate tree. Version is 8.0.0 and does not move.
 
     artifact   flosc.zip
-    sha256     dd647e8ba0f3cace069a56118ebd5bd24253fd346ea3a0bc235e1a8a7646a7b0
+    sha256     fe3767b731d28108e22f7b7c4966e6b2e80a2feb0ed63093495229b191f6a7db
     entries    277, single flosc/ root
     source     flosc-by-claude-opus-5/flosc
 
-## What this adds
+## What this changes
 
-**Variables in the personality designer.** A floscAdmin can type `{flow_name}`
-or `{score}` into any aspect card and it becomes the value when the
-personality is sent to the model. Typing a token used to send the literal
-seven characters.
+**An unresolved variable now leaves nothing behind.**
 
-This matters most on a cross-domain flow: a personality that says "this site"
-names nothing, and now it can say `{site_name}` and be right on every domain
-the flow serves.
+v33 substituted the literal string `not available` when a recognized variable
+had no value, so a card reading *"You are helping them with {topic_scope}"*
+reached the model as *"You are helping them with not available"* — which the
+model reads aloud as though it were the answer. Empty leaves the sentence to
+carry itself.
 
-Expansion happens on the request copy, every turn, because the attached
-personality can be switched mid-session and the next turn must read the new
-one. The stored `ai_base_prompt` keeps the tokens as written, so the designer
-still shows what was typed.
+Three stand-in strings are gone: `not available`, `not provided`, and
+`not signed in`. Four stay, because they are answers rather than unknowns — a
+logged-out person really is a `Visitor`, `message_count` really is `0`, and
+`guest` / `visitor` really are access levels.
 
-Nothing opens a query of its own. `flosc_personality_variable_context()` maps
-the evaluation context the chatpack and the dispatch already assembled. The
-four tokens naming the visitor share one `get_userdata()`, cached, and only
-when a document actually contains one of them. A document with no brace
-returns before any work.
+**A quiz variable can name its quiz.**
 
-A substituted value is prompt text, not markup, so escaping is not the
-protection that matters: braces are stripped so a value cannot introduce a
-second token, control characters are stripped, and length is capped at 500.
-An unresolved token substitutes empty.
+    {score:ipa_basics}     that quiz
+    {score}                the most recent quiz this person took
 
-**The designer shows them.** A Variables panel above the output pane lists
-every token with what it resolves to for the flow being edited. Visitor
-tokens say they resolve at chat time rather than showing a value invented for
-a screen where no visitor exists.
+Any of the six quiz tokens takes the qualifier, and the same base token can
+name two quizzes in one document. Two new tokens, `{quiz_id}` and
+`{quiz_title}`, name which quiz the unqualified values came from.
 
-## Carried forward from v31, unchanged
+The backend was already there: `FLOSC_Bridge_Data_Manager::get_flosc_bridge_data()`
+does per-quiz when named and most-recent when not. A qualified token costs one
+lookup per distinct quiz per request, cached, and is only reached when such a
+token is actually in the document.
 
-Sticky for User, the Personalization station at density 1, the oEmbed FAQ
-entry, and the `flosc.php` work. The four shipped personalities are v31's,
-untouched.
+`{score:}` is malformed and is left exactly as written — the same rule already
+applied to any unrecognized brace.
 
-## One gate fixed
+## Carried forward from v33, unchanged
 
-`tests/test_candidate_contract.php` was failing in v31. It pins the follow-up
-chatpack call by exact string, and v31 added a third argument to
-`build_identity_section()` for Sticky for User without updating the match.
-v32 matches up to the comma. What the gate asserts — compact false, so the
-whole profile goes every turn — is unchanged.
+The variable expander and token scanner, `current_url` from
+`browsing_page_url`, the designer's variables panel, Sticky for User, the
+Personalization station, and all four shipped personality profiles.
 
-## Changed from v31
+## Changed from v33
 
-    includes/flosc-personality-library.php        catalog, resolver, context map, expander, boot
-    includes/class-flosc-chatpack.php             passes the turn's context
-    includes/class-ai-chat-dispatch.php           passes the turn's context
-    assets/js/flosc-personality-builder.js        the Variables panel
-    assets/personality-builder/…-markup.php       the panel mount
-    tests/check_profile_variables.php             new gate
-    tests/test_candidate_contract.php             match updated, intent unchanged
+    includes/flosc-personality-library.php   the empty fallback, the qualifier, the quiz resolver
+    assets/js/flosc-personality-builder.js   panel help text: the new rule and the qualifier
+    tests/check_profile_variables.php        the contract, plus seven qualifier cases
 
 ## Verified
 
-All 28 gates pass, PHP lint clean across the tree, JS clean, density nesting
-clean, readme within the wordpress.org budgets, starter-pack manifest checked
-against the artifact, forbidden-path scan clean.
+28 gates pass, PHP lint clean across the tree, JS clean, density nesting
+clean, forbidden-path scan clean, version held at 8.0.0 in both files.
 
-Deferred to a WordPress install: Plugin Check, and typing a token into a card
-to watch it resolve in chat.
+Deferred to a WordPress install: Plugin Check, and a flow with two quizzes to
+watch the qualifier pick the right one.
 
 ## Not in this build
 
-The four shipped personality profiles are unchanged. Filling all thirteen
-headings is separate work.
+The four shipped personality profiles are unchanged. The fourteen-slot heading
+set is agreed and not yet coded.

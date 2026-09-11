@@ -323,12 +323,31 @@ class FLOSC_AI_Chat_Dispatch {
             $prompt .= "Use these configured flow values only when relevant. Do not announce configuration status or direct visitors to the administrator.\n\n";
         }
 
-        $profile_context = function_exists( 'flosc_personality_variable_context' )
-            ? flosc_personality_variable_context( $context )
-            : array();
         $compiled_profile = function_exists( 'flosc_personality_compiled_profile' )
-            ? flosc_personality_compiled_profile( isset( $context['flow_id'] ) ? (string) $context['flow_id'] : null, $profile_context )
+            ? flosc_personality_compiled_profile( isset( $context['flow_id'] ) ? (string) $context['flow_id'] : null )
             : '';
+        $profile_tokens = function_exists( 'flosc_personality_variable_tokens' )
+            ? flosc_personality_variable_tokens( $compiled_profile )
+            : array();
+        if ( ! empty( $profile_tokens ) && function_exists( 'flosc_personality_expand_variables' ) ) {
+            $profile_flow_id = isset( $context['flow_id'] ) ? (string) $context['flow_id'] : null;
+            $flow_variables  = function_exists( 'flosc_personality_flow_variable_context' )
+                ? flosc_personality_flow_variable_context(
+                    $profile_flow_id,
+                    array(
+                        'public_title'     => $product_name,
+                        'tagline'          => $product_tagline,
+                        'personality_name' => $name,
+                        'personality_role' => $role,
+                    ),
+                    $profile_tokens
+                )
+                : array();
+            $turn_variables = function_exists( 'flosc_personality_turn_variable_context' )
+                ? flosc_personality_turn_variable_context( $context )
+                : array();
+            $compiled_profile = flosc_personality_expand_variables( $compiled_profile, array_merge( $flow_variables, $turn_variables ) );
+        }
         if ( $compiled_profile !== '' ) {
             $prompt .= "## Personality\n";
             $prompt .= "The following profile is who you are. Speak as this person. Do not describe how you were made.\n\n";
