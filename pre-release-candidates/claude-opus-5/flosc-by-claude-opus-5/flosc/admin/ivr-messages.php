@@ -1251,13 +1251,47 @@ flosc_tab_header('💬', 'IVR Management');
 </div>
 
 <?php ob_start(); ?>
+function floscAppendAPIResultNode(parent, tagName, text) {
+    const node = tagName ? document.createElement(tagName) : document.createTextNode(String(text));
+    if (tagName) {
+        node.textContent = String(text);
+    }
+    parent.appendChild(node);
+    return node;
+}
+
+function floscAppendAPIResultBreaks(parent, count) {
+    for (let i = 0; i < count; i++) {
+        parent.appendChild(document.createElement('br'));
+    }
+}
+
+function floscBeginAPIResult(parent, icon, title) {
+    parent.textContent = '';
+    floscAppendAPIResultNode(parent, '', icon + ' ');
+    floscAppendAPIResultNode(parent, 'strong', title);
+}
+
+function floscAppendAPIResultLine(parent, label, value) {
+    floscAppendAPIResultNode(parent, 'strong', label);
+    floscAppendAPIResultNode(parent, '', ' ' + String(value));
+    floscAppendAPIResultBreaks(parent, 1);
+}
+
+function floscAppendAPIResponseDetails(parent, data) {
+    const details = document.createElement('details');
+    floscAppendAPIResultNode(details, 'summary', 'Full response');
+    floscAppendAPIResultNode(details, 'pre', JSON.stringify(data, null, 2));
+    parent.appendChild(details);
+}
+
 function floscTestAPI() {
     const resultDiv = document.getElementById('flosc-api-test-result');
     const btn = document.getElementById('flosc-test-api');
     
     resultDiv.style.display = 'block';
     resultDiv.style.background = '#e9ecef';
-    resultDiv.innerHTML = '⏳ Testing API endpoint...';
+    resultDiv.textContent = '⏳ Testing API endpoint...';
     btn.disabled = true;
     
     const apiUrl = '<?php echo esc_js(rest_url('flosc/v1/ivr-messages?phase=freeline')); ?>';
@@ -1273,27 +1307,35 @@ function floscTestAPI() {
                 
                 if (msgCount > 0) {
                     resultDiv.style.background = '#d4edda';
-                    resultDiv.innerHTML = `✅ <strong>API Working!</strong><br><br>` +
-                        `<strong>Messages returned:</strong> ${msgCount}<br>` +
-                        `<strong>Names:</strong> ${msgNames}<br>` +
-                        `<strong>User context:</strong> ${JSON.stringify(data.user_context)}<br><br>` +
-                        `<details><summary>Full response</summary><pre>${JSON.stringify(data, null, 2)}</pre></details>`;
+                    floscBeginAPIResult(resultDiv, '✅', 'API Working!');
+                    floscAppendAPIResultBreaks(resultDiv, 2);
+                    floscAppendAPIResultLine(resultDiv, 'Messages returned:', msgCount);
+                    floscAppendAPIResultLine(resultDiv, 'Names:', msgNames);
+                    floscAppendAPIResultLine(resultDiv, 'User context:', JSON.stringify(data.user_context));
+                    floscAppendAPIResultBreaks(resultDiv, 1);
+                    floscAppendAPIResponseDetails(resultDiv, data);
                 } else {
                     resultDiv.style.background = '#fff3cd';
-                    resultDiv.innerHTML = `⚠️ <strong>API responded but returned 0 messages</strong><br><br>` +
-                        `This usually means condition evaluation is filtering everything out.<br>` +
-                        `<strong>User context:</strong> ${JSON.stringify(data.user_context)}<br><br>` +
-                        `Check that conditions like "is_visitor" are being evaluated correctly.`;
+                    floscBeginAPIResult(resultDiv, '⚠️', 'API responded but returned 0 messages');
+                    floscAppendAPIResultBreaks(resultDiv, 2);
+                    floscAppendAPIResultNode(resultDiv, '', 'This usually means condition evaluation is filtering everything out.');
+                    floscAppendAPIResultBreaks(resultDiv, 1);
+                    floscAppendAPIResultLine(resultDiv, 'User context:', JSON.stringify(data.user_context));
+                    floscAppendAPIResultBreaks(resultDiv, 1);
+                    floscAppendAPIResultNode(resultDiv, '', 'Check that conditions like "is_visitor" are being evaluated correctly.');
                 }
             } else {
                 resultDiv.style.background = '#f8d7da';
-                resultDiv.innerHTML = `❌ <strong>API Error</strong><br><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                floscBeginAPIResult(resultDiv, '❌', 'API Error');
+                floscAppendAPIResultBreaks(resultDiv, 1);
+                floscAppendAPIResultNode(resultDiv, 'pre', JSON.stringify(data, null, 2));
             }
         })
         .catch(error => {
             btn.disabled = false;
             resultDiv.style.background = '#f8d7da';
-            resultDiv.innerHTML = `❌ <strong>Fetch failed:</strong> ${error.message}`;
+            floscBeginAPIResult(resultDiv, '❌', 'Fetch failed:');
+            floscAppendAPIResultNode(resultDiv, '', ' ' + error.message);
         });
 }
 

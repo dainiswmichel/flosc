@@ -118,6 +118,91 @@ trait FLOSC_Magic_Link_Trait {
         exit;
     }
 
+    /**
+     * Hash a MagicLink bearer so transients are not keyed by the raw URL token.
+     *
+     * @param string $token Raw token from the URL.
+     * @return string 64-char hex HMAC, or empty string.
+     */
+    private function flosc_magic_token_hash($token) {
+        $token = (string) $token;
+        if ($token === '') {
+            return '';
+        }
+        $secret = function_exists('flosc_token_secret') ? (string) flosc_token_secret() : 'flosc-magic';
+        return hash_hmac('sha256', $token, $secret);
+    }
+
+    /**
+     * Transient option name for a MagicLink token (hashed).
+     *
+     * @param string $token Raw token.
+     * @return string
+     */
+    private function flosc_magic_transient_key($token) {
+        $hash = $this->flosc_magic_token_hash($token);
+        return $hash === '' ? '' : 'flosc_magic_' . $hash;
+    }
+
+    /**
+     * Load payload by hashed key, then by legacy raw-token key.
+     *
+     * @param string $token Raw token from the URL.
+     * @return array{0:string,1:array|false} Transient key used, payload or false.
+     */
+    private function flosc_magic_load_payload($token) {
+        $hashed = $this->flosc_magic_transient_key($token);
+        if ($hashed !== '') {
+            $payload = get_transient($hashed);
+            if (is_array($payload)) {
+                $stored_hash = isset($payload['token_hash']) ? (string) $payload['token_hash'] : '';
+                if ($stored_hash === '' || hash_equals($stored_hash, $this->flosc_magic_token_hash($token))) {
+                    return array($hashed, $payload);
+                }
+            }
+        }
+        $legacy = 'flosc_magic_' . $token;
+        $payload = get_transient($legacy);
+        if (is_array($payload)) {
+            return array($legacy, $payload);
+        }
+        return array($hashed, false);
+    }
+
+    /**
+     * Delete hashed and legacy transients for a token.
+     *
+     * @param string $token Raw token.
+     * @return void
+     */
+    private function flosc_magic_delete_token_store($token) {
+        $token = (string) $token;
+        if ($token === '') {
+            return;
+        }
+        $hashed = $this->flosc_magic_transient_key($token);
+        if ($hashed !== '') {
+            delete_transient($hashed);
+        }
+        delete_transient('flosc_magic_' . $token);
+    }
+
+    /**
+     * Kind fallback: not a 403, not a ban. Same copy for invalid, rate-limit, two-places.
+     *
+     * @return void
+     */
+    private function flosc_magic_unrecognized() {
+        $login = wp_login_url(home_url('/'));
+        $msg   = __( 'Hey, looks like you\'re trying to use your magic link in a way that our system does not recognize. Please feel free to log in the regular way.', 'flosc' );
+        $link  = __( 'Log in the regular way', 'flosc' );
+        wp_die(
+            '<p>' . esc_html( $msg ) . '</p><p><a href="' . esc_url( $login ) . '">' . esc_html( $link ) . '</a></p>',
+            esc_html__( 'Magic link', 'flosc' ),
+            array( 'response' => 200 )
+        );
+    }
+
     public function handle_login_token() {
         // Auth/callback routing via query string (not a WP form nonce action).
         $get = array();
@@ -190,9 +275,11 @@ trait FLOSC_Magic_Link_Trait {
 
         // Case 0: Guest MagicLink access (existing users only; never creates accounts)
         if (!empty($get['flosc_magic'])) {
-            $token        = sanitize_text_field($get['flosc_magic']);
-            $transient_key = 'flosc_magic_' . $token;
-            $payload      = get_transient($transient_key);
+            $token = sanitize_text_field($get['flosc_magic']);
+            if (!$this->check_rate_limit('magic_consume', 30, 15 * MINUTE_IN_SECONDS)) {
+                $this->flosc_magic_unrecognized();
+            }
+            list($transient_key, $payload) = $this->flosc_magic_load_payload($token);
             $_payload_flow = is_array($payload)
                 ? sanitize_key((string) ($payload['flow_id'] ?? ''))
                 : '';
@@ -204,13 +291,10 @@ trait FLOSC_Magic_Link_Trait {
             $window_days = $this->flosc_magic_link_window_days($_payload_flow);
             $window_ttl  = $window_days * DAY_IN_SECONDS;
 
-            // Invalid or expired token — redirect to offer page or show expired status
+            // Invalid token — kind fallback. Window/use expiry still uses the offer URL.
             if (!$payload || !isset($payload['status'])) {
-                delete_transient($transient_key);
-                if (!empty($offer_url)) {
-                    wp_safe_redirect($offer_url); exit;
-                }
-                wp_safe_redirect(add_query_arg('flosc_guest_status', 'expired', remove_query_arg('flosc_magic'))); exit;
+                $this->flosc_magic_delete_token_store($token);
+                $this->flosc_magic_unrecognized();
             }
 
             $email        = sanitize_email($payload['email']);
@@ -238,7 +322,7 @@ trait FLOSC_Magic_Link_Trait {
                     (!$is_member_user && $payload['use_count'] >= $max_uses)
                 );
                 if ($expired) {
-                    delete_transient($transient_key);
+                    $this->flosc_magic_delete_token_store($token);
                     if (!empty($offer_url)) {
                         wp_safe_redirect($offer_url); exit;
                     }
@@ -273,20 +357,17 @@ trait FLOSC_Magic_Link_Trait {
             }
             if ($user_id <= 0) {
                 // Token without a known account: mint was wrong or data was purged. Fail closed.
-                delete_transient($transient_key);
+                $this->flosc_magic_delete_token_store($token);
                 if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
                     flosc_log('FLOSC MagicLink: refuse login — no existing WP user for token email/user_id');
                 }
-                if (!empty($offer_url)) {
-                    wp_safe_redirect($offer_url); exit;
-                }
-                wp_safe_redirect(add_query_arg('flosc_guest_status', 'error', remove_query_arg('flosc_magic'))); exit;
+                $this->flosc_magic_unrecognized();
             }
 
             $existing_user = get_userdata($user_id);
             if (!$existing_user) {
-                delete_transient($transient_key);
-                wp_safe_redirect(add_query_arg('flosc_guest_status', 'error', remove_query_arg('flosc_magic'))); exit;
+                $this->flosc_magic_delete_token_store($token);
+                $this->flosc_magic_unrecognized();
             }
 
             // MagicLink only for active accounts (email pending must verify first).
@@ -309,6 +390,37 @@ trait FLOSC_Magic_Link_Trait {
             if (!$has_member && !$has_guest && $guest_level !== '' && !$is_privileged && $is_bare) {
                 $existing_user->set_role($guest_level);
             }
+
+            // Two places at once: different IP within 15 minutes fails this click.
+            // Travel later is fine. No geo vendor. Membership is not revoked.
+            $ip = (string) $this->get_client_ip();
+            $last_ip = isset($payload['last_ip']) ? (string) $payload['last_ip'] : '';
+            $last_at = isset($payload['last_at']) ? absint($payload['last_at']) : 0;
+            if (
+                $last_ip !== ''
+                && $ip !== ''
+                && $last_ip !== $ip
+                && $last_at > 0
+                && (time() - $last_at) < (15 * MINUTE_IN_SECONDS)
+            ) {
+                $this->flosc_magic_unrecognized();
+            }
+            $payload['last_ip'] = $ip;
+            $payload['last_at'] = time();
+            if (!isset($payload['token_hash']) || $payload['token_hash'] === '') {
+                $payload['token_hash'] = $this->flosc_magic_token_hash($token);
+            }
+            $hashed_key = $this->flosc_magic_transient_key($token);
+            if ($hashed_key !== '' && $hashed_key !== $transient_key) {
+                delete_transient($transient_key);
+                $transient_key = $hashed_key;
+            }
+            $elapsed_save = isset($payload['first_clicked_at']) ? (time() - absint($payload['first_clicked_at'])) : 0;
+            $ttl_save = $window_ttl;
+            if ($elapsed_save > 0) {
+                $ttl_save = max($window_ttl - $elapsed_save, DAY_IN_SECONDS);
+            }
+            set_transient($transient_key, $payload, $ttl_save);
 
             // Log in the known user only
             wp_set_current_user($user_id);
@@ -864,7 +976,8 @@ trait FLOSC_Magic_Link_Trait {
             $payload['use_count']        = 0;
         }
 
-        $transient_key = 'flosc_magic_' . $token;
+        $payload['token_hash'] = $this->flosc_magic_token_hash($token);
+        $transient_key = $this->flosc_magic_transient_key($token);
         set_transient($transient_key, $payload, $ttl);
         update_user_meta($user_id, '_flosc_magic_link_token', $token);
 
@@ -898,7 +1011,7 @@ trait FLOSC_Magic_Link_Trait {
 
         // Always invalidate the prior token payload so previously sent links cannot be replayed.
         if ($had_token !== '') {
-            delete_transient('flosc_magic_' . $had_token);
+            $this->flosc_magic_delete_token_store($had_token);
         }
 
         $flow_id = sanitize_key((string) get_user_meta($user_id, '_flosc_registration_flow', true));
@@ -932,7 +1045,8 @@ trait FLOSC_Magic_Link_Trait {
             'use_count'        => 0,
         ];
 
-        set_transient('flosc_magic_' . $new_token, $payload, 30 * DAY_IN_SECONDS);
+        $payload['token_hash'] = $this->flosc_magic_token_hash($new_token);
+        set_transient($this->flosc_magic_transient_key($new_token), $payload, 30 * DAY_IN_SECONDS);
         update_user_meta($user_id, '_flosc_magic_link_token', $new_token);
 
         $send_refresh = (bool) apply_filters('flosc_magic_link_send_on_password_change', false, $user_id, $flow_id);
@@ -1582,7 +1696,7 @@ trait FLOSC_Magic_Link_Trait {
 
         $sent = $this->send_guest_link_email($email, $token, $flow_id);
         if (!$sent) {
-            delete_transient('flosc_magic_' . $token);
+            $this->flosc_magic_delete_token_store($token);
             wp_send_json_error(['message' => 'Email could not be sent. Check your mail configuration.']);
         }
 
@@ -1660,7 +1774,7 @@ trait FLOSC_Magic_Link_Trait {
 
         $sent = $this->send_guest_link_email($email, $token, $flow_id);
         if (!$sent) {
-            delete_transient('flosc_magic_' . $token);
+            $this->flosc_magic_delete_token_store($token);
             wp_safe_redirect($this->build_guest_request_admin_redirect('approve_send_failed'));
             exit;
         }

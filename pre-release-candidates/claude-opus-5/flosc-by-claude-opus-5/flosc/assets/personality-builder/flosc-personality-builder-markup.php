@@ -176,6 +176,10 @@ if ( ! defined( 'ABSPATH' ) ) {
       </div>
       <p class="figure-readout output-view-note" id="outViewNote"></p>
       <p class="figure-readout output-note">Influences name the works and sources this character draws on. Included, they are part of the personality like anything else here. Unchecked, they stay in the builder state and the design copy and are never sent.</p>
+      <details class="acc" id="varPanel">
+        <summary class="row-sum"><span class="row-lab">Variables you can type into any card</span></summary>
+        <div id="varMount"></div>
+      </details>
       <div class="stats" id="stats"></div>
       <div id="lintMount"></div>
       <pre class="out" id="out"></pre>

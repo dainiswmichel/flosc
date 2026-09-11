@@ -66,49 +66,53 @@ function flosc_activate() {
             }
         } else {
             // Create minimal working ivr.md
-            $minimal_ivr = <<<'MD'
-# FLOSC IVR Configuration
-
-## MessageStyle: pill
-Description: Superlight chat bubble style
-.flosc-style-pill {
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 18px;
-  padding: 8px 16px;
-  font-size: 14px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
-  backdrop-filter: blur(4px);
-}
-.flosc-style-pill:hover {
-  background: rgba(255, 255, 255, 0.95);
-  border-color: rgba(0, 0, 0, 0.12);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-}
-
----
-
-# Freeline Messages
-
-## Welcome Message
-MessageName: welcome_freeline_001
-MessageType: auto
-MessageContent: Hi! I'm your {product_name} assistant. Ready to get started?
-MessageConditions: first_show_session && !logged_in
-
-## Get Started
-MessageName: get_started_001
-MessageType: suggested_user_autoprompt
-MessageStyle: pill
-Icon: 🚀
-UserInput: Get started
-MessageContent: Great! Let's begin with a quick quiz to see where you stand.
-MessageConditions: !quiz_taken
-MD;
+            $minimal_ivr = implode(
+                "\n",
+                array(
+                    '# FLOSC IVR Configuration',
+                    '',
+                    '## MessageStyle: pill',
+                    'Description: Superlight chat bubble style',
+                    '.flosc-style-pill {',
+                    '  background: rgba(255, 255, 255, 0.7);',
+                    '  border: 1px solid rgba(0, 0, 0, 0.08);',
+                    '  border-radius: 18px;',
+                    '  padding: 8px 16px;',
+                    '  font-size: 14px;',
+                    '  display: inline-flex;',
+                    '  align-items: center;',
+                    '  gap: 6px;',
+                    '  cursor: pointer;',
+                    '  transition: all 0.2s;',
+                    '  backdrop-filter: blur(4px);',
+                    '}',
+                    '.flosc-style-pill:hover {',
+                    '  background: rgba(255, 255, 255, 0.95);',
+                    '  border-color: rgba(0, 0, 0, 0.12);',
+                    '  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);',
+                    '}',
+                    '',
+                    '---',
+                    '',
+                    '# Freeline Messages',
+                    '',
+                    '## Welcome Message',
+                    'MessageName: welcome_freeline_001',
+                    'MessageType: auto',
+                    'MessageContent: Hi! I\'m your {product_name} assistant. Ready to get started?',
+                    'MessageConditions: first_show_session && !logged_in',
+                    '',
+                    '## Get Started',
+                    'MessageName: get_started_001',
+                    'MessageType: suggested_user_autoprompt',
+                    'MessageStyle: pill',
+                    'Icon: 🚀',
+                    'UserInput: Get started',
+                    'MessageContent: Great! Let\'s begin with a quick quiz to see where you stand.',
+                    'MessageConditions: !quiz_taken',
+                    '',
+                )
+            );
             // Pass 5: seed only under uploads via flosc_write_data_file.
             if (function_exists('flosc_write_data_file')) {
                 flosc_write_data_file($ivr_file, $minimal_ivr);

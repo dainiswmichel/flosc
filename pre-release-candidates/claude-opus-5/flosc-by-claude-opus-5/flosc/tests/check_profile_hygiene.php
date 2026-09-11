@@ -37,6 +37,25 @@ $builder = (string) file_get_contents( $root . '/assets/js/flosc-personality-bui
 $markup  = (string) file_get_contents( $root . '/assets/personality-builder/flosc-personality-builder-markup.php' );
 $library = (string) file_get_contents( $root . '/includes/flosc-personality-library.php' );
 
+if ( ! defined( 'ABSPATH' ) ) {
+	define( 'ABSPATH', $root . '/' );
+}
+if ( ! defined( 'FLOSC_PLUGIN_DIR' ) ) {
+	define( 'FLOSC_PLUGIN_DIR', $root . '/' );
+}
+if ( ! function_exists( 'add_action' ) ) {
+	function add_action( ...$args ) {}
+}
+if ( ! function_exists( 'add_filter' ) ) {
+	function add_filter( ...$args ) {}
+}
+if ( ! function_exists( 'wp_json_encode' ) ) {
+	function wp_json_encode( $value, $flags = 0 ) {
+		return json_encode( $value, $flags );
+	}
+}
+require_once $root . '/includes/flosc-personality-library.php';
+
 // The compiler only. What the rest of the file says about these strings in a
 // comment or a form label is not what reaches a provider.
 preg_match( '/function compilePrompt\(withMetrics\) \{(.*?)\n  \}/s', $builder, $m );
@@ -91,9 +110,15 @@ ok( '  then the identity line as prose',
 ok( '  then the speak-as line',
 	strpos( (string) $compile, 'out.push("Speak as this person. Do not discuss how you were made.");' ) !== false, true );
 
-$library = (string) file_get_contents( $root . '/includes/flosc-personality-library.php' );
-preg_match_all( "/'ai_base_prompt'\s*=>\s*<<<'PROMPT'\n(.*?)\nPROMPT,/s", $library, $shipped );
-foreach ( $shipped[1] as $body ) {
+$shipped = array_values(
+	array_map(
+		static function ( $row ) {
+			return (string) ( $row['ai_base_prompt'] ?? '' );
+		},
+		flosc_personality_library_defaults()
+	)
+);
+foreach ( $shipped as $body ) {
 	$lines = explode( "\n", $body );
 	$who   = isset( $lines[0] ) ? trim( str_replace( '# Personality profile:', '', $lines[0] ) ) : '?';
 	ok( $who . ': opens with the heading',

@@ -44,6 +44,13 @@ class FLOSC_AI_Chat_Dispatch {
         // v1.9.5: Unified admin feedback — reads rated chat logs from DB
         $feedback_prompt = $this->build_feedback_prompt();
 
+        $user_sticky_content = function_exists('flosc_get_user_sticky_prompt')
+            ? flosc_get_user_sticky_prompt($context['user_id'] ?? 0, $context)
+            : '';
+        $user_sticky_section = $user_sticky_content !== ''
+            ? "# 1 Personalization\n\n" . $user_sticky_content
+            : '';
+
         // v3.0.5: AI-interpretation offer phrases — when the user's message
         // semantically matches one of these phrases, AI should include the action tag.
         $offer_phrase_section = '';
@@ -238,6 +245,7 @@ class FLOSC_AI_Chat_Dispatch {
         // 6. Merge all sections
         $sections = array_filter([
             $identity_prompt,
+            $user_sticky_section,
             $flosc_process,
             $phase_prompt,
             $orientation_content ? "## Knowledge Base\n" . $orientation_content : '',
@@ -315,8 +323,11 @@ class FLOSC_AI_Chat_Dispatch {
             $prompt .= "Use these configured flow values only when relevant. Do not announce configuration status or direct visitors to the administrator.\n\n";
         }
 
+        $profile_context = function_exists( 'flosc_personality_variable_context' )
+            ? flosc_personality_variable_context( $context )
+            : array();
         $compiled_profile = function_exists( 'flosc_personality_compiled_profile' )
-            ? flosc_personality_compiled_profile()
+            ? flosc_personality_compiled_profile( isset( $context['flow_id'] ) ? (string) $context['flow_id'] : null, $profile_context )
             : '';
         if ( $compiled_profile !== '' ) {
             $prompt .= "## Personality\n";

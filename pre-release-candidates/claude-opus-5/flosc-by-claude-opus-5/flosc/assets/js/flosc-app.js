@@ -6634,6 +6634,28 @@ class floscApp {
         }, 50);
     }
 
+    _canHearQuizAudio() {
+        return this.state === 'member' || this.state === 'admin';
+    }
+
+    _announceQuizAudioAccess() {
+        if (this.state === 'visitor') {
+            return;
+        }
+        if (this._canHearQuizAudio()) {
+            const base = String(this.config.profileUrl || '').replace(/\/?$/, '/');
+            if (base && base !== '/') {
+                this.addMessage(
+                    'assistant',
+                    'Listen to your recordings on your <a href="' + this.escapeHtml(base + 'flosc_quiz_tab/') + '">Quiz Results</a> tab.',
+                    true
+                );
+            }
+            return;
+        }
+        this.addMessage('assistant', 'Your recordings are saved. Become a member to listen to them.', false);
+    }
+
     showIpaPhraseResult(data, audioUrl, phrase, phraseNum) {
         const words = data.words || [{ word: data.target_text, expected_ipa: data.expected_ipa, phonemes: data.phonemes }];
         const allPh = words.flatMap(w => w.phonemes);
@@ -6648,7 +6670,9 @@ class floscApp {
 
         let h = `<div class="flosc-ipa-result">`;
         h += `<div class="flosc-ipa-result-header"><span class="flosc-ipa-result-phrase">Phrase ${phraseNum}: ${this.escapeHtml(phrase)}</span></div>`;
-        h += `<div class="flosc-ipa-playback"><audio controls src="${audioUrl}"></audio></div>`;
+        if (this._canHearQuizAudio() && audioUrl) {
+            h += `<div class="flosc-ipa-playback"><audio controls src="${audioUrl}"></audio></div>`;
+        }
         h += `<div class="flosc-ipa-summary-line">${words.length} word${words.length > 1 ? 's' : ''}, ${total} phonemes &middot; avg ${(avg * 100).toFixed(0)}% &middot; <span class="flosc-ipa-c-high">${high} HIGH</span> &middot; <span class="flosc-ipa-c-med">${med} MED</span> &middot; <span class="flosc-ipa-c-low">${low} LOW</span></div>`;
 
         words.forEach(w => {
@@ -6726,7 +6750,10 @@ class floscApp {
 
         const introMsg = this.config.audioQuizResultsMessage || 'Welcome! Here are your assessment results.';
         this.addMessage('assistant', introMsg, false);
-        setTimeout(() => { this.addMessage('assistant', summary, true); }, 200);
+        setTimeout(() => {
+            this.addMessage('assistant', summary, true);
+            this._announceQuizAudioAccess();
+        }, 200);
 
         // Per-phrase accordions — each phrase is a collapsible <details> block
         setTimeout(() => {
@@ -6851,6 +6878,7 @@ class floscApp {
 
             h += `</div>`;
             this.addMessage('assistant', h, true);
+            this._announceQuizAudioAccess();
 
             // Admin detail: per-phrase accordion with word-level phoneme scores
             if (this.state === 'admin' || (this.user && this.user.isAdmin)) {

@@ -689,6 +689,87 @@ class FLOSC_Framework {
         return $this->email_service->save_newsletter_profile_field($user_id);
     }
 
+    /**
+     * User-profile textarea only. Enable lives on the personality (AI tab, third row).
+     *
+     * @param WP_User $user User being edited.
+     * @return void
+     */
+    public function render_user_sticky_profile_field($user) {
+        if (!($user instanceof WP_User) || !current_user_can('edit_users')) {
+            return;
+        }
+        $sticky = get_user_meta($user->ID, '_flosc_user_sticky', true);
+        $enabled_labels = function_exists('flosc_get_user_sticky_enabled_personalities')
+            ? flosc_get_user_sticky_enabled_personalities()
+            : array();
+        $available = !empty($enabled_labels);
+        ?>
+        <h2><?php echo esc_html__('FLOSC', 'flosc'); ?></h2>
+        <table class="form-table" role="presentation">
+            <tr>
+                <th><label for="flosc_user_sticky"><?php echo esc_html__('Sticky for User', 'flosc'); ?></label></th>
+                <td>
+                    <?php wp_nonce_field('flosc_save_user_sticky_' . $user->ID, 'flosc_user_sticky_nonce'); ?>
+                    <p>
+                    <textarea name="flosc_user_sticky" id="flosc_user_sticky" rows="6" class="large-text code" <?php disabled(!$available); ?>><?php echo esc_textarea((string) $sticky); ?></textarea>
+                    </p>
+                    <?php if ($available) : ?>
+                    <p class="description">
+                        <strong><?php echo esc_html__('This is a private message to the configured AI API about how it should communicate with this specific user.', 'flosc'); ?></strong>
+                        <?php echo esc_html__('The attached personality remains the AI’s identity and voice. This text is never displayed verbatim to the user. Do not put passwords or API keys here.', 'flosc'); ?>
+                    </p>
+                    <p class="description"><strong><?php echo esc_html__('Enabled on personalities:', 'flosc'); ?></strong> <?php echo esc_html(implode(', ', $enabled_labels)); ?></p>
+                    <p class="description">
+                        <?php echo esc_html__('Variables:', 'flosc'); ?>
+                        <code>{userName}</code>, <code>{firstName}</code>, <code>{lastName}</code>,
+                        <code>{email}</code>, <code>{userId}</code>, <code>{accessLevel}</code>,
+                        <code>{memberLevel}</code>, <code>{quizScore}</code>, <code>{weakestPhonemes}</code>,
+                        <code>{flowName}</code>, <code>{siteName}</code>.
+                        <?php echo esc_html__('Unknown variables remain unchanged so typing errors are visible.', 'flosc'); ?>
+                    </p>
+                    <p class="description">
+                        <?php echo esc_html__('Example:', 'flosc'); ?>
+                        <code><?php echo esc_html__('{userName} likes the Dad Jokes Dan personality and needs encouragement to take the lesson on the W sound.', 'flosc'); ?></code>
+                    </p>
+                    <?php else : ?>
+                    <p class="description">
+                        <?php echo esc_html__('To enable personalized messaging for this user, enable “Sticky for Users” under Attached Personality Settings.', 'flosc'); ?>
+                    </p>
+                    <?php endif; ?>
+                </td>
+            </tr>
+        </table>
+        <?php
+    }
+
+    /**
+     * Save the user-profile sticky note. Enable is not saved here.
+     *
+     * @param int $user_id User ID.
+     * @return void
+     */
+    public function save_user_sticky_profile_field($user_id) {
+        $user_id = absint($user_id);
+        if ($user_id <= 0 || !current_user_can('edit_users') || !current_user_can('edit_user', $user_id)) {
+            return;
+        }
+        if (!isset($_POST['flosc_user_sticky_nonce'])
+            || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['flosc_user_sticky_nonce'])), 'flosc_save_user_sticky_' . $user_id)) {
+            return;
+        }
+        if (!isset($_POST['flosc_user_sticky'])) {
+            return;
+        }
+        $sticky = sanitize_textarea_field(wp_unslash($_POST['flosc_user_sticky']));
+        $sticky = substr($sticky, 0, 4000);
+        if ($sticky === '') {
+            delete_user_meta($user_id, '_flosc_user_sticky');
+            return;
+        }
+        update_user_meta($user_id, '_flosc_user_sticky', $sticky);
+    }
+
     private function send_due_series_followups($user, $prefix, $anchor_ts, $sent_meta_key, $flow_id) {
         return $this->email_service->send_due_series_followups($user, $prefix, $anchor_ts, $sent_meta_key, $flow_id);
     }
@@ -1445,6 +1526,10 @@ class FLOSC_Framework {
         add_action('edit_user_profile', [$this, 'render_newsletter_profile_field']);
         add_action('personal_options_update', [$this, 'save_newsletter_profile_field']);
         add_action('edit_user_profile_update', [$this, 'save_newsletter_profile_field']);
+        add_action('show_user_profile', [$this, 'render_user_sticky_profile_field']);
+        add_action('edit_user_profile', [$this, 'render_user_sticky_profile_field']);
+        add_action('personal_options_update', [$this, 'save_user_sticky_profile_field']);
+        add_action('edit_user_profile_update', [$this, 'save_user_sticky_profile_field']);
         add_action('flosc_guest_followup_cron', [$this, 'run_guest_followup_emails']);
         if (!wp_next_scheduled('flosc_guest_followup_cron')) {
             wp_schedule_event(time(), 'daily', 'flosc_guest_followup_cron');
@@ -1535,6 +1620,10 @@ class FLOSC_Framework {
 
         // v8.0.0: BuddyBoss/BuddyPress "Quiz Results" profile tab
         add_action('bp_setup_nav', [$this, 'setup_buddyboss_quiz_tab'], 100);
+
+        // Historical member/guest role renames on this install (pronunciation_learners ↔ lesaep_learners).
+        add_filter('flosc_member_level_alias_groups', [$this, 'member_level_alias_groups']);
+        add_filter('flosc_guest_level_slugs_to_clear_on_member_grant', [$this, 'guest_level_slugs_to_clear_on_member_grant'], 10, 2);
     }
     
     /**
@@ -1964,8 +2053,6 @@ The Team',
         return $value;
     }
 
-
-    
     /**
      * v8.0.3: Store quiz score with quiz_id tracking for multi-quiz support
      */
@@ -2019,10 +2106,15 @@ The Team',
             $attempts = [];
         }
         
+        $attempt_session = sanitize_text_field((string) ($score_data['session_id'] ?? ''));
+        if ($attempt_session === '') {
+            $attempt_session = $this->resolve_quiz_session_id($score_data);
+        }
         $attempts[] = [
             'quiz_id' => $quiz_id,
             'score' => $score,
             'timestamp' => current_time('mysql'),
+            'session_id' => $attempt_session,
         ];
         
         update_user_meta($user_id, '_flosc_quiz_attempts', $attempts);
@@ -3399,7 +3491,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
     /**
      * Render the existing single-session result card format for one quiz payload.
      */
-    private function render_session_result_card($user_id, $quiz_data, $is_guest_user, $profile_completed) {
+    private function render_session_result_card($user_id, $quiz_data, $is_guest_user, $profile_completed, $can_play_audio = false) {
         if (empty($quiz_data) || !is_array($quiz_data)) {
             return;
         }
@@ -3434,7 +3526,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
             echo '</div>';
         }
 
-        $this->render_phrase_breakdown_for_quiz_data($user_id, $quiz_data, $is_guest_user, $profile_completed);
+        $this->render_phrase_breakdown_for_quiz_data($user_id, $quiz_data, $is_guest_user, $profile_completed, $can_play_audio);
     }
 
 
@@ -8460,12 +8552,12 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
         }
         
         // v1.3.8: Get flow context from request (same pattern as handle_chat)
-        $flow_id = sanitize_text_field($request->get_param('flow_id') ?? '');
+        $flow_id = $this->flosc_request_flow_stem($request);
         $ivr_file = sanitize_file_name($request->get_param('ivr_file') ?? '');
         $ivr_source = 'unknown'; // Track source for debugging
         
         // Get user context
-        $user_context = $this->user_access_manager->get_user_context();
+        $user_context = $this->user_access_manager->get_user_context(null, $flow_id);
         
         // v9.2.7: Add session-based defaults (frontend handles actual session logic)
         // Backend is permissive - returns messages that COULD show
@@ -8489,7 +8581,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
         $is_member = !empty($user_context['is_member'])
             || (isset($user_context['access_level']) && in_array((string) $user_context['access_level'], ['member', 'full'], true));
         if (!$is_member && is_user_logged_in() && $this->member_access) {
-            $is_member = (bool) $this->member_access->is_member(get_current_user_id());
+            $is_member = (bool) $this->member_access->is_member(get_current_user_id(), $flow_id);
         }
         $is_admin = current_user_can('manage_options');
 
@@ -8992,6 +9084,13 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
         // wordIpa: reference IPA dictionary (espeak, mw, da1ni5 for each word) — sanitize keys/values.
         if (!empty($quiz_data['wordIpa']) && is_array($quiz_data['wordIpa'])) {
             $score_data['word_ipa'] = $this->flosc_sanitize_quiz_nested_value($quiz_data['wordIpa'], 0, 5);
+        }
+
+        if ($score_data['session_id'] === '') {
+            $score_data['session_id'] = $this->resolve_quiz_session_id($score_data);
+        }
+        if ($temp_id === '' && $score_data['session_id'] !== '') {
+            $temp_id = $score_data['session_id'];
         }
 
         // Store in user meta via existing store_quiz_score()
@@ -10978,12 +11077,15 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             return $phase;
         }
         $type = sanitize_text_field($request->get_param('type')); // auto, suggested_user_autoprompt, offer
+        $flow_id = $this->flosc_request_flow_stem($request);
+        $ivr_file = sanitize_file_name($request->get_param('ivr_file') ?? '');
 
         // Build context
         require_once FLOSC_PLUGIN_DIR . 'includes/class-condition-evaluator.php';
         $context = FLOSC_Condition_Evaluator::build_context(
             is_user_logged_in() ? get_current_user_id() : null,
             [
+                'flow_id' => $flow_id,
                 'message_count' => intval($request->get_param('message_count') ?? 0),
                 'inactive_seconds' => intval($request->get_param('inactive_seconds') ?? 0),
                 'session_seconds' => intval($request->get_param('session_seconds') ?? 0),
@@ -11001,8 +11103,6 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             );
         }
 
-        $flow_id = sanitize_text_field($request->get_param('flow_id') ?? '');
-        $ivr_file = sanitize_file_name($request->get_param('ivr_file') ?? '');
         $config = flosc_resolve_flow_runtime($flow_id, $ivr_file);
         $messages = flosc_flow_phase_messages($config, $phase);
 
@@ -11075,7 +11175,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
 
         // v8.0.0: Per-session storage — find audio dir via session_id in user meta
         $quiz_data = get_user_meta($user_id, '_flosc_last_quiz_data', true);
-        $sess_id = is_array($quiz_data) ? ($quiz_data['session_id'] ?? '') : '';
+        $sess_id = $this->resolve_quiz_session_id(is_array($quiz_data) ? $quiz_data : []);
         $meta_path = '';
         if ($sess_id && preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $sess_id)) {
             $session_dir = $user_audio_dir . '/sessions/' . $sess_id;
@@ -11153,7 +11253,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
                     $audio_url = admin_url('admin-ajax.php') . '?' . http_build_query([
                         'action' => 'flosc_serve_user_audio',
                         'user_id' => $user_id,
-                        'session_id' => $sess_id,
+                        'flosc_sid' => $sess_id,
                         'file' => $file,
                     ]);
 
@@ -11196,17 +11296,19 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         $expires     = absint( (string) filter_input( INPUT_GET, 'exp', FILTER_SANITIZE_NUMBER_INT ) );
         $sig_raw     = filter_input( INPUT_GET, 'sig', FILTER_UNSAFE_RAW );
         $sig         = is_string( $sig_raw ) ? strtolower( preg_replace( '/[^a-f0-9]/', '', wp_unslash( $sig_raw ) ) ) : '';
-        $session_raw = filter_input( INPUT_GET, 'session_id', FILTER_UNSAFE_RAW );
+        $session_raw = filter_input( INPUT_GET, 'flosc_sid', FILTER_UNSAFE_RAW );
+        if ( ! is_string( $session_raw ) || $session_raw === '' ) {
+            $session_raw = filter_input( INPUT_GET, 'session_id', FILTER_UNSAFE_RAW );
+        }
         $session_id  = is_string( $session_raw ) ? sanitize_text_field( wp_unslash( $session_raw ) ) : '';
 
         if (!$user_id || !$file) {
             wp_die('Missing parameters', 400);
         }
 
-        $has_valid_sig = $this->is_valid_audio_access_signature($user_id, $session_id, $file, $expires, $sig);
-
-        // Allow owner/admin access, or a valid short-lived signed URL.
-        if (!$has_valid_sig && !current_user_can('manage_options') && get_current_user_id() !== $user_id) {
+        // Stream: paid member listening to their own files, or an admin (wp-admin).
+        // Visitors, guests, and signed URLs without that session are 403.
+        if (!$this->viewer_can_stream_member_audio($user_id)) {
             wp_die('Unauthorized', 403);
         }
 
@@ -11257,6 +11359,279 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
     }
 
     /**
+     * Historical same-product role pairs (old pronunciation_* names ↔ current lesaep_* names).
+     * Empty on installs that never created those WP roles.
+     *
+     * @param array $groups
+     * @return array
+     */
+    public function member_level_alias_groups($groups) {
+        if (!is_array($groups)) {
+            $groups = [];
+        }
+        if (get_role('lesaep_learners') || get_role('pronunciation_learners')) {
+            $groups[] = ['pronunciation_learners', 'lesaep_learners'];
+        }
+        if (get_role('guest_lesaep_learner') || get_role('guest_pronunciation_learner')) {
+            $groups[] = ['guest_pronunciation_learner', 'guest_lesaep_learner'];
+        }
+        return $groups;
+    }
+
+    /**
+     * Guest roles to drop when granting a paid member level.
+     *
+     * @param array  $slugs
+     * @param string $member_level
+     * @return array
+     */
+    public function guest_level_slugs_to_clear_on_member_grant($slugs, $member_level) {
+        if (!is_array($slugs)) {
+            $slugs = [];
+        }
+        $member_level = sanitize_key((string) $member_level);
+        $paid = ['lesaep_learners', 'pronunciation_learners'];
+        if (in_array($member_level, $paid, true)) {
+            $slugs = array_merge($slugs, ['guest_lesaep_learner', 'guest_pronunciation_learner']);
+        }
+        return array_values(array_unique(array_filter(array_map('sanitize_key', $slugs))));
+    }
+
+    /**
+     * Guest role slugs that count as guest on the quiz profile tab.
+     *
+     * @param string $guest_level Current flow default_guest_level.
+     * @return string[]
+     */
+    private function guest_level_slugs_for_check($guest_level) {
+        $guest_level = sanitize_key((string) $guest_level);
+        $slugs = $guest_level !== '' ? [$guest_level] : [];
+        if (class_exists('FLOSC_Member_Access') && $guest_level !== '') {
+            $slugs = array_merge($slugs, FLOSC_Member_Access::instance()->get_level_aliases($guest_level));
+        }
+        return array_values(array_unique(array_filter($slugs)));
+    }
+
+    /**
+     * Paid membership on any flow, including historical learner role names.
+     *
+     * @param int $user_id
+     * @return bool
+     */
+    private function user_has_paid_membership($user_id) {
+        $user_id = absint($user_id);
+        if ($user_id <= 0) {
+            return false;
+        }
+        if (function_exists('flosc') && is_object(flosc()) && method_exists(flosc(), 'sale')) {
+            $sale = flosc()->sale();
+            if ($sale && method_exists($sale, 'access') && method_exists($sale->access(), 'is_member')) {
+                if ($sale->access()->is_member($user_id)) {
+                    return true;
+                }
+            }
+        }
+        if (class_exists('FLOSC_Member_Access')) {
+            $ma = FLOSC_Member_Access::instance();
+            if ($ma->is_member($user_id)) {
+                return true;
+            }
+            foreach ((array) $ma->get_user_levels($user_id) as $level) {
+                $level = sanitize_key((string) $level);
+                if ($level !== '' && strpos($level, 'guest') === false) {
+                    return true;
+                }
+            }
+            foreach (['lesaep_learners', 'pronunciation_learners'] as $level) {
+                if ($ma->has_level($user_id, $level)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Front-end quiz tab: only the paid member owner hears their recordings.
+     * Visitors and guests never do — including an admin looking at the public profile.
+     *
+     * @param int $profile_user_id Profile owner.
+     * @return bool
+     */
+    private function viewer_can_play_member_audio($profile_user_id) {
+        if (!is_user_logged_in()) {
+            return false;
+        }
+        $profile_user_id = absint($profile_user_id);
+        $viewer = get_current_user_id();
+        if ($profile_user_id <= 0 || $viewer !== $profile_user_id) {
+            return false;
+        }
+        return $this->user_has_paid_membership($profile_user_id);
+    }
+
+    /**
+     * Audio stream: member owner, or admin (wp-admin user profile).
+     *
+     * @param int $profile_user_id Profile owner whose files are requested.
+     * @return bool
+     */
+    private function viewer_can_stream_member_audio($profile_user_id) {
+        if (current_user_can('manage_options')) {
+            return true;
+        }
+        return $this->viewer_can_play_member_audio($profile_user_id);
+    }
+
+    /**
+     * Session id from quiz payload — top-level, else nested STT phrase data.
+     *
+     * @param array $quiz_data
+     * @return string
+     */
+    private function resolve_quiz_session_id($quiz_data) {
+        if (!is_array($quiz_data)) {
+            return '';
+        }
+        $candidates = [];
+        $top = sanitize_text_field((string) ($quiz_data['session_id'] ?? ''));
+        if ($top !== '') {
+            $candidates[] = $top;
+        }
+        foreach ((array) ($quiz_data['phrase_results'] ?? []) as $pr) {
+            if (!is_array($pr)) {
+                continue;
+            }
+            $nested = $pr['data']['session_id'] ?? $pr['session_id'] ?? '';
+            if (is_string($nested) && $nested !== '') {
+                $candidates[] = sanitize_text_field($nested);
+            }
+        }
+        foreach ($candidates as $sid) {
+            if (preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $sid)) {
+                return $sid;
+            }
+        }
+        return '';
+    }
+
+    /**
+     * Download phrase audio from the pronunciation API into flosc-users/{id}/sessions/{sid}/.
+     *
+     * @param int    $user_id
+     * @param string $session_id
+     * @param int    $phrase_count
+     * @return bool
+     */
+    private function ensure_user_session_audio_files($user_id, $session_id, $phrase_count = 5) {
+        $user_id = absint($user_id);
+        $session_id = sanitize_text_field((string) $session_id);
+        $phrase_count = max(1, min(20, intval($phrase_count)));
+        if ($user_id <= 0 || !preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $session_id)) {
+            return false;
+        }
+
+        $upload_dir = wp_upload_dir();
+        $user_dir = $upload_dir['basedir'] . '/flosc-users/' . $user_id;
+        $session_dir = $user_dir . '/sessions/' . $session_id;
+
+        $have = 0;
+        if (is_dir($session_dir)) {
+            for ($n = 1; $n <= $phrase_count; $n++) {
+                foreach (['mp4', 'm4a', 'wav', 'webm', 'ogg'] as $ext) {
+                    if (file_exists($session_dir . '/phrase-' . $n . '.' . $ext)) {
+                        $have++;
+                        break;
+                    }
+                }
+            }
+            if ($have >= $phrase_count) {
+                return true;
+            }
+        }
+
+        $lock_key = 'flosc_audio_pull_' . $user_id . '_' . md5($session_id);
+        if (get_transient($lock_key)) {
+            return $have > 0;
+        }
+        set_transient($lock_key, 1, 2 * MINUTE_IN_SECONDS);
+
+        $api_base = untrailingslashit((string) flosc_get_setting('ipa_api_base_url', ''));
+        if ($api_base === '') {
+            return false;
+        }
+
+        if (!file_exists($user_dir)) {
+            wp_mkdir_p($user_dir);
+            if (isset($this->filesystem) && is_object($this->filesystem)) {
+                $this->filesystem->protect_uploads_dir_with_htaccess($user_dir);
+            }
+        }
+        wp_mkdir_p($session_dir);
+
+        $session_phrases = [];
+        for ($n = 1; $n <= $phrase_count; $n++) {
+            $exists = false;
+            foreach (['mp4', 'm4a', 'wav', 'webm', 'ogg'] as $ext) {
+                if (file_exists($session_dir . '/phrase-' . $n . '.' . $ext)) {
+                    $session_phrases[] = [
+                        'num' => $n,
+                        'file' => 'phrase-' . $n . '.' . $ext,
+                        'format' => $ext,
+                    ];
+                    $exists = true;
+                    break;
+                }
+            }
+            if ($exists) {
+                continue;
+            }
+
+            $audio_resp = flosc_safe_remote_request('GET', $api_base . '/session/' . $session_id . '/audio/' . $n, [
+                'timeout' => 20,
+            ]);
+            if (is_wp_error($audio_resp) || wp_remote_retrieve_response_code($audio_resp) !== 200) {
+                continue;
+            }
+            $body = wp_remote_retrieve_body($audio_resp);
+            if (!is_string($body) || $body === '') {
+                continue;
+            }
+            $content_type = (string) wp_remote_retrieve_header($audio_resp, 'content-type');
+            $ext = 'webm';
+            if (strpos($content_type, 'mp4') !== false || strpos($content_type, 'm4a') !== false) {
+                $ext = 'mp4';
+            } elseif (strpos($content_type, 'ogg') !== false) {
+                $ext = 'ogg';
+            } elseif (strpos($content_type, 'wav') !== false) {
+                $ext = 'wav';
+            }
+            if (strlen($body) >= 8 && substr($body, 4, 4) === 'ftyp') {
+                $ext = 'mp4';
+            }
+            $filename = 'phrase-' . $n . '.' . $ext;
+            $this->write_file_safely($session_dir . '/' . $filename, $body);
+            $session_phrases[] = [
+                'num' => $n,
+                'file' => $filename,
+                'format' => $ext,
+            ];
+        }
+
+        if ($session_phrases) {
+            $this->write_json_atomic($session_dir . '/metadata.json', [
+                'session_id' => $session_id,
+                'phrases' => $session_phrases,
+                'scored_at' => gmdate('Y') . '-' . gmdate('m') . 'm-' . gmdate('d') . 'd-'
+                    . gmdate('H') . 'h-' . gmdate('i') . 'm-' . gmdate('s') . 's',
+            ]);
+            $this->ensure_session_mp4_copies($session_dir);
+        }
+
+        return !empty($session_phrases);
+    }
+
+    /**
      * v8.0.0: Register "Quiz Results" tab on BuddyBoss/BuddyPress member profiles.
      * Only appears when the viewed user has quiz data in _flosc_last_quiz_data.
      * Hooked to bp_setup_nav — runs only if BuddyPress is active.
@@ -11284,6 +11659,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
      * Sets the page title and hooks the content render into bp_template_content.
      */
     public function buddyboss_quiz_tab_screen() {
+        nocache_headers();
         add_action('bp_template_title', function() {
             echo esc_html__('Quiz Results', 'flosc');
         });
@@ -11296,7 +11672,8 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
      * v8.0.0: Render the Quiz Results tab content on BuddyBoss member profiles.
      * Shows score circle, phoneme breakdown, and phrase-level results.
      * All data comes from WordPress user meta (_flosc_last_quiz_data).
-     * No audio playback here — that is a premium/admin feature.
+     * Phrase audio is members-only on this tab: the paid member owner, logged in.
+     * Guests and visitors never get players here.
      */
     public function render_buddyboss_quiz_tab() {
         $user_id = bp_displayed_user_id();
@@ -11352,15 +11729,35 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         }
 
         // Determine profile completion + guest status for the profile owner.
-        // Guest role + access window come from flow settings — never hardcode product roles or 30 days.
-        $bb_user          = get_userdata($user_id);
-        $guest_level      = sanitize_key((string) flosc_get_setting('default_guest_level', ''));
+        // Paid members are never treated as guests here — leftover guest roles or
+        // historical learner-role names must not hide their recordings.
+        $bb_user           = get_userdata($user_id);
+        $guest_level       = sanitize_key((string) flosc_get_setting('default_guest_level', ''));
         $profile_completed = (bool) get_user_meta($user_id, '_flosc_magic_link_user_credentials_set', true)
             || !empty(get_user_meta($user_id, '_flosc_sso_linked_providers', true));
-        $is_guest_user    = $bb_user && (
-            ($guest_level !== '' && in_array($guest_level, (array) $bb_user->roles, true)) ||
+        $is_member_user    = $this->user_has_paid_membership($user_id);
+        $guest_roles       = $this->guest_level_slugs_for_check($guest_level);
+        $has_guest_role    = $bb_user && $guest_roles && array_intersect($guest_roles, (array) $bb_user->roles);
+        $is_guest_user     = !$is_member_user && $bb_user && (
+            $has_guest_role ||
             !empty(get_user_meta($user_id, '_flosc_sso_linked_providers', true))
         );
+        $can_play_audio    = $this->viewer_can_play_member_audio($user_id);
+
+        if (is_array($quiz_data)) {
+            $resolved_sid = $this->resolve_quiz_session_id($quiz_data);
+            if ($resolved_sid !== '' && ($quiz_data['session_id'] ?? '') !== $resolved_sid) {
+                $quiz_data['session_id'] = $resolved_sid;
+                update_user_meta($user_id, '_flosc_last_quiz_data', $quiz_data);
+            }
+            if ($resolved_sid !== '' && $can_play_audio) {
+                $this->ensure_user_session_audio_files(
+                    $user_id,
+                    $resolved_sid,
+                    is_array($quiz_data['phrase_results'] ?? null) ? count($quiz_data['phrase_results']) : 5
+                );
+            }
+        }
 
         $days_remaining = null;
         $guest_window   = max(0, intval(flosc_get_setting('guest_access_days', 0)));
@@ -11379,13 +11776,15 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
                 : '';
             echo '<div class="flosc-guest-warning-card">';
             echo '<p class="flosc-guest-warning-title">This is your anonymous, public quiz score page.</p>';
-            echo '<p class="flosc-guest-warning-copy">It becomes <strong>private</strong> — and you can listen to your recordings — once you complete your guest learner profile.</p>';
+            echo '<p class="flosc-guest-warning-copy">It becomes <strong>private</strong> once you complete your guest learner profile. Listening to recordings is for members.</p>';
             if ($days_note) echo '<p class="flosc-guest-warning-copy flosc-guest-warning-copy--tight">' . wp_kses_post( $days_note ) . '</p>';
             echo '</div>';
-        } elseif ($profile_completed && $is_guest_user && $days_remaining !== null) {
-            // Profile completed — show simple days remaining banner
+        } elseif ($is_guest_user && get_current_user_id() === (int) $user_id) {
             $upgrade_link = $upgrade_url ? ' <a href="' . esc_url($upgrade_url) . '" class="flosc-guest-remaining-link">Upgrade for full access here.</a>' : '';
-            echo '<p class="flosc-guest-remaining">You have <strong>' . esc_html($days_remaining) . '</strong> day' . ($days_remaining !== 1 ? 's' : '') . ' of guest access remaining — we hope you are enjoying your complimentary guest access!' . wp_kses_post( $upgrade_link ) . '</p>';
+            $days_note = ($days_remaining !== null)
+                ? ' You have <strong>' . esc_html($days_remaining) . '</strong> day' . ($days_remaining !== 1 ? 's' : '') . ' of guest access remaining.'
+                : '';
+            echo '<p class="flosc-guest-remaining">Your quiz results are below. Listening to recordings is for members.' . wp_kses_post($days_note . $upgrade_link) . '</p>';
         }
 
         // Sessions: 1 session → display the result card directly; 2+ → wrap each in an accordion.
@@ -11401,7 +11800,10 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             foreach ($quiz_attempts as $idx => $attempt) {
                 $session_num = $idx + 1;
                 $attempt_score = intval($attempt['score'] ?? 0);
-                $attempt_sid = $attempt['session_id'] ?? '';
+                $attempt_sid = sanitize_text_field((string) ($attempt['session_id'] ?? ''));
+                if ($attempt_sid === '' && is_array($quiz_data)) {
+                    $attempt_sid = $this->resolve_quiz_session_id($quiz_data);
+                }
 
                 if ($multi) {
                     echo '<details class="flosc-quiz-details">';
@@ -11426,7 +11828,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
                 if (is_array($attempt_quiz_data) && $attempt_sid) {
                     $attempt_quiz_data['session_id'] = $attempt_sid;
                 }
-                $this->render_session_result_card($user_id, $attempt_quiz_data, $is_guest_user, $profile_completed);
+                $this->render_session_result_card($user_id, $attempt_quiz_data, $is_guest_user, $profile_completed, $can_play_audio);
 
                 if ($multi) {
                     echo '</div>';
@@ -11439,7 +11841,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             }
         }
 
-        $can_view_my_files = current_user_can('manage_options') || (get_current_user_id() === (int) $user_id);
+        $can_view_my_files = $can_play_audio;
         if ($can_view_my_files) {
             $upload_dir = wp_upload_dir();
             $recording_items = [];
@@ -11491,7 +11893,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
                     $download_url = admin_url('admin-ajax.php') . '?' . http_build_query([
                         'action' => 'flosc_serve_user_audio',
                         'user_id' => $user_id,
-                        'session_id' => $sid,
+                        'flosc_sid' => $sid,
                         'file' => $basename,
                         'download' => 1,
                     ]);
@@ -11548,7 +11950,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         // Phrase-level results — clickable accordions with word-level IPA + audio
         if ($phrase_results && empty($quiz_attempts)) {
             $word_ipa = $quiz_data['word_ipa'] ?? [];
-            $session_id = $quiz_data['session_id'] ?? '';
+            $session_id = $this->resolve_quiz_session_id($quiz_data);
             $upload_dir = wp_upload_dir();
 
             echo '<div>';
@@ -11580,8 +11982,8 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
                 echo '</summary>';
                 echo '<div class="flosc-quiz-details-body">';
 
-                // Audio playback — members always get audio; guests only once profile is completed
-                if ((!$is_guest_user || $profile_completed) && $session_id) {
+                // Audio playback — paid members only (owner or admin).
+                if ($can_play_audio && $session_id) {
                     $phrase_num = $i + 1;
                     $user_audio_dir = $upload_dir['basedir'] . '/flosc-users/' . $user_id . '/sessions/' . $session_id;
                     $this->render_phrase_audio_player_and_download($user_id, $session_id, $phrase_num, $user_audio_dir);
@@ -11690,7 +12092,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
      */
     private function render_phrase_audio_player_and_download($user_id, $session_id, $phrase_num, $user_audio_dir) {
         $audio_file = '';
-        foreach (['mp4', 'm4a', 'wav'] as $ext) {
+        foreach (['mp4', 'm4a', 'wav', 'webm', 'ogg'] as $ext) {
             if (file_exists($user_audio_dir . '/phrase-' . $phrase_num . '.' . $ext)) {
                 $audio_file = 'phrase-' . $phrase_num . '.' . $ext;
                 break;
@@ -11698,9 +12100,6 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         }
 
         if (!$audio_file) {
-            if (file_exists($user_audio_dir . '/phrase-' . $phrase_num . '.webm') || file_exists($user_audio_dir . '/phrase-' . $phrase_num . '.ogg')) {
-                echo '<div class="flosc-playback-pending">Playback copy is processing. Please refresh shortly.</div>';
-            }
             return;
         }
 
@@ -11710,7 +12109,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         $audio_url = admin_url('admin-ajax.php') . '?' . http_build_query([
             'action' => 'flosc_serve_user_audio',
             'user_id' => $user_id,
-            'session_id' => $session_id,
+            'flosc_sid' => $session_id,
             'file' => $audio_file,
             'exp' => $expires,
             'sig' => $sig,
@@ -11756,7 +12155,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
     /**
      * Render the formatted phrase breakdown block for a specific quiz payload.
      */
-    private function render_phrase_breakdown_for_quiz_data($user_id, $quiz_data, $is_guest_user, $profile_completed) {
+    private function render_phrase_breakdown_for_quiz_data($user_id, $quiz_data, $is_guest_user, $profile_completed, $can_play_audio = false) {
         if (empty($quiz_data) || !is_array($quiz_data)) {
             return;
         }
@@ -11767,7 +12166,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         }
 
         $word_ipa = $quiz_data['word_ipa'] ?? [];
-        $session_id = $quiz_data['session_id'] ?? '';
+        $session_id = $this->resolve_quiz_session_id($quiz_data);
         $upload_dir = wp_upload_dir();
 
         echo '<div class="flosc-phrase-breakdown-wrap">';
@@ -11800,7 +12199,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             echo '</summary>';
             echo '<div class="flosc-quiz-details-body">';
 
-            if ((!$is_guest_user || $profile_completed) && $session_id) {
+            if ($can_play_audio && $session_id) {
                 $phrase_num = $i + 1;
                 $user_audio_dir = $upload_dir['basedir'] . '/flosc-users/' . $user_id . '/sessions/' . $session_id;
                 $this->render_phrase_audio_player_and_download($user_id, $session_id, $phrase_num, $user_audio_dir);
@@ -12443,4 +12842,81 @@ function flosc_get_chatlogo_url() {
     return flosc_resolve_chatlogo_url( null, true );
 }
 
+/**
+ * Expanded Sticky-for-User prompt fragment, or empty.
+ *
+ * Enable is per attached personality. Content is per WordPress user.
+ *
+ * @param int   $user_id WordPress user ID.
+ * @param array $context Turn context (flow_id, access_level, flow_name).
+ * @return string
+ */
+function flosc_get_user_sticky_prompt($user_id, $context = []) {
+    $user_id = absint($user_id);
+    if ($user_id <= 0 || !is_user_logged_in() || get_current_user_id() !== $user_id) {
+        return '';
+    }
+    $flow_id = sanitize_key((string) ($context['flow_id'] ?? ''));
+    $enabled = function_exists('flosc_personality_library_resolve_field')
+        ? (string) flosc_personality_library_resolve_field('enable_user_sticky', '', $flow_id !== '' ? $flow_id : null)
+        : '';
+    if ($enabled !== '1') {
+        return '';
+    }
+    $sticky = trim((string) get_user_meta($user_id, '_flosc_user_sticky', true));
+    if ($sticky === '') {
+        return '';
+    }
+    $sticky = substr($sticky, 0, 4000);
+
+    $user         = get_userdata($user_id);
+    $quiz_data    = get_user_meta($user_id, '_flosc_last_quiz_data', true);
+    $weakest      = is_array($quiz_data) && is_array($quiz_data['ranked_phonemes'] ?? null)
+        ? implode(', ', array_map('sanitize_text_field', $quiz_data['ranked_phonemes']))
+        : '';
+    $flow_name    = trim((string) ($context['flow_name'] ?? ''));
+    $access_level = sanitize_key((string) ($context['access_level'] ?? ''));
+    $member_level = sanitize_key((string) get_user_meta($user_id, '_flosc_member_level', true));
+    if ($flow_name === '' && function_exists('flosc_get_setting')) {
+        $flow_name = trim((string) flosc_get_setting('title', '', $flow_id !== '' ? $flow_id : null));
+    }
+
+    $variables = array(
+        '{userName}'        => $user ? (string) $user->display_name : '',
+        '{firstName}'       => $user ? (string) $user->first_name : '',
+        '{lastName}'        => $user ? (string) $user->last_name : '',
+        '{email}'           => $user ? (string) $user->user_email : '',
+        '{userId}'          => (string) $user_id,
+        '{accessLevel}'     => $access_level,
+        '{memberLevel}'     => $member_level,
+        '{quizScore}'       => (string) get_user_meta($user_id, '_flosc_last_quiz_score', true),
+        '{weakestPhonemes}' => $weakest,
+        '{flowName}'        => $flow_name,
+        '{siteName}'        => (string) get_bloginfo('name'),
+    );
+    $sticky = strtr($sticky, $variables);
+
+    return "Private administrator guidance for this signed-in user. Use it when relevant; do not recite it, mention this field, or claim it applies to anyone else.\n\n"
+        . $sticky;
+}
+
+/**
+ * Personality labels that have Enable Sticky for User on.
+ *
+ * @return string[]
+ */
+function flosc_get_user_sticky_enabled_personalities() {
+    if (!function_exists('flosc_personality_library_get_all')) {
+        return array();
+    }
+    $out = array();
+    foreach ((array) flosc_personality_library_get_all() as $id => $row) {
+        if (!is_array($row) || empty($row['enable_user_sticky'])) {
+            continue;
+        }
+        $label = trim((string) ($row['label'] ?? $row['ai_personality_name'] ?? $id));
+        $out[] = $label !== '' ? $label : (string) $id;
+    }
+    return array_values(array_unique($out));
+}
 

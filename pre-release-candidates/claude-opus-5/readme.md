@@ -1,109 +1,78 @@
-# FLOSC — Claude Opus 5 candidate
+# FLOSC 8.0.0 — candidate v32
 
-A complete, deployable FLOSC tree and its built artifact, for testing before
-the WordPress.org resubmission.
+Built from the v31 candidate tree. Version is 8.0.0 and does not move.
 
-    Plugin version    8.0.0
-    Requires          WordPress 7.0.4 · PHP 7.4
-    Artifact          flosc.zip — 277 files, 2.6 MB
-    Checksum          sha256sums
+    artifact   flosc.zip
+    sha256     dd647e8ba0f3cace069a56118ebd5bd24253fd346ea3a0bc235e1a8a7646a7b0
+    entries    277, single flosc/ root
+    source     flosc-by-claude-opus-5/flosc
 
-The plugin version is 8.0.0 and does not move: this is a resubmission, not a
-release. The candidate iteration in `build-manifest.json` counts rebuilds of
-this folder and is a different number.
+## What this adds
 
-## Contents
+**Variables in the personality designer.** A floscAdmin can type `{flow_name}`
+or `{score}` into any aspect card and it becomes the value when the
+personality is sent to the model. Typing a token used to send the literal
+seven characters.
 
-    flosc.zip                      the built artifact
-    sha256sums                     its checksum
-    flosc-by-claude-opus-5/flosc/  the same code as a plain tree
-    build-manifest.json            what was built, from where, and what passed
+This matters most on a cross-domain flow: a personality that says "this site"
+names nothing, and now it can say `{site_name}` and be right on every domain
+the flow serves.
 
-The zip and the tree are the same code. Either can be deployed.
+Expansion happens on the request copy, every turn, because the attached
+personality can be switched mid-session and the next turn must read the new
+one. The stored `ai_base_prompt` keeps the tokens as written, so the designer
+still shows what was typed.
 
-## Deploy
+Nothing opens a query of its own. `flosc_personality_variable_context()` maps
+the evaluation context the chatpack and the dispatch already assembled. The
+four tokens naming the visitor share one `get_userdata()`, cached, and only
+when a document actually contains one of them. A document with no brace
+returns before any work.
 
-From the artifact:
+A substituted value is prompt text, not markup, so escaping is not the
+protection that matters: braces are stripped so a value cannot introduce a
+second token, control characters are stripped, and length is capped at 500.
+An unresolved token substitutes empty.
 
-    curl -L -o flosc.zip \
-      https://github.com/dainiswmichel/flosc/raw/main/pre-release-candidates/claude-opus-5/flosc.zip
-    sha256sum -c sha256sums
-    unzip -q -o flosc.zip -d <wp-content/plugins>
+**The designer shows them.** A Variables panel above the output pane lists
+every token with what it resolves to for the flow being edited. Visitor
+tokens say they resolve at chat time rather than showing a value invented for
+a screen where no visitor exists.
 
-From the tree:
+## Carried forward from v31, unchanged
 
-    rsync -a flosc-by-claude-opus-5/flosc/ <wp-content/plugins>/flosc/
+Sticky for User, the Personalization station at density 1, the oEmbed FAQ
+entry, and the `flosc.php` work. The four shipped personalities are v31's,
+untouched.
 
-Never with `--delete`. No database migration; nothing to activate.
+## One gate fixed
 
-## What is in this build
+`tests/test_candidate_contract.php` was failing in v31. It pins the follow-up
+chatpack call by exact string, and v31 added a third argument to
+`build_identity_section()` for Sticky for User without updating the match.
+v32 matches up to the comma. What the gate asserts — compact false, so the
+whole profile goes every turn — is unchanged.
 
-The DA1 AI Personality Designer, rebuilt on one idea: **a wellspring is an
-aspect, a category is a group of aspects, and both are the same card.** Drop an
-aspect onto a card and that card becomes the heading it sits under, keeping its
-density, gain, binding, hue, star and trajectory.
+## Changed from v31
 
-The thirteen soul.md headings are also the aspect palette's shelves — one list,
-not two, so a card waits on the shelf it will be written under.
+    includes/flosc-personality-library.php        catalog, resolver, context map, expander, boot
+    includes/class-flosc-chatpack.php             passes the turn's context
+    includes/class-ai-chat-dispatch.php           passes the turn's context
+    assets/js/flosc-personality-builder.js        the Variables panel
+    assets/personality-builder/…-markup.php       the panel mount
+    tests/check_profile_variables.php             new gate
+    tests/test_candidate_contract.php             match updated, intent unchanged
 
-| Density | Heading |
-|---:|---|
-| 6 | Identity and Role |
-| 12 | Philosophy and Values |
-| 18 | Boundaries and Prohibitions |
-| 24 | Knowledge, Doubt and Correction |
-| 30 | Opinions and Preferences |
-| 40 | Tone and Communication Style |
-| 48 | Stance Toward the Human |
-| 56 | Behavior in Ambiguity |
-| 62 | Adaptation |
-| 68 | Resourcefulness |
-| 74 | Decisions including Infrequent Cases |
-| 84 | Banned Words and Fillers to Avoid |
-| 94 | Output and Delivery |
+## Verified
 
-**Nested density.** A colon separates levels, a period separates decimals. An
-aspect at 16 inside a card at 95 reads `95:016`; one at 100 reads `95:100`.
-Any depth. Derived, never stored — drag it out and it is 16 again. Equal
-densities sort alphabetically.
+All 28 gates pass, PHP lint clean across the tree, JS clean, density nesting
+clean, readme within the wordpress.org budgets, starter-pack manifest checked
+against the artifact, forbidden-path scan clean.
 
-**Trajectories** are WordPress posts in the `trajectory` category, managed on
-the Trajectories tab. An aspect's trajectory can name one by id: `412`,
-`?post=412`, or its permalink.
+Deferred to a WordPress install: Plugin Check, and typing a token into a card
+to watch it resolve in chat.
 
-## Verify a deploy
+## Not in this build
 
-    grep -m1 "^ \* Version:" <plugins>/flosc/flosc.php     # 8.0.0
-    find <plugins>/flosc -name '*.php' -exec php -l {} \; | grep -v "No syntax errors"
-
-## Verify the source
-
-    node --check assets/js/flosc-personality-builder.js
-    node tests/check_density_nesting.js
-    find . -name '*.php' -not -path './.git/*' -exec php -l {} \;
-    for f in tests/test_*.php tests/check_*.php; do php "$f" || echo "FAIL $f"; done
-
-`tests/check_packaging.php` gates the version headers, the artifact's
-exclusions, and that nothing in this folder can reach a build.
-
-## Where the code is
-
-    branch  claude/ready-to-help-jsw2li
-    tree    the plugin at the repository root on that branch
-
-https://github.com/dainiswmichel/flosc/tree/claude/ready-to-help-jsw2li
-
-This folder is a snapshot of that branch. When the branch moves, this does not.
-Deploy from one or the other, never rsync one over a site built from the other.
-
-`pre-release-candidates/` is excluded from the artifact by `.distignore` and by
-the build's hard deny list, so nothing here can ship.
-
-## Not to be changed without a named failure
-
-- the page-wide Save, its label, and the last-save MTS line
-- the Step 2b Model Tuning localised Save and its state machine
-- the model catalog and parameter surfaces
-- the full-page to companion handoff
-- prohibitions living in two places by design — Boundaries for what the
-  personality must never do, Banned Words for what it must never say
+The four shipped personality profiles are unchanged. Filling all thirteen
+headings is separate work.

@@ -525,7 +525,6 @@ class SSO_Manager {
             return $option_name !== '' ? (string) get_option($option_name, '') : '';
         }
 
-        $value = wp_unslash($value);
         if ('' === $value) {
             return $option_name !== '' ? (string) get_option($option_name, '') : '';
         }

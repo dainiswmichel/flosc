@@ -30,6 +30,25 @@ $builder = (string) file_get_contents( $root . '/assets/js/flosc-personality-bui
 $library = (string) file_get_contents( $root . '/includes/flosc-personality-library.php' );
 $markup  = (string) file_get_contents( $root . '/assets/personality-builder/flosc-personality-builder-markup.php' );
 
+if ( ! defined( 'ABSPATH' ) ) {
+	define( 'ABSPATH', $root . '/' );
+}
+if ( ! defined( 'FLOSC_PLUGIN_DIR' ) ) {
+	define( 'FLOSC_PLUGIN_DIR', $root . '/' );
+}
+if ( ! function_exists( 'add_action' ) ) {
+	function add_action( ...$args ) {}
+}
+if ( ! function_exists( 'add_filter' ) ) {
+	function add_filter( ...$args ) {}
+}
+if ( ! function_exists( 'wp_json_encode' ) ) {
+	function wp_json_encode( $value, $flags = 0 ) {
+		return json_encode( $value, $flags );
+	}
+}
+require_once $root . '/includes/flosc-personality-library.php';
+
 /*
  * Comments are stripped before any search. Two earlier gates in this suite
  * matched their own explanatory comment and reported it as the defect.
@@ -189,9 +208,16 @@ ok( '  and the point count',
 	strpos( $code, 'starPoints: t.star_points || t.starPoints || null,' ) !== false, true );
 
 echo "\nThe shipped four use the document's headings and nothing else\n";
-preg_match_all( "/'ai_base_prompt'\s*=>\s*<<<'PROMPT'\n(.*?)\nPROMPT,/s", $library, $shipped );
-ok( 'four profiles found', count( $shipped[1] ), 4 );
-foreach ( $shipped[1] as $body ) {
+$shipped = array_values(
+	array_map(
+		static function ( $row ) {
+			return (string) ( $row['ai_base_prompt'] ?? '' );
+		},
+		flosc_personality_library_defaults()
+	)
+);
+ok( 'four profiles found', count( $shipped ), 4 );
+foreach ( $shipped as $body ) {
 	$lines = explode( "\n", $body );
 	$who   = trim( str_replace( '# DA1/FLOSC AI Personality Profile Name:', '', (string) $lines[0] ) );
 	$bad   = array();

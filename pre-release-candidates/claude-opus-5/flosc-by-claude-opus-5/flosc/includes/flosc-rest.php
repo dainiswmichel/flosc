@@ -273,17 +273,10 @@ trait FLOSC_REST_Trait {
         // Content phase is member-entitled only (sale stays public for guest purchase).
         if ($phase === 'content') {
             $user_id = get_current_user_id();
-            // The meta is stored as the string 'true' / 'false' (see
-            // FLOSC_Member_Access). A (bool) cast would treat the revoked value
-            // 'false' as truthy and let a revoked member through — compare the
-            // string explicitly.
-            $has_member_access = $user_id && 'true' === get_user_meta($user_id, '_flosc_member_access', true);
-            // Also honor flow-scoped membership when available.
-            if (!$has_member_access && $user_id && function_exists('flosc') && is_object(flosc()) && method_exists(flosc(), 'sale')) {
-                $sale = flosc()->sale();
-                if ($sale && method_exists($sale, 'access') && method_exists($sale->access(), 'is_member')) {
-                    $has_member_access = (bool) $sale->access()->is_member($user_id);
-                }
+            $flow_id = $this->flosc_request_flow_stem($request);
+            $has_member_access = current_user_can('manage_options');
+            if (!$has_member_access && $user_id && $this->member_access && method_exists($this->member_access, 'is_member')) {
+                $has_member_access = (bool) $this->member_access->is_member($user_id, $flow_id);
             }
             if (!$has_member_access) {
                 return new WP_Error('forbidden', __('Not entitled to this content.', 'flosc'), ['status' => 403]);

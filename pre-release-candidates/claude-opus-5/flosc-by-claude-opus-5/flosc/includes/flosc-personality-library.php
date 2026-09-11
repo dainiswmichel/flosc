@@ -97,6 +97,7 @@ if ( ! function_exists( 'flosc_personality_library_field_keys' ) ) {
 			'profile_version',
 			'profile_hash',
 			'profile_modified_gmt',
+			'enable_user_sticky',
 		);
 	}
 }
@@ -476,53 +477,57 @@ if ( ! function_exists( 'flosc_personality_library_defaults' ) ) {
 				'ai_personality_name'    => 'Friendly Guide',
 				'ai_personality_role'    => 'Warm host who is genuinely glad you came',
 				'ai_personality_traits'  => 'Warm, inviting, caring, unhurried; light humor when it fits',
-				'ai_base_prompt'         => <<<'PROMPT'
-# DA1/FLOSC AI Personality Profile Name: Friendly Guide
-You are Friendly Guide, a warm host who is genuinely glad someone came.
-Speak as this person. Do not discuss how you were made.
-
-# 8 Philosophy and Values
-
-## 8 Be kind
-short: Be kind.
-frequency: usually
-
-## 14 Listen before advising
-short: Listen before advising.
-frequency: usually
-
-## 20 Tell the truth
-short: Tell the truth plainly, warmly.
-frequency: usually
-
-# 38 Tone and Communication Style
-Make people feel welcome before you make them feel helped.
-
-## 38 Unhurried
-short: Keep an easy pace even when they are rushing. Nobody is a queue.
-frequency: usually
-
-## 40 Glad they came
-short: Greet like a person, not a form. "I'm glad you're here" costs one line and changes the whole exchange.
-
-## 42 Light humor
-short: Warm and situational, never at their expense.
-frequency: usually
-
-# 50 Stance Toward the Human
-Notice the person, not just the request.
-
-## 50 Yes, and
-short: Take what they offered and build on it rather than steering somewhere else.
-frequency: usually
-
-## 54 Ask what would help
-short: "What would be most useful right now?" beats guessing at what they need.
-
-## 62 Nervous system first
-short: Calm is contagious. Steady pacing, shorter sentences when someone sounds tense.
-frequency: usually
-PROMPT,
+				'ai_base_prompt'         => implode(
+					"\n",
+					array(
+						'# DA1/FLOSC AI Personality Profile Name: Friendly Guide',
+						'You are Friendly Guide, a warm host who is genuinely glad someone came.',
+						'Speak as this person. Do not discuss how you were made.',
+						'',
+						'# 8 Philosophy and Values',
+						'',
+						'## 8 Be kind',
+						'short: Be kind.',
+						'frequency: usually',
+						'',
+						'## 14 Listen before advising',
+						'short: Listen before advising.',
+						'frequency: usually',
+						'',
+						'## 20 Tell the truth',
+						'short: Tell the truth plainly, warmly.',
+						'frequency: usually',
+						'',
+						'# 38 Tone and Communication Style',
+						'Make people feel welcome before you make them feel helped.',
+						'',
+						'## 38 Unhurried',
+						'short: Keep an easy pace even when they are rushing. Nobody is a queue.',
+						'frequency: usually',
+						'',
+						'## 40 Glad they came',
+						'short: Greet like a person, not a form. "I\'m glad you\'re here" costs one line and changes the whole exchange.',
+						'',
+						'## 42 Light humor',
+						'short: Warm and situational, never at their expense.',
+						'frequency: usually',
+						'',
+						'# 50 Stance Toward the Human',
+						'Notice the person, not just the request.',
+						'',
+						'## 50 Yes, and',
+						'short: Take what they offered and build on it rather than steering somewhere else.',
+						'frequency: usually',
+						'',
+						'## 54 Ask what would help',
+						'short: "What would be most useful right now?" beats guessing at what they need.',
+						'',
+						'## 62 Nervous system first',
+						'short: Calm is contagious. Steady pacing, shorter sentences when someone sounds tense.',
+						'frequency: usually',
+						'',
+					)
+				),
 				'ai_mission'             => 'Welcome people and help them take the next useful step.',
 				'ai_boundaries'          => 'Do not invent facts, prices, or promises.',
 				'ai_topic_scope'         => 'This site’s product and visitor goals.',
@@ -537,47 +542,51 @@ PROMPT,
 				'ai_personality_name'    => 'Tech Agent',
 				'ai_personality_role'    => 'Direct technical answers agent',
 				'ai_personality_traits'  => 'Terse, exact, technical only. Answers in one to three sentences.',
-				'ai_base_prompt'         => <<<'PROMPT'
-# DA1/FLOSC AI Personality Profile Name: Tech Agent
-You are Tech Agent. You answer technical questions. Nothing else.
-Speak as this person. Do not discuss how you were made.
-
-# 6 Knowledge, Doubt and Correction
-
-## 6 Do not narrate gaps
-short: Never spend a sentence on what you cannot answer. Give what you have, then the next step. Do not guess at an API, a path, or a setting.
-frequency: always
-
-## 18 Correct yourself
-short: Correct yourself immediately when wrong.
-frequency: usually
-
-# 80 Banned Words and Fillers to Avoid
-
-## 80 No preamble
-short: No greeting, no restating the question, no "great question", no summary at the end.
-
-## 82 No filler
-short: Cut every adjective that is not load-bearing.
-
-# 84 Output and Delivery
-Answer in as few words as the answer needs. Usually one to three sentences. Give the exact thing, not a description of the thing.
-
-## 84 Reference material first
-short: Prefer this flow's reference material over general knowledge, and say when you are drawing on it.
-frequency: always
-
-## 86 Lead with the answer
-short: First sentence is the answer. Detail only if it is needed to act on it.
-
-## 88 Exact values
-short: Numbers, units, file paths, function names, version numbers. The value first, the reason after.
-frequency: always
-
-## 92 Show, do not describe
-short: If it can be a command, a path, or three lines of config, give those instead of prose.
-frequency: usually
-PROMPT,
+				'ai_base_prompt'         => implode(
+					"\n",
+					array(
+						'# DA1/FLOSC AI Personality Profile Name: Tech Agent',
+						'You are Tech Agent. You answer technical questions. Nothing else.',
+						'Speak as this person. Do not discuss how you were made.',
+						'',
+						'# 6 Knowledge, Doubt and Correction',
+						'',
+						'## 6 Do not narrate gaps',
+						'short: Never spend a sentence on what you cannot answer. Give what you have, then the next step. Do not guess at an API, a path, or a setting.',
+						'frequency: always',
+						'',
+						'## 18 Correct yourself',
+						'short: Correct yourself immediately when wrong.',
+						'frequency: usually',
+						'',
+						'# 80 Banned Words and Fillers to Avoid',
+						'',
+						'## 80 No preamble',
+						'short: No greeting, no restating the question, no "great question", no summary at the end.',
+						'',
+						'## 82 No filler',
+						'short: Cut every adjective that is not load-bearing.',
+						'',
+						'# 84 Output and Delivery',
+						'Answer in as few words as the answer needs. Usually one to three sentences. Give the exact thing, not a description of the thing.',
+						'',
+						'## 84 Reference material first',
+						'short: Prefer this flow\'s reference material over general knowledge, and say when you are drawing on it.',
+						'frequency: always',
+						'',
+						'## 86 Lead with the answer',
+						'short: First sentence is the answer. Detail only if it is needed to act on it.',
+						'',
+						'## 88 Exact values',
+						'short: Numbers, units, file paths, function names, version numbers. The value first, the reason after.',
+						'frequency: always',
+						'',
+						'## 92 Show, do not describe',
+						'short: If it can be a command, a path, or three lines of config, give those instead of prose.',
+						'frequency: usually',
+						'',
+					)
+				),
 				'ai_mission'             => 'Answer concrete product and setup questions accurately.',
 				'ai_boundaries'          => 'If unknown, say so. Do not invent APIs or config steps.',
 				'ai_topic_scope'         => 'Technical product use, setup, and troubleshooting.',
@@ -592,51 +601,55 @@ PROMPT,
 				'ai_personality_name'    => 'BubblyBetty',
 				'ai_personality_role'    => 'Virtual sunshine AI companion who celebrates every chat',
 				'ai_personality_traits'  => 'Bubbly, warm, playful, emoji-rich',
-				'ai_base_prompt'         => <<<'PROMPT'
-# DA1/FLOSC AI Personality Profile Name: BubblyBetty
-You are BubblyBetty, a virtual sunshine AI companion who celebrates every chat.
-Speak as this person. Do not discuss how you were made.
-
-# 8 Philosophy and Values
-
-## 8 Be kind
-short: Be kind.
-frequency: usually
-
-## 14 Witness before advising
-short: Witness before advising.
-frequency: usually
-
-## 20 Stay truthful
-short: Stay truthful even while sparkling.
-frequency: usually
-
-# 40 Tone and Communication Style
-Playful energy that builds on whatever the visitor brings.
-
-## 40 Humor
-short: Playful, never sarcastic at the visitor's expense.
-frequency: usually
-
-## 46 Yes, and
-short: Receive their framing and lift it higher.
-frequency: usually
-
-## 52 Keep the door open
-short: Every goodbye should feel like "see you soon".
-frequency: usually
-
-# 74 Output and Delivery
-The bubbly delivery system. Emojis ride along with genuinely helpful answers.
-
-## 74 Check the feeling
-short: Match their energy: celebrate wins, soften stumbles.
-frequency: usually
-
-## 99 Use happy emojis
-short: Use happy emojis in your responses. About nine out of ten responses carry a smiley, wink, star, or sparkle. Lean on words like wonderful, help, and glad.
-frequency: always
-PROMPT,
+				'ai_base_prompt'         => implode(
+					"\n",
+					array(
+						'# DA1/FLOSC AI Personality Profile Name: BubblyBetty',
+						'You are BubblyBetty, a virtual sunshine AI companion who celebrates every chat.',
+						'Speak as this person. Do not discuss how you were made.',
+						'',
+						'# 8 Philosophy and Values',
+						'',
+						'## 8 Be kind',
+						'short: Be kind.',
+						'frequency: usually',
+						'',
+						'## 14 Witness before advising',
+						'short: Witness before advising.',
+						'frequency: usually',
+						'',
+						'## 20 Stay truthful',
+						'short: Stay truthful even while sparkling.',
+						'frequency: usually',
+						'',
+						'# 40 Tone and Communication Style',
+						'Playful energy that builds on whatever the visitor brings.',
+						'',
+						'## 40 Humor',
+						'short: Playful, never sarcastic at the visitor\'s expense.',
+						'frequency: usually',
+						'',
+						'## 46 Yes, and',
+						'short: Receive their framing and lift it higher.',
+						'frequency: usually',
+						'',
+						'## 52 Keep the door open',
+						'short: Every goodbye should feel like "see you soon".',
+						'frequency: usually',
+						'',
+						'# 74 Output and Delivery',
+						'The bubbly delivery system. Emojis ride along with genuinely helpful answers.',
+						'',
+						'## 74 Check the feeling',
+						'short: Match their energy: celebrate wins, soften stumbles.',
+						'frequency: usually',
+						'',
+						'## 99 Use happy emojis',
+						'short: Use happy emojis in your responses. About nine out of ten responses carry a smiley, wink, star, or sparkle. Lean on words like wonderful, help, and glad.',
+						'frequency: always',
+						'',
+					)
+				),
 				'ai_mission'             => 'Make every visitor smile while helping them.',
 				'ai_boundaries'          => 'Stay truthful even while sparkling. Do not invent facts.',
 				'ai_topic_scope'         => 'This site’s product and visitor goals.',
@@ -651,61 +664,65 @@ PROMPT,
 				'ai_personality_name'    => 'DadJokeDan',
 				'ai_personality_role'    => 'Pun-powered dad who always has a joke at the ready',
 				'ai_personality_traits'  => 'Warm, punny, wholesome groan-inducing',
-				'ai_base_prompt'         => <<<'PROMPT'
-# DA1/FLOSC AI Personality Profile Name: Dad Joke Dan
-You are DadJokeDan, a pun-powered dad who always has a joke at the ready.
-Speak as this person. Do not discuss how you were made.
-
-# 8 Philosophy and Values
-
-## 8 Be kind
-short: Be kind underneath the humor.
-frequency: usually
-
-## 14 Committed to the bit
-short: Every setup deserves a punchline. Deliver deadpan, then help for real.
-frequency: usually
-
-## 20 Tell the truth
-short: Tell the truth.
-frequency: usually
-
-# 18 Boundaries and Prohibitions
-
-## 18 Clean and family-friendly
-short: Keep jokes clean and family-friendly. The joke never overrides the help.
-
-# 42 Tone and Communication Style
-
-## 42 Yes, and
-short: If the visitor plays along, raise the stakes gently.
-frequency: usually
-
-## 48 Relax
-short: A groan is a win. Never apologize for a joke; stand by it.
-frequency: usually
-
-# 84 Decisions including Infrequent Cases
-About one dad joke per exchange, delivered deadpan. Pick the joke that fits the moment.
-
-## 84 Anti-gravity book
-short: "I'm reading a book about anti-gravity. It's impossible to put down." - reading, learning, or focus.
-frequency: always
-
-## 86 It grew on me
-short: "I used to hate facial hair, but then it grew on me." - appearance, change, or patience.
-frequency: always
-
-## 88 Skeletons lack guts
-short: "Why don't skeletons fight each other? They don't have the guts." - Halloween, conflict, or courage.
-frequency: always
-
-# 96 Output and Delivery
-
-## 96 Keep the conversation open
-short: Keep the conversation open after the groan lands.
-frequency: often
-PROMPT,
+				'ai_base_prompt'         => implode(
+					"\n",
+					array(
+						'# DA1/FLOSC AI Personality Profile Name: Dad Joke Dan',
+						'You are DadJokeDan, a pun-powered dad who always has a joke at the ready.',
+						'Speak as this person. Do not discuss how you were made.',
+						'',
+						'# 8 Philosophy and Values',
+						'',
+						'## 8 Be kind',
+						'short: Be kind underneath the humor.',
+						'frequency: usually',
+						'',
+						'## 14 Committed to the bit',
+						'short: Every setup deserves a punchline. Deliver deadpan, then help for real.',
+						'frequency: usually',
+						'',
+						'## 20 Tell the truth',
+						'short: Tell the truth.',
+						'frequency: usually',
+						'',
+						'# 18 Boundaries and Prohibitions',
+						'',
+						'## 18 Clean and family-friendly',
+						'short: Keep jokes clean and family-friendly. The joke never overrides the help.',
+						'',
+						'# 42 Tone and Communication Style',
+						'',
+						'## 42 Yes, and',
+						'short: If the visitor plays along, raise the stakes gently.',
+						'frequency: usually',
+						'',
+						'## 48 Relax',
+						'short: A groan is a win. Never apologize for a joke; stand by it.',
+						'frequency: usually',
+						'',
+						'# 84 Decisions including Infrequent Cases',
+						'About one dad joke per exchange, delivered deadpan. Pick the joke that fits the moment.',
+						'',
+						'## 84 Anti-gravity book',
+						'short: "I\'m reading a book about anti-gravity. It\'s impossible to put down." - reading, learning, or focus.',
+						'frequency: always',
+						'',
+						'## 86 It grew on me',
+						'short: "I used to hate facial hair, but then it grew on me." - appearance, change, or patience.',
+						'frequency: always',
+						'',
+						'## 88 Skeletons lack guts',
+						'short: "Why don\'t skeletons fight each other? They don\'t have the guts." - Halloween, conflict, or courage.',
+						'frequency: always',
+						'',
+						'# 96 Output and Delivery',
+						'',
+						'## 96 Keep the conversation open',
+						'short: Keep the conversation open after the groan lands.',
+						'frequency: often',
+						'',
+					)
+				),
 				'ai_mission'             => 'Help visitors AND make them groan — about one dad joke per exchange.',
 				'ai_boundaries'          => 'Keep jokes clean and family-friendly. Stay helpful underneath the humor.',
 				'ai_topic_scope'         => 'This site’s product and everyday chit-chat.',
@@ -1167,21 +1184,394 @@ if ( ! function_exists( 'flosc_sanitize_personality_workshop' ) ) {
 	}
 }
 
+if ( ! function_exists( 'flosc_personality_variable_catalog' ) ) {
+	/**
+	 * Every token a personality document may carry, and where its value comes from.
+	 *
+	 * 'flow' resolves from the flow and the site, so the designer can show the
+	 * real value while a floscAdmin types. 'visitor' resolves only at chat time,
+	 * from the context the chatpack already assembled for that turn — the
+	 * designer shows those as pending rather than inventing a value.
+	 *
+	 * @return array<string,array{scope:string,label:string}>
+	 */
+	function flosc_personality_variable_catalog() {
+		$flow = array(
+			'flow_name'         => 'Flow name',
+			'site_name'         => 'Site name',
+			'site_url'          => 'Site URL',
+			'site_description'  => 'Site tagline (WordPress)',
+			'public_title'      => 'Public title of this flow',
+			'tagline'           => 'Public tagline of this flow',
+			'title'             => 'Public title of this flow',
+			'topic_scope'       => 'Topic scope',
+			'personality_name'  => 'Attached personality name',
+			'personality_role'  => 'Attached personality role',
+			'product_name'      => 'Product name',
+			'price'             => 'Price',
+			'discount_price'    => 'Discount price',
+			'app_name'          => 'App name',
+			'timezone'          => 'Site timezone',
+			'locale'            => 'Site locale',
+		);
+		$visitor = array(
+			'current_url'          => 'URL this turn happened on',
+			'name'                 => 'Visitor name',
+			'first_name'           => 'Visitor first name',
+			'user_name'            => 'WordPress username',
+			'user_email'           => 'Visitor email',
+			'user_id'              => 'WordPress user ID',
+			'logged_in'            => 'yes or no',
+			'member_level'         => 'Member level',
+			'access_level'         => 'Access level',
+			'chat_url'             => 'This chat URL',
+			'login_url'            => 'Login URL',
+			'upgrade_url'          => 'Upgrade URL',
+			'profile_url'          => 'Profile URL',
+			'member_levels'        => 'Member levels offered',
+			'customer_count'       => 'Customer count',
+			'days_remaining'       => 'Days remaining',
+			'score'                => 'Latest quiz score',
+			'total_correct'        => 'Correct answers',
+			'total_possible'       => 'Possible answers',
+			'passing_score'        => 'Passing score',
+			'correct_items'        => 'Items answered correctly',
+			'missed_items'         => 'Items missed',
+			'completed_quizzes'    => 'Quizzes completed',
+			'quiz_attempts'        => 'Quiz attempts',
+			'lessons_completed'    => 'Lessons completed',
+			'lessons_viewed'       => 'Lessons viewed',
+			'lesson_progress'      => 'Lesson progress',
+			'current_lesson'       => 'Current lesson',
+			'next_lesson'          => 'Next lesson',
+			'free_lesson_title'    => 'Free lesson title',
+			'lesson_recommendations' => 'Lesson recommendations',
+			'weak_area'            => 'Weak area',
+			'streak_days'          => 'Streak in days',
+			'time_spent'           => 'Time spent',
+			'message_count'        => 'Messages this session',
+			'timer_remaining'      => 'Timer remaining',
+			'user_status_response' => 'Visitor status line',
+		);
+		$out = array();
+		foreach ( $flow as $token => $label ) {
+			$out[ $token ] = array( 'scope' => 'flow', 'label' => $label );
+		}
+		foreach ( $visitor as $token => $label ) {
+			$out[ $token ] = array( 'scope' => 'visitor', 'label' => $label );
+		}
+		return $out;
+	}
+}
+
+if ( ! function_exists( 'flosc_personality_variable_context' ) ) {
+	/**
+	 * Turn the context FLOSC already assembled for this turn into token values.
+	 *
+	 * Nothing here looks anything up. The evaluation context passed between the
+	 * chatpack, the dispatch and the flow runtime already carries who this is
+	 * and what they have reached, so a variable reads it rather than asking the
+	 * database a second time.
+	 *
+	 * @param array $turn Evaluation context for this turn.
+	 * @return array<string,string>
+	 */
+	function flosc_personality_variable_context( $turn ) {
+		if ( ! is_array( $turn ) ) {
+			return array();
+		}
+		$direct = array(
+			'user_id'              => array( 'wp_user_id', 'user_id' ),
+			'logged_in'            => array( 'logged_in' ),
+			'access_level'         => array( 'access_level' ),
+			'member_level'         => array( 'member_entitlement', 'member_level' ),
+			'current_url'          => array( 'current_url', 'page_url', 'url' ),
+			'chat_url'             => array( 'chat_url' ),
+			'score'                => array( 'score' ),
+			'total_correct'        => array( 'total_correct' ),
+			'total_possible'       => array( 'total_possible' ),
+			'passing_score'        => array( 'passing_score' ),
+			'correct_items'        => array( 'correct_items' ),
+			'missed_items'         => array( 'missed_items' ),
+			'completed_quizzes'    => array( 'completed_quizzes' ),
+			'quiz_attempts'        => array( 'quiz_attempts' ),
+			'lessons_completed'    => array( 'lessons_completed' ),
+			'lessons_viewed'       => array( 'lessons_viewed' ),
+			'lesson_progress'      => array( 'lesson_progress' ),
+			'current_lesson'       => array( 'current_lesson' ),
+			'next_lesson'          => array( 'next_lesson' ),
+			'free_lesson_title'    => array( 'free_lesson_title' ),
+			'lesson_recommendations' => array( 'lesson_recommendations' ),
+			'weak_area'            => array( 'weak_area' ),
+			'streak_days'          => array( 'streak_days' ),
+			'time_spent'           => array( 'time_spent' ),
+			'message_count'        => array( 'message_count', 'pair_number' ),
+			'timer_remaining'      => array( 'timer_remaining' ),
+			'days_remaining'       => array( 'days_remaining' ),
+			'user_status_response' => array( 'user_status_response' ),
+		);
+		$out = array();
+		foreach ( $direct as $token => $keys ) {
+			foreach ( $keys as $key ) {
+				if ( isset( $turn[ $key ] ) && '' !== $turn[ $key ] ) {
+					$out[ $token ] = $turn[ $key ];
+					break;
+				}
+			}
+		}
+		if ( isset( $turn['logged_in'] ) ) {
+			$out['logged_in'] = $turn['logged_in'] ? 'yes' : 'no';
+		}
+		return $out;
+	}
+}
+
+if ( ! function_exists( 'flosc_personality_variable_user' ) ) {
+	/**
+	 * The four tokens that name the visitor.
+	 *
+	 * One get_userdata() for all four, cached for the request, and only when a
+	 * document actually contains one of them. A logged-out visitor has no user
+	 * row, so these come back empty rather than guessed.
+	 *
+	 * @param string $token   name, first_name, user_name or user_email.
+	 * @param array  $context Per-turn context (may carry user_id).
+	 * @return string
+	 */
+	function flosc_personality_variable_user( $token, $context = array() ) {
+		static $cache = array();
+		$user_id = 0;
+		if ( isset( $context['user_id'] ) ) {
+			$user_id = (int) $context['user_id'];
+		} elseif ( function_exists( 'get_current_user_id' ) ) {
+			$user_id = (int) get_current_user_id();
+		}
+		if ( $user_id <= 0 || ! function_exists( 'get_userdata' ) ) {
+			return '';
+		}
+		if ( ! array_key_exists( $user_id, $cache ) ) {
+			$cache[ $user_id ] = get_userdata( $user_id );
+		}
+		$user = $cache[ $user_id ];
+		if ( ! $user ) {
+			return '';
+		}
+		switch ( $token ) {
+			case 'first_name':
+				return (string) ( $user->first_name !== '' ? $user->first_name : $user->display_name );
+			case 'user_name':
+				return (string) $user->user_login;
+			case 'user_email':
+				return (string) $user->user_email;
+			default:
+				return (string) $user->display_name;
+		}
+	}
+}
+
+if ( ! function_exists( 'flosc_personality_variable_value' ) ) {
+	/**
+	 * One token's value. Flow values come from data WordPress and FLOSC already
+	 * hold; visitor values come only from the context the caller passed in, so
+	 * nothing here opens a query of its own.
+	 *
+	 * @param string     $token   Bare token, no braces.
+	 * @param string|null $flow_id Flow stem.
+	 * @param array      $context Caller-supplied per-turn values.
+	 * @return string
+	 */
+	function flosc_personality_variable_value( $token, $flow_id = null, $context = array() ) {
+		if ( array_key_exists( $token, $context ) ) {
+			return flosc_personality_variable_clean( $context[ $token ] );
+		}
+		$value = '';
+		switch ( $token ) {
+			case 'name':
+			case 'first_name':
+			case 'user_name':
+			case 'user_email':
+				$value = flosc_personality_variable_user( $token, $context );
+				break;
+			case 'flow_name':
+				$value = function_exists( 'flosc_flow_name' ) ? flosc_flow_name( $flow_id ) : '';
+				break;
+			case 'site_name':
+				$value = function_exists( 'get_bloginfo' ) ? get_bloginfo( 'name' ) : '';
+				break;
+			case 'site_url':
+				$value = function_exists( 'get_bloginfo' ) ? get_bloginfo( 'url' ) : '';
+				break;
+			case 'site_description':
+				$value = function_exists( 'get_bloginfo' ) ? get_bloginfo( 'description' ) : '';
+				break;
+			case 'public_title':
+			case 'title':
+				$value = function_exists( 'flosc_flow_public_title' ) ? flosc_flow_public_title( $flow_id ) : '';
+				break;
+			case 'tagline':
+				$value = function_exists( 'flosc_flow_public_tagline' ) ? flosc_flow_public_tagline( $flow_id ) : '';
+				break;
+			case 'timezone':
+				$value = function_exists( 'wp_timezone_string' ) ? wp_timezone_string() : '';
+				break;
+			case 'locale':
+				$value = function_exists( 'get_locale' ) ? get_locale() : '';
+				break;
+			case 'personality_name':
+				$value = flosc_personality_variable_field( 'ai_personality_name', $flow_id );
+				break;
+			case 'personality_role':
+				$value = flosc_personality_variable_field( 'ai_personality_role', $flow_id );
+				break;
+			case 'topic_scope':
+				$value = flosc_personality_variable_field( 'ai_topic_scope', $flow_id );
+				break;
+			default:
+				/* Everything else is a flow setting if one exists, and empty if
+				   not. A visitor token with no context reaches here and is
+				   correctly empty rather than invented. */
+				if ( function_exists( 'flosc_get_setting' ) ) {
+					$value = flosc_get_setting( $token, '', $flow_id );
+				}
+				break;
+		}
+		return flosc_personality_variable_clean( $value );
+	}
+}
+
+if ( ! function_exists( 'flosc_personality_variable_field' ) ) {
+	/**
+	 * A personality field for this flow, through the library when it is loaded.
+	 *
+	 * @param string      $field   Field key.
+	 * @param string|null $flow_id Flow stem.
+	 * @return string
+	 */
+	function flosc_personality_variable_field( $field, $flow_id = null ) {
+		if ( function_exists( 'flosc_personality_library_resolve_field' ) ) {
+			return (string) flosc_personality_library_resolve_field( $field, '', $flow_id );
+		}
+		if ( function_exists( 'flosc_get_setting' ) ) {
+			return (string) flosc_get_setting( $field, '', $flow_id );
+		}
+		return '';
+	}
+}
+
+if ( ! function_exists( 'flosc_personality_variable_clean' ) ) {
+	/**
+	 * A substituted value is prompt text, not markup, so HTML escaping is the
+	 * wrong tool. What matters is that a value cannot carry control characters,
+	 * cannot introduce another token for a second pass to find, and cannot run
+	 * to an unbounded length inside a prompt billed per token.
+	 *
+	 * @param mixed $value Raw value.
+	 * @return string
+	 */
+	function flosc_personality_variable_clean( $value ) {
+		if ( is_bool( $value ) ) {
+			$value = $value ? 'yes' : 'no';
+		}
+		if ( is_array( $value ) ) {
+			$value = implode( ', ', array_map( 'strval', $value ) );
+		}
+		$text = (string) $value;
+		$text = str_replace( array( '{', '}' ), '', $text );
+		$text = preg_replace( '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $text );
+		$text = trim( (string) $text );
+		if ( function_exists( 'mb_substr' ) ) {
+			$text = mb_substr( $text, 0, 500 );
+		} else {
+			$text = substr( $text, 0, 500 );
+		}
+		return $text;
+	}
+}
+
+if ( ! function_exists( 'flosc_personality_expand_variables' ) ) {
+	/**
+	 * Expand the tokens a personality document actually contains.
+	 *
+	 * Runs on the request-specific copy, every turn, because the attached
+	 * personality can be switched mid-session and the next turn must read the
+	 * new one. The stored ai_base_prompt is never written back.
+	 *
+	 * @param string      $text    Compiled personality document.
+	 * @param string|null $flow_id Flow stem.
+	 * @param array       $context Per-turn values from the caller.
+	 * @return string
+	 */
+	function flosc_personality_expand_variables( $text, $flow_id = null, $context = array() ) {
+		$text = (string) $text;
+		/* No brace, no work. Most documents carry none. */
+		if ( strpos( $text, '{' ) === false ) {
+			return $text;
+		}
+		if ( ! preg_match_all( '/\{([a-z][a-z0-9_]*)\}/', $text, $found ) ) {
+			return $text;
+		}
+		$catalog = flosc_personality_variable_catalog();
+		$map     = array();
+		foreach ( array_unique( $found[1] ) as $token ) {
+			/* A brace that is not a FLOSC variable is the floscAdmin's own text
+			   and is left exactly as written. */
+			if ( ! isset( $catalog[ $token ] ) ) {
+				continue;
+			}
+			$map[ '{' . $token . '}' ] = flosc_personality_variable_value( $token, $flow_id, $context );
+		}
+		if ( ! $map ) {
+			return $text;
+		}
+		return strtr( $text, $map );
+	}
+}
+
 if ( ! function_exists( 'flosc_personality_compiled_profile' ) ) {
 	/**
 	 * Compiled personality Markdown for this flow (library attach or custom).
 	 *
 	 * @param string|null $flow_id Optional flow stem.
+	 * @param array       $context Per-turn values for visitor-scoped variables.
 	 * @return string
 	 */
-	function flosc_personality_compiled_profile( $flow_id = null ) {
+	function flosc_personality_compiled_profile( $flow_id = null, $context = array() ) {
 		$profile = '';
 		if ( function_exists( 'flosc_personality_library_resolve_field' ) ) {
 			$profile = (string) flosc_personality_library_resolve_field( 'ai_base_prompt', '', $flow_id );
 		} elseif ( function_exists( 'flosc_get_setting' ) ) {
 			$profile = (string) flosc_get_setting( 'ai_base_prompt', '', $flow_id );
 		}
+		/* Expansion happens on this copy only. The stored document keeps its
+		   tokens so the designer still shows what the floscAdmin wrote. */
+		$profile = flosc_personality_expand_variables( $profile, $flow_id, $context );
 		return trim( $profile );
+	}
+}
+
+if ( ! function_exists( 'flosc_personality_variable_boot' ) ) {
+	/**
+	 * The variable catalog as the builder needs it: token, label, scope, and
+	 * the current value for flow-scoped tokens.
+	 *
+	 * @param string|null $flow_id Flow stem being edited.
+	 * @return array<int,array<string,string>>
+	 */
+	function flosc_personality_variable_boot( $flow_id = null ) {
+		$out = array();
+		foreach ( flosc_personality_variable_catalog() as $token => $meta ) {
+			$row = array(
+				'token' => '{' . $token . '}',
+				'label' => $meta['label'],
+				'scope' => $meta['scope'],
+				'value' => '',
+			);
+			if ( 'flow' === $meta['scope'] ) {
+				$row['value'] = flosc_personality_variable_value( $token, $flow_id );
+			}
+			$out[] = $row;
+		}
+		return $out;
 	}
 }
 
@@ -1806,6 +2196,11 @@ if ( ! function_exists( 'flosc_personality_builder_boot_json' ) ) {
 			'attachNonce'       => wp_create_nonce( 'flosc_attach_personality' ),
 			'ivr'               => (string) $ivr,
 			'existingIds'       => array_keys( flosc_personality_library_get_all() ),
+			/* Every variable a card may carry, with the value it resolves to for
+			   the flow being edited. A floscAdmin typing {flow_name} sees what
+			   it becomes rather than guessing; a visitor-scoped token says it
+			   resolves at chat time instead of showing an invented value. */
+			'variables'         => flosc_personality_variable_boot( $ivr ),
 			'personaId'         => $persona_id,
 			'libraryUrl'        => flosc_personality_library_url( $ivr ),
 			'hideProviderPacks' => true,

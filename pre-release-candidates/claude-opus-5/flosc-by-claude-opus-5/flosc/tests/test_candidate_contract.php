@@ -37,9 +37,33 @@ $dispatch = (string) file_get_contents( $root . '/includes/class-ai-chat-dispatc
 $turn     = (string) file_get_contents( $root . '/includes/chat-turn/trait-flosc-chat-turn.php' );
 $library  = (string) file_get_contents( $root . '/includes/flosc-personality-library.php' );
 
+if ( ! defined( 'ABSPATH' ) ) {
+	define( 'ABSPATH', $root . '/' );
+}
+if ( ! defined( 'FLOSC_PLUGIN_DIR' ) ) {
+	define( 'FLOSC_PLUGIN_DIR', $root . '/' );
+}
+if ( ! function_exists( 'add_action' ) ) {
+	function add_action( ...$args ) {}
+}
+if ( ! function_exists( 'add_filter' ) ) {
+	function add_filter( ...$args ) {}
+}
+if ( ! function_exists( 'wp_json_encode' ) ) {
+	function wp_json_encode( $value, $flags = 0 ) {
+		return json_encode( $value, $flags );
+	}
+}
+require_once $root . '/includes/flosc-personality-library.php';
+
+/* The compact flag is what this asserts: false means the whole compiled
+   profile goes on a follow-up, not a name-and-role summary. The call carries a
+   third argument now — the turn's context, for Sticky for User and for
+   variable expansion — so the match stops at the comma rather than pinning the
+   whole argument list. Pinning it is why this gate went red in v31. */
 echo "The personality reaches the model whole, every turn\n";
 ok( 'follow-ups send the complete current profile',
-	strpos( $chatpack, "build_identity_section((string) (\$eval_context['flow_id'] ?? ''), false)" ) !== false, true );
+	strpos( $chatpack, "build_identity_section((string) (\$eval_context['flow_id'] ?? ''), false," ) !== false, true );
 
 echo "\nA failed provider call is distinguishable from a quiet one\n";
 ok( 'dispatch reports a structured outcome',
@@ -123,10 +147,17 @@ ok( 'no chatpack section number carries two different titles', $collisions, arra
 // reinforce it — it crowds out the character that was the reason to attach a
 // personality at all.
 echo "\nNo shipped personality carries the flow's trajectory in its own voice\n";
-preg_match_all( "/'ai_base_prompt'\s*=>\s*<<<'PROMPT'\n(.*?)\nPROMPT,/s", $library, $prompts );
-ok( 'four shipped profiles found', count( $prompts[1] ), 4 );
+$prompts = array_values(
+	array_map(
+		static function ( $row ) {
+			return (string) ( $row['ai_base_prompt'] ?? '' );
+		},
+		flosc_personality_library_defaults()
+	)
+);
+ok( 'four shipped profiles found', count( $prompts ), 4 );
 
-foreach ( $prompts[1] as $body ) {
+foreach ( $prompts as $body ) {
 	preg_match( '/# DA1\/FLOSC AI Personality Profile Name: (.+)/', $body, $who );
 	$name = isset( $who[1] ) ? trim( $who[1] ) : 'unnamed';
 

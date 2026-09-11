@@ -1,160 +1,49 @@
 {
   "candidate": "claude-opus-5",
-  "creator": "Claude Opus 5 \u2014 Chief Engineer",
-  "status": "DESIGNER_PASS_AWAITING_CAPTAIN_TEST",
-  "branch": "claude/ready-to-help-jsw2li",
-  "baseline_commit": "477f252",
-  "head_commit": "a62220c67b9a6f3c773b8a2974a95cd3a1338b8b",
-  "version": "8.0.0",
+  "candidate_iteration": 32,
+  "creator": "Claude Opus 5",
+  "status": "BUILT_AWAITING_CAPTAIN_TEST",
+  "plugin_version": "8.0.0",
+  "base": "grok-4-6 v31 (8a6b3f5)",
+  "base_note": "Built from the v31 candidate tree, not from an older branch. v31's Sticky for User, oEmbed FAQ entry, Personalization station and flosc.php work are all carried forward unchanged.",
+  "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
-  "artifact_note": "Built from this tree with ./build-dist-zip.sh at head_commit. sha256sums covers it. pre-release-candidates/ is excluded from the artifact by .distignore and by the build's hard deny list, so none of these folders can ride along into a ZIP.",
-  "assembled_from": {
-    "codex-gpt5": "full profile every turn, RAG fallthrough, get_response_result(), personality boilerplate removal, genome/profile fingerprint",
-    "opencode-big-pickle": "no-hedge method pair and the method_exists guards",
-    "grok-4-6": "public request protection, IVR greeting variables, line-break forms, Public Title placement",
-    "github-copilot": "nothing advanced"
+  "artifact_root": "flosc/",
+  "artifact_sha256": "dd647e8ba0f3cace069a56118ebd5bd24253fd346ea3a0bc235e1a8a7646a7b0",
+  "artifact_size_bytes": 2725873,
+  "artifact_entries": 277,
+  "tree_files": 289,
+  "what_v32_adds": {
+    "one_line": "Variables in the personality designer: a floscAdmin can type {flow_name} or {score} into any aspect card and it becomes the value when the personality is sent to the model.",
+    "why": "Typing a token used to send the literal seven characters. It matters most on a cross-domain flow, where a personality that says 'this site' names nothing.",
+    "expansion": "On the request copy, every turn, because the attached personality can be switched mid-session and the next turn must read the new one. The stored ai_base_prompt keeps the tokens the floscAdmin wrote.",
+    "no_extra_queries": "flosc_personality_variable_context() maps the evaluation context the chatpack and dispatch already assembled. The four tokens naming the visitor share one get_userdata(), cached, and only when the document contains one of them.",
+    "fast_exit": "A document with no brace returns before any work. Only recognised tokens actually present are resolved. A floscAdmin's own braces are left alone.",
+    "safety": "A value is prompt text, not markup, so escaping is not the protection that matters: braces are stripped so a value cannot introduce a token, control characters are stripped, length is capped at 500.",
+    "unresolved": "An unresolved token substitutes empty. The literal reaching a model is the failure mode that once put \"I'm {personality_name}\" in front of a visitor.",
+    "designer": "A Variables panel above the output pane lists every token with what it resolves to for the flow being edited. Visitor tokens say they resolve at chat time rather than showing a value invented for a screen where no visitor exists. Reuses the existing flosc-acc-var-chip styling — no new CSS."
   },
+  "v31_gate_fixed": "test_candidate_contract.php was RED in v31. It pins the follow-up chatpack call by exact string, and v31 added a third argument to build_identity_section() for Sticky for User without updating it. v32 matches up to the comma. What the gate asserts — compact false, the whole profile every turn — is unchanged.",
+  "files_changed_from_v31": [
+    "includes/flosc-personality-library.php",
+    "includes/class-flosc-chatpack.php",
+    "includes/class-ai-chat-dispatch.php",
+    "assets/js/flosc-personality-builder.js",
+    "assets/personality-builder/flosc-personality-builder-markup.php",
+    "tests/check_profile_variables.php",
+    "tests/test_candidate_contract.php"
+  ],
   "verification": {
+    "test_suite": "passed — 28 files, including the new check_profile_variables.php",
     "php_syntax_all_files": "passed",
     "javascript_syntax": "passed",
-    "test_suite": "passed (25 files + tests/check_density_nesting.js)",
-    "starter_pack_manifest": "passed",
-    "packaging_gates": "passed",
-    "version_held_at_8_0_0": "passed",
-    "wordpress_runtime": "DEFERRED \u2014 fresh install required",
-    "wordpress_plugin_check": "DEFERRED \u2014 fresh install required",
-    "live_ai_provider_calls": "DEFERRED \u2014 fresh install required",
-    "journey_harness": "DEFERRED \u2014 needs WP-CLI on the target site",
-    "contract_acceptance": "DEFERRED \u2014 personality built from scratch, attached to a pack, carrying that flow to its outcome",
-    "zip_gates": "passed (277 files, 2.6M, forbidden-path scan clean)",
-    "wordpress_version_headers": "passed (Requires at least 7.0.4, Tested up to 7.0.4, gated by check_packaging.php)",
-    "plugin_check": "two findings addressed: outdated_tested_upto_header, readme_parser_warnings_trimmed_section_description"
-  },
-  "new_gates": [
-    "check_method_contract.php",
-    "test_candidate_contract.php",
-    "check_ivr_variables.php",
-    "check_request_protection.php",
-    "check_action_handlers.php",
-    "check_log_contract.php",
-    "check_turn_recovery.php",
-    "check_attachment_save.php",
-    "check_profile_hygiene.php",
-    "check_starter_pack_assets.php",
-    "check_packaging.php"
-  ],
-  "harness": "tests/journey-harness.php (WP-CLI, --require, never shipped)",
-  "plugin_source": "flosc-by-claude-opus-5/flosc",
-  "tree_files": 283,
-  "designer_pass": {
-    "note": "The DA1 AI Personality Designer, made usable. Version held at 8.0.0.",
-    "one_card": "A wellspring is an aspect; a category is a group of aspects; both are the same card. Drop an aspect onto a card and that card becomes the heading it sits under, keeping density, gain, binding, hue, star and trajectory.",
-    "group_noun": "heading | wellspring | cloud | rain cloud | pool | category \u2014 defaults from density: cloud in soul, rain cloud in character, pool in behavior.",
-    "nested_density": "A colon separates levels, a period separates decimals. 16 inside 95 reads 95:016; 100 inside 95 reads 95:100; a nested card keeps its decimals, 95:016.5. Any depth, 95:025:100. Root and nested alike run 0-100 to three decimal places. Derived, never stored. Ties sort alphabetically.",
-    "dialogs_removed": "Both <dialog> blocks opened a <form> inside WordPress's settings form. The browser dropped the inner tag, #tribForm was null, and the listener on it threw \u2014 killing every line of setup after it, which is why + Category did nothing.",
-    "placement_round_trip": "workshopFile() wrote placement and importSpec() never read it. It does now, so a group survives a save.",
-    "soul_section": "Shown on every card, read from the placement rather than recalculated. Default is the last heading at or below the card's density.",
-    "trajectory_posts": "412, ?post=412, or a permalink resolves to that post's title and excerpt. Boot list from flosc_personality_trajectory_posts().",
-    "items_closed": [
-      9,
-      10,
-      11,
-      18,
-      "20b",
-      21,
-      25,
-      26,
-      27,
-      28,
-      30,
-      31,
-      32,
-      33,
-      34,
-      35,
-      37
-    ],
-    "one_list": "The thirteen soul.md headings ARE the aspect palette's shelves. wellspringCategories() derives from the container list, so renaming a shelf renames its heading and a card waits on the shelf it will be written under.",
-    "headings": "Identity and Role 6 | Philosophy and Values 12 | Boundaries and Prohibitions 18 | Knowledge, Doubt and Correction 24 | Opinions and Preferences 30 | Tone and Communication Style 40 | Stance Toward the Human 48 | Behavior in Ambiguity 56 | Adaptation 62 | Resourcefulness 68 | Decisions including Infrequent Cases 74 | Banned Words and Fillers to Avoid 84 | Output and Delivery 94"
-  },
-  "candidate_iteration": 25,
-  "iterations": {
-    "v7": {
-      "commit": "7d329fa",
-      "what": "assembled candidate, then rebuilt with the empty-profile guard"
-    },
-    "v8": {
-      "commit": "48b951b",
-      "what": "the designer pass: one card, nested density, both dialogs removed, placement round-trip, post-id trajectories"
-    },
-    "v9": {
-      "commit": "c5364b5",
-      "what": "a colon separates nesting levels, a period separates decimals; nested cards keep their decimals"
-    },
-    "v10": {
-      "commit": "a62220c",
-      "what": "the headings are the palette shelves (thirteen, two renamed, two new); ticking reveals; a heading is a drop target; the card editor on the palette side; the builder's own trajectory list removed and migrated; shelves open on one click; card rows wrap instead of printing over themselves; Spectrograph expands"
-    },
-    "v11": {
-      "commit": "this commit",
-      "what": "the summary keeps its ellipsis; the full line becomes a wrapped footer at the bottom of the opened card"
-    },
-    "v12": {
-      "commit": "this commit",
-      "what": "the row summary's label was landing in the 18px swatch column and printing across its own meta line; three columns, each child placed by name"
-    },
-    "v13": {
-      "commit": "this commit",
-      "what": "filenames stop shouting: readme.md, sha256sums, handoff.md"
-    },
-    "v14": {
-      "commit": "this commit",
-      "what": "Tested up to was 7.1, a WordPress version that does not exist; both headers are 7.0.4 and a gate holds them there"
-    },
-    "v15": {
-      "commit": "this commit",
-      "what": "+ Category makes a heading at density 0; + Heading becomes + Aspect; the Drop between control removed; readme rewritten clean"
-    },
-    "v16": {
-      "commit": "this commit",
-      "what": "the palette sorted shelves alphabetically so a d0 category landed under N; justify-self:end sized the meta line to its content and grew it leftward out of the row"
-    },
-    "v17": {
-      "commit": "this commit",
-      "what": "new aspects are created at density 0, not densest-card + 2"
-    },
-    "v18": {
-      "commit": "this commit",
-      "what": "a saved personality now receives headings added since it was saved and takes the current standard labels unless renamed; renaming a category from the palette wrote to a throwaway object and did nothing; an empty shelf says so"
-    },
-    "v19": {
-      "commit": "this commit",
-      "what": "empty-state copy reads Place aspects here"
-    },
-    "v20": {
-      "commit": "this commit",
-      "what": "a category gets the full card; an empty heading stays in the palette and is not written into the document; ticking an aspect places it under the shelf it was ticked from"
-    },
-    "v21": {
-      "commit": "this commit",
-      "what": "New and New from template; 30s autosave with blue/green save button and a UTC last-saved line; a new aspect is unfiled; Remove on every category; the Written under list is built from the live headings; the density box accepts a colon path"
-    },
-    "v22": {
-      "commit": "this commit",
-      "what": "New writes a NEW library row, named first; a save can no longer write one personality into another's row"
-    },
-    "v23": {
-      "commit": "this commit",
-      "what": "the two Plugin Check findings: Tested up to 7.1, and the overflow section renamed to a heading wp.org recognises"
-    },
-    "v24": {
-      "commit": "this commit",
-      "what": "the Description is measured as rendered HTML, not markdown source; Included Features moved whole into Other Notes"
-    },
-    "v25": {
-      "commit": "this commit",
-      "what": "read the wp.org parser: unrecognised == headings == are routed to other_notes and other_notes is appended to description, and the 2500 limit is words not characters. External Services moves into the FAQ; three trailing sections become Changelog subsections."
-    }
-  },
-  "iteration_note": "candidate_iteration counts rebuilds of this folder. It is not the plugin version, which is held at 8.0.0 and does not move. v8 and v9 landed with subject lines that broke the 'Home run candidate v<N>' pattern; the iterations map is the mapping."
+    "density_nesting": "passed",
+    "readme_wporg_budgets": "passed",
+    "starter_pack_manifest": "passed against the artifact",
+    "zip_gates": "passed (277 entries, forbidden-path scan clean, single flosc/ root)",
+    "version_held_at_8_0_0": "passed (flosc.php, FLOSC_VERSION, readme.txt Stable tag)",
+    "wordpress_plugin_check": "DEFERRED — needs a WordPress install",
+    "live_variable_expansion": "DEFERRED — type a token into a card, save, ask the chat",
+    "personality_revision": "NOT IN THIS BUILD — the four shipped profiles are unchanged from v31"
+  }
 }
