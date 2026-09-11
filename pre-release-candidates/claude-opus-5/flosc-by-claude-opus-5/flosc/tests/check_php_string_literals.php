@@ -79,17 +79,19 @@ require_once $root . '/includes/flosc-personality-library.php';
  * when a revision is approved the hash below moves with it, in the same commit
  * as the text, so the two cannot drift apart quietly.
  *
- * Last moved: v37, for the gain ladder. Every frequency word in all four
+ * Last moved: v38, for the revision itself — all four personalities rewritten
+ * across the fourteen headings, cards and documents generated from one source
+ * so they cannot disagree. Before that, v37, for the gain ladder. Every frequency word in all four
  * profiles was recomputed from its own card's gain — the old nine-rung ladder
  * rounded every gain from 65 to 95 down to "usually", which is why these
  * documents said it twenty-one times for eleven different values.
  */
 echo "\nThe four shipped runtime profiles match their approved text\n";
 $expected = array(
-	'friendly'     => '7b53c542d49e3c393973f3e7b886fa84540cc0e551dd864bf09dadc785197f72',
-	'tech'         => '3bdd964bce7c44f279fda1d5c113e8395941921e19a98c51ab4ad9d75f6ff570',
-	'bubblybetty'  => '7264b32907c84a45b7fb43f60d5fe257cb0c8778d48cda203b985b41be8dcde1',
-	'dadjokedan'   => '97cb6d86554693134a3a83628120873c496aa3d102578372d20a88173b857eed',
+	'friendly'     => 'f57561a07d8a92c0c4c3eb49a0d04371236ee1bfb8090711f4d61cf59e4914a4',
+	'tech'         => '40830172e34ba20d23fd09d90ed287f954b61f646794a94c2d621f64628f5efe',
+	'bubblybetty'  => '955912e06317ebb6e3ee2130c43a68d2cf949d93948990d5c908526de2c33526',
+	'dadjokedan'   => 'a7e4b024e90642942359e03ca061b5bab173039fa9951b8e2a9d3db8814121fa',
 );
 $defaults = flosc_personality_library_defaults();
 foreach ( $expected as $id => $hash ) {

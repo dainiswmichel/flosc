@@ -247,11 +247,15 @@ foreach ( $shipped as $body ) {
 			continue;
 		}
 		// "# 40 Tone and Communication Style" — the density leads the heading.
-		if ( ! preg_match( '/^# [0-9]+ (.+)$/', $line, $h ) || ! isset( $stations[ trim( $h[1] ) ] ) ) {
+		/* Personalization is the fourteenth slot. It is not seeded in
+		   SOUL_LAYERS — the compiler pushes it in at density 1 as the reserved
+		   place for Sticky for User — so the station list does not carry it. */
+		if ( ! preg_match( '/^# [0-9]+ (.+)$/', $line, $h )
+			|| ( ! isset( $stations[ trim( $h[1] ) ] ) && 'Personalization' !== trim( $h[1] ) ) ) {
 			$bad[] = $line;
 		}
 	}
-	ok( $who . ': every heading is one of the thirteen', $bad, array() );
+	ok( $who . ': every heading is one of the fourteen', $bad, array() );
 }
 
 echo $fail ? "\n$fail FAILURES\n" : "\nThe document keeps the shape it ships with\n";

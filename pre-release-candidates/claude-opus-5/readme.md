@@ -1,85 +1,82 @@
-# FLOSC 8.0.0 — candidate v37
+# FLOSC 8.0.0 — candidate v38
 
-Built from v36. Version is 8.0.0 and does not move.
+Built from v37. Version is 8.0.0 and does not move.
 
     artifact   flosc.zip
-    sha256     79962075f7ab530da9d6d08bab208987488472a5d574650dff9c9e2b05e9a95c
+    sha256     088d18b6a3addd5fa8dcbf9d5b36fc7fb060a161d93f70726033af847972c3ee
     entries    277, single flosc/ root
     source     flosc-by-claude-opus-5/flosc
 
-## The gain ladder
+**All four personalities are revised.** Coverage went from 3, 3, 3 and 5 of
+thirteen headings to fourteen of fourteen each.
 
-Gain is a frequency in disguise — `frequency = (gain + 100) / 2`. The old
-ladder had nine evenly spaced rungs, and four of its words named a comparison
-or an attitude rather than a frequency: *less often than not*, *more often
-than not*, *no preference*. A floscAdmin could not rank them, and they did not
-mean what they sounded like.
+    Friendly Guide   22 cards
+    Tech Agent       23 cards
+    BubblyBetty      20 cards
+    Dad Joke Dan     27 cards, eight of them jokes
 
-Thirteen rungs, paired around the hinge:
+## Read this before testing on a live site
 
-    gain   freq   word
-    -100     0%   never
-     -90     5%   rarely
-     -80    10%   infrequently
-     -60    20%   seldom
-     -50    25%   sporadically
-     -30    35%   occasionally
-       0    50%   sometimes
-      30    65%   typically
-      50    75%   usually
-      60    80%   regularly
-      80    90%   frequently
-      90    95%   consistently
-     100   100%   always
+**The shipped defaults do not overwrite an existing library.**
 
-The uneven spacing is deliberate. `gainWord()` takes the nearest rung, so a
-word owns the band to the midpoint of its neighbours — the rungs sit where a
-word actually lives rather than where arithmetic put them.
+```php
+$raw = get_option( $key, false );
+if ( false === $raw ) {          // only when the option does not exist
+    $raw = flosc_personality_library_defaults();
+```
 
-**On the hinge.** A new card defaults to gain 50, not 0, and a card at 0 still
-emits its frequency line. So 0 is a value someone chose and is being sent to
-the model, not an absence — which is why *no preference* was the wrong word
-for it, and *sometimes* is the right one.
+dainis.net already has that option, so installing this zip will **not** change
+the four personalities there. To force a reseed:
 
-## What that did to the four profiles
+    wp option delete flosc_personality_library --path=/home/dainisne/public_html
 
-Twenty-two frequency lines changed, each recomputed from its own card's gain
-in the workshop template rather than find-and-replaced.
+then load any FLOSC admin page. That destroys any personality edited on that
+site, which is why it is a manual step and not code — auto-overwrite would
+wipe a floscAdmin's work on every install.
 
-The old ladder rounded every gain from 65 to 95 down to `usually`. That is why
-the four documents said "usually" twenty-one times — for eleven different
-authored values. The thirteen rungs tell them apart:
+## Nothing was deleted
 
-    before                  after
-    21 × usually            6 × consistently
-     7 × always            13 × frequently
-     1 × often              3 × regularly
-                            7 × always
+Ten cards existed in the workshop and never reached their documents — seven in
+Tech Agent (`popper`, `one_reality`, `tell_the_truth`, `kind`,
+`open_continue`), three in BubblyBetty (`nervous_system`, `relax`,
+`sales_host`). All are in the documents now, filed under the heading that fits
+them.
 
-Dad Joke Dan carried one hand-written `frequency: often`. That word is not on
-the ladder, so the designer would never produce it and a Save would have
-silently rewritten the document. It is now `regularly`, computed from that
-card's gain of 60.
+## Document and cards are generated from one source
 
-## Gates
+Both come from the same data, so the designer shows exactly what chats
+receive. Before this, a personality whose document carried cards the workshop
+did not would lose them on the first Save — which is what would have happened
+to anyone testing the old profiles in the designer.
 
-`check_personality_document.php` holds the thirteen rungs, and now also
-asserts that **every frequency word in a shipped profile is one of them** — so
-a hand-written word the designer cannot produce fails the suite rather than
-drifting until someone hits Save.
+Every `frequency:` line is computed from its own card's gain, never typed.
 
-`check_php_string_literals.php` pins the four profiles by hash. All four moved
-with the recomputed words, in this commit, per the rule in that file.
+## Absolutes are rare now
+
+Two cards per personality carry `always` — identity under probe, and the one
+real prohibition. Nothing carries `never`.
+
+## The jokes
+
+Eight, on the Tone shelf at densities 45.1 through 45.8, gain 70 —
+`regularly`, 85%. Five of them new. Format is the Captain's:
+
+    instruction: Joke set up — "What's the funniest preposition?"
+    Punchline — "Over and PUNder."
+    short: Direction, position, or the follow-up when PreposishPUNS lands.
+    frequency: regularly
+
+## Clouds emptied
+
+The cloud groupings named cards that no longer exist after the rewrite, and
+they compile as their own sections. The fourteen headings are the grouping
+now.
 
 ## Verified
 
 28 gates pass, PHP lint clean, JS clean, density nesting clean,
 forbidden-path scan clean, version 8.0.0 in both files.
 
-Deferred to a WordPress install: Plugin Check, and dragging a card's gain in
-the designer to watch the word track the number across the new rungs.
-
-## Not in this build
-
-The personality revisions themselves. Friendly Guide is settled and Dad Joke
-Dan is drafted with five new jokes; neither is written to the file yet.
+Deferred to a WordPress install: Plugin Check, and a designer round trip —
+open each personality, confirm fourteen shelves with cards on them, Save, and
+confirm the document does not change.

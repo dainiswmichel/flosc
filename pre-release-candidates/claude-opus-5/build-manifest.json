@@ -1,37 +1,38 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": 37,
+  "candidate_iteration": 38,
   "creator": "Claude Opus 5",
   "status": "BUILT_AWAITING_CAPTAIN_TEST",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v36 (63325f4)",
+  "base": "claude-opus-5 v37 (9770300)",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "79962075f7ab530da9d6d08bab208987488472a5d574650dff9c9e2b05e9a95c",
-  "artifact_bytes": 2729320,
+  "artifact_sha256": "088d18b6a3addd5fa8dcbf9d5b36fc7fb060a161d93f70726033af847972c3ee",
+  "artifact_bytes": 2732345,
   "artifact_entries": 277,
   "tree_files": 289,
-  "the_gain_ladder": {
-    "authored_by": "The Captain — paired around the hinge, negative against positive.",
-    "why": "Gain is a frequency in disguise: frequency = (gain + 100) / 2. The old ladder had nine evenly spaced rungs and four of its words named a comparison or an attitude rather than a frequency — 'less often than not', 'more often than not', 'no preference'. A floscAdmin could not rank them, and they did not mean what they sounded like.",
-    "rungs": "-100 never · -90 rarely · -80 infrequently · -60 seldom · -50 sporadically · -30 occasionally · 0 sometimes · 30 typically · 50 usually · 60 regularly · 80 frequently · 90 consistently · 100 always",
-    "uneven_spacing": "Deliberate. gainWord() takes the nearest rung, so a word owns the band to the midpoint of its neighbours, and the rungs sit where a word actually lives rather than where arithmetic put them.",
-    "the_hinge": "0 is 'sometimes'. A new card defaults to gain 50, not 0, and a card at 0 still emits its frequency line — so 0 is a value someone chose and is being sent, not an absence. That is why 'no preference' was wrong."
+  "the_revision": {
+    "what": "All four shipped personalities rewritten across the fourteen headings. Coverage went from 3, 3, 3 and 5 of thirteen to fourteen of fourteen each.",
+    "cards": "Friendly Guide 22, Tech Agent 23, BubblyBetty 20, Dad Joke Dan 27 including eight jokes.",
+    "generated_from_one_source": "Document and workshop cards are generated from the same data, so a Save in the designer recompiles to what is already stored. Before this, a personality whose document had cards the workshop did not would lose them on the first Save.",
+    "nothing_deleted": "Seven Tech cards and three BubblyBetty cards existed in the workshop and never reached their documents — popper, one_reality, tell_the_truth, kind, open_continue for Tech; nervous_system, relax, sales_host for Betty. All are in the documents now.",
+    "frequency_words_computed": "Every frequency line is computed from its own card's gain, never typed, so the two cannot disagree.",
+    "absolutes_are_rare": "Two cards per personality carry always — identity under probe, and the one real prohibition. Nothing carries never.",
+    "jokes": "Five new jokes from the Captain. Eight total, on the Tone shelf at 45.1 to 45.8, gain 70 — regularly, 85%. Format is his: Joke set up — \"...\" then Punchline — \"...\".",
+    "clouds_emptied": "The cloud groupings named cards that no longer exist after the rewrite, and they compile as their own sections. The fourteen headings are the grouping now."
   },
-  "profiles_recomputed": {
-    "what": "Twenty-two frequency lines across all four profiles, each recomputed from its own card's gain in the workshop template rather than find-and-replaced.",
-    "why": "The old ladder rounded every gain from 65 to 95 down to 'usually', which is why the four documents said 'usually' twenty-one times for eleven different authored values. The thirteen rungs tell them apart: 6 consistently, 13 frequently, 3 regularly, 7 always.",
-    "often_removed": "Dad Joke Dan carried one hand-written 'frequency: often'. That word is not on the ladder, so the designer would never produce it and a Save would have silently changed the document. It is now 'regularly', computed from that card's gain of 60."
-  },
-  "files_changed_from_v36": [
-    "assets/js/flosc-personality-builder.js",
+  "files_changed_from_v37": [
     "includes/flosc-personality-library.php",
     "tests/check_personality_document.php",
     "tests/check_php_string_literals.php"
   ],
-  "gate_added": "check_personality_document.php now holds the thirteen rungs, and asserts that every frequency word appearing in a shipped profile is one of them — so a hand-written word the designer cannot produce fails the suite instead of drifting until someone saves.",
-  "gate_moved": "check_php_string_literals.php pins the four profiles by hash. All four moved with the recomputed words, in this commit, per the rule in that file's comment.",
+  "gate_updated": "check_personality_document.php knows Personalization is the fourteenth slot — it is not seeded in SOUL_LAYERS, the compiler pushes it in at density 1 — so a document carrying it no longer fails.",
+  "gate_moved": "check_php_string_literals.php: all four hashes moved with the approved text, in this commit.",
+  "IMPORTANT_for_testing": {
+    "defaults_do_not_overwrite": "flosc_personality_library_get_all() seeds the shipped defaults only when the wp_options row does not exist. dainis.net already has that row, so installing this zip will NOT change the four personalities there.",
+    "how_to_force_a_reseed": "wp option delete flosc_personality_library --path=/home/dainisne/public_html   then load any FLOSC admin page. This destroys any personality edited on that site, which is why it is a manual step and not code."
+  },
   "verification": {
     "test_suite": "passed — 28 files",
     "php_syntax_all_files": "passed",
@@ -40,10 +41,6 @@
     "zip_gates": "passed (277 entries, forbidden-path scan clean, single flosc/ root)",
     "version_held_at_8_0_0": "passed",
     "wordpress_plugin_check": "DEFERRED — needs a WordPress install",
-    "designer_check": "DEFERRED — open any personality, drag a card's gain, and confirm the word tracks the number across the new rungs"
-  },
-  "still_open": {
-    "10": "Revise the four shipped profiles across all fourteen headings. Friendly Guide is settled. Dad Joke Dan is drafted with five new jokes and a Laugh factory card group; two items open on him — whether the joke cards use a verbatim field so 'Joke set up:' / 'Punchline:' reach the model unprefixed, and what gain the jokes carry now that the ladder has changed. Tech Agent and BubblyBetty not started.",
-    "verbatim_field": "Every line a card emits is prefixed with a field name — short:, instruction:, character note:. There is no field that emits raw text, so the Captain's 'Joke set up:' / 'Punchline:' format cannot survive a recompile. One line in topicBody() and one input in the card editor would add it."
+    "designer_round_trip": "DEFERRED — open each personality, confirm fourteen shelves with cards on them, Save, confirm the document does not change"
   }
 }
