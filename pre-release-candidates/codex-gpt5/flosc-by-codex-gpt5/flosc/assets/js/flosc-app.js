@@ -6634,6 +6634,28 @@ class floscApp {
         }, 50);
     }
 
+    _canHearQuizAudio() {
+        return this.state === 'member' || this.state === 'admin';
+    }
+
+    _announceQuizAudioAccess() {
+        if (this.state === 'visitor') {
+            return;
+        }
+        if (this._canHearQuizAudio()) {
+            const base = String(this.config.profileUrl || '').replace(/\/?$/, '/');
+            if (base && base !== '/') {
+                this.addMessage(
+                    'assistant',
+                    'Listen to your recordings on your <a href="' + this.escapeHtml(base + 'flosc_quiz_tab/') + '">Quiz Results</a> tab.',
+                    true
+                );
+            }
+            return;
+        }
+        this.addMessage('assistant', 'Your recordings are saved. Become a member to listen to them.', false);
+    }
+
     showIpaPhraseResult(data, audioUrl, phrase, phraseNum) {
         const words = data.words || [{ word: data.target_text, expected_ipa: data.expected_ipa, phonemes: data.phonemes }];
         const allPh = words.flatMap(w => w.phonemes);
@@ -6648,7 +6670,9 @@ class floscApp {
 
         let h = `<div class="flosc-ipa-result">`;
         h += `<div class="flosc-ipa-result-header"><span class="flosc-ipa-result-phrase">Phrase ${phraseNum}: ${this.escapeHtml(phrase)}</span></div>`;
-        h += `<div class="flosc-ipa-playback"><audio controls src="${audioUrl}"></audio></div>`;
+        if (this._canHearQuizAudio() && audioUrl) {
+            h += `<div class="flosc-ipa-playback"><audio controls src="${audioUrl}"></audio></div>`;
+        }
         h += `<div class="flosc-ipa-summary-line">${words.length} word${words.length > 1 ? 's' : ''}, ${total} phonemes &middot; avg ${(avg * 100).toFixed(0)}% &middot; <span class="flosc-ipa-c-high">${high} HIGH</span> &middot; <span class="flosc-ipa-c-med">${med} MED</span> &middot; <span class="flosc-ipa-c-low">${low} LOW</span></div>`;
 
         words.forEach(w => {
@@ -6726,7 +6750,10 @@ class floscApp {
 
         const introMsg = this.config.audioQuizResultsMessage || 'Welcome! Here are your assessment results.';
         this.addMessage('assistant', introMsg, false);
-        setTimeout(() => { this.addMessage('assistant', summary, true); }, 200);
+        setTimeout(() => {
+            this.addMessage('assistant', summary, true);
+            this._announceQuizAudioAccess();
+        }, 200);
 
         // Per-phrase accordions — each phrase is a collapsible <details> block
         setTimeout(() => {
@@ -6851,6 +6878,7 @@ class floscApp {
 
             h += `</div>`;
             this.addMessage('assistant', h, true);
+            this._announceQuizAudioAccess();
 
             // Admin detail: per-phrase accordion with word-level phoneme scores
             if (this.state === 'admin' || (this.user && this.user.isAdmin)) {
@@ -7128,16 +7156,8 @@ class floscApp {
             scoreMessage = "Thanks for completing the assessment! Based on your answers, we can personalize your learning path.";
         }
 
-        // Both storage endpoints describe the same completion. Give them one
-        // opaque id and run /store-score after /quiz-result settles so the
-        // canonical completion observers cannot race each other.
-        const quizCompletion = {
-            id: this.floscMintTurnId(),
-            completedAt: this.quiz.completedAt,
-            flowId: this.config?.flowId || '',
-            journeyId: this.getJourneyId()
-        };
-        const quizResultStore = this.storeQuizResults(scorePercent, quizCompletion);
+        // Store quiz results via /quiz-result (sets flosc_quiz_result cookie)
+        this.storeQuizResults(scorePercent);
 
         // v3.0.7: ALSO call /store-score with numeric lesson positions.
         // /store-score sets the flosc_prelogin_score signed cookie that
@@ -7147,7 +7167,7 @@ class floscApp {
         if (scoredQuestions.length > 0) {
             const correctLessons  = this.quiz.answers.map((a, i) => a.correct === true  ? i + 1 : null).filter(n => n !== null);
             const incorrectLessons = this.quiz.answers.map((a, i) => a.correct === false ? i + 1 : null).filter(n => n !== null);
-            quizResultStore.then(() => this.authFetch(this.config.apiUrl + '/store-score', {
+            this.authFetch(this.config.apiUrl + '/store-score', {
                 method: 'POST',
                 credentials: 'same-origin',
                 headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': this.config.nonce },
@@ -7157,12 +7177,8 @@ class floscApp {
                     quiz_type: 'multiple_choice',
                     correct: correctLessons,
                     incorrect: incorrectLessons,
-                    completed_at: quizCompletion.completedAt,
-                    completion_id: quizCompletion.id,
-                    flow_id: quizCompletion.flowId,
-                    journey_id: quizCompletion.journeyId
                 })
-            })).catch(e => this.logWarn('[FLOSC] store-score failed (non-fatal):', e));
+            }).catch(e => this.logWarn('[FLOSC] store-score failed (non-fatal):', e));
         }
 
         // Update IVR context
@@ -7213,24 +7229,21 @@ class floscApp {
         this.log('[FLOSC Quiz] Completed. Score:', scorePercent, '% Answers:', this.quiz.answers);
     }
 
-    async storeQuizResults(score, completion = {}) {
+    async storeQuizResults(score) {
         try {
             // Store in session/localStorage
             // v1.4.6: Use 'flosc_quiz_result' key to match checkPendingQuizResults()
             const correct = this.quiz.answers.filter(a => a.correct).length;
             const total = this.quiz.answers.length;
             const quizResult = {
-                id: this.quiz.id || 'default',
+                id: this.quiz.id,
                 score: score,
                 correct: correct,
                 total: total,
                 answers: this.quiz.answers,
-                completedAt: completion.completedAt || this.quiz.completedAt,
+                completedAt: this.quiz.completedAt,
                 duration: this.quiz.completedAt - this.quiz.startedAt,
-                timestamp: completion.completedAt || this.quiz.completedAt,
-                completionId: completion.id || this.floscMintTurnId(),
-                flowId: completion.flowId || this.config?.flowId || '',
-                journeyId: completion.journeyId || this.getJourneyId()
+                timestamp: Date.now()
             };
 
             localStorage.setItem(this.flowStorageKey('flosc_quiz_result'), JSON.stringify(quizResult));
@@ -7408,12 +7421,6 @@ class floscApp {
         }
 
         const tempId = parsed.tempId || this.ipaQuiz?.tempId || null;
-        const eventContext = {
-            flowId: parsed.flowId || this.config?.flowId || '',
-            journeyId: parsed.journeyId || this.getJourneyId(),
-            timestamp: Number(parsed.timestamp || parsed.completedAt || parsed.completed_at) || Date.now(),
-            completionId: parsed.completionId || parsed.completion_id || ''
-        };
 
         if (parsed.phraseResults) {
             return {
@@ -7422,9 +7429,8 @@ class floscApp {
                 wordIpa: parsed.wordIpa || null,
                 rankedPhonemes: parsed.rankedPhonemes || null,
                 quizType: parsed.quizType || 'ipa_audio',
-                quizId: parsed.quizId || parsed.id || null,
-                tempId,
-                ...eventContext
+                quizId: parsed.quizId || null,
+                tempId
             };
         }
 
@@ -7437,9 +7443,8 @@ class floscApp {
                 total: parsed.total,
                 passed: parsed.passed,
                 quizType: parsed.quizType || 'sequence',
-                quizId: parsed.quizId || parsed.id || null,
-                tempId,
-                ...eventContext
+                quizId: parsed.quizId || null,
+                tempId
             };
         }
 
@@ -7447,9 +7452,8 @@ class floscApp {
             return {
                 score: parsed.score,
                 quizType: parsed.quizType || 'sequence',
-                quizId: parsed.quizId || parsed.id || null,
-                tempId,
-                ...eventContext
+                quizId: parsed.quizId || null,
+                tempId
             };
         }
 
@@ -9660,9 +9664,9 @@ Purchased: ${ctx.purchased}
         const messageEl = document.getElementById('floscQuizResultMessage');
         if (messageEl) {
             if (result.passed) {
-                messageEl.textContent = `Great job! You got ${result.correct} out of ${result.total} correct. Continue to see your personalized learning path.`;
+                messageEl.innerHTML = `<strong>Great job!</strong> You got ${result.correct} out of ${result.total} correct.<br>Continue to see your personalized learning path.`;
             } else {
-                messageEl.textContent = `You got ${result.correct} out of ${result.total} correct. Don't worry - we'll help you improve! Continue to get started.`;
+                messageEl.innerHTML = `You got ${result.correct} out of ${result.total} correct.<br>Don't worry - we'll help you improve! Continue to get started.`;
             }
         }
     }
@@ -9678,10 +9682,7 @@ Purchased: ${ctx.purchased}
             passed: result.passed,
             timestamp: Date.now(),
             userAnswer: result.userAnswer,
-            quizId: this.quiz.id || '',
-            flowId: this.config?.flowId || '',
-            journeyId: this.getJourneyId(),
-            completionId: this.floscMintTurnId()
+            quizId: this.quiz.id || ''
         };
         if (result.quizType) quizData.quizType = result.quizType;
         if (result.phraseResults) quizData.phraseResults = result.phraseResults;
@@ -9729,11 +9730,7 @@ Purchased: ${ctx.purchased}
                     correct: result.incorrect ? [] : correctPositions,
                     incorrect: result.incorrect || missedPositions,
                     ranked_worst_lessons: result.ranked_worst_lessons || [],
-                    details: quizData,
-                    completion_id: quizData.completionId,
-                    completed_at: quizData.timestamp,
-                    flow_id: quizData.flowId,
-                    journey_id: quizData.journeyId
+                    details: quizData
                 })
             });
         } catch (e) {

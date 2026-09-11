@@ -639,11 +639,11 @@ class FLOSC_Offer_Manager {
                 'guarantee' => '',
                 'grants' => [
                     'features' => ['all_lessons', 'pronunciation_exercises', 'audio_recordings', 'ipa_training', 'ai_coach'],
-                    'level' => 'lesaep_learners',
+                    'level' => 'pronunciation_learners',
                     'duration_days' => 30,
                     'usage_limits' => [],
                 ],
-                'grants_level' => 'lesaep_learners',
+                'grants_level' => 'pronunciation_learners',
                 'meta' => [
                     'icon' => '🎤',
                     'badge' => 'Pre-Launch Price',

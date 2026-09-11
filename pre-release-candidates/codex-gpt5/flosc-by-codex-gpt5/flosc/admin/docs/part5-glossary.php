@@ -409,12 +409,6 @@
 <h3 id="term-stt">STT (Speech-to-Text)</h3>
 <p>Audio transcription. FLOSC STT providers: <strong>AssemblyAI</strong>, <strong>OpenAI Whisper</strong>, and a <strong>custom endpoint</strong>. Selected on This flow: AI settings (<code>stt_provider</code>). AssemblyAI keys also live in the install pool. STT is not a chat personality.</p>
 
-<h3 id="term-sticky-aspects">Sticky aspects</h3>
-<p>Flow-wide facts and instructions written by a floscAdmin on the AI tab. They are sent to the configured AI API on every turn in that flow and apply to every user of the flow.</p>
-
-<h3 id="term-sticky-for-user">Sticky for User</h3>
-<p>Private, administrator-authored guidance on a native WordPress user profile. When its checkbox is enabled, FLOSC places a prepared <strong>Sticky for User</strong> section immediately after the attached personality only when that specific authenticated user chats. The attached personality remains the AI's identity and voice; this section tells it how to communicate with this user and may contain facts, preferences, recommendations, or next steps. The text remains saved when disabled, is never displayed verbatim to the user, and is never sent for another user. Variables supported in the field are <code>{userName}</code>, <code>{firstName}</code>, <code>{lastName}</code>, <code>{email}</code>, <code>{userId}</code>, <code>{accessLevel}</code>, <code>{memberLevel}</code>, <code>{quizScore}</code>, <code>{weakestPhonemes}</code>, <code>{flowName}</code>, and <code>{siteName}</code>. Unknown variables remain unchanged. Because this text and its expanded values become part of the AI prompt, floscAdmins should enter only information appropriate to send to the selected AI provider.</p>
-
 <h3 id="term-stripe">Stripe</h3>
 <p>The primary payment processor for FLOSC. Supports one-time payments via Payment Intents, subscriptions via Stripe Subscriptions, and webhook-based purchase confirmation. Requires a Stripe publishable key (sent to frontend) and secret key (server-side only). Test mode and live mode use different key pairs.</p>
 

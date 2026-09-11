@@ -160,22 +160,12 @@ class FLOSC_First_Party_Authentication {
                         $incorrect[] = $lesson;
                     }
                 }
-                $completed_at = absint( $raw['completed_at'] ?? $raw['timestamp'] ?? time() );
-                if ( 20000000000 < $completed_at ) {
-                    $completed_at = (int) floor( $completed_at / 1000 );
-                }
-                if ( 946684800 > $completed_at || ( time() + DAY_IN_SECONDS ) < $completed_at ) {
-                    $completed_at = time();
-                }
                 $score_data = [
-                    'quiz_id'       => $raw['quiz_id'] ?? flosc_get_setting('default_text_quiz_id', 'sample_assessment_quiz'),
-                    'score'         => intval( $raw['score'] ),
-                    'correct'       => $correct,
-                    'incorrect'     => $incorrect,
-                    'timestamp'     => $completed_at,
-                    'flow_id'       => FLOSC_Chat_Logger::flosc_journey_flow_stem( $raw['flow_id'] ?? $raw['flowId'] ?? '' ),
-                    'journey_id'    => FLOSC_Chat_Logger::flosc_sanitize_journey_id( $raw['journey_id'] ?? $raw['journeyId'] ?? '' ),
-                    'completion_id' => FLOSC_Chat_Logger::flosc_sanitize_turn_id( $raw['completion_id'] ?? $raw['completionId'] ?? '' ),
+                    'quiz_id'   => $raw['quiz_id']      ?? flosc_get_setting('default_text_quiz_id', 'sample_assessment_quiz'),
+                    'score'     => intval( $raw['score'] ),
+                    'correct'   => $correct,
+                    'incorrect' => $incorrect,
+                    'timestamp' => isset( $raw['completed_at'] ) ? intval( $raw['completed_at'] / 1000 ) : time(),
                 ];
                 // Clear the fallback cookie
                 setcookie( 'flosc_quiz_result', '', [ 'expires' => time() - 3600, 'path' => '/', 'samesite' => 'Lax' ] );
@@ -197,11 +187,6 @@ class FLOSC_First_Party_Authentication {
 
             // Clear the cookie (v1.0.7: use array syntax)
             setcookie('flosc_prelogin_score', '', [
-                'expires' => time() - 3600,
-                'path' => '/',
-                'samesite' => 'Lax'
-            ]);
-            setcookie('flosc_quiz_result', '', [
                 'expires' => time() - 3600,
                 'path' => '/',
                 'samesite' => 'Lax'

@@ -181,6 +181,25 @@ foreach ( $flosc_key_catalog as $flosc_slug => $flosc_meta ) {
 			</p>
 		</td>
 	</tr>
+	<tr>
+		<th scope="row"><?php echo esc_html__( 'Sticky for User', 'flosc' ); ?></th>
+		<td>
+			<?php
+			$flosc_enable_user_sticky = false;
+			if ( $flosc_personality_id !== '' && function_exists( 'flosc_personality_library_get' ) ) {
+				$flosc_sticky_row = flosc_personality_library_get( $flosc_personality_id );
+				$flosc_enable_user_sticky = is_array( $flosc_sticky_row ) && ! empty( $flosc_sticky_row['enable_user_sticky'] );
+			}
+			?>
+			<label for="flosc_personality_enable_user_sticky">
+				<input type="checkbox" name="flosc_personality_enable_user_sticky" id="flosc_personality_enable_user_sticky" value="1" <?php checked( $flosc_enable_user_sticky ); ?> <?php disabled( $flosc_personality_id === '' ); ?>>
+				<?php echo esc_html__( 'Enable Sticky for Users', 'flosc' ); ?>
+			</label>
+			<p class="description">
+				<?php echo esc_html__( 'When this personality is attached, include that signed-in user’s private “Sticky for User” profile note in their AI turns. The note is authored on the WordPress user profile. It is never shown verbatim to the visitor. Attach a personality to use this switch.', 'flosc' ); ?>
+			</p>
+		</td>
+	</tr>
 </table>
 </div>
 </details>

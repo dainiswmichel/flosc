@@ -2784,7 +2784,12 @@
         }
       });
     });
+    toc.unshift("- Personalization");
     if (toc.length) out.push("Contents:\n" + toc.join("\n"));
+
+    /* Reserved slot for Sticky for User. Always present; body stays blank
+       until runtime fills it for a signed-in user. Density 1. */
+    out.push(stationHeading("Personalization", 1, withMetrics));
 
     containersSorted().forEach(function (L) {
       if (L.kind === "providers") {
@@ -4574,6 +4579,72 @@
     renderSpec();
   }
 
+  /* Show the exact runtime variable contract beside the compiled profile. */
+  function renderVariables() {
+    const mount = document.getElementById("varMount");
+    if (!mount) return;
+    const wp = window.floscPersonalityBuilder || {};
+    const rows = Array.isArray(wp.variables) ? wp.variables : [];
+    mount.textContent = "";
+
+    const paragraph = function (text, strong) {
+      const p = document.createElement("p");
+      p.className = "figure-readout";
+      if (strong) {
+        const b = document.createElement("strong");
+        b.textContent = text;
+        p.appendChild(b);
+      } else {
+        p.textContent = text;
+      }
+      mount.appendChild(p);
+    };
+
+    if (!rows.length) {
+      paragraph("No variables are available for this flow.", false);
+      return;
+    }
+
+    paragraph(
+      "Type any variable into a card. FLOSC replaces it on the request copy sent to the AI, every turn; the saved personality keeps the variable. Recognized values that are unavailable become ‘not available’. Unrecognized braces remain unchanged.",
+      false
+    );
+
+    const appendGroup = function (title, group, atRuntime) {
+      paragraph(title, true);
+      const chips = document.createElement("div");
+      chips.className = "flosc-acc-var-chips";
+      group.forEach(function (row) {
+        const chip = document.createElement("span");
+        chip.className = "flosc-acc-var-chip";
+        const code = document.createElement("code");
+        code.textContent = row.token || "";
+        chip.appendChild(code);
+        chip.appendChild(document.createTextNode(" = "));
+        if (atRuntime) {
+          const em = document.createElement("em");
+          em.textContent = "resolved from this turn";
+          chip.appendChild(em);
+        } else {
+          chip.appendChild(document.createTextNode(row.value || "not configured"));
+        }
+        const note = document.createElement("span");
+        note.className = "small-note";
+        note.textContent = " · " + (row.label || "");
+        chip.appendChild(note);
+        chips.appendChild(chip);
+      });
+      mount.appendChild(chips);
+    };
+
+    appendGroup("This flow and this site", rows.filter(function (row) {
+      return row.scope === "flow";
+    }), false);
+    appendGroup("This visitor, this turn", rows.filter(function (row) {
+      return row.scope !== "flow";
+    }), true);
+  }
+
   function render() {
     /*
      * The starting-template dropdown is gone. The flow — and the personality
@@ -4596,6 +4667,7 @@
     renderDenRail();
     renderOut();
     renderMorphViz();
+    renderVariables();
   }
 
   function bindSoulInputs(root) {

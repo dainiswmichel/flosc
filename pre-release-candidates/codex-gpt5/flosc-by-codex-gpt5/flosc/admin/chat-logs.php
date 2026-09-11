@@ -30,22 +30,17 @@ $flosc_selected_user_id = isset( $flosc_get['flosc_user_id'] ) ? absint( $flosc_
 // Scope chat logs to the selected flow. Stored flow_id has no file extension
 // (e.g. "flow_ivr"), while $current_ivr is the filename ("flow_ivr.md").
 $flosc_current_flow_id = $flosc_current_ivr !== '' ? pathinfo($flosc_current_ivr, PATHINFO_FILENAME) : '';
-$flosc_total_logs = $flosc_logger->flosc_get_log_count($flosc_current_flow_id, $flosc_selected_user_id);
+$flosc_total_logs = $flosc_logger->flosc_get_log_count($flosc_current_flow_id);
 $flosc_chat_logs_nonce = wp_create_nonce('flosc_chat_logs');
 
 // Two ways to read the same logs: grouped by conversation (default) or the flat
 // chronological table. The flat view keeps the live 5s poll + rating widgets.
 $flosc_logview = (isset($flosc_get['logview']) && $flosc_get['logview'] === 'flat') ? 'flat' : 'sessions';
-$flosc_view_args = [
+$flosc_view_base = add_query_arg([
     'page' => 'flosc-settings',
     'ivr'  => $flosc_current_ivr,
     'tab'  => 'chat-logs',
-];
-if ($flosc_selected_user_id > 0) {
-    $flosc_view_args['flosc_user_id'] = $flosc_selected_user_id;
-}
-$flosc_view_base = add_query_arg($flosc_view_args, admin_url('admin.php'));
-$flosc_clear_user_url = remove_query_arg('flosc_user_id', $flosc_view_base);
+], admin_url('admin.php'));
 $flosc_sessions_url = add_query_arg('logview', 'sessions', $flosc_view_base);
 $flosc_flat_url     = add_query_arg('logview', 'flat', $flosc_view_base);
 $flosc_session_scope = (isset($flosc_get['session_scope']) && $flosc_get['session_scope'] === 'archived') ? 'archived' : 'active';
@@ -66,7 +61,7 @@ $flosc_sessions_archived_url = add_query_arg([
     </h2>
     <p class="description">All chat exchanges for this flow.<?php echo esc_html( $flosc_logview === 'sessions' ? ' Grouped by conversation, newest first — click a session to read the thread.' : ' Flat view, newest first. Auto-refreshes every 5 seconds.' ); ?></p>
     <?php if ($flosc_selected_user_id > 0): ?>
-        <p class="description"><strong>User filter:</strong> Showing only User #<?php echo intval($flosc_selected_user_id); ?>. <a href="<?php echo esc_url($flosc_clear_user_url); ?>">Clear filter</a></p>
+        <p class="description"><strong>User filter:</strong> Showing only User #<?php echo intval($flosc_selected_user_id); ?>. <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&tab=chat-logs')); ?>">Clear filter</a></p>
     <?php endif; ?>
 
     <div class="flosc-chat-logs-toolbar">
@@ -110,7 +105,7 @@ $flosc_sessions_archived_url = add_query_arg([
     </div>
 
 <?php if ($flosc_logview === 'sessions'): ?>
-    <?php $flosc_sessions = $flosc_logger->flosc_get_sessions($flosc_current_flow_id, 800, $flosc_session_scope, $flosc_selected_user_id); ?>
+    <?php $flosc_sessions = $flosc_logger->flosc_get_sessions($flosc_current_flow_id, 800, $flosc_session_scope); ?>
     <?php // Chat Logs styles (.flosc-session*, .flosc-msg*) live in assets/css/flosc-admin.css, enqueued on FLOSC admin pages. ?>
     <div class="flosc-session-bulk-toolbar">
         <label class="flosc-session-bulk-checkall">
@@ -813,11 +808,11 @@ function flosc_render_chat_session($flosc_s) {
         $t   = flosc_format_mts_utc((string) ($r['timestamp'] ?? ''));
         $src = (string) ($r['response_source'] ?? '');
 
-        // State and quiz activity — a divider, not a message. It has no speaker, so it
+        // VGM state change — a divider, not a message. It has no speaker, so it
         // gets no u-/b-/a- sequence number and does not count as a turn.
         //   +G  account created just now      G  signed in, account already existed
         //   +M  became a member just now      M  signed in, already a member here
-        if ($src === 'state_change' || $src === 'quiz_completion') {
+        if ($src === 'state_change') {
             $thread .= '<div class="flosc-msg flosc-msg-state" title="row ' . $rid . '">'
                 . '<span class="flosc-msg-state-rule" aria-hidden="true"></span>'
                 . '<span class="flosc-msg-state-label">' . esc_html(trim($ar)) . '</span>'

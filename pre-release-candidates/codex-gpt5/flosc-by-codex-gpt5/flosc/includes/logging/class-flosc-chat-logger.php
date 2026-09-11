@@ -781,10 +781,8 @@ class FLOSC_Chat_Logger {
         );
 
         if ( $result ) {
-            $logged_flow = sanitize_text_field((string) ($data['flow_id'] ?? ''));
             wp_cache_delete( 'rated_logs_50', 'flosc_chat_logs' );
             wp_cache_delete( 'log_count_' . md5( '' ), 'flosc_chat_logs' );
-            wp_cache_delete( 'log_count_' . md5( $logged_flow ), 'flosc_chat_logs' );
             $this->flosc_bust_log_caches();
             return $wpdb->insert_id;
         }
@@ -892,37 +890,11 @@ class FLOSC_Chat_Logger {
     /**
      * Get total log count (for admin stats).
      */
-    public function flosc_get_log_count($flow_id = '', $user_id = 0) {
+    public function flosc_get_log_count($flow_id = '') {
         global $wpdb;
         $this->flosc_ensure_table();
         // When a flow is given, count only that flow's rows so "Total" matches the filtered view.
         $flow_id   = sanitize_text_field((string) $flow_id);
-        $user_id   = absint($user_id);
-
-        // A user-filtered admin view must be exact after each write. The general
-        // flow count can use the short object-cache entry; ad-hoc user counts do
-        // not create unbounded cache keys that would be difficult to invalidate.
-        if ($user_id > 0) {
-            if ($flow_id !== '') {
-                return (int) $wpdb->get_var(
-                    $wpdb->prepare(
-                        'SELECT COUNT(*) FROM %i WHERE flow_id = %s AND user_id = %d',
-                        $this->table_name,
-                        $flow_id,
-                        $user_id
-                    )
-                );
-            }
-
-            return (int) $wpdb->get_var(
-                $wpdb->prepare(
-                    'SELECT COUNT(*) FROM %i WHERE user_id = %d',
-                    $this->table_name,
-                    $user_id
-                )
-            );
-        }
-
         $cache_key = 'log_count_' . md5( $flow_id );
         $cached    = wp_cache_get( $cache_key, 'flosc_chat_logs' );
         if ( is_int( $cached ) || ( is_numeric( $cached ) && false !== $cached ) ) {
@@ -1206,71 +1178,30 @@ class FLOSC_Chat_Logger {
      * with its messages in chronological order and a count of real visitor turns
      * (the auto-welcome "[SYSTEM: …]" rows are counted as noise, not turns).
      *
-     * @param string $flow_id       Restrict to a flow (no extension), or '' for all.
-     * @param int    $max_rows      Safety cap on rows scanned (default 800).
-     * @param string $archive_status active, archived, or all.
-     * @param int    $user_id       Keep only conversations containing this user.
+     * @param string $flow_id  Restrict to a flow (no extension), or '' for all.
+     * @param int    $max_rows Safety cap on rows scanned (default 800).
      * @return array List of session arrays.
      */
-    public function flosc_get_sessions($flow_id = '', $max_rows = 800, $archive_status = 'active', $user_id = 0) {
+    public function flosc_get_sessions($flow_id = '', $max_rows = 800, $archive_status = 'active') {
         global $wpdb;
         $flosc_cache_probe = wp_cache_get( 'flosc_chat_logs_list', 'flosc_chat_logs' );
         $this->flosc_ensure_table();
 
         $flow_id  = sanitize_text_field((string) $flow_id);
         $max_rows = max(1, min(5000, intval($max_rows)));
-        $user_id  = absint($user_id);
         $archive_status = in_array($archive_status, ['active', 'archived', 'all'], true) ? $archive_status : 'active';
         $archived_lookup = array_fill_keys($this->flosc_get_archived_session_keys($flow_id), true);
 
-        if ($user_id > 0) {
-            // Select the user's rows and every anonymous row from those same
-            // journeys before LIMIT is applied. Unrelated site traffic cannot
-            // push a selected user's conversations out of the admin view.
-            $rows = $wpdb->get_results(
-                $wpdb->prepare(
-                    "SELECT * FROM %i
-                     WHERE ( %s = '' OR flow_id = %s )
-                       AND (
-                           user_id = %d
-                           OR (
-                               user_id = 0
-                               AND
-                               journey_id <> ''
-                               AND journey_id IN (
-                                   SELECT journey_id FROM %i
-                                   WHERE user_id = %d
-                                     AND journey_id <> ''
-                                     AND ( %s = '' OR flow_id = %s )
-                               )
-                           )
-                       )
-                     ORDER BY id DESC
-                     LIMIT %d",
-                    $this->table_name,
-                    $flow_id,
-                    $flow_id,
-                    $user_id,
-                    $this->table_name,
-                    $user_id,
-                    $flow_id,
-                    $flow_id,
-                    $max_rows
-                ),
-                ARRAY_A
-            );
-        } else {
-            $rows = $wpdb->get_results(
-                $wpdb->prepare(
-                    "SELECT * FROM %i WHERE ( %s = '' OR flow_id = %s ) ORDER BY id DESC LIMIT %d",
-                    $this->table_name,
-                    $flow_id,
-                    $flow_id,
-                    $max_rows
-                ),
-                ARRAY_A
-            );
-        }
+        $rows = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT * FROM %i WHERE ( %s = '' OR flow_id = %s ) ORDER BY id DESC LIMIT %d",
+                $this->table_name,
+                $flow_id,
+                $flow_id,
+                $max_rows
+            ),
+            ARRAY_A
+        );
         wp_cache_set( 'flosc_chat_logs_list', is_array( $rows ) ? $rows : array(), 'flosc_chat_logs', 30 );
         if (!$rows) {
             return [];
@@ -1318,11 +1249,7 @@ class FLOSC_Chat_Logger {
             }
             // A state-change divider has no speaker, and the auto-welcome's
             // "[SYSTEM: …]" prompt is machinery, so neither counts as a message.
-            $is_marker = in_array(
-                (string) ($r['response_source'] ?? ''),
-                array('state_change', 'quiz_completion'),
-                true
-            );
+            $is_marker = ((string) ($r['response_source'] ?? '') === 'state_change');
             if (!$is_marker && strncmp((string) $r['user_message'], '[SYSTEM:', 8) !== 0) {
                 $sessions[$k]['turns']++;
             }

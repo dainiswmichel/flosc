@@ -1,0 +1,15 @@
+{
+  "archive_sha256": "b78165b95d31c20d6c40b7dd0e52845369137eb487a83551625765447b46eae1",
+  "directories": 40,
+  "duplicates": [],
+  "entries": 277,
+  "files": 237,
+  "forbidden_paths": [],
+  "independent_rebuild_sha256": "b78165b95d31c20d6c40b7dd0e52845369137eb487a83551625765447b46eae1",
+  "php_files": 148,
+  "reproducible_archive_bytes": true,
+  "root_violations": [],
+  "source_mismatches": [],
+  "status": "passed",
+  "symlinks": []
+}

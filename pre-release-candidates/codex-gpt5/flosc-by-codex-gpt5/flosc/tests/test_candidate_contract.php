@@ -58,7 +58,7 @@ require_once $root . '/includes/flosc-personality-library.php';
 
 echo "The personality reaches the model whole, every turn\n";
 ok( 'follow-ups send the complete current profile',
-	strpos( $chatpack, "build_identity_section((string) (\$eval_context['flow_id'] ?? ''), false)" ) !== false, true );
+	strpos( $chatpack, "build_identity_section((string) (\$eval_context['flow_id'] ?? ''), false, \$eval_context)" ) !== false, true );
 
 echo "\nA failed provider call is distinguishable from a quiet one\n";
 ok( 'dispatch reports a structured outcome',

@@ -746,6 +746,15 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
     // The AI tab's parameter box is the request; Temperature and Max Tokens are
     // a way of writing into it. So after a save the fields must show what the
     // text says, or the page displays one number and sends another.
+    if ($flosc_active_tab === 'ai') {
+        $flosc_sticky_pid = sanitize_key( (string) ( $flosc_new_settings['personality_library_id'] ?? '' ) );
+        if ( $flosc_sticky_pid !== '' && function_exists( 'flosc_personality_library_update_entry' ) ) {
+            $flosc_sticky_on = ! empty( $flosc_post['flosc_personality_enable_user_sticky'] ) ? '1' : '';
+            flosc_personality_library_update_entry( $flosc_sticky_pid, array( 'enable_user_sticky' => $flosc_sticky_on ) );
+        }
+        unset( $flosc_new_settings['enable_user_sticky'] );
+    }
+
     if ($flosc_active_tab === 'ai' && function_exists('flosc_reconcile_model_parameters')) {
         $flosc_param_provider = sanitize_key((string) ($flosc_new_settings['ai_provider'] ?? ''));
 
@@ -2118,24 +2127,7 @@ if (function_exists('wp_add_inline_style')) {
     function switchIVR(ivr) {
         const tab = '<?php echo esc_js($flosc_active_tab); ?>';
         const view = '<?php echo esc_js($flosc_identity_view); ?>';
-        const target = new URL('<?php echo esc_js(admin_url('admin.php?page=flosc-settings')); ?>');
-        target.searchParams.set('ivr', ivr);
-        target.searchParams.set('tab', tab);
-        target.searchParams.set('view', view);
-
-        // A Users-screen "View chats" investigation remains tied to that user
-        // while the administrator switches between the user's FLOSC flows.
-        if (tab === 'chat-logs') {
-            const current = new URLSearchParams(window.location.search);
-            ['flosc_user_id', 'logview', 'session_scope'].forEach(function (key) {
-                const value = current.get(key);
-                if (value) {
-                    target.searchParams.set(key, value);
-                }
-            });
-        }
-
-        window.location.href = target.toString();
+        window.location.href = '<?php echo esc_js( admin_url('admin.php?page=flosc-settings') ); ?>&ivr=' + encodeURIComponent(ivr) + '&tab=' + tab + '&view=' + encodeURIComponent(view);
     }
 
     (function () {

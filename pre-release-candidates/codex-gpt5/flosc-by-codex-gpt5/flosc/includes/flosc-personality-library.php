@@ -97,6 +97,7 @@ if ( ! function_exists( 'flosc_personality_library_field_keys' ) ) {
 			'profile_version',
 			'profile_hash',
 			'profile_modified_gmt',
+			'enable_user_sticky',
 		);
 	}
 }
@@ -1183,6 +1184,301 @@ if ( ! function_exists( 'flosc_sanitize_personality_workshop' ) ) {
 	}
 }
 
+if ( ! function_exists( 'flosc_personality_variable_catalog' ) ) {
+	/**
+	 * Variables that may be used in a compiled personality card.
+	 *
+	 * Flow values are shown in the designer. Turn values are populated from the
+	 * context FLOSC has already assembled for the current AI request.
+	 *
+	 * @return array<string,array{scope:string,label:string}>
+	 */
+	function flosc_personality_variable_catalog() {
+		$flow = array(
+			'flow_name'        => 'Flow name',
+			'site_name'        => 'WordPress site name',
+			'site_url'         => 'WordPress site URL',
+			'site_description' => 'WordPress site description',
+			'public_title'     => 'Public title of this flow',
+			'title'            => 'Public title of this flow',
+			'tagline'          => 'Public tagline of this flow',
+			'topic_scope'      => 'Attached personality topic scope',
+			'personality_name' => 'Attached personality name',
+			'personality_role' => 'Attached personality role',
+			'product_name'     => 'Public flow title, or flow name',
+			'app_name'         => 'Public flow title, or flow name',
+			'timezone'         => 'WordPress site timezone',
+			'locale'           => 'WordPress site locale',
+		);
+		$turn = array(
+			'current_url'        => 'URL for this turn',
+			'current_page_title' => 'Page title for this turn',
+			'name'               => 'Visitor display name',
+			'first_name'         => 'Visitor first name',
+			'user_name'          => 'WordPress username',
+			'user_email'         => 'Visitor email',
+			'user_id'            => 'WordPress user ID',
+			'logged_in'          => 'Whether the visitor is logged in',
+			'member_level'       => 'FLOSC visitor, guest, or member state',
+			'access_level'       => 'FLOSC visitor, guest, or member state',
+			'score'              => 'Latest quiz score in this turn context',
+			'total_correct'      => 'Correct-answer count in this turn context',
+			'total_possible'     => 'Possible-answer count in this turn context',
+			'correct_items'      => 'Correct items in this turn context',
+			'missed_items'       => 'Missed items in this turn context',
+			'weak_area'          => 'Weakest area in this turn context',
+			'message_count'      => 'Messages in this session',
+		);
+		$out = array();
+		foreach ( $flow as $token => $label ) {
+			$out[ $token ] = array( 'scope' => 'flow', 'label' => $label );
+		}
+		foreach ( $turn as $token => $label ) {
+			$out[ $token ] = array( 'scope' => 'turn', 'label' => $label );
+		}
+		return $out;
+	}
+}
+
+if ( ! function_exists( 'flosc_personality_variable_clean' ) ) {
+	/**
+	 * Normalize a value before it becomes part of an AI system prompt.
+	 *
+	 * @param mixed $value Raw value.
+	 * @return string
+	 */
+	function flosc_personality_variable_clean( $value ) {
+		if ( is_bool( $value ) ) {
+			$value = $value ? 'yes' : 'no';
+		}
+		if ( is_array( $value ) ) {
+			$flat = array();
+			array_walk_recursive(
+				$value,
+				static function ( $item ) use ( &$flat ) {
+					if ( is_scalar( $item ) ) {
+						$flat[] = (string) $item;
+					}
+				}
+			);
+			$value = implode( ', ', $flat );
+		}
+		if ( ! is_scalar( $value ) && null !== $value ) {
+			return 'not available';
+		}
+		$text = (string) $value;
+		$text = str_replace( array( '{', '}' ), '', $text );
+		$text = preg_replace( '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $text );
+		$text = trim( (string) $text );
+		if ( function_exists( 'mb_substr' ) ) {
+			$text = mb_substr( $text, 0, 500 );
+		} else {
+			$text = substr( $text, 0, 500 );
+		}
+		return $text;
+	}
+}
+
+if ( ! function_exists( 'flosc_personality_variable_pick' ) ) {
+	/**
+	 * First non-empty value carried by an already-built context.
+	 *
+	 * @param array<int,string> $keys    Candidate keys in priority order.
+	 * @param array             $context Existing context.
+	 * @param string            $fallback Explicit value when unavailable.
+	 * @return string
+	 */
+	function flosc_personality_variable_pick( $keys, $context, $fallback = 'not available' ) {
+		foreach ( $keys as $key ) {
+			if ( array_key_exists( $key, $context ) && '' !== $context[ $key ] && null !== $context[ $key ] ) {
+				return flosc_personality_variable_clean( $context[ $key ] );
+			}
+		}
+		return $fallback;
+	}
+}
+
+if ( ! function_exists( 'flosc_personality_turn_variable_context' ) ) {
+	/**
+	 * Build the allowlisted variable values from an existing turn context.
+	 *
+	 * This function performs no WordPress, database, URL, quiz, lesson, or
+	 * session lookup. Logged-in identity fields have already been replaced with
+	 * backend values before Chatpack receives the context.
+	 *
+	 * @param array $turn Existing turn context.
+	 * @return array<string,string>
+	 */
+	function flosc_personality_turn_variable_context( $turn ) {
+		if ( ! is_array( $turn ) ) {
+			$turn = array();
+		}
+		$logged_in = ! empty( $turn['logged_in'] );
+		$out = array(
+			'current_url'        => flosc_personality_variable_pick( array( 'browsing_page_url' ), $turn ),
+			'current_page_title' => flosc_personality_variable_pick( array( 'browsing_page_title' ), $turn ),
+			'logged_in'          => $logged_in ? 'yes' : 'no',
+			'access_level'       => flosc_personality_variable_pick( array( 'access_level', 'state' ), $turn, $logged_in ? 'guest' : 'visitor' ),
+			'member_level'       => flosc_personality_variable_pick( array( 'member_level', 'access_level', 'state' ), $turn, $logged_in ? 'guest' : 'visitor' ),
+			'score'              => flosc_personality_variable_pick( array( 'score', 'quiz_score', 'bridge_score', 'ipa_quiz_score' ), $turn ),
+			'total_correct'      => flosc_personality_variable_pick( array( 'total_correct', 'quiz_correct_count', 'bridge_correct_count' ), $turn ),
+			'total_possible'     => flosc_personality_variable_pick( array( 'total_possible' ), $turn ),
+			'correct_items'      => flosc_personality_variable_pick( array( 'correct_items', 'correctItems', 'quiz_correct_items' ), $turn ),
+			'missed_items'       => flosc_personality_variable_pick( array( 'missed_items', 'incorrect_items', 'incorrectItems', 'quiz_missed_items' ), $turn ),
+			'weak_area'          => flosc_personality_variable_pick( array( 'weak_area', 'weakest_category', 'ipa_weakest_sounds' ), $turn ),
+			'message_count'      => flosc_personality_variable_pick( array( 'message_count', 'pair_number' ), $turn, '0' ),
+		);
+		if ( 'not available' !== $out['score'] ) {
+			$out['score'] = rtrim( $out['score'], "% \t\n\r\0\x0B" );
+		}
+		if ( $logged_in ) {
+			$out['name']       = flosc_personality_variable_pick( array( 'user_display_name', 'user_name' ), $turn, 'User' );
+			$out['first_name'] = flosc_personality_variable_pick( array( 'user_first_name', 'user_display_name', 'user_name' ), $turn, 'User' );
+			$out['user_name']  = flosc_personality_variable_pick( array( 'user_login', 'user_name' ), $turn, 'User' );
+			$out['user_email'] = flosc_personality_variable_pick( array( 'user_email' ), $turn, 'not provided' );
+			$out['user_id']    = flosc_personality_variable_pick( array( 'user_id', 'wp_user_id' ), $turn, 'not available' );
+		} else {
+			$out['name']       = 'Visitor';
+			$out['first_name'] = 'Visitor';
+			$out['user_name']  = 'Visitor';
+			$out['user_email'] = 'not provided';
+			$out['user_id']    = 'not signed in';
+		}
+		return $out;
+	}
+}
+
+if ( ! function_exists( 'flosc_personality_flow_variable_context' ) ) {
+	/**
+	 * Resolve flow/site values. Runtime callers may supply values they already
+	 * loaded while assembling the identity section.
+	 *
+	 * @param string|null $flow_id Flow stem.
+	 * @param array       $known   Already-loaded values.
+	 * @param array|null  $tokens  Bare flow tokens needed, or null for all.
+	 * @return array<string,string>
+	 */
+	function flosc_personality_flow_variable_context( $flow_id = null, $known = array(), $tokens = null ) {
+		$get = static function ( $key, $resolver ) use ( $known ) {
+			if ( array_key_exists( $key, $known ) ) {
+				return flosc_personality_variable_clean( $known[ $key ] );
+			}
+			return flosc_personality_variable_clean( $resolver() );
+		};
+		$wanted = null === $tokens ? null : array_fill_keys( $tokens, true );
+		$needs  = static function ( $token ) use ( $wanted ) {
+			return null === $wanted || isset( $wanted[ $token ] );
+		};
+		$needs_flow_name   = $needs( 'flow_name' ) || $needs( 'product_name' ) || $needs( 'app_name' );
+		$needs_public_name = $needs( 'public_title' ) || $needs( 'title' ) || $needs( 'product_name' ) || $needs( 'app_name' );
+		$flow_name         = $needs_flow_name
+			? $get( 'flow_name', static function () use ( $flow_id ) { return function_exists( 'flosc_flow_name' ) ? flosc_flow_name( $flow_id ) : ''; } )
+			: '';
+		$public_title      = $needs_public_name
+			? $get( 'public_title', static function () use ( $flow_id ) { return function_exists( 'flosc_flow_public_title' ) ? flosc_flow_public_title( $flow_id ) : ''; } )
+			: '';
+		$resolvers = array(
+			'flow_name'        => static function () use ( $flow_name ) { return $flow_name; },
+			'site_name'        => static function () use ( $get ) { return $get( 'site_name', static function () { return function_exists( 'get_bloginfo' ) ? get_bloginfo( 'name' ) : ''; } ); },
+			'site_url'         => static function () use ( $get ) { return $get( 'site_url', static function () { return function_exists( 'get_bloginfo' ) ? get_bloginfo( 'url' ) : ''; } ); },
+			'site_description' => static function () use ( $get ) { return $get( 'site_description', static function () { return function_exists( 'get_bloginfo' ) ? get_bloginfo( 'description' ) : ''; } ); },
+			'public_title'     => static function () use ( $public_title ) { return $public_title; },
+			'title'            => static function () use ( $public_title ) { return $public_title; },
+			'tagline'          => static function () use ( $get, $flow_id ) { return $get( 'tagline', static function () use ( $flow_id ) { return function_exists( 'flosc_flow_public_tagline' ) ? flosc_flow_public_tagline( $flow_id ) : ''; } ); },
+			'topic_scope'      => static function () use ( $get, $flow_id ) { return $get( 'topic_scope', static function () use ( $flow_id ) { return function_exists( 'flosc_personality_library_resolve_field' ) ? flosc_personality_library_resolve_field( 'ai_topic_scope', '', $flow_id ) : ''; } ); },
+			'personality_name' => static function () use ( $get, $flow_id ) { return $get( 'personality_name', static function () use ( $flow_id ) { return function_exists( 'flosc_personality_name' ) ? flosc_personality_name( $flow_id ) : ''; } ); },
+			'personality_role' => static function () use ( $get, $flow_id ) { return $get( 'personality_role', static function () use ( $flow_id ) { return function_exists( 'flosc_personality_library_resolve_field' ) ? flosc_personality_library_resolve_field( 'ai_personality_role', '', $flow_id ) : ''; } ); },
+			'product_name'     => static function () use ( $public_title, $flow_name ) { return $public_title !== '' ? $public_title : $flow_name; },
+			'app_name'         => static function () use ( $public_title, $flow_name ) { return $public_title !== '' ? $public_title : $flow_name; },
+			'timezone'         => static function () use ( $get ) { return $get( 'timezone', static function () { return function_exists( 'wp_timezone_string' ) ? wp_timezone_string() : ''; } ); },
+			'locale'           => static function () use ( $get ) { return $get( 'locale', static function () { return function_exists( 'get_locale' ) ? get_locale() : ''; } ); },
+		);
+		$context = array();
+		foreach ( $resolvers as $token => $resolver ) {
+			if ( $needs( $token ) ) {
+				$context[ $token ] = flosc_personality_variable_clean( $resolver() );
+			}
+		}
+		foreach ( $context as $token => $value ) {
+			if ( '' === $value ) {
+				$context[ $token ] = 'not configured';
+			}
+		}
+		return $context;
+	}
+}
+
+if ( ! function_exists( 'flosc_personality_variable_tokens' ) ) {
+	/**
+	 * Recognized bare tokens present in a personality profile.
+	 *
+	 * @param string $text Personality profile.
+	 * @return array<int,string>
+	 */
+	function flosc_personality_variable_tokens( $text ) {
+		$text = (string) $text;
+		if ( false === strpos( $text, '{' ) || ! preg_match_all( '/\{([a-z][a-z0-9_]*)\}/', $text, $found ) ) {
+			return array();
+		}
+		$catalog = flosc_personality_variable_catalog();
+		return array_values(
+			array_filter(
+				array_unique( $found[1] ),
+				static function ( $token ) use ( $catalog ) {
+					return isset( $catalog[ $token ] );
+				}
+			)
+		);
+	}
+}
+
+if ( ! function_exists( 'flosc_personality_expand_variables' ) ) {
+	/**
+	 * Expand recognized tokens in one pass on a request-specific profile copy.
+	 *
+	 * @param string $text    Stored personality profile copy.
+	 * @param array  $context Allowlisted token values for this request.
+	 * @return string
+	 */
+	function flosc_personality_expand_variables( $text, $context = array() ) {
+		$text = (string) $text;
+		if ( false === strpos( $text, '{' ) ) {
+			return $text;
+		}
+		$tokens = flosc_personality_variable_tokens( $text );
+		$map    = array();
+		foreach ( $tokens as $token ) {
+			$value = array_key_exists( $token, $context ) ? $context[ $token ] : 'not available';
+			$map[ '{' . $token . '}' ] = flosc_personality_variable_clean( $value );
+		}
+		return $map ? strtr( $text, $map ) : $text;
+	}
+}
+
+if ( ! function_exists( 'flosc_personality_variable_boot' ) ) {
+	/**
+	 * Variable catalog formatted for the personality designer.
+	 *
+	 * @param string|null $flow_id Flow filename or stem being edited.
+	 * @return array<int,array<string,string>>
+	 */
+	function flosc_personality_variable_boot( $flow_id = null ) {
+		$stem    = null === $flow_id ? null : sanitize_key( pathinfo( (string) $flow_id, PATHINFO_FILENAME ) );
+		$flow    = flosc_personality_flow_variable_context( $stem );
+		$rows    = array();
+		$catalog = flosc_personality_variable_catalog();
+		foreach ( $catalog as $token => $meta ) {
+			$rows[] = array(
+				'token' => '{' . $token . '}',
+				'label' => $meta['label'],
+				'scope' => $meta['scope'],
+				'value' => 'flow' === $meta['scope'] ? $flow[ $token ] : '',
+			);
+		}
+		return $rows;
+	}
+}
+
 if ( ! function_exists( 'flosc_personality_compiled_profile' ) ) {
 	/**
 	 * Compiled personality Markdown for this flow (library attach or custom).
@@ -1822,6 +2118,7 @@ if ( ! function_exists( 'flosc_personality_builder_boot_json' ) ) {
 			'attachNonce'       => wp_create_nonce( 'flosc_attach_personality' ),
 			'ivr'               => (string) $ivr,
 			'existingIds'       => array_keys( flosc_personality_library_get_all() ),
+			'variables'         => flosc_personality_variable_boot( $ivr ),
 			'personaId'         => $persona_id,
 			'libraryUrl'        => flosc_personality_library_url( $ivr ),
 			'hideProviderPacks' => true,

@@ -1,53 +1,51 @@
-# Home Run Candidate v29 — Codex GPT-5.6 Sol
+# Home Run Candidate v33 — Codex
 
-**Status:** Build complete; ready for the Captain's pre-resubmission acceptance tests.
+**Status:** Build complete and ready for the Captain's personality-variable testing.
 
-**Built by:** Codex (OpenAI), GPT-5.6 Sol  
-**Build record:** `2026-09-10d-UTC12h:58m27s`  
-**Baseline:** Home Run Candidate v28 by Grok 4.6, commit `c3711af`
+**Built by:** Codex (OpenAI), GPT-6
 
-This candidate is isolated under `pre-release-candidates/codex-gpt5`. Grok's v28 candidate and the local v28 baseline were not modified.
+**Build record:** `2026-09-11d-UTC09h:52m05s`
 
-The installable artifact is `flosc.zip`. It contains one top-level `flosc/` directory and installs as `wp-content/plugins/flosc/`.
+**Baseline:** Home Run Candidate v31 by Grok 4.6, commit `8a6b3f5`
 
-## Proven defect and repair
+**Reference reviewed:** Home Run Candidate v32 by Claude Opus 5, commit `fbc56c48`
 
-Tim's LeSAEp quiz data and entitlements were present, but no LeSAEp Chat Logs row existed. Quiz completion did not pass through the chat endpoints, and the successful quiz storage paths never wrote a Chat Logs activity row. The admin's displayed user filter also was not applied to grouped sessions and was lost while navigating between views and flows.
+v33 is built directly from v31. Claude's v32 was used only as a reference for the personality-variable feature. Grok's and Claude's candidate directories were not modified.
 
-v29 makes these bounded repairs:
+The four shipped personalities are byte-for-byte unchanged from v31. Their editorial revision remains a separate, Captain-guided task, one personality at a time.
 
-- Future successful quiz completions write a flow-scoped `quiz_completion` activity marker after bridge data and complimentary lessons are processed.
-- Browser quiz storage, signed-cookie recovery, email registration, and SSO recovery retain the originating flow, journey, completion ID, and completion time.
-- The two multiple-choice storage requests run sequentially with one completion ID; deterministic server-side identity prevents a retry from creating a second activity row.
-- Nested multiple-choice answer rows are parsed as structured data instead of being passed to string functions.
-- A selected user is filtered in SQL before the grouped-session row cap. Their anonymous pre-login rows from the same journey remain visible, while rows belonging to another signed-in user do not.
-- The user filter persists across grouped/flat views, active/archived scopes, and flow switching.
-- Quiz result copy uses `textContent` at the two remediated DOM sinks.
+## Personality variables
 
-This repair records future completions. It does not invent Tim's missing historical log row. Any one-time backfill and account change will be reviewed jointly from his stored quiz data.
+The DA1 Personality Designer now shows the variables that can be typed into personality cards. Flow values show their current value; visitor values state that they resolve from the current turn.
 
-## Exact-artifact verification
+At runtime:
 
-The final `flosc.zip` passed:
+- the stored personality remains unchanged;
+- the current profile is loaded on every AI turn;
+- only recognized variables present in that profile are resolved;
+- substitution runs once on the request-specific copy;
+- a profile with no recognized variable causes no variable data lookup;
+- visitor, page, quiz, and session values come from FLOSC's existing turn context;
+- name fields reuse the `WP_User` object already loaded by the turn handler;
+- `{current_url}` reads the real `browsing_page_url` context key;
+- score and quiz aliases are normalized consistently;
+- unavailable recognized values become `not available`;
+- unrecognized braces remain unchanged;
+- replacement values are bounded, stripped of control characters and braces, and cannot trigger a second substitution pass.
 
-- all 184 source/test PHP files parsed by PHP 8.4;
-- all 34 PHP regression scripts;
-- JavaScript syntax and density-nesting checks;
-- WordPress 7.1 installation and activation in an isolated SQLite-backed site;
-- an isolated database behavior test covering quiz activity insertion, deterministic retry deduplication, flow/journey persistence, SQL-before-LIMIT user filtering, pre-login context, cross-user exclusion, and activity turn counts;
-- WordPress Plugin Check 2.1.0, both the full correctly initialized run and an explicit `plugin_review_phpcs` run, with no errors;
-- PHPCompatibility 9.3.5 for PHP 7.4 and newer across all 148 PHP files in the artifact, with zero errors and zero warnings;
-- ZIP integrity, one-root validation, forbidden-path scanning, duplicate and symlink scanning, and source-byte CRC comparison;
-- an independent rebuild that matched all 277 ZIP entries and the final archive byte for byte.
+The catalog contains 31 variables backed by verified flow/site values or existing turn-context fields. Claude's speculative variables without a proven runtime source are not advertised.
 
-SHA-256: `544f39cd6f9c2f367d47fff8c68331e8b1e573fcebb9b671d8f121a336de6126`
+## Verification
 
-Machine-readable results and logs are in `evidence/`.
+- 33 PHP regression scripts passed.
+- All 184 PHP files passed syntax checks; the final edited PHP file was linted again after the last change.
+- Personality-builder and FLOSC application JavaScript passed `node --check`.
+- The exact ZIP activated under WordPress 7.1 in the isolated test site.
+- A real Chatpack build expanded a Tim-shaped logged-in context, including URL and score, while the stored profile retained its tokens.
+- WordPress Plugin Check 2.1.0 `plugin_review_phpcs` passed the exact ZIP with no errors.
+- The ZIP passed the fail-closed distribution build and a second build matched byte for byte.
+- The shipped-personality hash matches v31.
 
-## Verification boundary
+The installable artifact is `flosc.zip`; it contains one top-level `flosc/` directory. Plugin version remains `8.0.0` because this is a candidate, not a release.
 
-Plugin Check's WordPress.org review profile is clean. A broader raw whole-tree WordPress PHPCS scan still reports substantial inherited formatting debt, so this candidate must not be described as universally WPCS-clean. Formatting the entire legacy tree was outside this targeted repair and would create high-risk churn.
-
-The remaining acceptance work is the Captain's fresh-install test, real AI API connection, shipped-personality test, AI Personality Designer test, and final resubmission decision. No live AI-provider call is represented as passed here.
-
-No production account, membership, post, token balance, or email was changed while building and verifying this candidate.
+The full Plugin Check aggregate scan was attempted but did not finish within the local review window. v31's aggregate scan was already clean, and v33's changed runtime files pass the WordPress.org review PHPCS profile. The aggregate scan should be rerun before the final resubmission assertion.

@@ -1,15 +1,9 @@
 {
-    "status": "passed",
-    "wordpress_version": "7.1",
-    "plugin_version": "8.0.0",
-    "active_plugin": "flosc-v29-runtime/flosc.php",
-    "quiz_activity_rows": 1,
-    "dedupe_return_ids_equal": true,
-    "grouped_sessions": 1,
-    "grouped_rows": 2,
-    "grouped_turns": 1,
-    "exact_direct_user_count": 1,
-    "anonymous_context_present": true,
-    "other_user_absent": true,
-    "failures": []
+  "status": "passed",
+  "wordpress_version": "7.1",
+  "plugin_version": "8.0.0",
+  "active_plugin": "flosc-v33-artifact-final/flosc.php",
+  "expected_profile_found": true,
+  "stored_tokens_intact": true,
+  "failures": []
 }

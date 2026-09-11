@@ -357,7 +357,10 @@ trait FLOSC_Chat_Turn_Trait {
             $user_id = get_current_user_id();
             $user_data = get_userdata($user_id);
             $eval_context['user_name'] = $user_data->display_name ?? 'there';
-            $eval_context['user_email'] = $user_data->user_email;
+            $eval_context['user_display_name'] = $user_data->display_name ?? 'there';
+            $eval_context['user_first_name'] = $user_data->first_name ?? '';
+            $eval_context['user_login'] = $user_data->user_login ?? '';
+            $eval_context['user_email'] = $user_data->user_email ?? '';
             $eval_context['is_admin'] = user_can($user_id, 'manage_options');
             // Per-flow userState: member only when entitled on this flow's stem.
             $simple_state = 'guest';
@@ -1380,7 +1383,7 @@ trait FLOSC_Chat_Turn_Trait {
         
         // Build system prompt for AI
         $system_prompt = $this->build_rag_system_prompt($user_context);
-
+        
         // Get available lessons list (for AI to know what exists)
         $lessons_list = $this->rag_manager->get_available_lessons($user_context['access_level']);
         

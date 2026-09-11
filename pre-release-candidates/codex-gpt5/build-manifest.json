@@ -1,99 +1,68 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "candidate": "codex-gpt5",
-  "candidate_label": "Home Run Candidate v29",
-  "creator": "Codex (OpenAI), GPT-5.6 Sol",
-  "created_at_mts": "2026-09-10d-UTC14h:12m26s",
-  "status": "BUILD_AND_LIVE_DEPLOY_COMPLETE_AWAITING_CAPTAIN_ACCEPTANCE",
+  "candidate_label": "Home Run Candidate v33",
+  "creator": "Codex (OpenAI), GPT-6",
+  "created_at_mts": "2026-09-11d-UTC09h:52m05s",
+  "status": "BUILD_COMPLETE_READY_FOR_CAPTAIN_TESTING",
   "baseline": {
-    "candidate": "Home Run Candidate v28",
+    "candidate": "Home Run Candidate v31",
     "creator": "Grok 4.6",
-    "commit": "c3711af",
+    "commit": "8a6b3f5ef37180679c5c59910598717f70c3a857",
     "modified": false
+  },
+  "reference": {
+    "candidate": "Home Run Candidate v32",
+    "creator": "Claude Opus 5",
+    "commit": "fbc56c48bb2f2c1fb87a9c81eaa19a1029d8419c",
+    "copied_wholesale": false
   },
   "plugin_source": "flosc-by-codex-gpt5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "12caa0854468b9d924a007006b53fe98cf2ee2a8964daeb3e47f54756088224a",
-  "artifact_bytes": 2723257,
+  "artifact_sha256": "b78165b95d31c20d6c40b7dd0e52845369137eb487a83551625765447b46eae1",
+  "artifact_bytes": 2725935,
   "artifact_entries": 277,
-  "artifact_files": 237,
-  "artifact_directories": 40,
   "artifact_php_files": 148,
   "scope": {
-    "quiz_completion_activity": "implemented",
-    "flow_and_journey_context": "implemented across browser, REST, signed-cookie, email-registration, and SSO restore paths",
-    "completion_retry_deduplication": "implemented and runtime verified",
-    "grouped_sessions_user_filter": "implemented in SQL before LIMIT",
-    "filter_navigation_persistence": "implemented",
-    "nested_multiple_choice_answer_parsing": "repaired",
-    "quiz_result_dom_sinks": "textContent",
-    "historical_tim_backfill": "not performed; missing LeSAEp chat-log attribution remains a separate investigation",
-    "canonical_lesaep_roles": "lesaep_learners and guest_lesaep_learner; production pre-launch migration completed",
-    "user_specific_ai_guidance": "native WordPress profile field with explicit enable checkbox, server-authenticated user binding, variables, and every-turn prompt placement after attached personality"
+    "personality_card_variables": "implemented at the AI request boundary",
+    "current_url_mapping": "browsing_page_url",
+    "user_data_lookup": "reuses the WP_User already loaded by the turn handler",
+    "stored_personality_mutation": false,
+    "unavailable_recognized_variable": "not available",
+    "unrecognized_braces": "preserved",
+    "shipped_personality_revision": "not in this build; all four profiles are unchanged from v31"
   },
   "verification": {
     "php_syntax": {
       "status": "passed",
-      "files": 185
+      "files": 184
     },
     "php_regression_scripts": {
       "status": "passed",
-      "scripts": 34
+      "scripts": 33
     },
     "javascript_syntax": "passed",
-    "density_nesting": "passed",
     "wordpress_runtime": {
       "status": "passed",
       "wordpress": "7.1",
-      "database": "SQLite isolated test site",
-      "warnings_or_fatals": 0
+      "artifact_activated": true,
+      "chatpack_variable_expansion": true,
+      "stored_tokens_intact": true
     },
-    "plugin_check_2_1_0_full": "passed on deployed refreshed artifact; no errors found",
-    "plugin_check_2_1_0_plugin_review_phpcs": "passed on deployed refreshed artifact; no errors found",
-    "phpcompatibility_9_3_5_php_7_4_plus": {
-      "status": "passed",
-      "files": 148,
-      "errors": 0,
-      "warnings": 0
-    },
-    "zip_integrity": "passed",
-    "zip_forbidden_paths": "passed",
-    "zip_duplicates": 0,
-    "zip_symlinks": 0,
-    "source_crc_match": "passed",
-    "independent_rebuild_crc_match": "passed",
-    "independent_rebuild_sha256_match": "passed"
-  },
-  "standards_boundary": {
-    "wordpress_org_plugin_check": "passed on deployed refreshed artifact",
-    "raw_full_tree_wordpress_phpcs": "inherited formatting diagnostics remain; universal WPCS cleanliness is not claimed"
+    "plugin_check_2_1_0_plugin_review_phpcs": "passed on exact artifact; no errors found",
+    "plugin_check_2_1_0_aggregate": "attempted; did not complete within the local review window",
+    "reproducible_zip_sha256": "passed",
+    "shipped_personality_hash_matches_v31": true
   },
   "captain_acceptance": {
     "fresh_wordpress_install": "pending",
     "real_ai_api_connection_and_starter_packs": "pending",
-    "shipped_personalities": "pending",
-    "ai_personality_designer": "pending",
+    "personality_variable_turns": "pending",
+    "shipped_personality_editorial_revision": "pending, Captain-guided one personality at a time",
     "resubmission": "pending"
   },
-  "production_migration": {
-    "status": "completed and verified",
-    "canonical_member_role": "lesaep_learners",
-    "canonical_guest_role": "guest_lesaep_learner",
-    "legacy_roles_removed": [
-      "pronunciation_learners",
-      "guest_pronunciation_learner"
-    ],
-    "migrated_member_users": 5,
-    "guest_users_remaining": 0,
-    "tim_user_id": 20292,
-    "tim_roles": [
-      "bbp_participant",
-      "lesaep_learners"
-    ],
-    "tim_sticky_for_user": "enabled and runtime verified"
-  },
-  "production_user_data_changed": true,
+  "production_user_data_changed": false,
   "email_sent": false,
-  "roadmap_updated": false
+  "live_deployed": false
 }

@@ -44,10 +44,11 @@ class FLOSC_AI_Chat_Dispatch {
         // v1.9.5: Unified admin feedback — reads rated chat logs from DB
         $feedback_prompt = $this->build_feedback_prompt();
 
-        // Administrator-authored context for this authenticated user only.
-        // The backend supplies user_id; browser input never selects another user.
-        $user_sticky_section = function_exists('flosc_get_user_sticky_prompt')
+        $user_sticky_content = function_exists('flosc_get_user_sticky_prompt')
             ? flosc_get_user_sticky_prompt($context['user_id'] ?? 0, $context)
+            : '';
+        $user_sticky_section = $user_sticky_content !== ''
+            ? "# 1 Personalization\n\n" . $user_sticky_content
             : '';
 
         // v3.0.5: AI-interpretation offer phrases — when the user's message
@@ -323,8 +324,30 @@ class FLOSC_AI_Chat_Dispatch {
         }
 
         $compiled_profile = function_exists( 'flosc_personality_compiled_profile' )
-            ? flosc_personality_compiled_profile()
+            ? flosc_personality_compiled_profile( isset( $context['flow_id'] ) ? (string) $context['flow_id'] : null )
             : '';
+        $profile_tokens = function_exists( 'flosc_personality_variable_tokens' )
+            ? flosc_personality_variable_tokens( $compiled_profile )
+            : array();
+        if ( ! empty( $profile_tokens ) && function_exists( 'flosc_personality_expand_variables' ) ) {
+            $profile_flow_id = isset( $context['flow_id'] ) ? (string) $context['flow_id'] : null;
+            $flow_variables  = function_exists( 'flosc_personality_flow_variable_context' )
+                ? flosc_personality_flow_variable_context(
+                    $profile_flow_id,
+                    array(
+                        'public_title'     => $product_name,
+                        'tagline'          => $product_tagline,
+                        'personality_name' => $name,
+                        'personality_role' => $role,
+                    ),
+                    $profile_tokens
+                )
+                : array();
+            $turn_variables = function_exists( 'flosc_personality_turn_variable_context' )
+                ? flosc_personality_turn_variable_context( $context )
+                : array();
+            $compiled_profile = flosc_personality_expand_variables( $compiled_profile, array_merge( $flow_variables, $turn_variables ) );
+        }
         if ( $compiled_profile !== '' ) {
             $prompt .= "## Personality\n";
             $prompt .= "The following profile is who you are. Speak as this person. Do not describe how you were made.\n\n";
