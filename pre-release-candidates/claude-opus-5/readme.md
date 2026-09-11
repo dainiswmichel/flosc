@@ -1,71 +1,85 @@
-# FLOSC 8.0.0 — candidate v36
+# FLOSC 8.0.0 — candidate v37
 
-Built from v35. Version is 8.0.0 and does not move.
+Built from v36. Version is 8.0.0 and does not move.
 
     artifact   flosc.zip
-    sha256     c59124bdbead6b0e6d82409a8b4f137c26579e83373df828de4a5bc234650067
+    sha256     79962075f7ab530da9d6d08bab208987488472a5d574650dff9c9e2b05e9a95c
     entries    277, single flosc/ root
     source     flosc-by-claude-opus-5/flosc
 
-Rename, do not restructure. Three edits in the designer's editor and one CSS
-class. No state key renamed, no storage column renamed, nothing added or
-removed — only where a field sits and what its label says.
+## The gain ladder
 
-## Goals is Mission
+Gain is a frequency in disguise — `frequency = (gain + 100) / 2`. The old
+ladder had nine evenly spaced rungs, and four of its words named a comparison
+or an attitude rather than a frequency: *less often than not*, *more often
+than not*, *no preference*. A floscAdmin could not rank them, and they did not
+mean what they sounded like.
 
-The field under *Mission, Philosophy and Values* was labelled **Goals**, with
-the placeholder *"mission, not the full law"* — the correction written into
-the hint instead of the label, while the value saves as `ai_mission`. Three
-names for one thing.
+Thirteen rungs, paired around the hinge:
 
-It now reads **Mission**, hint *"what this conversation is for"*. The state key
-`goals` and the column `ai_mission` are unchanged; nobody sees either.
+    gain   freq   word
+    -100     0%   never
+     -90     5%   rarely
+     -80    10%   infrequently
+     -60    20%   seldom
+     -50    25%   sporadically
+     -30    35%   occasionally
+       0    50%   sometimes
+      30    65%   typically
+      50    75%   usually
+      60    80%   regularly
+      80    90%   frequently
+      90    95%   consistently
+     100   100%   always
 
-## Scope sits with Mission
+The uneven spacing is deliberate. `gainWord()` takes the nearest rung, so a
+word owns the band to the midpoint of its neighbours — the rungs sit where a
+word actually lives rather than where arithmetic put them.
 
-Scope was seventh in a seven-field Boundaries panel, behind Core values,
-Prohibitions, Interaction policy, Invariants and Defaults. It answers the
-question its new heading asks, and it reaches the model on every turn as
-**Topic Scope** — which it did not look like, buried in that list.
+**On the hinge.** A new card defaults to gain 50, not 0, and a card at 0 still
+emits its frequency line. So 0 is a value someone chose and is being sent to
+the model, not an absence — which is why *no preference* was the wrong word
+for it, and *sometimes* is the right one.
 
-## Identity splits into three
+## What that did to the four profiles
 
-That panel held three different kinds of thing in one column: filing details,
-a nameplate, and who this personality remains under probe. *BubblyBetty* and
-*"who you are when someone tests you"* are not the same altitude, and as one
-list they read as equals.
+Twenty-two frequency lines changed, each recomputed from its own card's gain
+in the workshop template rather than find-and-replaced.
 
-Same fields, same keys, three labelled groups:
+The old ladder rounded every gain from 65 to 95 down to `usually`. That is why
+the four documents said "usually" twenty-one times — for eleven different
+authored values. The thirteen rungs tell them apart:
 
-    FILING       Id (slug) · Library label · Profile version · Install-private
-    NAMEPLATE    Name · Role
-    UNDER PROBE  Identity lock · If asked "Is this [name]?" · If asked to describe yourself
+    before                  after
+    21 × usually            6 × consistently
+     7 × always            13 × frequently
+     1 × often              3 × regularly
+                            7 × always
 
-The Name hint changed with it — from *"chat header; this personality
-introduces itself as this name"* to *"what it is called — BubblyBetty, Tech
-Agent"*, because the altitude was the confusion.
+Dad Joke Dan carried one hand-written `frequency: often`. That word is not on
+the ladder, so the designer would never produce it and a Save would have
+silently rewritten the document. It is now `regularly`, computed from that
+card's gain of 60.
 
-## One gate added
+## Gates
 
-`check_attachment_save.php` now pins that every stored field a floscAdmin is
-expected to fill has somewhere to fill it — name, role, goals, prohibitions,
-scope — and that Scope sits with Mission under the label Mission.
+`check_personality_document.php` holds the thirteen rungs, and now also
+asserts that **every frequency word in a shipped profile is one of them** — so
+a hand-written word the designer cannot produce fails the suite rather than
+drifting until someone hits Save.
 
-`ai_topic_scope` reaches the model on every turn and spent this entire cycle
-with no path from the designer to the database. A field read at runtime with
-no input anywhere is that bug's shape, so the input is pinned rather than left
-to be noticed.
+`check_php_string_literals.php` pins the four profiles by hash. All four moved
+with the recomputed words, in this commit, per the rule in that file.
 
 ## Verified
 
-28 gates pass on the first run, PHP lint clean, JS clean, density nesting
-clean, forbidden-path scan clean, version 8.0.0 in both files.
+28 gates pass, PHP lint clean, JS clean, density nesting clean,
+forbidden-path scan clean, version 8.0.0 in both files.
 
-Deferred to a WordPress install: Plugin Check, and a look at the two panels —
-Identity and Role should show three labelled groups, and Mission, Philosophy
-and Values should hold both Mission and Scope.
+Deferred to a WordPress install: Plugin Check, and dragging a card's gain in
+the designer to watch the word track the number across the new rungs.
 
 ## Not in this build
 
-The four shipped personality profiles. Friendly Guide is drafted across all
-fourteen headings and waiting on the Captain's edits.
+The personality revisions themselves. Friendly Guide is settled and Dad Joke
+Dan is drafted with five new jokes; neither is written to the file yet.

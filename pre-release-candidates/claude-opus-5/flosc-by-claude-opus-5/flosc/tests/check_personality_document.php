@@ -100,21 +100,37 @@ ok( '  and never to a column that does not exist',
 	strpos( $code, 'return categoryExists(mapped) ? mapped : firstCategoryId();' ) !== false, true );
 
 echo "\nThe gain ladder\n";
+/* Thirteen rungs, paired around the hinge. Every word names a frequency; none
+   names a comparison or an attitude, which is what "less often than not" and
+   "no preference" were doing. Uneven spacing is deliberate — a rung sits where
+   a word actually lives, and gainWord() takes the nearest. */
 $rungs = array(
 	-100 => 'never',
-	-75  => 'almost never',
-	-50  => 'rarely',
-	-25  => 'less often than not',
-	0    => 'no preference',
-	25   => 'more often than not',
-	50   => 'often',
-	75   => 'usually',
+	-90  => 'rarely',
+	-80  => 'infrequently',
+	-60  => 'seldom',
+	-50  => 'sporadically',
+	-30  => 'occasionally',
+	0    => 'sometimes',
+	30   => 'typically',
+	50   => 'usually',
+	60   => 'regularly',
+	80   => 'frequently',
+	90   => 'consistently',
 	100  => 'always',
 );
 foreach ( $rungs as $gain => $word ) {
 	ok( sprintf( '  %+5d reads "%s"', $gain, $word ),
 		strpos( $code, '{ g: ' . $gain . ', word: "' . $word . '" }' ) !== false, true );
 }
+/* Every word a shipped profile uses has to be a rung. "often" was written into
+   Dad Joke Dan by hand and is not on the ladder any more, so the designer
+   would never produce it and a Save would silently change the document. */
+$flosc_lib_src = (string) file_get_contents( dirname( __DIR__ ) . '/includes/flosc-personality-library.php' );
+preg_match_all( "/'frequency: ([a-z ]+)'/", $flosc_lib_src, $flosc_used );
+$flosc_unknown = array_values( array_unique( array_diff( $flosc_used[1], $rungs ) ) );
+ok( '  every word the shipped profiles use is a rung', $flosc_unknown, array() );
+
 
 echo "\nnever and always are reserved for the invariants\n";
 // A value short of the extreme means an exception exists. A word that reads as

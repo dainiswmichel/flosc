@@ -2115,15 +2115,36 @@
    * that reads as "never" is an exception nobody can see. -98 is "almost
    * never", and the situation block below it names the case it does not cover.
    */
+  /*
+   * Gain is a frequency in disguise: frequency = (gain + 100) / 2. The old
+   * ladder had nine evenly spaced rungs and four of its words described a
+   * comparison or an attitude rather than a frequency — "less often than not",
+   * "no preference" — so a floscAdmin could not rank them and the numbers they
+   * stood for were not what they sounded like.
+   *
+   * These thirteen are frequency words, paired around the hinge: never against
+   * always, rarely against consistently, seldom against regularly. The spacing
+   * is uneven on purpose — gainWord() takes the nearest rung, so a word owns
+   * the band to the midpoint of its neighbours, and the rungs sit where a word
+   * actually lives rather than where arithmetic put it.
+   *
+   * The old ladder collapsed every gain from 65 to 95 into "usually", which is
+   * why the shipped profiles said it twenty-one times. These rungs tell those
+   * apart.
+   */
   const GAIN_LADDER = [
     { g: -100, word: "never" },
-    { g: -75, word: "almost never" },
-    { g: -50, word: "rarely" },
-    { g: -25, word: "less often than not" },
-    { g: 0, word: "no preference" },
-    { g: 25, word: "more often than not" },
-    { g: 50, word: "often" },
-    { g: 75, word: "usually" },
+    { g: -90, word: "rarely" },
+    { g: -80, word: "infrequently" },
+    { g: -60, word: "seldom" },
+    { g: -50, word: "sporadically" },
+    { g: -30, word: "occasionally" },
+    { g: 0, word: "sometimes" },
+    { g: 30, word: "typically" },
+    { g: 50, word: "usually" },
+    { g: 60, word: "regularly" },
+    { g: 80, word: "frequently" },
+    { g: 90, word: "consistently" },
     { g: 100, word: "always" }
   ];
   function gainNum(g) {

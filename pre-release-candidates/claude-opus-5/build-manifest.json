@@ -1,42 +1,49 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": 36,
+  "candidate_iteration": 37,
   "creator": "Claude Opus 5",
   "status": "BUILT_AWAITING_CAPTAIN_TEST",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v35 (18754c3)",
+  "base": "claude-opus-5 v36 (63325f4)",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "c59124bdbead6b0e6d82409a8b4f137c26579e83373df828de4a5bc234650067",
-  "artifact_bytes": 2728907,
+  "artifact_sha256": "79962075f7ab530da9d6d08bab208987488472a5d574650dff9c9e2b05e9a95c",
+  "artifact_bytes": 2729320,
   "artifact_entries": 277,
   "tree_files": 289,
-  "scope": "Rename, do not restructure. Three edits in editorHtml() and one CSS class. No state key renamed, no storage column renamed, no field added or removed — only where a field sits and what its label says.",
-  "what_v36_changes": {
-    "goals_is_mission": "The field under Mission, Philosophy and Values was labelled Goals with the placeholder 'mission, not the full law' — the correction written into the hint instead of the label, while the value saves as ai_mission. It now reads Mission, with the hint 'what this conversation is for'. The state key goals and the column ai_mission are unchanged; nobody sees either.",
-    "scope_moves_to_mission": "Scope was seventh in a seven-field Boundaries panel, behind Core values, Prohibitions, Interaction policy, Invariants and Defaults. It answers the question its new heading asks — what is this conversation for — and it reaches the model on every turn as Topic Scope, which it did not look like buried in that list.",
-    "identity_splits_into_three": "The Identity panel held filing details (id, label, version, install-private), a nameplate (name, role) and probe answers (identity lock, the two probe lines) in one column, which read as one list of equals. Same fields, same keys, three labelled groups: Filing, Nameplate, Under probe.",
-    "name_hint": "The Name hint read 'chat header; this personality introduces itself as this name'. It now reads 'what it is called — BubblyBetty, Tech Agent', because the altitude was the confusion: a name is a label, not the identity."
+  "the_gain_ladder": {
+    "authored_by": "The Captain — paired around the hinge, negative against positive.",
+    "why": "Gain is a frequency in disguise: frequency = (gain + 100) / 2. The old ladder had nine evenly spaced rungs and four of its words named a comparison or an attitude rather than a frequency — 'less often than not', 'more often than not', 'no preference'. A floscAdmin could not rank them, and they did not mean what they sounded like.",
+    "rungs": "-100 never · -90 rarely · -80 infrequently · -60 seldom · -50 sporadically · -30 occasionally · 0 sometimes · 30 typically · 50 usually · 60 regularly · 80 frequently · 90 consistently · 100 always",
+    "uneven_spacing": "Deliberate. gainWord() takes the nearest rung, so a word owns the band to the midpoint of its neighbours, and the rungs sit where a word actually lives rather than where arithmetic put them.",
+    "the_hinge": "0 is 'sometimes'. A new card defaults to gain 50, not 0, and a card at 0 still emits its frequency line — so 0 is a value someone chose and is being sent, not an absence. That is why 'no preference' was wrong."
   },
-  "files_changed_from_v35": [
+  "profiles_recomputed": {
+    "what": "Twenty-two frequency lines across all four profiles, each recomputed from its own card's gain in the workshop template rather than find-and-replaced.",
+    "why": "The old ladder rounded every gain from 65 to 95 down to 'usually', which is why the four documents said 'usually' twenty-one times for eleven different authored values. The thirteen rungs tell them apart: 6 consistently, 13 frequently, 3 regularly, 7 always.",
+    "often_removed": "Dad Joke Dan carried one hand-written 'frequency: often'. That word is not on the ladder, so the designer would never produce it and a Save would have silently changed the document. It is now 'regularly', computed from that card's gain of 60."
+  },
+  "files_changed_from_v36": [
     "assets/js/flosc-personality-builder.js",
-    "assets/css/flosc-personality-builder.css",
-    "tests/check_attachment_save.php"
+    "includes/flosc-personality-library.php",
+    "tests/check_personality_document.php",
+    "tests/check_php_string_literals.php"
   ],
-  "gate_added": "check_attachment_save.php now pins that every stored field a floscAdmin is expected to fill has an editor — name, role, goals, prohibitions, scope — and that Scope sits with Mission and is labelled Mission rather than Goals. ai_topic_scope reaches the model on every turn and spent this whole cycle with no path from the designer to the database; a field read at runtime with no input anywhere is that bug's shape.",
+  "gate_added": "check_personality_document.php now holds the thirteen rungs, and asserts that every frequency word appearing in a shipped profile is one of them — so a hand-written word the designer cannot produce fails the suite instead of drifting until someone saves.",
+  "gate_moved": "check_php_string_literals.php pins the four profiles by hash. All four moved with the recomputed words, in this commit, per the rule in that file's comment.",
   "verification": {
-    "test_suite": "passed — 28 files, first pass",
+    "test_suite": "passed — 28 files",
     "php_syntax_all_files": "passed",
     "javascript_syntax": "passed",
     "density_nesting": "passed",
     "zip_gates": "passed (277 entries, forbidden-path scan clean, single flosc/ root)",
     "version_held_at_8_0_0": "passed",
     "wordpress_plugin_check": "DEFERRED — needs a WordPress install",
-    "designer_visual_check": "DEFERRED — open Identity and Role and confirm three labelled groups; open Mission, Philosophy and Values and confirm Mission and Scope are both there"
+    "designer_check": "DEFERRED — open any personality, drag a card's gain, and confirm the word tracks the number across the new rungs"
   },
   "still_open": {
-    "10": "Revise the four shipped profiles across all fourteen headings. Friendly Guide is drafted; open on it is whether the # 24 knowledge cards use {flow_name} or {public_title}. Order: Friendly Guide, Tech Agent, BubblyBetty, Dad Joke Dan — one at a time, the Captain's edits and his explicit approval before each is written.",
-    "traits_is_synthesized": "ai_personality_traits has no field and is assembled from tone, posture and warmth by synthesizeTraits(). A hand-written traits string in the shipped defaults is overwritten on the first Save in the designer, which is why the traits line belongs in the document as a card rather than in that column."
+    "10": "Revise the four shipped profiles across all fourteen headings. Friendly Guide is settled. Dad Joke Dan is drafted with five new jokes and a Laugh factory card group; two items open on him — whether the joke cards use a verbatim field so 'Joke set up:' / 'Punchline:' reach the model unprefixed, and what gain the jokes carry now that the ladder has changed. Tech Agent and BubblyBetty not started.",
+    "verbatim_field": "Every line a card emits is prefixed with a field name — short:, instruction:, character note:. There is no field that emits raw text, so the Captain's 'Joke set up:' / 'Punchline:' format cannot survive a recompile. One line in topicBody() and one input in the card editor would add it."
   }
 }

@@ -79,16 +79,17 @@ require_once $root . '/includes/flosc-personality-library.php';
  * when a revision is approved the hash below moves with it, in the same commit
  * as the text, so the two cannot drift apart quietly.
  *
- * Last moved: v35, for the heading rename. Philosophy and Values became
- * Mission, Philosophy and Values in three profiles, and Dad Joke Dan's three
- * jokes followed their cards from Decisions to Tone at 45, 46 and 47.
+ * Last moved: v37, for the gain ladder. Every frequency word in all four
+ * profiles was recomputed from its own card's gain — the old nine-rung ladder
+ * rounded every gain from 65 to 95 down to "usually", which is why these
+ * documents said it twenty-one times for eleven different values.
  */
 echo "\nThe four shipped runtime profiles match their approved text\n";
 $expected = array(
-	'friendly'     => 'c61e0461c835277786ee615e7e2b08b34f6b1c664bb82b606e941ee95f6bb11f',
-	'tech'         => 'b9f3c546d88896664980a233d88b7f1baee38d9725d6d58488a1fbb004aec21a',
-	'bubblybetty'  => 'b50dae7dfa9d7fcdb36bc295d66db28ecdd6c97dd2f16d9d89d6af2f5764f6b5',
-	'dadjokedan'   => '53bdad32ca0ceec4251c2b277af8c2309fcf3981e4588d1b1d653bac56fb45bc',
+	'friendly'     => '7b53c542d49e3c393973f3e7b886fa84540cc0e551dd864bf09dadc785197f72',
+	'tech'         => '3bdd964bce7c44f279fda1d5c113e8395941921e19a98c51ab4ad9d75f6ff570',
+	'bubblybetty'  => '7264b32907c84a45b7fb43f60d5fe257cb0c8778d48cda203b985b41be8dcde1',
+	'dadjokedan'   => '97cb6d86554693134a3a83628120873c496aa3d102578372d20a88173b857eed',
 );
 $defaults = flosc_personality_library_defaults();
 foreach ( $expected as $id => $hash ) {
