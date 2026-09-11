@@ -60,19 +60,19 @@ $code = (string) preg_replace( '#(^|\s)//.*$#m', '$1', (string) $code );
 // waits on the shelf it will be written under.
 echo "The thirteen headings, in density order\n";
 $stations = array(
-	'Identity and Role'                    => 6,
-	'Philosophy and Values'                => 12,
-	'Boundaries and Prohibitions'          => 18,
-	'Knowledge, Doubt and Correction'      => 24,
-	'Opinions and Preferences'             => 30,
-	'Tone and Communication Style'         => 40,
-	'Stance Toward the Human'              => 48,
-	'Behavior in Ambiguity'                => 56,
-	'Adaptation'                           => 62,
-	'Resourcefulness'                      => 68,
-	'Decisions including Infrequent Cases' => 74,
-	'Banned Words and Fillers to Avoid'    => 84,
-	'Output and Delivery'                  => 94,
+	'Identity and Role'                           => 6,
+	'Mission, Philosophy and Values'              => 12,
+	'Boundaries and Prohibitions'                 => 18,
+	'Knowledge, Doubt and Correction'             => 24,
+	'Opinions, Traits and Preferences'            => 30,
+	'Tone and Communication Style'                => 40,
+	'Stance Toward the Human'                     => 48,
+	'Decisions and Behavior in Ambiguity'         => 56,
+	'Adaptation, Exceptions and Infrequent Cases' => 62,
+	'Workflow and Resourcefulness'                => 68,
+	'Banned Words and Fillers to Avoid'           => 74,
+	'Prosody and Syntax'                          => 84,
+	'Output and Delivery'                         => 94,
 );
 preg_match( '/const SOUL_LAYERS = \[(.*?)\n  \];/s', $code, $m );
 $layers = isset( $m[1] ) ? $m[1] : '';
@@ -85,6 +85,11 @@ foreach ( $stations as $label => $density ) {
 	if ( $found ) { $seen[] = $label; }
 }
 ok( 'thirteen and no more', substr_count( $layers, 'label: "' ), 13 );
+/* Two at one density would tie, and a tie sorts on the alphabet — which is how
+   AI Provider Parameters used to land above Output and Delivery. */
+preg_match_all( '/density: ([0-9]+) \}/', $layers, $flosc_dens );
+ok( '  and no two share a density', count( $flosc_dens[1] ), count( array_unique( $flosc_dens[1] ) ) );
+ok( '  in ascending order', array_map( 'intval', $flosc_dens[1] ), array_values( $stations ) );
 
 echo "\nThe palette's shelves are those headings\n";
 ok( 'derived from the container list, not a second array',

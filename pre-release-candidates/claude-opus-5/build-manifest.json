@@ -1,31 +1,38 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": 34,
+  "candidate_iteration": 35,
   "creator": "Claude Opus 5",
   "status": "BUILT_AWAITING_CAPTAIN_TEST",
   "plugin_version": "8.0.0",
-  "base": "codex-gpt5 v33 (db55a20)",
-  "base_note": "Built from the v33 candidate tree. Everything Codex landed — the variable expander, the token scanner, current_url from browsing_page_url, the designer's variables panel — is carried forward and extended, not replaced.",
+  "base": "claude-opus-5 v34 (914ee7b)",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "fe3767b731d28108e22f7b7c4966e6b2e80a2feb0ed63093495229b191f6a7db",
-  "artifact_bytes": 2727148,
+  "artifact_sha256": "63afe4ec8e2535f1e54314b3bbb45fd317eb5877301521cebb237142c21cd2b8",
+  "artifact_bytes": 2728339,
   "artifact_entries": 277,
   "tree_files": 289,
-  "what_v34_adds": {
-    "unresolved_is_empty": "A recognized variable with no value now leaves nothing behind. v33 substituted the literal 'not available', which the model reads aloud as if it were the answer. Three stand-in strings are gone: 'not available', 'not provided', 'not signed in'.",
-    "kept_deliberately": "'Visitor', 'User', '0' for message_count, and 'guest'/'visitor' for access level stay. Those are answers, not unknowns — a logged-out person really is a Visitor.",
-    "quiz_can_name_its_quiz": "{score:ipa_basics} reads that quiz. Unnamed, {score} means the most recent quiz this person took. Any of the six quiz tokens takes a qualifier, and the same base token can name two different quizzes in one document.",
-    "quiz_identity": "{quiz_id} and {quiz_title} name which quiz the unqualified values came from.",
-    "cost": "A qualified token reads through FLOSC_Bridge_Data_Manager::get_flosc_bridge_data(), which already does per-quiz and most-recent. One lookup per distinct quiz per request, cached, and only reached when such a token is actually in the document.",
-    "malformed": "{score:} matches nothing and is left exactly as written, the same rule already applied to any unrecognized brace."
+  "tasks_closed": {
+    "7": "The {title} alias. {title}, {product_name} and {app_name} all resolve to the public title. All three keep resolving — flow files, IVR greetings and the accuracy-test templates in admin/docs use them — but the catalog marks them alias_of and the designer's variables panel lists one name per value instead of four names for one.",
+    "8": "The fourteen-slot heading set. Five relabels and one density swap in SOUL_LAYERS. Mission at 12, Traits at 30, Decisions at 56, Exceptions at 62, Workflow at 68; Banned Words moves 84 to 74 and the behavior id takes Prosody and Syntax at 84. No id retires, so ensureContainers() carries the labels to saved personalities with no migration. AI Provider Parameters moved 94 to 98, off its tie with Output and Delivery.",
+    "9": "saveToLibrary() now sends what libraryEntry() builds. The builder exposes libraryEntry on its api, the bridge reads it rather than rebuilding it, and the AJAX handler stores ai_personality_traits, ai_mission, ai_boundaries and ai_topic_scope. All four were already in field_keys() and already computed; nothing read them. ai_boundaries and ai_topic_scope reach the model every turn, so a floscAdmin had no way to set two values the AI was being given. The Scope input already exists in the designer under Boundaries and Prohibitions."
   },
-  "files_changed_from_v33": [
+  "profiles_touched_minimally": "Not the #10 revision. Three profiles had 'Philosophy and Values' renamed to 'Mission, Philosophy and Values' — label only, densities untouched. Dad Joke Dan's three jokes followed their workshop cards from Decisions to Tone at 45, 46 and 47, because the behavior id they were filed under is Prosody and Syntax now. The parked joke slots moved to 43 and 44 so switching one on puts it in the run it belongs to.",
+  "files_changed_from_v34": [
     "includes/flosc-personality-library.php",
     "assets/js/flosc-personality-builder.js",
-    "tests/check_profile_variables.php"
+    "assets/js/flosc-personality-builder-wp.js",
+    "tests/check_personality_document.php",
+    "tests/check_profile_variables.php",
+    "tests/check_attachment_save.php",
+    "tests/check_php_string_literals.php"
   ],
+  "gates_added": {
+    "check_personality_document.php": "the fourteen labels and densities, no two sharing a density, in ascending order",
+    "check_profile_variables.php": "an alias resolves and is not advertised; the token it aliases is",
+    "check_attachment_save.php": "every field libraryEntry() computes is sent, read by the handler, and storable"
+  },
+  "gate_moved": "check_php_string_literals.php pinned the four profiles to their exact v25 bytes. The pin is a drift guard, not a freeze: three hashes moved with the approved heading rename, in this commit, so text and pin cannot drift apart quietly.",
   "verification": {
     "test_suite": "passed — 28 files",
     "php_syntax_all_files": "passed",
@@ -34,12 +41,10 @@
     "zip_gates": "passed (277 entries, forbidden-path scan clean, single flosc/ root)",
     "version_held_at_8_0_0": "passed",
     "wordpress_plugin_check": "DEFERRED — needs a WordPress install",
-    "live_quiz_qualifier": "DEFERRED — needs a flow with two quizzes and a person who took both",
-    "personality_revision": "NOT IN THIS BUILD — the four shipped profiles are unchanged from v31"
+    "live_designer_round_trip": "DEFERRED — open a personality, set Scope under Boundaries, save, confirm {topic_scope} resolves"
   },
   "still_open": {
-    "heading_set": "The fourteen slots are agreed and not yet coded: five relabels and two density swaps in SOUL_LAYERS, builder.js. Mission at 12, Traits at 30, Decisions at 56, Exceptions at 62, Workflow at 68, Banned Words to 74, Prosody and Syntax at 84.",
-    "title_alias": "{title}, {public_title}, {product_name} and {app_name} all resolve to the same string on most flows.",
-    "library_entry_gap": "builder.js libraryEntry() computes traits, mission, boundaries and topic_scope; saveToLibrary() sends four keys and not those. That is why those fields have no editor."
+    "10": "Revise the four shipped profiles across all fourteen headings. Unblocked now. Friendly Guide is drafted and mostly settled; open on it is whether the # 24 knowledge cards use {flow_name} or {public_title}. Order: Friendly Guide, Tech Agent, BubblyBetty, Dad Joke Dan, one at a time, the Captain's edits and his explicit approval before each is written.",
+    "profile_densities": "The densities inside the four profiles still predate the heading map — Philosophy written at 8, Betty's Output at 74, Tech's Knowledge at 6. Reseating them is part of #10, not a separate item."
   }
 }

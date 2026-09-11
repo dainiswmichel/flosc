@@ -193,7 +193,17 @@ $expected = array(
 );
 flosc_profile_vars_check( 'catalog contains only the verified contract', array_keys( $catalog ), $expected );
 $boot = flosc_personality_variable_boot( 'lesaep_com_ivr.md' );
-flosc_profile_vars_check( 'designer receives every catalog variable', count( $boot ), count( $expected ) );
+/* {title}, {product_name} and {app_name} all resolve to the public title. They
+   keep working — flow files, IVR greetings and the accuracy-test templates use
+   them — but the designer lists one name per value, not four names for one. */
+$aliased = array( 'title', 'product_name', 'app_name' );
+flosc_profile_vars_check( 'designer receives every catalog variable but the aliases', count( $boot ), count( $expected ) - count( $aliased ) );
+$boot_tokens = array_map( static function ( $row ) { return trim( $row['token'], '{}' ); }, $boot );
+flosc_profile_vars_check( '  no alias is advertised', array_values( array_intersect( $aliased, $boot_tokens ) ), array() );
+flosc_profile_vars_check( '  and the one they alias is', in_array( 'public_title', $boot_tokens, true ), true );
+foreach ( $aliased as $flosc_alias ) {
+	flosc_profile_vars_check( '  {' . $flosc_alias . '} still expands', flosc_personality_variable_tokens( '{' . $flosc_alias . '}' ), array( $flosc_alias ) );
+}
 flosc_profile_vars_check( 'flow filename is normalized before lookup', in_array( 'setting:name:lesaep_com_ivr', $GLOBALS['flosc_profile_var_calls'], true ), true );
 $js = (string) file_get_contents( $root . '/assets/js/flosc-personality-builder.js' );
 $markup = (string) file_get_contents( $root . '/assets/personality-builder/flosc-personality-builder-markup.php' );

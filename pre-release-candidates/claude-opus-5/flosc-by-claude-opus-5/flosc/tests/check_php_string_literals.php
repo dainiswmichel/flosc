@@ -71,12 +71,24 @@ if ( ! function_exists( 'wp_json_encode' ) ) {
 }
 require_once $root . '/includes/flosc-personality-library.php';
 
-echo "\nThe four shipped runtime profiles retain their exact v25 bytes\n";
+/*
+ * A shipped profile changes only when the Captain approves the words.
+ *
+ * The pin caught the conversion from heredoc to implode, which had to be
+ * byte-identical. It keeps catching an accidental edit. It is not a freeze:
+ * when a revision is approved the hash below moves with it, in the same commit
+ * as the text, so the two cannot drift apart quietly.
+ *
+ * Last moved: v35, for the heading rename. Philosophy and Values became
+ * Mission, Philosophy and Values in three profiles, and Dad Joke Dan's three
+ * jokes followed their cards from Decisions to Tone at 45, 46 and 47.
+ */
+echo "\nThe four shipped runtime profiles match their approved text\n";
 $expected = array(
-	'friendly'     => '148857604f6cd44f945d58b7ab5fb4ecdf13d85ad0931ced3349a8b408c3c82e',
+	'friendly'     => 'c61e0461c835277786ee615e7e2b08b34f6b1c664bb82b606e941ee95f6bb11f',
 	'tech'         => 'b9f3c546d88896664980a233d88b7f1baee38d9725d6d58488a1fbb004aec21a',
-	'bubblybetty'  => '875deb1c50b450f493bb7e65b4fac9defd7f0427b4428e9f8c53275fbe2bd8a6',
-	'dadjokedan'   => 'cc79d1f8ff715e531a2ed56fdc21e441a7be5015760996aa81bc0b4b1899bf27',
+	'bubblybetty'  => 'b50dae7dfa9d7fcdb36bc295d66db28ecdd6c97dd2f16d9d89d6af2f5764f6b5',
+	'dadjokedan'   => '53bdad32ca0ceec4251c2b277af8c2309fcf3981e4588d1b1d653bac56fb45bc',
 );
 $defaults = flosc_personality_library_defaults();
 foreach ( $expected as $id => $hash ) {

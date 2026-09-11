@@ -20,6 +20,33 @@
     return shop;
   }
 
+  /*
+   * The four fields the designer computes and used not to send.
+   *
+   * libraryEntry() has always built a complete entry — traits, mission,
+   * boundaries and topic scope alongside name and role — and only the
+   * downloadable builder state read it. So a personality saved here left those
+   * four empty in the database, which is why {topic_scope} resolved to nothing
+   * on every flow that had not hand-edited a flow_ivr.md.
+   */
+  function sidecarFields(api) {
+    var entry = api && typeof api.libraryEntry === "function" ? api.libraryEntry() : null;
+    if (!entry) { return {}; }
+    return {
+      ai_personality_traits: entry.ai_personality_traits || "",
+      ai_mission: entry.ai_mission || "",
+      ai_boundaries: entry.ai_boundaries || "",
+      ai_topic_scope: entry.ai_topic_scope || ""
+    };
+  }
+
+  function appendSidecar(body, api) {
+    var extra = sidecarFields(api);
+    Object.keys(extra).forEach(function (key) {
+      body.append(key, extra[key]);
+    });
+  }
+
   function soulBits(api) {
     var soul = (api && api.state && api.state.soul) || {};
     return {
@@ -152,6 +179,7 @@
     body.append("label", bits.label);
     body.append("ai_personality_name", bits.name);
     body.append("ai_personality_role", bits.role);
+    appendSidecar(body, api);
     body.append("ai_base_prompt", profile);
     body.append("workshop_json", JSON.stringify(workshopForSave(api)));
     saving = true;

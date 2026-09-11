@@ -364,8 +364,8 @@ if ( ! function_exists( 'flosc_personality_library_default_workshop' ) ) {
 			case 'dadjokedan':
 				/* Parked cards wait for Dainis’s own jokes: paste one into the
 				   instruction field, switch the card on, done. */
-				$parked = static function ( $id ) use ( $t ) {
-					return $t( $id, 94, 0, array(
+				$parked = static function ( $id, $density ) use ( $t ) {
+					return $t( $id, $density, 0, array(
 						'on'          => false,
 						'state'       => 'off',
 						'label'       => 'Your joke here',
@@ -408,8 +408,13 @@ if ( ! function_exists( 'flosc_personality_library_default_workshop' ) ) {
 							'binding' => 'may', 'shape2' => 'circle', 'color' => '#cffafe',
 							'trajectory' => 'Deadpan delivery, zero apology.',
 						) ),
-						// Behavior — the Laugh Factory: one card per joke.
-						$t( 'joke_antigravity', 84, 100, array(
+						/*
+						 * The Laugh Factory, one card per joke, filed under Tone.
+						 * The jokes are how Dan talks, not a decision he makes —
+						 * and density 84 is Prosody and Syntax now, which is
+						 * where they would have landed if left where they were.
+						 */
+						$t( 'joke_antigravity', 45, 100, array(
 							'label'       => 'Anti-gravity book',
 							'short'       => 'Impossible to put down',
 							'family'      => 'context',
@@ -418,7 +423,7 @@ if ( ! function_exists( 'flosc_personality_library_default_workshop' ) ) {
 							'instruction' => 'I’m reading a book about anti-gravity. It’s impossible to put down.',
 							'comments'    => array( 'character' => 'Deploy when reading, learning, or focus comes up.' ),
 						) ),
-						$t( 'joke_grew_on_me', 86, 100, array(
+						$t( 'joke_grew_on_me', 46, 100, array(
 							'label'       => 'It grew on me',
 							'short'       => 'Facial hair pun',
 							'family'      => 'context',
@@ -427,7 +432,7 @@ if ( ! function_exists( 'flosc_personality_library_default_workshop' ) ) {
 							'instruction' => 'I used to hate facial hair, but then it grew on me.',
 							'comments'    => array( 'character' => 'Deploy when appearance, change, or patience comes up.' ),
 						) ),
-						$t( 'joke_skeletons', 88, 100, array(
+						$t( 'joke_skeletons', 47, 100, array(
 							'label'       => 'Skeletons lack guts',
 							'short'       => 'Why they never fight',
 							'family'      => 'context',
@@ -436,8 +441,11 @@ if ( ! function_exists( 'flosc_personality_library_default_workshop' ) ) {
 							'instruction' => 'Why don’t skeletons fight each other? They don’t have the guts.',
 							'comments'    => array( 'character' => 'Halloween, conflict, or courage topics.' ),
 						) ),
-						$parked( 'joke_yours_1' ),
-						$parked( 'joke_yours_2' ),
+						/* Off, and sitting with the jokes rather than under
+						   Output and Delivery, so switching one on puts it in
+						   the run it belongs to. */
+						$parked( 'joke_yours_1', 43 ),
+						$parked( 'joke_yours_2', 44 ),
 						$t( 'open_continue', 96, 60, array(
 							'binding' => 'may', 'shape2' => 'ellipse', 'color' => '#e0f2fe',
 						) ),
@@ -484,7 +492,7 @@ if ( ! function_exists( 'flosc_personality_library_defaults' ) ) {
 						'You are Friendly Guide, a warm host who is genuinely glad someone came.',
 						'Speak as this person. Do not discuss how you were made.',
 						'',
-						'# 8 Philosophy and Values',
+						'# 8 Mission, Philosophy and Values',
 						'',
 						'## 8 Be kind',
 						'short: Be kind.',
@@ -608,7 +616,7 @@ if ( ! function_exists( 'flosc_personality_library_defaults' ) ) {
 						'You are BubblyBetty, a virtual sunshine AI companion who celebrates every chat.',
 						'Speak as this person. Do not discuss how you were made.',
 						'',
-						'# 8 Philosophy and Values',
+						'# 8 Mission, Philosophy and Values',
 						'',
 						'## 8 Be kind',
 						'short: Be kind.',
@@ -671,7 +679,7 @@ if ( ! function_exists( 'flosc_personality_library_defaults' ) ) {
 						'You are DadJokeDan, a pun-powered dad who always has a joke at the ready.',
 						'Speak as this person. Do not discuss how you were made.',
 						'',
-						'# 8 Philosophy and Values',
+						'# 8 Mission, Philosophy and Values',
 						'',
 						'## 8 Be kind',
 						'short: Be kind underneath the humor.',
@@ -691,29 +699,27 @@ if ( ! function_exists( 'flosc_personality_library_defaults' ) ) {
 						'short: Keep jokes clean and family-friendly. The joke never overrides the help.',
 						'',
 						'# 42 Tone and Communication Style',
+						'About one dad joke per exchange, delivered deadpan. Pick the joke that fits the moment.',
 						'',
 						'## 42 Yes, and',
 						'short: If the visitor plays along, raise the stakes gently.',
 						'frequency: usually',
 						'',
-						'## 48 Relax',
-						'short: A groan is a win. Never apologize for a joke; stand by it.',
-						'frequency: usually',
-						'',
-						'# 84 Decisions including Infrequent Cases',
-						'About one dad joke per exchange, delivered deadpan. Pick the joke that fits the moment.',
-						'',
-						'## 84 Anti-gravity book',
+						'## 45 Anti-gravity book',
 						'short: "I\'m reading a book about anti-gravity. It\'s impossible to put down." - reading, learning, or focus.',
 						'frequency: always',
 						'',
-						'## 86 It grew on me',
+						'## 46 It grew on me',
 						'short: "I used to hate facial hair, but then it grew on me." - appearance, change, or patience.',
 						'frequency: always',
 						'',
-						'## 88 Skeletons lack guts',
+						'## 47 Skeletons lack guts',
 						'short: "Why don\'t skeletons fight each other? They don\'t have the guts." - Halloween, conflict, or courage.',
 						'frequency: always',
+						'',
+						'## 48 Relax',
+						'short: A groan is a win. Never apologize for a joke; stand by it.',
+						'frequency: usually',
 						'',
 						'# 96 Output and Delivery',
 						'',
@@ -1231,9 +1237,23 @@ if ( ! function_exists( 'flosc_personality_variable_catalog' ) ) {
 			'quiz_title'         => 'Title of that quiz',
 			'message_count'      => 'Messages in this session',
 		);
+		/*
+		 * Four tokens print the same string on most flows. They keep working —
+		 * flow files, IVR greetings and the accuracy-test templates documented
+		 * in admin/docs all use {title} — but the designer offers a floscAdmin
+		 * one name for one value rather than four names for one value.
+		 */
+		$aliases = array(
+			'title'        => 'public_title',
+			'product_name' => 'public_title',
+			'app_name'     => 'public_title',
+		);
 		$out = array();
 		foreach ( $flow as $token => $label ) {
 			$out[ $token ] = array( 'scope' => 'flow', 'label' => $label );
+			if ( isset( $aliases[ $token ] ) ) {
+				$out[ $token ]['alias_of'] = $aliases[ $token ];
+			}
 		}
 		foreach ( $turn as $token => $label ) {
 			$out[ $token ] = array( 'scope' => 'turn', 'label' => $label );
@@ -1565,6 +1585,11 @@ if ( ! function_exists( 'flosc_personality_variable_boot' ) ) {
 		$rows    = array();
 		$catalog = flosc_personality_variable_catalog();
 		foreach ( $catalog as $token => $meta ) {
+			/* An alias resolves, but is not advertised. Listing it would show
+			   the same value under a second name and read as a second thing. */
+			if ( isset( $meta['alias_of'] ) ) {
+				continue;
+			}
 			$rows[] = array(
 				'token' => '{' . $token . '}',
 				'label' => $meta['label'],
@@ -2017,6 +2042,19 @@ if ( ! function_exists( 'flosc_ajax_save_personality_design' ) ) {
 		}
 		if ( isset( $_POST['ai_personality_role'] ) ) {
 			$fields['ai_personality_role'] = sanitize_text_field( wp_unslash( (string) $_POST['ai_personality_role'] ) );
+		}
+		/*
+		 * The four the designer computes. They were already in
+		 * flosc_personality_library_field_keys(), already built by the
+		 * builder's libraryEntry(), and read by nothing — the save sent four
+		 * keys and these were not among them. ai_boundaries and ai_topic_scope
+		 * reach the model on every turn, so a floscAdmin had no way to set two
+		 * values the AI was being given.
+		 */
+		foreach ( array( 'ai_personality_traits', 'ai_mission', 'ai_boundaries', 'ai_topic_scope' ) as $flosc_sidecar ) {
+			if ( isset( $_POST[ $flosc_sidecar ] ) ) {
+				$fields[ $flosc_sidecar ] = sanitize_textarea_field( wp_unslash( (string) $_POST[ $flosc_sidecar ] ) );
+			}
 		}
 		if ( isset( $_POST['ai_base_prompt'] ) && is_string( $_POST['ai_base_prompt'] ) ) {
 			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- flosc_sanitize_personality_profile_text keeps Markdown.

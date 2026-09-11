@@ -59,17 +59,17 @@
    */
   const SOUL_LAYERS = [
     { id: "identity", band: "soul", label: "Identity and Role", hint: "Who remains, under probe", density: 6 },
-    { id: "goals", band: "soul", label: "Philosophy and Values", hint: "What this conversation is for", density: 12 },
+    { id: "goals", band: "soul", label: "Mission, Philosophy and Values", hint: "What this conversation is for", density: 12 },
     { id: "rules", band: "soul", label: "Boundaries and Prohibitions", hint: "Invariants, defaults, who is served", density: 18 },
     { id: "epistemics", band: "soul", label: "Knowledge, Doubt and Correction", hint: "How this personality knows, doubts, corrects", density: 24 },
-    { id: "opinions", band: "soul", label: "Opinions and Preferences", hint: "What it leans toward when nothing forces the choice", density: 30 },
+    { id: "opinions", band: "soul", label: "Opinions, Traits and Preferences", hint: "What it leans toward when nothing forces the choice", density: 30 },
     { id: "expression", band: "character", label: "Tone and Communication Style", hint: "Tone, cadence, conditionals", density: 40 },
     { id: "relation", band: "character", label: "Stance Toward the Human", hint: "How it orients toward this human", density: 48 },
-    { id: "initiative", band: "character", label: "Behavior in Ambiguity", hint: "When to answer, ask, lead, stay quiet", density: 56 },
-    { id: "adaptation", band: "character", label: "Adaptation", hint: "Same soul, fitting intensity", density: 62 },
-    { id: "resource", band: "behavior", label: "Resourcefulness", hint: "What it does when the direct route is closed", density: 68 },
-    { id: "behavior", band: "behavior", label: "Decisions including Infrequent Cases", hint: "Decisions, infrequent cases, recipes", density: 74 },
-    { id: "language", band: "behavior", label: "Banned Words and Fillers to Avoid", hint: "Length, examples, words this personality never uses", density: 84 },
+    { id: "initiative", band: "character", label: "Decisions and Behavior in Ambiguity", hint: "When to answer, ask, lead, stay quiet", density: 56 },
+    { id: "adaptation", band: "character", label: "Adaptation, Exceptions and Infrequent Cases", hint: "Same soul, fitting intensity; and the rare case", density: 62 },
+    { id: "resource", band: "behavior", label: "Workflow and Resourcefulness", hint: "How it proceeds, and what it does when the direct route is closed", density: 68 },
+    { id: "language", band: "behavior", label: "Banned Words and Fillers to Avoid", hint: "Length, examples, words this personality never uses", density: 74 },
+    { id: "behavior", band: "behavior", label: "Prosody and Syntax", hint: "Sentence shape, rhythm, grammar", density: 84 },
     { id: "action", band: "behavior", label: "Output and Delivery", hint: "What actually leaves the model, and how it is shaped", density: 94 }
   ];
   const SHAPE2 = ["circle", "ellipse", "triangle", "square", "diamond", "pentagon", "hexagon", "star", "none"];
@@ -1074,7 +1074,9 @@
     arr.push({
       id: PROVIDERS_CONTAINER_ID, kind: "providers", origin: "seed", band: "behavior",
       label: "AI Provider Parameters", desc: "Sampling and provider knobs. The runtime maps names per API and omits what an API does not support.",
-      density: 94, gain: 0
+      /* 98, not 94. At 94 it tied with Output and Delivery and sorted first on
+         the alphabet, putting the knobs above the last thing the model reads. */
+      density: 98, gain: 0
     });
     return arr;
   }
@@ -6088,6 +6090,10 @@
   window.floscBuilder = {
     compilePrompt: compilePrompt,
     promptFile: promptFile,
+    /* The WordPress bridge sends what this returns. It was only ever read by
+       the downloadable builder state, which is why four of the six fields it
+       computes never reached the database. */
+    libraryEntry: libraryEntry,
     providerPacks: providerPacks,
     workshopFile: workshopFile,
     lint: lint,
