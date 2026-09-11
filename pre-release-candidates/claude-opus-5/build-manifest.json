@@ -1,50 +1,42 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": 35,
+  "candidate_iteration": 36,
   "creator": "Claude Opus 5",
   "status": "BUILT_AWAITING_CAPTAIN_TEST",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v34 (914ee7b)",
+  "base": "claude-opus-5 v35 (18754c3)",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "63afe4ec8e2535f1e54314b3bbb45fd317eb5877301521cebb237142c21cd2b8",
-  "artifact_bytes": 2728339,
+  "artifact_sha256": "c59124bdbead6b0e6d82409a8b4f137c26579e83373df828de4a5bc234650067",
+  "artifact_bytes": 2728907,
   "artifact_entries": 277,
   "tree_files": 289,
-  "tasks_closed": {
-    "7": "The {title} alias. {title}, {product_name} and {app_name} all resolve to the public title. All three keep resolving — flow files, IVR greetings and the accuracy-test templates in admin/docs use them — but the catalog marks them alias_of and the designer's variables panel lists one name per value instead of four names for one.",
-    "8": "The fourteen-slot heading set. Five relabels and one density swap in SOUL_LAYERS. Mission at 12, Traits at 30, Decisions at 56, Exceptions at 62, Workflow at 68; Banned Words moves 84 to 74 and the behavior id takes Prosody and Syntax at 84. No id retires, so ensureContainers() carries the labels to saved personalities with no migration. AI Provider Parameters moved 94 to 98, off its tie with Output and Delivery.",
-    "9": "saveToLibrary() now sends what libraryEntry() builds. The builder exposes libraryEntry on its api, the bridge reads it rather than rebuilding it, and the AJAX handler stores ai_personality_traits, ai_mission, ai_boundaries and ai_topic_scope. All four were already in field_keys() and already computed; nothing read them. ai_boundaries and ai_topic_scope reach the model every turn, so a floscAdmin had no way to set two values the AI was being given. The Scope input already exists in the designer under Boundaries and Prohibitions."
+  "scope": "Rename, do not restructure. Three edits in editorHtml() and one CSS class. No state key renamed, no storage column renamed, no field added or removed — only where a field sits and what its label says.",
+  "what_v36_changes": {
+    "goals_is_mission": "The field under Mission, Philosophy and Values was labelled Goals with the placeholder 'mission, not the full law' — the correction written into the hint instead of the label, while the value saves as ai_mission. It now reads Mission, with the hint 'what this conversation is for'. The state key goals and the column ai_mission are unchanged; nobody sees either.",
+    "scope_moves_to_mission": "Scope was seventh in a seven-field Boundaries panel, behind Core values, Prohibitions, Interaction policy, Invariants and Defaults. It answers the question its new heading asks — what is this conversation for — and it reaches the model on every turn as Topic Scope, which it did not look like buried in that list.",
+    "identity_splits_into_three": "The Identity panel held filing details (id, label, version, install-private), a nameplate (name, role) and probe answers (identity lock, the two probe lines) in one column, which read as one list of equals. Same fields, same keys, three labelled groups: Filing, Nameplate, Under probe.",
+    "name_hint": "The Name hint read 'chat header; this personality introduces itself as this name'. It now reads 'what it is called — BubblyBetty, Tech Agent', because the altitude was the confusion: a name is a label, not the identity."
   },
-  "profiles_touched_minimally": "Not the #10 revision. Three profiles had 'Philosophy and Values' renamed to 'Mission, Philosophy and Values' — label only, densities untouched. Dad Joke Dan's three jokes followed their workshop cards from Decisions to Tone at 45, 46 and 47, because the behavior id they were filed under is Prosody and Syntax now. The parked joke slots moved to 43 and 44 so switching one on puts it in the run it belongs to.",
-  "files_changed_from_v34": [
-    "includes/flosc-personality-library.php",
+  "files_changed_from_v35": [
     "assets/js/flosc-personality-builder.js",
-    "assets/js/flosc-personality-builder-wp.js",
-    "tests/check_personality_document.php",
-    "tests/check_profile_variables.php",
-    "tests/check_attachment_save.php",
-    "tests/check_php_string_literals.php"
+    "assets/css/flosc-personality-builder.css",
+    "tests/check_attachment_save.php"
   ],
-  "gates_added": {
-    "check_personality_document.php": "the fourteen labels and densities, no two sharing a density, in ascending order",
-    "check_profile_variables.php": "an alias resolves and is not advertised; the token it aliases is",
-    "check_attachment_save.php": "every field libraryEntry() computes is sent, read by the handler, and storable"
-  },
-  "gate_moved": "check_php_string_literals.php pinned the four profiles to their exact v25 bytes. The pin is a drift guard, not a freeze: three hashes moved with the approved heading rename, in this commit, so text and pin cannot drift apart quietly.",
+  "gate_added": "check_attachment_save.php now pins that every stored field a floscAdmin is expected to fill has an editor — name, role, goals, prohibitions, scope — and that Scope sits with Mission and is labelled Mission rather than Goals. ai_topic_scope reaches the model on every turn and spent this whole cycle with no path from the designer to the database; a field read at runtime with no input anywhere is that bug's shape.",
   "verification": {
-    "test_suite": "passed — 28 files",
+    "test_suite": "passed — 28 files, first pass",
     "php_syntax_all_files": "passed",
     "javascript_syntax": "passed",
     "density_nesting": "passed",
     "zip_gates": "passed (277 entries, forbidden-path scan clean, single flosc/ root)",
     "version_held_at_8_0_0": "passed",
     "wordpress_plugin_check": "DEFERRED — needs a WordPress install",
-    "live_designer_round_trip": "DEFERRED — open a personality, set Scope under Boundaries, save, confirm {topic_scope} resolves"
+    "designer_visual_check": "DEFERRED — open Identity and Role and confirm three labelled groups; open Mission, Philosophy and Values and confirm Mission and Scope are both there"
   },
   "still_open": {
-    "10": "Revise the four shipped profiles across all fourteen headings. Unblocked now. Friendly Guide is drafted and mostly settled; open on it is whether the # 24 knowledge cards use {flow_name} or {public_title}. Order: Friendly Guide, Tech Agent, BubblyBetty, Dad Joke Dan, one at a time, the Captain's edits and his explicit approval before each is written.",
-    "profile_densities": "The densities inside the four profiles still predate the heading map — Philosophy written at 8, Betty's Output at 74, Tech's Knowledge at 6. Reseating them is part of #10, not a separate item."
+    "10": "Revise the four shipped profiles across all fourteen headings. Friendly Guide is drafted; open on it is whether the # 24 knowledge cards use {flow_name} or {public_title}. Order: Friendly Guide, Tech Agent, BubblyBetty, Dad Joke Dan — one at a time, the Captain's edits and his explicit approval before each is written.",
+    "traits_is_synthesized": "ai_personality_traits has no field and is assembled from tone, posture and warmth by synthesizeTraits(). A hand-written traits string in the shipped defaults is overwritten on the first Save in the designer, which is why the traits line belongs in the document as a card rather than in that column."
   }
 }

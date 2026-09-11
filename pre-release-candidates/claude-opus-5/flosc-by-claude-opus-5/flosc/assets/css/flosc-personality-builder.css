@@ -336,6 +336,22 @@
     background: var(--card);
   }
   .flosc-personality-workshop dialog::backdrop{ background: rgba(19,33,23,.35); }
+  /* A labelled run of fields inside one heading's editor. The Identity panel
+     held filing details, a nameplate and probe answers in one column, which
+     read as one list of equals. */
+  .flosc-personality-workshop .field-group{
+    border-top: 1px solid var(--line);
+    padding-top: 10px;
+    margin: 0 0 14px;
+  }
+  .flosc-personality-workshop .field-group:first-of-type{ border-top: 0; padding-top: 0; }
+  .flosc-personality-workshop .field-group-label{
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin: 0 0 6px;
+  }
   .flosc-personality-workshop .idline{ display: flex; gap: 8px; flex-wrap: wrap; align-items: end; }
   .flosc-personality-workshop .idline .field{ flex: 1; min-width: 140px; }
   .flosc-personality-workshop .file-seq{ padding: 8px 10px 16px; overflow: visible; max-height: none; }

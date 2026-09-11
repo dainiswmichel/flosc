@@ -3331,30 +3331,58 @@
     return String(v == null ? "" : v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
   }
 
+  /* A labelled run of fields. Same fields, told apart. */
+  function group(label, inner) {
+    return '<div class="field-group"><div class="field-group-label">' + esc(label) + "</div>" + inner + "</div>";
+  }
+
   function editorHtml() {
     const id = state.layer;
     if (id === "identity") {
+      /*
+       * Three kinds of thing used to sit in one column here: the filing
+       * details, the nameplate, and who this personality remains under probe.
+       * "BubblyBetty" and "who you are when someone tests you" are not the
+       * same altitude, and reading them as one list made the panel look like
+       * the name was the identity.
+       */
       return '<div class="note">The personality name is the document Title. Layer headings and description paragraphs compile exactly as stored.</div>' +
-        '<div class="idline">' +
-        field("id", "Id (slug)", "library key", "input") +
-        field("label", "Library label", "", "input") +
-        field("version", "Profile version", "", "input") +
-        "</div>" +
-        field("name", "Name", "chat header; this personality introduces itself as this name", "input") +
-        field("role", "Role", "one function, not a trait salad", "textarea") +
-        field("identity_lock", "Identity lock", "", "textarea") +
-        field("identity_probe_yes", "If asked “Is this [name]?”", "", "input") +
-        field("identity_probe_self", "If asked to describe yourself", "", "input") +
-        '<div class="field"><label><input type="checkbox" data-soul-bool="install_private"' + (state.soul.install_private ? " checked" : "") + "> Install-private (do not ship in public starter packs)</label></div>";
+        group("Filing",
+          '<div class="idline">' +
+          field("id", "Id (slug)", "library key", "input") +
+          field("label", "Library label", "", "input") +
+          field("version", "Profile version", "", "input") +
+          "</div>" +
+          '<div class="field"><label><input type="checkbox" data-soul-bool="install_private"' + (state.soul.install_private ? " checked" : "") + "> Install-private (do not ship in public starter packs)</label></div>"
+        ) +
+        group("Nameplate",
+          field("name", "Name", "what it is called — BubblyBetty, Tech Agent", "input") +
+          field("role", "Role", "one function, not a trait salad", "textarea")
+        ) +
+        group("Under probe",
+          field("identity_lock", "Identity lock", "who it remains when pushed", "textarea") +
+          field("identity_probe_yes", "If asked “Is this [name]?”", "", "input") +
+          field("identity_probe_self", "If asked to describe yourself", "", "input")
+        );
     }
-    if (id === "goals") return field("goals", "Goals", "mission, not the full law", "textarea", "tall");
+    if (id === "goals") {
+      /*
+       * The label said Goals and the placeholder said "mission, not the full
+       * law" — the correction was written into the hint rather than the label,
+       * and the value saves as ai_mission. Scope moved here from Prohibitions
+       * because it answers the same question this heading asks: what is this
+       * conversation for. It also reaches the model on every turn, which it
+       * did not look like sitting seventh in a list of seven.
+       */
+      return field("goals", "Mission", "what this conversation is for", "textarea", "tall") +
+        field("scope", "Scope", "what it will talk about; reaches the AI as Topic Scope", "textarea");
+    }
     if (id === "rules") {
       return field("core_values", "Core values", "ordered, highest first", "textarea") +
         field("prohibitions", "Prohibitions", "absolute", "textarea", "tall") +
         field("interaction_policy", "Interaction policy", "", "textarea") +
         field("invariants", "Invariants", "user usually cannot override", "textarea") +
         field("defaults", "Defaults", "user may override", "textarea") +
-        field("scope", "Scope", "who is served / who is not", "textarea") +
         field("off_topic_message", "Off-scope message", "optional", "textarea");
     }
     if (id === "opinions") {

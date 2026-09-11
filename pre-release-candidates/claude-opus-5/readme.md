@@ -1,94 +1,71 @@
-# FLOSC 8.0.0 — candidate v35
+# FLOSC 8.0.0 — candidate v36
 
-Built from v34. Version is 8.0.0 and does not move.
+Built from v35. Version is 8.0.0 and does not move.
 
     artifact   flosc.zip
-    sha256     63afe4ec8e2535f1e54314b3bbb45fd317eb5877301521cebb237142c21cd2b8
+    sha256     c59124bdbead6b0e6d82409a8b4f137c26579e83373df828de4a5bc234650067
     entries    277, single flosc/ root
     source     flosc-by-claude-opus-5/flosc
 
-Three tasks closed.
+Rename, do not restructure. Three edits in the designer's editor and one CSS
+class. No state key renamed, no storage column renamed, nothing added or
+removed — only where a field sits and what its label says.
 
-## The fourteen headings
+## Goals is Mission
 
-    SOUL       6   Identity and Role
-               12  Mission, Philosophy and Values
-               18  Boundaries and Prohibitions
-               24  Knowledge, Doubt and Correction
-               30  Opinions, Traits and Preferences
+The field under *Mission, Philosophy and Values* was labelled **Goals**, with
+the placeholder *"mission, not the full law"* — the correction written into
+the hint instead of the label, while the value saves as `ai_mission`. Three
+names for one thing.
 
-    CHARACTER  40  Tone and Communication Style
-               48  Stance Toward the Human
-               56  Decisions and Behavior in Ambiguity
-               62  Adaptation, Exceptions and Infrequent Cases
+It now reads **Mission**, hint *"what this conversation is for"*. The state key
+`goals` and the column `ai_mission` are unchanged; nobody sees either.
 
-    BEHAVIOR   68  Workflow and Resourcefulness
-               74  Banned Words and Fillers to Avoid
-               84  Prosody and Syntax
-               94  Output and Delivery
+## Scope sits with Mission
 
-Plus Personalization at 1, the reserved Sticky for User slot.
+Scope was seventh in a seven-field Boundaries panel, behind Core values,
+Prohibitions, Interaction policy, Invariants and Defaults. It answers the
+question its new heading asks, and it reaches the model on every turn as
+**Topic Scope** — which it did not look like, buried in that list.
 
-Five relabels and one density swap. No id retires, so `ensureContainers()`
-carries the labels to every saved personality on next open — no migration.
+## Identity splits into three
 
-`AI Provider Parameters` moved from 94 to 98. At 94 it tied with Output and
-Delivery, and a tie sorts on the alphabet, which put the knobs above the last
-thing the model reads.
+That panel held three different kinds of thing in one column: filing details,
+a nameplate, and who this personality remains under probe. *BubblyBetty* and
+*"who you are when someone tests you"* are not the same altitude, and as one
+list they read as equals.
 
-## One name per value
+Same fields, same keys, three labelled groups:
 
-`{title}`, `{product_name}` and `{app_name}` all resolve to the public title.
-All three keep resolving — flow files, IVR greetings and the accuracy-test
-templates documented in `admin/docs` use them — but the catalog marks them as
-aliases and the designer's variables panel lists one name per value instead of
-four names for one.
+    FILING       Id (slug) · Library label · Profile version · Install-private
+    NAMEPLATE    Name · Role
+    UNDER PROBE  Identity lock · If asked "Is this [name]?" · If asked to describe yourself
 
-## The designer saves what it builds
+The Name hint changed with it — from *"chat header; this personality
+introduces itself as this name"* to *"what it is called — BubblyBetty, Tech
+Agent"*, because the altitude was the confusion.
 
-`libraryEntry()` has always built a complete entry: traits, mission,
-boundaries and topic scope alongside name and role. Only the downloadable
-builder state read it. The save sent four keys and those four were not among
-them, so every personality the designer ever made left them empty.
+## One gate added
 
-`ai_boundaries` and `ai_topic_scope` reach the model on every turn. So a
-floscAdmin had no way to set two values the AI was already being given, and
-`{topic_scope}` resolved to nothing on any flow that had not hand-edited a
-`flow_ivr.md`.
+`check_attachment_save.php` now pins that every stored field a floscAdmin is
+expected to fill has somewhere to fill it — name, role, goals, prohibitions,
+scope — and that Scope sits with Mission under the label Mission.
 
-The builder now exposes `libraryEntry` on its api, the bridge reads it rather
-than rebuilding it, and the save handler stores all four. The Scope input
-already existed — under Boundaries and Prohibitions in the designer — it just
-had nowhere to go.
-
-## The profiles, touched only where the headings forced it
-
-This is not the full revision. Three profiles had `Philosophy and Values`
-renamed to `Mission, Philosophy and Values`, label only, densities untouched.
-
-Dad Joke Dan's three jokes followed their workshop cards from Decisions to
-Tone at 45, 46 and 47, because the id they were filed under is Prosody and
-Syntax now. His two parked joke slots moved to 43 and 44, so switching one on
-puts it in the run it belongs to.
+`ai_topic_scope` reaches the model on every turn and spent this entire cycle
+with no path from the designer to the database. A field read at runtime with
+no input anywhere is that bug's shape, so the input is pinned rather than left
+to be noticed.
 
 ## Verified
 
-28 gates pass, PHP lint clean, JS clean, density nesting clean, forbidden-path
-scan clean, version 8.0.0 in both files.
+28 gates pass on the first run, PHP lint clean, JS clean, density nesting
+clean, forbidden-path scan clean, version 8.0.0 in both files.
 
-Three gates gained assertions: the fourteen labels and densities with no two
-sharing a density; an alias resolves and is not advertised; every field
-`libraryEntry()` computes is sent, read and storable.
-
-One gate moved deliberately. `check_php_string_literals.php` pins the four
-profiles by hash — a drift guard, not a freeze. Three hashes moved with the
-approved rename, in the same commit as the text.
-
-Deferred to a WordPress install: Plugin Check, and a designer round trip —
-open a personality, set Scope under Boundaries and Prohibitions, save, and
-confirm `{topic_scope}` resolves in a card.
+Deferred to a WordPress install: Plugin Check, and a look at the two panels —
+Identity and Role should show three labelled groups, and Mission, Philosophy
+and Values should hold both Mission and Scope.
 
 ## Not in this build
 
-The four profiles still carry densities that predate the heading map. Filling
-all fourteen headings, and reseating those densities, is the revision pass.
+The four shipped personality profiles. Friendly Guide is drafted across all
+fourteen headings and waiting on the Captain's edits.

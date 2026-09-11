@@ -116,5 +116,33 @@ foreach ( $flosc_sidecar as $flosc_field ) {
 }
 ok( '  and storable', $flosc_unstorable, array() );
 
+/*
+ * Every stored field a floscAdmin is expected to fill has somewhere to fill it.
+ *
+ * ai_topic_scope reaches the model on every turn and was computed from a Scope
+ * box the save never sent; before that it had no path at all. A field that is
+ * read at runtime and has no input anywhere is the shape of that bug, so the
+ * input is pinned here rather than left to be noticed.
+ */
+echo "\nThe fields that reach the model have an editor\n";
+$flosc_editor = $flosc_builder;
+foreach ( array(
+	'name'         => 'the nameplate',
+	'role'         => 'the role',
+	'goals'        => 'mission, stored as ai_mission',
+	'prohibitions' => 'boundaries, stored as ai_boundaries',
+	'scope'        => 'topic scope, stored as ai_topic_scope',
+) as $flosc_key => $flosc_what ) {
+	ok( '  ' . $flosc_key . ' — ' . $flosc_what,
+		(bool) preg_match( '/field\(\s*"' . preg_quote( $flosc_key, '/' ) . '"/', $flosc_editor ), true );
+}
+/* Mission and Scope answer the same question, so they sit in one panel. */
+preg_match( '/if \(id === "goals"\) \{(.*?)\n    \}/s', $flosc_editor, $flosc_goals_m );
+$flosc_goals_panel = isset( $flosc_goals_m[1] ) ? $flosc_goals_m[1] : '';
+ok( '  and Scope sits with Mission, not seventh under Prohibitions',
+	strpos( $flosc_goals_panel, 'field("scope"' ) !== false, true );
+ok( '  labelled Mission, not Goals',
+	strpos( $flosc_goals_panel, '"Mission"' ) !== false, true );
+
 echo $fail ? "\n$fail FAILURES\n" : "\nAn attach reports what is stored, and the answer survives the reload\n";
 exit( $fail ? 1 : 0 );
