@@ -1167,20 +1167,256 @@ if ( ! function_exists( 'flosc_sanitize_personality_workshop' ) ) {
 	}
 }
 
+if ( ! function_exists( 'flosc_personality_variable_catalog' ) ) {
+	/**
+	 * Every token a personality document may carry, and where its value comes from.
+	 *
+	 * 'flow' resolves from the flow and the site, so the designer can show the
+	 * real value while a floscAdmin types. 'visitor' resolves only at chat time,
+	 * from the context the chatpack already assembled for that turn — the
+	 * designer shows those as pending rather than inventing a value.
+	 *
+	 * @return array<string,array{scope:string,label:string}>
+	 */
+	function flosc_personality_variable_catalog() {
+		$flow = array(
+			'flow_name'         => 'Flow name',
+			'site_name'         => 'Site name',
+			'site_url'          => 'Site URL',
+			'site_description'  => 'Site tagline (WordPress)',
+			'public_title'      => 'Public title of this flow',
+			'tagline'           => 'Public tagline of this flow',
+			'title'             => 'Public title of this flow',
+			'topic_scope'       => 'Topic scope',
+			'personality_name'  => 'Attached personality name',
+			'personality_role'  => 'Attached personality role',
+			'product_name'      => 'Product name',
+			'price'             => 'Price',
+			'discount_price'    => 'Discount price',
+			'app_name'          => 'App name',
+			'timezone'          => 'Site timezone',
+			'locale'            => 'Site locale',
+		);
+		$visitor = array(
+			'current_url'          => 'URL this turn happened on',
+			'name'                 => 'Visitor name',
+			'first_name'           => 'Visitor first name',
+			'user_name'            => 'WordPress username',
+			'user_email'           => 'Visitor email',
+			'user_id'              => 'WordPress user ID',
+			'logged_in'            => 'yes or no',
+			'member_level'         => 'Member level',
+			'access_level'         => 'Access level',
+			'chat_url'             => 'This chat URL',
+			'login_url'            => 'Login URL',
+			'upgrade_url'          => 'Upgrade URL',
+			'profile_url'          => 'Profile URL',
+			'member_levels'        => 'Member levels offered',
+			'customer_count'       => 'Customer count',
+			'days_remaining'       => 'Days remaining',
+			'score'                => 'Latest quiz score',
+			'total_correct'        => 'Correct answers',
+			'total_possible'       => 'Possible answers',
+			'passing_score'        => 'Passing score',
+			'correct_items'        => 'Items answered correctly',
+			'missed_items'         => 'Items missed',
+			'completed_quizzes'    => 'Quizzes completed',
+			'quiz_attempts'        => 'Quiz attempts',
+			'lessons_completed'    => 'Lessons completed',
+			'lessons_viewed'       => 'Lessons viewed',
+			'lesson_progress'      => 'Lesson progress',
+			'current_lesson'       => 'Current lesson',
+			'next_lesson'          => 'Next lesson',
+			'free_lesson_title'    => 'Free lesson title',
+			'lesson_recommendations' => 'Lesson recommendations',
+			'weak_area'            => 'Weak area',
+			'streak_days'          => 'Streak in days',
+			'time_spent'           => 'Time spent',
+			'message_count'        => 'Messages this session',
+			'timer_remaining'      => 'Timer remaining',
+			'user_status_response' => 'Visitor status line',
+		);
+		$out = array();
+		foreach ( $flow as $token => $label ) {
+			$out[ $token ] = array( 'scope' => 'flow', 'label' => $label );
+		}
+		foreach ( $visitor as $token => $label ) {
+			$out[ $token ] = array( 'scope' => 'visitor', 'label' => $label );
+		}
+		return $out;
+	}
+}
+
+if ( ! function_exists( 'flosc_personality_variable_value' ) ) {
+	/**
+	 * One token's value. Flow values come from data WordPress and FLOSC already
+	 * hold; visitor values come only from the context the caller passed in, so
+	 * nothing here opens a query of its own.
+	 *
+	 * @param string     $token   Bare token, no braces.
+	 * @param string|null $flow_id Flow stem.
+	 * @param array      $context Caller-supplied per-turn values.
+	 * @return string
+	 */
+	function flosc_personality_variable_value( $token, $flow_id = null, $context = array() ) {
+		if ( array_key_exists( $token, $context ) ) {
+			return flosc_personality_variable_clean( $context[ $token ] );
+		}
+		$value = '';
+		switch ( $token ) {
+			case 'flow_name':
+				$value = function_exists( 'flosc_flow_name' ) ? flosc_flow_name( $flow_id ) : '';
+				break;
+			case 'site_name':
+				$value = function_exists( 'get_bloginfo' ) ? get_bloginfo( 'name' ) : '';
+				break;
+			case 'site_url':
+				$value = function_exists( 'get_bloginfo' ) ? get_bloginfo( 'url' ) : '';
+				break;
+			case 'site_description':
+				$value = function_exists( 'get_bloginfo' ) ? get_bloginfo( 'description' ) : '';
+				break;
+			case 'public_title':
+			case 'title':
+				$value = function_exists( 'flosc_flow_public_title' ) ? flosc_flow_public_title( $flow_id ) : '';
+				break;
+			case 'tagline':
+				$value = function_exists( 'flosc_flow_public_tagline' ) ? flosc_flow_public_tagline( $flow_id ) : '';
+				break;
+			case 'timezone':
+				$value = function_exists( 'wp_timezone_string' ) ? wp_timezone_string() : '';
+				break;
+			case 'locale':
+				$value = function_exists( 'get_locale' ) ? get_locale() : '';
+				break;
+			case 'personality_name':
+				$value = flosc_personality_variable_field( 'ai_personality_name', $flow_id );
+				break;
+			case 'personality_role':
+				$value = flosc_personality_variable_field( 'ai_personality_role', $flow_id );
+				break;
+			case 'topic_scope':
+				$value = flosc_personality_variable_field( 'ai_topic_scope', $flow_id );
+				break;
+			default:
+				/* Everything else is a flow setting if one exists, and empty if
+				   not. A visitor token with no context reaches here and is
+				   correctly empty rather than invented. */
+				if ( function_exists( 'flosc_get_setting' ) ) {
+					$value = flosc_get_setting( $token, '', $flow_id );
+				}
+				break;
+		}
+		return flosc_personality_variable_clean( $value );
+	}
+}
+
+if ( ! function_exists( 'flosc_personality_variable_field' ) ) {
+	/**
+	 * A personality field for this flow, through the library when it is loaded.
+	 *
+	 * @param string      $field   Field key.
+	 * @param string|null $flow_id Flow stem.
+	 * @return string
+	 */
+	function flosc_personality_variable_field( $field, $flow_id = null ) {
+		if ( function_exists( 'flosc_personality_library_resolve_field' ) ) {
+			return (string) flosc_personality_library_resolve_field( $field, '', $flow_id );
+		}
+		if ( function_exists( 'flosc_get_setting' ) ) {
+			return (string) flosc_get_setting( $field, '', $flow_id );
+		}
+		return '';
+	}
+}
+
+if ( ! function_exists( 'flosc_personality_variable_clean' ) ) {
+	/**
+	 * A substituted value is prompt text, not markup, so HTML escaping is the
+	 * wrong tool. What matters is that a value cannot carry control characters,
+	 * cannot introduce another token for a second pass to find, and cannot run
+	 * to an unbounded length inside a prompt billed per token.
+	 *
+	 * @param mixed $value Raw value.
+	 * @return string
+	 */
+	function flosc_personality_variable_clean( $value ) {
+		if ( is_bool( $value ) ) {
+			$value = $value ? 'yes' : 'no';
+		}
+		if ( is_array( $value ) ) {
+			$value = implode( ', ', array_map( 'strval', $value ) );
+		}
+		$text = (string) $value;
+		$text = str_replace( array( '{', '}' ), '', $text );
+		$text = preg_replace( '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $text );
+		$text = trim( (string) $text );
+		if ( function_exists( 'mb_substr' ) ) {
+			$text = mb_substr( $text, 0, 500 );
+		} else {
+			$text = substr( $text, 0, 500 );
+		}
+		return $text;
+	}
+}
+
+if ( ! function_exists( 'flosc_personality_expand_variables' ) ) {
+	/**
+	 * Expand the tokens a personality document actually contains.
+	 *
+	 * Runs on the request-specific copy, every turn, because the attached
+	 * personality can be switched mid-session and the next turn must read the
+	 * new one. The stored ai_base_prompt is never written back.
+	 *
+	 * @param string      $text    Compiled personality document.
+	 * @param string|null $flow_id Flow stem.
+	 * @param array       $context Per-turn values from the caller.
+	 * @return string
+	 */
+	function flosc_personality_expand_variables( $text, $flow_id = null, $context = array() ) {
+		$text = (string) $text;
+		/* No brace, no work. Most documents carry none. */
+		if ( strpos( $text, '{' ) === false ) {
+			return $text;
+		}
+		if ( ! preg_match_all( '/\{([a-z][a-z0-9_]*)\}/', $text, $found ) ) {
+			return $text;
+		}
+		$catalog = flosc_personality_variable_catalog();
+		$map     = array();
+		foreach ( array_unique( $found[1] ) as $token ) {
+			/* A brace that is not a FLOSC variable is the floscAdmin's own text
+			   and is left exactly as written. */
+			if ( ! isset( $catalog[ $token ] ) ) {
+				continue;
+			}
+			$map[ '{' . $token . '}' ] = flosc_personality_variable_value( $token, $flow_id, $context );
+		}
+		if ( ! $map ) {
+			return $text;
+		}
+		return strtr( $text, $map );
+	}
+}
+
 if ( ! function_exists( 'flosc_personality_compiled_profile' ) ) {
 	/**
 	 * Compiled personality Markdown for this flow (library attach or custom).
 	 *
 	 * @param string|null $flow_id Optional flow stem.
+	 * @param array       $context Per-turn values for visitor-scoped variables.
 	 * @return string
 	 */
-	function flosc_personality_compiled_profile( $flow_id = null ) {
+	function flosc_personality_compiled_profile( $flow_id = null, $context = array() ) {
 		$profile = '';
 		if ( function_exists( 'flosc_personality_library_resolve_field' ) ) {
 			$profile = (string) flosc_personality_library_resolve_field( 'ai_base_prompt', '', $flow_id );
 		} elseif ( function_exists( 'flosc_get_setting' ) ) {
 			$profile = (string) flosc_get_setting( 'ai_base_prompt', '', $flow_id );
 		}
+		/* Expansion happens on this copy only. The stored document keeps its
+		   tokens so the designer still shows what the floscAdmin wrote. */
+		$profile = flosc_personality_expand_variables( $profile, $flow_id, $context );
 		return trim( $profile );
 	}
 }
