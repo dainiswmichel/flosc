@@ -696,7 +696,16 @@ class FLOSC_Site_Content_Index {
 		 * could not be found by chat.
 		 */
 		$body = strip_shortcodes( (string) $post->post_content );
-		$body = wp_strip_all_tags( $body );
+		/*
+		 * strip_shortcodes() only knows shortcodes that are REGISTERED, and a page
+		 * builder registers its own only when the builder loads. A rebuild runs in
+		 * admin without it, so every [et_pb_*] survived the call above and the
+		 * index still filled with builder attributes. This second pass matches the
+		 * shape rather than the registry: any [tag ...] or [/tag] goes, whoever
+		 * owns it. Safe here because this text is a search corpus, never output.
+		 */
+		$body = preg_replace( '/\[\/?[A-Za-z0-9_-]+(?:[^\]\[]*)?\]/', ' ', (string) $body );
+		$body = wp_strip_all_tags( (string) $body );
 		$body = preg_replace( '/\s+/u', ' ', $body );
 		$body = is_string( $body ) ? trim( $body ) : '';
 		if ( strlen( $body ) > self::MAX_BODY_CHARS ) {
