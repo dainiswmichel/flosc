@@ -3535,7 +3535,11 @@
          * as the box, and the only way to stop that also stops the tick.
          */
         const paletteOpen = state.open["palette:" + t.id] === true;
-        return '<div class="trib ' + cls + '" data-focus-trib="' + t.id + '" data-drag-trib="' + t.id + '" data-drop-before="' + t.id + '" draggable="true">' +
+        /* The card is NOT draggable — only its handle is, exactly as the
+           density row does it. A draggable container swallows every mousedown
+           inside it, so selecting the aspect's name or clicking into a field
+           in "Edit this aspect" started a drag instead of a selection. */
+        return '<div class="trib ' + cls + '" data-focus-trib="' + t.id + '" data-drag-trib="' + t.id + '" data-drop-before="' + t.id + '">' +
           '<div class="trib-top">' +
           '<span class="drag-handle" title="Drag to insert or reorder" draggable="true" data-drag-trib="' + t.id + '">⋮⋮</span>' +
           '<input type="checkbox" data-toggle="' + t.id + '"' + (st.on ? " checked" : "") + ">" +
@@ -5996,6 +6000,12 @@
 
   const app = document.querySelector(".app");
   app.addEventListener("dragstart", function (e) {
+    /* Never start a drag from inside something the floscAdmin is typing in or
+       selecting text in. Belt to the braces of removing draggable from the
+       card itself: a stray draggable ancestor can never eat a click again. */
+    if (e.target.closest && e.target.closest("input, textarea, select, option, label, [contenteditable]")) {
+      return;
+    }
     const h = e.target.closest("[data-drag-trib]");
     if (!h) return;
     const id = h.getAttribute("data-drag-trib");
@@ -6003,7 +6013,9 @@
     app.classList.add("drag-active");
     e.dataTransfer.setData("text/plain", id);
     e.dataTransfer.effectAllowed = "move";
-    const card = h.closest("[data-drag-trib]");
+    /* h is the handle, which carries data-drag-trib itself, so closest() from
+       h returns h. Start the search at its parent to reach the card. */
+    const card = h.parentElement ? h.parentElement.closest("[data-drag-trib]") : null;
     if (card) card.classList.add("dragging");
   });
   app.addEventListener("dragend", function () {

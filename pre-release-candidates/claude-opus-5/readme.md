@@ -1,9 +1,9 @@
-# FLOSC 8.0.0 — candidate v39
+# FLOSC 8.0.0 — candidate v40
 
-Built from v38. Version is 8.0.0 and does not move.
+Built from v39. Version is 8.0.0 and does not move.
 
     artifact   flosc.zip
-    sha256     5c4b67c5b6718db9474b16bf5ae30304dd0fe2d3566c4618b9476daf4a151b22
+    sha256     84d0942343cc93014fbb15137159215cd397e698e0ac1596a1b2d7d1181aa231
     entries    277, single flosc/ root
     source     flosc-by-claude-opus-5/flosc
 
@@ -73,6 +73,23 @@ were written for.
 **The API-key note is admin-only.** `$ai_hint` is now behind
 `current_user_can('manage_options')`. It is addressed to the floscAdmin, so
 only the floscAdmin sees it.
+
+## The designer UI
+
+Clicking **+ Aspect** put an untitled aspect in the palette column, and trying
+to select its title — or click into any field in "Edit this aspect" — started
+dragging the card instead.
+
+The palette card carried `draggable="true"` on its outer container, wrapping
+the label, the checkbox and the whole edit panel. A draggable container
+swallows every mousedown inside it. The density row renderer never did this;
+it put `draggable` only on its handle. The two renderers disagreed and the
+palette one was wrong.
+
+`draggable` is off the container now, so only the two drag handles are
+draggable and both renderers behave identically. `dragstart` additionally
+refuses to begin inside an input, textarea, select, option, label or
+contenteditable, so a stray draggable ancestor can never eat a click again.
 
 ## Read this before testing on a live site
 
