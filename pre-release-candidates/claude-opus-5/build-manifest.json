@@ -1,15 +1,15 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": 50,
+  "candidate_iteration": 51,
   "creator": "Claude Opus 5",
   "status": "BUILT_AWAITING_CAPTAIN_TEST",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v49 (e592300)",
+  "base": "claude-opus-5 v50 (2e7d5a9)",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "01346545e8d2887831f8558c49ffc07603594761624154d73e581796296dd48f",
-  "artifact_bytes": 2736710,
+  "artifact_sha256": "cccfdaad195a755fab8235a8c15c83e61831e0fa66abc696f117e9055ee059cf",
+  "artifact_bytes": 2737338,
   "artifact_entries": 277,
   "tree_files": 289,
   "why_this_iteration": {
@@ -162,5 +162,18 @@
   "files_changed_from_v49": [
     "assets/js/flosc-personality-builder.js",
     "tests/check_palette_placement.js"
+  ],
+  "follow_density_now_follows_density": {
+    "symptom": "An aspect at d86 read 'Follow density — Identity and Role' and its meta line said 'inside Identity and Role'. d86 plainly falls under Prosody and Syntax at d84. Aspects at d68 to d72 said 'inside Prosody and Syntax' for the same reason, in the other direction.",
+    "cause": "soulSectionOf() read state.tribParent before it read density, and parentLabelOf() printed whatever it found there. An auto parent is this code's own earlier guess handed back to it, so 'Follow density' was following the guess instead of the density, and the meta line reported a heading as owning an aspect that is a peer of it.",
+    "fix": "Both skip an auto parent. Only a heading someone chose answers 'written under'; otherwise density does, which is what the option says."
+  },
+  "create_sub_aspect": {
+    "the_captains_idea": "Cancel dragging and add Create Sub Aspect on every aspect.",
+    "what_it_does": "Every aspect's editor carries + Sub-aspect under <name>. It writes a new aspect inside that one, on, at the host's density, with an explicit parent — so it is a real child, reads as 84:010, and stays a child across a save. The host becomes a heading by having a child, which is the only thing that makes anything a heading.",
+    "why": "Dragging is one way and not a reliable one: a drop can miss, and a collapsed row gives nothing to aim at. Dragging still works; this is a click that cannot miss."
+  },
+  "files_changed_from_v50": [
+    "assets/js/flosc-personality-builder.js"
   ]
 }

@@ -1428,7 +1428,16 @@
     const p = state.tribParent && state.tribParent[id];
     /* Inside a group: the group's section. That is what being inside means. */
     if (p && p.kind === "trib" && p.id !== id) return soulSectionOf(p.id);
-    if (p && p.kind === "layer") {
+    /*
+     * An auto parent is not an answer to "which heading is this written
+     * under" — it is this function's own previous guess, handed back. Reading
+     * it here made "Follow density" follow the parent instead: an aspect at
+     * d86 with an auto parent of Identity and Role read "Follow density —
+     * Identity and Role", and the meta line said "inside Identity and Role",
+     * when d86 plainly falls under Prosody and Syntax. Only a heading someone
+     * chose answers the question; otherwise the density does.
+     */
+    if (p && p.kind === "layer" && !p.auto) {
       const L = containerById(p.id);
       if (L) return L;
     }
@@ -3721,6 +3730,10 @@
       const host = allTribs().find(function (x) { return x.id === p.id; });
       return host ? host.label : "";
     }
+    /* An auto parent is this code's own guess, not a place someone put the
+       aspect. Printing it as "inside X" told the floscAdmin a heading owned an
+       aspect that is a peer of it. */
+    if (p.auto) return "";
     const L = containerById(p.id);
     return L ? L.label : "";
   }
@@ -3944,6 +3957,16 @@
         : "") +
       soulSectionRow(t, st) +
       groupNounRow(t, st) +
+
+      /* Dragging is one way to put an aspect under another. It is not a
+         reliable way — a drop can miss, and there is nothing to aim at on a
+         collapsed row. This button does the same thing with a click, from the
+         aspect that will be the parent. */
+      '<div class="card-param"><label class="excerpt-lab">Sub-aspects</label>' +
+      '<button type="button" class="btn ghost" data-add-sub="' + t.id + '">+ Sub-aspect under ' + esc(t.label) + '</button>' +
+      '<p class="figure-readout">Writes a new aspect inside this one, reading d' +
+      esc(composedDensity(t.id)) + ':010 and so on. This aspect becomes its heading.</p>' +
+      "</div>" +
 
       '<div class="card-param"><label class="excerpt-lab">Density</label>' +
       '<div class="den-row"><div class="den-slider-wrap"><input class="den-vert" type="range" min="0" max="100" step="any" data-density="' + t.id + '" value="' + st.density + '" title="Density: 0 at top (white / least dense) to 100 at bottom (black / ink). Not Gain."></div>' +
@@ -4871,6 +4894,32 @@
   }
 
   function onTribClick(e) {
+    /* + Sub-aspect: the click-driven way to put an aspect under an aspect.
+       The host becomes a heading by having a child, which is the only thing
+       that makes anything a heading. */
+    const addSub = e.target.closest("[data-add-sub]");
+    if (addSub) {
+      e.preventDefault();
+      e.stopPropagation();
+      const hostId = addSub.getAttribute("data-add-sub");
+      const host = allTribs().find(function (x) { return x.id === hostId; });
+      if (host) {
+        const id = addCard("New sub-aspect", {
+          prefix: "aspect",
+          on: true,
+          density: tribState(hostId).density
+        });
+        /* Explicit, so it is a real child and stays one across a save. */
+        state.tribParent[id] = { kind: "trib", id: hostId };
+        state.open["trib:" + hostId] = true;
+        persistSoft();
+        render();
+        focusItem("trib", id);
+        showBuilderNotice("New sub-aspect inside " + (host.label || "that aspect") +
+          ", reading d" + composedDensity(id) + ". Name it and write its instruction.");
+      }
+      return;
+    }
     const addAspect = e.target.closest("[data-add-aspect]");
     if (addAspect) {
       e.preventDefault();
