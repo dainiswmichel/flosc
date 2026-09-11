@@ -686,7 +686,17 @@ class FLOSC_Site_Content_Index {
 	 * @return array
 	 */
 	public function build_row_from_post( WP_Post $post, $keywords_manual = '', $excluded = false ) {
-		$body = wp_strip_all_tags( (string) $post->post_content );
+		/*
+		 * Shortcodes out before tags out. wp_strip_all_tags() removes HTML and
+		 * leaves shortcodes whole, so a page built with Divi indexed as its
+		 * builder markup — [et_pb_section fb_built="1" _builder_version="4.17.4"
+		 * …] — and that markup ate the character budget from the top of the post
+		 * downward. Text at the bottom of a long builder page never reached the
+		 * index at all, which is why a translation added at the end of a post
+		 * could not be found by chat.
+		 */
+		$body = strip_shortcodes( (string) $post->post_content );
+		$body = wp_strip_all_tags( $body );
 		$body = preg_replace( '/\s+/u', ' ', $body );
 		$body = is_string( $body ) ? trim( $body ) : '';
 		if ( strlen( $body ) > self::MAX_BODY_CHARS ) {

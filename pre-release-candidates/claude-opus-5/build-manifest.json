@@ -1,14 +1,14 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": 53,
+  "candidate_iteration": 54,
   "creator": "Claude Opus 5",
   "status": "BUILT_AWAITING_CAPTAIN_TEST",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v52 (0c2185c)",
+  "base": "claude-opus-5 v53 (f89e5a8)",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "ef79a69ca1734c5cd7668f94041bf34bc3a764c00bdc5a62c92041935253e1c0",
+  "artifact_sha256": "353057f9d940a78203c0142ab6fb00b5d744cb91b23fa404e6be2256cc17eae0",
   "artifact_bytes": 2737756,
   "artifact_entries": 277,
   "tree_files": 289,
@@ -187,12 +187,20 @@
     "assets/js/flosc-personality-builder.js",
     "assets/css/flosc-personality-builder.css"
   ],
-  "artifact_note": "Byte-identical to v52. This iteration changed tests/check_palette_placement.js only, and tests/ is excluded from the zip, so the sha256 does not move.",
   "the_audit": {
     "asked_for": "A self-audit of v52 before deploying it.",
     "executed": "Eighteen assertions, all green, including the + Sub-aspect path: a sub-aspect carries its host in the density chain and so reads as a nested path rather than a bare number, its host stays top level, it is active, and it is never drawn as a peer.",
     "defect_found": "In the gate itself. The four new assertions sat after a process.exit and never ran. Found by noticing the output was short, not by reading it.",
     "checked_and_sound": "Every identifier introduced across v49 to v52 resolves — no call that would throw. focusItem(kind, id) and showBuilderNotice(message, isError) are called correctly. drop-beside is set nowhere, so removing the per-event document sweep cannot strand it, and dragend still sweeps once per drag. trib:<id> is the correct open key. renderEditor() calls ensurePlacement() before it builds. The one CSS overlap is two near-identical blues.",
     "not_worth_a_rebuild": "A redundant state.open assignment that focusItem already makes, and that CSS overlap. Neither changes behaviour."
-  }
+  },
+  "site_index_kept_the_shortcodes": {
+    "symptom": "A translation added at the bottom of a post did not reach the index after a reindex. Only the top of the post was captured.",
+    "cause": "build_row_from_post() called wp_strip_all_tags(), which removes HTML and leaves shortcodes whole. strip_shortcodes() was called nowhere in the indexer. A Divi page is largely builder markup, so [et_pb_section fb_built=\"1\" _builder_version=\"4.17.4\" ...] consumed the 200,000-character body budget from the top down and the real text at the end fell off the end of it.",
+    "fix": "strip_shortcodes() before wp_strip_all_tags(). One line.",
+    "file": "includes/class-flosc-site-content-index.php"
+  },
+  "files_changed_from_v53": [
+    "includes/class-flosc-site-content-index.php"
+  ]
 }
