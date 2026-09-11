@@ -138,5 +138,28 @@ const legacy = readPlacement({ a: "layer:identity", b: "trib:loose" });
 ok("legacy heading parent loads as a peer", legacy.a, { kind: "layer", id: "identity", auto: true });
 ok("legacy card parent stays real nesting", legacy.b, { kind: "trib", id: "loose" });
 
+
+/* ---- 4. a sub-aspect made by + Sub-aspect reads as a nested path ---- */
+function densityChain(id) {
+  const chain = [];
+  let cur = id, guard = 0;
+  while (cur && guard++ < 24) {
+    chain.unshift(clampDensity(tribState(cur).density));
+    const p = state.tribParent[cur];
+    cur = p && p.kind === "trib" ? p.id : null;
+  }
+  return chain;
+}
+/* + Sub-aspect gives the child the host's own density, as the shipped joke
+   cards do. The path is what makes it read as 10:010 rather than a bare 10. */
+state.trib.sub = { on: true, mode: "on", density: 10, col: "" };
+state.tribParent.sub = { kind: "trib", id: "loose" };
+CARDS.push({ id: "sub", col: "", label: "A sub-aspect" });
+ok("a sub-aspect carries its host in the chain", densityChain("sub"), [10, 10]);
+ok("its host is still top level", densityChain("loose"), [10]);
+ok("a sub-aspect is active", activeTribs().map(function (t) { return t.id; }).indexOf("sub") >= 0, true);
+ok("a sub-aspect is never a top-level peer",
+   (state.tribParent.sub.kind === "trib"), true);
+
 console.log(fail ? "\n" + fail + " FAILURES" : "\nall green");
 process.exit(fail ? 1 : 0);

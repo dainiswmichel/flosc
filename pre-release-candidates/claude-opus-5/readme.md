@@ -1,6 +1,6 @@
-# FLOSC 8.0.0 — candidate v52
+# FLOSC 8.0.0 — candidate v53
 
-Built from v51. Version is 8.0.0 and does not move.
+Built from v52. Version is 8.0.0 and does not move.
 
     artifact   flosc.zip
     sha256     ef79a69ca1734c5cd7668f94041bf34bc3a764c00bdc5a62c92041935253e1c0

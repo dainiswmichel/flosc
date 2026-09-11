@@ -1,10 +1,10 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": 52,
+  "candidate_iteration": 53,
   "creator": "Claude Opus 5",
   "status": "BUILT_AWAITING_CAPTAIN_TEST",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v51 (30d3235)",
+  "base": "claude-opus-5 v52 (0c2185c)",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
@@ -186,5 +186,13 @@
   "files_changed_from_v51": [
     "assets/js/flosc-personality-builder.js",
     "assets/css/flosc-personality-builder.css"
-  ]
+  ],
+  "artifact_note": "Byte-identical to v52. This iteration changed tests/check_palette_placement.js only, and tests/ is excluded from the zip, so the sha256 does not move.",
+  "the_audit": {
+    "asked_for": "A self-audit of v52 before deploying it.",
+    "executed": "Eighteen assertions, all green, including the + Sub-aspect path: a sub-aspect carries its host in the density chain and so reads as a nested path rather than a bare number, its host stays top level, it is active, and it is never drawn as a peer.",
+    "defect_found": "In the gate itself. The four new assertions sat after a process.exit and never ran. Found by noticing the output was short, not by reading it.",
+    "checked_and_sound": "Every identifier introduced across v49 to v52 resolves — no call that would throw. focusItem(kind, id) and showBuilderNotice(message, isError) are called correctly. drop-beside is set nowhere, so removing the per-event document sweep cannot strand it, and dragend still sweeps once per drag. trib:<id> is the correct open key. renderEditor() calls ensurePlacement() before it builds. The one CSS overlap is two near-identical blues.",
+    "not_worth_a_rebuild": "A redundant state.open assignment that focusItem already makes, and that CSS overlap. Neither changes behaviour."
+  }
 }
