@@ -1557,8 +1557,30 @@
     });
     if (!state.tribOrder[col]) state.tribOrder[col] = [];
     state.tribOrder[col].push(id);
+    /*
+     * Born on a heading. + Aspect in the working sort makes a card that is
+     * already on and already under a heading, so it appears on the right where
+     * it was asked for. + Aspect in the palette passes nothing and keeps the
+     * old behaviour — unfiled and off, which is right for a palette.
+     */
+    if (o.parent && containerById(o.parent)) {
+      state.tribParent[id] = { kind: "layer", id: o.parent };
+    }
     ensurePlacement();
     return id;
+  }
+
+  /* The heading the floscAdmin is working on, else the first one. */
+  function focusedLayerId() {
+    if (state.focus && state.focus.kind === "layer" && containerById(state.focus.id)) {
+      return state.focus.id;
+    }
+    if (state.focus && state.focus.kind === "trib") {
+      const p = state.tribParent[state.focus.id];
+      if (p && p.kind === "layer" && containerById(p.id)) return p.id;
+    }
+    const all = ensureContainers();
+    return all.length ? all[0].id : "";
   }
 
   function applyPreset(name) {
@@ -4760,7 +4782,15 @@
     if (addAspect) {
       e.preventDefault();
       e.stopPropagation();
-      const id = addCard("New aspect", { prefix: "aspect" });
+      /*
+       * + Aspect in the working sort makes the card here, on the right, where
+       * it was clicked: on, at density 0, under the heading being worked on.
+       * It used to make the same unfiled, switched-off card the palette
+       * button makes, which appeared only on the left.
+       */
+      const id = addCard("New aspect", { prefix: "aspect", on: true, parent: focusedLayerId() });
+      /* Working on the right: leave the palette's editor shut. */
+      state.open["palette:" + id] = false;
       persistSoft();
       render();
       focusItem("trib", id);
@@ -5014,15 +5044,24 @@
       const on = e.target.checked;
       const t = allTribs().find(function (x) { return x.id === id; });
       setTrib(id, { on: on, mode: on ? "on" : "off" });
+      /*
+       * Ticking a card gives it a heading (ensurePlacement) — but the working
+       * sort is drawn from state.tribParent, so without a render the card was
+       * placed and never appeared. You could tick it, name it, set its density
+       * and save, and the right column still showed nothing. Both sides redraw
+       * on every tick now, exactly as + Aspect already did.
+       */
+      ensurePlacement();
       if (on) {
-        ensurePlacement();
         showBuilderNotice((t ? t.label : "Aspect") + " added to " +
           (parentLabelOf(id) || "this personality") +
           " at density " + formatDensity(tribState(id).density) + ".");
-        focusItem("trib", id);
       } else {
         showBuilderNotice((t ? t.label : "Aspect") + " removed from this personality.");
       }
+      persistSoft();
+      render();
+      if (on) focusItem("trib", id);
       return;
     }
     if (e.target.matches("[data-density]") || e.target.matches("[data-density-num]")) {

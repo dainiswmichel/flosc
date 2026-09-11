@@ -72,14 +72,14 @@
      There was none: Save was bound to the button and to nothing else, so
      every change sat in the browser until someone remembered to press it.
 
-     A change marks the personality dirty and starts a 30-second timer, which
+     A change marks the personality unsaved and starts a 30-second timer, which
      any further change restarts — so typing a sentence saves once, at the end,
      not once per keystroke. The button carries the state: blue while there is
      something to save, green once it is saved.
      --------------------------------------------------------------- */
   var AUTOSAVE_MS = 30000;
   var autosaveTimer = null;
-  var dirty = false;
+  var unsaved = false;
   var saving = false;
 
   function saveButton() {
@@ -88,7 +88,7 @@
   function markState(next) {
     var btn = saveButton();
     if (!btn) { return; }
-    btn.classList.remove("is-dirty", "is-saved", "is-saving");
+    btn.classList.remove("is-unsaved", "is-saved", "is-saving");
     btn.classList.add(next);
   }
   function setSavedStamp(stamp) {
@@ -96,14 +96,32 @@
     if (!el) { return; }
     el.textContent = stamp ? "Last saved " + stamp + " UTC" : "Not saved yet";
   }
-  function markDirty() {
+  /*
+   * The autosave ran silently: between an edit and the save thirty seconds
+   * later nothing on the page changed, so the designer read as frozen.
+   *
+   * Three words, one element, no timer of its own: Unsaved changes → Saving…
+   * → Last saved. The same indicator every editor uses, and it costs one DOM
+   * write per state change rather than one per second. A ticking countdown was
+   * the other option and it is not free — thirty writes per edit burst to say
+   * something the three states already say.
+   */
+  function showSaveState(text) {
+    var el = document.getElementById("flosc-personality-builder-mts");
+    if (el) { el.textContent = text; }
+  }
+  function markUnsaved() {
     if (saving) { return; }
-    dirty = true;
-    markState("is-dirty");
+    var wasUnsaved = unsaved;
+    unsaved = true;
+    markState("is-unsaved");
+    /* Only on the edit that turns a saved personality unsaved. Every keystroke
+       after that restarts the timer and writes nothing. */
+    if (!wasUnsaved) { showSaveState("Unsaved changes"); }
     if (autosaveTimer) { clearTimeout(autosaveTimer); }
     autosaveTimer = setTimeout(function () {
       autosaveTimer = null;
-      if (!dirty) { return; }
+      if (!unsaved) { return; }
       if (saveTargetMismatch(builderApi())) { return; }
       saveToLibrary();
     }, AUTOSAVE_MS);
@@ -112,7 +130,7 @@
     var root = document.querySelector(".flosc-personality-workshop");
     if (!root) { return; }
     ["input", "change", "drop"].forEach(function (evt) {
-      root.addEventListener(evt, markDirty, true);
+      root.addEventListener(evt, markUnsaved, true);
     });
     /* Only buttons that alter the design. The Save button itself, the export
        buttons and the accordion summaries change nothing worth saving. */
@@ -122,11 +140,11 @@
       if (el.id === "flosc-personality-builder-save") { return; }
       if (el.id && el.id.indexOf("btnExport") === 0) { return; }
       if (el.id === "btnViewPreview" || el.id === "btnImport" || el.id === "btnImportProfile") { return; }
-      markDirty();
+      markUnsaved();
     }, true);
     /* A tab closed with unsaved work is work lost. */
     window.addEventListener("beforeunload", function (e) {
-      if (!dirty) { return undefined; }
+      if (!unsaved) { return undefined; }
       e.preventDefault();
       e.returnValue = "";
       return "";
@@ -163,9 +181,10 @@
     }
     var mismatch = saveTargetMismatch(api);
     if (mismatch) {
-      dirty = false;
+      unsaved = false;
       if (autosaveTimer) { clearTimeout(autosaveTimer); autosaveTimer = null; }
-      markState("is-dirty");
+      markState("is-unsaved");
+      showSaveState("Not saved");
       setStatus("Not saved. The builder is holding \u201c" + mismatch + "\u201d and this flow is attached to \u201c" +
         wp.personaId + "\u201d. Use New to create it as its own personality.", false);
       return;
@@ -185,6 +204,7 @@
     saving = true;
     markState("is-saving");
     if (autosaveTimer) { clearTimeout(autosaveTimer); autosaveTimer = null; }
+    showSaveState("Saving…");
     setStatus(wp.i18n.saving, true);
     fetch(wp.ajaxUrl, {
       method: "POST",
@@ -197,19 +217,21 @@
       .then(function (json) {
         saving = false;
         if (json && json.success) {
-          dirty = false;
+          unsaved = false;
           markState("is-saved");
           setSavedStamp(json.data && json.data.saved_at ? json.data.saved_at : "");
           setStatus((json.data && json.data.message) || wp.i18n.saved, true);
         } else {
           var msg = json && json.data && json.data.message ? json.data.message : wp.i18n.error;
-          markState("is-dirty");
+          markState("is-unsaved");
+          showSaveState("Not saved");
           setStatus(msg, false);
         }
       })
       .catch(function () {
         saving = false;
-        markState("is-dirty");
+        markState("is-unsaved");
+        showSaveState("Not saved");
         setStatus(wp.i18n.error, false);
       });
   }
@@ -267,7 +289,7 @@
         return fetch(wp.ajaxUrl, { method: "POST", credentials: "same-origin", body: att })
           .then(function (r) { return r.json(); })
           .then(function () {
-            dirty = false;
+            unsaved = false;
             if (autosaveTimer) { clearTimeout(autosaveTimer); autosaveTimer = null; }
             setStatus("Created " + label + ". Opening it\u2026", true);
             window.location.reload();

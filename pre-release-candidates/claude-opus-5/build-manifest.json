@@ -1,15 +1,15 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": 40,
+  "candidate_iteration": 41,
   "creator": "Claude Opus 5",
   "status": "BUILT_AWAITING_CAPTAIN_TEST",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v39 (6d67588)",
+  "base": "claude-opus-5 v40 (d3a04dd)",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "84d0942343cc93014fbb15137159215cd397e698e0ac1596a1b2d7d1181aa231",
-  "artifact_bytes": 2732955,
+  "artifact_sha256": "06e5bc3cecbfd184f21b95f8142940e7ab544a4ba1684e3a9b0d235c166f7af1",
+  "artifact_bytes": 2734061,
   "artifact_entries": 277,
   "tree_files": 289,
   "why_this_iteration": {
@@ -62,5 +62,21 @@
   },
   "files_changed_from_v39": [
     "assets/js/flosc-personality-builder.js"
+  ],
+  "the_designer_ui_v41": {
+    "1_ticked_aspect_never_appeared_on_the_right": "childrenOf() draws a heading's members from state.tribParent only. The tick handler called ensurePlacement() — which does assign the parent — but never render() or persistSoft(), so the card was placed in state and the working sort was never redrawn. You could tick it, name it, set its density and save, and the right column still showed nothing. Both now run on every tick, as + Aspect already did.",
+    "2_plus_aspect_on_the_right_made_the_card_on_the_left": "Both buttons called the same addCard() with no options, which makes an unfiled, switched-off, density-0 card that can only appear in the palette. addCard() takes a parent now; the working-sort button passes on:true and the heading being worked on (focusedLayerId()), so the card is born on the right where it was clicked, shows ticked in the palette, and leaves its palette editor shut. The palette button is unchanged — unfiled and off is right for a palette.",
+    "3_the_fake_checkbox_beside_density": ".den-swatch was an 18px square with a dark border and a white inset ring — pixel-for-pixel a WordPress checkbox, and at low density its ink is nearly white, so it read as an unticked box beside the word Density. It is a round, inset ink sample now. CSS only.",
+    "4_autosave_looked_frozen": "The 30-second autosave was already there and already correct; nothing on screen said so. One element now carries three states — Unsaved changes, Saving…, Last saved — written once per state change rather than on a per-second timer. markDirty() is renamed markUnsaved() throughout, with the flag and the CSS class to match.",
+    "files": [
+      "assets/js/flosc-personality-builder.js",
+      "assets/js/flosc-personality-builder-wp.js",
+      "assets/css/flosc-personality-builder.css"
+    ]
+  },
+  "files_changed_from_v40": [
+    "assets/js/flosc-personality-builder.js",
+    "assets/js/flosc-personality-builder-wp.js",
+    "assets/css/flosc-personality-builder.css"
   ]
 }
