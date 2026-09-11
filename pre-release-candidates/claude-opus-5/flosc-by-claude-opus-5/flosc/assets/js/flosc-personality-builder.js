@@ -6106,7 +6106,17 @@
      * has aspects under it — that is the whole of what makes it a category.
      * Making an empty one and calling it a category teaches the opposite.
      */
-    addCard("New aspect", { prefix: "aspect", on: true, parent: c.id, density: (Number(c.density) || 0) });
+    addCard("New aspect", {
+      prefix: "aspect",
+      on: true,
+      /* col puts it on this category's shelf in the palette; parent makes it
+         this category's child in the personality. Without col it floated in
+         the palette as a loose aspect while claiming to be a child here —
+         which teaches the opposite of what the pair is for. */
+      col: c.id,
+      parent: c.id,
+      density: (Number(c.density) || 0)
+    });
     state.open["fam:" + c.id] = true;
     state.open["layer:" + c.id] = true;
     state.editCategory = c.id;

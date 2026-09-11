@@ -1,15 +1,15 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": 48,
+  "candidate_iteration": 49,
   "creator": "Claude Opus 5",
   "status": "BUILT_AWAITING_CAPTAIN_TEST",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v47 (cd1fd97)",
+  "base": "claude-opus-5 v48 (7a49a53)",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "8e15d9abc2e4e8092fef197e0f0c283c6f74151f40f9d866943d905c365a0107",
-  "artifact_bytes": 2736505,
+  "artifact_sha256": "875f2689c68fbd76d7c3226d6d8cc6ea2d9a932e93c1acc36f7e8e821fbd9e06",
+  "artifact_bytes": 2736622,
   "artifact_entries": 277,
   "tree_files": 289,
   "why_this_iteration": {
@@ -143,6 +143,14 @@
     "tidied": "A pointless IIFE left in the palette map by the v47 edit."
   },
   "files_changed_from_v47": [
+    "assets/js/flosc-personality-builder.js"
+  ],
+  "second_self_audit": {
+    "bug_found_and_fixed": "+ Category's demo aspect was given a parent but no column, so it floated in the palette as a loose aspect while being this category's child in the personality. The one thing that pair exists to demonstrate — that a category is an aspect with aspects under it — was the one thing it would not have shown. It carries col now as well as parent.",
+    "wordpress_review_surface": "Every PHP line added since the last clean Plugin Check run is control flow, one optional parameter with a default, and one current_user_can() call. No output, no superglobals, no SQL, no filesystem, no escaping surface. The library change is string literals in an array. Nothing Plugin Check scans for was introduced.",
+    "left_alone_deliberately": "The providers container now renders in the working sort even when no sampling values are set, because the rule is that a heading shows whether or not anything is under it. The compiler still omits it when empty, so the document is unaffected."
+  },
+  "files_changed_from_v48": [
     "assets/js/flosc-personality-builder.js"
   ]
 }
