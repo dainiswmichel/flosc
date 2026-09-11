@@ -1578,18 +1578,7 @@
     return id;
   }
 
-  /* The heading the floscAdmin is working on, else the first one. */
-  function focusedLayerId() {
-    if (state.focus && state.focus.kind === "layer" && containerById(state.focus.id)) {
-      return state.focus.id;
-    }
-    if (state.focus && state.focus.kind === "trib") {
-      const p = state.tribParent[state.focus.id];
-      if (p && p.kind === "layer" && containerById(p.id)) return p.id;
-    }
-    const all = ensureContainers();
-    return all.length ? all[0].id : "";
-  }
+
 
   function applyPreset(name) {
     const p = PRESETS[name] || PRESETS.blank;
@@ -4857,12 +4846,14 @@
       e.preventDefault();
       e.stopPropagation();
       /*
-       * + Aspect in the working sort makes the card here, on the right, where
-       * it was clicked: on, at density 0, under the heading being worked on.
-       * It used to make the same unfiled, switched-off card the palette
-       * button makes, which appeared only on the left.
+       * + Aspect in the working sort makes the aspect here, on the right: on,
+       * at density 0, a peer at the top of the list. Not under anything —
+       * nothing is under anything unless someone puts it there. It used to
+       * make the same switched-off card the palette button makes, which
+       * appeared only on the left; then it briefly made a child of whichever
+       * heading was focused, which is the same mistake wearing a hat.
        */
-      const id = addCard("New aspect", { prefix: "aspect", on: true, parent: focusedLayerId() });
+      const id = addCard("New aspect", { prefix: "aspect", on: true });
       /* Working on the right: leave the palette's editor shut. */
       state.open["palette:" + id] = false;
       persistSoft();

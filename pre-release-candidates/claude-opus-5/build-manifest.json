@@ -1,15 +1,15 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": 45,
+  "candidate_iteration": 46,
   "creator": "Claude Opus 5",
   "status": "BUILT_AWAITING_CAPTAIN_TEST",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v44 (a08562f)",
+  "base": "claude-opus-5 v45 (1fabe88)",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "13a036491dd45adf08810d90c535e59bf816e805bc3bdd50cfd8d2f196328ac8",
-  "artifact_bytes": 2735753,
+  "artifact_sha256": "d61dd4fc7a34234547a9b754212dcb13e48bfce6c6315d5f599d1c9a2e482363",
+  "artifact_bytes": 2735705,
   "artifact_entries": 277,
   "tree_files": 289,
   "why_this_iteration": {
@@ -114,6 +114,16 @@
     "file": "assets/js/flosc-personality-builder.js"
   },
   "files_changed_from_v44": [
+    "assets/js/flosc-personality-builder.js"
+  ],
+  "plus_aspect_makes_a_peer": {
+    "found": "While writing the explanation of how the designer works, not by testing.",
+    "symptom": "+ Aspect in the working sort made the new aspect a nested child of whichever heading was focused, instead of a peer at density 0.",
+    "cause": "v41 had that button pass an explicit parent, which was an improvement then — it at least put the card on the right. v44 then gave explicit parents their real meaning: a child, drawn inside its heading. The two together made every new aspect somebody's child.",
+    "fix": "The button passes no parent. The aspect is created on, at density 0, and ensurePlacement() gives it an auto parent, so it is a peer at the top of the list. focusedLayerId(), added in v41 for that one call, is removed with it.",
+    "file": "assets/js/flosc-personality-builder.js"
+  },
+  "files_changed_from_v45": [
     "assets/js/flosc-personality-builder.js"
   ]
 }
