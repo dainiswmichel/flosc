@@ -3181,7 +3181,10 @@
       placement: Object.keys(state.tribParent || {}).reduce(function (acc, tid) {
         const p = state.tribParent[tid];
         if (!p) return acc;
-        acc[tid] = p.auto ? { to: p.kind + ":" + p.id, auto: true } : p.kind + ":" + p.id;
+        /* Both forms are objects, so the reader never has to guess about a
+           save this build wrote. A bare string can then only mean data written
+           before auto existed, and only that gets the heuristic below. */
+        acc[tid] = { to: p.kind + ":" + p.id, auto: !!p.auto };
         return acc;
       }, {}),
       clouds: cloudList(),

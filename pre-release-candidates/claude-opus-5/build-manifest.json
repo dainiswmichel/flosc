@@ -1,15 +1,15 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": 49,
+  "candidate_iteration": 50,
   "creator": "Claude Opus 5",
   "status": "BUILT_AWAITING_CAPTAIN_TEST",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v48 (7a49a53)",
+  "base": "claude-opus-5 v49 (e592300)",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "875f2689c68fbd76d7c3226d6d8cc6ea2d9a932e93c1acc36f7e8e821fbd9e06",
-  "artifact_bytes": 2736622,
+  "artifact_sha256": "01346545e8d2887831f8558c49ffc07603594761624154d73e581796296dd48f",
+  "artifact_bytes": 2736710,
   "artifact_entries": 277,
   "tree_files": 289,
   "why_this_iteration": {
@@ -152,5 +152,15 @@
   },
   "files_changed_from_v48": [
     "assets/js/flosc-personality-builder.js"
+  ],
+  "executed_rather_than_reasoned_about": {
+    "new_gate": "tests/check_palette_placement.js. It lifts activeTribs() and cardAtDensityPath() out of the builder by name and runs them against stubs, and it round-trips the placement writer and reader. Fourteen assertions over the three mechanisms the designer broke on. It does not ship — tests/ is excluded from the zip.",
+    "what_it_caught_on_its_first_run": "v49 still lost deliberate nesting. An explicit child was written as the bare string 'layer:identity', and the reader's rule for data written before auto existed treats any bare string with a heading parent as auto. So a card dragged onto a heading came back a peer on the next page load — the opposite failure to the one v48 fixed, and invisible to reading.",
+    "fix": "Both forms are written as objects now, carrying auto true or false. A bare string can then only mean a save written before auto existed, and only that gets the heuristic.",
+    "why_this_matters": "Three audits by reading found three bugs. One execution found a fourth that reading had missed twice."
+  },
+  "files_changed_from_v49": [
+    "assets/js/flosc-personality-builder.js",
+    "tests/check_palette_placement.js"
   ]
 }
