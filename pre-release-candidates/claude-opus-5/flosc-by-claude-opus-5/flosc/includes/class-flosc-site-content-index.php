@@ -701,10 +701,12 @@ class FLOSC_Site_Content_Index {
 		 * builder registers its own only when the builder loads. A rebuild runs in
 		 * admin without it, so every [et_pb_*] survived the call above and the
 		 * index still filled with builder attributes. This second pass matches the
-		 * shape rather than the registry: any [tag ...] or [/tag] goes, whoever
-		 * owns it. Safe here because this text is a search corpus, never output.
+		 * shape rather than the registry, and it is not fussy about the shape:
+		 * nothing between square brackets belongs in a search corpus, whoever
+		 * wrote it and whether or not anything has declared it. Safe here and only
+		 * here — this text is stored for lookup and is never rendered.
 		 */
-		$body = preg_replace( '/\[\/?[A-Za-z0-9_-]+(?:[^\]\[]*)?\]/', ' ', (string) $body );
+		$body = preg_replace( '/\[[^\]]*\]/', ' ', (string) $body );
 		$body = wp_strip_all_tags( (string) $body );
 		$body = preg_replace( '/\s+/u', ' ', $body );
 		$body = is_string( $body ) ? trim( $body ) : '';

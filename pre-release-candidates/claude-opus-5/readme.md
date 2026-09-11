@@ -1,9 +1,9 @@
-# FLOSC 8.0.0 — candidate v55
+# FLOSC 8.0.0 — candidate v56
 
-Built from v54. Version is 8.0.0 and does not move.
+Built from v55. Version is 8.0.0 and does not move.
 
     artifact   flosc.zip
-    sha256     b01166de8b7665cd868f9c25a88aa3f6aad756f1982fe1e2cd313292aba7f8d2
+    sha256     e6280ab0661e661af14cc173d65ef31a5af95c3b43fd4aeef05acd42368638cc
     entries    277, single flosc/ root
     source     flosc-by-claude-opus-5/flosc
 

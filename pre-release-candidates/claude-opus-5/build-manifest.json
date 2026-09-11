@@ -1,14 +1,14 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": 55,
+  "candidate_iteration": 56,
   "creator": "Claude Opus 5",
   "status": "BUILT_AWAITING_CAPTAIN_TEST",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v54 (7692533)",
+  "base": "claude-opus-5 v55",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "b01166de8b7665cd868f9c25a88aa3f6aad756f1982fe1e2cd313292aba7f8d2",
+  "artifact_sha256": "e6280ab0661e661af14cc173d65ef31a5af95c3b43fd4aeef05acd42368638cc",
   "artifact_bytes": 2737756,
   "artifact_entries": 277,
   "tree_files": 289,
@@ -199,12 +199,16 @@
     "cause": "build_row_from_post() called wp_strip_all_tags(), which removes HTML and leaves shortcodes whole. strip_shortcodes() was called nowhere in the indexer. A Divi page is largely builder markup, so [et_pb_section fb_built=\"1\" _builder_version=\"4.17.4\" ...] consumed the 200,000-character body budget from the top down and the real text at the end fell off the end of it.",
     "fix": "strip_shortcodes() before wp_strip_all_tags(). One line.",
     "file": "includes/class-flosc-site-content-index.php",
-    "v55_the_rest_of_it": "strip_shortcodes() only removes shortcodes that are REGISTERED, and a page builder registers its own only when the builder loads. A rebuild runs in admin without it, so every [et_pb_*] survived v54's call and the index still filled with builder attributes. A second pass now matches the shape rather than the registry — any [tag ...] or [/tag] goes, whoever owns it. Safe here because this text is a search corpus and is never output."
+    "v55_the_rest_of_it": "strip_shortcodes() only removes shortcodes that are REGISTERED, and a page builder registers its own only when the builder loads. A rebuild runs in admin without it, so every [et_pb_*] survived v54's call and the index still filled with builder attributes. A second pass now matches the shape rather than the registry — any [tag ...] or [/tag] goes, whoever owns it. Safe here because this text is a search corpus and is never output.",
+    "v56_nothing_in_brackets": "The Captain's rule: nothing between square brackets belongs in the index. v55 matched a tag-like shape, which still let [caption id=\"x\"], [gallery] and anything else oddly formed through. The pass removes any bracketed span now, whoever wrote it."
   },
   "files_changed_from_v53": [
     "includes/class-flosc-site-content-index.php"
   ],
   "files_changed_from_v54": [
+    "includes/class-flosc-site-content-index.php"
+  ],
+  "files_changed_from_v55": [
     "includes/class-flosc-site-content-index.php"
   ]
 }
