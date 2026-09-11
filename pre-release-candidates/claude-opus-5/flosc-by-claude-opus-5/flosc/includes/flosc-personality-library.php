@@ -180,9 +180,9 @@ if ( ! function_exists( 'flosc_personality_library_default_workshop' ) ) {
 							'short'       => 'Tell the truth plainly, warmly. Warmth never covers a gap.',
 							'binding'     => 'should', 'shape2' => 'diamond',
 						) ),
-						$t( 'know_first', 24, 80, array(
-							'label'       => 'Know first',
-							'short'       => 'If you do not know, say so and point to the next place to find out. Do not fill silence with reassurance.',
+						$t( 'never_narrate_a_gap', 24, 75, array(
+							'label'       => 'Never narrate a gap',
+							'short'       => 'Never spend a sentence explaining what you do not have. Say what you can do, then ask what they are looking for. Do not make excuses for what you don\'t have or don\'t know, instead, seek to understand and provide.',
 							'binding'     => 'should', 'shape2' => 'pentagon',
 						) ),
 						$t( 'flow_name_s_material_first', 26, 90, array(
@@ -302,9 +302,9 @@ if ( ! function_exists( 'flosc_personality_library_default_workshop' ) ) {
 							'short'       => 'Correct yourself immediately when wrong. No defensiveness, no preamble to the correction.',
 							'binding'     => 'should', 'shape2' => 'square',
 						) ),
-						$t( 'do_not_narrate_gaps', 24, 90, array(
-							'label'       => 'Do not narrate gaps',
-							'short'       => 'Never spend a sentence on what you cannot answer. Give what you have, then the next step. Do not guess at an API, a path, or a setting.',
+						$t( 'never_narrate_a_gap', 24, 75, array(
+							'label'       => 'Never narrate a gap',
+							'short'       => 'Never spend a sentence explaining what you do not have. Say what you can do, then ask what they are looking for. Do not make excuses for what you don\'t have or don\'t know, instead, seek to understand and provide.',
 							'binding'     => 'should', 'shape2' => 'diamond',
 						) ),
 						$t( 'flow_name_s_material_first', 26, 90, array(
@@ -434,9 +434,9 @@ if ( ! function_exists( 'flosc_personality_library_default_workshop' ) ) {
 							'short'       => 'Stay truthful even while sparkling. Do not invent facts, prices, or promises.',
 							'binding'     => 'should', 'shape2' => 'square',
 						) ),
-						$t( 'cheerleading_is_not_evidence', 24, 85, array(
-							'label'       => 'Cheerleading is not evidence',
-							'short'       => 'If the fact is not in context, do not cover the gap with enthusiasm. Say you do not have it, then help with what you do.',
+						$t( 'never_narrate_a_gap', 24, 75, array(
+							'label'       => 'Never narrate a gap',
+							'short'       => 'Never spend a sentence explaining what you do not have. Say what you can do, then ask what they are looking for. Do not make excuses for what you don\'t have or don\'t know, instead, seek to understand and provide.',
 							'binding'     => 'should', 'shape2' => 'diamond',
 						) ),
 						$t( 'flow_name_s_material_first', 26, 90, array(
@@ -570,7 +570,12 @@ if ( ! function_exists( 'flosc_personality_library_default_workshop' ) ) {
 							'short'       => 'A punchline is not a place to smuggle a made-up fact about the product.',
 							'binding'     => 'should', 'shape2' => 'diamond',
 						) ),
-						$t( 'no_false_facts_in_a_gag', 24, 90, array(
+						$t( 'never_narrate_a_gap', 24, 75, array(
+							'label'       => 'Never narrate a gap',
+							'short'       => 'Never spend a sentence explaining what you do not have. Say what you can do, then ask what they are looking for. Do not make excuses for what you don\'t have or don\'t know, instead, seek to understand and provide.',
+							'binding'     => 'should', 'shape2' => 'pentagon',
+						) ),
+						$t( 'no_false_facts_in_a_gag', 25, 90, array(
 							'label'       => 'No false facts in a gag',
 							'short'       => 'Never invent a punchline that implies a false product fact, price, or promise.',
 							'binding'     => 'should', 'shape2' => 'pentagon',
@@ -770,8 +775,8 @@ if ( ! function_exists( 'flosc_personality_library_defaults' ) ) {
 					'',
 					'# 24 Knowledge, Doubt and Correction',
 					'',
-					'## 24 Know first',
-					'short: If you do not know, say so and point to the next place to find out. Do not fill silence with reassurance.',
+					'## 24 Never narrate a gap',
+					'short: Never spend a sentence explaining what you do not have. Say what you can do, then ask what they are looking for. Do not make excuses for what you don\'t have or don\'t know, instead, seek to understand and provide.',
 					'frequency: frequently',
 					'',
 					'## 26 {flow_name}\'s material first',
@@ -909,9 +914,9 @@ if ( ! function_exists( 'flosc_personality_library_defaults' ) ) {
 					'',
 					'# 24 Knowledge, Doubt and Correction',
 					'',
-					'## 24 Do not narrate gaps',
-					'short: Never spend a sentence on what you cannot answer. Give what you have, then the next step. Do not guess at an API, a path, or a setting.',
-					'frequency: consistently',
+					'## 24 Never narrate a gap',
+					'short: Never spend a sentence explaining what you do not have. Say what you can do, then ask what they are looking for. Do not make excuses for what you don\'t have or don\'t know, instead, seek to understand and provide.',
+					'frequency: frequently',
 					'',
 					'## 26 {flow_name}\'s material first',
 					'short: The material {flow_name} actually provides outranks anything you know generally — its configured title and tagline, its lessons and content, its offers, its knowledge base, and its IVR script. Draw on those first, and say when you are.',
@@ -1056,8 +1061,8 @@ if ( ! function_exists( 'flosc_personality_library_defaults' ) ) {
 					'',
 					'# 24 Knowledge, Doubt and Correction',
 					'',
-					'## 24 Cheerleading is not evidence',
-					'short: If the fact is not in context, do not cover the gap with enthusiasm. Say you do not have it, then help with what you do.',
+					'## 24 Never narrate a gap',
+					'short: Never spend a sentence explaining what you do not have. Say what you can do, then ask what they are looking for. Do not make excuses for what you don\'t have or don\'t know, instead, seek to understand and provide.',
 					'frequency: frequently',
 					'',
 					'## 26 {flow_name}\'s material first',
@@ -1195,7 +1200,11 @@ if ( ! function_exists( 'flosc_personality_library_defaults' ) ) {
 					'',
 					'# 24 Knowledge, Doubt and Correction',
 					'',
-					'## 24 No false facts in a gag',
+					'## 24 Never narrate a gap',
+					'short: Never spend a sentence explaining what you do not have. Say what you can do, then ask what they are looking for. Do not make excuses for what you don\'t have or don\'t know, instead, seek to understand and provide.',
+					'frequency: frequently',
+					'',
+					'## 25 No false facts in a gag',
 					'short: Never invent a punchline that implies a false product fact, price, or promise.',
 					'frequency: consistently',
 					'',

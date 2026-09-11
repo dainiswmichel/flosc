@@ -1,82 +1,106 @@
-# FLOSC 8.0.0 — candidate v38
+# FLOSC 8.0.0 — candidate v39
 
-Built from v37. Version is 8.0.0 and does not move.
+Built from v38. Version is 8.0.0 and does not move.
 
     artifact   flosc.zip
-    sha256     088d18b6a3addd5fa8dcbf9d5b36fc7fb060a161d93f70726033af847972c3ee
+    sha256     5c4b67c5b6718db9474b16bf5ae30304dd0fe2d3566c4618b9476daf4a151b22
     entries    277, single flosc/ root
     source     flosc-by-claude-opus-5/flosc
 
-**All four personalities are revised.** Coverage went from 3, 3, 3 and 5 of
-thirteen headings to fourteen of fourteen each.
+## What went wrong
 
-    Friendly Guide   22 cards
-    Tech Agent       23 cards
-    BubblyBetty      20 cards
-    Dad Joke Dan     27 cards, eight of them jokes
+A visitor asked Br3nda about a song, and was shown this:
+
+> Thanks for your interest! Try one of the suggestions above. This is just
+> IVR-style copy — remember to configure your preferred AI API for much more
+> intelligent responses!
+
+The AI provider was configured and working the entire time. An internal
+ten-question test passed 10/10 on the same flow.
+
+The provider answered. The plugin threw the answer away.
+
+`trait-flosc-chat-turn.php` runs a reputation guard right after the provider
+call. The guard matches the reply against a hedge pattern — `i don't have`
+followed within 160 characters by `context`, `details`, `information` and
+friends — discards the whole reply, and hands off to a replacement chain. That
+chain tried a catalog reply, tried a bio reply, and then fell through to the
+IVR phase defaults, which append a note written for the site owner.
+
+**The cause was upstream of the guard.** Three of the four shipped profiles
+instructed the model to narrate the gap:
+
+    Friendly Guide   "If you do not know, say so and point to the next place…"
+    BubblyBetty      "Say you do not have it, then help with what you do."
+    Tech Agent       "Do not narrate gaps" — right intent, weaker wording
+
+The profile asked for the sentence, the model produced it, the guard killed it,
+and the visitor was told the site was unconfigured. The profile and the guard
+were fighting each other.
+
+## The card
+
+The Captain's text, verbatim, in all four personalities at density 24:
+
+    ## 24 Never narrate a gap
+    short: Never spend a sentence explaining what you do not have. Say what you
+    can do, then ask what they are looking for. Do not make excuses for what you
+    don't have or don't know, instead, seek to understand and provide.
+    frequency: frequently
+
+Gain 75, which resolves to **frequently** on the ladder — the nearest rung is
+80, and 60 is further away.
+
+It is in both representations, the `ai_base_prompt` block and the workshop
+card, so the designer shows what chats receive.
+
+The three contradicting cards are replaced rather than kept alongside. Dad Joke
+Dan's "No false facts in a gag" is a different concern — not inventing product
+facts inside a joke — so it stays, moved from density 24 to 25.
+
+## The IVR leak
+
+Two changes in `flosc.php`, independent of the personalities:
+
+**Canned copy can never displace a real reply.** The replacement chain takes an
+`allow_phase_default` flag. When the provider already answered, the chain stops
+before the phase defaults: a catalog or bio reply may still stand in, because
+those are real answers, but when neither matches the provider's own words ship
+instead of being discarded. The genuine IVR-only path and a provider that
+returned nothing at all both still reach the phase defaults, which is what they
+were written for.
+
+**The API-key note is admin-only.** `$ai_hint` is now behind
+`current_user_can('manage_options')`. It is addressed to the floscAdmin, so
+only the floscAdmin sees it.
 
 ## Read this before testing on a live site
 
 **The shipped defaults do not overwrite an existing library.**
+`flosc_personality_library_get_all()` seeds them only when the `wp_options` row
+does not exist. dainis.net already has that row, so installing this zip will
+**not** change the four personalities there.
 
-```php
-$raw = get_option( $key, false );
-if ( false === $raw ) {          // only when the option does not exist
-    $raw = flosc_personality_library_defaults();
-```
-
-dainis.net already has that option, so installing this zip will **not** change
-the four personalities there. To force a reseed:
+To force a reseed — this destroys any personality edited on that site, which is
+why it is a manual step and not code:
 
     wp option delete flosc_personality_library --path=/home/dainisne/public_html
 
-then load any FLOSC admin page. That destroys any personality edited on that
-site, which is why it is a manual step and not code — auto-overwrite would
-wipe a floscAdmin's work on every install.
+then load any FLOSC admin page.
 
-## Nothing was deleted
+**Br3nda is not in this zip.** She is site-local and carries her own heading 24,
+so the new card reaches her only when she is edited in the designer. The IVR
+leak fix is code and reaches her the moment the plugin is deployed.
 
-Ten cards existed in the workshop and never reached their documents — seven in
-Tech Agent (`popper`, `one_reality`, `tell_the_truth`, `kind`,
-`open_continue`), three in BubblyBetty (`nervous_system`, `relax`,
-`sales_host`). All are in the documents now, filed under the heading that fits
-them.
+## Verification
 
-## Document and cards are generated from one source
+    test suite            0 failing gates
+    php -l, whole tree    clean
+    node --check          clean, builder and app
+    density nesting       all green
+    zip gates             277 entries, single flosc/ root, no forbidden paths
+    version               8.0.0 in header, FLOSC_VERSION and Stable tag
 
-Both come from the same data, so the designer shows exactly what chats
-receive. Before this, a personality whose document carried cards the workshop
-did not would lose them on the first Save — which is what would have happened
-to anyone testing the old profiles in the designer.
-
-Every `frequency:` line is computed from its own card's gain, never typed.
-
-## Absolutes are rare now
-
-Two cards per personality carry `always` — identity under probe, and the one
-real prohibition. Nothing carries `never`.
-
-## The jokes
-
-Eight, on the Tone shelf at densities 45.1 through 45.8, gain 70 —
-`regularly`, 85%. Five of them new. Format is the Captain's:
-
-    instruction: Joke set up — "What's the funniest preposition?"
-    Punchline — "Over and PUNder."
-    short: Direction, position, or the follow-up when PreposishPUNS lands.
-    frequency: regularly
-
-## Clouds emptied
-
-The cloud groupings named cards that no longer exist after the rewrite, and
-they compile as their own sections. The fourteen headings are the grouping
-now.
-
-## Verified
-
-28 gates pass, PHP lint clean, JS clean, density nesting clean,
-forbidden-path scan clean, version 8.0.0 in both files.
-
-Deferred to a WordPress install: Plugin Check, and a designer round trip —
-open each personality, confirm fourteen shelves with cards on them, Save, and
-confirm the document does not change.
+Deferred to a live install: WordPress Plugin Check, and asking Br3nda something
+she does not have — she should say what she can do and ask what you are looking
+for, with no IVR copy and no API-key note.

@@ -88,10 +88,10 @@ require_once $root . '/includes/flosc-personality-library.php';
  */
 echo "\nThe four shipped runtime profiles match their approved text\n";
 $expected = array(
-	'friendly'     => 'f57561a07d8a92c0c4c3eb49a0d04371236ee1bfb8090711f4d61cf59e4914a4',
-	'tech'         => '40830172e34ba20d23fd09d90ed287f954b61f646794a94c2d621f64628f5efe',
-	'bubblybetty'  => '955912e06317ebb6e3ee2130c43a68d2cf949d93948990d5c908526de2c33526',
-	'dadjokedan'   => 'a7e4b024e90642942359e03ca061b5bab173039fa9951b8e2a9d3db8814121fa',
+	'friendly'     => '65504c279fbfd6ff4fb58da922af230fa778c60ba022f7927997226ea2e91762',
+	'tech'         => '7ebc8e7e369bb62e5a5cc710be3c12d2c3b7279a09b4a5340c6882e8916dba38',
+	'bubblybetty'  => '45d038547aeb399f7dc23cf9a04fd6a8083946c1e4be577ee7df5b04354c18e3',
+	'dadjokedan'   => 'b7293376b83588031e67e653758eef298921dbece39b67a5c97802493010d05b',
 );
 $defaults = flosc_personality_library_defaults();
 foreach ( $expected as $id => $hash ) {

@@ -4057,8 +4057,21 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
     private function flosc_enforce_no_hedge_response($response_text, $user_message, $flow_id, $ivr_file, $phase, $eval_context) {
         $response_text = trim((string) $response_text);
 
-        if ($response_text === '' || $this->flosc_contains_forbidden_hedge($response_text)) {
-            return $this->flosc_build_professional_replacement($user_message, $flow_id, $ivr_file, $phase, $eval_context);
+        if ($response_text === '') {
+            // The provider returned nothing at all. Canned phase copy is what
+            // it was written for, so let the chain run to the end.
+            return $this->flosc_build_professional_replacement($user_message, $flow_id, $ivr_file, $phase, $eval_context, true);
+        }
+
+        if ($this->flosc_contains_forbidden_hedge($response_text)) {
+            // The provider DID answer. A catalog or bio reply is itself a real
+            // answer and may stand in for a hedge. IVR phase copy is not an
+            // answer — it tells a visitor the site is unconfigured when it is
+            // not — so when nothing better is found the provider's own words
+            // ship rather than being thrown away.
+            $replacement = trim((string) $this->flosc_build_professional_replacement($user_message, $flow_id, $ivr_file, $phase, $eval_context, false));
+
+            return $replacement !== '' ? $replacement : $response_text;
         }
 
         return $response_text;
@@ -4087,7 +4100,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
         return false;
     }
 
-    private function flosc_build_professional_replacement($user_message, $flow_id, $ivr_file, $phase, $eval_context) {
+    private function flosc_build_professional_replacement($user_message, $flow_id, $ivr_file, $phase, $eval_context, $allow_phase_default = true) {
         $user_message = (string) $user_message;
 
         $flosc_da1_access_level = is_array($eval_context)
@@ -4129,6 +4142,13 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
             }
 
             return $this->flosc_limit_chat_response_length($reply);
+        }
+
+        // Canned phase copy only when the caller has nothing of its own. A
+        // provider reply that merely hedged is worth more to a visitor than
+        // copy announcing that no AI is configured.
+        if (!$allow_phase_default) {
+            return '';
         }
 
         $default_response = $this->get_phase_default_response((string) $phase, is_array($eval_context) ? $eval_context : []);
@@ -5711,7 +5731,11 @@ Example good response:
         // Guest phase is 'login' but user IS logged in — message must reflect that.
         $name = $context['user_name'] ?? $context['name'] ?? 'there';
         // Reminder when free-form hits button/keyword IVR only (no model).
-        $ai_hint = ' This is just IVR-style copy — remember to configure your preferred AI API for much more intelligent responses!';
+        // It is addressed to the floscAdmin, so only the floscAdmin sees it: a
+        // visitor being told the site needs an API key reads as a broken site.
+        $ai_hint = current_user_can('manage_options')
+            ? ' This is just IVR-style copy — remember to configure your preferred AI API for much more intelligent responses!'
+            : '';
         $responses = [
             'freeline' => 'Thanks for your interest! Try one of the suggestions above.' . $ai_hint,
             'login' => "Hey {$name}! I work best with the suggestion buttons above. Try tapping one to continue." . $ai_hint,
