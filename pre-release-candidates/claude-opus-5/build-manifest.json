@@ -1,15 +1,15 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": 43,
+  "candidate_iteration": 44,
   "creator": "Claude Opus 5",
   "status": "BUILT_AWAITING_CAPTAIN_TEST",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v42 (35e6777)",
+  "base": "claude-opus-5 v43 (6014e44)",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "171ae9925666f7174f143770bc89cf686b976922fb50898a94abe3b5d1768d77",
-  "artifact_bytes": 2734645,
+  "artifact_sha256": "b8887509d26dca5def5957e36bc751b119ab37419cb4d27f98a832e8b337d573",
+  "artifact_bytes": 2735448,
   "artifact_entries": 277,
   "tree_files": 289,
   "why_this_iteration": {
@@ -95,6 +95,16 @@
     "file": "assets/js/flosc-personality-builder.js"
   },
   "files_changed_from_v42": [
+    "assets/js/flosc-personality-builder.js"
+  ],
+  "the_working_sort_is_one_list": {
+    "the_model": "An aspect IS a heading. Same object, same parameters, same possibilities. It becomes a heading over others only when others are put under it. Density alone decides position. Nothing is under anything unless someone put it there.",
+    "what_was_wrong": "ensurePlacement() gave every aspect a heading by density band and the working sort drew that as nesting, so an aspect at d10 was rendered INSIDE the d6 heading rather than between d6 and d12. Every card was somebody's child whether or not anyone had dragged it anywhere. Headings with nothing under them were filtered out of the column entirely, so they looked like they did not exist.",
+    "what_changed": "A parent chosen by ensurePlacement() is marked auto. The working sort is one density-ordered list: headings, aspects and clouds as peers. A card renders inside a heading only when someone dragged it there — an explicit parent, no auto flag. Headings with no children show like any other aspect. The empty-nest scolding is gone.",
+    "what_did_not_change": "The children math. composedDensity(), childrenOf(), nestedSegment() and the 45:010 reading are untouched — that work has been right for weeks. Only the manufacturing of children nobody asked for is gone.",
+    "file": "assets/js/flosc-personality-builder.js"
+  },
+  "files_changed_from_v43": [
     "assets/js/flosc-personality-builder.js"
   ]
 }

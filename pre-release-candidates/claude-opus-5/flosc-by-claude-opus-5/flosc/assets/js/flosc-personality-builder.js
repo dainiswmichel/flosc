@@ -1171,9 +1171,9 @@
       const p = state.tribParent[tid];
       if (p && p.kind === "cloud") {
         const cl = cloudById(p.id);
-        if (cl && cl.parent === id) state.tribParent[tid] = { kind: "layer", id: fallbackLayerForTrib(tid) };
+        if (cl && cl.parent === id) state.tribParent[tid] = { kind: "layer", id: fallbackLayerForTrib(tid) , auto: true };
       } else if (p && p.kind === "layer" && p.id === id) {
-        state.tribParent[tid] = { kind: "layer", id: fallbackLayerForTrib(tid) };
+        state.tribParent[tid] = { kind: "layer", id: fallbackLayerForTrib(tid) , auto: true };
       }
     });
     cloudList().forEach(function (cl) { if (cl.parent === id) cl.parent = fallbackLayerForTrib(cl.members[0]); });
@@ -1253,7 +1253,15 @@
         (p.kind === "layer" && !containerById(p.id)) ||
         (p.kind === "cloud" && !cloudById(p.id)) ||
         (p.kind === "trib" && (!live[p.id] || p.id === t.id || cardAncestors(p.id).indexOf(t.id) >= 0));
-      if (orphan) state.tribParent[t.id] = { kind: "layer", id: fallbackLayerForTrib(t.id) };
+      /*
+       * auto marks a parent this function chose, not one the floscAdmin did.
+       * A card dragged onto a heading is that heading's child and is written
+       * under it. A card that merely has a density in that heading's band is
+       * not its child — it is a peer that sorts nearby. Both used to land in
+       * tribParent as the same thing, so every aspect got swallowed by
+       * whichever heading its density fell past.
+       */
+      if (orphan) state.tribParent[t.id] = { kind: "layer", id: fallbackLayerForTrib(t.id), auto: true };
     });
     cloudList().forEach(function (c) {
       if (!c.parent || !containerById(c.parent)) c.parent = fallbackLayerForTrib(c.members[0]);
@@ -4137,24 +4145,70 @@
       '<p class="figure-readout" style="margin:0 0 8px">Drop an aspect between two rows and it takes the average of the two. If both neighbours are 55 it stays 55 and sorts alphabetically among them. Type 47 and it stays 47. Densities keep up to 3 decimal places, no float garbage.</p>');
     parts.push('<div class="seq-den"><div class="seq-den-rail"><div class="cap">0</div><div class="rail-body"><div class="rail-bands"><span>Soul</span><span>Character</span><span>Behavior</span></div><div class="den-rail" id="denRail" title="0 white at top · 100 ink at bottom"></div></div><div class="cap">100</div></div><div class="seq-den-items" data-drop-den="1">');
 
-    /* Only headings that hold something. An empty one lives in the palette
-       until an aspect is placed on it. */
-    const seq = containersSorted().filter(containerHasContent).map(function (L) {
-      return { kind: "layer", density: Number(L.density) || 0, c: L };
+    /*
+     * One list, density order, headings and aspects as peers.
+     *
+     * An aspect IS a heading — its name field says so: "The heading this card
+     * writes." Nothing sits under anything by default; density alone decides
+     * position. So d6 Identity and Role, then a card at d10, then d12 Mission,
+     * all at the same level. This column used to nest every aspect inside the
+     * heading whose density band it fell in, which invented a hierarchy the
+     * document does not have.
+     *
+     * The one real nesting stays: a card that is explicitly a member of
+     * another card renders inside its host and reads as 45:010. Those are
+     * skipped here because tribRowHtml() draws them with their host.
+     */
+    /* No containerHasContent filter. An aspect with no children is still an
+       aspect, with every parameter the others have. Hiding it because nothing
+       had been put under it yet made it look like it did not exist. */
+    const seq = containersSorted().map(function (L) {
+      return { kind: "layer", density: Number(L.density) || 0, c: L, sortKey: L.id };
+    });
+    activeTribs().forEach(function (t) {
+      const p = state.tribParent[t.id];
+      /* Member of a group card, or of a cloud: drawn with its host. */
+      if (p && (p.kind === "trib" || p.kind === "cloud")) return;
+      /* Dragged onto a heading deliberately: it is that heading's child and is
+         drawn inside it. Only an auto-chosen heading means "peer". */
+      if (p && p.kind === "layer" && !p.auto) return;
+      seq.push({ kind: "topic", density: tribState(t.id).density, c: t, sortKey: String(t.label || t.id) });
+    });
+    cloudList().forEach(function (c) {
+      if (!c || !c.members || c.members.length < 2) return;
+      if (c.parent && containerById(c.parent)) return;
+      seq.push({
+        kind: "cloud",
+        density: (typeof c.density === "number") ? c.density : minMemberDensity(c),
+        c: c,
+        sortKey: String(c.name || c.id)
+      });
     });
     seq.sort(function (a, b) {
       if (a.density !== b.density) return a.density - b.density;
-      return a.c.id < b.c.id ? -1 : a.c.id > b.c.id ? 1 : 0;
+      return a.sortKey < b.sortKey ? -1 : a.sortKey > b.sortKey ? 1 : 0;
     });
     let lastBand = "";
     seq.forEach(function (item) {
-      const L = item.c;
-      const band = L.band || bandOfDensity(item.density);
+      const band = (item.kind === "layer" && item.c.band) || bandOfDensity(item.density);
       if (band && band !== lastBand) {
         lastBand = band;
         const meta = BAND_META[band] || { label: band, hint: "" };
         parts.push('<div class="band-lab">' + esc(meta.label) + ' <span>' + esc(meta.hint) + "</span></div>");
       }
+
+      /* An aspect, at its own density, a peer of every heading around it. */
+      if (item.kind === "topic") {
+        parts.push('<div class="row-gap" data-drop-before="' + item.c.id + '"></div>');
+        parts.push(tribRowHtml(item.c));
+        return;
+      }
+      if (item.kind === "cloud") {
+        parts.push(cloudBlockHtml(item.c));
+        return;
+      }
+
+      const L = item.c;
       const open = isOpen("layer:" + L.id) || isFocus("layer", L.id);
       const sel = isFocus("layer", L.id);
       let body = containerAdminHtml(L);
@@ -4165,33 +4219,32 @@
         state.layer = L.id;
         body += editorHtml();
         state.layer = prev;
-        const kids = childrenOf(L.id);
         /*
-         * The nest renders whether or not the heading has children, and opens
-         * with a drop strip. Before this, an empty heading carried no drop
-         * target at all and a full one had gaps only between existing rows —
-         * so there was nowhere to release an aspect at the top of a heading,
-         * and nothing whatever to release onto an empty one.
+         * A heading no longer swallows every aspect whose density falls in its
+         * band. Those are peers in the list above, each at its own density,
+         * which is the whole model: an aspect IS a heading, and it becomes a
+         * heading over others only when others are put under it. The strip
+         * stays so an aspect can still be dropped onto this one deliberately.
          */
-        {
-          body += '<div class="nest" data-drop-layer="' + L.id + '">';
-          body += '<div class="row-gap row-gap--first" data-drop-layer-top="' + L.id + '"></div>';
-          if (!kids.length) {
-            body += '<p class="figure-readout nest-empty">Drag aspects here.</p>';
+        const kids = childrenOf(L.id).filter(function (k) {
+          if (k.kind === "cloud") return true;
+          const p = state.tribParent[k.id];
+          return !!p && p.kind === "layer" && !p.auto;
+        });
+        body += '<div class="nest" data-drop-layer="' + L.id + '">';
+        body += '<div class="row-gap row-gap--first" data-drop-layer-top="' + L.id + '"></div>';
+        kids.forEach(function (k) {
+          if (k.kind === "cloud") {
+            const cl = cloudById(k.id);
+            if (cl && cl.members.length >= 2) body += cloudBlockHtml(cl);
+            return;
           }
-          kids.forEach(function (k) {
-            if (k.kind === "cloud") {
-              const cl = cloudById(k.id);
-              if (cl && cl.members.length >= 2) body += cloudBlockHtml(cl);
-            } else {
-              const t = allTribs().find(function (x) { return x.id === k.id; });
-              if (!t) return;
-              body += '<div class="row-gap" data-drop-before="' + t.id + '"></div>';
-              body += tribRowHtml(t);
-            }
-          });
-          body += "</div>";
-        }
+          const t = allTribs().find(function (x) { return x.id === k.id; });
+          if (!t) return;
+          body += '<div class="row-gap" data-drop-before="' + t.id + '"></div>';
+          body += tribRowHtml(t);
+        });
+        body += "</div>";
       }
       parts.push(
         '<details class="acc' + (sel ? " sel" : "") + '"' + (open ? " open" : "") + ' data-acc="layer:' + L.id + '" data-open-key="layer:' + L.id + '">' +
