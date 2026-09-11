@@ -1,14 +1,14 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": 57,
+  "candidate_iteration": 58,
   "creator": "Claude Opus 5",
   "status": "BUILT_AWAITING_CAPTAIN_TEST",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v56",
+  "base": "claude-opus-5 v57",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "e763c3d831b29d0bf7dc85ffd513f6e71026b6736572eb8db3e0fba97f5767e4",
+  "artifact_sha256": "e1817bc393a44c79c00fe18515e714a1fc7c914a84d18e2507a4f3b94a310342",
   "artifact_bytes": 2737756,
   "artifact_entries": 277,
   "tree_files": 289,
@@ -219,10 +219,14 @@
     "files": [
       "assets/css/flosc-personality-builder.css",
       "assets/js/flosc-personality-builder.js"
-    ]
+    ],
+    "v58_the_actual_cause": "applyFloscHostChrome() hid header.top > div:not(.toolbar) outright, and that div holds the identity row as well as the h1, the attribution and the blurb. v57's CSS scoping was necessary and not sufficient: the parent was hidden by JavaScript. Hosted mode now hides the page chrome and leaves the identity row, so Name, Role and Filename are reachable inside WordPress."
   },
   "files_changed_from_v56": [
     "assets/css/flosc-personality-builder.css",
+    "assets/js/flosc-personality-builder.js"
+  ],
+  "files_changed_from_v57": [
     "assets/js/flosc-personality-builder.js"
   ]
 }

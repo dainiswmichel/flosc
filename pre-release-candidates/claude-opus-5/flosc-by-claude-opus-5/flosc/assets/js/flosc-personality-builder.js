@@ -6,8 +6,21 @@
     if (!floscHosted()) return;
     var root = document.querySelector(".flosc-personality-workshop");
     if (root) root.classList.add("is-hosted");
+    /*
+     * Hide the standalone page's chrome, not everything near it. This hid the
+     * whole block, and that block holds the identity row — Name, Role and
+     * Filename. So inside WordPress those three inputs existed, were bound to
+     * their listeners and saved through the autosave, and could not be seen or
+     * reached. There was no way to rename a loaded personality at all, which
+     * is how Br3nda came to wear the first heading of her own document.
+     */
     var titleBlock = document.querySelector("header.top > div:not(.toolbar)");
-    if (titleBlock) titleBlock.hidden = true;
+    if (titleBlock) {
+      Array.prototype.forEach.call(titleBlock.children, function (el) {
+        if (el.classList && el.classList.contains("identity-row")) return;
+        el.hidden = true;
+      });
+    }
     document.querySelectorAll(".preset-where").forEach(function (el) {
       el.hidden = true;
     });
