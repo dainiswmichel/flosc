@@ -5099,11 +5099,32 @@
       return;
     }
   }
+  /*
+   * Typing used to cost a full recompile per keystroke.
+   *
+   * Every text branch below wrote its value and then ran persistSoft() and
+   * renderOut() immediately — compiling the whole personality document and
+   * serialising the whole state, once per character. At twenty aspects that
+   * was survivable. At sixty it is not: typing a card name crawled.
+   *
+   * The value still lands in state on the keystroke, so nothing typed is ever
+   * lost and a save that fires mid-word still saves the word. Only the
+   * recompile waits for a gap in typing.
+   */
+  let _outSoon = null;
+  function persistAndRenderSoon() {
+    if (_outSoon) clearTimeout(_outSoon);
+    _outSoon = setTimeout(function () {
+      _outSoon = null;
+      persistSoft();
+      renderOut();
+    }, 200);
+  }
   function onTribInput(e) {
     if (e.target.matches("[data-card-label]")) {
       const id = e.target.getAttribute("data-card-label");
       const card = (state.custom || []).find(function (c) { return c.id === id; });
-      if (card) { card.label = e.target.value; persistSoft(); renderOut(); }
+      if (card) { card.label = e.target.value; persistAndRenderSoon(); }
       return;
     }
     if (e.target.matches("[data-cat-label]") || e.target.matches("[data-cat-hint]")) {
@@ -5116,51 +5137,48 @@
       if (e.target.hasAttribute("data-cat-label")) L.label = e.target.value;
       else L.desc = e.target.value;
       L.renamed = true;
-      persistSoft();
-      renderOut();
+      persistAndRenderSoon();
       return;
     }
     if (e.target.matches("[data-layer-label]")) {
       const L = containerById(e.target.getAttribute("data-layer-label"));
-      if (L) { L.label = e.target.value; L.renamed = true; persistSoft(); renderOut(); }
+      if (L) { L.label = e.target.value; L.renamed = true; persistAndRenderSoon(); }
       return;
     }
     if (e.target.matches("[data-layer-desc]")) {
       const L = containerById(e.target.getAttribute("data-layer-desc"));
-      if (L) { L.desc = e.target.value; L.renamed = true; persistSoft(); renderOut(); }
+      if (L) { L.desc = e.target.value; L.renamed = true; persistAndRenderSoon(); }
       return;
     }
     if (e.target.matches("[data-layer-traj]")) {
       const L = containerById(e.target.getAttribute("data-layer-traj"));
-      if (L) { L.trajectory = e.target.value; persistSoft(); renderOut(); }
+      if (L) { L.trajectory = e.target.value; persistAndRenderSoon(); }
       return;
     }
     if (e.target.matches("[data-layer-color]")) {
       const L = containerById(e.target.getAttribute("data-layer-color"));
-      if (L) { L.color = e.target.value; persistSoft(); renderOut(); }
+      if (L) { L.color = e.target.value; persistAndRenderSoon(); }
       return;
     }
     if (e.target.matches("[data-pv-text]")) {
       state.sampling[e.target.getAttribute("data-pv-text")] = e.target.value;
-      persistSoft();
-      renderOut();
+      persistAndRenderSoon();
       return;
     }
     if (e.target.matches("[data-cloud-name]")) {
       const c = cloudById(e.target.getAttribute("data-cloud-name"));
-      if (c) { c.name = e.target.value; persistSoft(); renderOut(); }
+      if (c) { c.name = e.target.value; persistAndRenderSoon(); }
       return;
     }
     if (e.target.matches("[data-cloud-exp]")) {
       const c = cloudById(e.target.getAttribute("data-cloud-exp"));
-      if (c) { c.explanation = e.target.value; persistSoft(); renderOut(); }
+      if (c) { c.explanation = e.target.value; persistAndRenderSoon(); }
       return;
     }
     if (e.target.matches("[data-traj-phrase]")) {
       const id = e.target.getAttribute("data-traj-phrase");
       state.trib[id] = Object.assign({}, tribState(id), { trajectory: e.target.value });
-      persistSoft();
-      renderOut();
+      persistAndRenderSoon();
       renderMorphViz();
       return;
     }
@@ -5182,8 +5200,7 @@
       state.trib[id] = Object.assign({}, tribState(id), { weight: weight });
       const wn = e.target.parentElement && e.target.parentElement.querySelector(".wn");
       if (wn) wn.textContent = String(weight);
-      persistSoft();
-      renderOut();
+      persistAndRenderSoon();
       renderMorphViz();
       return;
     }
@@ -5196,16 +5213,14 @@
       const id = e.target.getAttribute("data-star-points");
       const n = Math.max(3, Math.min(24, Math.round(Number(e.target.value) || 5)));
       state.trib[id] = Object.assign({}, tribState(id), { starPoints: n });
-      persistSoft();
-      renderOut();
+      persistAndRenderSoon();
       renderMorphViz();
       return;
     }
     if (e.target.matches("[data-inject]")) {
       const id = e.target.getAttribute("data-inject");
       state.trib[id] = Object.assign({}, tribState(id), { inject: e.target.value });
-      persistSoft();
-      renderOut();
+      persistAndRenderSoon();
       return;
     }
     if (e.target.matches("[data-color]")) {

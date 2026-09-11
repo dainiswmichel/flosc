@@ -1,15 +1,15 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": 41,
+  "candidate_iteration": 42,
   "creator": "Claude Opus 5",
   "status": "BUILT_AWAITING_CAPTAIN_TEST",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v40 (d3a04dd)",
+  "base": "claude-opus-5 v41 (94505fa)",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "06e5bc3cecbfd184f21b95f8142940e7ab544a4ba1684e3a9b0d235c166f7af1",
-  "artifact_bytes": 2734061,
+  "artifact_sha256": "3da1333a67da99bc9443c93ff5e7e12b59aa5b08d2867428a585f036f074217c",
+  "artifact_bytes": 2734344,
   "artifact_entries": 277,
   "tree_files": 289,
   "why_this_iteration": {
@@ -78,5 +78,14 @@
     "assets/js/flosc-personality-builder.js",
     "assets/js/flosc-personality-builder-wp.js",
     "assets/css/flosc-personality-builder.css"
+  ],
+  "typing_was_achingly_slow": {
+    "symptom": "Typing a card name in the designer crawled, one character at a time, on a personality with 60 aspects.",
+    "cause": "Every text branch of onTribInput() wrote its value and then ran persistSoft() and renderOut() immediately — recompiling the whole personality document and serialising the whole builder state once per keystroke. At the 20-27 aspects the shipped personalities carry that was survivable; at 60 it is not. Not introduced by v39-v41; those touched the drag attribute, the tick handler, the density swatch and the save indicator. It got slow because the personality got big.",
+    "fix": "One debounce. The typed value still lands in state on the keystroke, so nothing is lost and a save firing mid-word saves the word; only the recompile waits 200ms for a gap in typing. 13 call sites. Density is untouched — it commits immediately through commitDensity() as before.",
+    "file": "assets/js/flosc-personality-builder.js"
+  },
+  "files_changed_from_v41": [
+    "assets/js/flosc-personality-builder.js"
   ]
 }
