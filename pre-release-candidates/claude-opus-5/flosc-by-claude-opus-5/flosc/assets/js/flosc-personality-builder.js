@@ -5328,20 +5328,36 @@
     const own = clampDensity(parts.pop());
     return { density: own, path: parts.map(function (x) { return clampDensity(x); }) };
   }
-  /* Walk a colon path down the card tree and return the card it lands inside. */
+  /*
+   * A colon path can land on any aspect at that density — including the ones
+   * that are headings. A heading IS an aspect: every parameter the others
+   * have, and a heading only because things sit under it. This searched
+   * activeTribs() alone, so the fourteen headings were invisible and typing
+   * 6:010 answered "No card at 6" about an aspect plainly sitting at d6.
+   */
   function cardAtDensityPath(path, skipId) {
     if (!path || !path.length) return null;
+    const denOf = function (t) {
+      return containerById(t.id) ? (Number(t.density) || 0) : tribState(t.id).density;
+    };
     let hostId = null;
     for (let i = 0; i < path.length; i++) {
       const want = path[i];
-      const pool = hostId
-        ? tribChildren(hostId)
-        : activeTribs().filter(function (t) {
-            const p = state.tribParent && state.tribParent[t.id];
-            return !p || p.kind !== "trib";
-          });
+      let pool;
+      if (hostId) {
+        pool = containerById(hostId)
+          ? childrenOf(hostId).map(function (k) {
+              return allTribs().find(function (x) { return x.id === k.id; });
+            }).filter(Boolean)
+          : tribChildren(hostId);
+      } else {
+        pool = activeTribs().filter(function (t) {
+          const p = state.tribParent && state.tribParent[t.id];
+          return !p || p.kind !== "trib";
+        }).concat(containersSorted().filter(function (c) { return c.kind === "layer"; }));
+      }
       const hit = pool.find(function (t) {
-        return t.id !== skipId && clampDensity(tribState(t.id).density) === want;
+        return t && t.id !== skipId && clampDensity(denOf(t)) === want;
       });
       if (!hit) return null;
       hostId = hit.id;
@@ -5361,12 +5377,16 @@
       const host = cardAtDensityPath(parsed.path, id);
       if (host && host !== id && cardAncestors(host).indexOf(id) < 0) {
         cloudLeave(id);
-        state.tribParent[id] = { kind: "trib", id: host };
-        const hostCard = allTribs().find(function (x) { return x.id === host; });
-        showBuilderNotice("Placed inside " + ((hostCard && hostCard.label) || "that card") +
+        /* A heading host is a layer parent, a card host a card parent.
+           Neither carries auto: this one was typed deliberately. */
+        state.tribParent[id] = containerById(host)
+          ? { kind: "layer", id: host }
+          : { kind: "trib", id: host };
+        const hostCard = allTribs().find(function (x) { return x.id === host; }) || containerById(host);
+        showBuilderNotice("Placed inside " + ((hostCard && hostCard.label) || "that aspect") +
           ", reading d" + composedDensity(id) + ".");
       } else {
-        showBuilderNotice("No card at " + parsed.path.map(formatDensity).join(":") +
+        showBuilderNotice("No aspect at " + parsed.path.map(formatDensity).join(":") +
           ". The density is set to " + formatDensity(density) + "; the card has not moved.", true);
       }
     }
