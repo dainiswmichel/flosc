@@ -195,8 +195,16 @@
     user-select: none;
   }
   .flosc-personality-workshop .trib.dragging, .flosc-personality-workshop .acc.dragging{ opacity: 0.4; }
-  .flosc-personality-workshop .drop-aim{ outline: 2px dashed var(--accent-2); background: #f0f6fc !important; }
-  .flosc-personality-workshop .drop-line{ box-shadow: inset 0 3px 0 var(--accent); }
+  /* Where the aspect will land, at a glance. A 3px inset shadow on a thin gap
+     was easy to lose track of while dragging. */
+  .flosc-personality-workshop .drop-aim{
+    outline: 3px solid var(--accent); outline-offset: -1px;
+    background: #eaf2fb !important;
+  }
+  .flosc-personality-workshop .drop-line{
+    box-shadow: inset 0 5px 0 var(--accent);
+    background: #eaf2fb;
+  }
   /* Density-tinted titlebars: the ground IS the density (white → ink).
      .ink-light rows sit on dark grounds, so every child flips to light. */
   .flosc-personality-workshop .row-sum{ transition: background-color 120ms ease; }
@@ -204,7 +212,7 @@
   .flosc-personality-workshop .row-sum.ink-light .meta-bit{ color: #ececec; border-color: rgba(255,255,255,.45); background: transparent; }
   .flosc-personality-workshop .row-sum.ink-light .gain-mark{ background: rgba(255,255,255,.38); }
   .flosc-personality-workshop .row-gap{ height: 0; margin: 0; overflow: hidden; transition: height 120ms ease; }
-  .flosc-personality-workshop .drag-active .row-gap{ height: 14px; }
+  .flosc-personality-workshop .drag-active .row-gap{ height: 20px; border-radius: 3px; }
   .flosc-personality-workshop .row-gap.drop-line{ background: #f0f6fc; }
   .flosc-personality-workshop .trib.off{ opacity: 0.48; background: #f6f7f7; }
   .flosc-personality-workshop .trib.cond{ border-color: #dba617; background: #fcf9e8; opacity: 1; }

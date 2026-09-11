@@ -1,15 +1,15 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": 51,
+  "candidate_iteration": 52,
   "creator": "Claude Opus 5",
   "status": "BUILT_AWAITING_CAPTAIN_TEST",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v50 (2e7d5a9)",
+  "base": "claude-opus-5 v51 (30d3235)",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "cccfdaad195a755fab8235a8c15c83e61831e0fa66abc696f117e9055ee059cf",
-  "artifact_bytes": 2737338,
+  "artifact_sha256": "ef79a69ca1734c5cd7668f94041bf34bc3a764c00bdc5a62c92041935253e1c0",
+  "artifact_bytes": 2737756,
   "artifact_entries": 277,
   "tree_files": 289,
   "why_this_iteration": {
@@ -175,5 +175,16 @@
   },
   "files_changed_from_v50": [
     "assets/js/flosc-personality-builder.js"
+  ],
+  "dragging_was_crawling": {
+    "symptom": "Dragging worked but was very hard to see and follow — slow, with no real visual cue for where the aspect would land.",
+    "cause": "dragover fires continuously, and the handler ran document.querySelectorAll('.drop-aim, .drop-line, .drop-beside') on every single event — a whole-document scan across sixty aspects and their open editors, many times a second. The mark lagged behind the pointer because the browser was busy clearing marks that were not there.",
+    "fix": "One element is marked at a time, so the code remembers which one. An event landing on the same target as the last one now does nothing at all. No document scan remains in the drag path.",
+    "cues": "The drop line was a 3px inset shadow on a 14px gap. It is a 5px bar on a 20px gap with a tinted ground, and the drop target outline is solid instead of dashed.",
+    "note": "+ Sub-aspect is the reliable path and does not depend on any of this. The drag was fixed because it was crawling, not to make it the recommended route."
+  },
+  "files_changed_from_v51": [
+    "assets/js/flosc-personality-builder.js",
+    "assets/css/flosc-personality-builder.css"
   ]
 }

@@ -6243,6 +6243,22 @@
   }
 
   const app = document.querySelector(".app");
+  /* The one marked drop target, remembered rather than searched for. */
+  let _dropMark = null;
+  function clearDropMark() {
+    if (_dropMark) {
+      _dropMark.el.classList.remove("drop-aim", "drop-line", "drop-beside");
+      _dropMark = null;
+    }
+  }
+  function setDropMark(el, cls) {
+    if (_dropMark && _dropMark.el === el && _dropMark.cls === cls) return;
+    clearDropMark();
+    if (!el) return;
+    el.classList.add(cls);
+    _dropMark = { el: el, cls: cls };
+  }
+
   app.addEventListener("dragstart", function (e) {
     /* Never start a drag from inside something the floscAdmin is typing in or
        selecting text in. Belt to the braces of removing draggable from the
@@ -6264,6 +6280,7 @@
   });
   app.addEventListener("dragend", function () {
     state._drag = null;
+    clearDropMark();
     app.classList.remove("drag-active");
     document.querySelectorAll(".dragging, .drop-aim, .drop-line, .drop-beside").forEach(function (n) {
       n.classList.remove("dragging", "drop-aim", "drop-line", "drop-beside");
@@ -6291,16 +6308,23 @@
     if (!before && !col && !denList && !cloudEl && !cardOk && !layerEl) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
-    document.querySelectorAll(".drop-aim, .drop-line, .drop-beside").forEach(function (n) {
-      n.classList.remove("drop-aim", "drop-line", "drop-beside");
-    });
+    /*
+     * dragover fires continuously. This used to querySelectorAll the whole
+     * document on every one of those events, across sixty aspects and their
+     * open editors, which is why dragging crawled and the mark lagged behind
+     * the pointer. One element is marked at a time, so remembering which one
+     * is all the bookkeeping there is, and an event that lands on the same
+     * target as the last one does nothing at all.
+     */
+    let el = null, cls = "drop-aim";
     if (before && before.getAttribute("data-drop-before") !== state._drag) {
-      before.classList.add("drop-line");
-    } else if (cardOk) cardEl.classList.add("drop-aim");
-    else if (layerTop) layerTop.classList.add("drop-line");
-    else if (cloudEl) cloudEl.classList.add("drop-aim");
-    else if (layerEl) layerEl.classList.add("drop-aim");
-    else if (col) col.classList.add("drop-aim");
+      el = before; cls = "drop-line";
+    } else if (cardOk) { el = cardEl; }
+    else if (layerTop) { el = layerTop; cls = "drop-line"; }
+    else if (cloudEl) { el = cloudEl; }
+    else if (layerEl) { el = layerEl; }
+    else if (col) { el = col; }
+    setDropMark(el, cls);
   });
   app.addEventListener("drop", function (e) {
     if (!state._drag) return;
