@@ -3548,17 +3548,9 @@
       if (da !== db) return da - db;
       return String(a.label || a.id).localeCompare(String(b.label || b.id));
     });
-    /* Aspects with no category, above the headings. A card lives here until it
-       is dragged onto one; it is in no heading, so it is in no document. */
-    if (allTribs().some(function (t) { return tribColOf(t) === UNFILED; })) {
-      categories.unshift({ id: UNFILED, label: "Unfiled aspects", hint: "Not in any category yet. Drag one onto a heading.", density: -1 });
-    }
-    root.innerHTML = categories.map(function (c) {
-      const items = tribsInCol(c.id).slice().sort(function (a, b) {
-        return String(a.label || a.id).localeCompare(String(b.label || b.id));
-      }).filter(function (t) {
-        return !(state.hideOff && !tribState(t.id).on);
-      }).map(function (t) {
+  /* One palette row. Used by a category's shelf and by an aspect that is
+     in no category — same row either way, so the two cannot drift. */
+  function paletteRowHtml(t) {
         const st = tribState(t.id);
         const cls = [
           st.mode === "off" ? "off" : (st.mode === "conditional" ? "cond" : ""),
@@ -3589,14 +3581,45 @@
           "<summary>Edit this aspect</summary>" +
           '<div class="acc-body">' + (paletteOpen ? wellspringEditor(t) : "") + "</div></details>" +
           "</div>";
-      }).join("");
+  }
+
+    /*
+     * The palette is every aspect there is, in density order. A category is an
+     * aspect with aspects under it and renders as a shelf; an aspect with no
+     * category renders as itself, in the same list, at its own density.
+     *
+     * There is no "Unfiled" any more. It was a bucket invented to hold aspects
+     * the code could not otherwise place, and it described nothing real: an
+     * aspect in no category is not unfiled, it is simply an aspect.
+     */
+    const loose = allTribs().filter(function (t) {
+      return tribColOf(t) === UNFILED && !(state.hideOff && !tribState(t.id).on);
+    }).map(function (t) {
+      return { kind: "aspect", density: tribState(t.id).density, c: t, sortKey: String(t.label || t.id) };
+    });
+    const shelves = categories.map(function (c) {
+      return { kind: "cat", density: Number(c.density) || 0, c: c, sortKey: String(c.label || c.id) };
+    });
+    const paletteSeq = shelves.concat(loose).sort(function (x, y) {
+      if (x.density !== y.density) return x.density - y.density;
+      return x.sortKey < y.sortKey ? -1 : x.sortKey > y.sortKey ? 1 : 0;
+    });
+    root.innerHTML = paletteSeq.map(function (entry) {
+      if (entry.kind === "aspect") { return paletteRowHtml(entry.c); }
+      const c = entry.c;
+      return (function (c) {
+      const items = tribsInCol(c.id).slice().sort(function (a, b) {
+        return String(a.label || a.id).localeCompare(String(b.label || b.id));
+      }).filter(function (t) {
+        return !(state.hideOff && !tribState(t.id).on);
+      }).map(paletteRowHtml).join("");
       const colSel = (state.focus.kind === "col" && state.focus.id === c.id) ||
         (state.focus.kind === "trib" && allTribs().some(function (t) { return t.id === state.focus.id && tribColOf(t) === c.id; }));
       const famOpen = state.open["fam:" + c.id] !== false;
       /* Renaming a shelf happens on the shelf. It used to happen in two
          browser prompt boxes, which could reach the name and the description
          and nothing else, and looked like an error dialog while doing it. */
-      const editing = state.editCategory === c.id && c.id !== UNFILED;
+      const editing = state.editCategory === c.id;
       const head = editing
         ? '<div class="cat-edit">' +
           '<label class="cadmin-field"><span>Category name</span>' +
@@ -3613,9 +3636,7 @@
         : "";
       return '<details class="col' + (colSel ? " sel" : "") + '" data-col="' + c.id + '" data-open-key="fam:' + c.id + '"' + (famOpen || editing ? " open" : "") + ">" +
         '<summary data-focus-col="' + c.id + '"><strong>' + esc(c.label) + '</strong><span class="fam-hint">' + esc(c.hint || "") + "</span>" +
-        (c.id === UNFILED
-          ? ""
-          : '<span class="fam-den">d' + formatDensity(c.density) + '</span><button type="button" class="btn ghost" data-edit-category="' + c.id + '">' + (editing ? "Close" : "Edit") + '</button><button type="button" class="btn ghost danger" data-remove-category="' + c.id + '">Remove</button>') +
+        ('<span class="fam-den">d' + formatDensity(c.density) + '</span><button type="button" class="btn ghost" data-edit-category="' + c.id + '">' + (editing ? "Close" : "Edit") + '</button><button type="button" class="btn ghost danger" data-remove-category="' + c.id + '">Remove</button>') +
         "</summary>" +
         head +
         /* Every heading shows, filled or not. A shelf with nothing on it is
@@ -3626,6 +3647,7 @@
           (state.hideOff ? "Drag aspects here. Untick Hide inactive aspects to see what is available."
                          : "Drag aspects here.") + "</p>") +
         "</div></details>";
+      })(c);
     }).join("");
     /* A wellspring is an aspect, so the button says aspect. It makes the card
        outright — there is nothing to ask for first that the card cannot say
@@ -3634,12 +3656,14 @@
     if (oldAdd) oldAdd.remove();
     root.insertAdjacentHTML("afterend", '<button type="button" class="btn add-trib" id="btnAddAspect">+ Aspect</button>');
     document.getElementById("btnAddAspect").addEventListener("click", function () {
-      const id = addCard("New aspect", { prefix: "aspect" });
+      /* Density 100: a new aspect in the palette belongs at the bottom, where
+         a palette ordered by density puts it and where it is not in the way.
+         Unticked — nothing enters the personality until it is ticked. */
+      const id = addCard("New aspect", { prefix: "aspect", density: 100 });
       persistSoft();
       render();
       focusItem("trib", id);
-      showBuilderNotice("New aspect added to " + (parentLabelOf(id) || "this personality") +
-        " at density " + formatDensity(tribState(id).density) + ". Name it and write its instruction.");
+      showBuilderNotice("New aspect added to the palette at density 100. Name it, write its instruction, then tick it to include it.");
     });
     root.querySelectorAll("details[data-open-key]").forEach(function (d) {
       d.addEventListener("toggle", function () {
@@ -6064,6 +6088,12 @@
     ensureContainers();
     const c = addContainer("New category", 0);
     state.tribOrder[c.id] = [];
+    /*
+     * One aspect under it, on, from the start. A category IS an aspect that
+     * has aspects under it — that is the whole of what makes it a category.
+     * Making an empty one and calling it a category teaches the opposite.
+     */
+    addCard("New aspect", { prefix: "aspect", on: true, parent: c.id, density: (Number(c.density) || 0) });
     state.open["fam:" + c.id] = true;
     state.open["layer:" + c.id] = true;
     state.editCategory = c.id;

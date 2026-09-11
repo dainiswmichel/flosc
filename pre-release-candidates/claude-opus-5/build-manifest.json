@@ -1,15 +1,15 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": 46,
+  "candidate_iteration": 47,
   "creator": "Claude Opus 5",
   "status": "BUILT_AWAITING_CAPTAIN_TEST",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v45 (1fabe88)",
+  "base": "claude-opus-5 v46 (606e301)",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "d61dd4fc7a34234547a9b754212dcb13e48bfce6c6315d5f599d1c9a2e482363",
-  "artifact_bytes": 2735705,
+  "artifact_sha256": "fe43d1fcd25209ef0f4c3a3bdca8e4e33dad50884e24a3748678d10e9cf6d734",
+  "artifact_bytes": 2736181,
   "artifact_entries": 277,
   "tree_files": 289,
   "why_this_iteration": {
@@ -124,6 +124,16 @@
     "file": "assets/js/flosc-personality-builder.js"
   },
   "files_changed_from_v45": [
+    "assets/js/flosc-personality-builder.js"
+  ],
+  "the_four_the_captain_asked_for": {
+    "1_plus_aspect_on_the_right": "Makes a blank aspect at density 0 at the top of the personality, ticked — so it shows ticked in the palette too. Already true in v46; unchanged here.",
+    "2_unfiled_aspects_is_gone": "The shelf and its label are removed. The palette is now one density-ordered list: a category renders as a shelf, an aspect in no category renders as itself at its own density. UNFILED survives only as an internal sentinel meaning 'no category' and is never shown. The bucket described nothing real — an aspect in no category is not unfiled, it is simply an aspect.",
+    "3_plus_aspect_in_the_palette": "Makes an unticked aspect at density 100, so it appears at the bottom of the palette. Nothing enters the personality until it is ticked.",
+    "4_plus_category": "Makes the category and one aspect under it, on, at the category's own density — so it is visible from the first second that a category is an aspect with aspects under it. An empty box called a category teaches the opposite.",
+    "file": "assets/js/flosc-personality-builder.js"
+  },
+  "files_changed_from_v46": [
     "assets/js/flosc-personality-builder.js"
   ]
 }
