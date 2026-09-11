@@ -1247,6 +1247,111 @@ if ( ! function_exists( 'flosc_personality_variable_catalog' ) ) {
 	}
 }
 
+if ( ! function_exists( 'flosc_personality_variable_context' ) ) {
+	/**
+	 * Turn the context FLOSC already assembled for this turn into token values.
+	 *
+	 * Nothing here looks anything up. The evaluation context passed between the
+	 * chatpack, the dispatch and the flow runtime already carries who this is
+	 * and what they have reached, so a variable reads it rather than asking the
+	 * database a second time.
+	 *
+	 * @param array $turn Evaluation context for this turn.
+	 * @return array<string,string>
+	 */
+	function flosc_personality_variable_context( $turn ) {
+		if ( ! is_array( $turn ) ) {
+			return array();
+		}
+		$direct = array(
+			'user_id'              => array( 'wp_user_id', 'user_id' ),
+			'logged_in'            => array( 'logged_in' ),
+			'access_level'         => array( 'access_level' ),
+			'member_level'         => array( 'member_entitlement', 'member_level' ),
+			'current_url'          => array( 'current_url', 'page_url', 'url' ),
+			'chat_url'             => array( 'chat_url' ),
+			'score'                => array( 'score' ),
+			'total_correct'        => array( 'total_correct' ),
+			'total_possible'       => array( 'total_possible' ),
+			'passing_score'        => array( 'passing_score' ),
+			'correct_items'        => array( 'correct_items' ),
+			'missed_items'         => array( 'missed_items' ),
+			'completed_quizzes'    => array( 'completed_quizzes' ),
+			'quiz_attempts'        => array( 'quiz_attempts' ),
+			'lessons_completed'    => array( 'lessons_completed' ),
+			'lessons_viewed'       => array( 'lessons_viewed' ),
+			'lesson_progress'      => array( 'lesson_progress' ),
+			'current_lesson'       => array( 'current_lesson' ),
+			'next_lesson'          => array( 'next_lesson' ),
+			'free_lesson_title'    => array( 'free_lesson_title' ),
+			'lesson_recommendations' => array( 'lesson_recommendations' ),
+			'weak_area'            => array( 'weak_area' ),
+			'streak_days'          => array( 'streak_days' ),
+			'time_spent'           => array( 'time_spent' ),
+			'message_count'        => array( 'message_count', 'pair_number' ),
+			'timer_remaining'      => array( 'timer_remaining' ),
+			'days_remaining'       => array( 'days_remaining' ),
+			'user_status_response' => array( 'user_status_response' ),
+		);
+		$out = array();
+		foreach ( $direct as $token => $keys ) {
+			foreach ( $keys as $key ) {
+				if ( isset( $turn[ $key ] ) && '' !== $turn[ $key ] ) {
+					$out[ $token ] = $turn[ $key ];
+					break;
+				}
+			}
+		}
+		if ( isset( $turn['logged_in'] ) ) {
+			$out['logged_in'] = $turn['logged_in'] ? 'yes' : 'no';
+		}
+		return $out;
+	}
+}
+
+if ( ! function_exists( 'flosc_personality_variable_user' ) ) {
+	/**
+	 * The four tokens that name the visitor.
+	 *
+	 * One get_userdata() for all four, cached for the request, and only when a
+	 * document actually contains one of them. A logged-out visitor has no user
+	 * row, so these come back empty rather than guessed.
+	 *
+	 * @param string $token   name, first_name, user_name or user_email.
+	 * @param array  $context Per-turn context (may carry user_id).
+	 * @return string
+	 */
+	function flosc_personality_variable_user( $token, $context = array() ) {
+		static $cache = array();
+		$user_id = 0;
+		if ( isset( $context['user_id'] ) ) {
+			$user_id = (int) $context['user_id'];
+		} elseif ( function_exists( 'get_current_user_id' ) ) {
+			$user_id = (int) get_current_user_id();
+		}
+		if ( $user_id <= 0 || ! function_exists( 'get_userdata' ) ) {
+			return '';
+		}
+		if ( ! array_key_exists( $user_id, $cache ) ) {
+			$cache[ $user_id ] = get_userdata( $user_id );
+		}
+		$user = $cache[ $user_id ];
+		if ( ! $user ) {
+			return '';
+		}
+		switch ( $token ) {
+			case 'first_name':
+				return (string) ( $user->first_name !== '' ? $user->first_name : $user->display_name );
+			case 'user_name':
+				return (string) $user->user_login;
+			case 'user_email':
+				return (string) $user->user_email;
+			default:
+				return (string) $user->display_name;
+		}
+	}
+}
+
 if ( ! function_exists( 'flosc_personality_variable_value' ) ) {
 	/**
 	 * One token's value. Flow values come from data WordPress and FLOSC already
@@ -1264,6 +1369,12 @@ if ( ! function_exists( 'flosc_personality_variable_value' ) ) {
 		}
 		$value = '';
 		switch ( $token ) {
+			case 'name':
+			case 'first_name':
+			case 'user_name':
+			case 'user_email':
+				$value = flosc_personality_variable_user( $token, $context );
+				break;
 			case 'flow_name':
 				$value = function_exists( 'flosc_flow_name' ) ? flosc_flow_name( $flow_id ) : '';
 				break;
@@ -1418,6 +1529,32 @@ if ( ! function_exists( 'flosc_personality_compiled_profile' ) ) {
 		   tokens so the designer still shows what the floscAdmin wrote. */
 		$profile = flosc_personality_expand_variables( $profile, $flow_id, $context );
 		return trim( $profile );
+	}
+}
+
+if ( ! function_exists( 'flosc_personality_variable_boot' ) ) {
+	/**
+	 * The variable catalog as the builder needs it: token, label, scope, and
+	 * the current value for flow-scoped tokens.
+	 *
+	 * @param string|null $flow_id Flow stem being edited.
+	 * @return array<int,array<string,string>>
+	 */
+	function flosc_personality_variable_boot( $flow_id = null ) {
+		$out = array();
+		foreach ( flosc_personality_variable_catalog() as $token => $meta ) {
+			$row = array(
+				'token' => '{' . $token . '}',
+				'label' => $meta['label'],
+				'scope' => $meta['scope'],
+				'value' => '',
+			);
+			if ( 'flow' === $meta['scope'] ) {
+				$row['value'] = flosc_personality_variable_value( $token, $flow_id );
+			}
+			$out[] = $row;
+		}
+		return $out;
 	}
 }
 
@@ -2042,6 +2179,11 @@ if ( ! function_exists( 'flosc_personality_builder_boot_json' ) ) {
 			'attachNonce'       => wp_create_nonce( 'flosc_attach_personality' ),
 			'ivr'               => (string) $ivr,
 			'existingIds'       => array_keys( flosc_personality_library_get_all() ),
+			/* Every variable a card may carry, with the value it resolves to for
+			   the flow being edited. A floscAdmin typing {flow_name} sees what
+			   it becomes rather than guessing; a visitor-scoped token says it
+			   resolves at chat time instead of showing an invented value. */
+			'variables'         => flosc_personality_variable_boot( $ivr ),
 			'personaId'         => $persona_id,
 			'libraryUrl'        => flosc_personality_library_url( $ivr ),
 			'hideProviderPacks' => true,

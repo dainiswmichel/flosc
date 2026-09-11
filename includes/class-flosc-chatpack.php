@@ -239,7 +239,7 @@ class FLOSC_Chatpack {
         $sections[] = self::build_header($flosc_hash, $session_hash, $pair_number, $flow_id);
 
         // ── 1. FLOSC IDENTITY ───────────────────────────────
-        $sections[] = self::build_identity_section((string) $flow_id);
+        $sections[] = self::build_identity_section((string) $flow_id, false, $eval_context);
 
         // ── 2. WORDPRESS ENVIRONMENT ────────────────────────
         $sections[] = self::build_wordpress_section();
@@ -321,7 +321,7 @@ class FLOSC_Chatpack {
         // profiles went from ~6.3KB to ~1KB each by moving the sales trajectory
         // back to the flow section that already sends it, which costs less per
         // turn than the anchor did and keeps the character.
-        $sections[] = self::build_identity_section((string) ($eval_context['flow_id'] ?? ''), false);
+        $sections[] = self::build_identity_section((string) ($eval_context['flow_id'] ?? ''), false, $eval_context);
         $followup_flow = (string) ($eval_context['flow_id'] ?? '');
         $sections[] = self::build_user_section($eval_context);
         $sections[] = self::build_flow_section($phase, $eval_context, $followup_flow);
@@ -501,7 +501,7 @@ class FLOSC_Chatpack {
      * @param string $flow_id  Flow stem.
      * @param bool   $compact  True on follow-ups: name/role/scope only, not the compiled profile.
      */
-    private static function build_identity_section($flow_id = '', $compact = false) {
+    private static function build_identity_section($flow_id = '', $compact = false, $eval_context = []) {
         $flow_id = ($flow_id !== null && $flow_id !== '') ? $flow_id : null;
         // Fix 12: Library attach (one personality) or flow bag / legacy keys.
         $res = function_exists( 'flosc_personality_library_resolve_field' ) ? 'flosc_personality_library_resolve_field' : null;
@@ -523,8 +523,14 @@ class FLOSC_Chatpack {
         $ai_referral_links = $res ? call_user_func( $res, 'ai_off_topic_links', '', $flow_id ) : flosc_get_setting( 'ai_off_topic_links', '', $flow_id );
         $ai_base_prompt    = $res ? call_user_func( $res, 'ai_base_prompt', '', $flow_id ) : flosc_get_setting( 'ai_base_prompt', '', $flow_id );
         $site_url = function_exists('get_bloginfo') ? get_bloginfo('url') : '';
+        /* Variables expand on this copy, this turn. The stored document keeps
+           the tokens the floscAdmin wrote, and a personality switched between
+           two turns expands against the context of the turn it speaks on. */
+        $profile_context = function_exists( 'flosc_personality_variable_context' )
+            ? flosc_personality_variable_context( $eval_context )
+            : array();
         $compiled_profile = function_exists( 'flosc_personality_compiled_profile' )
-            ? flosc_personality_compiled_profile( $flow_id )
+            ? flosc_personality_compiled_profile( $flow_id, $profile_context )
             : trim( (string) $ai_base_prompt );
 
         $public_title = function_exists( 'flosc_flow_public_title' )

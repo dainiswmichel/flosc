@@ -4574,6 +4574,41 @@
     renderSpec();
   }
 
+  /*
+   * The variables a card may carry, and what each becomes.
+   *
+   * A floscAdmin typing {flow_name} has no way to know what it resolves to
+   * without this. Flow-scoped tokens show their current value for the flow
+   * being edited; visitor-scoped tokens say they resolve at chat time rather
+   * than showing a value invented for an admin screen where no visitor exists.
+   */
+  function renderVariables() {
+    const mount = document.getElementById("varMount");
+    if (!mount) return;
+    const wp = window.floscPersonalityBuilder || {};
+    const rows = Array.isArray(wp.variables) ? wp.variables : [];
+    if (!rows.length) {
+      mount.innerHTML = '<p class="figure-readout">No variables are available for this flow.</p>';
+      return;
+    }
+    const chip = function (r) {
+      const val = r.scope === "flow"
+        ? (r.value ? esc(r.value) : '<em>empty for this flow</em>')
+        : '<em>resolved at chat time</em>';
+      return '<span class="flosc-acc-var-chip"><code>' + esc(r.token) + '</code> = ' + val +
+        '<span class="small-note"> · ' + esc(r.label) + '</span></span>';
+    };
+    const flow = rows.filter(function (r) { return r.scope === "flow"; });
+    const visitor = rows.filter(function (r) { return r.scope !== "flow"; });
+    mount.innerHTML =
+      '<p class="figure-readout">Type any of these into a card. They are replaced when the ' +
+      'personality is sent to the model, every turn. What you save keeps the token.</p>' +
+      '<p class="figure-readout"><strong>This flow and this site</strong></p>' +
+      '<div class="flosc-acc-var-chips">' + flow.map(chip).join("") + '</div>' +
+      '<p class="figure-readout"><strong>This visitor, this turn</strong></p>' +
+      '<div class="flosc-acc-var-chips">' + visitor.map(chip).join("") + '</div>';
+  }
+
   function render() {
     /*
      * The starting-template dropdown is gone. The flow — and the personality
@@ -4596,6 +4631,7 @@
     renderDenRail();
     renderOut();
     renderMorphViz();
+    renderVariables();
   }
 
   function bindSoulInputs(root) {

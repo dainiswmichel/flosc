@@ -37,9 +37,13 @@ $dispatch = (string) file_get_contents( $root . '/includes/class-ai-chat-dispatc
 $turn     = (string) file_get_contents( $root . '/includes/chat-turn/trait-flosc-chat-turn.php' );
 $library  = (string) file_get_contents( $root . '/includes/flosc-personality-library.php' );
 
+/* The compact flag is what this asserts: false means the whole compiled
+   profile goes on a follow-up, not a name-and-role summary. The call carries a
+   third argument now — the turn's context, for variable expansion — so the
+   match stops at the comma rather than pinning the argument list. */
 echo "The personality reaches the model whole, every turn\n";
 ok( 'follow-ups send the complete current profile',
-	strpos( $chatpack, "build_identity_section((string) (\$eval_context['flow_id'] ?? ''), false)" ) !== false, true );
+	strpos( $chatpack, "build_identity_section((string) (\$eval_context['flow_id'] ?? ''), false," ) !== false, true );
 
 echo "\nA failed provider call is distinguishable from a quiet one\n";
 ok( 'dispatch reports a structured outcome',

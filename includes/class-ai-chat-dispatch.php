@@ -315,8 +315,11 @@ class FLOSC_AI_Chat_Dispatch {
             $prompt .= "Use these configured flow values only when relevant. Do not announce configuration status or direct visitors to the administrator.\n\n";
         }
 
+        $profile_context = function_exists( 'flosc_personality_variable_context' )
+            ? flosc_personality_variable_context( $context )
+            : array();
         $compiled_profile = function_exists( 'flosc_personality_compiled_profile' )
-            ? flosc_personality_compiled_profile()
+            ? flosc_personality_compiled_profile( isset( $context['flow_id'] ) ? (string) $context['flow_id'] : null, $profile_context )
             : '';
         if ( $compiled_profile !== '' ) {
             $prompt .= "## Personality\n";
