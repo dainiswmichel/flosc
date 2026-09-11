@@ -1,15 +1,15 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": 47,
+  "candidate_iteration": 48,
   "creator": "Claude Opus 5",
   "status": "BUILT_AWAITING_CAPTAIN_TEST",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v46 (606e301)",
+  "base": "claude-opus-5 v47 (cd1fd97)",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "fe43d1fcd25209ef0f4c3a3bdca8e4e33dad50884e24a3748678d10e9cf6d734",
-  "artifact_bytes": 2736181,
+  "artifact_sha256": "8e15d9abc2e4e8092fef197e0f0c283c6f74151f40f9d866943d905c365a0107",
+  "artifact_bytes": 2736505,
   "artifact_entries": 277,
   "tree_files": 289,
   "why_this_iteration": {
@@ -134,6 +134,15 @@
     "file": "assets/js/flosc-personality-builder.js"
   },
   "files_changed_from_v46": [
+    "assets/js/flosc-personality-builder.js"
+  ],
+  "self_audit_of_v41_to_v47": {
+    "bug_found_and_fixed": "The auto flag did not survive a save. placement serialised a parent as the string 'layer:identity', so the flag was dropped; on the next page load every aspect came back an explicit child and the flat sequence collapsed into nesting again. v44 would have evaporated the first time the page was reopened. The save carries the flag now, and a placement saved before auto existed loads as auto when the parent is a heading (density assigned it) and explicit when the parent is a card (real 45:010 nesting somebody built).",
+    "false_alarm_checked": "Whether the compiled document disagreed with the flat list. It does not. The compiler writes # heading then ## aspect — depth in the file, density order throughout — which is the format the four shipped personalities use and which was approved tonight. Zero compiler lines have changed since v41; the document the AI receives is byte-for-byte the same logic it was.",
+    "verified_sound": "paletteRowHtml() is self-contained. addCard() passes o.density through, so the palette button really lands at 100. + Category's child gets an explicit parent and renders as a child. A ticked aspect with no category now reaches the compiled document — activeTribs, ensurePlacement, childrenOf, cardBlocks — which it never did before v43.",
+    "tidied": "A pointless IIFE left in the palette map by the v47 edit."
+  },
+  "files_changed_from_v47": [
     "assets/js/flosc-personality-builder.js"
   ]
 }

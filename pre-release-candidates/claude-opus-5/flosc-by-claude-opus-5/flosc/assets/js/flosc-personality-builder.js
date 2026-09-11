@@ -3174,9 +3174,14 @@
                     overwrite their wording. */
                  renamed: !!l.renamed };
       }),
+      /* auto has to survive the save. Without it every aspect came back an
+         explicit child on the next load, and the sequence collapsed into
+         nesting again the moment the page was reopened. A string keeps older
+         importers working; the object form carries the flag. */
       placement: Object.keys(state.tribParent || {}).reduce(function (acc, tid) {
         const p = state.tribParent[tid];
-        if (p) acc[tid] = p.kind + ":" + p.id;
+        if (!p) return acc;
+        acc[tid] = p.auto ? { to: p.kind + ":" + p.id, auto: true } : p.kind + ":" + p.id;
         return acc;
       }, {}),
       clouds: cloudList(),
@@ -3607,7 +3612,6 @@
     root.innerHTML = paletteSeq.map(function (entry) {
       if (entry.kind === "aspect") { return paletteRowHtml(entry.c); }
       const c = entry.c;
-      return (function (c) {
       const items = tribsInCol(c.id).slice().sort(function (a, b) {
         return String(a.label || a.id).localeCompare(String(b.label || b.id));
       }).filter(function (t) {
@@ -3647,7 +3651,6 @@
           (state.hideOff ? "Drag aspects here. Untick Hide inactive aspects to see what is available."
                          : "Drag aspects here.") + "</p>") +
         "</div></details>";
-      })(c);
     }).join("");
     /* A wellspring is an aspect, so the button says aspect. It makes the card
        outright — there is nothing to ask for first that the card cannot say
@@ -5623,15 +5626,25 @@
     state.tribParent = {};
     if (spec.placement && typeof spec.placement === "object") {
       Object.keys(spec.placement).forEach(function (tid) {
-        const raw = String(spec.placement[tid] || "");
+        const val = spec.placement[tid];
+        const obj = val && typeof val === "object";
+        const raw = String((obj ? val.to : val) || "");
         const cut = raw.indexOf(":");
         if (cut < 1) return;
         const kind = raw.slice(0, cut);
         const pid = raw.slice(cut + 1);
         if (!pid) return;
-        if (kind === "layer" || kind === "cloud" || kind === "trib") {
-          state.tribParent[tid] = { kind: kind, id: pid };
-        }
+        if (kind !== "layer" && kind !== "cloud" && kind !== "trib") return;
+        /*
+         * Saved before auto existed: a card parent is real nesting somebody
+         * built and reads as 45:010, so it stays explicit. A heading parent in
+         * that old data was assigned by density, not chosen — so it loads as
+         * auto and the aspect is a peer, which is the model.
+         */
+        const auto = obj ? !!val.auto : (kind === "layer");
+        state.tribParent[tid] = auto
+          ? { kind: kind, id: pid, auto: true }
+          : { kind: kind, id: pid };
       });
     }
 
