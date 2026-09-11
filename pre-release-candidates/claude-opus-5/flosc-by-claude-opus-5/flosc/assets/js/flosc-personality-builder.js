@@ -2243,13 +2243,34 @@
       + (Math.abs(n) === 100 ? " · invariant within its situation" : "");
   }
 
+  /*
+   * Every card that is on — including the ones in no category yet.
+   *
+   * This walked wellspringCategories() alone, which is the real headings. A
+   * new aspect is unfiled, and an unfiled card's column is __unfiled, which is
+   * not a heading — it is a label the palette adds for display. So the walk
+   * could not reach a new aspect at all, and ticking one did nothing you could
+   * see: ensurePlacement() never gave it a heading because it was not active,
+   * childrenOf() never drew it on the right because it had no heading, and it
+   * never reached the compiled document either. It sat in the palette, ticked,
+   * and went nowhere.
+   *
+   * The category walk is kept exactly as it was, so filed cards keep their
+   * order. The second pass adds only what the first could not see.
+   */
   function activeTribs() {
     const out = [];
+    const seen = Object.create(null);
     wellspringCategories().forEach(function (c) {
       tribsInCol(c.id).forEach(function (t) {
         const s = tribState(t.id);
-        if (s.on && s.mode !== "off") out.push(t);
+        if (s.on && s.mode !== "off") { out.push(t); seen[t.id] = true; }
       });
+    });
+    allTribs().forEach(function (t) {
+      if (seen[t.id]) return;
+      const s = tribState(t.id);
+      if (s.on && s.mode !== "off") out.push(t);
     });
     return out;
   }

@@ -1,15 +1,15 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": 42,
+  "candidate_iteration": 43,
   "creator": "Claude Opus 5",
   "status": "BUILT_AWAITING_CAPTAIN_TEST",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v41 (94505fa)",
+  "base": "claude-opus-5 v42 (35e6777)",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "3da1333a67da99bc9443c93ff5e7e12b59aa5b08d2867428a585f036f074217c",
-  "artifact_bytes": 2734344,
+  "artifact_sha256": "171ae9925666f7174f143770bc89cf686b976922fb50898a94abe3b5d1768d77",
+  "artifact_bytes": 2734645,
   "artifact_entries": 277,
   "tree_files": 289,
   "why_this_iteration": {
@@ -86,6 +86,15 @@
     "file": "assets/js/flosc-personality-builder.js"
   },
   "files_changed_from_v41": [
+    "assets/js/flosc-personality-builder.js"
+  ],
+  "a_ticked_new_aspect_went_nowhere": {
+    "symptom": "Tick a new aspect and nothing happens. It does not appear in the working sort, it never gets a heading, and it never reaches the compiled document. It sits in the palette, ticked, and goes nowhere.",
+    "cause": "activeTribs() walked wellspringCategories() only — the real headings. A new aspect is unfiled, and an unfiled card's column is __unfiled, which is not a heading: it is a label the palette adds for display at render time. So the walk could not reach a new aspect at all. Everything downstream keys on activeTribs(): ensurePlacement() never gave it a heading because it was not active, childrenOf() never drew it because it had no heading, and the compiler never saw it.",
+    "fix": "activeTribs() keeps the category walk exactly as it was, so filed cards keep their order, and adds a second pass over allTribs() for anything the first could not see. Additive: nothing that worked before changes.",
+    "file": "assets/js/flosc-personality-builder.js"
+  },
+  "files_changed_from_v42": [
     "assets/js/flosc-personality-builder.js"
   ]
 }
