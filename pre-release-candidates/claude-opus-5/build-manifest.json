@@ -1,14 +1,14 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": 56,
+  "candidate_iteration": 57,
   "creator": "Claude Opus 5",
   "status": "BUILT_AWAITING_CAPTAIN_TEST",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v55",
+  "base": "claude-opus-5 v56",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "e6280ab0661e661af14cc173d65ef31a5af95c3b43fd4aeef05acd42368638cc",
+  "artifact_sha256": "e763c3d831b29d0bf7dc85ffd513f6e71026b6736572eb8db3e0fba97f5767e4",
   "artifact_bytes": 2737756,
   "artifact_entries": 277,
   "tree_files": 289,
@@ -210,5 +210,19 @@
   ],
   "files_changed_from_v55": [
     "includes/class-flosc-site-content-index.php"
+  ],
+  "the_name_field_was_invisible": {
+    "symptom": "Br3nda's name became '# DAINIS.NET SURFACE (this install only — not a FLOSC shipping persona)', and there was no way to change it back in the designer.",
+    "cause_one": "Five .identity-row rules were unscoped in a stylesheet where every other rule carries .flosc-personality-workshop. The WordPress admin stylesheet won them and the row collapsed, so the Name and Role inputs were in the DOM, bound and saving, but invisible. Renaming a loaded personality was impossible.",
+    "cause_two": "The name-line prefix was optional in the importer's regex, so the first heading of ANY kind became the name. A note at the top of her document was read as one, and a save wrote it into her row.",
+    "fix": "The five rules are scoped like every other rule in the file. The prefix is required; a document with no name line keeps the name it already has.",
+    "files": [
+      "assets/css/flosc-personality-builder.css",
+      "assets/js/flosc-personality-builder.js"
+    ]
+  },
+  "files_changed_from_v56": [
+    "assets/css/flosc-personality-builder.css",
+    "assets/js/flosc-personality-builder.js"
   ]
 }

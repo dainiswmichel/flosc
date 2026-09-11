@@ -5491,7 +5491,12 @@
        older "# Personality profile: X". A bare "# X" is still accepted, but the
        prefix has to come off first or the personality imports called
        "DA1/FLOSC AI Personality Profile Name: X". */
-    const nameLine = text.match(/^#\s*(?:DA1\/FLOSC AI Personality Profile Name:\s*|Personality profile:\s*)?(.+)$/m);
+    /* The prefix is REQUIRED. It was optional, so the first heading of any
+       kind became the personality's name: a note at the top of a document —
+       "# DAINIS.NET SURFACE (this install only ...)" — was read as a name and
+       a save wrote it into the row. A document with no name line keeps the
+       name it already has. */
+    const nameLine = text.match(/^#\s*(?:DA1\/FLOSC AI Personality Profile Name:\s*|Personality profile:\s*)(.+)$/m);
     const name = nameLine ? nameLine[1].trim() : (filename || "imported").replace(/\.(md|txt)$/i, "");
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "") || "imported";
     /*

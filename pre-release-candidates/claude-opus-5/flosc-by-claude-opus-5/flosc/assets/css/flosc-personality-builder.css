@@ -1254,11 +1254,16 @@
 
 /* Name and role. The first two lines of every profile, and until now the only
    two things about a personality that could not be changed here. */
-.identity-row { display: flex; gap: 12px; margin: 10px 0 6px; flex-wrap: wrap; }
-.identity-row .field { display: flex; flex-direction: column; gap: 3px; min-width: 180px; }
-.identity-row .field--wide { flex: 1 1 320px; }
-.identity-row label { font-size: 12px; opacity: .75; }
-.identity-row input { padding: 6px 8px; font: inherit; }
+/* Scoped, like every other rule in this file. Unscoped, the WordPress admin
+   stylesheet won these five and the row collapsed — so the Name and Role
+   inputs were in the DOM, bound, and saving, but invisible. There was no way
+   to rename a loaded personality, which is how Br3nda ended up wearing the
+   first heading of her own document as her name. */
+.flosc-personality-workshop .identity-row { display: flex; gap: 12px; margin: 10px 0 6px; flex-wrap: wrap; }
+.flosc-personality-workshop .identity-row .field { display: flex; flex-direction: column; gap: 3px; min-width: 180px; }
+.flosc-personality-workshop .identity-row .field--wide { flex: 1 1 320px; }
+.flosc-personality-workshop .identity-row label { font-size: 12px; opacity: .75; font-weight: 600; }
+.flosc-personality-workshop .identity-row input { padding: 6px 8px; font: inherit; width: 100%; box-sizing: border-box; }
 .identity-note { margin: 0 0 10px; }
 /* The filename is a stem, not prose: monospace so a typed underscore or a
    stray dot is visible rather than something the reader has to squint at. */
