@@ -4885,8 +4885,7 @@
       el.addEventListener("input", function () {
         const key = el.getAttribute("data-soul");
         state.soul[key] = el.type === "number" ? Number(el.value) : el.value;
-        persistSoft();
-        renderOut();
+        persistAndRenderSoon();
       });
     });
     root.querySelectorAll("[data-soul-bool]").forEach(function (el) {
@@ -4900,8 +4899,7 @@
       el.addEventListener("input", function () {
         const key = el.getAttribute("data-samp");
         state.sampling[key] = el.type === "number" ? Number(el.value) : el.value;
-        persistSoft();
-        renderOut();
+        persistAndRenderSoon();
       });
     });
   }
@@ -5792,15 +5790,13 @@
     // somebody choosing "Dad Joke Dan" and getting a profile that says
     // something else. The id is untouched — that is what a flow attaches to.
     state.soul.label = this.value;
-    persistSoft();
-    renderOut();
+    persistAndRenderSoon();
   });
 
   document.getElementById("soulRole").addEventListener("input", function () {
     if (!state.soul) return;
     state.soul.role = this.value;
-    persistSoft();
-    renderOut();
+    persistAndRenderSoon();
   });
 
   document.getElementById("soulFilename").addEventListener("input", function () {
@@ -5808,7 +5804,7 @@
     // Stored as typed; fileBase() does the cleaning. Sanitising on keystroke
     // fights the person typing — a dot removed mid-word moves their cursor.
     state.soul.filename = this.value;
-    persistSoft();
+    persistAndRenderSoon();
     renderFilenameNote();
     renderOut();
   });

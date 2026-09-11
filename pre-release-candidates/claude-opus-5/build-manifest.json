@@ -1,14 +1,14 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": 58,
+  "candidate_iteration": 59,
   "creator": "Claude Opus 5",
   "status": "BUILT_AWAITING_CAPTAIN_TEST",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v57",
+  "base": "claude-opus-5 v58",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "e1817bc393a44c79c00fe18515e714a1fc7c914a84d18e2507a4f3b94a310342",
+  "artifact_sha256": "6bdf6d3f52e934b87fb48e3846d5f08116aa480cfc1b44285f59aca3a590119e",
   "artifact_bytes": 2737756,
   "artifact_entries": 277,
   "tree_files": 289,
@@ -227,6 +227,14 @@
     "assets/js/flosc-personality-builder.js"
   ],
   "files_changed_from_v57": [
+    "assets/js/flosc-personality-builder.js"
+  ],
+  "typing_in_the_identity_row_was_slow": {
+    "symptom": "Typing in Name, Role or Filename crawled, the same way typing a card name did before v42.",
+    "cause": "v42 debounced onTribInput, which is the aspect editor. The identity inputs and the soul and sampling fields are separate listeners that v42 never touched — each still ran persistSoft() and renderOut() on every keystroke, recompiling the whole personality document per character. They only became reachable in v58, so nobody had hit it.",
+    "fix": "Every remaining per-keystroke input listener goes through persistAndRenderSoon(). The typed character still lands in state immediately; only the recompile waits 200ms for a gap."
+  },
+  "files_changed_from_v58": [
     "assets/js/flosc-personality-builder.js"
   ]
 }
