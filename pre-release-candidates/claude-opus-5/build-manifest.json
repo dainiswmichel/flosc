@@ -1,14 +1,14 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": 60,
+  "candidate_iteration": 61,
   "creator": "Claude Opus 5",
   "status": "BUILT_AWAITING_CAPTAIN_TEST",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v59",
+  "base": "claude-opus-5 v60",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "cbe15ec8236641dd0543a10b944019a4b7587ea7932b73058342ef8cee684aaa",
+  "artifact_sha256": "364f9744932ad3bf577ad89004c7b2eaca630d6206ce43089aec5eaf2e244ff5",
   "artifact_bytes": 2737756,
   "artifact_entries": 277,
   "tree_files": 289,
@@ -246,5 +246,16 @@
   },
   "files_changed_from_v59": [
     "includes/class-flosc-site-content-index.php"
+  ],
+  "access_is_a_vgm_list": {
+    "the_live_bug": "access_allows() read a single token: $hierarchy[ sanitize_key( $required ) ] ?? 3. group_vgm() has always produced lists like 'visitor guest member', and load() has always split access on whitespace — so a real list arrived at the comparator, came out of sanitize_key() as 'visitorguestmember', missed the hierarchy and fell to the members-only default. Silently, for every row carrying a list. v60 fixed the two reader defaults and never touched this.",
+    "the_comparator": "Allowed when the user's level reaches ANY level in the list. An empty or unparseable value is public, not private — nobody having said anything is not the same as members only.",
+    "the_derivation": "build_row_from_post() derives rather than defaults: the floscAdmin's own _flosc_access_level, then _flosc_content_subcategory, then _flosc_protection_mode 'full' meaning public outright, then FLOSC_Content_Protection::check_post_protection() — the class that actually gates the_content, so the index and the page can never disagree about a post — then WordPress itself: not published, or password protected, is member; published is visitor.",
+    "one_parser": "vgm_list() turns 'member', 'visitor guest member' and 'visitor,guest' into one ordered list, and array_intersect keeps it reading visitor, guest, member however it was typed. group_vgm() already did this for groups; the post path and the group path cannot drift now.",
+    "gate": "tests/check_access_vgm.php lifts vgm_list() and access_allows() out of the class by name and runs fifteen assertions against them, including the one that fails on v60."
+  },
+  "files_changed_from_v60": [
+    "includes/class-flosc-site-content-index.php",
+    "tests/check_access_vgm.php"
   ]
 }

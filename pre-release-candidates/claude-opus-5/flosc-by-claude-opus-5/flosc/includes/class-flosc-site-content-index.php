@@ -488,6 +488,27 @@ class FLOSC_Site_Content_Index {
 	 * @param int   $group_id Group.
 	 * @return string Space-separated tiers.
 	 */
+	/**
+	 * Any access value as a clean VGM list.
+	 *
+	 * "member", "visitor guest member", "visitor,guest" all arrive here and
+	 * leave as an ordered list of the levels that are actually meant. Empty
+	 * means nobody said anything, which is not the same as "members only".
+	 *
+	 * @param mixed $raw
+	 * @return string[]
+	 */
+	public static function vgm_list( $raw ) {
+		$raw = strtolower( trim( (string) $raw ) );
+		if ( '' === $raw ) {
+			return array();
+		}
+		$parts = preg_split( '/[\s,]+/', $raw ) ?: array();
+		/* array_intersect keeps the first array's order, so the list always
+		   reads visitor, guest, member however it was typed. */
+		return array_values( array_intersect( array( 'visitor', 'guest', 'member' ), $parts ) );
+	}
+
 	public static function group_vgm( array $policy, $group_id ) {
 		$key = 'bb_group:' . (int) $group_id;
 		$raw = isset( $policy['vgm_rows'][ $key ] ) ? $policy['vgm_rows'][ $key ] : $policy['vgm_default'];
@@ -718,32 +739,46 @@ class FLOSC_Site_Content_Index {
 		$manual  = sanitize_text_field( (string) $keywords_manual );
 		$merged  = $manual !== '' ? $this->merge_keywords( $auto_kw, $manual ) : $auto_kw;
 
-		$access = get_post_meta( $post->ID, '_flosc_access_level', true );
-		if ( ! is_string( $access ) || $access === '' ) {
-			// Content subcategory visitor|guest|member if used by sample packs.
-			$sub = get_post_meta( $post->ID, '_flosc_content_subcategory', true );
-			if ( in_array( $sub, array( 'visitor', 'guest', 'member' ), true ) ) {
-				$access = $sub;
-			} else {
-				/*
-				 * A published post that FLOSC has never gated is public.
-				 *
-				 * This defaulted to 'member', so every ordinary post on the
-				 * site — carrying neither _flosc_access_level nor
-				 * _flosc_content_subcategory, because nobody had ever asked for
-				 * it to be gated — was indexed members-only and skipped
-				 * outright by a visitor-level search. Ask a public chat about a
-				 * public post and it answered that it had no information, which
-				 * was false: the row was there, keywords and all, behind a gate
-				 * nobody set.
-				 *
-				 * FLOSC's protection is opt-in per post. Absent an opt-in,
-				 * WordPress has already decided: published is public.
-				 */
-				$access = 'visitor';
+		/*
+		 * Access is derived, never defaulted.
+		 *
+		 * It defaulted to 'member', so every ordinary post on the site — carrying
+		 * no FLOSC meta because nobody had ever asked for it to be gated — was
+		 * indexed members-only and skipped outright by a visitor-level search.
+		 * Ask a public chat about a public post and it said it had no
+		 * information, which was false: the row was there, keywords and all,
+		 * behind a gate nobody set.
+		 *
+		 * In order: what the floscAdmin said about this post, then what the
+		 * protection class says — it is the thing that actually gates
+		 * the_content, so the index and the page can never disagree — then what
+		 * WordPress itself says. Published is public.
+		 */
+		$access = implode( ' ', self::vgm_list( get_post_meta( $post->ID, '_flosc_access_level', true ) ) );
+
+		if ( '' === $access ) {
+			$access = implode( ' ', self::vgm_list( get_post_meta( $post->ID, '_flosc_content_subcategory', true ) ) );
+		}
+
+		if ( '' === $access && 'full' === get_post_meta( $post->ID, '_flosc_protection_mode', true ) ) {
+			/* The floscAdmin marked it public outright. */
+			$access = 'visitor';
+		}
+
+		if ( '' === $access && class_exists( 'FLOSC_Content_Protection' ) ) {
+			$protection = FLOSC_Content_Protection::instance()->check_post_protection( (int) $post->ID );
+			if ( ! empty( $protection['protected'] ) ) {
+				$access = implode( ' ', self::vgm_list( $protection['required_level'] ) );
+				if ( '' === $access ) {
+					$access = 'member';
+				}
 			}
 		}
-		$access = sanitize_key( (string) $access );
+
+		if ( '' === $access ) {
+			$private = ( 'publish' !== $post->post_status ) || ( '' !== (string) $post->post_password );
+			$access  = $private ? 'member' : 'visitor';
+		}
 
 		$parent = (int) $post->post_parent;
 		$cats   = array();
@@ -1026,8 +1061,30 @@ class FLOSC_Site_Content_Index {
 			'member'  => 3,
 		);
 		$u = $hierarchy[ sanitize_key( (string) $user_level ) ] ?? 1;
-		$r = $hierarchy[ sanitize_key( (string) $required ) ] ?? 3;
-		return $u >= $r;
+
+		/*
+		 * access is a VGM list, not one word.
+		 *
+		 * This read a single token: $hierarchy[ sanitize_key( $required ) ] ?? 3.
+		 * group_vgm() has always produced lists like "visitor guest member", and
+		 * load() has always split access on whitespace — so a real list arrived
+		 * here, came out of sanitize_key() as "visitorguestmember", missed the
+		 * hierarchy, and fell to the ?? 3 default. Members only. Silently, for
+		 * every row that carried a list.
+		 *
+		 * Nobody having said anything is not the same as members only either:
+		 * an empty value means published, and published is public.
+		 */
+		$levels = self::vgm_list( $required );
+		if ( empty( $levels ) ) {
+			return true;
+		}
+		foreach ( $levels as $level ) {
+			if ( $u >= $hierarchy[ $level ] ) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
