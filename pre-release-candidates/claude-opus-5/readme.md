@@ -1,123 +1,115 @@
-# FLOSC 8.0.0 — candidate v63
+# FLOSC 8.0.0 — candidate v64
 
-Built from v62. Version is 8.0.0 and does not move.
+Built from v63. Version is 8.0.0 and does not move.
 
     artifact   flosc.zip
-    sha256     6a0840fae3a7e055f918838b58663a9ac91ff27a3e3866f1beeadaf7ed1e37c3
+    sha256     6aa032b66bb3ec5a1f604156a8c024e3373ffe19c5628c16bad02c2589946404
     entries    277, single flosc/ root
     source     flosc-by-claude-opus-5/flosc
 
-## What went wrong
+## Three classes of content
 
-A visitor asked Br3nda about a song, and was shown this:
+Access is not one scale. It is three different questions, and only the third
+one is VGM.
 
-> Thanks for your interest! Try one of the suggestions above. This is just
-> IVR-style copy — remember to configure your preferred AI API for much more
-> intelligent responses!
+**1. Yours.** The `internal` category — the rolodex. No flow, no personality,
+no AI provider, ever. Not indexed, not retrieved, not named. It has no VGM
+value because VGM does not reach it.
 
-The AI provider was configured and working the entire time. An internal
-ten-question test passed 10/10 on the same flow.
+**2. FLOSC's plumbing.** Concierge entries and trajectories. The flow
+personality and the provider *do* see these — that is what they are for — but
+through their own readers, `admin/concierge.php` and
+`includes/flosc-personality-library.php`, which take the bare category names
+`concierge`, `trajectory` and `trajectories` alongside the prefixed ones. They
+never enter the content index, so the same text can never come back out to a
+visitor as retrieved content.
 
-The provider answered. The plugin threw the answer away.
+**3. Site content.** The table below.
 
-`trait-flosc-chat-turn.php` runs a reputation guard right after the provider
-call. The guard matches the reply against a hedge pattern — `i don't have`
-followed within 160 characters by `context`, `details`, `information` and
-friends — discards the whole reply, and hands off to a replacement chain. That
-chain tried a catalog reply, tried a bio reply, and then fell through to the
-IVR phase defaults, which append a note written for the site owner.
+`is_internal_post()` now matches `internal` as well as `flosc-internal*` and the
+three bare aliases. Exact match on the aliases, so `internal-notes`,
+`international` and `concierges` are somebody's own categories and stay indexed.
 
-**The cause was upstream of the guard.** Three of the four shipped profiles
-instructed the model to narrate the gap:
+## What was leaking
 
-    Friendly Guide   "If you do not know, say so and point to the next place…"
-    BubblyBetty      "Say you do not have it, then help with what you do."
-    Tech Agent       "Do not narrate gaps" — right intent, weaker wording
+`search()` and `format_map_for_ai()` ran `sanitize_key()` on a row's access
+value before comparing it. That strips the space:
 
-The profile asked for the sentence, the model produced it, the guard killed it,
-and the visitor was told the site was unconfigured. The profile and the guard
-were fighting each other.
+    "guest member"  →  sanitize_key()  →  "guestmember"
 
-## The card
+`vgm_list()` finds no level in that, returns an empty list, and `access_allows()`
+reads an empty list as *nobody gated this row* — so it returns **allowed**. A
+row restricted to guests and members was handed to a logged-out visitor, body
+and all. v61 fixed the comparator and left both callers destroying the value on
+the way in.
 
-The Captain's text, verbatim, in all four personalities at density 24:
+The comparator is the sanitizer now. Both call sites pass the stored value
+through untouched, and the gate has a source guard so the call cannot come back.
 
-    ## 24 Never narrate a gap
-    short: Never spend a sentence explaining what you do not have. Say what you
-    can do, then ask what they are looking for. Do not make excuses for what you
-    don't have or don't know, instead, seek to understand and provide.
-    frequency: frequently
+## Access has two axes
 
-Gain 75, which resolves to **frequently** on the ladder — the nearest rung is
-80, and 60 is further away.
+**Who** — the tier, and the tier is a floor:
 
-It is in both representations, the `ai_base_prompt` block and the workshop
-card, so the designer shows what chats receive.
+    Visitors    also covers guests and members
+    Guests      excludes visitors
+    Members     excludes both
 
-The three contradicting cards are replaced rather than kept alongside. Dad Joke
-Dan's "No false facts in a gag" is a different concern — not inventing product
-facts inside a joke — so it stays, moved from density 24 to 25.
+**Available** — how much of the post that tier gets:
 
-## The IVR leak
+    Title only
+    Title and excerpt
+    Through the read-more break
+    The whole post
 
-Two changes in `flosc.php`, independent of the personalities:
+A rule is one of each, attached to one scope. **Most specific wins**: a rule on
+a post beats one on its tags, which beats one on its categories, which beats the
+site default. Several rules on the *same* scope combine per tier, so one post can
+be read-more for visitors and full for guests.
 
-**Canned copy can never displace a real reply.** The replacement chain takes an
-`allow_phase_default` flag. When the provider already answered, the chain stops
-before the phase defaults: a catalog or bio reply may still stand in, because
-those are real answers, but when neither matches the provider's own words ship
-instead of being discarded. The genuine IVR-only path and a provider that
-returned nothing at all both still reach the phase defaults, which is what they
-were written for.
+Deciding rather than merging is what makes both directions possible. A post rule
+can open a post its category closed, and it can close one its category left
+open. A merge could only ever do the first.
 
-**The API-key note is admin-only.** `$ai_hint` is now behind
-`current_user_can('manage_options')`. It is addressed to the floscAdmin, so
-only the floscAdmin sees it.
+## Where a rule is written
 
-## The designer UI
+Three screens, one meaning, one resolver:
 
-Clicking **+ Aspect** put an untitled aspect in the palette column, and trying
-to select its title — or click into any field in "Edit this aspect" — started
-dragging the card instead.
+- **Post and page** — the FLOSC visibility metabox, under *AI retrieval*. The
+  radios above it still govern the page; these two govern what chat may quote.
+- **Category and tag** — a *FLOSC AI retrieval* field on the term edit screen.
+- **Content tab** — the site overview: the default row at the top, the rule
+  table below it with the two new columns, and a read-only listing of every rule
+  set on an object's own screen so the tab shows the whole picture.
 
-The palette card carried `draggable="true"` on its outer container, wrapping
-the label, the checkbox and the whole edit panel. A draggable container
-swallows every mousedown inside it. The density row renderer never did this;
-it put `draggable` only on its handle. The two renderers disagreed and the
-palette one was wrong.
+Both halves must be set for a rule to count. A post carrying a tier and no depth
+is somebody half-way through a thought, and treating it as a rule would silently
+gate the post.
 
-`draggable` is off the container now, so only the two drag handles are
-draggable and both renderers behave identically. `dragstart` additionally
-refuses to begin inside an input, textarea, select, option, label or
-contenteditable, so a stray draggable ancestor can never eat a click again.
+The site default ships as the whole post for everybody, because published is
+public. `all titles VGM` and `all excerpts VGM` are that one row.
 
-## Read this before testing on a live site
+## What nothing changes
 
-**The shipped defaults do not overwrite an existing library.**
-`flosc_personality_library_get_all()` seeds them only when the `wp_options` row
-does not exist. dainis.net already has that row, so installing this zip will
-**not** change the four personalities there.
-
-To force a reseed — this destroys any personality edited on that site, which is
-why it is a manual step and not code:
-
-    wp option delete flosc_personality_library --path=/home/dainisne/public_html
-
-then load any FLOSC admin page.
-
-**Br3nda is not in this zip.** She is site-local and carries her own heading 24,
-so the new card reaches her only when she is edited in the designer. The IVR
-leak fix is code and reaches her the moment the plugin is deployed.
+A rule stored before these two columns existed means exactly what it has always
+meant — gated, members only, whole body once cleared — so no rule on dainis.net
+changes meaning until somebody edits it. An index file written by an earlier
+build still answers, at the two depths it could express. And the derived tier
+still **clamps** the result: a rule can never hand out a body the page itself
+would refuse to render.
 
 ## Verification
 
     test suite            0 failing gates
     php -l, whole tree    clean
     node --check          clean, builder and app
-    density nesting       all green
     zip gates             277 entries, single flosc/ root, no forbidden paths
     version               8.0.0 in header, FLOSC_VERSION and Stable tag
 
-Deferred to a live install: WordPress Plugin Check, and asking Br3nda something
-she does not have — she should say what she can do and ask what you are looking
-for, with no IVR copy and no API-key note.
+`tests/check_access_vgm.php` executes the real functions, lifted out of the
+class by name: the tier floor, rule folding, scope precedence in both
+directions, a rule written on the object vs in the table, the site default, the
+read-more slice, legacy rows, and the call-site guard.
+
+Deferred to a live install: WordPress Plugin Check, a rebuild, and reading the
+Access column — `visitor` on the bees post and the songs, `member` on lesaep
+lessons, and no `internal`, concierge or trajectory rows in the table at all.

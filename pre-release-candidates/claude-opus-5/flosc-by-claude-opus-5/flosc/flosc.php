@@ -3223,6 +3223,41 @@ The Team',
                     <span class="option-desc">Disable FLOSC protection. Show per WordPress settings.</span>
                 </label>
             </div>
+
+            <?php
+            /*
+             * What the AI may retrieve of this post, for each tier.
+             *
+             * The radios above govern the PAGE. This governs what chat can
+             * quote, and it is the most specific scope there is: a rule here
+             * beats one on the post's tags, which beats one on its categories,
+             * which beats the site default on the Content tab. Both halves must
+             * be set for it to count, so "— Follow tags and categories —"
+             * leaves the post exactly as it is now.
+             */
+            $flosc_vgm_tier  = (string) get_post_meta($post->ID, '_flosc_vgm', true);
+            $flosc_vgm_depth = (string) get_post_meta($post->ID, '_flosc_depth', true);
+            ?>
+            <div class="flosc-protection-options flosc-protection-options--spaced">
+                <p><strong><?php echo esc_html__('AI retrieval', 'flosc'); ?></strong></p>
+                <p>
+                    <label for="flosc_vgm"><?php echo esc_html__('Who', 'flosc'); ?></label><br>
+                    <select name="flosc_vgm" id="flosc_vgm" class="widefat">
+                        <option value=""><?php echo esc_html__('— Follow tags and categories —', 'flosc'); ?></option>
+                        <?php echo flosc_vgm_options_markup(flosc_vgm_tier_labels(), $flosc_vgm_tier); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built escaped in flosc_vgm_options_markup() ?>
+                    </select>
+                </p>
+                <p>
+                    <label for="flosc_depth"><?php echo esc_html__('Available', 'flosc'); ?></label><br>
+                    <select name="flosc_depth" id="flosc_depth" class="widefat">
+                        <option value=""><?php echo esc_html__('— Follow tags and categories —', 'flosc'); ?></option>
+                        <?php echo flosc_vgm_options_markup(flosc_vgm_depth_labels(), $flosc_vgm_depth); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built escaped in flosc_vgm_options_markup() ?>
+                    </select>
+                </p>
+                <p class="option-desc">
+                    <?php echo esc_html__('The tier is a floor: Visitors also covers guests and members. Takes effect on the next index rebuild.', 'flosc'); ?>
+                </p>
+            </div>
         </div>
         <?php
     }
@@ -3255,6 +3290,22 @@ The Team',
         }
         
         update_post_meta($post_id, '_flosc_protection_mode', $mode);
+
+        // AI retrieval: who, and how much. Empty means follow tags and categories.
+        foreach ([
+            'flosc_vgm'   => ['_flosc_vgm', ['visitor', 'guest', 'member']],
+            'flosc_depth' => ['_flosc_depth', ['title', 'excerpt', 'readmore', 'full']],
+        ] as $flosc_field => $flosc_spec) {
+            if (!isset($request_post[$flosc_field])) {
+                continue;
+            }
+            $flosc_val = sanitize_key($request_post[$flosc_field]);
+            if (in_array($flosc_val, $flosc_spec[1], true)) {
+                update_post_meta($post_id, $flosc_spec[0], $flosc_val);
+            } else {
+                delete_post_meta($post_id, $flosc_spec[0]);
+            }
+        }
         
         // Backward compat: also update _flosc_public_post for existing code that checks it
         if ($mode === 'full') {

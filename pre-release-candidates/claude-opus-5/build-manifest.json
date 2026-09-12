@@ -1,15 +1,15 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": 63,
+  "candidate_iteration": 64,
   "creator": "Claude Opus 5",
   "status": "BUILT_AWAITING_CAPTAIN_TEST",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v62",
+  "base": "claude-opus-5 v63",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "6a0840fae3a7e055f918838b58663a9ac91ff27a3e3866f1beeadaf7ed1e37c3",
-  "artifact_bytes": 2737756,
+  "artifact_sha256": "6aa032b66bb3ec5a1f604156a8c024e3373ffe19c5628c16bad02c2589946404",
+  "artifact_bytes": 2750260,
   "artifact_entries": 277,
   "tree_files": 289,
   "why_this_iteration": {
@@ -45,14 +45,12 @@
     "brenda_is_site_local": "Br3nda is not in this zip. She carries her own heading 24, so the new card reaches her only when she is edited in the designer. The IVR leak fix is code and reaches her immediately."
   },
   "verification": {
-    "test_suite": "passed — 0 failing gates",
-    "php_syntax_all_files": "passed",
-    "javascript_syntax": "passed",
-    "density_nesting": "passed",
-    "zip_gates": "passed (277 entries, forbidden-path scan clean, single flosc/ root)",
-    "version_held_at_8_0_0": "passed — header, FLOSC_VERSION and Stable tag",
-    "wordpress_plugin_check": "DEFERRED — needs a WordPress install",
-    "live_behaviour": "DEFERRED — ask Br3nda something she does not have and confirm she says what she can do and asks what you are looking for, with no IVR copy and no API-key note"
+    "test_suite": "0 failing gates",
+    "php_lint": "clean, whole tree",
+    "node_check": "clean, builder and app",
+    "zip_gates": "277 entries, single flosc/ root, no forbidden paths",
+    "version": "8.0.0 in header, FLOSC_VERSION and Stable tag",
+    "deferred_to_live": "WordPress Plugin Check; a rebuild, then the Access column: visitor on the bees post and the songs, member on lesaep lessons, and no internal, concierge or trajectory rows at all"
   },
   "the_designer_ui_fix": {
     "symptom": "Clicking + Aspect put an untitled aspect in the palette column, and any attempt to select its title or click into a field started dragging the card instead.",
@@ -278,5 +276,37 @@
   "files_changed_from_v62": [
     "includes/class-flosc-site-content-index.php",
     "tests/check_access_vgm.php"
+  ],
+  "three_classes_of_content_v64": {
+    "yours": "The 'internal' category — the rolodex. No flow, no personality, no AI provider, ever. Not indexed. It has no VGM value because VGM does not reach it.",
+    "flosc_plumbing": "Concierge and trajectories. The flow personality and the provider DO see these, through admin/concierge.php and includes/flosc-personality-library.php, which take the bare names 'concierge', 'trajectory' and 'trajectories' alongside the prefixed ones. They never enter the content index, so the same text cannot come back out to a visitor as retrieved content.",
+    "site_content": "The VGM x depth table. lesaep is stratified here.",
+    "code": "is_internal_post() matches 'internal' as well as flosc-internal* and the three bare aliases. Exact match on aliases, so internal-notes, international and concierges stay indexed."
+  },
+  "the_leak_v64": {
+    "what": "search() and format_map_for_ai() ran sanitize_key() on the row's access value before comparing it.",
+    "mechanism": "sanitize_key() strips the space, so \"guest member\" arrived as \"guestmember\". vgm_list() finds no level, returns an empty list, and access_allows() reads an empty list as nobody having gated the row — so it returned ALLOWED. A row restricted to guests and members was handed to a logged-out visitor, body and all.",
+    "history": "v61 fixed the comparator and left both callers destroying the value on the way in.",
+    "fix": "Both call sites pass the stored value through untouched; vgm_list() is the sanitizer. check_access_vgm.php carries a source guard so the call cannot come back."
+  },
+  "access_has_two_axes_v64": {
+    "who": "visitor | guest | member, and the tier is a FLOOR: Visitors also covers guests and members, Guests excludes visitors, Members excludes both.",
+    "available": "title | excerpt | readmore | full — how much of the post that tier gets.",
+    "precedence": "Most specific wins: post, then tags, then categories, then the site default. Several rules on the SAME scope combine per tier, so one post can be read-more for visitors and full for guests.",
+    "why_decide_not_merge": "Deciding makes both directions possible: a post rule can open a post its category closed AND close one its category left open. A merge could only ever do the first.",
+    "where_written": "Post/page metabox (AI retrieval), category and tag edit screens (FLOSC AI retrieval), and the Content tab table. Both halves must be set for a rule to count.",
+    "site_default": "flow_settings['content_default_vgm'], one depth per tier, shipping the whole post for everybody because published is public. 'All titles VGM' is that one row.",
+    "backward_compat": "A rule stored before these columns existed still means gated/members only/full body, so nothing on dainis.net changes meaning until a row is edited. An index file from an earlier build still answers at the two depths it could express.",
+    "clamp": "The derived access tier still clamps the resolved map: a rule can never hand out a body the page itself would refuse to render."
+  },
+  "files_changed_from_v63": [
+    "includes/class-flosc-site-content-index.php — internal category; no sanitize_key at the two comparison sites; DEPTHS/TIERS, depth_token, depth_rank, tier_token, tiers_from, depth_map, normalize_depth_map, default_depth_map, protection_rules, fold_rules, resolve_vgm, meta_rules, rules_written_on_objects, row_depth, row_body_at; term panels and save_term_vgm; row now carries vgm, excerpt and more_offset",
+    "admin/settings.php — sanitize and store protection_vgm/protection_depth per rule, and content_default_vgm",
+    "admin/settings-helper.php — flosc_vgm_tier_labels(), flosc_vgm_depth_labels(), flosc_vgm_options_markup(): one vocabulary for both screens",
+    "admin/content.php — site default row, Who and Available columns, read-only listing of rules set on objects",
+    "admin/member-levels.php — same two columns, so saving from this screen cannot reset them",
+    "flosc.php — AI retrieval selects in the post visibility metabox, and their save",
+    "assets/css/flosc-admin.css — six-column widths for the protection table",
+    "tests/check_access_vgm.php — flosc_grab_const() so the probe class carries INTERNAL_CATEGORY_ALIASES (v63 shipped this gate red); assertions for the tier floor, rule folding, scope precedence both directions, object-written rules, the site default, the read-more slice, legacy rows, and the call-site guard"
   ]
 }

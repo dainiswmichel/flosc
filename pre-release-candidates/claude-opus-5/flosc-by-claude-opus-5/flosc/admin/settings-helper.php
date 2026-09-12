@@ -252,3 +252,56 @@ function flosc_companion_hub_defaults_from_flow(array $flow_settings) {
         'include_rules'    => implode("\n", $include),
     ];
 }
+
+/**
+ * The two axes of content access, as the admin selects present them.
+ *
+ * One vocabulary, two screens. The Content tab and the member-levels screen
+ * both render the same protection repeater, and when the two drifted apart
+ * before, saving from one of them quietly rewrote what the other had stored.
+ *
+ * The tier is a FLOOR: Visitors also covers guests and members, Guests excludes
+ * visitors, Members excludes both. FLOSC_Site_Content_Index::TIERS and ::DEPTHS
+ * are the same two lists on the reading side.
+ *
+ * @return array<string,string>
+ */
+function flosc_vgm_tier_labels() {
+    return [
+        'visitor' => __( 'Visitors (everyone)', 'flosc' ),
+        'guest'   => __( 'Guests and members', 'flosc' ),
+        'member'  => __( 'Members only', 'flosc' ),
+    ];
+}
+
+/**
+ * How much of a post a tier gets.
+ *
+ * @return array<string,string>
+ */
+function flosc_vgm_depth_labels() {
+    return [
+        'title'    => __( 'Title only', 'flosc' ),
+        'excerpt'  => __( 'Title and excerpt', 'flosc' ),
+        'readmore' => __( 'Through the read-more break', 'flosc' ),
+        'full'     => __( 'The whole post', 'flosc' ),
+    ];
+}
+
+/**
+ * Render <option> markup for one of the two vocabularies.
+ *
+ * @param array  $labels   From flosc_vgm_tier_labels() or flosc_vgm_depth_labels().
+ * @param string $selected Key to mark selected.
+ * @return string Escaped markup.
+ */
+function flosc_vgm_options_markup( array $labels, $selected ) {
+    $out = '';
+    foreach ( $labels as $key => $label ) {
+        $out .= '<option value="' . esc_attr( $key ) . '"'
+            . selected( $selected, $key, false ) . '>'
+            . esc_html( $label ) . '</option>';
+    }
+    return $out;
+}
+

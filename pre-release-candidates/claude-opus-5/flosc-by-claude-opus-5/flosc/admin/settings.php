@@ -1511,16 +1511,30 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
         $flosc_prot_types  = $flosc_post['protection_type']  ?? [];
         $flosc_prot_values = $flosc_post['protection_value'] ?? [];
         $flosc_prot_levels = $flosc_post['protection_level'] ?? [];
+        // Access has two axes: vgm says who, depth says how much of the post.
+        $flosc_prot_vgms   = $flosc_post['protection_vgm']   ?? [];
+        $flosc_prot_depths = $flosc_post['protection_depth'] ?? [];
         $flosc_protected_content = [];
         foreach ($flosc_prot_types as $flosc_i => $flosc_type) {
             $flosc_type  = sanitize_text_field($flosc_type);
             $flosc_value = sanitize_text_field($flosc_prot_values[$flosc_i] ?? '');
             $flosc_level = sanitize_key($flosc_prot_levels[$flosc_i] ?? '');
+            $flosc_vgm   = sanitize_key($flosc_prot_vgms[$flosc_i] ?? '');
+            $flosc_depth = sanitize_key($flosc_prot_depths[$flosc_i] ?? '');
+            if (!in_array($flosc_vgm, ['visitor', 'guest', 'member'], true)) {
+                // A rule stored before these columns existed meant members only.
+                $flosc_vgm = 'member';
+            }
+            if (!in_array($flosc_depth, ['title', 'excerpt', 'readmore', 'full'], true)) {
+                $flosc_depth = 'full';
+            }
             if ($flosc_value === '') continue;
             $flosc_item = [
                 'type'  => $flosc_type,
                 'id'    => $flosc_value,
                 'level' => $flosc_level,
+                'vgm'   => $flosc_vgm,
+                'depth' => $flosc_depth,
             ];
             // Resolve names for display
             if (in_array($flosc_type, ['category', 'tag'])) {
@@ -1538,6 +1552,20 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
             $flosc_protected_content[] = $flosc_item;
         }
         $flosc_new_settings['protected_content'] = $flosc_protected_content;
+
+        /*
+         * The site-wide default, for every post no rule names: one depth per
+         * tier. Ships as full body for everybody, because published is public.
+         * This is where "all titles VGM" or "all excerpts VGM" is set once.
+         */
+        $flosc_default_vgm = [];
+        foreach (['visitor', 'guest', 'member'] as $flosc_tier) {
+            $flosc_d = sanitize_key($flosc_post['content_default_vgm'][$flosc_tier] ?? '');
+            $flosc_default_vgm[$flosc_tier] = in_array($flosc_d, ['title', 'excerpt', 'readmore', 'full'], true)
+                ? $flosc_d
+                : 'full';
+        }
+        $flosc_new_settings['content_default_vgm'] = $flosc_default_vgm;
 
         // Guest chat entitlements (checkboxes need explicit empty when unchecked).
         $flosc_new_settings['guest_max_chats'] = max(0, min(9999, intval($flosc_new_settings['guest_max_chats'] ?? 0)));

@@ -120,6 +120,23 @@ if ( empty( $flosc_content_item_groups ) ) {
 
 $flosc_saved_levels      = $flosc_flow_settings['member_levels'] ?? $flosc_member_levels;
 $flosc_protected_items   = $flosc_flow_settings['protected_content'] ?? [];
+
+/*
+ * The two axes of access, as the selects present them.
+ *
+ * The tier is a FLOOR: Visitors also covers guests and members, Guests excludes
+ * visitors, Members excludes both. Depth is how much of the post that tier
+ * gets. FLOSC_Site_Content_Index holds the same two vocabularies as TIERS and
+ * DEPTHS and is the thing that reads them back at retrieval time.
+ */
+$flosc_vgm_tiers  = flosc_vgm_tier_labels();
+$flosc_vgm_depths = flosc_vgm_depth_labels();
+
+$flosc_default_vgm = $flosc_flow_settings['content_default_vgm'] ?? [];
+foreach ( array_keys( $flosc_vgm_tiers ) as $flosc_tier_key ) {
+	$flosc_d = (string) ( $flosc_default_vgm[ $flosc_tier_key ] ?? '' );
+	$flosc_default_vgm[ $flosc_tier_key ] = isset( $flosc_vgm_depths[ $flosc_d ] ) ? $flosc_d : 'full';
+}
 $flosc_free_content_item_mode  = $flosc_flow_settings['free_content_item_mode'] ?? 'fixed';
 $flosc_free_content_item_count = $flosc_flow_settings['free_content_item_count'] ?? 1;
 $flosc_free_content_item_proportion = $flosc_flow_settings['free_content_item_proportion'] ?? '1/3';
@@ -313,11 +330,44 @@ $flosc_chat_list_settings_url = add_query_arg(
 	<a href="<?php echo esc_url( $flosc_content_docs_inventory_url ); ?>" class="flosc-docs-link"><?php echo esc_html__( 'Docs', 'flosc' ); ?></a>
 </h2>
 <p><?php echo esc_html__( 'Assign WordPress content to member levels. Guests only open complimentary selection from the pool below until Sale grants a level.', 'flosc' ); ?></p>
-<table class="widefat flosc-protection-table flosc-member-protection-table">
+<p class="description">
+	<?php echo esc_html__( 'Access has two axes. Visitors / Guests / Members says WHO — and it is a floor, so a rule set to Visitors also covers guests and members, one set to Guests excludes visitors, and one set to Members excludes both. Available says HOW MUCH of the post that tier gets: the title alone, the excerpt, everything down to the read-more break, or the whole body.', 'flosc' ); ?>
+</p>
+<p class="description">
+	<?php echo esc_html__( 'Most specific wins: a rule on a post overrides one on its tags, which overrides one on its categories, which overrides the site default below. Several rules on the same scope combine, so one post can be read-more for visitors and full for guests.', 'flosc' ); ?>
+</p>
+
+<table class="widefat flosc-protection-table flosc-default-vgm-table">
+	<thead>
+		<tr>
+			<th colspan="4"><?php echo esc_html__( 'Site default — every post no rule below names', 'flosc' ); ?></th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<?php foreach ( $flosc_vgm_tiers as $flosc_tier_key => $flosc_tier_label ) : ?>
+				<td>
+					<label for="flosc-default-vgm-<?php echo esc_attr( $flosc_tier_key ); ?>"><?php echo esc_html( $flosc_tier_label ); ?></label><br>
+					<select name="content_default_vgm[<?php echo esc_attr( $flosc_tier_key ); ?>]"
+						id="flosc-default-vgm-<?php echo esc_attr( $flosc_tier_key ); ?>" class="flosc-width-full">
+						<?php echo flosc_vgm_options_markup( $flosc_vgm_depths, (string) $flosc_default_vgm[ $flosc_tier_key ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built escaped in flosc_vgm_options_markup() ?>
+					</select>
+				</td>
+			<?php endforeach; ?>
+			<td class="description">
+				<?php echo esc_html__( 'Published is public, so this ships as the whole body for everybody.', 'flosc' ); ?>
+			</td>
+		</tr>
+	</tbody>
+</table>
+
+<table class="widefat flosc-protection-table flosc-member-protection-table flosc-margin-top-10">
 	<thead>
 		<tr>
 			<th class="flosc-member-protection-col-type"><?php echo esc_html__( 'Type', 'flosc' ); ?></th>
 			<th class="flosc-member-protection-col-content"><?php echo esc_html__( 'Content', 'flosc' ); ?></th>
+			<th class="flosc-member-protection-col-vgm"><?php echo esc_html__( 'Who', 'flosc' ); ?></th>
+			<th class="flosc-member-protection-col-depth"><?php echo esc_html__( 'Available', 'flosc' ); ?></th>
 			<th class="flosc-member-protection-col-level"><?php echo esc_html__( 'Required Level', 'flosc' ); ?></th>
 			<th class="flosc-member-protection-col-actions"><?php echo esc_html__( 'Actions', 'flosc' ); ?></th>
 		</tr>
@@ -363,6 +413,16 @@ $flosc_chat_list_settings_url = add_query_arg(
 					<?php endif; ?>
 				</td>
 				<td>
+					<select name="protection_vgm[]" class="flosc-protection-vgm flosc-width-full">
+						<?php echo flosc_vgm_options_markup( $flosc_vgm_tiers, (string) ( $flosc_item['vgm'] ?? 'member' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built escaped in flosc_vgm_options_markup() ?>
+					</select>
+				</td>
+				<td>
+					<select name="protection_depth[]" class="flosc-protection-depth flosc-width-full">
+						<?php echo flosc_vgm_options_markup( $flosc_vgm_depths, (string) ( $flosc_item['depth'] ?? 'full' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built escaped in flosc_vgm_options_markup() ?>
+					</select>
+				</td>
+				<td>
 					<select name="protection_level[]" class="flosc-protection-level-select flosc-width-full">
 						<option value=""><?php echo esc_html__( '— Any Member —', 'flosc' ); ?></option>
 						<?php
@@ -389,6 +449,47 @@ $flosc_chat_list_settings_url = add_query_arg(
 <p class="flosc-margin-top-10">
 	<button type="button" class="button" id="flosc-add-protection"><?php echo esc_html__( '+ Add Protection Rule', 'flosc' ); ?></button>
 </p>
+
+<?php
+/*
+ * Rules a floscAdmin set on the object's own screen. Listed, not editable
+ * here — a rule has one home, and this tab's job is to show that the site has
+ * it. Without this the Content tab is an overview of only half the rules.
+ */
+$flosc_object_rules = class_exists( 'FLOSC_Site_Content_Index' )
+	? FLOSC_Site_Content_Index::rules_written_on_objects()
+	: [];
+?>
+<?php if ( ! empty( $flosc_object_rules ) ) : ?>
+	<h3><?php echo esc_html__( 'Set on the object itself', 'flosc' ); ?></h3>
+	<p class="description"><?php echo esc_html__( 'These were set on a post, category or tag screen. Edit them there.', 'flosc' ); ?></p>
+	<table class="widefat flosc-protection-table">
+		<thead>
+			<tr>
+				<th><?php echo esc_html__( 'Type', 'flosc' ); ?></th>
+				<th><?php echo esc_html__( 'Content', 'flosc' ); ?></th>
+				<th><?php echo esc_html__( 'Who', 'flosc' ); ?></th>
+				<th><?php echo esc_html__( 'Available', 'flosc' ); ?></th>
+			</tr>
+		</thead>
+		<tbody>
+			<?php foreach ( $flosc_object_rules as $flosc_obj_rule ) : ?>
+				<tr>
+					<td><?php echo esc_html( $flosc_obj_rule['kind'] ); ?></td>
+					<td>
+						<?php if ( ! empty( $flosc_obj_rule['edit_url'] ) ) : ?>
+							<a href="<?php echo esc_url( $flosc_obj_rule['edit_url'] ); ?>"><?php echo esc_html( $flosc_obj_rule['name'] ); ?></a>
+						<?php else : ?>
+							<?php echo esc_html( $flosc_obj_rule['name'] ); ?>
+						<?php endif; ?>
+					</td>
+					<td><?php echo esc_html( $flosc_vgm_tiers[ $flosc_obj_rule['vgm'] ] ?? $flosc_obj_rule['vgm'] ); ?></td>
+					<td><?php echo esc_html( $flosc_vgm_depths[ $flosc_obj_rule['depth'] ] ?? $flosc_obj_rule['depth'] ); ?></td>
+				</tr>
+			<?php endforeach; ?>
+		</tbody>
+	</table>
+<?php endif; ?>
 
 <!-- 5. Pool / selection -->
 <hr class="flosc-member-levels-divider">
@@ -662,10 +763,16 @@ jQuery(document).ready(function($) {
 		}
 		return '<select name="protection_value[]" class="flosc-protection-value flosc-width-full">' + categoryOptions + '</select>';
 	}
+	/* A new rule starts where every rule stored before these columns existed
+	   already sits: members only, whole body. */
+	var vgmOptions = <?php echo wp_json_encode( flosc_vgm_options_markup( $flosc_vgm_tiers, 'member' ) ); ?>;
+	var depthOptions = <?php echo wp_json_encode( flosc_vgm_options_markup( $flosc_vgm_depths, 'full' ) ); ?>;
 	$('#flosc-add-protection').on('click', function() {
 		var row = '<tr class="flosc-protection-row">'
 			+ '<td><select name="protection_type[]" class="flosc-protection-type flosc-width-full"><option value="category">Category</option><option value="tag">Tag</option><option value="post">Post (ID)</option><option value="page">Page (ID)</option></select></td>'
 			+ '<td>' + buildContentField('category') + '</td>'
+			+ '<td><select name="protection_vgm[]" class="flosc-protection-vgm flosc-width-full">' + vgmOptions + '</select></td>'
+			+ '<td><select name="protection_depth[]" class="flosc-protection-depth flosc-width-full">' + depthOptions + '</select></td>'
 			+ '<td><select name="protection_level[]" class="flosc-protection-level-select flosc-width-full">' + levelOptions + '</select></td>'
 			+ '<td class="flosc-text-center"><button type="button" class="button flosc-remove-protection-row">&times;</button></td>'
 			+ '</tr>';
