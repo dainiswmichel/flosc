@@ -515,6 +515,9 @@ class FLOSC_Site_Content_Index {
 	 * @param int $post_id
 	 * @return bool
 	 */
+	/** The bare category names the trajectory and concierge readers accept. */
+	const INTERNAL_CATEGORY_ALIASES = array( 'trajectory', 'trajectories', 'concierge' );
+
 	public static function is_internal_post( $post_id ) {
 		$terms = get_the_terms( (int) $post_id, 'category' );
 		if ( ! is_array( $terms ) ) {
@@ -526,6 +529,20 @@ class FLOSC_Site_Content_Index {
 			}
 			$slug = (string) $term->slug;
 			if ( 'flosc-internal' === $slug || 0 === strpos( $slug, 'flosc-internal-' ) ) {
+				return true;
+			}
+			/*
+			 * The bare aliases the readers themselves accept.
+			 *
+			 * The trajectory reader takes
+			 * "flosc-internal-trajectories,trajectory,trajectories" and the
+			 * concierge reader takes "flosc-internal-concierge,concierge". A
+			 * floscAdmin who filed either under the short name has internal
+			 * content in a category with no flosc- prefix, and matching only
+			 * the prefix would have left it in the index. What the readers
+			 * treat as internal, this treats as internal.
+			 */
+			if ( in_array( $slug, self::INTERNAL_CATEGORY_ALIASES, true ) ) {
 				return true;
 			}
 		}

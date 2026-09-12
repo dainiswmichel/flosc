@@ -88,12 +88,16 @@ if ( ! function_exists( 'is_wp_error' ) ) {
 		return false;
 	}
 }
-eval( 'class FLOSC_Internal_Probe { ' . flosc_grab_method( $src, 'is_internal_post' ) . ' }' );
+eval( 'class FLOSC_Internal_Probe { ' . flosc_grab_method( $src, "is_internal_post" ) . ' }' );
 
 foreach ( array(
 	array( 'flosc-internal', true ),
 	array( 'flosc-internal-concierge', true ),
 	array( 'flosc-internal-trajectories', true ),
+	/* The bare aliases the trajectory and concierge readers accept. */
+	array( 'trajectory', true ),
+	array( 'trajectories', true ),
+	array( 'concierge', true ),
 	array( 'music', false ),
 	array( 'dziesmu-sveetki', false ),
 	/* The hyphen matters: a category that merely starts with the same letters

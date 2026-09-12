@@ -1,14 +1,14 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": 62,
+  "candidate_iteration": 63,
   "creator": "Claude Opus 5",
   "status": "BUILT_AWAITING_CAPTAIN_TEST",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v61",
+  "base": "claude-opus-5 v62",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "345710245797d96bed80b6ecb9d9ce91f6cdd88565de574cc3f61859f712e5ed",
+  "artifact_sha256": "6a0840fae3a7e055f918838b58663a9ac91ff27a3e3866f1beeadaf7ed1e37c3",
   "artifact_bytes": 2737756,
   "artifact_entries": 277,
   "tree_files": 289,
@@ -263,9 +263,19 @@
     "the_convention": "admin/settings.php creates a flosc-internal category and hangs flosc-internal-concierge and flosc-internal-trajectories under it. The indexer had no idea it existed — zero mentions of 'internal' in the whole file — so every internal post was indexed as ordinary site content.",
     "the_rule": "Internal posts are not indexed at all, at any access level. They are how FLOSC stores its own working parts; they are not writing about the site and chat has no business citing them. Skipping them in the rebuild loop also drops any internal row an earlier build wrote, and reindexing one removes it rather than refreshing it.",
     "the_hyphen": "flosc-internal and flosc-internal-* only. A category merely starting with the same letters — flosc-internally-nothing — is somebody's own category and stays in the index. Asserted.",
-    "gated_content_is_unaffected": "A category carrying _flosc_required_level goes through FLOSC_Content_Protection::check_post_protection() and the row takes that level. That path is correct and untouched."
+    "gated_content_is_unaffected": "A category carrying _flosc_required_level goes through FLOSC_Content_Protection::check_post_protection() and the row takes that level. That path is correct and untouched.",
+    "v63_the_bare_aliases": "The trajectory reader accepts 'flosc-internal-trajectories,trajectory,trajectories' and the concierge reader accepts 'flosc-internal-concierge,concierge'. v62 matched the flosc-internal prefix only, so anything a floscAdmin filed under the short name stayed in the index. What the readers treat as internal, is_internal_post() treats as internal. The match is exact, not a prefix: 'concierges' is somebody's own category and stays indexed."
   },
   "files_changed_from_v61": [
+    "includes/class-flosc-site-content-index.php",
+    "tests/check_access_vgm.php"
+  ],
+  "stratified_vgm_on_a_category": {
+    "how_it_works": "A category carrying _flosc_required_level sets the floor for everything in it, and vgm_list() parses whatever is there — 'member', 'guest member', a full list. A single post carrying _flosc_access_level overrides its category, which is how a category like lesaep is stratified post by post.",
+    "order": "per-post _flosc_access_level, then _flosc_content_subcategory, then _flosc_protection_mode 'full', then the category's _flosc_required_level via FLOSC_Content_Protection::check_post_protection(), then WordPress itself.",
+    "unchanged": "This is v61's derivation. v62 and v63 only decide what never enters the index at all."
+  },
+  "files_changed_from_v62": [
     "includes/class-flosc-site-content-index.php",
     "tests/check_access_vgm.php"
   ]
