@@ -6,8 +6,21 @@
     if (!floscHosted()) return;
     var root = document.querySelector(".flosc-personality-workshop");
     if (root) root.classList.add("is-hosted");
+    /*
+     * Hide the standalone page's chrome, not everything near it. This hid the
+     * whole block, and that block holds the identity row — Name, Role and
+     * Filename. So inside WordPress those three inputs existed, were bound to
+     * their listeners and saved through the autosave, and could not be seen or
+     * reached. There was no way to rename a loaded personality at all, which
+     * is how Br3nda came to wear the first heading of her own document.
+     */
     var titleBlock = document.querySelector("header.top > div:not(.toolbar)");
-    if (titleBlock) titleBlock.hidden = true;
+    if (titleBlock) {
+      Array.prototype.forEach.call(titleBlock.children, function (el) {
+        if (el.classList && el.classList.contains("identity-row")) return;
+        el.hidden = true;
+      });
+    }
     document.querySelectorAll(".preset-where").forEach(function (el) {
       el.hidden = true;
     });
@@ -59,17 +72,17 @@
    */
   const SOUL_LAYERS = [
     { id: "identity", band: "soul", label: "Identity and Role", hint: "Who remains, under probe", density: 6 },
-    { id: "goals", band: "soul", label: "Philosophy and Values", hint: "What this conversation is for", density: 12 },
+    { id: "goals", band: "soul", label: "Mission, Philosophy and Values", hint: "What this conversation is for", density: 12 },
     { id: "rules", band: "soul", label: "Boundaries and Prohibitions", hint: "Invariants, defaults, who is served", density: 18 },
     { id: "epistemics", band: "soul", label: "Knowledge, Doubt and Correction", hint: "How this personality knows, doubts, corrects", density: 24 },
-    { id: "opinions", band: "soul", label: "Opinions and Preferences", hint: "What it leans toward when nothing forces the choice", density: 30 },
+    { id: "opinions", band: "soul", label: "Opinions, Traits and Preferences", hint: "What it leans toward when nothing forces the choice", density: 30 },
     { id: "expression", band: "character", label: "Tone and Communication Style", hint: "Tone, cadence, conditionals", density: 40 },
     { id: "relation", band: "character", label: "Stance Toward the Human", hint: "How it orients toward this human", density: 48 },
-    { id: "initiative", band: "character", label: "Behavior in Ambiguity", hint: "When to answer, ask, lead, stay quiet", density: 56 },
-    { id: "adaptation", band: "character", label: "Adaptation", hint: "Same soul, fitting intensity", density: 62 },
-    { id: "resource", band: "behavior", label: "Resourcefulness", hint: "What it does when the direct route is closed", density: 68 },
-    { id: "behavior", band: "behavior", label: "Decisions including Infrequent Cases", hint: "Decisions, infrequent cases, recipes", density: 74 },
-    { id: "language", band: "behavior", label: "Banned Words and Fillers to Avoid", hint: "Length, examples, words this personality never uses", density: 84 },
+    { id: "initiative", band: "character", label: "Decisions and Behavior in Ambiguity", hint: "When to answer, ask, lead, stay quiet", density: 56 },
+    { id: "adaptation", band: "character", label: "Adaptation, Exceptions and Infrequent Cases", hint: "Same soul, fitting intensity; and the rare case", density: 62 },
+    { id: "resource", band: "behavior", label: "Workflow and Resourcefulness", hint: "How it proceeds, and what it does when the direct route is closed", density: 68 },
+    { id: "language", band: "behavior", label: "Banned Words and Fillers to Avoid", hint: "Length, examples, words this personality never uses", density: 74 },
+    { id: "behavior", band: "behavior", label: "Prosody and Syntax", hint: "Sentence shape, rhythm, grammar", density: 84 },
     { id: "action", band: "behavior", label: "Output and Delivery", hint: "What actually leaves the model, and how it is shaped", density: 94 }
   ];
   const SHAPE2 = ["circle", "ellipse", "triangle", "square", "diamond", "pentagon", "hexagon", "star", "none"];
@@ -1074,7 +1087,9 @@
     arr.push({
       id: PROVIDERS_CONTAINER_ID, kind: "providers", origin: "seed", band: "behavior",
       label: "AI Provider Parameters", desc: "Sampling and provider knobs. The runtime maps names per API and omits what an API does not support.",
-      density: 94, gain: 0
+      /* 98, not 94. At 94 it tied with Output and Delivery and sorted first on
+         the alphabet, putting the knobs above the last thing the model reads. */
+      density: 98, gain: 0
     });
     return arr;
   }
@@ -1169,9 +1184,9 @@
       const p = state.tribParent[tid];
       if (p && p.kind === "cloud") {
         const cl = cloudById(p.id);
-        if (cl && cl.parent === id) state.tribParent[tid] = { kind: "layer", id: fallbackLayerForTrib(tid) };
+        if (cl && cl.parent === id) state.tribParent[tid] = { kind: "layer", id: fallbackLayerForTrib(tid) , auto: true };
       } else if (p && p.kind === "layer" && p.id === id) {
-        state.tribParent[tid] = { kind: "layer", id: fallbackLayerForTrib(tid) };
+        state.tribParent[tid] = { kind: "layer", id: fallbackLayerForTrib(tid) , auto: true };
       }
     });
     cloudList().forEach(function (cl) { if (cl.parent === id) cl.parent = fallbackLayerForTrib(cl.members[0]); });
@@ -1251,7 +1266,15 @@
         (p.kind === "layer" && !containerById(p.id)) ||
         (p.kind === "cloud" && !cloudById(p.id)) ||
         (p.kind === "trib" && (!live[p.id] || p.id === t.id || cardAncestors(p.id).indexOf(t.id) >= 0));
-      if (orphan) state.tribParent[t.id] = { kind: "layer", id: fallbackLayerForTrib(t.id) };
+      /*
+       * auto marks a parent this function chose, not one the floscAdmin did.
+       * A card dragged onto a heading is that heading's child and is written
+       * under it. A card that merely has a density in that heading's band is
+       * not its child — it is a peer that sorts nearby. Both used to land in
+       * tribParent as the same thing, so every aspect got swallowed by
+       * whichever heading its density fell past.
+       */
+      if (orphan) state.tribParent[t.id] = { kind: "layer", id: fallbackLayerForTrib(t.id), auto: true };
     });
     cloudList().forEach(function (c) {
       if (!c.parent || !containerById(c.parent)) c.parent = fallbackLayerForTrib(c.members[0]);
@@ -1418,7 +1441,16 @@
     const p = state.tribParent && state.tribParent[id];
     /* Inside a group: the group's section. That is what being inside means. */
     if (p && p.kind === "trib" && p.id !== id) return soulSectionOf(p.id);
-    if (p && p.kind === "layer") {
+    /*
+     * An auto parent is not an answer to "which heading is this written
+     * under" — it is this function's own previous guess, handed back. Reading
+     * it here made "Follow density" follow the parent instead: an aspect at
+     * d86 with an auto parent of Identity and Role read "Follow density —
+     * Identity and Role", and the meta line said "inside Identity and Role",
+     * when d86 plainly falls under Prosody and Syntax. Only a heading someone
+     * chose answers the question; otherwise the density does.
+     */
+    if (p && p.kind === "layer" && !p.auto) {
       const L = containerById(p.id);
       if (L) return L;
     }
@@ -1555,9 +1587,20 @@
     });
     if (!state.tribOrder[col]) state.tribOrder[col] = [];
     state.tribOrder[col].push(id);
+    /*
+     * Born on a heading. + Aspect in the working sort makes a card that is
+     * already on and already under a heading, so it appears on the right where
+     * it was asked for. + Aspect in the palette passes nothing and keeps the
+     * old behaviour — unfiled and off, which is right for a palette.
+     */
+    if (o.parent && containerById(o.parent)) {
+      state.tribParent[id] = { kind: "layer", id: o.parent };
+    }
     ensurePlacement();
     return id;
   }
+
+
 
   function applyPreset(name) {
     const p = PRESETS[name] || PRESETS.blank;
@@ -2113,15 +2156,36 @@
    * that reads as "never" is an exception nobody can see. -98 is "almost
    * never", and the situation block below it names the case it does not cover.
    */
+  /*
+   * Gain is a frequency in disguise: frequency = (gain + 100) / 2. The old
+   * ladder had nine evenly spaced rungs and four of its words described a
+   * comparison or an attitude rather than a frequency — "less often than not",
+   * "no preference" — so a floscAdmin could not rank them and the numbers they
+   * stood for were not what they sounded like.
+   *
+   * These thirteen are frequency words, paired around the hinge: never against
+   * always, rarely against consistently, seldom against regularly. The spacing
+   * is uneven on purpose — gainWord() takes the nearest rung, so a word owns
+   * the band to the midpoint of its neighbours, and the rungs sit where a word
+   * actually lives rather than where arithmetic put it.
+   *
+   * The old ladder collapsed every gain from 65 to 95 into "usually", which is
+   * why the shipped profiles said it twenty-one times. These rungs tell those
+   * apart.
+   */
   const GAIN_LADDER = [
     { g: -100, word: "never" },
-    { g: -75, word: "almost never" },
-    { g: -50, word: "rarely" },
-    { g: -25, word: "less often than not" },
-    { g: 0, word: "no preference" },
-    { g: 25, word: "more often than not" },
-    { g: 50, word: "often" },
-    { g: 75, word: "usually" },
+    { g: -90, word: "rarely" },
+    { g: -80, word: "infrequently" },
+    { g: -60, word: "seldom" },
+    { g: -50, word: "sporadically" },
+    { g: -30, word: "occasionally" },
+    { g: 0, word: "sometimes" },
+    { g: 30, word: "typically" },
+    { g: 50, word: "usually" },
+    { g: 60, word: "regularly" },
+    { g: 80, word: "frequently" },
+    { g: 90, word: "consistently" },
     { g: 100, word: "always" }
   ];
   function gainNum(g) {
@@ -2198,13 +2262,34 @@
       + (Math.abs(n) === 100 ? " · invariant within its situation" : "");
   }
 
+  /*
+   * Every card that is on — including the ones in no category yet.
+   *
+   * This walked wellspringCategories() alone, which is the real headings. A
+   * new aspect is unfiled, and an unfiled card's column is __unfiled, which is
+   * not a heading — it is a label the palette adds for display. So the walk
+   * could not reach a new aspect at all, and ticking one did nothing you could
+   * see: ensurePlacement() never gave it a heading because it was not active,
+   * childrenOf() never drew it on the right because it had no heading, and it
+   * never reached the compiled document either. It sat in the palette, ticked,
+   * and went nowhere.
+   *
+   * The category walk is kept exactly as it was, so filed cards keep their
+   * order. The second pass adds only what the first could not see.
+   */
   function activeTribs() {
     const out = [];
+    const seen = Object.create(null);
     wellspringCategories().forEach(function (c) {
       tribsInCol(c.id).forEach(function (t) {
         const s = tribState(t.id);
-        if (s.on && s.mode !== "off") out.push(t);
+        if (s.on && s.mode !== "off") { out.push(t); seen[t.id] = true; }
       });
+    });
+    allTribs().forEach(function (t) {
+      if (seen[t.id]) return;
+      const s = tribState(t.id);
+      if (s.on && s.mode !== "off") out.push(t);
     });
     return out;
   }
@@ -3111,9 +3196,17 @@
                     overwrite their wording. */
                  renamed: !!l.renamed };
       }),
+      /* auto has to survive the save. Without it every aspect came back an
+         explicit child on the next load, and the sequence collapsed into
+         nesting again the moment the page was reopened. A string keeps older
+         importers working; the object form carries the flag. */
       placement: Object.keys(state.tribParent || {}).reduce(function (acc, tid) {
         const p = state.tribParent[tid];
-        if (p) acc[tid] = p.kind + ":" + p.id;
+        if (!p) return acc;
+        /* Both forms are objects, so the reader never has to guess about a
+           save this build wrote. A bare string can then only mean data written
+           before auto existed, and only that gets the heuristic below. */
+        acc[tid] = { to: p.kind + ":" + p.id, auto: !!p.auto };
         return acc;
       }, {}),
       clouds: cloudList(),
@@ -3329,30 +3422,58 @@
     return String(v == null ? "" : v).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
   }
 
+  /* A labelled run of fields. Same fields, told apart. */
+  function group(label, inner) {
+    return '<div class="field-group"><div class="field-group-label">' + esc(label) + "</div>" + inner + "</div>";
+  }
+
   function editorHtml() {
     const id = state.layer;
     if (id === "identity") {
+      /*
+       * Three kinds of thing used to sit in one column here: the filing
+       * details, the nameplate, and who this personality remains under probe.
+       * "BubblyBetty" and "who you are when someone tests you" are not the
+       * same altitude, and reading them as one list made the panel look like
+       * the name was the identity.
+       */
       return '<div class="note">The personality name is the document Title. Layer headings and description paragraphs compile exactly as stored.</div>' +
-        '<div class="idline">' +
-        field("id", "Id (slug)", "library key", "input") +
-        field("label", "Library label", "", "input") +
-        field("version", "Profile version", "", "input") +
-        "</div>" +
-        field("name", "Name", "chat header; this personality introduces itself as this name", "input") +
-        field("role", "Role", "one function, not a trait salad", "textarea") +
-        field("identity_lock", "Identity lock", "", "textarea") +
-        field("identity_probe_yes", "If asked “Is this [name]?”", "", "input") +
-        field("identity_probe_self", "If asked to describe yourself", "", "input") +
-        '<div class="field"><label><input type="checkbox" data-soul-bool="install_private"' + (state.soul.install_private ? " checked" : "") + "> Install-private (do not ship in public starter packs)</label></div>";
+        group("Filing",
+          '<div class="idline">' +
+          field("id", "Id (slug)", "library key", "input") +
+          field("label", "Library label", "", "input") +
+          field("version", "Profile version", "", "input") +
+          "</div>" +
+          '<div class="field"><label><input type="checkbox" data-soul-bool="install_private"' + (state.soul.install_private ? " checked" : "") + "> Install-private (do not ship in public starter packs)</label></div>"
+        ) +
+        group("Nameplate",
+          field("name", "Name", "what it is called — BubblyBetty, Tech Agent", "input") +
+          field("role", "Role", "one function, not a trait salad", "textarea")
+        ) +
+        group("Under probe",
+          field("identity_lock", "Identity lock", "who it remains when pushed", "textarea") +
+          field("identity_probe_yes", "If asked “Is this [name]?”", "", "input") +
+          field("identity_probe_self", "If asked to describe yourself", "", "input")
+        );
     }
-    if (id === "goals") return field("goals", "Goals", "mission, not the full law", "textarea", "tall");
+    if (id === "goals") {
+      /*
+       * The label said Goals and the placeholder said "mission, not the full
+       * law" — the correction was written into the hint rather than the label,
+       * and the value saves as ai_mission. Scope moved here from Prohibitions
+       * because it answers the same question this heading asks: what is this
+       * conversation for. It also reaches the model on every turn, which it
+       * did not look like sitting seventh in a list of seven.
+       */
+      return field("goals", "Mission", "what this conversation is for", "textarea", "tall") +
+        field("scope", "Scope", "what it will talk about; reaches the AI as Topic Scope", "textarea");
+    }
     if (id === "rules") {
       return field("core_values", "Core values", "ordered, highest first", "textarea") +
         field("prohibitions", "Prohibitions", "absolute", "textarea", "tall") +
         field("interaction_policy", "Interaction policy", "", "textarea") +
         field("invariants", "Invariants", "user usually cannot override", "textarea") +
         field("defaults", "Defaults", "user may override", "textarea") +
-        field("scope", "Scope", "who is served / who is not", "textarea") +
         field("off_topic_message", "Off-scope message", "optional", "textarea");
     }
     if (id === "opinions") {
@@ -3457,17 +3578,9 @@
       if (da !== db) return da - db;
       return String(a.label || a.id).localeCompare(String(b.label || b.id));
     });
-    /* Aspects with no category, above the headings. A card lives here until it
-       is dragged onto one; it is in no heading, so it is in no document. */
-    if (allTribs().some(function (t) { return tribColOf(t) === UNFILED; })) {
-      categories.unshift({ id: UNFILED, label: "Unfiled aspects", hint: "Not in any category yet. Drag one onto a heading.", density: -1 });
-    }
-    root.innerHTML = categories.map(function (c) {
-      const items = tribsInCol(c.id).slice().sort(function (a, b) {
-        return String(a.label || a.id).localeCompare(String(b.label || b.id));
-      }).filter(function (t) {
-        return !(state.hideOff && !tribState(t.id).on);
-      }).map(function (t) {
+  /* One palette row. Used by a category's shelf and by an aspect that is
+     in no category — same row either way, so the two cannot drift. */
+  function paletteRowHtml(t) {
         const st = tribState(t.id);
         const cls = [
           st.mode === "off" ? "off" : (st.mode === "conditional" ? "cond" : ""),
@@ -3484,7 +3597,11 @@
          * as the box, and the only way to stop that also stops the tick.
          */
         const paletteOpen = state.open["palette:" + t.id] === true;
-        return '<div class="trib ' + cls + '" data-focus-trib="' + t.id + '" data-drag-trib="' + t.id + '" data-drop-before="' + t.id + '" draggable="true">' +
+        /* The card is NOT draggable — only its handle is, exactly as the
+           density row does it. A draggable container swallows every mousedown
+           inside it, so selecting the aspect's name or clicking into a field
+           in "Edit this aspect" started a drag instead of a selection. */
+        return '<div class="trib ' + cls + '" data-focus-trib="' + t.id + '" data-drag-trib="' + t.id + '" data-drop-before="' + t.id + '">' +
           '<div class="trib-top">' +
           '<span class="drag-handle" title="Drag to insert or reorder" draggable="true" data-drag-trib="' + t.id + '">⋮⋮</span>' +
           '<input type="checkbox" data-toggle="' + t.id + '"' + (st.on ? " checked" : "") + ">" +
@@ -3494,14 +3611,44 @@
           "<summary>Edit this aspect</summary>" +
           '<div class="acc-body">' + (paletteOpen ? wellspringEditor(t) : "") + "</div></details>" +
           "</div>";
-      }).join("");
+  }
+
+    /*
+     * The palette is every aspect there is, in density order. A category is an
+     * aspect with aspects under it and renders as a shelf; an aspect with no
+     * category renders as itself, in the same list, at its own density.
+     *
+     * There is no "Unfiled" any more. It was a bucket invented to hold aspects
+     * the code could not otherwise place, and it described nothing real: an
+     * aspect in no category is not unfiled, it is simply an aspect.
+     */
+    const loose = allTribs().filter(function (t) {
+      return tribColOf(t) === UNFILED && !(state.hideOff && !tribState(t.id).on);
+    }).map(function (t) {
+      return { kind: "aspect", density: tribState(t.id).density, c: t, sortKey: String(t.label || t.id) };
+    });
+    const shelves = categories.map(function (c) {
+      return { kind: "cat", density: Number(c.density) || 0, c: c, sortKey: String(c.label || c.id) };
+    });
+    const paletteSeq = shelves.concat(loose).sort(function (x, y) {
+      if (x.density !== y.density) return x.density - y.density;
+      return x.sortKey < y.sortKey ? -1 : x.sortKey > y.sortKey ? 1 : 0;
+    });
+    root.innerHTML = paletteSeq.map(function (entry) {
+      if (entry.kind === "aspect") { return paletteRowHtml(entry.c); }
+      const c = entry.c;
+      const items = tribsInCol(c.id).slice().sort(function (a, b) {
+        return String(a.label || a.id).localeCompare(String(b.label || b.id));
+      }).filter(function (t) {
+        return !(state.hideOff && !tribState(t.id).on);
+      }).map(paletteRowHtml).join("");
       const colSel = (state.focus.kind === "col" && state.focus.id === c.id) ||
         (state.focus.kind === "trib" && allTribs().some(function (t) { return t.id === state.focus.id && tribColOf(t) === c.id; }));
       const famOpen = state.open["fam:" + c.id] !== false;
       /* Renaming a shelf happens on the shelf. It used to happen in two
          browser prompt boxes, which could reach the name and the description
          and nothing else, and looked like an error dialog while doing it. */
-      const editing = state.editCategory === c.id && c.id !== UNFILED;
+      const editing = state.editCategory === c.id;
       const head = editing
         ? '<div class="cat-edit">' +
           '<label class="cadmin-field"><span>Category name</span>' +
@@ -3518,9 +3665,7 @@
         : "";
       return '<details class="col' + (colSel ? " sel" : "") + '" data-col="' + c.id + '" data-open-key="fam:' + c.id + '"' + (famOpen || editing ? " open" : "") + ">" +
         '<summary data-focus-col="' + c.id + '"><strong>' + esc(c.label) + '</strong><span class="fam-hint">' + esc(c.hint || "") + "</span>" +
-        (c.id === UNFILED
-          ? ""
-          : '<span class="fam-den">d' + formatDensity(c.density) + '</span><button type="button" class="btn ghost" data-edit-category="' + c.id + '">' + (editing ? "Close" : "Edit") + '</button><button type="button" class="btn ghost danger" data-remove-category="' + c.id + '">Remove</button>') +
+        ('<span class="fam-den">d' + formatDensity(c.density) + '</span><button type="button" class="btn ghost" data-edit-category="' + c.id + '">' + (editing ? "Close" : "Edit") + '</button><button type="button" class="btn ghost danger" data-remove-category="' + c.id + '">Remove</button>') +
         "</summary>" +
         head +
         /* Every heading shows, filled or not. A shelf with nothing on it is
@@ -3539,12 +3684,14 @@
     if (oldAdd) oldAdd.remove();
     root.insertAdjacentHTML("afterend", '<button type="button" class="btn add-trib" id="btnAddAspect">+ Aspect</button>');
     document.getElementById("btnAddAspect").addEventListener("click", function () {
-      const id = addCard("New aspect", { prefix: "aspect" });
+      /* Density 100: a new aspect in the palette belongs at the bottom, where
+         a palette ordered by density puts it and where it is not in the way.
+         Unticked — nothing enters the personality until it is ticked. */
+      const id = addCard("New aspect", { prefix: "aspect", density: 100 });
       persistSoft();
       render();
       focusItem("trib", id);
-      showBuilderNotice("New aspect added to " + (parentLabelOf(id) || "this personality") +
-        " at density " + formatDensity(tribState(id).density) + ". Name it and write its instruction.");
+      showBuilderNotice("New aspect added to the palette at density 100. Name it, write its instruction, then tick it to include it.");
     });
     root.querySelectorAll("details[data-open-key]").forEach(function (d) {
       d.addEventListener("toggle", function () {
@@ -3596,6 +3743,10 @@
       const host = allTribs().find(function (x) { return x.id === p.id; });
       return host ? host.label : "";
     }
+    /* An auto parent is this code's own guess, not a place someone put the
+       aspect. Printing it as "inside X" told the floscAdmin a heading owned an
+       aspect that is a peer of it. */
+    if (p.auto) return "";
     const L = containerById(p.id);
     return L ? L.label : "";
   }
@@ -3820,6 +3971,16 @@
       soulSectionRow(t, st) +
       groupNounRow(t, st) +
 
+      /* Dragging is one way to put an aspect under another. It is not a
+         reliable way — a drop can miss, and there is nothing to aim at on a
+         collapsed row. This button does the same thing with a click, from the
+         aspect that will be the parent. */
+      '<div class="card-param"><label class="excerpt-lab">Sub-aspects</label>' +
+      '<button type="button" class="btn ghost" data-add-sub="' + t.id + '">+ Sub-aspect under ' + esc(t.label) + '</button>' +
+      '<p class="figure-readout">Writes a new aspect inside this one, reading d' +
+      esc(composedDensity(t.id)) + ':010 and so on. This aspect becomes its heading.</p>' +
+      "</div>" +
+
       '<div class="card-param"><label class="excerpt-lab">Density</label>' +
       '<div class="den-row"><div class="den-slider-wrap"><input class="den-vert" type="range" min="0" max="100" step="any" data-density="' + t.id + '" value="' + st.density + '" title="Density: 0 at top (white / least dense) to 100 at bottom (black / ink). Not Gain."></div>' +
       '<div class="den-lab"><span class="den-swatch" style="background:' + densityGray(st.density) + '"></span><b>Density <input type="text" inputmode="decimal" data-density-num="' + t.id + '" value="' + esc(composedDensity(t.id)) + '" style="width:9rem" title="A number, or a colon path such as 95:016 to place this card inside the card at 95"></b>' +
@@ -4039,24 +4200,70 @@
       '<p class="figure-readout" style="margin:0 0 8px">Drop an aspect between two rows and it takes the average of the two. If both neighbours are 55 it stays 55 and sorts alphabetically among them. Type 47 and it stays 47. Densities keep up to 3 decimal places, no float garbage.</p>');
     parts.push('<div class="seq-den"><div class="seq-den-rail"><div class="cap">0</div><div class="rail-body"><div class="rail-bands"><span>Soul</span><span>Character</span><span>Behavior</span></div><div class="den-rail" id="denRail" title="0 white at top · 100 ink at bottom"></div></div><div class="cap">100</div></div><div class="seq-den-items" data-drop-den="1">');
 
-    /* Only headings that hold something. An empty one lives in the palette
-       until an aspect is placed on it. */
-    const seq = containersSorted().filter(containerHasContent).map(function (L) {
-      return { kind: "layer", density: Number(L.density) || 0, c: L };
+    /*
+     * One list, density order, headings and aspects as peers.
+     *
+     * An aspect IS a heading — its name field says so: "The heading this card
+     * writes." Nothing sits under anything by default; density alone decides
+     * position. So d6 Identity and Role, then a card at d10, then d12 Mission,
+     * all at the same level. This column used to nest every aspect inside the
+     * heading whose density band it fell in, which invented a hierarchy the
+     * document does not have.
+     *
+     * The one real nesting stays: a card that is explicitly a member of
+     * another card renders inside its host and reads as 45:010. Those are
+     * skipped here because tribRowHtml() draws them with their host.
+     */
+    /* No containerHasContent filter. An aspect with no children is still an
+       aspect, with every parameter the others have. Hiding it because nothing
+       had been put under it yet made it look like it did not exist. */
+    const seq = containersSorted().map(function (L) {
+      return { kind: "layer", density: Number(L.density) || 0, c: L, sortKey: L.id };
+    });
+    activeTribs().forEach(function (t) {
+      const p = state.tribParent[t.id];
+      /* Member of a group card, or of a cloud: drawn with its host. */
+      if (p && (p.kind === "trib" || p.kind === "cloud")) return;
+      /* Dragged onto a heading deliberately: it is that heading's child and is
+         drawn inside it. Only an auto-chosen heading means "peer". */
+      if (p && p.kind === "layer" && !p.auto) return;
+      seq.push({ kind: "topic", density: tribState(t.id).density, c: t, sortKey: String(t.label || t.id) });
+    });
+    cloudList().forEach(function (c) {
+      if (!c || !c.members || c.members.length < 2) return;
+      if (c.parent && containerById(c.parent)) return;
+      seq.push({
+        kind: "cloud",
+        density: (typeof c.density === "number") ? c.density : minMemberDensity(c),
+        c: c,
+        sortKey: String(c.name || c.id)
+      });
     });
     seq.sort(function (a, b) {
       if (a.density !== b.density) return a.density - b.density;
-      return a.c.id < b.c.id ? -1 : a.c.id > b.c.id ? 1 : 0;
+      return a.sortKey < b.sortKey ? -1 : a.sortKey > b.sortKey ? 1 : 0;
     });
     let lastBand = "";
     seq.forEach(function (item) {
-      const L = item.c;
-      const band = L.band || bandOfDensity(item.density);
+      const band = (item.kind === "layer" && item.c.band) || bandOfDensity(item.density);
       if (band && band !== lastBand) {
         lastBand = band;
         const meta = BAND_META[band] || { label: band, hint: "" };
         parts.push('<div class="band-lab">' + esc(meta.label) + ' <span>' + esc(meta.hint) + "</span></div>");
       }
+
+      /* An aspect, at its own density, a peer of every heading around it. */
+      if (item.kind === "topic") {
+        parts.push('<div class="row-gap" data-drop-before="' + item.c.id + '"></div>');
+        parts.push(tribRowHtml(item.c));
+        return;
+      }
+      if (item.kind === "cloud") {
+        parts.push(cloudBlockHtml(item.c));
+        return;
+      }
+
+      const L = item.c;
       const open = isOpen("layer:" + L.id) || isFocus("layer", L.id);
       const sel = isFocus("layer", L.id);
       let body = containerAdminHtml(L);
@@ -4067,33 +4274,32 @@
         state.layer = L.id;
         body += editorHtml();
         state.layer = prev;
-        const kids = childrenOf(L.id);
         /*
-         * The nest renders whether or not the heading has children, and opens
-         * with a drop strip. Before this, an empty heading carried no drop
-         * target at all and a full one had gaps only between existing rows —
-         * so there was nowhere to release an aspect at the top of a heading,
-         * and nothing whatever to release onto an empty one.
+         * A heading no longer swallows every aspect whose density falls in its
+         * band. Those are peers in the list above, each at its own density,
+         * which is the whole model: an aspect IS a heading, and it becomes a
+         * heading over others only when others are put under it. The strip
+         * stays so an aspect can still be dropped onto this one deliberately.
          */
-        {
-          body += '<div class="nest" data-drop-layer="' + L.id + '">';
-          body += '<div class="row-gap row-gap--first" data-drop-layer-top="' + L.id + '"></div>';
-          if (!kids.length) {
-            body += '<p class="figure-readout nest-empty">Drag aspects here.</p>';
+        const kids = childrenOf(L.id).filter(function (k) {
+          if (k.kind === "cloud") return true;
+          const p = state.tribParent[k.id];
+          return !!p && p.kind === "layer" && !p.auto;
+        });
+        body += '<div class="nest" data-drop-layer="' + L.id + '">';
+        body += '<div class="row-gap row-gap--first" data-drop-layer-top="' + L.id + '"></div>';
+        kids.forEach(function (k) {
+          if (k.kind === "cloud") {
+            const cl = cloudById(k.id);
+            if (cl && cl.members.length >= 2) body += cloudBlockHtml(cl);
+            return;
           }
-          kids.forEach(function (k) {
-            if (k.kind === "cloud") {
-              const cl = cloudById(k.id);
-              if (cl && cl.members.length >= 2) body += cloudBlockHtml(cl);
-            } else {
-              const t = allTribs().find(function (x) { return x.id === k.id; });
-              if (!t) return;
-              body += '<div class="row-gap" data-drop-before="' + t.id + '"></div>';
-              body += tribRowHtml(t);
-            }
-          });
-          body += "</div>";
-        }
+          const t = allTribs().find(function (x) { return x.id === k.id; });
+          if (!t) return;
+          body += '<div class="row-gap" data-drop-before="' + t.id + '"></div>';
+          body += tribRowHtml(t);
+        });
+        body += "</div>";
       }
       parts.push(
         '<details class="acc' + (sel ? " sel" : "") + '"' + (open ? " open" : "") + ' data-acc="layer:' + L.id + '" data-open-key="layer:' + L.id + '">' +
@@ -4606,7 +4812,11 @@
     }
 
     paragraph(
-      "Type any variable into a card. FLOSC replaces it on the request copy sent to the AI, every turn; the saved personality keeps the variable. Recognized values that are unavailable become ‘not available’. Unrecognized braces remain unchanged.",
+      "Type any variable into a card. FLOSC replaces it on the request copy sent to the AI, every turn; the saved personality keeps the variable. A recognized variable with no value becomes nothing at all, so the sentence around it still reads. Unrecognized braces remain unchanged.",
+      false
+    );
+    paragraph(
+      "A quiz variable can name one quiz: {score:ipa_basics} reads that quiz. Unnamed, {score} means the most recent quiz this person took.",
       false
     );
 
@@ -4675,8 +4885,7 @@
       el.addEventListener("input", function () {
         const key = el.getAttribute("data-soul");
         state.soul[key] = el.type === "number" ? Number(el.value) : el.value;
-        persistSoft();
-        renderOut();
+        persistAndRenderSoon();
       });
     });
     root.querySelectorAll("[data-soul-bool]").forEach(function (el) {
@@ -4690,18 +4899,53 @@
       el.addEventListener("input", function () {
         const key = el.getAttribute("data-samp");
         state.sampling[key] = el.type === "number" ? Number(el.value) : el.value;
-        persistSoft();
-        renderOut();
+        persistAndRenderSoon();
       });
     });
   }
 
   function onTribClick(e) {
+    /* + Sub-aspect: the click-driven way to put an aspect under an aspect.
+       The host becomes a heading by having a child, which is the only thing
+       that makes anything a heading. */
+    const addSub = e.target.closest("[data-add-sub]");
+    if (addSub) {
+      e.preventDefault();
+      e.stopPropagation();
+      const hostId = addSub.getAttribute("data-add-sub");
+      const host = allTribs().find(function (x) { return x.id === hostId; });
+      if (host) {
+        const id = addCard("New sub-aspect", {
+          prefix: "aspect",
+          on: true,
+          density: tribState(hostId).density
+        });
+        /* Explicit, so it is a real child and stays one across a save. */
+        state.tribParent[id] = { kind: "trib", id: hostId };
+        state.open["trib:" + hostId] = true;
+        persistSoft();
+        render();
+        focusItem("trib", id);
+        showBuilderNotice("New sub-aspect inside " + (host.label || "that aspect") +
+          ", reading d" + composedDensity(id) + ". Name it and write its instruction.");
+      }
+      return;
+    }
     const addAspect = e.target.closest("[data-add-aspect]");
     if (addAspect) {
       e.preventDefault();
       e.stopPropagation();
-      const id = addCard("New aspect", { prefix: "aspect" });
+      /*
+       * + Aspect in the working sort makes the aspect here, on the right: on,
+       * at density 0, a peer at the top of the list. Not under anything —
+       * nothing is under anything unless someone puts it there. It used to
+       * make the same switched-off card the palette button makes, which
+       * appeared only on the left; then it briefly made a child of whichever
+       * heading was focused, which is the same mistake wearing a hat.
+       */
+      const id = addCard("New aspect", { prefix: "aspect", on: true });
+      /* Working on the right: leave the palette's editor shut. */
+      state.open["palette:" + id] = false;
       persistSoft();
       render();
       focusItem("trib", id);
@@ -4955,15 +5199,24 @@
       const on = e.target.checked;
       const t = allTribs().find(function (x) { return x.id === id; });
       setTrib(id, { on: on, mode: on ? "on" : "off" });
+      /*
+       * Ticking a card gives it a heading (ensurePlacement) — but the working
+       * sort is drawn from state.tribParent, so without a render the card was
+       * placed and never appeared. You could tick it, name it, set its density
+       * and save, and the right column still showed nothing. Both sides redraw
+       * on every tick now, exactly as + Aspect already did.
+       */
+      ensurePlacement();
       if (on) {
-        ensurePlacement();
         showBuilderNotice((t ? t.label : "Aspect") + " added to " +
           (parentLabelOf(id) || "this personality") +
           " at density " + formatDensity(tribState(id).density) + ".");
-        focusItem("trib", id);
       } else {
         showBuilderNotice((t ? t.label : "Aspect") + " removed from this personality.");
       }
+      persistSoft();
+      render();
+      if (on) focusItem("trib", id);
       return;
     }
     if (e.target.matches("[data-density]") || e.target.matches("[data-density-num]")) {
@@ -5001,11 +5254,32 @@
       return;
     }
   }
+  /*
+   * Typing used to cost a full recompile per keystroke.
+   *
+   * Every text branch below wrote its value and then ran persistSoft() and
+   * renderOut() immediately — compiling the whole personality document and
+   * serialising the whole state, once per character. At twenty aspects that
+   * was survivable. At sixty it is not: typing a card name crawled.
+   *
+   * The value still lands in state on the keystroke, so nothing typed is ever
+   * lost and a save that fires mid-word still saves the word. Only the
+   * recompile waits for a gap in typing.
+   */
+  let _outSoon = null;
+  function persistAndRenderSoon() {
+    if (_outSoon) clearTimeout(_outSoon);
+    _outSoon = setTimeout(function () {
+      _outSoon = null;
+      persistSoft();
+      renderOut();
+    }, 200);
+  }
   function onTribInput(e) {
     if (e.target.matches("[data-card-label]")) {
       const id = e.target.getAttribute("data-card-label");
       const card = (state.custom || []).find(function (c) { return c.id === id; });
-      if (card) { card.label = e.target.value; persistSoft(); renderOut(); }
+      if (card) { card.label = e.target.value; persistAndRenderSoon(); }
       return;
     }
     if (e.target.matches("[data-cat-label]") || e.target.matches("[data-cat-hint]")) {
@@ -5018,51 +5292,48 @@
       if (e.target.hasAttribute("data-cat-label")) L.label = e.target.value;
       else L.desc = e.target.value;
       L.renamed = true;
-      persistSoft();
-      renderOut();
+      persistAndRenderSoon();
       return;
     }
     if (e.target.matches("[data-layer-label]")) {
       const L = containerById(e.target.getAttribute("data-layer-label"));
-      if (L) { L.label = e.target.value; L.renamed = true; persistSoft(); renderOut(); }
+      if (L) { L.label = e.target.value; L.renamed = true; persistAndRenderSoon(); }
       return;
     }
     if (e.target.matches("[data-layer-desc]")) {
       const L = containerById(e.target.getAttribute("data-layer-desc"));
-      if (L) { L.desc = e.target.value; L.renamed = true; persistSoft(); renderOut(); }
+      if (L) { L.desc = e.target.value; L.renamed = true; persistAndRenderSoon(); }
       return;
     }
     if (e.target.matches("[data-layer-traj]")) {
       const L = containerById(e.target.getAttribute("data-layer-traj"));
-      if (L) { L.trajectory = e.target.value; persistSoft(); renderOut(); }
+      if (L) { L.trajectory = e.target.value; persistAndRenderSoon(); }
       return;
     }
     if (e.target.matches("[data-layer-color]")) {
       const L = containerById(e.target.getAttribute("data-layer-color"));
-      if (L) { L.color = e.target.value; persistSoft(); renderOut(); }
+      if (L) { L.color = e.target.value; persistAndRenderSoon(); }
       return;
     }
     if (e.target.matches("[data-pv-text]")) {
       state.sampling[e.target.getAttribute("data-pv-text")] = e.target.value;
-      persistSoft();
-      renderOut();
+      persistAndRenderSoon();
       return;
     }
     if (e.target.matches("[data-cloud-name]")) {
       const c = cloudById(e.target.getAttribute("data-cloud-name"));
-      if (c) { c.name = e.target.value; persistSoft(); renderOut(); }
+      if (c) { c.name = e.target.value; persistAndRenderSoon(); }
       return;
     }
     if (e.target.matches("[data-cloud-exp]")) {
       const c = cloudById(e.target.getAttribute("data-cloud-exp"));
-      if (c) { c.explanation = e.target.value; persistSoft(); renderOut(); }
+      if (c) { c.explanation = e.target.value; persistAndRenderSoon(); }
       return;
     }
     if (e.target.matches("[data-traj-phrase]")) {
       const id = e.target.getAttribute("data-traj-phrase");
       state.trib[id] = Object.assign({}, tribState(id), { trajectory: e.target.value });
-      persistSoft();
-      renderOut();
+      persistAndRenderSoon();
       renderMorphViz();
       return;
     }
@@ -5084,8 +5355,7 @@
       state.trib[id] = Object.assign({}, tribState(id), { weight: weight });
       const wn = e.target.parentElement && e.target.parentElement.querySelector(".wn");
       if (wn) wn.textContent = String(weight);
-      persistSoft();
-      renderOut();
+      persistAndRenderSoon();
       renderMorphViz();
       return;
     }
@@ -5098,16 +5368,14 @@
       const id = e.target.getAttribute("data-star-points");
       const n = Math.max(3, Math.min(24, Math.round(Number(e.target.value) || 5)));
       state.trib[id] = Object.assign({}, tribState(id), { starPoints: n });
-      persistSoft();
-      renderOut();
+      persistAndRenderSoon();
       renderMorphViz();
       return;
     }
     if (e.target.matches("[data-inject]")) {
       const id = e.target.getAttribute("data-inject");
       state.trib[id] = Object.assign({}, tribState(id), { inject: e.target.value });
-      persistSoft();
-      renderOut();
+      persistAndRenderSoon();
       return;
     }
     if (e.target.matches("[data-color]")) {
@@ -5141,20 +5409,36 @@
     const own = clampDensity(parts.pop());
     return { density: own, path: parts.map(function (x) { return clampDensity(x); }) };
   }
-  /* Walk a colon path down the card tree and return the card it lands inside. */
+  /*
+   * A colon path can land on any aspect at that density — including the ones
+   * that are headings. A heading IS an aspect: every parameter the others
+   * have, and a heading only because things sit under it. This searched
+   * activeTribs() alone, so the fourteen headings were invisible and typing
+   * 6:010 answered "No card at 6" about an aspect plainly sitting at d6.
+   */
   function cardAtDensityPath(path, skipId) {
     if (!path || !path.length) return null;
+    const denOf = function (t) {
+      return containerById(t.id) ? (Number(t.density) || 0) : tribState(t.id).density;
+    };
     let hostId = null;
     for (let i = 0; i < path.length; i++) {
       const want = path[i];
-      const pool = hostId
-        ? tribChildren(hostId)
-        : activeTribs().filter(function (t) {
-            const p = state.tribParent && state.tribParent[t.id];
-            return !p || p.kind !== "trib";
-          });
+      let pool;
+      if (hostId) {
+        pool = containerById(hostId)
+          ? childrenOf(hostId).map(function (k) {
+              return allTribs().find(function (x) { return x.id === k.id; });
+            }).filter(Boolean)
+          : tribChildren(hostId);
+      } else {
+        pool = activeTribs().filter(function (t) {
+          const p = state.tribParent && state.tribParent[t.id];
+          return !p || p.kind !== "trib";
+        }).concat(containersSorted().filter(function (c) { return c.kind === "layer"; }));
+      }
       const hit = pool.find(function (t) {
-        return t.id !== skipId && clampDensity(tribState(t.id).density) === want;
+        return t && t.id !== skipId && clampDensity(denOf(t)) === want;
       });
       if (!hit) return null;
       hostId = hit.id;
@@ -5174,12 +5458,16 @@
       const host = cardAtDensityPath(parsed.path, id);
       if (host && host !== id && cardAncestors(host).indexOf(id) < 0) {
         cloudLeave(id);
-        state.tribParent[id] = { kind: "trib", id: host };
-        const hostCard = allTribs().find(function (x) { return x.id === host; });
-        showBuilderNotice("Placed inside " + ((hostCard && hostCard.label) || "that card") +
+        /* A heading host is a layer parent, a card host a card parent.
+           Neither carries auto: this one was typed deliberately. */
+        state.tribParent[id] = containerById(host)
+          ? { kind: "layer", id: host }
+          : { kind: "trib", id: host };
+        const hostCard = allTribs().find(function (x) { return x.id === host; }) || containerById(host);
+        showBuilderNotice("Placed inside " + ((hostCard && hostCard.label) || "that aspect") +
           ", reading d" + composedDensity(id) + ".");
       } else {
-        showBuilderNotice("No card at " + parsed.path.map(formatDensity).join(":") +
+        showBuilderNotice("No aspect at " + parsed.path.map(formatDensity).join(":") +
           ". The density is set to " + formatDensity(density) + "; the card has not moved.", true);
       }
     }
@@ -5214,7 +5502,12 @@
        older "# Personality profile: X". A bare "# X" is still accepted, but the
        prefix has to come off first or the personality imports called
        "DA1/FLOSC AI Personality Profile Name: X". */
-    const nameLine = text.match(/^#\s*(?:DA1\/FLOSC AI Personality Profile Name:\s*|Personality profile:\s*)?(.+)$/m);
+    /* The prefix is REQUIRED. It was optional, so the first heading of any
+       kind became the personality's name: a note at the top of a document —
+       "# DAINIS.NET SURFACE (this install only ...)" — was read as a name and
+       a save wrote it into the row. A document with no name line keeps the
+       name it already has. */
+    const nameLine = text.match(/^#\s*(?:DA1\/FLOSC AI Personality Profile Name:\s*|Personality profile:\s*)(.+)$/m);
     const name = nameLine ? nameLine[1].trim() : (filename || "imported").replace(/\.(md|txt)$/i, "");
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "") || "imported";
     /*
@@ -5401,15 +5694,25 @@
     state.tribParent = {};
     if (spec.placement && typeof spec.placement === "object") {
       Object.keys(spec.placement).forEach(function (tid) {
-        const raw = String(spec.placement[tid] || "");
+        const val = spec.placement[tid];
+        const obj = val && typeof val === "object";
+        const raw = String((obj ? val.to : val) || "");
         const cut = raw.indexOf(":");
         if (cut < 1) return;
         const kind = raw.slice(0, cut);
         const pid = raw.slice(cut + 1);
         if (!pid) return;
-        if (kind === "layer" || kind === "cloud" || kind === "trib") {
-          state.tribParent[tid] = { kind: kind, id: pid };
-        }
+        if (kind !== "layer" && kind !== "cloud" && kind !== "trib") return;
+        /*
+         * Saved before auto existed: a card parent is real nesting somebody
+         * built and reads as 45:010, so it stays explicit. A heading parent in
+         * that old data was assigned by density, not chosen — so it loads as
+         * auto and the aspect is a peer, which is the model.
+         */
+        const auto = obj ? !!val.auto : (kind === "layer");
+        state.tribParent[tid] = auto
+          ? { kind: kind, id: pid, auto: true }
+          : { kind: kind, id: pid };
       });
     }
 
@@ -5487,15 +5790,13 @@
     // somebody choosing "Dad Joke Dan" and getting a profile that says
     // something else. The id is untouched — that is what a flow attaches to.
     state.soul.label = this.value;
-    persistSoft();
-    renderOut();
+    persistAndRenderSoon();
   });
 
   document.getElementById("soulRole").addEventListener("input", function () {
     if (!state.soul) return;
     state.soul.role = this.value;
-    persistSoft();
-    renderOut();
+    persistAndRenderSoon();
   });
 
   document.getElementById("soulFilename").addEventListener("input", function () {
@@ -5503,7 +5804,7 @@
     // Stored as typed; fileBase() does the cleaning. Sanitising on keystroke
     // fights the person typing — a dot removed mid-word moves their cursor.
     state.soul.filename = this.value;
-    persistSoft();
+    persistAndRenderSoon();
     renderFilenameNote();
     renderOut();
   });
@@ -5866,6 +6167,22 @@
     ensureContainers();
     const c = addContainer("New category", 0);
     state.tribOrder[c.id] = [];
+    /*
+     * One aspect under it, on, from the start. A category IS an aspect that
+     * has aspects under it — that is the whole of what makes it a category.
+     * Making an empty one and calling it a category teaches the opposite.
+     */
+    addCard("New aspect", {
+      prefix: "aspect",
+      on: true,
+      /* col puts it on this category's shelf in the palette; parent makes it
+         this category's child in the personality. Without col it floated in
+         the palette as a loose aspect while claiming to be a child here —
+         which teaches the opposite of what the pair is for. */
+      col: c.id,
+      parent: c.id,
+      density: (Number(c.density) || 0)
+    });
     state.open["fam:" + c.id] = true;
     state.open["layer:" + c.id] = true;
     state.editCategory = c.id;
@@ -5940,7 +6257,29 @@
   }
 
   const app = document.querySelector(".app");
+  /* The one marked drop target, remembered rather than searched for. */
+  let _dropMark = null;
+  function clearDropMark() {
+    if (_dropMark) {
+      _dropMark.el.classList.remove("drop-aim", "drop-line", "drop-beside");
+      _dropMark = null;
+    }
+  }
+  function setDropMark(el, cls) {
+    if (_dropMark && _dropMark.el === el && _dropMark.cls === cls) return;
+    clearDropMark();
+    if (!el) return;
+    el.classList.add(cls);
+    _dropMark = { el: el, cls: cls };
+  }
+
   app.addEventListener("dragstart", function (e) {
+    /* Never start a drag from inside something the floscAdmin is typing in or
+       selecting text in. Belt to the braces of removing draggable from the
+       card itself: a stray draggable ancestor can never eat a click again. */
+    if (e.target.closest && e.target.closest("input, textarea, select, option, label, [contenteditable]")) {
+      return;
+    }
     const h = e.target.closest("[data-drag-trib]");
     if (!h) return;
     const id = h.getAttribute("data-drag-trib");
@@ -5948,11 +6287,14 @@
     app.classList.add("drag-active");
     e.dataTransfer.setData("text/plain", id);
     e.dataTransfer.effectAllowed = "move";
-    const card = h.closest("[data-drag-trib]");
+    /* h is the handle, which carries data-drag-trib itself, so closest() from
+       h returns h. Start the search at its parent to reach the card. */
+    const card = h.parentElement ? h.parentElement.closest("[data-drag-trib]") : null;
     if (card) card.classList.add("dragging");
   });
   app.addEventListener("dragend", function () {
     state._drag = null;
+    clearDropMark();
     app.classList.remove("drag-active");
     document.querySelectorAll(".dragging, .drop-aim, .drop-line, .drop-beside").forEach(function (n) {
       n.classList.remove("dragging", "drop-aim", "drop-line", "drop-beside");
@@ -5980,16 +6322,23 @@
     if (!before && !col && !denList && !cloudEl && !cardOk && !layerEl) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
-    document.querySelectorAll(".drop-aim, .drop-line, .drop-beside").forEach(function (n) {
-      n.classList.remove("drop-aim", "drop-line", "drop-beside");
-    });
+    /*
+     * dragover fires continuously. This used to querySelectorAll the whole
+     * document on every one of those events, across sixty aspects and their
+     * open editors, which is why dragging crawled and the mark lagged behind
+     * the pointer. One element is marked at a time, so remembering which one
+     * is all the bookkeeping there is, and an event that lands on the same
+     * target as the last one does nothing at all.
+     */
+    let el = null, cls = "drop-aim";
     if (before && before.getAttribute("data-drop-before") !== state._drag) {
-      before.classList.add("drop-line");
-    } else if (cardOk) cardEl.classList.add("drop-aim");
-    else if (layerTop) layerTop.classList.add("drop-line");
-    else if (cloudEl) cloudEl.classList.add("drop-aim");
-    else if (layerEl) layerEl.classList.add("drop-aim");
-    else if (col) col.classList.add("drop-aim");
+      el = before; cls = "drop-line";
+    } else if (cardOk) { el = cardEl; }
+    else if (layerTop) { el = layerTop; cls = "drop-line"; }
+    else if (cloudEl) { el = cloudEl; }
+    else if (layerEl) { el = layerEl; }
+    else if (col) { el = col; }
+    setDropMark(el, cls);
   });
   app.addEventListener("drop", function (e) {
     if (!state._drag) return;
@@ -6084,6 +6433,10 @@
   window.floscBuilder = {
     compilePrompt: compilePrompt,
     promptFile: promptFile,
+    /* The WordPress bridge sends what this returns. It was only ever read by
+       the downloadable builder state, which is why four of the six fields it
+       computes never reached the database. */
+    libraryEntry: libraryEntry,
     providerPacks: providerPacks,
     workshopFile: workshopFile,
     lint: lint,

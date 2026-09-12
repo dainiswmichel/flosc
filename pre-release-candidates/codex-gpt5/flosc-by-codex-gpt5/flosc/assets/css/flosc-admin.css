@@ -5505,21 +5505,39 @@
     max-width: 960px;
 }
 
+/* Six columns now: type, content, who, available, level, actions. The two new
+   ones are the VGM axes — who may read it, and how much of it they get. */
 .flosc-member-protection-col-type {
-    width: 18%;
+    width: 14%;
 }
 
 .flosc-member-protection-col-content {
-    width: 37%;
+    width: 26%;
+}
+
+.flosc-member-protection-col-vgm {
+    width: 17%;
+}
+
+.flosc-member-protection-col-depth {
+    width: 19%;
 }
 
 .flosc-member-protection-col-level {
-    width: 30%;
+    width: 17%;
 }
 
 .flosc-member-protection-col-actions {
-    width: 15%;
+    width: 7%;
     text-align: center;
+}
+
+.flosc-default-vgm-table td {
+    vertical-align: top;
+}
+
+.flosc-default-vgm-table td label {
+    font-weight: 600;
 }
 
 .flosc-member-levels-info-box {

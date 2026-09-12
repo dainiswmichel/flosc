@@ -130,7 +130,36 @@ echo "Expansion behavior\n";
 $plain = "# Identity\nYou are the host.\n";
 flosc_profile_vars_check( 'a no-brace profile returns byte-for-byte unchanged', flosc_personality_expand_variables( $plain, array() ), $plain );
 flosc_profile_vars_check( 'recognized tokens expand in one pass', flosc_personality_expand_variables( '{first_name}: {score}% at {current_url}', $context ), 'Tim: 72% at https://example.test/w-sound/' );
-flosc_profile_vars_check( 'an unavailable recognized value is explicit', flosc_personality_expand_variables( 'Possible: {total_possible}; missing: {total_correct}.', flosc_personality_turn_variable_context( array() ) ), 'Possible: not available; missing: not available.' );
+/* A recognized variable with no value leaves nothing behind. The literal
+   reaching a model is the failure mode that once put "I'm {personality_name}"
+   in front of a visitor, and a stand-in phrase is the model reading "not
+   available" aloud as if it were the answer. */
+flosc_profile_vars_check( 'an unavailable recognized value disappears', flosc_personality_expand_variables( 'Possible: {total_possible}; missing: {total_correct}.', flosc_personality_turn_variable_context( array() ) ), 'Possible: ; missing: .' );
+flosc_profile_vars_check( '  and no stand-in phrase survives anywhere', (bool) preg_match( '/not available|not provided|not signed in/', (string) file_get_contents( $root . '/includes/flosc-personality-library.php' ) ), false );
+
+echo "\nA quiz variable can name its quiz\n";
+/* {score:ipa_basics} asks about one quiz; {score} means the most recent. The
+   qualifier has to survive the scanner, or it reaches the model as literal
+   text. */
+$quiz_tokens = flosc_personality_variable_tokens( 'A {score:ipa_basics} and a {score} and a {missed_items:ipa_basics}.' );
+flosc_profile_vars_check( 'the scanner keeps the qualifier', $quiz_tokens, array( 'score:ipa_basics', 'score', 'missed_items:ipa_basics' ) );
+flosc_profile_vars_check( 'the same base token can name two quizzes',
+	flosc_personality_variable_tokens( '{score:one} then {score:two}' ), array( 'score:one', 'score:two' ) );
+flosc_profile_vars_check( 'a qualifier on an unknown token is still rejected',
+	flosc_personality_variable_tokens( '{not_a_token:one}' ), array() );
+/* {score:} is malformed, not a variable. It falls under the same rule as any
+   other unrecognized brace: left exactly as the floscAdmin typed it. */
+flosc_profile_vars_check( 'a malformed qualifier is left as written',
+	flosc_personality_variable_tokens( '{score:}' ), array() );
+flosc_profile_vars_check( '  so it survives expansion untouched',
+	flosc_personality_expand_variables( 'Score: {score:}.', array() ), 'Score: {score:}.' );
+/* No WordPress here, so the bridge manager is absent and a named quiz has
+   nowhere to read from. It must come back empty rather than leaving the
+   qualified token in the prompt. */
+flosc_profile_vars_check( 'with no bridge data the qualified token still leaves nothing',
+	flosc_personality_expand_variables( 'Score: {score:ipa_basics}.', array( 'user_id' => 7 ) ), 'Score: .' );
+flosc_profile_vars_check( '  and the turn value still wins for the plain token',
+	flosc_personality_expand_variables( 'Score: {score}.', array( 'score' => '82' ) ), 'Score: 82.' );
 flosc_profile_vars_check( 'an unknown brace remains admin-authored text', flosc_personality_expand_variables( 'Keep {the thing}.', $context ), 'Keep {the thing}.' );
 flosc_profile_vars_check( 'a substituted token-looking value is not expanded again', flosc_personality_expand_variables( '{name} / {site_url}', array( 'name' => '{site_url}', 'site_url' => 'https://example.test' ) ), 'site_url / https://example.test' );
 $GLOBALS['flosc_profile_var_calls'] = array();
@@ -160,11 +189,21 @@ $expected = array(
 	'topic_scope', 'personality_name', 'personality_role', 'product_name', 'app_name', 'timezone', 'locale',
 	'current_url', 'current_page_title', 'name', 'first_name', 'user_name', 'user_email', 'user_id',
 	'logged_in', 'member_level', 'access_level', 'score', 'total_correct', 'total_possible',
-	'correct_items', 'missed_items', 'weak_area', 'message_count',
+	'correct_items', 'missed_items', 'weak_area', 'quiz_id', 'quiz_title', 'message_count',
 );
 flosc_profile_vars_check( 'catalog contains only the verified contract', array_keys( $catalog ), $expected );
 $boot = flosc_personality_variable_boot( 'lesaep_com_ivr.md' );
-flosc_profile_vars_check( 'designer receives every catalog variable', count( $boot ), count( $expected ) );
+/* {title}, {product_name} and {app_name} all resolve to the public title. They
+   keep working — flow files, IVR greetings and the accuracy-test templates use
+   them — but the designer lists one name per value, not four names for one. */
+$aliased = array( 'title', 'product_name', 'app_name' );
+flosc_profile_vars_check( 'designer receives every catalog variable but the aliases', count( $boot ), count( $expected ) - count( $aliased ) );
+$boot_tokens = array_map( static function ( $row ) { return trim( $row['token'], '{}' ); }, $boot );
+flosc_profile_vars_check( '  no alias is advertised', array_values( array_intersect( $aliased, $boot_tokens ) ), array() );
+flosc_profile_vars_check( '  and the one they alias is', in_array( 'public_title', $boot_tokens, true ), true );
+foreach ( $aliased as $flosc_alias ) {
+	flosc_profile_vars_check( '  {' . $flosc_alias . '} still expands', flosc_personality_variable_tokens( '{' . $flosc_alias . '}' ), array( $flosc_alias ) );
+}
 flosc_profile_vars_check( 'flow filename is normalized before lookup', in_array( 'setting:name:lesaep_com_ivr', $GLOBALS['flosc_profile_var_calls'], true ), true );
 $js = (string) file_get_contents( $root . '/assets/js/flosc-personality-builder.js' );
 $markup = (string) file_get_contents( $root . '/assets/personality-builder/flosc-personality-builder-markup.php' );

@@ -74,5 +74,75 @@ foreach ( array( 'flosc-attach-ok', 'flosc-attach-bad' ) as $class ) {
 ok( 'and the note element carries no style attribute',
 	(bool) preg_match( '/id="flosc-personality-attach-note"[^>]*style=/', $page ), false );
 
+/*
+ * Every field the designer computes reaches the database.
+ *
+ * libraryEntry() built a complete six-field entry from the first day and only
+ * the downloadable builder state read it. The save sent four keys, so traits,
+ * mission, boundaries and topic scope stayed empty in every personality the
+ * designer ever made — and ai_boundaries and ai_topic_scope are read on every
+ * turn, so a floscAdmin had no way to set two values the AI was being given.
+ */
+echo "\nWhat the designer computes is what the database receives\n";
+$flosc_bridge  = (string) file_get_contents( dirname( __DIR__ ) . '/assets/js/flosc-personality-builder-wp.js' );
+$flosc_builder = (string) file_get_contents( dirname( __DIR__ ) . '/assets/js/flosc-personality-builder.js' );
+$flosc_lib     = (string) file_get_contents( dirname( __DIR__ ) . '/includes/flosc-personality-library.php' );
+$flosc_sidecar = array( 'ai_personality_traits', 'ai_mission', 'ai_boundaries', 'ai_topic_scope' );
+
+ok( 'the builder exposes libraryEntry to the bridge', strpos( $flosc_builder, 'libraryEntry: libraryEntry,' ) !== false, true );
+ok( 'the bridge reads it rather than rebuilding it', strpos( $flosc_bridge, 'api.libraryEntry()' ) !== false, true );
+
+$flosc_unsent = array();
+$flosc_unread = array();
+foreach ( $flosc_sidecar as $flosc_field ) {
+	if ( strpos( $flosc_bridge, $flosc_field ) === false ) {
+		$flosc_unsent[] = $flosc_field;
+	}
+	if ( strpos( $flosc_lib, "'" . $flosc_field . "'" ) === false ) {
+		$flosc_unread[] = $flosc_field;
+	}
+}
+ok( 'every sidecar field is sent', $flosc_unsent, array() );
+ok( '  and read by the save handler', $flosc_unread, array() );
+/* This file stubs WordPress rather than loading the plugin, so the key list is
+   read from the source instead of called. */
+preg_match( '/function flosc_personality_library_field_keys\(\).*?return array\((.*?)\);/s', $flosc_lib, $flosc_keys_m );
+$flosc_key_src = isset( $flosc_keys_m[1] ) ? $flosc_keys_m[1] : '';
+$flosc_unstorable = array();
+foreach ( $flosc_sidecar as $flosc_field ) {
+	if ( strpos( $flosc_key_src, "'" . $flosc_field . "'" ) === false ) {
+		$flosc_unstorable[] = $flosc_field;
+	}
+}
+ok( '  and storable', $flosc_unstorable, array() );
+
+/*
+ * Every stored field a floscAdmin is expected to fill has somewhere to fill it.
+ *
+ * ai_topic_scope reaches the model on every turn and was computed from a Scope
+ * box the save never sent; before that it had no path at all. A field that is
+ * read at runtime and has no input anywhere is the shape of that bug, so the
+ * input is pinned here rather than left to be noticed.
+ */
+echo "\nThe fields that reach the model have an editor\n";
+$flosc_editor = $flosc_builder;
+foreach ( array(
+	'name'         => 'the nameplate',
+	'role'         => 'the role',
+	'goals'        => 'mission, stored as ai_mission',
+	'prohibitions' => 'boundaries, stored as ai_boundaries',
+	'scope'        => 'topic scope, stored as ai_topic_scope',
+) as $flosc_key => $flosc_what ) {
+	ok( '  ' . $flosc_key . ' — ' . $flosc_what,
+		(bool) preg_match( '/field\(\s*"' . preg_quote( $flosc_key, '/' ) . '"/', $flosc_editor ), true );
+}
+/* Mission and Scope answer the same question, so they sit in one panel. */
+preg_match( '/if \(id === "goals"\) \{(.*?)\n    \}/s', $flosc_editor, $flosc_goals_m );
+$flosc_goals_panel = isset( $flosc_goals_m[1] ) ? $flosc_goals_m[1] : '';
+ok( '  and Scope sits with Mission, not seventh under Prohibitions',
+	strpos( $flosc_goals_panel, 'field("scope"' ) !== false, true );
+ok( '  labelled Mission, not Goals',
+	strpos( $flosc_goals_panel, '"Mission"' ) !== false, true );
+
 echo $fail ? "\n$fail FAILURES\n" : "\nAn attach reports what is stored, and the answer survives the reload\n";
 exit( $fail ? 1 : 0 );

@@ -111,6 +111,17 @@ $flosc_tags       = get_tags( [ 'hide_empty' => false ] );
 
 // Load existing protection data
 $flosc_protected_items = $flosc_flow_settings['protected_content'] ?? [];
+
+/*
+ * Same two vocabularies as the Content tab, from the same helper.
+ *
+ * This screen and the Content tab post the SAME repeater into the same save
+ * handler. A column present on one and missing on the other means saving from
+ * the screen that is missing it silently resets that column on every rule. One
+ * source, both screens.
+ */
+$flosc_vgm_tiers  = flosc_vgm_tier_labels();
+$flosc_vgm_depths = flosc_vgm_depth_labels();
 ?>
 
 <hr class="flosc-member-levels-divider">
@@ -122,6 +133,8 @@ $flosc_protected_items = $flosc_flow_settings['protected_content'] ?? [];
         <tr>
             <th class="flosc-member-protection-col-type">Type</th>
             <th class="flosc-member-protection-col-content">Content</th>
+            <th class="flosc-member-protection-col-vgm">Who</th>
+            <th class="flosc-member-protection-col-depth">Available</th>
             <th class="flosc-member-protection-col-level">Required Level</th>
             <th class="flosc-member-protection-col-actions">Actions</th>
         </tr>
@@ -166,6 +179,16 @@ $flosc_protected_items = $flosc_flow_settings['protected_content'] ?? [];
                             <?php endif; ?>
                         </select>
                     <?php endif; ?>
+                </td>
+                <td>
+                    <select name="protection_vgm[]" class="flosc-protection-vgm flosc-width-full">
+                        <?php echo flosc_vgm_options_markup( $flosc_vgm_tiers, (string) ( $flosc_item['vgm'] ?? 'member' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built escaped in flosc_vgm_options_markup() ?>
+                    </select>
+                </td>
+                <td>
+                    <select name="protection_depth[]" class="flosc-protection-depth flosc-width-full">
+                        <?php echo flosc_vgm_options_markup( $flosc_vgm_depths, (string) ( $flosc_item['depth'] ?? 'full' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built escaped in flosc_vgm_options_markup() ?>
+                    </select>
                 </td>
                 <td>
                     <select name="protection_level[]" class="flosc-protection-level-select flosc-width-full">
@@ -396,10 +419,15 @@ jQuery(document).ready(function($) {
         return '<select name="protection_value[]" class="flosc-protection-value flosc-width-full">' + categoryOptions + '</select>';
     }
 
+    var vgmOptions = <?php echo wp_json_encode( flosc_vgm_options_markup( $flosc_vgm_tiers, 'member' ) ); ?>;
+    var depthOptions = <?php echo wp_json_encode( flosc_vgm_options_markup( $flosc_vgm_depths, 'full' ) ); ?>;
+
     $('#flosc-add-protection').on('click', function() {
         var row = '<tr class="flosc-protection-row">'
             + '<td><select name="protection_type[]" class="flosc-protection-type flosc-width-full"><option value="category">Category</option><option value="tag">Tag</option><option value="post">Post (ID)</option><option value="page">Page (ID)</option></select></td>'
             + '<td>' + buildContentField('category') + '</td>'
+            + '<td><select name="protection_vgm[]" class="flosc-protection-vgm flosc-width-full">' + vgmOptions + '</select></td>'
+            + '<td><select name="protection_depth[]" class="flosc-protection-depth flosc-width-full">' + depthOptions + '</select></td>'
             + '<td><select name="protection_level[]" class="flosc-protection-level-select flosc-width-full">' + levelOptions + '</select></td>'
             + '<td class="flosc-text-center"><button type="button" class="button flosc-remove-protection-row" title="Remove">&times;</button></td>'
             + '</tr>';

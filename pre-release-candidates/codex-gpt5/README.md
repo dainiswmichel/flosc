@@ -1,51 +1,52 @@
-# Home Run Candidate v33 — Codex
+# FLOSC 8.0.0 — candidate v65
 
-**Status:** Build complete and ready for the Captain's personality-variable testing.
+Built by Codex from the deployed `claude-opus-5` v64 source. All work is
+contained in `pre-release-candidates/codex-gpt5/`; the Claude candidate is
+unchanged. The plugin version remains 8.0.0.
 
-**Built by:** Codex (OpenAI), GPT-6
+    artifact   flosc.zip
+    sha256     b4fd6fe1af4e86657960024b634dc29cbd8990ccf074239db98cbd5a9f7e0433
+    bytes      2751019
+    entries    277, single flosc/ root
+    source     flosc-by-codex-gpt5/flosc
 
-**Build record:** `2026-09-11d-UTC09h:52m05s`
+## What was wrong in v64
 
-**Baseline:** Home Run Candidate v31 by Grok 4.6, commit `8a6b3f5`
+1. Saving Member Levels posted no `content_default_vgm` field, but the shared
+   save branch still replaced every configured site-default depth with `full`.
+2. The AI-retrieval metabox was registered only for posts in a category already
+   marked FLOSC-protected. Pages and ordinary indexed posts could not reach it,
+   and rendering the metabox everywhere would have made the absent protection
+   radios write a default `protected` mode.
+3. Rules stored on category, tag, post, and page objects appeared read-only on
+   the Content tab.
 
-**Reference reviewed:** Home Run Candidate v32 by Claude Opus 5, commit `fbc56c48`
+## What changed in v65
 
-v33 is built directly from v31. Claude's v32 was used only as a reference for the personality-variable feature. Grok's and Claude's candidate directories were not modified.
-
-The four shipped personalities are byte-for-byte unchanged from v31. Their editorial revision remains a separate, Captain-guided task, one personality at a time.
-
-## Personality variables
-
-The DA1 Personality Designer now shows the variables that can be typed into personality cards. Flow values show their current value; visitor values state that they resolve from the current turn.
-
-At runtime:
-
-- the stored personality remains unchanged;
-- the current profile is loaded on every AI turn;
-- only recognized variables present in that profile are resolved;
-- substitution runs once on the request-specific copy;
-- a profile with no recognized variable causes no variable data lookup;
-- visitor, page, quiz, and session values come from FLOSC's existing turn context;
-- name fields reuse the `WP_User` object already loaded by the turn handler;
-- `{current_url}` reads the real `browsing_page_url` context key;
-- score and quiz aliases are normalized consistently;
-- unavailable recognized values become `not available`;
-- unrecognized braces remain unchanged;
-- replacement values are bounded, stripped of control characters and braces, and cannot trigger a second substitution pass.
-
-The catalog contains 31 variables backed by verified flow/site values or existing turn-context fields. Claude's speculative variables without a proven runtime source are not advertised.
+- `content_default_vgm` is written only when the submitted form actually
+  contains that array, so Member Levels saves preserve the configured default.
+- The metabox is registered unconditionally for posts, pages, and configured
+  indexed post types. Existing page-protection notice and radios render only
+  for posts in a protected category; AI-retrieval tier and depth controls render
+  for every supported object.
+- The save handler writes protection mode only when its radios were submitted.
+- The Content tab edits object rules in place using `term:<id>` and `post:<id>`
+  keys. Values pass through the index class's shared tier/depth token validators
+  and update the original term or post metadata. Clearing either half removes
+  both halves of the rule; no duplicate `protected_content` writer is created.
+- Regression guards cover the default-save condition, post/page metabox reach,
+  absent-radio behavior, editable object fields, and shared metadata vocabulary.
 
 ## Verification
 
-- 33 PHP regression scripts passed.
-- All 184 PHP files passed syntax checks; the final edited PHP file was linted again after the last change.
-- Personality-builder and FLOSC application JavaScript passed `node --check`.
-- The exact ZIP activated under WordPress 7.1 in the isolated test site.
-- A real Chatpack build expanded a Tim-shaped logged-in context, including URL and score, while the stored profile retained its tokens.
-- WordPress Plugin Check 2.1.0 `plugin_review_phpcs` passed the exact ZIP with no errors.
-- The ZIP passed the fail-closed distribution build and a second build matched byte for byte.
-- The shipped-personality hash matches v31.
+    PHP regression scripts   34 passed, 0 failed
+    JavaScript test scripts   2 passed, 0 failed
+    PHP syntax               185 files clean
+    artifact entries         277
+    artifact root            flosc/
+    artifact PHP files       148
+    reproducible ZIP         byte-for-byte match
+    plugin version           8.0.0 in header, FLOSC_VERSION, Stable tag
 
-The installable artifact is `flosc.zip`; it contains one top-level `flosc/` directory. Plugin version remains `8.0.0` because this is a candidate, not a release.
-
-The full Plugin Check aggregate scan was attempted but did not finish within the local review window. v31's aggregate scan was already clean, and v33's changed runtime files pass the WordPress.org review PHPCS profile. The aggregate scan should be rerun before the final resubmission assertion.
+The exact built ZIP passed the packaging gate. No deployment or database work
+was performed for this candidate.

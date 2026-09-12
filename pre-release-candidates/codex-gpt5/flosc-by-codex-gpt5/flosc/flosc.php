@@ -3144,26 +3144,17 @@ The Team',
      * v1.4.3: Add FLOSC post visibility meta box to post editor
      */
     public function flosc_add_post_visibility_meta_box() {
-        // v1.4.7: Only show on posts that are in a FLOSC-protected category
-        global $post;
-        if (!$post || !$post->ID) return;
-        
-        $categories = wp_get_post_categories($post->ID);
-        $in_protected = false;
-        foreach ($categories as $cat_id) {
-            if (get_term_meta($cat_id, '_flosc_protected', true) === 'yes') {
-                $in_protected = true;
-                break;
-            }
+        $flosc_screens = ['post', 'page'];
+        if (class_exists('FLOSC_Site_Content_Index')) {
+            $flosc_screens = array_merge($flosc_screens, FLOSC_Site_Content_Index::indexed_post_types());
         }
-        
-        if (!$in_protected) return;
+        $flosc_screens = array_values(array_unique(array_filter(array_map('sanitize_key', $flosc_screens))));
         
         add_meta_box(
             'flosc_post_visibility',
             '🔐 FLOSC Content Access',
             [$this, 'flosc_render_post_visibility_meta_box'],
-            'post',
+            $flosc_screens,
             'side',
             'high'
         );
@@ -3175,33 +3166,39 @@ The Team',
      */
     public function flosc_render_post_visibility_meta_box($post) {
         wp_nonce_field('flosc_post_visibility_nonce', 'flosc_post_visibility_nonce');
-        
-        // v1.8.2: Read protection mode (replaces binary _flosc_public_post)
-        $protection_mode = get_post_meta($post->ID, '_flosc_protection_mode', true);
-        // Backward compat: old _flosc_public_post = 'yes' → 'full'
-        if (empty($protection_mode)) {
-            $is_public_override = get_post_meta($post->ID, '_flosc_public_post', true) === 'yes';
-            $protection_mode = $is_public_override ? 'full' : 'protected';
-        }
-        
-        // Find the protected category name for display
+
+        // Page-visibility controls apply only when a protected category gates
+        // the post. AI-retrieval controls below apply to every indexed object.
         $categories = wp_get_post_categories($post->ID);
+        $in_protected = false;
         $protected_cat_name = '';
         foreach ($categories as $cat_id) {
             if (get_term_meta($cat_id, '_flosc_protected', true) === 'yes') {
+                $in_protected = true;
                 $cat = get_category($cat_id);
                 $protected_cat_name = $cat ? $cat->name : '';
                 break;
             }
         }
+        
+        if ($in_protected) {
+            // v1.8.2: Read protection mode (replaces binary _flosc_public_post)
+            $protection_mode = get_post_meta($post->ID, '_flosc_protection_mode', true);
+            // Backward compat: old _flosc_public_post = 'yes' → 'full'
+            if (empty($protection_mode)) {
+                $is_public_override = get_post_meta($post->ID, '_flosc_public_post', true) === 'yes';
+                $protection_mode = $is_public_override ? 'full' : 'protected';
+            }
+        }
         ?>
         <?php // §12: metabox styles enqueued via the 'flosc-metabox' handle in enqueue_admin_assets(). ?>
         <div class="flosc-post-visibility-meta-box">
-            <div class="flosc-protected-notice">
-                🔒 Protected by FLOSC category: <strong><?php echo esc_html($protected_cat_name); ?></strong>
-            </div>
-            
-            <div class="flosc-protection-options flosc-protection-options--spaced">
+            <?php if ($in_protected) : ?>
+                <div class="flosc-protected-notice">
+                    🔒 Protected by FLOSC category: <strong><?php echo esc_html($protected_cat_name); ?></strong>
+                </div>
+
+                <div class="flosc-protection-options flosc-protection-options--spaced">
                 <label>
                     <input type="radio" name="flosc_protection_mode" value="protected" <?php checked($protection_mode, 'protected'); ?>>
                     <strong>Protected</strong>
@@ -3222,6 +3219,42 @@ The Team',
                     <strong>Full Post (Public)</strong>
                     <span class="option-desc">Disable FLOSC protection. Show per WordPress settings.</span>
                 </label>
+                </div>
+            <?php endif; ?>
+
+            <?php
+            /*
+             * What the AI may retrieve of this post, for each tier.
+             *
+             * The radios above govern the PAGE. This governs what chat can
+             * quote, and it is the most specific scope there is: a rule here
+             * beats one on the post's tags, which beats one on its categories,
+             * which beats the site default on the Content tab. Both halves must
+             * be set for it to count, so "— Follow tags and categories —"
+             * leaves the post exactly as it is now.
+             */
+            $flosc_vgm_tier  = (string) get_post_meta($post->ID, '_flosc_vgm', true);
+            $flosc_vgm_depth = (string) get_post_meta($post->ID, '_flosc_depth', true);
+            ?>
+            <div class="flosc-protection-options flosc-protection-options--spaced">
+                <p><strong><?php echo esc_html__('AI retrieval', 'flosc'); ?></strong></p>
+                <p>
+                    <label for="flosc_vgm"><?php echo esc_html__('Who', 'flosc'); ?></label><br>
+                    <select name="flosc_vgm" id="flosc_vgm" class="widefat">
+                        <option value=""><?php echo esc_html__('— Follow tags and categories —', 'flosc'); ?></option>
+                        <?php echo flosc_vgm_options_markup(flosc_vgm_tier_labels(), $flosc_vgm_tier); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built escaped in flosc_vgm_options_markup() ?>
+                    </select>
+                </p>
+                <p>
+                    <label for="flosc_depth"><?php echo esc_html__('Available', 'flosc'); ?></label><br>
+                    <select name="flosc_depth" id="flosc_depth" class="widefat">
+                        <option value=""><?php echo esc_html__('— Follow tags and categories —', 'flosc'); ?></option>
+                        <?php echo flosc_vgm_options_markup(flosc_vgm_depth_labels(), $flosc_vgm_depth); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built escaped in flosc_vgm_options_markup() ?>
+                    </select>
+                </p>
+                <p class="option-desc">
+                    <?php echo esc_html__('The tier is a floor: Visitors also covers guests and members. Takes effect on the next index rebuild.', 'flosc'); ?>
+                </p>
             </div>
         </div>
         <?php
@@ -3248,20 +3281,39 @@ The Team',
         }
         
         // v1.8.2: Save protection mode (protected, title_excerpt, title_readmore, full)
-        $valid_modes = ['protected', 'title_excerpt', 'title_readmore', 'full'];
-        $mode = isset($request_post['flosc_protection_mode']) ? sanitize_text_field($request_post['flosc_protection_mode']) : 'protected';
-        if (!in_array($mode, $valid_modes, true)) {
-            $mode = 'protected';
+        if (isset($request_post['flosc_protection_mode'])) {
+            $valid_modes = ['protected', 'title_excerpt', 'title_readmore', 'full'];
+            $mode = sanitize_text_field($request_post['flosc_protection_mode']);
+            if (!in_array($mode, $valid_modes, true)) {
+                $mode = 'protected';
+            }
+
+            update_post_meta($post_id, '_flosc_protection_mode', $mode);
+
+            // Backward compat: also update _flosc_public_post for existing code that checks it
+            if ($mode === 'full') {
+                update_post_meta($post_id, '_flosc_public_post', 'yes');
+            } else {
+                delete_post_meta($post_id, '_flosc_public_post');
+            }
+        }
+
+        // AI retrieval: who, and how much. Empty means follow tags and categories.
+        foreach ([
+            'flosc_vgm'   => ['_flosc_vgm', ['visitor', 'guest', 'member']],
+            'flosc_depth' => ['_flosc_depth', ['title', 'excerpt', 'readmore', 'full']],
+        ] as $flosc_field => $flosc_spec) {
+            if (!isset($request_post[$flosc_field])) {
+                continue;
+            }
+            $flosc_val = sanitize_key($request_post[$flosc_field]);
+            if (in_array($flosc_val, $flosc_spec[1], true)) {
+                update_post_meta($post_id, $flosc_spec[0], $flosc_val);
+            } else {
+                delete_post_meta($post_id, $flosc_spec[0]);
+            }
         }
         
-        update_post_meta($post_id, '_flosc_protection_mode', $mode);
-        
-        // Backward compat: also update _flosc_public_post for existing code that checks it
-        if ($mode === 'full') {
-            update_post_meta($post_id, '_flosc_public_post', 'yes');
-        } else {
-            delete_post_meta($post_id, '_flosc_public_post');
-        }
     }
 
     /**
@@ -4057,8 +4109,21 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
     private function flosc_enforce_no_hedge_response($response_text, $user_message, $flow_id, $ivr_file, $phase, $eval_context) {
         $response_text = trim((string) $response_text);
 
-        if ($response_text === '' || $this->flosc_contains_forbidden_hedge($response_text)) {
-            return $this->flosc_build_professional_replacement($user_message, $flow_id, $ivr_file, $phase, $eval_context);
+        if ($response_text === '') {
+            // The provider returned nothing at all. Canned phase copy is what
+            // it was written for, so let the chain run to the end.
+            return $this->flosc_build_professional_replacement($user_message, $flow_id, $ivr_file, $phase, $eval_context, true);
+        }
+
+        if ($this->flosc_contains_forbidden_hedge($response_text)) {
+            // The provider DID answer. A catalog or bio reply is itself a real
+            // answer and may stand in for a hedge. IVR phase copy is not an
+            // answer — it tells a visitor the site is unconfigured when it is
+            // not — so when nothing better is found the provider's own words
+            // ship rather than being thrown away.
+            $replacement = trim((string) $this->flosc_build_professional_replacement($user_message, $flow_id, $ivr_file, $phase, $eval_context, false));
+
+            return $replacement !== '' ? $replacement : $response_text;
         }
 
         return $response_text;
@@ -4087,7 +4152,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
         return false;
     }
 
-    private function flosc_build_professional_replacement($user_message, $flow_id, $ivr_file, $phase, $eval_context) {
+    private function flosc_build_professional_replacement($user_message, $flow_id, $ivr_file, $phase, $eval_context, $allow_phase_default = true) {
         $user_message = (string) $user_message;
 
         $flosc_da1_access_level = is_array($eval_context)
@@ -4129,6 +4194,13 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
             }
 
             return $this->flosc_limit_chat_response_length($reply);
+        }
+
+        // Canned phase copy only when the caller has nothing of its own. A
+        // provider reply that merely hedged is worth more to a visitor than
+        // copy announcing that no AI is configured.
+        if (!$allow_phase_default) {
+            return '';
         }
 
         $default_response = $this->get_phase_default_response((string) $phase, is_array($eval_context) ? $eval_context : []);
@@ -5711,7 +5783,11 @@ Example good response:
         // Guest phase is 'login' but user IS logged in — message must reflect that.
         $name = $context['user_name'] ?? $context['name'] ?? 'there';
         // Reminder when free-form hits button/keyword IVR only (no model).
-        $ai_hint = ' This is just IVR-style copy — remember to configure your preferred AI API for much more intelligent responses!';
+        // It is addressed to the floscAdmin, so only the floscAdmin sees it: a
+        // visitor being told the site needs an API key reads as a broken site.
+        $ai_hint = current_user_can('manage_options')
+            ? ' This is just IVR-style copy — remember to configure your preferred AI API for much more intelligent responses!'
+            : '';
         $responses = [
             'freeline' => 'Thanks for your interest! Try one of the suggestions above.' . $ai_hint,
             'login' => "Hey {$name}! I work best with the suggestion buttons above. Try tapping one to continue." . $ai_hint,
@@ -12919,4 +12995,3 @@ function flosc_get_user_sticky_enabled_personalities() {
     }
     return array_values(array_unique($out));
 }
-

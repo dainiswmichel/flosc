@@ -195,8 +195,16 @@
     user-select: none;
   }
   .flosc-personality-workshop .trib.dragging, .flosc-personality-workshop .acc.dragging{ opacity: 0.4; }
-  .flosc-personality-workshop .drop-aim{ outline: 2px dashed var(--accent-2); background: #f0f6fc !important; }
-  .flosc-personality-workshop .drop-line{ box-shadow: inset 0 3px 0 var(--accent); }
+  /* Where the aspect will land, at a glance. A 3px inset shadow on a thin gap
+     was easy to lose track of while dragging. */
+  .flosc-personality-workshop .drop-aim{
+    outline: 3px solid var(--accent); outline-offset: -1px;
+    background: #eaf2fb !important;
+  }
+  .flosc-personality-workshop .drop-line{
+    box-shadow: inset 0 5px 0 var(--accent);
+    background: #eaf2fb;
+  }
   /* Density-tinted titlebars: the ground IS the density (white → ink).
      .ink-light rows sit on dark grounds, so every child flips to light. */
   .flosc-personality-workshop .row-sum{ transition: background-color 120ms ease; }
@@ -204,7 +212,7 @@
   .flosc-personality-workshop .row-sum.ink-light .meta-bit{ color: #ececec; border-color: rgba(255,255,255,.45); background: transparent; }
   .flosc-personality-workshop .row-sum.ink-light .gain-mark{ background: rgba(255,255,255,.38); }
   .flosc-personality-workshop .row-gap{ height: 0; margin: 0; overflow: hidden; transition: height 120ms ease; }
-  .flosc-personality-workshop .drag-active .row-gap{ height: 14px; }
+  .flosc-personality-workshop .drag-active .row-gap{ height: 20px; border-radius: 3px; }
   .flosc-personality-workshop .row-gap.drop-line{ background: #f0f6fc; }
   .flosc-personality-workshop .trib.off{ opacity: 0.48; background: #f6f7f7; }
   .flosc-personality-workshop .trib.cond{ border-color: #dba617; background: #fcf9e8; opacity: 1; }
@@ -336,6 +344,22 @@
     background: var(--card);
   }
   .flosc-personality-workshop dialog::backdrop{ background: rgba(19,33,23,.35); }
+  /* A labelled run of fields inside one heading's editor. The Identity panel
+     held filing details, a nameplate and probe answers in one column, which
+     read as one list of equals. */
+  .flosc-personality-workshop .field-group{
+    border-top: 1px solid var(--line);
+    padding-top: 10px;
+    margin: 0 0 14px;
+  }
+  .flosc-personality-workshop .field-group:first-of-type{ border-top: 0; padding-top: 0; }
+  .flosc-personality-workshop .field-group-label{
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin: 0 0 6px;
+  }
   .flosc-personality-workshop .idline{ display: flex; gap: 8px; flex-wrap: wrap; align-items: end; }
   .flosc-personality-workshop .idline .field{ flex: 1; min-width: 140px; }
   .flosc-personality-workshop .file-seq{ padding: 8px 10px 16px; overflow: visible; max-height: none; }
@@ -822,10 +846,16 @@
   }
   .flosc-personality-workshop .den-lab{ font-family: var(--ui); font-size: 0.68rem; color: var(--ink-soft); }
   .flosc-personality-workshop .den-lab b{ color: var(--ink); }
+  /* An ink sample, never a control. An 18px square with a dark border and a
+     white inset ring is pixel-for-pixel a WordPress checkbox, and at low
+     density — where the ink is almost white — that is exactly what it looked
+     like sitting beside the word "Density". Round, borderless, and inset into
+     its own well: it reads as a colour, and there is nothing to tick. */
   .flosc-personality-workshop .den-swatch{
-    display: inline-block; width: 18px; height: 18px; border: 1px solid #1d2327;
-    vertical-align: -3px; margin-right: 6px; flex-shrink: 0;
-    box-shadow: inset 0 0 0 1px #fff;
+    display: inline-block; width: 14px; height: 14px; border-radius: 50%;
+    border: 1px solid rgba(29, 35, 39, 0.28);
+    vertical-align: -2px; margin-right: 7px; flex-shrink: 0;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.22);
   }
   .flosc-personality-workshop .seq-den{
     display: grid;
@@ -1224,11 +1254,16 @@
 
 /* Name and role. The first two lines of every profile, and until now the only
    two things about a personality that could not be changed here. */
-.identity-row { display: flex; gap: 12px; margin: 10px 0 6px; flex-wrap: wrap; }
-.identity-row .field { display: flex; flex-direction: column; gap: 3px; min-width: 180px; }
-.identity-row .field--wide { flex: 1 1 320px; }
-.identity-row label { font-size: 12px; opacity: .75; }
-.identity-row input { padding: 6px 8px; font: inherit; }
+/* Scoped, like every other rule in this file. Unscoped, the WordPress admin
+   stylesheet won these five and the row collapsed — so the Name and Role
+   inputs were in the DOM, bound, and saving, but invisible. There was no way
+   to rename a loaded personality, which is how Br3nda ended up wearing the
+   first heading of her own document as her name. */
+.flosc-personality-workshop .identity-row { display: flex; gap: 12px; margin: 10px 0 6px; flex-wrap: wrap; }
+.flosc-personality-workshop .identity-row .field { display: flex; flex-direction: column; gap: 3px; min-width: 180px; }
+.flosc-personality-workshop .identity-row .field--wide { flex: 1 1 320px; }
+.flosc-personality-workshop .identity-row label { font-size: 12px; opacity: .75; font-weight: 600; }
+.flosc-personality-workshop .identity-row input { padding: 6px 8px; font: inherit; width: 100%; box-sizing: border-box; }
 .identity-note { margin: 0 0 10px; }
 /* The filename is a stem, not prose: monospace so a typed underscore or a
    stray dot is visible rather than something the reader has to squint at. */

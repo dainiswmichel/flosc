@@ -31,11 +31,124 @@ class FLOSC_Site_Content_Index {
 	}
 
 	private function __construct() {
+		/*
+		 * Categories and tags get the same two fields the post metabox and the
+		 * Content tab carry. A floscAdmin setting up a category is on the
+		 * category screen, not the Content tab, and making them go somewhere
+		 * else to say who may read it is how rules end up unset.
+		 */
+		foreach ( array( 'category', 'post_tag' ) as $taxonomy ) {
+			add_action( $taxonomy . '_add_form_fields', array( $this, 'render_term_vgm_add_fields' ) );
+			add_action( $taxonomy . '_edit_form_fields', array( $this, 'render_term_vgm_edit_fields' ) );
+		}
+		add_action( 'created_term', array( $this, 'save_term_vgm' ), 10, 3 );
+		add_action( 'edited_term', array( $this, 'save_term_vgm' ), 10, 3 );
+
 		add_action( 'admin_post_flosc_site_index_rebuild', array( $this, 'handle_rebuild' ) );
 		add_action( 'admin_post_flosc_site_index_exclude', array( $this, 'handle_exclude' ) );
 		add_action( 'admin_post_flosc_site_index_include', array( $this, 'handle_include' ) );
 		add_action( 'admin_post_flosc_site_index_keywords', array( $this, 'handle_keywords' ) );
 		add_action( 'admin_post_flosc_site_index_reindex_one', array( $this, 'handle_reindex_one' ) );
+	}
+
+	/**
+	 * The two selects, shared by the add and edit forms.
+	 *
+	 * @param string $tier
+	 * @param string $depth
+	 * @return void
+	 */
+	private function term_vgm_selects( $tier, $depth ) {
+		if ( ! function_exists( 'flosc_vgm_tier_labels' ) ) {
+			return;
+		}
+		?>
+		<select name="flosc_vgm" id="flosc_vgm">
+			<option value="">&mdash; <?php esc_html_e( 'No rule', 'flosc' ); ?> &mdash;</option>
+			<?php echo flosc_vgm_options_markup( flosc_vgm_tier_labels(), (string) $tier ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built escaped in flosc_vgm_options_markup() ?>
+		</select>
+		<select name="flosc_depth" id="flosc_depth">
+			<option value="">&mdash; <?php esc_html_e( 'No rule', 'flosc' ); ?> &mdash;</option>
+			<?php echo flosc_vgm_options_markup( flosc_vgm_depth_labels(), (string) $depth ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built escaped in flosc_vgm_options_markup() ?>
+		</select>
+		<p class="description">
+			<?php esc_html_e( 'What the AI may retrieve of posts in this term. The tier is a floor: Visitors also covers guests and members. Both halves must be set for the rule to count. A rule on a post beats one on its tags, which beats one on its categories.', 'flosc' ); ?>
+		</p>
+		<?php
+	}
+
+	/**
+	 * @return void
+	 */
+	public function render_term_vgm_add_fields() {
+		?>
+		<div class="form-field">
+			<label for="flosc_vgm"><?php esc_html_e( 'FLOSC AI retrieval', 'flosc' ); ?></label>
+			<?php
+			wp_nonce_field( 'flosc_term_vgm', 'flosc_term_vgm_nonce' );
+			$this->term_vgm_selects( '', '' );
+			?>
+		</div>
+		<?php
+	}
+
+	/**
+	 * @param WP_Term $term
+	 * @return void
+	 */
+	public function render_term_vgm_edit_fields( $term ) {
+		$term_id = isset( $term->term_id ) ? (int) $term->term_id : 0;
+		?>
+		<tr class="form-field">
+			<th scope="row"><label for="flosc_vgm"><?php esc_html_e( 'FLOSC AI retrieval', 'flosc' ); ?></label></th>
+			<td>
+				<?php
+				wp_nonce_field( 'flosc_term_vgm', 'flosc_term_vgm_nonce' );
+				$this->term_vgm_selects(
+					get_term_meta( $term_id, '_flosc_vgm', true ),
+					get_term_meta( $term_id, '_flosc_depth', true )
+				);
+				?>
+			</td>
+		</tr>
+		<?php
+	}
+
+	/**
+	 * @param int    $term_id
+	 * @param int    $tt_id
+	 * @param string $taxonomy
+	 * @return void
+	 */
+	public function save_term_vgm( $term_id, $tt_id = 0, $taxonomy = '' ) {
+		unset( $tt_id );
+
+		if ( ! in_array( (string) $taxonomy, array( 'category', 'post_tag' ), true ) ) {
+			return;
+		}
+		if ( ! current_user_can( 'manage_categories' ) ) {
+			return;
+		}
+
+		$nonce = isset( $_POST['flosc_term_vgm_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['flosc_term_vgm_nonce'] ) ) : '';
+		if ( '' === $nonce || ! wp_verify_nonce( $nonce, 'flosc_term_vgm' ) ) {
+			return;
+		}
+
+		foreach ( array(
+			'flosc_vgm'   => array( '_flosc_vgm', 'tier_token' ),
+			'flosc_depth' => array( '_flosc_depth', 'depth_token' ),
+		) as $field => $spec ) {
+			if ( ! isset( $_POST[ $field ] ) ) {
+				continue;
+			}
+			$value = call_user_func( array( __CLASS__, $spec[1] ), sanitize_key( wp_unslash( $_POST[ $field ] ) ) );
+			if ( '' === $value ) {
+				delete_term_meta( (int) $term_id, $spec[0] );
+			} else {
+				update_term_meta( (int) $term_id, $spec[0], $value );
+			}
+		}
 	}
 
 	/**
@@ -488,6 +601,480 @@ class FLOSC_Site_Content_Index {
 	 * @param int   $group_id Group.
 	 * @return string Space-separated tiers.
 	 */
+	/**
+	 * Any access value as a clean VGM list.
+	 *
+	 * "member", "visitor guest member", "visitor,guest" all arrive here and
+	 * leave as an ordered list of the levels that are actually meant. Empty
+	 * means nobody said anything, which is not the same as "members only".
+	 *
+	 * @param mixed $raw
+	 * @return string[]
+	 */
+	/**
+	 * FLOSC's own plumbing, which is not site content.
+	 *
+	 * settings.php creates a flosc-internal category and hangs
+	 * flosc-internal-concierge and flosc-internal-trajectories under it. Those
+	 * posts are how FLOSC stores its own working parts — they are not writing
+	 * about the site and chat has no business citing them at any access level.
+	 *
+	 * The indexer had no idea the convention existed. Every internal post was
+	 * indexed as ordinary content, and what kept it out of a visitor's reach was
+	 * nothing but the members-only default that used to sit on every un-gated
+	 * row. Deriving access properly removed that accident, so the convention has
+	 * to be honoured on purpose: internal posts are not indexed at all.
+	 *
+	 * @param int $post_id
+	 * @return bool
+	 */
+	/**
+	 * Categories that never enter the index, matched exactly.
+	 *
+	 * Two different things, both excluded for the same reason — neither is site
+	 * content and neither may come back out of retrieval as content.
+	 *
+	 * 'internal' is the site owner's own material: the rolodex. No flow, no
+	 * personality and no AI provider ever sees it. It has no VGM value, because
+	 * VGM does not reach it at all.
+	 *
+	 * 'trajectory', 'trajectories' and 'concierge' are FLOSC's own plumbing. The
+	 * flow personality and the provider DO see these — that is what they are
+	 * for — but through their own readers, admin/concierge.php and
+	 * includes/flosc-personality-library.php, which take exactly these bare
+	 * names alongside the prefixed ones. Indexing them would let the same text
+	 * come back to a visitor as retrieved content.
+	 *
+	 * Exact match, so 'internal-notes', 'international' and 'concierges' are
+	 * somebody's own categories and stay in the index.
+	 */
+	const INTERNAL_CATEGORY_ALIASES = array( 'internal', 'trajectory', 'trajectories', 'concierge' );
+
+	public static function is_internal_post( $post_id ) {
+		$terms = get_the_terms( (int) $post_id, 'category' );
+		if ( ! is_array( $terms ) ) {
+			return false;
+		}
+		foreach ( $terms as $term ) {
+			if ( ! $term || is_wp_error( $term ) ) {
+				continue;
+			}
+			$slug = (string) $term->slug;
+			if ( 'flosc-internal' === $slug || 0 === strpos( $slug, 'flosc-internal-' ) ) {
+				return true;
+			}
+			/*
+			 * The bare aliases the readers themselves accept.
+			 *
+			 * The trajectory reader takes
+			 * "flosc-internal-trajectories,trajectory,trajectories" and the
+			 * concierge reader takes "flosc-internal-concierge,concierge". A
+			 * floscAdmin who filed either under the short name has internal
+			 * content in a category with no flosc- prefix, and matching only
+			 * the prefix would have left it in the index. What the readers
+			 * treat as internal, this treats as internal.
+			 */
+			if ( in_array( $slug, self::INTERNAL_CATEGORY_ALIASES, true ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * How much of a post a tier gets, deepest last.
+	 *
+	 * Access has two axes, not one. VGM says WHO — and the tier is a floor, so
+	 * V includes VGM, G excludes V, M excludes VG. Depth says HOW MUCH that
+	 * tier gets of the post itself.
+	 */
+	const DEPTHS = array( 'title', 'excerpt', 'readmore', 'full' );
+
+	/** The tiers, shallowest first. A tier never gets less than the one below. */
+	const TIERS = array( 'visitor', 'guest', 'member' );
+
+	/**
+	 * A depth token, or '' when it is not one.
+	 *
+	 * @param mixed $raw
+	 * @return string
+	 */
+	public static function depth_token( $raw ) {
+		$raw = strtolower( trim( (string) $raw ) );
+		return in_array( $raw, self::DEPTHS, true ) ? $raw : '';
+	}
+
+	/**
+	 * Position on the depth ladder. -1 for anything that is not a depth.
+	 *
+	 * @param mixed $raw
+	 * @return int
+	 */
+	public static function depth_rank( $raw ) {
+		$idx = array_search( self::depth_token( $raw ), self::DEPTHS, true );
+		return false === $idx ? -1 : (int) $idx;
+	}
+
+	/**
+	 * A tier token, or '' when it is not one.
+	 *
+	 * @param mixed $raw
+	 * @return string
+	 */
+	public static function tier_token( $raw ) {
+		$raw = strtolower( trim( (string) $raw ) );
+		return in_array( $raw, self::TIERS, true ) ? $raw : '';
+	}
+
+	/**
+	 * Every tier at or above $tier. The floor, expressed as a list.
+	 *
+	 * @param string $tier
+	 * @return string[]
+	 */
+	public static function tiers_from( $tier ) {
+		$tier = self::tier_token( $tier );
+		if ( '' === $tier ) {
+			return array();
+		}
+		$idx = (int) array_search( $tier, self::TIERS, true );
+		return array_slice( self::TIERS, $idx );
+	}
+
+	/**
+	 * A complete depth map: every tier, one depth each.
+	 *
+	 * @param string $depth Depth every tier gets.
+	 * @return array<string,string>
+	 */
+	public static function depth_map( $depth ) {
+		$depth = self::depth_token( $depth );
+		if ( '' === $depth ) {
+			$depth = 'title';
+		}
+		$map = array();
+		foreach ( self::TIERS as $tier ) {
+			$map[ $tier ] = $depth;
+		}
+		return $map;
+	}
+
+	/**
+	 * Normalise a stored map, and enforce the floor.
+	 *
+	 * A higher tier can never get less than a lower one — that is what "V
+	 * includes VGM" means — so each tier is raised to the deepest depth granted
+	 * at or below it.
+	 *
+	 * @param mixed $raw
+	 * @return array<string,string>
+	 */
+	public static function normalize_depth_map( $raw ) {
+		$raw = is_array( $raw ) ? $raw : array();
+		$map = array();
+		$run = 'title';
+		foreach ( self::TIERS as $tier ) {
+			$depth = self::depth_token( $raw[ $tier ] ?? '' );
+			if ( '' === $depth ) {
+				$depth = 'title';
+			}
+			if ( self::depth_rank( $depth ) < self::depth_rank( $run ) ) {
+				$depth = $run;
+			}
+			$run          = $depth;
+			$map[ $tier ] = $depth;
+		}
+		return $map;
+	}
+
+	/**
+	 * The site-wide default, from flow settings.
+	 *
+	 * Ships as full body for everybody, because published is public. A
+	 * floscAdmin who wants "all titles VGM" or "all excerpts VGM" sets it here
+	 * once and every post with no rule of its own follows.
+	 *
+	 * @param string $flow_stem
+	 * @return array<string,string>
+	 */
+	public static function default_depth_map( $flow_stem = '' ) {
+		$saved = null;
+
+		if ( ! empty( $GLOBALS['flosc_current_settings']['content_default_vgm'] ) ) {
+			$saved = $GLOBALS['flosc_current_settings']['content_default_vgm'];
+		} elseif ( function_exists( 'flosc_get_setting' ) ) {
+			$saved = flosc_get_setting( 'content_default_vgm', null, $flow_stem !== '' ? $flow_stem : null );
+		}
+
+		if ( ! is_array( $saved ) || empty( $saved ) ) {
+			return self::depth_map( 'full' );
+		}
+
+		return self::normalize_depth_map( $saved );
+	}
+
+	/**
+	 * Protection rules for this flow, as the Content tab stores them.
+	 *
+	 * @param string $flow_stem
+	 * @return array[]
+	 */
+	public static function protection_rules( $flow_stem = '' ) {
+		$rules = array();
+
+		if ( ! empty( $GLOBALS['flosc_current_settings']['protected_content'] ) ) {
+			$rules = $GLOBALS['flosc_current_settings']['protected_content'];
+		} elseif ( function_exists( 'flosc_get_setting' ) ) {
+			$rules = flosc_get_setting( 'protected_content', array(), $flow_stem !== '' ? $flow_stem : null );
+		}
+
+		return is_array( $rules ) ? $rules : array();
+	}
+
+	/**
+	 * Fold one scope's rules into a depth map.
+	 *
+	 * A rule reads "at this tier and above, you get this depth". Several rules
+	 * on one scope are normal — a post can be readmore for visitors and full
+	 * for guests — so the deepest grant wins per tier, and tiers no rule
+	 * mentions fall to title: the post still exists and may be named, which is
+	 * the locked stub behaviour that was already there.
+	 *
+	 * @param array[] $rules
+	 * @return array<string,string>|null Null when no rule in the set applies.
+	 */
+	public static function fold_rules( array $rules ) {
+		$map   = self::depth_map( 'title' );
+		$any   = false;
+
+		foreach ( $rules as $rule ) {
+			if ( ! is_array( $rule ) ) {
+				continue;
+			}
+			$tier  = self::tier_token( $rule['vgm'] ?? '' );
+			$depth = self::depth_token( $rule['depth'] ?? '' );
+
+			/*
+			 * A rule stored before these two columns existed. Every such rule
+			 * on dainis.net means what it has always meant: gated, members
+			 * only, whole body once cleared. Nothing changes meaning until
+			 * somebody edits the row.
+			 */
+			if ( '' === $tier ) {
+				$tier = 'member';
+			}
+			if ( '' === $depth ) {
+				$depth = 'full';
+			}
+
+			$any = true;
+			foreach ( self::tiers_from( $tier ) as $t ) {
+				if ( self::depth_rank( $depth ) > self::depth_rank( $map[ $t ] ) ) {
+					$map[ $t ] = $depth;
+				}
+			}
+		}
+
+		return $any ? self::normalize_depth_map( $map ) : null;
+	}
+
+	/**
+	 * What each tier gets of this post.
+	 *
+	 * Scopes, most specific first: post, then its tags, then its categories,
+	 * then the site default. The most specific scope that carries any rule at
+	 * all decides — so a rule on the post can open a post its category closed,
+	 * and it can close one its category left open. Merging instead of deciding
+	 * would make the second of those impossible.
+	 *
+	 * @param int    $post_id
+	 * @param string $flow_stem
+	 * @return array<string,string>
+	 */
+	public static function resolve_vgm( $post_id, $flow_stem = '' ) {
+		$post_id = (int) $post_id;
+
+		$tag_ids = array();
+		$terms   = get_the_terms( $post_id, 'post_tag' );
+		if ( is_array( $terms ) ) {
+			foreach ( $terms as $term ) {
+				if ( $term && ! is_wp_error( $term ) ) {
+					$tag_ids[] = (int) $term->term_id;
+				}
+			}
+		}
+
+		$cat_ids = array();
+		$terms   = get_the_terms( $post_id, 'category' );
+		if ( is_array( $terms ) ) {
+			foreach ( $terms as $term ) {
+				if ( $term && ! is_wp_error( $term ) ) {
+					$cat_ids[] = (int) $term->term_id;
+				}
+			}
+		}
+
+		/*
+		 * A rule can be written in two places and means the same thing in both:
+		 * on the object's own editing screen, or in the table on the Content
+		 * tab. The panels write meta because that is where a floscAdmin is when
+		 * they think of it; the table writes flow settings because that is the
+		 * site overview. Both land here.
+		 */
+		$by_post = self::meta_rules( 'post', $post_id );
+		$by_tag  = array();
+		$by_cat  = array();
+
+		foreach ( $tag_ids as $tid ) {
+			$by_tag = array_merge( $by_tag, self::meta_rules( 'term', $tid ) );
+		}
+		foreach ( $cat_ids as $cid ) {
+			$by_cat = array_merge( $by_cat, self::meta_rules( 'term', $cid ) );
+		}
+
+		foreach ( self::protection_rules( $flow_stem ) as $rule ) {
+			if ( ! is_array( $rule ) || ! isset( $rule['type'], $rule['id'] ) ) {
+				continue;
+			}
+			$type = strtolower( trim( (string) $rule['type'] ) );
+			$id   = (int) $rule['id'];
+
+			if ( ( 'post' === $type || 'page' === $type ) && $id === $post_id ) {
+				$by_post[] = $rule;
+			} elseif ( 'tag' === $type && in_array( $id, $tag_ids, true ) ) {
+				$by_tag[] = $rule;
+			} elseif ( 'category' === $type && in_array( $id, $cat_ids, true ) ) {
+				$by_cat[] = $rule;
+			}
+		}
+
+		foreach ( array( $by_post, $by_tag, $by_cat ) as $scope ) {
+			if ( empty( $scope ) ) {
+				continue;
+			}
+			$map = self::fold_rules( $scope );
+			if ( null !== $map ) {
+				return $map;
+			}
+		}
+
+		return self::default_depth_map( $flow_stem );
+	}
+
+	/**
+	 * Every rule written on an object rather than in the table.
+	 *
+	 * The Content tab is meant to be the one place a floscAdmin can see what
+	 * the site does. A rule set on a category screen is invisible there unless
+	 * something goes and looks, so this goes and looks.
+	 *
+	 * @return array[] Each: kind, id, name, vgm, depth, edit_url.
+	 */
+	public static function rules_written_on_objects() {
+		$out = array();
+
+		$terms = get_terms(
+			array(
+				'taxonomy'   => array( 'category', 'post_tag' ),
+				'hide_empty' => false,
+				'meta_key'   => '_flosc_vgm', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- admin overview, runs once per page load
+			)
+		);
+		if ( is_array( $terms ) ) {
+			foreach ( $terms as $term ) {
+				if ( ! $term || is_wp_error( $term ) ) {
+					continue;
+				}
+				$rule = self::meta_rules( 'term', (int) $term->term_id );
+				if ( empty( $rule ) ) {
+					continue;
+				}
+				$out[] = array(
+					'kind'     => 'category' === $term->taxonomy ? __( 'Category', 'flosc' ) : __( 'Tag', 'flosc' ),
+					'object_kind' => 'term',
+					'rule_key' => 'term:' . (int) $term->term_id,
+					'id'       => (int) $term->term_id,
+					'name'     => (string) $term->name,
+					'vgm'      => $rule[0]['vgm'],
+					'depth'    => $rule[0]['depth'],
+					'edit_url' => get_edit_term_link( (int) $term->term_id, (string) $term->taxonomy ),
+				);
+			}
+		}
+
+		$posts = get_posts(
+			array(
+				'post_type'      => 'any',
+				'post_status'    => 'any',
+				'posts_per_page' => 200,
+				'meta_key'       => '_flosc_vgm', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- admin overview, runs once per page load
+				'no_found_rows'  => true,
+			)
+		);
+		foreach ( (array) $posts as $post ) {
+			if ( ! $post instanceof WP_Post ) {
+				continue;
+			}
+			$rule = self::meta_rules( 'post', (int) $post->ID );
+			if ( empty( $rule ) ) {
+				continue;
+			}
+			$out[] = array(
+				'kind'     => 'page' === $post->post_type ? __( 'Page', 'flosc' ) : __( 'Post', 'flosc' ),
+				'object_kind' => 'post',
+				'rule_key' => 'post:' . (int) $post->ID,
+				'id'       => (int) $post->ID,
+				'name'     => (string) get_the_title( $post ),
+				'vgm'      => $rule[0]['vgm'],
+				'depth'    => $rule[0]['depth'],
+				'edit_url' => get_edit_post_link( (int) $post->ID ),
+			);
+		}
+
+		return $out;
+	}
+
+	/**
+	 * A rule written on the object itself, as zero or one rule.
+	 *
+	 * Both halves must be set for it to count. A post carrying only a tier and
+	 * no depth is somebody half-way through a thought, not a rule, and treating
+	 * it as one would silently gate the post.
+	 *
+	 * @param string $kind 'post' or 'term'
+	 * @param int    $id
+	 * @return array[]
+	 */
+	public static function meta_rules( $kind, $id ) {
+		$id = (int) $id;
+		if ( $id <= 0 ) {
+			return array();
+		}
+
+		$tier  = 'term' === $kind ? get_term_meta( $id, '_flosc_vgm', true ) : get_post_meta( $id, '_flosc_vgm', true );
+		$depth = 'term' === $kind ? get_term_meta( $id, '_flosc_depth', true ) : get_post_meta( $id, '_flosc_depth', true );
+
+		$tier  = self::tier_token( $tier );
+		$depth = self::depth_token( $depth );
+
+		if ( '' === $tier || '' === $depth ) {
+			return array();
+		}
+
+		return array( array( 'vgm' => $tier, 'depth' => $depth ) );
+	}
+
+	public static function vgm_list( $raw ) {
+		$raw = strtolower( trim( (string) $raw ) );
+		if ( '' === $raw ) {
+			return array();
+		}
+		$parts = preg_split( '/[\s,]+/', $raw ) ?: array();
+		/* array_intersect keeps the first array's order, so the list always
+		   reads visitor, guest, member however it was typed. */
+		return array_values( array_intersect( array( 'visitor', 'guest', 'member' ), $parts ) );
+	}
+
 	public static function group_vgm( array $policy, $group_id ) {
 		$key = 'bb_group:' . (int) $group_id;
 		$raw = isset( $policy['vgm_rows'][ $key ] ) ? $policy['vgm_rows'][ $key ] : $policy['vgm_default'];
@@ -603,6 +1190,12 @@ class FLOSC_Site_Content_Index {
 			if ( ! $post instanceof WP_Post ) {
 				continue;
 			}
+			/* FLOSC's own plumbing is not site content. Skipping it here also
+			   drops any internal row an earlier build wrote, because $indexed
+			   is what gets saved. */
+			if ( self::is_internal_post( $post->ID ) ) {
+				continue;
+			}
 			$id_key   = (string) $post->ID;
 			$prev     = isset( $prev_posts[ $id_key ] ) && is_array( $prev_posts[ $id_key ] ) ? $prev_posts[ $id_key ] : array();
 			$excluded = ! empty( $prev['excluded'] );
@@ -686,28 +1279,123 @@ class FLOSC_Site_Content_Index {
 	 * @return array
 	 */
 	public function build_row_from_post( WP_Post $post, $keywords_manual = '', $excluded = false ) {
-		$body = wp_strip_all_tags( (string) $post->post_content );
+		/*
+		 * Shortcodes out before tags out. wp_strip_all_tags() removes HTML and
+		 * leaves shortcodes whole, so a page built with Divi indexed as its
+		 * builder markup — [et_pb_section fb_built="1" _builder_version="4.17.4"
+		 * …] — and that markup ate the character budget from the top of the post
+		 * downward. Text at the bottom of a long builder page never reached the
+		 * index at all, which is why a translation added at the end of a post
+		 * could not be found by chat.
+		 */
+		$raw_body = (string) $post->post_content;
+
+		/*
+		 * The read-more split happens before cleaning, because cleaning removes
+		 * the marker along with every other tag. What is stored is the LENGTH of
+		 * the cleaned teaser, so a readmore slice is a substr() of the same body
+		 * string the full depth returns — no second copy, and no need to reach
+		 * for the live post at retrieval time.
+		 */
+		$teaser_raw = $raw_body;
+		if ( preg_match( '/<!--\s*more(.*?)?-->/', $raw_body, $more_m, PREG_OFFSET_CAPTURE ) ) {
+			$teaser_raw = substr( $raw_body, 0, (int) $more_m[0][1] );
+		}
+
+		$body = strip_shortcodes( $raw_body );
+		/*
+		 * strip_shortcodes() only knows shortcodes that are REGISTERED, and a page
+		 * builder registers its own only when the builder loads. A rebuild runs in
+		 * admin without it, so every [et_pb_*] survived the call above and the
+		 * index still filled with builder attributes. This second pass matches the
+		 * shape rather than the registry, and it is not fussy about the shape:
+		 * nothing between square brackets belongs in a search corpus, whoever
+		 * wrote it and whether or not anything has declared it. Safe here and only
+		 * here — this text is stored for lookup and is never rendered.
+		 */
+		$body = preg_replace( '/\[[^\]]*\]/', ' ', (string) $body );
+		$body = wp_strip_all_tags( (string) $body );
 		$body = preg_replace( '/\s+/u', ' ', $body );
 		$body = is_string( $body ) ? trim( $body ) : '';
 		if ( strlen( $body ) > self::MAX_BODY_CHARS ) {
 			$body = substr( $body, 0, self::MAX_BODY_CHARS );
 		}
 
+		$teaser = strip_shortcodes( $teaser_raw );
+		$teaser = preg_replace( '/\[[^\]]*\]/', ' ', (string) $teaser );
+		$teaser = wp_strip_all_tags( (string) $teaser );
+		$teaser = preg_replace( '/\s+/u', ' ', $teaser );
+		$teaser = is_string( $teaser ) ? trim( $teaser ) : '';
+		$more_offset = min( strlen( $teaser ), strlen( $body ) );
+
 		$auto_kw = $this->derive_keywords( $post, $body );
 		$manual  = sanitize_text_field( (string) $keywords_manual );
 		$merged  = $manual !== '' ? $this->merge_keywords( $auto_kw, $manual ) : $auto_kw;
 
-		$access = get_post_meta( $post->ID, '_flosc_access_level', true );
-		if ( ! is_string( $access ) || $access === '' ) {
-			// Content subcategory visitor|guest|member if used by sample packs.
-			$sub = get_post_meta( $post->ID, '_flosc_content_subcategory', true );
-			if ( in_array( $sub, array( 'visitor', 'guest', 'member' ), true ) ) {
-				$access = $sub;
-			} else {
-				$access = 'member';
+		/*
+		 * Access is derived, never defaulted.
+		 *
+		 * It defaulted to 'member', so every ordinary post on the site — carrying
+		 * no FLOSC meta because nobody had ever asked for it to be gated — was
+		 * indexed members-only and skipped outright by a visitor-level search.
+		 * Ask a public chat about a public post and it said it had no
+		 * information, which was false: the row was there, keywords and all,
+		 * behind a gate nobody set.
+		 *
+		 * In order: what the floscAdmin said about this post, then what the
+		 * protection class says — it is the thing that actually gates
+		 * the_content, so the index and the page can never disagree — then what
+		 * WordPress itself says. Published is public.
+		 */
+		$access = implode( ' ', self::vgm_list( get_post_meta( $post->ID, '_flosc_access_level', true ) ) );
+
+		if ( '' === $access ) {
+			$access = implode( ' ', self::vgm_list( get_post_meta( $post->ID, '_flosc_content_subcategory', true ) ) );
+		}
+
+		if ( '' === $access && 'full' === get_post_meta( $post->ID, '_flosc_protection_mode', true ) ) {
+			/* The floscAdmin marked it public outright. */
+			$access = 'visitor';
+		}
+
+		if ( '' === $access && class_exists( 'FLOSC_Content_Protection' ) ) {
+			$protection = FLOSC_Content_Protection::instance()->check_post_protection( (int) $post->ID );
+			if ( ! empty( $protection['protected'] ) ) {
+				$access = implode( ' ', self::vgm_list( $protection['required_level'] ) );
+				if ( '' === $access ) {
+					$access = 'member';
+				}
 			}
 		}
-		$access = sanitize_key( (string) $access );
+
+		if ( '' === $access ) {
+			$private = ( 'publish' !== $post->post_status ) || ( '' !== (string) $post->post_password );
+			$access  = $private ? 'member' : 'visitor';
+		}
+
+		/*
+		 * Depth, the second axis.
+		 *
+		 * resolve_vgm() answers from the rule table — post, then tag, then
+		 * category, then the site default. The derived tier above then CLAMPS
+		 * it: anything below that tier drops to title, so a rule can never hand
+		 * out a body the page itself would refuse to render. A floscAdmin who
+		 * wants a gated post opened does it the way that already exists, with
+		 * the post's own visibility override, which lands on 'visitor' here and
+		 * clamps nothing.
+		 */
+		$vgm   = self::resolve_vgm( (int) $post->ID );
+		$floor = self::vgm_list( $access );
+		$floor = empty( $floor ) ? 'visitor' : $floor[0];
+		$open  = self::tiers_from( $floor );
+		foreach ( self::TIERS as $tier ) {
+			if ( ! in_array( $tier, $open, true ) ) {
+				$vgm[ $tier ] = 'title';
+			}
+		}
+		$vgm = self::normalize_depth_map( $vgm );
+
+		$excerpt = sanitize_text_field( (string) $post->post_excerpt );
 
 		$parent = (int) $post->post_parent;
 		$cats   = array();
@@ -737,6 +1425,10 @@ class FLOSC_Site_Content_Index {
 			'keywords'         => $merged,
 			'keywords_manual'  => $manual,
 			'access'           => $access,
+			// What each tier gets: title | excerpt | readmore | full.
+			'vgm'              => $vgm,
+			'excerpt'          => $excerpt,
+			'more_offset'      => (int) $more_offset,
 			'excluded'         => (bool) $excluded,
 			'parent'           => $parent,
 			'categories'       => $cats,
@@ -835,15 +1527,26 @@ class FLOSC_Site_Content_Index {
 			if ( ! empty( $row['excluded'] ) ) {
 				continue;
 			}
-			$req = sanitize_key( (string) ( $row['access'] ?? 'member' ) );
-			$ok  = $this->access_allows( $access_level, $req );
-			$lock = $ok ? '' : ' [locked]';
+			/*
+			 * No sanitize_key() on the way in.
+			 *
+			 * access is a VGM list, and sanitize_key() strips the space:
+			 * "guest member" arrived as "guestmember", vgm_list() found no level
+			 * in it, and access_allows() reads an empty list as nobody having
+			 * gated the row — so a row restricted to guests and members was
+			 * handed to a logged-out visitor, body and all. vgm_list() is the
+			 * sanitizer: it lowercases, trims, splits and whitelists.
+			 */
+			$req   = (string) ( $row['access'] ?? 'visitor' );
+			$depth = $this->row_depth( $row, $access_level );
+			$lock  = ( 'title' === $depth ) ? ' [locked]' : '';
 			$lines[] = sprintf(
-				'- #%d %s%s (access: %s)',
+				'- #%d %s%s (access: %s, available: %s)',
 				(int) ( $row['post_id'] ?? 0 ),
 				(string) ( $row['title'] ?? '' ),
 				$lock,
-				$req
+				$req,
+				$depth
 			);
 		}
 		return implode( "\n", $lines );
@@ -875,14 +1578,44 @@ class FLOSC_Site_Content_Index {
 			if ( ! is_array( $row ) || ! empty( $row['excluded'] ) ) {
 				continue;
 			}
-			$req = sanitize_key( (string) ( $row['access'] ?? 'member' ) );
-			if ( ! $this->access_allows( $access_level, $req ) ) {
-				// List locked title only in map path; skip full body here.
-				continue;
-			}
-			$hay = function_exists( 'mb_strtolower' )
-				? mb_strtolower( (string) ( $row['title'] ?? '' ) . ' ' . (string) ( $row['keywords'] ?? '' ) . ' ' . (string) ( $row['content'] ?? '' ) )
-				: strtolower( (string) ( $row['title'] ?? '' ) . ' ' . (string) ( $row['keywords'] ?? '' ) . ' ' . (string) ( $row['content'] ?? '' ) );
+			/*
+			 * A post the visitor may not READ is still a post that EXISTS.
+			 *
+			 * This skipped the whole row, so a member-only post was invisible
+			 * to search entirely — its title, its keywords, all of it. Ask a
+			 * visitor-level chat about a member-only piece and the honest
+			 * answer available to it was "I have no information", which is
+			 * false: the site knows the piece perfectly well.
+			 *
+			 * The row is scored and returned now, with its title, URL and
+			 * keywords and WITHOUT its body, marked locked. The model can say
+			 * the piece exists and point at it; it cannot quote what is behind
+			 * the gate. That is what the comment here always said it wanted:
+			 * "list locked title only".
+			 */
+			/*
+			 * No sanitize_key() on the way in.
+			 *
+			 * access is a VGM list, and sanitize_key() strips the space:
+			 * "guest member" arrived as "guestmember", vgm_list() found no level
+			 * in it, and access_allows() reads an empty list as nobody having
+			 * gated the row — so a row restricted to guests and members was
+			 * handed to a logged-out visitor, body and all. vgm_list() is the
+			 * sanitizer: it lowercases, trims, splits and whitelists.
+			 */
+			$depth  = $this->row_depth( $row, $access_level );
+			$slice  = $this->row_body_at( $row, $depth );
+			$locked = ( 'title' === $depth );
+			/*
+			 * A row is searched at the depth it is returned at, never deeper.
+			 * At title depth the body is not searched and not returned; at
+			 * excerpt or readmore only that slice is. Otherwise a keyword that
+			 * appears solely past the gate would pull up a row the reader then
+			 * cannot see the reason for.
+			 */
+			$hay_src = (string) ( $row['title'] ?? '' ) . ' ' . (string) ( $row['keywords'] ?? '' )
+				. ( '' !== $slice ? ' ' . $slice : '' );
+			$hay = function_exists( 'mb_strtolower' ) ? mb_strtolower( $hay_src ) : strtolower( $hay_src );
 
 			$score = 0;
 			if ( $q !== '' && $hay !== '' ) {
@@ -926,7 +1659,13 @@ class FLOSC_Site_Content_Index {
 				}
 			}
 			if ( $score > 0 ) {
-				$scored[] = array( 'score' => $score, 'row' => $row );
+				$scored[] = array(
+					'score'  => $score,
+					'row'    => $row,
+					'locked' => $locked,
+					'depth'  => $depth,
+					'slice'  => $slice,
+				);
 			}
 		}
 
@@ -954,9 +1693,87 @@ class FLOSC_Site_Content_Index {
 			if ( ! empty( $row['keywords'] ) ) {
 				$out .= 'Keywords: ' . (string) $row['keywords'] . "\n";
 			}
-			$out .= "\n" . (string) ( $row['content'] ?? '' ) . "\n\n---\n\n";
+			if ( ! empty( $hit['locked'] ) ) {
+				$out .= "Access: title only. This piece exists and may be named and linked. Its content is not available at this access level, so do not quote or summarise it — say it is there and point to it.\n";
+				$out .= "\n---\n\n";
+				continue;
+			}
+
+			$depth = (string) ( $hit['depth'] ?? 'full' );
+			if ( 'full' !== $depth ) {
+				/*
+				 * Say which slice this is, so the model does not present a
+				 * teaser as the whole piece. It may quote what it was given and
+				 * point at the post for the rest.
+				 */
+				$out .= 'excerpt' === $depth
+					? "Access: excerpt only. Quote this much and point to the post for the rest.\n"
+					: "Access: opening section only, up to the read-more break. Quote this much and point to the post for the rest.\n";
+			}
+
+			$out .= "\n" . (string) ( $hit['slice'] ?? ( $row['content'] ?? '' ) ) . "\n\n---\n\n";
 		}
 		return $out;
+	}
+
+	/**
+	 * What this tier gets of this row.
+	 *
+	 * A row built before depth existed carries only its access string. That
+	 * still answers the question, at the two depths it could express: whole
+	 * body for a tier that clears it, title for one that does not. So an index
+	 * file written by an older build keeps working until it is rebuilt.
+	 *
+	 * @param array  $row
+	 * @param string $tier visitor|guest|member
+	 * @return string title|excerpt|readmore|full
+	 */
+	public function row_depth( array $row, $tier ) {
+		$tier = self::tier_token( $tier );
+		if ( '' === $tier ) {
+			$tier = 'visitor';
+		}
+
+		if ( ! empty( $row['vgm'] ) && is_array( $row['vgm'] ) ) {
+			$map = self::normalize_depth_map( $row['vgm'] );
+			return $map[ $tier ];
+		}
+
+		return $this->access_allows( $tier, (string) ( $row['access'] ?? 'visitor' ) ) ? 'full' : 'title';
+	}
+
+	/**
+	 * The slice of body this depth returns. Empty string at title depth.
+	 *
+	 * @param array  $row
+	 * @param string $depth
+	 * @return string
+	 */
+	public function row_body_at( array $row, $depth ) {
+		$body = (string) ( $row['content'] ?? '' );
+
+		switch ( self::depth_token( $depth ) ) {
+			case 'full':
+				return $body;
+
+			case 'readmore':
+				$offset = isset( $row['more_offset'] ) ? (int) $row['more_offset'] : 0;
+				if ( $offset <= 0 || $offset >= strlen( $body ) ) {
+					/* No read-more break in this post: the teaser IS the post. */
+					return $body;
+				}
+				return rtrim( substr( $body, 0, $offset ) );
+
+			case 'excerpt':
+				$excerpt = trim( (string) ( $row['excerpt'] ?? '' ) );
+				if ( '' !== $excerpt ) {
+					return $excerpt;
+				}
+				/* No hand-written excerpt: the snippet the row already carries. */
+				return trim( (string) ( $row['snippet'] ?? '' ) );
+		}
+
+		return '';
 	}
 
 	/**
@@ -971,8 +1788,30 @@ class FLOSC_Site_Content_Index {
 			'member'  => 3,
 		);
 		$u = $hierarchy[ sanitize_key( (string) $user_level ) ] ?? 1;
-		$r = $hierarchy[ sanitize_key( (string) $required ) ] ?? 3;
-		return $u >= $r;
+
+		/*
+		 * access is a VGM list, not one word.
+		 *
+		 * This read a single token: $hierarchy[ sanitize_key( $required ) ] ?? 3.
+		 * group_vgm() has always produced lists like "visitor guest member", and
+		 * load() has always split access on whitespace — so a real list arrived
+		 * here, came out of sanitize_key() as "visitorguestmember", missed the
+		 * hierarchy, and fell to the ?? 3 default. Members only. Silently, for
+		 * every row that carried a list.
+		 *
+		 * Nobody having said anything is not the same as members only either:
+		 * an empty value means published, and published is public.
+		 */
+		$levels = self::vgm_list( $required );
+		if ( empty( $levels ) ) {
+			return true;
+		}
+		foreach ( $levels as $level ) {
+			if ( $u >= $hierarchy[ $level ] ) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
@@ -1016,7 +1855,10 @@ class FLOSC_Site_Content_Index {
 		$title   = (string) ( $doc['posts'][ $key ]['title'] ?? '' );
 		$content = (string) ( $doc['posts'][ $key ]['content'] ?? '' );
 		// Re-derive light auto keywords from title + body, then fold in manual overrides.
-		$auto = $this->merge_keywords( $title, implode( ', ', array_slice( preg_split( '/\s+/', $content ) ?: array(), 0, 24 ) ) );
+		/* Saving a keyword rebuilt the row's searchable field from the first 24
+		   words of the body, throwing away everything derive_keywords() had
+		   built from the whole post. Adding one word quietly shrank the row. */
+		$auto = $this->merge_keywords( $title, (string) ( $doc['posts'][ $key ]['keywords'] ?? '' ) );
 		$doc['posts'][ $key ]['keywords'] = $manual !== '' ? $this->merge_keywords( $auto, $manual ) : $auto;
 		return $this->save( $flow_stem, $doc );
 	}
@@ -1035,6 +1877,11 @@ class FLOSC_Site_Content_Index {
 		}
 		$doc  = $this->load( $flow_stem );
 		$key  = (string) (int) $post_id;
+		/* Reindexing an internal post removes it rather than refreshing it. */
+		if ( self::is_internal_post( $post->ID ) ) {
+			unset( $doc['posts'][ $key ] );
+			return $this->save( $flow_stem, $doc );
+		}
 		$prev = isset( $doc['posts'][ $key ] ) ? $doc['posts'][ $key ] : array();
 		$manual   = isset( $prev['keywords_manual'] ) ? (string) $prev['keywords_manual'] : '';
 		$excluded = ! empty( $prev['excluded'] );

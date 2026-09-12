@@ -1,68 +1,54 @@
 {
   "schema_version": 3,
   "candidate": "codex-gpt5",
-  "candidate_label": "Home Run Candidate v33",
-  "creator": "Codex (OpenAI), GPT-6",
-  "created_at_mts": "2026-09-11d-UTC09h:52m05s",
-  "status": "BUILD_COMPLETE_READY_FOR_CAPTAIN_TESTING",
-  "baseline": {
-    "candidate": "Home Run Candidate v31",
-    "creator": "Grok 4.6",
-    "commit": "8a6b3f5ef37180679c5c59910598717f70c3a857",
-    "modified": false
-  },
-  "reference": {
-    "candidate": "Home Run Candidate v32",
-    "creator": "Claude Opus 5",
-    "commit": "fbc56c48bb2f2c1fb87a9c81eaa19a1029d8419c",
-    "copied_wholesale": false
-  },
+  "candidate_label": "FLOSC 8.0.0 candidate v65",
+  "candidate_iteration": 65,
+  "creator": "Codex",
+  "created_at_utc": "2026-09-12T04:58:54Z",
+  "status": "BUILD_COMPLETE_NOT_DEPLOYED",
+  "base": "claude-opus-5 v64",
   "plugin_source": "flosc-by-codex-gpt5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "b78165b95d31c20d6c40b7dd0e52845369137eb487a83551625765447b46eae1",
-  "artifact_bytes": 2725935,
+  "artifact_sha256": "b4fd6fe1af4e86657960024b634dc29cbd8990ccf074239db98cbd5a9f7e0433",
+  "artifact_bytes": 2751019,
   "artifact_entries": 277,
   "artifact_php_files": 148,
-  "scope": {
-    "personality_card_variables": "implemented at the AI request boundary",
-    "current_url_mapping": "browsing_page_url",
-    "user_data_lookup": "reuses the WP_User already loaded by the turn handler",
-    "stored_personality_mutation": false,
-    "unavailable_recognized_variable": "not available",
-    "unrecognized_braces": "preserved",
-    "shipped_personality_revision": "not in this build; all four profiles are unchanged from v31"
+  "files_changed_from_v64": [
+    "admin/content.php",
+    "admin/settings.php",
+    "flosc.php",
+    "includes/class-flosc-site-content-index.php",
+    "tests/check_access_vgm.php"
+  ],
+  "fixes": {
+    "member_levels_preserves_content_default_vgm": true,
+    "metabox_reaches_posts_pages_and_indexed_types": true,
+    "protection_mode_written_only_when_submitted": true,
+    "content_tab_edits_object_metadata_in_place": true,
+    "term_meta_remains_single_home_for_term_rules": true
   },
   "verification": {
+    "php_regression_scripts": {
+      "passed": 34,
+      "failed": 0
+    },
+    "javascript_test_scripts": {
+      "passed": 2,
+      "failed": 0
+    },
     "php_syntax": {
       "status": "passed",
-      "files": 184
+      "files": 185
     },
-    "php_regression_scripts": {
+    "artifact_packaging": {
       "status": "passed",
-      "scripts": 33
+      "entries": 277,
+      "single_root": "flosc/"
     },
-    "javascript_syntax": "passed",
-    "wordpress_runtime": {
-      "status": "passed",
-      "wordpress": "7.1",
-      "artifact_activated": true,
-      "chatpack_variable_expansion": true,
-      "stored_tokens_intact": true
-    },
-    "plugin_check_2_1_0_plugin_review_phpcs": "passed on exact artifact; no errors found",
-    "plugin_check_2_1_0_aggregate": "attempted; did not complete within the local review window",
-    "reproducible_zip_sha256": "passed",
-    "shipped_personality_hash_matches_v31": true
-  },
-  "captain_acceptance": {
-    "fresh_wordpress_install": "pending",
-    "real_ai_api_connection_and_starter_packs": "pending",
-    "personality_variable_turns": "pending",
-    "shipped_personality_editorial_revision": "pending, Captain-guided one personality at a time",
-    "resubmission": "pending"
+    "reproducible_zip_sha256": true,
+    "version_unchanged": "8.0.0"
   },
   "production_user_data_changed": false,
-  "email_sent": false,
   "live_deployed": false
 }

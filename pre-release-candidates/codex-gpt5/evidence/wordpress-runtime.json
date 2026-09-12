@@ -1,9 +1,0 @@
-{
-  "status": "passed",
-  "wordpress_version": "7.1",
-  "plugin_version": "8.0.0",
-  "active_plugin": "flosc-v33-artifact-final/flosc.php",
-  "expected_profile_found": true,
-  "stored_tokens_intact": true,
-  "failures": []
-}

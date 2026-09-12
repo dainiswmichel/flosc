@@ -1511,16 +1511,30 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
         $flosc_prot_types  = $flosc_post['protection_type']  ?? [];
         $flosc_prot_values = $flosc_post['protection_value'] ?? [];
         $flosc_prot_levels = $flosc_post['protection_level'] ?? [];
+        // Access has two axes: vgm says who, depth says how much of the post.
+        $flosc_prot_vgms   = $flosc_post['protection_vgm']   ?? [];
+        $flosc_prot_depths = $flosc_post['protection_depth'] ?? [];
         $flosc_protected_content = [];
         foreach ($flosc_prot_types as $flosc_i => $flosc_type) {
             $flosc_type  = sanitize_text_field($flosc_type);
             $flosc_value = sanitize_text_field($flosc_prot_values[$flosc_i] ?? '');
             $flosc_level = sanitize_key($flosc_prot_levels[$flosc_i] ?? '');
+            $flosc_vgm   = sanitize_key($flosc_prot_vgms[$flosc_i] ?? '');
+            $flosc_depth = sanitize_key($flosc_prot_depths[$flosc_i] ?? '');
+            if (!in_array($flosc_vgm, ['visitor', 'guest', 'member'], true)) {
+                // A rule stored before these columns existed meant members only.
+                $flosc_vgm = 'member';
+            }
+            if (!in_array($flosc_depth, ['title', 'excerpt', 'readmore', 'full'], true)) {
+                $flosc_depth = 'full';
+            }
             if ($flosc_value === '') continue;
             $flosc_item = [
                 'type'  => $flosc_type,
                 'id'    => $flosc_value,
                 'level' => $flosc_level,
+                'vgm'   => $flosc_vgm,
+                'depth' => $flosc_depth,
             ];
             // Resolve names for display
             if (in_array($flosc_type, ['category', 'tag'])) {
@@ -1538,6 +1552,80 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
             $flosc_protected_content[] = $flosc_item;
         }
         $flosc_new_settings['protected_content'] = $flosc_protected_content;
+
+        /*
+         * The site-wide default is rendered only on the Content tab. Member
+         * Levels shares this save branch but does not post the field, so an
+         * absent field must leave the stored map untouched rather than reset
+         * every tier to full.
+         */
+        if (isset($flosc_post['content_default_vgm']) && is_array($flosc_post['content_default_vgm'])) {
+            $flosc_default_vgm = [];
+            foreach (['visitor', 'guest', 'member'] as $flosc_tier) {
+                $flosc_d = sanitize_key($flosc_post['content_default_vgm'][$flosc_tier] ?? '');
+                $flosc_default_vgm[$flosc_tier] = in_array($flosc_d, ['title', 'excerpt', 'readmore', 'full'], true)
+                    ? $flosc_d
+                    : 'full';
+            }
+            $flosc_new_settings['content_default_vgm'] = $flosc_default_vgm;
+        }
+
+        /*
+         * Object-screen VGM rules have one home: post or term meta. The
+         * Content tab edits that same metadata in place, keyed by kind so a
+         * term and post with the same numeric id cannot collide. Clearing
+         * either half clears the rule; half a rule must never become a gate.
+         */
+        if (
+            'content' === $flosc_active_tab
+            && (
+                isset($flosc_post['flosc_object_rule_vgm'])
+                || isset($flosc_post['flosc_object_rule_depth'])
+            )
+            && class_exists('FLOSC_Site_Content_Index')
+        ) {
+            $flosc_object_vgms = isset($flosc_post['flosc_object_rule_vgm']) && is_array($flosc_post['flosc_object_rule_vgm'])
+                ? $flosc_post['flosc_object_rule_vgm']
+                : [];
+            $flosc_object_depths = isset($flosc_post['flosc_object_rule_depth']) && is_array($flosc_post['flosc_object_rule_depth'])
+                ? $flosc_post['flosc_object_rule_depth']
+                : [];
+            $flosc_object_keys = array_unique(array_merge(array_keys($flosc_object_vgms), array_keys($flosc_object_depths)));
+
+            foreach ($flosc_object_keys as $flosc_object_key) {
+                if (!preg_match('/^(term|post):([1-9][0-9]*)$/', (string) $flosc_object_key, $flosc_object_match)) {
+                    continue;
+                }
+
+                $flosc_object_kind = $flosc_object_match[1];
+                $flosc_object_id = (int) $flosc_object_match[2];
+                $flosc_object_vgm = FLOSC_Site_Content_Index::tier_token(
+                    sanitize_key((string) ($flosc_object_vgms[$flosc_object_key] ?? ''))
+                );
+                $flosc_object_depth = FLOSC_Site_Content_Index::depth_token(
+                    sanitize_key((string) ($flosc_object_depths[$flosc_object_key] ?? ''))
+                );
+
+                if ('' === $flosc_object_vgm || '' === $flosc_object_depth) {
+                    if ('term' === $flosc_object_kind) {
+                        delete_term_meta($flosc_object_id, '_flosc_vgm');
+                        delete_term_meta($flosc_object_id, '_flosc_depth');
+                    } else {
+                        delete_post_meta($flosc_object_id, '_flosc_vgm');
+                        delete_post_meta($flosc_object_id, '_flosc_depth');
+                    }
+                    continue;
+                }
+
+                if ('term' === $flosc_object_kind) {
+                    update_term_meta($flosc_object_id, '_flosc_vgm', $flosc_object_vgm);
+                    update_term_meta($flosc_object_id, '_flosc_depth', $flosc_object_depth);
+                } else {
+                    update_post_meta($flosc_object_id, '_flosc_vgm', $flosc_object_vgm);
+                    update_post_meta($flosc_object_id, '_flosc_depth', $flosc_object_depth);
+                }
+            }
+        }
 
         // Guest chat entitlements (checkboxes need explicit empty when unchecked).
         $flosc_new_settings['guest_max_chats'] = max(0, min(9999, intval($flosc_new_settings['guest_max_chats'] ?? 0)));
