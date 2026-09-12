@@ -76,5 +76,37 @@ ok( 'guest reaches guest', $probe->access_allows( 'guest', 'guest' ), true );
 ok( 'member reaches member', $probe->access_allows( 'member', 'member' ), true );
 ok( 'member reaches a visitor row', $probe->access_allows( 'member', 'visitor' ), true );
 
+/* ---- FLOSC's own plumbing is never indexed ---- */
+$GLOBALS['flosc_probe_slug'] = '';
+if ( ! function_exists( 'get_the_terms' ) ) {
+	function get_the_terms( $post_id, $taxonomy ) {
+		return array( (object) array( 'slug' => $GLOBALS['flosc_probe_slug'] ) );
+	}
+}
+if ( ! function_exists( 'is_wp_error' ) ) {
+	function is_wp_error( $thing ) {
+		return false;
+	}
+}
+eval( 'class FLOSC_Internal_Probe { ' . flosc_grab_method( $src, 'is_internal_post' ) . ' }' );
+
+foreach ( array(
+	array( 'flosc-internal', true ),
+	array( 'flosc-internal-concierge', true ),
+	array( 'flosc-internal-trajectories', true ),
+	array( 'music', false ),
+	array( 'dziesmu-sveetki', false ),
+	/* The hyphen matters: a category that merely starts with the same letters
+	   is somebody's own category and belongs in the index. */
+	array( 'flosc-internally-nothing', false ),
+) as $case ) {
+	$GLOBALS['flosc_probe_slug'] = $case[0];
+	ok(
+		( $case[1] ? 'internal, never indexed: ' : 'ordinary content: ' ) . $case[0],
+		FLOSC_Internal_Probe::is_internal_post( 1 ),
+		$case[1]
+	);
+}
+
 echo $fail ? "\n{$fail} FAILURES\n" : "\nall green\n";
 exit( $fail ? 1 : 0 );

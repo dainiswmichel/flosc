@@ -498,6 +498,40 @@ class FLOSC_Site_Content_Index {
 	 * @param mixed $raw
 	 * @return string[]
 	 */
+	/**
+	 * FLOSC's own plumbing, which is not site content.
+	 *
+	 * settings.php creates a flosc-internal category and hangs
+	 * flosc-internal-concierge and flosc-internal-trajectories under it. Those
+	 * posts are how FLOSC stores its own working parts — they are not writing
+	 * about the site and chat has no business citing them at any access level.
+	 *
+	 * The indexer had no idea the convention existed. Every internal post was
+	 * indexed as ordinary content, and what kept it out of a visitor's reach was
+	 * nothing but the members-only default that used to sit on every un-gated
+	 * row. Deriving access properly removed that accident, so the convention has
+	 * to be honoured on purpose: internal posts are not indexed at all.
+	 *
+	 * @param int $post_id
+	 * @return bool
+	 */
+	public static function is_internal_post( $post_id ) {
+		$terms = get_the_terms( (int) $post_id, 'category' );
+		if ( ! is_array( $terms ) ) {
+			return false;
+		}
+		foreach ( $terms as $term ) {
+			if ( ! $term || is_wp_error( $term ) ) {
+				continue;
+			}
+			$slug = (string) $term->slug;
+			if ( 'flosc-internal' === $slug || 0 === strpos( $slug, 'flosc-internal-' ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public static function vgm_list( $raw ) {
 		$raw = strtolower( trim( (string) $raw ) );
 		if ( '' === $raw ) {
@@ -622,6 +656,12 @@ class FLOSC_Site_Content_Index {
 		$indexed = array();
 		foreach ( $posts as $post ) {
 			if ( ! $post instanceof WP_Post ) {
+				continue;
+			}
+			/* FLOSC's own plumbing is not site content. Skipping it here also
+			   drops any internal row an earlier build wrote, because $indexed
+			   is what gets saved. */
+			if ( self::is_internal_post( $post->ID ) ) {
 				continue;
 			}
 			$id_key   = (string) $post->ID;
@@ -1150,6 +1190,11 @@ class FLOSC_Site_Content_Index {
 		}
 		$doc  = $this->load( $flow_stem );
 		$key  = (string) (int) $post_id;
+		/* Reindexing an internal post removes it rather than refreshing it. */
+		if ( self::is_internal_post( $post->ID ) ) {
+			unset( $doc['posts'][ $key ] );
+			return $this->save( $flow_stem, $doc );
+		}
 		$prev = isset( $doc['posts'][ $key ] ) ? $doc['posts'][ $key ] : array();
 		$manual   = isset( $prev['keywords_manual'] ) ? (string) $prev['keywords_manual'] : '';
 		$excluded = ! empty( $prev['excluded'] );

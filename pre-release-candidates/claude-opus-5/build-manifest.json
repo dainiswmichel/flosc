@@ -1,14 +1,14 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": 61,
+  "candidate_iteration": 62,
   "creator": "Claude Opus 5",
   "status": "BUILT_AWAITING_CAPTAIN_TEST",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v60",
+  "base": "claude-opus-5 v61",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "364f9744932ad3bf577ad89004c7b2eaca630d6206ce43089aec5eaf2e244ff5",
+  "artifact_sha256": "345710245797d96bed80b6ecb9d9ce91f6cdd88565de574cc3f61859f712e5ed",
   "artifact_bytes": 2737756,
   "artifact_entries": 277,
   "tree_files": 289,
@@ -255,6 +255,17 @@
     "gate": "tests/check_access_vgm.php lifts vgm_list() and access_allows() out of the class by name and runs fifteen assertions against them, including the one that fails on v60."
   },
   "files_changed_from_v60": [
+    "includes/class-flosc-site-content-index.php",
+    "tests/check_access_vgm.php"
+  ],
+  "flosc_internal_content_is_never_indexed": {
+    "the_risk": "Deriving access properly in v61 removed an accident. Until v60 every un-gated row was members-only, and that default was the only thing keeping FLOSC's own internal posts out of a visitor's reach. v61 would have made them visitor-visible. Caught before deployment, on the Captain's warning.",
+    "the_convention": "admin/settings.php creates a flosc-internal category and hangs flosc-internal-concierge and flosc-internal-trajectories under it. The indexer had no idea it existed — zero mentions of 'internal' in the whole file — so every internal post was indexed as ordinary site content.",
+    "the_rule": "Internal posts are not indexed at all, at any access level. They are how FLOSC stores its own working parts; they are not writing about the site and chat has no business citing them. Skipping them in the rebuild loop also drops any internal row an earlier build wrote, and reindexing one removes it rather than refreshing it.",
+    "the_hyphen": "flosc-internal and flosc-internal-* only. A category merely starting with the same letters — flosc-internally-nothing — is somebody's own category and stays in the index. Asserted.",
+    "gated_content_is_unaffected": "A category carrying _flosc_required_level goes through FLOSC_Content_Protection::check_post_protection() and the row takes that level. That path is correct and untouched."
+  },
+  "files_changed_from_v61": [
     "includes/class-flosc-site-content-index.php",
     "tests/check_access_vgm.php"
   ]
