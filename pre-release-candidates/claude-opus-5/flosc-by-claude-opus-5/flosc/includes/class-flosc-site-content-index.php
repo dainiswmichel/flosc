@@ -725,7 +725,22 @@ class FLOSC_Site_Content_Index {
 			if ( in_array( $sub, array( 'visitor', 'guest', 'member' ), true ) ) {
 				$access = $sub;
 			} else {
-				$access = 'member';
+				/*
+				 * A published post that FLOSC has never gated is public.
+				 *
+				 * This defaulted to 'member', so every ordinary post on the
+				 * site — carrying neither _flosc_access_level nor
+				 * _flosc_content_subcategory, because nobody had ever asked for
+				 * it to be gated — was indexed members-only and skipped
+				 * outright by a visitor-level search. Ask a public chat about a
+				 * public post and it answered that it had no information, which
+				 * was false: the row was there, keywords and all, behind a gate
+				 * nobody set.
+				 *
+				 * FLOSC's protection is opt-in per post. Absent an opt-in,
+				 * WordPress has already decided: published is public.
+				 */
+				$access = 'visitor';
 			}
 		}
 		$access = sanitize_key( (string) $access );
@@ -856,7 +871,7 @@ class FLOSC_Site_Content_Index {
 			if ( ! empty( $row['excluded'] ) ) {
 				continue;
 			}
-			$req = sanitize_key( (string) ( $row['access'] ?? 'member' ) );
+			$req = sanitize_key( (string) ( $row['access'] ?? 'visitor' ) );
 			$ok  = $this->access_allows( $access_level, $req );
 			$lock = $ok ? '' : ' [locked]';
 			$lines[] = sprintf(
@@ -896,14 +911,28 @@ class FLOSC_Site_Content_Index {
 			if ( ! is_array( $row ) || ! empty( $row['excluded'] ) ) {
 				continue;
 			}
-			$req = sanitize_key( (string) ( $row['access'] ?? 'member' ) );
-			if ( ! $this->access_allows( $access_level, $req ) ) {
-				// List locked title only in map path; skip full body here.
-				continue;
-			}
-			$hay = function_exists( 'mb_strtolower' )
-				? mb_strtolower( (string) ( $row['title'] ?? '' ) . ' ' . (string) ( $row['keywords'] ?? '' ) . ' ' . (string) ( $row['content'] ?? '' ) )
-				: strtolower( (string) ( $row['title'] ?? '' ) . ' ' . (string) ( $row['keywords'] ?? '' ) . ' ' . (string) ( $row['content'] ?? '' ) );
+			/*
+			 * A post the visitor may not READ is still a post that EXISTS.
+			 *
+			 * This skipped the whole row, so a member-only post was invisible
+			 * to search entirely — its title, its keywords, all of it. Ask a
+			 * visitor-level chat about a member-only piece and the honest
+			 * answer available to it was "I have no information", which is
+			 * false: the site knows the piece perfectly well.
+			 *
+			 * The row is scored and returned now, with its title, URL and
+			 * keywords and WITHOUT its body, marked locked. The model can say
+			 * the piece exists and point at it; it cannot quote what is behind
+			 * the gate. That is what the comment here always said it wanted:
+			 * "list locked title only".
+			 */
+			$req    = sanitize_key( (string) ( $row['access'] ?? 'visitor' ) );
+			$locked = ! $this->access_allows( $access_level, $req );
+			/* Locked: match on title and keywords only. The body stays behind
+			   the gate, so it is not searched and it is not returned. */
+			$hay_src = (string) ( $row['title'] ?? '' ) . ' ' . (string) ( $row['keywords'] ?? '' )
+				. ( $locked ? '' : ' ' . (string) ( $row['content'] ?? '' ) );
+			$hay = function_exists( 'mb_strtolower' ) ? mb_strtolower( $hay_src ) : strtolower( $hay_src );
 
 			$score = 0;
 			if ( $q !== '' && $hay !== '' ) {
@@ -947,7 +976,7 @@ class FLOSC_Site_Content_Index {
 				}
 			}
 			if ( $score > 0 ) {
-				$scored[] = array( 'score' => $score, 'row' => $row );
+				$scored[] = array( 'score' => $score, 'row' => $row, 'locked' => $locked );
 			}
 		}
 
@@ -974,6 +1003,11 @@ class FLOSC_Site_Content_Index {
 			$out .= "\n";
 			if ( ! empty( $row['keywords'] ) ) {
 				$out .= 'Keywords: ' . (string) $row['keywords'] . "\n";
+			}
+			if ( ! empty( $hit['locked'] ) ) {
+				$out .= "Access: members only. This piece exists and may be named and linked. Its content is not available at this access level, so do not quote or summarise it — say it is there and point to it.\n";
+				$out .= "\n---\n\n";
+				continue;
 			}
 			$out .= "\n" . (string) ( $row['content'] ?? '' ) . "\n\n---\n\n";
 		}
@@ -1037,7 +1071,10 @@ class FLOSC_Site_Content_Index {
 		$title   = (string) ( $doc['posts'][ $key ]['title'] ?? '' );
 		$content = (string) ( $doc['posts'][ $key ]['content'] ?? '' );
 		// Re-derive light auto keywords from title + body, then fold in manual overrides.
-		$auto = $this->merge_keywords( $title, implode( ', ', array_slice( preg_split( '/\s+/', $content ) ?: array(), 0, 24 ) ) );
+		/* Saving a keyword rebuilt the row's searchable field from the first 24
+		   words of the body, throwing away everything derive_keywords() had
+		   built from the whole post. Adding one word quietly shrank the row. */
+		$auto = $this->merge_keywords( $title, (string) ( $doc['posts'][ $key ]['keywords'] ?? '' ) );
 		$doc['posts'][ $key ]['keywords'] = $manual !== '' ? $this->merge_keywords( $auto, $manual ) : $auto;
 		return $this->save( $flow_stem, $doc );
 	}
