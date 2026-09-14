@@ -1,10 +1,10 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": 64,
+  "candidate_iteration": 65,
   "creator": "Claude Opus 5",
   "status": "BUILT_AWAITING_CAPTAIN_TEST",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v63",
+  "base": "claude-opus-5 v64",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
@@ -308,5 +308,21 @@
     "flosc.php — AI retrieval selects in the post visibility metabox, and their save",
     "assets/css/flosc-admin.css — six-column widths for the protection table",
     "tests/check_access_vgm.php — flosc_grab_const() so the probe class carries INTERNAL_CATEGORY_ALIASES (v63 shipped this gate red); assertions for the tier floor, rule folding, scope precedence both directions, object-written rules, the site default, the read-more slice, legacy rows, and the call-site guard"
+  ],
+  "artifact_note": "Byte-identical to v64. tests/ is excluded from the artifact by .distignore:7, so adding tests/verify-standards.sh does not change the zip. sha256sums was stale at v63 and is corrected in this pass.",
+  "verify_standards_v65": {
+    "file": "tests/verify-standards.sh",
+    "why": "242 remediation roadmaps, 279 builds, 29 uploads to WordPress.org, still not compliant. Every upload happened because AI agents promised WordPress.org standards and submissions compliant code. This removes the agent from the reporting path.",
+    "what_it_does": "Runs php -l, PHPCS (WordPress-Extra + WordPress-Docs), WordPress Plugin Check via wp-cli, the repo gates, and the live api.wordpress.org release list against the version headers. Prints each command and each tool output verbatim. Summarises nothing.",
+    "the_load_bearing_rule": "A tool that did not run is a FAILURE, never a pass. Missing phpcs, missing wp-cli, blocked network each print NOT RUN and force a non-zero exit. This is what stops \"clean\" from meaning \"we did not check\".",
+    "own_gates_labelled": "The FLOSC gate blocks are labelled in the output as testing internal logic only, and explicitly not evidence of WordPress.org compliance, because those gates printed 0 failures through 29 rejected uploads.",
+    "defect_found_and_fixed_before_first_run": "OVERALL was computed inside the { } | tee block while PIPESTATUS[0] read the final echo, so the script would always have exited 0 — always \"pass\". Fixed by making exit \"${OVERALL}\" the last statement in the block.",
+    "container_run": "exit 1. PHP LINT RAN-PASS, FLOSC PHP GATES RAN-PASS, FLOSC JS GATES RAN-PASS, PHPCS NOT-RUN, WORDPRESS PLUGIN CHECK NOT-RUN, WORDPRESS VERSION HEADERS NOT-RUN (api.wordpress.org returns 403 through this proxy). Three tools did not run, so the run cannot be cited as evidence of anything.",
+    "headers_as_printed": "readme.txt Requires at least 7.0.4 | readme.txt Tested up to 7.1 | flosc.php Requires at least 7.0.4 — unverified against the live release list, which could not be fetched here."
+  },
+  "files_changed_from_v64": [
+    "tests/verify-standards.sh — new, executable",
+    ".gitignore — tests/verify-standards-*.log",
+    "pre-release-candidates/claude-opus-5/sha256sums — was stale at v63 hash, now correct"
   ]
 }
