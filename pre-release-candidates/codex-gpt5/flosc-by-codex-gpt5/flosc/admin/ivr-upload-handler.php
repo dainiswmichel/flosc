@@ -565,7 +565,13 @@ if ( ! function_exists( 'flosc_portability_ingest_media' ) ) {
 
 if ( ! function_exists( 'flosc_portability_run_wxr_import' ) ) {
 	/**
-	 * Import a staged WXR if WordPress Importer is available.
+	 * Reject the retired one-click WXR importer path.
+	 *
+	 * WordPress Importer is an interactive plugin, not a public library API.
+	 * Loading its plugin file or a WordPress core admin include directly from
+	 * FLOSC is unsupported and was specifically rejected during directory
+	 * review. Staging and downloading remain available; importing belongs to
+	 * WordPress under Tools → Import.
 	 *
 	 * @param string $ivr_file Flow IVR basename.
 	 * @param string $filename Staged WXR basename.
@@ -594,52 +600,11 @@ if ( ! function_exists( 'flosc_portability_run_wxr_import' ) ) {
 			return new WP_Error( 'flosc_wxr_path', __( 'Staged WXR path is not inside this flow’s pack directory.', 'flosc' ) );
 		}
 
-		// Prefer the WordPress Importer plugin when present.
-		if ( ! class_exists( 'WP_Import' ) ) {
-			$importer_path = WP_PLUGIN_DIR . '/wordpress-importer/wordpress-importer.php';
-			if ( file_exists( $importer_path ) ) {
-				// phpcs:ignore WordPressVIPMinimum.Files.IncludingFile.UsingVariable -- known plugin path under WP_PLUGIN_DIR.
-				require_once $importer_path;
-			}
-		}
-		if ( ! class_exists( 'WP_Import' ) ) {
-			return new WP_Error(
-				'flosc_wxr_importer',
-				__( 'Install and activate the WordPress Importer plugin, then use Import posts again — or use Tools → Import.', 'flosc' )
-			);
-		}
-
-		if ( ! defined( 'WP_LOAD_IMPORTERS' ) ) {
-			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- WordPress core importer bootstrap flag.
-			define( 'WP_LOAD_IMPORTERS', true );
-		}
-		if ( ! function_exists( 'wordpress_importer_init' ) && function_exists( 'get_plugins' ) ) {
-			// Class may load without full bootstrap; try import.php helpers.
-			require_once ABSPATH . 'wp-admin/includes/import.php';
-		}
-
-		// Suppress HTML output from the importer UI classes.
-		ob_start();
-		$importer = new WP_Import();
-		if ( method_exists( $importer, 'fetch_attachments' ) ) {
-			$importer->fetch_attachments = true;
-		}
-		// import() is the public entry on classic WordPress Importer.
-		if ( method_exists( $importer, 'import' ) ) {
-			$importer->import( $path );
-		} else {
-			ob_end_clean();
-			return new WP_Error( 'flosc_wxr_api', __( 'WordPress Importer API is not available on this site.', 'flosc' ) );
-		}
-		ob_end_clean();
-
-		if ( $idx >= 0 && isset( $pack['wxr'][ $idx ] ) && is_array( $pack['wxr'][ $idx ] ) ) {
-			$pack['wxr'][ $idx ]['status']     = 'imported';
-			$pack['wxr'][ $idx ]['imported_at'] = current_time( 'mysql' );
-			flosc_portability_save_pack_assets( $ivr_file, $pack );
-		}
-
-		return true;
+		unset( $idx, $pack );
+		return new WP_Error(
+			'flosc_wxr_manual_import_required',
+			__( 'Download the staged WXR, then import it with WordPress under Tools → Import.', 'flosc' )
+		);
 	}
 }
 

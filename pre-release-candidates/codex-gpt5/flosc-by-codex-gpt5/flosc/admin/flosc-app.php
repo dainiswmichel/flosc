@@ -103,7 +103,13 @@ ICON & BUTTON CHECKLIST (verify all work before deployment):
     <?php
     // Companion embed: FOUC guard via wp_add_inline_style on flosc-layout (same handle as
     // theme vars below). Hides chrome and caps logos when ?flosc_companion is present.
-    $flosc_is_companion_embed = ( null !== filter_input( INPUT_GET, 'flosc_companion' ) );
+    // This is a read-only presentation flag; an empty ?flosc_companion value is valid.
+    /* phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only presentation flag; no state changes. */
+    $flosc_companion_raw = isset( $_GET['flosc_companion'] ) && is_scalar( $_GET['flosc_companion'] )
+        ? sanitize_text_field( wp_unslash( (string) $_GET['flosc_companion'] ) )
+        : null;
+    /* phpcs:enable WordPress.Security.NonceVerification.Recommended */
+    $flosc_is_companion_embed = ( null !== $flosc_companion_raw );
     if ( $flosc_is_companion_embed ) {
         $flosc_companion_critical_css = '
 body.flosc-companion-embed .flosc-sidebar,
@@ -130,7 +136,7 @@ body.flosc-companion-embed img.landing-icon {
     ?>
     
     <!-- Dynamic Primary Color -->
-    <?php // §12: dynamic CSS vars attached to the enqueued flosc-chat handle (prints in <head> via wp_head) instead of an inline <style> tag. ?>
+    <?php // §12: dynamic CSS vars attached to the enqueued flosc-chat handle (prints in <head> via wp_head) instead of an inline style element. ?>
     <?php ob_start(); ?>
         :root {
             --flosc-primary: <?php echo esc_attr($identity['primary_color']); ?>;

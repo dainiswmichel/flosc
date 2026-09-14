@@ -482,11 +482,11 @@ trait FLOSC_REST_Trait {
             'permission_callback' => [$this, 'check_public_endpoint_permission'],
         ]);
 
-        // RAG Chat (v9.1.6 - AI with search capabilities)
-        // v9.4.2: Now rate-limited via check_public_endpoint_permission
+        // Legacy URL retained for clients that still post to /chat-rag. Both
+        // URLs deliberately use the one access-aware conversational engine.
         register_rest_route('flosc/v1', '/chat-rag', [
             'methods' => 'POST',
-            'callback' => [$this, 'handle_chat_with_rag'],
+            'callback' => [$this, 'handle_chat'],
             'permission_callback' => [$this, 'check_public_endpoint_permission'],
         ]);
 

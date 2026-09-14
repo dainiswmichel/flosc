@@ -4,7 +4,7 @@
  * Plugin URI: https://flosc.ai
  * Description: (F)reeline --> (L)ogin --> (O)ffer --> (S)ale --> (C)ontent: try-before-you-buy WordPress journeys.
  * Version: 8.0.0
- * Requires at least: 7.0.4
+ * Requires at least: 7.0
  * Requires PHP: 7.4
  * Author: Dainis W. Michel
  * Author URI: https://dainis.net
@@ -1281,7 +1281,7 @@ class FLOSC_Framework {
 
         // Initialize SALE system
         $this->sale_manager = FLOSC_Sale_Manager::instance();
-        
+
         // Initialize RAG system (v9.1.6)
         $this->user_access_manager = FLOSC_User_Access_Manager::instance();
         $this->content_filter = FLOSC_Content_Protection::instance();
@@ -1361,7 +1361,6 @@ class FLOSC_Framework {
         add_filter('manage_users_columns', [$this, 'flosc_add_users_columns']);
         add_filter('manage_users_custom_column', [$this, 'flosc_render_users_custom_column'], 10, 3);
         add_action('wp_ajax_flosc_serve_user_audio', [$this, 'ajax_serve_user_audio']);
-        add_action('wp_ajax_nopriv_flosc_serve_user_audio', [$this, 'ajax_serve_user_audio']);
         
         // Auto-flush permalinks when slug changes
         add_action('update_option_flosc_app_slug', [$this, 'handle_slug_change'], 10, 2);
@@ -2690,7 +2689,20 @@ The Team',
             exit;
         }
 
-        $content = $post['file_content'] ?? '';
+        $content_raw = $post['file_content'] ?? '';
+        if (!is_string($content_raw)) {
+            wp_safe_redirect($this->kb_return_url($ivr, 'error', 'Knowledge-base content must be plain text or Markdown.'));
+            exit;
+        }
+        if (strlen($content_raw) > 512000) {
+            wp_safe_redirect($this->kb_return_url($ivr, 'error', 'Knowledge-base files cannot exceed 500 KB.'));
+            exit;
+        }
+        if (1 !== preg_match('//u', $content_raw)) {
+            wp_safe_redirect($this->kb_return_url($ivr, 'error', 'Knowledge-base content must be valid UTF-8 text.'));
+            exit;
+        }
+        $content = sanitize_textarea_field(str_replace(["\r\n", "\r"], "\n", $content_raw));
         if (!flosc_write_data_file($target, $content)) {
             wp_safe_redirect($this->kb_return_url($ivr, 'error', 'The file could not be written. Uploads folder permissions need attention.'));
             exit;
@@ -3180,7 +3192,7 @@ The Team',
                 break;
             }
         }
-        
+
         if ($in_protected) {
             // v1.8.2: Read protection mode (replaces binary _flosc_public_post)
             $protection_mode = get_post_meta($post->ID, '_flosc_protection_mode', true);
@@ -3398,8 +3410,10 @@ The Team',
         }
 
         // Cookie is set by FLOSC during SSO handoff; not a form POST.
-        $pending_raw = filter_input( INPUT_COOKIE, 'flosc_pending_session', FILTER_UNSAFE_RAW );
-        if ( ! is_string( $pending_raw ) || $pending_raw === '' ) {
+        $pending_raw = isset( $_COOKIE['flosc_pending_session'] ) && is_scalar( $_COOKIE['flosc_pending_session'] )
+            ? sanitize_text_field( wp_unslash( (string) $_COOKIE['flosc_pending_session'] ) )
+            : '';
+        if ( $pending_raw === '' ) {
             return;
         }
 
@@ -3739,7 +3753,12 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
     public function build_flow_from_ivr_file($filename) {
         $filename = basename($filename); // Ensure just filename
         $base_name = pathinfo($filename, PATHINFO_FILENAME);
-        $settings_key = 'flosc_flow_' . sanitize_key($base_name);
+        // Settings, Attach, and runtime must choose the same legacy-compatible
+        // option row. Re-synthesizing this key here could make the admin save
+        // one row while the provider prompt continued reading another.
+        $settings_key = function_exists('flosc_resolve_flow_option_key_for_ivr')
+            ? flosc_resolve_flow_option_key_for_ivr($filename)
+            : 'flosc_flow_' . sanitize_key($base_name);
         $settings = get_option($settings_key, []);
         
         // Generate defaults if no settings saved
@@ -11328,6 +11347,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
 
                     $audio_url = admin_url('admin-ajax.php') . '?' . http_build_query([
                         'action' => 'flosc_serve_user_audio',
+                        '_wpnonce' => wp_create_nonce('flosc_serve_user_audio'),
                         'user_id' => $user_id,
                         'flosc_sid' => $sess_id,
                         'file' => $file,
@@ -11363,20 +11383,24 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
      * Required because flosc-users/ dirs have .htaccess Deny from all.
      */
     public function ajax_serve_user_audio() {
-        // Signed URL endpoint (exp + HMAC). Read query via filter_input — not a
-        // state-changing POST; auth is signature and/or capability below.
-        $user_id     = absint( (string) filter_input( INPUT_GET, 'user_id', FILTER_SANITIZE_NUMBER_INT ) );
-        $file_raw    = filter_input( INPUT_GET, 'file', FILTER_UNSAFE_RAW );
-        $file        = is_string( $file_raw ) ? sanitize_file_name( wp_unslash( $file_raw ) ) : '';
-        $is_download = (bool) filter_input( INPUT_GET, 'download', FILTER_UNSAFE_RAW );
-        $expires     = absint( (string) filter_input( INPUT_GET, 'exp', FILTER_SANITIZE_NUMBER_INT ) );
-        $sig_raw     = filter_input( INPUT_GET, 'sig', FILTER_UNSAFE_RAW );
-        $sig         = is_string( $sig_raw ) ? strtolower( preg_replace( '/[^a-f0-9]/', '', wp_unslash( $sig_raw ) ) ) : '';
-        $session_raw = filter_input( INPUT_GET, 'flosc_sid', FILTER_UNSAFE_RAW );
-        if ( ! is_string( $session_raw ) || $session_raw === '' ) {
-            $session_raw = filter_input( INPUT_GET, 'session_id', FILTER_UNSAFE_RAW );
-        }
-        $session_id  = is_string( $session_raw ) ? sanitize_text_field( wp_unslash( $session_raw ) ) : '';
+        check_ajax_referer('flosc_serve_user_audio');
+
+        $user_id = isset( $_GET['user_id'] ) && is_scalar( $_GET['user_id'] )
+            ? absint( wp_unslash( (string) $_GET['user_id'] ) )
+            : 0;
+        $file = isset( $_GET['file'] ) && is_scalar( $_GET['file'] )
+            ? sanitize_file_name( wp_unslash( (string) $_GET['file'] ) )
+            : '';
+        $is_download = isset( $_GET['download'] ) && is_scalar( $_GET['download'] )
+            ? '1' === sanitize_text_field( wp_unslash( (string) $_GET['download'] ) )
+            : false;
+		$session_raw = isset( $_GET['flosc_sid'] ) && is_scalar( $_GET['flosc_sid'] )
+			? sanitize_text_field( wp_unslash( (string) $_GET['flosc_sid'] ) )
+			: '';
+		if ( $session_raw === '' && isset( $_GET['session_id'] ) && is_scalar( $_GET['session_id'] ) ) {
+			$session_raw = sanitize_text_field( wp_unslash( (string) $_GET['session_id'] ) );
+		}
+		$session_id = $session_raw;
 
         if (!$user_id || !$file) {
             wp_die('Missing parameters', 400);
@@ -11420,9 +11444,8 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         }
 
         // Byte range for iOS Safari/WebKit <audio> probe (Range: bytes=0-1).
-        $http_range = filter_input( INPUT_SERVER, 'HTTP_RANGE', FILTER_UNSAFE_RAW );
-        $http_range = is_string( $http_range ) && $http_range !== ''
-            ? sanitize_text_field( wp_unslash( $http_range ) )
+        $http_range = isset( $_SERVER['HTTP_RANGE'] ) && is_scalar( $_SERVER['HTTP_RANGE'] )
+            ? sanitize_text_field( wp_unslash( (string) $_SERVER['HTTP_RANGE'] ) )
             : null;
 
         $this->filesystem->stream_uploads_binary_range_and_exit(
@@ -11968,6 +11991,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
                     $display_name = 'phrase_' . $phrase_num . '_' . $mts_stamp . '.' . $ext;
                     $download_url = admin_url('admin-ajax.php') . '?' . http_build_query([
                         'action' => 'flosc_serve_user_audio',
+                        '_wpnonce' => wp_create_nonce('flosc_serve_user_audio'),
                         'user_id' => $user_id,
                         'flosc_sid' => $sid,
                         'file' => $basename,
@@ -12179,53 +12203,18 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             return;
         }
 
-        $expires = time() + 3600;
-        $sig = $this->build_audio_access_signature($user_id, $session_id, $audio_file, $expires);
-
         $audio_url = admin_url('admin-ajax.php') . '?' . http_build_query([
             'action' => 'flosc_serve_user_audio',
+            '_wpnonce' => wp_create_nonce('flosc_serve_user_audio'),
             'user_id' => $user_id,
             'flosc_sid' => $session_id,
             'file' => $audio_file,
-            'exp' => $expires,
-            'sig' => $sig,
         ]);
 
         echo '<div class="flosc-audio-wrap">';
         echo '<audio class="flosc-audio-stream" controls controlsList="nodownload" src="' . esc_url($audio_url) . '"></audio>';
 
         echo '</div>';
-    }
-
-    /**
-     * Build short-lived signature for protected audio URLs.
-     */
-    private function build_audio_access_signature($user_id, $session_id, $file, $expires) {
-        $payload = implode('|', [
-            (int) $user_id,
-            (string) $session_id,
-            (string) $file,
-            (int) $expires,
-        ]);
-
-        return hash_hmac('sha256', $payload, flosc_token_secret());
-    }
-
-    /**
-     * Validate signature for protected audio URL access.
-     */
-    private function is_valid_audio_access_signature($user_id, $session_id, $file, $expires, $sig) {
-        if (!$expires || !$sig) {
-            return false;
-        }
-
-        $now = time();
-        if ($expires < $now || $expires > ($now + DAY_IN_SECONDS)) {
-            return false;
-        }
-
-        $expected = $this->build_audio_access_signature($user_id, $session_id, $file, $expires);
-        return hash_equals($expected, $sig);
     }
 
     /**

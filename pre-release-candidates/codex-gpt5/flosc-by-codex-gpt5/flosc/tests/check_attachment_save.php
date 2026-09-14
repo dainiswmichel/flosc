@@ -78,16 +78,15 @@ ok( 'and the note element carries no style attribute',
  * Every field the designer computes reaches the database.
  *
  * libraryEntry() built a complete six-field entry from the first day and only
- * the downloadable builder state read it. The save sent four keys, so traits,
- * mission, boundaries and topic scope stayed empty in every personality the
- * designer ever made — and ai_boundaries and ai_topic_scope are read on every
- * turn, so a floscAdmin had no way to set two values the AI was being given.
+ * the downloadable builder state read it. The save omitted its runtime
+ * sidecars, so those fields stayed empty in personalities the designer made.
+ * Several sidecars are also read independently on every turn.
  */
 echo "\nWhat the designer computes is what the database receives\n";
 $flosc_bridge  = (string) file_get_contents( dirname( __DIR__ ) . '/assets/js/flosc-personality-builder-wp.js' );
 $flosc_builder = (string) file_get_contents( dirname( __DIR__ ) . '/assets/js/flosc-personality-builder.js' );
 $flosc_lib     = (string) file_get_contents( dirname( __DIR__ ) . '/includes/flosc-personality-library.php' );
-$flosc_sidecar = array( 'ai_personality_traits', 'ai_mission', 'ai_boundaries', 'ai_topic_scope' );
+$flosc_sidecar = array( 'ai_personality_traits', 'ai_mission', 'ai_boundaries', 'ai_topic_scope', 'ai_off_topic_message', 'ai_fallback_phrase' );
 
 ok( 'the builder exposes libraryEntry to the bridge', strpos( $flosc_builder, 'libraryEntry: libraryEntry,' ) !== false, true );
 ok( 'the bridge reads it rather than rebuilding it', strpos( $flosc_bridge, 'api.libraryEntry()' ) !== false, true );

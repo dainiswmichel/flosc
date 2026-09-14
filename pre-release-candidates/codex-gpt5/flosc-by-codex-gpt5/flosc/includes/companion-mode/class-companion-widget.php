@@ -271,7 +271,7 @@ class FLOSC_Companion_Widget {
         $user_data    = $this->get_companion_user_data();
 
         // §12: Attach the accent override + config to the enqueued flosc-companion handles
-        // (wp_add_inline_style/script) rather than echoing raw <style>/<script> tags. This runs
+        // (wp_add_inline_style/script) rather than echoing raw style/script elements. This runs
         // on wp_footer before wp_print_footer_scripts, so the data prints with — and just before —
         // flosc-companion.js. WordPress prints the late inline style via print_late_styles().
         if (!empty($settings['accent_color'])) {

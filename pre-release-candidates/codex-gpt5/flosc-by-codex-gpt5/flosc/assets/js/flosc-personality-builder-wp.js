@@ -21,13 +21,13 @@
   }
 
   /*
-   * The four fields the designer computes and used not to send.
+   * The runtime sidecar fields the designer computes.
    *
    * libraryEntry() has always built a complete entry — traits, mission,
    * boundaries and topic scope alongside name and role — and only the
    * downloadable builder state read it. So a personality saved here left those
-   * four empty in the database, which is why {topic_scope} resolved to nothing
-   * on every flow that had not hand-edited a flow_ivr.md.
+   * values empty in the database, which is why {topic_scope} resolved to
+   * nothing on every flow that had not hand-edited a flow_ivr.md.
    */
   function sidecarFields(api) {
     var entry = api && typeof api.libraryEntry === "function" ? api.libraryEntry() : null;
@@ -36,15 +36,39 @@
       ai_personality_traits: entry.ai_personality_traits || "",
       ai_mission: entry.ai_mission || "",
       ai_boundaries: entry.ai_boundaries || "",
-      ai_topic_scope: entry.ai_topic_scope || ""
+      ai_topic_scope: entry.ai_topic_scope || "",
+      ai_off_topic_message: entry.ai_off_topic_message || "",
+      ai_fallback_phrase: entry.ai_fallback_phrase || ""
     };
   }
 
   function appendSidecar(body, api) {
     var extra = sidecarFields(api);
-    Object.keys(extra).forEach(function (key) {
-      body.append(key, extra[key]);
+    appendSidecarEntry(body, extra);
+  }
+
+  function appendSidecarEntry(body, entry) {
+    var extra = entry || {};
+    var keys = [
+      "ai_personality_traits", "ai_mission", "ai_boundaries", "ai_topic_scope",
+      "ai_off_topic_message", "ai_fallback_phrase"
+    ];
+    keys.forEach(function (key) {
+      body.append(key, extra[key] || "");
     });
+  }
+
+  /* The runtime profile is the compiled character only. promptFile() is an
+     export document: it deliberately adds a portable wrapper and an About
+     footer for humans. Saving that export made those download-only words part
+     of every billed provider turn and could carry stale provenance into a new
+     personality. */
+  function runtimeProfile(api) {
+    var entry = api && typeof api.libraryEntry === "function" ? api.libraryEntry() : null;
+    if (entry && typeof entry.ai_base_prompt === "string") {
+      return entry.ai_base_prompt;
+    }
+    return api && typeof api.compilePrompt === "function" ? api.compilePrompt() : "";
   }
 
   function soulBits(api) {
@@ -190,7 +214,7 @@
       return;
     }
     var bits = soulBits(api);
-    var profile = api.promptFile ? api.promptFile() : "";
+    var profile = runtimeProfile(api);
     var body = new FormData();
     body.append("action", "flosc_save_personality_design");
     body.append("nonce", wp.nonce);
@@ -218,6 +242,19 @@
         saving = false;
         if (json && json.success) {
           unsaved = false;
+          wp.entry = wp.entry || {};
+          wp.entry.label = bits.label;
+          wp.entry.name = bits.name;
+          wp.entry.role = bits.role;
+          wp.entry.profile = profile;
+          if (json.data) {
+            wp.entry.version = json.data.version || wp.entry.version || "";
+            wp.entry.hash = json.data.hash || wp.entry.hash || "";
+            wp.entry.modifiedGmt = json.data.saved_at || wp.entry.modifiedGmt || "";
+          }
+          if (typeof api.render === "function") {
+            api.render();
+          }
           markState("is-saved");
           setSavedStamp(json.data && json.data.saved_at ? json.data.saved_at : "");
           setStatus((json.data && json.data.message) || wp.i18n.saved, true);
@@ -254,7 +291,15 @@
     return id;
   }
 
-  window.floscCreatePersonality = function (label, profile, workshopJson, name, role, done) {
+  window.floscCreatePersonality = function (label, profile, workshopJson, name, role, done, entryFields) {
+    /* Existing integrations may pass a callback as argument six. The bundled
+       builder passes the new row's computed entry there, so creation can save
+       the same sidecars as an ordinary edit without reading the restored
+       (previous personality's) canvas. */
+    if (done && typeof done === "object" && !entryFields) {
+      entryFields = done;
+      done = null;
+    }
     var id = freeId(slugify(label));
     var body = new FormData();
     body.append("action", "flosc_save_personality_design");
@@ -263,6 +308,7 @@
     body.append("label", label);
     body.append("ai_personality_name", name || label);
     body.append("ai_personality_role", role || "");
+    appendSidecarEntry(body, entryFields);
     body.append("ai_base_prompt", profile);
     body.append("workshop_json", workshopJson);
     setStatus("Creating " + label + "\u2026", true);
@@ -288,7 +334,15 @@
         att.append("persona", id);
         return fetch(wp.ajaxUrl, { method: "POST", credentials: "same-origin", body: att })
           .then(function (r) { return r.json(); })
-          .then(function () {
+          .then(function (attachJson) {
+            if (!attachJson || !attachJson.success) {
+              var attachMessage = attachJson && attachJson.data && attachJson.data.message
+                ? attachJson.data.message
+                : "The personality was created, but it could not be attached to this flow.";
+              setStatus(attachMessage, false);
+              if (done) { done(false, id); }
+              return;
+            }
             unsaved = false;
             if (autosaveTimer) { clearTimeout(autosaveTimer); autosaveTimer = null; }
             setStatus("Created " + label + ". Opening it\u2026", true);

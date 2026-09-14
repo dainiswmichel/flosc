@@ -950,7 +950,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
                 }
                 $flosc_status_label = ( 'imported' === $flosc_wxr_status )
                     ? __( 'Imported', 'flosc' )
-                    : ( $flosc_wxr_path_ok ? __( 'Staged — ready to import', 'flosc' ) : __( 'Missing on disk', 'flosc' ) );
+                    : ( $flosc_wxr_path_ok ? __( 'Staged — download for WordPress Importer', 'flosc' ) : __( 'Missing on disk', 'flosc' ) );
                 ?>
                 <tr>
                     <td><span class="flosc-portability-chip flosc-portability-chip--dataset"><?php echo esc_html__( 'Posts (WXR)', 'flosc' ); ?></span></td>
@@ -960,15 +960,6 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
                         <div class="flosc-ivr-file-action-group">
                             <?php if ( $flosc_wxr_url !== '' ) : ?>
                                 <a href="<?php echo esc_url( $flosc_wxr_url ); ?>" class="button button-small" download><?php echo esc_html__( 'Download', 'flosc' ); ?></a>
-                            <?php endif; ?>
-                            <?php if ( $flosc_wxr_path_ok && 'imported' !== $flosc_wxr_status ) : ?>
-                            <form method="post" action="<?php echo esc_url( $flosc_flow_all_url ); ?>" class="flosc-ivr-inline-form">
-                                <?php wp_nonce_field( 'flosc_portability_pack' ); ?>
-                                <input type="hidden" name="flosc_working_ivr" value="<?php echo esc_attr( $flosc_selected_ivr ); ?>">
-                                <input type="hidden" name="flosc_pack_filename" value="<?php echo esc_attr( $flosc_wxr_name ); ?>">
-                                <input type="hidden" name="flosc_portability_pack_action" value="import_wxr">
-                                <button type="submit" class="button button-small button-primary"><?php echo esc_html__( 'Import posts', 'flosc' ); ?></button>
-                            </form>
                             <?php endif; ?>
                             <a href="<?php echo esc_url( admin_url( 'import.php' ) ); ?>" class="button button-small"><?php echo esc_html__( 'Tools → Import', 'flosc' ); ?></a>
                             <form method="post" action="<?php echo esc_url( $flosc_flow_all_url ); ?>" class="flosc-ivr-inline-form flosc-ivr-inline-form--warn" data-confirm-message="<?php echo esc_attr__( 'Remove this WXR from the pack list? Staged file on disk will be deleted.', 'flosc' ); ?>">
@@ -1026,7 +1017,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
             </tbody>
         </table>
         <p class="description">
-            <?php echo esc_html__( 'This list is the data set only. Import posts needs the WordPress Importer for one-click import; Tools → Import works with a downloaded WXR. Personality files are in the table below.', 'flosc' ); ?>
+            <?php echo esc_html__( 'This list is the data set only. Download a staged WXR, then use Tools → Import; WordPress Importer owns the import workflow. Personality files are in the table below.', 'flosc' ); ?>
         </p>
         <?php endif; ?>
         </div><!-- .flosc-portability-section--dataset -->

@@ -212,13 +212,23 @@ trait FLOSC_Magic_Link_Trait {
             'flosc_wp_sync',
             'flosc_login_token',
             'flosc_sso_success',
-            'redirect_to',
         ) as $flosc_qk ) {
-            $raw = filter_input( INPUT_GET, $flosc_qk, FILTER_UNSAFE_RAW );
-            if ( is_string( $raw ) && $raw !== '' ) {
-                $get[ $flosc_qk ] = wp_unslash( $raw );
+			if ( isset( $_GET[ $flosc_qk ] ) && is_string( $_GET[ $flosc_qk ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- authentication callback token.
+				$query_token = sanitize_text_field( wp_unslash( $_GET[ $flosc_qk ] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- authentication callback token.
+                if ( $query_token !== '' ) {
+                    // Do not use sanitize_key(): generated tokens are case-sensitive.
+                    $get[ $flosc_qk ] = $query_token;
+                }
             }
         }
+		/* phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only destination on an authentication callback. */
+		if ( isset( $_GET['redirect_to'] ) && is_string( $_GET['redirect_to'] ) ) {
+			$redirect_to = esc_url_raw( wp_unslash( $_GET['redirect_to'] ) );
+			if ( $redirect_to !== '' ) {
+				$get['redirect_to'] = $redirect_to;
+			}
+		}
+		/* phpcs:enable WordPress.Security.NonceVerification.Recommended */
 
         // Email registration verification (not MagicLink login).
         if (!empty($get['flosc_verify_email'])) {
@@ -1568,19 +1578,23 @@ trait FLOSC_Magic_Link_Trait {
         if ( $uid > 0 && $notice_key !== '' ) {
             set_transient( 'flosc_guest_request_notice_' . $uid, $notice_key, MINUTE_IN_SECONDS );
         }
-        // Prefer flow already resolved on the framework; fall back to sanitized filter_input.
+        // Prefer the flow already resolved on the framework; fall back to request context.
         $ivr = '';
         if ( isset( $this->current_ivr_file ) && is_string( $this->current_ivr_file ) ) {
             $ivr = sanitize_file_name( $this->current_ivr_file );
         }
         if ( $ivr === '' ) {
-            $ivr_in = filter_input( INPUT_POST, 'ivr', FILTER_DEFAULT );
-            if ( ! is_string( $ivr_in ) || $ivr_in === '' ) {
-                $ivr_in = filter_input( INPUT_GET, 'ivr', FILTER_DEFAULT );
-            }
-            if ( is_string( $ivr_in ) ) {
-                $ivr = sanitize_file_name( wp_unslash( $ivr_in ) );
-            }
+            // The mutating caller verifies its nonce before this redirect is built.
+			if ( isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- mutating caller verifies its nonce.
+				$ivr = sanitize_file_name( wp_unslash( $_POST['ivr'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- mutating caller verifies its nonce.
+			}
+			if ( $ivr === '' ) {
+				/* phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only redirect context; no state changes. */
+				$ivr = isset( $_GET['ivr'] ) && is_string( $_GET['ivr'] )
+					? sanitize_file_name( wp_unslash( $_GET['ivr'] ) )
+					: '';
+				/* phpcs:enable WordPress.Security.NonceVerification.Recommended */
+			}
         }
         return add_query_arg(
             array(

@@ -6062,7 +6062,8 @@
     state.soul.id = label.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "") || "personality";
     ensureContainers();
     ensurePlacement();
-    const profile = promptFile();
+    const entry = libraryEntry();
+    const profile = entry.ai_base_prompt;
     const workshop = JSON.stringify(workshopFile());
     const role = state.soul.role || "";
 
@@ -6076,7 +6077,7 @@
 
     if (typeof window.floscCreatePersonality === "function") {
       closeNewPanel();
-      window.floscCreatePersonality(label, profile, workshop, label, role);
+      window.floscCreatePersonality(label, profile, workshop, label, role, entry);
       return;
     }
     /* Standalone: there is no library, so New simply loads the template. */
@@ -6433,9 +6434,8 @@
   window.floscBuilder = {
     compilePrompt: compilePrompt,
     promptFile: promptFile,
-    /* The WordPress bridge sends what this returns. It was only ever read by
-       the downloadable builder state, which is why four of the six fields it
-       computes never reached the database. */
+    /* The WordPress bridge sends what this returns. Keeping one entry builder
+       prevents create and edit from disagreeing about runtime sidecars. */
     libraryEntry: libraryEntry,
     providerPacks: providerPacks,
     workshopFile: workshopFile,

@@ -504,7 +504,10 @@ class FLOSC_Email {
     public function save_newsletter_profile_field($user_id) {
         if (!current_user_can('edit_user', $user_id)) return;
         // WP core verifies the profile-update nonce before these hooks fire.
-        $opted = (bool) filter_input( INPUT_POST, 'flosc_newsletter_optin', FILTER_UNSAFE_RAW );
+        /* phpcs:disable WordPress.Security.NonceVerification.Missing -- WordPress core's profile handler verifies its nonce before this hook. */
+        $opted = isset( $_POST['flosc_newsletter_optin'] ) && is_scalar( $_POST['flosc_newsletter_optin'] )
+            && '1' === sanitize_text_field( wp_unslash( (string) $_POST['flosc_newsletter_optin'] ) );
+        /* phpcs:enable WordPress.Security.NonceVerification.Missing */
         if ($opted) {
             $this->subscribe_to_newsletter($user_id);
         } else {

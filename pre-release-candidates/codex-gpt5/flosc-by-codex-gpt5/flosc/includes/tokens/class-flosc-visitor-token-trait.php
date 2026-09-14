@@ -290,9 +290,11 @@ trait FLOSC_Visitor_Token_Trait {
      */
     public function flosc_resolve_visitor_session_id_for_grant() {
         foreach ( array( 'flosc_visitor_session', 'flosc_vtok_session' ) as $cookie_name ) {
-            $raw = filter_input( INPUT_COOKIE, $cookie_name, FILTER_UNSAFE_RAW );
-            if ( is_string( $raw ) && $raw !== '' ) {
-                return sanitize_text_field( rawurldecode( wp_unslash( $raw ) ) );
+            if ( isset( $_COOKIE[ $cookie_name ] ) && is_string( $_COOKIE[ $cookie_name ] ) ) {
+                $session_id = sanitize_text_field( rawurldecode( wp_unslash( $_COOKIE[ $cookie_name ] ) ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- decoded then sanitized before use.
+                if ( $session_id !== '' ) {
+                    return $session_id;
+                }
             }
         }
         return '';

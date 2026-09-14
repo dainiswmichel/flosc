@@ -3,20 +3,10 @@
  * FLOSC RAG Manager
  * Retrieval Augmented Generation - AI search tools
  *
- * STATUS: ✅ WORDPRESS SEARCH FUNCTIONAL | ⚙️ AI INTEGRATION OPTIONAL
- *
- * FULLY FUNCTIONAL:
- * - search_posts() searches flow's configured WP category ✅
- * - Searches by lesson number (1-10) or keywords ✅
- * - Filters by access level (visitor/guest/member) ✅
- * - Returns post title, excerpt, URL ✅
- *
- * OPTIONAL (Requires AI API):
- * - search_knowledge_base() for markdown files ⚙️
- * - get_lesson_content() for full post delivery ⚙️
- * - AI tool calling via Anthropic Claude API ⚙️
- *
- * NOTE: WordPress search works WITHOUT AI configured!
+ * WordPress post tools use the same indexed VGM/depth authority as the shared
+ * provider prompt. Knowledge-base and post tools are currently exposed to the
+ * Anthropic tool loop; every provider receives server-selected site evidence
+ * through the shared chatpack before dispatch.
  *
  * @since 9.1.6
  * @since 1.9.0 Dynamic category ID (no longer hardcoded flosc_sample_data)
@@ -69,7 +59,7 @@ class FLOSC_RAG_Manager {
             ],
             [
                 'name' => 'search_posts',
-                'description' => 'Search WordPress posts for lessons and content',
+                'description' => 'Search the access-filtered WordPress site index before making a factual claim about this site, its works, pages, posts, lessons, products, people, or projects. Treat title-only results as proof of title, ID, URL, and existence only.',
                 'input_schema' => [
                     'type' => 'object',
                     'properties' => [
@@ -88,7 +78,7 @@ class FLOSC_RAG_Manager {
             ],
             [
                 'name' => 'get_lesson_content',
-                'description' => 'Get full content of a specific lesson by number or ID',
+                'description' => 'Get the authorized title/body slice of a specific indexed item by lesson number or WordPress post ID. The returned depth is authoritative; never infer details beyond it.',
                 'input_schema' => [
                     'type' => 'object',
                     'properties' => [
@@ -226,89 +216,22 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC RAG: Input - " . wp_
      * @return string
      */
     private function search_posts($keywords, $limit, $access_level, $category_id = 0) {
+        unset($category_id);
 
-        // Prefer the site content index when built for this flow (full bodies, selective).
+        /*
+         * The VGM index is the only authority allowed to hand WordPress body
+         * text to a model. The former live get_posts() fallback understood only
+         * a legacy access meta value and could bypass the configured depth map.
+         * If the index is unavailable, fail closed and ask the floscAdmin to
+         * rebuild it; never improvise a second content-access implementation.
+         */
         if ( class_exists( 'FLOSC_Site_Content_Index' ) ) {
             $index = FLOSC_Site_Content_Index::instance();
-            $stem  = '';
-            if ( function_exists( 'flosc' ) ) {
-                $flow = flosc()->get_current_flow();
-                if ( is_array( $flow ) && ! empty( $flow['ivr_file'] ) ) {
-                    $stem = $index->stem_from_ivr( (string) $flow['ivr_file'] );
-                } elseif ( is_array( $flow ) && ! empty( $flow['id'] ) ) {
-                    $stem = sanitize_key( (string) $flow['id'] );
-                }
-            }
-            if ( $stem === '' && ! empty( $GLOBALS['flosc_current_ivr'] ) ) {
-                $stem = $index->stem_from_ivr( (string) $GLOBALS['flosc_current_ivr'] );
-            }
-            if ( $stem !== '' ) {
-                $doc = $index->load( $stem );
-                if ( ! empty( $doc['posts'] ) ) {
-                    $from_index = $index->search( $stem, (string) $keywords, (string) $access_level, (int) $limit );
-                    if ( is_string( $from_index ) && $from_index !== '' ) {
-                        return $from_index;
-                    }
-                }
-            }
+            $stem  = $this->site_index_flow_stem( $index );
+            return $index->search( $stem, (string) $keywords, (string) $access_level, (int) $limit );
         }
 
-        // Fallback: live WordPress search in the flow category.
-        $args = [
-            's' => $keywords,
-            'posts_per_page' => $limit,
-            'post_status' => 'publish'
-        ];
-
-        if ($category_id > 0) {
-            $args['cat'] = $category_id;
-        }
-
-        if (is_numeric($keywords) && $keywords >= 1 && $keywords <= 10) {
-            unset($args['s']);
-            $pids = function_exists( 'flosc_get_post_ids_for_meta' )
-                ? flosc_get_post_ids_for_meta( '_flosc_lesson_number', (string) intval( $keywords ), 20 )
-                : array();
-            if ( empty( $pids ) ) {
-                return "No posts found for: {$keywords}";
-            }
-            $args['post__in'] = $pids;
-            $args['orderby']  = 'post__in';
-        }
-
-        $posts = get_posts($args);
-
-        if (empty($posts)) {
-            return "No posts found for: {$keywords}";
-        }
-
-        $results = "**Found " . count($posts) . " posts:**\n\n";
-
-        foreach ($posts as $post) {
-
-            $lesson_num = get_post_meta($post->ID, '_flosc_lesson_number', true);
-            $required_access = get_post_meta($post->ID, '_flosc_access_level', true) ?: 'member';
-
-            $lesson_label = $lesson_num ? "Lesson {$lesson_num}: " : "";
-
-            if (!$this->content_filter->has_access($required_access, $access_level)) {
-                $results .= "**{$lesson_label}{$post->post_title}** 🔒\n";
-                $results .= "Access: " . ucfirst($required_access) . " required\n\n";
-                continue;
-            }
-
-            // Full post body (access-filtered), not excerpt-only.
-            $content = $this->content_filter->filter_post_content($post->post_content, $access_level);
-            $content = wp_strip_all_tags( (string) $content );
-            $content = preg_replace( '/\s+/u', ' ', $content );
-            $content = is_string( $content ) ? trim( $content ) : '';
-
-            $results .= "**{$lesson_label}{$post->post_title}**\n";
-            $results .= "ID: {$post->ID} | URL: " . get_permalink($post->ID) . "\n\n";
-            $results .= $content . "\n\n---\n\n";
-        }
-
-        return $results;
+        return 'No verified indexed site content is available for this turn.';
     }
     
     /**
@@ -320,38 +243,47 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC RAG: Input - " . wp_
      * @return string
      */
     private function get_lesson_content($lesson_number, $post_id, $access_level) {
-        
-        $post = null;
-        
-        // Try to find by lesson number first
-        if ($lesson_number) {
-            $pids = function_exists( 'flosc_get_post_ids_for_meta' )
-                ? flosc_get_post_ids_for_meta( '_flosc_lesson_number', (string) $lesson_number, 1 )
-                : array();
-            if ( ! empty( $pids ) ) {
-                $post = get_post( (int) $pids[0] );
+        if ( ! class_exists( 'FLOSC_Site_Content_Index' ) ) {
+            return 'No verified indexed site content is available for this turn.';
+        }
+
+        $query = $post_id ? (string) absint($post_id) : (string) absint($lesson_number);
+        if ( '0' === $query ) {
+            return 'Lesson not found.';
+        }
+
+        $index = FLOSC_Site_Content_Index::instance();
+        $stem  = $this->site_index_flow_stem( $index );
+        return $index->search( $stem, $query, (string) $access_level, 1 );
+    }
+
+    /**
+     * Resolve the active flow once for every site-index tool.
+     *
+     * Specific-item retrieval used to pass an empty flow while keyword search
+     * passed the active one. On a shared site index that could apply a VGM map
+     * captured for a different flow to the same post.
+     *
+     * @param FLOSC_Site_Content_Index $index Site index service.
+     * @return string Flow stem, or an empty string when no flow is available.
+     */
+    private function site_index_flow_stem( $index ) {
+        $stem = '';
+        if ( function_exists( 'flosc' ) ) {
+            $framework = flosc();
+            if ( is_object( $framework ) && method_exists( $framework, 'get_current_flow' ) ) {
+                $flow = $framework->get_current_flow();
+                if ( is_array( $flow ) && ! empty( $flow['ivr_file'] ) ) {
+                    $stem = $index->stem_from_ivr( (string) $flow['ivr_file'] );
+                } elseif ( is_array( $flow ) && ! empty( $flow['id'] ) ) {
+                    $stem = sanitize_key( (string) $flow['id'] );
+                }
             }
         }
-        
-        // Fall back to post ID
-        if (!$post && $post_id) {
-            $post = get_post($post_id);
+        if ( $stem === '' && ! empty( $GLOBALS['flosc_current_ivr'] ) ) {
+            $stem = $index->stem_from_ivr( (string) $GLOBALS['flosc_current_ivr'] );
         }
-        
-        if (!$post) {
-            return "Lesson not found.";
-        }
-        
-        // Filter content by access level
-        $content = $this->content_filter->filter_post_content($post->post_content, $access_level);
-        
-        // Build response
-        $response = "**{$post->post_title}**\n\n";
-        $response .= "URL: " . get_permalink($post->ID) . "\n\n";
-        $response .= "---\n\n";
-        $response .= $content;
-        
-        return $response;
+        return $stem;
     }
     
     /**

@@ -278,7 +278,7 @@ class SSO_Manager {
         if ($styles_output) return;
         $styles_output = true;
         
-        // §12: SSO button styles via an inline-only style handle instead of a raw <style> tag.
+        // §12: SSO button styles via an inline-only style handle instead of a raw style element.
         wp_register_style('flosc-sso', false, [], FLOSC_VERSION);
         wp_enqueue_style('flosc-sso');
         wp_add_inline_style('flosc-sso', '
@@ -343,7 +343,7 @@ class SSO_Manager {
 
         // Add click handler script
         // v1.4.6: Use URL-safe separator (handles non-pretty permalinks)
-        // §12: attached via an inline-only script handle instead of a raw <script> tag.
+        // §12: attached via an inline-only script handle instead of a raw script element.
         wp_register_script('flosc-sso', false, [], FLOSC_VERSION, true);
         wp_enqueue_script('flosc-sso');
         wp_add_inline_script('flosc-sso', '
@@ -372,13 +372,13 @@ class SSO_Manager {
      * auth modal so the user can try a different login method.
      */
     public function handle_sso_error_display() {
-        $err_raw = filter_input( INPUT_GET, 'flosc_sso_error', FILTER_UNSAFE_RAW );
-        if ( is_string( $err_raw ) && $err_raw !== '' ) {
-            $error_token = sanitize_key( wp_unslash( $err_raw ) );
-            if ($error_token === '') {
-                return;
-            }
-
+        // OAuth callback feedback is read-only; the random token selects a short-lived transient.
+        /* phpcs:disable WordPress.Security.NonceVerification.Recommended -- Random external OAuth callback token; no state authorization. */
+        $error_token = isset( $_GET['flosc_sso_error'] ) && is_string( $_GET['flosc_sso_error'] )
+            ? sanitize_key( wp_unslash( $_GET['flosc_sso_error'] ) )
+            : '';
+        /* phpcs:enable WordPress.Security.NonceVerification.Recommended */
+        if ( $error_token !== '' ) {
             $error_key = 'flosc_sso_error_' . $error_token;
             $error_message = get_transient($error_key);
             
@@ -393,7 +393,7 @@ class SSO_Manager {
             // v8.0.1: Set a JS variable instead of alert() so flosc-app.js can
             // show the error in-chat and re-present the auth modal
             add_action('wp_footer', function() use ($error_message) {
-                // §12: emit via an inline-only script handle instead of a raw <script> tag.
+                // §12: emit via an inline-only script handle instead of a raw script element.
                 wp_register_script('flosc-sso-error', false, [], FLOSC_VERSION, true);
                 wp_enqueue_script('flosc-sso-error');
                 wp_add_inline_script('flosc-sso-error', 'window.flosc_sso_error = ' . wp_json_encode($error_message) . ';');

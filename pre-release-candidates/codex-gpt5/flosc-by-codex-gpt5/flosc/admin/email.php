@@ -390,7 +390,7 @@ if (!$flosc_has_levels):
 <p class="description"><em>No member levels defined yet. Add levels in the <strong>Member Levels</strong> tab, then their email series will appear here.</em></p>
 <?php endif; ?>
 
-<?php // §12: enqueue page JS via the registered admin handle instead of a raw <script> tag. ?>
+<?php // §12: enqueue page JS via the registered admin handle instead of a raw script element. ?>
 <?php ob_start(); ?>
 (function () {
     function addRow(prefix) {

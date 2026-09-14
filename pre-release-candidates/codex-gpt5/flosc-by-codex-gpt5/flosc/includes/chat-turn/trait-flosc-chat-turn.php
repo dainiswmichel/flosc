@@ -864,6 +864,35 @@ trait FLOSC_Chat_Turn_Trait {
             }
         }
 
+        /*
+         * Retrieve WordPress evidence once, before any provider-specific path.
+         * The server overwrites this key so browser input can never inject a
+         * supposed source. FLOSC_Site_Content_Index::search() applies the
+         * visitor/guest/member depth before returning a single body character.
+         * Both full and follow-up Chatpacks consume the resulting field, which
+         * gives OpenAI, Gemini, xAI, and Anthropic the same site facts.
+         */
+        unset($eval_context['site_retrieval_context']);
+        $flosc_site_retrieval_status = 'not-used';
+        if ($ai_available) {
+            $flosc_site_retrieval = 'No verified indexed site content is available for this turn.';
+            if (class_exists('FLOSC_Site_Content_Index')) {
+                $flosc_site_stem = $flow_id !== ''
+                    ? $flow_id
+                    : sanitize_key((string) pathinfo($ivr_file, PATHINFO_FILENAME));
+                $flosc_site_retrieval = FLOSC_Site_Content_Index::instance()->search(
+                    $flosc_site_stem,
+                    $message,
+                    (string) ($eval_context['access_level'] ?? 'visitor'),
+                    3
+                );
+            }
+            $eval_context['site_retrieval_context'] = (string) $flosc_site_retrieval;
+            $flosc_site_retrieval_status = strncmp((string) $flosc_site_retrieval, '**Verified site retrieval', 25) === 0
+                ? 'hit'
+                : 'miss';
+        }
+
         try {
         if ($response_message && $ai_available) {
             // IVR matched AND AI is configured — AI interprets the IVR guidance
@@ -1025,6 +1054,9 @@ trait FLOSC_Chat_Turn_Trait {
         $flosc_ctx_post_id = absint($eval_context['browsing_page_post_id'] ?? 0);
         if (!is_array($flosc_chain_detail)) {
             $flosc_chain_detail = [];
+        }
+        if ('not-used' !== $flosc_site_retrieval_status) {
+            $flosc_chain_detail[] = 'site_retrieval:' . $flosc_site_retrieval_status;
         }
         if ($flosc_ctx_surface !== '') {
             $flosc_chain_detail[] = 'ctx_surface:' . $flosc_ctx_surface;
@@ -1214,33 +1246,7 @@ trait FLOSC_Chat_Turn_Trait {
      * @return WP_REST_Response|WP_Error
      */
     public function handle_chat_with_rag($request) {
-        try {
-            return $this->handle_chat_with_rag_turn($request);
-        } catch (Throwable $e) {
-            if (function_exists('flosc_log')) {
-                flosc_log(sprintf(
-                    'Chat turn failed: %s in %s:%d — %s',
-                    get_class($e),
-                    $e->getFile(),
-                    $e->getLine(),
-                    $e->getMessage()
-                ));
-            }
-
-            $flosc_error_code = 'flosc_chat_turn_exception';
-            $flosc_friendly_message = __( 'Something went wrong on our side just then. Please try that again.', 'flosc' );
-
-            return new WP_REST_Response(
-                array(
-                    'success'    => false,
-                    'message'    => $flosc_friendly_message,
-                    'response'   => $flosc_friendly_message, // Backward compatibility.
-                    'error'      => $flosc_error_code,        // Backward compatibility / machine code.
-                    'error_code' => $flosc_error_code,
-                ),
-                200
-            );
-        }
+        return $this->handle_chat($request);
     }
 
     private function handle_chat_with_rag_turn($request) {

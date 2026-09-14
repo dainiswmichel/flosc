@@ -1391,11 +1391,11 @@ if ( ! function_exists( 'flosc_personality_library_get' ) ) {
 if ( ! function_exists( 'flosc_personality_library_save_all' ) ) {
 	/**
 	 * @param array<string,array<string,mixed>> $library Full map.
-	 * @return void
+	 * @return bool Whether the normalized library is present in storage.
 	 */
 	function flosc_personality_library_save_all( $library ) {
 		if ( ! is_array( $library ) ) {
-			return;
+			return false;
 		}
 		$previous = flosc_personality_library_get_all();
 		$clean    = array();
@@ -1465,7 +1465,14 @@ if ( ! function_exists( 'flosc_personality_library_save_all' ) ) {
 			$entry['profile_hash'] = $hash;
 			$clean[ $id ] = $entry;
 		}
-		update_option( flosc_personality_library_option_key(), $clean, false );
+		$option_key = flosc_personality_library_option_key();
+		update_option( $option_key, $clean, false );
+
+		/* update_option() returns false both for a failed write and for a no-op.
+		 * Read back the normalized document so callers report what is stored,
+		 * never merely what they attempted to write. */
+		$stored = get_option( $option_key, null );
+		return is_array( $stored ) && $stored === $clean;
 	}
 }
 
@@ -1481,11 +1488,18 @@ if ( ! function_exists( 'flosc_personality_library_resolve_field' ) ) {
 	function flosc_personality_library_resolve_field( $field, $default = '', $flow_id = null ) {
 		$field = (string) $field;
 		$pid   = '';
-		if ( function_exists( 'flosc_get_setting' ) ) {
-			$pid = sanitize_key( (string) flosc_get_setting( 'personality_library_id', '', $flow_id ) );
-		}
-		if ( $pid === '' && function_exists( 'flosc_personality_library_id_for_flow' ) ) {
+		/*
+		 * Resolve the attachment from the same option row the admin screen edits.
+		 * Older installs can have a filename-bound flow row whose option name is
+		 * not the synthesized flosc_flow_{stem} key. Reading the synthesized row
+		 * first made Attach appear to succeed while the next AI turn continued to
+		 * resolve the other row.
+		 */
+		if ( function_exists( 'flosc_personality_library_id_for_flow' ) ) {
 			$pid = flosc_personality_library_id_for_flow( $flow_id );
+		}
+		if ( $pid === '' && function_exists( 'flosc_get_setting' ) ) {
+			$pid = sanitize_key( (string) flosc_get_setting( 'personality_library_id', '', $flow_id ) );
 		}
 		if ( $pid !== '' ) {
 			$entry = flosc_personality_library_get( $pid );
@@ -1775,9 +1789,14 @@ if ( ! function_exists( 'flosc_sanitize_personality_workshop' ) ) {
 		if ( $keys === range( 0, count( $decoded ) - 1 ) ) {
 			return '';
 		}
-		if ( isset( $decoded['derived'] ) && is_array( $decoded['derived'] ) ) {
-			unset( $decoded['derived']['provider_packs'] );
-		}
+		/*
+		 * Store the authored genome, not an export receipt or compiled copies of
+		 * it. written_at/provenance contain a new timestamp (and the previous
+		 * saved hash) every time workshopFile() runs. Including those values in
+		 * the server fingerprint made an unchanged Save look like a new version.
+		 * derived is reproducible from the genome and is never read by importSpec.
+		 */
+		unset( $decoded['written_at'], $decoded['provenance'], $decoded['derived'] );
 		$encoded = wp_json_encode( $decoded );
 		if ( ! is_string( $encoded ) || $encoded === '' ) {
 			return '';
@@ -2242,8 +2261,11 @@ if ( ! function_exists( 'flosc_personality_builder_request_context' ) ) {
 			$ivr_files = array_values( array_unique( $ivr_files ) );
 		}
 
-		$ivr_raw = filter_input( INPUT_GET, 'ivr', FILTER_UNSAFE_RAW );
-		$ivr     = is_string( $ivr_raw ) ? sanitize_file_name( wp_unslash( $ivr_raw ) ) : '';
+			/* phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only designer context; no state changes. */
+			$ivr = isset( $_GET['ivr'] ) && is_string( $_GET['ivr'] )
+				? sanitize_file_name( wp_unslash( $_GET['ivr'] ) )
+				: '';
+			/* phpcs:enable WordPress.Security.NonceVerification.Recommended */
 		if ( $ivr !== '' && ! empty( $ivr_files ) && ! in_array( $ivr, $ivr_files, true ) ) {
 			$ivr = '';
 		}
@@ -2264,7 +2286,12 @@ if ( ! function_exists( 'flosc_personality_builder_request_context' ) ) {
 			   Attached-personality select and the designer hint render.
 			   Registry/implied lookups are fallbacks for flows that never
 			   saved an attachment, never overrides. */
-			$flow_bag = get_option( 'flosc_flow_' . $flosc_stem, array() );
+			if ( function_exists( 'flosc_personality_flow_settings_for_ivr' ) ) {
+				$picked   = flosc_personality_flow_settings_for_ivr( $ivr );
+				$flow_bag = isset( $picked['settings'] ) && is_array( $picked['settings'] ) ? $picked['settings'] : array();
+			} else {
+				$flow_bag = get_option( 'flosc_flow_' . $flosc_stem, array() );
+			}
 			if ( is_array( $flow_bag ) ) {
 				$persona = sanitize_key( (string) ( $flow_bag['personality_library_id'] ?? '' ) );
 			}
@@ -2392,8 +2419,7 @@ if ( ! function_exists( 'flosc_personality_library_update_entry' ) ) {
 			}
 			$lib[ $id ][ $fk ] = (string) $fields[ $fk ];
 		}
-		flosc_personality_library_save_all( $lib );
-		return true;
+		return flosc_personality_library_save_all( $lib );
 	}
 }
 
@@ -2566,8 +2592,40 @@ if ( ! function_exists( 'flosc_personality_library_id_for_flow' ) ) {
 	 */
 	function flosc_personality_library_id_for_flow( $flow_id = null ) {
 		$pid = '';
+		$ivr = '';
+
+		/*
+		 * When this is the active flow, resolve its actual IVR filename and read
+		 * the same legacy-compatible option row Attach writes. A synthesized
+		 * flosc_flow_{stem} row is not necessarily the runtime row on upgraded
+		 * installs.
+		 */
+		if ( is_string( $flow_id ) && preg_match( '/\.md$/i', $flow_id ) ) {
+			$ivr = basename( $flow_id );
+		}
+		if ( function_exists( 'flosc' ) ) {
+			$inst = flosc();
+			if ( is_object( $inst ) && method_exists( $inst, 'get_current_flow' ) ) {
+				$current = $inst->get_current_flow();
+				if ( is_array( $current ) ) {
+					$current_ivr  = basename( (string) ( $current['ivr_file'] ?? '' ) );
+					$current_id   = sanitize_key( (string) ( $current['id'] ?? '' ) );
+					$current_stem = sanitize_key( pathinfo( $current_ivr, PATHINFO_FILENAME ) );
+					$requested    = sanitize_key( pathinfo( basename( (string) $flow_id ), PATHINFO_FILENAME ) );
+					if ( $current_ivr !== '' && ( null === $flow_id || in_array( $requested, array( $current_id, $current_stem, preg_replace( '/_ivr$/', '', $current_stem ) ), true ) ) ) {
+						$ivr = $current_ivr;
+					}
+				}
+			}
+		}
+		if ( $ivr !== '' && function_exists( 'flosc_personality_flow_settings_for_ivr' ) ) {
+			$picked = flosc_personality_flow_settings_for_ivr( $ivr );
+			$pid    = isset( $picked['settings']['personality_library_id'] )
+				? sanitize_key( (string) $picked['settings']['personality_library_id'] )
+				: '';
+		}
 		if ( function_exists( 'flosc_get_setting' ) ) {
-			$pid = sanitize_key( (string) flosc_get_setting( 'personality_library_id', '', $flow_id ) );
+			$pid = $pid !== '' ? $pid : sanitize_key( (string) flosc_get_setting( 'personality_library_id', '', $flow_id ) );
 		}
 		if ( $pid !== '' ) {
 			return $pid;
@@ -2643,14 +2701,13 @@ if ( ! function_exists( 'flosc_ajax_save_personality_design' ) ) {
 			$fields['ai_personality_role'] = sanitize_text_field( wp_unslash( (string) $_POST['ai_personality_role'] ) );
 		}
 		/*
-		 * The four the designer computes. They were already in
+		 * The runtime sidecars the designer computes. They were already in
 		 * flosc_personality_library_field_keys(), already built by the
-		 * builder's libraryEntry(), and read by nothing — the save sent four
-		 * keys and these were not among them. ai_boundaries and ai_topic_scope
-		 * reach the model on every turn, so a floscAdmin had no way to set two
-		 * values the AI was being given.
+		 * builder's libraryEntry(), but the save once omitted them. Several are
+		 * also read independently by runtime scope/fallback handling, so they must
+		 * stay synchronized with the compiled profile.
 		 */
-		foreach ( array( 'ai_personality_traits', 'ai_mission', 'ai_boundaries', 'ai_topic_scope' ) as $flosc_sidecar ) {
+		foreach ( array( 'ai_personality_traits', 'ai_mission', 'ai_boundaries', 'ai_topic_scope', 'ai_off_topic_message', 'ai_fallback_phrase' ) as $flosc_sidecar ) {
 			if ( isset( $_POST[ $flosc_sidecar ] ) ) {
 				$fields[ $flosc_sidecar ] = sanitize_textarea_field( wp_unslash( (string) $_POST[ $flosc_sidecar ] ) );
 			}
@@ -2685,6 +2742,7 @@ if ( ! function_exists( 'flosc_ajax_save_personality_design' ) ) {
 				'id'       => $id,
 				'saved_at' => $saved_at,
 				'version'  => is_array( $saved_row ) && isset( $saved_row['profile_version'] ) ? (string) $saved_row['profile_version'] : '',
+				'hash'     => is_array( $saved_row ) && isset( $saved_row['profile_hash'] ) ? (string) $saved_row['profile_hash'] : '',
 			)
 		);
 	}
@@ -2710,8 +2768,16 @@ if ( ! function_exists( 'flosc_ajax_attach_personality' ) ) {
 		if ( $ivr === '' ) {
 			wp_send_json_error( array( 'message' => __( 'Missing flow.', 'flosc' ) ), 400 );
 		}
+		if ( $persona !== '' && ! is_array( flosc_personality_library_get( $persona ) ) ) {
+			wp_send_json_error( array( 'message' => __( 'That personality is not in the FLOSC library.', 'flosc' ) ), 400 );
+		}
 
-		$option_key = 'flosc_flow_' . sanitize_key( pathinfo( $ivr, PATHINFO_FILENAME ) );
+		/* Write the exact flow row used by the settings screen and runtime. Older
+		 * installs can have a filename-bound row whose key differs from the
+		 * synthesized flosc_flow_{stem} default. */
+		$option_key = function_exists( 'flosc_resolve_flow_option_key_for_ivr' )
+			? flosc_resolve_flow_option_key_for_ivr( $ivr )
+			: 'flosc_flow_' . sanitize_key( pathinfo( $ivr, PATHINFO_FILENAME ) );
 		$settings   = get_option( $option_key, array() );
 		if ( ! is_array( $settings ) ) {
 			$settings = array();
@@ -2737,10 +2803,13 @@ if ( ! function_exists( 'flosc_ajax_attach_personality' ) ) {
 					'ai_mission'           => 'ai_mission',
 					'ai_boundaries'        => 'ai_boundaries',
 					'ai_topic_scope'       => 'ai_topic_scope',
+					'ai_off_topic_message' => 'ai_off_topic_message',
+					'ai_fallback_phrase'   => 'ai_fallback_phrase',
 				);
 				$changed = false;
 				foreach ( $map as $src => $dst ) {
-					if ( isset( $row[ $src ] ) && trim( (string) $row[ $src ] ) !== '' && (string) $settings[ $dst ] !== (string) $row[ $src ] ) {
+					$current = isset( $settings[ $dst ] ) ? (string) $settings[ $dst ] : '';
+					if ( isset( $row[ $src ] ) && trim( (string) $row[ $src ] ) !== '' && $current !== (string) $row[ $src ] ) {
 						$settings[ $dst ] = (string) $row[ $src ];
 						$changed          = true;
 					}
@@ -2749,6 +2818,9 @@ if ( ! function_exists( 'flosc_ajax_attach_personality' ) ) {
 					update_option( $option_key, $settings );
 				}
 			}
+		}
+		if ( function_exists( 'flosc_bust_flow_option_rows_cache' ) ) {
+			flosc_bust_flow_option_rows_cache();
 		}
 
 		/*
@@ -3142,12 +3214,18 @@ if ( ! function_exists( 'flosc_personality_builder_admin_body_class' ) ) {
 	 * @return string
 	 */
 	function flosc_personality_builder_admin_body_class( $classes ) {
-		$page_raw = filter_input( INPUT_GET, 'page', FILTER_UNSAFE_RAW );
-		$page     = is_string( $page_raw ) ? sanitize_key( wp_unslash( $page_raw ) ) : '';
-		$tab_raw  = filter_input( INPUT_GET, 'tab', FILTER_UNSAFE_RAW );
-		$tab      = is_string( $tab_raw ) ? sanitize_key( wp_unslash( $tab_raw ) ) : '';
-		$view_raw = filter_input( INPUT_GET, 'view', FILTER_UNSAFE_RAW );
-		$view     = is_string( $view_raw ) ? sanitize_key( wp_unslash( $view_raw ) ) : '';
+		// Read-only admin routing values; they neither authorize nor mutate anything.
+		/* phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only admin routes; no state changes. */
+		$page = isset( $_GET['page'] ) && is_string( $_GET['page'] )
+			? sanitize_key( wp_unslash( $_GET['page'] ) )
+			: '';
+		$tab = isset( $_GET['tab'] ) && is_string( $_GET['tab'] )
+			? sanitize_key( wp_unslash( $_GET['tab'] ) )
+			: '';
+		$view = isset( $_GET['view'] ) && is_string( $_GET['view'] )
+			? sanitize_key( wp_unslash( $_GET['view'] ) )
+			: '';
+		/* phpcs:enable WordPress.Security.NonceVerification.Recommended */
 		if ( $page === 'flosc-settings' && $tab === 'ai' && $view !== 'all' ) {
 			$classes .= ' flosc-personality-builder-admin';
 		}
@@ -3166,12 +3244,17 @@ if ( ! function_exists( 'flosc_redirect_nested_personality_designer' ) ) {
 		if ( ! is_admin() || ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
-		$page_raw = filter_input( INPUT_GET, 'page', FILTER_UNSAFE_RAW );
-		$page     = is_string( $page_raw ) ? sanitize_key( wp_unslash( $page_raw ) ) : '';
-		$tab_raw  = filter_input( INPUT_GET, 'tab', FILTER_UNSAFE_RAW );
-		$tab      = is_string( $tab_raw ) ? sanitize_key( wp_unslash( $tab_raw ) ) : '';
-		$view_raw = filter_input( INPUT_GET, 'view', FILTER_UNSAFE_RAW );
-		$view     = is_string( $view_raw ) ? sanitize_key( wp_unslash( $view_raw ) ) : '';
+		/* phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only legacy-route detection; no state changes. */
+		$page = isset( $_GET['page'] ) && is_string( $_GET['page'] )
+			? sanitize_key( wp_unslash( $_GET['page'] ) )
+			: '';
+		$tab = isset( $_GET['tab'] ) && is_string( $_GET['tab'] )
+			? sanitize_key( wp_unslash( $_GET['tab'] ) )
+			: '';
+		$view = isset( $_GET['view'] ) && is_string( $_GET['view'] )
+			? sanitize_key( wp_unslash( $_GET['view'] ) )
+			: '';
+		/* phpcs:enable WordPress.Security.NonceVerification.Recommended */
 		$legacy   = ( $page === 'flosc-personality-builder' ) || ( $page === 'flosc-settings' && $tab === 'ai' && $view === 'design' );
 		if ( ! $legacy ) {
 			return;

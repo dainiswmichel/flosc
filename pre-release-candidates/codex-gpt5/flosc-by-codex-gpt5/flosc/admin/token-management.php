@@ -207,7 +207,11 @@ $flosc_active_count = count(array_filter($flosc_product_rows, static function ($
     return !empty($flosc_row['active']);
 }));
 // Admin list filter (read-only navigation, not a form submission).
-$flosc_filter = sanitize_key((string) filter_input(INPUT_GET, 'flosc_product_filter'));
+/* phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only admin list filter; no state changes. */
+$flosc_filter = isset( $_GET['flosc_product_filter'] ) && is_string( $_GET['flosc_product_filter'] )
+    ? sanitize_key( wp_unslash( $_GET['flosc_product_filter'] ) )
+    : '';
+/* phpcs:enable WordPress.Security.NonceVerification.Recommended */
 if (!in_array($flosc_filter, ['active', 'all'], true)) {
     $flosc_filter = 'active';
 }

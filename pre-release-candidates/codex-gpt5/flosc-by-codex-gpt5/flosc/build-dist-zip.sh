@@ -59,6 +59,7 @@ trap cleanup EXIT
 DENY_PATTERNS=(
   'flosc_development_worknotes'
   'flosc_development_archives'
+  'flosc_documentation'
   'sample-data'
   'admin/create-sample-data.php'
   'vendor'
@@ -119,6 +120,8 @@ done < <(find "$STAGE/flosc" \( \
   -path '*/flosc_development_worknotes/*' -o \
   -path '*/flosc_development_archives' -o \
   -path '*/flosc_development_archives/*' -o \
+  -path '*/flosc_documentation' -o \
+  -path '*/flosc_documentation/*' -o \
   -path '*/sample-data' -o \
   -path '*/sample-data/*' -o \
   -path '*/tests' -o \
@@ -152,6 +155,17 @@ while IFS= read -r -d '' found; do
   esac
 done < <(find "$STAGE/flosc" -type f -print0)
 
+# Static HTML is not a runtime asset format for FLOSC. In particular, do not
+# let an unreferenced documentation export bypass WordPress' enqueue system by
+# carrying its own script or stylesheet tags into the final artifact.
+while IFS= read -r -d '' found; do
+  if grep -Eiq "<(script|style)([[:space:]>])|<link[^>]+rel[[:space:]]*=[[:space:]]*['\"]stylesheet" "$found"; then
+    rel="${found#"$STAGE/flosc/"}"
+    echo "FATAL: executable/presentation HTML asset staged: flosc/${rel}" >&2
+    fail=1
+  fi
+done < <(find "$STAGE/flosc" -type f \( -name '*.html' -o -name '*.htm' \) -print0)
+
 if [[ ! -f "$STAGE/flosc/flosc.php" || ! -f "$STAGE/flosc/readme.txt" ]]; then
   echo "FATAL: staged zip missing flosc.php or readme.txt" >&2
   fail=1
@@ -174,9 +188,9 @@ rm -f "$ZIP_PATH"
 )
 
 # Second pass: inspect the zip itself
-if unzip -l "$ZIP_PATH" | grep -Eiq 'worknote|flosc_development_|/vendor/|composer\.(json|lock)|sample-data/|\.git/'; then
+if unzip -l "$ZIP_PATH" | grep -Eiq 'worknote|flosc_development_|flosc_documentation/|/vendor/|composer\.(json|lock)|sample-data/|\.git/'; then
   echo "FATAL: zip contents still contain forbidden paths:" >&2
-  unzip -l "$ZIP_PATH" | grep -Ei 'worknote|flosc_development_|/vendor/|composer\.(json|lock)|sample-data/|\.git/' >&2 || true
+  unzip -l "$ZIP_PATH" | grep -Ei 'worknote|flosc_development_|flosc_documentation/|/vendor/|composer\.(json|lock)|sample-data/|\.git/' >&2 || true
   rm -f "$ZIP_PATH"
   exit 1
 fi

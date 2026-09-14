@@ -767,7 +767,7 @@ trait FLOSC_Admin_Trait {
     public function enqueue_admin_assets($hook) {
         // §12: Post-visibility metabox styles render on the post editor (post.php / post-new.php),
         // which is a different screen than the FLOSC settings pages. Enqueue them there via an
-        // inline-only style handle instead of echoing a <style> tag inside the metabox markup.
+        // inline-only style handle instead of echoing a style element inside the metabox markup.
         if ($hook === 'post.php' || $hook === 'post-new.php') {
             wp_register_style('flosc-metabox', false, [], FLOSC_VERSION);
             wp_enqueue_style('flosc-metabox');
@@ -810,7 +810,7 @@ trait FLOSC_Admin_Trait {
 
         // §12: Footer-printed script handle (no src) that FLOSC admin page templates
         // attach their page JS to via wp_add_inline_script('flosc-admin', ...), instead
-        // of echoing raw <script> tags. Registering it here (on admin_enqueue_scripts)
+        // of echoing raw script elements. Registering it here (on admin_enqueue_scripts)
         // means the handle is enqueued before render, so inline JS added during the page
         // body still prints in the admin footer. jQuery dep covers the existing jQuery use.
         wp_register_script('flosc-admin', false, ['jquery'], FLOSC_VERSION, true);
@@ -827,12 +827,18 @@ trait FLOSC_Admin_Trait {
             );
         }
 
-        $flosc_tab_raw  = filter_input( INPUT_GET, 'tab', FILTER_UNSAFE_RAW );
-        $flosc_tab      = is_string( $flosc_tab_raw ) ? sanitize_key( wp_unslash( $flosc_tab_raw ) ) : '';
-        $flosc_page_raw = filter_input( INPUT_GET, 'page', FILTER_UNSAFE_RAW );
-        $flosc_page     = is_string( $flosc_page_raw ) ? sanitize_key( wp_unslash( $flosc_page_raw ) ) : '';
-        $flosc_view_raw = filter_input( INPUT_GET, 'view', FILTER_UNSAFE_RAW );
-        $flosc_view     = is_string( $flosc_view_raw ) ? sanitize_key( wp_unslash( $flosc_view_raw ) ) : '';
+        // Read-only admin routing values; these do not authorize or mutate anything.
+        /* phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only admin routes; no state changes. */
+        $flosc_tab = isset( $_GET['tab'] ) && is_string( $_GET['tab'] )
+            ? sanitize_key( wp_unslash( $_GET['tab'] ) )
+            : '';
+        $flosc_page = isset( $_GET['page'] ) && is_string( $_GET['page'] )
+            ? sanitize_key( wp_unslash( $_GET['page'] ) )
+            : '';
+        $flosc_view = isset( $_GET['view'] ) && is_string( $_GET['view'] )
+            ? sanitize_key( wp_unslash( $_GET['view'] ) )
+            : '';
+        /* phpcs:enable WordPress.Security.NonceVerification.Recommended */
         if ( $flosc_page === 'flosc-settings' && $flosc_tab === 'ai' && $flosc_view !== 'all' ) {
             if ( function_exists( 'flosc_enqueue_personality_builder_assets' ) ) {
                 flosc_enqueue_personality_builder_assets();
@@ -862,9 +868,6 @@ trait FLOSC_Admin_Trait {
          * The zone markup only renders on the "all" view of the Flow tab, so the
          * view is read here and the assets are skipped on the single-flow view.
          */
-        $flosc_view_raw = filter_input( INPUT_GET, 'view', FILTER_UNSAFE_RAW );
-        $flosc_view     = is_string( $flosc_view_raw ) ? sanitize_key( wp_unslash( $flosc_view_raw ) ) : '';
-
         if ( $flosc_tab === 'flow' && $flosc_view === 'all' ) {
             $flosc_port_css = FLOSC_PLUGIN_DIR . 'assets/css/flosc-portability-admin.css';
             $flosc_port_js  = FLOSC_PLUGIN_DIR . 'assets/js/flosc-portability-admin.js';
@@ -977,9 +980,12 @@ trait FLOSC_Admin_Trait {
         }
 
         // Read-only admin menu routing (capability-checked below). No nonce: GET page
-        // slug only; never mutates options. filter_input avoids direct $_GET PHPCS noise.
-        $page_raw = filter_input(INPUT_GET, 'page', FILTER_UNSAFE_RAW);
-        $page     = is_string($page_raw) ? sanitize_key(wp_unslash($page_raw)) : '';
+        // slug only; never mutates options.
+        /* phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only admin route; no state changes. */
+        $page = isset( $_GET['page'] ) && is_string( $_GET['page'] )
+            ? sanitize_key( wp_unslash( $_GET['page'] ) )
+            : '';
+        /* phpcs:enable WordPress.Security.NonceVerification.Recommended */
         if ($page === '' || $page === 'flosc-settings') {
             return;
         }
@@ -1028,13 +1034,18 @@ trait FLOSC_Admin_Trait {
             'page' => 'flosc-settings',
             'tab'  => $tab,
         ];
-        $ivr_raw = filter_input(INPUT_GET, 'ivr', FILTER_UNSAFE_RAW);
-        if (is_string($ivr_raw) && $ivr_raw !== '') {
-            $args['ivr'] = sanitize_file_name(wp_unslash($ivr_raw));
+        /* phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only redirect context; no state changes. */
+        $ivr = isset( $_GET['ivr'] ) && is_string( $_GET['ivr'] )
+            ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) )
+            : '';
+        if ( $ivr !== '' ) {
+            $args['ivr'] = $ivr;
         }
-        $view_raw = filter_input(INPUT_GET, 'view', FILTER_UNSAFE_RAW);
-        if (is_string($view_raw) && $view_raw !== '') {
-            $view = sanitize_text_field(wp_unslash($view_raw));
+        $view = isset( $_GET['view'] ) && is_string( $_GET['view'] )
+            ? sanitize_text_field( wp_unslash( $_GET['view'] ) )
+            : '';
+        /* phpcs:enable WordPress.Security.NonceVerification.Recommended */
+        if ( $view !== '' ) {
             if (in_array($view, ['single', 'all'], true)) {
                 $args['view'] = $view;
             }
@@ -1053,8 +1064,11 @@ trait FLOSC_Admin_Trait {
             return;
         }
 
-        $page_raw = filter_input(INPUT_GET, 'page', FILTER_UNSAFE_RAW);
-        $page     = is_string($page_raw) ? sanitize_key(wp_unslash($page_raw)) : '';
+        /* phpcs:disable WordPress.Security.NonceVerification.Recommended -- Routing only; invoked POST handlers verify their nonces. */
+        $page = isset( $_GET['page'] ) && is_string( $_GET['page'] )
+            ? sanitize_key( wp_unslash( $_GET['page'] ) )
+            : '';
+        /* phpcs:enable WordPress.Security.NonceVerification.Recommended */
         if ($page !== 'flosc-settings') {
             return;
         }
@@ -1403,8 +1417,11 @@ trait FLOSC_Admin_Trait {
         ], $atts);
 
         $settings = $this->get_contact_form_settings((string) $atts['flow']);
-        $status_raw = filter_input( INPUT_GET, 'flosc_contact_status', FILTER_UNSAFE_RAW );
-        $status     = is_string( $status_raw ) ? sanitize_key( wp_unslash( $status_raw ) ) : '';
+        /* phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only status notice; no state changes. */
+        $status = isset( $_GET['flosc_contact_status'] ) && is_string( $_GET['flosc_contact_status'] )
+            ? sanitize_key( wp_unslash( $_GET['flosc_contact_status'] ) )
+            : '';
+        /* phpcs:enable WordPress.Security.NonceVerification.Recommended */
 
         wp_enqueue_style(
             'flosc-contact-form',

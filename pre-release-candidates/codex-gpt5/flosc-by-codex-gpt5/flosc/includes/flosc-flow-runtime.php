@@ -208,7 +208,26 @@ function flosc_resolve_flow_runtime($flow_id = '', $ivr_file = '') {
         }
     }
 
-    $flow_key = 'flosc_flow_' . $stem;
+	/*
+	 * Use the same legacy-compatible row resolver as the Settings screen. When
+	 * the request supplies only a stem, the forced flow established by
+	 * set_flow_context() can still supply its actual IVR filename.
+	 */
+	if ( function_exists( 'flosc' ) && method_exists( flosc(), 'get_current_flow' ) ) {
+		$current = flosc()->get_current_flow();
+		if ( is_array( $current ) && ! empty( $current['ivr_file'] ) ) {
+			$current_ivr  = basename( (string) $current['ivr_file'] );
+			$current_id   = sanitize_key( (string) ( $current['id'] ?? '' ) );
+			$current_stem = sanitize_key( pathinfo( $current_ivr, PATHINFO_FILENAME ) );
+			if ( in_array( $stem, array( $current_id, $current_stem, preg_replace( '/_ivr$/', '', $current_stem ) ), true ) ) {
+				/* The server-resolved flow outranks a conflicting browser filename. */
+				$ivr_file = $current_ivr;
+			}
+		}
+	}
+	$flow_key = $ivr_file !== '' && function_exists( 'flosc_resolve_flow_option_key_for_ivr' )
+		? flosc_resolve_flow_option_key_for_ivr( basename( (string) $ivr_file ) )
+		: 'flosc_flow_' . $stem;
     // Persist one-time cleanup of legacy ivr_* keys when present.
     $fs = flosc_flow_get_option_array($flow_key, true);
     $messages = flosc_flow_get_messages($fs);

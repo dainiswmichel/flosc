@@ -208,6 +208,14 @@ $GLOBALS['flosc_probe_terms']     = array( 'category' => array(), 'post_tag' => 
 $GLOBALS['flosc_probe_term_meta'] = array();
 $GLOBALS['flosc_probe_post_meta'] = array();
 $GLOBALS['flosc_current_settings'] = array();
+$GLOBALS['flosc_probe_flow_settings'] = array();
+
+if ( ! function_exists( 'flosc_get_setting' ) ) {
+	function flosc_get_setting( $key, $default = null, $flow_stem = null ) {
+		$flow_stem = (string) $flow_stem;
+		return $GLOBALS['flosc_probe_flow_settings'][ $flow_stem ][ $key ] ?? $default;
+	}
+}
 
 if ( ! function_exists( 'get_term_meta' ) ) {
 	function get_term_meta( $id, $key, $single = false ) {
@@ -314,6 +322,21 @@ ok(
 	array( 'visitor' => 'title', 'guest' => 'excerpt', 'member' => 'full' )
 );
 $GLOBALS['flosc_current_settings'] = array();
+
+/* An explicit flow must beat whichever flow happens to be in admin globals. */
+$GLOBALS['flosc_current_settings'] = array(
+	'content_default_vgm' => array( 'visitor' => 'full', 'guest' => 'full', 'member' => 'full' ),
+);
+$GLOBALS['flosc_probe_flow_settings']['alpha'] = array(
+	'content_default_vgm' => array( 'visitor' => 'title', 'guest' => 'excerpt', 'member' => 'full' ),
+);
+ok(
+	'an explicit flow cannot inherit the current global flow default',
+	FLOSC_Resolve_Probe::resolve_vgm( 5, 'alpha' ),
+	array( 'visitor' => 'title', 'guest' => 'excerpt', 'member' => 'full' )
+);
+$GLOBALS['flosc_current_settings'] = array();
+$GLOBALS['flosc_probe_flow_settings'] = array();
 
 /* ---- the slice a row hands back at each depth ---- */
 eval( 'class FLOSC_Slice_Probe { '

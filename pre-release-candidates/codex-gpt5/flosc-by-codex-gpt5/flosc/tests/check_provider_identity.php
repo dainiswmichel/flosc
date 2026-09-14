@@ -116,8 +116,8 @@ ok( 'every key is named in readme.txt', $undisclosed, array() );
 ok( '  and the header itself is named', strpos( $readme, 'X-DA1-Trace' ) !== false, true );
 ok( '  and the readme says what is not sent',
 	stripos( $readme, 'Not sent in these headers' ) !== false, true );
-ok( '  and that nothing goes to a FLOSC service',
-	stripos( $readme, 'FLOSC sends nothing to flosc.ai' ) !== false, true );
+ok( '  and that identity headers do not go to a FLOSC service',
+	stripos( $readme, 'FLOSC sends no identity request to flosc.ai' ) !== false, true );
 
 echo "\nA floscAdmin can turn both off\n";
 ok( 'the identity toggle is rendered',

@@ -1,36 +1,72 @@
 {
   "schema_version": 3,
   "candidate": "codex-gpt5",
-  "candidate_label": "FLOSC 8.0.0 candidate v65",
-  "candidate_iteration": 65,
+  "candidate_label": "FLOSC 8.0.0 Home run candidate v66",
+  "candidate_iteration": 66,
   "creator": "Codex",
-  "created_at_utc": "2026-09-12T04:58:54Z",
-  "status": "BUILD_COMPLETE_NOT_DEPLOYED",
-  "base": "claude-opus-5 v64",
+  "created_at_utc": "2026-09-14T14:31:16Z",
+  "status": "BUILD_COMPLETE_NOT_DEPLOYED_REQUIRES_LIVE_VALIDATION",
+  "base": "claude-opus-5 v64 plus audited Codex v65 admin repairs",
   "plugin_source": "flosc-by-codex-gpt5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "b4fd6fe1af4e86657960024b634dc29cbd8990ccf074239db98cbd5a9f7e0433",
-  "artifact_bytes": 2751019,
-  "artifact_entries": 277,
+  "artifact_sha256": "e43774f4bc15597d2b576f242163f9105adae17485cc68733d923509ac660739",
+  "artifact_bytes": 2692630,
+  "artifact_entries": 258,
   "artifact_php_files": 148,
   "files_changed_from_v64": [
+    ".distignore",
     "admin/content.php",
+    "admin/email.php",
+    "admin/flosc-app.php",
+    "admin/flow.php",
+    "admin/ivr-upload-handler.php",
     "admin/settings.php",
+    "admin/token-management.php",
+    "assets/js/flosc-personality-builder-wp.js",
+    "assets/js/flosc-personality-builder.js",
+    "build-dist-zip.sh",
     "flosc.php",
+    "includes/ai/flosc-provider-identity.php",
+    "includes/chat-turn/trait-flosc-chat-turn.php",
+    "includes/class-flosc-chatpack.php",
     "includes/class-flosc-site-content-index.php",
-    "tests/check_access_vgm.php"
+    "includes/class-flosc-wp-ai-client.php",
+    "includes/class-rag-manager.php",
+    "includes/companion-mode/class-companion-widget.php",
+    "includes/companion-mode/class-flosc-companion-mode.php",
+    "includes/email/class-flosc-email.php",
+    "includes/flosc-admin.php",
+    "includes/flosc-flow-runtime.php",
+    "includes/flosc-personality-library.php",
+    "includes/flosc-rest.php",
+    "includes/magic-link/class-flosc-magic-link-trait.php",
+    "includes/sso/class-oauth2-handler.php",
+    "includes/sso/class-sso-manager.php",
+    "includes/sso/providers/class-apple-provider.php",
+    "includes/tokens/class-flosc-visitor-token-trait.php",
+    "readme.txt",
+    "tests/check_access_vgm.php",
+    "tests/check_attachment_save.php",
+    "tests/check_input_sanitization.php",
+    "tests/check_packaging.php",
+    "tests/check_personality_save_contract.php",
+    "tests/check_provider_identity.php",
+    "tests/check_site_grounding.php",
+    "tests/check_wporg_review.php"
   ],
   "fixes": {
-    "member_levels_preserves_content_default_vgm": true,
-    "metabox_reaches_posts_pages_and_indexed_types": true,
-    "protection_mode_written_only_when_submitted": true,
-    "content_tab_edits_object_metadata_in_place": true,
-    "term_meta_remains_single_home_for_term_rules": true
+    "v65_admin_repairs_retained": true,
+    "personality_create_edit_attach_storage_contract": true,
+    "admin_and_runtime_share_flow_option_resolver": true,
+    "provider_neutral_site_grounding": true,
+    "live_vgm_and_publication_authorization": true,
+    "wordpress_org_september_13_findings_remediated": true,
+    "artifact_excludes_static_documentation_and_tests": true
   },
   "verification": {
     "php_regression_scripts": {
-      "passed": 34,
+      "passed": 38,
       "failed": 0
     },
     "javascript_test_scripts": {
@@ -39,15 +75,31 @@
     },
     "php_syntax": {
       "status": "passed",
-      "files": 185
+      "files": 189
+    },
+    "official_plugin_review_phpcs_runtime_source": {
+      "status": "passed",
+      "errors": 0,
+      "warnings": 0
+    },
+    "official_plugin_review_phpcs_built_artifact": {
+      "status": "passed",
+      "exit_code": 0
     },
     "artifact_packaging": {
       "status": "passed",
-      "entries": 277,
+      "entries": 258,
+      "php_files": 148,
       "single_root": "flosc/"
     },
     "reproducible_zip_sha256": true,
     "version_unchanged": "8.0.0"
+  },
+  "limitations": {
+    "clean_wordpress_wp_debug_browser_test": "not_run",
+    "full_database_backed_plugin_check_runtime": "not_run",
+    "dainis_net_human_personality_tests": "not_run",
+    "live_deployment": false
   },
   "production_user_data_changed": false,
   "live_deployed": false

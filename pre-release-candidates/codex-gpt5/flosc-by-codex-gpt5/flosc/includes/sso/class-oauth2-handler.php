@@ -246,21 +246,33 @@ class OAuth2_Handler {
         // OAuth provider callback payload (not a WP form nonce action).
         $get  = array();
         $post = array();
+		/* phpcs:disable WordPress.Security.NonceVerification.Missing,WordPress.Security.NonceVerification.Recommended -- External OAuth callback; verify_state() validates the one-time state before authentication. */
         foreach ( array( 'code', 'state', 'error', 'error_description' ) as $flosc_k ) {
-            $g = filter_input( INPUT_GET, $flosc_k, FILTER_UNSAFE_RAW );
-            if ( is_string( $g ) && $g !== '' ) {
-                $get[ $flosc_k ] = wp_unslash( $g );
+            $g = isset( $_GET[ $flosc_k ] ) && is_scalar( $_GET[ $flosc_k ] )
+                ? sanitize_text_field( wp_unslash( (string) $_GET[ $flosc_k ] ) )
+                : '';
+            if ( $g !== '' ) {
+                $get[ $flosc_k ] = $g;
             }
-            $p = filter_input( INPUT_POST, $flosc_k, FILTER_UNSAFE_RAW );
-            if ( is_string( $p ) && $p !== '' ) {
-                $post[ $flosc_k ] = wp_unslash( $p );
+            $p = isset( $_POST[ $flosc_k ] ) && is_scalar( $_POST[ $flosc_k ] )
+                ? sanitize_text_field( wp_unslash( (string) $_POST[ $flosc_k ] ) )
+                : '';
+            if ( $p !== '' ) {
+                $post[ $flosc_k ] = $p;
             }
         }
-        $server = array();
-        foreach ( array( 'REQUEST_URI', 'REQUEST_METHOD', 'QUERY_STRING' ) as $flosc_sk ) {
-            $sv = filter_input( INPUT_SERVER, $flosc_sk, FILTER_UNSAFE_RAW );
-            $server[ $flosc_sk ] = is_string( $sv ) ? wp_unslash( $sv ) : '';
-        }
+		/* phpcs:enable WordPress.Security.NonceVerification.Missing,WordPress.Security.NonceVerification.Recommended */
+        $server = array(
+            'REQUEST_URI'    => isset( $_SERVER['REQUEST_URI'] ) && is_scalar( $_SERVER['REQUEST_URI'] )
+                ? sanitize_text_field( wp_unslash( (string) $_SERVER['REQUEST_URI'] ) )
+                : '',
+            'REQUEST_METHOD' => isset( $_SERVER['REQUEST_METHOD'] ) && is_scalar( $_SERVER['REQUEST_METHOD'] )
+                ? sanitize_key( wp_unslash( (string) $_SERVER['REQUEST_METHOD'] ) )
+                : '',
+            'QUERY_STRING'   => isset( $_SERVER['QUERY_STRING'] ) && is_scalar( $_SERVER['QUERY_STRING'] )
+                ? sanitize_text_field( wp_unslash( (string) $_SERVER['QUERY_STRING'] ) )
+                : '',
+        );
 
         // v8.0.4: Prevent caching of callback responses
         header('Cache-Control: no-store, no-cache, must-revalidate, private');
@@ -500,7 +512,9 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC SSO] Provider error
         }
         
         // Cross-domain login token: only on allowlisted hosts (never arbitrary external).
-        $callback_host = strtolower(sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST'] ?? '')));
+        // Use WordPress's configured REST origin, never the request Host header,
+        // when deciding whether a cross-domain token is required.
+        $callback_host = strtolower((string) (wp_parse_url(rest_url('/'), PHP_URL_HOST) ?? ''));
         $redirect_host = strtolower((string) (wp_parse_url($redirect_to, PHP_URL_HOST) ?? ''));
         if ($redirect_host && $callback_host && $redirect_host !== $callback_host
             && $this->is_allowed_sso_redirect($redirect_to, $flow_id_for_redirect)
@@ -590,11 +604,10 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC SSO] Provider error
                 return;
             }
             if (strpos($url_or_host, '://') === false) {
-                $host = strtolower(preg_replace('#^www\.#', '', $url_or_host));
+                $host = strtolower($url_or_host);
             } else {
                 $host = strtolower((string) (wp_parse_url($url_or_host, PHP_URL_HOST) ?? ''));
             }
-            $host = preg_replace('#^www\.#', '', $host);
             if ($host !== '') {
                 $hosts[$host] = true;
             }
@@ -611,11 +624,6 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC SSO] Provider error
             if (is_string($app) && $app !== '') {
                 $add($app);
             }
-        }
-
-        // Current request host (callback domain, e.g. the WordPress host).
-        if (!empty($_SERVER['HTTP_HOST'])) {
-            $add(sanitize_text_field(wp_unslash((string) $_SERVER['HTTP_HOST'])));
         }
 
         // Flow-scoped allowlist only: the current flow's configured domains/app URLs.
@@ -731,14 +739,10 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC SSO] Provider error
         // v8.0.4: Ungated logging — SSO failures are rare and critical
     if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC SSO] State generated: provider=' . $provider_id . ' | token=' . substr($state, 0, 8) . '... | saved=' . ($saved ? 'yes' : 'NO') . ' | flow_id=' . $flow_id);
         
-        // v8.0.2: Always write to options table as backup.
-        // Transients can disappear between requests due to object cache eviction.
-        update_option($transient_key, $state_data, false);
-        
         // Verify state is retrievable
         $verify = get_transient($transient_key);
         if (!$verify) {
-    if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC SSO] WARNING: State transient not readable after save — options fallback active');
+    if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC SSO] WARNING: State transient not readable after save');
         }
         
         return $state;
@@ -762,12 +766,6 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC SSO] Provider error
         
         $state_data = get_transient($transient_key);
         
-        // Fallback: check options table directly
-        if (!$state_data) {
-    if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC SSO] Transient not found, checking options table fallback');
-            $state_data = get_option($transient_key);
-        }
-        
         if (!$state_data || !is_array($state_data)) {
             if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
                 flosc_log('[FLOSC SSO] State verification FAILED for key ' . $transient_key);
@@ -775,11 +773,10 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC SSO] Provider error
             return false;
         }
 
-        // Enforce absolute expiry even when options-table fallback outlives the transient.
+        // Enforce absolute expiry independently of the transient backend.
         $ts = isset($state_data['timestamp']) ? (int) $state_data['timestamp'] : 0;
         if ($ts <= 0 || (time() - $ts) > self::STATE_EXPIRATION) {
             delete_transient($transient_key);
-            delete_option($transient_key);
             if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
                 flosc_log('[FLOSC SSO] State expired (timestamp check) for key ' . $transient_key);
             }
@@ -790,9 +787,8 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC SSO] Provider error
             flosc_log('[FLOSC SSO] State verification SUCCESS for provider: ' . ($state_data['provider'] ?? 'unknown'));
         }
         
-        // Delete used state (one-time use) — prevent replay via option fallback.
+        // Delete used state (one-time use) to prevent replay.
         delete_transient($transient_key);
-        delete_option($transient_key);
         
         return $state_data;
     }
