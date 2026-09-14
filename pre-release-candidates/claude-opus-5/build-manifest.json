@@ -1,10 +1,10 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": 66,
+  "candidate_iteration": 67,
   "creator": "Claude Opus 5",
   "status": "BUILT_AWAITING_CAPTAIN_TEST",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v65",
+  "base": "claude-opus-5 v66",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
@@ -333,5 +333,18 @@
   },
   "files_changed_from_v65": [
     "tests/verify-standards.sh — WP_CURRENT input, single fetch attempt, do-not-retry guidance"
+  ],
+  "wporg_rules_gate_v67": {
+    "file": "tests/check_wporg_rules.php",
+    "why": "Plugin Check was clean on every submission since 31 May 2026 — wordpress.org hosted, then local from 11 Jul — and the plugin was rejected on 14 Jun, 27 Jun, 12 Jul and 13 Sep. The findings in those emails are therefore a list of what Plugin Check does not detect. This file encodes them.",
+    "design_rule": "No rule asserts a snapshot value. check_packaging.php asserted \"Requires at least: 7.0.4\" as correct for three rounds because somebody wrote down what the code said instead of what the standard requires. Every rule here describes the SHAPE a value must have.",
+    "first_run": "exit 1, 131 findings across 140 files. WPORG-01 2, WPORG-02 12, WPORG-03 2, WPORG-04 38, WPORG-05 53, WPORG-06 clear, WPORG-07 clear, WPORG-08 16, WPORG-09 8.",
+    "high_confidence": "WPORG-01 both 7.0.4 headers, WPORG-03 ivr-upload-handler.php:599, the import.php hit at :618, and WPORG-04 38 sites — these reproduce the reviewer wording at the reviewer lines.",
+    "needs_human_read": "WPORG-02 other 11, WPORG-05 53, WPORG-08 16, WPORG-09 8. Known false-positive shapes: class-wp-filesystem-base.php is a class file so the used-a-function test does not apply, and a superglobal sanitized on the NEXT line trips WPORG-05. Mass-fixing these without reading them is destructacoding.",
+    "out_of_reach": "The T12 SSO redirect-host finding, traced by their AI across call paths, and anything their AI flags that it has not flagged before. Printed at the bottom of every run so a clear result is never mistaken for coverage.",
+    "exceptions": "tests/wporg-rule-exceptions.txt, file:line:RULE:reason. An exception with no written reason is itself counted as a finding, and the active count prints on every run."
+  },
+  "files_changed_from_v66": [
+    "tests/check_wporg_rules.php — new"
   ]
 }
