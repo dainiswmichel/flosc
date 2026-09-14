@@ -1,10 +1,10 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": 65,
+  "candidate_iteration": 66,
   "creator": "Claude Opus 5",
   "status": "BUILT_AWAITING_CAPTAIN_TEST",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v64",
+  "base": "claude-opus-5 v65",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
@@ -324,5 +324,14 @@
     "tests/verify-standards.sh — new, executable",
     ".gitignore — tests/verify-standards-*.log",
     "pre-release-candidates/claude-opus-5/sha256sums — was stale at v63 hash, now correct"
+  ],
+  "no_churn_rule_v66": {
+    "captains_rule": "AI agents do not have permission to churn on a fact that fits on one line. Churning on something as idiotic as \"which WordPress version is current?\" has cost hundreds of dollars and produced nothing.",
+    "in_the_script": "The version block makes ONE fetch attempt. No retry loop, no fallback chain. On failure it prints DO NOT RETRY. DO NOT SEARCH, states that this is one line of text, and names the flag.",
+    "the_flag": "WP_CURRENT=<version> bash tests/verify-standards.sh — supplied by hand, no fetch happens at all.",
+    "honest_accounting": "The WordPress-version question cost two curl calls in this session. The expensive churn was five rejected approval cycles, every one caused by Claude Opus 5 stating a fact wrong and the Captain having to correct it."
+  },
+  "files_changed_from_v65": [
+    "tests/verify-standards.sh — WP_CURRENT input, single fetch attempt, do-not-retry guidance"
   ]
 }

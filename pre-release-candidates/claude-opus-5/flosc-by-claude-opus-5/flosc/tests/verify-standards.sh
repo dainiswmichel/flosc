@@ -233,8 +233,21 @@ echo "===== WORDPRESS VERSION HEADERS vs THE LIVE RELEASE LIST ====="
 echo "\$ curl -sS --max-time 20 https://api.wordpress.org/core/stable-check/1.0/"
 echo
 
-WP_API_RAW="$( curl -sS --max-time 20 "https://api.wordpress.org/core/stable-check/1.0/" 2>&1 )"
-WP_API_CODE=$?
+# One attempt. Not two, not a retry loop, not a fallback chain.
+#
+# This number is one line of text. An agent that cannot fetch it must ASK for
+# it and stop — never keep hunting. Churning on a one-line fact costs the
+# Captain real money and produces nothing. Pass it in and no fetch happens:
+#
+#     WP_CURRENT=6.9 bash tests/verify-standards.sh
+#
+if [ -n "${WP_CURRENT:-}" ]; then
+	WP_API_RAW="supplied by hand: ${WP_CURRENT}"
+	WP_API_CODE=0
+else
+	WP_API_RAW="$( curl -sS --max-time 20 "https://api.wordpress.org/core/stable-check/1.0/" 2>&1 )"
+	WP_API_CODE=$?
+fi
 
 echo "  readme.txt  Requires at least : $( grep -m1 '^Requires at least:' readme.txt 2>/dev/null | sed 's/^Requires at least:[[:space:]]*//' )"
 echo "  readme.txt  Tested up to      : $( grep -m1 '^Tested up to:' readme.txt 2>/dev/null | sed 's/^Tested up to:[[:space:]]*//' )"
@@ -248,14 +261,25 @@ if [ "${WP_API_CODE}" -ne 0 ] || [ -z "${WP_API_RAW}" ]; then
 	echo
 	echo "  This is a FAILURE, not a pass. Without the live release list the"
 	echo "  headers above are unverified, and NOBODY — human or agent — may"
-	echo "  state what they should be. Read the current version off"
-	echo "  https://wordpress.org/download/ and do not guess it."
+	echo "  state what they should be."
+	echo
+	echo "  DO NOT RETRY. DO NOT SEARCH. This is one line of text."
+	echo "  Ask the Captain for the current WordPress version, then:"
+	echo
+	echo "      WP_CURRENT=<version> bash tests/verify-standards.sh"
+	echo
+	echo "  Or read it off https://wordpress.org/download/ once. Churning on a"
+	echo "  one-line fact costs money and produces nothing."
 	echo
 	echo "----- exit NOT RUN -----"
 	RESULTS+=( "WORDPRESS VERSION HEADERS	NOT-RUN	-" )
 else
-	echo "  api.wordpress.org, latest release:"
-	echo "${WP_API_RAW}" | tr ',' '\n' | grep '"latest"' | tr -d '{}" ' | sed 's/^/      /'
+	if [ -n "${WP_CURRENT:-}" ]; then
+		echo "  current WordPress, supplied by hand: ${WP_CURRENT}"
+	else
+		echo "  api.wordpress.org, latest release:"
+		echo "${WP_API_RAW}" | tr ',' '\n' | grep '"latest"' | tr -d '{}" ' | sed 's/^/      /'
+	fi
 	echo
 	echo "  Read the three header values above against that number yourself."
 	echo "  WordPress.org rejects a Tested up to that is behind the current"
