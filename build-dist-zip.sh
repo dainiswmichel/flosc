@@ -75,6 +75,7 @@ DENY_PATTERNS=(
   'quiz_development'
   'da1ni5_personal_profitability'
   'build-dist-zip.sh'
+  'testing-bench.sh'
   '.distignore'
 )
 

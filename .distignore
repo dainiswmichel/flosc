@@ -9,6 +9,7 @@
 .gitignore
 .distignore
 build-dist-zip.sh
+testing-bench.sh
 .claude/
 .vscode/
 .idea/
