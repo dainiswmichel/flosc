@@ -339,6 +339,15 @@ head_proc() {
   echo "════════════════════════════════════════════════════════════════════"
   printf 'PROCEDURE %-3s %s\n' "$n" "$title"
   printf '  TOOL       %s\n' "$tool"
+  # Provenance on EVERY procedure, not once at the top. Procedures run against
+  # the unpacked zip, which is the point -- but reading "ship/flosc" without
+  # being told which candidate produced it makes the result untraceable.
+  case "$(target_kind)" in
+    candidate) printf '  UNDER TEST %s\n' "$(candidate_src)"
+               printf '  VIA        %s   (the zip built from it)\n' "$SHIP/flosc" ;;
+    zip)       printf '  UNDER TEST %s\n' "$(target_val)"
+               printf '  VIA        %s   (unpacked, unaltered)\n' "$SHIP/flosc" ;;
+  esac
   printf '  COMMAND    %s\n' "$cmd"
   echo "════════════════════════════════════════════════════════════════════"
 }
@@ -441,7 +450,7 @@ phpcs_proc() {
   [ -n "$sniffs" ] && args="$args --sniffs=$sniffs"
   head_proc "$n" "$title" \
     "PHP_CodeSniffer $( [ -n "$PHPCS" ] && "$PHPCS" --version 2>/dev/null | awk '{print $3}' || echo '?' ) + WPCS — not written by any AI" \
-    "phpcs --standard=$ruleset${sniffs:+ --sniffs=$sniffs} \$SHIP/flosc"
+    "phpcs --standard=$ruleset${sniffs:+ --sniffs=$sniffs} $src"
   echo "  RULESET    $ruleset  — sets no warning-severity, so nothing is hidden"
   if [ -z "$PHPCS" ]; then notrun "phpcs not found"; return; fi
   if [ ! -f "$cfg" ]; then notrun "$ruleset missing"; return; fi
