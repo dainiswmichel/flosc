@@ -78,15 +78,61 @@ PHP=$(command -v php 2>/dev/null || true)
 
 # Every tool runs by default. Confidence is the default state; skipping is the
 # deliberate choice, and it says so on the line where it skipped.
-RUN_STAN=1; RUN_PC=1; STEPS=0
+RUN_STAN=1; RUN_PC=1; STEPS=0; RUN_RULES=0; VERIFY=0
 for a in "$@"; do
   case "$a" in
     --fast)  RUN_STAN=0; RUN_PC=0 ;;
     --no-stan) RUN_STAN=0 ;;
     --no-plugincheck) RUN_PC=0 ;;
+    --rules) RUN_RULES=1 ;;
+    --verify) VERIFY=1 ;;
     --steps) STEPS=1 ;;
   esac
 done
+
+# ---------------------------------------------------------------- --verify
+# Answers one question: is anything in the default run written by an AI agent?
+# Prints, for every default check, the binary that decides it, its version, and
+# the composer package it came from -- each one checkable without trusting this
+# script. Run it whenever you want to re-establish that.
+if [ "$VERIFY" = "1" ]; then
+  echo "WHO DECIDES EACH CHECK IN THE DEFAULT RUN"
+  echo
+  printf '%-8s %-46s %s\n' COLUMN 'DECIDED BY' 'VERIFY IT YOURSELF'
+  printf '%-8s %-46s %s\n' ------ '--------------------------------------------' '------------------'
+  pc_ver=$([ -n "$PHPCS" ] && "$PHPCS" --version 2>/dev/null || echo 'NOT INSTALLED')
+  st_ver=$([ -n "$PHPSTAN" ] && "$PHPSTAN" --version 2>/dev/null | head -1 || echo 'NOT INSTALLED')
+  printf '%-8s %-46s %s\n' sec    "$pc_ver" 'composer global show squizlabs/php_codesniffer'
+  printf '%-8s %-46s %s\n' php74  "$pc_ver" 'composer global show phpcompatibility/phpcompatibility-wp'
+  printf '%-8s %-46s %s\n' enq    "$pc_ver" 'composer global show wp-coding-standards/wpcs'
+  printf '%-8s %-46s %s\n' i18n   "$pc_ver" 'composer global show wp-coding-standards/wpcs'
+  printf '%-8s %-46s %s\n' strict "$pc_ver" 'composer global show wp-coding-standards/wpcs'
+  printf '%-8s %-46s %s\n' wporg  "$pc_ver" 'composer global show wp-coding-standards/wpcs'
+  printf '%-8s %-46s %s\n' stan   "$st_ver" 'composer global show phpstan/phpstan'
+  printf '%-8s %-46s %s\n' pcheck 'Plugin Check (WordPress.org)' 'wordpress.org/plugins/plugin-check/'
+  echo
+  echo "  binaries actually invoked:"
+  echo "    phpcs   ${PHPCS:-NOT FOUND}"
+  echo "    phpstan ${PHPSTAN:-NOT FOUND}"
+  echo "    php     ${PHP:-NOT FOUND}"
+  echo
+  echo "  hdr    two greps of 'Requires at least:' in readme.txt and flosc.php."
+  echo "         Written by Claude Opus 5. Read it in full:  grep -n \"Requires at least\" testing-bench.sh"
+  echo "  inline one grep for 'style=\"...\"' in .php files."
+  echo "         Written by Claude Opus 5. Read it in full:  grep -n 'style=' testing-bench.sh"
+  echo
+  echo "  NOT IN THE DEFAULT RUN:"
+  echo "    rules  tests/check_wporg_rules.php -- 597 lines written by Claude Opus 5."
+  echo "           It encodes the review emails and has produced false positives."
+  echo "           It runs only when you pass --rules."
+  if [ -f "$RULES" ]; then
+    echo "           sha256 $(shasum -a 256 "$RULES" 2>/dev/null | cut -d' ' -f1 || sha256sum "$RULES" 2>/dev/null | cut -d' ' -f1)"
+  fi
+  echo
+  echo "So: the default run is seven real-tool columns plus two greps you can read"
+  echo "in one line each. No agent-written analysis decides any default number."
+  exit 0
+fi
 
 # --------------------------------------------------------------- --steps
 # Runs NOTHING. Prints the commands, numbered, one per line, so the whole
@@ -282,6 +328,9 @@ for d in "$CANDS"/*/; do
   inl=$(grep -rnoE 'style="[^"]+"' "$root" --include=*.php 2>/dev/null \
         | grep -v '/tests/\|/admin/docs/\|/flosc_documentation/' | wc -l | tr -d ' ')
 
+  if [ "$RUN_RULES" != "1" ]; then
+    rules="off"
+  else
   rules="NORUN"
   rules_out="NOT RUN — $( [ -f "$RULES" ] || echo 'check_wporg_rules.php not found'; [ -n "$PHP" ] || echo 'php not installed' )"
   if [ -f "$RULES" ] && [ -n "$PHP" ]; then
@@ -289,6 +338,7 @@ for d in "$CANDS"/*/; do
     rules_out=$( (cd "$work" && "$PHP" tests/check_wporg_rules.php 2>&1) )
     rn=$(printf '%s' "$rules_out" | grep -oE 'findings *: *[0-9]+' | grep -oE '[0-9]+$')
     if [ -n "$rn" ]; then rules="$rn"; else rules="NORUN"; note_norun "rules:$name"; fi
+  fi
   fi
 
   printf '%-20s %-9s %-6s %-6s %-6s %-6s %-6s %-6s %-6s %-6s %s\n' \

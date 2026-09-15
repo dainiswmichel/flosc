@@ -94,6 +94,52 @@ this machine. The block prints `UNVERIFIED` above its own output.
 **Not installed, not run:** PHPStan is installed but has never been run against
 any candidate.
 
+## Trust: what the default run contains
+
+Run `./testing-bench.sh --verify`. It prints every default check, the binary that
+decides it, its version, and the composer package it came from — each verifiable
+with `composer global show <package>`, without trusting this script.
+
+The default run is **seven real-tool columns plus two greps**. The 597-line
+`check_wporg_rules.php` gate written by Claude Opus 5 is **not** in it. It runs
+only when you pass `--rules`, and `--verify` prints its sha256 so you can tell
+when it changes.
+
+| in the default run | who wrote it |
+|---|---|
+| sec, php74, enq, i18n, strict, wporg | PHPCS + WPCS + PHPCompatibilityWP |
+| stan | PHPStan + szepeviktor/phpstan-wordpress |
+| pcheck | Plugin Check — WordPress.org's own |
+| hdr | one grep of `Requires at least:` in two files |
+| inline | one grep for `style="..."` |
+
+## Plugin Check — the only verdict that matches the review
+
+Every other check is a proxy. Plugin Check is the tool WordPress.org actually
+runs. **It has never been verified outside WordPress.org's own servers**, and it
+could not be verified from the container this bench was written in: every
+`wordpress.org` host returns **403 from that network's egress policy** —
+`api.wordpress.org`, `downloads.wordpress.org`, `playground.wordpress.net` and
+`wordpress.org` alike. Your machine is the only place this can be settled.
+
+Three ways to run it, most likely to work first:
+
+**1. WordPress Playground, one command, no Docker.** Unverified.
+
+```
+cd /Users/dainismichel/2026/flosc_project_folder && CAND=$(ls -d pre-release-candidates/claude-opus-5/flosc-by-*/flosc | head -1) && printf '%s\n' '{ "$schema": "https://playground.wordpress.net/blueprint-schema.json", "login": true, "steps": [ { "step": "installPlugin", "pluginData": { "resource": "wordpress.org/plugins", "slug": "plugin-check" }, "options": { "activate": true } }, { "step": "wp-cli", "command": "wp plugin check flosc --format=csv" } ] }' > /tmp/flosc-pc.json && npx --yes @wp-playground/cli@latest run-blueprint --blueprint=/tmp/flosc-pc.json --mount="$PWD/$CAND:/wordpress/wp-content/plugins/flosc" --php=8.3; echo "exit=$?"
+```
+
+**2. `wp-env`** — WordPress core's own Docker harness. Needs Docker Desktop
+running. More moving parts, but it is a real WordPress and wp-cli is built in.
+
+**3. dainis.net**, where Plugin Check is already installed and known to work.
+This means putting a candidate on a live site, so it is the last resort rather
+than the first, and it is your call, not mine.
+
+Whichever one you run: if it fails, the output of the failure is the next thing
+to work from. A Plugin Check that did not run is not a pass.
+
 ## The one rule
 
 A check that did not run prints `NORUN` and makes the exit code 1. It never
@@ -124,6 +170,8 @@ claim checkable a month later.
 
 ## Changelog of this environment
 
+- **2026-09-15** — `rules` moved out of the default run to `--rules`; `--verify`
+  added so the provenance of every default check is checkable in one command.
 - **2026-09-15** — refresh command changed from `git pull` to `git fetch` +
   `git reset --hard`. `git pull` on the shallow mirror failed with divergent
   branches and aborted the rest of the chain.
