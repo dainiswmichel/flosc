@@ -95,6 +95,33 @@ wpenv_up() {
   ( cd "$RUNTIME" && npx wp-env run cli -- wp core version ) >/dev/null 2>&1
 }
 
+# IS THE CONTAINER SERVING THE SHIP TREE, OR THE DIRECTORY IT WAS STARTED WITH?
+#
+# wp-env mounts whatever .wp-env.json said AT START. Editing that file changes
+# nothing until the container restarts, and the old path goes on being served.
+# doctor can report .wp-env.json as correct while the running container serves
+# something else entirely -- which is exactly what happened: Plugin Check spent
+# seven minutes scanning a source tree and returned 46 findings in files that
+# are not in the zip.
+#
+# Procedure 1 proves the zip carries no tests/ and no build-dist-zip.sh. So if
+# the container's plugin directory has either, the mount is stale. Ask it.
+wpenv_mount_stale() {
+  local out
+  out=$( cd "$RUNTIME" && npx wp-env run cli -- bash -c \
+    'ls -d /var/www/html/wp-content/plugins/flosc/tests \
+          /var/www/html/wp-content/plugins/flosc/build-dist-zip.sh 2>/dev/null' ) 2>/dev/null
+  printf '%s' "$out" | grep -q 'plugins/flosc/\(tests\|build-dist-zip\)'
+}
+
+# The URL WordPress thinks it is at. Asked, not assumed -- procedure 11 guessed
+# localhost:8888, nothing answered, and it silently fell back to firing hooks.
+wpenv_home() {
+  local u
+  u=$( cd "$RUNTIME" && npx wp-env run cli -- wp option get home 2>/dev/null | tr -d '\r' | tail -1 )
+  case "$u" in http://*|https://*) echo "$u" ;; *) echo "" ;; esac
+}
+
 doctor() {
   local fix=0
   for a in "$@"; do [ "$a" = "--fix" ] && fix=1; done
@@ -803,6 +830,21 @@ p10() { # plugin check
     echo
   fi
 
+  # CHECK THE MOUNT FIRST. This scan takes seven minutes; there is no reason to
+  # spend them on the wrong directory. The guard after the run stays as a
+  # backstop, but this is the one that saves the time.
+  if wpenv_mount_stale; then
+    echo "STALE MOUNT — the container is serving a source tree, not the zip."
+    echo "It still has tests/ or build-dist-zip.sh inside its flosc directory,"
+    echo "and procedure 1 proves neither is in the zip. Scanning it would produce"
+    echo "hundreds of findings in files WordPress.org never receives."
+    echo
+    echo "Fix:   ./flosc-test doctor --fix          (restarts wp-env with the current config)"
+    echo "  or:  ( cd $RUNTIME && npx wp-env start --update )"
+    notrun "wp-env is mounted on the wrong tree — nothing was scanned"
+    return
+  fi
+
   local out rc
   out=$( cd "$RUNTIME" && npx wp-env run cli -- wp plugin check flosc \
       --require=./wp-content/plugins/plugin-check/cli.php --include-experimental 2>&1 ); rc=$?
@@ -879,19 +921,26 @@ wpenv_logclear() {
 # The hook-firing fallback remains for a machine with no curl; the baseline
 # subtraction in p11 makes even that readable.
 wpenv_exercise() {
-  local port="$1" code=""
-  if [ -n "$CURL" ]; then
-    code=$("$CURL" -s -o /dev/null -w '%{http_code}' --max-time 30 "http://localhost:$port/" 2>/dev/null)
+  local base="$1" code=""
+  if [ -n "$CURL" ] && [ -n "$base" ]; then
+    code=$("$CURL" -sS -o /dev/null -w '%{http_code}' --max-time 45 "$base/" 2>/dev/null)
   fi
   if [ -n "$code" ] && [ "$code" != "000" ]; then
-    "$CURL" -s -o /dev/null --max-time 30 "http://localhost:$port/wp-login.php"                     2>/dev/null
-    "$CURL" -s -o /dev/null --max-time 30 "http://localhost:$port/?p=1"                             2>/dev/null
-    "$CURL" -s -o /dev/null --max-time 30 "http://localhost:$port/no-such-page-flosc-test"          2>/dev/null
-    "$CURL" -s -o /dev/null --max-time 30 "http://localhost:$port/wp-admin/"                        2>/dev/null
-    echo "HTTP  http://localhost:$port/  (home $code, wp-login.php, ?p=1, a 404, wp-admin)"
+    "$CURL" -s -o /dev/null --max-time 45 "$base/wp-login.php"            2>/dev/null
+    "$CURL" -s -o /dev/null --max-time 45 "$base/?p=1"                    2>/dev/null
+    "$CURL" -s -o /dev/null --max-time 45 "$base/no-such-page-flosc-test" 2>/dev/null
+    "$CURL" -s -o /dev/null --max-time 45 "$base/wp-admin/"               2>/dev/null
+    echo "HTTP  $base/  (home $code, wp-login.php, ?p=1, a 404, wp-admin)"
   else
     ( cd "$RUNTIME" && npx wp-env run cli -- wp eval 'do_action("init"); do_action("admin_init");' ) >/dev/null 2>&1
-    echo "wp eval do_action(init)+do_action(admin_init)   [no curl, or nothing answering on port $port]"
+    # Say WHY it fell back. "no curl, or nothing answering" named two causes and
+    # told you which neither of them was.
+    local why
+    if [ -z "$CURL" ];      then why="curl is not on PATH"
+    elif [ -z "$base" ];    then why="WordPress did not report a home URL"
+    else                         why="curl got ${code:-no response} from $base/"
+    fi
+    echo "wp eval do_action(init)+do_action(admin_init)   [fell back: $why]"
   fi
 }
 
@@ -911,12 +960,18 @@ p11() { # clean-install smoke test
   [ "$CMD_ONLY" = "1" ] && { echo "(not run: --cmd)"; return 0; }
   if ! wpenv_up; then notrun "wp-env is not running — ./flosc-test doctor --fix"; return; fi
 
-  local port; port=$(wpenv_port)
+  # Ask WordPress where it is. wpenv_port stays as the fallback for a site that
+  # cannot answer, but the option is the truth and the config is only a guess.
+  # Named $site, not $base: $base is the baseline log a few lines down, and one
+  # of them would have silently become the other.
+  local site; site=$(wpenv_home)
+  [ -z "$site" ] && site="http://localhost:$(wpenv_port)"
+  site="${site%/}"
 
   # PASS 1 — the baseline. FLOSC off.
   ( cd "$RUNTIME" && npx wp-env run cli -- wp plugin deactivate flosc ) >/dev/null 2>&1
   wpenv_logclear
-  local how; how=$(wpenv_exercise "$port")
+  local how; how=$(wpenv_exercise "$site")
   local base; base=$(wpenv_log)
 
   # PASS 2 — the test. FLOSC on.
@@ -933,7 +988,7 @@ p11() { # clean-install smoke test
     return
   fi
   wpenv_logclear
-  wpenv_exercise "$port" >/dev/null
+  wpenv_exercise "$site" >/dev/null
   local after; after=$(wpenv_log)
 
   # THE SUBTRACTION. Lines present with the plugin on, absent with it off.
