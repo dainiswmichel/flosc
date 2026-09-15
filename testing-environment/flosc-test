@@ -316,19 +316,60 @@ pull() {
 TARGET_KIND=""
 TARGET_VAL=""
 
-# Accepts a candidate name, or a path to a .zip. Sets TARGET_KIND/TARGET_VAL.
+# POINT AT A THING. Any of these work:
+#
+#   ./flosc-test all ~/some/plugin/dir          a directory, anywhere
+#   ./flosc-test all ~/Downloads/flosc.zip      a zip, anywhere
+#   ./flosc-test all codex-gpt5                 shorthand for a candidate folder
+#
+# A directory is used as given. If the plugin root is nested inside it, the
+# root is found; you do not have to know the layout.
 resolve_target() {
   local t="$1"
   [ -z "$t" ] && return 1
-  case "$t" in
-    *.zip)
-      [ -f "$t" ] || { echo "no such zip: $t" >&2; return 1; }
-      TARGET_KIND="zip"
-      TARGET_VAL="$(cd "$(dirname "$t")" && pwd)/$(basename "$t")"
-      return 0 ;;
-  esac
-  if [ -d "$CANDS/$t" ]; then TARGET_KIND="candidate"; TARGET_VAL="$t"; return 0; fi
-  echo "no such candidate or zip: $t" >&2
+
+  # A zip: a file ending .zip.
+  if [ -f "$t" ]; then
+    case "$t" in
+      *.zip) TARGET_KIND="zip"
+             TARGET_VAL="$(cd "$(dirname "$t")" && pwd)/$(basename "$t")"
+             return 0 ;;
+      *) echo "not a zip: $t" >&2; return 1 ;;
+    esac
+  fi
+
+  # A directory: find the plugin root inside it, or use it directly.
+  if [ -d "$t" ]; then
+    local abs root
+    abs="$(cd "$t" && pwd)"
+    root=$(find_plugin_root "$abs") || {
+      echo "no plugin found under: $abs" >&2
+      echo "(looked for a .php file carrying a 'Plugin Name:' header, 3 levels deep)" >&2
+      return 1
+    }
+    TARGET_KIND="dir"; TARGET_VAL="$root"; return 0
+  fi
+
+  # A bare name: shorthand for pre-release-candidates/<name>.
+  if [ -d "$CANDS/$t" ]; then
+    local root
+    root=$(find_plugin_root "$CANDS/$t") || { echo "no plugin under $CANDS/$t" >&2; return 1; }
+    TARGET_KIND="dir"; TARGET_VAL="$root"; return 0
+  fi
+
+  echo "no such path or candidate: $t" >&2
+  return 1
+}
+
+# The plugin root is the directory holding a .php file with a Plugin Name header.
+find_plugin_root() {
+  local base="$1" f
+  for f in "$base"/*.php; do
+    [ -f "$f" ] && grep -qi '^[[:space:]]*\*\?[[:space:]]*Plugin Name:' "$f" && { echo "$base"; return 0; }
+  done
+  while IFS= read -r f; do
+    grep -qi '^[[:space:]]*\*\?[[:space:]]*Plugin Name:' "$f" && { dirname "$f"; return 0; }
+  done < <(find "$base" -maxdepth 3 -name '*.php' -not -path '*/vendor/*' -not -path '*/node_modules/*' 2>/dev/null)
   return 1
 }
 
@@ -336,27 +377,20 @@ target_kind() { echo "$TARGET_KIND"; }
 target_val()  { echo "$TARGET_VAL"; }
 candidate()   { [ "$(target_kind)" = "candidate" ] && target_val || echo ""; }
 
-candidate_src() {
-  local c; c=$(candidate)
-  [ -z "$c" ] && return 1
-  ls -d "$CANDS/$c"/flosc-by-*/flosc 2>/dev/null | head -1
-}
+candidate_src() { [ "$TARGET_KIND" = "dir" ] && echo "$TARGET_VAL" || return 1; }
 
 describe_target() {
-  case "$(target_kind)" in
-    candidate) echo "candidate  $(target_val)   source: $(candidate_src)" ;;
-    zip)       echo "zip        $(target_val)" ;;
-    *)         echo "(none selected)" ;;
+  case "$TARGET_KIND" in
+    dir) echo "directory  $TARGET_VAL" ;;
+    zip) echo "zip        $TARGET_VAL" ;;
+    *)   echo "(none)" ;;
   esac
 }
 
 list_candidates() {
-  local cur; cur=$(candidate)
   for d in "$CANDS"/*/; do
-    local n; n=$(basename "$d")
     [ -d "$d" ] || continue
-    if [ "$n" = "$cur" ]; then printf '  * %s   (selected)\n' "$n"
-    else printf '    %s\n' "$n"; fi
+    printf '    %s\n' "$(basename "$d")"
   done
 }
 
@@ -370,11 +404,11 @@ head_proc() {
   # Provenance on EVERY procedure, not once at the top. Procedures run against
   # the unpacked zip, which is the point -- but reading "ship/flosc" without
   # being told which candidate produced it makes the result untraceable.
-  case "$(target_kind)" in
-    candidate) printf '  UNDER TEST %s\n' "$(candidate_src)"
-               printf '  VIA        %s   (the zip built from it)\n' "$SHIP/flosc" ;;
-    zip)       printf '  UNDER TEST %s\n' "$(target_val)"
-               printf '  VIA        %s   (unpacked, unaltered)\n' "$SHIP/flosc" ;;
+  case "$TARGET_KIND" in
+    dir) printf '  UNDER TEST %s\n' "$TARGET_VAL"
+         printf '  VIA        %s   (the zip built from it)\n' "$SHIP/flosc" ;;
+    zip) printf '  UNDER TEST %s\n' "$TARGET_VAL"
+         printf '  VIA        %s   (unpacked, unaltered)\n' "$SHIP/flosc" ;;
   esac
   printf '  COMMAND    %s\n' "$cmd"
   echo "════════════════════════════════════════════════════════════════════"
@@ -397,9 +431,110 @@ run_or_show() {
   eval "$1"
 }
 
+# ================================================================== PROCEDURES
+#
+# WHAT A PROCEDURE IS
+#
+# One check. It must be readable and editable by the Captain without reading the
+# rest of this file. Every procedure has the same five parts, in this order:
+#
+#   head_proc <n> <title> <tool> <command>
+#        prints the number, the title, WHO WROTE THE TOOL, the directory under
+#        test, and the exact command. This is the accountability line: if the
+#        command cannot be pasted and re-run by hand, the procedure is wrong.
+#
+#   context echo lines
+#        what this catches, and which review email asked for it. Prose, aimed at
+#        whoever is reading the transcript six weeks from now.
+#
+#   --cmd early return
+#        prints and stops. It ran nothing, so it must never report a failure.
+#
+#   preconditions
+#        anything missing calls notrun "<what and how to fix it>". NEVER print 0
+#        for a check that did not run. That is the whole reason this file exists.
+#
+#   the command, then foot <exit code>
+#        raw output, unfiltered, then the real exit code.
+#
+# HOW TO ADD ONE
+#
+#   1. copy the shape of p9 (the simplest)
+#   2. name it p12, p13, ...
+#   3. add it to the `all` loop in main()
+#   4. add a line to usage() and to `what`
+#
+# HOW TO CHANGE ONE
+#
+#   The PHPCS procedures are one line each: phpcs_proc <n> <title> <ruleset>
+#   <sniff list>. To add a sniff, add it to the comma list. To change what is
+#   excluded from every PHPCS run, edit phpcs.xml.dist -- not this file.
+#
+# THE RULE THAT OUTRANKS EVERYTHING HERE
+#
+#   Do not add a flag that hides findings. --warning-severity=0 once made this
+#   suite print "0" for a tree carrying 84 nonce warnings. If a finding is truly
+#   not applicable, it gets a phpcs:ignore WITH A WRITTEN REASON in the plugin
+#   source, where a reviewer can judge it -- never a flag here, where nobody sees
+#   it.
+# ============================================================================
+
+# ------------------------------------------------------------------ what
+# Print the whole suite: what is checked, by what, and -- just as important --
+# what is NOT checked. A test suite that does not state its own gaps invites
+# "it passed" to be read as "it is fine".
+what() {
+  cat <<'WHAT'
+WHAT THIS SUITE CHECKS
+
+  #   CHECK                             DECIDED BY                  FROM
+  --  --------------------------------  --------------------------  --------------
+   0  build or unpack the ship tree     build-dist-zip.sh / unzip   —
+   1  what actually ships               unzip                       —
+   2  version headers major.minor       grep                        T12, T13 ERROR
+   3  escaping, sanitizing, NONCES,     PHPCS + WPCS                T10-T13 RED
+      redirects, prepared SQL           (warnings included)
+   4  PHP 7.4 compatibility             PHPCompatibilityWP          .org minimum
+   5  unprefixed globals, bad caps,     PHPCS + WPCS                .org guidelines
+      WP global overrides, curl vs
+      HTTP API, error_log/var_dump,
+      @ suppression, __FILE__ slugs
+   6  translation function calls        PHPCS + WPCS                —
+   7  undefined vars, impossible        PHPStan level 5             —
+      conditions, wrong arg types
+   8  syntax                            php -l                      —
+   9  inline style="" attributes        grep                        T10-T13 advisory
+  10  the full .org review scan         PLUGIN CHECK (wordpress.org) every email
+  11  clean install, WP_DEBUG on        wp-env + wp-cli             .org checklist
+
+WHAT THIS SUITE DOES NOT CHECK
+
+  * The reviewers' AI pass. Every finding marked with a sparkle in the review
+    emails came from an LLM reading the code. It is non-deterministic: T12 and
+    T13 reviewed the IDENTICAL zip and returned different lists. Nothing local
+    reproduces it. A clean run here does not predict a clean review.
+
+  * Taint across functions. The T12 SSO finding -- an attacker-controlled
+    HTTP_HOST reaching an auth-flow allowlist -- crossed three functions. PHPCS
+    is line-scoped and cannot see it. That one was found by reading.
+
+  * That the plugin actually works. Procedure 11 activates it and fires init;
+    it does not click a button or hold a conversation.
+
+  * readme.txt external-service documentation. T12 and T13 both raise it and no
+    tool here reads it. Still open.
+
+TO CHANGE ANY OF THIS
+
+  Open flosc-test. Each procedure is a commented block, and the comment above
+  the procedures section says how to add or edit one. The PHPCS sniff lists are
+  one comma-separated line each.
+WHAT
+}
+
 # ---------------------------------------------------------------- procedures
 p0() { # build the ship tree
-  if [ "$(target_kind)" = "zip" ]; then p0_zip; return; fi
+  if [ "$TARGET_KIND" = "zip" ]; then p0_zip; return; fi
   p0_candidate
 }
 
@@ -650,12 +785,16 @@ usage() {
   echo "USAGE"
   echo "  ./flosc-test doctor          check the environment itself, and say how to repair it"
   echo "  ./flosc-test doctor --fix    start wp-env and install Plugin Check if missing"
+  echo "  ./flosc-test what            what this suite checks, and what it does NOT"
   echo "  ./flosc-test pull            refresh candidates and this environment"
   echo "  ./flosc-test all <target>    run every procedure"
   echo "  ./flosc-test <n> <target>    run one procedure"
   echo "  ./flosc-test <n> <target> --cmd   print its command, run nothing"
   echo
-  echo "  <target> is a candidate name, or a path ending in .zip"
+  echo "  <target> is ANY of:"
+  echo "     a directory      ./flosc-test all ~/some/plugin"
+  echo "     a zip            ./flosc-test all ~/Downloads/flosc.zip"
+  echo "     a candidate name ./flosc-test all codex-gpt5"
   echo
   echo "PROCEDURES"
   echo "   0  Build the ship tree                    build-dist-zip.sh"
@@ -680,6 +819,7 @@ main() {
     ""|help|-h|--help) usage; exit 0 ;;
     pull|update) pull; exit 0 ;;
     doctor) shift; doctor "$@" ;;
+    what) what; exit 0 ;;
     select|zip)
       # Kept so an old habit still works, but it only writes a default. It does
       # NOT decide anything a later command cannot override, and a run that
