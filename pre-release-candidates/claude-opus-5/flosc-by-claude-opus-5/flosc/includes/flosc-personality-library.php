@@ -2243,9 +2243,9 @@ if ( ! function_exists( 'flosc_personality_builder_request_context' ) ) {
 		}
 
 		$ivr_raw = ( isset( $_GET['ivr'] ) && is_scalar( $_GET['ivr'] )
-			? sanitize_text_field( (string) $_GET['ivr'] )
+			? sanitize_text_field( wp_unslash( $_GET['ivr'] ) )
 			: '' );
-		$ivr     = is_string( $ivr_raw ) ? sanitize_file_name( wp_unslash( $ivr_raw ) ) : '';
+		$ivr     = is_string( $ivr_raw ) ? sanitize_file_name( $ivr_raw ) : '';
 		if ( $ivr !== '' && ! empty( $ivr_files ) && ! in_array( $ivr, $ivr_files, true ) ) {
 			$ivr = '';
 		}
@@ -3145,17 +3145,17 @@ if ( ! function_exists( 'flosc_personality_builder_admin_body_class' ) ) {
 	 */
 	function flosc_personality_builder_admin_body_class( $classes ) {
 		$page_raw = ( isset( $_GET['page'] ) && is_scalar( $_GET['page'] )
-			? sanitize_text_field( (string) $_GET['page'] )
+			? sanitize_text_field( wp_unslash( $_GET['page'] ) )
 			: '' );
-		$page     = is_string( $page_raw ) ? sanitize_key( wp_unslash( $page_raw ) ) : '';
+		$page     = is_string( $page_raw ) ? sanitize_key( $page_raw ) : '';
 		$tab_raw  = ( isset( $_GET['tab'] ) && is_scalar( $_GET['tab'] )
-			? sanitize_text_field( (string) $_GET['tab'] )
+			? sanitize_text_field( wp_unslash( $_GET['tab'] ) )
 			: '' );
-		$tab      = is_string( $tab_raw ) ? sanitize_key( wp_unslash( $tab_raw ) ) : '';
+		$tab      = is_string( $tab_raw ) ? sanitize_key( $tab_raw ) : '';
 		$view_raw = ( isset( $_GET['view'] ) && is_scalar( $_GET['view'] )
-			? sanitize_text_field( (string) $_GET['view'] )
+			? sanitize_text_field( wp_unslash( $_GET['view'] ) )
 			: '' );
-		$view     = is_string( $view_raw ) ? sanitize_key( wp_unslash( $view_raw ) ) : '';
+		$view     = is_string( $view_raw ) ? sanitize_key( $view_raw ) : '';
 		if ( $page === 'flosc-settings' && $tab === 'ai' && $view !== 'all' ) {
 			$classes .= ' flosc-personality-builder-admin';
 		}
@@ -3175,17 +3175,17 @@ if ( ! function_exists( 'flosc_redirect_nested_personality_designer' ) ) {
 			return;
 		}
 		$page_raw = ( isset( $_GET['page'] ) && is_scalar( $_GET['page'] )
-			? sanitize_text_field( (string) $_GET['page'] )
+			? sanitize_text_field( wp_unslash( $_GET['page'] ) )
 			: '' );
-		$page     = is_string( $page_raw ) ? sanitize_key( wp_unslash( $page_raw ) ) : '';
+		$page     = is_string( $page_raw ) ? sanitize_key( $page_raw ) : '';
 		$tab_raw  = ( isset( $_GET['tab'] ) && is_scalar( $_GET['tab'] )
-			? sanitize_text_field( (string) $_GET['tab'] )
+			? sanitize_text_field( wp_unslash( $_GET['tab'] ) )
 			: '' );
-		$tab      = is_string( $tab_raw ) ? sanitize_key( wp_unslash( $tab_raw ) ) : '';
+		$tab      = is_string( $tab_raw ) ? sanitize_key( $tab_raw ) : '';
 		$view_raw = ( isset( $_GET['view'] ) && is_scalar( $_GET['view'] )
-			? sanitize_text_field( (string) $_GET['view'] )
+			? sanitize_text_field( wp_unslash( $_GET['view'] ) )
 			: '' );
-		$view     = is_string( $view_raw ) ? sanitize_key( wp_unslash( $view_raw ) ) : '';
+		$view     = is_string( $view_raw ) ? sanitize_key( $view_raw ) : '';
 		$legacy   = ( $page === 'flosc-personality-builder' ) || ( $page === 'flosc-settings' && $tab === 'ai' && $view === 'design' );
 		if ( ! $legacy ) {
 			return;

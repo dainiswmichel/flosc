@@ -828,17 +828,17 @@ trait FLOSC_Admin_Trait {
         }
 
         $flosc_tab_raw  = ( isset( $_GET['tab'] ) && is_scalar( $_GET['tab'] )
-			? sanitize_text_field( (string) $_GET['tab'] )
+			? sanitize_text_field( wp_unslash( $_GET['tab'] ) )
 			: '' );
-        $flosc_tab      = is_string( $flosc_tab_raw ) ? sanitize_key( wp_unslash( $flosc_tab_raw ) ) : '';
+        $flosc_tab      = is_string( $flosc_tab_raw ) ? sanitize_key( $flosc_tab_raw ) : '';
         $flosc_page_raw = ( isset( $_GET['page'] ) && is_scalar( $_GET['page'] )
-			? sanitize_text_field( (string) $_GET['page'] )
+			? sanitize_text_field( wp_unslash( $_GET['page'] ) )
 			: '' );
-        $flosc_page     = is_string( $flosc_page_raw ) ? sanitize_key( wp_unslash( $flosc_page_raw ) ) : '';
+        $flosc_page     = is_string( $flosc_page_raw ) ? sanitize_key( $flosc_page_raw ) : '';
         $flosc_view_raw = ( isset( $_GET['view'] ) && is_scalar( $_GET['view'] )
-			? sanitize_text_field( (string) $_GET['view'] )
+			? sanitize_text_field( wp_unslash( $_GET['view'] ) )
 			: '' );
-        $flosc_view     = is_string( $flosc_view_raw ) ? sanitize_key( wp_unslash( $flosc_view_raw ) ) : '';
+        $flosc_view     = is_string( $flosc_view_raw ) ? sanitize_key( $flosc_view_raw ) : '';
         if ( $flosc_page === 'flosc-settings' && $flosc_tab === 'ai' && $flosc_view !== 'all' ) {
             if ( function_exists( 'flosc_enqueue_personality_builder_assets' ) ) {
                 flosc_enqueue_personality_builder_assets();
@@ -869,9 +869,9 @@ trait FLOSC_Admin_Trait {
          * view is read here and the assets are skipped on the single-flow view.
          */
         $flosc_view_raw = ( isset( $_GET['view'] ) && is_scalar( $_GET['view'] )
-			? sanitize_text_field( (string) $_GET['view'] )
+			? sanitize_text_field( wp_unslash( $_GET['view'] ) )
 			: '' );
-        $flosc_view     = is_string( $flosc_view_raw ) ? sanitize_key( wp_unslash( $flosc_view_raw ) ) : '';
+        $flosc_view     = is_string( $flosc_view_raw ) ? sanitize_key( $flosc_view_raw ) : '';
 
         if ( $flosc_tab === 'flow' && $flosc_view === 'all' ) {
             $flosc_port_css = FLOSC_PLUGIN_DIR . 'assets/css/flosc-portability-admin.css';
@@ -987,9 +987,9 @@ trait FLOSC_Admin_Trait {
         // Read-only admin menu routing (capability-checked below). No nonce: GET page
         // slug only; never mutates options. filter_input avoids direct $_GET PHPCS noise.
         $page_raw = ( isset( $_GET['page'] ) && is_scalar( $_GET['page'] )
-			? sanitize_text_field( (string) $_GET['page'] )
+			? sanitize_text_field( wp_unslash( $_GET['page'] ) )
 			: '' );
-        $page     = is_string($page_raw) ? sanitize_key(wp_unslash($page_raw)) : '';
+        $page     = is_string($page_raw) ? sanitize_key($page_raw) : '';
         if ($page === '' || $page === 'flosc-settings') {
             return;
         }
@@ -1039,16 +1039,16 @@ trait FLOSC_Admin_Trait {
             'tab'  => $tab,
         ];
         $ivr_raw = ( isset( $_GET['ivr'] ) && is_scalar( $_GET['ivr'] )
-			? sanitize_text_field( (string) $_GET['ivr'] )
+			? sanitize_text_field( wp_unslash( $_GET['ivr'] ) )
 			: '' );
         if (is_string($ivr_raw) && $ivr_raw !== '') {
-            $args['ivr'] = sanitize_file_name(wp_unslash($ivr_raw));
+            $args['ivr'] = sanitize_file_name($ivr_raw);
         }
         $view_raw = ( isset( $_GET['view'] ) && is_scalar( $_GET['view'] )
-			? sanitize_text_field( (string) $_GET['view'] )
+			? sanitize_text_field( wp_unslash( $_GET['view'] ) )
 			: '' );
         if (is_string($view_raw) && $view_raw !== '') {
-            $view = sanitize_text_field(wp_unslash($view_raw));
+            $view = sanitize_text_field($view_raw);
             if (in_array($view, ['single', 'all'], true)) {
                 $args['view'] = $view;
             }
@@ -1068,9 +1068,9 @@ trait FLOSC_Admin_Trait {
         }
 
         $page_raw = ( isset( $_GET['page'] ) && is_scalar( $_GET['page'] )
-			? sanitize_text_field( (string) $_GET['page'] )
+			? sanitize_text_field( wp_unslash( $_GET['page'] ) )
 			: '' );
-        $page     = is_string($page_raw) ? sanitize_key(wp_unslash($page_raw)) : '';
+        $page     = is_string($page_raw) ? sanitize_key($page_raw) : '';
         if ($page !== 'flosc-settings') {
             return;
         }
@@ -1420,9 +1420,9 @@ trait FLOSC_Admin_Trait {
 
         $settings = $this->get_contact_form_settings((string) $atts['flow']);
         $status_raw = ( isset( $_GET['flosc_contact_status'] ) && is_scalar( $_GET['flosc_contact_status'] )
-			? sanitize_text_field( (string) $_GET['flosc_contact_status'] )
+			? sanitize_text_field( wp_unslash( $_GET['flosc_contact_status'] ) )
 			: '' );
-        $status     = is_string( $status_raw ) ? sanitize_key( wp_unslash( $status_raw ) ) : '';
+        $status     = is_string( $status_raw ) ? sanitize_key( $status_raw ) : '';
 
         wp_enqueue_style(
             'flosc-contact-form',

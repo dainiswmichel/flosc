@@ -217,10 +217,10 @@ class Apple_Provider extends SSO_Provider_Base {
 
         // Apple may send a JSON user object in POST on first authorization only.
         $user_post = ( isset( $_POST['user'] ) && is_scalar( $_POST['user'] )
-			? sanitize_text_field( (string) $_POST['user'] )
+			? sanitize_text_field( wp_unslash( $_POST['user'] ) )
 			: '' );
         $raw_user_json = is_string( $user_post ) && $user_post !== ''
-            ? sanitize_textarea_field( wp_unslash( $user_post ) )
+            ? sanitize_textarea_field( $user_post )
             : '';
         $user_data_raw = array();
         if ( $raw_user_json !== '' && strlen( $raw_user_json ) <= 20000 ) {

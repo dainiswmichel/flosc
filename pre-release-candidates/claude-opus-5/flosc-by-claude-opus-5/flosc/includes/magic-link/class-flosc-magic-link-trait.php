@@ -215,10 +215,10 @@ trait FLOSC_Magic_Link_Trait {
             'redirect_to',
         ) as $flosc_qk ) {
             $raw = ( isset( $_GET[ $flosc_qk ] ) && is_scalar( $_GET[ $flosc_qk ] )
-				? sanitize_text_field( (string) $_GET[ $flosc_qk ] )
+				? sanitize_text_field( wp_unslash( $_GET[ $flosc_qk ] ) )
 				: '' );
             if ( is_string( $raw ) && $raw !== '' ) {
-                $get[ $flosc_qk ] = wp_unslash( $raw );
+                $get[ $flosc_qk ] = $raw;
             }
         }
 
@@ -1577,15 +1577,15 @@ trait FLOSC_Magic_Link_Trait {
         }
         if ( $ivr === '' ) {
             $ivr_in = ( isset( $_POST['ivr'] ) && is_scalar( $_POST['ivr'] )
-			? sanitize_text_field( (string) $_POST['ivr'] )
+			? sanitize_text_field( wp_unslash( $_POST['ivr'] ) )
 			: '' );
             if ( ! is_string( $ivr_in ) || $ivr_in === '' ) {
                 $ivr_in = ( isset( $_GET['ivr'] ) && is_scalar( $_GET['ivr'] )
-			? sanitize_text_field( (string) $_GET['ivr'] )
+			? sanitize_text_field( wp_unslash( $_GET['ivr'] ) )
 			: '' );
             }
             if ( is_string( $ivr_in ) ) {
-                $ivr = sanitize_file_name( wp_unslash( $ivr_in ) );
+                $ivr = sanitize_file_name( $ivr_in );
             }
         }
         return add_query_arg(
