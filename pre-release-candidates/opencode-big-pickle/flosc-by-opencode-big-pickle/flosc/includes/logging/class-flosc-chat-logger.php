@@ -51,33 +51,10 @@ class FLOSC_Chat_Logger {
         return $flow_id !== '' ? $flow_id : '__all';
     }
 
-    /**
-     * Normalize a client-supplied journey id.
-     *
-     * The journey id is an opaque string the browser mints once and keeps across
-     * the login boundary, so every turn of one conversation carries the same
-     * value even though session_id changes from the visitor's hashed id to the
-     * numeric user-meta session id at login. Restricted to the characters a
-     * UUID (or the client's fallback id) can contain, so it is safe to use as a
-     * grouping key and in an option array key.
-     *
-     * @param mixed $raw Client-supplied value.
-     * @return string Sanitized journey id, or '' when unusable.
-     */
-    public static function flosc_sanitize_journey_id($raw) {
-        $raw = preg_replace('/[^A-Za-z0-9_-]/', '', (string) $raw);
-        return substr((string) $raw, 0, 64);
-    }
-
     public static function flosc_session_key_from_descriptor($by, $value) {
-        $by = in_array($by, ['journey', 'session', 'user', 'ip'], true) ? $by : '';
+        $by = in_array($by, ['session', 'user', 'ip'], true) ? $by : '';
         if ($by === '') {
             return '';
-        }
-
-        if ($by === 'journey') {
-            $journey_id = self::flosc_sanitize_journey_id($value);
-            return $journey_id !== '' ? 'j' . $journey_id : '';
         }
 
         if ($by === 'session') {
@@ -165,7 +142,6 @@ class FLOSC_Chat_Logger {
             phase VARCHAR(50) DEFAULT 'freeline',
             user_id BIGINT UNSIGNED DEFAULT 0,
             session_id BIGINT UNSIGNED DEFAULT 0,
-            journey_id VARCHAR(64) NOT NULL DEFAULT '',
             visitor_ip VARCHAR(45) DEFAULT '',
             user_message TEXT NOT NULL,
             ai_response TEXT NOT NULL,
@@ -188,9 +164,7 @@ class FLOSC_Chat_Logger {
             KEY idx_flosc_chat_timestamp (timestamp),
             KEY idx_flosc_chat_user (user_id),
             KEY idx_flosc_chat_flow (flow_id),
-            KEY idx_flosc_chat_phase (phase),
-            KEY idx_flosc_chat_session (session_id),
-            KEY idx_flosc_chat_journey (journey_id)
+            KEY idx_flosc_chat_phase (phase)
         ) $charset_collate;";
 
         require_once ABSPATH . 'wp-admin/includes/upgrade.php';
@@ -281,7 +255,6 @@ class FLOSC_Chat_Logger {
                 $wpdb->prepare(
                     "SELECT user_message, ai_response FROM %i
                      WHERE session_id = %d AND user_id = %d
-                       AND response_source <> 'state_change'
                      ORDER BY id DESC
                      LIMIT %d",
                     $this->table_name,
@@ -297,7 +270,6 @@ class FLOSC_Chat_Logger {
                 $wpdb->prepare(
                     "SELECT user_message, ai_response FROM %i
                      WHERE session_id = %d AND user_id = 0 AND visitor_ip = %s
-                       AND response_source <> 'state_change'
                      ORDER BY id DESC
                      LIMIT %d",
                     $this->table_name,
@@ -333,205 +305,6 @@ class FLOSC_Chat_Logger {
         return $out;
     }
 
-    // ──────────────────────────────────────────────────────────────
-    // Journey marks — VGM state changes as rows in the thread
-    // ──────────────────────────────────────────────────────────────
-
-    /**
-     * Meta key holding acquisition marks waiting to be written into a thread.
-     *
-     * @return string
-     */
-    private static function flosc_journey_marks_meta_key() {
-        return '_flosc_journey_marks_pending';
-    }
-
-    /**
-     * Normalize a flow id to the stem the log table and the grant meta both use.
-     *
-     * @param string $flow_id
-     * @return string Stem, or '' when there is no flow.
-     */
-    public static function flosc_journey_flow_stem($flow_id) {
-        $stem = sanitize_key(pathinfo(basename((string) $flow_id), PATHINFO_FILENAME));
-        if ($stem === '') {
-            $stem = sanitize_key((string) $flow_id);
-        }
-        return $stem;
-    }
-
-    /**
-     * Record that a user acquired something, to be written into their thread later.
-     *
-     * The acquisition events fire where the browser is not present -- a PayPal IPN,
-     * a ClickBank postback, an OAuth callback -- so the journey id is unknown at
-     * that moment. Parking the mark on the user and redeeming it on their next
-     * logged turn is what lets the row land in the right thread, in order, without
-     * guessing from timestamps.
-     *
-     * One-shot per user per (mark, flow): you can only become a guest once, and a
-     * member of any one flow once, so a re-grant or a renewal must not queue a
-     * second "+M".
-     *
-     * @param int    $user_id
-     * @param string $mark    '+G' or '+M'.
-     * @param string $flow_id Flow the acquisition belongs to. '' = account-wide.
-     * @return void
-     */
-    public static function flosc_queue_journey_mark($user_id, $mark, $flow_id = '') {
-        $user_id = (int) $user_id;
-        $mark    = in_array($mark, ['+G', '+M'], true) ? $mark : '';
-        if ($user_id <= 0 || $mark === '') {
-            return;
-        }
-
-        $stem = self::flosc_journey_flow_stem($flow_id);
-
-        // One-shot guard. Kept as its own meta key rather than scanning the queue,
-        // because the queue is emptied as soon as the marks are written.
-        $once_key = '_flosc_journey_marked_' . ($mark === '+M' ? 'm' : 'g') . ($stem !== '' ? '_' . $stem : '');
-        if (get_user_meta($user_id, $once_key, true)) {
-            return;
-        }
-        update_user_meta($user_id, $once_key, time());
-
-        $queue = get_user_meta($user_id, self::flosc_journey_marks_meta_key(), true);
-        if (!is_array($queue)) {
-            $queue = [];
-        }
-        $queue[] = ['mark' => $mark, 'flow' => $stem];
-        // Bounded: a runaway producer must not grow user meta without limit.
-        if (count($queue) > 10) {
-            $queue = array_slice($queue, -10);
-        }
-        update_user_meta($user_id, self::flosc_journey_marks_meta_key(), $queue);
-    }
-
-    /**
-     * Write any VGM state-change rows this turn should be preceded by.
-     *
-     * Two things can produce a mark, and they mean different things:
-     *
-     *   Acquisition  -- the account or the entitlement came into existence just
-     *                   now. Queued by flosc_queue_journey_mark() from the events
-     *                   themselves (user_register, flosc_member_access_granted),
-     *                   so it is a fact, not an inference. Written as +G / +M.
-     *
-     *   Recognition  -- nothing was acquired; someone who already had an account
-     *                   signed in and the system recognized them. There is no
-     *                   event for this, but the thread itself is the evidence: the
-     *                   previous row in this journey was written with user_id 0
-     *                   and this one is not. Written as G / M.
-     *
-     * @param array $data The turn about to be logged (flow_id, user_id, journey_id, phase).
-     * @return void
-     */
-    private function flosc_write_journey_marks($data) {
-        global $wpdb;
-
-        $journey_id = self::flosc_sanitize_journey_id($data['journey_id'] ?? '');
-        $user_id    = intval($data['user_id'] ?? 0);
-        if ($journey_id === '' || $user_id <= 0) {
-            // A visitor has nothing to transition from yet, and a thread with no
-            // journey id has nowhere to put the row.
-            return;
-        }
-
-        $flow_id = sanitize_text_field((string) ($data['flow_id'] ?? ''));
-        $stem    = self::flosc_journey_flow_stem($flow_id);
-
-        // Previous row of THIS conversation, to see whether the signer-in just
-        // crossed out of visitor.
-        $previous = $wpdb->get_row(
-            $wpdb->prepare(
-                "SELECT user_id FROM %i WHERE journey_id = %s ORDER BY id DESC LIMIT 1",
-                $this->table_name,
-                $journey_id
-            ),
-            ARRAY_A
-        );
-        $has_previous  = is_array($previous);
-        $crossed_from_visitor = $has_previous && intval($previous['user_id']) === 0;
-
-        // Redeem acquisition marks for this flow (or account-wide ones).
-        $queue = get_user_meta($user_id, self::flosc_journey_marks_meta_key(), true);
-        $queue = is_array($queue) ? $queue : [];
-        $marks = [];
-        $keep  = [];
-        foreach ($queue as $entry) {
-            if (!is_array($entry)) {
-                continue;
-            }
-            $entry_flow = (string) ($entry['flow'] ?? '');
-            if ($entry_flow === '' || $entry_flow === $stem) {
-                $marks[] = (string) ($entry['mark'] ?? '');
-            } else {
-                $keep[] = $entry;
-            }
-        }
-        $marks = array_values(array_filter($marks, static function ($m) {
-            return in_array($m, ['+G', '+M'], true);
-        }));
-
-        if (empty($marks) && !$crossed_from_visitor) {
-            return;
-        }
-
-        if ($marks !== [] || $queue !== $keep) {
-            if ($keep === []) {
-                delete_user_meta($user_id, self::flosc_journey_marks_meta_key());
-            } else {
-                update_user_meta($user_id, self::flosc_journey_marks_meta_key(), $keep);
-            }
-        }
-
-        // Nothing was acquired, so this is a recognition: they already had the
-        // account, and possibly the entitlement, before this conversation began.
-        if (empty($marks)) {
-            $level = 'guest';
-            if (class_exists('FLOSC_Member_Access')) {
-                $level = FLOSC_Member_Access::instance()->get_access_level($user_id, $flow_id !== '' ? $flow_id : null);
-            }
-            $marks[] = ($level === 'member') ? 'M' : 'G';
-        }
-
-        // Where they came from. Only 'V' is directly evidenced; otherwise they were
-        // already signed in on this thread, which for an unqueued +M means guest.
-        $from = '';
-        if ($crossed_from_visitor) {
-            $from = 'V';
-        } elseif ($has_previous) {
-            $from = 'G';
-        }
-
-        $phase = sanitize_text_field((string) ($data['phase'] ?? 'content'));
-
-        foreach ($marks as $mark) {
-            $wpdb->insert(
-                $this->table_name,
-                [
-                    'timestamp'       => current_time('mysql'),
-                    'flow_id'         => $flow_id,
-                    'phase'           => $phase,
-                    'user_id'         => $user_id,
-                    'session_id'      => intval($data['session_id'] ?? 0),
-                    'journey_id'      => $journey_id,
-                    'visitor_ip'      => '',
-                    'user_message'    => '',
-                    'ai_response'     => ($from !== '' ? $from . ' → ' : '') . $mark,
-                    'provider'        => 'flosc',
-                    'chain_detail'    => '',
-                    'response_source' => 'state_change',
-                    'response_time_ms'=> 0,
-                ],
-                ['%s', '%s', '%s', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d']
-            );
-            // Only the first mark of a batch carries the "came from" side; a
-            // +G immediately followed by +M reads as V → +G then +M.
-            $from = '';
-        }
-    }
-
     /**
      * Log a chat exchange.
      *
@@ -540,7 +313,6 @@ class FLOSC_Chat_Logger {
      *     @type string $phase          Current funnel phase
      *     @type int    $user_id        WordPress user ID (0 for visitors)
      *     @type int    $session_id     Session ID if available
-     *     @type string $journey_id     Opaque per-conversation id that survives login
      *     @type string $user_message   What the user said
      *     @type string $ai_response    What the AI/IVR responded
      *     @type string $provider       AI provider used (openai, anthropic, xai, ivr)
@@ -555,11 +327,6 @@ class FLOSC_Chat_Logger {
 
         // Ensure table exists (lightweight check — cached after first call)
         $this->flosc_ensure_table();
-
-        // Any VGM state change goes in FIRST, so the marker sits above the turn
-        // that triggered it. Done here rather than at each call site so every path
-        // that logs a turn -- /chat, /chat-rag, /chat-log -- is covered by one hook.
-        $this->flosc_write_journey_marks($data);
 
         $visitor_ip = '';
         if (empty($data['user_id'])) {
@@ -579,7 +346,6 @@ class FLOSC_Chat_Logger {
                 'phase'           => sanitize_text_field($data['phase'] ?? 'freeline'),
                 'user_id'         => intval($data['user_id'] ?? 0),
                 'session_id'      => intval($data['session_id'] ?? 0),
-                'journey_id'      => self::flosc_sanitize_journey_id($data['journey_id'] ?? ''),
                 'visitor_ip'      => $visitor_ip,
                 'user_message'    => sanitize_textarea_field($data['user_message'] ?? ''),
                 'ai_response'     => wp_kses_post($data['ai_response'] ?? ''),
@@ -594,7 +360,7 @@ class FLOSC_Chat_Logger {
                 'billing_total_tokens' => max(0, intval($data['billing_total_tokens'] ?? 0)),
                 'billing_real_millicents' => max(0, intval($data['billing_real_millicents'] ?? 0)),
             ],
-            ['%s', '%s', '%s', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%d', '%d', '%d', '%d']
+            ['%s', '%s', '%s', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%d', '%d', '%d', '%d']
         );
 
         if ( $result ) {
@@ -783,15 +549,6 @@ class FLOSC_Chat_Logger {
         // (assistant) message, but still admin-authored and delivered via the poll.
         $response_source = ($source === 'bot') ? 'admin_bot' : 'admin';
 
-        // Inherit the conversation's journey id from its newest row. Without it the
-        // admin's reply would carry journey_id '' and split off into its own thread
-        // in the log view, right next to the conversation it was answering.
-        $journey_id = self::flosc_sanitize_journey_id($wpdb->get_var($wpdb->prepare(
-            "SELECT journey_id FROM %i WHERE session_id = %d AND journey_id <> '' ORDER BY id DESC LIMIT 1",
-            $this->table_name,
-            $session_id
-        )));
-
         $result = $wpdb->insert(
             $this->table_name,
             [
@@ -800,7 +557,6 @@ class FLOSC_Chat_Logger {
                 'phase'           => 'freeline',
                 'user_id'         => 0,
                 'session_id'      => $session_id,
-                'journey_id'      => $journey_id,
                 'visitor_ip'      => '',
                 'user_message'    => '',
                 'ai_response'     => wp_kses_post($text),
@@ -809,7 +565,7 @@ class FLOSC_Chat_Logger {
                 'response_source' => $response_source,
                 'response_time_ms'=> 0,
             ],
-            ['%s', '%s', '%s', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d']
+            ['%s', '%s', '%s', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%d']
         );
 
         return $result ? $wpdb->insert_id : false;
@@ -946,30 +702,17 @@ class FLOSC_Chat_Logger {
      *
      * Multiple people can be chatting at once, so the flat log is unreadable. We
      * group rows into conversations using the most specific key a row carries:
-     * the journey id, else an explicit session id, else the logged-in user, else
-     * the (hashed) visitor IP for anonymous guests. The returned descriptor also
-     * drives deletion, so the grouping key and the delete WHERE clause always agree.
+     * an explicit session id, else the logged-in user, else the (hashed) visitor
+     * IP for anonymous guests. The returned descriptor also drives deletion, so
+     * the grouping key and the delete WHERE clause always agree.
      *
      * @param array $row A chat log row (ARRAY_A).
-     * @return array { by: 'journey'|'session'|'user'|'ip', value: string, key: string, label: string }
+     * @return array { by: 'session'|'user'|'ip', value: string, key: string, label: string }
      */
     public static function flosc_session_descriptor($row) {
-        $journey_id = self::flosc_sanitize_journey_id($row['journey_id'] ?? '');
         $session_id = intval($row['session_id'] ?? 0);
         $user_id    = intval($row['user_id'] ?? 0);
         $ip         = (string) ($row['visitor_ip'] ?? '');
-
-        // Journey first. session_id changes at login (hashed visitor id -> numeric
-        // user-meta session id), so grouping by it splits one conversation in two
-        // at the moment someone signs in. The journey id is minted once in the
-        // browser and carried across that boundary, so it keeps the whole thread
-        // together. Rows written before this column existed have journey_id '',
-        // and fall through to the original session/user/ip grouping unchanged.
-        if ($journey_id !== '') {
-            $code  = substr(md5('j' . $journey_id), 0, 6);
-            $label = ($user_id > 0 ? 'User #' . $user_id : 'Visitor') . ' · ' . $code;
-            return ['by' => 'journey', 'value' => $journey_id, 'key' => 'j' . $journey_id, 'label' => $label, 'code' => $code];
-        }
 
         // Every conversation gets a stable 6-char "code" — shown in the label and
         // used as the prefix of each message id (e.g. 4f09a2-b-002). For IP-keyed
@@ -1048,26 +791,15 @@ class FLOSC_Chat_Logger {
                     'last_ts'  => (string) $r['timestamp'],
                     'is_archived' => $is_archived,
                     'turns'    => 0,
-                    // Newest row first, so the first non-zero session_id we see is
-                    // the conversation's current one. A journey-grouped thread is
-                    // keyed by journey_id, but admin-join still has to deliver to a
-                    // real session id — this is where it comes from.
-                    'deliver_session_id' => intval($r['session_id'] ?? 0),
                     'rows'     => [],
                 ];
-            }
-            if (intval($sessions[$k]['deliver_session_id']) <= 0) {
-                $sessions[$k]['deliver_session_id'] = intval($r['session_id'] ?? 0);
             }
             // Build the thread oldest-first by prepending each older row.
             array_unshift($sessions[$k]['rows'], $r);
             if ((string) $r['timestamp'] < $sessions[$k]['first_ts']) {
                 $sessions[$k]['first_ts'] = (string) $r['timestamp'];
             }
-            // A state-change divider has no speaker, and the auto-welcome's
-            // "[SYSTEM: …]" prompt is machinery, so neither counts as a message.
-            $is_marker = ((string) ($r['response_source'] ?? '') === 'state_change');
-            if (!$is_marker && strncmp((string) $r['user_message'], '[SYSTEM:', 8) !== 0) {
+            if (strncmp((string) $r['user_message'], '[SYSTEM:', 8) !== 0) {
                 $sessions[$k]['turns']++;
             }
         }
@@ -1099,26 +831,10 @@ class FLOSC_Chat_Logger {
         wp_cache_delete( 'flosc_chat_logs_list', 'flosc_chat_logs' );
         $this->flosc_ensure_table();
 
-        $by      = in_array($by, ['journey', 'session', 'user', 'ip'], true) ? $by : '';
+        $by      = in_array($by, ['session', 'user', 'ip'], true) ? $by : '';
         $flow_id = sanitize_text_field((string) $flow_id);
         if ($by === '') {
             return 0;
-        }
-
-        // The four branches must stay mutually exclusive, or one conversation's
-        // rows would show up under two headings and a delete would reach into a
-        // neighbouring thread. Journey rows are claimed by the journey branch, so
-        // the other three exclude them with journey_id = ''.
-        if ($by === 'journey') {
-            $jid = self::flosc_sanitize_journey_id($value);
-            if ($jid === '') {
-                return 0;
-            }
-            $this->flosc_set_session_archived($by, $jid, $flow_id, false);
-            return (int) $wpdb->query($wpdb->prepare(
-                "DELETE FROM %i WHERE journey_id = %s AND ( %s = '' OR flow_id = %s )",
-                $this->table_name, $jid, $flow_id, $flow_id
-            ));
         }
 
         if ($by === 'session') {
@@ -1128,7 +844,7 @@ class FLOSC_Chat_Logger {
             }
             $this->flosc_set_session_archived($by, (string) $sid, $flow_id, false);
             return (int) $wpdb->query($wpdb->prepare(
-                "DELETE FROM %i WHERE session_id = %d AND journey_id = '' AND ( %s = '' OR flow_id = %s )",
+                "DELETE FROM %i WHERE session_id = %d AND ( %s = '' OR flow_id = %s )",
                 $this->table_name, $sid, $flow_id, $flow_id
             ));
         }
@@ -1140,7 +856,7 @@ class FLOSC_Chat_Logger {
             }
             $this->flosc_set_session_archived($by, (string) $uid, $flow_id, false);
             return (int) $wpdb->query($wpdb->prepare(
-                "DELETE FROM %i WHERE user_id = %d AND session_id = 0 AND journey_id = '' AND ( %s = '' OR flow_id = %s )",
+                "DELETE FROM %i WHERE user_id = %d AND session_id = 0 AND ( %s = '' OR flow_id = %s )",
                 $this->table_name, $uid, $flow_id, $flow_id
             ));
         }
@@ -1151,7 +867,7 @@ class FLOSC_Chat_Logger {
         }
         $this->flosc_set_session_archived($by, $ip, $flow_id, false);
         return (int) $wpdb->query($wpdb->prepare(
-            "DELETE FROM %i WHERE visitor_ip = %s AND user_id = 0 AND session_id = 0 AND journey_id = '' AND ( %s = '' OR flow_id = %s )",
+            "DELETE FROM %i WHERE visitor_ip = %s AND user_id = 0 AND session_id = 0 AND ( %s = '' OR flow_id = %s )",
             $this->table_name, $ip, $flow_id, $flow_id
         ));
     }
@@ -1161,31 +877,10 @@ class FLOSC_Chat_Logger {
         $flosc_cache_probe = wp_cache_get( 'flosc_chat_logs_list', 'flosc_chat_logs' );
         $this->flosc_ensure_table();
 
-        $by = in_array($by, ['journey', 'session', 'user', 'ip'], true) ? $by : '';
+        $by = in_array($by, ['session', 'user', 'ip'], true) ? $by : '';
         $flow_id = sanitize_text_field((string) $flow_id);
         if ($by === '') {
             return [];
-        }
-
-        // Mirrors flosc_delete_session() exactly: journey rows belong to the
-        // journey branch, so the other three exclude them with journey_id = ''.
-        if ($by === 'journey') {
-            $jid = self::flosc_sanitize_journey_id($value);
-            if ($jid === '') {
-                return [];
-            }
-
-            wp_cache_set( 'flosc_chat_logs_list', true, 'flosc_chat_logs', 30 );
-            return $wpdb->get_results(
-                $wpdb->prepare(
-                    "SELECT * FROM %i WHERE journey_id = %s AND ( %s = '' OR flow_id = %s ) ORDER BY id ASC",
-                    $this->table_name,
-                    $jid,
-                    $flow_id,
-                    $flow_id
-                ),
-                ARRAY_A
-            ) ?: [];
         }
 
         if ($by === 'session') {
@@ -1197,7 +892,7 @@ class FLOSC_Chat_Logger {
             wp_cache_set( 'flosc_chat_logs_list', true, 'flosc_chat_logs', 30 );
         return $wpdb->get_results(
                 $wpdb->prepare(
-                    "SELECT * FROM %i WHERE session_id = %d AND journey_id = '' AND ( %s = '' OR flow_id = %s ) ORDER BY id ASC",
+                    "SELECT * FROM %i WHERE session_id = %d AND ( %s = '' OR flow_id = %s ) ORDER BY id ASC",
                     $this->table_name,
                     $sid,
                     $flow_id,
@@ -1215,7 +910,7 @@ class FLOSC_Chat_Logger {
 
             return $wpdb->get_results(
                 $wpdb->prepare(
-                    "SELECT * FROM %i WHERE user_id = %d AND session_id = 0 AND journey_id = '' AND ( %s = '' OR flow_id = %s ) ORDER BY id ASC",
+                    "SELECT * FROM %i WHERE user_id = %d AND session_id = 0 AND ( %s = '' OR flow_id = %s ) ORDER BY id ASC",
                     $this->table_name,
                     $uid,
                     $flow_id,
@@ -1232,7 +927,7 @@ class FLOSC_Chat_Logger {
 
         return $wpdb->get_results(
             $wpdb->prepare(
-                "SELECT * FROM %i WHERE visitor_ip = %s AND user_id = 0 AND session_id = 0 AND journey_id = '' AND ( %s = '' OR flow_id = %s ) ORDER BY id ASC",
+                "SELECT * FROM %i WHERE visitor_ip = %s AND user_id = 0 AND session_id = 0 AND ( %s = '' OR flow_id = %s ) ORDER BY id ASC",
                 $this->table_name,
                 $ip,
                 $flow_id,

@@ -2,10 +2,6 @@
 # Keep release archives focused on runtime plugin code only.
 # ALWAYS build zips with ./build-dist-zip.sh (fail-closed). Never zip -r by hand.
 
-# Test harnesses. These stub WordPress on purpose — they define ABSPATH and
-# redeclare core functions — so they must never reach a running site.
-tests/
-
 # VCS and local editor state
 .git/
 .github/
@@ -20,6 +16,16 @@ build-dist-zip.sh
 Thumbs.db
 *.swp
 .gitkeep
+
+# AI agent instruction files (never runtime; keep them out of the artifact)
+AGENTS.md
+CLAUDE.md
+.cursorrules
+WORDPRESS-ORG-RELEASE.md
+phpcs.xml.dist
+
+# Archive-only output of other coding agents — reference only, never ships
+pre-release-candidates/
 
 # Python/local env
 .venv/

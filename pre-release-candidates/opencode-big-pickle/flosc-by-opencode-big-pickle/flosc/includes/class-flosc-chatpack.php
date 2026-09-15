@@ -25,17 +25,6 @@ if (!defined('ABSPATH')) exit;
 class FLOSC_Chatpack {
 
     /**
-     * Maximum bytes for the personality-voice portion of a follow-up identity block.
-     *
-     * Re-anchoring the full compiled profile every turn keeps a character vivid and
-     * honours an admin-driven mid-chat personality switch, but inflates input tokens.
-     * This bound keeps the per-turn cost controlled while preserving enough voice to
-     * remain unmistakably the current personality. Shared FLOSC policy is NOT part of
-     * this budget — it lives in the SESSION CONTINUE anchor, never inside the profile.
-     */
-    const FOLLOWUP_IDENTITY_BYTES = 1400;
-
-    /**
      * Generate or retrieve the permanent FLOSC installation hash.
      *
      * Format: flosc_{domain}_{MTS}_{7-char hex}
@@ -314,9 +303,7 @@ class FLOSC_Chatpack {
         // a generic FLOSC voice, i.e. one flow bleeding into another. The identity
         // section is flow-scoped, so re-sending it on every turn keeps each chatbot
         // firmly inside its own flow. (Cheap insurance; flow isolation is the point.)
-        // Full compiled profile (v5.7-scale) is first-turn only. Re-sending it
-        // on every visitor hop bills thousands of input tokens per turn.
-        $sections[] = self::build_identity_section((string) ($eval_context['flow_id'] ?? ''), true);
+        $sections[] = self::build_identity_section((string) ($eval_context['flow_id'] ?? ''));
         $followup_flow = (string) ($eval_context['flow_id'] ?? '');
         $sections[] = self::build_user_section($eval_context);
         $sections[] = self::build_flow_section($phase, $eval_context, $followup_flow);
@@ -485,11 +472,8 @@ class FLOSC_Chatpack {
     /**
      * Section 1: FLOSC Identity — what FLOSC is, product info, AI persona.
      * Reads from floscAdmin-configurable settings.
-     *
-     * @param string $flow_id  Flow stem.
-     * @param bool   $compact  True on follow-ups: name/role/scope only, not the compiled profile.
      */
-    private static function build_identity_section($flow_id = '', $compact = false) {
+    private static function build_identity_section($flow_id = '') {
         $flow_id = ($flow_id !== null && $flow_id !== '') ? $flow_id : null;
         // Fix 12: Library attach (one personality) or flow bag / legacy keys.
         $res = function_exists( 'flosc_personality_library_resolve_field' ) ? 'flosc_personality_library_resolve_field' : null;
@@ -514,47 +498,6 @@ class FLOSC_Chatpack {
         $compiled_profile = function_exists( 'flosc_personality_compiled_profile' )
             ? flosc_personality_compiled_profile( $flow_id )
             : trim( (string) $ai_base_prompt );
-
-        $public_title = function_exists( 'flosc_flow_public_title' )
-            ? flosc_flow_public_title( $flow_id )
-            : '';
-        $public_tagline = function_exists( 'flosc_flow_public_tagline' )
-            ? flosc_flow_public_tagline( $flow_id )
-            : '';
-
-        if ( $compact ) {
-            // Resolve the CURRENT attached personality fresh this turn (not a snapshot).
-            // The flow stores only personality_library_id; the runtime re-reads the row
-            // each call, so an admin-driven mid-chat switch takes effect here immediately.
-            $section  = "## 1. IDENTITY (current — resolved fresh this turn)\n\n";
-            $section .= "You are {$ai_name}";
-            if ( $ai_role ) {
-                $section .= " — {$ai_role}";
-            }
-            $section .= ".\n";
-            if ( $ai_traits ) {
-                $section .= "Traits: {$ai_traits}\n";
-            }
-            if ( $ai_mission ) {
-                $section .= "Mission: {$ai_mission}\n";
-            }
-            if ( $compiled_profile !== '' ) {
-                // Re-anchor the personality voice so multi-turn stays vivid and a
-                // personality switch is honoured. Only personality, never shared policy.
-                // Bound the re-anchored value so per-turn token cost stays controlled.
-                $voice = $compiled_profile;
-                if ( function_exists( 'mb_strlen' ) && mb_strlen( $voice ) > self::FOLLOWUP_IDENTITY_BYTES ) {
-                    $voice = trim( mb_substr( $voice, 0, self::FOLLOWUP_IDENTITY_BYTES ) ) . "\n…";
-                } elseif ( strlen( $voice ) > self::FOLLOWUP_IDENTITY_BYTES ) {
-                    $voice = trim( substr( $voice, 0, self::FOLLOWUP_IDENTITY_BYTES ) ) . "\n…";
-                }
-                $section .= "\nVoice profile (this is who you are; speak as this person):\n{$voice}\n";
-            }
-            $section .= "\nFLOSC = Freeline, Login, Offer, Sale, Content only when the software is the topic.\n";
-            $section .= "Never invent facts, titles, URLs, prices, or contact details. Never guess.\n";
-            $section .= "Do not leak Dainis contact details until name + email + phone are in this conversation.\n";
-            return $section;
-        }
 
         $section = "## 1. IDENTITY\n\n";
 
@@ -600,16 +543,6 @@ class FLOSC_Chatpack {
         $section .= "**FLOSC** = Freeline, Login, Offer, Sale, Content. Those are the 5 phases. "
             . "FLOSC is a white-label WordPress plugin framework. "
             . "That is ALL it stands for. Do not expand it any other way.\n\n";
-
-        if ( $public_title !== '' ) {
-            $section .= "**Public title:** {$public_title}\n";
-        } else {
-            $section .= "**Public title:** (none).\n";
-        }
-        if ( $public_tagline !== '' ) {
-            $section .= "**Tagline:** {$public_tagline}\n";
-        }
-        $section .= "\n";
 
         if ( $compiled_profile === '' ) {
             $section .= "\n**Your Persona:**\n";
@@ -825,14 +758,6 @@ class FLOSC_Chatpack {
      * Section 4: Flow Context — current phase and phase-specific instructions.
      */
     private static function build_flow_section($phase, $eval_context, $flow_id = null) {
-        // build_followup_chatpack() hands us $eval_context['flow_id'] cast to a
-        // string, which is '' when the turn carries no flow. Settings lookups
-        // treat '' as "a flow named empty string" and skip the flow bag entirely,
-        // so normalize it back to null and keep the get_current_flow() fallback.
-        if ($flow_id === '') {
-            $flow_id = null;
-        }
-
         $section = "## 4. FLOW CONTEXT\n\n";
 
         $is_admin = $eval_context['is_admin'] ?? false;
@@ -869,11 +794,8 @@ class FLOSC_Chatpack {
         // Phase-specific instructions
         $section .= "\n" . self::get_phase_instructions($phase, $eval_context, $flow_id);
 
-        // Access-level instructions (floscAdmin-configurable via ai_prompt_{phase}).
-        // Pass $flow_id: without it flosc_get_setting() falls back to
-        // get_current_flow(), so a turn on one flow could be handed another
-        // flow's phase instructions.
-        $phase_prompt = flosc_get_setting("ai_prompt_{$phase}", '', $flow_id);
+        // Access-level instructions (floscAdmin-configurable via ai_prompt_{phase})
+        $phase_prompt = flosc_get_setting("ai_prompt_{$phase}", '');
         if ($phase_prompt) {
             $section .= "\n**FloscAdmin Phase Instructions:**\n" . $phase_prompt . "\n";
         }
@@ -1187,7 +1109,7 @@ class FLOSC_Chatpack {
      * Accepts either a map (phase_outcomes[phase]) or per-phase keys.
      */
     private static function get_phase_outcomes($phase, $eval_context = [], $flow_id = null) {
-        $raw_map = flosc_get_setting('phase_outcomes', [], $flow_id);
+        $raw_map = flosc_get_setting('phase_outcomes', []);
         if (is_array($raw_map) && isset($raw_map[$phase])) {
             $parsed = self::normalize_outcomes($raw_map[$phase]);
             if (!empty($parsed)) {
@@ -1202,7 +1124,7 @@ class FLOSC_Chatpack {
             "behaviors_{$phase}",
         ];
         foreach ($candidate_keys as $key) {
-            $raw = flosc_get_setting($key, '', $flow_id);
+            $raw = flosc_get_setting($key, '');
             $parsed = self::normalize_outcomes($raw);
             if (!empty($parsed)) {
                 return $parsed;

@@ -247,19 +247,18 @@ class OAuth2_Handler {
         $get  = array();
         $post = array();
         foreach ( array( 'code', 'state', 'error', 'error_description' ) as $flosc_k ) {
-            $g = filter_input( INPUT_GET, $flosc_k, FILTER_UNSAFE_RAW );
-            if ( is_string( $g ) && $g !== '' ) {
-                $get[ $flosc_k ] = wp_unslash( $g );
+            if ( isset( $_GET[ $flosc_k ] ) && is_string( $_GET[ $flosc_k ] ) && $_GET[ $flosc_k ] !== '' ) {
+                $get[ $flosc_k ] = sanitize_text_field( wp_unslash( $_GET[ $flosc_k ] ) );
             }
-            $p = filter_input( INPUT_POST, $flosc_k, FILTER_UNSAFE_RAW );
-            if ( is_string( $p ) && $p !== '' ) {
-                $post[ $flosc_k ] = wp_unslash( $p );
+            if ( isset( $_POST[ $flosc_k ] ) && is_string( $_POST[ $flosc_k ] ) && $_POST[ $flosc_k ] !== '' ) {
+                $post[ $flosc_k ] = sanitize_text_field( wp_unslash( $_POST[ $flosc_k ] ) );
             }
         }
         $server = array();
         foreach ( array( 'REQUEST_URI', 'REQUEST_METHOD', 'QUERY_STRING' ) as $flosc_sk ) {
-            $sv = filter_input( INPUT_SERVER, $flosc_sk, FILTER_UNSAFE_RAW );
-            $server[ $flosc_sk ] = is_string( $sv ) ? wp_unslash( $sv ) : '';
+            $server[ $flosc_sk ] = isset( $_SERVER[ $flosc_sk ] ) && is_string( $_SERVER[ $flosc_sk ] )
+                ? sanitize_text_field( wp_unslash( $_SERVER[ $flosc_sk ] ) )
+                : '';
         }
 
         // v8.0.4: Prevent caching of callback responses
@@ -332,8 +331,8 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC SSO] handle_callbac
         // ── Resolve the correct app URL from state ──
         // The callback runs on the WordPress host (registered with Google), but the user
         // came from the flow domain. get_current_flow() fails here because it matches
-        // by HTTP_HOST = the WordPress host. Instead, use the flow_id stored in state to
-        // look up the flow's custom_domain directly from the database.
+        // on the current request host, which here is the WordPress host. Instead, use the
+        // flow_id stored in state to look up the flow's custom_domain directly from the database.
         $app_url = home_url(); // absolute last resort
         $error_redirect_to = '';
         
@@ -500,7 +499,9 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC SSO] Provider error
         }
         
         // Cross-domain login token: only on allowlisted hosts (never arbitrary external).
-        $callback_host = strtolower(sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST'] ?? '')));
+        // The callback host is taken from site configuration, never from a
+        // request-supplied host header.
+        $callback_host = strtolower((string) (wp_parse_url(home_url('/'), PHP_URL_HOST) ?? ''));
         $redirect_host = strtolower((string) (wp_parse_url($redirect_to, PHP_URL_HOST) ?? ''));
         if ($redirect_host && $callback_host && $redirect_host !== $callback_host
             && $this->is_allowed_sso_redirect($redirect_to, $flow_id_for_redirect)
@@ -613,11 +614,6 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC SSO] Provider error
             }
         }
 
-        // Current request host (callback domain, e.g. the WordPress host).
-        if (!empty($_SERVER['HTTP_HOST'])) {
-            $add(sanitize_text_field(wp_unslash((string) $_SERVER['HTTP_HOST'])));
-        }
-
         // Flow-scoped allowlist only: the current flow's configured domains/app URLs.
         // This prevents one flow's configured redirect host from implicitly approving
         // a different flow's post-login target.
@@ -650,7 +646,8 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC SSO] Provider error
     /**
      * Resolve the app URL from a flow_id by looking up the flow's custom domain
      * directly from the database. This works during REST API callbacks where
-     * get_current_flow() fails because HTTP_HOST is the WordPress host, not the custom domain.
+     * get_current_flow() fails because the current request host is the WordPress host,
+     * not the flow's custom domain.
      *
      * @param string $flow_id Flow ID (e.g. 'flow_ivr')
      * @return string|false App URL (e.g. 'https://the flow domain/') or false if not found

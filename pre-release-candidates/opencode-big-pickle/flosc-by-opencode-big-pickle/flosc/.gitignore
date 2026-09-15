@@ -6,10 +6,17 @@ Thumbs.db
 *.zip
 *.bundle
 
-# Composer / PHPCS tooling (local only; .distignore + build-dist-zip deny)
+# ...except a candidate's own built artifact. *.zip above silently skipped it
+# on `git add -A`, so main carried a v7 zip beside a v9 SHA256SUMS that did not
+# match it. The candidate folder is excluded from the shipped artifact by
+# .distignore and by build-dist-zip's hard deny list, so nothing here can ride
+# along into a release.
+!pre-release-candidates/*/flosc.zip
+
+# Composer / PHPCS tooling — vendor stays local; composer.json + composer.lock
+# ARE committed (pinned standards for every agent/CI). Both are excluded from
+# the shipped artifact by .distignore and build-dist-zip's hard deny list.
 vendor/
-composer.json
-composer.lock
 .venv/
 node_modules/
 

@@ -2,7 +2,7 @@
 Contributors: dainismichel
 Donate link: https://dainis.net/donate/
 Tags: leads, sales, access, ai, chatbot
-Requires at least: 7.0.4
+Requires at least: 7.0
 Requires PHP: 7.4
 Tested up to: 7.1
 Stable tag: 8.0.0
@@ -24,7 +24,6 @@ Instead of "Are you interested in buying?" FLOSC asks "What should I help you wi
 * **Content Gating** - Unlock premium content only after quiz completion or specific actions
 * **Offer Sequencing** - Show payment offers at the ideal moment in the visitor journey
 * **DA1 Catalogs** - Attach structured TSV catalogs to flows so floscAdmins can serve curated, flow-scoped datasets without hard-coding project-specific content
-* **Starter Packs** - Install a complete working journey in one click: a flow, the example posts it talks about, and the visitor / guest / member gating already wired
 * **Locally Stored** - All visitor data stays in your WordPress database by default
 * **AI-Ready** - Bring-your-own-key chat with Anthropic, OpenAI, xAI, or Gemini (or IVR scripted only). OpenAI, Anthropic, and Gemini chat use the WordPress 7.0 AI Client — install the official provider plugin for the agent this flow attaches. Speech-to-text: AssemblyAI, OpenAI Whisper, or a custom endpoint.
 * **WordPress Native** - Built as a standard WordPress plugin; no external platform required
@@ -50,21 +49,6 @@ Instead of "Are you interested in buying?" FLOSC asks "What should I help you wi
 * **Consulting Intake** - Conversational questionnaire that qualifies leads and captures intent before outreach
 * **Sample Content First** - From listen to a few songs first here, to read some of my poems, to try these free recipes, FLOSC allows you to give samples before selling.  
 
-= Starter Packs =
-
-A new install has nothing to say. A starter pack fixes that in one click, so you can see a complete journey work before you configure anything.
-
-Installing a pack creates a flow file in the FLOSC configuration folder, its categories, its example posts each stamped with the access level it is gated at, and — where the pack has one — its DA1 catalog and product file. Nothing is written to the plugin folder. A pack refuses rather than overwrites: if a flow file, a flow's settings, or a category of the same name already exists, FLOSC tells you instead of replacing your work. Removing a pack deletes exactly what that pack created, found by its own stamp — never by title, date or category name.
-
-Two packs ship with FLOSC:
-
-* **WordPress Content Membership Journey** - 100 deliberately silly WordPress posts gated as a real membership library: visitors read items 1-10, guests reach 1-30, members reach all 100. Curated by BubblyBetty. The journey sells membership; you set the price.
-* **DA1 Catalog Sales Journey** - 50 over-serious instruction manuals for ordinary household tasks, served as a content-agnostic DA1 catalog: 4 items for visitors, 8 for guests, all 50 for members. Curated by DadJokeDan. The journey sells the compiled UberManual PDF for $10.
-
-Each pack references a personality from the FLOSC library rather than bundling one, so you can swap the voice curating the journey at any time and watch the whole experience change.
-
-Both are example content. Delete them, or take them apart and replace the subject with your own.
-
 = How It Works =
 
 1. **Configure IVR Messages** - Expanding on interactive voice response (IVR) automated telephone system technology, in which callers receive and provide information by using voice or menu inputs, floscAdmins define chatbot conversational input-response flows: welcome messages, quiz questions, conditional branches, offers, and content unlock paths -- all while drawing from your WordPress content and configurable content database. 
@@ -75,7 +59,7 @@ Both are example content. Delete them, or take them apart and replace the subjec
 
 = Technical Details =
 
-* Requires WordPress 7.0.4+ (see header Requires at least)
+* Requires WordPress 7.0+ (see header Requires at least)
 * No external services required for core functionality (flows run locally)
 * BYOK AI: one WordPress AI Client (`wp_ai_client_prompt()`), plus official provider plugins for OpenAI, Anthropic, and Google. xAI has no official plugin yet (FLOSC hop). IVR is scripted and calls none of them.
 * Payment integration
@@ -143,7 +127,7 @@ Current per-provider pocket rules are dated MTS 26_08m_20d on the Personality De
 
 = What are DA1 Catalogs? =
 
-DA1 provides a content-agnostic catalog structure with native compatibility for Dublin Core metadata and unrestricted catalog-specific parameters. A FLOSC flow can expose selected catalog items to Visitors, Guests, or Members and use the assigned catalog during the conversational journey without hard-coding project-specific content into plugin PHP. Catalogs are stored as TSV datasets in the WordPress uploads directory and can be assigned to specific flows.
+DA1 Catalogs are structured TSV datasets managed by the floscAdmin. They let a FLOSC flow answer from curated rows of content, media, links, records, or fallback responses without hard-coding that data into plugin PHP. Catalogs are stored in the WordPress uploads directory and can be assigned to specific flows.
 
 = Where does visitor data get stored? =
 
@@ -191,34 +175,28 @@ Put it in FLOSC (this flow's AI tab, or All Flows AI API Management). FLOSC bind
 
 FLOSC core flow logic runs locally in WordPress. The services below power specific FLOSC features. When those features are enabled, calling these services is intentional and required for full functionality.
 
-Note on "Ask the model what it does": in Settings -> AI, an administrator can ask the flow's own configured model what one of that provider's request parameters means. This sends a one-sentence question containing the parameter name to whichever provider is selected below, through the same chat path that provider's row already describes. It is never automatic; it happens only on that button click, and no visitor or site content is included.
-
 1. OpenAI (via WordPress AI Client + AI Provider for OpenAI, and FLOSC Whisper STT)
 Chat: when this flow attaches OpenAI, FLOSC sends prompts through `wp_ai_client_prompt()` to the official AI Provider for OpenAI plugin, which communicates with OpenAI. FLOSC does not call OpenAI chat endpoints itself.
-Model list: when an administrator clicks "Fetch models this key can use", or runs the AI connection test, FLOSC requests https://api.openai.com/v1/models directly so the saved key can be offered the models it is entitled to. Only the API key is sent; no visitor or site content is included.
 Whisper: when OpenAI Whisper is selected as the STT provider, FLOSC transcribes audio at https://api.openai.com/v1/audio/transcriptions (the official OpenAI provider plugin does not implement transcription).
 Data sent: visitor prompt text, conversation context, and model parameters for chat; uploaded audio payloads for Whisper.
 Service terms: https://openai.com/policies/terms-of-use
 Privacy policy: https://openai.com/policies/privacy-policy
 
 2. Anthropic (via WordPress AI Client + AI Provider for Anthropic)
-When this flow attaches Anthropic, FLOSC sends prompts (including RAG tool declarations) through `wp_ai_client_prompt()` to the official AI Provider for Anthropic plugin, which communicates with Anthropic. FLOSC does not call Anthropic chat endpoints itself.
-Model list: when an administrator clicks "Fetch models this key can use", or runs the AI connection test, FLOSC requests https://api.anthropic.com/v1/models directly so the saved key can be offered the models it is entitled to. Only the API key and the anthropic-version header are sent; no visitor or site content is included.
-Model description: when an administrator clicks "Describe this model", FLOSC requests https://api.anthropic.com/v1/models/{model_id} to read that model's context window, maximum reply length and capabilities. Only the API key and the anthropic-version header are sent.
+When this flow attaches Anthropic, FLOSC sends prompts (including RAG tool declarations) through `wp_ai_client_prompt()` to the official AI Provider for Anthropic plugin, which communicates with Anthropic. FLOSC does not call Anthropic endpoints itself.
 Data sent: visitor prompt text, conversation context, model parameters, and tool results when RAG is active.
 Service terms: https://www.anthropic.com/legal/consumer-terms
 Privacy policy: https://www.anthropic.com/legal/privacy
 
 3. xAI (for AI chat responses)
-Endpoints: https://api.x.ai/v1/chat/completions and https://api.x.ai/v1/language-models
-Purpose: generate real-time AI chat responses when xAI/Grok is selected as the AI provider. There is no official WordPress xAI provider plugin yet, so this hop is FLOSC-owned. The language-models endpoint is requested only when an administrator clicks "Fetch models this key can use" or runs the AI connection test, to list the chat models the saved key can use.
-Data sent: visitor prompt text, conversation context, and model parameters for chat; only the API key for the model list.
+Endpoint: https://api.x.ai/v1/chat/completions
+Purpose: generate real-time AI chat responses when xAI/Grok is selected as the AI provider. There is no official WordPress xAI provider plugin yet, so this hop is FLOSC-owned.
+Data sent: visitor prompt text, conversation context, and model parameters.
 Service terms: https://x.ai/legal/terms-of-service
 Privacy policy: https://x.ai/legal/privacy-policy
 
 4. Google Gemini (via WordPress AI Client + AI Provider for Google)
 When this flow attaches Gemini, FLOSC sends prompts through `wp_ai_client_prompt()` to the official AI Provider for Google plugin, which communicates with Google. FLOSC does not call Gemini generateContent itself. The compiled personality profile is sent as the system instruction.
-Model list: when an administrator clicks "Fetch models this key can use", or runs the AI connection test, FLOSC requests https://generativelanguage.googleapis.com/v1beta/models directly so the saved key can be offered the models it is entitled to. Only the API key is sent; no visitor or site content is included.
 Data sent: visitor prompt text, conversation context, and model parameters.
 Service terms: https://developers.google.com/terms
 Privacy policy: https://policies.google.com/privacy

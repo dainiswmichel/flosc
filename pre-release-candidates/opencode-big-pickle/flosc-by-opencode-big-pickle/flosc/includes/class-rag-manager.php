@@ -147,7 +147,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC RAG: Input - " . wp_
                 default:
                     return "Unknown tool: {$tool_name}";
             }
-        } catch ( Throwable $e ) {
+        } catch (Exception $e) {
             if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC RAG Error: " . $e->getMessage());
             return "Error executing search: " . $e->getMessage();
         }

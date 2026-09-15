@@ -151,10 +151,73 @@ if (!function_exists('flosc_permalink_status_indicator')) {
  * @param string $flosc_ivr_filename
  * @return string
  */
-// flosc_resolve_flow_option_key_for_ivr() now lives in
-// includes/filesystem/flosc-data-paths.php, loaded before admin and admin-ajax
-// alike, so a key saved over AJAX lands in the same row this page reads.
+if (!function_exists('flosc_resolve_flow_option_key_for_ivr')) {
+    function flosc_resolve_flow_option_key_for_ivr($flosc_ivr_filename) {
+        $flosc_ivr_filename = basename((string) $flosc_ivr_filename);
+        $target_stem = sanitize_key(pathinfo($flosc_ivr_filename, PATHINFO_FILENAME));
+        $default_key = 'flosc_flow_' . $target_stem;
 
+        // Start with deterministic default key and score it conservatively.
+        $best_key = $default_key;
+        $best_score = -1;
+
+        // Scan flosc_flow_* (autoload=no) via cached prepared options scan.
+        $flosc_rows = function_exists( 'flosc_get_flow_option_rows' ) ? flosc_get_flow_option_rows() : array();
+        if ( ! is_array( $flosc_rows ) || empty( $flosc_rows ) ) {
+            return $default_key;
+        }
+
+        foreach ( $flosc_rows as $flosc_row ) {
+            $option_name = (string) ( $flosc_row['option_name'] ?? '' );
+            if ( $option_name === '' || strpos( $option_name, 'flosc_flow_' ) !== 0 ) {
+                continue;
+            }
+
+            $flosc_settings = maybe_unserialize( $flosc_row['option_value'] ?? '' );
+            if ( ! is_array( $flosc_settings ) ) {
+                continue;
+            }
+
+            $active = basename((string) ($flosc_settings['active_ivr_file'] ?? ''));
+            $primary = basename((string) ($flosc_settings['ivr_file'] ?? ''));
+            $matches_active = ($active !== '' && $active === $flosc_ivr_filename);
+            $matches_primary = ($primary !== '' && $primary === $flosc_ivr_filename);
+
+            // Only consider keys that are explicitly tied to this IVR filename.
+            if (!$matches_active && !$matches_primary && $option_name !== $default_key) {
+                continue;
+            }
+
+            $message_count = 0;
+            if (function_exists('flosc_flow_get_messages') && is_array($flosc_settings)) {
+                $message_count = count(flosc_flow_get_messages($flosc_settings));
+            } elseif (isset($flosc_settings['flow_messages']) && is_array($flosc_settings['flow_messages'])) {
+                $message_count = count($flosc_settings['flow_messages']);
+            }
+
+            $score = 0;
+            // Prefer rows explicitly bound to this IVR file over a plain default
+            // key, because legacy duplicate rows can leave default keys stale.
+            if ($matches_primary) {
+                $score += 2000;
+            }
+            if ($matches_active) {
+                $score += 1800;
+            }
+            if ($option_name === $default_key) {
+                $score += 200;
+            }
+            $score += min($message_count, 200);
+
+            if ($score > $best_score) {
+                $best_score = $score;
+                $best_key = $option_name;
+            }
+        }
+
+        return $best_key;
+    }
+}
 
 /**
  * §10: Allowlist of legitimate per-flow option keys.
@@ -196,7 +259,7 @@ if (!empty($flosc_files)) {
 // so the same flow file can appear twice. Keep one entry per filename.
 $flosc_ivr_files = array_values( array_unique( $flosc_ivr_files ) );
 
-$flosc_get_early = isset( $_GET ) && is_array( $_GET ) ? wp_unslash( $_GET ) : array(); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+$flosc_get_early = isset( $_GET ) && is_array( $_GET ) ? wp_unslash( $_GET ) : array(); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only initial tab/IVR selection; no state change.
 $flosc_keep_ivr  = isset( $flosc_get_early['ivr'] ) ? sanitize_file_name( (string) $flosc_get_early['ivr'] ) : '';
 if ( $flosc_keep_ivr === '' && is_user_logged_in() ) {
     $flosc_keep_ivr = sanitize_file_name( (string) get_user_meta( get_current_user_id(), '_flosc_admin_default_ivr', true ) );
@@ -646,10 +709,6 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
             $flosc_is_textarea = in_array($flosc_setting_key, $flosc_textarea_flow_keys, true)
                 || strpos($flosc_setting_key, 'quiz_content_') === 0
                 || strpos($flosc_setting_key, '_template_') !== false
-                // The AI request per provider: one parameter per line, so the
-                // newlines are the format. sanitize_text_field would collapse
-                // a four-line request into one unreadable line and lose it.
-                || (bool) preg_match('/^ai_[a-z0-9_]+_params$/', $flosc_setting_key)
                 || substr($flosc_setting_key, -5) === '_body'; // email bodies (guest/member/newsletter) — preserve newlines
             if (in_array($flosc_setting_key, $flosc_identity_html_keys, true)) {
                 $flosc_new_settings[$flosc_setting_key] = wp_kses_post($flosc_value);
@@ -712,17 +771,6 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
             $flosc_new_settings['logout_farewell_message'] = sanitize_textarea_field($flosc_new_settings['logout_farewell_message']);
         }
     }
-    // The AI tab's parameter box is the request; Temperature and Max Tokens are
-    // a way of writing into it. So after a save the fields must show what the
-    // text says, or the page displays one number and sends another.
-    if ($flosc_active_tab === 'ai' && function_exists('flosc_reconcile_model_parameters')) {
-        $flosc_param_provider = sanitize_key((string) ($flosc_new_settings['ai_provider'] ?? ''));
-
-        if ($flosc_param_provider !== '') {
-            $flosc_new_settings = flosc_reconcile_model_parameters($flosc_new_settings, $flosc_param_provider);
-        }
-    }
-
     if ($flosc_active_tab === 'engagement') {
         if (isset($flosc_new_settings['guest_access_days'])) {
             $flosc_new_settings['guest_access_days'] = max(0, min(365, intval($flosc_new_settings['guest_access_days'])));
@@ -1836,14 +1884,6 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
     // Save flow settings (ALL tabs now per-flow)
     update_option($flosc_settings_key, $flosc_new_settings);
 
-    // Record the save in its own option, after the write it reports on. Keeping
-    // it inside $flosc_new_settings made it one more key in a bag that is
-    // rebuilt from POST, normalised on load and seeded when partial — a record
-    // of whether a write happened must not ride on the thing being written.
-    if (function_exists('flosc_stamp_flow_saved')) {
-        flosc_stamp_flow_saved($flosc_selected_ivr);
-    }
-
     // floscAvailableProviders: non-empty keys on this flow become available install-wide.
     if ( function_exists( 'flosc_available_providers_promote_from_flow' ) ) {
         flosc_available_providers_promote_from_flow( $flosc_new_settings );
@@ -2140,24 +2180,17 @@ if (function_exists('wp_add_inline_style')) {
             'administration'=> 'Administration',
             'documentation' => '📖 Docs',
             'da1'           => 'DA1',
-            'starter-packs' => 'Starter Packs',
         ];
         if (!$flosc_can_view_administration) {
             unset($tabs['administration']);
         }
-        // Tabs that are global rather than per-flow do not carry the flow
-        // selection, so their URL never implies Switch Flow changes what they do.
-        $flosc_global_tabs = ['starter-packs'];
-
         foreach ($tabs as $flosc_tab_id => $flosc_tab_label):
-            $flosc_tab_args = ['page' => 'flosc-settings', 'tab' => $flosc_tab_id];
-
-            if (!in_array($flosc_tab_id, $flosc_global_tabs, true)) {
-                $flosc_tab_args['ivr']  = $flosc_selected_ivr;
-                $flosc_tab_args['view'] = $flosc_identity_view;
-            }
-
-            $flosc_tab_url = add_query_arg($flosc_tab_args, admin_url('admin.php'));
+            $flosc_tab_url = add_query_arg([
+                'page' => 'flosc-settings',
+                'ivr' => $flosc_selected_ivr,
+                'tab' => $flosc_tab_id,
+                'view' => $flosc_identity_view,
+            ], admin_url('admin.php'));
         ?>
             <a href="<?php echo esc_url($flosc_tab_url); ?>" 
                class="nav-tab <?php
@@ -2170,12 +2203,8 @@ if (function_exists('wp_add_inline_style')) {
         <?php endforeach; ?>
     </nav>
 
-    <?php if ($flosc_active_tab === 'da1' || $flosc_active_tab === 'starter-packs'): ?>
-        <?php if ($flosc_active_tab === 'da1'): ?>
-            <?php include FLOSC_PLUGIN_DIR . 'admin/da1.php'; ?>
-        <?php else: ?>
-            <?php include FLOSC_PLUGIN_DIR . 'admin/starter-packs.php'; ?>
-        <?php endif; ?>
+    <?php if ($flosc_active_tab === 'da1'): ?>
+        <?php include FLOSC_PLUGIN_DIR . 'admin/da1.php'; ?>
         <?php flosc_tab_footer(); ?>
 </div>
         <?php return; ?>
@@ -2386,12 +2415,10 @@ if (function_exists('wp_add_inline_style')) {
                     $flosc_status_badge_class = 'flosc-flow-status-badge' . ( $flosc_status_value === 'active' ? ' is-active' : ' is-draft' );
                 ?>
                 
-                <details class="<?php echo esc_attr( $flosc_flow_block_classes ); ?>" id="<?php echo esc_attr( 'flosc-flow-card-' . sanitize_key( pathinfo( $flosc_ivr_file, PATHINFO_FILENAME ) ) ); ?>" <?php if ( $flosc_is_current ) : ?>open<?php endif; ?>>
+                <div class="<?php echo esc_attr( $flosc_flow_block_classes ); ?>">
                     
-                    <!-- Flow header. Doubles as the card's summary so a long list
-                         of flows reads as a list, and the accordion memory can
-                         keep each one the way the operator left it. -->
-                    <summary class="flosc-flow-block__header">
+                    <!-- Flow Header with IVR file -->
+                    <div class="flosc-flow-block__header">
                         <div>
                             <h3 class="flosc-flow-block__title">
                                 <?php echo esc_html($flosc_settings['name'] ?? $flosc_ivr_file); ?>
@@ -2408,7 +2435,7 @@ if (function_exists('wp_add_inline_style')) {
                                 <?php echo esc_html(ucfirst($flosc_status_value)); ?>
                             </span>
                         </div>
-                    </summary>
+                    </div>
                     
                     <!-- URL Mapping Summary -->
                     <div class="flosc-flow-block__url-box">
@@ -2570,7 +2597,7 @@ if (function_exists('wp_add_inline_style')) {
                             Save <?php echo esc_html($flosc_settings['name'] ?? $flosc_ivr_file); ?>
                         </button>
                     </div>
-                </details>
+                </div>
                 
                 <?php endforeach; ?>
                 
@@ -2951,80 +2978,11 @@ if (function_exists('wp_add_inline_style')) {
         <?php endif; ?>
 
         <?php if ($flosc_active_tab !== 'documentation' && $flosc_active_tab !== 'autoprompts' && $flosc_active_tab !== 'da1' && $flosc_active_tab !== 'trajectories' && $flosc_active_tab !== 'concierge'): ?>
-        <?php
-        /*
-         * Submit the settings form from script rather than relying on the
-         * button's form="" attribute.
-         *
-         * The AI tab ends #flosc-settings-form partway down the page so its
-         * inline admin-post forms are siblings rather than nested ones, which
-         * leaves this button outside the form it saves. The form attribute is
-         * the standard answer to that and it is still on the button — but on
-         * this page it was not producing a submit at all: pressing Save did
-         * nothing, no request left the browser, and no amount of reading the
-         * markup explained why. So the association is made directly instead of
-         * being asked for, which does not depend on how any parser resolved
-         * the surrounding tags.
-         *
-         * The form posts exactly the fields it contains, the same set a native
-         * submit would have sent. flosc_save rides along as a hidden field
-         * because form.submit() does not carry the pressed button's own name.
-         */
-        wp_add_inline_script(
-            'flosc-admin',
-            "document.addEventListener('click', function (e) {\n"
-            . "    var t = e.target;\n"
-            . "    var btn = (t && t.closest) ? t.closest('button[name=\"flosc_save\"]') : null;\n"
-            . "    if (!btn || btn.disabled) { return; }\n"
-            . "    var form = document.getElementById('flosc-settings-form');\n"
-            . "    if (!form) { return; }\n"
-            . "    e.preventDefault();\n"
-            . "    if (!form.querySelector('input[name=\"flosc_save\"]')) {\n"
-            . "        var f = document.createElement('input');\n"
-            . "        f.type = 'hidden'; f.name = 'flosc_save'; f.value = '1';\n"
-            . "        form.appendChild(f);\n"
-            . "    }\n"
-            . "    form.submit();\n"
-            . "});"
-        );
-        ?>
         <p class="submit flosc-settings-submit-row">
             <?php // form= keeps submit bound if AI tab closed #flosc-settings-form early (no nested forms). ?>
             <button type="submit" name="flosc_save" value="1" form="flosc-settings-form" class="button button-primary button-large">
                 Save Settings for <?php echo esc_html($flosc_flow_settings['identity']['name'] ?? $flosc_selected_ivr); ?>
             </button>
-            <?php
-            // Always say something. A line that appears only after the first
-            // save reads, on a flow that has never been saved, as the feature
-            // not working — which is the opposite of what it is here to do.
-            // Pressing Save always writes and always restamps, so the line
-            // always moves, and an operator can tell the press landed without
-            // having to remember what it said a moment ago.
-            $flosc_last_save = function_exists('flosc_flow_last_saved_at')
-                ? flosc_flow_last_saved_at($flosc_selected_ivr)
-                : '';
-
-            // Whether the save handler ran at all. It redirects with saved=1,
-            // so this separates "the button never submitted" from "it submitted
-            // and the write did not land" — two different faults that look
-            // identical on screen, and one screenshot now tells them apart.
-            $flosc_save_ran = isset($_GET['saved']) && '1' === sanitize_text_field(wp_unslash((string) $_GET['saved'])); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only display hint
-            ?>
-            <span class="flosc-last-save" id="flosc-last-save">
-                <?php
-                if ($flosc_last_save !== '') {
-                    printf(
-                        /* translators: %s: Michel Time Stamp of the last save, in UTC. */
-                        esc_html__( 'Last save: %s', 'flosc' ),
-                        esc_html( $flosc_last_save )
-                    );
-                } elseif ($flosc_save_ran) {
-                    echo esc_html__( 'Saved, but this site did not keep the time it happened.', 'flosc' );
-                } else {
-                    echo esc_html__( 'Not saved from this page yet.', 'flosc' );
-                }
-                ?>
-            </span>
         </p>
         <?php endif; ?>
         

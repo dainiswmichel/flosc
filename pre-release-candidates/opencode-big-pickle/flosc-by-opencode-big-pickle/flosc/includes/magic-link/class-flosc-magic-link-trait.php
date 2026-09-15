@@ -129,9 +129,8 @@ trait FLOSC_Magic_Link_Trait {
             'flosc_sso_success',
             'redirect_to',
         ) as $flosc_qk ) {
-            $raw = filter_input( INPUT_GET, $flosc_qk, FILTER_UNSAFE_RAW );
-            if ( is_string( $raw ) && $raw !== '' ) {
-                $get[ $flosc_qk ] = wp_unslash( $raw );
+            if ( isset( $_GET[ $flosc_qk ] ) && is_string( $_GET[ $flosc_qk ] ) && $_GET[ $flosc_qk ] !== '' ) {
+                $get[ $flosc_qk ] = sanitize_text_field( wp_unslash( $_GET[ $flosc_qk ] ) );
             }
         }
 
@@ -1460,12 +1459,12 @@ trait FLOSC_Magic_Link_Trait {
             $ivr = sanitize_file_name( $this->current_ivr_file );
         }
         if ( $ivr === '' ) {
-            $ivr_in = filter_input( INPUT_POST, 'ivr', FILTER_DEFAULT );
-            if ( ! is_string( $ivr_in ) || $ivr_in === '' ) {
-                $ivr_in = filter_input( INPUT_GET, 'ivr', FILTER_DEFAULT );
+            $ivr_in = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
+            if ( $ivr_in === '' ) {
+                $ivr_in = isset( $_GET['ivr'] ) && is_string( $_GET['ivr'] ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
             }
-            if ( is_string( $ivr_in ) ) {
-                $ivr = sanitize_file_name( wp_unslash( $ivr_in ) );
+            if ( $ivr_in !== '' ) {
+                $ivr = $ivr_in;
             }
         }
         return add_query_arg(

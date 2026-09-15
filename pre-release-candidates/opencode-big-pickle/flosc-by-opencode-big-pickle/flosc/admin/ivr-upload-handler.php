@@ -594,28 +594,15 @@ if ( ! function_exists( 'flosc_portability_run_wxr_import' ) ) {
 			return new WP_Error( 'flosc_wxr_path', __( 'Staged WXR path is not inside this flow’s pack directory.', 'flosc' ) );
 		}
 
-		// Prefer the WordPress Importer plugin when present.
-		if ( ! class_exists( 'WP_Import' ) ) {
-			$importer_path = WP_PLUGIN_DIR . '/wordpress-importer/wordpress-importer.php';
-			if ( file_exists( $importer_path ) ) {
-				// phpcs:ignore WordPressVIPMinimum.Files.IncludingFile.UsingVariable -- known plugin path under WP_PLUGIN_DIR.
-				require_once $importer_path;
-			}
-		}
+		// The importer runs only when the WordPress Importer plugin is genuinely
+		// active and has bootstrapped WP_Import through its own normal load path.
+		// Nothing here hardcodes a plugin path or force-loads core import files,
+		// and no unactivated plugin code is included directly.
 		if ( ! class_exists( 'WP_Import' ) ) {
 			return new WP_Error(
 				'flosc_wxr_importer',
 				__( 'Install and activate the WordPress Importer plugin, then use Import posts again — or use Tools → Import.', 'flosc' )
 			);
-		}
-
-		if ( ! defined( 'WP_LOAD_IMPORTERS' ) ) {
-			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- WordPress core importer bootstrap flag.
-			define( 'WP_LOAD_IMPORTERS', true );
-		}
-		if ( ! function_exists( 'wordpress_importer_init' ) && function_exists( 'get_plugins' ) ) {
-			// Class may load without full bootstrap; try import.php helpers.
-			require_once ABSPATH . 'wp-admin/includes/import.php';
 		}
 
 		// Suppress HTML output from the importer UI classes.

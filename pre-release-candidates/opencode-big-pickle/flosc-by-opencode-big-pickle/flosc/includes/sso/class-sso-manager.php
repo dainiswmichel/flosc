@@ -372,9 +372,9 @@ class SSO_Manager {
      * auth modal so the user can try a different login method.
      */
     public function handle_sso_error_display() {
-        $err_raw = filter_input( INPUT_GET, 'flosc_sso_error', FILTER_UNSAFE_RAW );
-        if ( is_string( $err_raw ) && $err_raw !== '' ) {
-            $error_token = sanitize_key( wp_unslash( $err_raw ) );
+        $err_raw = isset( $_GET['flosc_sso_error'] ) && is_string( $_GET['flosc_sso_error'] ) ? sanitize_key( wp_unslash( $_GET['flosc_sso_error'] ) ) : '';
+        if ( $err_raw !== '' ) {
+            $error_token = $err_raw;
             if ($error_token === '') {
                 return;
             }

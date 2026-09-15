@@ -504,7 +504,7 @@ class FLOSC_Email {
     public function save_newsletter_profile_field($user_id) {
         if (!current_user_can('edit_user', $user_id)) return;
         // WP core verifies the profile-update nonce before these hooks fire.
-        $opted = (bool) filter_input( INPUT_POST, 'flosc_newsletter_optin', FILTER_UNSAFE_RAW );
+        $opted = isset( $_POST['flosc_newsletter_optin'] ) && $_POST['flosc_newsletter_optin'] !== '';
         if ($opted) {
             $this->subscribe_to_newsletter($user_id);
         } else {

@@ -4,7 +4,7 @@
  * Plugin URI: https://flosc.ai
  * Description: (F)reeline --> (L)ogin --> (O)ffer --> (S)ale --> (C)ontent: try-before-you-buy WordPress journeys.
  * Version: 8.0.0
- * Requires at least: 7.0.4
+ * Requires at least: 7.0
  * Requires PHP: 7.4
  * Author: Dainis W. Michel
  * Author URI: https://dainis.net
@@ -84,10 +84,6 @@ require_once FLOSC_PLUGIN_DIR . 'includes/filesystem/class-flosc-filesystem.php'
 require_once FLOSC_PLUGIN_DIR . 'includes/filesystem/flosc-data-paths.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-available-providers.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-wp-ai-client.php';
-require_once FLOSC_PLUGIN_DIR . 'includes/ai/flosc-model-catalog.php';
-require_once FLOSC_PLUGIN_DIR . 'includes/ai/flosc-provider-profiles.php';
-require_once FLOSC_PLUGIN_DIR . 'includes/ai/flosc-model-parameters.php';
-require_once FLOSC_PLUGIN_DIR . 'includes/ai/flosc-provider-keys.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-personality-library.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-knowledge-bases.php';
 
@@ -345,7 +341,7 @@ function flosc_is_shipped_personality_sample_ivr( $ivr_filename_or_stem ) {
 function flosc_shipped_personality_sample_library_id( $ivr_filename_or_stem ) {
     $stem = sanitize_key( pathinfo( basename( (string) $ivr_filename_or_stem ), PATHINFO_FILENAME ) );
     $map  = array(
-        'flosc_default_ivr'            => 'friendly',
+        'flosc_default_ivr'            => 'starter',
         'flosc_default_friendly_ivr'   => 'friendly',
         'flosc_default_technical_ivr'  => 'tech',
     );
@@ -407,8 +403,7 @@ require_once FLOSC_PLUGIN_DIR . 'includes/tokens/class-flosc-visitor-token-trait
 require_once FLOSC_PLUGIN_DIR . 'includes/magic-link/class-flosc-magic-link-trait.php';
 // FLOSC_Filesystem already required above (before flosc-data-paths.php).
 require_once FLOSC_PLUGIN_DIR . 'includes/request-guard/class-flosc-request-guard.php';
-require_once FLOSC_PLUGIN_DIR . 'includes/da1/class-flosc-da1-catalogs.php';
-require_once FLOSC_PLUGIN_DIR . 'includes/starter-packs/class-flosc-starter-packs.php';
+require_once FLOSC_PLUGIN_DIR . 'includes/da1/class-flosc-da1-compositions.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/chat-turn/trait-flosc-chat-turn.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/companion-mode/class-flosc-companion-mode.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/full-page-mode/class-flosc-full-page-mode.php';
@@ -437,7 +432,7 @@ class FLOSC_Framework {
     // Core components
     private $filesystem;
     private $request_guard;
-    private $da1_catalogs;
+    private $da1_compositions;
     private $companion_mode;
     private $full_page_mode;
     private $first_party_auth;
@@ -569,44 +564,8 @@ class FLOSC_Framework {
         return $this->first_party_auth->ajax_logout();
     }
 
-    /**
-     * Invalidate every FLOSC token a user holds. Called on password reset.
-     *
-     * @param WP_User|int $user The user whose tokens end here.
-     */
-    public function revoke_flosc_auth_tokens_for_user($user) {
-        $user_id = ($user instanceof WP_User) ? (int) $user->ID : absint($user);
-
-        if ($user_id) {
-            $this->first_party_auth->revoke_flosc_auth_tokens($user_id);
-        }
-    }
-
-    /**
-     * Invalidate FLOSC tokens when a profile update changed the password.
-     *
-     * profile_update fires for every profile save, so the old record is
-     * compared rather than revoking on a changed nickname.
-     *
-     * @param int     $user_id       The user being updated.
-     * @param WP_User $old_user_data Their record before the update.
-     */
-    public function revoke_flosc_auth_tokens_on_password_change($user_id, $old_user_data = null) {
-        $user_id = absint($user_id);
-
-        if (!$user_id || !($old_user_data instanceof WP_User)) {
-            return;
-        }
-
-        $user = get_userdata($user_id);
-
-        if ($user && $user->user_pass !== $old_user_data->user_pass) {
-            $this->first_party_auth->revoke_flosc_auth_tokens($user_id);
-        }
-    }
-
-    public function clear_flosc_auth_token($user_id = 0) {
-        return $this->first_party_auth->clear_flosc_auth_token($user_id);
+    public function clear_flosc_auth_token() {
+        return $this->first_party_auth->clear_flosc_auth_token();
     }
 
     public function set_entry_flow_cookie($flow_id) {
@@ -896,62 +855,6 @@ class FLOSC_Framework {
         return $this->token_ledger->apply_member_token_grant_on_access($user_id, $purchase_data);
     }
 
-    /**
-     * Chat Logs journey mark: this account came into existence just now.
-     *
-     * Hooked to WordPress core's user_register. Observes only -- it queues a note
-     * on the user that the next logged chat turn writes into their thread as "+G".
-     * Nothing about registration itself is changed or intercepted.
-     *
-     * The account is not flow-specific, so the mark is queued account-wide and is
-     * redeemed by whichever flow the person is chatting on.
-     *
-     * @param int $user_id Newly created user.
-     * @return void
-     */
-    public function flosc_mark_journey_account_created($user_id) {
-        if (!class_exists('FLOSC_Chat_Logger')) {
-            return;
-        }
-        FLOSC_Chat_Logger::flosc_queue_journey_mark((int) $user_id, '+G', '');
-    }
-
-    /**
-     * Chat Logs journey mark: this user became a member of a flow just now.
-     *
-     * Hooked to flosc_member_access_granted, which every purchase path reaches via
-     * grant_member_access(). Observes only -- the entitlement is already written by
-     * the time this runs.
-     *
-     * Membership is per-flow, so the mark is queued against the flow's stem and is
-     * only redeemed by a turn on that flow. Two callers fire this action with
-     * different second arguments -- an array of purchase data, and a plain string
-     * reason -- so accept both and fall back to the current flow when no flow id
-     * is carried.
-     *
-     * @param int          $user_id
-     * @param array|string $purchase_data Purchase payload, or a reason string.
-     * @return void
-     */
-    public function flosc_mark_journey_member_granted($user_id, $purchase_data = []) {
-        if (!class_exists('FLOSC_Chat_Logger')) {
-            return;
-        }
-
-        $flow_raw = '';
-        if (is_array($purchase_data)) {
-            $flow_raw = (string) ($purchase_data['flow_id'] ?? '');
-        }
-        if ($flow_raw === '') {
-            $flow = $this->get_current_flow();
-            if (is_array($flow)) {
-                $flow_raw = (string) ($flow['ivr_file'] ?? $flow['ivr'] ?? $flow['id'] ?? '');
-            }
-        }
-
-        FLOSC_Chat_Logger::flosc_queue_journey_mark((int) $user_id, '+M', $flow_raw);
-    }
-
     public function flosc_user_should_receive_guest_tokens($user_id, $flow_id = '') {
         return $this->token_ledger->flosc_user_should_receive_guest_tokens($user_id, $flow_id);
     }
@@ -1125,7 +1028,7 @@ class FLOSC_Framework {
     private function load_dependencies() {
         $this->filesystem = new FLOSC_Filesystem();
         $this->request_guard = new FLOSC_Request_Guard();
-        $this->da1_catalogs = new FLOSC_DA1_Catalogs();
+        $this->da1_compositions = new FLOSC_DA1_Compositions();
         $this->companion_mode = new FLOSC_Companion_Mode($this);
         $this->full_page_mode = new FLOSC_Full_Page_Mode($this);
         $this->first_party_auth = new FLOSC_First_Party_Authentication($this);
@@ -1221,15 +1124,7 @@ class FLOSC_Framework {
         add_filter('rest_authentication_errors', [$this, 'allow_flosc_token_auth'], 99);
 
         // v3.0.0: Clear FLOSC auth token on logout
-        // wp_logout passes the id of the user who just logged out. Taking it
-        // is what lets logout revoke that user's FLOSC tokens server-side
-        // rather than only clearing this browser's copy.
-        add_action('wp_logout', [$this, 'clear_flosc_auth_token'], 10, 1);
-
-        // A password reset ends every session that was opened under the old
-        // one. FLOSC tokens are sessions, so they end with it.
-        add_action('after_password_reset', [$this, 'revoke_flosc_auth_tokens_for_user'], 10, 1);
-        add_action('profile_update', [$this, 'revoke_flosc_auth_tokens_on_password_change'], 10, 2);
+        add_action('wp_logout', [$this, 'clear_flosc_auth_token']);
 
         // Specialty roles (the product, etc.) are created when that product is
         // imported/configured — not on every request for a generic install.
@@ -1342,14 +1237,7 @@ class FLOSC_Framework {
 
             // Only pin when the file the old fallback pointed at actually exists.
             if (file_exists($flosc_da1_legacy_file) && function_exists('flosc_data_dir')) {
-                // Flows are named *_ivr.md. Every .md beside them is not a flow:
-                // the data directory also holds this plugin's own backups —
-                // dainis_net_ivr_bak_companion_hubs_20260807.md,
-                // ivr-backup-2026-07-03_05-48-20.md — and an earlier build of
-                // this migration pinned a catalog to each of them, which is why
-                // DA1's "Attributed to" list has been naming files Switch Flow
-                // correctly refuses to show.
-                $flosc_da1_flow_files = glob(trailingslashit(flosc_data_dir()) . '*_ivr.md');
+                $flosc_da1_flow_files = glob(trailingslashit(flosc_data_dir()) . '*.md');
                 if (is_array($flosc_da1_flow_files)) {
                     foreach ($flosc_da1_flow_files as $flosc_da1_flow_path) {
                         $flosc_da1_flow_name = basename($flosc_da1_flow_path);
@@ -1362,23 +1250,6 @@ class FLOSC_Framework {
             }
 
             update_option('flosc_da1_explicit_catalogs_v800', true);
-        }
-
-        // v8.0.0: clear up after the migration above, on sites that already ran
-        // its earlier form. This removes attribution records naming files that
-        // are not flows; it never touches a catalog, a .tsv, or a flow file.
-        if (!get_option('flosc_da1_assignments_pruned_v800')) {
-            $flosc_da1_stored = get_option('flosc_da1_flow_catalogs', []);
-
-            if (is_array($flosc_da1_stored) && function_exists('flosc_da1_prune_flow_assignments')) {
-                $flosc_da1_pruned = flosc_da1_prune_flow_assignments($flosc_da1_stored);
-
-                if ($flosc_da1_pruned !== $flosc_da1_stored) {
-                    update_option('flosc_da1_flow_catalogs', $flosc_da1_pruned, false);
-                }
-            }
-
-            update_option('flosc_da1_assignments_pruned_v800', true);
         }
 
         // v8.0.0: Upgrade is the profile-bar feature button — strip purchase rows from guest/member menus.
@@ -1423,14 +1294,6 @@ class FLOSC_Framework {
         add_action('flosc_member_access_granted', [$this, 'dispatch_member_welcome_email'], 10, 2);
         // G→M additive token grant (remaining + member_token_grant), once per flow
         add_action('flosc_member_access_granted', [$this, 'apply_member_token_grant_on_access'], 15, 2);
-        // Chat Logs journey marks. These only observe -- they queue a note that the
-        // next logged turn turns into a row -- so no auth or purchase path changes.
-        // WordPress fires user_register from wp_insert_user(), which every FLOSC
-        // account-creation path goes through (wp_create_user() calls it), so one
-        // listener covers first-party registration, SSO linking, MagicLink and the
-        // purchase-driven creates without touching any of them.
-        add_action('user_register', [$this, 'flosc_mark_journey_account_created'], 20, 1);
-        add_action('flosc_member_access_granted', [$this, 'flosc_mark_journey_member_granted'], 20, 2);
         // Newsletter opt-in profile checkbox (optional lead-gen)
         add_action('show_user_profile', [$this, 'render_newsletter_profile_field']);
         add_action('edit_user_profile', [$this, 'render_newsletter_profile_field']);
@@ -1482,12 +1345,6 @@ class FLOSC_Framework {
 
         // v1.9.0: AI connection test AJAX
         add_action('wp_ajax_flosc_test_ai_connection', [$this, 'ajax_test_ai_connection']);
-        add_action('wp_ajax_flosc_fetch_ai_models', [$this, 'ajax_fetch_ai_models']);
-        add_action('wp_ajax_flosc_save_ai_provider_key', [$this, 'ajax_save_ai_provider_key']);
-        add_action('wp_ajax_flosc_save_ai_provider_model', [$this, 'ajax_save_ai_provider_model']);
-        add_action('wp_ajax_flosc_describe_ai_model', [$this, 'ajax_describe_ai_model']);
-        add_action('wp_ajax_flosc_explain_ai_parameter', [$this, 'ajax_explain_ai_parameter']);
-        add_action('wp_ajax_flosc_save_model_tuning', [$this, 'ajax_save_model_tuning']);
 
         // Admin: send Guest Access Link to any email (Register & Login tab)
         add_action('wp_ajax_flosc_send_guest_link', [$this, 'ajax_send_guest_link']);
@@ -3245,12 +3102,12 @@ The Team',
         }
 
         // Cookie is set by FLOSC during SSO handoff; not a form POST.
-        $pending_raw = filter_input( INPUT_COOKIE, 'flosc_pending_session', FILTER_UNSAFE_RAW );
+        $pending_raw = isset( $_COOKIE['flosc_pending_session'] ) ? wp_unslash( $_COOKIE['flosc_pending_session'] ) : '';
         if ( ! is_string( $pending_raw ) || $pending_raw === '' ) {
             return;
         }
 
-        $session_id = sanitize_text_field( urldecode( wp_unslash( $pending_raw ) ) );
+        $session_id = sanitize_text_field( urldecode( $pending_raw ) );
 
         // Clear the cookie immediately (one-time use)
         setcookie('flosc_pending_session', '', time() - 3600, '/');
@@ -3920,31 +3777,54 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
     
 
 
-    private function flosc_build_da1_catalog_reply($message, $flow_id, $ivr_file, $access_level = 'visitor') {
-        return $this->da1_catalogs->build_catalog_reply($message, $flow_id, $ivr_file, $access_level);
+    private function flosc_build_da1_composition_reply($message, $flow_id, $ivr_file) {
+        return $this->da1_compositions->build_composition_reply($message, $flow_id, $ivr_file);
     }
 
-    private function flosc_is_catalog_query($message, $flow_id = '', $ivr_file = '', $access_level = 'visitor') {
-        $rows = $this->da1_catalogs->load_rows_for_flow($flow_id, $ivr_file, $access_level);
-        $items = $this->da1_catalogs->extract_items($rows);
-        return $this->da1_catalogs->is_catalog_query($message, $items);
+    private function flosc_is_composition_query($message) {
+        return $this->da1_compositions->is_composition_query($message);
     }
 
-    private function flosc_load_da1_rows_for_flow($flow_id, $ivr_file, $access_level = 'visitor') {
-        return $this->da1_catalogs->load_rows_for_flow($flow_id, $ivr_file, $access_level);
+    private function flosc_da1_is_count_request($message) {
+        return $this->da1_compositions->is_count_request($message);
+    }
+
+    private function flosc_da1_is_full_list_request($message) {
+        return $this->da1_compositions->is_full_list_request($message);
+    }
+
+    private function flosc_da1_detect_batch_size($message) {
+        return $this->da1_compositions->detect_batch_size($message);
+    }
+
+    private function flosc_da1_get_works_list_url() {
+        return $this->da1_compositions->get_works_list_url();
+    }
+
+    private function flosc_load_da1_rows_for_flow($flow_id, $ivr_file) {
+        return $this->da1_compositions->load_rows_for_flow($flow_id, $ivr_file);
+    }
+
+    private function flosc_extract_da1_composition_items($rows) {
+        return $this->da1_compositions->extract_composition_items($rows);
+    }
+
+    private function flosc_da1_extract_primary_media_url($text) {
+        return $this->da1_compositions->extract_primary_media_url($text);
     }
 
     private function flosc_da1_parse_tsv_content($content) {
-        return $this->da1_catalogs->parse_tsv_content($content);
+        return $this->da1_compositions->parse_tsv_content($content);
     }
 
     private function flosc_shorten_text($text, $limit) {
-        return $this->da1_catalogs->shorten_text($text, $limit);
+        return $this->da1_compositions->shorten_text($text, $limit);
     }
 
     private function flosc_limit_chat_response_length($text) {
-        return $this->da1_catalogs->limit_chat_response_length($text);
+        return $this->da1_compositions->limit_chat_response_length($text);
     }
+
 
     private function flosc_enforce_no_hedge_response($response_text, $user_message, $flow_id, $ivr_file, $phase, $eval_context) {
         $response_text = trim((string) $response_text);
@@ -3957,6 +3837,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
     }
 
     private function flosc_contains_forbidden_hedge($text) {
+        $text = (string) $text;
         $patterns = [
             '/\bi\s+don\'t\s+have\b[^\n]{0,160}\b(information|info|context|details|data|catalog|count|biography|bio|configured|system)\b/i',
             '/\bi\s+do\s+not\s+have\b[^\n]{0,160}\b(information|info|context|details|data|catalog|count|biography|bio|configured|system)\b/i',
@@ -3966,7 +3847,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
         ];
 
         foreach ($patterns as $pattern) {
-            if (preg_match($pattern, (string) $text)) {
+            if (preg_match($pattern, $text)) {
                 return true;
             }
         }
@@ -3977,17 +3858,11 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
     private function flosc_build_professional_replacement($user_message, $flow_id, $ivr_file, $phase, $eval_context) {
         $user_message = (string) $user_message;
 
-        $flosc_da1_access_level = is_array($eval_context)
-            ? (string) ($eval_context['access_level'] ?? 'visitor')
-            : 'visitor';
-        $catalog_reply = $this->flosc_build_da1_catalog_reply(
-            $user_message,
-            $flow_id,
-            $ivr_file,
-            $flosc_da1_access_level
-        );
-        if ($catalog_reply !== '') {
-            return $catalog_reply;
+        if ($this->flosc_is_composition_query($user_message)) {
+            $catalog_reply = $this->flosc_build_da1_composition_reply($user_message, $flow_id, $ivr_file);
+            if ($catalog_reply !== '') {
+                return $catalog_reply;
+            }
         }
 
         if ($this->flosc_is_bio_query($user_message)) {
@@ -4025,7 +3900,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
             return $default_response;
         }
 
-        return 'I can help with a direct answer. Ask about the catalog, a specific item, a creator, subject, category, tag, or a few recommendations.';
+        return 'I can help with a direct answer. Ask for biography, resume link, catalog count, full works list, or 1 to 3 composition recommendations.';
     }
 
     private function flosc_is_bio_query($message) {
@@ -4722,7 +4597,7 @@ Example good response:
             return "RAG tools require {$plugin_name}. Install it from {$plugin_url}, then try again.";
         }
         
-        $model = flosc_get_setting('ai_anthropic_model', flosc_default_model('anthropic'));
+        $model = flosc_get_setting('ai_anthropic_model', 'claude-sonnet-4-5-20250929');
         $access_level = $user_context['access_level'] ?? 'visitor';
 
         $result = FLOSC_WP_AI_Client::generate_with_tools(
@@ -6405,9 +6280,6 @@ Example good response:
         }
 
         $session_id = absint($request->get_param('session_id'));
-        // Opaque per-conversation id the browser keeps across login, so client-UI
-        // turns logged before someone signs in group with the ones after.
-        $journey_id = FLOSC_Chat_Logger::flosc_sanitize_journey_id($request->get_param('journey_id'));
         $phase = sanitize_text_field((string) ($request->get_param('phase') ?? 'content'));
         $provider = sanitize_text_field((string) ($request->get_param('provider') ?? 'client'));
         $source = sanitize_text_field((string) ($request->get_param('response_source') ?? 'client_ui'));
@@ -6441,7 +6313,6 @@ Example good response:
             'phase'            => $phase !== '' ? $phase : 'content',
             'user_id'          => $user_id,
             'session_id'       => $session_id,
-            'journey_id'       => $journey_id,
             'user_message'     => $user_message,
             'ai_response'      => $ai_response,
             'provider'         => $provider !== '' ? $provider : 'client',
@@ -9776,335 +9647,6 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
      * v1.9.0: AJAX handler for AI connection test button in admin
      * Wraps handle_test_ai() for wp_ajax context
      */
-    /**
-     * Ask the selected provider which models this key can use, and say which
-     * of them the installed provider plugin can actually pin.
-     *
-     * @return void
-     */
-    public function ajax_fetch_ai_models() {
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(['message' => __('Unauthorized', 'flosc')], 403);
-        }
-
-        check_ajax_referer('flosc_test_ai', 'nonce');
-
-        $post     = wp_unslash($_POST);
-        $provider = isset($post['provider']) ? sanitize_key($post['provider']) : '';
-        $ivr      = isset($post['ivr']) ? sanitize_file_name($post['ivr']) : '';
-
-        // Same flow context the connection test establishes. admin-ajax has no
-        // URL to detect the flow from, so without this the per-flow key is
-        // invisible and the install-wide one answers in its place — the button
-        // would then report "no key saved", or list models for a different key,
-        // while the test standing next to it reads the right one.
-        if ($ivr !== '') {
-            $GLOBALS['flosc_current_ivr'] = $ivr;
-            $this->set_flow_context(pathinfo($ivr, PATHINFO_FILENAME));
-        }
-
-        // The key on screen, if there is one, outranks the saved key. Asking an
-        // operator to save a whole settings page before FLOSC will read a key
-        // sitting directly above the button is a loop with no purpose: paste,
-        // fetch, "no key saved".
-        $typed = isset($post['api_key']) ? trim((string) $post['api_key']) : '';
-
-        if ($typed !== '' && (strlen($typed) > 4096 || preg_match('/[\x00-\x1F\x7F]/', $typed))) {
-            wp_send_json_error(['message' => __('That API key contains characters an API key cannot contain.', 'flosc')]);
-        }
-
-        $api_key = $typed;
-
-        if ($api_key === '') {
-            $api_key = function_exists('flosc_get_provider_api_key')
-                ? flosc_get_provider_api_key($provider)
-                : (string) flosc_get_setting($provider . '_api_key', '');
-        }
-
-        $result = flosc_fetch_model_catalog($provider, (string) $api_key);
-
-        if (is_wp_error($result)) {
-            wp_send_json_error([
-                'message' => $result->get_error_message(),
-            ]);
-        }
-
-        wp_send_json_success($result);
-    }
-
-    /**
-     * Ask the provider which models this key can use — the test's first step.
-     *
-     * This is the one step that isolates the key from everything built on top
-     * of it:
-     *
-     *   the call succeeds  → the key reaches the provider. Whatever fails
-     *                        after this is not the key, and the returned ids
-     *                        are what the key is entitled to ask for.
-     *   the call is 401    → the key itself is the problem, said plainly,
-     *                        instead of a generation error that reads like one.
-     *
-     * It reports the provider's list and nothing more. Whether a given id then
-     * runs here is answered by the generation call this test makes next, so
-     * FLOSC never has to speculate about it in the operator's UI.
-     *
-     * @param string $provider FLOSC provider slug.
-     * @param string $api_key  The saved key.
-     * @return array<string,mixed>
-     */
-    private function probe_provider_models($provider, $api_key) {
-        if ((string) $api_key === '' || !function_exists('flosc_fetch_model_catalog')) {
-            return ['models_probed' => false];
-        }
-
-        $catalog = flosc_fetch_model_catalog($provider, (string) $api_key);
-
-        if (is_wp_error($catalog)) {
-            return [
-                'models_probed' => true,
-                'models_error'  => $catalog->get_error_message(),
-                'models_code'   => $catalog->get_error_code(),
-            ];
-        }
-
-        return [
-            'models_probed' => true,
-            'models'        => isset($catalog['models']) && is_array($catalog['models']) ? $catalog['models'] : [],
-        ];
-    }
-
-    /**
-     * Save one provider's API key on its own, without saving the whole tab.
-     *
-     * A key is the one setting an operator wants to commit the moment they
-     * paste it, and the only one where "did that save?" has to have an answer.
-     * The full-page Save is at the foot of a long tab and its confirmation
-     * banner renders at the top, so the answer arrived somewhere the operator
-     * was not looking. This writes the key, to this flow, and says so where
-     * the button is.
-     */
-    public function ajax_save_ai_provider_key() {
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(['message' => __('Unauthorized', 'flosc')], 403);
-        }
-
-        check_ajax_referer('flosc_test_ai', 'nonce');
-
-        $post     = wp_unslash($_POST);
-        $provider = isset($post['provider']) ? sanitize_key((string) $post['provider']) : '';
-        $ivr      = isset($post['ivr']) ? sanitize_file_name((string) $post['ivr']) : '';
-        $api_key  = isset($post['api_key']) ? trim((string) $post['api_key']) : '';
-
-        $stored = flosc_store_provider_api_key($ivr, $provider, $api_key);
-
-        if (is_wp_error($stored)) {
-            wp_send_json_error(['message' => $stored->get_error_message()], 400);
-        }
-
-        wp_send_json_success([
-            'provider' => $provider,
-            'suffix'   => $stored['suffix'],
-            'message'  => __('API key saved for this flow.', 'flosc'),
-        ]);
-    }
-
-    /**
-     * Save one provider's model id on its own.
-     *
-     * Choosing from the fetched list has to be the end of the job. A pick that
-     * only fills a form field, and is then lost unless the operator finds a
-     * page-wide Save, is not a choice — it is a suggestion.
-     */
-    public function ajax_save_ai_provider_model() {
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(['message' => __('Unauthorized', 'flosc')], 403);
-        }
-
-        check_ajax_referer('flosc_test_ai', 'nonce');
-
-        $post     = wp_unslash($_POST);
-        $provider = isset($post['provider']) ? sanitize_key((string) $post['provider']) : '';
-        $ivr      = isset($post['ivr']) ? sanitize_file_name((string) $post['ivr']) : '';
-        $model    = isset($post['model']) ? trim((string) $post['model']) : '';
-
-        $stored = flosc_store_provider_model($ivr, $provider, $model);
-
-        if (is_wp_error($stored)) {
-            wp_send_json_error(['message' => $stored->get_error_message()], 400);
-        }
-
-        wp_send_json_success([
-            'provider' => $provider,
-            'model'    => $stored['model'],
-            'message'  => __('Model saved for this flow.', 'flosc'),
-        ]);
-    }
-
-    /**
-     * Ask the provider to describe the chosen model, and report it verbatim.
-     *
-     * Everything shown comes from the provider. FLOSC adds no judgement about
-     * which model is better, and does not claim the list is complete —
-     * sampling support, for one, is not in it.
-     */
-    public function ajax_describe_ai_model() {
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(['message' => __('Unauthorized', 'flosc')], 403);
-        }
-
-        check_ajax_referer('flosc_test_ai', 'nonce');
-
-        $post     = wp_unslash($_POST);
-        $provider = isset($post['provider']) ? sanitize_key((string) $post['provider']) : '';
-        $ivr      = isset($post['ivr']) ? sanitize_file_name((string) $post['ivr']) : '';
-        $model    = isset($post['model']) ? trim((string) $post['model']) : '';
-        $typed    = isset($post['api_key']) ? trim((string) $post['api_key']) : '';
-
-        if ($ivr !== '') {
-            $GLOBALS['flosc_current_ivr'] = $ivr;
-            $this->set_flow_context(pathinfo($ivr, PATHINFO_FILENAME));
-        }
-
-        $api_key = $typed;
-
-        if ($api_key === '') {
-            $api_key = function_exists('flosc_get_provider_api_key')
-                ? flosc_get_provider_api_key($provider)
-                : (string) flosc_get_setting($provider . '_api_key', '');
-        }
-
-        $details = flosc_fetch_model_details($provider, (string) $api_key, $model);
-
-        if (is_wp_error($details)) {
-            wp_send_json_error(['message' => $details->get_error_message()]);
-        }
-
-        wp_send_json_success($details);
-    }
-
-    /**
-     * Ask the configured model what one of its own request parameters does.
-     *
-     * FLOSC ships notes on the parameters it has measured, and that list is out
-     * of date the day a provider adds one. This is the answer to that: the
-     * operator types a name FLOSC has never heard of, and the provider's own
-     * model is asked what it is. The answer is labelled as the model's, never
-     * as FLOSC's, because a model can be wrong about its own API and the
-     * operator has to know which of the two they are reading.
-     */
-    public function ajax_explain_ai_parameter() {
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(['message' => __('Unauthorized', 'flosc')], 403);
-        }
-
-        check_ajax_referer('flosc_test_ai', 'nonce');
-
-        $post  = wp_unslash($_POST);
-        $ivr   = isset($post['ivr']) ? sanitize_file_name((string) $post['ivr']) : '';
-        $param = isset($post['param']) ? trim((string) $post['param']) : '';
-
-        // A parameter name, not a prompt. Anything that is not one is refused
-        // rather than passed through to the provider as free text.
-        if ($param === '' || !preg_match('/^[A-Za-z0-9_.\[\]-]{1,64}$/', $param)) {
-            wp_send_json_error(['message' => __('That is not a parameter name.', 'flosc')]);
-        }
-
-        if ($ivr !== '') {
-            $GLOBALS['flosc_current_ivr'] = $ivr;
-            $this->set_flow_context(pathinfo($ivr, PATHINFO_FILENAME));
-        }
-
-        $provider = (string) flosc_get_setting('ai_provider', 'ivr');
-
-        if ($provider === '' || $provider === 'ivr') {
-            wp_send_json_error([
-                'message' => __('Pick an AI provider for this flow first — the answer comes from the provider\'s own model.', 'flosc'),
-            ]);
-        }
-
-        $model_setting_key = [
-            'openai'    => 'ai_openai_model',
-            'anthropic' => 'ai_anthropic_model',
-            'xai'       => 'ai_xai_model',
-            'gemini'    => 'ai_gemini_model',
-        ];
-        $model = isset($model_setting_key[$provider])
-            ? (string) flosc_get_setting($model_setting_key[$provider], '')
-            : '';
-
-        // Not the flow's personality. A factual question deserves the plainest
-        // system prompt available, and the flow's bot voice would only get in
-        // the way of it.
-        $system_prompt = 'You are answering a developer question about your own HTTP API. '
-            . 'Answer in at most four sentences of plain prose, no markdown, no code fences. '
-            . 'Say what the parameter does, what values are valid, and one situation it is worth setting. '
-            . 'If the named parameter is not part of this API, say so plainly in one sentence.';
-
-        $question = sprintf(
-            'In the %1$s API request body for model %2$s, what is the parameter "%3$s"?',
-            $provider,
-            $model !== '' ? $model : 'the model in use',
-            $param
-        );
-
-        $answer = $this->ai_chat_dispatch->get_response($question, $system_prompt, [], true);
-
-        if (is_wp_error($answer)) {
-            wp_send_json_error(['message' => $answer->get_error_message()]);
-        }
-
-        $answer = trim(wp_strip_all_tags((string) $answer));
-
-        if ($answer === '') {
-            wp_send_json_error(['message' => __('The model returned nothing.', 'flosc')]);
-        }
-
-        wp_send_json_success([
-            'param'    => $param,
-            'provider' => $provider,
-            'model'    => $model,
-            'answer'   => $answer,
-            'docs_url' => function_exists('flosc_provider_docs_url') ? flosc_provider_docs_url($provider) : '',
-        ]);
-    }
-
-    /**
-     * Save Step 2b where it is typed, rather than at the foot of the page.
-     */
-    public function ajax_save_model_tuning() {
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(['message' => __('Unauthorized', 'flosc')], 403);
-        }
-
-        check_ajax_referer('flosc_test_ai', 'nonce');
-
-        $post     = wp_unslash($_POST);
-        $ivr      = isset($post['ivr']) ? sanitize_file_name((string) $post['ivr']) : '';
-        $provider = isset($post['provider']) ? sanitize_key((string) $post['provider']) : '';
-
-        if (!function_exists('flosc_store_model_tuning')) {
-            wp_send_json_error(['message' => __('Model tuning storage is unavailable on this install.', 'flosc')]);
-        }
-
-        // Only what was posted is written. A field the form did not send is a
-        // field this save has no opinion about, and it is left as it stands.
-        $tuning = [];
-
-        foreach (['temperature', 'max_tokens', 'params'] as $field) {
-            if (isset($post[$field])) {
-                $tuning[$field] = (string) $post[$field];
-            }
-        }
-
-        $stored = flosc_store_model_tuning($ivr, $provider, $tuning);
-
-        if (is_wp_error($stored)) {
-            wp_send_json_error(['message' => $stored->get_error_message()]);
-        }
-
-        wp_send_json_success($stored);
-    }
-
     public function ajax_test_ai_connection() {
         $post = wp_unslash($_POST);
         if (!current_user_can('manage_options')) {
@@ -10170,11 +9712,6 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         ];
         $endpoint_url = $endpoint[$provider] ?? '';
 
-        // Step one: does this key reach the provider at all? Answering that
-        // before generation is attempted is what separates "the key is wrong"
-        // from "the key is fine and the model id is not carried here".
-        $model_probe = $this->probe_provider_models($provider, $key_raw);
-
         try {
             $ai_context = ['phase' => 'freeline', 'is_admin' => true];
             $system_prompt = $this->ai_chat_dispatch->build_system_prompt('freeline', $ai_context);
@@ -10182,7 +9719,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             $response_time = round((microtime(true) - $start_time) * 1000);
 
             if (is_wp_error($response)) {
-                wp_send_json_error(array_merge([
+                wp_send_json_error([
                     'message'           => $response->get_error_message(),
                     'provider'          => $provider,
                     'model'             => $configured_model,
@@ -10191,7 +9728,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
                     'api_key_suffix'    => $key_suffix,
                     'response_time'     => $response_time,
                     'flow_ivr'          => $ivr,
-                ], $model_probe));
+                ]);
             }
 
             $billing = method_exists($this->ai_chat_dispatch, 'get_last_billing_meta')
@@ -10216,24 +9753,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
                 $flow_label = pathinfo($ivr, PATHINFO_FILENAME);
             }
 
-            // Configured is what the flow stores. Applied is what this request
-            // actually carried. Reporting the first as the second is how the
-            // panel came to say a parameter was sent and could not be sent in
-            // the same breath.
-            $configured_params = function_exists('flosc_get_model_parameters')
-                ? array_keys(flosc_get_model_parameters($provider))
-                : [];
-            $applied = (class_exists('FLOSC_WP_AI_Client') && method_exists('FLOSC_WP_AI_Client', 'applied_parameters'))
-                ? FLOSC_WP_AI_Client::applied_parameters()
-                : [];
-            $unapplied = (class_exists('FLOSC_WP_AI_Client') && method_exists('FLOSC_WP_AI_Client', 'unapplied_parameters'))
-                ? FLOSC_WP_AI_Client::unapplied_parameters()
-                : [];
-
             wp_send_json_success([
-                'params_configured' => $configured_params,
-                'params_applied'    => $applied,
-                'params_unapplied' => $unapplied,
                 'provider'        => $provider,
                 'model'           => $model_used,
                 'model_configured'=> $configured_model,
@@ -10250,9 +9770,9 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
                 'flow_label'      => $flow_label,
                 'http_ok'         => true,
                 'test_message'    => $test_message,
-            ] + $model_probe);
+            ]);
         } catch (\Throwable $e) {
-            wp_send_json_error(array_merge([
+            wp_send_json_error([
                 'message'         => $e->getMessage(),
                 'provider'        => $provider,
                 'model'           => $configured_model,
@@ -10260,7 +9780,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
                 'api_key_present' => $key_present,
                 'api_key_suffix'  => $key_suffix,
                 'flow_ivr'        => $ivr,
-            ], $model_probe));
+            ]);
         }
     }
     public function ajax_flosc_get_chat_logs() {
@@ -11164,14 +10684,14 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         // Signed URL endpoint (exp + HMAC). Read query via filter_input — not a
         // state-changing POST; auth is signature and/or capability below.
         $user_id     = absint( (string) filter_input( INPUT_GET, 'user_id', FILTER_SANITIZE_NUMBER_INT ) );
-        $file_raw    = filter_input( INPUT_GET, 'file', FILTER_UNSAFE_RAW );
-        $file        = is_string( $file_raw ) ? sanitize_file_name( wp_unslash( $file_raw ) ) : '';
-        $is_download = (bool) filter_input( INPUT_GET, 'download', FILTER_UNSAFE_RAW );
+        $file_raw    = isset( $_GET['file'] ) ? wp_unslash( $_GET['file'] ) : '';
+        $file        = is_string( $file_raw ) ? sanitize_file_name( $file_raw ) : '';
+        $is_download = ! empty( $_GET['download'] );
         $expires     = absint( (string) filter_input( INPUT_GET, 'exp', FILTER_SANITIZE_NUMBER_INT ) );
-        $sig_raw     = filter_input( INPUT_GET, 'sig', FILTER_UNSAFE_RAW );
-        $sig         = is_string( $sig_raw ) ? strtolower( preg_replace( '/[^a-f0-9]/', '', wp_unslash( $sig_raw ) ) ) : '';
-        $session_raw = filter_input( INPUT_GET, 'session_id', FILTER_UNSAFE_RAW );
-        $session_id  = is_string( $session_raw ) ? sanitize_text_field( wp_unslash( $session_raw ) ) : '';
+        $sig_raw     = isset( $_GET['sig'] ) ? wp_unslash( $_GET['sig'] ) : '';
+        $sig         = is_string( $sig_raw ) ? strtolower( preg_replace( '/[^a-f0-9]/', '', $sig_raw ) ) : '';
+        $session_raw = isset( $_GET['session_id'] ) ? wp_unslash( $_GET['session_id'] ) : '';
+        $session_id  = is_string( $session_raw ) ? sanitize_text_field( $session_raw ) : '';
 
         if (!$user_id || !$file) {
             wp_die('Missing parameters', 400);
@@ -11216,9 +10736,9 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         }
 
         // Byte range for iOS Safari/WebKit <audio> probe (Range: bytes=0-1).
-        $http_range = filter_input( INPUT_SERVER, 'HTTP_RANGE', FILTER_UNSAFE_RAW );
+        $http_range = isset( $_SERVER['HTTP_RANGE'] ) ? wp_unslash( $_SERVER['HTTP_RANGE'] ) : null;
         $http_range = is_string( $http_range ) && $http_range !== ''
-            ? sanitize_text_field( wp_unslash( $http_range ) )
+            ? sanitize_text_field( $http_range )
             : null;
 
         $this->filesystem->stream_uploads_binary_range_and_exit(

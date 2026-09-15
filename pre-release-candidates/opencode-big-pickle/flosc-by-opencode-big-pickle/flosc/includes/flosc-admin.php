@@ -830,12 +830,9 @@ trait FLOSC_Admin_Trait {
             );
         }
 
-        $flosc_tab_raw  = filter_input( INPUT_GET, 'tab', FILTER_UNSAFE_RAW );
-        $flosc_tab      = is_string( $flosc_tab_raw ) ? sanitize_key( wp_unslash( $flosc_tab_raw ) ) : '';
-        $flosc_page_raw = filter_input( INPUT_GET, 'page', FILTER_UNSAFE_RAW );
-        $flosc_page     = is_string( $flosc_page_raw ) ? sanitize_key( wp_unslash( $flosc_page_raw ) ) : '';
-        $flosc_view_raw = filter_input( INPUT_GET, 'view', FILTER_UNSAFE_RAW );
-        $flosc_view     = is_string( $flosc_view_raw ) ? sanitize_key( wp_unslash( $flosc_view_raw ) ) : '';
+        $flosc_tab  = isset( $_GET['tab'] ) && is_string( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : '';
+        $flosc_page = isset( $_GET['page'] ) && is_string( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+        $flosc_view = isset( $_GET['view'] ) && is_string( $_GET['view'] ) ? sanitize_key( wp_unslash( $_GET['view'] ) ) : '';
         if ( $flosc_page === 'flosc-settings' && $flosc_tab === 'ai' && $flosc_view !== 'all' ) {
             if ( function_exists( 'flosc_enqueue_personality_builder_assets' ) ) {
                 flosc_enqueue_personality_builder_assets();
@@ -865,8 +862,7 @@ trait FLOSC_Admin_Trait {
          * The zone markup only renders on the "all" view of the Flow tab, so the
          * view is read here and the assets are skipped on the single-flow view.
          */
-        $flosc_view_raw = filter_input( INPUT_GET, 'view', FILTER_UNSAFE_RAW );
-        $flosc_view     = is_string( $flosc_view_raw ) ? sanitize_key( wp_unslash( $flosc_view_raw ) ) : '';
+        $flosc_view = isset( $_GET['view'] ) && is_string( $_GET['view'] ) ? sanitize_key( wp_unslash( $_GET['view'] ) ) : '';
 
         if ( $flosc_tab === 'flow' && $flosc_view === 'all' ) {
             $flosc_port_css = FLOSC_PLUGIN_DIR . 'assets/css/flosc-portability-admin.css';
@@ -980,9 +976,8 @@ trait FLOSC_Admin_Trait {
         }
 
         // Read-only admin menu routing (capability-checked below). No nonce: GET page
-        // slug only; never mutates options. filter_input avoids direct $_GET PHPCS noise.
-        $page_raw = filter_input(INPUT_GET, 'page', FILTER_UNSAFE_RAW);
-        $page     = is_string($page_raw) ? sanitize_key(wp_unslash($page_raw)) : '';
+        // slug only; never mutates options. Read via wp_unslash; sanitized next line.
+        $page = isset($_GET['page']) && is_string($_GET['page']) ? sanitize_key(wp_unslash($_GET['page'])) : '';
         if ($page === '' || $page === 'flosc-settings') {
             return;
         }
@@ -1031,13 +1026,11 @@ trait FLOSC_Admin_Trait {
             'page' => 'flosc-settings',
             'tab'  => $tab,
         ];
-        $ivr_raw = filter_input(INPUT_GET, 'ivr', FILTER_UNSAFE_RAW);
-        if (is_string($ivr_raw) && $ivr_raw !== '') {
-            $args['ivr'] = sanitize_file_name(wp_unslash($ivr_raw));
+        if ( isset($_GET['ivr']) && is_string($_GET['ivr']) && $_GET['ivr'] !== '' ) {
+            $args['ivr'] = sanitize_file_name(wp_unslash($_GET['ivr']));
         }
-        $view_raw = filter_input(INPUT_GET, 'view', FILTER_UNSAFE_RAW);
-        if (is_string($view_raw) && $view_raw !== '') {
-            $view = sanitize_text_field(wp_unslash($view_raw));
+        if ( isset($_GET['view']) && is_string($_GET['view']) && $_GET['view'] !== '' ) {
+            $view = sanitize_text_field(wp_unslash($_GET['view']));
             if (in_array($view, ['single', 'all'], true)) {
                 $args['view'] = $view;
             }
@@ -1056,8 +1049,7 @@ trait FLOSC_Admin_Trait {
             return;
         }
 
-        $page_raw = filter_input(INPUT_GET, 'page', FILTER_UNSAFE_RAW);
-        $page     = is_string($page_raw) ? sanitize_key(wp_unslash($page_raw)) : '';
+        $page = isset($_GET['page']) && is_string($_GET['page']) ? sanitize_key(wp_unslash($_GET['page'])) : '';
         if ($page !== 'flosc-settings') {
             return;
         }
@@ -1406,8 +1398,8 @@ trait FLOSC_Admin_Trait {
         ], $atts);
 
         $settings = $this->get_contact_form_settings((string) $atts['flow']);
-        $status_raw = filter_input( INPUT_GET, 'flosc_contact_status', FILTER_UNSAFE_RAW );
-        $status     = is_string( $status_raw ) ? sanitize_key( wp_unslash( $status_raw ) ) : '';
+        $status_raw = isset( $_GET['flosc_contact_status'] ) && is_string( $_GET['flosc_contact_status'] ) ? sanitize_key( wp_unslash( $_GET['flosc_contact_status'] ) ) : '';
+        $status     = $status_raw;
 
         wp_enqueue_style(
             'flosc-contact-form',

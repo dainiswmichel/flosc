@@ -795,21 +795,6 @@ function flosc_render_chat_session($flosc_s) {
         $t   = flosc_format_mts_utc((string) ($r['timestamp'] ?? ''));
         $src = (string) ($r['response_source'] ?? '');
 
-        // VGM state change — a divider, not a message. It has no speaker, so it
-        // gets no u-/b-/a- sequence number and does not count as a turn.
-        //   +G  account created just now      G  signed in, account already existed
-        //   +M  became a member just now      M  signed in, already a member here
-        if ($src === 'state_change') {
-            $thread .= '<div class="flosc-msg flosc-msg-state" title="row ' . $rid . '">'
-                . '<span class="flosc-msg-state-rule" aria-hidden="true"></span>'
-                . '<span class="flosc-msg-state-label">' . esc_html(trim($ar)) . '</span>'
-                . '<span class="flosc-msg-state-t">' . esc_html($t) . '</span>'
-                . '<span class="flosc-msg-state-rule" aria-hidden="true"></span>'
-                . '</div>';
-            $shown++;
-            continue;
-        }
-
         // Admin-joined human message — pale green, "Name (admin)" (italic), letter 'a'.
         if ($src === 'admin') {
             $a_seq++;
@@ -865,18 +850,8 @@ function flosc_render_chat_session($flosc_s) {
     // Admin-join composer — shown when the conversation has a deliverable session id
     // (visitors now carry one). Posting drops a pale-green "(admin)" line at the
     // bottom; the visitor's widget shows it on its next poll.
-    //
-    // A journey-grouped conversation is keyed by its journey id, but delivery
-    // still needs the numeric session id, so read it from deliver_session_id
-    // (which flosc_get_sessions() fills from the newest row that carries one).
-    // For a session-grouped conversation the two are the same value.
-    $flosc_deliver_session = intval($flosc_s['deliver_session_id'] ?? 0);
-    if ($flosc_deliver_session <= 0 && ($flosc_s['by'] ?? '') === 'session') {
-        $flosc_deliver_session = intval($flosc_s['value'] ?? 0);
-    }
-
     $composer = '';
-    if ($flosc_deliver_session > 0) {
+    if (($flosc_s['by'] ?? '') === 'session' && intval($flosc_s['value'] ?? 0) > 0) {
         $admin_name = wp_get_current_user()->display_name;
         if ($admin_name === '') {
             $admin_name = 'Admin';
@@ -998,12 +973,12 @@ function flosc_render_chat_session($flosc_s) {
                 . '<option value="bot">' . esc_html($bot_name) . '</option>'
             . '</select>'
             . '<input type="text" class="flosc-admin-join-input" placeholder="' . esc_attr('Type a message to join the chat…') . '">'
-            . '<button type="button" class="button button-small flosc-admin-join-send" data-session="' . esc_attr((string) $flosc_deliver_session) . '" data-flow="' . esc_attr($flosc_s['flow_id'] ?? '') . '">Send</button>'
+            . '<button type="button" class="button button-small flosc-admin-join-send" data-session="' . esc_attr($flosc_s['value']) . '" data-flow="' . esc_attr($flosc_s['flow_id'] ?? '') . '">Send</button>'
             . '</div>';
 
         $composer .= '<div class="flosc-admin-assign-tokens">'
             . '<input type="number" class="flosc-admin-token-amount" min="1" step="1" value="" placeholder="Token amount">'
-            . '<button type="button" class="button button-small flosc-admin-assign-send" data-session="' . esc_attr((string) $flosc_deliver_session) . '" data-flow="' . esc_attr($flosc_s['flow_id'] ?? '') . '">Assign Tokens</button>'
+            . '<button type="button" class="button button-small flosc-admin-assign-send" data-session="' . esc_attr($flosc_s['value']) . '" data-flow="' . esc_attr($flosc_s['flow_id'] ?? '') . '">Assign Tokens</button>'
             . '</div>';
     }
 

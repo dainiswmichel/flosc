@@ -11,58 +11,13 @@ if (!defined('ABSPATH')) {
 }
 
 trait FLOSC_Chat_Turn_Trait {
-    /**
-     * A visitor's turn must never end as WordPress fatal HTML inside a chat
-     * bubble. Everything below this point may touch third-party provider code,
-     * so the whole turn is wrapped: any Throwable becomes a controlled FLOSC
-     * reply, with the technical reason kept for the log rather than the visitor.
-     *
-     * @param WP_REST_Request $request
-     * @return WP_REST_Response|WP_Error
-     */
     public function handle_chat($request) {
-        try {
-            return $this->handle_chat_turn($request);
-        } catch (Throwable $e) {
-            if (function_exists('flosc_log')) {
-                flosc_log(sprintf(
-                    'Chat turn failed: %s in %s:%d — %s',
-                    get_class($e),
-                    $e->getFile(),
-                    $e->getLine(),
-                    $e->getMessage()
-                ));
-            }
-
-            $flosc_error_code = 'flosc_chat_turn_exception';
-            $flosc_friendly_message = __( 'Something went wrong on our side just then. Please try that again.', 'flosc' );
-
-            return new WP_REST_Response(
-                array(
-                    'success'    => false,
-                    'message'    => $flosc_friendly_message,
-                    'response'   => $flosc_friendly_message, // Backward compatibility.
-                    'error'      => $flosc_error_code,        // Backward compatibility / machine code.
-                    'error_code' => $flosc_error_code,
-                ),
-                200
-            );
-        }
-    }
-
-    private function handle_chat_turn($request) {
         $flosc_chat_start_time = microtime(true);
         $flosc_response_source = 'ivr'; // Track how response was generated
 
         $message = sanitize_text_field($request->get_param('message'));
         $session_id_raw = sanitize_text_field((string) ($request->get_param('session_id') ?? ''));
         $session_id = $this->flosc_normalize_session_id($session_id_raw);
-        // Opaque per-conversation id minted in the browser and kept across login.
-        // session_id changes at that moment (hashed visitor id -> numeric session
-        // id), so without this the chat log splits one conversation into two.
-        $journey_id = class_exists('FLOSC_Chat_Logger')
-            ? FLOSC_Chat_Logger::flosc_sanitize_journey_id($request->get_param('journey_id'))
-            : '';
         $context = $request->get_param('context') ?? [];
         if (is_array($context)) {
             if (isset($context['browsing_page_url'])) {
@@ -388,7 +343,6 @@ trait FLOSC_Chat_Turn_Trait {
                     'phase'           => $phase,
                     'user_id'         => 0,
                     'session_id'      => $session_id,
-                    'journey_id'      => $journey_id,
                     'user_message'    => $contact_log_message,
                     'ai_response'     => $thank_you_message,
                     'provider'        => 'ivr',
@@ -457,7 +411,6 @@ trait FLOSC_Chat_Turn_Trait {
                 'phase'           => $phase,
                 'user_id'         => 0,
                 'session_id'      => $session_id,
-                'journey_id'      => $journey_id,
                 'user_message'    => $contact_log_message,
                 'ai_response'     => $thank_you_message,
                 'provider'        => 'ivr',
@@ -505,7 +458,6 @@ trait FLOSC_Chat_Turn_Trait {
                 'phase'           => $phase,
                 'user_id'         => 0,
                 'session_id'      => $session_id,
-                'journey_id'      => $journey_id,
                 'user_message'    => $contact_details,
                 'ai_response'     => $thank_you_message,
                 'provider'        => 'ivr',
@@ -542,15 +494,9 @@ trait FLOSC_Chat_Turn_Trait {
             $flosc_response_source = 'concierge';
         }
 
-        // DA1 catalog path: content-agnostic and access-aware across all phases.
-        // Rows are filtered by Status, parent Status, Flow Scope, and VGM before
-        // any catalog payload can reach the conversational layer.
-        $da1_catalog_reply = $this->flosc_build_da1_catalog_reply(
-            $message,
-            $flow_id,
-            $ivr_file,
-            (string) ($eval_context['access_level'] ?? 'visitor')
-        );
+        // DA1 compositions path: available across all phases and all user levels.
+        // This gives deterministic, bounded catalog answers before IVR/AI fallbacks.
+        $da1_catalog_reply = $this->flosc_build_da1_composition_reply($message, $flow_id, $ivr_file);
         if ($da1_catalog_reply !== '') {
             $response_message = [
                 'content' => $da1_catalog_reply,
@@ -852,23 +798,12 @@ trait FLOSC_Chat_Turn_Trait {
 
                     // v5.0.2: When AI fails, provide a useful fallback instead of generic error.
                     // If user asked about quiz results and we have quiz data, give them that.
-                    // Reliability: get_response() returns WP_Error on provider rejection/timeout.
-                    // WP_Error is truthy, so it must be checked explicitly — otherwise a failed
-                    // request would be recorded as a successful 'ai' response and the visitor
-                    // would receive apology copy mislabeled as AI-generated personality.
-                    $flosc_provider_error = null;
-                    if ( $ai_response && is_wp_error( $ai_response ) ) {
-                        $flosc_provider_error = $ai_response;
-                        $ai_response = null;
-                    }
-                    if ( ! $ai_response ) {
+                    if (!$ai_response) {
                         $quiz_fallback = $this->build_quiz_fallback_response($message, $eval_context);
-                        $ai_response   = $quiz_fallback ?: null;
+                        $ai_response = $quiz_fallback ?: null;
                     }
                     $response_message = [
-                        'content' => $ai_response ?: ($flosc_provider_error
-                            ? 'I\'m having trouble reaching my assistant right now. Please try again in a moment.'
-                            : 'I apologize, but I\'m having trouble responding right now. Please try again.'),
+                        'content' => $ai_response ?: 'I apologize, but I\'m having trouble responding right now. Please try again.',
                         'user_autoprompts' => $this->get_user_autoprompts_for_phase($phase, $eval_context, $ivr_config),
                         'phase_change' => null,
                     ];
@@ -892,16 +827,14 @@ trait FLOSC_Chat_Turn_Trait {
         }
 
         // Reputation guard: never return self-undermining hedge language.
-        if (method_exists($this, 'flosc_enforce_no_hedge_response')) {
-            $response_message['content'] = $this->flosc_enforce_no_hedge_response(
-                $response_message['content'] ?? '',
-                $message,
-                $flow_id,
-                $ivr_file,
-                $phase,
-                $eval_context
-            );
-        }
+        $response_message['content'] = $this->flosc_enforce_no_hedge_response(
+            $response_message['content'] ?? '',
+            $message,
+            $flow_id,
+            $ivr_file,
+            $phase,
+            $eval_context
+        );
 
         // Store message in session if user is logged in (guarded to this flow).
         if (is_user_logged_in() && $session_id) {
@@ -970,7 +903,6 @@ trait FLOSC_Chat_Turn_Trait {
             'phase'           => $phase,
             'user_id'         => is_user_logged_in() ? get_current_user_id() : 0,
             'session_id'      => $session_id ?? 0,
-            'journey_id'      => $journey_id,
             'user_message'    => $message,
             'ai_response'     => $response_message['content'],
             'provider'        => $flosc_provider_used,
@@ -1077,46 +1009,7 @@ trait FLOSC_Chat_Turn_Trait {
      * Handle chat with RAG (Retrieval Augmented Generation) - v9.1.6
      * AI can search WordPress content dynamically
      */
-    /**
-     * A visitor's turn must never end as WordPress fatal HTML inside a chat
-     * bubble. Everything below this point may touch third-party provider code,
-     * so the whole turn is wrapped: any Throwable becomes a controlled FLOSC
-     * reply, with the technical reason kept for the log rather than the visitor.
-     *
-     * @param WP_REST_Request $request
-     * @return WP_REST_Response|WP_Error
-     */
     public function handle_chat_with_rag($request) {
-        try {
-            return $this->handle_chat_with_rag_turn($request);
-        } catch (Throwable $e) {
-            if (function_exists('flosc_log')) {
-                flosc_log(sprintf(
-                    'Chat turn failed: %s in %s:%d — %s',
-                    get_class($e),
-                    $e->getFile(),
-                    $e->getLine(),
-                    $e->getMessage()
-                ));
-            }
-
-            $flosc_error_code = 'flosc_chat_turn_exception';
-            $flosc_friendly_message = __( 'Something went wrong on our side just then. Please try that again.', 'flosc' );
-
-            return new WP_REST_Response(
-                array(
-                    'success'    => false,
-                    'message'    => $flosc_friendly_message,
-                    'response'   => $flosc_friendly_message, // Backward compatibility.
-                    'error'      => $flosc_error_code,        // Backward compatibility / machine code.
-                    'error_code' => $flosc_error_code,
-                ),
-                200
-            );
-        }
-    }
-
-    private function handle_chat_with_rag_turn($request) {
         $message = sanitize_text_field($request->get_param('message'));
         $context = $request->get_param('context') ?? [];
         if (is_array($context)) {
@@ -1172,9 +1065,6 @@ trait FLOSC_Chat_Turn_Trait {
         $flow_stem = sanitize_key(pathinfo($ivr_file, PATHINFO_FILENAME));
         $session_id_raw = sanitize_text_field((string) ($request->get_param('session_id') ?? ''));
         $session_id = $this->flosc_normalize_session_id($session_id_raw);
-        $journey_id = class_exists('FLOSC_Chat_Logger')
-            ? FLOSC_Chat_Logger::flosc_sanitize_journey_id($request->get_param('journey_id'))
-            : '';
         $user_context = $this->user_access_manager->get_user_context();
         $phase = sanitize_key((string) ($user_context['phase'] ?? 'content'));
 
@@ -1218,7 +1108,6 @@ trait FLOSC_Chat_Turn_Trait {
                                 'phase'           => $phase,
                                 'user_id'         => is_user_logged_in() ? get_current_user_id() : 0,
                                 'session_id'      => $session_id,
-                                'journey_id'      => $journey_id,
                                 'user_message'    => $message,
                                 'ai_response'     => $concierge_message,
                                 'provider'        => 'concierge',
@@ -1286,23 +1175,20 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC SECURITY: Violations
             }
         }
         
-        $safe_rag_response = method_exists($this, 'flosc_enforce_no_hedge_response')
-            ? $this->flosc_enforce_no_hedge_response(
-                $validation_result['response'] ?? '',
-                $message,
-                $flow_id,
-                $ivr_file,
-                $user_context['phase'] ?? 'freeline',
-                $user_context
-            )
-            : (string) ($validation_result['response'] ?? '');
+        $safe_rag_response = $this->flosc_enforce_no_hedge_response(
+            $validation_result['response'] ?? '',
+            $message,
+            $flow_id,
+            $ivr_file,
+            $user_context['phase'] ?? 'freeline',
+            $user_context
+        );
 
         FLOSC_Chat_Logger::instance()->flosc_log_chat([
             'flow_id'         => $flow_id ?: $flow_stem,
             'phase'           => $phase,
             'user_id'         => is_user_logged_in() ? get_current_user_id() : 0,
             'session_id'      => $session_id,
-            'journey_id'      => $journey_id,
             'user_message'    => $message,
             'ai_response'     => $safe_rag_response,
             'provider'        => flosc_get_setting('ai_provider', 'rag'),

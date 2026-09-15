@@ -248,7 +248,7 @@ class FLOSC_RAG_Chat_Handler {
             return null;
         }
 
-        $flosc_model = flosc_get_setting('ai_anthropic_model', flosc_default_model('anthropic'));
+        $flosc_model = flosc_get_setting('ai_anthropic_model', 'claude-sonnet-4-5-20250929');
         $flosc_max_tokens = max(2000, (int) flosc_get_setting('ai_max_tokens', '500') * 4);
 
         $flosc_result = FLOSC_WP_AI_Client::generate_with_tools(
@@ -277,11 +277,10 @@ class FLOSC_RAG_Chat_Handler {
         );
 
         if ( is_wp_error( $flosc_result ) ) {
-            if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG && function_exists( 'flosc_log' ) ) {
+            if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
                 flosc_log( 'FLOSC RAG: ' . $flosc_result->get_error_message() );
             }
-
-            return null;
+            return "Sorry, I'm having trouble connecting. Please try again.";
         }
 
         $flosc_usage = isset( $flosc_result['usage'] ) && is_array( $flosc_result['usage'] ) ? $flosc_result['usage'] : array();
