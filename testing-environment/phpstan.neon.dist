@@ -19,3 +19,15 @@ parameters:
             - */vendor/*
             - */node_modules/*
     reportUnmatchedIgnoredErrors: false
+
+    # ONE WORKER, ON PURPOSE.
+    # With parallel workers PHPStan died as
+    #   "Child process error: PHPStan process crashed because it reached
+    #    configured PHP memory limit: 1G ... while running parallel worker"
+    # and then said "Result is incomplete because of severe errors". A crash in
+    # a worker names no file, so there is nothing to act on. Serial is slower
+    # and its memory ceiling applies to a single process, which makes both the
+    # limit and any crash attributable. Raise the ceiling with
+    # FLOSC_PHPSTAN_MEMORY (procedure 7 defaults it to 4G).
+    parallel:
+        maximumNumberOfProcesses: 1

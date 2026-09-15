@@ -62,6 +62,7 @@ phpstan_ver() {
 PHPCS=$(find_bin phpcs)
 PHPSTAN=$(find_bin phpstan)
 PHP=$(command -v php 2>/dev/null || true)
+CURL=$(command -v curl 2>/dev/null || true)
 
 RC=0
 CMD_ONLY=0
@@ -104,12 +105,13 @@ doctor() {
 
   echo "TOOLS"
   local v
-  for t in php composer node npx docker; do
+  for t in php composer node npx docker curl; do
     if command -v "$t" >/dev/null 2>&1; then
       case "$t" in
         php)      v=$("$t" -r 'echo PHP_VERSION;' 2>/dev/null) ;;
         composer) v=$("$t" --version 2>/dev/null | awk '{print $3}') ;;
         docker)   v=$("$t" --version 2>/dev/null | awk '{print $3}' | tr -d ,) ;;
+        curl)     v="$("$t" --version 2>/dev/null | head -1 | awk '{print $2}')  (procedure 11 loads pages with it)" ;;
         *)        v=$("$t" --version 2>/dev/null) ;;
       esac
       dok "$t" "$v"
@@ -211,6 +213,23 @@ doctor() {
             && dok "plugin-check" "installed by --fix" || dmiss "plugin-check" "install failed"
         else dmiss "plugin-check" "not installed — ./flosc-test doctor --fix"; fi ;;
     esac
+    # Plugin Check's runtime checks ask WordPress for a post permalink. With no
+    # published post the whole run aborts with
+    #   Error: Unable to retrieve post URL for post type: post
+    # and exits 1 having checked nothing -- which reads like a plugin failure
+    # and is not one.
+    local posts
+    posts=$( cd "$RUNTIME" && npx wp-env run cli -- wp post list --post_type=post --post_status=publish --format=count 2>/dev/null | tr -d '\r' | tail -1 )
+    case "$posts" in ''|*[!0-9]*) posts=0 ;; esac
+    if [ "$posts" -ge 1 ]; then
+      dok "fixture post" "$posts published — Plugin Check's URL checks can run"
+    elif [ "$fix" = "1" ]; then
+      ( cd "$RUNTIME" && npx wp-env run cli -- wp post create \
+          --post_type=post --post_status=publish --post_title='flosc-test fixture' ) >/dev/null 2>&1 \
+        && dok "fixture post" "created by --fix" || dmiss "fixture post" "create failed"
+    else
+      dmiss "fixture post" "none published — Plugin Check aborts before checking anything"
+    fi
   else
     if [ "$fix" = "1" ] && [ -d "$RUNTIME" ]; then
       echo "  starting wp-env (this takes a few minutes on a cold start)..."
@@ -281,11 +300,29 @@ pull() {
   if [ -d "$env_dir" ]; then
     cp "$env_dir/flosc-test" "$HERE/.flosc-test.new" && chmod +x "$HERE/.flosc-test.new" \
       && mv "$HERE/.flosc-test.new" "$HERE/flosc-test"
-    for f in phpcs.xml.dist phpstan.neon.dist TESTING-PROCEDURES.md; do
+    # phpcs-compat.xml.dist was missing from this list, so procedure 4 ran on
+    # whatever copy happened to be on the machine. Every config the procedures
+    # read belongs here.
+    for f in phpcs.xml.dist phpcs-compat.xml.dist phpstan.neon.dist TESTING-PROCEDURES.md; do
       [ -f "$env_dir/$f" ] && cp "$env_dir/$f" "$HERE/$f"
     done
     mkdir -p "$RUNTIME"
-    [ -f "$env_dir/wp-env.json" ] && cp "$env_dir/wp-env.json" "$RUNTIME/.wp-env.json"
+    # wp-env serves the directory it was STARTED with. Replacing .wp-env.json
+    # under a running container changes nothing until it is restarted, and the
+    # container goes on serving the old path -- which is how Plugin Check came
+    # to report findings in tests/. Say so, out loud, at the moment it happens.
+    if [ -f "$env_dir/wp-env.json" ]; then
+      local before after
+      before=$(sha_of "$RUNTIME/.wp-env.json")
+      cp "$env_dir/wp-env.json" "$RUNTIME/.wp-env.json"
+      after=$(sha_of "$RUNTIME/.wp-env.json")
+      if [ "$before" != "$after" ]; then
+        echo
+        echo "  .wp-env.json CHANGED. The running container is now serving the old"
+        echo "  configuration. Restart it before procedure 10 or 11 means anything:"
+        echo "      ( cd $RUNTIME && npx wp-env start --update )"
+      fi
+    fi
   fi
 
   echo
@@ -505,7 +542,8 @@ WHAT THIS SUITE CHECKS
    8  syntax                            php -l                      —
    9  inline style="" attributes        grep                        T10-T13 advisory
   10  the full .org review scan         PLUGIN CHECK (wordpress.org) every email
-  11  clean install, WP_DEBUG on        wp-env + wp-cli             .org checklist
+  11  clean install, WP_DEBUG on        wp-env + wp-cli + HTTP      .org checklist
+      (off/on baseline subtracted)
 
 WHAT THIS SUITE DOES NOT CHECK
 
@@ -518,8 +556,10 @@ WHAT THIS SUITE DOES NOT CHECK
     HTTP_HOST reaching an auth-flow allowlist -- crossed three functions. PHPCS
     is line-scoped and cannot see it. That one was found by reading.
 
-  * That the plugin actually works. Procedure 11 activates it and fires init;
-    it does not click a button or hold a conversation.
+  * That the plugin actually works. Procedure 11 activates it and loads the
+    home page, wp-login.php, a post and a 404 over HTTP, then reports what the
+    plugin added to debug.log. It does not click a button, log in to wp-admin,
+    or hold a conversation.
 
   * readme.txt external-service documentation. T12 and T13 both raise it and no
     tool here reads it. Still open.
@@ -636,8 +676,15 @@ p6() { phpcs_proc 6 "Translation functions" phpcs.xml.dist "WordPress.WP.I18n"; 
 p7() { # phpstan
   local src="$SHIP/flosc"
   local cfg="$HERE/phpstan.neon.dist"
+  # THE MEMORY CEILING IS A KNOB, NOT A CONSTANT.
+  # 1G was not enough for this plugin. PHPStan died with "PHPStan process
+  # crashed because it reached configured PHP memory limit: 1G ... while
+  # running parallel worker", and then printed "Result is incomplete because
+  # of severe errors". An incomplete result is not a pass, and this procedure
+  # no longer treats it as one -- see the memory check after the run.
+  local mem="${FLOSC_PHPSTAN_MEMORY:-4G}"
   head_proc 7 "PHPStan level 5" "PHPStan $(phpstan_ver) + szepeviktor/phpstan-wordpress — not written by any AI" \
-    "phpstan analyse -c phpstan.neon.dist --no-progress --memory-limit=1G $src"
+    "phpstan analyse -c phpstan.neon.dist --no-progress --memory-limit=$mem $src"
   if [ -z "$PHPSTAN" ]; then notrun "phpstan not found"; return; fi
   if [ ! -f "$cfg" ]; then notrun "phpstan.neon.dist missing"; return; fi
   if [ ! -d "$src" ]; then notrun "no ship tree; run procedure 0"; return; fi
@@ -660,12 +707,33 @@ p7() { # phpstan
   sed "s|%currentWorkingDirectory%/../.composer/vendor/szepeviktor/phpstan-wordpress/extension.neon|$ext|" \
     "$HERE/phpstan.neon.dist" > "$cfg"
   echo "  EXTENSION  $ext"
-  echo "NOTE: PHPStan has never been run against this plugin. Its output is unknown."
-  echo "      If you see hundreds of 'Function wp_* not found', the WordPress extension"
+  echo "  MEMORY     $mem   (FLOSC_PHPSTAN_MEMORY overrides it; 1G was not enough)"
+  echo "  WORKERS    1      (phpstan.neon.dist sets parallel.maximumNumberOfProcesses)"
+  echo "NOTE: If you see hundreds of 'Function wp_* not found', the WordPress extension"
   echo "      did not load and the run means nothing — fix that before reading it."
   echo
   [ "$CMD_ONLY" = "1" ] && { echo "(not run: --cmd)"; return 0; }
-  "$PHPSTAN" analyse -c "$cfg" --no-progress --memory-limit=1G "$src"; foot $?
+
+  # Capture rather than stream, so the memory crash can be recognised. It is
+  # printed verbatim either way -- nothing here is summarised away.
+  local out rc
+  out=$("$PHPSTAN" analyse -c "$cfg" --no-progress --memory-limit="$mem" "$src" 2>&1); rc=$?
+  printf '%s\n' "$out"
+
+  if printf '%s' "$out" | grep -q 'memory limit'; then
+    echo
+    echo "PHPStan ran out of memory at $mem. The list above is INCOMPLETE — it is"
+    echo "neither a pass nor a full set of findings, so this procedure does not"
+    echo "report it as either."
+    echo "Retry higher:   FLOSC_PHPSTAN_MEMORY=8G ./flosc-test 7 <target>"
+    echo "Largest PHP files in the ship tree — memory usually goes in one of these:"
+    find "$src" -name '*.php' -exec ls -l {} + 2>/dev/null \
+      | sort -k5 -rn | head -5 \
+      | awk -v s="$src/" '{n=$NF; sub(s,"",n); printf "  %8.1f KB  %s\n", $5/1024, n}'
+    notrun "phpstan hit its memory limit at $mem"
+    return
+  fi
+  foot "$rc"
 }
 
 p8() { # syntax
@@ -697,8 +765,6 @@ p10() { # plugin check
   head_proc 10 "Plugin Check" "Plugin Check — WORDPRESS.ORG'S OWN TOOL, run in wp-env" \
     "cd testing-runtime && npx wp-env run cli -- wp plugin check flosc --require=./wp-content/plugins/plugin-check/cli.php --include-experimental"
   echo "This runs against $SHIP/flosc — the unpacked zip, NOT the working tree."
-  echo "If you see findings in tests/ or handoff.md, .wp-env.json is pointed at the"
-  echo "wrong directory and every one of those findings is false."
   echo
   # --cmd prints and stops. It must never report a failure -- it ran nothing.
   [ "$CMD_ONLY" = "1" ] && { echo "(not run: --cmd)"; return 0; }
@@ -719,49 +785,175 @@ p10() { # plugin check
     notrun "plugin-check is '${pc:-not installed}' — ./flosc-test doctor --fix"
     return
   fi
-  ( cd "$RUNTIME" && npx wp-env run cli -- wp plugin check flosc \
-      --require=./wp-content/plugins/plugin-check/cli.php --include-experimental ) 2>&1
-  foot $?
+
+  # THE FIXTURE NEEDS A PUBLISHED POST.
+  # Plugin Check's runtime checks ask WordPress for the permalink of a post.
+  # An install with no published post answers
+  #     Error: Unable to retrieve post URL for post type: post
+  # and the entire run aborts with exit 1 having checked nothing. That is a
+  # property of the WordPress fixture, not of the plugin under test, so this
+  # procedure supplies the missing post rather than reporting a failure.
+  local posts
+  posts=$( cd "$RUNTIME" && npx wp-env run cli -- wp post list --post_type=post --post_status=publish --format=count 2>/dev/null | tr -d '\r' | tail -1 )
+  case "$posts" in ''|*[!0-9]*) posts=0 ;; esac
+  if [ "$posts" -lt 1 ]; then
+    echo "fixture: no published post — Plugin Check needs one for its URL checks. Creating it."
+    ( cd "$RUNTIME" && npx wp-env run cli -- wp post create \
+        --post_type=post --post_status=publish --post_title='flosc-test fixture' ) >/dev/null 2>&1
+    echo
+  fi
+
+  local out rc
+  out=$( cd "$RUNTIME" && npx wp-env run cli -- wp plugin check flosc \
+      --require=./wp-content/plugins/plugin-check/cli.php --include-experimental 2>&1 ); rc=$?
+  printf '%s\n' "$out"
+  echo
+
+  # Did it get as far as checking anything?
+  if printf '%s' "$out" | grep -q 'Unable to retrieve post URL'; then
+    notrun "Plugin Check aborted before checking anything: no published post in the fixture"
+    return
+  fi
+  local errs warns
+  errs=$(printf '%s\n' "$out" | grep -cE '\| *ERROR *\|')
+  warns=$(printf '%s\n' "$out" | grep -cE '\| *WARNING *\|')
+  if [ "$rc" -ne 0 ] && [ "$errs" -eq 0 ] && [ "$warns" -eq 0 ]; then
+    notrun "wp plugin check exited $rc without producing a findings table"
+    return
+  fi
+
+  # STALE MOUNT GUARD.
+  # wp-env serves whatever directory it was started with. Change .wp-env.json
+  # without restarting and the container keeps serving the OLD path -- which
+  # was a source tree, so Plugin Check reported hundreds of findings in
+  # tests/, .github, handoff.md and build-dist-zip.sh. None of those files are
+  # in the zip. Procedure 1 already prints what ships; this makes the
+  # contradiction impossible to read past.
+  local stale
+  stale=$(printf '%s\n' "$out" | grep -cE '(^|[^a-z])tests/|handoff|build-dist-zip\.sh|\.distignore|\.gitignore|\.github/')
+  if [ "$stale" -gt 0 ]; then
+    echo "STALE MOUNT — $stale line(s) name files that are not in the zip."
+    echo "The container is still serving the directory it was started with,"
+    echo "not $SHIP/flosc. Every finding above is therefore suspect."
+    echo "Fix:   ( cd $RUNTIME && npx wp-env start --update )      then re-run."
+    notrun "wp-env is mounted on the wrong tree"
+    return
+  fi
+
+  # wp-cli exits 0 whether Plugin Check found nothing or found fifty errors.
+  # Reading its exit code as the verdict reported "---- exit 0 ----" under a
+  # screen of ERRORs. Count the rows instead.
+  echo "ERRORS: $errs   WARNINGS: $warns   (wp-cli exits 0 either way — this line is the verdict)"
+  if [ "$errs" -gt 0 ] || [ "$warns" -gt 0 ]; then foot 1; else foot 0; fi
+}
+
+# --- helpers for procedure 11 ------------------------------------------------
+# The port wp-env is actually serving on, read from the generated config rather
+# than assumed. .wp-env.json is written by procedure 0 from wp-env.json.
+wpenv_port() {
+  local p
+  p=$(grep -o '"port"[[:space:]]*:[[:space:]]*[0-9]*' "$RUNTIME/.wp-env.json" 2>/dev/null \
+      | grep -o '[0-9]*$' | tail -1)
+  echo "${p:-8888}"
+}
+
+# Read debug.log with the timestamp prefix stripped, so two runs can be
+# compared line for line. The timestamp is the only thing that differs between
+# an identical notice logged twice.
+wpenv_log() {
+  ( cd "$RUNTIME" && npx wp-env run cli -- bash -c 'cat /var/www/html/wp-content/debug.log 2>/dev/null' ) 2>/dev/null \
+    | sed 's/^\[[^]]*\] //'
+}
+wpenv_logclear() {
+  ( cd "$RUNTIME" && npx wp-env run cli -- bash -c 'rm -f /var/www/html/wp-content/debug.log' ) >/dev/null 2>&1
+}
+
+# EXERCISE THE SITE THE WAY A VISITOR DOES.
+# The previous version ran `wp eval 'do_action("init"); do_action("admin_init")'`.
+# That fires init a SECOND time inside an already-booted WordPress, and every
+# registry in core objects: 123 lines of
+#   Function WP_Block_Type_Registry::register was called incorrectly.
+#   Block type "core/verse" is already registered.
+# Not one of those came from the plugin. Real HTTP requests boot WordPress once
+# and fire init once, which is what "tested on a clean install" means.
+# The hook-firing fallback remains for a machine with no curl; the baseline
+# subtraction in p11 makes even that readable.
+wpenv_exercise() {
+  local port="$1" code=""
+  if [ -n "$CURL" ]; then
+    code=$("$CURL" -s -o /dev/null -w '%{http_code}' --max-time 30 "http://localhost:$port/" 2>/dev/null)
+  fi
+  if [ -n "$code" ] && [ "$code" != "000" ]; then
+    "$CURL" -s -o /dev/null --max-time 30 "http://localhost:$port/wp-login.php"                     2>/dev/null
+    "$CURL" -s -o /dev/null --max-time 30 "http://localhost:$port/?p=1"                             2>/dev/null
+    "$CURL" -s -o /dev/null --max-time 30 "http://localhost:$port/no-such-page-flosc-test"          2>/dev/null
+    "$CURL" -s -o /dev/null --max-time 30 "http://localhost:$port/wp-admin/"                        2>/dev/null
+    echo "HTTP  http://localhost:$port/  (home $code, wp-login.php, ?p=1, a 404, wp-admin)"
+  else
+    ( cd "$RUNTIME" && npx wp-env run cli -- wp eval 'do_action("init"); do_action("admin_init");' ) >/dev/null 2>&1
+    echo "wp eval do_action(init)+do_action(admin_init)   [no curl, or nothing answering on port $port]"
+  fi
 }
 
 p11() { # clean-install smoke test
   head_proc 11 "Clean install, WP_DEBUG on" "wp-env + wp-cli — WordPress.org's own checklist item" \
-    "npx wp-env run cli -- wp plugin activate flosc ; then load init/admin_init and read wp-content/debug.log"
+    "wp plugin deactivate flosc ; load pages ; keep that log as the baseline ; wp plugin activate flosc ; load the same pages ; report only what is NEW"
   echo "WordPress.org's checklist says: \"I tested my updated plugin on a clean"
   echo "WordPress installation with WP_DEBUG set to true.\" This is that test."
-  echo "Any notice or warning in debug.log is a finding."
+  echo
+  echo "WHAT THE BASELINE IS FOR: a stock wp-env writes its own notices into"
+  echo "debug.log — font collections, icon registries, block types. An earlier"
+  echo "version of this procedure reported 123 of them as FLOSC findings. So the"
+  echo "site is exercised twice, once with the plugin OFF and once with it ON,"
+  echo "and only lines that appear solely in the second run are findings."
   echo
   if ! command -v npx >/dev/null 2>&1; then notrun "npx not found"; return; fi
   [ "$CMD_ONLY" = "1" ] && { echo "(not run: --cmd)"; return 0; }
   if ! wpenv_up; then notrun "wp-env is not running — ./flosc-test doctor --fix"; return; fi
 
-  # Each step is separate and its own failure is reported. Chained with && this
-  # silently stopped at 'plugin activate', which exits non-zero when the plugin
-  # is ALREADY active -- so a correctly installed plugin looked like a failure
-  # and the debug.log was never read.
+  local port; port=$(wpenv_port)
+
+  # PASS 1 — the baseline. FLOSC off.
+  ( cd "$RUNTIME" && npx wp-env run cli -- wp plugin deactivate flosc ) >/dev/null 2>&1
+  wpenv_logclear
+  local how; how=$(wpenv_exercise "$port")
+  local base; base=$(wpenv_log)
+
+  # PASS 2 — the test. FLOSC on.
+  # `wp plugin activate` exits non-zero when the plugin is ALREADY active, so
+  # its status is read rather than its exit code.
+  ( cd "$RUNTIME" && npx wp-env run cli -- wp plugin activate flosc ) >/dev/null 2>&1
   local st
   st=$( cd "$RUNTIME" && npx wp-env run cli -- wp plugin list --name=flosc --field=status 2>/dev/null | tr -d '\r' | tail -1 )
+  echo "plugin status : ${st:-unknown}"
+  echo "exercised via : $how"
   if [ "$st" != "active" ]; then
     ( cd "$RUNTIME" && npx wp-env run cli -- wp plugin activate flosc ) 2>&1 | tail -3
-    st=$( cd "$RUNTIME" && npx wp-env run cli -- wp plugin list --name=flosc --field=status 2>/dev/null | tr -d '\r' | tail -1 )
+    notrun "flosc did not activate — that is itself the finding"
+    return
   fi
-  echo "plugin status: ${st:-unknown}"
-  if [ "$st" != "active" ]; then notrun "flosc did not activate — that is itself the finding"; return; fi
+  wpenv_logclear
+  wpenv_exercise "$port" >/dev/null
+  local after; after=$(wpenv_log)
 
-  # Absolute paths: the cli container's working directory is not guaranteed.
-  ( cd "$RUNTIME" && npx wp-env run cli -- bash -c 'rm -f /var/www/html/wp-content/debug.log' ) >/dev/null 2>&1
-  ( cd "$RUNTIME" && npx wp-env run cli -- wp eval 'do_action("init"); do_action("admin_init"); echo "hooks fired\n";' ) 2>&1 | tail -5
+  # THE SUBTRACTION. Lines present with the plugin on, absent with it off.
+  local bf new
+  bf=$(mktemp)
+  printf '%s\n' "$base" > "$bf"
+  new=$(printf '%s\n' "$after" | grep -vxF -f "$bf" 2>/dev/null | grep -v '^[[:space:]]*$')
+  rm -f "$bf"
+
+  local nbase; nbase=$(printf '%s\n' "$base" | grep -c . )
+  echo "baseline      : $nbase line(s) with FLOSC deactivated — WordPress and the theme, excluded"
   echo
-  echo "--- wp-content/debug.log ---"
-  local log
-  log=$( cd "$RUNTIME" && npx wp-env run cli -- bash -c 'cat /var/www/html/wp-content/debug.log 2>/dev/null' )
-  if [ -z "$(printf '%s' "$log" | tr -d '[:space:]')" ]; then
-    echo "(empty — no notices, warnings or deprecations)"
+  echo "--- debug.log attributable to FLOSC ---"
+  if [ -z "$new" ]; then
+    echo "(nothing — the plugin added no notice, warning or deprecation)"
     foot 0
   else
-    printf '%s\n' "$log"
+    printf '%s\n' "$new"
     echo
-    echo "lines: $(printf '%s\n' "$log" | grep -c .)  — every one of these is a finding"
+    echo "lines: $(printf '%s\n' "$new" | grep -c .)  — every one of these is a finding"
     foot 1
   fi
 }
