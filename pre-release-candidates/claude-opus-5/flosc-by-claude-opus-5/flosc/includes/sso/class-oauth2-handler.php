@@ -621,10 +621,24 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC SSO] Provider error
             }
         }
 
-        // Current request host (callback domain, e.g. the WordPress host).
-        if (!empty($_SERVER['HTTP_HOST'])) {
-            $add(sanitize_text_field(wp_unslash((string) $_SERVER['HTTP_HOST'])));
-        }
+        // The current request host is deliberately NOT added here.
+        //
+        // WordPress.org review T12, 13 Sep 2026, on this function:
+        //   "An untrusted HTTP_HOST value is also added to the SSO redirect-host
+        //    allowlist, which can permit an attacker-controlled redirect host."
+        //
+        // HTTP_HOST is the Host header. The client sends it. sanitize_text_field()
+        // makes it a clean string; it does not make it trustworthy. Adding it here
+        // let a request carrying "Host: evil.com" put evil.com into this allowlist,
+        // which is the one gate flosc_safe_external_redirect() consults before it
+        // adds a host to WordPress's allowed_redirect_hosts filter and redirects.
+        // That turned wp_safe_redirect() into a no-op for the attacker's own host.
+        //
+        // Nothing legitimate is lost. Every host an OAuth callback can legitimately
+        // arrive on is already in this list by construction: the callback URL is
+        // built by this plugin as rest_url('flosc/v1/sso/callback/...'), and
+        // rest_url(), home_url(), site_url() and admin_url() are all added above,
+        // alongside the configured custom domain and the flow's own domains.
 
         // Flow-scoped allowlist only: the current flow's configured domains/app URLs.
         // This prevents one flow's configured redirect host from implicitly approving

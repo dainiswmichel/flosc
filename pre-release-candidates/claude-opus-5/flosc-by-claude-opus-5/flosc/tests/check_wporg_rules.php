@@ -120,7 +120,6 @@ if ( is_readable( $exc_path ) ) {
 
 $FINDINGS = array();
 $RULES    = array();
-$ADVISORY = array();
 
 function rule( $id, $title, $source ) {
 	global $RULES;
@@ -138,47 +137,6 @@ function finding( $id, $file, $line, $text ) {
 }
 
 $src = flosc_source_files( $root );
-
-/* =========================================================================
- * WPORG-01 — WordPress version headers
- *
- * T12, 13 Sep 2026: "Requires at least at readme.txt: '7.0.4' is expected to
- * be the lowest WordPress version... Please, include only the major WordPress
- * version, as the minor version is ignored."
- *
- * The shape, not the value: major.minor, no third digit. The readme and the
- * main file must agree. tests/check_packaging.php compared them to EACH OTHER
- * and they agreed while both were wrong, so agreement alone is not the test.
- * ====================================================================== */
-rule( 'WPORG-01', 'WordPress version headers have the right shape', 'T12 13Sep26' );
-
-$readme = is_readable( "$root/readme.txt" ) ? file_get_contents( "$root/readme.txt" ) : '';
-$main   = is_readable( "$root/flosc.php" ) ? file_get_contents( "$root/flosc.php" ) : '';
-
-$hdr = array();
-preg_match( '/^Requires at least:\s*(\S+)/m', $readme, $m ) && $hdr['readme.txt Requires at least'] = $m[1];
-preg_match( '/^Tested up to:\s*(\S+)/m', $readme, $m ) && $hdr['readme.txt Tested up to'] = $m[1];
-preg_match( '/^ \* Requires at least:\s*(\S+)/m', $main, $m ) && $hdr['flosc.php Requires at least'] = $m[1];
-
-foreach ( $hdr as $label => $value ) {
-	if ( ! preg_match( '/^\d+\.\d+$/', $value ) ) {
-		$why = preg_match( '/^\d+\.\d+\.\d+/', $value )
-			? "carries a patch digit — WordPress.org ignores the minor version and returns this as an ERROR"
-			: "is not a major.minor WordPress version";
-		finding( 'WPORG-01', basename( strpos( $label, 'readme' ) === 0 ? 'readme.txt' : 'flosc.php' ), 0, "$label: \"$value\" $why" );
-	}
-}
-if ( isset( $hdr['readme.txt Requires at least'], $hdr['flosc.php Requires at least'] )
-	&& $hdr['readme.txt Requires at least'] !== $hdr['flosc.php Requires at least'] ) {
-	finding( 'WPORG-01', 'readme.txt', 0, 'Requires at least disagrees between readme.txt and flosc.php' );
-}
-
-$wp_current = getenv( 'WP_CURRENT' );
-if ( $wp_current && isset( $hdr['readme.txt Tested up to'] ) ) {
-	if ( version_compare( $hdr['readme.txt Tested up to'], $wp_current, '<' ) ) {
-		finding( 'WPORG-01', 'readme.txt', 0, "Tested up to {$hdr['readme.txt Tested up to']} is behind the current WordPress {$wp_current} — wp.org will not list it" );
-	}
-}
 
 /* =========================================================================
  * WPORG-02 — core file loaded and then not used
@@ -329,43 +287,6 @@ foreach ( $src as $file => $lines ) {
 }
 
 /* =========================================================================
- * WPORG-05 — a superglobal assigned without sanitizing on the same line
- *
- * T11 and T12: "$flosc_post = wp_unslash($_POST); ... later used to write
- * ivr_full_text directly to the IVR file without sanitization."
- *
- * wp_unslash() is not a sanitizer. It removes slashes.
- * ====================================================================== */
-/*
- * ADVISORY, superseded by PHPCS.
- *
- * WordPress.Security.ValidatedSanitizedInput is the authoritative sniff for
- * this, it is installed now, and it reports ZERO errors on this tree. This rule
- * is a hand-rolled approximation that reports dozens. It tests whether a
- * sanitizer appears on the SAME LINE as the read, which is not the standard --
- * WordPress's ordinary idiom unslashes the array once and sanitizes each field
- * where it is used. The title says exactly that, so nobody reads a count here
- * as a count of real defects. Where they disagree,
- * PHPCS is right and this is not, so its findings print for reading and are
- * excluded from the exit code. Sweeping them is how working code gets broken.
- */
-$ADVISORY[] = 'WPORG-05';
-rule( 'WPORG-05', 'Superglobal read with no sanitizer on that line (advisory)', 'T11, T12 - see PHPCS ValidatedSanitizedInput' );
-
-$sanitizers = 'sanitize_|esc_url_raw|absint|intval|\(int\)|\(float\)|floatval|wp_kses|wp_verify_nonce|check_admin_referer|check_ajax_referer|flosc_sanitize_';
-foreach ( $src as $file => $lines ) {
-	foreach ( $lines as $i => $line ) {
-		if ( ! preg_match( '/=\s*(?:wp_unslash\s*\(\s*)?\$_(POST|GET|REQUEST|COOKIE|SERVER)\b/', $line, $m ) ) {
-			continue;
-		}
-		if ( preg_match( '/' . $sanitizers . '/', $line ) ) {
-			continue;
-		}
-		finding( 'WPORG-05', $file, $i + 1, "\$_{$m[1]} assigned with no sanitizer on this line (wp_unslash is not a sanitizer)" );
-	}
-}
-
-/* =========================================================================
  * WPORG-06 — register_setting() without a sanitize_callback
  *
  * T10, 27 Jun 2026 and T11, 12 Jul 2026.
@@ -412,27 +333,6 @@ foreach ( $src as $file => $lines ) {
 			finding( 'WPORG-07', $file, $line_no, "permission_callback is __return_true — intentional only if the data is genuinely public" );
 		} elseif ( preg_match( "/'permission_callback'\s*=>\s*'is_user_logged_in'/", $window ) ) {
 			finding( 'WPORG-07', $file, $line_no, "permission_callback is is_user_logged_in — too weak if the route returns gated or admin data" );
-		}
-	}
-}
-
-/* =========================================================================
- * WPORG-08 — json_decode on request data
- *
- * T11: "json_decode() ... does not sanitize the input. Any potentially
- * malicious data or scripts may persist after json_decode()."
- * ====================================================================== */
-/* ADVISORY, same reasoning as WPORG-05: PHPCS is the authority here. */
-$ADVISORY[] = 'WPORG-08';
-rule( 'WPORG-08', 'json_decode output field-sanitized (advisory)', 'T11 12Jul26 - read each, do not sweep' );
-
-foreach ( $src as $file => $lines ) {
-	foreach ( $lines as $i => $line ) {
-		if ( strpos( $line, 'json_decode' ) === false || flosc_is_comment_line( $line ) ) {
-			continue;
-		}
-		if ( preg_match( '/json_decode\s*\([^;]*(\$_(POST|GET|REQUEST|COOKIE)|\$post\[|\$request\[|\$raw|_raw)/', $line ) ) {
-			finding( 'WPORG-08', $file, $i + 1, 'json_decode on request-derived data — decode is not sanitizing; each field must be sanitized after' );
 		}
 	}
 }
@@ -543,13 +443,8 @@ foreach ( $src as $file => $lines ) {
 /* =========================================================================
  * Report. Raw counts and every file:line. No summary verdict beyond the total.
  * ====================================================================== */
-$total    = 0;
-$advisory = 0;
-foreach ( $RULES as $id => $r ) {
-	if ( in_array( $id, $ADVISORY, true ) ) {
-		$advisory += $r['hits'];
-		continue;
-	}
+$total = 0;
+foreach ( $RULES as $r ) {
 	$total += $r['hits'];
 }
 
@@ -569,8 +464,7 @@ if ( ! empty( $exc_bad ) ) {
 }
 
 foreach ( $RULES as $id => $r ) {
-	$mark = in_array( $id, $ADVISORY, true ) ? ' advisory' : '';
-	printf( "%-10s %-52s %s%s\n", $id, $r['title'], $r['hits'] === 0 ? 'clear' : $r['hits'] . ' FOUND', $mark );
+	printf( "%-10s %-52s %s\n", $id, $r['title'], $r['hits'] === 0 ? 'clear' : $r['hits'] . ' FOUND' );
 	printf( "%-10s source: %s\n", '', $r['source'] );
 	if ( ! empty( $FINDINGS[ $id ] ) ) {
 		foreach ( $FINDINGS[ $id ] as $f ) {
@@ -584,13 +478,16 @@ echo "--------------------------------------------------------------------------
 printf( "  active exceptions : %d  (tests/wporg-rule-exceptions.txt)\n", count( $exceptions ) );
 printf( "  files scanned     : %d\n", count( $src ) );
 printf( "  findings          : %d  (exit code counts these)\n", $total );
-printf( "  advisory          : %d  (read, never swept -- PHPCS is the authority)\n", $advisory );
 echo "---------------------------------------------------------------------------\n\n";
 
 echo "OUT OF REACH OF THIS FILE — do not read a clear run as coverage of these:\n";
-echo "  * The T12 SSO redirect-host finding. WordPress.org's AI traced an\n";
-echo "    untrusted host into an auth-flow allowlist across call paths.\n";
-echo "    Pattern matching does not do that. It stays a human read.\n";
+echo "  * The T12 SSO redirect-host finding. CLOSED on 15 Sep 2026 by removing the\n";
+echo "    HTTP_HOST entry from get_allowed_sso_redirect_hosts() in\n";
+echo "    includes/sso/class-oauth2-handler.php. The Host header is client-supplied,\n";
+echo "    so it put an attacker-named host into the one allowlist that\n";
+echo "    flosc_safe_external_redirect() consults. Closed by reading the call paths,\n";
+echo "    not by this file -- pattern matching cannot follow taint across functions,\n";
+echo "    and it still cannot. Do not read a clear run as proof this stayed fixed.\n";
 echo "  * Anything their AI flags that has not been flagged before. This file\n";
 echo "    knows four emails. It cannot know the fifth.\n\n";
 

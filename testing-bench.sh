@@ -5,10 +5,10 @@
 #
 # Run from the directory that contains pre-release-candidates/:
 #
-#     ./testing-bench.sh                 fast checks only
-#     ./testing-bench.sh --stan          also run PHPStan (slow)
-#     ./testing-bench.sh --plugincheck   also run Plugin Check in WordPress Playground (slowest)
-#     ./testing-bench.sh --all           everything
+#     ./testing-bench.sh                 EVERY tool. This is the default.
+#     ./testing-bench.sh --fast          skip PHPStan and Plugin Check
+#     ./testing-bench.sh --no-stan       skip PHPStan only
+#     ./testing-bench.sh --no-plugincheck  skip Plugin Check only
 #     ./testing-bench.sh --steps         run NOTHING; print the commands to run by hand
 #     ./testing-bench.sh --no-log        do not write a transcript
 #
@@ -76,12 +76,14 @@ PHPCS=$(find_tool phpcs "${PHPCS:-}")
 PHPSTAN=$(find_tool phpstan "${PHPSTAN:-}")
 PHP=$(command -v php 2>/dev/null || true)
 
-RUN_STAN=0; RUN_PC=0; STEPS=0
+# Every tool runs by default. Confidence is the default state; skipping is the
+# deliberate choice, and it says so on the line where it skipped.
+RUN_STAN=1; RUN_PC=1; STEPS=0
 for a in "$@"; do
   case "$a" in
-    --stan) RUN_STAN=1 ;;
-    --plugincheck) RUN_PC=1 ;;
-    --all) RUN_STAN=1; RUN_PC=1 ;;
+    --fast)  RUN_STAN=0; RUN_PC=0 ;;
+    --no-stan) RUN_STAN=0 ;;
+    --no-plugincheck) RUN_PC=0 ;;
     --steps) STEPS=1 ;;
   esac
 done
@@ -90,58 +92,79 @@ done
 # Runs NOTHING. Prints the commands, numbered, one per line, so the whole
 # bench can be done by hand with no script of mine in the middle.
 if [ "$STEPS" = "1" ]; then
-  P="${PHPCS:-phpcs}"
-  echo "Every check this bench performs, as a command you run yourself."
-  echo "Pick a candidate folder for CAND. To see them:  ls pre-release-candidates"
-  echo
-  echo "STEP 0  set the candidate once, then paste the rest as they are"
-  echo "        CAND=\$(ls -d $CANDS/*/flosc-by-*/flosc | head -1)"
-  echo "        echo \$CAND"
-  echo
-  echo "STEP 1  the version header — the first ERROR in the T12 and T13 emails"
-  echo "        grep -m1 '^Requires at least:' \$CAND/readme.txt"
-  echo "        grep -m1 'Requires at least:' \$CAND/flosc.php"
-  echo "        the two must match and must be major.minor, e.g. 7.0 — never 7.0.4"
-  echo
-  echo "STEP 2  WordPress security sniffs (escaping, sanitizing, nonces, SQL)"
-  echo "        $P --standard=WordPress --warning-severity=0 \\"
-  echo "          --sniffs=WordPress.Security.EscapeOutput,WordPress.Security.ValidatedSanitizedInput,WordPress.Security.NonceVerification,WordPress.Security.SafeRedirect,WordPress.DB.PreparedSQL,WordPress.DB.DirectDatabaseQuery \\"
-  echo "          --extensions=php --ignore='$IGN' \$CAND"
-  echo
-  echo "STEP 3  PHP 7.4 compatibility — WordPress.org's minimum"
-  echo "        $P --standard=PHPCompatibilityWP --runtime-set testVersion 7.4- \\"
-  echo "          --extensions=php --ignore='$IGN' \$CAND"
-  echo
-  echo "STEP 4  scripts and styles must be enqueued, never printed inline"
-  echo "        $P --standard=WordPress --sniffs=WordPress.WP.EnqueuedResources \\"
-  echo "          --extensions=php --ignore='$IGN' \$CAND"
-  echo
-  echo "STEP 5  translation function calls"
-  echo "        $P --standard=WordPress --sniffs=WordPress.WP.I18n \\"
-  echo "          --extensions=php --ignore='$IGN' \$CAND"
-  echo
-  echo "STEP 6  in_array / array_search without strict comparison"
-  echo "        $P --standard=WordPress --sniffs=WordPress.PHP.StrictInArray \\"
-  echo "          --extensions=php --ignore='$IGN' \$CAND"
-  echo
-  echo "STEP 7  inline style=\"...\" attributes. No sniff catches these — it is a grep."
-  echo "        grep -rnE 'style=\"[^\"]+\"' \$CAND --include=*.php | grep -v '/tests/'"
-  echo
-  echo "STEP 8  PHPStan"
-  echo "        ${PHPSTAN:-phpstan} analyse --level=5 --no-progress \$CAND"
-  echo
-  echo "STEP 9  Plugin Check — WordPress.org's OWN tool. UNVERIFIED, never completed a run."
-  echo "        npx --yes @wp-playground/cli@latest run-blueprint \\"
-  echo "          --blueprint=pc-blueprint.json \\"
-  echo "          --mount=\$CAND:/wordpress/wp-content/plugins/flosc --php=8.3"
-  echo
-  echo "STEP 10 the rules gate. THIS ONE IS MY CODE, not a real tool."
-  echo "        It encodes the review emails and has produced false positives."
-  echo "        Read what it prints. Never sweep it."
-  echo "        cp $RULES \$CAND/tests/ && (cd \$CAND && php tests/check_wporg_rules.php)"
-  echo
-  echo "Exit code on every phpcs step: 0 = clean, 1 or 2 = findings, 3 or more = it did not run."
-  echo "A step that did not run is not a pass. Check with:  echo \$?"
+  P="${PHPCS:-phpcs}"; SP="${PHPSTAN:-phpstan}"
+  # A quoted heredoc: nothing in here is expanded by this script, so what you
+  # read is exactly what your shell will see. The four __TOKENS__ are filled in
+  # with this machine's real paths by the sed below.
+  cat <<'STEPS_EOF' | sed -e "s|__PHPCS__|$P|g" -e "s|__PHPSTAN__|$SP|g" -e "s|__IGN__|$IGN|g" -e "s|__CANDS__|$CANDS|g" -e "s|__RULES__|$RULES|g"
+Every check this bench performs, as a command you run yourself.
+The same procedure with copy buttons is in FLOSC-TESTING-PROCEDURE.html.
+
+STEP 0  set the candidate once, then paste the rest as they are
+        CAND=$(ls -d __CANDS__/*/flosc-by-*/flosc | head -1)
+        echo $CAND
+
+STEP 1  the version header - the first ERROR in the T12 and T13 emails
+        grep -m1 '^Requires at least:' $CAND/readme.txt
+        grep -m1 'Requires at least:' $CAND/flosc.php
+        The two must match and must be major.minor, e.g. 7.0 - never 7.0.4
+
+STEP 2  WordPress security sniffs: escaping, sanitizing, nonces, redirects, SQL
+        __PHPCS__ --standard=WordPress --warning-severity=0 \
+          --sniffs=WordPress.Security.EscapeOutput,WordPress.Security.ValidatedSanitizedInput,WordPress.Security.NonceVerification,WordPress.Security.SafeRedirect,WordPress.DB.PreparedSQL,WordPress.DB.DirectDatabaseQuery \
+          --extensions=php --ignore='__IGN__' $CAND
+
+STEP 3  PHP 7.4 compatibility - the WordPress.org minimum
+        __PHPCS__ --standard=PHPCompatibilityWP --runtime-set testVersion 7.4- \
+          --extensions=php --ignore='__IGN__' $CAND
+
+STEP 4  scripts and styles must be enqueued
+        __PHPCS__ --standard=WordPress --sniffs=WordPress.WP.EnqueuedResources \
+          --extensions=php --ignore='__IGN__' $CAND
+
+STEP 5  translation function calls
+        __PHPCS__ --standard=WordPress --sniffs=WordPress.WP.I18n \
+          --extensions=php --ignore='__IGN__' $CAND
+
+STEP 6  in_array / array_search without strict comparison
+        __PHPCS__ --standard=WordPress --sniffs=WordPress.PHP.StrictInArray \
+          --extensions=php --ignore='__IGN__' $CAND
+
+STEP 7  seven sniffs for documented WordPress.org review rejections
+        __PHPCS__ --standard=WordPress \
+          --sniffs=WordPress.NamingConventions.PrefixAllGlobals,WordPress.WP.Capabilities,WordPress.WP.GlobalVariablesOverride,WordPress.WP.AlternativeFunctions,WordPress.PHP.DevelopmentFunctions,WordPress.PHP.NoSilencedErrors,WordPress.Security.PluginMenuSlug \
+          --extensions=php --ignore='__IGN__' $CAND
+
+STEP 8  PHPStan level 5. It MUST load the WordPress extension, or it reports
+        thousands of phantom undefined-function errors. Write the config first.
+        printf '%s\n' \
+          'includes:' \
+          "    - $HOME/.composer/vendor/szepeviktor/phpstan-wordpress/extension.neon" \
+          'parameters:' \
+          '    level: 5' \
+          '    paths:' \
+          "        - $CAND" \
+          '    excludePaths:' \
+          "        - $CAND/tests" > /tmp/flosc-phpstan.neon
+        __PHPSTAN__ analyse -c /tmp/flosc-phpstan.neon --no-progress --memory-limit=1G
+
+STEP 9  inline style="..." attributes. No sniff catches these. It is a grep.
+        grep -rnE 'style="[^"]+"' $CAND --include=*.php | grep -v '/tests/'
+
+STEP 10 Plugin Check - WordPress.org's OWN tool. UNVERIFIED: this command has
+        never completed a run anywhere. Whatever it prints is the first evidence.
+        npx --yes @wp-playground/cli@latest run-blueprint \
+          --blueprint=pc-blueprint.json \
+          --mount=$CAND:/wordpress/wp-content/plugins/flosc --php=8.3
+
+STEP 11 the rules gate. THIS ONE IS MY CODE, not a real tool.
+        Seven rules encoding the review emails. It has produced false positives.
+        Read what it prints. Never sweep it.
+        cp __RULES__ $CAND/tests/ && (cd $CAND && php tests/check_wporg_rules.php)
+
+Exit code on every phpcs step: 0 clean, 1 or 2 findings, 3 or more it did not run.
+A step that did not run is not a pass. Check it with:  echo $?
+STEPS_EOF
   exit 0
 fi
 
@@ -169,6 +192,46 @@ pc_err() {
   echo "$n"
 }
 
+# PHPStan, with szepeviktor/phpstan-wordpress actually loaded. Without that
+# extension PHPStan does not know a single WordPress function and reports
+# thousands of phantom "undefined function" errors — a number that looks like
+# analysis and is nothing but a missing config. If the extension cannot be
+# found, this reports NORUN rather than that phantom number.
+stan_err() {
+  local root="$1" name="$2" cfg ext out rc n
+  if [ -z "$PHPSTAN" ]; then note_norun "phpstan"; echo "NORUN"; return; fi
+  ext=""
+  for c in "$HOME/.composer/vendor/szepeviktor/phpstan-wordpress/extension.neon" \
+           "$HOME/.config/composer/vendor/szepeviktor/phpstan-wordpress/extension.neon" \
+           "$HERE/vendor/szepeviktor/phpstan-wordpress/extension.neon"; do
+    [ -f "$c" ] && ext="$c" && break
+  done
+  if [ -z "$ext" ]; then
+    note_norun "phpstan-wordpress-extension"; echo "NORUN"; return
+  fi
+  cfg="$TMP/phpstan-$name.neon"
+  {
+    echo "includes:"
+    echo "    - $ext"
+    echo "parameters:"
+    echo "    level: 5"
+    echo "    paths:"
+    echo "        - $root"
+    echo "    excludePaths:"
+    echo "        - $root/tests"
+    echo "        - $root/vendor"
+    echo "        - $root/node_modules"
+  } > "$cfg"
+  out=$("$PHPSTAN" analyse -c "$cfg" --no-progress --error-format=raw --memory-limit=1G 2>&1); rc=$?
+  # PHPStan: 0 no errors, 1 errors found, anything else could not run.
+  if [ "$rc" -eq 0 ]; then echo 0; return; fi
+  if [ "$rc" -ne 1 ]; then
+    note_norun "phpstan:$name"; echo "NORUN"; return
+  fi
+  n=$(printf '%s' "$out" | grep -c ':[0-9]*:')
+  echo "${n:-0}"
+}
+
 echo "FLOSC testing bench — $STAMP"
 if [ -d "$HERE/.flosc-mirror/.git" ]; then
   echo "  candidates: $(git -C "$HERE/.flosc-mirror" rev-parse --short HEAD 2>/dev/null || echo unknown) (.flosc-mirror)"
@@ -185,10 +248,10 @@ echo "  rules   : $([ -f "$RULES" ] && echo 'present (Claude Opus 5 code)' || ec
 [ -n "$PHP" ]   || note_norun "php"
 [ -f "$RULES" ] || note_norun "check_wporg_rules.php"
 echo
-printf '%-20s %-9s %-6s %-6s %-6s %-6s %-7s %-7s %s\n' \
-  CANDIDATE hdr sec php74 enq i18n strict inline rules
-printf '%-20s %-9s %-6s %-6s %-6s %-6s %-7s %-7s %s\n' \
-  -------------------- --------- ------ ------ ------ ------ ------- ------- -----
+printf '%-20s %-9s %-6s %-6s %-6s %-6s %-6s %-6s %-6s %-6s %s\n' \
+  CANDIDATE hdr sec php74 enq i18n strict wporg stan inline rules
+printf '%-20s %-9s %-6s %-6s %-6s %-6s %-6s %-6s %-6s %-6s %s\n' \
+  -------------------- --------- ------ ------ ------ ------ ------ ------ ------ ------ -----
 
 DETAIL=""
 for d in "$CANDS"/*/; do
@@ -210,6 +273,12 @@ for d in "$CANDS"/*/; do
   i18=$(pc_err WordPress "--sniffs=WordPress.WP.I18n" "$root")
   stc=$(pc_err WordPress "--sniffs=WordPress.PHP.StrictInArray" "$root")
 
+  # Seven sniffs that map to documented WordPress.org plugin-review rejections
+  # and that nothing else in this bench was checking.
+  wpo=$(pc_err WordPress "--sniffs=WordPress.NamingConventions.PrefixAllGlobals,WordPress.WP.Capabilities,WordPress.WP.GlobalVariablesOverride,WordPress.WP.AlternativeFunctions,WordPress.PHP.DevelopmentFunctions,WordPress.PHP.NoSilencedErrors,WordPress.Security.PluginMenuSlug" "$root")
+
+  if [ "$RUN_STAN" = "1" ]; then stan=$(stan_err "$root" "$name"); else stan="skip"; fi
+
   inl=$(grep -rnoE 'style="[^"]+"' "$root" --include=*.php 2>/dev/null \
         | grep -v '/tests/\|/admin/docs/\|/flosc_documentation/' | wc -l | tr -d ' ')
 
@@ -222,8 +291,8 @@ for d in "$CANDS"/*/; do
     if [ -n "$rn" ]; then rules="$rn"; else rules="NORUN"; note_norun "rules:$name"; fi
   fi
 
-  printf '%-20s %-9s %-6s %-6s %-6s %-6s %-7s %-7s %s\n' \
-    "$name" "$hdr" "$sec" "$p74" "$enq" "$i18" "$stc" "$inl" "$rules"
+  printf '%-20s %-9s %-6s %-6s %-6s %-6s %-6s %-6s %-6s %-6s %s\n' \
+    "$name" "$hdr" "$sec" "$p74" "$enq" "$i18" "$stc" "$wpo" "$stan" "$inl" "$rules"
 
   DETAIL="$DETAIL
 ===================================================================
@@ -243,33 +312,25 @@ $rules_out
 done
 
 echo
-echo "  hdr=Requires at least   sec/php74/enq/i18n/strict = PHPCS errors (real tool)"
-echo "  inline = inline style=\"\" attributes   rules = check_wporg_rules.php findings (Claude Opus 5 code)"
+echo "  REAL TOOLS, not my code:"
+echo "    sec     PHPCS WordPress — escaping, sanitizing, nonces, redirects, SQL"
+echo "    php74   PHPCompatibilityWP at the WordPress.org PHP 7.4 minimum"
+echo "    enq     scripts/styles must be enqueued (matches src= and rel=stylesheet only)"
+echo "    i18n    translation function calls"
+echo "    strict  in_array / array_search without strict comparison"
+echo "    wporg   7 sniffs for documented .org review rejections: unprefixed globals,"
+echo "            bad capabilities, WP global overrides, curl instead of the HTTP API,"
+echo "            error_log/var_dump left in, @ suppression, __FILE__ menu slugs"
+echo "    stan    PHPStan level 5 with the WordPress extension loaded"
+echo
+echo "  MINE, not a tool:"
+echo "    hdr     a grep of the two Requires-at-least headers"
+echo "    inline  a grep for inline style=\"\" — nothing else in this bench catches those"
+echo "    rules   check_wporg_rules.php. 7 rules encoding the review emails. It has"
+echo "            produced false positives. Read its findings. Never sweep them."
+echo
 echo "  NORUN = the tool did not run. It is not a zero and it is not a pass."
-
-# ---------------------------------------------------------------- PHPStan
-if [ "$RUN_STAN" = "1" ]; then
-  echo
-  echo "=== PHPStan level 5 (real tool) ==="
-  if [ -z "$PHPSTAN" ]; then
-    echo "  NORUN — composer global require phpstan/phpstan szepeviktor/phpstan-wordpress"
-    note_norun "phpstan"
-  else
-    for d in "$CANDS"/*/; do
-      name=$(basename "$d")
-      root=$(find "$d" -maxdepth 3 -name flosc.php -not -path '*/tests/*' 2>/dev/null | head -1)
-      [ -z "$root" ] && continue
-      root=$(dirname "$root")
-      out=$("$PHPSTAN" analyse --level=5 --no-progress --error-format=raw "$root" 2>&1); rc=$?
-      if [ "$rc" -ge 2 ]; then
-        printf '  %-20s NORUN\n' "$name"; note_norun "phpstan:$name"
-        printf '%s\n' "$out" | head -5 | sed 's/^/      /'
-      else
-        printf '  %-20s %s findings\n' "$name" "$(printf '%s' "$out" | grep -c .)"
-      fi
-    done
-  fi
-fi
+echo "  skip  = you asked for it to be skipped (--fast / --no-stan / --no-plugincheck)."
 
 # ------------------------------------------------- Plugin Check (Playground)
 if [ "$RUN_PC" = "1" ]; then
