@@ -26,11 +26,18 @@ hardware, printing their own bytes.
 
 ## Refresh and run
 
-One block. Pulls the candidates and the runner:
+One block. Absolute paths, so it works from any directory. Pulls the
+candidates, the runner, and this document:
 
 ```
-cd /Users/dainismichel/2026/flosc_project_folder/.flosc-mirror && git pull --depth 1 origin main && cd .. && rsync -a --delete .flosc-mirror/pre-release-candidates/ pre-release-candidates/ && git -C .flosc-mirror show origin/main:testing-bench.sh > testing-bench.sh && chmod +x testing-bench.sh && echo INSTALLED
+cd /Users/dainismichel/2026/flosc_project_folder/.flosc-mirror && git fetch --depth 1 origin main && git reset --hard FETCH_HEAD && cd /Users/dainismichel/2026/flosc_project_folder && rsync -a --delete .flosc-mirror/pre-release-candidates/ pre-release-candidates/ && git -C .flosc-mirror show FETCH_HEAD:testing-bench.sh > testing-bench.sh && git -C .flosc-mirror show FETCH_HEAD:TESTING-ENVIRONMENT.md > TESTING-ENVIRONMENT.md && chmod +x testing-bench.sh && echo INSTALLED
 ```
+
+`fetch` + `reset --hard`, never `git pull`. The mirror is read-only, so there is
+nothing to reconcile and no merge strategy to choose. `git pull` on a shallow
+clone stops with *"You have divergent branches and need to specify how to
+reconcile them"* and then the rest of the chain never runs — including the `cd`,
+which leaves the shell inside `.flosc-mirror`.
 
 Then:
 
@@ -117,6 +124,9 @@ claim checkable a month later.
 
 ## Changelog of this environment
 
+- **2026-09-15** — refresh command changed from `git pull` to `git fetch` +
+  `git reset --hard`. `git pull` on the shallow mirror failed with divergent
+  branches and aborted the rest of the chain.
 - **2026-09-15** — `testing-bench.sh` created. PHPCS + WPCS +
   PHPCompatibilityWP verified working. `--steps` added so every check can be
   run by hand. Transcript logging added. Plugin Check path written, unverified.
