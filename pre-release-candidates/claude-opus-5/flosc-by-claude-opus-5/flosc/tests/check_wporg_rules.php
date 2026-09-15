@@ -166,6 +166,24 @@ if ( $wp_current && isset( $hdr['readme.txt Tested up to'] ) ) {
  * ====================================================================== */
 rule( 'WPORG-02', 'A core file is loaded and then actually used', 'T12 13Sep26' );
 
+/*
+ * Class files are used with `new` or class_exists(), not by calling a function.
+ *
+ * The first cut of this rule looked only for function calls, so
+ * class-wp-filesystem-direct.php loaded and then instantiated four lines later
+ * read as "uses nothing from it" — eleven false alarms across three files, on
+ * code that is correct. A false positive acted on is destructacoding, so the
+ * symbol a file provides has to be matched the way that file is actually used.
+ */
+$core_classes = array(
+	'class-wp-filesystem-base.php'   => 'WP_Filesystem_Base',
+	'class-wp-filesystem-direct.php' => 'WP_Filesystem_Direct',
+	'class-wp-filesystem-ftpext.php' => 'WP_Filesystem_FTPext',
+	'class-wp-filesystem-ssh2.php'   => 'WP_Filesystem_SSH2',
+	'class-wp-upgrader.php'          => 'WP_Upgrader',
+	'class-wp-list-table.php'        => 'WP_List_Table',
+);
+
 $core_fns = array(
 	'file.php'     => array( 'WP_Filesystem', 'request_filesystem_credentials', 'wp_handle_upload', 'wp_handle_sideload', 'download_url', 'unzip_file', 'wp_tempnam', 'validate_file_to_edit' ),
 	'media.php'    => array( 'media_handle_upload', 'media_handle_sideload', 'wp_read_image_metadata', 'media_sideload_image' ),
@@ -182,18 +200,25 @@ foreach ( $src as $file => $lines ) {
 			continue;
 		}
 		$core = $m[1];
-		if ( ! isset( $core_fns[ $core ] ) ) {
-			finding( 'WPORG-02', $file, $i + 1, "loads core {$core} — unknown to this rule, verify a function from it is used right after" );
-			continue;
-		}
-		/* Look ahead 30 lines for a call to something that file provides. */
+		/* Look ahead 30 lines for the symbol that file provides. */
 		$window = implode( "\n", array_slice( $lines, $i + 1, 30 ) );
 		$used   = false;
-		foreach ( $core_fns[ $core ] as $fn ) {
-			if ( preg_match( '/\b' . preg_quote( $fn, '/' ) . '\s*\(/', $window ) ) {
-				$used = true;
-				break;
+
+		if ( isset( $core_classes[ $core ] ) ) {
+			/* A class file is used by instantiating it, extending it, or asking
+			   whether it exists — never by calling a function from it. */
+			$cls  = preg_quote( $core_classes[ $core ], '/' );
+			$used = (bool) preg_match( '/(?:new\s+' . $cls . '\b|class_exists\s*\(\s*[\x27"]' . $cls . '|extends\s+' . $cls . '\b|' . $cls . '::)/', $window );
+		} elseif ( isset( $core_fns[ $core ] ) ) {
+			foreach ( $core_fns[ $core ] as $fn ) {
+				if ( preg_match( '/\b' . preg_quote( $fn, '/' ) . '\s*\(/', $window ) ) {
+					$used = true;
+					break;
+				}
 			}
+		} else {
+			finding( 'WPORG-02', $file, $i + 1, "loads core {$core} — unknown to this rule, verify a symbol from it is used right after" );
+			continue;
 		}
 		if ( ! $used ) {
 			finding( 'WPORG-02', $file, $i + 1, "loads core {$core} and uses nothing from it within 30 lines" );

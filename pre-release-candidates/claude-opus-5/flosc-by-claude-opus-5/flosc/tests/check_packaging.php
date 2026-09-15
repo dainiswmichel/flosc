@@ -143,21 +143,27 @@ ok( 'readme.txt stable tag', isset( $t[1] ) ? $t[1] : '', '8.0.0' );
 ok( '  and they agree', ( $v[1] ?? 'a' ) === ( $t[1] ?? 'b' ), true );
 
 /*
- * Requires at least and Tested up to are WordPress versions. This plugin needs
- * 7.0.4 and is tested against 7.1, the current release.
+ * The WordPress version headers are checked by SHAPE, never against a stored value.
  *
- * Tested up to reads major.minor only — a value of 7.0.4 is read as 7.0, and
- * Plugin Check then reports outdated_tested_upto_header against 7.1. That is
- * an ERROR, and wp.org will not list a plugin whose Tested up to is behind the
- * current release.
+ * This block used to assert 'Requires at least' === '7.0.4' and printed a
+ * confident comment explaining why that was right. WordPress.org returned it as
+ * an ERROR in three consecutive reviews — 27 Jun, 12 Jul and 13 Sep 2026 — while
+ * this suite printed "0 failing gates", because the assertion recorded what the
+ * code said instead of what the standard requires. A test that agrees with the
+ * code it is testing cannot fail when the code is wrong.
+ *
+ * The rule, from the 13 Sep 2026 email: "include only the major WordPress
+ * version, as the minor version is ignored." So: major.minor, no patch digit.
+ * No version literal appears below.
  */
 echo "\nThe WordPress version headers name a real release\n";
 preg_match( '/^Requires at least:\s*(\S+)/m', $readme, $rmin );
 preg_match( '/^Tested up to:\s*(\S+)/m', $readme, $rmax );
 preg_match( '/^ \* Requires at least:\s*(\S+)/m', $main, $pmin );
-ok( 'readme.txt Requires at least', $rmin[1] ?? '', '7.0.4' );
-ok( 'readme.txt Tested up to', $rmax[1] ?? '', '7.1' );
-ok( 'flosc.php Requires at least', $pmin[1] ?? '', '7.0.4' );
+ok( 'readme.txt Requires at least is major.minor', (bool) preg_match( '/^\d+\.\d+$/', $rmin[1] ?? '' ), true );
+ok( 'readme.txt Tested up to is major.minor', (bool) preg_match( '/^\d+\.\d+$/', $rmax[1] ?? '' ), true );
+ok( 'flosc.php Requires at least is major.minor', (bool) preg_match( '/^\d+\.\d+$/', $pmin[1] ?? '' ), true );
+ok( '  and the two files agree', ( $rmin[1] ?? 'a' ) === ( $pmin[1] ?? 'b' ), true );
 ok( '  and Tested up to is never ahead of Requires at least',
 	version_compare( $rmax[1] ?? '0', $rmin[1] ?? '0', '>=' ), true );
 
