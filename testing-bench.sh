@@ -10,6 +10,9 @@
 #     ./testing-bench.sh --plugincheck   also run Plugin Check in WordPress Playground (slowest)
 #     ./testing-bench.sh --all           everything
 #     ./testing-bench.sh --steps         run NOTHING; print the commands to run by hand
+#     ./testing-bench.sh --no-log        do not write a transcript
+#
+# Every run is logged to testing-logs/<MTS>.txt unless --no-log is given.
 #
 # READ-ONLY. Each candidate is copied to a temp dir before anything touches it.
 #
@@ -34,6 +37,25 @@ CANDS="$HERE/pre-release-candidates"
 RULES="$CANDS/claude-opus-5/flosc-by-claude-opus-5/flosc/tests/check_wporg_rules.php"
 IGN='*/tests/*,*/vendor/*,*/node_modules/*,*/admin/docs/*,*/flosc_documentation/*'
 STAMP=$(date -u +"%Yy-%mm-%dd-UTC-%Hh-%Mm-%Ss")
+
+# ------------------------------------------------------------------ the log
+# Every run writes its full transcript to testing-logs/<MTS>.txt, unedited,
+# before anyone gets a chance to summarise it. A claim about this plugin can
+# then be checked against a file with a date on it instead of against an
+# agent's memory of what it saw. --no-log turns it off.
+case " $* " in
+  *" --no-log "*) BENCH_LOGGING=1 ;;
+esac
+if [ "${BENCH_LOGGING:-0}" != "1" ]; then
+  mkdir -p "$HERE/testing-logs"
+  LOGFILE="$HERE/testing-logs/$STAMP.txt"
+  BENCH_LOGGING=1 "$0" "$@" 2>&1 | tee "$LOGFILE"
+  rc=${PIPESTATUS[0]}
+  echo
+  echo "transcript written to: $LOGFILE"
+  exit "$rc"
+fi
+
 TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
 NORUN=""            # names of tools that did not run; any entry => exit 1
 
@@ -148,6 +170,13 @@ pc_err() {
 }
 
 echo "FLOSC testing bench — $STAMP"
+if [ -d "$HERE/.flosc-mirror/.git" ]; then
+  echo "  candidates: $(git -C "$HERE/.flosc-mirror" rev-parse --short HEAD 2>/dev/null || echo unknown) (.flosc-mirror)"
+elif [ -d "$HERE/.git" ]; then
+  echo "  candidates: $(git -C "$HERE" rev-parse --short HEAD 2>/dev/null || echo unknown)"
+else
+  echo "  candidates: NO GIT — cannot say which commit these numbers describe"
+fi
 echo "  phpcs   : $([ -n "$PHPCS" ] && "$PHPCS" --version 2>/dev/null || echo 'NOT INSTALLED')"
 echo "  phpstan : $([ -n "$PHPSTAN" ] && "$PHPSTAN" --version 2>/dev/null | head -1 || echo 'NOT INSTALLED')"
 echo "  php     : $([ -n "$PHP" ] && "$PHP" -r 'echo PHP_VERSION;' 2>/dev/null || echo 'NOT INSTALLED')"

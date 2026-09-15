@@ -10,6 +10,8 @@
 .distignore
 build-dist-zip.sh
 testing-bench.sh
+TESTING-ENVIRONMENT.md
+testing-logs/
 .claude/
 .vscode/
 .idea/

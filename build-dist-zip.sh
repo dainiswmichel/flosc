@@ -76,6 +76,8 @@ DENY_PATTERNS=(
   'da1ni5_personal_profitability'
   'build-dist-zip.sh'
   'testing-bench.sh'
+  'TESTING-ENVIRONMENT.md'
+  'testing-logs'
   '.distignore'
 )
 

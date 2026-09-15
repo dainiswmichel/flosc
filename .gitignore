@@ -25,3 +25,6 @@ flosc_development_worknotes/
 flosc_development_archives/
 tmp/
 zip-files/
+
+# Local test transcripts — the Captain's evidence, his machine, not repo content.
+testing-logs/
