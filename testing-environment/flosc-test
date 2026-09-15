@@ -303,7 +303,7 @@ pull() {
     # phpcs-compat.xml.dist was missing from this list, so procedure 4 ran on
     # whatever copy happened to be on the machine. Every config the procedures
     # read belongs here.
-    for f in phpcs.xml.dist phpcs-compat.xml.dist phpstan.neon.dist TESTING-PROCEDURES.md; do
+    for f in phpcs.xml.dist phpcs-compat.xml.dist phpstan.neon.dist MANUAL.html; do
       [ -f "$env_dir/$f" ] && cp "$env_dir/$f" "$HERE/$f"
     done
     mkdir -p "$RUNTIME"
@@ -1004,6 +1004,10 @@ usage() {
   echo
   echo "Every procedure prints the tool and the exact command before its output."
   echo "A check that did not run prints NOT RUN and exits non-zero. Never 0."
+  echo
+  echo "MANUAL"
+  echo "  open $HERE/MANUAL.html"
+  echo "  The whole bench explained, quoting this file's own code. Refreshed by pull."
 }
 
 main() {
