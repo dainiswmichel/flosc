@@ -1075,7 +1075,21 @@ trait FLOSC_Admin_Trait {
             return;
         }
 
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified inside handlers
+        /*
+         * Capability first, then the body.
+         *
+         * Every individual handler below verifies its own nonce, and that is
+         * still true -- but nothing established WHO was asking before the POST
+         * body was unslashed and dispatched on. On a page that stores
+         * administrative settings, the identity check belongs before the parse,
+         * not distributed among the things the parse leads to. This is the same
+         * capability the FLOSC menu itself requires.
+         */
+        if (!current_user_can('edit_others_posts')) {
+            return;
+        }
+
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- each handler below verifies its own nonce; capability checked immediately above.
         $post = isset($_POST) && is_array($_POST) ? wp_unslash($_POST) : [];
         if ($post === []) {
             return;

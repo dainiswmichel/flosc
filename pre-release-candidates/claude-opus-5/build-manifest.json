@@ -1,15 +1,15 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": 69,
+  "candidate_iteration": 70,
   "creator": "Claude Opus 5",
   "status": "BUILT_AWAITING_CAPTAIN_TEST",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v67",
+  "base": "claude-opus-5 v69",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "cd4192b463b80a931a746772d9f4f067da487ac0cfda744d4b25afd7b51565ba",
-  "artifact_bytes": 2751714,
+  "artifact_sha256": "98e99e683bdcbecb5be5188b2a9c8a33ba49d55b4a9bf525d84fdf7c2c8e4a67",
+  "artifact_bytes": 2755894,
   "artifact_entries": 277,
   "tree_files": 289,
   "why_this_iteration": {
@@ -379,5 +379,28 @@
     "tests/check_wporg_rules.php - four false-positive classes fixed, advisory split",
     "tests/wporg-rule-exceptions.txt - new",
     "tests/verify-standards.sh - from v65/v66"
+  ],
+  "v70_t13_nonces": {
+    "the_finding": "T13, 14 Sep 2026, a category never seen before: nonce/origin checks. 9 incidences, 5 named.",
+    "what_their_scanner_measures": "Not whether a check EXISTS but whether one appears BEFORE the request is read. Several sites here verified correctly and verified LATE, and late did not count -- an unauthorized request still walked the whole parser before being refused.",
+    "fixed": "ajax_flosc_manage_chat_sessions: check_ajax_referer moved to the first statement. ajax_serve_user_audio: reads user_id, authorizes, THEN parses the other five parameters; the duplicate later guards removed. maybe_process_flosc_settings_post: capability before the POST body. Seven admin tab files and the portability handler: explicit capability gate at the top.",
+    "rule_added": "WPORG-10 encodes the heuristic and found exactly 9 -- the same count the email reported. Now clear.",
+    "false_positive_not_fixed": "admin/flosc-app.php lives in admin/ but is the PUBLIC full-page app, included by class-flosc-full-page-mode.php:467 and rendered for logged-out visitors. Gating it would 403 every visitor. Recorded as a reviewed exception."
+  },
+  "v70_non_determinism_finding": "T12 (13 Sep) and T13 (14 Sep) both reviewed the SAME zip, the 11 Sep 23:16 upload, and returned DIFFERENT lists. T12: version headers, import.php, WP_PLUGIN_DIR, SSO allowlist, filter_input. T13: version headers and nonces, nothing else. Their AI pass is non-deterministic, so fixing exactly what the last email said was never sufficient. The real list is the union, and more can surface from unchanged code.",
+  "v70_verification": {
+    "wporg_rules": "all 10 blocking rules clear, 0 findings, 4 reviewed exceptions each with a written reason",
+    "phpcs_security": "exit 0, no output -- EscapeOutput, ValidatedSanitizedInput, NonceVerification, SafeRedirect, PreparedSQL, DirectDatabaseQuery",
+    "gates": "all PHP gates pass, both JS gates pass, php -l clean",
+    "unverified": "whether Tested up to 7.1 is the current WordPress release. api.wordpress.org is 403 through this proxy.",
+    "not_claimed": "that this passes review. Plugin Check needs a WordPress install, and their AI pass is non-deterministic."
+  },
+  "files_changed_from_v69": [
+    "flosc.php - ajax nonce ordering, audio endpoint authorizes before parsing",
+    "includes/flosc-admin.php - capability before the settings POST body",
+    "admin/ivr-messages.php, offers.php, ai-configuration.php, ai-feedback.php, autoprompts.php, chat-styling.php, flow.php, token-management.php, settings.php - explicit capability gate",
+    "admin/ivr-upload-handler.php - capability first in the portability handler",
+    "tests/check_wporg_rules.php - WPORG-10 added",
+    "tests/wporg-rule-exceptions.txt - flosc-app.php public-app exception"
   ]
 }

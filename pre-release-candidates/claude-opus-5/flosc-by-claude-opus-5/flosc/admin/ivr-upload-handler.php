@@ -661,7 +661,16 @@ if ( ! function_exists( 'flosc_admin_handle_portability_pack_actions' ) ) {
 	 * @return void
 	 */
 	function flosc_admin_handle_portability_pack_actions() {
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified via check_admin_referer in this handler
+		/*
+		 * Who, before what. check_admin_referer() runs further down for each
+		 * action, and that is still true -- but nothing established the caller's
+		 * identity before the POST body was read at all.
+		 */
+		if ( ! current_user_can( 'edit_others_posts' ) ) {
+			return;
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified via check_admin_referer per action below; capability checked immediately above.
 		$action = isset( $_POST['flosc_portability_pack_action'] )
 			? sanitize_key( (string) wp_unslash( $_POST['flosc_portability_pack_action'] ) )
 			: '';

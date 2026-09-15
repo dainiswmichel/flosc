@@ -457,6 +457,90 @@ foreach ( $src as $file => $lines ) {
 }
 
 /* =========================================================================
+ * WPORG-10 — origin or identity established before request data is read
+ *
+ * T13, 14 Sep 2026, a category that had never appeared before: "No nonce check
+ * found validating input origin on lines 1-116", "The settings POST processor
+ * stores administrative settings without validating a nonce before processing
+ * the request", "The AJAX audio-serving endpoint lacks a request-origin check
+ * and authorization before serving user-associated audio."
+ *
+ * Note what their scanner measures: not whether a check EXISTS in the function,
+ * but whether one appears BEFORE the request is read. Several sites in this
+ * tree verified correctly and verified late, and late did not count -- an
+ * unauthorized request still walked through the whole parser before being
+ * refused.
+ *
+ * So this rule asks the same question. For every wp_ajax_ handler and every
+ * admin tab file, does a nonce or capability check appear before the first
+ * superglobal read?
+ * ====================================================================== */
+rule( 'WPORG-10', 'Origin or identity checked BEFORE request data is read', 'T13 14Sep26' );
+
+$gates = '/\b(?:check_ajax_referer|check_admin_referer|wp_verify_nonce|current_user_can|is_super_admin|can_access_flow_admin|can_manage_flow_chat_logs|viewer_can_stream_member_audio)\s*\(/';
+$reads = '/\$_(?:POST|GET|REQUEST|COOKIE)\b/';
+
+/* --- admin tab files: the check must precede the first read in the file --- */
+foreach ( $src as $file => $lines ) {
+	if ( strpos( $file, 'admin/' ) !== 0 ) {
+		continue;
+	}
+	$first_read = null;
+	$first_gate = null;
+	foreach ( $lines as $i => $line ) {
+		if ( flosc_is_comment_line( $line ) ) {
+			continue;
+		}
+		if ( null === $first_gate && preg_match( $gates, $line ) ) {
+			$first_gate = $i;
+		}
+		if ( null === $first_read && preg_match( $reads, $line ) ) {
+			$first_read = $i;
+		}
+	}
+	if ( null === $first_read ) {
+		continue;
+	}
+	if ( null === $first_gate || $first_gate > $first_read ) {
+		finding( 'WPORG-10', $file, $first_read + 1, 'first request read at this line; no nonce or capability check before it' );
+	}
+}
+
+/* --- wp_ajax_ handlers: same question, inside the method --- */
+foreach ( $src as $file => $lines ) {
+	$joined = implode( "\n", $lines );
+	if ( ! preg_match_all( '/add_action\\s*\\(\\s*[\\x27"]wp_ajax(?:_nopriv)?_[a-z0-9_]+[\\x27"]\\s*,\\s*(?:array\\s*\\(\\s*\\$this\\s*,\\s*)?[\\x27"]?([A-Za-z0-9_]+)/', $joined, $am ) ) {
+		continue;
+	}
+	foreach ( array_unique( $am[1] ) as $method ) {
+		if ( ! preg_match( '/function\s+' . preg_quote( $method, '/' ) . '\s*\(/', $joined, $fm, PREG_OFFSET_CAPTURE ) ) {
+			continue;
+		}
+		$start = substr_count( substr( $joined, 0, $fm[0][1] ), "\n" );
+		$body  = array_slice( $lines, $start, 40 );
+		$g = null;
+		$r = null;
+		foreach ( $body as $k => $line ) {
+			if ( flosc_is_comment_line( $line ) ) {
+				continue;
+			}
+			if ( null === $g && preg_match( $gates, $line ) ) {
+				$g = $k;
+			}
+			if ( null === $r && preg_match( $reads, $line ) ) {
+				$r = $k;
+			}
+		}
+		if ( null === $r ) {
+			continue;
+		}
+		if ( null === $g || $g > $r ) {
+			finding( 'WPORG-10', $file, $start + $r + 1, "wp_ajax handler {$method}() reads the request before any nonce or capability check" );
+		}
+	}
+}
+
+/* =========================================================================
  * Report. Raw counts and every file:line. No summary verdict beyond the total.
  * ====================================================================== */
 $total    = 0;

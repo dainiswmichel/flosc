@@ -10567,13 +10567,19 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
      * Bulk session management for chat logs: archive, restore, or delete.
      */
     public function ajax_flosc_manage_chat_sessions() {
+        // Origin first, before a single byte of the request is read. The nonce
+        // was verified here before, but after the POST body was parsed and after
+        // a capability branch that can exit -- so nothing proved the request
+        // originated from this site until several statements in. Capability
+        // answers WHO; the nonce answers WHETHER THEY MEANT TO. Both, in that
+        // order, before anything else happens.
+        check_ajax_referer('flosc_chat_logs', 'nonce');
+
         $post = wp_unslash($_POST);
         $flow = sanitize_key((string) ($post['flow_id'] ?? ''));
         if (!$this->can_manage_flow_chat_logs($flow)) {
             wp_send_json_error(['message' => 'Unauthorized'], 403);
         }
-
-        check_ajax_referer('flosc_chat_logs', 'nonce');
 
         $operation = sanitize_key((string) ($post['operation'] ?? ''));
         if (!in_array($operation, ['archive', 'restore', 'delete'], true)) {
@@ -11364,9 +11370,25 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
      * Required because flosc-users/ dirs have .htaccess Deny from all.
      */
     public function ajax_serve_user_audio() {
-        // Signed URL endpoint (exp + HMAC). Read query via filter_input — not a
-        // state-changing POST; auth is signature and/or capability below.
-        $user_id     = absint( (string) filter_input( INPUT_GET, 'user_id', FILTER_SANITIZE_NUMBER_INT ) );
+        /*
+         * Authorize before parsing.
+         *
+         * This read six query parameters and then asked whether the viewer was
+         * allowed any of them. The check was real but it was last, so an
+         * unauthorized request still walked through the whole parser. Read the
+         * one value the decision needs, decide, and refuse before touching
+         * anything else. A signed URL is the origin proof here -- it has to work
+         * from an <audio src>, where a nonce cannot go -- and the capability
+         * check is what makes it safe.
+         */
+        $user_id = absint( (string) filter_input( INPUT_GET, 'user_id', FILTER_SANITIZE_NUMBER_INT ) );
+        if ( ! $user_id ) {
+            wp_die( 'Missing parameters', 400 );
+        }
+        if ( ! $this->viewer_can_stream_member_audio( $user_id ) ) {
+            wp_die( 'Unauthorized', 403 );
+        }
+
         $file_raw    = ( isset( $_GET['file'] ) && is_scalar( $_GET['file'] )
 			? sanitize_text_field( wp_unslash( $_GET['file'] ) )
 			: '' );
@@ -11389,14 +11411,10 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         }
         $session_id  = is_string( $session_raw ) ? sanitize_text_field( $session_raw ) : '';
 
-        if (!$user_id || !$file) {
+        // $user_id and the capability were settled at the top of this method,
+        // before anything else was parsed. Only $file is left to validate.
+        if (!$file) {
             wp_die('Missing parameters', 400);
-        }
-
-        // Stream: paid member listening to their own files, or an admin (wp-admin).
-        // Visitors, guests, and signed URLs without that session are 403.
-        if (!$this->viewer_can_stream_member_audio($user_id)) {
-            wp_die('Unauthorized', 403);
         }
 
         // Validate filename: only allow phrase-N.ext pattern

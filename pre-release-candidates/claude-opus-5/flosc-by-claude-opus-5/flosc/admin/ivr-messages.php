@@ -7,6 +7,18 @@
 
 if (!defined('ABSPATH')) exit;
 
+/*
+ * This tab is reached only through the FLOSC menu, which requires
+ * edit_others_posts, and admin/settings.php checks can_access_flow_admin()
+ * before including it. Both of those are true, and neither is visible from
+ * inside this file -- to a reviewer or to a scanner reading it on its own, and
+ * to anything that ever includes it from somewhere new. An included file does
+ * not get to assume its caller gated it.
+ */
+if ( ! current_user_can( 'edit_others_posts' ) ) {
+	wp_die( esc_html__( 'You do not have permission to access this page.', 'flosc' ), 403 );
+}
+
 if (!function_exists('flosc_resolve_ivr_file_path')) {
     function flosc_resolve_ivr_file_path($flosc_ivr_filename) {
         $flosc_ivr_filename = sanitize_file_name(trim((string) $flosc_ivr_filename));

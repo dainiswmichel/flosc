@@ -14,6 +14,23 @@
 
 if (!defined('ABSPATH')) exit;
 
+/*
+ * Identity before input.
+ *
+ * WordPress.org, 14 Sep 2026: "No nonce check found validating input origin on
+ * lines 1-116". Their scanner measures whether a check appears BEFORE the
+ * request is read, not merely whether one exists somewhere in the file. Several
+ * files here verified correctly and verified late, and late did not count -- an
+ * unauthorized request still walked the whole parser before being refused.
+ *
+ * This is the capability the FLOSC menu itself requires. Flow-level access is
+ * still checked further down where the flow is known; this only establishes
+ * that somebody who may administer FLOSC at all is asking.
+ */
+if ( ! current_user_can( 'edit_others_posts' ) ) {
+	wp_die( esc_html__( 'You do not have permission to access this page.', 'flosc' ), 403 );
+}
+
 // ── v1.9.5: Rated Responses from DB (via logger data API; schema ensured there) ──
 $flosc_rated_logs  = FLOSC_Chat_Logger::instance()->flosc_get_rated_logs( 50 );
 $flosc_rated_count = count( $flosc_rated_logs );
