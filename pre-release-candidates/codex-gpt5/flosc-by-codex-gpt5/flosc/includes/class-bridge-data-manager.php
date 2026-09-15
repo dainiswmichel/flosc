@@ -132,7 +132,13 @@ class FLOSC_Bridge_Data_Manager {
      *   - categories: (array) Optional category breakdown
      */
     public function handle_external_quiz($user_id, $quiz_id, $score_data) {
-        if (!$user_id || !is_array($score_data)) {
+        $user_id = absint($user_id);
+        $quiz_id = sanitize_key((string) $quiz_id);
+        $score_data = class_exists('FLOSC_Quiz_Manager')
+            ? FLOSC_Quiz_Manager::sanitize_score_data($score_data)
+            : false;
+
+        if (!$user_id || !$quiz_id || false === $score_data) {
             return;
         }
         

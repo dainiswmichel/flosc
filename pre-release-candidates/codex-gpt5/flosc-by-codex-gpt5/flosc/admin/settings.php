@@ -689,7 +689,22 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
                     'vgm_rows'    => $flosc_bb_rows,
                 );
             } elseif (is_array($flosc_value)) {
-                $flosc_new_settings[$flosc_setting_key] = array_map('sanitize_text_field', $flosc_value);
+                // Remaining flow_* arrays are flat lists; the supported nested
+                // buddyboss_index setting has its schema-specific branch above.
+                $flosc_flat_values = [];
+                foreach ($flosc_value as $flosc_array_key => $flosc_array_value) {
+                    if (!is_scalar($flosc_array_value)) {
+                        continue;
+                    }
+                    $flosc_clean_key = is_int($flosc_array_key)
+                        ? $flosc_array_key
+                        : sanitize_key((string) $flosc_array_key);
+                    if (!is_int($flosc_clean_key) && '' === $flosc_clean_key) {
+                        continue;
+                    }
+                    $flosc_flat_values[$flosc_clean_key] = sanitize_text_field((string) $flosc_array_value);
+                }
+                $flosc_new_settings[$flosc_setting_key] = $flosc_flat_values;
             } else {
                 $flosc_new_settings[$flosc_setting_key] = sanitize_text_field($flosc_value);
             }
@@ -1633,7 +1648,7 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
         $flosc_new_settings['guest_can_rename_chats'] = !empty($flosc_post['flow_guest_can_rename_chats']) ? '1' : '';
         if (isset($flosc_post['flow_guest_new_chat_limit_message'])) {
             $flosc_new_settings['guest_new_chat_limit_message'] = sanitize_textarea_field(
-                wp_unslash((string) $flosc_post['flow_guest_new_chat_limit_message'])
+                (string) $flosc_post['flow_guest_new_chat_limit_message']
             );
         }
         if (isset($flosc_new_settings['guest_access_days'])) {
@@ -1719,8 +1734,8 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
         if (is_array($flosc_ct_singular)) {
             $flosc_content_types = [];
             foreach ($flosc_ct_singular as $flosc_i => $flosc_s) {
-                $flosc_s = sanitize_text_field(wp_unslash((string) $flosc_s));
-                $flosc_p = sanitize_text_field(wp_unslash((string) ($flosc_ct_plural[$flosc_i] ?? '')));
+                $flosc_s = sanitize_text_field((string) $flosc_s);
+                $flosc_p = sanitize_text_field((string) ($flosc_ct_plural[$flosc_i] ?? ''));
                 if ($flosc_s === '' && $flosc_p === '') {
                     continue;
                 }
@@ -1752,23 +1767,23 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
         // Chat list chrome (flow-scoped labels / new-chat welcome copy).
         if (isset($flosc_post['flow_new_chat_button_label'])) {
             $flosc_new_settings['new_chat_button_label'] = sanitize_text_field(
-                wp_unslash((string) $flosc_post['flow_new_chat_button_label'])
+                (string) $flosc_post['flow_new_chat_button_label']
             );
         }
         // first_chat_title removed: session title is always "New Chat" on create, then auto/rename.
         if (isset($flosc_post['flow_empty_chat_list_message'])) {
             $flosc_new_settings['empty_chat_list_message'] = sanitize_text_field(
-                wp_unslash((string) $flosc_post['flow_empty_chat_list_message'])
+                (string) $flosc_post['flow_empty_chat_list_message']
             );
         }
         if (isset($flosc_post['flow_guest_new_chat_welcome_message'])) {
             $flosc_new_settings['guest_new_chat_welcome_message'] = sanitize_textarea_field(
-                wp_unslash((string) $flosc_post['flow_guest_new_chat_welcome_message'])
+                (string) $flosc_post['flow_guest_new_chat_welcome_message']
             );
         }
         if (isset($flosc_post['flow_member_new_chat_welcome_message'])) {
             $flosc_new_settings['member_new_chat_welcome_message'] = sanitize_textarea_field(
-                wp_unslash((string) $flosc_post['flow_member_new_chat_welcome_message'])
+                (string) $flosc_post['flow_member_new_chat_welcome_message']
             );
         }
 

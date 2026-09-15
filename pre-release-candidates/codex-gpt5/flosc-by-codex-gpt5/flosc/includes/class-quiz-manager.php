@@ -98,8 +98,8 @@ class FLOSC_Quiz_Manager {
      */
     public function handle_external_quiz_rest($request) {
         $user_id = absint($request->get_param('user_id') ?: get_current_user_id());
-        $quiz_id = $request->get_param('quiz_id');
-        $score_data = $request->get_param('score_data');
+        $quiz_id = sanitize_key((string) $request->get_param('quiz_id'));
+        $score_data = self::sanitize_score_data($request->get_param('score_data'));
 
         $api_key = sanitize_text_field((string) $request->get_header('X-FLOSC-API-Key'));
         $stored_key = (string) get_option('flosc_external_api_key', '');
@@ -112,10 +112,10 @@ class FLOSC_Quiz_Manager {
             ], 403);
         }
         
-        if (!$user_id || !$quiz_id) {
+        if (!$user_id || !$quiz_id || false === $score_data) {
             return new WP_REST_Response([
                 'success' => false,
-                'error' => 'Missing required parameters: user_id, quiz_id',
+                'error' => 'Invalid or missing user_id, quiz_id, or score_data.',
             ], 400);
         }
         
@@ -217,18 +217,14 @@ class FLOSC_Quiz_Manager {
      * @return bool Success
      */
     public static function submit_score($user_id, $quiz_id, $score_data) {
-        if (!$user_id || !$quiz_id || !is_array($score_data)) {
+        $user_id    = absint($user_id);
+        $quiz_id    = sanitize_key((string) $quiz_id);
+        $score_data = self::sanitize_score_data($score_data);
+
+        if (!$user_id || !$quiz_id || false === $score_data) {
             if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Quiz Manager: Invalid parameters - user_id: {$user_id}, quiz_id: {$quiz_id}");
             return false;
         }
-        
-        // Ensure score is set
-        if (!isset($score_data['score'])) {
-            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Quiz Manager: Missing score in score_data");
-            return false;
-        }
-        
-        $quiz_id = sanitize_key($quiz_id);
         
         // Get quiz metadata if registered
         $quiz_meta = self::get_quiz($quiz_id);
@@ -239,8 +235,8 @@ class FLOSC_Quiz_Manager {
         }
         
         // Add source info
-        $score_data['plugin'] = $quiz_meta['source'] ?? 'external';
-        $score_data['quiz_title'] = $quiz_meta['title'] ?? $quiz_id;
+        $score_data['plugin'] = sanitize_key((string) ($quiz_meta['source'] ?? 'external'));
+        $score_data['quiz_title'] = sanitize_text_field((string) ($quiz_meta['title'] ?? $quiz_id));
         
         // Fire the external quiz hook (Bridge Data Manager listens to this)
         do_action('flosc_external_quiz_score', $user_id, $quiz_id, $score_data);
@@ -251,6 +247,115 @@ class FLOSC_Quiz_Manager {
         if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Quiz Manager: Submitted score for user {$user_id}, quiz {$quiz_id}, score {$score_data['score']}%");
         
         return true;
+    }
+
+    /**
+     * Sanitize an external quiz payload before hooks or persistence.
+     *
+     * The documented fields remain available to integrations, as do additional
+     * scalar/array fields, but the request is bounded and every string/key is
+     * sanitized. Numeric and boolean values retain their JSON types.
+     *
+     * @param mixed $score_data Candidate score payload.
+     * @return array|false Sanitized payload, or false when invalid.
+     */
+    public static function sanitize_score_data($score_data) {
+        if (!is_array($score_data)) {
+            return false;
+        }
+
+        $remaining = 2000;
+        $valid     = true;
+        $clean     = self::sanitize_score_value($score_data, 0, $remaining, $valid);
+        if (!$valid || !is_array($clean) || !array_key_exists('score', $clean) || !is_numeric($clean['score'])) {
+            return false;
+        }
+
+        $score = (float) $clean['score'];
+        if (!is_finite($score) || $score < 0 || $score > 100) {
+            return false;
+        }
+        $clean['score'] = $score;
+
+        foreach (array('correct_items', 'incorrect_items') as $list_key) {
+            if (!isset($clean[$list_key])) {
+                $clean[$list_key] = array();
+                continue;
+            }
+            if (!is_array($clean[$list_key]) || count($clean[$list_key]) > 500) {
+                return false;
+            }
+
+            $identifiers = array();
+            foreach ($clean[$list_key] as $identifier) {
+                if (!is_scalar($identifier)) {
+                    return false;
+                }
+                $identifiers[] = sanitize_text_field((string) $identifier);
+            }
+            $clean[$list_key] = $identifiers;
+        }
+
+        if (isset($clean['time_spent'])) {
+            $clean['time_spent'] = absint($clean['time_spent']);
+        }
+
+        $encoded = wp_json_encode($clean);
+        if (!is_string($encoded) || strlen($encoded) > 200000) {
+            return false;
+        }
+
+        return $clean;
+    }
+
+    /**
+     * Recursively sanitize one value in an external quiz payload.
+     *
+     * @param mixed $value     Candidate value.
+     * @param int   $depth     Current array depth.
+     * @param int   $remaining Remaining value budget.
+     * @param bool  $valid     Whether the complete payload remains valid.
+     * @return mixed Sanitized value.
+     */
+    private static function sanitize_score_value($value, $depth, &$remaining, &$valid) {
+        if (!$valid || $depth > 8 || $remaining < 1) {
+            $valid = false;
+            return null;
+        }
+        --$remaining;
+
+        if (is_array($value)) {
+            $clean = array();
+            foreach ($value as $key => $item) {
+                if (is_int($key)) {
+                    $clean_key = $key;
+                } else {
+                    $clean_key = sanitize_text_field((string) $key);
+                    if ($clean_key === '' || strlen($clean_key) > 191) {
+                        $valid = false;
+                        return null;
+                    }
+                }
+                $clean[$clean_key] = self::sanitize_score_value($item, $depth + 1, $remaining, $valid);
+                if (!$valid) {
+                    return null;
+                }
+            }
+            return $clean;
+        }
+
+        if (is_string($value)) {
+            return sanitize_textarea_field($value);
+        }
+        if (is_int($value) || is_bool($value) || null === $value) {
+            return $value;
+        }
+        if (is_float($value) && is_finite($value)) {
+            return $value;
+        }
+
+        $valid = false;
+        return null;
     }
     
     /**

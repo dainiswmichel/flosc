@@ -148,6 +148,61 @@ if ( ! function_exists( 'flosc_coerce_model_parameter_value' ) ) {
 
 if ( ! function_exists( 'flosc_validate_model_parameter_keys' ) ) {
 	/**
+	 * Sanitize one model-parameter value without changing its JSON type.
+	 *
+	 * Provider parameters are extensible, so FLOSC cannot impose a fixed schema.
+	 * It can still bound the structure, validate nested keys and sanitize every
+	 * string before the value is stored or sent to a third-party API.
+	 *
+	 * @param mixed    $value  Candidate value.
+	 * @param int      $depth  Current nesting depth.
+	 * @param int|null $budget Remaining value budget.
+	 * @return mixed|WP_Error Sanitized value or validation error.
+	 */
+	function flosc_sanitize_model_parameter_value( $value, $depth = 0, &$budget = null ) {
+		if ( null === $budget ) {
+			$budget = 1000;
+		}
+		if ( $depth > 8 || $budget < 1 ) {
+			return new WP_Error( 'flosc_params_shape', __( 'The parameter structure is too large or deeply nested.', 'flosc' ) );
+		}
+		--$budget;
+
+		if ( is_array( $value ) ) {
+			$clean = array();
+			foreach ( $value as $key => $item ) {
+				if ( is_int( $key ) ) {
+					$clean_key = $key;
+				} else {
+					$clean_key = (string) $key;
+					if ( ! preg_match( '/^[A-Za-z_][A-Za-z0-9_.-]{0,127}$/', $clean_key ) ) {
+						return new WP_Error( 'flosc_params_nested_key', __( 'A nested parameter name contains unsupported characters.', 'flosc' ) );
+					}
+				}
+
+				$clean_item = flosc_sanitize_model_parameter_value( $item, $depth + 1, $budget );
+				if ( is_wp_error( $clean_item ) ) {
+					return $clean_item;
+				}
+				$clean[ $clean_key ] = $clean_item;
+			}
+			return $clean;
+		}
+
+		if ( is_string( $value ) ) {
+			return sanitize_textarea_field( $value );
+		}
+		if ( is_int( $value ) || is_bool( $value ) || null === $value ) {
+			return $value;
+		}
+		if ( is_float( $value ) && is_finite( $value ) ) {
+			return $value;
+		}
+
+		return new WP_Error( 'flosc_params_value', __( 'A parameter value has an unsupported type.', 'flosc' ) );
+	}
+
+	/**
 	 * Refuse only what would make the request malformed.
 	 *
 	 * The parameter set is the payload. Temperature and Max Tokens above are a
@@ -167,8 +222,9 @@ if ( ! function_exists( 'flosc_validate_model_parameter_keys' ) ) {
 	function flosc_validate_model_parameter_keys( $params ) {
 		// Not "FLOSC owns these" — "the request stops working without these".
 		$structural = array( 'messages', 'contents', 'stream' );
+		$budget     = 1000;
 
-		foreach ( $params as $key => $unused ) {
+		foreach ( $params as $key => $value ) {
 			if ( ! is_string( $key ) || '' === trim( $key ) ) {
 				return new WP_Error( 'flosc_params_key', __( 'A parameter with no name cannot be sent.', 'flosc' ) );
 			}
@@ -194,6 +250,12 @@ if ( ! function_exists( 'flosc_validate_model_parameter_keys' ) ) {
 					)
 				);
 			}
+
+			$clean_value = flosc_sanitize_model_parameter_value( $value, 0, $budget );
+			if ( is_wp_error( $clean_value ) ) {
+				return $clean_value;
+			}
+			$params[ $key ] = $clean_value;
 		}
 
 		return $params;

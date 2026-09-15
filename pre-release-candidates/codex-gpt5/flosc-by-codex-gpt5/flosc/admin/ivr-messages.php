@@ -60,55 +60,6 @@ if (!function_exists('flosc_ivr_safe_json_decode')) {
     }
 }
 
-if (!function_exists('flosc_sanitize_ivr_markdown')) {
-    /**
-     * Sanitize IVR Markdown for disk write (Pass 5 / E3).
-     *
-     * Preserves intentional Markdown while rejecting null bytes, validating UTF-8,
-     * normalizing line endings, and capping size.
-     *
-     * @param mixed $raw       Untrusted body.
-     * @param int   $max_bytes Max stored size (default 1.5 MiB).
-     * @return string|WP_Error Sanitized body or error.
-     */
-    function flosc_sanitize_ivr_markdown($raw, $max_bytes = 1572864) {
-        if (!is_string($raw) && !is_numeric($raw)) {
-            return new WP_Error('flosc_ivr_invalid', 'IVR content must be text.');
-        }
-
-        $text = (string) $raw;
-        // Reject null bytes (path/injection vector in some stacks).
-        if (false !== strpos($text, "\0")) {
-            return new WP_Error('flosc_ivr_null_byte', 'IVR content contains invalid characters.');
-        }
-
-        if (function_exists('mb_check_encoding') && !mb_check_encoding($text, 'UTF-8')) {
-            if (function_exists('mb_convert_encoding')) {
-                $converted = @mb_convert_encoding($text, 'UTF-8', 'UTF-8');
-                $text      = is_string($converted) ? $converted : '';
-            } else {
-                return new WP_Error('flosc_ivr_encoding', 'IVR content must be valid UTF-8.');
-            }
-        }
-
-        // Normalize newlines; strip C0 controls except tab/newline.
-        $text = str_replace(array("\r\n", "\r"), "\n", $text);
-        $text = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $text);
-        if (!is_string($text)) {
-            $text = '';
-        }
-
-        // Strip PHP open tags that must never land in markdown configs.
-        $text = str_ireplace(array('<?php', '<?=', '<?'), '', $text);
-
-        if (strlen($text) > $max_bytes) {
-            return new WP_Error('flosc_ivr_too_large', 'IVR content is too large.');
-        }
-
-        return $text;
-    }
-}
-
 $flosc_get = wp_unslash($_GET);
 $flosc_post = wp_unslash($_POST);
 

@@ -65,12 +65,14 @@ ok( "'post' is shown ticked and disabled",
 ok( '  with a hidden field so disabling does not drop it from the post',
 	strpos( $panel, '<input type="hidden" name="flow_site_index_post_types[]" value="post">' ) !== false, true );
 
-// flow_* keys are written by the page-wide Save, which maps arrays through
-// sanitize_text_field. The control has to sit inside that form to be saved.
+// flow_* keys are written by the page-wide Save. Its flat-list branch rejects
+// nested values and sanitizes every scalar. The control must be inside the form.
 echo "\nIt is saved by the form it sits in\n";
 $settings = (string) file_get_contents( $root . '/admin/settings.php' );
 ok( 'the page-wide save handles array values',
-	strpos( $settings, "\$flosc_new_settings[\$flosc_setting_key] = array_map('sanitize_text_field', \$flosc_value);" ) !== false, true );
+	strpos( $settings, 'foreach ($flosc_value as $flosc_array_key => $flosc_array_value)' ) !== false
+	&& strpos( $settings, 'if (!is_scalar($flosc_array_value))' ) !== false
+	&& strpos( $settings, 'sanitize_text_field((string) $flosc_array_value)' ) !== false, true );
 // There are two form-closes in this file. The first is the All Flows branch,
 // which does not run on the single-flow view where this control lives, so the
 // one that matters is the guarded close just above the rebuild control.

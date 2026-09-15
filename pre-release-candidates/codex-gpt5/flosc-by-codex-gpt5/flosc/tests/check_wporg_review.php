@@ -257,6 +257,16 @@ if ( '' !== $raw_name && '' !== $clean_name ) {
 		PREG_OFFSET_CAPTURE
 	);
 	$size_at = isset( $match[0][1] ) ? $match[0][1] : -1;
+	if ( $size_at < 0 ) {
+		$match = array();
+		preg_match(
+			'/flosc_sanitize_[A-Za-z0-9_]+\s*\(\s*' . $raw_token . '\s*,\s*(?:\d+|[A-Z_][A-Z0-9_]*)\s*\)/i',
+			$kb_save,
+			$match,
+			PREG_OFFSET_CAPTURE
+		);
+		$size_at = isset( $match[0][1] ) ? $match[0][1] : -1;
+	}
 
 	$match = array();
 	preg_match(

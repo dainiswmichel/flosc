@@ -482,7 +482,8 @@ class SSO_Manager {
      * @return string
      */
     public function sanitize_text_setting($value) {
-        return sanitize_text_field(wp_unslash((string) $value));
+        // options.php unslashes registered setting values before update_option().
+        return sanitize_text_field((string) $value);
     }
 
     /**
@@ -492,7 +493,7 @@ class SSO_Manager {
      * @return string
      */
     public function sanitize_textarea_setting($value) {
-        return sanitize_textarea_field(wp_unslash((string) $value));
+        return sanitize_textarea_field((string) $value);
     }
 
     /**

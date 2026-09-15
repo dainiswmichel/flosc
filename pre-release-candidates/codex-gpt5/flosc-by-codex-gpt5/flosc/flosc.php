@@ -90,6 +90,7 @@ if (!function_exists('flosc_log')) {
 // Domain: filesystem helpers then path helpers (write gate needs FLOSC_Filesystem).
 require_once FLOSC_PLUGIN_DIR . 'includes/filesystem/class-flosc-filesystem.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/filesystem/flosc-data-paths.php';
+require_once FLOSC_PLUGIN_DIR . 'includes/flosc-content-sanitizers.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-available-providers.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-wp-ai-client.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/ai/flosc-model-catalog.php';
@@ -2604,6 +2605,16 @@ The Team',
             $uploaded_body = (!empty($handled_upload['file']) && is_readable($handled_upload['file']))
                 ? flosc_fs_get_contents($handled_upload['file'])
                 : false;
+            if (false !== $uploaded_body) {
+                $uploaded_body = flosc_sanitize_ivr_markdown($uploaded_body, 500000);
+            }
+            if (is_wp_error($uploaded_body)) {
+                if (!empty($handled_upload['file'])) {
+                    $this->delete_file_safely($handled_upload['file']);
+                }
+                $err = $uploaded_body->get_error_message();
+                continue;
+            }
             if (false === $uploaded_body || !function_exists('flosc_write_data_file') || !flosc_write_data_file($target, $uploaded_body)) {
                 if (!empty($handled_upload['file'])) {
                     $this->delete_file_safely($handled_upload['file']);
@@ -2694,15 +2705,11 @@ The Team',
             wp_safe_redirect($this->kb_return_url($ivr, 'error', 'Knowledge-base content must be plain text or Markdown.'));
             exit;
         }
-        if (strlen($content_raw) > 512000) {
-            wp_safe_redirect($this->kb_return_url($ivr, 'error', 'Knowledge-base files cannot exceed 500 KB.'));
+        $content = flosc_sanitize_ivr_markdown($content_raw, 500000);
+        if (is_wp_error($content)) {
+            wp_safe_redirect($this->kb_return_url($ivr, 'error', $content->get_error_message()));
             exit;
         }
-        if (1 !== preg_match('//u', $content_raw)) {
-            wp_safe_redirect($this->kb_return_url($ivr, 'error', 'Knowledge-base content must be valid UTF-8 text.'));
-            exit;
-        }
-        $content = sanitize_textarea_field(str_replace(["\r\n", "\r"], "\n", $content_raw));
         if (!flosc_write_data_file($target, $content)) {
             wp_safe_redirect($this->kb_return_url($ivr, 'error', 'The file could not be written. Uploads folder permissions need attention.'));
             exit;
@@ -6867,11 +6874,36 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("[FLOSC v8.0.7] score_visit
             ], 400);
         }
 
-        // Keep only fields the login handoff needs; drop unexpected keys.
+        $score = null;
+        if (isset($quiz_data['score'])) {
+            if (!is_numeric($quiz_data['score'])) {
+                return new WP_REST_Response([
+                    'success' => false,
+                    'message' => 'Quiz score must be a number from 0 to 100',
+                ], 400);
+            }
+            $score = (float) $quiz_data['score'];
+            if (!is_finite($score) || $score < 0 || $score > 100) {
+                return new WP_REST_Response([
+                    'success' => false,
+                    'message' => 'Quiz score must be a number from 0 to 100',
+                ], 400);
+            }
+        }
+
+        $phrase_results = $this->flosc_sanitize_phrase_results($quiz_data['phraseResults']);
+        if (empty($phrase_results)) {
+            return new WP_REST_Response([
+                'success' => false,
+                'message' => 'No valid quiz phrase results were provided',
+            ], 400);
+        }
+
+        // Keep and sanitize only the fields the login handoff needs.
         $safe = array(
-            'phraseResults' => array_slice(array_values($quiz_data['phraseResults']), 0, 20),
+            'phraseResults' => $phrase_results,
             'tempId'        => '',
-            'score'         => isset($quiz_data['score']) ? floatval($quiz_data['score']) : null,
+            'score'         => $score,
         );
         if (!empty($quiz_data['tempId']) && preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', (string) $quiz_data['tempId'])) {
             $safe['tempId'] = (string) $quiz_data['tempId'];
@@ -8935,13 +8967,20 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
      * v9.4.2: Uses signed cookies to prevent score forgery
      */
     public function store_prelogin_score($request) {
+        $score = intval($request->get_param('score'));
+        if ($score < 0 || $score > 100) {
+            return new WP_Error('invalid_score', __('Quiz score must be between 0 and 100.', 'flosc'), ['status' => 400]);
+        }
+
+        $correct = $this->flosc_sanitize_quiz_id_list($request->get_param('correct'));
+        $incorrect = $this->flosc_sanitize_quiz_id_list($request->get_param('incorrect'));
         $score_data = [
-            'score' => intval($request->get_param('score')),
+            'score' => $score,
             'quiz_id' => sanitize_key((string) ($request->get_param('quiz_id') ?? '')),
-            'correct' => $request->get_param('correct') ?? [],
-            'incorrect' => $request->get_param('incorrect') ?? [],
+            'correct' => $correct,
+            'incorrect' => $incorrect,
             'quiz_type' => sanitize_text_field($request->get_param('quiz_type') ?? ''),
-            'ranked_worst_lessons' => $request->get_param('ranked_worst_lessons') ?? [],
+            'ranked_worst_lessons' => $this->flosc_sanitize_quiz_nested_value($request->get_param('ranked_worst_lessons') ?? [], 0, 5),
             'timestamp' => time(),
         ];
         
@@ -8993,12 +9032,14 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
      */
     public function store_visitor_audio($request) {
         $files = $request->get_file_params();
-        if (empty($files['audio']) || $files['audio']['error'] !== UPLOAD_ERR_OK) {
+        $audio = isset($files['audio']) && is_array($files['audio']) ? $files['audio'] : array();
+        if (empty($audio) || absint($audio['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
             return new WP_Error('no_audio', __('No audio file received', 'flosc'), ['status' => 400]);
         }
 
         // 2MB per-phrase limit — 5-10 seconds of webm/opus is typically 50-150KB
-        if ($files['audio']['size'] > 2 * 1024 * 1024) {
+        $reported_size = absint($audio['size'] ?? 0);
+        if ($reported_size < 1 || $reported_size > 2 * 1024 * 1024) {
             return new WP_Error('too_large', __('Audio file exceeds 2MB limit', 'flosc'), ['status' => 400]);
         }
 
@@ -9008,8 +9049,22 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
         }
 
         $phrase_text = sanitize_text_field($request->get_param('phrase_text') ?? '');
-        $format = sanitize_text_field($request->get_param('format') ?? 'webm');
-        $target_ipa_json = $request->get_param('target_ipa') ?? '{}';
+        $format = sanitize_key((string) ($request->get_param('format') ?? 'webm'));
+        if (!in_array($format, ['webm', 'mp4', 'ogg'], true)) {
+            return new WP_Error('bad_audio_format', __('Unsupported audio format', 'flosc'), ['status' => 400]);
+        }
+        $target_ipa_param = $request->get_param('target_ipa') ?? '{}';
+        if (is_array($target_ipa_param)) {
+            $target_ipa = $target_ipa_param;
+        } elseif (is_string($target_ipa_param) && strlen($target_ipa_param) <= 20000) {
+            $target_ipa = json_decode($target_ipa_param, true, 8);
+            if (JSON_ERROR_NONE !== json_last_error() || !is_array($target_ipa)) {
+                return new WP_Error('bad_target_ipa', __('Invalid target IPA data', 'flosc'), ['status' => 400]);
+            }
+        } else {
+            return new WP_Error('bad_target_ipa', __('Invalid target IPA data', 'flosc'), ['status' => 400]);
+        }
+        $target_ipa = $this->flosc_sanitize_quiz_nested_value($target_ipa, 0, 6);
 
         // Get or create tempID (Michel timestamp + 5 hex chars)
         // Format: 2026-03m-08d-14h-30m-45s-a1b2c
@@ -9046,18 +9101,26 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
             }
         }
 
-        // Whitelist extensions
-        $ext = in_array($format, ['webm', 'mp4', 'ogg'], true) ? $format : 'webm';
+        // The extension and byte-level container check use the same allowlist.
+        $ext = $format;
         $filename = 'phrase-' . $phrase_num . '.' . $ext;
         $filepath = $temp_dir . '/' . $filename;
 
-        $tmp_audio = $files['audio']['tmp_name'] ?? '';
-        if (empty($tmp_audio) || !is_uploaded_file($tmp_audio)) {
+        $tmp_audio = isset($audio['tmp_name']) && is_string($audio['tmp_name']) ? $audio['tmp_name'] : '';
+        if ($tmp_audio === '' || !is_uploaded_file($tmp_audio)) {
             return new WP_Error('write_failed', __('Invalid uploaded audio', 'flosc'), ['status' => 400]);
         }
 
         $uploaded_audio = flosc_fs_get_contents($tmp_audio);
-        if ($uploaded_audio === false || !$this->write_file_safely($filepath, $uploaded_audio)) {
+        if (
+            !is_string($uploaded_audio)
+            || strlen($uploaded_audio) < 1
+            || strlen($uploaded_audio) > 2 * 1024 * 1024
+            || !flosc_uploaded_audio_container_matches_format($uploaded_audio, $format)
+        ) {
+            return new WP_Error('invalid_audio', __('Uploaded file is not valid WebM, MP4, or Ogg audio', 'flosc'), ['status' => 400]);
+        }
+        if (!$this->write_file_safely($filepath, $uploaded_audio)) {
             return new WP_Error('write_failed', __('Could not save audio', 'flosc'), ['status' => 500]);
         }
 
@@ -9070,6 +9133,14 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
             'created_at' => $temp_id,
             'phrases' => [],
         ];
+        if (!is_array($meta) || !isset($meta['phrases']) || !is_array($meta['phrases'])) {
+            $meta = [
+                'quiz_id' => sanitize_key((string) $default_audio_quiz_id),
+                'quiz_type' => 'ipa_audio',
+                'created_at' => $temp_id,
+                'phrases' => [],
+            ];
+        }
 
         // Replace existing phrase entry if re-recorded, otherwise append
         $meta['phrases'] = array_values(array_filter($meta['phrases'], function($p) use ($phrase_num) {
@@ -9080,7 +9151,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
             'text' => $phrase_text,
             'format' => $ext,
             'file' => $filename,
-            'target_ipa' => json_decode($target_ipa_json, true) ?: [],
+            'target_ipa' => $target_ipa,
         ];
 
         // Sort by phrase number
@@ -9131,18 +9202,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
 
         // phraseResults: array of {phrase, data} — STT payloads from the browser (schema-sanitize, depth-capped).
         if (!empty($quiz_data['phraseResults']) && is_array($quiz_data['phraseResults'])) {
-            $score_data['phrase_results'] = array_map(function ($pr) {
-                if (!is_array($pr)) {
-                    return array(
-                        'phrase' => '',
-                        'data'   => array(),
-                    );
-                }
-                return array(
-                    'phrase' => sanitize_text_field((string) ($pr['phrase'] ?? '')),
-                    'data'   => $this->flosc_sanitize_quiz_nested_value($pr['data'] ?? array(), 0, 6),
-                );
-            }, array_slice(array_values($quiz_data['phraseResults']), 0, 20));
+            $score_data['phrase_results'] = $this->flosc_sanitize_phrase_results($quiz_data['phraseResults']);
         }
 
         // rankedPhonemes: array of IPA strings (worst → best)
@@ -9216,17 +9276,25 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
      * @param mixed $value Incoming browser value.
      * @param int   $depth Current depth.
      * @param int   $max   Max depth.
+     * @param int   $remaining Remaining scalar/array budget.
      * @return mixed
      */
-    private function flosc_sanitize_quiz_nested_value($value, $depth = 0, $max = 6) {
-        if ($depth > $max) {
+    private function flosc_sanitize_quiz_nested_value($value, $depth = 0, $max = 6, &$remaining = null) {
+        if (null === $remaining) {
+            $remaining = 2000;
+        }
+        if ($depth > $max || $remaining < 1) {
             return null;
         }
+        --$remaining;
         if (is_null($value) || is_bool($value)) {
             return $value;
         }
-        if (is_int($value) || is_float($value)) {
+        if (is_int($value)) {
             return $value;
+        }
+        if (is_float($value)) {
+            return is_finite($value) ? $value : null;
         }
         if (is_string($value)) {
             // Cap runaway strings from STT blobs.
@@ -9241,20 +9309,68 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
         $out = array();
         $i   = 0;
         foreach ($value as $k => $v) {
-            if ($i++ > 200) {
+            if ($i++ >= 200 || $remaining < 1) {
                 break;
             }
-            $key = is_string($k) ? sanitize_key($k) : (is_int($k) ? $k : sanitize_key((string) $k));
-            if ($key === '' && !is_int($k)) {
+            $key = is_int($k) ? $k : sanitize_text_field((string) $k);
+            if ((!is_int($key) && ($key === '' || strlen($key) > 191)) || array_key_exists($key, $out)) {
                 continue;
             }
-            $clean = $this->flosc_sanitize_quiz_nested_value($v, $depth + 1, $max);
+            $clean = $this->flosc_sanitize_quiz_nested_value($v, $depth + 1, $max, $remaining);
             if (null === $clean && !is_null($v) && !is_array($v)) {
                 continue;
             }
             $out[ is_int($k) ? $k : $key ] = $clean;
         }
         return $out;
+    }
+
+    /**
+     * Sanitize browser/STT phrase results before transient or user-meta storage.
+     *
+     * @param mixed $phrase_results Candidate phrase-result rows.
+     * @return array Sanitized rows, capped at twenty phrases.
+     */
+    private function flosc_sanitize_phrase_results($phrase_results) {
+        if (!is_array($phrase_results)) {
+            return array();
+        }
+
+        $clean = array();
+        foreach (array_slice(array_values($phrase_results), 0, 20) as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $clean[] = array(
+                'phrase' => sanitize_text_field((string) ($row['phrase'] ?? '')),
+                'data'   => $this->flosc_sanitize_quiz_nested_value($row['data'] ?? array(), 0, 6),
+            );
+        }
+        return $clean;
+    }
+
+    /**
+     * Sanitize a bounded list of numeric lesson identifiers.
+     *
+     * @param mixed $identifiers Candidate identifiers.
+     * @return array<int,int> Positive lesson identifiers.
+     */
+    private function flosc_sanitize_quiz_id_list($identifiers) {
+        if (!is_array($identifiers)) {
+            return array();
+        }
+
+        $clean = array();
+        foreach (array_slice(array_values($identifiers), 0, 500) as $identifier) {
+            if (!is_scalar($identifier) || !is_numeric($identifier)) {
+                continue;
+            }
+            $identifier = absint($identifier);
+            if ($identifier > 0) {
+                $clean[] = $identifier;
+            }
+        }
+        return $clean;
     }
 
     /**
@@ -11121,9 +11237,13 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
      * Track which messages have been shown to users
      */
     public function handle_ivr_track($request) {
-        $message_name = sanitize_text_field($request->get_param('message_name'));
-        $offer_id = sanitize_text_field($request->get_param('offer_id'));
-        $offer_state = sanitize_text_field($request->get_param('offer_state')); // shown, dismissed, purchased
+        $message_name = sanitize_key((string) $request->get_param('message_name'));
+        $offer_id = sanitize_key((string) $request->get_param('offer_id'));
+        $offer_state = sanitize_key((string) $request->get_param('offer_state')); // shown, dismissed, purchased
+
+        if ($offer_state !== '' && !in_array($offer_state, ['shown', 'dismissed', 'purchased'], true)) {
+            return new WP_Error('invalid_offer_state', __('Invalid offer state.', 'flosc'), ['status' => 400]);
+        }
 
         if (empty($message_name) && empty($offer_id)) {
             return new WP_Error('missing_params', 'message_name or offer_id required', ['status' => 400]);

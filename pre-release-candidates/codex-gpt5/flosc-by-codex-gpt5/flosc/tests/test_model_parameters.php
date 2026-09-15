@@ -10,6 +10,7 @@ if ( PHP_SAPI !== 'cli' ) {
 }
 
 function sanitize_key( $k ) { return strtolower( preg_replace( '/[^a-z0-9_\-]/i', '', (string) $k ) ); }
+function sanitize_textarea_field( $value ) { return strip_tags( (string) $value ); }
 function __( $t, $d = null ) { return $t; }
 
 class WP_Error {
@@ -46,6 +47,8 @@ ok( 'nothing typed means nothing sent', flosc_parse_model_parameters( '   ' ), a
 echo "JSON pasted from a provider's docs\n";
 ok( 'an object parses', flosc_parse_model_parameters( '{"top_p":0.9,"top_k":40}' ), array( 'top_p' => 0.9, 'top_k' => 40 ) );
 ok( 'nested shapes survive', flosc_parse_model_parameters( '{"thinking":{"type":"adaptive"}}' ), array( 'thinking' => array( 'type' => 'adaptive' ) ) );
+ok( 'nested strings are sanitized after decode', flosc_parse_model_parameters( '{"thinking":{"type":"<b>adaptive</b>"}}' ), array( 'thinking' => array( 'type' => 'adaptive' ) ) );
+ok( 'invalid nested names are refused', is_wp_error( flosc_parse_model_parameters( '{"thinking":{"bad key":true}}' ) ), true );
 ok( 'broken JSON is refused', is_wp_error( flosc_parse_model_parameters( '{"top_p":}' ) ), true );
 
 echo "A parameter FLOSC has never heard of is still sent\n";

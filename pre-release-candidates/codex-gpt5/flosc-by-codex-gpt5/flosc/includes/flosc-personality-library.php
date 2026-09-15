@@ -1761,27 +1761,82 @@ if ( ! function_exists( 'flosc_sanitize_personality_profile_text' ) ) {
 
 if ( ! function_exists( 'flosc_sanitize_personality_workshop' ) ) {
 	/**
+	 * Sanitize every authored value in a decoded personality workshop.
+	 *
+	 * JSON scalar types stay scalar so booleans and numeric settings retain their
+	 * meaning. Strings use the same Markdown-preserving boundary as compiled
+	 * personality text. Object keys are text fields and nested arrays are bounded.
+	 *
+	 * @param mixed $value     Decoded JSON value.
+	 * @param int   $depth     Current nesting depth.
+	 * @param int   $remaining Remaining value budget.
+	 * @param bool  $valid     Whether the complete structure remains valid.
+	 * @return mixed Sanitized value, or null when the structure is invalid.
+	 */
+	function flosc_sanitize_personality_workshop_value( $value, $depth, &$remaining, &$valid ) {
+		if ( ! $valid || $depth > 32 || $remaining < 1 ) {
+			$valid = false;
+			return null;
+		}
+		--$remaining;
+		if ( is_array( $value ) ) {
+			$clean = array();
+			foreach ( $value as $key => $item ) {
+				$clean_key = is_int( $key ) ? $key : sanitize_text_field( (string) $key );
+				if ( ! is_int( $clean_key ) && ( '' === $clean_key || strlen( $clean_key ) > 200 ) ) {
+					$valid = false;
+					return null;
+				}
+				if ( array_key_exists( $clean_key, $clean ) ) {
+					$valid = false;
+					return null;
+				}
+				$clean[ $clean_key ] = flosc_sanitize_personality_workshop_value( $item, $depth + 1, $remaining, $valid );
+				if ( ! $valid ) {
+					return null;
+				}
+			}
+			return $clean;
+		}
+		if ( is_string( $value ) ) {
+			return flosc_sanitize_personality_profile_text( $value );
+		}
+		if ( is_int( $value ) || is_bool( $value ) || null === $value ) {
+			return $value;
+		}
+		if ( is_float( $value ) ) {
+			if ( is_finite( $value ) ) {
+				return $value;
+			}
+			$valid = false;
+			return null;
+		}
+		$valid = false;
+		return null;
+	}
+
+	/**
 	 * Accept only a JSON object. Strip derived provider packs (not used in FLOSC).
 	 *
-	 * @param string $raw Raw JSON.
+	 * @param string $workshop_json Workshop JSON.
 	 * @return string Empty string or re-encoded JSON object.
 	 */
-	function flosc_sanitize_personality_workshop( $raw ) {
-		$raw = (string) $raw;
-		$raw = wp_check_invalid_utf8( $raw );
-		$raw = preg_replace( '/[\x00-\x08\x0B\x0C\x0E-\x1F]/', '', $raw );
-		if ( ! is_string( $raw ) ) {
+	function flosc_sanitize_personality_workshop( $workshop_json ) {
+		$workshop_json = (string) $workshop_json;
+		$workshop_json = wp_check_invalid_utf8( $workshop_json );
+		$workshop_json = preg_replace( '/[\x00-\x08\x0B\x0C\x0E-\x1F]/', '', $workshop_json );
+		if ( ! is_string( $workshop_json ) ) {
 			return '';
 		}
-		$raw = trim( $raw );
-		if ( $raw === '' ) {
+		$workshop_json = trim( $workshop_json );
+		if ( $workshop_json === '' ) {
 			return '';
 		}
 		$max = flosc_personality_workshop_max_bytes();
-		if ( strlen( $raw ) > $max ) {
+		if ( strlen( $workshop_json ) > $max ) {
 			return '';
 		}
-		$decoded = json_decode( $raw, true );
+		$decoded = json_decode( $workshop_json, true );
 		if ( ! is_array( $decoded ) || $decoded === array() ) {
 			return '';
 		}
@@ -1797,6 +1852,12 @@ if ( ! function_exists( 'flosc_sanitize_personality_workshop' ) ) {
 		 * derived is reproducible from the genome and is never read by importSpec.
 		 */
 		unset( $decoded['written_at'], $decoded['provenance'], $decoded['derived'] );
+		$remaining = 10000;
+		$valid     = true;
+		$decoded   = flosc_sanitize_personality_workshop_value( $decoded, 0, $remaining, $valid );
+		if ( ! $valid || ! is_array( $decoded ) || array() === $decoded ) {
+			return '';
+		}
 		$encoded = wp_json_encode( $decoded );
 		if ( ! is_string( $encoded ) || $encoded === '' ) {
 			return '';

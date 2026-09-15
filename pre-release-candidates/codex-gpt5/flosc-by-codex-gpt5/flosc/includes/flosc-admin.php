@@ -532,7 +532,8 @@ trait FLOSC_Admin_Trait {
                         return '';
                     }
 
-                    $sanitized = sanitize_key(wp_unslash((string) $value));
+                    // options.php unslashes registered setting values before update_option().
+                    $sanitized = sanitize_key((string) $value);
                     if ($sanitized !== '' && in_array($sanitized, $allowed_keys, true)) {
                         return $sanitized;
                     }
@@ -597,7 +598,7 @@ trait FLOSC_Admin_Trait {
             return array_map(array($this, 'sanitize_text_setting'), $value);
         }
 
-        return sanitize_text_field(wp_unslash((string) $value));
+        return sanitize_text_field((string) $value);
     }
 
     /**
@@ -642,7 +643,7 @@ trait FLOSC_Admin_Trait {
             return array_map(array($this, 'sanitize_textarea_setting'), $value);
         }
 
-        return sanitize_textarea_field(wp_unslash((string) $value));
+        return sanitize_textarea_field((string) $value);
     }
 
     /**
@@ -656,7 +657,7 @@ trait FLOSC_Admin_Trait {
             return array_map(array($this, 'sanitize_url_setting'), $value);
         }
 
-        return esc_url_raw(wp_unslash((string) $value));
+        return esc_url_raw((string) $value);
     }
 
     /**
@@ -666,7 +667,7 @@ trait FLOSC_Admin_Trait {
      * @return string
      */
     public function sanitize_hex_setting($value) {
-        $sanitized = sanitize_hex_color(wp_unslash((string) $value));
+        $sanitized = sanitize_hex_color((string) $value);
         return $sanitized ? $sanitized : '';
     }
 
@@ -688,7 +689,7 @@ trait FLOSC_Admin_Trait {
      */
     public function sanitize_array_setting($value) {
         if (!is_array($value)) {
-            return sanitize_text_field(wp_unslash((string) $value));
+            return sanitize_text_field((string) $value);
         }
 
         $sanitized = array();
@@ -696,7 +697,7 @@ trait FLOSC_Admin_Trait {
             $sanitized_key = is_string($key) ? sanitize_key($key) : $key;
             $sanitized[$sanitized_key] = is_array($item)
                 ? $this->sanitize_array_setting($item)
-                : sanitize_text_field(wp_unslash((string) $item));
+                : sanitize_text_field((string) $item);
         }
 
         return $sanitized;
