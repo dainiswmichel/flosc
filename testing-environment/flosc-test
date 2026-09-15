@@ -303,9 +303,37 @@ pull() {
 # artifact WordPress.org received. Nothing can differ between what was tested and
 # what was uploaded, because they are the same file.
 #
-# .flosc-candidate holds one line:  candidate:<name>   or   zip:<abs path>
-target_kind() { [ -f "$SEL" ] && cut -d: -f1 "$SEL" || echo ""; }
-target_val()  { [ -f "$SEL" ] && cut -d: -f2- "$SEL" || echo ""; }
+# THE TARGET IS AN ARGUMENT, NOT REMEMBERED STATE.
+#
+# It used to live in a hidden .flosc-candidate file that every command read
+# silently. That is the same category of mistake as --warning-severity=0: a
+# thing that decides the outcome, invisible to whoever reads the result. A
+# selection made yesterday applied to today's run with nothing on screen saying
+# so, and the command you typed did not say what it tested.
+#
+# So: ./flosc-test all codex-gpt5   states its target every single time.
+# The file survives only as a fallback, and using it prints a loud warning.
+TARGET_KIND=""
+TARGET_VAL=""
+
+# Accepts a candidate name, or a path to a .zip. Sets TARGET_KIND/TARGET_VAL.
+resolve_target() {
+  local t="$1"
+  [ -z "$t" ] && return 1
+  case "$t" in
+    *.zip)
+      [ -f "$t" ] || { echo "no such zip: $t" >&2; return 1; }
+      TARGET_KIND="zip"
+      TARGET_VAL="$(cd "$(dirname "$t")" && pwd)/$(basename "$t")"
+      return 0 ;;
+  esac
+  if [ -d "$CANDS/$t" ]; then TARGET_KIND="candidate"; TARGET_VAL="$t"; return 0; fi
+  echo "no such candidate or zip: $t" >&2
+  return 1
+}
+
+target_kind() { echo "$TARGET_KIND"; }
+target_val()  { echo "$TARGET_VAL"; }
 candidate()   { [ "$(target_kind)" = "candidate" ] && target_val || echo ""; }
 
 candidate_src() {
@@ -610,23 +638,24 @@ usage() {
   echo "CANDIDATES"
   list_candidates
   echo
-  echo "THE THREE STEPS"
-  echo "  1.  ./flosc-test pull                    pull revisions from GitHub"
-  echo "  2.  ./flosc-test select <name>           select that codebase"
-  echo "      ./flosc-test zip <path-to-zip>       ...or test an archive instead"
-  echo "  3.  ./flosc-test all                     run tests"
+  echo "THE STEPS"
+  echo "  1.  ./flosc-test pull                     pull revisions from GitHub"
+  echo "  2.  ./flosc-test doctor                   check the environment itself"
+  echo "  3.  ./flosc-test all <candidate>          pick a codebase and check it"
+  echo "      ./flosc-test all <path-to-zip>        ...or an archive, as uploaded"
   echo
-  echo "  Current target: $(describe_target)"
+  echo "  The target is always an argument. Nothing is remembered, so every"
+  echo "  command on screen says exactly what it tested."
   echo
   echo "USAGE"
   echo "  ./flosc-test doctor          check the environment itself, and say how to repair it"
   echo "  ./flosc-test doctor --fix    start wp-env and install Plugin Check if missing"
   echo "  ./flosc-test pull            refresh candidates and this environment"
-  echo "  ./flosc-test select <name>   test a candidate source tree"
-  echo "  ./flosc-test zip <path>      test an archive exactly as uploaded"
-  echo "  ./flosc-test all             run every procedure"
-  echo "  ./flosc-test <n>             run one procedure"
-  echo "  ./flosc-test <n> --cmd       print its command, run nothing"
+  echo "  ./flosc-test all <target>    run every procedure"
+  echo "  ./flosc-test <n> <target>    run one procedure"
+  echo "  ./flosc-test <n> <target> --cmd   print its command, run nothing"
+  echo
+  echo "  <target> is a candidate name, or a path ending in .zip"
   echo
   echo "PROCEDURES"
   echo "   0  Build the ship tree                    build-dist-zip.sh"
@@ -651,26 +680,42 @@ main() {
     ""|help|-h|--help) usage; exit 0 ;;
     pull|update) pull; exit 0 ;;
     doctor) shift; doctor "$@" ;;
-    select)
-      [ -z "${2:-}" ] && { echo "which candidate?"; list_candidates; exit 1; }
-      [ -d "$CANDS/$2" ] || { echo "no such candidate: $2"; list_candidates; exit 1; }
-      printf 'candidate:%s' "$2" > "$SEL"
-      echo "target: $(describe_target)"
-      exit 0 ;;
-    zip)
-      [ -z "${2:-}" ] && { echo "usage: ./flosc-test zip <path-to-zip>"; exit 1; }
-      [ -f "$2" ] || { echo "no such file: $2"; exit 1; }
-      printf 'zip:%s' "$(cd "$(dirname "$2")" && pwd)/$(basename "$2")" > "$SEL"
-      echo "target: $(describe_target)"
+    select|zip)
+      # Kept so an old habit still works, but it only writes a default. It does
+      # NOT decide anything a later command cannot override, and a run that
+      # falls back to it says so on screen.
+      [ -z "${2:-}" ] && { echo "usage: ./flosc-test select <candidate|path-to-zip>"; list_candidates; exit 1; }
+      resolve_target "$2" || exit 1
+      printf '%s:%s' "$TARGET_KIND" "$TARGET_VAL" > "$SEL"
+      echo "default written to $SEL:"
+      echo "  $(describe_target)"
+      echo
+      echo "This is only a default. Prefer naming the target on the command line,"
+      echo "so every run states what it tested:"
+      echo "  ./flosc-test all $2"
       exit 0 ;;
   esac
 
   for a in "$@"; do [ "$a" = "--cmd" ] && CMD_ONLY=1; done
 
-  if [ -z "$(target_kind)" ]; then
-    echo "Nothing selected. Pick a target:"
-    echo "  ./flosc-test select <candidate>     test a source tree"
-    echo "  ./flosc-test zip <path-to-zip>      test an archive as uploaded"
+  # The target is the argument after the procedure. Everything states it.
+  local want=""
+  for a in "${@:2}"; do
+    case "$a" in --*) ;; *) want="$a"; break ;; esac
+  done
+
+  if [ -n "$want" ]; then
+    resolve_target "$want" || exit 1
+  elif [ -f "$SEL" ]; then
+    TARGET_KIND=$(cut -d: -f1 "$SEL"); TARGET_VAL=$(cut -d: -f2- "$SEL")
+    echo "WARNING: no target given, so a REMEMBERED one from $SEL is being used."
+    echo "         $(describe_target)"
+    echo "         Name it on the command line instead:  ./flosc-test $1 <candidate|zip>"
+    echo
+  else
+    echo "No target. Name the codebase or zip you want tested:"
+    echo "  ./flosc-test $1 <candidate>          a source tree"
+    echo "  ./flosc-test $1 <path-to-zip>        an archive, exactly as uploaded"
     echo
     list_candidates
     exit 1
