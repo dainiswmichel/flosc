@@ -594,14 +594,20 @@ if ( ! function_exists( 'flosc_portability_run_wxr_import' ) ) {
 			return new WP_Error( 'flosc_wxr_path', __( 'Staged WXR path is not inside this flow’s pack directory.', 'flosc' ) );
 		}
 
-		// Prefer the WordPress Importer plugin when present.
-		if ( ! class_exists( 'WP_Import' ) ) {
-			$importer_path = WP_PLUGIN_DIR . '/wordpress-importer/wordpress-importer.php';
-			if ( file_exists( $importer_path ) ) {
-				// phpcs:ignore WordPressVIPMinimum.Files.IncludingFile.UsingVariable -- known plugin path under WP_PLUGIN_DIR.
-				require_once $importer_path;
-			}
-		}
+		/*
+		 * The WordPress Importer has to be ACTIVE. FLOSC does not load it.
+		 *
+		 * This used to build a path from WP_PLUGIN_DIR and require the file
+		 * directly, to serve an importer that was installed but not activated.
+		 * WordPress.org returned both halves on 13 Sep 2026: the constant-built
+		 * path "can fail if that plugin is installed in a differently named
+		 * directory", and loading another plugin's main file out of band is not
+		 * FLOSC's business. Resolving the path some other way would keep the
+		 * second problem, so the load is gone rather than rewritten.
+		 *
+		 * WP_Import exists whenever the importer is active, which is what the
+		 * error below has always told the floscAdmin to do.
+		 */
 		if ( ! class_exists( 'WP_Import' ) ) {
 			return new WP_Error(
 				'flosc_wxr_importer',
@@ -613,10 +619,15 @@ if ( ! function_exists( 'flosc_portability_run_wxr_import' ) ) {
 			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- WordPress core importer bootstrap flag.
 			define( 'WP_LOAD_IMPORTERS', true );
 		}
-		if ( ! function_exists( 'wordpress_importer_init' ) && function_exists( 'get_plugins' ) ) {
-			// Class may load without full bootstrap; try import.php helpers.
-			require_once ABSPATH . 'wp-admin/includes/import.php';
-		}
+		/*
+		 * wp-admin/includes/import.php is NOT loaded here.
+		 *
+		 * It was, under a guard that then used nothing from it. WordPress.org,
+		 * 13 Sep 2026: "Loads the core importer bootstrap even though no
+		 * function from import.php is subsequently used by this import path."
+		 * The guideline permits loading a core file when a function from it is
+		 * used immediately after. Nothing here is, so it is not loaded.
+		 */
 
 		// Suppress HTML output from the importer UI classes.
 		ob_start();
