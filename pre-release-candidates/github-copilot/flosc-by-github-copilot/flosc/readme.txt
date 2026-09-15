@@ -2,7 +2,7 @@
 Contributors: dainismichel
 Donate link: https://dainis.net/donate/
 Tags: leads, sales, access, ai, chatbot
-Requires at least: 7.0.4
+Requires at least: 7.0
 Requires PHP: 7.4
 Tested up to: 7.1
 Stable tag: 8.0.0
@@ -59,7 +59,7 @@ Instead of "Are you interested in buying?" FLOSC asks "What should I help you wi
 
 = Technical Details =
 
-* Requires WordPress 7.0.4+ (see header Requires at least)
+* Requires WordPress 7.0+ (see header Requires at least)
 * No external services required for core functionality (flows run locally)
 * BYOK AI: one WordPress AI Client (`wp_ai_client_prompt()`), plus official provider plugins for OpenAI, Anthropic, and Google. xAI has no official plugin yet (FLOSC hop). IVR is scripted and calls none of them.
 * Payment integration
@@ -301,7 +301,7 @@ Production-ready 8.x release with guided IVR flows, offer gating, BYOK AI suppor
 == Changelog ==
 
 = 8.0.0 =
-* Initial stable 8.0.0 release for WordPress 7.0.4+ and PHP 7.4+
+* Initial stable 8.0.0 release for WordPress 7.0+ and PHP 7.4+
 * Guided flow architecture with IVR routes, quiz branching, and offer/content gating
 * Optional BYOK chat: one WordPress AI Client; official provider plugins for OpenAI, Anthropic, and Google; FLOSC hop for xAI; IVR scripted
 * Payment providers (including Stripe, PayPal, and ClickBank) and social sign-in
