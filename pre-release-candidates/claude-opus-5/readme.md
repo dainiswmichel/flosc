@@ -1,115 +1,114 @@
-# FLOSC 8.0.0 — candidate v64
-
-Built from v63. Version is 8.0.0 and does not move.
+# FLOSC 8.0.0 — candidate v69
 
     artifact   flosc.zip
-    sha256     6aa032b66bb3ec5a1f604156a8c024e3373ffe19c5628c16bad02c2589946404
+    sha256     cd4192b463b80a931a746772d9f4f067da487ac0cfda744d4b25afd7b51565ba
     entries    277, single flosc/ root
-    source     flosc-by-claude-opus-5/flosc
+    base       claude-opus-5 v67
 
-## Three classes of content
+## The thing that should have happened first
 
-Access is not one scale. It is three different questions, and only the third
-one is VGM.
+PHP_CodeSniffer with `wp-coding-standards/wpcs` installs in this container from
+packagist. It took one command. Nobody ran it in three months, me included, and
+"WordPress.org compliant" was asserted by agents instead of measured by the tool
+that measures it.
 
-**1. Yours.** The `internal` category — the rolodex. No flow, no personality,
-no AI provider, ever. Not indexed, not retrieved, not named. It has no VGM
-value because VGM does not reach it.
+**PHPCS, WordPress standard, whole tree, errors only:**
 
-**2. FLOSC's plumbing.** Concierge entries and trajectories. The flow
-personality and the provider *do* see these — that is what they are for — but
-through their own readers, `admin/concierge.php` and
-`includes/flosc-personality-library.php`, which take the bare category names
-`concierge`, `trajectory` and `trajectories` alongside the prefixed ones. They
-never enter the content index, so the same text can never come back out to a
-visitor as retrieved content.
+    EscapeOutput                       0
+    ValidatedSanitizedInput            0
+    NonceVerification                  0
+    SafeRedirect                       0
+    PreparedSQL                        0
+    DirectDatabaseQuery                0
 
-**3. Site content.** The table below.
+    phpcs exit 0, no output
 
-`is_internal_post()` now matches `internal` as well as `flosc-internal*` and the
-three bare aliases. Exact match on the aliases, so `internal-notes`,
-`international` and `concierges` are somebody's own categories and stay indexed.
+84 `Nonce verification recommended` **warnings** remain, all on `$_GET` reads
+that render admin screens without changing state. Named here rather than
+quietly suppressed.
 
-## What was leaking
+## Formatting is NOT done, and that is deliberate
 
-`search()` and `format_map_for_ai()` ran `sanitize_key()` on a row's access
-value before comparing it. That strips the space:
+`WordPress-Extra` + `WordPress-Docs` report **153,723 errors and 7,576
+warnings across 138 files**. 71,466 are space indent instead of tabs; 35,362
+are function-call spacing. `phpcbf` fixes 154,329 of them automatically.
 
-    "guest member"  →  sanitize_key()  →  "guestmember"
+I ran that pass and reverted it. Behaviour was provably unchanged — the
+whitespace-stripped fingerprint of every PHP file was byte-identical before and
+after — but it broke **nine** gates that assert on source text, including the
+method, log and request-protection contracts.
 
-`vgm_list()` finds no level in that, returns an empty list, and `access_allows()`
-reads an empty list as *nobody gated this row* — so it returns **allowed**. A
-row restricted to guests and members was handed to a logged-out visitor, body
-and all. v61 fixed the comparator and left both callers destroying the value on
-the way in.
+WordPress.org rejected this plugin four times and never once mentioned
+formatting. All 153,723 findings were present in every rejected submission.
+The pass buys nothing toward approval and cost nine working contracts, so it
+belongs in its own change after resubmission, with the gates updated alongside.
 
-The comparator is the sanitizer now. Both call sites pass the stored value
-through untouched, and the gate has a source guard so the call cannot come back.
+## The T12 findings
 
-## Access has two axes
+| finding | state |
+|---|---|
+| `Requires at least: 7.0.4` | **fixed** — `7.0` in both files |
+| `WP_PLUGIN_DIR` importer path | **fixed** — load removed, not rewritten |
+| `import.php` core include | **fixed** — removed |
+| 38 `filter_input` sites | **fixed** — sanitized at the read |
+| inline `<script>`/`<style>` | never real — my rule was reading comments as code |
+| SSO redirect-host allowlist | **traced, clean** — see below |
 
-**Who** — the tier, and the tier is a floor:
+`check_packaging.php` asserted `7.0.4` as **correct** for three rounds while the
+suite printed `0 failing gates`. It now checks the shape — major.minor, no patch
+digit — and carries no version literal at all.
 
-    Visitors    also covers guests and members
-    Guests      excludes visitors
-    Members     excludes both
+**The SSO item, traced by hand because no pattern matcher reaches it:**
+`get_app_url()` returns only options-derived values; its single `$_SERVER` read
+is `HTTP_X_FORWARDED_PROTO`, which picks the scheme, never the host.
+`resolve_app_url_from_flow_id()` is `get_option()` only.
+`get_current_request_base_url()` does read `HTTP_HOST` but has exactly two
+callers and neither is in the allowlist path. The reviewer's flagged line,
+`:603 $add( home_url( '/' ) )`, is a false positive.
 
-**Available** — how much of the post that tier gets:
+## Defects I introduced in this candidate and caught before shipping
 
-    Title only
-    Title and excerpt
-    Through the read-more break
-    The whole post
+**`flosc-app.php:106`** tested `null !== filter_input(...)`. A converted read
+always returns a string, so `null !== ''` is always true — **every page would
+have rendered as a companion embed.** Now `isset()`.
 
-A rule is one of each, attached to one scope. **Most specific wins**: a rule on
-a post beats one on its tags, which beats one on its categories, which beats the
-site default. Several rules on the *same* scope combine per tier, so one post can
-be read-more for visitors and full for guests.
+**31 sites would have unslashed twice**, once at the read and once downstream.
+Two passes corrupt any value carrying a backslash. Reconciled: unslash at the
+read, redundant downstream call removed, zero double-unslash sites confirmed by
+script across the tree.
 
-Deciding rather than merging is what makes both directions possible. A post rule
-can open a post its category closed, and it can close one its category left
-open. A merge could only ever do the first.
+**Four false-positive classes in my own rules gate** — class files used via
+`new`, grouped core includes, comments naming a constant, comments containing a
+tag. All fixed. Counts from that gate were not trustworthy until now and should
+not have been quoted as if they were.
 
-## Where a rule is written
+## The gate tells you what it is
 
-Three screens, one meaning, one resolver:
+    WPORG-01,02,03,04,06,07,09   blocking, all clear, exit code counts these
+    WPORG-05, WPORG-08           advisory, 69 findings, print but never block
 
-- **Post and page** — the FLOSC visibility metabox, under *AI retrieval*. The
-  radios above it still govern the page; these two govern what chat may quote.
-- **Category and tag** — a *FLOSC AI retrieval* field on the term edit screen.
-- **Content tab** — the site overview: the default row at the top, the rule
-  table below it with the two new columns, and a read-only listing of every rule
-  set on an object's own screen so the tab shows the whole picture.
-
-Both halves must be set for a rule to count. A post carrying a tier and no depth
-is somebody half-way through a thought, and treating it as a rule would silently
-gate the post.
-
-The site default ships as the whole post for everybody, because published is
-public. `all titles VGM` and `all excerpts VGM` are that one row.
-
-## What nothing changes
-
-A rule stored before these two columns existed means exactly what it has always
-meant — gated, members only, whole body once cleared — so no rule on dainis.net
-changes meaning until somebody edits it. An index file written by an earlier
-build still answers, at the two depths it could express. And the derived tier
-still **clamps** the result: a rule can never hand out a body the page itself
-would refuse to render.
+PHPCS `ValidatedSanitizedInput` is the authority on sanitization and reports 0,
+so the two hand-rolled rules that approximate it are advisory. WPORG-05 is now
+titled for what it actually tests — *a superglobal read with no sanitizer on
+that line* — which is **not** the standard, so its count cannot be mistaken for
+a count of defects. Three reviewed exceptions live in
+`tests/wporg-rule-exceptions.txt`, each with a written reason; an entry without
+one counts as a finding.
 
 ## Verification
 
-    test suite            0 failing gates
-    php -l, whole tree    clean
-    node --check          clean, builder and app
-    zip gates             277 entries, single flosc/ root, no forbidden paths
-    version               8.0.0 in header, FLOSC_VERSION and Stable tag
+    php gates            0 failing
+    js gates             clean
+    php -l, whole tree   clean
+    phpcs security       exit 0, no output
+    zip                  277 entries, single flosc/ root
+    version              8.0.0 in header, FLOSC_VERSION and Stable tag
 
-`tests/check_access_vgm.php` executes the real functions, lifted out of the
-class by name: the tier floor, rule folding, scope precedence in both
-directions, a rule written on the object vs in the table, the site default, the
-read-more slice, legacy rows, and the call-site guard.
+**Unverified, and it needs one look from you:** whether `Tested up to: 7.1` is
+the current WordPress release. `api.wordpress.org` is 403 through this
+container's proxy. One line off https://wordpress.org/download/ — it must not
+be churned on.
 
-Deferred to a live install: WordPress Plugin Check, a rebuild, and reading the
-Access column — `visitor` on the bees post and the songs, `member` on lesaep
-lessons, and no `internal`, concierge or trajectory rows in the table at all.
+**Not claimed:** that this passes review. Plugin Check needs a WordPress
+install, and WordPress.org also runs an AI pass that reads intent across call
+paths, which no tool here reaches.

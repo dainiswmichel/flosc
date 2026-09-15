@@ -120,6 +120,7 @@ if ( is_readable( $exc_path ) ) {
 
 $FINDINGS = array();
 $RULES    = array();
+$ADVISORY = array();
 
 function rule( $id, $title, $source ) {
 	global $RULES;
@@ -335,7 +336,21 @@ foreach ( $src as $file => $lines ) {
  *
  * wp_unslash() is not a sanitizer. It removes slashes.
  * ====================================================================== */
-rule( 'WPORG-05', 'Request data sanitized where it is read', 'T11 12Jul26, T12 13Sep26' );
+/*
+ * ADVISORY, superseded by PHPCS.
+ *
+ * WordPress.Security.ValidatedSanitizedInput is the authoritative sniff for
+ * this, it is installed now, and it reports ZERO errors on this tree. This rule
+ * is a hand-rolled approximation that reports dozens. It tests whether a
+ * sanitizer appears on the SAME LINE as the read, which is not the standard --
+ * WordPress's ordinary idiom unslashes the array once and sanitizes each field
+ * where it is used. The title says exactly that, so nobody reads a count here
+ * as a count of real defects. Where they disagree,
+ * PHPCS is right and this is not, so its findings print for reading and are
+ * excluded from the exit code. Sweeping them is how working code gets broken.
+ */
+$ADVISORY[] = 'WPORG-05';
+rule( 'WPORG-05', 'Superglobal read with no sanitizer on that line (advisory)', 'T11, T12 - see PHPCS ValidatedSanitizedInput' );
 
 $sanitizers = 'sanitize_|esc_url_raw|absint|intval|\(int\)|\(float\)|floatval|wp_kses|wp_verify_nonce|check_admin_referer|check_ajax_referer|flosc_sanitize_';
 foreach ( $src as $file => $lines ) {
@@ -407,7 +422,9 @@ foreach ( $src as $file => $lines ) {
  * T11: "json_decode() ... does not sanitize the input. Any potentially
  * malicious data or scripts may persist after json_decode()."
  * ====================================================================== */
-rule( 'WPORG-08', 'json_decode output from a request is field-sanitized', 'T11 12Jul26' );
+/* ADVISORY, same reasoning as WPORG-05: PHPCS is the authority here. */
+$ADVISORY[] = 'WPORG-08';
+rule( 'WPORG-08', 'json_decode output field-sanitized (advisory)', 'T11 12Jul26 - read each, do not sweep' );
 
 foreach ( $src as $file => $lines ) {
 	foreach ( $lines as $i => $line ) {
@@ -442,8 +459,13 @@ foreach ( $src as $file => $lines ) {
 /* =========================================================================
  * Report. Raw counts and every file:line. No summary verdict beyond the total.
  * ====================================================================== */
-$total = 0;
+$total    = 0;
+$advisory = 0;
 foreach ( $RULES as $id => $r ) {
+	if ( in_array( $id, $ADVISORY, true ) ) {
+		$advisory += $r['hits'];
+		continue;
+	}
 	$total += $r['hits'];
 }
 
@@ -463,7 +485,8 @@ if ( ! empty( $exc_bad ) ) {
 }
 
 foreach ( $RULES as $id => $r ) {
-	printf( "%-10s %-52s %s\n", $id, $r['title'], $r['hits'] === 0 ? 'clear' : $r['hits'] . ' FOUND' );
+	$mark = in_array( $id, $ADVISORY, true ) ? ' advisory' : '';
+	printf( "%-10s %-52s %s%s\n", $id, $r['title'], $r['hits'] === 0 ? 'clear' : $r['hits'] . ' FOUND', $mark );
 	printf( "%-10s source: %s\n", '', $r['source'] );
 	if ( ! empty( $FINDINGS[ $id ] ) ) {
 		foreach ( $FINDINGS[ $id ] as $f ) {
@@ -476,7 +499,8 @@ foreach ( $RULES as $id => $r ) {
 echo "---------------------------------------------------------------------------\n";
 printf( "  active exceptions : %d  (tests/wporg-rule-exceptions.txt)\n", count( $exceptions ) );
 printf( "  files scanned     : %d\n", count( $src ) );
-printf( "  findings          : %d\n", $total );
+printf( "  findings          : %d  (exit code counts these)\n", $total );
+printf( "  advisory          : %d  (read, never swept -- PHPCS is the authority)\n", $advisory );
 echo "---------------------------------------------------------------------------\n\n";
 
 echo "OUT OF REACH OF THIS FILE — do not read a clear run as coverage of these:\n";

@@ -1,15 +1,15 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": 67,
+  "candidate_iteration": 69,
   "creator": "Claude Opus 5",
   "status": "BUILT_AWAITING_CAPTAIN_TEST",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v66",
+  "base": "claude-opus-5 v67",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "6aa032b66bb3ec5a1f604156a8c024e3373ffe19c5628c16bad02c2589946404",
-  "artifact_bytes": 2750260,
+  "artifact_sha256": "cd4192b463b80a931a746772d9f4f067da487ac0cfda744d4b25afd7b51565ba",
+  "artifact_bytes": 2751714,
   "artifact_entries": 277,
   "tree_files": 289,
   "why_this_iteration": {
@@ -309,7 +309,6 @@
     "assets/css/flosc-admin.css — six-column widths for the protection table",
     "tests/check_access_vgm.php — flosc_grab_const() so the probe class carries INTERNAL_CATEGORY_ALIASES (v63 shipped this gate red); assertions for the tier floor, rule folding, scope precedence both directions, object-written rules, the site default, the read-more slice, legacy rows, and the call-site guard"
   ],
-  "artifact_note": "Byte-identical to v64. tests/ is excluded from the artifact by .distignore:7, so adding tests/verify-standards.sh does not change the zip. sha256sums was stale at v63 and is corrected in this pass.",
   "verify_standards_v65": {
     "file": "tests/verify-standards.sh",
     "why": "242 remediation roadmaps, 279 builds, 29 uploads to WordPress.org, still not compliant. Every upload happened because AI agents promised WordPress.org standards and submissions compliant code. This removes the agent from the reporting path.",
@@ -346,5 +345,39 @@
   },
   "files_changed_from_v66": [
     "tests/check_wporg_rules.php — new"
+  ],
+  "v69_measured_by_phpcs": {
+    "tool": "PHP_CodeSniffer 3.13.6 + wp-coding-standards/wpcs, installed from packagist in this container. It installs. That should have been step one of this project and was not.",
+    "security_errors_whole_tree": "EscapeOutput 0, ValidatedSanitizedInput 0, NonceVerification 0, SafeRedirect 0, PreparedSQL 0, DirectDatabaseQuery 0. phpcs exit 0, no output.",
+    "warnings_remaining": "84 \"Nonce verification recommended\" on $_GET reads that render admin screens without changing state. Warnings, not errors. Named rather than suppressed.",
+    "formatting_NOT_done": "WordPress-Extra + WordPress-Docs report 153,723 errors and 7,576 warnings across 138 files -- 71,466 space-indent, 35,362 function-call spacing. phpcbf fixes 154,329 automatically. A whitespace pass was run and REVERTED: the whitespace-stripped fingerprint of the tree was byte-identical before and after, proving behaviour unchanged, but it broke NINE gates that assert on source text. WordPress.org rejected this plugin four times and never mentioned formatting; all 153,723 findings were present in every rejected submission. It belongs in its own change after resubmission, with the gates updated alongside."
+  },
+  "v69_t12_findings": {
+    "version_headers": "FIXED. Requires at least 7.0 in readme.txt and flosc.php. check_packaging.php no longer asserts a version literal -- it checks the shape, major.minor with no patch digit.",
+    "importer_path_WP_PLUGIN_DIR": "FIXED. Load removed, not rewritten. The importer must be active.",
+    "import_php_core_include": "FIXED. Removed. The other twenty ABSPATH includes were not flagged and are untouched.",
+    "filter_input_38_sites": "FIXED. Every site reads the superglobal under isset() + is_scalar() and sanitizes at the read.",
+    "inline_script_style": "Was never a real finding -- my own rule was reading PHP comments as code. Rule fixed, code untouched.",
+    "sso_redirect_host_allowlist": "TRACED, CLEAN. get_app_url() returns only options-derived values; its one $_SERVER read is HTTP_X_FORWARDED_PROTO, which picks the scheme not the host. get_current_request_base_url() does read HTTP_HOST but has two callers, neither in the allowlist path. The reviewer flagged :603 $add(home_url(/)), which is a false positive."
+  },
+  "v69_defects_i_introduced_and_caught": [
+    "flosc-app.php:106 tested null !== filter_input(...). A converted read always returns a string, so every page would have rendered as a companion embed. Now isset().",
+    "31 sites would have unslashed twice, once at the read and once downstream. Two passes corrupt any value carrying a backslash. Reconciled: unslash at the read, redundant downstream call removed, zero double-unslash sites verified by script.",
+    "Four false-positive classes in my own rules gate: class files used via new, grouped core includes, comments naming a constant, comments containing a tag. All fixed. Counts from that gate were not trustworthy until now and should not have been quoted as if they were."
+  ],
+  "v69_gate_honesty": {
+    "blocking_rules": "WPORG-01,02,03,04,06,07,09 -- all clear, exit code counts these, currently 0.",
+    "advisory_rules": "WPORG-05 and WPORG-08, 69 findings, print but do not block. PHPCS ValidatedSanitizedInput is the authority and reports 0. WPORG-05 is titled for what it actually tests -- a superglobal read with no sanitizer on that line -- which is not the standard, so nobody reads its count as a count of defects.",
+    "exceptions": "3 in tests/wporg-rule-exceptions.txt, each with a written reason. An entry without one counts as a finding."
+  },
+  "files_changed_from_v67": [
+    "readme.txt, flosc.php - Requires at least 7.0",
+    "tests/check_packaging.php - shape check, no version literal",
+    "admin/ivr-upload-handler.php - importer path and core include removed",
+    "12 files - 38 filter_input sites converted and reconciled for unslash",
+    "includes/email, includes/sso x2, includes/magic-link - four documented nonce suppressions",
+    "tests/check_wporg_rules.php - four false-positive classes fixed, advisory split",
+    "tests/wporg-rule-exceptions.txt - new",
+    "tests/verify-standards.sh - from v65/v66"
   ]
 }
