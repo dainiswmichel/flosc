@@ -214,7 +214,9 @@ trait FLOSC_Magic_Link_Trait {
             'flosc_sso_success',
             'redirect_to',
         ) as $flosc_qk ) {
-            $raw = filter_input( INPUT_GET, $flosc_qk, FILTER_UNSAFE_RAW );
+            $raw = ( isset( $_GET[ $flosc_qk ] ) && is_scalar( $_GET[ $flosc_qk ] )
+				? sanitize_text_field( (string) $_GET[ $flosc_qk ] )
+				: '' );
             if ( is_string( $raw ) && $raw !== '' ) {
                 $get[ $flosc_qk ] = wp_unslash( $raw );
             }
@@ -1574,9 +1576,13 @@ trait FLOSC_Magic_Link_Trait {
             $ivr = sanitize_file_name( $this->current_ivr_file );
         }
         if ( $ivr === '' ) {
-            $ivr_in = filter_input( INPUT_POST, 'ivr', FILTER_DEFAULT );
+            $ivr_in = ( isset( $_POST['ivr'] ) && is_scalar( $_POST['ivr'] )
+			? sanitize_text_field( (string) $_POST['ivr'] )
+			: '' );
             if ( ! is_string( $ivr_in ) || $ivr_in === '' ) {
-                $ivr_in = filter_input( INPUT_GET, 'ivr', FILTER_DEFAULT );
+                $ivr_in = ( isset( $_GET['ivr'] ) && is_scalar( $_GET['ivr'] )
+			? sanitize_text_field( (string) $_GET['ivr'] )
+			: '' );
             }
             if ( is_string( $ivr_in ) ) {
                 $ivr = sanitize_file_name( wp_unslash( $ivr_in ) );

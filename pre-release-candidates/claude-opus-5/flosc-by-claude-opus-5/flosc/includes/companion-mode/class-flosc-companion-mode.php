@@ -33,7 +33,9 @@ class FLOSC_Companion_Mode {
         }
 
         // Public handoff flag from full-page dock (not a form POST — no nonce applies).
-        $handoff_request = ( '1' === sanitize_text_field( (string) filter_input( INPUT_GET, 'flosc_companion_handoff' ) ) );
+        $handoff_request = ( '1' === sanitize_text_field( (string) ( isset( $_GET['flosc_companion_handoff'] ) && is_scalar( $_GET['flosc_companion_handoff'] )
+			? sanitize_text_field( wp_unslash( (string) $_GET['flosc_companion_handoff'] ) )
+			: '' ) ) );
 
         // Cross-domain knowledge hub: pick the owning flow before reading settings.
         $this->resolve_companion_flow_context($handoff_request);
@@ -508,9 +510,13 @@ class FLOSC_Companion_Mode {
         $req_path = $this->companion_normalize_url_path($request_path);
 
         // Optional dock hint from full-page chat (public query string, not a form).
-        $hint = sanitize_text_field((string) filter_input(INPUT_GET, 'flosc_flow_id'));
+        $hint = sanitize_text_field((string) ( isset( $_GET['flosc_flow_id'] ) && is_scalar( $_GET['flosc_flow_id'] )
+			? sanitize_text_field( wp_unslash( (string) $_GET['flosc_flow_id'] ) )
+			: '' ));
         if ($hint === '') {
-            $hint = sanitize_text_field((string) filter_input(INPUT_GET, 'flosc_ivr'));
+            $hint = sanitize_text_field((string) ( isset( $_GET['flosc_ivr'] ) && is_scalar( $_GET['flosc_ivr'] )
+			? sanitize_text_field( wp_unslash( (string) $_GET['flosc_ivr'] ) )
+			: '' ));
         }
         $hint = sanitize_key(preg_replace('/\.md$/i', '', (string) $hint));
 

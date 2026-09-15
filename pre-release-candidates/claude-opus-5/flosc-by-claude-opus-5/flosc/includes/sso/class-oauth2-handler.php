@@ -247,18 +247,24 @@ class OAuth2_Handler {
         $get  = array();
         $post = array();
         foreach ( array( 'code', 'state', 'error', 'error_description' ) as $flosc_k ) {
-            $g = filter_input( INPUT_GET, $flosc_k, FILTER_UNSAFE_RAW );
+            $g = ( isset( $_GET[ $flosc_k ] ) && is_scalar( $_GET[ $flosc_k ] )
+				? sanitize_text_field( (string) $_GET[ $flosc_k ] )
+				: '' );
             if ( is_string( $g ) && $g !== '' ) {
                 $get[ $flosc_k ] = wp_unslash( $g );
             }
-            $p = filter_input( INPUT_POST, $flosc_k, FILTER_UNSAFE_RAW );
+            $p = ( isset( $_POST[ $flosc_k ] ) && is_scalar( $_POST[ $flosc_k ] )
+				? sanitize_text_field( (string) $_POST[ $flosc_k ] )
+				: '' );
             if ( is_string( $p ) && $p !== '' ) {
                 $post[ $flosc_k ] = wp_unslash( $p );
             }
         }
         $server = array();
         foreach ( array( 'REQUEST_URI', 'REQUEST_METHOD', 'QUERY_STRING' ) as $flosc_sk ) {
-            $sv = filter_input( INPUT_SERVER, $flosc_sk, FILTER_UNSAFE_RAW );
+            $sv = ( isset( $_SERVER[ $flosc_sk ] ) && is_scalar( $_SERVER[ $flosc_sk ] )
+				? sanitize_text_field( (string) $_SERVER[ $flosc_sk ] )
+				: '' );
             $server[ $flosc_sk ] = is_string( $sv ) ? wp_unslash( $sv ) : '';
         }
 

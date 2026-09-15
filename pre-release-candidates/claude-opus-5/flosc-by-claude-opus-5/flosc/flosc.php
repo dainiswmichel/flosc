@@ -3397,7 +3397,9 @@ The Team',
         }
 
         // Cookie is set by FLOSC during SSO handoff; not a form POST.
-        $pending_raw = filter_input( INPUT_COOKIE, 'flosc_pending_session', FILTER_UNSAFE_RAW );
+        $pending_raw = ( isset( $_COOKIE['flosc_pending_session'] ) && is_scalar( $_COOKIE['flosc_pending_session'] )
+			? sanitize_text_field( (string) $_COOKIE['flosc_pending_session'] )
+			: '' );
         if ( ! is_string( $pending_raw ) || $pending_raw === '' ) {
             return;
         }
@@ -11365,15 +11367,25 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         // Signed URL endpoint (exp + HMAC). Read query via filter_input — not a
         // state-changing POST; auth is signature and/or capability below.
         $user_id     = absint( (string) filter_input( INPUT_GET, 'user_id', FILTER_SANITIZE_NUMBER_INT ) );
-        $file_raw    = filter_input( INPUT_GET, 'file', FILTER_UNSAFE_RAW );
+        $file_raw    = ( isset( $_GET['file'] ) && is_scalar( $_GET['file'] )
+			? sanitize_text_field( (string) $_GET['file'] )
+			: '' );
         $file        = is_string( $file_raw ) ? sanitize_file_name( wp_unslash( $file_raw ) ) : '';
-        $is_download = (bool) filter_input( INPUT_GET, 'download', FILTER_UNSAFE_RAW );
+        $is_download = (bool) ( isset( $_GET['download'] ) && is_scalar( $_GET['download'] )
+			? sanitize_text_field( wp_unslash( (string) $_GET['download'] ) )
+			: '' );
         $expires     = absint( (string) filter_input( INPUT_GET, 'exp', FILTER_SANITIZE_NUMBER_INT ) );
-        $sig_raw     = filter_input( INPUT_GET, 'sig', FILTER_UNSAFE_RAW );
+        $sig_raw     = ( isset( $_GET['sig'] ) && is_scalar( $_GET['sig'] )
+			? sanitize_text_field( (string) $_GET['sig'] )
+			: '' );
         $sig         = is_string( $sig_raw ) ? strtolower( preg_replace( '/[^a-f0-9]/', '', wp_unslash( $sig_raw ) ) ) : '';
-        $session_raw = filter_input( INPUT_GET, 'flosc_sid', FILTER_UNSAFE_RAW );
+        $session_raw = ( isset( $_GET['flosc_sid'] ) && is_scalar( $_GET['flosc_sid'] )
+			? sanitize_text_field( (string) $_GET['flosc_sid'] )
+			: '' );
         if ( ! is_string( $session_raw ) || $session_raw === '' ) {
-            $session_raw = filter_input( INPUT_GET, 'session_id', FILTER_UNSAFE_RAW );
+            $session_raw = ( isset( $_GET['session_id'] ) && is_scalar( $_GET['session_id'] )
+			? sanitize_text_field( (string) $_GET['session_id'] )
+			: '' );
         }
         $session_id  = is_string( $session_raw ) ? sanitize_text_field( wp_unslash( $session_raw ) ) : '';
 
@@ -11419,7 +11431,9 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         }
 
         // Byte range for iOS Safari/WebKit <audio> probe (Range: bytes=0-1).
-        $http_range = filter_input( INPUT_SERVER, 'HTTP_RANGE', FILTER_UNSAFE_RAW );
+        $http_range = ( isset( $_SERVER['HTTP_RANGE'] ) && is_scalar( $_SERVER['HTTP_RANGE'] )
+			? sanitize_text_field( (string) $_SERVER['HTTP_RANGE'] )
+			: '' );
         $http_range = is_string( $http_range ) && $http_range !== ''
             ? sanitize_text_field( wp_unslash( $http_range ) )
             : null;

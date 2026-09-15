@@ -290,7 +290,9 @@ trait FLOSC_Visitor_Token_Trait {
      */
     public function flosc_resolve_visitor_session_id_for_grant() {
         foreach ( array( 'flosc_visitor_session', 'flosc_vtok_session' ) as $cookie_name ) {
-            $raw = filter_input( INPUT_COOKIE, $cookie_name, FILTER_UNSAFE_RAW );
+            $raw = ( isset( $_COOKIE[ $cookie_name ] ) && is_scalar( $_COOKIE[ $cookie_name ] )
+				? sanitize_text_field( (string) $_COOKIE[ $cookie_name ] )
+				: '' );
             if ( is_string( $raw ) && $raw !== '' ) {
                 return sanitize_text_field( rawurldecode( wp_unslash( $raw ) ) );
             }

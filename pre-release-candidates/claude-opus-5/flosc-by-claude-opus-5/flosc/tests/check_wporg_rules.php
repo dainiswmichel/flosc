@@ -44,6 +44,22 @@ chdir( $root );
  * Which files are code that ships. Docs and tests are excluded because the
  * artifact excludes them (.distignore), so a rule firing there is noise.
  * ------------------------------------------------------------------------ */
+/**
+ * A line of prose is not a line of code.
+ *
+ * WPORG-03 fired on a comment that merely NAMED WP_PLUGIN_DIR while explaining
+ * why the constant had been removed. A rule that cannot tell an explanation from
+ * an instruction produces work that does nothing, which is the same cost as a
+ * missed finding paid in the other direction.
+ *
+ * @param string $line
+ * @return bool
+ */
+function flosc_is_comment_line( $line ) {
+	$t = ltrim( $line );
+	return $t === '' || $t[0] === '*' || strpos( $t, '//' ) === 0 || strpos( $t, '/*' ) === 0 || strpos( $t, '#' ) === 0;
+}
+
 function flosc_source_files( $root ) {
 	$out  = array();
 	$skip = array( '/.git/', '/tests/', '/admin/docs/', '/flosc_documentation/', '/node_modules/', '/vendor/' );
@@ -196,7 +212,7 @@ $core_fns = array(
 
 foreach ( $src as $file => $lines ) {
 	foreach ( $lines as $i => $line ) {
-		if ( ! preg_match( "#(?:require|include)(?:_once)?\s+ABSPATH\s*\.\s*'[^']*/([a-z\-]+\.php)'#", $line, $m ) ) {
+		if ( flosc_is_comment_line( $line ) || ! preg_match( "#(?:require|include)(?:_once)?\s+ABSPATH\s*\.\s*'[^']*/([a-z\-]+\.php)'#", $line, $m ) ) {
 			continue;
 		}
 		$core = $m[1];
@@ -237,6 +253,9 @@ rule( 'WPORG-03', 'Locations resolved, not built from WP_* constants', 'T12 13Se
 
 foreach ( $src as $file => $lines ) {
 	foreach ( $lines as $i => $line ) {
+		if ( flosc_is_comment_line( $line ) ) {
+			continue;
+		}
 		if ( preg_match( '/\b(WP_PLUGIN_DIR|WP_PLUGIN_URL|WP_CONTENT_DIR|WP_CONTENT_URL)\b/', $line, $m ) ) {
 			finding( 'WPORG-03', $file, $i + 1, "{$m[1]} — use plugin_dir_path(), plugin_dir_url(), plugins_url() or wp_upload_dir()" );
 		}
@@ -253,7 +272,7 @@ rule( 'WPORG-04', 'filter_input carries a sanitizing filter', 'T12 13Sep26' );
 
 foreach ( $src as $file => $lines ) {
 	foreach ( $lines as $i => $line ) {
-		if ( strpos( $line, 'filter_input' ) === false ) {
+		if ( strpos( $line, 'filter_input' ) === false || flosc_is_comment_line( $line ) ) {
 			continue;
 		}
 		if ( preg_match( '/filter_input(?:_array)?\s*\([^)]*FILTER_(DEFAULT|UNSAFE_RAW)/', $line, $m ) ) {
@@ -348,7 +367,7 @@ rule( 'WPORG-08', 'json_decode output from a request is field-sanitized', 'T11 1
 
 foreach ( $src as $file => $lines ) {
 	foreach ( $lines as $i => $line ) {
-		if ( strpos( $line, 'json_decode' ) === false ) {
+		if ( strpos( $line, 'json_decode' ) === false || flosc_is_comment_line( $line ) ) {
 			continue;
 		}
 		if ( preg_match( '/json_decode\s*\([^;]*(\$_(POST|GET|REQUEST|COOKIE)|\$post\[|\$request\[|\$raw|_raw)/', $line ) ) {
@@ -367,6 +386,9 @@ rule( 'WPORG-09', 'No inline script or style tags', 'T10, T11, T12' );
 
 foreach ( $src as $file => $lines ) {
 	foreach ( $lines as $i => $line ) {
+		if ( flosc_is_comment_line( $line ) ) {
+			continue;
+		}
 		if ( preg_match( '/<(script|style)[\s>]/i', $line, $m ) ) {
 			finding( 'WPORG-09', $file, $i + 1, "inline <{$m[1]}> — enqueue it with wp_enqueue_script() / wp_enqueue_style()" );
 		}

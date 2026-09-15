@@ -207,7 +207,9 @@ $flosc_active_count = count(array_filter($flosc_product_rows, static function ($
     return !empty($flosc_row['active']);
 }));
 // Admin list filter (read-only navigation, not a form submission).
-$flosc_filter = sanitize_key((string) filter_input(INPUT_GET, 'flosc_product_filter'));
+$flosc_filter = sanitize_key((string) ( isset( $_GET['flosc_product_filter'] ) && is_scalar( $_GET['flosc_product_filter'] )
+			? sanitize_text_field( wp_unslash( (string) $_GET['flosc_product_filter'] ) )
+			: '' ));
 if (!in_array($flosc_filter, ['active', 'all'], true)) {
     $flosc_filter = 'active';
 }
