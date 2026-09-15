@@ -52,6 +52,13 @@ find_bin() {
     [ -n "$c" ] && [ -x "$c" ] && { echo "$c"; return; }
   done
 }
+# "PHPStan - PHP Static Analysis Tool 2.2.14" -- field 5 is the word "Analysis",
+# not the version. Take the first token that actually looks like one.
+phpstan_ver() {
+  [ -z "$PHPSTAN" ] && { echo "?"; return; }
+  "$PHPSTAN" --version 2>/dev/null | tr ' ' '\n' | grep -m1 -E '^[0-9]+\.[0-9]+' || echo "?"
+}
+
 PHPCS=$(find_bin phpcs)
 PHPSTAN=$(find_bin phpstan)
 PHP=$(command -v php 2>/dev/null || true)
@@ -112,7 +119,7 @@ doctor() {
   done
   if [ -n "$PHPCS" ]; then dok "phpcs" "$("$PHPCS" --version 2>/dev/null | awk '{print $3}')  ($PHPCS)"
   else dmiss "phpcs" "composer global require squizlabs/php_codesniffer"; fi
-  if [ -n "$PHPSTAN" ]; then dok "phpstan" "$("$PHPSTAN" --version 2>/dev/null | awk '{print $5}')  ($PHPSTAN)"
+  if [ -n "$PHPSTAN" ]; then dok "phpstan" "$(phpstan_ver)  ($PHPSTAN)"
   else dmiss "phpstan" "composer global require phpstan/phpstan"; fi
 
   echo
@@ -457,7 +464,7 @@ p6() { phpcs_proc 6 "Translation functions" phpcs.xml.dist "WordPress.WP.I18n"; 
 p7() { # phpstan
   local src="$SHIP/flosc"
   local cfg="$HERE/phpstan.neon.dist"
-  head_proc 7 "PHPStan level 5" "PHPStan $( [ -n "$PHPSTAN" ] && "$PHPSTAN" --version 2>/dev/null | awk '{print $5}' || echo '?' ) + szepeviktor/phpstan-wordpress — not written by any AI" \
+  head_proc 7 "PHPStan level 5" "PHPStan $(phpstan_ver) + szepeviktor/phpstan-wordpress — not written by any AI" \
     "phpstan analyse -c phpstan.neon.dist --no-progress --memory-limit=1G $src"
   if [ -z "$PHPSTAN" ]; then notrun "phpstan not found"; return; fi
   if [ ! -f "$cfg" ]; then notrun "phpstan.neon.dist missing"; return; fi
