@@ -59,6 +59,189 @@ PHP=$(command -v php 2>/dev/null || true)
 RC=0
 CMD_ONLY=0
 
+# ---------------------------------------------------------------- doctor
+# Step 3: check the testing environment itself, and say how to repair it.
+#
+# An environment that has quietly lost a tool does not go quiet -- it reports
+# clean runs on checks that never executed. phpcs exiting 3 because the WordPress
+# standard was never registered looks exactly like phpcs exiting 0 because the
+# code is clean, unless something is watching for it. This is that something.
+#
+# The last section is the accountability one. It prints the sha256 of this script
+# and every config beside the sha256 of the same file in .flosc-mirror. If an
+# agent has edited your testing environment on your machine, that difference is
+# visible in one command. Including if the agent was me.
+DOC_RC=0
+dok()   { printf '  %-10s %-34s %s\n' "OK"      "$1" "$2"; }
+dmiss() { printf '  %-10s %-34s %s\n' "MISSING" "$1" "$2"; DOC_RC=1; }
+dstale(){ printf '  %-10s %-34s %s\n' "STALE"   "$1" "$2"; DOC_RC=1; }
+
+sha_of() {
+  [ -f "$1" ] || { echo "-"; return; }
+  if command -v shasum >/dev/null 2>&1; then shasum -a 256 "$1" | cut -d' ' -f1
+  else sha256sum "$1" | cut -d' ' -f1; fi
+}
+
+wpenv_up() {
+  [ -d "$RUNTIME" ] || return 1
+  ( cd "$RUNTIME" && npx wp-env run cli -- wp core version ) >/dev/null 2>&1
+}
+
+doctor() {
+  local fix=0
+  for a in "$@"; do [ "$a" = "--fix" ] && fix=1; done
+
+  echo "FLOSC testing environment — doctor"
+  echo "  $HERE"
+  echo
+
+  echo "TOOLS"
+  local v
+  for t in php composer node npx docker; do
+    if command -v "$t" >/dev/null 2>&1; then
+      case "$t" in
+        php)      v=$("$t" -r 'echo PHP_VERSION;' 2>/dev/null) ;;
+        composer) v=$("$t" --version 2>/dev/null | awk '{print $3}') ;;
+        docker)   v=$("$t" --version 2>/dev/null | awk '{print $3}' | tr -d ,) ;;
+        *)        v=$("$t" --version 2>/dev/null) ;;
+      esac
+      dok "$t" "$v"
+    else
+      dmiss "$t" "not on PATH"
+    fi
+  done
+  if [ -n "$PHPCS" ]; then dok "phpcs" "$("$PHPCS" --version 2>/dev/null | awk '{print $3}')  ($PHPCS)"
+  else dmiss "phpcs" "composer global require squizlabs/php_codesniffer"; fi
+  if [ -n "$PHPSTAN" ]; then dok "phpstan" "$("$PHPSTAN" --version 2>/dev/null | awk '{print $5}')  ($PHPSTAN)"
+  else dmiss "phpstan" "composer global require phpstan/phpstan"; fi
+
+  echo
+  echo "PHPCS STANDARDS  (registered, not merely installed)"
+  if [ -z "$PHPCS" ]; then
+    dmiss "phpcs -i" "phpcs itself is missing"
+  else
+    local inst; inst=$("$PHPCS" -i 2>/dev/null)
+    for std in WordPress PHPCompatibilityWP; do
+      if printf '%s' "$inst" | grep -q "\b$std\b"; then dok "$std" "registered"
+      else
+        dmiss "$std" "installed but NOT registered — every --standard=$std run exits 3"
+        echo "             composer global config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true"
+      fi
+    done
+  fi
+
+  echo
+  echo "PHPSTAN WORDPRESS EXTENSION"
+  local ext=""
+  for c in "$HOME/.composer/vendor/szepeviktor/phpstan-wordpress/extension.neon" \
+           "$HOME/.config/composer/vendor/szepeviktor/phpstan-wordpress/extension.neon" \
+           "$HERE/vendor/szepeviktor/phpstan-wordpress/extension.neon"; do
+    [ -f "$c" ] && ext="$c" && break
+  done
+  if [ -n "$ext" ]; then dok "extension.neon" "$ext"
+  else dmiss "extension.neon" "composer global require szepeviktor/phpstan-wordpress"
+       echo "             without it PHPStan knows no WordPress function and prints thousands of phantom errors"
+  fi
+
+  echo
+  echo "CONFIGS  (present AND parsed)"
+  for f in phpcs.xml.dist phpcs-compat.xml.dist; do
+    if [ ! -f "$HERE/$f" ]; then dmiss "$f" "not found — ./flosc-test pull"
+    elif command -v python3 >/dev/null 2>&1 \
+         && ! python3 -c "import xml.dom.minidom,sys; xml.dom.minidom.parse(sys.argv[1])" "$HERE/$f" 2>/dev/null; then
+      dmiss "$f" "present but not well-formed XML"
+    else
+      # Match the ELEMENT, not the word. The description in these files explains
+      # why there is no warning-severity setting -- grepping for the bare string
+      # flagged the explanation as the offence. Found by running this on itself.
+      if grep -qE '<(arg|config)[^>]*name="warning-severity"' "$HERE/$f" 2>/dev/null; then
+        dstale "$f" "sets warning-severity — findings can be hidden. Remove that line."
+      else
+        dok "$f" "no warning-severity setting — nothing can be hidden"
+      fi
+    fi
+  done
+  if [ -f "$HERE/phpstan.neon.dist" ]; then dok "phpstan.neon.dist" "present"
+  else dmiss "phpstan.neon.dist" "not found — ./flosc-test pull"; fi
+
+  local wpe="$RUNTIME/.wp-env.json"
+  if [ ! -f "$wpe" ]; then
+    dmiss ".wp-env.json" "not found at $wpe"
+  elif command -v python3 >/dev/null 2>&1 && ! python3 -c "import json,sys; json.load(open(sys.argv[1]))" "$wpe" 2>/dev/null; then
+    dmiss ".wp-env.json" "present but not valid JSON"
+  elif grep -q 'pre-release-candidates' "$wpe"; then
+    dstale ".wp-env.json" "points at a SOURCE TREE — every tests/ finding will be false"
+    echo "             it must read:  \"plugins\": [\"./ship/flosc\"]"
+  else
+    dok ".wp-env.json" "mounts ./ship/flosc — the zip, not the working tree"
+  fi
+
+  echo
+  echo "CONTAINER STACK"
+  if ! command -v docker >/dev/null 2>&1; then
+    dmiss "docker" "not installed"
+  elif ! docker info >/dev/null 2>&1; then
+    dmiss "docker daemon" "not reachable — colima start --runtime docker"
+  else
+    dok "docker daemon" "reachable"
+  fi
+  if ! command -v npx >/dev/null 2>&1; then
+    dmiss "wp-env" "npx missing"
+  elif wpenv_up; then
+    dok "wp-env" "WordPress $( cd "$RUNTIME" && npx wp-env run cli -- wp core version 2>/dev/null | tr -d '\r' | tail -1 )"
+    local pc
+    pc=$( cd "$RUNTIME" && npx wp-env run cli -- wp plugin list --name=plugin-check --field=status 2>/dev/null | tr -d '\r' | tail -1 )
+    case "$pc" in
+      active) dok "plugin-check" "active" ;;
+      inactive)
+        if [ "$fix" = "1" ]; then
+          ( cd "$RUNTIME" && npx wp-env run cli -- wp plugin activate plugin-check ) >/dev/null 2>&1 \
+            && dok "plugin-check" "activated by --fix" || dmiss "plugin-check" "activate failed"
+        else dmiss "plugin-check" "installed but inactive — ./flosc-test doctor --fix"; fi ;;
+      *)
+        if [ "$fix" = "1" ]; then
+          ( cd "$RUNTIME" && npx wp-env run cli -- wp plugin install plugin-check --activate ) >/dev/null 2>&1 \
+            && dok "plugin-check" "installed by --fix" || dmiss "plugin-check" "install failed"
+        else dmiss "plugin-check" "not installed — ./flosc-test doctor --fix"; fi ;;
+    esac
+  else
+    if [ "$fix" = "1" ] && [ -d "$RUNTIME" ]; then
+      echo "  starting wp-env (this takes a few minutes on a cold start)..."
+      ( cd "$RUNTIME" && npx wp-env start ) 2>&1 | tail -3
+      wpenv_up && dok "wp-env" "started by --fix" || dmiss "wp-env" "start failed"
+    else
+      dmiss "wp-env" "not running — ./flosc-test doctor --fix   (or: cd testing-runtime && npx wp-env start)"
+    fi
+  fi
+
+  echo
+  echo "INTEGRITY  (your copy vs. what is in git)"
+  local mirror="$HERE/.flosc-mirror/testing-environment"
+  if [ ! -d "$mirror" ]; then
+    dmiss "mirror" "no .flosc-mirror — cannot compare; ./flosc-test pull"
+  else
+    for f in flosc-test phpcs.xml.dist phpcs-compat.xml.dist phpstan.neon.dist; do
+      local a b; a=$(sha_of "$HERE/$f"); b=$(sha_of "$mirror/$f")
+      if [ "$a" = "-" ]; then dmiss "$f" "missing locally"
+      elif [ "$b" = "-" ]; then dmiss "$f" "not in git — where did it come from?"
+      elif [ "$a" = "$b" ]; then dok "$f" "${a:0:16}"
+      else dstale "$f" "local ${a:0:16} != git ${b:0:16} — something edited it"; fi
+    done
+    local wa wb; wa=$(sha_of "$wpe"); wb=$(sha_of "$mirror/wp-env.json")
+    if [ "$wa" = "$wb" ]; then dok ".wp-env.json" "${wa:0:16}"
+    else dstale ".wp-env.json" "local ${wa:0:16} != git ${wb:0:16}"; fi
+  fi
+
+  echo
+  if [ "$DOC_RC" -eq 0 ]; then
+    echo "ENVIRONMENT OK — every tool present, every standard registered, nothing hidden."
+  else
+    echo "ENVIRONMENT NOT OK. Every line above that is not OK is a check that will"
+    echo "either not run or not be trustworthy. Fix those before believing a result."
+  fi
+  exit "$DOC_RC"
+}
+
 # ---------------------------------------------------------------- pull
 # Refresh the candidates AND this environment from GitHub.
 #
@@ -334,13 +517,29 @@ p9() { # inline styles
 p10() { # plugin check
   head_proc 10 "Plugin Check" "Plugin Check — WORDPRESS.ORG'S OWN TOOL, run in wp-env" \
     "cd testing-runtime && npx wp-env run cli -- wp plugin check flosc --require=./wp-content/plugins/plugin-check/cli.php --include-experimental"
-  if [ ! -d "$SHIP/flosc" ]; then notrun "no ship tree; run procedure 0"; return; fi
-  if ! command -v npx >/dev/null 2>&1; then notrun "npx not found"; return; fi
   echo "This runs against $SHIP/flosc — the unpacked zip, NOT the working tree."
   echo "If you see findings in tests/ or handoff.md, .wp-env.json is pointed at the"
   echo "wrong directory and every one of those findings is false."
   echo
+  # --cmd prints and stops. It must never report a failure -- it ran nothing.
   [ "$CMD_ONLY" = "1" ] && { echo "(not run: --cmd)"; return 0; }
+  if [ ! -d "$SHIP/flosc" ]; then notrun "no ship tree; run procedure 0"; return; fi
+  if ! command -v npx >/dev/null 2>&1; then notrun "npx not found"; return; fi
+
+  # Probe first. Without this, a stopped Docker produces a wall of npm noise that
+  # reads like a tool failure in the plugin rather than a missing container.
+  if ! wpenv_up; then
+    notrun "wp-env is not running — ./flosc-test doctor --fix"
+    return
+  fi
+  # Plugin Check is a plugin; a fresh wp-env does not have it. Absent, this
+  # procedure used to fail with a confusing wp-cli error instead of NOT RUN.
+  local pc
+  pc=$( cd "$RUNTIME" && npx wp-env run cli -- wp plugin list --name=plugin-check --field=status 2>/dev/null | tr -d '\r' | tail -1 )
+  if [ "$pc" != "active" ]; then
+    notrun "plugin-check is '${pc:-not installed}' — ./flosc-test doctor --fix"
+    return
+  fi
   ( cd "$RUNTIME" && npx wp-env run cli -- wp plugin check flosc \
       --require=./wp-content/plugins/plugin-check/cli.php --include-experimental ) 2>&1
   foot $?
@@ -348,20 +547,44 @@ p10() { # plugin check
 
 p11() { # clean-install smoke test
   head_proc 11 "Clean install, WP_DEBUG on" "wp-env + wp-cli — WordPress.org's own checklist item" \
-    "cd testing-runtime && npx wp-env run cli -- wp plugin activate flosc && ... && cat debug.log"
-  if ! command -v npx >/dev/null 2>&1; then notrun "npx not found"; return; fi
+    "npx wp-env run cli -- wp plugin activate flosc ; then load init/admin_init and read wp-content/debug.log"
   echo "WordPress.org's checklist says: \"I tested my updated plugin on a clean"
   echo "WordPress installation with WP_DEBUG set to true.\" This is that test."
   echo "Any notice or warning in debug.log is a finding."
   echo
+  if ! command -v npx >/dev/null 2>&1; then notrun "npx not found"; return; fi
   [ "$CMD_ONLY" = "1" ] && { echo "(not run: --cmd)"; return 0; }
-  ( cd "$RUNTIME" \
-    && npx wp-env run cli -- wp plugin activate flosc \
-    && npx wp-env run cli -- rm -f wp-content/debug.log \
-    && npx wp-env run cli -- wp eval 'do_action("init"); do_action("admin_init"); echo "hooks fired\n";' \
-    && echo "--- debug.log ---" \
-    && npx wp-env run cli -- sh -c 'cat wp-content/debug.log 2>/dev/null || echo "(empty — no notices)"' ) 2>&1
-  foot $?
+  if ! wpenv_up; then notrun "wp-env is not running — ./flosc-test doctor --fix"; return; fi
+
+  # Each step is separate and its own failure is reported. Chained with && this
+  # silently stopped at 'plugin activate', which exits non-zero when the plugin
+  # is ALREADY active -- so a correctly installed plugin looked like a failure
+  # and the debug.log was never read.
+  local st
+  st=$( cd "$RUNTIME" && npx wp-env run cli -- wp plugin list --name=flosc --field=status 2>/dev/null | tr -d '\r' | tail -1 )
+  if [ "$st" != "active" ]; then
+    ( cd "$RUNTIME" && npx wp-env run cli -- wp plugin activate flosc ) 2>&1 | tail -3
+    st=$( cd "$RUNTIME" && npx wp-env run cli -- wp plugin list --name=flosc --field=status 2>/dev/null | tr -d '\r' | tail -1 )
+  fi
+  echo "plugin status: ${st:-unknown}"
+  if [ "$st" != "active" ]; then notrun "flosc did not activate — that is itself the finding"; return; fi
+
+  # Absolute paths: the cli container's working directory is not guaranteed.
+  ( cd "$RUNTIME" && npx wp-env run cli -- bash -c 'rm -f /var/www/html/wp-content/debug.log' ) >/dev/null 2>&1
+  ( cd "$RUNTIME" && npx wp-env run cli -- wp eval 'do_action("init"); do_action("admin_init"); echo "hooks fired\n";' ) 2>&1 | tail -5
+  echo
+  echo "--- wp-content/debug.log ---"
+  local log
+  log=$( cd "$RUNTIME" && npx wp-env run cli -- bash -c 'cat /var/www/html/wp-content/debug.log 2>/dev/null' )
+  if [ -z "$(printf '%s' "$log" | tr -d '[:space:]')" ]; then
+    echo "(empty — no notices, warnings or deprecations)"
+    foot 0
+  else
+    printf '%s\n' "$log"
+    echo
+    echo "lines: $(printf '%s\n' "$log" | grep -c .)  — every one of these is a finding"
+    foot 1
+  fi
 }
 
 # ---------------------------------------------------------------- dispatch
@@ -380,6 +603,8 @@ usage() {
   echo "  Current target: $(describe_target)"
   echo
   echo "USAGE"
+  echo "  ./flosc-test doctor          check the environment itself, and say how to repair it"
+  echo "  ./flosc-test doctor --fix    start wp-env and install Plugin Check if missing"
   echo "  ./flosc-test pull            refresh candidates and this environment"
   echo "  ./flosc-test select <name>   test a candidate source tree"
   echo "  ./flosc-test zip <path>      test an archive exactly as uploaded"
@@ -408,7 +633,8 @@ usage() {
 main() {
   case "${1:-}" in
     ""|help|-h|--help) usage; exit 0 ;;
-    pull) pull; exit 0 ;;
+    pull|update) pull; exit 0 ;;
+    doctor) shift; doctor "$@" ;;
     select)
       [ -z "${2:-}" ] && { echo "which candidate?"; list_candidates; exit 1; }
       [ -d "$CANDS/$2" ] || { echo "no such candidate: $2"; list_candidates; exit 1; }
