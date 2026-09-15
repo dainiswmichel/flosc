@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<ruleset name="FLOSC">
+	<description>
+		WordPress Coding Standards for FLOSC submission checks.
+
+		THE ONE THING TO NOTICE: there is no warning-severity setting anywhere in
+		this file, and there never will be. An earlier bench passed
+		--warning-severity=0 to the security sniffs and printed "0" for a tree
+		carrying 84 WordPress.Security.NonceVerification warnings -- the exact
+		category WordPress.org rejected this plugin for in the 14 Sep 2026 review.
+		Suppressing warnings is how a check lies. If a warning is genuinely not
+		applicable, it gets a phpcs:ignore comment WITH A WRITTEN REASON, on that
+		line, where a reader can judge it.
+	</description>
+
+	<rule ref="WordPress"/>
+
+	<arg name="extensions" value="php"/>
+	<arg name="colors"/>
+	<arg value="s"/><!-- always show the sniff code, so any finding can be re-run alone -->
+
+	<!--
+		Paths excluded here are excluded because they DO NOT SHIP, which
+		procedure 1 proves on every run by printing the zip's real contents.
+		Nothing is excluded because its findings are inconvenient.
+	-->
+	<exclude-pattern>*/tests/*</exclude-pattern>
+	<exclude-pattern>*/vendor/*</exclude-pattern>
+	<exclude-pattern>*/node_modules/*</exclude-pattern>
+	<exclude-pattern>*/admin/docs/*</exclude-pattern>
+	<exclude-pattern>*/flosc_documentation/*</exclude-pattern>
+</ruleset>

@@ -78,6 +78,12 @@ DENY_PATTERNS=(
   'testing-bench.sh'
   'TESTING-ENVIRONMENT.md'
   'testing-logs'
+  'testing-runtime'
+  'testing-environment'
+  'flosc-test'
+  'phpcs.xml.dist'
+  'phpcs-compat.xml.dist'
+  'phpstan.neon.dist'
   '.distignore'
 )
 

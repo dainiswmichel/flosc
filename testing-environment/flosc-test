@@ -1,0 +1,463 @@
+#!/usr/bin/env bash
+#
+# flosc-test — the FLOSC submission testing environment.
+#
+#   ./flosc-test                    show the candidates, the selection, the procedures
+#   ./flosc-test select <name>      choose which candidate to test
+#   ./flosc-test all                run every procedure in order
+#   ./flosc-test <n>                run one procedure
+#   ./flosc-test <n> --cmd          print that procedure's command and run NOTHING
+#
+# WHY THIS EXISTS, AND WHAT IT IS FOR
+#
+# It is for holding a coding tool to account — including the one that wrote this
+# file. That only works if every number can be traced to a command you can paste
+# yourself. So every procedure prints, before its output:
+#
+#     the tool that decides it, by name and version
+#     the exact command, copy-pasteable
+#
+# and after it, the raw exit code. Nothing here summarises anything. If a claim
+# about this plugin cannot be reproduced by pasting one of these commands, the
+# claim is worth nothing.
+#
+# TWO RULES THIS FILE ENFORCES, BOTH LEARNED THE HARD WAY
+#
+#   1. TEST THE SHIP TREE, NOT THE SOURCE TREE. The first local Plugin Check run
+#      was pointed at the working directory and returned hundreds of findings in
+#      tests/, .github, handoff.md and build-dist-zip.sh — none of which are in
+#      the zip WordPress.org receives. Procedure 1 prints what actually ships,
+#      every time, so that mistake announces itself.
+#
+#   2. A WARNING IS NEVER SUPPRESSED. phpcs.xml.dist sets no warning-severity at
+#      all. An earlier version of the bench passed --warning-severity=0 on the
+#      security sniffs and reported "0" for a tree carrying 84 nonce warnings —
+#      the exact category WordPress.org rejected the plugin for.
+#
+#   A check that did not run prints NOT RUN and exits non-zero. It never prints 0.
+
+set -uo pipefail
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CANDS="$HERE/pre-release-candidates"
+RUNTIME="$HERE/testing-runtime"
+SHIP="$RUNTIME/ship"
+SEL="$HERE/.flosc-candidate"
+LOGS="$HERE/testing-logs"
+STAMP=$(date -u +"%Yy-%mm-%dd-UTC-%Hh-%Mm-%Ss")
+
+find_bin() {
+  local n="$1" c
+  for c in "$HOME/.composer/vendor/bin/$n" "$HOME/.config/composer/vendor/bin/$n" \
+           "$(command -v "$n" 2>/dev/null || true)"; do
+    [ -n "$c" ] && [ -x "$c" ] && { echo "$c"; return; }
+  done
+}
+PHPCS=$(find_bin phpcs)
+PHPSTAN=$(find_bin phpstan)
+PHP=$(command -v php 2>/dev/null || true)
+
+RC=0
+CMD_ONLY=0
+
+# ---------------------------------------------------------------- pull
+# Refresh the candidates AND this environment from GitHub.
+#
+# fetch + reset --hard, never git pull: the mirror is read-only, so there is
+# nothing to reconcile and no merge strategy to choose. git pull on a shallow
+# read-only clone stops with "divergent branches" and aborts the rest of the
+# chain, leaving the shell in the wrong directory.
+pull() {
+  local mirror="$HERE/.flosc-mirror"
+  if [ ! -d "$mirror/.git" ]; then
+    echo "NOT RUN — no mirror at $mirror"
+    echo "Create it once with:"
+    echo "  mkdir -p $mirror && cd $mirror && git init -q \\"
+    echo "    && git remote add origin https://github.com/dainiswmichel/flosc.git \\"
+    echo "    && git config core.sparseCheckout true \\"
+    echo "    && git sparse-checkout set --no-cone pre-release-candidates testing-environment"
+    exit 1
+  fi
+  echo "fetching..."
+  git -C "$mirror" fetch --depth 1 origin main || exit 1
+  git -C "$mirror" reset --hard FETCH_HEAD || exit 1
+  local head; head=$(git -C "$mirror" rev-parse --short HEAD)
+
+  mkdir -p "$CANDS"
+  rsync -a --delete "$mirror/pre-release-candidates/" "$CANDS/"
+
+  # Replace this script and the configs. mv is atomic and swaps the inode, so
+  # the copy currently running keeps its own open file and finishes cleanly.
+  local env_dir="$mirror/testing-environment"
+  if [ -d "$env_dir" ]; then
+    cp "$env_dir/flosc-test" "$HERE/.flosc-test.new" && chmod +x "$HERE/.flosc-test.new" \
+      && mv "$HERE/.flosc-test.new" "$HERE/flosc-test"
+    for f in phpcs.xml.dist phpstan.neon.dist TESTING-PROCEDURES.md; do
+      [ -f "$env_dir/$f" ] && cp "$env_dir/$f" "$HERE/$f"
+    done
+    mkdir -p "$RUNTIME"
+    [ -f "$env_dir/wp-env.json" ] && cp "$env_dir/wp-env.json" "$RUNTIME/.wp-env.json"
+  fi
+
+  echo
+  echo "candidates now at commit $head"
+  list_candidates
+  echo
+  echo "next:  ./flosc-test select <name>    then    ./flosc-test all"
+}
+
+# ---------------------------------------------------------------- target
+# The target is either a CANDIDATE (a source tree, which procedure 0 builds into
+# a zip) or a ZIP (an existing archive, which procedure 0 only unpacks).
+#
+# Testing a zip directly is the one that settles an argument: it is the exact
+# artifact WordPress.org received. Nothing can differ between what was tested and
+# what was uploaded, because they are the same file.
+#
+# .flosc-candidate holds one line:  candidate:<name>   or   zip:<abs path>
+target_kind() { [ -f "$SEL" ] && cut -d: -f1 "$SEL" || echo ""; }
+target_val()  { [ -f "$SEL" ] && cut -d: -f2- "$SEL" || echo ""; }
+candidate()   { [ "$(target_kind)" = "candidate" ] && target_val || echo ""; }
+
+candidate_src() {
+  local c; c=$(candidate)
+  [ -z "$c" ] && return 1
+  ls -d "$CANDS/$c"/flosc-by-*/flosc 2>/dev/null | head -1
+}
+
+describe_target() {
+  case "$(target_kind)" in
+    candidate) echo "candidate  $(target_val)   source: $(candidate_src)" ;;
+    zip)       echo "zip        $(target_val)" ;;
+    *)         echo "(none selected)" ;;
+  esac
+}
+
+list_candidates() {
+  local cur; cur=$(candidate)
+  for d in "$CANDS"/*/; do
+    local n; n=$(basename "$d")
+    [ -d "$d" ] || continue
+    if [ "$n" = "$cur" ]; then printf '  * %s   (selected)\n' "$n"
+    else printf '    %s\n' "$n"; fi
+  done
+}
+
+# ---------------------------------------------------------------- framing
+head_proc() {
+  local n="$1" title="$2" tool="$3" cmd="$4"
+  echo
+  echo "════════════════════════════════════════════════════════════════════"
+  printf 'PROCEDURE %-3s %s\n' "$n" "$title"
+  printf '  TOOL       %s\n' "$tool"
+  printf '  COMMAND    %s\n' "$cmd"
+  echo "════════════════════════════════════════════════════════════════════"
+}
+foot() {
+  local code="$1"
+  echo "---- exit $code ----"
+  [ "$code" -ne 0 ] && RC=1
+  return 0
+}
+notrun() {
+  echo "NOT RUN — $1"
+  echo "---- NOT RUN is not a pass ----"
+  RC=1
+}
+
+# A procedure runs unless --cmd was given, in which case only the header prints.
+run_or_show() {
+  [ "$CMD_ONLY" = "1" ] && { echo "(not run: --cmd)"; return 0; }
+  eval "$1"
+}
+
+# ---------------------------------------------------------------- procedures
+p0() { # build the ship tree
+  if [ "$(target_kind)" = "zip" ]; then p0_zip; return; fi
+  p0_candidate
+}
+
+p0_zip() { # target is an existing archive: unpack it, build nothing
+  local z; z=$(target_val)
+  head_proc 0 "Unpack the zip under test" "unzip — the archive itself, unaltered" "unzip -o $z -d $SHIP"
+  echo "This is the artifact as uploaded. Nothing is rebuilt, so nothing can differ"
+  echo "between what you test here and what WordPress.org received."
+  echo
+  if [ ! -f "$z" ]; then notrun "no such zip: $z"; return; fi
+  [ "$CMD_ONLY" = "1" ] && { echo "(not run: --cmd)"; return 0; }
+  rm -rf "$SHIP"; mkdir -p "$SHIP"
+  unzip -q -o "$z" -d "$SHIP" || { notrun "unzip failed"; return; }
+  cp -f "$z" "$RUNTIME/flosc.zip"
+  if [ ! -d "$SHIP/flosc" ]; then
+    local top; top=$(ls "$SHIP" | head -1)
+    echo "NOTE: archive top-level dir is '$top', not 'flosc' — linking so wp-env sees flosc/"
+    ln -sfn "$SHIP/$top" "$SHIP/flosc"
+  fi
+  echo "unpacked to $SHIP/flosc"
+  foot 0
+}
+
+p0_candidate() { # target is a source tree: build the zip from it
+  local src; src=$(candidate_src) || { notrun "no candidate selected"; return; }
+  local cmd="FLOSC_ZIP_OUT_DIR=$RUNTIME ./build-dist-zip.sh   (run inside $src)"
+  head_proc 0 "Build the ship tree" "build-dist-zip.sh — in the plugin, not a tool" "$cmd"
+  echo "NOTE: build-dist-zip.sh computes its own output dir as \$ROOT/../../../zip-files."
+  echo "      From a candidate nested under pre-release-candidates/<agent>/flosc-by-<agent>/flosc"
+  echo "      that resolves to pre-release-candidates/zip-files — not the project folder."
+  echo "      FLOSC_ZIP_OUT_DIR overrides it, which is what this procedure uses."
+  echo
+  [ "$CMD_ONLY" = "1" ] && { echo "(not run: --cmd)"; return 0; }
+  ( cd "$src" && FLOSC_ZIP_OUT_DIR="$RUNTIME" ./build-dist-zip.sh ) 2>&1 | tail -20
+  local rc=${PIPESTATUS[0]}
+  if [ "$rc" -eq 0 ] && [ -f "$RUNTIME/flosc.zip" ]; then
+    rm -rf "$SHIP"; mkdir -p "$SHIP"
+    unzip -q -o "$RUNTIME/flosc.zip" -d "$SHIP"
+    echo "unpacked to $SHIP/flosc"
+  fi
+  foot "$rc"
+}
+
+p1() { # what actually ships
+  local cmd="unzip -l $RUNTIME/flosc.zip"
+  head_proc 1 "What actually ships" "unzip — read this before believing any finding" "$cmd"
+  if [ ! -f "$RUNTIME/flosc.zip" ]; then notrun "no zip yet; run procedure 0"; return; fi
+  [ "$CMD_ONLY" = "1" ] && { echo "(not run: --cmd)"; return 0; }
+  echo "entries        : $(unzip -l "$RUNTIME/flosc.zip" | tail -1 | awk '{print $2}')"
+  echo "tests/ entries : $(unzip -l "$RUNTIME/flosc.zip" | grep -c 'flosc/tests/')"
+  echo "root files     :"
+  unzip -l "$RUNTIME/flosc.zip" | awk '$NF ~ /^flosc\/[^\/]+$/ {print "                 " $NF}'
+  echo
+  echo "Any finding in a path NOT listed above is not a finding. It does not ship."
+  foot 0
+}
+
+p2() { # version headers
+  local src="$SHIP/flosc"
+  local cmd="grep -m1 '^Requires at least:' $src/readme.txt ; grep -m1 'Requires at least:' $src/flosc.php"
+  head_proc 2 "Version headers" "grep — first ERROR in the T12 and T13 emails" "$cmd"
+  if [ ! -d "$src" ]; then notrun "no ship tree; run procedure 0"; return; fi
+  [ "$CMD_ONLY" = "1" ] && { echo "(not run: --cmd)"; return 0; }
+  grep -m1 '^Requires at least:' "$src/readme.txt"
+  grep -m1 'Requires at least:' "$src/flosc.php"
+  echo
+  echo "Both must read the same major.minor, e.g. 7.0. A third digit is an ERROR."
+  foot 0
+}
+
+phpcs_proc() {
+  local n="$1" title="$2" ruleset="$3" sniffs="$4"
+  local src="$SHIP/flosc"
+  local cfg="$HERE/$ruleset"
+  local args="--standard=$cfg"
+  [ -n "$sniffs" ] && args="$args --sniffs=$sniffs"
+  head_proc "$n" "$title" \
+    "PHP_CodeSniffer $( [ -n "$PHPCS" ] && "$PHPCS" --version 2>/dev/null | awk '{print $3}' || echo '?' ) + WPCS — not written by any AI" \
+    "phpcs --standard=$ruleset${sniffs:+ --sniffs=$sniffs} \$SHIP/flosc"
+  echo "  RULESET    $ruleset  — sets no warning-severity, so nothing is hidden"
+  if [ -z "$PHPCS" ]; then notrun "phpcs not found"; return; fi
+  if [ ! -f "$cfg" ]; then notrun "$ruleset missing"; return; fi
+  if [ ! -d "$src" ]; then notrun "no ship tree; run procedure 0"; return; fi
+  [ "$CMD_ONLY" = "1" ] && { echo "(not run: --cmd)"; return 0; }
+  # shellcheck disable=SC2086
+  "$PHPCS" $args "$src"; local rc=$?
+  if [ "$rc" -ge 3 ]; then notrun "phpcs exit $rc — it could not run"; return; fi
+  [ "$rc" -eq 0 ] && echo "(no output — clean)"
+  foot "$rc"
+}
+
+p3() { phpcs_proc 3 "WordPress security — WARNINGS INCLUDED" phpcs.xml.dist \
+  "WordPress.Security.EscapeOutput,WordPress.Security.ValidatedSanitizedInput,WordPress.Security.NonceVerification,WordPress.Security.SafeRedirect,WordPress.DB.PreparedSQL,WordPress.DB.DirectDatabaseQuery"; }
+p4() { phpcs_proc 4 "PHP 7.4 compatibility" phpcs-compat.xml.dist ""; }
+p5() { phpcs_proc 5 "Seven documented plugin-review rejections" phpcs.xml.dist \
+  "WordPress.NamingConventions.PrefixAllGlobals,WordPress.WP.Capabilities,WordPress.WP.GlobalVariablesOverride,WordPress.WP.AlternativeFunctions,WordPress.PHP.DevelopmentFunctions,WordPress.PHP.NoSilencedErrors,WordPress.Security.PluginMenuSlug"; }
+p6() { phpcs_proc 6 "Translation functions" phpcs.xml.dist "WordPress.WP.I18n"; }
+
+p7() { # phpstan
+  local src="$SHIP/flosc"
+  local cfg="$HERE/phpstan.neon.dist"
+  head_proc 7 "PHPStan level 5" "PHPStan $( [ -n "$PHPSTAN" ] && "$PHPSTAN" --version 2>/dev/null | awk '{print $5}' || echo '?' ) + szepeviktor/phpstan-wordpress — not written by any AI" \
+    "phpstan analyse -c phpstan.neon.dist --no-progress --memory-limit=1G $src"
+  if [ -z "$PHPSTAN" ]; then notrun "phpstan not found"; return; fi
+  if [ ! -f "$cfg" ]; then notrun "phpstan.neon.dist missing"; return; fi
+  if [ ! -d "$src" ]; then notrun "no ship tree; run procedure 0"; return; fi
+  # Resolve the WordPress extension by looking for it, not by assuming a path.
+  # A wrong path here does not fail loudly -- it produces thousands of phantom
+  # "Function wp_* not found" errors that read like analysis. So: find it, or
+  # do not run at all.
+  local ext=""
+  for c in "$HOME/.composer/vendor/szepeviktor/phpstan-wordpress/extension.neon" \
+           "$HOME/.config/composer/vendor/szepeviktor/phpstan-wordpress/extension.neon" \
+           "$HERE/vendor/szepeviktor/phpstan-wordpress/extension.neon"; do
+    [ -f "$c" ] && ext="$c" && break
+  done
+  if [ -z "$ext" ]; then
+    notrun "szepeviktor/phpstan-wordpress not found — without it PHPStan knows no WordPress function"
+    return
+  fi
+  mkdir -p "$RUNTIME"
+  cfg="$RUNTIME/phpstan.neon"
+  sed "s|%currentWorkingDirectory%/../.composer/vendor/szepeviktor/phpstan-wordpress/extension.neon|$ext|" \
+    "$HERE/phpstan.neon.dist" > "$cfg"
+  echo "  EXTENSION  $ext"
+  echo "NOTE: PHPStan has never been run against this plugin. Its output is unknown."
+  echo "      If you see hundreds of 'Function wp_* not found', the WordPress extension"
+  echo "      did not load and the run means nothing — fix that before reading it."
+  echo
+  [ "$CMD_ONLY" = "1" ] && { echo "(not run: --cmd)"; return 0; }
+  "$PHPSTAN" analyse -c "$cfg" --no-progress --memory-limit=1G "$src"; foot $?
+}
+
+p8() { # syntax
+  local src="$SHIP/flosc"
+  head_proc 8 "Syntax" "php -l ($( [ -n "$PHP" ] && "$PHP" -r 'echo PHP_VERSION;' || echo '?' )) — the interpreter itself" \
+    "find $src -name '*.php' -exec php -l {} \\;"
+  if [ -z "$PHP" ]; then notrun "php not found"; return; fi
+  if [ ! -d "$src" ]; then notrun "no ship tree; run procedure 0"; return; fi
+  [ "$CMD_ONLY" = "1" ] && { echo "(not run: --cmd)"; return 0; }
+  local bad=0
+  while IFS= read -r f; do
+    "$PHP" -l "$f" >/dev/null 2>&1 || { "$PHP" -l "$f"; bad=$((bad+1)); }
+  done < <(find "$src" -name '*.php')
+  echo "files with syntax errors: $bad"
+  foot "$bad"
+}
+
+p9() { # inline styles
+  local src="$SHIP/flosc"
+  local cmd="grep -rnE 'style=\"[^\"]+\"' $src --include=*.php"
+  head_proc 9 "Inline style attributes" "grep — no sniff catches these" "$cmd"
+  if [ ! -d "$src" ]; then notrun "no ship tree; run procedure 0"; return; fi
+  [ "$CMD_ONLY" = "1" ] && { echo "(not run: --cmd)"; return 0; }
+  local out; out=$(grep -rnE 'style="[^"]+"' "$src" --include=*.php 2>/dev/null | sed "s|$src/||")
+  if [ -z "$out" ]; then echo "(none)"; foot 0; else echo "$out"; echo; echo "count: $(printf '%s\n' "$out" | wc -l | tr -d ' ')"; foot 1; fi
+}
+
+p10() { # plugin check
+  head_proc 10 "Plugin Check" "Plugin Check — WORDPRESS.ORG'S OWN TOOL, run in wp-env" \
+    "cd testing-runtime && npx wp-env run cli -- wp plugin check flosc --require=./wp-content/plugins/plugin-check/cli.php --include-experimental"
+  if [ ! -d "$SHIP/flosc" ]; then notrun "no ship tree; run procedure 0"; return; fi
+  if ! command -v npx >/dev/null 2>&1; then notrun "npx not found"; return; fi
+  echo "This runs against $SHIP/flosc — the unpacked zip, NOT the working tree."
+  echo "If you see findings in tests/ or handoff.md, .wp-env.json is pointed at the"
+  echo "wrong directory and every one of those findings is false."
+  echo
+  [ "$CMD_ONLY" = "1" ] && { echo "(not run: --cmd)"; return 0; }
+  ( cd "$RUNTIME" && npx wp-env run cli -- wp plugin check flosc \
+      --require=./wp-content/plugins/plugin-check/cli.php --include-experimental ) 2>&1
+  foot $?
+}
+
+p11() { # clean-install smoke test
+  head_proc 11 "Clean install, WP_DEBUG on" "wp-env + wp-cli — WordPress.org's own checklist item" \
+    "cd testing-runtime && npx wp-env run cli -- wp plugin activate flosc && ... && cat debug.log"
+  if ! command -v npx >/dev/null 2>&1; then notrun "npx not found"; return; fi
+  echo "WordPress.org's checklist says: \"I tested my updated plugin on a clean"
+  echo "WordPress installation with WP_DEBUG set to true.\" This is that test."
+  echo "Any notice or warning in debug.log is a finding."
+  echo
+  [ "$CMD_ONLY" = "1" ] && { echo "(not run: --cmd)"; return 0; }
+  ( cd "$RUNTIME" \
+    && npx wp-env run cli -- wp plugin activate flosc \
+    && npx wp-env run cli -- rm -f wp-content/debug.log \
+    && npx wp-env run cli -- wp eval 'do_action("init"); do_action("admin_init"); echo "hooks fired\n";' \
+    && echo "--- debug.log ---" \
+    && npx wp-env run cli -- sh -c 'cat wp-content/debug.log 2>/dev/null || echo "(empty — no notices)"' ) 2>&1
+  foot $?
+}
+
+# ---------------------------------------------------------------- dispatch
+usage() {
+  echo "FLOSC testing environment"
+  echo
+  echo "CANDIDATES"
+  list_candidates
+  echo
+  echo "THE THREE STEPS"
+  echo "  1.  ./flosc-test pull                    pull revisions from GitHub"
+  echo "  2.  ./flosc-test select <name>           select that codebase"
+  echo "      ./flosc-test zip <path-to-zip>       ...or test an archive instead"
+  echo "  3.  ./flosc-test all                     run tests"
+  echo
+  echo "  Current target: $(describe_target)"
+  echo
+  echo "USAGE"
+  echo "  ./flosc-test pull            refresh candidates and this environment"
+  echo "  ./flosc-test select <name>   test a candidate source tree"
+  echo "  ./flosc-test zip <path>      test an archive exactly as uploaded"
+  echo "  ./flosc-test all             run every procedure"
+  echo "  ./flosc-test <n>             run one procedure"
+  echo "  ./flosc-test <n> --cmd       print its command, run nothing"
+  echo
+  echo "PROCEDURES"
+  echo "   0  Build the ship tree                    build-dist-zip.sh"
+  echo "   1  What actually ships                    unzip"
+  echo "   2  Version headers                        grep"
+  echo "   3  WordPress security, warnings included  PHPCS + WPCS"
+  echo "   4  PHP 7.4 compatibility                  PHPCompatibilityWP"
+  echo "   5  Seven plugin-review rejections         PHPCS + WPCS"
+  echo "   6  Translation functions                  PHPCS + WPCS"
+  echo "   7  PHPStan level 5                        PHPStan"
+  echo "   8  Syntax                                 php -l"
+  echo "   9  Inline style attributes                grep"
+  echo "  10  Plugin Check                           WordPress.org's own tool"
+  echo "  11  Clean install with WP_DEBUG            wp-env + wp-cli"
+  echo
+  echo "Every procedure prints the tool and the exact command before its output."
+  echo "A check that did not run prints NOT RUN and exits non-zero. Never 0."
+}
+
+main() {
+  case "${1:-}" in
+    ""|help|-h|--help) usage; exit 0 ;;
+    pull) pull; exit 0 ;;
+    select)
+      [ -z "${2:-}" ] && { echo "which candidate?"; list_candidates; exit 1; }
+      [ -d "$CANDS/$2" ] || { echo "no such candidate: $2"; list_candidates; exit 1; }
+      printf 'candidate:%s' "$2" > "$SEL"
+      echo "target: $(describe_target)"
+      exit 0 ;;
+    zip)
+      [ -z "${2:-}" ] && { echo "usage: ./flosc-test zip <path-to-zip>"; exit 1; }
+      [ -f "$2" ] || { echo "no such file: $2"; exit 1; }
+      printf 'zip:%s' "$(cd "$(dirname "$2")" && pwd)/$(basename "$2")" > "$SEL"
+      echo "target: $(describe_target)"
+      exit 0 ;;
+  esac
+
+  for a in "$@"; do [ "$a" = "--cmd" ] && CMD_ONLY=1; done
+
+  if [ -z "$(target_kind)" ]; then
+    echo "Nothing selected. Pick a target:"
+    echo "  ./flosc-test select <candidate>     test a source tree"
+    echo "  ./flosc-test zip <path-to-zip>      test an archive as uploaded"
+    echo
+    list_candidates
+    exit 1
+  fi
+  local c; c=$(target_val | tr '/' '_')
+
+  mkdir -p "$LOGS"
+  local log="$LOGS/$STAMP-$c.txt"
+
+  {
+    echo "FLOSC testing environment — $STAMP"
+    echo "target    : $(describe_target)"
+    echo "phpcs     : ${PHPCS:-NOT FOUND}"
+    echo "phpstan   : ${PHPSTAN:-NOT FOUND}"
+    echo "php       : ${PHP:-NOT FOUND}"
+
+    case "$1" in
+      all) for n in 0 1 2 3 4 5 6 7 8 9 10 11; do "p$n"; done ;;
+      [0-9]|1[01]) "p$1" ;;
+      *) echo "unknown procedure: $1"; usage; RC=1 ;;
+    esac
+
+    echo
+    if [ "$RC" -eq 0 ]; then echo "ALL PROCEDURES RUN, NOTHING FAILED."
+    else echo "SOMETHING FAILED OR DID NOT RUN. Read the blocks above; exit 1."; fi
+  } 2>&1 | tee "$log"
+
+  echo
+  echo "transcript: $log"
+  exit "$RC"
+}
+main "$@"

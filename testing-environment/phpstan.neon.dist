@@ -1,0 +1,21 @@
+# PHPStan for FLOSC.
+#
+# The includes: line is load-bearing. Without szepeviktor/phpstan-wordpress,
+# PHPStan does not know a single WordPress function and reports thousands of
+# "Function wp_* not found" errors. That number looks like analysis and is
+# nothing but a missing config. If you see it, the extension did not load and
+# the run means nothing.
+#
+# PHPStan has never been run against this plugin. Its first real output is
+# unknown. Unknown is information, not a regression.
+includes:
+    - %currentWorkingDirectory%/../.composer/vendor/szepeviktor/phpstan-wordpress/extension.neon
+
+parameters:
+    level: 5
+    excludePaths:
+        analyse:
+            - */tests/*
+            - */vendor/*
+            - */node_modules/*
+    reportUnmatchedIgnoredErrors: false
