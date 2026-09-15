@@ -57,7 +57,17 @@ chdir( $root );
  */
 function flosc_is_comment_line( $line ) {
 	$t = ltrim( $line );
-	return $t === '' || $t[0] === '*' || strpos( $t, '//' ) === 0 || strpos( $t, '/*' ) === 0 || strpos( $t, '#' ) === 0;
+	if ( $t === '' ) {
+		return true;
+	}
+	/* A one-line PHP comment tag: <?php // ... ?> — the shape this codebase uses
+	   to explain, right where it used to live, that a block was moved to
+	   wp_enqueue_*(). Missing it made WPORG-09 fire on the very comments that
+	   record the fix. */
+	if ( preg_match( '/^<\?php\s*(?:\/\/|\/\*|#)/', $t ) ) {
+		return true;
+	}
+	return $t[0] === '*' || strpos( $t, '//' ) === 0 || strpos( $t, '/*' ) === 0 || strpos( $t, '#' ) === 0;
 }
 
 function flosc_source_files( $root ) {
@@ -211,33 +221,67 @@ $core_fns = array(
 );
 
 foreach ( $src as $file => $lines ) {
-	foreach ( $lines as $i => $line ) {
-		if ( flosc_is_comment_line( $line ) || ! preg_match( "#(?:require|include)(?:_once)?\s+ABSPATH\s*\.\s*'[^']*/([a-z\-]+\.php)'#", $line, $m ) ) {
+	$n = count( $lines );
+	for ( $i = 0; $i < $n; $i++ ) {
+		if ( flosc_is_comment_line( $lines[ $i ] )
+			|| ! preg_match( "#(?:require|include)(?:_once)?\s+ABSPATH\s*\.\s*'[^']*/([a-z\-]+\.php)'#", $lines[ $i ] ) ) {
 			continue;
 		}
-		$core = $m[1];
-		/* Look ahead 30 lines for the symbol that file provides. */
-		$window = implode( "\n", array_slice( $lines, $i + 1, 30 ) );
-		$used   = false;
 
-		if ( isset( $core_classes[ $core ] ) ) {
-			/* A class file is used by instantiating it, extending it, or asking
-			   whether it exists — never by calling a function from it. */
-			$cls  = preg_quote( $core_classes[ $core ], '/' );
-			$used = (bool) preg_match( '/(?:new\s+' . $cls . '\b|class_exists\s*\(\s*[\x27"]' . $cls . '|extends\s+' . $cls . '\b|' . $cls . '::)/', $window );
-		} elseif ( isset( $core_fns[ $core ] ) ) {
-			foreach ( $core_fns[ $core ] as $fn ) {
-				if ( preg_match( '/\b' . preg_quote( $fn, '/' ) . '\s*\(/', $window ) ) {
+		/*
+		 * Core includes arrive in BLOCKS, and one symbol satisfies the block.
+		 *
+		 * ivr-upload-handler.php loads file.php, media.php and image.php inside
+		 * a single `if ( ! function_exists( 'media_handle_sideload' ) )` guard
+		 * and calls media_handle_sideload() eight lines down. Judged one file at
+		 * a time against only its OWN symbols, file.php and image.php read as
+		 * unused — a false alarm on correct code, and acting on it would break
+		 * an upload path. The same shape appears wherever file.php is loaded
+		 * beside the WP_Filesystem_Direct class files.
+		 *
+		 * So: collect the contiguous run of includes, take the UNION of what
+		 * they provide, and ask once whether anything in that union is used.
+		 */
+		$block   = array();
+		$first   = $i;
+		while ( $i < $n
+			&& preg_match( "#(?:require|include)(?:_once)?\s+ABSPATH\s*\.\s*'[^']*/([a-z\-]+\.php)'#", $lines[ $i ], $bm ) ) {
+			$block[ $bm[1] ] = $i + 1;
+			$i++;
+		}
+		$i--; /* the for-loop increments past the last include */
+
+		$window   = implode( "\n", array_slice( $lines, $i + 1, 30 ) );
+		$used     = false;
+		$unknown  = array();
+
+		foreach ( array_keys( $block ) as $core ) {
+			if ( isset( $core_classes[ $core ] ) ) {
+				$cls = preg_quote( $core_classes[ $core ], '/' );
+				if ( preg_match( '/(?:new\s+' . $cls . '\b|class_exists\s*\(\s*[\x27"]' . $cls . '|extends\s+' . $cls . '\b|' . $cls . '::)/', $window ) ) {
 					$used = true;
-					break;
 				}
+			} elseif ( isset( $core_fns[ $core ] ) ) {
+				foreach ( $core_fns[ $core ] as $fn ) {
+					if ( preg_match( '/\b' . preg_quote( $fn, '/' ) . '\s*\(/', $window ) ) {
+						$used = true;
+						break;
+					}
+				}
+			} else {
+				$unknown[] = $core;
 			}
-		} else {
-			finding( 'WPORG-02', $file, $i + 1, "loads core {$core} — unknown to this rule, verify a symbol from it is used right after" );
+		}
+
+		if ( $used ) {
 			continue;
 		}
-		if ( ! $used ) {
-			finding( 'WPORG-02', $file, $i + 1, "loads core {$core} and uses nothing from it within 30 lines" );
+
+		$names = implode( ', ', array_keys( $block ) );
+		if ( ! empty( $unknown ) ) {
+			finding( 'WPORG-02', $file, $first + 1, "loads {$names} — " . implode( ', ', $unknown ) . " unknown to this rule, verify a symbol from the block is used right after" );
+		} else {
+			finding( 'WPORG-02', $file, $first + 1, "loads {$names} and uses nothing from any of them within 30 lines" );
 		}
 	}
 }
