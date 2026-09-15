@@ -1570,7 +1570,15 @@ trait FLOSC_Magic_Link_Trait {
         if ( $uid > 0 && $notice_key !== '' ) {
             set_transient( 'flosc_guest_request_notice_' . $uid, $notice_key, MINUTE_IN_SECONDS );
         }
-        // Prefer flow already resolved on the framework; fall back to sanitized filter_input.
+        /*
+         * Which flow this request belongs to, as a routing hint only.
+         *
+         * Nothing is written from it: it picks which IVR file to read and is
+         * run through sanitize_file_name() downstream. There is no form here to
+         * carry a nonce -- the request arrives from a magic link, whose own
+         * token is the credential and is verified separately.
+         */
+        // phpcs:disable WordPress.Security.NonceVerification.Missing,WordPress.Security.NonceVerification.Recommended -- flow-name routing hint, no state change; magic-link token is verified separately.
         $ivr = '';
         if ( isset( $this->current_ivr_file ) && is_string( $this->current_ivr_file ) ) {
             $ivr = sanitize_file_name( $this->current_ivr_file );
@@ -1583,6 +1591,7 @@ trait FLOSC_Magic_Link_Trait {
                 $ivr_in = ( isset( $_GET['ivr'] ) && is_scalar( $_GET['ivr'] )
 			? sanitize_text_field( wp_unslash( $_GET['ivr'] ) )
 			: '' );
+              // phpcs:enable WordPress.Security.NonceVerification.Missing,WordPress.Security.NonceVerification.Recommended
             }
             if ( is_string( $ivr_in ) ) {
                 $ivr = sanitize_file_name( $ivr_in );

@@ -216,9 +216,16 @@ class Apple_Provider extends SSO_Provider_Base {
         }
 
         // Apple may send a JSON user object in POST on first authorization only.
+        /*
+         * Apple posts this back itself, in response_mode=form_post. There is no
+         * WordPress form and therefore no nonce to verify. The OAuth state is
+         * checked by the handler before this provider is reached.
+         */
+        // phpcs:disable WordPress.Security.NonceVerification.Missing -- Apple form_post callback; OAuth state verified by the handler before this runs.
         $user_post = ( isset( $_POST['user'] ) && is_scalar( $_POST['user'] )
 			? sanitize_text_field( wp_unslash( $_POST['user'] ) )
 			: '' );
+        // phpcs:enable WordPress.Security.NonceVerification.Missing
         $raw_user_json = is_string( $user_post ) && $user_post !== ''
             ? sanitize_textarea_field( $user_post )
             : '';

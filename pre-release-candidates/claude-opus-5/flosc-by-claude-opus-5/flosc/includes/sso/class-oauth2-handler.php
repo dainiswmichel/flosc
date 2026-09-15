@@ -253,9 +253,11 @@ class OAuth2_Handler {
             if ( is_string( $g ) && $g !== '' ) {
                 $get[ $flosc_k ] = $g;
             }
+            // phpcs:disable WordPress.Security.NonceVerification.Missing -- external OAuth provider callback; a WordPress nonce cannot exist on it. verify_state() checks the one-time state parameter before any authentication.
             $p = ( isset( $_POST[ $flosc_k ] ) && is_scalar( $_POST[ $flosc_k ] )
 				? sanitize_text_field( wp_unslash( $_POST[ $flosc_k ] ) )
 				: '' );
+            // phpcs:enable WordPress.Security.NonceVerification.Missing
             if ( is_string( $p ) && $p !== '' ) {
                 $post[ $flosc_k ] = $p;
             }
