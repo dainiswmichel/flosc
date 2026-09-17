@@ -59,7 +59,6 @@ trap cleanup EXIT
 DENY_PATTERNS=(
   'flosc_development_worknotes'
   'flosc_development_archives'
-  'pre-release-candidates'
   'sample-data'
   'admin/create-sample-data.php'
   'vendor'
@@ -77,6 +76,11 @@ DENY_PATTERNS=(
   'da1ni5_personal_profitability'
   'build-dist-zip.sh'
   '.distignore'
+  'tests'
+  # Four full plugin trees plus their ZIPs live here on main. They are
+  # comparison candidates, not runtime code, and a ZIP that carried them would
+  # be four times the size and contain three other people's builds.
+  'pre-release-candidates'
 )
 
 rsync_excludes=()
@@ -115,10 +119,10 @@ done < <(find "$STAGE/flosc" \( \
   -path '*/flosc_development_worknotes/*' -o \
   -path '*/flosc_development_archives' -o \
   -path '*/flosc_development_archives/*' -o \
-  -path '*/pre-release-candidates' -o \
-  -path '*/pre-release-candidates/*' -o \
   -path '*/sample-data' -o \
   -path '*/sample-data/*' -o \
+  -path '*/tests' -o \
+  -path '*/tests/*' -o \
   -name 'create-sample-data.php' -o \
   -path '*/vendor' -o \
   -path '*/vendor/*' -o \
@@ -132,11 +136,6 @@ done < <(find "$STAGE/flosc" \( \
   -name 'composer.lock' -o \
   -name 'build-dist-zip.sh' -o \
   -name '.distignore' -o \
-  -name 'AGENTS.md' -o \
-  -name 'CLAUDE.md' -o \
-  -name '.cursorrules' -o \
-  -name 'WORDPRESS-ORG-RELEASE.md' -o \
-  -name 'phpcs.xml.dist' -o \
   -name '*.zip' -o \
   -name '*.bundle' \
 \) -print0 2>/dev/null)

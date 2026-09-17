@@ -13,7 +13,8 @@
     }
 
     function resolveCardRows(row) {
-        if (!row) return null;
+        if (!row) { return null;
+        }
         if (row.classList.contains('flosc-ap-row-primary')) {
             return {
                 primary: row,
@@ -40,7 +41,8 @@
 
     window.floscToggleTriggerValue = function(select) {
         const row = select.closest('tr');
-        if (!row) return;
+        if (!row) { return;
+        }
 
         const ai = row.querySelector('.flosc-tv-ai');
         const offer = row.querySelector('.flosc-tv-offer');
@@ -48,13 +50,19 @@
         const hidden = row.querySelector('.flosc-tv-hidden');
         const value = select.value;
 
-        if (ai) ai.classList.toggle('flosc-hidden', value !== 'ai');
-        if (offer) offer.classList.toggle('flosc-hidden', value !== 'offer');
-        if (action) action.classList.toggle('flosc-hidden', value !== 'action');
+        if (ai) { ai.classList.toggle('flosc-hidden', value !== 'ai');
+        }
+        if (offer) { offer.classList.toggle('flosc-hidden', value !== 'offer');
+        }
+        if (action) { action.classList.toggle('flosc-hidden', value !== 'action');
+        }
 
-        if (value === 'ai' && hidden) hidden.value = '';
-        if (value === 'offer' && offer && hidden) hidden.value = offer.value;
-        if (value === 'action' && action && hidden) hidden.value = action.value;
+        if (value === 'ai' && hidden) { hidden.value = '';
+        }
+        if (value === 'offer' && offer && hidden) { hidden.value = offer.value;
+        }
+        if (value === 'action' && action && hidden) { hidden.value = action.value;
+        }
     };
 
     function buildExpectedBehaviorText(state, row) {
@@ -79,15 +87,18 @@
 
     function updateExpectedBehaviorRow(row) {
         const card = resolveCardRows(row);
-        if (!card || !card.primary || !card.secondary || !card.expected) return;
+        if (!card || !card.primary || !card.secondary || !card.expected) { return;
+        }
 
         const iconInput = card.primary.querySelector('input[name$="_pill_icon[]"]');
         const stateMatch = iconInput && iconInput.name ? iconInput.name.match(/^([a-z_]+)_pill_icon\[\]$/) : null;
         const state = stateMatch ? stateMatch[1] : '';
-        if (!state) return;
+        if (!state) { return;
+        }
 
         const expectedText = card.expected.querySelector('.flosc-ap-expected-text');
-        if (!expectedText) return;
+        if (!expectedText) { return;
+        }
 
         const composite = {
             querySelector: function(selector) {
@@ -102,15 +113,18 @@
             const primaryRows = tbody.querySelectorAll('.flosc-ap-row-primary');
             primaryRows.forEach(function(primaryRow, index) {
                 const card = resolveCardRows(primaryRow);
-                if (!card) return;
+                if (!card) { return;
+                }
 
                 [card.primary, card.secondary, card.expected].forEach(function(r) {
-                    if (r) r.classList.remove('flosc-ap-pair-even', 'flosc-ap-pair-odd');
+                    if (r) { r.classList.remove('flosc-ap-pair-even', 'flosc-ap-pair-odd');
+                    }
                 });
 
                 const pairClass = index % 2 === 0 ? 'flosc-ap-pair-even' : 'flosc-ap-pair-odd';
                 [card.primary, card.secondary, card.expected].forEach(function(r) {
-                    if (r) r.classList.add(pairClass);
+                    if (r) { r.classList.add(pairClass);
+                    }
                 });
             });
         });
@@ -230,12 +244,14 @@
 
     function appendDemoPills(state, pills) {
         const tbody = document.getElementById(`tbody-${state}`);
-        if (!tbody || !pills.length) return 0;
+        if (!tbody || !pills.length) { return 0;
+        }
 
         pills.forEach(function(pill) {
             const rows = parseTableRows(buildRowWithData(state, pill));
             rows.forEach(function(row) { tbody.appendChild(row); });
-            if (rows[0]) updateExpectedBehaviorRow(rows[0]);
+            if (rows[0]) { updateExpectedBehaviorRow(rows[0]);
+            }
         });
 
         applyAutopromptStriping();
@@ -252,7 +268,8 @@
 
         if (target.classList.contains('flosc-tv-offer') || target.classList.contains('flosc-tv-action')) {
             const hidden = target.closest('td')?.querySelector('.flosc-tv-hidden');
-            if (hidden) hidden.value = target.value;
+            if (hidden) { hidden.value = target.value;
+            }
         }
     });
 
@@ -262,7 +279,8 @@
         if (target.classList.contains('flosc-ap-header-input')) {
             const state = target.dataset.state || '';
             const preview = state ? document.getElementById(`header-preview-${state}`) : null;
-            if (preview) preview.textContent = target.value;
+            if (preview) { preview.textContent = target.value;
+            }
         }
 
         const row = target.closest('tr');
@@ -278,10 +296,12 @@
             const state = addBtn.dataset.state;
             const defaultCond = addBtn.dataset.defaultCond || `is_${state}`;
             const tbody = document.getElementById(`tbody-${state}`);
-            if (!tbody) return;
+            if (!tbody) { return;
+            }
 
             const rows = parseTableRows(buildRow(state, defaultCond));
-            if (!rows.length) return;
+            if (!rows.length) { return;
+            }
 
             rows.forEach(function(row) { tbody.appendChild(row); });
 
@@ -296,11 +316,15 @@
         if (removeBtn) {
             const sourceRow = removeBtn.closest('tr');
             const card = resolveCardRows(sourceRow);
-            if (!card) return;
+            if (!card) { return;
+            }
 
-            if (card.primary) card.primary.remove();
-            if (card.secondary) card.secondary.remove();
-            if (card.expected) card.expected.remove();
+            if (card.primary) { card.primary.remove();
+            }
+            if (card.secondary) { card.secondary.remove();
+            }
+            if (card.expected) { card.expected.remove();
+            }
             applyAutopromptStriping();
             return;
         }
@@ -310,7 +334,8 @@
             const state = loadSetBtn.dataset.state;
             const pills = JSON.parse(loadSetBtn.dataset.pills || '[]');
             const count = appendDemoPills(state, pills);
-            if (!count) return;
+            if (!count) { return;
+            }
 
             const original = loadSetBtn.textContent;
             loadSetBtn.textContent = `✓ ${count} pills loaded!`;
@@ -326,10 +351,12 @@
         if (loadItemBtn) {
             const state = loadItemBtn.dataset.state;
             const pill = JSON.parse(loadItemBtn.dataset.pill || '{}');
-            if (!pill || Object.keys(pill).length === 0) return;
+            if (!pill || Object.keys(pill).length === 0) { return;
+            }
 
             const count = appendDemoPills(state, [pill]);
-            if (!count) return;
+            if (!count) { return;
+            }
 
             const original = loadItemBtn.textContent;
             loadItemBtn.textContent = '✓ Loaded';

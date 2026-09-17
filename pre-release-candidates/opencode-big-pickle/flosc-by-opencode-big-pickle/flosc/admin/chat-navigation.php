@@ -9,104 +9,141 @@
  * @since 8.0.1
  */
 
-if (!defined('ABSPATH')) exit;
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 
 // Visitor menu
-$flosc_visitor_menu_raw = get_option('flosc_visitor_menu_items', []);
-$flosc_visitor_menu = [];
-if (!empty($flosc_visitor_menu_raw)) {
-    // Backward compatibility: old associative format (signup/login/quiz)
-    if (isset($flosc_visitor_menu_raw['signup']) || isset($flosc_visitor_menu_raw['login']) || isset($flosc_visitor_menu_raw['quiz'])) {
-        $flosc_action_map = [
-            'signup' => 'open_registration',
-            'login'  => 'login',
-            'quiz'   => 'open_quiz',
-        ];
-        foreach ($flosc_visitor_menu_raw as $flosc_key => $flosc_item) {
-            if (!empty($flosc_item['enabled'])) {
-                $flosc_visitor_menu[] = [
-                    'label'  => $flosc_item['label'] ?? ucfirst($flosc_key),
-                    'action' => $flosc_action_map[$flosc_key] ?? $flosc_key,
-                ];
-            }
-        }
-    } else {
-        $flosc_visitor_menu = $flosc_visitor_menu_raw;
-    }
+$flosc_visitor_menu_raw = get_option( 'flosc_visitor_menu_items', array() );
+$flosc_visitor_menu     = array();
+if ( ! empty( $flosc_visitor_menu_raw ) ) {
+	// Backward compatibility: old associative format (signup/login/quiz)
+	if ( isset( $flosc_visitor_menu_raw['signup'] ) || isset( $flosc_visitor_menu_raw['login'] ) || isset( $flosc_visitor_menu_raw['quiz'] ) ) {
+		$flosc_action_map = array(
+			'signup' => 'open_registration',
+			'login'  => 'login',
+			'quiz'   => 'open_quiz',
+		);
+		foreach ( $flosc_visitor_menu_raw as $flosc_key => $flosc_item ) {
+			if ( ! empty( $flosc_item['enabled'] ) ) {
+				$flosc_visitor_menu[] = array(
+					'label'  => $flosc_item['label'] ?? ucfirst( $flosc_key ),
+					'action' => $flosc_action_map[ $flosc_key ] ?? $flosc_key,
+				);
+			}
+		}
+	} else {
+		$flosc_visitor_menu = $flosc_visitor_menu_raw;
+	}
 }
-if (empty($flosc_visitor_menu)) {
-    $flosc_visitor_menu = [
-        ['label' => 'Sign Up',    'action' => 'open_registration'],
-        ['label' => 'Log In',     'action' => 'open_login_modal'],
-        ['label' => 'Take Quiz',  'action' => 'open_quiz'],
-    ];
+if ( empty( $flosc_visitor_menu ) ) {
+	$flosc_visitor_menu = array(
+		array(
+			'label'  => 'Sign Up',
+			'action' => 'open_registration',
+		),
+		array(
+			'label'  => 'Log In',
+			'action' => 'open_login_modal',
+		),
+		array(
+			'label'  => 'Take Quiz',
+			'action' => 'open_quiz',
+		),
+	);
 }
 
-$flosc_guest_menu = get_option('flosc_guest_menu_items', []);
-if (!is_array($flosc_guest_menu)) {
-    $flosc_guest_menu = [];
+$flosc_guest_menu = get_option( 'flosc_guest_menu_items', array() );
+if ( ! is_array( $flosc_guest_menu ) ) {
+	$flosc_guest_menu = array();
 }
 // Hide purchase rows in admin UI (Upgrade is profile-bar feature button).
-$flosc_guest_menu = array_values(array_filter($flosc_guest_menu, static function ($item) {
-    $action = is_array($item) ? (string) ($item['action'] ?? '') : '';
-    return $action !== 'open_sandbox_purchase' && strpos($action, 'show_offer') !== 0;
-}));
-if (empty($flosc_guest_menu)) {
-    // Upgrade is the profile-bar feature button (show_upgrade), not a dropdown menu row.
-    $flosc_guest_menu = [
-        ['label' => 'My Profile', 'action' => 'view_profile'],
-        ['label' => 'Take Quiz',  'action' => 'open_quiz'],
-        ['label' => 'Log Out',    'action' => 'logout'],
-    ];
+$flosc_guest_menu = array_values(
+	array_filter(
+		$flosc_guest_menu,
+		static function ( $item ) {
+			$action = is_array( $item ) ? (string) ( $item['action'] ?? '' ) : '';
+			return $action !== 'open_sandbox_purchase' && strpos( $action, 'show_offer' ) !== 0;
+		}
+	)
+);
+if ( empty( $flosc_guest_menu ) ) {
+	// Upgrade is the profile-bar feature button (show_upgrade), not a dropdown menu row.
+	$flosc_guest_menu = array(
+		array(
+			'label'  => 'My Profile',
+			'action' => 'view_profile',
+		),
+		array(
+			'label'  => 'Take Quiz',
+			'action' => 'open_quiz',
+		),
+		array(
+			'label'  => 'Log Out',
+			'action' => 'logout',
+		),
+	);
 }
 
-$flosc_member_menu = get_option('flosc_member_menu_items', []);
-if (empty($flosc_member_menu)) {
-    $flosc_member_menu = [
-        ['label' => 'My Profile',     'action' => 'view_profile'],
-        ['label' => 'My Lessons',     'action' => 'open_lesson_library'],
-        ['label' => 'Take Quiz',      'action' => 'open_quiz'],
-        ['label' => 'Log Out',        'action' => 'logout'],
-    ];
+$flosc_member_menu = get_option( 'flosc_member_menu_items', array() );
+if ( empty( $flosc_member_menu ) ) {
+	$flosc_member_menu = array(
+		array(
+			'label'  => 'My Profile',
+			'action' => 'view_profile',
+		),
+		array(
+			'label'  => 'My Lessons',
+			'action' => 'open_lesson_library',
+		),
+		array(
+			'label'  => 'Take Quiz',
+			'action' => 'open_quiz',
+		),
+		array(
+			'label'  => 'Log Out',
+			'action' => 'logout',
+		),
+	);
 }
 
-$flosc_login_destination = get_option('flosc_login_destination', '');
-$flosc_app_url = flosc()->get_app_url();
+$flosc_login_destination = get_option( 'flosc_login_destination', '' );
+$flosc_app_url           = flosc()->get_app_url();
 
-$flosc_available_actions = [
-    'open_registration'     => 'Sign Up — open registration modal',
-    'open_login_modal'      => 'Log In — open login modal',
-    'logout'                => 'Log Out — end session and return to visitor state',
-    'open_quiz'             => 'Take Quiz — open quiz modal',
-    'open_free_lesson'      => 'Free Lesson — open the free lesson',
-    'open_lesson_library'   => 'Lesson Library — show all lessons',
-    'open_quiz_library'     => 'Quiz Library — show all quizzes',
-    'open_support'          => 'Support — open help/support',
-    // Visitor menus may use this; it renders as the .upgrade-btn, not a plain link.
-    // Guest/member: Upgrade is controlled only by Profile Bar show_upgrade (skipped in those menus).
-    'open_sandbox_purchase' => 'Upgrade / Purchase — feature button (not a plain menu row)',
-    'send_prompt'           => 'Send Prompt — type a message into the chatbot',
-    'view_profile'          => 'My Profile — go to user profile page',
-    'view_dashboard'        => 'Dashboard — go to WordPress dashboard',
-];
+$flosc_available_actions = array(
+	'open_registration'     => 'Sign Up — open registration modal',
+	'open_login_modal'      => 'Log In — open login modal',
+	'logout'                => 'Log Out — end session and return to visitor state',
+	'open_quiz'             => 'Take Quiz — open quiz modal',
+	'open_free_lesson'      => 'Free Lesson — open the free lesson',
+	'open_lesson_library'   => 'Lesson Library — show all lessons',
+	'open_quiz_library'     => 'Quiz Library — show all quizzes',
+	'open_support'          => 'Support — open help/support',
+	// Visitor menus may use this; it renders as the .upgrade-btn, not a plain link.
+	// Guest/member: Upgrade is controlled only by Profile Bar show_upgrade (skipped in those menus).
+	'open_sandbox_purchase' => 'Upgrade / Purchase — feature button (not a plain menu row)',
+	'send_prompt'           => 'Send Prompt — type a message into the chatbot',
+	'view_profile'          => 'My Profile — go to user profile page',
+	'view_dashboard'        => 'Dashboard — go to WordPress dashboard',
+);
 ?>
 
 <?php
 // Chat list chrome — flow-scoped labels / opening messages (not entitlements).
-$flosc_flow_for_chat_list = $GLOBALS['flosc_current_settings'] ?? [];
-$flosc_new_chat_button_label = (string) ( $flosc_flow_for_chat_list['new_chat_button_label'] ?? 'New chat' );
+$flosc_flow_for_chat_list      = $GLOBALS['flosc_current_settings'] ?? array();
+$flosc_new_chat_button_label   = (string) ( $flosc_flow_for_chat_list['new_chat_button_label'] ?? 'New chat' );
 $flosc_empty_chat_list_message = (string) ( $flosc_flow_for_chat_list['empty_chat_list_message'] ?? 'No chats yet' );
-$flosc_guest_new_chat_welcome = (string) ( $flosc_flow_for_chat_list['guest_new_chat_welcome_message']
+$flosc_guest_new_chat_welcome  = (string) ( $flosc_flow_for_chat_list['guest_new_chat_welcome_message']
 	?? 'Welcome back, what would you like to work on?' );
 $flosc_member_new_chat_welcome = (string) ( $flosc_flow_for_chat_list['member_new_chat_welcome_message']
 	?? 'Hi {NickName}, glad to be chatting with you! What would you like to work on in this session?' );
-$flosc_member_levels_chat_url = add_query_arg(
-	[
+$flosc_member_levels_chat_url  = add_query_arg(
+	array(
 		'page' => 'flosc-settings',
 		'ivr'  => $GLOBALS['flosc_current_ivr'] ?? '',
 		'tab'  => 'content',
 		'view' => 'single',
-	],
+	),
 	admin_url( 'admin.php' )
 );
 ?>
@@ -121,14 +158,14 @@ $flosc_member_levels_chat_url = add_query_arg(
 		<th scope="row"><label for="flow_new_chat_button_label">New chat button label</label></th>
 		<td>
 			<input type="text" class="regular-text" id="flow_new_chat_button_label" name="flow_new_chat_button_label"
-				   value="<?php echo esc_attr( $flosc_new_chat_button_label ); ?>">
+					value="<?php echo esc_attr( $flosc_new_chat_button_label ); ?>">
 		</td>
 	</tr>
 	<tr>
 		<th scope="row"><label for="flow_empty_chat_list_message">Empty list message</label></th>
 		<td>
 			<input type="text" class="regular-text" id="flow_empty_chat_list_message" name="flow_empty_chat_list_message"
-				   value="<?php echo esc_attr( $flosc_empty_chat_list_message ); ?>">
+					value="<?php echo esc_attr( $flosc_empty_chat_list_message ); ?>">
 		</td>
 	</tr>
 	<tr>
@@ -151,312 +188,312 @@ $flosc_member_levels_chat_url = add_query_arg(
 <p class="description">Configure the menu items visitors see when they click the profile bar. All actions happen in-chat.</p>
 
 <div id="flosc-visitor-menu-repeater">
-    <table class="widefat flosc-ui-menu-table">
-        <thead>
-            <tr>
-                <th class="flosc-ui-col-index">#</th>
-                <th>Label</th>
-                <th>Action</th>
-                <th class="flosc-ui-col-actions"></th>
-            </tr>
-        </thead>
-        <tbody id="flosc-menu-items-body">
-            <?php foreach ($flosc_visitor_menu as $flosc_i => $flosc_item): ?>
-            <tr class="flosc-menu-row">
-                <td class="flosc-menu-row-number"><?php echo esc_html((string) ($flosc_i + 1)); ?></td>
-                <td>
-                    <input type="text" name="visitor_menu_label[]"
-                           value="<?php echo esc_attr($flosc_item['label']); ?>"
-                           class="regular-text" placeholder="Menu label" required>
-                </td>
-                <td>
-                    <select name="visitor_menu_action[]" class="flosc-ui-action-select">
-                        <?php foreach ($flosc_available_actions as $flosc_val => $flosc_desc): ?>
-                        <option value="<?php echo esc_attr($flosc_val); ?>" <?php selected($flosc_item['action'], $flosc_val); ?>>
-                            <?php echo esc_html($flosc_desc); ?>
-                        </option>
-                        <?php endforeach; ?>
-                    </select>
-                </td>
-                <td>
-                    <button type="button" class="button flosc-remove-menu-item" title="Remove item">&times;</button>
-                </td>
-            </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
+	<table class="widefat flosc-ui-menu-table">
+		<thead>
+			<tr>
+				<th class="flosc-ui-col-index">#</th>
+				<th>Label</th>
+				<th>Action</th>
+				<th class="flosc-ui-col-actions"></th>
+			</tr>
+		</thead>
+		<tbody id="flosc-menu-items-body">
+			<?php foreach ( $flosc_visitor_menu as $flosc_i => $flosc_item ) : ?>
+			<tr class="flosc-menu-row">
+				<td class="flosc-menu-row-number"><?php echo esc_html( (string) ( $flosc_i + 1 ) ); ?></td>
+				<td>
+					<input type="text" name="visitor_menu_label[]"
+							value="<?php echo esc_attr( $flosc_item['label'] ); ?>"
+							class="regular-text" placeholder="Menu label" required>
+				</td>
+				<td>
+					<select name="visitor_menu_action[]" class="flosc-ui-action-select">
+						<?php foreach ( $flosc_available_actions as $flosc_val => $flosc_desc ) : ?>
+						<option value="<?php echo esc_attr( $flosc_val ); ?>" <?php selected( $flosc_item['action'], $flosc_val ); ?>>
+							<?php echo esc_html( $flosc_desc ); ?>
+						</option>
+						<?php endforeach; ?>
+					</select>
+				</td>
+				<td>
+					<button type="button" class="button flosc-remove-menu-item" title="Remove item">&times;</button>
+				</td>
+			</tr>
+			<?php endforeach; ?>
+		</tbody>
+	</table>
 
-    <p class="flosc-ui-menu-actions-wrap">
-        <button type="button" class="button" id="flosc-add-menu-item">+ Add Menu Item</button>
-    </p>
+	<p class="flosc-ui-menu-actions-wrap">
+		<button type="button" class="button" id="flosc-add-menu-item">+ Add Menu Item</button>
+	</p>
 </div>
 
 <?php ob_start(); ?>
 (function() {
-    const tbody = document.getElementById('flosc-menu-items-body');
-    const addBtn = document.getElementById('flosc-add-menu-item');
-    const actions = <?php echo wp_json_encode($flosc_available_actions); ?>;
+	const tbody = document.getElementById('flosc-menu-items-body');
+	const addBtn = document.getElementById('flosc-add-menu-item');
+	const actions = <?php echo wp_json_encode( $flosc_available_actions ); ?>;
 
-    if (!tbody || !addBtn) {
-        return;
-    }
+	if (!tbody || !addBtn) {
+		return;
+	}
 
-    function buildActionOptions(selected) {
-        let html = '';
-        for (const [val, desc] of Object.entries(actions)) {
-            const sel = val === selected ? ' selected' : '';
-            html += `<option value="${val}"${sel}>${desc}</option>`;
-        }
-        return html;
-    }
+	function buildActionOptions(selected) {
+		let html = '';
+		for (const [val, desc] of Object.entries(actions)) {
+			const sel = val === selected ? ' selected' : '';
+			html += `<option value="${val}"${sel}>${desc}</option>`;
+		}
+		return html;
+	}
 
-    function renumber() {
-        tbody.querySelectorAll('.flosc-menu-row').forEach((row, i) => {
-            row.querySelector('.flosc-menu-row-number').textContent = i + 1;
-        });
-    }
+	function renumber() {
+		tbody.querySelectorAll('.flosc-menu-row').forEach((row, i) => {
+			row.querySelector('.flosc-menu-row-number').textContent = i + 1;
+		});
+	}
 
-    addBtn.addEventListener('click', function() {
-        const tr = document.createElement('tr');
-        tr.className = 'flosc-menu-row';
-        tr.innerHTML = `
-            <td class="flosc-menu-row-number"></td>
-            <td><input type="text" name="visitor_menu_label[]" class="regular-text" placeholder="Menu label" required></td>
-            <td><select name="visitor_menu_action[]" class="flosc-ui-action-select">${buildActionOptions('open_quiz')}</select></td>
-            <td><button type="button" class="button flosc-remove-menu-item" title="Remove item">&times;</button></td>
-        `;
-        tbody.appendChild(tr);
-        renumber();
-        tr.querySelector('input').focus();
-    });
+	addBtn.addEventListener('click', function() {
+		const tr = document.createElement('tr');
+		tr.className = 'flosc-menu-row';
+		tr.innerHTML = `
+			<td class="flosc-menu-row-number"></td>
+			<td><input type="text" name="visitor_menu_label[]" class="regular-text" placeholder="Menu label" required></td>
+			<td><select name="visitor_menu_action[]" class="flosc-ui-action-select">${buildActionOptions('open_quiz')}</select></td>
+			<td><button type="button" class="button flosc-remove-menu-item" title="Remove item">&times;</button></td>
+		`;
+		tbody.appendChild(tr);
+		renumber();
+		tr.querySelector('input').focus();
+	});
 
-    tbody.addEventListener('click', function(e) {
-        if (e.target.classList.contains('flosc-remove-menu-item')) {
-            e.target.closest('.flosc-menu-row').remove();
-            renumber();
-        }
-    });
+	tbody.addEventListener('click', function(e) {
+		if (e.target.classList.contains('flosc-remove-menu-item')) {
+			e.target.closest('.flosc-menu-row').remove();
+			renumber();
+		}
+	});
 })();
-<?php wp_add_inline_script('flosc-admin', ob_get_clean()); ?>
+<?php wp_add_inline_script( 'flosc-admin', ob_get_clean() ); ?>
 
 <h3 class="flosc-ui-section-title">Guest Dropdown Menu</h3>
 <p class="description">Menu items for logged-in users who have not purchased. <strong>Upgrade</strong> is not a menu row — it is the profile-bar feature button (Profile Bar tab → Guest → Show Upgrade).</p>
 
 <div id="flosc-guest-menu-repeater">
-    <table class="widefat flosc-ui-menu-table">
-        <thead>
-            <tr>
-                <th class="flosc-ui-col-index">#</th>
-                <th>Label</th>
-                <th>Action</th>
-                <th class="flosc-ui-col-actions"></th>
-            </tr>
-        </thead>
-        <tbody id="flosc-guest-menu-items-body">
-            <?php foreach ($flosc_guest_menu as $flosc_i => $flosc_item): ?>
-            <tr class="flosc-guest-menu-row">
-                <td class="flosc-guest-menu-row-number"><?php echo esc_html((string) ($flosc_i + 1)); ?></td>
-                <td>
-                    <input type="text" name="guest_menu_label[]"
-                           value="<?php echo esc_attr($flosc_item['label']); ?>"
-                           class="regular-text" placeholder="Menu label" required>
-                </td>
-                <td>
-                    <select name="guest_menu_action[]" class="flosc-ui-action-select">
-                        <?php foreach ($flosc_available_actions as $flosc_val => $flosc_desc): ?>
-                        <option value="<?php echo esc_attr($flosc_val); ?>" <?php selected($flosc_item['action'], $flosc_val); ?>>
-                            <?php echo esc_html($flosc_desc); ?>
-                        </option>
-                        <?php endforeach; ?>
-                    </select>
-                </td>
-                <td>
-                    <button type="button" class="button flosc-guest-remove-menu-item" title="Remove item">&times;</button>
-                </td>
-            </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
+	<table class="widefat flosc-ui-menu-table">
+		<thead>
+			<tr>
+				<th class="flosc-ui-col-index">#</th>
+				<th>Label</th>
+				<th>Action</th>
+				<th class="flosc-ui-col-actions"></th>
+			</tr>
+		</thead>
+		<tbody id="flosc-guest-menu-items-body">
+			<?php foreach ( $flosc_guest_menu as $flosc_i => $flosc_item ) : ?>
+			<tr class="flosc-guest-menu-row">
+				<td class="flosc-guest-menu-row-number"><?php echo esc_html( (string) ( $flosc_i + 1 ) ); ?></td>
+				<td>
+					<input type="text" name="guest_menu_label[]"
+							value="<?php echo esc_attr( $flosc_item['label'] ); ?>"
+							class="regular-text" placeholder="Menu label" required>
+				</td>
+				<td>
+					<select name="guest_menu_action[]" class="flosc-ui-action-select">
+						<?php foreach ( $flosc_available_actions as $flosc_val => $flosc_desc ) : ?>
+						<option value="<?php echo esc_attr( $flosc_val ); ?>" <?php selected( $flosc_item['action'], $flosc_val ); ?>>
+							<?php echo esc_html( $flosc_desc ); ?>
+						</option>
+						<?php endforeach; ?>
+					</select>
+				</td>
+				<td>
+					<button type="button" class="button flosc-guest-remove-menu-item" title="Remove item">&times;</button>
+				</td>
+			</tr>
+			<?php endforeach; ?>
+		</tbody>
+	</table>
 
-    <p class="flosc-ui-menu-actions-wrap">
-        <button type="button" class="button" id="flosc-guest-add-menu-item">+ Add Menu Item</button>
-    </p>
+	<p class="flosc-ui-menu-actions-wrap">
+		<button type="button" class="button" id="flosc-guest-add-menu-item">+ Add Menu Item</button>
+	</p>
 </div>
 
 <?php ob_start(); ?>
 (function() {
-    const tbody = document.getElementById('flosc-guest-menu-items-body');
-    const addBtn = document.getElementById('flosc-guest-add-menu-item');
-    const actions = <?php echo wp_json_encode($flosc_available_actions); ?>;
+	const tbody = document.getElementById('flosc-guest-menu-items-body');
+	const addBtn = document.getElementById('flosc-guest-add-menu-item');
+	const actions = <?php echo wp_json_encode( $flosc_available_actions ); ?>;
 
-    if (!tbody || !addBtn) {
-        return;
-    }
+	if (!tbody || !addBtn) {
+		return;
+	}
 
-    function buildActionOptions(selected) {
-        let html = '';
-        for (const [val, desc] of Object.entries(actions)) {
-            const sel = val === selected ? ' selected' : '';
-            html += `<option value="${val}"${sel}>${desc}</option>`;
-        }
-        return html;
-    }
+	function buildActionOptions(selected) {
+		let html = '';
+		for (const [val, desc] of Object.entries(actions)) {
+			const sel = val === selected ? ' selected' : '';
+			html += `<option value="${val}"${sel}>${desc}</option>`;
+		}
+		return html;
+	}
 
-    function renumber() {
-        tbody.querySelectorAll('.flosc-guest-menu-row').forEach((row, i) => {
-            row.querySelector('.flosc-guest-menu-row-number').textContent = i + 1;
-        });
-    }
+	function renumber() {
+		tbody.querySelectorAll('.flosc-guest-menu-row').forEach((row, i) => {
+			row.querySelector('.flosc-guest-menu-row-number').textContent = i + 1;
+		});
+	}
 
-    addBtn.addEventListener('click', function() {
-        const tr = document.createElement('tr');
-        tr.className = 'flosc-guest-menu-row';
-        tr.innerHTML = `
-            <td class="flosc-guest-menu-row-number"></td>
-            <td><input type="text" name="guest_menu_label[]" class="regular-text" placeholder="Menu label" required></td>
-            <td><select name="guest_menu_action[]" class="flosc-ui-action-select">${buildActionOptions('open_quiz')}</select></td>
-            <td><button type="button" class="button flosc-guest-remove-menu-item" title="Remove item">&times;</button></td>
-        `;
-        tbody.appendChild(tr);
-        renumber();
-        tr.querySelector('input').focus();
-    });
+	addBtn.addEventListener('click', function() {
+		const tr = document.createElement('tr');
+		tr.className = 'flosc-guest-menu-row';
+		tr.innerHTML = `
+			<td class="flosc-guest-menu-row-number"></td>
+			<td><input type="text" name="guest_menu_label[]" class="regular-text" placeholder="Menu label" required></td>
+			<td><select name="guest_menu_action[]" class="flosc-ui-action-select">${buildActionOptions('open_quiz')}</select></td>
+			<td><button type="button" class="button flosc-guest-remove-menu-item" title="Remove item">&times;</button></td>
+		`;
+		tbody.appendChild(tr);
+		renumber();
+		tr.querySelector('input').focus();
+	});
 
-    tbody.addEventListener('click', function(e) {
-        if (e.target.classList.contains('flosc-guest-remove-menu-item')) {
-            e.target.closest('.flosc-guest-menu-row').remove();
-            renumber();
-        }
-    });
+	tbody.addEventListener('click', function(e) {
+		if (e.target.classList.contains('flosc-guest-remove-menu-item')) {
+			e.target.closest('.flosc-guest-menu-row').remove();
+			renumber();
+		}
+	});
 })();
-<?php wp_add_inline_script('flosc-admin', ob_get_clean()); ?>
+<?php wp_add_inline_script( 'flosc-admin', ob_get_clean() ); ?>
 
 <h3 class="flosc-ui-section-title">Member Dropdown Menu</h3>
 <p class="description">Menu items for logged-in users who have purchased.</p>
 
 <div id="flosc-member-menu-repeater">
-    <table class="widefat flosc-ui-menu-table">
-        <thead>
-            <tr>
-                <th class="flosc-ui-col-index">#</th>
-                <th>Label</th>
-                <th>Action</th>
-                <th class="flosc-ui-col-actions"></th>
-            </tr>
-        </thead>
-        <tbody id="flosc-member-menu-items-body">
-            <?php foreach ($flosc_member_menu as $flosc_i => $flosc_item): ?>
-            <tr class="flosc-member-menu-row">
-                <td class="flosc-member-menu-row-number"><?php echo esc_html((string) ($flosc_i + 1)); ?></td>
-                <td>
-                    <input type="text" name="member_menu_label[]"
-                           value="<?php echo esc_attr($flosc_item['label']); ?>"
-                           class="regular-text" placeholder="Menu label" required>
-                </td>
-                <td>
-                    <select name="member_menu_action[]" class="flosc-ui-action-select">
-                        <?php foreach ($flosc_available_actions as $flosc_val => $flosc_desc): ?>
-                        <option value="<?php echo esc_attr($flosc_val); ?>" <?php selected($flosc_item['action'], $flosc_val); ?>>
-                            <?php echo esc_html($flosc_desc); ?>
-                        </option>
-                        <?php endforeach; ?>
-                    </select>
-                </td>
-                <td>
-                    <button type="button" class="button flosc-member-remove-menu-item" title="Remove item">&times;</button>
-                </td>
-            </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
+	<table class="widefat flosc-ui-menu-table">
+		<thead>
+			<tr>
+				<th class="flosc-ui-col-index">#</th>
+				<th>Label</th>
+				<th>Action</th>
+				<th class="flosc-ui-col-actions"></th>
+			</tr>
+		</thead>
+		<tbody id="flosc-member-menu-items-body">
+			<?php foreach ( $flosc_member_menu as $flosc_i => $flosc_item ) : ?>
+			<tr class="flosc-member-menu-row">
+				<td class="flosc-member-menu-row-number"><?php echo esc_html( (string) ( $flosc_i + 1 ) ); ?></td>
+				<td>
+					<input type="text" name="member_menu_label[]"
+							value="<?php echo esc_attr( $flosc_item['label'] ); ?>"
+							class="regular-text" placeholder="Menu label" required>
+				</td>
+				<td>
+					<select name="member_menu_action[]" class="flosc-ui-action-select">
+						<?php foreach ( $flosc_available_actions as $flosc_val => $flosc_desc ) : ?>
+						<option value="<?php echo esc_attr( $flosc_val ); ?>" <?php selected( $flosc_item['action'], $flosc_val ); ?>>
+							<?php echo esc_html( $flosc_desc ); ?>
+						</option>
+						<?php endforeach; ?>
+					</select>
+				</td>
+				<td>
+					<button type="button" class="button flosc-member-remove-menu-item" title="Remove item">&times;</button>
+				</td>
+			</tr>
+			<?php endforeach; ?>
+		</tbody>
+	</table>
 
-    <p class="flosc-ui-menu-actions-wrap">
-        <button type="button" class="button" id="flosc-member-add-menu-item">+ Add Menu Item</button>
-    </p>
+	<p class="flosc-ui-menu-actions-wrap">
+		<button type="button" class="button" id="flosc-member-add-menu-item">+ Add Menu Item</button>
+	</p>
 </div>
 
 <?php ob_start(); ?>
 (function() {
-    const tbody = document.getElementById('flosc-member-menu-items-body');
-    const addBtn = document.getElementById('flosc-member-add-menu-item');
-    const actions = <?php echo wp_json_encode($flosc_available_actions); ?>;
+	const tbody = document.getElementById('flosc-member-menu-items-body');
+	const addBtn = document.getElementById('flosc-member-add-menu-item');
+	const actions = <?php echo wp_json_encode( $flosc_available_actions ); ?>;
 
-    if (!tbody || !addBtn) {
-        return;
-    }
+	if (!tbody || !addBtn) {
+		return;
+	}
 
-    function buildActionOptions(selected) {
-        let html = '';
-        for (const [val, desc] of Object.entries(actions)) {
-            const sel = val === selected ? ' selected' : '';
-            html += `<option value="${val}"${sel}>${desc}</option>`;
-        }
-        return html;
-    }
+	function buildActionOptions(selected) {
+		let html = '';
+		for (const [val, desc] of Object.entries(actions)) {
+			const sel = val === selected ? ' selected' : '';
+			html += `<option value="${val}"${sel}>${desc}</option>`;
+		}
+		return html;
+	}
 
-    function renumber() {
-        tbody.querySelectorAll('.flosc-member-menu-row').forEach((row, i) => {
-            row.querySelector('.flosc-member-menu-row-number').textContent = i + 1;
-        });
-    }
+	function renumber() {
+		tbody.querySelectorAll('.flosc-member-menu-row').forEach((row, i) => {
+			row.querySelector('.flosc-member-menu-row-number').textContent = i + 1;
+		});
+	}
 
-    addBtn.addEventListener('click', function() {
-        const tr = document.createElement('tr');
-        tr.className = 'flosc-member-menu-row';
-        tr.innerHTML = `
-            <td class="flosc-member-menu-row-number"></td>
-            <td><input type="text" name="member_menu_label[]" class="regular-text" placeholder="Menu label" required></td>
-            <td><select name="member_menu_action[]" class="flosc-ui-action-select">${buildActionOptions('open_lesson_library')}</select></td>
-            <td><button type="button" class="button flosc-member-remove-menu-item" title="Remove item">&times;</button></td>
-        `;
-        tbody.appendChild(tr);
-        renumber();
-        tr.querySelector('input').focus();
-    });
+	addBtn.addEventListener('click', function() {
+		const tr = document.createElement('tr');
+		tr.className = 'flosc-member-menu-row';
+		tr.innerHTML = `
+			<td class="flosc-member-menu-row-number"></td>
+			<td><input type="text" name="member_menu_label[]" class="regular-text" placeholder="Menu label" required></td>
+			<td><select name="member_menu_action[]" class="flosc-ui-action-select">${buildActionOptions('open_lesson_library')}</select></td>
+			<td><button type="button" class="button flosc-member-remove-menu-item" title="Remove item">&times;</button></td>
+		`;
+		tbody.appendChild(tr);
+		renumber();
+		tr.querySelector('input').focus();
+	});
 
-    tbody.addEventListener('click', function(e) {
-        if (e.target.classList.contains('flosc-member-remove-menu-item')) {
-            e.target.closest('.flosc-member-menu-row').remove();
-            renumber();
-        }
-    });
+	tbody.addEventListener('click', function(e) {
+		if (e.target.classList.contains('flosc-member-remove-menu-item')) {
+			e.target.closest('.flosc-member-menu-row').remove();
+			renumber();
+		}
+	});
 })();
-<?php wp_add_inline_script('flosc-admin', ob_get_clean()); ?>
+<?php wp_add_inline_script( 'flosc-admin', ob_get_clean() ); ?>
 
 <h2 class="title">Login Destination</h2>
 <p class="description">Where should users land after logging in from the FLOSC chat?</p>
 
 <table class="form-table">
-    <tr>
-        <th scope="row">After login, redirect to</th>
-        <td>
-            <input type="url" name="flosc_login_destination" class="large-text"
-                   value="<?php echo esc_attr($flosc_login_destination); ?>"
-                   placeholder="<?php echo esc_attr($flosc_app_url); ?>">
-            <p class="description">
-                Full URL. Leave empty to default to this flow's chat URL: <code><?php echo esc_html($flosc_app_url); ?></code><br>
-                Only applies when login originates from the FLOSC chat. Normal WordPress logins are unaffected.
-            </p>
-        </td>
-    </tr>
+	<tr>
+		<th scope="row">After login, redirect to</th>
+		<td>
+			<input type="url" name="flosc_login_destination" class="large-text"
+					value="<?php echo esc_attr( $flosc_login_destination ); ?>"
+					placeholder="<?php echo esc_attr( $flosc_app_url ); ?>">
+			<p class="description">
+				Full URL. Leave empty to default to this flow's chat URL: <code><?php echo esc_html( $flosc_app_url ); ?></code><br>
+				Only applies when login originates from the FLOSC chat. Normal WordPress logins are unaffected.
+			</p>
+		</td>
+	</tr>
 </table>
 
 <h2 class="title">Available In-Chat Actions</h2>
 <p class="description">These actions can be assigned to Visitor, Guest, and Member menu items above. All stay in-chat — no page navigation (except Log In/Out).</p>
 
 <table class="widefat striped flosc-ui-actions-table">
-    <thead>
-        <tr>
-            <th>Action Key</th>
-            <th>What Happens</th>
-        </tr>
-    </thead>
-    <tbody>
-        <?php foreach ($flosc_available_actions as $flosc_key => $flosc_desc): ?>
-        <tr>
-            <td><code><?php echo esc_html($flosc_key); ?></code></td>
-            <td><?php echo esc_html($flosc_desc); ?></td>
-        </tr>
-        <?php endforeach; ?>
-    </tbody>
+	<thead>
+		<tr>
+			<th>Action Key</th>
+			<th>What Happens</th>
+		</tr>
+	</thead>
+	<tbody>
+		<?php foreach ( $flosc_available_actions as $flosc_key => $flosc_desc ) : ?>
+		<tr>
+			<td><code><?php echo esc_html( $flosc_key ); ?></code></td>
+			<td><?php echo esc_html( $flosc_desc ); ?></td>
+		</tr>
+		<?php endforeach; ?>
+	</tbody>
 </table>

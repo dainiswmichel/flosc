@@ -1,4 +1,4 @@
-<?php if (!defined('ABSPATH')) exit; // Part 3: Audio Quiz Flow — FLOSC Documentation ?>
+<?php if (!defined('ABSPATH')) { exit;} // Part 3: Audio Quiz Flow — FLOSC Documentation ?>
 
 <h1 id="ref-audio-quiz-flow">Part 3: Reference — Audio Quiz Flow</h1>
 <p>The audio quiz lets visitors record spoken phrases and receive a pronunciation assessment. Results are withheld until after signup/login, following the FLOSC phase flow: <strong>Freeline → Login → Offer → Sale → Content</strong>. This section documents the visitor-to-member journey, the three configurable messages, and the data persistence mechanism.</p>

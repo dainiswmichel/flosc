@@ -210,7 +210,7 @@ if ( ! function_exists( 'flosc_portability_ingest_da1_tsv' ) ) {
 		if ( ! is_array( $index ) ) {
 			$index = array();
 		}
-		$label = flosc_portability_display_name_from_stem( $key );
+		$label         = flosc_portability_display_name_from_stem( $key );
 		$index[ $key ] = array(
 			'label'      => $label,
 			'key'        => $key,
@@ -296,8 +296,8 @@ if ( ! function_exists( 'flosc_portability_get_pack_assets' ) ) {
 
 if ( ! function_exists( 'flosc_portability_save_pack_assets' ) ) {
 	/**
-	 * @param string               $ivr_file Flow IVR basename.
-	 * @param array<string,mixed>  $row      Pack row (wxr + media; catalogs stay in DA1 options).
+	 * @param string              $ivr_file Flow IVR basename.
+	 * @param array<string,mixed> $row      Pack row (wxr + media; catalogs stay in DA1 options).
 	 * @return void
 	 */
 	function flosc_portability_save_pack_assets( $ivr_file, $row ) {
@@ -443,9 +443,9 @@ if ( ! function_exists( 'flosc_portability_ingest_wxr' ) ) {
 			return new WP_Error( 'flosc_wxr_write', __( 'Could not store the WXR file.', 'flosc' ) );
 		}
 
-		$upload  = wp_upload_dir();
-		$rel     = '';
-		$url     = '';
+		$upload = wp_upload_dir();
+		$rel    = '';
+		$url    = '';
 		if ( empty( $upload['error'] ) && ! empty( $upload['basedir'] ) && 0 === strpos( $path, (string) $upload['basedir'] ) ) {
 			$rel = ltrim( str_replace( (string) $upload['basedir'], '', $path ), '/\\' );
 			$url = trailingslashit( (string) $upload['baseurl'] ) . str_replace( '\\', '/', $rel );
@@ -463,7 +463,7 @@ if ( ! function_exists( 'flosc_portability_ingest_wxr' ) ) {
 			}
 			$wxr[] = $item;
 		}
-		$wxr[] = array(
+		$wxr[]       = array(
 			'filename'    => $filename,
 			'path'        => $path,
 			'rel'         => $rel,
@@ -520,7 +520,7 @@ if ( ! function_exists( 'flosc_portability_ingest_media' ) ) {
 		}
 
 		// media_handle_sideload expects a $_FILES-like array and moves the temp file.
-		$file_array = array(
+		$file_array    = array(
 			'name'     => $raw_name,
 			'tmp_name' => $tmp_name,
 			'error'    => 0,
@@ -549,7 +549,7 @@ if ( ! function_exists( 'flosc_portability_ingest_media' ) ) {
 			}
 			$media[] = $item;
 		}
-		$media[] = array(
+		$media[]       = array(
 			'attachment_id' => $attachment_id,
 			'filename'      => $raw_name,
 			'url'           => (string) wp_get_attachment_url( $attachment_id ),
@@ -594,16 +594,40 @@ if ( ! function_exists( 'flosc_portability_run_wxr_import' ) ) {
 			return new WP_Error( 'flosc_wxr_path', __( 'Staged WXR path is not inside this flow’s pack directory.', 'flosc' ) );
 		}
 
-		// The importer runs only when the WordPress Importer plugin is genuinely
-		// active and has bootstrapped WP_Import through its own normal load path.
-		// Nothing here hardcodes a plugin path or force-loads core import files,
-		// and no unactivated plugin code is included directly.
+		/*
+		 * The WordPress Importer has to be ACTIVE. FLOSC does not load it.
+		 *
+		 * This used to build a path from WP_PLUGIN_DIR and require the file
+		 * directly, to serve an importer that was installed but not activated.
+		 * WordPress.org returned both halves on 13 Sep 2026: the constant-built
+		 * path "can fail if that plugin is installed in a differently named
+		 * directory", and loading another plugin's main file out of band is not
+		 * FLOSC's business. Resolving the path some other way would keep the
+		 * second problem, so the load is gone rather than rewritten.
+		 *
+		 * WP_Import exists whenever the importer is active, which is what the
+		 * error below has always told the floscAdmin to do.
+		 */
 		if ( ! class_exists( 'WP_Import' ) ) {
 			return new WP_Error(
 				'flosc_wxr_importer',
 				__( 'Install and activate the WordPress Importer plugin, then use Import posts again — or use Tools → Import.', 'flosc' )
 			);
 		}
+
+		if ( ! defined( 'WP_LOAD_IMPORTERS' ) ) {
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- WordPress core importer bootstrap flag.
+			define( 'WP_LOAD_IMPORTERS', true );
+		}
+		/*
+		 * wp-admin/includes/import.php is NOT loaded here.
+		 *
+		 * It was, under a guard that then used nothing from it. WordPress.org,
+		 * 13 Sep 2026: "Loads the core importer bootstrap even though no
+		 * function from import.php is subsequently used by this import path."
+		 * The guideline permits loading a core file when a function from it is
+		 * used immediately after. Nothing here is, so it is not loaded.
+		 */
 
 		// Suppress HTML output from the importer UI classes.
 		ob_start();
@@ -621,7 +645,7 @@ if ( ! function_exists( 'flosc_portability_run_wxr_import' ) ) {
 		ob_end_clean();
 
 		if ( $idx >= 0 && isset( $pack['wxr'][ $idx ] ) && is_array( $pack['wxr'][ $idx ] ) ) {
-			$pack['wxr'][ $idx ]['status']     = 'imported';
+			$pack['wxr'][ $idx ]['status']      = 'imported';
 			$pack['wxr'][ $idx ]['imported_at'] = current_time( 'mysql' );
 			flosc_portability_save_pack_assets( $ivr_file, $pack );
 		}
@@ -637,7 +661,15 @@ if ( ! function_exists( 'flosc_admin_handle_portability_pack_actions' ) ) {
 	 * @return void
 	 */
 	function flosc_admin_handle_portability_pack_actions() {
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified via check_admin_referer in this handler
+		/*
+		 * Who, before what. check_admin_referer() runs further down for each
+		 * action, and that is still true -- but nothing established the caller's
+		 * identity before the POST body was read at all.
+		 */
+		if ( ! current_user_can( 'edit_others_posts' ) ) {
+			return;
+		}
+
 		$action = isset( $_POST['flosc_portability_pack_action'] )
 			? sanitize_key( (string) wp_unslash( $_POST['flosc_portability_pack_action'] ) )
 			: '';
@@ -649,20 +681,17 @@ if ( ! function_exists( 'flosc_admin_handle_portability_pack_actions' ) ) {
 		}
 		check_admin_referer( 'flosc_portability_pack' );
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified via check_admin_referer in this handler
-		$ivr_file = isset( $_POST['flosc_working_ivr'] )
+		$ivr_file      = isset( $_POST['flosc_working_ivr'] )
 			? sanitize_file_name( (string) wp_unslash( $_POST['flosc_working_ivr'] ) )
 			: '';
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified via check_admin_referer in this handler
-		$filename = isset( $_POST['flosc_pack_filename'] )
+		$filename      = isset( $_POST['flosc_pack_filename'] )
 			? sanitize_file_name( (string) wp_unslash( $_POST['flosc_pack_filename'] ) )
 			: '';
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified via check_admin_referer in this handler
 		$attachment_id = isset( $_POST['flosc_pack_attachment_id'] )
 			? (int) $_POST['flosc_pack_attachment_id']
 			: 0;
 
-		$notes   = array();
+		$notes    = array();
 		$is_error = false;
 		if ( 'import_wxr' === $action ) {
 			$result = flosc_portability_run_wxr_import( $ivr_file, $filename );
@@ -750,14 +779,12 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 			return;
 		}
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- checked below.
 		// Submit value is create|apply (clicked button) — no JS required.
 		$submit_raw = isset( $_POST['flosc_portability_submit'] )
 			? sanitize_key( (string) wp_unslash( $_POST['flosc_portability_submit'] ) )
 			: '';
 		$is_kit     = in_array( $submit_raw, array( 'create', 'apply' ), true );
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified via check_admin_referer in this handler
-		$is_legacy = ! empty( $_POST['flosc_upload_ivr_file'] ) && ! empty( $_FILES['ivr_file_upload']['name'] );
+		$is_legacy  = ! empty( $_POST['flosc_upload_ivr_file'] ) && ! empty( $_FILES['ivr_file_upload']['name'] );
 
 		if ( ! $is_kit && ! $is_legacy ) {
 			return;
@@ -793,16 +820,16 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 		$max_media = 10;
 		$media_ext = flosc_portability_allowed_media_ext();
 
-		$files      = flosc_portability_collect_kit_files( $_FILES );
-		$md         = null;
-		$tsv_list   = array();
-		$wxr_list   = array();
-		$media_list = array();
-		$md_count   = 0;
-		$tsv_count  = 0;
-		$wxr_count  = 0;
+		$files       = flosc_portability_collect_kit_files( $_FILES );
+		$md          = null;
+		$tsv_list    = array();
+		$wxr_list    = array();
+		$media_list  = array();
+		$md_count    = 0;
+		$tsv_count   = 0;
+		$wxr_count   = 0;
 		$media_count = 0;
-		$unknown    = array();
+		$unknown     = array();
 		foreach ( $files as $f ) {
 			if ( (int) ( $f['error'] ?? UPLOAD_ERR_NO_FILE ) === UPLOAD_ERR_NO_FILE || (string) ( $f['name'] ?? '' ) === '' ) {
 				continue;
@@ -921,17 +948,16 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 		}
 
 		// Current flow for Apply (and for DA1 assign after create).
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified via check_admin_referer in this handler
 		$working_ivr = isset( $_POST['flosc_working_ivr'] )
 			? sanitize_file_name( (string) wp_unslash( $_POST['flosc_working_ivr'] ) )
 			: '';
-		if ( $working_ivr === '' && isset( $_GET['ivr'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- admin GET context after POST kit handler; ivr is sanitized_file_name only
+		if ( $working_ivr === '' && isset( $_GET['ivr'] ) ) {
 			$working_ivr = sanitize_file_name( (string) wp_unslash( $_GET['ivr'] ) );
 		}
 
-		$notes         = array();
-		$redirect_ivr  = $working_ivr;
-		$created_file  = '';
+		$notes        = array();
+		$redirect_ivr = $working_ivr;
+		$created_file = '';
 
 		// ── IVR .md ───────────────────────────────────────────────────────────
 		if ( null !== $md ) {
@@ -1233,14 +1259,12 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 			);
 		}
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified via check_admin_referer in this handler
 		$redirect_tab = isset( $_POST['flosc_upload_redirect_tab'] )
 			? sanitize_key( (string) wp_unslash( $_POST['flosc_upload_redirect_tab'] ) )
 			: 'flow';
 		if ( ! in_array( $redirect_tab, array( 'ivr-messages', 'flow', 'da1' ), true ) ) {
 			$redirect_tab = 'flow';
 		}
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified via check_admin_referer in this handler
 		$redirect_view = isset( $_POST['flosc_upload_redirect_view'] )
 			? sanitize_key( (string) wp_unslash( $_POST['flosc_upload_redirect_view'] ) )
 			: 'all';

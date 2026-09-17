@@ -57,17 +57,17 @@
                         </select>
                     </div>
                     ` : ''}
-                    <div class="ivr-message-actions">
+						<div class="ivr-message-actions">
                         <label>
                             <input type="checkbox" checked />
                             Enabled
                         </label>
                         <button type="button" class="button ivr-remove-message">Remove</button>
-                    </div>
-                </div>
-            `;
+						</div>
+						</div>
+						`;
 
-            list.append(messageHtml);
+						list.append(messageHtml);
         }
 
         removeMessage(e) {

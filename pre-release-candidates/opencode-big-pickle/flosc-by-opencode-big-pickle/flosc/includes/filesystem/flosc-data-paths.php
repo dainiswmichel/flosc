@@ -8,73 +8,74 @@
  * @package FLOSC
  */
 
-if (!defined('ABSPATH')) {
-    exit;
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
 }
 
-if (!function_exists('flosc_admin_may_view_secrets')) {
-    /**
-     * Whether the current user may see stored API keys / client secrets in admin UI.
-     *
-     * @return bool
-     */
-    function flosc_admin_may_view_secrets() {
-        return current_user_can('manage_options');
-    }
+if ( ! function_exists( 'flosc_admin_may_view_secrets' ) ) {
+	/**
+	 * Whether the current user may see stored API keys / client secrets in admin UI.
+	 *
+	 * @return bool
+	 */
+	function flosc_admin_may_view_secrets() {
+		return current_user_can( 'manage_options' );
+	}
 }
 
-if (!function_exists('flosc_admin_secret_input_value')) {
-    /**
-     * Value attribute for secret inputs: full value for admins; empty for others
-     * (empty submit preserves stored secret via sanitize_secret_setting).
-     *
-     * @param mixed $stored Stored option/setting value.
-     * @return string
-     */
-    function flosc_admin_secret_input_value($stored) {
-        if (flosc_admin_may_view_secrets()) {
-            return (string) $stored;
-        }
-        return '';
-    }
+if ( ! function_exists( 'flosc_admin_secret_input_value' ) ) {
+	/**
+	 * Value attribute for secret inputs: full value for admins; empty for others
+	 * (empty submit preserves stored secret via sanitize_secret_setting).
+	 *
+	 * @param mixed $stored Stored option/setting value.
+	 * @return string
+	 */
+	function flosc_admin_secret_input_value( $stored ) {
+		if ( flosc_admin_may_view_secrets() ) {
+			return (string) $stored;
+		}
+		return '';
+	}
 }
 
-if (!function_exists('flosc_safe_remote_request')) {
-    /**
-     * Outbound HTTP for admin-configurable URLs.
-     * Validates URL then uses wp_safe_remote_* (no private/loopback hosts).
-     *
-     * @param string $method GET|POST|DELETE|…
-     * @param string $url    Absolute URL.
-     * @param array  $args   wp_remote_* args (sslverify cannot be forced off).
-     * @return array|WP_Error
-     */
-    function flosc_safe_remote_request($method, $url, $args = array()) {
-        $url = esc_url_raw((string) $url);
-        if ($url === '' || !wp_http_validate_url($url)) {
-            return new WP_Error(
-                'flosc_invalid_remote_url',
-                __('Invalid or disallowed remote URL.', 'flosc')
-            );
-        }
-        if (!is_array($args)) {
-            $args = array();
-        }
-        // Certificate verification required.
-        $args['sslverify'] = true;
-        $method = strtoupper((string) $method);
-        if ($method === 'GET') {
-            return wp_safe_remote_get($url, $args);
-        }
-        if ($method === 'POST') {
-            return wp_safe_remote_post($url, $args);
-        }
-        $args['method'] = $method;
-        return wp_safe_remote_request($url, $args);
-    }
+if ( ! function_exists( 'flosc_safe_remote_request' ) ) {
+	/**
+	 * Outbound HTTP for admin-configurable URLs.
+	 * Validates URL then uses wp_safe_remote_* (no private/loopback hosts).
+	 *
+	 * @param string $method GET|POST|DELETE|…
+	 * @param string $url    Absolute URL.
+	 * @param array  $args   wp_remote_* args (sslverify cannot be forced off).
+	 * @return array|WP_Error
+	 */
+	function flosc_safe_remote_request( $method, $url, $args = array() ) {
+		$url = esc_url_raw( (string) $url );
+		if ( $url === '' || ! wp_http_validate_url( $url ) ) {
+			return new WP_Error(
+				'flosc_invalid_remote_url',
+				__( 'Invalid or disallowed remote URL.', 'flosc' )
+			);
+		}
+		if ( ! is_array( $args ) ) {
+			$args = array();
+		}
+		// Certificate verification required.
+		$args['sslverify'] = true;
+		$method            = strtoupper( (string) $method );
+		if ( $method === 'GET' ) {
+			return wp_safe_remote_get( $url, $args );
+		}
+		if ( $method === 'POST' ) {
+			return wp_safe_remote_post( $url, $args );
+		}
+		$args['method'] = $method;
+		return wp_safe_remote_request( $url, $args );
+	}
 }
 
-/* =============================================================================
+/*
+=============================================================================
  * §1 — FLOSC writable data directory (uploads-only, by design)
  * -----------------------------------------------------------------------------
  * WordPress.org rule, and the reason this section exists: runtime-generated or
@@ -396,149 +397,150 @@ if ( ! function_exists( 'flosc_fs_get_contents' ) ) {
 	}
 }
 
-if (!function_exists('flosc_protect_uploads_directory')) {
-    /**
-     * Drops lightweight access-control files into a FLOSC uploads folder.
-     *
-     * index.php blanks directory listings everywhere; .htaccess denies direct
-     * reads on Apache/LiteSpeed hosts. These complement — never replace —
-     * server-level security; they exist so a casual URL guess returns nothing.
-     *
-     * @param string $dir Absolute directory path (already created).
-     */
-    function flosc_protect_uploads_directory($dir) {
-        $dir = trailingslashit($dir);
-        if ( ! class_exists( 'FLOSC_Filesystem' ) ) {
-            return;
-        }
-        $fs = new FLOSC_Filesystem();
-        if ( ! file_exists( $dir . 'index.php' ) ) {
-            $fs->write_file_safely( $dir . 'index.php', "<?php // Silence is golden.\n" );
-        }
-        if ( ! file_exists( $dir . '.htaccess' ) ) {
-            $fs->write_file_safely( $dir . '.htaccess', "Deny from all\n" );
-        }
-    }
+if ( ! function_exists( 'flosc_protect_uploads_directory' ) ) {
+	/**
+	 * Drops lightweight access-control files into a FLOSC uploads folder.
+	 *
+	 * index.php blanks directory listings everywhere; .htaccess denies direct
+	 * reads on Apache/LiteSpeed hosts. These complement — never replace —
+	 * server-level security; they exist so a casual URL guess returns nothing.
+	 *
+	 * @param string $dir Absolute directory path (already created).
+	 */
+	function flosc_protect_uploads_directory( $dir ) {
+		$dir = trailingslashit( $dir );
+		if ( ! class_exists( 'FLOSC_Filesystem' ) ) {
+			return;
+		}
+		$fs = new FLOSC_Filesystem();
+		if ( ! file_exists( $dir . 'index.php' ) ) {
+			$fs->write_file_safely( $dir . 'index.php', "<?php // Silence is golden.\n" );
+		}
+		if ( ! file_exists( $dir . '.htaccess' ) ) {
+			$fs->write_file_safely( $dir . '.htaccess', "Deny from all\n" );
+		}
+	}
 }
 
-if (!function_exists('flosc_data_dir')) {
-    /**
-     * The single source of truth for where FLOSC may write.
-     *
-     * @return string Trailing-slashed uploads data directory, or '' when
-     *                uploads are unavailable — never a plugin-folder path.
-     */
-    function flosc_data_dir() {
-        $uploads = wp_upload_dir();
-        if (!empty($uploads['error']) || empty($uploads['basedir'])) {
-            return '';
-        }
-        $dir = trailingslashit($uploads['basedir']) . 'flosc/ai_configuration_files';
-        if (!file_exists($dir)) {
-            wp_mkdir_p($dir);
-        }
-        if (!is_dir($dir) || !wp_is_writable($dir)) {
-            return '';
-        }
-        flosc_protect_uploads_directory($dir);
-        return trailingslashit($dir);
-    }
+if ( ! function_exists( 'flosc_data_dir' ) ) {
+	/**
+	 * The single source of truth for where FLOSC may write.
+	 *
+	 * @return string Trailing-slashed uploads data directory, or '' when
+	 *                uploads are unavailable — never a plugin-folder path.
+	 */
+	function flosc_data_dir() {
+		$uploads = wp_upload_dir();
+		if ( ! empty( $uploads['error'] ) || empty( $uploads['basedir'] ) ) {
+			return '';
+		}
+		$dir = trailingslashit( $uploads['basedir'] ) . 'flosc/ai_configuration_files';
+		if ( ! file_exists( $dir ) ) {
+			wp_mkdir_p( $dir );
+		}
+		if ( ! is_dir( $dir ) || ! wp_is_writable( $dir ) ) {
+			return '';
+		}
+		flosc_protect_uploads_directory( $dir );
+		return trailingslashit( $dir );
+	}
 }
 
-if (!function_exists('flosc_write_data_file')) {
-    /**
-     * The only sanctioned way to write a FLOSC data file.
-     *
-     * Resolves both the data directory and the write target through realpath
-     * and refuses the write unless the target sits inside the data directory.
-     * This makes "write outside uploads" structurally impossible at the one
-     * chokepoint every save passes through, rather than a rule each call site
-     * must remember.
-     *
-     * @param string $target  Absolute file path inside flosc_data_dir().
-     * @param string $content File content.
-     * @return bool Whether the write happened.
-     */
-    function flosc_write_data_file($target, $content) {
-        $base = flosc_data_dir();
-        if ('' === $base || !is_string($target) || '' === $target) {
-            return false;
-        }
-        $base_real = realpath($base);
-        $dir_real  = realpath(dirname($target));
-        if (!$base_real || !$dir_real) {
-            return false;
-        }
-        if (0 !== strpos(trailingslashit($dir_real), trailingslashit($base_real))) {
-            return false;
-        }
-        if ( ! class_exists( 'FLOSC_Filesystem' ) ) {
-            return false;
-        }
-        $fs = new FLOSC_Filesystem();
-        return (bool) $fs->write_file_safely( $target, $content );
-    }
+if ( ! function_exists( 'flosc_write_data_file' ) ) {
+	/**
+	 * The only sanctioned way to write a FLOSC data file.
+	 *
+	 * Resolves both the data directory and the write target through realpath
+	 * and refuses the write unless the target sits inside the data directory.
+	 * This makes "write outside uploads" structurally impossible at the one
+	 * chokepoint every save passes through, rather than a rule each call site
+	 * must remember.
+	 *
+	 * @param string $target  Absolute file path inside flosc_data_dir().
+	 * @param string $content File content.
+	 * @return bool Whether the write happened.
+	 */
+	function flosc_write_data_file( $target, $content ) {
+		$base = flosc_data_dir();
+		if ( '' === $base || ! is_string( $target ) || '' === $target ) {
+			return false;
+		}
+		$base_real = realpath( $base );
+		$dir_real  = realpath( dirname( $target ) );
+		if ( ! $base_real || ! $dir_real ) {
+			return false;
+		}
+		if ( 0 !== strpos( trailingslashit( $dir_real ), trailingslashit( $base_real ) ) ) {
+			return false;
+		}
+		if ( ! class_exists( 'FLOSC_Filesystem' ) ) {
+			return false;
+		}
+		$fs = new FLOSC_Filesystem();
+		return (bool) $fs->write_file_safely( $target, $content );
+	}
 }
 
-if (!function_exists('flosc_data_file_path')) {
-    /**
-     * Build an absolute path under flosc_data_dir() for a basename only.
-     * Returns '' if uploads data dir is unavailable or the name is empty after cleanup.
-     *
-     * @param string $filename File name (path segments stripped).
-     * @return string Absolute path or ''.
-     */
-    function flosc_data_file_path($filename) {
-        $base = flosc_data_dir();
-        if ('' === $base) {
-            return '';
-        }
-        $name = basename(sanitize_file_name((string) $filename));
-        if ('' === $name || '.' === $name || '..' === $name) {
-            return '';
-        }
-        return $base . $name;
-    }
+if ( ! function_exists( 'flosc_data_file_path' ) ) {
+	/**
+	 * Build an absolute path under flosc_data_dir() for a basename only.
+	 * Returns '' if uploads data dir is unavailable or the name is empty after cleanup.
+	 *
+	 * @param string $filename File name (path segments stripped).
+	 * @return string Absolute path or ''.
+	 */
+	function flosc_data_file_path( $filename ) {
+		$base = flosc_data_dir();
+		if ( '' === $base ) {
+			return '';
+		}
+		$name = basename( sanitize_file_name( (string) $filename ) );
+		if ( '' === $name || '.' === $name || '..' === $name ) {
+			return '';
+		}
+		return $base . $name;
+	}
 }
 
-if (!function_exists('flosc_is_allowed_ivr_source_path')) {
-    /**
-     * True when $path realpath is under uploads flosc data dir or shipped plugin IVR folder.
-     * Used before reading markdown for import so callers cannot pass arbitrary filesystem paths.
-     *
-     * @param string $path Absolute or relative path.
-     * @return bool
-     */
-    function flosc_is_allowed_ivr_source_path($path) {
-        if (!is_string($path) || '' === $path) {
-            return false;
-        }
-        $real = realpath($path);
-        if (false === $real || !is_file($real)) {
-            return false;
-        }
-        $allowed_roots = array();
-        $data_dir = flosc_data_dir();
-        if ('' !== $data_dir) {
-            $data_real = realpath($data_dir);
-            if (false !== $data_real) {
-                $allowed_roots[] = trailingslashit($data_real);
-            }
-        }
-        $plugin_ivr = realpath(FLOSC_PLUGIN_DIR . 'ai_configuration_files');
-        if (false !== $plugin_ivr) {
-            $allowed_roots[] = trailingslashit($plugin_ivr);
-        }
-        foreach ($allowed_roots as $root) {
-            if (0 === strpos($real, $root)) {
-                return true;
-            }
-        }
-        return false;
-    }
+if ( ! function_exists( 'flosc_is_allowed_ivr_source_path' ) ) {
+	/**
+	 * True when $path realpath is under uploads flosc data dir or shipped plugin IVR folder.
+	 * Used before reading markdown for import so callers cannot pass arbitrary filesystem paths.
+	 *
+	 * @param string $path Absolute or relative path.
+	 * @return bool
+	 */
+	function flosc_is_allowed_ivr_source_path( $path ) {
+		if ( ! is_string( $path ) || '' === $path ) {
+			return false;
+		}
+		$real = realpath( $path );
+		if ( false === $real || ! is_file( $real ) ) {
+			return false;
+		}
+		$allowed_roots = array();
+		$data_dir      = flosc_data_dir();
+		if ( '' !== $data_dir ) {
+			$data_real = realpath( $data_dir );
+			if ( false !== $data_real ) {
+				$allowed_roots[] = trailingslashit( $data_real );
+			}
+		}
+		$plugin_ivr = realpath( FLOSC_PLUGIN_DIR . 'ai_configuration_files' );
+		if ( false !== $plugin_ivr ) {
+			$allowed_roots[] = trailingslashit( $plugin_ivr );
+		}
+		foreach ( $allowed_roots as $root ) {
+			if ( 0 === strpos( $real, $root ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
 }
 
-/* =============================================================================
+/*
+=============================================================================
  * Per-flow Knowledge Base directory
  * -----------------------------------------------------------------------------
  * Each floscFlow owns a physically separate basket of uploaded knowledge files,
@@ -548,64 +550,65 @@ if (!function_exists('flosc_is_allowed_ivr_source_path')) {
  * in the this flow. The folder is web-protected (Deny from all + silent index)
  * and created on first use. $flow_stem is the flow id (e.g. 'flow_ivr').
  * ========================================================================== */
-if (!function_exists('flosc_flow_kb_dir')) {
-    function flosc_flow_kb_dir($flow_stem) {
-        $base = flosc_data_dir();
-        if ('' === $base) {
-            // Uploads unavailable — propagate the empty path so callers fail
-            // safely instead of building a path relative to nowhere.
-            return '';
-        }
-        $flow_stem = sanitize_key((string) $flow_stem);
-        if ($flow_stem === '') {
-            // No flow context — fall back to the shared base rather than guess a flow.
-            return $base;
-        }
-        $dir = $base . 'kb/' . $flow_stem;
-        if (!file_exists($dir)) {
-            wp_mkdir_p($dir);
-        }
-        if (!is_dir($dir) || !wp_is_writable($dir)) {
-            return '';
-        }
-        flosc_protect_uploads_directory($dir);
-        return trailingslashit($dir);
-    }
+if ( ! function_exists( 'flosc_flow_kb_dir' ) ) {
+	function flosc_flow_kb_dir( $flow_stem ) {
+		$base = flosc_data_dir();
+		if ( '' === $base ) {
+			// Uploads unavailable — propagate the empty path so callers fail
+			// safely instead of building a path relative to nowhere.
+			return '';
+		}
+		$flow_stem = sanitize_key( (string) $flow_stem );
+		if ( $flow_stem === '' ) {
+			// No flow context — fall back to the shared base rather than guess a flow.
+			return $base;
+		}
+		$dir = $base . 'kb/' . $flow_stem;
+		if ( ! file_exists( $dir ) ) {
+			wp_mkdir_p( $dir );
+		}
+		if ( ! is_dir( $dir ) || ! wp_is_writable( $dir ) ) {
+			return '';
+		}
+		flosc_protect_uploads_directory( $dir );
+		return trailingslashit( $dir );
+	}
 }
-if (!function_exists('flosc_chat_archive_dir')) {
-    /**
-     * Get per-flow chat archive directory.
-     *
-     * @param string $flow_stem Flow identifier (e.g. 'flow_ivr').
-     *
-     * @return string Trailing-slashed archive directory, or '' if unavailable.
-     */
-    function flosc_chat_archive_dir($flow_stem = '') {
-        $base = flosc_data_dir();
-        if ('' === $base) {
-            return '';
-        }
+if ( ! function_exists( 'flosc_chat_archive_dir' ) ) {
+	/**
+	 * Get per-flow chat archive directory.
+	 *
+	 * @param string $flow_stem Flow identifier (e.g. 'flow_ivr').
+	 *
+	 * @return string Trailing-slashed archive directory, or '' if unavailable.
+	 */
+	function flosc_chat_archive_dir( $flow_stem = '' ) {
+		$base = flosc_data_dir();
+		if ( '' === $base ) {
+			return '';
+		}
 
-        $flow_stem = sanitize_key((string) $flow_stem);
-        $dir = trailingslashit($base) . 'chat-archives/';
+		$flow_stem = sanitize_key( (string) $flow_stem );
+		$dir       = trailingslashit( $base ) . 'chat-archives/';
 
-        if ('' !== $flow_stem) {
-            $dir .= $flow_stem . '/';
-        }
+		if ( '' !== $flow_stem ) {
+			$dir .= $flow_stem . '/';
+		}
 
-        if (!file_exists($dir)) {
-            wp_mkdir_p($dir);
-        }
-        if (!is_dir($dir) || !wp_is_writable($dir)) {
-            return '';
-        }
+		if ( ! file_exists( $dir ) ) {
+			wp_mkdir_p( $dir );
+		}
+		if ( ! is_dir( $dir ) || ! wp_is_writable( $dir ) ) {
+			return '';
+		}
 
-        flosc_protect_uploads_directory($dir);
-        return trailingslashit($dir);
-    }
+		flosc_protect_uploads_directory( $dir );
+		return trailingslashit( $dir );
+	}
 }
 
-/* =============================================================================
+/*
+=============================================================================
  * §5 — Token signing secret (dedicated; NOT the WordPress auth salt)
  * -----------------------------------------------------------------------------
  * WordPress.org flags signing/exposing material derived from wp_salt('auth'):
@@ -615,19 +618,20 @@ if (!function_exists('flosc_chat_archive_dir')) {
  * autoload=false so it is never shipped to the browser. Every FLOSC HMAC/XOR
  * key uses this instead of wp_salt('auth').
  * ========================================================================== */
-if (!function_exists('flosc_token_secret')) {
-    function flosc_token_secret() {
-        $secret = get_option('flosc_token_secret');
-        if (!$secret) {
-            // Generated once on first use; autoload=false keeps it server-side only.
-            $secret = wp_generate_password(64, true, true);
-            update_option('flosc_token_secret', $secret, false);
-        }
-        return $secret;
-    }
+if ( ! function_exists( 'flosc_token_secret' ) ) {
+	function flosc_token_secret() {
+		$secret = get_option( 'flosc_token_secret' );
+		if ( ! $secret ) {
+			// Generated once on first use; autoload=false keeps it server-side only.
+			$secret = wp_generate_password( 64, true, true );
+			update_option( 'flosc_token_secret', $secret, false );
+		}
+		return $secret;
+	}
 }
 
-/* =============================================================================
+/*
+=============================================================================
  * §5b — Checkout binding token (proof a completion request is the buyer's browser)
  * -----------------------------------------------------------------------------
  * The problem this solves: a payment completion request carries a payment
@@ -649,67 +653,67 @@ if (!function_exists('flosc_token_secret')) {
  * (webhooks, IPN) have no browser and never issue sessions — the buyer reaches
  * those through the emailed single-use link instead.
  * ========================================================================== */
-if (!function_exists('flosc_checkout_binding_create')) {
-    /**
-     * Mint a single-use binding token for a checkout that is about to begin.
-     *
-     * Called server-side from the binding REST endpoint (and any server-side
-     * order-creation path). The raw token is returned to the initiating browser
-     * once; only its HMAC is stored, keyed to the caller's session.
-     *
-     * @param array $context Optional: 'session_id', 'flow_id', 'provider'.
-     * @return string The raw token to hand to the initiating browser.
-     */
-    function flosc_checkout_binding_create($context = array()) {
-        $token = wp_generate_password(43, false, false);
-        $hash  = hash_hmac('sha256', $token, flosc_token_secret());
-        $record = array(
-            'session_id' => isset($context['session_id']) ? sanitize_text_field((string) $context['session_id']) : '',
-            'flow_id'    => isset($context['flow_id']) ? sanitize_text_field((string) $context['flow_id']) : '',
-            'provider'   => isset($context['provider']) ? sanitize_text_field((string) $context['provider']) : '',
-            'offer_id'   => isset($context['offer_id']) ? sanitize_text_field((string) $context['offer_id']) : '',
-            'user_id'    => isset($context['user_id']) ? absint($context['user_id']) : get_current_user_id(),
-            'created_at' => time(),
-        );
-        // 1-hour lifetime: long enough to complete a payment, short enough that a
-        // leaked token expires quickly. autoload is irrelevant for transients.
-        set_transient('flosc_checkout_binding_' . $hash, $record, HOUR_IN_SECONDS);
-        return $token;
-    }
+if ( ! function_exists( 'flosc_checkout_binding_create' ) ) {
+	/**
+	 * Mint a single-use binding token for a checkout that is about to begin.
+	 *
+	 * Called server-side from the binding REST endpoint (and any server-side
+	 * order-creation path). The raw token is returned to the initiating browser
+	 * once; only its HMAC is stored, keyed to the caller's session.
+	 *
+	 * @param array $context Optional: 'session_id', 'flow_id', 'provider'.
+	 * @return string The raw token to hand to the initiating browser.
+	 */
+	function flosc_checkout_binding_create( $context = array() ) {
+		$token  = wp_generate_password( 43, false, false );
+		$hash   = hash_hmac( 'sha256', $token, flosc_token_secret() );
+		$record = array(
+			'session_id' => isset( $context['session_id'] ) ? sanitize_text_field( (string) $context['session_id'] ) : '',
+			'flow_id'    => isset( $context['flow_id'] ) ? sanitize_text_field( (string) $context['flow_id'] ) : '',
+			'provider'   => isset( $context['provider'] ) ? sanitize_text_field( (string) $context['provider'] ) : '',
+			'offer_id'   => isset( $context['offer_id'] ) ? sanitize_text_field( (string) $context['offer_id'] ) : '',
+			'user_id'    => isset( $context['user_id'] ) ? absint( $context['user_id'] ) : get_current_user_id(),
+			'created_at' => time(),
+		);
+		// 1-hour lifetime: long enough to complete a payment, short enough that a
+		// leaked token expires quickly. autoload is irrelevant for transients.
+		set_transient( 'flosc_checkout_binding_' . $hash, $record, HOUR_IN_SECONDS );
+		return $token;
+	}
 }
 
-if (!function_exists('flosc_checkout_binding_verify')) {
-    /**
-     * Verify and consume a binding token.
-     *
-     * Single-use: the stored record is deleted on lookup, so the same token can
-     * never authorize two sessions. When the completion request carries a
-     * session id, it must match the session the token was minted for; this binds
-     * the proof to one browser. When no session id is threaded through a given
-     * provider flow, the server-minted single-use token is itself the proof.
-     *
-     * @param string $token      The token returned by the browser.
-     * @param string $session_id The completing request's session id (may be '').
-     * @return array|false The stored record on success, false otherwise.
-     */
-    function flosc_checkout_binding_verify($token, $session_id = '') {
-        if (empty($token) || !is_string($token)) {
-            return false;
-        }
-        $hash = hash_hmac('sha256', $token, flosc_token_secret());
-        $key  = 'flosc_checkout_binding_' . $hash;
-        $record = get_transient($key);
-        delete_transient($key); // Consume regardless of outcome — one attempt only.
-        if (!is_array($record)) {
-            return false;
-        }
-        $session_id = sanitize_text_field((string) $session_id);
-        if ('' !== $record['session_id'] && '' !== $session_id
-            && !hash_equals($record['session_id'], $session_id)) {
-            return false; // Token belongs to a different browser session.
-        }
-        return $record;
-    }
+if ( ! function_exists( 'flosc_checkout_binding_verify' ) ) {
+	/**
+	 * Verify and consume a binding token.
+	 *
+	 * Single-use: the stored record is deleted on lookup, so the same token can
+	 * never authorize two sessions. When the completion request carries a
+	 * session id, it must match the session the token was minted for; this binds
+	 * the proof to one browser. When no session id is threaded through a given
+	 * provider flow, the server-minted single-use token is itself the proof.
+	 *
+	 * @param string $token      The token returned by the browser.
+	 * @param string $session_id The completing request's session id (may be '').
+	 * @return array|false The stored record on success, false otherwise.
+	 */
+	function flosc_checkout_binding_verify( $token, $session_id = '' ) {
+		if ( empty( $token ) || ! is_string( $token ) ) {
+			return false;
+		}
+		$hash   = hash_hmac( 'sha256', $token, flosc_token_secret() );
+		$key    = 'flosc_checkout_binding_' . $hash;
+		$record = get_transient( $key );
+		delete_transient( $key ); // Consume regardless of outcome — one attempt only.
+		if ( ! is_array( $record ) ) {
+			return false;
+		}
+		$session_id = sanitize_text_field( (string) $session_id );
+		if ( '' !== $record['session_id'] && '' !== $session_id
+			&& ! hash_equals( $record['session_id'], $session_id ) ) {
+			return false; // Token belongs to a different browser session.
+		}
+		return $record;
+	}
 }
 
 /**
@@ -719,137 +723,138 @@ if (!function_exists('flosc_checkout_binding_verify')) {
  * is placed in PayPal custom_id. On activate, the server loads the intent and
  * requires: ACTIVE status, plan_id match, offer/amount/currency from intent only.
  */
-if (!function_exists('flosc_paypal_purchase_intent_create')) {
-    /**
-     * @param array $data offer_id, plan_id, plan_type, amount, currency, flow_id, user_id, session_id, mode
-     * @return array|WP_Error Intent record including purchase_uuid
-     */
-    function flosc_paypal_purchase_intent_create(array $data) {
-        $uuid = function_exists('wp_generate_uuid4') ? wp_generate_uuid4() : wp_generate_password(32, false, false);
-        $uuid = sanitize_text_field((string) $uuid);
-        if ($uuid === '') {
-            return new WP_Error('intent_failed', __('Could not create purchase intent', 'flosc'), array('status' => 500));
-        }
-        $offer_id = sanitize_text_field((string) ($data['offer_id'] ?? ''));
-        $plan_id  = sanitize_text_field((string) ($data['plan_id'] ?? ''));
-        if ($offer_id === '' || $plan_id === '') {
-            return new WP_Error('invalid_intent', __('Offer and PayPal plan are required', 'flosc'), array('status' => 400));
-        }
-        $record = array(
-            'purchase_uuid' => $uuid,
-            'offer_id'      => $offer_id,
-            'plan_id'       => $plan_id,
-            'plan_type'     => sanitize_key((string) ($data['plan_type'] ?? '')),
-            'amount'        => number_format((float) ($data['amount'] ?? 0), 2, '.', ''),
-            'currency'      => strtoupper(sanitize_text_field((string) ($data['currency'] ?? 'USD'))) ?: 'USD',
-            'flow_id'       => sanitize_key((string) ($data['flow_id'] ?? '')),
-            'user_id'       => absint($data['user_id'] ?? 0),
-            'session_id'    => sanitize_text_field((string) ($data['session_id'] ?? '')),
-            'mode'          => sanitize_key((string) ($data['mode'] ?? '')),
-            'status'        => 'pending',
-            'created_at'    => time(),
-            'expires_at'    => time() + (2 * HOUR_IN_SECONDS),
-        );
-        // 2h: enough for PayPal popup; short-lived if leaked.
-        set_transient('flosc_pp_pi_' . $uuid, $record, 2 * HOUR_IN_SECONDS);
-        return $record;
-    }
+if ( ! function_exists( 'flosc_paypal_purchase_intent_create' ) ) {
+	/**
+	 * @param array $data offer_id, plan_id, plan_type, amount, currency, flow_id, user_id, session_id, mode
+	 * @return array|WP_Error Intent record including purchase_uuid
+	 */
+	function flosc_paypal_purchase_intent_create( array $data ) {
+		$uuid = function_exists( 'wp_generate_uuid4' ) ? wp_generate_uuid4() : wp_generate_password( 32, false, false );
+		$uuid = sanitize_text_field( (string) $uuid );
+		if ( $uuid === '' ) {
+			return new WP_Error( 'intent_failed', __( 'Could not create purchase intent', 'flosc' ), array( 'status' => 500 ) );
+		}
+		$offer_id = sanitize_text_field( (string) ( $data['offer_id'] ?? '' ) );
+		$plan_id  = sanitize_text_field( (string) ( $data['plan_id'] ?? '' ) );
+		if ( $offer_id === '' || $plan_id === '' ) {
+			return new WP_Error( 'invalid_intent', __( 'Offer and PayPal plan are required', 'flosc' ), array( 'status' => 400 ) );
+		}
+		$record = array(
+			'purchase_uuid' => $uuid,
+			'offer_id'      => $offer_id,
+			'plan_id'       => $plan_id,
+			'plan_type'     => sanitize_key( (string) ( $data['plan_type'] ?? '' ) ),
+			'amount'        => number_format( (float) ( $data['amount'] ?? 0 ), 2, '.', '' ),
+			'currency'      => strtoupper( sanitize_text_field( (string) ( $data['currency'] ?? 'USD' ) ) ) ?: 'USD',
+			'flow_id'       => sanitize_key( (string) ( $data['flow_id'] ?? '' ) ),
+			'user_id'       => absint( $data['user_id'] ?? 0 ),
+			'session_id'    => sanitize_text_field( (string) ( $data['session_id'] ?? '' ) ),
+			'mode'          => sanitize_key( (string) ( $data['mode'] ?? '' ) ),
+			'status'        => 'pending',
+			'created_at'    => time(),
+			'expires_at'    => time() + ( 2 * HOUR_IN_SECONDS ),
+		);
+		// 2h: enough for PayPal popup; short-lived if leaked.
+		set_transient( 'flosc_pp_pi_' . $uuid, $record, 2 * HOUR_IN_SECONDS );
+		return $record;
+	}
 }
 
-if (!function_exists('flosc_paypal_purchase_intent_get')) {
-    /**
-     * @param string $uuid
-     * @return array|false
-     */
-    function flosc_paypal_purchase_intent_get($uuid) {
-        $uuid = sanitize_text_field((string) $uuid);
-        if ($uuid === '') {
-            return false;
-        }
-        $record = get_transient('flosc_pp_pi_' . $uuid);
-        return is_array($record) ? $record : false;
-    }
+if ( ! function_exists( 'flosc_paypal_purchase_intent_get' ) ) {
+	/**
+	 * @param string $uuid
+	 * @return array|false
+	 */
+	function flosc_paypal_purchase_intent_get( $uuid ) {
+		$uuid = sanitize_text_field( (string) $uuid );
+		if ( $uuid === '' ) {
+			return false;
+		}
+		$record = get_transient( 'flosc_pp_pi_' . $uuid );
+		return is_array( $record ) ? $record : false;
+	}
 }
 
-if (!function_exists('flosc_paypal_purchase_intent_mark_fulfilled')) {
-    /**
-     * @param string $uuid
-     * @param string $subscription_id
-     * @param int    $user_id
-     * @return bool
-     */
-    function flosc_paypal_purchase_intent_mark_fulfilled($uuid, $subscription_id, $user_id = 0) {
-        $record = flosc_paypal_purchase_intent_get($uuid);
-        if (!is_array($record)) {
-            return false;
-        }
-        $record['status']          = 'fulfilled';
-        $record['subscription_id'] = sanitize_text_field((string) $subscription_id);
-        $record['fulfilled_at']    = time();
-        if (absint($user_id) > 0) {
-            $record['user_id'] = absint($user_id);
-        }
-        set_transient('flosc_pp_pi_' . $uuid, $record, DAY_IN_SECONDS);
-        return true;
-    }
+if ( ! function_exists( 'flosc_paypal_purchase_intent_mark_fulfilled' ) ) {
+	/**
+	 * @param string $uuid
+	 * @param string $subscription_id
+	 * @param int    $user_id
+	 * @return bool
+	 */
+	function flosc_paypal_purchase_intent_mark_fulfilled( $uuid, $subscription_id, $user_id = 0 ) {
+		$record = flosc_paypal_purchase_intent_get( $uuid );
+		if ( ! is_array( $record ) ) {
+			return false;
+		}
+		$record['status']          = 'fulfilled';
+		$record['subscription_id'] = sanitize_text_field( (string) $subscription_id );
+		$record['fulfilled_at']    = time();
+		if ( absint( $user_id ) > 0 ) {
+			$record['user_id'] = absint( $user_id );
+		}
+		set_transient( 'flosc_pp_pi_' . $uuid, $record, DAY_IN_SECONDS );
+		return true;
+	}
 }
 
-if (!function_exists('flosc_issue_post_purchase_session')) {
-    /**
-     * Issue an authenticated session after a verified purchase, for the buyer's
-     * own browser. This is the single sanctioned post-purchase login path; every
-     * browser-facing payment handler routes through it.
-     *
-    * WordPress.org / Pass 2: flosc_post_purchase_instant_login defaults to false
-     * so a completed checkout does not auto-set a WP auth cookie. Private deploys
-     * that want same-browser post-purchase session may enable:
-     *
-     *     add_filter( 'flosc_post_purchase_instant_login', '__return_true' );
-     *
-     * Related: emailed passwordless ?flosc_login_token= after purchase is gated by
-     * flosc_post_purchase_login_token (also default false).
-     *
-     * @param int    $user_id     The buyer.
-     * @param string $redirect_to Optional safe redirect target after login.
-     * @return bool Whether a session was issued.
-     */
-    function flosc_issue_post_purchase_session($user_id, $redirect_to = '') {
-        $user_id = absint($user_id);
-        if (!$user_id || !apply_filters('flosc_post_purchase_instant_login', false)) {
-            return false;
-        }
-        $user = get_userdata($user_id);
-        if (!$user) {
-            return false;
-        }
+if ( ! function_exists( 'flosc_issue_post_purchase_session' ) ) {
+	/**
+	 * Issue an authenticated session after a verified purchase, for the buyer's
+	 * own browser. This is the single sanctioned post-purchase login path; every
+	 * browser-facing payment handler routes through it.
+	 *
+	 * WordPress.org / Pass 2: flosc_post_purchase_instant_login defaults to false
+	 * so a completed checkout does not auto-set a WP auth cookie. Private deploys
+	 * that want same-browser post-purchase session may enable:
+	 *
+	 *     add_filter( 'flosc_post_purchase_instant_login', '__return_true' );
+	 *
+	 * Related: emailed passwordless ?flosc_login_token= after purchase is gated by
+	 * flosc_post_purchase_login_token (also default false).
+	 *
+	 * @param int    $user_id     The buyer.
+	 * @param string $redirect_to Optional safe redirect target after login.
+	 * @return bool Whether a session was issued.
+	 */
+	function flosc_issue_post_purchase_session( $user_id, $redirect_to = '' ) {
+		$user_id = absint( $user_id );
+		if ( ! $user_id || ! apply_filters( 'flosc_post_purchase_instant_login', false ) ) {
+			return false;
+		}
+		$user = get_userdata( $user_id );
+		if ( ! $user ) {
+			return false;
+		}
 
-        wp_set_current_user($user_id);
-        wp_set_auth_cookie($user_id, true);
-        // Core WP login action (required for session-aware plugins).
+		wp_set_current_user( $user_id );
+		wp_set_auth_cookie( $user_id, true );
+		// Core WP login action (required for session-aware plugins).
         // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- core WP action wp_login
-        do_action( 'wp_login', $user->user_login, $user );
+		do_action( 'wp_login', $user->user_login, $user );
 
-        // FLOSC's own cross-domain auth cookie rides alongside the WP cookie so a
-        // flow served on flosc.ai / the flow domain / the WordPress host authenticates even when
-        // COOKIE_DOMAIN does not match the custom domain. The methods live on the
-        // framework singleton (flosc()), not a separate session class.
-        if (function_exists('flosc') && method_exists(flosc(), 'generate_flosc_auth_token')) {
-            $auth_token = flosc()->generate_flosc_auth_token($user_id);
-            flosc()->set_flosc_auth_cookie($auth_token);
-        }
+		// FLOSC's own cross-domain auth cookie rides alongside the WP cookie so a
+		// flow served on flosc.ai / the flow domain / the WordPress host authenticates even when
+		// COOKIE_DOMAIN does not match the custom domain. The methods live on the
+		// framework singleton (flosc()), not a separate session class.
+		if ( function_exists( 'flosc' ) && method_exists( flosc(), 'generate_flosc_auth_token' ) ) {
+			$auth_token = flosc()->generate_flosc_auth_token( $user_id );
+			flosc()->set_flosc_auth_cookie( $auth_token );
+		}
 
-        if ('' !== $redirect_to) {
-            $safe = wp_validate_redirect($redirect_to, '');
-            if ('' !== $safe) {
-                wp_safe_redirect($safe);
-                exit;
-            }
-        }
-        return true;
-    }
+		if ( '' !== $redirect_to ) {
+			$safe = wp_validate_redirect( $redirect_to, '' );
+			if ( '' !== $safe ) {
+				wp_safe_redirect( $safe );
+				exit;
+			}
+		}
+		return true;
+	}
 }
 
-/* =============================================================================
+/*
+=============================================================================
  * §2 — AI-configuration read resolvers (uploads-first, plugin default fallback)
  * -----------------------------------------------------------------------------
  * Writes land in the per-install uploads dir (flosc_data_dir()); the plugin ships
@@ -858,18 +863,18 @@ if (!function_exists('flosc_issue_post_purchase_session')) {
  * so saved edits are actually read back. They resolve a SPECIFIC filename within
  * THIS install's dirs only — no cross-flow or cross-install bleeding.
  * ========================================================================== */
-if (!function_exists('flosc_config_file')) {
-    // Single config file: the uploads copy if it exists, else the shipped
-    // default. The plugin path is a READ-ONLY resolution — every write goes
-    // through flosc_write_data_file(), which only accepts uploads targets.
-    function flosc_config_file($filename) {
-        $filename = ltrim((string) $filename, '/');
-        $base     = flosc_data_dir();
-        if ('' !== $base && file_exists($base . $filename)) {
-            return $base . $filename;
-        }
-        return FLOSC_PLUGIN_DIR . 'ai_configuration_files/' . $filename;
-    }
+if ( ! function_exists( 'flosc_config_file' ) ) {
+	// Single config file: the uploads copy if it exists, else the shipped
+	// default. The plugin path is a READ-ONLY resolution — every write goes
+	// through flosc_write_data_file(), which only accepts uploads targets.
+	function flosc_config_file( $filename ) {
+		$filename = ltrim( (string) $filename, '/' );
+		$base     = flosc_data_dir();
+		if ( '' !== $base && file_exists( $base . $filename ) ) {
+			return $base . $filename;
+		}
+		return FLOSC_PLUGIN_DIR . 'ai_configuration_files/' . $filename;
+	}
 }
 
 /**
@@ -878,16 +883,16 @@ if (!function_exists('flosc_config_file')) {
  *
  * @return string[]
  */
-if (!function_exists('flosc_lesson_catalog_basenames')) {
-    function flosc_lesson_catalog_basenames() {
-        // Ship core: neutral name only. Instances may add legacy basenames via filter.
-        $names = ['lesson_catalog.md'];
-        /**
-         * @param string[] $names Basename candidates, first match wins for reads.
-         */
-        $names = apply_filters('flosc_lesson_catalog_basenames', $names);
-        return is_array($names) ? array_values(array_filter(array_map('strval', $names))) : [];
-    }
+if ( ! function_exists( 'flosc_lesson_catalog_basenames' ) ) {
+	function flosc_lesson_catalog_basenames() {
+		// Ship core: neutral name only. Instances may add legacy basenames via filter.
+		$names = array( 'lesson_catalog.md' );
+		/**
+		 * @param string[] $names Basename candidates, first match wins for reads.
+		 */
+		$names = apply_filters( 'flosc_lesson_catalog_basenames', $names );
+		return is_array( $names ) ? array_values( array_filter( array_map( 'strval', $names ) ) ) : array();
+	}
 }
 
 /**
@@ -896,28 +901,28 @@ if (!function_exists('flosc_lesson_catalog_basenames')) {
  *
  * @return string Absolute path or empty string.
  */
-if (!function_exists('flosc_resolve_lesson_catalog_path')) {
-    function flosc_resolve_lesson_catalog_path() {
-        if (!function_exists('flosc_config_file')) {
-            return '';
-        }
-        $preferred = '';
-        foreach (flosc_lesson_catalog_basenames() as $i => $base) {
-            $base = ltrim((string) $base, '/');
-            if ($base === '') {
-                continue;
-            }
-            $path = flosc_config_file($base);
-            if ($i === 0) {
-                $preferred = $path;
-            }
-            // flosc_config_file returns plugin path even when missing; require real file for match.
-            if ($path && file_exists($path)) {
-                return $path;
-            }
-        }
-        return $preferred;
-    }
+if ( ! function_exists( 'flosc_resolve_lesson_catalog_path' ) ) {
+	function flosc_resolve_lesson_catalog_path() {
+		if ( ! function_exists( 'flosc_config_file' ) ) {
+			return '';
+		}
+		$preferred = '';
+		foreach ( flosc_lesson_catalog_basenames() as $i => $base ) {
+			$base = ltrim( (string) $base, '/' );
+			if ( $base === '' ) {
+				continue;
+			}
+			$path = flosc_config_file( $base );
+			if ( $i === 0 ) {
+				$preferred = $path;
+			}
+			// flosc_config_file returns plugin path even when missing; require real file for match.
+			if ( $path && file_exists( $path ) ) {
+				return $path;
+			}
+		}
+		return $preferred;
+	}
 }
 
 /**
@@ -926,49 +931,232 @@ if (!function_exists('flosc_resolve_lesson_catalog_path')) {
  *
  * @return string[] Absolute paths under flosc_data_dir(), or empty if uploads unavailable.
  */
-if (!function_exists('flosc_lesson_catalog_write_paths')) {
-    function flosc_lesson_catalog_write_paths() {
-        $dir = function_exists('flosc_data_dir') ? flosc_data_dir() : '';
-        if ($dir === '') {
-            return [];
-        }
-        $out = [];
-        foreach (flosc_lesson_catalog_basenames() as $base) {
-            $base = ltrim((string) $base, '/');
-            if ($base !== '') {
-                $out[] = $dir . $base;
-            }
-        }
-        return $out;
-    }
+if ( ! function_exists( 'flosc_lesson_catalog_write_paths' ) ) {
+	function flosc_lesson_catalog_write_paths() {
+		$dir = function_exists( 'flosc_data_dir' ) ? flosc_data_dir() : '';
+		if ( $dir === '' ) {
+			return array();
+		}
+		$out = array();
+		foreach ( flosc_lesson_catalog_basenames() as $base ) {
+			$base = ltrim( (string) $base, '/' );
+			if ( $base !== '' ) {
+				$out[] = $dir . $base;
+			}
+		}
+		return $out;
+	}
 }
 
-if (!function_exists('flosc_config_glob')) {
-    // Union of glob matches across uploads + plugin dirs, deduped by basename
-    // (uploads wins, since it is scanned first). $patterns is one pattern or a list.
-    function flosc_config_glob($patterns) {
-        $patterns = (array) $patterns;
-        $dirs     = [];
-        $base     = flosc_data_dir();
-        if ('' !== $base) {
-            $dirs[] = $base; // Uploads scanned first, so an edited copy wins.
-        }
-        $dirs[] = FLOSC_PLUGIN_DIR . 'ai_configuration_files/'; // Read-only shipped defaults.
-        $seen = [];
-        $out  = [];
-        foreach ($dirs as $dir) {
-            foreach ($patterns as $pattern) {
-                foreach (glob($dir . $pattern) ?: [] as $match) {
-                    $base = basename($match);
-                    if (isset($seen[$base])) {
-                        continue;
-                    }
-                    $seen[$base] = true;
-                    $out[] = $match;
-                }
-            }
-        }
-        return $out;
-    }
+if ( ! function_exists( 'flosc_config_glob' ) ) {
+	// Union of glob matches across uploads + plugin dirs, deduped by basename
+	// (uploads wins, since it is scanned first). $patterns is one pattern or a list.
+	function flosc_config_glob( $patterns ) {
+		$patterns = (array) $patterns;
+		$dirs     = array();
+		$base     = flosc_data_dir();
+		if ( '' !== $base ) {
+			$dirs[] = $base; // Uploads scanned first, so an edited copy wins.
+		}
+		$dirs[] = FLOSC_PLUGIN_DIR . 'ai_configuration_files/'; // Read-only shipped defaults.
+		$seen   = array();
+		$out    = array();
+		foreach ( $dirs as $dir ) {
+			foreach ( $patterns as $pattern ) {
+				foreach ( glob( $dir . $pattern ) ?: array() as $match ) {
+					$base = basename( $match );
+					if ( isset( $seen[ $base ] ) ) {
+						continue;
+					}
+					$seen[ $base ] = true;
+					$out[]         = $match;
+				}
+			}
+		}
+		return $out;
+	}
 }
 
+if ( ! function_exists( 'flosc_resolve_flow_option_key_for_ivr' ) ) {
+	function flosc_resolve_flow_option_key_for_ivr( $flosc_ivr_filename ) {
+		$flosc_ivr_filename = basename( (string) $flosc_ivr_filename );
+		$target_stem        = sanitize_key( pathinfo( $flosc_ivr_filename, PATHINFO_FILENAME ) );
+		$default_key        = 'flosc_flow_' . $target_stem;
+
+		// Start with deterministic default key and score it conservatively.
+		$best_key   = $default_key;
+		$best_score = -1;
+
+		// Scan flosc_flow_* (autoload=no) via cached prepared options scan.
+		$flosc_rows = function_exists( 'flosc_get_flow_option_rows' ) ? flosc_get_flow_option_rows() : array();
+		if ( ! is_array( $flosc_rows ) || empty( $flosc_rows ) ) {
+			return $default_key;
+		}
+
+		foreach ( $flosc_rows as $flosc_row ) {
+			$option_name = (string) ( $flosc_row['option_name'] ?? '' );
+			if ( $option_name === '' || strpos( $option_name, 'flosc_flow_' ) !== 0 ) {
+				continue;
+			}
+
+			$flosc_settings = maybe_unserialize( $flosc_row['option_value'] ?? '' );
+			if ( ! is_array( $flosc_settings ) ) {
+				continue;
+			}
+
+			$active          = basename( (string) ( $flosc_settings['active_ivr_file'] ?? '' ) );
+			$primary         = basename( (string) ( $flosc_settings['ivr_file'] ?? '' ) );
+			$matches_active  = ( $active !== '' && $active === $flosc_ivr_filename );
+			$matches_primary = ( $primary !== '' && $primary === $flosc_ivr_filename );
+
+			// Only consider keys that are explicitly tied to this IVR filename.
+			if ( ! $matches_active && ! $matches_primary && $option_name !== $default_key ) {
+				continue;
+			}
+
+			$message_count = 0;
+			if ( function_exists( 'flosc_flow_get_messages' ) && is_array( $flosc_settings ) ) {
+				$message_count = count( flosc_flow_get_messages( $flosc_settings ) );
+			} elseif ( isset( $flosc_settings['flow_messages'] ) && is_array( $flosc_settings['flow_messages'] ) ) {
+				$message_count = count( $flosc_settings['flow_messages'] );
+			}
+
+			$score = 0;
+			// Prefer rows explicitly bound to this IVR file over a plain default
+			// key, because legacy duplicate rows can leave default keys stale.
+			if ( $matches_primary ) {
+				$score += 2000;
+			}
+			if ( $matches_active ) {
+				$score += 1800;
+			}
+			if ( $option_name === $default_key ) {
+				$score += 200;
+			}
+			$score += min( $message_count, 200 );
+
+			if ( $score > $best_score ) {
+				$best_score = $score;
+				$best_key   = $option_name;
+			}
+		}
+
+		return $best_key;
+	}
+}
+
+if ( ! function_exists( 'flosc_da1_prune_flow_assignments' ) ) {
+	/**
+	 * Keep only the DA1 catalog attributions that name an actual flow.
+	 *
+	 * FLOSC flows are files named *_ivr.md. The same directory also holds this
+	 * plugin's own backups of them — *_ivr_bak_*.md and ivr-backup-*.md — and
+	 * those are not flows: Switch Flow has always refused to list them. An
+	 * earlier form of the v8 catalog migration walked every .md it found, so
+	 * those backups ended up stored as DA1 attributions and DA1 duly displayed
+	 * them, which is where the names nobody recognised came from.
+	 *
+	 * This drops those records and nothing else. Catalogs, .tsv uploads and
+	 * flow files are untouched; only the list saying which flow uses which
+	 * catalog is cleaned.
+	 *
+	 * @param mixed $assignments Stored flow => catalog-slug map.
+	 * @return array<string,array<int,string>>
+	 */
+	function flosc_da1_prune_flow_assignments( $assignments ) {
+		$clean = array();
+
+		if ( ! is_array( $assignments ) ) {
+			return $clean;
+		}
+
+		foreach ( $assignments as $flow => $catalogs ) {
+			$flow = sanitize_file_name( (string) $flow );
+
+			// A flow file, not a backup of one and not a stray .md.
+			if ( '' === $flow || ! preg_match( '/^[A-Za-z0-9._-]+_ivr\.md$/', $flow ) ) {
+				continue;
+			}
+
+			if ( ! is_array( $catalogs ) ) {
+				continue;
+			}
+
+			$slugs = array_values( array_unique( array_filter( array_map( 'sanitize_key', $catalogs ) ) ) );
+
+			if ( $slugs ) {
+				$clean[ $flow ] = $slugs;
+			}
+		}
+
+		return $clean;
+	}
+}
+
+if ( ! function_exists( 'flosc_flow_last_save_option' ) ) {
+	/**
+	 * Where one flow records when it was last saved from the Settings page.
+	 *
+	 * Its own option rather than a key inside the flow settings bag. That bag
+	 * is rebuilt from POST on every save, normalised on load, seeded when
+	 * partial, and promoted between flows — any of which can drop a key it does
+	 * not know about. A record of whether a write happened must not depend on
+	 * the write it is reporting on.
+	 *
+	 * @param string $ivr Flow file.
+	 * @return string Option name, or '' when the flow cannot be identified.
+	 */
+	function flosc_flow_last_save_option( $ivr ) {
+		$stem = sanitize_key( pathinfo( basename( (string) $ivr ), PATHINFO_FILENAME ) );
+
+		return '' === $stem ? '' : 'flosc_last_save_' . $stem;
+	}
+}
+
+if ( ! function_exists( 'flosc_stamp_flow_saved' ) ) {
+	/**
+	 * Record that this flow was just saved, and answer with the stamp.
+	 *
+	 * @param string $ivr Flow file.
+	 * @return string The stamp written, or '' when there was nowhere to write it.
+	 */
+	function flosc_stamp_flow_saved( $ivr ) {
+		$option = flosc_flow_last_save_option( $ivr );
+
+		if ( '' === $option ) {
+			return '';
+		}
+
+		// The helper lives with the AI code and is loaded at plugin boot, but a
+		// record of a save must not go missing because a require moved. The
+		// same format either way.
+		if ( function_exists( 'flosc_mts_utc' ) ) {
+			$stamp = flosc_mts_utc();
+		} else {
+			$now   = microtime( true );
+			$secs  = (int) floor( $now );
+			$ms    = min( 999, (int) round( ( $now - $secs ) * 1000 ) );
+			$zone  = ( 0 === (int) gmdate( 'Z', $secs ) ) ? 'UTC' : 'T';
+			$stamp = gmdate( 'Y\y-m\m-d\d-', $secs ) . $zone . '-'
+				. gmdate( 'H\h-i\m-s\s-', $secs ) . sprintf( '%03dms', $ms );
+		}
+
+		update_option( $option, $stamp, false );
+
+		return $stamp;
+	}
+}
+
+if ( ! function_exists( 'flosc_flow_last_saved_at' ) ) {
+	/**
+	 * When this flow was last saved from the Settings page, or ''.
+	 *
+	 * @param string $ivr Flow file.
+	 * @return string
+	 */
+	function flosc_flow_last_saved_at( $ivr ) {
+		$option = flosc_flow_last_save_option( $ivr );
+
+		return '' === $option ? '' : trim( (string) get_option( $option, '' ) );
+	}
+}

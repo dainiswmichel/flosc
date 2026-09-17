@@ -99,7 +99,7 @@ function flosc_guest_followup_was_sent( array $sent, $slot_id ) {
 	if ( in_array( $slot_id, $sent, true ) ) {
 		return true;
 	}
-	$slots = flosc_guest_followup_slots();
+	$slots  = flosc_guest_followup_slots();
 	$legacy = (string) ( $slots[ $slot_id ]['legacy_sent_key'] ?? '' );
 	if ( $legacy !== '' && in_array( $legacy, $sent, true ) ) {
 		return true;
@@ -137,7 +137,7 @@ function flosc_guest_followup_textarea_keys() {
 function flosc_guest_followup_template_ids() {
 	$ids = array( '', 'reengagement', 'guest_welcome' );
 	foreach ( flosc_guest_followup_slots() as $slot_id => $meta ) {
-		$ids[] = $slot_id;
+		$ids[]  = $slot_id;
 		$legacy = (string) ( $meta['legacy_prefix'] ?? '' );
 		if ( $legacy !== '' ) {
 			$ids[] = $legacy;

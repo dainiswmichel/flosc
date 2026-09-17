@@ -27,7 +27,7 @@ class FLOSC_Quiz_Registry {
 			return;
 		}
 		self::$quizzes = array(
-			'sample_assessment_quiz'        => new FLOSC_Sample_Assessment_Quiz(),
+			'sample_assessment_quiz'         => new FLOSC_Sample_Assessment_Quiz(),
 			'flosc_sample_data_numbers_quiz' => new FLOSC_Sample_Text_Based_Quiz(),
 		);
 	}

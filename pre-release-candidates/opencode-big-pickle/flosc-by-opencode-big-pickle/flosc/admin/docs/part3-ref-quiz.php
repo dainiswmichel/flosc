@@ -1,4 +1,4 @@
-<?php if (!defined('ABSPATH')) exit; // Part 3: Quiz System Reference — FLOSC Documentation ?>
+<?php if (!defined('ABSPATH')) { exit;} // Part 3: Quiz System Reference — FLOSC Documentation ?>
 
 <h1 id="ref-quiz">Part 3: Reference — Quiz System</h1>
 <p>The quiz system is a pluggable assessment engine. Each quiz type is a PHP class extending <code>FLOSC_Abstract_Quiz_Type</code>. The factory loads all registered types. The admin enables quizzes per-flow. Wrong answers map to WordPress content via TOPIC tags.</p>

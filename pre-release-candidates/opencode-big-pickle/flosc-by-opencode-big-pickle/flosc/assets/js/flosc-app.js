@@ -173,19 +173,19 @@ class floscApp {
     }
     
         // v9.2.7: Minimal fallback - only if DB completely fails
-        getFallbackMessages() {
-            this.logWarn('[FLOSC] Using emergency fallback - DB messages not loaded!');
-            return {
-                'emergency_fallback': {
-                    name: 'emergency_fallback',
-                    type: 'auto',
-                    phase: 'freeline',
-                    content: "Hi! How can I help you today?",
-                    conditions: 'always',
-                    style: 'default'
-                }
-            };
-        }
+	getFallbackMessages() {
+		this.logWarn('[FLOSC] Using emergency fallback - DB messages not loaded!');
+		return {
+			'emergency_fallback': {
+				name: 'emergency_fallback',
+				type: 'auto',
+				phase: 'freeline',
+				content: "Hi! How can I help you today?",
+				conditions: 'always',
+				style: 'default'
+			}
+		};
+	}
     
     /**
      * Load IVR messages from database via REST API (v9.2.7)
@@ -249,6 +249,27 @@ class floscApp {
     
     async init() {
         this.log('[FLOSC] Initializing app...');
+
+        // v10.1.0: Tell the companion parent this frame really is the FLOSC app.
+        // An HTTP error page satisfies the iframe 'load' event just as happily as
+        // the app does, which is how a reader ended up looking at a raw nginx 414
+        // inside a branded chat panel. Silence now means "not the app", and the
+        // parent rebuilds the frame. Sent first so a slow IVR fetch never reads
+        // as a failure.
+        if (window.self !== window.top) {
+            try {
+                let readyOrigin = '*';
+                if (document.referrer) {
+                    const ref = new URL(document.referrer, window.location.origin);
+                    if (/^https?:$/.test(ref.protocol)) {
+                        readyOrigin = ref.origin;
+                    }
+                }
+                window.parent.postMessage({ type: 'flosc_app_ready' }, readyOrigin);
+            } catch (e) {
+                // No parent access; the health check will rebuild once and stop.
+            }
+        }
 
         // v10.0.0: Record the entry flow in a host-global cookie (first visit only)
         // so logout can recall the per-flow logout destination. Server mirrors this
@@ -388,9 +409,19 @@ class floscApp {
                 } else {
                     this.log('[FLOSC] Continuing session - restoring visitor messages');
                     this.restoreVisitorMessages();
+                    // After the thread is back, so a recovered answer lands
+                    // under the message it answers.
+                    this.floscResumePendingTurn().catch(() => {});
                 }
             }
-            
+
+            if (this.state !== 'visitor') {
+                // A signed-in thread restores from the server, so there is no
+                // orphaned message to drop — the server wrote both halves. The
+                // answer is simply unread, and this is how it arrives.
+                this.floscResumePendingTurn().catch(() => {});
+            }
+
             // Member magic-link login: show confirmation as first message, with fresh chat
             if (this.config.memberLinkLogin) {
                 this.currentSession = null;          // ensure new session on first message
@@ -893,10 +924,10 @@ class floscApp {
                     visitor_session_id: sessionId
                 })
             });
-            if (!response.ok) {
-                const errText = await response.text().catch(() => '');
-                throw new Error(`grant HTTP ${response.status} ${errText}`.slice(0, 200));
-            }
+		if (!response.ok) {
+			const errText = await response.text().catch(() => '');
+			throw new Error(`grant HTTP ${response.status} ${errText}`.slice(0, 200));
+		}
             return response.json();
         };
 
@@ -1123,6 +1154,191 @@ class floscApp {
         }
     }
 
+    /*
+     * A turn that was in flight when the page went away.
+     *
+     * /flosc/v1/chat is an ordinary POST. Reloading mid-answer drops the
+     * browser's end of it while PHP runs to completion and writes the reply.
+     * The reply exists and nobody read it, and the restored thread held a
+     * visitor message with no assistant reply — which then went to the server
+     * as history, so the next turn read as a question the assistant had
+     * ignored and came back as scripted IVR copy on the same subject.
+     *
+     * The id is minted before the request leaves and cleared when the answer
+     * arrives. Anything still marked pending on the next page load is a turn
+     * whose outcome we do not know yet.
+     */
+    floscMintTurnId() {
+        try {
+            if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+                return window.crypto.randomUUID();
+            }
+        } catch (e) {
+            // Fall through to the manual form below.
+        }
+        const rand = () => Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
+        return `${rand()}${rand()}-${rand()}-${rand()}-${rand()}-${rand()}${rand()}${rand()}`;
+    }
+
+    floscMarkTurnPending(turnId, message) {
+        if (!turnId) return;
+        try {
+            this.writeVisitorJourneyItem('flosc_pending_turn', JSON.stringify({
+                turn_id: turnId,
+                message: String(message || '').substring(0, 2000),
+                at: Date.now(),
+            }));
+        } catch (e) {
+            // Storage is a convenience here; a turn that cannot be marked
+            // simply behaves the way it did before.
+        }
+    }
+
+    floscClearTurnPending() {
+        this._floscTurnId = null;
+        try {
+            this.removeVisitorJourneyItem('flosc_pending_turn');
+        } catch (e) {
+            // Ignore storage failures.
+        }
+    }
+
+    floscReadPendingTurn() {
+        try {
+            const raw = this.readVisitorJourneyItem('flosc_pending_turn');
+            if (!raw) return null;
+            const pending = JSON.parse(raw);
+            if (!pending || !pending.turn_id) return null;
+            // Older than a day is not a turn anyone is still waiting on.
+            if (pending.at && (Date.now() - Number(pending.at)) > 86400000) {
+                this.removeVisitorJourneyItem('flosc_pending_turn');
+                return null;
+            }
+            return pending;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    /*
+     * Ask the server what became of a turn we stopped listening to.
+     *
+     * Recovered: the answer was written, so show it and save it — the visitor
+     * gets the reply they reloaded away from. Not recovered: nothing was
+     * written, so drop the orphaned visitor message rather than sending half a
+     * turn as history on the next request.
+     */
+    async floscResumePendingTurn() {
+        const pending = this.floscReadPendingTurn();
+        if (!pending) return;
+
+        this.removeVisitorJourneyItem('flosc_pending_turn');
+
+        let data = null;
+        try {
+            const response = await this.authFetch(this.config.apiUrl + '/chat', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-WP-Nonce': this.config.nonce
+                },
+                body: JSON.stringify({
+                    resume_turn_id: pending.turn_id,
+                    flow_id: this.config?.flowId || '',
+                    journey_id: this.readVisitorJourneyItem('flosc_journey_id') || '',
+                })
+            });
+            data = await response.json();
+        } catch (e) {
+            this.logWarn('[FLOSC] Could not resolve the interrupted turn:', e);
+            // Unresolved is the one case where the orphan must still go, or the
+            // next request carries the half-turn this whole path exists to stop.
+            this.floscDropOrphanVisitorMessage(pending.message);
+            return;
+        }
+
+        if (data && data.recovered && data.message) {
+            /*
+             * The reply exists on the server. Whether it is already on screen
+             * depends on who is asking.
+             *
+             * A signed-in turn is written to the session by PHP — both halves,
+             * together, before the browser ever receives the response — so a
+             * reload restores the complete pair and appending the recovered
+             * reply says the same thing twice. That is what a live tester saw:
+             * "you glitched a tiny bit refreshing while waiting", and the model
+             * itself noticed, calling it an echo.
+             *
+             * An anonymous turn has no server session. The client writes the
+             * assistant message only after the fetch resolves, so a reload
+             * loses it and recovery is the only way it arrives.
+             *
+             * One check covers both: if it is already in the thread, leave it.
+             */
+            if (this.floscAssistantAlreadyInThread(String(data.message))) {
+                this.log('[FLOSC] The interrupted answer was already restored; not repeating it.');
+                return;
+            }
+
+            this.log('[FLOSC] Recovered the answer written while the page was reloading.');
+            const html = this.formatMarkdown(String(data.message));
+            this.addMessage('assistant', html, true);
+            if (this.state === 'visitor') {
+                this.saveVisitorMessage('assistant', html);
+            }
+            return;
+        }
+
+        this.log('[FLOSC] The interrupted turn never completed; dropping its unanswered message.');
+        this.floscDropOrphanVisitorMessage(pending.message);
+    }
+
+    /*
+     * Is this assistant text already on screen?
+     *
+     * Compared as normalised plain text, because the same reply renders
+     * differently depending on how it arrived — markdown converted here,
+     * HTML restored from a session, entities decoded by the browser.
+     */
+    floscAssistantAlreadyInThread(text) {
+        const candidate = this._normalizeAssistantPlain(text);
+        if (!candidate) {
+            return false;
+        }
+        const root = this.chatMessages || document.getElementById('flosc_app_messages');
+        if (!root) {
+            return false;
+        }
+        const nodes = root.querySelectorAll('.message-content, .flosc-message-content, .message.assistant, [data-role="assistant"]');
+        for (const el of nodes) {
+            if (this._normalizeAssistantPlain(el.textContent || el.innerText || '') === candidate) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /*
+     * Remove a trailing visitor message that never got an answer. Only the
+     * last one, and only if it is the message we were waiting on — an earlier
+     * unanswered message is somebody else's problem and not ours to rewrite.
+     */
+    floscDropOrphanVisitorMessage(message) {
+        if (this.state !== 'visitor' || !message) return;
+        try {
+            const stored = JSON.parse(this.readVisitorJourneyItem('flosc_visitor_messages') || '[]');
+            if (!Array.isArray(stored) || !stored.length) return;
+            const last = stored[stored.length - 1];
+            if (last && last.role === 'user' && String(last.content || '') === String(message)) {
+                stored.pop();
+                this.writeVisitorJourneyItem('flosc_visitor_messages', JSON.stringify(stored));
+            }
+        } catch (e) {
+            this.logWarn('[FLOSC] Could not drop the unanswered message:', e);
+        }
+    }
+
     removeVisitorJourneyItem(base) {
         try {
             localStorage.removeItem(this.visitorJourneyKey(base));
@@ -1173,6 +1389,30 @@ class floscApp {
         }
     }
 
+    /**
+     * v10.1.0: Collect a handoff pack parked in sessionStorage.
+     *
+     * The pack used to travel as base64 in the query string. At 8000 characters
+     * plus the context params it exceeded nginx's request-line limit, and the
+     * reader was shown "414 Request-URI Too Large" inside the chat panel. The URL
+     * now carries only flosc_handoff_ref=1 and the payload waits here.
+     *
+     * Read-once: cleared as soon as it is taken, so a reload cannot replay it.
+     *
+     * @return {string} Base64 pack, or an empty string.
+     */
+    readStashedHandoffPack() {
+        try {
+            const raw = window.sessionStorage.getItem('flosc_handoff_pack');
+            if (raw) {
+                window.sessionStorage.removeItem('flosc_handoff_pack');
+            }
+            return String(raw || '');
+        } catch (e) {
+            return '';
+        }
+    }
+
     decodeSessionHandoffPayload(encoded) {
         try {
             if (!encoded) {
@@ -1196,6 +1436,10 @@ class floscApp {
             const payload = {
                 kind: 'visitor',
                 sessionId: String(this.getVisitorSessionId() || '').slice(0, 80),
+                // Carried across the handoff so a conversation that moves between
+                // floscDomains (different origins, so different localStorage) stays
+                // one thread in Chat Logs.
+                journeyId: String(this.getJourneyId() || '').slice(0, 64),
                 messages: []
             };
             try {
@@ -1229,6 +1473,7 @@ class floscApp {
             const visitorFallback = {
                 kind: 'visitor',
                 sessionId: String(this.getVisitorSessionId() || '').slice(0, 80),
+                journeyId: String(this.getJourneyId() || '').slice(0, 64),
                 messages: []
             };
             try {
@@ -1245,6 +1490,7 @@ class floscApp {
         return {
             kind: 'user',
             sessionId: serverId.slice(0, 80),
+            journeyId: String(this.getJourneyId() || '').slice(0, 64),
             messages: []
         };
     }
@@ -1286,7 +1532,7 @@ class floscApp {
         try {
             const url = new URL(window.location.href);
             let changed = false;
-            ['flosc_visitor_session', 'flosc_handoff', 'flosc_session_id'].forEach((key) => {
+            ['flosc_visitor_session', 'flosc_handoff', 'flosc_handoff_ref', 'flosc_session_id'].forEach((key) => {
                 if (url.searchParams.has(key)) {
                     url.searchParams.delete(key);
                     changed = true;
@@ -1315,11 +1561,26 @@ class floscApp {
             }
 
             const sid = String(params.get('flosc_visitor_session') || '').trim();
-            const encoded = String(params.get('flosc_handoff') || '').trim();
+            // Stash first; the query-string form stays supported so links already
+            // in flight when this shipped still restore their thread.
+            const stashed = (params.get('flosc_handoff_ref') === '1')
+                ? this.readStashedHandoffPack()
+                : '';
+            const encoded = stashed || String(params.get('flosc_handoff') || '').trim();
 
             if (encoded) {
                 const payload = this.decodeSessionHandoffPayload(encoded);
                 if (payload && typeof payload === 'object') {
+                    // Adopt the originating page's journey before anything logs a
+                    // turn here, so the thread continues instead of forking.
+                    const payloadJourney = String(payload.journeyId || '')
+                        .replace(/[^A-Za-z0-9_-]/g, '')
+                        .slice(0, 64);
+                    if (payloadJourney) {
+                        this._journeyId = payloadJourney;
+                        this.writeVisitorJourneyItem('flosc_journey_id', payloadJourney);
+                    }
+
                     const payloadSid = String(payload.sessionId || '').trim();
                     const effectiveSid = payloadSid || sid;
                     if (effectiveSid) {
@@ -1436,8 +1697,15 @@ class floscApp {
                 ...payload,
                 messages: Array.isArray(payload.messages) ? payload.messages.slice(-10) : []
             });
-            if (packed && packed.length <= 8000) {
-                url.searchParams.set('flosc_handoff', packed);
+            // v10.1.0: park it, mark it. A transcript in the query string is what
+            // produced the 414 the reader used to see inside the panel.
+            if (packed) {
+                try {
+                    window.sessionStorage.setItem('flosc_handoff_pack', packed);
+                    url.searchParams.set('flosc_handoff_ref', '1');
+                } catch (e) {
+                    this.logWarn('[FLOSC] Could not stash handoff pack:', e);
+                }
             }
             return;
         }
@@ -1686,6 +1954,52 @@ class floscApp {
             this._persistVisitorSessionCookie(this._visitorSessionId);
             return this._visitorSessionId;
         }
+    }
+
+    /**
+     * Opaque id for one conversation, from first message to logout.
+     *
+     * session_id is not stable across the journey: a visitor sends the opaque
+     * flosc_visitor_session id, which the server hashes into an int, and the
+     * moment they log in the client switches to this.currentSession.id (a small
+     * numeric user-meta session id). Chat Logs group by session_id, so one
+     * conversation used to break into two threads at login, and client-UI turns
+     * (free lesson list, offer card, gate denial) sent session_id 0 and landed in
+     * a shared bucket with every other visitor's.
+     *
+     * This id is minted once, stored under its own key, and sent on every logged
+     * turn before and after login, so the whole conversation stays one thread.
+     * Kept separate from flosc_visitor_session on purpose: reading that one mints
+     * a visitor session cookie and a visitor token grant as a side effect, which
+     * a logged-in member must not get.
+     *
+     * Cleared by clearClientAuth() (logout) and restartChat(), so the next
+     * conversation is a new journey.
+     */
+    getJourneyId() {
+        if (this._journeyId) {
+            return this._journeyId;
+        }
+        try {
+            let id = this.readVisitorJourneyItem('flosc_journey_id');
+            if (!id) {
+                id = this._mintOpaqueVisitorSessionId();
+                this.writeVisitorJourneyItem('flosc_journey_id', id);
+            }
+            this._journeyId = String(id).slice(0, 64);
+            return this._journeyId;
+        } catch (e) {
+            // Storage unavailable: keep a stable id for this page lifetime so the
+            // turns logged on this page still group together.
+            this._journeyId = String(this._mintOpaqueVisitorSessionId()).slice(0, 64);
+            return this._journeyId;
+        }
+    }
+
+    /** Start a new journey: the next logged turn opens a fresh Chat Logs thread. */
+    resetJourneyId() {
+        this._journeyId = null;
+        this.removeVisitorJourneyItem('flosc_journey_id');
     }
 
     /**
@@ -3004,6 +3318,16 @@ class floscApp {
         content = content.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
         content = content.replace(/~~([^~]+)~~/g, '<del>$1</del>');
 
+        // Line breaks arrive three ways and must all render. Catalog rows and
+        // IVR messages store a literal backslash-n; the admin editor produces
+        // real newlines; older saved messages contain <br>. A visitor reading
+        // "\n" in a chat bubble is seeing a renderer bug, not a model mistake.
+        content = content
+            .replace(/\\n/g, '\n')
+            .replace(/<br\s*\/?>/gi, '\n')
+            .replace(/\r\n?/g, '\n')
+            .replace(/\n/g, '<br>');
+
         const isWelcomeMessage = !!(msg && msg.name && String(msg.name).includes('welcome'));
         if (this.state === 'visitor' && isWelcomeMessage && !/flosc-welcome-badge/i.test(content)) {
             const productName = this.config.personalityName || this.config.productName || 'FLOSC';
@@ -3739,33 +4063,33 @@ class floscApp {
     renderOfferByFormat(msg, offer, displayFormat) {
         // v1.6.2: Error boundary for offer rendering
         try {
-        switch (displayFormat) {
-            case 'pill':
-                this.showOfferPill(msg, offer);
-                break;
-            case 'compact':
-                this.showOfferCompact(msg, offer);
-                break;
-            case 'banner':
-                this.showOfferBanner(msg, offer);
-                break;
-            case 'featured':
-                this.showOfferFeatured(msg, offer);
-                break;
-            case 'text':
-                this.showOfferText(msg, offer);
-                break;
-            case 'inline-checkout':
-                this.showInlineCheckout(msg, offer);
-                break;
-            case 'card':
-            default:
-                this.showOfferCard(msg, offer);
-                break;
-        }
+			switch (displayFormat) {
+				case 'pill':
+					this.showOfferPill(msg, offer);
+					break;
+				case 'compact':
+					this.showOfferCompact(msg, offer);
+					break;
+				case 'banner':
+					this.showOfferBanner(msg, offer);
+					break;
+				case 'featured':
+					this.showOfferFeatured(msg, offer);
+					break;
+				case 'text':
+					this.showOfferText(msg, offer);
+					break;
+				case 'inline-checkout':
+					this.showInlineCheckout(msg, offer);
+					break;
+				case 'card':
+				default:
+					this.showOfferCard(msg, offer);
+					break;
+			}
         
-        // Track via API
-        this.trackOfferShown(msg.offer_id, displayFormat);
+			// Track via API
+			this.trackOfferShown(msg.offer_id, displayFormat);
         } catch (e) {
             // v1.6.2: A render error must not halt the whole app
             this.logError('[FLOSC-OFFER] Render error for', msg.offer_id, 'format:', displayFormat, e);
@@ -4035,14 +4359,14 @@ class floscApp {
                     ${this.escapeHtml(String(ctaText))}${price ? ` <span class="flosc-offer-cta-price">${this.escapeHtml(String(price))}</span>` : ''}
                 </button>
                 ${guarantee ? `<div class="flosc-offer-guarantee">${this.escapeHtml(guarantee)}</div>` : ''}
-            </div>
-        `;
+				</div>
+				`;
 
-        this.addMessage('assistant', offerHtml, true);
-        if (timerSeconds > 0) {
-            this.startOfferTimer(msg.offer_id, timerSeconds);
-        }
-        this.bindOfferEvents(msg);
+				this.addMessage('assistant', offerHtml, true);
+				if (timerSeconds > 0) {
+					this.startOfferTimer(msg.offer_id, timerSeconds);
+				}
+				this.bindOfferEvents(msg);
     }
     
     // Format: PILL (compact inline)
@@ -4113,14 +4437,14 @@ class floscApp {
                 <button class="flosc-offer-banner-cta" data-action="checkout_${msg.offer_id}">
                     ${this.escapeHtml(String(ctaText))}
                 </button>
-            </div>
-        `;
+				</div>
+				`;
         
-        this.addMessage('assistant', bannerHtml, true);
-        if (timerSeconds > 0) {
-            this.startOfferTimer(msg.offer_id, timerSeconds);
-        }
-        this.bindOfferEvents(msg);
+				this.addMessage('assistant', bannerHtml, true);
+				if (timerSeconds > 0) {
+					this.startOfferTimer(msg.offer_id, timerSeconds);
+				}
+				this.bindOfferEvents(msg);
     }
     
     // Format: FEATURED (large prominent card) — fully driven by Offers registry (WPDB)
@@ -4154,9 +4478,9 @@ class floscApp {
                     </div>
                 `).join('')}
             </div>
-        ` : '';
+			` : '';
 
-        const featuredHtml = `
+			const featuredHtml = `
             <div class="flosc-offer-featured" data-offer-id="${this.escapeHtml(String(msg.offer_id || offer?.id || ''))}">
                 <button class="flosc-offer-close" aria-label="Dismiss">×</button>
                 ${badge ? `<div class="flosc-offer-featured-badge">${this.escapeHtml(badge)}</div>` : ''}
@@ -4173,10 +4497,10 @@ class floscApp {
                 </button>
                 ${guarantee ? `<div class="flosc-offer-featured-guarantee">${this.escapeHtml(guarantee)}</div>` : ''}
             </div>
-        `;
+			`;
 
-        this.addMessage('assistant', featuredHtml, true);
-        this.bindOfferEvents(msg);
+			this.addMessage('assistant', featuredHtml, true);
+			this.bindOfferEvents(msg);
     }
     
     // Format: TEXT (simple inline text)
@@ -4556,10 +4880,15 @@ class floscApp {
         
         return text
             .replace(/{name}/g, ctx.name || 'there')
+            .replace(/{personality_name}/g, this.config?.personalityName || 'FLOSC')
+            .replace(/{personality_role}/g, this.config?.personalityRole || '')
+            .replace(/{flow_name}/g, this.config?.flowDisplayName || '')
+            .replace(/{public_title}/g, ctx.title || '')
             .replace(/{score}/g, ctx.score || '0')
             .replace(/{product_name}/g, ctx.product_name || 'the course')
             .replace(/{title}/g, ctx.title || ctx.product_name || 'the course')
             .replace(/{tagline}/g, ctx.tagline || '')
+            .replace(/{site_name}/g, this.config?.siteName || '')
             .replace(/{price}/g, ctx.price || '')
             .replace(/{discount_price}/g, ctx.discount_price || '')
             .replace(/{timer_remaining}/g, ctx.timer_remaining || '60:00')
@@ -4734,13 +5063,13 @@ class floscApp {
                 // v10.0.0: Admin-configurable farewell message (per-flow). Falls back
                 // to a neutral default built from the product name.
                 let farewell = String(this.config?.logoutFarewell || '').trim();
-                if (farewell) {
-                    farewell = farewell.replace(/\{product_name\}/g, productLabel);
-                } else {
-                    farewell = productLabel
-                        ? `See you later — thanks for learning with ${productLabel}!`
-                        : 'See you later!';
-                }
+			if (farewell) {
+				farewell = farewell.replace(/\{product_name\}/g, productLabel);
+			} else {
+				farewell = productLabel
+					? `See you later — thanks for learning with ${productLabel}!`
+					: 'See you later!';
+			}
                 this.addMessage('assistant', farewell);
                 const ajaxLogoutUrl = this.config.ajaxUrl || '/wp-admin/admin-ajax.php';
                 const serverLogoutUrl = this.config.logoutUrl || (this.config.appUrl || '/');
@@ -4750,17 +5079,72 @@ class floscApp {
                 });
 
                 const redirectAfterLogout = (targetUrl) => {
+                    // v10.1.0: In companion mode the iframe must not navigate itself —
+                    // that leaves the bubble open on a stale document showing the
+                    // previous account holder's conversation. Hand the teardown to
+                    // the parent, which closes the bubble and repaints the host.
+                    if (window.self !== window.top) {
+                        try {
+                            let targetOrigin = '*';
+                            if (document.referrer) {
+                                const ref = new URL(document.referrer, window.location.origin);
+                                if (/^https?:$/.test(ref.protocol)) {
+                                    targetOrigin = ref.origin;
+                                }
+                            }
+                            window.parent.postMessage({
+                                type: 'flosc_companion_logout_complete',
+                                redirect: String(targetUrl || '')
+                            }, targetOrigin);
+                            return;
+                        } catch (e) {
+                            this.logWarn('[FLOSC Auth] Could not hand logout to companion parent:', e);
+                        }
+                    }
+
                     setTimeout(() => {
                         window.location.href = targetUrl || (this.config.appUrl || '/');
                     }, 2000);
                 };
+
+                // v10.1.0: Logout is a teardown, not a relabel. Every device-held
+                // trace of this person goes, so the next opener starts as a genuinely
+                // new visitor. Nothing here recognises anyone: a returning member gets
+                // their history back the ordinary way, by logging in again.
                 const clearClientAuth = () => {
                     this.authToken = '';
                     this.config.authToken = '';
+                    this.currentSession = null;
+                    this._visitorSessionId = null;
+
                     try {
                         localStorage.removeItem('flosc_auth_token');
                     } catch (e) {
                         this.logWarn('[FLOSC Auth] Could not clear browser auth token:', e);
+                    }
+
+                    try {
+                        localStorage.removeItem(this.getActiveChatSessionStorageKey());
+                    } catch (e) {
+                        this.logWarn('[FLOSC Auth] Could not clear active chat session key:', e);
+                    }
+
+                    // Clean slate: the device keeps nothing. Transcript and anonymous
+                    // visitor id both go, so the next opener is a new visitor in every
+                    // sense -- not because anything was detected about them, but because
+                    // nothing was kept. A returning member gets their history back the
+                    // ordinary way, by logging in again; it lives on the account, not
+                    // here. The cost is that a new visitor id draws a fresh token grant,
+                    // which is bounded by per-flow spend limits, not by device state.
+                    try {
+                        this.removeVisitorJourneyItem('flosc_visitor_messages');
+                        this.removeVisitorJourneyItem('flosc_visitor_session');
+                        // Ends the Chat Logs thread too: whoever opens the widget
+                        // next starts a new conversation, not a continuation of the
+                        // one that just logged out.
+                        this.resetJourneyId();
+                    } catch (e) {
+                        this.logWarn('[FLOSC Auth] Could not clear visitor journey keys:', e);
                     }
                 };
 
@@ -4844,7 +5228,7 @@ class floscApp {
                 } else if (action.startsWith('checkout_')) {
                     const offerId = action.replace('checkout_', '');
                     this.openCheckout(offerId);
-                // v1.4.0: Product-specific sandbox purchase
+					// v1.4.0: Product-specific sandbox purchase
                 } else if (action.startsWith('sandbox_purchase_')) {
                     const productId = action.replace('sandbox_purchase_', '');
                     if (this._sandboxPurchaseAllowed()) {
@@ -6250,6 +6634,28 @@ class floscApp {
         }, 50);
     }
 
+    _canHearQuizAudio() {
+        return this.state === 'member' || this.state === 'admin';
+    }
+
+    _announceQuizAudioAccess() {
+        if (this.state === 'visitor') {
+            return;
+        }
+        if (this._canHearQuizAudio()) {
+            const base = String(this.config.profileUrl || '').replace(/\/?$/, '/');
+            if (base && base !== '/') {
+                this.addMessage(
+                    'assistant',
+                    'Listen to your recordings on your <a href="' + this.escapeHtml(base + 'flosc_quiz_tab/') + '">Quiz Results</a> tab.',
+                    true
+                );
+            }
+            return;
+        }
+        this.addMessage('assistant', 'Your recordings are saved. Become a member to listen to them.', false);
+    }
+
     showIpaPhraseResult(data, audioUrl, phrase, phraseNum) {
         const words = data.words || [{ word: data.target_text, expected_ipa: data.expected_ipa, phonemes: data.phonemes }];
         const allPh = words.flatMap(w => w.phonemes);
@@ -6264,7 +6670,9 @@ class floscApp {
 
         let h = `<div class="flosc-ipa-result">`;
         h += `<div class="flosc-ipa-result-header"><span class="flosc-ipa-result-phrase">Phrase ${phraseNum}: ${this.escapeHtml(phrase)}</span></div>`;
-        h += `<div class="flosc-ipa-playback"><audio controls src="${audioUrl}"></audio></div>`;
+        if (this._canHearQuizAudio() && audioUrl) {
+            h += `<div class="flosc-ipa-playback"><audio controls src="${audioUrl}"></audio></div>`;
+        }
         h += `<div class="flosc-ipa-summary-line">${words.length} word${words.length > 1 ? 's' : ''}, ${total} phonemes &middot; avg ${(avg * 100).toFixed(0)}% &middot; <span class="flosc-ipa-c-high">${high} HIGH</span> &middot; <span class="flosc-ipa-c-med">${med} MED</span> &middot; <span class="flosc-ipa-c-low">${low} LOW</span></div>`;
 
         words.forEach(w => {
@@ -6342,7 +6750,10 @@ class floscApp {
 
         const introMsg = this.config.audioQuizResultsMessage || 'Welcome! Here are your assessment results.';
         this.addMessage('assistant', introMsg, false);
-        setTimeout(() => { this.addMessage('assistant', summary, true); }, 200);
+        setTimeout(() => {
+            this.addMessage('assistant', summary, true);
+            this._announceQuizAudioAccess();
+        }, 200);
 
         // Per-phrase accordions — each phrase is a collapsible <details> block
         setTimeout(() => {
@@ -6396,28 +6807,28 @@ class floscApp {
             // Upsell message — configurable, with ranked phoneme placeholders
             const ranked = result.rankedPhonemes || [];
             const upsellTpl = this.config.audioQuizUpsellMessage || '';
-            if (upsellTpl && ranked.length >= 4) {
-                const upsellMsg = upsellTpl
-                    .replace('{1st}', ranked[0] || '')
-                    .replace('{2nd}', ranked[1] || '')
-                    .replace('{3rd}', ranked[2] || '')
-                    .replace('{4th}', ranked[3] || '');
-                setTimeout(() => {
-                    this.addMessage('assistant', upsellMsg, false);
+		if (upsellTpl && ranked.length >= 4) {
+			const upsellMsg = upsellTpl
+				.replace('{1st}', ranked[0] || '')
+				.replace('{2nd}', ranked[1] || '')
+				.replace('{3rd}', ranked[2] || '')
+				.replace('{4th}', ranked[3] || '');
+			setTimeout(() => {
+				this.addMessage('assistant', upsellMsg, false);
                 }, 300);
-            }
+		}
 
             // Congratulations message — after accordions and upsell
             const freeCount = parseInt(this.user?.freeLessonsCount) || 0;
-            if (freeCount > 0 && this.state === 'guest') {
-                const lessonWord = freeCount === 1 ? 'lesson' : 'lessons';
-                setTimeout(() => {
-                    this.addMessage('assistant', `🎉 Congratulations! You have been granted access to <strong>${freeCount}</strong> free ${lessonWord} — you can try them out right here in this chat!`, true);
-                    setTimeout(() => this.floscShowUserAutoPrompts(), 500);
+		if (freeCount > 0 && this.state === 'guest') {
+			const lessonWord = freeCount === 1 ? 'lesson' : 'lessons';
+			setTimeout(() => {
+				this.addMessage('assistant', `🎉 Congratulations! You have been granted access to <strong>${freeCount}</strong> free ${lessonWord} — you can try them out right here in this chat!`, true);
+				setTimeout(() => this.floscShowUserAutoPrompts(), 500);
                 }, 600);
-            } else {
-                setTimeout(() => this.floscShowUserAutoPrompts(), 500);
-            }
+		} else {
+			setTimeout(() => this.floscShowUserAutoPrompts(), 500);
+		}
         }, 500);
     }
 
@@ -6467,6 +6878,7 @@ class floscApp {
 
             h += `</div>`;
             this.addMessage('assistant', h, true);
+            this._announceQuizAudioAccess();
 
             // Admin detail: per-phrase accordion with word-level phoneme scores
             if (this.state === 'admin' || (this.user && this.user.isAdmin)) {
@@ -6588,7 +7000,7 @@ class floscApp {
                         { key: 'D', text: 'Advanced' }
                     ],
                     correct: null // No wrong answers for assessment
-                },
+			},
                 {
                     id: 'q2',
                     text: 'How much time can you dedicate to practice each week?',
@@ -6599,7 +7011,7 @@ class floscApp {
                         { key: 'D', text: 'More than 5 hours' }
                     ],
                     correct: null
-                },
+			},
                 {
                     id: 'q3',
                     text: 'What is your primary goal?',
@@ -6610,7 +7022,7 @@ class floscApp {
                         { key: 'D', text: 'Just curious to learn' }
                     ],
                     correct: null
-                }
+			}
             ],
             currentIndex: 0,
             answers: [],
@@ -6894,7 +7306,7 @@ class floscApp {
                         </button>
                     `).join('')}
                 </div>
-            `;
+				`;
         }
         
         const modalHtml = `
@@ -7460,18 +7872,18 @@ class floscApp {
                     `).join('')}
                 </div>
                 ${hasMore ? `<button class="flosc-load-more-btn flosc-load-more-btn-inline" data-list-id="${listId}">Show more (${sorted.length - PAGE_SIZE} remaining)</button>` : ''}
-            </div>
-        `;
-        this.addMessage('assistant', listHtml, true);
+				</div>
+				`;
+				this.addMessage('assistant', listHtml, true);
 
-        if (hasMore) {
-            this._lessonListData = this._lessonListData || {};
-            this._lessonListData[listId] = { lessons: sorted, shown: PAGE_SIZE };
-            setTimeout(() => {
-                const btn = document.querySelector(`[data-list-id="${listId}"]`);
-                if (btn) btn.addEventListener('click', () => this._loadMoreLessons(listId));
-            }, 100);
-        }
+				if (hasMore) {
+					this._lessonListData = this._lessonListData || {};
+					this._lessonListData[listId] = { lessons: sorted, shown: PAGE_SIZE };
+					setTimeout(() => {
+						const btn = document.querySelector(`[data-list-id="${listId}"]`);
+						if (btn) btn.addEventListener('click', () => this._loadMoreLessons(listId));
+					}, 100);
+				}
     }
 
     _loadMoreLessons(listId) {
@@ -7792,10 +8204,10 @@ class floscApp {
                 header: `📚 Lessons: ${displayTopic}`,
                 countLabel: 'found'
             });
-        } catch (e) {
-            this.logError('[FLOSC] openFilteredLessons failed:', e);
-            this.addMessage('assistant', '❌ Could not search lessons. Please try again.');
-        }
+			} catch (e) {
+				this.logError('[FLOSC] openFilteredLessons failed:', e);
+				this.addMessage('assistant', '❌ Could not search lessons. Please try again.');
+			}
     }
 
     // v8.0.0: Open a single lesson by its number ("show me lesson 2").
@@ -7845,10 +8257,10 @@ class floscApp {
                 return;
             }
             this.renderLessonList(lessons);
-        } catch (e) {
-            this.logError('[FLOSC] openQuizLessons failed:', e);
-            this.addMessage('assistant', '❌ Could not load quiz lessons. Please try again.');
-        }
+			} catch (e) {
+				this.logError('[FLOSC] openQuizLessons failed:', e);
+				this.addMessage('assistant', '❌ Could not load quiz lessons. Please try again.');
+			}
     }
 
     // Show sample topics covered by the assessment quiz (generic placeholders).
@@ -7860,29 +8272,29 @@ class floscApp {
             id.includes('sample_assessment') || id.includes('assessment') || id.includes('quiz')
         );
 
-        if (hasAssessment) {
-            const quizProduct = String(this.config?.personalityName || this.config?.productName || 'This flow').trim();
-            const html = `
-                <div class="flosc-quiz-topics">
-                    <h3>${this.escapeHtml(quizProduct)} — Sample topics (replace in Quiz admin)</h3>
-                    <ol class="flosc-quiz-topic-list">
-                        <li><strong>Topic 1</strong> — Getting started</li>
-                        <li><strong>Topic 2</strong> — Core ideas</li>
-                        <li><strong>Topic 3</strong> — Practice basics</li>
-                        <li><strong>Topic 4</strong> — Common mistakes</li>
-                        <li><strong>Topic 5</strong> — Building habits</li>
-                        <li><strong>Topic 6</strong> — Intermediate skills</li>
-                        <li><strong>Topic 7</strong> — Applying skills</li>
-                        <li><strong>Topic 8</strong> — Feedback loops</li>
-                        <li><strong>Topic 9</strong> — Advanced practice</li>
-                        <li><strong>Topic 10</strong> — Next steps</li>
-                    </ol>
-                    <p>These labels are sample defaults. Your flow's real topics come from quiz content and content gates you configure.</p>
-                </div>`;
-            this.addMessage('assistant', html, true);
-        } else {
-            this.addMessage('assistant', 'Ask me about any quiz topic configured for this flow.');
-        }
+	if (hasAssessment) {
+		const quizProduct = String(this.config?.personalityName || this.config?.productName || 'This flow').trim();
+		const html = `
+			<div class="flosc-quiz-topics">
+				<h3>${this.escapeHtml(quizProduct)} — Sample topics (replace in Quiz admin)</h3>
+				<ol class="flosc-quiz-topic-list">
+					<li><strong>Topic 1</strong> — Getting started</li>
+					<li><strong>Topic 2</strong> — Core ideas</li>
+					<li><strong>Topic 3</strong> — Practice basics</li>
+					<li><strong>Topic 4</strong> — Common mistakes</li>
+					<li><strong>Topic 5</strong> — Building habits</li>
+					<li><strong>Topic 6</strong> — Intermediate skills</li>
+					<li><strong>Topic 7</strong> — Applying skills</li>
+					<li><strong>Topic 8</strong> — Feedback loops</li>
+					<li><strong>Topic 9</strong> — Advanced practice</li>
+					<li><strong>Topic 10</strong> — Next steps</li>
+				</ol>
+				<p>These labels are sample defaults. Your flow's real topics come from quiz content and content gates you configure.</p>
+			</div>`;
+		this.addMessage('assistant', html, true);
+	} else {
+		this.addMessage('assistant', 'Ask me about any quiz topic configured for this flow.');
+	}
     }
 
     openSupport() {
@@ -8275,15 +8687,15 @@ class floscApp {
         this.updateIVRContext();
         const ctx = this.ivr.context;
         const status = `
-**IVR Status (v07.08)**
-Phase: ${this.ivr.phase}
-Messages: ${this.ivr.messageCount}
-Session: ${ctx.session_minutes}m ${ctx.session_seconds % 60}s
-Logged in: ${ctx.logged_in}
-Quiz taken: ${ctx.quiz_taken}
-Score: ${ctx.score}%
-Lesson viewed: ${ctx.lesson_viewed}
-Purchased: ${ctx.purchased}
+		**IVR Status (v07.08)**
+		Phase: ${this.ivr.phase}
+		Messages: ${this.ivr.messageCount}
+		Session: ${ctx.session_minutes}m ${ctx.session_seconds % 60}s
+		Logged in: ${ctx.logged_in}
+		Quiz taken: ${ctx.quiz_taken}
+		Score: ${ctx.score}%
+		Lesson viewed: ${ctx.lesson_viewed}
+		Purchased: ${ctx.purchased}
         `.trim();
         this.addMessage('assistant', status.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>'));
     }
@@ -8459,8 +8871,19 @@ Purchased: ${ctx.purchased}
                     }
 
                     // Prevent duplicate wrappers when a message is re-rendered.
-                    const existingWrap = a.parentElement
-                        ? Array.from(a.parentElement.querySelectorAll('.flosc-oembed-wrap')).find(function(node) {
+                    // v10.1.0: scope the check to the whole message, not just the
+                    // anchor's immediate parent. A redraw -- restoring a thread after
+                    // a companion/full-page handoff, or re-rendering on resize --
+                    // rebuilds the anchor as a fresh node with no floscEmbedded flag,
+                    // and the earlier wrapper often sits in a sibling paragraph where
+                    // a parentElement-scoped lookup cannot see it. That produced two
+                    // players for one link, which for a TikTok music post reads as the
+                    // song caption printed twice.
+                    const dedupeScope = (typeof a.closest === 'function'
+                        ? a.closest('.message-text, .flosc-message-text, .message-content, .message')
+                        : null) || a.parentElement;
+                    const existingWrap = dedupeScope
+                        ? Array.from(dedupeScope.querySelectorAll('.flosc-oembed-wrap')).find(function(node) {
                             return String(node.dataset.oembedUrl || '') === normalizedUrl;
                         })
                         : null;
@@ -8474,12 +8897,70 @@ Purchased: ${ctx.purchased}
                     wrap.dataset.oembedUrl = normalizedUrl;
                     wrap.innerHTML = html;
                     a.insertAdjacentElement('afterend', wrap);
+                    // innerHTML never executes <script>. Providers that return a
+                    // blockquote plus a loader script (TikTok, Instagram) stay as
+                    // raw fallback markup without this -- which is why a TikTok link
+                    // rendered the whole caption as text instead of a player.
+                    self._activateOembedLoaderScripts(wrap);
                     a.dataset.floscEmbedded = 'done';
                     if (self.chatMessages) self.chatMessages.scrollTop = self.chatMessages.scrollHeight;
                 })
                 .catch(function () {
                     delete a.dataset.floscEmbedded;
                 });
+        });
+    }
+
+    /**
+     * v10.1.0: Re-create provider loader scripts so the browser runs them.
+     *
+     * wp_oembed_get() only answers for providers on WordPress core's allow-list,
+     * and several of them (TikTok, Instagram) return a blockquote that a loader
+     * script upgrades into a player. Assigning that markup via innerHTML leaves
+     * the script inert, so the reader is shown the blockquote's fallback text --
+     * for a TikTok music post, the entire song caption.
+     *
+     * Only external https scripts whose host is one of the providers we embed are
+     * re-created. Inline script from an oEmbed response is discarded outright:
+     * nothing legitimate needs it, and executing arbitrary third-party inline JS
+     * inside the chat is not a trade worth making.
+     *
+     * @param {HTMLElement} wrap The inserted oEmbed wrapper.
+     */
+    _activateOembedLoaderScripts(wrap) {
+        if (!wrap || typeof wrap.querySelectorAll !== 'function') {
+            return;
+        }
+
+        const allowedHosts = [
+            'www.tiktok.com',
+            'platform.twitter.com',
+            'www.instagram.com',
+            'platform.instagram.com',
+            'embed.music.apple.com',
+            'w.soundcloud.com'
+        ];
+
+        wrap.querySelectorAll('script').forEach((original) => {
+            const src = String(original.getAttribute('src') || '').trim();
+            let host = '';
+            try {
+                host = src ? new URL(src, window.location.origin).host : '';
+            } catch (e) {
+                host = '';
+            }
+
+            if (!/^https:\/\//i.test(src) || allowedHosts.indexOf(host) === -1) {
+                original.remove();
+                return;
+            }
+
+            const fresh = document.createElement('script');
+            fresh.src = src;
+            fresh.async = true;
+            if (original.parentNode) {
+                original.parentNode.replaceChild(fresh, original);
+            }
         });
     }
 
@@ -8513,6 +8994,7 @@ Purchased: ${ctx.purchased}
         if (!user || !(user.id || user.ID)) {
             return;
         }
+        const previousState = this.state;
         this.user = user;
         window.FLOSC_USER = user;
         this.state = this.resolveAppUserState(user, stateHint || user.state);
@@ -8525,6 +9007,124 @@ Purchased: ${ctx.purchased}
             this.user.tokens = tokens;
             this.user.tokenBalance = tokens;
             this.user.flowTokens = user.flowTokens ?? tokens;
+        }
+
+        // v10.1.0: Leaving visitor is a journey event, not just a repaint.
+        this.onAuthStateGained(previousState);
+    }
+
+    /**
+     * v10.1.0: Fires once, when this browser stops being a visitor.
+     *
+     * Login is a phase boundary: the reader has crossed out of Freeline. Before
+     * this, ivr.phase only ever advanced when a free lesson was delivered, so a
+     * signed-in guest stayed in 'freeline' and no offer was ever scheduled.
+     *
+     * Every step is guarded — a failure here leaves prior behaviour untouched.
+     *
+     * @param {string} previousState State before the auth shell was applied.
+     */
+    onAuthStateGained(previousState) {
+        if (previousState !== 'visitor' || this.state === 'visitor') {
+            return;
+        }
+
+        try {
+            if (this.ivr && this.ivr.phase === 'freeline') {
+                // Where they land depends on what they became. A guest has an
+                // account but no entitlement, so they are the Offer phase. A member
+                // already bought: pitching them what they own is wrong, and they
+                // should be reading with ai_prompt_content, not ai_prompt_offer.
+                this.ivr.phase = (this.state === 'member') ? 'content' : 'offer';
+                if (this.ivr.context) {
+                    this.ivr.context.just_authenticated = true;
+                    this.ivr.context.account_state = this.state;
+                }
+            }
+        } catch (e) {
+            this.logWarn('[FLOSC] Could not advance phase on auth:', e);
+        }
+
+        // Give the conversation somewhere durable to live before anything clears it.
+        void this.persistThreadOnAuth();
+
+        // No-op until a floscAdmin configures an offer with reveal_event "login".
+        try {
+            this._scheduleOffersForEvent('login');
+        } catch (e) {
+            this.logWarn('[FLOSC] Could not schedule login offers:', e);
+        }
+    }
+
+    /**
+     * v10.1.0: Write the visitor's existing turns into a real session the moment
+     * there is an account to hold them.
+     *
+     * Without this, a signed-in guest can hold an entire conversation with
+     * currentSession === null: the sidebar reads "No chats yet" beside a full
+     * transcript, and chat-log rows are written with session_id 0. Refusals
+     * (guest chat cap, nonce, network) are logged and ignored — the reader's
+     * conversation is never interrupted.
+     */
+    async persistThreadOnAuth() {
+        if (this.state === 'visitor' || this.currentSession?.id) {
+            return;
+        }
+
+        let pending = [];
+        try {
+            const stored = JSON.parse(this.readVisitorJourneyItem('flosc_visitor_messages') || '[]');
+            if (Array.isArray(stored)) {
+                pending = stored
+                    .filter((m) => m && (m.role === 'user' || m.role === 'assistant') && m.content)
+                    .slice(-50)
+                    .map((m) => ({ role: m.role, content: String(m.content).slice(0, 4000) }));
+            }
+        } catch (e) {
+            this.logWarn('[FLOSC] Could not read visitor thread for persistence:', e);
+        }
+
+        if (!pending.length) {
+            return;
+        }
+
+        try {
+            await this.refreshNonce?.();
+            const response = await this.authFetch(this.config.apiUrl + '/sessions' + this.sessionsQuery(), {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-WP-Nonce': this.config.nonce,
+                },
+                body: JSON.stringify({
+                    flow_id: this.config.flowId || '',
+                    messages: pending,
+                }),
+            });
+
+            const data = await response.json();
+            const sessionId = parseInt(data?.session?.id, 10);
+            if (!Number.isFinite(sessionId) || sessionId <= 0) {
+                this.logWarn('[FLOSC] Thread not persisted on auth:', data?.code || response.status);
+                return;
+            }
+
+            this.currentSession = Object.assign({}, this.currentSession || {}, data.session);
+            this.rememberActiveChatSessionId(sessionId);
+
+            // Migrated, so drop the device copy. Without this a reload with no
+            // currentSession would persist the same turns into a second session.
+            try {
+                this.removeVisitorJourneyItem('flosc_visitor_messages');
+            } catch (eClear) {
+                this.logWarn('[FLOSC] Could not clear migrated visitor thread:', eClear);
+            }
+
+            await this.loadSessions?.();
+            this.log('[FLOSC] Visitor thread persisted to session', sessionId);
+        } catch (e) {
+            this.logWarn('[FLOSC] Thread not persisted on auth:', e);
         }
     }
 
@@ -8719,18 +9319,18 @@ Purchased: ${ctx.purchased}
         
         // v1.7.0: Mobile menu button also toggles sidebar (works on desktop too)
         const mobileMenuBtn = document.getElementById('flosc_app_mobile_menu_button');
-        if (mobileMenuBtn) {
-            mobileMenuBtn.addEventListener('click', () => this.toggleSidebar());
-        }
+	if (mobileMenuBtn) {
+		mobileMenuBtn.addEventListener('click', () => this.toggleSidebar());
+	}
         
         // v1.7.0: Overlay click closes sidebar on mobile
         const sidebarOverlay = document.getElementById('flosc_app_sidebar_overlay');
-        if (sidebarOverlay) {
-            sidebarOverlay.addEventListener('click', () => {
-                if (this.sidebar) this.sidebar.classList.remove('open');
-                sidebarOverlay.classList.remove('show');
+	if (sidebarOverlay) {
+		sidebarOverlay.addEventListener('click', () => {
+			if (this.sidebar) this.sidebar.classList.remove('open');
+			sidebarOverlay.classList.remove('show');
             });
-        }
+	}
         
         // v2.0.5: Clean up mobile sidebar state on viewport resize (e.g. iPad rotation)
         window.addEventListener('resize', () => {
@@ -8750,112 +9350,112 @@ Purchased: ${ctx.purchased}
             }
         });
         
-        if (this.newSessionBtn) {
-            this.newSessionBtn.addEventListener('click', () => this.newSession());
-        }
+	if (this.newSessionBtn) {
+		this.newSessionBtn.addEventListener('click', () => this.newSession());
+	}
         
-        if (this.sendBtn) {
-            this.sendBtn.addEventListener('click', () => this.sendMessage());
-        }
+	if (this.sendBtn) {
+		this.sendBtn.addEventListener('click', () => this.sendMessage());
+	}
         
-        if (this.chatInput) {
-            this.chatInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    this.sendMessage();
-                }
+	if (this.chatInput) {
+		this.chatInput.addEventListener('keypress', (e) => {
+			if (e.key === 'Enter' && !e.shiftKey) {
+				e.preventDefault();
+				this.sendMessage();
+			}
             });
-        }
+	}
 
         // E5 / Plugin Check: no inline onclick/onkeyup in rendered chat HTML.
         // Delegate from the messages root so dynamic message markup stays event-attribute free.
-        if (this.chatMessages && !this.chatMessages.dataset.floscActionBound) {
-            this.chatMessages.dataset.floscActionBound = '1';
-            this.chatMessages.addEventListener('click', (e) => this.handleDelegatedFloscAction(e));
-            this.chatMessages.addEventListener('keydown', (e) => {
-                if (e.key !== 'Enter' && e.key !== ' ') return;
-                const target = e.target?.closest?.('[data-flosc-action="view-lesson"]');
-                if (!target || !this.chatMessages.contains(target)) return;
-                e.preventDefault();
-                this.handleDelegatedFloscAction({ target, type: 'keydown' });
+	if (this.chatMessages && !this.chatMessages.dataset.floscActionBound) {
+		this.chatMessages.dataset.floscActionBound = '1';
+		this.chatMessages.addEventListener('click', (e) => this.handleDelegatedFloscAction(e));
+		this.chatMessages.addEventListener('keydown', (e) => {
+			if (e.key !== 'Enter' && e.key !== ' ') return;
+			const target = e.target?.closest?.('[data-flosc-action="view-lesson"]');
+			if (!target || !this.chatMessages.contains(target)) return;
+			e.preventDefault();
+			this.handleDelegatedFloscAction({ target, type: 'keydown' });
+		});
+		this.chatMessages.addEventListener('input', (e) => {
+			const el = e.target;
+			if (!el || el.getAttribute('data-flosc-action') !== 'sandbox-amount-filter') return;
+			el.value = String(el.value || '').replace(/[^0-9,]/g, '');
             });
-            this.chatMessages.addEventListener('input', (e) => {
-                const el = e.target;
-                if (!el || el.getAttribute('data-flosc-action') !== 'sandbox-amount-filter') return;
-                el.value = String(el.value || '').replace(/[^0-9,]/g, '');
-            });
-        }
+	}
 
         // Header auth controls sit outside the messages root, so they need their
         // own delegation — the chatMessages dispatcher deliberately ignores them.
-        if (!document.body.dataset.floscHeaderActionBound) {
-            document.body.dataset.floscHeaderActionBound = '1';
-            document.body.addEventListener('click', (e) => {
-                const el = e.target?.closest?.('[data-flosc-action="perform-ivr-action"]');
-                if (!el) return;
-                e.preventDefault();
-                const ivrAction = el.getAttribute('data-ivr-action') || '';
-                if (ivrAction) this.performIVRAction(ivrAction);
-            });
-        }
+	if (!document.body.dataset.floscHeaderActionBound) {
+		document.body.dataset.floscHeaderActionBound = '1';
+		document.body.addEventListener('click', (e) => {
+			const el = e.target?.closest?.('[data-flosc-action="perform-ivr-action"]');
+			if (!el) return;
+			e.preventDefault();
+			const ivrAction = el.getAttribute('data-ivr-action') || '';
+			if (ivrAction) this.performIVRAction(ivrAction);
+		});
+	}
 
-        if (this.shareBtn) {
-            this.shareBtn.addEventListener('click', () => this.openShareModal());
-        }
+	if (this.shareBtn) {
+		this.shareBtn.addEventListener('click', () => this.openShareModal());
+	}
 
         // Share modal close handlers
         const shareModalClose = document.getElementById('shareModalClose');
-        if (shareModalClose) {
-            shareModalClose.addEventListener('click', () => {
-                this.setDisplayState(this.shareModal, false, 'flex');
+	if (shareModalClose) {
+		shareModalClose.addEventListener('click', () => {
+			this.setDisplayState(this.shareModal, false, 'flex');
             });
-        }
-        if (this.shareModal) {
-            this.shareModal.addEventListener('click', (e) => {
-                if (e.target === this.shareModal) this.setDisplayState(this.shareModal, false, 'flex');
+	}
+	if (this.shareModal) {
+		this.shareModal.addEventListener('click', (e) => {
+			if (e.target === this.shareModal) this.setDisplayState(this.shareModal, false, 'flex');
             });
-        }
+	}
         // Copy button
         const copyBtn = document.getElementById('copyBtn');
-        if (copyBtn) {
-            copyBtn.addEventListener('click', () => {
-                const shareLink = document.getElementById('shareLink');
-                if (shareLink?.value) {
-                    navigator.clipboard.writeText(shareLink.value).then(() => {
-                        const txt = document.getElementById('copyBtnText');
-                        if (txt) { txt.textContent = 'Copied!'; setTimeout(() => txt.textContent = 'Copy', 2000); }
+	if (copyBtn) {
+		copyBtn.addEventListener('click', () => {
+			const shareLink = document.getElementById('shareLink');
+			if (shareLink?.value) {
+				navigator.clipboard.writeText(shareLink.value).then(() => {
+					const txt = document.getElementById('copyBtnText');
+					if (txt) { txt.textContent = 'Copied!'; setTimeout(() => txt.textContent = 'Copy', 2000); }
                     });
-                }
+			}
             });
-        }
+	}
 
         const restartBtn = document.getElementById('flosc_app_restart_chat');
-        if (restartBtn) {
-            restartBtn.addEventListener('click', () => this.restartChat());
-        }
+	if (restartBtn) {
+		restartBtn.addEventListener('click', () => this.restartChat());
+	}
 
         // Profile button dropdown toggle (single unified bar)
         const profileBtn = document.getElementById('flosc_profile_button');
         const profileDropdown = document.getElementById('flosc_profile_dropdown');
-        if (profileBtn && profileDropdown) {
-            profileBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                profileDropdown.classList.toggle('open');
-                profileBtn.setAttribute('aria-expanded', profileDropdown.classList.contains('open'));
+	if (profileBtn && profileDropdown) {
+		profileBtn.addEventListener('click', (e) => {
+			e.stopPropagation();
+			profileDropdown.classList.toggle('open');
+			profileBtn.setAttribute('aria-expanded', profileDropdown.classList.contains('open'));
             });
-        }
+	}
 
         // Handle visitor menu item clicks (data-action items inside the unified dropdown)
-        if (profileDropdown) {
-            profileDropdown.querySelectorAll('[data-action]').forEach(item => {
-                item.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const action = e.currentTarget.dataset.action;
-                    this.handleVisitorMenuAction(action);
-                    profileDropdown.classList.remove('open');
+	if (profileDropdown) {
+		profileDropdown.querySelectorAll('[data-action]').forEach(item => {
+			item.addEventListener('click', (e) => {
+				e.preventDefault();
+				const action = e.currentTarget.dataset.action;
+				this.handleVisitorMenuAction(action);
+				profileDropdown.classList.remove('open');
                 });
-            });
-        }
+		});
+	}
 
         // Close dropdown when clicking outside
         document.addEventListener('click', (e) => {
@@ -8866,9 +9466,9 @@ Purchased: ${ctx.purchased}
         });
 
         const recordingModalClose = document.getElementById('floscQuizModalClose');
-        if (recordingModalClose) {
-            recordingModalClose.addEventListener('click', () => this.hideRecordingModal());
-        }
+	if (recordingModalClose) {
+		recordingModalClose.addEventListener('click', () => this.hideRecordingModal());
+	}
         
         document.addEventListener('click', (e) => {
             const card = e.target.closest('.flosc-prompt-card');
@@ -8885,10 +9485,10 @@ Purchased: ${ctx.purchased}
         // v8.0.0: Use dynamic lookup — the offer ID comes from admin config,
         // Offer IDs come from flow config, not hardcode.
         const upgradeBtn = document.getElementById('flosc_upgrade_button');
-        if (upgradeBtn) {
-            const upgradeOfferId = this.getOfferIdForProduct();
-            upgradeBtn.addEventListener('click', () => this.showOffer(upgradeOfferId, { source: 'user' }));
-        }
+	if (upgradeBtn) {
+		const upgradeOfferId = this.getOfferIdForProduct();
+		upgradeBtn.addEventListener('click', () => this.showOffer(upgradeOfferId, { source: 'user' }));
+	}
         
         // v9.3.3: Quiz modal event bindings
         this.bindQuizEvents();
@@ -8906,41 +9506,41 @@ Purchased: ${ctx.purchased}
         
         // Text quiz submission
         const submitTextBtn = document.getElementById('floscQuizSubmitTextButton');
-        if (submitTextBtn) {
-            submitTextBtn.addEventListener('click', () => this.submitTextQuiz());
-        }
+	if (submitTextBtn) {
+		submitTextBtn.addEventListener('click', () => this.submitTextQuiz());
+	}
         
         // Text input enter key
         const textInput = document.getElementById('floscQuizTextInput');
-        if (textInput) {
-            textInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    this.submitTextQuiz();
-                }
+	if (textInput) {
+		textInput.addEventListener('keypress', (e) => {
+			if (e.key === 'Enter') {
+				e.preventDefault();
+				this.submitTextQuiz();
+			}
             });
-        }
+	}
         
         // Audio recording controls
         const recordBtn = document.getElementById('floscQuizRecordButton');
         const stopBtn = document.getElementById('floscQuizStopButton');
         const submitRecordingBtn = document.getElementById('floscQuizSubmitRecordingButton');
         
-        if (recordBtn) {
-            recordBtn.addEventListener('click', () => this.startQuizRecording());
-        }
-        if (stopBtn) {
-            stopBtn.addEventListener('click', () => this.stopQuizRecording());
-        }
-        if (submitRecordingBtn) {
-            submitRecordingBtn.addEventListener('click', () => this.submitQuizRecording());
-        }
+	if (recordBtn) {
+		recordBtn.addEventListener('click', () => this.startQuizRecording());
+	}
+	if (stopBtn) {
+		stopBtn.addEventListener('click', () => this.stopQuizRecording());
+	}
+	if (submitRecordingBtn) {
+		submitRecordingBtn.addEventListener('click', () => this.submitQuizRecording());
+	}
         
         // Continue button after quiz
         const continueBtn = document.getElementById('floscQuizContinueButton');
-        if (continueBtn) {
-            continueBtn.addEventListener('click', () => this.onQuizComplete());
-        }
+	if (continueBtn) {
+		continueBtn.addEventListener('click', () => this.onQuizComplete());
+	}
     }
     
     // v9.3.3: Switch between text and audio tabs
@@ -9115,27 +9715,27 @@ Purchased: ${ctx.purchased}
             return idx >= 0 ? idx + 1 : null;
         }).filter(n => n !== null);
 
-        try {
-            await this.authFetch(this.config.apiUrl + '/store-score', {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-WP-Nonce': this.config.nonce
-                },
-                body: JSON.stringify({
-                    score: result.score,
-                    quiz_id: this.quiz.id || '',
-                    quiz_type: result.quizType || 'sequence',
-                    correct: result.incorrect ? [] : correctPositions,
-                    incorrect: result.incorrect || missedPositions,
-                    ranked_worst_lessons: result.ranked_worst_lessons || [],
-                    details: quizData
+	try {
+		await this.authFetch(this.config.apiUrl + '/store-score', {
+			method: 'POST',
+			credentials: 'same-origin',
+			headers: {
+				'Content-Type': 'application/json',
+				'X-WP-Nonce': this.config.nonce
+			},
+			body: JSON.stringify({
+				score: result.score,
+				quiz_id: this.quiz.id || '',
+				quiz_type: result.quizType || 'sequence',
+				correct: result.incorrect ? [] : correctPositions,
+				incorrect: result.incorrect || missedPositions,
+				ranked_worst_lessons: result.ranked_worst_lessons || [],
+				details: quizData
                 })
-            });
-        } catch (e) {
-            this.logError('FLOSC: Could not store quiz score', e);
-        }
+		});
+	} catch (e) {
+		this.logError('FLOSC: Could not store quiz score', e);
+	}
     }
     
     // v9.3.3: Handle quiz completion - close modal, trigger login gate
@@ -9309,6 +9909,10 @@ Purchased: ${ctx.purchased}
         this._adminPollSessionId = null;
         this._adminPollToken = '';
         this._adminSince = 0;
+
+        // New conversation means a new Chat Logs thread, for visitors and for
+        // logged-in users alike (the visitor branch below only resets visitor state).
+        this.resetJourneyId();
 
         // Clear session tracking (use same pattern as buildIVRContext)
         const sessionKey = 'flosc_session_' + this.getSessionKey();
@@ -9739,10 +10343,10 @@ Purchased: ${ctx.purchased}
             profileName.innerHTML =
                 `<span class="flosc-user-label-text">${this.escapeHtml(baseName)}</span> ` +
                 `<span class="flosc-user-token-count" id="flosc_user_token_count" data-flosc-token-balance="1">(${this.escapeHtml(formattedTokens)})</span>`;
-        }
+			}
 
-        this.postCompanionTokenUpdate(n, formattedTokens, baseName);
-        this.updateCompanionSessionStatus(n, baseName);
+			this.postCompanionTokenUpdate(n, formattedTokens, baseName);
+			this.updateCompanionSessionStatus(n, baseName);
     }
 
     /**
@@ -10078,22 +10682,22 @@ Purchased: ${ctx.purchased}
 
         // CTA click - start quiz
         const ctaBtn = document.getElementById('floscVisitorBarCta');
-        if (ctaBtn) {
-            ctaBtn.addEventListener('click', () => {
-                this.sendMessage('Start quiz');
-                this.setDisplayState(visitorBar, false, 'block');
-                sessionStorage.setItem(this.flowStorageKey('flosc_visitor_bar_dismissed'), 'true');
+	if (ctaBtn) {
+		ctaBtn.addEventListener('click', () => {
+			this.sendMessage('Start quiz');
+			this.setDisplayState(visitorBar, false, 'block');
+			sessionStorage.setItem(this.flowStorageKey('flosc_visitor_bar_dismissed'), 'true');
             });
-        }
+	}
 
         // Dismiss button
         const dismissBtn = document.getElementById('floscVisitorBarDismiss');
-        if (dismissBtn) {
-            dismissBtn.addEventListener('click', () => {
-                this.setDisplayState(visitorBar, false, 'block');
-                sessionStorage.setItem(this.flowStorageKey('flosc_visitor_bar_dismissed'), 'true');
+	if (dismissBtn) {
+		dismissBtn.addEventListener('click', () => {
+			this.setDisplayState(visitorBar, false, 'block');
+			sessionStorage.setItem(this.flowStorageKey('flosc_visitor_bar_dismissed'), 'true');
             });
-        }
+	}
     }
 
     isCompanionHandoffAvailable() {
@@ -10577,12 +11181,27 @@ Purchased: ${ctx.purchased}
                 this.log('FLOSC: IVR match found, routing through AI:', ivrGuidance.name);
             }
 
+            // A turn id, minted before the request leaves and remembered until
+            // the answer arrives. If the visitor reloads while the assistant is
+            // still typing, this is what the next page load uses to ask for the
+            // answer it missed — and what stops the same turn being billed
+            // twice if the message is resent.
+            this._floscTurnId = this.floscMintTurnId();
+            this.floscMarkTurnPending(this._floscTurnId, message);
+
             try {
                 let response;
                 try {
                     response = await this.callAPI(message, ivrGuidance, { allowSessionAutoCreate: true });
                 } catch (firstErr) {
                     if (firstErr?.floscCode === 'visitor_tokens_depleted') {
+                        throw firstErr;
+                    }
+                    // A 429 is FLOSC's own per-visitor bucket, not a stale
+                    // nonce. Refreshing and resending spends a second request
+                    // from the bucket that just refused, so the limit lands
+                    // twice as fast. Opt in under Public Request Protection.
+                    if (firstErr?.httpStatus === 429 && !this.config?.retryAfter429) {
                         throw firstErr;
                     }
                     // v8.0.0 FIX: Retry once with fresh nonce — handles stale-nonce after
@@ -10592,6 +11211,7 @@ Purchased: ${ctx.purchased}
                     response = await this.callAPI(message, ivrGuidance, { allowSessionAutoCreate: true });
                 }
                 this.hideTyping();
+                this.floscClearTurnPending();
 
                 if (response) {
                     // v3.0.5: Extract [ACTION:...] tags from AI response (for AI-interpretation offer triggers)
@@ -10869,10 +11489,10 @@ Purchased: ${ctx.purchased}
             m.user_input.toLowerCase() === lowerInput
         );
         
-        if (exactMatch) {
-            this.log('[FLOSC-FIND] Exact match found:', exactMatch.name);
-            return exactMatch;
-        }
+	if (exactMatch) {
+		this.log('[FLOSC-FIND] Exact match found:', exactMatch.name);
+		return exactMatch;
+	}
 
         // 2. Keyword match — check if user message matches any keyword in the message's keywords list
         // v1.9.6: Find ALL keyword matches, prefer the first whose conditions pass.
@@ -10885,19 +11505,19 @@ Purchased: ${ctx.purchased}
             return keywords.some(kw => kw === lowerInput || lowerInput.includes(kw));
         });
 
-        if (keywordMatches.length > 0) {
-            // Prefer the first match whose conditions pass
-            const conditionMatch = keywordMatches.find(m => 
-                !m.conditions || m.conditions === 'always' || this.evaluateCondition(m.conditions)
-            );
-            if (conditionMatch) {
-                this.log('[FLOSC-FIND] Keyword match found (condition-verified):', conditionMatch.name);
-                return conditionMatch;
-            }
-            // If no conditions pass, return first match anyway (caller handles condition check)
-            this.log('[FLOSC-FIND] Keyword match found (no conditions pass):', keywordMatches[0].name);
-            return keywordMatches[0];
-        }
+	if (keywordMatches.length > 0) {
+		// Prefer the first match whose conditions pass
+		const conditionMatch = keywordMatches.find(m => 
+			!m.conditions || m.conditions === 'always' || this.evaluateCondition(m.conditions)
+		);
+		if (conditionMatch) {
+			this.log('[FLOSC-FIND] Keyword match found (condition-verified):', conditionMatch.name);
+			return conditionMatch;
+		}
+		// If no conditions pass, return first match anyway (caller handles condition check)
+		this.log('[FLOSC-FIND] Keyword match found (no conditions pass):', keywordMatches[0].name);
+		return keywordMatches[0];
+	}
 
         // 3. Fuzzy word match — catch natural language variations
         // "i want to see my free lesson" should match a message with user_input "View my free lesson!"
@@ -10910,62 +11530,62 @@ Purchased: ${ctx.purchased}
         
         const inputWords = lowerInput.replace(/[^\w\s]/g, '').split(/\s+/).filter(w => w.length > 1 && !stopWords.has(w));
         
-        if (inputWords.length >= 1) {
-            let bestMatch = null;
-            let bestScore = 0;
+	if (inputWords.length >= 1) {
+		let bestMatch = null;
+		let bestScore = 0;
 
-            for (const msg of allMessages) {
-                if (!msg.user_input && !msg.keywords) continue;
-                // Only match actionable messages (autoprompts/offers)
-                if (msg.type !== 'suggested_user_autoprompt' && msg.type !== 'offer') continue;
+		for (const msg of allMessages) {
+			if (!msg.user_input && !msg.keywords) continue;
+			// Only match actionable messages (autoprompts/offers)
+			if (msg.type !== 'suggested_user_autoprompt' && msg.type !== 'offer') continue;
                 
-                // Build word pool from user_input + keywords
-                const pool = new Set();
-                if (msg.user_input) {
-                    msg.user_input.toLowerCase().replace(/[^\w\s]/g, '').split(/\s+/)
-                        .filter(w => w.length > 1 && !stopWords.has(w))
-                        .forEach(w => pool.add(w));
-                }
-                if (msg.keywords) {
-                    const kws = Array.isArray(msg.keywords) ? msg.keywords : msg.keywords.split(',');
-                    kws.forEach(kw => {
-                        kw.toLowerCase().trim().split(/\s+/)
-                            .filter(w => w.length > 1)
-                            .forEach(w => pool.add(w));
+			// Build word pool from user_input + keywords
+			const pool = new Set();
+			if (msg.user_input) {
+				msg.user_input.toLowerCase().replace(/[^\w\s]/g, '').split(/\s+/)
+					.filter(w => w.length > 1 && !stopWords.has(w))
+					.forEach(w => pool.add(w));
+			}
+			if (msg.keywords) {
+				const kws = Array.isArray(msg.keywords) ? msg.keywords : msg.keywords.split(',');
+				kws.forEach(kw => {
+					kw.toLowerCase().trim().split(/\s+/)
+						.filter(w => w.length > 1)
+						.forEach(w => pool.add(w));
                     });
-                }
+			}
                 
-                if (pool.size === 0) continue;
+			if (pool.size === 0) continue;
                 
-                // Score: how many user words appear in the pool
-                let score = 0;
-                for (const word of inputWords) {
-                    if (pool.has(word)) {
-                        score += 2;
-                    } else {
-                        // Stem match: "lessons" matches "lesson", "viewing" matches "view" (4+ chars)
-                        for (const poolWord of pool) {
-                            if (word.length >= 4 && poolWord.length >= 4 && 
-                                (word.startsWith(poolWord) || poolWord.startsWith(word))) {
-                                score += 1;
-                                break;
-                            }
-                        }
-                    }
-                }
+			// Score: how many user words appear in the pool
+			let score = 0;
+			for (const word of inputWords) {
+				if (pool.has(word)) {
+					score += 2;
+				} else {
+					// Stem match: "lessons" matches "lesson", "viewing" matches "view" (4+ chars)
+					for (const poolWord of pool) {
+						if (word.length >= 4 && poolWord.length >= 4 && 
+							(word.startsWith(poolWord) || poolWord.startsWith(word))) {
+							score += 1;
+							break;
+						}
+					}
+				}
+			}
                 
-                // Require minimum score (at least 2 meaningful word matches)
-                if (score >= 3 && score > bestScore) {
-                    bestScore = score;
-                    bestMatch = msg;
-                }
-            }
+			// Require minimum score (at least 2 meaningful word matches)
+			if (score >= 3 && score > bestScore) {
+				bestScore = score;
+				bestMatch = msg;
+			}
+		}
 
-            if (bestMatch) {
-                this.log('[FLOSC-FIND] Fuzzy match found:', bestMatch.name, 'score:', bestScore);
-                return bestMatch;
-            }
-        }
+		if (bestMatch) {
+			this.log('[FLOSC-FIND] Fuzzy match found:', bestMatch.name, 'score:', bestScore);
+			return bestMatch;
+		}
+	}
 
         this.log('[FLOSC-FIND] No match for:', userMessage);
         return null;
@@ -11133,20 +11753,20 @@ Purchased: ${ctx.purchased}
         // v1.9.5: Hide empty-state elements when USER sends a message (Grok pattern).
         // Landing state stays visible during welcome/auto messages — only the user's
         // first typed message transitions to full chat mode.
-        if (role === 'user') {
-            const landing = document.getElementById('landingState');
-            if (landing && !landing.classList.contains('flosc-hidden')) {
-                landing.classList.add('flosc-hidden');
-            }
-            const greeting = document.getElementById('greeting');
-            if (greeting && !greeting.classList.contains('flosc-hidden')) {
-                greeting.classList.add('flosc-hidden');
-            }
-            const pills = document.getElementById('flosc_input_user_autoprompts_panel');
-            if (pills && !pills.classList.contains('flosc-hidden')) {
-                pills.classList.add('flosc-hidden');
-            }
-        }
+	if (role === 'user') {
+		const landing = document.getElementById('landingState');
+		if (landing && !landing.classList.contains('flosc-hidden')) {
+			landing.classList.add('flosc-hidden');
+		}
+		const greeting = document.getElementById('greeting');
+		if (greeting && !greeting.classList.contains('flosc-hidden')) {
+			greeting.classList.add('flosc-hidden');
+		}
+		const pills = document.getElementById('flosc_input_user_autoprompts_panel');
+		if (pills && !pills.classList.contains('flosc-hidden')) {
+			pills.classList.add('flosc-hidden');
+		}
+	}
 
         // v8.0.9: Return element so caller can add attributes
         return messageDiv;
@@ -11461,6 +12081,8 @@ Purchased: ${ctx.purchased}
                 || (this.state === 'visitor' ? this.getVisitorSessionId() : undefined)
                 || this.readRememberedActiveChatSessionId()
                 || undefined,
+            // Stable across login, unlike session_id — keeps Chat Logs one thread.
+            journey_id: this.getJourneyId(),
             context: this.ivr.context,
             // v1.3.7: Flow context for multi-flow support
             flow_id: this.config.flowId,
@@ -11476,6 +12098,10 @@ Purchased: ${ctx.purchased}
             payload.request_guest_account = options.requestGuestAccount ? 1 : 0;
         }
         
+        if (this._floscTurnId) {
+            payload.turn_id = this._floscTurnId;
+        }
+
         // v2.0.7: Send visitor conversation history so AI has memory across messages.
         // Visitors have no server-side session, so we send localStorage history.
         // This prevents AI from repeating itself and enables conversation-awareness.
@@ -11529,33 +12155,36 @@ Purchased: ${ctx.purchased}
         });
 
         let data = {};
-        try {
-            data = await response.json();
-        } catch (parseErr) {
-            const err = new Error(`Server error (${response.status})`);
-            err.floscCode = 'invalid_json';
-            err.floscPayload = null;
-            throw err;
-        }
+	try {
+		data = await response.json();
+	} catch (parseErr) {
+		const err = new Error(`Server error (${response.status})`);
+		err.floscCode = 'invalid_json';
+		err.floscPayload = null;
+		err.httpStatus = response.status;
+		throw err;
+	}
 
         // Keep the visitor token label in sync even when the API returns an error payload.
         this.syncVisitorTokenBalanceFromPayload(data);
 
-        if (!response.ok) {
-            const errorMsg = data.error || data.message || `Server error (${response.status})`;
-            const err = new Error(errorMsg);
-            err.floscCode = String(data.error_code || data.code || '');
-            err.floscPayload = data;
-            throw err;
-        }
+	if (!response.ok) {
+		const errorMsg = data.message || data.response || data.error || `Server error (${response.status})`;
+		const err = new Error(errorMsg);
+		err.floscCode = String(data.error_code || data.code || data.error || '');
+		err.floscPayload = data;
+		err.httpStatus = response.status;
+		throw err;
+	}
 
-        if (!data.success) {
-            const errorMsg = data.error || data.message || 'Unknown API error';
-            const err = new Error(errorMsg);
-            err.floscCode = String(data.error_code || '');
-            err.floscPayload = data;
-            throw err;
-        }
+	if (!data.success) {
+		const errorMsg = data.message || data.response || data.error || 'Unknown API error';
+		const err = new Error(errorMsg);
+		err.floscCode = String(data.error_code || data.code || data.error || '');
+		err.floscPayload = data;
+		err.httpStatus = response.status;
+		throw err;
+	}
 
         this.syncVisitorTokenBalanceFromPayload(data);
 
@@ -11760,8 +12389,8 @@ Purchased: ${ctx.purchased}
             const response = await this.authFetch(
                 this.config.apiUrl + '/sessions/' + sessionId + this.sessionsQuery(),
                 {
-                credentials: 'same-origin',
-                headers: { 'X-WP-Nonce': this.config.nonce }
+					credentials: 'same-origin',
+					headers: { 'X-WP-Nonce': this.config.nonce }
             });
             const data = await response.json();
             
@@ -11979,9 +12608,9 @@ Purchased: ${ctx.purchased}
             item.classList.toggle('active', String(item.dataset.sessionId) === String(this.currentSession?.id));
         });
 
-        if (window.innerWidth <= 768 && this.sidebar) {
-            this.sidebar.classList.remove('open');
-        }
+	if (window.innerWidth <= 768 && this.sidebar) {
+		this.sidebar.classList.remove('open');
+	}
     }
 
     /**
@@ -12044,13 +12673,13 @@ Purchased: ${ctx.purchased}
             const res = await this.authFetch(
                 this.config.apiUrl + '/sessions/' + this.currentSession.id + this.sessionsQuery(),
                 {
-                method: 'PUT',
-                credentials: 'same-origin',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-WP-Nonce': this.config.nonce,
-                },
-                body: JSON.stringify(this.sessionsFlowBody({ title })),
+					method: 'PUT',
+					credentials: 'same-origin',
+					headers: {
+						'Content-Type': 'application/json',
+						'X-WP-Nonce': this.config.nonce,
+					},
+					body: JSON.stringify(this.sessionsFlowBody({ title })),
             });
             const data = await res.json();
             if (data.success) {
@@ -12073,13 +12702,13 @@ Purchased: ${ctx.purchased}
             const response = await this.authFetch(
                 this.config.apiUrl + '/sessions/' + sessionId + this.sessionsQuery(),
                 {
-                method: 'PUT',
-                credentials: 'same-origin',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-WP-Nonce': this.config.nonce
-                },
-                body: JSON.stringify(this.sessionsFlowBody({ title: newTitle }))
+					method: 'PUT',
+					credentials: 'same-origin',
+					headers: {
+						'Content-Type': 'application/json',
+						'X-WP-Nonce': this.config.nonce
+					},
+					body: JSON.stringify(this.sessionsFlowBody({ title: newTitle }))
             });
             const data = await response.json();
             if (data.success) {
@@ -12101,9 +12730,9 @@ Purchased: ${ctx.purchased}
             const response = await this.authFetch(
                 this.config.apiUrl + '/sessions/' + sessionId + this.sessionsQuery(),
                 {
-                method: 'DELETE',
-                credentials: 'same-origin',
-                headers: { 'X-WP-Nonce': this.config.nonce }
+					method: 'DELETE',
+					credentials: 'same-origin',
+					headers: { 'X-WP-Nonce': this.config.nonce }
             });
             const data = await response.json();
             if (data.success) {
@@ -12432,7 +13061,7 @@ Purchased: ${ctx.purchased}
             if (data.success && lessons.length > 0) {
                 this.ivr.context.lesson_viewed = true;
                 this.ivr.context.first_message_after_free_content_item = true;
-            this.ivr.context.first_message_after_free_lesson = true;
+				this.ivr.context.first_message_after_free_lesson = true;
                 this._cachedFreeLessons = lessons;
                 this._renderFreeLessonCards(lessons);
                 this.ivr.phase = 'offer';
@@ -12475,6 +13104,10 @@ Purchased: ${ctx.purchased}
                     user_message: userMessage || '',
                     ai_response: aiResponse || '',
                     session_id: this.currentSession?.id || 0,
+                    // A visitor has no currentSession, so session_id is 0 here and
+                    // these turns used to pile into one shared bucket. journey_id
+                    // files them under the conversation they actually belong to.
+                    journey_id: this.getJourneyId(),
                     flow_id: this.config.flowId || '',
                     phase: this.ivr?.phase || meta.phase || 'content',
                     provider: meta.provider || 'client',
@@ -12881,7 +13514,7 @@ Purchased: ${ctx.purchased}
                     yearly: data.yearly,
                     list_monthly: data.list_monthly,
                     list_yearly: data.list_yearly,
-                }
+			}
                 : null;
 
             if (data.billing === 'subscription') {
@@ -13040,90 +13673,90 @@ Purchased: ${ctx.purchased}
                             : ''}${this.escapeHtml(fmtMoney(yearlyPrice))}</div>
                         <div class="flosc-plan-interval flosc-plan-interval-yearly">/year</div>
                         ${yearlyExtra ? `<div class="flosc-plan-savings">${this.escapeHtml(yearlyExtra)}</div>` : ''}
-                    </label>
-                    <label class="flosc-plan-option" data-plan="monthly">
+						</label>
+						<label class="flosc-plan-option" data-plan="monthly">
                         <input type="radio" name="flosc_plan" value="monthly" class="flosc-plan-option-input">
                         <div class="flosc-plan-amount">${listMonthly > monthlyPrice && listMonthly > 0
                             ? `<span class="flosc-price-was">${this.escapeHtml(fmtMoney(listMonthly))}</span> `
                             : ''}${this.escapeHtml(fmtMoney(monthlyPrice))}</div>
                         <div class="flosc-plan-interval">/month</div>
                         ${monthlyTokenLine ? `<div class="flosc-plan-savings">${this.escapeHtml(monthlyTokenLine)}</div>` : ''}
-                    </label>
-                </div>
-            </div>
-            <div id="flosc-sub-paypal-btn" class="flosc-sub-paypal-btn"></div>
-            <div id="flosc-sub-status" class="flosc-sub-status"></div>
-        `;
-        // Stash for welcome copy after activate
-        container.dataset.floscMonthlyPrice = String(monthlyPrice);
-        container.dataset.floscYearlyPrice = String(yearlyPrice);
-        container.dataset.floscMonthlyLabel = monthlyLabel;
-        container.dataset.floscYearlyLabel = yearlyLabel;
-        container.dataset.floscPromoCoupon = this._getCheckoutCouponCodeForCharge() || '';
+						</label>
+						</div>
+						</div>
+						<div id="flosc-sub-paypal-btn" class="flosc-sub-paypal-btn"></div>
+						<div id="flosc-sub-status" class="flosc-sub-status"></div>
+						`;
+						// Stash for welcome copy after activate
+						container.dataset.floscMonthlyPrice = String(monthlyPrice);
+						container.dataset.floscYearlyPrice = String(yearlyPrice);
+						container.dataset.floscMonthlyLabel = monthlyLabel;
+						container.dataset.floscYearlyLabel = yearlyLabel;
+						container.dataset.floscPromoCoupon = this._getCheckoutCouponCodeForCharge() || '';
 
-        // Plan selection toggle styling
-        const planOptions = container.querySelectorAll('.flosc-plan-option');
-        planOptions.forEach(opt => {
-            opt.addEventListener('click', () => {
-                planOptions.forEach(o => {
-                    o.classList.remove('flosc-plan-option-selected');
-                });
-                opt.classList.add('flosc-plan-option-selected');
-                opt.querySelector('input').checked = true;
-                // Re-render PayPal buttons for new plan
-                this._mountSubscriptionButtons(offerId, container);
-            });
-        });
+						// Plan selection toggle styling
+						const planOptions = container.querySelectorAll('.flosc-plan-option');
+						planOptions.forEach(opt => {
+							opt.addEventListener('click', () => {
+								planOptions.forEach(o => {
+									o.classList.remove('flosc-plan-option-selected');
+								});
+								opt.classList.add('flosc-plan-option-selected');
+								opt.querySelector('input').checked = true;
+								// Re-render PayPal buttons for new plan
+								this._mountSubscriptionButtons(offerId, container);
+							});
+						});
 
         // Plan IDs: list-price plans from config, or promo plans when coupon applied.
         const couponCode = this._getCheckoutCouponCodeForCharge();
         let monthlyPlanId = '';
         let yearlyPlanId = '';
-        if (!couponCode) {
-            monthlyPlanId = this.config.paypalMonthlyPlanId || '';
-            yearlyPlanId = this.config.paypalYearlyPlanId || '';
-        }
+	if (!couponCode) {
+		monthlyPlanId = this.config.paypalMonthlyPlanId || '';
+		yearlyPlanId = this.config.paypalYearlyPlanId || '';
+	}
 
-        if (!monthlyPlanId || !yearlyPlanId || couponCode) {
-            const statusEl = container.querySelector('#flosc-sub-status');
-            if (statusEl) statusEl.textContent = couponCode
-                ? 'Setting up promo subscription plans...'
-                : 'Setting up payment plans...';
-            try {
-                await this.refreshNonce();
-                const res = await this.authFetch(this.config.apiUrl + '/paypal/get-plans', {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': this.config.nonce },
-                    body: JSON.stringify({
-                        flow_id: this.config.flowId || '',
-                        offer_id: offerId || '',
-                        coupon_code: couponCode || '',
+	if (!monthlyPlanId || !yearlyPlanId || couponCode) {
+		const statusEl = container.querySelector('#flosc-sub-status');
+		if (statusEl) statusEl.textContent = couponCode
+			? 'Setting up promo subscription plans...'
+			: 'Setting up payment plans...';
+		try {
+			await this.refreshNonce();
+			const res = await this.authFetch(this.config.apiUrl + '/paypal/get-plans', {
+				method: 'POST',
+				credentials: 'same-origin',
+				headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': this.config.nonce },
+				body: JSON.stringify({
+					flow_id: this.config.flowId || '',
+					offer_id: offerId || '',
+					coupon_code: couponCode || '',
                     }),
-                });
-                const data = await res.json();
-                if (data.monthly_plan_id && data.yearly_plan_id) {
-                    monthlyPlanId = data.monthly_plan_id;
-                    yearlyPlanId = data.yearly_plan_id;
-                    if (couponCode) {
-                        // Do not overwrite default list-price plan IDs in config.
-                        this._paypalPromoMonthlyPlanId = monthlyPlanId;
-                        this._paypalPromoYearlyPlanId = yearlyPlanId;
-                    } else {
-                        this.config.paypalMonthlyPlanId = monthlyPlanId;
-                        this.config.paypalYearlyPlanId = yearlyPlanId;
-                    }
-                } else {
-                    throw new Error(data.message || 'Could not get plan IDs');
-                }
-            } catch (err) {
-                this.logError('[FLOSC-CHECKOUT] Failed to get PayPal plans:', err);
-                const statusEl2 = container.querySelector('#flosc-sub-status');
-                if (statusEl2) statusEl2.innerHTML = '<span class="flosc-status-error">Could not set up payment plans. Please try again.</span>';
-                return;
-            }
-            if (statusEl) statusEl.textContent = '';
-        }
+			});
+			const data = await res.json();
+			if (data.monthly_plan_id && data.yearly_plan_id) {
+				monthlyPlanId = data.monthly_plan_id;
+				yearlyPlanId = data.yearly_plan_id;
+				if (couponCode) {
+					// Do not overwrite default list-price plan IDs in config.
+					this._paypalPromoMonthlyPlanId = monthlyPlanId;
+					this._paypalPromoYearlyPlanId = yearlyPlanId;
+				} else {
+					this.config.paypalMonthlyPlanId = monthlyPlanId;
+					this.config.paypalYearlyPlanId = yearlyPlanId;
+				}
+			} else {
+				throw new Error(data.message || 'Could not get plan IDs');
+			}
+		} catch (err) {
+			this.logError('[FLOSC-CHECKOUT] Failed to get PayPal plans:', err);
+			const statusEl2 = container.querySelector('#flosc-sub-status');
+			if (statusEl2) statusEl2.innerHTML = '<span class="flosc-status-error">Could not set up payment plans. Please try again.</span>';
+			return;
+		}
+		if (statusEl) statusEl.textContent = '';
+	}
 
         this._mountSubscriptionButtons(offerId, container);
     }
@@ -13182,14 +13815,14 @@ Purchased: ${ctx.purchased}
                     });
                     const prepRaw = await prepRes.text();
                     let prep = {};
-                    try {
-                        prep = prepRaw ? JSON.parse(prepRaw) : {};
-                    } catch (e) {
-                        throw new Error('Could not prepare PayPal purchase (invalid JSON)');
-                    }
-                    if (!prepRes.ok || !prep.purchase_uuid || !prep.plan_id) {
-                        throw new Error(prep.message || 'Could not prepare PayPal purchase intent');
-                    }
+				try {
+					prep = prepRaw ? JSON.parse(prepRaw) : {};
+				} catch (e) {
+					throw new Error('Could not prepare PayPal purchase (invalid JSON)');
+				}
+				if (!prepRes.ok || !prep.purchase_uuid || !prep.plan_id) {
+					throw new Error(prep.message || 'Could not prepare PayPal purchase intent');
+				}
                     this._paypalPurchaseUuid = prep.purchase_uuid;
                     this.log('[FLOSC-CHECKOUT] Creating subscription with purchase_uuid=' + prep.purchase_uuid);
                     return actions.subscription.create({
@@ -13389,219 +14022,219 @@ Purchased: ${ctx.purchased}
      */
     _renderOneTimePayPal(offerId, paypalContainer) {
             const renderPayPalButtons = () => {
-            if (typeof paypal === 'undefined' || typeof paypal.Buttons !== 'function') {
-                this.logError('[FLOSC-CHECKOUT] PayPal.Buttons unavailable — SDK must be enqueued without ?ver=');
-                return;
-            }
-            const paypalButtonsInstance = paypal.Buttons({
-                style: {
-                    layout: 'vertical',
-                    color: 'gold',
-                    shape: 'rect',
-                    label: 'paypal',
-                    height: 45,
-                },
-                createOrder: async () => {
-                    this.log('[FLOSC-CHECKOUT] PayPal createOrder: offerId=' + offerId + ', flowId=' + (this.config.flowId || 'none'));
-                    const doCreate = async () => {
-                        const res = await this.authFetch(this.config.apiUrl + '/paypal/create-order', {
-                            method: 'POST',
-                            credentials: 'same-origin',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-WP-Nonce': this.config.nonce,
-                            },
-                            body: JSON.stringify({
-                                offer_id: offerId,
-                                flow_id: this.config.flowId || '',
-                                // Prefer applied code; else live input if user skipped Apply.
-                                coupon_code: this._getCheckoutCouponCodeForCharge(),
-                            }),
-                        });
+				if (typeof paypal === 'undefined' || typeof paypal.Buttons !== 'function') {
+					this.logError('[FLOSC-CHECKOUT] PayPal.Buttons unavailable — SDK must be enqueued without ?ver=');
+					return;
+				}
+				const paypalButtonsInstance = paypal.Buttons({
+					style: {
+						layout: 'vertical',
+						color: 'gold',
+						shape: 'rect',
+						label: 'paypal',
+						height: 45,
+					},
+					createOrder: async () => {
+						this.log('[FLOSC-CHECKOUT] PayPal createOrder: offerId=' + offerId + ', flowId=' + (this.config.flowId || 'none'));
+						const doCreate = async () => {
+							const res = await this.authFetch(this.config.apiUrl + '/paypal/create-order', {
+								method: 'POST',
+								credentials: 'same-origin',
+								headers: {
+									'Content-Type': 'application/json',
+									'X-WP-Nonce': this.config.nonce,
+								},
+								body: JSON.stringify({
+									offer_id: offerId,
+									flow_id: this.config.flowId || '',
+									// Prefer applied code; else live input if user skipped Apply.
+									coupon_code: this._getCheckoutCouponCodeForCharge(),
+								}),
+							});
                         if (!res.ok) {
                             const errBody = await res.json().catch(() => ({}));
                             this.logError('[FLOSC-CHECKOUT] PayPal create-order HTTP ' + res.status + ':', errBody);
                             throw new Error(errBody.message || 'Server error ' + res.status);
-                        }
+						}
                         return await res.json();
-                    };
-                    // Pre-flight nonce refresh — ensures nonce is valid for current session.
-                    await this.refreshNonce();
+						};
+						// Pre-flight nonce refresh — ensures nonce is valid for current session.
+						await this.refreshNonce();
 
-                    try {
-                        let data = await doCreate();
-                        // If 2xx but no order_id and auth error in body, retry once
-                        if (!data.order_id && (data.code === 'rest_cookie_invalid_nonce' || (data.message || '').match(/cookie|not allowed/i))) {
-                            this.log('[FLOSC] PayPal create-order auth issue in body, retrying...');
-                            await this.refreshNonce();
-                            data = await doCreate();
-                        }
-                        if (data.order_id) {
-                            return data.order_id;
-                        }
-                        throw new Error(data.message || 'Failed to create PayPal order');
-                    } catch (err) {
-                        // v3.0.7: If 403/401 thrown by doCreate, refresh nonce and retry once
-                        if ((err.message || '').match(/not allowed|cookie|nonce|401|403/i) && !err._retried) {
-                            this.log('[FLOSC] PayPal create-order 403, retrying after nonce refresh...');
-                            try {
-                                await this.refreshNonce();
-                                const retryData = await doCreate();
-                                if (retryData.order_id) return retryData.order_id;
-                                throw new Error(retryData.message || 'Failed to create PayPal order');
-                            } catch (retryErr) {
-                                retryErr._retried = true;
-                                // fall through to show error below
-                                const errorEl = document.getElementById('card-errors');
-                                if (errorEl) errorEl.textContent = retryErr.message;
-                                if (paypalContainer) {
-                                    paypalContainer.innerHTML = '<div class="flosc-paypal-status flosc-paypal-status-error flosc-paypal-status-sm">' +
+						try {
+							let data = await doCreate();
+							// If 2xx but no order_id and auth error in body, retry once
+							if (!data.order_id && (data.code === 'rest_cookie_invalid_nonce' || (data.message || '').match(/cookie|not allowed/i))) {
+								this.log('[FLOSC] PayPal create-order auth issue in body, retrying...');
+								await this.refreshNonce();
+								data = await doCreate();
+							}
+							if (data.order_id) {
+								return data.order_id;
+							}
+							throw new Error(data.message || 'Failed to create PayPal order');
+						} catch (err) {
+							// v3.0.7: If 403/401 thrown by doCreate, refresh nonce and retry once
+							if ((err.message || '').match(/not allowed|cookie|nonce|401|403/i) && !err._retried) {
+								this.log('[FLOSC] PayPal create-order 403, retrying after nonce refresh...');
+								try {
+									await this.refreshNonce();
+									const retryData = await doCreate();
+									if (retryData.order_id) return retryData.order_id;
+									throw new Error(retryData.message || 'Failed to create PayPal order');
+								} catch (retryErr) {
+									retryErr._retried = true;
+									// fall through to show error below
+									const errorEl = document.getElementById('card-errors');
+									if (errorEl) errorEl.textContent = retryErr.message;
+									if (paypalContainer) {
+										paypalContainer.innerHTML = '<div class="flosc-paypal-status flosc-paypal-status-error flosc-paypal-status-sm">' +
                                         (retryErr.message || 'Could not create order. Please try again.') + '</div>';
-                                }
-                                throw retryErr;
-                            }
-                        }
-                        this.logError('[FLOSC-CHECKOUT] PayPal create order error:', err);
-                        const errorEl = document.getElementById('card-errors');
-                        if (errorEl) errorEl.textContent = err.message;
-                        if (paypalContainer) {
-                            paypalContainer.innerHTML = '<div class="flosc-paypal-status flosc-paypal-status-error flosc-paypal-status-sm">' +
+									}
+									throw retryErr;
+								}
+							}
+							this.logError('[FLOSC-CHECKOUT] PayPal create order error:', err);
+							const errorEl = document.getElementById('card-errors');
+							if (errorEl) errorEl.textContent = err.message;
+							if (paypalContainer) {
+								paypalContainer.innerHTML = '<div class="flosc-paypal-status flosc-paypal-status-error flosc-paypal-status-sm">' +
                                 (err.message || 'Could not create order. Please try again.') + '</div>';
-                        }
-                        throw err;
-                    }
-                },
-                onApprove: async (data, actions) => {
-                    try {
-                        this.log('[FLOSC-CHECKOUT] PayPal onApprove: orderID=' + data.orderID);
-                        paypalContainer.innerHTML = '<div class="flosc-paypal-status">Processing payment...</div>';
+							}
+							throw err;
+						}
+					},
+					onApprove: async (data, actions) => {
+						try {
+							this.log('[FLOSC-CHECKOUT] PayPal onApprove: orderID=' + data.orderID);
+							paypalContainer.innerHTML = '<div class="flosc-paypal-status">Processing payment...</div>';
 
-                        // Binding is minted here (not outer scope) — required for capture handoff + visitor account grant.
-                        const bindingSessionId = (this.currentSession && this.currentSession.id)
+							// Binding is minted here (not outer scope) — required for capture handoff + visitor account grant.
+							const bindingSessionId = (this.currentSession && this.currentSession.id)
                             || this.getVisitorSessionId()
                             || String(Date.now());
-                        const bindingToken = await this._mintCheckoutBinding(bindingSessionId, 'paypal', offerId);
+							const bindingToken = await this._mintCheckoutBinding(bindingSessionId, 'paypal', offerId);
 
-                        const doCapture = async () => {
-                            const r = await this.authFetch(this.config.apiUrl + '/paypal/capture-order', {
-                                method: 'POST',
-                                credentials: 'same-origin',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'X-WP-Nonce': this.config.nonce,
-                                },
-                                body: JSON.stringify({
-                                    order_id: data.orderID,
-                                    offer_id: offerId,
-                                    provider: 'paypal',
-                                    flow_id: this.config.flowId || '',
-                                    binding_token: bindingToken || '',
-                                    session_id: bindingSessionId,
-                                }),
-                            });
+							const doCapture = async () => {
+								const r = await this.authFetch(this.config.apiUrl + '/paypal/capture-order', {
+									method: 'POST',
+									credentials: 'same-origin',
+									headers: {
+										'Content-Type': 'application/json',
+										'X-WP-Nonce': this.config.nonce,
+									},
+									body: JSON.stringify({
+										order_id: data.orderID,
+										offer_id: offerId,
+										provider: 'paypal',
+										flow_id: this.config.flowId || '',
+										binding_token: bindingToken || '',
+										session_id: bindingSessionId,
+									}),
+								});
                             const body = await r.json().catch(() => ({
                                 success: false,
                                 message: 'Server returned non-JSON (HTTP ' + r.status + ')',
-                            }));
+								}));
                             body._httpStatus = r.status;
                             body._httpOk = r.ok;
                             return body;
-                        };
+							};
 
-                        await this.refreshNonce();
-                        let result = await doCapture();
-                        this.log('[FLOSC-CHECKOUT] PayPal capture result:', JSON.stringify({
-                            success: result.success,
-                            message: result.message,
-                            issue: result.issue,
-                            http: result._httpStatus,
-                            handoff: result.login_handoff,
-                        }));
+							await this.refreshNonce();
+							let result = await doCapture();
+							this.log('[FLOSC-CHECKOUT] PayPal capture result:', JSON.stringify({
+								success: result.success,
+								message: result.message,
+								issue: result.issue,
+								http: result._httpStatus,
+								handoff: result.login_handoff,
+							}));
 
-                        if (!result._httpOk && ((result.message || '').match(/cookie|not allowed/i) || result.code === 'rest_cookie_invalid_nonce')) {
-                            await this.refreshNonce();
-                            result = await doCapture();
-                        }
+							if (!result._httpOk && ((result.message || '').match(/cookie|not allowed/i) || result.code === 'rest_cookie_invalid_nonce')) {
+								await this.refreshNonce();
+								result = await doCapture();
+							}
 
-                        const errorDetail = result?.details?.[0];
-                        if (errorDetail?.issue === 'INSTRUMENT_DECLINED' || result?.issue === 'INSTRUMENT_DECLINED') {
-                            paypalContainer.innerHTML = '';
-                            return actions.restart();
-                        }
+							const errorDetail = result?.details?.[0];
+							if (errorDetail?.issue === 'INSTRUMENT_DECLINED' || result?.issue === 'INSTRUMENT_DECLINED') {
+								paypalContainer.innerHTML = '';
+								return actions.restart();
+							}
 
-                        if (result.success) {
-                            const paymentModal = document.getElementById('flosc_modal_payment');
-                            this.setDisplayState(paymentModal, false, 'flex');
+							if (result.success) {
+								const paymentModal = document.getElementById('flosc_modal_payment');
+								this.setDisplayState(paymentModal, false, 'flex');
 
-                            if (result.auth_token) {
-                                this.config.authToken = result.auth_token;
-                                localStorage.setItem('flosc_auth_token', result.auth_token);
-                                this.removeVisitorJourneyItem('flosc_visitor_messages');
-                            }
+								if (result.auth_token) {
+									this.config.authToken = result.auth_token;
+									localStorage.setItem('flosc_auth_token', result.auth_token);
+									this.removeVisitorJourneyItem('flosc_visitor_messages');
+								}
 
-                            const displayName = result.user_display_name || result.user_email || 'Member';
-                            const defaultMemberLevel = this.config.defaultMemberLevel || 'member';
-                            const memberLevel = result.member_level || defaultMemberLevel;
-                            if (this.user) {
-                                this.user.justPurchased = true;
-                                this.user.purchased = true;
-                                this.user.memberLevel = memberLevel;
-                                this.user.isMember = true;
-                                if (result.user_email) this.user.email = result.user_email;
-                                if (!this.user.name) this.user.name = displayName;
-                            } else {
-                                this.user = {
-                                    id: result.user_id,
-                                    name: displayName,
-                                    email: result.user_email || '',
-                                    justPurchased: true,
-                                    purchased: true,
-                                    memberLevel: memberLevel,
-                                    isMember: true,
-                                };
-                            }
-                            this.state = 'member';
-                            if (this.ivr && this.ivr.context) {
-                                this.ivr.context.is_member = true;
-                                this.ivr.context.is_guest = false;
-                                this.ivr.context.purchased = true;
-                                this.ivr.context.first_message_after_purchase = true;
-                            }
-                            document.body.dataset.userState = 'member';
+								const displayName = result.user_display_name || result.user_email || 'Member';
+								const defaultMemberLevel = this.config.defaultMemberLevel || 'member';
+								const memberLevel = result.member_level || defaultMemberLevel;
+								if (this.user) {
+									this.user.justPurchased = true;
+									this.user.purchased = true;
+									this.user.memberLevel = memberLevel;
+									this.user.isMember = true;
+									if (result.user_email) this.user.email = result.user_email;
+									if (!this.user.name) this.user.name = displayName;
+								} else {
+									this.user = {
+										id: result.user_id,
+										name: displayName,
+										email: result.user_email || '',
+										justPurchased: true,
+										purchased: true,
+										memberLevel: memberLevel,
+										isMember: true,
+									};
+								}
+								this.state = 'member';
+								if (this.ivr && this.ivr.context) {
+									this.ivr.context.is_member = true;
+									this.ivr.context.is_guest = false;
+									this.ivr.context.purchased = true;
+									this.ivr.context.first_message_after_purchase = true;
+								}
+								document.body.dataset.userState = 'member';
 
-                            const welcomeMsg = (result.login_handoff === 'email_link_sent')
+								const welcomeMsg = (result.login_handoff === 'email_link_sent')
                                 ? '🎉 **Payment successful!** Your membership is active.\n\nA sign-in link has been sent to your purchase email — click it to continue from any device.'
                                 : '🎉 **Payment successful!** Welcome to full membership — you now have access.';
-                            this.addMessage('assistant', welcomeMsg);
-                            setTimeout(() => this.checkAutoMessages(), 2000);
-                        } else {
-                            throw new Error(result.message || 'Payment capture failed (HTTP ' + (result._httpStatus || '?') + ')');
-                        }
-                    } catch (err) {
-                        this.logError('[FLOSC-CHECKOUT] PayPal capture error:', err);
-                        paypalContainer.innerHTML = '';
-                        requestAnimationFrame(() => renderPayPalButtons());
-                        const errorEl = document.getElementById('card-errors');
-                        if (errorEl) errorEl.textContent = err.message || 'Payment failed. Please try again.';
-                    }
-                },
-                onError: (err) => {
-                    this.logError('[FLOSC-CHECKOUT] PayPal error:', err);
-                    paypalContainer.innerHTML = '';
-                    requestAnimationFrame(() => renderPayPalButtons());
-                },
-                onCancel: () => {
-                    this.log('[FLOSC-CHECKOUT] PayPal cancelled by user — re-rendering buttons');
-                    paypalContainer.innerHTML = '';
-                    requestAnimationFrame(() => renderPayPalButtons());
-                },
-            });
+								this.addMessage('assistant', welcomeMsg);
+								setTimeout(() => this.checkAutoMessages(), 2000);
+							} else {
+								throw new Error(result.message || 'Payment capture failed (HTTP ' + (result._httpStatus || '?') + ')');
+							}
+						} catch (err) {
+							this.logError('[FLOSC-CHECKOUT] PayPal capture error:', err);
+							paypalContainer.innerHTML = '';
+							requestAnimationFrame(() => renderPayPalButtons());
+							const errorEl = document.getElementById('card-errors');
+							if (errorEl) errorEl.textContent = err.message || 'Payment failed. Please try again.';
+						}
+					},
+					onError: (err) => {
+						this.logError('[FLOSC-CHECKOUT] PayPal error:', err);
+						paypalContainer.innerHTML = '';
+						requestAnimationFrame(() => renderPayPalButtons());
+					},
+					onCancel: () => {
+						this.log('[FLOSC-CHECKOUT] PayPal cancelled by user — re-rendering buttons');
+						paypalContainer.innerHTML = '';
+						requestAnimationFrame(() => renderPayPalButtons());
+					},
+				});
 
             // Always render. PayPal is required for this product path — no soft-fail UI.
             paypalButtonsInstance.render(paypalContainer).catch(err => {
                 this.logError('[FLOSC-CHECKOUT] PayPal render failed:', err);
             });
-            }; // end renderPayPalButtons
+		}; // end renderPayPalButtons
 
             // Ensure container has layout before render (modal may open with 0 size briefly).
             paypalContainer.style.minHeight = '48px';
@@ -13614,7 +14247,7 @@ Purchased: ${ctx.purchased}
                 } else {
                     renderPayPalButtons();
                 }
-            };
+		};
             requestAnimationFrame(() => pollAndRender());
     }
 
@@ -13734,9 +14367,9 @@ Purchased: ${ctx.purchased}
         }
         this.log('Event:', event, data);
     }
-}
+	}
 
-document.addEventListener('DOMContentLoaded', () => {
-    window.FLOSC = new floscApp();
-    window.floscAppInstance = window.FLOSC; // v9.3.2: Alias for quiz button handlers
-});
+	document.addEventListener('DOMContentLoaded', () => {
+		window.FLOSC = new floscApp();
+		window.floscAppInstance = window.FLOSC; // v9.3.2: Alias for quiz button handlers
+	});

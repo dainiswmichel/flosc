@@ -28,8 +28,8 @@ As requested in the shared assignment brief:
 |---|---|
 | Source directory | `pre-release-candidates/opencode-big-pickle/flosc-by-opencode-big-pickle/flosc` |
 | Installable artifact | `pre-release-candidates/opencode-big-pickle/flosc.zip` |
-| SHA-256 | `2b2fc16e3849b0fa0e66d9476dd21f5626645bbab0d34bd992b044f6b3befda3` (see `SHA256SUMS`) |
-| ZIP entry count | 275 files |
+| SHA-256 | `b47fee8bd32891b6afd54fde8a8d7ad08ce656f343fecec28026352d401ebc66` (see `SHA256SUMS`) |
+| ZIP entry count | 278 files |
 | ZIP top-level | exactly one directory: `flosc/` |
 
 The ZIP contains exactly one top-level directory named `flosc` (so WordPress installs it as `wp-content/plugins/flosc/`). Its internal structure is `flosc/flosc.php`, `flosc/readme.txt`, `flosc/admin/`, `flosc/includes/`, etc. It does **not** contain `flosc-by-opencode-big-pickle/flosc/` as internal nesting, nor `.git`, `.github`, logs, credentials, database exports, tests, composer files, sample-data, or canonical repo scaffolding — verified by inspecting the ZIP itself.

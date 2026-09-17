@@ -1,4 +1,4 @@
-<?php if (!defined('ABSPATH')) exit; // Core reference content derived from flosc.php ?>
+<?php if (!defined('ABSPATH')) { exit;} // Core reference content derived from flosc.php ?>
 
 <h2 id="core-version-identity">Version and Identity</h2>
 <p><strong>Source of truth:</strong> <code>flosc.php</code> plugin header and constants.</p>

@@ -1,82 +1,95 @@
 {
-  "agent": {
-    "name": "opencode",
-    "exact_agent_model": "opencode/big-pickle",
-    "slug": "opencode-big-pickle"
-  },
-  "assignment": {
-    "baseline_commit": "03f4b926c5502b7d2af0136fc1bac8359286b9f8",
-    "category": "complete-independently-deployable-plugin",
-    "source_path": "pre-release-candidates/opencode-big-pickle/flosc-by-opencode-big-pickle/flosc",
-    "artifact_path": "pre-release-candidates/opencode-big-pickle/flosc.zip"
-  },
-  "artifact": {
-    "filename": "flosc.zip",
-    "sha256": "258fc2210349f941ce1f8c327d207f883307159977ae8b3a3406be9b6c411738",
-    "entry_count": 242,
-    "top_level_dirs": [
-      "flosc"
-    ],
-    "contains_git": false,
-    "contains_forbidden_paths": false
-  },
-  "candidate_status": "candidate",
-  "phases_implemented": {
-    "p0": "not-applicable-to-code-candidate",
-    "p1": "partial",
-    "p2": "implemented",
-    "p3": "partial",
-    "p4": "implemented",
-    "p5": "not-started",
-    "p6": "deferred-runtime-verification",
-    "p7": "not-mutated",
-    "p8": "partial"
-  },
-  "files_subsystems_changed": [
-    "includes/flosc-personality-library.php",
-    "includes/class-flosc-chatpack.php",
-    "includes/chat-turn/trait-flosc-chat-turn.php",
-    "flosc.php",
-    "admin/flosc-app.php",
-    "admin/ivr-messages.php",
-    "assets/js/flosc-app.js"
+ "agent": {
+  "name": "opencode",
+  "exact_agent_model": "opencode/big-pickle",
+  "slug": "opencode-big-pickle"
+ },
+ "assignment": {
+  "baseline_commit": "03f4b926c5502b7d2af0136fc1bac8359286b9f8",
+  "category": "complete-independently-deployable-plugin",
+  "source_path": "pre-release-candidates/opencode-big-pickle/flosc-by-opencode-big-pickle/flosc",
+  "artifact_path": "pre-release-candidates/opencode-big-pickle/flosc.zip"
+ },
+ "artifact": {
+  "filename": "flosc.zip",
+  "sha256": "b47fee8bd32891b6afd54fde8a8d7ad08ce656f343fecec28026352d401ebc66",
+  "entry_count": 278,
+  "top_level_dirs": [
+   "flosc"
   ],
-  "public_chat_repair": "hedge methods + guarded calls; IVR personality/flow variable substitution; newline normalization",
-  "live_rating_after_repair": "8/10",
-  "tests": {
-    "checks_run": [
-      "php -l (syntax) on all three changed files",
-      "isolated deterministic-compiler unit test (rich-profile preservation, synthesis determinism, hash consistency, distinctness)",
-      "ZIP structure inspection (single top-level flosc/, no forbidden paths, artifact contains all three changes)"
-    ],
-    "checks_passed": [
-      "php -l syntax on includes/flosc-personality-library.php",
-      "php -l syntax on includes/class-flosc-chatpack.php",
-      "php -l syntax on includes/chat-turn/trait-flosc-chat-turn.php",
-      "deterministic compiler: rich profile preserved, synthesis deterministic, hash consistent, distinct genomes differ",
-      "ZIP top-level = flosc/ only; no .git/.github/composer/sample-data/tests/forgeable nesting; artifact contains all three source changes"
-    ],
-    "checks_failed": [],
-    "checks_deferred": [
-      "WordPress installation and activation",
-      "Plugin Check (requires WordPress)",
-      "WP_DEBUG runtime behavior",
-      "Live AI provider requests",
-      "Real database persistence",
-      "Browser behavior / admin-visitor parity",
-      "Betty -> Dan -> Betty mid-conversation interaction",
-      "RAG and provider failure simulations",
-      "Accessibility interaction testing",
-      "Starter Pack install/repair/remove/reinstall on a fresh database"
-    ]
-  },
-  "known_defects": [
-    "Bundled BubblyBetty (~6.3KB) and DadJokeDan (~6.4KB) profiles duplicate shared FLOSC sales/truth policy inline (baseline bloat). Not refactored out of the heredocs in this pass to avoid regressing the working first-turn voice; flagged as future work to split into Layer-2 shared policy.",
-    "Follow-up identity re-anchors the current personality voice but truncates the profile at FOLLOWUP_IDENTITY_BYTES (1400) when it exceeds the bound, to keep per-turn token cost controlled. Truncation is on a byte boundary and may cut a longer profile mid-instruction; verified that the two bundled profiles remain distinct within the first 1400 bytes.",
-    "profile_hash is computed for newly saved/upgraded entries; pre-existing library rows saved before this candidate ship without a stored hash until next save (resolver falls back to hashing the live profile at read time)."
+  "contains_git": false,
+  "contains_forbidden_paths": false
+ },
+ "candidate_status": "candidate",
+ "phases_implemented": {
+  "p0": "buildable (build-dist-zip.sh runs in procedure 0)",
+  "p1": "clean shipping tree (278 entries, 0 tests/, no forbidden paths)",
+  "p2": "clean version headers (readme.txt == flosc.php)",
+  "p3": "CLEAN on fresh build \u2014 WordPress security: EscapeOutput, ValidatedSanitizedInput, NonceVerification, SafeRedirect, PreparedSQL, DirectDatabaseQuery (warnings included) = 0 findings",
+  "p4": "CLEAN \u2014 PHP 7.4 compatibility (PHPCompatibilityWP)",
+  "p5": "CLEAN \u2014 7 plugin-review rejections incl. NoSilencedErrors (uninstall.php @-suppression removed)",
+  "p6": "CLEAN \u2014 translation functions (I18n)",
+  "p7": "partial \u2014 PHPStan level 5: 616 errors (down from 790). Of 616: 102 are the documented FLOSC_PLUGIN_DIR/FLOSC_PLUGIN_URL constant.notFound artifact (define() with function-call values; mirror-guarded config cannot be edited), the rest are dead-defensive-check buckets (alreadyNarrowedType 150, nullCoalesce.offset 96, booleanAnd.rightAlwaysTrue 41, etc.)",
+  "p8": "CLEAN \u2014 syntax (php -l, 0 errors)",
+  "p9": "clean \u2014 no inline style attributes in shipped PHP",
+  "p10": "NOT RUN \u2014 wp-env not running (requires docker container; see deferred)",
+  "p11": "NOT RUN \u2014 wp-env not running (clean-install WP_DEBUG smoke test deferred)"
+ },
+ "files_subsystems_changed": [
+  "includes/flosc-personality-library.php",
+  "includes/class-flosc-chatpack.php",
+  "includes/chat-turn/trait-flosc-chat-turn.php",
+  "flosc.php",
+  "admin/flosc-app.php",
+  "admin/ivr-messages.php",
+  "assets/js/flosc-app.js"
+ ],
+ "public_chat_repair": "hedge methods + guarded calls; IVR personality/flow variable substitution; newline normalization",
+ "live_rating_after_repair": "8/10",
+ "tests": {
+  "checks_run": [
+   "php -l on all edited files",
+   "flosc-test procedure 0 (build ship tree via build-dist-zip.sh)",
+   "flosc-test procedure 1 (what ships: unzip -l)",
+   "flosc-test procedure 2 (version headers)",
+   "flosc-test procedure 3 (WordPress security incl. nonce, warnings included)",
+   "flosc-test procedure 4 (PHP 7.4 compatibility)",
+   "flosc-test procedure 5 (seven documented plugin-review rejections)",
+   "flosc-test procedure 6 (translation functions)",
+   "flosc-test procedure 7 (PHPStan level 5)",
+   "flosc-test procedure 8 (syntax)",
+   "flosc-test procedure 9 (inline styles)"
   ],
-  "canonical_source_modified": false,
-  "other_candidates_modified": false,
-  "wordpress_versions_tested": "DEFERRED - AUTHORIZED REMOTE TEST REQUIRED (no local WordPress)",
-  "php_versions_tested": "php 8 CLI syntax only (runtime deferred)"
+  "checks_passed": [
+   "php -l syntax on every edited file",
+   "p0 build, p1 ship contents, p2 version headers",
+   "p3 WordPress security: 0 errors, 0 warnings",
+   "p4 PHP 7.4 compat: clean",
+   "p5 seven rejections (globals, cap overrides, curl, error_log, @-suppression, menu slugs): clean",
+   "p6 I18n: clean",
+   "p8 syntax: clean",
+   "p9 inline styles: clean"
+  ],
+  "checks_failed": [
+   "p7 PHPStan level 5: 616 errors (102 = FLOSC_PLUGIN_DIR/URL constant.notFound artifact, documented; ~514 = dead-defensive-check warnings: alreadyNarrowedType 150, nullCoalesce.offset 96, booleanAnd.rightAlwaysTrue 41, notIdentical.alwaysTrue 28, function.impossibleType 25, booleanNot.alwaysFalse 18, nullCoalesce.property 15, method.unused 14, isset.offset 12, identical.alwaysFalse 11, instanceof.alwaysTrue 10, misc)"
+  ],
+  "checks_deferred": [
+   "p10 Plugin Check (needs running wp-env)",
+   "p11 clean-install WP_DEBUG smoke test (needs running wp-env)",
+   "Live AI provider requests",
+   "Real browser/admin-visitor parity",
+   "Accessibility interaction testing",
+   "Starter Pack install/repair/remove/reinstall on a fresh database"
+  ]
+ },
+ "known_defects": [
+  "PHPStan reports 'Constant FLOSC_PLUGIN_DIR/FLOSC_PLUGIN_URL not found' (102 sites). Cause: flosc.php defines them as define('FLOSC_PLUGIN_DIR', plugin_dir_path(__FILE__)) \u2014 the value is a function call PHPStan cannot resolve cross-file. The regex-list bootstrap fix belongs in phpstan.neon.dist which is mirror-guarded (sha256-checked by flosc-test doctor); editing it would fail integrity. Counted and documented rather than hidden.",
+  "Remaining PHPStan dead-check warnings (alreadyNarrowedType, alwaysTrue, nullCoalesce.offset, etc.) are genuine always-true defensive is_*/empty checks left in place to avoid removing defensive code without per-site verification; each is provably dead but harmless.",
+  "Bundled BubblyBetty/DadJokeDan profiles duplicate shared FLOSC sales/truth policy inline (baseline bloat; unchanged this pass).",
+  "Follow-up identity re-anchor truncates profile at FOLLOWUP_IDENTITY_BYTES (1400) byte boundary if a profile exceeds the bound."
+ ],
+ "canonical_source_modified": false,
+ "other_candidates_modified": false,
+ "wordpress_versions_tested": "peer-up: procedure 11 (wp_DEBUG clean-install smoke) NOT RUN \u2014 wp-env container not started",
+ "php_versions_tested": "php 8.4.7 CLI (php -l and phpcs/phpstan runtime); PHP 7.4 compat asserted by PHPCompatibilityWP (p4, clean)"
 }
