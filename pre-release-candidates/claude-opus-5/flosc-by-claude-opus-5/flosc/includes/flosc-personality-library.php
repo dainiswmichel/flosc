@@ -1686,8 +1686,9 @@ if ( ! function_exists( 'flosc_admin_save_personality_library' ) ) {
 		// save handler above has already verified its nonce and capability, so
 		// the request is proven by the time this line is reached; the value only
 		// picks a redirect target on this site's own admin.php.
-		$ivr_raw = filter_input( INPUT_POST, 'flosc_return_ivr', FILTER_UNSAFE_RAW );
-		$ivr     = is_string( $ivr_raw ) ? sanitize_file_name( wp_unslash( $ivr_raw ) ) : '';
+		$ivr = ( isset( $_POST['flosc_return_ivr'] ) && is_scalar( $_POST['flosc_return_ivr'] ) )
+			? sanitize_file_name( wp_unslash( $_POST['flosc_return_ivr'] ) )
+			: '';
 		wp_safe_redirect(
 			add_query_arg(
 				array(

@@ -8,19 +8,28 @@
  * nonce on them would break bookmarks and the back button while protecting
  * nothing.
  *
- * WHY filter_input() AND NOT $_GET
+ * WHY THIS READS $_GET DIRECTLY
  *
- * Not to quieten a sniff. filter_input() is the correct boundary here because
- * these values arrive from outside and must be typed and constrained on the way
- * in, and because it reads the original request rather than a superglobal that
- * any earlier code may have written to -- which this plugin did do, in
- * redirect_to_settings_tab(), until it was removed.
+ * An earlier version read through filter_input( ..., FILTER_UNSAFE_RAW ) and
+ * this docblock claimed that was not about quietening a sniff. That claim was
+ * false. WPCS's NonceVerification sniff detects reads of the $_GET and $_POST
+ * variables; it does not model filter_input(), so routing thirty reads through
+ * a function call made them invisible to it. The warnings went to zero because
+ * the scanner could no longer see the read, not because a control was added.
  *
- * FILTER_UNSAFE_RAW is NOT the sanitization here. It is the "give me the string
- * unchanged" flag; sanitize_text_field() and the allowlist below do the actual
- * work, in that order. Anything that returns from this function has either
- * matched a closed set of expected values or passed a named WordPress
- * sanitizer, and is a string.
+ * FLOSC's own gate caught it. tests/check_wporg_rules.php WPORG-04, written
+ * from the 13 Sep 2026 rejection, reports FILTER_UNSAFE_RAW as not sanitizing,
+ * which is the same objection WordPress.org made.
+ *
+ * So the read is a plain superglobal read again, unslashed and sanitized where
+ * it happens. What this function legitimately provides is centralization: the
+ * read occurs HERE, once, instead of at thirty call sites, so a reviewer checks
+ * one function. NonceVerification will report this function, and that report is
+ * true -- it reads GET without a nonce, deliberately, for the reasons above.
+ * A warning that is true is not a defect to be hidden.
+ *
+ * Anything that returns from here has either matched a closed set of expected
+ * values or passed a named WordPress sanitizer, and is a string.
  *
  * WHAT THIS MUST NEVER BE USED FOR
  *
@@ -58,12 +67,11 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @return string
  */
 function flosc_nav_param( $key, array $allowed = array(), $default = '', $sanitizer = 'sanitize_key' ) {
-	$raw = filter_input( INPUT_GET, $key, FILTER_UNSAFE_RAW );
-	if ( ! is_string( $raw ) ) {
+	if ( ! isset( $_GET[ $key ] ) || ! is_scalar( $_GET[ $key ] ) ) {
 		return $default;
 	}
 
-	$value = sanitize_text_field( wp_unslash( $raw ) );
+	$value = sanitize_text_field( wp_unslash( $_GET[ $key ] ) );
 
 	if ( array() !== $allowed ) {
 		return in_array( $value, $allowed, true ) ? $value : $default;
@@ -106,5 +114,5 @@ function flosc_nav_param_int( $key, $min = 0, $max = PHP_INT_MAX, $default = 0 )
  * @return bool
  */
 function flosc_nav_param_present( $key ) {
-	return filter_has_var( INPUT_GET, $key );
+	return isset( $_GET[ $key ] );
 }

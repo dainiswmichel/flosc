@@ -140,7 +140,9 @@ if (!function_exists('flosc_sanitize_ivr_markdown')) {
  * $_POST is now read only on an actual POST. It was unslashed on every render
  * of the tab, including plain GETs that could not possibly carry a submission.
  */
-$flosc_request_method = strtoupper( (string) ( filter_input( INPUT_SERVER, 'REQUEST_METHOD', FILTER_UNSAFE_RAW ) ?: '' ) );
+$flosc_request_method = isset( $_SERVER['REQUEST_METHOD'] )
+    ? strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) )
+    : '';
 
 /*
  * Display selectors, through the shared input boundary. Each is constrained to
@@ -219,7 +221,10 @@ if ( 'POST' === $flosc_request_method ) {
         'save_ivr_message'               => 'flosc_save_ivr_message',
     );
     foreach ( $flosc_actions as $flosc_submit_key => $flosc_nonce_action ) {
-        if ( null !== filter_input( INPUT_POST, $flosc_submit_key, FILTER_UNSAFE_RAW ) ) {
+        // Presence selects the route. check_admin_referer() on the next line
+        // ends the request unless the nonce for THAT route verifies, so nothing
+        // below this loop runs on an unverified body.
+        if ( isset( $_POST[ $flosc_submit_key ] ) ) {
             check_admin_referer( $flosc_nonce_action );
             $flosc_post = wp_unslash( $_POST );
             break;

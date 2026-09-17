@@ -221,8 +221,9 @@ class Apple_Provider extends SSO_Provider_Base {
          * WordPress form and therefore no nonce to verify. The OAuth state is
          * checked by the handler before this provider is reached.
          */
-        $user_raw      = filter_input( INPUT_POST, 'user', FILTER_UNSAFE_RAW );
-        $user_post     = is_string( $user_raw ) ? sanitize_text_field( wp_unslash( $user_raw ) ) : '';
+        $user_post     = ( isset( $_POST['user'] ) && is_scalar( $_POST['user'] ) )
+            ? sanitize_text_field( wp_unslash( $_POST['user'] ) )
+            : '';
         $raw_user_json = ( '' !== $user_post )
             ? sanitize_textarea_field( $user_post )
             : '';

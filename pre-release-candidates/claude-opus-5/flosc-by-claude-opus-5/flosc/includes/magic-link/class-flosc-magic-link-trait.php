@@ -222,9 +222,10 @@ trait FLOSC_Magic_Link_Trait {
              * request this site did not compose. Read as a bounded, sanitized
              * boundary -- untrusted until the token verifies.
              */
-            $raw = filter_input( INPUT_GET, $flosc_qk, FILTER_UNSAFE_RAW );
-            $val = is_string( $raw ) ? sanitize_text_field( wp_unslash( $raw ) ) : '';
-            if ( '' !== $val && strlen( $val ) <= 2048 ) {
+            $val = ( isset( $_GET[ $flosc_qk ] ) && is_scalar( $_GET[ $flosc_qk ] ) )
+                ? sanitize_text_field( wp_unslash( $_GET[ $flosc_qk ] ) )
+                : '';
+            if ( '' !== $val ) {
                 $get[ $flosc_qk ] = $val;
             }
         }
@@ -1593,8 +1594,9 @@ trait FLOSC_Magic_Link_Trait {
             // Which flow to return the admin to. A display selector for the
             // redirect target below, matched against known flow files by the
             // caller; it selects no action and writes nothing.
-            $ivr_raw = filter_input( INPUT_POST, 'ivr', FILTER_UNSAFE_RAW );
-            $ivr_in  = is_string( $ivr_raw ) ? sanitize_file_name( wp_unslash( $ivr_raw ) ) : '';
+            $ivr_in = ( isset( $_POST['ivr'] ) && is_scalar( $_POST['ivr'] ) )
+                ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
+                : '';
             if ( '' === $ivr_in ) {
                 $ivr_in = flosc_nav_param( 'ivr', array(), '', 'sanitize_file_name' );
             }

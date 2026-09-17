@@ -262,13 +262,15 @@ class OAuth2_Handler {
         $get  = array();
         $post = array();
         foreach ( array( 'code', 'state', 'error', 'error_description' ) as $flosc_k ) {
-            $g_raw = filter_input( INPUT_GET, $flosc_k, FILTER_UNSAFE_RAW );
-            $g     = is_string( $g_raw ) ? sanitize_text_field( wp_unslash( $g_raw ) ) : '';
+            $g = ( isset( $_GET[ $flosc_k ] ) && is_scalar( $_GET[ $flosc_k ] ) )
+                ? sanitize_text_field( wp_unslash( $_GET[ $flosc_k ] ) )
+                : '';
             if ( '' !== $g ) {
                 $get[ $flosc_k ] = $g;
             }
-            $p_raw = filter_input( INPUT_POST, $flosc_k, FILTER_UNSAFE_RAW );
-            $p     = is_string( $p_raw ) ? sanitize_text_field( wp_unslash( $p_raw ) ) : '';
+            $p = ( isset( $_POST[ $flosc_k ] ) && is_scalar( $_POST[ $flosc_k ] ) )
+                ? sanitize_text_field( wp_unslash( $_POST[ $flosc_k ] ) )
+                : '';
             if ( '' !== $p ) {
                 $post[ $flosc_k ] = $p;
             }

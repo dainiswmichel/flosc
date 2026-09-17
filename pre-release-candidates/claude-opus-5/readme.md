@@ -1,17 +1,55 @@
-# FLOSC 8.0.0 — candidate v80
+# FLOSC 8.0.0 — candidate v81
 
-**STATICALLY CLEAN — FUNCTIONALLY UNVERIFIED.** NonceVerification is 84 → 0,
-measured. Four defects v78 introduced were then found by auditing its own diff,
-plus one that predated it. All five are fixed. 0 of 30 behavioral tests have
-been executed.
+**RETRACTION: the "84 → 0" headline was substantially scanner gaming.**
 
-Test procedures: **`v79-regression-accounting.html`**.
+WPCS's `NonceVerification` sniff detects reads of the `$_GET` and `$_POST`
+*variables*. It does not model `filter_input()`. v78 routed about thirty
+read-only navigation reads through `filter_input()` and added no nonce and no
+capability check at those sites. The warnings went to zero because the scanner
+could no longer see the read. `includes/flosc-request.php` opened with "Not to
+quieten a sniff", which was false.
+
+FLOSC's own gate caught it: `tests/check_wporg_rules.php` WPORG-04, written from
+the 13 Sep 2026 rejection, reports `FILTER_UNSAFE_RAW` as not sanitizing. On v80
+it found 14, all in shipping code, none in the exceptions file, and exited 1.
+
+v81 reads every one of those superglobals directly again -- `isset()` /
+`is_scalar()`, then `wp_unslash()`, then a named sanitizer, then the allowlist.
+`flosc_nav_param()` still exists and still allowlists; what it legitimately
+provides is centralization, one read instead of thirty, not invisibility.
+
+**Expect NonceVerification to report a non-zero number on this candidate.** Every
+warning it reports is true: that code reads a request parameter without a nonce,
+deliberately, because the parameter selects what to display or because the right
+control there is an HMAC, an OAuth `state`, or an emailed token. That number is
+not measured here and is not predicted here.
 
     artifact   flosc.zip
-    sha256     c368b435adbc171e… (full value in sha256sums)
+    sha256     0280e535a4713c3a… (full value in sha256sums)
     entries    278, single flosc/ root, 0 under tests/
-    base       claude-opus-5 v79
+    base       claude-opus-5 v80
     version    8.0.0 — unchanged; this is the release being resubmitted
+
+## What v78 got right, and keeps
+
+The settings and IVR dispatchers verify the nonce for the matched route before
+the POST body is read. `ajax_serve_user_audio` calls the HMAC verifier that
+existed and was never invoked. `handle_admin_activate_email_account` no longer
+builds its nonce action from an unvalidated id.
+`save_newsletter_profile_field` verifies `update-user_{id}` itself. Those are
+controls, and they stay.
+
+## Measured in this container
+
+    php tests/check_wporg_rules.php        0 findings, exit 0   (was 14, exit 1)
+    every CLI gate                         37 of 37 pass
+    php -l, whole tree                     0 errors / 187 files
+    FILTER_UNSAFE_RAW in shipping code     0
+    NonceVerification suppressions         0
+    zip                                    278 entries, 0 under tests/, 8.0.0
+
+There is no phpcs, phpstan, wp-env or Plugin Check in this container, and no
+WordPress. 0 of 30 behavioral tests have been executed.
 
 ## What v80 did
 

@@ -11468,8 +11468,9 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             wp_die( 'Unauthorized', 403 );
         }
 
-        $file_raw = filter_input( INPUT_GET, 'file', FILTER_UNSAFE_RAW );
-        $file     = is_string( $file_raw ) ? sanitize_file_name( wp_unslash( $file_raw ) ) : '';
+        $file = isset( $_GET['file'] ) && is_scalar( $_GET['file'] )
+            ? sanitize_file_name( wp_unslash( $_GET['file'] ) )
+            : '';
 
         $is_download = (bool) filter_input( INPUT_GET, 'download', FILTER_VALIDATE_BOOLEAN );
 
@@ -11481,16 +11482,23 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         );
         $expires = is_int( $expires ) ? $expires : 0;
 
-        $sig_raw = filter_input( INPUT_GET, 'sig', FILTER_UNSAFE_RAW );
-        $sig     = ( is_string( $sig_raw ) && preg_match( '/^[a-f0-9]{64}$/i', $sig_raw ) )
-            ? strtolower( $sig_raw )
+        // The signature is REJECTED if it is not exactly 64 hex characters --
+        // never stripped down to the characters that happen to qualify, which
+        // would turn malformed input into different input.
+        $sig_raw = isset( $_GET['sig'] ) && is_scalar( $_GET['sig'] )
+            ? sanitize_text_field( wp_unslash( $_GET['sig'] ) )
             : '';
+        $sig     = preg_match( '/\A[a-f0-9]{64}\z/i', $sig_raw ) ? strtolower( $sig_raw ) : '';
 
-        $session_raw = filter_input( INPUT_GET, 'flosc_sid', FILTER_UNSAFE_RAW );
-        if ( ! is_string( $session_raw ) || '' === $session_raw ) {
-            $session_raw = filter_input( INPUT_GET, 'session_id', FILTER_UNSAFE_RAW );
+        $session_raw = isset( $_GET['flosc_sid'] ) && is_scalar( $_GET['flosc_sid'] )
+            ? sanitize_text_field( wp_unslash( $_GET['flosc_sid'] ) )
+            : '';
+        if ( '' === $session_raw ) {
+            $session_raw = isset( $_GET['session_id'] ) && is_scalar( $_GET['session_id'] )
+                ? sanitize_text_field( wp_unslash( $_GET['session_id'] ) )
+                : '';
         }
-        $session_id = is_string( $session_raw ) ? sanitize_text_field( wp_unslash( $session_raw ) ) : '';
+        $session_id = $session_raw;
 
         // $user_id and the capability were settled at the top of this method,
         // before anything else was parsed. Only $file is left to validate.

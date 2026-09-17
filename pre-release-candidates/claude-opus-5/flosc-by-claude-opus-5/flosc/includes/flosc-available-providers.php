@@ -513,8 +513,9 @@ if ( ! function_exists( 'flosc_admin_save_available_providers' ) ) {
 
 		// Redirect target after the save above, which verified its own nonce and
 		// capability before writing. Only picks a tab on this site's admin.php.
-		$ivr_raw = filter_input( INPUT_POST, 'flosc_return_ivr', FILTER_UNSAFE_RAW );
-		$ivr     = is_string( $ivr_raw ) ? sanitize_file_name( wp_unslash( $ivr_raw ) ) : '';
+		$ivr = ( isset( $_POST['flosc_return_ivr'] ) && is_scalar( $_POST['flosc_return_ivr'] ) )
+			? sanitize_file_name( wp_unslash( $_POST['flosc_return_ivr'] ) )
+			: '';
 		wp_safe_redirect(
 			add_query_arg(
 				array(
