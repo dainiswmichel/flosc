@@ -313,9 +313,11 @@ class User_Linker {
 		$key  = flosc_token_secret(); // §5: dedicated secret, not the auth salt
 
 		// Simple XOR encryption with base64 encoding.
-		$encrypted = '';
-		for ( $i = 0; $i < strlen( $json ); $i++ ) {
-			$encrypted .= chr( ord( $json[ $i ] ) ^ ord( $key[ $i % strlen( $key ) ] ) );
+		$encrypted   = '';
+		$json_length = strlen( $json );
+		$key_length  = strlen( $key );
+		for ( $i = 0; $i < $json_length; $i++ ) {
+			$encrypted .= chr( ord( $json[ $i ] ) ^ ord( $key[ $i % $key_length ] ) );
 		}
 
 		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- binary/JWT token encoding, not obfuscation
@@ -333,9 +335,11 @@ class User_Linker {
 		$encrypted = base64_decode( $encrypted );
 		$key       = flosc_token_secret(); // §5: dedicated secret, not the auth salt
 
-		$decrypted = '';
-		for ( $i = 0; $i < strlen( $encrypted ); $i++ ) {
-			$decrypted .= chr( ord( $encrypted[ $i ] ) ^ ord( $key[ $i % strlen( $key ) ] ) );
+		$decrypted        = '';
+		$encrypted_length = strlen( $encrypted );
+		$key_length       = strlen( $key );
+		for ( $i = 0; $i < $encrypted_length; $i++ ) {
+			$decrypted .= chr( ord( $encrypted[ $i ] ) ^ ord( $key[ $i % $key_length ] ) );
 		}
 
 		$flosc_value = json_decode( $decrypted, true );

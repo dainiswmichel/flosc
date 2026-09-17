@@ -265,7 +265,8 @@ class FLOSC_Sample_Text_Based_Quiz extends FLOSC_Abstract_Quiz_Type {
 				$answers[]       = $answer;
 				$correct_content = array();
 				$related_content = array();
-				for ( $i = 1; $i < count( $parts ); $i++ ) {
+				$part_count = count( $parts );
+			for ( $i = 1; $i < $part_count; $i++ ) {
 					$seg = trim( $parts[ $i ] );
 					if ( 0 === stripos( $seg, 'correctcontent:' ) ) {
 						foreach ( array_map( 'trim', explode( ',', trim( substr( $seg, strlen( 'correctcontent:' ) ) ) ) ) as $r ) {

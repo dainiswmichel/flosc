@@ -2226,8 +2226,9 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 					$index[ $sid ] = $user_id;
 				}
 			}
-			$page++;
-		} while ( 100 === count( $batch ) );
+			++$page;
+			$batch_size = count( $batch );
+		} while ( 100 === $batch_size );
 
 		update_option( self::SUBSCRIPTION_INDEX_OPTION, $index, false );
 		return $index;

@@ -927,7 +927,9 @@ $flosc_da1_col_idx = flosc_da1_col_index_map( $flosc_da1_columns );
 $flosc_da1_ncols   = count( $flosc_da1_columns );
 
 foreach ( $flosc_da1_rows as &$flosc_da1_row ) {
-	while ( count( $flosc_da1_row ) < $flosc_da1_ncols ) {
+	// Pad the row out to the column count. It grows inside the loop, so the
+	// count is re-taken each pass.
+	for ( $flosc_da1_filled = count( $flosc_da1_row ); $flosc_da1_filled < $flosc_da1_ncols; $flosc_da1_filled = count( $flosc_da1_row ) ) {
 		$flosc_da1_row[] = '';
 	}
 	flosc_da1_apply_defaults( $flosc_da1_row, $flosc_da1_columns, $flosc_da1_col_idx, $flosc_control_defaults, $flosc_da1_requested_catalog_key );
@@ -1109,7 +1111,9 @@ if ( isset( $flosc_da1_post['da1_save_catalog'] ) ) {
 				$flosc_da1_rows           = array_slice( $flosc_da1_parsed, 1 );
 				$flosc_da1_ncols          = count( $flosc_da1_columns );
 				foreach ( $flosc_da1_rows as &$flosc_da1_row ) {
-					while ( count( $flosc_da1_row ) < $flosc_da1_ncols ) {
+					// Pad the row out to the column count. It grows inside the
+					// loop, so the count is re-taken each pass.
+					for ( $flosc_da1_filled = count( $flosc_da1_row ); $flosc_da1_filled < $flosc_da1_ncols; $flosc_da1_filled = count( $flosc_da1_row ) ) {
 						$flosc_da1_row[] = '';
 					}
 					flosc_da1_apply_defaults( $flosc_da1_row, $flosc_da1_columns, $flosc_da1_col_idx, $flosc_control_defaults, $flosc_da1_requested_catalog_key );

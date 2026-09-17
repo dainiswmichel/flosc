@@ -1135,7 +1135,8 @@ function flosc_render_offer_editor_v2( $flosc_offer, $flosc_flow_key, $flosc_cur
 						$flosc_coupons = array();
 					}
 					// Always show 3 rows (existing + blanks).
-					while ( count( $flosc_coupons ) < 3 ) {
+					// Grows inside the loop; the count is re-taken each pass.
+					for ( $flosc_coupon_count = count( $flosc_coupons ); $flosc_coupon_count < 3; $flosc_coupon_count = count( $flosc_coupons ) ) {
 						$flosc_coupons[] = array(
 							'code'            => '',
 							'type'            => 'fixed_price',

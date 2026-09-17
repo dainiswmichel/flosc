@@ -348,7 +348,10 @@ class FLOSC_Free_Content_Item_Manager {
 		$selected = array();
 
 		// Prefer multi-phoneme tiers first (protect unique worst as upsell when possible).
-		for ( $i = 0; $i < count( $tiers ) && count( $selected ) < $count; $i++ ) {
+		// $tiers is fixed, so its size is taken once; $selected grows inside the
+		// loop, so its size is re-taken after each pass.
+		$tier_count = count( $tiers );
+		for ( $i = 0, $selected_count = 0; $i < $tier_count && $selected_count < $count; $i++, $selected_count = count( $selected ) ) {
 			$prefer = ( count( $tiers[ $i ] ) > 1 ) || ( $i >= 2 );
 			if ( ! $prefer ) {
 				continue;

@@ -3562,8 +3562,9 @@ if ( array() === $flosc_acc_saved_lines ) {
 	}
 }
 $flosc_acc_row_count = max( count( $flosc_acc_templates ), count( $flosc_acc_edit_lines ) );
-while ( count( $flosc_acc_edit_lines ) < $flosc_acc_row_count ) {
-	$flosc_idx              = count( $flosc_acc_edit_lines );
+// The list grows inside the loop, so the count is re-taken after each pass
+// rather than hoisted -- hoisting it would never terminate.
+for ( $flosc_idx = count( $flosc_acc_edit_lines ); $flosc_idx < $flosc_acc_row_count; $flosc_idx = count( $flosc_acc_edit_lines ) ) {
 	$flosc_acc_edit_lines[] = $flosc_acc_templates[ $flosc_idx ] ?? '';
 }
 $flosc_acc_line_count             = max( 1, count( array_filter( $flosc_acc_edit_lines ) ) );

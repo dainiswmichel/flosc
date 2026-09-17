@@ -350,7 +350,8 @@ function flosc_portable_parse_yaml_map( $yaml ) {
 			);
 		}
 
-		while ( count( $stack ) > 0 && $stack[ count( $stack ) - 1 ]['indent'] >= $indent ) {
+		// The stack shrinks inside the loop, so its depth is re-taken each pass.
+		for ( $depth = count( $stack ); $depth > 0 && $stack[ $depth - 1 ]['indent'] >= $indent; $depth = count( $stack ) ) {
 			array_pop( $stack );
 		}
 		if ( empty( $stack ) ) {

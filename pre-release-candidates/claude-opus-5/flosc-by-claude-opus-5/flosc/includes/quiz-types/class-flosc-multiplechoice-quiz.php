@@ -152,7 +152,8 @@ class FLOSC_MultipleChoice_Quiz extends FLOSC_Abstract_Quiz_Type {
 			$correct_content = array();
 			$related_content = array();
 
-			for ( $i = 1; $i < count( $parts ); $i++ ) {
+			$part_count = count( $parts );
+			for ( $i = 1; $i < $part_count; $i++ ) {
 				$part = trim( $parts[ $i ] );
 
 				if ( 0 === stripos( $part, 'correctcontent:' ) ) {
