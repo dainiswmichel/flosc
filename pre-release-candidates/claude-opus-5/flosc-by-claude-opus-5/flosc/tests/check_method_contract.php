@@ -99,7 +99,7 @@ function flosc_this_calls( $path ) {
 // The class under test and every trait it composes. Read the use statements
 // rather than hard-coding them, so a trait added later is covered without
 // anyone remembering to come back here.
-$class_file = $root . '/flosc.php';
+$class_file = $root . '/includes/class-flosc-framework.php';
 $trait_files = array(
 	'FLOSC_REST_Trait'          => $root . '/includes/flosc-rest.php',
 	'FLOSC_Admin_Trait'         => $root . '/includes/flosc-admin.php',
