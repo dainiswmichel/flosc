@@ -223,13 +223,9 @@ usort($flosc_product_rows, static function ($flosc_a, $flosc_b) {
 $flosc_active_count = count(array_filter($flosc_product_rows, static function ($flosc_row) {
     return !empty($flosc_row['active']);
 }));
-// Admin list filter (read-only navigation, not a form submission).
-$flosc_filter = sanitize_key((string) ( isset( $_GET['flosc_product_filter'] ) && is_scalar( $_GET['flosc_product_filter'] )
-			? sanitize_text_field( wp_unslash( (string) $_GET['flosc_product_filter'] ) )
-			: '' ));
-if (!in_array($flosc_filter, ['active', 'all'], true)) {
-    $flosc_filter = 'active';
-}
+// Which rows to list. Read-only navigation; the allowlist and the default are
+// now one expression instead of a read followed by a corrective if.
+$flosc_filter = flosc_nav_param( 'flosc_product_filter', array( 'active', 'all' ), 'active' );
 $flosc_visible_products = array_values(array_filter($flosc_product_rows, static function ($flosc_row) use ($flosc_filter) {
     return $flosc_filter === 'all' || !empty($flosc_row['active']);
 }));

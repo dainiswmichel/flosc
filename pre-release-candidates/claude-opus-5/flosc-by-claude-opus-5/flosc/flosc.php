@@ -90,6 +90,7 @@ if (!function_exists('flosc_log')) {
 // Domain: filesystem helpers then path helpers (write gate needs FLOSC_Filesystem).
 require_once FLOSC_PLUGIN_DIR . 'includes/filesystem/class-flosc-filesystem.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/filesystem/flosc-data-paths.php';
+require_once FLOSC_PLUGIN_DIR . 'includes/flosc-request.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-available-providers.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-wp-ai-client.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/ai/flosc-model-catalog.php';
@@ -11442,35 +11443,54 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
          * comment that used to sit here claimed a signed URL was the origin
          * proof, which was not true of the code beneath it. It is now.
          */
-        $user_id = absint( (string) filter_input( INPUT_GET, 'user_id', FILTER_SANITIZE_NUMBER_INT ) );
-        if ( ! $user_id ) {
+        /*
+         * Typed boundary, not a sanitize-and-hope.
+         *
+         * user_id and exp are integers, so they are VALIDATED as integers with a
+         * range rather than run through FILTER_SANITIZE_NUMBER_INT, which strips
+         * characters and hands back a string: "12abc" became 12 and "  " became
+         * 0, and neither of those is a user id the caller asked for. sig is a
+         * hex digest of a known length, so it is matched against that shape and
+         * rejected otherwise instead of having non-hex characters quietly
+         * deleted -- deleting them turns a malformed signature into a different,
+         * shorter signature and then compares that.
+         */
+        $user_id = filter_input(
+            INPUT_GET,
+            'user_id',
+            FILTER_VALIDATE_INT,
+            array( 'options' => array( 'min_range' => 1 ) )
+        );
+        if ( ! is_int( $user_id ) ) {
             wp_die( 'Missing parameters', 400 );
         }
         if ( ! $this->viewer_can_stream_member_audio( $user_id ) ) {
             wp_die( 'Unauthorized', 403 );
         }
 
-        $file_raw    = ( isset( $_GET['file'] ) && is_scalar( $_GET['file'] )
-			? sanitize_text_field( wp_unslash( $_GET['file'] ) )
-			: '' );
-        $file        = is_string( $file_raw ) ? sanitize_file_name( $file_raw ) : '';
-        $is_download = (bool) ( isset( $_GET['download'] ) && is_scalar( $_GET['download'] )
-			? sanitize_text_field( wp_unslash( (string) $_GET['download'] ) )
-			: '' );
-        $expires     = absint( (string) filter_input( INPUT_GET, 'exp', FILTER_SANITIZE_NUMBER_INT ) );
-        $sig_raw     = ( isset( $_GET['sig'] ) && is_scalar( $_GET['sig'] )
-			? sanitize_text_field( wp_unslash( $_GET['sig'] ) )
-			: '' );
-        $sig         = is_string( $sig_raw ) ? strtolower( preg_replace( '/[^a-f0-9]/', '', $sig_raw ) ) : '';
-        $session_raw = ( isset( $_GET['flosc_sid'] ) && is_scalar( $_GET['flosc_sid'] )
-			? sanitize_text_field( wp_unslash( $_GET['flosc_sid'] ) )
-			: '' );
-        if ( ! is_string( $session_raw ) || $session_raw === '' ) {
-            $session_raw = ( isset( $_GET['session_id'] ) && is_scalar( $_GET['session_id'] )
-			? sanitize_text_field( wp_unslash( $_GET['session_id'] ) )
-			: '' );
+        $file_raw = filter_input( INPUT_GET, 'file', FILTER_UNSAFE_RAW );
+        $file     = is_string( $file_raw ) ? sanitize_file_name( wp_unslash( $file_raw ) ) : '';
+
+        $is_download = (bool) filter_input( INPUT_GET, 'download', FILTER_VALIDATE_BOOLEAN );
+
+        $expires = filter_input(
+            INPUT_GET,
+            'exp',
+            FILTER_VALIDATE_INT,
+            array( 'options' => array( 'min_range' => 1 ) )
+        );
+        $expires = is_int( $expires ) ? $expires : 0;
+
+        $sig_raw = filter_input( INPUT_GET, 'sig', FILTER_UNSAFE_RAW );
+        $sig     = ( is_string( $sig_raw ) && preg_match( '/^[a-f0-9]{64}$/i', $sig_raw ) )
+            ? strtolower( $sig_raw )
+            : '';
+
+        $session_raw = filter_input( INPUT_GET, 'flosc_sid', FILTER_UNSAFE_RAW );
+        if ( ! is_string( $session_raw ) || '' === $session_raw ) {
+            $session_raw = filter_input( INPUT_GET, 'session_id', FILTER_UNSAFE_RAW );
         }
-        $session_id  = is_string( $session_raw ) ? sanitize_text_field( $session_raw ) : '';
+        $session_id = is_string( $session_raw ) ? sanitize_text_field( wp_unslash( $session_raw ) ) : '';
 
         // $user_id and the capability were settled at the top of this method,
         // before anything else was parsed. Only $file is left to validate.

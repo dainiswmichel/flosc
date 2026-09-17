@@ -1962,7 +1962,6 @@ class FLOSC_Site_Content_Index {
 		$this->require_admin();
 		check_admin_referer( 'flosc_site_index_exclude' );
 		$ivr = $this->ivr_from_request( wp_unslash( $_POST ) );
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified by check_admin_referer in this method before read
 		$post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
 		$stem    = $this->stem_from_ivr( $ivr );
 		if ( $post_id && $this->set_excluded( $stem, $post_id, true ) ) {
@@ -1978,7 +1977,6 @@ class FLOSC_Site_Content_Index {
 		$this->require_admin();
 		check_admin_referer( 'flosc_site_index_include' );
 		$ivr = $this->ivr_from_request( wp_unslash( $_POST ) );
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified by check_admin_referer in this method before read
 		$post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
 		$stem    = $this->stem_from_ivr( $ivr );
 		if ( $post_id && $this->set_excluded( $stem, $post_id, false ) ) {
@@ -1994,9 +1992,7 @@ class FLOSC_Site_Content_Index {
 		$this->require_admin();
 		check_admin_referer( 'flosc_site_index_keywords' );
 		$ivr = $this->ivr_from_request( wp_unslash( $_POST ) );
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified by check_admin_referer in this method before read
 		$post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified by check_admin_referer in this method before read
 		$kw      = isset( $_POST['keywords_manual'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['keywords_manual'] ) ) : '';
 		$stem    = $this->stem_from_ivr( $ivr );
 		if ( $post_id && $this->set_manual_keywords( $stem, $post_id, $kw ) ) {
@@ -2012,7 +2008,6 @@ class FLOSC_Site_Content_Index {
 		$this->require_admin();
 		check_admin_referer( 'flosc_site_index_reindex_one' );
 		$ivr = $this->ivr_from_request( wp_unslash( $_POST ) );
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified by check_admin_referer in this method before read
 		$post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
 		$stem    = $this->stem_from_ivr( $ivr );
 		if ( $post_id && $this->reindex_one( $stem, $post_id ) ) {

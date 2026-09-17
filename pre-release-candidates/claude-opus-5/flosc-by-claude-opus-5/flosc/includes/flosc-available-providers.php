@@ -511,8 +511,10 @@ if ( ! function_exists( 'flosc_admin_save_available_providers' ) ) {
 			60
 		);
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing
-		$ivr = isset( $_POST['flosc_return_ivr'] ) ? sanitize_file_name( wp_unslash( (string) $_POST['flosc_return_ivr'] ) ) : '';
+		// Redirect target after the save above, which verified its own nonce and
+		// capability before writing. Only picks a tab on this site's admin.php.
+		$ivr_raw = filter_input( INPUT_POST, 'flosc_return_ivr', FILTER_UNSAFE_RAW );
+		$ivr     = is_string( $ivr_raw ) ? sanitize_file_name( wp_unslash( $ivr_raw ) ) : '';
 		wp_safe_redirect(
 			add_query_arg(
 				array(

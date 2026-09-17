@@ -372,10 +372,11 @@ class SSO_Manager {
      * auth modal so the user can try a different login method.
      */
     public function handle_sso_error_display() {
-        $err_raw = ( isset( $_GET['flosc_sso_error'] ) && is_scalar( $_GET['flosc_sso_error'] )
-			? sanitize_text_field( wp_unslash( $_GET['flosc_sso_error'] ) )
-			: '' );
-        if ( is_string( $err_raw ) && $err_raw !== '' ) {
+        // Which failure notice to paint after a provider bounced the user back.
+        // Display only: the token selects a translated string from a fixed table
+        // below and never reaches a mutation or a redirect target.
+        $err_raw = flosc_nav_param( 'flosc_sso_error' );
+        if ( '' !== $err_raw ) {
             $error_token = sanitize_key( $err_raw );
             if ($error_token === '') {
                 return;

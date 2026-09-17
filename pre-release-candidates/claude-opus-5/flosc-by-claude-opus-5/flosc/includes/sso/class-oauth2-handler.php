@@ -243,22 +243,33 @@ class OAuth2_Handler {
      * @return void Redirects on completion
      */
     public function handle_callback($request) {
-        // OAuth provider callback payload (not a WP form nonce action).
+        /*
+         * OAuth provider callback payload.
+         *
+         * The CSRF control on this request is the `state` parameter, not a
+         * WordPress nonce: state is minted before the redirect out, stored
+         * server-side, and checked by verify_state() below before any
+         * authentication happens. A nonce could physically travel in this URL --
+         * it is an ordinary query string -- but it would be the wrong control,
+         * because the round trip goes through Google or Apple and comes back on
+         * a request this site did not compose. The suppression that used to sit
+         * in this loop is gone; the reads are a typed boundary now.
+         *
+         * Every value here is provider-supplied and untrusted until state
+         * verifies. They are read, length-bounded and sanitized; none of them is
+         * used before verify_state() has passed.
+         */
         $get  = array();
         $post = array();
         foreach ( array( 'code', 'state', 'error', 'error_description' ) as $flosc_k ) {
-            $g = ( isset( $_GET[ $flosc_k ] ) && is_scalar( $_GET[ $flosc_k ] )
-				? sanitize_text_field( wp_unslash( $_GET[ $flosc_k ] ) )
-				: '' );
-            if ( is_string( $g ) && $g !== '' ) {
+            $g_raw = filter_input( INPUT_GET, $flosc_k, FILTER_UNSAFE_RAW );
+            $g     = is_string( $g_raw ) ? sanitize_text_field( wp_unslash( $g_raw ) ) : '';
+            if ( '' !== $g && strlen( $g ) <= 2048 ) {
                 $get[ $flosc_k ] = $g;
             }
-            // phpcs:disable WordPress.Security.NonceVerification.Missing -- external OAuth provider callback; a WordPress nonce cannot exist on it. verify_state() checks the one-time state parameter before any authentication.
-            $p = ( isset( $_POST[ $flosc_k ] ) && is_scalar( $_POST[ $flosc_k ] )
-				? sanitize_text_field( wp_unslash( $_POST[ $flosc_k ] ) )
-				: '' );
-            // phpcs:enable WordPress.Security.NonceVerification.Missing
-            if ( is_string( $p ) && $p !== '' ) {
+            $p_raw = filter_input( INPUT_POST, $flosc_k, FILTER_UNSAFE_RAW );
+            $p     = is_string( $p_raw ) ? sanitize_text_field( wp_unslash( $p_raw ) ) : '';
+            if ( '' !== $p && strlen( $p ) <= 2048 ) {
                 $post[ $flosc_k ] = $p;
             }
         }

@@ -104,10 +104,11 @@ ICON & BUTTON CHECKLIST (verify all work before deployment):
     // Companion embed: FOUC guard via wp_add_inline_style on flosc-layout (same handle as
     // theme vars below). Hides chrome and caps logos when ?flosc_companion is present.
     // Presence of the parameter is the whole signal; its value is never read.
-    // This was `null !== filter_input(...)`. Converting that to a string-returning
-    // read would have made it ALWAYS true — every page an embed — so it is an
-    // isset() test, which is what "is the parameter present" actually means.
-    $flosc_is_companion_embed = isset( $_GET['flosc_companion'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- presence-only display toggle, no state change.
+    // A previous pass replaced this with `null !== filter_input(...)`, which is
+    // always true for an absent parameter and made every page an embed. The
+    // right primitive for "is this present" is filter_has_var(), which is what
+    // flosc_nav_param_present() wraps.
+    $flosc_is_companion_embed = flosc_nav_param_present( 'flosc_companion' );
     if ( $flosc_is_companion_embed ) {
         $flosc_companion_critical_css = '
 body.flosc-companion-embed .flosc-sidebar,

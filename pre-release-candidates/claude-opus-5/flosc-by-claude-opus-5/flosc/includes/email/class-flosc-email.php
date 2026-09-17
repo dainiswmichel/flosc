@@ -504,19 +504,16 @@ class FLOSC_Email {
     public function save_newsletter_profile_field($user_id) {
         if (!current_user_can('edit_user', $user_id)) return;
         /*
-         * No nonce is verified here because WordPress core already did.
-         *
-         * This runs on personal_options_update / edit_user_profile_update,
-         * which core fires only after check_admin_referer( 'update-user_' . $user_id ).
-         * The capability check above is the second gate. PHPCS cannot see a
-         * nonce verified in the caller, so the sniff is suppressed here with
-         * the reason rather than left to look like an oversight.
+         * Core already verified this nonce -- personal_options_update and
+         * edit_user_profile_update only fire after core's own
+         * check_admin_referer( 'update-user_' . $user_id ). Verifying it again
+         * here costs a hash comparison and buys two things: the guarantee stops
+         * depending on a caller no reader of this method can see, and the method
+         * stays correct if it is ever called from anywhere else.
          */
-        // phpcs:disable WordPress.Security.NonceVerification.Missing -- profile-update nonce verified by core before this hook fires; capability checked above.
-        $opted = (bool) ( isset( $_POST['flosc_newsletter_optin'] ) && is_scalar( $_POST['flosc_newsletter_optin'] )
-			? sanitize_text_field( wp_unslash( (string) $_POST['flosc_newsletter_optin'] ) )
-			: '' );
-        // phpcs:enable WordPress.Security.NonceVerification.Missing
+        check_admin_referer( 'update-user_' . $user_id );
+
+        $opted = (bool) filter_input( INPUT_POST, 'flosc_newsletter_optin', FILTER_VALIDATE_BOOLEAN );
         if ($opted) {
             $this->subscribe_to_newsletter($user_id);
         } else {

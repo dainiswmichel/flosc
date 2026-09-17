@@ -213,8 +213,9 @@ if (!empty($flosc_files)) {
 // so the same flow file can appear twice. Keep one entry per filename.
 $flosc_ivr_files = array_values( array_unique( $flosc_ivr_files ) );
 
-$flosc_get_early = isset( $_GET ) && is_array( $_GET ) ? wp_unslash( $_GET ) : array(); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-$flosc_keep_ivr  = isset( $flosc_get_early['ivr'] ) ? sanitize_file_name( (string) $flosc_get_early['ivr'] ) : '';
+// Which flow the chrome should stay on. Display selection, read through the
+// shared boundary; nothing here writes.
+$flosc_keep_ivr = flosc_nav_param( 'ivr', array(), '', 'sanitize_file_name' );
 if ( $flosc_keep_ivr === '' && is_user_logged_in() ) {
     $flosc_keep_ivr = sanitize_file_name( (string) get_user_meta( get_current_user_id(), '_flosc_admin_default_ivr', true ) );
 }
@@ -351,7 +352,12 @@ if ($flosc_flow_seed_needed) {
 
 $flosc_get = wp_unslash($_GET);
 $flosc_post = wp_unslash($_POST);
-$flosc_active_tab = isset($flosc_get['tab']) ? sanitize_text_field($flosc_get['tab']) : 'identity';
+// redirect_to_settings_tab() sets flosc_forced_tab when headers are already
+// sent and it cannot redirect. It takes precedence over the URL because it is
+// the tab the admin actually asked for.
+$flosc_active_tab = isset($GLOBALS['flosc_forced_tab'])
+    ? sanitize_key((string) $GLOBALS['flosc_forced_tab'])
+    : (isset($flosc_get['tab']) ? sanitize_text_field($flosc_get['tab']) : 'identity');
 $flosc_can_manage_administration = current_user_can('manage_options');
 if ($flosc_active_tab === 'administration' && !$flosc_can_view_administration) {
     $flosc_active_tab = 'identity';
@@ -3131,7 +3137,7 @@ if (function_exists('wp_add_inline_style')) {
             // so this separates "the button never submitted" from "it submitted
             // and the write did not land" — two different faults that look
             // identical on screen, and one screenshot now tells them apart.
-            $flosc_save_ran = isset($_GET['saved']) && '1' === sanitize_text_field(wp_unslash((string) $_GET['saved'])); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only display hint
+            $flosc_save_ran = ( '1' === flosc_nav_param( 'saved', array( '1' ) ) );
             ?>
             <span class="flosc-last-save" id="flosc-last-save">
                 <?php

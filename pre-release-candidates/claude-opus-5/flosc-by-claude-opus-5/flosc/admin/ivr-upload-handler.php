@@ -670,7 +670,6 @@ if ( ! function_exists( 'flosc_admin_handle_portability_pack_actions' ) ) {
 			return;
 		}
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified via check_admin_referer per action below; capability checked immediately above.
 		$action = isset( $_POST['flosc_portability_pack_action'] )
 			? sanitize_key( (string) wp_unslash( $_POST['flosc_portability_pack_action'] ) )
 			: '';
@@ -682,15 +681,12 @@ if ( ! function_exists( 'flosc_admin_handle_portability_pack_actions' ) ) {
 		}
 		check_admin_referer( 'flosc_portability_pack' );
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified via check_admin_referer in this handler
 		$ivr_file = isset( $_POST['flosc_working_ivr'] )
 			? sanitize_file_name( (string) wp_unslash( $_POST['flosc_working_ivr'] ) )
 			: '';
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified via check_admin_referer in this handler
 		$filename = isset( $_POST['flosc_pack_filename'] )
 			? sanitize_file_name( (string) wp_unslash( $_POST['flosc_pack_filename'] ) )
 			: '';
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified via check_admin_referer in this handler
 		$attachment_id = isset( $_POST['flosc_pack_attachment_id'] )
 			? (int) $_POST['flosc_pack_attachment_id']
 			: 0;
@@ -783,13 +779,11 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 			return;
 		}
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- checked below.
 		// Submit value is create|apply (clicked button) — no JS required.
 		$submit_raw = isset( $_POST['flosc_portability_submit'] )
 			? sanitize_key( (string) wp_unslash( $_POST['flosc_portability_submit'] ) )
 			: '';
 		$is_kit     = in_array( $submit_raw, array( 'create', 'apply' ), true );
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified via check_admin_referer in this handler
 		$is_legacy = ! empty( $_POST['flosc_upload_ivr_file'] ) && ! empty( $_FILES['ivr_file_upload']['name'] );
 
 		if ( ! $is_kit && ! $is_legacy ) {
@@ -954,11 +948,10 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 		}
 
 		// Current flow for Apply (and for DA1 assign after create).
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified via check_admin_referer in this handler
 		$working_ivr = isset( $_POST['flosc_working_ivr'] )
 			? sanitize_file_name( (string) wp_unslash( $_POST['flosc_working_ivr'] ) )
 			: '';
-		if ( $working_ivr === '' && isset( $_GET['ivr'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- admin GET context after POST kit handler; ivr is sanitized_file_name only
+		if ( $working_ivr === '' && isset( $_GET['ivr'] ) ) {
 			$working_ivr = sanitize_file_name( (string) wp_unslash( $_GET['ivr'] ) );
 		}
 
@@ -1266,14 +1259,12 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 			);
 		}
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified via check_admin_referer in this handler
 		$redirect_tab = isset( $_POST['flosc_upload_redirect_tab'] )
 			? sanitize_key( (string) wp_unslash( $_POST['flosc_upload_redirect_tab'] ) )
 			: 'flow';
 		if ( ! in_array( $redirect_tab, array( 'ivr-messages', 'flow', 'da1' ), true ) ) {
 			$redirect_tab = 'flow';
 		}
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified via check_admin_referer in this handler
 		$redirect_view = isset( $_POST['flosc_upload_redirect_view'] )
 			? sanitize_key( (string) wp_unslash( $_POST['flosc_upload_redirect_view'] ) )
 			: 'all';

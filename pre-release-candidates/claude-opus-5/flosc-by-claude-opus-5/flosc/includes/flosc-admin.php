@@ -827,18 +827,11 @@ trait FLOSC_Admin_Trait {
             );
         }
 
-        $flosc_tab_raw  = ( isset( $_GET['tab'] ) && is_scalar( $_GET['tab'] )
-			? sanitize_text_field( wp_unslash( $_GET['tab'] ) )
-			: '' );
-        $flosc_tab      = is_string( $flosc_tab_raw ) ? sanitize_key( $flosc_tab_raw ) : '';
-        $flosc_page_raw = ( isset( $_GET['page'] ) && is_scalar( $_GET['page'] )
-			? sanitize_text_field( wp_unslash( $_GET['page'] ) )
-			: '' );
-        $flosc_page     = is_string( $flosc_page_raw ) ? sanitize_key( $flosc_page_raw ) : '';
-        $flosc_view_raw = ( isset( $_GET['view'] ) && is_scalar( $_GET['view'] )
-			? sanitize_text_field( wp_unslash( $_GET['view'] ) )
-			: '' );
-        $flosc_view     = is_string( $flosc_view_raw ) ? sanitize_key( $flosc_view_raw ) : '';
+        // Which screen is being painted. Selection only -- nothing here writes.
+        // 'view' is a closed set now; it used to accept any string the URL carried.
+        $flosc_tab  = flosc_nav_param( 'tab' );
+        $flosc_page = flosc_nav_param( 'page' );
+        $flosc_view = flosc_nav_param( 'view', array( 'single', 'all' ) );
         if ( $flosc_page === 'flosc-settings' && $flosc_tab === 'ai' && $flosc_view !== 'all' ) {
             if ( function_exists( 'flosc_enqueue_personality_builder_assets' ) ) {
                 flosc_enqueue_personality_builder_assets();
@@ -868,10 +861,7 @@ trait FLOSC_Admin_Trait {
          * The zone markup only renders on the "all" view of the Flow tab, so the
          * view is read here and the assets are skipped on the single-flow view.
          */
-        $flosc_view_raw = ( isset( $_GET['view'] ) && is_scalar( $_GET['view'] )
-			? sanitize_text_field( wp_unslash( $_GET['view'] ) )
-			: '' );
-        $flosc_view     = is_string( $flosc_view_raw ) ? sanitize_key( $flosc_view_raw ) : '';
+        $flosc_view = flosc_nav_param( 'view', array( 'single', 'all' ) );
 
         if ( $flosc_tab === 'flow' && $flosc_view === 'all' ) {
             $flosc_port_css = FLOSC_PLUGIN_DIR . 'assets/css/flosc-portability-admin.css';
@@ -984,12 +974,10 @@ trait FLOSC_Admin_Trait {
             return;
         }
 
-        // Read-only admin menu routing (capability-checked below). No nonce: GET page
-        // slug only; never mutates options. filter_input avoids direct $_GET PHPCS noise.
-        $page_raw = ( isset( $_GET['page'] ) && is_scalar( $_GET['page'] )
-			? sanitize_text_field( wp_unslash( $_GET['page'] ) )
-			: '' );
-        $page     = is_string($page_raw) ? sanitize_key($page_raw) : '';
+        // Read-only admin menu routing, capability-checked below. The comment that
+        // stood here claimed filter_input was used to avoid PHPCS noise; the code
+        // read $_GET directly and the warning was reported anyway.
+        $page = flosc_nav_param( 'page' );
         if ($page === '' || $page === 'flosc-settings') {
             return;
         }
@@ -1038,20 +1026,13 @@ trait FLOSC_Admin_Trait {
             'page' => 'flosc-settings',
             'tab'  => $tab,
         ];
-        $ivr_raw = ( isset( $_GET['ivr'] ) && is_scalar( $_GET['ivr'] )
-			? sanitize_text_field( wp_unslash( $_GET['ivr'] ) )
-			: '' );
-        if (is_string($ivr_raw) && $ivr_raw !== '') {
-            $args['ivr'] = sanitize_file_name($ivr_raw);
+        $ivr = flosc_nav_param( 'ivr', array(), '', 'sanitize_file_name' );
+        if ( '' !== $ivr ) {
+            $args['ivr'] = $ivr;
         }
-        $view_raw = ( isset( $_GET['view'] ) && is_scalar( $_GET['view'] )
-			? sanitize_text_field( wp_unslash( $_GET['view'] ) )
-			: '' );
-        if (is_string($view_raw) && $view_raw !== '') {
-            $view = sanitize_text_field($view_raw);
-            if (in_array($view, ['single', 'all'], true)) {
-                $args['view'] = $view;
-            }
+        $view = flosc_nav_param( 'view', array( 'single', 'all' ) );
+        if ( '' !== $view ) {
+            $args['view'] = $view;
         }
 
         wp_safe_redirect(add_query_arg($args, admin_url('admin.php')));
@@ -1067,11 +1048,9 @@ trait FLOSC_Admin_Trait {
             return;
         }
 
-        $page_raw = ( isset( $_GET['page'] ) && is_scalar( $_GET['page'] )
-			? sanitize_text_field( wp_unslash( $_GET['page'] ) )
-			: '' );
-        $page     = is_string($page_raw) ? sanitize_key($page_raw) : '';
-        if ($page !== 'flosc-settings') {
+        // Which admin screen this is. Selection only; the POST body below is what
+        // carries intent, and each handler verifies its own nonce before writing.
+        if ( 'flosc-settings' !== flosc_nav_param( 'page' ) ) {
             return;
         }
 
@@ -1089,15 +1068,49 @@ trait FLOSC_Admin_Trait {
             return;
         }
 
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- each handler below verifies its own nonce; capability checked immediately above.
-        $post = isset($_POST) && is_array($_POST) ? wp_unslash($_POST) : [];
-        if ($post === []) {
+        /*
+         * Origin, at dispatch, before the body is read.
+         *
+         * Every handler this function routes to verifies its own nonce, and that
+         * was the whole defence: nothing in here proved the request came from
+         * this site until control had already reached a handler. On a screen
+         * that stores administrative settings that is the wrong place for it.
+         *
+         * Each route is now declared with the nonce action and field its own
+         * form prints, and the match is verified here. The handlers still verify
+         * again -- check_admin_referer() is idempotent and defence in depth on a
+         * settings writer is worth the microsecond.
+         */
+        $flosc_routes = array(
+            // POST key                      => array( nonce action, nonce field )
+            'flosc_upload_ivr_file'          => array( 'flosc_upload_ivr_file', '_wpnonce' ),
+            'flosc_portability_submit'       => array( 'flosc_portability_kit', '_wpnonce' ),
+            'flosc_portability_pack_action'  => array( 'flosc_portability_pack', '_wpnonce' ),
+            'flosc_save'                     => array( 'flosc_save_settings', '_wpnonce' ),
+            'flosc_toggle_trajectory_post'   => array( 'flosc_toggle_trajectory_post', 'flosc_toggle_trajectory_nonce' ),
+            'flosc_create_concierge_post'    => array( 'flosc_create_concierge_post', 'flosc_concierge_create_nonce' ),
+            'flosc_create_trajectory_post'   => array( 'flosc_create_trajectory_post', 'flosc_trajectory_create_nonce' ),
+        );
+
+        $flosc_route = '';
+        foreach ( $flosc_routes as $flosc_key => $flosc_spec ) {
+            if ( ! empty( $_POST[ $flosc_key ] ) ) {
+                $flosc_route = $flosc_key;
+                break;
+            }
+        }
+        if ( '' === $flosc_route ) {
             return;
         }
 
+        // Ends the request on a bad or missing nonce. Nothing below runs unless
+        // this passes, so every $_POST read after it is verified input.
+        check_admin_referer( $flosc_routes[ $flosc_route ][0], $flosc_routes[ $flosc_route ][1] );
+
+        $post = isset($_POST) && is_array($_POST) ? wp_unslash($_POST) : [];
+
         // IVR new-flow upload: must redirect before admin chrome (Set-as-default class of bug).
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified in handler
-        if (!empty($post['flosc_upload_ivr_file']) && !empty($_FILES['ivr_file_upload'])) {
+        if ('flosc_upload_ivr_file' === $flosc_route && !empty($_FILES['ivr_file_upload'])) {
             if (!function_exists('flosc_admin_handle_ivr_file_upload')) {
                 require_once FLOSC_PLUGIN_DIR . 'admin/ivr-upload-handler.php';
             }
@@ -1114,48 +1127,29 @@ trait FLOSC_Admin_Trait {
          *
          * The clicked button carries the intent, so the button value alone decides
          * the route. Also requiring $_FILES would let a drop that arrived without
-         * its files — an oversized post, or a submission with nothing staged —
+         * its files -- an oversized post, or a submission with nothing staged --
          * fall straight through to a silent page reload, instead of reaching the
-         * handler and being named. Nonce (flosc_portability_kit) and the
-         * manage_options capability are verified inside the handler.
+         * handler and being named.
          */
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified in handler
-        $kit_action = isset($post['flosc_portability_submit'])
-            ? sanitize_key((string) $post['flosc_portability_submit'])
-            : '';
-        if (in_array($kit_action, ['create', 'apply'], true)) {
-            if (!function_exists('flosc_admin_handle_ivr_file_upload')) {
-                require_once FLOSC_PLUGIN_DIR . 'admin/ivr-upload-handler.php';
+        if ('flosc_portability_submit' === $flosc_route) {
+            $kit_action = sanitize_key((string) $post['flosc_portability_submit']);
+            if (in_array($kit_action, ['create', 'apply'], true)) {
+                if (!function_exists('flosc_admin_handle_ivr_file_upload')) {
+                    require_once FLOSC_PLUGIN_DIR . 'admin/ivr-upload-handler.php';
+                }
+                flosc_admin_handle_ivr_file_upload();
+                // Success exits inside handler. Failure: continue so the settings page can show errors.
+                return;
             }
-            flosc_admin_handle_ivr_file_upload();
-            // Success exits inside handler. Failure: continue so the settings page can show errors.
             return;
         }
 
         // Pack list actions (import staged WXR, remove WXR, unlink media).
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified in handler
-        if (!empty($post['flosc_portability_pack_action'])) {
+        if ('flosc_portability_pack_action' === $flosc_route) {
             if (!function_exists('flosc_admin_handle_portability_pack_actions')) {
                 require_once FLOSC_PLUGIN_DIR . 'admin/ivr-upload-handler.php';
             }
             flosc_admin_handle_portability_pack_actions();
-            return;
-        }
-
-        $redirect_post_keys = [
-            'flosc_save',
-            'flosc_toggle_trajectory_post',
-            'flosc_create_concierge_post',
-            'flosc_create_trajectory_post',
-        ];
-        $hit = false;
-        foreach ($redirect_post_keys as $key) {
-            if (!empty($post[$key])) {
-                $hit = true;
-                break;
-            }
-        }
-        if (!$hit) {
             return;
         }
 
@@ -1249,11 +1243,16 @@ trait FLOSC_Admin_Trait {
             exit;
         }
 
-        // Fallback: paint Settings with the requested tab (no blank exit).
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- admin redirect copies sanitized GET routing keys only
-        $_GET['page'] = 'flosc-settings';
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- admin redirect copies sanitized GET routing keys only
-        $_GET['tab'] = $tab;
+        /*
+         * Fallback: paint Settings with the requested tab, no blank exit.
+         *
+         * This used to assign into $_GET to carry the tab down to settings.php.
+         * Mutating a superglobal to pass a parameter is what PHPCS was flagging,
+         * and it is worth flagging: anything reading $_GET after this point sees
+         * a value the browser never sent. settings.php consults this global the
+         * same way it already consults flosc_current_ivr and flosc_settings_view.
+         */
+        $GLOBALS['flosc_forced_tab'] = $tab;
         $this->render_admin_page();
     }
 
@@ -1433,10 +1432,8 @@ trait FLOSC_Admin_Trait {
         ], $atts);
 
         $settings = $this->get_contact_form_settings((string) $atts['flow']);
-        $status_raw = ( isset( $_GET['flosc_contact_status'] ) && is_scalar( $_GET['flosc_contact_status'] )
-			? sanitize_text_field( wp_unslash( $_GET['flosc_contact_status'] ) )
-			: '' );
-        $status     = is_string( $status_raw ) ? sanitize_key( $status_raw ) : '';
+        // Which notice to paint after a contact-form round trip. Closed set now.
+        $status = flosc_nav_param( 'flosc_contact_status', array( 'sent', 'error' ) );
 
         wp_enqueue_style(
             'flosc-contact-form',

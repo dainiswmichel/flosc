@@ -32,10 +32,10 @@ class FLOSC_Companion_Mode {
             return;
         }
 
-        // Public handoff flag from full-page dock (not a form POST — no nonce applies).
-        $handoff_request = ( '1' === sanitize_text_field( (string) ( isset( $_GET['flosc_companion_handoff'] ) && is_scalar( $_GET['flosc_companion_handoff'] )
-			? sanitize_text_field( wp_unslash( (string) $_GET['flosc_companion_handoff'] ) )
-			: '' ) ) );
+        // Public handoff flag from the full-page dock. A display switch on a public
+        // page: it decides whether the companion widget renders, and nothing else.
+        // Closed to the single value that means anything.
+        $handoff_request = ( '1' === flosc_nav_param( 'flosc_companion_handoff', array( '1' ) ) );
 
         // Cross-domain knowledge hub: pick the owning flow before reading settings.
         $this->resolve_companion_flow_context($handoff_request);
@@ -509,16 +509,14 @@ class FLOSC_Companion_Mode {
         // Normalize so site-root "/" is not collapsed to "" (WP untrailingslashit('/')).
         $req_path = $this->companion_normalize_url_path($request_path);
 
-        // Optional dock hint from full-page chat (public query string, not a form).
-        $hint = sanitize_text_field((string) ( isset( $_GET['flosc_flow_id'] ) && is_scalar( $_GET['flosc_flow_id'] )
-			? sanitize_text_field( wp_unslash( (string) $_GET['flosc_flow_id'] ) )
-			: '' ));
-        if ($hint === '') {
-            $hint = sanitize_text_field((string) ( isset( $_GET['flosc_ivr'] ) && is_scalar( $_GET['flosc_ivr'] )
-			? sanitize_text_field( wp_unslash( (string) $_GET['flosc_ivr'] ) )
-			: '' ));
+        // Optional dock hint from full-page chat: which flow the visitor came from.
+        // Used only to look up an existing flow's display settings; a hint naming
+        // no known flow falls through to the normal resolution below.
+        $hint = flosc_nav_param( 'flosc_flow_id' );
+        if ( '' === $hint ) {
+            $hint = flosc_nav_param( 'flosc_ivr', array(), '', 'sanitize_file_name' );
         }
-        $hint = sanitize_key(preg_replace('/\.md$/i', '', (string) $hint));
+        $hint = sanitize_key( preg_replace( '/\.md$/i', '', (string) $hint ) );
 
         $matches = $this->find_companion_flows_for_request($req_path, $category_slugs);
         $hub_match = $matches['hub'] ?? null;

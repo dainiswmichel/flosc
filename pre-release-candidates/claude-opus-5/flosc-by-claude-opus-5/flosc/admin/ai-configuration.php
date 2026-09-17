@@ -34,8 +34,12 @@ flosc_tab_header('🤖', 'AI');
 
 $flosc_flow_settings = $GLOBALS['flosc_current_settings'] ?? [];
 $flosc_current_ivr   = $GLOBALS['flosc_current_ivr'] ?? '';
-$flosc_get           = isset( $GLOBALS['flosc_get'] ) && is_array( $GLOBALS['flosc_get'] ) ? $GLOBALS['flosc_get'] : wp_unslash( $_GET ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-$flosc_ai_view       = isset( $flosc_get['view'] ) ? sanitize_key( (string) $flosc_get['view'] ) : 'single';
+// Which view of the AI tab to paint. The bulk wp_unslash( $_GET ) fallback that
+// stood here pulled in the entire query string to read one display selector.
+$flosc_get     = isset( $GLOBALS['flosc_get'] ) && is_array( $GLOBALS['flosc_get'] ) ? $GLOBALS['flosc_get'] : array();
+$flosc_ai_view = isset( $flosc_get['view'] )
+	? sanitize_key( (string) $flosc_get['view'] )
+	: flosc_nav_param( 'view', array( 'single', 'all' ), 'single' );
 if ( ! in_array( $flosc_ai_view, array( 'single', 'all' ), true ) ) {
 	$flosc_ai_view = 'single';
 }

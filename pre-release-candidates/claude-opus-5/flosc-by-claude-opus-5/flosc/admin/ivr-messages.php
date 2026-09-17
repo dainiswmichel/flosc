@@ -140,14 +140,57 @@ if (!function_exists('flosc_sanitize_ivr_markdown')) {
  * $_POST is now read only on an actual POST. It was unslashed on every render
  * of the tab, including plain GETs that could not possibly carry a submission.
  */
-// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only display state; capability gate above, per-branch nonces below.
-$flosc_get = wp_unslash($_GET);
+$flosc_request_method = strtoupper( (string) ( filter_input( INPUT_SERVER, 'REQUEST_METHOD', FILTER_UNSAFE_RAW ) ?: '' ) );
 
-$flosc_request_method = isset($_SERVER['REQUEST_METHOD'])
-    ? strtoupper(sanitize_text_field(wp_unslash($_SERVER['REQUEST_METHOD'])))
-    : '';
-// phpcs:ignore WordPress.Security.NonceVerification.Missing -- every handler below calls check_admin_referer() with its own action before writing.
-$flosc_post = ('POST' === $flosc_request_method) ? wp_unslash($_POST) : array();
+/*
+ * Display selectors, through the shared input boundary. Each is constrained to
+ * the values this tab actually understands, so a hand-edited URL selects a
+ * default instead of a template name of the caller's choosing.
+ */
+$flosc_nav = array(
+    'ivr'                 => flosc_nav_param( 'ivr', array(), '', 'sanitize_file_name' ),
+    'view'                => flosc_nav_param( 'view', array( 'single', 'all' ), 'single' ),
+    'ivr_phase'           => flosc_nav_param( 'ivr_phase' ),
+    'flosc_ivr_uploaded'  => flosc_nav_param( 'flosc_ivr_uploaded', array( '1' ) ),
+    'flosc_download_ivr'  => flosc_nav_param( 'flosc_download_ivr', array(), '', 'sanitize_file_name' ),
+    'delete_message'      => flosc_nav_param( 'delete_message' ),
+    'phase'               => flosc_nav_param( 'phase' ),
+    'edit_message'        => flosc_nav_param( 'edit_message' ),
+    'expand'              => flosc_nav_param( 'expand' ),
+    '_wpnonce'            => flosc_nav_param( '_wpnonce' ),
+);
+$flosc_get = $flosc_nav;
+
+/*
+ * The POST body. Every handler below calls check_admin_referer() with its own
+ * action before it writes, and this file wp_die()s at the top unless the viewer
+ * holds edit_others_posts -- but neither of those was visible to a reader, or a
+ * scanner, at the point the body was unslashed. The nonce for whichever action
+ * was submitted is verified here, at the boundary, before the body is read.
+ */
+$flosc_post = array();
+if ( 'POST' === $flosc_request_method ) {
+    $flosc_actions = array(
+        'flosc_import_selected_ivr_file' => 'flosc_import_selected_ivr_file',
+        'flosc_change_active_file'       => 'flosc_change_active_file',
+        'flosc_save_full_ivr'            => 'flosc_save_full_ivr',
+        'flosc_duplicate_ivr_file'       => 'flosc_duplicate_ivr_file',
+        'flosc_delete_ivr_file'          => 'flosc_delete_ivr_file',
+        'flosc_clear_ivr_db'             => 'flosc_clear_ivr_db',
+        'flosc_force_resync'             => 'flosc_force_resync',
+        'flosc_confirm_import'           => 'flosc_confirm_import',
+        'flosc_preview_import'           => 'flosc_preview_import',
+        'flosc_export_ivr'               => 'flosc_export_ivr',
+        'save_ivr_message'               => 'flosc_save_ivr_message',
+    );
+    foreach ( $flosc_actions as $flosc_submit_key => $flosc_nonce_action ) {
+        if ( null !== filter_input( INPUT_POST, $flosc_submit_key, FILTER_UNSAFE_RAW ) ) {
+            check_admin_referer( $flosc_nonce_action );
+            $flosc_post = wp_unslash( $_POST );
+            break;
+        }
+    }
+}
 
 // v1.2.8: Resolve active IVR file from explicit request first, then context fallback.
 $flosc_requested_ivr_file = sanitize_file_name((string)($flosc_get['ivr'] ?? ''));

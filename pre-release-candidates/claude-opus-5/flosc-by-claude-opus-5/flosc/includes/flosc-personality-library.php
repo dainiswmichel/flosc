@@ -1682,8 +1682,12 @@ if ( ! function_exists( 'flosc_admin_save_personality_library' ) ) {
 			60
 		);
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing
-		$ivr = isset( $_POST['flosc_return_ivr'] ) ? sanitize_file_name( wp_unslash( (string) $_POST['flosc_return_ivr'] ) ) : '';
+		// Where to send the admin back to after the save. This runs after the
+		// save handler above has already verified its nonce and capability, so
+		// the request is proven by the time this line is reached; the value only
+		// picks a redirect target on this site's own admin.php.
+		$ivr_raw = filter_input( INPUT_POST, 'flosc_return_ivr', FILTER_UNSAFE_RAW );
+		$ivr     = is_string( $ivr_raw ) ? sanitize_file_name( wp_unslash( $ivr_raw ) ) : '';
 		wp_safe_redirect(
 			add_query_arg(
 				array(
@@ -2242,10 +2246,9 @@ if ( ! function_exists( 'flosc_personality_builder_request_context' ) ) {
 			$ivr_files = array_values( array_unique( $ivr_files ) );
 		}
 
-		$ivr_raw = ( isset( $_GET['ivr'] ) && is_scalar( $_GET['ivr'] )
-			? sanitize_text_field( wp_unslash( $_GET['ivr'] ) )
-			: '' );
-		$ivr     = is_string( $ivr_raw ) ? sanitize_file_name( $ivr_raw ) : '';
+		// Which flow file the builder is pointed at. Display selection; validated
+		// against the known file list immediately below.
+		$ivr = flosc_nav_param( 'ivr', array(), '', 'sanitize_file_name' );
 		if ( $ivr !== '' && ! empty( $ivr_files ) && ! in_array( $ivr, $ivr_files, true ) ) {
 			$ivr = '';
 		}
@@ -2610,8 +2613,9 @@ function flosc_admin_nocache_headers() {
 	if ( ! function_exists( 'nocache_headers' ) ) {
 		return;
 	}
-	$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( (string) $_GET['page'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only page routing, no state change.
-	if ( 'flosc-settings' === $page ) {
+	// Which admin screen is being painted; decides whether to send no-cache
+	// headers. Reads nothing else and writes nothing.
+	if ( 'flosc-settings' === flosc_nav_param( 'page' ) ) {
 		nocache_headers();
 	}
 }
@@ -3144,18 +3148,10 @@ if ( ! function_exists( 'flosc_personality_builder_admin_body_class' ) ) {
 	 * @return string
 	 */
 	function flosc_personality_builder_admin_body_class( $classes ) {
-		$page_raw = ( isset( $_GET['page'] ) && is_scalar( $_GET['page'] )
-			? sanitize_text_field( wp_unslash( $_GET['page'] ) )
-			: '' );
-		$page     = is_string( $page_raw ) ? sanitize_key( $page_raw ) : '';
-		$tab_raw  = ( isset( $_GET['tab'] ) && is_scalar( $_GET['tab'] )
-			? sanitize_text_field( wp_unslash( $_GET['tab'] ) )
-			: '' );
-		$tab      = is_string( $tab_raw ) ? sanitize_key( $tab_raw ) : '';
-		$view_raw = ( isset( $_GET['view'] ) && is_scalar( $_GET['view'] )
-			? sanitize_text_field( wp_unslash( $_GET['view'] ) )
-			: '' );
-		$view     = is_string( $view_raw ) ? sanitize_key( $view_raw ) : '';
+		// Adds a CSS class to <body>. Three display selectors, nothing else.
+		$page = flosc_nav_param( 'page' );
+		$tab  = flosc_nav_param( 'tab' );
+		$view = flosc_nav_param( 'view', array( 'single', 'all', 'design' ) );
 		if ( $page === 'flosc-settings' && $tab === 'ai' && $view !== 'all' ) {
 			$classes .= ' flosc-personality-builder-admin';
 		}
@@ -3174,19 +3170,12 @@ if ( ! function_exists( 'flosc_redirect_nested_personality_designer' ) ) {
 		if ( ! is_admin() || ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
-		$page_raw = ( isset( $_GET['page'] ) && is_scalar( $_GET['page'] )
-			? sanitize_text_field( wp_unslash( $_GET['page'] ) )
-			: '' );
-		$page     = is_string( $page_raw ) ? sanitize_key( $page_raw ) : '';
-		$tab_raw  = ( isset( $_GET['tab'] ) && is_scalar( $_GET['tab'] )
-			? sanitize_text_field( wp_unslash( $_GET['tab'] ) )
-			: '' );
-		$tab      = is_string( $tab_raw ) ? sanitize_key( $tab_raw ) : '';
-		$view_raw = ( isset( $_GET['view'] ) && is_scalar( $_GET['view'] )
-			? sanitize_text_field( wp_unslash( $_GET['view'] ) )
-			: '' );
-		$view     = is_string( $view_raw ) ? sanitize_key( $view_raw ) : '';
-		$legacy   = ( $page === 'flosc-personality-builder' ) || ( $page === 'flosc-settings' && $tab === 'ai' && $view === 'design' );
+		// Recognises a legacy designer URL and redirects it to the current one.
+		// The redirect target is built from constants below, never from input.
+		$page   = flosc_nav_param( 'page' );
+		$tab    = flosc_nav_param( 'tab' );
+		$view   = flosc_nav_param( 'view', array( 'single', 'all', 'design' ) );
+		$legacy = ( $page === 'flosc-personality-builder' ) || ( $page === 'flosc-settings' && $tab === 'ai' && $view === 'design' );
 		if ( ! $legacy ) {
 			return;
 		}

@@ -214,11 +214,18 @@ trait FLOSC_Magic_Link_Trait {
             'flosc_sso_success',
             'redirect_to',
         ) as $flosc_qk ) {
-            $raw = ( isset( $_GET[ $flosc_qk ] ) && is_scalar( $_GET[ $flosc_qk ] )
-				? sanitize_text_field( wp_unslash( $_GET[ $flosc_qk ] ) )
-				: '' );
-            if ( is_string( $raw ) && $raw !== '' ) {
-                $get[ $flosc_qk ] = $raw;
+            /*
+             * Magic-link and email-verification callbacks. The credential on
+             * these URLs is the token itself, which is verified further down
+             * before any session is established; a WordPress nonce would be the
+             * wrong control, because the link arrives from the user's inbox on a
+             * request this site did not compose. Read as a bounded, sanitized
+             * boundary -- untrusted until the token verifies.
+             */
+            $raw = filter_input( INPUT_GET, $flosc_qk, FILTER_UNSAFE_RAW );
+            $val = is_string( $raw ) ? sanitize_text_field( wp_unslash( $raw ) ) : '';
+            if ( '' !== $val && strlen( $val ) <= 2048 ) {
+                $get[ $flosc_qk ] = $val;
             }
         }
 
@@ -1578,20 +1585,18 @@ trait FLOSC_Magic_Link_Trait {
          * carry a nonce -- the request arrives from a magic link, whose own
          * token is the credential and is verified separately.
          */
-        // phpcs:disable WordPress.Security.NonceVerification.Missing,WordPress.Security.NonceVerification.Recommended -- flow-name routing hint, no state change; magic-link token is verified separately.
         $ivr = '';
         if ( isset( $this->current_ivr_file ) && is_string( $this->current_ivr_file ) ) {
             $ivr = sanitize_file_name( $this->current_ivr_file );
         }
         if ( $ivr === '' ) {
-            $ivr_in = ( isset( $_POST['ivr'] ) && is_scalar( $_POST['ivr'] )
-			? sanitize_text_field( wp_unslash( $_POST['ivr'] ) )
-			: '' );
-            if ( ! is_string( $ivr_in ) || $ivr_in === '' ) {
-                $ivr_in = ( isset( $_GET['ivr'] ) && is_scalar( $_GET['ivr'] )
-			? sanitize_text_field( wp_unslash( $_GET['ivr'] ) )
-			: '' );
-              // phpcs:enable WordPress.Security.NonceVerification.Missing,WordPress.Security.NonceVerification.Recommended
+            // Which flow to return the admin to. A display selector for the
+            // redirect target below, matched against known flow files by the
+            // caller; it selects no action and writes nothing.
+            $ivr_raw = filter_input( INPUT_POST, 'ivr', FILTER_UNSAFE_RAW );
+            $ivr_in  = is_string( $ivr_raw ) ? sanitize_file_name( wp_unslash( $ivr_raw ) ) : '';
+            if ( '' === $ivr_in ) {
+                $ivr_in = flosc_nav_param( 'ivr', array(), '', 'sanitize_file_name' );
             }
             if ( is_string( $ivr_in ) ) {
                 $ivr = sanitize_file_name( $ivr_in );
@@ -1660,8 +1665,12 @@ trait FLOSC_Magic_Link_Trait {
      * Works for SSO-registered users (existing account) the same as email-registered.
      */
     public function ajax_send_guest_link() {
-        $post = wp_unslash($_POST);
+        // Origin, then identity, then the body. The nonce ran after $_POST had
+        // already been unslashed, so an off-site request was parsed before being
+        // refused.
         check_ajax_referer('flosc_send_guest_link', 'nonce');
+
+        $post = wp_unslash($_POST);
 
         if (!current_user_can('manage_options')) {
             wp_send_json_error(['message' => 'Unauthorized'], 403);
@@ -1895,12 +1904,26 @@ trait FLOSC_Magic_Link_Trait {
         if (!current_user_can('promote_users')) {
             wp_die(esc_html__('Unauthorized', 'flosc'), '', array('response' => 403));
         }
-        $user_id = isset($_GET['user_id']) ? absint(wp_unslash($_GET['user_id'])) : 0;
-        check_admin_referer('flosc_activate_email_' . $user_id);
-        if ($user_id <= 0 || !get_userdata($user_id)) {
-            wp_safe_redirect(admin_url('users.php'));
+        /*
+         * The nonce action is per-user, so the id has to be read before the
+         * nonce can be named. That is unavoidable and safe, but only if the id
+         * is validated as an id first: absint() turned "9abc" into 9 and "" into
+         * 0, and a 0 produced the action 'flosc_activate_email_0', which is a
+         * real action name a caller could mint a nonce for. It is validated as a
+         * positive integer now, and a request that fails that stops here rather
+         * than continuing into a nonce check for a user that does not exist.
+         */
+        $user_id = filter_input(
+            INPUT_GET,
+            'user_id',
+            FILTER_VALIDATE_INT,
+            array( 'options' => array( 'min_range' => 1 ) )
+        );
+        if ( ! is_int( $user_id ) || ! get_userdata( $user_id ) ) {
+            wp_safe_redirect( admin_url( 'users.php' ) );
             exit;
         }
+        check_admin_referer( 'flosc_activate_email_' . $user_id );
         $result = $this->flosc_activate_email_account($user_id);
         $redir = get_edit_user_link($user_id);
         if (!$redir) {

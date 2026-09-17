@@ -1,22 +1,22 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": 75,
+  "candidate_iteration": 78,
   "creator": "Claude Opus 5",
   "status": "BUILT_AWAITING_CAPTAIN_TEST",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v74",
+  "base": "claude-opus-5 v77",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "67a1406e6c8631b0bdea0f435d2a97dd72fac40f38a48900f7f461f26128b167",
-  "artifact_bytes": 2758195,
+  "artifact_sha256": "798196386dc5738fd6bb55d65ced8890132d836f1974121de3699a7bfa6ed065",
+  "artifact_bytes": 2762442,
   "artifact_entries": 277,
-  "tree_files": 294,
+  "tree_files": 295,
   "why_this_iteration": {
-    "symptom": "T13 'Nonces and User Permissions Needed for Security', 9 named incidences.",
-    "chain": "Three distinct defects. (1) ajax_serve_user_audio parsed ?exp= and ?sig= and never looked at them again; build_audio_access_signature() and is_valid_audio_access_signature() both existed and nothing called the verifier, while two of the three URL builders emitted unsigned links. A comment above the handler asserted a signed URL was the origin proof, which was untrue of the code beneath it. (2) Eleven admin-ajax handlers unslashed $_POST before verifying the nonce, several after a capability branch that can exit, so an off-site request was parsed before anything established where it came from. (3) admin/offers.php guarded offer deletion with capability and nonce joined by && in one condition, and a failure fell through into the rest of the page instead of ending the request.",
-    "fix": "Verifier is now called before a byte is served, after filename validation so the signature covers the file actually requested; both unsigned builders sign. check_ajax_referer() is the first statement in all eleven handlers. Offer deletion is two separate wp_die refusals. The IVR tab reads $_POST only on an actual POST.",
-    "not_fixed": "includes/flosc-admin.php maybe_process_flosc_settings_post() is unchanged: capability first, each sub-handler verifying its own nonce, under a documented phpcs:ignore. admin/ivr-messages.php still reads $_GET at file scope for navigation state and was not restructured into a function."
+    "symptom": "phpcs --sniffs=WordPress.Security.NonceVerification measured 84 warnings in 8 files on the Captain's machine. v76 did not move it.",
+    "chain": "v75 reordered eleven admin-ajax handlers, which answered the reviewer's ordering complaint but could never change this number: WPCS is satisfied by a nonce anywhere in the enclosing function, not by its position, so those handlers were never counted. The 84 were reads in functions that verify no nonce at all.",
+    "fix": "Every one classified by request semantics and given the correct control. Read-only navigation goes through a new input boundary, includes/flosc-request.php, which validates against closed sets. State-changing dispatchers verify the nonce for the matched route before the body is read. The audio endpoint got a typed boundary and its HMAC verified. OAuth and magic-link reads got bounded sanitization with their own controls named.",
+    "suppressions_removed": "All 24 phpcs:ignore/disable for NonceVerification are gone, including two written earlier the same day. Plugin-wide count is now 0. No suppression was removed without changing the code beneath it."
   },
   "the_card": {
     "text": "## 24 Never narrate a gap / short: Never spend a sentence explaining what you do not have. Say what you can do, then ask what they are looking for. Do not make excuses for what you don't have or don't know, instead, seek to understand and provide. / frequency: frequently",
@@ -404,11 +404,10 @@
     "tests/wporg-rule-exceptions.txt - flosc-app.php public-app exception"
   ],
   "measured_here": {
-    "note": "This container has no phpcs, phpstan, wp-env or Plugin Check. Only the checks below were executed; every other number in readme.md names the command instead of a result.",
-    "php_l_changed_files": "clean (flosc.php, admin/offers.php, admin/ivr-messages.php)",
-    "artifact_entries": 277,
-    "artifact_tests_entries": 0,
-    "is_valid_audio_access_signature_calls_in_zip": 1,
-    "check_ajax_referer_occurrences_in_zip_flosc_php": 28
+    "note": "No phpcs, phpstan, wp-env or Plugin Check in this container. These are the only checks executed.",
+    "php_l_whole_tree": "0 errors",
+    "nonce_suppressions_plugin_wide": 0,
+    "superglobal_reads_in_functions_without_a_nonce": 0,
+    "artifact_entries": 277
   }
 }
