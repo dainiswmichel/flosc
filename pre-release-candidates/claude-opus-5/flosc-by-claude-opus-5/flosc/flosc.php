@@ -261,9 +261,9 @@ if ( ! get_option( 'flosc_ivr_reparse_800' ) ) {
 					$config   = $parser->flosc_parse( $markdown );
 					$messages = $config['messages'] ?? array();
 					$pills    = array(
-					'visitor' => array(),
-					'guest'   => array(),
-					'member'  => array(),
+						'visitor' => array(),
+						'guest'   => array(),
+						'member'  => array(),
 					);
 					foreach ( $messages as $msg ) {
 						if ( 'suggested_user_autoprompt' !== ( $msg['type'] ?? '' ) ) {
@@ -970,15 +970,15 @@ class FLOSC_Framework {
 
 		$intent = flosc_paypal_purchase_intent_create(
 			array(
-			'offer_id'   => sanitize_text_field( (string) ( $offer['id'] ?? $offer_id ) ),
-			'plan_id'    => $plan_id,
-			'plan_type'  => $plan_type,
-			'amount'     => $amount,
-			'currency'   => $currency,
-			'flow_id'    => $flow_id,
-			'user_id'    => get_current_user_id(),
-			'session_id' => $session_id,
-			'mode'       => $mode,
+				'offer_id'   => sanitize_text_field( (string) ( $offer['id'] ?? $offer_id ) ),
+				'plan_id'    => $plan_id,
+				'plan_type'  => $plan_type,
+				'amount'     => $amount,
+				'currency'   => $currency,
+				'flow_id'    => $flow_id,
+				'user_id'    => get_current_user_id(),
+				'session_id' => $session_id,
+				'mode'       => $mode,
 			)
 		);
 		if ( is_wp_error( $intent ) ) {
@@ -987,13 +987,13 @@ class FLOSC_Framework {
 
 		return new WP_REST_Response(
 			array(
-			'success'       => true,
-			'purchase_uuid' => $intent['purchase_uuid'],
-			'plan_id'       => $plan_id,
-			'plan_type'     => $plan_type,
-			'amount'        => $amount,
-			'currency'      => $currency,
-			'offer_id'      => $intent['offer_id'],
+				'success'       => true,
+				'purchase_uuid' => $intent['purchase_uuid'],
+				'plan_id'       => $plan_id,
+				'plan_type'     => $plan_type,
+				'amount'        => $amount,
+				'currency'      => $currency,
+				'offer_id'      => $intent['offer_id'],
 			),
 			200
 		);
@@ -1209,24 +1209,24 @@ class FLOSC_Framework {
 	private function dispatch_remote_playback_conversion( $session_id, $targets ) {
 		if ( ! preg_match( '/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $session_id ) ) {
 			return array(
-			'ok'     => false,
-			'status' => 'invalid_session',
+				'ok'     => false,
+				'status' => 'invalid_session',
 			);
 		}
 
 		$provider = strtolower( (string) flosc_get_setting( 'audio_conversion_provider', 'none' ) );
 		if ( 'external' !== $provider ) {
 			return array(
-			'ok'     => false,
-			'status' => 'provider_none',
+				'ok'     => false,
+				'status' => 'provider_none',
 			);
 		}
 
 		$api_base = untrailingslashit( (string) flosc_get_setting( 'ipa_api_base_url', '' ) );
 		if ( '' === $api_base ) {
 			return array(
-			'ok'     => false,
-			'status' => 'missing_api_base',
+				'ok'     => false,
+				'status' => 'missing_api_base',
 			);
 		}
 
@@ -1244,30 +1244,30 @@ class FLOSC_Framework {
 			'POST',
 			$api_base . '/convert-session-playback',
 			array(
-			'headers' => $headers,
-			'body'    => $payload_json,
-			'timeout' => 6,
+				'headers' => $headers,
+				'body'    => $payload_json,
+				'timeout' => 6,
 			)
 		);
 
 		if ( is_wp_error( $response ) ) {
 			return array(
-			'ok'     => false,
-			'status' => 'request_error',
+				'ok'     => false,
+				'status' => 'request_error',
 			);
 		}
 
 		$code = (int) wp_remote_retrieve_response_code( $response );
 		if ( $code >= 200 && $code < 300 ) {
 			return array(
-			'ok'     => true,
-			'status' => 'requested',
+				'ok'     => true,
+				'status' => 'requested',
 			);
 		}
 
 		return array(
-		'ok'     => false,
-		'status' => 'http_' . $code,
+			'ok'     => false,
+			'status' => 'http_' . $code,
 		);
 	}
 
@@ -1468,17 +1468,17 @@ class FLOSC_Framework {
 				$_actions = array_column( $_menu, 'action' );
 				if ( ! in_array( 'view_profile', $_actions ) ) {
 					array_unshift(
-					$_menu,
-					array(
-					'label'  => 'My Profile',
-					'action' => 'view_profile',
-					) 
+						$_menu,
+						array(
+							'label'  => 'My Profile',
+							'action' => 'view_profile',
+						) 
 					);
 				}
 				if ( ! in_array( 'logout', $_actions ) ) {
 					$_menu[] = array(
-					'label'  => 'Log Out',
-					'action' => 'logout',
+						'label'  => 'Log Out',
+						'action' => 'logout',
 					);
 				}
 				update_option( $_menu_key, $_menu );
@@ -1721,11 +1721,11 @@ class FLOSC_Framework {
 				function ( $quiz_id, $score, $user_id ) {
 					$this->capture_external_quiz_score(
 						array(
-						'source'    => 'wp_pro_quiz',
-						'quiz_id'   => $quiz_id,
-						'score'     => $score,
-						'user_id'   => $user_id,
-						'timestamp' => time(),
+							'source'    => 'wp_pro_quiz',
+							'quiz_id'   => $quiz_id,
+							'score'     => $score,
+							'user_id'   => $user_id,
+							'timestamp' => time(),
 						)
 					);
 				},
@@ -1741,11 +1741,11 @@ class FLOSC_Framework {
 				function ( $data, $user ) {
 					$this->capture_external_quiz_score(
 						array(
-						'source'    => 'learndash',
-						'quiz_id'   => $data['quiz'] ?? 0,
-						'score'     => $data['percentage'] ?? 0,
-						'user_id'   => $user->ID,
-						'timestamp' => time(),
+							'source'    => 'learndash',
+							'quiz_id'   => $data['quiz'] ?? 0,
+							'score'     => $data['percentage'] ?? 0,
+							'user_id'   => $user->ID,
+							'timestamp' => time(),
 						)
 					);
 				},
@@ -1763,11 +1763,11 @@ class FLOSC_Framework {
 					$correct = $results['total_correct'] ?? 0;
 					$this->capture_external_quiz_score(
 						array(
-						'source'    => 'qsm',
-						'quiz_id'   => $quiz_id,
-						'score'     => ( $total > 0 ) ? round( ( $correct / $total ) * 100 ) : 0,
-						'user_id'   => get_current_user_id(),
-						'timestamp' => time(),
+							'source'    => 'qsm',
+							'quiz_id'   => $quiz_id,
+							'score'     => ( $total > 0 ) ? round( ( $correct / $total ) * 100 ) : 0,
+							'user_id'   => get_current_user_id(),
+							'timestamp' => time(),
 						)
 					);
 				},
@@ -1927,12 +1927,12 @@ The Team',
 			for ( $i = 1; $i <= 10; $i++ ) {
 				$post_id = wp_insert_post(
 					array(
-					'post_title'    => "Default FLOSC Lesson $i: Sample Training Topic",
-					'post_content'  => "Default FLOSC Lesson Content: This is a sample lesson for quiz item $i. Replace this with your actual training content.\n\nThis lesson addresses the skills tested in item $i of the quiz.",
-					'post_status'   => 'publish',
-					'post_type'     => 'post',
-					'post_category' => array( $cat_id ),
-					'tags_input'    => array( "$i", "lesson-$i", "phoneme-$i" ),
+						'post_title'    => "Default FLOSC Lesson $i: Sample Training Topic",
+						'post_content'  => "Default FLOSC Lesson Content: This is a sample lesson for quiz item $i. Replace this with your actual training content.\n\nThis lesson addresses the skills tested in item $i of the quiz.",
+						'post_status'   => 'publish',
+						'post_type'     => 'post',
+						'post_category' => array( $cat_id ),
+						'tags_input'    => array( "$i", "lesson-$i", "phoneme-$i" ),
 					)
 				);
 			}
@@ -1942,32 +1942,32 @@ The Team',
 		$offer_manager = $this->sale_manager->offers();
 		$offer_manager->create_offer(
 			array(
-			'id'            => 'default-flosc-full-access',
-			'name'          => 'Default FLOSC Full Access',
-			'description'   => 'Default FLOSC Offer: Unlock all lessons and premium features',
-			'type'          => 'one_time',
-			'status'        => 'active',
-			'display_price' => '$97',
-			'pricing'       => array(
-				'stripe'    => array(
-					'price_id' => '', // Admin must configure
+				'id'            => 'default-flosc-full-access',
+				'name'          => 'Default FLOSC Full Access',
+				'description'   => 'Default FLOSC Offer: Unlock all lessons and premium features',
+				'type'          => 'one_time',
+				'status'        => 'active',
+				'display_price' => '$97',
+				'pricing'       => array(
+					'stripe'    => array(
+						'price_id' => '', // Admin must configure
 				),
-				'tokens'    => array(
-					'cost' => 1000,
+					'tokens'    => array(
+						'cost' => 1000,
 				),
-				'affiliate' => array(
-					'credit_amount' => 97.00,
+					'affiliate' => array(
+						'credit_amount' => 97.00,
 				),
 			),
-			'grants'        => array(
-				'features'      => array( 'all_lessons', 'ai_coach', 'certificates' ),
-				'duration_days' => 0, // Lifetime
+				'grants'        => array(
+					'features'      => array( 'all_lessons', 'ai_coach', 'certificates' ),
+					'duration_days' => 0, // Lifetime
 			),
-			'meta'          => array(
-				'icon'  => '⭐',
-				'badge' => 'Best Value',
+				'meta'          => array(
+					'icon'  => '⭐',
+					'badge' => 'Best Value',
 			),
-			'sort_order'    => 1,
+				'sort_order'    => 1,
 			)
 		);
 
@@ -2140,9 +2140,9 @@ The Team',
 
 			$chat_logs_url = add_query_arg(
 				array(
-				'page'          => 'flosc-settings',
-				'tab'           => 'chat-logs',
-				'flosc_user_id' => intval( $user_id ),
+					'page'          => 'flosc-settings',
+					'tab'           => 'chat-logs',
+					'flosc_user_id' => intval( $user_id ),
 				),
 				admin_url( 'admin.php' )
 			);
@@ -2655,9 +2655,9 @@ The Team',
 		if ( function_exists( 'flosc_knowledge_base_put' ) && ! flosc_knowledge_base_get( $kb_id ) ) {
 			flosc_knowledge_base_put(
 				array(
-				'id'     => $kb_id,
-				'label'  => $kb_id,
-				'access' => array(),
+					'id'     => $kb_id,
+					'label'  => $kb_id,
+					'access' => array(),
 				) 
 			);
 		}
@@ -2716,8 +2716,8 @@ The Team',
 		$upload_overrides = array(
 			'test_form' => false,
 			'mimes'     => array(
-		'md'  => 'text/markdown',
-		'txt' => 'text/plain',
+				'md'  => 'text/markdown',
+				'txt' => 'text/plain',
 		),
 		);
 
@@ -2810,9 +2810,9 @@ The Team',
 			? flosc_knowledge_base_file_access( $kb_id, $file )
 			: 'visitor';
 		$cycle   = array(
-		'visitor' => 'guest',
-		'guest'   => 'member',
-		'member'  => 'visitor',
+			'visitor' => 'guest',
+			'guest'   => 'member',
+			'member'  => 'visitor',
 		);
 		$next    = $cycle[ $current ] ?? 'visitor';
 		if ( function_exists( 'flosc_knowledge_base_set_file_access' ) ) {
@@ -2872,9 +2872,9 @@ The Team',
 		if ( function_exists( 'flosc_knowledge_base_put' ) ) {
 			flosc_knowledge_base_put(
 				array(
-				'id'     => $id,
-				'label'  => $label,
-				'access' => array(),
+					'id'     => $id,
+					'label'  => $label,
+					'access' => array(),
 				) 
 			);
 		}
@@ -2974,10 +2974,10 @@ The Team',
 		}
 		wp_send_json_success(
 			array(
-			'response'  => $response_text,
-			'tokens_in' => 0, // Token tracking requires provider-specific response parsing; placeholder
-			'pass'      => $pass,
-			'corrected' => $corrected,
+				'response'  => $response_text,
+				'tokens_in' => 0, // Token tracking requires provider-specific response parsing; placeholder
+				'pass'      => $pass,
+				'corrected' => $corrected,
 			)
 		);
 	}
@@ -3117,8 +3117,8 @@ The Team',
 			'GET',
 			$callback_url,
 			array(
-			'timeout'     => 10,
-			'redirection' => 0,
+				'timeout'     => 10,
+				'redirection' => 0,
 			)
 		);
 
@@ -3187,10 +3187,10 @@ The Team',
 
 		wp_send_json_success(
 			array(
-			'provider'     => $provider_id,
-			'checks'       => $checks,
-			'all_pass'     => $all_pass,
-			'callback_url' => $callback_url,
+				'provider'     => $provider_id,
+				'checks'       => $checks,
+				'all_pass'     => $all_pass,
+				'callback_url' => $callback_url,
 			)
 		);
 	}
@@ -3209,8 +3209,8 @@ The Team',
 		$response = wp_remote_get(
 			'https://graph.facebook.com/v19.0/app?access_token=' . rawurlencode( $app_access_token ),
 			array(
-			'timeout'   => 15,
-			'sslverify' => true,
+				'timeout'   => 15,
+				'sslverify' => true,
 			)
 		);
 
@@ -3267,14 +3267,14 @@ The Team',
 		$response = wp_remote_post(
 			'https://oauth2.googleapis.com/token',
 			array(
-			'timeout'   => 15,
-			'sslverify' => true,
-			'body'      => array(
-				'client_id'     => $client_id,
-				'client_secret' => $client_secret,
-				'code'          => 'flosc_connection_test',
-				'grant_type'    => 'authorization_code',
-				'redirect_uri'  => $redirect_uri,
+				'timeout'   => 15,
+				'sslverify' => true,
+				'body'      => array(
+					'client_id'     => $client_id,
+					'client_secret' => $client_secret,
+					'code'          => 'flosc_connection_test',
+					'grant_type'    => 'authorization_code',
+					'redirect_uri'  => $redirect_uri,
 			),
 			)
 		);
@@ -3932,8 +3932,8 @@ The Team',
 			$this->forced_flow = array_merge(
 				$settings,
 				array(
-				'id'     => $flow_id,
-				'status' => $settings['status'] ?? 'active',
+					'id'     => $flow_id,
+					'status' => $settings['status'] ?? 'active',
 				)
 			);
 		}
@@ -3958,25 +3958,25 @@ The Team',
 		$flow = array_merge(
 			$settings,
 			array(
-			'id'            => $base_name,
-			'ivr_file'      => $filename,
-			'slug'          => $settings['slug'] ?? $default_slug,
-			'custom_domain' => $settings['domain'] ?? '',
-			'status'        => $settings['status'] ?? 'active',
+				'id'            => $base_name,
+				'ivr_file'      => $filename,
+				'slug'          => $settings['slug'] ?? $default_slug,
+				'custom_domain' => $settings['domain'] ?? '',
+				'status'        => $settings['status'] ?? 'active',
 			)
 		);
 
 		// Ensure identity sub-array exists with defaults.
 		$flow['identity'] = array_merge(
 			array(
-			'name'          => ucwords( str_replace( array( '_', '-' ), ' ', $base_name ) ),
-			'title'         => '',
-			'tagline'       => '',
-			'primary_color' => '#4f46e5',
-			'chatlogo_url'  => '',
-			'favicon_url'   => '',
-			'badgeUrl'      => '',
-			'share_text'    => '',
+				'name'          => ucwords( str_replace( array( '_', '-' ), ' ', $base_name ) ),
+				'title'         => '',
+				'tagline'       => '',
+				'primary_color' => '#4f46e5',
+				'chatlogo_url'  => '',
+				'favicon_url'   => '',
+				'badgeUrl'      => '',
+				'share_text'    => '',
 			),
 			$flow['identity'] ?? array()
 		);
@@ -4985,24 +4985,24 @@ You are a GUIDE, not a teacher. Your job is to:
 	private function get_admin_introspection_prompts() {
 		return array(
 			array(
-		'text'  => '📁 Show IVR files',
-		'input' => 'What files do you have access to?',
+				'text'  => '📁 Show IVR files',
+				'input' => 'What files do you have access to?',
 		),
 			array(
-		'text'  => '🏷️ Show offers',
-		'input' => 'What offers are configured?',
+				'text'  => '🏷️ Show offers',
+				'input' => 'What offers are configured?',
 		),
 			array(
-		'text'  => '🖥️ System status',
-		'input' => 'System status',
+				'text'  => '🖥️ System status',
+				'input' => 'System status',
 		),
 			array(
-		'text'  => '👤 My status',
-		'input' => 'What is my user status?',
+				'text'  => '👤 My status',
+				'input' => 'What is my user status?',
 		),
 			array(
-		'text'  => '📍 Current config',
-		'input' => 'What is the current config?',
+				'text'  => '📍 Current config',
+				'input' => 'What is the current config?',
 		),
 		);
 	}
@@ -5191,13 +5191,13 @@ Example good response:
 
 		return new WP_REST_Response(
 			array(
-			'success'            => true,
-			'bridge_data_active' => $user_id ? $bridge_mgr->is_in_flosc_bridge_state( $user_id ) : false,
-			'score'              => $bridge_data['score'] ?? 0,
-			'percentage'         => $bridge_data['percentage'] ?? 0,
-			'correct_items'      => $bridge_data['correct_items'] ?? array(),
-			'incorrect_items'    => $bridge_data['incorrect_items'] ?? array(),
-			'weakest_category'   => $user_id ? $bridge_mgr->get_flosc_weakest_category( $user_id ) : null,
+				'success'            => true,
+				'bridge_data_active' => $user_id ? $bridge_mgr->is_in_flosc_bridge_state( $user_id ) : false,
+				'score'              => $bridge_data['score'] ?? 0,
+				'percentage'         => $bridge_data['percentage'] ?? 0,
+				'correct_items'      => $bridge_data['correct_items'] ?? array(),
+				'incorrect_items'    => $bridge_data['incorrect_items'] ?? array(),
+				'weakest_category'   => $user_id ? $bridge_mgr->get_flosc_weakest_category( $user_id ) : null,
 			)
 		);
 	}
@@ -5287,13 +5287,13 @@ Example good response:
 				// Return text sequence quiz format.
 				return new WP_REST_Response(
 					array(
-					'success'      => true,
-					'id'           => $resolved_id,
-					'title'        => $quiz_type->get_name(),
-					'type'         => 'text_sequence',
-					'prompt'       => 'Type the sequence from 1 to 10 (e.g., "1, 2, 3, 4, 5, 6, 7, 8, 9, 10")',
-					'expected'     => array_values( $expected ),
-					'instructions' => $quiz_type->get_instructions(),
+						'success'      => true,
+						'id'           => $resolved_id,
+						'title'        => $quiz_type->get_name(),
+						'type'         => 'text_sequence',
+						'prompt'       => 'Type the sequence from 1 to 10 (e.g., "1, 2, 3, 4, 5, 6, 7, 8, 9, 10")',
+						'expected'     => array_values( $expected ),
+						'instructions' => $quiz_type->get_instructions(),
 					)
 				);
 			}
@@ -5302,13 +5302,13 @@ Example good response:
 			if ( 'flosc_sample_audio_quiz' === $resolved_id ) {
 				return new WP_REST_Response(
 					array(
-					'success'      => true,
-					'id'           => $resolved_id,
-					'title'        => $quiz_type->get_name(),
-					'type'         => 'audio',
-					'prompt'       => 'Record yourself saying the sequence from 1 to 10',
-					'expected'     => array_map( 'trim', explode( ',', $content ) ),
-					'instructions' => $quiz_type->get_instructions(),
+						'success'      => true,
+						'id'           => $resolved_id,
+						'title'        => $quiz_type->get_name(),
+						'type'         => 'audio',
+						'prompt'       => 'Record yourself saying the sequence from 1 to 10',
+						'expected'     => array_map( 'trim', explode( ',', $content ) ),
+						'instructions' => $quiz_type->get_instructions(),
 					)
 				);
 			}
@@ -5319,11 +5319,11 @@ Example good response:
 				$questions = $this->parse_multiplechoice_content( $content );
 				return new WP_REST_Response(
 					array(
-					'success'   => true,
-					'id'        => $resolved_id,
-					'title'     => $quiz_type->get_name(),
-					'type'      => 'multiple_choice',
-					'questions' => $questions,
+						'success'   => true,
+						'id'        => $resolved_id,
+						'title'     => $quiz_type->get_name(),
+						'type'      => 'multiple_choice',
+						'questions' => $questions,
 					)
 				);
 			}
@@ -5345,11 +5345,11 @@ Example good response:
 				}
 				return new WP_REST_Response(
 					array(
-					'success'   => true,
-					'id'        => $resolved_id,
-					'title'     => $quiz_type->get_name(),
-					'type'      => 'multiple_choice',
-					'questions' => $questions,
+						'success'   => true,
+						'id'        => $resolved_id,
+						'title'     => $quiz_type->get_name(),
+						'type'      => 'multiple_choice',
+						'questions' => $questions,
 					)
 				);
 			}
@@ -5362,20 +5362,20 @@ Example good response:
 				'text'    => 'How would you rate your current skill level?',
 				'options' => array(
 					array(
-		'key'  => 'A',
-		'text' => 'Complete beginner',
+						'key'  => 'A',
+						'text' => 'Complete beginner',
 				),
 					array(
-				'key'  => 'B',
-				'text' => 'Some basics',
+						'key'  => 'B',
+						'text' => 'Some basics',
 				),
 					array(
-				'key'  => 'C',
-				'text' => 'Intermediate',
+						'key'  => 'C',
+						'text' => 'Intermediate',
 				),
 					array(
-				'key'  => 'D',
-				'text' => 'Advanced',
+						'key'  => 'D',
+						'text' => 'Advanced',
 				),
 				),
 				'correct' => null,
@@ -5385,20 +5385,20 @@ Example good response:
 				'text'    => 'How much time can you dedicate to practice each week?',
 				'options' => array(
 					array(
-		'key'  => 'A',
-		'text' => 'Less than 1 hour',
+						'key'  => 'A',
+						'text' => 'Less than 1 hour',
 				),
 					array(
-				'key'  => 'B',
-				'text' => '1-3 hours',
+						'key'  => 'B',
+						'text' => '1-3 hours',
 				),
 					array(
-				'key'  => 'C',
-				'text' => '3-5 hours',
+						'key'  => 'C',
+						'text' => '3-5 hours',
 				),
 					array(
-				'key'  => 'D',
-				'text' => 'More than 5 hours',
+						'key'  => 'D',
+						'text' => 'More than 5 hours',
 				),
 				),
 				'correct' => null,
@@ -5408,20 +5408,20 @@ Example good response:
 				'text'    => 'What is your primary goal?',
 				'options' => array(
 					array(
-		'key'  => 'A',
-		'text' => 'Personal improvement',
+						'key'  => 'A',
+						'text' => 'Personal improvement',
 				),
 					array(
-				'key'  => 'B',
-				'text' => 'Professional development',
+						'key'  => 'B',
+						'text' => 'Professional development',
 				),
 					array(
-				'key'  => 'C',
-				'text' => 'Academic requirements',
+						'key'  => 'C',
+						'text' => 'Academic requirements',
 				),
 					array(
-				'key'  => 'D',
-				'text' => 'Just curious to learn',
+						'key'  => 'D',
+						'text' => 'Just curious to learn',
 				),
 				),
 				'correct' => null,
@@ -5430,11 +5430,11 @@ Example good response:
 
 		return new WP_REST_Response(
 			array(
-			'success'   => true,
-			'id'        => 'sample',
-			'title'     => 'Quick Assessment',
-			'type'      => 'multiple_choice',
-			'questions' => $sample_questions,
+				'success'   => true,
+				'id'        => 'sample',
+				'title'     => 'Quick Assessment',
+				'type'      => 'multiple_choice',
+				'questions' => $sample_questions,
 			)
 		);
 	}
@@ -5471,8 +5471,8 @@ Example good response:
 					$question['correct'] = substr( $part, 8 );
 				} elseif ( preg_match( '/^([A-D]):(.+)$/', $part, $m ) ) {
 					$question['options'][] = array(
-					'key'  => $m[1],
-					'text' => trim( $m[2] ),
+						'key'  => $m[1],
+						'text' => trim( $m[2] ),
 					);
 				}
 			}
@@ -5571,10 +5571,10 @@ Example good response:
 
 		return new WP_REST_Response(
 			array(
-			'success'         => true,
-			'message'         => 'Quiz result stored',
-			'stored_for_user' => is_user_logged_in(),
-			'score'           => $score,
+				'success'         => true,
+				'message'         => 'Quiz result stored',
+				'stored_for_user' => is_user_logged_in(),
+				'score'           => $score,
 			)
 		);
 	}
@@ -6409,8 +6409,8 @@ Example good response:
 
 		return new WP_REST_Response(
 			array(
-			'success'  => true,
-			'response' => $response,
+				'success'  => true,
+				'response' => $response,
 			)
 		);
 	}
@@ -6439,9 +6439,9 @@ Example good response:
 		if ( ! $quiz_type ) {
 			return new WP_REST_Response(
 				array(
-				'success'    => true,
-				'transcript' => $transcript,
-				'analysis'   => null,
+					'success'    => true,
+					'transcript' => $transcript,
+					'analysis'   => null,
 				)
 			);
 		}
@@ -6461,7 +6461,7 @@ Example good response:
 			$transcript,
 			$expected_content,
 			array(
-			'user_id' => is_user_logged_in() ? get_current_user_id() : null,
+				'user_id' => is_user_logged_in() ? get_current_user_id() : null,
 			)
 		);
 
@@ -6472,8 +6472,8 @@ Example good response:
 				'quizzes',
 				1,
 				array(
-				'score'     => $analysis['score'],
-				'quiz_type' => $quiz_type->get_id(),
+					'score'     => $analysis['score'],
+					'quiz_type' => $quiz_type->get_id(),
 				)
 			);
 		}
@@ -6495,11 +6495,11 @@ Example good response:
 
 		return new WP_REST_Response(
 			array(
-			'success'    => true,
-			'transcript' => $transcript,
-			'analysis'   => $analysis,
-			'lessons'    => $lessons,
-			'message'    => $message,
+				'success'    => true,
+				'transcript' => $transcript,
+				'analysis'   => $analysis,
+				'lessons'    => $lessons,
+				'message'    => $message,
 			)
 		);
 	}
@@ -6559,7 +6559,7 @@ Example good response:
 			$input,
 			$expected_content,
 			array(
-			'user_id' => is_user_logged_in() ? get_current_user_id() : null,
+				'user_id' => is_user_logged_in() ? get_current_user_id() : null,
 			)
 		);
 
@@ -6575,8 +6575,8 @@ Example good response:
 				'quizzes',
 				1,
 				array(
-				'score'     => $analysis['score'],
-				'quiz_type' => $quiz_type->get_id(),
+					'score'     => $analysis['score'],
+					'quiz_type' => $quiz_type->get_id(),
 				)
 			);
 
@@ -6621,10 +6621,10 @@ Example good response:
 
 		return new WP_REST_Response(
 			array(
-			'success'  => true,
-			'analysis' => $analysis,
-			'lessons'  => $lessons,
-			'message'  => $message,
+				'success'  => true,
+				'analysis' => $analysis,
+				'lessons'  => $lessons,
+				'message'  => $message,
 			)
 		);
 	}
@@ -6958,8 +6958,8 @@ Example good response:
 			$hist_flow = $flow_id;
 			$hist_meta = ( 'engagement_admin' === $source )
 				? array(
-			'source' => 'engagement_admin',
-			'name'   => 'Engagement',
+					'source' => 'engagement_admin',
+					'name'   => 'Engagement',
 				)
 				: null;
 			if ( '' !== $user_message ) {
@@ -6979,25 +6979,25 @@ Example good response:
 
 		$insert_id = FLOSC_Chat_Logger::instance()->flosc_log_chat(
 			array(
-			'flow_id'          => $flow_id,
-			'phase'            => '' !== $phase ? $phase : 'content',
-			'user_id'          => $user_id,
-			'session_id'       => $session_id,
-			'journey_id'       => $journey_id,
-			'user_message'     => $user_message,
-			'ai_response'      => $ai_response,
-			'provider'         => '' !== $provider ? $provider : 'client',
-			'chain_detail'     => array( 'client_ui' ),
-			'response_source'  => '' !== $source ? $source : 'client_ui',
-			'response_time_ms' => 0,
-			'billing_source'   => 'none',
+				'flow_id'          => $flow_id,
+				'phase'            => '' !== $phase ? $phase : 'content',
+				'user_id'          => $user_id,
+				'session_id'       => $session_id,
+				'journey_id'       => $journey_id,
+				'user_message'     => $user_message,
+				'ai_response'      => $ai_response,
+				'provider'         => '' !== $provider ? $provider : 'client',
+				'chain_detail'     => array( 'client_ui' ),
+				'response_source'  => '' !== $source ? $source : 'client_ui',
+				'response_time_ms' => 0,
+				'billing_source'   => 'none',
 			)
 		);
 
 		return new WP_REST_Response(
 			array(
-			'success' => (bool) $insert_id,
-			'log_id'  => $insert_id ? (int) $insert_id : 0,
+				'success' => (bool) $insert_id,
+				'log_id'  => $insert_id ? (int) $insert_id : 0,
 			)
 		);
 	}
@@ -7090,12 +7090,12 @@ Example good response:
 		$member_access->grant_member_access(
 			$user_id,
 			array(
-			'offer_id'       => $matched_offer_id,
-			'grants_level'   => $grants_level,
-			'provider'       => 'access_code',
-			'transaction_id' => 'access_code_' . $user_id . '_' . time(),
-			'amount'         => 0,
-			'flow_id'        => $flow_id,
+				'offer_id'       => $matched_offer_id,
+				'grants_level'   => $grants_level,
+				'provider'       => 'access_code',
+				'transaction_id' => 'access_code_' . $user_id . '_' . time(),
+				'amount'         => 0,
+				'flow_id'        => $flow_id,
 			)
 		);
 
@@ -7107,8 +7107,8 @@ Example good response:
 					$user_id,
 					$offer,
 					array(
-					'transaction_id' => 'access_code_' . $user_id . '_' . time(),
-					'provider'       => 'access_code',
+						'transaction_id' => 'access_code_' . $user_id . '_' . time(),
+						'provider'       => 'access_code',
 					)
 				);
 			}
@@ -7122,9 +7122,9 @@ Example good response:
 
 		return new WP_REST_Response(
 			array(
-			'success'  => true,
-			'message'  => 'Access granted',
-			'offer_id' => $matched_offer_id,
+				'success'  => true,
+				'message'  => 'Access granted',
+				'offer_id' => $matched_offer_id,
 			)
 		);
 	}
@@ -7145,8 +7145,8 @@ Example good response:
 		if ( ! $user_id ) {
 			return new WP_REST_Response(
 				array(
-				'success' => false,
-				'message' => 'Not logged in',
+					'success' => false,
+					'message' => 'Not logged in',
 				),
 				401 
 			);
@@ -7163,9 +7163,9 @@ Example good response:
 			}
 			return new WP_REST_Response(
 				array(
-				'success'        => true,
-				'already_scored' => true,
-				'score_data'     => $existing,
+					'success'        => true,
+					'already_scored' => true,
+					'score_data'     => $existing,
 				)
 			);
 		}
@@ -7177,8 +7177,8 @@ Example good response:
 			}
 			return new WP_REST_Response(
 				array(
-				'success' => false,
-				'message' => 'Invalid session ID',
+					'success' => false,
+					'message' => 'Invalid session ID',
 				),
 				400 
 			);
@@ -7202,8 +7202,8 @@ Example good response:
 			}
 			return new WP_REST_Response(
 				array(
-				'success'    => true,
-				'score_data' => $audio_score,
+					'success'    => true,
+					'score_data' => $audio_score,
 				)
 			);
 		}
@@ -7212,8 +7212,8 @@ Example good response:
 		}
 		return new WP_REST_Response(
 			array(
-			'success' => false,
-			'message' => 'Could not score audio. Files may have expired.',
+				'success' => false,
+				'message' => 'Could not score audio. Files may have expired.',
 			),
 			500
 		);
@@ -7231,8 +7231,8 @@ Example good response:
 		if ( ! is_array( $quiz_data ) || empty( $quiz_data['phraseResults'] ) || ! is_array( $quiz_data['phraseResults'] ) ) {
 			return new WP_REST_Response(
 				array(
-				'success' => false,
-				'message' => 'Missing quiz_data.phraseResults',
+					'success' => false,
+					'message' => 'Missing quiz_data.phraseResults',
 				),
 				400
 			);
@@ -7243,8 +7243,8 @@ Example good response:
 		if ( ! is_string( $encoded ) || strlen( $encoded ) > 200000 ) {
 			return new WP_REST_Response(
 				array(
-				'success' => false,
-				'message' => 'Quiz data too large',
+					'success' => false,
+					'message' => 'Quiz data too large',
 				),
 				400
 			);
@@ -7265,8 +7265,8 @@ Example good response:
 
 		return new WP_REST_Response(
 			array(
-			'success' => true,
-			'token'   => $token,
+				'success' => true,
+				'token'   => $token,
 			)
 		);
 	}
@@ -7331,10 +7331,10 @@ Example good response:
 		if ( ! empty( $display_name ) ) {
 			wp_update_user(
 				array(
-				'ID'           => $user_id,
-				'display_name' => $display_name,
-				'nickname'     => $display_name,
-				'first_name'   => $display_name,   // fixes WP Admin Name column + AI context
+					'ID'           => $user_id,
+					'display_name' => $display_name,
+					'nickname'     => $display_name,
+					'first_name'   => $display_name,   // fixes WP Admin Name column + AI context
 				)
 			);
 			// Set BuddyBoss xprofile Name field if available (field 1 = Name by default).
@@ -7391,8 +7391,8 @@ Example good response:
 
 		return new WP_REST_Response(
 			array(
-			'success'      => true,
-			'display_name' => $display_name ?: get_userdata( $user_id )->display_name,
+				'success'      => true,
+				'display_name' => $display_name ?: get_userdata( $user_id )->display_name,
 			)
 		);
 	}
@@ -7460,9 +7460,9 @@ Example good response:
 					'flosc_quiz_result',
 					'',
 					array(
-					'expires'  => time() - 3600,
-					'path'     => '/',
-					'samesite' => 'Lax',
+						'expires'  => time() - 3600,
+						'path'     => '/',
+						'samesite' => 'Lax',
 					) 
 				);
 			}
@@ -7508,9 +7508,9 @@ Example good response:
 				'flosc_prelogin_score',
 				'',
 				array(
-				'expires'  => time() - 3600,
-				'path'     => '/',
-				'samesite' => 'Lax',
+					'expires'  => time() - 3600,
+					'path'     => '/',
+					'samesite' => 'Lax',
 				)
 			);
 
@@ -7541,9 +7541,9 @@ Example good response:
 		if ( ! $this->flosc_flow_serves_lessons( $stem ) ) {
 			return new WP_REST_Response(
 				array(
-				'success' => false,
-				'code'    => 'lessons_not_on_flow',
-				'message' => 'Lessons are not available in this chat.',
+					'success' => false,
+					'code'    => 'lessons_not_on_flow',
+					'message' => 'Lessons are not available in this chat.',
 				),
 				404
 			);
@@ -7558,8 +7558,8 @@ Example good response:
 		if ( ! $result['success'] ) {
 			return new WP_REST_Response(
 				array(
-				'success' => false,
-				'message' => $result['message'] ?? 'No free lesson available. Please take the quiz first.',
+					'success' => false,
+					'message' => $result['message'] ?? 'No free lesson available. Please take the quiz first.',
 				),
 				404
 			);
@@ -7581,8 +7581,8 @@ Example good response:
 			if ( empty( $result['title'] ) ) {
 				return new WP_REST_Response(
 					array(
-					'success' => false,
-					'message' => 'No free lesson available. Please take the quiz first.',
+						'success' => false,
+						'message' => 'No free lesson available. Please take the quiz first.',
 					),
 					404
 				);
@@ -7597,10 +7597,10 @@ Example good response:
 
 		return new WP_REST_Response(
 			array(
-			'success' => true,
-			'count'   => count( $lessons_data ),
-			'lessons' => $lessons_data,
-			// Backward compat.
+				'success' => true,
+				'count'   => count( $lessons_data ),
+				'lessons' => $lessons_data,
+				// Backward compat.
 			'lesson'  => $lessons_data[0],
 			)
 		);
@@ -7635,13 +7635,13 @@ Example good response:
 		$response = wp_remote_post(
 			$api_base . '/v1/oauth2/token',
 			array(
-			'headers' => array(
+				'headers' => array(
                 // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- binary/JWT token encoding, not obfuscation
 				'Authorization' => 'Basic ' . base64_encode( $client_id . ':' . $secret ),
-				'Content-Type'  => 'application/x-www-form-urlencoded',
+					'Content-Type'  => 'application/x-www-form-urlencoded',
 			),
-			'body'    => 'grant_type=client_credentials',
-			'timeout' => 15,
+				'body'    => 'grant_type=client_credentials',
+				'timeout' => 15,
 			)
 		);
 
@@ -7664,9 +7664,9 @@ Example good response:
 			if ( is_wp_error( $wh ) ) {
 				wp_send_json_success(
 					array(
-					'mode'     => ucfirst( $mode ),
-					'app_name' => $body['app_id'] ?? 'PayPal',
-					'webhook'  => 'error: ' . $wh->get_error_message(),
+						'mode'     => ucfirst( $mode ),
+						'app_name' => $body['app_id'] ?? 'PayPal',
+						'webhook'  => 'error: ' . $wh->get_error_message(),
 					)
 				);
 			}
@@ -7679,9 +7679,9 @@ Example good response:
 
 		// P0-A security matrix (same path as production REST dispatcher).
 		$p0a = array(
-		'unsigned'      => null,
-		'forged'        => null,
-		'headers_wired' => false,
+			'unsigned'      => null,
+			'forged'        => null,
+			'headers_wired' => false,
 		);
 		if ( method_exists( $pp, 'handle_webhook' ) && class_exists( 'WP_REST_Request' ) ) {
 			$unsigned        = $pp->handle_webhook( '{"id":"WH-ADMIN-UNSIGNED"}', array() );
@@ -7724,10 +7724,10 @@ Example good response:
 
 		wp_send_json_success(
 			array(
-			'mode'     => ucfirst( $mode ),
-			'app_name' => $body['app_id'] ?? 'PayPal',
-			'webhook'  => $webhook_info,
-			'p0a'      => $p0a,
+				'mode'     => ucfirst( $mode ),
+				'app_name' => $body['app_id'] ?? 'PayPal',
+				'webhook'  => $webhook_info,
+				'p0a'      => $p0a,
 			)
 		);
 	}
@@ -7774,13 +7774,13 @@ Example good response:
 			}
 			return new WP_REST_Response(
 				array(
-				'monthly_plan_id' => $plans['monthly_plan_id'],
-				'yearly_plan_id'  => $plans['yearly_plan_id'],
-				'monthly_price'   => $sub['monthly'],
-				'yearly_price'    => $sub['yearly'],
-				'list_monthly'    => $sub['list_monthly'],
-				'list_yearly'     => $sub['list_yearly'],
-				'coupon_code'     => $sub['coupon_code'],
+					'monthly_plan_id' => $plans['monthly_plan_id'],
+					'yearly_plan_id'  => $plans['yearly_plan_id'],
+					'monthly_price'   => $sub['monthly'],
+					'yearly_price'    => $sub['yearly'],
+					'list_monthly'    => $sub['list_monthly'],
+					'list_yearly'     => $sub['list_yearly'],
+					'coupon_code'     => $sub['coupon_code'],
 				)
 			);
 		}
@@ -7792,8 +7792,8 @@ Example good response:
 
 		return new WP_REST_Response(
 			array(
-			'monthly_plan_id' => $plans['monthly_plan_id'],
-			'yearly_plan_id'  => $plans['yearly_plan_id'],
+				'monthly_plan_id' => $plans['monthly_plan_id'],
+				'yearly_plan_id'  => $plans['yearly_plan_id'],
 			)
 		);
 	}
@@ -7946,10 +7946,10 @@ Example good response:
 		if ( 'fulfilled' === ( $intent['status'] ?? '' ) ) {
 			return new WP_REST_Response(
 				array(
-				'success'           => true,
-				'already_fulfilled' => true,
-				'subscription_id'   => $subscription_id,
-				'offer_id'          => sanitize_text_field( (string) ( $intent['offer_id'] ?? '' ) ),
+					'success'           => true,
+					'already_fulfilled' => true,
+					'subscription_id'   => $subscription_id,
+					'offer_id'          => sanitize_text_field( (string) ( $intent['offer_id'] ?? '' ) ),
 				),
 				200
 			);
@@ -8104,10 +8104,10 @@ Example good response:
 					$name_parts = explode( ' ', $subscriber_name, 2 );
 					wp_update_user(
 						array(
-						'ID'           => $user_id,
-						'first_name'   => sanitize_text_field( (string) ( $name_parts[0] ?? '' ) ),
-						'last_name'    => sanitize_text_field( (string) ( $name_parts[1] ?? '' ) ),
-						'display_name' => sanitize_text_field( $subscriber_name ),
+							'ID'           => $user_id,
+							'first_name'   => sanitize_text_field( (string) ( $name_parts[0] ?? '' ) ),
+							'last_name'    => sanitize_text_field( (string) ( $name_parts[1] ?? '' ) ),
+							'display_name' => sanitize_text_field( $subscriber_name ),
 						)
 					);
 				}
@@ -8244,14 +8244,14 @@ Example good response:
 				'flosc_paypal_subscription_activated',
 				$user_id,
 				array(
-				'offer_id'       => $resolved_offer_id,
-				'provider'       => 'paypal',
-				'transaction_id' => $subscription_id,
-				'amount'         => $amount,
-				'flow_id'        => $capture_flow_id,
-				'subscription'   => true,
-				'plan_type'      => $plan_type,
-				'timestamp'      => time(),
+					'offer_id'       => $resolved_offer_id,
+					'provider'       => 'paypal',
+					'transaction_id' => $subscription_id,
+					'amount'         => $amount,
+					'flow_id'        => $capture_flow_id,
+					'subscription'   => true,
+					'plan_type'      => $plan_type,
+					'timestamp'      => time(),
 				)
 			);
 		}
@@ -8274,22 +8274,22 @@ Example good response:
 
 		return new WP_REST_Response(
 			array(
-			'success'           => true,
-			'message'           => sprintf( /* translators: %s: product / flow name */ __( 'Welcome to %s!', 'flosc' ), $product_name ),
-			'product_name'      => $product_name,
-			'access'            => $access_manager->get_user_access( $user_id ),
-			'member_level'      => $default_member_level,
-			'plan_type'         => $plan_type,
-			'amount'            => $amount,
-			'currency'          => $transaction['currency'],
-			'purchase_count'    => (int) get_user_meta( $user_id, '_flosc_purchase_count', true ),
-			'user_id'           => $user_id,
-			'user_email'        => $user_data->user_email ?? '',
-			'user_display_name' => $user_data->display_name ?? '',
-			'is_new_user'       => $is_new_user,
-			'auth_token'        => $auth_token ?: null,
-			'login_handoff'     => $login_handoff,
-			'token_topup'       => $token_topup,
+				'success'           => true,
+				'message'           => sprintf( /* translators: %s: product / flow name */ __( 'Welcome to %s!', 'flosc' ), $product_name ),
+				'product_name'      => $product_name,
+				'access'            => $access_manager->get_user_access( $user_id ),
+				'member_level'      => $default_member_level,
+				'plan_type'         => $plan_type,
+				'amount'            => $amount,
+				'currency'          => $transaction['currency'],
+				'purchase_count'    => (int) get_user_meta( $user_id, '_flosc_purchase_count', true ),
+				'user_id'           => $user_id,
+				'user_email'        => $user_data->user_email ?? '',
+				'user_display_name' => $user_data->display_name ?? '',
+				'is_new_user'       => $is_new_user,
+				'auth_token'        => $auth_token ?: null,
+				'login_handoff'     => $login_handoff,
+				'token_topup'       => $token_topup,
 			)
 		);
 	}
@@ -8361,15 +8361,15 @@ Example good response:
 		if ( function_exists( 'flosc_paypal_purchase_intent_create' ) ) {
 			$intent = flosc_paypal_purchase_intent_create(
 				array(
-				'offer_id'   => sanitize_text_field( (string) ( $offer['id'] ?? $offer_id ) ),
-				'plan_id'    => 'order', // one-time Orders API (not a billing plan)
-				'plan_type'  => 'onetime',
-				'amount'     => number_format( (float) $amount, 2, '.', '' ),
-				'currency'   => $currency,
-				'flow_id'    => $flow_id,
-				'user_id'    => (int) ( $user->ID ?? 0 ),
-				'session_id' => $session_id,
-				'mode'       => method_exists( $paypal, 'get_setting' ) ? sanitize_key( (string) $paypal->get_setting( 'mode', 'live' ) ) : 'live',
+					'offer_id'   => sanitize_text_field( (string) ( $offer['id'] ?? $offer_id ) ),
+					'plan_id'    => 'order', // one-time Orders API (not a billing plan)
+					'plan_type'  => 'onetime',
+					'amount'     => number_format( (float) $amount, 2, '.', '' ),
+					'currency'   => $currency,
+					'flow_id'    => $flow_id,
+					'user_id'    => (int) ( $user->ID ?? 0 ),
+					'session_id' => $session_id,
+					'mode'       => method_exists( $paypal, 'get_setting' ) ? sanitize_key( (string) $paypal->get_setting( 'mode', 'live' ) ) : 'live',
 				)
 			);
 			if ( is_wp_error( $intent ) ) {
@@ -8487,10 +8487,10 @@ Example good response:
 			if ( is_array( $intent ) && 'fulfilled' === ( $intent['status'] ?? '' ) ) {
 				return new WP_REST_Response(
 					array(
-					'success'           => true,
-					'already_fulfilled' => true,
-					'order_id'          => $order_id,
-					'offer_id'          => $bound_offer_id,
+						'success'           => true,
+						'already_fulfilled' => true,
+						'order_id'          => $order_id,
+						'offer_id'          => $bound_offer_id,
 					),
 					200
 				);
@@ -8588,10 +8588,10 @@ Example good response:
 					$name_parts = explode( ' ', $payer_name, 2 );
 					wp_update_user(
 						array(
-						'ID'           => $user_id,
-						'first_name'   => sanitize_text_field( (string) ( $name_parts[0] ?? '' ) ),
-						'last_name'    => sanitize_text_field( (string) ( $name_parts[1] ?? '' ) ),
-						'display_name' => $payer_name,
+							'ID'           => $user_id,
+							'first_name'   => sanitize_text_field( (string) ( $name_parts[0] ?? '' ) ),
+							'last_name'    => sanitize_text_field( (string) ( $name_parts[1] ?? '' ) ),
+							'display_name' => $payer_name,
 						)
 					);
 				}
@@ -8691,13 +8691,13 @@ Example good response:
 				'flosc_paypal_capture_completed',
 				$user_id,
 				array(
-				'offer_id'       => $offer_id,
-				'grants_level'   => $member_level,
-				'provider'       => 'paypal',
-				'transaction_id' => $txn_id,
-				'amount'         => $capture_result['amount'],
-				'flow_id'        => $capture_flow_id,
-				'timestamp'      => time(),
+					'offer_id'       => $offer_id,
+					'grants_level'   => $member_level,
+					'provider'       => 'paypal',
+					'transaction_id' => $txn_id,
+					'amount'         => $capture_result['amount'],
+					'flow_id'        => $capture_flow_id,
+					'timestamp'      => time(),
 				)
 			);
 		}
@@ -8710,18 +8710,18 @@ Example good response:
 
 		return new WP_REST_Response(
 			array(
-			'success'           => true,
-			'message'           => 'Access granted',
-			'access'            => $access_manager->get_user_access( $user_id ),
-			'purchase_count'    => (int) get_user_meta( $user_id, '_flosc_purchase_count', true ),
-			'member_level'      => get_user_meta( $user_id, '_flosc_member_level', true ) ?: $member_level,
-			'user_id'           => $user_id,
-			'user_email'        => $user_data->user_email ?? '',
-			'user_display_name' => $user_data->display_name ?? '',
-			'is_new_user'       => $is_new_user,
-			'auth_token'        => $auth_token ?: null,
-			'login_handoff'     => $login_handoff,
-			'token_topup'       => $token_topup,
+				'success'           => true,
+				'message'           => 'Access granted',
+				'access'            => $access_manager->get_user_access( $user_id ),
+				'purchase_count'    => (int) get_user_meta( $user_id, '_flosc_purchase_count', true ),
+				'member_level'      => get_user_meta( $user_id, '_flosc_member_level', true ) ?: $member_level,
+				'user_id'           => $user_id,
+				'user_email'        => $user_data->user_email ?? '',
+				'user_display_name' => $user_data->display_name ?? '',
+				'is_new_user'       => $is_new_user,
+				'auth_token'        => $auth_token ?: null,
+				'login_handoff'     => $login_handoff,
+				'token_topup'       => $token_topup,
 			)
 		);
 	}
@@ -8767,9 +8767,9 @@ Example good response:
 		if ( ! is_user_logged_in() ) {
 			return new WP_REST_Response(
 				array(
-				'success' => false,
-				'state'   => 'visitor',
-				'user'    => null,
+					'success' => false,
+					'state'   => 'visitor',
+					'user'    => null,
 				),
 				200
 			);
@@ -8798,7 +8798,7 @@ Example good response:
 			$user_id,
 			$flow_stem,
 			array(
-			'allow_guest_grant_without_session' => true,
+				'allow_guest_grant_without_session' => true,
 			)
 		);
 
@@ -8808,11 +8808,11 @@ Example good response:
 
 		return new WP_REST_Response(
 			array(
-			'success'   => true,
-			'state'     => $payload['state'] ?? 'guest',
-			'flow_id'   => $flow_stem,
-			'user'      => $payload,
-			'authToken' => $auth_token,
+				'success'   => true,
+				'state'     => $payload['state'] ?? 'guest',
+				'flow_id'   => $flow_stem,
+				'user'      => $payload,
+				'authToken' => $auth_token,
 			)
 		);
 	}
@@ -8834,8 +8834,8 @@ Example good response:
 		$args    = wp_parse_args(
 			$args,
 			array(
-			'allow_guest_grant_without_session' => false,
-			'consume_event_transients'          => false,
+				'allow_guest_grant_without_session' => false,
+				'consume_event_transients'          => false,
 			)
 		);
 		$user    = get_userdata( $user_id );
@@ -9005,8 +9005,8 @@ Example good response:
 
 		return new WP_REST_Response(
 			array(
-			'balance' => $token_provider->get_balance( $user_id ),
-			'ledger'  => $token_provider->get_ledger( $user_id, 10 ),
+				'balance' => $token_provider->get_balance( $user_id ),
+				'ledger'  => $token_provider->get_ledger( $user_id, 10 ),
 			)
 		);
 	}
@@ -9021,11 +9021,11 @@ Example good response:
 		$intent = $affiliate->declare_intent(
 			get_current_user_id(),
 			array(
-			'description'    => sanitize_text_field( $request->get_param( 'description' ) ),
-			'category'       => sanitize_text_field( $request->get_param( 'category' ) ?? 'general' ),
-			'expected_price' => floatval( $request->get_param( 'expected_price' ) ?? 0 ),
-			'timeframe'      => sanitize_text_field( $request->get_param( 'timeframe' ) ?? 'exploring' ),
-			'notes'          => sanitize_textarea_field( $request->get_param( 'notes' ) ?? '' ),
+				'description'    => sanitize_text_field( $request->get_param( 'description' ) ),
+				'category'       => sanitize_text_field( $request->get_param( 'category' ) ?? 'general' ),
+				'expected_price' => floatval( $request->get_param( 'expected_price' ) ?? 0 ),
+				'timeframe'      => sanitize_text_field( $request->get_param( 'timeframe' ) ?? 'exploring' ),
+				'notes'          => sanitize_textarea_field( $request->get_param( 'notes' ) ?? '' ),
 			)
 		);
 
@@ -9054,8 +9054,8 @@ Example good response:
 
 		return new WP_REST_Response(
 			array(
-			'link' => add_query_arg( 'ref', $code, $app_url ),
-			'code' => $code,
+				'link' => add_query_arg( 'ref', $code, $app_url ),
+				'code' => $code,
 			)
 		);
 	}
@@ -9083,35 +9083,35 @@ Example good response:
 
 		return new WP_REST_Response(
 			array(
-			'success'      => true,
-			'debug'        => true,
-			'version'      => FLOSC_VERSION,
-			'user_id'      => $user_id,
-			'funnel_phase' => $this->determine_flosc_phase(),
-			'bridge_state' => array(
-				'in_bridge'        => $bridge_mgr->is_in_flosc_bridge_state( $user_id ),
-				'has_profile'      => $bridge_mgr->flosc_has_profile( $user_id ),
-				'data'             => $bridge_mgr->get_flosc_bridge_data( $user_id ),
-				'weakest_category' => $bridge_mgr->get_flosc_weakest_category( $user_id ),
+				'success'      => true,
+				'debug'        => true,
+				'version'      => FLOSC_VERSION,
+				'user_id'      => $user_id,
+				'funnel_phase' => $this->determine_flosc_phase(),
+				'bridge_state' => array(
+					'in_bridge'        => $bridge_mgr->is_in_flosc_bridge_state( $user_id ),
+					'has_profile'      => $bridge_mgr->flosc_has_profile( $user_id ),
+					'data'             => $bridge_mgr->get_flosc_bridge_data( $user_id ),
+					'weakest_category' => $bridge_mgr->get_flosc_weakest_category( $user_id ),
 			),
-			'member_state' => array(
-				'is_member'    => $member_access->is_member( $user_id ),
-				'access_level' => $member_access->get_access_level( $user_id ),
-				'member_since' => get_user_meta( $user_id, '_flosc_member_since', true ),
+				'member_state' => array(
+					'is_member'    => $member_access->is_member( $user_id ),
+					'access_level' => $member_access->get_access_level( $user_id ),
+					'member_since' => get_user_meta( $user_id, '_flosc_member_since', true ),
 			),
-			'quiz_state'   => array(
-				'last_score'            => get_user_meta( $user_id, '_flosc_last_quiz_score', true ),
-				'completed_at'          => get_user_meta( $user_id, '_flosc_quiz_completed_at', true ),
-				'free_lesson_number'    => $free_lesson_num,
-				'free_lesson_delivered' => get_user_meta( $user_id, '_flosc_free_content_item_delivered', true ),
+				'quiz_state'   => array(
+					'last_score'            => get_user_meta( $user_id, '_flosc_last_quiz_score', true ),
+					'completed_at'          => get_user_meta( $user_id, '_flosc_quiz_completed_at', true ),
+					'free_lesson_number'    => $free_lesson_num,
+					'free_lesson_delivered' => get_user_meta( $user_id, '_flosc_free_content_item_delivered', true ),
 			),
-			'token_state'  => array(
-				'balance'      => $token_balance,
-				'signup_bonus' => $token_provider ? $token_provider->get_setting( 'signup_bonus', 10 ) : 0,
+				'token_state'  => array(
+					'balance'      => $token_balance,
+					'signup_bonus' => $token_provider ? $token_provider->get_setting( 'signup_bonus', 10 ) : 0,
 			),
-			'transients'   => array(
-				'just_completed_quiz' => (bool) get_transient( 'flosc_just_completed_quiz_' . $user_id ),
-				'just_logged_in'      => (bool) get_transient( 'flosc_just_logged_in_' . $user_id ),
+				'transients'   => array(
+					'just_completed_quiz' => (bool) get_transient( 'flosc_just_completed_quiz_' . $user_id ),
+					'just_logged_in'      => (bool) get_transient( 'flosc_just_logged_in_' . $user_id ),
 			),
 			)
 		);
@@ -9225,7 +9225,7 @@ Example good response:
 		$eval_context = array_merge(
 			$user_context,
 			array(
-			'user_name' => is_user_logged_in() ? wp_get_current_user()->display_name : 'there',
+				'user_name' => is_user_logged_in() ? wp_get_current_user()->display_name : 'there',
 			)
 		);
 		foreach ( $filtered_messages as &$msg ) {
@@ -9237,15 +9237,15 @@ Example good response:
 
 		return new WP_REST_Response(
 			array(
-			'success'        => true,
-			'phase'          => $phase,
-			'phases_checked' => $phases_to_check,
-			'messages'       => $filtered_messages,
-			'user_context'   => array(
-				'access_level' => $user_context['access_level'],
-				'is_logged_in' => is_user_logged_in(),
+				'success'        => true,
+				'phase'          => $phase,
+				'phases_checked' => $phases_to_check,
+				'messages'       => $filtered_messages,
+				'user_context'   => array(
+					'access_level' => $user_context['access_level'],
+					'is_logged_in' => is_user_logged_in(),
 			),
-			// v1.3.8: Debug info for flow context.
+				// v1.3.8: Debug info for flow context.
 			'flow_context'   => array(
 				'flow_id'    => $flow_id ?: null,
 				'ivr_file'   => $ivr_file ?: null,
@@ -9264,8 +9264,8 @@ Example good response:
 		if ( ! $user_id ) {
 			return new WP_REST_Response(
 				array(
-				'success' => false,
-				'error'   => 'Not logged in',
+					'success' => false,
+					'error'   => 'Not logged in',
 				),
 				401 
 			);
@@ -9281,14 +9281,14 @@ Example good response:
 
 		return new WP_REST_Response(
 			array(
-			'success'          => true,
-			'in_bridge_state'  => $in_bridge,
-			'has_profile'      => $has_profile,
-			'bridge_data'      => $bridge_data,
-			'weakest_category' => $weakest_category,
-			'debug'            => FLOSC_DEBUG ? array(
-				'user_id' => $user_id,
-				'phase'   => $this->determine_flosc_phase(),
+				'success'          => true,
+				'in_bridge_state'  => $in_bridge,
+				'has_profile'      => $has_profile,
+				'bridge_data'      => $bridge_data,
+				'weakest_category' => $weakest_category,
+				'debug'            => FLOSC_DEBUG ? array(
+					'user_id' => $user_id,
+					'phase'   => $this->determine_flosc_phase(),
 			) : null,
 			)
 		);
@@ -9478,8 +9478,8 @@ Example good response:
 
 		return new WP_REST_Response(
 			array(
-			'stored'    => true,
-			'logged_in' => is_user_logged_in(),
+				'stored'    => true,
+				'logged_in' => is_user_logged_in(),
 			)
 		);
 	}
@@ -9611,9 +9611,9 @@ Example good response:
 
 		return new WP_REST_Response(
 			array(
-			'stored'  => true,
-			'phrase'  => $phrase_num,
-			'temp_id' => $temp_id,
+				'stored'  => true,
+				'phrase'  => $phrase_num,
+				'temp_id' => $temp_id,
 			)
 		);
 	}
@@ -9655,13 +9655,13 @@ Example good response:
 				function ( $pr ) {
 					if ( ! is_array( $pr ) ) {
 						return array(
-						'phrase' => '',
-						'data'   => array(),
+							'phrase' => '',
+							'data'   => array(),
 						);
 					}
 					return array(
-					'phrase' => sanitize_text_field( (string) ( $pr['phrase'] ?? '' ) ),
-					'data'   => $this->flosc_sanitize_quiz_nested_value( $pr['data'] ?? array(), 0, 6 ),
+						'phrase' => sanitize_text_field( (string) ( $pr['phrase'] ?? '' ) ),
+						'data'   => $this->flosc_sanitize_quiz_nested_value( $pr['data'] ?? array(), 0, 6 ),
 					);
 				},
 				array_slice( array_values( $quiz_data['phraseResults'] ), 0, 20 )
@@ -9690,8 +9690,8 @@ Example good response:
 					$val     = $phoneme_map[ $ipa ];
 					$lessons = is_array( $val ) ? array_map( 'intval', $val ) : array( intval( $val ) );
 					$entry   = array(
-					'ipa'     => $ipa,
-					'lessons' => $lessons,
+						'ipa'     => $ipa,
+						'lessons' => $lessons,
 					);
 					if ( isset( $js_scores[ $ipa ] ) ) {
 						$entry['score'] = $js_scores[ $ipa ];
@@ -9856,8 +9856,8 @@ Example good response:
 						$name = 'phrase-' . $num . '.' . $ext;
 						if ( file_exists( $session_dir . '/' . $name ) ) {
 							$ready = array(
-							'file'   => $name,
-							'format' => $ext,
+								'file'   => $name,
+								'format' => $ext,
 							);
 							break;
 						}
@@ -9885,8 +9885,8 @@ Example good response:
 								$updated          = true;
 							}
 							$conversion_targets[] = array(
-							'phrase_num'    => $num,
-							'source_format' => $ext,
+								'phrase_num'    => $num,
+								'source_format' => $ext,
 							);
 							break;
 						}
@@ -9996,7 +9996,7 @@ Example good response:
 			'GET',
 			$api_base . '/session/' . $session_id,
 			array(
-			'timeout' => 15,
+				'timeout' => 15,
 			)
 		);
 
@@ -10052,8 +10052,8 @@ Example good response:
 				$val     = $phoneme_map[ $ipa ];
 				$lessons = array_map( 'intval', is_array( $val ) ? $val : array( $val ) );
 				$entry   = array(
-				'ipa'     => $ipa,
-				'lessons' => $lessons,
+					'ipa'     => $ipa,
+					'lessons' => $lessons,
 				);
 				if ( isset( $do_phoneme_scores[ $ipa ] ) ) {
 					$entry['score'] = $do_phoneme_scores[ $ipa ];
@@ -10106,7 +10106,7 @@ Example good response:
 				'GET',
 				$api_base . '/session/' . $session_id . '/audio/' . $n,
 				array(
-				'timeout' => 15,
+					'timeout' => 15,
 				)
 			);
 
@@ -10135,12 +10135,12 @@ Example good response:
 			$this->write_json_atomic(
 				$session_dir . '/metadata.json',
 				array(
-				'session_id' => $session_id,
-				'quiz_id'    => $default_audio_quiz_id,
-				'phrases'    => $session_phrases,
-				'scored_at'  => gmdate( 'Y' ) . '-' . gmdate( 'm' ) . 'm-' . gmdate( 'd' ) . 'd-'
+					'session_id' => $session_id,
+					'quiz_id'    => $default_audio_quiz_id,
+					'phrases'    => $session_phrases,
+					'scored_at'  => gmdate( 'Y' ) . '-' . gmdate( 'm' ) . 'm-' . gmdate( 'd' ) . 'd-'
 							 . gmdate( 'H' ) . 'h-' . gmdate( 'i' ) . 'm-' . gmdate( 's' ) . 's',
-				'score'      => $score,
+					'score'      => $score,
 				)
 			);
 
@@ -10172,8 +10172,8 @@ Example good response:
 		if ( ! $user_id ) {
 			return new WP_REST_Response(
 				array(
-				'success' => false,
-				'message' => 'Not logged in',
+					'success' => false,
+					'message' => 'Not logged in',
 				),
 				401 
 			);
@@ -10189,9 +10189,9 @@ Example good response:
 			}
 			return new WP_REST_Response(
 				array(
-				'success'        => true,
-				'already_scored' => true,
-				'quiz_data'      => $existing,
+					'success'        => true,
+					'already_scored' => true,
+					'quiz_data'      => $existing,
 				)
 			);
 		}
@@ -10212,8 +10212,8 @@ Example good response:
 				delete_user_meta( $user_id, '_flosc_audio_temp_id' );
 				return new WP_REST_Response(
 					array(
-					'success'   => true,
-					'quiz_data' => get_user_meta( $user_id, '_flosc_last_quiz_data', true ),
+						'success'   => true,
+						'quiz_data' => get_user_meta( $user_id, '_flosc_last_quiz_data', true ),
 					)
 				);
 			}
@@ -10222,8 +10222,8 @@ Example good response:
 		if ( $session_id && $this->pull_session_from_do( $user_id, $session_id ) ) {
 			return new WP_REST_Response(
 				array(
-				'success'   => true,
-				'quiz_data' => get_user_meta( $user_id, '_flosc_last_quiz_data', true ),
+					'success'   => true,
+					'quiz_data' => get_user_meta( $user_id, '_flosc_last_quiz_data', true ),
 				)
 			);
 		}
@@ -10231,8 +10231,8 @@ Example good response:
 		if ( ! $quiz_data || ! is_array( $quiz_data ) ) {
 			return new WP_REST_Response(
 				array(
-				'success' => false,
-				'message' => 'Missing quiz_data',
+					'success' => false,
+					'message' => 'Missing quiz_data',
 				),
 				400 
 			);
@@ -10242,8 +10242,8 @@ Example good response:
 		if ( ! $stored ) {
 			return new WP_REST_Response(
 				array(
-				'success' => false,
-				'message' => 'Failed to store quiz data',
+					'success' => false,
+					'message' => 'Failed to store quiz data',
 				),
 				500 
 			);
@@ -10254,8 +10254,8 @@ Example good response:
 
 		return new WP_REST_Response(
 			array(
-			'success'   => true,
-			'quiz_data' => get_user_meta( $user_id, '_flosc_last_quiz_data', true ),
+				'success'   => true,
+				'quiz_data' => get_user_meta( $user_id, '_flosc_last_quiz_data', true ),
 			)
 		);
 	}
@@ -10330,12 +10330,12 @@ Example good response:
 				'POST',
 				$api_base . $endpoint,
 				array(
-				'headers' => array_merge(
+					'headers' => array_merge(
 					array( 'Content-Type' => 'application/json' ),
 					$this->build_flosc_signed_headers( $payload_json )
 				),
-				'body'    => $payload_json,
-				'timeout' => 30,
+					'body'    => $payload_json,
+					'timeout' => 30,
 				)
 			);
 
@@ -10390,8 +10390,8 @@ Example good response:
 		$ranked = array();
 		foreach ( $phoneme_scores as $ipa => $scores ) {
 			$ranked[] = array(
-			'ipa' => $ipa,
-			'avg' => array_sum( $scores ) / count( $scores ),
+				'ipa' => $ipa,
+				'avg' => array_sum( $scores ) / count( $scores ),
 			);
 		}
 		usort(
@@ -10427,9 +10427,9 @@ Example good response:
 			$val                    = $phoneme_map[ $p['ipa'] ];
 			$lessons                = array_map( 'intval', is_array( $val ) ? $val : array( $val ) );
 			$ranked_worst_lessons[] = array(
-			'ipa'     => $p['ipa'],
-			'score'   => round( $p['avg'], 3 ),
-			'lessons' => $lessons,
+				'ipa'     => $p['ipa'],
+				'score'   => round( $p['avg'], 3 ),
+				'lessons' => $lessons,
 			);
 		}
 
@@ -10570,8 +10570,8 @@ Example good response:
 
 		return new WP_REST_Response(
 			array(
-			'success' => true,
-			'message' => 'Funnel marked as completed',
+				'success' => true,
+				'message' => 'Funnel marked as completed',
 			)
 		);
 	}
@@ -10594,10 +10594,10 @@ Example good response:
 		if ( 'ivr' === $provider ) {
 			return new WP_REST_Response(
 				array(
-				'success'    => false,
-				'provider'   => 'ivr',
-				'error_code' => 'ivr_not_external_api',
-				'message'    => 'Provider is IVR (scripted only). No external API call was made. Select Anthropic, OpenAI, xAI, or Gemini, Save Settings, then test again.',
+					'success'    => false,
+					'provider'   => 'ivr',
+					'error_code' => 'ivr_not_external_api',
+					'message'    => 'Provider is IVR (scripted only). No external API call was made. Select Anthropic, OpenAI, xAI, or Gemini, Save Settings, then test again.',
 				),
 				200
 			);
@@ -10615,10 +10615,10 @@ Example good response:
 			if ( is_wp_error( $response ) ) {
 				return new WP_REST_Response(
 					array(
-					'success'    => false,
-					'provider'   => $provider,
-					'error_code' => $response->get_error_code(),
-					'message'    => $response->get_error_message(),
+						'success'    => false,
+						'provider'   => $provider,
+						'error_code' => $response->get_error_code(),
+						'message'    => $response->get_error_message(),
 					),
 					200
 				);
@@ -10629,18 +10629,18 @@ Example good response:
 
 			return new WP_REST_Response(
 				array(
-				'success'       => true,
-				'provider'      => $provider,
-				'response_time' => $response_time,
-				'test_message'  => $test_message,
-				'ai_response'   => $response,
+					'success'       => true,
+					'provider'      => $provider,
+					'response_time' => $response_time,
+					'test_message'  => $test_message,
+					'ai_response'   => $response,
 				)
 			);
 		} catch ( \Throwable $e ) {
 			return new WP_REST_Response(
 				array(
-				'success' => false,
-				'message' => $e->getMessage(),
+					'success' => false,
+					'message' => $e->getMessage(),
 				),
 				500
 			);
@@ -10701,7 +10701,7 @@ Example good response:
 		if ( is_wp_error( $result ) ) {
 			wp_send_json_error(
 				array(
-				'message' => $result->get_error_message(),
+					'message' => $result->get_error_message(),
 				)
 			);
 		}
@@ -10780,9 +10780,9 @@ Example good response:
 
 		wp_send_json_success(
 			array(
-			'provider' => $provider,
-			'suffix'   => $stored['suffix'],
-			'message'  => __( 'API key saved for this flow.', 'flosc' ),
+				'provider' => $provider,
+				'suffix'   => $stored['suffix'],
+				'message'  => __( 'API key saved for this flow.', 'flosc' ),
 			)
 		);
 	}
@@ -10814,9 +10814,9 @@ Example good response:
 
 		wp_send_json_success(
 			array(
-			'provider' => $provider,
-			'model'    => $stored['model'],
-			'message'  => __( 'Model saved for this flow.', 'flosc' ),
+				'provider' => $provider,
+				'model'    => $stored['model'],
+				'message'  => __( 'Model saved for this flow.', 'flosc' ),
 			)
 		);
 	}
@@ -10900,7 +10900,7 @@ Example good response:
 		if ( '' === $provider || 'ivr' === $provider ) {
 			wp_send_json_error(
 				array(
-				'message' => __( 'Pick an AI provider for this flow first — the answer comes from the provider\'s own model.', 'flosc' ),
+					'message' => __( 'Pick an AI provider for this flow first — the answer comes from the provider\'s own model.', 'flosc' ),
 				)
 			);
 		}
@@ -10944,11 +10944,11 @@ Example good response:
 
 		wp_send_json_success(
 			array(
-			'param'    => $param,
-			'provider' => $provider,
-			'model'    => $model,
-			'answer'   => $answer,
-			'docs_url' => function_exists( 'flosc_provider_docs_url' ) ? flosc_provider_docs_url( $provider ) : '',
+				'param'    => $param,
+				'provider' => $provider,
+				'model'    => $model,
+				'answer'   => $answer,
+				'docs_url' => function_exists( 'flosc_provider_docs_url' ) ? flosc_provider_docs_url( $provider ) : '',
 			)
 		);
 	}
@@ -11023,8 +11023,8 @@ Example good response:
 		if ( 'ivr' === $provider ) {
 			wp_send_json_error(
 				array(
-				'provider' => 'ivr',
-				'message'  => "Provider is IVR (scripted only). No external API call was made.\n\n"
+					'provider' => 'ivr',
+					'message'  => "Provider is IVR (scripted only). No external API call was made.\n\n"
 					. "1. Primary AI Provider → Anthropic, OpenAI, xAI Grok, or Gemini\n"
 					. "2. For OpenAI / Anthropic / Gemini, activate that official AI Provider plugin\n"
 					. "3. Paste the API key for that provider in FLOSC\n"
@@ -11068,8 +11068,8 @@ Example good response:
 
 		try {
 			$ai_context    = array(
-			'phase'    => 'freeline',
-			'is_admin' => true,
+				'phase'    => 'freeline',
+				'is_admin' => true,
 			);
 			$system_prompt = $this->ai_chat_dispatch->build_system_prompt( 'freeline', $ai_context );
 			$response      = $this->ai_chat_dispatch->get_response( $test_message, $system_prompt, array(), true );
@@ -11079,14 +11079,14 @@ Example good response:
 				wp_send_json_error(
 					array_merge(
 						array(
-						'message'         => $response->get_error_message(),
-						'provider'        => $provider,
-						'model'           => $configured_model,
-						'endpoint'        => $endpoint_url,
-						'api_key_present' => $key_present,
-						'api_key_suffix'  => $key_suffix,
-						'response_time'   => $response_time,
-						'flow_ivr'        => $ivr,
+							'message'         => $response->get_error_message(),
+							'provider'        => $provider,
+							'model'           => $configured_model,
+							'endpoint'        => $endpoint_url,
+							'api_key_present' => $key_present,
+							'api_key_suffix'  => $key_suffix,
+							'response_time'   => $response_time,
+							'flow_ivr'        => $ivr,
 						),
 						$model_probe
 					)
@@ -11131,38 +11131,38 @@ Example good response:
 
 			wp_send_json_success(
 				array(
-				'params_configured' => $configured_params,
-				'params_applied'    => $applied,
-				'params_unapplied'  => $unapplied,
-				'provider'          => $provider,
-				'model'             => $model_used,
-				'model_configured'  => $configured_model,
-				'endpoint'          => $endpoint_url,
-				'api_key_present'   => $key_present,
-				'api_key_suffix'    => $key_suffix,
-				'response'          => is_string( $response ) ? $response : wp_json_encode( $response ),
-				'response_time'     => $response_time,
-				'tokens_in'         => $in_tok,
-				'tokens_out'        => $out_tok,
-				'tokens_total'      => $tot_tok,
-				'billing_source'    => (string) ( $billing['source'] ?? '' ),
-				'flow_ivr'          => $ivr,
-				'flow_label'        => $flow_label,
-				'http_ok'           => true,
-				'test_message'      => $test_message,
+					'params_configured' => $configured_params,
+					'params_applied'    => $applied,
+					'params_unapplied'  => $unapplied,
+					'provider'          => $provider,
+					'model'             => $model_used,
+					'model_configured'  => $configured_model,
+					'endpoint'          => $endpoint_url,
+					'api_key_present'   => $key_present,
+					'api_key_suffix'    => $key_suffix,
+					'response'          => is_string( $response ) ? $response : wp_json_encode( $response ),
+					'response_time'     => $response_time,
+					'tokens_in'         => $in_tok,
+					'tokens_out'        => $out_tok,
+					'tokens_total'      => $tot_tok,
+					'billing_source'    => (string) ( $billing['source'] ?? '' ),
+					'flow_ivr'          => $ivr,
+					'flow_label'        => $flow_label,
+					'http_ok'           => true,
+					'test_message'      => $test_message,
 				) + $model_probe
 			);
 		} catch ( \Throwable $e ) {
 			wp_send_json_error(
 				array_merge(
 					array(
-					'message'         => $e->getMessage(),
-					'provider'        => $provider,
-					'model'           => $configured_model,
-					'endpoint'        => $endpoint_url,
-					'api_key_present' => $key_present,
-					'api_key_suffix'  => $key_suffix,
-					'flow_ivr'        => $ivr,
+						'message'         => $e->getMessage(),
+						'provider'        => $provider,
+						'model'           => $configured_model,
+						'endpoint'        => $endpoint_url,
+						'api_key_present' => $key_present,
+						'api_key_suffix'  => $key_suffix,
+						'flow_ivr'        => $ivr,
 					),
 					$model_probe
 				)
@@ -11196,8 +11196,8 @@ Example good response:
 
 		wp_send_json_success(
 			array(
-			'logs'  => $logs,
-			'total' => $total,
+				'logs'  => $logs,
+				'total' => $total,
 			)
 		);
 	}
@@ -11223,8 +11223,8 @@ Example good response:
 
 		wp_send_json_success(
 			array(
-			'deleted'   => $deleted,
-			'remaining' => $logger->flosc_get_log_count(),
+				'deleted'   => $deleted,
+				'remaining' => $logger->flosc_get_log_count(),
 			)
 		);
 	}
@@ -11260,8 +11260,8 @@ Example good response:
 		if ( $result ) {
 			wp_send_json_success(
 				array(
-				'log_id' => $log_id,
-				'rating' => $rating,
+					'log_id' => $log_id,
+					'rating' => $rating,
 				) 
 			);
 		} else {
@@ -11362,9 +11362,9 @@ Example good response:
 
 		wp_send_json_success(
 			array(
-			'processed'     => $processed,
-			'affected_rows' => $affected_rows,
-			'operation'     => $operation,
+				'processed'     => $processed,
+				'affected_rows' => $affected_rows,
+				'operation'     => $operation,
 			)
 		);
 	}
@@ -11520,10 +11520,10 @@ Example good response:
 		if ( $id ) {
 			wp_send_json_success(
 				array(
-				'id'   => $id,
-				'name' => $name,
-				'text' => $text,
-				'as'   => $as,
+					'id'   => $id,
+					'name' => $name,
+					'text' => $text,
+					'as'   => $as,
 				) 
 			);
 		}
@@ -11566,9 +11566,9 @@ Example good response:
 				$amount,
 				'Admin chat token assignment',
 				array(
-				'flow_id'       => $flow,
-				'session_id'    => $session_id,
-				'admin_user_id' => get_current_user_id(),
+					'flow_id'       => $flow,
+					'session_id'    => $session_id,
+					'admin_user_id' => get_current_user_id(),
 				)
 			);
 
@@ -11578,11 +11578,11 @@ Example good response:
 
 			wp_send_json_success(
 				array(
-				'scope'     => 'user',
-				'user_id'   => $owner_user_id,
-				'assigned'  => $amount,
-				'balance'   => intval( $result ),
-				'formatted' => $this->flosc_format_token_display( intval( $result ) ),
+					'scope'     => 'user',
+					'user_id'   => $owner_user_id,
+					'assigned'  => $amount,
+					'balance'   => intval( $result ),
+					'formatted' => $this->flosc_format_token_display( intval( $result ) ),
 				)
 			);
 		}
@@ -11592,11 +11592,11 @@ Example good response:
 
 		wp_send_json_success(
 			array(
-			'scope'      => 'visitor_session',
-			'session_id' => $session_id,
-			'assigned'   => $amount,
-			'balance'    => intval( $updated ),
-			'formatted'  => $this->flosc_format_token_display( intval( $updated ) ),
+				'scope'      => 'visitor_session',
+				'session_id' => $session_id,
+				'assigned'   => $amount,
+				'balance'    => intval( $updated ),
+				'formatted'  => $this->flosc_format_token_display( intval( $updated ) ),
 			)
 		);
 	}
@@ -11620,8 +11620,8 @@ Example good response:
 
 		return new WP_REST_Response(
 			array(
-			'success'    => true,
-			'poll_token' => $token,
+				'success'    => true,
+				'poll_token' => $token,
 			)
 		);
 	}
@@ -11663,8 +11663,8 @@ Example good response:
 
 		return new WP_REST_Response(
 			array(
-			'messages'      => $messages,
-			'token_balance' => $token_balance_payload,
+				'messages'      => $messages,
+				'token_balance' => $token_balance_payload,
 			)
 		);
 	}
@@ -11717,9 +11717,9 @@ Example good response:
 
 		return new WP_REST_Response(
 			array(
-			'success'  => true,
-			'feedback' => $feedback_item,
-			'total'    => count( $feedback_items ),
+				'success'  => true,
+				'feedback' => $feedback_item,
+				'total'    => count( $feedback_items ),
 			)
 		);
 	}
@@ -11738,8 +11738,8 @@ Example good response:
 		if ( empty( $flow_id ) ) {
 			return new WP_REST_Response(
 				array(
-				'success'  => true,
-				'feedback' => array(),
+					'success'  => true,
+					'feedback' => array(),
 				) 
 			);
 		}
@@ -11750,9 +11750,9 @@ Example good response:
 
 		return new WP_REST_Response(
 			array(
-			'success'  => true,
-			'feedback' => $feedback_items,
-			'total'    => count( $feedback_items ),
+				'success'  => true,
+				'feedback' => $feedback_items,
+				'total'    => count( $feedback_items ),
 			)
 		);
 	}
@@ -11796,9 +11796,9 @@ Example good response:
 
 		return new WP_REST_Response(
 			array(
-			'success'   => true,
-			'deleted'   => $feedback_id,
-			'remaining' => count( $feedback_items ),
+				'success'   => true,
+				'deleted'   => $feedback_id,
+				'remaining' => count( $feedback_items ),
 			)
 		);
 	}
@@ -11844,9 +11844,9 @@ Example good response:
 
 		return new WP_REST_Response(
 			array(
-			'success' => true,
-			'praise'  => $praise,
-			'total'   => count( $praises ),
+				'success' => true,
+				'praise'  => $praise,
+				'total'   => count( $praises ),
 			)
 		);
 	}
@@ -11890,9 +11890,9 @@ Example good response:
 
 		return new WP_REST_Response(
 			array(
-			'success'   => true,
-			'deleted'   => $praise_id,
-			'remaining' => count( $praises ),
+				'success'   => true,
+				'deleted'   => $praise_id,
+				'remaining' => count( $praises ),
 			)
 		);
 	}
@@ -11927,8 +11927,8 @@ Example good response:
 
 			return new WP_REST_Response(
 				array(
-				'success' => true,
-				'tracked' => 'visitor',
+					'success' => true,
+					'tracked' => 'visitor',
 				) 
 			);
 		}
@@ -11948,8 +11948,8 @@ Example good response:
 
 		return new WP_REST_Response(
 			array(
-			'success' => true,
-			'tracked' => 'user',
+				'success' => true,
+				'tracked' => 'user',
 			) 
 		);
 	}
@@ -12023,11 +12023,11 @@ Example good response:
 		// Only public-safe flags; quiz scores / user_id / bridge internals stay server-side.
 		return new WP_REST_Response(
 			array(
-			'success'      => true,
-			'messages'     => array_values( $applicable ),
-			'user_context' => array(
-				'access_level' => sanitize_key( (string) ( $context['access_level'] ?? 'visitor' ) ),
-				'is_logged_in' => ! empty( $context['logged_in'] ),
+				'success'      => true,
+				'messages'     => array_values( $applicable ),
+				'user_context' => array(
+					'access_level' => sanitize_key( (string) ( $context['access_level'] ?? 'visitor' ) ),
+					'is_logged_in' => ! empty( $context['logged_in'] ),
 			),
 			)
 		);
@@ -12158,12 +12158,12 @@ Example good response:
 					$flosc_audio_exp = time() + HOUR_IN_SECONDS;
 					$audio_url       = admin_url( 'admin-ajax.php' ) . '?' . http_build_query(
 						array(
-						'action'    => 'flosc_serve_user_audio',
-						'user_id'   => $user_id,
-						'flosc_sid' => $sess_id,
-						'file'      => $file,
-						'exp'       => $flosc_audio_exp,
-						'sig'       => $this->build_audio_access_signature( $user_id, $sess_id, $file, $flosc_audio_exp ),
+							'action'    => 'flosc_serve_user_audio',
+							'user_id'   => $user_id,
+							'flosc_sid' => $sess_id,
+							'file'      => $file,
+							'exp'       => $flosc_audio_exp,
+							'sig'       => $this->build_audio_access_signature( $user_id, $sess_id, $file, $flosc_audio_exp ),
 						)
 					);
 
@@ -12312,11 +12312,11 @@ Example good response:
 
 		$ext   = pathinfo( $file, PATHINFO_EXTENSION );
 		$mimes = array(
-		'webm' => 'audio/webm',
-		'mp4'  => 'audio/mp4',
-		'm4a'  => 'audio/mp4',
-		'ogg'  => 'audio/ogg',
-		'wav'  => 'audio/wav',
+			'webm' => 'audio/webm',
+			'mp4'  => 'audio/mp4',
+			'm4a'  => 'audio/mp4',
+			'ogg'  => 'audio/ogg',
+			'wav'  => 'audio/wav',
 		);
 		$mime  = $mimes[ $ext ] ?? 'application/octet-stream';
 
@@ -12581,7 +12581,7 @@ Example good response:
 				'GET',
 				$api_base . '/session/' . $session_id . '/audio/' . $n,
 				array(
-				'timeout' => 20,
+					'timeout' => 20,
 				)
 			);
 			if ( is_wp_error( $audio_resp ) || 200 !== wp_remote_retrieve_response_code( $audio_resp ) ) {
@@ -12616,9 +12616,9 @@ Example good response:
 			$this->write_json_atomic(
 				$session_dir . '/metadata.json',
 				array(
-				'session_id' => $session_id,
-				'phrases'    => $session_phrases,
-				'scored_at'  => gmdate( 'Y' ) . '-' . gmdate( 'm' ) . 'm-' . gmdate( 'd' ) . 'd-'
+					'session_id' => $session_id,
+					'phrases'    => $session_phrases,
+					'scored_at'  => gmdate( 'Y' ) . '-' . gmdate( 'm' ) . 'm-' . gmdate( 'd' ) . 'd-'
 					. gmdate( 'H' ) . 'h-' . gmdate( 'i' ) . 'm-' . gmdate( 's' ) . 's',
 				)
 			);
@@ -12645,12 +12645,12 @@ Example good response:
 
 		bp_core_new_nav_item(
 			array(
-			'name'                    => __( 'Quiz Results', 'flosc' ),
-			'slug'                    => 'flosc_quiz_tab',
-			'position'                => 80,
-			'screen_function'         => array( $this, 'buddyboss_quiz_tab_screen' ),
-			'default_subnav_slug'     => 'flosc_quiz_tab',
-			'show_for_displayed_user' => true,
+				'name'                    => __( 'Quiz Results', 'flosc' ),
+				'slug'                    => 'flosc_quiz_tab',
+				'position'                => 80,
+				'screen_function'         => array( $this, 'buddyboss_quiz_tab_screen' ),
+				'default_subnav_slug'     => 'flosc_quiz_tab',
+				'show_for_displayed_user' => true,
 			)
 		);
 	}
@@ -12900,13 +12900,13 @@ Example good response:
 					$flosc_dl_exp = time() + HOUR_IN_SECONDS;
 					$download_url = admin_url( 'admin-ajax.php' ) . '?' . http_build_query(
 						array(
-						'action'    => 'flosc_serve_user_audio',
-						'user_id'   => $user_id,
-						'flosc_sid' => $sid,
-						'file'      => $basename,
-						'download'  => 1,
-						'exp'       => $flosc_dl_exp,
-						'sig'       => $this->build_audio_access_signature( $user_id, $sid, $basename, $flosc_dl_exp ),
+							'action'    => 'flosc_serve_user_audio',
+							'user_id'   => $user_id,
+							'flosc_sid' => $sid,
+							'file'      => $basename,
+							'download'  => 1,
+							'exp'       => $flosc_dl_exp,
+							'sig'       => $this->build_audio_access_signature( $user_id, $sid, $basename, $flosc_dl_exp ),
 						)
 					);
 
@@ -12978,10 +12978,10 @@ Example good response:
 				$phoneme_count = 0;
 
 				$words_data = $data['words'] ?? array(
-				array(
-				'word'         => $data['target_text'] ?? '',
-				'expected_ipa' => $data['expected_ipa'] ?? '',
-				'phonemes'     => $data['phonemes'] ?? array(),
+					array(
+						'word'         => $data['target_text'] ?? '',
+						'expected_ipa' => $data['expected_ipa'] ?? '',
+						'phonemes'     => $data['phonemes'] ?? array(),
 				), );
 				foreach ( $words_data as $w ) {
 					foreach ( ( $w['phonemes'] ?? array() ) as $ph ) {
@@ -13136,12 +13136,12 @@ Example good response:
 
 		$audio_url = admin_url( 'admin-ajax.php' ) . '?' . http_build_query(
 			array(
-			'action'    => 'flosc_serve_user_audio',
-			'user_id'   => $user_id,
-			'flosc_sid' => $session_id,
-			'file'      => $audio_file,
-			'exp'       => $expires,
-			'sig'       => $sig,
+				'action'    => 'flosc_serve_user_audio',
+				'user_id'   => $user_id,
+				'flosc_sid' => $session_id,
+				'file'      => $audio_file,
+				'exp'       => $expires,
+				'sig'       => $sig,
 			)
 		);
 
@@ -13158,10 +13158,10 @@ Example good response:
 		$payload = implode(
 			'|',
 			array(
-			(int) $user_id,
-			(string) $session_id,
-			(string) $file,
-			(int) $expires,
+				(int) $user_id,
+				(string) $session_id,
+				(string) $file,
+				(int) $expires,
 			)
 		);
 
@@ -13213,10 +13213,10 @@ Example good response:
 			$phoneme_count = 0;
 
 			$words_data = $data['words'] ?? array(
-			array(
-			'word'         => $data['target_text'] ?? '',
-			'expected_ipa' => $data['expected_ipa'] ?? '',
-			'phonemes'     => $data['phonemes'] ?? array(),
+				array(
+					'word'         => $data['target_text'] ?? '',
+					'expected_ipa' => $data['expected_ipa'] ?? '',
+					'phonemes'     => $data['phonemes'] ?? array(),
 			), );
 			foreach ( $words_data as $w ) {
 				foreach ( ( $w['phonemes'] ?? array() ) as $ph ) {
@@ -13585,24 +13585,24 @@ Example good response:
 		// Bubble style presets (border-radius values per FLOSC_STYLE_GUIDE.md).
 		$bubble_styles = array(
 			'subtle-notch' => array(
-		'user'      => '18px 18px 4px 18px',
-		'assistant' => '4px 18px 18px 18px',
+				'user'      => '18px 18px 4px 18px',
+				'assistant' => '4px 18px 18px 18px',
 		),
 			'classic'      => array(
-		'user'      => '18px 18px 0 18px',
-		'assistant' => '0 18px 18px 18px',
+				'user'      => '18px 18px 0 18px',
+				'assistant' => '0 18px 18px 18px',
 		),
 			'modern'       => array(
-		'user'      => '20px 20px 6px 20px',
-		'assistant' => '6px 20px 20px 20px',
+				'user'      => '20px 20px 6px 20px',
+				'assistant' => '6px 20px 20px 20px',
 		),
 			'minimal'      => array(
-		'user'      => '16px',
-		'assistant' => '16px',
+				'user'      => '16px',
+				'assistant' => '16px',
 		),
 			'sharp'        => array(
-		'user'      => '12px 12px 2px 12px',
-		'assistant' => '2px 12px 12px 12px',
+				'user'      => '12px 12px 2px 12px',
+				'assistant' => '2px 12px 12px 12px',
 		),
 		);
 

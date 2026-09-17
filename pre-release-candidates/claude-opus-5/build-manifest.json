@@ -1,15 +1,15 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": "82.3",
+  "candidate_iteration": "82.4",
   "creator": "Claude Opus 5",
   "status": "WPCS_FORMATTING_APPLIED_FUNCTIONALLY_UNVERIFIED",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v82.2",
+  "base": "claude-opus-5 v82.3",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "87b16553b942504454d780be6bea6f0188cecc35b70d09a20d0147e2feb410f5",
-  "artifact_bytes": 2754819,
+  "artifact_sha256": "956ad33eea2084a5c73d75219c5ce3857d36724d16bfc0c54f5a3ad0772a7693",
+  "artifact_bytes": 2754883,
   "artifact_entries": 278,
   "tree_files": 295,
   "why_this_iteration": {
@@ -596,5 +596,17 @@
     },
     "still_open": "Docblock work about 2,100 -- missing @param tags 797, missing function docblocks 467, @param descriptions 655, class and file docblocks 113. Array indentation 764 which phpcbf still will not converge on. Short ternaries 172. 0 of 30 behavioural tests executed.",
     "note_on_this_manifest_entry": "An earlier write of this entry lost two expressions: the shell heredoc that carried it was unquoted, so backticks in the prose were executed as commands and their output -- nothing -- replaced the text. Rewritten from a file. Recorded because a manifest that silently drops part of its own explanation is the same class of problem as a gate that silently stops testing."
+  },
+  "v82_4_array_indentation": {
+    "wpcs_php_shipping": "3,774 -> 3,062 errors",
+    "the_problem": "phpcbf cannot fix WordPress.Arrays.ArrayIndentation on flosc.php or class-paypal-provider.php. It prints 'A TOTAL OF 701 ERRORS WERE FIXED IN 1 FILE' and 'PHPCBF FAILED TO FIX 1 FILE' in the same breath: it fixes them in memory, never reaches a stable state, and discards the entire result. Raising its internal loop limit from 50 to 200 changed nothing, so the fixer oscillates rather than running out of time.",
+    "the_fix": "phpcs reports each finding with the column it wants -- 'expected 24 spaces but found 20'. A small script reads those numbers and rewrites the leading whitespace of exactly the lines phpcs named, as tabs. Because only leading whitespace changes, no line numbers move, so a whole round applies at once and is then re-measured. Six rounds: 700, 79, 10, 3, 2, 0.",
+    "proof_it_is_whitespace_only": "diff of flosc.php before and after, with leading whitespace stripped from both, is empty. Not one character of code changed.",
+    "measured_here": {
+      "php_l": "0 errors / 187 files",
+      "cli_gates": "37 of 37 pass",
+      "wpcs_php_shipping": "3,062 errors, 191 warnings, 132 files"
+    },
+    "still_open": "Docblock work about 2,100 -- missing @param tags 797, missing function docblocks 467, @param descriptions 655, class and file docblocks 113. Short ternaries 172. Inline comment end punctuation 162 that were not line comments. 0 of 30 behavioural tests executed."
   }
 }

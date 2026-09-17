@@ -329,11 +329,11 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 		$list     = wp_remote_get(
 			$api_base . '/v1/notifications/webhooks',
 			array(
-			'headers' => array(
-				'Authorization' => 'Bearer ' . $token,
-				'Content-Type'  => 'application/json',
+				'headers' => array(
+					'Authorization' => 'Bearer ' . $token,
+					'Content-Type'  => 'application/json',
 			),
-			'timeout' => 30,
+				'timeout' => 30,
 			)
 		);
 		if ( is_wp_error( $list ) ) {
@@ -349,11 +349,11 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 			$list = wp_remote_get(
 				$api_base . '/v1/notifications/webhooks',
 				array(
-				'headers' => array(
-					'Authorization' => 'Bearer ' . $token,
-					'Content-Type'  => 'application/json',
+					'headers' => array(
+						'Authorization' => 'Bearer ' . $token,
+						'Content-Type'  => 'application/json',
 				),
-				'timeout' => 30,
+					'timeout' => 30,
 				)
 			);
 			if ( is_wp_error( $list ) ) {
@@ -399,17 +399,17 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 			$create = wp_remote_post(
 				$api_base . '/v1/notifications/webhooks',
 				array(
-				'headers' => array(
-					'Authorization' => 'Bearer ' . $token,
-					'Content-Type'  => 'application/json',
+					'headers' => array(
+						'Authorization' => 'Bearer ' . $token,
+						'Content-Type'  => 'application/json',
 				),
-				'body'    => wp_json_encode(
+					'body'    => wp_json_encode(
 					array(
-					'url'         => $listener_url,
-					'event_types' => $this->get_required_webhook_event_types(),
+						'url'         => $listener_url,
+						'event_types' => $this->get_required_webhook_event_types(),
 					)
 				),
-				'timeout' => 30,
+					'timeout' => 30,
 				)
 			);
 			if ( is_wp_error( $create ) ) {
@@ -427,11 +427,11 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 				$retry_list = wp_remote_get(
 					$api_base . '/v1/notifications/webhooks',
 					array(
-					'headers' => array(
-						'Authorization' => 'Bearer ' . $token,
-						'Content-Type'  => 'application/json',
+						'headers' => array(
+							'Authorization' => 'Bearer ' . $token,
+							'Content-Type'  => 'application/json',
 					),
-					'timeout' => 30,
+						'timeout' => 30,
 					)
 				);
 				if ( ! is_wp_error( $retry_list ) ) {
@@ -637,13 +637,13 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 		$response = wp_remote_post(
 			$api_base . '/v1/oauth2/token',
 			array(
-			'headers' => array(
+				'headers' => array(
                 // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- binary/JWT token encoding, not obfuscation
 				'Authorization' => 'Basic ' . base64_encode( $client_id . ':' . $secret ),
-				'Content-Type'  => 'application/x-www-form-urlencoded',
+					'Content-Type'  => 'application/x-www-form-urlencoded',
 			),
-			'body'    => 'grant_type=client_credentials',
-			'timeout' => 30,
+				'body'    => 'grant_type=client_credentials',
+				'timeout' => 30,
 			)
 		);
 
@@ -693,8 +693,8 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 			? substr( $purchase_uuid, 0, 127 )
 			: wp_json_encode(
 				array(
-				'user_id'  => $user->ID ?? 0,
-				'offer_id' => $offer_id,
+					'user_id'  => $user->ID ?? 0,
+					'offer_id' => $offer_id,
 				)
 			);
 
@@ -705,13 +705,13 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 		$order_body = array(
 			'intent'         => 'CAPTURE',
 			'purchase_units' => array(
-		array(
-				'reference_id' => $offer_id,
-				'description'  => 'FLOSC Purchase - ' . $offer_id,
-				'custom_id'    => $custom_id,
-				'amount'       => array(
-					'currency_code' => $currency,
-					'value'         => $amount,
+				array(
+					'reference_id' => $offer_id,
+					'description'  => 'FLOSC Purchase - ' . $offer_id,
+					'custom_id'    => $custom_id,
+					'amount'       => array(
+						'currency_code' => $currency,
+						'value'         => $amount,
 				),
 			),
 		),
@@ -730,13 +730,13 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 		$response = wp_remote_post(
 			$this->get_api_base() . '/v2/checkout/orders',
 			array(
-			'headers' => array(
-				'Authorization' => 'Bearer ' . $token,
-				'Content-Type'  => 'application/json',
-				'Prefer'        => 'return=representation',
+				'headers' => array(
+					'Authorization' => 'Bearer ' . $token,
+					'Content-Type'  => 'application/json',
+					'Prefer'        => 'return=representation',
 			),
-			'body'    => wp_json_encode( $order_body ),
-			'timeout' => 30,
+				'body'    => wp_json_encode( $order_body ),
+				'timeout' => 30,
 			)
 		);
 
@@ -767,13 +767,13 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 			$response = wp_remote_post(
 				$this->get_api_base() . '/v2/checkout/orders',
 				array(
-				'headers' => array(
-					'Authorization' => 'Bearer ' . $token,
-					'Content-Type'  => 'application/json',
-					'Prefer'        => 'return=representation',
+					'headers' => array(
+						'Authorization' => 'Bearer ' . $token,
+						'Content-Type'  => 'application/json',
+						'Prefer'        => 'return=representation',
 				),
-				'body'    => wp_json_encode( $order_body ),
-				'timeout' => 30,
+					'body'    => wp_json_encode( $order_body ),
+					'timeout' => 30,
 				)
 			);
 
@@ -817,13 +817,13 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 		$response = wp_remote_post(
 			$capture_url,
 			array(
-			'headers' => array(
-				'Authorization' => 'Bearer ' . $token,
-				'Content-Type'  => 'application/json',
-				'Prefer'        => 'return=representation',
+				'headers' => array(
+					'Authorization' => 'Bearer ' . $token,
+					'Content-Type'  => 'application/json',
+					'Prefer'        => 'return=representation',
 			),
-			'body'    => '{}',
-			'timeout' => 30,
+				'body'    => '{}',
+				'timeout' => 30,
 			)
 		);
 
@@ -854,13 +854,13 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 			$response = wp_remote_post(
 				$capture_url,
 				array(
-				'headers' => array(
-					'Authorization' => 'Bearer ' . $token,
-					'Content-Type'  => 'application/json',
-					'Prefer'        => 'return=representation',
+					'headers' => array(
+						'Authorization' => 'Bearer ' . $token,
+						'Content-Type'  => 'application/json',
+						'Prefer'        => 'return=representation',
 				),
-				'body'    => '{}',
-				'timeout' => 30,
+					'body'    => '{}',
+					'timeout' => 30,
 				)
 			);
 
@@ -1003,19 +1003,19 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 		$response = wp_remote_post(
 			$this->get_api_base() . '/v1/catalogs/products',
 			array(
-			'headers' => array(
-				'Authorization' => 'Bearer ' . $token,
-				'Content-Type'  => 'application/json',
+				'headers' => array(
+					'Authorization' => 'Bearer ' . $token,
+					'Content-Type'  => 'application/json',
 			),
-			'body'    => wp_json_encode(
+				'body'    => wp_json_encode(
 				array(
-				'name'        => $name,
-				'description' => $description,
-				'type'        => 'DIGITAL',
-				'category'    => 'EDUCATIONAL_AND_TEXTBOOKS',
+					'name'        => $name,
+					'description' => $description,
+					'type'        => 'DIGITAL',
+					'category'    => 'EDUCATIONAL_AND_TEXTBOOKS',
 				)
 			),
-			'timeout' => 30,
+				'timeout' => 30,
 			)
 		);
 
@@ -1045,39 +1045,39 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 		$response = wp_remote_post(
 			$this->get_api_base() . '/v1/billing/plans',
 			array(
-			'headers' => array(
-				'Authorization' => 'Bearer ' . $token,
-				'Content-Type'  => 'application/json',
+				'headers' => array(
+					'Authorization' => 'Bearer ' . $token,
+					'Content-Type'  => 'application/json',
 			),
-			'body'    => wp_json_encode(
+				'body'    => wp_json_encode(
 				array(
-				'product_id'          => $product_id,
-				'name'                => $name,
-				'status'              => 'ACTIVE',
-				'billing_cycles'      => array(
-					array(
-						'frequency'      => array(
-							'interval_unit'  => strtoupper( $interval_unit ),
-							'interval_count' => $interval_count,
+					'product_id'          => $product_id,
+					'name'                => $name,
+					'status'              => 'ACTIVE',
+					'billing_cycles'      => array(
+						array(
+							'frequency'      => array(
+								'interval_unit'  => strtoupper( $interval_unit ),
+								'interval_count' => $interval_count,
 						),
-						'tenure_type'    => 'REGULAR',
-						'sequence'       => 1,
-						'total_cycles'   => 0,
-						'pricing_scheme' => array(
-							'fixed_price' => array(
-								'value'         => number_format( (float) $amount, 2, '.', '' ),
-								'currency_code' => $currency,
+							'tenure_type'    => 'REGULAR',
+							'sequence'       => 1,
+							'total_cycles'   => 0,
+							'pricing_scheme' => array(
+								'fixed_price' => array(
+									'value'         => number_format( (float) $amount, 2, '.', '' ),
+									'currency_code' => $currency,
 							),
 						),
 					),
 				),
-				'payment_preferences' => array(
-					'auto_bill_outstanding'     => true,
-					'payment_failure_threshold' => 3,
+					'payment_preferences' => array(
+						'auto_bill_outstanding'     => true,
+						'payment_failure_threshold' => 3,
 				),
 				)
 			),
-			'timeout' => 30,
+				'timeout' => 30,
 			)
 		);
 
@@ -1105,10 +1105,10 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 		$response = wp_remote_get(
 			$this->get_api_base() . '/v1/billing/subscriptions/' . rawurlencode( $subscription_id ),
 			array(
-			'headers' => array(
-				'Authorization' => 'Bearer ' . $token,
+				'headers' => array(
+					'Authorization' => 'Bearer ' . $token,
 			),
-			'timeout' => 30,
+				'timeout' => 30,
 			)
 		);
 
@@ -1700,9 +1700,9 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 		if ( in_array(
 			$event_type,
 			array(
-			'BILLING.SUBSCRIPTION.CANCELLED',
-			'BILLING.SUBSCRIPTION.SUSPENDED',
-			'BILLING.SUBSCRIPTION.EXPIRED',
+				'BILLING.SUBSCRIPTION.CANCELLED',
+				'BILLING.SUBSCRIPTION.SUSPENDED',
+				'BILLING.SUBSCRIPTION.EXPIRED',
 			),
 			true
 		) ) {
@@ -1880,8 +1880,8 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 					'missing_signature',
 					__( 'Missing PayPal webhook transmission headers', 'flosc' ),
 					array(
-					'status'  => 401,
-					'missing' => $required,
+						'status'  => 401,
+						'missing' => $required,
 					)
 				);
 			}
@@ -2013,12 +2013,12 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 			$response = wp_remote_post(
 				$api_base . '/v1/notifications/verify-webhook-signature',
 				array(
-				'headers' => array(
-					'Authorization' => 'Bearer ' . $token,
-					'Content-Type'  => 'application/json',
+					'headers' => array(
+						'Authorization' => 'Bearer ' . $token,
+						'Content-Type'  => 'application/json',
 				),
-				'body'    => $encoded,
-				'timeout' => 30,
+					'body'    => $encoded,
+					'timeout' => 30,
 				)
 			);
 
@@ -2050,12 +2050,12 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 				$response = wp_remote_post(
 					$api_base . '/v1/notifications/verify-webhook-signature',
 					array(
-					'headers' => array(
-						'Authorization' => 'Bearer ' . $token,
-						'Content-Type'  => 'application/json',
+						'headers' => array(
+							'Authorization' => 'Bearer ' . $token,
+							'Content-Type'  => 'application/json',
 					),
-					'body'    => $encoded,
-					'timeout' => 30,
+						'body'    => $encoded,
+						'timeout' => 30,
 					)
 				);
 				if ( is_wp_error( $response ) ) {
@@ -2196,9 +2196,9 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 		do {
 			$batch = get_users(
 				array(
-				'fields' => 'ID',
-				'number' => 100,
-				'paged'  => $page,
+					'fields' => 'ID',
+					'number' => 100,
+					'paged'  => $page,
 				)
 			);
 			if ( empty( $batch ) ) {
