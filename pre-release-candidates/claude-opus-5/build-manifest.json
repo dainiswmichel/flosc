@@ -2,7 +2,7 @@
   "candidate": "claude-opus-5",
   "candidate_iteration": 78,
   "creator": "Claude Opus 5",
-  "status": "BUILT_AWAITING_CAPTAIN_TEST",
+  "status": "NONCE_ACCEPTANCE_PASSED_ON_CAPTAINS_MACHINE",
   "plugin_version": "8.0.0",
   "base": "claude-opus-5 v77",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
@@ -409,5 +409,14 @@
     "nonce_suppressions_plugin_wide": 0,
     "superglobal_reads_in_functions_without_a_nonce": 0,
     "artifact_entries": 277
+  },
+  "v78_acceptance_measured": {
+    "command": "phpcs -d memory_limit=1G --standard=WordPress -s --report=summary --sniffs=WordPress.Security.NonceVerification <candidate>",
+    "run_by": "the Captain, on his machine. There is no phpcs in the container this candidate was built in.",
+    "v76_result": "0 ERRORS, 84 WARNINGS in 8 FILES, exit 1",
+    "v78_result": "no output, exit 0",
+    "reading": "--report=summary prints nothing when there is nothing to report, and phpcs exits 0 only when it found neither errors nor warnings. 84 -> 0.",
+    "not_the_v70_claim": "v70_verification below records 'exit 0, no output' for this same sniff. That run carried a filter that excluded warnings, and NonceVerification only ever emits warnings, so it could not have reported a problem on any codebase. The v78 run carries no such filter. The two lines look identical and mean different things; this is the distinction the bench exists to make.",
+    "still_unmeasured": "Full WPCS, the broader WordPress.Security set, PHPStan, Plugin Check, and whether WordPress.org accepts the submission."
   }
 }

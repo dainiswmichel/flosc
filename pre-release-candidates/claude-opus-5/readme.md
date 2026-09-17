@@ -1,5 +1,9 @@
 # FLOSC 8.0.0 — candidate v78
 
+**NonceVerification: 84 → 0.** Measured on the Captain's machine, phpcs exit 0.
+See *the acceptance test* below. The zip is unchanged by this note; it is the
+same 278-entry artifact that was measured.
+
     artifact   flosc.zip
     sha256     798196386dc5738f… (full value in sha256sums)
     entries    278, single flosc/ root, 0 under tests/
@@ -88,14 +92,26 @@ nonce core verifies in a caller no reader of that method can see, so it verifies
 third line above is my own static sweep, not PHPCS, and the two are not the same
 instrument.
 
-## Not measured — the acceptance test
+## Measured on the Captain's machine — the acceptance test
 
     phpcs -d memory_limit=1G --standard=WordPress -s --report=summary \
       --sniffs=WordPress.Security.NonceVerification "$CAND"
 
-**I do not know what this prints.** The target is 0. I last predicted a movement
-in this number and was wrong by exactly 84, so this file states the target and
-stops there.
+    v76   0 ERRORS, 84 WARNINGS in 8 FILES   exit 1
+    v78   no output                          exit 0
+
+    84 -> 0
+
+`--report=summary` prints nothing when there is nothing to report, and phpcs
+exits 0 only when it found neither errors nor warnings. The v76 run exited 1.
+
+**This is not the same claim the v70 readme made.** That one also read "exit 0,
+no output", but it was produced under a filter that excluded warnings, and this
+sniff only ever emits warnings -- so it could not have reported a problem on any
+codebase. The run above carries no such filter. The difference between the two
+lines is the whole point of building the bench.
+
+Run by the Captain, not by me. There is no phpcs in my container.
 
 ## Still not claimed
 
