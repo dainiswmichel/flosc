@@ -13,15 +13,16 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  finalize:
-    if: ${{ !contains(github.event.head_commit.message || '', '[sol-finalized]') }}
+  corrected-self-audit:
+    if: ${{ contains(github.event.head_commit.message || '', '[sol-self-audit-v3-run]') }}
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 75
     env:
       CAND: pre-release-candidates/gpt-5-6-sol
       TARGET: pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc
-      TOOLS: pre-release-candidates/gpt-5-6-sol/remediation-tools
       REPORTS: pre-release-candidates/gpt-5-6-sol/remediation-tools/reports
+      PRE_SOL1: 4ed0570a9972c5b38c747934d76b4fa12d37a2ce
+      FIRST_SOL1: 22a6bb2d004e8eb7f33331306ac77586425412da
     steps:
       - uses: actions/checkout@v4
         with:
@@ -34,213 +35,35 @@ jobs:
           coverage: none
           tools: composer
 
-      - name: Install analysis tools
+      - name: Execute the corrected v3 self-audit run blocks
         shell: bash
         run: |
           set -euo pipefail
-          composer global config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
-          composer global require --no-interaction --no-progress \
-            squizlabs/php_codesniffer:^3.13 \
-            wp-coding-standards/wpcs:^3.4 \
-            dealerdirect/phpcodesniffer-composer-installer:^1.0 \
-            phpcompatibility/phpcompatibility-wp:^2.1 \
-            phpstan/phpstan:^2.1 \
-            szepeviktor/phpstan-wordpress:^2.0 \
-            php-stubs/wordpress-stubs:^6.7
-          mkdir -p "$REPORTS"
-
-      - name: SOL-1 baseline
-        shell: bash
-        run: |
-          set +e
-          "$HOME/.composer/vendor/bin/phpcs" --standard=WordPress --extensions=php \
-            --ignore="$TARGET/tests/*,$TARGET/vendor/*" --report=source "$TARGET" \
-            > "$REPORTS/sol1-finalize-before-source.txt" 2>&1
-          echo "exit=$?" > "$REPORTS/sol1-finalize-before-exit.txt"
-          set -e
-          tail -40 "$REPORTS/sol1-finalize-before-source.txt" || true
-
-      - name: SOL-1 comment-only cleanup and per-file tollgate
-        shell: bash
-        run: |
-          set -euo pipefail
-          : > "$REPORTS/sol1-finalize-per-file.txt"
-          mapfile -t files < <(find "$TARGET" -type f -name '*.php' -not -path '*/tests/*' -not -path '*/vendor/*' | sort)
-          for f in "${files[@]}"; do
-            before=$(sha256sum "$f" | awk '{print $1}')
-            php "$TOOLS/sol1-comment-clean.php" "$f" >> "$REPORTS/sol1-finalize-per-file.txt"
-            after=$(sha256sum "$f" | awk '{print $1}')
-            if [[ "$before" != "$after" ]]; then
-              echo "===== $f =====" | tee -a "$REPORTS/sol1-finalize-per-file.txt"
-              php -l "$f" | tee -a "$REPORTS/sol1-finalize-per-file.txt"
-              set +e
-              "$HOME/.composer/vendor/bin/phpcs" --standard=WordPress --extensions=php --report=source "$f" \
-                >> "$REPORTS/sol1-finalize-per-file.txt" 2>&1
-              rc=$?
-              set -e
-              echo "PHPCS_EXIT=$rc" >> "$REPORTS/sol1-finalize-per-file.txt"
-            fi
-          done
-
-      - name: SOL-1 executable-token proof against pre-cleanup HEAD
-        shell: bash
-        run: |
-          set -euo pipefail
-          php -r '
-          function fp_code($c){$a=[];foreach(token_get_all($c) as $t){if(is_array($t)){if(in_array($t[0],[T_WHITESPACE,T_COMMENT,T_DOC_COMMENT],true))continue;$a[]=token_name($t[0]).":".$t[1];}else{$a[]="C:".$t;}}return hash("sha256",implode("\0",$a));}
-          $root=getenv("TARGET");$bad=0;$changed=0;
-          foreach(preg_split("/\R/",trim(shell_exec("git diff --name-only -- \"$root\""))) as $p){if($p===""||substr($p,-4)!==".php")continue;$changed++;$old=shell_exec("git show HEAD:".escapeshellarg($p));$new=file_get_contents($p);if(fp_code($old)!==fp_code($new)){fwrite(STDERR,"EXEC_TOKEN_MISMATCH $p\n");$bad++;}else{echo "EXEC_TOKEN_IDENTICAL $p\n";}}
-          echo "EXEC_TOKEN_SUMMARY changed=$changed mismatches=$bad\n";exit($bad?1:0);
-          ' | tee "$REPORTS/sol1-finalize-token-proof.txt"
-
-      - name: SOL-1 full tree after last edit
-        shell: bash
-        run: |
-          set +e
-          "$HOME/.composer/vendor/bin/phpcs" --standard=WordPress --extensions=php \
-            --ignore="$TARGET/tests/*,$TARGET/vendor/*" --report=source "$TARGET" \
-            > "$REPORTS/sol1-finalize-after-source.txt" 2>&1
-          echo "exit=$?" > "$REPORTS/sol1-finalize-after-exit.txt"
-          set -e
-          tail -50 "$REPORTS/sol1-finalize-after-source.txt" || true
-
-      - name: SOL-2 narrow PHPStan evidence
-        shell: bash
-        run: |
-          set +e
-          cat > /tmp/flosc-v85-phpstan.neon <<NEON
-          includes:
-              - $HOME/.composer/vendor/szepeviktor/phpstan-wordpress/extension.neon
-          parameters:
-              level: 5
-              excludePaths:
-                  analyse:
-                      - */tests/*
-                      - */vendor/*
-                      - */node_modules/*
-              reportUnmatchedIgnoredErrors: false
-              parallel:
-                  maximumNumberOfProcesses: 1
-          NEON
-          "$HOME/.composer/vendor/bin/phpstan" analyse "$TARGET" --configuration=/tmp/flosc-v85-phpstan.neon \
-            --error-format=json --no-progress --memory-limit=4G > "$REPORTS/sol2-final-phpstan.json" 2> "$REPORTS/sol2-final-phpstan.stderr.txt"
-          echo "exit=$?" > "$REPORTS/sol2-final-phpstan-exit.txt"
-          set -e
+          python3 -m pip install --quiet pyyaml
           python3 - <<'PY'
-          import json, os, re
-          p=os.path.join(os.environ['REPORTS'],'sol2-final-phpstan.json')
-          out=os.path.join(os.environ['REPORTS'],'sol2-final-narrow.txt')
-          try:data=json.load(open(p,encoding='utf-8'))
-          except Exception as e:
-              open(out,'w').write('PHPSTAN_JSON_UNREADABLE '+repr(e)+'\n');raise SystemExit
-          rows=[]
-          for file,b in (data.get('files') or {}).items():
-              for m in b.get('messages',[]):
-                  ident=m.get('identifier') or '';msg=m.get('message') or ''
-                  if ident=='variable.undefined' or (ident=='argument.type' and re.search(r'esc_(attr|html|textarea|url)',msg,re.I)):
-                      rows.append((file,m.get('line'),ident,msg))
-          with open(out,'w',encoding='utf-8') as f:
-              f.write(f'SOL2_NARROW_FINDINGS={len(rows)}\n')
-              for r in rows:f.write('%s:%s [%s] %s\n'%r)
-          print(open(out).read())
+          import os
+          import subprocess
+          import sys
+          import yaml
+
+          path = '.github/workflows/sol-v85-self-audit-remediate-v3.yml'
+          with open(path, encoding='utf-8') as handle:
+              workflow = yaml.safe_load(handle)
+
+          steps = workflow['jobs']['self-audit-v3']['steps']
+          run_steps = [step for step in steps if 'run' in step]
+          print(f'V3_RUN_BLOCKS={len(run_steps)}')
+
+          for number, step in enumerate(run_steps, 1):
+              name = step.get('name', f'run block {number}')
+              print(f'\n===== V3 STEP {number}/{len(run_steps)}: {name} =====', flush=True)
+              proc = subprocess.run(
+                  ['bash', '--noprofile', '--norc', '-e', '-o', 'pipefail', '-c', step['run']],
+                  env=os.environ.copy(),
+                  text=True,
+              )
+              if proc.returncode:
+                  print(f'V3_STEP_FAILED={name} EXIT={proc.returncode}', file=sys.stderr)
+                  raise SystemExit(proc.returncode)
+              print(f'V3_STEP_PASSED={name}', flush=True)
           PY
-
-      - name: SOL-3 outbound integration reconciliation
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          import os,re,pathlib,urllib.parse
-          root=pathlib.Path(os.environ['TARGET']);readme=(root/'readme.txt').read_text(encoding='utf-8',errors='replace')
-          calls=[];urls=[];rx=re.compile(r'https?://[^\s\"\'<>`)]+' ,re.I)
-          for p in root.rglob('*'):
-              if not p.is_file() or any(x in p.parts for x in ('tests','vendor','node_modules')):continue
-              if p.suffix.lower() not in ('.php','.js','.mjs','.html','.txt','.md'):continue
-              text=p.read_text(encoding='utf-8',errors='replace');rel=p.relative_to(root)
-              for n,line in enumerate(text.splitlines(),1):
-                  if re.search(r'\bwp_remote_(?:get|post|request|head)\s*\(|\bfetch\s*\(|XMLHttpRequest',line):calls.append((str(rel),n,line.strip()))
-                  for u in rx.findall(line):
-                      h=urllib.parse.urlparse(u.rstrip('.,;')).hostname
-                      if h:urls.append((h.lower(),str(rel),n,u))
-          domains=sorted({x[0] for x in urls});out=pathlib.Path(os.environ['REPORTS'])/'sol3-final-external-services.txt'
-          with out.open('w',encoding='utf-8') as f:
-              f.write(f'OUTBOUND_CALL_SITES={len(calls)}\nLITERAL_URL_DOMAINS={len(domains)}\n')
-              f.write('\n== call sites ==\n')
-              for x in calls:f.write(f'{x[0]}:{x[1]} {x[2]}\n')
-              f.write('\n== domains ==\n');[f.write(d+'\n') for d in domains]
-              f.write('\n== readme coverage by domain ==\n')
-              low=readme.lower()
-              for d in domains:f.write(f'{d}: documented={int(d in low or d.removeprefix("www.") in low)}\n')
-              f.write('\n== literal evidence ==\n')
-              for h,rel,n,u in sorted(urls):f.write(f'{rel}:{n} {u}\n')
-          print(out.read_text(encoding='utf-8')[:12000])
-          PY
-
-      - name: SOL-4 T7 through T13 historical audit
-        shell: bash
-        run: |
-          set +e
-          out="$REPORTS/sol4-final-t7-t13.txt";: > "$out"
-          echo '== Requires at least ==' >> "$out"; grep -n 'Requires at least:' "$TARGET/flosc.php" "$TARGET/readme.txt" >> "$out" 2>&1
-          echo '== hardcoded importer path ==' >> "$out"; grep -RIn --include='*.php' --exclude-dir=tests --exclude-dir=vendor 'WP_PLUGIN_DIR.*wordpress-importer\|wordpress-importer/wordpress-importer.php' "$TARGET" >> "$out" 2>&1
-          echo '== direct import.php load ==' >> "$out"; grep -RIn --include='*.php' --exclude-dir=tests --exclude-dir=vendor 'wp-admin/includes/import.php' "$TARGET" >> "$out" 2>&1
-          echo '== unsafe filter input ==' >> "$out"; grep -RIn --include='*.php' --exclude-dir=tests --exclude-dir=vendor 'FILTER_UNSAFE_RAW\|FILTER_DEFAULT' "$TARGET" >> "$out" 2>&1
-          echo '== SSO HTTP_HOST ==' >> "$out"; grep -n -C 5 'HTTP_HOST' "$TARGET/includes/sso/class-oauth2-handler.php" >> "$out" 2>&1
-          echo '== file_content / writes ==' >> "$out"; grep -RIn -C 4 --include='*.php' --exclude-dir=tests --exclude-dir=vendor 'file_content\|flosc_write_data_file' "$TARGET" >> "$out" 2>&1
-          echo '== REST permission callbacks ==' >> "$out"; grep -RIn --include='*.php' --exclude-dir=tests --exclude-dir=vendor 'register_rest_route\|permission_callback' "$TARGET" >> "$out" 2>&1
-          echo '== register_setting ==' >> "$out"; grep -RIn --include='*.php' --exclude-dir=tests --exclude-dir=vendor 'register_setting' "$TARGET" >> "$out" 2>&1
-          echo '== historical rules gate ==' >> "$out"; (cd "$TARGET" && php tests/check_wporg_rules.php) >> "$out" 2>&1; echo "rules_gate_exit=$?" >> "$out"
-          set -e
-          sed -n '1,1200p' "$out"
-
-      - name: SOL-5 exact package rebuild and artifact recheck
-        shell: bash
-        run: |
-          set -euo pipefail
-          stage=$(mktemp -d);mkdir -p "$stage/flosc"
-          rsync -a --delete --exclude-from="$TARGET/.distignore" "$TARGET/" "$stage/flosc/"
-          rm -rf "$stage/flosc/tests" "$stage/flosc/vendor" "$stage/flosc/.git" "$stage/flosc/node_modules"
-          (cd "$stage" && zip -X -q -r flosc.zip flosc)
-          cp "$stage/flosc.zip" "$CAND/flosc.zip"
-          sha256sum "$CAND/flosc.zip" | sed 's#  .*#  flosc.zip#' > "$CAND/SHA256SUMS"
-          unzip -Z1 "$CAND/flosc.zip" > "$REPORTS/sol5-final-zip-list.txt"
-          entries=$(wc -l < "$REPORTS/sol5-final-zip-list.txt" | tr -d ' ');bytes=$(stat -c '%s' "$CAND/flosc.zip");sha=$(sha256sum "$CAND/flosc.zip"|awk '{print $1}')
-          tests=$(grep -c '^flosc/tests/' "$REPORTS/sol5-final-zip-list.txt" || true);vendor=$(grep -c '^flosc/vendor/' "$REPORTS/sol5-final-zip-list.txt" || true);roots=$(cut -d/ -f1 "$REPORTS/sol5-final-zip-list.txt"|sort -u|tr '\n' ' ')
-          { echo "sha256=$sha";echo "bytes=$bytes";echo "entries=$entries";echo "tests_entries=$tests";echo "vendor_entries=$vendor";echo "roots=$roots";grep -n '^Requires at least:' "$stage/flosc/readme.txt";grep -n 'Requires at least:' "$stage/flosc/flosc.php"|head -1;grep -n 'Version:' "$stage/flosc/flosc.php"|head -1; } | tee "$REPORTS/sol5-final-package-facts.txt"
-          [[ "$tests" == 0 && "$vendor" == 0 && "$roots" == 'flosc ' ]]
-          ship=$(mktemp -d);unzip -q "$CAND/flosc.zip" -d "$ship"
-          find "$ship/flosc" -type f -name '*.php' -print0 | sort -z | xargs -0 -n1 php -l > "$REPORTS/sol5-final-php-lint.txt"
-          set +e
-          "$HOME/.composer/vendor/bin/phpcs" --standard=WordPress --extensions=php --report=source "$ship/flosc" > "$REPORTS/sol5-final-wpcs-source.txt" 2>&1
-          echo "exit=$?" > "$REPORTS/sol5-final-wpcs-exit.txt"
-          set -e
-          tail -50 "$REPORTS/sol5-final-wpcs-source.txt" || true
-
-      - name: Commit evidence and rebuilt v85 artifact
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name 'GPT-5.6 Sol'
-          git config user.email 'noreply@openai.com'
-          git add "$CAND"
-          if git diff --cached --quiet; then echo 'No candidate delta.';exit 0;fi
-          before=$(grep -E 'A TOTAL OF|FOUND [0-9]+ ERRORS|FOUND [0-9]+ ERROR' "$REPORTS/sol1-finalize-before-source.txt"|tail -1||true)
-          after=$(grep -E 'A TOTAL OF|FOUND [0-9]+ ERRORS|FOUND [0-9]+ ERROR' "$REPORTS/sol1-finalize-after-source.txt"|tail -1||true)
-          narrow=$(head -1 "$REPORTS/sol2-final-narrow.txt"||true)
-          facts=$(tr '\n' '; ' < "$REPORTS/sol5-final-package-facts.txt")
-          git commit -m "Home run candidate v85.2 coded by GPT-5.6 Sol — SOL-1 through SOL-5 evidence pass [sol-finalized]" \
-            -m "SOL-1 remains comments/docblocks only; every changed shipping PHP file is linted and run through WordPress-standard PHPCS individually, followed by a full-tree report and executable-token identity proof. Before: ${before}. After: ${after}." \
-            -m "SOL-2 is intentionally narrow: ${narrow}. No global PHPStan-to-zero exercise." \
-            -m "SOL-3 inventories actual outbound call sites and literal service domains against readme.txt; no runtime edits are made by the reconciliation pass." \
-            -m "SOL-4 rechecks T7–T13 historical categories first and records the evidence verbatim; no architecture is remodeled by the audit." \
-            -m "SOL-5 rebuilds flosc.zip from this exact source, excludes tests/vendor/.git/node_modules, then re-extracts the archive for php -l and WordPress-standard PHPCS. ${facts}" \
-            -m "No readiness claim is made beyond what the committed evidence files show."
-          git push origin HEAD:gpt-5-6-sol/wporg-remediation
-
-      - name: Upload evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: v85-sol-final-evidence
-          path: pre-release-candidates/gpt-5-6-sol/remediation-tools/reports/
-          if-no-files-found: warn
