@@ -71,12 +71,27 @@ if ( ! function_exists( 'wp_json_encode' ) ) {
 }
 require_once $root . '/includes/flosc-personality-library.php';
 
-echo "\nThe four shipped runtime profiles retain their exact v25 bytes\n";
+/*
+ * A shipped profile changes only when the Captain approves the words.
+ *
+ * The pin caught the conversion from heredoc to implode, which had to be
+ * byte-identical. It keeps catching an accidental edit. It is not a freeze:
+ * when a revision is approved the hash below moves with it, in the same commit
+ * as the text, so the two cannot drift apart quietly.
+ *
+ * Last moved: v38, for the revision itself — all four personalities rewritten
+ * across the fourteen headings, cards and documents generated from one source
+ * so they cannot disagree. Before that, v37, for the gain ladder. Every frequency word in all four
+ * profiles was recomputed from its own card's gain — the old nine-rung ladder
+ * rounded every gain from 65 to 95 down to "usually", which is why these
+ * documents said it twenty-one times for eleven different values.
+ */
+echo "\nThe four shipped runtime profiles match their approved text\n";
 $expected = array(
-	'friendly'     => '148857604f6cd44f945d58b7ab5fb4ecdf13d85ad0931ced3349a8b408c3c82e',
-	'tech'         => 'b9f3c546d88896664980a233d88b7f1baee38d9725d6d58488a1fbb004aec21a',
-	'bubblybetty'  => '875deb1c50b450f493bb7e65b4fac9defd7f0427b4428e9f8c53275fbe2bd8a6',
-	'dadjokedan'   => 'cc79d1f8ff715e531a2ed56fdc21e441a7be5015760996aa81bc0b4b1899bf27',
+	'friendly'     => '65504c279fbfd6ff4fb58da922af230fa778c60ba022f7927997226ea2e91762',
+	'tech'         => '7ebc8e7e369bb62e5a5cc710be3c12d2c3b7279a09b4a5340c6882e8916dba38',
+	'bubblybetty'  => '45d038547aeb399f7dc23cf9a04fd6a8083946c1e4be577ee7df5b04354c18e3',
+	'dadjokedan'   => 'b7293376b83588031e67e653758eef298921dbece39b67a5c97802493010d05b',
 );
 $defaults = flosc_personality_library_defaults();
 foreach ( $expected as $id => $hash ) {

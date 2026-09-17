@@ -7,7 +7,7 @@
  * @package FLOSC
  */
 
-if (!defined('ABSPATH')) {
+if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
@@ -17,19 +17,25 @@ if (!defined('ABSPATH')) {
 class FLOSC_Filesystem {
 
 	/**
+	 * The initialised WordPress filesystem, or null if it cannot be brought up.
+	 *
+	 * Callers must handle null rather than assume an object: on a host where the
+	 * filesystem API needs credentials FLOSC does not have, there is nothing to
+	 * return and a fatal would be the wrong answer.
+	 *
 	 * @return WP_Filesystem_Base|null
 	 */
 	public function get_wp_filesystem() {
 		global $wp_filesystem;
 
-		if (!is_object($wp_filesystem)) {
-			if (!function_exists('WP_Filesystem')) {
+		if ( ! is_object( $wp_filesystem ) ) {
+			if ( ! function_exists( 'WP_Filesystem' ) ) {
 				require_once ABSPATH . 'wp-admin/includes/file.php';
 			}
 			WP_Filesystem();
 		}
 
-		return is_object($wp_filesystem) ? $wp_filesystem : null;
+		return is_object( $wp_filesystem ) ? $wp_filesystem : null;
 	}
 
 	/**
@@ -39,48 +45,48 @@ class FLOSC_Filesystem {
 	 * @param string $path Absolute filesystem path.
 	 * @return bool
 	 */
-	private function path_is_under_uploads($path) {
-		if (!is_string($path) || '' === $path) {
+	private function path_is_under_uploads( $path ) {
+		if ( ! is_string( $path ) || '' === $path ) {
 			return false;
 		}
 
 		$uploads = wp_upload_dir();
-		if (!empty($uploads['error']) || empty($uploads['basedir'])) {
+		if ( ! empty( $uploads['error'] ) || empty( $uploads['basedir'] ) ) {
 			return false;
 		}
 
-		$base_real = realpath($uploads['basedir']);
-		if (false === $base_real) {
+		$base_real = realpath( $uploads['basedir'] );
+		if ( false === $base_real ) {
 			return false;
 		}
 
 		// Never follow a pre-existing destination symlink. WP_Filesystem writes
 		// and moves would otherwise modify the link target outside uploads after
 		// the parent directory itself had passed this containment check.
-		if (is_link($path)) {
+		if ( is_link( $path ) ) {
 			return false;
 		}
 
-		$parent = dirname($path);
-		if (!is_dir($parent)) {
-			wp_mkdir_p($parent);
+		$parent = dirname( $path );
+		if ( ! is_dir( $parent ) ) {
+			wp_mkdir_p( $parent );
 		}
 
-		$dir_real = realpath($parent);
-		if (false === $dir_real) {
+		$dir_real = realpath( $parent );
+		if ( false === $dir_real ) {
 			return false;
 		}
 
-		$base_prefix = trailingslashit($base_real);
-		if (0 !== strpos(trailingslashit($dir_real), $base_prefix)) {
+		$base_prefix = trailingslashit( $base_real );
+		if ( 0 !== strpos( trailingslashit( $dir_real ), $base_prefix ) ) {
 			return false;
 		}
 
 		// Existing ordinary destinations must resolve under uploads too. This is
 		// redundant for regular files with a real parent, but keeps the boundary
 		// explicit if another filesystem implementation resolves paths differently.
-		$path_real = realpath($path);
-		if (false !== $path_real && 0 !== strpos(trailingslashit($path_real), $base_prefix)) {
+		$path_real = realpath( $path );
+		if ( false !== $path_real && 0 !== strpos( trailingslashit( $path_real ), $base_prefix ) ) {
 			return false;
 		}
 
@@ -95,14 +101,14 @@ class FLOSC_Filesystem {
 	 * @param string $destination Destination path.
 	 * @return bool
 	 */
-	public function move_file_safely($source, $destination) {
-		if (!$this->path_is_under_uploads($destination)) {
+	public function move_file_safely( $source, $destination ) {
+		if ( ! $this->path_is_under_uploads( $destination ) ) {
 			return false;
 		}
 
 		$filesystem = $this->get_wp_filesystem();
-		if ($filesystem && method_exists($filesystem, 'move')) {
-			$moved = $filesystem->move($source, $destination, true);
+		if ( $filesystem && method_exists( $filesystem, 'move' ) ) {
+			$moved = $filesystem->move( $source, $destination, true );
 			if ( $moved ) {
 				return true;
 			}
@@ -125,17 +131,17 @@ class FLOSC_Filesystem {
 	 * @param string $path File path.
 	 * @return bool
 	 */
-	public function delete_file_safely($path) {
-		if (!file_exists($path)) {
+	public function delete_file_safely( $path ) {
+		if ( ! file_exists( $path ) ) {
 			return true;
 		}
 
 		$filesystem = $this->get_wp_filesystem();
-		if ($filesystem && method_exists($filesystem, 'delete')) {
-			return $filesystem->delete($path, false, 'f');
+		if ( $filesystem && method_exists( $filesystem, 'delete' ) ) {
+			return $filesystem->delete( $path, false, 'f' );
 		}
 
-		return wp_delete_file($path) !== false;
+		return false !== wp_delete_file( $path );
 	}
 
 	/**
@@ -144,10 +150,10 @@ class FLOSC_Filesystem {
 	 * @param string $path Directory path.
 	 * @return bool
 	 */
-	public function delete_directory_safely($path) {
+	public function delete_directory_safely( $path ) {
 		$filesystem = $this->get_wp_filesystem();
-		if ($filesystem && method_exists($filesystem, 'rmdir')) {
-			return $filesystem->rmdir($path, true);
+		if ( $filesystem && method_exists( $filesystem, 'rmdir' ) ) {
+			return $filesystem->rmdir( $path, true );
 		}
 
 		return true;
@@ -161,14 +167,14 @@ class FLOSC_Filesystem {
 	 * @param string $content File body.
 	 * @return bool
 	 */
-	public function write_file_safely($path, $content) {
-		if (!$this->path_is_under_uploads($path)) {
+	public function write_file_safely( $path, $content ) {
+		if ( ! $this->path_is_under_uploads( $path ) ) {
 			return false;
 		}
 
 		$filesystem = $this->get_wp_filesystem();
-		if ($filesystem && method_exists($filesystem, 'put_contents')) {
-			$ok = $filesystem->put_contents($path, $content, FS_CHMOD_FILE);
+		if ( $filesystem && method_exists( $filesystem, 'put_contents' ) ) {
+			$ok = $filesystem->put_contents( $path, $content, FS_CHMOD_FILE );
 			if ( false !== $ok && null !== $ok ) {
 				return (bool) $ok;
 			}
@@ -216,7 +222,7 @@ class FLOSC_Filesystem {
 	 * @return string|false File body or false on failure.
 	 */
 	public function read_file_safely( $path ) {
-		if ( ! is_string( $path ) || $path === '' || ! $this->path_resolves_under_uploads( $path ) ) {
+		if ( ! is_string( $path ) || '' === $path || ! $this->path_resolves_under_uploads( $path ) ) {
 			return false;
 		}
 		return $this->read_contents( $path );
@@ -230,7 +236,7 @@ class FLOSC_Filesystem {
 	 * @return string|false
 	 */
 	public function read_contents( $path ) {
-		if ( ! is_string( $path ) || $path === '' ) {
+		if ( ! is_string( $path ) || '' === $path ) {
 			return false;
 		}
 
@@ -294,7 +300,7 @@ class FLOSC_Filesystem {
 	 * @return bool
 	 */
 	public function protect_uploads_dir_with_htaccess( $dir ) {
-		if ( ! is_string( $dir ) || $dir === '' ) {
+		if ( ! is_string( $dir ) || '' === $dir ) {
 			return false;
 		}
 		if ( ! is_dir( $dir ) ) {
@@ -311,7 +317,7 @@ class FLOSC_Filesystem {
 	 * @return void
 	 */
 	public function emit_raw_bytes_and_exit( $body ) {
-		$body = is_string( $body ) ? $body : '';
+		$body       = is_string( $body ) ? $body : '';
 		$filesystem = $this->get_wp_filesystem();
 		if ( $filesystem && method_exists( $filesystem, 'put_contents' ) ) {
 			$filesystem->put_contents( 'php://output', $body );
@@ -332,9 +338,9 @@ class FLOSC_Filesystem {
 	 */
 	public function stream_plain_download_and_exit( $body, $content_type, $filename ) {
 		$body         = is_string( $body ) ? $body : '';
-		$content_type = is_string( $content_type ) && $content_type !== '' ? $content_type : 'application/octet-stream';
+		$content_type = is_string( $content_type ) && '' !== $content_type ? $content_type : 'application/octet-stream';
 		$filename     = sanitize_file_name( (string) $filename );
-		if ( $filename === '' ) {
+		if ( '' === $filename ) {
 			$filename = 'download.txt';
 		}
 
@@ -366,15 +372,15 @@ class FLOSC_Filesystem {
 			exit;
 		}
 
-		$size  = strlen( $body );
-		$start = 0;
-		$end   = $size > 0 ? $size - 1 : 0;
+		$size    = strlen( $body );
+		$start   = 0;
+		$end     = $size > 0 ? $size - 1 : 0;
 		$partial = false;
 
-		if ( is_string( $range_header ) && $range_header !== '' && $size > 0 ) {
+		if ( is_string( $range_header ) && '' !== $range_header && $size > 0 ) {
 			if ( preg_match( '/bytes=(\d*)-(\d*)/', $range_header, $m ) ) {
-				$rs = ( isset( $m[1] ) && $m[1] !== '' ) ? (int) $m[1] : null;
-				$re = ( isset( $m[2] ) && $m[2] !== '' ) ? (int) $m[2] : null;
+				$rs = ( isset( $m[1] ) && '' !== $m[1] ) ? (int) $m[1] : null;
+				$re = ( isset( $m[2] ) && '' !== $m[2] ) ? (int) $m[2] : null;
 				if ( null !== $rs ) {
 					$start   = $rs;
 					$end     = null !== $re ? min( $re, $size - 1 ) : $size - 1;
@@ -396,10 +402,10 @@ class FLOSC_Filesystem {
 
 		$slice    = substr( $body, $start, $end - $start + 1 );
 		$filename = sanitize_file_name( (string) $filename );
-		if ( $filename === '' ) {
+		if ( '' === $filename ) {
 			$filename = 'download.bin';
 		}
-		$mime = is_string( $mime ) && $mime !== '' ? $mime : 'application/octet-stream';
+		$mime = is_string( $mime ) && '' !== $mime ? $mime : 'application/octet-stream';
 
 		header( 'Accept-Ranges: bytes' );
 		header( 'Content-Type: ' . $mime );
@@ -423,17 +429,17 @@ class FLOSC_Filesystem {
 	 * @param mixed  $data Data to encode.
 	 * @return bool
 	 */
-	public function write_json_atomic($path, $data) {
-		$json = wp_json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-		if (!is_string($json) || $json === '') {
+	public function write_json_atomic( $path, $data ) {
+		$json = wp_json_encode( $data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE );
+		if ( ! is_string( $json ) || '' === $json ) {
 			return false;
 		}
 
 		$tmp_path = $path . '.tmp';
-		if (!$this->write_file_safely($tmp_path, $json)) {
+		if ( ! $this->write_file_safely( $tmp_path, $json ) ) {
 			return false;
 		}
 
-		return $this->move_file_safely($tmp_path, $path);
+		return $this->move_file_safely( $tmp_path, $path );
 	}
 }

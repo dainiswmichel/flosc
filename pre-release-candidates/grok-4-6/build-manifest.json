@@ -1,30 +1,32 @@
 {
-  "candidate": "grok-4-6",
-  "candidate_iteration": 31,
-  "creator": "Grok 4.6",
-  "status": "DEPLOYED_AWAITING_CAPTAIN_ACCEPTANCE",
-  "plugin_version": "8.0.0",
-  "source": "local mvp_sprint/flosc_8_0_0/flosc",
-  "plugin_source": "flosc-by-grok-4-6/flosc",
-  "artifact": "flosc.zip",
-  "artifact_root": "flosc/",
-  "artifact_sha256": "6b40ca27c2cb69425fe83a54f7b5fe3cd34e7f24e91bbbd3018431406553cd29",
-  "artifact_size_bytes": 2721620,
-  "artifact_entries": 277,
-  "artifact_files": 237,
-  "verification": {
-    "php_lint": "passed on overlay files",
-    "zip_entries": 277,
-    "zip_no_tests": true,
-    "zip_no_handoff": true,
-    "zip_no_users_list_css": true,
-    "oembed_faq_item_17": true,
-    "sticky_eval_context": true,
-    "quiz_audio_flosc_sid": true,
-    "members_only_playback": true
+  "agent": {
+    "name": "Grok",
+    "exact_agent_model": "grok-4.6",
+    "slug": "grok-4-6"
   },
-  "live_deployment": {
-    "remote": "chemicloud:public_html/wp-content/plugins/flosc",
-    "test_host": "dainis.net"
-  }
+  "assemble": {
+    "mts": "2026y-09m-17d-UTC-14h-51m-53s-719ms",
+    "base": "claude-opus-5 v82.18 8096ec3",
+    "overlay": "opencode-big-pickle v83 ab871e6 P1",
+    "source_path": "pre-release-candidates/grok-4-6/flosc-by-grok-4-6/flosc",
+    "artifact_path": "pre-release-candidates/grok-4-6/flosc.zip"
+  },
+  "artifact": {
+    "filename": "flosc.zip",
+    "sha256": "ccdb7ab39ecf476d96d43d1912329a116c26ef3e6f6deedef1d1e691d6126ad4",
+    "entry_count": 281,
+    "size_bytes": 2793531,
+    "top_level_dirs": ["flosc"],
+    "tests_entries": 0
+  },
+  "measured_after_assemble": {
+    "php_l_overlay_files": "clean",
+    "phpstan_variable_undefined_overlay": "empty",
+    "requires_at_least": "7.0",
+    "version": "8.0.0",
+    "wpcs_full": "not run",
+    "plugin_check": "not run",
+    "wordpress_runtime": "not run"
+  },
+  "candidate_status": "assemble-p1"
 }

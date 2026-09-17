@@ -17,6 +17,26 @@ if ( PHP_SAPI !== 'cli' ) {
 	exit;
 }
 
+if ( ! function_exists( 'flosc_nows' ) ) {
+	/**
+	 * Strip every whitespace character.
+	 *
+	 * Source-text assertions below compare code, not the way it is laid out. A
+	 * WordPress Coding Standards pass reformatted the plugin -- tabs for spaces,
+	 * spaces inside call parentheses, realigned array arrows -- and every literal
+	 * match went red on behaviour that had not changed. Both sides of those
+	 * comparisons now pass through here, so the assertion is the same and the
+	 * formatting no longer decides it. Assertions that use a regular expression
+	 * are deliberately left reading the raw source.
+	 *
+	 * @param string $s Source text.
+	 * @return string
+	 */
+	function flosc_nows( $s ) {
+		return (string) preg_replace( '/\s+/', '', (string) $s );
+	}
+}
+
 $root = dirname( __DIR__ );
 $fail = 0;
 
@@ -52,14 +72,18 @@ foreach ( $keys as $key ) {
 // The whole point. A number typed into this file is a number nobody can reach.
 echo "\nNo limit is hardcoded in the REST permission callbacks\n";
 $callbacks = '';
-if ( preg_match_all( '/function check_(?:public_endpoint|metered_visitor_compute)_permission.*?\n    }/s', $rest, $m ) ) {
+// The close is matched as "newline, any indent, brace". It used to be spelled
+// as four literal spaces, which stopped existing the day a WordPress Coding
+// Standards pass converted the indentation to tabs -- and the extraction came
+// back empty on callbacks that were still exactly where they had always been.
+if ( preg_match_all( '/function check_(?:public_endpoint|metered_visitor_compute)_permission.*?\n\s*\}/s', $rest, $m ) ) {
 	$callbacks = implode( "\n", $m[0] );
 }
 ok( 'the permission callbacks were found', $callbacks !== '', true );
 ok( 'no check_rate_limit() carries a literal count',
 	(bool) preg_match( "/check_rate_limit\(\s*'[^']*'\s*,\s*\d+/", $callbacks ), false );
 ok( 'the chat route gets its own budget, apart from content reads',
-	strpos( $rest, "\$endpoint === '/flosc/v1/chat'" ) !== false, true );
+	strpos( flosc_nows( $rest ), flosc_nows( "'/flosc/v1/chat' === \$endpoint" ) ) !== false, true );
 
 echo "\nThe floscAdmin can see and change every one of them\n";
 
@@ -71,24 +95,28 @@ foreach ( array( 'enabled', 'retry_after_429' ) as $key ) {
 		strpos( $admin, 'flosc_public_request_protection[' . $key . ']' ) !== false, true );
 }
 ok( 'the counts are rendered from a labelled map',
-	strpos( $admin, 'name="flosc_public_request_protection[<?php echo esc_attr($flosc_protection_key); ?>]"' ) !== false, true );
+	strpos( flosc_nows( $admin ), flosc_nows( 'name="flosc_public_request_protection[<?php echo esc_attr($flosc_protection_key); ?>]"'  )) !== false, true );
 
-preg_match( '/\$flosc_protection_fields\s*=\s*\[(.*?)\n\];/s', $admin, $map );
+// Both array syntaxes are accepted. This used to require "= [", and a
+// WordPress Coding Standards pass converted the plugin to long array syntax,
+// so the map came back empty and all five fields below reported missing on a
+// screen that still offered every one of them.
+preg_match( '/\$flosc_protection_fields\s*=\s*(?:\[|array\()(.*?)\n\s*(?:\]|\))\s*;/s', $admin, $map );
 $fields = isset( $map[1] ) ? $map[1] : '';
 foreach ( array( 'anonymous_chat_limit', 'authenticated_chat_limit', 'anonymous_ivr_limit', 'metered_compute_limit', 'visitor_compute_limit' ) as $key ) {
 	ok( $key . ' is offered, with a label and an explanation',
-		(bool) preg_match( "/'" . preg_quote( $key, '/' ) . "'\s*=>\s*\['[^']+',\s*'[^']+'\]/", $fields ), true );
+		(bool) preg_match( "/'" . preg_quote( $key, '/' ) . "'\s*=>\s*(?:\[|array\()\s*'[^']+'\s*,\s*'[^']+'\s*(?:\]|\))/", $fields ), true );
 }
 ok( 'and the page says the scope is the whole installation',
 	stripos( $admin, 'Global for this FLOSC installation' ) !== false, true );
 
 echo "\nWhat the form posts is validated before it is stored\n";
 ok( 'the save clamps to a usable range',
-	strpos( $save, 'min(10000, absint($flosc_post[\'flosc_public_request_protection\']' ) !== false, true );
+	strpos( flosc_nows( $save ), flosc_nows( 'min(10000, absint($flosc_post[\'flosc_public_request_protection\']'  )) !== false, true );
 ok( '  and never to zero, which would refuse every visitor',
-	strpos( $save, '$flosc_protection[$flosc_protection_key] = max(' ) !== false, true );
+	strpos( flosc_nows( $save ), flosc_nows( '$flosc_protection[ $flosc_protection_key ] = max(' ) ) !== false, true );
 ok( 'the option is written',
-	strpos( $save, "update_option('flosc_public_request_protection'" ) !== false, true );
+	strpos( flosc_nows( $save ), flosc_nows( "update_option('flosc_public_request_protection'"  )) !== false, true );
 
 echo "\nA refused request is not retried unless the floscAdmin asked for it\n";
 ok( 'the client is told the choice',

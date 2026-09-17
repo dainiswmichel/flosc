@@ -19,14 +19,14 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 function flosc_content_item_option_key_map() {
 	return array(
-		'free_content_item_count'          => 'free_lesson_count',
-		'free_content_item_pool_category'  => 'free_lesson_pool_category',
-		'free_content_item_mode'           => 'free_lesson_mode',
-		'free_content_item_proportion'     => 'free_lesson_proportion',
-		'free_content_item_guaranteed'     => 'free_lesson_guaranteed',
-		'exclude_items_from_freeline'      => 'free_lesson_never_free',
-		'content_item_category'            => 'lessons_category',
-		'content_item_groups'              => 'lesson_groups',
+		'free_content_item_count'         => 'free_lesson_count',
+		'free_content_item_pool_category' => 'free_lesson_pool_category',
+		'free_content_item_mode'          => 'free_lesson_mode',
+		'free_content_item_proportion'    => 'free_lesson_proportion',
+		'free_content_item_guaranteed'    => 'free_lesson_guaranteed',
+		'exclude_items_from_freeline'     => 'free_lesson_never_free',
+		'content_item_category'           => 'lessons_category',
+		'content_item_groups'             => 'lesson_groups',
 	);
 }
 
@@ -53,10 +53,10 @@ function flosc_content_item_user_meta_key_map() {
  * @return bool
  */
 function flosc_content_item_value_present( $value ) {
-	if ( $value === null || $value === '' ) {
+	if ( null === $value || '' === $value ) {
 		return false;
 	}
-	if ( is_array( $value ) && $value === array() ) {
+	if ( is_array( $value ) && array() === $value ) {
 		return false;
 	}
 	return true;
@@ -95,7 +95,7 @@ function flosc_normalize_content_item_flow_settings( array $fs, $option_key = ''
 				'category' => sanitize_title( (string) $fs['content_item_category'] ),
 			),
 		);
-		$changed = true;
+		$changed                   = true;
 	}
 	if ( ! empty( $fs['content_item_groups'] ) && is_array( $fs['content_item_groups'] ) && empty( $fs['content_item_category'] ) ) {
 		$first = reset( $fs['content_item_groups'] );
@@ -105,7 +105,7 @@ function flosc_normalize_content_item_flow_settings( array $fs, $option_key = ''
 		}
 	}
 
-	if ( $changed && $option_key !== '' && strpos( (string) $option_key, 'flosc_flow_' ) === 0 ) {
+	if ( $changed && '' !== $option_key && 0 === strpos( (string) $option_key, 'flosc_flow_' ) ) {
 		update_option( $option_key, $fs, false );
 	}
 
@@ -132,7 +132,7 @@ function flosc_content_item_canonical_option_key( $key ) {
 }
 
 /**
- * get_user_meta with legacy freeline meta fallback.
+ * Get_user_meta with legacy freeline meta fallback.
  *
  * @param int    $user_id
  * @param string $new_key Canonical meta key.
@@ -148,7 +148,7 @@ function flosc_content_item_get_user_meta( $user_id, $new_key, $single = true ) 
 	}
 	$map = flosc_content_item_user_meta_key_map();
 	$old = $map[ $new_key ] ?? '';
-	if ( $old === '' ) {
+	if ( '' === $old ) {
 		return $val;
 	}
 	$legacy = get_user_meta( $user_id, $old, $single );
@@ -159,7 +159,7 @@ function flosc_content_item_get_user_meta( $user_id, $new_key, $single = true ) 
 }
 
 /**
- * update_user_meta for freeline state (writes new key only).
+ * Update_user_meta for freeline state (writes new key only).
  *
  * @param int    $user_id
  * @param string $new_key

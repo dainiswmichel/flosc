@@ -334,7 +334,10 @@ echo "\nEdition is a label beside the version, never part of it\n";
 ok( 'the builder version is a plain number',
 	(bool) preg_match( "/'version' => defined\( 'FLOSC_DA1_BUILDER_VERSION' \)/", $library ), true );
 ok( "  and it is a comparable one",
-	(bool) preg_match( "/define\('FLOSC_DA1_BUILDER_VERSION', '\d+\.\d+\.\d+'\);/", (string) file_get_contents( $root . '/flosc.php' ) ), true );
+	// Spacing-tolerant: this required define('X','1.2.3'); with no spaces, and a
+	// WordPress Coding Standards pass wrote define( 'X', '1.2.3' ); which is the
+	// same definition and the required style.
+	(bool) preg_match( "/define\(\s*'FLOSC_DA1_BUILDER_VERSION'\s*,\s*'\d+\.\d+\.\d+'\s*\)\s*;/", (string) file_get_contents( $root . '/flosc.php' ) ), true );
 ok( 'the edition is its own field',
 	strpos( $library, "'edition' => 'FLOSC'," ) !== false, true );
 

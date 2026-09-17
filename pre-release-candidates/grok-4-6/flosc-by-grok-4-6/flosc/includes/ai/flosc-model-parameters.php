@@ -74,7 +74,7 @@ if ( ! function_exists( 'flosc_parse_model_parameters' ) ) {
 
 			$parts = explode( ':', $line, 2 );
 
-			if ( count( $parts ) !== 2 ) {
+			if ( 2 !== count( $parts ) ) {
 				return new WP_Error(
 					'flosc_params_line',
 					sprintf(
@@ -440,7 +440,7 @@ if ( ! function_exists( 'flosc_model_parameter_recipes' ) ) {
 				array(
 					'name'   => __( 'Never writes the visitor\'s line', 'flosc' ),
 					'why'    => __( 'Cuts the reply the moment the model starts inventing the other half of the conversation. The classic chat-bubble fix.', 'flosc' ),
-					'params' => "stop_sequences: [\"User:\", \"Visitor:\", \"Human:\"]",
+					'params' => 'stop_sequences: ["User:", "Visitor:", "Human:"]',
 					'models' => __( 'Every Anthropic model tested.', 'flosc' ),
 				),
 				array(
@@ -488,7 +488,7 @@ if ( ! function_exists( 'flosc_model_parameter_recipes' ) ) {
 				array(
 					'name'   => __( 'Tight and factual', 'flosc' ),
 					'why'    => __( 'Gemini keeps its sampling inside generationConfig rather than at the top level, so a whole block is set at once.', 'flosc' ),
-					'params' => "generationConfig: {\"temperature\":0.2,\"topP\":0.8}",
+					'params' => 'generationConfig: {"temperature":0.2,"topP":0.8}',
 					'models' => '',
 				),
 			),
@@ -530,7 +530,7 @@ if ( ! function_exists( 'flosc_format_model_parameter_value' ) ) {
 	/**
 	 * One parameter value, written the way a person would write it.
 	 *
-	 * var_export() on a float prints its full binary expansion — 0.9 comes back
+	 * Var_export() on a float prints its full binary expansion — 0.9 comes back
 	 * as 0.90000000000000002220446049250313080847263336181640625, which is the
 	 * same number and an unusable thing to show anybody. json_encode gives the
 	 * shortest decimal that round-trips, which is what was typed.

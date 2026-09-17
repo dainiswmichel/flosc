@@ -85,8 +85,8 @@ class FLOSC_Concierge {
 		// Step 2: a password gate is open for this session (keyword already hit).
 		$pending = get_transient( $gate_key );
 		if ( is_array( $pending ) && ! empty( $pending['id'] ) && isset( $messages[ $pending['id'] ] ) ) {
-			$msg = $messages[ $pending['id'] ];
-			$max = self::max_tries( $msg );
+			$msg      = $messages[ $pending['id'] ];
+			$max      = self::max_tries( $msg );
 			$password = (string) ( $msg[ self::PASSWORD_FIELD ] ?? '' );
 
 			if ( self::is_escape_request( $message ) ) {
@@ -96,7 +96,14 @@ class FLOSC_Concierge {
 			}
 
 			if ( self::keyword_hit( $message, (string) ( $msg['keywords'] ?? '' ) ) ) {
-				set_transient( $gate_key, array( 'id' => $pending['id'], 'tries' => 0 ), self::GATE_TTL );
+				set_transient(
+					$gate_key,
+					array(
+						'id'    => $pending['id'],
+						'tries' => 0,
+					),
+					self::GATE_TTL
+				);
 				return self::prompt( self::text( $msg, 'password_prompt', 'I’ve got something for you — what’s the password?' ) );
 			}
 
@@ -108,11 +115,11 @@ class FLOSC_Concierge {
 				delete_transient( $gate_key );
 				self::open_session( $session_key, $msg, 'revealing', true );
 				return array(
-					'content'          => trim( (string) ( $msg['content'] ?? '' ) ),
-					'user_autoprompts' => array(),
-					'phase_change'     => null,
-					'flosc_concierge'  => 'revealing',
-					'concierge_success'=> self::text( $msg, 'password_success', 'Password confirmed — here you go.' ),
+					'content'           => trim( (string) ( $msg['content'] ?? '' ) ),
+					'user_autoprompts'  => array(),
+					'phase_change'      => null,
+					'flosc_concierge'   => 'revealing',
+					'concierge_success' => self::text( $msg, 'password_success', 'Password confirmed — here you go.' ),
 				);
 			}
 
@@ -124,7 +131,14 @@ class FLOSC_Concierge {
 			if ( $tries >= $max ) {
 				delete_transient( $gate_key );
 			} else {
-				set_transient( $gate_key, array( 'id' => $pending['id'], 'tries' => $tries ), self::GATE_TTL );
+				set_transient(
+					$gate_key,
+					array(
+						'id'    => $pending['id'],
+						'tries' => $tries,
+					),
+					self::GATE_TTL
+				);
 			}
 			return self::prompt( $line );
 		}
@@ -142,7 +156,14 @@ class FLOSC_Concierge {
 			}
 			$password = self::normalize_password( (string) ( $msg[ self::PASSWORD_FIELD ] ?? '' ) );
 			if ( '' !== $password ) {
-				set_transient( $gate_key, array( 'id' => $id, 'tries' => 0 ), self::GATE_TTL );
+				set_transient(
+					$gate_key,
+					array(
+						'id'    => $id,
+						'tries' => 0,
+					),
+					self::GATE_TTL
+				);
 				return self::prompt( self::text( $msg, 'password_prompt', 'I’ve got something for you — what’s the password?' ) );
 			}
 			// No gate → open the concierge desk for this guest and hand off to the AI
@@ -176,24 +197,24 @@ class FLOSC_Concierge {
 	 *
 	 * @param array  $msg     IVR message.
 	 * @param string $key     Field key.
-	 * @param string $default Fallback text.
+	 * @param string $fallback Fallback text.
 	 * @return string
 	 */
-	protected static function text( $msg, $key, $default ) {
+	protected static function text( $msg, $key, $fallback ) {
 		$value = trim( (string) ( $msg[ $key ] ?? '' ) );
-		return '' !== $value ? $value : $default;
+		return '' !== $value ? $value : $fallback;
 	}
 
 	/**
 	 * Substitute {try} and {max} into a retry line.
 	 *
 	 * @param string $text Retry text.
-	 * @param int    $try  Which attempt this was.
+	 * @param int    $attempt  Which attempt this was.
 	 * @param int    $max  Allowed attempts.
 	 * @return string
 	 */
-	protected static function fill_counts( $text, $try, $max ) {
-		return str_replace( array( '{try}', '{max}' ), array( (string) $try, (string) $max ), (string) $text );
+	protected static function fill_counts( $text, $attempt, $max ) {
+		return str_replace( array( '{try}', '{max}' ), array( (string) $attempt, (string) $max ), (string) $text );
 	}
 
 	/**
@@ -204,11 +225,11 @@ class FLOSC_Concierge {
 	 * in. The final line is typically the "reach out to me directly" escape note.
 	 *
 	 * @param array $msg IVR message.
-	 * @param int   $try Which miss this is (1-based).
+	 * @param int   $attempt Which miss this is (1-based).
 	 * @param int   $max Allowed attempts.
 	 * @return string
 	 */
-	protected static function retry_line( $msg, $try, $max ) {
+	protected static function retry_line( $msg, $attempt, $max ) {
 		$list = array();
 		if ( isset( $msg['password_retry_messages'] ) && is_array( $msg['password_retry_messages'] ) ) {
 			foreach ( $msg['password_retry_messages'] as $line ) {
@@ -221,8 +242,8 @@ class FLOSC_Concierge {
 		if ( empty( $list ) ) {
 			$list = array( 'Hmm, not quite — that’s try {try} of {max}.' );
 		}
-		$idx = min( $try - 1, count( $list ) - 1 );
-		return self::fill_counts( $list[ $idx ], $try, $max );
+		$idx = min( $attempt - 1, count( $list ) - 1 );
+		return self::fill_counts( $list[ $idx ], $attempt, $max );
 	}
 
 	/**
@@ -342,7 +363,8 @@ class FLOSC_Concierge {
 		);
 	}
 
-	/* ===========================================================================
+	/*
+	===========================================================================
 	 * The open concierge desk (AI-hosted reveal)
 	 * ---------------------------------------------------------------------------
 	 * Once a guest clears the keyword (and any password), we don't dump the post's
@@ -383,13 +405,13 @@ class FLOSC_Concierge {
 				// reference every turn so the AI can quote facts (phone, email)
 				// EXACTLY and never invent them — while the guidance instructs it to
 				// reveal only 1–3 sentences per turn rather than paste the whole note.
-				'brief'       => (string) ( $msg['content'] ?? '' ),
-				'stage'       => $start_stage,
-				'deliver_now' => (bool) $deliver_now_once,
-				'delivery'    => (string) ( $msg['delivery_style'] ?? '' ),
-				'off_ramp_phrases' => (string) ( $msg['off_ramp_phrases'] ?? '' ),
+				'brief'              => (string) ( $msg['content'] ?? '' ),
+				'stage'              => $start_stage,
+				'deliver_now'        => (bool) $deliver_now_once,
+				'delivery'           => (string) ( $msg['delivery_style'] ?? '' ),
+				'off_ramp_phrases'   => (string) ( $msg['off_ramp_phrases'] ?? '' ),
 				'off_ramp_exactness' => self::off_ramp_exactness( (string) ( $msg['off_ramp_exactness'] ?? '' ) ),
-				'name'        => (string) ( $msg['name'] ?? '' ),
+				'name'               => (string) ( $msg['name'] ?? '' ),
 			),
 			self::OPEN_TTL
 		);
@@ -443,7 +465,7 @@ class FLOSC_Concierge {
 			$data['stage'] = 'offered';
 			set_transient( $key, $data, self::OPEN_TTL );
 			return $head
-				. "This is your FIRST reply. Greet the guest warmly by name and let them know the person who introduced you left a short, personal note for them. "
+				. 'This is your FIRST reply. Greet the guest warmly by name and let them know the person who introduced you left a short, personal note for them. '
 				. "Invite them to say whether they'd like to hear it. Reveal NONE of the note's content yet. End on an inviting question.";
 		}
 
@@ -454,7 +476,7 @@ class FLOSC_Concierge {
 				. "The guest has already passed access verification. In THIS reply, deliver the core content immediately. If the SOURCE contains a URL, provide that URL verbatim in this reply. Keep it concise and helpful; do not ask for more permission first.\n"
 				. "----- SOURCE (authoritative private reference — quote facts exactly, never paste wholesale) -----\n"
 				. trim( (string) $data['brief'] ) . "\n"
-				. "----- end SOURCE -----";
+				. '----- end SOURCE -----';
 		}
 
 		// Reveal stage: the AI gets the full SOURCE so every fact it states is
@@ -464,10 +486,11 @@ class FLOSC_Concierge {
 			. "ACCURACY IS ABSOLUTE: every fact you state — ESPECIALLY phone numbers and email addresses — must be copied VERBATIM from the SOURCE. Never invent, guess, alter, reformat, or round a number or address. When the guest asks for a contact detail, quote it EXACTLY as written below. If something is not in the SOURCE, say you don't have it — do not make anything up.\n"
 			. "----- SOURCE (authoritative private reference — quote facts exactly, never paste wholesale) -----\n"
 			. trim( (string) $data['brief'] ) . "\n"
-			. "----- end SOURCE -----";
+			. '----- end SOURCE -----';
 	}
 
-	/* ===========================================================================
+	/*
+	===========================================================================
 	 * Concierge POSTS → DB/IVR sync
 	 * ---------------------------------------------------------------------------
 	 * OpenClaw (or the admin) writes a private post in the concierge category; the
@@ -478,26 +501,26 @@ class FLOSC_Concierge {
 	 * ======================================================================== */
 
 	/** Default category that marks a concierge post. */
-	const CATEGORY = 'concierge';
-	const INTERNAL_PARENT_SLUG = 'flosc-internal';
+	const CATEGORY                      = 'concierge';
+	const INTERNAL_PARENT_SLUG          = 'flosc-internal';
 	const INTERNAL_CONCIERGE_CHILD_SLUG = 'flosc-internal-concierge';
 
 	/** Post-meta keys for the editable settings (the "FLOSC Concierge" meta box). */
 	const META = array(
-		'flow'      => '_flosc_concierge_flow',
-		'keyword'   => '_flosc_concierge_keyword',
-		'password'  => '_flosc_concierge_password',
-		'start'     => '_flosc_concierge_start_utc_mts',
-		'end'       => '_flosc_concierge_end_utc_mts',
-		'success'   => '_flosc_concierge_success',
-		'max_tries' => '_flosc_concierge_max_tries',
-		'retry'     => '_flosc_concierge_retry',
-		'delivery'  => '_flosc_concierge_delivery',
-		'off_ramp_phrases' => '_flosc_concierge_off_ramp_phrases',
+		'flow'               => '_flosc_concierge_flow',
+		'keyword'            => '_flosc_concierge_keyword',
+		'password'           => '_flosc_concierge_password',
+		'start'              => '_flosc_concierge_start_utc_mts',
+		'end'                => '_flosc_concierge_end_utc_mts',
+		'success'            => '_flosc_concierge_success',
+		'max_tries'          => '_flosc_concierge_max_tries',
+		'retry'              => '_flosc_concierge_retry',
+		'delivery'           => '_flosc_concierge_delivery',
+		'off_ramp_phrases'   => '_flosc_concierge_off_ramp_phrases',
 		'off_ramp_exactness' => '_flosc_concierge_off_ramp_exactness',
-		'expires'   => '_flosc_concierge_expires_utc_mts',
-		'params'    => '_flosc_concierge_parameters',
-		'instruct'  => '_flosc_concierge_instruction_template',
+		'expires'            => '_flosc_concierge_expires_utc_mts',
+		'params'             => '_flosc_concierge_parameters',
+		'instruct'           => '_flosc_concierge_instruction_template',
 	);
 
 	/**
@@ -523,20 +546,20 @@ class FLOSC_Concierge {
 			return is_string( $v ) ? $v : '';
 		};
 
-		$flow     = $meta( $post->ID, 'flow' );
-		$keyword  = $meta( $post->ID, 'keyword' );
-		$password = $meta( $post->ID, 'password' );
-		$success  = $meta( $post->ID, 'success' );
-		$retry    = $meta( $post->ID, 'retry' );
-		$delivery = $meta( $post->ID, 'delivery' );
-		$off_ramp_phrases = $meta( $post->ID, 'off_ramp_phrases' );
+		$flow               = $meta( $post->ID, 'flow' );
+		$keyword            = $meta( $post->ID, 'keyword' );
+		$password           = $meta( $post->ID, 'password' );
+		$success            = $meta( $post->ID, 'success' );
+		$retry              = $meta( $post->ID, 'retry' );
+		$delivery           = $meta( $post->ID, 'delivery' );
+		$off_ramp_phrases   = $meta( $post->ID, 'off_ramp_phrases' );
 		$off_ramp_exactness = $meta( $post->ID, 'off_ramp_exactness' );
-		$start    = $meta( $post->ID, 'start' );
-		$end      = $meta( $post->ID, 'end' );
-		$expires  = $meta( $post->ID, 'expires' );
-		$params   = $meta( $post->ID, 'params' );
-		$instruct = $meta( $post->ID, 'instruct' );
-		$max      = (int) $meta( $post->ID, 'max_tries' );
+		$start              = $meta( $post->ID, 'start' );
+		$end                = $meta( $post->ID, 'end' );
+		$expires            = $meta( $post->ID, 'expires' );
+		$params             = $meta( $post->ID, 'params' );
+		$instruct           = $meta( $post->ID, 'instruct' );
+		$max                = (int) $meta( $post->ID, 'max_tries' );
 
 		$deployment = self::label( $body, 'Deployment' );
 		if ( '' === $deployment ) {
@@ -553,9 +576,9 @@ class FLOSC_Concierge {
 
 		// OpenClaw fallback: resolve the flow for any field left blank in the meta box.
 		// Tried in order of how a person would name it:
-		//   1. an explicit .md filename in floscFlow/Flow/FlowName ("… (flow_ivr.md)")
-		//   2. the flow's NAME in floscFlow/Flow/FlowName (flow identity name)
-		//   3. the human-facing Deployment ("the WordPress host/chat", "flosc.ai")
+		// 1. an explicit .md filename in floscFlow/Flow/FlowName ("… (flow_ivr.md)")
+		// 2. the flow's NAME in floscFlow/Flow/FlowName (flow identity name)
+		// 3. the human-facing Deployment ("the WordPress host/chat", "flosc.ai").
 		if ( '' === $flow ) {
 			$flow = self::flow_file( $flow_hint );
 		}
@@ -608,31 +631,31 @@ class FLOSC_Concierge {
 		}
 
 		$parameters = self::parse_parameters_text( $params );
-		$content = self::content_to_deliver( $body );
-		$end = self::normalize_utc_mts( $end );
-		$start = self::normalize_utc_mts( $start );
-		$content = self::apply_template_parameters( $content, $parameters, $end );
-		$instruct = self::apply_template_parameters( (string) $instruct, $parameters, $end );
-		$expires = $end;
+		$content    = self::content_to_deliver( $body );
+		$end        = self::normalize_utc_mts( $end );
+		$start      = self::normalize_utc_mts( $start );
+		$content    = self::apply_template_parameters( $content, $parameters, $end );
+		$instruct   = self::apply_template_parameters( (string) $instruct, $parameters, $end );
+		$expires    = $end;
 
 		return array(
-			'flow'       => $flow,
-			'deployment' => self::label( $body, 'Deployment' ),
-			'keyword'    => $keyword,
-			'password'   => $password,
-			'success'    => $success,
-			'max_tries'  => $max > 0 ? $max : 3,
-			'retry'      => $retry,
-			'delivery'   => $delivery,
-			'off_ramp_phrases' => (string) $off_ramp_phrases,
-			'off_ramp_exactness' => (string) $off_ramp_exactness,
-			'start_utc_mts'   => $start,
-			'end_utc_mts'     => $end,
-			'expires_utc_mts' => $expires,
-			'parameters_text' => (string) $params,
-			'parameters' => $parameters,
+			'flow'                 => $flow,
+			'deployment'           => self::label( $body, 'Deployment' ),
+			'keyword'              => $keyword,
+			'password'             => $password,
+			'success'              => $success,
+			'max_tries'            => $max > 0 ? $max : 3,
+			'retry'                => $retry,
+			'delivery'             => $delivery,
+			'off_ramp_phrases'     => (string) $off_ramp_phrases,
+			'off_ramp_exactness'   => (string) $off_ramp_exactness,
+			'start_utc_mts'        => $start,
+			'end_utc_mts'          => $end,
+			'expires_utc_mts'      => $expires,
+			'parameters_text'      => (string) $params,
+			'parameters'           => $parameters,
 			'instruction_template' => (string) $instruct,
-			'content'    => $content,
+			'content'              => $content,
 		);
 	}
 
@@ -660,8 +683,8 @@ class FLOSC_Concierge {
 				continue;
 			}
 			$seen[ $name ] = true;
-			$opt   = get_option( 'flosc_flow_' . sanitize_key( pathinfo( $name, PATHINFO_FILENAME ) ), array() );
-			$label = ( is_array( $opt ) && ! empty( $opt['identity']['name'] ) ) ? $opt['identity']['name'] . ' (' . $name . ')' : $name;
+			$opt           = get_option( 'flosc_flow_' . sanitize_key( pathinfo( $name, PATHINFO_FILENAME ) ), array() );
+			$label         = ( is_array( $opt ) && ! empty( $opt['identity']['name'] ) ) ? $opt['identity']['name'] . ' (' . $name . ')' : $name;
 			if ( $name === $current ) {
 				$have_cur = true;
 			}
@@ -706,20 +729,20 @@ class FLOSC_Concierge {
 			return;
 		}
 		$map = array(
-			'flow'      => 'flosc_cncrg_flow',
-			'keyword'   => 'flosc_cncrg_keyword',
-			'password'  => 'flosc_cncrg_password',
-			'success'   => 'flosc_cncrg_success',
-			'max_tries' => 'flosc_cncrg_max_tries',
-			'retry'     => 'flosc_cncrg_retry',
-			'delivery'  => 'flosc_cncrg_delivery',
-			'off_ramp_phrases' => 'flosc_cncrg_off_ramp_phrases',
+			'flow'               => 'flosc_cncrg_flow',
+			'keyword'            => 'flosc_cncrg_keyword',
+			'password'           => 'flosc_cncrg_password',
+			'success'            => 'flosc_cncrg_success',
+			'max_tries'          => 'flosc_cncrg_max_tries',
+			'retry'              => 'flosc_cncrg_retry',
+			'delivery'           => 'flosc_cncrg_delivery',
+			'off_ramp_phrases'   => 'flosc_cncrg_off_ramp_phrases',
 			'off_ramp_exactness' => 'flosc_cncrg_off_ramp_exactness',
-			'start'     => 'flosc_cncrg_start_utc_mts',
-			'end'       => 'flosc_cncrg_end_utc_mts',
-			'expires'   => 'flosc_cncrg_expires_utc_mts',
-			'params'    => 'flosc_cncrg_parameters',
-			'instruct'  => 'flosc_cncrg_instruction_template',
+			'start'              => 'flosc_cncrg_start_utc_mts',
+			'end'                => 'flosc_cncrg_end_utc_mts',
+			'expires'            => 'flosc_cncrg_expires_utc_mts',
+			'params'             => 'flosc_cncrg_parameters',
+			'instruct'           => 'flosc_cncrg_instruction_template',
 		);
 		foreach ( $map as $key => $field ) {
 			if ( ! isset( $_POST[ $field ] ) ) {
@@ -752,9 +775,9 @@ class FLOSC_Concierge {
 		if ( ! $post instanceof WP_Post || ! self::is_concierge_post( $post ) ) {
 			return;
 		}
-		if ( in_array( (string) $post->post_status, array( 'publish', 'private' ), true ) ) {
-			// Keep syncing only from statuses that are intended to be live.
-		} else {
+		// Only a status meant to be live keeps its sync; anything else is
+		// removed from the index rather than left there stale.
+		if ( ! in_array( (string) $post->post_status, array( 'publish', 'private' ), true ) ) {
 			self::unsync_post( $post );
 			return;
 		}
@@ -773,11 +796,11 @@ class FLOSC_Concierge {
 			}
 		}
 
-		$fs = get_option( $flow_key, array() );
+		$fs       = get_option( $flow_key, array() );
 		$messages = flosc_flow_get_messages( $fs );
 		$phases   = flosc_flow_get_phases( $fs );
 		$styles   = flosc_flow_get_styles( $fs );
-		$id = self::post_message_id( $post );
+		$id       = self::post_message_id( $post );
 
 		$messages[ $id ] = array(
 			'name'                        => $id,
@@ -815,7 +838,7 @@ class FLOSC_Concierge {
 		if ( ! $post instanceof WP_Post ) {
 			return;
 		}
-		$c = self::config_from_post( $post );
+		$c        = self::config_from_post( $post );
 		$flow_key = self::flow_key( $c['flow'] ?? '' );
 		if ( '' === $flow_key ) {
 			$flow_key = self::flow_key( self::flow_file( self::label( (string) $post->post_content, 'floscFlow' ) ) );
@@ -823,11 +846,11 @@ class FLOSC_Concierge {
 		if ( '' === $flow_key ) {
 			return;
 		}
-		$fs = get_option( $flow_key, array() );
+		$fs       = get_option( $flow_key, array() );
 		$messages = flosc_flow_get_messages( $fs );
 		$phases   = flosc_flow_get_phases( $fs );
 		$styles   = flosc_flow_get_styles( $fs );
-		$id = self::post_message_id( $post );
+		$id       = self::post_message_id( $post );
 		if ( isset( $messages[ $id ] ) ) {
 			unset( $messages[ $id ] );
 			flosc_flow_set_runtime( $fs, $messages, $phases, $styles );
@@ -1039,7 +1062,7 @@ class FLOSC_Concierge {
 				continue;
 			}
 			list( $key, $value ) = array_map( 'trim', explode( '=', $line, 2 ) );
-			$key = sanitize_key( $key );
+			$key                 = sanitize_key( $key );
 			if ( '' === $key ) {
 				continue;
 			}
@@ -1055,8 +1078,8 @@ class FLOSC_Concierge {
 			return '';
 		}
 
-		$tokens = is_array( $params ) ? $params : array();
-		$tokens['utc_now_mts'] = self::utc_now_mts();
+		$tokens                    = is_array( $params ) ? $params : array();
+		$tokens['utc_now_mts']     = self::utc_now_mts();
 		$tokens['expires_utc_mts'] = (string) $expires_utc_mts;
 
 		foreach ( $tokens as $k => $v ) {
@@ -1088,12 +1111,12 @@ class FLOSC_Concierge {
 		}
 
 		if ( preg_match( '/^(\d{4})-(\d{2})m-(\d{2})d-T(\d{2})h:(\d{2})m:(\d{2})s$/', $value, $m ) ) {
-			$y = (int) $m[1];
+			$y  = (int) $m[1];
 			$mo = (int) $m[2];
-			$d = (int) $m[3];
-			$h = (int) $m[4];
+			$d  = (int) $m[3];
+			$h  = (int) $m[4];
 			$mi = (int) $m[5];
-			$s = (int) $m[6];
+			$s  = (int) $m[6];
 			if ( ! checkdate( $mo, $d, $y ) || $h > 23 || $mi > 59 || $s > 59 ) {
 				return null;
 			}
@@ -1101,9 +1124,9 @@ class FLOSC_Concierge {
 		}
 
 		if ( preg_match( '/^(\d{4})-(\d{2})m-(\d{2})d$/', $value, $m ) ) {
-			$y = (int) $m[1];
+			$y  = (int) $m[1];
 			$mo = (int) $m[2];
-			$d = (int) $m[3];
+			$d  = (int) $m[3];
 			if ( ! checkdate( $mo, $d, $y ) ) {
 				return null;
 			}

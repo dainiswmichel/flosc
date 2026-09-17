@@ -60,19 +60,19 @@ $code = (string) preg_replace( '#(^|\s)//.*$#m', '$1', (string) $code );
 // waits on the shelf it will be written under.
 echo "The thirteen headings, in density order\n";
 $stations = array(
-	'Identity and Role'                    => 6,
-	'Philosophy and Values'                => 12,
-	'Boundaries and Prohibitions'          => 18,
-	'Knowledge, Doubt and Correction'      => 24,
-	'Opinions and Preferences'             => 30,
-	'Tone and Communication Style'         => 40,
-	'Stance Toward the Human'              => 48,
-	'Behavior in Ambiguity'                => 56,
-	'Adaptation'                           => 62,
-	'Resourcefulness'                      => 68,
-	'Decisions including Infrequent Cases' => 74,
-	'Banned Words and Fillers to Avoid'    => 84,
-	'Output and Delivery'                  => 94,
+	'Identity and Role'                           => 6,
+	'Mission, Philosophy and Values'              => 12,
+	'Boundaries and Prohibitions'                 => 18,
+	'Knowledge, Doubt and Correction'             => 24,
+	'Opinions, Traits and Preferences'            => 30,
+	'Tone and Communication Style'                => 40,
+	'Stance Toward the Human'                     => 48,
+	'Decisions and Behavior in Ambiguity'         => 56,
+	'Adaptation, Exceptions and Infrequent Cases' => 62,
+	'Workflow and Resourcefulness'                => 68,
+	'Banned Words and Fillers to Avoid'           => 74,
+	'Prosody and Syntax'                          => 84,
+	'Output and Delivery'                         => 94,
 );
 preg_match( '/const SOUL_LAYERS = \[(.*?)\n  \];/s', $code, $m );
 $layers = isset( $m[1] ) ? $m[1] : '';
@@ -85,6 +85,11 @@ foreach ( $stations as $label => $density ) {
 	if ( $found ) { $seen[] = $label; }
 }
 ok( 'thirteen and no more', substr_count( $layers, 'label: "' ), 13 );
+/* Two at one density would tie, and a tie sorts on the alphabet — which is how
+   AI Provider Parameters used to land above Output and Delivery. */
+preg_match_all( '/density: ([0-9]+) \}/', $layers, $flosc_dens );
+ok( '  and no two share a density', count( $flosc_dens[1] ), count( array_unique( $flosc_dens[1] ) ) );
+ok( '  in ascending order', array_map( 'intval', $flosc_dens[1] ), array_values( $stations ) );
 
 echo "\nThe palette's shelves are those headings\n";
 ok( 'derived from the container list, not a second array',
@@ -95,21 +100,37 @@ ok( '  and never to a column that does not exist',
 	strpos( $code, 'return categoryExists(mapped) ? mapped : firstCategoryId();' ) !== false, true );
 
 echo "\nThe gain ladder\n";
+/* Thirteen rungs, paired around the hinge. Every word names a frequency; none
+   names a comparison or an attitude, which is what "less often than not" and
+   "no preference" were doing. Uneven spacing is deliberate — a rung sits where
+   a word actually lives, and gainWord() takes the nearest. */
 $rungs = array(
 	-100 => 'never',
-	-75  => 'almost never',
-	-50  => 'rarely',
-	-25  => 'less often than not',
-	0    => 'no preference',
-	25   => 'more often than not',
-	50   => 'often',
-	75   => 'usually',
+	-90  => 'rarely',
+	-80  => 'infrequently',
+	-60  => 'seldom',
+	-50  => 'sporadically',
+	-30  => 'occasionally',
+	0    => 'sometimes',
+	30   => 'typically',
+	50   => 'usually',
+	60   => 'regularly',
+	80   => 'frequently',
+	90   => 'consistently',
 	100  => 'always',
 );
 foreach ( $rungs as $gain => $word ) {
 	ok( sprintf( '  %+5d reads "%s"', $gain, $word ),
 		strpos( $code, '{ g: ' . $gain . ', word: "' . $word . '" }' ) !== false, true );
 }
+/* Every word a shipped profile uses has to be a rung. "often" was written into
+   Dad Joke Dan by hand and is not on the ladder any more, so the designer
+   would never produce it and a Save would silently change the document. */
+$flosc_lib_src = (string) file_get_contents( dirname( __DIR__ ) . '/includes/flosc-personality-library.php' );
+preg_match_all( "/'frequency: ([a-z ]+)'/", $flosc_lib_src, $flosc_used );
+$flosc_unknown = array_values( array_unique( array_diff( $flosc_used[1], $rungs ) ) );
+ok( '  every word the shipped profiles use is a rung', $flosc_unknown, array() );
+
 
 echo "\nnever and always are reserved for the invariants\n";
 // A value short of the extreme means an exception exists. A word that reads as
@@ -226,11 +247,15 @@ foreach ( $shipped as $body ) {
 			continue;
 		}
 		// "# 40 Tone and Communication Style" — the density leads the heading.
-		if ( ! preg_match( '/^# [0-9]+ (.+)$/', $line, $h ) || ! isset( $stations[ trim( $h[1] ) ] ) ) {
+		/* Personalization is the fourteenth slot. It is not seeded in
+		   SOUL_LAYERS — the compiler pushes it in at density 1 as the reserved
+		   place for Sticky for User — so the station list does not carry it. */
+		if ( ! preg_match( '/^# [0-9]+ (.+)$/', $line, $h )
+			|| ( ! isset( $stations[ trim( $h[1] ) ] ) && 'Personalization' !== trim( $h[1] ) ) ) {
 			$bad[] = $line;
 		}
 	}
-	ok( $who . ': every heading is one of the thirteen', $bad, array() );
+	ok( $who . ': every heading is one of the fourteen', $bad, array() );
 }
 
 echo $fail ? "\n$fail FAILURES\n" : "\nThe document keeps the shape it ships with\n";

@@ -137,8 +137,8 @@ class FLOSC_Starter_Packs {
 			);
 		}
 
-		$pack   = self::get( $slug );
-		$record = $state[ $slug ];
+		$pack    = self::get( $slug );
+		$record  = $state[ $slug ];
 		$missing = array();
 		$present = array();
 
@@ -282,7 +282,8 @@ class FLOSC_Starter_Packs {
 		return trailingslashit( (string) ( $uploads['basedir'] ?? '' ) ) . 'flosc-catalogs/';
 	}
 
-	/* ------------------------------------------------------------------ *
+	/*
+	------------------------------------------------------------------ *
 	 * Install
 	 * ------------------------------------------------------------------ */
 
@@ -538,7 +539,7 @@ class FLOSC_Starter_Packs {
 
 			$term_id = (int) $existing->term_id;
 
-			if ( $pack['slug'] === get_term_meta( $term_id, self::TERM_STAMP, true ) ) {
+			if ( get_term_meta( $term_id, self::TERM_STAMP, true ) === $pack['slug'] ) {
 				$adopted[ $slug ] = $term_id;
 				continue;
 			}
@@ -596,9 +597,9 @@ class FLOSC_Starter_Packs {
 					return self::result( false, $term->get_error_message() ) + array( 'record' => array( 'category_ids' => $created ) );
 				}
 
-				$term_id            = (int) $term['term_id'];
-				$term_ids[ $slug ]  = $term_id;
-				$created[]          = $term_id;
+				$term_id           = (int) $term['term_id'];
+				$term_ids[ $slug ] = $term_id;
+				$created[]         = $term_id;
 
 				add_term_meta( $term_id, self::TERM_STAMP, $pack['slug'], true );
 
@@ -697,13 +698,21 @@ class FLOSC_Starter_Packs {
 		$ids = array();
 
 		if ( empty( $pack['assets'] ) || ! is_array( $pack['assets'] ) ) {
-			return array( 'ok' => true, 'message' => '', 'ids' => $ids );
+			return array(
+				'ok'      => true,
+				'message' => '',
+				'ids'     => $ids,
+			);
 		}
 
 		$uploads = wp_upload_dir();
 
 		if ( ! empty( $uploads['error'] ) ) {
-			return array( 'ok' => false, 'message' => (string) $uploads['error'], 'ids' => $ids );
+			return array(
+				'ok'      => false,
+				'message' => (string) $uploads['error'],
+				'ids'     => $ids,
+			);
 		}
 
 		foreach ( $pack['assets'] as $asset ) {
@@ -749,7 +758,11 @@ class FLOSC_Starter_Packs {
 
 			if ( is_wp_error( $post_id ) ) {
 				wp_delete_file( $target );
-				return array( 'ok' => false, 'message' => $post_id->get_error_message(), 'ids' => $ids );
+				return array(
+					'ok'      => false,
+					'message' => $post_id->get_error_message(),
+					'ids'     => $ids,
+				);
 			}
 
 			$ids[] = (int) $post_id;
@@ -1222,7 +1235,7 @@ class FLOSC_Starter_Packs {
 		}
 
 		// --- categories and posts ---
-		$restored = self::repair_content( $pack, $record );
+		$restored = self::repair_content( $pack );
 
 		if ( ! $restored['ok'] ) {
 			return self::result( false, $restored['message'] );
@@ -1316,25 +1329,36 @@ class FLOSC_Starter_Packs {
 	 * items are created again.
 	 *
 	 * @param array<string,mixed> $pack   Manifest.
-	 * @param array<string,mixed> $record Install record.
 	 * @return array{ok:bool,message:string,record:array<string,mixed>}
 	 */
-	private static function repair_content( $pack, $record ) {
+	private static function repair_content( $pack ) {
 		if ( empty( $pack['content']['file'] ) ) {
-			return array( 'ok' => true, 'message' => '', 'record' => array() );
+			return array(
+				'ok'      => true,
+				'message' => '',
+				'record'  => array(),
+			);
 		}
 
 		$source = $pack['dir'] . basename( (string) $pack['content']['file'] );
 
 		if ( ! is_readable( $source ) ) {
-			return array( 'ok' => false, 'message' => __( 'The pack is missing its content file.', 'flosc' ), 'record' => array() );
+			return array(
+				'ok'      => false,
+				'message' => __( 'The pack is missing its content file.', 'flosc' ),
+				'record'  => array(),
+			);
 		}
 
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reading a file shipped inside the plugin.
 		$doc = json_decode( (string) file_get_contents( $source ), true );
 
 		if ( ! is_array( $doc ) || empty( $doc['posts'] ) ) {
-			return array( 'ok' => false, 'message' => __( 'The pack content file could not be read.', 'flosc' ), 'record' => array() );
+			return array(
+				'ok'      => false,
+				'message' => __( 'The pack content file could not be read.', 'flosc' ),
+				'record'  => array(),
+			);
 		}
 
 		// Which categories still exist, by slug.
@@ -1457,10 +1481,15 @@ class FLOSC_Starter_Packs {
 			);
 		}
 
-		return array( 'ok' => true, 'message' => $message, 'record' => array() );
+		return array(
+			'ok'      => true,
+			'message' => $message,
+			'record'  => array(),
+		);
 	}
 
-	/* ------------------------------------------------------------------ *
+	/*
+	------------------------------------------------------------------ *
 	 * Personalities
 	 * ------------------------------------------------------------------ */
 
@@ -1568,7 +1597,7 @@ class FLOSC_Starter_Packs {
 					$bag  = maybe_unserialize( $row['option_value'] ?? '' );
 					$stem = substr( $name, strlen( 'flosc_flow_' ) );
 
-					if ( is_array( $bag ) && $id === sanitize_key( (string) ( $bag['personality_library_id'] ?? '' ) ) ) {
+					if ( is_array( $bag ) && sanitize_key( (string) ( $bag['personality_library_id'] ?? '' ) ) === $id ) {
 						$label = self::flow_label( $stem, $bag );
 
 						if ( '' !== $label ) {
@@ -1593,7 +1622,7 @@ class FLOSC_Starter_Packs {
 
 			$bag = get_option( 'flosc_flow_' . $stem, array() );
 
-			if ( is_array( $bag ) && $id === sanitize_key( (string) ( $bag['personality_library_id'] ?? '' ) ) ) {
+			if ( is_array( $bag ) && sanitize_key( (string) ( $bag['personality_library_id'] ?? '' ) ) === $id ) {
 				$label = self::flow_label( $stem, $bag );
 
 				if ( '' !== $label ) {
@@ -1825,7 +1854,8 @@ class FLOSC_Starter_Packs {
 		);
 	}
 
-	/* ------------------------------------------------------------------ *
+	/*
+	------------------------------------------------------------------ *
 	 * Sample flows
 	 * ------------------------------------------------------------------ */
 
@@ -1839,7 +1869,7 @@ class FLOSC_Starter_Packs {
 	 * @return array<string,array<string,mixed>>
 	 */
 	public static function sample_flows() {
-		$out    = array();
+		$out     = array();
 		$shipped = FLOSC_PLUGIN_DIR . 'ai_configuration_files/';
 		$files   = glob( $shipped . '*_ivr.md' );
 
@@ -1970,7 +2000,8 @@ class FLOSC_Starter_Packs {
 		);
 	}
 
-	/* ------------------------------------------------------------------ *
+	/*
+	------------------------------------------------------------------ *
 	 * Uninstall
 	 * ------------------------------------------------------------------ */
 
@@ -2024,12 +2055,12 @@ class FLOSC_Starter_Packs {
 			$slug  = (string) $record['pack_slug'];
 			$found = get_posts(
 				array(
-					'post_type'      => 'post',
-					'post_status'    => 'any',
-					'numberposts'    => -1,
-					'fields'         => 'ids',
-					'meta_key'       => self::POST_STAMP, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- Bounded, admin-only, runs once.
-					'meta_value'     => $slug,            // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- See above.
+					'post_type'   => 'post',
+					'post_status' => 'any',
+					'numberposts' => -1,
+					'fields'      => 'ids',
+					'meta_key'    => self::POST_STAMP, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- Bounded, admin-only, runs once.
+					'meta_value'  => $slug,            // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- See above.
 				)
 			);
 

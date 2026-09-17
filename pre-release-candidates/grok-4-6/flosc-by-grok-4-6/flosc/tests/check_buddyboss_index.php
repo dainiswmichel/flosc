@@ -21,6 +21,26 @@ if ( PHP_SAPI !== 'cli' ) {
 	exit;
 }
 
+if ( ! function_exists( 'flosc_nows' ) ) {
+	/**
+	 * Strip every whitespace character.
+	 *
+	 * Source-text assertions below compare code, not the way it is laid out. A
+	 * WordPress Coding Standards pass reformatted the plugin -- tabs for spaces,
+	 * spaces inside call parentheses, realigned array arrows -- and every literal
+	 * match went red on behaviour that had not changed. Both sides of those
+	 * comparisons now pass through here, so the assertion is the same and the
+	 * formatting no longer decides it. Assertions that use a regular expression
+	 * are deliberately left reading the raw source.
+	 *
+	 * @param string $s Source text.
+	 * @return string
+	 */
+	function flosc_nows( $s ) {
+		return (string) preg_replace( '/\s+/', '', (string) $s );
+	}
+}
+
 $root = dirname( __DIR__ );
 $fail = 0;
 
@@ -45,7 +65,7 @@ ok( '  it accepts kind:id',
 ok( 'load() no longer drops non-numeric keys',
 	(bool) preg_match( '/\$id = isset\( \$row\[.post_id.\] \).*\(int\) \$key;\s*if \( \$id <= 0 \)/s', $index ), false );
 ok( 'every row carries an id and a kind',
-	strpos( $index, "'kind'             => 'post'," ) !== false, true );
+	strpos( flosc_nows( $index ), flosc_nows( "'kind'             => 'post',"  )) !== false, true );
 
 // Grok's guide flagged load(); these three are the rest of the same tail.
 echo "\nAnd the other three places that keyed on an int\n";
@@ -70,7 +90,7 @@ echo "\nThe catalogue reaches the model every turn\n";
 ok( 'the index can format it',
 	strpos( $index, 'public function format_groups_for_ai(' ) !== false, true );
 ok( 'the chatpack asks for it',
-	strpos( $pack, 'format_groups_for_ai($flosc_group_flow, $flosc_group_tier)' ) !== false, true );
+	strpos( flosc_nows( $pack ), flosc_nows( 'format_groups_for_ai($flosc_group_flow, $flosc_group_tier)'  )) !== false, true );
 ok( '  under its own heading',
 	strpos( $pack, '## 5c. GROUPS' ) !== false, true );
 ok( 'and it is empty when the flow does not index groups',

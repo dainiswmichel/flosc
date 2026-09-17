@@ -206,7 +206,7 @@ if ( ! function_exists( 'flosc_mts_utc' ) ) {
 		// that names a zone it is not in is worse than one that names none.
 		// Where the check cannot be satisfied the separator is a bare T, which
 		// marks the boundary without claiming a zone.
-		$zone = ( gmdate( 'e', $secs ) === 'UTC' || 0 === (int) gmdate( 'Z', $secs ) ) ? 'UTC' : 'T';
+		$zone = ( 'UTC' === gmdate( 'e', $secs ) || 0 === (int) gmdate( 'Z', $secs ) ) ? 'UTC' : 'T';
 
 		return gmdate( 'Y\y-m\m-d\d-', $secs )
 			. $zone . '-'
