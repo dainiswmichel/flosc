@@ -9,6 +9,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC First Party Authentication behavior and the WordPress services used by its methods.
+ */
 class FLOSC_First_Party_Authentication {
 
 	/**
@@ -23,11 +26,19 @@ class FLOSC_First_Party_Authentication {
 	 */
 	private $flosc_token_auth_used = false;
 
-	public function __construct( $flosc ) {
+		/**
+	 * Coordinate the construct behavior implemented by this code path.
+	 *
+	 * @param mixed $flosc Input consumed by the Coordinate the construct behavior implemented by this code path. operation.
+	 */
+public function __construct( $flosc ) {
 		$this->flosc = $flosc;
 	}
 
 	/**
+ * Resolve the current token provider value from the available WordPress and flow state.
+ *
+ * @return mixed Result produced by the token provider operation.
 	 */
 	private function get_token_provider() {
 		$sale = method_exists( $this->flosc, 'sale' ) ? $this->flosc->sale() : null;
@@ -35,6 +46,8 @@ class FLOSC_First_Party_Authentication {
 	}
 
 	/**
+ * Coordinate the mark flosc token auth used behavior implemented by this code path.
+ *
 	 */
 	public function mark_flosc_token_auth_used() {
 		$this->flosc_token_auth_used = true;
@@ -63,7 +76,13 @@ class FLOSC_First_Party_Authentication {
 		return $user;
 	}
 
-	public function handle_user_registration( $user_id ) {
+		/**
+	 * Coordinate the user registration behavior implemented by this code path.
+	 *
+	 * @param mixed $user_id WordPress user ID whose Coordinate the user registration behavior implemented by this code path. state is being processed.
+	 * @return mixed Result produced by the user registration operation.
+	 */
+public function handle_user_registration( $user_id ) {
 		// Pending email registrants receive tokens only after verification/activation.
 		// Flag is set on the framework instance by MagicLink / email registration paths.
 		if ( ! empty( $this->flosc->flosc_skip_registration_token_grants ) ) {
@@ -104,6 +123,8 @@ class FLOSC_First_Party_Authentication {
 
 	/**
 	 * Handle user login - process pre-login quiz scores.
+ * @param mixed $user_login Input consumed by the Persist the user login state in Word Press storage. operation.
+ * @param mixed $user Input consumed by the Persist the user login state in Word Press storage. operation.
 	 */
 	public function handle_user_login( $user_login, $user ) {
 		$token_provider = $this->get_token_provider();
@@ -226,6 +247,10 @@ class FLOSC_First_Party_Authentication {
 	 * Only redirects to FLOSC app when there's a clear FLOSC context.
 	 *
 	 * @since 9.5.7
+ * @param mixed $redirect_to Input consumed by the Coordinate the login redirect behavior implemented by this code path. operation.
+ * @param mixed $requested_redirect_to Input consumed by the Coordinate the login redirect behavior implemented by this code path. operation.
+ * @param mixed $user Input consumed by the Coordinate the login redirect behavior implemented by this code path. operation.
+ * @return mixed Result produced by the login redirect operation.
 	 */
 	public function handle_login_redirect( $redirect_to, $requested_redirect_to, $user ) {
 		$app_slug = get_option( 'flosc_app_slug', 'flosc' );
@@ -242,7 +267,7 @@ class FLOSC_First_Party_Authentication {
 		} else {
 			$dest_user_id = ( $user instanceof WP_User ) ? (int) $user->ID : 0;
 			$flow_count   = 0;
-			// is_callable() is visibility-aware: the builder is private, so a
+			// is_callable() is visibility-aware: the builder is private, so a.
 			// Cross-class call is intentionally skipped (no fatal) until the.
 			// method becomes callable. Multi-flow routing stays inert meanwhile.
 			if ( $dest_user_id > 0 && is_callable( array( $this->flosc, 'flosc_build_user_flow_statuses' ) ) ) {
@@ -318,6 +343,8 @@ class FLOSC_First_Party_Authentication {
 	 * V1.4.9: Custom domain support.
 	 *
 	 * @since 9.5.7
+ * @param mixed $redirect Input consumed by the Coordinate the woocommerce login redirect behavior implemented by this code path. operation.
+ * @return mixed Result produced by the woocommerce login redirect operation.
 	 */
 	public function handle_woocommerce_login_redirect( $redirect ) {
 		$app_slug = get_option( 'flosc_app_slug', 'flosc' );
@@ -562,6 +589,7 @@ class FLOSC_First_Party_Authentication {
 	 *
 	 * @param string $token The auth token.
 	 * @param int    $ttl   Lifetime in seconds.
+ * @return mixed Result produced by the auth cookie operation.
 	 */
 	public function set_flosc_auth_cookie( $token, $ttl = DAY_IN_SECONDS ) {
 		if ( headers_sent() ) {
@@ -691,6 +719,7 @@ class FLOSC_First_Party_Authentication {
 	 *
 	 * @param string $flow_id Normalized flow id/stem.
 	 * @since 10.0.0
+ * @return mixed Result produced by the entry flow cookie operation.
 	 */
 	public function set_entry_flow_cookie( $flow_id ) {
 		if ( headers_sent() ) {
@@ -720,6 +749,8 @@ class FLOSC_First_Party_Authentication {
 
 	/**
 	 * Action: wp_logout — Clear FLOSC auth token + entry-flow recall cookies.
+ * @param mixed $user_id WordPress user ID whose Coordinate the clear flosc auth token behavior implemented by this code path. state is being processed.
+ * @return mixed Result produced by the clear flosc auth token operation.
 	 */
 	public function clear_flosc_auth_token( $user_id = 0 ) {
 		// Logging out has to end the session everywhere, not only in this.

@@ -27,6 +27,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC Concierge behavior and the WordPress services used by its methods.
+ */
 class FLOSC_Concierge {
 
 	/**
@@ -172,7 +175,7 @@ class FLOSC_Concierge {
 				return self::prompt( self::text( $msg, 'password_prompt', 'I’ve got something for you — what’s the password?' ) );
 			}
 			// No gate → open the concierge desk for this guest and hand off to the AI.
-			// path (return null, no short-circuit). The AI then hosts the reveal in
+			// path (return null, no short-circuit). The AI then hosts the reveal in.
 			// its own voice, offer by offer, using the desk's brief (active_guidance).
 			// There is deliberately NO canned-dump fallback: dumping the raw brief is.
 			// exactly the behaviour we must never produce.
@@ -385,6 +388,10 @@ class FLOSC_Concierge {
 	 * ======================================================================== */
 
 	/**
+ * Coordinate the open key behavior implemented by this code path.
+ *
+ * @param mixed $session_key Name or key used to select the Coordinate the open key behavior implemented by this code path. value.
+ * @return mixed Result produced by the open key operation.
 	 */
 	protected static function open_key( $session_key ) {
 		return 'flosc_concierge_open_' . md5( (string) $session_key );
@@ -424,6 +431,10 @@ class FLOSC_Concierge {
 	}
 
 	/**
+ * Determine whether the current state satisfies active session.
+ *
+ * @param mixed $session_key Name or key used to select the Determine whether the current state satisfies active session. value.
+ * @return bool Whether active session applies to the current state.
 	 */
 	public static function has_active_session( $session_key ) {
 		$data = get_transient( self::open_key( $session_key ) );
@@ -678,7 +689,7 @@ class FLOSC_Concierge {
 		$c = self::config_from_post( $post );
 		wp_nonce_field( 'flosc_concierge_meta', 'flosc_concierge_nonce' );
 		// Styles for .flosc-cncrg-* live on the 'flosc-metabox' handle, added in.
-		// enqueue_admin_assets() during admin_enqueue_scripts — the only moment
+		// enqueue_admin_assets() during admin_enqueue_scripts — the only moment.
 		// inline style data still reaches the page (see the §12 note there).
 		echo '<div class="flosc-cncrg-row"><label>Flow</label><select name="flosc_cncrg_flow">';
 		$current  = $c['flow'];
@@ -914,6 +925,10 @@ class FLOSC_Concierge {
 	}
 
 	/**
+ * Determine whether the current state satisfies concierge post.
+ *
+ * @param mixed $post Input consumed by the Determine whether the current state satisfies concierge post. operation.
+ * @return bool Whether concierge post applies to the current state.
 	 */
 	public static function is_concierge_post( $post ) {
 		$post = get_post( $post );
@@ -947,6 +962,10 @@ class FLOSC_Concierge {
 	}
 
 	/**
+ * Coordinate the post message id behavior implemented by this code path.
+ *
+ * @param mixed $post Input consumed by the Coordinate the post message id behavior implemented by this code path. operation.
+ * @return mixed Result produced by the post message id operation.
 	 */
 	protected static function post_message_id( $post ) {
 		$slug = ( '' !== $post->post_name ) ? $post->post_name : ( 'post' . $post->ID );
@@ -954,6 +973,10 @@ class FLOSC_Concierge {
 	}
 
 	/**
+ * Coordinate the flow key behavior implemented by this code path.
+ *
+ * @param mixed $flow_file Filesystem value identifying the file used by the Coordinate the flow key behavior implemented by this code path. operation.
+ * @return mixed Result produced by the flow key operation.
 	 */
 	protected static function flow_key( $flow_file ) {
 		$flow_file = (string) $flow_file;
@@ -964,6 +987,10 @@ class FLOSC_Concierge {
 	}
 
 	/**
+ * Coordinate the flow file behavior implemented by this code path.
+ *
+ * @param mixed $value Value consumed or normalized by the Coordinate the flow file behavior implemented by this code path. operation.
+ * @return mixed Result produced by the flow file operation.
 	 */
 	protected static function flow_file( $value ) {
 		if ( preg_match( '/([A-Za-z0-9_\-]+\.md)\b/i', (string) $value, $m ) ) {
@@ -1036,6 +1063,11 @@ class FLOSC_Concierge {
 	}
 
 	/**
+ * Coordinate the label behavior implemented by this code path.
+ *
+ * @param mixed $body Input consumed by the Coordinate the label behavior implemented by this code path. operation.
+ * @param mixed $label Input consumed by the Coordinate the label behavior implemented by this code path. operation.
+ * @return mixed Result produced by the label operation.
 	 */
 	protected static function label( $body, $label ) {
 		$pattern = '/^[ \t>*_\-]*' . preg_quote( $label, '/' ) . '[ \t]*:[ \t]*(.+?)[ \t]*$/mi';
@@ -1068,6 +1100,10 @@ class FLOSC_Concierge {
 	}
 
 	/**
+ * Coordinate the parse parameters text behavior implemented by this code path.
+ *
+ * @param mixed $text Input consumed by the Coordinate the parse parameters text behavior implemented by this code path. operation.
+ * @return mixed Result produced by the parse parameters text operation.
 	 */
 	protected static function parse_parameters_text( $text ) {
 		$params = array();
@@ -1087,6 +1123,12 @@ class FLOSC_Concierge {
 	}
 
 	/**
+ * Coordinate the apply template parameters behavior implemented by this code path.
+ *
+ * @param mixed $text Input consumed by the Coordinate the apply template parameters behavior implemented by this code path. operation.
+ * @param mixed $params Input consumed by the Coordinate the apply template parameters behavior implemented by this code path. operation.
+ * @param mixed $expires_utc_mts Input consumed by the Coordinate the apply template parameters behavior implemented by this code path. operation.
+ * @return mixed Result produced by the apply template parameters operation.
 	 */
 	protected static function apply_template_parameters( $text, $params, $expires_utc_mts = '' ) {
 		$text = (string) $text;
@@ -1106,12 +1148,19 @@ class FLOSC_Concierge {
 	}
 
 	/**
+ * Coordinate the utc now mts behavior implemented by this code path.
+ *
+ * @return mixed Result produced by the utc now mts operation.
 	 */
 	protected static function utc_now_mts() {
 		return gmdate( 'Y' ) . '-' . gmdate( 'm' ) . 'm-' . gmdate( 'd' ) . 'd-T' . gmdate( 'H' ) . 'h:' . gmdate( 'i' ) . 'm:' . gmdate( 's' ) . 's';
 	}
 
 	/**
+ * Normalize the input into the canonical form required for normalize utc mts.
+ *
+ * @param mixed $value Value consumed or normalized by the Normalize the input into the canonical form required for normalize utc mts. operation.
+ * @return mixed Result produced by the normalize utc mts operation.
 	 */
 	protected static function normalize_utc_mts( $value ) {
 		$ts = self::utc_mts_to_unix( (string) $value );
@@ -1122,6 +1171,10 @@ class FLOSC_Concierge {
 	}
 
 	/**
+ * Coordinate the utc mts to unix behavior implemented by this code path.
+ *
+ * @param mixed $value Value consumed or normalized by the Coordinate the utc mts to unix behavior implemented by this code path. operation.
+ * @return mixed Result produced by the utc mts to unix operation.
 	 */
 	protected static function utc_mts_to_unix( $value ) {
 		$value = trim( (string) $value );
@@ -1156,6 +1209,10 @@ class FLOSC_Concierge {
 	}
 
 	/**
+ * Determine whether the current state satisfies expired.
+ *
+ * @param mixed $msg Input consumed by the Determine whether the current state satisfies expired. operation.
+ * @return bool Whether expired applies to the current state.
 	 */
 	protected static function is_expired( $msg ) {
 		$expires = trim( (string) ( $msg['end_utc_mts'] ?? ( $msg['expires_utc_mts'] ?? '' ) ) );
@@ -1170,6 +1227,10 @@ class FLOSC_Concierge {
 	}
 
 	/**
+ * Determine whether the current state satisfies active now.
+ *
+ * @param mixed $msg Input consumed by the Determine whether the current state satisfies active now. operation.
+ * @return bool Whether active now applies to the current state.
 	 */
 	protected static function is_active_now( $msg ) {
 		$start = trim( (string) ( $msg['start_utc_mts'] ?? '' ) );
@@ -1188,6 +1249,11 @@ class FLOSC_Concierge {
 	}
 
 	/**
+ * Coordinate the content block behavior implemented by this code path.
+ *
+ * @param mixed $body Input consumed by the Coordinate the content block behavior implemented by this code path. operation.
+ * @param mixed $label Input consumed by the Coordinate the content block behavior implemented by this code path. operation.
+ * @return mixed Result produced by the content block operation.
 	 */
 	protected static function content_block( $body, $label ) {
 		$pattern = '/^[ \t>*_\-]*' . preg_quote( $label, '/' ) . '[ \t]*:[ \t]*/mi';
@@ -1198,6 +1264,10 @@ class FLOSC_Concierge {
 	}
 
 	/**
+ * Coordinate the unquote behavior implemented by this code path.
+ *
+ * @param mixed $value Value consumed or normalized by the Coordinate the unquote behavior implemented by this code path. operation.
+ * @return mixed Result produced by the unquote operation.
 	 */
 	protected static function unquote( $value ) {
 		$value = trim( (string) $value );
@@ -1211,7 +1281,13 @@ class FLOSC_Concierge {
 		return $value;
 	}
 
-	private static function off_ramp_exactness( $mode ) {
+		/**
+	 * Coordinate the off ramp exactness behavior implemented by this code path.
+	 *
+	 * @param mixed $mode Input consumed by the Coordinate the off ramp exactness behavior implemented by this code path. operation.
+	 * @return mixed Result produced by the off ramp exactness operation.
+	 */
+private static function off_ramp_exactness( $mode ) {
 		$mode = sanitize_key( (string) $mode );
 		if ( ! in_array( $mode, array( 'flexible', 'preferred', 'exact' ), true ) ) {
 			$mode = 'preferred';
@@ -1219,7 +1295,14 @@ class FLOSC_Concierge {
 		return $mode;
 	}
 
-	private static function off_ramp_guidance( $phrases_text, $exactness ) {
+		/**
+	 * Coordinate the off ramp guidance behavior implemented by this code path.
+	 *
+	 * @param mixed $phrases_text Input consumed by the Coordinate the off ramp guidance behavior implemented by this code path. operation.
+	 * @param mixed $exactness Input consumed by the Coordinate the off ramp guidance behavior implemented by this code path. operation.
+	 * @return mixed Result produced by the off ramp guidance operation.
+	 */
+private static function off_ramp_guidance( $phrases_text, $exactness ) {
 		$phrases = array();
 		foreach ( preg_split( '/\r\n|\r|\n/', (string) $phrases_text ) as $line ) {
 			$line = trim( (string) $line );
