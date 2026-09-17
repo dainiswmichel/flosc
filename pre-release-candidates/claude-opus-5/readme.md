@@ -1,90 +1,133 @@
-# FLOSC 8.0.0 — candidate v70
+# FLOSC 8.0.0 — candidate v75
 
     artifact   flosc.zip
-    sha256     98e99e683bdcbecb5be5188b2a9c8a33ba49d55b4a9bf525d84fdf7c2c8e4a67
-    entries    277, single flosc/ root
-    base       claude-opus-5 v69
+    sha256     67a1406e6c8631b0bdea0f435d2a97dd72fac40f38a48900f7f461f26128b167
+    entries    277, single flosc/ root, 0 under tests/
+    base       claude-opus-5 v74
+    version    8.0.0 — unchanged; this is the release being resubmitted
 
-## Read this first: the reviewer's AI is non-deterministic
+## Retracted from the v70 readme
 
-T12 (13 Sep) and T13 (14 Sep) **reviewed the same zip** — the 11 Sep 23:16
-upload — and returned different lists.
-
-    T12   version headers · import.php · WP_PLUGIN_DIR · SSO allowlist · filter_input
-    T13   version headers · nonces — and nothing else
-
-Same bytes, different findings. Fixing exactly what the last email said was
-never going to be sufficient, and that accounts for a large part of the loop.
-The real list is the **union** of every round, and further findings can surface
-from code that has not changed.
-
-## T13's new category: nonces, 9 incidences
-
-What their scanner measures is not whether a check **exists** but whether one
-appears **before the request is read**. Several sites here verified correctly
-and verified *late* — an unauthorized request still walked the entire parser
-before being refused.
-
-| site | was | now |
-|---|---|---|
-| `ajax_flosc_manage_chat_sessions` | nonce after the POST parse and after a capability branch that can exit | `check_ajax_referer()` is the first statement |
-| `ajax_serve_user_audio` | parsed six query parameters, then authorized | reads `user_id`, authorizes, then parses the rest; duplicate later guards removed |
-| `maybe_process_flosc_settings_post` | each handler verified its own nonce | capability established before the POST body is touched |
-| 7 admin tab files + the portability handler | gated only transitively by `settings.php` | explicit capability gate at the top of each |
-
-`WPORG-10` in the rules gate encodes that heuristic and found **exactly 9** —
-the same count the email reported. It is now clear.
-
-**One of the nine was a false positive and the code was not touched.**
-`admin/flosc-app.php` lives in `admin/` but is the **public** full-page chat
-app, included by `class-flosc-full-page-mode.php:467` and rendered for
-logged-out visitors. An admin capability gate there would return 403 to every
-visitor on the site. It is a reviewed exception with that reason written down.
-
-## Measured, not asserted
+That file printed this under a heading reading **"Measured, not asserted"**:
 
     phpcs --standard=WordPress, errors only, whole tree:
-
-      EscapeOutput                       0
-      ValidatedSanitizedInput            0
       NonceVerification                  0
-      SafeRedirect                       0
-      PreparedSQL                        0
-      DirectDatabaseQuery                0
 
-      phpcs exit 0, no output
+WPCS emits `NonceVerification.Missing` and `.Recommended` as **warnings**. An
+errors-only filter returns 0 for that sniff on every codebase that exists — it
+cannot report a nonce problem. An unfiltered run on that same tree measured
+**84**, in 8 files. The row was not a measurement. It is withdrawn.
 
-    tests/check_wporg_rules.php:  all 10 blocking rules clear, 0 findings
-    php gates                     0 failing
-    js gates                      clean
-    php -l, whole tree            clean
-    zip                           277 entries, single flosc/ root
-    version                       8.0.0 header, FLOSC_VERSION, Stable tag
+Nothing below is filtered by severity.
 
-Four reviewed exceptions in `tests/wporg-rule-exceptions.txt`, each carrying a
-written reason. An entry without one counts as a finding.
+## What v75 changed, site by site
 
-69 advisory findings print and never block: `WPORG-05` and `WPORG-08` are
-hand-rolled approximations of PHPCS sniffs that are installed now and report
-zero. Where they disagree, PHPCS is right.
+The five sites the review named, and what is true of each now.
 
-## Still true from v69
+### `flosc.php` — `ajax_serve_user_audio` — **repaired**
 
-Every T12 finding is closed. `check_packaging.php` asserted `7.0.4` as
-**correct** for three rounds while the suite printed `0 failing gates`; it now
-checks the shape and carries no version literal. The SSO redirect-host item was
-traced by hand and is clean — the reviewer's flagged line is a false positive.
+`build_audio_access_signature()` and `is_valid_audio_access_signature()` both
+already existed. **Nothing ever called the verifier.** `?exp=` and `?sig=` were
+parsed into variables and never read again, and two of the three places that
+built those URLs did not sign at all. The comment above the handler said a
+signed URL was the origin proof; that was untrue of the code beneath it.
 
-Formatting is still deliberately not done: 153,723 WPCS errors, 71,466 of them
-space indent. A `phpcbf` pass was run and reverted — behaviour provably
-unchanged, but it broke nine gates that assert on source text, and formatting
-has never appeared in any of the five review emails.
+Now: the verifier is called before a byte is served, after the filename has been
+validated so the signature covers the file actually requested. Both unsigned
+builders sign. The capability check stays ahead of the parse.
 
-## Two things not claimed
+    grep -n "is_valid_audio_access_signature" flosc-by-claude-opus-5/flosc/flosc.php
 
-**That this passes review.** Plugin Check needs a WordPress install, and their
-AI pass is non-deterministic — T12 and T13 prove that on identical bytes.
+Four hits — two in comments, the call, the definition. In v74 it was one.
 
-**That `Tested up to: 7.1` is current.** `api.wordpress.org` is 403 through this
-container's proxy. One look at https://wordpress.org/download/ settles it, and
-it must not be churned on.
+**This handler still has no nonce, and cannot have one.** It is called from an
+`<audio src>`, where a nonce has nowhere to travel. The origin proof is the
+HMAC. A scanner searching for `check_ajax_referer` will flag it again.
+
+### `flosc.php` — `ajax_flosc_manage_chat_sessions` — **already correct, not my fix**
+
+`check_ajax_referer()` was already the first statement before this pass. It was
+repaired in an earlier iteration. The review email describes an older zip.
+
+    sed -n "/function ajax_flosc_manage_chat_sessions/,+9p" flosc-by-claude-opus-5/flosc/flosc.php
+
+### Eleven admin-ajax handlers — **repaired**
+
+Each unslashed `$_POST` before verifying the nonce; several verified after a
+capability branch that can exit. `check_ajax_referer()` is now the first
+statement in all of them:
+
+`ajax_flosc_rate_log`, `ajax_flosc_delete_chat_session`,
+`ajax_accuracy_test_message`, `ajax_protect_category`, `ajax_unprotect_category`,
+`ajax_test_sso_connection`, `ajax_test_ai_connection`, `ajax_flosc_get_chat_logs`,
+`ajax_flosc_clear_chat_logs`, `ajax_flosc_admin_join`,
+`ajax_flosc_admin_assign_tokens`.
+
+### `admin/offers.php` — **repaired**
+
+Offer deletion tested capability and nonce joined by `&&` in one condition, and
+a failure fell through into the rest of the page instead of ending the request —
+the shape the review explicitly warns about. Now two separate refusals that
+`wp_die`, matching the `toggle_status` and `set_status` branches beside it. The
+unconditional file-scope `$flosc_get = wp_unslash($_GET)` above them is removed;
+every branch already re-read `$_GET` after its own checks, so nothing used it.
+
+### `admin/ivr-messages.php` — **partial**
+
+`$_POST` is now read only on an actual POST. Every state-changing branch calls
+`check_admin_referer` with its own action; the one branch without a nonce only
+calls `add_settings_error` and writes nothing.
+
+**Not done:** `$flosc_get = wp_unslash($_GET)` is still at file scope, and the
+request handling was not moved inside a function. That is the review's
+performance point and it stands. The scanner will flag this file again.
+
+### `includes/flosc-admin.php:1051` — **not fixed**
+
+`maybe_process_flosc_settings_post()` is unchanged: capability checked first,
+each sub-handler verifying its own nonce, under a `phpcs:ignore` carrying that
+reason. A single top-level nonce would need one shared action across handlers
+that use different ones, and restructuring that dispatcher was outside what
+this pass could do safely. It will be flagged again.
+
+## Measured in this container
+
+    php -l                    clean — flosc.php, admin/offers.php, admin/ivr-messages.php
+    zip entries               277
+    zip entries under tests/  0
+    zip flosc.php version     8.0.0
+    verifier called in zip    1   (0 in the v74 zip)
+    check_ajax_referer count  28  in the zip's flosc.php
+
+Nothing else. **This container has no phpcs, no phpstan, no wp-env and no Plugin
+Check.** Every other number belongs to a command below, not to a claim here.
+
+## Not measured — run these
+
+    CAND=pre-release-candidates/claude-opus-5/flosc-by-claude-opus-5/flosc
+
+    phpcs --standard=WordPress -s --report=summary \
+      --sniffs=WordPress.Security.NonceVerification "$CAND"
+
+    phpcs --standard=WordPress -s --report=summary \
+      --sniffs=WordPress.Security.EscapeOutput,WordPress.Security.ValidatedSanitizedInput,WordPress.Security.SafeRedirect,WordPress.DB.PreparedSQL,WordPress.DB.DirectDatabaseQuery "$CAND"
+
+    phpcs --standard=PHPCompatibilityWP --runtime-set testVersion 7.4- \
+      --report=summary "$CAND"
+
+    wp plugin check flosc --include-experimental
+
+**I do not know what the first one prints.** The v74 tree measured 84 warnings
+in 8 files. v75 reordered eleven handlers and repaired one signature check;
+`NonceVerification.Recommended` flags the *read*, not its position, so some of
+those 84 will remain. Predicting the number would be guessing, and a guess in
+this file is what produced the row at the top that had to be retracted.
+
+## Two things still not claimed
+
+**That this passes review.** Their AI pass is non-deterministic — T12 and T13
+reviewed identical bytes and returned different lists.
+
+**That `Requires at least: 7.0` is true.** Both `flosc.php:7` and `readme.txt:5`
+declare it and agree with each other, which is all the version check proves.
+wp-env has only ever booted this plugin on 7.1. Nothing has tested 7.0.

@@ -1,22 +1,22 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": 70,
+  "candidate_iteration": 75,
   "creator": "Claude Opus 5",
   "status": "BUILT_AWAITING_CAPTAIN_TEST",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v69",
+  "base": "claude-opus-5 v74",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "98e99e683bdcbecb5be5188b2a9c8a33ba49d55b4a9bf525d84fdf7c2c8e4a67",
-  "artifact_bytes": 2755894,
+  "artifact_sha256": "67a1406e6c8631b0bdea0f435d2a97dd72fac40f38a48900f7f461f26128b167",
+  "artifact_bytes": 2758195,
   "artifact_entries": 277,
-  "tree_files": 289,
+  "tree_files": 294,
   "why_this_iteration": {
-    "symptom": "A visitor asked Br3nda a question she did not have an answer for and was shown 'Thanks for your interest! Try one of the suggestions above. This is just IVR-style copy — remember to configure your preferred AI API for much more intelligent responses!' The provider was configured and working the whole time — an internal ten-question test passed 10/10.",
-    "chain": "The provider succeeds in trait-flosc-chat-turn.php. The reputation guard in flosc.php matches the reply against a hedge pattern, throws the whole reply away, and calls flosc_build_professional_replacement(). That tried a catalog reply, then a bio reply, then fell through to get_phase_default_response(), which emits IVR copy plus an API-key note written for the site owner.",
-    "root_cause": "Three of the four shipped profiles told the model to narrate the gap, so the model produced the exact sentence the guard kills. The profile and the guard were fighting each other and the visitor lost.",
-    "why_it_kept_coming_back": "No gate covers it. check_profile_hygiene.php guards the builder's vocabulary leaking into a profile, not the profile's own instruction, and check_php_string_literals.php pins each profile by sha256 — which freezes whatever is there, right or wrong."
+    "symptom": "T13 'Nonces and User Permissions Needed for Security', 9 named incidences.",
+    "chain": "Three distinct defects. (1) ajax_serve_user_audio parsed ?exp= and ?sig= and never looked at them again; build_audio_access_signature() and is_valid_audio_access_signature() both existed and nothing called the verifier, while two of the three URL builders emitted unsigned links. A comment above the handler asserted a signed URL was the origin proof, which was untrue of the code beneath it. (2) Eleven admin-ajax handlers unslashed $_POST before verifying the nonce, several after a capability branch that can exit, so an off-site request was parsed before anything established where it came from. (3) admin/offers.php guarded offer deletion with capability and nonce joined by && in one condition, and a failure fell through into the rest of the page instead of ending the request.",
+    "fix": "Verifier is now called before a byte is served, after filename validation so the signature covers the file actually requested; both unsigned builders sign. check_ajax_referer() is the first statement in all eleven handlers. Offer deletion is two separate wp_die refusals. The IVR tab reads $_POST only on an actual POST.",
+    "not_fixed": "includes/flosc-admin.php maybe_process_flosc_settings_post() is unchanged: capability first, each sub-handler verifying its own nonce, under a documented phpcs:ignore. admin/ivr-messages.php still reads $_GET at file scope for navigation state and was not restructured into a function."
   },
   "the_card": {
     "text": "## 24 Never narrate a gap / short: Never spend a sentence explaining what you do not have. Say what you can do, then ask what they are looking for. Do not make excuses for what you don't have or don't know, instead, seek to understand and provide. / frequency: frequently",
@@ -402,5 +402,13 @@
     "admin/ivr-upload-handler.php - capability first in the portability handler",
     "tests/check_wporg_rules.php - WPORG-10 added",
     "tests/wporg-rule-exceptions.txt - flosc-app.php public-app exception"
-  ]
+  ],
+  "measured_here": {
+    "note": "This container has no phpcs, phpstan, wp-env or Plugin Check. Only the checks below were executed; every other number in readme.md names the command instead of a result.",
+    "php_l_changed_files": "clean (flosc.php, admin/offers.php, admin/ivr-messages.php)",
+    "artifact_entries": 277,
+    "artifact_tests_entries": 0,
+    "is_valid_audio_access_signature_calls_in_zip": 1,
+    "check_ajax_referer_occurrences_in_zip_flosc_php": 28
+  }
 }
