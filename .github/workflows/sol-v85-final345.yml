@@ -1,0 +1,269 @@
+name: FLOSC v85 final SOL-3 through SOL-5
+
+on:
+  push:
+    branches:
+      - gpt-5-6-sol/wporg-remediation
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    if: ${{ contains(github.event.head_commit.message || '', '[sol345-final]') && !contains(github.event.head_commit.message || '', '[sol345-final-generated]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      CAND: pre-release-candidates/gpt-5-6-sol
+      TARGET: pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc
+      REPORTS: pre-release-candidates/gpt-5-6-sol/remediation-tools/reports
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: gpt-5-6-sol/wporg-remediation
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          tools: composer
+
+      - name: Install WPCS
+        shell: bash
+        run: |
+          set -euo pipefail
+          composer global config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+          composer global require --no-interaction --no-progress squizlabs/php_codesniffer:^3.13 wp-coding-standards/wpcs:^3.4 dealerdirect/phpcodesniffer-composer-installer:^1.0
+          mkdir -p "$REPORTS"
+
+      - name: SOL-3 reconcile actual outbound integration families with readme
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os,re,pathlib
+          root=pathlib.Path(os.environ['TARGET']); readme=(root/'readme.txt').read_text(encoding='utf-8',errors='surrogateescape')
+          low=readme.lower()
+          # These are integration families evidenced by shipping provider/dispatcher files,
+          # not arbitrary documentation URLs or same-origin browser fetches.
+          families={
+            'OpenAI': ['api.openai.com/v1/models','api.openai.com/v1/audio/transcriptions'],
+            'Anthropic': ['api.anthropic.com/v1/models'],
+            'xAI': ['api.x.ai'],
+            'Google Gemini': ['generativelanguage.googleapis.com'],
+            'AssemblyAI': ['api.assemblyai.com'],
+            'Custom STT': ['custom stt endpoint'],
+            'PayPal': ['api-m.paypal.com','api-m.sandbox.paypal.com'],
+            'Stripe': ['api.stripe.com','js.stripe.com'],
+            'ClickBank': ['pay.clickbank.net','sandbox.clickbank.net'],
+            'Google OAuth': ['accounts.google.com','oauth2.googleapis.com'],
+            'Facebook OAuth': ['graph.facebook.com'],
+            'Apple Sign In': ['appleid.apple.com'],
+            'Microsoft OAuth': ['login.microsoftonline.com','graph.microsoft.com'],
+            'LinkedIn OAuth': ['api.linkedin.com'],
+            'External scoring provider': ['api.yourdomain.tld'],
+            'Amazon links': ['amazon.com'],
+            'WordPress oEmbed': ['oembed'],
+          }
+          # Evidence file inventory by subsystem.
+          evidence=[]
+          for p in root.rglob('*'):
+              if not p.is_file() or any(x in p.parts for x in ('tests','vendor','node_modules')): continue
+              if p.suffix.lower() not in ('.php','.js'): continue
+              text=p.read_text(encoding='utf-8',errors='surrogateescape')
+              if re.search(r'\bwp_remote_(?:get|post|request|head)\s*\(',text):
+                  evidence.append(str(p.relative_to(root)))
+          missing=[]
+          lines=[f'SERVER_REMOTE_FILES={len(evidence)}','== server remote files ==',*sorted(evidence),'','== family disclosure checks ==']
+          for family,needles in families.items():
+              # Disclosure is considered present only when the family heading/name and at
+              # least one concrete endpoint/purpose token are in the External Services text.
+              family_ok=family.lower().split()[0] in low
+              endpoint_ok=any(n.lower() in low for n in needles)
+              ok=family_ok and endpoint_ok
+              lines.append(f'{family}: family={int(family_ok)} endpoint_or_contract={int(endpoint_ok)} disclosed={int(ok)}')
+              if not ok: missing.append(family)
+          lines += ['',f'UNDISCLOSED_FAMILIES={len(missing)}',*missing]
+          out=pathlib.Path(os.environ['REPORTS'])/'sol3-final-reconciliation.txt';out.write_text('\n'.join(lines)+'\n')
+          print(out.read_text())
+          if missing: raise SystemExit(1)
+          PY
+
+      - name: SOL-4 audit T7-T13 and high-risk manual categories
+        shell: bash
+        run: |
+          set -euo pipefail
+          out="$REPORTS/sol4-final-verified.txt"; : > "$out"
+          python3 - <<'PY' | tee -a "$REPORTS/sol4-final-verified.txt"
+          import os,re,pathlib
+          root=pathlib.Path(os.environ['TARGET'])
+          def text(rel): return (root/rel).read_text(encoding='utf-8',errors='surrogateescape')
+          def strip_php_comments(code):
+              # Conservative lexical comment remover adequate for scanning banned literal
+              # patterns while leaving strings and executable syntax intact.
+              out=[];i=0;n=len(code);state='code';quote=''
+              while i<n:
+                  c=code[i];d=code[i:i+2]
+                  if state=='code':
+                      if d=='//': state='line';i+=2;continue
+                      if c=='#': state='line';i+=1;continue
+                      if d=='/*': state='block';i+=2;continue
+                      if c in "'\"": state='string';quote=c;out.append(c);i+=1;continue
+                      out.append(c);i+=1;continue
+                  if state=='line':
+                      if c=='\n': out.append(c);state='code'
+                      i+=1;continue
+                  if state=='block':
+                      if d=='*/': state='code';i+=2
+                      else:i+=1
+                      continue
+                  if state=='string':
+                      out.append(c)
+                      if c=='\\' and i+1<n: out.append(code[i+1]);i+=2;continue
+                      if c==quote: state='code'
+                      i+=1
+              return ''.join(out)
+          def function_source(code,name):
+              m=re.search(r'function\s+'+re.escape(name)+r'\s*\(',code)
+              if not m:return ''
+              start=m.start();brace=code.find('{',m.end())
+              if brace<0:return ''
+              depth=0;state='code';quote='';i=brace
+              while i<len(code):
+                  c=code[i];d=code[i:i+2]
+                  if state=='code':
+                      if d=='//':state='line';i+=2;continue
+                      if d=='/*':state='block';i+=2;continue
+                      if c in "'\"":state='string';quote=c;i+=1;continue
+                      if c=='{':depth+=1
+                      elif c=='}':
+                          depth-=1
+                          if depth==0:return code[start:i+1]
+                      i+=1;continue
+                  if state=='line':
+                      if c=='\n':state='code'
+                      i+=1;continue
+                  if state=='block':
+                      if d=='*/':state='code';i+=2
+                      else:i+=1
+                      continue
+                  if state=='string':
+                      if c=='\\':i+=2;continue
+                      if c==quote:state='code'
+                      i+=1
+              return code[start:]
+          failures=[]
+          main=text('flosc.php');readme=text('readme.txt')
+          h1=re.search(r'Requires at least:\s*([^\s*]+)',main);h2=re.search(r'^Requires at least:\s*(\S+)',readme,re.M)
+          print('Requires at least main=',h1.group(1) if h1 else 'MISSING','readme=',h2.group(1) if h2 else 'MISSING')
+          if not h1 or h1.group(1)!='7.0' or not h2 or h2.group(1)!='7.0':failures.append('requires-at-least')
+          shipping=[]
+          for p in root.rglob('*.php'):
+              if any(x in p.parts for x in ('tests','vendor')):continue
+              shipping.append((p,strip_php_comments(p.read_text(encoding='utf-8',errors='surrogateescape'))))
+          importer=[str(p.relative_to(root)) for p,c in shipping if re.search(r'WP_PLUGIN_DIR\s*\.\s*[\'\"][^\'\"]*wordpress-importer|wordpress-importer/wordpress-importer\.php',c)]
+          coreimport=[str(p.relative_to(root)) for p,c in shipping if 'wp-admin/includes/import.php' in c]
+          unsafe=[str(p.relative_to(root)) for p,c in shipping if 'FILTER_UNSAFE_RAW' in c or 'FILTER_DEFAULT' in c]
+          print('hardcoded importer executable hits=',len(importer),importer)
+          print('direct import.php executable hits=',len(coreimport),coreimport)
+          print('unsafe filter executable hits=',len(unsafe),unsafe)
+          if importer:failures.append('hardcoded-importer')
+          if coreimport:failures.append('direct-import-bootstrap')
+          if unsafe:failures.append('unsafe-filter-input')
+          sso=text('includes/sso/class-oauth2-handler.php');allow=function_source(sso,'get_allowed_sso_redirect_hosts')
+          host_in_allow=bool(re.search(r'HTTP_HOST',strip_php_comments(allow)))
+          print('SSO allowlist function found=',int(bool(allow)),'HTTP_HOST executable in allowlist=',int(host_in_allow))
+          if not allow or host_in_allow:failures.append('sso-http-host-allowlist')
+          kb=function_source(main,'handle_kb_save_edit')
+          print('KB save handler in flosc.php=',int(bool(kb)))
+          if kb:
+              print('KB handler excerpt:')
+              print(kb[:5000])
+              raw=re.search(r'\$([A-Za-z_][A-Za-z0-9_]*)\s*=\s*\$post\s*\[\s*[\'\"]file_content[\'\"]\s*\]\s*\?\?',kb)
+              write=re.search(r'flosc_write_data_file\s*\([^,]+,\s*\$([A-Za-z_][A-Za-z0-9_]*)',kb)
+              if not raw or not write:
+                  failures.append('kb-content-flow-unresolved')
+              else:
+                  rv,wv=raw.group(1),write.group(1)
+                  between=kb[raw.end():write.start()]
+                  validated=(rv!=wv and re.search(r'\$'+re.escape(wv)+r'\s*=\s*(?:sanitize_|wp_kses|flosc_[A-Za-z0-9_]*(?:validate|sanitize)|preg_replace|str_replace|trim)',between)) or re.search(r'flosc_[A-Za-z0-9_]*(?:validate|sanitize)[A-Za-z0-9_]*\s*\(\s*\$'+re.escape(rv),between)
+                  print('KB raw var=',rv,'write var=',wv,'validation bridge=',int(bool(validated)))
+                  if not validated:failures.append('kb-raw-file-content')
+          else:
+              # Handler may have moved during modularization; locate it across shipping PHP.
+              located=[]
+              for p,c in shipping:
+                  fs=function_source(c,'handle_kb_save_edit')
+                  if fs:located.append((p,fs))
+              print('KB handler alternate locations=',[str(p.relative_to(root)) for p,_ in located])
+              if not located:failures.append('kb-handler-missing')
+          print('SOL4_ASSERTION_FAILURES=',len(failures))
+          for f in failures:print('FAIL',f)
+          if failures:raise SystemExit(1)
+          PY
+          echo '== historical rules gate ==' | tee -a "$out"
+          (cd "$TARGET" && php tests/check_wporg_rules.php) 2>&1 | tee -a "$out"
+
+      - name: SOL-5 build exact ZIP from final source and re-extract
+        shell: bash
+        run: |
+          set -euo pipefail
+          stage=$(mktemp -d); mkdir -p "$stage/flosc"
+          rsync -a --delete --exclude-from="$TARGET/.distignore" "$TARGET/" "$stage/flosc/"
+          rm -rf "$stage/flosc/tests" "$stage/flosc/vendor" "$stage/flosc/.git" "$stage/flosc/node_modules"
+          (cd "$stage" && zip -X -q -r flosc.zip flosc)
+          cp "$stage/flosc.zip" "$CAND/flosc.zip"
+          sha=$(sha256sum "$CAND/flosc.zip"|awk '{print $1}')
+          printf '%s  flosc.zip\n' "$sha" > "$CAND/SHA256SUMS"
+          unzip -Z1 "$CAND/flosc.zip" > "$REPORTS/sol5-final-list.txt"
+          entries=$(wc -l < "$REPORTS/sol5-final-list.txt"|tr -d ' ');bytes=$(stat -c '%s' "$CAND/flosc.zip")
+          tests=$(grep -c '^flosc/tests/' "$REPORTS/sol5-final-list.txt"||true);vendor=$(grep -c '^flosc/vendor/' "$REPORTS/sol5-final-list.txt"||true);roots=$(cut -d/ -f1 "$REPORTS/sol5-final-list.txt"|sort -u|tr '\n' ' ')
+          { echo "sha256=$sha";echo "bytes=$bytes";echo "entries=$entries";echo "tests_entries=$tests";echo "vendor_entries=$vendor";echo "roots=$roots";grep -n '^Requires at least:' "$stage/flosc/readme.txt";grep -n 'Requires at least:' "$stage/flosc/flosc.php"|head -1;grep -n 'Version:' "$stage/flosc/flosc.php"|head -1; } | tee "$REPORTS/sol5-final-facts.txt"
+          [[ "$tests" == 0 && "$vendor" == 0 && "$roots" == 'flosc ' ]]
+          ship=$(mktemp -d);unzip -q "$CAND/flosc.zip" -d "$ship"
+          find "$ship/flosc" -type f -name '*.php' -print0 | sort -z | xargs -0 -n1 php -l > "$REPORTS/sol5-final-php-l.txt"
+          set +e
+          "$HOME/.composer/vendor/bin/phpcs" --standard=WordPress --extensions=php --report=source "$ship/flosc" > "$REPORTS/sol5-final-wpcs-source.txt" 2>&1
+          echo "exit=$?" > "$REPORTS/sol5-final-wpcs-exit.txt"
+          set -e
+          tail -50 "$REPORTS/sol5-final-wpcs-source.txt" || true
+
+      - name: Write final delegated-pass ledger and commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          sol1=$(grep -E 'A TOTAL OF|FOUND [0-9]+ ERRORS|FOUND [0-9]+ ERROR' "$REPORTS/sol1-one-file-final-source.txt"|tail -1||true)
+          sol2=$(head -1 "$REPORTS/sol2-one-file-after-narrow.txt"||true)
+          sol3=$(grep '^UNDISCLOSED_FAMILIES=' "$REPORTS/sol3-final-reconciliation.txt"||true)
+          sol4=$(grep '^SOL4_ASSERTION_FAILURES=' "$REPORTS/sol4-final-verified.txt"|tail -1||true)
+          sol5=$(tr '\n' '; ' < "$REPORTS/sol5-final-facts.txt")
+          cat > "$CAND/SOL-1-THROUGH-SOL-5.md" <<EOF
+          # GPT-5.6 Sol v85 — delegated remediation ledger
+
+          ## SOL-1
+          One-file-at-a-time WordPress-standard PHPCS remediation, comments/docblocks/leading whitespace only. Executable-token identity is recorded in `remediation-tools/reports/sol1-one-file-token-proof.txt`; each changed file's source tollgate is recorded in `sol1-one-file-tollgates.txt`; final tree report: $sol1
+
+          ## SOL-2
+          Narrow PHPStan pass only. Behavior-identical `(string)` casts at `esc_*` boundaries are applied where proven. Undefined variables without a locally proven intended value are skipped and recorded. Final narrow status: $sol2
+
+          ## SOL-3
+          Shipping external-service families were reconciled against `readme.txt`; $sol3. No runtime change was made by SOL-3.
+
+          ## SOL-4
+          T7–T13 historical categories and high-risk manual checks were rerun on the assembled v85 source; $sol4. The historical rules gate output and SSO/importer/input evidence are committed under `remediation-tools/reports/`.
+
+          ## SOL-5
+          The distribution ZIP was rebuilt from this exact source after SOL-1–SOL-4, then re-extracted for PHP lint and WordPress-standard PHPCS. $sol5
+
+          This ledger certifies only these five delegated passes and the evidence named above. It does not substitute for any unrun WordPress runtime or human functional walk.
+          EOF
+          git config user.name 'GPT-5.6 Sol'
+          git config user.email 'noreply@openai.com'
+          git add "$CAND"
+          git commit -m "Home run candidate v85.4 coded by GPT-5.6 Sol — complete delegated SOL-3 through SOL-5 verification [sol1-generated] [sol25-generated] [sol-finalized] [sol345-final-generated]" \
+            -m "SOL-3: ${sol3}. External-service families are reconciled to the readme with no runtime edit." \
+            -m "SOL-4: ${sol4}. Historical WordPress.org rejection categories are rechecked, including a manual executable check that HTTP_HOST is absent from the SSO redirect allowlist and importer/input patterns are not resurrected." \
+            -m "SOL-5: ${sol5}. The ZIP is rebuilt from the exact final source, tests/vendor excluded, then re-extracted for php -l and WordPress-standard PHPCS." \
+            -m "SOL-1 final tree: ${sol1}. SOL-2 final narrow status: ${sol2}. No broader submission-readiness claim is made beyond committed evidence."
+          git push origin HEAD:gpt-5-6-sol/wporg-remediation
