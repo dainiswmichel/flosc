@@ -1,6 +1,6 @@
 <?php
 /**
- * Compatibility shim — implementation lives at includes/tokens/class-flosc-visitor-token-trait.php.
+ * Compatibility shim — implementation lives at includes/tokens/class-flosc-visitor-token-trait.php
  *
  * @package FLOSC
  */

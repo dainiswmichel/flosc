@@ -20,11 +20,11 @@ trait FLOSC_REST_Trait {
 	 *
 	 * Global for this installation, not per floscFlow.
 	 */
-/**
- * Coordinate the public request protection behavior implemented by this code path.
- *
- * @return Mixed Result produced by the public request protection operation.
- */
+		/**
+	 * Coordinate the public request protection behavior implemented by this code path.
+	 *
+	 * @return mixed Result produced by the public request protection operation.
+	 */
 private function flosc_public_request_protection() {
 		$defaults = array(
 			'enabled'                  => '1',
@@ -39,9 +39,8 @@ private function flosc_public_request_protection() {
 		return is_array( $settings ) ? array_merge( $defaults, $settings ) : $defaults;
 	}
 	/**
-	 * Permission Callbacks for REST API.
-	 *
-	 * @return Bool Whether check metered visitor compute permission applies to the current state.
+	 * Permission Callbacks for REST API
+ * @return bool Whether check metered visitor compute permission applies to the current state.
 	 */
 	public function check_metered_visitor_compute_permission() {
 		$protection = $this->flosc_public_request_protection();
@@ -67,17 +66,17 @@ private function flosc_public_request_protection() {
 	}
 
 	/**
-	 * Permission callback for public endpoints that need rate limiting.
+	 * Permission callback for public endpoints that need rate limiting
 	 *
-	 * Unlike check_metered_visitor_compute_permission(), this is for truly public endpoints.
-	 * Like IVR chat that don't consume expensive AI credits but should still.
-	 * Be protected from abuse.
+	 * Unlike check_metered_visitor_compute_permission(), this is for truly public endpoints
+	 * like IVR chat that don't consume expensive AI credits but should still
+	 * be protected from abuse.
 	 *
-	 * Limits: 60 requests/hour for logged-in users, 30/hour for visitors.
+	 * Limits: 60 requests/hour for logged-in users, 30/hour for visitors
 	 *
 	 * @since 9.4.2
-	 * @param mixed $request Request object carrying the input consumed by this handler.
-	 * @return Bool Whether check public endpoint permission applies to the current state.
+ * @param mixed $request Request object carrying the input consumed by this handler.
+ * @return bool Whether check public endpoint permission applies to the current state.
 	 */
 	public function check_public_endpoint_permission( $request ) {
 		$endpoint   = $request->get_route();
@@ -107,7 +106,7 @@ private function flosc_public_request_protection() {
 	/**
 	 * Permission callback for routes that require a logged-in user.
 	 *
-	 * @return True|WP_Error.
+	 * @return true|WP_Error
 	 */
 	public function check_authenticated_user_permission() {
 		if ( ! is_user_logged_in() ) {
@@ -120,8 +119,7 @@ private function flosc_public_request_protection() {
 	/**
 	 * §4: Permission callback for privileged admin-only REST actions.
 	 * Grants only to users who can manage_options; everyone else gets 403.
-	 *
-	 * @return Bool Whether check admin endpoint permission applies to the current state.
+ * @return bool Whether check admin endpoint permission applies to the current state.
 	 */
 	public function check_admin_endpoint_permission() {
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -132,11 +130,10 @@ private function flosc_public_request_protection() {
 
 	/**
 	 * §4: Permission callback for buyer-scoped checkout/payment REST actions.
-	 * Requires a valid checkout-issued wp_rest nonce: X-WP-Nonce header first,.
-	 * Falling back to the _wpnonce request param. Handler then binds to the buyer.
-	 *
-	 * @param mixed $request Request object carrying the input consumed by this handler.
-	 * @return Bool Whether check checkout endpoint permission applies to the current state.
+	 * Requires a valid checkout-issued wp_rest nonce: X-WP-Nonce header first,
+	 * falling back to the _wpnonce request param. Handler then binds to the buyer.
+ * @param mixed $request Request object carrying the input consumed by this handler.
+ * @return bool Whether check checkout endpoint permission applies to the current state.
 	 */
 	public function check_checkout_endpoint_permission( $request ) {
 		$nonce = $request->get_header( 'X-WP-Nonce' );
@@ -153,12 +150,11 @@ private function flosc_public_request_protection() {
 	/**
 	 * Permission callback for checkout finalization endpoints.
 	 *
-	 * Requires the same REST nonce gate as checkout-start endpoints, plus a.
-	 * Server-issued checkout binding token that matches the browser session and,.
-	 * When present, route/provider/flow/offer context.
-	 *
-	 * @param mixed $request Request object carrying the input consumed by this handler.
-	 * @return Bool Whether check checkout finalization permission applies to the current state.
+	 * Requires the same REST nonce gate as checkout-start endpoints, plus a
+	 * server-issued checkout binding token that matches the browser session and,
+	 * when present, route/provider/flow/offer context.
+ * @param mixed $request Request object carrying the input consumed by this handler.
+ * @return bool Whether check checkout finalization permission applies to the current state.
 	 */
 	public function check_checkout_finalization_permission( $request ) {
 		$nonce_result = $this->check_checkout_endpoint_permission( $request );
@@ -216,11 +212,11 @@ private function flosc_public_request_protection() {
 	/**
 	 * Public nonce endpoint permission callback.
 	 *
-	 * Route only returns a WordPress REST nonce (no state mutation). Still.
-	 * Rate-limited so directory review does not treat it as an unbounded open surface.
+	 * Route only returns a WordPress REST nonce (no state mutation). Still
+	 * rate-limited so directory review does not treat it as an unbounded open surface.
 	 *
 	 * @param WP_REST_Request $request Request.
-	 * @return True|WP_Error.
+	 * @return true|WP_Error
 	 */
 	public function check_public_nonce_endpoint_permission( $request ) {
 		$endpoint = $request->get_route();
@@ -241,11 +237,10 @@ private function flosc_public_request_protection() {
 	/**
 	 * Intentionally public webhook endpoint permission callback.
 	 *
-	 * Payment providers cannot present WordPress auth; signature checks happen in.
-	 * The webhook handler itself.
-	 *
-	 * @param mixed $request Request object carrying the input consumed by this handler.
-	 * @return Bool Whether check webhook endpoint permission applies to the current state.
+	 * Payment providers cannot present WordPress auth; signature checks happen in
+	 * the webhook handler itself.
+ * @param mixed $request Request object carrying the input consumed by this handler.
+ * @return bool Whether check webhook endpoint permission applies to the current state.
 	 */
 	public function check_webhook_endpoint_permission( $request ) {
 		$provider = sanitize_key( (string) $request->get_param( 'provider' ) );
@@ -258,11 +253,11 @@ private function flosc_public_request_protection() {
 	/**
 	 * Normalize and validate IVR phase from request input.
 	 *
-	 * Missing phase defaults to freeline for compatibility. Unknown phases are.
-	 * Rejected to keep authorization behavior explicit and auditable.
+	 * Missing phase defaults to freeline for compatibility. Unknown phases are
+	 * rejected to keep authorization behavior explicit and auditable.
 	 *
 	 * @param mixed $raw_phase Raw phase parameter.
-	 * @return String|WP_Error.
+	 * @return string|WP_Error
 	 */
 	private function normalize_ivr_phase( $raw_phase ) {
 		$phase = ( null === $raw_phase || '' === $raw_phase )
@@ -281,9 +276,8 @@ private function flosc_public_request_protection() {
 	 * Permission callback for /ivr-messages and /ivr/messages.
 	 * Public rate limiting for visitor funnel phases (including sale/offer).
 	 * Content phase requires membership entitlement.
-	 *
-	 * @param mixed $request Request object carrying the input consumed by this handler.
-	 * @return Bool Whether check ivr messages permission applies to the current state.
+ * @param mixed $request Request object carrying the input consumed by this handler.
+ * @return bool Whether check ivr messages permission applies to the current state.
 	 */
 	public function check_ivr_messages_permission( $request ) {
 		// Keep the existing public rate-limit behavior for the visitor funnel.
@@ -317,7 +311,7 @@ private function flosc_public_request_protection() {
 	 * Build transient storage key for one visitor session's poll token hash.
 	 *
 	 * @param int $session_id Conversation/session ID.
-	 * @return String.
+	 * @return string
 	 */
 	private function get_admin_poll_token_storage_key( $session_id ) {
 		return 'flosc_admin_poll_' . md5( (string) absint( $session_id ) );
@@ -327,7 +321,7 @@ private function flosc_public_request_protection() {
 	 * Mint poll token for visitor admin-message polling.
 	 *
 	 * @param int $session_id Conversation/session ID.
-	 * @return String.
+	 * @return string
 	 */
 	private function issue_admin_poll_token( $session_id ) {
 		$session_id = absint( $session_id );
@@ -352,7 +346,7 @@ private function flosc_public_request_protection() {
 	 *
 	 * @param int    $session_id Session ID.
 	 * @param string $poll_token Token provided by visitor.
-	 * @return Bool.
+	 * @return bool
 	 */
 	private function verify_admin_poll_token( $session_id, $poll_token ) {
 		$session_id = absint( $session_id );
@@ -374,7 +368,7 @@ private function flosc_public_request_protection() {
 	 * Verify that the current request can be tied to the provided visitor session.
 	 *
 	 * @param int $session_id Session ID.
-	 * @return Bool.
+	 * @return bool
 	 */
 	private function current_request_owns_chat_session( $session_id ) {
 		$session_id = absint( $session_id );
@@ -395,7 +389,7 @@ private function flosc_public_request_protection() {
 	 * Requires session ownership proof via poll token bound to session_id.
 	 *
 	 * @param WP_REST_Request $request Request object.
-	 * @return True|WP_Error.
+	 * @return true|WP_Error
 	 */
 	public function check_visitor_session_poll_permission( $request ) {
 		// Canonicalize to the same crc32 id the chat logger and admin-inject.
@@ -429,11 +423,11 @@ private function flosc_public_request_protection() {
 	/**
 	 * Permission callback for minting visitor admin-message poll tokens.
 	 *
-	 * This route is intentionally visitor-facing but now requires ownership proof.
-	 * Of the requested session before a token is minted.
+	 * This route is intentionally visitor-facing but now requires ownership proof
+	 * of the requested session before a token is minted.
 	 *
 	 * @param WP_REST_Request $request Request object.
-	 * @return True|WP_Error.
+	 * @return true|WP_Error
 	 */
 	public function check_admin_messages_token_permission( $request ) {
 		$public_check = $this->check_public_endpoint_permission( $request );
@@ -460,13 +454,13 @@ private function flosc_public_request_protection() {
 	}
 
 	/**
-	 * Public oEmbed proxy: returns provider-native player HTML for a media URL.
-	 * Via WordPress core oEmbed (YouTube, TikTok, Spotify, SoundCloud, Vimeo,.
-	 * Apple Music, etc.). Results are cached in a transient. Only oEmbed-.
-	 * Whitelisted providers resolve, so arbitrary URLs cannot be embedded.
+	 * Public oEmbed proxy: returns provider-native player HTML for a media URL
+	 * via WordPress core oEmbed (YouTube, TikTok, Spotify, SoundCloud, Vimeo,
+	 * Apple Music, etc.). Results are cached in a transient. Only oEmbed-
+	 * whitelisted providers resolve, so arbitrary URLs cannot be embedded.
 	 *
 	 * @param WP_REST_Request $request Request object.
-	 * @return WP_REST_Response.
+	 * @return WP_REST_Response
 	 */
 	public function handle_oembed( $request ) {
 		$url   = esc_url_raw( (string) $request->get_param( 'url' ) );
@@ -506,11 +500,11 @@ private function flosc_public_request_protection() {
 	}
 
 	/**
-	 * REST API Routes.
-	 * Added rate limiting to public endpoints.
+	 * REST API Routes
+	 * Added rate limiting to public endpoints
 	 *
 	 * @since 9.4.2
-	 * @return Mixed Result produced by the rest routes operation.
+ * @return mixed Result produced by the rest routes operation.
 	 */
 	public function register_rest_routes() {
 		// IVR Chat (primary endpoint)

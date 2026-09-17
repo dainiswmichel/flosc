@@ -1,6 +1,6 @@
 <?php
 /**
- * FLOSC RAG Chat Handler.
+ * FLOSC RAG Chat Handler
  * Handles AI chat with Retrieval Augmented Generation (tools + memory)
  *
  * @package FLOSC
@@ -21,9 +21,9 @@ class FLOSC_RAG_Chat_Handler {
 	private $flosc_user_session;
 	private $flosc_last_billing_meta = array();
 
-/**
- * Coordinate the construct behavior implemented by this code path.
- */
+		/**
+	 * Coordinate the construct behavior implemented by this code path.
+	 */
 public function __construct() {
 		$this->flosc_rag_manager = FLOSC_RAG_Manager::instance();
 		// Access controller will be set when handle_with_state is called.
@@ -32,12 +32,12 @@ public function __construct() {
 	/**
 	 * Handle chat with state object (v1.9.0)
 	 *
-	 * @param string             $flosc_message         User's message.
-	 * @param FLOSC_User_Session $flosc_user_session    User session with full context.
-	 * @param int|null           $flosc_session_id      Session ID for conversation history.
-	 * @param string|null        $flosc_chatpack_prompt V1.9.2: Optional chatpack system prompt (overrides internal builder).
-	 * @param mixed              $flosc_conv_history    Input consumed by the Coordinate the with state behavior implemented by this code path. operation.
-	 * @return Array Response with content and autoprompts.
+	 * @param string             $flosc_message User's message.
+	 * @param FLOSC_User_Session $flosc_user_session User session with full context.
+	 * @param int|null           $flosc_session_id Session ID for conversation history.
+	 * @param string|null        $flosc_chatpack_prompt v1.9.2: Optional chatpack system prompt (overrides internal builder).
+ * @param mixed $flosc_conv_history Input consumed by the Coordinate the with state behavior implemented by this code path. operation.
+	 * @return array Response with content and autoprompts
 	 */
 	public function flosc_handle_with_state( $flosc_message, $flosc_user_session, $flosc_session_id = null, $flosc_chatpack_prompt = null, $flosc_conv_history = null ) {
 		$this->flosc_last_billing_meta = array();
@@ -126,18 +126,17 @@ public function __construct() {
 	/**
 	 * Get billing metadata for the most recent RAG response.
 	 * Shape mirrors ai-chat-dispatch get_last_billing_meta().
-	 *
-	 * @return Mixed Result produced by the last billing meta operation.
+ * @return mixed Result produced by the last billing meta operation.
 	 */
 	public function get_last_billing_meta() {
 		return is_array( $this->flosc_last_billing_meta ) ? $this->flosc_last_billing_meta : array();
 	}
 
 	/**
-	 * Build system prompt from FLOSC User Session.
+	 * Build system prompt from FLOSC User Session
 	 *
-	 * @param mixed $flosc_user_session Input consumed by the Coordinate the system prompt from state behavior implemented by this code path. operation.
-	 * @return String System prompt.
+ * @param mixed $flosc_user_session Input consumed by the Coordinate the system prompt from state behavior implemented by this code path. operation.
+	 * @return string System prompt
 	 */
 	private function flosc_build_system_prompt_from_state( $flosc_user_session ) {
 		$flosc_state      = $flosc_user_session->flosc_get();
@@ -199,11 +198,11 @@ public function __construct() {
 	}
 
 	/**
-	 * Load conversation history.
+	 * Load conversation history
 	 *
-	 * @param FLOSC_User_Session $flosc_user_session Value consumed by this operation.
-	 * @param mixed              $flosc_session_id   Identifier used to select the record involved in the Coordinate the conversation history behavior implemented by this code path. operation.
-	 * @return Array Message history.
+	 * @param FLOSC_User_Session $flosc_user_session
+	 * @param mixed $flosc_session_id Identifier used to select the record involved in the Coordinate the conversation history behavior implemented by this code path. operation.
+	 * @return array Message history
 	 */
 	private function flosc_load_conversation_history( $flosc_user_session, $flosc_session_id ) {
 		$flosc_state   = $flosc_user_session->flosc_get();
@@ -237,13 +236,13 @@ public function __construct() {
 	}
 
 	/**
-	 * Execute RAG loop with tools.
+	 * Execute RAG loop with tools
 	 *
 	 * @param string $flosc_message       User message.
 	 * @param string $flosc_system_prompt System prompt.
 	 * @param array  $flosc_history       Conversation history.
 	 * @param array  $flosc_tools         Available tools.
-	 * @return String AI response.
+	 * @return string AI response
 	 */
 	private function flosc_execute_rag_loop( $flosc_message, $flosc_system_prompt, $flosc_history, $flosc_tools ) {
 
@@ -328,9 +327,8 @@ public function __construct() {
 	/**
 	 * Resolve Anthropics pricing (real millicents per 1M tokens) for billing math.
 	 * Flow-level overrides win when configured.
-	 *
-	 * @param mixed $flosc_model AI model identifier used for the provider request.
-	 * @return Array Structured anthropic price per 1m data.
+ * @param mixed $flosc_model AI model identifier used for the provider request.
+ * @return array Structured anthropic price per 1m data.
 	 */
 	private function flosc_resolve_anthropic_price_per_1m( $flosc_model ) {
 		$override_in  = max( 0, intval( flosc_get_setting( 'ai_billing_anthropic_input_millicents_per_1m', 0 ) ) );
@@ -371,12 +369,12 @@ public function __construct() {
 	}
 
 	/**
-	 * Store conversation.
+	 * Store conversation
 	 *
-	 * @param FLOSC_User_Session $flosc_user_session Value consumed by this operation.
-	 * @param mixed              $flosc_session_id   Identifier used to select the record involved in the Coordinate the store conversation behavior implemented by this code path. operation.
-	 * @param string             $flosc_message      Value consumed by this operation.
-	 * @param mixed              $flosc_response     Input consumed by the Coordinate the store conversation behavior implemented by this code path. operation.
+	 * @param FLOSC_User_Session $flosc_user_session
+	 * @param mixed $flosc_session_id Identifier used to select the record involved in the Coordinate the store conversation behavior implemented by this code path. operation.
+	 * @param string             $flosc_message
+ * @param mixed $flosc_response Input consumed by the Coordinate the store conversation behavior implemented by this code path. operation.
 	 */
 	private function flosc_store_conversation( $flosc_user_session, $flosc_session_id, $flosc_message, $flosc_response ) {
 		$flosc_state   = $flosc_user_session->flosc_get();
@@ -391,10 +389,10 @@ public function __construct() {
 	}
 
 	/**
-	 * Get contextual autoprompts.
+	 * Get contextual autoprompts
 	 *
 	 * @param FLOSC_User_Session $flosc_user_session The session to read state from.
-	 * @return Array Autoprompt options.
+	 * @return array Autoprompt options
 	 */
 	private function flosc_get_contextual_autoprompts( $flosc_user_session ) {
 		$flosc_state       = $flosc_user_session->flosc_get();

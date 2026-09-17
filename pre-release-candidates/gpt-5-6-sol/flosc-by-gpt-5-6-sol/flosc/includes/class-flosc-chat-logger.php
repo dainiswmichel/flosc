@@ -1,6 +1,6 @@
 <?php
 /**
- * Compatibility shim — implementation lives at includes/logging/class-flosc-chat-logger.php.
+ * Compatibility shim — implementation lives at includes/logging/class-flosc-chat-logger.php
  *
  * @package FLOSC
  */

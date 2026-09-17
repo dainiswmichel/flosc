@@ -1,6 +1,6 @@
 <?php
 /**
- * FLOSC Content Tab.
+ * FLOSC Content Tab
  *
  * Merges former Member Levels + Lessons admin into one Content tab (C of FLOSC).
  *
@@ -8,9 +8,9 @@
  * 1. Content types (repeater: singular / plural — Lesson/Lessons, Recipe/Recipes, …)
  * 2. Member levels (registry)
  * 3. Content groups (quiz → WP category)
- * 4. Content protection.
+ * 4. Content protection
  * 5. Complimentary pool / selection (guests)
- * 6. Guest chat caps.
+ * 6. Guest chat caps
  *
  * Setting keys: free_content_item_*, content_item_*, exclude_items_from_freeline.
  *
@@ -413,13 +413,13 @@ $flosc_chat_list_settings_url          = add_query_arg(
 							<option value=""><?php echo esc_html__( '— Select —', 'flosc' ); ?></option>
 							<?php if ( 'category' === $flosc_item_type ) : ?>
 								<?php foreach ( $flosc_categories as $flosc_cat ) : ?>
-									<option value="<?php echo esc_attr( $flosc_cat->term_id ); ?>" <?php selected( $flosc_item['id'] ?? '', $flosc_cat->term_id ); ?>>
+									<option value="<?php echo esc_attr( (string) $flosc_cat->term_id ); ?>" <?php selected( $flosc_item['id'] ?? '', $flosc_cat->term_id ); ?>>
 										<?php echo esc_html( $flosc_cat->name ); ?> (<?php echo esc_html( (string) $flosc_cat->count ); ?> posts)
 									</option>
 								<?php endforeach; ?>
 							<?php elseif ( 'tag' === $flosc_item_type ) : ?>
 								<?php foreach ( $flosc_tags as $flosc_tag ) : ?>
-									<option value="<?php echo esc_attr( $flosc_tag->term_id ); ?>" <?php selected( $flosc_item['id'] ?? '', $flosc_tag->term_id ); ?>>
+									<option value="<?php echo esc_attr( (string) $flosc_tag->term_id ); ?>" <?php selected( $flosc_item['id'] ?? '', $flosc_tag->term_id ); ?>>
 										<?php echo esc_html( $flosc_tag->name ); ?> (<?php echo esc_html( (string) $flosc_tag->count ); ?> posts)
 									</option>
 								<?php endforeach; ?>
@@ -752,7 +752,7 @@ jQuery(document).ready(function($) {
 	<?php
 		$flosc_opts = '<option value="">— Select —</option>';
 	foreach ( $flosc_categories as $flosc_cat ) {
-		$flosc_opts .= '<option value="' . esc_attr( $flosc_cat->term_id ) . '">' . esc_html( $flosc_cat->name ) . '</option>';
+		$flosc_opts .= '<option value="' . esc_attr( (string) $flosc_cat->term_id ) . '">' . esc_html( $flosc_cat->name ) . '</option>';
 	}
 		echo wp_json_encode( $flosc_opts );
 	?>
@@ -761,7 +761,7 @@ jQuery(document).ready(function($) {
 	<?php
 		$flosc_opts = '<option value="">— Select —</option>';
 	foreach ( $flosc_tags as $flosc_tag ) {
-		$flosc_opts .= '<option value="' . esc_attr( $flosc_tag->term_id ) . '">' . esc_html( $flosc_tag->name ) . '</option>';
+		$flosc_opts .= '<option value="' . esc_attr( (string) $flosc_tag->term_id ) . '">' . esc_html( $flosc_tag->name ) . '</option>';
 	}
 		echo wp_json_encode( $flosc_opts );
 	?>

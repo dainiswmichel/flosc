@@ -1,18 +1,18 @@
 <?php
 /**
- * FLOSC Offers Configuration Tab v1.6.2.
+ * FLOSC Offers Configuration Tab v1.6.2
  *
  * Single scrollable page with inline editing.
- * Multi-format support per offer — one offer can render as.
- * Pill, card, banner, etc., each with independent conditions.
+ * Multi-format support per offer — one offer can render as
+ * pill, card, banner, etc., each with independent conditions.
  *
  * Data model:
- * Offer['display_formats'] = [.
- * 'card'   => ['enabled'=>true, 'condition'=>'...', 'timer'=>900, ...],.
- * 'pill'   => ['enabled'=>true, 'label'=>'...', 'icon'=>'🎁', ...],.
- * 'banner' => ['enabled'=>false],.
- * ...
- * ]
+ *   offer['display_formats'] = [
+ *       'card'   => ['enabled'=>true, 'condition'=>'...', 'timer'=>900, ...],
+ *       'pill'   => ['enabled'=>true, 'label'=>'...', 'icon'=>'🎁', ...],
+ *       'banner' => ['enabled'=>false],
+ *       ...
+ *   ]
  *
  * @package FLOSC
  */
@@ -55,16 +55,16 @@ echo '<div class="flosc-docs-link-wrap">'
 	. '<a href="' . esc_url( $flosc_offers_docs_url ) . '" class="flosc-docs-link">Docs</a>'
 	. '</div>';
 
-// ============================================.
+// ============================================
 // Coupon / access-code helpers (offer params; native checkout only for coupons)
-// ============================================.
+// ============================================
 
 /**
  * Parse offer coupon rows from POST (fixed_price preferred; percent optional).
  * Validity windows are UTC (ISO or MTS). Empty bounds = no start/end limit.
  *
  * @param array $flosc_post Unslashed POST.
- * @return Array<int, array<string, mixed>>.
+ * @return array<int, array<string, mixed>>
  */
 function flosc_parse_offer_coupons_from_post( array $flosc_post ) {
 	$codes = $flosc_post['offer_coupon_code'] ?? array();
@@ -110,7 +110,7 @@ function flosc_parse_offer_coupons_from_post( array $flosc_post ) {
  * Parse comma/newline separated access codes for full unlock of this offer.
  *
  * @param array $flosc_post Unslashed POST.
- * @return String[]
+ * @return string[]
  */
 function flosc_parse_offer_access_codes_from_post( array $flosc_post ) {
 	$raw = (string) ( $flosc_post['offer_access_codes'] ?? '' );
@@ -131,14 +131,14 @@ function flosc_parse_offer_access_codes_from_post( array $flosc_post ) {
 	return array_values( array_unique( $out ) );
 }
 
-// ============================================.
+// ============================================
 // SAVE HANDLER — runs at include time (same as delete/toggle handlers below)
 // v1.6.5: Removed dead add_action('init',...) — file loads after init fires.
-// ============================================.
+// ============================================
 /**
  * Persist the offer save state in WordPress storage.
  *
- * @return Mixed Result produced by the offer save operation.
+ * @return mixed Result produced by the offer save operation.
  */
 function flosc_handle_offer_save() {
 	$flosc_post = wp_unslash( $_POST );
@@ -508,9 +508,9 @@ $flosc_all_format_meta = array(
 <!-- Styles in assets/css/flosc-admin.css -->
 
 <?php
-// ============================================.
+// ============================================
 // ACTIVE OFFERS SUMMARY.
-// ============================================.
+// ============================================
 $flosc_active_offers = array();
 foreach ( $flosc_offers as $flosc_offer_id => $flosc_offer ) {
 	$flosc_status    = strtolower( (string) ( $flosc_offer['status'] ?? '' ) );
@@ -820,8 +820,8 @@ $flosc_demo_offers = array(
 				<input type="hidden" name="flosc_ivr"             value="<?php echo esc_attr( $flosc_current_ivr ); ?>">
 				<input type="hidden" name="offer_name"            value="<?php echo esc_attr( $flosc_demo['offer_name'] ); ?>">
 				<input type="hidden" name="offer_type"            value="one_time">
-				<input type="hidden" name="offer_price"           value="<?php echo esc_attr( $flosc_demo['offer_price'] ); ?>">
-				<input type="hidden" name="offer_original_price"  value="<?php echo esc_attr( $flosc_demo['offer_original'] ); ?>">
+				<input type="hidden" name="offer_price"           value="<?php echo esc_attr( (string) $flosc_demo['offer_price'] ); ?>">
+				<input type="hidden" name="offer_original_price"  value="<?php echo esc_attr( (string) $flosc_demo['offer_original'] ); ?>">
 				<input type="hidden" name="offer_headline"        value="<?php echo esc_attr( $flosc_demo['offer_headline'] ); ?>">
 				<input type="hidden" name="offer_description"     value="<?php echo esc_attr( $flosc_demo['offer_description'] ); ?>">
 				<input type="hidden" name="offer_features"        value="<?php echo esc_attr( $flosc_demo['offer_features'] ); ?>">
@@ -831,7 +831,7 @@ $flosc_demo_offers = array(
 				<input type="hidden" name="offer_reveal_phrase"   value="">
 				<input type="hidden" name="offer_match_type"      value="exact">
 				<input type="hidden" name="offer_grants_level"    value="<?php echo esc_attr( $flosc_demo['offer_grants'] ); ?>">
-				<input type="hidden" name="offer_timer"           value="<?php echo esc_attr( $flosc_demo['offer_timer'] ); ?>">
+				<input type="hidden" name="offer_timer"           value="<?php echo esc_attr( (string) $flosc_demo['offer_timer'] ); ?>">
 				<input type="hidden" name="offer_currency"        value="USD">
 				<input type="hidden" name="offer_processor"       value="paypal">
 				<input type="hidden" name="offer_stripe_price_id" value="">
@@ -951,15 +951,15 @@ document.addEventListener('DOMContentLoaded', function() {
 <?php wp_add_inline_script( 'flosc-admin', ob_get_clean() ); ?>
 
 <?php
-// ============================================.
+// ============================================
 // OFFER EDITOR RENDER FUNCTION.
-// ============================================.
+// ============================================
 /**
  * Render the WordPress interface for offer editor v2.
  *
- * @param mixed $flosc_offer           Input consumed by the Render the Word Press interface for offer editor v2. operation.
- * @param mixed $flosc_flow_key        Name or key used to select the Render the Word Press interface for offer editor v2. value.
- * @param mixed $flosc_current_ivr     IVR identifier or filename used to select the flow configuration.
+ * @param mixed $flosc_offer Input consumed by the Render the Word Press interface for offer editor v2. operation.
+ * @param mixed $flosc_flow_key Name or key used to select the Render the Word Press interface for offer editor v2. value.
+ * @param mixed $flosc_current_ivr IVR identifier or filename used to select the flow configuration.
  * @param mixed $flosc_all_format_meta Input consumed by the Render the Word Press interface for offer editor v2. operation.
  */
 function flosc_render_offer_editor_v2( $flosc_offer, $flosc_flow_key, $flosc_current_ivr, $flosc_all_format_meta ) {

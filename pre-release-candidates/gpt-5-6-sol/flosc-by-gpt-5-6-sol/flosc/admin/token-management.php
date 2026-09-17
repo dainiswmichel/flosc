@@ -1,10 +1,10 @@
 <?php
 /**
- * FLOSC Token Management Tab.
+ * FLOSC Token Management Tab
  *
  * Per-flow wallet economics + product token grants.
- * Products (offers) are editable accordion rows — set grant mode, amount, and cap.
- * Per product, or inherit flow defaults.
+ * Products (offers) are editable accordion rows — set grant mode, amount, and cap
+ * per product, or inherit flow defaults.
  *
  * @package FLOSC
  */
@@ -448,28 +448,28 @@ $flosc_visible_products = array_values(
 				<tr>
 					<th scope="row"><label for="flow_product_token_grant_onetime">One-time Product Token Grant</label></th>
 					<td>
-						<input type="number" id="flow_product_token_grant_onetime" name="flow_product_token_grant_onetime" value="<?php echo esc_attr( $flosc_product_token_grant_onetime ); ?>" min="0" step="1" class="regular-text">
+						<input type="number" id="flow_product_token_grant_onetime" name="flow_product_token_grant_onetime" value="<?php echo esc_attr( (string) $flosc_product_token_grant_onetime ); ?>" min="0" step="1" class="regular-text">
 						<p class="description">Default tokens for one-time paid products.</p>
 					</td>
 				</tr>
 				<tr>
 					<th scope="row"><label for="flow_product_token_grant_recurring">Recurring Product Token Grant</label></th>
 					<td>
-						<input type="number" id="flow_product_token_grant_recurring" name="flow_product_token_grant_recurring" value="<?php echo esc_attr( $flosc_product_token_grant_recurring ); ?>" min="0" step="1" class="regular-text">
+						<input type="number" id="flow_product_token_grant_recurring" name="flow_product_token_grant_recurring" value="<?php echo esc_attr( (string) $flosc_product_token_grant_recurring ); ?>" min="0" step="1" class="regular-text">
 						<p class="description">Default tokens on each paid recurring cycle (e.g. monthly).</p>
 					</td>
 				</tr>
 				<tr>
 					<th scope="row"><label for="flow_product_token_grant_recurring_yearly">Recurring Yearly Product Token Grant</label></th>
 					<td>
-						<input type="number" id="flow_product_token_grant_recurring_yearly" name="flow_product_token_grant_recurring_yearly" value="<?php echo esc_attr( $flosc_product_token_grant_recurring_yearly ); ?>" min="0" step="1" class="regular-text">
+						<input type="number" id="flow_product_token_grant_recurring_yearly" name="flow_product_token_grant_recurring_yearly" value="<?php echo esc_attr( (string) $flosc_product_token_grant_recurring_yearly ); ?>" min="0" step="1" class="regular-text">
 						<p class="description">Default tokens on each paid yearly cycle.</p>
 					</td>
 				</tr>
 				<tr>
 					<th scope="row"><label for="flow_product_token_cap">Product Token Cap</label></th>
 					<td>
-						<input type="number" id="flow_product_token_cap" name="flow_product_token_cap" value="<?php echo esc_attr( $flosc_product_token_cap ); ?>" min="0" step="1" class="regular-text">
+						<input type="number" id="flow_product_token_cap" name="flow_product_token_cap" value="<?php echo esc_attr( (string) $flosc_product_token_cap ); ?>" min="0" step="1" class="regular-text">
 						<p class="description"><strong>0 = no cap.</strong> At the cap, payment still processes; product credits become 0 until the wallet is spent down.</p>
 					</td>
 				</tr>
@@ -502,20 +502,20 @@ $flosc_visible_products = array_values(
 				<tr>
 					<th scope="row"><label for="flow_tokens_communication_tokens_per_message">Visitor Wallet Initial Amount</label></th>
 					<td>
-						<input type="number" id="flow_tokens_communication_tokens_per_message" name="flow_tokens_communication_tokens_per_message" value="<?php echo esc_attr( $flosc_tokens_per_message ); ?>" min="1" step="1" class="regular-text">
+						<input type="number" id="flow_tokens_communication_tokens_per_message" name="flow_tokens_communication_tokens_per_message" value="<?php echo esc_attr( (string) $flosc_tokens_per_message ); ?>" min="1" step="1" class="regular-text">
 					</td>
 				</tr>
 				<tr>
 					<th scope="row"><label for="flow_guest_token_grant">Guest Wallet Additional Grant</label></th>
 					<td>
-						<input type="number" id="flow_guest_token_grant" name="flow_guest_token_grant" value="<?php echo esc_attr( $flosc_guest_token_grant ); ?>" min="0" step="1" class="regular-text">
+						<input type="number" id="flow_guest_token_grant" name="flow_guest_token_grant" value="<?php echo esc_attr( (string) $flosc_guest_token_grant ); ?>" min="0" step="1" class="regular-text">
 						<p class="description">V→G once: guest = visitor remaining + this grant.</p>
 					</td>
 				</tr>
 				<tr>
 					<th scope="row"><label for="flow_member_token_grant">Member Wallet Additional Grant</label></th>
 					<td>
-						<input type="number" id="flow_member_token_grant" name="flow_member_token_grant" value="<?php echo esc_attr( $flosc_member_token_grant ); ?>" min="0" step="1" class="regular-text">
+						<input type="number" id="flow_member_token_grant" name="flow_member_token_grant" value="<?php echo esc_attr( (string) $flosc_member_token_grant ); ?>" min="0" step="1" class="regular-text">
 						<p class="description">G→M once (Access Code / first membership): member = guest remaining + this grant.</p>
 					</td>
 				</tr>
@@ -574,7 +574,7 @@ $flosc_visible_products = array_values(
 				<tr>
 					<th scope="row"><label for="flow_visitor_low_token_threshold">Low Tokens Threshold</label></th>
 					<td>
-						<input type="number" id="flow_visitor_low_token_threshold" name="flow_visitor_low_token_threshold" value="<?php echo esc_attr( $flosc_low_token_threshold ); ?>" min="0" step="1" class="regular-text">
+						<input type="number" id="flow_visitor_low_token_threshold" name="flow_visitor_low_token_threshold" value="<?php echo esc_attr( (string) $flosc_low_token_threshold ); ?>" min="0" step="1" class="regular-text">
 					</td>
 				</tr>
 				<tr>

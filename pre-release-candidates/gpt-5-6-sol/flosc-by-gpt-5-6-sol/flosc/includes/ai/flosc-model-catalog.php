@@ -2,37 +2,37 @@
 /**
  * Ask an AI provider which models the API key can actually use.
  *
- * FLOSC used to ship hardcoded lists of model ids. Those drift — providers.
- * Release models faster than any plugin updates — and a stale list is worse.
- * Than no list, because an id it does not contain cannot even be saved.
+ * FLOSC used to ship hardcoded lists of model ids. Those drift — providers
+ * release models faster than any plugin updates — and a stale list is worse
+ * than no list, because an id it does not contain cannot even be saved.
  *
- * The list this returns is what the provider says the key can use. That is the.
- * Whole claim. Whether a given id then runs on this site is settled by making.
- * The call — the connection test does exactly that — not by FLOSC inspecting a.
- * Provider plugin's registry and guessing on its behalf.
+ * The list this returns is what the provider says the key can use. That is the
+ * whole claim. Whether a given id then runs on this site is settled by making
+ * the call — the connection test does exactly that — not by FLOSC inspecting a
+ * provider plugin's registry and guessing on its behalf.
  *
- * Each request below follows the provider's own published reference, checked.
- * Rather than recalled:
+ * Each request below follows the provider's own published reference, checked
+ * rather than recalled:
  *
- * Anthropic  GET /v1/models        headers x-api-key + anthropic-version,.
- * Limit 1..1000, pages via has_more/last_id.
- * → { data: [ { id, display_name } ] }.
- * Platform.claude.com/docs/en/api/models-list.
- * OpenAI     GET /v1/models        Bearer auth, no pagination.
- * → { object: "list", data: [ { id } ] }.
- * Github.com/openai/openai-openapi openapi.yaml.
- * Gemini     GET /v1beta/models    header x-goog-api-key, pageSize max 1000,.
- * Pages via nextPageToken.
- * → { models: [ { name: "models/x",.
- * DisplayName, supportedGenerationMethods } ] }.
- * Generativelanguage.googleapis.com discovery doc.
- * XAI        GET /v1/language-models   Bearer auth, no pagination.
- * → { models: [ { id, aliases } ] }.
- * Docs.x.ai rest-api-reference/inference/models.
- * Not /v1/models: that one lists image and.
- * Video generation models alongside the chat.
- * Ones, and offering grok-imagine-image as a.
- * Conversation model would be a lie.
+ *   Anthropic  GET /v1/models        headers x-api-key + anthropic-version,
+ *                                    limit 1..1000, pages via has_more/last_id
+ *                                    → { data: [ { id, display_name } ] }
+ *                                    platform.claude.com/docs/en/api/models-list
+ *   OpenAI     GET /v1/models        Bearer auth, no pagination
+ *                                    → { object: "list", data: [ { id } ] }
+ *                                    github.com/openai/openai-openapi openapi.yaml
+ *   Gemini     GET /v1beta/models    header x-goog-api-key, pageSize max 1000,
+ *                                    pages via nextPageToken
+ *                                    → { models: [ { name: "models/x",
+ *                                         displayName, supportedGenerationMethods } ] }
+ *                                    generativelanguage.googleapis.com discovery doc
+ *   xAI        GET /v1/language-models   Bearer auth, no pagination
+ *                                    → { models: [ { id, aliases } ] }
+ *                                    docs.x.ai rest-api-reference/inference/models
+ *                                    Not /v1/models: that one lists image and
+ *                                    video generation models alongside the chat
+ *                                    ones, and offering grok-imagine-image as a
+ *                                    conversation model would be a lie.
  *
  * @package FLOSC
  */
@@ -55,7 +55,7 @@ if ( ! function_exists( 'flosc_model_catalog_request' ) ) {
 	 * @param string $provider FLOSC provider slug.
 	 * @param string $api_key  The key to authenticate with.
 	 * @param string $cursor   Page cursor from the previous page, or ''.
-	 * @return Array{url:string,args:array<string,mixed>}|null.
+	 * @return array{url:string,args:array<string,mixed>}|null
 	 */
 	function flosc_model_catalog_request( $provider, $api_key, $cursor = '' ) {
 		$provider = sanitize_key( (string) $provider );
@@ -117,14 +117,14 @@ if ( ! function_exists( 'flosc_model_catalog_page' ) ) {
 	/**
 	 * Read one page of models out of whichever shape the provider answered with.
 	 *
-	 * Gemini's list is not only chat models — it carries embedding, TTS and.
-	 * Tuned entries too, and the provider says which is which in.
-	 * SupportedGenerationMethods. An id that cannot generateContent would only.
-	 * Fail later, so it is dropped here.
+	 * Gemini's list is not only chat models — it carries embedding, TTS and
+	 * tuned entries too, and the provider says which is which in
+	 * supportedGenerationMethods. An id that cannot generateContent would only
+	 * fail later, so it is dropped here.
 	 *
 	 * @param string              $provider FLOSC provider slug.
 	 * @param array<string,mixed> $body     Decoded response body.
-	 * @return Array{models:array<int,array{id:string,label:string}>,cursor:string}.
+	 * @return array{models:array<int,array{id:string,label:string}>,cursor:string}
 	 */
 	function flosc_model_catalog_page( $provider, $body ) {
 		$provider = sanitize_key( (string) $provider );
@@ -264,7 +264,7 @@ if ( ! function_exists( 'flosc_fetch_model_catalog' ) ) {
 	 *
 	 * @param string $provider FLOSC provider slug.
 	 * @param string $api_key  The saved key.
-	 * @return Array{models:array<int,array<string,mixed>>,provider:string}|WP_Error.
+	 * @return array{models:array<int,array<string,mixed>>,provider:string}|WP_Error
 	 */
 	function flosc_fetch_model_catalog( $provider, $api_key ) {
 		$provider = sanitize_key( (string) $provider );
@@ -379,17 +379,17 @@ if ( ! function_exists( 'flosc_default_model' ) ) {
 	/**
 	 * The model id FLOSC uses for a provider when the operator has not chosen one.
 	 *
-	 * These used to be written out by hand in six different files, which is how.
-	 * FLOSC ended up shipping ids their providers had already retired. A default.
-	 * Is a fact about the outside world, so it lives in one place and every.
-	 * Caller reads it from here.
+	 * These used to be written out by hand in six different files, which is how
+	 * FLOSC ended up shipping ids their providers had already retired. A default
+	 * is a fact about the outside world, so it lives in one place and every
+	 * caller reads it from here.
 	 *
-	 * Current as of the references checked in this file's header. When one goes.
-	 * Stale the operator is not stranded: the model field says so by name and.
+	 * Current as of the references checked in this file's header. When one goes
+	 * stale the operator is not stranded: the model field says so by name and
 	 * "Fetch models this key can use" lists what the key can actually run.
 	 *
 	 * @param string $provider FLOSC provider slug.
-	 * @return String Empty when the provider has no default (IVR, or unknown).
+	 * @return string Empty when the provider has no default (IVR, or unknown).
 	 */
 	function flosc_default_model( $provider ) {
 		$defaults = array(
@@ -412,20 +412,20 @@ if ( ! function_exists( 'flosc_fetch_model_details' ) ) {
 	/**
 	 * Ask the provider to describe one model.
 	 *
-	 * Anthropic publishes a per-model endpoint carrying the real context.
-	 * Window, the real maximum output, and a capability tree. FLOSC used to.
-	 * Cap Max Tokens at a hardcoded 4096, a number belonging to no model —.
-	 * Sonnet 5 allows 128,000 and Haiku 4.5 allows 64,000. Reading the limit.
-	 * From the model beats inventing one.
+	 * Anthropic publishes a per-model endpoint carrying the real context
+	 * window, the real maximum output, and a capability tree. FLOSC used to
+	 * cap Max Tokens at a hardcoded 4096, a number belonging to no model —
+	 * Sonnet 5 allows 128,000 and Haiku 4.5 allows 64,000. Reading the limit
+	 * from the model beats inventing one.
 	 *
-	 * What this cannot answer: sampling. There is no temperature entry in the.
-	 * Capability tree, so whether a model accepts temperature is only knowable.
-	 * By making a request. Do not present this as a complete settings list.
+	 * What this cannot answer: sampling. There is no temperature entry in the
+	 * capability tree, so whether a model accepts temperature is only knowable
+	 * by making a request. Do not present this as a complete settings list.
 	 *
 	 * @param string $provider FLOSC provider slug.
 	 * @param string $api_key  The saved key.
 	 * @param string $model    Model id to describe.
-	 * @return Array<string,mixed>|WP_Error.
+	 * @return array<string,mixed>|WP_Error
 	 */
 	function flosc_fetch_model_details( $provider, $api_key, $model ) {
 		$provider = sanitize_key( (string) $provider );
@@ -493,7 +493,7 @@ if ( ! function_exists( 'flosc_model_details_summarise' ) ) {
 	 * Turn a model description into the few facts an operator acts on.
 	 *
 	 * @param array<string,mixed> $body Decoded model object.
-	 * @return Array<string,mixed>.
+	 * @return array<string,mixed>
 	 */
 	function flosc_model_details_summarise( $body ) {
 		$caps = isset( $body['capabilities'] ) && is_array( $body['capabilities'] ) ? $body['capabilities'] : array();

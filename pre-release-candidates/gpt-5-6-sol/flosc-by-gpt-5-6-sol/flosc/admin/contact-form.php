@@ -1,6 +1,6 @@
 <?php
 /**
- * FLOSC Contact Form Tab.
+ * FLOSC Contact Form Tab
  *
  * @package FLOSC
  */

@@ -1,6 +1,6 @@
 <?php
 /**
- * FLOSC Lesson Manager.
+ * FLOSC Lesson Manager
  *
  * Manages lessons stored as WordPress posts.
  * Lessons are regular posts in a configured category.
@@ -21,11 +21,11 @@ class FLOSC_Lesson_Manager {
 
 	private static $instance = null;
 
-/**
- * Coordinate the instance behavior implemented by this code path.
- *
- * @return Mixed Result produced by the instance operation.
- */
+		/**
+	 * Coordinate the instance behavior implemented by this code path.
+	 *
+	 * @return mixed Result produced by the instance operation.
+	 */
 public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
@@ -39,7 +39,7 @@ public static function instance() {
 	 * The global flosc_content_item_category option may be empty if only per-flow was configured.
 	 *
 	 * @since 1.8.2
-	 * @return Mixed Result produced by the category operation.
+ * @return mixed Result produced by the category operation.
 	 */
 	private function resolve_category() {
 		// 1. Try per-flow settings (where the admin actually saves it)
@@ -75,15 +75,15 @@ public static function instance() {
 	/**
 	 * Get all lessons from ALL configured categories (content_item_groups + content_item_category).
 	 *
-	 * Queries every category across all content_item_groups in the current flow so.
+	 * Queries every category across all content_item_groups in the current flow so
 	 * "show all lessons" returns the full library across enabled lesson groups.
 	 * Falls back to single content_item_category for flows without content_item_groups.
 	 *
 	 * @since 3.0.8
-	 * @return Array Structured all lessons data.
+ * @return array Structured all lessons data.
 	 */
 	public function get_all_lessons() {
-		// --- Collect every category slug/ID from content_item_groups first ---.
+		// --- Collect every category slug/ID from content_item_groups first ---
 		$categories = array();
 		if ( function_exists( 'flosc' ) ) {
 			$flow = flosc()->get_current_flow();
@@ -96,7 +96,7 @@ public static function instance() {
 			}
 		}
 
-		// --- If no content_item_groups, fall back to the single content_item_category ---.
+		// --- If no content_item_groups, fall back to the single content_item_category ---
 		if ( empty( $categories ) ) {
 			$single = $this->resolve_category();
 			if ( empty( $single ) ) {
@@ -110,7 +110,7 @@ public static function instance() {
 
 		$categories = array_unique( $categories );
 
-		// --- Resolve slugs / IDs into term_id list for a single efficient query ---.
+		// --- Resolve slugs / IDs into term_id list for a single efficient query ---
 		$cat_ids = array();
 		foreach ( $categories as $cat ) {
 			if ( is_numeric( $cat ) ) {
@@ -155,11 +155,11 @@ public static function instance() {
 
 	/**
 	 * Get lessons from quiz-linked categories only (content_item_groups with quiz_id set).
-	 * Used for "show me the lessons covered in the quiz" — returns the quiz-mapped.
-	 * Content library (e.g. FLOSC Sample Data 10 posts), not the standalone library.
+	 * Used for "show me the lessons covered in the quiz" — returns the quiz-mapped
+	 * content library (e.g. FLOSC Sample Data 10 posts), not the standalone library.
 	 *
 	 * @since 3.0.8
-	 * @return Array Structured quiz lessons data.
+ * @return array Structured quiz lessons data.
 	 */
 	public function get_quiz_lessons() {
 		$categories = array();
@@ -237,8 +237,8 @@ public static function instance() {
 	 * Results are scoped to the flow's lesson categories so members can't accidentally browse other content.
 	 *
 	 * @since 3.0.8
-	 * @param mixed $search Input consumed by the Coordinate the search lessons behavior implemented by this code path. operation.
-	 * @return Mixed Result of the search lessons operation, or a WP_Error when it cannot complete.
+ * @param mixed $search Input consumed by the Coordinate the search lessons behavior implemented by this code path. operation.
+ * @return mixed Result of the search lessons operation, or a WP_Error when it cannot complete.
 	 */
 	public function search_lessons( $search ) {
 		if ( empty( trim( $search ) ) ) {
@@ -299,10 +299,9 @@ public static function instance() {
 	}
 
 	/**
-	 * Get a single lesson by ID.
-	 *
-	 * @param mixed $lesson_id Identifier used to select the record involved in the Resolve the current lesson value from the available Word Press and flow state. operation.
-	 * @return Mixed Result produced by the lesson operation.
+	 * Get a single lesson by ID
+ * @param mixed $lesson_id Identifier used to select the record involved in the Resolve the current lesson value from the available Word Press and flow state. operation.
+ * @return mixed Result produced by the lesson operation.
 	 */
 	public function get_lesson( $lesson_id ) {
 		$post = get_post( $lesson_id );
@@ -318,7 +317,7 @@ public static function instance() {
 	 * Get lessons that match quiz results (missed items)
 	 *
 	 * @param array $missed_items Items the user got wrong.
-	 * @return Array Matching lessons.
+	 * @return array Matching lessons
 	 */
 	public function get_lessons_for_missed_items( $missed_items ) {
 		if ( empty( $missed_items ) ) {
@@ -379,10 +378,9 @@ public static function instance() {
 	}
 
 	/**
-	 * Get the first (free) lesson for a set of missed items.
-	 *
-	 * @param mixed $missed_items Input consumed by the Resolve the current free lesson value from the available Word Press and flow state. operation.
-	 * @return Mixed Result produced by the free lesson operation.
+	 * Get the first (free) lesson for a set of missed items
+ * @param mixed $missed_items Input consumed by the Resolve the current free lesson value from the available Word Press and flow state. operation.
+ * @return mixed Result produced by the free lesson operation.
 	 */
 	public function get_free_lesson( $missed_items ) {
 		$lessons = $this->get_lessons_for_missed_items( $missed_items );
@@ -397,11 +395,10 @@ public static function instance() {
 	}
 
 	/**
-	 * Format a post as a lesson array.
-	 *
-	 * @param mixed $post            Input consumed by the Coordinate the format lesson behavior implemented by this code path. operation.
-	 * @param mixed $include_content Input consumed by the Coordinate the format lesson behavior implemented by this code path. operation.
-	 * @return Mixed Result produced by the format lesson operation.
+	 * Format a post as a lesson array
+ * @param mixed $post Input consumed by the Coordinate the format lesson behavior implemented by this code path. operation.
+ * @param mixed $include_content Input consumed by the Coordinate the format lesson behavior implemented by this code path. operation.
+ * @return mixed Result produced by the format lesson operation.
 	 */
 	private function format_lesson( $post, $include_content = false ) {
 		// v1.9.5: Decode HTML entities in title and excerpt.
@@ -443,12 +440,11 @@ public static function instance() {
 	}
 
 	/**
-	 * Check if user has access to a lesson.
-	 *
-	 * @param mixed $user_id        WordPress user ID whose Coordinate the user can access behavior implemented by this code path. state is being processed.
-	 * @param mixed $lesson_id      Identifier used to select the record involved in the Coordinate the user can access behavior implemented by this code path. operation.
-	 * @param mixed $is_free_lesson Input consumed by the Coordinate the user can access behavior implemented by this code path. operation.
-	 * @return Bool Whether user can access applies to the current state.
+	 * Check if user has access to a lesson
+ * @param mixed $user_id WordPress user ID whose Coordinate the user can access behavior implemented by this code path. state is being processed.
+ * @param mixed $lesson_id Identifier used to select the record involved in the Coordinate the user can access behavior implemented by this code path. operation.
+ * @param mixed $is_free_lesson Input consumed by the Coordinate the user can access behavior implemented by this code path. operation.
+ * @return bool Whether user can access applies to the current state.
 	 */
 	public function user_can_access( $user_id, $lesson_id, $is_free_lesson = false ) {
 		// Free lesson is always accessible to logged-in users.
@@ -476,10 +472,9 @@ public static function instance() {
 	}
 
 	/**
-	 * Get lesson mapping for pronunciation analyzer.
-	 * Returns array compatible with existing lesson_mapping format.
-	 *
-	 * @return Mixed Result produced by the lesson mapping operation.
+	 * Get lesson mapping for pronunciation analyzer
+	 * Returns array compatible with existing lesson_mapping format
+ * @return mixed Result produced by the lesson mapping operation.
 	 */
 	public function get_lesson_mapping() {
 		$lessons = $this->get_all_lessons();

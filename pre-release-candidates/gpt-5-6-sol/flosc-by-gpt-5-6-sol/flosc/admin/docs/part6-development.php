@@ -2,9 +2,9 @@
 /**
  * Documentation, Part 6: development.
  *
- * Prose only — no settings are read and nothing is written. Included by.
- * Admin/documentation.php inside the Documentation tab's markup, so the file.
- * Opens at heading level 1 and inherits the surrounding page wrapper.
+ * Prose only — no settings are read and nothing is written. Included by
+ * admin/documentation.php inside the Documentation tab's markup, so the file
+ * opens at heading level 1 and inherits the surrounding page wrapper.
  *
  * @package FLOSC
  */

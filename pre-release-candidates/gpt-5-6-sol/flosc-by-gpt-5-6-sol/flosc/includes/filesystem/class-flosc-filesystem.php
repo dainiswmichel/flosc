@@ -12,18 +12,18 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Class FLOSC_Filesystem.
+ * Class FLOSC_Filesystem
  */
 class FLOSC_Filesystem {
 
 	/**
 	 * The initialised WordPress filesystem, or null if it cannot be brought up.
 	 *
-	 * Callers must handle null rather than assume an object: on a host where the.
-	 * Filesystem API needs credentials FLOSC does not have, there is nothing to.
-	 * Return and a fatal would be the wrong answer.
+	 * Callers must handle null rather than assume an object: on a host where the
+	 * filesystem API needs credentials FLOSC does not have, there is nothing to
+	 * return and a fatal would be the wrong answer.
 	 *
-	 * @return WP_Filesystem_Base|null.
+	 * @return WP_Filesystem_Base|null
 	 */
 	public function get_wp_filesystem() {
 		global $wp_filesystem;
@@ -43,7 +43,7 @@ class FLOSC_Filesystem {
 	 * Pass 5: blocks writes/moves into the plugin directory.
 	 *
 	 * @param string $path Absolute filesystem path.
-	 * @return Bool.
+	 * @return bool
 	 */
 	private function path_is_under_uploads( $path ) {
 		if ( ! is_string( $path ) || '' === $path ) {
@@ -99,7 +99,7 @@ class FLOSC_Filesystem {
 	 *
 	 * @param string $source      Source path.
 	 * @param string $destination Destination path.
-	 * @return Bool.
+	 * @return bool
 	 */
 	public function move_file_safely( $source, $destination ) {
 		if ( ! $this->path_is_under_uploads( $destination ) ) {
@@ -129,7 +129,7 @@ class FLOSC_Filesystem {
 	 * Delete a file without calling PHP unlink().
 	 *
 	 * @param string $path File path.
-	 * @return Bool.
+	 * @return bool
 	 */
 	public function delete_file_safely( $path ) {
 		if ( ! file_exists( $path ) ) {
@@ -148,7 +148,7 @@ class FLOSC_Filesystem {
 	 * Delete a directory without calling PHP rmdir().
 	 *
 	 * @param string $path Directory path.
-	 * @return Bool.
+	 * @return bool
 	 */
 	public function delete_directory_safely( $path ) {
 		$filesystem = $this->get_wp_filesystem();
@@ -165,7 +165,7 @@ class FLOSC_Filesystem {
 	 *
 	 * @param string $path    Absolute path.
 	 * @param string $content File body.
-	 * @return Bool.
+	 * @return bool
 	 */
 	public function write_file_safely( $path, $content ) {
 		if ( ! $this->path_is_under_uploads( $path ) ) {
@@ -200,7 +200,7 @@ class FLOSC_Filesystem {
 	 * True when $path resolves under wp-content/uploads.
 	 *
 	 * @param string $path Absolute path.
-	 * @return Bool.
+	 * @return bool
 	 */
 	private function path_resolves_under_uploads( $path ) {
 		$uploads = wp_upload_dir();
@@ -219,7 +219,7 @@ class FLOSC_Filesystem {
 	 * Read file contents under wp-content/uploads via WP_Filesystem.
 	 *
 	 * @param string $path Absolute path.
-	 * @return String|false File body or false on failure.
+	 * @return string|false File body or false on failure.
 	 */
 	public function read_file_safely( $path ) {
 		if ( ! is_string( $path ) || '' === $path || ! $this->path_resolves_under_uploads( $path ) ) {
@@ -229,11 +229,11 @@ class FLOSC_Filesystem {
 	}
 
 	/**
-	 * Read file body via WP_Filesystem. Caller enforces path policy.
+	 * Read file body via WP_Filesystem. Caller enforces path policy
 	 * (uploads catalog, verified upload temp, or plugin sample-data).
 	 *
 	 * @param string $path Absolute path.
-	 * @return String|false.
+	 * @return string|false
 	 */
 	public function read_contents( $path ) {
 		if ( ! is_string( $path ) || '' === $path ) {
@@ -276,7 +276,7 @@ class FLOSC_Filesystem {
 	 *
 	 * @param string $path    Final absolute path under uploads.
 	 * @param string $content File body.
-	 * @return Bool.
+	 * @return bool
 	 */
 	public function write_text_atomic( $path, $content ) {
 		if ( ! $this->path_is_under_uploads( $path ) ) {
@@ -297,7 +297,7 @@ class FLOSC_Filesystem {
 	 * Write Deny-from-all .htaccess into an uploads-bound directory.
 	 *
 	 * @param string $dir Absolute directory path under uploads.
-	 * @return Bool.
+	 * @return bool
 	 */
 	public function protect_uploads_dir_with_htaccess( $dir ) {
 		if ( ! is_string( $dir ) || '' === $dir ) {
@@ -314,7 +314,7 @@ class FLOSC_Filesystem {
 	 * Prefer WP_Filesystem put_contents(php://output) over bare echo.
 	 *
 	 * @param string $body Binary or plain-text body.
-	 * @return Void.
+	 * @return void
 	 */
 	public function emit_raw_bytes_and_exit( $body ) {
 		$body       = is_string( $body ) ? $body : '';
@@ -334,7 +334,7 @@ class FLOSC_Filesystem {
 	 * @param string $body         Raw file body (TSV, markdown, etc.).
 	 * @param string $content_type MIME type (e.g. text/markdown; charset=UTF-8).
 	 * @param string $filename     Download filename (sanitized by caller).
-	 * @return Void.
+	 * @return void
 	 */
 	public function stream_plain_download_and_exit( $body, $content_type, $filename ) {
 		$body         = is_string( $body ) ? $body : '';
@@ -355,7 +355,7 @@ class FLOSC_Filesystem {
 
 	/**
 	 * Stream an uploads-bound binary file (optional HTTP Range) and exit.
-	 * Loads via WP_Filesystem then slices in memory — intended for small media.
+	 * Loads via WP_Filesystem then slices in memory — intended for small media
 	 * (e.g. phrase audio clips), not multi‑gigabyte assets.
 	 *
 	 * @param string      $path         Absolute path under uploads.
@@ -363,7 +363,7 @@ class FLOSC_Filesystem {
 	 * @param string      $filename     Download/inline filename.
 	 * @param bool        $is_download  Attachment vs inline.
 	 * @param string|null $range_header Raw HTTP Range header value, or null.
-	 * @return Void.
+	 * @return void
 	 */
 	public function stream_uploads_binary_range_and_exit( $path, $mime, $filename, $is_download = false, $range_header = null ) {
 		$body = $this->read_file_safely( $path );
@@ -427,7 +427,7 @@ class FLOSC_Filesystem {
 	 *
 	 * @param string $path Absolute path.
 	 * @param mixed  $data Data to encode.
-	 * @return Bool.
+	 * @return bool
 	 */
 	public function write_json_atomic( $path, $data ) {
 		$json = wp_json_encode( $data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE );

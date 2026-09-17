@@ -3,9 +3,9 @@
  * Storing one AI provider's key, model, and tuning.
  *
  * Pulled out of the AJAX handler so the rule can be stated once and tested:
- * A value is written into the flow settings row the Settings page reads, it.
- * Replaces only its own provider's entry, and everything else in that row —.
- * The other providers' keys above all — is left exactly as it was.
+ * a value is written into the flow settings row the Settings page reads, it
+ * replaces only its own provider's entry, and everything else in that row —
+ * the other providers' keys above all — is left exactly as it was.
  *
  * @package FLOSC
  */
@@ -18,13 +18,13 @@ if ( ! function_exists( 'flosc_provider_key_is_plausible' ) ) {
 	/**
 	 * Whether a pasted string could be an API key at all.
 	 *
-	 * Not a format check — providers change key shapes and FLOSC must never be.
-	 * The reason a valid new key is refused. This rejects only what no key can.
-	 * Be: empty, absurdly long, or carrying control characters, which is what a.
-	 * Bad paste looks like.
+	 * Not a format check — providers change key shapes and FLOSC must never be
+	 * the reason a valid new key is refused. This rejects only what no key can
+	 * be: empty, absurdly long, or carrying control characters, which is what a
+	 * bad paste looks like.
 	 *
 	 * @param string $api_key Pasted value.
-	 * @return True|WP_Error.
+	 * @return true|WP_Error
 	 */
 	function flosc_provider_key_is_plausible( $api_key ) {
 		$api_key = (string) $api_key;
@@ -52,7 +52,7 @@ if ( ! function_exists( 'flosc_store_provider_api_key' ) ) {
 	 * @param string $ivr      IVR filename identifying the flow.
 	 * @param string $provider FLOSC provider slug.
 	 * @param string $api_key  The key to store.
-	 * @return Array{option:string,setting:string,suffix:string}|WP_Error.
+	 * @return array{option:string,setting:string,suffix:string}|WP_Error
 	 */
 	function flosc_store_provider_api_key( $ivr, $provider, $api_key ) {
 		$provider = sanitize_key( (string) $provider );
@@ -111,15 +111,15 @@ if ( ! function_exists( 'flosc_store_provider_model' ) ) {
 	/**
 	 * Save one provider's model id onto one flow.
 	 *
-	 * Same rule as the key: it lands in the row the Settings page reads, it.
-	 * Replaces only its own provider's model, and nothing else on the flow.
-	 * Moves. Picking a model from the fetched list is worth nothing if the.
-	 * Pick does not survive the click.
+	 * Same rule as the key: it lands in the row the Settings page reads, it
+	 * replaces only its own provider's model, and nothing else on the flow
+	 * moves. Picking a model from the fetched list is worth nothing if the
+	 * pick does not survive the click.
 	 *
 	 * @param string $ivr      IVR filename identifying the flow.
 	 * @param string $provider FLOSC provider slug.
 	 * @param string $model    Model id to store.
-	 * @return Array{option:string,setting:string,model:string}|WP_Error.
+	 * @return array{option:string,setting:string,model:string}|WP_Error
 	 */
 	function flosc_store_provider_model( $ivr, $provider, $model ) {
 		$provider = sanitize_key( (string) $provider );
@@ -179,18 +179,18 @@ if ( ! function_exists( 'flosc_mts_utc' ) ) {
 	/**
 	 * The Michel Time Stamp, in UTC, to the millisecond.
 	 *
-	 * YYYYy-MMm-DDd-UTC-HHh-MMm-SSs-MMMms — for example.
-	 * 2026y-08m-30d-UTC-10h-48m-31s-472ms. Sorts correctly as text, carries its.
-	 * Own units so no reader has to guess which number is the month, and names.
-	 * Its zone so a stamp read in Riga and a stamp read in California mean the.
-	 * Same instant.
+	 * YYYYy-MMm-DDd-UTC-HHh-MMm-SSs-MMMms — for example
+	 * 2026y-08m-30d-UTC-10h-48m-31s-472ms. Sorts correctly as text, carries its
+	 * own units so no reader has to guess which number is the month, and names
+	 * its zone so a stamp read in Riga and a stamp read in California mean the
+	 * same instant.
 	 *
-	 * The server stamps its own writes. A browser clock can be wrong by hours,.
-	 * And "saved at" is a claim about when the database was written, which only.
-	 * The machine that wrote it can make.
+	 * The server stamps its own writes. A browser clock can be wrong by hours,
+	 * and "saved at" is a claim about when the database was written, which only
+	 * the machine that wrote it can make.
 	 *
 	 * @param float|null $when Unix timestamp with fraction. Defaults to now.
-	 * @return String.
+	 * @return string
 	 */
 	function flosc_mts_utc( $when = null ) {
 		$when = ( null === $when ) ? microtime( true ) : (float) $when;
@@ -219,22 +219,22 @@ if ( ! function_exists( 'flosc_store_model_tuning' ) ) {
 	/**
 	 * Store Step 2b for one flow: temperature, max tokens, and the request.
 	 *
-	 * The page-wide Save at the foot of Settings already writes these. This is.
-	 * The same write reachable from where they are typed, because a control.
-	 * Whose Save is a screen away is a control operators stop trusting: they.
-	 * Change a number, see nothing happen, and conclude it did not take.
+	 * The page-wide Save at the foot of Settings already writes these. This is
+	 * the same write reachable from where they are typed, because a control
+	 * whose Save is a screen away is a control operators stop trusting: they
+	 * change a number, see nothing happen, and conclude it did not take.
 	 *
-	 * The parameter text is validated before anything is written. A request.
-	 * That will not parse is refused with the line that broke it, and the.
-	 * Stored tuning is left exactly as it was — a half-saved request is worse.
-	 * Than an unsaved one. What survives is then reconciled the same way the.
-	 * Page-wide save reconciles it, so the fields and the text agree afterwards.
+	 * The parameter text is validated before anything is written. A request
+	 * that will not parse is refused with the line that broke it, and the
+	 * stored tuning is left exactly as it was — a half-saved request is worse
+	 * than an unsaved one. What survives is then reconciled the same way the
+	 * page-wide save reconciles it, so the fields and the text agree afterwards.
 	 *
 	 * @param string              $ivr      Flow file the tuning belongs to.
 	 * @param string              $provider FLOSC provider slug.
-	 * @param array<string,mixed> $tuning   Temperature, max_tokens, params. A.
-	 * Key left out is left alone.
-	 * @return Array<string,mixed>|WP_Error The values as stored.
+	 * @param array<string,mixed> $tuning   temperature, max_tokens, params. A
+	 *                                      key left out is left alone.
+	 * @return array<string,mixed>|WP_Error The values as stored.
 	 */
 	function flosc_store_model_tuning( $ivr, $provider, $tuning ) {
 		$provider = sanitize_key( (string) $provider );

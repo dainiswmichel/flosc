@@ -1,8 +1,8 @@
 <?php
 /**
- * FLOSC Flow Edit Page.
+ * FLOSC Flow Edit Page
  *
- * Create/edit a single flow.
+ * Create/edit a single flow
  *
  * @package FLOSC
  * @since 1.2.2
@@ -514,7 +514,7 @@ $flosc_categories = get_categories( array( 'hide_empty' => false ) );
 							<select id="wp_category" name="wp_category" class="regular-text">
 								<option value="0">— All Categories —</option>
 								<?php foreach ( $flosc_categories as $flosc_cat ) : ?>
-									<option value="<?php echo esc_attr( $flosc_cat->term_id ); ?>" <?php selected( $flosc_flow['wp_category_id'] ?? 0, $flosc_cat->term_id ); ?>>
+									<option value="<?php echo esc_attr( (string) $flosc_cat->term_id ); ?>" <?php selected( $flosc_flow['wp_category_id'] ?? 0, $flosc_cat->term_id ); ?>>
 										<?php echo esc_html( $flosc_cat->name ); ?> (<?php echo esc_html( (string) $flosc_cat->count ); ?> posts)
 									</option>
 								<?php endforeach; ?>

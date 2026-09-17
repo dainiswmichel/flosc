@@ -1,12 +1,11 @@
 <?php
 /**
- * FLOSC Documentation Tab.
+ * FLOSC Documentation Tab
  *
- * In-admin reference manual. Content sections are keyed by topic ID.
- * To support future helpID deep-linking from other admin tabs.
+ * In-admin reference manual. Content sections are keyed by topic ID
+ * to support future helpID deep-linking from other admin tabs.
  *
- * Content status: �.
- * = written, 🔲 = placeholder (heading structure only)
+ * Content status: ✅ = written, 🔲 = placeholder (heading structure only)
  *
  * @since 8.0.1
  *

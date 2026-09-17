@@ -19,7 +19,7 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
  * Coordinate the uninstall delete options by prefix behavior implemented by this code path.
  *
  * @param string $prefix Option name prefix.
- * @return Void.
+ * @return void
  */
 function flosc_uninstall_delete_options_by_prefix( $prefix ) {
 	global $wpdb;
@@ -41,7 +41,7 @@ function flosc_uninstall_delete_options_by_prefix( $prefix ) {
  * Coordinate the uninstall delete sitemeta by prefix behavior implemented by this code path.
  *
  * @param string $prefix Meta key prefix.
- * @return Void.
+ * @return void
  */
 function flosc_uninstall_delete_sitemeta_by_prefix( $prefix ) {
 	if ( ! is_multisite() ) {
@@ -63,9 +63,9 @@ function flosc_uninstall_delete_sitemeta_by_prefix( $prefix ) {
 /**
  * Bulk-delete object meta by key prefix (no per-object PHP loops).
  *
- * @param string $table  Full table name (usermeta, postmeta, termmeta).
+ * @param string $table Full table name (usermeta, postmeta, termmeta).
  * @param string $prefix Meta key prefix.
- * @return Void.
+ * @return void
  */
 function flosc_uninstall_delete_meta_table_prefix( $table, $prefix ) {
 	global $wpdb;
@@ -124,7 +124,7 @@ if ( function_exists( 'wp_clear_scheduled_hook' ) ) {
  * Recursively remove a directory under uploads.
  *
  * @param string $dir Absolute path.
- * @return Void.
+ * @return void
  */
 function flosc_uninstall_rm_rf( $dir ) {
 	$dir = untrailingslashit( (string) $dir );

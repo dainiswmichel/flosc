@@ -2,17 +2,17 @@
 /**
  * Extra model parameters, written by the operator.
  *
- * FLOSC ships two tuning fields. Providers ship dozens, they differ per model,.
- * And they change without notice — measured against one Anthropic key on.
- * 2026-08-30, Sonnet 4.5 accepts temperature, top_p and top_k while Sonnet 5.
- * Rejects all three and accepts thinking instead. No fixed set of inputs can.
- * Track that, so the operator gets to name parameters FLOSC has never heard of.
+ * FLOSC ships two tuning fields. Providers ship dozens, they differ per model,
+ * and they change without notice — measured against one Anthropic key on
+ * 2026-08-30, Sonnet 4.5 accepts temperature, top_p and top_k while Sonnet 5
+ * rejects all three and accepts thinking instead. No fixed set of inputs can
+ * track that, so the operator gets to name parameters FLOSC has never heard of.
  *
- * What FLOSC owes them in return is not silence. It parses what they wrote.
- * Before storing it, so a typo is caught at the point of typing, and it passes.
- * The provider's own refusal back verbatim rather than swallowing it. FLOSC.
- * Does not judge whether a parameter is real; the provider does that, and it.
- * Is the only thing qualified to.
+ * What FLOSC owes them in return is not silence. It parses what they wrote
+ * before storing it, so a typo is caught at the point of typing, and it passes
+ * the provider's own refusal back verbatim rather than swallowing it. FLOSC
+ * does not judge whether a parameter is real; the provider does that, and it
+ * is the only thing qualified to.
  *
  * @package FLOSC
  */
@@ -26,12 +26,12 @@ if ( ! function_exists( 'flosc_parse_model_parameters' ) ) {
 	 * Read operator-written parameters into an array.
 	 *
 	 * Two shapes are accepted, because both are things people actually type:
-	 * A JSON object, or one "key: value" per line. Values keep their type —.
-	 * 0.3 stays a number, true stays a boolean, a JSON object stays an object —.
-	 * Since a provider that wants a number will refuse the string "0.3".
+	 * a JSON object, or one "key: value" per line. Values keep their type —
+	 * 0.3 stays a number, true stays a boolean, a JSON object stays an object —
+	 * since a provider that wants a number will refuse the string "0.3".
 	 *
 	 * @param string $raw What the operator typed.
-	 * @return Array<string,mixed>|WP_Error.
+	 * @return array<string,mixed>|WP_Error
 	 */
 	function flosc_parse_model_parameters( $raw ) {
 		$raw = trim( (string) $raw );
@@ -105,7 +105,7 @@ if ( ! function_exists( 'flosc_coerce_model_parameter_value' ) ) {
 	 * Give a typed value the type the provider expects.
 	 *
 	 * @param string $value Raw value as typed.
-	 * @return Mixed.
+	 * @return mixed
 	 */
 	function flosc_coerce_model_parameter_value( $value ) {
 		$value = trim( (string) $value );
@@ -150,19 +150,19 @@ if ( ! function_exists( 'flosc_validate_model_parameter_keys' ) ) {
 	/**
 	 * Refuse only what would make the request malformed.
 	 *
-	 * The parameter set is the payload. Temperature and Max Tokens above are a.
-	 * Convenience for writing into it, not owners of it — so naming one of them.
-	 * Here overrides the field, which is what an operator typing a payload.
-	 * Expects. FLOSC shows that the override happened rather than pretending.
-	 * The field still rules.
+	 * The parameter set is the payload. Temperature and Max Tokens above are a
+	 * convenience for writing into it, not owners of it — so naming one of them
+	 * here overrides the field, which is what an operator typing a payload
+	 * expects. FLOSC shows that the override happened rather than pretending
+	 * the field still rules.
 	 *
-	 * FLOSC keeps no list of allowed parameters; a list would be wrong within.
-	 * Weeks, which is the failure this field exists to avoid. What is refused.
-	 * Is only what FLOSC must assemble for the request to be a request at all:
-	 * The conversation itself, and the streaming mode its parser depends on.
+	 * FLOSC keeps no list of allowed parameters; a list would be wrong within
+	 * weeks, which is the failure this field exists to avoid. What is refused
+	 * is only what FLOSC must assemble for the request to be a request at all:
+	 * the conversation itself, and the streaming mode its parser depends on.
 	 *
 	 * @param array<string,mixed> $params Parsed parameters.
-	 * @return Array<string,mixed>|WP_Error.
+	 * @return array<string,mixed>|WP_Error
 	 */
 	function flosc_validate_model_parameter_keys( $params ) {
 		// Not "FLOSC owns these" — "the request stops working without these".
@@ -204,11 +204,11 @@ if ( ! function_exists( 'flosc_get_model_parameters' ) ) {
 	/**
 	 * The stored parameters for one provider on the current flow.
 	 *
-	 * Anything unparseable is treated as absent rather than sent, because a.
-	 * Broken parameter set must not take a working bot down with it.
+	 * Anything unparseable is treated as absent rather than sent, because a
+	 * broken parameter set must not take a working bot down with it.
 	 *
 	 * @param string $provider FLOSC provider slug.
-	 * @return Array<string,mixed>.
+	 * @return array<string,mixed>
 	 */
 	function flosc_get_model_parameters( $provider ) {
 		$provider = sanitize_key( (string) $provider );
@@ -227,23 +227,23 @@ if ( ! function_exists( 'flosc_model_parameter_reference' ) ) {
 	/**
 	 * What each parameter does, for the operator typing it.
 	 *
-	 * Documentation, never a gate. A name absent from this list is still sent —.
-	 * The provider rules on it, and its answer comes back in the connection.
-	 * Test. That is what keeps this list from going stale in a way that costs.
-	 * Anything: when a provider ships a parameter tomorrow, it works in FLOSC.
-	 * Tomorrow, and only the note beside it is missing. For that case the panel.
-	 * Offers to ask the configured model itself what the parameter is.
+	 * Documentation, never a gate. A name absent from this list is still sent —
+	 * the provider rules on it, and its answer comes back in the connection
+	 * test. That is what keeps this list from going stale in a way that costs
+	 * anything: when a provider ships a parameter tomorrow, it works in FLOSC
+	 * tomorrow, and only the note beside it is missing. For that case the panel
+	 * offers to ask the configured model itself what the parameter is.
 	 *
 	 * Fields:
-	 * What      one paragraph, in the operator's language, not the spec's.
-	 * Range     what a sane value looks like.
-	 * Providers who takes it, in prose, including the exceptions.
-	 * Measured  true when FLOSC has watched a live API accept or refuse it.
-	 * Applies   provider slugs to list it under. Documentation again: a.
-	 * Parameter absent here can still be typed and sent.
-	 * Example   the line clicking it writes into the request.
+	 *   what      one paragraph, in the operator's language, not the spec's.
+	 *   range     what a sane value looks like.
+	 *   providers who takes it, in prose, including the exceptions.
+	 *   measured  true when FLOSC has watched a live API accept or refuse it.
+	 *   applies   provider slugs to list it under. Documentation again: a
+	 *             parameter absent here can still be typed and sent.
+	 *   example   the line clicking it writes into the request.
 	 *
-	 * @return Array<string,array<string,mixed>>.
+	 * @return array<string,array<string,mixed>>
 	 */
 	function flosc_model_parameter_reference() {
 		return array(
@@ -383,12 +383,12 @@ if ( ! function_exists( 'flosc_model_parameters_for_provider' ) ) {
 	/**
 	 * The reference rows worth showing for one provider.
 	 *
-	 * A filter over documentation, not over what can be sent. An unknown.
-	 * Provider gets the whole list rather than an empty one — better to show.
-	 * Everything FLOSC knows than to imply a provider takes nothing.
+	 * A filter over documentation, not over what can be sent. An unknown
+	 * provider gets the whole list rather than an empty one — better to show
+	 * everything FLOSC knows than to imply a provider takes nothing.
 	 *
 	 * @param string $provider FLOSC provider slug.
-	 * @return Array<string,array<string,mixed>>.
+	 * @return array<string,array<string,mixed>>
 	 */
 	function flosc_model_parameters_for_provider( $provider ) {
 		$provider = sanitize_key( (string) $provider );
@@ -416,17 +416,17 @@ if ( ! function_exists( 'flosc_model_parameter_recipes' ) ) {
 	/**
 	 * Whole parameter sets that do a named job, for a provider.
 	 *
-	 * A parameter on its own asks the operator to work out what to combine it.
-	 * With. These are the combinations, each with the reason it exists, so a.
-	 * Setup that takes an afternoon of reading can be arrived at in one click.
-	 * And then edited.
+	 * A parameter on its own asks the operator to work out what to combine it
+	 * with. These are the combinations, each with the reason it exists, so a
+	 * setup that takes an afternoon of reading can be arrived at in one click
+	 * and then edited.
 	 *
-	 * Every recipe here is composed only of parameters FLOSC has watched that.
-	 * Provider accept. A provider nobody has measured gets none, which is the.
-	 * Honest answer rather than a plausible-looking guess.
+	 * Every recipe here is composed only of parameters FLOSC has watched that
+	 * provider accept. A provider nobody has measured gets none, which is the
+	 * honest answer rather than a plausible-looking guess.
 	 *
 	 * @param string $provider FLOSC provider slug.
-	 * @return Array<int,array<string,string>> name, why, params.
+	 * @return array<int,array<string,string>> name, why, params.
 	 */
 	function flosc_model_parameter_recipes( $provider ) {
 		$recipes = array(
@@ -504,12 +504,12 @@ if ( ! function_exists( 'flosc_model_parameters_overriding' ) ) {
 	/**
 	 * Which of the visible tuning fields the parameter text is overriding.
 	 *
-	 * The fields above and this box write into the same payload, so one can.
-	 * Quietly replace the other. An operator is owed the word "overridden".
-	 * Rather than a number on screen that is not the number being sent.
+	 * The fields above and this box write into the same payload, so one can
+	 * quietly replace the other. An operator is owed the word "overridden"
+	 * rather than a number on screen that is not the number being sent.
 	 *
 	 * @param string $provider FLOSC provider slug.
-	 * @return Array<string,mixed> Field key => value the parameters will send.
+	 * @return array<string,mixed> Field key => value the parameters will send.
 	 */
 	function flosc_model_parameters_overriding( $provider ) {
 		$params = flosc_get_model_parameters( $provider );
@@ -531,12 +531,12 @@ if ( ! function_exists( 'flosc_format_model_parameter_value' ) ) {
 	 * One parameter value, written the way a person would write it.
 	 *
 	 * Var_export() on a float prints its full binary expansion — 0.9 comes back
-	 * As 0.90000000000000002220446049250313080847263336181640625, which is the.
-	 * Same number and an unusable thing to show anybody. json_encode gives the.
-	 * Shortest decimal that round-trips, which is what was typed.
+	 * as 0.90000000000000002220446049250313080847263336181640625, which is the
+	 * same number and an unusable thing to show anybody. json_encode gives the
+	 * shortest decimal that round-trips, which is what was typed.
 	 *
 	 * @param mixed $value Parsed parameter value.
-	 * @return String.
+	 * @return string
 	 */
 	function flosc_format_model_parameter_value( $value ) {
 		if ( null === $value ) {
@@ -567,14 +567,14 @@ if ( ! function_exists( 'flosc_build_model_parameter_preview' ) ) {
 	/**
 	 * The request as it stands, built from the fields plus anything extra.
 	 *
-	 * Same idea as the personality preview: the controls above compose it, and.
-	 * An operator who wants something the controls cannot express edits it.
-	 * Directly. Reading it should answer "what will FLOSC actually send?".
-	 * Without opening a network tab.
+	 * Same idea as the personality preview: the controls above compose it, and
+	 * an operator who wants something the controls cannot express edits it
+	 * directly. Reading it should answer "what will FLOSC actually send?"
+	 * without opening a network tab.
 	 *
 	 * @param string              $provider FLOSC provider slug.
 	 * @param array<string,mixed> $settings Flow settings.
-	 * @return String YAML-style lines.
+	 * @return string YAML-style lines.
 	 */
 	function flosc_build_model_parameter_preview( $provider, $settings ) {
 		$provider = sanitize_key( (string) $provider );
@@ -614,22 +614,22 @@ if ( ! function_exists( 'flosc_reconcile_model_parameters' ) ) {
 	/**
 	 * Fold what the operator wrote back into the fields it names.
 	 *
-	 * The parameter text wins, so after a save the controls above must show.
-	 * What it says — otherwise the page displays one number and sends another,.
-	 * Which is the confusion this whole arrangement exists to end.
+	 * The parameter text wins, so after a save the controls above must show
+	 * what it says — otherwise the page displays one number and sends another,
+	 * which is the confusion this whole arrangement exists to end.
 	 *
-	 * Temperature and max_tokens are copied into the fields that display them.
-	 * The text itself is never touched. That is the whole rule: a save may.
-	 * Refuse, and a save that succeeds may not rewrite, reorder, renumber or.
-	 * Delete a single character of what was typed. FLOSC used to lift those two.
-	 * Parameters out of the text and rebuild the rest from its own parser,.
-	 * Which reordered the lines, reprinted 0.9 as its full binary expansion,.
-	 * And — on a provider known to refuse temperature — dropped that line on.
-	 * The floor. Every one of those looked like Save eating the work.
+	 * temperature and max_tokens are copied into the fields that display them.
+	 * The text itself is never touched. That is the whole rule: a save may
+	 * refuse, and a save that succeeds may not rewrite, reorder, renumber or
+	 * delete a single character of what was typed. FLOSC used to lift those two
+	 * parameters out of the text and rebuild the rest from its own parser,
+	 * which reordered the lines, reprinted 0.9 as its full binary expansion,
+	 * and — on a provider known to refuse temperature — dropped that line on
+	 * the floor. Every one of those looked like Save eating the work.
 	 *
 	 * @param array<string,mixed> $settings Flow settings being saved.
 	 * @param string              $provider FLOSC provider slug.
-	 * @return Array<string,mixed>.
+	 * @return array<string,mixed>
 	 */
 	function flosc_reconcile_model_parameters( $settings, $provider ) {
 		$provider = sanitize_key( (string) $provider );

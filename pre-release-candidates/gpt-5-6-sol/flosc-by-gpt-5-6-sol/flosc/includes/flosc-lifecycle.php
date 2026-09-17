@@ -2,9 +2,9 @@
 /**
  * Plugin lifecycle — what happens on activation and deactivation.
  *
- * These functions run outside the main class on purpose. A registration hook.
- * Pointed at a class method only fires if the class is already loaded at the.
- * Moment WordPress calls it, which is not guaranteed during activation.
+ * These functions run outside the main class on purpose. A registration hook
+ * pointed at a class method only fires if the class is already loaded at the
+ * moment WordPress calls it, which is not guaranteed during activation.
  *
  * @package FLOSC
  */
@@ -17,9 +17,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Seed options and run first-time setup when the plugin is activated.
  *
  * @since 3.0.9 Moved outside the main class so the activation hook fires
- * Reliably, whether or not that class has loaded yet.
+ *              reliably, whether or not that class has loaded yet.
  *
- * @return Void.
+ * @return void
  */
 function flosc_activate() {
 	// Specialty product roles are created when that flow/product.
@@ -157,8 +157,8 @@ function flosc_activate() {
 /**
  * Deactivation cleanup.
  *
- * Keep stored data intact on deactivation, but unschedule FLOSC cron jobs.
- * And flush rewrite rules to avoid stale routes.
+ * Keep stored data intact on deactivation, but unschedule FLOSC cron jobs
+ * and flush rewrite rules to avoid stale routes.
  */
 function flosc_deactivate() {
 	wp_clear_scheduled_hook( 'flosc_cleanup_visitor_audio' );
@@ -168,8 +168,7 @@ function flosc_deactivate() {
 
 /**
  * Suggested privacy policy text for Settings → Privacy.
- *
- * @return Mixed Result produced by the add privacy policy content operation.
+ * @return mixed Result produced by the add privacy policy content operation.
  */
 function flosc_add_privacy_policy_content() {
 	if ( ! function_exists( 'wp_add_privacy_policy_content' ) ) {

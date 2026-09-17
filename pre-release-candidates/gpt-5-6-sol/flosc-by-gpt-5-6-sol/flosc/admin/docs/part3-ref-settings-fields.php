@@ -2,17 +2,17 @@
 /**
  * Documentation, Part 3 reference: every portable flow setting, field by field.
  *
- * Compiled 11 Aug 2026 from the settings inventory and the descriptions carried.
- * In the code that reads each field. API keys and other secrets are listed in a.
- * Separate section and never travel in a portable flow file.
+ * Compiled 11 Aug 2026 from the settings inventory and the descriptions carried
+ * in the code that reads each field. API keys and other secrets are listed in a
+ * separate section and never travel in a portable flow file.
  *
  * Included by admin/documentation.php inside the Documentation tab's markup.
- * $selected_ivr (or $flosc_selected_ivr) is read out of the includer's scope.
- * Rather than passed in, because an include shares the caller's scope and this.
- * Page is only ever reached through that one caller. It names the flow the.
- * "Open admin tab" links should point at. Either name is accepted because the.
- * Documentation tab has used both; absent, the links fall back to no flow and.
- * Still resolve to the tab.
+ * $selected_ivr (or $flosc_selected_ivr) is read out of the includer's scope
+ * rather than passed in, because an include shares the caller's scope and this
+ * page is only ever reached through that one caller. It names the flow the
+ * "Open admin tab" links should point at. Either name is accepted because the
+ * Documentation tab has used both; absent, the links fall back to no flow and
+ * still resolve to the tab.
  *
  * @package FLOSC
  */
@@ -33,20 +33,20 @@ if ( ! function_exists( 'flosc_ref_settings_tab_url' ) ) {
 	/**
 	 * URL of one Settings tab, for the "Open admin tab" link under each field.
 	 *
-	 * Twenty-three of these links appear below. Until v82.9 each one built its.
-	 * Own URL inside the href attribute, which a formatting pass then split.
-	 * Across eleven lines -- putting a newline inside the attribute value on.
-	 * Every link. Naming the work here keeps each link on the line it belongs.
-	 * On and keeps the rendered markup clean.
+	 * Twenty-three of these links appear below. Until v82.9 each one built its
+	 * own URL inside the href attribute, which a formatting pass then split
+	 * across eleven lines -- putting a newline inside the attribute value on
+	 * every link. Naming the work here keeps each link on the line it belongs
+	 * on and keeps the rendered markup clean.
 	 *
-	 * The flow is passed in rather than reached for. $flosc_ref_ivr lives in the.
-	 * Scope of whatever called this template, which is not the global scope, so.
-	 * A function cannot see it -- reaching for it would silently yield an empty.
-	 * Flow on every link.
+	 * The flow is passed in rather than reached for. $flosc_ref_ivr lives in the
+	 * scope of whatever called this template, which is not the global scope, so
+	 * a function cannot see it -- reaching for it would silently yield an empty
+	 * flow on every link.
 	 *
 	 * @param string $tab Settings tab slug, e.g. 'flow' or 'token-management'.
 	 * @param string $ivr Flow the link should open, or '' for none selected.
-	 * @return String Admin URL for that tab in that flow.
+	 * @return string Admin URL for that tab in that flow.
 	 */
 	function flosc_ref_settings_tab_url( $tab, $ivr ) {
 		return add_query_arg(

@@ -1,20 +1,20 @@
 <?php
 /**
- * FLOSC Admin — DA1 Catalog Manager.
+ * FLOSC Admin — DA1 Catalog Manager
  *
- * DA1 Catalogs are flow-scoped structured datasets used by FLOSC to deliver.
- * Curated records, media references, fallback content, and response material.
- * Without hard-coding project-specific data into plugin PHP.
+ * DA1 Catalogs are flow-scoped structured datasets used by FLOSC to deliver
+ * curated records, media references, fallback content, and response material
+ * without hard-coding project-specific data into plugin PHP.
  *
- * Catalogs are stored as TSV files under wp-content/uploads/flosc-catalogs.
- * And assigned to flows by the floscAdmin.
+ * Catalogs are stored as TSV files under wp-content/uploads/flosc-catalogs
+ * and assigned to flows by the floscAdmin.
  *
- * V8.0.1 foundation:
- * - Multi-catalog TSV management.
+ * v8.0.1 foundation:
+ * - Multi-catalog TSV management
  * - Parent/child row model (85, 85.1, 85.2)
- * - Required control columns with safe defaults.
- * - Status model: active / paused.
- * - Upload and export catalog actions.
+ * - Required control columns with safe defaults
+ * - Status model: active / paused
+ * - Upload and export catalog actions
  *
  * @package FLOSC
  */
@@ -27,14 +27,14 @@ if ( ! current_user_can( 'manage_options' ) ) {
 }
 
 if ( ! function_exists( 'flosc_da1_safe_json_decode' ) ) {
-/**
- * Coordinate the da1 safe json decode behavior implemented by this code path.
- *
- * @param mixed $raw       Input consumed by the Coordinate the da1 safe json decode behavior implemented by this code path. operation.
- * @param mixed $max_bytes Input consumed by the Coordinate the da1 safe json decode behavior implemented by this code path. operation.
- * @param mixed $depth     Input consumed by the Coordinate the da1 safe json decode behavior implemented by this code path. operation.
- * @return Mixed Result of the da1 safe json decode operation, or a WP_Error when it cannot complete.
- */
+		/**
+	 * Coordinate the da1 safe json decode behavior implemented by this code path.
+	 *
+	 * @param mixed $raw Input consumed by the Coordinate the da1 safe json decode behavior implemented by this code path. operation.
+	 * @param mixed $max_bytes Input consumed by the Coordinate the da1 safe json decode behavior implemented by this code path. operation.
+	 * @param mixed $depth Input consumed by the Coordinate the da1 safe json decode behavior implemented by this code path. operation.
+	 * @return mixed Result of the da1 safe json decode operation, or a WP_Error when it cannot complete.
+	 */
 function flosc_da1_safe_json_decode( $raw, $max_bytes = 200000, $depth = 32 ) {
 		$raw = (string) $raw;
 		if ( '' === $raw || strlen( $raw ) > $max_bytes ) {
@@ -124,7 +124,7 @@ $flosc_da1_post = $flosc_post;
  * Coordinate the da1 slugify behavior implemented by this code path.
  *
  * @param mixed $value Value consumed or normalized by the Coordinate the da1 slugify behavior implemented by this code path. operation.
- * @return Mixed Result produced by the da1 slugify operation.
+ * @return mixed Result produced by the da1 slugify operation.
  */
 function flosc_da1_slugify( $value ) {
 	$value = strtolower( trim( (string) $value ) );
@@ -137,7 +137,7 @@ function flosc_da1_slugify( $value ) {
  * Coordinate the da1 normalize key behavior implemented by this code path.
  *
  * @param mixed $value Value consumed or normalized by the Coordinate the da1 normalize key behavior implemented by this code path. operation.
- * @return Mixed Result produced by the da1 normalize key operation.
+ * @return mixed Result produced by the da1 normalize key operation.
  */
 function flosc_da1_normalize_key( $value ) {
 	$value = strtolower( trim( (string) $value ) );
@@ -151,7 +151,7 @@ function flosc_da1_normalize_key( $value ) {
  * Coordinate the da1 parse tsv behavior implemented by this code path.
  *
  * @param mixed $flosc_da1_content Input consumed by the Coordinate the da1 parse tsv behavior implemented by this code path. operation.
- * @return Mixed Result produced by the da1 parse tsv operation.
+ * @return mixed Result produced by the da1 parse tsv operation.
  */
 function flosc_da1_parse_tsv( $flosc_da1_content ) {
 	$flosc_da1_rows = array();
@@ -202,7 +202,7 @@ function flosc_da1_parse_tsv( $flosc_da1_content ) {
  * Coordinate the da1 tsv cell behavior implemented by this code path.
  *
  * @param mixed $value Value consumed or normalized by the Coordinate the da1 tsv cell behavior implemented by this code path. operation.
- * @return Mixed Result produced by the da1 tsv cell operation.
+ * @return mixed Result produced by the da1 tsv cell operation.
  */
 function flosc_da1_tsv_cell( $value ) {
 	$value = str_replace( array( "\r\n", "\r" ), "\n", (string) $value );
@@ -216,8 +216,8 @@ function flosc_da1_tsv_cell( $value ) {
  * Coordinate the da1 normalize columns behavior implemented by this code path.
  *
  * @param mixed $flosc_da1_columns Input consumed by the Coordinate the da1 normalize columns behavior implemented by this code path. operation.
- * @param mixed $required_columns  Input consumed by the Coordinate the da1 normalize columns behavior implemented by this code path. operation.
- * @return Mixed Result produced by the da1 normalize columns operation.
+ * @param mixed $required_columns Input consumed by the Coordinate the da1 normalize columns behavior implemented by this code path. operation.
+ * @return mixed Result produced by the da1 normalize columns operation.
  */
 function flosc_da1_normalize_columns( $flosc_da1_columns, $required_columns ) {
 	$payload_columns = array();
@@ -247,9 +247,9 @@ function flosc_da1_normalize_columns( $flosc_da1_columns, $required_columns ) {
 /**
  * Coordinate the da1 sanitize payload columns behavior implemented by this code path.
  *
- * @param mixed $value            Value consumed or normalized by the Coordinate the da1 sanitize payload columns behavior implemented by this code path. operation.
+ * @param mixed $value Value consumed or normalized by the Coordinate the da1 sanitize payload columns behavior implemented by this code path. operation.
  * @param mixed $required_columns Input consumed by the Coordinate the da1 sanitize payload columns behavior implemented by this code path. operation.
- * @return Mixed Result produced by the da1 sanitize payload columns operation.
+ * @return mixed Result produced by the da1 sanitize payload columns operation.
  */
 function flosc_da1_sanitize_payload_columns( $value, $required_columns ) {
 	$columns = preg_split( '/[,\r\n]+/', (string) $value );
@@ -275,7 +275,7 @@ function flosc_da1_sanitize_payload_columns( $value, $required_columns ) {
  * Coordinate the da1 col index map behavior implemented by this code path.
  *
  * @param mixed $flosc_da1_columns Input consumed by the Coordinate the da1 col index map behavior implemented by this code path. operation.
- * @return Mixed Result produced by the da1 col index map operation.
+ * @return mixed Result produced by the da1 col index map operation.
  */
 function flosc_da1_col_index_map( $flosc_da1_columns ) {
 	$map = array();
@@ -289,8 +289,8 @@ function flosc_da1_col_index_map( $flosc_da1_columns ) {
  * Coordinate the da1 next parent key behavior implemented by this code path.
  *
  * @param mixed $flosc_da1_rows Input consumed by the Coordinate the da1 next parent key behavior implemented by this code path. operation.
- * @param mixed $row_idx_key    Identifier used to select the record involved in the Coordinate the da1 next parent key behavior implemented by this code path. operation.
- * @return Mixed Result produced by the da1 next parent key operation.
+ * @param mixed $row_idx_key Identifier used to select the record involved in the Coordinate the da1 next parent key behavior implemented by this code path. operation.
+ * @return mixed Result produced by the da1 next parent key operation.
  */
 function flosc_da1_next_parent_key( $flosc_da1_rows, $row_idx_key ) {
 	$max = 0;
@@ -309,10 +309,10 @@ function flosc_da1_next_parent_key( $flosc_da1_rows, $row_idx_key ) {
 /**
  * Coordinate the da1 next child key behavior implemented by this code path.
  *
- * @param mixed $flosc_da1_rows       Input consumed by the Coordinate the da1 next child key behavior implemented by this code path. operation.
- * @param mixed $row_idx_key          Identifier used to select the record involved in the Coordinate the da1 next child key behavior implemented by this code path. operation.
+ * @param mixed $flosc_da1_rows Input consumed by the Coordinate the da1 next child key behavior implemented by this code path. operation.
+ * @param mixed $row_idx_key Identifier used to select the record involved in the Coordinate the da1 next child key behavior implemented by this code path. operation.
  * @param mixed $flosc_da1_parent_key Name or key used to select the Coordinate the da1 next child key behavior implemented by this code path. value.
- * @return Mixed Result produced by the da1 next child key operation.
+ * @return mixed Result produced by the da1 next child key operation.
  */
 function flosc_da1_next_child_key( $flosc_da1_rows, $row_idx_key, $flosc_da1_parent_key ) {
 	$max    = 0;
@@ -336,7 +336,7 @@ function flosc_da1_next_child_key( $flosc_da1_rows, $row_idx_key, $flosc_da1_par
  * Coordinate the da1 normalize vgm behavior implemented by this code path.
  *
  * @param mixed $value Value consumed or normalized by the Coordinate the da1 normalize vgm behavior implemented by this code path. operation.
- * @return Mixed Result produced by the da1 normalize vgm operation.
+ * @return mixed Result produced by the da1 normalize vgm operation.
  */
 function flosc_da1_normalize_vgm( $value ) {
 	$flosc_da1_raw = strtolower( trim( (string) $value ) );
@@ -407,11 +407,11 @@ function flosc_da1_normalize_vgm( $value ) {
 /**
  * Coordinate the da1 apply defaults behavior implemented by this code path.
  *
- * @param mixed $flosc_da1_row     Input consumed by the Coordinate the da1 apply defaults behavior implemented by this code path. operation.
+ * @param mixed $flosc_da1_row Input consumed by the Coordinate the da1 apply defaults behavior implemented by this code path. operation.
  * @param mixed $flosc_da1_columns Input consumed by the Coordinate the da1 apply defaults behavior implemented by this code path. operation.
  * @param mixed $flosc_da1_col_idx Identifier used to select the record involved in the Coordinate the da1 apply defaults behavior implemented by this code path. operation.
- * @param mixed $defaults          Input consumed by the Coordinate the da1 apply defaults behavior implemented by this code path. operation.
- * @param mixed $catalog_key       Name or key used to select the Coordinate the da1 apply defaults behavior implemented by this code path. value.
+ * @param mixed $defaults Input consumed by the Coordinate the da1 apply defaults behavior implemented by this code path. operation.
+ * @param mixed $catalog_key Name or key used to select the Coordinate the da1 apply defaults behavior implemented by this code path. value.
  */
 function flosc_da1_apply_defaults( &$flosc_da1_row, $flosc_da1_columns, $flosc_da1_col_idx, $defaults, $catalog_key ) {
 	foreach ( $flosc_da1_columns as $flosc_da1_ci => $column ) {
@@ -450,7 +450,7 @@ function flosc_da1_apply_defaults( &$flosc_da1_row, $flosc_da1_columns, $flosc_d
  *
  * @param mixed $catalog_dir Input consumed by the Coordinate the da1 catalog file behavior implemented by this code path. operation.
  * @param mixed $catalog_key Name or key used to select the Coordinate the da1 catalog file behavior implemented by this code path. value.
- * @return Mixed Result produced by the da1 catalog file operation.
+ * @return mixed Result produced by the da1 catalog file operation.
  */
 function flosc_da1_catalog_file( $catalog_dir, $catalog_key ) {
 	return trailingslashit( $catalog_dir ) . 'flosc_da1_catalog_' . $catalog_key . '.tsv';
@@ -459,9 +459,9 @@ function flosc_da1_catalog_file( $catalog_dir, $catalog_key ) {
 /**
  * Coordinate the da1 is allowed catalog path behavior implemented by this code path.
  *
- * @param mixed $path        Filesystem value identifying the file used by the Coordinate the da1 is allowed catalog path behavior implemented by this code path. operation.
+ * @param mixed $path Filesystem value identifying the file used by the Coordinate the da1 is allowed catalog path behavior implemented by this code path. operation.
  * @param mixed $catalog_dir Input consumed by the Coordinate the da1 is allowed catalog path behavior implemented by this code path. operation.
- * @return Mixed Result produced by the da1 is allowed catalog path operation.
+ * @return mixed Result produced by the da1 is allowed catalog path operation.
  */
 function flosc_da1_is_allowed_catalog_path( $path, $catalog_dir ) {
 	$catalog_dir = wp_normalize_path( trailingslashit( (string) $catalog_dir ) );
@@ -473,7 +473,7 @@ function flosc_da1_is_allowed_catalog_path( $path, $catalog_dir ) {
 /**
  * Shared FLOSC_Filesystem for DA1 catalog I/O (one instance per request).
  *
- * @return FLOSC_Filesystem|null.
+ * @return FLOSC_Filesystem|null
  */
 function flosc_da1_filesystem() {
 	static $flosc_da1_fs_singleton = null;
@@ -495,7 +495,7 @@ if ( $flosc_da1_fs ) {
  * @param string $path        Absolute catalog path.
  * @param string $content     TSV body.
  * @param string $catalog_dir Allowed catalog directory.
- * @return True|WP_Error.
+ * @return true|WP_Error
  */
 function flosc_da1_write_catalog_file( $path, $content, $catalog_dir ) {
 	if ( ! flosc_da1_is_allowed_catalog_path( $path, $catalog_dir ) ) {
@@ -524,7 +524,7 @@ function flosc_da1_write_catalog_file( $path, $content, $catalog_dir ) {
  *
  * @param string $path        Absolute catalog path.
  * @param string $catalog_dir Allowed catalog directory.
- * @return String|WP_Error Empty string if missing; WP_Error on failure.
+ * @return string|WP_Error Empty string if missing; WP_Error on failure.
  */
 function flosc_da1_read_catalog_file( $path, $catalog_dir ) {
 	if ( ! flosc_da1_is_allowed_catalog_path( $path, $catalog_dir ) ) {
@@ -552,7 +552,7 @@ function flosc_da1_read_catalog_file( $path, $catalog_dir ) {
  * Read the shipped sample catalog (plugin sample-data only).
  *
  * @param string $sample_path Absolute path under FLOSC_PLUGIN_DIR/sample-data/.
- * @return String|false.
+ * @return string|false
  */
 function flosc_da1_read_shipped_sample( $sample_path ) {
 	$sample_path = wp_normalize_path( (string) $sample_path );
@@ -575,7 +575,7 @@ function flosc_da1_read_shipped_sample( $sample_path ) {
  * Read a PHP upload temp file after is_uploaded_file() verification.
  *
  * @param string $tmp_name Raw $_FILES['…']['tmp_name'] (do not path-sanitize).
- * @return String|false.
+ * @return string|false
  */
 function flosc_da1_read_uploaded_tmp( $tmp_name ) {
 	$tmp_name = (string) $tmp_name;
@@ -592,13 +592,13 @@ function flosc_da1_read_uploaded_tmp( $tmp_name ) {
 /**
  * A catalog's description — free text the operator writes, never its identity.
  *
- * Stored under 'description'. Entries written before descriptions existed used.
- * 'label', so that is read as a fallback and rewritten as 'description' on the.
- * Next save. Empty is a legitimate answer: a catalog is identified by its.
- * Filename, so a description is optional.
+ * Stored under 'description'. Entries written before descriptions existed used
+ * 'label', so that is read as a fallback and rewritten as 'description' on the
+ * next save. Empty is a legitimate answer: a catalog is identified by its
+ * filename, so a description is optional.
  *
  * @param array $catalog One entry from the catalog index.
- * @return String.
+ * @return string
  */
 function flosc_da1_catalog_description( $catalog ) {
 	if ( ! is_array( $catalog ) ) {
@@ -616,15 +616,15 @@ function flosc_da1_catalog_description( $catalog ) {
 /**
  * Catalog .tsv files actually present in the catalogs folder, keyed by catalog key.
  *
- * A catalog key is produced by flosc_da1_slugify(), whose charset is [a-z0-9_-] —.
- * No dots. That single rule separates real catalogs from their backup siblings:
- * Flosc_da1_catalog_default.tsv is a catalog, while.
- * Flosc_da1_catalog_default.backup-2026-07-02.tsv carries a dot in the key.
- * Position and is a copy. Listing copies as catalogs would invite editing a.
- * Backup by mistake, so they are skipped.
+ * A catalog key is produced by flosc_da1_slugify(), whose charset is [a-z0-9_-] —
+ * no dots. That single rule separates real catalogs from their backup siblings:
+ * flosc_da1_catalog_default.tsv is a catalog, while
+ * flosc_da1_catalog_default.backup-2026-07-02.tsv carries a dot in the key
+ * position and is a copy. Listing copies as catalogs would invite editing a
+ * backup by mistake, so they are skipped.
  *
  * @param string $catalog_dir Absolute path to the catalogs folder.
- * @return Array<string,string> key => filename.
+ * @return array<string,string> key => filename.
  */
 function flosc_da1_catalog_files_on_disk( $catalog_dir ) {
 	$found = array();
@@ -648,14 +648,14 @@ function flosc_da1_catalog_files_on_disk( $catalog_dir ) {
 /**
  * Number of data rows in a catalog, or null when it cannot be counted cheaply.
  *
- * Counting by newline would be wrong: flosc_da1_tsv_cell() quotes cells that.
- * Contain a newline rather than escaping them, so one record can span several.
- * Lines. The real parser is used instead, and files past a sane ceiling report.
- * Null rather than being parsed just to render one number.
+ * Counting by newline would be wrong: flosc_da1_tsv_cell() quotes cells that
+ * contain a newline rather than escaping them, so one record can span several
+ * lines. The real parser is used instead, and files past a sane ceiling report
+ * null rather than being parsed just to render one number.
  *
  * @param string $path        Absolute catalog path.
  * @param string $catalog_dir Absolute path to the catalogs folder.
- * @return Int|null.
+ * @return int|null
  */
 function flosc_da1_catalog_row_count( $path, $catalog_dir ) {
 	if ( ! file_exists( $path ) ) {

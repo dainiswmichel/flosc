@@ -1,24 +1,24 @@
 <?php
 /**
- * FLOSC Concierge.
- * -----------------------------------------------------------------------------.
- * Concierge is an IVR message TYPE — a keyword-triggered message with an.
- * Optional password gate. Because it's just a message type, it rides the whole.
- * IVR machinery for free: stored in the DB, mirrored to the portability .md,.
- * Organized by phase, scoped per flow, edited in the IVR editor, and loaded.
- * With every other message. It can live in any phase of any flow.
+ * FLOSC Concierge
+ * -----------------------------------------------------------------------------
+ * Concierge is an IVR message TYPE — a keyword-triggered message with an
+ * optional password gate. Because it's just a message type, it rides the whole
+ * IVR machinery for free: stored in the DB, mirrored to the portability .md,
+ * organized by phase, scoped per flow, edited in the IVR editor, and loaded
+ * with every other message. It can live in any phase of any flow.
  *
  * The only behavior unique to concierge is the gate:
  *
- * Guest says the keyword.
- * → message has IndividualMessagePassword? ask for it, then on an exact.
- * Match deliver the content.
- * → no password? deliver immediately, like any keyword message.
+ *   guest says the keyword
+ *     → message has IndividualMessagePassword? ask for it, then on an exact
+ *       match deliver the content
+ *     → no password? deliver immediately, like any keyword message
  *
- * This class does that one thing, operating on the IVR config the chat has.
- * ALREADY loaded from the DB — so a concierge check adds no file read, no.
- * Markdown parse, and no database query. The gate's "waiting for the password".
- * State is the only thing it stores, and only while a gate is actually open.
+ * This class does that one thing, operating on the IVR config the chat has
+ * ALREADY loaded from the DB — so a concierge check adds no file read, no
+ * markdown parse, and no database query. The gate's "waiting for the password"
+ * state is the only thing it stores, and only while a gate is actually open.
  *
  * @package FLOSC
  */
@@ -27,51 +27,43 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-/**
- * Coordinate FLOSC Concierge behavior and the WordPress services used by its methods.
- */
 class FLOSC_Concierge {
 
-	/**
-	 */
+	/** The IVR message type that marks a concierge message. */
 	const TYPE = 'concierge';
 
-	/**
-	 */
+	/** Message field holding the optional per-message password. */
 	const PASSWORD_FIELD = 'individual_message_password';
 
-	/**
-	 */
+	/** Field holding the optional UTC window start time. */
 	const START_FIELD = 'start_utc_mts';
 
-	/**
-	 */
+	/** Field holding the optional UTC window end time. */
 	const END_FIELD = 'end_utc_mts';
 
-	/**
-	 */
+	/** How long (seconds) a guest has to enter the password after the keyword. */
 	const GATE_TTL = 600;
 
 	/**
 	 * How long an opened concierge "desk" stays available for that one guest.
 	 *
-	 * Once the keyword unlocks the desk, the guest can come and go and keep asking.
-	 * For the next thing for this long — scoped to their session alone, so it is.
-	 * Open for them and no one else. Three days suits a personal hand-off: long.
-	 * Enough to revisit from the same browser, short enough that it isn't forever.
+	 * Once the keyword unlocks the desk, the guest can come and go and keep asking
+	 * for the next thing for this long — scoped to their session alone, so it is
+	 * open for them and no one else. Three days suits a personal hand-off: long
+	 * enough to revisit from the same browser, short enough that it isn't forever.
 	 */
 	const OPEN_TTL = 7 * DAY_IN_SECONDS;
 
 	/**
 	 * Handle a chat message against the concierge messages already loaded in the IVR.
 	 *
-	 * Called before the normal IVR/AI path. Operates entirely on the in-memory.
+	 * Called before the normal IVR/AI path. Operates entirely on the in-memory
 	 * $ivr_config — no queries — so it's free on every non-concierge message too.
 	 *
 	 * @param string $message     The visitor's message.
 	 * @param string $session_key Stable per-conversation key (session id or user).
 	 * @param array  $ivr_config  The loaded IVR config: ['messages' => [...], ...].
-	 * @return Array|null A chat response to return, or null when no concierge applies.
+	 * @return array|null A chat response to return, or null when no concierge applies.
 	 */
 	public static function handle( $message, $session_key, $ivr_config ) {
 		$message     = trim( (string) $message );
@@ -115,9 +107,9 @@ class FLOSC_Concierge {
 				return self::prompt( self::text( $msg, 'password_prompt', 'I’ve got something for you — what’s the password?' ) );
 			}
 
-			// Right password → open the AI-hosted desk and hand the conversation to.
-			// The AI path. We return the authoritative source content so the AI can.
-			// Host the reveal, but the chat handler can still fall back to that exact.
+			// Right password → open the AI-hosted desk and hand the conversation to
+			// the AI path. We return the authoritative source content so the AI can
+			// host the reveal, but the chat handler can still fall back to that exact
 			// content if the provider is unavailable on this turn.
 			if ( self::password_matches( $message, $password ) ) {
 				delete_transient( $gate_key );
@@ -131,8 +123,8 @@ class FLOSC_Concierge {
 				);
 			}
 
-			// Wrong password → show this miss's retry line. The final allowed miss.
-			// Shows its line (typically the "reach out to me" escape note) and then.
+			// Wrong password → show this miss's retry line. The final allowed miss
+			// shows its line (typically the "reach out to me" escape note) and then
 			// the gate closes — the conversation falls back to normal chat.
 			$tries = (int) ( $pending['tries'] ?? 0 ) + 1;
 			$line  = self::retry_line( $msg, $tries, $max );
@@ -174,10 +166,10 @@ class FLOSC_Concierge {
 				);
 				return self::prompt( self::text( $msg, 'password_prompt', 'I’ve got something for you — what’s the password?' ) );
 			}
-			// No gate → open the concierge desk for this guest and hand off to the AI.
-			// path (return null, no short-circuit). The AI then hosts the reveal in.
+			// No gate → open the concierge desk for this guest and hand off to the AI
+			// path (return null, no short-circuit). The AI then hosts the reveal in
 			// its own voice, offer by offer, using the desk's brief (active_guidance).
-			// There is deliberately NO canned-dump fallback: dumping the raw brief is.
+			// There is deliberately NO canned-dump fallback: dumping the raw brief is
 			// exactly the behaviour we must never produce.
 			self::open_session( $session_key, $msg, 'revealing', true );
 			return null;
@@ -190,7 +182,7 @@ class FLOSC_Concierge {
 	 * Allowed password attempts for a message (default 3).
 	 *
 	 * @param array $msg IVR message.
-	 * @return Int.
+	 * @return int
 	 */
 	protected static function max_tries( $msg ) {
 		$n = (int) ( $msg['password_max_tries'] ?? 3 );
@@ -200,13 +192,13 @@ class FLOSC_Concierge {
 	/**
 	 * Read a per-message text field, falling back to a default when blank.
 	 *
-	 * Every gate line is the floscAdmin's to write; the defaults only show when.
-	 * A field is left empty.
+	 * Every gate line is the floscAdmin's to write; the defaults only show when
+	 * a field is left empty.
 	 *
-	 * @param array  $msg      IVR message.
-	 * @param string $key      Field key.
+	 * @param array  $msg     IVR message.
+	 * @param string $key     Field key.
 	 * @param string $fallback Fallback text.
-	 * @return String.
+	 * @return string
 	 */
 	protected static function text( $msg, $key, $fallback ) {
 		$value = trim( (string) ( $msg[ $key ] ?? '' ) );
@@ -216,10 +208,10 @@ class FLOSC_Concierge {
 	/**
 	 * Substitute {try} and {max} into a retry line.
 	 *
-	 * @param string $text    Retry text.
-	 * @param int    $attempt Which attempt this was.
-	 * @param int    $max     Allowed attempts.
-	 * @return String.
+	 * @param string $text Retry text.
+	 * @param int    $attempt  Which attempt this was.
+	 * @param int    $max  Allowed attempts.
+	 * @return string
 	 */
 	protected static function fill_counts( $text, $attempt, $max ) {
 		return str_replace( array( '{try}', '{max}' ), array( (string) $attempt, (string) $max ), (string) $text );
@@ -228,14 +220,14 @@ class FLOSC_Concierge {
 	/**
 	 * The retry line for a given miss, from the per-message retry list.
 	 *
-	 * Line 1 shows on the first miss, line 2 on the second, and so on; if there.
-	 * Are more misses than lines, the last line repeats. {try}/{max} are filled.
-	 * In. The final line is typically the "reach out to me directly" escape note.
+	 * Line 1 shows on the first miss, line 2 on the second, and so on; if there
+	 * are more misses than lines, the last line repeats. {try}/{max} are filled
+	 * in. The final line is typically the "reach out to me directly" escape note.
 	 *
-	 * @param array $msg     IVR message.
+	 * @param array $msg IVR message.
 	 * @param int   $attempt Which miss this is (1-based).
-	 * @param int   $max     Allowed attempts.
-	 * @return String.
+	 * @param int   $max Allowed attempts.
+	 * @return string
 	 */
 	protected static function retry_line( $msg, $attempt, $max ) {
 		$list = array();
@@ -261,7 +253,7 @@ class FLOSC_Concierge {
 	 *
 	 * @param string $message  Visitor message.
 	 * @param string $keywords Comma-separated keyword(s).
-	 * @return Bool.
+	 * @return bool
 	 */
 	protected static function keyword_hit( $message, $keywords ) {
 		$haystack = mb_strtolower( (string) $message );
@@ -270,7 +262,7 @@ class FLOSC_Concierge {
 			if ( '' === $keyword ) {
 				continue;
 			}
-			// Approximate: case- and position-insensitive containment, so "Narcissist".
+			// Approximate: case- and position-insensitive containment, so "Narcissist"
 			// matches "you're a narcissist" and "narcissistic" without an exact phrase.
 			if ( false !== mb_strpos( $haystack, $keyword ) ) {
 				return true;
@@ -282,18 +274,18 @@ class FLOSC_Concierge {
 	/**
 	 * Collapse a written "no password" to an actual blank (= no gate).
 	 *
-	 * Admins and OpenClaw naturally write "none", "(none)", or "n/a" to MEAN.
-	 * "there is no password" — in the meta-box field or as a `Password:` line in.
-	 * The post body. Taken literally, those words become the password itself,.
-	 * Opening a gate whose secret is the word "none"; worse, the meta box keeps.
-	 * Re-deriving that word from the body, so clearing the field never sticks.
-	 * Normalizing the whole family of sentinels to '' makes a written "none" do.
-	 * What it plainly says: no gate. The trade-off is intentional — a concierge.
-	 * Password literally equal to one of these words is disallowed, which is fine.
-	 * For a friendly handoff that was never a security boundary.
+	 * Admins and OpenClaw naturally write "none", "(none)", or "n/a" to MEAN
+	 * "there is no password" — in the meta-box field or as a `Password:` line in
+	 * the post body. Taken literally, those words become the password itself,
+	 * opening a gate whose secret is the word "none"; worse, the meta box keeps
+	 * re-deriving that word from the body, so clearing the field never sticks.
+	 * Normalizing the whole family of sentinels to '' makes a written "none" do
+	 * what it plainly says: no gate. The trade-off is intentional — a concierge
+	 * password literally equal to one of these words is disallowed, which is fine
+	 * for a friendly handoff that was never a security boundary.
 	 *
 	 * @param string $password Password as resolved from the meta box or post body.
-	 * @return String The password, or '' when it is a "no password" sentinel.
+	 * @return string The password, or '' when it is a "no password" sentinel.
 	 */
 	protected static function normalize_password( $password ) {
 		$sentinels = array( 'none', '(none)', 'n/a', 'n.a.', 'na', 'no', 'no password', 'false', 'nil', 'null', '-', '–', '—' );
@@ -303,14 +295,14 @@ class FLOSC_Concierge {
 	/**
 	 * Case-insensitive password comparison ("MONKI" == "monki" == "Monki").
 	 *
-	 * Concierge gates are a friendly handoff, not a security boundary, so a guest.
-	 * Shouldn't be tripped up by capitalization. Both sides are lower-cased and.
-	 * Trimmed before a constant-time compare. A blank stored password never matches —.
-	 * That's the "no gate" case, handled before we reach here.
+	 * Concierge gates are a friendly handoff, not a security boundary, so a guest
+	 * shouldn't be tripped up by capitalization. Both sides are lower-cased and
+	 * trimmed before a constant-time compare. A blank stored password never matches —
+	 * that's the "no gate" case, handled before we reach here.
 	 *
 	 * @param string $given    What the guest typed.
 	 * @param string $expected The message's password.
-	 * @return Bool.
+	 * @return bool
 	 */
 	protected static function password_matches( $given, $expected ) {
 		$expected = mb_strtolower( trim( (string) $expected ) );
@@ -325,7 +317,7 @@ class FLOSC_Concierge {
 	 * Decide whether the guest wants out of the concierge flow.
 	 *
 	 * @param string $message Visitor message.
-	 * @return Bool.
+	 * @return bool
 	 */
 	protected static function is_escape_request( $message ) {
 		$message = mb_strtolower( trim( (string) $message ) );
@@ -359,7 +351,7 @@ class FLOSC_Concierge {
 	 * Build a prompt chat response (e.g. asking for the password).
 	 *
 	 * @param string $text Prompt text.
-	 * @return Array.
+	 * @return array
 	 */
 	protected static function prompt( $text ) {
 		return array(
@@ -387,12 +379,7 @@ class FLOSC_Concierge {
 	 * exchange is logged like any other turn, instead of being short-circuited).
 	 * ======================================================================== */
 
-	/**
- * Coordinate the open key behavior implemented by this code path.
- *
- * @param mixed $session_key Name or key used to select the Coordinate the open key behavior implemented by this code path. value.
- * @return mixed Result produced by the open key operation.
-	 */
+	/** Per-session transient key for an open desk. */
 	protected static function open_key( $session_key ) {
 		return 'flosc_concierge_open_' . md5( (string) $session_key );
 	}
@@ -400,23 +387,23 @@ class FLOSC_Concierge {
 	/**
 	 * Open the concierge desk for one guest's session.
 	 *
-	 * Stores just what the AI needs to host the reveal: the material to draw from.
-	 * And the optional per-post delivery style (tone, language, pacing).
+	 * Stores just what the AI needs to host the reveal: the material to draw from
+	 * and the optional per-post delivery style (tone, language, pacing).
 	 *
 	 * @param string $session_key      Stable per-conversation key.
 	 * @param array  $msg              The matched concierge IVR message.
 	 * @param string $start_stage      Initial stage ('invited' or 'revealing').
 	 * @param bool   $deliver_now_once Whether next AI turn should deliver content immediately.
-	 * @return Void.
+	 * @return void
 	 */
 	protected static function open_session( $session_key, $msg, $start_stage = 'invited', $deliver_now_once = false ) {
 		$start_stage = in_array( $start_stage, array( 'invited', 'revealing', 'offered' ), true ) ? $start_stage : 'invited';
 		set_transient(
 			self::open_key( $session_key ),
 			array(
-				// The full note is the AI's authoritative SOURCE. It is given as.
+				// The full note is the AI's authoritative SOURCE. It is given as
 				// reference every turn so the AI can quote facts (phone, email)
-				// EXACTLY and never invent them — while the guidance instructs it to.
+				// EXACTLY and never invent them — while the guidance instructs it to
 				// reveal only 1–3 sentences per turn rather than paste the whole note.
 				'brief'              => (string) ( $msg['content'] ?? '' ),
 				'stage'              => $start_stage,
@@ -430,12 +417,7 @@ class FLOSC_Concierge {
 		);
 	}
 
-	/**
- * Determine whether the current state satisfies active session.
- *
- * @param mixed $session_key Name or key used to select the Determine whether the current state satisfies active session. value.
- * @return bool Whether active session applies to the current state.
-	 */
+	/** Is a concierge desk currently open for this guest's session? */
 	public static function has_active_session( $session_key ) {
 		$data = get_transient( self::open_key( $session_key ) );
 		return is_array( $data ) && '' !== trim( (string) ( $data['brief'] ?? '' ) );
@@ -444,18 +426,18 @@ class FLOSC_Concierge {
 	/**
 	 * The system-prompt block to inject on THIS turn, and advance the desk's state.
 	 *
-	 * This is the heart of the hosted reveal. It is stateful and called once per.
-	 * Guest turn:
-	 * - the first turn returns an INVITATION instruction with NONE of the note;
-	 * - each later turn hands the AI exactly ONE fragment to voice, then advances.
-	 * The cursor, so the note is revealed strictly one piece per turn;
-	 * - once every fragment is revealed, it returns a gentle closing instruction.
+	 * This is the heart of the hosted reveal. It is stateful and called once per
+	 * guest turn:
+	 *   - the first turn returns an INVITATION instruction with NONE of the note;
+	 *   - each later turn hands the AI exactly ONE fragment to voice, then advances
+	 *     the cursor, so the note is revealed strictly one piece per turn;
+	 *   - once every fragment is revealed, it returns a gentle closing instruction.
 	 *
-	 * Because the AI never receives more than a single fragment, a full-note dump is.
-	 * Impossible by construction — the guidance below is style, not the safeguard.
+	 * Because the AI never receives more than a single fragment, a full-note dump is
+	 * impossible by construction — the guidance below is style, not the safeguard.
 	 *
 	 * @param string $session_key Stable per-conversation key.
-	 * @return String Prompt block for this turn, or '' when no desk is open.
+	 * @return string Prompt block for this turn, or '' when no desk is open.
 	 */
 	public static function active_guidance( $session_key ) {
 		$key  = self::open_key( $session_key );
@@ -497,7 +479,7 @@ class FLOSC_Concierge {
 				. '----- end SOURCE -----';
 		}
 
-		// Reveal stage: the AI gets the full SOURCE so every fact it states is.
+		// Reveal stage: the AI gets the full SOURCE so every fact it states is
 		// accurate, but it must reveal only a little per turn and never fabricate.
 		return $head
 			. "Reveal the SOURCE below GRADUALLY — only 1–3 sentences per reply, in order, continuing from what you have already shared (check the conversation so far), and end by inviting them to hear more. NEVER paste, list, or summarise the whole note at once.\n"
@@ -518,14 +500,12 @@ class FLOSC_Concierge {
 	 * "what FLOSC understands" confirmation so they can check the setup landed.
 	 * ======================================================================== */
 
-	/**
-	 */
+	/** Default category that marks a concierge post. */
 	const CATEGORY                      = 'concierge';
 	const INTERNAL_PARENT_SLUG          = 'flosc-internal';
 	const INTERNAL_CONCIERGE_CHILD_SLUG = 'flosc-internal-concierge';
 
-	/**
-	 */
+	/** Post-meta keys for the editable settings (the "FLOSC Concierge" meta box). */
 	const META = array(
 		'flow'               => '_flosc_concierge_flow',
 		'keyword'            => '_flosc_concierge_keyword',
@@ -546,14 +526,14 @@ class FLOSC_Concierge {
 	/**
 	 * Resolve a concierge post's settings.
 	 *
-	 * The meta box is the editable source of truth; for any field left blank.
-	 * There, we fall back to the labeled lines in the post body (the format.
-	 * OpenClaw writes), so an OpenClaw-authored post works with no meta set and.
-	 * Its values pre-fill the meta box. Content delivered is the post body's.
+	 * The meta box is the editable source of truth; for any field left blank
+	 * there, we fall back to the labeled lines in the post body (the format
+	 * OpenClaw writes), so an OpenClaw-authored post works with no meta set and
+	 * its values pre-fill the meta box. Content delivered is the post body's
 	 * "Content to deliver" block, or the whole body if that label is absent.
 	 *
 	 * @param int|WP_Post $post Post or ID.
-	 * @return Array|null.
+	 * @return array|null
 	 */
 	public static function config_from_post( $post ) {
 		$post = get_post( $post );
@@ -683,13 +663,13 @@ class FLOSC_Concierge {
 	 * Render the "FLOSC Concierge" meta box on a concierge post's edit screen.
 	 *
 	 * @param WP_Post $post The post being edited.
-	 * @return Void.
+	 * @return void
 	 */
 	public static function render_meta_box( $post ) {
 		$c = self::config_from_post( $post );
 		wp_nonce_field( 'flosc_concierge_meta', 'flosc_concierge_nonce' );
-		// Styles for .flosc-cncrg-* live on the 'flosc-metabox' handle, added in.
-		// enqueue_admin_assets() during admin_enqueue_scripts — the only moment.
+		// Styles for .flosc-cncrg-* live on the 'flosc-metabox' handle, added in
+		// enqueue_admin_assets() during admin_enqueue_scripts — the only moment
 		// inline style data still reaches the page (see the §12 note there).
 		echo '<div class="flosc-cncrg-row"><label>Flow</label><select name="flosc_cncrg_flow">';
 		$current  = $c['flow'];
@@ -738,7 +718,7 @@ class FLOSC_Concierge {
 	 * Save the meta box fields to post meta.
 	 *
 	 * @param int $post_id Post ID.
-	 * @return Void.
+	 * @return void
 	 */
 	public static function save_meta_box( $post_id ) {
 		if ( ! isset( $_POST['flosc_concierge_nonce'] )
@@ -788,14 +768,14 @@ class FLOSC_Concierge {
 	 * Sync a concierge post into its flow's DB (upsert a concierge message).
 	 *
 	 * @param int|WP_Post $post Post or ID.
-	 * @return Void.
+	 * @return void
 	 */
 	public static function sync_post( $post ) {
 		$post = get_post( $post );
 		if ( ! $post instanceof WP_Post || ! self::is_concierge_post( $post ) ) {
 			return;
 		}
-		// Only a status meant to be live keeps its sync; anything else is.
+		// Only a status meant to be live keeps its sync; anything else is
 		// removed from the index rather than left there stale.
 		if ( ! in_array( (string) $post->post_status, array( 'publish', 'private' ), true ) ) {
 			self::unsync_post( $post );
@@ -851,7 +831,7 @@ class FLOSC_Concierge {
 	 * Remove a concierge post's synced message from its flow.
 	 *
 	 * @param int|WP_Post $post Post or ID.
-	 * @return Void.
+	 * @return void
 	 */
 	public static function unsync_post( $post ) {
 		$post = get_post( $post );
@@ -884,7 +864,7 @@ class FLOSC_Concierge {
 	 * Read-only by design — editing happens in the post itself, and saving re-syncs.
 	 *
 	 * @param string $content Post content.
-	 * @return String.
+	 * @return string
 	 */
 	public static function maybe_append_confirmation( $content ) {
 		if ( is_admin() || ! is_singular() || ! current_user_can( 'manage_options' ) ) {
@@ -924,12 +904,7 @@ class FLOSC_Concierge {
 		return $content . wp_kses_post( $html );
 	}
 
-	/**
- * Determine whether the current state satisfies concierge post.
- *
- * @param mixed $post Input consumed by the Determine whether the current state satisfies concierge post. operation.
- * @return bool Whether concierge post applies to the current state.
-	 */
+	/** Is this post in the concierge category? */
 	public static function is_concierge_post( $post ) {
 		$post = get_post( $post );
 		if ( ! $post instanceof WP_Post ) {
@@ -961,23 +936,13 @@ class FLOSC_Concierge {
 		return false;
 	}
 
-	/**
- * Coordinate the post message id behavior implemented by this code path.
- *
- * @param mixed $post Input consumed by the Coordinate the post message id behavior implemented by this code path. operation.
- * @return mixed Result produced by the post message id operation.
-	 */
+	/** Stable, slug-derived message id for a post-sourced concierge message. */
 	protected static function post_message_id( $post ) {
 		$slug = ( '' !== $post->post_name ) ? $post->post_name : ( 'post' . $post->ID );
 		return 'concierge_' . sanitize_key( $slug );
 	}
 
-	/**
- * Coordinate the flow key behavior implemented by this code path.
- *
- * @param mixed $flow_file Filesystem value identifying the file used by the Coordinate the flow key behavior implemented by this code path. operation.
- * @return mixed Result produced by the flow key operation.
-	 */
+	/** Resolve a flow option key from a flow file ('flow_ivr.md' -> 'flosc_flow_flow_ivr'). */
 	protected static function flow_key( $flow_file ) {
 		$flow_file = (string) $flow_file;
 		if ( '' === $flow_file ) {
@@ -986,12 +951,7 @@ class FLOSC_Concierge {
 		return 'flosc_flow_' . sanitize_key( pathinfo( $flow_file, PATHINFO_FILENAME ) );
 	}
 
-	/**
- * Coordinate the flow file behavior implemented by this code path.
- *
- * @param mixed $value Value consumed or normalized by the Coordinate the flow file behavior implemented by this code path. operation.
- * @return mixed Result produced by the flow file operation.
-	 */
+	/** Pull a '*.md' flow file out of a floscFlow value ('assistant (flow_ivr.md)' -> 'flow_ivr.md'). */
 	protected static function flow_file( $value ) {
 		if ( preg_match( '/([A-Za-z0-9_\-]+\.md)\b/i', (string) $value, $m ) ) {
 			return $m[1];
@@ -1002,12 +962,12 @@ class FLOSC_Concierge {
 	/**
 	 * Resolve a flow file from a flow's NAME ('Site Assistant' -> 'flow_ivr.md').
 	 *
-	 * Every flow carries a human name (identity.name) — the same name shown in the.
-	 * IVR editor and the Flow dropdown. Matching is case-insensitive and ignores.
-	 * Surrounding quotes, so an admin or OpenClaw can simply name the flow.
+	 * Every flow carries a human name (identity.name) — the same name shown in the
+	 * IVR editor and the Flow dropdown. Matching is case-insensitive and ignores
+	 * surrounding quotes, so an admin or OpenClaw can simply name the flow.
 	 *
 	 * @param string $value A flow name, possibly quoted.
-	 * @return String Flow file (e.g. 'flow_ivr.md'), or '' if no name matches.
+	 * @return string Flow file (e.g. 'flow_ivr.md'), or '' if no name matches.
 	 */
 	protected static function flow_by_name( $value ) {
 		$name = mb_strtolower( self::unquote( (string) $value ) );
@@ -1029,30 +989,30 @@ class FLOSC_Concierge {
 	/**
 	 * Resolve a flow file from a human-facing Deployment ('the WordPress host/chat' -> 'flow_ivr.md').
 	 *
-	 * OpenClaw writes the deployment it knows — "the WordPress host/chat", "flosc.ai",.
-	 * "the flow domain" — never the internal filename. We reduce that to a bare domain,.
-	 * Turn it into a stem ("the WordPress host" -> "host_flow"), and match it against the.
-	 * Actual *_ivr.md flow files so their names stay the single source of truth.
+	 * OpenClaw writes the deployment it knows — "the WordPress host/chat", "flosc.ai",
+	 * "the flow domain" — never the internal filename. We reduce that to a bare domain,
+	 * turn it into a stem ("the WordPress host" -> "host_flow"), and match it against the
+	 * actual *_ivr.md flow files so their names stay the single source of truth.
 	 *
 	 * @param string $deployment Deployment value from the post body.
-	 * @return String Flow file (e.g. 'flow_ivr.md'), or '' if none matches.
+	 * @return string Flow file (e.g. 'flow_ivr.md'), or '' if none matches.
 	 */
 	protected static function flow_from_deployment( $deployment ) {
 		$host = strtolower( trim( (string) $deployment ) );
 		if ( '' === $host ) {
 			return '';
 		}
-		$host = preg_replace( '#^[a-z][a-z0-9+.\-]*://#', '', $host ); // Drop scheme.
-		$host = preg_replace( '#[/?\#].*$#', '', $host );              // Drop path/query/fragment.
+		$host = preg_replace( '#^[a-z][a-z0-9+.\-]*://#', '', $host ); // drop scheme
+		$host = preg_replace( '#[/?\#].*$#', '', $host );              // drop path/query/fragment
 		$host = preg_replace( '#^www\.#', '', $host );                 // drop www.
-		$stem = trim( (string) preg_replace( '/[^a-z0-9]+/', '_', $host ), '_' ); // The WordPress host -> host_flow.
+		$stem = trim( (string) preg_replace( '/[^a-z0-9]+/', '_', $host ), '_' ); // the WordPress host -> host_flow
 		if ( '' === $stem ) {
 			return '';
 		}
 		$files = function_exists( 'flosc_config_glob' ) ? flosc_config_glob( '*_ivr.md' ) : array();
 		foreach ( (array) $files as $file ) {
 			$name  = basename( (string) $file );
-			$fstem = pathinfo( $name, PATHINFO_FILENAME );             // E.g. flow_ivr.
+			$fstem = pathinfo( $name, PATHINFO_FILENAME );             // e.g. flow_ivr
 			if ( $fstem === $stem || 0 === strpos( $fstem, $stem . '_' ) ) {
 				if ( ! empty( get_option( 'flosc_flow_' . sanitize_key( $fstem ) ) ) ) {
 					return $name;
@@ -1062,13 +1022,7 @@ class FLOSC_Concierge {
 		return '';
 	}
 
-	/**
- * Coordinate the label behavior implemented by this code path.
- *
- * @param mixed $body Input consumed by the Coordinate the label behavior implemented by this code path. operation.
- * @param mixed $label Input consumed by the Coordinate the label behavior implemented by this code path. operation.
- * @return mixed Result produced by the label operation.
-	 */
+	/** Read a single-line "Label: value", quotes preserved, returning the trimmed value. */
 	protected static function label( $body, $label ) {
 		$pattern = '/^[ \t>*_\-]*' . preg_quote( $label, '/' ) . '[ \t]*:[ \t]*(.+?)[ \t]*$/mi';
 		return preg_match( $pattern, (string) $body, $m ) ? trim( $m[1] ) : '';
@@ -1077,12 +1031,12 @@ class FLOSC_Concierge {
 	/**
 	 * Resolve the content a concierge message delivers, from the post body.
 	 *
-	 * What the bot delivers is everything after the "Content to deliver:" line. If.
-	 * That label is absent, the body is served with the config lines (floscFlow/.
+	 * What the bot delivers is everything after the "Content to deliver:" line. If
+	 * that label is absent, the body is served with the config lines (floscFlow/
 	 * Deployment/Keyword/Password) stripped, so a password is never handed out.
 	 *
 	 * @param string $body Post body.
-	 * @return String.
+	 * @return string
 	 */
 	protected static function content_to_deliver( $body ) {
 		$body = (string) $body;
@@ -1093,18 +1047,13 @@ class FLOSC_Concierge {
 			return $block;
 		}
 
-		// Safety net only (no label present): serve the body with the config lines.
+		// Safety net only (no label present): serve the body with the config lines
 		// removed, so a password is never handed to the guest.
 		$stripped = preg_replace( '/^[ \t>*_\-]*(floscFlow|Deployment|Keyword|Password)[ \t]*:.*$/mi', '', $body );
 		return trim( (string) $stripped );
 	}
 
-	/**
- * Coordinate the parse parameters text behavior implemented by this code path.
- *
- * @param mixed $text Input consumed by the Coordinate the parse parameters text behavior implemented by this code path. operation.
- * @return mixed Result produced by the parse parameters text operation.
-	 */
+	/** Parse parameters text (key=value per line) into an associative array. */
 	protected static function parse_parameters_text( $text ) {
 		$params = array();
 		foreach ( preg_split( '/\r\n|\r|\n/', (string) $text ) as $line ) {
@@ -1122,14 +1071,7 @@ class FLOSC_Concierge {
 		return $params;
 	}
 
-	/**
- * Coordinate the apply template parameters behavior implemented by this code path.
- *
- * @param mixed $text Input consumed by the Coordinate the apply template parameters behavior implemented by this code path. operation.
- * @param mixed $params Input consumed by the Coordinate the apply template parameters behavior implemented by this code path. operation.
- * @param mixed $expires_utc_mts Input consumed by the Coordinate the apply template parameters behavior implemented by this code path. operation.
- * @return mixed Result produced by the apply template parameters operation.
-	 */
+	/** Replace {parameter_name} placeholders in a template. */
 	protected static function apply_template_parameters( $text, $params, $expires_utc_mts = '' ) {
 		$text = (string) $text;
 		if ( '' === $text ) {
@@ -1147,21 +1089,12 @@ class FLOSC_Concierge {
 		return $text;
 	}
 
-	/**
- * Coordinate the utc now mts behavior implemented by this code path.
- *
- * @return mixed Result produced by the utc now mts operation.
-	 */
+	/** Current UTC time in Michel timestamp format. */
 	protected static function utc_now_mts() {
 		return gmdate( 'Y' ) . '-' . gmdate( 'm' ) . 'm-' . gmdate( 'd' ) . 'd-T' . gmdate( 'H' ) . 'h:' . gmdate( 'i' ) . 'm:' . gmdate( 's' ) . 's';
 	}
 
-	/**
- * Normalize the input into the canonical form required for normalize utc mts.
- *
- * @param mixed $value Value consumed or normalized by the Normalize the input into the canonical form required for normalize utc mts. operation.
- * @return mixed Result produced by the normalize utc mts operation.
-	 */
+	/** Normalize accepted UTC MTS variants to canonical format; returns '' when invalid. */
 	protected static function normalize_utc_mts( $value ) {
 		$ts = self::utc_mts_to_unix( (string) $value );
 		if ( null === $ts ) {
@@ -1170,12 +1103,7 @@ class FLOSC_Concierge {
 		return gmdate( 'Y', $ts ) . '-' . gmdate( 'm', $ts ) . 'm-' . gmdate( 'd', $ts ) . 'd-T' . gmdate( 'H', $ts ) . 'h:' . gmdate( 'i', $ts ) . 'm:' . gmdate( 's', $ts ) . 's';
 	}
 
-	/**
- * Coordinate the utc mts to unix behavior implemented by this code path.
- *
- * @param mixed $value Value consumed or normalized by the Coordinate the utc mts to unix behavior implemented by this code path. operation.
- * @return mixed Result produced by the utc mts to unix operation.
-	 */
+	/** Convert UTC MTS to unix timestamp. Supports date-only and date-time forms. */
 	protected static function utc_mts_to_unix( $value ) {
 		$value = trim( (string) $value );
 		if ( '' === $value ) {
@@ -1208,12 +1136,7 @@ class FLOSC_Concierge {
 		return null;
 	}
 
-	/**
- * Determine whether the current state satisfies expired.
- *
- * @param mixed $msg Input consumed by the Determine whether the current state satisfies expired. operation.
- * @return bool Whether expired applies to the current state.
-	 */
+	/** Is this concierge message expired for UTC now? */
 	protected static function is_expired( $msg ) {
 		$expires = trim( (string) ( $msg['end_utc_mts'] ?? ( $msg['expires_utc_mts'] ?? '' ) ) );
 		if ( '' === $expires ) {
@@ -1226,12 +1149,7 @@ class FLOSC_Concierge {
 		return time() > $ts;
 	}
 
-	/**
- * Determine whether the current state satisfies active now.
- *
- * @param mixed $msg Input consumed by the Determine whether the current state satisfies active now. operation.
- * @return bool Whether active now applies to the current state.
-	 */
+	/** Is this concierge message currently active within its optional UTC window? */
 	protected static function is_active_now( $msg ) {
 		$start = trim( (string) ( $msg['start_utc_mts'] ?? '' ) );
 		if ( '' !== $start ) {
@@ -1248,13 +1166,7 @@ class FLOSC_Concierge {
 		return true;
 	}
 
-	/**
- * Coordinate the content block behavior implemented by this code path.
- *
- * @param mixed $body Input consumed by the Coordinate the content block behavior implemented by this code path. operation.
- * @param mixed $label Input consumed by the Coordinate the content block behavior implemented by this code path. operation.
- * @return mixed Result produced by the content block operation.
-	 */
+	/** Read everything from a "Label:" to the end of the body. */
 	protected static function content_block( $body, $label ) {
 		$pattern = '/^[ \t>*_\-]*' . preg_quote( $label, '/' ) . '[ \t]*:[ \t]*/mi';
 		if ( preg_match( $pattern, (string) $body, $m, PREG_OFFSET_CAPTURE ) ) {
@@ -1263,12 +1175,7 @@ class FLOSC_Concierge {
 		return '';
 	}
 
-	/**
- * Coordinate the unquote behavior implemented by this code path.
- *
- * @param mixed $value Value consumed or normalized by the Coordinate the unquote behavior implemented by this code path. operation.
- * @return mixed Result produced by the unquote operation.
-	 */
+	/** Strip one pair of matching surrounding quotes. */
 	protected static function unquote( $value ) {
 		$value = trim( (string) $value );
 		if ( strlen( $value ) >= 2 ) {
@@ -1281,13 +1188,7 @@ class FLOSC_Concierge {
 		return $value;
 	}
 
-		/**
-	 * Coordinate the off ramp exactness behavior implemented by this code path.
-	 *
-	 * @param mixed $mode Input consumed by the Coordinate the off ramp exactness behavior implemented by this code path. operation.
-	 * @return mixed Result produced by the off ramp exactness operation.
-	 */
-private static function off_ramp_exactness( $mode ) {
+	private static function off_ramp_exactness( $mode ) {
 		$mode = sanitize_key( (string) $mode );
 		if ( ! in_array( $mode, array( 'flexible', 'preferred', 'exact' ), true ) ) {
 			$mode = 'preferred';
@@ -1295,14 +1196,7 @@ private static function off_ramp_exactness( $mode ) {
 		return $mode;
 	}
 
-		/**
-	 * Coordinate the off ramp guidance behavior implemented by this code path.
-	 *
-	 * @param mixed $phrases_text Input consumed by the Coordinate the off ramp guidance behavior implemented by this code path. operation.
-	 * @param mixed $exactness Input consumed by the Coordinate the off ramp guidance behavior implemented by this code path. operation.
-	 * @return mixed Result produced by the off ramp guidance operation.
-	 */
-private static function off_ramp_guidance( $phrases_text, $exactness ) {
+	private static function off_ramp_guidance( $phrases_text, $exactness ) {
 		$phrases = array();
 		foreach ( preg_split( '/\r\n|\r|\n/', (string) $phrases_text ) as $line ) {
 			$line = trim( (string) $line );

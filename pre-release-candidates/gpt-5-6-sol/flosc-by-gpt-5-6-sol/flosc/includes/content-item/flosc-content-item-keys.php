@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Map: canonical (new) key => legacy (old) key for one-time migrate + dual-read.
  *
- * @return Array<string,string>.
+ * @return array<string,string>
  */
 function flosc_content_item_option_key_map() {
 	return array(
@@ -33,7 +33,7 @@ function flosc_content_item_option_key_map() {
 /**
  * User-meta: new => old.
  *
- * @return Array<string,string>.
+ * @return array<string,string>
  */
 function flosc_content_item_user_meta_key_map() {
 	return array(
@@ -49,8 +49,8 @@ function flosc_content_item_user_meta_key_map() {
 /**
  * Whether a flow settings value is "present" for migrate-from-legacy.
  *
- * @param mixed $value Value consumed by this operation.
- * @return Bool.
+ * @param mixed $value
+ * @return bool
  */
 function flosc_content_item_value_present( $value ) {
 	if ( null === $value || '' === $value ) {
@@ -65,9 +65,9 @@ function flosc_content_item_value_present( $value ) {
 /**
  * Normalize flow option bag to content-item keys; drop legacy freeline keys.
  *
- * @param array  $fs         Flow settings.
- * @param string $option_key If non-empty and bag changed, persist via update_option.
- * @return Array.
+ * @param array  $fs          Flow settings.
+ * @param string $option_key  If non-empty and bag changed, persist via update_option.
+ * @return array
  */
 function flosc_normalize_content_item_flow_settings( array $fs, $option_key = '' ) {
 	$map     = flosc_content_item_option_key_map();
@@ -115,8 +115,8 @@ function flosc_normalize_content_item_flow_settings( array $fs, $option_key = ''
 /**
  * Resolve setting key for reads: accept legacy key name, return canonical.
  *
- * @param string $key Value consumed by this operation.
- * @return String.
+ * @param string $key
+ * @return string
  */
 function flosc_content_item_canonical_option_key( $key ) {
 	$key = (string) $key;
@@ -134,10 +134,10 @@ function flosc_content_item_canonical_option_key( $key ) {
 /**
  * Get_user_meta with legacy freeline meta fallback.
  *
- * @param int   $user_id Value consumed by this operation.
+ * @param int    $user_id
  * @param mixed $new_key Name or key used to select the Coordinate the content item get user meta behavior implemented by this code path. value.
- * @param bool  $single  Value consumed by this operation.
- * @return Mixed.
+ * @param bool   $single
+ * @return mixed
  */
 function flosc_content_item_get_user_meta( $user_id, $new_key, $single = true ) {
 	$user_id = absint( $user_id );
@@ -161,10 +161,10 @@ function flosc_content_item_get_user_meta( $user_id, $new_key, $single = true ) 
 /**
  * Update_user_meta for freeline state (writes new key only).
  *
- * @param int   $user_id Value consumed by this operation.
+ * @param int    $user_id
  * @param mixed $new_key Name or key used to select the Persist the content item update user meta state in Word Press storage. value.
- * @param mixed $value   Value consumed by this operation.
- * @return Int|bool.
+ * @param mixed  $value
+ * @return int|bool
  */
 function flosc_content_item_update_user_meta( $user_id, $new_key, $value ) {
 	return update_user_meta( absint( $user_id ), (string) $new_key, $value );

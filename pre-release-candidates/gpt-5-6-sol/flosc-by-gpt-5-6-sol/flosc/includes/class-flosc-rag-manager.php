@@ -1,25 +1,20 @@
 <?php
 /**
- * FLOSC RAG Manager.
- * Retrieval Augmented Generation - AI search tools.
+ * FLOSC RAG Manager
+ * Retrieval Augmented Generation - AI search tools
  *
- * STATUS: �.
- * WordPress SEARCH FUNCTIONAL | ⚙️ AI INTEGRATION OPTIONAL.
+ * STATUS: ✅ WordPress SEARCH FUNCTIONAL | ⚙️ AI INTEGRATION OPTIONAL
  *
  * FULLY FUNCTIONAL:
- * - search_posts() searches flow's configured WP category �.
- *
- * - Searches by lesson number (1-10) or keywords �.
- *
- * - Filters by access level (visitor/guest/member) �.
- *
- * - Returns post title, excerpt, URL �.
- *
+ * - search_posts() searches flow's configured WP category ✅
+ * - Searches by lesson number (1-10) or keywords ✅
+ * - Filters by access level (visitor/guest/member) ✅
+ * - Returns post title, excerpt, URL ✅
  *
  * OPTIONAL (Requires AI API):
- * - search_knowledge_base() for markdown files ⚙️.
- * - get_lesson_content() for full post delivery ⚙️.
- * - AI tool calling via Anthropic Claude API ⚙️.
+ * - search_knowledge_base() for markdown files ⚙️
+ * - get_lesson_content() for full post delivery ⚙️
+ * - AI tool calling via Anthropic Claude API ⚙️
  *
  * NOTE: WordPress search works WITHOUT AI configured!
  *
@@ -41,11 +36,11 @@ class FLOSC_RAG_Manager {
 	private static $instance = null;
 	private $content_filter;
 
-/**
- * Coordinate the instance behavior implemented by this code path.
- *
- * @return Mixed Result produced by the instance operation.
- */
+		/**
+	 * Coordinate the instance behavior implemented by this code path.
+	 *
+	 * @return mixed Result produced by the instance operation.
+	 */
 public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
@@ -53,18 +48,18 @@ public static function instance() {
 		return self::$instance;
 	}
 
-/**
- * Coordinate the construct behavior implemented by this code path.
- */
+		/**
+	 * Coordinate the construct behavior implemented by this code path.
+	 */
 private function __construct() {
 		$this->content_filter = FLOSC_Content_Filter::instance();
 	}
 
 	/**
-	 * Get AI tools definition for Anthropic API.
-	 * These tools allow AI to search WordPress.
+	 * Get AI tools definition for Anthropic API
+	 * These tools allow AI to search WordPress
 	 *
-	 * @return Array.
+	 * @return array
 	 */
 	public function get_ai_tools() {
 		return array(
@@ -122,13 +117,13 @@ private function __construct() {
 	}
 
 	/**
-	 * Execute a tool call from the AI.
+	 * Execute a tool call from the AI
 	 *
-	 * @param string $tool_name    Value consumed by this operation.
-	 * @param mixed  $input        Input consumed by the Coordinate the execute tool behavior implemented by this code path. operation.
+	 * @param string $tool_name
+	 * @param mixed $input Input consumed by the Coordinate the execute tool behavior implemented by this code path. operation.
 	 * @param string $access_level User's access level.
-	 * @param int    $category_id  WordPress category ID for the flow (0 for none).
-	 * @return String Tool result.
+	 * @param int    $category_id WordPress category ID for the flow (0 for none).
+	 * @return string Tool result
 	 */
 	public function execute_tool( $tool_name, $input, $access_level, $category_id = 0 ) {
 
@@ -171,11 +166,11 @@ private function __construct() {
 	}
 
 	/**
-	 * Search knowledge base files.
+	 * Search knowledge base files
 	 *
-	 * @param string $query        Value consumed by this operation.
-	 * @param mixed  $access_level Input consumed by the Coordinate the search knowledge base behavior implemented by this code path. operation.
-	 * @return String.
+	 * @param string $query
+	 * @param mixed $access_level Input consumed by the Coordinate the search knowledge base behavior implemented by this code path. operation.
+	 * @return string
 	 */
 	private function search_knowledge_base( $query, $access_level ) {
 
@@ -235,13 +230,13 @@ private function __construct() {
 	}
 
 	/**
-	 * Search WordPress posts in flow's configured category.
+	 * Search WordPress posts in flow's configured category
 	 *
-	 * @param string $keywords     Value consumed by this operation.
-	 * @param mixed  $limit        Input consumed by the Coordinate the search posts behavior implemented by this code path. operation.
-	 * @param string $access_level Value consumed by this operation.
-	 * @param mixed  $category_id  Identifier used to select the record involved in the Coordinate the search posts behavior implemented by this code path. operation.
-	 * @return String.
+	 * @param string $keywords
+	 * @param mixed $limit Input consumed by the Coordinate the search posts behavior implemented by this code path. operation.
+	 * @param string $access_level
+	 * @param mixed $category_id Identifier used to select the record involved in the Coordinate the search posts behavior implemented by this code path. operation.
+	 * @return string
 	 */
 	private function search_posts( $keywords, $limit, $access_level, $category_id = 0 ) {
 
@@ -333,12 +328,12 @@ private function __construct() {
 	}
 
 	/**
-	 * Get specific lesson content.
+	 * Get specific lesson content
 	 *
-	 * @param int    $lesson_number Value consumed by this operation.
-	 * @param mixed  $post_id       WordPress post ID used to resolve the content involved in this operation.
-	 * @param string $access_level  Value consumed by this operation.
-	 * @return String.
+	 * @param int    $lesson_number
+	 * @param mixed $post_id WordPress post ID used to resolve the content involved in this operation.
+	 * @param string $access_level
+	 * @return string
 	 */
 	private function get_lesson_content( $lesson_number, $post_id, $access_level ) {
 
@@ -376,11 +371,11 @@ private function __construct() {
 	}
 
 	/**
-	 * Get available lessons list.
-	 * Used to tell AI what content exists.
+	 * Get available lessons list
+	 * Used to tell AI what content exists
 	 *
-	 * @param string $access_level Value consumed by this operation.
-	 * @return String.
+	 * @param string $access_level
+	 * @return string
 	 */
 	public function get_available_lessons( $access_level ) {
 
@@ -475,11 +470,11 @@ private function __construct() {
 	}
 
 	/**
-	 * Helper to check access hierarchy.
+	 * Helper to check access hierarchy
 	 *
-	 * @param string $user_level     Value consumed by this operation.
-	 * @param mixed  $required_level Input consumed by the Determine whether the current state satisfies user access level. operation.
-	 * @return Bool.
+	 * @param string $user_level
+	 * @param mixed $required_level Input consumed by the Determine whether the current state satisfies user access level. operation.
+	 * @return bool
 	 */
 	private function can_user_access_level( $user_level, $required_level ) {
 		$hierarchy = array(

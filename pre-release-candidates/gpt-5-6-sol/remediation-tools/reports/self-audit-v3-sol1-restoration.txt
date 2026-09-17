@@ -1,0 +1,291 @@
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/administration.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/administration.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ai-configuration-guide.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ai-configuration-guide.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ai-configuration.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ai-configuration.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ai-feedback.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ai-feedback.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/autoprompts.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/autoprompts.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/bridge-analytics.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/bridge-analytics.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/chat-logs.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/chat-logs.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/chat-styling.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/chat-styling.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/companion.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/companion.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/concierge.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/concierge.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/contact-form.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/contact-form.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/content.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/content.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/create-sample-data.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/create-sample-data.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/da1.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/da1.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part1-journey.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part1-journey.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part3-ref-audio-quiz-flow.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part3-ref-audio-quiz-flow.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part3-ref-personality-profile.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part3-ref-personality-profile.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part3-ref-quiz.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part3-ref-quiz.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part3-ref-settings-fields.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part3-ref-settings-fields.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part5-glossary.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part5-glossary.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part6-development.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part6-development.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/ref-admin-skeleton.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/ref-admin-skeleton.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/ref-core-skeleton.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/ref-core-skeleton.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/documentation.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/documentation.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/email.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/email.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/engagement.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/engagement.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flow-edit.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flow-edit.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flow.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flow.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flows.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flows.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-messages.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-messages.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/login-registration.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/login-registration.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/member-levels.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/member-levels.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/offers.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/offers.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/payments.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/payments.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/quiz.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/quiz.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/settings-helper.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/settings-helper.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/settings.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/settings.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/sso.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/sso.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/starter-packs.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/starter-packs.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/token-management.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/token-management.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/trajectories.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/trajectories.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/assets/personality-builder/flosc-personality-builder-markup.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/assets/personality-builder/flosc-personality-builder-markup.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/flosc.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/flosc.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/ai/flosc-model-catalog.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/ai/flosc-model-catalog.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/ai/flosc-model-parameters.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/ai/flosc-model-parameters.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/ai/flosc-provider-identity.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/ai/flosc-provider-identity.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/ai/flosc-provider-keys.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/ai/flosc-provider-keys.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/ai/flosc-provider-profiles.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/ai/flosc-provider-profiles.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/chat-turn/trait-flosc-chat-turn.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/chat-turn/trait-flosc-chat-turn.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-companion-widget.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-companion-widget.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-access-validator.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-access-validator.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-ai-chat-dispatch.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-ai-chat-dispatch.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-bridge-data-manager.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-bridge-data-manager.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-chat-logger.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-chat-logger.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-chatpack.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-chatpack.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-concierge.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-concierge.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-condition-evaluator.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-condition-evaluator.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-content-filter.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-content-filter.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-content-protection.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-content-protection.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-flow-manager.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-flow-manager.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-free-content-item-manager.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-free-content-item-manager.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-lesson-manager.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-lesson-manager.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-lessons-table.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-lessons-table.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-member-access.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-member-access.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-page-context.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-page-context.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-pronunciation-analyzer.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-pronunciation-analyzer.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-quiz-manager.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-quiz-manager.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-quiz-registry.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-quiz-registry.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-quiz-type-factory.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-quiz-type-factory.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-rag-access-controller.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-rag-access-controller.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-rag-chat-handler.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-rag-chat-handler.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-rag-manager.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-rag-manager.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-response-validator.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-response-validator.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-site-content-index.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-site-content-index.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-stt-dispatch.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-stt-dispatch.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-trajectory.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-trajectory.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-user-access-manager.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-user-access-manager.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-user-session.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-user-session.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-wp-ai-client.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-wp-ai-client.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-ivr-parser.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-ivr-parser.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-session-manager.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-session-manager.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/companion-mode/class-flosc-companion-mode.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/companion-mode/class-flosc-companion-mode.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/companion-mode/class-flosc-companion-widget.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/companion-mode/class-flosc-companion-widget.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/content-item/flosc-content-item-keys.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/content-item/flosc-content-item-keys.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/da1/class-flosc-da1-catalogs.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/da1/class-flosc-da1-catalogs.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/da1/class-flosc-da1-compositions.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/da1/class-flosc-da1-compositions.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/email/class-flosc-email.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/email/class-flosc-email.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/email/flosc-guest-followup-slots.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/email/flosc-guest-followup-slots.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/filesystem/class-flosc-filesystem.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/filesystem/class-flosc-filesystem.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/filesystem/flosc-data-paths.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/filesystem/flosc-data-paths.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/first-party-authentication/class-flosc-first-party-authentication.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/first-party-authentication/class-flosc-first-party-authentication.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-accessors.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-accessors.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-admin.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-admin.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-available-providers.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-available-providers.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-flow-runtime.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-flow-runtime.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-ivr-sync.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-ivr-sync.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-knowledge-bases.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-knowledge-bases.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-lifecycle.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-lifecycle.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-personality-library.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-personality-library.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-request.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-request.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/full-page-mode/class-flosc-full-page-mode.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/full-page-mode/class-flosc-full-page-mode.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/logging/class-flosc-chat-logger.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/logging/class-flosc-chat-logger.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/magic-link/class-flosc-magic-link-trait.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/magic-link/class-flosc-magic-link-trait.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/class-flosc-ivr-parser.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/class-flosc-ivr-parser.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/flosc-ivr-sync.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/flosc-ivr-sync.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-abstract-quiz-type.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-abstract-quiz-type.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-multiplechoice-quiz.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-multiplechoice-quiz.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-sample-assessment-quiz.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-sample-assessment-quiz.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-sample-audio-quiz.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-sample-audio-quiz.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-sample-text-based-quiz.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-sample-text-based-quiz.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-truefalse-quiz.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-truefalse-quiz.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-wordmatching-quiz.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-wordmatching-quiz.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/request-guard/class-flosc-request-guard.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/request-guard/class-flosc-request-guard.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/class-flosc-access-manager.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/class-flosc-access-manager.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/class-flosc-checkout-rest.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/class-flosc-checkout-rest.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/class-flosc-offer-manager.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/class-flosc-offer-manager.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/class-flosc-payment-provider.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/class-flosc-payment-provider.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/class-flosc-sale-manager.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/class-flosc-sale-manager.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/class-flosc-usage-tracker.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/class-flosc-usage-tracker.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/providers/class-flosc-affiliate-provider.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/providers/class-flosc-affiliate-provider.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/providers/class-flosc-clickbank-provider.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/providers/class-flosc-clickbank-provider.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/providers/class-flosc-paypal-provider.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/providers/class-flosc-paypal-provider.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/providers/class-flosc-stripe-provider.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/providers/class-flosc-stripe-provider.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/providers/class-flosc-token-provider.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/providers/class-flosc-token-provider.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sessions/class-flosc-session-manager.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sessions/class-flosc-session-manager.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sessions/class-flosc-session-rest.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sessions/class-flosc-session-rest.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/class-oauth2-handler.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/class-oauth2-handler.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/class-sso-manager.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/class-sso-manager.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/class-sso-provider-base.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/class-sso-provider-base.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/class-user-linker.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/class-user-linker.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/flosc-sso-accessor.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/flosc-sso-accessor.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/providers/class-apple-provider.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/providers/class-apple-provider.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/providers/class-facebook-provider.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/providers/class-facebook-provider.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/providers/class-google-provider.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/providers/class-google-provider.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/providers/class-linkedin-provider.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/providers/class-linkedin-provider.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/providers/class-microsoft-provider.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/providers/class-microsoft-provider.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/starter-packs/class-flosc-starter-packs.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/starter-packs/class-flosc-starter-packs.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/tokens/class-flosc-token-ledger.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/tokens/class-flosc-token-ledger.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/tokens/class-flosc-visitor-token-trait.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/tokens/class-flosc-visitor-token-trait.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/traits/class-flosc-magic-link-trait.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/traits/class-flosc-magic-link-trait.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/traits/class-flosc-visitor-token-trait.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/traits/class-flosc-visitor-token-trait.php
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/uninstall.php
+RESTORED_EXACT_PRE_SOL1 pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/uninstall.php
+RESTORED_PHP_FILES=145

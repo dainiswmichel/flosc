@@ -1,17 +1,17 @@
 <?php
 /**
- * FLOSC Member Levels Tab — Level Registry + Content Protection.
+ * FLOSC Member Levels Tab — Level Registry + Content Protection
  *
  * SINGLE SOURCE OF TRUTH for member levels in a flow.
  * Other tabs (Offers, Lessons) reference this registry via dropdown.
  *
  * Sections:
- * 1. Level Registry — admin defines level slugs + display names.
- * 2. Content Protection — assign categories, tags, posts, pages to levels.
- * 3. Guest Access — freeline count/mode, access duration, max chats / management.
+ * 1. Level Registry — admin defines level slugs + display names
+ * 2. Content Protection — assign categories, tags, posts, pages to levels
+ * 3. Guest Access — freeline count/mode, access duration, max chats / management
  *
- * Extracted from Lessons tab (v8.0.0 → v8.1.0) where content protection.
- * And guest access were previously mixed with lesson group configuration.
+ * Extracted from Lessons tab (v8.0.0 → v8.1.0) where content protection
+ * and guest access were previously mixed with lesson group configuration.
  *
  * @package FLOSC
  * @since 8.1.0
@@ -174,14 +174,14 @@ $flosc_vgm_depths = flosc_vgm_depth_labels();
 							<option value="">— Select —</option>
 							<?php if ( 'category' === $flosc_item_type ) : ?>
 								<?php foreach ( $flosc_categories as $flosc_cat ) : ?>
-									<option value="<?php echo esc_attr( $flosc_cat->term_id ); ?>" 
+									<option value="<?php echo esc_attr( (string) $flosc_cat->term_id ); ?>" 
 											<?php selected( $flosc_item['id'] ?? '', $flosc_cat->term_id ); ?>>
 										<?php echo esc_html( $flosc_cat->name ); ?> (<?php echo esc_html( (string) $flosc_cat->count ); ?> posts)
 									</option>
 								<?php endforeach; ?>
 							<?php elseif ( 'tag' === $flosc_item_type ) : ?>
 								<?php foreach ( $flosc_tags as $flosc_tag ) : ?>
-									<option value="<?php echo esc_attr( $flosc_tag->term_id ); ?>" 
+									<option value="<?php echo esc_attr( (string) $flosc_tag->term_id ); ?>" 
 											<?php selected( $flosc_item['id'] ?? '', $flosc_tag->term_id ); ?>>
 										<?php echo esc_html( $flosc_tag->name ); ?> (<?php echo esc_html( (string) $flosc_tag->count ); ?> posts)
 									</option>
@@ -399,7 +399,7 @@ jQuery(document).ready(function($) {
 	<?php
 		$flosc_opts = '<option value="">— Select —</option>';
 	foreach ( $flosc_categories as $flosc_cat ) {
-		$flosc_opts .= '<option value="' . esc_attr( $flosc_cat->term_id ) . '">' . esc_html( $flosc_cat->name ) . ' (' . intval( $flosc_cat->count ) . ' posts)</option>';
+		$flosc_opts .= '<option value="' . esc_attr( (string) $flosc_cat->term_id ) . '">' . esc_html( $flosc_cat->name ) . ' (' . intval( $flosc_cat->count ) . ' posts)</option>';
 	}
 		echo wp_json_encode( $flosc_opts );
 	?>
@@ -409,7 +409,7 @@ jQuery(document).ready(function($) {
 	<?php
 		$flosc_opts = '<option value="">— Select —</option>';
 	foreach ( $flosc_tags as $flosc_tag ) {
-		$flosc_opts .= '<option value="' . esc_attr( $flosc_tag->term_id ) . '">' . esc_html( $flosc_tag->name ) . ' (' . intval( $flosc_tag->count ) . ' posts)</option>';
+		$flosc_opts .= '<option value="' . esc_attr( (string) $flosc_tag->term_id ) . '">' . esc_html( $flosc_tag->name ) . ' (' . intval( $flosc_tag->count ) . ' posts)</option>';
 	}
 		echo wp_json_encode( $flosc_opts );
 	?>

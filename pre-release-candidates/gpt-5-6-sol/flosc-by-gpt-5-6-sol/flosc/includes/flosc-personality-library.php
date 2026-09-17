@@ -3,7 +3,7 @@
  * Install personality library — attach exactly one entry to a floscFlow.
  * No personality chaining (only AI APIs chain).
  *
- * Option: flosc_personality_library.
+ * Option: flosc_personality_library
  * Flow bag key: personality_library_id (empty = custom fields on the flow only)
  *
  * @package FLOSC
@@ -15,9 +15,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 if ( ! function_exists( 'flosc_personality_library_option_key' ) ) {
 	/**
-	 * Coordinate the personality library option key behavior implemented by this code path.
-	 *
-	 * @return String.
+ * Coordinate the personality library option key behavior implemented by this code path.
+ *
+	 * @return string
 	 */
 	function flosc_personality_library_option_key() {
 		return 'flosc_personality_library';
@@ -28,13 +28,13 @@ if ( ! function_exists( 'flosc_personality_fingerprint' ) ) {
 	/**
 	 * The deployment fingerprint: genome and runtime profile as one unit.
 	 *
-	 * Kept in one place because it is written on save and read back on every.
-	 * Turn, and a hash computed two slightly different ways is worse than no.
-	 * Hash at all — it reports a mismatch that is not there.
+	 * Kept in one place because it is written on save and read back on every
+	 * turn, and a hash computed two slightly different ways is worse than no
+	 * hash at all — it reports a mismatch that is not there.
 	 *
-	 * @param string $genome  Workshop_json as stored.
-	 * @param string $profile Ai_base_prompt as stored.
-	 * @return String 64 hex characters.
+	 * @param string $genome  workshop_json as stored.
+	 * @param string $profile ai_base_prompt as stored.
+	 * @return string 64 hex characters.
 	 */
 	function flosc_personality_fingerprint( $genome, $profile ) {
 		return hash( 'sha256', (string) $genome . "\n--FLOSC-RUNTIME--\n" . trim( (string) $profile ) );
@@ -45,16 +45,16 @@ if ( ! function_exists( 'flosc_personality_resolved_fingerprint' ) ) {
 	/**
 	 * The fingerprint of whatever personality this flow resolves to now.
 	 *
-	 * Profile_hash is written when a personality is saved, so a row that has.
-	 * Not been saved since the field existed has none — which is every shipped.
-	 * Default on a fresh install. The live chat log showed an empty column for.
-	 * Exactly that reason: the mechanism was right and had nothing to read.
+	 * profile_hash is written when a personality is saved, so a row that has
+	 * not been saved since the field existed has none — which is every shipped
+	 * default on a fresh install. The live chat log showed an empty column for
+	 * exactly that reason: the mechanism was right and had nothing to read.
 	 *
-	 * Computing it when it is absent costs one sha256 over about a kilobyte and.
-	 * Makes the column mean the same thing on every row.
+	 * Computing it when it is absent costs one sha256 over about a kilobyte and
+	 * makes the column mean the same thing on every row.
 	 *
 	 * @param string|null $flow_id Flow to resolve for.
-	 * @return String 64 hex characters, or '' when no personality is attached.
+	 * @return string 64 hex characters, or '' when no personality is attached.
 	 */
 	function flosc_personality_resolved_fingerprint( $flow_id = null ) {
 		if ( ! function_exists( 'flosc_personality_library_resolve_field' ) ) {
@@ -81,7 +81,7 @@ if ( ! function_exists( 'flosc_personality_library_field_keys' ) ) {
 	/**
 	 * Fields stored on each library entry (and mirrored on the flow when custom).
 	 *
-	 * @return Array<int,string>.
+	 * @return array<int,string>
 	 */
 	function flosc_personality_library_field_keys() {
 		return array(
@@ -107,11 +107,11 @@ if ( ! function_exists( 'flosc_personality_library_field_keys' ) ) {
 if ( ! function_exists( 'flosc_personality_library_default_workshop' ) ) {
 	/**
 	 * Build one showcase genome. Every heading populated AND self-explaining:
-	 * These templates teach the designer by example (clouds at several sizes,.
-	 * A polarity pair, Never-tier exclusions, parked joke cards).
+	 * these templates teach the designer by example (clouds at several sizes,
+	 * a polarity pair, Never-tier exclusions, parked joke cards).
 	 *
-	 * @param string $template Friendly|tech|bubblybetty|dadjokedan.
-	 * @return Array<string,mixed>.
+	 * @param string $template friendly|tech|bubblybetty|dadjokedan.
+	 * @return array<string,mixed>
 	 */
 	function flosc_personality_library_template_workshop( $template = 'friendly' ) {
 		/*
@@ -1279,7 +1279,7 @@ Punchline — "Over and PUNder."',
 	/**
 	 * Back-compat wrapper: the seed a fresh install starts from.
 	 *
-	 * @return Array<string,mixed>.
+	 * @return array<string,mixed>
 	 */
 	function flosc_personality_library_default_workshop() {
 		return flosc_personality_library_template_workshop( 'friendly' );
@@ -1290,7 +1290,7 @@ if ( ! function_exists( 'flosc_personality_library_defaults' ) ) {
 	/**
 	 * Seed entries for a fresh install.
 	 *
-	 * @return Array<string,array<string,string>>.
+	 * @return array<string,array<string,string>>
 	 */
 	function flosc_personality_library_defaults() {
 		return array(
@@ -1907,9 +1907,9 @@ if ( ! function_exists( 'flosc_personality_library_defaults' ) ) {
 
 if ( ! function_exists( 'flosc_personality_library_get_all' ) ) {
 	/**
-	 * Persist the personality library get all state in WordPress storage.
-	 *
-	 * @return Array<string,array<string,string>>.
+ * Persist the personality library get all state in WordPress storage.
+ *
+	 * @return array<string,array<string,string>>
 	 */
 	function flosc_personality_library_get_all() {
 		$key = flosc_personality_library_option_key();
@@ -1945,10 +1945,10 @@ if ( ! function_exists( 'flosc_personality_library_get_all' ) ) {
 
 if ( ! function_exists( 'flosc_personality_library_get' ) ) {
 	/**
-	 * Coordinate the personality library get behavior implemented by this code path.
-	 *
+ * Coordinate the personality library get behavior implemented by this code path.
+ *
 	 * @param string $id Personality id.
-	 * @return Array<string,string>|null.
+	 * @return array<string,string>|null
 	 */
 	function flosc_personality_library_get( $id ) {
 		$id  = sanitize_key( (string) $id );
@@ -1959,10 +1959,10 @@ if ( ! function_exists( 'flosc_personality_library_get' ) ) {
 
 if ( ! function_exists( 'flosc_personality_library_save_all' ) ) {
 	/**
-	 * Persist the personality library save all state in WordPress storage.
-	 *
+ * Persist the personality library save all state in WordPress storage.
+ *
 	 * @param array<string,array<string,mixed>> $library Full map.
-	 * @return Void.
+	 * @return void
 	 */
 	function flosc_personality_library_save_all( $library ) {
 		if ( ! is_array( $library ) ) {
@@ -2044,10 +2044,10 @@ if ( ! function_exists( 'flosc_personality_library_resolve_field' ) ) {
 	/**
 	 * Value for a personality field: attached library entry wins when non-empty; else flow setting.
 	 *
-	 * @param string      $field    Field key (e.g. ai_personality_name).
+	 * @param string      $field   Field key (e.g. ai_personality_name).
 	 * @param mixed       $fallback Default.
-	 * @param string|null $flow_id  Optional flow stem.
-	 * @return Mixed.
+	 * @param string|null $flow_id Optional flow stem.
+	 * @return mixed
 	 */
 	function flosc_personality_library_resolve_field( $field, $fallback = '', $flow_id = null ) {
 		$field = (string) $field;
@@ -2076,7 +2076,7 @@ if ( ! function_exists( 'flosc_flow_name' ) ) {
 	 * Flow Name (Identity). Switch Flow pull-down only. Not the chat header.
 	 *
 	 * @param string|null $flow_id Optional flow stem.
-	 * @return String.
+	 * @return string
 	 */
 	function flosc_flow_name( $flow_id = null ) {
 		$name = '';
@@ -2096,11 +2096,11 @@ if ( ! function_exists( 'flosc_flow_name' ) ) {
 
 if ( ! function_exists( 'flosc_personality_name' ) ) {
 	/**
-	 * Personality Name. Chat header, composer, landing H1, compiled “You are {name}.”.
+	 * Personality Name. Chat header, composer, landing H1, compiled “You are {name}.”
 	 * Attached library row only — never Flow Name.
 	 *
 	 * @param string|null $flow_id Optional flow stem.
-	 * @return String.
+	 * @return string
 	 */
 	function flosc_personality_name( $flow_id = null ) {
 		$name = '';
@@ -2119,7 +2119,7 @@ if ( ! function_exists( 'flosc_visitor_assistant_name' ) ) {
 	 * Alias of flosc_personality_name().
 	 *
 	 * @param string|null $flow_id Optional flow stem.
-	 * @return String.
+	 * @return string
 	 */
 	function flosc_visitor_assistant_name( $flow_id = null ) {
 		return flosc_personality_name( $flow_id );
@@ -2132,7 +2132,7 @@ if ( ! function_exists( 'flosc_flow_public_title' ) ) {
 	 * Not the operator floscFlow name and not the personality name.
 	 *
 	 * @param string|null $flow_id Optional flow stem.
-	 * @return String.
+	 * @return string
 	 */
 	function flosc_flow_public_title( $flow_id = null ) {
 		$title = '';
@@ -2155,7 +2155,7 @@ if ( ! function_exists( 'flosc_flow_public_tagline' ) ) {
 	 * One-line expansion of the Public Title. Not the FLOSC acronym, not the personality.
 	 *
 	 * @param string|null $flow_id Optional flow stem.
-	 * @return String.
+	 * @return string
 	 */
 	function flosc_flow_public_tagline( $flow_id = null ) {
 		$tagline = '';
@@ -2175,9 +2175,9 @@ if ( ! function_exists( 'flosc_flow_public_tagline' ) ) {
 
 if ( ! function_exists( 'flosc_admin_save_personality_library' ) ) {
 	/**
-	 * Admin-post.php?action=flosc_save_personality_library.
+	 * Admin-post.php?action=flosc_save_personality_library
 	 *
-	 * @return Void.
+	 * @return void
 	 */
 	function flosc_admin_save_personality_library() {
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -2280,7 +2280,7 @@ if ( ! function_exists( 'flosc_personality_profile_max_bytes' ) ) {
 	/**
 	 * Compiled personality profile size cap (bytes).
 	 *
-	 * @return Int.
+	 * @return int
 	 */
 	function flosc_personality_profile_max_bytes() {
 		return 200000;
@@ -2291,7 +2291,7 @@ if ( ! function_exists( 'flosc_personality_workshop_max_bytes' ) ) {
 	/**
 	 * Workshop JSON size cap (bytes).
 	 *
-	 * @return Int.
+	 * @return int
 	 */
 	function flosc_personality_workshop_max_bytes() {
 		return 800000;
@@ -2300,11 +2300,11 @@ if ( ! function_exists( 'flosc_personality_workshop_max_bytes' ) ) {
 
 if ( ! function_exists( 'flosc_sanitize_personality_profile_text' ) ) {
 	/**
-	 * Keep Markdown structure for compiled personalities. Do not use.
+	 * Keep Markdown structure for compiled personalities. Do not use
 	 * sanitize_textarea_field() — it collapses whitespace and strips hashes.
 	 *
 	 * @param string $text Raw profile.
-	 * @return String.
+	 * @return string
 	 */
 	function flosc_sanitize_personality_profile_text( $text ) {
 		$text = (string) $text;
@@ -2326,7 +2326,7 @@ if ( ! function_exists( 'flosc_sanitize_personality_workshop' ) ) {
 	 * Accept only a JSON object. Strip derived provider packs (not used in FLOSC).
 	 *
 	 * @param string $raw Raw JSON.
-	 * @return String Empty string or re-encoded JSON object.
+	 * @return string Empty string or re-encoded JSON object.
 	 */
 	function flosc_sanitize_personality_workshop( $raw ) {
 		$raw = (string) $raw;
@@ -2369,10 +2369,10 @@ if ( ! function_exists( 'flosc_personality_variable_catalog' ) ) {
 	/**
 	 * Variables that may be used in a compiled personality card.
 	 *
-	 * Flow values are shown in the designer. Turn values are populated from the.
-	 * Context FLOSC has already assembled for the current AI request.
+	 * Flow values are shown in the designer. Turn values are populated from the
+	 * context FLOSC has already assembled for the current AI request.
 	 *
-	 * @return Array<string,array{scope:string,label:string}>.
+	 * @return array<string,array{scope:string,label:string}>
 	 */
 	function flosc_personality_variable_catalog() {
 		$flow = array(
@@ -2448,7 +2448,7 @@ if ( ! function_exists( 'flosc_personality_variable_clean' ) ) {
 	 * Normalize a value before it becomes part of an AI system prompt.
 	 *
 	 * @param mixed $value Raw value.
-	 * @return String.
+	 * @return string
 	 */
 	function flosc_personality_variable_clean( $value ) {
 		if ( is_bool( $value ) ) {
@@ -2486,10 +2486,10 @@ if ( ! function_exists( 'flosc_personality_variable_pick' ) ) {
 	/**
 	 * First non-empty value carried by an already-built context.
 	 *
-	 * @param array<int,string> $keys     Candidate keys in priority order.
-	 * @param array             $context  Existing context.
+	 * @param array<int,string> $keys    Candidate keys in priority order.
+	 * @param array             $context Existing context.
 	 * @param string            $fallback Explicit value when unavailable.
-	 * @return String.
+	 * @return string
 	 */
 	function flosc_personality_variable_pick( $keys, $context, $fallback = '' ) {
 		foreach ( $keys as $key ) {
@@ -2505,12 +2505,12 @@ if ( ! function_exists( 'flosc_personality_turn_variable_context' ) ) {
 	/**
 	 * Build the allowlisted variable values from an existing turn context.
 	 *
-	 * This function performs no WordPress, database, URL, quiz, lesson, or.
-	 * Session lookup. Logged-in identity fields have already been replaced with.
-	 * Backend values before Chatpack receives the context.
+	 * This function performs no WordPress, database, URL, quiz, lesson, or
+	 * session lookup. Logged-in identity fields have already been replaced with
+	 * backend values before Chatpack receives the context.
 	 *
 	 * @param array $turn Existing turn context.
-	 * @return Array<string,string>.
+	 * @return array<string,string>
 	 */
 	function flosc_personality_turn_variable_context( $turn ) {
 		if ( ! is_array( $turn ) ) {
@@ -2553,13 +2553,13 @@ if ( ! function_exists( 'flosc_personality_turn_variable_context' ) ) {
 
 if ( ! function_exists( 'flosc_personality_flow_variable_context' ) ) {
 	/**
-	 * Resolve flow/site values. Runtime callers may supply values they already.
-	 * Loaded while assembling the identity section.
+	 * Resolve flow/site values. Runtime callers may supply values they already
+	 * loaded while assembling the identity section.
 	 *
 	 * @param string|null $flow_id Flow stem.
 	 * @param array       $known   Already-loaded values.
 	 * @param array|null  $tokens  Bare flow tokens needed, or null for all.
-	 * @return Array<string,string>.
+	 * @return array<string,string>
 	 */
 	function flosc_personality_flow_variable_context( $flow_id = null, $known = array(), $tokens = null ) {
 		$get               = static function ( $key, $resolver ) use ( $known ) {
@@ -2682,15 +2682,15 @@ if ( ! function_exists( 'flosc_personality_quiz_values' ) ) {
 	/**
 	 * One quiz's stored result, as token values.
 	 *
-	 * A personality that names a quiz — {score:ipa_basics} — is asking about a.
-	 * Result the turn may not carry, so this reads it. One get_user_meta per.
-	 * Distinct quiz per request, cached, and only reached when a qualified.
-	 * Token is actually in the document. An unnamed quiz means the most recent.
-	 * One, which is what get_flosc_bridge_data() already returns for a null id.
+	 * A personality that names a quiz — {score:ipa_basics} — is asking about a
+	 * result the turn may not carry, so this reads it. One get_user_meta per
+	 * distinct quiz per request, cached, and only reached when a qualified
+	 * token is actually in the document. An unnamed quiz means the most recent
+	 * one, which is what get_flosc_bridge_data() already returns for a null id.
 	 *
 	 * @param int         $user_id WordPress user ID.
 	 * @param string|null $quiz_id Quiz id, or null for the most recent.
-	 * @return Array<string,string>.
+	 * @return array<string,string>
 	 */
 	function flosc_personality_quiz_values( $user_id, $quiz_id = null ) {
 		static $cache = array();
@@ -2741,7 +2741,7 @@ if ( ! function_exists( 'flosc_personality_variable_tokens' ) ) {
 	 * Recognized bare tokens present in a personality profile.
 	 *
 	 * @param string $text Personality profile.
-	 * @return Array<int,string>.
+	 * @return array<int,string>
 	 */
 	function flosc_personality_variable_tokens( $text ) {
 		$text = (string) $text;
@@ -2774,7 +2774,7 @@ if ( ! function_exists( 'flosc_personality_expand_variables' ) ) {
 	 *
 	 * @param string $text    Stored personality profile copy.
 	 * @param array  $context Allowlisted token values for this request.
-	 * @return String.
+	 * @return string
 	 */
 	function flosc_personality_expand_variables( $text, $context = array() ) {
 		$text = (string) $text;
@@ -2828,7 +2828,7 @@ if ( ! function_exists( 'flosc_personality_variable_boot' ) ) {
 	 * Variable catalog formatted for the personality designer.
 	 *
 	 * @param string|null $flow_id Flow filename or stem being edited.
-	 * @return Array<int,array<string,string>>.
+	 * @return array<int,array<string,string>>
 	 */
 	function flosc_personality_variable_boot( $flow_id = null ) {
 		$stem    = null === $flow_id ? null : sanitize_key( pathinfo( (string) $flow_id, PATHINFO_FILENAME ) );
@@ -2858,7 +2858,7 @@ if ( ! function_exists( 'flosc_personality_compiled_profile' ) ) {
 	 * Compiled personality Markdown for this flow (library attach or custom).
 	 *
 	 * @param string|null $flow_id Optional flow stem.
-	 * @return String.
+	 * @return string
 	 */
 	function flosc_personality_compiled_profile( $flow_id = null ) {
 		$profile = '';
@@ -2875,11 +2875,11 @@ if ( ! function_exists( 'flosc_personality_builder_request_context' ) ) {
 	/**
 	 * Persona and IVR from the designer admin request.
 	 *
-	 * Mirrors the fallback chain in admin/settings.php ($_GET ivr → user default ivr →.
-	 * First available flow file) so the assets enqueued here always match the flow the.
+	 * Mirrors the fallback chain in admin/settings.php ($_GET ivr → user default ivr →
+	 * first available flow file) so the assets enqueued here always match the flow the
 	 * AI tab actually renders, even when the URL carries no ivr param.
 	 *
-	 * @return Array{persona:string,ivr:string}.
+	 * @return array{persona:string,ivr:string}
 	 */
 	function flosc_personality_builder_request_context() {
 		$ivr_files = array();
@@ -2940,7 +2940,7 @@ if ( ! function_exists( 'flosc_personality_builder_url' ) ) {
 	 *
 	 * @param string $persona_id Library id.
 	 * @param string $ivr        Optional current IVR filename.
-	 * @return String.
+	 * @return string
 	 */
 	function flosc_personality_builder_url( $persona_id, $ivr = '' ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter -- signature kept for callers.
 		$args = array(
@@ -2958,10 +2958,10 @@ if ( ! function_exists( 'flosc_personality_builder_url' ) ) {
 
 if ( ! function_exists( 'flosc_personality_library_url' ) ) {
 	/**
-	 * Coordinate the personality library url behavior implemented by this code path.
-	 *
+ * Coordinate the personality library url behavior implemented by this code path.
+ *
 	 * @param string $ivr Optional current IVR filename.
-	 * @return String.
+	 * @return string
 	 */
 	function flosc_personality_library_url( $ivr = '' ) {
 		$args = array(
@@ -2981,9 +2981,9 @@ if ( ! function_exists( 'flosc_render_ai_tab_nav' ) ) {
 	/**
 	 * This flow / All Flows buttons on the AI tab.
 	 *
-	 * @param string $current_view Single|all.
+	 * @param string $current_view single|all.
 	 * @param string $ivr          Optional current IVR filename.
-	 * @return Void.
+	 * @return void
 	 */
 	function flosc_render_ai_tab_nav( $current_view, $ivr = '' ) {
 		$current_view = sanitize_key( (string) $current_view );
@@ -3023,7 +3023,7 @@ if ( ! function_exists( 'flosc_personality_library_update_entry' ) ) {
 	 *
 	 * @param string               $id     Persona id.
 	 * @param array<string,string> $fields Fields to merge.
-	 * @return Bool.
+	 * @return bool
 	 */
 	function flosc_personality_library_update_entry( $id, $fields ) {
 		$id = sanitize_key( (string) $id );
@@ -3059,7 +3059,7 @@ if ( ! function_exists( 'flosc_personality_library_promote_custom_flow_voices' )
 	 * Lift custom-on-flow voices into the library and attach them.
 	 * Shipped personality-sample IVRs attach the seed rows. Does not invent soul text.
 	 *
-	 * @return Void.
+	 * @return void
 	 */
 	function flosc_personality_library_promote_custom_flow_voices() {
 		static $ran = false;
@@ -3162,7 +3162,7 @@ if ( ! function_exists( 'flosc_personality_flow_settings_for_ivr' ) ) {
 	 * Pick the flow option bag that actually holds this IVR’s personality fields.
 	 *
 	 * @param string $ivr_filename IVR filename.
-	 * @return Array{option_key:string,settings:array<string,mixed>}.
+	 * @return array{option_key:string,settings:array<string,mixed>}
 	 */
 	function flosc_personality_flow_settings_for_ivr( $ivr_filename ) {
 		$ivr_filename = basename( (string) $ivr_filename );
@@ -3219,7 +3219,7 @@ if ( ! function_exists( 'flosc_personality_library_id_for_flow' ) ) {
 	 * Attached library id for a flow, including the Br3nda → dainis.net mapping.
 	 *
 	 * @param string|null $flow_id Flow stem.
-	 * @return String.
+	 * @return string
 	 */
 	function flosc_personality_library_id_for_flow( $flow_id = null ) {
 		$pid = '';
@@ -3255,11 +3255,11 @@ add_action( 'admin_init', 'flosc_personality_library_promote_custom_flow_voices'
 /**
  * Never let proxies or browsers cache FLOSC admin screens.
  *
- * A stale cached admin page re-submits old form values (this once kept.
- * Reverting the personality selection), so we send no-cache headers for.
- * Every request to our settings screen.
+ * A stale cached admin page re-submits old form values (this once kept
+ * reverting the personality selection), so we send no-cache headers for
+ * every request to our settings screen.
  *
- * @return Void.
+ * @return void
  */
 function flosc_admin_nocache_headers() {
 	if ( ! function_exists( 'nocache_headers' ) ) {
@@ -3277,7 +3277,7 @@ if ( ! function_exists( 'flosc_ajax_save_personality_design' ) ) {
 	/**
 	 * AJAX: save designer output into a library row.
 	 *
-	 * @return Void.
+	 * @return void
 	 */
 	function flosc_ajax_save_personality_design() {
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -3353,10 +3353,10 @@ if ( ! function_exists( 'flosc_ajax_save_personality_design' ) ) {
 if ( ! function_exists( 'flosc_ajax_attach_personality' ) ) {
 	/**
 	 * AJAX: attach (or clear) a library personality on one flow, immediately.
-	 * Writes the same option the generic settings saver writes, so Save.
+	 * Writes the same option the generic settings saver writes, so Save
 	 * Settings stays a working manual fallback.
 	 *
-	 * @return Void.
+	 * @return void
 	 */
 	function flosc_ajax_attach_personality() {
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -3460,7 +3460,7 @@ if ( ! function_exists( 'flosc_personality_builder_boot_json' ) ) {
 	 *
 	 * @param string $persona_id Library id.
 	 * @param string $ivr        Optional IVR filename.
-	 * @return Array<string,mixed>.
+	 * @return array<string,mixed>
 	 */
 	function flosc_personality_builder_boot_json( $persona_id, $ivr = '' ) {
 		$entry = flosc_personality_library_get( $persona_id );
@@ -3557,7 +3557,7 @@ if ( ! function_exists( 'flosc_personality_trajectory_posts' ) ) {
 	 * Published posts and pages a trajectory can point at.
 	 *
 	 * @param int $limit Maximum entries.
-	 * @return Array<int,array<string,string|int>>.
+	 * @return array<int,array<string,string|int>>
 	 */
 	function flosc_personality_trajectory_posts( $limit = 200 ) {
 		$rows = array();
@@ -3616,7 +3616,7 @@ if ( ! function_exists( 'flosc_personality_trajectory_row' ) ) {
 	 *
 	 * @param WP_Post $post Post.
 	 * @param string  $type Row type: trajectory, post or page.
-	 * @return Array<string,string|int>.
+	 * @return array<string,string|int>
 	 */
 	function flosc_personality_trajectory_row( $post, $type ) {
 		$excerpt = has_excerpt( $post )
@@ -3636,7 +3636,7 @@ if ( ! function_exists( 'flosc_enqueue_personality_builder_assets' ) ) {
 	/**
 	 * Enqueue designer bridge on AI → This flow.
 	 *
-	 * @return Void.
+	 * @return void
 	 */
 	function flosc_enqueue_personality_builder_assets() {
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -3697,7 +3697,7 @@ if ( ! function_exists( 'flosc_render_personality_designer_accordion' ) ) {
 	 *
 	 * @param string $persona_id Library id.
 	 * @param string $ivr        Optional IVR filename.
-	 * @return Void.
+	 * @return void
 	 */
 	function flosc_render_personality_designer_accordion( $persona_id, $ivr = '' ) {
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -3788,7 +3788,7 @@ if ( ! function_exists( 'flosc_admin_personality_builder_page' ) ) {
 	/**
 	 * Legacy slug: send leftover bookmarks to the AI-tab accordion.
 	 *
-	 * @return Void.
+	 * @return void
 	 */
 	function flosc_admin_personality_builder_page() {
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -3802,10 +3802,10 @@ if ( ! function_exists( 'flosc_admin_personality_builder_page' ) ) {
 
 if ( ! function_exists( 'flosc_personality_builder_admin_body_class' ) ) {
 	/**
-	 * Coordinate the personality builder admin body class behavior implemented by this code path.
-	 *
+ * Coordinate the personality builder admin body class behavior implemented by this code path.
+ *
 	 * @param string $classes Body classes.
-	 * @return String.
+	 * @return string
 	 */
 	function flosc_personality_builder_admin_body_class( $classes ) {
 		// Adds a CSS class to <body>. Three display selectors, nothing else.
@@ -3824,7 +3824,7 @@ if ( ! function_exists( 'flosc_redirect_nested_personality_designer' ) ) {
 	/**
 	 * Old designer page and view=design URLs go to the AI-tab accordion.
 	 *
-	 * @return Void.
+	 * @return void
 	 */
 	function flosc_redirect_nested_personality_designer() {
 		if ( ! is_admin() || ! current_user_can( 'manage_options' ) ) {
@@ -3852,7 +3852,7 @@ if ( ! function_exists( 'flosc_render_personality_designer_canvas' ) ) {
 	 *
 	 * @param string $persona_id Library id.
 	 * @param string $ivr        Optional IVR filename.
-	 * @return Void.
+	 * @return void
 	 */
 	function flosc_render_personality_designer_canvas( $persona_id, $ivr = '' ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter -- signature kept for callers.
 		$markup = FLOSC_PLUGIN_DIR . 'assets/personality-builder/flosc-personality-builder-markup.php';

@@ -1,6 +1,6 @@
 <?php
 /**
- * FLOSC IVR Parser.
+ * FLOSC IVR Parser
  *
  * Parses ivr.md markdown format into structured configuration.
  *
@@ -21,11 +21,11 @@ class FLOSC_IVR_Parser {
 	private static $flosc_instance = null;
 	private $flosc_config          = null;
 
-/**
- * Coordinate the instance behavior implemented by this code path.
- *
- * @return Mixed Result produced by the instance operation.
- */
+		/**
+	 * Coordinate the instance behavior implemented by this code path.
+	 *
+	 * @return mixed Result produced by the instance operation.
+	 */
 public static function flosc_instance() {
 		if ( null === self::$flosc_instance ) {
 			self::$flosc_instance = new self();
@@ -34,10 +34,9 @@ public static function flosc_instance() {
 	}
 
 	/**
-	 * Parse IVR markdown content.
-	 *
-	 * @param mixed $markdown Input consumed by the Coordinate the parse behavior implemented by this code path. operation.
-	 * @return Mixed Result produced by the parse operation.
+	 * Parse IVR markdown content
+ * @param mixed $markdown Input consumed by the Coordinate the parse behavior implemented by this code path. operation.
+ * @return mixed Result produced by the parse operation.
 	 */
 	public function flosc_parse( $markdown ) {
 		$config = array(
@@ -329,12 +328,11 @@ public static function flosc_instance() {
 	}
 
 	/**
-	 * Add message to config.
-	 *
-	 * @param mixed $config  Configuration values used to control the Coordinate the add message to config behavior implemented by this code path. behavior.
-	 * @param mixed $message Input consumed by the Coordinate the add message to config behavior implemented by this code path. operation.
-	 * @param mixed $phase   Input consumed by the Coordinate the add message to config behavior implemented by this code path. operation.
-	 * @return Mixed Result produced by the add message to config operation.
+	 * Add message to config
+ * @param mixed $config Configuration values used to control the Coordinate the add message to config behavior implemented by this code path. behavior.
+ * @param mixed $message Input consumed by the Coordinate the add message to config behavior implemented by this code path. operation.
+ * @param mixed $phase Input consumed by the Coordinate the add message to config behavior implemented by this code path. operation.
+ * @return mixed Result produced by the add message to config operation.
 	 */
 	private function flosc_add_message_to_config( &$config, $message, $phase ) {
 		if ( empty( $message['name'] ) ) {
@@ -349,9 +347,8 @@ public static function flosc_instance() {
 	}
 
 	/**
-	 * Get parsed config.
-	 *
-	 * @return Mixed Result produced by the config operation.
+	 * Get parsed config
+ * @return mixed Result produced by the config operation.
 	 */
 	public function get_flosc_config() {
 		if ( null === $this->flosc_config ) {
@@ -363,12 +360,12 @@ public static function flosc_instance() {
 	/**
 	 * Get IVR file path for current or specified flow.
 	 * Returns the appropriate ivr.md path based on flow configuration.
-	 * When $for_write is true, returns a path in uploads (for writes); otherwise,.
-	 * May return a read-only shipped default.
+	 * When $for_write is true, returns a path in uploads (for writes); otherwise,
+	 * may return a read-only shipped default.
 	 *
-	 * @param array|null $flow      Flow to retrieve config for (optional).
+	 * @param array|null $flow Flow to retrieve config for (optional).
 	 * @param bool       $for_write If true, return a write target (uploads only).
-	 * @return String File path, or empty string if unavailable.
+	 * @return string File path, or empty string if unavailable
 	 * @since 1.2.3
 	 */
 	private function get_ivr_file_path( $flow = null, $for_write = false ) {
@@ -428,11 +425,11 @@ public static function flosc_instance() {
 		return FLOSC_PLUGIN_DIR . 'ai_configuration_files/flosc_default_technical_ivr.md';
 	}
 
-/**
- * Coordinate the config behavior implemented by this code path.
- *
- * @return Mixed Result produced by the config operation.
- */
+		/**
+	 * Coordinate the config behavior implemented by this code path.
+	 *
+	 * @return mixed Result produced by the config operation.
+	 */
 public function flosc_load_config() {
 		// v1.2.3: Always reload from file - multi-flow aware, no global caching.
 
@@ -456,9 +453,9 @@ public function flosc_load_config() {
 	 * Flow-aware -- can specify target flow for admin editing.
 	 * Per WordPress.org policy, writes are uploads-only and validated via realpath containment.
 	 *
-	 * @param string     $markdown    The IVR markdown content.
+	 * @param string     $markdown The IVR markdown content.
 	 * @param array|null $target_flow Optional flow to save to (for admin editing).
-	 * @return Array|bool Parsed config on success, false if write failed or uploads unavailable.
+	 * @return array|bool Parsed config on success, false if write failed or uploads unavailable
 	 * @since 1.2.3
 	 */
 	public function flosc_save_config( $markdown, $target_flow = null ) {
@@ -490,10 +487,9 @@ public function flosc_load_config() {
 	}
 
 	/**
-	 * Get messages for a phase.
-	 *
-	 * @param mixed $phase Input consumed by the Resolve the current phase messages value from the available Word Press and flow state. operation.
-	 * @return Array Structured phase messages data.
+	 * Get messages for a phase
+ * @param mixed $phase Input consumed by the Resolve the current phase messages value from the available Word Press and flow state. operation.
+ * @return array Structured phase messages data.
 	 */
 	public function get_flosc_phase_messages( $phase ) {
 		$config = $this->get_flosc_config();
@@ -511,10 +507,9 @@ public function flosc_load_config() {
 	}
 
 	/**
-	 * Get message by name.
-	 *
-	 * @param mixed $name Name or key used to select the Resolve the current message value from the available Word Press and flow state. value.
-	 * @return Mixed Result produced by the message operation.
+	 * Get message by name
+ * @param mixed $name Name or key used to select the Resolve the current message value from the available Word Press and flow state. value.
+ * @return mixed Result produced by the message operation.
 	 */
 	public function get_flosc_message( $name ) {
 		$config = $this->get_flosc_config();
@@ -522,9 +517,8 @@ public function flosc_load_config() {
 	}
 
 	/**
-	 * Get all styles.
-	 *
-	 * @return Mixed Result produced by the styles operation.
+	 * Get all styles
+ * @return mixed Result produced by the styles operation.
 	 */
 	public function get_flosc_styles() {
 		$config = $this->get_flosc_config();
@@ -532,9 +526,8 @@ public function flosc_load_config() {
 	}
 
 	/**
-	 * Get CSS for all styles.
-	 *
-	 * @return Mixed Result produced by the styles css operation.
+	 * Get CSS for all styles
+ * @return mixed Result produced by the styles css operation.
 	 */
 	public function get_flosc_styles_css() {
 		$styles = $this->get_flosc_styles();
@@ -546,10 +539,9 @@ public function flosc_load_config() {
 	}
 
 	/**
-	 * Get messages by type.
-	 *
-	 * @param mixed $type Input consumed by the Resolve the current messages by type value from the available Word Press and flow state. operation.
-	 * @return Mixed Result produced by the messages by type operation.
+	 * Get messages by type
+ * @param mixed $type Input consumed by the Resolve the current messages by type value from the available Word Press and flow state. operation.
+ * @return mixed Result produced by the messages by type operation.
 	 */
 	public function get_flosc_messages_by_type( $type ) {
 		$config   = $this->get_flosc_config();
@@ -563,10 +555,9 @@ public function flosc_load_config() {
 	}
 
 	/**
-	 * Get user autoprompts for a phase.
-	 *
-	 * @param mixed $phase Input consumed by the Resolve the current user autoprompts value from the available Word Press and flow state. operation.
-	 * @return Mixed Result produced by the user autoprompts operation.
+	 * Get user autoprompts for a phase
+ * @param mixed $phase Input consumed by the Resolve the current user autoprompts value from the available Word Press and flow state. operation.
+ * @return mixed Result produced by the user autoprompts operation.
 	 */
 	public function get_flosc_user_autoprompts( $phase ) {
 		$messages = $this->get_flosc_phase_messages( $phase );
@@ -579,10 +570,9 @@ public function flosc_load_config() {
 	}
 
 	/**
-	 * Get auto messages for a phase.
-	 *
-	 * @param mixed $phase Input consumed by the Resolve the current auto messages value from the available Word Press and flow state. operation.
-	 * @return Mixed Result produced by the auto messages operation.
+	 * Get auto messages for a phase
+ * @param mixed $phase Input consumed by the Resolve the current auto messages value from the available Word Press and flow state. operation.
+ * @return mixed Result produced by the auto messages operation.
 	 */
 	public function get_flosc_auto_messages( $phase ) {
 		$messages = $this->get_flosc_phase_messages( $phase );
@@ -595,9 +585,8 @@ public function flosc_load_config() {
 	}
 
 	/**
-	 * Default config if no ivr.md exists.
-	 *
-	 * @return Array Structured default config data.
+	 * Default config if no ivr.md exists
+ * @return array Structured default config data.
 	 */
 	private function get_flosc_default_config() {
 		return array(

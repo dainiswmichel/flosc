@@ -1,11 +1,11 @@
 <?php
 /**
- * FLOSC Register & Login Tab.
+ * FLOSC Register & Login Tab
  *
  * Three product concerns on one tab:
- * 1. Registration — post-quiz / create-account modal copy and header Sign Up.
- * 2. Login — general auth modal copy and header Log In.
- * 3. Guest Access Link (MagicLink) — convenience login for existing users only.
+ * 1. Registration — post-quiz / create-account modal copy and header Sign Up
+ * 2. Login — general auth modal copy and header Log In
+ * 3. Guest Access Link (MagicLink) — convenience login for existing users only
  *
  * Defaults are product-neutral. Never hardcode a single product brand for all flows.
  *
@@ -822,7 +822,7 @@ if ( empty( $flosc_guest_log ) ) {
 			: esc_html( $flosc_entry['email'] );
 		echo '<tr>';
 		echo '<td>' . wp_kses_post( $flosc_email_display ) . '</td>';
-		echo '<td class="' . esc_attr( $flosc_count_class ) . '">' . esc_html( $flosc_count ) . ( $flosc_count >= 6 ? ' ⚠️' : '' ) . '</td>';
+		echo '<td class="' . esc_attr( $flosc_count_class ) . '">' . esc_html( (string) $flosc_count ) . ( $flosc_count >= 6 ? ' ⚠️' : '' ) . '</td>';
 		echo '<td>' . esc_html( $flosc_first_sent ) . '</td>';
 		echo '<td>' . esc_html( $flosc_last_sent ) . '</td>';
 		echo '</tr>';

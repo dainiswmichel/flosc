@@ -1,18 +1,18 @@
 <?php
 /**
- * FLOSC Access Manager.
+ * FLOSC Access Manager
  *
  * Manages user access based on:
- * - Purchased offers.
- * - Active subscriptions.
- * - Token balances.
- * - Feature flags.
- * - Usage limits.
- * - Expiration dates.
+ * - Purchased offers
+ * - Active subscriptions
+ * - Token balances
+ * - Feature flags
+ * - Usage limits
+ * - Expiration dates
  *
  * User States (FLOSC determines):
- * - visitor: not logged in.
- * - guest: logged in, hasn't paid.
+ * - visitor: not logged in
+ * - guest: logged in, hasn't paid
  * - member: has paid (has active offer or subscription)
  *
  * @package FLOSC
@@ -30,10 +30,9 @@ class FLOSC_Access_Manager {
 	private $meta_key = '_flosc_access';
 
 	/**
-	 * Get user's complete access state.
-	 *
-	 * @param mixed $user_id WordPress user ID whose Resolve the current user access value from the available Word Press and flow state. state is being processed.
-	 * @return Mixed Result produced by the user access operation.
+	 * Get user's complete access state
+ * @param mixed $user_id WordPress user ID whose Resolve the current user access value from the available Word Press and flow state. state is being processed.
+ * @return mixed Result produced by the user access operation.
 	 */
 	public function get_user_access( $user_id ) {
 		$access = get_user_meta( $user_id, $this->meta_key, true );
@@ -58,7 +57,7 @@ class FLOSC_Access_Manager {
 	 * Normalize a flow id / ivr path to the stem used in flosc_flow_* options and meta.
 	 *
 	 * @param string|null $flow_id Flow id, ivr filename, or stem. Empty → current flow when available.
-	 * @return String Stem or '' when none can be resolved.
+	 * @return string Stem or '' when none can be resolved.
 	 */
 	public function normalize_flow_stem( $flow_id = null ) {
 		$raw = is_string( $flow_id ) || is_numeric( $flow_id ) ? (string) $flow_id : '';
@@ -79,7 +78,7 @@ class FLOSC_Access_Manager {
 	 * Member levels that grant paid access on a given flow (never guest* roles).
 	 *
 	 * @param string $stem Flow stem.
-	 * @return String[]
+	 * @return string[]
 	 */
 	public function get_flow_member_levels( $stem ) {
 		$stem   = sanitize_key( (string) $stem );
@@ -150,14 +149,14 @@ class FLOSC_Access_Manager {
 	 * Check if user is a member for a flow (or any flow when $flow_id is null and no current flow).
 	 *
 	 * Per-flow rules (when a stem is known):
-	 * - Explicit _flosc_member_access_{stem}.
-	 * - Holds a paid level declared by that flow.
-	 * - Active offer / purchase history for that flow.
-	 * - Does NOT treat global _flosc_member_access or any other-flow roles as membership on other flows.
+	 * - Explicit _flosc_member_access_{stem}
+	 * - Holds a paid level declared by that flow
+	 * - Active offer / purchase history for that flow
+	 * - Does NOT treat global _flosc_member_access or any other-flow roles as membership on other flows
 	 *
-	 * @param int   $user_id Value consumed by this operation.
+	 * @param int         $user_id
 	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
-	 * @return Bool.
+	 * @return bool
 	 */
 	public function is_member( $user_id, $flow_id = null ) {
 		if ( ! $user_id ) {
@@ -181,14 +180,14 @@ class FLOSC_Access_Manager {
 	/**
 	 * Membership on one flow only (FLOSC framework rule).
 	 *
-	 * Product brands (categories, lesson libraries, instance role names) are.
-	 * Per-flow configuration — not FLOSC core. Membership is:
-	 * 1) per-flow grant meta, 2) offers/purchases for this flow, 3) member.
-	 * Levels declared on this flow only (never a global product brand branch).
+	 * Product brands (categories, lesson libraries, instance role names) are
+	 * per-flow configuration — not FLOSC core. Membership is:
+	 * 1) per-flow grant meta, 2) offers/purchases for this flow, 3) member
+	 * levels declared on this flow only (never a global product brand branch).
 	 *
-	 * @param int   $user_id Value consumed by this operation.
-	 * @param mixed $stem    Input consumed by the Determine whether the current state satisfies member of flow. operation.
-	 * @return Bool.
+	 * @param int    $user_id
+	 * @param mixed $stem Input consumed by the Determine whether the current state satisfies member of flow. operation.
+	 * @return bool
 	 */
 	public function is_member_of_flow( $user_id, $stem ) {
 		$user_id = (int) $user_id;
@@ -227,11 +226,11 @@ class FLOSC_Access_Manager {
 	}
 
 	/**
-	 * Determine whether the current state satisfies purchase history for flow.
-	 *
-	 * @param int   $user_id Value consumed by this operation.
-	 * @param mixed $stem    Input consumed by the Determine whether the current state satisfies purchase history for flow. operation.
-	 * @return Bool.
+ * Determine whether the current state satisfies purchase history for flow.
+ *
+	 * @param int    $user_id
+	 * @param mixed $stem Input consumed by the Determine whether the current state satisfies purchase history for flow. operation.
+	 * @return bool
 	 */
 	private function has_purchase_history_for_flow( $user_id, $stem ) {
 		$history = get_user_meta( $user_id, '_flosc_purchase_history', true );
@@ -258,8 +257,8 @@ class FLOSC_Access_Manager {
 	/**
 	 * True when the user holds paid access on at least one flow (legacy / no-context).
 	 *
-	 * @param int $user_id Value consumed by this operation.
-	 * @return Bool.
+	 * @param int $user_id
+	 * @return bool
 	 */
 	public function is_member_any_flow( $user_id ) {
 		$user_id = (int) $user_id;
@@ -318,9 +317,9 @@ class FLOSC_Access_Manager {
 	/**
 	 * Whether an active _flosc_access offer belongs to this flow.
 	 *
-	 * @param int   $user_id Value consumed by this operation.
-	 * @param mixed $stem    Input consumed by the Determine whether the current state satisfies active offer for flow. operation.
-	 * @return Bool.
+	 * @param int    $user_id
+	 * @param mixed $stem Input consumed by the Determine whether the current state satisfies active offer for flow. operation.
+	 * @return bool
 	 */
 	private function has_active_offer_for_flow( $user_id, $stem ) {
 		$access = $this->get_user_access( $user_id );
@@ -356,11 +355,10 @@ class FLOSC_Access_Manager {
 	}
 
 	/**
-	 * Check if user has a specific feature.
-	 *
-	 * @param mixed $user_id WordPress user ID whose Determine whether the current state satisfies feature. state is being processed.
-	 * @param mixed $feature Input consumed by the Determine whether the current state satisfies feature. operation.
-	 * @return Bool Whether feature applies to the current state.
+	 * Check if user has a specific feature
+ * @param mixed $user_id WordPress user ID whose Determine whether the current state satisfies feature. state is being processed.
+ * @param mixed $feature Input consumed by the Determine whether the current state satisfies feature. operation.
+ * @return bool Whether feature applies to the current state.
 	 */
 	public function has_feature( $user_id, $feature ) {
 		$access  = $this->get_user_access( $user_id );
@@ -395,8 +393,8 @@ class FLOSC_Access_Manager {
 		/**
 		 * Extra feature slugs that count as full-member content for a flow instance.
 		 *
-		 * @param string[] $features Value consumed by this operation.
-		 * @param int      $user_id  Value consumed by this operation.
+		 * @param string[] $features
+		 * @param int      $user_id
 		 */
 		$member_content_features = apply_filters( 'flosc_member_content_features', $member_content_features, $user_id );
 		if ( ! is_array( $member_content_features ) ) {
@@ -415,10 +413,9 @@ class FLOSC_Access_Manager {
 	 * String aliases:
 	 * - 'full' / 'member' → any full member (offer, subscription, or FLOSC_Member_Access)
 	 * - other strings → feature flag via has_feature()
-	 *
-	 * @param mixed $user_id     WordPress user ID whose Determine whether the current state satisfies access. state is being processed.
-	 * @param mixed $requirement Input consumed by the Determine whether the current state satisfies access. operation.
-	 * @return Bool Whether access applies to the current state.
+ * @param mixed $user_id WordPress user ID whose Determine whether the current state satisfies access. state is being processed.
+ * @param mixed $requirement Input consumed by the Determine whether the current state satisfies access. operation.
+ * @return bool Whether access applies to the current state.
 	 */
 	public function can_access( $user_id, $requirement ) {
 		// If requirement is a feature name.
@@ -454,12 +451,11 @@ class FLOSC_Access_Manager {
 	}
 
 	/**
-	 * Grant access from an offer purchase.
-	 *
-	 * @param mixed $user_id     WordPress user ID whose Persist the grant from offer state in Word Press storage. state is being processed.
-	 * @param mixed $offer       Input consumed by the Persist the grant from offer state in Word Press storage. operation.
-	 * @param mixed $transaction Input consumed by the Persist the grant from offer state in Word Press storage. operation.
-	 * @return Mixed Result produced by the grant from offer operation.
+	 * Grant access from an offer purchase
+ * @param mixed $user_id WordPress user ID whose Persist the grant from offer state in Word Press storage. state is being processed.
+ * @param mixed $offer Input consumed by the Persist the grant from offer state in Word Press storage. operation.
+ * @param mixed $transaction Input consumed by the Persist the grant from offer state in Word Press storage. operation.
+ * @return mixed Result produced by the grant from offer operation.
 	 */
 	public function grant_from_offer( $user_id, $offer, $transaction = array() ) {
 		$access = $this->get_user_access( $user_id );
@@ -587,11 +583,10 @@ class FLOSC_Access_Manager {
 	}
 
 	/**
-	 * Grant feature directly.
-	 *
-	 * @param mixed $user_id WordPress user ID whose Persist the grant feature state in Word Press storage. state is being processed.
-	 * @param mixed $feature Input consumed by the Persist the grant feature state in Word Press storage. operation.
-	 * @return Bool Whether grant feature applies to the current state.
+	 * Grant feature directly
+ * @param mixed $user_id WordPress user ID whose Persist the grant feature state in Word Press storage. state is being processed.
+ * @param mixed $feature Input consumed by the Persist the grant feature state in Word Press storage. operation.
+ * @return bool Whether grant feature applies to the current state.
 	 */
 	public function grant_feature( $user_id, $feature ) {
 		$access = $this->get_user_access( $user_id );
@@ -606,11 +601,10 @@ class FLOSC_Access_Manager {
 	}
 
 	/**
-	 * Revoke feature.
-	 *
-	 * @param mixed $user_id WordPress user ID whose Persist the revoke feature state in Word Press storage. state is being processed.
-	 * @param mixed $feature Input consumed by the Persist the revoke feature state in Word Press storage. operation.
-	 * @return Bool Whether revoke feature applies to the current state.
+	 * Revoke feature
+ * @param mixed $user_id WordPress user ID whose Persist the revoke feature state in Word Press storage. state is being processed.
+ * @param mixed $feature Input consumed by the Persist the revoke feature state in Word Press storage. operation.
+ * @return bool Whether revoke feature applies to the current state.
 	 */
 	public function revoke_feature( $user_id, $feature ) {
 		$access = $this->get_user_access( $user_id );
@@ -629,11 +623,10 @@ class FLOSC_Access_Manager {
 	}
 
 	/**
-	 * Check if user has purchased a specific offer.
-	 *
-	 * @param mixed $user_id  WordPress user ID whose Determine whether the current state satisfies offer. state is being processed.
-	 * @param mixed $offer_id Identifier used to select the record involved in the Determine whether the current state satisfies offer. operation.
-	 * @return Bool Whether offer applies to the current state.
+	 * Check if user has purchased a specific offer
+ * @param mixed $user_id WordPress user ID whose Determine whether the current state satisfies offer. state is being processed.
+ * @param mixed $offer_id Identifier used to select the record involved in the Determine whether the current state satisfies offer. operation.
+ * @return bool Whether offer applies to the current state.
 	 */
 	public function has_offer( $user_id, $offer_id ) {
 		$access = $this->get_user_access( $user_id );
@@ -647,9 +640,8 @@ class FLOSC_Access_Manager {
 
 	/**
 	 * Revoke all access (reset to guest)
-	 *
-	 * @param mixed $user_id WordPress user ID whose Persist the revoke all state in Word Press storage. state is being processed.
-	 * @return Bool Whether revoke all applies to the current state.
+ * @param mixed $user_id WordPress user ID whose Persist the revoke all state in Word Press storage. state is being processed.
+ * @return bool Whether revoke all applies to the current state.
 	 */
 	public function revoke_all( $user_id ) {
 		$access = array(
@@ -669,11 +661,10 @@ class FLOSC_Access_Manager {
 	}
 
 	/**
-	 * Update subscription status.
-	 *
-	 * @param mixed $user_id           WordPress user ID whose Persist the subscription state in Word Press storage. state is being processed.
-	 * @param mixed $subscription_data Structured data consumed by the Persist the subscription state in Word Press storage. operation.
-	 * @return Mixed Result produced by the subscription operation.
+	 * Update subscription status
+ * @param mixed $user_id WordPress user ID whose Persist the subscription state in Word Press storage. state is being processed.
+ * @param mixed $subscription_data Structured data consumed by the Persist the subscription state in Word Press storage. operation.
+ * @return mixed Result produced by the subscription operation.
 	 */
 	public function update_subscription( $user_id, $subscription_data ) {
 		$access = $this->get_user_access( $user_id );
@@ -691,10 +682,9 @@ class FLOSC_Access_Manager {
 	}
 
 	/**
-	 * Cancel subscription access.
-	 *
-	 * @param mixed $user_id WordPress user ID whose Persist the cancel subscription state in Word Press storage. state is being processed.
-	 * @return Bool Whether cancel subscription applies to the current state.
+	 * Cancel subscription access
+ * @param mixed $user_id WordPress user ID whose Persist the cancel subscription state in Word Press storage. state is being processed.
+ * @return bool Whether cancel subscription applies to the current state.
 	 */
 	public function cancel_subscription( $user_id ) {
 		$access = $this->get_user_access( $user_id );
@@ -712,15 +702,14 @@ class FLOSC_Access_Manager {
 		return true;
 	}
 
-	// =========================================================================.
+	// =========================================================================
 	// HELPERS.
-	// =========================================================================.
+	// =========================================================================
 
 	/**
-	 * Calculate expiration date from offer.
-	 *
-	 * @param mixed $offer Input consumed by the Coordinate the calculate expiration behavior implemented by this code path. operation.
-	 * @return Mixed Result produced by the calculate expiration operation.
+	 * Calculate expiration date from offer
+ * @param mixed $offer Input consumed by the Coordinate the calculate expiration behavior implemented by this code path. operation.
+ * @return mixed Result produced by the calculate expiration operation.
 	 */
 	private function calculate_expiration( $offer ) {
 		$duration = $offer['grants']['duration_days'] ?? 0;
@@ -734,9 +723,8 @@ class FLOSC_Access_Manager {
 
 	/**
 	 * Check if an offer is still active (not expired)
-	 *
-	 * @param mixed $offer_data Structured data consumed by the Determine whether the current state satisfies offer active. operation.
-	 * @return Bool Whether offer active applies to the current state.
+ * @param mixed $offer_data Structured data consumed by the Determine whether the current state satisfies offer active. operation.
+ * @return bool Whether offer active applies to the current state.
 	 */
 	private function is_offer_active( $offer_data ) {
 		if ( empty( $offer_data['expires_at'] ) ) {
@@ -747,10 +735,9 @@ class FLOSC_Access_Manager {
 	}
 
 	/**
-	 * Check if subscription is active.
-	 *
-	 * @param mixed $subscription Input consumed by the Determine whether the current state satisfies subscription active. operation.
-	 * @return Bool Whether subscription active applies to the current state.
+	 * Check if subscription is active
+ * @param mixed $subscription Input consumed by the Determine whether the current state satisfies subscription active. operation.
+ * @return bool Whether subscription active applies to the current state.
 	 */
 	private function is_subscription_active( $subscription ) {
 		if ( ! $subscription ) {
@@ -764,16 +751,16 @@ class FLOSC_Access_Manager {
 	 * Resolve the only three real-world app states.
 	 *
 	 * Real-world (one browser host, one session):
-	 * - No authenticated user  → visitor.
+	 * - No authenticated user  → visitor
 	 * - Authenticated, unpaid  → guest   (tokens/wallet from user profile for this flow)
 	 * - Authenticated + paid   → member  (for this flow only)
 	 *
-	 * A non-zero $user_id MUST NEVER return visitor. Multi-host same-user testing.
-	 * Is rare; do not invent visitor UI for a known WP user.
+	 * A non-zero $user_id MUST NEVER return visitor. Multi-host same-user testing
+	 * is rare; do not invent visitor UI for a known WP user.
 	 *
 	 * @param int         $user_id 0 = anonymous.
 	 * @param string|null $flow_id Flow id / ivr / stem for paid-tier check.
-	 * @return String visitor|guest|member.
+	 * @return string visitor|guest|member
 	 */
 	public function get_simple_state( $user_id, $flow_id = null ) {
 		$user_id = absint( $user_id );

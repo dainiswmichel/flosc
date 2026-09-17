@@ -1,22 +1,22 @@
 <?php
 /**
- * FLOSC Companion Configuration Tab.
+ * FLOSC Companion Configuration Tab
  *
- * Configures the floating Companion chat widget that appears on WordPress.
- * Pages alongside FLOSC content and interactions.
+ * Configures the floating Companion chat widget that appears on WordPress
+ * pages alongside FLOSC content and interactions.
  *
  * Operator display modes (stored values unchanged for compatibility):
- * - Full-page  (in_chat)   — Chat only at the flow URL; no site bubble.
+ * - Full-page  (in_chat)   — Chat only at the flow URL; no site bubble
  * - Companion  (companion) — Floating bubble on WP pages (except full chat route)
- * - Hybrid     (both)      — Full-page + companion; expand/collapse continuous session.
+ * - Hybrid     (both)      — Full-page + companion; expand/collapse continuous session
  *
  * Settings (per-flow via companion override group):
- * - content_display_mode:  'in_chat' | 'companion' | 'both'.
- * - enabled:               Whether the companion widget is active.
- * - position:              'bottom-right' | 'bottom-left'.
- * - greeting:              Initial greeting message.
+ * - content_display_mode:  'in_chat' | 'companion' | 'both'
+ * - enabled:               Whether the companion widget is active
+ * - position:              'bottom-right' | 'bottom-left'
+ * - greeting:              Initial greeting message
  * - accent_color:          Custom accent color (hex, or empty for default)
- * - show_for_visitors:     Whether non-logged-in users see the widget.
+ * - show_for_visitors:     Whether non-logged-in users see the widget
  *
  * @package FLOSC
  * @since   1.6.0
@@ -707,7 +707,7 @@ $flosc_companion_snippet_frontend_config = implode(
 						<select name="flow_companion_include_pages[]" id="flow_companion_include_pages" multiple size="6" class="widefat">
 							<?php foreach ( (array) $flosc_target_pages as $flosc_target_page ) : ?>
 								<?php $flosc_target_page_id = (int) ( $flosc_target_page->ID ?? 0 ); ?>
-								<option value="<?php echo esc_attr( $flosc_target_page_id ); ?>" <?php selected( in_array( $flosc_target_page_id, $flosc_target_include_pages, true ) ); ?>>
+								<option value="<?php echo esc_attr( (string) $flosc_target_page_id ); ?>" <?php selected( in_array( $flosc_target_page_id, $flosc_target_include_pages, true ) ); ?>>
 									<?php echo esc_html( ( $flosc_target_page->post_title ? $flosc_target_page->post_title : '(untitled)' ) . ' (#' . $flosc_target_page_id . ')' ); ?>
 								</option>
 							<?php endforeach; ?>
@@ -718,7 +718,7 @@ $flosc_companion_snippet_frontend_config = implode(
 						<strong>Include: Posts</strong>
 						<select name="flow_companion_include_posts[]" id="flow_companion_include_posts" multiple size="6" class="widefat">
 							<?php foreach ( $flosc_target_posts_map as $flosc_target_post_id => $flosc_target_post_title ) : ?>
-								<option value="<?php echo esc_attr( (int) $flosc_target_post_id ); ?>" <?php selected( in_array( (int) $flosc_target_post_id, $flosc_target_include_posts, true ) ); ?>>
+								<option value="<?php echo esc_attr( (string) (int) $flosc_target_post_id ); ?>" <?php selected( in_array( (int) $flosc_target_post_id, $flosc_target_include_posts, true ) ); ?>>
 									<?php echo esc_html( ( $flosc_target_post_title ? $flosc_target_post_title : '(untitled)' ) . ' (#' . (int) $flosc_target_post_id . ')' ); ?>
 								</option>
 							<?php endforeach; ?>
@@ -733,7 +733,7 @@ $flosc_companion_snippet_frontend_config = implode(
 							<?php if ( ! is_wp_error( $flosc_target_categories ) ) : ?>
 								<?php foreach ( (array) $flosc_target_categories as $flosc_target_category ) : ?>
 									<?php $flosc_target_category_id = (int) ( $flosc_target_category->term_id ?? 0 ); ?>
-									<option value="<?php echo esc_attr( $flosc_target_category_id ); ?>" <?php selected( in_array( $flosc_target_category_id, $flosc_target_include_categories, true ) ); ?>>
+									<option value="<?php echo esc_attr( (string) $flosc_target_category_id ); ?>" <?php selected( in_array( $flosc_target_category_id, $flosc_target_include_categories, true ) ); ?>>
 										<?php echo esc_html( ( $flosc_target_category->name ?? '(unnamed)' ) . ' (#' . $flosc_target_category_id . ')' ); ?>
 									</option>
 								<?php endforeach; ?>
@@ -747,7 +747,7 @@ $flosc_companion_snippet_frontend_config = implode(
 							<?php if ( ! is_wp_error( $flosc_target_tags ) ) : ?>
 								<?php foreach ( (array) $flosc_target_tags as $flosc_target_tag ) : ?>
 									<?php $flosc_target_tag_id = (int) ( $flosc_target_tag->term_id ?? 0 ); ?>
-									<option value="<?php echo esc_attr( $flosc_target_tag_id ); ?>" <?php selected( in_array( $flosc_target_tag_id, $flosc_target_include_tags, true ) ); ?>>
+									<option value="<?php echo esc_attr( (string) $flosc_target_tag_id ); ?>" <?php selected( in_array( $flosc_target_tag_id, $flosc_target_include_tags, true ) ); ?>>
 										<?php echo esc_html( ( $flosc_target_tag->name ?? '(unnamed)' ) . ' (#' . $flosc_target_tag_id . ')' ); ?>
 									</option>
 								<?php endforeach; ?>
@@ -762,7 +762,7 @@ $flosc_companion_snippet_frontend_config = implode(
 						<select name="flow_companion_exclude_pages[]" id="flow_companion_exclude_pages" multiple size="6" class="widefat">
 							<?php foreach ( (array) $flosc_target_pages as $flosc_target_page ) : ?>
 								<?php $flosc_target_page_id = (int) ( $flosc_target_page->ID ?? 0 ); ?>
-								<option value="<?php echo esc_attr( $flosc_target_page_id ); ?>" <?php selected( in_array( $flosc_target_page_id, $flosc_target_exclude_pages, true ) ); ?>>
+								<option value="<?php echo esc_attr( (string) $flosc_target_page_id ); ?>" <?php selected( in_array( $flosc_target_page_id, $flosc_target_exclude_pages, true ) ); ?>>
 									<?php echo esc_html( ( $flosc_target_page->post_title ? $flosc_target_page->post_title : '(untitled)' ) . ' (#' . $flosc_target_page_id . ')' ); ?>
 								</option>
 							<?php endforeach; ?>
@@ -773,7 +773,7 @@ $flosc_companion_snippet_frontend_config = implode(
 						<strong>Exclude: Posts</strong>
 						<select name="flow_companion_exclude_posts[]" id="flow_companion_exclude_posts" multiple size="6" class="widefat">
 							<?php foreach ( $flosc_target_posts_map as $flosc_target_post_id => $flosc_target_post_title ) : ?>
-								<option value="<?php echo esc_attr( (int) $flosc_target_post_id ); ?>" <?php selected( in_array( (int) $flosc_target_post_id, $flosc_target_exclude_posts, true ) ); ?>>
+								<option value="<?php echo esc_attr( (string) (int) $flosc_target_post_id ); ?>" <?php selected( in_array( (int) $flosc_target_post_id, $flosc_target_exclude_posts, true ) ); ?>>
 									<?php echo esc_html( ( $flosc_target_post_title ? $flosc_target_post_title : '(untitled)' ) . ' (#' . (int) $flosc_target_post_id . ')' ); ?>
 								</option>
 							<?php endforeach; ?>
@@ -788,7 +788,7 @@ $flosc_companion_snippet_frontend_config = implode(
 							<?php if ( ! is_wp_error( $flosc_target_categories ) ) : ?>
 								<?php foreach ( (array) $flosc_target_categories as $flosc_target_category ) : ?>
 									<?php $flosc_target_category_id = (int) ( $flosc_target_category->term_id ?? 0 ); ?>
-									<option value="<?php echo esc_attr( $flosc_target_category_id ); ?>" <?php selected( in_array( $flosc_target_category_id, $flosc_target_exclude_categories, true ) ); ?>>
+									<option value="<?php echo esc_attr( (string) $flosc_target_category_id ); ?>" <?php selected( in_array( $flosc_target_category_id, $flosc_target_exclude_categories, true ) ); ?>>
 										<?php echo esc_html( ( $flosc_target_category->name ?? '(unnamed)' ) . ' (#' . $flosc_target_category_id . ')' ); ?>
 									</option>
 								<?php endforeach; ?>
@@ -802,7 +802,7 @@ $flosc_companion_snippet_frontend_config = implode(
 							<?php if ( ! is_wp_error( $flosc_target_tags ) ) : ?>
 								<?php foreach ( (array) $flosc_target_tags as $flosc_target_tag ) : ?>
 									<?php $flosc_target_tag_id = (int) ( $flosc_target_tag->term_id ?? 0 ); ?>
-									<option value="<?php echo esc_attr( $flosc_target_tag_id ); ?>" <?php selected( in_array( $flosc_target_tag_id, $flosc_target_exclude_tags, true ) ); ?>>
+									<option value="<?php echo esc_attr( (string) $flosc_target_tag_id ); ?>" <?php selected( in_array( $flosc_target_tag_id, $flosc_target_exclude_tags, true ) ); ?>>
 										<?php echo esc_html( ( $flosc_target_tag->name ?? '(unnamed)' ) . ' (#' . $flosc_target_tag_id . ')' ); ?>
 									</option>
 								<?php endforeach; ?>
@@ -832,7 +832,7 @@ $flosc_companion_snippet_frontend_config = implode(
 		<tr>
 			<th scope="row"><label for="flow_companion_panel_width">Panel Width</label></th>
 			<td>
-				<input type="number" name="flow_companion_panel_width" id="flow_companion_panel_width" min="<?php echo esc_attr( $flosc_companion_numeric_limits['panel_width_min'] ); ?>" max="<?php echo esc_attr( $flosc_companion_numeric_limits['panel_width_max'] ); ?>" step="1" value="<?php echo esc_attr( $flosc_panel_width ); ?>" class="small-text">
+				<input type="number" name="flow_companion_panel_width" id="flow_companion_panel_width" min="<?php echo esc_attr( (string) $flosc_companion_numeric_limits['panel_width_min'] ); ?>" max="<?php echo esc_attr( (string) $flosc_companion_numeric_limits['panel_width_max'] ); ?>" step="1" value="<?php echo esc_attr( (string) $flosc_panel_width ); ?>" class="small-text">
 				<span>px</span>
 				<p class="description">Desktop panel width. Recommended range: 320 to 520.</p>
 			</td>
@@ -841,7 +841,7 @@ $flosc_companion_snippet_frontend_config = implode(
 		<tr>
 			<th scope="row"><label for="flow_companion_panel_height">Panel Height</label></th>
 			<td>
-				<input type="number" name="flow_companion_panel_height" id="flow_companion_panel_height" min="<?php echo esc_attr( $flosc_companion_numeric_limits['panel_height_min'] ); ?>" max="<?php echo esc_attr( $flosc_companion_numeric_limits['panel_height_max'] ); ?>" step="1" value="<?php echo esc_attr( $flosc_panel_height ); ?>" class="small-text">
+				<input type="number" name="flow_companion_panel_height" id="flow_companion_panel_height" min="<?php echo esc_attr( (string) $flosc_companion_numeric_limits['panel_height_min'] ); ?>" max="<?php echo esc_attr( (string) $flosc_companion_numeric_limits['panel_height_max'] ); ?>" step="1" value="<?php echo esc_attr( (string) $flosc_panel_height ); ?>" class="small-text">
 				<span>px</span>
 				<p class="description">Desktop panel height. Recommended range: 480 to 720.</p>
 			</td>
@@ -850,7 +850,7 @@ $flosc_companion_snippet_frontend_config = implode(
 		<tr>
 			<th scope="row"><label for="flow_companion_launcher_size">Launcher Size</label></th>
 			<td>
-				<input type="number" name="flow_companion_launcher_size" id="flow_companion_launcher_size" min="<?php echo esc_attr( $flosc_companion_numeric_limits['launcher_size_min'] ); ?>" max="<?php echo esc_attr( $flosc_companion_numeric_limits['launcher_size_max'] ); ?>" step="1" value="<?php echo esc_attr( $flosc_launcher_size ); ?>" class="small-text">
+				<input type="number" name="flow_companion_launcher_size" id="flow_companion_launcher_size" min="<?php echo esc_attr( (string) $flosc_companion_numeric_limits['launcher_size_min'] ); ?>" max="<?php echo esc_attr( (string) $flosc_companion_numeric_limits['launcher_size_max'] ); ?>" step="1" value="<?php echo esc_attr( (string) $flosc_launcher_size ); ?>" class="small-text">
 				<span>px</span>
 				<p class="description">Floating launcher button diameter.</p>
 			</td>
@@ -1069,7 +1069,7 @@ $flosc_companion_snippet_frontend_config = implode(
 		<tr>
 			<th scope="row"><label for="flow_companion_auto_open_delay_ms">Auto Open Delay</label></th>
 			<td>
-				<input type="number" name="flow_companion_auto_open_delay_ms" id="flow_companion_auto_open_delay_ms" min="<?php echo esc_attr( $flosc_companion_numeric_limits['auto_open_delay_min_ms'] ); ?>" max="<?php echo esc_attr( $flosc_companion_numeric_limits['auto_open_delay_max_ms'] ); ?>" step="100" value="<?php echo esc_attr( $flosc_auto_open_delay_ms ); ?>" class="small-text">
+				<input type="number" name="flow_companion_auto_open_delay_ms" id="flow_companion_auto_open_delay_ms" min="<?php echo esc_attr( (string) $flosc_companion_numeric_limits['auto_open_delay_min_ms'] ); ?>" max="<?php echo esc_attr( (string) $flosc_companion_numeric_limits['auto_open_delay_max_ms'] ); ?>" step="100" value="<?php echo esc_attr( (string) $flosc_auto_open_delay_ms ); ?>" class="small-text">
 				<span>ms</span>
 				<p class="description">Delay before auto open triggers. Example: 1500 = 1.5 seconds.</p>
 			</td>
@@ -1105,7 +1105,7 @@ $flosc_companion_snippet_frontend_config = implode(
 					Open companion when scroll progress reaches threshold
 				</label>
 				<div class="flosc-companion-scroll-threshold-row">
-					<input type="number" name="flow_companion_launch_on_scroll_percent" id="flow_companion_launch_on_scroll_percent" min="<?php echo esc_attr( $flosc_companion_numeric_limits['scroll_percent_min'] ); ?>" max="<?php echo esc_attr( $flosc_companion_numeric_limits['scroll_percent_max'] ); ?>" step="1" value="<?php echo esc_attr( $flosc_launch_scroll_pct ); ?>" class="small-text">
+					<input type="number" name="flow_companion_launch_on_scroll_percent" id="flow_companion_launch_on_scroll_percent" min="<?php echo esc_attr( (string) $flosc_companion_numeric_limits['scroll_percent_min'] ); ?>" max="<?php echo esc_attr( (string) $flosc_companion_numeric_limits['scroll_percent_max'] ); ?>" step="1" value="<?php echo esc_attr( (string) $flosc_launch_scroll_pct ); ?>" class="small-text">
 					<span>%</span>
 				</div>
 				<p class="description">Set to 0 to trigger immediately after scrolling starts.</p>
@@ -1126,7 +1126,7 @@ $flosc_companion_snippet_frontend_config = implode(
 		<tr>
 			<th scope="row"><label for="flow_companion_trigger_min_page_time_ms">Minimum Page Time Before Trigger</label></th>
 			<td>
-				<input type="number" name="flow_companion_trigger_min_page_time_ms" id="flow_companion_trigger_min_page_time_ms" min="<?php echo esc_attr( $flosc_companion_numeric_limits['trigger_min_page_time_min_ms'] ); ?>" max="<?php echo esc_attr( $flosc_companion_numeric_limits['trigger_min_page_time_max_ms'] ); ?>" step="100" value="<?php echo esc_attr( $flosc_trigger_min_time_ms ); ?>" class="small-text">
+				<input type="number" name="flow_companion_trigger_min_page_time_ms" id="flow_companion_trigger_min_page_time_ms" min="<?php echo esc_attr( (string) $flosc_companion_numeric_limits['trigger_min_page_time_min_ms'] ); ?>" max="<?php echo esc_attr( (string) $flosc_companion_numeric_limits['trigger_min_page_time_max_ms'] ); ?>" step="100" value="<?php echo esc_attr( (string) $flosc_trigger_min_time_ms ); ?>" class="small-text">
 				<span>ms</span>
 				<p class="description">Behavioral triggers will not open companion before this time on page.</p>
 			</td>
@@ -1244,7 +1244,7 @@ $flosc_companion_snippet_frontend_config = implode(
 		<tr>
 			<th scope="row"><label for="flow_companion_trigger_cooldown_ms">Trigger Cooldown</label></th>
 			<td>
-				<input type="number" name="flow_companion_trigger_cooldown_ms" id="flow_companion_trigger_cooldown_ms" min="<?php echo esc_attr( $flosc_companion_numeric_limits['trigger_cooldown_min_ms'] ); ?>" max="<?php echo esc_attr( $flosc_companion_numeric_limits['trigger_cooldown_max_ms'] ); ?>" step="1000" value="<?php echo esc_attr( $flosc_trigger_cooldown_ms ); ?>" class="small-text">
+				<input type="number" name="flow_companion_trigger_cooldown_ms" id="flow_companion_trigger_cooldown_ms" min="<?php echo esc_attr( (string) $flosc_companion_numeric_limits['trigger_cooldown_min_ms'] ); ?>" max="<?php echo esc_attr( (string) $flosc_companion_numeric_limits['trigger_cooldown_max_ms'] ); ?>" step="1000" value="<?php echo esc_attr( (string) $flosc_trigger_cooldown_ms ); ?>" class="small-text">
 				<span>ms</span>
 				<p class="description">Minimum time between behavior-triggered opens. Example: 600000 = 10 minutes.</p>
 			</td>

@@ -1,26 +1,25 @@
 <?php
 /**
- * FLOSC Free Lesson Manager.
- * Handles quiz results and free lesson selection.
+ * FLOSC Free Lesson Manager
+ * Handles quiz results and free lesson selection
  *
- * STATUS: �.
- * FULLY FUNCTIONAL.
+ * STATUS: ✅ FULLY FUNCTIONAL
  *
- * V3.0.0: Quiz-aware lesson delivery via content_item_groups.
- * - handle_quiz_completion() reads quiz_id from $quiz_result.
+ * v3.0.0: Quiz-aware lesson delivery via content_item_groups
+ * - handle_quiz_completion() reads quiz_id from $quiz_result
  * - find_lesson_post() resolves category from content_item_groups[quiz_id]
- * - Backward compatible: falls back to content_item_category if content_item_groups absent.
+ * - Backward compatible: falls back to content_item_category if content_item_groups absent
  *
- * V1.5.4: Multiple free lessons.
- * V9.1.8: Initial implementation.
+ * v1.5.4: Multiple free lessons
+ * v9.1.8: Initial implementation
  *
  * FLOW:
- * 1. User takes a flow quiz (e.g. sample_assessment_quiz); score < 100%.
- * 2. System checks content_item_groups for quiz → category mapping.
- * 3. Finds the configured lesson category for the quiz.
+ * 1. User takes a flow quiz (e.g. sample_assessment_quiz); score < 100%
+ * 2. System checks content_item_groups for quiz → category mapping
+ * 3. Finds the configured lesson category for the quiz
  * 4. Calculates missed items (lesson numbers or question indexes)
  * 5. Picks random eligible free lesson(s)
- * 6. Delivers WordPress post with _flosc_lesson_number from the configured category.
+ * 6. Delivers WordPress post with _flosc_lesson_number from the configured category
  *
  * @since 9.1.8
  *
@@ -38,11 +37,11 @@ class FLOSC_Free_Content_Item_Manager {
 
 	private static $instance = null;
 
-/**
- * Coordinate the instance behavior implemented by this code path.
- *
- * @return Mixed Result produced by the instance operation.
- */
+		/**
+	 * Coordinate the instance behavior implemented by this code path.
+	 *
+	 * @return mixed Result produced by the instance operation.
+	 */
 public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
@@ -50,9 +49,9 @@ public static function instance() {
 		return self::$instance;
 	}
 
-/**
- * Register the WordPress hooks that connect construct to this object.
- */
+		/**
+	 * Register the WordPress hooks that connect construct to this object.
+	 */
 private function __construct() {
 		// Hook into quiz completion.
 		add_action( 'flosc_quiz_completed', array( $this, 'handle_quiz_completion' ), 10, 2 );
@@ -61,12 +60,12 @@ private function __construct() {
 	/**
 	 * Handle quiz completion and select free lesson(s)
 	 *
-	 * Now quiz-aware — reads quiz_id from $quiz_result to resolve.
-	 * The correct lesson category via the flow's content_item_groups config.
+	 * Now quiz-aware — reads quiz_id from $quiz_result to resolve
+	 * the correct lesson category via the flow's content_item_groups config.
 	 *
 	 * @param array $quiz_result Quiz results with score, answers, quiz_id.
-	 * @param int   $user_id     User ID.
-	 * @return Array|void Selected lesson numbers, or void if no lessons needed.
+	 * @param int   $user_id    User ID.
+	 * @return array|void Selected lesson numbers, or void if no lessons needed
 	 * @since 3.0.0
 	 */
 	public function handle_quiz_completion( $quiz_result, $user_id ) {
@@ -194,7 +193,7 @@ private function __construct() {
 	 * Per-flow free-sample pool category slug (Lessons → free_content_item_pool_category).
 	 * Empty = use the normal lesson-group category (all mapped lessons).
 	 *
-	 * @return String.
+	 * @return string
 	 */
 	private function get_free_content_item_pool_category() {
 		if ( ! function_exists( 'flosc_get_setting' ) ) {
@@ -207,7 +206,7 @@ private function __construct() {
 	 * Lesson numbers that must never be given as complimentary guest content.
 	 * Admin: exclude_items_from_freeline (comma/space-separated numbers).
 	 *
-	 * @return Int[]
+	 * @return int[]
 	 */
 	private function get_exclude_items_from_freeline_numbers() {
 		if ( ! function_exists( 'flosc_get_setting' ) ) {
@@ -232,10 +231,10 @@ private function __construct() {
 	}
 
 	/**
-	 * Determine whether the current state satisfies excluded from freeline.
-	 *
+ * Determine whether the current state satisfies excluded from freeline.
+ *
 	 * @param int $lesson_num Lesson number.
-	 * @return Bool.
+	 * @return bool
 	 */
 	private function is_excluded_from_freeline( $lesson_num ) {
 		$n = intval( $lesson_num );
@@ -245,9 +244,9 @@ private function __construct() {
 	/**
 	 * Find a published lesson post by number inside a specific category slug.
 	 *
-	 * @param int   $lesson_num    Value consumed by this operation.
+	 * @param int    $lesson_num
 	 * @param mixed $category_slug Input consumed by the Persist the lesson post in category state in Word Press storage. operation.
-	 * @return WP_Post|null.
+	 * @return WP_Post|null
 	 */
 	private function find_lesson_post_in_category( $lesson_num, $category_slug ) {
 		$lesson_num    = intval( $lesson_num );
@@ -292,9 +291,9 @@ private function __construct() {
 	/**
 	 * Resolve free-sample post: only from free_content_item_pool_category when set.
 	 *
-	 * @param int   $lesson_num Value consumed by this operation.
-	 * @param mixed $quiz_id    Identifier used to select the record involved in the Resolve the current free eligible lesson post value from the available Word Press and flow state. operation.
-	 * @return WP_Post|null.
+	 * @param int    $lesson_num
+	 * @param mixed $quiz_id Identifier used to select the record involved in the Resolve the current free eligible lesson post value from the available Word Press and flow state. operation.
+	 * @return WP_Post|null
 	 */
 	private function find_free_eligible_lesson_post( $lesson_num, $quiz_id = '' ) {
 		$pool = $this->get_free_content_item_pool_category();
@@ -306,11 +305,11 @@ private function __construct() {
 	}
 
 	/**
-	 * Coordinate the lesson number is free eligible behavior implemented by this code path.
-	 *
-	 * @param int   $lesson_num Value consumed by this operation.
-	 * @param mixed $quiz_id    Identifier used to select the record involved in the Coordinate the lesson number is free eligible behavior implemented by this code path. operation.
-	 * @return Bool.
+ * Coordinate the lesson number is free eligible behavior implemented by this code path.
+ *
+	 * @param int    $lesson_num
+	 * @param mixed $quiz_id Identifier used to select the record involved in the Coordinate the lesson number is free eligible behavior implemented by this code path. operation.
+	 * @return bool
 	 */
 	private function lesson_number_is_free_eligible( $lesson_num, $quiz_id = '' ) {
 		$n = intval( $lesson_num );
@@ -324,10 +323,10 @@ private function __construct() {
 	/**
 	 * Collect eligible lesson numbers from a score tier (shuffled).
 	 *
-	 * @param array $tier_entries Value consumed by this operation.
-	 * @param mixed $quiz_id      Identifier used to select the record involved in the Coordinate the collect eligible from tier behavior implemented by this code path. operation.
-	 * @param int[] $exclude      Already selected numbers.
-	 * @return Int[]
+	 * @param array  $tier_entries
+	 * @param mixed $quiz_id Identifier used to select the record involved in the Coordinate the collect eligible from tier behavior implemented by this code path. operation.
+	 * @param int[]  $exclude Already selected numbers.
+	 * @return int[]
 	 */
 	private function collect_eligible_from_tier( array $tier_entries, $quiz_id, array $exclude = array() ) {
 		$candidates = array();
@@ -350,10 +349,10 @@ private function __construct() {
 	 * Tier-walk free-lesson pick limited to the free lesson pool + never-free rules.
 	 * Returns up to $count lesson numbers (admin free_content_item_count).
 	 *
-	 * @param array $tiers   Value consumed by this operation.
+	 * @param array  $tiers
 	 * @param mixed $quiz_id Identifier used to select the record involved in the Coordinate the pick eligible lessons from tiers behavior implemented by this code path. operation.
-	 * @param int   $count   Value consumed by this operation.
-	 * @return Int[]
+	 * @param int    $count
+	 * @return int[]
 	 */
 	private function pick_eligible_lessons_from_tiers( array $tiers, $quiz_id = '', $count = 1 ) {
 		$count = max( 1, intval( $count ) );
@@ -398,23 +397,23 @@ private function __construct() {
 	}
 
 	/**
-	 * Coordinate the pick eligible lesson from tiers behavior implemented by this code path.
-	 *
+ * Coordinate the pick eligible lesson from tiers behavior implemented by this code path.
+ *
 	 * @deprecated Use pick_eligible_lessons_from_tiers — kept for any external callers.
 	 *
-	 * @param array $tiers   Value consumed by this operation.
+	 * @param array  $tiers
 	 * @param mixed $quiz_id Identifier used to select the record involved in the Coordinate the pick eligible lesson from tiers behavior implemented by this code path. operation.
-	 * @return Int[]
+	 * @return int[]
 	 */
 	private function pick_eligible_lesson_from_tiers( array $tiers, $quiz_id = '' ) {
 		return $this->pick_eligible_lessons_from_tiers( $tiers, $quiz_id, 1 );
 	}
 
 	/**
-	 * Get missed lesson numbers from quiz result.
+	 * Get missed lesson numbers from quiz result
 	 *
-	 * @param array $quiz_result Value consumed by this operation.
-	 * @return Array Array of missed lesson numbers.
+	 * @param array $quiz_result
+	 * @return array Array of missed lesson numbers
 	 */
 	private function get_missed_lessons( $quiz_result ) {
 		// Quiz types may return either plain lesson numbers or structured rows.
@@ -470,13 +469,13 @@ private function __construct() {
 	}
 
 	/**
-	 * Resolve the lesson category for a given quiz_id using content_item_groups.
+	 * Resolve the lesson category for a given quiz_id using content_item_groups
 	 *
-	 * Searches the current flow's content_item_groups array for a matching.
-	 * Quiz_id → category mapping. Falls back to legacy content_item_category.
+	 * Searches the current flow's content_item_groups array for a matching
+	 * quiz_id → category mapping. Falls back to legacy content_item_category.
 	 *
 	 * @param string $quiz_id The quiz ID to look up (e.g., "flosc_sample_data_numbers_quiz").
-	 * @return String Category slug, or empty string if not found.
+	 * @return string Category slug, or empty string if not found
 	 * @since 3.0.0
 	 */
 	private function resolve_category_for_quiz( $quiz_id ) {
@@ -518,14 +517,14 @@ private function __construct() {
 	}
 
 	/**
-	 * Find a lesson post by lesson number.
+	 * Find a lesson post by lesson number
 	 *
-	 * Quiz-aware — resolves category from content_item_groups.
-	 * V1.4.4: Fallback to common slug patterns.
+	 * Quiz-aware — resolves category from content_item_groups
+	 * v1.4.4: Fallback to common slug patterns
 	 *
 	 * @param int    $lesson_num Lesson number to find.
 	 * @param string $quiz_id    Optional quiz ID for category resolution.
-	 * @return WP_Post|null.
+	 * @return WP_Post|null
 	 * @since 3.0.0
 	 */
 	private function find_lesson_post( $lesson_num, $quiz_id = '' ) {
@@ -612,8 +611,8 @@ private function __construct() {
 	/**
 	 * Get free lesson content for user (single — backward compatible)
 	 *
-	 * @param int $user_id Value consumed by this operation.
-	 * @return Array|false Post data or false.
+	 * @param int $user_id
+	 * @return array|false Post data or false
 	 */
 	public function get_free_lesson( $user_id ) {
 		$lessons = $this->get_free_lessons( $user_id );
@@ -621,11 +620,11 @@ private function __construct() {
 	}
 
 	/**
-	 * Get all free lessons for user.
-	 * V3.0.0: Uses stored quiz_id to resolve the correct category.
+	 * Get all free lessons for user
+	 * v3.0.0: Uses stored quiz_id to resolve the correct category
 	 *
-	 * @param int $user_id Value consumed by this operation.
-	 * @return Array Array of lesson data arrays.
+	 * @param int $user_id
+	 * @return array Array of lesson data arrays
 	 * @since 1.5.4
 	 */
 	public function get_free_lessons( $user_id ) {
@@ -674,10 +673,10 @@ private function __construct() {
 	}
 
 	/**
-	 * Check if user has already received free lesson.
+	 * Check if user has already received free lesson
 	 *
-	 * @param int $user_id Value consumed by this operation.
-	 * @return Bool.
+	 * @param int $user_id
+	 * @return bool
 	 */
 	public function has_received_free_lesson( $user_id ) {
 		$offered = get_user_meta( $user_id, '_flosc_free_content_item_offered', true );
@@ -685,12 +684,12 @@ private function __construct() {
 	}
 
 	/**
-	 * Deliver free lesson(s) via chat or redirect.
-	 * Supports multiple lessons.
+	 * Deliver free lesson(s) via chat or redirect
+	 * Supports multiple lessons
 	 *
-	 * @param int   $user_id       Value consumed by this operation.
+	 * @param int    $user_id
 	 * @param mixed $delivery_mode Input consumed by the Persist the deliver free lesson state in Word Press storage. operation.
-	 * @return Array Response data.
+	 * @return array Response data
 	 * @since 1.5.4
 	 */
 	public function deliver_free_lesson( $user_id, $delivery_mode = 'chat' ) {

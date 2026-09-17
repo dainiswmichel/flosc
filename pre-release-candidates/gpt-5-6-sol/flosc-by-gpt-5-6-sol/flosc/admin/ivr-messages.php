@@ -1,6 +1,6 @@
 <?php
 /**
- * FLOSC IVR Management Tab v1.2.9.
+ * FLOSC IVR Management Tab v1.2.9
  *
  * Uses the IVR file selected in the Flow dropdown.
  *
@@ -24,12 +24,12 @@ if ( ! current_user_can( 'edit_others_posts' ) ) {
 }
 
 if ( ! function_exists( 'flosc_resolve_ivr_file_path' ) ) {
-/**
- * Coordinate the ivr file path behavior implemented by this code path.
- *
- * @param mixed $flosc_ivr_filename IVR identifier or filename used to select the flow configuration.
- * @return Mixed Result produced by the ivr file path operation.
- */
+		/**
+	 * Coordinate the ivr file path behavior implemented by this code path.
+	 *
+	 * @param mixed $flosc_ivr_filename IVR identifier or filename used to select the flow configuration.
+	 * @return mixed Result produced by the ivr file path operation.
+	 */
 function flosc_resolve_ivr_file_path( $flosc_ivr_filename ) {
 		$flosc_ivr_filename = sanitize_file_name( trim( (string) $flosc_ivr_filename ) );
 		// Per WordPress.org policy: runtime-generated files must be written to uploads only.
@@ -64,8 +64,8 @@ if ( ! function_exists( 'flosc_ivr_safe_json_decode' ) ) {
 	 *
 	 * @param mixed $raw       Raw JSON string.
 	 * @param int   $max_bytes Maximum payload size.
-	 * @param int   $depth     Json_decode depth.
-	 * @return Array|false.
+	 * @param int   $depth     json_decode depth.
+	 * @return array|false
 	 */
 	function flosc_ivr_safe_json_decode( $raw, $max_bytes = 200000, $depth = 32 ) {
 		$raw = (string) $raw;
@@ -86,12 +86,12 @@ if ( ! function_exists( 'flosc_sanitize_ivr_markdown' ) ) {
 	/**
 	 * Sanitize IVR Markdown for disk write (Pass 5 / E3).
 	 *
-	 * Preserves intentional Markdown while rejecting null bytes, validating UTF-8,.
-	 * Normalizing line endings, and capping size.
+	 * Preserves intentional Markdown while rejecting null bytes, validating UTF-8,
+	 * normalizing line endings, and capping size.
 	 *
 	 * @param mixed $raw       Untrusted body.
 	 * @param int   $max_bytes Max stored size (default 1.5 MiB).
-	 * @return String|WP_Error Sanitized body or error.
+	 * @return string|WP_Error Sanitized body or error.
 	 */
 	function flosc_sanitize_ivr_markdown( $raw, $max_bytes = 1572864 ) {
 		if ( ! is_string( $raw ) && ! is_numeric( $raw ) ) {
@@ -264,9 +264,8 @@ if ( ! in_array( $flosc_ivr_management_view, array( 'single', 'all' ), true ) ) 
 }
 
 /**
- * Run IVR diagnostics - checks DB, file, sync status.
- *
- * @return Mixed Result of the run ivr diagnostics operation, or a WP_Error when it cannot complete.
+ * Run IVR diagnostics - checks DB, file, sync status
+ * @return mixed Result of the run ivr diagnostics operation, or a WP_Error when it cannot complete.
  */
 function flosc_run_ivr_diagnostics() {
 	// v1.2.8: Use current IVR file from context.

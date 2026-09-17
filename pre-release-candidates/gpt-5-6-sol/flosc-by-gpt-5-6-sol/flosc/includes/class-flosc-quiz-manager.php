@@ -1,6 +1,6 @@
 <?php
 /**
- * FLOSC Quiz Integration Manager.
+ * FLOSC Quiz Integration Manager
  *
  * Provides a unified interface for integrating external quiz plugins with FLOSC.
  * Handles quiz metadata, score submission, and routing to Bridge Data Manager.
@@ -8,14 +8,14 @@
  * EXTERNAL PLUGIN INTEGRATION:
  * 1. Direct API: FLOSC_Quiz_Manager::submit_score($user_id, $quiz_id, $score_data)
  * 2. Action hook: do_action('flosc_external_quiz_score', $user_id, $quiz_id, $score_data)
- * 3. REST API: POST /wp-json/flosc/v1/external-quiz.
+ * 3. REST API: POST /wp-json/flosc/v1/external-quiz
  *
  * QUIZ METADATA (optional):
  * Register quiz metadata to enable richer personalization:
- * FLOSC_Quiz_Manager::register_quiz('my_quiz_id', [.
- * 'title' => 'My Quiz',.
- * 'category' => 'grammar',.
- * 'lesson_mapping' => ['q1' => 1, 'q2' => 2], // question ID → lesson number.
+ * FLOSC_Quiz_Manager::register_quiz('my_quiz_id', [
+ *     'title' => 'My Quiz',
+ *     'category' => 'grammar',
+ *     'lesson_mapping' => ['q1' => 1, 'q2' => 2], // question ID → lesson number
  * ]);
  *
  * @package FLOSC
@@ -32,23 +32,23 @@ if ( ! defined( 'ABSPATH' ) ) {
 class FLOSC_Quiz_Manager {
 
 	/**
-	 * Singleton instance.
+	 * Singleton instance
 	 *
 	 * @var FLOSC_Quiz_Manager
 	 */
 	private static $instance = null;
 
 	/**
-	 * Registered quiz metadata.
+	 * Registered quiz metadata
 	 *
 	 * @var array
 	 */
 	private static $quiz_registry = array();
 
 	/**
-	 * Get singleton instance.
+	 * Get singleton instance
 	 *
-	 * @return FLOSC_Quiz_Manager.
+	 * @return FLOSC_Quiz_Manager
 	 */
 	public static function instance() {
 		if ( null === self::$instance ) {
@@ -58,7 +58,7 @@ class FLOSC_Quiz_Manager {
 	}
 
 	/**
-	 * Constructor.
+	 * Constructor
 	 */
 	private function __construct() {
 		// Load registered quizzes from options.
@@ -69,7 +69,7 @@ class FLOSC_Quiz_Manager {
 	}
 
 	/**
-	 * Register REST routes for external quiz submission.
+	 * Register REST routes for external quiz submission
 	 */
 	public function register_rest_routes() {
 		register_rest_route(
@@ -89,7 +89,7 @@ class FLOSC_Quiz_Manager {
 	 * Allows either a valid configured API key or an authenticated user.
 	 *
 	 * @param WP_REST_Request $request Request object.
-	 * @return Bool.
+	 * @return bool
 	 */
 	public function check_external_quiz_permission( $request ) {
 		$api_key    = sanitize_text_field( (string) $request->get_header( 'X-FLOSC-API-Key' ) );
@@ -103,10 +103,10 @@ class FLOSC_Quiz_Manager {
 	}
 
 	/**
-	 * Handle REST API quiz submission.
+	 * Handle REST API quiz submission
 	 *
-	 * @param WP_REST_Request $request Value consumed by this operation.
-	 * @return WP_REST_Response.
+	 * @param WP_REST_Request $request
+	 * @return WP_REST_Response
 	 */
 	public function handle_external_quiz_rest( $request ) {
 		$flosc_requested_user = $request->get_param( 'user_id' );
@@ -149,19 +149,19 @@ class FLOSC_Quiz_Manager {
 	}
 
 	/**
-	 * Register a quiz with metadata.
+	 * Register a quiz with metadata
 	 *
 	 * Optional but recommended for richer personalization.
 	 *
-	 * @param string $quiz_id  Unique quiz identifier.
+	 * @param string $quiz_id Unique quiz identifier.
 	 * @param array  $metadata Quiz metadata:.
-	 * - title: (string) Display title.
-	 * - description: (string) Quiz description.
-	 * - category: (string) Category for weakness analysis.
-	 * - lesson_mapping: (array) Maps question IDs to lesson numbers.
-	 * - pass_score: (int) Score needed to pass (default: 70)
-	 * - source: (string) Plugin name ('learndash', 'tutor', 'custom')
-	 * @return Bool.
+	 *    - title: (string) Display title
+	 *    - description: (string) Quiz description
+	 *    - category: (string) Category for weakness analysis
+	 *    - lesson_mapping: (array) Maps question IDs to lesson numbers
+	 *    - pass_score: (int) Score needed to pass (default: 70)
+	 *    - source: (string) Plugin name ('learndash', 'tutor', 'custom')
+	 * @return bool
 	 */
 	public static function register_quiz( $quiz_id, $metadata = array() ) {
 		$quiz_id = sanitize_key( $quiz_id );
@@ -185,10 +185,10 @@ class FLOSC_Quiz_Manager {
 	}
 
 	/**
-	 * Get quiz metadata.
+	 * Get quiz metadata
 	 *
-	 * @param mixed $quiz_id Identifier used to select the record involved in the Resolve the current quiz value from the available Word Press and flow state. operation.
-	 * @return Array|null.
+ * @param mixed $quiz_id Identifier used to select the record involved in the Resolve the current quiz value from the available Word Press and flow state. operation.
+	 * @return array|null
 	 */
 	public static function get_quiz( $quiz_id ) {
 		$quiz_id = sanitize_key( $quiz_id );
@@ -196,19 +196,19 @@ class FLOSC_Quiz_Manager {
 	}
 
 	/**
-	 * Get all registered quizzes.
+	 * Get all registered quizzes
 	 *
-	 * @return Array.
+	 * @return array
 	 */
 	public static function get_all_quizzes() {
 		return self::$quiz_registry;
 	}
 
 	/**
-	 * Unregister a quiz.
+	 * Unregister a quiz
 	 *
-	 * @param string $quiz_id Value consumed by this operation.
-	 * @return Bool.
+	 * @param string $quiz_id
+	 * @return bool
 	 */
 	public static function unregister_quiz( $quiz_id ) {
 		$quiz_id = sanitize_key( $quiz_id );
@@ -223,19 +223,19 @@ class FLOSC_Quiz_Manager {
 	}
 
 	/**
-	 * Submit a quiz score.
+	 * Submit a quiz score
 	 *
 	 * Main API for external plugins to submit scores to FLOSC.
 	 *
-	 * @param int    $user_id    WordPress user ID.
-	 * @param string $quiz_id    Quiz identifier (should be registered first).
+	 * @param int    $user_id WordPress user ID.
+	 * @param string $quiz_id Quiz identifier (should be registered first).
 	 * @param array  $score_data Score data:.
-	 * - score: (int) Percentage score 0-100 (required)
-	 * - correct_items: (array) IDs/names of correct answers.
-	 * - incorrect_items: (array) IDs/names of incorrect answers.
-	 * - answers: (array) All user answers keyed by question ID.
-	 * - time_spent: (int) Seconds spent on quiz.
-	 * @return Bool Success.
+	 *    - score: (int) Percentage score 0-100 (required)
+	 *    - correct_items: (array) IDs/names of correct answers
+	 *    - incorrect_items: (array) IDs/names of incorrect answers
+	 *    - answers: (array) All user answers keyed by question ID
+	 *    - time_spent: (int) Seconds spent on quiz
+	 * @return bool Success
 	 */
 	public static function submit_score( $user_id, $quiz_id, $score_data ) {
 		if ( ! $user_id || ! $quiz_id || ! is_array( $score_data ) ) {
@@ -281,13 +281,13 @@ class FLOSC_Quiz_Manager {
 	}
 
 	/**
-	 * Apply lesson mapping to score data.
+	 * Apply lesson mapping to score data
 	 *
 	 * Converts question IDs to lesson numbers based on registered mapping.
 	 *
 	 * @param array $score_data Original score data.
-	 * @param array $mapping    Question ID → Lesson number mapping.
-	 * @return Array Modified score data.
+	 * @param array $mapping Question ID → Lesson number mapping.
+	 * @return array Modified score data
 	 */
 	private static function apply_lesson_mapping( $score_data, $mapping ) {
 		// Map correct items.
@@ -312,11 +312,11 @@ class FLOSC_Quiz_Manager {
 	}
 
 	/**
-	 * Get user's quiz history.
+	 * Get user's quiz history
 	 *
-	 * @param int   $user_id Value consumed by this operation.
+	 * @param int    $user_id
 	 * @param mixed $quiz_id Identifier used to select the record involved in the Resolve the current user quiz history value from the available Word Press and flow state. operation.
-	 * @return Array.
+	 * @return array
 	 */
 	public static function get_user_quiz_history( $user_id, $quiz_id = null ) {
 		$bridge_manager = FLOSC_Bridge_Data_Manager::instance();
@@ -330,11 +330,11 @@ class FLOSC_Quiz_Manager {
 	}
 
 	/**
-	 * Check if user passed a quiz.
+	 * Check if user passed a quiz
 	 *
-	 * @param int   $user_id Value consumed by this operation.
+	 * @param int    $user_id
 	 * @param mixed $quiz_id Identifier used to select the record involved in the Coordinate the user passed quiz behavior implemented by this code path. operation.
-	 * @return Bool|null True if passed, false if failed, null if not taken.
+	 * @return bool|null True if passed, false if failed, null if not taken
 	 */
 	public static function user_passed_quiz( $user_id, $quiz_id ) {
 		$bridge_manager = FLOSC_Bridge_Data_Manager::instance();
@@ -351,10 +351,10 @@ class FLOSC_Quiz_Manager {
 	}
 
 	/**
-	 * Get user's best score for a quiz.
+	 * Get user's best score for a quiz
 	 *
 	 * @param int $user_id The user.
-	 * @return Int|null Best score or null if never taken.
+	 * @return int|null Best score or null if never taken
 	 */
 	public static function get_best_score( $user_id ) {
 		$bridge_manager = FLOSC_Bridge_Data_Manager::instance();
@@ -364,12 +364,12 @@ class FLOSC_Quiz_Manager {
 	}
 
 	/**
-	 * Shortcode to display quiz results.
+	 * Shortcode to display quiz results
 	 *
 	 * Usage: [flosc_quiz_results quiz_id="my_quiz"]
 	 *
 	 * @param array $atts Shortcode attributes.
-	 * @return String HTML output.
+	 * @return string HTML output
 	 */
 	public static function shortcode_quiz_results( $atts ) {
 		$atts = shortcode_atts(

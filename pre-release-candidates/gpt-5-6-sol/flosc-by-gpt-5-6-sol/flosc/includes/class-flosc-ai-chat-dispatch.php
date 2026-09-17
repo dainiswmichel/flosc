@@ -1,6 +1,6 @@
 <?php
 /**
- * FLOSC AI Chat Dispatch.
+ * FLOSC AI Chat Dispatch
  * Supports: IVR (scripted), Anthropic, OpenAI, xAI, Gemini.
  *
  * @package FLOSC
@@ -19,9 +19,9 @@ class FLOSC_AI_Chat_Dispatch {
 	public $last_chain_detail  = array();
 	private $last_billing_meta = array();
 
-/**
- * Coordinate the construct behavior implemented by this code path.
- */
+		/**
+	 * Coordinate the construct behavior implemented by this code path.
+	 */
 public function __construct() {
 		// v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves),.
 		// then falls back to global options.
@@ -30,10 +30,9 @@ public function __construct() {
 
 	/**
 	 * Build system prompt by merging identity + phase + knowledge + FLOSC process (v1.4.1)
-	 *
-	 * @param mixed $phase   Input consumed by the Build the structured value consumed by system prompt. operation.
-	 * @param mixed $context Context values used to resolve request- or flow-specific behavior.
-	 * @return Mixed Result produced by the system prompt operation.
+ * @param mixed $phase Input consumed by the Build the structured value consumed by system prompt. operation.
+ * @param mixed $context Context values used to resolve request- or flow-specific behavior.
+ * @return mixed Result produced by the system prompt operation.
 	 */
 	public function build_system_prompt( $phase = '', $context = array() ) {
 		// 1. Build AI Identity section from Knowledge tab settings.
@@ -282,12 +281,12 @@ public function __construct() {
 	}
 
 	/**
-	 * Build AI identity from Knowledge tab settings.
-	 * V1.9.2: Added FLOSC framework description to prevent identity hallucination.
+	 * Build AI identity from Knowledge tab settings
+	 * v1.9.2: Added FLOSC framework description to prevent identity hallucination
 	 *
 	 * @since 1.4.1
-	 * @param mixed $context Context values used to resolve request- or flow-specific behavior.
-	 * @return Mixed Result produced by the identity prompt operation.
+ * @param mixed $context Context values used to resolve request- or flow-specific behavior.
+ * @return mixed Result produced by the identity prompt operation.
 	 */
 	private function build_identity_prompt( $context = array() ) {
 		// Personality: attached library entry (one per flow) wins when set; else flow bag.
@@ -398,11 +397,11 @@ public function __construct() {
 	 * Reads directly from the flosc_chat_logs table (admin_rating != 0).
 	 * Negative ratings = feedback. Positive ratings = praise. Magnitude = weight.
 	 *
-	 * Also includes legacy ai_feedback/ai_praises from flow settings.
-	 * For backward compatibility with manually-added entries.
+	 * Also includes legacy ai_feedback/ai_praises from flow settings
+	 * for backward compatibility with manually-added entries.
 	 *
 	 * @since 1.9.5
-	 * @return Mixed Result produced by the feedback prompt operation.
+ * @return mixed Result produced by the feedback prompt operation.
 	 */
 	private function build_feedback_prompt() {
 		$sections = array();
@@ -509,11 +508,10 @@ public function __construct() {
 	}
 
 	/**
-	 * Get FLOSC process instructions based on user phase and role.
-	 *
-	 * @param mixed $phase   Input consumed by the Resolve the current prompt value from the available Word Press and flow state. operation.
-	 * @param mixed $context Context values used to resolve request- or flow-specific behavior.
-	 * @return Mixed Result produced by the prompt operation.
+	 * Get FLOSC process instructions based on user phase and role
+ * @param mixed $phase Input consumed by the Resolve the current prompt value from the available Word Press and flow state. operation.
+ * @param mixed $context Context values used to resolve request- or flow-specific behavior.
+ * @return mixed Result produced by the prompt operation.
 	 */
 	private function get_flosc_process_prompt( $phase, $context = array() ) {
 		$is_admin = $context['is_admin'] ?? false;
@@ -622,10 +620,9 @@ public function __construct() {
 	}
 
 	/**
-	 * Load phase-specific prompt from admin settings.
-	 *
-	 * @param mixed $phase Input consumed by the Resolve the current phase prompt value from the available Word Press and flow state. operation.
-	 * @return Mixed Result produced by the phase prompt operation.
+	 * Load phase-specific prompt from admin settings
+ * @param mixed $phase Input consumed by the Resolve the current phase prompt value from the available Word Press and flow state. operation.
+ * @return mixed Result produced by the phase prompt operation.
 	 */
 	private function load_phase_prompt( $phase ) {
 		// v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves).
@@ -634,11 +631,10 @@ public function __construct() {
 
 	/**
 	 * Load AI knowledge files with access-level filtering (v1.4.1)
-	 * Public files: available to all users.
-	 * Members files: only loaded for logged-in users.
-	 *
-	 * @param mixed $context Context values used to resolve request- or flow-specific behavior.
-	 * @return Mixed Result produced by the orientation files operation.
+	 * Public files: available to all users
+	 * Members files: only loaded for logged-in users
+ * @param mixed $context Context values used to resolve request- or flow-specific behavior.
+ * @return mixed Result produced by the orientation files operation.
 	 */
 	private function load_orientation_files( $context = array() ) {
 		// Per-flow basket only — mirrors FLOSC_Chatpack::load_knowledge_files so both.
@@ -664,12 +660,12 @@ public function __construct() {
 	/**
 	 * Whether AI context represents a full member (member), not a guest.
 	 *
-	 * Prefer access_level / is_member. Treat purchased as truthy for bool and.
-	 * Common string forms ('Yes', 'true', '1') — never require purchased === 'Yes'.
-	 * Alone (that mis-labeled sandbox / meta-granted members as guests).
+	 * Prefer access_level / is_member. Treat purchased as truthy for bool and
+	 * common string forms ('Yes', 'true', '1') — never require purchased === 'Yes'
+	 * alone (that mis-labeled sandbox / meta-granted members as guests).
 	 *
 	 * @param array $context AI / session context.
-	 * @return Bool.
+	 * @return bool
 	 */
 	private function flosc_context_user_is_member( $context ) {
 		if ( ! is_array( $context ) ) {
@@ -727,12 +723,12 @@ public function __construct() {
 	}
 
 	/**
-	 * Build context string from context array.
-	 * Handle arrays and nested values gracefully.
+	 * Build context string from context array
+	 * Handle arrays and nested values gracefully
 	 *
 	 * @since 1.9.2
-	 * @param mixed $context Context values used to resolve request- or flow-specific behavior.
-	 * @return Mixed Result produced by the context string operation.
+ * @param mixed $context Context values used to resolve request- or flow-specific behavior.
+ * @return mixed Result produced by the context string operation.
 	 */
 	private function build_context_string( $context ) {
 		if ( empty( $context ) ) {
@@ -796,9 +792,9 @@ public function __construct() {
 	 * Format nested context values into readable strings for prompts.
 	 * Prevents nested arrays from collapsing into literal "Array" strings.
 	 *
-	 * @param mixed $value Value consumed by this operation.
+	 * @param mixed $value
 	 * @param mixed $depth Input consumed by the Coordinate the format context value behavior implemented by this code path. operation.
-	 * @return String|null.
+	 * @return string|null
 	 */
 	private function format_context_value( $value, $depth = 0 ) {
 		if ( null === $value ) {
@@ -843,9 +839,8 @@ public function __construct() {
 	}
 
 	/**
-	 * Get default base system prompt.
-	 *
-	 * @return Mixed Result produced by the default base prompt operation.
+	 * Get default base system prompt
+ * @return mixed Result produced by the default base prompt operation.
 	 */
 	private function get_default_base_prompt() {
 		$identity     = $this->get_floscflow_identity();
@@ -869,13 +864,13 @@ public function __construct() {
 	 * @param string $message       What the visitor said.
 	 * @param string $system_prompt The assembled system prompt.
 	 * @param array  $context       Request context passed to the provider.
-	 * @param bool   $test_mode     True to return a WP_Error on failure instead of.
-	 * Falling back to the scripted IVR. Used by the.
-	 * Test Connection button, which needs to see the.
-	 * Failure rather than a graceful recovery.
-	 * @param bool   $return_errors True to return provider errors to the caller.
-	 * Rather than absorbing them.
-	 * @return String|WP_Error The reply, or an error when the flags above allow one.
+	 * @param bool   $test_mode     True to return a WP_Error on failure instead of
+	 *                              falling back to the scripted IVR. Used by the
+	 *                              Test Connection button, which needs to see the
+	 *                              failure rather than a graceful recovery.
+	 * @param bool   $return_errors True to return provider errors to the caller
+	 *                              rather than absorbing them.
+	 * @return string|WP_Error The reply, or an error when the flags above allow one.
 	 */
 	public function get_response( $message, $system_prompt = '', $context = array(), $test_mode = false, $return_errors = false ) {
 		$this->last_billing_meta = array();
@@ -954,17 +949,17 @@ public function __construct() {
 	 * Production dispatch with an explicit, inspectable outcome.
 	 *
 	 * get_response() answers with a string, so an empty answer and a provider
-	 * That refused the request are indistinguishable at the call site. That is.
-	 * How a 400 could read as a working chatbot with nothing to say. This keeps.
-	 * Production caching and chaining intact and reports what happened.
+	 * that refused the request are indistinguishable at the call site. That is
+	 * how a 400 could read as a working chatbot with nothing to say. This keeps
+	 * production caching and chaining intact and reports what happened.
 	 *
-	 * Provider detail stays internal. The chat-turn layer decides separately.
-	 * What a visitor sees, what an administrator sees, and what is logged.
+	 * Provider detail stays internal. The chat-turn layer decides separately
+	 * what a visitor sees, what an administrator sees, and what is logged.
 	 *
-	 * @param mixed $message       Input consumed by the Resolve the current response result value from the available Word Press and flow state. operation.
-	 * @param mixed $system_prompt Input consumed by the Resolve the current response result value from the available Word Press and flow state. operation.
-	 * @param mixed $context       Context values used to resolve request- or flow-specific behavior.
-	 * @return Array{content:string,source:string,provider:string,error_code:string,error:string}.
+ * @param mixed $message Input consumed by the Resolve the current response result value from the available Word Press and flow state. operation.
+ * @param mixed $system_prompt Input consumed by the Resolve the current response result value from the available Word Press and flow state. operation.
+ * @param mixed $context Context values used to resolve request- or flow-specific behavior.
+	 * @return array{content:string,source:string,provider:string,error_code:string,error:string}
 	 */
 	public function get_response_result( $message, $system_prompt = '', $context = array() ) {
 		$provider = (string) flosc_get_setting( 'ai_provider', 'ivr' );
@@ -992,8 +987,7 @@ public function __construct() {
 
 	/**
 	 * Get billing metadata for the most recent provider call.
-	 *
-	 * @return Mixed Result produced by the last billing meta operation.
+ * @return mixed Result produced by the last billing meta operation.
 	 */
 	public function get_last_billing_meta() {
 		return is_array( $this->last_billing_meta ) ? $this->last_billing_meta : array();
@@ -1001,11 +995,10 @@ public function __construct() {
 
 	/**
 	 * Capture normalized billing metrics from provider responses.
-	 *
-	 * @param mixed $provider Provider identifier or object used for the Coordinate the capture billing meta behavior implemented by this code path. operation.
-	 * @param mixed $model    AI model identifier used for the provider request.
-	 * @param mixed $usage    Input consumed by the Coordinate the capture billing meta behavior implemented by this code path. operation.
-	 * @param mixed $raw      Input consumed by the Coordinate the capture billing meta behavior implemented by this code path. operation.
+ * @param mixed $provider Provider identifier or object used for the Coordinate the capture billing meta behavior implemented by this code path. operation.
+ * @param mixed $model AI model identifier used for the provider request.
+ * @param mixed $usage Input consumed by the Coordinate the capture billing meta behavior implemented by this code path. operation.
+ * @param mixed $raw Input consumed by the Coordinate the capture billing meta behavior implemented by this code path. operation.
 	 */
 	private function capture_billing_meta( $provider, $model, $usage = array(), $raw = array() ) {
 		$usage = is_array( $usage ) ? $usage : array();
@@ -1067,13 +1060,13 @@ public function __construct() {
 	 * Real price per 1,000,000 tokens, in millicents ($1 = 100,000 millicents), by model.
 	 *
 	 * A per-provider setting override (ai_billing_{provider}_input/output_millicents_per_1m)
-	 * Wins when set; otherwise a seeded per-model real price is used so cost never resolves.
-	 * To zero. Matched by keyword on the model id so id variants (dates/suffixes) resolve.
+	 * wins when set; otherwise a seeded per-model real price is used so cost never resolves
+	 * to zero. Matched by keyword on the model id so id variants (dates/suffixes) resolve.
 	 * Overridable via the 'flosc_model_price_millicents_per_1m' filter.
 	 *
 	 * @param string $provider Provider slug.
 	 * @param string $model    Model id.
-	 * @return Array {input:int, output:int} millicents per 1M tokens.
+	 * @return array {input:int, output:int} millicents per 1M tokens.
 	 */
 	private function resolve_model_price_per_1m( $provider, $model ) {
 		$override_in  = max( 0, intval( flosc_get_setting( 'ai_billing_' . $provider . '_input_millicents_per_1m', 0 ) ) );
@@ -1131,13 +1124,12 @@ public function __construct() {
 
 	/**
 	 * One hop: IVR locally; OpenAI/Anthropic/Gemini via WordPress AI Client; xAI via FLOSC HTTP.
-	 *
-	 * @param mixed $provider      Provider identifier or object used for the Coordinate the call provider behavior implemented by this code path. operation.
-	 * @param mixed $message       Input consumed by the Coordinate the call provider behavior implemented by this code path. operation.
-	 * @param mixed $system_prompt Input consumed by the Coordinate the call provider behavior implemented by this code path. operation.
-	 * @param mixed $context       Context values used to resolve request- or flow-specific behavior.
-	 * @param mixed $test_mode     Input consumed by the Coordinate the call provider behavior implemented by this code path. operation.
-	 * @return Mixed Result produced by the call provider operation.
+ * @param mixed $provider Provider identifier or object used for the Coordinate the call provider behavior implemented by this code path. operation.
+ * @param mixed $message Input consumed by the Coordinate the call provider behavior implemented by this code path. operation.
+ * @param mixed $system_prompt Input consumed by the Coordinate the call provider behavior implemented by this code path. operation.
+ * @param mixed $context Context values used to resolve request- or flow-specific behavior.
+ * @param mixed $test_mode Input consumed by the Coordinate the call provider behavior implemented by this code path. operation.
+ * @return mixed Result produced by the call provider operation.
 	 */
 	private function call_provider( $provider, $message, $system_prompt, $context, $test_mode ) {
 		switch ( $provider ) {
@@ -1161,16 +1153,16 @@ public function __construct() {
 	}
 
 	/**
-	 * Provider Chaining.
+	 * Provider Chaining
 	 * Sends the user message through multiple AI providers sequentially.
 	 * Each provider sees the previous provider's response as context.
 	 * Example: OpenAI drafts → Anthropic refines → final response.
 	 *
 	 * @since 1.9.0
-	 * @param mixed $message       Input consumed by the Resolve the current chained response value from the available Word Press and flow state. operation.
-	 * @param mixed $system_prompt Input consumed by the Resolve the current chained response value from the available Word Press and flow state. operation.
-	 * @param mixed $context       Context values used to resolve request- or flow-specific behavior.
-	 * @return Mixed Result of the chained response operation, or a WP_Error when it cannot complete.
+ * @param mixed $message Input consumed by the Resolve the current chained response value from the available Word Press and flow state. operation.
+ * @param mixed $system_prompt Input consumed by the Resolve the current chained response value from the available Word Press and flow state. operation.
+ * @param mixed $context Context values used to resolve request- or flow-specific behavior.
+ * @return mixed Result of the chained response operation, or a WP_Error when it cannot complete.
 	 */
 	private function get_chained_response( $message, $system_prompt, $context ) {
 		$chain = array();
@@ -1216,9 +1208,8 @@ public function __construct() {
 
 	/**
 	 * IVR - Scripted Responses (Free)
-	 *
-	 * @param mixed $message Input consumed by the Coordinate the ivr response behavior implemented by this code path. operation.
-	 * @return Mixed Result produced by the ivr response operation.
+ * @param mixed $message Input consumed by the Coordinate the ivr response behavior implemented by this code path. operation.
+ * @return mixed Result produced by the ivr response operation.
 	 */
 	private function ivr_response( $message ) {
 		$message_lower = strtolower( $message );
@@ -1291,13 +1282,12 @@ public function __construct() {
 	/**
 	 * OpenAI, Anthropic, and Gemini chat: WordPress 7.0 AI Client.
 	 * Official provider plugins own the vendor HTTP. FLOSC binds this flow's key.
-	 *
-	 * @param mixed $provider      Provider identifier or object used for the Coordinate the wp ai chat request behavior implemented by this code path. operation.
-	 * @param mixed $message       Input consumed by the Coordinate the wp ai chat request behavior implemented by this code path. operation.
-	 * @param mixed $system_prompt Input consumed by the Coordinate the wp ai chat request behavior implemented by this code path. operation.
-	 * @param mixed $context       Context values used to resolve request- or flow-specific behavior.
-	 * @param mixed $test_mode     Input consumed by the Coordinate the wp ai chat request behavior implemented by this code path. operation.
-	 * @return Mixed Result of the wp ai chat request operation, or a WP_Error when it cannot complete.
+ * @param mixed $provider Provider identifier or object used for the Coordinate the wp ai chat request behavior implemented by this code path. operation.
+ * @param mixed $message Input consumed by the Coordinate the wp ai chat request behavior implemented by this code path. operation.
+ * @param mixed $system_prompt Input consumed by the Coordinate the wp ai chat request behavior implemented by this code path. operation.
+ * @param mixed $context Context values used to resolve request- or flow-specific behavior.
+ * @param mixed $test_mode Input consumed by the Coordinate the wp ai chat request behavior implemented by this code path. operation.
+ * @return mixed Result of the wp ai chat request operation, or a WP_Error when it cannot complete.
 	 */
 	private function wp_ai_chat_request( $provider, $message, $system_prompt, $context = array(), $test_mode = false ) {
 		$model_keys = array(
@@ -1353,12 +1343,11 @@ public function __construct() {
 
 	/**
 	 * OpenAI chat via WordPress AI Client + AI Provider for OpenAI.
-	 *
-	 * @param mixed $message       Input consumed by the Coordinate the openai request behavior implemented by this code path. operation.
-	 * @param mixed $system_prompt Input consumed by the Coordinate the openai request behavior implemented by this code path. operation.
-	 * @param mixed $context       Context values used to resolve request- or flow-specific behavior.
-	 * @param mixed $test_mode     Input consumed by the Coordinate the openai request behavior implemented by this code path. operation.
-	 * @return Mixed Result produced by the openai request operation.
+ * @param mixed $message Input consumed by the Coordinate the openai request behavior implemented by this code path. operation.
+ * @param mixed $system_prompt Input consumed by the Coordinate the openai request behavior implemented by this code path. operation.
+ * @param mixed $context Context values used to resolve request- or flow-specific behavior.
+ * @param mixed $test_mode Input consumed by the Coordinate the openai request behavior implemented by this code path. operation.
+ * @return mixed Result produced by the openai request operation.
 	 */
 	private function openai_request( $message, $system_prompt, $context = array(), $test_mode = false ) {
 		return $this->wp_ai_chat_request( 'openai', $message, $system_prompt, $context, $test_mode );
@@ -1366,25 +1355,23 @@ public function __construct() {
 
 	/**
 	 * Anthropic Claude via WordPress AI Client + AI Provider for Anthropic.
-	 *
-	 * @param mixed $message       Input consumed by the Coordinate the anthropic request behavior implemented by this code path. operation.
-	 * @param mixed $system_prompt Input consumed by the Coordinate the anthropic request behavior implemented by this code path. operation.
-	 * @param mixed $context       Context values used to resolve request- or flow-specific behavior.
-	 * @param mixed $test_mode     Input consumed by the Coordinate the anthropic request behavior implemented by this code path. operation.
-	 * @return Mixed Result produced by the anthropic request operation.
+ * @param mixed $message Input consumed by the Coordinate the anthropic request behavior implemented by this code path. operation.
+ * @param mixed $system_prompt Input consumed by the Coordinate the anthropic request behavior implemented by this code path. operation.
+ * @param mixed $context Context values used to resolve request- or flow-specific behavior.
+ * @param mixed $test_mode Input consumed by the Coordinate the anthropic request behavior implemented by this code path. operation.
+ * @return mixed Result produced by the anthropic request operation.
 	 */
 	private function anthropic_request( $message, $system_prompt, $context = array(), $test_mode = false ) {
 		return $this->wp_ai_chat_request( 'anthropic', $message, $system_prompt, $context, $test_mode );
 	}
 
 	/**
-	 * XAI Grok.
-	 *
-	 * @param mixed $message       Input consumed by the Send the remote request required for xai request and normalize its result. operation.
-	 * @param mixed $system_prompt Input consumed by the Send the remote request required for xai request and normalize its result. operation.
-	 * @param mixed $context       Context values used to resolve request- or flow-specific behavior.
-	 * @param mixed $test_mode     Input consumed by the Send the remote request required for xai request and normalize its result. operation.
-	 * @return Mixed Result of the xai request operation, or a WP_Error when it cannot complete.
+	 * xAI Grok
+ * @param mixed $message Input consumed by the Send the remote request required for xai request and normalize its result. operation.
+ * @param mixed $system_prompt Input consumed by the Send the remote request required for xai request and normalize its result. operation.
+ * @param mixed $context Context values used to resolve request- or flow-specific behavior.
+ * @param mixed $test_mode Input consumed by the Send the remote request required for xai request and normalize its result. operation.
+ * @return mixed Result of the xai request operation, or a WP_Error when it cannot complete.
 	 */
 	private function xai_request( $message, $system_prompt, $context = array(), $test_mode = false ) {
 		// v1.9.0: Use flosc_get_setting() — reads flow settings first.
@@ -1530,23 +1517,22 @@ public function __construct() {
 
 	/**
 	 * Gemini chat via WordPress AI Client + AI Provider for Google.
-	 *
-	 * @param mixed $message       Input consumed by the Coordinate the gemini request behavior implemented by this code path. operation.
-	 * @param mixed $system_prompt Input consumed by the Coordinate the gemini request behavior implemented by this code path. operation.
-	 * @param mixed $context       Context values used to resolve request- or flow-specific behavior.
-	 * @param mixed $test_mode     Input consumed by the Coordinate the gemini request behavior implemented by this code path. operation.
-	 * @return Mixed Result produced by the gemini request operation.
+ * @param mixed $message Input consumed by the Coordinate the gemini request behavior implemented by this code path. operation.
+ * @param mixed $system_prompt Input consumed by the Coordinate the gemini request behavior implemented by this code path. operation.
+ * @param mixed $context Context values used to resolve request- or flow-specific behavior.
+ * @param mixed $test_mode Input consumed by the Coordinate the gemini request behavior implemented by this code path. operation.
+ * @return mixed Result produced by the gemini request operation.
 	 */
 	private function gemini_request( $message, $system_prompt, $context = array(), $test_mode = false ) {
 		return $this->wp_ai_chat_request( 'gemini', $message, $system_prompt, $context, $test_mode );
 	}
 
-/**
- * Persist the ai response state in WordPress storage.
- *
- * @param mixed $response Input consumed by the Persist the ai response state in Word Press storage. operation.
- * @return Mixed Result produced by the ai response operation.
- */
+		/**
+	 * Persist the ai response state in WordPress storage.
+	 *
+	 * @param mixed $response Input consumed by the Persist the ai response state in Word Press storage. operation.
+	 * @return mixed Result produced by the ai response operation.
+	 */
 private function validate_ai_response( $response ) {
 		if ( empty( $response ) ) {
 			return $response;
@@ -1583,8 +1569,7 @@ private function validate_ai_response( $response ) {
 
 	/**
 	 * Get FloscFlow Identity (helper)
-	 *
-	 * @return Array Structured floscflow identity data.
+ * @return array Structured floscflow identity data.
 	 */
 	private function get_floscflow_identity() {
 		$currency = flosc_get_setting( 'currency', 'EUR' );

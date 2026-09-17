@@ -1,6 +1,6 @@
 <?php
 /**
- * Domain collaborator — FLOSC_Session_Rest.
+ * Domain collaborator — FLOSC_Session_Rest
  *
  * @package FLOSC
  */
@@ -14,25 +14,24 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class FLOSC_Session_Rest {
 
-	/**
-	 */
+	/** @var FLOSC_Framework */
 	private $flosc;
 
-/**
- * Coordinate the construct behavior implemented by this code path.
- *
- * @param mixed $flosc Input consumed by the Coordinate the construct behavior implemented by this code path. operation.
- */
+		/**
+	 * Coordinate the construct behavior implemented by this code path.
+	 *
+	 * @param mixed $flosc Input consumed by the Coordinate the construct behavior implemented by this code path. operation.
+	 */
 public function __construct( $flosc ) {
 		$this->flosc = $flosc;
 	}
 
-/**
- * Resolve the current sessions value from the available WordPress and flow state.
- *
- * @param mixed $request Request object carrying the input consumed by this handler.
- * @return Mixed Result of the sessions operation, or a WP_Error when it cannot complete.
- */
+		/**
+	 * Resolve the current sessions value from the available WordPress and flow state.
+	 *
+	 * @param mixed $request Request object carrying the input consumed by this handler.
+	 * @return mixed Result of the sessions operation, or a WP_Error when it cannot complete.
+	 */
 public function get_sessions( $request ) {
 		$user_id = get_current_user_id();
 		if ( $user_id <= 0 ) {
@@ -64,9 +63,8 @@ public function get_sessions( $request ) {
 
 	/**
 	 * Get a single session by ID (owner + flow scoped; fail closed).
-	 *
-	 * @param mixed $request Request object carrying the input consumed by this handler.
-	 * @return Mixed Result of the single session operation, or a WP_Error when it cannot complete.
+ * @param mixed $request Request object carrying the input consumed by this handler.
+ * @return mixed Result of the single session operation, or a WP_Error when it cannot complete.
 	 */
 	public function get_single_session( $request ) {
 		$user_id = get_current_user_id();
@@ -115,12 +113,12 @@ public function get_sessions( $request ) {
 		);
 	}
 
-/**
- * Create the WordPress data required for session.
- *
- * @param mixed $request Request object carrying the input consumed by this handler.
- * @return Mixed Result of the session operation, or a WP_Error when it cannot complete.
- */
+		/**
+	 * Create the WordPress data required for session.
+	 *
+	 * @param mixed $request Request object carrying the input consumed by this handler.
+	 * @return mixed Result of the session operation, or a WP_Error when it cannot complete.
+	 */
 public function create_session( $request ) {
 		// New chat = new session on THIS flow only.
 		$title   = 'New Chat';
@@ -225,7 +223,7 @@ public function create_session( $request ) {
 	 *
 	 * @param int    $user_id User ID.
 	 * @param string $flow_id Flow stem.
-	 * @return String.
+	 * @return string
 	 */
 	public function get_user_state_for_session_limits( $user_id, $flow_id = '' ) {
 		$user_id = (int) $user_id;
@@ -252,7 +250,7 @@ public function create_session( $request ) {
 	 * Guest chat sidebar flags: default true if key never saved; ''/'0' = false.
 	 *
 	 * @param string $key Flow setting key (guest_can_delete_chats | guest_can_rename_chats).
-	 * @return Bool.
+	 * @return bool
 	 */
 	public function flosc_guest_chat_flag_enabled( $key ) {
 		$key = sanitize_key( (string) $key );
@@ -278,11 +276,11 @@ public function create_session( $request ) {
 	}
 
 	/**
-	 * Delete a session.
+	 * Delete a session
 	 *
 	 * @since 8.0.11
-	 * @param mixed $request Request object carrying the input consumed by this handler.
-	 * @return Mixed Result of the session operation, or a WP_Error when it cannot complete.
+ * @param mixed $request Request object carrying the input consumed by this handler.
+ * @return mixed Result of the session operation, or a WP_Error when it cannot complete.
 	 */
 	public function delete_session( $request ) {
 		$session_id = absint( $request->get_param( 'id' ) );
@@ -328,9 +326,8 @@ public function create_session( $request ) {
 
 	/**
 	 * Rename a session (owner + flow scoped).
-	 *
-	 * @param mixed $request Request object carrying the input consumed by this handler.
-	 * @return Mixed Result of the rename session operation, or a WP_Error when it cannot complete.
+ * @param mixed $request Request object carrying the input consumed by this handler.
+ * @return mixed Result of the rename session operation, or a WP_Error when it cannot complete.
 	 */
 	public function rename_session( $request ) {
 		$session_id = absint( $request->get_param( 'id' ) );
@@ -417,9 +414,8 @@ public function create_session( $request ) {
 	/**
 	 * Delete a DO session directory after its data has been pulled to WP.
 	 * Fire-and-forget: failures are logged but do not block the login flow.
-	 *
-	 * @param mixed $session_id Identifier used to select the record involved in the Remove the Word Press data associated with session from do. operation.
-	 * @return Mixed Result of the session from do operation, or a WP_Error when it cannot complete.
+ * @param mixed $session_id Identifier used to select the record involved in the Remove the Word Press data associated with session from do. operation.
+ * @return mixed Result of the session from do operation, or a WP_Error when it cannot complete.
 	 */
 	public function delete_session_from_do( $session_id ) {
 		if ( ! preg_match( '/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $session_id ) ) {
@@ -442,10 +438,9 @@ public function create_session( $request ) {
 
 	/**
 	 * Normalize client session id values (numeric, hex, opaque strings)
-	 * Into a stable positive integer for storage/log/token accounting.
-	 *
-	 * @param mixed $session_id_raw Identifier used to select the record involved in the Coordinate the normalize session id behavior implemented by this code path. operation.
-	 * @return Mixed Result produced by the normalize session id operation.
+	 * into a stable positive integer for storage/log/token accounting.
+ * @param mixed $session_id_raw Identifier used to select the record involved in the Coordinate the normalize session id behavior implemented by this code path. operation.
+ * @return mixed Result produced by the normalize session id operation.
 	 */
 	public function flosc_normalize_session_id( $session_id_raw ) {
 		$raw = trim( (string) $session_id_raw );
@@ -471,14 +466,14 @@ public function create_session( $request ) {
 	/**
 	 * Stable, per-visitor key for a concierge desk.
 	 *
-	 * The desk is scoped to ONE guest. A logged-in user keys by user id; an.
-	 * Anonymous visitor keys by their session id when present, otherwise by a.
-	 * Salted hash of their IP. It must NEVER fall back to a shared constant.
-	 * (e.g. "user_0") — that would leak one guest's open desk into every other.
-	 * Anonymous visitor's chat (it contaminated even the welcome greeting).
+	 * The desk is scoped to ONE guest. A logged-in user keys by user id; an
+	 * anonymous visitor keys by their session id when present, otherwise by a
+	 * salted hash of their IP. It must NEVER fall back to a shared constant
+	 * (e.g. "user_0") — that would leak one guest's open desk into every other
+	 * anonymous visitor's chat (it contaminated even the welcome greeting).
 	 *
 	 * @param int $session_id Frontend session id (0 when absent).
-	 * @return String.
+	 * @return string
 	 */
 	public function flosc_concierge_session_key( $session_id ) {
 		if ( is_user_logged_in() ) {

@@ -1,11 +1,11 @@
 <?php
 /**
- * FLOSC Sample Text-Based Quiz.
+ * FLOSC Sample Text-Based Quiz
  *
  * User enters comma-separated values; scored by set intersection.
  * Example: Correct answers = 1 through 10 (one per block)
- * User enters "3,7,9" = 30%.
- * User enters "1,3,7,10" = 40%.
+ *          User enters "3,7,9" = 30%
+ *          User enters "1,3,7,10" = 40%
  *
  * Admin content format: one answer per block, separated by a blank line.
  * Each block: answer value, then optional CorrectContent: and RelatedContent: lines.
@@ -24,83 +24,83 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class FLOSC_Sample_Text_Based_Quiz extends FLOSC_Abstract_Quiz_Type {
 
-/**
- * Resolve the current id value from the available WordPress and flow state.
- *
- * @return Mixed Result produced by the id operation.
- */
+		/**
+	 * Resolve the current id value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the id operation.
+	 */
 public function get_id() {
 		return 'flosc_sample_data_numbers_quiz';
 	}
 
-/**
- * Resolve the current name value from the available WordPress and flow state.
- *
- * @return Mixed Result produced by the name operation.
- */
+		/**
+	 * Resolve the current name value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the name operation.
+	 */
 public function get_name() {
 		return 'FLOSC Sample 1-10 Numbers Quiz';
 	}
 
-/**
- * Resolve the current description value from the available WordPress and flow state.
- *
- * @return Mixed Result produced by the description operation.
- */
+		/**
+	 * Resolve the current description value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the description operation.
+	 */
 public function get_description() {
 		return 'Input the following numbers: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10';
 	}
 
-/**
- * Resolve the current icon value from the available WordPress and flow state.
- *
- * @return Mixed Result produced by the icon operation.
- */
+		/**
+	 * Resolve the current icon value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the icon operation.
+	 */
 public function get_icon() {
 		return '✍️';
 	}
 
-/**
- * Coordinate the needs audio behavior implemented by this code path.
- *
- * @return Bool Whether needs audio applies to the current state.
- */
+		/**
+	 * Coordinate the needs audio behavior implemented by this code path.
+	 *
+	 * @return bool Whether needs audio applies to the current state.
+	 */
 public function needs_audio() {
 		return false;
 	}
 
-/**
- * Coordinate the needs stt behavior implemented by this code path.
- *
- * @return Bool Whether needs stt applies to the current state.
- */
+		/**
+	 * Coordinate the needs stt behavior implemented by this code path.
+	 *
+	 * @return bool Whether needs stt applies to the current state.
+	 */
 public function needs_stt() {
 		return false;
 	}
 
-/**
- * Coordinate the needs ai analysis behavior implemented by this code path.
- *
- * @return Bool Whether needs ai analysis applies to the current state.
- */
+		/**
+	 * Coordinate the needs ai analysis behavior implemented by this code path.
+	 *
+	 * @return bool Whether needs ai analysis applies to the current state.
+	 */
 public function needs_ai_analysis() {
 		return false;
 	}
 
-/**
- * Resolve the current instructions value from the available WordPress and flow state.
- *
- * @return Mixed Result produced by the instructions operation.
- */
+		/**
+	 * Resolve the current instructions value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the instructions operation.
+	 */
 public function get_instructions() {
 		return "One answer per block, separated by a blank line.\n\nEach block:\n  answer value\n  CorrectContent: post:my-post-slug\n  RelatedContent: post:slug-one, tag:my-tag\n\nScoring: set-based — order doesn't matter. Score = how many correct answers the user included / total.\n\nPrefixes — always required, no quotes:\n  post:slug         — post by URL slug; use post:parent/child if the same slug exists under multiple parents\n  id:1042           — one post by numeric ID\n  category:slug     — posts in a category; category:parent/child for sub-categories\n  tag:slug          — posts with a tag (use the tag slug, not the display name)\n  search:any words  — keyword search (avoid: unreliable, may match wrong posts)\n\nMultiple CorrectContent: and RelatedContent: lines all accumulate. CorrectContent items are shown first (tier 1) when a learner asks to review what they missed.\n\nLegacy flat format also accepted (no content refs): 1,2,3,4,5,6,7,8,9,10";
 	}
 
-/**
- * Resolve the current default content value from the available WordPress and flow state.
- *
- * @return Mixed Result produced by the default content operation.
- */
+		/**
+	 * Resolve the current default content value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the default content operation.
+	 */
 public function get_default_content() {
 		$blocks = array(
 			"1\nCorrectContent: post:lesson-one\nRelatedContent: post:lesson-two, post:lesson-three",
@@ -117,12 +117,12 @@ public function get_default_content() {
 		return implode( "\n\n", $blocks );
 	}
 
-/**
- * Validate the input and trust conditions required for input.
- *
- * @param mixed $input Input consumed by the Validate the input and trust conditions required for input. operation.
- * @return Bool Whether input applies to the current state.
- */
+		/**
+	 * Validate the input and trust conditions required for input.
+	 *
+	 * @param mixed $input Input consumed by the Validate the input and trust conditions required for input. operation.
+	 * @return bool Whether input applies to the current state.
+	 */
 public function validate_input( $input ) {
 		if ( empty( $input ) || ! is_string( $input ) ) {
 			return new WP_Error( 'invalid_input', __( 'Please enter your answers.', 'flosc' ) );
@@ -138,14 +138,14 @@ public function validate_input( $input ) {
 		return true;
 	}
 
-/**
- * Coordinate the analyze behavior implemented by this code path.
- *
- * @param mixed $input            Input consumed by the Coordinate the analyze behavior implemented by this code path. operation.
- * @param mixed $expected_content Input consumed by the Coordinate the analyze behavior implemented by this code path. operation.
- * @param mixed $context          Context values used to resolve request- or flow-specific behavior.
- * @return Array Structured analyze data.
- */
+		/**
+	 * Coordinate the analyze behavior implemented by this code path.
+	 *
+	 * @param mixed $input Input consumed by the Coordinate the analyze behavior implemented by this code path. operation.
+	 * @param mixed $expected_content Input consumed by the Coordinate the analyze behavior implemented by this code path. operation.
+	 * @param mixed $context Context values used to resolve request- or flow-specific behavior.
+	 * @return array Structured analyze data.
+	 */
 public function analyze( $input, $expected_content, $context = array() ) {
 		$separator      = $this->get_setting( 'separator', ',' );
 		$case_sensitive = $this->get_setting( 'case_sensitive', false );
@@ -219,11 +219,11 @@ public function analyze( $input, $expected_content, $context = array() ) {
 		);
 	}
 
-/**
- * Resolve the current settings fields value from the available WordPress and flow state.
- *
- * @return Array Structured settings fields data.
- */
+		/**
+	 * Resolve the current settings fields value from the available WordPress and flow state.
+	 *
+	 * @return array Structured settings fields data.
+	 */
 public function get_settings_fields() {
 		return array(
 			'separator'      => array(
@@ -247,11 +247,11 @@ public function get_settings_fields() {
 		);
 	}
 
-/**
- * Resolve the current default response templates value from the available WordPress and flow state.
- *
- * @return Array Structured default response templates data.
- */
+		/**
+	 * Resolve the current default response templates value from the available WordPress and flow state.
+	 *
+	 * @return array Structured default response templates data.
+	 */
 public function get_default_response_templates() {
 		return array(
 			'0-30'   => "**Score: {score}%**\n\nYou got {total_correct} out of {total_possible} correct.\n\n{lesson_recommendations}",
@@ -261,14 +261,14 @@ public function get_default_response_templates() {
 		);
 	}
 
-/**
- * Coordinate the format results behavior implemented by this code path.
- *
- * @param mixed $analysis           Input consumed by the Coordinate the format results behavior implemented by this code path. operation.
- * @param mixed $lessons            Input consumed by the Coordinate the format results behavior implemented by this code path. operation.
- * @param mixed $response_templates Input consumed by the Coordinate the format results behavior implemented by this code path. operation.
- * @return Mixed Result produced by the format results operation.
- */
+		/**
+	 * Coordinate the format results behavior implemented by this code path.
+	 *
+	 * @param mixed $analysis Input consumed by the Coordinate the format results behavior implemented by this code path. operation.
+	 * @param mixed $lessons Input consumed by the Coordinate the format results behavior implemented by this code path. operation.
+	 * @param mixed $response_templates Input consumed by the Coordinate the format results behavior implemented by this code path. operation.
+	 * @return mixed Result produced by the format results operation.
+	 */
 public function format_results( $analysis, $lessons, $response_templates ) {
 		$score        = $analysis['score'];
 		$response_key = $analysis['response_key'];
@@ -313,18 +313,17 @@ public function format_results( $analysis, $lessons, $response_templates ) {
 	/**
 	 * Parse expected_content into answers array + per-answer content map.
 	 *
-	 * Primary format — one answer per block, separated by blank lines.
+	 * Primary format — one answer per block, separated by blank lines
 	 * (consistent with the standard block format):
-	 * 1.
-	 * CorrectContent: post:lesson-one.
-	 * RelatedContent: post:lesson-two, post:lesson-three.
+	 *   1
+	 *   CorrectContent: post:lesson-one
+	 *   RelatedContent: post:lesson-two, post:lesson-three
 	 *
 	 * Legacy formats still accepted (backward compat):
-	 * Flat:  1,2,3,4,5,6,7,8,9,10.
-	 * Pipe:  1|CorrectContent: post:lesson-one|RelatedContent: post:lesson-two.
-	 *
-	 * @param mixed $expected_content Input consumed by the Coordinate the parse content behavior implemented by this code path. operation.
-	 * @return Array Structured parse content data.
+	 *   Flat:  1,2,3,4,5,6,7,8,9,10
+	 *   Pipe:  1|CorrectContent: post:lesson-one|RelatedContent: post:lesson-two
+ * @param mixed $expected_content Input consumed by the Coordinate the parse content behavior implemented by this code path. operation.
+ * @return array Structured parse content data.
 	 */
 	private function parse_content( $expected_content ) {
 		$answers     = array();
@@ -424,10 +423,9 @@ public function format_results( $analysis, $lessons, $response_templates ) {
 	/**
 	 * Parse a flat input string into an array of answer strings.
 	 * Used for user input only (never for expected_content).
-	 *
-	 * @param mixed $input     Input consumed by the Coordinate the parse input behavior implemented by this code path. operation.
-	 * @param mixed $separator Input consumed by the Coordinate the parse input behavior implemented by this code path. operation.
-	 * @return Array Structured parse input data.
+ * @param mixed $input Input consumed by the Coordinate the parse input behavior implemented by this code path. operation.
+ * @param mixed $separator Input consumed by the Coordinate the parse input behavior implemented by this code path. operation.
+ * @return array Structured parse input data.
 	 */
 	private function parse_input( $input, $separator ) {
 		if ( empty( $input ) ) {

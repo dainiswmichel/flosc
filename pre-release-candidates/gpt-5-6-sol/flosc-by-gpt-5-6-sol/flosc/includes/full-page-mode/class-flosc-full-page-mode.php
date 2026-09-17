@@ -14,24 +14,23 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class FLOSC_Full_Page_Mode {
 
-	/**
-	 */
+	/** @var FLOSC_Framework */
 	private $flosc;
 
-/**
- * Coordinate the construct behavior implemented by this code path.
- *
- * @param mixed $flosc Input consumed by the Coordinate the construct behavior implemented by this code path. operation.
- */
+		/**
+	 * Coordinate the construct behavior implemented by this code path.
+	 *
+	 * @param mixed $flosc Input consumed by the Coordinate the construct behavior implemented by this code path. operation.
+	 */
 public function __construct( $flosc ) {
 		$this->flosc = $flosc;
 	}
 
-/**
- * Determine whether the current state satisfies request.
- *
- * @return Bool Whether request applies to the current state.
- */
+		/**
+	 * Determine whether the current state satisfies request.
+	 *
+	 * @return bool Whether request applies to the current state.
+	 */
 public function is_flosc_request() {
 		// Full-page chat SPA only: custom domain, flow slug, or flosc_ivr rewrite.
 		// Intentionally ignores forced_flow — companion knowledge-hub resolution sets.
@@ -42,22 +41,22 @@ public function is_flosc_request() {
 	}
 
 	/**
-	 * Check if currently serving via custom domain.
+	 * Check if currently serving via custom domain
 	 *
 	 * @deprecated Use is_flosc_request() instead for most cases
 	 * @since 1.1.9
-	 * @return Bool Whether custom domain applies to the current state.
+ * @return bool Whether custom domain applies to the current state.
 	 */
 	public static function is_custom_domain() {
 		return defined( 'FLOSC_CUSTOM_DOMAIN_ACTIVE' ) && FLOSC_CUSTOM_DOMAIN_ACTIVE;
 	}
 
 	/**
-	 * Get the appropriate app URL for current or specified flow.
+	 * Get the appropriate app URL for current or specified flow
 	 *
 	 * @since 1.2.2
-	 * @param mixed $flow Input consumed by the Resolve the current app url value from the available Word Press and flow state. operation.
-	 * @return Mixed Result produced by the app url operation.
+ * @param mixed $flow Input consumed by the Resolve the current app url value from the available Word Press and flow state. operation.
+ * @return mixed Result produced by the app url operation.
 	 */
 	public function get_app_url( $flow = null ) {
 		if ( null === $flow ) {
@@ -96,12 +95,12 @@ public function is_flosc_request() {
 		return home_url( '/' . $slug . '/' );
 	}
 
-/**
- * Coordinate the add query vars behavior implemented by this code path.
- *
- * @param mixed $vars Input consumed by the Coordinate the add query vars behavior implemented by this code path. operation.
- * @return Mixed Result produced by the add query vars operation.
- */
+		/**
+	 * Coordinate the add query vars behavior implemented by this code path.
+	 *
+	 * @param mixed $vars Input consumed by the Coordinate the add query vars behavior implemented by this code path. operation.
+	 * @return mixed Result produced by the add query vars operation.
+	 */
 public function add_query_vars( $vars ) {
 		$vars[] = 'flosc_app';
 		$vars[] = 'flosc_flow'; // v1.2.2: Multi-flow support.
@@ -110,11 +109,11 @@ public function add_query_vars( $vars ) {
 		return $vars;
 	}
 
-/**
- * Register the WordPress hooks that connect app route to this object.
- *
- * @return Mixed Result produced by the app route operation.
- */
+		/**
+	 * Register the WordPress hooks that connect app route to this object.
+	 *
+	 * @return mixed Result produced by the app route operation.
+	 */
 public function handle_app_route() {
 		// v1.2.1: Use centralized is_flosc_request() helper.
 		// This reads from flosc_custom_domain setting (not hardcoded).
@@ -201,11 +200,11 @@ public function handle_app_route() {
 		exit;
 	}
 
-/**
- * Resolve the current requested legal page value from the available WordPress and flow state.
- *
- * @return Mixed Result produced by the requested legal page operation.
- */
+		/**
+	 * Resolve the current requested legal page value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the requested legal page operation.
+	 */
 public function get_requested_legal_page() {
 		$request_uri = sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ?? '' ) );
 		if ( '' === $request_uri ) {
@@ -228,11 +227,11 @@ public function get_requested_legal_page() {
 		return in_array( $path, $legal_pages, true ) ? $path : null;
 	}
 
-/**
- * Resolve the current current request base url value from the available WordPress and flow state.
- *
- * @return Mixed Result produced by the current request base url operation.
- */
+		/**
+	 * Resolve the current current request base url value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the current request base url operation.
+	 */
 public function get_current_request_base_url() {
 		$host = sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ?? '' ) );
 		if ( '' === $host ) {
@@ -242,11 +241,11 @@ public function get_current_request_base_url() {
 		return ( is_ssl() ? 'https://' : 'http://' ) . $host . '/';
 	}
 
-/**
- * Render the WordPress interface for legal page.
- *
- * @param mixed $page Input consumed by the Render the Word Press interface for legal page. operation.
- */
+		/**
+	 * Render the WordPress interface for legal page.
+	 *
+	 * @param mixed $page Input consumed by the Render the Word Press interface for legal page. operation.
+	 */
 public function render_legal_page( $page ) {
 		status_header( 200 );
 		nocache_headers();
@@ -334,11 +333,11 @@ public function render_legal_page( $page ) {
 		echo '</html>';
 	}
 
-/**
- * Resolve the current codex charter content value from the available WordPress and flow state.
- *
- * @return Mixed Result produced by the codex charter content operation.
- */
+		/**
+	 * Resolve the current codex charter content value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the codex charter content operation.
+	 */
 public function get_codex_charter_content() {
 		return implode(
 			"\n",
@@ -382,8 +381,8 @@ public function get_codex_charter_content() {
 	}
 
 	/**
-	 * Extracted app rendering to separate method.
-	 * Called by handle_app_route() for both custom domain and slug routing.
+	 * Extracted app rendering to separate method
+	 * Called by handle_app_route() for both custom domain and slug routing
 	 *
 	 * @since 1.2.0
 	 */

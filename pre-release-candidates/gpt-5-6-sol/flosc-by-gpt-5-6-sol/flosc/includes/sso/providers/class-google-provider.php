@@ -1,6 +1,6 @@
 <?php
 /**
- * Google SSO Provider.
+ * Google SSO Provider
  *
  * Implements Google OAuth2 login for FLOSC.
  *
@@ -18,12 +18,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Google Provider Class.
+ * Google Provider Class
  */
 class Google_Provider extends SSO_Provider_Base {
 
 	/**
-	 * Constructor.
+	 * Constructor
 	 */
 	public function __construct() {
 		$this->provider_id   = 'google';
@@ -45,10 +45,10 @@ class Google_Provider extends SSO_Provider_Base {
 	}
 
 	/**
-	 * Customize authorization parameters for Google.
+	 * Customize authorization parameters for Google
 	 *
 	 * @param array $params Default parameters.
-	 * @return Array Modified parameters.
+	 * @return array Modified parameters
 	 */
 	protected function customize_auth_params( $params ) {
 		// Add Google-specific parameters.
@@ -68,10 +68,10 @@ class Google_Provider extends SSO_Provider_Base {
 	 *
 	 * @param string $access_token OAuth access token.
 	 * @param array  $token_data   Full token response. Unused by this provider;
-	 * Present because OAuth2_Handler passes the same.
-	 * Arguments to every provider, and Apple reads.
-	 * Its id_token and form_post claims from it.
-	 * @return Array|WP_Error User data, or WP_Error if the call fails.
+	 *                             present because OAuth2_Handler passes the same
+	 *                             arguments to every provider, and Apple reads
+	 *                             its id_token and form_post claims from it.
+	 * @return array|WP_Error User data, or WP_Error if the call fails.
 	 */
 	public function get_user_info( $access_token, $token_data = array() ) {
 		$url = add_query_arg(
@@ -110,10 +110,10 @@ class Google_Provider extends SSO_Provider_Base {
 	}
 
 	/**
-	 * Normalize Google user data to standard format.
+	 * Normalize Google user data to standard format
 	 *
 	 * @param array $raw_data Raw user data from Google.
-	 * @return Array Normalized user data.
+	 * @return array Normalized user data
 	 */
 	protected function normalize_user_data( $raw_data ) {
 		// v1.4.6: Handle both v2 (id) and v3 (sub) response formats.
@@ -146,10 +146,10 @@ class Google_Provider extends SSO_Provider_Base {
 	}
 
 	/**
-	 * Get provider-specific user ID.
+	 * Get provider-specific user ID
 	 *
 	 * @param array $raw_data Raw user data.
-	 * @return String Provider user ID.
+	 * @return string Provider user ID
 	 */
 	public function get_provider_user_id( $raw_data ) {
 		// v1.4.6: Handle both v2 (id) and v3 (sub) formats.
@@ -157,9 +157,9 @@ class Google_Provider extends SSO_Provider_Base {
 	}
 
 	/**
-	 * Get button colors.
+	 * Get button colors
 	 *
-	 * @return Array.
+	 * @return array
 	 */
 	public function get_button_colors() {
 		return array(
@@ -170,9 +170,9 @@ class Google_Provider extends SSO_Provider_Base {
 	}
 
 	/**
-	 * Get setup instructions for Google OAuth.
+	 * Get setup instructions for Google OAuth
 	 *
-	 * @return String HTML instructions.
+	 * @return string HTML instructions
 	 */
 	public function get_setup_instructions() {
 		$callback_url = $this->get_callback_url();

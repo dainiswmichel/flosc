@@ -1,6 +1,6 @@
 <?php
 /**
- * FLOSC Condition Evaluator.
+ * FLOSC Condition Evaluator
  *
  * Evaluates IVR message conditions against current user/session state.
  *
@@ -23,9 +23,8 @@ class FLOSC_Condition_Evaluator {
 	private $session_shown = array();
 
 	/**
-	 * Constructor.
-	 *
-	 * @param mixed $context Context values used to resolve request- or flow-specific behavior.
+	 * Constructor
+ * @param mixed $context Context values used to resolve request- or flow-specific behavior.
 	 */
 	public function __construct( $context = array() ) {
 		$this->context = $context;
@@ -33,29 +32,26 @@ class FLOSC_Condition_Evaluator {
 	}
 
 	/**
-	 * Set context.
-	 *
-	 * @param mixed $context Context values used to resolve request- or flow-specific behavior.
+	 * Set context
+ * @param mixed $context Context values used to resolve request- or flow-specific behavior.
 	 */
 	public function set_context( $context ) {
 		$this->context = $context;
 	}
 
 	/**
-	 * Update context value.
-	 *
-	 * @param mixed $key   Name or key used to select the Save the validated context state for later requests. value.
-	 * @param mixed $value Value consumed or normalized by the Save the validated context state for later requests. operation.
+	 * Update context value
+ * @param mixed $key Name or key used to select the Save the validated context state for later requests. value.
+ * @param mixed $value Value consumed or normalized by the Save the validated context state for later requests. operation.
 	 */
 	public function update_context( $key, $value ) {
 		$this->context[ $key ] = $value;
 	}
 
 	/**
-	 * Evaluate a condition string.
-	 *
-	 * @param mixed $condition_string Input consumed by the Coordinate the evaluate behavior implemented by this code path. operation.
-	 * @return Bool Whether evaluate applies to the current state.
+	 * Evaluate a condition string
+ * @param mixed $condition_string Input consumed by the Coordinate the evaluate behavior implemented by this code path. operation.
+ * @return bool Whether evaluate applies to the current state.
 	 */
 	public function evaluate( $condition_string ) {
 		$condition_string = trim( $condition_string );
@@ -76,9 +72,8 @@ class FLOSC_Condition_Evaluator {
 
 	/**
 	 * Evaluate a complex expression with && || ! ()
-	 *
-	 * @param mixed $expr Input consumed by the Coordinate the evaluate expression behavior implemented by this code path. operation.
-	 * @return Bool Whether evaluate expression applies to the current state.
+ * @param mixed $expr Input consumed by the Coordinate the evaluate expression behavior implemented by this code path. operation.
+ * @return bool Whether evaluate expression applies to the current state.
 	 */
 	private function evaluate_expression( $expr ) {
 		$expr = trim( $expr );
@@ -132,10 +127,9 @@ class FLOSC_Condition_Evaluator {
 	}
 
 	/**
-	 * Evaluate a single condition.
-	 *
-	 * @param mixed $condition Input consumed by the Coordinate the evaluate single behavior implemented by this code path. operation.
-	 * @return Bool Whether evaluate single applies to the current state.
+	 * Evaluate a single condition
+ * @param mixed $condition Input consumed by the Coordinate the evaluate single behavior implemented by this code path. operation.
+ * @return bool Whether evaluate single applies to the current state.
 	 */
 	private function evaluate_single( $condition ) {
 		$condition = trim( $condition );
@@ -310,12 +304,11 @@ class FLOSC_Condition_Evaluator {
 	 * Parse Michel timestamp with optional timezone token.
 	 *
 	 * Supported timezone forms:
-	 * - UTC.
-	 * - UTC+2, UTC+02, UTC+02:00, UTC-5, UTC-05:30.
-	 * - No explicit token: fallback to site timezone, then system timezone.
-	 *
-	 * @param mixed $raw_value Value consumed or normalized by the Coordinate the parse mts with timezone behavior implemented by this code path. operation.
-	 * @return Mixed Result produced by the parse mts with timezone operation.
+	 * - UTC
+	 * - UTC+2, UTC+02, UTC+02:00, UTC-5, UTC-05:30
+	 * - No explicit token: fallback to site timezone, then system timezone
+ * @param mixed $raw_value Value consumed or normalized by the Coordinate the parse mts with timezone behavior implemented by this code path. operation.
+ * @return mixed Result produced by the parse mts with timezone operation.
 	 */
 	private function parse_mts_with_timezone( $raw_value ) {
 		$raw_value = trim( (string) $raw_value );
@@ -354,10 +347,10 @@ class FLOSC_Condition_Evaluator {
 	/**
 	 * Build a DateTimeZone from a name or offset, or say it could not be done.
 	 *
-	 * DateTimeZone throws on anything it does not recognise, and the resolver.
-	 * Below has four sources to try in turn. Answering "no" by returning null.
-	 * Lets that chain read as a chain, instead of four try/catch blocks whose.
-	 * Catch has nothing to do.
+	 * DateTimeZone throws on anything it does not recognise, and the resolver
+	 * below has four sources to try in turn. Answering "no" by returning null
+	 * lets that chain read as a chain, instead of four try/catch blocks whose
+	 * catch has nothing to do.
 	 *
 	 * @param string $name A timezone name, or a UTC offset like '+02:00'.
 	 * @return DateTimeZone|null The zone, or null when $name is empty or unusable.
@@ -384,8 +377,8 @@ class FLOSC_Condition_Evaluator {
 	 * 3. The system timezone PHP is running under.
 	 * 4. UTC, which always resolves.
 	 *
-	 * @param string $token Timezone token from the condition: 'UTC', or an.
-	 * Offset such as UTC+2, UTC+02, UTC+02:00 or UTC-05:30.
+	 * @param string $token Timezone token from the condition: 'UTC', or an
+	 *                      offset such as UTC+2, UTC+02, UTC+02:00 or UTC-05:30.
 	 * @return DateTimeZone The resolved zone. Never null -- UTC is the floor.
 	 */
 	private function resolve_timezone( $token = '' ) {
@@ -439,12 +432,11 @@ class FLOSC_Condition_Evaluator {
 	}
 
 	/**
-	 * Compare values with operator.
-	 *
-	 * @param mixed $left     Input consumed by the Coordinate the compare behavior implemented by this code path. operation.
-	 * @param mixed $operator Input consumed by the Coordinate the compare behavior implemented by this code path. operation.
-	 * @param mixed $right    Input consumed by the Coordinate the compare behavior implemented by this code path. operation.
-	 * @return Bool Whether compare applies to the current state.
+	 * Compare values with operator
+ * @param mixed $left Input consumed by the Coordinate the compare behavior implemented by this code path. operation.
+ * @param mixed $operator Input consumed by the Coordinate the compare behavior implemented by this code path. operation.
+ * @param mixed $right Input consumed by the Coordinate the compare behavior implemented by this code path. operation.
+ * @return bool Whether compare applies to the current state.
 	 */
 	private function compare( $left, $operator, $right ) {
 		switch ( $operator ) {
@@ -464,11 +456,10 @@ class FLOSC_Condition_Evaluator {
 	}
 
 	/**
-	 * Check offer state.
-	 *
-	 * @param mixed $offer_id Identifier used to select the record involved in the Coordinate the check offer state behavior implemented by this code path. operation.
-	 * @param mixed $state    Input consumed by the Coordinate the check offer state behavior implemented by this code path. operation.
-	 * @return Bool Whether check offer state applies to the current state.
+	 * Check offer state
+ * @param mixed $offer_id Identifier used to select the record involved in the Coordinate the check offer state behavior implemented by this code path. operation.
+ * @param mixed $state Input consumed by the Coordinate the check offer state behavior implemented by this code path. operation.
+ * @return bool Whether check offer state applies to the current state.
 	 */
 	private function check_offer_state( $offer_id, $state ) {
 		if ( ! $this->user_id ) {
@@ -479,11 +470,10 @@ class FLOSC_Condition_Evaluator {
 	}
 
 	/**
-	 * Mark offer state.
-	 *
-	 * @param mixed $offer_id Identifier used to select the record involved in the Persist the mark offer state state in Word Press storage. operation.
-	 * @param mixed $state    Input consumed by the Persist the mark offer state state in Word Press storage. operation.
-	 * @return Bool Whether mark offer state applies to the current state.
+	 * Mark offer state
+ * @param mixed $offer_id Identifier used to select the record involved in the Persist the mark offer state state in Word Press storage. operation.
+ * @param mixed $state Input consumed by the Persist the mark offer state state in Word Press storage. operation.
+ * @return bool Whether mark offer state applies to the current state.
 	 */
 	public function mark_offer_state( $offer_id, $state ) {
 		if ( ! $this->user_id ) {
@@ -494,29 +484,26 @@ class FLOSC_Condition_Evaluator {
 	}
 
 	/**
-	 * Check if message was shown this session.
-	 *
-	 * @param mixed $message_name Name or key used to select the Coordinate the was shown this session behavior implemented by this code path. value.
-	 * @return Mixed Result produced by the was shown this session operation.
+	 * Check if message was shown this session
+ * @param mixed $message_name Name or key used to select the Coordinate the was shown this session behavior implemented by this code path. value.
+ * @return mixed Result produced by the was shown this session operation.
 	 */
 	public function was_shown_this_session( $message_name ) {
 		return isset( $this->session_shown[ $message_name ] );
 	}
 
 	/**
-	 * Mark message as shown this session.
-	 *
-	 * @param mixed $message_name Name or key used to select the Coordinate the mark shown this session behavior implemented by this code path. value.
+	 * Mark message as shown this session
+ * @param mixed $message_name Name or key used to select the Coordinate the mark shown this session behavior implemented by this code path. value.
 	 */
 	public function mark_shown_this_session( $message_name ) {
 		$this->session_shown[ $message_name ] = true;
 	}
 
 	/**
-	 * Check if message was ever shown to user.
-	 *
-	 * @param mixed $message_name Name or key used to select the Coordinate the was ever shown behavior implemented by this code path. value.
-	 * @return Bool Whether was ever shown applies to the current state.
+	 * Check if message was ever shown to user
+ * @param mixed $message_name Name or key used to select the Coordinate the was ever shown behavior implemented by this code path. value.
+ * @return bool Whether was ever shown applies to the current state.
 	 */
 	public function was_ever_shown( $message_name ) {
 		if ( ! $this->user_id ) {
@@ -528,9 +515,8 @@ class FLOSC_Condition_Evaluator {
 
 	/**
 	 * Mark message as shown to user (persistent)
-	 *
-	 * @param mixed $message_name Name or key used to select the Persist the mark shown state in Word Press storage. value.
-	 * @return Bool Whether mark shown applies to the current state.
+ * @param mixed $message_name Name or key used to select the Persist the mark shown state in Word Press storage. value.
+ * @return bool Whether mark shown applies to the current state.
 	 */
 	public function mark_shown( $message_name ) {
 		if ( ! $this->user_id ) {
@@ -541,11 +527,10 @@ class FLOSC_Condition_Evaluator {
 	}
 
 	/**
-	 * Get all applicable messages for current state.
-	 *
-	 * @param mixed $messages Input consumed by the Resolve the current applicable messages value from the available Word Press and flow state. operation.
-	 * @param mixed $type     Input consumed by the Resolve the current applicable messages value from the available Word Press and flow state. operation.
-	 * @return Mixed Result produced by the applicable messages operation.
+	 * Get all applicable messages for current state
+ * @param mixed $messages Input consumed by the Resolve the current applicable messages value from the available Word Press and flow state. operation.
+ * @param mixed $type Input consumed by the Resolve the current applicable messages value from the available Word Press and flow state. operation.
+ * @return mixed Result produced by the applicable messages operation.
 	 */
 	public function get_applicable_messages( $messages, $type = null ) {
 		$applicable = array();
@@ -571,11 +556,10 @@ class FLOSC_Condition_Evaluator {
 	}
 
 	/**
-	 * Build context from user state.
-	 *
-	 * @param mixed $user_id    WordPress user ID whose Persist the context state in Word Press storage. state is being processed.
-	 * @param mixed $additional Input consumed by the Persist the context state in Word Press storage. operation.
-	 * @return Mixed Result produced by the context operation.
+	 * Build context from user state
+ * @param mixed $user_id WordPress user ID whose Persist the context state in Word Press storage. state is being processed.
+ * @param mixed $additional Input consumed by the Persist the context state in Word Press storage. operation.
+ * @return mixed Result produced by the context operation.
 	 */
 	public static function build_context( $user_id = null, $additional = array() ) {
 		$user_id = $user_id ? $user_id : get_current_user_id();

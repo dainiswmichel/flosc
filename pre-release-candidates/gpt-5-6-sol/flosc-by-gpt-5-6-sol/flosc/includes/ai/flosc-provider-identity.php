@@ -2,45 +2,45 @@
 /**
  * What FLOSC tells an AI provider about itself.
  *
- * Until now, nothing. A provider receiving FLOSC traffic saw an API key, a.
- * Model name and a prompt, with no way to tell that the request came from a.
- * WordPress plugin at all — let alone which one, which version, or which of.
- * Many installs. Assuming FLOSC is adopted widely, that is a provider's.
- * Problem as much as ours: they cannot recognise a client they cannot see.
+ * Until now, nothing. A provider receiving FLOSC traffic saw an API key, a
+ * model name and a prompt, with no way to tell that the request came from a
+ * WordPress plugin at all — let alone which one, which version, or which of
+ * many installs. Assuming FLOSC is adopted widely, that is a provider's
+ * problem as much as ours: they cannot recognise a client they cannot see.
  *
- * So every outbound call to an AI host now carries a User-Agent and one.
- * Structured trace header. Both are machine-to-machine; no visitor ever sees.
- * Them, and nothing here changes a single token of the prompt.
+ * So every outbound call to an AI host now carries a User-Agent and one
+ * structured trace header. Both are machine-to-machine; no visitor ever sees
+ * them, and nothing here changes a single token of the prompt.
  *
  * WHAT IS SENT, exactly:
  *
- * User-Agent: FLOSC/8.0.0 (+https://flosc.ai) DA1-Personality-Builder/3.1.2.
- * (FLOSC edition) WordPress/7.0.4 PHP/8.2.0.
+ *   User-Agent: FLOSC/8.0.0 (+https://flosc.ai) DA1-Personality-Builder/3.1.2
+ *               (FLOSC edition) WordPress/7.0.4 PHP/8.2.0
  *
- * X-DA1-Trace: v=1;app=flosc/8.0.0;bld=da1pb/3.1.2;ed=flosc;
- * Inst=<12 hex>;site=<domain>;flow=<8 hex>;prof=<8 hex>;
- * Kb=<8 hex>;tier=<v|g|m>;pair=<n>.
+ *   X-DA1-Trace: v=1;app=flosc/8.0.0;bld=da1pb/3.1.2;ed=flosc;
+ *                inst=<12 hex>;site=<domain>;flow=<8 hex>;prof=<8 hex>;
+ *                kb=<8 hex>;tier=<v|g|m>;pair=<n>
  *
- * WHAT IS NOT SENT: the visitor's id, name, email, IP, or the page they are.
- * On. Nothing that narrows a turn to one person. `tier` says what KIND of.
- * Turn it was — visitor, guest or member — and stops there.
+ * WHAT IS NOT SENT: the visitor's id, name, email, IP, or the page they are
+ * on. Nothing that narrows a turn to one person. `tier` says what KIND of
+ * turn it was — visitor, guest or member — and stops there.
  *
- * The install id is random and generated once. It is NOT derived from the.
- * Domain, so it survives a site moving house and cannot be reversed into one.
- * The domain, when sent, is sent plainly; a hashed domain is not anonymous,.
- * Because there are only so many domains and anyone can hash all of them.
+ * The install id is random and generated once. It is NOT derived from the
+ * domain, so it survives a site moving house and cannot be reversed into one.
+ * The domain, when sent, is sent plainly; a hashed domain is not anonymous,
+ * because there are only so many domains and anyone can hash all of them.
  *
- * Flow, prof and kb are salted hashes — HMACs under a secret this install.
- * Generated and keeps. Every correlation the floscAdmin wants survives: the.
- * Same flow, personality or corpus matches itself forever, on this install.
- * What does not survive is a stranger turning `4d81ac09` back into a name,.
- * And two installs running the same shipped personality looking like one.
- * Install.
+ * flow, prof and kb are salted hashes — HMACs under a secret this install
+ * generated and keeps. Every correlation the floscAdmin wants survives: the
+ * same flow, personality or corpus matches itself forever, on this install.
+ * What does not survive is a stranger turning `4d81ac09` back into a name,
+ * and two installs running the same shipped personality looking like one
+ * install.
  *
- * FLOSC PHONES NOTHING HOME. None of this reaches Anthropic's authors, da1.fm.
- * Or flosc.ai. It goes to the AI host the floscAdmin configured with their own.
- * Key, on a request already carrying the entire conversation, and nowhere.
- * Else.
+ * FLOSC PHONES NOTHING HOME. None of this reaches Anthropic's authors, da1.fm
+ * or flosc.ai. It goes to the AI host the floscAdmin configured with their own
+ * key, on a request already carrying the entire conversation, and nowhere
+ * else.
  *
  * @package FLOSC
  */
@@ -53,11 +53,11 @@ if ( ! function_exists( 'flosc_provider_identity_hosts' ) ) {
 	/**
 	 * The hosts FLOSC identifies itself to.
 	 *
-	 * Deliberately a list, not a wildcard. This filter sees every outbound.
-	 * HTTP request WordPress makes, from every plugin on the site; adding a.
-	 * Header to a request that is not ours would be someone else's bug report.
+	 * Deliberately a list, not a wildcard. This filter sees every outbound
+	 * HTTP request WordPress makes, from every plugin on the site; adding a
+	 * header to a request that is not ours would be someone else's bug report.
 	 *
-	 * @return String[]
+	 * @return string[]
 	 */
 	function flosc_provider_identity_hosts() {
 		$hosts = array(
@@ -81,13 +81,13 @@ if ( ! function_exists( 'flosc_provider_identity_salt' ) ) {
 	/**
 	 * Per-install salt for the derived ids.
 	 *
-	 * Random and stored once. Without it the flow and profile hashes would be.
-	 * Plain hashes of short, guessable strings — a provider could tell that a.
-	 * Flow was called "chat" by hashing the word "chat". With it, the same.
-	 * Flow hashes differently on every install, which is what makes these.
-	 * Correlation ids rather than disclosures.
+	 * Random and stored once. Without it the flow and profile hashes would be
+	 * plain hashes of short, guessable strings — a provider could tell that a
+	 * flow was called "chat" by hashing the word "chat". With it, the same
+	 * flow hashes differently on every install, which is what makes these
+	 * correlation ids rather than disclosures.
 	 *
-	 * @return String.
+	 * @return string
 	 */
 	function flosc_provider_identity_salt() {
 		$salt = (string) get_option( 'flosc_provider_identity_salt', '' );
@@ -110,11 +110,11 @@ if ( ! function_exists( 'flosc_provider_install_id' ) ) {
 	/**
 	 * Opaque, stable id for this FLOSC install.
 	 *
-	 * Random — NOT derived from the domain, the admin email, or anything else.
-	 * A provider could reverse. It says "the same install as last time" and.
-	 * Nothing more.
+	 * Random — NOT derived from the domain, the admin email, or anything else
+	 * a provider could reverse. It says "the same install as last time" and
+	 * nothing more.
 	 *
-	 * @return String 12 hex characters.
+	 * @return string 12 hex characters.
 	 */
 	function flosc_provider_install_id() {
 		$id = (string) get_option( 'flosc_install_id', '' );
@@ -135,7 +135,7 @@ if ( ! function_exists( 'flosc_provider_identity_digest' ) ) {
 	 *
 	 * @param string $value  Value to digest.
 	 * @param int    $length Hex characters to keep.
-	 * @return String.
+	 * @return string
 	 */
 	function flosc_provider_identity_digest( $value, $length = 8 ) {
 		$value = trim( (string) $value );
@@ -151,13 +151,13 @@ if ( ! function_exists( 'flosc_provider_identity_context' ) ) {
 	/**
 	 * Read or set the per-turn identity context.
 	 *
-	 * The HTTP filter runs deep inside the AI Client and knows nothing about.
-	 * Flows or personalities, so the chat turn leaves the few facts worth.
-	 * Carrying here on its way past. Static rather than a global: one request.
-	 * Serves one turn, and a leftover value would mislabel the next one.
+	 * The HTTP filter runs deep inside the AI Client and knows nothing about
+	 * flows or personalities, so the chat turn leaves the few facts worth
+	 * carrying here on its way past. Static rather than a global: one request
+	 * serves one turn, and a leftover value would mislabel the next one.
 	 *
 	 * @param array|null $set Values to store, or null to read.
-	 * @return Array{flow:string,profile:string,pair:int,surface:string,kb:string,tier:string}.
+	 * @return array{flow:string,profile:string,pair:int,surface:string,kb:string,tier:string}
 	 */
 	function flosc_provider_identity_context( $set = null ) {
 		static $context = array(
@@ -188,7 +188,7 @@ if ( ! function_exists( 'flosc_provider_user_agent' ) ) {
 	/**
 	 * The User-Agent FLOSC sends to AI hosts.
 	 *
-	 * @return String.
+	 * @return string
 	 */
 	function flosc_provider_user_agent() {
 		$plugin  = defined( 'FLOSC_VERSION' ) ? FLOSC_VERSION : '8.0.0';
@@ -215,10 +215,10 @@ if ( ! function_exists( 'flosc_provider_trace_header' ) ) {
 	/**
 	 * The structured trace header: one line, key=value pairs, ';' separated.
 	 *
-	 * Condensed on purpose. Nothing here is for a human to read, and a header.
-	 * That rides on every turn should cost bytes, not kilobytes.
+	 * Condensed on purpose. Nothing here is for a human to read, and a header
+	 * that rides on every turn should cost bytes, not kilobytes.
 	 *
-	 * @return String.
+	 * @return string
 	 */
 	function flosc_provider_trace_header() {
 		$plugin  = defined( 'FLOSC_VERSION' ) ? FLOSC_VERSION : '8.0.0';
@@ -305,7 +305,7 @@ if ( ! function_exists( 'flosc_provider_identity_enabled' ) ) {
 	/**
 	 * Whether FLOSC identifies itself at all. On by default.
 	 *
-	 * @return Bool.
+	 * @return bool
 	 */
 	function flosc_provider_identity_enabled() {
 		$settings = get_option( 'flosc_provider_identity', array() );
@@ -326,7 +326,7 @@ if ( ! function_exists( 'flosc_provider_identity_site_enabled' ) ) {
 	/**
 	 * Whether the site's own domain rides along. On by default.
 	 *
-	 * @return Bool.
+	 * @return bool
 	 */
 	function flosc_provider_identity_site_enabled() {
 		$settings = get_option( 'flosc_provider_identity', array() );
@@ -347,14 +347,14 @@ if ( ! function_exists( 'flosc_provider_identity_http_args' ) ) {
 	/**
 	 * Attach the identity headers to outbound AI requests.
 	 *
-	 * Hooked on http_request_args rather than added at each call site, because.
-	 * Three of the four chat providers go through the WordPress AI Client and.
-	 * Its official provider plugins, whose HTTP calls FLOSC does not make and.
-	 * Cannot reach. This filter is the one place that sees all of them.
+	 * Hooked on http_request_args rather than added at each call site, because
+	 * three of the four chat providers go through the WordPress AI Client and
+	 * its official provider plugins, whose HTTP calls FLOSC does not make and
+	 * cannot reach. This filter is the one place that sees all of them.
 	 *
 	 * @param array  $args Request arguments.
 	 * @param string $url  Request URL.
-	 * @return Array.
+	 * @return array
 	 */
 	function flosc_provider_identity_http_args( $args, $url ) {
 		if ( ! flosc_provider_identity_enabled() ) {
@@ -404,18 +404,18 @@ if ( ! function_exists( 'flosc_provider_last_request_id' ) ) {
 	 * The provider's own id for the most recent AI request, or ''.
 	 *
 	 * This is the one identifier that exists on BOTH sides of the wire.
-	 * Everything FLOSC sends outward lands in a provider's logs and can never.
-	 * Be read back — there is no API to ask Anthropic "show me requests.
-	 * Tagged inst=9f3c". The id they return is the reverse direction: a.
-	 * FloscAdmin holding it can ask the provider to look up that exact call.
+	 * Everything FLOSC sends outward lands in a provider's logs and can never
+	 * be read back — there is no API to ask Anthropic "show me requests
+	 * tagged inst=9f3c". The id they return is the reverse direction: a
+	 * floscAdmin holding it can ask the provider to look up that exact call.
 	 * Without it, our ledger and theirs can never be joined.
 	 *
-	 * Captured rather than passed through, because three of the four chat.
-	 * Providers answer inside the WordPress AI Client, whose response object.
+	 * Captured rather than passed through, because three of the four chat
+	 * providers answer inside the WordPress AI Client, whose response object
 	 * FLOSC never sees. The http_response filter does see it.
 	 *
 	 * @param array|null $set Internal: the value to store.
-	 * @return String.
+	 * @return string
 	 */
 	function flosc_provider_last_request_id( $set = null ) {
 		static $request_id = '';
@@ -432,16 +432,16 @@ if ( ! function_exists( 'flosc_provider_capture_request_id' ) ) {
 	/**
 	 * Remember the provider's request id from an AI response.
 	 *
-	 * Providers do not agree on the header name, so all the known spellings.
-	 * Are checked in order. An unrecognised provider simply leaves the id.
-	 * Empty, which is the honest outcome — a blank column says "not recorded",.
-	 * And inventing one would put a value in the ledger that no provider can.
-	 * Look up.
+	 * Providers do not agree on the header name, so all the known spellings
+	 * are checked in order. An unrecognised provider simply leaves the id
+	 * empty, which is the honest outcome — a blank column says "not recorded",
+	 * and inventing one would put a value in the ledger that no provider can
+	 * look up.
 	 *
 	 * @param array  $response HTTP response.
 	 * @param array  $args     Request arguments.
 	 * @param string $url      Request URL.
-	 * @return Array The response, unchanged.
+	 * @return array The response, unchanged.
 	 */
 	function flosc_provider_capture_request_id( $response, $args, $url ) {
 		$host = function_exists( 'wp_parse_url' ) ? wp_parse_url( (string) $url, PHP_URL_HOST ) : '';

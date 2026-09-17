@@ -1,7 +1,7 @@
 <?php
 /**
- * FLOSC User Access Manager.
- * Handles visitor/guest/member access levels.
+ * FLOSC User Access Manager
+ * Handles visitor/guest/member access levels
  *
  * @since 9.1.6
  *
@@ -19,11 +19,11 @@ class FLOSC_User_Access_Manager {
 
 	private static $instance = null;
 
-/**
- * Coordinate the instance behavior implemented by this code path.
- *
- * @return Mixed Result produced by the instance operation.
- */
+		/**
+	 * Coordinate the instance behavior implemented by this code path.
+	 *
+	 * @return mixed Result produced by the instance operation.
+	 */
 public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
@@ -32,11 +32,11 @@ public static function instance() {
 	}
 
 	/**
-	 * Get current user's access level.
+	 * Get current user's access level
 	 *
-	 * @param mixed $user_id WordPress user ID whose Resolve the current access level value from the available Word Press and flow state. state is being processed.
-	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
-	 * @return String 'visitor', 'guest', or 'member'.
+ * @param mixed $user_id WordPress user ID whose Resolve the current access level value from the available Word Press and flow state. state is being processed.
+ * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+	 * @return string 'visitor', 'guest', or 'member'
 	 */
 	public function get_access_level( $user_id = null, $flow_id = null ) {
 
@@ -66,18 +66,18 @@ public static function instance() {
 	/**
 	 * Check if user is a member (full entitlement).
 	 *
-	 * Bridges legacy keys plus FLOSC_Member_Access and sale-side access so RAG.
-	 * And AI userState match content gates (sandbox grants, roles, offers).
+	 * Bridges legacy keys plus FLOSC_Member_Access and sale-side access so RAG
+	 * and AI userState match content gates (sandbox grants, roles, offers).
 	 *
-	 * @param int $user_id Value consumed by this operation.
-	 * @return Bool.
+	 * @param int $user_id
+	 * @return bool
 	 */
 	/**
-	 * Determine whether the current state satisfies member.
-	 *
-	 * @param int   $user_id Value consumed by this operation.
+ * Determine whether the current state satisfies member.
+ *
+	 * @param int         $user_id
 	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
-	 * @return Bool Whether member applies to the current state.
+ * @return bool Whether member applies to the current state.
 	 */
 	public function is_member( $user_id, $flow_id = null ) {
 		if ( ! $user_id ) {
@@ -128,10 +128,10 @@ public static function instance() {
 	}
 
 	/**
-	 * Grant member access to user.
+	 * Grant member access to user
 	 *
-	 * @param int   $user_id Value consumed by this operation.
-	 * @param mixed $reason  Input consumed by the Persist the grant member access state in Word Press storage. operation.
+	 * @param int    $user_id
+	 * @param mixed $reason Input consumed by the Persist the grant member access state in Word Press storage. operation.
 	 */
 	public function grant_member_access( $user_id, $reason = 'quiz_completion' ) {
 
@@ -149,9 +149,9 @@ public static function instance() {
 	}
 
 	/**
-	 * Revoke member access.
+	 * Revoke member access
 	 *
-	 * @param int $user_id Value consumed by this operation.
+	 * @param int $user_id
 	 */
 	public function revoke_member_access( $user_id ) {
 
@@ -165,12 +165,12 @@ public static function instance() {
 	}
 
 	/**
-	 * Get user context for AI.
-	 * Returns all relevant user data.
+	 * Get user context for AI
+	 * Returns all relevant user data
 	 *
-	 * @param int   $user_id Value consumed by this operation.
+	 * @param int         $user_id
 	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
-	 * @return Array.
+	 * @return array
 	 */
 	public function get_user_context( $user_id = null, $flow_id = null ) {
 
@@ -259,11 +259,11 @@ public static function instance() {
 	}
 
 	/**
-	 * Check if user can access specific content level.
+	 * Check if user can access specific content level
 	 *
 	 * @param string $required_level 'visitor', 'guest', or 'member'.
-	 * @param int    $user_id        Value consumed by this operation.
-	 * @return Bool.
+	 * @param int    $user_id
+	 * @return bool
 	 */
 	public function can_access_level( $required_level, $user_id = null ) {
 

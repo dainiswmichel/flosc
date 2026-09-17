@@ -1,6 +1,6 @@
 <?php
 /**
- * User Linker Class.
+ * User Linker Class
  *
  * Handles linking social login accounts to WordPress users.
  * Manages the relationship between provider IDs and WP user accounts.
@@ -17,21 +17,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * User Linker Class.
+ * User Linker Class
  */
 class User_Linker {
 
 	/**
-	 * Meta key prefix for linked accounts.
+	 * Meta key prefix for linked accounts
 	 */
 	const META_PREFIX = '_flosc_sso_';
 
 	/**
-	 * Find WordPress user linked to a provider account.
+	 * Find WordPress user linked to a provider account
 	 *
-	 * @param string $provider_id      SSO provider ID.
+	 * @param string $provider_id SSO provider ID.
 	 * @param string $provider_user_id User ID from provider.
-	 * @return Int|false User ID or false if not found.
+	 * @return int|false User ID or false if not found
 	 */
 	public function find_linked_user( $provider_id, $provider_user_id ) {
 		$meta_key = self::META_PREFIX . $provider_id . '_id';
@@ -46,13 +46,13 @@ class User_Linker {
 	}
 
 	/**
-	 * Link a provider account to a WordPress user.
+	 * Link a provider account to a WordPress user
 	 *
-	 * @param int    $user_id     WordPress user ID.
+	 * @param int    $user_id WordPress user ID.
 	 * @param string $provider_id SSO provider ID.
-	 * @param array  $user_data   Normalized user data from provider.
-	 * @param array  $token_data  Token response data.
-	 * @return Bool Success.
+	 * @param array  $user_data Normalized user data from provider.
+	 * @param array  $token_data Token response data.
+	 * @return bool Success
 	 */
 	public function link_account( $user_id, $provider_id, $user_data, $token_data ) {
 		// Store provider user ID.
@@ -91,11 +91,11 @@ class User_Linker {
 	}
 
 	/**
-	 * Unlink a provider account from a WordPress user.
+	 * Unlink a provider account from a WordPress user
 	 *
-	 * @param int    $user_id     WordPress user ID.
+	 * @param int    $user_id WordPress user ID.
 	 * @param string $provider_id SSO provider ID.
-	 * @return Bool Success.
+	 * @return bool Success
 	 */
 	public function unlink_account( $user_id, $provider_id ) {
 		delete_user_meta( $user_id, self::META_PREFIX . $provider_id . '_id' );
@@ -116,10 +116,10 @@ class User_Linker {
 	}
 
 	/**
-	 * Get all linked providers for a user.
+	 * Get all linked providers for a user
 	 *
 	 * @param int $user_id WordPress user ID.
-	 * @return Array Array of provider IDs.
+	 * @return array Array of provider IDs
 	 */
 	public function get_linked_providers( $user_id ) {
 		$linked_providers = get_user_meta( $user_id, self::META_PREFIX . 'linked_providers', true );
@@ -127,23 +127,23 @@ class User_Linker {
 	}
 
 	/**
-	 * Check if user has a specific provider linked.
+	 * Check if user has a specific provider linked
 	 *
-	 * @param int    $user_id     WordPress user ID.
+	 * @param int    $user_id WordPress user ID.
 	 * @param string $provider_id SSO provider ID.
-	 * @return Bool.
+	 * @return bool
 	 */
 	public function is_provider_linked( $user_id, $provider_id ) {
 		return in_array( (string) $provider_id, array_map( 'strval', $this->get_linked_providers( $user_id ) ), true );
 	}
 
 	/**
-	 * Create a new WordPress user from SSO data.
+	 * Create a new WordPress user from SSO data
 	 *
 	 * @param string $provider_id SSO provider ID.
-	 * @param array  $user_data   Normalized user data.
-	 * @param array  $token_data  Token response data.
-	 * @return Int|WP_Error User ID or error.
+	 * @param array  $user_data Normalized user data.
+	 * @param array  $token_data Token response data.
+	 * @return int|WP_Error User ID or error
 	 */
 	public function create_user_from_sso( $provider_id, $user_data, $token_data ) {
 		$email      = isset( $user_data['email'] ) ? sanitize_email( $user_data['email'] ) : '';
@@ -219,11 +219,11 @@ class User_Linker {
 	}
 
 	/**
-	 * Generate a unique username.
+	 * Generate a unique username
 	 *
 	 * @param string $email User email.
-	 * @param string $name  User display name.
-	 * @return String Unique username.
+	 * @param string $name User display name.
+	 * @return string Unique username
 	 */
 	private function generate_unique_username( $email, $name = '' ) {
 		// Try email-based username first.
@@ -256,9 +256,9 @@ class User_Linker {
 	/**
 	 * Store OAuth tokens (encrypted)
 	 *
-	 * @param int    $user_id     WordPress user ID.
+	 * @param int    $user_id WordPress user ID.
 	 * @param string $provider_id SSO provider ID.
-	 * @param array  $token_data  Token response data.
+	 * @param array  $token_data Token response data.
 	 */
 	private function store_tokens( $user_id, $provider_id, $token_data ) {
 		$tokens = array(
@@ -275,11 +275,11 @@ class User_Linker {
 	}
 
 	/**
-	 * Get stored tokens for a user/provider.
+	 * Get stored tokens for a user/provider
 	 *
-	 * @param int    $user_id     WordPress user ID.
+	 * @param int    $user_id WordPress user ID.
 	 * @param string $provider_id SSO provider ID.
-	 * @return Array|false Token data or false.
+	 * @return array|false Token data or false
 	 */
 	public function get_tokens( $user_id, $provider_id ) {
 		$encrypted = get_user_meta( $user_id, self::META_PREFIX . $provider_id . '_tokens', true );
@@ -292,11 +292,11 @@ class User_Linker {
 	}
 
 	/**
-	 * Update stored tokens.
+	 * Update stored tokens
 	 *
-	 * @param int    $user_id     WordPress user ID.
+	 * @param int    $user_id WordPress user ID.
 	 * @param string $provider_id SSO provider ID.
-	 * @param array  $token_data  New token data.
+	 * @param array  $token_data New token data.
 	 */
 	public function update_user_tokens( $user_id, $provider_id, $token_data ) {
 		$this->store_tokens( $user_id, $provider_id, $token_data );
@@ -306,7 +306,7 @@ class User_Linker {
 	 * Encrypt tokens using the dedicated FLOSC token secret (§5)
 	 *
 	 * @param array $tokens Token data.
-	 * @return String Encrypted string.
+	 * @return string Encrypted string
 	 */
 	private function encrypt_tokens( $tokens ) {
 		$json = wp_json_encode( $tokens );
@@ -325,10 +325,10 @@ class User_Linker {
 	}
 
 	/**
-	 * Decrypt tokens.
+	 * Decrypt tokens
 	 *
 	 * @param string $encrypted Encrypted string.
-	 * @return Array Token data.
+	 * @return array Token data
 	 */
 	private function decrypt_tokens( $encrypted ) {
 		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- binary/JWT token decoding, not obfuscation
@@ -347,11 +347,11 @@ class User_Linker {
 	}
 
 	/**
-	 * Get linked account info for display.
+	 * Get linked account info for display
 	 *
-	 * @param int    $user_id     WordPress user ID.
+	 * @param int    $user_id WordPress user ID.
 	 * @param string $provider_id SSO provider ID.
-	 * @return Array|false Account info or false.
+	 * @return array|false Account info or false
 	 */
 	public function get_linked_account_info( $user_id, $provider_id ) {
 		if ( ! $this->is_provider_linked( $user_id, $provider_id ) ) {
@@ -371,10 +371,10 @@ class User_Linker {
 	}
 
 	/**
-	 * Get SSO avatar for user profile.
+	 * Get SSO avatar for user profile
 	 *
 	 * @param int $user_id WordPress user ID.
-	 * @return String|false Avatar URL or false.
+	 * @return string|false Avatar URL or false
 	 */
 	public function get_sso_avatar( $user_id ) {
 		// Try stored avatar first.

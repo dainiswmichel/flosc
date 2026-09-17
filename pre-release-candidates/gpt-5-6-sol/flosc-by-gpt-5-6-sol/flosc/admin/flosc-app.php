@@ -150,7 +150,7 @@ body.flosc-companion-embed img.landing-icon {
 			--flosc-primary: <?php echo esc_attr( $identity['primary_color'] ); ?>;
 			--flosc-primary-hover: <?php echo esc_attr( flosc_adjust_brightness( $identity['primary_color'], -20 ) ); ?>;
 			--flosc-primary-light: <?php echo esc_attr( $identity['primary_color'] ); ?>15;
-			--flosc-scale: <?php echo esc_attr( $flosc_chat_scale ); ?>%;
+			--flosc-scale: <?php echo esc_attr( (string) $flosc_chat_scale ); ?>%;
 			// v1.8.3+: Avatar shape defaults from profile-bar visitor state.
 			<?php
 			$flosc_profile_bar_for_avatar = get_option( 'flosc_profile_bar', array() );

@@ -1,27 +1,27 @@
 <?php
 /**
- * FLOSC Email Configuration Tab.
+ * FLOSC Email Configuration Tab
  *
  * Email templates and automation triggers for user engagement:
  * - Quiz result emails (customizable templates)
- * - Congratulations/encouragement based on score.
- * - Welcome emails for new users.
- * - Re-engagement for inactive users.
- * - Upgrade offers for free users.
+ * - Congratulations/encouragement based on score
+ * - Welcome emails for new users
+ * - Re-engagement for inactive users
+ * - Upgrade offers for free users
  * - Email trigger configuration (when to send)
  *
  * PLACEHOLDERS AVAILABLE:
- * {name} - User's name.
- * {score} - Quiz score percentage.
- * {correct} - Number of correct answers.
- * {incorrect} - Number of incorrect answers.
- * {product_name} - Product name from Product tab.
- * {app_link} - Link to app.
+ * {name} - User's name
+ * {score} - Quiz score percentage
+ * {correct} - Number of correct answers
+ * {incorrect} - Number of incorrect answers
+ * {product_name} - Product name from Product tab
+ * {app_link} - Link to app
  * {oto_section} - One-time offer content (if applicable)
  *
  * BACKEND STATUS: Email templates functional. Guest/member automation sequences are live.
  *
- * Added tab header for flow context.
+ * Added tab header for flow context
  *
  * @package FLOSC
  * @since 1.2.9
@@ -87,8 +87,8 @@ The {$flosc_product_name} Team";
 /**
  * Renderer for a configurable per-flow email series (used by Newsletter + Member levels).
  * Welcome = single email. Follow-ups = admin-managed repeater rows ("after N days" + subject + body).
- * The number of follow-ups and their day offsets are per-flow parameters (stored in <prefix>_followups),.
- * Never hardcoded. Mirrors the Member Levels repeater pattern.
+ * The number of follow-ups and their day offsets are per-flow parameters (stored in <prefix>_followups),
+ * never hardcoded. Mirrors the Member Levels repeater pattern.
  */
 $flosc_render_email_series = function ( $prefix, $flow_settings, $welcome_default_subject, $welcome_default_body ) {
 	$w_subject = $flow_settings[ $prefix . '_welcome_subject' ] ?? $welcome_default_subject;
@@ -127,7 +127,7 @@ $flosc_render_email_series = function ( $prefix, $flow_settings, $welcome_defaul
 	<tbody class="flosc-fu-body">
 	<?php foreach ( $followups as $fu ) : ?>
 		<tr class="flosc-fu-row">
-			<td><input type="number" min="0" max="365" class="small-text" name="<?php echo esc_attr( $prefix ); ?>_fu_day[]" value="<?php echo esc_attr( (int) ( $fu['day'] ?? 0 ) ); ?>"></td>
+			<td><input type="number" min="0" max="365" class="small-text" name="<?php echo esc_attr( (string) $prefix ); ?>_fu_day[]" value="<?php echo esc_attr( (string) (int) ( $fu['day'] ?? 0 ) ); ?>"></td>
 			<td><input type="text" name="<?php echo esc_attr( $prefix ); ?>_fu_subject[]" value="<?php echo esc_attr( $fu['subject'] ?? '' ); ?>" class="flosc-width-full"></td>
 			<td><textarea name="<?php echo esc_attr( $prefix ); ?>_fu_body[]" rows="3" class="flosc-width-full"><?php echo esc_textarea( $fu['body'] ?? '' ); ?></textarea></td>
 			<td class="flosc-text-center"><button type="button" class="button flosc-fu-remove" title="Remove">&times;</button></td>

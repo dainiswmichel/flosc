@@ -1,6 +1,6 @@
 <?php
 /**
- * Compatibility shim — implementation lives at includes/magic-link/class-flosc-magic-link-trait.php.
+ * Compatibility shim — implementation lives at includes/magic-link/class-flosc-magic-link-trait.php
  *
  * @package FLOSC
  */

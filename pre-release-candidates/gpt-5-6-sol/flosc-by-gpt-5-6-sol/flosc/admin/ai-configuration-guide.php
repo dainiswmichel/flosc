@@ -1,13 +1,13 @@
 <?php
 /**
- * FLOSC AI Configuration Guide.
+ * FLOSC AI Configuration Guide
  *
  * Help documentation for FloscAdmins configuring AI for their specific content.
- * This guide explains how FLOSC works with AI providers and how to configure.
- * Personality, knowledge base, and phase instructions.
+ * This guide explains how FLOSC works with AI providers and how to configure
+ * personality, knowledge base, and phase instructions.
  *
- * Initial documentation system.
- * Fix 15: Moved from standalone tab to Documentation > AI Configuration Guide.
+ * Initial documentation system
+ * Fix 15: Moved from standalone tab to Documentation > AI Configuration Guide
  *
  * @package FLOSC
  * @since 1.7.8

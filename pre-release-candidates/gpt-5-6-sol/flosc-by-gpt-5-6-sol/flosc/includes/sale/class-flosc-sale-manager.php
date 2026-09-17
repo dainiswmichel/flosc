@@ -1,6 +1,6 @@
 <?php
 /**
- * FLOSC SALE Manager.
+ * FLOSC SALE Manager
  *
  * Orchestrates the entire SALE system:
  * - Offers (what can be purchased)
@@ -27,11 +27,11 @@ class FLOSC_Sale_Manager {
 	private $access_manager;
 	private $providers = array();
 
-/**
- * Coordinate the instance behavior implemented by this code path.
- *
- * @return Mixed Result produced by the instance operation.
- */
+		/**
+	 * Coordinate the instance behavior implemented by this code path.
+	 *
+	 * @return mixed Result produced by the instance operation.
+	 */
 public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
@@ -39,17 +39,17 @@ public static function instance() {
 		return self::$instance;
 	}
 
-/**
- * Coordinate the construct behavior implemented by this code path.
- */
+		/**
+	 * Coordinate the construct behavior implemented by this code path.
+	 */
 private function __construct() {
 		$this->load_components();
 		$this->register_providers();
 	}
 
-/**
- * Resolve the current components value from the available WordPress and flow state.
- */
+		/**
+	 * Resolve the current components value from the available WordPress and flow state.
+	 */
 private function load_components() {
 		require_once __DIR__ . '/class-flosc-offer-manager.php';
 		require_once __DIR__ . '/class-flosc-usage-tracker.php';
@@ -66,9 +66,9 @@ private function load_components() {
 		$this->access_manager = new FLOSC_Access_Manager();
 	}
 
-/**
- * Coordinate the providers behavior implemented by this code path.
- */
+		/**
+	 * Coordinate the providers behavior implemented by this code path.
+	 */
 private function register_providers() {
 		// Register built-in payment providers.
 		$this->providers['stripe']    = new FLOSC_Stripe_Provider();
@@ -82,19 +82,17 @@ private function register_providers() {
 	}
 
 	/**
-	 * Get a payment provider by ID.
-	 *
-	 * @param mixed $provider_id Provider identifier or object used for the Resolve the current provider value from the available Word Press and flow state. operation.
-	 * @return Mixed Result produced by the provider operation.
+	 * Get a payment provider by ID
+ * @param mixed $provider_id Provider identifier or object used for the Resolve the current provider value from the available Word Press and flow state. operation.
+ * @return mixed Result produced by the provider operation.
 	 */
 	public function get_provider( $provider_id ) {
 		return $this->providers[ $provider_id ] ?? null;
 	}
 
 	/**
-	 * Get all registered providers.
-	 *
-	 * @return Mixed Result produced by the providers operation.
+	 * Get all registered providers
+ * @return mixed Result produced by the providers operation.
 	 */
 	public function get_providers() {
 		return $this->providers;
@@ -102,8 +100,7 @@ private function register_providers() {
 
 	/**
 	 * Get active providers (configured and enabled)
-	 *
-	 * @return Mixed Result produced by the active providers operation.
+ * @return mixed Result produced by the active providers operation.
 	 */
 	public function get_active_providers() {
 		return array_filter(
@@ -115,28 +112,27 @@ private function register_providers() {
 	}
 
 	/**
-	 * Access component getters.
-	 *
-	 * @return Mixed Result produced by the offers operation.
+	 * Access component getters
+ * @return mixed Result produced by the offers operation.
 	 */
 	public function offers() {
 		return $this->offer_manager;
 	}
 
-/**
- * Coordinate the usage behavior implemented by this code path.
- *
- * @return Mixed Result produced by the usage operation.
- */
+		/**
+	 * Coordinate the usage behavior implemented by this code path.
+	 *
+	 * @return mixed Result produced by the usage operation.
+	 */
 public function usage() {
 		return $this->usage_tracker;
 	}
 
-/**
- * Coordinate the access behavior implemented by this code path.
- *
- * @return Mixed Result produced by the access operation.
- */
+		/**
+	 * Coordinate the access behavior implemented by this code path.
+	 *
+	 * @return mixed Result produced by the access operation.
+	 */
 public function access() {
 		return $this->access_manager;
 	}
@@ -144,11 +140,11 @@ public function access() {
 	/**
 	 * Whether a provider result is settled payment suitable for granting access.
 	 *
-	 * Fail-closed: redirect initiation, client_secret, requires_action, processing,.
-	 * And any result without a confirmed transaction_id never unlock access.
+	 * Fail-closed: redirect initiation, client_secret, requires_action, processing,
+	 * and any result without a confirmed transaction_id never unlock access.
 	 *
 	 * @param mixed $result Provider process_payment() return value.
-	 * @return Bool.
+	 * @return bool
 	 */
 	public function is_payment_settled( $result ) {
 		if ( ! is_array( $result ) ) {
@@ -217,7 +213,7 @@ public function access() {
 	 * Offer is free only when explicitly marked free — never by missing price.
 	 *
 	 * @param array $offer Offer row.
-	 * @return Bool.
+	 * @return bool
 	 */
 	public function offer_is_explicitly_free( array $offer ) {
 		if ( ! empty( $offer['is_free'] ) ) {
@@ -243,7 +239,7 @@ public function access() {
 	 * Whether an offer may be purchased or free-granted (status=active).
 	 *
 	 * @param array $offer Offer row.
-	 * @return Bool.
+	 * @return bool
 	 */
 	public function offer_is_active_for_purchase( array $offer ) {
 		$status = sanitize_key( (string) ( $offer['status'] ?? '' ) );
@@ -261,8 +257,8 @@ public function access() {
 	 * Validate offer before free or paid fulfillment.
 	 *
 	 * @param array  $offer Offer row.
-	 * @param string $mode  Free|paid.
-	 * @return True|WP_Error.
+	 * @param string $mode  free|paid.
+	 * @return true|WP_Error
 	 */
 	public function validate_offer_for_purchase( array $offer, $mode = 'paid' ) {
 		$mode = sanitize_key( (string) $mode );
@@ -301,12 +297,12 @@ public function access() {
 	 * Prevents PAY-02: reusing one settled payment to unlock a different offer.
 	 * Same user + same offer is idempotent (webhook + browser race).
 	 *
-	 * @param string $provider       Provider id (stripe, paypal, tokens, free, …).
-	 * @param string $transaction_id Processor transaction / receipt id.
-	 * @param int    $user_id        Buyer WordPress user id.
-	 * @param string $offer_id       Offer being fulfilled.
-	 * @param array  $extra          Optional amount/currency/mode metadata.
-	 * @return True|string|WP_Error true on new claim, 'already' on idempotent repeat, WP_Error on conflict.
+	 * @param string $provider        Provider id (stripe, paypal, tokens, free, …).
+	 * @param string $transaction_id  Processor transaction / receipt id.
+	 * @param int    $user_id         Buyer WordPress user id.
+	 * @param string $offer_id        Offer being fulfilled.
+	 * @param array  $extra           Optional amount/currency/mode metadata.
+	 * @return true|string|WP_Error true on new claim, 'already' on idempotent repeat, WP_Error on conflict.
 	 */
 	public function claim_transaction_fulfillment( $provider, $transaction_id, $user_id, $offer_id, $extra = array() ) {
 		$provider       = sanitize_key( (string) $provider );
@@ -368,11 +364,11 @@ public function access() {
 	 *
 	 * Call only after payment is confirmed settled (not requires_action / redirect).
 	 *
-	 * @param int    $user_id     Value consumed by this operation.
-	 * @param array  $offer       Input consumed by the Coordinate the fulfill settled purchase behavior implemented by this code path. operation.
-	 * @param string $provider_id Value consumed by this operation.
-	 * @param array  $transaction Input consumed by the Coordinate the fulfill settled purchase behavior implemented by this code path. operation.
-	 * @return Array|WP_Error.
+	 * @param int    $user_id
+	 * @param array $offer Input consumed by the Coordinate the fulfill settled purchase behavior implemented by this code path. operation.
+	 * @param string $provider_id
+	 * @param array $transaction Input consumed by the Coordinate the fulfill settled purchase behavior implemented by this code path. operation.
+	 * @return array|WP_Error
 	 */
 	public function fulfill_settled_purchase( $user_id, array $offer, $provider_id, array $transaction ) {
 		$user_id     = absint( $user_id );
@@ -446,13 +442,13 @@ public function access() {
 	}
 
 	/**
-	 * Process a purchase.
+	 * Process a purchase
 	 *
-	 * @param int    $user_id      Value consumed by this operation.
-	 * @param mixed  $offer_id     Identifier used to select the record involved in the Coordinate the purchase behavior implemented by this code path. operation.
-	 * @param string $provider_id  Value consumed by this operation.
-	 * @param mixed  $payment_data Structured data consumed by the Coordinate the purchase behavior implemented by this code path. operation.
-	 * @return Array|WP_Error.
+	 * @param int    $user_id
+	 * @param mixed $offer_id Identifier used to select the record involved in the Coordinate the purchase behavior implemented by this code path. operation.
+	 * @param string $provider_id
+	 * @param mixed $payment_data Structured data consumed by the Coordinate the purchase behavior implemented by this code path. operation.
+	 * @return array|WP_Error
 	 */
 	public function process_purchase( $user_id, $offer_id, $provider_id, $payment_data = array() ) {
 		// Get offer.
@@ -502,59 +498,54 @@ public function access() {
 	}
 
 	/**
-	 * Check if user can access a feature.
-	 *
-	 * @param mixed $user_id WordPress user ID whose Determine whether the current state satisfies access. state is being processed.
-	 * @param mixed $feature Input consumed by the Determine whether the current state satisfies access. operation.
-	 * @return Bool Whether access applies to the current state.
+	 * Check if user can access a feature
+ * @param mixed $user_id WordPress user ID whose Determine whether the current state satisfies access. state is being processed.
+ * @param mixed $feature Input consumed by the Determine whether the current state satisfies access. operation.
+ * @return bool Whether access applies to the current state.
 	 */
 	public function can_access( $user_id, $feature ) {
 		return $this->access_manager->can_access( $user_id, $feature );
 	}
 
 	/**
-	 * Track usage of a feature.
-	 *
-	 * @param mixed $user_id  WordPress user ID whose Coordinate the track usage behavior implemented by this code path. state is being processed.
-	 * @param mixed $event    Input consumed by the Coordinate the track usage behavior implemented by this code path. operation.
-	 * @param mixed $quantity Input consumed by the Coordinate the track usage behavior implemented by this code path. operation.
-	 * @param mixed $meta     Input consumed by the Coordinate the track usage behavior implemented by this code path. operation.
-	 * @return Mixed Result produced by the track usage operation.
+	 * Track usage of a feature
+ * @param mixed $user_id WordPress user ID whose Coordinate the track usage behavior implemented by this code path. state is being processed.
+ * @param mixed $event Input consumed by the Coordinate the track usage behavior implemented by this code path. operation.
+ * @param mixed $quantity Input consumed by the Coordinate the track usage behavior implemented by this code path. operation.
+ * @param mixed $meta Input consumed by the Coordinate the track usage behavior implemented by this code path. operation.
+ * @return mixed Result produced by the track usage operation.
 	 */
 	public function track_usage( $user_id, $event, $quantity = 1, $meta = array() ) {
 		return $this->usage_tracker->track( $user_id, $event, $quantity, $meta );
 	}
 
 	/**
-	 * Check if user has enough tokens/credits for an action.
-	 *
-	 * @param mixed $user_id WordPress user ID whose Determine whether the current state satisfies credits. state is being processed.
-	 * @param mixed $amount  Input consumed by the Determine whether the current state satisfies credits. operation.
-	 * @return Bool Whether credits applies to the current state.
+	 * Check if user has enough tokens/credits for an action
+ * @param mixed $user_id WordPress user ID whose Determine whether the current state satisfies credits. state is being processed.
+ * @param mixed $amount Input consumed by the Determine whether the current state satisfies credits. operation.
+ * @return bool Whether credits applies to the current state.
 	 */
 	public function has_credits( $user_id, $amount ) {
 		return $this->providers['tokens']->get_balance( $user_id ) >= $amount;
 	}
 
 	/**
-	 * Deduct credits for an action.
-	 *
-	 * @param mixed $user_id WordPress user ID whose Coordinate the deduct credits behavior implemented by this code path. state is being processed.
-	 * @param mixed $amount  Input consumed by the Coordinate the deduct credits behavior implemented by this code path. operation.
-	 * @param mixed $reason  Input consumed by the Coordinate the deduct credits behavior implemented by this code path. operation.
-	 * @return Mixed Result produced by the deduct credits operation.
+	 * Deduct credits for an action
+ * @param mixed $user_id WordPress user ID whose Coordinate the deduct credits behavior implemented by this code path. state is being processed.
+ * @param mixed $amount Input consumed by the Coordinate the deduct credits behavior implemented by this code path. operation.
+ * @param mixed $reason Input consumed by the Coordinate the deduct credits behavior implemented by this code path. operation.
+ * @return mixed Result produced by the deduct credits operation.
 	 */
 	public function deduct_credits( $user_id, $amount, $reason = '' ) {
 		return $this->providers['tokens']->deduct( $user_id, $amount, $reason );
 	}
 
 	/**
-	 * Log purchase for records.
-	 *
-	 * @param mixed $user_id     WordPress user ID whose Persist the log purchase state in Word Press storage. state is being processed.
-	 * @param mixed $offer       Input consumed by the Persist the log purchase state in Word Press storage. operation.
-	 * @param mixed $provider_id Provider identifier or object used for the Persist the log purchase state in Word Press storage. operation.
-	 * @param mixed $transaction Input consumed by the Persist the log purchase state in Word Press storage. operation.
+	 * Log purchase for records
+ * @param mixed $user_id WordPress user ID whose Persist the log purchase state in Word Press storage. state is being processed.
+ * @param mixed $offer Input consumed by the Persist the log purchase state in Word Press storage. operation.
+ * @param mixed $provider_id Provider identifier or object used for the Persist the log purchase state in Word Press storage. operation.
+ * @param mixed $transaction Input consumed by the Persist the log purchase state in Word Press storage. operation.
 	 */
 	private function log_purchase( $user_id, $offer, $provider_id, $transaction ) {
 		$purchases = get_user_meta( $user_id, '_flosc_purchases', true );
@@ -577,12 +568,12 @@ public function access() {
 
 	/**
 	 * Get available offers for a user (considering their current access)
-	 * Flow-aware — accepts flow_id to read from per-flow storage.
+	 * Flow-aware — accepts flow_id to read from per-flow storage
 	 *
 	 * @since 1.6.2
-	 * @param mixed $user_id WordPress user ID whose Resolve the current available offers value from the available Word Press and flow state. state is being processed.
-	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
-	 * @return Bool Whether available offers applies to the current state.
+ * @param mixed $user_id WordPress user ID whose Resolve the current available offers value from the available Word Press and flow state. state is being processed.
+ * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+ * @return bool Whether available offers applies to the current state.
 	 */
 	public function get_available_offers( $user_id = null, $flow_id = null ) {
 		$all_offers = $this->offer_manager->get_active_offers( $flow_id );
@@ -607,11 +598,10 @@ public function access() {
 	}
 
 	/**
-	 * Get recommended offer based on user state and funnel position.
-	 *
-	 * @param mixed $user_id WordPress user ID whose Resolve the current recommended offer value from the available Word Press and flow state. state is being processed.
-	 * @param mixed $context Context values used to resolve request- or flow-specific behavior.
-	 * @return Mixed Result produced by the recommended offer operation.
+	 * Get recommended offer based on user state and funnel position
+ * @param mixed $user_id WordPress user ID whose Resolve the current recommended offer value from the available Word Press and flow state. state is being processed.
+ * @param mixed $context Context values used to resolve request- or flow-specific behavior.
+ * @return mixed Result produced by the recommended offer operation.
 	 */
 	public function get_recommended_offer( $user_id, $context = array() ) {
 		$offers = $this->get_available_offers( $user_id );

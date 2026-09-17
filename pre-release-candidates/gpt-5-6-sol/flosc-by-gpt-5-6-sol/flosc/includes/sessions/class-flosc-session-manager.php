@@ -1,6 +1,6 @@
 <?php
 /**
- * FLOSC Session Manager.
+ * FLOSC Session Manager
  * Handles chat session storage and retrieval — scoped per flow.
  *
  * Real-world: a guest on one flow must not see another flow's chats.
@@ -23,8 +23,8 @@ class FLOSC_Session_Manager {
 	/**
 	 * Normalize a flow id / ivr path to a stable stem.
 	 *
-	 * @param string $flow_id Value consumed by this operation.
-	 * @return String.
+	 * @param string $flow_id
+	 * @return string
 	 */
 	public function normalize_flow_stem( $flow_id = '' ) {
 		$raw  = (string) $flow_id;
@@ -38,8 +38,8 @@ class FLOSC_Session_Manager {
 	/**
 	 * Resolve current request flow stem when not passed explicitly.
 	 *
-	 * @param string $flow_id Value consumed by this operation.
-	 * @return String.
+	 * @param string $flow_id
+	 * @return string
 	 */
 	public function resolve_flow_stem( $flow_id = '' ) {
 		$stem = $this->normalize_flow_stem( $flow_id );
@@ -60,10 +60,10 @@ class FLOSC_Session_Manager {
 	/**
 	 * Whether a session belongs to the requested flow.
 	 *
-	 * @param array $session Value consumed by this operation.
-	 * @param mixed $stem    Input consumed by the Coordinate the session belongs to flow behavior implemented by this code path. operation.
-	 * @param int   $user_id For legacy untagged sessions.
-	 * @return Bool.
+	 * @param array  $session
+	 * @param mixed $stem Input consumed by the Coordinate the session belongs to flow behavior implemented by this code path. operation.
+	 * @param int    $user_id For legacy untagged sessions.
+	 * @return bool
 	 */
 	public function session_belongs_to_flow( array $session, $stem, $user_id = 0 ) {
 		$stem = $this->normalize_flow_stem( $stem );
@@ -92,9 +92,9 @@ class FLOSC_Session_Manager {
 	/**
 	 * Get sessions for a user, optionally filtered to one flow (grouped by date).
 	 *
-	 * @param int   $user_id Value consumed by this operation.
+	 * @param int    $user_id
 	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
-	 * @return Array.
+	 * @return array
 	 */
 	public function get_flosc_user_sessions( $user_id, $flow_id = '' ) {
 		$empty = array(
@@ -154,11 +154,11 @@ class FLOSC_Session_Manager {
 	/**
 	 * Create a new session on a flow.
 	 *
-	 * @param int    $user_id       Value consumed by this operation.
-	 * @param mixed  $title         Input consumed by the Persist the session state in Word Press storage. operation.
-	 * @param string $flow_id       Flow stem for isolation.
-	 * @param mixed  $seed_messages Input consumed by the Persist the session state in Word Press storage. operation.
-	 * @return Array.
+	 * @param int    $user_id
+	 * @param mixed $title Input consumed by the Persist the session state in Word Press storage. operation.
+	 * @param string $flow_id Flow stem for isolation.
+ * @param mixed $seed_messages Input consumed by the Persist the session state in Word Press storage. operation.
+	 * @return array
 	 */
 	public function flosc_create_session( $user_id, $title = 'New Chat', $flow_id = '', $seed_messages = array() ) {
 
@@ -194,12 +194,12 @@ class FLOSC_Session_Manager {
 	/**
 	 * Normalize client-supplied seed messages for a newly created session.
 	 *
-	 * Used when a visitor authenticates mid-conversation: the turns they already.
-	 * Had are written into the session created for their account, so the thread.
-	 * Is not stranded on the device. Anything malformed is dropped, never stored.
+	 * Used when a visitor authenticates mid-conversation: the turns they already
+	 * had are written into the session created for their account, so the thread
+	 * is not stranded on the device. Anything malformed is dropped, never stored.
 	 *
 	 * @param mixed $seed_messages Raw messages from the request.
-	 * @return Array Normalized message rows (most recent 50).
+	 * @return array Normalized message rows (most recent 50).
 	 */
 	private function normalize_seed_messages( $seed_messages ) {
 		if ( ! is_array( $seed_messages ) || empty( $seed_messages ) ) {
@@ -243,10 +243,10 @@ class FLOSC_Session_Manager {
 	/**
 	 * Get a specific session (must belong to user; optional flow match).
 	 *
-	 * @param int         $session_id Value consumed by this operation.
-	 * @param mixed       $user_id    WordPress user ID whose Resolve the current session value from the available Word Press and flow state. state is being processed.
-	 * @param string|null $flow_id    When set, reject sessions from other flows.
-	 * @return Array|null.
+	 * @param int         $session_id
+	 * @param mixed $user_id WordPress user ID whose Resolve the current session value from the available Word Press and flow state. state is being processed.
+	 * @param string|null $flow_id When set, reject sessions from other flows.
+	 * @return array|null
 	 */
 	public function get_flosc_session( $session_id, $user_id = null, $flow_id = null ) {
 		if ( ! $user_id ) {
@@ -281,9 +281,9 @@ class FLOSC_Session_Manager {
 	 * Replacement security boundary: the session must belong to this WordPress user.
 	 * Sidebar listing stays flow-filtered; history/handoff restore may cross floscDomains.
 	 *
-	 * @param int   $session_id Value consumed by this operation.
-	 * @param mixed $user_id    WordPress user ID whose Resolve the current session by id value from the available Word Press and flow state. state is being processed.
-	 * @return Array|null.
+	 * @param int      $session_id
+	 * @param mixed $user_id WordPress user ID whose Resolve the current session by id value from the available Word Press and flow state. state is being processed.
+	 * @return array|null
 	 */
 	public function get_flosc_session_by_id( $session_id, $user_id = null ) {
 		$session_id = absint( $session_id );
@@ -312,13 +312,13 @@ class FLOSC_Session_Manager {
 	/**
 	 * Add message to session.
 	 *
-	 * @param int        $session_id Value consumed by this operation.
-	 * @param mixed      $role       Input consumed by the Persist the add flosc message state in Word Press storage. operation.
-	 * @param string     $content    Value consumed by this operation.
-	 * @param mixed      $user_id    WordPress user ID whose Persist the add flosc message state in Word Press storage. state is being processed.
-	 * @param array|null $meta       Value consumed by this operation.
-	 * @param mixed      $flow_id    Flow identifier used to resolve flow-scoped configuration and state.
-	 * @return Bool.
+	 * @param int         $session_id
+	 * @param mixed $role Input consumed by the Persist the add flosc message state in Word Press storage. operation.
+	 * @param string      $content
+	 * @param mixed $user_id WordPress user ID whose Persist the add flosc message state in Word Press storage. state is being processed.
+	 * @param array|null  $meta
+	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+	 * @return bool
 	 */
 	public function add_flosc_message( $session_id, $role, $content, $user_id = null, $meta = null, $flow_id = null ) {
 		if ( ! $user_id ) {
@@ -380,10 +380,10 @@ class FLOSC_Session_Manager {
 	/**
 	 * Delete a session (optional flow guard).
 	 *
-	 * @param int         $session_id Value consumed by this operation.
-	 * @param mixed       $user_id    WordPress user ID whose Persist the session state in Word Press storage. state is being processed.
-	 * @param string|null $flow_id    Value consumed by this operation.
-	 * @return Bool.
+	 * @param int         $session_id
+	 * @param mixed $user_id WordPress user ID whose Persist the session state in Word Press storage. state is being processed.
+	 * @param string|null $flow_id
+	 * @return bool
 	 */
 	public function flosc_delete_session( $session_id, $user_id = null, $flow_id = null ) {
 		if ( ! $user_id ) {
@@ -427,8 +427,8 @@ class FLOSC_Session_Manager {
 	/**
 	 * Generate session title from first message.
 	 *
-	 * @param string $content Value consumed by this operation.
-	 * @return String.
+	 * @param string $content
+	 * @return string
 	 */
 	private function generate_flosc_session_title( $content ) {
 		$plain = wp_strip_all_tags( (string) $content );
@@ -452,9 +452,9 @@ class FLOSC_Session_Manager {
 	/**
 	 * Session count for user (optional per-flow).
 	 *
-	 * @param int   $user_id Value consumed by this operation.
+	 * @param int    $user_id
 	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
-	 * @return Int.
+	 * @return int
 	 */
 	public function get_flosc_session_count( $user_id, $flow_id = '' ) {
 		$sessions = get_user_meta( $user_id, $this->flosc_session_meta_key, true );

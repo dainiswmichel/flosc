@@ -1,6 +1,6 @@
 <?php
 /**
- * SSO Provider Base Class.
+ * SSO Provider Base Class
  *
  * Abstract base class for all social login providers.
  * Based on BuddyBoss SSO patterns with FLOSC-specific adaptations.
@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Abstract base class for SSO providers.
+ * Abstract base class for SSO providers
  */
 abstract class SSO_Provider_Base {
 
@@ -29,56 +29,56 @@ abstract class SSO_Provider_Base {
 	protected $provider_id;
 
 	/**
-	 * Provider display name.
+	 * Provider display name
 	 *
 	 * @var string
 	 */
 	protected $provider_name;
 
 	/**
-	 * Provider icon class or URL.
+	 * Provider icon class or URL
 	 *
 	 * @var string
 	 */
 	protected $provider_icon;
 
 	/**
-	 * OAuth2 authorization endpoint.
+	 * OAuth2 authorization endpoint
 	 *
 	 * @var string
 	 */
 	protected $auth_url;
 
 	/**
-	 * OAuth2 token endpoint.
+	 * OAuth2 token endpoint
 	 *
 	 * @var string
 	 */
 	protected $token_url;
 
 	/**
-	 * User info endpoint.
+	 * User info endpoint
 	 *
 	 * @var string
 	 */
 	protected $user_info_url;
 
 	/**
-	 * Required OAuth scopes.
+	 * Required OAuth scopes
 	 *
 	 * @var array
 	 */
 	protected $scopes = array();
 
 	/**
-	 * Client ID from provider settings.
+	 * Client ID from provider settings
 	 *
 	 * @var string
 	 */
 	protected $client_id;
 
 	/**
-	 * Client Secret from provider settings.
+	 * Client Secret from provider settings
 	 *
 	 * @var string
 	 */
@@ -103,44 +103,44 @@ abstract class SSO_Provider_Base {
 	protected $flow_enabled = null;
 
 	/**
-	 * Constructor.
+	 * Constructor
 	 */
 	public function __construct() {
 		$this->load_credentials();
 	}
 
 	/**
-	 * Get provider ID.
+	 * Get provider ID
 	 *
-	 * @return String.
+	 * @return string
 	 */
 	public function get_id() {
 		return $this->provider_id;
 	}
 
 	/**
-	 * Get provider display name.
+	 * Get provider display name
 	 *
-	 * @return String.
+	 * @return string
 	 */
 	public function get_name() {
 		return $this->provider_name;
 	}
 
 	/**
-	 * Get provider icon.
+	 * Get provider icon
 	 *
-	 * @return String.
+	 * @return string
 	 */
 	public function get_icon() {
 		return $this->provider_icon;
 	}
 
 	/**
-	 * Check if provider is enabled and configured.
-	 * Checks flow-specific enabled flag if set, otherwise falls back to global.
+	 * Check if provider is enabled and configured
+	 * Checks flow-specific enabled flag if set, otherwise falls back to global
 	 *
-	 * @return Bool.
+	 * @return bool
 	 * @since 1.4.9
 	 */
 	public function is_enabled() {
@@ -152,16 +152,16 @@ abstract class SSO_Provider_Base {
 	}
 
 	/**
-	 * Check if provider has valid credentials.
+	 * Check if provider has valid credentials
 	 *
-	 * @return Bool.
+	 * @return bool
 	 */
 	public function is_configured() {
 		return ! empty( $this->client_id ) && ! empty( $this->client_secret );
 	}
 
 	/**
-	 * Load credentials from WordPress options.
+	 * Load credentials from WordPress options
 	 */
 	protected function load_credentials() {
 		$this->client_id     = get_option( "flosc_sso_{$this->provider_id}_client_id", '' );
@@ -175,9 +175,9 @@ abstract class SSO_Provider_Base {
 	 *
 	 * @since 1.4.9
 	 *
-	 * @param string $client_id     Flow-specific Client ID.
+	 * @param string $client_id Flow-specific Client ID.
 	 * @param string $client_secret Flow-specific Client Secret.
-	 * @param bool   $enabled       Whether this provider is enabled for this flow.
+	 * @param bool   $enabled Whether this provider is enabled for this flow.
 	 */
 	public function set_flow_credentials( $client_id, $client_secret, $enabled = true ) {
 		$this->client_id            = $client_id;
@@ -187,11 +187,11 @@ abstract class SSO_Provider_Base {
 	}
 
 	/**
-	 * Get OAuth2 authorization URL.
+	 * Get OAuth2 authorization URL
 	 *
-	 * @param string $state        CSRF protection state.
+	 * @param string $state CSRF protection state.
 	 * @param string $redirect_uri Callback URL.
-	 * @return String.
+	 * @return string
 	 */
 	public function get_authorization_url( $state, $redirect_uri ) {
 		$params = array(
@@ -212,18 +212,18 @@ abstract class SSO_Provider_Base {
 	 * Customize authorization parameters (override in subclasses)
 	 *
 	 * @param array $params Default parameters.
-	 * @return Array Modified parameters.
+	 * @return array Modified parameters
 	 */
 	protected function customize_auth_params( $params ) {
 		return $params;
 	}
 
 	/**
-	 * Exchange authorization code for access token.
+	 * Exchange authorization code for access token
 	 *
-	 * @param string $code         Authorization code.
+	 * @param string $code Authorization code.
 	 * @param string $redirect_uri Callback URL.
-	 * @return Array|WP_Error Token data or error.
+	 * @return array|WP_Error Token data or error
 	 */
 	public function exchange_code_for_token( $code, $redirect_uri ) {
 		$response = wp_remote_post(
@@ -252,7 +252,7 @@ abstract class SSO_Provider_Base {
 
 		if ( isset( $body['error'] ) ) {
 			// v1.4.6: Handle both flat and nested error formats.
-			// Flat: { "error": "invalid_grant", "error_description": "Code expired" }.
+			// Flat: { "error": "invalid_grant", "error_description": "Code expired" }
 			// Nested (Facebook/Google): { "error": { "message": "...", "code": 190 } }.
 			if ( is_array( $body['error'] ) && isset( $body['error']['message'] ) ) {
 				$error_msg = $body['error']['message'];
@@ -272,11 +272,11 @@ abstract class SSO_Provider_Base {
 	}
 
 	/**
-	 * Get user info from provider.
+	 * Get user info from provider
 	 *
 	 * @param string $access_token OAuth access token.
 	 * @param array  $token_data   Full token response (needed by Apple for id_token).
-	 * @return Array|WP_Error User data or error.
+	 * @return array|WP_Error User data or error
 	 */
 	public function get_user_info( $access_token, $token_data = array() ) {
 		// The base implementation reads its claims from user_info_url and has no.
@@ -313,26 +313,26 @@ abstract class SSO_Provider_Base {
 	}
 
 	/**
-	 * Normalize user data to standard format.
-	 * Override in each provider to map provider-specific fields.
+	 * Normalize user data to standard format
+	 * Override in each provider to map provider-specific fields
 	 *
 	 * @param array $raw_data Raw user data from provider.
-	 * @return Array Normalized user data with standard keys.
+	 * @return array Normalized user data with standard keys
 	 */
 	abstract protected function normalize_user_data( $raw_data );
 
 	/**
-	 * Get provider-specific user ID from raw data.
+	 * Get provider-specific user ID from raw data
 	 *
 	 * @param array $raw_data Raw user data.
-	 * @return String Provider user ID.
+	 * @return string Provider user ID
 	 */
 	abstract public function get_provider_user_id( $raw_data );
 
 	/**
-	 * Get provider settings fields for admin UI.
+	 * Get provider settings fields for admin UI
 	 *
-	 * @return Array Settings fields configuration.
+	 * @return array Settings fields configuration
 	 */
 	public function get_settings_fields() {
 		return array(
@@ -365,25 +365,25 @@ abstract class SSO_Provider_Base {
 	}
 
 	/**
-	 * Get setup instructions for this provider.
+	 * Get setup instructions for this provider
 	 *
-	 * @return String HTML instructions.
+	 * @return string HTML instructions
 	 */
 	abstract public function get_setup_instructions();
 
 	/**
-	 * Get the callback URL for this provider.
+	 * Get the callback URL for this provider
 	 *
-	 * @return String.
+	 * @return string
 	 */
 	public function get_callback_url() {
 		return rest_url( "flosc/v1/sso/callback/{$this->provider_id}" );
 	}
 
 	/**
-	 * Get provider button HTML for login form.
+	 * Get provider button HTML for login form
 	 *
-	 * @return String HTML button.
+	 * @return string HTML button
 	 */
 	public function get_login_button_html() {
 		$button_class = "flosc-sso-button flosc-sso-{$this->provider_id}";
@@ -403,9 +403,9 @@ abstract class SSO_Provider_Base {
 	}
 
 	/**
-	 * Get provider button color for CSS.
+	 * Get provider button color for CSS
 	 *
-	 * @return Array ['background' => '#xxx', 'text' => '#xxx']
+	 * @return array ['background' => '#xxx', 'text' => '#xxx']
 	 */
 	public function get_button_colors() {
 		// Override in subclasses for provider-specific colors.

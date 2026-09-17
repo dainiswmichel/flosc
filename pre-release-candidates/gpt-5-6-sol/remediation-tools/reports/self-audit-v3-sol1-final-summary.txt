@@ -1,0 +1,57 @@
+SOL1_WPCS_ALL_TOTAL=4134
+SOL1_FILES_WITH_ANY_FINDINGS=90
+SOL1_COMMENT_DOC_TARGET_REMAINING=3545
+
+== SOL-1 target residuals ==
+2389	Squiz.Commenting.DocCommentAlignment.SpaceBeforeStar
+380	Generic.Commenting.DocComment.SpacingBeforeTags
+262	WordPress.WP.CapitalPDangit.MisspelledInComment
+207	Squiz.Commenting.FunctionComment.MissingParamComment
+121	Squiz.Commenting.FunctionComment.SpacingAfterParamType
+50	Squiz.Commenting.VariableComment.Missing
+27	Squiz.Commenting.BlockComment.NoEmptyLineBefore
+27	Squiz.Commenting.BlockComment.CloserSameLine
+26	Squiz.Commenting.FunctionComment.MissingParamTag
+15	Generic.Commenting.DocComment.MissingShort
+11	Squiz.Commenting.InlineComment.InvalidEndChar
+7	Generic.Commenting.DocComment.LongNotCapital
+5	Squiz.Commenting.FunctionComment.ParamCommentFullStop
+4	Squiz.Commenting.FileComment.Missing
+4	Squiz.Commenting.FunctionComment.Missing
+3	Generic.Commenting.DocComment.ShortNotCapital
+2	Squiz.Commenting.ClassComment.Missing
+2	Squiz.Commenting.VariableComment.WrongStyle
+1	Squiz.Commenting.FunctionCommentThrowTag.Missing
+1	Squiz.Commenting.BlockComment.HasEmptyLineBefore
+1	Squiz.Commenting.BlockComment.NoCapital
+
+== full WPCS residuals ==
+2389	Squiz.Commenting.DocCommentAlignment.SpaceBeforeStar
+395	Generic.WhiteSpace.ScopeIndent.IncorrectExact
+380	Generic.Commenting.DocComment.SpacingBeforeTags
+262	WordPress.WP.CapitalPDangit.MisspelledInComment
+207	Squiz.Commenting.FunctionComment.MissingParamComment
+159	Generic.WhiteSpace.ScopeIndent.Incorrect
+121	Squiz.Commenting.FunctionComment.SpacingAfterParamType
+50	Squiz.Commenting.VariableComment.Missing
+27	Squiz.Commenting.BlockComment.NoEmptyLineBefore
+27	Squiz.Commenting.BlockComment.CloserSameLine
+26	Squiz.Commenting.FunctionComment.MissingParamTag
+22	WordPress.Security.NonceVerification.Recommended
+15	Generic.Commenting.DocComment.MissingShort
+11	Squiz.Commenting.InlineComment.InvalidEndChar
+7	Generic.Commenting.DocComment.LongNotCapital
+5	Squiz.Commenting.FunctionComment.ParamCommentFullStop
+4	WordPress.WP.PostsPerPage.posts_per_page_posts_per_page
+4	Squiz.Commenting.FileComment.Missing
+4	Squiz.Commenting.FunctionComment.Missing
+3	Generic.Commenting.DocComment.ShortNotCapital
+3	WordPress.Security.NonceVerification.Missing
+3	Generic.CodeAnalysis.UnusedFunctionParameter.Found
+2	Squiz.Commenting.ClassComment.Missing
+2	Universal.WhiteSpace.PrecisionAlignment.Found
+2	Squiz.Commenting.VariableComment.WrongStyle
+1	Squiz.Commenting.FunctionCommentThrowTag.Missing
+1	Squiz.Commenting.BlockComment.HasEmptyLineBefore
+1	Generic.Formatting.MultipleStatementAlignment.IncorrectWarning
+1	Squiz.Commenting.BlockComment.NoCapital

@@ -1,15 +1,15 @@
 <?php
 /**
- * FLOSC Chat Logs Admin Page.
+ * FLOSC Chat Logs Admin Page
  * Real-time chat log viewer with AJAX polling.
- * V8.0.0: Session view — conversations grouped, click to expand the thread, the.
- * Auto-welcome "[SYSTEM: …]" greetings filtered out, and a per-session.
- * Delete. The original flat table lives on under the "All entries" view.
+ * v8.0.0: Session view — conversations grouped, click to expand the thread, the
+ *         auto-welcome "[SYSTEM: …]" greetings filtered out, and a per-session
+ *         delete. The original flat table lives on under the "All entries" view.
  *
- * Included by admin/settings.php when tab === 'chat-logs'.
- * Front-end CSS for the flat table is in assets/css/flosc-admin.css; the small,.
- * Self-contained session-view styling is scoped inline below so the feature is.
- * One file.
+ * Included by admin/settings.php when tab === 'chat-logs'
+ * Front-end CSS for the flat table is in assets/css/flosc-admin.css; the small,
+ * self-contained session-view styling is scoped inline below so the feature is
+ * one file.
  *
  * @package FLOSC
  * @since 1.9.0
@@ -590,9 +590,8 @@ $flosc_sessions_archived_url = add_query_arg(
 <?php
 /**
  * Render a single chat log table row (flat "All entries" view).
- *
  * @param mixed $log Input consumed by the Coordinate the chat log row behavior implemented by this code path. operation.
- * @return Mixed Result produced by the chat log row operation.
+ * @return mixed Result produced by the chat log row operation.
  */
 function flosc_render_chat_log_row( $log ) {
 	$time = substr( $log['timestamp'] ?? '', 11, 8 );
@@ -654,8 +653,7 @@ function flosc_render_chat_log_row( $log ) {
 
 /**
  * Allowed HTML for a rendered session block (passed to wp_kses on output).
- *
- * @return Array Structured chat session allowed html data.
+ * @return array Structured chat session allowed html data.
  */
 function flosc_chat_session_allowed_html() {
 	return array(
@@ -714,10 +712,9 @@ function flosc_chat_session_allowed_html() {
 
 /**
  * Format a MySQL timestamp into Michel Date Stamp (UTC).
- * Example: 2026-07m-10d-UTC08h:26m13s.
- *
+ * Example: 2026-07m-10d-UTC08h:26m13s
  * @param mixed $timestamp Input consumed by the Coordinate the format mts utc behavior implemented by this code path. operation.
- * @return Mixed Result produced by the format mts utc operation.
+ * @return mixed Result produced by the format mts utc operation.
  */
 function flosc_format_mts_utc( $timestamp ) {
 	$raw = trim( (string) $timestamp );
@@ -737,10 +734,9 @@ function flosc_format_mts_utc( $timestamp ) {
 
 /**
  * Extract one context token from chain_detail.
- *
  * @param mixed $chain_detail Input consumed by the Coordinate the chain context value behavior implemented by this code path. operation.
- * @param mixed $key          Name or key used to select the Coordinate the chain context value behavior implemented by this code path. value.
- * @return Mixed Result produced by the chain context value operation.
+ * @param mixed $key Name or key used to select the Coordinate the chain context value behavior implemented by this code path. value.
+ * @return mixed Result produced by the chain context value operation.
  */
 function flosc_get_chain_context_value( $chain_detail, $key ) {
 	$chain_detail = (string) $chain_detail;
@@ -762,21 +758,21 @@ function flosc_get_chain_context_value( $chain_detail, $key ) {
 /**
  * Render one speaker's turn as one or more message bubbles with stable ids.
  *
- * The turn is split on blank lines into the bubbles the chat would show. A single.
- * Bubble is "{code}-{u|b}-{NNN}"; several become "…-NNN.1", "…-NNN.2", … — reading.
- * Like a nested list. The source row id rides along in the title attribute so the.
- * True chronological order (the database sort) is always one hover away.
+ * The turn is split on blank lines into the bubbles the chat would show. A single
+ * bubble is "{code}-{u|b}-{NNN}"; several become "…-NNN.1", "…-NNN.2", … — reading
+ * like a nested list. The source row id rides along in the title attribute so the
+ * true chronological order (the database sort) is always one hover away.
  *
- * @param string $code        Conversation code (6-char).
- * @param string $letter      'u' (visitor) or 'b' (bot).
- * @param string $n           Zero-padded turn number (001…).
- * @param string $content     The turn's text.
- * @param string $who         Speaker label.
- * @param string $time        HH:MM, shown on the first bubble only ('' to omit).
- * @param int    $rid         Source row id (hover title).
- * @param string $css         Bubble CSS class.
+ * @param string $code    Conversation code (6-char).
+ * @param string $letter  'u' (visitor) or 'b' (bot).
+ * @param string $n       Zero-padded turn number (001…).
+ * @param string $content The turn's text.
+ * @param string $who     Speaker label.
+ * @param string $time    HH:MM, shown on the first bubble only ('' to omit).
+ * @param int    $rid     Source row id (hover title).
+ * @param string $css     Bubble CSS class.
  * @param string $context_url Optional visitor page URL context.
- * @return String.
+ * @return string
  */
 function flosc_render_msg_bubbles( $code, $letter, $n, $content, $who, $time, $rid, $css, $context_url = '' ) {
 	// One stored field = ONE message = ONE bubble, shown verbatim. We do NOT split.
@@ -825,11 +821,10 @@ function flosc_render_msg_bubbles( $code, $letter, $n, $content, $who, $time, $r
 /**
  * Render one conversation as a collapsible <details> block (session view).
  *
- * The auto-welcome "[SYSTEM: …]" rows are skipped so only the real back-and-forth.
- * Shows. The header carries a Delete control that removes the whole conversation.
- *
+ * The auto-welcome "[SYSTEM: …]" rows are skipped so only the real back-and-forth
+ * shows. The header carries a Delete control that removes the whole conversation.
  * @param mixed $flosc_s Input consumed by the Render the Word Press interface for chat session. operation.
- * @return Mixed Result produced by the chat session operation.
+ * @return mixed Result produced by the chat session operation.
  */
 function flosc_render_chat_session( $flosc_s ) {
 	$when        = esc_html( flosc_format_mts_utc( (string) ( $flosc_s['last_ts'] ?? '' ) ) );

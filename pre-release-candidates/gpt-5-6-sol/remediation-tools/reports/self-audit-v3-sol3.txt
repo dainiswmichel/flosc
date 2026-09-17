@@ -1,0 +1,66 @@
+DIRECT_LITERAL_EXTERNAL_CALLS=7
+DYNAMIC_OR_INTERNAL_CALLS=50
+DIRECT_LITERAL_DOMAINS=5
+DIRECT_LITERAL_DOMAINS_UNDISCLOSED=0
+DYNAMIC_FAMILIES_WITHOUT_DISCLOSURE=0
+
+== direct literal calls ==
+includes/class-flosc-framework.php:4008 https://graph.facebook.com/v19.0/app?access_token=
+includes/class-flosc-framework.php:4073 https://oauth2.googleapis.com/token
+includes/class-flosc-stt-dispatch.php:107 https://api.assemblyai.com/v2/upload
+includes/class-flosc-stt-dispatch.php:133 https://api.assemblyai.com/v2/transcript
+includes/class-flosc-stt-dispatch.php:172 https://api.assemblyai.com/v2/transcript/{$transcript_id}
+includes/sso/providers/class-microsoft-provider.php:125 https://graph.microsoft.com/v1.0/me/photo/$value
+includes/sso/providers/class-apple-provider.php:407 https://appleid.apple.com/auth/keys
+
+== dynamic/internal calls requiring code-path review ==
+admin/sso.php:446 fetch(ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' }) 				.then(function(r) { return r.json(); }) 				.then(functio
+admin/ivr-messages.php:628 wp_remote_get( $api_url, array( 'timeout' => 5 ) );  	if ( is_wp_error( $api_response ) ) { 		$diagnostics['api_endpoint'] = array( 			'stat
+admin/ivr-messages.php:1496 fetch(apiUrl) 		.then(response => response.json()) 		.then(data => { 			btn.disabled = false; 			 			if (data.success && data.messages) { 		
+admin/payments.php:287 fetch(ajaxurl + '?action=flosc_test_paypal&_wpnonce=<?php echo esc_js( wp_create_nonce( 'flosc_test_paypal' ) ); ?>') 					.then(r => r.json
+admin/login-registration.php:696 fetch(ajaxurl, { method: 'POST', body: data }) 			.then(r => r.json()) 			.then(res => { 				resultEl.style.display = 'block'; 				if (res.s
+includes/class-flosc-ai-chat-dispatch.php:1429 wp_remote_post() call, and 		 * a WordPress Coding Standards pass split that call across lines -- 		 * leaving the phpcs:ignore above `wp_re
+includes/class-flosc-ai-chat-dispatch.php:1431 wp_remote_post(` and the host it 		 * annotates one line further down, where the suppression does not reach. 		 */ 		// phpcs:ignore PluginC
+includes/class-flosc-ai-chat-dispatch.php:1436 wp_remote_post( 			$flosc_xai_endpoint, 			array( 				'headers' => array( 					'Authorization' => 'Bearer ' . $api_key, 					'Content-Type' 
+includes/class-flosc-framework.php:8910 wp_remote_post( 			$api_base . '/v1/oauth2/token', 			array( 				'headers' => array( 					// phpcs:ignore WordPress.PHP.DiscouragedPHPFuncti
+includes/class-flosc-framework.php:11694 wp_remote_post (server-to-server — never exposed to browser), 	 * aggregates phoneme scores, maps to lessons, and returns a score_data array
+includes/class-flosc-stt-dispatch.php:240 wp_remote_post() call, and 		 * a WordPress Coding Standards pass split that call across lines -- 		 * leaving the phpcs:ignore above `wp_re
+includes/class-flosc-stt-dispatch.php:242 wp_remote_post(` and the host it 		 * annotates one line further down, where the suppression does not reach. 		 */ 		// phpcs:ignore PluginC
+includes/class-flosc-stt-dispatch.php:247 wp_remote_post( 			$flosc_whisper_endpoint, 			array( 				'headers' => array( 					'Authorization' => 'Bearer ' . $api_key, 					'Content-Ty
+includes/ai/flosc-model-catalog.php:300 wp_remote_get( $request['url'], $args );  			if ( is_wp_error( $response ) ) { 				return $response; 			}  			$code = (int) wp_remote_retrie
+includes/ai/flosc-model-catalog.php:464 wp_remote_get( $url, $args );  		if ( is_wp_error( $response ) ) { 			return $response; 		}  		$code = (int) wp_remote_retrieve_response_cod
+includes/sso/class-sso-provider-base.php:229 wp_remote_post( 			$this->token_url, 			array( 				'timeout' => 30, 				'headers' => array( 					'Content-Type' => 'application/x-www-form-u
+includes/sso/class-sso-provider-base.php:288 wp_remote_get( 			$this->user_info_url, 			array( 				'timeout' => 30, 				'headers' => array( 					'Authorization' => 'Bearer ' . $access_t
+includes/sso/providers/class-microsoft-provider.php:87 wp_remote_get( 			$this->user_info_url, 			array( 				'timeout' => 30, 				'headers' => array( 					'Authorization' => 'Bearer ' . $access_t
+includes/sso/providers/class-linkedin-provider.php:63 wp_remote_get( 			$this->user_info_url, 			array( 				'timeout' => 30, 				'headers' => array( 					'Authorization' => 'Bearer ' . $access_t
+includes/sso/providers/class-apple-provider.php:148 wp_remote_post( 			$this->token_url, 			array( 				'timeout' => 30, 				'headers' => array( 					'Content-Type' => 'application/x-www-form-u
+includes/sso/providers/class-google-provider.php:85 wp_remote_get( 			$url, 			array( 				'timeout' => 30, 				'headers' => array( 					'Authorization' => 'Bearer ' . $access_token, 					'Acce
+includes/sso/providers/class-facebook-provider.php:106 wp_remote_get( 			$url, 			array( 				'timeout' => 30, 				'headers' => array( 					'Accept' => 'application/json', 				), 			) 		);  		if (
+includes/sso/providers/class-facebook-provider.php:288 wp_remote_get( 			$url, 			array( 				'timeout' => 15, 			) 		);  		if ( is_wp_error( $response ) ) { 			return $response; 		}  		if ( 200 !
+includes/sso/providers/class-facebook-provider.php:333 wp_remote_get( $url, array( 'timeout' => 30 ) );  		if ( is_wp_error( $response ) ) { 			return $response; 		}  		$body = json_decode( wp_re
+includes/sale/providers/class-flosc-stripe-provider.php:817 wp_remote_request( $url, $args );  		if ( is_wp_error( $response ) ) { 			return $response; 		}  		$body = json_decode( wp_remote_retrieve_b
+includes/sale/providers/class-flosc-paypal-provider.php:374 wp_remote_get( 			$api_base . '/v1/notifications/webhooks', 			array( 				'headers' => array( 					'Authorization' => 'Bearer ' . $token, 		
+includes/sale/providers/class-flosc-paypal-provider.php:394 wp_remote_get( 				$api_base . '/v1/notifications/webhooks', 				array( 					'headers' => array( 						'Authorization' => 'Bearer ' . $token
+includes/sale/providers/class-flosc-paypal-provider.php:444 wp_remote_post( 				$api_base . '/v1/notifications/webhooks', 				array( 					'headers' => array( 						'Authorization' => 'Bearer ' . $toke
+includes/sale/providers/class-flosc-paypal-provider.php:472 wp_remote_get( 					$api_base . '/v1/notifications/webhooks', 					array( 						'headers' => array( 							'Authorization' => 'Bearer ' . $t
+includes/sale/providers/class-flosc-paypal-provider.php:707 wp_remote_post( 			$api_base . '/v1/oauth2/token', 			array( 				'headers' => array( 					// phpcs:ignore WordPress.PHP.DiscouragedPHPFuncti
+includes/sale/providers/class-flosc-paypal-provider.php:808 wp_remote_post( 			$this->get_api_base() . '/v2/checkout/orders', 			array( 				'headers' => array( 					'Authorization' => 'Bearer ' . $tok
+includes/sale/providers/class-flosc-paypal-provider.php:845 wp_remote_post( 				$this->get_api_base() . '/v2/checkout/orders', 				array( 					'headers' => array( 						'Authorization' => 'Bearer ' . 
+includes/sale/providers/class-flosc-paypal-provider.php:899 wp_remote_post( 			$capture_url, 			array( 				'headers' => array( 					'Authorization' => 'Bearer ' . $token, 					'Content-Type'  => 'appl
+includes/sale/providers/class-flosc-paypal-provider.php:936 wp_remote_post( 				$capture_url, 				array( 					'headers' => array( 						'Authorization' => 'Bearer ' . $token, 						'Content-Type'  => 
+includes/sale/providers/class-flosc-paypal-provider.php:1092 wp_remote_post( 			$this->get_api_base() . '/v1/catalogs/products', 			array( 				'headers' => array( 					'Authorization' => 'Bearer ' . $t
+includes/sale/providers/class-flosc-paypal-provider.php:1140 wp_remote_post( 			$this->get_api_base() . '/v1/billing/plans', 			array( 				'headers' => array( 					'Authorization' => 'Bearer ' . $token
+includes/sale/providers/class-flosc-paypal-provider.php:1202 wp_remote_get( 			$this->get_api_base() . '/v1/billing/subscriptions/' . rawurlencode( $subscription_id ), 			array( 				'headers' => array(
+includes/sale/providers/class-flosc-paypal-provider.php:2116 wp_remote_post( 				$api_base . '/v1/notifications/verify-webhook-signature', 				array( 					'headers' => array( 						'Authorization' => '
+includes/sale/providers/class-flosc-paypal-provider.php:2153 wp_remote_post( 					$api_base . '/v1/notifications/verify-webhook-signature', 					array( 						'headers' => array( 							'Authorization' 
+assets/js/flosc-companion.js:1267 fetch(restUrl.replace(/\/?$/, '/') + 'register-email', {                 method: 'POST',                 credentials: 'same-origin',        
+assets/js/flosc-personality-builder-wp.js:209 fetch(wp.ajaxUrl, {       method: "POST",       credentials: "same-origin",       body: body     })       .then(function (r) {         retur
+assets/js/flosc-personality-builder-wp.js:269 fetch(wp.ajaxUrl, { method: "POST", credentials: "same-origin", body: body })       .then(function (r) { return r.json(); })       .then(fun
+assets/js/flosc-personality-builder-wp.js:289 fetch(wp.ajaxUrl, { method: "POST", credentials: "same-origin", body: att })           .then(function (r) { return r.json(); })           .t
+assets/js/flosc-app.js:2099 fetch(this.config.apiUrl + '/admin-messages-token', {                         method: 'POST',                         credentials: 'same-ori
+assets/js/flosc-app.js:2112 fetch(this.config.apiUrl + '/admin-messages', {                     method: 'POST',                     credentials: 'same-origin',         
+assets/js/flosc-app.js:5151 fetch(ajaxLogoutUrl, {                     method: 'POST',                     credentials: 'same-origin',                     headers: { 'C
+assets/js/flosc-app.js:6478 fetch(`${apiBaseUrl}${endpoint}`, {                 method: 'POST',                 headers: { 'Content-Type': 'application/json' },        
+assets/js/flosc-app.js:6924 fetch(`${apiBaseUrl}/finalize-session`, {                 method: 'POST',                 headers: { 'Content-Type': 'application/json' },  
+assets/js/flosc-app.js:7671 fetch(`${this.config.restUrl}stash-visitor-quiz`, {                         method: 'POST',                         headers: { 'Content-Type
+assets/js/flosc-app.js:9222 fetch(url, {             ...options,             credentials: 'same-origin',             headers         });     }      /**      * v1.7.1: R

@@ -1,14 +1,14 @@
 <?php
 /**
- * FLOSC AI Configuration Tab.
+ * FLOSC AI Configuration Tab
  *
- * Configures AI provider connections, model tuning, personality,.
- * And phase-specific behavior for each FLOSC flow.
+ * Configures AI provider connections, model tuning, personality,
+ * and phase-specific behavior for each FLOSC flow.
  *
- * Moved all inline styles to assets/css/flosc-admin.css.
- * Removed hardcoded default prompts (floscAdmin configures all)
- * Added provider-aware show/hide for API key sections.
- * Cleaned up unbuilt feature UI.
+ * Moved all inline styles to assets/css/flosc-admin.css
+ *         Removed hardcoded default prompts (floscAdmin configures all)
+ *         Added provider-aware show/hide for API key sections
+ *         Cleaned up unbuilt feature UI
  *
  * @package FLOSC
  * @since 1.9.0
@@ -315,17 +315,17 @@ if ( ! function_exists( 'flosc_ai_key_state_line' ) ) :
 	/**
 	 * Say, on the page and permanently, whether a key is stored for this provider.
 	 *
-	 * The save confirmation is a banner at the top of a long tab. Pressing Save at.
-	 * The foot of the page and being scrolled to a notice you never see is not.
-	 * Feedback — it leaves "did that work?" unanswered, and a key that is fine.
-	 * Looks like a key that never saved. The field answers for itself instead.
+	 * The save confirmation is a banner at the top of a long tab. Pressing Save at
+	 * the foot of the page and being scrolled to a notice you never see is not
+	 * feedback — it leaves "did that work?" unanswered, and a key that is fine
+	 * looks like a key that never saved. The field answers for itself instead.
 	 *
-	 * It also separates two things that look identical in an empty box: no key.
-	 * Anywhere, and no key on THIS flow while an install-wide one is doing the work.
+	 * It also separates two things that look identical in an empty box: no key
+	 * anywhere, and no key on THIS flow while an install-wide one is doing the work.
 	 *
 	 * @param string              $provider FLOSC provider slug.
 	 * @param array<string,mixed> $bag      This flow's settings.
-	 * @return Void.
+	 * @return void
 	 */
 	function flosc_ai_key_state_line( $provider, $bag ) {
 		$provider = sanitize_key( (string) $provider );
@@ -3139,7 +3139,7 @@ unset( $flosc_sci_types_available['attachment'] );
 				<p class="flosc-sci-subhead"><?php echo esc_html__( 'Which groups', 'flosc' ); ?></p>
 				<?php foreach ( $flosc_bb_groups as $flosc_bb_group ) : ?>
 					<label class="flosc-sci-type">
-						<input type="checkbox" name="flow_buddyboss_index[group_ids][]" value="<?php echo esc_attr( (int) $flosc_bb_group->id ); ?>"
+						<input type="checkbox" name="flow_buddyboss_index[group_ids][]" value="<?php echo esc_attr( (string) (int) $flosc_bb_group->id ); ?>"
 							<?php checked( in_array( (int) $flosc_bb_group->id, $flosc_bb_policy['group_ids'], true ) ); ?>>
 						<?php echo esc_html( (string) $flosc_bb_group->name ); ?>
 						<code><?php echo esc_html( (string) $flosc_bb_group->status ); ?></code>

@@ -1,10 +1,10 @@
 <?php
 /**
- * FLOSC Chat Logger.
+ * FLOSC Chat Logger
  * Logs all chat exchanges for real-time monitoring and later retrieval.
  *
- * Storage: Custom WordPress table {prefix}flosc_chat_logs.
- * Access: Admin-only viewer via FLOSC Settings → Chat Logs tab.
+ * Storage: Custom WordPress table {prefix}flosc_chat_logs
+ * Access: Admin-only viewer via FLOSC Settings → Chat Logs tab
  *
  * @package FLOSC
  * @since 1.9.0
@@ -25,11 +25,11 @@ class FLOSC_Chat_Logger {
 	private static $instance = null;
 	private $table_name;
 
-/**
- * Coordinate the instance behavior implemented by this code path.
- *
- * @return Mixed Result produced by the instance operation.
- */
+		/**
+	 * Coordinate the instance behavior implemented by this code path.
+	 *
+	 * @return mixed Result produced by the instance operation.
+	 */
 public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
@@ -37,9 +37,9 @@ public static function instance() {
 		return self::$instance;
 	}
 
-/**
- * Coordinate the construct behavior implemented by this code path.
- */
+		/**
+	 * Coordinate the construct behavior implemented by this code path.
+	 */
 private function __construct() {
 		global $wpdb;
 		$this->table_name = $wpdb->prefix . 'flosc_chat_logs';
@@ -48,7 +48,7 @@ private function __construct() {
 	/**
 	 * Bust short-lived chat-log object-cache keys after writes.
 	 *
-	 * @return Void.
+	 * @return void
 	 */
 	private function flosc_bust_log_caches() {
 		foreach ( array( 25, 50, 100 ) as $flosc_lim ) {
@@ -58,21 +58,21 @@ private function __construct() {
 		wp_cache_delete( 'log_count_' . md5( '' ), 'flosc_chat_logs' );
 	}
 
-/**
- * Coordinate the archived sessions option name behavior implemented by this code path.
- *
- * @return Mixed Result produced by the archived sessions option name operation.
- */
+		/**
+	 * Coordinate the archived sessions option name behavior implemented by this code path.
+	 *
+	 * @return mixed Result produced by the archived sessions option name operation.
+	 */
 private function flosc_archived_sessions_option_name() {
 		return 'flosc_archived_chat_sessions';
 	}
 
-/**
- * Coordinate the archive bucket key behavior implemented by this code path.
- *
- * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
- * @return Mixed Result produced by the archive bucket key operation.
- */
+		/**
+	 * Coordinate the archive bucket key behavior implemented by this code path.
+	 *
+	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+	 * @return mixed Result produced by the archive bucket key operation.
+	 */
 private function flosc_archive_bucket_key( $flow_id = '' ) {
 		$flow_id = sanitize_text_field( (string) $flow_id );
 		return '' !== $flow_id ? $flow_id : '__all';
@@ -81,28 +81,28 @@ private function flosc_archive_bucket_key( $flow_id = '' ) {
 	/**
 	 * Normalize a client-supplied journey id.
 	 *
-	 * The journey id is an opaque string the browser mints once and keeps across.
-	 * The login boundary, so every turn of one conversation carries the same.
-	 * Value even though session_id changes from the visitor's hashed id to the.
-	 * Numeric user-meta session id at login. Restricted to the characters a.
-	 * UUID (or the client's fallback id) can contain, so it is safe to use as a.
-	 * Grouping key and in an option array key.
+	 * The journey id is an opaque string the browser mints once and keeps across
+	 * the login boundary, so every turn of one conversation carries the same
+	 * value even though session_id changes from the visitor's hashed id to the
+	 * numeric user-meta session id at login. Restricted to the characters a
+	 * UUID (or the client's fallback id) can contain, so it is safe to use as a
+	 * grouping key and in an option array key.
 	 *
 	 * @param mixed $raw Client-supplied value.
-	 * @return String Sanitized journey id, or '' when unusable.
+	 * @return string Sanitized journey id, or '' when unusable.
 	 */
 	public static function flosc_sanitize_journey_id( $raw ) {
 		$raw = preg_replace( '/[^A-Za-z0-9_-]/', '', (string) $raw );
 		return substr( (string) $raw, 0, 64 );
 	}
 
-/**
- * Coordinate the session key from descriptor behavior implemented by this code path.
- *
- * @param mixed $by    Input consumed by the Coordinate the session key from descriptor behavior implemented by this code path. operation.
- * @param mixed $value Value consumed or normalized by the Coordinate the session key from descriptor behavior implemented by this code path. operation.
- * @return Mixed Result produced by the session key from descriptor operation.
- */
+		/**
+	 * Coordinate the session key from descriptor behavior implemented by this code path.
+	 *
+	 * @param mixed $by Input consumed by the Coordinate the session key from descriptor behavior implemented by this code path. operation.
+	 * @param mixed $value Value consumed or normalized by the Coordinate the session key from descriptor behavior implemented by this code path. operation.
+	 * @return mixed Result produced by the session key from descriptor operation.
+	 */
 public static function flosc_session_key_from_descriptor( $by, $value ) {
 		$by = in_array( $by, array( 'journey', 'session', 'user', 'ip' ), true ) ? $by : '';
 		if ( '' === $by ) {
@@ -128,12 +128,12 @@ public static function flosc_session_key_from_descriptor( $by, $value ) {
 		return '' !== $ip ? 'ip' . $ip : '';
 	}
 
-/**
- * Coordinate the archived session keys behavior implemented by this code path.
- *
- * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
- * @return Array Structured archived session keys data.
- */
+		/**
+	 * Coordinate the archived session keys behavior implemented by this code path.
+	 *
+	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+	 * @return array Structured archived session keys data.
+	 */
 public function flosc_get_archived_session_keys( $flow_id = '' ) {
 		$bucket = $this->flosc_archive_bucket_key( $flow_id );
 		$all    = get_option( $this->flosc_archived_sessions_option_name(), array() );
@@ -150,15 +150,15 @@ public function flosc_get_archived_session_keys( $flow_id = '' ) {
 		return array_values( array_unique( $keys ) );
 	}
 
-/**
- * Persist the session archived state in WordPress storage.
- *
- * @param mixed $by       Input consumed by the Persist the session archived state in Word Press storage. operation.
- * @param mixed $value    Value consumed or normalized by the Persist the session archived state in Word Press storage. operation.
- * @param mixed $flow_id  Flow identifier used to resolve flow-scoped configuration and state.
- * @param mixed $archived Input consumed by the Persist the session archived state in Word Press storage. operation.
- * @return Bool Whether session archived applies to the current state.
- */
+		/**
+	 * Persist the session archived state in WordPress storage.
+	 *
+	 * @param mixed $by Input consumed by the Persist the session archived state in Word Press storage. operation.
+	 * @param mixed $value Value consumed or normalized by the Persist the session archived state in Word Press storage. operation.
+	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+	 * @param mixed $archived Input consumed by the Persist the session archived state in Word Press storage. operation.
+	 * @return bool Whether session archived applies to the current state.
+	 */
 public function flosc_set_session_archived( $by, $value, $flow_id = '', $archived = true ) {
 		$key = self::flosc_session_key_from_descriptor( $by, $value );
 		if ( '' === $key ) {
@@ -205,8 +205,7 @@ public function flosc_set_session_archived( $by, $value, $flow_id = '', $archive
 	/**
 	 * Create the chat logs table if it doesn't exist.
 	 * Called on plugin activation and on first use.
-	 *
-	 * @return Bool Whether ensure table applies to the current state.
+ * @return bool Whether ensure table applies to the current state.
 	 */
 	public function flosc_ensure_table() {
 		global $wpdb;
@@ -273,10 +272,10 @@ public function flosc_set_session_archived( $by, $value, $flow_id = '', $archive
 	 * Rate a chat log entry. Score from -10 to +10 with optional note.
 	 * Any non-zero rating auto-protects the log from expunge.
 	 *
-	 * @param int    $log_id The chat log row ID.
-	 * @param int    $rating Score from -10 to +10.
-	 * @param string $note   Admin's note (why this score).
-	 * @return Bool True on success.
+	 * @param int    $log_id  The chat log row ID.
+	 * @param int    $rating  Score from -10 to +10.
+	 * @param string $note    Admin's note (why this score).
+	 * @return bool True on success
 	 * @since 1.9.5
 	 */
 	public function flosc_rate_log( $log_id, $rating, $note = '' ) {
@@ -316,15 +315,15 @@ public function flosc_set_session_archived( $by, $value, $flow_id = '', $archive
 	/**
 	 * Load recent turns for one session the current request is allowed to see.
 	 *
-	 * Visitor rows require the opaque client session string (not a short numeric.
-	 * Guess) and a matching hashed visitor IP already stored on that session.
+	 * Visitor rows require the opaque client session string (not a short numeric
+	 * guess) and a matching hashed visitor IP already stored on that session.
 	 * Logged-in rows require the current WordPress user to own the session.
 	 * Destination flow is not required so floscDomain visits keep the transcript.
 	 *
 	 * @param int    $session_id     Normalized session id.
 	 * @param int    $max_pairs      Max user/assistant pairs (each pair is two roles).
 	 * @param string $session_id_raw Client-supplied session string.
-	 * @return Array<int,array{role:string,content:string}>.
+	 * @return array<int,array{role:string,content:string}>
 	 */
 	public function flosc_get_session_turns( $session_id, $max_pairs = 10, $session_id_raw = '' ) {
 		global $wpdb;
@@ -403,14 +402,14 @@ public function flosc_set_session_archived( $by, $value, $flow_id = '', $archive
 		return $out;
 	}
 
-	// ──────────────────────────────────────────────────────────────.
+	// ──────────────────────────────────────────────────────────────
 	// Journey marks — VGM state changes as rows in the thread.
-	// ──────────────────────────────────────────────────────────────.
+	// ──────────────────────────────────────────────────────────────
 
 	/**
 	 * Meta key holding acquisition marks waiting to be written into a thread.
 	 *
-	 * @return String.
+	 * @return string
 	 */
 	private static function flosc_journey_marks_meta_key() {
 		return '_flosc_journey_marks_pending';
@@ -419,8 +418,8 @@ public function flosc_set_session_archived( $by, $value, $flow_id = '', $archive
 	/**
 	 * Normalize a flow id to the stem the log table and the grant meta both use.
 	 *
-	 * @param string $flow_id Value consumed by this operation.
-	 * @return String Stem, or '' when there is no flow.
+	 * @param string $flow_id
+	 * @return string Stem, or '' when there is no flow.
 	 */
 	public static function flosc_journey_flow_stem( $flow_id ) {
 		$stem = sanitize_key( pathinfo( basename( (string) $flow_id ), PATHINFO_FILENAME ) );
@@ -433,20 +432,20 @@ public function flosc_set_session_archived( $by, $value, $flow_id = '', $archive
 	/**
 	 * Record that a user acquired something, to be written into their thread later.
 	 *
-	 * The acquisition events fire where the browser is not present -- a PayPal IPN,.
-	 * A ClickBank postback, an OAuth callback -- so the journey id is unknown at.
-	 * That moment. Parking the mark on the user and redeeming it on their next.
-	 * Logged turn is what lets the row land in the right thread, in order, without.
-	 * Guessing from timestamps.
+	 * The acquisition events fire where the browser is not present -- a PayPal IPN,
+	 * a ClickBank postback, an OAuth callback -- so the journey id is unknown at
+	 * that moment. Parking the mark on the user and redeeming it on their next
+	 * logged turn is what lets the row land in the right thread, in order, without
+	 * guessing from timestamps.
 	 *
-	 * One-shot per user per (mark, flow): you can only become a guest once, and a.
-	 * Member of any one flow once, so a re-grant or a renewal must not queue a.
-	 * Second "+M".
+	 * One-shot per user per (mark, flow): you can only become a guest once, and a
+	 * member of any one flow once, so a re-grant or a renewal must not queue a
+	 * second "+M".
 	 *
-	 * @param int    $user_id Value consumed by this operation.
-	 * @param mixed  $mark    Input consumed by the Persist the queue journey mark state in Word Press storage. operation.
+	 * @param int    $user_id
+	 * @param mixed $mark Input consumed by the Persist the queue journey mark state in Word Press storage. operation.
 	 * @param string $flow_id Flow the acquisition belongs to. '' = account-wide.
-	 * @return Void.
+	 * @return void
 	 */
 	public static function flosc_queue_journey_mark( $user_id, $mark, $flow_id = '' ) {
 		$user_id = (int) $user_id;
@@ -485,19 +484,19 @@ public function flosc_set_session_archived( $by, $value, $flow_id = '', $archive
 	 *
 	 * Two things can produce a mark, and they mean different things:
 	 *
-	 * Acquisition  -- the account or the entitlement came into existence just.
-	 * Now. Queued by flosc_queue_journey_mark() from the events.
-	 * Themselves (user_register, flosc_member_access_granted),.
-	 * So it is a fact, not an inference. Written as +G / +M.
+	 *   Acquisition  -- the account or the entitlement came into existence just
+	 *                   now. Queued by flosc_queue_journey_mark() from the events
+	 *                   themselves (user_register, flosc_member_access_granted),
+	 *                   so it is a fact, not an inference. Written as +G / +M.
 	 *
-	 * Recognition  -- nothing was acquired; someone who already had an account.
-	 * Signed in and the system recognized them. There is no.
-	 * Event for this, but the thread itself is the evidence: the.
-	 * Previous row in this journey was written with user_id 0.
-	 * And this one is not. Written as G / M.
+	 *   Recognition  -- nothing was acquired; someone who already had an account
+	 *                   signed in and the system recognized them. There is no
+	 *                   event for this, but the thread itself is the evidence: the
+	 *                   previous row in this journey was written with user_id 0
+	 *                   and this one is not. Written as G / M.
 	 *
 	 * @param array $data The turn about to be logged (flow_id, user_id, journey_id, phase).
-	 * @return Void.
+	 * @return void
 	 */
 	private function flosc_write_journey_marks( $data ) {
 		global $wpdb;
@@ -613,26 +612,25 @@ public function flosc_set_session_archived( $by, $value, $flow_id = '', $archive
 	/**
 	 * Log a chat exchange.
 	 *
-	 * @param array $data {.
-	 * @type string $flow_id        Flow identifier
-	 * @type string $phase          Current funnel phase
-	 * @type int    $user_id        WordPress user ID (0 for visitors)
-	 * @type int    $session_id     Session ID if available
-	 * @type string $journey_id     Opaque per-conversation id that survives login
-	 * @type string $user_message   What the user said
-	 * @type string $ai_response    What the AI/IVR responded
-	 * @type string $provider       AI provider used (openai, anthropic, xai, ivr)
-	 * @type array  $chain_detail   Provider names if chaining was used
-	 * @type string $response_source How the response was generated (ivr, ai, ai+ivr, rag, fallback)
-	 * @type int    $response_time_ms Response time in milliseconds
-	 * }.
-	 * @return Int|false Insert ID on success, false on failure.
+	 * @param array $data {
+	 *     @type string $flow_id        Flow identifier
+	 *     @type string $phase          Current funnel phase
+	 *     @type int    $user_id        WordPress user ID (0 for visitors)
+	 *     @type int    $session_id     Session ID if available
+	 *     @type string $journey_id     Opaque per-conversation id that survives login
+	 *     @type string $user_message   What the user said
+	 *     @type string $ai_response    What the AI/IVR responded
+	 *     @type string $provider       AI provider used (openai, anthropic, xai, ivr)
+	 *     @type array  $chain_detail   Provider names if chaining was used
+	 *     @type string $response_source How the response was generated (ivr, ai, ai+ivr, rag, fallback)
+	 *     @type int    $response_time_ms Response time in milliseconds
+	 * }
+	 * @return int|false Insert ID on success, false on failure
 	 */
 	/**
 	 * A turn id is opaque and browser-minted; accept only what we mint.
-	 *
-	 * @param mixed $raw Input consumed by the Coordinate the turn id behavior implemented by this code path. operation.
-	 * @return Mixed Result produced by the turn id operation.
+ * @param mixed $raw Input consumed by the Coordinate the turn id behavior implemented by this code path. operation.
+ * @return mixed Result produced by the turn id operation.
 	 */
 	public static function flosc_sanitize_turn_id( $raw ) {
 		$raw = strtolower( trim( (string) $raw ) );
@@ -642,13 +640,12 @@ public function flosc_set_session_archived( $by, $value, $flow_id = '', $archive
 	/**
 	 * The row a turn id wrote, if it wrote one.
 	 *
-	 * A visitor who reloads while the assistant is still typing leaves the.
-	 * Request in flight: the browser drops the connection, PHP runs to.
-	 * Completion and writes the answer, and nobody reads it. The reply exists.
+	 * A visitor who reloads while the assistant is still typing leaves the
+	 * request in flight: the browser drops the connection, PHP runs to
+	 * completion and writes the answer, and nobody reads it. The reply exists.
 	 * This is how the reloaded page finds it.
-	 *
-	 * @param mixed $turn_id Identifier used to select the record involved in the Coordinate the turn behavior implemented by this code path. operation.
-	 * @return Mixed Result produced by the turn operation.
+ * @param mixed $turn_id Identifier used to select the record involved in the Coordinate the turn behavior implemented by this code path. operation.
+ * @return mixed Result produced by the turn operation.
 	 */
 	public function flosc_find_turn( $turn_id ) {
 		global $wpdb;
@@ -675,11 +672,10 @@ public function flosc_set_session_archived( $by, $value, $flow_id = '', $archive
 
 	/**
 	 * Mark a turn abandoned. An abandoned turn is not conversation history:
-	 * Replaying it makes the next prompt look like a question nobody answered,.
-	 * Which is how a normal follow-up came back as scripted IVR copy.
-	 *
-	 * @param mixed $turn_id Identifier used to select the record involved in the Coordinate the mark turn abandoned behavior implemented by this code path. operation.
-	 * @return Bool Whether mark turn abandoned applies to the current state.
+	 * replaying it makes the next prompt look like a question nobody answered,
+	 * which is how a normal follow-up came back as scripted IVR copy.
+ * @param mixed $turn_id Identifier used to select the record involved in the Coordinate the mark turn abandoned behavior implemented by this code path. operation.
+ * @return bool Whether mark turn abandoned applies to the current state.
 	 */
 	public function flosc_mark_turn_abandoned( $turn_id ) {
 		global $wpdb;
@@ -707,12 +703,12 @@ public function flosc_set_session_archived( $by, $value, $flow_id = '', $archive
 		return (bool) $updated;
 	}
 
-/**
- * Coordinate the log chat behavior implemented by this code path.
- *
- * @param mixed $data Structured data consumed by the Coordinate the log chat behavior implemented by this code path. operation.
- * @return Bool Whether log chat applies to the current state.
- */
+		/**
+	 * Coordinate the log chat behavior implemented by this code path.
+	 *
+	 * @param mixed $data Structured data consumed by the Coordinate the log chat behavior implemented by this code path. operation.
+	 * @return bool Whether log chat applies to the current state.
+	 */
 public function flosc_log_chat( $data ) {
 		global $wpdb;
 
@@ -873,13 +869,13 @@ public function flosc_log_chat( $data ) {
 	 * Get recent chat logs for admin viewer.
 	 *
 	 * @param array $filters {.
-	 * @type string $flow_id  Filter by flow
-	 * @type string $phase    Filter by phase
-	 * @type int    $user_id  Filter by user
-	 * @type int    $since_id Only return logs with ID > this (for polling)
-	 * @type int    $limit    Max results (default 50)
-	 * }.
-	 * @return Array Chat log entries.
+	 *     @type string $flow_id  Filter by flow
+	 *     @type string $phase    Filter by phase
+	 *     @type int    $user_id  Filter by user
+	 *     @type int    $since_id Only return logs with ID > this (for polling)
+	 *     @type int    $limit    Max results (default 50)
+	 * }
+	 * @return array Chat log entries
 	 */
 	public function flosc_get_logs( $filters = array() ) {
 		global $wpdb;
@@ -938,7 +934,7 @@ public function flosc_log_chat( $data ) {
 	 * Ensures schema via flosc_ensure_table(); caches short-lived in the object cache.
 	 *
 	 * @param int $limit Max rows (1–100).
-	 * @return Array<int, array<string, mixed>>.
+	 * @return array<int, array<string, mixed>>
 	 */
 	public function flosc_get_rated_logs( $limit = 50 ) {
 		global $wpdb;
@@ -973,9 +969,8 @@ public function flosc_log_chat( $data ) {
 
 	/**
 	 * Get total log count (for admin stats).
-	 *
-	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
-	 * @return Mixed Result produced by the log count operation.
+ * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+ * @return mixed Result produced by the log count operation.
 	 */
 	public function flosc_get_log_count( $flow_id = '' ) {
 		global $wpdb;
@@ -1002,7 +997,7 @@ public function flosc_log_chat( $data ) {
 	 * Clear logs older than X days.
 	 *
 	 * @param int $days Number of days to retain.
-	 * @return Int Number of rows deleted.
+	 * @return int Number of rows deleted
 	 */
 	public function flosc_clear_old_logs( $days = 30 ) {
 		global $wpdb;
@@ -1025,18 +1020,18 @@ public function flosc_log_chat( $data ) {
 	/**
 	 * Inject an admin/human message into a conversation (admin joins the chat).
 	 *
-	 * Stored as a normal log row in the visitor's conversation (keyed by the same.
-	 * Session id the visitor uses), marked response_source='admin' with the admin's.
-	 * Display name in `provider`. It is a bot-side, human-authored line — so.
-	 * User_message is blank and ai_response holds the text. It lands at the bottom.
+	 * Stored as a normal log row in the visitor's conversation (keyed by the same
+	 * session id the visitor uses), marked response_source='admin' with the admin's
+	 * display name in `provider`. It is a bot-side, human-authored line — so
+	 * user_message is blank and ai_response holds the text. It lands at the bottom
 	 * (chronological), to be picked up by the visitor's poll.
 	 *
 	 * @param int    $session_id The visitor's session id (the conversation).
 	 * @param string $flow_id    Flow the conversation belongs to.
 	 * @param string $admin_name The admin's display name (shown as "Name (admin)").
 	 * @param string $text       The message text.
-	 * @param mixed  $source     Input consumed by the Coordinate the insert admin message behavior implemented by this code path. operation.
-	 * @return Int|false New row id, or false.
+ * @param mixed $source Input consumed by the Coordinate the insert admin message behavior implemented by this code path. operation.
+	 * @return int|false New row id, or false.
 	 */
 	public function flosc_insert_admin_message( $session_id, $flow_id, $admin_name, $text, $source = 'admin' ) {
 		global $wpdb;
@@ -1094,8 +1089,8 @@ public function flosc_log_chat( $data ) {
 	 * Fetch admin messages for one conversation newer than a cursor (visitor poll).
 	 *
 	 * @param int $session_id The visitor's session id.
-	 * @param int $since_id   Return admin rows with id greater than this.
-	 * @return Array List of ['id','text','name','timestamp'].
+	 * @param int $since_id    Return admin rows with id greater than this.
+	 * @return array List of ['id','text','name','timestamp'].
 	 */
 	public function flosc_get_admin_messages_since( $session_id, $since_id ) {
 		global $wpdb;
@@ -1137,10 +1132,9 @@ public function flosc_log_chat( $data ) {
 
 	/**
 	 * Resolve the most recent logged-in user associated with a chat session.
-	 *
-	 * @param mixed $session_id Identifier used to select the record involved in the Coordinate the session owner user id behavior implemented by this code path. operation.
-	 * @param mixed $flow_id    Flow identifier used to resolve flow-scoped configuration and state.
-	 * @return Mixed Result produced by the session owner user id operation.
+ * @param mixed $session_id Identifier used to select the record involved in the Coordinate the session owner user id behavior implemented by this code path. operation.
+ * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+ * @return mixed Result produced by the session owner user id operation.
 	 */
 	public function flosc_get_session_owner_user_id( $session_id, $flow_id = '' ) {
 		global $wpdb;
@@ -1179,7 +1173,7 @@ public function flosc_log_chat( $data ) {
 	 * - Visitors: at least one row for this session with current visitor_ip hash.
 	 *
 	 * @param int $session_id Visitor session identifier.
-	 * @return Bool.
+	 * @return bool
 	 */
 	public function flosc_current_request_owns_session( $session_id ) {
 		global $wpdb;
@@ -1223,14 +1217,14 @@ public function flosc_log_chat( $data ) {
 	/**
 	 * Identify which conversation a log row belongs to.
 	 *
-	 * Multiple people can be chatting at once, so the flat log is unreadable. We.
-	 * Group rows into conversations using the most specific key a row carries:
-	 * The journey id, else an explicit session id, else the logged-in user, else.
-	 * The (hashed) visitor IP for anonymous guests. The returned descriptor also.
-	 * Drives deletion, so the grouping key and the delete WHERE clause always agree.
+	 * Multiple people can be chatting at once, so the flat log is unreadable. We
+	 * group rows into conversations using the most specific key a row carries:
+	 * the journey id, else an explicit session id, else the logged-in user, else
+	 * the (hashed) visitor IP for anonymous guests. The returned descriptor also
+	 * drives deletion, so the grouping key and the delete WHERE clause always agree.
 	 *
 	 * @param array $row A chat log row (ARRAY_A).
-	 * @return Array { by: 'journey'|'session'|'user'|'ip', value: string, key: string, label: string }.
+	 * @return array { by: 'journey'|'session'|'user'|'ip', value: string, key: string, label: string }
 	 */
 	public static function flosc_session_descriptor( $row ) {
 		$journey_id = self::flosc_sanitize_journey_id( $row['journey_id'] ?? '' );
@@ -1294,14 +1288,14 @@ public function flosc_log_chat( $data ) {
 	/**
 	 * Get chat logs grouped into conversations, newest conversation first.
 	 *
-	 * Pulls the most recent rows (flow-scoped) and folds them into sessions, each.
-	 * With its messages in chronological order and a count of real visitor turns.
+	 * Pulls the most recent rows (flow-scoped) and folds them into sessions, each
+	 * with its messages in chronological order and a count of real visitor turns
 	 * (the auto-welcome "[SYSTEM: …]" rows are counted as noise, not turns).
 	 *
-	 * @param string $flow_id        Restrict to a flow (no extension), or '' for all.
-	 * @param int    $max_rows       Safety cap on rows scanned (default 800).
-	 * @param mixed  $archive_status Input consumed by the Coordinate the sessions behavior implemented by this code path. operation.
-	 * @return Array List of session arrays.
+	 * @param string $flow_id  Restrict to a flow (no extension), or '' for all.
+	 * @param int    $max_rows Safety cap on rows scanned (default 800).
+ * @param mixed $archive_status Input consumed by the Coordinate the sessions behavior implemented by this code path. operation.
+	 * @return array List of session arrays.
 	 */
 	public function flosc_get_sessions( $flow_id = '', $max_rows = 800, $archive_status = 'active' ) {
 		global $wpdb;
@@ -1389,16 +1383,16 @@ public function flosc_log_chat( $data ) {
 	/**
 	 * Delete every row of one conversation (an explicit admin action).
 	 *
-	 * The WHERE clause mirrors flosc_session_descriptor() exactly so a delete.
-	 * Removes precisely the rows shown under that session — and nothing from a.
-	 * Neighbouring conversation. Flow-scoped when a flow is given. Unlike the.
-	 * Retention sweep, this deliberately removes protected (rated) rows too,.
-	 * Because the admin asked for this specific session to go.
+	 * The WHERE clause mirrors flosc_session_descriptor() exactly so a delete
+	 * removes precisely the rows shown under that session — and nothing from a
+	 * neighbouring conversation. Flow-scoped when a flow is given. Unlike the
+	 * retention sweep, this deliberately removes protected (rated) rows too,
+	 * because the admin asked for this specific session to go.
 	 *
 	 * @param string $by      'session' | 'user' | 'ip'.
 	 * @param string $value   The matching session id / user id / hashed ip.
 	 * @param string $flow_id Restrict to a flow (no extension), or '' for all.
-	 * @return Int Rows deleted.
+	 * @return int Rows deleted.
 	 */
 	public function flosc_delete_session( $by, $value, $flow_id = '' ) {
 		global $wpdb;
@@ -1483,14 +1477,14 @@ public function flosc_log_chat( $data ) {
 		);
 	}
 
-/**
- * Coordinate the session rows behavior implemented by this code path.
- *
- * @param mixed $by      Input consumed by the Coordinate the session rows behavior implemented by this code path. operation.
- * @param mixed $value   Value consumed or normalized by the Coordinate the session rows behavior implemented by this code path. operation.
- * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
- * @return Array Structured session rows data.
- */
+		/**
+	 * Coordinate the session rows behavior implemented by this code path.
+	 *
+	 * @param mixed $by Input consumed by the Coordinate the session rows behavior implemented by this code path. operation.
+	 * @param mixed $value Value consumed or normalized by the Coordinate the session rows behavior implemented by this code path. operation.
+	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+	 * @return array Structured session rows data.
+	 */
 public function flosc_get_session_rows( $by, $value, $flow_id = '' ) {
 		global $wpdb;
 		$flosc_cache_probe = wp_cache_get( 'flosc_chat_logs_list', 'flosc_chat_logs' );
@@ -1592,8 +1586,7 @@ public function flosc_get_session_rows( $by, $value, $flow_id = '' ) {
 	/**
 	 * Hash the visitor IP for privacy.
 	 * We don't store raw IPs — just a one-way hash for grouping sessions.
-	 *
-	 * @return Mixed Result produced by the hashed ip operation.
+ * @return mixed Result produced by the hashed ip operation.
 	 */
 	private function flosc_get_hashed_ip() {
 		$ip = 'unknown';

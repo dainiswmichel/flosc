@@ -2,11 +2,11 @@
 /**
  * FLOSC DA1 content-agnostic catalog runtime (TSV-backed).
  *
- * DA1 stores catalog structure and access/delivery controls. Catalog payload.
- * Columns are intentionally unrestricted. Dublin Core-compatible field names.
- * (Title, Creator, Subject, Description, Publisher, Contributor, Date, Type,.
- * Format, Identifier, Source, Language, Relation, Coverage, Rights) are.
- * Recognized when present, but are never required or injected into a catalog.
+ * DA1 stores catalog structure and access/delivery controls. Catalog payload
+ * columns are intentionally unrestricted. Dublin Core-compatible field names
+ * (Title, Creator, Subject, Description, Publisher, Contributor, Date, Type,
+ * Format, Identifier, Source, Language, Relation, Coverage, Rights) are
+ * recognized when present, but are never required or injected into a catalog.
  *
  * @package FLOSC
  */
@@ -37,14 +37,14 @@ class FLOSC_DA1_Catalogs {
 	);
 
 	/**
-	 * Build a deterministic catalog reply when the user clearly asks about an.
-	 * Assigned DA1 catalog or names an available item.
+	 * Build a deterministic catalog reply when the user clearly asks about an
+	 * assigned DA1 catalog or names an available item.
 	 *
 	 * @param string $message      User message.
 	 * @param string $flow_id      Current flow id/stem.
 	 * @param string $ivr_file     Current IVR filename.
-	 * @param string $access_level Visitor|guest|member.
-	 * @return String.
+	 * @param string $access_level visitor|guest|member.
+	 * @return string
 	 */
 	public function build_catalog_reply( $message, $flow_id, $ivr_file, $access_level = 'visitor' ) {
 		$rows = $this->load_rows_for_flow( $flow_id, $ivr_file, $access_level );
@@ -111,12 +111,11 @@ class FLOSC_DA1_Catalogs {
 	}
 
 	/**
-	 * Conservative catalog-intent check. The runtime is called on every chat.
-	 * Turn, so it must not hijack unrelated conversation.
-	 *
-	 * @param mixed $message Input consumed by the Determine whether the current state satisfies catalog query. operation.
-	 * @param mixed $items   Input consumed by the Determine whether the current state satisfies catalog query. operation.
-	 * @return Bool Whether catalog query applies to the current state.
+	 * Conservative catalog-intent check. The runtime is called on every chat
+	 * turn, so it must not hijack unrelated conversation.
+ * @param mixed $message Input consumed by the Determine whether the current state satisfies catalog query. operation.
+ * @param mixed $items Input consumed by the Determine whether the current state satisfies catalog query. operation.
+ * @return bool Whether catalog query applies to the current state.
 	 */
 	public function is_catalog_query( $message, $items = array() ) {
 		$text = $this->normalize_search_text( $message );
@@ -156,34 +155,34 @@ class FLOSC_DA1_Catalogs {
 		return false;
 	}
 
-/**
- * Determine whether the current state satisfies count request.
- *
- * @param mixed $message Input consumed by the Determine whether the current state satisfies count request. operation.
- * @return Bool Whether count request applies to the current state.
- */
+		/**
+	 * Determine whether the current state satisfies count request.
+	 *
+	 * @param mixed $message Input consumed by the Determine whether the current state satisfies count request. operation.
+	 * @return bool Whether count request applies to the current state.
+	 */
 public function is_count_request( $message ) {
 		$text = $this->normalize_search_text( $message );
 		return (bool) preg_match( '/\b(how many|number of|count|total|cik)\b/u', $text );
 	}
 
-/**
- * Determine whether the current state satisfies full list request.
- *
- * @param mixed $message Input consumed by the Determine whether the current state satisfies full list request. operation.
- * @return Bool Whether full list request applies to the current state.
- */
+		/**
+	 * Determine whether the current state satisfies full list request.
+	 *
+	 * @param mixed $message Input consumed by the Determine whether the current state satisfies full list request. operation.
+	 * @return bool Whether full list request applies to the current state.
+	 */
 public function is_full_list_request( $message ) {
 		$text = $this->normalize_search_text( $message );
 		return (bool) preg_match( '/\b(full list|complete list|entire catalog|entire catalogue|show all|list all|everything)\b/u', $text );
 	}
 
-/**
- * Coordinate the detect batch size behavior implemented by this code path.
- *
- * @param mixed $message Input consumed by the Coordinate the detect batch size behavior implemented by this code path. operation.
- * @return Mixed Result produced by the detect batch size operation.
- */
+		/**
+	 * Coordinate the detect batch size behavior implemented by this code path.
+	 *
+	 * @param mixed $message Input consumed by the Coordinate the detect batch size behavior implemented by this code path. operation.
+	 * @return mixed Result produced by the detect batch size operation.
+	 */
 public function detect_batch_size( $message ) {
 		$text = $this->normalize_search_text( $message );
 		if ( preg_match( '/\b(one|1|single)\b/u', $text ) ) {
@@ -196,13 +195,12 @@ public function detect_batch_size( $message ) {
 	}
 
 	/**
-	 * Load assigned catalog rows and enforce DA1 controls before any row can be.
-	 * Exposed to the chat layer.
-	 *
-	 * @param mixed $flow_id      Flow identifier used to resolve flow-scoped configuration and state.
-	 * @param mixed $ivr_file     IVR identifier or filename used to select the flow configuration.
-	 * @param mixed $access_level Input consumed by the Resolve the current rows for flow value from the available Word Press and flow state. operation.
-	 * @return Array Structured rows for flow data.
+	 * Load assigned catalog rows and enforce DA1 controls before any row can be
+	 * exposed to the chat layer.
+ * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+ * @param mixed $ivr_file IVR identifier or filename used to select the flow configuration.
+ * @param mixed $access_level Input consumed by the Resolve the current rows for flow value from the available Word Press and flow state. operation.
+ * @return array Structured rows for flow data.
 	 */
 	public function load_rows_for_flow( $flow_id, $ivr_file, $access_level = 'visitor' ) {
 		$upload_dir  = wp_upload_dir();
@@ -313,9 +311,8 @@ public function detect_batch_size( $message ) {
 
 	/**
 	 * Convert visible rows into content-agnostic catalog items.
-	 *
-	 * @param mixed $rows Input consumed by the Coordinate the extract items behavior implemented by this code path. operation.
-	 * @return Mixed Result produced by the extract items operation.
+ * @param mixed $rows Input consumed by the Coordinate the extract items behavior implemented by this code path. operation.
+ * @return mixed Result produced by the extract items operation.
 	 */
 	public function extract_items( $rows ) {
 		$children_by_parent = array();
@@ -370,12 +367,11 @@ public function detect_batch_size( $message ) {
 	}
 
 	/**
-	 * Dublin Core compatibility layer. It recognizes DC/DCMI field names without.
-	 * Forcing them into the source catalog. Categories and Tags can supplement.
+	 * Dublin Core compatibility layer. It recognizes DC/DCMI field names without
+	 * forcing them into the source catalog. Categories and Tags can supplement
 	 * Subject when a catalog chooses to use those DA1-friendly fields.
-	 *
-	 * @param mixed $payload Structured data consumed by the Coordinate the extract dublin core metadata behavior implemented by this code path. operation.
-	 * @return Mixed Result produced by the extract dublin core metadata operation.
+ * @param mixed $payload Structured data consumed by the Coordinate the extract dublin core metadata behavior implemented by this code path. operation.
+ * @return mixed Result produced by the extract dublin core metadata operation.
 	 */
 	public function extract_dublin_core_metadata( $payload ) {
 		$dc_fields = array(
@@ -420,13 +416,13 @@ public function detect_batch_size( $message ) {
 		return $dc;
 	}
 
-/**
- * Resolve the current matching items value from the available WordPress and flow state.
- *
- * @param mixed $message Input consumed by the Resolve the current matching items value from the available Word Press and flow state. operation.
- * @param mixed $items   Input consumed by the Resolve the current matching items value from the available Word Press and flow state. operation.
- * @return Array Structured matching items data.
- */
+		/**
+	 * Resolve the current matching items value from the available WordPress and flow state.
+	 *
+	 * @param mixed $message Input consumed by the Resolve the current matching items value from the available Word Press and flow state. operation.
+	 * @param mixed $items Input consumed by the Resolve the current matching items value from the available Word Press and flow state. operation.
+	 * @return array Structured matching items data.
+	 */
 public function find_matching_items( $message, $items ) {
 		$query_tokens = $this->search_tokens( $message );
 		if ( empty( $query_tokens ) ) {
@@ -490,12 +486,12 @@ public function find_matching_items( $message, $items ) {
 		);
 	}
 
-/**
- * Coordinate the parse tsv content behavior implemented by this code path.
- *
- * @param mixed $content Input consumed by the Coordinate the parse tsv content behavior implemented by this code path. operation.
- * @return Mixed Result produced by the parse tsv content operation.
- */
+		/**
+	 * Coordinate the parse tsv content behavior implemented by this code path.
+	 *
+	 * @param mixed $content Input consumed by the Coordinate the parse tsv content behavior implemented by this code path. operation.
+	 * @return mixed Result produced by the parse tsv content operation.
+	 */
 public function parse_tsv_content( $content ) {
 		$rows      = array();
 		$row       = array();
@@ -539,13 +535,13 @@ public function parse_tsv_content( $content ) {
 		return $rows;
 	}
 
-/**
- * Coordinate the shorten text behavior implemented by this code path.
- *
- * @param mixed $text  Input consumed by the Coordinate the shorten text behavior implemented by this code path. operation.
- * @param mixed $limit Input consumed by the Coordinate the shorten text behavior implemented by this code path. operation.
- * @return Mixed Result produced by the shorten text operation.
- */
+		/**
+	 * Coordinate the shorten text behavior implemented by this code path.
+	 *
+	 * @param mixed $text Input consumed by the Coordinate the shorten text behavior implemented by this code path. operation.
+	 * @param mixed $limit Input consumed by the Coordinate the shorten text behavior implemented by this code path. operation.
+	 * @return mixed Result produced by the shorten text operation.
+	 */
 public function shorten_text( $text, $limit ) {
 		$text = trim( (string) $text );
 		if ( '' === $text ) {
@@ -563,12 +559,12 @@ public function shorten_text( $text, $limit ) {
 		return rtrim( substr( $text, 0, max( 1, $limit - 1 ) ) ) . '...';
 	}
 
-/**
- * Coordinate the limit chat response length behavior implemented by this code path.
- *
- * @param mixed $text Input consumed by the Coordinate the limit chat response length behavior implemented by this code path. operation.
- * @return Mixed Result produced by the limit chat response length operation.
- */
+		/**
+	 * Coordinate the limit chat response length behavior implemented by this code path.
+	 *
+	 * @param mixed $text Input consumed by the Coordinate the limit chat response length behavior implemented by this code path. operation.
+	 * @return mixed Result produced by the limit chat response length operation.
+	 */
 public function limit_chat_response_length( $text ) {
 		$raw_limit = (string) flosc_get_setting( 'ai_max_response_length', '' );
 		$numeric   = preg_replace( '/[^0-9]/', '', $raw_limit );
@@ -579,12 +575,12 @@ public function limit_chat_response_length( $text ) {
 		return $this->shorten_text( $text, $max );
 	}
 
-/**
- * Coordinate the canonicalize column name behavior implemented by this code path.
- *
- * @param mixed $column Input consumed by the Coordinate the canonicalize column name behavior implemented by this code path. operation.
- * @return Mixed Result produced by the canonicalize column name operation.
- */
+		/**
+	 * Coordinate the canonicalize column name behavior implemented by this code path.
+	 *
+	 * @param mixed $column Input consumed by the Coordinate the canonicalize column name behavior implemented by this code path. operation.
+	 * @return mixed Result produced by the canonicalize column name operation.
+	 */
 private function canonicalize_column_name( $column ) {
 		$column = trim( (string) $column );
 		if ( 'Record Type' === $column ) {
@@ -593,12 +589,12 @@ private function canonicalize_column_name( $column ) {
 		return $column;
 	}
 
-/**
- * Normalize the input into the canonical form required for normalize access level.
- *
- * @param mixed $access_level Input consumed by the Normalize the input into the canonical form required for normalize access level. operation.
- * @return Mixed Result produced by the normalize access level operation.
- */
+		/**
+	 * Normalize the input into the canonical form required for normalize access level.
+	 *
+	 * @param mixed $access_level Input consumed by the Normalize the input into the canonical form required for normalize access level. operation.
+	 * @return mixed Result produced by the normalize access level operation.
+	 */
 private function normalize_access_level( $access_level ) {
 		$access_level = strtolower( trim( (string) $access_level ) );
 		return in_array( $access_level, array( 'visitor', 'guest', 'member' ), true ) ? $access_level : 'visitor';
@@ -607,8 +603,8 @@ private function normalize_access_level( $access_level ) {
 	/**
 	 * Numeric rank for an access level. Higher sees more.
 	 *
-	 * @param string $access_level Visitor|guest|member.
-	 * @return Int.
+	 * @param string $access_level visitor|guest|member.
+	 * @return int
 	 */
 	private function access_rank( $access_level ) {
 		$ranks = array(
@@ -623,14 +619,14 @@ private function normalize_access_level( $access_level ) {
 	/**
 	 * Rank a VGM cell demands.
 	 *
-	 * VGM names the LOWEST tier that may see the row, so a Guest row is also.
-	 * Visible to Members. An empty cell, or "all", leaves the row ungated so.
-	 * That catalogs which do not use access control still work. A non-empty.
-	 * Value that is not recognised is treated as member-only: somebody meant.
-	 * To gate that row and mistyped it, and hiding it is the safe way to fail.
+	 * VGM names the LOWEST tier that may see the row, so a Guest row is also
+	 * visible to Members. An empty cell, or "all", leaves the row ungated so
+	 * that catalogs which do not use access control still work. A non-empty
+	 * value that is not recognised is treated as member-only: somebody meant
+	 * to gate that row and mistyped it, and hiding it is the safe way to fail.
 	 *
 	 * @param string $vgm Raw cell value.
-	 * @return Int.
+	 * @return int
 	 */
 	private function vgm_rank( $vgm ) {
 		$value = strtolower( trim( (string) $vgm ) );
@@ -671,13 +667,13 @@ private function normalize_access_level( $access_level ) {
 		return null === $lowest ? 3 : (int) $lowest;
 	}
 
-/**
- * Coordinate the row allows audience behavior implemented by this code path.
- *
- * @param mixed $row          Input consumed by the Coordinate the row allows audience behavior implemented by this code path. operation.
- * @param mixed $access_level Input consumed by the Coordinate the row allows audience behavior implemented by this code path. operation.
- * @return Mixed Result produced by the row allows audience operation.
- */
+		/**
+	 * Coordinate the row allows audience behavior implemented by this code path.
+	 *
+	 * @param mixed $row Input consumed by the Coordinate the row allows audience behavior implemented by this code path. operation.
+	 * @param mixed $access_level Input consumed by the Coordinate the row allows audience behavior implemented by this code path. operation.
+	 * @return mixed Result produced by the row allows audience operation.
+	 */
 private function row_allows_audience( $row, $access_level ) {
 		return $this->access_rank( $access_level ) >= $this->vgm_rank( $row['VGM'] ?? '' );
 	}
@@ -685,14 +681,14 @@ private function row_allows_audience( $row, $access_level ) {
 	/**
 	 * Whether any ancestor of a row is not active.
 	 *
-	 * Parent Key describes a hierarchy, so pausing a parent has to hide its.
-	 * Whole subtree, not just its immediate children. The seen-map keeps a.
-	 * Malformed catalog with a cycle from looping forever.
+	 * Parent Key describes a hierarchy, so pausing a parent has to hide its
+	 * whole subtree, not just its immediate children. The seen-map keeps a
+	 * malformed catalog with a cycle from looping forever.
 	 *
 	 * @param array<string,string> $row           Row being considered.
 	 * @param array<string,string> $status_by_key Row Key => status.
 	 * @param array<string,string> $parent_by_key Row Key => Parent Key.
-	 * @return Bool.
+	 * @return bool
 	 */
 	private function has_inactive_ancestor( $row, $status_by_key, $parent_by_key ) {
 		$parent_key = trim( (string) ( $row['Parent Key'] ?? '' ) );
@@ -711,13 +707,13 @@ private function row_allows_audience( $row, $access_level ) {
 		return false;
 	}
 
-/**
- * Coordinate the row matches flow scope behavior implemented by this code path.
- *
- * @param mixed $row               Input consumed by the Coordinate the row matches flow scope behavior implemented by this code path. operation.
- * @param mixed $flow_scope_tokens Token value used to authenticate or correlate this operation.
- * @return Bool Whether row matches flow scope applies to the current state.
- */
+		/**
+	 * Coordinate the row matches flow scope behavior implemented by this code path.
+	 *
+	 * @param mixed $row Input consumed by the Coordinate the row matches flow scope behavior implemented by this code path. operation.
+	 * @param mixed $flow_scope_tokens Token value used to authenticate or correlate this operation.
+	 * @return bool Whether row matches flow scope applies to the current state.
+	 */
 private function row_matches_flow_scope( $row, $flow_scope_tokens ) {
 		$scope = strtolower( trim( (string) ( $row['Flow Scope'] ?? 'all' ) ) );
 		if ( '' === $scope || 'all' === $scope ) {
@@ -736,13 +732,13 @@ private function row_matches_flow_scope( $row, $flow_scope_tokens ) {
 		return false;
 	}
 
-/**
- * Coordinate the item lines behavior implemented by this code path.
- *
- * @param mixed $item   Input consumed by the Coordinate the item lines behavior implemented by this code path. operation.
- * @param mixed $number Input consumed by the Coordinate the item lines behavior implemented by this code path. operation.
- * @return Mixed Result produced by the item lines operation.
- */
+		/**
+	 * Coordinate the item lines behavior implemented by this code path.
+	 *
+	 * @param mixed $item Input consumed by the Coordinate the item lines behavior implemented by this code path. operation.
+	 * @param mixed $number Input consumed by the Coordinate the item lines behavior implemented by this code path. operation.
+	 * @return mixed Result produced by the item lines operation.
+	 */
 private function render_item_lines( $item, $number ) {
 		$label = $this->get_item_label( $item );
 		$dc    = (array) ( $item['dublin_core'] ?? array() );
@@ -764,12 +760,12 @@ private function render_item_lines( $item, $number ) {
 		return $lines;
 	}
 
-/**
- * Resolve the current item label value from the available WordPress and flow state.
- *
- * @param mixed $item Input consumed by the Resolve the current item label value from the available Word Press and flow state. operation.
- * @return Mixed Result produced by the item label operation.
- */
+		/**
+	 * Resolve the current item label value from the available WordPress and flow state.
+	 *
+	 * @param mixed $item Input consumed by the Resolve the current item label value from the available Word Press and flow state. operation.
+	 * @return mixed Result produced by the item label operation.
+	 */
 private function get_item_label( $item ) {
 		$dc      = (array) ( $item['dublin_core'] ?? array() );
 		$payload = (array) ( $item['payload'] ?? array() );
@@ -790,12 +786,12 @@ private function get_item_label( $item ) {
 		return '' !== $row_key ? 'Item ' . $row_key : 'Catalog item';
 	}
 
-/**
- * Coordinate the extract primary url from payload behavior implemented by this code path.
- *
- * @param mixed $payload Structured data consumed by the Coordinate the extract primary url from payload behavior implemented by this code path. operation.
- * @return Mixed Result produced by the extract primary url from payload operation.
- */
+		/**
+	 * Coordinate the extract primary url from payload behavior implemented by this code path.
+	 *
+	 * @param mixed $payload Structured data consumed by the Coordinate the extract primary url from payload behavior implemented by this code path. operation.
+	 * @return mixed Result produced by the extract primary url from payload operation.
+	 */
 private function extract_primary_url_from_payload( $payload ) {
 		foreach ( (array) $payload as $value ) {
 			$text = trim( (string) $value );
@@ -806,24 +802,24 @@ private function extract_primary_url_from_payload( $payload ) {
 		return '';
 	}
 
-/**
- * Normalize the input into the canonical form required for normalize search text.
- *
- * @param mixed $text Input consumed by the Normalize the input into the canonical form required for normalize search text. operation.
- * @return Mixed Result produced by the normalize search text operation.
- */
+		/**
+	 * Normalize the input into the canonical form required for normalize search text.
+	 *
+	 * @param mixed $text Input consumed by the Normalize the input into the canonical form required for normalize search text. operation.
+	 * @return mixed Result produced by the normalize search text operation.
+	 */
 private function normalize_search_text( $text ) {
 		$text = function_exists( 'mb_strtolower' ) ? mb_strtolower( (string) $text, 'UTF-8' ) : strtolower( (string) $text );
 		$text = preg_replace( '/[^\p{L}\p{N}]+/u', ' ', $text );
 		return trim( (string) preg_replace( '/\s+/', ' ', (string) $text ) );
 	}
 
-/**
- * Coordinate the search tokens behavior implemented by this code path.
- *
- * @param mixed $text Input consumed by the Coordinate the search tokens behavior implemented by this code path. operation.
- * @return Array Structured search tokens data.
- */
+		/**
+	 * Coordinate the search tokens behavior implemented by this code path.
+	 *
+	 * @param mixed $text Input consumed by the Coordinate the search tokens behavior implemented by this code path. operation.
+	 * @return array Structured search tokens data.
+	 */
 private function search_tokens( $text ) {
 		$normalized = $this->normalize_search_text( $text );
 		if ( '' === $normalized ) {

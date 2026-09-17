@@ -1,17 +1,17 @@
 <?php
 /**
- * Plugin Name: FLOSC.
- * Plugin URI: https://flosc.ai.
+ * Plugin Name: FLOSC
+ * Plugin URI: https://flosc.ai
  * Description: (F)reeline --> (L)ogin --> (O)ffer --> (S)ale --> (C)ontent: try-before-you-buy WordPress journeys.
- * Version: 8.0.0.
- * Requires at least: 7.0.
- * Requires PHP: 7.4.
- * Author: Dainis W. Michel.
- * Author URI: https://dainis.net.
- * License: GPLv3 or later.
- * License URI: https://www.gnu.org/licenses/gpl-3.0.html.
- * Text Domain: flosc.
- * Domain Path: /languages.
+ * Version: 8.0.0
+ * Requires at least: 7.0
+ * Requires PHP: 7.4
+ * Author: Dainis W. Michel
+ * Author URI: https://dainis.net
+ * License: GPLv3 or later
+ * License URI: https://www.gnu.org/licenses/gpl-3.0.html
+ * Text Domain: flosc
+ * Domain Path: /languages
  *
  * @package FLOSC
  */
@@ -49,7 +49,7 @@ if ( ! function_exists( 'flosc_log' ) ) {
 	 * Debug logger: writes under uploads/flosc-logs when FLOSC_DEBUG is on (no error_log).
 	 *
 	 * @param mixed $msg Message or structure to log.
-	 * @return Mixed Result produced by the log operation.
+ * @return mixed Result produced by the log operation.
 	 */
 	function flosc_log( $msg ) {
 		if ( ! defined( 'FLOSC_DEBUG' ) || ! FLOSC_DEBUG ) {
@@ -112,9 +112,9 @@ register_activation_hook( __FILE__, 'flosc_activation_flush' );
 /**
  * Mark permalinks as needing a flush, on activation.
  *
- * The flush itself is deferred: FLOSC's rewrite rules are registered on init,.
- * And activation runs before that, so flushing here would rebuild the rules.
- * Without them. The flag is read on the next init instead.
+ * The flush itself is deferred: FLOSC's rewrite rules are registered on init,
+ * and activation runs before that, so flushing here would rebuild the rules
+ * without them. The flag is read on the next init instead.
  *
  * @since 1.2.9
  */
@@ -129,11 +129,11 @@ add_action( 'admin_init', 'flosc_version_flush_check' );
 /**
  * Flush permalinks once after the plugin version changes.
  *
- * Activation does not run on an update, so a new version whose rewrite rules.
- * Differ would otherwise serve 404s until someone visited Settings > Permalinks.
- * This compares FLOSC_VERSION against the last version that flushed and, when it.
- * Is newer, flushes immediately and backfills any flow options the new version.
- * Added.
+ * Activation does not run on an update, so a new version whose rewrite rules
+ * differ would otherwise serve 404s until someone visited Settings > Permalinks.
+ * This compares FLOSC_VERSION against the last version that flushed and, when it
+ * is newer, flushes immediately and backfills any flow options the new version
+ * added.
  *
  * @since 1.3.4
  */
@@ -161,21 +161,21 @@ if ( ! function_exists( 'flosc_legacy_autoprompt_is_sandbox_pill' ) ) {
 	/**
 	 * Whether an AutoPrompt pill is one of the old sandbox-purchase test pills.
 	 *
-	 * Early builds shipped AutoPrompts that opened a sandbox purchase, so a.
-	 * Visitor on a live site could be offered a test transaction. They were.
-	 * Removed from the shipped flows, but they persist in the saved AutoPrompts.
-	 * Of any site that installed those builds, which is what the purge below is.
-	 * For.
+	 * Early builds shipped AutoPrompts that opened a sandbox purchase, so a
+	 * visitor on a live site could be offered a test transaction. They were
+	 * removed from the shipped flows, but they persist in the saved AutoPrompts
+	 * of any site that installed those builds, which is what the purge below is
+	 * for.
 	 *
-	 * A pill is recognised by its own text rather than by an id, because the.
-	 * Ids differed between builds: every label, input, action and trigger field.
-	 * Is searched for "sandbox" together with one of the purchase phrasings.
-	 * Both halves must match, so a pill that merely mentions a sandbox is left.
-	 * Alone.
+	 * A pill is recognised by its own text rather than by an id, because the
+	 * ids differed between builds: every label, input, action and trigger field
+	 * is searched for "sandbox" together with one of the purchase phrasings.
+	 * Both halves must match, so a pill that merely mentions a sandbox is left
+	 * alone.
 	 *
-	 * @param mixed $pill One saved AutoPrompt pill; anything that is not an.
-	 * Array is not a pill.
-	 * @return Bool True when the pill opens a sandbox purchase.
+	 * @param mixed $pill One saved AutoPrompt pill; anything that is not an
+	 *                    array is not a pill.
+	 * @return bool True when the pill opens a sandbox purchase.
 	 */
 	function flosc_legacy_autoprompt_is_sandbox_pill( $pill ) {
 		if ( ! is_array( $pill ) ) {
@@ -219,12 +219,12 @@ if ( ! function_exists( 'flosc_legacy_autoprompt_purge_sandbox_pills' ) ) {
 	/**
 	 * Drop the legacy sandbox pills from a saved AutoPrompts structure.
 	 *
-	 * Returns all three visitor states whether or not the input held them, so.
-	 * The caller can save the result without checking. Order within each state.
-	 * Is preserved for the pills that survive.
+	 * Returns all three visitor states whether or not the input held them, so
+	 * the caller can save the result without checking. Order within each state
+	 * is preserved for the pills that survive.
 	 *
 	 * @param mixed $autoprompts Saved AutoPrompts, keyed by visitor state.
-	 * @return Array<string, array> The same structure without the sandbox pills.
+	 * @return array<string, array> The same structure without the sandbox pills.
 	 */
 	function flosc_legacy_autoprompt_purge_sandbox_pills( $autoprompts ) {
 		if ( ! is_array( $autoprompts ) ) {
@@ -251,16 +251,15 @@ add_action( 'init', 'flosc_purge_legacy_sandbox_autoprompts', 4 );
 /**
  * One-time migration: remove the legacy sandbox-purchase AutoPrompts.
  *
- * Walks every flow that has an IVR file on disk and strips the pills described.
- * In flosc_legacy_autoprompt_is_sandbox_pill() from its saved settings. Runs.
- * Once per site; the flosc_legacy_sandbox_autoprompt_purged option records that.
- * It has, so it costs one option read on every later request and nothing more.
+ * Walks every flow that has an IVR file on disk and strips the pills described
+ * in flosc_legacy_autoprompt_is_sandbox_pill() from its saved settings. Runs
+ * once per site; the flosc_legacy_sandbox_autoprompt_purged option records that
+ * it has, so it costs one option read on every later request and nothing more.
  *
- * On init at priority 4, ahead of anything that reads AutoPrompts, so a visitor.
- * On the request that performs the migration is served the cleaned set rather.
- * Than the old one.
- *
- * @return Mixed Result produced by the purge legacy sandbox autoprompts operation.
+ * On init at priority 4, ahead of anything that reads AutoPrompts, so a visitor
+ * on the request that performs the migration is served the cleaned set rather
+ * than the old one.
+ * @return mixed Result produced by the purge legacy sandbox autoprompts operation.
  */
 function flosc_purge_legacy_sandbox_autoprompts() {
 	if ( get_option( 'flosc_legacy_sandbox_autoprompt_purged' ) ) {
@@ -418,13 +417,13 @@ if ( ! get_option( 'flosc_ivr_reparse_800' ) ) {
 /**
  * A sortable UTC timestamp string, in the format FLOSC records operations with.
  *
- * Reads as 2026y-09m-17d-UTC14h-32m-05s. It lives at global scope rather than.
- * On the framework class because the activation hook runs before the class is.
- * Loaded.
+ * Reads as 2026y-09m-17d-UTC14h-32m-05s. It lives at global scope rather than
+ * on the framework class because the activation hook runs before the class is
+ * loaded.
  *
  * @since 1.2.9
  *
- * @return String The current UTC time in that format.
+ * @return string The current UTC time in that format.
  */
 function flosc_michel_timestamp_global() {
 	return gmdate( 'Y' ) . 'y-' . gmdate( 'm' ) . 'm-' . gmdate( 'd' ) . 'd-UTC' . gmdate( 'H' ) . 'h-' . gmdate( 'i' ) . 'm-' . gmdate( 's' ) . 's';
@@ -433,8 +432,8 @@ function flosc_michel_timestamp_global() {
 /**
  * Friendly display names for shipped sample IVR stems (Identity / sidebar).
  *
- * @param string $ivr_filename_or_stem E.g. flosc_default_technical_ivr.md.
- * @return String Empty if not a known shipped sample (caller falls back).
+ * @param string $ivr_filename_or_stem e.g. flosc_default_technical_ivr.md.
+ * @return string Empty if not a known shipped sample (caller falls back).
  */
 function flosc_shipped_flow_display_name( $ivr_filename_or_stem ) {
 	$stem = sanitize_key( pathinfo( basename( (string) $ivr_filename_or_stem ), PATHINFO_FILENAME ) );
@@ -454,7 +453,7 @@ function flosc_shipped_flow_display_name( $ivr_filename_or_stem ) {
  * They belong in the Personalities library, not in Switch Flow.
  *
  * @param string $ivr_filename_or_stem Filename or stem.
- * @return Bool.
+ * @return bool
  */
 function flosc_is_shipped_personality_sample_ivr( $ivr_filename_or_stem ) {
 	$stem = sanitize_key( pathinfo( basename( (string) $ivr_filename_or_stem ), PATHINFO_FILENAME ) );
@@ -474,7 +473,7 @@ function flosc_is_shipped_personality_sample_ivr( $ivr_filename_or_stem ) {
  * Seed library id for a shipped personality-sample IVR, if any.
  *
  * @param string $ivr_filename_or_stem Filename or stem.
- * @return String.
+ * @return string
  */
 function flosc_shipped_personality_sample_library_id( $ivr_filename_or_stem ) {
 	$stem = sanitize_key( pathinfo( basename( (string) $ivr_filename_or_stem ), PATHINFO_FILENAME ) );
@@ -487,12 +486,12 @@ function flosc_shipped_personality_sample_library_id( $ivr_filename_or_stem ) {
 }
 
 /**
- * Library personality implied by a shipped sample IVR, if any. Real flows.
- * Carry their attachment in the per-flow settings bag — never hardcode.
- * Flow→personality pairs here.
+ * Library personality implied by a shipped sample IVR, if any. Real flows
+ * carry their attachment in the per-flow settings bag — never hardcode
+ * flow→personality pairs here.
  *
  * @param string $ivr_filename_or_stem Filename or stem.
- * @return String Library id or empty.
+ * @return string Library id or empty.
  */
 function flosc_implied_personality_library_id( $ivr_filename_or_stem ) {
 	$id = flosc_shipped_personality_sample_library_id( $ivr_filename_or_stem );
@@ -504,7 +503,7 @@ function flosc_implied_personality_library_id( $ivr_filename_or_stem ) {
  *
  * @param array<int,string> $files IVR filenames.
  * @param string            $keep  Filename to keep even if it is a sample (currently selected).
- * @return Array<int,string>.
+ * @return array<int,string>
  */
 function flosc_filter_switch_flow_ivr_files( $files, $keep = '' ) {
 	if ( ! is_array( $files ) ) {
@@ -566,9 +565,9 @@ require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-framework.php';
 /**
  * The FLOSC framework instance.
  *
- * The plugin's entry point: every other file reaches the runtime through this.
- * Rather than through the class name. Safe to call repeatedly -- the instance.
- * Is built once and returned thereafter.
+ * The plugin's entry point: every other file reaches the runtime through this
+ * rather than through the class name. Safe to call repeatedly -- the instance
+ * is built once and returned thereafter.
  *
  * @return FLOSC_Framework The single framework instance.
  */
@@ -579,13 +578,13 @@ function flosc() {
 /**
  * Lighten or darken a hex colour by a percentage.
  *
- * Used to derive hover and border shades from the one brand colour the operator.
- * Sets, so a flow's palette stays consistent without asking for five colours.
+ * Used to derive hover and border shades from the one brand colour the operator
+ * sets, so a flow's palette stays consistent without asking for five colours.
  *
  * @param string $hex     Colour as #rgb or #rrggbb; the leading # is optional.
- * @param float  $percent Between -1 and 1. Positive lightens toward white,.
- * Negative darkens toward black.
- * @return String The adjusted colour as #rrggbb.
+ * @param float  $percent Between -1 and 1. Positive lightens toward white,
+ *                        negative darkens toward black.
+ * @return string The adjusted colour as #rrggbb.
  */
 function flosc_adjust_brightness( $hex, $percent ) {
 	$hex = ltrim( $hex, '#' );
@@ -604,18 +603,18 @@ function flosc_adjust_brightness( $hex, $percent ) {
 }
 
 /**
- * IVR import/export/sync hooks were extracted to a dedicated include to keep.
- * This bootstrap file smaller and easier to maintain.
- * Flow runtime (bag-first load + flow_* dual-read helpers) must load before.
- * Sync/admin/shell callers that use flosc_resolve_flow_runtime / flosc_flow_*.
+ * IVR import/export/sync hooks were extracted to a dedicated include to keep
+ * this bootstrap file smaller and easier to maintain.
+ * Flow runtime (bag-first load + flow_* dual-read helpers) must load before
+ * sync/admin/shell callers that use flosc_resolve_flow_runtime / flosc_flow_*.
  */
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-flow-runtime.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/portability/flosc-ivr-sync.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-lifecycle.php';
 
 /**
- * Lifecycle hooks are loaded from a dedicated include to keep this bootstrap.
- * File focused on framework bootstrapping.
+ * Lifecycle hooks are loaded from a dedicated include to keep this bootstrap
+ * file focused on framework bootstrapping.
  */
 
 // Register activation hook.
@@ -629,15 +628,15 @@ register_deactivation_hook( __FILE__, 'flosc_deactivate' );
 add_action( 'plugins_loaded', 'flosc' );
 
 /**
- * Global helper function for flow-aware settings.
+ * Global helper function for flow-aware settings
  *
  * Usage: flosc_get_setting('ai_provider', 'ivr')
- * Checks: flow[$key] → get_option('flosc_' . $key) → $default.
+ * Checks: flow[$key] → get_option('flosc_' . $key) → $default
  *
  * @param string      $key      Setting key, without the 'flosc_' prefix.
  * @param mixed       $fallback Returned when neither the flow nor the global option holds a value.
  * @param string|null $flow_id  Read this flow instead of the one the request resolves to.
- * @return Mixed The stored value, or $fallback.
+ * @return mixed The stored value, or $fallback.
  * @since 1.2.4
  */
 function flosc_get_setting( $key, $fallback = '', $flow_id = null ) {
@@ -647,14 +646,14 @@ function flosc_get_setting( $key, $fallback = '', $flow_id = null ) {
 /**
  * The flow's favicon URL, for the browser tab.
  *
- * Reads favicon_url from the flow's identity settings. When the flow has not set.
- * One, falls back to the icon bundled with the plugin.
+ * Reads favicon_url from the flow's identity settings. When the flow has not set
+ * one, falls back to the icon bundled with the plugin.
  *
- * @param string $size Size suffix on the bundled icon, e.g. '32' for.
- * Flosc-icon-32.png. Empty for the unsuffixed default. Only.
- * Applies to the fallback; a flow's own favicon_url is.
- * Returned as set.
- * @return String Absolute URL of the favicon.
+ * @param string $size Size suffix on the bundled icon, e.g. '32' for
+ *                     flosc-icon-32.png. Empty for the unsuffixed default. Only
+ *                     applies to the fallback; a flow's own favicon_url is
+ *                     returned as set.
+ * @return string Absolute URL of the favicon.
  */
 function flosc_get_favicon_url( $size = '' ) {
 	$identity = FLOSC_Framework::instance()->get_floscflow_identity();
@@ -669,9 +668,9 @@ function flosc_get_favicon_url( $size = '' ) {
  * Resolve Chat Logo URL from a flow settings array (admin or runtime).
  * Prefer identity.chatlogo_url, then flat chatlogo_url. Does not invent a brand logo.
  *
- * @param array|null $flow_settings      Flow option / current settings. Null = current runtime identity.
+ * @param array|null $flow_settings Flow option / current settings. Null = current runtime identity.
  * @param bool       $use_plugin_default When true and nothing set, return bundled FLOSC icon.
- * @return String URL or empty string when $use_plugin_default is false and no logo is configured.
+ * @return string URL or empty string when $use_plugin_default is false and no logo is configured.
  */
 function flosc_resolve_chatlogo_url( $flow_settings = null, $use_plugin_default = true ) {
 	$url = '';
@@ -707,8 +706,7 @@ function flosc_resolve_chatlogo_url( $flow_settings = null, $use_plugin_default 
 /**
  * Get the flow's chatLogo URL (landing state header image, sidebar logo).
  * Reads chatlogo_url from flow identity. Falls back to bundled FLOSC default icon.
- *
- * @return Mixed Result produced by the chatlogo url operation.
+ * @return mixed Result produced by the chatlogo url operation.
  */
 function flosc_get_chatlogo_url() {
 	return flosc_resolve_chatlogo_url( null, true );
@@ -721,7 +719,7 @@ function flosc_get_chatlogo_url() {
  *
  * @param int   $user_id WordPress user ID.
  * @param array $context Turn context (flow_id, access_level, flow_name).
- * @return String.
+ * @return string
  */
 function flosc_get_user_sticky_prompt( $user_id, $context = array() ) {
 	$user_id = absint( $user_id );
@@ -775,7 +773,7 @@ function flosc_get_user_sticky_prompt( $user_id, $context = array() ) {
 /**
  * Personality labels that have Enable Sticky for User on.
  *
- * @return String[]
+ * @return string[]
  */
 function flosc_get_user_sticky_enabled_personalities() {
 	if ( ! function_exists( 'flosc_personality_library_get_all' ) ) {

@@ -1,6 +1,6 @@
 <?php
 /**
- * True/False Quiz Type.
+ * True/False Quiz Type
  *
  * User answers True or False questions.
  * Simple, effective, works out of the box.
@@ -18,94 +18,94 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class FLOSC_TrueFalse_Quiz extends FLOSC_Abstract_Quiz_Type {
 
-/**
- * Resolve the current id value from the available WordPress and flow state.
- *
- * @return Mixed Result produced by the id operation.
- */
+		/**
+	 * Resolve the current id value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the id operation.
+	 */
 public function get_id() {
 		return 'truefalse';
 	}
 
-/**
- * Resolve the current name value from the available WordPress and flow state.
- *
- * @return Mixed Result produced by the name operation.
- */
+		/**
+	 * Resolve the current name value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the name operation.
+	 */
 public function get_name() {
 		return 'True/False';
 	}
 
-/**
- * Resolve the current description value from the available WordPress and flow state.
- *
- * @return Mixed Result produced by the description operation.
- */
+		/**
+	 * Resolve the current description value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the description operation.
+	 */
 public function get_description() {
 		return 'User answers True or False to statements. Perfect for knowledge checks.';
 	}
 
-/**
- * Resolve the current icon value from the available WordPress and flow state.
- *
- * @return Mixed Result produced by the icon operation.
- */
+		/**
+	 * Resolve the current icon value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the icon operation.
+	 */
 public function get_icon() {
 		return '✓✗';
 	}
 
-/**
- * Coordinate the needs audio behavior implemented by this code path.
- *
- * @return Bool Whether needs audio applies to the current state.
- */
+		/**
+	 * Coordinate the needs audio behavior implemented by this code path.
+	 *
+	 * @return bool Whether needs audio applies to the current state.
+	 */
 public function needs_audio() {
 		return false;
 	}
 
-/**
- * Coordinate the needs stt behavior implemented by this code path.
- *
- * @return Bool Whether needs stt applies to the current state.
- */
+		/**
+	 * Coordinate the needs stt behavior implemented by this code path.
+	 *
+	 * @return bool Whether needs stt applies to the current state.
+	 */
 public function needs_stt() {
 		return false;
 	}
 
-/**
- * Coordinate the needs ai analysis behavior implemented by this code path.
- *
- * @return Bool Whether needs ai analysis applies to the current state.
- */
+		/**
+	 * Coordinate the needs ai analysis behavior implemented by this code path.
+	 *
+	 * @return bool Whether needs ai analysis applies to the current state.
+	 */
 public function needs_ai_analysis() {
 		return false;
 	}
 
-/**
- * Resolve the current instructions value from the available WordPress and flow state.
- *
- * @return Mixed Result produced by the instructions operation.
- */
+		/**
+	 * Resolve the current instructions value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the instructions operation.
+	 */
 public function get_instructions() {
 		return "One statement per line. Format: Statement.|True or Statement.|False\n\nOptional pipe segments (add as many as you like — they all accumulate):\n  |CorrectContent: post:my-post-slug\n  |CorrectContent: tag:my-tag, id:1042\n  |RelatedContent: post:slug-one, category:parent/child\n  |RelatedContent: tag:another-tag, id:1043\n  |RelatedContent: search:distinctive words from title\n\nPrefixes — always required, no quotes:\n  post:slug              — post by URL slug; use post:parent/child if the same slug exists under multiple parents\n  id:1042           — one post by numeric ID\n  category:slug     — posts in a category; category:parent/child for sub-categories\n  tag:slug          — posts with a tag (use the tag slug, not the display name)\n  search:any words  — keyword search (avoid: unreliable, may match wrong posts)\n\nMultiple |CorrectContent: and |RelatedContent: segments accumulate. CorrectContent items are tier 1 — shown first when a learner asks to review what they got wrong.";
 	}
 
-/**
- * Resolve the current default content value from the available WordPress and flow state.
- *
- * @return Mixed Result produced by the default content operation.
- */
+		/**
+	 * Resolve the current default content value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the default content operation.
+	 */
 public function get_default_content() {
 		// Subject-neutral sample — replace with your own statements in FLOSC → Quiz.
 		return "Sample statement for Topic 1 — Getting started: this product ships ready for any subject.|True|CorrectContent: post:sample-topic-1-getting-started|RelatedContent: post:sample-topic-1-getting-started-extra|Topic: topic-1-getting-started\nSample statement for Topic 2 — Core ideas: admins configure freeline, guest gifts, and member gates in the flow.|True|CorrectContent: post:sample-topic-2-core-ideas|RelatedContent: category:sample_lessons|Topic: topic-2-core-ideas\nSample statement for Topic 3 — Practice basics: wrong answers must always unlock the full member library.|False|CorrectContent: post:sample-topic-3-practice-basics|RelatedContent: post:sample-topic-3-practice-basics-extra|Topic: topic-3-practice-basics";
 	}
 
-/**
- * Validate the input and trust conditions required for input.
- *
- * @param mixed $input Input consumed by the Validate the input and trust conditions required for input. operation.
- * @return Bool Whether input applies to the current state.
- */
+		/**
+	 * Validate the input and trust conditions required for input.
+	 *
+	 * @param mixed $input Input consumed by the Validate the input and trust conditions required for input. operation.
+	 * @return bool Whether input applies to the current state.
+	 */
 public function validate_input( $input ) {
 		if ( empty( $input ) || ! is_string( $input ) ) {
 			return new WP_Error( 'invalid_input', __( 'Please enter your answers.', 'flosc' ) );
@@ -114,14 +114,14 @@ public function validate_input( $input ) {
 		return true;
 	}
 
-/**
- * Coordinate the analyze behavior implemented by this code path.
- *
- * @param mixed $input            Input consumed by the Coordinate the analyze behavior implemented by this code path. operation.
- * @param mixed $expected_content Input consumed by the Coordinate the analyze behavior implemented by this code path. operation.
- * @param mixed $context          Context values used to resolve request- or flow-specific behavior.
- * @return Array Structured analyze data.
- */
+		/**
+	 * Coordinate the analyze behavior implemented by this code path.
+	 *
+	 * @param mixed $input Input consumed by the Coordinate the analyze behavior implemented by this code path. operation.
+	 * @param mixed $expected_content Input consumed by the Coordinate the analyze behavior implemented by this code path. operation.
+	 * @param mixed $context Context values used to resolve request- or flow-specific behavior.
+	 * @return array Structured analyze data.
+	 */
 public function analyze( $input, $expected_content, $context = array() ) {
 		// Parse questions.
 		$questions = $this->parse_questions( $expected_content );
@@ -176,11 +176,11 @@ public function analyze( $input, $expected_content, $context = array() ) {
 		);
 	}
 
-/**
- * Resolve the current settings fields value from the available WordPress and flow state.
- *
- * @return Array Structured settings fields data.
- */
+		/**
+	 * Resolve the current settings fields value from the available WordPress and flow state.
+	 *
+	 * @return array Structured settings fields data.
+	 */
 public function get_settings_fields() {
 		return array(
 			'answer_format' => array(
@@ -199,11 +199,10 @@ public function get_settings_fields() {
 
 	/**
 	 * Parse questions from content.
-	 * Format: "Statement.|True|Topic: slug1, slug2".
+	 * Format: "Statement.|True|Topic: slug1, slug2"
 	 * Topic segment is optional.
-	 *
-	 * @param mixed $content Input consumed by the Coordinate the parse questions behavior implemented by this code path. operation.
-	 * @return Mixed Result produced by the parse questions operation.
+ * @param mixed $content Input consumed by the Coordinate the parse questions behavior implemented by this code path. operation.
+ * @return mixed Result produced by the parse questions operation.
 	 */
 	private function parse_questions( $content ) {
 		$lines     = explode( "\n", $content );
@@ -258,11 +257,10 @@ public function get_settings_fields() {
 	}
 
 	/**
-	 * Parse user answers.
-	 * Accepts: "T,F,T" or "True,False,True" or "true\nfalse\ntrue".
-	 *
-	 * @param mixed $input Input consumed by the Coordinate the parse user answers behavior implemented by this code path. operation.
-	 * @return Mixed Result produced by the parse user answers operation.
+	 * Parse user answers
+	 * Accepts: "T,F,T" or "True,False,True" or "true\nfalse\ntrue"
+ * @param mixed $input Input consumed by the Coordinate the parse user answers behavior implemented by this code path. operation.
+ * @return mixed Result produced by the parse user answers operation.
 	 */
 	private function parse_user_answers( $input ) {
 		// Try comma-separated first.
@@ -278,9 +276,8 @@ public function get_settings_fields() {
 
 	/**
 	 * Normalize answer (T/True/Yes → true, F/False/No → false)
-	 *
-	 * @param mixed $answer Input consumed by the Normalize the input into the canonical form required for normalize answer. operation.
-	 * @return Mixed Result produced by the normalize answer operation.
+ * @param mixed $answer Input consumed by the Normalize the input into the canonical form required for normalize answer. operation.
+ * @return mixed Result produced by the normalize answer operation.
 	 */
 	private function normalize_answer( $answer ) {
 		$answer = strtolower( trim( $answer ) );

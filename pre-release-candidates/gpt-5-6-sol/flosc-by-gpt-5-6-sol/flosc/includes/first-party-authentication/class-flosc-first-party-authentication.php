@@ -9,13 +9,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-/**
- * Coordinate FLOSC First Party Authentication behavior and the WordPress services used by its methods.
- */
 class FLOSC_First_Party_Authentication {
 
-	/**
-	 */
+	/** @var FLOSC_Framework */
 	private $flosc;
 
 	/**
@@ -26,41 +22,29 @@ class FLOSC_First_Party_Authentication {
 	 */
 	private $flosc_token_auth_used = false;
 
-		/**
-	 * Coordinate the construct behavior implemented by this code path.
-	 *
-	 * @param mixed $flosc Input consumed by the Coordinate the construct behavior implemented by this code path. operation.
-	 */
-public function __construct( $flosc ) {
+	public function __construct( $flosc ) {
 		$this->flosc = $flosc;
 	}
 
-	/**
- * Resolve the current token provider value from the available WordPress and flow state.
- *
- * @return mixed Result produced by the token provider operation.
-	 */
+	/** @return object|null Token provider from framework sale manager. */
 	private function get_token_provider() {
 		$sale = method_exists( $this->flosc, 'sale' ) ? $this->flosc->sale() : null;
 		return ( $sale && method_exists( $sale, 'get_provider' ) ) ? $sale->get_provider( 'tokens' ) : null;
 	}
 
-	/**
- * Coordinate the mark flosc token auth used behavior implemented by this code path.
- *
-	 */
+	/** Flag FLOSC token auth for allow_flosc_token_auth() (REST / session bootstrap). */
 	public function mark_flosc_token_auth_used() {
 		$this->flosc_token_auth_used = true;
 	}
 
 	/**
-	 * Handle new user registration.
+	 * Handle new user registration
 	 */
 	/**
 	 * Block WP password login for pending email-registered accounts until verification.
 	 *
-	 * @param WP_User|WP_Error $user Value consumed by this operation.
-	 * @return WP_User|WP_Error.
+	 * @param WP_User|WP_Error $user
+	 * @return WP_User|WP_Error
 	 */
 	public function flosc_block_pending_email_login( $user ) {
 		if ( is_wp_error( $user ) || ! ( $user instanceof WP_User ) ) {
@@ -76,13 +60,7 @@ public function __construct( $flosc ) {
 		return $user;
 	}
 
-		/**
-	 * Coordinate the user registration behavior implemented by this code path.
-	 *
-	 * @param mixed $user_id WordPress user ID whose Coordinate the user registration behavior implemented by this code path. state is being processed.
-	 * @return mixed Result produced by the user registration operation.
-	 */
-public function handle_user_registration( $user_id ) {
+	public function handle_user_registration( $user_id ) {
 		// Pending email registrants receive tokens only after verification/activation.
 		// Flag is set on the framework instance by MagicLink / email registration paths.
 		if ( ! empty( $this->flosc->flosc_skip_registration_token_grants ) ) {
@@ -113,18 +91,16 @@ public function handle_user_registration( $user_id ) {
 			}
 		}
 
-		// V8.0.5: Audio scoring is NOT done here. This hook fires for ALL registration.
+		// v8.0.5: Audio scoring is NOT done here. This hook fires for ALL registration
 		// methods (email, SSO, WP form) and has no reliable access to the temp_id.
 		// Instead, scoring is called DIRECTLY by the function that has the temp_id:
-		// - Email registration: handle_email_registration() calls score_visitor_audio() directly.
+		// - Email registration: handle_email_registration() calls score_visitor_audio() directly
 		// - SSO registration: handle_user_login() reads the browser cookie (reliable for SSO)
 		// This hook handles signup bonus + referral only.
 	}
 
 	/**
-	 * Handle user login - process pre-login quiz scores.
- * @param mixed $user_login Input consumed by the Persist the user login state in Word Press storage. operation.
- * @param mixed $user Input consumed by the Persist the user login state in Word Press storage. operation.
+	 * Handle user login - process pre-login quiz scores
 	 */
 	public function handle_user_login( $user_login, $user ) {
 		$token_provider = $this->get_token_provider();
@@ -155,11 +131,11 @@ public function handle_user_registration( $user_id ) {
 		// v9.4.2: Check for pre-login score in SIGNED cookie.
 		$score_data = $this->flosc->get_signed_cookie( 'flosc_prelogin_score' );
 
-		// V8.0.5: Score visitor audio on login — covers SSO path (Google/Facebook) where.
+		// v8.0.5: Score visitor audio on login — covers SSO path (Google/Facebook) where
 		// the browser sends the visitor_temp_id cookie set during audio recording.
 		// Email registration scoring is handled directly in handle_email_registration().
 		// Don't re-score server-side (times out on shared hosting).
-		// Instead, store temp_id in user meta and let JS send browser-computed.
+		// Instead, store temp_id in user meta and let JS send browser-computed
 		// results via /store-quiz-data after the page reloads.
 		$temp_id = $this->flosc->get_signed_cookie( 'flosc_visitor_temp_id' );
 		if ( $temp_id && is_string( $temp_id ) ) {
@@ -239,27 +215,23 @@ public function handle_user_registration( $user_id ) {
 	}
 
 	/**
-	 * Redirect users to FLOSC app after login.
-	 * V1.0.0: ONLY redirect if user was on FLOSC app or has pre-login quiz score.
-	 * V1.4.9: Use get_app_url() for custom domain support (the flow domain, flosc.ai)
+	 * Redirect users to FLOSC app after login
+	 * v1.0.0: ONLY redirect if user was on FLOSC app or has pre-login quiz score
+	 * v1.4.9: Use get_app_url() for custom domain support (the flow domain, flosc.ai)
 	 *
 	 * IMPORTANT: This function does NOT hijack normal WordPress logins.
 	 * Only redirects to FLOSC app when there's a clear FLOSC context.
 	 *
 	 * @since 9.5.7
- * @param mixed $redirect_to Input consumed by the Coordinate the login redirect behavior implemented by this code path. operation.
- * @param mixed $requested_redirect_to Input consumed by the Coordinate the login redirect behavior implemented by this code path. operation.
- * @param mixed $user Input consumed by the Coordinate the login redirect behavior implemented by this code path. operation.
- * @return mixed Result produced by the login redirect operation.
 	 */
 	public function handle_login_redirect( $redirect_to, $requested_redirect_to, $user ) {
 		$app_slug = get_option( 'flosc_app_slug', 'flosc' );
 		// v1.4.9: Use flow-aware URL so custom domains redirect correctly.
 		$app_url = $this->flosc->get_app_url();
 		// v1.9.8: FloscAdmin-configured destination URL (empty = use app_url)
-		// V10.0.0: Per-flow login_destination is resolved first; global.
+		// v10.0.0: Per-flow login_destination is resolved first; global
 		// flosc_login_destination remains the fallback via get_setting().
-		// Slice 2: explicit login_destination wins first; then multi-flow.
+		// Slice 2: explicit login_destination wins first; then multi-flow
 		// routing per login_destination_mode; else single-flow app URL.
 		$explicit_dest = flosc_get_setting( 'login_destination', '' );
 		if ( '' !== $explicit_dest ) {
@@ -267,8 +239,8 @@ public function handle_user_registration( $user_id ) {
 		} else {
 			$dest_user_id = ( $user instanceof WP_User ) ? (int) $user->ID : 0;
 			$flow_count   = 0;
-			// is_callable() is visibility-aware: the builder is private, so a.
-			// Cross-class call is intentionally skipped (no fatal) until the.
+			// is_callable() is visibility-aware: the builder is private, so a
+			// cross-class call is intentionally skipped (no fatal) until the
 			// method becomes callable. Multi-flow routing stays inert meanwhile.
 			if ( $dest_user_id > 0 && is_callable( array( $this->flosc, 'flosc_build_user_flow_statuses' ) ) ) {
 				$rows       = $this->flosc->flosc_build_user_flow_statuses( $dest_user_id );
@@ -332,19 +304,17 @@ public function handle_user_registration( $user_id ) {
 			}
 		}
 
-		// Otherwise, respect WordPress's default redirect behavior.
+		// Otherwise, respect WordPress's default redirect behavior
 		// This allows normal WordPress posts/pages to work properly.
 		return $redirect_to;
 	}
 
 	/**
-	 * Handle WooCommerce-specific login redirect.
-	 * V1.0.0: ONLY redirect to FLOSC app if there's FLOSC context.
-	 * V1.4.9: Custom domain support.
+	 * Handle WooCommerce-specific login redirect
+	 * v1.0.0: ONLY redirect to FLOSC app if there's FLOSC context
+	 * v1.4.9: Custom domain support
 	 *
 	 * @since 9.5.7
- * @param mixed $redirect Input consumed by the Coordinate the woocommerce login redirect behavior implemented by this code path. operation.
- * @return mixed Result produced by the woocommerce login redirect operation.
 	 */
 	public function handle_woocommerce_login_redirect( $redirect ) {
 		$app_slug = get_option( 'flosc_app_slug', 'flosc' );
@@ -362,18 +332,18 @@ public function handle_user_registration( $user_id ) {
 	/**
 	 * Takeover WordPress native auth surfaces.
 	 *
-	 * Hooks into 'login_url' and (via takeover_wp_auth's register disable) routes.
-	 * WP's native login/registration destinations into the FLOSC app so the site.
-	 * Exposes a SINGLE auth surface (no BuddyBoss double buttons / wp-login.php).
+	 * Hooks into 'login_url' and (via takeover_wp_auth's register disable) routes
+	 * WP's native login/registration destinations into the FLOSC app so the site
+	 * exposes a SINGLE auth surface (no BuddyBoss double buttons / wp-login.php).
 	 *
-	 * Per-flow admin control: the flow setting 'takeover_wp_auth' (checkbox) turns.
-	 * This on. When on, the native login screen is redirected to the flow's app URL.
+	 * Per-flow admin control: the flow setting 'takeover_wp_auth' (checkbox) turns
+	 * this on. When on, the native login screen is redirected to the flow's app URL
 	 * (which itself auto-opens the FLOSC Register-Or-LogIn modal via ?flosc_open_login=1).
 	 *
-	 * @param string $url          Current URL.
-	 * @param string $redirect     Requested redirect_to (unused; FLOSC owns the funnel).
+	 * @param string $url    Current URL.
+	 * @param string $redirect Requested redirect_to (unused; FLOSC owns the funnel).
 	 * @param bool   $force_reauth Unused.
-	 * @return String.
+	 * @return string
 	 * @since 10.0.0
 	 */
 	public function takeover_wp_auth_url( $url, $redirect = '', $force_reauth = false ) {
@@ -381,35 +351,35 @@ public function handle_user_registration( $user_id ) {
 			return $url;
 		}
 
-		// Never break the password-reset surface. WP's lost-password screen is a.
+		// Never break the password-reset surface. WP's lost-password screen is a
 		// distinct surface; we only take over the SIGN-IN entry point, not recovery.
 		if ( defined( 'WP_CLI' ) && WP_CLI ) {
 			return $url;
 		}
 
-		// Keep a direct escape hatch for admins who must hit wp-login.php.
+		// Keep a direct escape hatch for admins who must hit wp-login.php
 		// (e.g. an expired interactive session forces a deliberate re-auth).
-		// FLOSC's own auth still works for those users via the normal login path,.
-		// But we must not loop the admin back into a modal that can't complete.
+		// FLOSC's own auth still works for those users via the normal login path,
+		// but we must not loop the admin back into a modal that can't complete
 		// a re-login from a non-FLOSC-context screen.
 		$in_admin = ( is_admin() && ! wp_doing_ajax() ) || ( function_exists( 'wp_get_referer' ) && false !== strpos( (string) wp_get_referer(), '/wp-admin/' ) );
 		if ( $in_admin || $force_reauth ) {
 			return $url;
 		}
 
-		// Open the FLOSC Register/Log-in modal IN PLACE (email + SSO) rather than.
-		// Navigating the user away to the full-page app. We point at the current.
-		// Front-end page URL with ?flosc_open_login=1, which flosc-app.js consumes.
+		// Open the FLOSC Register/Log-in modal IN PLACE (email + SSO) rather than
+		// navigating the user away to the full-page app. We point at the current
+		// front-end page URL with ?flosc_open_login=1, which flosc-app.js consumes
 		// to auto-open the combined auth modal without a cross-page jump.
 		return add_query_arg( 'flosc_open_login', '1', $this->get_front_current_url() );
 	}
 
 	/**
 	 * Current front-end page URL (no query args) for in-place auth modals.
-	 * Returns the flow app URL as a safe fallback if a front-end URL cannot be.
-	 * Determined (e.g. an odd CLI/server setup).
+	 * Returns the flow app URL as a safe fallback if a front-end URL cannot be
+	 * determined (e.g. an odd CLI/server setup).
 	 *
-	 * @return String.
+	 * @return string
 	 */
 	private function get_front_current_url() {
 		if ( $this->is_takeover_enabled() && ! is_admin() && ! empty( $_SERVER['REQUEST_URI'] ) ) {
@@ -424,7 +394,7 @@ public function handle_user_registration( $user_id ) {
 	/**
 	 * Whether the current flow has WP native auth takeover enabled.
 	 *
-	 * @return Bool.
+	 * @return bool
 	 */
 	private function is_takeover_enabled() {
 		$setting = flosc_get_setting( 'takeover_wp_auth', '' );
@@ -436,19 +406,19 @@ public function handle_user_registration( $user_id ) {
 	 * Token is stateless — no database storage needed.
 	 *
 	 * @param int $user_id WordPress user ID.
-	 * @param int $ttl     Token lifetime in seconds (default: 24 hours).
-	 * @return String Base64-encoded token.
+	 * @param int $ttl Token lifetime in seconds (default: 24 hours).
+	 * @return string Base64-encoded token
 	 */
 	public function generate_flosc_auth_token( $user_id, $ttl = DAY_IN_SECONDS ) {
 		$user_id = absint( $user_id );
-		// Floored, not absolute: absint() would turn a caller's negative.
-		// Lifetime into a token valid that far into the future, which is the.
+		// Floored, not absolute: absint() would turn a caller's negative
+		// lifetime into a token valid that far into the future, which is the
 		// opposite of what such a call meant.
 		$expiry     = time() + max( 60, (int) $ttl );
 		$generation = $this->get_flosc_auth_generation( $user_id );
 
-		// A nonce makes two tokens issued in the same second distinct, so a.
-		// Token is one credential rather than a value anybody holding the same.
+		// A nonce makes two tokens issued in the same second distinct, so a
+		// token is one credential rather than a value anybody holding the same
 		// second could reproduce.
 		$nonce = function_exists( 'wp_generate_password' )
 			? wp_generate_password( 24, false, false )
@@ -464,18 +434,18 @@ public function handle_user_registration( $user_id ) {
 	/**
 	 * This user's current token generation.
 	 *
-	 * A FLOSC token is signed rather than stored, which is what lets it work.
-	 * Across a flow domain the WordPress cookie cannot reach. The cost of that.
-	 * Is that clearing the browser copy on logout does not stop a copy someone.
-	 * Else took: the signature stays valid until it expires.
+	 * A FLOSC token is signed rather than stored, which is what lets it work
+	 * across a flow domain the WordPress cookie cannot reach. The cost of that
+	 * is that clearing the browser copy on logout does not stop a copy someone
+	 * else took: the signature stays valid until it expires.
 	 *
-	 * The generation closes that. It is carried inside the signature, so a.
-	 * Token is only valid while it matches the number on the user. Logging out,.
-	 * Or changing the password, increments the number, and every token issued.
-	 * Before that stops validating everywhere at once.
+	 * The generation closes that. It is carried inside the signature, so a
+	 * token is only valid while it matches the number on the user. Logging out,
+	 * or changing the password, increments the number, and every token issued
+	 * before that stops validating everywhere at once.
 	 *
 	 * @param int $user_id WordPress user ID.
-	 * @return Int.
+	 * @return int
 	 */
 	private function get_flosc_auth_generation( $user_id ) {
 		$user_id = absint( $user_id );
@@ -498,7 +468,7 @@ public function handle_user_registration( $user_id ) {
 	 * Invalidate every FLOSC token this user currently holds.
 	 *
 	 * @param int $user_id WordPress user ID.
-	 * @return Void.
+	 * @return void
 	 */
 	public function revoke_flosc_auth_tokens( $user_id ) {
 		$user_id = absint( $user_id );
@@ -518,7 +488,7 @@ public function handle_user_registration( $user_id ) {
 	 * Validate a FLOSC auth token and return the user ID.
 	 *
 	 * @param string $token Base64-encoded token.
-	 * @return Int|false User ID if valid, false otherwise.
+	 * @return int|false User ID if valid, false otherwise
 	 */
 	public function validate_flosc_auth_token( $token ) {
 		$token = trim( (string) $token );
@@ -536,9 +506,9 @@ public function handle_user_registration( $user_id ) {
 
 		$parts = explode( ':', $decoded );
 
-		// V1 tokens (user:expiry:signature) carried no generation, so they.
-		// Could not be revoked. They are refused rather than honoured: a.
-		// Credential that cannot be withdrawn is the thing being fixed here,.
+		// v1 tokens (user:expiry:signature) carried no generation, so they
+		// could not be revoked. They are refused rather than honoured: a
+		// credential that cannot be withdrawn is the thing being fixed here,
 		// and one fresh login costs less than leaving that door open.
 		if ( 6 !== count( $parts ) || 'v2' !== $parts[0] ) {
 			return false;
@@ -582,14 +552,13 @@ public function handle_user_registration( $user_id ) {
 
 	/**
 	 * Set the FLOSC auth token as a cookie with EMPTY domain.
-	 * Empty domain binds to the host that served the response.
+	 * Empty domain binds to the host that served the response
 	 * (the flow domain, flosc.ai, the WordPress host — whichever the user is on).
-	 * Do not use get_app_url() host: that can point at a different flow.
-	 * Domain than the current request and the browser will reject the cookie.
+	 * Do not use get_app_url() host: that can point at a different flow
+	 * domain than the current request and the browser will reject the cookie.
 	 *
 	 * @param string $token The auth token.
-	 * @param int    $ttl   Lifetime in seconds.
- * @return mixed Result produced by the auth cookie operation.
+	 * @param int    $ttl Lifetime in seconds.
 	 */
 	public function set_flosc_auth_cookie( $token, $ttl = DAY_IN_SECONDS ) {
 		if ( headers_sent() ) {
@@ -619,7 +588,7 @@ public function handle_user_registration( $user_id ) {
 	 * 2. flosc_auth_token cookie (for page loads on custom domains)
 	 *
 	 * @param int $user_id Current user ID (0 if not authenticated).
-	 * @return Int Authenticated user ID.
+	 * @return int Authenticated user ID
 	 */
 	public function authenticate_flosc_token( $user_id ) {
 		// If WordPress already authenticated via cookies, skip.
@@ -633,8 +602,8 @@ public function handle_user_registration( $user_id ) {
 			$token = sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FLOSC_TOKEN'] ) );
 		}
 
-		// Fall back to the cookie for page loads. REST requests must present.
-		// The explicit X-FLOSC-Token header so a browser cookie does not.
+		// Fall back to the cookie for page loads. REST requests must present
+		// the explicit X-FLOSC-Token header so a browser cookie does not
 		// silently become a REST authentication credential.
 		$is_rest_request = defined( 'REST_REQUEST' ) && REST_REQUEST;
 		if ( ! $is_rest_request && empty( $token ) && ! empty( $_COOKIE['flosc_auth_token'] ) ) {
@@ -673,13 +642,13 @@ public function handle_user_registration( $user_id ) {
 	 * Resolve the logout redirect destination.
 	 *
 	 * Priority (first match wins):
-	 * 1. Current flow's per-flow 'logout_destination'.
-	 * 2. Entry-flow recall ('flosc_entry_flow' cookie) -> that flow's destination.
-	 * 3. Legacy global 'logout_redirect_url'.
+	 * 1. Current flow's per-flow 'logout_destination'
+	 * 2. Entry-flow recall ('flosc_entry_flow' cookie) -> that flow's destination
+	 * 3. Legacy global 'logout_redirect_url'
 	 * 4. '/thank-you/' page when it exists (clear, brand-agnostic farewell)
-	 * 5. Home URL.
+	 * 5. Home URL
 	 *
-	 * @return String.
+	 * @return string
 	 * @since 10.0.0
 	 */
 	private function resolve_logout_destination() {
@@ -700,7 +669,7 @@ public function handle_user_registration( $user_id ) {
 			return '' !== $flow_dest ? esc_url_raw( $flow_dest ) : $this->flosc->get_app_url();
 		}
 
-		// The default mode: return them to the flow they entered through, when.
+		// The default mode: return them to the flow they entered through, when
 		// that flow names a logout destination of its own.
 		if ( '' !== $entry_flow ) {
 			$recall = flosc_get_setting( 'logout_destination', '', $entry_flow );
@@ -714,12 +683,11 @@ public function handle_user_registration( $user_id ) {
 	}
 
 	/**
-	 * Remember the entry flow so logout can recall it (per-flow logout.
-	 * Destination). Single-session, host-global (not flow-scoped), cleared on logout.
+	 * Remember the entry flow so logout can recall it (per-flow logout
+	 * destination). Single-session, host-global (not flow-scoped), cleared on logout.
 	 *
 	 * @param string $flow_id Normalized flow id/stem.
 	 * @since 10.0.0
- * @return mixed Result produced by the entry flow cookie operation.
 	 */
 	public function set_entry_flow_cookie( $flow_id ) {
 		if ( headers_sent() ) {
@@ -749,11 +717,9 @@ public function handle_user_registration( $user_id ) {
 
 	/**
 	 * Action: wp_logout — Clear FLOSC auth token + entry-flow recall cookies.
- * @param mixed $user_id WordPress user ID whose Coordinate the clear flosc auth token behavior implemented by this code path. state is being processed.
- * @return mixed Result produced by the clear flosc auth token operation.
 	 */
 	public function clear_flosc_auth_token( $user_id = 0 ) {
-		// Logging out has to end the session everywhere, not only in this.
+		// Logging out has to end the session everywhere, not only in this
 		// browser. Clearing the cookie below removes this copy of the token;
 		// this line invalidates every copy of it that exists.
 		$this->revoke_flosc_auth_tokens( $user_id );
@@ -776,7 +742,7 @@ public function handle_user_registration( $user_id ) {
 			)
 		);
 
-		// V10.0.0: Entry-flow recall is single-session state; wipe it on logout so.
+		// v10.0.0: Entry-flow recall is single-session state; wipe it on logout so
 		// a later login starts a fresh entry-flow journey.
 		setcookie(
 			'flosc_entry_flow',
@@ -798,27 +764,27 @@ public function handle_user_registration( $user_id ) {
 	 *
 	 * WordPress hooks rest_cookie_check_errors at priority 100, which:
 	 * 1. Fires auth_cookie_malformed when NO cookie is present (cross-domain)
-	 * 2. Sets $wp_rest_auth_cookie = true.
+	 * 2. Sets $wp_rest_auth_cookie = true
 	 * 3. Checks nonce → fails (no session token for HMAC match)
-	 * 4. Calls wp_set_current_user(0) → undoes our FLOSC token auth.
+	 * 4. Calls wp_set_current_user(0) → undoes our FLOSC token auth
 	 *
-	 * By returning true at priority 99, rest_cookie_check_errors receives.
-	 * A non-empty $result and short-circuits without checking the nonce.
+	 * By returning true at priority 99, rest_cookie_check_errors receives
+	 * a non-empty $result and short-circuits without checking the nonce.
 	 *
 	 * @param WP_Error|null|true $result Current auth result.
-	 * @return WP_Error|null|true Modified auth result.
+	 * @return WP_Error|null|true Modified auth result
 	 */
 	public function allow_flosc_token_auth( $result ) {
-		// WordPress's contract for this filter: null means no authentication.
-		// Method has decided yet. Anything else is another method's decision —.
-		// True that it authenticated somebody, a WP_Error that it refused — and.
-		// Is not FLOSC's to overrule. Returning $result untouched is what makes.
+		// WordPress's contract for this filter: null means no authentication
+		// method has decided yet. Anything else is another method's decision —
+		// true that it authenticated somebody, a WP_Error that it refused — and
+		// is not FLOSC's to overrule. Returning $result untouched is what makes
 		// FLOSC a good neighbour to a security plugin running beside it.
 		if ( null !== $result ) {
 			return $result;
 		}
 
-		// Limit the nonce short-circuit to FLOSC REST routes. A FLOSC token.
+		// Limit the nonce short-circuit to FLOSC REST routes. A FLOSC token
 		// must not alter authentication for unrelated WordPress endpoints.
 		if ( ! $this->is_flosc_rest_request() ) {
 			return null;
@@ -831,7 +797,7 @@ public function handle_user_registration( $user_id ) {
 	/**
 	 * Determine whether the current REST request belongs to FLOSC.
 	 *
-	 * @return Bool.
+	 * @return bool
 	 */
 	private function is_flosc_rest_request() {
 		$route = '';
@@ -849,9 +815,9 @@ public function handle_user_registration( $user_id ) {
 			$route = (string) $GLOBALS['wp']->query_vars['rest_route'];
 		}
 
-		// Determine_current_user runs before the REST server has attached the.
-		// Current request, so neither source above is populated yet. Read the.
-		// Path directly in that window, through WordPress's own prefix so a.
+		// determine_current_user runs before the REST server has attached the
+		// current request, so neither source above is populated yet. Read the
+		// path directly in that window, through WordPress's own prefix so a
 		// site that renamed wp-json is still recognised.
 		if ( '' === $route && isset( $_SERVER['REQUEST_URI'] ) && function_exists( 'rest_get_url_prefix' ) ) {
 			$path   = (string) wp_parse_url( esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ), PHP_URL_PATH );

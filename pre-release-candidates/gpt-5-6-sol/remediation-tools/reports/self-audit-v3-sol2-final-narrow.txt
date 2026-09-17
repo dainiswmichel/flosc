@@ -1,0 +1,13 @@
+SOL2_NARROW_REMAINING=10
+SOL2_ESC_TYPE_REMAINING=0
+SOL2_UNDEFINED_REMAINING=10
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flosc-app.php:150 [variable.undefined] Variable $identity might not be defined.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flosc-app.php:151 [variable.undefined] Variable $identity might not be defined.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flosc-app.php:152 [variable.undefined] Variable $identity might not be defined.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flosc-app.php:194 [variable.undefined] Variable $user_state might not be defined.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flosc-app.php:424 [variable.undefined] Variable $user_state might not be defined.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flosc-app.php:1095 [variable.undefined] Variable $flow_settings might not be defined.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flosc-app.php:1262 [variable.undefined] Variable $identity might not be defined.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flosc-app.php:1270 [variable.undefined] Variable $identity might not be defined.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flosc-app.php:1272 [variable.undefined] Variable $offers might not be defined.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flosc-app.php:1857 [variable.undefined] Variable $user_data might not be defined.

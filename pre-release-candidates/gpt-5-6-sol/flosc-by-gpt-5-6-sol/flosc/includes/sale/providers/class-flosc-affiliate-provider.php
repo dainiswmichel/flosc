@@ -1,23 +1,23 @@
 <?php
 /**
- * FLOSC Affiliate Payment Provider.
+ * FLOSC Affiliate Payment Provider
  *
- * Permission-Based Purchase Intent System.
+ * Permission-Based Purchase Intent System
  *
  * How it works:
  * 1. User declares what they're planning to buy ("I need a new laptop")
- * 2. System searches affiliate networks for matching offers.
+ * 2. System searches affiliate networks for matching offers
  * 3. User clicks through and purchases (they were going to buy anyway)
- * 4. Commission flows back to the ecosystem.
- * 5. User gets free/discounted access to FLOSC products.
+ * 4. Commission flows back to the ecosystem
+ * 5. User gets free/discounted access to FLOSC products
  *
  * Win-win-win:
- * - User gets free access.
- * - Ecosystem gets commission.
- * - Affiliate networks get sales they wouldn't have tracked.
+ * - User gets free access
+ * - Ecosystem gets commission
+ * - Affiliate networks get sales they wouldn't have tracked
  *
- * This is the spiritual successor to ADZ.world - a permission-based.
- * Advertising model that doesn't track users without consent.
+ * This is the spiritual successor to ADZ.world - a permission-based
+ * advertising model that doesn't track users without consent.
  *
  * @package FLOSC
  */
@@ -34,47 +34,47 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 	private $intents_meta_key = '_flosc_purchase_intents';
 	private $credits_meta_key = '_flosc_affiliate_credits';
 
-/**
- * Resolve the current id value from the available WordPress and flow state.
- *
- * @return Mixed Result produced by the id operation.
- */
+		/**
+	 * Resolve the current id value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the id operation.
+	 */
 public function get_id() {
 		return 'affiliate';
 	}
 
-/**
- * Resolve the current name value from the available WordPress and flow state.
- *
- * @return Mixed Result produced by the name operation.
- */
+		/**
+	 * Resolve the current name value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the name operation.
+	 */
 public function get_name() {
 		return 'Purchase Intent';
 	}
 
-/**
- * Resolve the current description value from the available WordPress and flow state.
- *
- * @return Mixed Result produced by the description operation.
- */
+		/**
+	 * Resolve the current description value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the description operation.
+	 */
 public function get_description() {
 		return 'Users earn access by declaring purchase intent. When they buy through affiliate links, the commission funds their access.';
 	}
 
-/**
- * Resolve the current icon value from the available WordPress and flow state.
- *
- * @return Mixed Result produced by the icon operation.
- */
+		/**
+	 * Resolve the current icon value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the icon operation.
+	 */
 public function get_icon() {
 		return '🎁';
 	}
 
-/**
- * Determine whether the current state satisfies configured.
- *
- * @return Bool Whether configured applies to the current state.
- */
+		/**
+	 * Determine whether the current state satisfies configured.
+	 *
+	 * @return bool Whether configured applies to the current state.
+	 */
 public function is_configured() {
 		// Check if any affiliate network is configured.
 		return ! empty( $this->get_setting( 'amazon_tag', '' ) ) ||
@@ -84,9 +84,8 @@ public function is_configured() {
 	}
 
 	/**
-	 * Settings for admin.
-	 *
-	 * @return Array Structured settings fields data.
+	 * Settings for admin
+ * @return array Structured settings fields data.
 	 */
 	public function get_settings_fields() {
 		return array(
@@ -167,12 +166,11 @@ public function is_configured() {
 	}
 
 	/**
-	 * Process payment via affiliate credits.
-	 *
-	 * @param mixed $user_id      WordPress user ID whose Coordinate the payment behavior implemented by this code path. state is being processed.
-	 * @param mixed $offer        Input consumed by the Coordinate the payment behavior implemented by this code path. operation.
-	 * @param mixed $payment_data Structured data consumed by the Coordinate the payment behavior implemented by this code path. operation.
-	 * @return Array Structured payment data.
+	 * Process payment via affiliate credits
+ * @param mixed $user_id WordPress user ID whose Coordinate the payment behavior implemented by this code path. state is being processed.
+ * @param mixed $offer Input consumed by the Coordinate the payment behavior implemented by this code path. operation.
+ * @param mixed $payment_data Structured data consumed by the Coordinate the payment behavior implemented by this code path. operation.
+ * @return array Structured payment data.
 	 */
 	public function process_payment( $user_id, $offer, $payment_data = array() ) {
 		if ( ! is_array( $offer['pricing']['affiliate'] ?? null )
@@ -229,9 +227,8 @@ public function is_configured() {
 	}
 
 	/**
-	 * Get client config.
-	 *
-	 * @return Array Structured client config data.
+	 * Get client config
+ * @return array Structured client config data.
 	 */
 	public function get_client_config() {
 		return array(
@@ -241,22 +238,22 @@ public function is_configured() {
 		);
 	}
 
-	// =========================================================================.
+	// =========================================================================
 	// PURCHASE INTENT SYSTEM.
-	// =========================================================================.
+	// =========================================================================
 
 	/**
-	 * User declares a purchase intent.
+	 * User declares a purchase intent
 	 *
-	 * @param int   $user_id Value consumed by this operation.
-	 * @param mixed $intent  Input consumed by the Persist the declare intent state in Word Press storage. operation.
-	 * 'description' => 'MacBook Pro 14"',.
-	 * 'category' => 'electronics',.
-	 * 'expected_price' => 2000,.
-	 * 'timeframe' => 'this_week', // this_week, this_month, exploring.
-	 * 'notes' => 'Need for music production',.
+	 * @param int   $user_id
+	 * @param mixed $intent Input consumed by the Persist the declare intent state in Word Press storage. operation.
+	 *   'description' => 'MacBook Pro 14"',
+	 *   'category' => 'electronics',
+	 *   'expected_price' => 2000,
+	 *   'timeframe' => 'this_week', // this_week, this_month, exploring
+	 *   'notes' => 'Need for music production',
 	 * ]
-	 * @return Mixed Result produced by the declare intent operation.
+ * @return mixed Result produced by the declare intent operation.
 	 */
 	public function declare_intent( $user_id, $intent ) {
 		$intents = $this->get_intents( $user_id );
@@ -289,11 +286,10 @@ public function is_configured() {
 	}
 
 	/**
-	 * Get user's purchase intents.
-	 *
-	 * @param mixed $user_id WordPress user ID whose Resolve the current intents value from the available Word Press and flow state. state is being processed.
-	 * @param mixed $status  Input consumed by the Resolve the current intents value from the available Word Press and flow state. operation.
-	 * @return Mixed Result produced by the intents operation.
+	 * Get user's purchase intents
+ * @param mixed $user_id WordPress user ID whose Resolve the current intents value from the available Word Press and flow state. state is being processed.
+ * @param mixed $status Input consumed by the Resolve the current intents value from the available Word Press and flow state. operation.
+ * @return mixed Result produced by the intents operation.
 	 */
 	public function get_intents( $user_id, $status = null ) {
 		$intents = get_user_meta( $user_id, $this->intents_meta_key, true );
@@ -314,12 +310,11 @@ public function is_configured() {
 	}
 
 	/**
-	 * Update intent status.
-	 *
-	 * @param mixed $user_id   WordPress user ID whose Persist the intent state in Word Press storage. state is being processed.
-	 * @param mixed $intent_id Identifier used to select the record involved in the Persist the intent state in Word Press storage. operation.
-	 * @param mixed $updates   Input consumed by the Persist the intent state in Word Press storage. operation.
-	 * @return Mixed Result of the intent operation, or a WP_Error when it cannot complete.
+	 * Update intent status
+ * @param mixed $user_id WordPress user ID whose Persist the intent state in Word Press storage. state is being processed.
+ * @param mixed $intent_id Identifier used to select the record involved in the Persist the intent state in Word Press storage. operation.
+ * @param mixed $updates Input consumed by the Persist the intent state in Word Press storage. operation.
+ * @return mixed Result of the intent operation, or a WP_Error when it cannot complete.
 	 */
 	public function update_intent( $user_id, $intent_id, $updates ) {
 		$intents = $this->get_intents( $user_id );
@@ -334,15 +329,14 @@ public function is_configured() {
 		return $intents[ $intent_id ];
 	}
 
-	// =========================================================================.
+	// =========================================================================
 	// AFFILIATE OFFER MATCHING.
-	// =========================================================================.
+	// =========================================================================
 
 	/**
-	 * Find affiliate offers for an intent.
-	 *
-	 * @param mixed $intent Input consumed by the Resolve the current offers for intent value from the available Word Press and flow state. operation.
-	 * @return Mixed Result produced by the offers for intent operation.
+	 * Find affiliate offers for an intent
+ * @param mixed $intent Input consumed by the Resolve the current offers for intent value from the available Word Press and flow state. operation.
+ * @return mixed Result produced by the offers for intent operation.
 	 */
 	public function find_offers_for_intent( $intent ) {
 		$offers = array();
@@ -383,11 +377,10 @@ public function is_configured() {
 	}
 
 	/**
-	 * Search Amazon for products.
-	 *
-	 * @param mixed $query    Input consumed by the Coordinate the search amazon behavior implemented by this code path. operation.
-	 * @param mixed $category Input consumed by the Coordinate the search amazon behavior implemented by this code path. operation.
-	 * @return Array Structured search amazon data.
+	 * Search Amazon for products
+ * @param mixed $query Input consumed by the Coordinate the search amazon behavior implemented by this code path. operation.
+ * @param mixed $category Input consumed by the Coordinate the search amazon behavior implemented by this code path. operation.
+ * @return array Structured search amazon data.
 	 */
 	private function search_amazon( $query, $category = null ) {
 		$tag = $this->get_setting( 'amazon_tag' );
@@ -421,10 +414,9 @@ public function is_configured() {
 
 	/**
 	 * Search CJ (Commission Junction)
-	 *
-	 * @param mixed $query    Input consumed by the Coordinate the search cj behavior implemented by this code path. operation.
-	 * @param mixed $category Input consumed by the Coordinate the search cj behavior implemented by this code path. operation.
-	 * @return Array Structured search cj data.
+ * @param mixed $query Input consumed by the Coordinate the search cj behavior implemented by this code path. operation.
+ * @param mixed $category Input consumed by the Coordinate the search cj behavior implemented by this code path. operation.
+ * @return array Structured search cj data.
 	 */
 	private function search_cj( $query, $category = null ) {
 		$cj_id   = $this->get_setting( 'cj_id' );
@@ -441,11 +433,10 @@ public function is_configured() {
 	}
 
 	/**
-	 * Search ShareASale.
-	 *
-	 * @param mixed $query    Input consumed by the Coordinate the search shareasale behavior implemented by this code path. operation.
-	 * @param mixed $category Input consumed by the Coordinate the search shareasale behavior implemented by this code path. operation.
-	 * @return Array Structured search shareasale data.
+	 * Search ShareASale
+ * @param mixed $query Input consumed by the Coordinate the search shareasale behavior implemented by this code path. operation.
+ * @param mixed $category Input consumed by the Coordinate the search shareasale behavior implemented by this code path. operation.
+ * @return array Structured search shareasale data.
 	 */
 	private function search_shareasale( $query, $category = null ) {
 		$sas_id = $this->get_setting( 'shareasale_id' );
@@ -461,9 +452,8 @@ public function is_configured() {
 
 	/**
 	 * Search custom endpoint (your own aggregation service)
-	 *
-	 * @param mixed $intent Input consumed by the Coordinate the search custom behavior implemented by this code path. operation.
-	 * @return Array Structured search custom data.
+ * @param mixed $intent Input consumed by the Coordinate the search custom behavior implemented by this code path. operation.
+ * @return array Structured search custom data.
 	 */
 	private function search_custom( $intent ) {
 		$endpoint = $this->get_setting( 'custom_endpoint' );
@@ -501,16 +491,15 @@ public function is_configured() {
 		return $body['offers'] ?? array();
 	}
 
-	// =========================================================================.
+	// =========================================================================
 	// TRACKING & CONVERSIONS.
-	// =========================================================================.
+	// =========================================================================
 
 	/**
-	 * Track a click on an affiliate offer.
-	 *
-	 * @param mixed $user_id   WordPress user ID whose Persist the track click state in Word Press storage. state is being processed.
-	 * @param mixed $intent_id Identifier used to select the record involved in the Persist the track click state in Word Press storage. operation.
-	 * @param mixed $offer     Input consumed by the Persist the track click state in Word Press storage. operation.
+	 * Track a click on an affiliate offer
+ * @param mixed $user_id WordPress user ID whose Persist the track click state in Word Press storage. state is being processed.
+ * @param mixed $intent_id Identifier used to select the record involved in the Persist the track click state in Word Press storage. operation.
+ * @param mixed $offer Input consumed by the Persist the track click state in Word Press storage. operation.
 	 */
 	public function track_click( $user_id, $intent_id, $offer ) {
 		$user_id    = absint( $user_id );
@@ -538,9 +527,8 @@ public function is_configured() {
 
 	/**
 	 * Record a conversion (called by webhook or postback)
-	 *
-	 * @param mixed $tracking_data Structured data consumed by the Coordinate the record conversion behavior implemented by this code path. operation.
-	 * @return Array Structured record conversion data.
+ * @param mixed $tracking_data Structured data consumed by the Coordinate the record conversion behavior implemented by this code path. operation.
+ * @return array Structured record conversion data.
 	 */
 	public function record_conversion( $tracking_data ) {
 		// Tracking data comes from affiliate network postback.
@@ -606,15 +594,14 @@ public function is_configured() {
 		);
 	}
 
-	// =========================================================================.
+	// =========================================================================
 	// CREDITS MANAGEMENT.
-	// =========================================================================.
+	// =========================================================================
 
 	/**
 	 * Get user's affiliate credits (in dollars)
-	 *
-	 * @param mixed $user_id WordPress user ID whose Resolve the current credits value from the available Word Press and flow state. state is being processed.
-	 * @return Mixed Result produced by the credits operation.
+ * @param mixed $user_id WordPress user ID whose Resolve the current credits value from the available Word Press and flow state. state is being processed.
+ * @return mixed Result produced by the credits operation.
 	 */
 	public function get_credits( $user_id ) {
 		$credits     = get_user_meta( $user_id, $this->credits_meta_key, true );
@@ -623,12 +610,11 @@ public function is_configured() {
 	}
 
 	/**
-	 * Add affiliate credits.
-	 *
-	 * @param mixed $user_id WordPress user ID whose Persist the add credits state in Word Press storage. state is being processed.
-	 * @param mixed $amount  Input consumed by the Persist the add credits state in Word Press storage. operation.
-	 * @param mixed $meta    Input consumed by the Persist the add credits state in Word Press storage. operation.
-	 * @return Mixed Result produced by the add credits operation.
+	 * Add affiliate credits
+ * @param mixed $user_id WordPress user ID whose Persist the add credits state in Word Press storage. state is being processed.
+ * @param mixed $amount Input consumed by the Persist the add credits state in Word Press storage. operation.
+ * @param mixed $meta Input consumed by the Persist the add credits state in Word Press storage. operation.
+ * @return mixed Result produced by the add credits operation.
 	 */
 	public function add_credits( $user_id, $amount, $meta = array() ) {
 		$current     = $this->get_credits( $user_id );
@@ -644,11 +630,10 @@ public function is_configured() {
 
 	/**
 	 * Deduct affiliate credits (atomic conditional debit — PAY-ACC-01).
-	 *
-	 * @param mixed $user_id WordPress user ID whose Coordinate the deduct credits behavior implemented by this code path. state is being processed.
-	 * @param mixed $amount  Input consumed by the Coordinate the deduct credits behavior implemented by this code path. operation.
-	 * @param mixed $reason  Input consumed by the Coordinate the deduct credits behavior implemented by this code path. operation.
-	 * @return Mixed Result of the deduct credits operation, or a WP_Error when it cannot complete.
+ * @param mixed $user_id WordPress user ID whose Coordinate the deduct credits behavior implemented by this code path. state is being processed.
+ * @param mixed $amount Input consumed by the Coordinate the deduct credits behavior implemented by this code path. operation.
+ * @param mixed $reason Input consumed by the Coordinate the deduct credits behavior implemented by this code path. operation.
+ * @return mixed Result of the deduct credits operation, or a WP_Error when it cannot complete.
 	 */
 	public function deduct_credits( $user_id, $amount, $reason = '' ) {
 		$user_id = absint( $user_id );
@@ -741,12 +726,11 @@ public function is_configured() {
 	}
 
 	/**
-	 * Log credit changes.
-	 *
-	 * @param mixed $user_id WordPress user ID whose Persist the log credit change state in Word Press storage. state is being processed.
-	 * @param mixed $type    Input consumed by the Persist the log credit change state in Word Press storage. operation.
-	 * @param mixed $amount  Input consumed by the Persist the log credit change state in Word Press storage. operation.
-	 * @param mixed $meta    Input consumed by the Persist the log credit change state in Word Press storage. operation.
+	 * Log credit changes
+ * @param mixed $user_id WordPress user ID whose Persist the log credit change state in Word Press storage. state is being processed.
+ * @param mixed $type Input consumed by the Persist the log credit change state in Word Press storage. operation.
+ * @param mixed $amount Input consumed by the Persist the log credit change state in Word Press storage. operation.
+ * @param mixed $meta Input consumed by the Persist the log credit change state in Word Press storage. operation.
 	 */
 	private function log_credit_change( $user_id, $type, $amount, $meta = array() ) {
 		$log = get_user_meta( $user_id, '_flosc_affiliate_credit_log', true );
@@ -770,11 +754,10 @@ public function is_configured() {
 	}
 
 	/**
-	 * Handle webhook from affiliate networks.
-	 *
-	 * @param mixed $payload Structured data consumed by the Coordinate the webhook behavior implemented by this code path. operation.
-	 * @param mixed $headers Input consumed by the Coordinate the webhook behavior implemented by this code path. operation.
-	 * @return Mixed Result of the webhook operation, or a WP_Error when it cannot complete.
+	 * Handle webhook from affiliate networks
+ * @param mixed $payload Structured data consumed by the Coordinate the webhook behavior implemented by this code path. operation.
+ * @param mixed $headers Input consumed by the Coordinate the webhook behavior implemented by this code path. operation.
+ * @return mixed Result of the webhook operation, or a WP_Error when it cannot complete.
 	 */
 	public function handle_webhook( $payload, $headers = array() ) {
 		// Determine source from headers or payload.
@@ -790,25 +773,25 @@ public function is_configured() {
 		return $this->record_conversion( $tracking_data );
 	}
 
-/**
- * Coordinate the detect webhook source behavior implemented by this code path.
- *
- * @param mixed $headers Input consumed by the Coordinate the detect webhook source behavior implemented by this code path. operation.
- * @param mixed $payload Structured data consumed by the Coordinate the detect webhook source behavior implemented by this code path. operation.
- * @return Mixed Result produced by the detect webhook source operation.
- */
+		/**
+	 * Coordinate the detect webhook source behavior implemented by this code path.
+	 *
+	 * @param mixed $headers Input consumed by the Coordinate the detect webhook source behavior implemented by this code path. operation.
+	 * @param mixed $payload Structured data consumed by the Coordinate the detect webhook source behavior implemented by this code path. operation.
+	 * @return mixed Result produced by the detect webhook source operation.
+	 */
 private function detect_webhook_source( $headers, $payload ) {
 		// Logic to detect Amazon, CJ, ShareASale, etc. from webhook.
 		return 'custom';
 	}
 
-/**
- * Coordinate the parse webhook payload behavior implemented by this code path.
- *
- * @param mixed $source  Input consumed by the Coordinate the parse webhook payload behavior implemented by this code path. operation.
- * @param mixed $payload Structured data consumed by the Coordinate the parse webhook payload behavior implemented by this code path. operation.
- * @return Array Structured parse webhook payload data.
- */
+		/**
+	 * Coordinate the parse webhook payload behavior implemented by this code path.
+	 *
+	 * @param mixed $source Input consumed by the Coordinate the parse webhook payload behavior implemented by this code path. operation.
+	 * @param mixed $payload Structured data consumed by the Coordinate the parse webhook payload behavior implemented by this code path. operation.
+	 * @return array Structured parse webhook payload data.
+	 */
 private function parse_webhook_payload( $source, $payload ) {
 		// Pass 8: field-sanitize after json_decode of untrusted webhook body.
 		$data = array();
