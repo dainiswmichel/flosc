@@ -1,16 +1,37 @@
-# FLOSC 8.0.0 — candidate v79
+# FLOSC 8.0.0 — candidate v80
 
 **STATICALLY CLEAN — FUNCTIONALLY UNVERIFIED.** NonceVerification is 84 → 0,
-measured. Two functional defects were then found by auditing v78's own diff and
-fixed here. 0 of 30 behavioral tests have been executed.
+measured. Four defects v78 introduced were then found by auditing its own diff,
+plus one that predated it. All five are fixed. 0 of 30 behavioral tests have
+been executed.
 
-Full accounting: **`v79-regression-accounting.html`**.
+Test procedures: **`v79-regression-accounting.html`**.
 
     artifact   flosc.zip
-    sha256     a80b7340fa53f21c… (full value in sha256sums)
+    sha256     c368b435adbc171e… (full value in sha256sums)
     entries    278, single flosc/ root, 0 under tests/
-    base       claude-opus-5 v78
+    base       claude-opus-5 v79
     version    8.0.0 — unchanged; this is the release being resubmitted
+
+## What v80 did
+
+**R-3, introduced by v78.** `admin/ivr-messages.php` replaced
+`$flosc_get = wp_unslash( $_GET )` with an array declaring all ten nav keys
+unconditionally, each with a default. `$_GET` only ever contains the keys the
+request carried; that array always contained all ten. So
+`isset( $flosc_get['delete_message'] )` was permanently true, the delete branch
+ran on every render, and `check_admin_referer( 'flosc_delete_message_' )` with an
+empty id and no nonce in the URL ended the request. The IVR Messages tab
+`wp_die()`d on every load. `?? 'freeline'` also stopped falling back, because
+`??` tests for null and the declared default was `''`. The array is now built
+with `flosc_nav_param_present()`, so a key exists only if the request carried
+it, and every value that is present still passes its allowlist.
+
+**R-4, introduced by v78.** A 2048-character cap on the OAuth
+`code`/`state`/`error`/`error_description` and an 8192 cap on Apple's `user`
+field. Neither was required by the nonce work; both could only reject a login.
+Removed. The Apple one was also redundant against the 20000 cap already sitting
+at the `json_decode` below it.
 
 ## What v79 did
 

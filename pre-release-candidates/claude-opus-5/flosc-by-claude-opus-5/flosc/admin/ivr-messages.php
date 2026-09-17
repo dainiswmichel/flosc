@@ -146,19 +146,54 @@ $flosc_request_method = strtoupper( (string) ( filter_input( INPUT_SERVER, 'REQU
  * Display selectors, through the shared input boundary. Each is constrained to
  * the values this tab actually understands, so a hand-edited URL selects a
  * default instead of a template name of the caller's choosing.
+ *
+ * A KEY IS PRESENT HERE ONLY IF IT WAS PRESENT IN THE REQUEST.
+ *
+ * This replaced $flosc_get = wp_unslash( $_GET ), and an earlier version of it
+ * declared all ten keys unconditionally with a default each. That is not the
+ * same array, and the difference broke this tab:
+ *
+ *   - isset( $flosc_get['delete_message'] ) became permanently true, so the
+ *     delete branch ran on every render and called check_admin_referer() with
+ *     an empty message id and no nonce in the URL -- wp_die() on every load.
+ *   - $flosc_get['ivr_phase'] ?? 'freeline' stopped falling back, because ??
+ *     tests for null and the declared default was ''. The phase view lost its
+ *     starting phase.
+ *   - isset( $flosc_get['_wpnonce'] ) and ['flosc_download_ivr'] became true on
+ *     every render, entering the download branch for nothing.
+ *
+ * The consumers below were written against $_GET semantics and read presence as
+ * intent. Building the array with flosc_nav_param_present() keeps isset() and
+ * ?? meaning what they meant, while every value that IS present still passes
+ * through the boundary and its allowlist.
  */
-$flosc_nav = array(
-    'ivr'                 => flosc_nav_param( 'ivr', array(), '', 'sanitize_file_name' ),
-    'view'                => flosc_nav_param( 'view', array( 'single', 'all' ), 'single' ),
-    'ivr_phase'           => flosc_nav_param( 'ivr_phase' ),
-    'flosc_ivr_uploaded'  => flosc_nav_param( 'flosc_ivr_uploaded', array( '1' ) ),
-    'flosc_download_ivr'  => flosc_nav_param( 'flosc_download_ivr', array(), '', 'sanitize_file_name' ),
-    'delete_message'      => flosc_nav_param( 'delete_message' ),
-    'phase'               => flosc_nav_param( 'phase' ),
-    'edit_message'        => flosc_nav_param( 'edit_message' ),
-    'expand'              => flosc_nav_param( 'expand' ),
-    '_wpnonce'            => flosc_nav_param( '_wpnonce' ),
+$flosc_nav_spec = array(
+    // key                => array( allowed values, default, sanitizer )
+    'ivr'                 => array( array(), '', 'sanitize_file_name' ),
+    'view'                => array( array( 'single', 'all' ), 'single', 'sanitize_key' ),
+    'ivr_phase'           => array( array(), '', 'sanitize_key' ),
+    'flosc_ivr_uploaded'  => array( array( '1' ), '', 'sanitize_key' ),
+    'flosc_download_ivr'  => array( array(), '', 'sanitize_file_name' ),
+    'delete_message'      => array( array(), '', 'sanitize_key' ),
+    'phase'               => array( array(), '', 'sanitize_key' ),
+    'edit_message'        => array( array(), '', 'sanitize_key' ),
+    'expand'              => array( array(), '', 'sanitize_key' ),
+    // Verified by wp_verify_nonce() at the download branch. sanitize_text_field
+    // rather than sanitize_key: a nonce is compared, never used as a key, and
+    // it must reach the comparison as the browser sent it.
+    '_wpnonce'            => array( array(), '', 'sanitize_text_field' ),
 );
+$flosc_nav = array();
+foreach ( $flosc_nav_spec as $flosc_nav_key => $flosc_nav_rule ) {
+    if ( flosc_nav_param_present( $flosc_nav_key ) ) {
+        $flosc_nav[ $flosc_nav_key ] = flosc_nav_param(
+            $flosc_nav_key,
+            $flosc_nav_rule[0],
+            $flosc_nav_rule[1],
+            $flosc_nav_rule[2]
+        );
+    }
+}
 $flosc_get = $flosc_nav;
 
 /*

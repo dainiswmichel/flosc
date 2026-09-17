@@ -223,7 +223,7 @@ class Apple_Provider extends SSO_Provider_Base {
          */
         $user_raw      = filter_input( INPUT_POST, 'user', FILTER_UNSAFE_RAW );
         $user_post     = is_string( $user_raw ) ? sanitize_text_field( wp_unslash( $user_raw ) ) : '';
-        $raw_user_json = ( '' !== $user_post && strlen( $user_post ) <= 8192 )
+        $raw_user_json = ( '' !== $user_post )
             ? sanitize_textarea_field( $user_post )
             : '';
         $user_data_raw = array();

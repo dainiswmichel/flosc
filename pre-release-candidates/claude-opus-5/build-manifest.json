@@ -1,15 +1,15 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": 79,
+  "candidate_iteration": 80,
   "creator": "Claude Opus 5",
   "status": "STATICALLY_CLEAN_FUNCTIONALLY_UNVERIFIED",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v78",
+  "base": "claude-opus-5 v79",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "a80b7340fa53f21c17464b0a6d1d03fc58e9d050f1629388115f4a8e9f06af26",
-  "artifact_bytes": 2763076,
+  "artifact_sha256": "c368b435adbc171e4f51c5131f16114b061f706f1ae51e3d4844fc48663d5c9b",
+  "artifact_bytes": 2763560,
   "artifact_entries": 278,
   "tree_files": 295,
   "why_this_iteration": {
@@ -457,6 +457,32 @@
     "new_behavior_not_required_by_the_nonce_work": [
       "class-oauth2-handler.php: new strlen <= 2048 cap on code/state/error/error_description. A provider sending longer would now be dropped.",
       "class-apple-provider.php: new strlen <= 8192 cap on the 'user' form_post field."
+    ]
+  },
+  "v80_fixes": {
+    "R3_ivr_tab_dead_on_every_load": {
+      "introduced_by": "v78",
+      "what": "admin/ivr-messages.php replaced $flosc_get = wp_unslash($_GET) with an array that declared all ten nav keys unconditionally, each with a default. $_GET only contains keys the request carried; that array always contained all ten.",
+      "effects": [
+        "isset($flosc_get['delete_message']) && isset($flosc_get['phase']) became permanently true, so the delete branch ran on every render and called check_admin_referer('flosc_delete_message_') with an empty id and no nonce in the URL. wp_die() on every load of the IVR Messages tab.",
+        "$flosc_get['ivr_phase'] ?? 'freeline' stopped falling back: ?? tests for null and the declared default was ''. The phase view lost its starting phase.",
+        "$flosc_get['edit_message'] ?? null and ['expand'] ?? ['edit_message'] ?? null returned '' instead of null.",
+        "isset($flosc_get['flosc_download_ivr']) && isset($flosc_get['_wpnonce']) became true on every render, entering the download branch for nothing."
+      ],
+      "fix": "The array is built with flosc_nav_param_present(), so a key exists only if the request carried it. isset() and ?? mean what the consumers were written against. Values that are present still pass the allowlist and sanitizer. _wpnonce uses sanitize_text_field rather than sanitize_key, since it is compared and never used as a key.",
+      "verified": "Simulated the ten-key build against a URL carrying only page+tab: zero keys present, isset false, ivr_phase falls back to freeline, edit_message is NULL.",
+      "test": "T-IVR-1 and T-IVR-6. NOT YET EXECUTED."
+    },
+    "R4_gratuitous_length_caps": {
+      "introduced_by": "v78",
+      "what": "strlen <= 2048 on the OAuth code/state/error/error_description, and strlen <= 8192 on Apple's user form_post field. Neither was required by the nonce work.",
+      "why_removed": "They are new failure modes with no compliance benefit. The Apple cap was also redundant and tighter than the pre-existing 20000 cap at the json_decode below it.",
+      "fix": "Both removed. The reads are back to the pre-v78 acceptance, through filter_input."
+    },
+    "also_checked": [
+      "No code anywhere in the plugin writes $_GET, $_POST or $_REQUEST, so filter_input() cannot miss a value another function set.",
+      "ivr-messages.php was the only file that built a nav array; every other conversion assigns scalars, so the isset() hazard was confined to it.",
+      "The two remaining presence-sensitive conversions (flosc_contact_status, magic-link ivr) compare values rather than test presence."
     ]
   }
 }

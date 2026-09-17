@@ -256,7 +256,7 @@ class OAuth2_Handler {
          * in this loop is gone; the reads are a typed boundary now.
          *
          * Every value here is provider-supplied and untrusted until state
-         * verifies. They are read, length-bounded and sanitized; none of them is
+         * verifies. They are read and sanitized; none of them is
          * used before verify_state() has passed.
          */
         $get  = array();
@@ -264,12 +264,12 @@ class OAuth2_Handler {
         foreach ( array( 'code', 'state', 'error', 'error_description' ) as $flosc_k ) {
             $g_raw = filter_input( INPUT_GET, $flosc_k, FILTER_UNSAFE_RAW );
             $g     = is_string( $g_raw ) ? sanitize_text_field( wp_unslash( $g_raw ) ) : '';
-            if ( '' !== $g && strlen( $g ) <= 2048 ) {
+            if ( '' !== $g ) {
                 $get[ $flosc_k ] = $g;
             }
             $p_raw = filter_input( INPUT_POST, $flosc_k, FILTER_UNSAFE_RAW );
             $p     = is_string( $p_raw ) ? sanitize_text_field( wp_unslash( $p_raw ) ) : '';
-            if ( '' !== $p && strlen( $p ) <= 2048 ) {
+            if ( '' !== $p ) {
                 $post[ $flosc_k ] = $p;
             }
         }
