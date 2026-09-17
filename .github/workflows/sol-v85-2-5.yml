@@ -1,0 +1,253 @@
+name: FLOSC v85 SOL-2 through SOL-5
+
+on:
+  push:
+    branches:
+      - gpt-5-6-sol/wporg-remediation
+
+permissions:
+  contents: write
+
+concurrency:
+  group: flosc-v85-sol25
+  cancel-in-progress: false
+
+jobs:
+  sol25:
+    if: ${{ contains(github.event.head_commit.message || '', '[sol1-generated]') && !contains(github.event.head_commit.message || '', '[sol25-generated]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CAND: pre-release-candidates/gpt-5-6-sol
+      TARGET: pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc
+      REPORTS: pre-release-candidates/gpt-5-6-sol/remediation-tools/reports
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: gpt-5-6-sol/wporg-remediation
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          tools: composer
+
+      - name: Install real analysis tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          composer global config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+          composer global require --no-interaction --no-progress \
+            squizlabs/php_codesniffer:^3.13 \
+            wp-coding-standards/wpcs:^3.4 \
+            dealerdirect/phpcodesniffer-composer-installer:^1.0 \
+            phpcompatibility/phpcompatibility-wp:^2.1 \
+            phpstan/phpstan:^2.1 \
+            szepeviktor/phpstan-wordpress:^2.0 \
+            php-stubs/wordpress-stubs:^6.7
+          mkdir -p "$REPORTS"
+
+      - name: SOL-2 — narrow PHPStan evidence only
+        shell: bash
+        run: |
+          set +e
+          cat > /tmp/flosc-v85-phpstan.neon <<NEON
+          includes:
+              - $HOME/.composer/vendor/szepeviktor/phpstan-wordpress/extension.neon
+          parameters:
+              level: 5
+              excludePaths:
+                  analyse:
+                      - */tests/*
+                      - */vendor/*
+                      - */node_modules/*
+              reportUnmatchedIgnoredErrors: false
+              parallel:
+                  maximumNumberOfProcesses: 1
+          NEON
+          "$HOME/.composer/vendor/bin/phpstan" analyse "$TARGET" \
+            --configuration=/tmp/flosc-v85-phpstan.neon --error-format=json --no-progress --memory-limit=4G \
+            > "$REPORTS/sol2-phpstan.json" 2> "$REPORTS/sol2-phpstan.stderr.txt"
+          rc=$?
+          echo "phpstan_exit=$rc" > "$REPORTS/sol2-phpstan-exit.txt"
+          set -e
+          python3 - <<'PY'
+          import json, os, re
+          p=os.environ['REPORTS']+'/sol2-phpstan.json'
+          out=os.environ['REPORTS']+'/sol2-narrow-scope.txt'
+          try:
+              data=json.load(open(p,encoding='utf-8'))
+          except Exception as e:
+              open(out,'w').write('PHPSTAN_JSON_UNREADABLE '+repr(e)+'\n')
+              raise SystemExit(0)
+          rows=[]
+          for file, bucket in (data.get('files') or {}).items():
+              for m in bucket.get('messages',[]):
+                  ident=m.get('identifier') or ''
+                  msg=m.get('message') or ''
+                  if ident=='variable.undefined' or (ident=='argument.type' and re.search(r'esc_(attr|html|textarea|url)',msg,re.I)):
+                      rows.append((file,m.get('line'),ident,msg))
+          with open(out,'w',encoding='utf-8') as f:
+              f.write(f'SOL2_NARROW_FINDINGS={len(rows)}\n')
+              for r in rows: f.write('%s:%s [%s] %s\n'%r)
+          print('SOL2_NARROW_FINDINGS',len(rows))
+          PY
+          cat "$REPORTS/sol2-narrow-scope.txt"
+
+      - name: SOL-3 — inventory actual outbound integrations against readme
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os,re, pathlib, urllib.parse
+          root=pathlib.Path(os.environ['TARGET'])
+          report=pathlib.Path(os.environ['REPORTS'])/'sol3-external-services.txt'
+          readme=(root/'readme.txt').read_text(encoding='utf-8',errors='replace')
+          literals=[]; calls=[]
+          urlrx=re.compile(r'https?://[^\s\"\'<>`)]+' ,re.I)
+          for p in root.rglob('*'):
+              if not p.is_file() or any(x in p.parts for x in ('tests','vendor','node_modules')): continue
+              if p.suffix.lower() not in ('.php','.js','.mjs','.html','.txt','.md'): continue
+              text=p.read_text(encoding='utf-8',errors='replace')
+              rel=p.relative_to(root)
+              for n,line in enumerate(text.splitlines(),1):
+                  if re.search(r'\bwp_remote_(?:get|post|request|head)\s*\(|\bfetch\s*\(|XMLHttpRequest',line):
+                      calls.append((str(rel),n,line.strip()))
+                  for u in urlrx.findall(line):
+                      h=urllib.parse.urlparse(u.rstrip('.,;')).hostname
+                      if h: literals.append((h.lower(),str(rel),n,u))
+          services={
+            'OpenAI':['openai.com'], 'Anthropic':['anthropic.com'], 'xAI':['x.ai'],
+            'Google Gemini':['googleapis.com'], 'AssemblyAI':['assemblyai.com'],
+            'PayPal':['paypal.com'], 'Stripe':['stripe.com'], 'ClickBank':['clickbank.com'],
+            'Google OAuth':['accounts.google.com'], 'Facebook OAuth':['facebook.com'],
+            'Apple Sign In':['appleid.apple.com'], 'Microsoft OAuth':['microsoftonline.com'],
+            'LinkedIn':['linkedin.com'], 'Amazon':['amazon.'], 'YouTube':['youtube.com','youtu.be'],
+            'TikTok':['tiktok.com'], 'Spotify':['spotify.com'], 'SoundCloud':['soundcloud.com'],
+            'Apple Music':['music.apple.com'], 'Vimeo':['vimeo.com']
+          }
+          domains=sorted({x[0] for x in literals})
+          with report.open('w',encoding='utf-8') as f:
+              f.write(f'OUTBOUND_CALL_SITES={len(calls)}\nLITERAL_URL_DOMAINS={len(domains)}\n')
+              f.write('\n== wp_remote/fetch/XHR call sites ==\n')
+              for x in calls:f.write(f'{x[0]}:{x[1]} {x[2]}\n')
+              f.write('\n== literal URL domains in shipping tree ==\n')
+              for d in domains:f.write(d+'\n')
+              f.write('\n== known-service reconciliation ==\n')
+              for name,needles in services.items():
+                  present=any(any(n in d for n in needles) for d in domains)
+                  documented=(name.lower() in readme.lower()) or any(n.lower() in readme.lower() for n in needles)
+                  f.write(f'{name}: code_literal={int(present)} readme={int(documented)}\n')
+              f.write('\n== literal URL evidence ==\n')
+              for h,rel,n,u in sorted(literals):f.write(f'{rel}:{n} {u}\n')
+          print(report.read_text(encoding='utf-8')[:12000])
+          PY
+
+      - name: SOL-4 — T7 through T13 historical rejection audit
+        shell: bash
+        run: |
+          set +e
+          out="$REPORTS/sol4-t7-t13-audit.txt"
+          : > "$out"
+          echo '== HEADER / README ==' >> "$out"
+          grep -n '^ \?\* \?Requires at least:\|^Requires at least:' "$TARGET/flosc.php" "$TARGET/readme.txt" >> "$out" 2>&1
+          echo >> "$out"
+          echo '== HARDCODED WORDPRESS IMPORTER PATH ==' >> "$out"
+          grep -RIn --include='*.php' --exclude-dir=tests --exclude-dir=vendor "WP_PLUGIN_DIR.*wordpress-importer\|wordpress-importer/wordpress-importer.php" "$TARGET" >> "$out" 2>&1
+          echo >> "$out"
+          echo '== DIRECT import.php LOAD ==' >> "$out"
+          grep -RIn --include='*.php' --exclude-dir=tests --exclude-dir=vendor "wp-admin/includes/import.php" "$TARGET" >> "$out" 2>&1
+          echo >> "$out"
+          echo '== FILTER_UNSAFE_RAW / FILTER_DEFAULT ==' >> "$out"
+          grep -RIn --include='*.php' --exclude-dir=tests --exclude-dir=vendor "FILTER_UNSAFE_RAW\|FILTER_DEFAULT" "$TARGET" >> "$out" 2>&1
+          echo >> "$out"
+          echo '== HTTP_HOST in SSO handler (manual trust-boundary evidence) ==' >> "$out"
+          grep -n -C 5 "HTTP_HOST" "$TARGET/includes/sso/class-oauth2-handler.php" >> "$out" 2>&1
+          echo >> "$out"
+          echo '== file_content persistent-write vicinity ==' >> "$out"
+          grep -RIn -C 4 --include='*.php' --exclude-dir=tests --exclude-dir=vendor "file_content\|flosc_write_data_file" "$TARGET" >> "$out" 2>&1
+          echo >> "$out"
+          echo '== REST route registration / permission callbacks ==' >> "$out"
+          grep -RIn --include='*.php' --exclude-dir=tests --exclude-dir=vendor "register_rest_route\|permission_callback" "$TARGET" >> "$out" 2>&1
+          echo >> "$out"
+          echo '== register_setting sanitizers ==' >> "$out"
+          grep -RIn --include='*.php' --exclude-dir=tests --exclude-dir=vendor "register_setting" "$TARGET" >> "$out" 2>&1
+          echo >> "$out"
+          echo '== historical rules gate (lead generator, not authority) ==' >> "$out"
+          (cd "$TARGET" && php tests/check_wporg_rules.php) >> "$out" 2>&1
+          echo "rules_gate_exit=$?" >> "$out"
+          set -e
+          sed -n '1,1200p' "$out"
+
+      - name: SOL-5 — rebuild exact distribution artifact from v85 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          stage=$(mktemp -d)
+          mkdir -p "$stage/flosc"
+          # .distignore is rsync-compatible for the path patterns used here; comments
+          # and blank lines are ignored by rsync's filter parser.
+          rsync -a --delete --exclude-from="$TARGET/.distignore" "$TARGET/" "$stage/flosc/"
+          # Hard distribution walls independent of .distignore.
+          rm -rf "$stage/flosc/tests" "$stage/flosc/vendor" "$stage/flosc/.git" "$stage/flosc/node_modules"
+          (cd "$stage" && zip -X -q -r flosc.zip flosc)
+          cp "$stage/flosc.zip" "$CAND/flosc.zip"
+          sha256sum "$CAND/flosc.zip" | sed 's#  .*#  flosc.zip#' > "$CAND/SHA256SUMS"
+          unzip -Z1 "$CAND/flosc.zip" > "$REPORTS/sol5-zip-list.txt"
+          entries=$(wc -l < "$REPORTS/sol5-zip-list.txt" | tr -d ' ')
+          bytes=$(stat -c '%s' "$CAND/flosc.zip")
+          sha=$(sha256sum "$CAND/flosc.zip" | awk '{print $1}')
+          phpfiles=$(grep -c '\.php$' "$REPORTS/sol5-zip-list.txt" || true)
+          tests=$(grep -c '^flosc/tests/' "$REPORTS/sol5-zip-list.txt" || true)
+          vendor=$(grep -c '^flosc/vendor/' "$REPORTS/sol5-zip-list.txt" || true)
+          roots=$(cut -d/ -f1 "$REPORTS/sol5-zip-list.txt" | sort -u | tr '\n' ' ')
+          {
+            echo "sha256=$sha"
+            echo "bytes=$bytes"
+            echo "entries=$entries"
+            echo "php_files=$phpfiles"
+            echo "tests_entries=$tests"
+            echo "vendor_entries=$vendor"
+            echo "roots=$roots"
+            grep -n '^Requires at least:' "$stage/flosc/readme.txt"
+            grep -n 'Requires at least:' "$stage/flosc/flosc.php" | head -1
+            grep -n '^ \?\* \?Version:\|^Version:' "$stage/flosc/flosc.php" | head -1
+          } | tee "$REPORTS/sol5-package-facts.txt"
+          [[ "$tests" == 0 && "$vendor" == 0 && "$roots" == 'flosc ' ]]
+          # Extract the artifact again: all final syntax and WPCS evidence below is
+          # about the archive bytes, not the working source tree.
+          ship=$(mktemp -d)
+          unzip -q "$CAND/flosc.zip" -d "$ship"
+          find "$ship/flosc" -type f -name '*.php' -not -path '*/tests/*' -print0 | sort -z | xargs -0 -n1 php -l > "$REPORTS/sol5-final-php-lint.txt"
+          "$HOME/.composer/vendor/bin/phpcs" --standard=WordPress --extensions=php --report=source "$ship/flosc" > "$REPORTS/sol5-final-wpcs-source.txt" 2>&1 || true
+          tail -50 "$REPORTS/sol5-final-wpcs-source.txt" || true
+
+      - name: Record SOL-2 through SOL-5 and push v85 package
+        shell: bash
+        run: |
+          set -euo pipefail
+          narrow=$(head -1 "$REPORTS/sol2-narrow-scope.txt" 2>/dev/null || echo SOL2_NARROW_FINDINGS=unknown)
+          facts=$(tr '\n' '; ' < "$REPORTS/sol5-package-facts.txt")
+          git config user.name 'GPT-5.6 Sol'
+          git config user.email 'noreply@openai.com'
+          git add "$CAND"
+          if git diff --cached --quiet; then
+            echo 'No SOL-2–SOL-5 artifact/report delta.'
+            exit 0
+          fi
+          git commit -m "Home run candidate v85.2 coded by GPT-5.6 Sol — SOL-2 through SOL-5 audit and exact package [sol1-generated] [sol25-generated]" \
+            -m "SOL-2: PHPStan level 5 is narrowed to variable.undefined and esc_* argument.type findings only; no attempt is made to drive PHPStan globally to zero. ${narrow}." \
+            -m "SOL-3: shipping-tree outbound wp_remote/fetch/XHR sites and literal URL domains are inventoried against readme.txt; no runtime code is changed by the reconciliation pass." \
+            -m "SOL-4: T7–T13 historical categories are re-audited first via targeted source searches plus the historical rules gate as a lead generator. The report is retained verbatim; no architectural remodel is performed." \
+            -m "SOL-5: flosc.zip is rebuilt from the exact v85 source with .distignore plus hard tests/vendor/.git/node_modules exclusions, then re-extracted for PHP lint and WordPress-standard PHPCS. ${facts}" \
+            -m "No WordPress.org submission-readiness claim is implied by this commit unless every retained report supports it."
+          git push origin HEAD:gpt-5-6-sol/wporg-remediation
+
+      - name: Upload SOL-2 through SOL-5 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v85-sol2-sol5-evidence
+          path: pre-release-candidates/gpt-5-6-sol/remediation-tools/reports/
+          if-no-files-found: warn
