@@ -1,4 +1,20 @@
-<?php if (!defined('ABSPATH')) exit; // Part 5: Glossary — FLOSC Documentation ?>
+<?php
+/**
+ * Documentation, Part 5: the glossary.
+ *
+ * Prose only — no settings are read and nothing is written. Every FLOSC-coined
+ * term is defined here once, and the rest of the documentation links back to
+ * this page rather than redefining them. Included by admin/documentation.php
+ * inside the Documentation tab's markup, so the file opens at heading level 1
+ * and inherits the surrounding page wrapper.
+ *
+ * @package FLOSC
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+?>
 
 <h1 id="glossary">Part 5: Glossary</h1>
 <p>Every FLOSC-specific term defined once. When a term appears in the codebase or documentation, its definition is here.</p>
