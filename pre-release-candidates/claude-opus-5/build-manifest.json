@@ -10,7 +10,7 @@
   "artifact_root": "flosc/",
   "artifact_sha256": "798196386dc5738fd6bb55d65ced8890132d836f1974121de3699a7bfa6ed065",
   "artifact_bytes": 2762442,
-  "artifact_entries": 277,
+  "artifact_entries": 278,
   "tree_files": 295,
   "why_this_iteration": {
     "symptom": "phpcs --sniffs=WordPress.Security.NonceVerification measured 84 warnings in 8 files on the Captain's machine. v76 did not move it.",
@@ -418,5 +418,6 @@
     "reading": "--report=summary prints nothing when there is nothing to report, and phpcs exits 0 only when it found neither errors nor warnings. 84 -> 0.",
     "not_the_v70_claim": "v70_verification below records 'exit 0, no output' for this same sniff. That run carried a filter that excluded warnings, and NonceVerification only ever emits warnings, so it could not have reported a problem on any codebase. The v78 run carries no such filter. The two lines look identical and mean different things; this is the distinction the bench exists to make.",
     "still_unmeasured": "Full WPCS, the broader WordPress.Security set, PHPStan, Plugin Check, and whether WordPress.org accepts the submission."
-  }
+  },
+  "artifact_entry_breakdown": "278 zip entries = 238 files + 40 directory entries. Earlier manifests said 277; that was one short and is corrected here. tree_files 295 is the source tree, which is larger because tests/ and build scripts are excluded from the zip."
 }
