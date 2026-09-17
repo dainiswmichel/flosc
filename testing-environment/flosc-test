@@ -676,18 +676,41 @@ phpcs_proc() {
   local n="$1" title="$2" ruleset="$3" sniffs="$4"
   local src="$SHIP/flosc"
   local cfg="$HERE/$ruleset"
-  local args="--standard=$cfg"
+  # PHP's default memory_limit is 128M and PHPCS's tokenizer runs out of it on
+  # this plugin -- flosc.php alone is over half a megabyte in one file. The
+  # failure is a PHP fatal, not a finding: phpcs dies mid-tree having reported
+  # nothing, and every procedure downstream of it measures nothing either. The
+  # flag is in the printed COMMAND line too, so the pasteable command is the one
+  # that actually completes.
+  local mem="${FLOSC_PHPCS_MEMORY:-1G}"
+  local args="-d memory_limit=$mem --standard=$cfg"
   [ -n "$sniffs" ] && args="$args --sniffs=$sniffs"
   head_proc "$n" "$title" \
     "PHP_CodeSniffer $( [ -n "$PHPCS" ] && "$PHPCS" --version 2>/dev/null | awk '{print $3}' || echo '?' ) + WPCS — not written by any AI" \
-    "phpcs --standard=$ruleset${sniffs:+ --sniffs=$sniffs} $src"
+    "phpcs -d memory_limit=$mem --standard=$ruleset${sniffs:+ --sniffs=$sniffs} $src"
   echo "  RULESET    $ruleset  — sets no warning-severity, so nothing is hidden"
+  echo "  MEMORY     $mem   (FLOSC_PHPCS_MEMORY overrides it; PHP's 128M default is not enough)"
   if [ -z "$PHPCS" ]; then notrun "phpcs not found"; return; fi
   if [ ! -f "$cfg" ]; then notrun "$ruleset missing"; return; fi
   if [ ! -d "$src" ]; then notrun "no ship tree; run procedure 0"; return; fi
   [ "$CMD_ONLY" = "1" ] && { echo "(not run: --cmd)"; return 0; }
+
+  # Captured rather than streamed so the out-of-memory death can be recognised
+  # and named. It is printed in full either way -- nothing is filtered.
+  local out rc
   # shellcheck disable=SC2086
-  "$PHPCS" $args "$src"; local rc=$?
+  out=$("$PHPCS" $args "$src" 2>&1); rc=$?
+  printf '%s\n' "$out"
+
+  if printf '%s' "$out" | grep -qiE 'memory size of [0-9]+ bytes exhausted|ran out of memory'; then
+    echo
+    echo "PHPCS died of memory exhaustion at $mem, partway through the tree. It"
+    echo "reported nothing after that point, so this is NOT a clean result and"
+    echo "NOT a finding count -- it is a run that did not finish."
+    echo "Retry higher:   FLOSC_PHPCS_MEMORY=2G ./flosc-test $n <target>"
+    notrun "phpcs ran out of memory at $mem"
+    return
+  fi
   if [ "$rc" -ge 3 ]; then notrun "phpcs exit $rc — it could not run"; return; fi
   [ "$rc" -eq 0 ] && echo "(no output — clean)"
   foot "$rc"
