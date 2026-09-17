@@ -1572,37 +1572,46 @@ trait FLOSC_Magic_Link_Trait {
         return true;
     }
 
-    private function build_guest_request_admin_redirect($notice_key) {
+    /**
+     * Build the admin redirect a guest-request action returns to.
+     *
+     * WHY $ivr_hint IS A PARAMETER
+     *
+     * This read $_POST['ivr'] itself, and carried a comment saying "there is no
+     * form here to carry a nonce". That was wrong twice. Every caller --
+     * handle_guest_request_approve(), _approve_send(), _deny_block() and
+     * _delete() -- checks manage_options and then
+     * check_admin_referer( 'flosc_guest_request_action', ... ) before reaching
+     * this line, so the request IS nonce-verified. And a URL builder has no
+     * business reading the request at all: its inputs belong in its signature.
+     *
+     * The callers now read that value in their own scope, where the
+     * verification they perform is visible to a reader and to a scanner alike,
+     * and hand it in.
+     *
+     * @param string $notice_key Transient notice to set for this admin.
+     * @param string $ivr_hint   Flow file the caller was working in, already
+     *                           sanitized. Used only when the trait has no
+     *                           current flow of its own.
+     * @return string
+     */
+    private function build_guest_request_admin_redirect( $notice_key, $ivr_hint = '' ) {
         $notice_key = sanitize_key((string) $notice_key);
         $uid = get_current_user_id();
         if ( $uid > 0 && $notice_key !== '' ) {
             set_transient( 'flosc_guest_request_notice_' . $uid, $notice_key, MINUTE_IN_SECONDS );
         }
-        /*
-         * Which flow this request belongs to, as a routing hint only.
-         *
-         * Nothing is written from it: it picks which IVR file to read and is
-         * run through sanitize_file_name() downstream. There is no form here to
-         * carry a nonce -- the request arrives from a magic link, whose own
-         * token is the credential and is verified separately.
-         */
+        // Which flow to return the admin to. A routing hint only: it picks which
+        // tab to land on and writes nothing.
         $ivr = '';
         if ( isset( $this->current_ivr_file ) && is_string( $this->current_ivr_file ) ) {
             $ivr = sanitize_file_name( $this->current_ivr_file );
         }
         if ( $ivr === '' ) {
-            // Which flow to return the admin to. A display selector for the
-            // redirect target below, matched against known flow files by the
-            // caller; it selects no action and writes nothing.
-            $ivr_in = ( isset( $_POST['ivr'] ) && is_scalar( $_POST['ivr'] ) )
-                ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
-                : '';
-            if ( '' === $ivr_in ) {
-                $ivr_in = flosc_nav_param( 'ivr', array(), '', 'sanitize_file_name' );
-            }
-            if ( is_string( $ivr_in ) ) {
-                $ivr = sanitize_file_name( $ivr_in );
-            }
+            $ivr = sanitize_file_name( (string) $ivr_hint );
+        }
+        if ( $ivr === '' ) {
+            $ivr = flosc_nav_param( 'ivr', array(), '', 'sanitize_file_name' );
         }
         return add_query_arg(
             array(
@@ -1741,18 +1750,25 @@ trait FLOSC_Magic_Link_Trait {
 
         check_admin_referer('flosc_guest_request_action', 'flosc_guest_request_nonce');
 
+        // Read here, not in the URL builder: this scope is the one that just
+        // verified the nonce above, so the verification and the read are
+        // visible together.
+        $flosc_ivr_hint = ( isset( $_POST['ivr'] ) && is_scalar( $_POST['ivr'] ) )
+            ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
+            : '';
+
         $post = wp_unslash($_POST);
         $email = sanitize_email((string) ($post['email'] ?? ''));
         $actor = get_current_user_id();
         if (empty($email) || !is_email($email)) {
-            wp_safe_redirect($this->build_guest_request_admin_redirect('invalid_email'));
+            wp_safe_redirect($this->build_guest_request_admin_redirect('invalid_email', $flosc_ivr_hint));
             exit;
         }
 
         $this->unblock_guest_account_request_email($email);
         $this->set_guest_account_request_status($email, 'approved', $actor);
 
-        wp_safe_redirect($this->build_guest_request_admin_redirect('approved'));
+        wp_safe_redirect($this->build_guest_request_admin_redirect('approved', $flosc_ivr_hint));
         exit;
     }
 
@@ -1763,18 +1779,25 @@ trait FLOSC_Magic_Link_Trait {
 
         check_admin_referer('flosc_guest_request_action', 'flosc_guest_request_nonce');
 
+        // Read here, not in the URL builder: this scope is the one that just
+        // verified the nonce above, so the verification and the read are
+        // visible together.
+        $flosc_ivr_hint = ( isset( $_POST['ivr'] ) && is_scalar( $_POST['ivr'] ) )
+            ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
+            : '';
+
         $post = wp_unslash($_POST);
         $email = sanitize_email((string) ($post['email'] ?? ''));
         $flow_id = sanitize_key((string) ($post['flow_id'] ?? ''));
         $actor = get_current_user_id();
 
         if (!$this->flosc_magic_access_links_enabled($flow_id)) {
-            wp_safe_redirect($this->build_guest_request_admin_redirect('approve_send_failed'));
+            wp_safe_redirect($this->build_guest_request_admin_redirect('approve_send_failed', $flosc_ivr_hint));
             exit;
         }
 
         if (empty($email) || !is_email($email)) {
-            wp_safe_redirect($this->build_guest_request_admin_redirect('invalid_email'));
+            wp_safe_redirect($this->build_guest_request_admin_redirect('invalid_email', $flosc_ivr_hint));
             exit;
         }
 
@@ -1784,7 +1807,7 @@ trait FLOSC_Magic_Link_Trait {
         // Convenience link only: existing account required (never create user here).
         $user_id = $this->flosc_resolve_existing_user_for_convenience_link($email);
         if (is_wp_error($user_id)) {
-            wp_safe_redirect($this->build_guest_request_admin_redirect('approve_send_failed'));
+            wp_safe_redirect($this->build_guest_request_admin_redirect('approve_send_failed', $flosc_ivr_hint));
             exit;
         }
 
@@ -1794,20 +1817,20 @@ trait FLOSC_Magic_Link_Trait {
             'ttl'     => 7 * DAY_IN_SECONDS,
         ]);
         if (is_wp_error($token)) {
-            wp_safe_redirect($this->build_guest_request_admin_redirect('approve_send_failed'));
+            wp_safe_redirect($this->build_guest_request_admin_redirect('approve_send_failed', $flosc_ivr_hint));
             exit;
         }
 
         $sent = $this->send_guest_link_email($email, $token, $flow_id);
         if (!$sent) {
             $this->flosc_magic_delete_token_store($token);
-            wp_safe_redirect($this->build_guest_request_admin_redirect('approve_send_failed'));
+            wp_safe_redirect($this->build_guest_request_admin_redirect('approve_send_failed', $flosc_ivr_hint));
             exit;
         }
 
         $this->record_guest_link_send($email);
 
-        wp_safe_redirect($this->build_guest_request_admin_redirect('approve_sent'));
+        wp_safe_redirect($this->build_guest_request_admin_redirect('approve_sent', $flosc_ivr_hint));
         exit;
     }
 
@@ -1818,17 +1841,24 @@ trait FLOSC_Magic_Link_Trait {
 
         check_admin_referer('flosc_guest_request_action', 'flosc_guest_request_nonce');
 
+        // Read here, not in the URL builder: this scope is the one that just
+        // verified the nonce above, so the verification and the read are
+        // visible together.
+        $flosc_ivr_hint = ( isset( $_POST['ivr'] ) && is_scalar( $_POST['ivr'] ) )
+            ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
+            : '';
+
         $post = wp_unslash($_POST);
         $email = sanitize_email((string) ($post['email'] ?? ''));
         $actor = get_current_user_id();
         if (empty($email) || !is_email($email)) {
-            wp_safe_redirect($this->build_guest_request_admin_redirect('invalid_email'));
+            wp_safe_redirect($this->build_guest_request_admin_redirect('invalid_email', $flosc_ivr_hint));
             exit;
         }
 
         $this->deny_and_block_guest_account_request($email, $actor);
 
-        wp_safe_redirect($this->build_guest_request_admin_redirect('denied_blocked'));
+        wp_safe_redirect($this->build_guest_request_admin_redirect('denied_blocked', $flosc_ivr_hint));
         exit;
     }
 
@@ -1839,16 +1869,23 @@ trait FLOSC_Magic_Link_Trait {
 
         check_admin_referer('flosc_guest_request_action', 'flosc_guest_request_nonce');
 
+        // Read here, not in the URL builder: this scope is the one that just
+        // verified the nonce above, so the verification and the read are
+        // visible together.
+        $flosc_ivr_hint = ( isset( $_POST['ivr'] ) && is_scalar( $_POST['ivr'] ) )
+            ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
+            : '';
+
         $post = wp_unslash($_POST);
         $email = sanitize_email((string) ($post['email'] ?? ''));
         if (empty($email) || !is_email($email)) {
-            wp_safe_redirect($this->build_guest_request_admin_redirect('invalid_email'));
+            wp_safe_redirect($this->build_guest_request_admin_redirect('invalid_email', $flosc_ivr_hint));
             exit;
         }
 
         $this->delete_guest_account_request($email);
 
-        wp_safe_redirect($this->build_guest_request_admin_redirect('deleted'));
+        wp_safe_redirect($this->build_guest_request_admin_redirect('deleted', $flosc_ivr_hint));
         exit;
     }
 

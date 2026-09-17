@@ -215,17 +215,18 @@ class Apple_Provider extends SSO_Provider_Base {
             return new \WP_Error('invalid_id_token', 'Apple ID token missing subject');
         }
 
-        // Apple may send a JSON user object in POST on first authorization only.
         /*
-         * Apple posts this back itself, in response_mode=form_post. There is no
-         * WordPress form and therefore no nonce to verify. The OAuth state is
-         * checked by the handler before this provider is reached.
+         * Apple sends a JSON user object in the form_post body, on first
+         * authorization only.
+         *
+         * This method used to read $_POST['user'] itself. A provider adapter has
+         * no business reading the request: it is handed a token response and
+         * returns user claims. OAuth2_Handler::handle_callback() owns the
+         * request, collects its body in the scope where verify_state() runs, and
+         * passes the value in here as flosc_form_post_user.
          */
-        $user_post     = ( isset( $_POST['user'] ) && is_scalar( $_POST['user'] ) )
-            ? sanitize_text_field( wp_unslash( $_POST['user'] ) )
-            : '';
-        $raw_user_json = ( '' !== $user_post )
-            ? sanitize_textarea_field( $user_post )
+        $raw_user_json = isset( $token_data['flosc_form_post_user'] ) && is_string( $token_data['flosc_form_post_user'] )
+            ? sanitize_textarea_field( $token_data['flosc_form_post_user'] )
             : '';
         $user_data_raw = array();
         if ( $raw_user_json !== '' && strlen( $raw_user_json ) <= 20000 ) {

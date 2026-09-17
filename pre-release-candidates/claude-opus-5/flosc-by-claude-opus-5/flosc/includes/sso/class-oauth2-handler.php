@@ -261,7 +261,10 @@ class OAuth2_Handler {
          */
         $get  = array();
         $post = array();
-        foreach ( array( 'code', 'state', 'error', 'error_description' ) as $flosc_k ) {
+        // 'user' is Apple's form_post extra, sent on first authorization only.
+        // It is collected HERE, in the scope where verify_state() runs, and
+        // handed to the provider adapter, so no provider reads the request.
+        foreach ( array( 'code', 'state', 'error', 'error_description', 'user' ) as $flosc_k ) {
             $g = ( isset( $_GET[ $flosc_k ] ) && is_scalar( $_GET[ $flosc_k ] ) )
                 ? sanitize_text_field( wp_unslash( $_GET[ $flosc_k ] ) )
                 : '';
@@ -463,6 +466,11 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC SSO] Provider error
         
         // ── Get user info from provider ──
         $access_token = isset($token_data['access_token']) ? $token_data['access_token'] : '';
+        // Apple's first-authorization user object, read above with the rest of
+        // the callback body and only after verify_state() passed.
+        if ( is_array( $token_data ) && isset( $post['user'] ) ) {
+            $token_data['flosc_form_post_user'] = $post['user'];
+        }
         $user_data = $provider->get_user_info($access_token, $token_data);
         if (is_wp_error($user_data)) {
     if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC SSO] User info failed: ' . $user_data->get_error_message());

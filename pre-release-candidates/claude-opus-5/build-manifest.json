@@ -1,15 +1,15 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": 81,
+  "candidate_iteration": 82,
   "creator": "Claude Opus 5",
   "status": "WPORG_GATE_GREEN_NONCE_COUNT_HONEST_FUNCTIONALLY_UNVERIFIED",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v80",
+  "base": "claude-opus-5 v81",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "0280e535a4713c3a4a27eed2d67f7b253ba3ac4883f6b63beb1e20dafe2610ad",
-  "artifact_bytes": 2763788,
+  "artifact_sha256": "d015bc871c5a63245cd960846add59431b32f17eef1a9b3474a26dd49e135854",
+  "artifact_bytes": 2764329,
   "artifact_entries": 278,
   "tree_files": 295,
   "why_this_iteration": {
@@ -506,5 +506,38 @@
       "zip": "278 entries, 0 under tests/, version 8.0.0"
     },
     "expect_this_to_change": "WordPress.Security.NonceVerification will no longer report 0 on this candidate. The reads it could not see are visible again. Every warning it now reports is true: that code reads a request parameter without a nonce, deliberately, because the parameter selects what to display or because the correct control is an HMAC, an OAuth state or an emailed token. The number is not measured -- there is no phpcs in this container -- and it is not predicted here."
+  },
+  "v82_six_of_nine_errors": {
+    "measured_on_v81": "phpcs --sniffs=WordPress.Security.NonceVerification --ignore='*/tests/*' -> 9 ERRORS, 22 WARNINGS across 5 files, on the Captain's machine. .Missing is the POST variant and is what WordPress.org rejected on.",
+    "principle": "Both fixes are the same one: the function that OWNS the request reads it, in the scope where the verification it performs is visible. A URL builder and a provider adapter have no business reaching into a superglobal.",
+    "fix_1_magic_link": {
+      "was": "build_guest_request_admin_redirect() read $_POST['ivr'] itself, and carried a comment claiming 'there is no form here to carry a nonce'.",
+      "truth": "All four callers -- handle_guest_request_approve(), _approve_send(), _deny_block(), _delete() -- check manage_options and then check_admin_referer('flosc_guest_request_action', ...) before calling it. The request was already verified; WPCS simply cannot see across a function boundary, and the comment was wrong.",
+      "now": "The builder takes $ivr_hint as a parameter. Each caller reads $_POST['ivr'] in its own scope, immediately after its own nonce check. 12 call sites updated.",
+      "errors_cleared": 3
+    },
+    "fix_2_apple_provider": {
+      "was": "Apple_Provider::get_user_info() read $_POST['user'] -- the form_post extra Apple sends on first authorization only.",
+      "now": "OAuth2_Handler::handle_callback() collects 'user' with the rest of the callback body and passes it as $token_data['flosc_form_post_user']. verify_state() runs at line 404; get_user_info() is called at line 474, so the value is handed over only after state verified. The provider now reads no superglobal at all.",
+      "errors_cleared": 3
+    },
+    "what_the_other_candidates_did": {
+      "read": "Checked before inventing anything, at the Captain's suggestion.",
+      "opencode-big-pickle": "Plain $_GET/$_POST at the OAuth callback, no suppression -- carries the finding honestly. But 26 NonceVerification suppressions elsewhere in the plugin.",
+      "codex-gpt5": "phpcs:disable around the OAuth callback read.",
+      "github-copilot": "filter_input(FILTER_UNSAFE_RAW) -- the same gaming v81 retracted.",
+      "grok-4-6": "Same as github-copilot.",
+      "conclusion": "No candidate has reached 0 errors and 0 warnings without either suppressing or gaming. That is not a reason to do either."
+    },
+    "still_open": "3 errors and 22 warnings. See v82_remaining_and_why.",
+    "measured_here": {
+      "php_l": "0 errors / 187 files",
+      "wporg_gate": "exit 0",
+      "cli_gates": "37 of 37 pass",
+      "nonce_suppressions": 0,
+      "filter_unsafe_raw_in_shipping_code": 0,
+      "zip": "278 entries, 0 under tests/, 8.0.0",
+      "not_measured": "phpcs. There is none in this container. The 9->3 error count is reasoned from where the reads moved, NOT measured."
+    }
   }
 }
