@@ -13,6 +13,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Registry and loader for quiz types.
+ *
+ * A quiz type is a class that knows how to render one kind of question and mark
+ * its answer. This factory maps a type id to that class, loads it on demand and
+ * hands back a single shared instance, so a flow with twenty questions of one
+ * type constructs that type once.
+ */
 class FLOSC_Quiz_Type_Factory {
 
 	/**
@@ -52,7 +60,7 @@ class FLOSC_Quiz_Type_Factory {
 			$filename   = basename( $file, '.php' );
 			$class_name = str_replace( 'class-', '', $filename );
 			$class_name = str_replace( '-', ' ', $class_name );
-			$class_name = str_replace( 'flosc', 'FLOSC', $class_name ); // Capitalize FLOSC prefix
+			$class_name = str_replace( 'flosc', 'FLOSC', $class_name ); // Capitalise the FLOSC prefix.
 			$class_name = ucwords( $class_name );
 			$class_name = str_replace( ' ', '_', $class_name );
 

@@ -1,4 +1,15 @@
 <?php
+/**
+ * Markup for the DA1 Personality Designer.
+ *
+ * Structure only. Every value the designer shows is filled in by
+ * assets/js/flosc-personality-builder.js after the page loads, and the styling
+ * lives in assets/css/flosc-personality-builder.css. Nothing here is echoed
+ * from PHP state, which is why this file reads as a static shell.
+ *
+ * @package FLOSC
+ */
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }

@@ -559,7 +559,16 @@ if ( 'anthropic' === $flosc_ai_provider ) {
 	$flosc_ai_label .= ' (' . esc_html( $flosc_ai_model ) . ')';
 }
 
-// ── Helper: render a phase card ───────────────────────────────────────────────
+/**
+ * Render one phase card on the Flow tab.
+ *
+ * @param string $letter           Single-letter phase code. Lowercased for the
+ *                                 CSS modifier, so the card is coloured by phase.
+ * @param string $flosc_phase_name Phase name shown as the card heading.
+ * @param string $subtitle         Line under the heading.
+ * @param array  $rows             Rows to list inside the card.
+ * @return void Echoes the card markup.
+ */
 function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 	$phase_class = strtolower( $letter );
 	echo '<div class="flosc-flow-card flosc-flow-card--' . esc_attr( $phase_class ) . '">';
@@ -653,7 +662,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 	// v8.1.0: Member levels summary
 	$flosc_ml_registry = $flosc_flow_settings['member_levels'] ?? array();
 	$flosc_ml_count    = count( array_filter( $flosc_ml_registry, fn( $l ) => ! empty( $l['slug'] ?? '' ) ) );
-	$flosc_ml_names    = array_map( fn( $l ) => $l['name'] ?: ( $l['slug'] ?? '?' ), array_filter( $flosc_ml_registry, fn( $l ) => ! empty( $l['slug'] ?? '' ) ) );
+	$flosc_ml_names    = array_map( fn( $l ) => $l['name'] ? $l['name'] : ( $l['slug'] ?? '?' ), array_filter( $flosc_ml_registry, fn( $l ) => ! empty( $l['slug'] ?? '' ) ) );
 	$flosc_ml_label    = $flosc_ml_count ? $flosc_ml_count . ' level' . ( 1 !== $flosc_ml_count ? 's' : '' ) . ' (' . implode( ', ', $flosc_ml_names ) . ')' : 'None configured';
 
 	flosc_flow_card(

@@ -44,6 +44,12 @@ $flosc_contact_trj_default_off_ramp_exactness = 'preferred';
 $flosc_contact_trj_default_off_ramp_phrases   = "Would you like me to continue facilitating human-to-human connection between you and the site operator, or would you like to chat about something else?\nDo you want to keep chatting about this trajectory, or would you like to chat about something else?\nDo you have any other questions, or are you interested in something else?";
 $flosc_contact_trj_default_instructions       = "Encourage direct human-to-human connection when relevant.\nInvite exchange of contact information (email, phone, or message).\nAsk for one concrete next step and keep tone warm, concise, and natural.\nOffer a clear off-ramp: Would you like me to continue facilitating human-to-human connection between you and the site operator, or would you like to chat about something else?";
 
+/*
+ * 200 is a deliberate ceiling, not an oversight. This feeds the trajectory
+ * picker below, so anything the query drops is a post the admin cannot choose.
+ * WPCS warns above 100; a lower number here would hide content rather than save
+ * work, and the query is admin-only, category-scoped and ordered by modified.
+ */
 $flosc_trajectory_posts = get_posts(
 	array(
 		'post_type'      => 'post',

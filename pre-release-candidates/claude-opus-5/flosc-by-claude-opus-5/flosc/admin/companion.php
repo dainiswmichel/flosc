@@ -262,6 +262,12 @@ $flosc_target_pages = get_pages(
 	)
 );
 
+/*
+ * 500 is a deliberate ceiling, not an oversight. This builds the list of pages a
+ * companion can be attached to, so anything dropped is a page the admin cannot
+ * pick. It asks for ids only, which is why the limit can be this high without
+ * loading post bodies. WPCS warns above 100.
+ */
 $flosc_target_posts = get_posts(
 	array(
 		'post_type'      => 'post',

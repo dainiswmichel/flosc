@@ -395,7 +395,8 @@ foreach ( (array) $flosc_member_levels as $flosc_lvl_key => $flosc_lvl ) {
 	if ( '' === $flosc_slug ) {
 		continue; }
 	$flosc_has_levels = true;
-	$flosc_lname      = trim( (string) ( $flosc_lvl['name'] ?? '' ) ) ?: $flosc_slug;
+	$flosc_trimmed    = trim( (string) ( $flosc_lvl['name'] ?? '' ) );
+	$flosc_lname      = $flosc_trimmed ? $flosc_trimmed : $flosc_slug;
 	echo '<h4 class="flosc-email-level-title">Level: ' . esc_html( $flosc_lname ) . ' <code>' . esc_html( $flosc_slug ) . '</code></h4>';
 	$flosc_render_email_series(
 		'member_' . $flosc_slug,

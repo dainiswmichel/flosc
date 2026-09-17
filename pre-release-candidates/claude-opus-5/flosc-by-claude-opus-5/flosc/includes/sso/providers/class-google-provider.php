@@ -52,19 +52,26 @@ class Google_Provider extends SSO_Provider_Base {
 	 */
 	protected function customize_auth_params( $params ) {
 		// Add Google-specific parameters.
-		$params['access_type']   = 'offline';  // Get refresh token
-		$params['prompt']        = 'select_account'; // Always show account selector
-		$params['response_mode'] = 'form_post'; // Deliver code/state via POST callback
+		$params['access_type']   = 'offline'; // Ask for a refresh token.
+		$params['prompt']        = 'select_account'; // Always show the account selector.
+		$params['response_mode'] = 'form_post'; // Deliver code and state via a POST callback.
 
 		return $params;
 	}
 
 	/**
-	 * Get user info from Google
-	 * v1.4.6: Override to request explicit fields (BuddyBoss pattern)
+	 * Get user info from Google.
+	 *
+	 * Overridden to request explicit fields rather than accept the default set.
+	 *
+	 * @since 1.4.6
 	 *
 	 * @param string $access_token OAuth access token.
-	 * @return array|WP_Error User data or error
+	 * @param array  $token_data   Full token response. Unused by this provider;
+	 *                             present because OAuth2_Handler passes the same
+	 *                             arguments to every provider, and Apple reads
+	 *                             its id_token and form_post claims from it.
+	 * @return array|WP_Error User data, or WP_Error if the call fails.
 	 */
 	public function get_user_info( $access_token, $token_data = array() ) {
 		$url = add_query_arg(

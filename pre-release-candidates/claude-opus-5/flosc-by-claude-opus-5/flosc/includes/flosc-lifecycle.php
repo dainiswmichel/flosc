@@ -1,10 +1,25 @@
 <?php
+/**
+ * Plugin lifecycle — what happens on activation and deactivation.
+ *
+ * These functions run outside the main class on purpose. A registration hook
+ * pointed at a class method only fires if the class is already loaded at the
+ * moment WordPress calls it, which is not guaranteed during activation.
+ *
+ * @package FLOSC
+ */
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 /**
- * Plugin activation (v3.0.9 - Resolved: moved outside class so hook fires correctly)
+ * Seed options and run first-time setup when the plugin is activated.
+ *
+ * @since 3.0.9 Moved outside the main class so the activation hook fires
+ *              reliably, whether or not that class has loaded yet.
+ *
+ * @return void
  */
 function flosc_activate() {
 	// Specialty product roles are created when that flow/product
@@ -19,8 +34,8 @@ function flosc_activate() {
 
 	// First-install defaults only — never clobber floscAdmin choices on reactivate.
 	$defaults = array(
-		'flosc_app_slug'                                   => 'flosc', // v1.1.9: Changed default from 'app' to 'flosc'
-		'flosc_custom_domain'                              => '', // v1.1.9: Optional custom domain mapping
+		'flosc_app_slug'                                   => 'flosc', // Since 1.1.9 the default is 'flosc'; was 'app' to 'flosc'
+		'flosc_custom_domain'                              => '', // Since 1.1.9. Optional custom domain mapping
 		'flosc_product_name'                               => '',
 		'flosc_product_title'                              => '',
 		'flosc_product_tagline'                            => '',
@@ -121,7 +136,7 @@ function flosc_activate() {
 	}
 
 	// v9.2.3: Import IVR messages to database on first activation.
-	flosc_import_ivr_to_database( false ); // Execute import (not preview)
+	flosc_import_ivr_to_database( false ); // False means execute the import, not preview it.
 
 	// v1.9.0: Create chat logs table
 	// Must require the file here — activation hook fires before plugins_loaded,

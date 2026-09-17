@@ -1,15 +1,15 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": "82.7",
+  "candidate_iteration": "82.8",
   "creator": "Claude Opus 5",
   "status": "WPCS_FORMATTING_APPLIED_FUNCTIONALLY_UNVERIFIED",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v82.6",
+  "base": "claude-opus-5 v82.7",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "2988d32c4306d5e2dfcc352d38b44c446c4432725de50e338ee0706bfbb9adfa",
-  "artifact_bytes": 2759350,
+  "artifact_sha256": "a39d7c95065daba4c976b7d8b56a10f209cb33f39fe424e5336e3da0e2c8938a",
+  "artifact_bytes": 2760831,
   "artifact_entries": 278,
   "tree_files": 295,
   "why_this_iteration": {
@@ -669,5 +669,30 @@
       "wporg_gate": "exit 0, 3 active exceptions, 0 stale",
       "wpcs_php_shipping": "2,522 errors, 181 warnings, 105 files"
     }
+  },
+  "v82_8": {
+    "wpcs_php_shipping": "2,522 -> 2,499 errors, 105 files -> 92",
+    "short_ternaries_finished": "Six more expanded. Their left operand is an array read behind ??, so repeating it costs nothing. In admin/email.php the operand was trim(...), a function call, so the result is named in a variable first and the falsy test is kept exactly as ?: had it -- rewriting it as an empty-string test would treat the string \"0\" differently.",
+    "yoda_finished": "The two the token transform refused, where the right operand is array() rather than a literal.",
+    "in_array": {
+      "sso_php": "A string needle against a list of field names. Made strict.",
+      "quiz_php": "NOT simply made strict.  is an array key, so PHP has already turned a numeric one into an int, while the saved enabled list holds strings. Adding true alone would have stopped it matching. Both sides are normalised to strings instead."
+    },
+    "pagination_ceilings": "200, 200 and 500 in the concierge, trajectory and companion pickers. WPCS warns above 100. The numbers stay: anything the query drops is a post the admin cannot choose, so a lower limit would hide content rather than save work. The reason is written above each query where a reader will find it. These three warnings are correct to remain.",
+    "documented": [
+      "class-quiz-type-factory: what a quiz type is, and that the factory hands back one shared instance so a flow with twenty questions of one type constructs it once.",
+      "flosc-lifecycle: why activation and deactivation live outside the main class -- a hook pointed at a class method only fires if that class is already loaded, which activation does not guarantee.",
+      "flosc-personality-builder-markup: that it is structure only, with every value filled in by the designer JavaScript after load.",
+      "class-sso-provider-base: three version markers moved into @since, and an explicit note that the base get_user_info() has no use for token_data -- the parameter exists because Apple overrides the method and reads its claims from there.",
+      "class-google-provider: the same parameter, plus three trailing comments."
+    ],
+    "reserved_word_parameter": "flosc_guest_followup_get() took a parameter named $default, which is a reserved word. Renamed to $fallback inside that function only; every call site passes it positionally, so no caller changed.",
+    "measured_here": {
+      "php_l": "0 errors / 187 files",
+      "cli_gates": "37 of 37 pass",
+      "wporg_gate": "exit 0, 3 active exceptions, 0 stale",
+      "wpcs_php_shipping": "2,499 errors, 177 warnings, 92 files"
+    },
+    "functionality": "Still 0 of 30 behavioural tests executed. There is no WordPress in this container. Nothing in this session has been exercised in a browser."
   }
 }

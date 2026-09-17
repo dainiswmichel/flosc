@@ -164,7 +164,7 @@ class Microsoft_Provider extends SSO_Provider_Base {
 		return array(
 			'provider_id'    => sanitize_text_field( (string) ( $raw_data['id'] ?? '' ) ),
 			'email'          => sanitize_email( (string) ( $raw_data['mail'] ?? $raw_data['userPrincipalName'] ?? '' ) ),
-			'email_verified' => true, // Microsoft verifies emails
+			'email_verified' => true, // Microsoft verifies email addresses before returning them.
 			'name'           => sanitize_text_field( (string) ( $raw_data['displayName'] ?? '' ) ),
 			'first_name'     => sanitize_text_field( (string) ( $raw_data['givenName'] ?? '' ) ),
 			'last_name'      => sanitize_text_field( (string) ( $raw_data['surname'] ?? '' ) ),

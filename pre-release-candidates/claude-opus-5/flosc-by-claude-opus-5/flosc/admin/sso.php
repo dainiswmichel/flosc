@@ -260,7 +260,7 @@ $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key( pathinfo( $flosc_se
 					</td>
 				</tr>
 				
-				<?php if ( isset( $flosc_provider['extra_fields'] ) && in_array( 'team_id', $flosc_provider['extra_fields'] ) ) : ?>
+				<?php if ( isset( $flosc_provider['extra_fields'] ) && in_array( 'team_id', $flosc_provider['extra_fields'], true ) ) : ?>
 					<?php
 					$flosc_team_id     = $flosc_flow_settings[ "sso_{$flosc_provider_id}_team_id" ] ?? '';
 					$flosc_key_id      = $flosc_flow_settings[ "sso_{$flosc_provider_id}_key_id" ] ?? '';

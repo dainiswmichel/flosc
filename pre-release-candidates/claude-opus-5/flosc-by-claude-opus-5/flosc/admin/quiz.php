@@ -381,7 +381,7 @@ $flosc_quiz_demos = array(
 	<div class="flosc-quiz-grid">
 	<?php
 	foreach ( $flosc_ready_quizzes as $flosc_quiz_id => $flosc_qt ) :
-		$flosc_is_enabled = in_array( $flosc_quiz_id, $flosc_enabled_quizzes );
+		$flosc_is_enabled = in_array( (string) $flosc_quiz_id, array_map( 'strval', (array) $flosc_enabled_quizzes ), true );
 		$flosc_content    = ! empty( $flosc_flow_settings[ 'quiz_content_' . $flosc_quiz_id ] )
 						? $flosc_flow_settings[ 'quiz_content_' . $flosc_quiz_id ]
 						: $flosc_qt->get_default_content();

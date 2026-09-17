@@ -212,7 +212,7 @@ $flosc_vgm_depths = flosc_vgm_depth_labels();
 							?>
 							<option value="<?php echo esc_attr( $flosc_slug ); ?>" 
 									<?php selected( $flosc_item['level'] ?? '', $flosc_slug ); ?>>
-								<?php echo esc_html( ( $flosc_lv['name'] ?? '' ) ?: $flosc_slug ); ?>
+								<?php echo esc_html( ( $flosc_lv['name'] ?? '' ) ? $flosc_lv['name'] : $flosc_slug ); ?>
 							</option>
 						<?php endforeach; ?>
 					</select>
@@ -423,7 +423,7 @@ jQuery(document).ready(function($) {
 		if ( empty( $flosc_slug ) ) {
 			continue;
 		}
-		$flosc_label = ( $flosc_lv['name'] ?? '' ) ?: $flosc_slug;
+		$flosc_label = ( $flosc_lv['name'] ?? '' ) ? $flosc_lv['name'] : $flosc_slug;
 		$flosc_opts .= '<option value="' . esc_attr( $flosc_slug ) . '">' . esc_html( $flosc_label ) . '</option>';
 	}
 		echo wp_json_encode( $flosc_opts );
