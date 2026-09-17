@@ -54,7 +54,7 @@ class FLOSC_Email {
 		if ( $oto_offer_id ) {
 			$sale = method_exists( $this->flosc, 'sale' ) ? $this->flosc->sale() : null;
 			if ( $sale && method_exists( $sale, 'offers' ) ) {
-				$oto_offer = $sale->offers()->get_offer( $oto_offer_id, $flow_id ?: null );
+				$oto_offer = $sale->offers()->get_offer( $oto_offer_id, $flow_id ? $flow_id : null );
 			}
 		}
 
@@ -474,7 +474,7 @@ class FLOSC_Email {
 		if ( ! $user || empty( $user->user_email ) ) {
 			return;
 		}
-		$flow_id   = sanitize_key( (string) ( $flow_id ?: get_user_meta( $user_id, '_flosc_registration_flow', true ) ) );
+		$flow_id   = sanitize_key( (string) ( $flow_id ? $flow_id : get_user_meta( $user_id, '_flosc_registration_flow', true ) ) );
 		$flow_stem = sanitize_key( pathinfo( basename( (string) $flow_id ), PATHINFO_FILENAME ) );
 
 		$sent = get_user_meta( $user_id, '_flosc_newsletter_welcome_sent', true );

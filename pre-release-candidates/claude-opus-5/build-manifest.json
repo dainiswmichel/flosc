@@ -1,15 +1,15 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": "82.4",
+  "candidate_iteration": "82.5",
   "creator": "Claude Opus 5",
   "status": "WPCS_FORMATTING_APPLIED_FUNCTIONALLY_UNVERIFIED",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v82.3",
+  "base": "claude-opus-5 v82.4",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "956ad33eea2084a5c73d75219c5ce3857d36724d16bfc0c54f5a3ad0772a7693",
-  "artifact_bytes": 2754883,
+  "artifact_sha256": "194802fd71de29d8e9f0c63707dc51e090434a618d0c3331db4ff34d12c66273",
+  "artifact_bytes": 2755034,
   "artifact_entries": 278,
   "tree_files": 295,
   "why_this_iteration": {
@@ -608,5 +608,18 @@
       "wpcs_php_shipping": "3,062 errors, 191 warnings, 132 files"
     },
     "still_open": "Docblock work about 2,100 -- missing @param tags 797, missing function docblocks 467, @param descriptions 655, class and file docblocks 113. Short ternaries 172. Inline comment end punctuation 162 that were not line comments. 0 of 30 behavioural tests executed."
+  },
+  "v82_5_short_ternary": {
+    "wpcs_php_shipping": "3,062 -> 2,973 errors",
+    "expanded": 89,
+    "left_alone": 83,
+    "why_83_were_left_alone": "The short ternary evaluates its left operand once; the long form evaluates it twice. 76 of these have a function call on the left -- preg_split(...) ?: array() would become preg_split(...) ? preg_split(...) : array(), two calls where the code has always made one. That is a behaviour and performance change dressed as a formatting fix. Array access is excluded too: on a missing key ?: emits one notice and the long form emits two. Only a plain variable or a property chain is expanded, because reading those twice is free.",
+    "verified": "An 8-case fixture: plain variable, property chain, deep property chain, a function call, array access, an already-long ternary, and a ?: inside a double-quoted string. Then php -l on every file as it ran, then all 37 gates.",
+    "measured_here": {
+      "php_l": "0 errors / 187 files",
+      "cli_gates": "37 of 37 pass",
+      "wpcs_php_shipping": "2,973 errors, 191 warnings"
+    },
+    "what_remains_is_documentation": "About 2,100 of the 2,973 are docblock findings: 797 missing @param tags, 467 missing function docblocks, 655 @param descriptions, 113 class and file docblocks. That is authorship, not tooling."
   }
 }

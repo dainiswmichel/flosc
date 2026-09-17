@@ -1667,7 +1667,7 @@ trait FLOSC_Admin_Trait {
 	}
 
 	private function redirect_contact_form_result( $return_url, $status ) {
-		$target = $return_url ?: home_url( '/' );
+		$target = $return_url ? $return_url : home_url( '/' );
 		$target = add_query_arg( 'flosc_contact_status', sanitize_key( $status ), $target );
 		wp_safe_redirect( $target );
 		exit;
@@ -1781,10 +1781,10 @@ trait FLOSC_Admin_Trait {
 						'title'            => $title,
 						'productName'      => $product_name,
 						'headerIconUrl'    => $header_icon,
-						'assistantTitle'   => $product_name ?: $title,
+						'assistantTitle'   => $product_name ? $product_name : $title,
 						'showHeaderTokens' => false,
 						'headerTokenText'  => '',
-						'accentColor'      => $accent ?: '#2563eb',
+						'accentColor'      => $accent ? $accent : '#2563eb',
 					)
 				)
 			)

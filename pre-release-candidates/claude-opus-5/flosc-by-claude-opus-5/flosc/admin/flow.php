@@ -539,7 +539,7 @@ $flosc_prompt_panel_counts    = array(
 	'member'  => $flosc_member_pills,
 );
 $flosc_diagnostics_flow_name  = trim( (string) ( $flosc_flow_settings['identity']['name'] ?? '' ) );
-$flosc_diagnostics_flow_label = '' !== $flosc_diagnostics_flow_name ? $flosc_diagnostics_flow_name : ( $flosc_selected_ivr ?: 'this flow' );
+$flosc_diagnostics_flow_label = '' !== $flosc_diagnostics_flow_name ? $flosc_diagnostics_flow_name : ( $flosc_selected_ivr ? $flosc_selected_ivr : 'this flow' );
 
 $flosc_ai_provider = $flosc_flow_settings['ai_provider'] ?? 'ivr';
 $flosc_ai_labels   = function_exists( 'flosc_chat_provider_labels' )
@@ -593,7 +593,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 			<a href="<?php echo esc_url( $flosc_flow_docs_url ); ?>" class="flosc-docs-link">Docs</a>
 			<a href="<?php echo esc_url( $flosc_flow_docs_inventory_url ); ?>" class="flosc-docs-link">Parameter Docs</a>
 		</h2>
-		<p class="flosc-flow-overview-summary">Read-only snapshot of the five flow phases for <strong><?php echo esc_html( $flosc_selected_ivr ?: 'this flow' ); ?></strong>. Click any Edit button to jump to that tab.</p>
+		<p class="flosc-flow-overview-summary">Read-only snapshot of the five flow phases for <strong><?php echo esc_html( $flosc_selected_ivr ? $flosc_selected_ivr : 'this flow' ); ?></strong>. Click any Edit button to jump to that tab.</p>
 
 		<div class="flosc-view-toggle-row">
 			<a href="<?php echo esc_url( $flosc_flow_single_url ); ?>" class="button <?php echo esc_attr( 'single' === $flosc_flow_view ? 'button-primary' : '' ); ?>"><?php echo esc_html__( 'Overview', 'flosc' ); ?></a>
@@ -665,7 +665,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 				'edit_label' => 'Edit Levels →',
 			),
 			array(
-				'label'      => 'Offers: ' . esc_html( $flosc_offers_label ?: 'None configured' ),
+				'label'      => 'Offers: ' . esc_html( $flosc_offers_label ? $flosc_offers_label : 'None configured' ),
 				'edit_url'   => $flosc_base_url . 'offers',
 				'edit_label' => 'Edit Offers →',
 			),
@@ -752,7 +752,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 	echo '<h3 class="flosc-flow-diagnostics__title">Diagnostics <a href="' . esc_url( $flosc_flow_docs_url ) . '" class="flosc-docs-link">Docs</a></h3>';
 	echo '<p class="flosc-flow-diagnostics__hashes">Open <code>#' . esc_html( $flosc_diagnostics_start ) . '</code> to jump here, and <code>#' . esc_html( $flosc_diagnostics_end ) . '</code> to jump past the diagnostics block.</p>';
 	echo '<ul class="flosc-flow-diagnostics__list">';
-	echo '<li><strong>Flow:</strong> ' . esc_html( $flosc_diagnostics_flow_label ) . ' <code>' . esc_html( $flosc_selected_ivr ?: '(no IVR selected)' ) . '</code></li>';
+	echo '<li><strong>Flow:</strong> ' . esc_html( $flosc_diagnostics_flow_label ) . ' <code>' . esc_html( $flosc_selected_ivr ? $flosc_selected_ivr : '(no IVR selected)' ) . '</code></li>';
 	echo '<li><strong>Prompt panels:</strong> Visitor ' . esc_html( (string) $flosc_prompt_panel_counts['visitor'] ) . ', Guest ' . esc_html( (string) $flosc_prompt_panel_counts['guest'] ) . ', Member ' . esc_html( (string) $flosc_prompt_panel_counts['member'] ) . '</li>';
 	echo '<li><strong>AI:</strong> ' . esc_html( $flosc_ai_label ) . '</li>';
 	echo '<li><strong>Companion:</strong> ' . esc_html( $flosc_companion_mode_label . ' · ' . $flosc_companion_status . ' · ' . $flosc_companion_effective_label ) . '</li>';
@@ -820,7 +820,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 		<div class="flosc-flow-portability-target">
 			<div class="flosc-flow-portability-target__line">
 				<strong><?php echo esc_html__( 'Current flow (Apply target):', 'flosc' ); ?></strong>
-				<code><?php echo esc_html( $flosc_selected_ivr ?: '(none — use Switch Flow)' ); ?></code>
+				<code><?php echo esc_html( $flosc_selected_ivr ? $flosc_selected_ivr : '(none — use Switch Flow)' ); ?></code>
 			</div>
 			<p class="flosc-flow-portability-target__hint">
 				<?php echo esc_html__( 'Switch Flow picks which flow receives Apply. Personality (.md) and data set files can travel together; secrets never come from files.', 'flosc' ); ?>

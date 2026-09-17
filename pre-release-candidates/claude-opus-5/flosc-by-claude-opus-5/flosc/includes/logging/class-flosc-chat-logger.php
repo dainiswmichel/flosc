@@ -863,7 +863,7 @@ class FLOSC_Chat_Logger {
 			),
 			ARRAY_A
 		);
-		$results = $results ?: array();
+		$results = $results ? $results : array();
 		wp_cache_set( $cache_key, $results, 'flosc_chat_logs', 30 );
 		return $results;
 	}
@@ -1053,7 +1053,7 @@ class FLOSC_Chat_Logger {
 		wp_cache_set( 'flosc_chat_logs_list', is_array( $rows ) ? $rows : array(), 'flosc_chat_logs', 30 );
 
 		$out = array();
-		foreach ( ( $rows ?: array() ) as $r ) {
+		foreach ( ( $rows ? $rows : array() ) as $r ) {
 			$out[] = array(
 				'id'        => intval( $r['id'] ),
 				'text'      => (string) $r['ai_response'],

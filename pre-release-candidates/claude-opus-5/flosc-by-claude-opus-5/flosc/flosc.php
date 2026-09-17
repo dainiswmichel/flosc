@@ -906,7 +906,7 @@ class FLOSC_Framework {
 			return new WP_Error( 'paypal_not_configured', __( 'PayPal is not configured', 'flosc' ), array( 'status' => 503 ) );
 		}
 
-		$offer = $this->sale_manager->offers()->get_offer( $offer_id, $flow_id ?: null );
+		$offer = $this->sale_manager->offers()->get_offer( $offer_id, $flow_id ? $flow_id : null );
 		if ( ! $offer ) {
 			return new WP_Error( 'invalid_offer', __( 'Offer not found', 'flosc' ), array( 'status' => 404 ) );
 		}
@@ -4832,7 +4832,7 @@ You are a GUIDE, not a teacher. Your job is to:
 		$output = "📍 **Current Context:**\n\n";
 
 		// Current IVR.
-		$output .= '**IVR File:** ' . ( $current_ivr_file ?: '_default/unknown_' ) . "\n";
+		$output .= '**IVR File:** ' . ( $current_ivr_file ? $current_ivr_file : '_default/unknown_' ) . "\n";
 
 		// Current flow.
 		$flow = $this->get_current_flow();
@@ -4856,7 +4856,7 @@ You are a GUIDE, not a teacher. Your job is to:
 			$output .= "  - ID: {$user_id}\n";
 			$output .= "  - Name: {$user->display_name}\n";
 			$output .= '  - Member Levels: ' . ( empty( $member_levels ) ? '_none_' : implode( ', ', $member_levels ) ) . "\n";
-			$output .= '  - Last Quiz Score: ' . ( $quiz_score ?: '_no quiz taken_' ) . "\n";
+			$output .= '  - Last Quiz Score: ' . ( $quiz_score ? $quiz_score : '_no quiz taken_' ) . "\n";
 			$output .= '  - Purchased: ' . ( $purchased ? 'Yes' : 'No' ) . "\n";
 		}
 
@@ -7030,7 +7030,7 @@ Example good response:
 		$stored_code = strtoupper( trim( (string) ( $flow_option['access_code'] ?? '' ) ) );
 		if ( '' !== $stored_code && $code_norm === $stored_code ) {
 			$grants_level     = $flow_option['access_code_role']
-				?? flosc_get_setting( 'default_member_level', '', $flow_id ?: null );
+				?? flosc_get_setting( 'default_member_level', '', $flow_id ? $flow_id : null );
 			$matched_offer_id = 'access_code';
 		}
 
@@ -7077,7 +7077,7 @@ Example good response:
 		}
 
 		if ( '' === $grants_level ) {
-			$grants_level = sanitize_key( (string) flosc_get_setting( 'default_member_level', '', $flow_id ?: null ) );
+			$grants_level = sanitize_key( (string) flosc_get_setting( 'default_member_level', '', $flow_id ? $flow_id : null ) );
 		}
 		// Product-neutral: only apply level meta when this flow configured one.
 		if ( '' !== $grants_level ) {
@@ -7101,7 +7101,7 @@ Example good response:
 
 		// Also grant offer tokens/features when we matched a real offer.
 		if ( 'access_code' !== $matched_offer_id && $this->sale_manager ) {
-			$offer = $this->sale_manager->offers()->get_offer( $matched_offer_id, $flow_id ?: null );
+			$offer = $this->sale_manager->offers()->get_offer( $matched_offer_id, $flow_id ? $flow_id : null );
 			if ( $offer && method_exists( $this->sale_manager->access(), 'grant_from_offer' ) ) {
 				$this->sale_manager->access()->grant_from_offer(
 					$user_id,
@@ -7359,7 +7359,7 @@ Example good response:
 			$guest_email_context = $this->get_guest_email_context( '', $user_id );
 			$chat_url            = $guest_email_context['chat_url'];
 			$profile_url         = function_exists( 'bp_core_get_user_domain' ) ? bp_core_get_user_domain( $user_id ) : '';
-			$name_for_email      = $display_name ?: $user->display_name;
+			$name_for_email      = $display_name ? $display_name : $user->display_name;
 			if ( $user_email ) {
 				$magic_token     = get_user_meta( $user_id, '_flosc_magic_link_token', true );
 				$magic_link_line = '';
@@ -7392,7 +7392,7 @@ Example good response:
 		return new WP_REST_Response(
 			array(
 				'success'      => true,
-				'display_name' => $display_name ?: get_userdata( $user_id )->display_name,
+				'display_name' => $display_name ? $display_name : get_userdata( $user_id )->display_name,
 			)
 		);
 	}
@@ -7753,7 +7753,7 @@ Example good response:
 
 		// Coupon path: create/cache PayPal plans at discounted recurring amounts.
 		if ( '' !== $offer_id && '' !== $coupon_code ) {
-			$offer = $this->sale_manager->offers()->get_offer( $offer_id, $flow_id ?: null );
+			$offer = $this->sale_manager->offers()->get_offer( $offer_id, $flow_id ? $flow_id : null );
 			if ( ! $offer ) {
 				return new WP_Error( 'invalid_offer', __( 'Offer not found', 'flosc' ), array( 'status' => 404 ) );
 			}
@@ -8023,7 +8023,7 @@ Example good response:
 			}
 		}
 
-		$offer = $this->sale_manager->offers()->get_offer( $sold_offer_id, $flow_id ?: null );
+		$offer = $this->sale_manager->offers()->get_offer( $sold_offer_id, $flow_id ? $flow_id : null );
 		if ( ! $offer ) {
 			return new WP_Error( 'invalid_offer', __( 'Offer not found', 'flosc' ), array( 'status' => 404 ) );
 		}
@@ -8127,7 +8127,7 @@ Example good response:
 			);
 		}
 
-		$default_member_level = flosc_get_setting( 'default_member_level', 'member', $flow_id ?: null );
+		$default_member_level = flosc_get_setting( 'default_member_level', 'member', $flow_id ? $flow_id : null );
 		if ( ! isset( $offer['grants'] ) || ! is_array( $offer['grants'] ) ) {
 			$offer['grants'] = array();
 		}
@@ -8257,7 +8257,7 @@ Example good response:
 		}
 
 		if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
-			flosc_log( '[FLOSC-PAYPAL] === activate-subscription SUCCESS === sub=' . $subscription_id . ', plan=' . $plan_type . ', offer=' . ( $resolved_offer_id ?: 'none' ) . ', user=' . $user_id . ', handoff=' . $login_handoff );
+			flosc_log( '[FLOSC-PAYPAL] === activate-subscription SUCCESS === sub=' . $subscription_id . ', plan=' . $plan_type . ', offer=' . ( $resolved_offer_id ? $resolved_offer_id : 'none' ) . ', user=' . $user_id . ', handoff=' . $login_handoff );
 		}
 
 		$user_data      = get_userdata( $user_id );
@@ -8287,7 +8287,7 @@ Example good response:
 				'user_email'        => $user_data->user_email ?? '',
 				'user_display_name' => $user_data->display_name ?? '',
 				'is_new_user'       => $is_new_user,
-				'auth_token'        => $auth_token ?: null,
+				'auth_token'        => $auth_token ? $auth_token : null,
 				'login_handoff'     => $login_handoff,
 				'token_topup'       => $token_topup,
 			)
@@ -8313,10 +8313,10 @@ Example good response:
 		$coupon_code = sanitize_text_field( $request->get_param( 'coupon_code' ) ?? '' );
 
 		if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
-			flosc_log( '[FLOSC-PAYPAL] === create_order START === offer=' . $offer_id . ', flow=' . ( $flow_id ?: 'none' ) . ', user=' . get_current_user_id() );
+			flosc_log( '[FLOSC-PAYPAL] === create_order START === offer=' . $offer_id . ', flow=' . ( $flow_id ? $flow_id : 'none' ) . ', user=' . get_current_user_id() );
 		}
 
-		$offer = $this->sale_manager->offers()->get_offer( $offer_id, $flow_id ?: null );
+		$offer = $this->sale_manager->offers()->get_offer( $offer_id, $flow_id ? $flow_id : null );
 
 		if ( ! $offer ) {
 			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
@@ -8331,7 +8331,7 @@ Example good response:
 			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
 				flosc_log( '[FLOSC-PAYPAL] create_order FAIL: not configured (client_id: ' . $has_id . ')' );
 			}
-			return new WP_Error( 'paypal_not_configured', 'PayPal is not configured (client_id: ' . $has_id . ', flow: ' . ( $flow_id ?: 'none' ) . ')', array( 'status' => 500 ) );
+			return new WP_Error( 'paypal_not_configured', 'PayPal is not configured (client_id: ' . $has_id . ', flow: ' . ( $flow_id ? $flow_id : 'none' ) . ')', array( 'status' => 500 ) );
 		}
 
 		// List price or native coupon (fixed final $ / percent). Server validates coupon.
@@ -8421,7 +8421,7 @@ Example good response:
 		$binding_session = sanitize_text_field( (string) $request->get_param( 'session_id' ) );
 
 		if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
-			flosc_log( '[FLOSC-PAYPAL] === capture_order START === order=' . $order_id . ', offer=' . $offer_id . ', flow=' . ( $flow_id ?: 'none' ) . ', user=' . get_current_user_id() );
+			flosc_log( '[FLOSC-PAYPAL] === capture_order START === order=' . $order_id . ', offer=' . $offer_id . ', flow=' . ( $flow_id ? $flow_id : 'none' ) . ', user=' . get_current_user_id() );
 		}
 
 		if ( empty( $order_id ) || empty( $offer_id ) ) {
@@ -8446,7 +8446,7 @@ Example good response:
 		// grant_from_offer() is idempotent for features/level and additive for tokens.
 		$access_manager = $this->sale_manager->access();
 
-		$offer = $this->sale_manager->offers()->get_offer( $offer_id, $flow_id ?: null );
+		$offer = $this->sale_manager->offers()->get_offer( $offer_id, $flow_id ? $flow_id : null );
 		if ( ! $offer ) {
 			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
 				flosc_log( '[FLOSC-PAYPAL] capture_order FAIL: offer not found' );
@@ -8511,7 +8511,7 @@ Example good response:
 			);
 		}
 		$offer_id = $bound_offer_id;
-		$offer    = $this->sale_manager->offers()->get_offer( $offer_id, $flow_id ?: null );
+		$offer    = $this->sale_manager->offers()->get_offer( $offer_id, $flow_id ? $flow_id : null );
 		if ( ! $offer ) {
 			return new WP_Error( 'invalid_offer', __( 'Offer not found', 'flosc' ), array( 'status' => 404 ) );
 		}
@@ -8658,7 +8658,7 @@ Example good response:
 			array(
 				'idempotency_key' => 'onetime_' . $txn_id,
 				'offer'           => $offer,
-				'offer_id'        => $offer_id ?: ( $offer['id'] ?? '' ),
+				'offer_id'        => $offer_id ? $offer_id : ( $offer['id'] ?? '' ),
 				'reason'          => 'PayPal one-time product token credit',
 			)
 		);
@@ -8719,7 +8719,7 @@ Example good response:
 				'user_email'        => $user_data->user_email ?? '',
 				'user_display_name' => $user_data->display_name ?? '',
 				'is_new_user'       => $is_new_user,
-				'auth_token'        => $auth_token ?: null,
+				'auth_token'        => $auth_token ? $auth_token : null,
 				'login_handoff'     => $login_handoff,
 				'token_topup'       => $token_topup,
 			)
@@ -9247,8 +9247,8 @@ Example good response:
 			),
 				// v1.3.8: Debug info for flow context.
 			'flow_context'   => array(
-				'flow_id'    => $flow_id ?: null,
-				'ivr_file'   => $ivr_file ?: null,
+				'flow_id'    => $flow_id ? $flow_id : null,
+				'ivr_file'   => $ivr_file ? $ivr_file : null,
 				'ivr_source' => $ivr_source,
 			),
 			)

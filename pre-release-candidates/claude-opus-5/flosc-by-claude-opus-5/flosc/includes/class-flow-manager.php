@@ -38,7 +38,7 @@ class FLOSC_Flow_Manager {
 	 * Get flows accessible by a user
 	 */
 	public function get_user_flows( $user_id = null ) {
-		$user_id   = $user_id ?: get_current_user_id();
+		$user_id   = $user_id ? $user_id : get_current_user_id();
 		$all_flows = $this->get_all_flows();
 
 		// Administrators see all flows.
@@ -293,7 +293,7 @@ class FLOSC_Flow_Manager {
 	 * Check if user can access flow admin
 	 */
 	public function can_access_flow_admin( $flow_id, $user_id = null ) {
-		$user_id = $user_id ?: get_current_user_id();
+		$user_id = $user_id ? $user_id : get_current_user_id();
 
 		// Administrators see all flows.
 		if ( user_can( $user_id, 'manage_options' ) ) {
@@ -503,7 +503,7 @@ class FLOSC_Flow_Manager {
 		}
 
 		// Use flow override.
-		$key = $override_key ?: $option_name;
+		$key = $override_key ? $override_key : $option_name;
 		return $flow['overrides'][ $override_group ][ $key ] ?? get_option( $option_name, $default );
 	}
 
@@ -514,7 +514,7 @@ class FLOSC_Flow_Manager {
 	public function get_current_flow() {
 		if ( function_exists( 'get_current_flow' ) ) {
 			$flow_data = get_current_flow();
-			return $flow_data ?: null;
+			return $flow_data ? $flow_data : null;
 		}
 		return null;
 	}

@@ -499,7 +499,7 @@ class FLOSC_Chatpack {
 	 * @since 1.9.4: Added flosc_hash (installation ID)
 	 */
 	private static function build_header( $flosc_hash, $session_hash, $pair_number, $flow_id ) {
-		$flow_name = $flow_id ?: 'default';
+		$flow_name = $flow_id ? $flow_id : 'default';
 
 		return "## FLOSC CHATPACK v1\n"
 			. "FLOSC-HASH: {$flosc_hash}\n"

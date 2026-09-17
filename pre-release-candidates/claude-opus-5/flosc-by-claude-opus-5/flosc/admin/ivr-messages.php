@@ -1750,7 +1750,7 @@ if ( null !== $flosc_import_preview ) :
 		require_once FLOSC_PLUGIN_DIR . 'includes/portability/class-ivr-parser.php';
 		$flosc_preview_parser            = FLOSC_IVR_Parser::flosc_instance();
 		$flosc_preview_markdown          = flosc_fs_get_contents( $flosc_ivr_file_path );
-		$flosc_preview_config            = $flosc_preview_parser->flosc_parse( $flosc_preview_markdown ?: '' );
+		$flosc_preview_config            = $flosc_preview_parser->flosc_parse( $flosc_preview_markdown ? $flosc_preview_markdown : '' );
 		$flosc_file_messages_for_compare = $flosc_preview_config['messages'] ?? array();
 	}
 	?>

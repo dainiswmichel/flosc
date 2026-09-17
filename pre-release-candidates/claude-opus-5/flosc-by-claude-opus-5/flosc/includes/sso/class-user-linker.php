@@ -161,7 +161,7 @@ class User_Linker {
 			'user_login'   => $username,
 			'user_email'   => $email,
 			'user_pass'    => $password,
-			'display_name' => $name ?: $username,
+			'display_name' => $name ? $name : $username,
 			'first_name'   => $first_name,
 			'last_name'    => $last_name,
 			'role'         => apply_filters( 'flosc_sso_default_role', 'subscriber' ),

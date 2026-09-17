@@ -119,7 +119,7 @@ if ( $flosc_can_assign_editors ) {
 		<tbody>
 			<tr>
 				<td>Current user</td>
-				<td><?php echo esc_html( $flosc_user->user_login ?: 'Not logged in' ); ?></td>
+				<td><?php echo esc_html( $flosc_user->user_login ? $flosc_user->user_login : 'Not logged in' ); ?></td>
 			</tr>
 			<tr>
 				<td>Current access level</td>
@@ -182,15 +182,15 @@ if ( $flosc_can_assign_editors ) {
 			</tr>
 			<tr>
 				<td>Login</td>
-				<td><?php echo esc_html( $flosc_user->user_login ?: 'Not logged in' ); ?></td>
+				<td><?php echo esc_html( $flosc_user->user_login ? $flosc_user->user_login : 'Not logged in' ); ?></td>
 			</tr>
 			<tr>
 				<td>Display name</td>
-				<td><?php echo esc_html( $flosc_user->display_name ?: 'Not set' ); ?></td>
+				<td><?php echo esc_html( $flosc_user->display_name ? $flosc_user->display_name : 'Not set' ); ?></td>
 			</tr>
 			<tr>
 				<td>Email</td>
-				<td><?php echo esc_html( $flosc_user->user_email ?: 'Not set' ); ?></td>
+				<td><?php echo esc_html( $flosc_user->user_email ? $flosc_user->user_email : 'Not set' ); ?></td>
 			</tr>
 			<tr>
 				<td>First name</td>

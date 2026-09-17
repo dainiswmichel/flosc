@@ -296,7 +296,7 @@ trait FLOSC_Magic_Link_Trait {
 			if ( ! $this->flosc_magic_access_links_enabled( $_payload_flow ) ) {
 				$this->flosc_magic_access_disabled_redirect();
 			}
-			$offer_url   = flosc_get_setting( 'guest_link_expired_offer_url', '', $_payload_flow ?: null );
+			$offer_url   = flosc_get_setting( 'guest_link_expired_offer_url', '', $_payload_flow ? $_payload_flow : null );
 			$max_uses    = $this->flosc_magic_link_max_uses( $_payload_flow );
 			$window_days = $this->flosc_magic_link_window_days( $_payload_flow );
 			$window_ttl  = $window_days * DAY_IN_SECONDS;
@@ -392,8 +392,8 @@ trait FLOSC_Magic_Link_Trait {
 			// Optional: promote bare subscriber to THIS flow's configured guest role only.
 			// Never hardcode product roles — set per floscFlow. Never demote privileged users.
 			$level_flow    = sanitize_key( (string) ( $_link_flow ?? '' ) );
-			$member_level  = sanitize_key( (string) flosc_get_setting( 'default_member_level', '', $level_flow ?: null ) );
-			$guest_level   = sanitize_key( (string) flosc_get_setting( 'default_guest_level', '', $level_flow ?: null ) );
+			$member_level  = sanitize_key( (string) flosc_get_setting( 'default_member_level', '', $level_flow ? $level_flow : null ) );
+			$guest_level   = sanitize_key( (string) flosc_get_setting( 'default_guest_level', '', $level_flow ? $level_flow : null ) );
 			$roles_now     = (array) $existing_user->roles;
 			$has_member    = ( '' !== $member_level && in_array( $member_level, $roles_now, true ) );
 			$has_guest     = ( '' !== $guest_level && in_array( $guest_level, $roles_now, true ) );

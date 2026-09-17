@@ -1407,8 +1407,8 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 								// performIVRAction() instead of sending text to AI.
 								$action           = $p['action'] ?? '';
 								$explicit_trigger = $p['trigger_type'] ?? '';
-								$trigger_type     = $explicit_trigger ?: ( $action ? 'action' : 'ai' );
-								$trigger_value    = $p['trigger_value'] ?? ( $action ?: '' );
+								$trigger_type     = $explicit_trigger ? $explicit_trigger : ( $action ? 'action' : 'ai' );
+								$trigger_value    = $p['trigger_value'] ?? ( $action ? $action : '' );
 								$out[ $flosc_name ] = array(
 									'name'           => $flosc_name,
 									'type'           => 'suggested_user_autoprompt',

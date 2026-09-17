@@ -659,7 +659,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 		$body        = json_decode( wp_remote_retrieve_body( $response ), true );
 
 		if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
-			flosc_log( '[FLOSC-PAYPAL] OAuth response: HTTP ' . $status_code . ', body keys: ' . implode( ',', array_keys( $body ?: array() ) ) );
+			flosc_log( '[FLOSC-PAYPAL] OAuth response: HTTP ' . $status_code . ', body keys: ' . implode( ',', array_keys( $body ? $body : array() ) ) );
 		}
 
 		if ( empty( $body['access_token'] ) ) {
@@ -699,7 +699,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 			);
 
 		if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
-			flosc_log( '[FLOSC-PAYPAL] create_order: user=' . ( $user->ID ?? 0 ) . ', amount=' . $amount . ' ' . $currency . ', offer=' . $offer_id . ', intent=' . ( $purchase_uuid ?: 'legacy' ) );
+			flosc_log( '[FLOSC-PAYPAL] create_order: user=' . ( $user->ID ?? 0 ) . ', amount=' . $amount . ' ' . $currency . ', offer=' . $offer_id . ', intent=' . ( $purchase_uuid ? $purchase_uuid : 'legacy' ) );
 		}
 
 		$order_body = array(
@@ -961,7 +961,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 		}
 
 		if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
-			flosc_log( '[FLOSC-PAYPAL] capture_order SUCCESS: transaction_id=' . $txn_id . ', amount=' . ( $capture['amount']['value'] ?? '?' ) . ', payer=' . ( $payer_email ?: 'none' ) );
+			flosc_log( '[FLOSC-PAYPAL] capture_order SUCCESS: transaction_id=' . $txn_id . ', amount=' . ( $capture['amount']['value'] ?? '?' ) . ', payer=' . ( $payer_email ? $payer_email : 'none' ) );
 		}
 
 		return array(
@@ -1652,7 +1652,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 			if ( '' !== $sold_offer_id && function_exists( 'flosc_sale' ) ) {
 				$om = flosc_sale()->offers();
 				if ( $om && method_exists( $om, 'get_offer' ) ) {
-					$renewal_offer = $om->get_offer( $sold_offer_id, $flow_id ?: null );
+					$renewal_offer = $om->get_offer( $sold_offer_id, $flow_id ? $flow_id : null );
 				}
 			}
 

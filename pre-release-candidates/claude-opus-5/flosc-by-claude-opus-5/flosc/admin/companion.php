@@ -702,7 +702,7 @@ $flosc_companion_snippet_frontend_config = implode(
 							<?php foreach ( (array) $flosc_target_pages as $flosc_target_page ) : ?>
 								<?php $flosc_target_page_id = (int) ( $flosc_target_page->ID ?? 0 ); ?>
 								<option value="<?php echo esc_attr( $flosc_target_page_id ); ?>" <?php selected( in_array( $flosc_target_page_id, $flosc_target_include_pages, true ) ); ?>>
-									<?php echo esc_html( ( $flosc_target_page->post_title ?: '(untitled)' ) . ' (#' . $flosc_target_page_id . ')' ); ?>
+									<?php echo esc_html( ( $flosc_target_page->post_title ? $flosc_target_page->post_title : '(untitled)' ) . ' (#' . $flosc_target_page_id . ')' ); ?>
 								</option>
 							<?php endforeach; ?>
 						</select>
@@ -713,7 +713,7 @@ $flosc_companion_snippet_frontend_config = implode(
 						<select name="flow_companion_include_posts[]" id="flow_companion_include_posts" multiple size="6" class="widefat">
 							<?php foreach ( $flosc_target_posts_map as $flosc_target_post_id => $flosc_target_post_title ) : ?>
 								<option value="<?php echo esc_attr( (int) $flosc_target_post_id ); ?>" <?php selected( in_array( (int) $flosc_target_post_id, $flosc_target_include_posts, true ) ); ?>>
-									<?php echo esc_html( ( $flosc_target_post_title ?: '(untitled)' ) . ' (#' . (int) $flosc_target_post_id . ')' ); ?>
+									<?php echo esc_html( ( $flosc_target_post_title ? $flosc_target_post_title : '(untitled)' ) . ' (#' . (int) $flosc_target_post_id . ')' ); ?>
 								</option>
 							<?php endforeach; ?>
 						</select>
@@ -757,7 +757,7 @@ $flosc_companion_snippet_frontend_config = implode(
 							<?php foreach ( (array) $flosc_target_pages as $flosc_target_page ) : ?>
 								<?php $flosc_target_page_id = (int) ( $flosc_target_page->ID ?? 0 ); ?>
 								<option value="<?php echo esc_attr( $flosc_target_page_id ); ?>" <?php selected( in_array( $flosc_target_page_id, $flosc_target_exclude_pages, true ) ); ?>>
-									<?php echo esc_html( ( $flosc_target_page->post_title ?: '(untitled)' ) . ' (#' . $flosc_target_page_id . ')' ); ?>
+									<?php echo esc_html( ( $flosc_target_page->post_title ? $flosc_target_page->post_title : '(untitled)' ) . ' (#' . $flosc_target_page_id . ')' ); ?>
 								</option>
 							<?php endforeach; ?>
 						</select>
@@ -768,7 +768,7 @@ $flosc_companion_snippet_frontend_config = implode(
 						<select name="flow_companion_exclude_posts[]" id="flow_companion_exclude_posts" multiple size="6" class="widefat">
 							<?php foreach ( $flosc_target_posts_map as $flosc_target_post_id => $flosc_target_post_title ) : ?>
 								<option value="<?php echo esc_attr( (int) $flosc_target_post_id ); ?>" <?php selected( in_array( (int) $flosc_target_post_id, $flosc_target_exclude_posts, true ) ); ?>>
-									<?php echo esc_html( ( $flosc_target_post_title ?: '(untitled)' ) . ' (#' . (int) $flosc_target_post_id . ')' ); ?>
+									<?php echo esc_html( ( $flosc_target_post_title ? $flosc_target_post_title : '(untitled)' ) . ' (#' . (int) $flosc_target_post_id . ')' ); ?>
 								</option>
 							<?php endforeach; ?>
 						</select>
@@ -982,8 +982,8 @@ $flosc_companion_snippet_frontend_config = implode(
 		<tr>
 			<th scope="row"><label for="flow_companion_accent_color">Accent Color</label></th>
 			<td>
-				<input type="color" name="flow_companion_accent_color" id="flow_companion_accent_color" value="<?php echo esc_attr( $flosc_accent_color ?: '#6366f1' ); ?>" class="flosc-companion-color-input">
-				<input type="text" id="companion_accent_hex" value="<?php echo esc_attr( $flosc_accent_color ?: '#6366f1' ); ?>" class="flosc-companion-color-hex" readonly>
+				<input type="color" name="flow_companion_accent_color" id="flow_companion_accent_color" value="<?php echo esc_attr( $flosc_accent_color ? $flosc_accent_color : '#6366f1' ); ?>" class="flosc-companion-color-input">
+				<input type="text" id="companion_accent_hex" value="<?php echo esc_attr( $flosc_accent_color ? $flosc_accent_color : '#6366f1' ); ?>" class="flosc-companion-color-hex" readonly>
 				<button type="button" id="flosc-companion-color-reset" class="button flosc-companion-color-reset">Reset</button>
 				<p class="description">The primary color for the widget button and highlights. Leave as default for the FLOSC indigo.</p>
 			</td>

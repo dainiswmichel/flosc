@@ -1144,7 +1144,7 @@ class FLOSC_AI_Chat_Dispatch {
 		$this->last_chain_detail = $chain_log;
 
 		// v1.9.3: Return null on total chain failure — caller decides fallback, not dispatch.
-		return $response ?: null;
+		return $response ? $response : null;
 	}
 
 	/**

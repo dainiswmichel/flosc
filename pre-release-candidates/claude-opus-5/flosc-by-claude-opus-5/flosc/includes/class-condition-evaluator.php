@@ -498,7 +498,7 @@ class FLOSC_Condition_Evaluator {
 	 * Build context from user state
 	 */
 	public static function build_context( $user_id = null, $additional = array() ) {
-		$user_id = $user_id ?: get_current_user_id();
+		$user_id = $user_id ? $user_id : get_current_user_id();
 
 		$context = array(
 			'logged_in'                             => is_user_logged_in(),

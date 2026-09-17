@@ -99,7 +99,7 @@ class FLOSC_Usage_Tracker {
 	 * Get usage count for a specific event
 	 */
 	public function get_event_count( $user_id, $event, $period = null ) {
-		$period = $period ?: $this->get_current_period();
+		$period = $period ? $period : $this->get_current_period();
 		$usage  = $this->get_user_usage( $user_id, $period );
 
 		return $usage[ $event ]['count'] ?? 0;
@@ -109,7 +109,7 @@ class FLOSC_Usage_Tracker {
 	 * Get usage quantity for a specific event
 	 */
 	public function get_event_quantity( $user_id, $event, $period = null ) {
-		$period = $period ?: $this->get_current_period();
+		$period = $period ? $period : $this->get_current_period();
 		$usage  = $this->get_user_usage( $user_id, $period );
 
 		return $usage[ $event ]['quantity'] ?? 0;
@@ -317,7 +317,7 @@ class FLOSC_Usage_Tracker {
 	 * Get aggregate usage across all users for a period
 	 */
 	public function get_global_usage( $period = null ) {
-		$period = $period ?: $this->get_current_period();
+		$period = $period ? $period : $this->get_current_period();
 
 		$user_ids = function_exists( 'flosc_get_user_ids_for_meta' )
 			? flosc_get_user_ids_for_meta( $this->meta_key )
@@ -360,7 +360,7 @@ class FLOSC_Usage_Tracker {
 	 * Get top users by usage
 	 */
 	public function get_top_users( $event, $period = null, $limit = 10 ) {
-		$period = $period ?: $this->get_current_period();
+		$period = $period ? $period : $this->get_current_period();
 
 		$user_ids = function_exists( 'flosc_get_user_ids_for_meta' )
 			? flosc_get_user_ids_for_meta( $this->meta_key )

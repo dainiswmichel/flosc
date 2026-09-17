@@ -367,7 +367,7 @@ class OAuth2_Handler {
 			$code = sanitize_text_field( $request->get_param( 'code' ) ?? '' );
 		}
 		if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
-			flosc_log( '[FLOSC SSO] handle_callback: provider=' . $provider_id . ' | state=' . ( $state ?: '(empty)' ) . ' | code=' . ( $code ? 'present' : 'absent' ) . ' | error=' . ( $error ?: 'none' ) . ' | method=' . sanitize_text_field( $server['REQUEST_METHOD'] ?? 'unknown' ) . ' | source=' . ( ! empty( $get['state'] ) ? '$_GET' : ( ! empty( $server['REQUEST_URI'] ) && false !== strpos( $server['REQUEST_URI'], 'state=' ) ? 'REQUEST_URI' : ( ! empty( $server['QUERY_STRING'] ) ? 'QUERY_STRING' : 'WP_REST' ) ) ) );
+			flosc_log( '[FLOSC SSO] handle_callback: provider=' . $provider_id . ' | state=' . ( $state ? $state : '(empty)' ) . ' | code=' . ( $code ? 'present' : 'absent' ) . ' | error=' . ( $error ? $error : 'none' ) . ' | method=' . sanitize_text_field( $server['REQUEST_METHOD'] ?? 'unknown' ) . ' | source=' . ( ! empty( $get['state'] ) ? '$_GET' : ( ! empty( $server['REQUEST_URI'] ) && false !== strpos( $server['REQUEST_URI'], 'state=' ) ? 'REQUEST_URI' : ( ! empty( $server['QUERY_STRING'] ) ? 'QUERY_STRING' : 'WP_REST' ) ) ) );
 		}
 
 		// ── Resolve the correct app URL from state ──
@@ -423,7 +423,7 @@ class OAuth2_Handler {
 		$state_data = $this->verify_state( $state );
 		if ( ! $state_data ) {
 			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
-				flosc_log( '[FLOSC SSO] State verification failed for state: ' . ( $state ?: '(empty)' ) );
+				flosc_log( '[FLOSC SSO] State verification failed for state: ' . ( $state ? $state : '(empty)' ) );
 			}
 			$this->redirect_with_error( 'Invalid or expired authentication state. Please try again.', $error_redirect_to );
 			return;
@@ -1011,7 +1011,7 @@ class OAuth2_Handler {
 		// v8.0.2: Always log SSO errors (ungated) — SSO failures are rare and
 		// critical enough that the log line is justified without a debug flag.
 		if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
-			flosc_log( '[FLOSC SSO ERROR] ' . $message . ' | redirect_to: ' . ( $redirect_to ?: '(empty)' ) );
+			flosc_log( '[FLOSC SSO ERROR] ' . $message . ' | redirect_to: ' . ( $redirect_to ? $redirect_to : '(empty)' ) );
 		}
 
 		// v8.0.2: Use custom domain app URL as fallback instead of home_url().

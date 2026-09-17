@@ -131,7 +131,7 @@ class FLOSC_Session_Rest {
 				$identity  = method_exists( $this, 'get_floscflow_identity' )
 					? $this->flosc->get_floscflow_identity()
 					: array();
-				$name      = $user ? (string) ( $user->display_name ?: $user->user_login ) : '';
+				$name      = $user ? (string) ( $user->display_name ? $user->display_name : $user->user_login ) : '';
 				$flow_name = is_array( $identity ) ? (string) ( $identity['name'] ?? 'FLOSC' ) : 'FLOSC';
 				$limit_msg = str_replace(
 					array( '{max}', '{count}', '{flow_name}', '{name}', '{NickName}' ),

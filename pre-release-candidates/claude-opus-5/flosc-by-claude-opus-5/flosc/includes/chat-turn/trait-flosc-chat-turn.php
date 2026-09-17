@@ -1050,7 +1050,7 @@ trait FLOSC_Chat_Turn_Trait {
 							do_action( 'flosc_ai_dispatch_failed', $dispatch_result, $phase, $flow_id );
 						}
 						$response_message      = array(
-							'content'          => $ai_response ?: 'I apologize, but I\'m having trouble responding right now. Please try again.',
+							'content'          => $ai_response ? $ai_response : 'I apologize, but I\'m having trouble responding right now. Please try again.',
 							'user_autoprompts' => $this->get_user_autoprompts_for_phase( $phase, $eval_context, $ivr_config ),
 							'phase_change'     => null,
 						);
@@ -1442,7 +1442,7 @@ trait FLOSC_Chat_Turn_Trait {
 
 							FLOSC_Chat_Logger::instance()->flosc_log_chat(
 								array(
-									'flow_id'          => $flow_id ?: $flow_stem,
+									'flow_id'          => $flow_id ? $flow_id : $flow_stem,
 									'phase'            => $phase,
 									'user_tier'        => (string) ( $user_context['access_level'] ?? '' ),
 									'user_id'          => is_user_logged_in() ? get_current_user_id() : 0,
@@ -1539,7 +1539,7 @@ trait FLOSC_Chat_Turn_Trait {
 
 		FLOSC_Chat_Logger::instance()->flosc_log_chat(
 			array(
-				'flow_id'             => $flow_id ?: $flow_stem,
+				'flow_id'             => $flow_id ? $flow_id : $flow_stem,
 				'phase'               => $phase,
 				'user_tier'           => (string) ( $user_context['access_level'] ?? '' ),
 				'provider_request_id' => function_exists( 'flosc_provider_last_request_id' )

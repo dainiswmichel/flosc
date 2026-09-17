@@ -335,7 +335,7 @@ class FLOSC_Companion_Mode {
 			// Parameterized brand icon (Chat Logo / companion_header_icon_url). No emoji default.
 			'headerIconUrl'                 => $header_icon_url,
 			'avatar'                        => '',
-			'accentColor'                   => $accent ?: $defaults['accent_color'],
+			'accentColor'                   => $accent ? $accent : $defaults['accent_color'],
 			'position'                      => $position,
 			'mode'                          => $mode,
 			'width'                         => $panel_width . 'px',
@@ -533,7 +533,7 @@ class FLOSC_Companion_Mode {
 		$matches        = $this->find_companion_flows_for_request( $req_path, $category_slugs );
 		$hub_match      = $matches['hub'] ?? null;
 		$category_match = $matches['category'] ?? null;
-		$page_owner     = $hub_match ?: $category_match;
+		$page_owner     = $hub_match ? $hub_match : $category_match;
 
 		// Hint may only select a companion-enabled flow that either owns this page
 		// or is an explicit handoff to a real flow (dock from full-page chat).

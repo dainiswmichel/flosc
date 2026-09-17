@@ -27,7 +27,7 @@ class FLOSC_Checkout_Rest {
 				$flow_id = pathinfo( basename( $flow['ivr_file'] ), PATHINFO_FILENAME );
 			}
 		}
-		$offers = $this->flosc->sale()->get_available_offers( $user_id, $flow_id ?: null );
+		$offers = $this->flosc->sale()->get_available_offers( $user_id, $flow_id ? $flow_id : null );
 		return new WP_REST_Response( array( 'offers' => array_values( $offers ) ) );
 	}
 
@@ -154,7 +154,7 @@ class FLOSC_Checkout_Rest {
 		if ( ! empty( $flow_id ) ) {
 			$this->flosc->set_flow_context( $flow_id );
 		}
-		$offer = $this->flosc->sale()->offers()->get_offer( $offer_id, $flow_id ?: null );
+		$offer = $this->flosc->sale()->offers()->get_offer( $offer_id, $flow_id ? $flow_id : null );
 		if ( ! $offer ) {
 			return new WP_Error( 'invalid_offer', __( 'Offer not found', 'flosc' ), array( 'status' => 404 ) );
 		}
@@ -453,7 +453,7 @@ class FLOSC_Checkout_Rest {
 		if ( '' !== $flow_id ) {
 			$this->flosc->set_flow_context( $flow_id );
 		}
-		$offer = $this->flosc->sale()->offers()->get_offer( $offer_id, $flow_id ?: null );
+		$offer = $this->flosc->sale()->offers()->get_offer( $offer_id, $flow_id ? $flow_id : null );
 		if ( ! $offer ) {
 			return new WP_Error( 'invalid_offer', __( 'Offer not found', 'flosc' ), array( 'status' => 404 ) );
 		}
@@ -588,7 +588,7 @@ class FLOSC_Checkout_Rest {
 
 		// Try the offer (flow-aware lookup).
 		if ( ! empty( $offer_id ) && 'sandbox' !== $offer_id ) {
-			$offer = $offer_manager->get_offer( $offer_id, $flow_id ?: null );
+			$offer = $offer_manager->get_offer( $offer_id, $flow_id ? $flow_id : null );
 			if ( $offer && ! empty( $offer['grants']['level'] ) ) {
 				$member_level = $offer['grants']['level'];
 				$product_name = $offer['name'];
@@ -598,7 +598,7 @@ class FLOSC_Checkout_Rest {
 		}
 
 		$sandbox_offer = array(
-			'id'     => $offer_id ?: 'flosc_sandbox',
+			'id'     => $offer_id ? $offer_id : 'flosc_sandbox',
 			'name'   => $product_name,
 			'grants' => array(
 				'level'    => $member_level,
@@ -698,7 +698,7 @@ class FLOSC_Checkout_Rest {
 		if ( '' !== $flow_id ) {
 			$this->flosc->set_flow_context( $flow_id );
 		}
-		$offer = $this->flosc->sale()->offers()->get_offer( $offer_id, $flow_id ?: null );
+		$offer = $this->flosc->sale()->offers()->get_offer( $offer_id, $flow_id ? $flow_id : null );
 
 		if ( ! $offer ) {
 			return new WP_Error( 'invalid_offer', __( 'Offer not found', 'flosc' ), array( 'status' => 404 ) );
@@ -767,7 +767,7 @@ class FLOSC_Checkout_Rest {
 		}
 
 		// Get offer (client-supplied offer_id is only a hint until PI metadata binds it).
-		$offer = $this->flosc->sale()->offers()->get_offer( $offer_id, $flow_id_param ?: null );
+		$offer = $this->flosc->sale()->offers()->get_offer( $offer_id, $flow_id_param ? $flow_id_param : null );
 		if ( ! $offer ) {
 			return new WP_Error( 'invalid_offer', __( 'Offer not found', 'flosc' ), array( 'status' => 404 ) );
 		}
@@ -815,7 +815,7 @@ class FLOSC_Checkout_Rest {
 		}
 
 		// Re-load offer from bound id (authoritative).
-		$offer = $this->flosc->sale()->offers()->get_offer( $bound_offer_id, $flow_id_param ?: null );
+		$offer = $this->flosc->sale()->offers()->get_offer( $bound_offer_id, $flow_id_param ? $flow_id_param : null );
 		if ( ! $offer ) {
 			return new WP_Error( 'invalid_offer', __( 'Offer not found', 'flosc' ), array( 'status' => 404 ) );
 		}

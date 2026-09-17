@@ -459,7 +459,7 @@ class FLOSC_Companion_Widget {
 		return array(
 			'loggedIn'    => true,
 			'userId'      => $user_id,
-			'displayName' => $user->display_name ?: $user->user_login,
+			'displayName' => $user->display_name ? $user->display_name : $user->user_login,
 			'avatar'      => get_avatar_url( $user_id, array( 'size' => 48 ) ),
 			'isMember'    => $is_member,
 			'hasAccess'   => $has_access,
