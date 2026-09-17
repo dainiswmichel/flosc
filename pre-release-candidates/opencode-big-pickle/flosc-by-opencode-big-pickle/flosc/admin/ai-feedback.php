@@ -1,7 +1,10 @@
 <?php
 /**
- * v1.9.0: AI Feedback & Praise Editor
- * v1.9.5: Added "Rated Responses" section showing DB-rated chat log entries.
+ * AI Feedback & Praise Editor.
+ *
+ * @since 1.9.0
+ * @since 1.9.5 Added the "Rated Responses" section, which lists chat log
+ *              entries that carry a rating in the database.
  *
  * Admin can view, add, and delete feedback (flag bad responses) and
  * praises (reinforce good responses) that guide AI behavior.
@@ -10,6 +13,8 @@
  * Both are loaded into the system prompt via build_feedback_prompt().
  *
  * Included from settings.php within the Chat Logs tab.
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -84,11 +89,11 @@ $flosc_rated_count = count( $flosc_rated_logs );
 
 <?php
 // ── Feedback ──
-$flosc_settings_key    = $GLOBALS['flosc_settings_key'] ?? '';
-$flosc_feedback_items  = $flosc_flow_settings['ai_feedback'] ?? array();
-$flosc_feedback_count  = count( $flosc_feedback_items );
+$flosc_settings_key   = $GLOBALS['flosc_settings_key'] ?? '';
+$flosc_feedback_items = $flosc_flow_settings['ai_feedback'] ?? array();
+$flosc_feedback_count = count( $flosc_feedback_items );
 
-// Handle delete feedback
+// Handle delete feedback.
 if ( isset( $_POST['flosc_delete_feedback'] ) ) {
 	$flosc_post = wp_unslash( $_POST );
 	if ( wp_verify_nonce( sanitize_text_field( $flosc_post['_wpnonce'] ?? '' ), 'flosc_save_settings' ) ) {
@@ -111,7 +116,7 @@ if ( isset( $_POST['flosc_delete_feedback'] ) ) {
 	}
 }
 
-// Handle add feedback
+// Handle add feedback.
 if ( isset( $_POST['flosc_add_feedback'] ) ) {
 	$flosc_post = wp_unslash( $_POST );
 	if ( wp_verify_nonce( sanitize_text_field( $flosc_post['_wpnonce'] ?? '' ), 'flosc_save_settings' ) ) {
@@ -142,7 +147,7 @@ if ( isset( $_POST['flosc_add_feedback'] ) ) {
 $flosc_praises       = $flosc_flow_settings['ai_praises'] ?? array();
 $flosc_praises_count = count( $flosc_praises );
 
-// Handle delete praise
+// Handle delete praise.
 if ( isset( $_POST['flosc_delete_praise'] ) ) {
 	$flosc_post = wp_unslash( $_POST );
 	if ( wp_verify_nonce( sanitize_text_field( $flosc_post['_wpnonce'] ?? '' ), 'flosc_save_settings' ) ) {
@@ -165,7 +170,7 @@ if ( isset( $_POST['flosc_delete_praise'] ) ) {
 	}
 }
 
-// Handle add praise
+// Handle add praise.
 if ( isset( $_POST['flosc_add_praise'] ) ) {
 	$flosc_post = wp_unslash( $_POST );
 	if ( wp_verify_nonce( sanitize_text_field( $flosc_post['_wpnonce'] ?? '' ), 'flosc_save_settings' ) ) {
