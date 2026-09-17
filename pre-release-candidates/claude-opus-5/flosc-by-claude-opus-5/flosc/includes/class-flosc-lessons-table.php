@@ -141,7 +141,7 @@ class FLOSC_Lessons_Table {
 	/**
 	 * Insert a single lesson
 	 *
-	 * @param array $data Associative array with lesson fields
+	 * @param array $data Associative array with lesson fields.
 	 * @return int|false Inserted ID or false on failure
 	 */
 	public function insert_lesson( $data ) {
@@ -355,8 +355,8 @@ class FLOSC_Lessons_Table {
 	/**
 	 * Format a lesson row for REST API output
 	 *
-	 * @param array $row Raw DB row
-	 * @param bool  $include_content Include how_to and full word lists
+	 * @param array $row Raw DB row.
+	 * @param bool  $include_content Include how_to and full word lists.
 	 * @return array Formatted lesson
 	 */
 	public function format_for_api( $row, $include_content = false ) {

@@ -7,6 +7,8 @@
  *   $value = flosc_admin_get_value('ai_provider', 'ivr');
  *   - When editing a flow: returns flow[$key] if set, else global
  *   - When editing global: returns global wp_option value
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -16,8 +18,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Get the appropriate value for an admin settings field
  *
- * @param string $key Setting key (without 'flosc_' prefix)
- * @param mixed  $default Default value
+ * @param string $key Setting key (without 'flosc_' prefix).
+ * @param mixed  $default Default value.
  * @return mixed The value to display in the form
  */
 function flosc_admin_get_value( $key, $default = '' ) {
@@ -42,8 +44,8 @@ function flosc_admin_get_value( $key, $default = '' ) {
 /**
  * Get the global value for showing as placeholder when editing flow
  *
- * @param string $key Setting key (without 'flosc_' prefix)
- * @param mixed  $default Default value
+ * @param string $key Setting key (without 'flosc_' prefix).
+ * @param mixed  $default Default value.
  * @return mixed The global value for placeholder text
  */
 function flosc_admin_get_global( $key, $default = '' ) {
@@ -71,10 +73,10 @@ function flosc_admin_get_editing_flow_id() {
 /**
  * Render a text input with "using global" placeholder when editing flow
  *
- * @param string $key Setting key (without 'flosc_' prefix)
- * @param string $default Default value
- * @param string $class CSS class
- * @param string $placeholder Custom placeholder (overrides global value)
+ * @param string $key Setting key (without 'flosc_' prefix).
+ * @param string $default Default value.
+ * @param string $class CSS class.
+ * @param string $placeholder Custom placeholder (overrides global value).
  */
 function flosc_admin_text_input( $key, $default = '', $class = 'regular-text', $placeholder = null ) {
 	$value      = flosc_admin_get_value( $key, $default );

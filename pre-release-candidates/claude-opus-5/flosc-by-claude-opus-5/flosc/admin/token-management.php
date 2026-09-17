@@ -5,6 +5,8 @@
  * Per-flow wallet economics + product token grants.
  * Products (offers) are editable accordion rows — set grant mode, amount, and cap
  * per product, or inherit flow defaults.
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

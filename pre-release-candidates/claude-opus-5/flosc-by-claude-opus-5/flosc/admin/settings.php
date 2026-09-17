@@ -10,6 +10,8 @@
  * v1.3.3: All Flows = fully expanded inline editing, Domain field
  * v1.3.4: Register rewrite rules for ALL IVR files with default slugs, immediate version-flush
  * v1.4.8: Admin styling overhaul - WordPress-native colors, no gradients, no emojis in chrome
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

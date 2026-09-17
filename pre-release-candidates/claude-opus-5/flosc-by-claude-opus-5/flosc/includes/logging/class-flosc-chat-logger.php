@@ -5,6 +5,8 @@
  *
  * Storage: Custom WordPress table {prefix}flosc_chat_logs
  * Access: Admin-only viewer via FLOSC Settings → Chat Logs tab
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -224,9 +226,9 @@ class FLOSC_Chat_Logger {
 	 * v1.9.5: Rate a chat log entry. Score from -10 to +10 with optional note.
 	 * Any non-zero rating auto-protects the log from expunge.
 	 *
-	 * @param int    $log_id  The chat log row ID
-	 * @param int    $rating  Score from -10 to +10
-	 * @param string $note    Admin's note (why this score)
+	 * @param int    $log_id  The chat log row ID.
+	 * @param int    $rating  Score from -10 to +10.
+	 * @param string $note    Admin's note (why this score).
 	 * @return bool True on success
 	 */
 	public function flosc_rate_log( $log_id, $rating, $note = '' ) {
@@ -807,7 +809,7 @@ class FLOSC_Chat_Logger {
 	/**
 	 * Get recent chat logs for admin viewer.
 	 *
-	 * @param array $filters {
+	 * @param array $filters {.
 	 *     @type string $flow_id  Filter by flow
 	 *     @type string $phase    Filter by phase
 	 *     @type int    $user_id  Filter by user
@@ -933,7 +935,7 @@ class FLOSC_Chat_Logger {
 	/**
 	 * Clear logs older than X days.
 	 *
-	 * @param int $days Number of days to retain
+	 * @param int $days Number of days to retain.
 	 * @return int Number of rows deleted
 	 */
 	public function flosc_clear_old_logs( $days = 30 ) {

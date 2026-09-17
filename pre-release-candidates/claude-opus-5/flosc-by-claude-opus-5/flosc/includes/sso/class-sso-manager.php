@@ -146,7 +146,7 @@ class SSO_Manager {
 	/**
 	 * Register a provider
 	 *
-	 * @param SSO_Provider_Base $provider Provider instance
+	 * @param SSO_Provider_Base $provider Provider instance.
 	 */
 	public function register_provider( $provider ) {
 		if ( $provider instanceof SSO_Provider_Base ) {
@@ -157,7 +157,7 @@ class SSO_Manager {
 	/**
 	 * Check if a provider exists
 	 *
-	 * @param string $provider_id Provider ID
+	 * @param string $provider_id Provider ID.
 	 * @return bool
 	 */
 	public function has_provider( $provider_id ) {
@@ -167,7 +167,7 @@ class SSO_Manager {
 	/**
 	 * Get a provider instance
 	 *
-	 * @param string $provider_id Provider ID
+	 * @param string $provider_id Provider ID.
 	 * @return SSO_Provider_Base|null
 	 */
 	public function get_provider( $provider_id ) {
@@ -218,9 +218,9 @@ class SSO_Manager {
 	/**
 	 * Filter avatar URL to use SSO avatar
 	 *
-	 * @param string $url Current avatar URL
-	 * @param mixed  $id_or_email User ID or email
-	 * @param array  $args Avatar arguments
+	 * @param string $url Current avatar URL.
+	 * @param mixed  $id_or_email User ID or email.
+	 * @param array  $args Avatar arguments.
 	 * @return string
 	 */
 	public function filter_avatar_url( $url, $id_or_email, $args ) {
@@ -563,7 +563,7 @@ class SSO_Manager {
 	/**
 	 * Render a setting field
 	 *
-	 * @param array $field Field configuration
+	 * @param array $field Field configuration.
 	 */
 	public function render_setting_field( $field ) {
 		$value = get_option( $field['id'], $field['default'] ?? '' );

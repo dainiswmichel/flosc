@@ -6,6 +6,8 @@
  * CRITICAL: Prevents AI from leaking member content to visitors/guests
  *
  * @since 9.1.7
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -27,8 +29,8 @@ class FLOSC_Access_Validator {
 	 * Validate AI response before sending to user
 	 * CRITICAL: This catches any content leakage
 	 *
-	 * @param string $ai_response The AI's proposed response
-	 * @param string $access_level User's access level
+	 * @param string $ai_response The AI's proposed response.
+	 * @param string $access_level User's access level.
 	 * @return array ['valid' => bool, 'response' => string, 'violations' => array]
 	 */
 	public function validate_response( $ai_response, $access_level ) {

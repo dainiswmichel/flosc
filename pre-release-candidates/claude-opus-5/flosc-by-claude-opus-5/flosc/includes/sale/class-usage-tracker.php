@@ -13,6 +13,8 @@
  * - Usage limits (free tier caps)
  * - Metered billing
  * - Usage analytics
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

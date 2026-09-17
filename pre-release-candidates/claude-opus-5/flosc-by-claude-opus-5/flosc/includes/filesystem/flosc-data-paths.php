@@ -44,7 +44,7 @@ if ( ! function_exists( 'flosc_safe_remote_request' ) ) {
 	 * Outbound HTTP for admin-configurable URLs.
 	 * Validates URL then uses wp_safe_remote_* (no private/loopback hosts).
 	 *
-	 * @param string $method GET|POST|DELETE|…
+	 * @param string $method GET|POST|DELETE|….
 	 * @param string $url    Absolute URL.
 	 * @param array  $args   wp_remote_* args (sslverify cannot be forced off).
 	 * @return array|WP_Error
@@ -725,7 +725,7 @@ if ( ! function_exists( 'flosc_checkout_binding_verify' ) ) {
  */
 if ( ! function_exists( 'flosc_paypal_purchase_intent_create' ) ) {
 	/**
-	 * @param array $data offer_id, plan_id, plan_type, amount, currency, flow_id, user_id, session_id, mode
+	 * @param array $data offer_id, plan_id, plan_type, amount, currency, flow_id, user_id, session_id, mode.
 	 * @return array|WP_Error Intent record including purchase_uuid
 	 */
 	function flosc_paypal_purchase_intent_create( array $data ) {

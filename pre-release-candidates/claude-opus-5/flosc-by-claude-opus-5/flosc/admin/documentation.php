@@ -8,6 +8,8 @@
  * Content status: ✅ = written, 🔲 = placeholder (heading structure only)
  *
  * @since 8.0.1
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

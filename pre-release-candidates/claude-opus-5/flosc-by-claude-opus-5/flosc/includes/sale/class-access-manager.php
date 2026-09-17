@@ -14,6 +14,8 @@
  * - visitor: not logged in
  * - guest: logged in, hasn't paid
  * - member: has paid (has active offer or subscription)
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -711,8 +713,8 @@ class FLOSC_Access_Manager {
 	 * A non-zero $user_id MUST NEVER return visitor. Multi-host same-user testing
 	 * is rare; do not invent visitor UI for a known WP user.
 	 *
-	 * @param int         $user_id 0 = anonymous
-	 * @param string|null $flow_id Flow id / ivr / stem for paid-tier check
+	 * @param int         $user_id 0 = anonymous.
+	 * @param string|null $flow_id Flow id / ivr / stem for paid-tier check.
 	 * @return string visitor|guest|member
 	 */
 	public function get_simple_state( $user_id, $flow_id = null ) {

@@ -4,6 +4,8 @@
  *
  * Internal credit/token system for pay-per-use features.
  * Tokens can be earned through affiliate purchases or bought with real money.
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

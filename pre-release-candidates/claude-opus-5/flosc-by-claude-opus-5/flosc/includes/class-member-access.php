@@ -15,6 +15,8 @@
  * - _flosc_purchase_data: array
  *
  * @since 9.1.8
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -165,7 +167,7 @@ class FLOSC_Member_Access {
 	 * Check if user can access specific content
 	 *
 	 * @param int    $user_id
-	 * @param string $required_level 'visitor', 'guest', or 'member'
+	 * @param string $required_level 'visitor', 'guest', or 'member'.
 	 * @return bool
 	 */
 	public function can_access( $user_id, $required_level = 'member' ) {
@@ -255,7 +257,7 @@ class FLOSC_Member_Access {
 	 * Checks _flosc_memberlevel_{level} user meta, WP role, and legacy aliases.
 	 *
 	 * @param int    $user_id
-	 * @param string $level e.g. 'samplecourse', 'spanishcourse', 'pronunciation_learners'
+	 * @param string $level e.g. 'samplecourse', 'spanishcourse', 'pronunciation_learners'.
 	 * @return bool
 	 */
 	public function has_level( $user_id, $level ) {
@@ -546,7 +548,7 @@ class FLOSC_Member_Access {
 	/**
 	 * Calculate how many free lessons to grant based on admin settings
 	 *
-	 * @param int $missed_count Number of missed quiz items
+	 * @param int $missed_count Number of missed quiz items.
 	 * @return int Number of free lessons to grant
 	 */
 	public function calculate_free_content_item_count( $missed_count ) {
@@ -579,7 +581,7 @@ class FLOSC_Member_Access {
 	 * Grant free lesson access to a user based on missed quiz items
 	 *
 	 * @param int   $user_id
-	 * @param array $missed_post_ids Array of post IDs for missed items
+	 * @param array $missed_post_ids Array of post IDs for missed items.
 	 * @return array Array of post IDs that were granted
 	 */
 	public function grant_free_lessons( $user_id, $missed_post_ids ) {

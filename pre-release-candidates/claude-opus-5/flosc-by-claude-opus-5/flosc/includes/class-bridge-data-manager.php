@@ -73,8 +73,8 @@ class FLOSC_Bridge_Data_Manager {
 	/**
 	 * Handle purchase completion - exit bridge state
 	 *
-	 * @param int   $user_id User ID
-	 * @param array $purchase_data Purchase details
+	 * @param int   $user_id User ID.
+	 * @param array $purchase_data Purchase details.
 	 */
 	public function handle_purchase_completed( $user_id, $purchase_data = array() ) {
 		if ( ! $user_id ) {
@@ -91,8 +91,8 @@ class FLOSC_Bridge_Data_Manager {
 	/**
 	 * Handle FLOSC quiz completion
 	 *
-	 * @param array $quiz_result Quiz results
-	 * @param int   $user_id User ID
+	 * @param array $quiz_result Quiz results.
+	 * @param int   $user_id User ID.
 	 */
 	public function handle_quiz_completion( $quiz_result, $user_id ) {
 		if ( ! $user_id ) {
@@ -129,9 +129,9 @@ class FLOSC_Bridge_Data_Manager {
 	 *
 	 * Universal hook for any quiz plugin to feed scores into FLOSC.
 	 *
-	 * @param int    $user_id WordPress user ID
-	 * @param string $quiz_id External quiz identifier
-	 * @param array  $score_data Score data with keys:
+	 * @param int    $user_id WordPress user ID.
+	 * @param string $quiz_id External quiz identifier.
+	 * @param array  $score_data Score data with keys:.
 	 *    - score: (int) Percentage score 0-100
 	 *    - correct_items: (array) IDs/names of correct answers
 	 *    - incorrect_items: (array) IDs/names of incorrect answers
@@ -159,8 +159,8 @@ class FLOSC_Bridge_Data_Manager {
 	/**
 	 * Handle LearnDash quiz completion
 	 *
-	 * @param array   $quiz_data LearnDash quiz data
-	 * @param WP_User $user User object
+	 * @param array   $quiz_data LearnDash quiz data.
+	 * @param WP_User $user User object.
 	 */
 	public function handle_learndash_quiz( $quiz_data, $user ) {
 		if ( ! $user || ! isset( $user->ID ) ) {
@@ -182,9 +182,9 @@ class FLOSC_Bridge_Data_Manager {
 	/**
 	 * Handle Tutor LMS quiz completion
 	 *
-	 * @param int $attempt_id Attempt ID
-	 * @param int $course_id Course ID
-	 * @param int $user_id User ID
+	 * @param int $attempt_id Attempt ID.
+	 * @param int $course_id Course ID.
+	 * @param int $user_id User ID.
 	 */
 	public function handle_tutor_quiz( $attempt_id, $course_id, $user_id ) {
 		if ( ! $user_id ) {
@@ -207,7 +207,7 @@ class FLOSC_Bridge_Data_Manager {
 	/**
 	 * Build item results array from quiz data
 	 *
-	 * @param array $quiz_result Raw quiz result
+	 * @param array $quiz_result Raw quiz result.
 	 * @return array Structured item results
 	 */
 	private function build_item_results( $quiz_result ) {
@@ -263,7 +263,7 @@ class FLOSC_Bridge_Data_Manager {
 	 * Maps lesson numbers to categories for weakness analysis.
 	 * Override this method or use filter for custom categorization.
 	 *
-	 * @param mixed $item Item ID, number, or structured analyze row
+	 * @param mixed $item Item ID, number, or structured analyze row.
 	 * @return string Category name
 	 */
 	private function get_item_category( $item ) {
@@ -300,9 +300,9 @@ class FLOSC_Bridge_Data_Manager {
 	 *
 	 * Stores quiz results in user meta and marks user as in bridge data state.
 	 *
-	 * @param int    $user_id WordPress user ID
-	 * @param string $quiz_id Quiz ID
-	 * @param array  $scoring_results Scoring data with keys:
+	 * @param int    $user_id WordPress user ID.
+	 * @param string $quiz_id Quiz ID.
+	 * @param array  $scoring_results Scoring data with keys:.
 	 *    - score: (int) Total score
 	 *    - percentage: (float) Percentage correct
 	 *    - correct_items: (array) IDs of correct answers
@@ -374,8 +374,8 @@ class FLOSC_Bridge_Data_Manager {
 	/**
 	 * Get bridge data for user and quiz
 	 *
-	 * @param int    $user_id WordPress user ID
-	 * @param string $quiz_id Quiz ID (optional, returns latest if not specified)
+	 * @param int    $user_id WordPress user ID.
+	 * @param string $quiz_id Quiz ID (optional, returns latest if not specified).
 	 * @return array|false Bridge data or false if not found
 	 */
 	public function get_flosc_bridge_data( $user_id, $quiz_id = null ) {
@@ -405,8 +405,8 @@ class FLOSC_Bridge_Data_Manager {
 	 *
 	 * Bridge state = took quiz + has profile + hasn't purchased
 	 *
-	 * @param int    $user_id WordPress user ID
-	 * @param string $quiz_id Quiz ID (optional)
+	 * @param int    $user_id WordPress user ID.
+	 * @param string $quiz_id Quiz ID (optional).
 	 * @return bool
 	 */
 	public function is_in_flosc_bridge_state( $user_id, $quiz_id = null ) {
@@ -434,7 +434,7 @@ class FLOSC_Bridge_Data_Manager {
 	/**
 	 * Check if user has any quiz profile
 	 *
-	 * @param int $user_id WordPress user ID
+	 * @param int $user_id WordPress user ID.
 	 * @return bool
 	 */
 	public function flosc_has_profile( $user_id ) {
@@ -449,8 +449,8 @@ class FLOSC_Bridge_Data_Manager {
 	/**
 	 * Get correct answers for display
 	 *
-	 * @param int    $user_id WordPress user ID
-	 * @param string $quiz_id Quiz ID
+	 * @param int    $user_id WordPress user ID.
+	 * @param string $quiz_id Quiz ID.
 	 * @return array Formatted correct items
 	 */
 	public function get_flosc_correct_answers( $user_id, $quiz_id = null ) {
@@ -475,8 +475,8 @@ class FLOSC_Bridge_Data_Manager {
 	/**
 	 * Get incorrect answers for display
 	 *
-	 * @param int    $user_id WordPress user ID
-	 * @param string $quiz_id Quiz ID
+	 * @param int    $user_id WordPress user ID.
+	 * @param string $quiz_id Quiz ID.
 	 * @return array Formatted incorrect items
 	 */
 	public function get_flosc_incorrect_answers( $user_id, $quiz_id = null ) {
@@ -501,8 +501,8 @@ class FLOSC_Bridge_Data_Manager {
 	/**
 	 * Get display text for an item
 	 *
-	 * @param mixed $item_id Item ID
-	 * @param bool  $correct Whether item was correct
+	 * @param mixed $item_id Item ID.
+	 * @param bool  $correct Whether item was correct.
 	 * @return string Display text
 	 */
 	private function get_item_display_text( $item_id, $correct ) {
@@ -528,8 +528,8 @@ class FLOSC_Bridge_Data_Manager {
 	 *
 	 * Analyzes all quiz results to find category with most incorrect answers.
 	 *
-	 * @param int    $user_id WordPress user ID
-	 * @param string $quiz_id Specific quiz (optional)
+	 * @param int    $user_id WordPress user ID.
+	 * @param string $quiz_id Specific quiz (optional).
 	 * @return string|null Category name or null
 	 */
 	public function get_flosc_weakest_category( $user_id, $quiz_id = null ) {
@@ -545,8 +545,8 @@ class FLOSC_Bridge_Data_Manager {
 	/**
 	 * Calculate weakest category from quiz results
 	 *
-	 * @param int    $user_id User ID
-	 * @param string $quiz_id Specific quiz (optional)
+	 * @param int    $user_id User ID.
+	 * @param string $quiz_id Specific quiz (optional).
 	 * @return string|null Weakest category
 	 */
 	private function calculate_weakest_category( $user_id, $quiz_id = null ) {
@@ -589,8 +589,8 @@ class FLOSC_Bridge_Data_Manager {
 	/**
 	 * Record when user views their bridge data
 	 *
-	 * @param int    $user_id WordPress user ID
-	 * @param string $quiz_id Quiz ID
+	 * @param int    $user_id WordPress user ID.
+	 * @param string $quiz_id Quiz ID.
 	 * @return bool
 	 */
 	public function flosc_record_bridge_viewed( $user_id, $quiz_id = 'default' ) {
@@ -609,7 +609,7 @@ class FLOSC_Bridge_Data_Manager {
 	/**
 	 * Get all quizzes user has completed
 	 *
-	 * @param int $user_id WordPress user ID
+	 * @param int $user_id WordPress user ID.
 	 * @return array Quiz IDs with scores and dates
 	 */
 	public function get_flosc_completed_quizzes( $user_id ) {
@@ -629,7 +629,7 @@ class FLOSC_Bridge_Data_Manager {
 	/**
 	 * Get summary statistics for user
 	 *
-	 * @param int $user_id User ID
+	 * @param int $user_id User ID.
 	 * @return array Summary stats
 	 */
 	public function get_flosc_user_summary( $user_id ) {
@@ -670,7 +670,7 @@ class FLOSC_Bridge_Data_Manager {
 	/**
 	 * Clear bridge data state (after purchase)
 	 *
-	 * @param int $user_id User ID
+	 * @param int $user_id User ID.
 	 * @return bool
 	 */
 	public function clear_bridge_state( $user_id ) {

@@ -7,6 +7,8 @@
  * encrypted JSON) or verified legacy form IPN — never on redirect alone.
  *
  * @since 7.0.7
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

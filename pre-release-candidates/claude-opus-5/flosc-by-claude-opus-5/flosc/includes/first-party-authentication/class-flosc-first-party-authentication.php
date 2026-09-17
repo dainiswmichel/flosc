@@ -4,6 +4,7 @@
  *
  * @package FLOSC
  */
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -400,8 +401,8 @@ class FLOSC_First_Party_Authentication {
 	 * Generate a FLOSC auth token for the given user.
 	 * Token is stateless — no database storage needed.
 	 *
-	 * @param int $user_id WordPress user ID
-	 * @param int $ttl Token lifetime in seconds (default: 24 hours)
+	 * @param int $user_id WordPress user ID.
+	 * @param int $ttl Token lifetime in seconds (default: 24 hours).
 	 * @return string Base64-encoded token
 	 */
 	public function generate_flosc_auth_token( $user_id, $ttl = DAY_IN_SECONDS ) {
@@ -482,7 +483,7 @@ class FLOSC_First_Party_Authentication {
 	/**
 	 * Validate a FLOSC auth token and return the user ID.
 	 *
-	 * @param string $token Base64-encoded token
+	 * @param string $token Base64-encoded token.
 	 * @return int|false User ID if valid, false otherwise
 	 */
 	public function validate_flosc_auth_token( $token ) {
@@ -552,8 +553,8 @@ class FLOSC_First_Party_Authentication {
 	 * Do not use get_app_url() host: that can point at a different flow
 	 * domain than the current request and the browser will reject the cookie.
 	 *
-	 * @param string $token The auth token
-	 * @param int    $ttl Lifetime in seconds
+	 * @param string $token The auth token.
+	 * @param int    $ttl Lifetime in seconds.
 	 */
 	public function set_flosc_auth_cookie( $token, $ttl = DAY_IN_SECONDS ) {
 		if ( headers_sent() ) {
@@ -582,7 +583,7 @@ class FLOSC_First_Party_Authentication {
 	 * 1. X-FLOSC-Token request header (for API calls from JS)
 	 * 2. flosc_auth_token cookie (for page loads on custom domains)
 	 *
-	 * @param int $user_id Current user ID (0 if not authenticated)
+	 * @param int $user_id Current user ID (0 if not authenticated).
 	 * @return int Authenticated user ID
 	 */
 	public function authenticate_flosc_token( $user_id ) {
@@ -763,7 +764,7 @@ class FLOSC_First_Party_Authentication {
 	 * By returning true at priority 99, rest_cookie_check_errors receives
 	 * a non-empty $result and short-circuits without checking the nonce.
 	 *
-	 * @param WP_Error|null|true $result Current auth result
+	 * @param WP_Error|null|true $result Current auth result.
 	 * @return WP_Error|null|true Modified auth result
 	 */
 	public function allow_flosc_token_auth( $result ) {

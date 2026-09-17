@@ -13,6 +13,8 @@
  *       'banner' => ['enabled'=>false],
  *       ...
  *   ]
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

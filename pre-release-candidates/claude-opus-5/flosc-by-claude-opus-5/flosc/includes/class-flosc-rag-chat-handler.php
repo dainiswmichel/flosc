@@ -26,10 +26,10 @@ class FLOSC_RAG_Chat_Handler {
 	/**
 	 * Handle chat with state object (v1.9.0)
 	 *
-	 * @param string             $flosc_message User's message
-	 * @param FLOSC_User_Session $flosc_user_session User session with full context
-	 * @param int|null           $flosc_session_id Session ID for conversation history
-	 * @param string|null        $flosc_chatpack_prompt v1.9.2: Optional chatpack system prompt (overrides internal builder)
+	 * @param string             $flosc_message User's message.
+	 * @param FLOSC_User_Session $flosc_user_session User session with full context.
+	 * @param int|null           $flosc_session_id Session ID for conversation history.
+	 * @param string|null        $flosc_chatpack_prompt v1.9.2: Optional chatpack system prompt (overrides internal builder).
 	 * @return array Response with content and autoprompts
 	 */
 	public function flosc_handle_with_state( $flosc_message, $flosc_user_session, $flosc_session_id = null, $flosc_chatpack_prompt = null, $flosc_conv_history = null ) {
@@ -231,10 +231,10 @@ class FLOSC_RAG_Chat_Handler {
 	/**
 	 * Execute RAG loop with tools
 	 *
-	 * @param string             $flosc_message User message
-	 * @param string             $flosc_system_prompt System prompt
-	 * @param array              $flosc_history Conversation history
-	 * @param array              $flosc_tools Available tools
+	 * @param string             $flosc_message User message.
+	 * @param string             $flosc_system_prompt System prompt.
+	 * @param array              $flosc_history Conversation history.
+	 * @param array              $flosc_tools Available tools.
 	 * @param FLOSC_User_Session $flosc_user_session
 	 * @return string AI response
 	 */

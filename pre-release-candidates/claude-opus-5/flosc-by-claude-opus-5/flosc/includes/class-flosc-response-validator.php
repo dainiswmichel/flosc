@@ -22,8 +22,8 @@ class FLOSC_Response_Validator {
 	/**
 	 * Validate AI response
 	 *
-	 * @param string $flosc_response AI response text
-	 * @param array  $flosc_tool_calls_made Tools that were called
+	 * @param string $flosc_response AI response text.
+	 * @param array  $flosc_tool_calls_made Tools that were called.
 	 * @return array Validation result
 	 */
 	public function flosc_validate( $flosc_response, $flosc_tool_calls_made = array() ) {

@@ -10,6 +10,8 @@
  * Both are loaded into the system prompt via build_feedback_prompt().
  *
  * Included from settings.php within the Chat Logs tab.
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

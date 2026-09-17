@@ -1410,8 +1410,8 @@ trait FLOSC_Admin_Trait {
 	 *
 	 * Usage: [flosc_member_only fallback="Upgrade to unlock"]Content here[/flosc_member_only]
 	 *
-	 * @param array  $atts Shortcode attributes (fallback message)
-	 * @param string $content Shortcode content
+	 * @param array  $atts Shortcode attributes (fallback message).
+	 * @param string $content Shortcode content.
 	 * @return string
 	 */
 	public function shortcode_member_only( $atts, $content = '' ) {
@@ -1959,7 +1959,7 @@ trait FLOSC_Admin_Trait {
 	 * Extract CSS variables from stylesheet content
 	 * Returns the inner content of :root { } block
 	 *
-	 * @param string $css_content Raw CSS file content
+	 * @param string $css_content Raw CSS file content.
 	 * @return string Variable declarations or empty string
 	 */
 	private function extract_css_variables( $css_content ) {

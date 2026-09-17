@@ -3,6 +3,8 @@
  * FLOSC Flow Edit Page
  *
  * v1.2.2: Create/edit a single flow
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

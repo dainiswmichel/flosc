@@ -467,7 +467,7 @@ if ( ! function_exists( 'flosc_get_provider_api_key' ) ) {
 
 if ( ! function_exists( 'flosc_admin_save_available_providers' ) ) {
 	/**
-	 * admin-post.php?action=flosc_save_available_providers
+	 * Admin-post.php?action=flosc_save_available_providers
 	 *
 	 * @return void
 	 */

@@ -2,6 +2,8 @@
 /**
  * FLOSC Pronunciation Analyzer
  * Compares transcript to expected text and identifies errors
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

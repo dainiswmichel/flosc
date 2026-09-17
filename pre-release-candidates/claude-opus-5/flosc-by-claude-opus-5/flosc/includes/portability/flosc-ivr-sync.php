@@ -1018,9 +1018,9 @@ function flosc_flow_load_runtime_triplet( $flow_key = null ) {
  * v9.2.2: IVR Database Integration
  * v1.6.4: Added $custom_ivr_file and $flow_key params for per-flow storage
  *
- * @param bool        $preview_only If true, returns preview without making changes
- * @param string|null $custom_ivr_file Optional path to IVR file (defaults to flosc_default_technical_ivr.md)
- * @param string|null $flow_key Optional per-flow option key (e.g. 'flosc_flow_flosc_default_ivr')
+ * @param bool        $preview_only If true, returns preview without making changes.
+ * @param string|null $custom_ivr_file Optional path to IVR file (defaults to flosc_default_technical_ivr.md).
+ * @param string|null $flow_key Optional per-flow option key (e.g. 'flosc_flow_flosc_default_ivr').
  * @return array Result with success, stats, message, and preview data
  */
 function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file = null, $flow_key = null, $mode = 'merge' ) {
@@ -1362,7 +1362,7 @@ function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file =
  * Create timestamped backup of current IVR database state
  * v1.6.4: Added $flow_key param for per-flow storage
  *
- * @param string|null $flow_key Optional per-flow option key
+ * @param string|null $flow_key Optional per-flow option key.
  * @return string|false Backup filename on success, false on failure
  */
 function flosc_export_ivr_backup( $flow_key = null ) {

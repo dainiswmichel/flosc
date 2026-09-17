@@ -293,7 +293,7 @@ class FLOSC_Lesson_Manager {
 	/**
 	 * Get lessons that match quiz results (missed items)
 	 *
-	 * @param array $missed_items Items the user got wrong
+	 * @param array $missed_items Items the user got wrong.
 	 * @return array Matching lessons
 	 */
 	public function get_lessons_for_missed_items( $missed_items ) {

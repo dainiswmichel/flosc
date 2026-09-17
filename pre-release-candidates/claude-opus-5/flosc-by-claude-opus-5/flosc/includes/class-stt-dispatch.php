@@ -2,6 +2,8 @@
 /**
  * FLOSC STT Dispatch
  * Supports: AssemblyAI, OpenAI Whisper, Custom Endpoint
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

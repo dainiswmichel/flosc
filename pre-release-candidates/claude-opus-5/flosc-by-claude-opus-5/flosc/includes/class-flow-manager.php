@@ -4,6 +4,8 @@
  *
  * v1.2.2: Handles CRUD operations for FLOSC Flows
  * Enables multiple independent chatbots from a single WordPress installation
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -475,11 +477,11 @@ class FLOSC_Flow_Manager {
 	 * Get setting value with flow override support
 	 * v1.2.3: Checks flow override first, falls back to global option
 	 *
-	 * @param string      $option_name The wp_options key
-	 * @param string      $override_group Which override group (style, ai, email, etc.)
-	 * @param string      $override_key Key within the override group (optional, defaults to option_name)
-	 * @param mixed       $default Default value if neither found
-	 * @param string|null $flow_id Flow ID (null = use current flow)
+	 * @param string      $option_name The wp_options key.
+	 * @param string      $override_group Which override group (style, ai, email, etc.).
+	 * @param string      $override_key Key within the override group (optional, defaults to option_name).
+	 * @param mixed       $default Default value if neither found.
+	 * @param string|null $flow_id Flow ID (null = use current flow).
 	 * @return mixed The setting value
 	 */
 	public function get_setting( $option_name, $override_group, $override_key = null, $default = null, $flow_id = null ) {
@@ -523,10 +525,10 @@ class FLOSC_Flow_Manager {
 	 * Update flow override settings
 	 * v1.2.3: Sets override values for a specific group
 	 *
-	 * @param string $flow_id The flow ID
-	 * @param string $override_group Which override group (style, ai, email, etc.)
-	 * @param array  $values The settings values
-	 * @param bool   $use_global Whether to use global settings
+	 * @param string $flow_id The flow ID.
+	 * @param string $override_group Which override group (style, ai, email, etc.).
+	 * @param array  $values The settings values.
+	 * @param bool   $use_global Whether to use global settings.
 	 * @return bool|WP_Error
 	 */
 	public function update_override( $flow_id, $override_group, $values, $use_global = false ) {

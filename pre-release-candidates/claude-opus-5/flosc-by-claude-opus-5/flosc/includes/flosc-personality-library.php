@@ -2167,7 +2167,7 @@ if ( ! function_exists( 'flosc_flow_public_tagline' ) ) {
 
 if ( ! function_exists( 'flosc_admin_save_personality_library' ) ) {
 	/**
-	 * admin-post.php?action=flosc_save_personality_library
+	 * Admin-post.php?action=flosc_save_personality_library
 	 *
 	 * @return void
 	 */
@@ -2971,7 +2971,7 @@ if ( ! function_exists( 'flosc_render_ai_tab_nav' ) ) {
 	/**
 	 * This flow / All Flows buttons on the AI tab.
 	 *
-	 * @param string $current_view single|all
+	 * @param string $current_view single|all.
 	 * @param string $ivr          Optional current IVR filename.
 	 * @return void
 	 */

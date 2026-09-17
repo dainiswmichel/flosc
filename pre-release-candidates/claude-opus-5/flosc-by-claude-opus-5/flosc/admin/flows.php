@@ -2,6 +2,8 @@
 /**
  * FLOSC Flows Overview Page
  * v1.2.5: Simple list of flows with quick actions
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

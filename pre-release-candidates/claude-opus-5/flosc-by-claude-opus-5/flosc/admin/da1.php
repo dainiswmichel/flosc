@@ -15,6 +15,8 @@
  * - Required control columns with safe defaults
  * - Status model: active / paused
  * - Upload and export catalog actions
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

@@ -16,6 +16,8 @@
  *   trigger_value — offer_id (for offer), action key (for action), empty for ai
  *   conditions    — when to show (is_visitor, is_guest, is_member, custom expression)
  *   style         — pill | button | chip
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

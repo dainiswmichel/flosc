@@ -8,6 +8,8 @@
  * language as Offers (FLOSC_Condition_Evaluator).
  *
  * Not: offer builder (→ Offers). Not: letter body editor (→ Email). Not: F→L→O→S→C map (→ Flow).
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

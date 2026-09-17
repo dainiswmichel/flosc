@@ -20,6 +20,8 @@
  * v1.4.7: Simplified meta box — single override checkbox
  *
  * @since 1.0.1
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -573,8 +575,8 @@ class FLOSC_Content_Protection {
 	/**
 	 * Apply visibility tier to content
 	 *
-	 * @param string $content Full content
-	 * @param string $visibility 'hidden' | 'teaser' | 'preview' | 'public'
+	 * @param string $content Full content.
+	 * @param string $visibility 'hidden' | 'teaser' | 'preview' | 'public'.
 	 * @param int    $post_id
 	 * @return string Filtered content
 	 */
@@ -725,7 +727,7 @@ class FLOSC_Content_Protection {
 	 * Get CTA to chatbot with tracking
 	 * v1.4.3: Added post tracking for chat context
 	 *
-	 * @param int $post_id Optional post ID for tracking
+	 * @param int $post_id Optional post ID for tracking.
 	 * @return string
 	 */
 	private function get_chatbot_cta( $post_id = null ) {
@@ -813,7 +815,7 @@ class FLOSC_Content_Protection {
 	 * Set category as protected
 	 *
 	 * @param int    $category_id
-	 * @param string $required_level Optional membership level required
+	 * @param string $required_level Optional membership level required.
 	 * @return bool
 	 */
 	public function protect_category( $category_id, $required_level = null ) {
@@ -843,7 +845,7 @@ class FLOSC_Content_Protection {
 	 * Set post visibility
 	 *
 	 * @param int    $post_id
-	 * @param string $visibility 'hidden' | 'teaser' | 'preview' | 'public'
+	 * @param string $visibility 'hidden' | 'teaser' | 'preview' | 'public'.
 	 * @return bool
 	 */
 	public function set_post_visibility( $post_id, $visibility ) {

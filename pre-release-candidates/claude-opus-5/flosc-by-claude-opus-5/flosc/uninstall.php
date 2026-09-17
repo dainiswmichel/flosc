@@ -5,6 +5,8 @@
  * Runs only when the plugin is deleted from WordPress admin.
  * Keep this fast and dependency-free so Delete can finish removing plugins/flosc/.
  * Do not load the main plugin, loop all users/posts, or call optional helpers.
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {

@@ -24,8 +24,8 @@ class FLOSC_RAG_Access_Controller {
 	/**
 	 * Execute tool with access control (deny-by-default)
 	 *
-	 * @param string $flosc_tool_name Tool to execute
-	 * @param array  $flosc_args Tool arguments
+	 * @param string $flosc_tool_name Tool to execute.
+	 * @param array  $flosc_args Tool arguments.
 	 * @return mixed Tool result or denial payload
 	 */
 	public function flosc_execute_tool( $flosc_tool_name, $flosc_args ) {

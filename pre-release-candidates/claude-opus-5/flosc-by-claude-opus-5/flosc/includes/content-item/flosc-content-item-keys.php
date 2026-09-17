@@ -132,7 +132,7 @@ function flosc_content_item_canonical_option_key( $key ) {
 }
 
 /**
- * get_user_meta with legacy freeline meta fallback.
+ * Get_user_meta with legacy freeline meta fallback.
  *
  * @param int    $user_id
  * @param string $new_key Canonical meta key.
@@ -159,7 +159,7 @@ function flosc_content_item_get_user_meta( $user_id, $new_key, $single = true ) 
 }
 
 /**
- * update_user_meta for freeline state (writes new key only).
+ * Update_user_meta for freeline state (writes new key only).
  *
  * @param int    $user_id
  * @param string $new_key

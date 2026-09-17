@@ -48,7 +48,7 @@ class LinkedIn_Provider extends SSO_Provider_Base {
 	/**
 	 * Get user info from LinkedIn
 	 *
-	 * @param string $access_token OAuth access token
+	 * @param string $access_token OAuth access token.
 	 * @return array|WP_Error User data or error
 	 */
 	public function get_user_info( $access_token, $token_data = array() ) {
@@ -83,7 +83,7 @@ class LinkedIn_Provider extends SSO_Provider_Base {
 	/**
 	 * Normalize LinkedIn user data to standard format
 	 *
-	 * @param array $raw_data Raw user data from LinkedIn
+	 * @param array $raw_data Raw user data from LinkedIn.
 	 * @return array Normalized user data
 	 */
 	protected function normalize_user_data( $raw_data ) {
@@ -109,7 +109,7 @@ class LinkedIn_Provider extends SSO_Provider_Base {
 	/**
 	 * Get provider-specific user ID
 	 *
-	 * @param array $raw_data Raw user data
+	 * @param array $raw_data Raw user data.
 	 * @return string Provider user ID
 	 */
 	public function get_provider_user_id( $raw_data ) {

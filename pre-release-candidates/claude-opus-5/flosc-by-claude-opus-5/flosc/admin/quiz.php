@@ -6,6 +6,8 @@
  *
  * v4.0.2: Stripped dead weight; added per-card inline edit panel + demo library
  *         with Load → buttons that fill the editor directly.
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

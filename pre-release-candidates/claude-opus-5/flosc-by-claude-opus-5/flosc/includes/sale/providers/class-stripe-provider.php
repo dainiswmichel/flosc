@@ -3,6 +3,8 @@
  * FLOSC Stripe Payment Provider
  *
  * Handles traditional card payments and subscriptions via Stripe.
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

@@ -82,9 +82,9 @@ class FLOSC_Chatpack {
 	 *
 	 * Generated once per session. The flosc_hash must be passed in.
 	 *
-	 * @param string   $flosc_hash The parent FLOSC installation hash
-	 * @param int      $user_id WordPress user ID (0 for visitors)
-	 * @param int|null $session_id FLOSC session ID
+	 * @param string   $flosc_hash The parent FLOSC installation hash.
+	 * @param int      $user_id WordPress user ID (0 for visitors).
+	 * @param int|null $session_id FLOSC session ID.
 	 * @return string Session hash
 	 * @since 1.9.4
 	 */
@@ -112,8 +112,8 @@ class FLOSC_Chatpack {
 	 * Count message pairs from stored session data (backend-authoritative).
 	 * One pair = user message + assistant response.
 	 *
-	 * @param int $session_id FLOSC session ID
-	 * @param int $user_id WordPress user ID
+	 * @param int $session_id FLOSC session ID.
+	 * @param int $user_id WordPress user ID.
 	 * @return int Number of completed pairs before this message
 	 */
 	public static function count_message_pairs( $session_id, $user_id, $flow_id = '', $session_id_raw = '' ) {
@@ -160,9 +160,9 @@ class FLOSC_Chatpack {
 	 * Load conversation history from stored session (for dispatch path).
 	 * RAG handler has its own loader; this gives dispatch parity.
 	 *
-	 * @param int $session_id FLOSC session ID
-	 * @param int $user_id WordPress user ID
-	 * @param int $max_messages Maximum messages to return (default 10)
+	 * @param int $session_id FLOSC session ID.
+	 * @param int $user_id WordPress user ID.
+	 * @param int $max_messages Maximum messages to return (default 10).
 	 * @return array Messages in [role, content] format for AI API
 	 */
 	public static function load_conversation_history( $session_id, $user_id, $max_messages = 10, $flow_id = '', $session_id_raw = '' ) {
@@ -224,8 +224,8 @@ class FLOSC_Chatpack {
 	/**
 	 * Detect if this is the first message in a session.
 	 *
-	 * @param int $session_id FLOSC session ID
-	 * @param int $user_id WordPress user ID
+	 * @param int $session_id FLOSC session ID.
+	 * @param int $user_id WordPress user ID.
 	 * @return bool True if no prior messages exist
 	 */
 	public static function is_first_message( $session_id, $user_id, $flow_id = '' ) {
@@ -236,13 +236,13 @@ class FLOSC_Chatpack {
 	 * Build the FULL chatpack for first-contact messages.
 	 * This is the comprehensive system prompt sent on message #1.
 	 *
-	 * @param string      $phase Current FLOSC phase
-	 * @param array       $eval_context Backend-authoritative evaluation context
-	 * @param string      $flow_id Current flow ID
-	 * @param string      $flosc_hash Permanent installation hash (FLOSC-HASH)
-	 * @param string      $session_hash Generated session hash (FLOSC-SESSION)
-	 * @param int         $pair_number Current message pair number (1-based)
-	 * @param string|null $ivr_guidance IVR scripted response (if matched)
+	 * @param string      $phase Current FLOSC phase.
+	 * @param array       $eval_context Backend-authoritative evaluation context.
+	 * @param string      $flow_id Current flow ID.
+	 * @param string      $flosc_hash Permanent installation hash (FLOSC-HASH).
+	 * @param string      $session_hash Generated session hash (FLOSC-SESSION).
+	 * @param int         $pair_number Current message pair number (1-based).
+	 * @param string|null $ivr_guidance IVR scripted response (if matched).
 	 * @return string Complete system prompt
 	 * @since 1.9.4: Added flosc_hash parameter, session_hash now second
 	 */
@@ -282,12 +282,12 @@ class FLOSC_Chatpack {
 	 * Build the SLIM follow-up prompt for subsequent messages.
 	 * Only includes changed state + session reference.
 	 *
-	 * @param string      $phase Current FLOSC phase
-	 * @param array       $eval_context Backend-authoritative evaluation context
-	 * @param string      $session_hash Same session hash as first message
-	 * @param int         $pair_number Current message pair number
-	 * @param string|null $ivr_guidance IVR scripted response (if matched)
-	 * @param string|null $previous_phase Phase from previous message (for change detection)
+	 * @param string      $phase Current FLOSC phase.
+	 * @param array       $eval_context Backend-authoritative evaluation context.
+	 * @param string      $session_hash Same session hash as first message.
+	 * @param int         $pair_number Current message pair number.
+	 * @param string|null $ivr_guidance IVR scripted response (if matched).
+	 * @param string|null $previous_phase Phase from previous message (for change detection).
 	 * @return string Slim follow-up system prompt
 	 */
 	public static function build_followup_chatpack( $phase, $eval_context, $session_hash, $pair_number, $ivr_guidance = null, $previous_phase = null ) {

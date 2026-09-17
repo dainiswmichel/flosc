@@ -167,9 +167,9 @@ abstract class SSO_Provider_Base {
 	 * v1.4.9: Set flow-specific credentials (overrides global options)
 	 * Called at runtime when we know which flow triggered the SSO login.
 	 *
-	 * @param string $client_id Flow-specific Client ID
-	 * @param string $client_secret Flow-specific Client Secret
-	 * @param bool   $enabled Whether this provider is enabled for this flow
+	 * @param string $client_id Flow-specific Client ID.
+	 * @param string $client_secret Flow-specific Client Secret.
+	 * @param bool   $enabled Whether this provider is enabled for this flow.
 	 */
 	public function set_flow_credentials( $client_id, $client_secret, $enabled = true ) {
 		$this->client_id            = $client_id;
@@ -181,8 +181,8 @@ abstract class SSO_Provider_Base {
 	/**
 	 * Get OAuth2 authorization URL
 	 *
-	 * @param string $state CSRF protection state
-	 * @param string $redirect_uri Callback URL
+	 * @param string $state CSRF protection state.
+	 * @param string $redirect_uri Callback URL.
 	 * @return string
 	 */
 	public function get_authorization_url( $state, $redirect_uri ) {
@@ -203,7 +203,7 @@ abstract class SSO_Provider_Base {
 	/**
 	 * Customize authorization parameters (override in subclasses)
 	 *
-	 * @param array $params Default parameters
+	 * @param array $params Default parameters.
 	 * @return array Modified parameters
 	 */
 	protected function customize_auth_params( $params ) {
@@ -213,8 +213,8 @@ abstract class SSO_Provider_Base {
 	/**
 	 * Exchange authorization code for access token
 	 *
-	 * @param string $code Authorization code
-	 * @param string $redirect_uri Callback URL
+	 * @param string $code Authorization code.
+	 * @param string $redirect_uri Callback URL.
 	 * @return array|WP_Error Token data or error
 	 */
 	public function exchange_code_for_token( $code, $redirect_uri ) {
@@ -266,8 +266,8 @@ abstract class SSO_Provider_Base {
 	/**
 	 * Get user info from provider
 	 *
-	 * @param string $access_token OAuth access token
-	 * @param array  $token_data   Full token response (needed by Apple for id_token)
+	 * @param string $access_token OAuth access token.
+	 * @param array  $token_data   Full token response (needed by Apple for id_token).
 	 * @return array|WP_Error User data or error
 	 */
 	public function get_user_info( $access_token, $token_data = array() ) {
@@ -302,7 +302,7 @@ abstract class SSO_Provider_Base {
 	 * Normalize user data to standard format
 	 * Override in each provider to map provider-specific fields
 	 *
-	 * @param array $raw_data Raw user data from provider
+	 * @param array $raw_data Raw user data from provider.
 	 * @return array Normalized user data with standard keys
 	 */
 	abstract protected function normalize_user_data( $raw_data );
@@ -310,7 +310,7 @@ abstract class SSO_Provider_Base {
 	/**
 	 * Get provider-specific user ID from raw data
 	 *
-	 * @param array $raw_data Raw user data
+	 * @param array $raw_data Raw user data.
 	 * @return string Provider user ID
 	 */
 	abstract public function get_provider_user_id( $raw_data );

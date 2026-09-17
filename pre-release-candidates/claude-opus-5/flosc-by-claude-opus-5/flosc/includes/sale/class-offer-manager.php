@@ -7,6 +7,8 @@
  * - Subscriptions (monthly, yearly)
  * - Token/Credit packs
  * - Hybrid offers
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

@@ -9,6 +9,8 @@
  *         Removed hardcoded default prompts (floscAdmin configures all)
  *         Added provider-aware show/hide for API key sections
  *         Cleaned up unbuilt feature UI
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

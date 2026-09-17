@@ -8,6 +8,8 @@
  *
  * @since 9.1.6
  * @updated 1.0.0 - Added safeguards to prevent affecting non-FLOSC content
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -38,7 +40,7 @@ class flosc_content_filter {
 	 * CRITICAL: Only processes content that contains FLOSC-specific markers.
 	 * Regular WordPress posts are returned unchanged immediately.
 	 *
-	 * @param string $content Post content from WordPress
+	 * @param string $content Post content from WordPress.
 	 * @return string Filtered content (or original if no FLOSC markers)
 	 */
 	public function apply_content_filter( $content ) {
@@ -138,8 +140,8 @@ class flosc_content_filter {
 	 * Filter markdown content by access level
 	 * Looks for ### ACCESS LEVEL: VISITOR/GUEST/MEMBER markers
 	 *
-	 * @param string $content Raw markdown content
-	 * @param string $access_level 'visitor', 'guest', or 'member'
+	 * @param string $content Raw markdown content.
+	 * @param string $access_level 'visitor', 'guest', or 'member'.
 	 * @return string Filtered content
 	 */
 	public function filter_markdown_by_access( $content, $access_level ) {
@@ -220,8 +222,8 @@ class flosc_content_filter {
 	/**
 	 * Check if user has access to content requiring specific level
 	 *
-	 * @param string $required_level Level required for content
-	 * @param string $user_level User's current level
+	 * @param string $required_level Level required for content.
+	 * @param string $user_level User's current level.
 	 * @return bool
 	 */
 	public function has_access( $required_level, $user_level ) {
@@ -242,7 +244,7 @@ class flosc_content_filter {
 	 * Handles <!--flosc_read_more--> tag for member-only content
 	 * Uses custom tag to avoid conflicts with WordPress core <!--more-->
 	 *
-	 * @param string $content Post content
+	 * @param string $content Post content.
 	 * @param string $access_level
 	 * @return string Filtered content
 	 */
@@ -285,7 +287,7 @@ class flosc_content_filter {
 	 *
 	 * @param string $content
 	 * @param string $query
-	 * @param int    $context_chars Number of characters of context
+	 * @param int    $context_chars Number of characters of context.
 	 * @return string
 	 */
 	public function extract_relevant_section( $content, $query, $context_chars = 500 ) {
@@ -320,7 +322,7 @@ class flosc_content_filter {
 	 * Get excerpt from content
 	 *
 	 * @param string $content
-	 * @param int    $length Word count
+	 * @param int    $length Word count.
 	 * @return string
 	 */
 	public function get_excerpt( $content, $length = 50 ) {

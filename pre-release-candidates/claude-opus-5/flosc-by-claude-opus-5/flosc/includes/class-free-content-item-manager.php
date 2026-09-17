@@ -22,6 +22,8 @@
  * 6. Delivers WordPress post with _flosc_lesson_number from the configured category
  *
  * @since 9.1.8
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -50,8 +52,8 @@ class FLOSC_Free_Content_Item_Manager {
 	 * v3.0.0: Now quiz-aware — reads quiz_id from $quiz_result to resolve
 	 * the correct lesson category via the flow's content_item_groups config.
 	 *
-	 * @param array $quiz_result Quiz results with score, answers, quiz_id
-	 * @param int   $user_id    User ID
+	 * @param array $quiz_result Quiz results with score, answers, quiz_id.
+	 * @param int   $user_id    User ID.
 	 * @return array|void Selected lesson numbers, or void if no lessons needed
 	 */
 	public function handle_quiz_completion( $quiz_result, $user_id ) {
@@ -448,7 +450,7 @@ class FLOSC_Free_Content_Item_Manager {
 	 * v3.0.0: Searches the current flow's content_item_groups array for a matching
 	 * quiz_id → category mapping. Falls back to legacy content_item_category.
 	 *
-	 * @param string $quiz_id The quiz ID to look up (e.g., "flosc_sample_data_numbers_quiz")
+	 * @param string $quiz_id The quiz ID to look up (e.g., "flosc_sample_data_numbers_quiz").
 	 * @return string Category slug, or empty string if not found
 	 */
 	private function resolve_category_for_quiz( $quiz_id ) {
@@ -495,8 +497,8 @@ class FLOSC_Free_Content_Item_Manager {
 	 * v3.0.0: Quiz-aware — resolves category from content_item_groups
 	 * v1.4.4: Fallback to common slug patterns
 	 *
-	 * @param int    $lesson_num Lesson number to find
-	 * @param string $quiz_id    Optional quiz ID for category resolution
+	 * @param int    $lesson_num Lesson number to find.
+	 * @param string $quiz_id    Optional quiz ID for category resolution.
 	 * @return WP_Post|null
 	 */
 	private function find_lesson_post( $lesson_num, $quiz_id = '' ) {
@@ -656,7 +658,7 @@ class FLOSC_Free_Content_Item_Manager {
 	 * v1.5.4: Supports multiple lessons
 	 *
 	 * @param int    $user_id
-	 * @param string $delivery_mode 'chat' or 'redirect'
+	 * @param string $delivery_mode 'chat' or 'redirect'.
 	 * @return array Response data
 	 */
 	public function deliver_free_lesson( $user_id, $delivery_mode = 'chat' ) {

@@ -12,6 +12,8 @@
  * License URI: https://www.gnu.org/licenses/gpl-3.0.html
  * Text Domain: flosc
  * Domain Path: /languages
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -345,7 +347,7 @@ function flosc_michel_timestamp_global() {
 /**
  * Friendly display names for shipped sample IVR stems (Identity / sidebar).
  *
- * @param string $ivr_filename_or_stem e.g. flosc_default_technical_ivr.md
+ * @param string $ivr_filename_or_stem e.g. flosc_default_technical_ivr.md.
  * @return string Empty if not a known shipped sample (caller falls back).
  */
 function flosc_shipped_flow_display_name( $ivr_filename_or_stem ) {
@@ -1785,7 +1787,7 @@ class FLOSC_Framework {
 	 *
 	 * v9.4.2: Uses signed cookies to prevent score forgery
 	 *
-	 * @param array $data Score data with source, quiz_id, score, user_id, timestamp
+	 * @param array $data Score data with source, quiz_id, score, user_id, timestamp.
 	 */
 	public function capture_external_quiz_score( $data ) {
 		$user_id = $data['user_id'] ?? get_current_user_id();
@@ -3987,9 +3989,9 @@ The Team',
 	/**
 	 * v1.2.4: Get a setting value, checking flow-specific first, then global
 	 *
-	 * @param string $key Setting key (without 'flosc_' prefix)
-	 * @param mixed $default Default if neither flow nor global has value
-	 * @param string|null $flow_id Force specific flow (null = auto-detect current)
+	 * @param string $key Setting key (without 'flosc_' prefix).
+	 * @param mixed $default Default if neither flow nor global has value.
+	 * @param string|null $flow_id Force specific flow (null = auto-detect current).
 	 * @return mixed The setting value
 	 */
 	public function get_setting( $key, $default = '', $flow_id = null ) {
@@ -8823,7 +8825,7 @@ Example good response:
 	 *
 	 * @param int    $user_id
 	 * @param string $flow_stem
-	 * @param array  $args {
+	 * @param array  $args {.
 	 *     @type bool $allow_guest_grant_without_session Apply V→G without visitor cookie.
 	 *     @type bool $consume_event_transients          Clear justLoggedIn etc. (page paint only).
 	 * }
@@ -9965,8 +9967,8 @@ Example good response:
 	 *   4. Fires flosc_quiz_completed hook (triggers Free Lesson Manager)
 	 *   5. Sends score email
 	 *
-	 * @param int    $user_id     WordPress user ID
-	 * @param string $session_id  Michel-timestamped session ID from DO
+	 * @param int    $user_id     WordPress user ID.
+	 * @param string $session_id  Michel-timestamped session ID from DO.
 	 * @return bool  True on success, false on failure
 	 */
 	private function pull_session_from_do( $user_id, $session_id ) {
@@ -10273,8 +10275,8 @@ Example good response:
 	 * NOTE: Primary path is store_browser_quiz_data(); this method is a fallback.
 	 * This method is retained as a fallback for the /score-pending-audio endpoint.
 	 *
-	 * @param int    $user_id  The newly registered user's ID
-	 * @param string $temp_id  The Michel-timestamp tempID from the signed cookie
+	 * @param int    $user_id  The newly registered user's ID.
+	 * @param string $temp_id  The Michel-timestamp tempID from the signed cookie.
 	 * @return array|false     score_data array on success, false on failure
 	 */
 	public function score_visitor_audio( $user_id, $temp_id ) {
@@ -13730,7 +13732,7 @@ Example good response:
 	 * Extract CSS variables from stylesheet content
 	 * Returns the inner content of :root { } block
 	 *
-	 * @param string $css_content Raw CSS file content
+	 * @param string $css_content Raw CSS file content.
 	 * @return string Variable declarations or empty string
 	 */
 	private function extract_css_variables( $css_content ) {
@@ -13841,9 +13843,9 @@ add_action( 'plugins_loaded', 'flosc' );
  * Usage: flosc_get_setting('ai_provider', 'ivr')
  * Checks: flow[$key] → get_option('flosc_' . $key) → $default
  *
- * @param string $key Setting key (without 'flosc_' prefix)
- * @param mixed $default Default if neither flow nor global has value
- * @param string|null $flow_id Force specific flow (null = auto-detect)
+ * @param string $key Setting key (without 'flosc_' prefix).
+ * @param mixed $default Default if neither flow nor global has value.
+ * @param string|null $flow_id Force specific flow (null = auto-detect).
  * @return mixed The setting value
  */
 function flosc_get_setting( $key, $default = '', $flow_id = null ) {

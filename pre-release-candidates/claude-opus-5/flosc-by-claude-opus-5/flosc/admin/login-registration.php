@@ -8,6 +8,8 @@
  * 3. Guest Access Link (MagicLink) — convenience login for existing users only
  *
  * Defaults are product-neutral. Never hardcode a single product brand for all flows.
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

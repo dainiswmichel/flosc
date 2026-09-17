@@ -1,15 +1,15 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": "82.5",
+  "candidate_iteration": "82.6",
   "creator": "Claude Opus 5",
   "status": "WPCS_FORMATTING_APPLIED_FUNCTIONALLY_UNVERIFIED",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v82.4",
+  "base": "claude-opus-5 v82.5",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "194802fd71de29d8e9f0c63707dc51e090434a618d0c3331db4ff34d12c66273",
-  "artifact_bytes": 2755034,
+  "artifact_sha256": "947a088795ac8bcdf09439850657cabfdbfaee9700533e657b912de34a71c782",
+  "artifact_bytes": 2757726,
   "artifact_entries": 278,
   "tree_files": 295,
   "why_this_iteration": {
@@ -621,5 +621,25 @@
       "wpcs_php_shipping": "2,973 errors, 191 warnings"
     },
     "what_remains_is_documentation": "About 2,100 of the 2,973 are docblock findings: 797 missing @param tags, 467 missing function docblocks, 655 @param descriptions, 113 class and file docblocks. That is authorship, not tooling."
+  },
+  "v82_6_documentation": {
+    "wpcs_php_shipping": "2,973 -> 2,536 errors, 132 files -> 114",
+    "punctuation_and_capitals": "330 existing parameter descriptions given a closing full stop and 119 short descriptions capitalised, both taken from the lines phpcs named.",
+    "114_of_those_capitals_were_wrong": "The capitalisation rule does not know a version marker from a sentence. It turned v8.0.0: into V8.0.0: on 113 lines and floscAvailableProviders into FloscAvailableProviders. Both are incorrect -- a version number is not a word and floscAvailableProviders is the product name. All 114 reverted by pairing each changed line with its original from the diff and restoring only those whose first word was a version marker or a camelCase identifier.",
+    "the_right_fix_for_version_markers": "A description that opens with a version marker belongs in a @since tag, which is what PHPDoc has for it. Done in the token ledger; the rest of the codebase still carries the markers inline.",
+    "file_headers": "@package FLOSC added to 53 file headers and a blank line added after 14 of them, at the positions phpcs reported.",
+    "first_file_finished_properly": {
+      "file": "includes/tokens/class-flosc-token-ledger.php",
+      "before": "41 documentation findings",
+      "after": "0 errors and 0 warnings against the FULL WordPress standard",
+      "what_was_written": "A class-level explanation of where a token balance actually lives at each tier -- transient for a visitor, user meta for a guest or member -- and why every method takes a flow id. Then a real contract for each method: what reserve and settle guarantee, that a visitor is never charged more than they hold, that the balance clamps at zero rather than going negative, and that the display formatter truncates rather than rounds so a label never claims more tokens than the wallet has.",
+      "not_what_was_written": "Not @param string  The key. Generated filler would satisfy the counter and tell a reader nothing."
+    },
+    "measured_here": {
+      "php_l": "0 errors / 187 files",
+      "cli_gates": "37 of 37 pass",
+      "wpcs_php_shipping": "2,536 errors, 191 warnings, 114 files"
+    },
+    "still_open": "Roughly 1,900 documentation findings across 113 files, led by flosc.php with 451. This is authorship at the rate of one file at a time. 0 of 30 behavioural tests executed."
   }
 }

@@ -20,6 +20,8 @@
  *
  * @since 9.1.6
  * @since 1.9.0 Dynamic category ID (no longer hardcoded flosc_sample_data)
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -112,9 +114,9 @@ class FLOSC_RAG_Manager {
 	 * Execute a tool call from the AI
 	 *
 	 * @param string $tool_name
-	 * @param array  $input Tool parameters
-	 * @param string $access_level User's access level
-	 * @param int    $category_id WordPress category ID for the flow (0 for none)
+	 * @param array  $input Tool parameters.
+	 * @param string $access_level User's access level.
+	 * @param int    $category_id WordPress category ID for the flow (0 for none).
 	 * @return string Tool result
 	 */
 	public function execute_tool( $tool_name, $input, $access_level, $category_id = 0 ) {
@@ -232,7 +234,7 @@ class FLOSC_RAG_Manager {
 	 * @param string $keywords
 	 * @param int    $limit
 	 * @param string $access_level
-	 * @param int    $category_id WordPress category ID (0 for all categories)
+	 * @param int    $category_id WordPress category ID (0 for all categories).
 	 * @return string
 	 */
 	private function search_posts( $keywords, $limit, $access_level, $category_id = 0 ) {

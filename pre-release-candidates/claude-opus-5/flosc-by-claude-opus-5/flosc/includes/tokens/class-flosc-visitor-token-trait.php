@@ -3,6 +3,8 @@
  * Visitor token runtime helpers.
  *
  * Keeps token grant and depletion copy logic out of the main framework file.
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -433,8 +435,8 @@ trait FLOSC_Visitor_Token_Trait {
 	 *
 	 * @param int    $user_id
 	 * @param string $flow_id
-	 * @param string $mode    onetime|recurring|recurring_yearly|monthly|yearly
-	 * @param array  $context idempotency_key, reason, grant, cap, offer, subscription_id
+	 * @param string $mode    onetime|recurring|recurring_yearly|monthly|yearly.
+	 * @param array  $context idempotency_key, reason, grant, cap, offer, subscription_id.
 	 * @return array{credited:int,balance:int,cap:int,grant:int,capped:bool,skipped:bool,mode:string}
 	 */
 	public function flosc_apply_product_token_credit( $user_id, $flow_id = '', $mode = 'onetime', $context = array() ) {

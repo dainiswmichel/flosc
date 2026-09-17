@@ -12,6 +12,8 @@
  * Run via: wp eval-file admin/create-sample-data.php
  *
  * @since 9.1.8
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

@@ -4,7 +4,10 @@
  *
  * Abstract base class for all payment providers.
  * Implement this to add new payment methods.
+ *
+ * @package FLOSC
  */
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -61,8 +64,8 @@ abstract class FLOSC_Payment_Provider {
 	 * Process a payment
 	 *
 	 * @param int   $user_id
-	 * @param array $offer The offer being purchased
-	 * @param array $payment_data Provider-specific data
+	 * @param array $offer The offer being purchased.
+	 * @param array $payment_data Provider-specific data.
 	 * @return array|WP_Error Transaction result or error
 	 */
 	abstract public function process_payment( $user_id, $offer, $payment_data = array() );

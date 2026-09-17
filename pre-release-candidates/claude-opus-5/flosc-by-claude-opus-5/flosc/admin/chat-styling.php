@@ -9,6 +9,8 @@
  * - Font family
  * - Text scaling
  * - CSS variables generated from structured controls
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

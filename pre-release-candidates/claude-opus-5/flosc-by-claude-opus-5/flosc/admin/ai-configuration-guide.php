@@ -8,6 +8,8 @@
  *
  * v1.7.8: Initial documentation system
  * Fix 15: Moved from standalone tab to Documentation > AI Configuration Guide
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

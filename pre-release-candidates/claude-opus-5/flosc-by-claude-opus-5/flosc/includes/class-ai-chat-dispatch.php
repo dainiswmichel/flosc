@@ -2,6 +2,8 @@
 /**
  * FLOSC AI Chat Dispatch
  * Supports: IVR (scripted), Anthropic, OpenAI, xAI, Gemini.
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -639,7 +641,7 @@ class FLOSC_AI_Chat_Dispatch {
 	 * common string forms ('Yes', 'true', '1') — never require purchased === 'Yes'
 	 * alone (that mis-labeled sandbox / meta-granted members as guests).
 	 *
-	 * @param array $context AI / session context
+	 * @param array $context AI / session context.
 	 * @return bool
 	 */
 	private function flosc_context_user_is_member( $context ) {
@@ -831,7 +833,7 @@ class FLOSC_AI_Chat_Dispatch {
 	/**
 	 * Get AI Response
 	 *
-	 * @param bool $test_mode If true, return WP_Error on failure instead of falling back to IVR
+	 * @param bool $test_mode If true, return WP_Error on failure instead of falling back to IVR.
 	 */
 	public function get_response( $message, $system_prompt = '', $context = array(), $test_mode = false, $return_errors = false ) {
 		$this->last_billing_meta = array();

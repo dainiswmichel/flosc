@@ -3,6 +3,8 @@
  * FLOSC Administration Tab
  *
  * Global controls for account plan and debug mode.
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

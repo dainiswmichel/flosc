@@ -10,6 +10,8 @@
  * Front-end CSS for the flat table is in assets/css/flosc-admin.css; the small,
  * self-contained session-view styling is scoped inline below so the feature is
  * one file.
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

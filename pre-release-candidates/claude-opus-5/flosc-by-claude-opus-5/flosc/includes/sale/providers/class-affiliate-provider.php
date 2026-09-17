@@ -18,6 +18,8 @@
  *
  * This is the spiritual successor to ADZ.world - a permission-based
  * advertising model that doesn't track users without consent.
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -210,7 +212,7 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 	 * User declares a purchase intent
 	 *
 	 * @param int   $user_id
-	 * @param array $intent [
+	 * @param array $intent [.
 	 *   'description' => 'MacBook Pro 14"',
 	 *   'category' => 'electronics',
 	 *   'expected_price' => 2000,

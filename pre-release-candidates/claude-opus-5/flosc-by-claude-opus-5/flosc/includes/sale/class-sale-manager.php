@@ -7,6 +7,8 @@
  * - Payment Providers (how they pay)
  * - Usage Tracking (metered billing)
  * - Access Grants (what they get)
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -223,7 +225,7 @@ class FLOSC_Sale_Manager {
 	 * Validate offer before free or paid fulfillment.
 	 *
 	 * @param array  $offer Offer row.
-	 * @param string $mode  free|paid
+	 * @param string $mode  free|paid.
 	 * @return true|WP_Error
 	 */
 	public function validate_offer_for_purchase( array $offer, $mode = 'paid' ) {
@@ -413,7 +415,7 @@ class FLOSC_Sale_Manager {
 	 * @param int    $user_id
 	 * @param string $offer_id
 	 * @param string $provider_id
-	 * @param array  $payment_data Provider-specific data
+	 * @param array  $payment_data Provider-specific data.
 	 * @return array|WP_Error
 	 */
 	public function process_purchase( $user_id, $offer_id, $provider_id, $payment_data = array() ) {

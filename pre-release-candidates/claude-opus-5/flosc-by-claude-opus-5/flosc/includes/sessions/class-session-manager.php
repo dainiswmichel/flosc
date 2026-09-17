@@ -5,6 +5,8 @@
  *
  * Real-world: a guest on one flow must not see another flow's chats.
  * Sessions live in user meta `_flosc_sessions` with an optional `flow_id` stem.
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

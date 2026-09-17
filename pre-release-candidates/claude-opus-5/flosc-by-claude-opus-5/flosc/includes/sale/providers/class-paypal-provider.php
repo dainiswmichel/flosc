@@ -10,6 +10,8 @@
  * - Debug logging: every API call logged when FLOSC_DEBUG is on
  *
  * Flow: Create Order → Approve (PayPal JS SDK) → Capture → Grant Access
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

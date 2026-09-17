@@ -154,7 +154,7 @@ class FLOSC_Site_Content_Index {
 	/**
 	 * Flow stem from IVR filename.
 	 *
-	 * @param string $ivr_file e.g. flosc_default_technical_ivr.md
+	 * @param string $ivr_file e.g. flosc_default_technical_ivr.md.
 	 * @return string
 	 */
 	public function stem_from_ivr( $ivr_file ) {
@@ -1037,7 +1037,7 @@ class FLOSC_Site_Content_Index {
 	 * no depth is somebody half-way through a thought, not a rule, and treating
 	 * it as one would silently gate the post.
 	 *
-	 * @param string $kind 'post' or 'term'
+	 * @param string $kind 'post' or 'term'.
 	 * @param int    $id
 	 * @return array[]
 	 */
@@ -1523,7 +1523,7 @@ class FLOSC_Site_Content_Index {
 	 * Light hierarchy map for AI (titles / ids / access) — no full bodies.
 	 *
 	 * @param string $flow_stem
-	 * @param string $access_level visitor|guest|member
+	 * @param string $access_level visitor|guest|member.
 	 * @return string
 	 */
 	public function format_map_for_ai( $flow_stem, $access_level = 'visitor' ) {
@@ -1735,7 +1735,7 @@ class FLOSC_Site_Content_Index {
 	 * file written by an older build keeps working until it is rebuilt.
 	 *
 	 * @param array  $row
-	 * @param string $tier visitor|guest|member
+	 * @param string $tier visitor|guest|member.
 	 * @return string title|excerpt|readmore|full
 	 */
 	public function row_depth( array $row, $tier ) {

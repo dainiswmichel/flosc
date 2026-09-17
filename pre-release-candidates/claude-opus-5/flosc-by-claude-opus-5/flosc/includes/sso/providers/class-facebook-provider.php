@@ -57,7 +57,7 @@ class Facebook_Provider extends SSO_Provider_Base {
 	/**
 	 * Customize authorization parameters for Facebook
 	 *
-	 * @param array $params Default parameters
+	 * @param array $params Default parameters.
 	 * @return array Modified parameters
 	 */
 	protected function customize_auth_params( $params ) {
@@ -74,7 +74,7 @@ class Facebook_Provider extends SSO_Provider_Base {
 	 * Get user info from Facebook
 	 * Facebook requires specifying fields explicitly
 	 *
-	 * @param string $access_token OAuth access token
+	 * @param string $access_token OAuth access token.
 	 * @return array|WP_Error User data or error
 	 */
 	public function get_user_info( $access_token, $token_data = array() ) {
@@ -123,7 +123,7 @@ class Facebook_Provider extends SSO_Provider_Base {
 	/**
 	 * Normalize Facebook user data to standard format
 	 *
-	 * @param array $raw_data Raw user data from Facebook
+	 * @param array $raw_data Raw user data from Facebook.
 	 * @return array Normalized user data
 	 */
 	protected function normalize_user_data( $raw_data ) {
@@ -158,7 +158,7 @@ class Facebook_Provider extends SSO_Provider_Base {
 	/**
 	 * Get provider-specific user ID
 	 *
-	 * @param array $raw_data Raw user data
+	 * @param array $raw_data Raw user data.
 	 * @return string Provider user ID
 	 */
 	public function get_provider_user_id( $raw_data ) {
@@ -229,8 +229,8 @@ class Facebook_Provider extends SSO_Provider_Base {
 	 * Exchange authorization code for access token
 	 * v1.4.6: Override to add long-lived token exchange (BuddyBoss pattern)
 	 *
-	 * @param string $code Authorization code
-	 * @param string $redirect_uri Callback URL
+	 * @param string $code Authorization code.
+	 * @param string $redirect_uri Callback URL.
 	 * @return array|WP_Error Token data or error
 	 */
 	public function exchange_code_for_token( $code, $redirect_uri ) {
@@ -259,7 +259,7 @@ class Facebook_Provider extends SSO_Provider_Base {
 	 * Request long-lived access token from Facebook
 	 * v1.4.6: BuddyBoss pattern — exchanges short-lived token for ~60 day token
 	 *
-	 * @param string $short_lived_token The short-lived access token
+	 * @param string $short_lived_token The short-lived access token.
 	 * @return array|WP_Error Long-lived token data or error
 	 */
 	private function request_long_lived_token( $short_lived_token ) {
@@ -303,7 +303,7 @@ class Facebook_Provider extends SSO_Provider_Base {
 	/**
 	 * Verify app access token (optional security check)
 	 *
-	 * @param string $access_token Token to verify
+	 * @param string $access_token Token to verify.
 	 * @return bool|WP_Error
 	 */
 	public function verify_access_token( $access_token ) {

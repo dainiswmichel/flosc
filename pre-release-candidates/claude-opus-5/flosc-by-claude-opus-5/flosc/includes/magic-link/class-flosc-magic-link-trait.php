@@ -720,7 +720,7 @@ trait FLOSC_Magic_Link_Trait {
 	 *
 	 * @param int    $user_id
 	 * @param string $flow_id
-	 * @param array  $attach temp_id, quiz_data, session_id, redirect_to, flow_id
+	 * @param array  $attach temp_id, quiz_data, session_id, redirect_to, flow_id.
 	 * @return bool
 	 */
 	private function flosc_send_email_verification_message( $user_id, $flow_id = '', $attach = array() ) {
@@ -781,7 +781,7 @@ trait FLOSC_Magic_Link_Trait {
 	 * Applies guest role/tokens, attaches optional quiz payload, sends welcome + MagicLink when enabled.
 	 *
 	 * @param int   $user_id
-	 * @param array $attach Optional override; otherwise user meta _flosc_email_pending_attach
+	 * @param array $attach Optional override; otherwise user meta _flosc_email_pending_attach.
 	 * @return true|WP_Error
 	 */
 	public function flosc_activate_email_account( $user_id, $attach = null ) {
@@ -1230,8 +1230,8 @@ trait FLOSC_Magic_Link_Trait {
 	 * Separate from guest magic links: guest links are multi-use (10x/30d), post-purchase
 	 * tokens are single-use to prevent shared/forwarded access after purchase.
 	 *
-	 * @param int   $user_id User who just purchased
-	 * @param array $purchase_data Offer details from flosc_purchase_completed action
+	 * @param int   $user_id User who just purchased.
+	 * @param array $purchase_data Offer details from flosc_purchase_completed action.
 	 */
 	public function handle_purchase_completed( $user_id, $purchase_data = array() ) {
 		$user = get_userdata( $user_id );
@@ -2001,7 +2001,7 @@ trait FLOSC_Magic_Link_Trait {
 	}
 
 	/**
-	 * admin-post: floscAdmin activates a pending email-registered user.
+	 * Admin-post: floscAdmin activates a pending email-registered user.
 	 */
 	public function handle_admin_activate_email_account() {
 		if ( ! current_user_can( 'promote_users' ) ) {

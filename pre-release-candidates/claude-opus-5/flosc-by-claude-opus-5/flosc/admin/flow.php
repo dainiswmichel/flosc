@@ -6,6 +6,8 @@
  * Data sourced from $flosc_flow_settings (via $GLOBALS) and flosc() helper objects.
  *
  * v4.0.0: Initial implementation
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

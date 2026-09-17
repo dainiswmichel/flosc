@@ -4,6 +4,8 @@
  * Handles visitor/guest/member access levels
  *
  * @since 9.1.6
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -116,7 +118,7 @@ class FLOSC_User_Access_Manager {
 	 * Grant member access to user
 	 *
 	 * @param int    $user_id
-	 * @param string $reason 'quiz_completion', 'payment', 'admin_grant'
+	 * @param string $reason 'quiz_completion', 'payment', 'admin_grant'.
 	 */
 	public function grant_member_access( $user_id, $reason = 'quiz_completion' ) {
 
@@ -246,7 +248,7 @@ class FLOSC_User_Access_Manager {
 	/**
 	 * Check if user can access specific content level
 	 *
-	 * @param string $required_level 'visitor', 'guest', or 'member'
+	 * @param string $required_level 'visitor', 'guest', or 'member'.
 	 * @param int    $user_id
 	 * @return bool
 	 */

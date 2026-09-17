@@ -12,6 +12,8 @@
  * Also: manual payment instructions; webhooks for Stripe/PayPal grant after pay.
  *
  * Offers tab chooses which path each offer uses (paypal | stripe | free | redirect).
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
