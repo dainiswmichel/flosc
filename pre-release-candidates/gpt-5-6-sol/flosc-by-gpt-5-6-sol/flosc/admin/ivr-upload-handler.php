@@ -3,10 +3,10 @@
  * Flow Portability upload handler (admin_init).
  *
  * Supports one kit drop for a full pack:
- * - .md  — create flow or apply IVR + Settings YAML
+ * - .md  — create flow or apply IVR + Settings YAML.
  * - .tsv — DA1 catalog(s), assigned to the flow (up to 10)
  * - .xml — WXR staged under uploads/flosc-packs/ and listed (import via WP tool / Import posts action)
- * - media — PDF and common images/audio into Media Library, tracked on the flow
+ * - media — PDF and common images/audio into Media Library, tracked on the flow.
  *
  * Must run on admin_init before admin HTML so redirects work.
  *
@@ -19,10 +19,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 if ( ! function_exists( 'flosc_portability_normalize_ivr_filename' ) ) {
 	/**
- * Coordinate the portability normalize ivr filename behavior implemented by this code path.
- *
+	 * Coordinate the portability normalize ivr filename behavior implemented by this code path.
+	 *
 	 * @param string $raw_name Original upload basename.
-	 * @return string Sanitized *_ivr.md name.
+	 * @return String Sanitized *_ivr.md name.
 	 */
 	function flosc_portability_normalize_ivr_filename( $raw_name ) {
 		$filename = sanitize_file_name( basename( (string) $raw_name ) );
@@ -37,10 +37,10 @@ if ( ! function_exists( 'flosc_portability_normalize_ivr_filename' ) ) {
 
 if ( ! function_exists( 'flosc_portability_display_name_from_stem' ) ) {
 	/**
- * Coordinate the portability display name from stem behavior implemented by this code path.
- *
+	 * Coordinate the portability display name from stem behavior implemented by this code path.
+	 *
 	 * @param string $stem Flow stem (e.g. vegan_latvian_kitchen_ivr).
-	 * @return string
+	 * @return String.
 	 */
 	function flosc_portability_display_name_from_stem( $stem ) {
 		$display = preg_replace( '/_ivr$/i', '', (string) $stem );
@@ -60,7 +60,7 @@ if ( ! function_exists( 'flosc_portability_collect_kit_files' ) ) {
 	 * Normalize multi or single file upload into list of {name,tmp,error,size,ext}.
 	 *
 	 * @param array<string,mixed> $files Uploaded files from the nonce-verified handler.
-	 * @return array<int,array<string,mixed>>
+	 * @return Array<int,array<string,mixed>>.
 	 */
 	function flosc_portability_collect_kit_files( $files ) {
 		$out   = array();
@@ -124,12 +124,12 @@ if ( ! function_exists( 'flosc_portability_write_uploads_file' ) ) {
 	/**
 	 * Write a file that already sits under wp-content/uploads.
 	 *
-	 * Single write chokepoint for this handler: FLOSC_Filesystem refuses
-	 * plugin-directory targets. Callers must not fall back to PHP file writes.
+	 * Single write chokepoint for this handler: FLOSC_Filesystem refuses.
+	 * Plugin-directory targets. Callers must not fall back to PHP file writes.
 	 *
 	 * @param string $path    Absolute path under uploads.
 	 * @param string $content File body.
-	 * @return bool
+	 * @return Bool.
 	 */
 	function flosc_portability_write_uploads_file( $path, $content ) {
 		if ( ! class_exists( 'FLOSC_Filesystem' ) ) {
@@ -144,10 +144,10 @@ if ( ! function_exists( 'flosc_portability_ingest_da1_tsv' ) ) {
 	/**
 	 * Store uploaded DA1 TSV and assign catalog to a flow IVR filename.
 	 *
-	 * @param string $tmp_name  Upload temp path.
-	 * @param string $raw_name  Original filename.
-	 * @param string $ivr_file  Flow IVR basename to assign (e.g. foo_ivr.md).
-	 * @return true|WP_Error
+	 * @param string $tmp_name Upload temp path.
+	 * @param string $raw_name Original filename.
+	 * @param string $ivr_file Flow IVR basename to assign (e.g. foo_ivr.md).
+	 * @return True|WP_Error.
 	 */
 	function flosc_portability_ingest_da1_tsv( $tmp_name, $raw_name, $ivr_file ) {
 		$tmp_name = (string) $tmp_name;
@@ -250,9 +250,9 @@ if ( ! function_exists( 'flosc_portability_ingest_da1_tsv' ) ) {
 
 if ( ! function_exists( 'flosc_portability_pack_assets_option_key' ) ) {
 	/**
- * Coordinate the portability pack assets option key behavior implemented by this code path.
- *
-	 * @return string
+	 * Coordinate the portability pack assets option key behavior implemented by this code path.
+	 *
+	 * @return String.
 	 */
 	function flosc_portability_pack_assets_option_key() {
 		return 'flosc_flow_pack_assets';
@@ -264,7 +264,7 @@ if ( ! function_exists( 'flosc_portability_get_pack_assets' ) ) {
 	 * Pack inventory for one flow IVR file.
 	 *
 	 * @param string $ivr_file Flow IVR basename.
-	 * @return array{wxr:array<int,array<string,mixed>>,media:array<int,array<string,mixed>>,catalogs:array<int,string>}
+	 * @return Array{wxr:array<int,array<string,mixed>>,media:array<int,array<string,mixed>>,catalogs:array<int,string>}.
 	 */
 	function flosc_portability_get_pack_assets( $ivr_file ) {
 		$ivr_file = sanitize_file_name( (string) $ivr_file );
@@ -302,11 +302,11 @@ if ( ! function_exists( 'flosc_portability_get_pack_assets' ) ) {
 
 if ( ! function_exists( 'flosc_portability_save_pack_assets' ) ) {
 	/**
- * Persist the portability save pack assets state in WordPress storage.
- *
+	 * Persist the portability save pack assets state in WordPress storage.
+	 *
 	 * @param string              $ivr_file Flow IVR basename.
 	 * @param array<string,mixed> $row      Pack row (wxr + media; catalogs stay in DA1 options).
-	 * @return void
+	 * @return Void.
 	 */
 	function flosc_portability_save_pack_assets( $ivr_file, $row ) {
 		$ivr_file = sanitize_file_name( (string) $ivr_file );
@@ -330,7 +330,7 @@ if ( ! function_exists( 'flosc_portability_pack_dir' ) ) {
 	 * Writable pack directory for one flow stem under uploads.
 	 *
 	 * @param string $ivr_file Flow IVR basename.
-	 * @return string Absolute path or empty.
+	 * @return String Absolute path or empty.
 	 */
 	function flosc_portability_pack_dir( $ivr_file ) {
 		$ivr_file = sanitize_file_name( (string) $ivr_file );
@@ -369,7 +369,7 @@ if ( ! function_exists( 'flosc_portability_path_is_in_pack_dir' ) ) {
 	 *
 	 * @param string $path     Absolute path.
 	 * @param string $ivr_file Flow IVR basename.
-	 * @return bool
+	 * @return Bool.
 	 */
 	function flosc_portability_path_is_in_pack_dir( $path, $ivr_file ) {
 		$pack_dir = flosc_portability_pack_dir( $ivr_file );
@@ -389,9 +389,9 @@ if ( ! function_exists( 'flosc_portability_path_is_in_pack_dir' ) ) {
 
 if ( ! function_exists( 'flosc_portability_allowed_media_ext' ) ) {
 	/**
- * Coordinate the portability allowed media ext behavior implemented by this code path.
- *
-	 * @return array<int,string>
+	 * Coordinate the portability allowed media ext behavior implemented by this code path.
+	 *
+	 * @return Array<int,string>.
 	 */
 	function flosc_portability_allowed_media_ext() {
 		return array( 'pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp', 'mp3', 'mp4', 'm4a', 'wav', 'ogg', 'webm' );
@@ -405,7 +405,7 @@ if ( ! function_exists( 'flosc_portability_ingest_wxr' ) ) {
 	 * @param string $tmp_name Upload temp path.
 	 * @param string $raw_name Original filename.
 	 * @param string $ivr_file Flow IVR basename.
-	 * @return true|WP_Error
+	 * @return True|WP_Error.
 	 */
 	function flosc_portability_ingest_wxr( $tmp_name, $raw_name, $ivr_file ) {
 		$tmp_name = (string) $tmp_name;
@@ -496,7 +496,7 @@ if ( ! function_exists( 'flosc_portability_ingest_media' ) ) {
 	 * @param string $tmp_name Upload temp path.
 	 * @param string $raw_name Original filename.
 	 * @param string $ivr_file Flow IVR basename.
-	 * @return true|WP_Error
+	 * @return True|WP_Error.
 	 */
 	function flosc_portability_ingest_media( $tmp_name, $raw_name, $ivr_file ) {
 		$tmp_name = (string) $tmp_name;
@@ -579,7 +579,7 @@ if ( ! function_exists( 'flosc_portability_run_wxr_import' ) ) {
 	 *
 	 * @param string $ivr_file Flow IVR basename.
 	 * @param string $filename Staged WXR basename.
-	 * @return true|WP_Error
+	 * @return True|WP_Error.
 	 */
 	function flosc_portability_run_wxr_import( $ivr_file, $filename ) {
 		$ivr_file = sanitize_file_name( (string) $ivr_file );
@@ -668,7 +668,7 @@ if ( ! function_exists( 'flosc_admin_handle_portability_pack_actions' ) ) {
 	/**
 	 * Non-upload pack actions: import staged WXR, remove tracked asset.
 	 *
-	 * @return void
+	 * @return Void.
 	 */
 	function flosc_admin_handle_portability_pack_actions() {
 		/*
@@ -782,7 +782,7 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 	/**
 	 * Portability kit upload: create/apply flow pack pieces.
 	 *
-	 * @return void
+	 * @return Void.
 	 */
 	function flosc_admin_handle_ivr_file_upload() {
 		if ( ! empty( $GLOBALS['flosc_ivr_upload_handled'] ) ) {

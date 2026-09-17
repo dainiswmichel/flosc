@@ -1,23 +1,23 @@
 <?php
 /**
- * FLOSC Content Protection
- * Handles category-level protection and post-level visibility
+ * FLOSC Content Protection.
+ * Handles category-level protection and post-level visibility.
  *
  * CATEGORY PROTECTION (term meta):
- * - _flosc_protected: 'yes' = all posts in category are hidden from public
+ * - _flosc_protected: 'yes' = all posts in category are hidden from public.
  *
  * POST OVERRIDE (post meta):
- * - _flosc_public_post: 'yes' = override FLOSC category protection,
- *   show per WordPress settings
+ * - _flosc_public_post: 'yes' = override FLOSC category protection,.
+ * Show per WordPress settings.
  *
  * RESOLUTION ORDER:
- * 1. Post has _flosc_public_post = 'yes' → FLOSC steps aside
+ * 1. Post has _flosc_public_post = 'yes' → FLOSC steps aside.
  * 2. Category is protected → hidden (content filtered, excluded from queries)
- * 3. No protection → public
+ * 3. No protection → public.
  *
- * v1.4.7: Added pre_get_posts to hide protected posts from archives/feeds/search
- * v1.4.7: Auto-protect flosc_sample_data category on first run
- * v1.4.7: Simplified meta box — single override checkbox
+ * V1.4.7: Added pre_get_posts to hide protected posts from archives/feeds/search.
+ * V1.4.7: Auto-protect flosc_sample_data category on first run.
+ * V1.4.7: Simplified meta box — single override checkbox.
  *
  * @since 1.0.1
  *
@@ -35,11 +35,11 @@ class FLOSC_Content_Protection {
 
 	private static $instance = null;
 
-		/**
-	 * Coordinate the instance behavior implemented by this code path.
-	 *
-	 * @return mixed Result produced by the instance operation.
-	 */
+/**
+ * Coordinate the instance behavior implemented by this code path.
+ *
+ * @return Mixed Result produced by the instance operation.
+ */
 public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
@@ -47,9 +47,9 @@ public static function instance() {
 		return self::$instance;
 	}
 
-		/**
-	 * Register the WordPress hooks that connect construct to this object.
-	 */
+/**
+ * Register the WordPress hooks that connect construct to this object.
+ */
 private function __construct() {
 		// Hook into the_content with high priority (runs after other filters).
 		add_filter( 'the_content', array( $this, 'filter_by_visibility' ), 20 );
@@ -65,15 +65,15 @@ private function __construct() {
 	}
 
 	/**
-	 * Hide posts in protected categories from public queries
+	 * Hide posts in protected categories from public queries.
 	 *
-	 * Excludes protected-category posts from archives, feeds, and search
-	 * unless the post has _flosc_public_post override set to 'yes'.
+	 * Excludes protected-category posts from archives, feeds, and search.
+	 * Unless the post has _flosc_public_post override set to 'yes'.
 	 * Skips admin, single post views, and users with manage_options.
 	 *
-	 * @param WP_Query $query
+	 * @param WP_Query $query Value consumed by this operation.
 	 * @since 1.4.7
- * @return mixed Result produced by the hide protected from public queries operation.
+	 * @return Mixed Result produced by the hide protected from public queries operation.
 	 */
 	public function hide_protected_from_public_queries( $query ) {
 		// Only modify public front-end queries.
@@ -166,7 +166,7 @@ private function __construct() {
 	/**
 	 * Get all protected category IDs (cached per request)
 	 *
-	 * @return array of category IDs
+	 * @return Array of category IDs.
 	 * @since 1.4.7
 	 */
 	public function get_protected_category_ids() {
@@ -188,11 +188,11 @@ private function __construct() {
 	}
 
 	/**
-	 * Auto-protect flosc_sample_data category on first run
+	 * Auto-protect flosc_sample_data category on first run.
 	 * Uses an option flag so this only runs once per site.
 	 *
 	 * @since 1.4.7
- * @return mixed Result produced by the auto protect sample category operation.
+	 * @return Mixed Result produced by the auto protect sample category operation.
 	 */
 	public function maybe_auto_protect_sample_category() {
 		if ( get_option( 'flosc_sample_data_auto_protected' ) ) {
@@ -208,10 +208,10 @@ private function __construct() {
 	}
 
 	/**
-	 * Check if a category is FLOSC protected
+	 * Check if a category is FLOSC protected.
 	 *
-	 * @param int $category_id
-	 * @return bool
+	 * @param int $category_id Value consumed by this operation.
+	 * @return Bool.
 	 */
 	public function is_category_protected( $category_id ) {
 		$protected = get_term_meta( $category_id, '_flosc_protected', true );
@@ -219,10 +219,10 @@ private function __construct() {
 	}
 
 	/**
-	 * Get required membership level for a category
+	 * Get required membership level for a category.
 	 *
-	 * @param int $category_id
-	 * @return string|null Level name or null if not set
+	 * @param int $category_id Value consumed by this operation.
+	 * @return String|null Level name or null if not set.
 	 */
 	public function get_category_required_level( $category_id ) {
 		$flosc_value = get_term_meta( $category_id, '_flosc_required_level', true );
@@ -230,10 +230,10 @@ private function __construct() {
 	}
 
 	/**
-	 * Check if a post is in a protected category
+	 * Check if a post is in a protected category.
 	 *
-	 * @param int $post_id
-	 * @return array ['protected' => bool, 'required_level' => string|null, 'category_id' => int|null]
+	 * @param int $post_id Value consumed by this operation.
+	 * @return Array ['protected' => bool, 'required_level' => string|null, 'category_id' => int|null]
 	 */
 	public function check_post_protection( $post_id ) {
 		$categories = wp_get_post_categories( $post_id );
@@ -256,11 +256,11 @@ private function __construct() {
 	}
 
 	/**
-	 * Get visibility tier for a post
+	 * Get visibility tier for a post.
 	 * Check _flosc_protection_mode first (4-tier: protected, title_excerpt, title_readmore, full)
 	 *
-	 * @param int $post_id
-	 * @return string 'hidden' | 'teaser' | 'preview' | 'public'
+	 * @param int $post_id Value consumed by this operation.
+	 * @return String 'hidden' | 'teaser' | 'preview' | 'public'.
 	 * @since 1.8.2
 	 */
 	public function get_post_visibility( $post_id ) {
@@ -306,7 +306,7 @@ private function __construct() {
 	 *
 	 * @param int      $category_id Category term ID.
 	 * @param int|null $user_id     User ID (default: current user).
-	 * @return bool
+	 * @return Bool.
 	 */
 	public function user_can_access_category( $category_id, $user_id = null ) {
 		$category_id = absint( $category_id );
@@ -355,10 +355,10 @@ private function __construct() {
 	/**
 	 * True when the user holds a non-guest member level for a flow that owns this category.
 	 *
-	 * @param int                 $user_id
-	 * @param mixed $category_id Identifier used to select the record involved in the Coordinate the user has flow member level for category behavior implemented by this code path. operation.
-	 * @param FLOSC_Member_Access $member_access
-	 * @return bool
+	 * @param int                 $user_id       Value consumed by this operation.
+	 * @param mixed               $category_id   Identifier used to select the record involved in the Coordinate the user has flow member level for category behavior implemented by this code path. operation.
+	 * @param FLOSC_Member_Access $member_access Value consumed by this operation.
+	 * @return Bool.
 	 */
 	private function user_has_flow_member_level_for_category( $user_id, $category_id, $member_access ) {
 		$cat = get_term( $category_id, 'category' );
@@ -396,8 +396,8 @@ private function __construct() {
 	/**
 	 * Find flow option payloads whose content_item_category / content_item_groups use this category slug.
 	 *
-	 * @param string $category_slug
-	 * @return array[]
+	 * @param string $category_slug Value consumed by this operation.
+	 * @return Array[]
 	 */
 	private function get_flows_owning_content_item_category( $category_slug ) {
 		$category_slug = sanitize_title( (string) $category_slug );
@@ -436,11 +436,11 @@ private function __construct() {
 	}
 
 	/**
-	 * Check if current user can access a post
-	 * Check _flosc_protection_mode for granular access
+	 * Check if current user can access a post.
+	 * Check _flosc_protection_mode for granular access.
 	 *
-	 * @param int $post_id
-	 * @return bool
+	 * @param int $post_id Value consumed by this operation.
+	 * @return Bool.
 	 * @since 1.8.2
 	 */
 	public function user_can_access( $post_id ) {
@@ -535,10 +535,10 @@ private function __construct() {
 	}
 
 	/**
-	 * Main content filter - applies visibility tier
+	 * Main content filter - applies visibility tier.
 	 *
-	 * @param string $content
-	 * @return string Filtered content
+	 * @param string $content Value consumed by this operation.
+	 * @return String Filtered content.
 	 */
 	public function filter_by_visibility( $content ) {
 		/*
@@ -593,12 +593,12 @@ private function __construct() {
 	}
 
 	/**
-	 * Apply visibility tier to content
+	 * Apply visibility tier to content.
 	 *
-	 * @param string $content Full content.
+	 * @param string $content    Full content.
 	 * @param string $visibility 'hidden' | 'teaser' | 'preview' | 'public'.
-	 * @param int    $post_id
-	 * @return string Filtered content
+	 * @param int    $post_id    Value consumed by this operation.
+	 * @return String Filtered content.
 	 */
 	public function apply_visibility_tier( $content, $visibility, $post_id ) {
 		switch ( $visibility ) {
@@ -625,12 +625,12 @@ private function __construct() {
 	}
 
 	/**
-	 * Add CTAs to public posts
-	 * Guides visitors to the chat for engagement
+	 * Add CTAs to public posts.
+	 * Guides visitors to the chat for engagement.
 	 *
-	 * @param string $content
-	 * @param mixed $post_id WordPress post ID used to resolve the content involved in this operation.
-	 * @return string
+	 * @param string $content Value consumed by this operation.
+	 * @param mixed  $post_id WordPress post ID used to resolve the content involved in this operation.
+	 * @return String.
 	 * @since 1.4.3
 	 */
 	private function flosc_add_public_post_ctas( $content, $post_id ) {
@@ -663,11 +663,11 @@ private function __construct() {
 	}
 
 	/**
-	 * Get message for hidden content
-	 * Added post_id tracking
+	 * Get message for hidden content.
+	 * Added post_id tracking.
 	 *
-	 * @param int $post_id
-	 * @return string
+	 * @param int $post_id Value consumed by this operation.
+	 * @return String.
 	 * @since 1.4.3
 	 */
 	private function get_hidden_message( $post_id ) {
@@ -681,10 +681,10 @@ private function __construct() {
 
 	/**
 	 * Get teaser content (title + excerpt only)
-	 * Added post_id tracking to CTA
+	 * Added post_id tracking to CTA.
 	 *
-	 * @param int $post_id
-	 * @return string
+	 * @param int $post_id Value consumed by this operation.
+	 * @return String.
 	 * @since 1.4.3
 	 */
 	private function get_teaser_content( $post_id ) {
@@ -709,11 +709,11 @@ private function __construct() {
 
 	/**
 	 * Get preview content (up to <!--flosc_read_more-->)
-	 * Added post_id tracking to CTA
+	 * Added post_id tracking to CTA.
 	 *
-	 * @param string $content
-	 * @param mixed $post_id WordPress post ID used to resolve the content involved in this operation.
-	 * @return string
+	 * @param string $content Value consumed by this operation.
+	 * @param mixed  $post_id WordPress post ID used to resolve the content involved in this operation.
+	 * @return String.
 	 * @since 1.4.3
 	 */
 	private function get_preview_content( $content, $post_id ) {
@@ -748,11 +748,11 @@ private function __construct() {
 	}
 
 	/**
-	 * Get CTA to chatbot with tracking
-	 * Added post tracking for chat context
+	 * Get CTA to chatbot with tracking.
+	 * Added post tracking for chat context.
 	 *
 	 * @param int $post_id Optional post ID for tracking.
-	 * @return string
+	 * @return String.
 	 * @since 1.4.3
 	 */
 	private function get_chatbot_cta( $post_id = null ) {
@@ -787,11 +787,11 @@ private function __construct() {
 	}
 
 	/**
-	 * Get chat URL with tracking for a specific post
-	 * Used for redirect-to-chat functionality
+	 * Get chat URL with tracking for a specific post.
+	 * Used for redirect-to-chat functionality.
 	 *
-	 * @param int $post_id
-	 * @return string
+	 * @param int $post_id Value consumed by this operation.
+	 * @return String.
 	 * @since 1.4.3
 	 */
 	public function get_chat_url_for_post( $post_id ) {
@@ -809,11 +809,11 @@ private function __construct() {
 	}
 
 	/**
-	 * Filter excerpt for teaser tier
+	 * Filter excerpt for teaser tier.
 	 *
-	 * @param string  $excerpt
-	 * @param mixed $post Input consumed by the Coordinate the filter excerpt behavior implemented by this code path. operation.
-	 * @return string
+	 * @param string $excerpt Value consumed by this operation.
+	 * @param mixed  $post    Input consumed by the Coordinate the filter excerpt behavior implemented by this code path. operation.
+	 * @return String.
 	 */
 	public function filter_excerpt( $excerpt, $post = null ) {
 		// This filter never builds markup — every branch relays core's own.
@@ -838,11 +838,11 @@ private function __construct() {
 	}
 
 	/**
-	 * Set category as protected
+	 * Set category as protected.
 	 *
-	 * @param int    $category_id
+	 * @param int   $category_id    Value consumed by this operation.
 	 * @param mixed $required_level Input consumed by the Coordinate the protect category behavior implemented by this code path. operation.
-	 * @return bool
+	 * @return Bool.
 	 */
 	public function protect_category( $category_id, $required_level = null ) {
 		update_term_meta( $category_id, '_flosc_protected', 'yes' );
@@ -855,10 +855,10 @@ private function __construct() {
 	}
 
 	/**
-	 * Unprotect a category
+	 * Unprotect a category.
 	 *
-	 * @param int $category_id
-	 * @return bool
+	 * @param int $category_id Value consumed by this operation.
+	 * @return Bool.
 	 */
 	public function unprotect_category( $category_id ) {
 		delete_term_meta( $category_id, '_flosc_protected' );
@@ -868,11 +868,11 @@ private function __construct() {
 	}
 
 	/**
-	 * Set post visibility
+	 * Set post visibility.
 	 *
-	 * @param int    $post_id
+	 * @param int   $post_id    Value consumed by this operation.
 	 * @param mixed $visibility Input consumed by the Persist the post visibility state in Word Press storage. operation.
-	 * @return bool
+	 * @return Bool.
 	 */
 	public function set_post_visibility( $post_id, $visibility ) {
 		if ( ! in_array( $visibility, array( 'hidden', 'teaser', 'preview', 'public' ), true ) ) {
@@ -884,9 +884,9 @@ private function __construct() {
 	}
 
 	/**
-	 * Get all protected categories
+	 * Get all protected categories.
 	 *
-	 * @return array Array of category objects with protection info
+	 * @return Array Array of category objects with protection info.
 	 */
 	public function get_protected_categories() {
 		$categories = get_categories( array( 'hide_empty' => false ) );

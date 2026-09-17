@@ -1,10 +1,10 @@
 <?php
 /**
- * FLOSC ClickBank Payment Provider
+ * FLOSC ClickBank Payment Provider.
  *
  * Redirect checkout via official seller payment links.
- * Fulfillment only after ClickBank Instant Notification Service (INS v6+/v8
- * encrypted JSON) or verified legacy form IPN — never on redirect alone.
+ * Fulfillment only after ClickBank Instant Notification Service (INS v6+/v8.
+ * Encrypted JSON) or verified legacy form IPN — never on redirect alone.
  *
  * @since 7.0.7
  *
@@ -20,65 +20,66 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
 
-		/**
-	 * Resolve the current id value from the available WordPress and flow state.
-	 *
-	 * @return mixed Result produced by the id operation.
-	 */
+/**
+ * Resolve the current id value from the available WordPress and flow state.
+ *
+ * @return Mixed Result produced by the id operation.
+ */
 public function get_id() {
 		return 'clickbank';
 	}
 
-		/**
-	 * Resolve the current name value from the available WordPress and flow state.
-	 *
-	 * @return mixed Result produced by the name operation.
-	 */
+/**
+ * Resolve the current name value from the available WordPress and flow state.
+ *
+ * @return Mixed Result produced by the name operation.
+ */
 public function get_name() {
 		return 'ClickBank';
 	}
 
-		/**
-	 * Resolve the current description value from the available WordPress and flow state.
-	 *
-	 * @return mixed Result produced by the description operation.
-	 */
+/**
+ * Resolve the current description value from the available WordPress and flow state.
+ *
+ * @return Mixed Result produced by the description operation.
+ */
 public function get_description() {
 		return 'Accept payments via ClickBank marketplace with affiliate support.';
 	}
 
-		/**
-	 * Resolve the current icon value from the available WordPress and flow state.
-	 *
-	 * @return mixed Result produced by the icon operation.
-	 */
+/**
+ * Resolve the current icon value from the available WordPress and flow state.
+ *
+ * @return Mixed Result produced by the icon operation.
+ */
 public function get_icon() {
 		return '🛒';
 	}
 
-		/**
-	 * Determine whether the current state satisfies configured.
-	 *
-	 * @return bool Whether configured applies to the current state.
-	 */
+/**
+ * Determine whether the current state satisfies configured.
+ *
+ * @return Bool Whether configured applies to the current state.
+ */
 public function is_configured() {
 		$vendor = $this->get_setting( 'vendor', '' );
 		$secret = $this->get_setting( 'secret', '' );
 		return ! empty( $vendor ) && ! empty( $secret );
 	}
 
-		/**
-	 * Coordinate the supports subscriptions behavior implemented by this code path.
-	 *
-	 * @return bool Whether supports subscriptions applies to the current state.
-	 */
+/**
+ * Coordinate the supports subscriptions behavior implemented by this code path.
+ *
+ * @return Bool Whether supports subscriptions applies to the current state.
+ */
 public function supports_subscriptions() {
 		return true;
 	}
 
 	/**
-	 * Get settings fields for admin UI
- * @return array Structured settings fields data.
+	 * Get settings fields for admin UI.
+	 *
+	 * @return Array Structured settings fields data.
 	 */
 	public function get_settings_fields() {
 		return array(
@@ -136,15 +137,16 @@ public function supports_subscriptions() {
 	}
 
 	/**
-	 * Process payment - ClickBank uses redirect-based checkout
-	 * Required by abstract parent class
+	 * Process payment - ClickBank uses redirect-based checkout.
+	 * Required by abstract parent class.
 	 *
 	 * PAY-01: Must not report settled payment. Redirect initiation only;
 	 * IPN/INS webhook is the sole fulfillment path.
- * @param mixed $user_id WordPress user ID whose Coordinate the payment behavior implemented by this code path. state is being processed.
- * @param mixed $offer Input consumed by the Coordinate the payment behavior implemented by this code path. operation.
- * @param mixed $payment_data Structured data consumed by the Coordinate the payment behavior implemented by this code path. operation.
- * @return array Structured payment data.
+	 *
+	 * @param mixed $user_id      WordPress user ID whose Coordinate the payment behavior implemented by this code path. state is being processed.
+	 * @param mixed $offer        Input consumed by the Coordinate the payment behavior implemented by this code path. operation.
+	 * @param mixed $payment_data Structured data consumed by the Coordinate the payment behavior implemented by this code path. operation.
+	 * @return Array Structured payment data.
 	 */
 	public function process_payment( $user_id, $offer, $payment_data = array() ) {
 		// Redirect only — never settled. Webhook is the only grant path.
@@ -167,13 +169,13 @@ public function supports_subscriptions() {
 	/**
 	 * Get ClickBank seller payment link.
 	 *
-	 * Official format (current): https://VENDOR.pay.clickbank.net/?cbitems=ITEM
+	 * Official format (current): https://VENDOR.pay.clickbank.net/?cbitems=ITEM.
 	 * Optional vtid is tracking only — never the product selector.
 	 * Affiliate hop links remain affiliate-side; this is the vendor pay link.
 	 *
 	 * @param string|null $affiliate_id Unused for seller pay links (kept for API compat).
 	 * @param string|null $vtid         Optional vendor tracking id.
-	 * @return string
+	 * @return String.
 	 */
 	public function get_checkout_url( $affiliate_id = null, $vtid = null ) {
 		unset( $affiliate_id ); // Seller pay links do not use hop-style affiliate hosts.
@@ -204,7 +206,8 @@ public function supports_subscriptions() {
 
 	/**
 	 * Get client-side config (for checkout buttons, etc.)
- * @return array Structured client config data.
+	 *
+	 * @return Array Structured client config data.
 	 */
 	public function get_client_config() {
 		return array(
@@ -218,12 +221,12 @@ public function supports_subscriptions() {
 	 * Handle ClickBank INS / legacy IPN webhook.
 	 *
 	 * Preferred: INS v6+/v8 encrypted JSON body:
-	 *   {"notification":"<base64>","iv":"<base64>"}
+	 * {"notification":"<base64>","iv":"<base64>"}.
 	 * Legacy: form-encoded fields with cverify (SHA-1 first 8 hex, uppercase).
 	 *
 	 * @param string $payload Raw request body.
 	 * @param array  $headers Optional headers.
-	 * @return WP_REST_Response|WP_Error
+	 * @return WP_REST_Response|WP_Error.
 	 */
 	public function handle_webhook( $payload, $headers = array() ) {
 		unset( $headers );
@@ -235,7 +238,7 @@ public function supports_subscriptions() {
 		$payload = (string) $payload;
 		$params  = null;
 
-		// --- INS encrypted JSON (v6/v7/v8) ---
+		// --- INS encrypted JSON (v6/v7/v8) ---.
 		$json = json_decode( $payload, true );
 		if ( is_array( $json ) && ! empty( $json['notification'] ) && ! empty( $json['iv'] ) ) {
 			$decrypted = $this->decrypt_ins_notification(
@@ -249,7 +252,7 @@ public function supports_subscriptions() {
 			$params = $this->map_ins_json_to_params( $decrypted );
 		}
 
-		// --- Legacy form IPN (requires cverify). CB-01: never accept unsigned plaintext JSON. ---
+		// --- Legacy form IPN (requires cverify). CB-01: never accept unsigned plaintext JSON. ---.
 		if ( null === $params ) {
 			$raw_params = array();
 			parse_str( $payload, $raw_params );
@@ -365,7 +368,7 @@ public function supports_subscriptions() {
 	 * @param string $encrypted_b64 Base64 notification.
 	 * @param string $iv_b64        Base64 IV.
 	 * @param string $secret_key    ClickBank secret (up to 16 chars).
-	 * @return array|WP_Error Decoded JSON assoc array.
+	 * @return Array|WP_Error Decoded JSON assoc array.
 	 */
 	private function decrypt_ins_notification( $encrypted_b64, $iv_b64, $secret_key ) {
 		if ( ! function_exists( 'openssl_decrypt' ) ) {
@@ -404,7 +407,7 @@ public function supports_subscriptions() {
 	 * Map INS JSON (v6–v8) into the flat param shape used by sale/refund handlers.
 	 *
 	 * @param array $order Decrypted or plain INS object.
-	 * @return array
+	 * @return Array.
 	 */
 	private function map_ins_json_to_params( array $order ) {
 		$billing  = is_array( $order['customer']['billing'] ?? null ) ? $order['customer']['billing'] : array();
@@ -451,7 +454,7 @@ public function supports_subscriptions() {
 	 *
 	 * @param array  $params     Raw form params including cverify.
 	 * @param string $secret_key Secret key.
-	 * @return bool
+	 * @return Bool.
 	 */
 	private function verify_ipn_signature( $params, $secret_key ) {
 		if ( empty( $params['cverify'] ) ) {
@@ -482,7 +485,7 @@ public function supports_subscriptions() {
 	 * Sanitize ClickBank IPN key/value map after signature verification.
 	 *
 	 * @param array $params Raw IPN params.
-	 * @return array
+	 * @return Array.
 	 */
 	private function sanitize_ipn_params( array $params ) {
 		$clean = array();
@@ -508,11 +511,12 @@ public function supports_subscriptions() {
 	 * Handle initial sale (after encrypted INS or signed form IPN only).
 	 *
 	 * Contract:
-	 * 1) product item matches configured cbitems when both present
+	 * 1) product item matches configured cbitems when both present.
 	 * 2) FLOSC offer_id setting is required (no synthetic grant)
-	 * 3) claim receipt → fulfill_settled_purchase once
- * @param mixed $params Input consumed by the Persist the sale state in Word Press storage. operation.
- * @return mixed Result of the sale operation, or a WP_Error when it cannot complete.
+	 * 3) claim receipt → fulfill_settled_purchase once.
+	 *
+	 * @param mixed $params Input consumed by the Persist the sale state in Word Press storage. operation.
+	 * @return Mixed Result of the sale operation, or a WP_Error when it cannot complete.
 	 */
 	private function handle_sale( $params ) {
 		$email    = sanitize_email( (string) ( $params['ccustemail'] ?? '' ) );
@@ -654,10 +658,11 @@ public function supports_subscriptions() {
 	}
 
 	/**
-	 * Create new user from ClickBank purchase
- * @param mixed $email Email address used by the Persist the user from purchase state in Word Press storage. operation.
- * @param mixed $name Name or key used to select the Persist the user from purchase state in Word Press storage. value.
- * @return mixed Result of the user from purchase operation, or a WP_Error when it cannot complete.
+	 * Create new user from ClickBank purchase.
+	 *
+	 * @param mixed $email Email address used by the Persist the user from purchase state in Word Press storage. operation.
+	 * @param mixed $name  Name or key used to select the Persist the user from purchase state in Word Press storage. value.
+	 * @return Mixed Result of the user from purchase operation, or a WP_Error when it cannot complete.
 	 */
 	private function create_user_from_purchase( $email, $name ) {
 		$base_username = sanitize_user( explode( '@', $email )[0], true );
@@ -698,9 +703,10 @@ public function supports_subscriptions() {
 	}
 
 	/**
-	 * Get unique username
- * @param mixed $base Input consumed by the Resolve the current unique username value from the available Word Press and flow state. operation.
- * @return mixed Result produced by the unique username operation.
+	 * Get unique username.
+	 *
+	 * @param mixed $base Input consumed by the Resolve the current unique username value from the available Word Press and flow state. operation.
+	 * @return Mixed Result produced by the unique username operation.
 	 */
 	private function get_unique_username( $base ) {
 		if ( ! username_exists( $base ) ) {
@@ -723,11 +729,11 @@ public function supports_subscriptions() {
 	/**
 	 * Send welcome email (no plaintext password — use WordPress reset link).
 	 *
-	 * @param int    $user_id
-	 * @param mixed $email Email address used by the Prepare and send the email required for send welcome email. operation.
-	 * @param string $name
-	 * @param mixed $username Name or key used to select the Prepare and send the email required for send welcome email. value.
- * @return mixed Result of the send welcome email operation, or a WP_Error when it cannot complete.
+	 * @param int    $user_id  Value consumed by this operation.
+	 * @param mixed  $email    Email address used by the Prepare and send the email required for send welcome email. operation.
+	 * @param string $name     Value consumed by this operation.
+	 * @param mixed  $username Name or key used to select the Prepare and send the email required for send welcome email. value.
+	 * @return Mixed Result of the send welcome email operation, or a WP_Error when it cannot complete.
 	 */
 	private function send_welcome_email( $user_id, $email, $name, $username ) {
 		$product_name = get_option( 'flosc_product_name', 'Our Product' );
@@ -763,9 +769,10 @@ public function supports_subscriptions() {
 	}
 
 	/**
-	 * Handle refund/chargeback
- * @param mixed $params Input consumed by the Persist the refund state in Word Press storage. operation.
- * @return mixed Result produced by the refund operation.
+	 * Handle refund/chargeback.
+	 *
+	 * @param mixed $params Input consumed by the Persist the refund state in Word Press storage. operation.
+	 * @return Mixed Result produced by the refund operation.
 	 */
 	private function handle_refund( $params ) {
 		$email = sanitize_email( $params['ccustemail'] );
@@ -791,9 +798,10 @@ public function supports_subscriptions() {
 	}
 
 	/**
-	 * Handle subscription rebill
- * @param mixed $params Input consumed by the Persist the rebill state in Word Press storage. operation.
- * @return mixed Result produced by the rebill operation.
+	 * Handle subscription rebill.
+	 *
+	 * @param mixed $params Input consumed by the Persist the rebill state in Word Press storage. operation.
+	 * @return Mixed Result produced by the rebill operation.
 	 */
 	private function handle_rebill( $params ) {
 		$email   = sanitize_email( $params['ccustemail'] );
@@ -818,9 +826,10 @@ public function supports_subscriptions() {
 	}
 
 	/**
-	 * Handle subscription cancellation/uncancellation
- * @param mixed $params Input consumed by the Persist the subscription change state in Word Press storage. operation.
- * @return mixed Result produced by the subscription change operation.
+	 * Handle subscription cancellation/uncancellation.
+	 *
+	 * @param mixed $params Input consumed by the Persist the subscription change state in Word Press storage. operation.
+	 * @return Mixed Result produced by the subscription change operation.
 	 */
 	private function handle_subscription_change( $params ) {
 		$email            = sanitize_email( $params['ccustemail'] );

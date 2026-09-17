@@ -1,8 +1,8 @@
 <?php
 /**
- * FLOSC Flow Edit Page
+ * FLOSC Flow Edit Page.
  *
- * Create/edit a single flow
+ * Create/edit a single flow.
  *
  * @package FLOSC
  * @since 1.2.2

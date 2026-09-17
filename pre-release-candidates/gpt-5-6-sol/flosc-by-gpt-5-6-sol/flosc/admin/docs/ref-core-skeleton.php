@@ -2,14 +2,14 @@
 /**
  * Documentation, Part 3 reference: the plugin core.
  *
- * Prose only — no settings are read and nothing is written. The version
- * numbers, constants, hooks and shortcodes listed below were transcribed from
- * flosc.php and are not read back out of it at render time, so a change there
- * has to be reflected here by hand.
+ * Prose only — no settings are read and nothing is written. The version.
+ * Numbers, constants, hooks and shortcodes listed below were transcribed from.
+ * Flosc.php and are not read back out of it at render time, so a change there.
+ * Has to be reflected here by hand.
  *
- * Included by admin/documentation.php for the ref-core topic, inside the
- * Documentation tab's markup, so the file opens at heading level 2 under the
- * card title the tab has already printed.
+ * Included by admin/documentation.php for the ref-core topic, inside the.
+ * Documentation tab's markup, so the file opens at heading level 2 under the.
+ * Card title the tab has already printed.
  *
  * @package FLOSC
  */

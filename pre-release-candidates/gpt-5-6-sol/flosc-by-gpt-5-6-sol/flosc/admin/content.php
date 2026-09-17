@@ -1,6 +1,6 @@
 <?php
 /**
- * FLOSC Content Tab
+ * FLOSC Content Tab.
  *
  * Merges former Member Levels + Lessons admin into one Content tab (C of FLOSC).
  *
@@ -8,9 +8,9 @@
  * 1. Content types (repeater: singular / plural — Lesson/Lessons, Recipe/Recipes, …)
  * 2. Member levels (registry)
  * 3. Content groups (quiz → WP category)
- * 4. Content protection
+ * 4. Content protection.
  * 5. Complimentary pool / selection (guests)
- * 6. Guest chat caps
+ * 6. Guest chat caps.
  *
  * Setting keys: free_content_item_*, content_item_*, exclude_items_from_freeline.
  *

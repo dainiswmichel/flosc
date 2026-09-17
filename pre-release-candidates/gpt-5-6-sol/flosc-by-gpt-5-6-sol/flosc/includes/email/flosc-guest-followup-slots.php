@@ -2,8 +2,8 @@
 /**
  * Guest follow-up email slots (parameterized — no magic day numbers in setting keys).
  *
- * Canonical keys: guest_followup_1|2|3_{subject,body,min_day,max_day}
- * Legacy keys (read fallback): guest_day10|20|28_* and sent-meta day10|20|28
+ * Canonical keys: guest_followup_1|2|3_{subject,body,min_day,max_day}.
+ * Legacy keys (read fallback): guest_day10|20|28_* and sent-meta day10|20|28.
  *
  * @package FLOSC
  */
@@ -15,11 +15,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * The follow-up slots a guest can be emailed into, keyed by slot id.
  *
- * Computed once per request and held in a static, because the list is derived
- * from settings that cannot change mid-request and several callers ask for it
- * on the same page load.
+ * Computed once per request and held in a static, because the list is derived.
+ * From settings that cannot change mid-request and several callers ask for it.
+ * On the same page load.
  *
- * @return array<string, array<string, mixed>> Slot id => slot definition.
+ * @return Array<string, array<string, mixed>> Slot id => slot definition.
  */
 function flosc_guest_followup_slots() {
 	static $slots = null;
@@ -67,10 +67,10 @@ function flosc_guest_followup_slots() {
  * Read a follow-up setting with legacy key fallback.
  *
  * @param array  $settings Flow settings.
- * @param string $slot_id  guest_followup_1|2|3.
- * @param string $suffix   subject|body|min_day|max_day.
+ * @param string $slot_id  Guest_followup_1|2|3.
+ * @param string $suffix   Subject|body|min_day|max_day.
  * @param mixed  $fallback Returned when neither the current nor the legacy key is set.
- * @return mixed
+ * @return Mixed.
  */
 function flosc_guest_followup_get( array $settings, $slot_id, $suffix, $fallback = '' ) {
 	$slot_id = sanitize_key( (string) $slot_id );
@@ -97,8 +97,8 @@ function flosc_guest_followup_get( array $settings, $slot_id, $suffix, $fallback
  * Whether this follow-up was already sent (new or legacy sent-meta key).
  *
  * @param array  $sent    Values from user meta _flosc_guest_emails_sent.
- * @param string $slot_id guest_followup_N.
- * @return bool
+ * @param string $slot_id Guest_followup_N.
+ * @return Bool.
  */
 function flosc_guest_followup_was_sent( array $sent, $slot_id ) {
 	$slot_id = sanitize_key( (string) $slot_id );
@@ -121,7 +121,7 @@ function flosc_guest_followup_was_sent( array $sent, $slot_id ) {
 /**
  * Setting key stems for textarea sanitization (new + legacy bodies).
  *
- * @return string[]
+ * @return String[]
  */
 function flosc_guest_followup_textarea_keys() {
 	$keys = array( 'guest_welcome_body' );
@@ -138,7 +138,7 @@ function flosc_guest_followup_textarea_keys() {
 /**
  * Engagement / allowlist template ids (new + legacy).
  *
- * @return string[]
+ * @return String[]
  */
 function flosc_guest_followup_template_ids() {
 	$ids = array( '', 'reengagement', 'guest_welcome' );

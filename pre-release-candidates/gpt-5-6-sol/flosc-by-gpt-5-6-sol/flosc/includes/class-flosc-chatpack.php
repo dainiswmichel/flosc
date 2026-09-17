@@ -1,20 +1,20 @@
 <?php
 /**
- * FLOSC Chatpack — Unified AI Context Builder
+ * FLOSC Chatpack — Unified AI Context Builder.
  *
- * v1.9.2: First-contact vs subsequent-message prompt strategy.
+ * V1.9.2: First-contact vs subsequent-message prompt strategy.
  *
  * On the FIRST message of a session, sends a comprehensive "chatpack" containing:
- *   - FLOSC identity, WordPress environment, user identity, flow context,
- *     knowledge base, feedback/praise, conversation rules.
+ * - FLOSC identity, WordPress environment, user identity, flow context,.
+ * Knowledge base, feedback/praise, conversation rules.
  *
  * On SUBSEQUENT messages, sends a slim follow-up with only:
- *   - Session reference, message pair number, phase changes, new IVR guidance,
- *     updated user state (if changed).
+ * - Session reference, message pair number, phase changes, new IVR guidance,.
+ * Updated user state (if changed).
  *
  * All sections are configurable by floscAdmins via the WordPress dashboard.
- * The chatpack also provides backend-authoritative session hashing and
- * input-response pair counting.
+ * The chatpack also provides backend-authoritative session hashing and.
+ * Input-response pair counting.
  *
  * @package FLOSC
  * @since 1.9.2
@@ -32,14 +32,14 @@ class FLOSC_Chatpack {
 	/**
 	 * Generate or retrieve the permanent FLOSC installation hash.
 	 *
-	 * Format: flosc_{domain}_{MTS}_{7-char hex}
-	 * Example: flosc_host_flow_26_02m_21d_T14h30m12s_a3f7e21
+	 * Format: flosc_{domain}_{MTS}_{7-char hex}.
+	 * Example: flosc_host_flow_26_02m_21d_T14h30m12s_a3f7e21.
 	 *
 	 * Generated once on first call, then stored permanently in wp_options.
 	 * The MTS (Michel Time Stamp) records when FLOSC first generated the hash.
 	 * The 7-char hex suffix provides global uniqueness across all FLOSC installs.
 	 *
-	 * @return string Permanent installation hash
+	 * @return String Permanent installation hash.
 	 * @since 1.9.4
 	 */
 	public static function generate_flosc_hash() {
@@ -76,19 +76,19 @@ class FLOSC_Chatpack {
 	/**
 	 * Generate a session hash linked to the parent FLOSC installation hash.
 	 *
-	 * Format: {parent_fingerprint}_flosc_session_{MTS}_{5-char hex}
-	 * Example: a3f7e21_flosc_session_26_02m_21d_T16h05m33s_c2ae3
+	 * Format: {parent_fingerprint}_flosc_session_{MTS}_{5-char hex}.
+	 * Example: a3f7e21_flosc_session_26_02m_21d_T16h05m33s_c2ae3.
 	 *
-	 * The parent fingerprint (first 7 chars) is extracted from the flosc_hash suffix,
-	 * linking every session back to its parent install without repeating the domain.
+	 * The parent fingerprint (first 7 chars) is extracted from the flosc_hash suffix,.
+	 * Linking every session back to its parent install without repeating the domain.
 	 * The 5-char hex suffix disambiguates sessions starting in the same second.
 	 *
 	 * Generated once per session. The flosc_hash must be passed in.
 	 *
 	 * @param string   $flosc_hash The parent FLOSC installation hash.
-	 * @param int      $user_id WordPress user ID (0 for visitors).
+	 * @param int      $user_id    WordPress user ID (0 for visitors).
 	 * @param int|null $session_id FLOSC session ID.
-	 * @return string Session hash
+	 * @return String Session hash.
 	 * @since 1.9.4
 	 */
 	public static function generate_session_hash( $flosc_hash, $user_id, $session_id = null ) {
@@ -115,11 +115,11 @@ class FLOSC_Chatpack {
 	 * Count message pairs from stored session data (backend-authoritative).
 	 * One pair = user message + assistant response.
 	 *
-	 * @param int $session_id FLOSC session ID.
-	 * @param int $user_id WordPress user ID.
- * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
- * @param mixed $session_id_raw Identifier used to select the record involved in the Coordinate the count message pairs behavior implemented by this code path. operation.
-	 * @return int Number of completed pairs before this message
+	 * @param int   $session_id     FLOSC session ID.
+	 * @param int   $user_id        WordPress user ID.
+	 * @param mixed $flow_id        Flow identifier used to resolve flow-scoped configuration and state.
+	 * @param mixed $session_id_raw Identifier used to select the record involved in the Coordinate the count message pairs behavior implemented by this code path. operation.
+	 * @return Int Number of completed pairs before this message.
 	 */
 	public static function count_message_pairs( $session_id, $user_id, $flow_id = '', $session_id_raw = '' ) {
 		if ( ! $session_id ) {
@@ -165,12 +165,12 @@ class FLOSC_Chatpack {
 	 * Load conversation history from stored session (for dispatch path).
 	 * RAG handler has its own loader; this gives dispatch parity.
 	 *
-	 * @param int $session_id FLOSC session ID.
-	 * @param int $user_id WordPress user ID.
-	 * @param int $max_messages Maximum messages to return (default 10).
- * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
- * @param mixed $session_id_raw Identifier used to select the record involved in the Resolve the current conversation history value from the available Word Press and flow state. operation.
-	 * @return array Messages in [role, content] format for AI API
+	 * @param int   $session_id     FLOSC session ID.
+	 * @param int   $user_id        WordPress user ID.
+	 * @param int   $max_messages   Maximum messages to return (default 10).
+	 * @param mixed $flow_id        Flow identifier used to resolve flow-scoped configuration and state.
+	 * @param mixed $session_id_raw Identifier used to select the record involved in the Resolve the current conversation history value from the available Word Press and flow state. operation.
+	 * @return Array Messages in [role, content] format for AI API.
 	 */
 	public static function load_conversation_history( $session_id, $user_id, $max_messages = 10, $flow_id = '', $session_id_raw = '' ) {
 		$session_id   = absint( $session_id );
@@ -231,10 +231,10 @@ class FLOSC_Chatpack {
 	/**
 	 * Detect if this is the first message in a session.
 	 *
-	 * @param int $session_id FLOSC session ID.
-	 * @param int $user_id WordPress user ID.
- * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
-	 * @return bool True if no prior messages exist
+	 * @param int   $session_id FLOSC session ID.
+	 * @param int   $user_id    WordPress user ID.
+	 * @param mixed $flow_id    Flow identifier used to resolve flow-scoped configuration and state.
+	 * @return Bool True if no prior messages exist.
 	 */
 	public static function is_first_message( $session_id, $user_id, $flow_id = '' ) {
 		return 0 === self::count_message_pairs( $session_id, $user_id, $flow_id );
@@ -244,14 +244,14 @@ class FLOSC_Chatpack {
 	 * Build the FULL chatpack for first-contact messages.
 	 * This is the comprehensive system prompt sent on message #1.
 	 *
-	 * @param string      $phase Current FLOSC phase.
+	 * @param string      $phase        Current FLOSC phase.
 	 * @param array       $eval_context Backend-authoritative evaluation context.
-	 * @param string      $flow_id Current flow ID.
-	 * @param string      $flosc_hash Permanent installation hash (FLOSC-HASH).
+	 * @param string      $flow_id      Current flow ID.
+	 * @param string      $flosc_hash   Permanent installation hash (FLOSC-HASH).
 	 * @param string      $session_hash Generated session hash (FLOSC-SESSION).
-	 * @param int         $pair_number Current message pair number (1-based).
+	 * @param int         $pair_number  Current message pair number (1-based).
 	 * @param string|null $ivr_guidance IVR scripted response (if matched).
-	 * @return string Complete system prompt
+	 * @return String Complete system prompt.
 	 * @since 1.9.4: Added flosc_hash parameter, session_hash now second
 	 */
 	public static function build_full_chatpack( $phase, $eval_context, $flow_id, $flosc_hash, $session_hash, $pair_number, $ivr_guidance = null ) {
@@ -290,13 +290,13 @@ class FLOSC_Chatpack {
 	 * Build the SLIM follow-up prompt for subsequent messages.
 	 * Only includes changed state + session reference.
 	 *
-	 * @param string      $phase Current FLOSC phase.
-	 * @param array       $eval_context Backend-authoritative evaluation context.
-	 * @param string      $session_hash Same session hash as first message.
-	 * @param int         $pair_number Current message pair number.
-	 * @param string|null $ivr_guidance IVR scripted response (if matched).
+	 * @param string      $phase          Current FLOSC phase.
+	 * @param array       $eval_context   Backend-authoritative evaluation context.
+	 * @param string      $session_hash   Same session hash as first message.
+	 * @param int         $pair_number    Current message pair number.
+	 * @param string|null $ivr_guidance   IVR scripted response (if matched).
 	 * @param string|null $previous_phase Phase from previous message (for change detection).
-	 * @return string Slim follow-up system prompt
+	 * @return String Slim follow-up system prompt.
 	 */
 	public static function build_followup_chatpack( $phase, $eval_context, $session_hash, $pair_number, $ivr_guidance = null, $previous_phase = null ) {
 		$sections = array();
@@ -426,14 +426,14 @@ class FLOSC_Chatpack {
 	 * Page-context block shared by first-contact and follow-up chatpacks.
 	 *
 	 * Two things ride here, and they are deliberately separate:
-	 *   - PAGE AWARENESS: lightweight title/URL/ID, present on EVERY turn so the bot
-	 *     can answer "what page am I on?" — cheap enough for idle browsing.
-	 *   - PAGE CONTENT: the full post body, injected ONLY on a turn where the user
-	 *     asked about the page (server sets browsing_page_content for that turn only).
+	 * - PAGE AWARENESS: lightweight title/URL/ID, present on EVERY turn so the bot.
+	 * Can answer "what page am I on?" — cheap enough for idle browsing.
+	 * - PAGE CONTENT: the full post body, injected ONLY on a turn where the user.
+	 * Asked about the page (server sets browsing_page_content for that turn only).
 	 * COMPANION MODE POLICY is appended when the surface is the docked companion.
 	 *
-	 * @param array $eval_context
-	 * @return string Section text, or '' when there is no page context to add.
+	 * @param array $eval_context Value consumed by this operation.
+	 * @return String Section text, or '' when there is no page context to add.
 	 */
 	private static function build_page_context_section( $eval_context ) {
 		$surface          = sanitize_key( (string) ( $eval_context['browsing_surface'] ?? '' ) );
@@ -497,19 +497,19 @@ class FLOSC_Chatpack {
 		return $section;
 	}
 
-	// ─────────────────────────────────────────────────────────
+	// ─────────────────────────────────────────────────────────.
 	// SECTION BUILDERS — each builds one piece of the chatpack.
-	// ─────────────────────────────────────────────────────────
+	// ─────────────────────────────────────────────────────────.
 
 	/**
 	 * Chatpack header with installation + session tracking metadata.
 	 *
 	 * @since 1.9.4: Added flosc_hash (installation ID)
- * @param mixed $flosc_hash Input consumed by the Build the structured value consumed by header. operation.
- * @param mixed $session_hash Input consumed by the Build the structured value consumed by header. operation.
- * @param mixed $pair_number Input consumed by the Build the structured value consumed by header. operation.
- * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
- * @return mixed Result produced by the header operation.
+	 * @param mixed $flosc_hash   Input consumed by the Build the structured value consumed by header. operation.
+	 * @param mixed $session_hash Input consumed by the Build the structured value consumed by header. operation.
+	 * @param mixed $pair_number  Input consumed by the Build the structured value consumed by header. operation.
+	 * @param mixed $flow_id      Flow identifier used to resolve flow-scoped configuration and state.
+	 * @return Mixed Result produced by the header operation.
 	 */
 	private static function build_header( $flosc_hash, $session_hash, $pair_number, $flow_id ) {
 		$flow_name = $flow_id ? $flow_id : 'default';
@@ -526,10 +526,10 @@ class FLOSC_Chatpack {
 	 * Section 1: FLOSC Identity — what FLOSC is, product info, AI persona.
 	 * Reads from floscAdmin-configurable settings.
 	 *
-	 * @param string $flow_id       Flow stem.
-	 * @param bool   $compact       True on follow-ups: name/role/scope only, not the compiled profile.
-	 * @param array  $eval_context  Backend-authoritative turn context (user_id, flow_id).
- * @return mixed Result produced by the identity section operation.
+	 * @param string $flow_id      Flow stem.
+	 * @param bool   $compact      True on follow-ups: name/role/scope only, not the compiled profile.
+	 * @param array  $eval_context Backend-authoritative turn context (user_id, flow_id).
+	 * @return Mixed Result produced by the identity section operation.
 	 */
 	private static function build_identity_section( $flow_id = '', $compact = false, $eval_context = array() ) {
 		$flow_id = ( null !== $flow_id && '' !== $flow_id ) ? $flow_id : null;
@@ -744,7 +744,7 @@ class FLOSC_Chatpack {
 	 * Administrator-authored guidance for this authenticated user only.
 	 *
 	 * @param array $eval_context Backend-authoritative evaluation context.
-	 * @return string
+	 * @return String.
 	 */
 	private static function build_user_sticky_section( $eval_context ) {
 		return function_exists( 'flosc_get_user_sticky_prompt' )
@@ -757,7 +757,7 @@ class FLOSC_Chatpack {
 	 *
 	 * @param string $profile         Compiled personality Markdown.
 	 * @param string $personalization Expanded per-user guidance.
-	 * @return string
+	 * @return String.
 	 */
 	private static function insert_user_personalization( $profile, $personalization ) {
 		if ( preg_match( '/^#\s*1\s+Personalization\s*$/m', $profile ) ) {
@@ -782,7 +782,8 @@ class FLOSC_Chatpack {
 	/**
 	 * Section 2: WordPress Environment — site info the AI should know.
 	 * All from WordPress core functions — not configurable (it's factual).
- * @return mixed Result produced by the wordpress section operation.
+	 *
+	 * @return Mixed Result produced by the WordPress section operation.
 	 */
 	private static function build_wordpress_section() {
 		// These are WordPress functions — they'll be available at runtime.
@@ -814,8 +815,9 @@ class FLOSC_Chatpack {
 	/**
 	 * Section 3: User Identity — who is talking to the AI.
 	 * Backend-authoritative, not spoofable.
- * @param mixed $eval_context Context values used to resolve request- or flow-specific behavior.
- * @return mixed Result produced by the user section operation.
+	 *
+	 * @param mixed $eval_context Context values used to resolve request- or flow-specific behavior.
+	 * @return Mixed Result produced by the user section operation.
 	 */
 	private static function build_user_section( $eval_context ) {
 		$section = "## 3. USER IDENTITY\n\n";
@@ -937,10 +939,11 @@ class FLOSC_Chatpack {
 
 	/**
 	 * Section 4: Flow Context — current phase and phase-specific instructions.
- * @param mixed $phase Input consumed by the Build the structured value consumed by flow section. operation.
- * @param mixed $eval_context Context values used to resolve request- or flow-specific behavior.
- * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
- * @return mixed Result produced by the flow section operation.
+	 *
+	 * @param mixed $phase        Input consumed by the Build the structured value consumed by flow section. operation.
+	 * @param mixed $eval_context Context values used to resolve request- or flow-specific behavior.
+	 * @param mixed $flow_id      Flow identifier used to resolve flow-scoped configuration and state.
+	 * @return Mixed Result produced by the flow section operation.
 	 */
 	private static function build_flow_section( $phase, $eval_context, $flow_id = null ) {
 		// build_followup_chatpack() hands us $eval_context['flow_id'] cast to a.
@@ -1019,8 +1022,9 @@ class FLOSC_Chatpack {
 	/**
 	 * Section 5: Knowledge Base — feedback, praise, KB files.
 	 * Feedback and praise are floscAdmin-managed training data.
- * @param mixed $eval_context Context values used to resolve request- or flow-specific behavior.
- * @return mixed Result produced by the knowledge section operation.
+	 *
+	 * @param mixed $eval_context Context values used to resolve request- or flow-specific behavior.
+	 * @return Mixed Result produced by the knowledge section operation.
 	 */
 	private static function build_knowledge_section( $eval_context ) {
 		$section = '';
@@ -1108,8 +1112,9 @@ class FLOSC_Chatpack {
 
 	/**
 	 * Section 6: IVR Guidance — scripted response the AI should rewrite.
- * @param mixed $ivr_guidance IVR identifier or filename used to select the flow configuration.
- * @return mixed Result produced by the ivr section operation.
+	 *
+	 * @param mixed $ivr_guidance IVR identifier or filename used to select the flow configuration.
+	 * @return Mixed Result produced by the ivr section operation.
 	 */
 	private static function build_ivr_section( $ivr_guidance ) {
 		return "## IVR RESPONSE GUIDANCE\n\n"
@@ -1128,9 +1133,10 @@ class FLOSC_Chatpack {
 
 	/**
 	 * Section 7: Conversation Rules — meta-instructions about the session.
- * @param mixed $pair_number Input consumed by the Build the structured value consumed by rules section. operation.
- * @param mixed $eval_context Context values used to resolve request- or flow-specific behavior.
- * @return mixed Result produced by the rules section operation.
+	 *
+	 * @param mixed $pair_number  Input consumed by the Build the structured value consumed by rules section. operation.
+	 * @param mixed $eval_context Context values used to resolve request- or flow-specific behavior.
+	 * @return Mixed Result produced by the rules section operation.
 	 */
 	private static function build_rules_section( $pair_number, $eval_context ) {
 		$phase    = $eval_context['phase'] ?? 'freeline';
@@ -1207,17 +1213,17 @@ class FLOSC_Chatpack {
 		return $section;
 	}
 
-	// ─────────────────────────────────────────────────────────
+	// ─────────────────────────────────────────────────────────.
 	// HELPER METHODS.
-	// ─────────────────────────────────────────────────────────
+	// ─────────────────────────────────────────────────────────.
 
 	/**
 	 * Fix 11b: Build server-generated personalized lesson recommendations.
 	 * PHP makes the connection between quiz weak sounds and specific lessons.
 	 * The AI receives a generated recommendation — no inference required.
 	 *
-	 * @param array $eval_context
-	 * @return string Recommendation block, or empty string if not applicable.
+	 * @param array $eval_context Value consumed by this operation.
+	 * @return String Recommendation block, or empty string if not applicable.
 	 */
 	private static function build_personalized_recommendations( $eval_context ) {
 		$weakest_sounds = $eval_context['ipa_weakest_sounds'] ?? array();
@@ -1254,10 +1260,11 @@ class FLOSC_Chatpack {
 
 	/**
 	 * Get phase-specific behavioral instructions.
- * @param mixed $phase Input consumed by the Resolve the current phase instructions value from the available Word Press and flow state. operation.
- * @param mixed $eval_context Context values used to resolve request- or flow-specific behavior.
- * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
- * @return mixed Result produced by the phase instructions operation.
+	 *
+	 * @param mixed $phase        Input consumed by the Resolve the current phase instructions value from the available Word Press and flow state. operation.
+	 * @param mixed $eval_context Context values used to resolve request- or flow-specific behavior.
+	 * @param mixed $flow_id      Flow identifier used to resolve flow-scoped configuration and state.
+	 * @return Mixed Result produced by the phase instructions operation.
 	 */
 	private static function get_phase_instructions( $phase, $eval_context, $flow_id = null ) {
 		$access_level = $eval_context['access_level'] ?? 'visitor';
@@ -1341,8 +1348,9 @@ class FLOSC_Chatpack {
 
 	/**
 	 * Get a one-liner description for phase change notifications.
- * @param mixed $phase Input consumed by the Resolve the current phase one liner value from the available Word Press and flow state. operation.
- * @return mixed Result produced by the phase one liner operation.
+	 *
+	 * @param mixed $phase Input consumed by the Resolve the current phase one liner value from the available Word Press and flow state. operation.
+	 * @return Mixed Result produced by the phase one liner operation.
 	 */
 	private static function get_phase_one_liner( $phase ) {
 		$liners = array(
@@ -1358,10 +1366,11 @@ class FLOSC_Chatpack {
 	/**
 	 * Resolve phase outcomes from per-flow/global settings with safe defaults.
 	 * Accepts either a map (phase_outcomes[phase]) or per-phase keys.
- * @param mixed $phase Input consumed by the Resolve the current phase outcomes value from the available Word Press and flow state. operation.
- * @param mixed $eval_context Context values used to resolve request- or flow-specific behavior.
- * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
- * @return mixed Result produced by the phase outcomes operation.
+	 *
+	 * @param mixed $phase        Input consumed by the Resolve the current phase outcomes value from the available Word Press and flow state. operation.
+	 * @param mixed $eval_context Context values used to resolve request- or flow-specific behavior.
+	 * @param mixed $flow_id      Flow identifier used to resolve flow-scoped configuration and state.
+	 * @return Mixed Result produced by the phase outcomes operation.
 	 */
 	private static function get_phase_outcomes( $phase, $eval_context = array(), $flow_id = null ) {
 		$raw_map = flosc_get_setting( 'phase_outcomes', array(), $flow_id );
@@ -1391,8 +1400,9 @@ class FLOSC_Chatpack {
 
 	/**
 	 * Normalize outcomes from string/array formats into a clean string list.
- * @param mixed $raw Input consumed by the Normalize the input into the canonical form required for normalize outcomes. operation.
- * @return array Structured normalize outcomes data.
+	 *
+	 * @param mixed $raw Input consumed by the Normalize the input into the canonical form required for normalize outcomes. operation.
+	 * @return Array Structured normalize outcomes data.
 	 */
 	private static function normalize_outcomes( $raw ) {
 		if ( is_array( $raw ) ) {
@@ -1430,8 +1440,9 @@ class FLOSC_Chatpack {
 
 	/**
 	 * Detect if an outcome list includes quiz-oriented intent.
- * @param mixed $outcomes Input consumed by the Coordinate the outcomes include quiz behavior implemented by this code path. operation.
- * @return bool Whether outcomes include quiz applies to the current state.
+	 *
+	 * @param mixed $outcomes Input consumed by the Coordinate the outcomes include quiz behavior implemented by this code path. operation.
+	 * @return Bool Whether outcomes include quiz applies to the current state.
 	 */
 	private static function outcomes_include_quiz( $outcomes ) {
 		if ( ! is_array( $outcomes ) || empty( $outcomes ) ) {
@@ -1448,9 +1459,10 @@ class FLOSC_Chatpack {
 
 	/**
 	 * Backward-compatible defaults when no explicit outcomes are configured.
- * @param mixed $phase Input consumed by the Resolve the current default phase outcomes value from the available Word Press and flow state. operation.
- * @param mixed $eval_context Context values used to resolve request- or flow-specific behavior.
- * @return array Structured default phase outcomes data.
+	 *
+	 * @param mixed $phase        Input consumed by the Resolve the current default phase outcomes value from the available Word Press and flow state. operation.
+	 * @param mixed $eval_context Context values used to resolve request- or flow-specific behavior.
+	 * @return Array Structured default phase outcomes data.
 	 */
 	private static function get_default_phase_outcomes( $phase, $eval_context = array() ) {
 		$quiz_in_progress = ! empty( $eval_context['quiz_in_progress'] );
@@ -1476,8 +1488,9 @@ class FLOSC_Chatpack {
 	/**
 	 * Load knowledge base .md files from ai_configuration_files/ directory.
 	 * Access-filtered: visitors get public files, members get everything.
- * @param mixed $eval_context Context values used to resolve request- or flow-specific behavior.
- * @return mixed Result produced by the knowledge files operation.
+	 *
+	 * @param mixed $eval_context Context values used to resolve request- or flow-specific behavior.
+	 * @return Mixed Result produced by the knowledge files operation.
 	 */
 	private static function load_knowledge_files( $eval_context ) {
 		$flow_stem = sanitize_key( (string) ( $eval_context['flow_id'] ?? '' ) );

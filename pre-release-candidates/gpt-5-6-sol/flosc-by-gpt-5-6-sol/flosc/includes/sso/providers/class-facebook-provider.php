@@ -1,13 +1,13 @@
 <?php
 /**
- * Facebook SSO Provider
+ * Facebook SSO Provider.
  *
  * Implements Facebook Login for FLOSC.
  * Uses Facebook Graph API v19.0 (aligned with BuddyBoss).
  *
  * Note: Facebook/Meta requires periodic API version updates.
- * Check https://developers.facebook.com/docs/graph-api/changelog
- * for deprecation notices (typically 2-year lifecycle).
+ * Check https://developers.facebook.com/docs/graph-api/changelog.
+ * For deprecation notices (typically 2-year lifecycle).
  *
  * @package FLOSC
  * @subpackage SSO\Providers
@@ -23,21 +23,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Facebook Provider Class
+ * Facebook Provider Class.
  */
 class Facebook_Provider extends SSO_Provider_Base {
 
 	/**
-	 * Graph API version
+	 * Graph API version.
 	 * Aligned with BuddyBoss proven working version (v19.0)
-	 * Facebook deprecates versions ~2 years after release
+	 * Facebook deprecates versions ~2 years after release.
 	 *
 	 * @since 1.4.6
 	 */
 	const GRAPH_VERSION = 'v19.0';
 
 	/**
-	 * Constructor
+	 * Constructor.
 	 */
 	public function __construct() {
 		$this->provider_id   = 'facebook';
@@ -57,10 +57,10 @@ class Facebook_Provider extends SSO_Provider_Base {
 	}
 
 	/**
-	 * Customize authorization parameters for Facebook
+	 * Customize authorization parameters for Facebook.
 	 *
 	 * @param array $params Default parameters.
-	 * @return array Modified parameters
+	 * @return Array Modified parameters.
 	 */
 	protected function customize_auth_params( $params ) {
 		// Facebook uses comma-separated scopes, not spaces.
@@ -75,16 +75,16 @@ class Facebook_Provider extends SSO_Provider_Base {
 	/**
 	 * Get user info from Facebook.
 	 *
-	 * Facebook returns nothing by default: the fields wanted have to be named
-	 * explicitly in the request, which is why this method builds a field list
-	 * rather than simply calling the endpoint.
+	 * Facebook returns nothing by default: the fields wanted have to be named.
+	 * Explicitly in the request, which is why this method builds a field list.
+	 * Rather than simply calling the endpoint.
 	 *
 	 * @param string $access_token OAuth access token.
 	 * @param array  $token_data   Full token response. Unused by this provider;
-	 *                             present because OAuth2_Handler passes the same
-	 *                             arguments to every provider, and Apple reads
-	 *                             its id_token and form_post claims from it.
-	 * @return array|WP_Error User data, or WP_Error if the call fails.
+	 * Present because OAuth2_Handler passes the same.
+	 * Arguments to every provider, and Apple reads.
+	 * Its id_token and form_post claims from it.
+	 * @return Array|WP_Error User data, or WP_Error if the call fails.
 	 */
 	public function get_user_info( $access_token, $token_data = array() ) {
 		// Facebook requires explicit field requests.
@@ -130,10 +130,10 @@ class Facebook_Provider extends SSO_Provider_Base {
 	}
 
 	/**
-	 * Normalize Facebook user data to standard format
+	 * Normalize Facebook user data to standard format.
 	 *
 	 * @param array $raw_data Raw user data from Facebook.
-	 * @return array Normalized user data
+	 * @return Array Normalized user data.
 	 */
 	protected function normalize_user_data( $raw_data ) {
 		// Pass 8: field-sanitize after provider JSON decode; do not keep raw blob.
@@ -165,19 +165,19 @@ class Facebook_Provider extends SSO_Provider_Base {
 	}
 
 	/**
-	 * Get provider-specific user ID
+	 * Get provider-specific user ID.
 	 *
 	 * @param array $raw_data Raw user data.
-	 * @return string Provider user ID
+	 * @return String Provider user ID.
 	 */
 	public function get_provider_user_id( $raw_data ) {
 		return $raw_data['id'] ?? '';
 	}
 
 	/**
-	 * Get button colors
+	 * Get button colors.
 	 *
-	 * @return array
+	 * @return Array.
 	 */
 	public function get_button_colors() {
 		return array(
@@ -188,9 +188,9 @@ class Facebook_Provider extends SSO_Provider_Base {
 	}
 
 	/**
-	 * Get setup instructions for Facebook Login
+	 * Get setup instructions for Facebook Login.
 	 *
-	 * @return string HTML instructions
+	 * @return String HTML instructions.
 	 */
 	public function get_setup_instructions() {
 		$callback_url = $this->get_callback_url();
@@ -235,12 +235,12 @@ class Facebook_Provider extends SSO_Provider_Base {
 	}
 
 	/**
-	 * Exchange authorization code for access token
+	 * Exchange authorization code for access token.
 	 * Override to add long-lived token exchange (BuddyBoss pattern)
 	 *
-	 * @param string $code Authorization code.
+	 * @param string $code         Authorization code.
 	 * @param string $redirect_uri Callback URL.
-	 * @return array|WP_Error Token data or error
+	 * @return Array|WP_Error Token data or error.
 	 * @since 1.4.6
 	 */
 	public function exchange_code_for_token( $code, $redirect_uri ) {
@@ -266,11 +266,11 @@ class Facebook_Provider extends SSO_Provider_Base {
 	}
 
 	/**
-	 * Request long-lived access token from Facebook
-	 * BuddyBoss pattern — exchanges short-lived token for ~60 day token
+	 * Request long-lived access token from Facebook.
+	 * BuddyBoss pattern — exchanges short-lived token for ~60 day token.
 	 *
 	 * @param string $short_lived_token The short-lived access token.
-	 * @return array|WP_Error Long-lived token data or error
+	 * @return Array|WP_Error Long-lived token data or error.
 	 * @since 1.4.6
 	 */
 	private function request_long_lived_token( $short_lived_token ) {
@@ -315,7 +315,7 @@ class Facebook_Provider extends SSO_Provider_Base {
 	 * Verify app access token (optional security check)
 	 *
 	 * @param string $access_token Token to verify.
-	 * @return bool|WP_Error
+	 * @return Bool|WP_Error.
 	 */
 	public function verify_access_token( $access_token ) {
 		$app_access_token = $this->client_id . '|' . $this->client_secret;

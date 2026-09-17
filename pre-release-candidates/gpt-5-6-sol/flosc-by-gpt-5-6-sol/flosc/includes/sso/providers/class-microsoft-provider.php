@@ -1,6 +1,6 @@
 <?php
 /**
- * Microsoft SSO Provider
+ * Microsoft SSO Provider.
  *
  * Implements Microsoft Account login for FLOSC.
  * Uses Microsoft Identity Platform (Azure AD v2.0 endpoints).
@@ -20,19 +20,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Microsoft Provider Class
+ * Microsoft Provider Class.
  */
 class Microsoft_Provider extends SSO_Provider_Base {
 
 	/**
-	 * Tenant - 'common' allows both personal and work accounts
-	 * Can be set to 'consumers' for personal only, 'organizations' for work only
-	 * Or a specific tenant ID for single-tenant apps
+	 * Tenant - 'common' allows both personal and work accounts.
+	 * Can be set to 'consumers' for personal only, 'organizations' for work only.
+	 * Or a specific tenant ID for single-tenant apps.
 	 */
 	const TENANT = 'common';
 
 	/**
-	 * Constructor
+	 * Constructor.
 	 */
 	public function __construct() {
 		$this->provider_id   = 'microsoft';
@@ -55,10 +55,10 @@ class Microsoft_Provider extends SSO_Provider_Base {
 	}
 
 	/**
-	 * Customize authorization parameters for Microsoft
+	 * Customize authorization parameters for Microsoft.
 	 *
 	 * @param array $params Default parameters.
-	 * @return array Modified parameters
+	 * @return Array Modified parameters.
 	 */
 	protected function customize_auth_params( $params ) {
 		// Microsoft prefers 'response_mode=query' for web apps.
@@ -73,15 +73,15 @@ class Microsoft_Provider extends SSO_Provider_Base {
 	/**
 	 * Get user info from Microsoft Graph.
 	 *
-	 * Microsoft serves its claims from the Graph /me endpoint, so the token
-	 * response is not consulted here.
+	 * Microsoft serves its claims from the Graph /me endpoint, so the token.
+	 * Response is not consulted here.
 	 *
 	 * @param string $access_token OAuth access token.
 	 * @param array  $token_data   Full token response. Unused by this provider;
-	 *                             present because OAuth2_Handler passes the same
-	 *                             arguments to every provider, and Apple reads
-	 *                             its id_token and form_post claims from it.
-	 * @return array|WP_Error User data, or WP_Error if the call fails.
+	 * Present because OAuth2_Handler passes the same.
+	 * Arguments to every provider, and Apple reads.
+	 * Its id_token and form_post claims from it.
+	 * @return Array|WP_Error User data, or WP_Error if the call fails.
 	 */
 	public function get_user_info( $access_token, $token_data = array() ) {
 		$response = wp_remote_get(
@@ -116,10 +116,10 @@ class Microsoft_Provider extends SSO_Provider_Base {
 	}
 
 	/**
-	 * Get user's profile photo from Microsoft Graph
+	 * Get user's profile photo from Microsoft Graph.
 	 *
 	 * @param string $access_token OAuth access token.
-	 * @return string Photo URL or empty string
+	 * @return String Photo URL or empty string.
 	 */
 	private function get_profile_photo( $access_token ) {
 		$response = wp_remote_get(
@@ -154,10 +154,10 @@ class Microsoft_Provider extends SSO_Provider_Base {
 	}
 
 	/**
-	 * Normalize Microsoft user data to standard format
+	 * Normalize Microsoft user data to standard format.
 	 *
 	 * @param array $raw_data Raw user data from Microsoft Graph.
-	 * @return array Normalized user data
+	 * @return Array Normalized user data.
 	 */
 	protected function normalize_user_data( $raw_data ) {
 		// Pass 8: field-sanitize after Graph JSON decode; do not keep raw blob.
@@ -176,19 +176,19 @@ class Microsoft_Provider extends SSO_Provider_Base {
 	}
 
 	/**
-	 * Get provider-specific user ID
+	 * Get provider-specific user ID.
 	 *
 	 * @param array $raw_data Raw user data.
-	 * @return string Provider user ID
+	 * @return String Provider user ID.
 	 */
 	public function get_provider_user_id( $raw_data ) {
 		return $raw_data['id'] ?? '';
 	}
 
 	/**
-	 * Get button colors
+	 * Get button colors.
 	 *
-	 * @return array
+	 * @return Array.
 	 */
 	public function get_button_colors() {
 		return array(
@@ -199,9 +199,9 @@ class Microsoft_Provider extends SSO_Provider_Base {
 	}
 
 	/**
-	 * Get setup instructions for Microsoft Login
+	 * Get setup instructions for Microsoft Login.
 	 *
-	 * @return string HTML instructions
+	 * @return String HTML instructions.
 	 */
 	public function get_setup_instructions() {
 		$callback_url = $this->get_callback_url();

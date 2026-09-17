@@ -1,22 +1,22 @@
 <?php
 /**
- * FLOSC Companion Configuration Tab
+ * FLOSC Companion Configuration Tab.
  *
- * Configures the floating Companion chat widget that appears on WordPress
- * pages alongside FLOSC content and interactions.
+ * Configures the floating Companion chat widget that appears on WordPress.
+ * Pages alongside FLOSC content and interactions.
  *
  * Operator display modes (stored values unchanged for compatibility):
- * - Full-page  (in_chat)   — Chat only at the flow URL; no site bubble
+ * - Full-page  (in_chat)   — Chat only at the flow URL; no site bubble.
  * - Companion  (companion) — Floating bubble on WP pages (except full chat route)
- * - Hybrid     (both)      — Full-page + companion; expand/collapse continuous session
+ * - Hybrid     (both)      — Full-page + companion; expand/collapse continuous session.
  *
  * Settings (per-flow via companion override group):
- * - content_display_mode:  'in_chat' | 'companion' | 'both'
- * - enabled:               Whether the companion widget is active
- * - position:              'bottom-right' | 'bottom-left'
- * - greeting:              Initial greeting message
+ * - content_display_mode:  'in_chat' | 'companion' | 'both'.
+ * - enabled:               Whether the companion widget is active.
+ * - position:              'bottom-right' | 'bottom-left'.
+ * - greeting:              Initial greeting message.
  * - accent_color:          Custom accent color (hex, or empty for default)
- * - show_for_visitors:     Whether non-logged-in users see the widget
+ * - show_for_visitors:     Whether non-logged-in users see the widget.
  *
  * @package FLOSC
  * @since   1.6.0

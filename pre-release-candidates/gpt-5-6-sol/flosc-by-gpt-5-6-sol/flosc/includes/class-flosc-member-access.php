@@ -1,18 +1,19 @@
 <?php
 /**
- * FLOSC Member Access Manager
- * Checks membership status and grants access
+ * FLOSC Member Access Manager.
+ * Checks membership status and grants access.
  *
- * STATUS: ✅ FULLY FUNCTIONAL
+ * STATUS: �.
+ * FULLY FUNCTIONAL.
  * - Hooks into flosc_purchase_completed action (v9.1.9)
- * - Checks _flosc_member_access user meta
- * - Three-tier access: visitor → guest → member
- * - Member statistics tracking
+ * - Checks _flosc_member_access user meta.
+ * - Three-tier access: visitor → guest → member.
+ * - Member statistics tracking.
  *
  * USER META:
- * - _flosc_member_access: 'true'/'false'
- * - _flosc_member_since: timestamp
- * - _flosc_purchase_data: array
+ * - _flosc_member_access: 'true'/'false'.
+ * - _flosc_member_since: timestamp.
+ * - _flosc_purchase_data: array.
  *
  * @since 9.1.8
  *
@@ -30,11 +31,11 @@ class FLOSC_Member_Access {
 
 	private static $instance = null;
 
-		/**
-	 * Coordinate the instance behavior implemented by this code path.
-	 *
-	 * @return mixed Result produced by the instance operation.
-	 */
+/**
+ * Coordinate the instance behavior implemented by this code path.
+ *
+ * @return Mixed Result produced by the instance operation.
+ */
 public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
@@ -42,9 +43,9 @@ public static function instance() {
 		return self::$instance;
 	}
 
-		/**
-	 * Register the WordPress hooks that connect construct to this object.
-	 */
+/**
+ * Register the WordPress hooks that connect construct to this object.
+ */
 private function __construct() {
 		// Hook into purchase completion.
 		add_action( 'flosc_purchase_completed', array( $this, 'grant_member_access' ), 10, 2 );
@@ -55,9 +56,9 @@ private function __construct() {
 	 *
 	 * Prefer FLOSC_Access_Manager when available so UI, tokens, and IVR share one rule.
 	 *
-	 * @param int         $user_id
+	 * @param int   $user_id Value consumed by this operation.
 	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
-	 * @return bool
+	 * @return Bool.
 	 */
 	public function is_member( $user_id, $flow_id = null ) {
 		if ( ! $user_id ) {
@@ -100,9 +101,9 @@ private function __construct() {
 	}
 
 	/**
-	 * Grant member access after purchase
+	 * Grant member access after purchase.
 	 *
-	 * @param int   $user_id
+	 * @param int   $user_id       Value consumed by this operation.
 	 * @param mixed $purchase_data Structured data consumed by the Persist the grant member access state in Word Press storage. operation.
 	 */
 	public function grant_member_access( $user_id, $purchase_data = array() ) {
@@ -158,9 +159,9 @@ private function __construct() {
 	/**
 	 * Get user's access level for a flow.
 	 *
-	 * @param int         $user_id
+	 * @param int   $user_id Value consumed by this operation.
 	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
-	 * @return string 'visitor', 'guest', or 'member'
+	 * @return String 'visitor', 'guest', or 'member'.
 	 */
 	public function get_access_level( $user_id, $flow_id = null ) {
 		if ( ! $user_id ) {
@@ -175,11 +176,11 @@ private function __construct() {
 	}
 
 	/**
-	 * Check if user can access specific content
+	 * Check if user can access specific content.
 	 *
-	 * @param int    $user_id
+	 * @param int   $user_id        Value consumed by this operation.
 	 * @param mixed $required_level Input consumed by the Determine whether the current state satisfies access. operation.
-	 * @return bool
+	 * @return Bool.
 	 */
 	public function can_access( $user_id, $required_level = 'member' ) {
 
@@ -200,8 +201,8 @@ private function __construct() {
 	/**
 	 * Revoke member access (for refunds, etc.)
 	 *
-	 * @param int    $user_id
-	 * @param mixed $reason Input consumed by the Persist the revoke member access state in Word Press storage. operation.
+	 * @param int   $user_id Value consumed by this operation.
+	 * @param mixed $reason  Input consumed by the Persist the revoke member access state in Word Press storage. operation.
 	 */
 	public function revoke_member_access( $user_id, $reason = '' ) {
 
@@ -220,8 +221,8 @@ private function __construct() {
 	 * Equivalent membership level slugs (instance-specific aliases via filter only).
 	 * FLOSC core does not ship product brand level pairs — instances add their own.
 	 *
-	 * @param string $level
-	 * @return string[]
+	 * @param string $level Value consumed by this operation.
+	 * @return String[]
 	 */
 	public function get_level_aliases( $level ) {
 		$level = sanitize_key( (string) $level );
@@ -264,12 +265,12 @@ private function __construct() {
 	}
 
 	/**
-	 * Check if user has a specific membership level
+	 * Check if user has a specific membership level.
 	 * Checks _flosc_memberlevel_{level} user meta, WP role, and legacy aliases.
 	 *
-	 * @param int    $user_id
-	 * @param mixed $level Input consumed by the Determine whether the current state satisfies level. operation.
-	 * @return bool
+	 * @param int   $user_id Value consumed by this operation.
+	 * @param mixed $level   Input consumed by the Determine whether the current state satisfies level. operation.
+	 * @return Bool.
 	 */
 	public function has_level( $user_id, $level ) {
 		if ( ! $user_id || ! $level ) {
@@ -295,11 +296,11 @@ private function __construct() {
 	}
 
 	/**
-	 * Grant a specific membership level to user
+	 * Grant a specific membership level to user.
 	 *
-	 * @param int    $user_id
-	 * @param mixed $level Input consumed by the Persist the grant level state in Word Press storage. operation.
- * @return bool Whether grant level applies to the current state.
+	 * @param int   $user_id Value consumed by this operation.
+	 * @param mixed $level   Input consumed by the Persist the grant level state in Word Press storage. operation.
+	 * @return Bool Whether grant level applies to the current state.
 	 */
 	public function grant_level( $user_id, $level ) {
 		if ( ! $user_id || ! $level ) {
@@ -340,12 +341,12 @@ private function __construct() {
 	}
 
 	/**
-	 * Revoke a specific membership level from user
+	 * Revoke a specific membership level from user.
 	 *
-	 * @param int    $user_id
-	 * @param mixed $level Input consumed by the Persist the revoke level state in Word Press storage. operation.
-	 * @param string $reason
- * @return bool Whether revoke level applies to the current state.
+	 * @param int    $user_id Value consumed by this operation.
+	 * @param mixed  $level   Input consumed by the Persist the revoke level state in Word Press storage. operation.
+	 * @param string $reason  Value consumed by this operation.
+	 * @return Bool Whether revoke level applies to the current state.
 	 */
 	public function revoke_level( $user_id, $level, $reason = '' ) {
 		if ( ! $user_id || ! $level ) {
@@ -373,10 +374,10 @@ private function __construct() {
 	}
 
 	/**
-	 * Get all membership levels for a user
+	 * Get all membership levels for a user.
 	 *
-	 * @param int $user_id
-	 * @return array List of level names
+	 * @param int $user_id Value consumed by this operation.
+	 * @return Array List of level names.
 	 */
 	public function get_user_levels( $user_id ) {
 		if ( ! $user_id ) {
@@ -408,10 +409,10 @@ private function __construct() {
 	}
 
 	/**
-	 * Get member statistics
+	 * Get member statistics.
 	 *
-	 * @param int $user_id
-	 * @return array
+	 * @param int $user_id Value consumed by this operation.
+	 * @return Array.
 	 */
 	public function get_member_stats( $user_id ) {
 
@@ -436,17 +437,17 @@ private function __construct() {
 		);
 	}
 
-	// =========================================================================
+	// =========================================================================.
 	// GUEST ACCESS - Free Lesson System (v1.0.1)
-	// =========================================================================
+	// =========================================================================.
 
 	/**
-	 * Grant guest access to a specific post
-	 * Used for free lessons after quiz completion
+	 * Grant guest access to a specific post.
+	 * Used for free lessons after quiz completion.
 	 *
-	 * @param int $user_id
+	 * @param int   $user_id Value consumed by this operation.
 	 * @param mixed $post_id WordPress post ID used to resolve the content involved in this operation.
-	 * @return bool
+	 * @return Bool.
 	 */
 	public function grant_guest_access( $user_id, $post_id ) {
 		if ( ! $user_id || ! $post_id ) {
@@ -472,11 +473,11 @@ private function __construct() {
 	}
 
 	/**
-	 * Check if user has guest access to a specific post
+	 * Check if user has guest access to a specific post.
 	 *
-	 * @param int $user_id
+	 * @param int   $user_id Value consumed by this operation.
 	 * @param mixed $post_id WordPress post ID used to resolve the content involved in this operation.
-	 * @return bool
+	 * @return Bool.
 	 */
 	public function has_guest_access( $user_id, $post_id ) {
 		if ( ! $user_id || ! $post_id ) {
@@ -501,11 +502,11 @@ private function __construct() {
 	}
 
 	/**
-	 * Revoke guest access to a specific post
+	 * Revoke guest access to a specific post.
 	 *
-	 * @param int $user_id
+	 * @param int   $user_id Value consumed by this operation.
 	 * @param mixed $post_id WordPress post ID used to resolve the content involved in this operation.
-	 * @return bool
+	 * @return Bool.
 	 */
 	public function revoke_guest_access( $user_id, $post_id ) {
 		if ( ! $user_id || ! $post_id ) {
@@ -521,10 +522,10 @@ private function __construct() {
 	}
 
 	/**
-	 * Get all posts a user has guest access to
+	 * Get all posts a user has guest access to.
 	 *
-	 * @param int $user_id
-	 * @return array Array of post IDs
+	 * @param int $user_id Value consumed by this operation.
+	 * @return Array Array of post IDs.
 	 */
 	public function get_guest_access_posts( $user_id ) {
 		if ( ! $user_id ) {
@@ -559,10 +560,10 @@ private function __construct() {
 	}
 
 	/**
-	 * Calculate how many free lessons to grant based on admin settings
+	 * Calculate how many free lessons to grant based on admin settings.
 	 *
 	 * @param int $missed_count Number of missed quiz items.
-	 * @return int Number of free lessons to grant
+	 * @return Int Number of free lessons to grant.
 	 */
 	public function calculate_free_content_item_count( $missed_count ) {
 		// v1.5.4: Read from per-flow settings via flow manager.
@@ -591,11 +592,11 @@ private function __construct() {
 	}
 
 	/**
-	 * Grant free lesson access to a user based on missed quiz items
+	 * Grant free lesson access to a user based on missed quiz items.
 	 *
-	 * @param int   $user_id
+	 * @param int   $user_id         Value consumed by this operation.
 	 * @param mixed $missed_post_ids Identifier used to select the record involved in the Persist the grant free lessons state in Word Press storage. operation.
-	 * @return array Array of post IDs that were granted
+	 * @return Array Array of post IDs that were granted.
 	 */
 	public function grant_free_lessons( $user_id, $missed_post_ids ) {
 		if ( ! $user_id || empty( $missed_post_ids ) ) {
@@ -625,10 +626,10 @@ private function __construct() {
 	}
 
 	/**
-	 * Get the free lessons that were granted to a user
+	 * Get the free lessons that were granted to a user.
 	 *
-	 * @param int $user_id
-	 * @return array Array of post IDs
+	 * @param int $user_id Value consumed by this operation.
+	 * @return Array Array of post IDs.
 	 */
 	public function get_free_lessons( $user_id ) {
 		if ( ! $user_id ) {

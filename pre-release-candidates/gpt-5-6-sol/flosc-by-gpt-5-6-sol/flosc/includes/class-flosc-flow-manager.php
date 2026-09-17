@@ -1,9 +1,9 @@
 <?php
 /**
- * FLOSC Flow Manager
+ * FLOSC Flow Manager.
  *
- * Handles CRUD operations for FLOSC Flows
- * Enables multiple independent chatbots from a single WordPress installation
+ * Handles CRUD operations for FLOSC Flows.
+ * Enables multiple independent chatbots from a single WordPress installation.
  *
  * @package FLOSC
  * @since 1.2.2
@@ -22,11 +22,11 @@ class FLOSC_Flow_Manager {
 
 	const OPTION_KEY = 'flosc_flows';
 
-		/**
-	 * Coordinate the instance behavior implemented by this code path.
-	 *
-	 * @return mixed Result produced by the instance operation.
-	 */
+/**
+ * Coordinate the instance behavior implemented by this code path.
+ *
+ * @return Mixed Result produced by the instance operation.
+ */
 public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
@@ -34,25 +34,27 @@ public static function instance() {
 		return self::$instance;
 	}
 
-		/**
-	 * Coordinate the construct behavior implemented by this code path.
-	 */
+/**
+ * Coordinate the construct behavior implemented by this code path.
+ */
 private function __construct() {
 		// Constructor.
 	}
 
 	/**
-	 * Get all flows
- * @return mixed Result produced by the all flows operation.
+	 * Get all flows.
+	 *
+	 * @return Mixed Result produced by the all flows operation.
 	 */
 	public function get_all_flows() {
 		return get_option( self::OPTION_KEY, array() );
 	}
 
 	/**
-	 * Get flows accessible by a user
- * @param mixed $user_id WordPress user ID whose Resolve the current user flows value from the available Word Press and flow state. state is being processed.
- * @return mixed Result produced by the user flows operation.
+	 * Get flows accessible by a user.
+	 *
+	 * @param mixed $user_id WordPress user ID whose Resolve the current user flows value from the available Word Press and flow state. state is being processed.
+	 * @return Mixed Result produced by the user flows operation.
 	 */
 	public function get_user_flows( $user_id = null ) {
 		$user_id   = $user_id ? $user_id : get_current_user_id();
@@ -84,9 +86,10 @@ private function __construct() {
 	}
 
 	/**
-	 * Get a single flow by ID
- * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
- * @return mixed Result produced by the flow operation.
+	 * Get a single flow by ID.
+	 *
+	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+	 * @return Mixed Result produced by the flow operation.
 	 */
 	public function get_flow( $flow_id ) {
 		$flows = $this->get_all_flows();
@@ -94,9 +97,10 @@ private function __construct() {
 	}
 
 	/**
-	 * Get flow by slug
- * @param mixed $slug Input consumed by the Resolve the current flow by slug value from the available Word Press and flow state. operation.
- * @return mixed Result produced by the flow by slug operation.
+	 * Get flow by slug.
+	 *
+	 * @param mixed $slug Input consumed by the Resolve the current flow by slug value from the available Word Press and flow state. operation.
+	 * @return Mixed Result produced by the flow by slug operation.
 	 */
 	public function get_flow_by_slug( $slug ) {
 		$flows = $this->get_all_flows();
@@ -109,9 +113,10 @@ private function __construct() {
 	}
 
 	/**
-	 * Get flow by custom domain
- * @param mixed $domain Input consumed by the Resolve the current flow by domain value from the available Word Press and flow state. operation.
- * @return mixed Result produced by the flow by domain operation.
+	 * Get flow by custom domain.
+	 *
+	 * @param mixed $domain Input consumed by the Resolve the current flow by domain value from the available Word Press and flow state. operation.
+	 * @return Mixed Result produced by the flow by domain operation.
 	 */
 	public function get_flow_by_domain( $domain ) {
 		$domain = strtolower( preg_replace( '#^https?://#', '', trim( $domain ) ) );
@@ -134,9 +139,10 @@ private function __construct() {
 	}
 
 	/**
-	 * Create a new flow
- * @param mixed $data Structured data consumed by the Persist the flow state in Word Press storage. operation.
- * @return mixed Result of the flow operation, or a WP_Error when it cannot complete.
+	 * Create a new flow.
+	 *
+	 * @param mixed $data Structured data consumed by the Persist the flow state in Word Press storage. operation.
+	 * @return Mixed Result of the flow operation, or a WP_Error when it cannot complete.
 	 */
 	public function create_flow( $data ) {
 		$flows = $this->get_all_flows();
@@ -176,10 +182,11 @@ private function __construct() {
 	}
 
 	/**
-	 * Update an existing flow
- * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
- * @param mixed $data Structured data consumed by the Persist the flow state in Word Press storage. operation.
- * @return mixed Result of the flow operation, or a WP_Error when it cannot complete.
+	 * Update an existing flow.
+	 *
+	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+	 * @param mixed $data    Structured data consumed by the Persist the flow state in Word Press storage. operation.
+	 * @return Mixed Result of the flow operation, or a WP_Error when it cannot complete.
 	 */
 	public function update_flow( $flow_id, $data ) {
 		$flows = $this->get_all_flows();
@@ -214,9 +221,10 @@ private function __construct() {
 	}
 
 	/**
-	 * Delete a flow
- * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
- * @return bool Whether flow applies to the current state.
+	 * Delete a flow.
+	 *
+	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+	 * @return Bool Whether flow applies to the current state.
 	 */
 	public function delete_flow( $flow_id ) {
 		$flows = $this->get_all_flows();
@@ -245,12 +253,12 @@ private function __construct() {
 	}
 
 	/**
-	 * Normalize flow data with defaults
-	 * Added 'overrides' for per-flow settings
+	 * Normalize flow data with defaults.
+	 * Added 'overrides' for per-flow settings.
 	 *
 	 * @since 1.2.3
- * @param mixed $data Structured data consumed by the Normalize the input into the canonical form required for normalize flow data. operation.
- * @return mixed Result produced by the normalize flow data operation.
+	 * @param mixed $data Structured data consumed by the Normalize the input into the canonical form required for normalize flow data. operation.
+	 * @return Mixed Result produced by the normalize flow data operation.
 	 */
 	private function normalize_flow_data( $data ) {
 		$defaults = array(
@@ -332,10 +340,11 @@ private function __construct() {
 	}
 
 	/**
-	 * Check if user can access flow admin
- * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
- * @param mixed $user_id WordPress user ID whose Determine whether the current state satisfies access flow admin. state is being processed.
- * @return bool Whether access flow admin applies to the current state.
+	 * Check if user can access flow admin.
+	 *
+	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+	 * @param mixed $user_id WordPress user ID whose Determine whether the current state satisfies access flow admin. state is being processed.
+	 * @return Bool Whether access flow admin applies to the current state.
 	 */
 	public function can_access_flow_admin( $flow_id, $user_id = null ) {
 		$user_id = $user_id ? $user_id : get_current_user_id();
@@ -356,10 +365,11 @@ private function __construct() {
 	}
 
 	/**
-	 * Grant user access to a flow
- * @param mixed $user_id WordPress user ID whose Persist the grant flow access state in Word Press storage. state is being processed.
- * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
- * @return bool Whether grant flow access applies to the current state.
+	 * Grant user access to a flow.
+	 *
+	 * @param mixed $user_id WordPress user ID whose Persist the grant flow access state in Word Press storage. state is being processed.
+	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+	 * @return Bool Whether grant flow access applies to the current state.
 	 */
 	public function grant_flow_access( $user_id, $flow_id ) {
 		$allowed = get_user_meta( $user_id, '_flosc_flow_access', true );
@@ -380,10 +390,11 @@ private function __construct() {
 	}
 
 	/**
-	 * Revoke user access to a flow
- * @param mixed $user_id WordPress user ID whose Persist the revoke flow access state in Word Press storage. state is being processed.
- * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
- * @return bool Whether revoke flow access applies to the current state.
+	 * Revoke user access to a flow.
+	 *
+	 * @param mixed $user_id WordPress user ID whose Persist the revoke flow access state in Word Press storage. state is being processed.
+	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+	 * @return Bool Whether revoke flow access applies to the current state.
 	 */
 	public function revoke_flow_access( $user_id, $flow_id ) {
 		$allowed = get_user_meta( $user_id, '_flosc_flow_access', true );
@@ -408,12 +419,12 @@ private function __construct() {
 	}
 
 	/**
-	 * Get users with access to a flow
-	 * More robust serialized array handling
+	 * Get users with access to a flow.
+	 * More robust serialized array handling.
 	 *
 	 * @since 1.2.3
- * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
- * @return array Structured flow users data.
+	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+	 * @return Array Structured flow users data.
 	 */
 	public function get_flow_users( $flow_id ) {
 		$candidate_ids = function_exists( 'flosc_get_user_ids_for_meta' )
@@ -451,7 +462,7 @@ private function __construct() {
 	 * Per WordPress.org policy, files are resolved uploads-first via flosc_config_glob().
 	 *
 	 * @since 1.2.3
- * @return mixed Result produced by the available ivr files operation.
+	 * @return Mixed Result produced by the available ivr files operation.
 	 */
 	public function get_available_ivr_files() {
 		$files = array();
@@ -475,8 +486,9 @@ private function __construct() {
 	}
 
 	/**
-	 * Get available quiz types
- * @return array Structured available quiz types data.
+	 * Get available quiz types.
+	 *
+	 * @return Array Structured available quiz types data.
 	 */
 	public function get_available_quiz_types() {
 		return array(
@@ -490,7 +502,8 @@ private function __construct() {
 
 	/**
 	 * Migrate from legacy settings (v1.2.1) to flows (v1.2.2)
- * @return bool Whether migrate from legacy applies to the current state.
+	 *
+	 * @return Bool Whether migrate from legacy applies to the current state.
 	 */
 	public function maybe_migrate_from_legacy() {
 		// If flows already exist, don't migrate.
@@ -538,15 +551,15 @@ private function __construct() {
 	}
 
 	/**
-	 * Get setting value with flow override support
-	 * Checks flow override first, falls back to global option
+	 * Get setting value with flow override support.
+	 * Checks flow override first, falls back to global option.
 	 *
-	 * @param string      $option_name The wp_options key.
+	 * @param string      $option_name    The wp_options key.
 	 * @param string      $override_group Which override group (style, ai, email, etc.).
-	 * @param string      $override_key Key within the override group (optional, defaults to option_name).
-	 * @param mixed       $fallback Default value if neither found.
-	 * @param string|null $flow_id Flow ID (null = use current flow).
-	 * @return mixed The setting value
+	 * @param string      $override_key   Key within the override group (optional, defaults to option_name).
+	 * @param mixed       $fallback       Default value if neither found.
+	 * @param string|null $flow_id        Flow ID (null = use current flow).
+	 * @return Mixed The setting value.
 	 * @since 1.2.3
 	 */
 	public function get_setting( $option_name, $override_group, $override_key = null, $fallback = null, $flow_id = null ) {
@@ -575,9 +588,10 @@ private function __construct() {
 	}
 
 	/**
-	 * Get current flow from context
-	 * Wrapper around global get_current_flow() function
- * @return mixed Result produced by the current flow operation.
+	 * Get current flow from context.
+	 * Wrapper around global get_current_flow() function.
+	 *
+	 * @return Mixed Result produced by the current flow operation.
 	 */
 	public function get_current_flow() {
 		if ( function_exists( 'get_current_flow' ) ) {
@@ -588,14 +602,14 @@ private function __construct() {
 	}
 
 	/**
-	 * Update flow override settings
-	 * Sets override values for a specific group
+	 * Update flow override settings.
+	 * Sets override values for a specific group.
 	 *
-	 * @param string $flow_id The flow ID.
+	 * @param string $flow_id        The flow ID.
 	 * @param string $override_group Which override group (style, ai, email, etc.).
-	 * @param array  $values The settings values.
-	 * @param bool   $use_global Whether to use global settings.
-	 * @return bool|WP_Error
+	 * @param array  $values         The settings values.
+	 * @param bool   $use_global     Whether to use global settings.
+	 * @return Bool|WP_Error.
 	 * @since 1.2.3
 	 */
 	public function update_override( $flow_id, $override_group, $values, $use_global = false ) {

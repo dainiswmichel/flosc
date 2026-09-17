@@ -16,13 +16,13 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 trait FLOSC_Chat_Turn_Trait {
 	/**
-	 * A visitor's turn must never end as WordPress fatal HTML inside a chat
-	 * bubble. Everything below this point may touch third-party provider code,
-	 * so the whole turn is wrapped: any Throwable becomes a controlled FLOSC
-	 * reply, with the technical reason kept for the log rather than the visitor.
+	 * A visitor's turn must never end as WordPress fatal HTML inside a chat.
+	 * Bubble. Everything below this point may touch third-party provider code,.
+	 * So the whole turn is wrapped: any Throwable becomes a controlled FLOSC.
+	 * Reply, with the technical reason kept for the log rather than the visitor.
 	 *
-	 * @param WP_REST_Request $request
-	 * @return WP_REST_Response|WP_Error
+	 * @param WP_REST_Request $request Value consumed by this operation.
+	 * @return WP_REST_Response|WP_Error.
 	 */
 	public function handle_chat( $request ) {
 		try {
@@ -56,12 +56,12 @@ trait FLOSC_Chat_Turn_Trait {
 		}
 	}
 
-		/**
-	 * Coordinate the chat turn behavior implemented by this code path.
-	 *
-	 * @param mixed $request Request object carrying the input consumed by this handler.
-	 * @return array Structured chat turn data.
-	 */
+/**
+ * Coordinate the chat turn behavior implemented by this code path.
+ *
+ * @param mixed $request Request object carrying the input consumed by this handler.
+ * @return Array Structured chat turn data.
+ */
 private function handle_chat_turn( $request ) {
 		$flosc_chat_start_time = microtime( true );
 		$flosc_response_source = 'ivr'; // Track how response was generated.
@@ -1306,17 +1306,17 @@ private function handle_chat_turn( $request ) {
 	}
 
 	/**
-	 * Handle chat with RAG (Retrieval Augmented Generation) - v9.1.6
-	 * AI can search WordPress content dynamically
+	 * Handle chat with RAG (Retrieval Augmented Generation) - v9.1.6.
+	 * AI can search WordPress content dynamically.
 	 */
 	/**
-	 * A visitor's turn must never end as WordPress fatal HTML inside a chat
-	 * bubble. Everything below this point may touch third-party provider code,
-	 * so the whole turn is wrapped: any Throwable becomes a controlled FLOSC
-	 * reply, with the technical reason kept for the log rather than the visitor.
+	 * A visitor's turn must never end as WordPress fatal HTML inside a chat.
+	 * Bubble. Everything below this point may touch third-party provider code,.
+	 * So the whole turn is wrapped: any Throwable becomes a controlled FLOSC.
+	 * Reply, with the technical reason kept for the log rather than the visitor.
 	 *
-	 * @param WP_REST_Request $request
-	 * @return WP_REST_Response|WP_Error
+	 * @param WP_REST_Request $request Value consumed by this operation.
+	 * @return WP_REST_Response|WP_Error.
 	 */
 	public function handle_chat_with_rag( $request ) {
 		try {
@@ -1350,12 +1350,12 @@ private function handle_chat_turn( $request ) {
 		}
 	}
 
-		/**
-	 * Coordinate the chat with rag turn behavior implemented by this code path.
-	 *
-	 * @param mixed $request Request object carrying the input consumed by this handler.
-	 * @return mixed Result produced by the chat with rag turn operation.
-	 */
+/**
+ * Coordinate the chat with rag turn behavior implemented by this code path.
+ *
+ * @param mixed $request Request object carrying the input consumed by this handler.
+ * @return Mixed Result produced by the chat with rag turn operation.
+ */
 private function handle_chat_with_rag_turn( $request ) {
 		$message = sanitize_text_field( $request->get_param( 'message' ) );
 		$context = $request->get_param( 'context' ) ?? array();

@@ -4,10 +4,10 @@
  *
  * @since 1.9.0
  * @since 1.9.5 Added the "Rated Responses" section, which lists chat log
- *              entries that carry a rating in the database.
+ * Entries that carry a rating in the database.
  *
- * Admin can view, add, and delete feedback (flag bad responses) and
- * praises (reinforce good responses) that guide AI behavior.
+ * Admin can view, add, and delete feedback (flag bad responses) and.
+ * Praises (reinforce good responses) that guide AI behavior.
  * Manual entries stored per-flow in flow settings.
  * Rated entries stored directly in flosc_chat_logs table (admin_rating column).
  * Both are loaded into the system prompt via build_feedback_prompt().

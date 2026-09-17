@@ -2,12 +2,12 @@
 /**
  * FLOSC starter packs — install a complete working journey in one click.
  *
- * A fresh FLOSC install has nothing to say. A starter pack gives it a flow, a
- * personality, and something to talk about, so the first thing an operator sees
- * is a bot that works rather than an empty form.
+ * A fresh FLOSC install has nothing to say. A starter pack gives it a flow, a.
+ * Personality, and something to talk about, so the first thing an operator sees.
+ * Is a bot that works rather than an empty form.
  *
- * Everything a pack creates is stamped, so uninstalling removes exactly what
- * that pack made and nothing else. Nothing is ever removed by title or by date.
+ * Everything a pack creates is stamped, so uninstalling removes exactly what.
+ * That pack made and nothing else. Nothing is ever removed by title or by date.
  *
  * @package FLOSC
  */
@@ -21,22 +21,26 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class FLOSC_Starter_Packs {
 
-	/** Post meta stamped on every post a pack creates. */
+	/**
+	 */
 	const POST_STAMP = '_flosc_starter_pack';
 
-	/** Post meta holding the pack's own item number, 1..N. */
+	/**
+	 */
 	const POST_ITEM_STAMP = '_flosc_starter_pack_item';
 
-	/** Term meta stamped on the category a pack creates. */
+	/**
+	 */
 	const TERM_STAMP = '_flosc_starter_pack';
 
-	/** Option holding what is currently installed. */
+	/**
+	 */
 	const STATE_OPTION = 'flosc_starter_packs_installed';
 
 	/**
 	 * Absolute path to the shipped packs directory.
 	 *
-	 * @return string
+	 * @return String.
 	 */
 	public static function packs_dir() {
 		return trailingslashit( FLOSC_PLUGIN_DIR ) . 'starter-packs';
@@ -45,10 +49,10 @@ class FLOSC_Starter_Packs {
 	/**
 	 * Every pack that ships with the plugin, keyed by slug.
 	 *
-	 * A pack is a directory holding pack.json. A malformed manifest is skipped
-	 * rather than fataling the settings screen.
+	 * A pack is a directory holding pack.json. A malformed manifest is skipped.
+	 * Rather than fataling the settings screen.
 	 *
-	 * @return array<string,array<string,mixed>>
+	 * @return Array<string,array<string,mixed>>.
 	 */
 	public static function discover() {
 		$packs = array();
@@ -88,7 +92,7 @@ class FLOSC_Starter_Packs {
 	 * One pack by slug.
 	 *
 	 * @param string $slug Pack slug.
-	 * @return array<string,mixed>|null
+	 * @return Array<string,mixed>|null.
 	 */
 	public static function get( $slug ) {
 		$packs = self::discover();
@@ -99,7 +103,7 @@ class FLOSC_Starter_Packs {
 	/**
 	 * What has been installed, keyed by slug.
 	 *
-	 * @return array<string,array<string,mixed>>
+	 * @return Array<string,array<string,mixed>>.
 	 */
 	public static function state() {
 		$state = get_option( self::STATE_OPTION, array() );
@@ -110,7 +114,7 @@ class FLOSC_Starter_Packs {
 	 * Whether a pack is currently installed.
 	 *
 	 * @param string $slug Pack slug.
-	 * @return bool
+	 * @return Bool.
 	 */
 	public static function is_installed( $slug ) {
 		$state = self::state();
@@ -121,12 +125,12 @@ class FLOSC_Starter_Packs {
 	 * What is actually on disk and in the database for a pack.
 	 *
 	 * The install record says what was created; this says what is still there.
-	 * An operator who deleted the flow, emptied the category, or lost the
-	 * catalog gets told which piece is gone rather than a badge that still
-	 * reads Installed.
+	 * An operator who deleted the flow, emptied the category, or lost the.
+	 * Catalog gets told which piece is gone rather than a badge that still.
+	 * Reads Installed.
 	 *
 	 * @param string $slug Pack slug.
-	 * @return array{state:string,missing:array<int,string>,present:array<int,string>}
+	 * @return Array{state:string,missing:array<int,string>,present:array<int,string>}.
 	 */
 	public static function status( $slug ) {
 		$slug  = sanitize_key( $slug );
@@ -246,7 +250,7 @@ class FLOSC_Starter_Packs {
 	 * Post ids a pack owns, found by its stamp.
 	 *
 	 * @param string $slug Pack slug.
-	 * @return array<int,int>
+	 * @return Array<int,int>.
 	 */
 	private static function installed_post_ids( $slug ) {
 		$found = get_posts(
@@ -266,7 +270,7 @@ class FLOSC_Starter_Packs {
 	/**
 	 * Directory holding flow files.
 	 *
-	 * @return string
+	 * @return String.
 	 */
 	private static function flow_dir() {
 		if ( function_exists( 'flosc_data_dir' ) ) {
@@ -278,7 +282,7 @@ class FLOSC_Starter_Packs {
 	/**
 	 * Directory holding DA1 catalog files.
 	 *
-	 * @return string
+	 * @return String.
 	 */
 	private static function catalog_dir() {
 		$uploads = wp_upload_dir();
@@ -293,11 +297,11 @@ class FLOSC_Starter_Packs {
 	/**
 	 * Install a pack.
 	 *
-	 * Refuses rather than overwrites: if the flow file or the category already
-	 * exists, the operator is told instead of losing work they did themselves.
+	 * Refuses rather than overwrites: if the flow file or the category already.
+	 * Exists, the operator is told instead of losing work they did themselves.
 	 *
 	 * @param string $slug Pack slug.
-	 * @return array{ok:bool,message:string,detail:array<int,string>}
+	 * @return Array{ok:bool,message:string,detail:array<int,string>}.
 	 */
 	public static function install( $slug ) {
 		$pack = self::get( $slug );
@@ -318,7 +322,7 @@ class FLOSC_Starter_Packs {
 		$detail    = array();
 		$flow_path = '';
 
-		// --- flow file ---
+		// --- flow file ---.
 		if ( ! empty( $pack['flow']['file'] ) ) {
 			$source    = $pack['dir'] . basename( (string) $pack['flow']['file'] );
 			$file_name = basename( (string) ( $pack['flow']['install_as'] ?? $pack['flow']['file'] ) );
@@ -349,7 +353,7 @@ class FLOSC_Starter_Packs {
 			$detail[] = sprintf( __( 'Flow installed: %s', 'flosc' ), basename( $target ) );
 		}
 
-		// --- category and posts ---
+		// --- category and posts ---.
 		if ( ! empty( $pack['content']['file'] ) ) {
 			$installed = self::install_content( $pack );
 
@@ -362,7 +366,7 @@ class FLOSC_Starter_Packs {
 			$detail[] = $installed['message'];
 		}
 
-		// --- DA1 catalog ---
+		// --- DA1 catalog ---.
 		if ( ! empty( $pack['catalog']['file'] ) ) {
 			$source = $pack['dir'] . basename( (string) $pack['catalog']['file'] );
 
@@ -435,7 +439,7 @@ class FLOSC_Starter_Packs {
 			}
 		}
 
-		// --- product files ---
+		// --- product files ---.
 		if ( ! empty( $pack['assets'] ) ) {
 			$assets = self::install_assets( $pack );
 
@@ -450,7 +454,7 @@ class FLOSC_Starter_Packs {
 			}
 		}
 
-		// --- register the flow ---
+		// --- register the flow ---.
 		// Copying the markdown is not enough. A flow only exists once it has a.
 		// per-flow option holding its messages, and the operator should not have.
 		// to import it by hand after clicking install.
@@ -466,7 +470,7 @@ class FLOSC_Starter_Packs {
 			$detail[]              = $registered['message'];
 		}
 
-		// --- content index ---
+		// --- content index ---.
 		// The assistant retrieves posts from the site content index, and the.
 		// index is a file that has to be built. Without this the pack installs.
 		// a hundred posts the bot cannot see.
@@ -493,7 +497,7 @@ class FLOSC_Starter_Packs {
 	 * Create the pack's category and its posts.
 	 *
 	 * @param array<string,mixed> $pack Manifest.
-	 * @return array{ok:bool,message:string,detail:array<int,string>,record:array<string,mixed>}
+	 * @return Array{ok:bool,message:string,detail:array<int,string>,record:array<string,mixed>}.
 	 */
 	private static function install_content( $pack ) {
 		$source = $pack['dir'] . basename( (string) $pack['content']['file'] );
@@ -691,11 +695,11 @@ class FLOSC_Starter_Packs {
 	/**
 	 * Copy a pack's product file into the media library.
 	 *
-	 * Sideloads from inside the plugin — never a remote fetch — so a pack's PDF
-	 * is present without the operator uploading it by hand.
+	 * Sideloads from inside the plugin — never a remote fetch — so a pack's PDF.
+	 * Is present without the operator uploading it by hand.
 	 *
 	 * @param array<string,mixed> $pack Manifest.
-	 * @return array{ok:bool,message:string,ids:array<int,int>}
+	 * @return Array{ok:bool,message:string,ids:array<int,int>}.
 	 */
 	private static function install_assets( $pack ) {
 		$ids = array();
@@ -782,15 +786,15 @@ class FLOSC_Starter_Packs {
 	/**
 	 * Create one post a pack owns, stamped so it can be found again.
 	 *
-	 * The stamp pair — pack slug and item number — is what makes install and
-	 * repair idempotent: a second run recognises what already exists instead
-	 * of duplicating it.
+	 * The stamp pair — pack slug and item number — is what makes install and.
+	 * Repair idempotent: a second run recognises what already exists instead.
+	 * Of duplicating it.
 	 *
 	 * @param string              $pack_slug Pack slug.
 	 * @param array<string,mixed> $entry     One entry from the pack's content file.
 	 * @param int                 $term_id   Category to file it under.
 	 * @param int                 $item      The pack's own item number.
-	 * @return int Post id, or 0 on failure.
+	 * @return Int Post id, or 0 on failure.
 	 */
 	private static function insert_pack_post( $pack_slug, $entry, $term_id, $item ) {
 		$post_arg = array(
@@ -843,13 +847,13 @@ class FLOSC_Starter_Packs {
 	/**
 	 * Whether a flow file on disk belongs to this starter pack.
 	 *
-	 * A pack owns a flow when the flow's settings row says so, or when there is
-	 * no settings row at all — a bare file with nothing pointing at it is debris
-	 * from an install that did not finish, not somebody's work.
+	 * A pack owns a flow when the flow's settings row says so, or when there is.
+	 * No settings row at all — a bare file with nothing pointing at it is debris.
+	 * From an install that did not finish, not somebody's work.
 	 *
 	 * @param string $pack_slug Pack slug.
 	 * @param string $path      Absolute path of the flow file.
-	 * @return bool
+	 * @return Bool.
 	 */
 	private static function owns_flow( $pack_slug, $path ) {
 		$stem = sanitize_key( pathinfo( basename( $path ), PATHINFO_FILENAME ) );
@@ -870,13 +874,13 @@ class FLOSC_Starter_Packs {
 	/**
 	 * Copy one file the pack ships into a writable FLOSC location.
 	 *
-	 * Never a raw copy(): reads the shipped file, then writes through the
-	 * plugin's own filesystem chokepoint, which refuses any path outside
-	 * uploads and goes through WP_Filesystem.
+	 * Never a raw copy(): reads the shipped file, then writes through the.
+	 * Plugin's own filesystem chokepoint, which refuses any path outside.
+	 * Uploads and goes through WP_Filesystem.
 	 *
 	 * @param string $source Absolute path of a file inside the plugin.
 	 * @param string $target Absolute path to write, under uploads.
-	 * @return bool Whether the file landed.
+	 * @return Bool Whether the file landed.
 	 */
 	private static function place_file( $source, $target ) {
 		if ( ! is_readable( $source ) ) {
@@ -908,16 +912,16 @@ class FLOSC_Starter_Packs {
 	/**
 	 * Give the copied flow file a per-flow option and import its messages.
 	 *
-	 * This is what the flow upload screen does after it writes a file, and it is
-	 * the difference between a flow that appears in the list and a flow that
-	 * actually answers. When the pack also installed posts, the flow is pointed
-	 * at their category so the assistant can find them.
+	 * This is what the flow upload screen does after it writes a file, and it is.
+	 * The difference between a flow that appears in the list and a flow that.
+	 * Actually answers. When the pack also installed posts, the flow is pointed.
+	 * At their category so the assistant can find them.
 	 *
-	 * @param array<string,mixed> $pack          Manifest.
-	 * @param string              $flow_path     Absolute path of the installed flow file.
-	 * @param string              $category_slug Category the pack's posts landed in, if any.
+	 * @param array<string,mixed> $pack           Manifest.
+	 * @param string              $flow_path      Absolute path of the installed flow file.
+	 * @param string              $category_slug  Category the pack's posts landed in, if any.
 	 * @param bool                $allow_existing Overwrite a settings row this pack already owns (repair only).
-	 * @return array{ok:bool,message:string,detail:array<int,string>,record:array<string,mixed>}
+	 * @return Array{ok:bool,message:string,detail:array<int,string>,record:array<string,mixed>}.
 	 */
 	private static function register_flow( $pack, $flow_path, $category_slug = '', $allow_existing = false ) {
 		if ( ! function_exists( 'flosc_import_ivr_to_database' ) ) {
@@ -1063,10 +1067,10 @@ class FLOSC_Starter_Packs {
 	/**
 	 * Rebuild the site content index so the assistant can see the pack's posts.
 	 *
-	 * Never fatal: a pack whose index did not build is still installed, and the
-	 * operator can rebuild it from the AI tab. Say so rather than failing.
+	 * Never fatal: a pack whose index did not build is still installed, and the.
+	 * Operator can rebuild it from the AI tab. Say so rather than failing.
 	 *
-	 * @return string One line of detail for the operator.
+	 * @return String One line of detail for the operator.
 	 */
 	private static function refresh_content_index() {
 		if ( ! class_exists( 'FLOSC_Site_Content_Index' ) ) {
@@ -1086,13 +1090,13 @@ class FLOSC_Starter_Packs {
 	/**
 	 * Name, id and post count for each category a pack created.
 	 *
-	 * Categories holding nothing are dropped, so the card links only to places
-	 * that actually have posts in them.
+	 * Categories holding nothing are dropped, so the card links only to places.
+	 * That actually have posts in them.
 	 *
 	 * @param array<int,array<string,mixed>> $categories   Manifest categories.
 	 * @param array<string,int>              $term_ids     Slug to term id.
 	 * @param array<int,int>                 $per_category Term id to post count.
-	 * @return array<int,array<string,mixed>>
+	 * @return Array<int,array<string,mixed>>.
 	 */
 	private static function describe_categories( $categories, $term_ids, $per_category ) {
 		$out = array();
@@ -1125,13 +1129,13 @@ class FLOSC_Starter_Packs {
 	/**
 	 * Point an installed pack's flow at a different personality.
 	 *
-	 * The whole journey is curated by whoever this names, so switching it is
-	 * the fastest way to see what FLOSC actually does. Only the flow this pack
-	 * installed is touched, and only with a personality the library really has.
+	 * The whole journey is curated by whoever this names, so switching it is.
+	 * The fastest way to see what FLOSC actually does. Only the flow this pack.
+	 * Installed is touched, and only with a personality the library really has.
 	 *
 	 * @param string $slug           Pack slug.
 	 * @param string $personality_id Personality library id.
-	 * @return array{ok:bool,message:string,detail:array<int,string>}
+	 * @return Array{ok:bool,message:string,detail:array<int,string>}.
 	 */
 	public static function set_personality( $slug, $personality_id ) {
 		$slug  = sanitize_key( $slug );
@@ -1178,12 +1182,12 @@ class FLOSC_Starter_Packs {
 	/**
 	 * Put back only the pieces of an installed pack that have gone missing.
 	 *
-	 * Structural, not a reset. Content the operator edited is left exactly as
-	 * they left it; only components that no longer exist are recreated. A pack
-	 * with nothing missing is reported as such rather than rebuilt.
+	 * Structural, not a reset. Content the operator edited is left exactly as.
+	 * They left it; only components that no longer exist are recreated. A pack.
+	 * With nothing missing is reported as such rather than rebuilt.
 	 *
 	 * @param string $slug Pack slug.
-	 * @return array{ok:bool,message:string,detail:array<int,string>}
+	 * @return Array{ok:bool,message:string,detail:array<int,string>}.
 	 */
 	public static function repair( $slug ) {
 		$slug   = sanitize_key( $slug );
@@ -1207,7 +1211,7 @@ class FLOSC_Starter_Packs {
 		$record = $state[ $slug ];
 		$detail = array();
 
-		// --- flow file ---
+		// --- flow file ---.
 		if ( ! empty( $record['flow_file'] ) ) {
 			$target = self::flow_dir() . basename( (string) $record['flow_file'] );
 
@@ -1222,7 +1226,7 @@ class FLOSC_Starter_Packs {
 				$detail[] = sprintf( __( 'Flow file restored: %s', 'flosc' ), basename( $target ) );
 			}
 
-			// --- flow settings and messages ---
+			// --- flow settings and messages ---.
 			$bag = ! empty( $record['flow_option'] ) ? get_option( (string) $record['flow_option'], null ) : null;
 
 			if ( ! is_array( $bag ) || empty( $bag['flow_messages'] ) ) {
@@ -1237,7 +1241,7 @@ class FLOSC_Starter_Packs {
 			}
 		}
 
-		// --- categories and posts ---
+		// --- categories and posts ---.
 		$restored = self::repair_content( $pack );
 
 		if ( ! $restored['ok'] ) {
@@ -1252,7 +1256,7 @@ class FLOSC_Starter_Packs {
 			$record = array_merge( $record, $restored['record'] );
 		}
 
-		// --- catalog ---
+		// --- catalog ---.
 		if ( ! empty( $record['catalog_file'] ) ) {
 			$target = self::catalog_dir() . basename( (string) $record['catalog_file'] );
 
@@ -1296,7 +1300,7 @@ class FLOSC_Starter_Packs {
 			}
 		}
 
-		// --- product files ---
+		// --- product files ---.
 		$live = array();
 
 		foreach ( (array) ( $record['attachment_ids'] ?? array() ) as $attachment_id ) {
@@ -1327,12 +1331,12 @@ class FLOSC_Starter_Packs {
 	/**
 	 * Recreate any category or post a pack owns that is no longer there.
 	 *
-	 * Posts are matched on the pack slug plus the item number, so a post the
-	 * operator rewrote is recognised and left alone. Only genuinely absent
-	 * items are created again.
+	 * Posts are matched on the pack slug plus the item number, so a post the.
+	 * Operator rewrote is recognised and left alone. Only genuinely absent.
+	 * Items are created again.
 	 *
-	 * @param array<string,mixed> $pack   Manifest.
-	 * @return array{ok:bool,message:string,record:array<string,mixed>}
+	 * @param array<string,mixed> $pack Manifest.
+	 * @return Array{ok:bool,message:string,record:array<string,mixed>}.
 	 */
 	private static function repair_content( $pack ) {
 		if ( empty( $pack['content']['file'] ) ) {
@@ -1499,7 +1503,7 @@ class FLOSC_Starter_Packs {
 	/**
 	 * The personalities FLOSC ships, whether or not this site has them yet.
 	 *
-	 * @return array<string,array<string,string>>
+	 * @return Array<string,array<string,string>>.
 	 */
 	public static function personality_seeds() {
 		if ( ! function_exists( 'flosc_personality_library_defaults' ) ) {
@@ -1515,7 +1519,7 @@ class FLOSC_Starter_Packs {
 	 * Whether this site's library already holds a shipped personality.
 	 *
 	 * @param string $id Personality id.
-	 * @return bool
+	 * @return Bool.
 	 */
 	public static function personality_is_installed( $id ) {
 		if ( ! function_exists( 'flosc_personality_library_get' ) ) {
@@ -1528,13 +1532,13 @@ class FLOSC_Starter_Packs {
 	/**
 	 * Put a shipped personality into this site's library.
 	 *
-	 * Extracting one that is already there replaces it with the shipped
-	 * version — that is the point of re-extracting, and it is the one thing
-	 * on this page that overwrites an operator's own edits, so the button
-	 * that calls it says so.
+	 * Extracting one that is already there replaces it with the shipped.
+	 * Version — that is the point of re-extracting, and it is the one thing.
+	 * On this page that overwrites an operator's own edits, so the button.
+	 * That calls it says so.
 	 *
 	 * @param string $id Personality id.
-	 * @return array{ok:bool,message:string,detail:array<int,string>}
+	 * @return Array{ok:bool,message:string,detail:array<int,string>}.
 	 */
 	public static function install_personality( $id ) {
 		$id    = sanitize_key( $id );
@@ -1571,11 +1575,11 @@ class FLOSC_Starter_Packs {
 	/**
 	 * Flows currently curated by a personality.
 	 *
-	 * Disabling a voice a flow is using would leave that flow without a host,
-	 * so this is what stops it happening quietly.
+	 * Disabling a voice a flow is using would leave that flow without a host,.
+	 * So this is what stops it happening quietly.
 	 *
 	 * @param string $id Personality id.
-	 * @return array<int,string> Flow file names.
+	 * @return Array<int,string> Flow file names.
 	 */
 	public static function personality_in_use( $id ) {
 		$id  = sanitize_key( $id );
@@ -1640,27 +1644,27 @@ class FLOSC_Starter_Packs {
 	/**
 	 * A readable name for a flow, or empty if it does not hold a voice hostage.
 	 *
-	 * The personality samples FLOSC ships are demonstration pairings, not the
-	 * operator's own work — FLOSC already hides them from Switch Flow once a
-	 * real flow exists, so they must not block a voice from being disabled
-	 * either. Everything else gets named the way the operator would recognise
-	 * it, never as a raw option row.
+	 * The personality samples FLOSC ships are demonstration pairings, not the.
+	 * Operator's own work — FLOSC already hides them from Switch Flow once a.
+	 * Real flow exists, so they must not block a voice from being disabled.
+	 * Either. Everything else gets named the way the operator would recognise.
+	 * It, never as a raw option row.
 	 *
 	 * @param string              $stem Flow stem, without the flosc_flow_ prefix.
 	 * @param array<string,mixed> $bag  The flow's settings.
-	 * @return string
+	 * @return String.
 	 */
 	/**
 	 * Move a file out of the way instead of refusing to install over it.
 	 *
-	 * Installing a journey used to stop dead when any one file already existed,
-	 * which meant a single leftover blocked the whole extraction. Overwriting
-	 * outright is the other bad answer: an operator's own flow or catalog would
-	 * be gone. So the existing file is renamed and left sitting beside its
-	 * replacement, and the install carries on.
+	 * Installing a journey used to stop dead when any one file already existed,.
+	 * Which meant a single leftover blocked the whole extraction. Overwriting.
+	 * Outright is the other bad answer: an operator's own flow or catalog would.
+	 * Be gone. So the existing file is renamed and left sitting beside its.
+	 * Replacement, and the install carries on.
 	 *
 	 * @param string $target Path being installed to.
-	 * @return string Basename of the backup, or '' when there was nothing to move.
+	 * @return String Basename of the backup, or '' when there was nothing to move.
 	 */
 	private static function move_aside( $target ) {
 		if ( ! file_exists( $target ) ) {
@@ -1688,18 +1692,18 @@ class FLOSC_Starter_Packs {
 	/**
 	 * What a flow is called, according to the flow.
 	 *
-	 * A flow is not a voice. Naming one after the personality attached to it
-	 * produced cards reading "Default Friendly — curated by Friendly Guide":
-	 * the same fact twice, with the flow's own identity thrown away to say it.
-	 * Every shipped IVR file opens by declaring its name, so that is what a
-	 * card shows.
+	 * A flow is not a voice. Naming one after the personality attached to it.
+	 * Produced cards reading "Default Friendly — curated by Friendly Guide":
+	 * The same fact twice, with the flow's own identity thrown away to say it.
+	 * Every shipped IVR file opens by declaring its name, so that is what a.
+	 * Card shows.
 	 *
-	 * Order of truth: what the operator saved, then what the file declares,
-	 * then the filename. The personality is never consulted.
+	 * Order of truth: what the operator saved, then what the file declares,.
+	 * Then the filename. The personality is never consulted.
 	 *
 	 * @param string $stem Flow stem.
 	 * @param string $path Absolute path to the IVR file.
-	 * @return string
+	 * @return String.
 	 */
 	private static function flow_name_from_file( $stem, $path ) {
 		$stem = sanitize_key( (string) $stem );
@@ -1743,15 +1747,15 @@ class FLOSC_Starter_Packs {
 	/**
 	 * A flow stem as a person would read it: flosc_default_friendly_ivr → Default Friendly.
 	 *
-	 * The portability handler has a function that does this, but it lives in an
-	 * admin upload handler that is only loaded while handling an upload. Reading
-	 * a name is not uploading anything, so every card that asked for one outside
-	 * that request got the raw stem instead — which is why sample flows rendered
-	 * as flosc_default_br3nda_emotional_support_ivr with their own filename
-	 * repeated underneath.
+	 * The portability handler has a function that does this, but it lives in an.
+	 * Admin upload handler that is only loaded while handling an upload. Reading.
+	 * A name is not uploading anything, so every card that asked for one outside.
+	 * That request got the raw stem instead — which is why sample flows rendered.
+	 * As flosc_default_br3nda_emotional_support_ivr with their own filename.
+	 * Repeated underneath.
 	 *
 	 * @param string $stem Flow stem.
-	 * @return string
+	 * @return String.
 	 */
 	private static function readable_stem( $stem ) {
 		$stem = (string) $stem;
@@ -1767,13 +1771,13 @@ class FLOSC_Starter_Packs {
 		return ( '' !== $display ) ? ucwords( $display ) : $stem;
 	}
 
-		/**
-	 * Coordinate the flow label behavior implemented by this code path.
-	 *
-	 * @param mixed $stem Input consumed by the Coordinate the flow label behavior implemented by this code path. operation.
-	 * @param mixed $bag Input consumed by the Coordinate the flow label behavior implemented by this code path. operation.
-	 * @return mixed Result produced by the flow label operation.
-	 */
+/**
+ * Coordinate the flow label behavior implemented by this code path.
+ *
+ * @param mixed $stem Input consumed by the Coordinate the flow label behavior implemented by this code path. operation.
+ * @param mixed $bag  Input consumed by the Coordinate the flow label behavior implemented by this code path. operation.
+ * @return Mixed Result produced by the flow label operation.
+ */
 private static function flow_label( $stem, $bag ) {
 		$stem = sanitize_key( (string) $stem );
 
@@ -1809,12 +1813,12 @@ private static function flow_label( $stem, $bag ) {
 	/**
 	 * Take a shipped personality back out of this site's library.
 	 *
-	 * Refuses while a flow is still using it, and names the flows, because
-	 * the alternative is a journey whose host silently disappears. Extracting
-	 * it again restores it exactly.
+	 * Refuses while a flow is still using it, and names the flows, because.
+	 * The alternative is a journey whose host silently disappears. Extracting.
+	 * It again restores it exactly.
 	 *
 	 * @param string $id Personality id.
-	 * @return array{ok:bool,message:string,detail:array<int,string>}
+	 * @return Array{ok:bool,message:string,detail:array<int,string>}.
 	 */
 	public static function remove_personality( $id ) {
 		$id    = sanitize_key( $id );
@@ -1872,11 +1876,11 @@ private static function flow_label( $stem, $bag ) {
 	/**
 	 * The demonstration flows FLOSC ships, and whether this site runs them.
 	 *
-	 * These are read-only files inside the plugin. Enabling one gives it a
-	 * settings row and imports its messages; disabling removes that row and
-	 * leaves the file alone, so enabling again restores it exactly.
+	 * These are read-only files inside the plugin. Enabling one gives it a.
+	 * Settings row and imports its messages; disabling removes that row and.
+	 * Leaves the file alone, so enabling again restores it exactly.
 	 *
-	 * @return array<string,array<string,mixed>>
+	 * @return Array<string,array<string,mixed>>.
 	 */
 	public static function sample_flows() {
 		$out     = array();
@@ -1921,7 +1925,7 @@ private static function flow_label( $stem, $bag ) {
 	 * Whether a shipped sample flow has a settings row with messages in it.
 	 *
 	 * @param string $stem Flow stem.
-	 * @return bool
+	 * @return Bool.
 	 */
 	public static function sample_flow_is_enabled( $stem ) {
 		$stem = sanitize_key( $stem );
@@ -1939,7 +1943,7 @@ private static function flow_label( $stem, $bag ) {
 	 * Give a shipped sample flow a settings row and import its messages.
 	 *
 	 * @param string $stem Flow stem.
-	 * @return array{ok:bool,message:string,detail:array<int,string>}
+	 * @return Array{ok:bool,message:string,detail:array<int,string>}.
 	 */
 	public static function enable_sample_flow( $stem ) {
 		$stem    = sanitize_key( $stem );
@@ -1980,11 +1984,11 @@ private static function flow_label( $stem, $bag ) {
 	/**
 	 * Take a shipped sample flow out of this site.
 	 *
-	 * Only the settings row goes; the file belongs to the plugin and stays
-	 * where it is, so enabling again rebuilds the flow from the same source.
+	 * Only the settings row goes; the file belongs to the plugin and stays.
+	 * Where it is, so enabling again rebuilds the flow from the same source.
 	 *
 	 * @param string $stem Flow stem.
-	 * @return array{ok:bool,message:string,detail:array<int,string>}
+	 * @return Array{ok:bool,message:string,detail:array<int,string>}.
 	 */
 	public static function disable_sample_flow( $stem ) {
 		$stem    = sanitize_key( $stem );
@@ -2019,7 +2023,7 @@ private static function flow_label( $stem, $bag ) {
 	 * Remove everything a pack created, by stamp.
 	 *
 	 * @param string $slug Pack slug.
-	 * @return array{ok:bool,message:string,detail:array<int,string>}
+	 * @return Array{ok:bool,message:string,detail:array<int,string>}.
 	 */
 	public static function uninstall( $slug ) {
 		$slug  = sanitize_key( $slug );
@@ -2042,11 +2046,11 @@ private static function flow_label( $stem, $bag ) {
 	}
 
 	/**
-	 * Undo an install record. Used both by uninstall and to clean up a partial
-	 * install that failed halfway.
+	 * Undo an install record. Used both by uninstall and to clean up a partial.
+	 * Install that failed halfway.
 	 *
 	 * @param array<string,mixed> $record Install record.
-	 * @return array<int,string> What was removed.
+	 * @return Array<int,string> What was removed.
 	 */
 	private static function rollback( $record ) {
 		$detail = array();
@@ -2140,7 +2144,7 @@ private static function flow_label( $stem, $bag ) {
 	 * @param bool              $ok      Whether it worked.
 	 * @param string            $message Human message.
 	 * @param array<int,string> $detail  Optional lines of detail.
-	 * @return array{ok:bool,message:string,detail:array<int,string>}
+	 * @return Array{ok:bool,message:string,detail:array<int,string>}.
 	 */
 	private static function result( $ok, $message, $detail = array() ) {
 		return array(

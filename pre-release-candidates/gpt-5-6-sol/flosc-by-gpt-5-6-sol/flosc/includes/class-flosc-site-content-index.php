@@ -20,13 +20,14 @@ class FLOSC_Site_Content_Index {
 	const MAX_BODY_CHARS         = 200000;
 	const DEFAULT_RETRIEVE_LIMIT = 5;
 
-	/** @var self|null */
+	/**
+	 */
 	private static $instance = null;
 
 	/**
- * Coordinate the instance behavior implemented by this code path.
- *
-	 * @return self
+	 * Coordinate the instance behavior implemented by this code path.
+	 *
+	 * @return Self.
 	 */
 	public static function instance() {
 		if ( null === self::$instance ) {
@@ -35,9 +36,9 @@ class FLOSC_Site_Content_Index {
 		return self::$instance;
 	}
 
-		/**
-	 * Register the WordPress hooks that connect construct to this object.
-	 */
+/**
+ * Register the WordPress hooks that connect construct to this object.
+ */
 private function __construct() {
 		/*
 		 * Categories and tags get the same two fields the post metabox and the
@@ -62,9 +63,9 @@ private function __construct() {
 	/**
 	 * The two selects, shared by the add and edit forms.
 	 *
-	 * @param string $tier
-	 * @param mixed $depth Input consumed by the Render the Word Press interface for term vgm selects. operation.
-	 * @return void
+	 * @param string $tier  Value consumed by this operation.
+	 * @param mixed  $depth Input consumed by the Render the Word Press interface for term vgm selects. operation.
+	 * @return Void.
 	 */
 	private function term_vgm_selects( $tier, $depth ) {
 		if ( ! function_exists( 'flosc_vgm_tier_labels' ) ) {
@@ -86,9 +87,9 @@ private function __construct() {
 	}
 
 	/**
- * Render the WordPress interface for term vgm add fields.
- *
-	 * @return void
+	 * Render the WordPress interface for term vgm add fields.
+	 *
+	 * @return Void.
 	 */
 	public function render_term_vgm_add_fields() {
 		?>
@@ -103,10 +104,10 @@ private function __construct() {
 	}
 
 	/**
- * Render the WordPress interface for term vgm edit fields.
- *
-	 * @param WP_Term $term
-	 * @return void
+	 * Render the WordPress interface for term vgm edit fields.
+	 *
+	 * @param WP_Term $term Value consumed by this operation.
+	 * @return Void.
 	 */
 	public function render_term_vgm_edit_fields( $term ) {
 		$term_id = isset( $term->term_id ) ? (int) $term->term_id : 0;
@@ -127,12 +128,12 @@ private function __construct() {
 	}
 
 	/**
- * Save the validated term vgm state for later requests.
- *
-	 * @param int    $term_id
-	 * @param mixed $tt_id Identifier used to select the record involved in the Save the validated term vgm state for later requests. operation.
-	 * @param string $taxonomy
-	 * @return void
+	 * Save the validated term vgm state for later requests.
+	 *
+	 * @param int    $term_id  Value consumed by this operation.
+	 * @param mixed  $tt_id    Identifier used to select the record involved in the Save the validated term vgm state for later requests. operation.
+	 * @param string $taxonomy Value consumed by this operation.
+	 * @return Void.
 	 */
 	public function save_term_vgm( $term_id, $tt_id = 0, $taxonomy = '' ) {
 		unset( $tt_id );
@@ -168,8 +169,8 @@ private function __construct() {
 	/**
 	 * Flow stem from IVR filename.
 	 *
-	 * @param string $ivr_file e.g. flosc_default_technical_ivr.md.
-	 * @return string
+	 * @param string $ivr_file E.g. flosc_default_technical_ivr.md.
+	 * @return String.
 	 */
 	public function stem_from_ivr( $ivr_file ) {
 		$stem = sanitize_key( pathinfo( basename( (string) $ivr_file ), PATHINFO_FILENAME ) );
@@ -181,7 +182,7 @@ private function __construct() {
 	 * One library for the whole site; each flow binds a category for freeline/sell.
 	 *
 	 * @param string $flow_stem Unused (kept for call-site compatibility).
-	 * @return string
+	 * @return String.
 	 */
 	public function index_path( $flow_stem = '' ) {
 		unset( $flow_stem );
@@ -195,7 +196,7 @@ private function __construct() {
 	 * Load the site-wide index document.
 	 *
 	 * @param string $flow_stem Unused (kept for call-site compatibility).
-	 * @return array{built_at:string,scope:string,category_slugs:array,category_ids:array,posts:array}
+	 * @return Array{built_at:string,scope:string,category_slugs:array,category_ids:array,posts:array}.
 	 */
 	public function load( $flow_stem = '' ) {
 		$empty = array(
@@ -275,9 +276,9 @@ private function __construct() {
 	/**
 	 * Persist index document.
 	 *
-	 * @param string $flow_stem
-	 * @param array $doc Input consumed by the Coordinate the save behavior implemented by this code path. operation.
-	 * @return bool
+	 * @param string $flow_stem Value consumed by this operation.
+	 * @param array  $doc       Input consumed by the Coordinate the save behavior implemented by this code path. operation.
+	 * @return Bool.
 	 */
 	public function save( $flow_stem, array $doc ) {
 		$path = $this->index_path( $flow_stem );
@@ -295,7 +296,7 @@ private function __construct() {
 	 * Category slugs configured for this flow (content_item_groups + content_item_category).
 	 *
 	 * @param string $flow_stem Optional; uses current flow settings when empty.
-	 * @return string[]
+	 * @return String[]
 	 */
 	public function resolve_category_slugs( $flow_stem = '' ) {
 		$slugs = array();
@@ -363,10 +364,10 @@ private function __construct() {
 	}
 
 	/**
- * Coordinate the category ids from slugs behavior implemented by this code path.
- *
-	 * @param string[] $slugs
-	 * @return int[]
+	 * Coordinate the category ids from slugs behavior implemented by this code path.
+	 *
+	 * @param string[] $slugs Value consumed by this operation.
+	 * @return Int[]
 	 */
 	public function category_ids_from_slugs( array $slugs ) {
 		$ids = array();
@@ -389,27 +390,27 @@ private function __construct() {
 	 * Preserves excluded flags and manual keywords by post ID.
 	 *
 	 * @param string $flow_stem Unused for path; kept for call-site compatibility.
-	 * @return array{ok:bool,message:string,count:int}
+	 * @return Array{ok:bool,message:string,count:int}.
 	 */
 	/**
 	 * The group catalogue for one turn, filtered to what this person may see.
 	 *
-	 * Retrieval by keyword will not produce "/groups/lesaep-learners/" from a
-	 * blog post, so the groups a visitor is allowed to hear about ride on the
-	 * turn as a short list. Thirteen rows is one or two kilobytes.
+	 * Retrieval by keyword will not produce "/groups/lesaep-learners/" from a.
+	 * Blog post, so the groups a visitor is allowed to hear about ride on the.
+	 * Turn as a short list. Thirteen rows is one or two kilobytes.
 	 *
 	 * Fail closed, in this order:
 	 *
-	 *   1. the person's tier must appear in that row's VGM string
-	 *   2. an excluded row is never shown
-	 *   3. a private or hidden group is never given to somebody who is not a
-	 *      member of it — it may be named as a gated next step, never described
+	 * 1. the person's tier must appear in that row's VGM string.
+	 * 2. an excluded row is never shown.
+	 * 3. a private or hidden group is never given to somebody who is not a.
+	 * Member of it — it may be named as a gated next step, never described.
 	 *
 	 * FLOSC can tighten BuddyBoss privacy. It can never loosen it.
 	 *
 	 * @param string $flow_stem  Flow.
-	 * @param string $user_level visitor | guest | member.
-	 * @return string Empty when there is nothing this person may be shown.
+	 * @param string $user_level Visitor | guest | member.
+	 * @return String Empty when there is nothing this person may be shown.
 	 */
 	public function format_groups_for_ai( $flow_stem = '', $user_level = 'visitor' ) {
 		$policy = self::buddyboss_policy( $flow_stem );
@@ -485,7 +486,7 @@ private function __construct() {
 	 * Is the person on this turn actually in that group?
 	 *
 	 * @param int $group_id Group.
-	 * @return bool
+	 * @return Bool.
 	 */
 	public static function viewer_is_group_member( $group_id ) {
 		if ( $group_id <= 0 || ! function_exists( 'groups_is_user_member' ) || ! is_user_logged_in() ) {
@@ -497,10 +498,10 @@ private function __construct() {
 	/**
 	 * Is a BuddyPress/BuddyBoss group directory available on this install?
 	 *
-	 * Guarded everywhere. FLOSC ships to sites that have never heard of
+	 * Guarded everywhere. FLOSC ships to sites that have never heard of.
 	 * BuddyBoss, and an unguarded groups_get_groups() is a white screen.
 	 *
-	 * @return bool
+	 * @return Bool.
 	 */
 	public static function groups_available() {
 		return function_exists( 'groups_get_groups' ) && function_exists( 'bp_get_group_permalink' );
@@ -509,12 +510,12 @@ private function __construct() {
 	/**
 	 * This flow's BuddyBoss index policy.
 	 *
-	 * Stored on the flow, not on the group: which groups a chatbot may mention
-	 * is a decision about that conversation, and the same group can be open on
-	 * one flow and withheld on another.
+	 * Stored on the flow, not on the group: which groups a chatbot may mention.
+	 * Is a decision about that conversation, and the same group can be open on.
+	 * One flow and withheld on another.
 	 *
 	 * @param string $flow_stem Flow.
-	 * @return array
+	 * @return Array.
 	 */
 	public static function buddyboss_policy( $flow_stem = '' ) {
 		$defaults = array(
@@ -550,7 +551,7 @@ private function __construct() {
 	 *
 	 * @param string $flow_stem  Flow.
 	 * @param array  $prev_posts Previous rows, so exclusions and manual keywords survive.
-	 * @return array
+	 * @return Array.
 	 */
 	private function build_group_rows( $flow_stem, array $prev_posts ) {
 		$policy = self::buddyboss_policy( $flow_stem );
@@ -618,63 +619,63 @@ private function __construct() {
 	 *
 	 * @param array $policy   Flow policy.
 	 * @param int   $group_id Group.
-	 * @return string Space-separated tiers.
+	 * @return String Space-separated tiers.
 	 */
 	/**
 	 * Any access value as a clean VGM list.
 	 *
-	 * "member", "visitor guest member", "visitor,guest" all arrive here and
-	 * leave as an ordered list of the levels that are actually meant. Empty
-	 * means nobody said anything, which is not the same as "members only".
+	 * "member", "visitor guest member", "visitor,guest" all arrive here and.
+	 * Leave as an ordered list of the levels that are actually meant. Empty.
+	 * Means nobody said anything, which is not the same as "members only".
 	 *
-	 * @param mixed $raw
-	 * @return string[]
+	 * @param mixed $raw Value consumed by this operation.
+	 * @return String[]
 	 */
 	/**
 	 * FLOSC's own plumbing, which is not site content.
 	 *
-	 * settings.php creates a flosc-internal category and hangs
-	 * flosc-internal-concierge and flosc-internal-trajectories under it. Those
-	 * posts are how FLOSC stores its own working parts — they are not writing
-	 * about the site and chat has no business citing them at any access level.
+	 * Settings.php creates a flosc-internal category and hangs.
+	 * Flosc-internal-concierge and flosc-internal-trajectories under it. Those.
+	 * Posts are how FLOSC stores its own working parts — they are not writing.
+	 * About the site and chat has no business citing them at any access level.
 	 *
-	 * The indexer had no idea the convention existed. Every internal post was
-	 * indexed as ordinary content, and what kept it out of a visitor's reach was
-	 * nothing but the members-only default that used to sit on every un-gated
-	 * row. Deriving access properly removed that accident, so the convention has
-	 * to be honoured on purpose: internal posts are not indexed at all.
+	 * The indexer had no idea the convention existed. Every internal post was.
+	 * Indexed as ordinary content, and what kept it out of a visitor's reach was.
+	 * Nothing but the members-only default that used to sit on every un-gated.
+	 * Row. Deriving access properly removed that accident, so the convention has.
+	 * To be honoured on purpose: internal posts are not indexed at all.
 	 *
-	 * @param int $post_id
-	 * @return bool
+	 * @param int $post_id Value consumed by this operation.
+	 * @return Bool.
 	 */
 	/**
 	 * Categories that never enter the index, matched exactly.
 	 *
-	 * Two different things, both excluded for the same reason — neither is site
-	 * content and neither may come back out of retrieval as content.
+	 * Two different things, both excluded for the same reason — neither is site.
+	 * Content and neither may come back out of retrieval as content.
 	 *
-	 * 'internal' is the site owner's own material: the rolodex. No flow, no
-	 * personality and no AI provider ever sees it. It has no VGM value, because
+	 * 'internal' is the site owner's own material: the rolodex. No flow, no.
+	 * Personality and no AI provider ever sees it. It has no VGM value, because.
 	 * VGM does not reach it at all.
 	 *
-	 * 'trajectory', 'trajectories' and 'concierge' are FLOSC's own plumbing. The
-	 * flow personality and the provider DO see these — that is what they are
-	 * for — but through their own readers, admin/concierge.php and
-	 * includes/flosc-personality-library.php, which take exactly these bare
-	 * names alongside the prefixed ones. Indexing them would let the same text
-	 * come back to a visitor as retrieved content.
+	 * 'trajectory', 'trajectories' and 'concierge' are FLOSC's own plumbing. The.
+	 * Flow personality and the provider DO see these — that is what they are.
+	 * For — but through their own readers, admin/concierge.php and.
+	 * Includes/flosc-personality-library.php, which take exactly these bare.
+	 * Names alongside the prefixed ones. Indexing them would let the same text.
+	 * Come back to a visitor as retrieved content.
 	 *
-	 * Exact match, so 'internal-notes', 'international' and 'concierges' are
-	 * somebody's own categories and stay in the index.
+	 * Exact match, so 'internal-notes', 'international' and 'concierges' are.
+	 * Somebody's own categories and stay in the index.
 	 */
 	const INTERNAL_CATEGORY_ALIASES = array( 'internal', 'trajectory', 'trajectories', 'concierge' );
 
-		/**
-	 * Determine whether the current state satisfies internal post.
-	 *
-	 * @param mixed $post_id WordPress post ID used to resolve the content involved in this operation.
-	 * @return bool Whether internal post applies to the current state.
-	 */
+/**
+ * Determine whether the current state satisfies internal post.
+ *
+ * @param mixed $post_id WordPress post ID used to resolve the content involved in this operation.
+ * @return Bool Whether internal post applies to the current state.
+ */
 public static function is_internal_post( $post_id ) {
 		$terms = get_the_terms( (int) $post_id, 'category' );
 		if ( ! is_array( $terms ) ) {
@@ -709,20 +710,21 @@ public static function is_internal_post( $post_id ) {
 	/**
 	 * How much of a post a tier gets, deepest last.
 	 *
-	 * Access has two axes, not one. VGM says WHO — and the tier is a floor, so
-	 * V includes VGM, G excludes V, M excludes VG. Depth says HOW MUCH that
-	 * tier gets of the post itself.
+	 * Access has two axes, not one. VGM says WHO — and the tier is a floor, so.
+	 * V includes VGM, G excludes V, M excludes VG. Depth says HOW MUCH that.
+	 * Tier gets of the post itself.
 	 */
 	const DEPTHS = array( 'title', 'excerpt', 'readmore', 'full' );
 
-	/** The tiers, shallowest first. A tier never gets less than the one below. */
+	/**
+	 */
 	const TIERS = array( 'visitor', 'guest', 'member' );
 
 	/**
 	 * A depth token, or '' when it is not one.
 	 *
-	 * @param mixed $raw
-	 * @return string
+	 * @param mixed $raw Value consumed by this operation.
+	 * @return String.
 	 */
 	public static function depth_token( $raw ) {
 		$raw = strtolower( trim( (string) $raw ) );
@@ -732,8 +734,8 @@ public static function is_internal_post( $post_id ) {
 	/**
 	 * Position on the depth ladder. -1 for anything that is not a depth.
 	 *
-	 * @param mixed $raw
-	 * @return int
+	 * @param mixed $raw Value consumed by this operation.
+	 * @return Int.
 	 */
 	public static function depth_rank( $raw ) {
 		$idx = array_search( self::depth_token( $raw ), self::DEPTHS, true );
@@ -743,8 +745,8 @@ public static function is_internal_post( $post_id ) {
 	/**
 	 * A tier token, or '' when it is not one.
 	 *
-	 * @param mixed $raw
-	 * @return string
+	 * @param mixed $raw Value consumed by this operation.
+	 * @return String.
 	 */
 	public static function tier_token( $raw ) {
 		$raw = strtolower( trim( (string) $raw ) );
@@ -754,8 +756,8 @@ public static function is_internal_post( $post_id ) {
 	/**
 	 * Every tier at or above $tier. The floor, expressed as a list.
 	 *
-	 * @param string $tier
-	 * @return string[]
+	 * @param string $tier Value consumed by this operation.
+	 * @return String[]
 	 */
 	public static function tiers_from( $tier ) {
 		$tier = self::tier_token( $tier );
@@ -770,7 +772,7 @@ public static function is_internal_post( $post_id ) {
 	 * A complete depth map: every tier, one depth each.
 	 *
 	 * @param string $depth Depth every tier gets.
-	 * @return array<string,string>
+	 * @return Array<string,string>.
 	 */
 	public static function depth_map( $depth ) {
 		$depth = self::depth_token( $depth );
@@ -787,12 +789,12 @@ public static function is_internal_post( $post_id ) {
 	/**
 	 * Normalise a stored map, and enforce the floor.
 	 *
-	 * A higher tier can never get less than a lower one — that is what "V
-	 * includes VGM" means — so each tier is raised to the deepest depth granted
-	 * at or below it.
+	 * A higher tier can never get less than a lower one — that is what "V.
+	 * Includes VGM" means — so each tier is raised to the deepest depth granted.
+	 * At or below it.
 	 *
-	 * @param mixed $raw
-	 * @return array<string,string>
+	 * @param mixed $raw Value consumed by this operation.
+	 * @return Array<string,string>.
 	 */
 	public static function normalize_depth_map( $raw ) {
 		$raw = is_array( $raw ) ? $raw : array();
@@ -815,12 +817,12 @@ public static function is_internal_post( $post_id ) {
 	/**
 	 * The site-wide default, from flow settings.
 	 *
-	 * Ships as full body for everybody, because published is public. A
-	 * floscAdmin who wants "all titles VGM" or "all excerpts VGM" sets it here
-	 * once and every post with no rule of its own follows.
+	 * Ships as full body for everybody, because published is public. A.
+	 * FloscAdmin who wants "all titles VGM" or "all excerpts VGM" sets it here.
+	 * Once and every post with no rule of its own follows.
 	 *
-	 * @param string $flow_stem
-	 * @return array<string,string>
+	 * @param string $flow_stem Value consumed by this operation.
+	 * @return Array<string,string>.
 	 */
 	public static function default_depth_map( $flow_stem = '' ) {
 		$saved = null;
@@ -841,8 +843,8 @@ public static function is_internal_post( $post_id ) {
 	/**
 	 * Protection rules for this flow, as the Content tab stores them.
 	 *
-	 * @param string $flow_stem
-	 * @return array[]
+	 * @param string $flow_stem Value consumed by this operation.
+	 * @return Array[]
 	 */
 	public static function protection_rules( $flow_stem = '' ) {
 		$rules = array();
@@ -859,14 +861,14 @@ public static function is_internal_post( $post_id ) {
 	/**
 	 * Fold one scope's rules into a depth map.
 	 *
-	 * A rule reads "at this tier and above, you get this depth". Several rules
-	 * on one scope are normal — a post can be readmore for visitors and full
-	 * for guests — so the deepest grant wins per tier, and tiers no rule
-	 * mentions fall to title: the post still exists and may be named, which is
-	 * the locked stub behaviour that was already there.
+	 * A rule reads "at this tier and above, you get this depth". Several rules.
+	 * On one scope are normal — a post can be readmore for visitors and full.
+	 * For guests — so the deepest grant wins per tier, and tiers no rule.
+	 * Mentions fall to title: the post still exists and may be named, which is.
+	 * The locked stub behaviour that was already there.
 	 *
-	 * @param array[] $rules
-	 * @return array<string,string>|null Null when no rule in the set applies.
+	 * @param array[] $rules Value consumed by this operation.
+	 * @return Array<string,string>|null Null when no rule in the set applies.
 	 */
 	public static function fold_rules( array $rules ) {
 		$map = self::depth_map( 'title' );
@@ -906,15 +908,15 @@ public static function is_internal_post( $post_id ) {
 	/**
 	 * What each tier gets of this post.
 	 *
-	 * Scopes, most specific first: post, then its tags, then its categories,
-	 * then the site default. The most specific scope that carries any rule at
-	 * all decides — so a rule on the post can open a post its category closed,
-	 * and it can close one its category left open. Merging instead of deciding
-	 * would make the second of those impossible.
+	 * Scopes, most specific first: post, then its tags, then its categories,.
+	 * Then the site default. The most specific scope that carries any rule at.
+	 * All decides — so a rule on the post can open a post its category closed,.
+	 * And it can close one its category left open. Merging instead of deciding.
+	 * Would make the second of those impossible.
 	 *
-	 * @param int    $post_id
+	 * @param int   $post_id   Value consumed by this operation.
 	 * @param mixed $flow_stem Input consumed by the Resolve the current vgm value from the available Word Press and flow state. operation.
-	 * @return array<string,string>
+	 * @return Array<string,string>.
 	 */
 	public static function resolve_vgm( $post_id, $flow_stem = '' ) {
 		$post_id = (int) $post_id;
@@ -989,11 +991,11 @@ public static function is_internal_post( $post_id ) {
 	/**
 	 * Every rule written on an object rather than in the table.
 	 *
-	 * The Content tab is meant to be the one place a floscAdmin can see what
-	 * the site does. A rule set on a category screen is invisible there unless
-	 * something goes and looks, so this goes and looks.
+	 * The Content tab is meant to be the one place a floscAdmin can see what.
+	 * The site does. A rule set on a category screen is invisible there unless.
+	 * Something goes and looks, so this goes and looks.
 	 *
-	 * @return array[] Each: kind, id, name, vgm, depth, edit_url.
+	 * @return Array[] Each: kind, id, name, vgm, depth, edit_url.
 	 */
 	public static function rules_written_on_objects() {
 		$out = array();
@@ -1069,13 +1071,13 @@ public static function is_internal_post( $post_id ) {
 	/**
 	 * A rule written on the object itself, as zero or one rule.
 	 *
-	 * Both halves must be set for it to count. A post carrying only a tier and
-	 * no depth is somebody half-way through a thought, not a rule, and treating
-	 * it as one would silently gate the post.
+	 * Both halves must be set for it to count. A post carrying only a tier and.
+	 * No depth is somebody half-way through a thought, not a rule, and treating.
+	 * It as one would silently gate the post.
 	 *
 	 * @param string $kind 'post' or 'term'.
-	 * @param int    $id
-	 * @return array[]
+	 * @param int    $id   Value consumed by this operation.
+	 * @return Array[]
 	 */
 	public static function meta_rules( $kind, $id ) {
 		$id = (int) $id;
@@ -1101,12 +1103,12 @@ public static function is_internal_post( $post_id ) {
 		);
 	}
 
-		/**
-	 * Coordinate the vgm list behavior implemented by this code path.
-	 *
-	 * @param mixed $raw Input consumed by the Coordinate the vgm list behavior implemented by this code path. operation.
-	 * @return array Structured vgm list data.
-	 */
+/**
+ * Coordinate the vgm list behavior implemented by this code path.
+ *
+ * @param mixed $raw Input consumed by the Coordinate the vgm list behavior implemented by this code path. operation.
+ * @return Array Structured vgm list data.
+ */
 public static function vgm_list( $raw ) {
 		$raw = strtolower( trim( (string) $raw ) );
 		if ( '' === $raw ) {
@@ -1122,13 +1124,13 @@ public static function vgm_list( $raw ) {
 		return array_values( array_intersect( array( 'visitor', 'guest', 'member' ), $parts ) );
 	}
 
-		/**
-	 * Coordinate the group vgm behavior implemented by this code path.
-	 *
-	 * @param array $policy Input consumed by the Coordinate the group vgm behavior implemented by this code path. operation.
-	 * @param mixed $group_id Identifier used to select the record involved in the Coordinate the group vgm behavior implemented by this code path. operation.
-	 * @return mixed Result produced by the group vgm operation.
-	 */
+/**
+ * Coordinate the group vgm behavior implemented by this code path.
+ *
+ * @param array $policy   Input consumed by the Coordinate the group vgm behavior implemented by this code path. operation.
+ * @param mixed $group_id Identifier used to select the record involved in the Coordinate the group vgm behavior implemented by this code path. operation.
+ * @return Mixed Result produced by the group vgm operation.
+ */
 public static function group_vgm( array $policy, $group_id ) {
 		$key = 'bb_group:' . (int) $group_id;
 		$raw = isset( $policy['vgm_rows'][ $key ] ) ? $policy['vgm_rows'][ $key ] : $policy['vgm_default'];
@@ -1151,7 +1153,7 @@ public static function group_vgm( array $policy, $group_id ) {
 	 * A library row key: digits for a WordPress post, "kind:id" for anything else.
 	 *
 	 * @param mixed $raw Candidate id.
-	 * @return string Empty when it is not usable as a key.
+	 * @return String Empty when it is not usable as a key.
 	 */
 	public static function normalize_row_id( $raw ) {
 		$raw = trim( (string) $raw );
@@ -1173,7 +1175,7 @@ public static function group_vgm( array $policy, $group_id ) {
 	 * Post types this flow indexes. Always at least 'post'.
 	 *
 	 * @param string $flow_stem Flow being rebuilt.
-	 * @return array
+	 * @return Array.
 	 */
 	public static function indexed_post_types( $flow_stem = '' ) {
 		$types = array();
@@ -1210,12 +1212,12 @@ public static function group_vgm( array $policy, $group_id ) {
 		return (array) apply_filters( 'flosc_site_content_index_post_types', $types, $flow_stem );
 	}
 
-		/**
-	 * Persist the rebuild state in WordPress storage.
-	 *
-	 * @param mixed $flow_stem Input consumed by the Persist the rebuild state in Word Press storage. operation.
-	 * @return array Structured rebuild data.
-	 */
+/**
+ * Persist the rebuild state in WordPress storage.
+ *
+ * @param mixed $flow_stem Input consumed by the Persist the rebuild state in Word Press storage. operation.
+ * @return Array Structured rebuild data.
+ */
 public function rebuild( $flow_stem = '' ) {
 		$previous   = $this->load( $flow_stem );
 		$prev_posts = is_array( $previous['posts'] ) ? $previous['posts'] : array();
@@ -1317,8 +1319,8 @@ public function rebuild( $flow_stem = '' ) {
 	/**
 	 * How many indexed posts belong to this flow's content category (for admin stats).
 	 *
-	 * @param string $flow_stem
-	 * @return int
+	 * @param string $flow_stem Value consumed by this operation.
+	 * @return Int.
 	 */
 	public function count_in_flow_category( $flow_stem ) {
 		$slugs = $this->resolve_category_slugs( $flow_stem );
@@ -1344,12 +1346,12 @@ public function rebuild( $flow_stem = '' ) {
 	}
 
 	/**
- * Build the structured value consumed by row from post.
- *
-	 * @param WP_Post $post
-	 * @param mixed $keywords_manual Name or key used to select the Build the structured value consumed by row from post. value.
-	 * @param bool    $excluded
-	 * @return array
+	 * Build the structured value consumed by row from post.
+	 *
+	 * @param WP_Post $post            Value consumed by this operation.
+	 * @param mixed   $keywords_manual Name or key used to select the Build the structured value consumed by row from post. value.
+	 * @param bool    $excluded        Value consumed by this operation.
+	 * @return Array.
 	 */
 	public function build_row_from_post( WP_Post $post, $keywords_manual = '', $excluded = false ) {
 		/*
@@ -1513,11 +1515,11 @@ public function rebuild( $flow_stem = '' ) {
 	}
 
 	/**
- * Coordinate the derive keywords behavior implemented by this code path.
- *
-	 * @param WP_Post $post
-	 * @param mixed $body Input consumed by the Coordinate the derive keywords behavior implemented by this code path. operation.
-	 * @return string comma-separated
+	 * Coordinate the derive keywords behavior implemented by this code path.
+	 *
+	 * @param WP_Post $post Value consumed by this operation.
+	 * @param mixed   $body Input consumed by the Coordinate the derive keywords behavior implemented by this code path. operation.
+	 * @return String comma-separated.
 	 */
 	private function derive_keywords( WP_Post $post, $body ) {
 		$parts = array();
@@ -1565,11 +1567,11 @@ public function rebuild( $flow_stem = '' ) {
 	}
 
 	/**
- * Coordinate the merge keywords behavior implemented by this code path.
- *
-	 * @param string $base
-	 * @param mixed $extra Input consumed by the Coordinate the merge keywords behavior implemented by this code path. operation.
-	 * @return string
+	 * Coordinate the merge keywords behavior implemented by this code path.
+	 *
+	 * @param string $base  Value consumed by this operation.
+	 * @param mixed  $extra Input consumed by the Coordinate the merge keywords behavior implemented by this code path. operation.
+	 * @return String.
 	 */
 	private function merge_keywords( $base, $extra ) {
 		$all = array();
@@ -1589,9 +1591,9 @@ public function rebuild( $flow_stem = '' ) {
 	/**
 	 * Light hierarchy map for AI (titles / ids / access) — no full bodies.
 	 *
-	 * @param string $flow_stem
-	 * @param mixed $access_level Input consumed by the Coordinate the format map for ai behavior implemented by this code path. operation.
-	 * @return string
+	 * @param string $flow_stem    Value consumed by this operation.
+	 * @param mixed  $access_level Input consumed by the Coordinate the format map for ai behavior implemented by this code path. operation.
+	 * @return String.
 	 */
 	public function format_map_for_ai( $flow_stem, $access_level = 'visitor' ) {
 		$doc   = $this->load( $flow_stem );
@@ -1632,11 +1634,11 @@ public function rebuild( $flow_stem = '' ) {
 	/**
 	 * Selective full-text retrieval from the index.
 	 *
-	 * @param string $flow_stem
-	 * @param mixed $keywords Name or key used to select the Coordinate the search behavior implemented by this code path. value.
-	 * @param string $access_level
-	 * @param mixed $limit Input consumed by the Coordinate the search behavior implemented by this code path. operation.
-	 * @return string Human-readable block for the model
+	 * @param string $flow_stem    Value consumed by this operation.
+	 * @param mixed  $keywords     Name or key used to select the Coordinate the search behavior implemented by this code path. value.
+	 * @param string $access_level Value consumed by this operation.
+	 * @param mixed  $limit        Input consumed by the Coordinate the search behavior implemented by this code path. operation.
+	 * @return String Human-readable block for the model.
 	 */
 	public function search( $flow_stem, $keywords, $access_level = 'visitor', $limit = self::DEFAULT_RETRIEVE_LIMIT ) {
 		$doc   = $this->load( $flow_stem );
@@ -1796,14 +1798,14 @@ public function rebuild( $flow_stem = '' ) {
 	/**
 	 * What this tier gets of this row.
 	 *
-	 * A row built before depth existed carries only its access string. That
-	 * still answers the question, at the two depths it could express: whole
-	 * body for a tier that clears it, title for one that does not. So an index
-	 * file written by an older build keeps working until it is rebuilt.
+	 * A row built before depth existed carries only its access string. That.
+	 * Still answers the question, at the two depths it could express: whole.
+	 * Body for a tier that clears it, title for one that does not. So an index.
+	 * File written by an older build keeps working until it is rebuilt.
 	 *
-	 * @param array  $row
+	 * @param array $row  Value consumed by this operation.
 	 * @param mixed $tier Input consumed by the Coordinate the row depth behavior implemented by this code path. operation.
-	 * @return string title|excerpt|readmore|full
+	 * @return String title|excerpt|readmore|full.
 	 */
 	public function row_depth( array $row, $tier ) {
 		$tier = self::tier_token( $tier );
@@ -1822,9 +1824,9 @@ public function rebuild( $flow_stem = '' ) {
 	/**
 	 * The slice of body this depth returns. Empty string at title depth.
 	 *
-	 * @param array  $row
+	 * @param array $row   Value consumed by this operation.
 	 * @param mixed $depth Input consumed by the Coordinate the row body at behavior implemented by this code path. operation.
-	 * @return string
+	 * @return String.
 	 */
 	public function row_body_at( array $row, $depth ) {
 		$body = (string) ( $row['content'] ?? '' );
@@ -1854,11 +1856,11 @@ public function rebuild( $flow_stem = '' ) {
 	}
 
 	/**
- * Coordinate the access allows behavior implemented by this code path.
- *
-	 * @param string $user_level
-	 * @param mixed $required Input consumed by the Coordinate the access allows behavior implemented by this code path. operation.
-	 * @return bool
+	 * Coordinate the access allows behavior implemented by this code path.
+	 *
+	 * @param string $user_level Value consumed by this operation.
+	 * @param mixed  $required   Input consumed by the Coordinate the access allows behavior implemented by this code path. operation.
+	 * @return Bool.
 	 */
 	public function access_allows( $user_level, $required ) {
 		$hierarchy = array(
@@ -1896,10 +1898,10 @@ public function rebuild( $flow_stem = '' ) {
 	/**
 	 * Set excluded flag and save.
 	 *
-	 * @param string $flow_stem
-	 * @param mixed $post_id WordPress post ID used to resolve the content involved in this operation.
-	 * @param bool   $excluded
-	 * @return bool
+	 * @param string $flow_stem Value consumed by this operation.
+	 * @param mixed  $post_id   WordPress post ID used to resolve the content involved in this operation.
+	 * @param bool   $excluded  Value consumed by this operation.
+	 * @return Bool.
 	 */
 	public function set_excluded( $flow_stem, $post_id, $excluded ) {
 		$doc = $this->load( $flow_stem );
@@ -1915,12 +1917,12 @@ public function rebuild( $flow_stem = '' ) {
 	}
 
 	/**
- * Coordinate the manual keywords behavior implemented by this code path.
- *
-	 * @param string $flow_stem
-	 * @param mixed $post_id WordPress post ID used to resolve the content involved in this operation.
-	 * @param string $manual_keywords
-	 * @return bool
+	 * Coordinate the manual keywords behavior implemented by this code path.
+	 *
+	 * @param string $flow_stem       Value consumed by this operation.
+	 * @param mixed  $post_id         WordPress post ID used to resolve the content involved in this operation.
+	 * @param string $manual_keywords Value consumed by this operation.
+	 * @return Bool.
 	 */
 	public function set_manual_keywords( $flow_stem, $post_id, $manual_keywords ) {
 		$doc = $this->load( $flow_stem );
@@ -1948,9 +1950,9 @@ public function rebuild( $flow_stem = '' ) {
 	/**
 	 * Reindex a single post if still in category.
 	 *
-	 * @param string $flow_stem
-	 * @param mixed $post_id WordPress post ID used to resolve the content involved in this operation.
-	 * @return bool
+	 * @param string $flow_stem Value consumed by this operation.
+	 * @param mixed  $post_id   WordPress post ID used to resolve the content involved in this operation.
+	 * @return Bool.
 	 */
 	public function reindex_one( $flow_stem, $post_id ) {
 		$post = get_post( (int) $post_id );
@@ -1977,9 +1979,9 @@ public function rebuild( $flow_stem = '' ) {
 	// ─── Admin POST handlers ─────────────────────────────────────────────.
 
 	/**
- * Coordinate the require admin behavior implemented by this code path.
- *
-	 * @return void
+	 * Coordinate the require admin behavior implemented by this code path.
+	 *
+	 * @return Void.
 	 */
 	private function require_admin() {
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -1988,10 +1990,10 @@ public function rebuild( $flow_stem = '' ) {
 	}
 
 	/**
- * Coordinate the ivr from request behavior implemented by this code path.
- *
- * @param mixed $request Request object carrying the input consumed by this handler.
-	 * @return string
+	 * Coordinate the ivr from request behavior implemented by this code path.
+	 *
+	 * @param mixed $request Request object carrying the input consumed by this handler.
+	 * @return String.
 	 */
 	private function ivr_from_request( $request ) {
 		$ivr = isset( $request['flosc_return_ivr'] ) ? sanitize_file_name( (string) $request['flosc_return_ivr'] ) : '';
@@ -1999,12 +2001,12 @@ public function rebuild( $flow_stem = '' ) {
 	}
 
 	/**
- * Resolve and perform the redirect required for redirect ai.
- *
-	 * @param string $ivr
-	 * @param mixed $action Input consumed by the Resolve and perform the redirect required for redirect ai. operation.
-	 * @param string $error
-	 * @return void
+	 * Resolve and perform the redirect required for redirect ai.
+	 *
+	 * @param string $ivr    Value consumed by this operation.
+	 * @param mixed  $action Input consumed by the Resolve and perform the redirect required for redirect ai. operation.
+	 * @param string $error  Value consumed by this operation.
+	 * @return Void.
 	 */
 	private function redirect_ai( $ivr, $action, $error = '' ) {
 		$args = array(
@@ -2023,9 +2025,9 @@ public function rebuild( $flow_stem = '' ) {
 	}
 
 	/**
- * Persist the rebuild state in WordPress storage.
- *
-	 * @return void
+	 * Persist the rebuild state in WordPress storage.
+	 *
+	 * @return Void.
 	 */
 	public function handle_rebuild() {
 		$this->require_admin();
@@ -2051,9 +2053,9 @@ public function rebuild( $flow_stem = '' ) {
 	}
 
 	/**
- * Coordinate the exclude behavior implemented by this code path.
- *
-	 * @return void
+	 * Coordinate the exclude behavior implemented by this code path.
+	 *
+	 * @return Void.
 	 */
 	public function handle_exclude() {
 		$this->require_admin();
@@ -2068,9 +2070,9 @@ public function rebuild( $flow_stem = '' ) {
 	}
 
 	/**
- * Coordinate the include behavior implemented by this code path.
- *
-	 * @return void
+	 * Coordinate the include behavior implemented by this code path.
+	 *
+	 * @return Void.
 	 */
 	public function handle_include() {
 		$this->require_admin();
@@ -2085,9 +2087,9 @@ public function rebuild( $flow_stem = '' ) {
 	}
 
 	/**
- * Coordinate the keywords behavior implemented by this code path.
- *
-	 * @return void
+	 * Coordinate the keywords behavior implemented by this code path.
+	 *
+	 * @return Void.
 	 */
 	public function handle_keywords() {
 		$this->require_admin();
@@ -2103,9 +2105,9 @@ public function rebuild( $flow_stem = '' ) {
 	}
 
 	/**
- * Coordinate the reindex one behavior implemented by this code path.
- *
-	 * @return void
+	 * Coordinate the reindex one behavior implemented by this code path.
+	 *
+	 * @return Void.
 	 */
 	public function handle_reindex_one() {
 		$this->require_admin();

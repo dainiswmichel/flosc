@@ -1,6 +1,6 @@
 <?php
 /**
- * FLOSC Stripe Payment Provider
+ * FLOSC Stripe Payment Provider.
  *
  * Handles traditional card payments and subscriptions via Stripe.
  *
@@ -16,63 +16,64 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 
-		/**
-	 * Resolve the current id value from the available WordPress and flow state.
-	 *
-	 * @return mixed Result produced by the id operation.
-	 */
+/**
+ * Resolve the current id value from the available WordPress and flow state.
+ *
+ * @return Mixed Result produced by the id operation.
+ */
 public function get_id() {
 		return 'stripe';
 	}
 
-		/**
-	 * Resolve the current name value from the available WordPress and flow state.
-	 *
-	 * @return mixed Result produced by the name operation.
-	 */
+/**
+ * Resolve the current name value from the available WordPress and flow state.
+ *
+ * @return Mixed Result produced by the name operation.
+ */
 public function get_name() {
 		return 'Stripe';
 	}
 
-		/**
-	 * Resolve the current description value from the available WordPress and flow state.
-	 *
-	 * @return mixed Result produced by the description operation.
-	 */
+/**
+ * Resolve the current description value from the available WordPress and flow state.
+ *
+ * @return Mixed Result produced by the description operation.
+ */
 public function get_description() {
 		return 'Accept credit cards, Apple Pay, Google Pay, and subscriptions via Stripe.';
 	}
 
-		/**
-	 * Resolve the current icon value from the available WordPress and flow state.
-	 *
-	 * @return mixed Result produced by the icon operation.
-	 */
+/**
+ * Resolve the current icon value from the available WordPress and flow state.
+ *
+ * @return Mixed Result produced by the icon operation.
+ */
 public function get_icon() {
 		return '💳';
 	}
 
-		/**
-	 * Determine whether the current state satisfies configured.
-	 *
-	 * @return bool Whether configured applies to the current state.
-	 */
+/**
+ * Determine whether the current state satisfies configured.
+ *
+ * @return Bool Whether configured applies to the current state.
+ */
 public function is_configured() {
 		return ! empty( $this->get_secret_key() ) && ! empty( $this->get_publishable_key() );
 	}
 
-		/**
-	 * Coordinate the supports subscriptions behavior implemented by this code path.
-	 *
-	 * @return bool Whether supports subscriptions applies to the current state.
-	 */
+/**
+ * Coordinate the supports subscriptions behavior implemented by this code path.
+ *
+ * @return Bool Whether supports subscriptions applies to the current state.
+ */
 public function supports_subscriptions() {
 		return true;
 	}
 
 	/**
-	 * Get settings fields for admin UI
- * @return array Structured settings fields data.
+	 * Get settings fields for admin UI.
+	 *
+	 * @return Array Structured settings fields data.
 	 */
 	public function get_settings_fields() {
 		return array(
@@ -115,46 +116,46 @@ public function supports_subscriptions() {
 	}
 
 	/**
-	 * Get appropriate keys based on mode
+	 * Get appropriate keys based on mode.
 	 * Fixed to read from per-flow settings via flosc()->get_setting()
-	 * Key mapping: provider asks for 'test_publishable_key' → admin stores 'stripe_test_pk'
+	 * Key mapping: provider asks for 'test_publishable_key' → admin stores 'stripe_test_pk'.
 	 *
 	 * @since 1.6.3
- * @return mixed Result produced by the mode operation.
+	 * @return Mixed Result produced by the mode operation.
 	 */
 	private function get_mode() {
 		return $this->get_flow_setting( 'mode', 'test' );
 	}
 
-		/**
-	 * Resolve the current publishable key value from the available WordPress and flow state.
-	 *
-	 * @return mixed Result produced by the publishable key operation.
-	 */
+/**
+ * Resolve the current publishable key value from the available WordPress and flow state.
+ *
+ * @return Mixed Result produced by the publishable key operation.
+ */
 private function get_publishable_key() {
 		$mode = $this->get_mode();
 		return $this->get_flow_setting( $mode . '_pk', '' );
 	}
 
-		/**
-	 * Resolve the current secret key value from the available WordPress and flow state.
-	 *
-	 * @return mixed Result produced by the secret key operation.
-	 */
+/**
+ * Resolve the current secret key value from the available WordPress and flow state.
+ *
+ * @return Mixed Result produced by the secret key operation.
+ */
 private function get_secret_key() {
 		$mode = $this->get_mode();
 		return $this->get_flow_setting( $mode . '_sk', '' );
 	}
 
 	/**
-	 * Read Stripe setting from per-flow settings, falling back to global
-	 * Admin saves: stripe_test_pk, stripe_test_sk, stripe_live_pk, stripe_live_sk, stripe_mode, stripe_webhook_secret
+	 * Read Stripe setting from per-flow settings, falling back to global.
+	 * Admin saves: stripe_test_pk, stripe_test_sk, stripe_live_pk, stripe_live_sk, stripe_mode, stripe_webhook_secret.
 	 * All under the per-flow array option (flosc_flow_{name})
 	 *
 	 * @since 1.6.3
- * @param mixed $key Name or key used to select the Resolve the current flow setting value from the available Word Press and flow state. value.
- * @param mixed $fallback Fallback value returned when no more specific value is available.
- * @return mixed Result produced by the flow setting operation.
+	 * @param mixed $key      Name or key used to select the Resolve the current flow setting value from the available Word Press and flow state. value.
+	 * @param mixed $fallback Fallback value returned when no more specific value is available.
+	 * @return Mixed Result produced by the flow setting operation.
 	 */
 	private function get_flow_setting( $key, $fallback = '' ) {
 		// Try per-flow via flosc()->get_setting() (checks flow array first, then global).
@@ -170,7 +171,8 @@ private function get_secret_key() {
 
 	/**
 	 * Client-side config (passed to JavaScript)
- * @return array Structured client config data.
+	 *
+	 * @return Array Structured client config data.
 	 */
 	public function get_client_config() {
 		return array(
@@ -180,11 +182,12 @@ private function get_secret_key() {
 	}
 
 	/**
-	 * Process payment
- * @param mixed $user_id WordPress user ID whose Coordinate the payment behavior implemented by this code path. state is being processed.
- * @param mixed $offer Input consumed by the Coordinate the payment behavior implemented by this code path. operation.
- * @param mixed $payment_data Structured data consumed by the Coordinate the payment behavior implemented by this code path. operation.
- * @return mixed Result of the payment operation, or a WP_Error when it cannot complete.
+	 * Process payment.
+	 *
+	 * @param mixed $user_id      WordPress user ID whose Coordinate the payment behavior implemented by this code path. state is being processed.
+	 * @param mixed $offer        Input consumed by the Coordinate the payment behavior implemented by this code path. operation.
+	 * @param mixed $payment_data Structured data consumed by the Coordinate the payment behavior implemented by this code path. operation.
+	 * @return Mixed Result of the payment operation, or a WP_Error when it cannot complete.
 	 */
 	public function process_payment( $user_id, $offer, $payment_data = array() ) {
 		$pricing  = $offer['pricing']['stripe'] ?? array();
@@ -210,13 +213,13 @@ private function get_secret_key() {
 	}
 
 	/**
-	 * Create one-time payment
+	 * Create one-time payment.
 	 *
-	 * @param WP_User $user
-	 * @param mixed $price_id Identifier used to select the record involved in the Create the Word Press data required for payment. operation.
-	 * @param array   $payment_data
-	 * @param mixed $offer_id Identifier used to select the record involved in the Create the Word Press data required for payment. operation.
- * @return mixed Result produced by the payment operation.
+	 * @param WP_User $user         Value consumed by this operation.
+	 * @param mixed   $price_id     Identifier used to select the record involved in the Create the Word Press data required for payment. operation.
+	 * @param array   $payment_data Value consumed by this operation.
+	 * @param mixed   $offer_id     Identifier used to select the record involved in the Create the Word Press data required for payment. operation.
+	 * @return Mixed Result produced by the payment operation.
 	 */
 	private function create_payment( $user, $price_id, $payment_data, $offer_id = '' ) {
 		// If we have a payment_method_id, create PaymentIntent and confirm.
@@ -229,15 +232,15 @@ private function get_secret_key() {
 	}
 
 	/**
-	 * Create PaymentIntent for client-side confirmation
-	 * Added offer_id parameter to track which offer is being purchased
+	 * Create PaymentIntent for client-side confirmation.
+	 * Added offer_id parameter to track which offer is being purchased.
 	 *
 	 * @since 1.4.1
- * @param mixed $user Input consumed by the Create the Word Press data required for payment intent. operation.
- * @param mixed $price_id_or_amount Identifier used to select the record involved in the Create the Word Press data required for payment intent. operation.
- * @param mixed $currency Input consumed by the Create the Word Press data required for payment intent. operation.
- * @param mixed $offer_id Identifier used to select the record involved in the Create the Word Press data required for payment intent. operation.
- * @return array Structured payment intent data.
+	 * @param mixed $user               Input consumed by the Create the Word Press data required for payment intent. operation.
+	 * @param mixed $price_id_or_amount Identifier used to select the record involved in the Create the Word Press data required for payment intent. operation.
+	 * @param mixed $currency           Input consumed by the Create the Word Press data required for payment intent. operation.
+	 * @param mixed $offer_id           Identifier used to select the record involved in the Create the Word Press data required for payment intent. operation.
+	 * @return Array Structured payment intent data.
 	 */
 	public function create_payment_intent( $user, $price_id_or_amount, $currency = 'usd', $offer_id = '' ) {
 		// First, get the price details from Stripe.
@@ -287,11 +290,11 @@ private function get_secret_key() {
 	/**
 	 * Confirm a payment (server-side)
 	 *
-	 * @param WP_User $user
-	 * @param mixed $price_id Identifier used to select the record involved in the Coordinate the confirm payment behavior implemented by this code path. operation.
-	 * @param string  $payment_method_id
-	 * @param mixed $offer_id Identifier used to select the record involved in the Coordinate the confirm payment behavior implemented by this code path. operation.
- * @return array Structured confirm payment data.
+	 * @param WP_User $user              Value consumed by this operation.
+	 * @param mixed   $price_id          Identifier used to select the record involved in the Coordinate the confirm payment behavior implemented by this code path. operation.
+	 * @param string  $payment_method_id Value consumed by this operation.
+	 * @param mixed   $offer_id          Identifier used to select the record involved in the Coordinate the confirm payment behavior implemented by this code path. operation.
+	 * @return Array Structured confirm payment data.
 	 */
 	private function confirm_payment( $user, $price_id, $payment_method_id, $offer_id = '' ) {
 		// Get price details.
@@ -353,15 +356,15 @@ private function get_secret_key() {
 	/**
 	 * Create subscription (Stripe Subscriptions API).
 	 *
-	 * With payment_behavior=default_incomplete the normal first response is
-	 * status=incomplete + PaymentIntent client_secret for the client to confirm.
+	 * With payment_behavior=default_incomplete the normal first response is.
+	 * Status=incomplete + PaymentIntent client_secret for the client to confirm.
 	 * Only status=active is settled for process_purchase fulfillment.
 	 *
-	 * @param WP_User $user
-	 * @param mixed $price_id Identifier used to select the record involved in the Persist the subscription state in Word Press storage. operation.
-	 * @param array   $payment_data
-	 * @param mixed $offer_id Identifier used to select the record involved in the Persist the subscription state in Word Press storage. operation.
-	 * @return array|WP_Error
+	 * @param WP_User $user         Value consumed by this operation.
+	 * @param mixed   $price_id     Identifier used to select the record involved in the Persist the subscription state in Word Press storage. operation.
+	 * @param array   $payment_data Value consumed by this operation.
+	 * @param mixed   $offer_id     Identifier used to select the record involved in the Persist the subscription state in Word Press storage. operation.
+	 * @return Array|WP_Error.
 	 */
 	private function create_subscription( $user, $price_id, $payment_data, $offer_id = '' ) {
 		$customer_id = $this->get_or_create_customer( $user );
@@ -486,7 +489,7 @@ private function get_secret_key() {
 	 * Pull PaymentIntent array from a Subscription create/retrieve response.
 	 *
 	 * @param array $subscription Stripe subscription object.
-	 * @return array|null
+	 * @return Array|null.
 	 */
 	private function extract_subscription_payment_intent( array $subscription ) {
 		$invoice = $subscription['latest_invoice'] ?? null;
@@ -515,9 +518,10 @@ private function get_secret_key() {
 	}
 
 	/**
-	 * Get or create Stripe Customer
- * @param mixed $user Input consumed by the Persist the or create customer state in Word Press storage. operation.
- * @return mixed Result of the or create customer operation, or a WP_Error when it cannot complete.
+	 * Get or create Stripe Customer.
+	 *
+	 * @param mixed $user Input consumed by the Persist the or create customer state in Word Press storage. operation.
+	 * @return Mixed Result of the or create customer operation, or a WP_Error when it cannot complete.
 	 */
 	private function get_or_create_customer( $user ) {
 		$customer_id = get_user_meta( $user->ID, '_flosc_stripe_customer', true );
@@ -554,9 +558,10 @@ private function get_secret_key() {
 	}
 
 	/**
-	 * Cancel subscription
- * @param mixed $subscription_id Identifier used to select the record involved in the Coordinate the cancel subscription behavior implemented by this code path. operation.
- * @return array Structured cancel subscription data.
+	 * Cancel subscription.
+	 *
+	 * @param mixed $subscription_id Identifier used to select the record involved in the Coordinate the cancel subscription behavior implemented by this code path. operation.
+	 * @return Array Structured cancel subscription data.
 	 */
 	public function cancel_subscription( $subscription_id ) {
 		$response = $this->api_request( 'DELETE', '/subscriptions/' . $subscription_id );
@@ -573,10 +578,11 @@ private function get_secret_key() {
 	}
 
 	/**
-	 * Handle Stripe webhook
- * @param mixed $payload Structured data consumed by the Persist the webhook state in Word Press storage. operation.
- * @param mixed $headers Input consumed by the Persist the webhook state in Word Press storage. operation.
- * @return array Structured webhook data.
+	 * Handle Stripe webhook.
+	 *
+	 * @param mixed $payload Structured data consumed by the Persist the webhook state in Word Press storage. operation.
+	 * @param mixed $headers Input consumed by the Persist the webhook state in Word Press storage. operation.
+	 * @return Array Structured webhook data.
 	 */
 	public function handle_webhook( $payload, $headers = array() ) {
 		$webhook_secret = $this->get_flow_setting( 'webhook_secret', '' );
@@ -663,12 +669,12 @@ private function get_secret_key() {
 	}
 
 	/**
-	 * Handle successful payment - grant access based on offer
+	 * Handle successful payment - grant access based on offer.
 	 * PAY-01/PAY-02: only metadata-bound offer; claim txn before grant (idempotent with complete_purchase).
 	 *
 	 * @since 1.4.1
- * @param mixed $payment_intent Input consumed by the Persist the payment succeeded state in Word Press storage. operation.
- * @return array Structured payment succeeded data.
+	 * @param mixed $payment_intent Input consumed by the Persist the payment succeeded state in Word Press storage. operation.
+	 * @return Array Structured payment succeeded data.
 	 */
 	private function handle_payment_succeeded( $payment_intent ) {
 		$meta           = ( isset( $payment_intent['metadata'] ) && is_array( $payment_intent['metadata'] ) )
@@ -715,12 +721,12 @@ private function get_secret_key() {
 		return array( 'success' => true );
 	}
 
-		/**
-	 * Persist the subscription updated state in WordPress storage.
-	 *
-	 * @param mixed $subscription Input consumed by the Persist the subscription updated state in Word Press storage. operation.
-	 * @return array Structured subscription updated data.
-	 */
+/**
+ * Persist the subscription updated state in WordPress storage.
+ *
+ * @param mixed $subscription Input consumed by the Persist the subscription updated state in Word Press storage. operation.
+ * @return Array Structured subscription updated data.
+ */
 private function handle_subscription_updated( $subscription ) {
 		$meta    = ( isset( $subscription['metadata'] ) && is_array( $subscription['metadata'] ) )
 			? $subscription['metadata']
@@ -736,12 +742,12 @@ private function handle_subscription_updated( $subscription ) {
 		return array( 'success' => true );
 	}
 
-		/**
-	 * Persist the subscription deleted state in WordPress storage.
-	 *
-	 * @param mixed $subscription Input consumed by the Persist the subscription deleted state in Word Press storage. operation.
-	 * @return array Structured subscription deleted data.
-	 */
+/**
+ * Persist the subscription deleted state in WordPress storage.
+ *
+ * @param mixed $subscription Input consumed by the Persist the subscription deleted state in Word Press storage. operation.
+ * @return Array Structured subscription deleted data.
+ */
 private function handle_subscription_deleted( $subscription ) {
 		$meta    = ( isset( $subscription['metadata'] ) && is_array( $subscription['metadata'] ) )
 			? $subscription['metadata']
@@ -757,12 +763,12 @@ private function handle_subscription_deleted( $subscription ) {
 		return array( 'success' => true );
 	}
 
-		/**
-	 * Coordinate the payment failed behavior implemented by this code path.
-	 *
-	 * @param mixed $invoice Input consumed by the Coordinate the payment failed behavior implemented by this code path. operation.
-	 * @return array Structured payment failed data.
-	 */
+/**
+ * Coordinate the payment failed behavior implemented by this code path.
+ *
+ * @param mixed $invoice Input consumed by the Coordinate the payment failed behavior implemented by this code path. operation.
+ * @return Array Structured payment failed data.
+ */
 private function handle_payment_failed( $invoice ) {
 		$customer_id = sanitize_text_field( (string) ( $invoice['customer'] ?? '' ) );
 
@@ -779,22 +785,23 @@ private function handle_payment_failed( $invoice ) {
 	}
 
 	/**
-	 * Retrieve a PaymentIntent to verify payment status
+	 * Retrieve a PaymentIntent to verify payment status.
 	 *
 	 * @since 1.4.1
- * @param mixed $payment_intent_id Identifier used to select the record involved in the Coordinate the retrieve payment intent behavior implemented by this code path. operation.
- * @return mixed Result produced by the retrieve payment intent operation.
+	 * @param mixed $payment_intent_id Identifier used to select the record involved in the Coordinate the retrieve payment intent behavior implemented by this code path. operation.
+	 * @return Mixed Result produced by the retrieve payment intent operation.
 	 */
 	public function retrieve_payment_intent( $payment_intent_id ) {
 		return $this->api_request( 'GET', '/payment_intents/' . $payment_intent_id );
 	}
 
 	/**
-	 * Make Stripe API request
- * @param mixed $method Input consumed by the Send the remote request required for api request and normalize its result. operation.
- * @param mixed $endpoint Input consumed by the Send the remote request required for api request and normalize its result. operation.
- * @param mixed $data Structured data consumed by the Send the remote request required for api request and normalize its result. operation.
- * @return mixed Result of the api request operation, or a WP_Error when it cannot complete.
+	 * Make Stripe API request.
+	 *
+	 * @param mixed $method   Input consumed by the Send the remote request required for api request and normalize its result. operation.
+	 * @param mixed $endpoint Input consumed by the Send the remote request required for api request and normalize its result. operation.
+	 * @param mixed $data     Structured data consumed by the Send the remote request required for api request and normalize its result. operation.
+	 * @return Mixed Result of the api request operation, or a WP_Error when it cannot complete.
 	 */
 	private function api_request( $method, $endpoint, $data = array() ) {
 		$url = 'https://api.stripe.com/v1' . $endpoint;

@@ -2,11 +2,11 @@
 /**
  * Reference: what a personality profile is made of, and where each part goes.
  *
- * Written because the structure existed and nobody could see it. Someone
- * arriving with the soul.md pattern in mind had no way to know that hard
- * constraints belong in Boundaries and Prohibitions while forbidden
- * phrases belong in Banned Words and Fillers to Avoid — or that the split is
- * deliberate rather than an oversight waiting to be tidied up.
+ * Written because the structure existed and nobody could see it. Someone.
+ * Arriving with the soul.md pattern in mind had no way to know that hard.
+ * Constraints belong in Boundaries and Prohibitions while forbidden.
+ * Phrases belong in Banned Words and Fillers to Avoid — or that the split is.
+ * Deliberate rather than an oversight waiting to be tidied up.
  *
  * @package FLOSC
  */

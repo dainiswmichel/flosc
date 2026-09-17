@@ -4,15 +4,15 @@
  *
  * A floscFlow has two representations and they are NOT interchangeable:
  *
- *   runtime   a WordPress option named flosc_flow_{stem}, holding
- *             flow_messages, flow_phases and flow_styles. This is what the
- *             chat actually reads on every turn.
- *   portable  a markdown file. Import and export only, never read at runtime.
+ * Runtime   a WordPress option named flosc_flow_{stem}, holding.
+ * Flow_messages, flow_phases and flow_styles. This is what the.
+ * Chat actually reads on every turn.
+ * Portable  a markdown file. Import and export only, never read at runtime.
  *
- * Keeping them apart is the point of this file. Runtime message, phase and
- * style lists must not be stored under ivr_* keys: those belong to the portable
- * form, and a flow that mixes the two has two sources of truth and no way to
- * tell which one answered.
+ * Keeping them apart is the point of this file. Runtime message, phase and.
+ * Style lists must not be stored under ivr_* keys: those belong to the portable.
+ * Form, and a flow that mixes the two has two sources of truth and no way to.
+ * Tell which one answered.
  *
  * @package FLOSC
  */
@@ -23,8 +23,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 /**
  * Flow runtime config lives in WordPress options:
- *   option name: flosc_flow_{stem}
- *   array keys (runtime only): flow_messages, flow_phases, flow_styles
+ * Option name: flosc_flow_{stem}.
+ * Array keys (runtime only): flow_messages, flow_phases, flow_styles.
  *
  * Portable markdown (*.md) is separate: import/export only.
  * Do not store runtime message/phase/style lists under ivr_* keys.
@@ -37,7 +37,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Call this before update_option so the saved row is clean.
  *
  * @param array $fs Flow option array (by reference).
- * @return bool True if any migration or cleanup changed $fs.
+ * @return Bool True if any migration or cleanup changed $fs.
  */
 function flosc_flow_migrate_legacy_runtime_keys( array &$fs ) {
 	$changed = false;
@@ -77,7 +77,7 @@ function flosc_flow_migrate_legacy_runtime_keys( array &$fs ) {
  * Prefers flow_messages. Reads ivr_messages only if flow_messages is empty (old installs).
  *
  * @param array $fs Flow option array from get_option('flosc_flow_*').
- * @return array
+ * @return Array.
  */
 function flosc_flow_get_messages( array $fs ) {
 	if ( ! empty( $fs['flow_messages'] ) && is_array( $fs['flow_messages'] ) ) {
@@ -96,7 +96,7 @@ function flosc_flow_get_messages( array $fs ) {
  * Phases for a flow option array.
  *
  * @param array $fs Flow option array.
- * @return array
+ * @return Array.
  */
 function flosc_flow_get_phases( array $fs ) {
 	if ( ! empty( $fs['flow_phases'] ) && is_array( $fs['flow_phases'] ) ) {
@@ -116,7 +116,7 @@ function flosc_flow_get_phases( array $fs ) {
  * Not “IVR styles” — runtime styles belong under flow_styles only.
  *
  * @param array $fs Flow option array.
- * @return array
+ * @return Array.
  */
 function flosc_flow_get_styles( array $fs ) {
 	if ( ! empty( $fs['flow_styles'] ) && is_array( $fs['flow_styles'] ) ) {
@@ -152,9 +152,9 @@ function flosc_flow_set_runtime( array &$fs, array $messages, array $phases = ar
 /**
  * Load flosc_flow_{stem} option, migrate legacy keys in memory, optionally persist cleanup.
  *
- * @param string $flow_key e.g. flosc_flow_{stem}.
+ * @param string $flow_key E.g. flosc_flow_{stem}.
  * @param bool   $persist  If true and migration removed legacy keys, update_option once.
- * @return array
+ * @return Array.
  */
 function flosc_flow_get_option_array( $flow_key, $persist = false ) {
 	$flow_key = (string) $flow_key;
@@ -180,7 +180,7 @@ function flosc_flow_get_option_array( $flow_key, $persist = false ) {
  *
  * @param string $flow_id  Flow id or stem.
  * @param string $ivr_file Portable markdown filename (e.g. foo_ivr.md), used only if option empty.
- * @return array{messages:array,phases:array,styles:array,source:string,flow_key:string,stem:string}
+ * @return Array{messages:array,phases:array,styles:array,source:string,flow_key:string,stem:string}.
  */
 function flosc_resolve_flow_runtime( $flow_id = '', $ivr_file = '' ) {
 	$source   = 'empty';
@@ -284,7 +284,7 @@ function flosc_resolve_flow_runtime( $flow_id = '', $ivr_file = '' ) {
  *
  * @param array  $config Return value of flosc_resolve_flow_runtime().
  * @param string $phase  Phase name.
- * @return array
+ * @return Array.
  */
 function flosc_flow_phase_messages( array $config, $phase ) {
 	$phases = $config['phases'] ?? array();
@@ -307,7 +307,7 @@ function flosc_flow_phase_messages( array $config, $phase ) {
  * Build CSS string from resolved flow runtime styles.
  *
  * @param array $config Return value of flosc_resolve_flow_runtime().
- * @return string
+ * @return String.
  */
 function flosc_flow_styles_css( array $config ) {
 	$styles = $config['styles'] ?? array();

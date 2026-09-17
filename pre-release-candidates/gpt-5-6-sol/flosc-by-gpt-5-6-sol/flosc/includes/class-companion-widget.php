@@ -1,6 +1,6 @@
 <?php
 /**
- * Compatibility shim — implementation lives at includes/companion-mode/class-flosc-companion-widget.php
+ * Compatibility shim — implementation lives at includes/companion-mode/class-flosc-companion-widget.php.
  *
  * @package FLOSC
  */

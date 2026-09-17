@@ -1,14 +1,14 @@
 <?php
 /**
- * Sample Assessment Quiz type
+ * Sample Assessment Quiz type.
  *
  * Subject-neutral sample: 10 topics with one multiple-choice item each.
- * floscAdmins replace this content with their own questions, map wrong answers
- * to topics, and gate freeline / guest / member content via flow settings —
- * not via this sample data.
+ * FloscAdmins replace this content with their own questions, map wrong answers.
+ * To topics, and gate freeline / guest / member content via flow settings —.
+ * Not via this sample data.
  *
- * Default CorrectContent / RelatedContent use placeholder post:sample-topic-N
- * slugs. Point them at real posts (or leave empty) in the Quiz admin for each flow.
+ * Default CorrectContent / RelatedContent use placeholder post:sample-topic-N.
+ * Slugs. Point them at real posts (or leave empty) in the Quiz admin for each flow.
  *
  * @package FLOSC
  */
@@ -22,74 +22,74 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class FLOSC_Sample_Assessment_Quiz extends FLOSC_Abstract_Quiz_Type {
 
-		/**
-	 * Resolve the current id value from the available WordPress and flow state.
-	 *
-	 * @return mixed Result produced by the id operation.
-	 */
+/**
+ * Resolve the current id value from the available WordPress and flow state.
+ *
+ * @return Mixed Result produced by the id operation.
+ */
 public function get_id() {
 		return 'sample_assessment_quiz';
 	}
 
-		/**
-	 * Resolve the current name value from the available WordPress and flow state.
-	 *
-	 * @return mixed Result produced by the name operation.
-	 */
+/**
+ * Resolve the current name value from the available WordPress and flow state.
+ *
+ * @return Mixed Result produced by the name operation.
+ */
 public function get_name() {
 		return 'Sample Assessment Quiz';
 	}
 
-		/**
-	 * Resolve the current description value from the available WordPress and flow state.
-	 *
-	 * @return mixed Result produced by the description operation.
-	 */
+/**
+ * Resolve the current description value from the available WordPress and flow state.
+ *
+ * @return Mixed Result produced by the description operation.
+ */
 public function get_description() {
 		return 'Sample multi-topic assessment (10 generic questions). Replace with your own items; topics drive freeline, guest gifts, and member content via admin config.';
 	}
 
-		/**
-	 * Resolve the current icon value from the available WordPress and flow state.
-	 *
-	 * @return mixed Result produced by the icon operation.
-	 */
+/**
+ * Resolve the current icon value from the available WordPress and flow state.
+ *
+ * @return Mixed Result produced by the icon operation.
+ */
 public function get_icon() {
 		return '📋';
 	}
 
-		/**
-	 * Coordinate the needs audio behavior implemented by this code path.
-	 *
-	 * @return bool Whether needs audio applies to the current state.
-	 */
+/**
+ * Coordinate the needs audio behavior implemented by this code path.
+ *
+ * @return Bool Whether needs audio applies to the current state.
+ */
 public function needs_audio() {
 		return false;
 	}
 
-		/**
-	 * Coordinate the needs stt behavior implemented by this code path.
-	 *
-	 * @return bool Whether needs stt applies to the current state.
-	 */
+/**
+ * Coordinate the needs stt behavior implemented by this code path.
+ *
+ * @return Bool Whether needs stt applies to the current state.
+ */
 public function needs_stt() {
 		return false;
 	}
 
-		/**
-	 * Coordinate the needs ai analysis behavior implemented by this code path.
-	 *
-	 * @return bool Whether needs ai analysis applies to the current state.
-	 */
+/**
+ * Coordinate the needs ai analysis behavior implemented by this code path.
+ *
+ * @return Bool Whether needs ai analysis applies to the current state.
+ */
 public function needs_ai_analysis() {
 		return false;
 	}
 
-		/**
-	 * Resolve the current instructions value from the available WordPress and flow state.
-	 *
-	 * @return mixed Result produced by the instructions operation.
-	 */
+/**
+ * Resolve the current instructions value from the available WordPress and flow state.
+ *
+ * @return Mixed Result produced by the instructions operation.
+ */
 public function get_instructions() {
 		return "One question per block, separated by a blank line.\n\n"
 			. "Each block:\n"
@@ -107,7 +107,8 @@ public function get_instructions() {
 
 	/**
 	 * Default content as admin-editable text (sample only — replace in Quiz admin).
- * @return mixed Result produced by the default content operation.
+	 *
+	 * @return Mixed Result produced by the default content operation.
 	 */
 	public function get_default_content() {
 		$lines = array();
@@ -137,7 +138,7 @@ public function get_instructions() {
 	 * Parse admin textarea into question arrays.
 	 *
 	 * @param string $content Raw admin content.
-	 * @return array
+	 * @return Array.
 	 */
 	public function parse_content_to_questions( $content ) {
 		$questions = array();
@@ -193,7 +194,7 @@ public function get_instructions() {
 	 * Validate user input before scoring.
 	 *
 	 * @param mixed $input Answer map, letter list, or empty (not yet answered).
-	 * @return true|WP_Error
+	 * @return True|WP_Error.
 	 */
 	public function validate_input( $input ) {
 		if ( null === $input || '' === $input || array() === $input ) {
@@ -211,14 +212,14 @@ public function get_instructions() {
 	 * Compatible with FLOSC_Abstract_Quiz_Type::analyze( $input, $expected_content, $context = [] ).
 	 *
 	 * $input may be:
-	 *   - array map: q1 => 'B', q2 => 'A', ...  or  0 => 'B', 1 => 'A', ...
-	 *   - string: "A,B,C,..." or "A\nB\nC"
-	 *   - JSON string of the same map/list
+	 * - array map: q1 => 'B', q2 => 'A', ...  or  0 => 'B', 1 => 'A', ...
+	 * - string: "A,B,C,..." or "A\nB\nC".
+	 * - JSON string of the same map/list.
 	 *
-	 * @param mixed  $input             User answers.
-	 * @param string $expected_content  Admin-edited question bank (optional).
-	 * @param array  $context           Unused optional context.
-	 * @return array score, correct, incorrect (structured), response_key, details
+	 * @param mixed  $input            User answers.
+	 * @param string $expected_content Admin-edited question bank (optional).
+	 * @param array  $context          Unused optional context.
+	 * @return Array score, correct, incorrect (structured), response_key, details.
 	 */
 	public function analyze( $input, $expected_content, $context = array() ) {
 		$questions = ! empty( $expected_content )
@@ -283,7 +284,7 @@ public function get_instructions() {
 	/**
 	 * Admin settings for this quiz type.
 	 *
-	 * @return array
+	 * @return Array.
 	 */
 	public function get_settings_fields() {
 		return array(
@@ -298,9 +299,9 @@ public function get_instructions() {
 
 	/**
 	 * Sample question bank: 10 generic topics (not subject-specific).
-	 * floscAdmins replace this in Quiz admin for each flow.
+	 * FloscAdmins replace this in Quiz admin for each flow.
 	 *
-	 * @return array
+	 * @return Array.
 	 */
 	public function get_default_questions() {
 		$topics = array(
@@ -387,7 +388,7 @@ public function get_instructions() {
 	 * Normalize raw input into a flat answer map/list.
 	 *
 	 * @param mixed $input Raw input.
-	 * @return array
+	 * @return Array.
 	 */
 	private function normalize_user_answers( $input ) {
 		if ( is_array( $input ) ) {
@@ -432,7 +433,7 @@ public function get_instructions() {
 	 * @param array  $user_answers Normalized answers.
 	 * @param string $qid          Question id (e.g. q3).
 	 * @param int    $index        Zero-based index.
-	 * @return string Uppercase letter or empty.
+	 * @return String Uppercase letter or empty.
 	 */
 	private function lookup_user_answer( array $user_answers, $qid, $index ) {
 		$candidates = array(

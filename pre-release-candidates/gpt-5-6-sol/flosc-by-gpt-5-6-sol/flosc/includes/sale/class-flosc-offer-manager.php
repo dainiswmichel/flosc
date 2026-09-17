@@ -1,12 +1,12 @@
 <?php
 /**
- * FLOSC Offer Manager
+ * FLOSC Offer Manager.
  *
  * Manages purchasable offers:
  * - One-time purchases (lifetime access, lesson packs)
  * - Subscriptions (monthly, yearly)
- * - Token/Credit packs
- * - Hybrid offers
+ * - Token/Credit packs.
+ * - Hybrid offers.
  *
  * @package FLOSC
  */
@@ -21,13 +21,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 class FLOSC_Offer_Manager {
 
 	private $option_key = 'flosc_offers';
-	/** @var array Offer id aliases (empty in core; instances may filter). */
+	/**
+	 */
 	private $offer_aliases = array();
 
 	/**
- * Resolve the current offer aliases value from the available WordPress and flow state.
- *
-	 * @return array<string,string>
+	 * Resolve the current offer aliases value from the available WordPress and flow state.
+	 *
+	 * @return Array<string,string>.
 	 */
 	private function get_offer_aliases() {
 		$aliases = apply_filters( 'flosc_offer_aliases', $this->offer_aliases );
@@ -35,7 +36,7 @@ class FLOSC_Offer_Manager {
 	}
 
 	/**
-	 * Offer types
+	 * Offer types.
 	 */
 	const TYPE_ONE_TIME     = 'one_time';
 	const TYPE_SUBSCRIPTION = 'subscription';
@@ -43,20 +44,20 @@ class FLOSC_Offer_Manager {
 	const TYPE_HYBRID       = 'hybrid';
 
 	/**
-	 * Subscription intervals
+	 * Subscription intervals.
 	 */
 	const INTERVAL_MONTHLY = 'month';
 	const INTERVAL_YEARLY  = 'year';
 	const INTERVAL_WEEKLY  = 'week';
 
 	/**
-	 * Get all offers
-	 * Flow-aware — reads from per-flow storage first, falls back to global
-	 * v1.6.5: Seeds defaults into per-flow storage on first access so admin can edit them
+	 * Get all offers.
+	 * Flow-aware — reads from per-flow storage first, falls back to global.
+	 * V1.6.5: Seeds defaults into per-flow storage on first access so admin can edit them.
 	 *
 	 * @since 1.6.2
- * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
- * @return mixed Result produced by the all offers operation.
+	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+	 * @return Mixed Result produced by the all offers operation.
 	 */
 	public function get_all_offers( $flow_id = null ) {
 		// v1.6.2: Try per-flow storage first (where admin offers.php saves).
@@ -98,12 +99,12 @@ class FLOSC_Offer_Manager {
 	}
 
 	/**
-	 * Get active (published) offers
-	 * Flow-aware
+	 * Get active (published) offers.
+	 * Flow-aware.
 	 *
 	 * @since 1.6.2
- * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
- * @return mixed Result produced by the active offers operation.
+	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+	 * @return Mixed Result produced by the active offers operation.
 	 */
 	public function get_active_offers( $flow_id = null ) {
 		$offers = $this->get_all_offers( $flow_id );
@@ -116,13 +117,13 @@ class FLOSC_Offer_Manager {
 	}
 
 	/**
-	 * Get a specific offer by ID
-	 * Flow-aware
+	 * Get a specific offer by ID.
+	 * Flow-aware.
 	 *
 	 * @since 1.6.2
- * @param mixed $offer_id Identifier used to select the record involved in the Resolve the current offer value from the available Word Press and flow state. operation.
- * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
- * @return mixed Result produced by the offer operation.
+	 * @param mixed $offer_id Identifier used to select the record involved in the Resolve the current offer value from the available Word Press and flow state. operation.
+	 * @param mixed $flow_id  Flow identifier used to resolve flow-scoped configuration and state.
+	 * @return Mixed Result produced by the offer operation.
 	 */
 	public function get_offer( $offer_id, $flow_id = null ) {
 		$offers = $this->get_all_offers( $flow_id );
@@ -135,9 +136,10 @@ class FLOSC_Offer_Manager {
 	}
 
 	/**
-	 * Get offers by type
- * @param mixed $type Input consumed by the Resolve the current offers by type value from the available Word Press and flow state. operation.
- * @return mixed Result produced by the offers by type operation.
+	 * Get offers by type.
+	 *
+	 * @param mixed $type Input consumed by the Resolve the current offers by type value from the available Word Press and flow state. operation.
+	 * @return Mixed Result produced by the offers by type operation.
 	 */
 	public function get_offers_by_type( $type ) {
 		$offers = $this->get_active_offers();
@@ -150,9 +152,10 @@ class FLOSC_Offer_Manager {
 	}
 
 	/**
-	 * Create a new offer
- * @param mixed $data Structured data consumed by the Persist the offer state in Word Press storage. operation.
- * @return mixed Result produced by the offer operation.
+	 * Create a new offer.
+	 *
+	 * @param mixed $data Structured data consumed by the Persist the offer state in Word Press storage. operation.
+	 * @return Mixed Result produced by the offer operation.
 	 */
 	public function create_offer( $data ) {
 		$offers = $this->get_all_offers();
@@ -178,10 +181,11 @@ class FLOSC_Offer_Manager {
 	}
 
 	/**
-	 * Update an offer
- * @param mixed $offer_id Identifier used to select the record involved in the Persist the offer state in Word Press storage. operation.
- * @param mixed $data Structured data consumed by the Persist the offer state in Word Press storage. operation.
- * @return mixed Result of the offer operation, or a WP_Error when it cannot complete.
+	 * Update an offer.
+	 *
+	 * @param mixed $offer_id Identifier used to select the record involved in the Persist the offer state in Word Press storage. operation.
+	 * @param mixed $data     Structured data consumed by the Persist the offer state in Word Press storage. operation.
+	 * @return Mixed Result of the offer operation, or a WP_Error when it cannot complete.
 	 */
 	public function update_offer( $offer_id, $data ) {
 		$offers = $this->get_all_offers();
@@ -207,9 +211,10 @@ class FLOSC_Offer_Manager {
 	}
 
 	/**
-	 * Delete an offer
- * @param mixed $offer_id Identifier used to select the record involved in the Persist the offer state in Word Press storage. operation.
- * @return bool Whether offer applies to the current state.
+	 * Delete an offer.
+	 *
+	 * @param mixed $offer_id Identifier used to select the record involved in the Persist the offer state in Word Press storage. operation.
+	 * @return Bool Whether offer applies to the current state.
 	 */
 	public function delete_offer( $offer_id ) {
 		$offers = $this->get_all_offers();
@@ -230,9 +235,10 @@ class FLOSC_Offer_Manager {
 	/**
 	 * Sync IVR-defined offer messages into the editable offer registry.
 	 * Keeps the IVR file as the source of truth for visible offer copy/format.
- * @param mixed $offers Input consumed by the Coordinate the sync ivr offers into offers behavior implemented by this code path. operation.
- * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
- * @return mixed Result produced by the sync ivr offers into offers operation.
+	 *
+	 * @param mixed $offers  Input consumed by the Coordinate the sync ivr offers into offers behavior implemented by this code path. operation.
+	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+	 * @return Mixed Result produced by the sync ivr offers into offers operation.
 	 */
 	private function sync_ivr_offers_into_offers( $offers, $flow_id = null ) {
 		if ( empty( $flow_id ) ) {
@@ -303,10 +309,11 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Build a normalized offer record from an IVR offer message.
- * @param mixed $existing Input consumed by the Normalize the input into the canonical form required for normalize ivr offer message. operation.
- * @param mixed $msg Input consumed by the Normalize the input into the canonical form required for normalize ivr offer message. operation.
- * @param mixed $offer_id Identifier used to select the record involved in the Normalize the input into the canonical form required for normalize ivr offer message. operation.
- * @return mixed Result produced by the normalize ivr offer message operation.
+	 *
+	 * @param mixed $existing Input consumed by the Normalize the input into the canonical form required for normalize ivr offer message. operation.
+	 * @param mixed $msg      Input consumed by the Normalize the input into the canonical form required for normalize ivr offer message. operation.
+	 * @param mixed $offer_id Identifier used to select the record involved in the Normalize the input into the canonical form required for normalize ivr offer message. operation.
+	 * @return Mixed Result produced by the normalize ivr offer message operation.
 	 */
 	private function normalize_ivr_offer_message( $existing, $msg, $offer_id ) {
 		$name = trim( (string) ( $msg['title'] ?? '' ) );
@@ -392,8 +399,9 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Resolve the active IVR file for a flow.
- * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
- * @return mixed Result produced by the flow ivr file operation.
+	 *
+	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+	 * @return Mixed Result produced by the flow ivr file operation.
 	 */
 	private function get_flow_ivr_file( $flow_id ) {
 		$flow_key        = 'flosc_flow_' . sanitize_key( $flow_id );
@@ -439,9 +447,10 @@ class FLOSC_Offer_Manager {
 	}
 
 	/**
-	 * Validate and normalize offer data
- * @param mixed $data Structured data consumed by the Validate the input and trust conditions required for offer data. operation.
- * @return mixed Result produced by the offer data operation.
+	 * Validate and normalize offer data.
+	 *
+	 * @param mixed $data Structured data consumed by the Validate the input and trust conditions required for offer data. operation.
+	 * @return Mixed Result produced by the offer data operation.
 	 */
 	private function validate_offer_data( $data ) {
 		$defaults = array(
@@ -518,7 +527,8 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Get default offers (starter configuration)
- * @return array Structured default offers data.
+	 *
+	 * @return Array Structured default offers data.
 	 */
 	private function get_default_offers() {
 		return array(
@@ -642,11 +652,11 @@ class FLOSC_Offer_Manager {
 				'created_at'    => current_time( 'mysql' ),
 			),
 
-			// ============================================
+			// ============================================.
 			// Example site-owner content offers only.
 			// Never seed a paid "buy the FLOSC plugin" / plugin-feature unlock.
 			// (WordPress.org guidelines 5 and 9 — WPORG-01).
-			// ============================================
+			// ============================================.
 
 			'simplified_solfeggio_full' => array(
 				'id'             => 'simplified_solfeggio_full',
@@ -745,8 +755,9 @@ class FLOSC_Offer_Manager {
 	}
 
 	/**
-	 * Get offer types for admin UI
- * @return array Structured offer types data.
+	 * Get offer types for admin UI.
+	 *
+	 * @return Array Structured offer types data.
 	 */
 	public function get_offer_types() {
 		return array(
@@ -770,8 +781,9 @@ class FLOSC_Offer_Manager {
 	}
 
 	/**
-	 * Get subscription intervals for admin UI
- * @return array Structured intervals data.
+	 * Get subscription intervals for admin UI.
+	 *
+	 * @return Array Structured intervals data.
 	 */
 	public function get_intervals() {
 		return array(
@@ -782,8 +794,9 @@ class FLOSC_Offer_Manager {
 	}
 
 	/**
-	 * MTS-2026-02-03: [DISPLAY-FORMATS] Get available display formats for admin UI
- * @return array Structured display formats data.
+	 * MTS-2026-02-03: [DISPLAY-FORMATS] Get available display formats for admin UI.
+	 *
+	 * @return Array Structured display formats data.
 	 */
 	public function get_display_formats() {
 		return array(
@@ -826,10 +839,11 @@ class FLOSC_Offer_Manager {
 	}
 
 	/**
-	 * Calculate effective price from an offer for a provider
- * @param mixed $offer_id Identifier used to select the record involved in the Resolve the current offer price value from the available Word Press and flow state. operation.
- * @param mixed $provider_id Provider identifier or object used for the Resolve the current offer price value from the available Word Press and flow state. operation.
- * @return mixed Result produced by the offer price operation.
+	 * Calculate effective price from an offer for a provider.
+	 *
+	 * @param mixed $offer_id    Identifier used to select the record involved in the Resolve the current offer price value from the available Word Press and flow state. operation.
+	 * @param mixed $provider_id Provider identifier or object used for the Resolve the current offer price value from the available Word Press and flow state. operation.
+	 * @return Mixed Result produced by the offer price operation.
 	 */
 	public function get_offer_price( $offer_id, $provider_id ) {
 		$offer = $this->get_offer( $offer_id );
@@ -844,8 +858,9 @@ class FLOSC_Offer_Manager {
 	/**
 	 * Get offer by product ID (site-owner content products only).
 	 * Does not map a paid unlock of the FLOSC plugin itself.
- * @param mixed $product_id Identifier used to select the record involved in the Resolve the current offer by product value from the available Word Press and flow state. operation.
- * @return mixed Result produced by the offer by product operation.
+	 *
+	 * @param mixed $product_id Identifier used to select the record involved in the Resolve the current offer by product value from the available Word Press and flow state. operation.
+	 * @return Mixed Result produced by the offer by product operation.
 	 */
 	public function get_offer_by_product( $product_id ) {
 		$product_id = sanitize_key( (string) $product_id );
@@ -872,8 +887,9 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Get member level for a site-owner content product (flow default level).
- * @param mixed $product_id Identifier used to select the record involved in the Resolve the current member level for product value from the available Word Press and flow state. operation.
- * @return mixed Result produced by the member level for product operation.
+	 *
+	 * @param mixed $product_id Identifier used to select the record involved in the Resolve the current member level for product value from the available Word Press and flow state. operation.
+	 * @return Mixed Result produced by the member level for product operation.
 	 */
 	public function get_member_level_for_product( $product_id ) {
 		$product_id = sanitize_key( (string) $product_id );
@@ -889,7 +905,8 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Product IDs = configured flow IDs (site instances of FLOSC), not brand seeds.
- * @return mixed Result produced by the product ids operation.
+	 *
+	 * @return Mixed Result produced by the product ids operation.
 	 */
 	public function get_product_ids() {
 		$ids = array();
@@ -926,8 +943,9 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Product metadata from a configured flow (instance), not hard-coded brands.
- * @param mixed $product_id Identifier used to select the record involved in the Resolve the current product metadata value from the available Word Press and flow state. operation.
- * @return array Structured product metadata data.
+	 *
+	 * @param mixed $product_id Identifier used to select the record involved in the Resolve the current product metadata value from the available Word Press and flow state. operation.
+	 * @return Array Structured product metadata data.
 	 */
 	public function get_product_metadata( $product_id ) {
 		$product_id = sanitize_key( (string) $product_id );

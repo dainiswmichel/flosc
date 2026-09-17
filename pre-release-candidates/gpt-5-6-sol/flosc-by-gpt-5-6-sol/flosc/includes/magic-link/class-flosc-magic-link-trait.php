@@ -15,27 +15,27 @@ if ( ! defined( 'ABSPATH' ) ) {
  * - MagicLink is DISABLED by default at package level (filter/constant default false).
  * - Per-flow enable is also default OFF (flow setting magic_access_links_enabled).
  * - Both package AND flow must be on for mint/consume.
- * - Product model when ON: multi-use guest access links —
- *   configurable window (default 30 days after first click) and max uses
- *   (default 10 for non-members); members unlimited.
+ * - Product model when ON: multi-use guest access links —.
+ * Configurable window (default 30 days after first click) and max uses.
+ * (default 10 for non-members); members unlimited.
  * - MagicLink never creates accounts (existing WP user only).
  * - Private deploys may re-enable package with:
- *     define( 'FLOSC_ENABLE_MAGIC_ACCESS_LINKS', true );
- *   or add_filter( 'flosc_enable_magic_access_links', '__return_true' );
- *   then enable the flow checkbox on Register & Login.
- * - When disabled: no mint, no flosc_magic consume, no flosc_wp_sync hop,
- *   no guest-link emails with access URLs.
+ * Define( 'FLOSC_ENABLE_MAGIC_ACCESS_LINKS', true );
+ * Or add_filter( 'flosc_enable_magic_access_links', '__return_true' );
+ * Then enable the flow checkbox on Register & Login.
+ * - When disabled: no mint, no flosc_magic consume, no flosc_wp_sync hop,.
+ * No guest-link emails with access URLs.
  *
  * Auth-cookie inventory (remaining justified paths when MagicLink OFF):
  * - SSO OAuth success → log_user_in + short-lived flosc_login_token (cross-domain).
  * - User registration + email verification (cookie set when the user clicks the verify URL).
  * - Purchase-driven wp_create_user after payment/IPN proof (PayPal/ClickBank).
- * - Post-purchase instant cookie / emailed login token: default OFF
- *   (flosc_post_purchase_instant_login / flosc_post_purchase_login_token).
+ * - Post-purchase instant cookie / emailed login token: default OFF.
+ * (flosc_post_purchase_instant_login / flosc_post_purchase_login_token).
  * - Logged-in guest profile password set (re-issues cookie after wp_set_password).
  * - REST X-FLOSC-Token bootstrap: sets current user only, not auth cookie.
  *
- * File: includes/magic-link/class-flosc-magic-link-trait.php
+ * File: includes/magic-link/class-flosc-magic-link-trait.php.
  */
 
 trait FLOSC_Magic_Link_Trait {
@@ -44,12 +44,12 @@ trait FLOSC_Magic_Link_Trait {
 	 * Whether guest MagicLink access (flosc_magic) is enabled.
 	 *
 	 * Requires package-level allow AND per-flow enable (both default false).
-	 * Private deploys: define FLOSC_ENABLE_MAGIC_ACCESS_LINKS true (or filter true),
-	 * then enable the flow checkbox magic_access_links_enabled.
+	 * Private deploys: define FLOSC_ENABLE_MAGIC_ACCESS_LINKS true (or filter true),.
+	 * Then enable the flow checkbox magic_access_links_enabled.
 	 *
 	 * @param string|null $flow_id Flow stem. Null = package gate only (cookie sync hop).
-	 *                             Empty string = current flow context. Non-empty = that flow.
-	 * @return bool
+	 * Empty string = current flow context. Non-empty = that flow.
+	 * @return Bool.
 	 */
 	private function flosc_magic_access_links_enabled( $flow_id = '' ) {
 		// Package-level gate: constant wins when defined; else filter (default false).
@@ -84,8 +84,8 @@ trait FLOSC_Magic_Link_Trait {
 	/**
 	 * Max MagicLink uses for non-members (members unlimited). Default 10.
 	 *
-	 * @param string $flow_id
-	 * @return int 1–100
+	 * @param string $flow_id Value consumed by this operation.
+	 * @return Int 1–100.
 	 */
 	private function flosc_magic_link_max_uses( $flow_id = '' ) {
 		$flow_id = sanitize_key( (string) $flow_id );
@@ -98,8 +98,8 @@ trait FLOSC_Magic_Link_Trait {
 	/**
 	 * MagicLink active window in days after first click. Default 30.
 	 *
-	 * @param string $flow_id
-	 * @return int 1–365
+	 * @param string $flow_id Value consumed by this operation.
+	 * @return Int 1–365.
 	 */
 	private function flosc_magic_link_window_days( $flow_id = '' ) {
 		$flow_id = sanitize_key( (string) $flow_id );
@@ -122,7 +122,7 @@ trait FLOSC_Magic_Link_Trait {
 	 * Hash a MagicLink bearer so transients are not keyed by the raw URL token.
 	 *
 	 * @param string $token Raw token from the URL.
-	 * @return string 64-char hex HMAC, or empty string.
+	 * @return String 64-char hex HMAC, or empty string.
 	 */
 	private function flosc_magic_token_hash( $token ) {
 		$token = (string) $token;
@@ -137,7 +137,7 @@ trait FLOSC_Magic_Link_Trait {
 	 * Transient option name for a MagicLink token (hashed).
 	 *
 	 * @param string $token Raw token.
-	 * @return string
+	 * @return String.
 	 */
 	private function flosc_magic_transient_key( $token ) {
 		$hash = $this->flosc_magic_token_hash( $token );
@@ -148,7 +148,7 @@ trait FLOSC_Magic_Link_Trait {
 	 * Load payload by hashed key, then by legacy raw-token key.
 	 *
 	 * @param string $token Raw token from the URL.
-	 * @return array{0:string,1:array|false} Transient key used, payload or false.
+	 * @return Array{0:string,1:array|false} Transient key used, payload or false.
 	 */
 	private function flosc_magic_load_payload( $token ) {
 		$hashed = $this->flosc_magic_transient_key( $token );
@@ -173,7 +173,7 @@ trait FLOSC_Magic_Link_Trait {
 	 * Delete hashed and legacy transients for a token.
 	 *
 	 * @param string $token Raw token.
-	 * @return void
+	 * @return Void.
 	 */
 	private function flosc_magic_delete_token_store( $token ) {
 		$token = (string) $token;
@@ -190,7 +190,7 @@ trait FLOSC_Magic_Link_Trait {
 	/**
 	 * Kind fallback: not a 403, not a ban. Same copy for invalid, rate-limit, two-places.
 	 *
-	 * @return void
+	 * @return Void.
 	 */
 	private function flosc_magic_unrecognized() {
 		$login = wp_login_url( home_url( '/' ) );
@@ -203,11 +203,11 @@ trait FLOSC_Magic_Link_Trait {
 		);
 	}
 
-		/**
-	 * Persist the login token state in WordPress storage.
-	 *
-	 * @return mixed Result of the login token operation, or a WP_Error when it cannot complete.
-	 */
+/**
+ * Persist the login token state in WordPress storage.
+ *
+ * @return Mixed Result of the login token operation, or a WP_Error when it cannot complete.
+ */
 public function handle_login_token() {
 		// Auth/callback routing via query string (not a WP form nonce action).
 		$get = array();
@@ -618,16 +618,16 @@ public function handle_login_token() {
 	 * Pull quiz session from DO at login time.
 	 *
 	 * Called during handle_login_token() — before the page renders.
-	 * JS sets a flosc_pending_session cookie before SSO redirect with the
-	 * DO session_id. We read it here, pull scores + audio from DO, store
-	 * in user meta, and clear the cookie. By the time the page loads,
+	 * JS sets a flosc_pending_session cookie before SSO redirect with the.
+	 * DO session_id. We read it here, pull scores + audio from DO, store.
+	 * In user meta, and clear the cookie. By the time the page loads,.
 	 * FLOSC_USER.lastQuizData is already populated from user meta.
 	 *
-	 * Why server-side? The client-side authFetch POST to store-quiz-data
-	 * fails on custom domains because WP cookies are on the WP domain
-	 * while the browser is on the flow domain.
-	 * Even with FLOSC token auth, the timing is fragile. The server knows
-	 * the user is logged in (we just set the cookie) and knows the session_id
+	 * Why server-side? The client-side authFetch POST to store-quiz-data.
+	 * Fails on custom domains because WP cookies are on the WP domain.
+	 * While the browser is on the flow domain.
+	 * Even with FLOSC token auth, the timing is fragile. The server knows.
+	 * The user is logged in (we just set the cookie) and knows the session_id.
 	 * (from the cookie). Pull now, no client help needed.
 	 *
 	 * @since 8.0.0
@@ -638,8 +638,8 @@ public function handle_login_token() {
 	 * Resolve an EXISTING WP user for convenience-link mint only.
 	 * Never creates an account (admin send / approve / mint must not provision users).
 	 *
-	 * @param string $email
-	 * @return int|WP_Error User ID.
+	 * @param string $email Value consumed by this operation.
+	 * @return Int|WP_Error User ID.
 	 */
 	private function flosc_resolve_existing_user_for_convenience_link( $email ) {
 		$email = sanitize_email( $email );
@@ -660,9 +660,9 @@ public function handle_login_token() {
 	 * Email registration only: create a pending subscriber (or return existing pending/active id).
 	 * Not used by convenience-link mint / admin send access link.
 	 *
-	 * @param string $email
-	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
-	 * @return int|WP_Error User ID.
+	 * @param string $email   Value consumed by this operation.
+	 * @param mixed  $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+	 * @return Int|WP_Error User ID.
 	 */
 	private function flosc_create_pending_email_registrant( $email, $flow_id = '' ) {
 		$email = sanitize_email( $email );
@@ -708,8 +708,9 @@ public function handle_login_token() {
 
 	/**
 	 * Whether an email-registered account is still pending verification.
- * @param mixed $user_id WordPress user ID whose Coordinate the email account is pending behavior implemented by this code path. state is being processed.
- * @return bool Whether email account is pending applies to the current state.
+	 *
+	 * @param mixed $user_id WordPress user ID whose Coordinate the email account is pending behavior implemented by this code path. state is being processed.
+	 * @return Bool Whether email account is pending applies to the current state.
 	 */
 	private function flosc_email_account_is_pending( $user_id ) {
 		$user_id = absint( $user_id );
@@ -727,10 +728,10 @@ public function handle_login_token() {
 	/**
 	 * Send email-registration verification message (not MagicLink).
 	 *
-	 * @param int    $user_id
+	 * @param int   $user_id Value consumed by this operation.
 	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
-	 * @param array  $attach temp_id, quiz_data, session_id, redirect_to, flow_id.
-	 * @return bool
+	 * @param array $attach  Temp_id, quiz_data, session_id, redirect_to, flow_id.
+	 * @return Bool.
 	 */
 	private function flosc_send_email_verification_message( $user_id, $flow_id = '', $attach = array() ) {
 		$user = get_userdata( $user_id );
@@ -789,9 +790,9 @@ public function handle_login_token() {
 	 * Activate a pending email-registered account (verification click or admin).
 	 * Applies guest role/tokens, attaches optional quiz payload, sends welcome + MagicLink when enabled.
 	 *
-	 * @param int   $user_id
-	 * @param mixed $attach Input consumed by the Persist the activate email account state in Word Press storage. operation.
-	 * @return true|WP_Error
+	 * @param int   $user_id Value consumed by this operation.
+	 * @param mixed $attach  Input consumed by the Persist the activate email account state in Word Press storage. operation.
+	 * @return True|WP_Error.
 	 */
 	public function flosc_activate_email_account( $user_id, $attach = null ) {
 		$user_id = absint( $user_id );
@@ -882,10 +883,11 @@ public function handle_login_token() {
 
 	/**
 	 * Welcome email after email verification. Includes MagicLink when enabled.
- * @param mixed $user_id WordPress user ID whose Persist the send email registration welcome state in Word Press storage. state is being processed.
- * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
- * @param mixed $attach Input consumed by the Persist the send email registration welcome state in Word Press storage. operation.
- * @return bool Whether send email registration welcome applies to the current state.
+	 *
+	 * @param mixed $user_id WordPress user ID whose Persist the send email registration welcome state in Word Press storage. state is being processed.
+	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+	 * @param mixed $attach  Input consumed by the Persist the send email registration welcome state in Word Press storage. operation.
+	 * @return Bool Whether send email registration welcome applies to the current state.
 	 */
 	private function flosc_send_email_registration_welcome( $user_id, $flow_id = '', $attach = array() ) {
 		$user = get_userdata( $user_id );
@@ -960,9 +962,9 @@ public function handle_login_token() {
 	/**
 	 * Mint a MagicLink access token for an EXISTING WordPress user only.
 	 *
-	 * @param int   $user_id
-	 * @param array $args Optional arguments that refine how the Persist the mint magic access for user state in Word Press storage. operation runs.
-	 * @return string|WP_Error Token string on success.
+	 * @param int   $user_id Value consumed by this operation.
+	 * @param array $args    Optional arguments that refine how the Persist the mint magic access for user state in Word Press storage. operation runs.
+	 * @return String|WP_Error Token string on success.
 	 */
 	private function flosc_mint_magic_access_for_user( $user_id, array $args = array() ) {
 		$mint_flow = sanitize_key( (string) ( $args['flow_id'] ?? '' ) );
@@ -1036,14 +1038,14 @@ public function handle_login_token() {
 	 * - If magic links are enabled, a fresh token is minted and seeded as active.
 	 * - Optional refresh email can be enabled via filter.
 	 *
-	 * Nothing in the plugin registers this on a hook; it is reached only by a
-	 * site that wires it up itself, which is why the signature keeps the leading
+	 * Nothing in the plugin registers this on a hook; it is reached only by a.
+	 * Site that wires it up itself, which is why the signature keeps the leading.
 	 * $password that WordPress password hooks pass first.
 	 *
-	 * @param string $password New password. Not read -- the decision is made from
-	 *                         the user's stored magic-link state.
+	 * @param string $password New password. Not read -- the decision is made from.
+	 * The user's stored magic-link state.
 	 * @param int    $user_id  The user whose password changed.
- * @return mixed Result produced by the password change revoke magic access operation.
+	 * @return Mixed Result produced by the password change revoke magic access operation.
 	 */
 	public function flosc_handle_password_change_revoke_magic_access( $password, $user_id ) {
 		$user_id = absint( $user_id );
@@ -1114,10 +1116,11 @@ public function handle_login_token() {
 	 */
 	/**
 	 * Collaborator API: FLOSC_Email member welcome magic link.
- * @param mixed $user Input consumed by the Coordinate the user magic url behavior implemented by this code path. operation.
- * @param mixed $context Context values used to resolve request- or flow-specific behavior.
- * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
- * @return mixed Result of the user magic url operation, or a WP_Error when it cannot complete.
+	 *
+	 * @param mixed $user    Input consumed by the Coordinate the user magic url behavior implemented by this code path. operation.
+	 * @param mixed $context Context values used to resolve request- or flow-specific behavior.
+	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+	 * @return Mixed Result of the user magic url operation, or a WP_Error when it cannot complete.
 	 */
 	public function flosc_user_magic_url( $user, $context, $flow_id ) {
 		if ( ! $user || empty( $user->ID ) ) {
@@ -1143,12 +1146,12 @@ public function handle_login_token() {
 		return add_query_arg( 'flosc_magic', rawurlencode( $token ), $chat_url );
 	}
 
-		/**
-	 * Persist the email registration state in WordPress storage.
-	 *
-	 * @param mixed $request Request object carrying the input consumed by this handler.
-	 * @return mixed Result of the email registration operation, or a WP_Error when it cannot complete.
-	 */
+/**
+ * Persist the email registration state in WordPress storage.
+ *
+ * @param mixed $request Request object carrying the input consumed by this handler.
+ * @return Mixed Result of the email registration operation, or a WP_Error when it cannot complete.
+ */
 public function handle_email_registration( $request ) {
 		$email           = sanitize_email( $request->get_param( 'email' ) );
 		$flow_id         = sanitize_key( (string) $request->get_param( 'flow_id' ) );
@@ -1251,16 +1254,16 @@ public function handle_email_registration( $request ) {
 	/**
 	 * Task 5: Post-purchase single-use login token for cross-domain access.
 	 *
-	 * Fires on flosc_purchase_completed (all payment methods). Generates a single-use,
-	 * short-lived login token stored in a transient. The token allows immediate cross-domain
-	 * login via ?flosc_login_token=TOKEN on the purchase flow's custom domain.
+	 * Fires on flosc_purchase_completed (all payment methods). Generates a single-use,.
+	 * Short-lived login token stored in a transient. The token allows immediate cross-domain.
+	 * Login via ?flosc_login_token=TOKEN on the purchase flow's custom domain.
 	 *
-	 * Separate from guest magic links: guest links are multi-use (10x/30d), post-purchase
-	 * tokens are single-use to prevent shared/forwarded access after purchase.
+	 * Separate from guest magic links: guest links are multi-use (10x/30d), post-purchase.
+	 * Tokens are single-use to prevent shared/forwarded access after purchase.
 	 *
-	 * @param int   $user_id User who just purchased.
+	 * @param int   $user_id       User who just purchased.
 	 * @param array $purchase_data Offer details from flosc_purchase_completed action.
- * @return mixed Result produced by the purchase completed operation.
+	 * @return Mixed Result produced by the purchase completed operation.
 	 */
 	public function handle_purchase_completed( $user_id, $purchase_data = array() ) {
 		$user = get_userdata( $user_id );
@@ -1323,10 +1326,11 @@ public function handle_email_registration( $request ) {
 	/**
 	 * Subscribe a user to the newsletter (idempotent); sends the welcome on first opt-in.
 	 * The chatbot opt-in flow can call this for a logged-in user.
- * @param mixed $email Email address used by the Prepare and send the email required for send guest link email. operation.
- * @param mixed $token Token value used to authenticate or correlate this operation.
- * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
- * @return mixed Result produced by the send guest link email operation.
+	 *
+	 * @param mixed $email   Email address used by the Prepare and send the email required for send guest link email. operation.
+	 * @param mixed $token   Token value used to authenticate or correlate this operation.
+	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+	 * @return Mixed Result produced by the send guest link email operation.
 	 */
 	private function send_guest_link_email( $email, $token, $flow_id = '' ) {
 		$context     = $this->get_guest_email_context( $flow_id );
@@ -1373,8 +1377,9 @@ public function handle_email_registration( $request ) {
 	 */
 	/**
 	 * Collaborator API: FLOSC_Email guest context / redirects.
- * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
- * @return mixed Result produced by the guest link base url operation.
+	 *
+	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+	 * @return Mixed Result produced by the guest link base url operation.
 	 */
 	public function get_guest_link_base_url( $flow_id = '' ) {
 		$flow_id = sanitize_key( (string) $flow_id );
@@ -1412,8 +1417,9 @@ public function handle_email_registration( $request ) {
 	/**
 	 * Send a warning email when an email has requested 6+ guest links.
 	 * Friendly but firm — covers both genuine learners and potential abusers.
- * @param mixed $email Email address used by the Prepare and send the email required for send guest link warning email. operation.
- * @param mixed $count Input consumed by the Prepare and send the email required for send guest link warning email. operation.
+	 *
+	 * @param mixed $email Email address used by the Prepare and send the email required for send guest link warning email. operation.
+	 * @param mixed $count Input consumed by the Prepare and send the email required for send guest link warning email. operation.
 	 */
 	private function send_guest_link_warning_email( $email, $count ) {
 		$context     = $this->get_guest_email_context( '' );
@@ -1446,8 +1452,9 @@ public function handle_email_registration( $request ) {
 	/**
 	 * Delete a DO session directory after its data has been pulled to WP.
 	 * Fire-and-forget: failures are logged but do not block the login flow.
- * @param mixed $email Email address used by the Persist the record guest link send state in Word Press storage. operation.
- * @return mixed Result produced by the record guest link send operation.
+	 *
+	 * @param mixed $email Email address used by the Persist the record guest link send state in Word Press storage. operation.
+	 * @return Mixed Result produced by the record guest link send operation.
 	 */
 	private function record_guest_link_send( $email ) {
 		$email = sanitize_email( $email );
@@ -1494,67 +1501,68 @@ public function handle_email_registration( $request ) {
 
 	/**
 	 * Send the Guest Access Link email.
- * @param mixed $email Email address used by the Normalize the input into the canonical form required for normalize guest request email. operation.
- * @return mixed Result produced by the normalize guest request email operation.
+	 *
+	 * @param mixed $email Email address used by the Normalize the input into the canonical form required for normalize guest request email. operation.
+	 * @return Mixed Result produced by the normalize guest request email operation.
 	 */
 	private function normalize_guest_request_email( $email ) {
 		return strtolower( trim( (string) $email ) );
 	}
 
-		/**
-	 * Resolve the current guest request key value from the available WordPress and flow state.
-	 *
-	 * @param mixed $email Email address used by the Resolve the current guest request key value from the available Word Press and flow state. operation.
-	 * @return mixed Result produced by the guest request key operation.
-	 */
+/**
+ * Resolve the current guest request key value from the available WordPress and flow state.
+ *
+ * @param mixed $email Email address used by the Resolve the current guest request key value from the available Word Press and flow state. operation.
+ * @return Mixed Result produced by the guest request key operation.
+ */
 private function get_guest_request_key( $email ) {
 		return md5( $this->normalize_guest_request_email( $email ) );
 	}
 
-		/**
-	 * Resolve the current guest account request queue value from the available WordPress and flow state.
-	 *
-	 * @return mixed Result produced by the guest account request queue operation.
-	 */
+/**
+ * Resolve the current guest account request queue value from the available WordPress and flow state.
+ *
+ * @return Mixed Result produced by the guest account request queue operation.
+ */
 private function get_guest_account_request_queue() {
 		$queue = get_option( 'flosc_guest_account_request_queue', array() );
 		return is_array( $queue ) ? $queue : array();
 	}
 
-		/**
-	 * Persist the guest account request queue state in WordPress storage.
-	 *
-	 * @param array $queue Input consumed by the Persist the guest account request queue state in Word Press storage. operation.
-	 */
+/**
+ * Persist the guest account request queue state in WordPress storage.
+ *
+ * @param array $queue Input consumed by the Persist the guest account request queue state in Word Press storage. operation.
+ */
 private function save_guest_account_request_queue( array $queue ) {
 		update_option( 'flosc_guest_account_request_queue', $queue, false );
 	}
 
-		/**
-	 * Resolve the current guest account request denylist value from the available WordPress and flow state.
-	 *
-	 * @return mixed Result produced by the guest account request denylist operation.
-	 */
+/**
+ * Resolve the current guest account request denylist value from the available WordPress and flow state.
+ *
+ * @return Mixed Result produced by the guest account request denylist operation.
+ */
 private function get_guest_account_request_denylist() {
 		$denylist = get_option( 'flosc_guest_account_request_denylist', array() );
 		return is_array( $denylist ) ? $denylist : array();
 	}
 
-		/**
-	 * Persist the guest account request denylist state in WordPress storage.
-	 *
-	 * @param array $denylist Input consumed by the Persist the guest account request denylist state in Word Press storage. operation.
-	 */
+/**
+ * Persist the guest account request denylist state in WordPress storage.
+ *
+ * @param array $denylist Input consumed by the Persist the guest account request denylist state in Word Press storage. operation.
+ */
 private function save_guest_account_request_denylist( array $denylist ) {
 		update_option( 'flosc_guest_account_request_denylist', $denylist, false );
 	}
 
-		/**
-	 * Determine whether the current state satisfies guest request email blocked.
-	 *
-	 * @param mixed $email Email address used by the Determine whether the current state satisfies guest request email blocked. operation.
-	 * @return bool Whether guest request email blocked applies to the current state.
-	 */
+/**
+ * Determine whether the current state satisfies guest request email blocked.
+ *
+ * @param mixed $email Email address used by the Determine whether the current state satisfies guest request email blocked. operation.
+ * @return Bool Whether guest request email blocked applies to the current state.
+ */
 private function is_guest_request_email_blocked( $email ) {
 		$email = $this->normalize_guest_request_email( $email );
 		if ( '' === $email ) {
@@ -1564,14 +1572,14 @@ private function is_guest_request_email_blocked( $email ) {
 		return isset( $denylist[ $this->get_guest_request_key( $email ) ] );
 	}
 
-		/**
-	 * Coordinate the upsert guest account request behavior implemented by this code path.
-	 *
-	 * @param mixed $email Email address used by the Coordinate the upsert guest account request behavior implemented by this code path. operation.
-	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
-	 * @param mixed $message Input consumed by the Coordinate the upsert guest account request behavior implemented by this code path. operation.
-	 * @return mixed Result produced by the upsert guest account request operation.
-	 */
+/**
+ * Coordinate the upsert guest account request behavior implemented by this code path.
+ *
+ * @param mixed $email   Email address used by the Coordinate the upsert guest account request behavior implemented by this code path. operation.
+ * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+ * @param mixed $message Input consumed by the Coordinate the upsert guest account request behavior implemented by this code path. operation.
+ * @return Mixed Result produced by the upsert guest account request operation.
+ */
 private function upsert_guest_account_request( $email, $flow_id = '', $message = '' ) {
 		$email = sanitize_email( $email );
 		if ( empty( $email ) || ! is_email( $email ) ) {
@@ -1613,14 +1621,14 @@ private function upsert_guest_account_request( $email, $flow_id = '', $message =
 		$this->save_guest_account_request_queue( $queue );
 	}
 
-		/**
-	 * Coordinate the guest account request status behavior implemented by this code path.
-	 *
-	 * @param mixed $email Email address used by the Coordinate the guest account request status behavior implemented by this code path. operation.
-	 * @param mixed $status Input consumed by the Coordinate the guest account request status behavior implemented by this code path. operation.
-	 * @param mixed $actor_id Identifier used to select the record involved in the Coordinate the guest account request status behavior implemented by this code path. operation.
-	 * @return bool Whether guest account request status applies to the current state.
-	 */
+/**
+ * Coordinate the guest account request status behavior implemented by this code path.
+ *
+ * @param mixed $email    Email address used by the Coordinate the guest account request status behavior implemented by this code path. operation.
+ * @param mixed $status   Input consumed by the Coordinate the guest account request status behavior implemented by this code path. operation.
+ * @param mixed $actor_id Identifier used to select the record involved in the Coordinate the guest account request status behavior implemented by this code path. operation.
+ * @return Bool Whether guest account request status applies to the current state.
+ */
 private function set_guest_account_request_status( $email, $status, $actor_id = 0 ) {
 		$email = sanitize_email( $email );
 		if ( empty( $email ) || ! is_email( $email ) ) {
@@ -1655,12 +1663,12 @@ private function set_guest_account_request_status( $email, $status, $actor_id = 
 		return true;
 	}
 
-		/**
-	 * Remove the WordPress data associated with guest account request.
-	 *
-	 * @param mixed $email Email address used by the Remove the Word Press data associated with guest account request. operation.
-	 * @return bool Whether guest account request applies to the current state.
-	 */
+/**
+ * Remove the WordPress data associated with guest account request.
+ *
+ * @param mixed $email Email address used by the Remove the Word Press data associated with guest account request. operation.
+ * @return Bool Whether guest account request applies to the current state.
+ */
 private function delete_guest_account_request( $email ) {
 		$email = sanitize_email( $email );
 		if ( empty( $email ) || ! is_email( $email ) ) {
@@ -1676,13 +1684,13 @@ private function delete_guest_account_request( $email ) {
 		return true;
 	}
 
-		/**
-	 * Coordinate the deny and block guest account request behavior implemented by this code path.
-	 *
-	 * @param mixed $email Email address used by the Coordinate the deny and block guest account request behavior implemented by this code path. operation.
-	 * @param mixed $actor_id Identifier used to select the record involved in the Coordinate the deny and block guest account request behavior implemented by this code path. operation.
-	 * @return bool Whether deny and block guest account request applies to the current state.
-	 */
+/**
+ * Coordinate the deny and block guest account request behavior implemented by this code path.
+ *
+ * @param mixed $email    Email address used by the Coordinate the deny and block guest account request behavior implemented by this code path. operation.
+ * @param mixed $actor_id Identifier used to select the record involved in the Coordinate the deny and block guest account request behavior implemented by this code path. operation.
+ * @return Bool Whether deny and block guest account request applies to the current state.
+ */
 private function deny_and_block_guest_account_request( $email, $actor_id = 0 ) {
 		$email = sanitize_email( $email );
 		if ( empty( $email ) || ! is_email( $email ) ) {
@@ -1701,12 +1709,12 @@ private function deny_and_block_guest_account_request( $email, $actor_id = 0 ) {
 		return true;
 	}
 
-		/**
-	 * Coordinate the unblock guest account request email behavior implemented by this code path.
-	 *
-	 * @param mixed $email Email address used by the Coordinate the unblock guest account request email behavior implemented by this code path. operation.
-	 * @return bool Whether unblock guest account request email applies to the current state.
-	 */
+/**
+ * Coordinate the unblock guest account request email behavior implemented by this code path.
+ *
+ * @param mixed $email Email address used by the Coordinate the unblock guest account request email behavior implemented by this code path. operation.
+ * @return Bool Whether unblock guest account request email applies to the current state.
+ */
 private function unblock_guest_account_request_email( $email ) {
 		$email = sanitize_email( $email );
 		if ( empty( $email ) || ! is_email( $email ) ) {
@@ -1726,25 +1734,25 @@ private function unblock_guest_account_request_email( $email ) {
 	/**
 	 * Build the admin redirect a guest-request action returns to.
 	 *
-	 * WHY $ivr_hint IS A PARAMETER
+	 * WHY $ivr_hint IS A PARAMETER.
 	 *
-	 * This read $_POST['ivr'] itself, and carried a comment saying "there is no
-	 * form here to carry a nonce". That was wrong twice. Every caller --
+	 * This read $_POST['ivr'] itself, and carried a comment saying "there is no.
+	 * Form here to carry a nonce". That was wrong twice. Every caller --.
 	 * handle_guest_request_approve(), _approve_send(), _deny_block() and
 	 * _delete() -- checks manage_options and then
-	 * check_admin_referer( 'flosc_guest_request_action', ... ) before reaching
-	 * this line, so the request IS nonce-verified. And a URL builder has no
-	 * business reading the request at all: its inputs belong in its signature.
+	 * Check_admin_referer( 'flosc_guest_request_action', ... ) before reaching.
+	 * This line, so the request IS nonce-verified. And a URL builder has no.
+	 * Business reading the request at all: its inputs belong in its signature.
 	 *
-	 * The callers now read that value in their own scope, where the
-	 * verification they perform is visible to a reader and to a scanner alike,
-	 * and hand it in.
+	 * The callers now read that value in their own scope, where the.
+	 * Verification they perform is visible to a reader and to a scanner alike,.
+	 * And hand it in.
 	 *
 	 * @param string $notice_key Transient notice to set for this admin.
-	 * @param string $ivr_hint   Flow file the caller was working in, already
-	 *                           sanitized. Used only when the trait has no
-	 *                           current flow of its own.
-	 * @return string
+	 * @param string $ivr_hint   Flow file the caller was working in, already.
+	 * Sanitized. Used only when the trait has no.
+	 * Current flow of its own.
+	 * @return String.
 	 */
 	private function build_guest_request_admin_redirect( $notice_key, $ivr_hint = '' ) {
 		$notice_key = sanitize_key( (string) $notice_key );
@@ -1777,13 +1785,13 @@ private function unblock_guest_account_request_email( $email ) {
 	/**
 	 * Optional admin MagicLink send gate (flow setting magic_link_admin_send_condition).
 	 *
-	 * Ship default: empty / always → allow. When set, target must already exist and
+	 * Ship default: empty / always → allow. When set, target must already exist and.
 	 * FLOSC_Condition_Evaluator must pass. manage_options may force-bypass.
 	 *
 	 * @param int    $user_id Existing WP user (0 = none).
-	 * @param string $flow_id
-	 * @param mixed $force Input consumed by the Coordinate the magic admin send condition ok behavior implemented by this code path. operation.
-	 * @return true|WP_Error
+	 * @param string $flow_id Value consumed by this operation.
+	 * @param mixed  $force   Input consumed by the Coordinate the magic admin send condition ok behavior implemented by this code path. operation.
+	 * @return True|WP_Error.
 	 */
 	private function flosc_magic_admin_send_condition_ok( $user_id, $flow_id = '', $force = false ) {
 		if ( $force ) {
@@ -1904,9 +1912,9 @@ private function unblock_guest_account_request_email( $email ) {
 		);
 	}
 
-		/**
-	 * Resolve and perform the redirect required for guest request approve.
-	 */
+/**
+ * Resolve and perform the redirect required for guest request approve.
+ */
 public function handle_guest_request_approve() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'Unauthorized', 'flosc' ), '', array( 'response' => 403 ) );
@@ -1936,9 +1944,9 @@ public function handle_guest_request_approve() {
 		exit;
 	}
 
-		/**
-	 * Resolve and perform the redirect required for guest request approve send.
-	 */
+/**
+ * Resolve and perform the redirect required for guest request approve send.
+ */
 public function handle_guest_request_approve_send() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'Unauthorized', 'flosc' ), '', array( 'response' => 403 ) );
@@ -2004,9 +2012,9 @@ public function handle_guest_request_approve_send() {
 		exit;
 	}
 
-		/**
-	 * Resolve and perform the redirect required for guest request deny block.
-	 */
+/**
+ * Resolve and perform the redirect required for guest request deny block.
+ */
 public function handle_guest_request_deny_block() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'Unauthorized', 'flosc' ), '', array( 'response' => 403 ) );
@@ -2035,9 +2043,9 @@ public function handle_guest_request_deny_block() {
 		exit;
 	}
 
-		/**
-	 * Resolve and perform the redirect required for guest request delete.
-	 */
+/**
+ * Resolve and perform the redirect required for guest request delete.
+ */
 public function handle_guest_request_delete() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'Unauthorized', 'flosc' ), '', array( 'response' => 403 ) );
@@ -2066,7 +2074,7 @@ public function handle_guest_request_delete() {
 	}
 
 	/**
-	 * AJAX handler for chat logs polling
+	 * AJAX handler for chat logs polling.
 	 * Returns recent chat log entries for the admin Chat Logs tab.
 	 * Supports since_id for incremental polling (new entries only).
 	 *
@@ -2076,8 +2084,9 @@ public function handle_guest_request_delete() {
 
 	/**
 	 * Admin UI: show pending email status + activate control on user profile.
- * @param mixed $user Input consumed by the Render the Word Press interface for email account status profile. operation.
- * @return mixed Result produced by the email account status profile operation.
+	 *
+	 * @param mixed $user Input consumed by the Render the Word Press interface for email account status profile. operation.
+	 * @return Mixed Result produced by the email account status profile operation.
 	 */
 	public function render_email_account_status_profile( $user ) {
 		if ( ! current_user_can( 'edit_user', $user->ID ) ) {

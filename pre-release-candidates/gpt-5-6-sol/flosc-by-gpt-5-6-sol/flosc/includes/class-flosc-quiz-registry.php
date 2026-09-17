@@ -1,6 +1,6 @@
 <?php
 /**
- * FLOSC Quiz Registry
+ * FLOSC Quiz Registry.
  *
  * The single place that maps quiz IDs to their quiz classes.
  * To add a new quiz: require its class file below and add it to the map in init().
@@ -22,14 +22,15 @@ require_once FLOSC_PLUGIN_DIR . 'includes/quiz-types/class-flosc-sample-text-bas
  */
 class FLOSC_Quiz_Registry {
 
-	/** @var FLOSC_Abstract_Quiz_Type[]|null */
+	/**
+	 */
 	private static $quizzes = null;
 
-		/**
-	 * Coordinate the init behavior implemented by this code path.
-	 *
-	 * @return mixed Result produced by the init operation.
-	 */
+/**
+ * Coordinate the init behavior implemented by this code path.
+ *
+ * @return Mixed Result produced by the init operation.
+ */
 private static function init() {
 		if ( null !== self::$quizzes ) {
 			return;
@@ -43,8 +44,8 @@ private static function init() {
 	/**
 	 * Normalize a quiz id for lookup (sanitize only — no rename table).
 	 *
-	 * @param string $quiz_id
-	 * @return string
+	 * @param string $quiz_id Value consumed by this operation.
+	 * @return String.
 	 */
 	private static function normalize_quiz_id( $quiz_id ) {
 		return sanitize_key( (string) $quiz_id );
@@ -53,8 +54,8 @@ private static function init() {
 	/**
 	 * Public helper: same normalize as get_quiz / quiz_exists.
 	 *
-	 * @param string $quiz_id
-	 * @return string
+	 * @param string $quiz_id Value consumed by this operation.
+	 * @return String.
 	 */
 	public static function resolve_id( $quiz_id ) {
 		return self::normalize_quiz_id( $quiz_id );
@@ -63,7 +64,7 @@ private static function init() {
 	/**
 	 * Get a quiz by its ID.
 	 *
-	 * @param  string $quiz_id
+	 * @param string $quiz_id Value consumed by this operation.
 	 * @return FLOSC_Abstract_Quiz_Type|null  Null if the ID is not registered.
 	 */
 	public static function get_quiz( $quiz_id ) {
@@ -85,8 +86,8 @@ private static function init() {
 	/**
 	 * Check whether a quiz with the given ID is registered.
 	 *
-	 * @param  string $quiz_id
-	 * @return bool
+	 * @param string $quiz_id Value consumed by this operation.
+	 * @return Bool.
 	 */
 	public static function quiz_exists( $quiz_id ) {
 		self::init();

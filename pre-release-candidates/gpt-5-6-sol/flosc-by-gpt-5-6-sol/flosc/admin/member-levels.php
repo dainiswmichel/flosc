@@ -1,17 +1,17 @@
 <?php
 /**
- * FLOSC Member Levels Tab — Level Registry + Content Protection
+ * FLOSC Member Levels Tab — Level Registry + Content Protection.
  *
  * SINGLE SOURCE OF TRUTH for member levels in a flow.
  * Other tabs (Offers, Lessons) reference this registry via dropdown.
  *
  * Sections:
- * 1. Level Registry — admin defines level slugs + display names
- * 2. Content Protection — assign categories, tags, posts, pages to levels
- * 3. Guest Access — freeline count/mode, access duration, max chats / management
+ * 1. Level Registry — admin defines level slugs + display names.
+ * 2. Content Protection — assign categories, tags, posts, pages to levels.
+ * 3. Guest Access — freeline count/mode, access duration, max chats / management.
  *
- * Extracted from Lessons tab (v8.0.0 → v8.1.0) where content protection
- * and guest access were previously mixed with lesson group configuration.
+ * Extracted from Lessons tab (v8.0.0 → v8.1.0) where content protection.
+ * And guest access were previously mixed with lesson group configuration.
  *
  * @package FLOSC
  * @since 8.1.0

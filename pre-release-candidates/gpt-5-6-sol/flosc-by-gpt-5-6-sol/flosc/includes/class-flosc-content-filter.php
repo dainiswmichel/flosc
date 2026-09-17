@@ -1,10 +1,10 @@
 <?php
 /**
- * FLOSC Content Filter
- * Filters content based on user access level
+ * FLOSC Content Filter.
+ * Filters content based on user access level.
  *
- * IMPORTANT: This filter ONLY applies to posts that explicitly contain
- * the <!--flosc_read_more--> tag. All other WordPress content is left untouched.
+ * IMPORTANT: This filter ONLY applies to posts that explicitly contain.
+ * The <!--flosc_read_more--> tag. All other WordPress content is left untouched.
  *
  * @since 9.1.6
  * @updated 1.0.0 - Added safeguards to prevent affecting non-FLOSC content
@@ -23,20 +23,20 @@ class FLOSC_Content_Filter {
 
 	private static $instance = null;
 
-		/**
-	 * Register the WordPress hooks that connect construct to this object.
-	 */
+/**
+ * Register the WordPress hooks that connect construct to this object.
+ */
 private function __construct() {
 		// Register WordPress content filter hook.
 		// Only applies when content contains FLOSC markers.
 		add_filter( 'the_content', array( $this, 'apply_content_filter' ), 10 );
 	}
 
-		/**
-	 * Coordinate the instance behavior implemented by this code path.
-	 *
-	 * @return mixed Result produced by the instance operation.
-	 */
+/**
+ * Coordinate the instance behavior implemented by this code path.
+ *
+ * @return Mixed Result produced by the instance operation.
+ */
 public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
@@ -45,14 +45,14 @@ public static function instance() {
 	}
 
 	/**
-	 * WordPress the_content filter wrapper
-	 * Automatically detects user access level and filters content
+	 * WordPress the_content filter wrapper.
+	 * Automatically detects user access level and filters content.
 	 *
 	 * CRITICAL: Only processes content that contains FLOSC-specific markers.
 	 * Regular WordPress posts are returned unchanged immediately.
 	 *
 	 * @param string $content Post content from WordPress.
-	 * @return string Filtered content (or original if no FLOSC markers)
+	 * @return String Filtered content (or original if no FLOSC markers)
 	 */
 	public function apply_content_filter( $content ) {
 		// SAFEGUARD 1: Skip if we're in the admin area.
@@ -120,16 +120,16 @@ public static function instance() {
 	/**
 	 * Resolve the flow that owns the page currently being filtered.
 	 *
-	 * A flow owns a host (custom_domain in its *_ivr.md), so the flow the
-	 * request resolved to is the flow this post belongs to. Returns the same
-	 * shape grant_member_access() stores, so the stem derived here matches the
-	 * stem written at purchase time.
+	 * A flow owns a host (custom_domain in its *_ivr.md), so the flow the.
+	 * Request resolved to is the flow this post belongs to. Returns the same.
+	 * Shape grant_member_access() stores, so the stem derived here matches the.
+	 * Stem written at purchase time.
 	 *
-	 * Returns null when the request resolves to no flow (a plain WordPress page
-	 * on a host no flow claims). Passing null keeps the pre-existing behaviour
-	 * for those pages rather than gating on a flow we cannot name.
+	 * Returns null when the request resolves to no flow (a plain WordPress page.
+	 * On a host no flow claims). Passing null keeps the pre-existing behaviour.
+	 * For those pages rather than gating on a flow we cannot name.
 	 *
-	 * @return string|null Flow ivr file / id, or null when unresolvable.
+	 * @return String|null Flow ivr file / id, or null when unresolvable.
 	 */
 	private function resolve_gate_flow_id() {
 		if ( ! function_exists( 'flosc' ) || ! is_object( flosc() ) || ! method_exists( flosc(), 'get_current_flow' ) ) {
@@ -148,12 +148,12 @@ public static function instance() {
 	}
 
 	/**
-	 * Filter markdown content by access level
-	 * Looks for ### ACCESS LEVEL: VISITOR/GUEST/MEMBER markers
+	 * Filter markdown content by access level.
+	 * Looks for ### ACCESS LEVEL: VISITOR/GUEST/MEMBER markers.
 	 *
-	 * @param string $content Raw markdown content.
+	 * @param string $content      Raw markdown content.
 	 * @param string $access_level 'visitor', 'guest', or 'member'.
-	 * @return string Filtered content
+	 * @return String Filtered content.
 	 */
 	public function filter_markdown_by_access( $content, $access_level ) {
 
@@ -185,10 +185,10 @@ public static function instance() {
 	}
 
 	/**
-	 * Parse markdown content into sections by access level
+	 * Parse markdown content into sections by access level.
 	 *
-	 * @param string $content
-	 * @return array Sections organized by level
+	 * @param string $content Value consumed by this operation.
+	 * @return Array Sections organized by level.
 	 */
 	private function parse_markdown_sections( $content ) {
 
@@ -231,11 +231,11 @@ public static function instance() {
 	}
 
 	/**
-	 * Check if user has access to content requiring specific level
+	 * Check if user has access to content requiring specific level.
 	 *
 	 * @param string $required_level Level required for content.
-	 * @param string $user_level User's current level.
-	 * @return bool
+	 * @param string $user_level     User's current level.
+	 * @return Bool.
 	 */
 	public function has_access( $required_level, $user_level ) {
 		$hierarchy = array(
@@ -251,13 +251,13 @@ public static function instance() {
 	}
 
 	/**
-	 * Filter WordPress post content by access level
-	 * Handles <!--flosc_read_more--> tag for member-only content
-	 * Uses custom tag to avoid conflicts with WordPress core <!--more-->
+	 * Filter WordPress post content by access level.
+	 * Handles <!--flosc_read_more--> tag for member-only content.
+	 * Uses custom tag to avoid conflicts with WordPress core <!--more-->.
 	 *
-	 * @param string $content Post content.
-	 * @param string $access_level
-	 * @return string Filtered content
+	 * @param string $content      Post content.
+	 * @param string $access_level Value consumed by this operation.
+	 * @return String Filtered content.
 	 */
 	public function filter_post_content( $content, $access_level ) {
 
@@ -293,13 +293,13 @@ public static function instance() {
 	}
 
 	/**
-	 * Extract relevant section from content based on query
-	 * Used for RAG to return focused results
+	 * Extract relevant section from content based on query.
+	 * Used for RAG to return focused results.
 	 *
-	 * @param string $content
-	 * @param mixed $query Input consumed by the Coordinate the extract relevant section behavior implemented by this code path. operation.
+	 * @param string $content       Value consumed by this operation.
+	 * @param mixed  $query         Input consumed by the Coordinate the extract relevant section behavior implemented by this code path. operation.
 	 * @param int    $context_chars Number of characters of context.
-	 * @return string
+	 * @return String.
 	 */
 	public function extract_relevant_section( $content, $query, $context_chars = 500 ) {
 
@@ -330,11 +330,11 @@ public static function instance() {
 	}
 
 	/**
-	 * Get excerpt from content
+	 * Get excerpt from content.
 	 *
-	 * @param string $content
-	 * @param mixed $length Input consumed by the Resolve the current excerpt value from the available Word Press and flow state. operation.
-	 * @return string
+	 * @param string $content Value consumed by this operation.
+	 * @param mixed  $length  Input consumed by the Resolve the current excerpt value from the available Word Press and flow state. operation.
+	 * @return String.
 	 */
 	public function get_excerpt( $content, $length = 50 ) {
 

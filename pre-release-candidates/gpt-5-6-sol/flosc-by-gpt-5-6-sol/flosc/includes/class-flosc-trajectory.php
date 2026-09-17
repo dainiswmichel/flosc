@@ -1,8 +1,8 @@
 <?php
 /**
- * FLOSC Trajectory
+ * FLOSC Trajectory.
  *
- * Lightweight, post-backed trajectory guidance that plugs into the existing
+ * Lightweight, post-backed trajectory guidance that plugs into the existing.
  * AI response pipeline as system-prompt guidance (no response engine rewrite).
  *
  * @package FLOSC
@@ -31,9 +31,10 @@ class FLOSC_Trajectory {
 
 	/**
 	 * Return trajectory guidance for the current message from flow settings.
- * @param mixed $message Input consumed by the Coordinate the active guidance behavior implemented by this code path. operation.
- * @param mixed $flow_settings Configuration values used to control the Coordinate the active guidance behavior implemented by this code path. behavior.
- * @return mixed Result produced by the active guidance operation.
+	 *
+	 * @param mixed $message       Input consumed by the Coordinate the active guidance behavior implemented by this code path. operation.
+	 * @param mixed $flow_settings Configuration values used to control the Coordinate the active guidance behavior implemented by this code path. behavior.
+	 * @return Mixed Result produced by the active guidance operation.
 	 */
 	public static function active_guidance( $message, $flow_settings ) {
 		$message = trim( (string) $message );
@@ -120,8 +121,9 @@ class FLOSC_Trajectory {
 
 	/**
 	 * Trajectory posts are private internal posts in trajectory/trajectories categories.
- * @param mixed $post Input consumed by the Determine whether the current state satisfies trajectory post. operation.
- * @return bool Whether trajectory post applies to the current state.
+	 *
+	 * @param mixed $post Input consumed by the Determine whether the current state satisfies trajectory post. operation.
+	 * @return Bool Whether trajectory post applies to the current state.
 	 */
 	public static function is_trajectory_post( $post ) {
 		$post = get_post( $post );
@@ -151,11 +153,11 @@ class FLOSC_Trajectory {
 		return false;
 	}
 
-		/**
-	 * Render the WordPress interface for meta box.
-	 *
-	 * @param mixed $post Input consumed by the Render the Word Press interface for meta box. operation.
-	 */
+/**
+ * Render the WordPress interface for meta box.
+ *
+ * @param mixed $post Input consumed by the Render the Word Press interface for meta box. operation.
+ */
 public static function render_meta_box( $post ) {
 		$c = self::config_from_post( $post );
 		wp_nonce_field( 'flosc_trajectory_meta', 'flosc_trajectory_nonce' );
@@ -196,12 +198,12 @@ public static function render_meta_box( $post ) {
 		echo '<p class="description">Saved trajectory posts are synced into flow DB settings and injected through the existing AI prompt path.</p>';
 	}
 
-		/**
-	 * Persist the meta box state in WordPress storage.
-	 *
-	 * @param mixed $post_id WordPress post ID used to resolve the content involved in this operation.
-	 * @return mixed Result produced by the meta box operation.
-	 */
+/**
+ * Persist the meta box state in WordPress storage.
+ *
+ * @param mixed $post_id WordPress post ID used to resolve the content involved in this operation.
+ * @return Mixed Result produced by the meta box operation.
+ */
 public static function save_meta_box( $post_id ) {
 		if ( ! isset( $_POST['flosc_trajectory_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['flosc_trajectory_nonce'] ) ), 'flosc_trajectory_meta' ) ) {
 			return;
@@ -238,12 +240,12 @@ public static function save_meta_box( $post_id ) {
 		}
 	}
 
-		/**
-	 * Coordinate the config from post behavior implemented by this code path.
-	 *
-	 * @param mixed $post Input consumed by the Coordinate the config from post behavior implemented by this code path. operation.
-	 * @return array Structured config from post data.
-	 */
+/**
+ * Coordinate the config from post behavior implemented by this code path.
+ *
+ * @param mixed $post Input consumed by the Coordinate the config from post behavior implemented by this code path. operation.
+ * @return Array Structured config from post data.
+ */
 public static function config_from_post( $post ) {
 		$post = get_post( $post );
 		if ( ! $post instanceof WP_Post ) {
@@ -329,12 +331,12 @@ public static function config_from_post( $post ) {
 		);
 	}
 
-		/**
-	 * Persist the sync post state in WordPress storage.
-	 *
-	 * @param mixed $post Input consumed by the Persist the sync post state in Word Press storage. operation.
-	 * @return mixed Result produced by the sync post operation.
-	 */
+/**
+ * Persist the sync post state in WordPress storage.
+ *
+ * @param mixed $post Input consumed by the Persist the sync post state in Word Press storage. operation.
+ * @return Mixed Result produced by the sync post operation.
+ */
 public static function sync_post( $post ) {
 		$post = get_post( $post );
 		if ( ! $post instanceof WP_Post || ! self::is_trajectory_post( $post ) ) {
@@ -372,12 +374,12 @@ public static function sync_post( $post ) {
 		update_option( $flow_key, $fs );
 	}
 
-		/**
-	 * Persist the unsync post state in WordPress storage.
-	 *
-	 * @param mixed $post Input consumed by the Persist the unsync post state in Word Press storage. operation.
-	 * @return mixed Result produced by the unsync post operation.
-	 */
+/**
+ * Persist the unsync post state in WordPress storage.
+ *
+ * @param mixed $post Input consumed by the Persist the unsync post state in Word Press storage. operation.
+ * @return Mixed Result produced by the unsync post operation.
+ */
 public static function unsync_post( $post ) {
 		$post = get_post( $post );
 		if ( ! $post instanceof WP_Post ) {
@@ -408,13 +410,13 @@ public static function unsync_post( $post ) {
 		}
 	}
 
-		/**
-	 * Coordinate the keyword hit behavior implemented by this code path.
-	 *
-	 * @param mixed $message Input consumed by the Coordinate the keyword hit behavior implemented by this code path. operation.
-	 * @param mixed $keywords Name or key used to select the Coordinate the keyword hit behavior implemented by this code path. value.
-	 * @return bool Whether keyword hit applies to the current state.
-	 */
+/**
+ * Coordinate the keyword hit behavior implemented by this code path.
+ *
+ * @param mixed $message  Input consumed by the Coordinate the keyword hit behavior implemented by this code path. operation.
+ * @param mixed $keywords Name or key used to select the Coordinate the keyword hit behavior implemented by this code path. value.
+ * @return Bool Whether keyword hit applies to the current state.
+ */
 private static function keyword_hit( $message, $keywords ) {
 		$haystack = mb_strtolower( (string) $message );
 		foreach ( explode( ',', (string) $keywords ) as $keyword ) {
@@ -429,23 +431,23 @@ private static function keyword_hit( $message, $keywords ) {
 		return false;
 	}
 
-		/**
-	 * Coordinate the post rule id behavior implemented by this code path.
-	 *
-	 * @param mixed $post Input consumed by the Coordinate the post rule id behavior implemented by this code path. operation.
-	 * @return mixed Result produced by the post rule id operation.
-	 */
+/**
+ * Coordinate the post rule id behavior implemented by this code path.
+ *
+ * @param mixed $post Input consumed by the Coordinate the post rule id behavior implemented by this code path. operation.
+ * @return Mixed Result produced by the post rule id operation.
+ */
 private static function post_rule_id( $post ) {
 		$slug = ( '' !== $post->post_name ) ? $post->post_name : ( 'post' . intval( $post->ID ) );
 		return 'trajectory_' . sanitize_key( $slug );
 	}
 
-		/**
-	 * Coordinate the flow key behavior implemented by this code path.
-	 *
-	 * @param mixed $flow_file Filesystem value identifying the file used by the Coordinate the flow key behavior implemented by this code path. operation.
-	 * @return mixed Result produced by the flow key operation.
-	 */
+/**
+ * Coordinate the flow key behavior implemented by this code path.
+ *
+ * @param mixed $flow_file Filesystem value identifying the file used by the Coordinate the flow key behavior implemented by this code path. operation.
+ * @return Mixed Result produced by the flow key operation.
+ */
 private static function flow_key( $flow_file ) {
 		$flow_file = (string) $flow_file;
 		if ( '' === $flow_file ) {
@@ -454,12 +456,12 @@ private static function flow_key( $flow_file ) {
 		return 'flosc_flow_' . sanitize_key( pathinfo( $flow_file, PATHINFO_FILENAME ) );
 	}
 
-		/**
-	 * Coordinate the flow file behavior implemented by this code path.
-	 *
-	 * @param mixed $value Value consumed or normalized by the Coordinate the flow file behavior implemented by this code path. operation.
-	 * @return mixed Result produced by the flow file operation.
-	 */
+/**
+ * Coordinate the flow file behavior implemented by this code path.
+ *
+ * @param mixed $value Value consumed or normalized by the Coordinate the flow file behavior implemented by this code path. operation.
+ * @return Mixed Result produced by the flow file operation.
+ */
 private static function flow_file( $value ) {
 		if ( preg_match( '/([A-Za-z0-9_\-]+\.md)\b/i', (string) $value, $m ) ) {
 			return $m[1];
@@ -467,12 +469,12 @@ private static function flow_file( $value ) {
 		return '';
 	}
 
-		/**
-	 * Coordinate the flow by name behavior implemented by this code path.
-	 *
-	 * @param mixed $value Value consumed or normalized by the Coordinate the flow by name behavior implemented by this code path. operation.
-	 * @return mixed Result produced by the flow by name operation.
-	 */
+/**
+ * Coordinate the flow by name behavior implemented by this code path.
+ *
+ * @param mixed $value Value consumed or normalized by the Coordinate the flow by name behavior implemented by this code path. operation.
+ * @return Mixed Result produced by the flow by name operation.
+ */
 private static function flow_by_name( $value ) {
 		$name = mb_strtolower( self::unquote( (string) $value ) );
 		if ( '' === $name ) {
@@ -492,12 +494,12 @@ private static function flow_by_name( $value ) {
 		return '';
 	}
 
-		/**
-	 * Coordinate the flow from deployment behavior implemented by this code path.
-	 *
-	 * @param mixed $deployment Input consumed by the Coordinate the flow from deployment behavior implemented by this code path. operation.
-	 * @return mixed Result produced by the flow from deployment operation.
-	 */
+/**
+ * Coordinate the flow from deployment behavior implemented by this code path.
+ *
+ * @param mixed $deployment Input consumed by the Coordinate the flow from deployment behavior implemented by this code path. operation.
+ * @return Mixed Result produced by the flow from deployment operation.
+ */
 private static function flow_from_deployment( $deployment ) {
 		$host = strtolower( trim( (string) $deployment ) );
 		if ( '' === $host ) {
@@ -526,25 +528,25 @@ private static function flow_from_deployment( $deployment ) {
 		return '';
 	}
 
-		/**
-	 * Coordinate the label behavior implemented by this code path.
-	 *
-	 * @param mixed $body Input consumed by the Coordinate the label behavior implemented by this code path. operation.
-	 * @param mixed $label Input consumed by the Coordinate the label behavior implemented by this code path. operation.
-	 * @return mixed Result produced by the label operation.
-	 */
+/**
+ * Coordinate the label behavior implemented by this code path.
+ *
+ * @param mixed $body  Input consumed by the Coordinate the label behavior implemented by this code path. operation.
+ * @param mixed $label Input consumed by the Coordinate the label behavior implemented by this code path. operation.
+ * @return Mixed Result produced by the label operation.
+ */
 private static function label( $body, $label ) {
 		$pattern = '/^[ \t>*_\-]*' . preg_quote( (string) $label, '/' ) . '[ \t]*:[ \t]*(.+?)[ \t]*$/mi';
 		return preg_match( $pattern, (string) $body, $m ) ? trim( (string) $m[1] ) : '';
 	}
 
-		/**
-	 * Coordinate the content block behavior implemented by this code path.
-	 *
-	 * @param mixed $body Input consumed by the Coordinate the content block behavior implemented by this code path. operation.
-	 * @param mixed $label Input consumed by the Coordinate the content block behavior implemented by this code path. operation.
-	 * @return mixed Result produced by the content block operation.
-	 */
+/**
+ * Coordinate the content block behavior implemented by this code path.
+ *
+ * @param mixed $body  Input consumed by the Coordinate the content block behavior implemented by this code path. operation.
+ * @param mixed $label Input consumed by the Coordinate the content block behavior implemented by this code path. operation.
+ * @return Mixed Result produced by the content block operation.
+ */
 private static function content_block( $body, $label ) {
 		$body          = (string) $body;
 		$label_pattern = '/^[ \t>*_\-]*' . preg_quote( (string) $label, '/' ) . '[ \t]*:[ \t]*$/mi';
@@ -565,12 +567,12 @@ private static function content_block( $body, $label ) {
 		return trim( (string) $tail );
 	}
 
-		/**
-	 * Coordinate the off ramp exactness behavior implemented by this code path.
-	 *
-	 * @param mixed $mode Input consumed by the Coordinate the off ramp exactness behavior implemented by this code path. operation.
-	 * @return mixed Result produced by the off ramp exactness operation.
-	 */
+/**
+ * Coordinate the off ramp exactness behavior implemented by this code path.
+ *
+ * @param mixed $mode Input consumed by the Coordinate the off ramp exactness behavior implemented by this code path. operation.
+ * @return Mixed Result produced by the off ramp exactness operation.
+ */
 private static function off_ramp_exactness( $mode ) {
 		$mode = sanitize_key( (string) $mode );
 		if ( ! in_array( $mode, array( 'flexible', 'preferred', 'exact' ), true ) ) {
@@ -579,12 +581,12 @@ private static function off_ramp_exactness( $mode ) {
 		return $mode;
 	}
 
-		/**
-	 * Build the structured value consumed by off ramp guidance.
-	 *
-	 * @param mixed $rule Input consumed by the Build the structured value consumed by off ramp guidance. operation.
-	 * @return mixed Result produced by the off ramp guidance operation.
-	 */
+/**
+ * Build the structured value consumed by off ramp guidance.
+ *
+ * @param mixed $rule Input consumed by the Build the structured value consumed by off ramp guidance. operation.
+ * @return Mixed Result produced by the off ramp guidance operation.
+ */
 private static function build_off_ramp_guidance( $rule ) {
 		$phrases_text = trim( (string) ( $rule['off_ramp_phrases'] ?? '' ) );
 		if ( '' === $phrases_text ) {
@@ -613,12 +615,12 @@ private static function build_off_ramp_guidance( $rule ) {
 		return "\n" . $lead . "\n- " . implode( "\n- ", $phrases );
 	}
 
-		/**
-	 * Coordinate the unquote behavior implemented by this code path.
-	 *
-	 * @param mixed $s Input consumed by the Coordinate the unquote behavior implemented by this code path. operation.
-	 * @return mixed Result produced by the unquote operation.
-	 */
+/**
+ * Coordinate the unquote behavior implemented by this code path.
+ *
+ * @param mixed $s Input consumed by the Coordinate the unquote behavior implemented by this code path. operation.
+ * @return Mixed Result produced by the unquote operation.
+ */
 private static function unquote( $s ) {
 		$s = trim( (string) $s );
 		if ( strlen( $s ) >= 2 ) {

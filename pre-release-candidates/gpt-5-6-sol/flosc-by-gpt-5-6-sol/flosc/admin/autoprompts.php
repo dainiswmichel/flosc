@@ -1,21 +1,21 @@
 <?php
 /**
- * FLOSC AutoPrompts Configuration Tab v1.1.0
+ * FLOSC AutoPrompts Configuration Tab v1.1.0.
  *
  * Manage AutoPromptPanel pills per user state (Visitor, Guest, Member).
  * Each pill can:
- *   - Send text to AI (default)
- *   - Trigger an offer (show_offer_OFFER_ID)
- *   - Trigger an in-chat action (open_quiz, open_free_lesson, etc.)
+ * - Send text to AI (default)
+ * - Trigger an offer (show_offer_OFFER_ID)
+ * - Trigger an in-chat action (open_quiz, open_free_lesson, etc.)
  *
  * Fields per pill:
- *   icon          — emoji
- *   label         — display text on pill/button
- *   user_input    — text sent or displayed (blank = same as label)
- *   trigger_type  — 'ai' | 'offer' | 'action'
- *   trigger_value — offer_id (for offer), action key (for action), empty for ai
- *   conditions    — when to show (is_visitor, is_guest, is_member, custom expression)
- *   style         — pill | button | chip
+ * Icon          — emoji.
+ * Label         — display text on pill/button.
+ * User_input    — text sent or displayed (blank = same as label)
+ * Trigger_type  — 'ai' | 'offer' | 'action'.
+ * Trigger_value — offer_id (for offer), action key (for action), empty for ai.
+ * Conditions    — when to show (is_visitor, is_guest, is_member, custom expression)
+ * Style         — pill | button | chip.
  *
  * @package FLOSC
  */
@@ -46,10 +46,10 @@ flosc_tab_header( '💊', 'AutoPrompts' );
 if ( ! function_exists( 'flosc_autoprompt_is_machine_label' ) ) {
 	/**
 	 * Detect technical key-style labels (e.g., host_flow_music_overview)
-	 * that should not be shown as user-facing autoprompt labels.
+	 * That should not be shown as user-facing autoprompt labels.
 	 *
-	 * @param string $label
-	 * @return bool
+	 * @param string $label Value consumed by this operation.
+	 * @return Bool.
 	 */
 	function flosc_autoprompt_is_machine_label( $label ) {
 		$label = trim( (string) $label );
@@ -79,13 +79,13 @@ $flosc_autoprompt_docs_anchor = array(
 	'member'  => 'member-autoprompts-memberpromptpanelshow-panel',
 );
 
-// ============================================
+// ============================================.
 // SAVE HANDLER.
-// ============================================
+// ============================================.
 /**
  * Persist the autoprompts save state in WordPress storage.
  *
- * @return mixed Result produced by the autoprompts save operation.
+ * @return Mixed Result produced by the autoprompts save operation.
  */
 function flosc_handle_autoprompts_save() {
 	$flosc_post = wp_unslash( $_POST );
@@ -188,9 +188,9 @@ if ( ! isset( $flosc_get ) || ! is_array( $flosc_get ) ) {
 	$flosc_get = array();
 }
 
-// ============================================
+// ============================================.
 // LOAD CURRENT DATA.
-// ============================================
+// ============================================.
 $flosc_fs = $flosc_flow_key ? get_option( $flosc_flow_key, array() ) : array();
 
 $flosc_flow_display_name = trim( (string) ( $flosc_fs['identity']['name'] ?? '' ) );
@@ -308,13 +308,13 @@ $flosc_available_conditions = array(
 
 // Declare before table rendering so expected-behavior rows can call it safely.
 if ( ! function_exists( 'flosc_autoprompt_expected_behavior_text' ) ) {
-		/**
-	 * Coordinate the autoprompt expected behavior text behavior implemented by this code path.
-	 *
-	 * @param mixed $flosc_state Input consumed by the Coordinate the autoprompt expected behavior text behavior implemented by this code path. operation.
-	 * @param array $flosc_item Input consumed by the Coordinate the autoprompt expected behavior text behavior implemented by this code path. operation.
-	 * @return mixed Result produced by the autoprompt expected behavior text operation.
-	 */
+/**
+ * Coordinate the autoprompt expected behavior text behavior implemented by this code path.
+ *
+ * @param mixed $flosc_state Input consumed by the Coordinate the autoprompt expected behavior text behavior implemented by this code path. operation.
+ * @param array $flosc_item  Input consumed by the Coordinate the autoprompt expected behavior text behavior implemented by this code path. operation.
+ * @return Mixed Result produced by the autoprompt expected behavior text operation.
+ */
 function flosc_autoprompt_expected_behavior_text( $flosc_state, array $flosc_item ) {
 		$flosc_label         = trim( (string) ( $flosc_item['label'] ?? '' ) );
 		$flosc_user_input    = trim( (string) ( $flosc_item['user_input'] ?? '' ) );

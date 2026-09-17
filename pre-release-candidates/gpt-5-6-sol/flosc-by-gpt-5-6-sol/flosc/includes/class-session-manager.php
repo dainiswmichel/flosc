@@ -1,6 +1,6 @@
 <?php
 /**
- * Compatibility shim — implementation lives at includes/sessions/class-flosc-session-manager.php
+ * Compatibility shim — implementation lives at includes/sessions/class-flosc-session-manager.php.
  *
  * @package FLOSC
  */

@@ -16,7 +16,7 @@ if ( ! function_exists( 'flosc_admin_may_view_secrets' ) ) {
 	/**
 	 * Whether the current user may see stored API keys / client secrets in admin UI.
 	 *
-	 * @return bool
+	 * @return Bool.
 	 */
 	function flosc_admin_may_view_secrets() {
 		return current_user_can( 'manage_options' );
@@ -25,11 +25,11 @@ if ( ! function_exists( 'flosc_admin_may_view_secrets' ) ) {
 
 if ( ! function_exists( 'flosc_admin_secret_input_value' ) ) {
 	/**
-	 * Value attribute for secret inputs: full value for admins; empty for others
+	 * Value attribute for secret inputs: full value for admins; empty for others.
 	 * (empty submit preserves stored secret via sanitize_secret_setting).
 	 *
 	 * @param mixed $stored Stored option/setting value.
-	 * @return string
+	 * @return String.
 	 */
 	function flosc_admin_secret_input_value( $stored ) {
 		if ( flosc_admin_may_view_secrets() ) {
@@ -46,8 +46,8 @@ if ( ! function_exists( 'flosc_safe_remote_request' ) ) {
 	 *
 	 * @param string $method GET|POST|DELETE|….
 	 * @param string $url    Absolute URL.
-	 * @param array  $args   wp_remote_* args (sslverify cannot be forced off).
-	 * @return array|WP_Error
+	 * @param array  $args   Wp_remote_* args (sslverify cannot be forced off).
+	 * @return Array|WP_Error.
 	 */
 	function flosc_safe_remote_request( $method, $url, $args = array() ) {
 		$url = esc_url_raw( (string) $url );
@@ -95,7 +95,7 @@ if ( ! function_exists( 'flosc_get_flow_option_rows' ) ) {
 	/**
 	 * All flosc_flow_* option rows (autoload=no). Prepared query + object cache.
 	 *
-	 * @return array<int, array{option_name?:string,option_value?:string}>
+	 * @return Array<int, array{option_name?:string,option_value?:string}>.
 	 */
 	function flosc_get_flow_option_rows() {
 		$cache_key = 'flow_option_rows_v1';
@@ -126,7 +126,7 @@ if ( ! function_exists( 'flosc_bust_flow_option_rows_cache' ) ) {
 	/**
 	 * Invalidate flosc_get_flow_option_rows() cache after flow option writes.
 	 *
-	 * @return void
+	 * @return Void.
 	 */
 	function flosc_bust_flow_option_rows_cache() {
 		wp_cache_delete( 'flow_option_rows_v1', 'flosc_options' );
@@ -142,7 +142,7 @@ if ( ! function_exists( 'flosc_get_user_ids_for_meta' ) ) {
 	 * @param string|null $meta_value Exact value, or null for key EXISTS.
 	 * @param string      $compare    '=' or 'LIKE' when value set.
 	 * @param int         $limit      Max IDs (0 = no SQL LIMIT).
-	 * @return int[]
+	 * @return Int[]
 	 */
 	function flosc_get_user_ids_for_meta( $meta_key, $meta_value = null, $compare = '=', $limit = 0 ) {
 		$meta_key = (string) $meta_key;
@@ -231,7 +231,7 @@ if ( ! function_exists( 'flosc_get_user_ids_for_meta_in' ) ) {
 	 * @param string   $meta_key Meta key.
 	 * @param string[] $values   Allowed values.
 	 * @param int      $limit    Max IDs.
-	 * @return int[]
+	 * @return Int[]
 	 */
 	function flosc_get_user_ids_for_meta_in( $meta_key, $values, $limit = 80 ) {
 		$meta_key = (string) $meta_key;
@@ -271,7 +271,7 @@ if ( ! function_exists( 'flosc_get_post_ids_for_meta' ) ) {
 	 * @param string $meta_key   Meta key.
 	 * @param string $meta_value Meta value.
 	 * @param int    $limit      Max posts.
-	 * @return int[]
+	 * @return Int[]
 	 */
 	function flosc_get_post_ids_for_meta( $meta_key, $meta_value, $limit = 1 ) {
 		$meta_key   = (string) $meta_key;
@@ -310,7 +310,7 @@ if ( ! function_exists( 'flosc_fs_path_is_allowed_read' ) ) {
 	 * Whether $path may be read by FLOSC (uploads, plugin dir, upload tmp, PHP temp).
 	 *
 	 * @param string $path Absolute path.
-	 * @return bool
+	 * @return Bool.
 	 */
 	function flosc_fs_path_is_allowed_read( $path ) {
 		if ( ! is_string( $path ) || '' === $path ) {
@@ -349,13 +349,13 @@ if ( ! function_exists( 'flosc_fs_path_is_allowed_read' ) ) {
 
 if ( ! function_exists( 'flosc_fs_get_contents' ) ) {
 	/**
-	 * Read a local file the WordPress way (WP_Filesystem), with Direct fallback
-	 * so IVR/audio/config still work when the global FS object is unavailable.
+	 * Read a local file the WordPress way (WP_Filesystem), with Direct fallback.
+	 * So IVR/audio/config still work when the global FS object is unavailable.
 	 *
 	 * Only allowlisted paths (uploads, plugin dir, upload/PHP temp).
 	 *
 	 * @param string $path Absolute filesystem path.
-	 * @return string|false
+	 * @return String|false.
 	 */
 	function flosc_fs_get_contents( $path ) {
 		if ( ! flosc_fs_path_is_allowed_read( $path ) ) {
@@ -401,12 +401,12 @@ if ( ! function_exists( 'flosc_protect_uploads_directory' ) ) {
 	/**
 	 * Drops lightweight access-control files into a FLOSC uploads folder.
 	 *
-	 * index.php blanks directory listings everywhere; .htaccess denies direct
-	 * reads on Apache/LiteSpeed hosts. These complement — never replace —
-	 * server-level security; they exist so a casual URL guess returns nothing.
+	 * Index.php blanks directory listings everywhere; .htaccess denies direct.
+	 * Reads on Apache/LiteSpeed hosts. These complement — never replace —.
+	 * Server-level security; they exist so a casual URL guess returns nothing.
 	 *
 	 * @param string $dir Absolute directory path (already created).
- * @return mixed Result produced by the protect uploads directory operation.
+	 * @return Mixed Result produced by the protect uploads directory operation.
 	 */
 	function flosc_protect_uploads_directory( $dir ) {
 		$dir = trailingslashit( $dir );
@@ -427,8 +427,8 @@ if ( ! function_exists( 'flosc_data_dir' ) ) {
 	/**
 	 * The single source of truth for where FLOSC may write.
 	 *
-	 * @return string Trailing-slashed uploads data directory, or '' when
-	 *                uploads are unavailable — never a plugin-folder path.
+	 * @return String Trailing-slashed uploads data directory, or '' when.
+	 * Uploads are unavailable — never a plugin-folder path.
 	 */
 	function flosc_data_dir() {
 		$uploads = wp_upload_dir();
@@ -451,15 +451,15 @@ if ( ! function_exists( 'flosc_write_data_file' ) ) {
 	/**
 	 * The only sanctioned way to write a FLOSC data file.
 	 *
-	 * Resolves both the data directory and the write target through realpath
-	 * and refuses the write unless the target sits inside the data directory.
-	 * This makes "write outside uploads" structurally impossible at the one
-	 * chokepoint every save passes through, rather than a rule each call site
-	 * must remember.
+	 * Resolves both the data directory and the write target through realpath.
+	 * And refuses the write unless the target sits inside the data directory.
+	 * This makes "write outside uploads" structurally impossible at the one.
+	 * Chokepoint every save passes through, rather than a rule each call site.
+	 * Must remember.
 	 *
 	 * @param string $target  Absolute file path inside flosc_data_dir().
 	 * @param string $content File content.
-	 * @return bool Whether the write happened.
+	 * @return Bool Whether the write happened.
 	 */
 	function flosc_write_data_file( $target, $content ) {
 		$base = flosc_data_dir();
@@ -488,7 +488,7 @@ if ( ! function_exists( 'flosc_data_file_path' ) ) {
 	 * Returns '' if uploads data dir is unavailable or the name is empty after cleanup.
 	 *
 	 * @param string $filename File name (path segments stripped).
-	 * @return string Absolute path or ''.
+	 * @return String Absolute path or ''.
 	 */
 	function flosc_data_file_path( $filename ) {
 		$base = flosc_data_dir();
@@ -509,7 +509,7 @@ if ( ! function_exists( 'flosc_is_allowed_ivr_source_path' ) ) {
 	 * Used before reading markdown for import so callers cannot pass arbitrary filesystem paths.
 	 *
 	 * @param string $path Absolute or relative path.
-	 * @return bool
+	 * @return Bool.
 	 */
 	function flosc_is_allowed_ivr_source_path( $path ) {
 		if ( ! is_string( $path ) || '' === $path ) {
@@ -552,12 +552,12 @@ if ( ! function_exists( 'flosc_is_allowed_ivr_source_path' ) ) {
  * and created on first use. $flow_stem is the flow id (e.g. 'flow_ivr').
  * ========================================================================== */
 if ( ! function_exists( 'flosc_flow_kb_dir' ) ) {
-		/**
-	 * Coordinate the flow kb dir behavior implemented by this code path.
-	 *
-	 * @param mixed $flow_stem Input consumed by the Coordinate the flow kb dir behavior implemented by this code path. operation.
-	 * @return mixed Result produced by the flow kb dir operation.
-	 */
+/**
+ * Coordinate the flow kb dir behavior implemented by this code path.
+ *
+ * @param mixed $flow_stem Input consumed by the Coordinate the flow kb dir behavior implemented by this code path. operation.
+ * @return Mixed Result produced by the flow kb dir operation.
+ */
 function flosc_flow_kb_dir( $flow_stem ) {
 		$base = flosc_data_dir();
 		if ( '' === $base ) {
@@ -587,7 +587,7 @@ if ( ! function_exists( 'flosc_chat_archive_dir' ) ) {
 	 *
 	 * @param string $flow_stem Flow identifier (e.g. 'flow_ivr').
 	 *
-	 * @return string Trailing-slashed archive directory, or '' if unavailable.
+	 * @return String Trailing-slashed archive directory, or '' if unavailable.
 	 */
 	function flosc_chat_archive_dir( $flow_stem = '' ) {
 		$base = flosc_data_dir();
@@ -626,11 +626,11 @@ if ( ! function_exists( 'flosc_chat_archive_dir' ) ) {
  * key uses this instead of wp_salt('auth').
  * ========================================================================== */
 if ( ! function_exists( 'flosc_token_secret' ) ) {
-		/**
-	 * Persist the token secret state in WordPress storage.
-	 *
-	 * @return mixed Result produced by the token secret operation.
-	 */
+/**
+ * Persist the token secret state in WordPress storage.
+ *
+ * @return Mixed Result produced by the token secret operation.
+ */
 function flosc_token_secret() {
 		$secret = get_option( 'flosc_token_secret' );
 		if ( ! $secret ) {
@@ -669,12 +669,12 @@ if ( ! function_exists( 'flosc_checkout_binding_create' ) ) {
 	/**
 	 * Mint a single-use binding token for a checkout that is about to begin.
 	 *
-	 * Called server-side from the binding REST endpoint (and any server-side
-	 * order-creation path). The raw token is returned to the initiating browser
-	 * once; only its HMAC is stored, keyed to the caller's session.
+	 * Called server-side from the binding REST endpoint (and any server-side.
+	 * Order-creation path). The raw token is returned to the initiating browser.
+	 * Once; only its HMAC is stored, keyed to the caller's session.
 	 *
 	 * @param array $context Optional: 'session_id', 'flow_id', 'provider'.
-	 * @return string The raw token to hand to the initiating browser.
+	 * @return String The raw token to hand to the initiating browser.
 	 */
 	function flosc_checkout_binding_create( $context = array() ) {
 		$token  = wp_generate_password( 43, false, false );
@@ -698,15 +698,15 @@ if ( ! function_exists( 'flosc_checkout_binding_verify' ) ) {
 	/**
 	 * Verify and consume a binding token.
 	 *
-	 * Single-use: the stored record is deleted on lookup, so the same token can
-	 * never authorize two sessions. When the completion request carries a
-	 * session id, it must match the session the token was minted for; this binds
-	 * the proof to one browser. When no session id is threaded through a given
-	 * provider flow, the server-minted single-use token is itself the proof.
+	 * Single-use: the stored record is deleted on lookup, so the same token can.
+	 * Never authorize two sessions. When the completion request carries a.
+	 * Session id, it must match the session the token was minted for; this binds.
+	 * The proof to one browser. When no session id is threaded through a given.
+	 * Provider flow, the server-minted single-use token is itself the proof.
 	 *
 	 * @param string $token      The token returned by the browser.
 	 * @param string $session_id The completing request's session id (may be '').
-	 * @return array|false The stored record on success, false otherwise.
+	 * @return Array|false The stored record on success, false otherwise.
 	 */
 	function flosc_checkout_binding_verify( $token, $session_id = '' ) {
 		if ( empty( $token ) || ! is_string( $token ) ) {
@@ -731,16 +731,16 @@ if ( ! function_exists( 'flosc_checkout_binding_verify' ) ) {
 /**
  * PayPal purchase intent (industry standard bind).
  *
- * Minted server-side before the PayPal JS createSubscription call. The intent UUID
- * is placed in PayPal custom_id. On activate, the server loads the intent and
- * requires: ACTIVE status, plan_id match, offer/amount/currency from intent only.
+ * Minted server-side before the PayPal JS createSubscription call. The intent UUID.
+ * Is placed in PayPal custom_id. On activate, the server loads the intent and.
+ * Requires: ACTIVE status, plan_id match, offer/amount/currency from intent only.
  */
 if ( ! function_exists( 'flosc_paypal_purchase_intent_create' ) ) {
 	/**
- * Persist the paypal purchase intent create state in WordPress storage.
- *
-	 * @param array $data offer_id, plan_id, plan_type, amount, currency, flow_id, user_id, session_id, mode.
-	 * @return array|WP_Error Intent record including purchase_uuid
+	 * Persist the paypal purchase intent create state in WordPress storage.
+	 *
+	 * @param array $data Offer_id, plan_id, plan_type, amount, currency, flow_id, user_id, session_id, mode.
+	 * @return Array|WP_Error Intent record including purchase_uuid.
 	 */
 	function flosc_paypal_purchase_intent_create( array $data ) {
 		$uuid = function_exists( 'wp_generate_uuid4' ) ? wp_generate_uuid4() : wp_generate_password( 32, false, false );
@@ -783,10 +783,10 @@ if ( ! function_exists( 'flosc_paypal_purchase_intent_create' ) ) {
 
 if ( ! function_exists( 'flosc_paypal_purchase_intent_get' ) ) {
 	/**
- * Coordinate the paypal purchase intent get behavior implemented by this code path.
- *
-	 * @param string $uuid
-	 * @return array|false
+	 * Coordinate the paypal purchase intent get behavior implemented by this code path.
+	 *
+	 * @param string $uuid Value consumed by this operation.
+	 * @return Array|false.
 	 */
 	function flosc_paypal_purchase_intent_get( $uuid ) {
 		$uuid = sanitize_text_field( (string) $uuid );
@@ -800,12 +800,12 @@ if ( ! function_exists( 'flosc_paypal_purchase_intent_get' ) ) {
 
 if ( ! function_exists( 'flosc_paypal_purchase_intent_mark_fulfilled' ) ) {
 	/**
- * Persist the paypal purchase intent mark fulfilled state in WordPress storage.
- *
-	 * @param string $uuid
-	 * @param mixed $subscription_id Identifier used to select the record involved in the Persist the paypal purchase intent mark fulfilled state in Word Press storage. operation.
-	 * @param int    $user_id
-	 * @return bool
+	 * Persist the paypal purchase intent mark fulfilled state in WordPress storage.
+	 *
+	 * @param string $uuid            Value consumed by this operation.
+	 * @param mixed  $subscription_id Identifier used to select the record involved in the Persist the paypal purchase intent mark fulfilled state in Word Press storage. operation.
+	 * @param int    $user_id         Value consumed by this operation.
+	 * @return Bool.
 	 */
 	function flosc_paypal_purchase_intent_mark_fulfilled( $uuid, $subscription_id, $user_id = 0 ) {
 		$record = flosc_paypal_purchase_intent_get( $uuid );
@@ -825,22 +825,22 @@ if ( ! function_exists( 'flosc_paypal_purchase_intent_mark_fulfilled' ) ) {
 
 if ( ! function_exists( 'flosc_issue_post_purchase_session' ) ) {
 	/**
-	 * Issue an authenticated session after a verified purchase, for the buyer's
-	 * own browser. This is the single sanctioned post-purchase login path; every
-	 * browser-facing payment handler routes through it.
+	 * Issue an authenticated session after a verified purchase, for the buyer's.
+	 * Own browser. This is the single sanctioned post-purchase login path; every.
+	 * Browser-facing payment handler routes through it.
 	 *
-	 * WordPress.org / Pass 2: flosc_post_purchase_instant_login defaults to false
-	 * so a completed checkout does not auto-set a WP auth cookie. Private deploys
-	 * that want same-browser post-purchase session may enable:
+	 * WordPress.org / Pass 2: flosc_post_purchase_instant_login defaults to false.
+	 * So a completed checkout does not auto-set a WP auth cookie. Private deploys.
+	 * That want same-browser post-purchase session may enable:
 	 *
-	 *     add_filter( 'flosc_post_purchase_instant_login', '__return_true' );
+	 * Add_filter( 'flosc_post_purchase_instant_login', '__return_true' );
 	 *
-	 * Related: emailed passwordless ?flosc_login_token= after purchase is gated by
-	 * flosc_post_purchase_login_token (also default false).
+	 * Related: emailed passwordless ?flosc_login_token= after purchase is gated by.
+	 * Flosc_post_purchase_login_token (also default false).
 	 *
 	 * @param int    $user_id     The buyer.
 	 * @param string $redirect_to Optional safe redirect target after login.
-	 * @return bool Whether a session was issued.
+	 * @return Bool Whether a session was issued.
 	 */
 	function flosc_issue_post_purchase_session( $user_id, $redirect_to = '' ) {
 		$user_id = absint( $user_id );
@@ -892,12 +892,12 @@ if ( ! function_exists( 'flosc_config_file' ) ) {
 	// Single config file: the uploads copy if it exists, else the shipped.
 	// default. The plugin path is a READ-ONLY resolution — every write goes.
 	// through flosc_write_data_file(), which only accepts uploads targets.
-		/**
-	 * Coordinate the config file behavior implemented by this code path.
-	 *
-	 * @param mixed $filename Filesystem value identifying the file used by the Coordinate the config file behavior implemented by this code path. operation.
-	 * @return mixed Result produced by the config file operation.
-	 */
+/**
+ * Coordinate the config file behavior implemented by this code path.
+ *
+ * @param mixed $filename Filesystem value identifying the file used by the Coordinate the config file behavior implemented by this code path. operation.
+ * @return Mixed Result produced by the config file operation.
+ */
 function flosc_config_file( $filename ) {
 		$filename = ltrim( (string) $filename, '/' );
 		$base     = flosc_data_dir();
@@ -912,14 +912,14 @@ function flosc_config_file( $filename ) {
  * Lesson-catalog basenames: neutral first, legacy product filename second.
  * Filterable so a product module can add/override names without forking readers.
  *
- * @return string[]
+ * @return String[]
  */
 if ( ! function_exists( 'flosc_lesson_catalog_basenames' ) ) {
-		/**
-	 * Coordinate the lesson catalog basenames behavior implemented by this code path.
-	 *
-	 * @return mixed Result produced by the lesson catalog basenames operation.
-	 */
+/**
+ * Coordinate the lesson catalog basenames behavior implemented by this code path.
+ *
+ * @return Mixed Result produced by the lesson catalog basenames operation.
+ */
 function flosc_lesson_catalog_basenames() {
 		// Ship core: neutral name only. Instances may add legacy basenames via filter.
 		$names = array( 'lesson_catalog.md' );
@@ -935,14 +935,14 @@ function flosc_lesson_catalog_basenames() {
  * Resolve the on-disk lesson catalog for recs/admin: first existing basename.
  * If none exist, returns the path for the preferred (first) basename (may not exist yet).
  *
- * @return string Absolute path or empty string.
+ * @return String Absolute path or empty string.
  */
 if ( ! function_exists( 'flosc_resolve_lesson_catalog_path' ) ) {
-		/**
-	 * Coordinate the lesson catalog path behavior implemented by this code path.
-	 *
-	 * @return mixed Result produced by the lesson catalog path operation.
-	 */
+/**
+ * Coordinate the lesson catalog path behavior implemented by this code path.
+ *
+ * @return Mixed Result produced by the lesson catalog path operation.
+ */
 function flosc_resolve_lesson_catalog_path() {
 		if ( ! function_exists( 'flosc_config_file' ) ) {
 			return '';
@@ -967,17 +967,17 @@ function flosc_resolve_lesson_catalog_path() {
 }
 
 /**
- * Absolute write targets for generated catalog (uploads dir). Writes all basenames
- * so legacy product filenames and neutral ship names stay in sync.
+ * Absolute write targets for generated catalog (uploads dir). Writes all basenames.
+ * So legacy product filenames and neutral ship names stay in sync.
  *
- * @return string[] Absolute paths under flosc_data_dir(), or empty if uploads unavailable.
+ * @return String[] Absolute paths under flosc_data_dir(), or empty if uploads unavailable.
  */
 if ( ! function_exists( 'flosc_lesson_catalog_write_paths' ) ) {
-		/**
-	 * Coordinate the lesson catalog write paths behavior implemented by this code path.
-	 *
-	 * @return array Structured lesson catalog write paths data.
-	 */
+/**
+ * Coordinate the lesson catalog write paths behavior implemented by this code path.
+ *
+ * @return Array Structured lesson catalog write paths data.
+ */
 function flosc_lesson_catalog_write_paths() {
 		$dir = function_exists( 'flosc_data_dir' ) ? flosc_data_dir() : '';
 		if ( '' === $dir ) {
@@ -997,12 +997,12 @@ function flosc_lesson_catalog_write_paths() {
 if ( ! function_exists( 'flosc_config_glob' ) ) {
 	// Union of glob matches across uploads + plugin dirs, deduped by basename.
 	// (uploads wins, since it is scanned first). $patterns is one pattern or a list.
-		/**
-	 * Coordinate the config glob behavior implemented by this code path.
-	 *
-	 * @param mixed $patterns Input consumed by the Coordinate the config glob behavior implemented by this code path. operation.
-	 * @return mixed Result produced by the config glob operation.
-	 */
+/**
+ * Coordinate the config glob behavior implemented by this code path.
+ *
+ * @param mixed $patterns Input consumed by the Coordinate the config glob behavior implemented by this code path. operation.
+ * @return Mixed Result produced by the config glob operation.
+ */
 function flosc_config_glob( $patterns ) {
 		$patterns = (array) $patterns;
 		$dirs     = array();
@@ -1032,12 +1032,12 @@ function flosc_config_glob( $patterns ) {
 }
 
 if ( ! function_exists( 'flosc_resolve_flow_option_key_for_ivr' ) ) {
-		/**
-	 * Coordinate the flow option key for ivr behavior implemented by this code path.
-	 *
-	 * @param mixed $flosc_ivr_filename IVR identifier or filename used to select the flow configuration.
-	 * @return mixed Result produced by the flow option key for ivr operation.
-	 */
+/**
+ * Coordinate the flow option key for ivr behavior implemented by this code path.
+ *
+ * @param mixed $flosc_ivr_filename IVR identifier or filename used to select the flow configuration.
+ * @return Mixed Result produced by the flow option key for ivr operation.
+ */
 function flosc_resolve_flow_option_key_for_ivr( $flosc_ivr_filename ) {
 		$flosc_ivr_filename = basename( (string) $flosc_ivr_filename );
 		$target_stem        = sanitize_key( pathinfo( $flosc_ivr_filename, PATHINFO_FILENAME ) );
@@ -1109,19 +1109,19 @@ if ( ! function_exists( 'flosc_da1_prune_flow_assignments' ) ) {
 	/**
 	 * Keep only the DA1 catalog attributions that name an actual flow.
 	 *
-	 * FLOSC flows are files named *_ivr.md. The same directory also holds this
-	 * plugin's own backups of them — *_ivr_bak_*.md and ivr-backup-*.md — and
-	 * those are not flows: Switch Flow has always refused to list them. An
-	 * earlier form of the v8 catalog migration walked every .md it found, so
-	 * those backups ended up stored as DA1 attributions and DA1 duly displayed
-	 * them, which is where the names nobody recognised came from.
+	 * FLOSC flows are files named *_ivr.md. The same directory also holds this.
+	 * Plugin's own backups of them — *_ivr_bak_*.md and ivr-backup-*.md — and.
+	 * Those are not flows: Switch Flow has always refused to list them. An.
+	 * Earlier form of the v8 catalog migration walked every .md it found, so.
+	 * Those backups ended up stored as DA1 attributions and DA1 duly displayed.
+	 * Them, which is where the names nobody recognised came from.
 	 *
-	 * This drops those records and nothing else. Catalogs, .tsv uploads and
-	 * flow files are untouched; only the list saying which flow uses which
-	 * catalog is cleaned.
+	 * This drops those records and nothing else. Catalogs, .tsv uploads and.
+	 * Flow files are untouched; only the list saying which flow uses which.
+	 * Catalog is cleaned.
 	 *
 	 * @param mixed $assignments Stored flow => catalog-slug map.
-	 * @return array<string,array<int,string>>
+	 * @return Array<string,array<int,string>>.
 	 */
 	function flosc_da1_prune_flow_assignments( $assignments ) {
 		$clean = array();
@@ -1157,14 +1157,14 @@ if ( ! function_exists( 'flosc_flow_last_save_option' ) ) {
 	/**
 	 * Where one flow records when it was last saved from the Settings page.
 	 *
-	 * Its own option rather than a key inside the flow settings bag. That bag
-	 * is rebuilt from POST on every save, normalised on load, seeded when
-	 * partial, and promoted between flows — any of which can drop a key it does
-	 * not know about. A record of whether a write happened must not depend on
-	 * the write it is reporting on.
+	 * Its own option rather than a key inside the flow settings bag. That bag.
+	 * Is rebuilt from POST on every save, normalised on load, seeded when.
+	 * Partial, and promoted between flows — any of which can drop a key it does.
+	 * Not know about. A record of whether a write happened must not depend on.
+	 * The write it is reporting on.
 	 *
 	 * @param string $ivr Flow file.
-	 * @return string Option name, or '' when the flow cannot be identified.
+	 * @return String Option name, or '' when the flow cannot be identified.
 	 */
 	function flosc_flow_last_save_option( $ivr ) {
 		$stem = sanitize_key( pathinfo( basename( (string) $ivr ), PATHINFO_FILENAME ) );
@@ -1178,7 +1178,7 @@ if ( ! function_exists( 'flosc_stamp_flow_saved' ) ) {
 	 * Record that this flow was just saved, and answer with the stamp.
 	 *
 	 * @param string $ivr Flow file.
-	 * @return string The stamp written, or '' when there was nowhere to write it.
+	 * @return String The stamp written, or '' when there was nowhere to write it.
 	 */
 	function flosc_stamp_flow_saved( $ivr ) {
 		$option = flosc_flow_last_save_option( $ivr );
@@ -1212,7 +1212,7 @@ if ( ! function_exists( 'flosc_flow_last_saved_at' ) ) {
 	 * When this flow was last saved from the Settings page, or ''.
 	 *
 	 * @param string $ivr Flow file.
-	 * @return string
+	 * @return String.
 	 */
 	function flosc_flow_last_saved_at( $ivr ) {
 		$option = flosc_flow_last_save_option( $ivr );

@@ -1,6 +1,6 @@
 <?php
 /**
- * Domain collaborator â€” FLOSC_Checkout_Rest
+ * Domain collaborator â€” FLOSC_Checkout_Rest.
  *
  * @package FLOSC
  */
@@ -14,24 +14,25 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class FLOSC_Checkout_Rest {
 
-	/** @var FLOSC_Framework */
+	/**
+	 */
 	private $flosc;
 
-		/**
-	 * Coordinate the construct behavior implemented by this code path.
-	 *
-	 * @param mixed $flosc Input consumed by the Coordinate the construct behavior implemented by this code path. operation.
-	 */
+/**
+ * Coordinate the construct behavior implemented by this code path.
+ *
+ * @param mixed $flosc Input consumed by the Coordinate the construct behavior implemented by this code path. operation.
+ */
 public function __construct( $flosc ) {
 		$this->flosc = $flosc;
 	}
 
-		/**
-	 * Resolve the current offers value from the available WordPress and flow state.
-	 *
-	 * @param mixed $request Request object carrying the input consumed by this handler.
-	 * @return mixed Result produced by the offers operation.
-	 */
+/**
+ * Resolve the current offers value from the available WordPress and flow state.
+ *
+ * @param mixed $request Request object carrying the input consumed by this handler.
+ * @return Mixed Result produced by the offers operation.
+ */
 public function get_offers( $request ) {
 		$user_id = is_user_logged_in() ? get_current_user_id() : null;
 		// v1.6.2: Flow-aware offer loading.
@@ -47,13 +48,13 @@ public function get_offers( $request ) {
 	}
 
 	/**
-	 * Serve offer content from external sources
+	 * Serve offer content from external sources.
 	 * Supports: HtmlFile (static HTML in plugin), WooProduct (WooCommerce), PostID (WP post)
 	 * Sanitizes output to prevent XSS.
 	 *
 	 * @since 1.6.2
- * @param mixed $request Request object carrying the input consumed by this handler.
- * @return mixed Result produced by the offer content operation.
+	 * @param mixed $request Request object carrying the input consumed by this handler.
+	 * @return Mixed Result produced by the offer content operation.
 	 */
 	public function get_offer_content( $request ) {
 		$source = sanitize_text_field( $request->get_param( 'source' ) );
@@ -137,23 +138,24 @@ public function get_offers( $request ) {
 	}
 
 	/**
-	 * Handle purchase
+	 * Handle purchase.
 	 *
-	 * STATUS: âœ
- FULLY FUNCTIONAL (v9.1.9)
-	 * - Processes purchase via payment provider
-	 * - Fires flosc_purchase_completed action âœ
-
-	 * - Grants member access automatically âœ
-
-	 * - Sets _flosc_member_access = 'true' âœ
-
-	 * - User can now access ALL 10 posts âœ
-
+	 * STATUS: âœ.
+	 * FULLY FUNCTIONAL (v9.1.9)
+	 * - Processes purchase via payment provider.
+	 * - Fires flosc_purchase_completed action âœ.
 	 *
-	 * TESTING: Use 'tokens' provider for sandbox testing
- * @param mixed $request Request object carrying the input consumed by this handler.
- * @return mixed Result of the purchase operation, or a WP_Error when it cannot complete.
+	 * - Grants member access automatically âœ.
+	 *
+	 * - Sets _flosc_member_access = 'true' âœ.
+	 *
+	 * - User can now access ALL 10 posts âœ.
+	 *
+	 *
+	 * TESTING: Use 'tokens' provider for sandbox testing.
+	 *
+	 * @param mixed $request Request object carrying the input consumed by this handler.
+	 * @return Mixed Result of the purchase operation, or a WP_Error when it cannot complete.
 	 */
 	public function handle_purchase( $request ) {
 		$user_id = get_current_user_id();
@@ -257,7 +259,7 @@ public function get_offers( $request ) {
 	 * List price for an offer (dollars).
 	 *
 	 * @param array $offer Offer row.
-	 * @return float
+	 * @return Float.
 	 */
 	private function flosc_offer_list_price( $offer ) {
 		$amount = 0.0;
@@ -272,11 +274,11 @@ public function get_offers( $request ) {
 
 	/**
 	 * Apply a native price coupon to an offer. Server is source of truth.
-	 * fixed_price = final amount charged; percent = % off list. Windows = UTC.
+	 * Fixed_price = final amount charged; percent = % off list. Windows = UTC.
 	 *
 	 * @param array  $offer Offer.
 	 * @param string $code  Coupon code.
-	 * @return array|WP_Error { payable, list_price, code, type, value }
+	 * @return Array|WP_Error { payable, list_price, code, type, value }.
 	 */
 	private function flosc_apply_offer_price_coupon( array $offer, $code ) {
 		$code = strtoupper( trim( (string) $code ) );
@@ -333,9 +335,9 @@ public function get_offers( $request ) {
 	/**
 	 * Resolve payable amount for native one-time checkout (list price or coupon).
 	 *
-	 * @param array  $offer Offer.
+	 * @param array  $offer       Offer.
 	 * @param string $coupon_code Optional.
-	 * @return array|WP_Error { amount, list_price, coupon_code, currency_hint }
+	 * @return Array|WP_Error { amount, list_price, coupon_code, currency_hint }.
 	 */
 	private function flosc_resolve_native_payable_amount( array $offer, $coupon_code = '' ) {
 		$list        = $this->flosc_offer_list_price( $offer );
@@ -373,7 +375,7 @@ public function get_offers( $request ) {
 	 * List monthly/yearly subscription prices from offer (dollars).
 	 *
 	 * @param array $offer Offer.
-	 * @return array{monthly:float,yearly:float}
+	 * @return Array{monthly:float,yearly:float}.
 	 */
 	private function flosc_offer_subscription_list_prices( array $offer ) {
 		$plans   = is_array( $offer['subscription']['plans'] ?? null ) ? $offer['subscription']['plans'] : array();
@@ -393,12 +395,12 @@ public function get_offers( $request ) {
 
 	/**
 	 * Apply coupon to subscription plan amounts.
-	 * fixed_price = final monthly amount; yearly scales by same ratio as monthly discount.
-	 * percent = both intervals reduced by %.
+	 * Fixed_price = final monthly amount; yearly scales by same ratio as monthly discount.
+	 * Percent = both intervals reduced by %.
 	 *
-	 * @param array  $offer Offer.
+	 * @param array  $offer       Offer.
 	 * @param string $coupon_code Code.
-	 * @return array|WP_Error
+	 * @return Array|WP_Error.
 	 */
 	private function flosc_resolve_subscription_coupon_prices( array $offer, $coupon_code = '' ) {
 		$list        = $this->flosc_offer_subscription_list_prices( $offer );
@@ -463,8 +465,9 @@ public function get_offers( $request ) {
 
 	/**
 	 * Whether offer is treated as subscription for checkout coupons.
- * @param array $offer Input consumed by the Coordinate the offer is subscription behavior implemented by this code path. operation.
- * @return bool Whether offer is subscription applies to the current state.
+	 *
+	 * @param array $offer Input consumed by the Coordinate the offer is subscription behavior implemented by this code path. operation.
+	 * @return Bool Whether offer is subscription applies to the current state.
 	 */
 	private function flosc_offer_is_subscription( array $offer ) {
 		if ( 'subscription' === ( $offer['type'] ?? '' ) ) {
@@ -476,8 +479,9 @@ public function get_offers( $request ) {
 
 	/**
 	 * Preview coupon for payment modal (native only). Does not charge.
- * @param mixed $request Request object carrying the input consumed by this handler.
- * @return mixed Result of the apply offer coupon operation, or a WP_Error when it cannot complete.
+	 *
+	 * @param mixed $request Request object carrying the input consumed by this handler.
+	 * @return Mixed Result of the apply offer coupon operation, or a WP_Error when it cannot complete.
 	 */
 	public function handle_apply_offer_coupon( $request ) {
 		$offer_id = sanitize_text_field( $request->get_param( 'offer_id' ) ?? '' );
@@ -564,18 +568,18 @@ public function get_offers( $request ) {
 	}
 
 	/**
-	 * Product-Aware Sandbox Purchase
-	 * Grants product-specific membership level based on product_id
-	 * Fun "Pay What You Want" for testing the full purchase flow
+	 * Product-Aware Sandbox Purchase.
+	 * Grants product-specific membership level based on product_id.
+	 * Fun "Pay What You Want" for testing the full purchase flow.
 	 *
-	 * v1.4.4 FIX: Now fires flosc_purchase_completed AND directly calls
+	 * V1.4.4 FIX: Now fires flosc_purchase_completed AND directly calls.
 	 * FLOSC_Member_Access::grant_level() so content protection works immediately.
-	 * Previous bug: sandbox set _flosc_member_level but content protection
-	 * checks _flosc_memberlevel_{level} via has_level(). Mismatch = no access.
+	 * Previous bug: sandbox set _flosc_member_level but content protection.
+	 * Checks _flosc_memberlevel_{level} via has_level(). Mismatch = no access.
 	 *
 	 * @since 1.4.4
- * @param mixed $request Request object carrying the input consumed by this handler.
- * @return mixed Result of the sandbox purchase operation, or a WP_Error when it cannot complete.
+	 * @param mixed $request Request object carrying the input consumed by this handler.
+	 * @return Mixed Result of the sandbox purchase operation, or a WP_Error when it cannot complete.
 	 */
 	public function handle_sandbox_purchase( $request ) {
 		$user_id = get_current_user_id();
@@ -731,12 +735,12 @@ public function get_offers( $request ) {
 		);
 	}
 
-		/**
-	 * Create the WordPress data required for payment intent.
-	 *
-	 * @param mixed $request Request object carrying the input consumed by this handler.
-	 * @return mixed Result of the payment intent operation, or a WP_Error when it cannot complete.
-	 */
+/**
+ * Create the WordPress data required for payment intent.
+ *
+ * @param mixed $request Request object carrying the input consumed by this handler.
+ * @return Mixed Result of the payment intent operation, or a WP_Error when it cannot complete.
+ */
 public function create_payment_intent( $request ) {
 		// Stripe is first-class: requires publishable + secret keys on Payments (per-flow WPDB).
 		$stripe = $this->flosc->sale()->get_provider( 'stripe' );
@@ -800,12 +804,12 @@ public function create_payment_intent( $request ) {
 	}
 
 	/**
-	 * Complete purchase after client-side payment confirmation
+	 * Complete purchase after client-side payment confirmation.
 	 * Verifies payment with Stripe and grants access (fallback if webhook is slow)
 	 *
 	 * @since 1.4.1
- * @param mixed $request Request object carrying the input consumed by this handler.
- * @return mixed Result of the complete purchase operation, or a WP_Error when it cannot complete.
+	 * @param mixed $request Request object carrying the input consumed by this handler.
+	 * @return Mixed Result of the complete purchase operation, or a WP_Error when it cannot complete.
 	 */
 	public function complete_purchase( $request ) {
 		$payment_intent_id = sanitize_text_field( $request->get_param( 'payment_intent_id' ) );
@@ -923,13 +927,13 @@ public function create_payment_intent( $request ) {
 	/**
 	 * Mint a checkout binding token for the calling browser.
 	 *
-	 * The frontend calls this when the buyer begins checkout, before approving
-	 * payment. The returned token is held in memory and presented back at
-	 * completion, where flosc_checkout_binding_verify() consumes it as proof the
-	 * completion request is this same browser. See Â§5b for the full rationale.
+	 * The frontend calls this when the buyer begins checkout, before approving.
+	 * Payment. The returned token is held in memory and presented back at.
+	 * Completion, where flosc_checkout_binding_verify() consumes it as proof the.
+	 * Completion request is this same browser. See Â§5b for the full rationale.
 	 *
-	 * @param WP_REST_Request $request
-	 * @return WP_REST_Response
+	 * @param WP_REST_Request $request Value consumed by this operation.
+	 * @return WP_REST_Response.
 	 */
 	public function handle_checkout_binding( $request ) {
 		$session_id = sanitize_text_field( (string) $request->get_param( 'session_id' ) );
@@ -952,12 +956,12 @@ public function create_payment_intent( $request ) {
 		);
 	}
 
-		/**
-	 * Coordinate the webhook behavior implemented by this code path.
-	 *
-	 * @param mixed $request Request object carrying the input consumed by this handler.
-	 * @return mixed Result of the webhook operation, or a WP_Error when it cannot complete.
-	 */
+/**
+ * Coordinate the webhook behavior implemented by this code path.
+ *
+ * @param mixed $request Request object carrying the input consumed by this handler.
+ * @return Mixed Result of the webhook operation, or a WP_Error when it cannot complete.
+ */
 public function handle_webhook( $request ) {
 		$provider_id = $request->get_param( 'provider' );
 		$provider    = $this->flosc->sale()->get_provider( $provider_id );
@@ -996,12 +1000,12 @@ public function handle_webhook( $request ) {
 		return new WP_REST_Response( $result );
 	}
 
-		/**
-	 * Coordinate the check access behavior implemented by this code path.
-	 *
-	 * @param mixed $request Request object carrying the input consumed by this handler.
-	 * @return mixed Result produced by the check access operation.
-	 */
+/**
+ * Coordinate the check access behavior implemented by this code path.
+ *
+ * @param mixed $request Request object carrying the input consumed by this handler.
+ * @return Mixed Result produced by the check access operation.
+ */
 public function check_access( $request ) {
 		if ( ! is_user_logged_in() ) {
 			return new WP_REST_Response(
@@ -1040,7 +1044,7 @@ public function check_access( $request ) {
 	 * Empty string â†’ null (no bound). Invalid â†’ false.
 	 *
 	 * @param string $raw UTC stamp.
-	 * @return int|null|false
+	 * @return Int|null|false.
 	 */
 	private function flosc_parse_utc_mts_timestamp( $raw ) {
 		$raw = trim( (string) $raw );

@@ -1,6 +1,6 @@
 <?php
 /**
- * FLOSC Token Payment Provider
+ * FLOSC Token Payment Provider.
  *
  * Internal credit/token system for pay-per-use features.
  * Tokens can be earned through affiliate purchases or bought with real money.
@@ -20,55 +20,56 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 	private $balance_meta_key = '_flosc_token_balance';
 	private $ledger_meta_key  = '_flosc_token_ledger';
 
-		/**
-	 * Resolve the current id value from the available WordPress and flow state.
-	 *
-	 * @return mixed Result produced by the id operation.
-	 */
+/**
+ * Resolve the current id value from the available WordPress and flow state.
+ *
+ * @return Mixed Result produced by the id operation.
+ */
 public function get_id() {
 		return 'tokens';
 	}
 
-		/**
-	 * Resolve the current name value from the available WordPress and flow state.
-	 *
-	 * @return mixed Result produced by the name operation.
-	 */
+/**
+ * Resolve the current name value from the available WordPress and flow state.
+ *
+ * @return Mixed Result produced by the name operation.
+ */
 public function get_name() {
 		return 'Tokens';
 	}
 
-		/**
-	 * Resolve the current description value from the available WordPress and flow state.
-	 *
-	 * @return mixed Result produced by the description operation.
-	 */
+/**
+ * Resolve the current description value from the available WordPress and flow state.
+ *
+ * @return Mixed Result produced by the description operation.
+ */
 public function get_description() {
 		return 'Internal credit system for pay-per-use features. Users earn or purchase tokens.';
 	}
 
-		/**
-	 * Resolve the current icon value from the available WordPress and flow state.
-	 *
-	 * @return mixed Result produced by the icon operation.
-	 */
+/**
+ * Resolve the current icon value from the available WordPress and flow state.
+ *
+ * @return Mixed Result produced by the icon operation.
+ */
 public function get_icon() {
 		return '🪙';
 	}
 
-		/**
-	 * Determine whether the current state satisfies configured.
-	 *
-	 * @return bool Whether configured applies to the current state.
-	 */
+/**
+ * Determine whether the current state satisfies configured.
+ *
+ * @return Bool Whether configured applies to the current state.
+ */
 public function is_configured() {
 		// Tokens are always "configured" - it's an internal system.
 		return true;
 	}
 
 	/**
-	 * Settings for admin
- * @return array Structured settings fields data.
+	 * Settings for admin.
+	 *
+	 * @return Array Structured settings fields data.
 	 */
 	public function get_settings_fields() {
 		return array(
@@ -100,8 +101,9 @@ public function is_configured() {
 	}
 
 	/**
-	 * Get client config
- * @return array Structured client config data.
+	 * Get client config.
+	 *
+	 * @return Array Structured client config data.
 	 */
 	public function get_client_config() {
 		return array(
@@ -113,9 +115,10 @@ public function is_configured() {
 
 	/**
 	 * Read a positive integer token-economics setting.
- * @param mixed $key Name or key used to select the Resolve the current positive setting int value from the available Word Press and flow state. value.
- * @param mixed $fallback Fallback value returned when no more specific value is available.
- * @return mixed Result produced by the positive setting int operation.
+	 *
+	 * @param mixed $key      Name or key used to select the Resolve the current positive setting int value from the available Word Press and flow state. value.
+	 * @param mixed $fallback Fallback value returned when no more specific value is available.
+	 * @return Mixed Result produced by the positive setting int operation.
 	 */
 	private function get_positive_setting_int( $key, $fallback ) {
 		if ( function_exists( 'flosc_get_setting' ) ) {
@@ -129,7 +132,8 @@ public function is_configured() {
 	/**
 	 * Communication economics model.
 	 * Defaults: 5000 tokens = 5 nominal cents = 2.5 real cents.
- * @return array Structured communication economics data.
+	 *
+	 * @return Array Structured communication economics data.
 	 */
 	public function get_communication_economics() {
 		$tokens_per_message = $this->get_positive_setting_int( 'communication_tokens_per_message', 5000 );
@@ -161,8 +165,9 @@ public function is_configured() {
 
 	/**
 	 * Convert real millicents to tokens using configured real-millicents ratio.
- * @param mixed $real_millicents Input consumed by the Coordinate the convert real millicents to tokens behavior implemented by this code path. operation.
- * @return mixed Result produced by the convert real millicents to tokens operation.
+	 *
+	 * @param mixed $real_millicents Input consumed by the Coordinate the convert real millicents to tokens behavior implemented by this code path. operation.
+	 * @return Mixed Result produced by the convert real millicents to tokens operation.
 	 */
 	public function convert_real_millicents_to_tokens( $real_millicents ) {
 		$real_millicents = max( 0, intval( $real_millicents ) );
@@ -179,10 +184,11 @@ public function is_configured() {
 
 	/**
 	 * Process payment (spend tokens)
- * @param mixed $user_id WordPress user ID whose Coordinate the payment behavior implemented by this code path. state is being processed.
- * @param mixed $offer Input consumed by the Coordinate the payment behavior implemented by this code path. operation.
- * @param mixed $payment_data Structured data consumed by the Coordinate the payment behavior implemented by this code path. operation.
- * @return array Structured payment data.
+	 *
+	 * @param mixed $user_id      WordPress user ID whose Coordinate the payment behavior implemented by this code path. state is being processed.
+	 * @param mixed $offer        Input consumed by the Coordinate the payment behavior implemented by this code path. operation.
+	 * @param mixed $payment_data Structured data consumed by the Coordinate the payment behavior implemented by this code path. operation.
+	 * @return Array Structured payment data.
 	 */
 	public function process_payment( $user_id, $offer, $payment_data = array() ) {
 		// PAY-01B: token provider never treats missing/zero cost as free unlock of a paid offer.
@@ -235,9 +241,10 @@ public function is_configured() {
 	}
 
 	/**
-	 * Get user's token balance
- * @param mixed $user_id WordPress user ID whose Resolve the current balance value from the available Word Press and flow state. state is being processed.
- * @return mixed Result produced by the balance operation.
+	 * Get user's token balance.
+	 *
+	 * @param mixed $user_id WordPress user ID whose Resolve the current balance value from the available Word Press and flow state. state is being processed.
+	 * @return Mixed Result produced by the balance operation.
 	 */
 	public function get_balance( $user_id ) {
 		$balance     = get_user_meta( $user_id, $this->balance_meta_key, true );
@@ -246,12 +253,13 @@ public function is_configured() {
 	}
 
 	/**
-	 * Add tokens to user's balance
- * @param mixed $user_id WordPress user ID whose Persist the credit state in Word Press storage. state is being processed.
- * @param mixed $amount Input consumed by the Persist the credit state in Word Press storage. operation.
- * @param mixed $reason Input consumed by the Persist the credit state in Word Press storage. operation.
- * @param mixed $meta Input consumed by the Persist the credit state in Word Press storage. operation.
- * @return mixed Result of the credit operation, or a WP_Error when it cannot complete.
+	 * Add tokens to user's balance.
+	 *
+	 * @param mixed $user_id WordPress user ID whose Persist the credit state in Word Press storage. state is being processed.
+	 * @param mixed $amount  Input consumed by the Persist the credit state in Word Press storage. operation.
+	 * @param mixed $reason  Input consumed by the Persist the credit state in Word Press storage. operation.
+	 * @param mixed $meta    Input consumed by the Persist the credit state in Word Press storage. operation.
+	 * @return Mixed Result of the credit operation, or a WP_Error when it cannot complete.
 	 */
 	public function credit( $user_id, $amount, $reason = '', $meta = array() ) {
 		if ( $amount <= 0 ) {
@@ -284,13 +292,14 @@ public function is_configured() {
 	/**
 	 * Deduct tokens from user's balance (atomic conditional debit).
 	 *
-	 * Uses a row lock on usermeta when available so two concurrent purchases
-	 * that can only afford one debit cannot both succeed (PAY-ACC-01).
- * @param mixed $user_id WordPress user ID whose Coordinate the deduct behavior implemented by this code path. state is being processed.
- * @param mixed $amount Input consumed by the Coordinate the deduct behavior implemented by this code path. operation.
- * @param mixed $reason Input consumed by the Coordinate the deduct behavior implemented by this code path. operation.
- * @param mixed $meta Input consumed by the Coordinate the deduct behavior implemented by this code path. operation.
- * @return mixed Result of the deduct operation, or a WP_Error when it cannot complete.
+	 * Uses a row lock on usermeta when available so two concurrent purchases.
+	 * That can only afford one debit cannot both succeed (PAY-ACC-01).
+	 *
+	 * @param mixed $user_id WordPress user ID whose Coordinate the deduct behavior implemented by this code path. state is being processed.
+	 * @param mixed $amount  Input consumed by the Coordinate the deduct behavior implemented by this code path. operation.
+	 * @param mixed $reason  Input consumed by the Coordinate the deduct behavior implemented by this code path. operation.
+	 * @param mixed $meta    Input consumed by the Coordinate the deduct behavior implemented by this code path. operation.
+	 * @return Mixed Result of the deduct operation, or a WP_Error when it cannot complete.
 	 */
 	public function deduct( $user_id, $amount, $reason = '', $meta = array() ) {
 		$user_id = absint( $user_id );
@@ -399,10 +408,11 @@ public function is_configured() {
 
 	/**
 	 * Set balance directly (admin function)
- * @param mixed $user_id WordPress user ID whose Persist the balance state in Word Press storage. state is being processed.
- * @param mixed $amount Input consumed by the Persist the balance state in Word Press storage. operation.
- * @param mixed $reason Input consumed by the Persist the balance state in Word Press storage. operation.
- * @return mixed Result produced by the balance operation.
+	 *
+	 * @param mixed $user_id WordPress user ID whose Persist the balance state in Word Press storage. state is being processed.
+	 * @param mixed $amount  Input consumed by the Persist the balance state in Word Press storage. operation.
+	 * @param mixed $reason  Input consumed by the Persist the balance state in Word Press storage. operation.
+	 * @return Mixed Result produced by the balance operation.
 	 */
 	public function set_balance( $user_id, $amount, $reason = 'Admin adjustment' ) {
 		$current = $this->get_balance( $user_id );
@@ -425,9 +435,10 @@ public function is_configured() {
 	}
 
 	/**
-	 * Log transaction to ledger
- * @param mixed $user_id WordPress user ID whose Persist the log transaction state in Word Press storage. state is being processed.
- * @param mixed $transaction Input consumed by the Persist the log transaction state in Word Press storage. operation.
+	 * Log transaction to ledger.
+	 *
+	 * @param mixed $user_id     WordPress user ID whose Persist the log transaction state in Word Press storage. state is being processed.
+	 * @param mixed $transaction Input consumed by the Persist the log transaction state in Word Press storage. operation.
 	 */
 	private function log_transaction( $user_id, $transaction ) {
 		$ledger = get_user_meta( $user_id, $this->ledger_meta_key, true );
@@ -443,10 +454,11 @@ public function is_configured() {
 	}
 
 	/**
-	 * Get user's transaction ledger
- * @param mixed $user_id WordPress user ID whose Resolve the current ledger value from the available Word Press and flow state. state is being processed.
- * @param mixed $limit Input consumed by the Resolve the current ledger value from the available Word Press and flow state. operation.
- * @return mixed Result produced by the ledger operation.
+	 * Get user's transaction ledger.
+	 *
+	 * @param mixed $user_id WordPress user ID whose Resolve the current ledger value from the available Word Press and flow state. state is being processed.
+	 * @param mixed $limit   Input consumed by the Resolve the current ledger value from the available Word Press and flow state. operation.
+	 * @return Mixed Result produced by the ledger operation.
 	 */
 	public function get_ledger( $user_id, $limit = 50 ) {
 		$ledger = get_user_meta( $user_id, $this->ledger_meta_key, true );
@@ -457,9 +469,10 @@ public function is_configured() {
 	}
 
 	/**
-	 * Grant signup bonus
- * @param mixed $user_id WordPress user ID whose Coordinate the grant signup bonus behavior implemented by this code path. state is being processed.
- * @return mixed Result produced by the grant signup bonus operation.
+	 * Grant signup bonus.
+	 *
+	 * @param mixed $user_id WordPress user ID whose Coordinate the grant signup bonus behavior implemented by this code path. state is being processed.
+	 * @return Mixed Result produced by the grant signup bonus operation.
 	 */
 	public function grant_signup_bonus( $user_id ) {
 		$bonus = intval( $this->get_setting( 'signup_bonus', 10 ) );
@@ -472,10 +485,11 @@ public function is_configured() {
 	}
 
 	/**
-	 * Grant referral bonus
- * @param mixed $referrer_id Identifier used to select the record involved in the Coordinate the grant referral bonus behavior implemented by this code path. operation.
- * @param mixed $referred_id Identifier used to select the record involved in the Coordinate the grant referral bonus behavior implemented by this code path. operation.
- * @return mixed Result produced by the grant referral bonus operation.
+	 * Grant referral bonus.
+	 *
+	 * @param mixed $referrer_id Identifier used to select the record involved in the Coordinate the grant referral bonus behavior implemented by this code path. operation.
+	 * @param mixed $referred_id Identifier used to select the record involved in the Coordinate the grant referral bonus behavior implemented by this code path. operation.
+	 * @return Mixed Result produced by the grant referral bonus operation.
 	 */
 	public function grant_referral_bonus( $referrer_id, $referred_id ) {
 		$bonus = intval( $this->get_setting( 'referral_bonus', 25 ) );
@@ -493,11 +507,12 @@ public function is_configured() {
 	}
 
 	/**
-	 * Convert tokens from affiliate earnings
- * @param mixed $user_id WordPress user ID whose Coordinate the credit from affiliate behavior implemented by this code path. state is being processed.
- * @param mixed $affiliate_amount Input consumed by the Coordinate the credit from affiliate behavior implemented by this code path. operation.
- * @param mixed $affiliate_meta Input consumed by the Coordinate the credit from affiliate behavior implemented by this code path. operation.
- * @return mixed Result produced by the credit from affiliate operation.
+	 * Convert tokens from affiliate earnings.
+	 *
+	 * @param mixed $user_id          WordPress user ID whose Coordinate the credit from affiliate behavior implemented by this code path. state is being processed.
+	 * @param mixed $affiliate_amount Input consumed by the Coordinate the credit from affiliate behavior implemented by this code path. operation.
+	 * @param mixed $affiliate_meta   Input consumed by the Coordinate the credit from affiliate behavior implemented by this code path. operation.
+	 * @return Mixed Result produced by the credit from affiliate operation.
 	 */
 	public function credit_from_affiliate( $user_id, $affiliate_amount, $affiliate_meta = array() ) {
 		// How many tokens one unit of affiliate commission buys. Ten by default.
@@ -524,7 +539,8 @@ public function is_configured() {
 
 	/**
 	 * Token costs for actions (configurable)
- * @return mixed Result produced by the action costs operation.
+	 *
+	 * @return Mixed Result produced by the action costs operation.
 	 */
 	public function get_action_costs() {
 		// Default per-turn AI cost = the configured per-message budget. Real cost.
@@ -547,10 +563,11 @@ public function is_configured() {
 	}
 
 	/**
-	 * Check if user can afford an action
- * @param mixed $user_id WordPress user ID whose Determine whether the current state satisfies afford. state is being processed.
- * @param mixed $action Input consumed by the Determine whether the current state satisfies afford. operation.
- * @return bool Whether afford applies to the current state.
+	 * Check if user can afford an action.
+	 *
+	 * @param mixed $user_id WordPress user ID whose Determine whether the current state satisfies afford. state is being processed.
+	 * @param mixed $action  Input consumed by the Determine whether the current state satisfies afford. operation.
+	 * @return Bool Whether afford applies to the current state.
 	 */
 	public function can_afford( $user_id, $action ) {
 		$costs = $this->get_action_costs();
@@ -564,11 +581,12 @@ public function is_configured() {
 	}
 
 	/**
-	 * Charge for an action
- * @param mixed $user_id WordPress user ID whose Coordinate the charge for action behavior implemented by this code path. state is being processed.
- * @param mixed $action Input consumed by the Coordinate the charge for action behavior implemented by this code path. operation.
- * @param mixed $meta Input consumed by the Coordinate the charge for action behavior implemented by this code path. operation.
- * @return bool Whether charge for action applies to the current state.
+	 * Charge for an action.
+	 *
+	 * @param mixed $user_id WordPress user ID whose Coordinate the charge for action behavior implemented by this code path. state is being processed.
+	 * @param mixed $action  Input consumed by the Coordinate the charge for action behavior implemented by this code path. operation.
+	 * @param mixed $meta    Input consumed by the Coordinate the charge for action behavior implemented by this code path. operation.
+	 * @return Bool Whether charge for action applies to the current state.
 	 */
 	public function charge_for_action( $user_id, $action, $meta = array() ) {
 		$costs = $this->get_action_costs();

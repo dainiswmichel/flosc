@@ -1,6 +1,6 @@
 <?php
 /**
- * LinkedIn SSO Provider
+ * LinkedIn SSO Provider.
  *
  * Implements LinkedIn Sign In for FLOSC.
  * Uses LinkedIn OAuth 2.0 with OpenID Connect.
@@ -19,12 +19,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * LinkedIn Provider Class
+ * LinkedIn Provider Class.
  */
 class LinkedIn_Provider extends SSO_Provider_Base {
 
 	/**
-	 * Constructor
+	 * Constructor.
 	 */
 	public function __construct() {
 		$this->provider_id   = 'linkedin';
@@ -48,15 +48,15 @@ class LinkedIn_Provider extends SSO_Provider_Base {
 	/**
 	 * Get user info from LinkedIn.
 	 *
-	 * LinkedIn returns its claims from the userinfo endpoint, so the token
-	 * response is not consulted here.
+	 * LinkedIn returns its claims from the userinfo endpoint, so the token.
+	 * Response is not consulted here.
 	 *
 	 * @param string $access_token OAuth access token.
 	 * @param array  $token_data   Full token response. Unused by this provider;
-	 *                             present because OAuth2_Handler passes the same
-	 *                             arguments to every provider, and Apple reads
-	 *                             its id_token and form_post claims from it.
-	 * @return array|WP_Error User data, or WP_Error if the call fails.
+	 * Present because OAuth2_Handler passes the same.
+	 * Arguments to every provider, and Apple reads.
+	 * Its id_token and form_post claims from it.
+	 * @return Array|WP_Error User data, or WP_Error if the call fails.
 	 */
 	public function get_user_info( $access_token, $token_data = array() ) {
 		// LinkedIn now supports OpenID Connect userinfo endpoint.
@@ -88,10 +88,10 @@ class LinkedIn_Provider extends SSO_Provider_Base {
 	}
 
 	/**
-	 * Normalize LinkedIn user data to standard format
+	 * Normalize LinkedIn user data to standard format.
 	 *
 	 * @param array $raw_data Raw user data from LinkedIn.
-	 * @return array Normalized user data
+	 * @return Array Normalized user data.
 	 */
 	protected function normalize_user_data( $raw_data ) {
 		// OpenID Connect format — Pass 8: field-sanitize after JSON decode; no raw blob.
@@ -114,19 +114,19 @@ class LinkedIn_Provider extends SSO_Provider_Base {
 	}
 
 	/**
-	 * Get provider-specific user ID
+	 * Get provider-specific user ID.
 	 *
 	 * @param array $raw_data Raw user data.
-	 * @return string Provider user ID
+	 * @return String Provider user ID.
 	 */
 	public function get_provider_user_id( $raw_data ) {
 		return $raw_data['sub'] ?? '';
 	}
 
 	/**
-	 * Get button colors
+	 * Get button colors.
 	 *
-	 * @return array
+	 * @return Array.
 	 */
 	public function get_button_colors() {
 		return array(
@@ -137,9 +137,9 @@ class LinkedIn_Provider extends SSO_Provider_Base {
 	}
 
 	/**
-	 * Get setup instructions for LinkedIn Login
+	 * Get setup instructions for LinkedIn Login.
 	 *
-	 * @return string HTML instructions
+	 * @return String HTML instructions.
 	 */
 	public function get_setup_instructions() {
 		$callback_url = $this->get_callback_url();

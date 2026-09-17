@@ -1,0 +1,514 @@
+OUTBOUND_CALL_SITES=58
+LITERAL_URL_DOMAINS=82
+
+== call sites ==
+flosc_documentation/techref.js:182 const resp = await fetch(chapter.file);
+admin/sso.php:446 fetch(ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' })
+admin/ivr-messages.php:629 $api_response = wp_remote_get( $api_url, array( 'timeout' => 5 ) );
+admin/ivr-messages.php:1497 fetch(apiUrl)
+admin/payments.php:287 fetch(ajaxurl + '?action=flosc_test_paypal&_wpnonce=<?php echo esc_js( wp_create_nonce( 'flosc_test_paypal' ) ); ?>')
+admin/login-registration.php:696 fetch(ajaxurl, { method: 'POST', body: data })
+includes/class-flosc-ai-chat-dispatch.php:1442 * attached to it. It used to sit inline in the wp_remote_post() call, and
+includes/class-flosc-ai-chat-dispatch.php:1444 * leaving the phpcs:ignore above `wp_remote_post(` and the host it
+includes/class-flosc-ai-chat-dispatch.php:1449 $response           = wp_remote_post(
+includes/class-flosc-framework.php:3996 $response = wp_remote_get(
+includes/class-flosc-framework.php:4061 $response = wp_remote_post(
+includes/class-flosc-framework.php:8904 $response = wp_remote_post(
+includes/class-flosc-framework.php:11688 * Pronunciation API via wp_remote_post (server-to-server — never exposed to browser),.
+includes/class-flosc-stt-dispatch.php:109 $upload_response = wp_remote_post(
+includes/class-flosc-stt-dispatch.php:135 $transcribe_response = wp_remote_post(
+includes/class-flosc-stt-dispatch.php:174 $poll_response = wp_remote_get(
+includes/class-flosc-stt-dispatch.php:243 * attached to it. It used to sit inline in the wp_remote_post() call, and
+includes/class-flosc-stt-dispatch.php:245 * leaving the phpcs:ignore above `wp_remote_post(` and the host it
+includes/class-flosc-stt-dispatch.php:250 $response               = wp_remote_post(
+includes/ai/flosc-model-catalog.php:300 $response = wp_remote_get( $request['url'], $args );
+includes/ai/flosc-model-catalog.php:464 $response = wp_remote_get( $url, $args );
+includes/sso/class-sso-provider-base.php:229 $response = wp_remote_post(
+includes/sso/class-sso-provider-base.php:288 $response = wp_remote_get(
+includes/sso/providers/class-microsoft-provider.php:87 $response = wp_remote_get(
+includes/sso/providers/class-microsoft-provider.php:125 $response = wp_remote_get(
+includes/sso/providers/class-linkedin-provider.php:63 $response = wp_remote_get(
+includes/sso/providers/class-apple-provider.php:148 $response = wp_remote_post(
+includes/sso/providers/class-apple-provider.php:407 $response = wp_remote_get(
+includes/sso/providers/class-google-provider.php:85 $response = wp_remote_get(
+includes/sso/providers/class-facebook-provider.php:106 $response = wp_remote_get(
+includes/sso/providers/class-facebook-provider.php:288 $response = wp_remote_get(
+includes/sso/providers/class-facebook-provider.php:333 $response = wp_remote_get( $url, array( 'timeout' => 30 ) );
+includes/sale/providers/class-flosc-stripe-provider.php:824 $response = wp_remote_request( $url, $args );
+includes/sale/providers/class-flosc-paypal-provider.php:376 $list     = wp_remote_get(
+includes/sale/providers/class-flosc-paypal-provider.php:396 $list = wp_remote_get(
+includes/sale/providers/class-flosc-paypal-provider.php:446 $create = wp_remote_post(
+includes/sale/providers/class-flosc-paypal-provider.php:474 $retry_list = wp_remote_get(
+includes/sale/providers/class-flosc-paypal-provider.php:712 $response = wp_remote_post(
+includes/sale/providers/class-flosc-paypal-provider.php:813 $response = wp_remote_post(
+includes/sale/providers/class-flosc-paypal-provider.php:850 $response = wp_remote_post(
+includes/sale/providers/class-flosc-paypal-provider.php:904 $response = wp_remote_post(
+includes/sale/providers/class-flosc-paypal-provider.php:941 $response = wp_remote_post(
+includes/sale/providers/class-flosc-paypal-provider.php:1099 $response = wp_remote_post(
+includes/sale/providers/class-flosc-paypal-provider.php:1148 $response = wp_remote_post(
+includes/sale/providers/class-flosc-paypal-provider.php:1211 $response = wp_remote_get(
+includes/sale/providers/class-flosc-paypal-provider.php:2130 $response = wp_remote_post(
+includes/sale/providers/class-flosc-paypal-provider.php:2167 $response = wp_remote_post(
+assets/js/flosc-companion.js:1267 fetch(restUrl.replace(/\/?$/, '/') + 'register-email', {
+assets/js/flosc-personality-builder-wp.js:209 fetch(wp.ajaxUrl, {
+assets/js/flosc-personality-builder-wp.js:269 fetch(wp.ajaxUrl, { method: "POST", credentials: "same-origin", body: body })
+assets/js/flosc-personality-builder-wp.js:289 return fetch(wp.ajaxUrl, { method: "POST", credentials: "same-origin", body: att })
+assets/js/flosc-app.js:2099 const tres = await fetch(this.config.apiUrl + '/admin-messages-token', {
+assets/js/flosc-app.js:2112 const r = await fetch(this.config.apiUrl + '/admin-messages', {
+assets/js/flosc-app.js:5151 fetch(ajaxLogoutUrl, {
+assets/js/flosc-app.js:6478 return fetch(`${apiBaseUrl}${endpoint}`, {
+assets/js/flosc-app.js:6924 fetch(`${apiBaseUrl}/finalize-session`, {
+assets/js/flosc-app.js:7671 const stashResp = await fetch(`${this.config.restUrl}stash-visitor-quiz`, {
+assets/js/flosc-app.js:9222 return fetch(url, {
+
+== domains ==
+accounts.google.com
+affiliate-program.amazon.com
+ai.google.dev
+aistudio.google.com
+api-m.paypal.com
+api-m.sandbox.paypal.com
+api.anthropic.com
+api.assemblyai.com
+api.linkedin.com
+api.openai.com
+api.paypal.com
+api.stripe.com
+api.x.ai
+api.yourdomain.tld
+appleid.apple.com
+archive.org
+checkout.example.com
+console.anthropic.com
+console.cloud.google.com
+console.x.ai
+console.x.ai\n
+console.x.ai\n2
+da1.fm
+dainis.net
+dashboard.stripe.com
+developer.apple.com
+developer.paypal.com
+developers.facebook.com
+developers.google.com
+docs.x.ai
+en.wikipedia.org
+etcsl.orinst.ox.ac.uk
+example.com
+flosc.ai
+generativelanguage.googleapis.com
+graph.facebook.com
+graph.microsoft.com
+js.stripe.com
+lesaep.com
+login.microsoftonline.com
+oauth2.googleapis.com
+openai.com
+platform.claude.com
+platform.openai.com
+plato.stanford.edu
+policies.google.com
+portal.azure.com
+privacy.microsoft.com
+profiles.wordpress.org
+rsarchive.org
+sandbox.clickbank.net
+soundcloud.com
+stripe.com
+support.clickbank.com
+the
+vendor.pay.clickbank.net
+vimeo.com
+wordpress.org
+www.amazon.com
+www.anthropic.com
+www.apple.com
+www.assemblyai.com
+www.bdkamerica.org
+www.biblegateway.com
+www.facebook.com
+www.gnu.org
+www.googleapis.com
+www.gutenberg.org
+www.linkedin.com
+www.microsoft.com
+www.nobelprize.org
+www.paypal.com
+www.spotify.com
+www.tiktok.com
+www.viktorfrankl.org
+www.w3.org
+www.youtube.com
+x.ai
+your-stt-endpoint.com
+yoursite.com
+youtu.be
+…
+
+== readme coverage by domain ==
+accounts.google.com: documented=1
+affiliate-program.amazon.com: documented=1
+ai.google.dev: documented=0
+aistudio.google.com: documented=0
+api-m.paypal.com: documented=1
+api-m.sandbox.paypal.com: documented=1
+api.anthropic.com: documented=1
+api.assemblyai.com: documented=1
+api.linkedin.com: documented=1
+api.openai.com: documented=1
+api.paypal.com: documented=0
+api.stripe.com: documented=1
+api.x.ai: documented=1
+api.yourdomain.tld: documented=1
+appleid.apple.com: documented=1
+archive.org: documented=0
+checkout.example.com: documented=0
+console.anthropic.com: documented=0
+console.cloud.google.com: documented=0
+console.x.ai: documented=0
+console.x.ai\n: documented=0
+console.x.ai\n2: documented=0
+da1.fm: documented=1
+dainis.net: documented=1
+dashboard.stripe.com: documented=0
+developer.apple.com: documented=1
+developer.paypal.com: documented=0
+developers.facebook.com: documented=0
+developers.google.com: documented=1
+docs.x.ai: documented=0
+en.wikipedia.org: documented=0
+etcsl.orinst.ox.ac.uk: documented=0
+example.com: documented=0
+flosc.ai: documented=1
+generativelanguage.googleapis.com: documented=1
+graph.facebook.com: documented=1
+graph.microsoft.com: documented=1
+js.stripe.com: documented=1
+lesaep.com: documented=0
+login.microsoftonline.com: documented=1
+oauth2.googleapis.com: documented=1
+openai.com: documented=1
+platform.claude.com: documented=0
+platform.openai.com: documented=0
+plato.stanford.edu: documented=0
+policies.google.com: documented=1
+portal.azure.com: documented=0
+privacy.microsoft.com: documented=1
+profiles.wordpress.org: documented=0
+rsarchive.org: documented=0
+sandbox.clickbank.net: documented=1
+soundcloud.com: documented=1
+stripe.com: documented=1
+support.clickbank.com: documented=1
+the: documented=1
+vendor.pay.clickbank.net: documented=1
+vimeo.com: documented=1
+wordpress.org: documented=1
+www.amazon.com: documented=1
+www.anthropic.com: documented=1
+www.apple.com: documented=1
+www.assemblyai.com: documented=1
+www.bdkamerica.org: documented=0
+www.biblegateway.com: documented=0
+www.facebook.com: documented=1
+www.gnu.org: documented=1
+www.googleapis.com: documented=1
+www.gutenberg.org: documented=0
+www.linkedin.com: documented=1
+www.microsoft.com: documented=1
+www.nobelprize.org: documented=0
+www.paypal.com: documented=1
+www.spotify.com: documented=1
+www.tiktok.com: documented=1
+www.viktorfrankl.org: documented=0
+www.w3.org: documented=0
+www.youtube.com: documented=1
+x.ai: documented=1
+your-stt-endpoint.com: documented=0
+yoursite.com: documented=0
+youtu.be: documented=0
+…: documented=0
+
+== literal evidence ==
+includes/sso/providers/class-google-provider.php:33 https://accounts.google.com/o/oauth2/v2/auth
+readme.txt:274 https://accounts.google.com/o/oauth2/v2/auth,
+readme.txt:318 https://affiliate-program.amazon.com/help/operating/agreement
+includes/ai/flosc-provider-profiles.php:154 https://ai.google.dev/api/generate-content
+admin/ai-configuration.php:591 https://aistudio.google.com/apikey
+includes/class-flosc-wp-ai-client.php:824 https://aistudio.google.com/apikey\n2.
+includes/flosc-available-providers.php:83 https://aistudio.google.com/apikey
+includes/class-flosc-framework.php:8902 https://api-m.paypal.com
+includes/sale/providers/class-flosc-paypal-provider.php:674 https://api-m.paypal.com
+readme.txt:253 https://api-m.paypal.com,
+includes/class-flosc-framework.php:8902 https://api-m.sandbox.paypal.com
+includes/sale/providers/class-flosc-paypal-provider.php:675 https://api-m.sandbox.paypal.com
+readme.txt:253 https://api-m.sandbox.paypal.com,
+includes/ai/flosc-model-catalog.php:75 https://api.anthropic.com/v1/models
+includes/ai/flosc-provider-profiles.php:65 https://api.anthropic.com/v1/models/%s
+readme.txt:218 https://api.anthropic.com/v1/models
+readme.txt:219 https://api.anthropic.com/v1/models/{model_id}
+includes/class-flosc-stt-dispatch.php:110 https://api.assemblyai.com/v2/upload
+includes/class-flosc-stt-dispatch.php:136 https://api.assemblyai.com/v2/transcript
+includes/class-flosc-stt-dispatch.php:175 https://api.assemblyai.com/v2/transcript/{$transcript_id}
+readme.txt:239 https://api.assemblyai.com/v2/transcript
+readme.txt:239 https://api.assemblyai.com/v2/upload,
+includes/sso/providers/class-linkedin-provider.php:36 https://api.linkedin.com/v2/userinfo
+readme.txt:302 https://api.linkedin.com/v2/userinfo
+includes/ai/flosc-model-catalog.php:87 https://api.openai.com/v1/models
+includes/class-flosc-stt-dispatch.php:249 https://api.openai.com/v1/audio/transcriptions
+readme.txt:210 https://api.openai.com/v1/models
+readme.txt:211 https://api.openai.com/v1/audio/transcriptions
+includes/class-flosc-framework.php:8966 https://api.paypal.com/v1/notifications/certs/CERT-test
+includes/sale/providers/class-flosc-stripe-provider.php:807 https://api.stripe.com/v1
+readme.txt:260 https://api.stripe.com/v1,
+includes/ai/flosc-model-catalog.php:94 https://api.x.ai/v1/language-models
+includes/class-flosc-ai-chat-dispatch.php:1448 https://api.x.ai/v1/chat/completions
+readme.txt:225 https://api.x.ai/v1/chat/completions
+readme.txt:225 https://api.x.ai/v1/language-models
+readme.txt:309 https://api.yourdomain.tld/analyze,
+readme.txt:309 https://api.yourdomain.tld/analyze-phrase,
+readme.txt:309 https://api.yourdomain.tld/finalize-session,
+readme.txt:309 https://api.yourdomain.tld/session/{id}
+includes/sso/providers/class-apple-provider.php:58 https://appleid.apple.com/auth/authorize
+includes/sso/providers/class-apple-provider.php:59 https://appleid.apple.com/auth/token
+includes/sso/providers/class-apple-provider.php:317 https://appleid.apple.com
+includes/sso/providers/class-apple-provider.php:408 https://appleid.apple.com/auth/keys
+includes/sso/providers/class-apple-provider.php:591 https://appleid.apple.com
+readme.txt:288 https://appleid.apple.com/auth/authorize,
+readme.txt:288 https://appleid.apple.com/auth/token
+assets/js/flosc-personality-builder.js:206 https://archive.org/details/hildegard-of-bingen-scivias
+assets/js/flosc-personality-builder.js:320 https://archive.org/details/sayings-of-the-desert-fathers
+admin/offers.php:1090 https://checkout.example.com/buy
+admin/ai-configuration.php:394 https://console.anthropic.com/settings/keys
+includes/class-flosc-wp-ai-client.php:823 https://console.anthropic.com/settings/keys\n2.
+includes/flosc-available-providers.php:65 https://console.anthropic.com/settings/keys
+admin/sso.php:30 https://console.cloud.google.com/apis/credentials
+admin/sso.php:32 https://console.cloud.google.com/apis/credentials
+includes/sso/providers/class-google-provider.php:184 https://console.cloud.google.com/apis/credentials
+admin/ai-configuration.php:524 https://console.x.ai
+includes/flosc-available-providers.php:77 https://console.x.ai/
+includes/class-flosc-ai-chat-dispatch.php:1503 https://console.x.ai\n
+includes/class-flosc-ai-chat-dispatch.php:1514 https://console.x.ai\n
+includes/class-flosc-ai-chat-dispatch.php:1397 https://console.x.ai\n2.
+admin/docs/part3-ref-personality-profile.php:240 https://da1.fm
+assets/js/flosc-personality-builder.js:554 https://da1.fm/
+assets/js/flosc-personality-builder.js:2445 https://da1.fm
+includes/ai/flosc-provider-identity.php:199 https://da1.fm
+includes/flosc-personality-library.php:3495 https://da1.fm
+ai_configuration_files/dainis_net_ivr.md:104 https://dainis.net/music/list-of-works/\n\nDainis
+ai_configuration_files/dainis_net_ivr.md:104 https://dainis.net/music/skumja-daina/\n-
+ai_configuration_files/dainis_net_ivr.md:104 https://dainis.net/music/surrounding-flutes/\n\nWhich
+ai_configuration_files/dainis_net_ivr.md:115 https://dainis.net/music/list-of-works/\n2
+ai_configuration_files/dainis_net_ivr.md:115 https://dainis.net/music/skumja-daina/\n5
+ai_configuration_files/dainis_net_ivr.md:115 https://dainis.net/music/surrounding-flutes/\n\nIf
+flosc.php:10 https://dainis.net.
+includes/class-flosc-page-context.php:48 https://dainis.net/groups/lesaep-learners/
+includes/companion-mode/class-flosc-companion-mode.php:612 https://dainis.net/
+readme.txt:3 https://dainis.net/donate/
+readme.txt:91 https://dainis.net
+readme.txt:365 https://dainis.net
+admin/offers.php:1068 https://dashboard.stripe.com/products
+admin/sso.php:45 https://developer.apple.com/account/resources/identifiers/list
+admin/sso.php:47 https://developer.apple.com/account
+includes/sso/providers/class-apple-provider.php:752 https://developer.apple.com/account/resources/identifiers/list
+readme.txt:291 https://developer.apple.com/support/terms/
+includes/sale/providers/class-flosc-paypal-provider.php:2057 https://developer.paypal.com/docs/api/webhooks/v1/#verify-webhook-signature_post
+admin/sso.php:62 https://developers.facebook.com/apps
+admin/sso.php:64 https://developers.facebook.com/apps
+includes/sso/providers/class-facebook-provider.php:9 https://developers.facebook.com/docs/graph-api/changelog.
+includes/sso/providers/class-facebook-provider.php:202 https://developers.facebook.com/apps/
+readme.txt:235 https://developers.google.com/terms
+includes/ai/flosc-provider-profiles.php:139 https://docs.x.ai/docs/api-reference
+includes/class-flosc-ai-chat-dispatch.php:1511 https://docs.x.ai/developers/models
+assets/js/flosc-personality-builder.js:188 https://en.wikipedia.org/wiki/Sophia_(wisdom
+assets/js/flosc-personality-builder.js:197 https://en.wikipedia.org/wiki/Deborah
+assets/js/flosc-personality-builder.js:205 https://en.wikipedia.org/wiki/Hildegard_of_Bingen
+assets/js/flosc-personality-builder.js:214 https://en.wikipedia.org/wiki/Tiresias
+assets/js/flosc-personality-builder.js:223 https://en.wikipedia.org/wiki/Guanyin
+assets/js/flosc-personality-builder.js:232 https://en.wikipedia.org/wiki/Pythia
+assets/js/flosc-personality-builder.js:233 https://en.wikipedia.org/wiki/Delphic_maxims
+assets/js/flosc-personality-builder.js:241 https://en.wikipedia.org/wiki/Teresa_of_%C3%81vila
+assets/js/flosc-personality-builder.js:250 https://en.wikipedia.org/wiki/Inanna
+assets/js/flosc-personality-builder.js:259 https://en.wikipedia.org/wiki/Maat
+assets/js/flosc-personality-builder.js:268 https://en.wikipedia.org/wiki/Shekhinah
+assets/js/flosc-personality-builder.js:277 https://en.wikipedia.org/wiki/Solomon
+assets/js/flosc-personality-builder.js:286 https://en.wikipedia.org/wiki/Jesus
+assets/js/flosc-personality-builder.js:294 https://en.wikipedia.org/wiki/Thoth
+assets/js/flosc-personality-builder.js:303 https://en.wikipedia.org/wiki/Laozi
+assets/js/flosc-personality-builder.js:311 https://en.wikipedia.org/wiki/Bodhidharma
+assets/js/flosc-personality-builder.js:319 https://en.wikipedia.org/wiki/Desert_Fathers
+assets/js/flosc-personality-builder.js:338 https://en.wikipedia.org/wiki/Abraham
+assets/js/flosc-personality-builder.js:346 https://en.wikipedia.org/wiki/Merlin
+assets/js/flosc-personality-builder.js:356 https://en.wikipedia.org/wiki/Noah
+assets/js/flosc-personality-builder.js:364 https://en.wikipedia.org/wiki/Laima
+assets/js/flosc-personality-builder.js:365 https://en.wikipedia.org/wiki/M%C4%81ra
+assets/js/flosc-personality-builder.js:386 https://en.wikipedia.org/wiki/Rudolf_Steiner
+assets/js/flosc-personality-builder.js:395 https://en.wikipedia.org/wiki/Viktor_Frankl
+assets/js/flosc-personality-builder.js:409 https://en.wikipedia.org/wiki/Just-world_hypothesis
+assets/js/flosc-personality-builder.js:419 https://en.wikipedia.org/wiki/Bible
+assets/js/flosc-personality-builder.js:459 https://en.wikipedia.org/wiki/Carl_Rogers
+assets/js/flosc-personality-builder.js:251 https://etcsl.orinst.ox.ac.uk/cgi-bin/etcsl.cgi?text=t.1.4.1#
+admin/concierge.php:49 https://example.com/private-resource\n\nWould
+admin/concierge.php:273 https://example.com/private-resource
+assets/js/flosc-app.js:2873 https://example.com/project
+assets/js/flosc-companion.js:10 https://example.com/your-flow-slug/
+assets/js/flosc-companion.js:13 https://example.com/logo.png
+admin/docs/part3-ref-personality-profile.php:241 https://flosc.ai
+admin/settings.php:2805 https://flosc.ai/docs/dns
+admin/settings.php:3142 https://flosc.ai/docs/dns
+admin/sso.php:188 https://flosc.ai/
+assets/js/flosc-personality-builder.js:2445 https://flosc.ai
+flosc.php:4 https://flosc.ai.
+includes/ai/flosc-provider-identity.php:17 https://flosc.ai
+includes/ai/flosc-provider-identity.php:198 https://flosc.ai
+includes/flosc-personality-library.php:3496 https://flosc.ai
+readme.txt:89 https://flosc.ai
+readme.txt:332 https://flosc.ai/terms-of-service/
+readme.txt:333 https://flosc.ai/privacy/
+readme.txt:334 https://flosc.ai/data-deletion/
+readme.txt:335 https://flosc.ai/platform-compliance/
+readme.txt:358 https://flosc.ai
+readme.txt:359 https://flosc.ai
+readme.txt:366 https://flosc.ai
+includes/ai/flosc-model-catalog.php:107 https://generativelanguage.googleapis.com/v1beta/models
+readme.txt:233 https://generativelanguage.googleapis.com/v1beta/models
+includes/class-flosc-framework.php:3997 https://graph.facebook.com/v19.0/app?access_token=
+includes/sso/providers/class-facebook-provider.php:48 https://graph.facebook.com/
+includes/sso/providers/class-facebook-provider.php:49 https://graph.facebook.com/
+includes/sso/providers/class-facebook-provider.php:285 https://graph.facebook.com/
+includes/sso/providers/class-facebook-provider.php:323 https://graph.facebook.com/
+readme.txt:281 https://graph.facebook.com/v19.0/me
+readme.txt:281 https://graph.facebook.com/v19.0/oauth/access_token,
+includes/sso/providers/class-microsoft-provider.php:45 https://graph.microsoft.com/v1.0/me
+includes/sso/providers/class-microsoft-provider.php:126 https://graph.microsoft.com/v1.0/me/photo/$value
+readme.txt:295 https://graph.microsoft.com/v1.0/me
+includes/class-flosc-framework.php:14954 https://js.stripe.com/v3/
+readme.txt:260 https://js.stripe.com
+.github/copilot-instructions.md:39 https://lesaep.com/
+includes/sso/providers/class-microsoft-provider.php:43 https://login.microsoftonline.com/{$tenant}/oauth2/v2.0/authorize
+includes/sso/providers/class-microsoft-provider.php:44 https://login.microsoftonline.com/{$tenant}/oauth2/v2.0/token
+readme.txt:295 https://login.microsoftonline.com/common/oauth2/v2.0/authorize,
+readme.txt:295 https://login.microsoftonline.com/common/oauth2/v2.0/token,
+includes/class-flosc-framework.php:4062 https://oauth2.googleapis.com/token
+includes/sso/providers/class-google-provider.php:34 https://oauth2.googleapis.com/token
+readme.txt:274 https://oauth2.googleapis.com/token,
+readme.txt:213 https://openai.com/policies/terms-of-use
+readme.txt:214 https://openai.com/policies/privacy-policy
+includes/ai/flosc-provider-profiles.php:80 https://platform.claude.com/docs/en/api/messages/create
+includes/ai/flosc-provider-profiles.php:85 https://platform.claude.com/docs/en/api/messages/create#create.%s
+admin/ai-configuration.php:463 https://platform.openai.com/api-keys
+includes/ai/flosc-provider-profiles.php:126 https://platform.openai.com/docs/api-reference/chat/create
+includes/class-flosc-wp-ai-client.php:822 https://platform.openai.com/api-keys\n2.
+includes/flosc-available-providers.php:71 https://platform.openai.com/api-keys
+assets/js/flosc-personality-builder.js:378 https://plato.stanford.edu/entries/plato/
+assets/js/flosc-personality-builder.js:510 https://plato.stanford.edu/entries/popper/
+assets/js/flosc-personality-builder.js:517 https://plato.stanford.edu/entries/hume/
+readme.txt:236 https://policies.google.com/privacy
+readme.txt:277 https://policies.google.com/terms
+readme.txt:278 https://policies.google.com/privacy
+readme.txt:326 https://policies.google.com/privacy
+admin/sso.php:77 https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade
+admin/sso.php:79 https://portal.azure.com/
+includes/sso/providers/class-microsoft-provider.php:213 https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade
+readme.txt:299 https://privacy.microsoft.com/privacystatement
+admin/docs/part6-development.php:23 https://profiles.wordpress.org/your-slug/
+flosc_documentation/chapters/part6-development.html:10 https://profiles.wordpress.org/dainismichel/
+assets/js/flosc-personality-builder.js:387 https://rsarchive.org/
+includes/sale/providers/class-flosc-clickbank-provider.php:195 https://sandbox.clickbank.net/checkout/order/hop.php?vendor=
+readme.txt:267 https://sandbox.clickbank.net/checkout/order/hop.php
+readme.txt:325 https://soundcloud.com/terms-of-use
+readme.txt:326 https://soundcloud.com/pages/privacy
+admin/payments.php:93 https://stripe.com
+admin/payments.php:438 https://stripe.com/docs/testing
+readme.txt:263 https://stripe.com/legal
+readme.txt:264 https://stripe.com/privacy
+readme.txt:270 https://support.clickbank.com/en/articles/10535340-clickbank-terms-of-sale
+readme.txt:271 https://support.clickbank.com/en/articles/10535346-clickbank-privacy-policy
+includes/sso/class-oauth2-handler.php:724 https://the
+includes/sale/providers/class-flosc-clickbank-provider.php:172 https://VENDOR.pay.clickbank.net/?cbitems=ITEM.
+readme.txt:267 https://VENDOR.pay.clickbank.net/?cbitems=ITEM
+readme.txt:325 https://vimeo.com/terms
+readme.txt:326 https://vimeo.com/privacy
+includes/class-flosc-framework.php:6248 https://wordpress.org/plugins/ai-provider-for-anthropic/
+includes/class-flosc-wp-ai-client.php:101 https://wordpress.org/plugins/
+readme.txt:104 https://wordpress.org/plugins/ai-provider-for-anthropic/
+readme.txt:104 https://wordpress.org/plugins/ai-provider-for-google/
+readme.txt:104 https://wordpress.org/plugins/ai-provider-for-openai/
+includes/sale/providers/class-flosc-affiliate-provider.php:403 https://www.amazon.com/s?
+readme.txt:315 https://www.amazon.com/s
+readme.txt:319 https://www.amazon.com/gp/help/customer/display.html?nodeId=GX7NJQ4ZB8MHFRNJ
+readme.txt:221 https://www.anthropic.com/legal/consumer-terms
+readme.txt:222 https://www.anthropic.com/legal/privacy
+readme.txt:292 https://www.apple.com/legal/privacy/
+readme.txt:325 https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+readme.txt:326 https://www.apple.com/legal/privacy/
+admin/ai-configuration.php:2947 https://www.assemblyai.com/dashboard/signup
+includes/flosc-available-providers.php:89 https://www.assemblyai.com/app/account
+readme.txt:242 https://www.assemblyai.com/terms
+readme.txt:243 https://www.assemblyai.com/privacy-policy
+assets/js/flosc-personality-builder.js:224 https://www.bdkamerica.org/product/the-lotus-sutra/
+assets/js/flosc-personality-builder.js:187 https://www.biblegateway.com/passage/?search=Wisdom+1&version=NRSVUE
+assets/js/flosc-personality-builder.js:196 https://www.biblegateway.com/passage/?search=Judges+4&version=KJV
+assets/js/flosc-personality-builder.js:276 https://www.biblegateway.com/passage/?search=1+Kings+3&version=KJV
+assets/js/flosc-personality-builder.js:285 https://www.biblegateway.com/passage/?search=Matthew+1&version=KJV
+assets/js/flosc-personality-builder.js:337 https://www.biblegateway.com/passage/?search=Genesis+12&version=KJV
+assets/js/flosc-personality-builder.js:355 https://www.biblegateway.com/passage/?search=Genesis+6&version=KJV
+assets/js/flosc-personality-builder.js:417 https://www.biblegateway.com/versions/King-James-Version-KJV-Bible/
+includes/sso/providers/class-facebook-provider.php:47 https://www.facebook.com/
+readme.txt:281 https://www.facebook.com/v19.0/dialog/oauth,
+readme.txt:284 https://www.facebook.com/terms.php
+readme.txt:285 https://www.facebook.com/privacy/policy/
+flosc.php:12 https://www.gnu.org/licenses/gpl-3.0.html.
+readme.txt:10 https://www.gnu.org/licenses/gpl-3.0.html
+readme.txt:95 https://www.gnu.org/licenses/gpl-3.0.html
+includes/sso/providers/class-google-provider.php:36 https://www.googleapis.com/oauth2/v2/userinfo
+readme.txt:274 https://www.googleapis.com/oauth2/v2/userinfo
+assets/js/flosc-personality-builder.js:215 https://www.gutenberg.org/ebooks/31
+assets/js/flosc-personality-builder.js:242 https://www.gutenberg.org/ebooks/8120
+assets/js/flosc-personality-builder.js:260 https://www.gutenberg.org/ebooks/15121
+assets/js/flosc-personality-builder.js:302 https://www.gutenberg.org/ebooks/216
+assets/js/flosc-personality-builder.js:329 https://www.gutenberg.org/ebooks/30155
+assets/js/flosc-personality-builder.js:347 https://www.gutenberg.org/ebooks/1251
+assets/js/flosc-personality-builder.js:377 https://www.gutenberg.org/ebooks/1497
+assets/js/flosc-personality-builder.js:418 https://www.gutenberg.org/ebooks/10
+assets/js/flosc-personality-builder.js:518 https://www.gutenberg.org/ebooks/9662
+admin/sso.php:92 https://www.linkedin.com/developers/apps
+admin/sso.php:94 https://www.linkedin.com/developers/apps
+includes/sso/providers/class-linkedin-provider.php:34 https://www.linkedin.com/oauth/v2/authorization
+includes/sso/providers/class-linkedin-provider.php:35 https://www.linkedin.com/oauth/v2/accessToken
+includes/sso/providers/class-linkedin-provider.php:151 https://www.linkedin.com/developers/apps
+readme.txt:302 https://www.linkedin.com/oauth/v2/accessToken,
+readme.txt:302 https://www.linkedin.com/oauth/v2/authorization,
+readme.txt:305 https://www.linkedin.com/legal/user-agreement
+readme.txt:306 https://www.linkedin.com/legal/privacy-policy
+readme.txt:298 https://www.microsoft.com/servicesagreement
+assets/js/flosc-personality-builder.js:328 https://www.nobelprize.org/prizes/physics/1921/einstein/biographical/
+admin/payments.php:208 https://www.paypal.com/merchantapps
+includes/class-flosc-framework.php:14997 https://www.paypal.com/sdk/js?client-id=
+readme.txt:253 https://www.paypal.com/sdk/js
+readme.txt:256 https://www.paypal.com/us/legalhub/paypal/useragreement-full
+readme.txt:257 https://www.paypal.com/us/legalhub/privacy-full
+readme.txt:325 https://www.spotify.com/legal/end-user-agreement/
+readme.txt:326 https://www.spotify.com/legal/privacy-policy/
+ai_configuration_files/dainis_net_ivr.md:104 https://www.tiktok.com/@dainisw.michel/video/7435502185007353121\n-
+ai_configuration_files/dainis_net_ivr.md:115 https://www.tiktok.com/@dainisw.michel/video/7435502185007353121\n3
+readme.txt:325 https://www.tiktok.com/legal/page/us/terms-of-service
+readme.txt:326 https://www.tiktok.com/legal/page/us/privacy-policy
+assets/js/flosc-personality-builder.js:396 https://www.viktorfrankl.org/
+admin/flow.php:903 http://www.w3.org/2000/svg
+assets/js/flosc-companion.js:531 http://www.w3.org/2000/svg
+includes/sso/providers/class-apple-provider.php:56 http://www.w3.org/2000/svg
+includes/sso/providers/class-facebook-provider.php:45 http://www.w3.org/2000/svg
+includes/sso/providers/class-google-provider.php:31 http://www.w3.org/2000/svg
+includes/sso/providers/class-linkedin-provider.php:32 http://www.w3.org/2000/svg
+includes/sso/providers/class-microsoft-provider.php:40 http://www.w3.org/2000/svg
+readme.txt:325 https://www.youtube.com/t/terms
+readme.txt:228 https://x.ai/legal/terms-of-service
+readme.txt:229 https://x.ai/legal/privacy-policy
+admin/ai-configuration.php:2959 https://your-stt-endpoint.com/transcribe
+admin/ui-navigation.php:141 https://yoursite.com/wp-content/uploads/.../visitor-avatar.png
+admin/ui-navigation.php:217 https://yoursite.com/wp-content/uploads/.../guest-avatar.png
+admin/ui-navigation.php:295 https://yoursite.com/wp-content/uploads/.../member-avatar.png
+ai_configuration_files/dainis_net_ivr.md:104 https://youtu.be/fCPkEqn6-a4?si=4rNhQUjoA4lmWCkz\n-
+ai_configuration_files/dainis_net_ivr.md:115 https://youtu.be/fCPkEqn6-a4?si=4rNhQUjoA4lmWCkz\n4
+admin/token-management.php:596 https://…

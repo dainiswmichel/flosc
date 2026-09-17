@@ -1,11 +1,11 @@
 <?php
 /**
- * FLOSC Quiz Configuration Tab
+ * FLOSC Quiz Configuration Tab.
  *
  * Enable/disable quizzes, edit questions inline, and load ready-made demo sets.
  *
- * Stripped dead weight; added per-card inline edit panel + demo library
- *         with Load → buttons that fill the editor directly.
+ * Stripped dead weight; added per-card inline edit panel + demo library.
+ * With Load → buttons that fill the editor directly.
  *
  * @package FLOSC
  * @since 4.0.2

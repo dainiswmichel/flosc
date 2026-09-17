@@ -1,6 +1,6 @@
 <?php
 /**
- * SSO Manager Class
+ * SSO Manager Class.
  *
  * Main entry point for FLOSC Social Login functionality.
  * Registers providers, initializes OAuth2 handler, and manages the SSO system.
@@ -17,42 +17,42 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * SSO Manager Class
+ * SSO Manager Class.
  */
 class SSO_Manager {
 
 	/**
-	 * Singleton instance
+	 * Singleton instance.
 	 *
 	 * @var SSO_Manager
 	 */
 	private static $instance = null;
 
 	/**
-	 * Registered providers
+	 * Registered providers.
 	 *
 	 * @var array
 	 */
 	private $providers = array();
 
 	/**
-	 * OAuth2 Handler
+	 * OAuth2 Handler.
 	 *
 	 * @var OAuth2_Handler
 	 */
 	private $oauth2_handler;
 
 	/**
-	 * User Linker
+	 * User Linker.
 	 *
 	 * @var User_Linker
 	 */
 	private $user_linker;
 
 	/**
-	 * Get singleton instance
+	 * Get singleton instance.
 	 *
-	 * @return SSO_Manager
+	 * @return SSO_Manager.
 	 */
 	public static function get_instance() {
 		if ( null === self::$instance ) {
@@ -62,7 +62,7 @@ class SSO_Manager {
 	}
 
 	/**
-	 * Constructor
+	 * Constructor.
 	 */
 	private function __construct() {
 		$this->user_linker    = new User_Linker();
@@ -70,7 +70,7 @@ class SSO_Manager {
 	}
 
 	/**
-	 * Initialize the SSO system
+	 * Initialize the SSO system.
 	 */
 	public function init() {
 		// Load provider classes.
@@ -86,7 +86,7 @@ class SSO_Manager {
 	}
 
 	/**
-	 * Load all provider classes
+	 * Load all provider classes.
 	 */
 	private function load_providers() {
 		$providers_dir = FLOSC_PLUGIN_DIR . 'includes/sso/providers/';
@@ -122,7 +122,7 @@ class SSO_Manager {
 	}
 
 	/**
-	 * Register hooks
+	 * Register hooks.
 	 */
 	private function register_hooks() {
 		// Avatar filter.
@@ -144,7 +144,7 @@ class SSO_Manager {
 	}
 
 	/**
-	 * Register a provider
+	 * Register a provider.
 	 *
 	 * @param SSO_Provider_Base $provider Provider instance.
 	 */
@@ -155,38 +155,38 @@ class SSO_Manager {
 	}
 
 	/**
-	 * Check if a provider exists
+	 * Check if a provider exists.
 	 *
 	 * @param string $provider_id Provider ID.
-	 * @return bool
+	 * @return Bool.
 	 */
 	public function has_provider( $provider_id ) {
 		return isset( $this->providers[ $provider_id ] );
 	}
 
 	/**
-	 * Get a provider instance
+	 * Get a provider instance.
 	 *
 	 * @param string $provider_id Provider ID.
-	 * @return SSO_Provider_Base|null
+	 * @return SSO_Provider_Base|null.
 	 */
 	public function get_provider( $provider_id ) {
 		return isset( $this->providers[ $provider_id ] ) ? $this->providers[ $provider_id ] : null;
 	}
 
 	/**
-	 * Get all registered providers
+	 * Get all registered providers.
 	 *
-	 * @return array
+	 * @return Array.
 	 */
 	public function get_providers() {
 		return $this->providers;
 	}
 
 	/**
-	 * Get all enabled providers
+	 * Get all enabled providers.
 	 *
-	 * @return array
+	 * @return Array.
 	 */
 	public function get_enabled_providers() {
 		return array_filter(
@@ -198,29 +198,29 @@ class SSO_Manager {
 	}
 
 	/**
-	 * Get the User Linker instance
+	 * Get the User Linker instance.
 	 *
-	 * @return User_Linker
+	 * @return User_Linker.
 	 */
 	public function get_user_linker() {
 		return $this->user_linker;
 	}
 
 	/**
-	 * Get the OAuth2 Handler instance
+	 * Get the OAuth2 Handler instance.
 	 *
-	 * @return OAuth2_Handler
+	 * @return OAuth2_Handler.
 	 */
 	public function get_oauth2_handler() {
 		return $this->oauth2_handler;
 	}
 
 	/**
-	 * Filter avatar URL to use SSO avatar
+	 * Filter avatar URL to use SSO avatar.
 	 *
-	 * @param string $url Current avatar URL.
+	 * @param string $url         Current avatar URL.
 	 * @param mixed  $id_or_email User ID or email.
-	 * @return string
+	 * @return String.
 	 */
 	public function filter_avatar_url( $url, $id_or_email ) {
 		// Get user ID.
@@ -254,8 +254,9 @@ class SSO_Manager {
 	}
 
 	/**
-	 * Add SSO buttons to WordPress login form
- * @return mixed Result produced by the add sso buttons to login operation.
+	 * Add SSO buttons to WordPress login form.
+	 *
+	 * @return Mixed Result produced by the add sso buttons to login operation.
 	 */
 	public function add_sso_buttons_to_login() {
 		$providers = $this->get_enabled_providers();
@@ -278,8 +279,9 @@ class SSO_Manager {
 	}
 
 	/**
-	 * Output login button styles
- * @return mixed Result produced by the output login button styles operation.
+	 * Output login button styles.
+	 *
+	 * @return Mixed Result produced by the output login button styles operation.
 	 */
 	private function output_login_button_styles() {
 		static $styles_output = false;
@@ -381,14 +383,14 @@ class SSO_Manager {
 	}
 
 	/**
-	 * Handle SSO error display on frontend
+	 * Handle SSO error display on frontend.
 	 *
-	 * Instead of a browser alert(), output a JS variable that flosc-app.js
-	 * picks up on init. This lets the app show the error in-chat and re-show the
-	 * auth modal so the user can try a different login method.
+	 * Instead of a browser alert(), output a JS variable that flosc-app.js.
+	 * Picks up on init. This lets the app show the error in-chat and re-show the.
+	 * Auth modal so the user can try a different login method.
 	 *
 	 * @since 8.0.1
- * @return mixed Result produced by the sso error display operation.
+	 * @return Mixed Result produced by the sso error display operation.
 	 */
 	public function handle_sso_error_display() {
 		// Which failure notice to paint after a provider bounced the user back.
@@ -427,7 +429,7 @@ class SSO_Manager {
 	}
 
 	/**
-	 * Register admin settings
+	 * Register admin settings.
 	 */
 	public function register_settings() {
 		// Register setting section.
@@ -504,7 +506,7 @@ class SSO_Manager {
 	 * Sanitize text-like SSO settings.
 	 *
 	 * @param mixed $value Raw submitted value.
-	 * @return string
+	 * @return String.
 	 */
 	public function sanitize_text_setting( $value ) {
 		return sanitize_text_field( wp_unslash( (string) $value ) );
@@ -514,7 +516,7 @@ class SSO_Manager {
 	 * Sanitize textarea SSO settings (preserves PEM newlines).
 	 *
 	 * @param mixed $value Raw submitted value.
-	 * @return string
+	 * @return String.
 	 */
 	public function sanitize_textarea_setting( $value ) {
 		return sanitize_textarea_field( wp_unslash( (string) $value ) );
@@ -524,7 +526,7 @@ class SSO_Manager {
 	 * Sanitize checkbox SSO settings to 0/1.
 	 *
 	 * @param mixed $value Raw submitted value.
-	 * @return int
+	 * @return Int.
 	 */
 	public function sanitize_checkbox_setting( $value ) {
 		return ! empty( $value ) ? 1 : 0;
@@ -533,11 +535,11 @@ class SSO_Manager {
 	/**
 	 * Pass-through sanitizer for OAuth client secrets and similar credentials.
 	 *
-	 * Empty form fields keep the stored secret (password inputs submit empty when
-	 * left unchanged). Option name is resolved from sanitize_option_{$option}.
+	 * Empty form fields keep the stored secret (password inputs submit empty when.
+	 * Left unchanged). Option name is resolved from sanitize_option_{$option}.
 	 *
 	 * @param mixed $value Raw submitted value.
-	 * @return string
+	 * @return String.
 	 */
 	public function sanitize_secret_setting( $value ) {
 		$option_name = '';
@@ -558,14 +560,14 @@ class SSO_Manager {
 	}
 
 	/**
-	 * Render settings section description
+	 * Render settings section description.
 	 */
 	public function render_settings_section() {
 		echo '<p>' . esc_html__( 'Configure social login providers. You will need to create OAuth applications with each provider.', 'flosc' ) . '</p>';
 	}
 
 	/**
-	 * Render a setting field
+	 * Render a setting field.
 	 *
 	 * @param array $field Field configuration.
 	 */
@@ -632,7 +634,7 @@ class SSO_Manager {
 	}
 
 	/**
-	 * AJAX handler: Unlink a provider from current user
+	 * AJAX handler: Unlink a provider from current user.
 	 */
 	public function ajax_unlink_provider() {
 		check_ajax_referer( 'flosc_sso_nonce', 'nonce' );
@@ -672,7 +674,7 @@ class SSO_Manager {
 	}
 
 	/**
-	 * AJAX handler: Get linked accounts for current user
+	 * AJAX handler: Get linked accounts for current user.
 	 */
 	public function ajax_get_linked_accounts() {
 		check_ajax_referer( 'flosc_sso_nonce', 'nonce' );

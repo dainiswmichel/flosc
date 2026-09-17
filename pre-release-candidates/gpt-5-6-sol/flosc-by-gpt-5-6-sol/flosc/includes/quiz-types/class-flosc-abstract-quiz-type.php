@@ -1,6 +1,6 @@
 <?php
 /**
- * Abstract Quiz Type Base Class
+ * Abstract Quiz Type Base Class.
  *
  * All quiz types must extend this class and implement required methods.
  * This enables FLOSC to support any quiz format without changing core code.
@@ -21,103 +21,103 @@ abstract class FLOSC_Abstract_Quiz_Type {
 	/**
 	 * Quiz type identifier (unique slug)
 	 *
-	 * @return string
+	 * @return String.
 	 */
 	abstract public function get_id();
 
 	/**
-	 * Human-readable name for admin UI
+	 * Human-readable name for admin UI.
 	 *
-	 * @return string
+	 * @return String.
 	 */
 	abstract public function get_name();
 
 	/**
-	 * Description shown in admin quiz type selector
+	 * Description shown in admin quiz type selector.
 	 *
-	 * @return string
+	 * @return String.
 	 */
 	abstract public function get_description();
 
 	/**
-	 * Emoji/icon for UI
+	 * Emoji/icon for UI.
 	 *
-	 * @return string
+	 * @return String.
 	 */
 	abstract public function get_icon();
 
 	/**
 	 * Does this quiz need audio recording?
 	 *
-	 * @return bool
+	 * @return Bool.
 	 */
 	abstract public function needs_audio();
 
 	/**
 	 * Does this quiz need speech-to-text?
 	 *
-	 * @return bool
+	 * @return Bool.
 	 */
 	abstract public function needs_stt();
 
 	/**
 	 * Does this quiz need AI analysis?
 	 *
-	 * @return bool
+	 * @return Bool.
 	 */
 	abstract public function needs_ai_analysis();
 
 	/**
-	 * Get instructions shown to user
-	 * Can use placeholders: {quiz_content}, {passing_score}
+	 * Get instructions shown to user.
+	 * Can use placeholders: {quiz_content}, {passing_score}.
 	 *
-	 * @return string
+	 * @return String.
 	 */
 	abstract public function get_instructions();
 
 	/**
 	 * Get default quiz content (for fresh installs)
 	 *
-	 * @return string
+	 * @return String.
 	 */
 	abstract public function get_default_content();
 
 	/**
-	 * Validate user input before processing
+	 * Validate user input before processing.
 	 *
 	 * @param mixed $input User's answer (text, audio data, etc.).
-	 * @return bool|WP_Error True if valid, WP_Error if invalid
+	 * @return Bool|WP_Error True if valid, WP_Error if invalid.
 	 */
 	abstract public function validate_input( $input );
 
 	/**
-	 * Analyze the user's answer
+	 * Analyze the user's answer.
 	 *
-	 * @param mixed  $input User's answer.
+	 * @param mixed  $input            User's answer.
 	 * @param string $expected_content Quiz content from admin settings.
-	 * @param array  $context Additional context (STT result, user_id, etc.).
-	 * @return array {
-	 *     @type int $score Score 0-100
-	 *     @type array $correct Items answered correctly
-	 *     @type array $incorrect Items answered incorrectly
-	 *     @type string $response_key Key for response template (e.g., '0-30', 'missing_th')
-	 *     @type array $details Additional analysis details
-	 * }
+	 * @param array  $context          Additional context (STT result, user_id, etc.).
+	 * @return Array {.
+	 * @type int $score Score 0-100
+	 * @type array $correct Items answered correctly
+	 * @type array $incorrect Items answered incorrectly
+	 * @type string $response_key Key for response template (e.g., '0-30', 'missing_th')
+	 * @type array $details Additional analysis details
+	 * }.
 	 */
 	abstract public function analyze( $input, $expected_content, $context = array() );
 
 	/**
-	 * Get admin settings fields for this quiz type
+	 * Get admin settings fields for this quiz type.
 	 *
-	 * @return array Settings fields configuration
+	 * @return Array Settings fields configuration.
 	 */
 	abstract public function get_settings_fields();
 
 	/**
-	 * Get default response templates for this quiz type
+	 * Get default response templates for this quiz type.
 	 * Keys should match response_key from analyze()
 	 *
-	 * @return array ['response_key' => 'Template text with {placeholders}']
+	 * @return Array ['response_key' => 'Template text with {placeholders}']
 	 */
 	public function get_default_response_templates() {
 		return array(
@@ -138,7 +138,7 @@ abstract class FLOSC_Abstract_Quiz_Type {
 	 * Results are sorted tier-1 first so callers get the highest-priority lessons up front.
 	 *
 	 * @param array $analysis Result from analyze().
-	 * @return array [['id' => int, 'title' => string, 'reason' => string, 'tier' => int], ...]
+	 * @return Array [['id' => int, 'title' => string, 'reason' => string, 'tier' => int], ...]
 	 */
 	public function map_to_lessons( $analysis ) {
 		$lessons = array();
@@ -227,18 +227,18 @@ abstract class FLOSC_Abstract_Quiz_Type {
 	 *
 	 * The prefix declares the lookup type — it is always required:
 	 *
-	 *   post:my-post-slug        — single post by slug
-	 *   id:1042                  — single post by numeric ID
-	 *   category:my-cat-slug     — all posts in a category (up to 5)
-	 *   tag:my-tag-slug          — all posts with a tag (up to 5)
-	 *   search:my search query   — title/full-text search (up to 3)
+	 * Post:my-post-slug        — single post by slug.
+	 * Id:1042                  — single post by numeric ID.
+	 * Category:my-cat-slug     — all posts in a category (up to 5)
+	 * Tag:my-tag-slug          — all posts with a tag (up to 5)
+	 * Search:my search query   — title/full-text search (up to 3)
 	 *
 	 * Legacy fallback (no prefix): tries numeric ID → post slug → category → tag → title search.
 	 * This only exists for saved content from older versions; all new content must use a prefix.
 	 *
 	 * A missing or non-existent reference always returns [] — never an error.
 	 *
-	 * @param string $ref
+	 * @param string $ref Value consumed by this operation.
 	 * @return WP_Post[]
 	 */
 	protected function lookup_lesson_by_tag( $ref ) {
@@ -407,13 +407,13 @@ abstract class FLOSC_Abstract_Quiz_Type {
 	}
 
 	/**
-	 * Format results for chat display
-	 * Override for custom formatting
+	 * Format results for chat display.
+	 * Override for custom formatting.
 	 *
-	 * @param array $analysis Result from analyze().
-	 * @param array $lessons Result from map_to_lessons().
+	 * @param array $analysis           Result from analyze().
+	 * @param array $lessons            Result from map_to_lessons().
 	 * @param array $response_templates Admin-configured templates.
-	 * @return string Formatted message
+	 * @return String Formatted message.
 	 */
 	public function format_results( $analysis, $lessons, $response_templates ) {
 		$score        = $analysis['score'];
@@ -451,21 +451,22 @@ abstract class FLOSC_Abstract_Quiz_Type {
 	}
 
 	/**
-	 * Get setting value for this quiz type
+	 * Get setting value for this quiz type.
 	 *
-	 * @param string $key Setting key.
+	 * @param string $key      Setting key.
 	 * @param mixed  $fallback Default value.
-	 * @return mixed
+	 * @return Mixed.
 	 */
 	protected function get_setting( $key, $fallback = '' ) {
 		return get_option( "flosc_quiz_{$this->get_id()}_{$key}", $fallback );
 	}
 
 	/**
-	 * Helper: Calculate percentage score
- * @param mixed $correct_count Input consumed by the Coordinate the calculate percentage behavior implemented by this code path. operation.
- * @param mixed $total_count Input consumed by the Coordinate the calculate percentage behavior implemented by this code path. operation.
- * @return mixed Result produced by the calculate percentage operation.
+	 * Helper: Calculate percentage score.
+	 *
+	 * @param mixed $correct_count Input consumed by the Coordinate the calculate percentage behavior implemented by this code path. operation.
+	 * @param mixed $total_count   Input consumed by the Coordinate the calculate percentage behavior implemented by this code path. operation.
+	 * @return Mixed Result produced by the calculate percentage operation.
 	 */
 	protected function calculate_percentage( $correct_count, $total_count ) {
 		if ( 0 === $total_count ) {
@@ -475,9 +476,10 @@ abstract class FLOSC_Abstract_Quiz_Type {
 	}
 
 	/**
-	 * Helper: Determine response key from score
- * @param mixed $score Input consumed by the Resolve the current response key from score value from the available Word Press and flow state. operation.
- * @return mixed Result produced by the response key from score operation.
+	 * Helper: Determine response key from score.
+	 *
+	 * @param mixed $score Input consumed by the Resolve the current response key from score value from the available Word Press and flow state. operation.
+	 * @return Mixed Result produced by the response key from score operation.
 	 */
 	protected function get_response_key_from_score( $score ) {
 		if ( $score <= 30 ) {

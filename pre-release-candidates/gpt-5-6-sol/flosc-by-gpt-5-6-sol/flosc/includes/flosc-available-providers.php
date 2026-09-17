@@ -1,13 +1,13 @@
 <?php
 /**
- * floscAvailableProviders — install-scoped AI credentials available to any floscFlow.
+ * FloscAvailableProviders — install-scoped AI credentials available to any floscFlow.
  *
  * Product model:
  * - Keys configured here (or promoted from a flow save) are AVAILABLE install-wide.
  * - Each floscFlow attaches via floscFlowAiPolicy (ai_provider, models, chain order).
  * - Secrets never go into portable Settings YAML.
  *
- * Option key: flosc_available_providers
+ * Option key: flosc_available_providers.
  *
  * @package FLOSC
  */
@@ -18,9 +18,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 if ( ! function_exists( 'flosc_available_providers_option_key' ) ) {
 	/**
- * Coordinate the available providers option key behavior implemented by this code path.
- *
-	 * @return string
+	 * Coordinate the available providers option key behavior implemented by this code path.
+	 *
+	 * @return String.
 	 */
 	function flosc_available_providers_option_key() {
 		return 'flosc_available_providers';
@@ -31,7 +31,7 @@ if ( ! function_exists( 'flosc_available_provider_slugs' ) ) {
 	/**
 	 * Provider ids that may hold an API key in the install pool.
 	 *
-	 * @return array<int,string>
+	 * @return Array<int,string>.
 	 */
 	function flosc_available_provider_slugs() {
 		return array( 'anthropic', 'openai', 'xai', 'gemini', 'assemblyai' );
@@ -43,7 +43,7 @@ if ( ! function_exists( 'flosc_chat_provider_slugs' ) ) {
 	 * Providers that send the compiled personality profile as chat system text.
 	 * AssemblyAI is STT only and is not in this list.
 	 *
-	 * @return array<int,string>
+	 * @return Array<int,string>.
 	 */
 	function flosc_chat_provider_slugs() {
 		return array( 'anthropic', 'openai', 'xai', 'gemini' );
@@ -54,7 +54,7 @@ if ( ! function_exists( 'flosc_install_provider_catalog' ) ) {
 	/**
 	 * Install-pool providers shown on All Flows / This flow key rows.
 	 *
-	 * @return array<string,array<string,string>>
+	 * @return Array<string,array<string,string>>.
 	 */
 	function flosc_install_provider_catalog() {
 		return array(
@@ -96,7 +96,7 @@ if ( ! function_exists( 'flosc_chat_provider_labels' ) ) {
 	/**
 	 * Primary-provider select labels, including IVR.
 	 *
-	 * @return array<string,string>
+	 * @return Array<string,string>.
 	 */
 	function flosc_chat_provider_labels() {
 		return array(
@@ -114,7 +114,7 @@ if ( ! function_exists( 'flosc_personality_pack_catalog' ) ) {
 	 * APIs the compiled personality profile is mapped for (same genome, different field).
 	 * FLOSC HTTP chat uses anthropic, openai, xai, gemini. The rest are pack shapes.
 	 *
-	 * @return array<string,array<string,string>>
+	 * @return Array<string,array<string,string>>.
 	 */
 	function flosc_personality_pack_catalog() {
 		return array(
@@ -184,9 +184,9 @@ if ( ! function_exists( 'flosc_personality_pack_catalog' ) ) {
 
 if ( ! function_exists( 'flosc_personality_pack_label_list' ) ) {
 	/**
- * Coordinate the personality pack label list behavior implemented by this code path.
- *
-	 * @return string
+	 * Coordinate the personality pack label list behavior implemented by this code path.
+	 *
+	 * @return String.
 	 */
 	function flosc_personality_pack_label_list() {
 		$labels = array();
@@ -201,7 +201,7 @@ if ( ! function_exists( 'flosc_provider_intricacies_mts' ) ) {
 	/**
 	 * Michel Time Stamp for the provider-intricacies snapshot (calendar day).
 	 *
-	 * @return string
+	 * @return String.
 	 */
 	function flosc_provider_intricacies_mts() {
 		return '26_08m_20d';
@@ -213,7 +213,7 @@ if ( ! function_exists( 'flosc_provider_intricacies' ) ) {
 	 * What each API currently wants for the same compiled personality.
 	 * Vintage: flosc_provider_intricacies_mts(). Re-date when a vendor changes the pocket.
 	 *
-	 * @return array{live:array<string,array<string,string>>,packs:array<string,array<string,string>>}
+	 * @return Array{live:array<string,array<string,string>>,packs:array<string,array<string,string>>}.
 	 */
 	function flosc_provider_intricacies() {
 		return array(
@@ -290,7 +290,7 @@ if ( ! function_exists( 'flosc_render_provider_intricacies_html' ) ) {
 	/**
 	 * Dated provider-intricacies list for admin UI.
 	 *
-	 * @return void
+	 * @return Void.
 	 */
 	function flosc_render_provider_intricacies_html() {
 		$mts  = flosc_provider_intricacies_mts();
@@ -330,7 +330,7 @@ if ( ! function_exists( 'flosc_available_providers_flow_key_map' ) ) {
 	/**
 	 * Map provider slug → flow bag key for the secret.
 	 *
-	 * @return array<string,string>
+	 * @return Array<string,string>.
 	 */
 	function flosc_available_providers_flow_key_map() {
 		return array(
@@ -345,9 +345,9 @@ if ( ! function_exists( 'flosc_available_providers_flow_key_map' ) ) {
 
 if ( ! function_exists( 'flosc_available_providers_get_all' ) ) {
 	/**
- * Coordinate the available providers get all behavior implemented by this code path.
- *
-	 * @return array<string,array<string,mixed>>
+	 * Coordinate the available providers get all behavior implemented by this code path.
+	 *
+	 * @return Array<string,array<string,mixed>>.
 	 */
 	function flosc_available_providers_get_all() {
 		$raw = get_option( flosc_available_providers_option_key(), array() );
@@ -369,10 +369,10 @@ if ( ! function_exists( 'flosc_available_providers_get_all' ) ) {
 
 if ( ! function_exists( 'flosc_available_providers_save_all' ) ) {
 	/**
- * Persist the available providers save all state in WordPress storage.
- *
+	 * Persist the available providers save all state in WordPress storage.
+	 *
 	 * @param array<string,array<string,mixed>> $providers Full map.
-	 * @return void
+	 * @return Void.
 	 */
 	function flosc_available_providers_save_all( $providers ) {
 		if ( ! is_array( $providers ) ) {
@@ -399,11 +399,11 @@ if ( ! function_exists( 'flosc_available_providers_save_all' ) ) {
 
 if ( ! function_exists( 'flosc_available_providers_set_key' ) ) {
 	/**
- * Coordinate the available providers set key behavior implemented by this code path.
- *
+	 * Coordinate the available providers set key behavior implemented by this code path.
+	 *
 	 * @param string $provider Provider slug.
 	 * @param string $api_key  Secret (empty clears).
-	 * @return void
+	 * @return Void.
 	 */
 	function flosc_available_providers_set_key( $provider, $api_key ) {
 		$provider = sanitize_key( (string) $provider );
@@ -419,10 +419,10 @@ if ( ! function_exists( 'flosc_available_providers_set_key' ) ) {
 
 if ( ! function_exists( 'flosc_available_providers_has_key' ) ) {
 	/**
- * Coordinate the available providers has key behavior implemented by this code path.
- *
+	 * Coordinate the available providers has key behavior implemented by this code path.
+	 *
 	 * @param string $provider Provider slug.
-	 * @return bool
+	 * @return Bool.
 	 */
 	function flosc_available_providers_has_key( $provider ) {
 		$all      = flosc_available_providers_get_all();
@@ -433,11 +433,11 @@ if ( ! function_exists( 'flosc_available_providers_has_key' ) ) {
 
 if ( ! function_exists( 'flosc_available_providers_promote_from_flow' ) ) {
 	/**
-	 * When a flow saves a non-empty key, copy it into the install pool so it is
-	 * available to other flows (floscAvailableProviders product rule).
+	 * When a flow saves a non-empty key, copy it into the install pool so it is.
+	 * Available to other flows (floscAvailableProviders product rule).
 	 *
 	 * @param array<string,mixed> $flow_settings Flow bag after save.
-	 * @return void
+	 * @return Void.
 	 */
 	function flosc_available_providers_promote_from_flow( $flow_settings ) {
 		if ( ! is_array( $flow_settings ) ) {
@@ -459,7 +459,7 @@ if ( ! function_exists( 'flosc_get_provider_api_key' ) ) {
 	 *
 	 * @param string      $provider Provider slug (anthropic|openai|xai|assemblyai).
 	 * @param string|null $flow_id  Optional flow stem for flosc_get_setting.
-	 * @return string
+	 * @return String.
 	 */
 	function flosc_get_provider_api_key( $provider, $flow_id = null ) {
 		$provider  = sanitize_key( (string) $provider );
@@ -479,9 +479,9 @@ if ( ! function_exists( 'flosc_get_provider_api_key' ) ) {
 
 if ( ! function_exists( 'flosc_admin_save_available_providers' ) ) {
 	/**
-	 * Admin-post.php?action=flosc_save_available_providers
+	 * Admin-post.php?action=flosc_save_available_providers.
 	 *
-	 * @return void
+	 * @return Void.
 	 */
 	function flosc_admin_save_available_providers() {
 		if ( ! current_user_can( 'manage_options' ) ) {

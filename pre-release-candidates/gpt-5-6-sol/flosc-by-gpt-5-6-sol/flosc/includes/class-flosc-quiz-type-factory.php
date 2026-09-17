@@ -1,6 +1,6 @@
 <?php
 /**
- * Quiz Type Factory
+ * Quiz Type Factory.
  *
  * Dynamically loads and manages quiz types.
  * Provides registry for all available quiz types.
@@ -16,30 +16,31 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Registry and loader for quiz types.
  *
- * A quiz type is a class that knows how to render one kind of question and mark
- * its answer. This factory maps a type id to that class, loads it on demand and
- * hands back a single shared instance, so a flow with twenty questions of one
- * type constructs that type once.
+ * A quiz type is a class that knows how to render one kind of question and mark.
+ * Its answer. This factory maps a type id to that class, loads it on demand and.
+ * Hands back a single shared instance, so a flow with twenty questions of one.
+ * Type constructs that type once.
  */
 class FLOSC_Quiz_Type_Factory {
 
 	/**
-	 * Loaded quiz type instances
+	 * Loaded quiz type instances.
 	 *
 	 * @var array
 	 */
 	private static $quiz_types = array();
 
 	/**
-	 * Whether quiz types have been loaded
+	 * Whether quiz types have been loaded.
 	 *
 	 * @var bool
 	 */
 	private static $loaded = false;
 
 	/**
-	 * Load all quiz types from quiz-types directory
- * @return mixed Result produced by the quiz types operation.
+	 * Load all quiz types from quiz-types directory.
+	 *
+	 * @return Mixed Result produced by the quiz types operation.
 	 */
 	private static function load_quiz_types() {
 		if ( self::$loaded ) {
@@ -78,10 +79,10 @@ class FLOSC_Quiz_Type_Factory {
 	}
 
 	/**
-	 * Get a specific quiz type by ID
+	 * Get a specific quiz type by ID.
 	 *
 	 * @param string $quiz_type_id The quiz type ID.
-	 * @return FLOSC_Abstract_Quiz_Type|null Quiz type instance or null if not found
+	 * @return FLOSC_Abstract_Quiz_Type|null Quiz type instance or null if not found.
 	 */
 	public static function get_quiz_type( $quiz_type_id ) {
 		self::load_quiz_types();
@@ -94,9 +95,9 @@ class FLOSC_Quiz_Type_Factory {
 	}
 
 	/**
-	 * Get all available quiz types
+	 * Get all available quiz types.
 	 *
-	 * @return array Array of quiz type instances
+	 * @return Array Array of quiz type instances.
 	 */
 	public static function get_all_quiz_types() {
 		self::load_quiz_types();
@@ -104,9 +105,9 @@ class FLOSC_Quiz_Type_Factory {
 	}
 
 	/**
-	 * Get quiz types formatted for admin dropdown
+	 * Get quiz types formatted for admin dropdown.
 	 *
-	 * @return array Array of ['id' => 'Name'] pairs
+	 * @return Array Array of ['id' => 'Name'] pairs.
 	 */
 	public static function get_quiz_types_for_dropdown() {
 		self::load_quiz_types();
@@ -120,10 +121,10 @@ class FLOSC_Quiz_Type_Factory {
 	}
 
 	/**
-	 * Check if a quiz type exists
+	 * Check if a quiz type exists.
 	 *
 	 * @param string $quiz_type_id The quiz type ID.
-	 * @return bool True if exists
+	 * @return Bool True if exists.
 	 */
 	public static function quiz_type_exists( $quiz_type_id ) {
 		self::load_quiz_types();
@@ -131,10 +132,10 @@ class FLOSC_Quiz_Type_Factory {
 	}
 
 	/**
-	 * Get quiz type metadata
+	 * Get quiz type metadata.
 	 *
 	 * @param string $quiz_type_id The quiz type ID.
-	 * @return array|null Metadata array or null if not found
+	 * @return Array|null Metadata array or null if not found.
 	 */
 	public static function get_quiz_type_meta( $quiz_type_id ) {
 		$quiz_type = self::get_quiz_type( $quiz_type_id );
@@ -161,7 +162,7 @@ class FLOSC_Quiz_Type_Factory {
 	/**
 	 * Get active quiz type (from plugin settings)
 	 *
-	 * @return FLOSC_Abstract_Quiz_Type|null Active quiz type instance
+	 * @return FLOSC_Abstract_Quiz_Type|null Active quiz type instance.
 	 */
 	public static function get_active_quiz_type() {
 		$active_quiz_type_id = get_option( 'flosc_quiz_type', 'flosc_sample_data_numbers_quiz' );
@@ -169,10 +170,10 @@ class FLOSC_Quiz_Type_Factory {
 	}
 
 	/**
-	 * Validate quiz type configuration
+	 * Validate quiz type configuration.
 	 *
 	 * @param string $quiz_type_id The quiz type ID.
-	 * @return true|WP_Error True if valid, WP_Error if invalid
+	 * @return True|WP_Error True if valid, WP_Error if invalid.
 	 */
 	public static function validate_quiz_type_config( $quiz_type_id ) {
 		if ( ! self::quiz_type_exists( $quiz_type_id ) ) {
@@ -228,7 +229,7 @@ class FLOSC_Quiz_Type_Factory {
 	/**
 	 * Get quiz types that work without configuration (text-only)
 	 *
-	 * @return array Array of quiz type IDs
+	 * @return Array Array of quiz type IDs.
 	 */
 	public static function get_zero_config_quiz_types() {
 		self::load_quiz_types();
@@ -244,10 +245,10 @@ class FLOSC_Quiz_Type_Factory {
 	}
 
 	/**
-	 * Get quiz types by capability requirement
+	 * Get quiz types by capability requirement.
 	 *
 	 * @param string $capability 'audio', 'stt', or 'ai'.
-	 * @return array Array of quiz type IDs
+	 * @return Array Array of quiz type IDs.
 	 */
 	public static function get_quiz_types_by_capability( $capability ) {
 		self::load_quiz_types();

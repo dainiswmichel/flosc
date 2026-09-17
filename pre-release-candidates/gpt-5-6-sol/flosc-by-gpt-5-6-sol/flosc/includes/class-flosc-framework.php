@@ -2,17 +2,17 @@
 /**
  * The FLOSC framework class: the plugin's single runtime object.
  *
- * Everything the plugin does at request time hangs off one instance of
- * FLOSC_Framework, reached through flosc() or FLOSC_Framework::instance(). The
- * class is assembled from five traits -- REST routes, admin screens, visitor
- * tokens, magic links and chat turns -- each of which lives in its own file
- * under includes/.
+ * Everything the plugin does at request time hangs off one instance of.
+ * FLOSC_Framework, reached through flosc() or FLOSC_Framework::instance(). The.
+ * Class is assembled from five traits -- REST routes, admin screens, visitor.
+ * Tokens, magic links and chat turns -- each of which lives in its own file.
+ * Under includes/.
  *
- * This lived inside flosc.php until v82.11. A WordPress plugin's main file has
- * to be named for the plugin, so a class in it can never satisfy the rule that
- * a class file is named class-<class>.php; moving it here settles that and
- * leaves flosc.php as what it should be, a header, the constants, the includes
- * and the bootstrap.
+ * This lived inside flosc.php until v82.11. A WordPress plugin's main file has.
+ * To be named for the plugin, so a class in it can never satisfy the rule that.
+ * A class file is named class-<class>.php; moving it here settles that and.
+ * Leaves flosc.php as what it should be, a header, the constants, the includes.
+ * And the bootstrap.
  *
  * @package FLOSC
  */
@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Main FLOSC Framework Class
+ * Main FLOSC Framework Class.
  */
 class FLOSC_Framework {
 	use FLOSC_REST_Trait;
@@ -153,10 +153,10 @@ class FLOSC_Framework {
 	/**
 	 * A flow named explicitly for this request, overriding domain detection.
 	 *
-	 * A REST call carries no URL for the domain or slug to be read from, and a
-	 * purchase can arrive from the WordPress host or from a payment provider
-	 * rather than from the flow's own domain. set_flow_context() writes this so
-	 * settings resolve to the right flow regardless of where the request came in.
+	 * A REST call carries no URL for the domain or slug to be read from, and a.
+	 * Purchase can arrive from the WordPress host or from a payment provider.
+	 * Rather than from the flow's own domain. set_flow_context() writes this so.
+	 * Settings resolve to the right flow regardless of where the request came in.
 	 *
 	 * @since 1.7.5
 	 *
@@ -214,13 +214,13 @@ class FLOSC_Framework {
 	private $lesson_manager;
 
 	/**
-	 * Whether a FLOSC auth token, rather than a WordPress cookie, authenticated
-	 * this request.
+	 * Whether a FLOSC auth token, rather than a WordPress cookie, authenticated.
+	 * This request.
 	 *
-	 * Read by allow_flosc_token_auth(). A request authenticated this way has no
-	 * WordPress session token, so the REST cookie check would fail its nonce and
-	 * reset the current user to nobody; this flag is what tells that filter to
-	 * stand down.
+	 * Read by allow_flosc_token_auth(). A request authenticated this way has no.
+	 * WordPress session token, so the REST cookie check would fail its nonce and.
+	 * Reset the current user to nobody; this flag is what tells that filter to.
+	 * Stand down.
 	 *
 	 * @since 3.0.0
 	 *
@@ -231,8 +231,8 @@ class FLOSC_Framework {
 	/**
 	 * The single framework instance, building it on first call.
 	 *
-	 * The instance is assigned to self::$instance before boot() runs, because the
-	 * wiring boot() performs calls flosc_get_setting(), which reaches back into
+	 * The instance is assigned to self::$instance before boot() runs, because the.
+	 * Wiring boot() performs calls flosc_get_setting(), which reaches back into.
 	 * instance() -- assigning first is what keeps that from recursing.
 	 *
 	 * @return FLOSC_Framework The instance.
@@ -250,9 +250,9 @@ class FLOSC_Framework {
 	/**
 	 * Private, so the only way to an instance is instance().
 	 *
-	 * Deliberately empty. boot() does the setting up, and it runs after
-	 * self::$instance has been assigned, because the wiring it performs calls
-	 * back into instance() and would otherwise recurse.
+	 * Deliberately empty. boot() does the setting up, and it runs after.
+	 * Self::$instance has been assigned, because the wiring it performs calls.
+	 * Back into instance() and would otherwise recurse.
 	 */
 	private function __construct() {
 		// Intentionally empty — boot() runs after self::$instance is assigned.
@@ -261,8 +261,8 @@ class FLOSC_Framework {
 	/**
 	 * The WordPress filesystem object, once it has been brought up.
 	 *
-	 * Null before WP_Filesystem() has run, or when the credentials it needs are
-	 * not available -- callers check rather than assuming.
+	 * Null before WP_Filesystem() has run, or when the credentials it needs are.
+	 * Not available -- callers check rather than assuming.
 	 *
 	 * @return WP_Filesystem_Base|null The filesystem object, or null.
 	 */
@@ -274,11 +274,11 @@ class FLOSC_Framework {
 	 * Move a file through the WordPress filesystem API.
 	 *
 	 * Delegates to FLOSC_Filesystem, which is where the containment check lives:
-	 * both paths must resolve inside a directory FLOSC owns.
+	 * Both paths must resolve inside a directory FLOSC owns.
 	 *
 	 * @param string $source      Path to move from.
 	 * @param string $destination Path to move to.
-	 * @return bool True when the file was moved.
+	 * @return Bool True when the file was moved.
 	 */
 	private function move_file_safely( $source, $destination ) {
 		return $this->filesystem->move_file_safely( $source, $destination );
@@ -287,11 +287,11 @@ class FLOSC_Framework {
 	/**
 	 * Delete a file through the WordPress filesystem API.
 	 *
-	 * Delegates to FLOSC_Filesystem, which refuses a path outside the
-	 * directories FLOSC owns.
+	 * Delegates to FLOSC_Filesystem, which refuses a path outside the.
+	 * Directories FLOSC owns.
 	 *
 	 * @param string $path File to delete.
-	 * @return bool True when the file is gone.
+	 * @return Bool True when the file is gone.
 	 */
 	private function delete_file_safely( $path ) {
 		return $this->filesystem->delete_file_safely( $path );
@@ -300,11 +300,11 @@ class FLOSC_Framework {
 	/**
 	 * Delete a directory and its contents through the WordPress filesystem API.
 	 *
-	 * Delegates to FLOSC_Filesystem, which refuses a path outside the
-	 * directories FLOSC owns.
+	 * Delegates to FLOSC_Filesystem, which refuses a path outside the.
+	 * Directories FLOSC owns.
 	 *
 	 * @param string $path Directory to delete.
-	 * @return bool True when the directory is gone.
+	 * @return Bool True when the directory is gone.
 	 */
 	private function delete_directory_safely( $path ) {
 		return $this->filesystem->delete_directory_safely( $path );
@@ -313,12 +313,12 @@ class FLOSC_Framework {
 	/**
 	 * Write a file through the WordPress filesystem API.
 	 *
-	 * Delegates to FLOSC_Filesystem, which refuses a path outside the
-	 * directories FLOSC owns.
+	 * Delegates to FLOSC_Filesystem, which refuses a path outside the.
+	 * Directories FLOSC owns.
 	 *
 	 * @param string $path    File to write.
 	 * @param string $content Bytes to write.
-	 * @return bool True when the write succeeded.
+	 * @return Bool True when the write succeeded.
 	 */
 	private function write_file_safely( $path, $content ) {
 		return $this->filesystem->write_file_safely( $path, $content );
@@ -327,12 +327,12 @@ class FLOSC_Framework {
 	/**
 	 * Write JSON so a reader never sees a half-written file.
 	 *
-	 * Delegates to FLOSC_Filesystem, which writes to a temporary file beside the
-	 * target and renames it into place.
+	 * Delegates to FLOSC_Filesystem, which writes to a temporary file beside the.
+	 * Target and renames it into place.
 	 *
 	 * @param string $path File to write.
 	 * @param mixed  $data Structure to encode.
-	 * @return bool True when the file was replaced.
+	 * @return Bool True when the file was replaced.
 	 */
 	private function write_json_atomic( $path, $data ) {
 		return $this->filesystem->write_json_atomic( $path, $data );
@@ -353,11 +353,11 @@ class FLOSC_Framework {
 	/**
 	 * Attach the visitor's pre-registration state to their new account.
 	 *
-	 * Delegates to FLOSC_First_Party_Authentication. Runs on user_register, and
-	 * is what carries a quiz taken as a visitor across into the account.
+	 * Delegates to FLOSC_First_Party_Authentication. Runs on user_register, and.
+	 * Is what carries a quiz taken as a visitor across into the account.
 	 *
 	 * @param int $user_id The account that was just created.
- * @return mixed Result produced by the user registration operation.
+	 * @return Mixed Result produced by the user registration operation.
 	 */
 	public function handle_user_registration( $user_id ) {
 		return $this->first_party_auth->handle_user_registration( $user_id );
@@ -366,12 +366,12 @@ class FLOSC_Framework {
 	/**
 	 * Process anything the visitor did before logging in.
 	 *
-	 * Delegates to FLOSC_First_Party_Authentication. Runs on wp_login and picks
-	 * up a pre-login quiz score held client-side.
+	 * Delegates to FLOSC_First_Party_Authentication. Runs on wp_login and picks.
+	 * Up a pre-login quiz score held client-side.
 	 *
 	 * @param string  $user_login The login name used.
 	 * @param WP_User $user       The user who logged in.
- * @return mixed Result produced by the user login operation.
+	 * @return Mixed Result produced by the user login operation.
 	 */
 	public function handle_user_login( $user_login, $user ) {
 		return $this->first_party_auth->handle_user_login( $user_login, $user );
@@ -380,14 +380,14 @@ class FLOSC_Framework {
 	/**
 	 * Send a user to the flow app after login, but only with FLOSC context.
 	 *
-	 * Delegates to FLOSC_First_Party_Authentication. This does not hijack an
-	 * ordinary WordPress login: it redirects only when the user came from a
+	 * Delegates to FLOSC_First_Party_Authentication. This does not hijack an.
+	 * Ordinary WordPress login: it redirects only when the user came from a.
 	 * FLOSC app or carries a pre-login quiz score.
 	 *
 	 * @param string           $redirect_to           Where WordPress means to send them.
 	 * @param string           $requested_redirect_to Where the request asked to go.
 	 * @param WP_User|WP_Error $user                  The user who logged in.
-	 * @return string The destination URL.
+	 * @return String The destination URL.
 	 */
 	public function handle_login_redirect( $redirect_to, $requested_redirect_to, $user ) {
 		return $this->first_party_auth->handle_login_redirect( $redirect_to, $requested_redirect_to, $user );
@@ -396,11 +396,11 @@ class FLOSC_Framework {
 	/**
 	 * The same post-login redirect decision, for WooCommerce's own filter.
 	 *
-	 * Delegates to FLOSC_First_Party_Authentication. Same rule: redirect only
-	 * when there is FLOSC context.
+	 * Delegates to FLOSC_First_Party_Authentication. Same rule: redirect only.
+	 * When there is FLOSC context.
 	 *
 	 * @param string $redirect Where WooCommerce means to send them.
-	 * @return string The destination URL.
+	 * @return String The destination URL.
 	 */
 	public function handle_woocommerce_login_redirect( $redirect ) {
 		return $this->first_party_auth->handle_woocommerce_login_redirect( $redirect );
@@ -409,14 +409,14 @@ class FLOSC_Framework {
 	/**
 	 * Point wp-login.php at the flow app, when the flow asks for that.
 	 *
-	 * Delegates to FLOSC_First_Party_Authentication. Off unless the flow's
-	 * takeover_wp_auth setting is on; when on, the native login screen is
-	 * replaced by the flow's app URL, which opens the FLOSC login modal itself.
+	 * Delegates to FLOSC_First_Party_Authentication. Off unless the flow's.
+	 * Takeover_wp_auth setting is on; when on, the native login screen is.
+	 * Replaced by the flow's app URL, which opens the FLOSC login modal itself.
 	 *
 	 * @param string $url          The login URL WordPress built.
 	 * @param string $redirect     Requested redirect_to. Not used -- FLOSC owns the funnel.
 	 * @param bool   $force_reauth Not used.
-	 * @return string The login URL to use.
+	 * @return String The login URL to use.
 	 */
 	public function takeover_wp_auth_url( $url, $redirect = '', $force_reauth = false ) {
 		return $this->first_party_auth->takeover_wp_auth_url( $url, $redirect, $force_reauth );
@@ -425,11 +425,11 @@ class FLOSC_Framework {
 	/**
 	 * Point the registration URL at the same place the login URL goes.
 	 *
-	 * Delegates to the same FLOSC_First_Party_Authentication method as
+	 * Delegates to the same FLOSC_First_Party_Authentication method as.
 	 * takeover_wp_auth_url(), because the flow app's modal covers both.
 	 *
 	 * @param string $url The registration URL WordPress built.
-	 * @return string The registration URL to use.
+	 * @return String The registration URL to use.
 	 */
 	public function take_over_wp_registration_url( $url ) {
 		return $this->first_party_auth->takeover_wp_auth_url( $url );
@@ -438,12 +438,12 @@ class FLOSC_Framework {
 	/**
 	 * Mint a FLOSC auth token for a user.
 	 *
-	 * Delegates to FLOSC_First_Party_Authentication. The token is stateless --
-	 * it carries its own expiry and signature and is not stored anywhere.
+	 * Delegates to FLOSC_First_Party_Authentication. The token is stateless --.
+	 * It carries its own expiry and signature and is not stored anywhere.
 	 *
 	 * @param int $user_id WordPress user id.
 	 * @param int $ttl     Lifetime in seconds. Defaults to a day.
-	 * @return string Base64-encoded token.
+	 * @return String Base64-encoded token.
 	 */
 	public function generate_flosc_auth_token( $user_id, $ttl = DAY_IN_SECONDS ) {
 		return $this->first_party_auth->generate_flosc_auth_token( $user_id, $ttl );
@@ -455,7 +455,7 @@ class FLOSC_Framework {
 	 * Delegates to FLOSC_First_Party_Authentication.
 	 *
 	 * @param string $token Base64-encoded token.
-	 * @return int|false The user id, or false when the token is invalid or expired.
+	 * @return Int|false The user id, or false when the token is invalid or expired.
 	 */
 	public function validate_flosc_auth_token( $token ) {
 		return $this->first_party_auth->validate_flosc_auth_token( $token );
@@ -464,13 +464,13 @@ class FLOSC_Framework {
 	/**
 	 * Put a FLOSC auth token in a cookie bound to the host that served this response.
 	 *
-	 * Delegates to FLOSC_First_Party_Authentication. The cookie domain is left
-	 * empty on purpose: naming a host would be naming the wrong one whenever the
-	 * request arrived on a different flow domain, and the browser would drop it.
+	 * Delegates to FLOSC_First_Party_Authentication. The cookie domain is left.
+	 * Empty on purpose: naming a host would be naming the wrong one whenever the.
+	 * Request arrived on a different flow domain, and the browser would drop it.
 	 *
 	 * @param string $token The auth token.
 	 * @param int    $ttl   Lifetime in seconds. Defaults to a day.
- * @return mixed Result produced by the auth cookie operation.
+	 * @return Mixed Result produced by the auth cookie operation.
 	 */
 	public function set_flosc_auth_cookie( $token, $ttl = DAY_IN_SECONDS ) {
 		return $this->first_party_auth->set_flosc_auth_cookie( $token, $ttl );
@@ -479,12 +479,12 @@ class FLOSC_Framework {
 	/**
 	 * Authenticate from a FLOSC token when the WordPress cookie is not available.
 	 *
-	 * Delegates to FLOSC_First_Party_Authentication, which looks first at the
-	 * X-FLOSC-Token header used by the app's own requests, then at the
-	 * flosc_auth_token cookie used on page loads from a custom domain.
+	 * Delegates to FLOSC_First_Party_Authentication, which looks first at the.
+	 * X-FLOSC-Token header used by the app's own requests, then at the.
+	 * Flosc_auth_token cookie used on page loads from a custom domain.
 	 *
 	 * @param int $user_id The user id determined so far; 0 when nobody is logged in.
-	 * @return int The authenticated user id.
+	 * @return Int The authenticated user id.
 	 */
 	public function authenticate_flosc_token( $user_id ) {
 		return $this->first_party_auth->authenticate_flosc_token( $user_id );
@@ -493,10 +493,11 @@ class FLOSC_Framework {
 	/**
 	 * AJAX: log the user out and hand the front end somewhere to go.
 	 *
-	 * Delegates to FLOSC_First_Party_Authentication. Returns a JSON response
-	 * carrying the redirect URL rather than redirecting itself, so the app can
-	 * finish what it is doing first.
- * @return mixed Result produced by the logout operation.
+	 * Delegates to FLOSC_First_Party_Authentication. Returns a JSON response.
+	 * Carrying the redirect URL rather than redirecting itself, so the app can.
+	 * Finish what it is doing first.
+	 *
+	 * @return Mixed Result produced by the logout operation.
 	 */
 	public function ajax_logout() {
 		return $this->first_party_auth->ajax_logout();
@@ -518,12 +519,12 @@ class FLOSC_Framework {
 	/**
 	 * Invalidate FLOSC tokens when a profile update changed the password.
 	 *
-	 * The profile_update hook fires for every profile save, so the old record
-	 * is compared rather than revoking on a changed nickname.
+	 * The profile_update hook fires for every profile save, so the old record.
+	 * Is compared rather than revoking on a changed nickname.
 	 *
 	 * @param int     $user_id       The user being updated.
 	 * @param WP_User $old_user_data Their record before the update.
- * @return mixed Result produced by the revoke flosc auth tokens on password change operation.
+	 * @return Mixed Result produced by the revoke flosc auth tokens on password change operation.
 	 */
 	public function revoke_flosc_auth_tokens_on_password_change( $user_id, $old_user_data = null ) {
 		$user_id = absint( $user_id );
@@ -545,7 +546,7 @@ class FLOSC_Framework {
 	 * Delegates to FLOSC_First_Party_Authentication. Runs on wp_logout.
 	 *
 	 * @param int $user_id The user logging out; 0 for the current one.
- * @return mixed Result produced by the clear flosc auth token operation.
+	 * @return Mixed Result produced by the clear flosc auth token operation.
 	 */
 	public function clear_flosc_auth_token( $user_id = 0 ) {
 		return $this->first_party_auth->clear_flosc_auth_token( $user_id );
@@ -554,11 +555,11 @@ class FLOSC_Framework {
 	/**
 	 * Remember which flow the user entered through, so logout can return them to it.
 	 *
-	 * Delegates to FLOSC_First_Party_Authentication. Host-global rather than
-	 * flow-scoped, single session, and cleared on logout.
+	 * Delegates to FLOSC_First_Party_Authentication. Host-global rather than.
+	 * Flow-scoped, single session, and cleared on logout.
 	 *
 	 * @param string $flow_id Normalised flow id or stem.
- * @return mixed Result produced by the entry flow cookie operation.
+	 * @return Mixed Result produced by the entry flow cookie operation.
 	 */
 	public function set_entry_flow_cookie( $flow_id ) {
 		return $this->first_party_auth->set_entry_flow_cookie( $flow_id );
@@ -567,10 +568,10 @@ class FLOSC_Framework {
 	/**
 	 * Stop the REST cookie check from undoing a FLOSC token authentication.
 	 *
-	 * Delegates to FLOSC_First_Party_Authentication. A request authenticated by
-	 * FLOSC token has no WordPress session token, so rest_cookie_check_errors
-	 * would fail its nonce check and reset the current user to nobody. Returning
-	 * a non-empty result short-circuits that check.
+	 * Delegates to FLOSC_First_Party_Authentication. A request authenticated by.
+	 * FLOSC token has no WordPress session token, so rest_cookie_check_errors.
+	 * Would fail its nonce check and reset the current user to nobody. Returning.
+	 * A non-empty result short-circuits that check.
 	 *
 	 * @param WP_Error|null|true $result The authentication result so far.
 	 * @return WP_Error|null|true The result to use.
@@ -584,7 +585,7 @@ class FLOSC_Framework {
 	 *
 	 * @param WP_User $user       The recipient.
 	 * @param array   $score_data Their quiz result, for the mail body.
-	 * @return bool True when the mail was handed to wp_mail().
+	 * @return Bool True when the mail was handed to wp_mail().
 	 */
 	public function send_score_email( $user, $score_data ) {
 		return $this->email_service->send_score_email( $user, $score_data );
@@ -597,7 +598,7 @@ class FLOSC_Framework {
 	 *
 	 * @param string $flow_id Flow whose identity settings to read; '' for the current one.
 	 * @param int    $user_id Recipient, when the flow has to be inferred from them.
-	 * @return array The identity and wording, keyed by field.
+	 * @return Array The identity and wording, keyed by field.
 	 */
 	private function get_guest_email_context( $flow_id = '', $user_id = 0 ) {
 		return $this->email_service->get_guest_email_context( $flow_id, $user_id );
@@ -606,13 +607,13 @@ class FLOSC_Framework {
 	/**
 	 * Substitute the placeholders a guest email body may carry.
 	 *
-	 * Delegates to FLOSC_Email. Handles the tokens documented on the Email tab --
-	 * name, app name, days remaining, chat and upgrade URLs.
+	 * Delegates to FLOSC_Email. Handles the tokens documented on the Email tab --.
+	 * Name, app name, days remaining, chat and upgrade URLs.
 	 *
-	 * @param string  $text            Template text with placeholders.
-	 * @param WP_User $user            Recipient.
-	 * @param int     $days_remaining  Days of guest access left, for the token of that name.
-	 * @return string The text with every placeholder replaced.
+	 * @param string  $text           Template text with placeholders.
+	 * @param WP_User $user           Recipient.
+	 * @param int     $days_remaining Days of guest access left, for the token of that name.
+	 * @return String The text with every placeholder replaced.
 	 */
 	private function replace_guest_email_placeholders( $text, $user, $days_remaining ) {
 		return $this->email_service->replace_guest_email_placeholders( $text, $user, $days_remaining );
@@ -621,12 +622,12 @@ class FLOSC_Framework {
 	/**
 	 * Who a FLOSC email is from, for this flow.
 	 *
-	 * Delegates to FLOSC_Email. Flows can each carry their own sender name and
-	 * address, so this is resolved per send rather than once per site.
+	 * Delegates to FLOSC_Email. Flows can each carry their own sender name and.
+	 * Address, so this is resolved per send rather than once per site.
 	 *
 	 * @param string $flow_id Flow whose identity to read; '' for the current one.
 	 * @param int    $user_id Recipient, when the flow has to be inferred from them.
-	 * @return array The sender name and address.
+	 * @return Array The sender name and address.
 	 */
 	private function get_flosc_mail_identity( $flow_id = '', $user_id = 0 ) {
 		return $this->email_service->get_flosc_mail_identity( $flow_id, $user_id );
@@ -635,13 +636,13 @@ class FLOSC_Framework {
 	/**
 	 * The mail headers every FLOSC email carries.
 	 *
-	 * Delegates to FLOSC_Email. Built from the flow's sender identity so all of a
-	 * flow's mail arrives from the same place.
+	 * Delegates to FLOSC_Email. Built from the flow's sender identity so all of a.
+	 * Flow's mail arrives from the same place.
 	 *
 	 * @param string $flow_id Flow whose identity to read; '' for the current one.
 	 * @param int    $user_id Recipient, when the flow has to be inferred from them.
 	 * @param bool   $is_html True to add the HTML content type.
-	 * @return string[] Headers, ready for wp_mail().
+	 * @return String[] Headers, ready for wp_mail().
 	 */
 	private function get_flosc_mail_headers( $flow_id = '', $user_id = 0, $is_html = false ) {
 		return $this->email_service->get_flosc_mail_headers( $flow_id, $user_id, $is_html );
@@ -654,7 +655,7 @@ class FLOSC_Framework {
 	 *
 	 * @param string $flow_id Flow whose identity to read; '' for the current one.
 	 * @param int    $user_id Recipient, when the flow has to be inferred from them.
-	 * @return string The Reply-To header line.
+	 * @return String The Reply-To header line.
 	 */
 	private function get_flosc_reply_to_header( $flow_id = '', $user_id = 0 ) {
 		return $this->email_service->get_flosc_reply_to_header( $flow_id, $user_id );
@@ -663,15 +664,15 @@ class FLOSC_Framework {
 	/**
 	 * Welcome a user who registered through an SSO provider.
 	 *
-	 * Delegates to FLOSC_Email. Carries no magic link: the provider has already
-	 * authenticated them, and magic links are opt-in and admin-issued. Users who
-	 * arrived by any other route are skipped, so the pending-email and purchase
-	 * paths keep their own welcome.
+	 * Delegates to FLOSC_Email. Carries no magic link: the provider has already.
+	 * Authenticated them, and magic links are opt-in and admin-issued. Users who.
+	 * Arrived by any other route are skipped, so the pending-email and purchase.
+	 * Paths keep their own welcome.
 	 *
 	 * @param int    $user_id     The new account.
 	 * @param string $provider_id Which provider they came from.
 	 * @param array  $user_data   Profile fields the provider returned.
-	 * @return bool True when the mail was handed to wp_mail().
+	 * @return Bool True when the mail was handed to wp_mail().
 	 */
 	public function send_sso_welcome_email( $user_id, $provider_id, $user_data = array() ) {
 		return $this->email_service->send_sso_welcome_email( $user_id, $provider_id, $user_data );
@@ -680,12 +681,12 @@ class FLOSC_Framework {
 	/**
 	 * Send whichever guest follow-ups this user is now due.
 	 *
-	 * Delegates to FLOSC_Email. Each follow-up slot has a day window measured from
-	 * registration; a slot sends when the guest's age falls inside its window and
-	 * they have not upgraded. Idempotent -- sent slots are recorded per user.
+	 * Delegates to FLOSC_Email. Each follow-up slot has a day window measured from.
+	 * Registration; a slot sends when the guest's age falls inside its window and.
+	 * They have not upgraded. Idempotent -- sent slots are recorded per user.
 	 *
 	 * @param int $user_id The guest.
-	 * @return int How many follow-ups were sent.
+	 * @return Int How many follow-ups were sent.
 	 */
 	private function send_due_guest_followups_for_user( $user_id ) {
 		return $this->email_service->send_due_guest_followups_for_user( $user_id );
@@ -694,17 +695,17 @@ class FLOSC_Framework {
 	/**
 	 * Send one email from a batch run, respecting the per-run cap.
 	 *
-	 * Delegates to FLOSC_Email. For cron sends only, so a daily run cannot burst the
-	 * mail server: it caps how many go out per run and spaces them slightly. The
-	 * cap is filterable through flosc_email_max_per_run, where 0 means no cap.
+	 * Delegates to FLOSC_Email. For cron sends only, so a daily run cannot burst the.
+	 * Mail server: it caps how many go out per run and spaces them slightly. The.
+	 * Cap is filterable through flosc_email_max_per_run, where 0 means no cap.
 	 * Welcome emails are event-driven and do not come through here.
 	 *
 	 * @param string   $to      Recipient address.
 	 * @param string   $subject Subject line.
 	 * @param string   $body    Message body.
 	 * @param string[] $headers Mail headers.
-	 * @return bool True when sent; false once the cap is reached, so the caller
-	 *              can stop and pick up on the next run.
+	 * @return Bool True when sent; false once the cap is reached, so the caller.
+	 * Can stop and pick up on the next run.
 	 */
 	private function send_email_throttled( $to, $subject, $body, $headers ) {
 		return $this->email_service->send_email_throttled( $to, $subject, $body, $headers );
@@ -713,15 +714,15 @@ class FLOSC_Framework {
 	/**
 	 * Wrap body text in the shared HTML email card.
 	 *
-	 * Delegates to FLOSC_Email. One card style across every FLOSC email, so the guest,
-	 * member and newsletter mail all look like they came from the same place.
+	 * Delegates to FLOSC_Email. One card style across every FLOSC email, so the guest,.
+	 * Member and newsletter mail all look like they came from the same place.
 	 *
 	 * @param array   $context      Sender identity and product wording.
 	 * @param WP_User $user         Recipient.
 	 * @param string  $body_text    The message, as plain text.
 	 * @param string  $button_url   Call-to-action URL. Omit for no button.
 	 * @param string  $button_label Button text. Omit for no button.
-	 * @return string The complete HTML message.
+	 * @return String The complete HTML message.
 	 */
 	private function flosc_email_html_card( $context, $user, $body_text, $button_url = '', $button_label = '' ) {
 		return $this->email_service->flosc_email_html_card( $context, $user, $body_text, $button_url, $button_label );
@@ -730,12 +731,12 @@ class FLOSC_Framework {
 	/**
 	 * Welcome a user who has just become a member.
 	 *
-	 * Delegates to FLOSC_Email. Sent once per user per flow; the send time anchors the
-	 * member follow-up series.
+	 * Delegates to FLOSC_Email. Sent once per user per flow; the send time anchors the.
+	 * Member follow-up series.
 	 *
 	 * @param int   $user_id       The new member.
 	 * @param array $purchase_data What they bought, for the mail's wording.
-	 * @return bool True when the mail was handed to wp_mail().
+	 * @return Bool True when the mail was handed to wp_mail().
 	 */
 	public function dispatch_member_welcome_email( $user_id, $purchase_data = array() ) {
 		return $this->email_service->dispatch_member_welcome_email( $user_id, $purchase_data );
@@ -744,12 +745,12 @@ class FLOSC_Framework {
 	/**
 	 * Welcome a user who has just opted into the newsletter.
 	 *
-	 * Delegates to FLOSC_Email. Sent once per user per flow; the send time anchors the
-	 * newsletter follow-up series.
+	 * Delegates to FLOSC_Email. Sent once per user per flow; the send time anchors the.
+	 * Newsletter follow-up series.
 	 *
 	 * @param int    $user_id The subscriber.
 	 * @param string $flow_id Flow they subscribed through; '' for the current one.
-	 * @return bool True when the mail was handed to wp_mail().
+	 * @return Bool True when the mail was handed to wp_mail().
 	 */
 	public function dispatch_newsletter_welcome_email( $user_id, $flow_id = '' ) {
 		return $this->email_service->dispatch_newsletter_welcome_email( $user_id, $flow_id );
@@ -762,7 +763,7 @@ class FLOSC_Framework {
 	 *
 	 * @param int    $user_id The subscriber.
 	 * @param string $flow_id Flow they subscribed through; '' for the current one.
-	 * @return bool True when the opt-in was recorded.
+	 * @return Bool True when the opt-in was recorded.
 	 */
 	public function subscribe_to_newsletter( $user_id, $flow_id = '' ) {
 		return $this->email_service->subscribe_to_newsletter( $user_id, $flow_id );
@@ -771,11 +772,11 @@ class FLOSC_Framework {
 	/**
 	 * Print the newsletter opt-in checkbox on the WordPress profile screen.
 	 *
-	 * Delegates to FLOSC_Email. Optional -- it appears only when the flow has the
-	 * newsletter turned on.
+	 * Delegates to FLOSC_Email. Optional -- it appears only when the flow has the.
+	 * Newsletter turned on.
 	 *
 	 * @param WP_User $user The profile being edited.
- * @return mixed Result produced by the newsletter profile field operation.
+	 * @return Mixed Result produced by the newsletter profile field operation.
 	 */
 	public function render_newsletter_profile_field( $user ) {
 		return $this->email_service->render_newsletter_profile_field( $user );
@@ -784,11 +785,11 @@ class FLOSC_Framework {
 	/**
 	 * Save the newsletter opt-in from the WordPress profile screen.
 	 *
-	 * Delegates to FLOSC_Email. A first opt-in here sends the welcome, the same as
-	 * one made through the app.
+	 * Delegates to FLOSC_Email. A first opt-in here sends the welcome, the same as.
+	 * One made through the app.
 	 *
 	 * @param int $user_id The profile being saved.
- * @return mixed Result produced by the newsletter profile field operation.
+	 * @return Mixed Result produced by the newsletter profile field operation.
 	 */
 	public function save_newsletter_profile_field( $user_id ) {
 		return $this->email_service->save_newsletter_profile_field( $user_id );
@@ -798,7 +799,7 @@ class FLOSC_Framework {
 	 * User-profile textarea only. Enable lives on the personality (AI tab, third row).
 	 *
 	 * @param WP_User $user User being edited.
-	 * @return void
+	 * @return Void.
 	 */
 	public function render_user_sticky_profile_field( $user ) {
 		if ( ! ( $user instanceof WP_User ) || ! current_user_can( 'edit_users' ) ) {
@@ -852,7 +853,7 @@ class FLOSC_Framework {
 	 * Save the user-profile sticky note. Enable is not saved here.
 	 *
 	 * @param int $user_id User ID.
-	 * @return void
+	 * @return Void.
 	 */
 	public function save_user_sticky_profile_field( $user_id ) {
 		$user_id = absint( $user_id );
@@ -878,17 +879,17 @@ class FLOSC_Framework {
 	/**
 	 * Send whichever emails in a follow-up series are now due.
 	 *
-	 * Delegates to FLOSC_Email. Reads the <prefix>_followups repeater rows -- each a
-	 * day offset, subject and body -- and sends those whose offset has elapsed
-	 * since $anchor_ts and that have not gone out already. Idempotent, and the
-	 * sent state is tracked per flow and per series.
+	 * Delegates to FLOSC_Email. Reads the <prefix>_followups repeater rows -- each a.
+	 * Day offset, subject and body -- and sends those whose offset has elapsed.
+	 * Since $anchor_ts and that have not gone out already. Idempotent, and the.
+	 * Sent state is tracked per flow and per series.
 	 *
 	 * @param WP_User $user          Recipient.
 	 * @param string  $prefix        Series key, e.g. 'member' or 'newsletter'.
 	 * @param int     $anchor_ts     When the series started -- the welcome email's send time.
 	 * @param string  $sent_meta_key User meta key recording which rows have been sent.
 	 * @param string  $flow_id       Flow the series belongs to.
-	 * @return int How many emails were sent.
+	 * @return Int How many emails were sent.
 	 */
 	private function send_due_series_followups( $user, $prefix, $anchor_ts, $sent_meta_key, $flow_id ) {
 		return $this->email_service->send_due_series_followups( $user, $prefix, $anchor_ts, $sent_meta_key, $flow_id );
@@ -897,13 +898,13 @@ class FLOSC_Framework {
 	/**
 	 * Cron: send every follow-up email that has come due across the site.
 	 *
-	 * Delegates to FLOSC_Email. Runs the guest day-window follow-ups plus the member
-	 * and newsletter series. Series offsets are measured from each user's own
-	 * welcome-email send time, not from a site-wide date.
+	 * Delegates to FLOSC_Email. Runs the guest day-window follow-ups plus the member.
+	 * And newsletter series. Series offsets are measured from each user's own.
+	 * Welcome-email send time, not from a site-wide date.
 	 *
 	 * Hooked to flosc_guest_followup_cron.
 	 *
-	 * @return int How many emails were sent this run.
+	 * @return Int How many emails were sent this run.
 	 */
 	public function run_guest_followup_emails() {
 		return $this->email_service->run_guest_followup_emails();
@@ -914,7 +915,7 @@ class FLOSC_Framework {
 	 *
 	 * Delegates to FLOSC_Email.
 	 *
-	 * @return string The default template text.
+	 * @return String The default template text.
 	 */
 	private function get_default_email_template() {
 		return $this->email_service->get_default_email_template();
@@ -935,9 +936,9 @@ class FLOSC_Framework {
 	/**
 	 * REST: the body content behind one offer.
 	 *
-	 * Delegates to FLOSC_Checkout_REST. The content can come from a static HTML file shipped
-	 * with the plugin, a WooCommerce product, or a WordPress post; the output is
-	 * escaped either way.
+	 * Delegates to FLOSC_Checkout_REST. The content can come from a static HTML file shipped.
+	 * With the plugin, a WooCommerce product, or a WordPress post; the output is.
+	 * Escaped either way.
 	 *
 	 * @param WP_REST_Request $request The request, naming the offer.
 	 * @return WP_REST_Response|WP_Error The offer's content.
@@ -949,9 +950,9 @@ class FLOSC_Framework {
 	/**
 	 * REST: complete a purchase and grant the access it buys.
 	 *
-	 * Delegates to FLOSC_Checkout_REST. On success this both fires flosc_purchase_completed and
-	 * grants the member level through FLOSC_Member_Access, so content protection
-	 * takes effect on the same request rather than on the next one.
+	 * Delegates to FLOSC_Checkout_REST. On success this both fires flosc_purchase_completed and.
+	 * Grants the member level through FLOSC_Member_Access, so content protection.
+	 * Takes effect on the same request rather than on the next one.
 	 *
 	 * @param WP_REST_Request $request The request.
 	 * @return WP_REST_Response|WP_Error The purchase result.
@@ -966,7 +967,7 @@ class FLOSC_Framework {
 	 * Delegates to FLOSC_Checkout_REST.
 	 *
 	 * @param array $offer The offer row.
-	 * @return float The price, in whole currency units.
+	 * @return Float The price, in whole currency units.
 	 */
 	public function flosc_offer_list_price( $offer ) {
 		return $this->checkout_rest->flosc_offer_list_price( $offer );
@@ -975,14 +976,14 @@ class FLOSC_Framework {
 	/**
 	 * Apply a coupon to an offer's one-time price.
 	 *
-	 * Delegates to FLOSC_Checkout_REST. A fixed_price coupon names the final amount charged; a
-	 * percent coupon takes that percentage off the list price. Validity windows
-	 * are read in UTC.
+	 * Delegates to FLOSC_Checkout_REST. A fixed_price coupon names the final amount charged; a.
+	 * Percent coupon takes that percentage off the list price. Validity windows.
+	 * Are read in UTC.
 	 *
 	 * @param array  $offer The offer row.
 	 * @param string $code  The coupon code.
-	 * @return array|WP_Error The payable amount, list price, code, type and
-	 *                        value; or an error when the coupon does not apply.
+	 * @return Array|WP_Error The payable amount, list price, code, type and.
+	 * Value; or an error when the coupon does not apply.
 	 */
 	public function flosc_apply_offer_price_coupon( array $offer, $code ) {
 		return $this->checkout_rest->flosc_apply_offer_price_coupon( $offer, $code );
@@ -991,13 +992,13 @@ class FLOSC_Framework {
 	/**
 	 * What a one-time native checkout should charge.
 	 *
-	 * Delegates to FLOSC_Checkout_REST. The list price, or the coupon price when a valid code
-	 * is supplied.
+	 * Delegates to FLOSC_Checkout_REST. The list price, or the coupon price when a valid code.
+	 * Is supplied.
 	 *
 	 * @param array  $offer       The offer row.
 	 * @param string $coupon_code Coupon code, or '' for none.
-	 * @return array|WP_Error The amount, list price, coupon code and currency
-	 *                        hint; or an error when the coupon does not apply.
+	 * @return Array|WP_Error The amount, list price, coupon code and currency.
+	 * Hint; or an error when the coupon does not apply.
 	 */
 	public function flosc_resolve_native_payable_amount( array $offer, $coupon_code = '' ) {
 		return $this->checkout_rest->flosc_resolve_native_payable_amount( $offer, $coupon_code );
@@ -1009,7 +1010,7 @@ class FLOSC_Framework {
 	 * Delegates to FLOSC_Checkout_REST.
 	 *
 	 * @param array $offer The offer row.
-	 * @return array{monthly:float,yearly:float} Both prices, in whole currency units.
+	 * @return Array{monthly:float,yearly:float} Both prices, in whole currency units.
 	 */
 	public function flosc_offer_subscription_list_prices( array $offer ) {
 		return $this->checkout_rest->flosc_offer_subscription_list_prices( $offer );
@@ -1018,13 +1019,13 @@ class FLOSC_Framework {
 	/**
 	 * Apply a coupon to an offer's subscription prices.
 	 *
-	 * Delegates to FLOSC_Checkout_REST. A percent coupon reduces both intervals by that
-	 * percentage.
+	 * Delegates to FLOSC_Checkout_REST. A percent coupon reduces both intervals by that.
+	 * Percentage.
 	 *
 	 * @param array  $offer       The offer row.
 	 * @param string $coupon_code The coupon code.
-	 * @return array|WP_Error Both reduced prices; or an error when the coupon
-	 *                        does not apply.
+	 * @return Array|WP_Error Both reduced prices; or an error when the coupon.
+	 * Does not apply.
 	 */
 	public function flosc_resolve_subscription_coupon_prices( array $offer, $coupon_code = '' ) {
 		return $this->checkout_rest->flosc_resolve_subscription_coupon_prices( $offer, $coupon_code );
@@ -1036,7 +1037,7 @@ class FLOSC_Framework {
 	 * Delegates to FLOSC_Checkout_REST. Decides which of the two coupon paths above applies.
 	 *
 	 * @param array $offer The offer row.
-	 * @return bool True for a subscription offer.
+	 * @return Bool True for a subscription offer.
 	 */
 	public function flosc_offer_is_subscription( array $offer ) {
 		return $this->checkout_rest->flosc_offer_is_subscription( $offer );
@@ -1045,8 +1046,8 @@ class FLOSC_Framework {
 	/**
 	 * REST: preview what a coupon would do, without charging anything.
 	 *
-	 * Delegates to FLOSC_Checkout_REST. Native checkout only; it fills in the payment modal's
-	 * before-and-after prices.
+	 * Delegates to FLOSC_Checkout_REST. Native checkout only; it fills in the payment modal's.
+	 * Before-and-after prices.
 	 *
 	 * @param WP_REST_Request $request The request, naming the offer and code.
 	 * @return WP_REST_Response|WP_Error The previewed prices.
@@ -1058,10 +1059,10 @@ class FLOSC_Framework {
 	/**
 	 * REST: run a purchase through the sandbox provider, for testing a flow.
 	 *
-	 * Delegates to FLOSC_Checkout_REST. Grants access by the same route a real purchase does --
-	 * it fires flosc_purchase_completed and calls FLOSC_Member_Access::grant_level()
-	 * -- so a sandbox purchase exercises content protection rather than only
-	 * setting a meta key that protection does not read.
+	 * Delegates to FLOSC_Checkout_REST. Grants access by the same route a real purchase does --.
+	 * It fires flosc_purchase_completed and calls FLOSC_Member_Access::grant_level()
+	 * -- so a sandbox purchase exercises content protection rather than only.
+	 * Setting a meta key that protection does not read.
 	 *
 	 * @param WP_REST_Request $request The request.
 	 * @return WP_REST_Response|WP_Error The purchase result.
@@ -1073,8 +1074,8 @@ class FLOSC_Framework {
 	/**
 	 * REST: mint a payment intent on the server before the payment SDK runs.
 	 *
-	 * Delegates to FLOSC_Checkout_REST. The offer, amount and currency are fixed here, so the
-	 * browser cannot name its own price.
+	 * Delegates to FLOSC_Checkout_REST. The offer, amount and currency are fixed here, so the.
+	 * Browser cannot name its own price.
 	 *
 	 * @param WP_REST_Request $request The request, naming the offer.
 	 * @return WP_REST_Response|WP_Error The intent.
@@ -1086,9 +1087,9 @@ class FLOSC_Framework {
 	/**
 	 * REST: finish a purchase the browser says has been paid.
 	 *
-	 * Delegates to FLOSC_Checkout_REST. Verifies the payment with the provider before granting
-	 * anything. This is the fallback path for when the provider's webhook is slow;
-	 * both routes are idempotent.
+	 * Delegates to FLOSC_Checkout_REST. Verifies the payment with the provider before granting.
+	 * Anything. This is the fallback path for when the provider's webhook is slow;
+	 * Both routes are idempotent.
 	 *
 	 * @param WP_REST_Request $request The request.
 	 * @return WP_REST_Response|WP_Error The purchase result.
@@ -1100,9 +1101,9 @@ class FLOSC_Framework {
 	/**
 	 * REST: bind a checkout to the browser that started it.
 	 *
-	 * Delegates to FLOSC_Checkout_REST, which issues a one-time value that
+	 * Delegates to FLOSC_Checkout_REST, which issues a one-time value that.
 	 * flosc_checkout_binding_verify() consumes at completion as proof that the
-	 * completing request is the same browser that opened the checkout.
+	 * Completing request is the same browser that opened the checkout.
 	 *
 	 * @param WP_REST_Request $request The request.
 	 * @return WP_REST_Response|WP_Error The binding.
@@ -1114,11 +1115,11 @@ class FLOSC_Framework {
 	/**
 	 * PayPal: prepare subscription purchase intent (server-side bind before JS SDK).
 	 *
-	 * Industry standard: mint offer/plan/amount/currency on the server, return UUID
-	 * for PayPal custom_id; activate loads that intent and ignores client offer swaps.
+	 * Industry standard: mint offer/plan/amount/currency on the server, return UUID.
+	 * For PayPal custom_id; activate loads that intent and ignores client offer swaps.
 	 *
 	 * @param WP_REST_Request $request Request.
-	 * @return WP_REST_Response|WP_Error
+	 * @return WP_REST_Response|WP_Error.
 	 */
 	public function paypal_prepare_subscription( $request ) {
 		$offer_id   = sanitize_text_field( (string) $request->get_param( 'offer_id' ) );
@@ -1242,8 +1243,8 @@ class FLOSC_Framework {
 	/**
 	 * REST: receive a payment provider's webhook.
 	 *
-	 * Delegates to FLOSC_Checkout_REST, which verifies the provider's signature
-	 * before acting on anything the request claims.
+	 * Delegates to FLOSC_Checkout_REST, which verifies the provider's signature.
+	 * Before acting on anything the request claims.
 	 *
 	 * @param WP_REST_Request $request The webhook request.
 	 * @return WP_REST_Response|WP_Error The acknowledgement.
@@ -1267,11 +1268,11 @@ class FLOSC_Framework {
 	/**
 	 * Read a FLOSC timestamp string back into a Unix time.
 	 *
-	 * Delegates to FLOSC_Checkout_REST. The format is the one
+	 * Delegates to FLOSC_Checkout_REST. The format is the one.
 	 * flosc_michel_timestamp_global() writes: 2026y-09m-17d-UTC14h-32m-05s.
 	 *
 	 * @param string $raw The timestamp string.
-	 * @return int Seconds since the epoch, or 0 when the string does not parse.
+	 * @return Int Seconds since the epoch, or 0 when the string does not parse.
 	 */
 	public function flosc_parse_utc_mts_timestamp( $raw ) {
 		return $this->checkout_rest->flosc_parse_utc_mts_timestamp( $raw );
@@ -1281,18 +1282,18 @@ class FLOSC_Framework {
 	/**
 	 * Give a guest their opening token allowance on a flow, once.
 	 *
-	 * Delegates to FLOSC_Token_Ledger. Idempotent: a guest who already has a wallet on this
-	 * flow keeps whatever is in it.
+	 * Delegates to FLOSC_Token_Ledger. Idempotent: a guest who already has a wallet on this.
+	 * Flow keeps whatever is in it.
 	 *
 	 * @param int    $user_id        The guest.
-	 * @param object $token_provider Not used. The wallet is flow meta rather than
-	 *                               provider state; the parameter stays for
-	 *                               callers that already hold a provider.
-	 * @param string $flow_id        Flow stem the grant belongs to; '' resolves
-	 *                               to the current flow.
-	 * @param string $reason         Not used. Kept for call sites that pass an
-	 *                               audit note.
-	 * @return int The balance after the grant, or 0 when $user_id is not a real user.
+	 * @param object $token_provider Not used. The wallet is flow meta rather than.
+	 * Provider state; the parameter stays for.
+	 * Callers that already hold a provider.
+	 * @param string $flow_id        Flow stem the grant belongs to; '' resolves.
+	 * To the current flow.
+	 * @param string $reason         Not used. Kept for call sites that pass an.
+	 * Audit note.
+	 * @return Int The balance after the grant, or 0 when $user_id is not a real user.
 	 */
 	public function flosc_ensure_guest_token_baseline( $user_id, $token_provider, $flow_id = '', $reason = '' ) {
 		return $this->token_ledger->flosc_ensure_guest_token_baseline( $user_id, $token_provider, $flow_id, $reason );
@@ -1305,12 +1306,12 @@ class FLOSC_Framework {
 	 *
 	 * @param int    $user_id The buyer.
 	 * @param string $flow_id Flow stem the purchase applies to.
-	 * @param string $mode    One of onetime, recurring, recurring_yearly, monthly
-	 *                        or yearly. Decides whether the credit applies once
-	 *                        or on each renewal.
-	 * @param array  $context Purchase details from the payment provider, carried
-	 *                        through to the audit record.
-	 * @return array What was applied, and the balance that resulted.
+	 * @param string $mode    One of onetime, recurring, recurring_yearly, monthly.
+	 * Or yearly. Decides whether the credit applies once.
+	 * Or on each renewal.
+	 * @param array  $context Purchase details from the payment provider, carried.
+	 * Through to the audit record.
+	 * @return Array What was applied, and the balance that resulted.
 	 */
 	public function flosc_apply_product_token_credit_public( $user_id, $flow_id = '', $mode = 'onetime', $context = array() ) {
 		return $this->token_ledger->flosc_apply_product_token_credit_public( $user_id, $flow_id, $mode, $context );
@@ -1322,13 +1323,13 @@ class FLOSC_Framework {
 	 * Delegates to FLOSC_Token_Ledger.
 	 *
 	 * @deprecated Use flosc_apply_product_token_credit_public(), which this
-	 *             forwards to unchanged. Kept so older call sites keep working.
+	 * Forwards to unchanged. Kept so older call sites keep working.
 	 *
 	 * @param int    $user_id   The subscriber.
 	 * @param string $flow_id   Flow stem the subscription applies to.
 	 * @param string $plan_type Passed through as the credit mode.
 	 * @param array  $context   Purchase details from the payment provider.
-	 * @return array What was applied, and the balance that resulted.
+	 * @return Array What was applied, and the balance that resulted.
 	 */
 	public function flosc_apply_subscription_token_topup_public( $user_id, $flow_id = '', $plan_type = 'monthly', $context = array() ) {
 		return $this->token_ledger->flosc_apply_subscription_token_topup_public( $user_id, $flow_id, $plan_type, $context );
@@ -1337,16 +1338,16 @@ class FLOSC_Framework {
 	/**
 	 * Give a member their token grant when access is granted.
 	 *
-	 * Delegates to FLOSC_Token_Ledger. Which wallet the grant lands in is
-	 * resolved in order: the flow named in $purchase_data, then the flow the
-	 * person registered on, then the flow currently being served. Without that
-	 * fallback a member who bought through a route carrying no flow id would be
-	 * credited on the wrong wallet.
+	 * Delegates to FLOSC_Token_Ledger. Which wallet the grant lands in is.
+	 * Resolved in order: the flow named in $purchase_data, then the flow the.
+	 * Person registered on, then the flow currently being served. Without that.
+	 * Fallback a member who bought through a route carrying no flow id would be.
+	 * Credited on the wrong wallet.
 	 *
 	 * @param int   $user_id       The user who was just granted access.
-	 * @param array $purchase_data Payload from the access-granting event. Its
-	 *                             flow_id is preferred when present.
-	 * @return int The balance after the grant, or 0 when $user_id is not a real user.
+	 * @param array $purchase_data Payload from the access-granting event. Its.
+	 * Flow_id is preferred when present.
+	 * @return Int The balance after the grant, or 0 when $user_id is not a real user.
 	 */
 	public function apply_member_token_grant_on_access( $user_id, $purchase_data = array() ) {
 		return $this->token_ledger->apply_member_token_grant_on_access( $user_id, $purchase_data );
@@ -1355,15 +1356,15 @@ class FLOSC_Framework {
 	/**
 	 * Chat Logs journey mark: this account came into existence just now.
 	 *
-	 * Hooked to WordPress core's user_register. Observes only -- it queues a note
-	 * on the user that the next logged chat turn writes into their thread as "+G".
+	 * Hooked to WordPress core's user_register. Observes only -- it queues a note.
+	 * On the user that the next logged chat turn writes into their thread as "+G".
 	 * Nothing about registration itself is changed or intercepted.
 	 *
-	 * The account is not flow-specific, so the mark is queued account-wide and is
-	 * redeemed by whichever flow the person is chatting on.
+	 * The account is not flow-specific, so the mark is queued account-wide and is.
+	 * Redeemed by whichever flow the person is chatting on.
 	 *
 	 * @param int $user_id Newly created user.
-	 * @return void
+	 * @return Void.
 	 */
 	public function flosc_mark_journey_account_created( $user_id ) {
 		if ( ! class_exists( 'FLOSC_Chat_Logger' ) ) {
@@ -1375,19 +1376,19 @@ class FLOSC_Framework {
 	/**
 	 * Chat Logs journey mark: this user became a member of a flow just now.
 	 *
-	 * Hooked to flosc_member_access_granted, which every purchase path reaches via
+	 * Hooked to flosc_member_access_granted, which every purchase path reaches via.
 	 * grant_member_access(). Observes only -- the entitlement is already written by
-	 * the time this runs.
+	 * The time this runs.
 	 *
-	 * Membership is per-flow, so the mark is queued against the flow's stem and is
-	 * only redeemed by a turn on that flow. Two callers fire this action with
-	 * different second arguments -- an array of purchase data, and a plain string
-	 * reason -- so accept both and fall back to the current flow when no flow id
-	 * is carried.
+	 * Membership is per-flow, so the mark is queued against the flow's stem and is.
+	 * Only redeemed by a turn on that flow. Two callers fire this action with.
+	 * Different second arguments -- an array of purchase data, and a plain string.
+	 * Reason -- so accept both and fall back to the current flow when no flow id.
+	 * Is carried.
 	 *
 	 * @param int          $user_id       The user who was granted membership.
 	 * @param array|string $purchase_data Purchase payload, or a reason string.
-	 * @return void
+	 * @return Void.
 	 */
 	public function flosc_mark_journey_member_granted( $user_id, $purchase_data = array() ) {
 		if ( ! class_exists( 'FLOSC_Chat_Logger' ) ) {
@@ -1411,14 +1412,14 @@ class FLOSC_Framework {
 	/**
 	 * Whether this user should get the visitor-to-guest token allowance on a flow.
 	 *
-	 * Delegates to FLOSC_Token_Ledger. A member of THIS flow does not -- they are past the
-	 * point the allowance exists for. A member of some other flow still does,
-	 * because they are a guest here.
+	 * Delegates to FLOSC_Token_Ledger. A member of THIS flow does not -- they are past the.
+	 * Point the allowance exists for. A member of some other flow still does,.
+	 * Because they are a guest here.
 	 *
 	 * @param int    $user_id The user being considered.
 	 * @param string $flow_id Flow id or stem for this page or request.
-	 * @return bool False for administrators and for members of this flow; true
-	 *              for everyone else.
+	 * @return Bool False for administrators and for members of this flow; true.
+	 * For everyone else.
 	 */
 	public function flosc_user_should_receive_guest_tokens( $user_id, $flow_id = '' ) {
 		return $this->token_ledger->flosc_user_should_receive_guest_tokens( $user_id, $flow_id );
@@ -1427,15 +1428,15 @@ class FLOSC_Framework {
 	/**
 	 * A visitor's token balance in this flow.
 	 *
-	 * Delegates to FLOSC_Token_Ledger. A visitor has no account, so the wallet lives in a
-	 * transient keyed by session. Reading it rewrites the transient with a fresh
-	 * thirty-day life, so a balance does not expire under an active conversation.
+	 * Delegates to FLOSC_Token_Ledger. A visitor has no account, so the wallet lives in a.
+	 * Transient keyed by session. Reading it rewrites the transient with a fresh.
+	 * Thirty-day life, so a balance does not expire under an active conversation.
 	 *
 	 * @param string $flow_id        Flow stem the wallet belongs to.
 	 * @param int    $session_id     Visitor session id.
-	 * @param object $token_provider Provider used to resolve this flow's opening
-	 *                               allowance.
-	 * @return int The balance, or 0 when the session id or provider is missing.
+	 * @param object $token_provider Provider used to resolve this flow's opening.
+	 * Allowance.
+	 * @return Int The balance, or 0 when the session id or provider is missing.
 	 */
 	public function flosc_get_visitor_session_token_balance( $flow_id, $session_id, $token_provider ) {
 		return $this->token_ledger->flosc_get_visitor_session_token_balance( $flow_id, $session_id, $token_provider );
@@ -1444,13 +1445,13 @@ class FLOSC_Framework {
 	/**
 	 * Write a visitor's token balance.
 	 *
-	 * Delegates to FLOSC_Token_Ledger. A negative balance is clamped to zero: a visitor can
-	 * run out, never into debt.
+	 * Delegates to FLOSC_Token_Ledger. A negative balance is clamped to zero: a visitor can.
+	 * Run out, never into debt.
 	 *
 	 * @param string $flow_id    Flow stem the wallet belongs to.
 	 * @param int    $session_id Visitor session id.
 	 * @param int    $balance    Balance to store. Clamped at zero.
-	 * @return int The balance as stored, or 0 when the session id is missing.
+	 * @return Int The balance as stored, or 0 when the session id is missing.
 	 */
 	public function flosc_set_visitor_session_token_balance( $flow_id, $session_id, $balance ) {
 		return $this->token_ledger->flosc_set_visitor_session_token_balance( $flow_id, $session_id, $balance );
@@ -1459,14 +1460,14 @@ class FLOSC_Framework {
 	/**
 	 * Charge a visitor for one completed turn.
 	 *
-	 * Delegates to FLOSC_Token_Ledger. When the balance will not cover the turn nothing is
-	 * charged and charged comes back false, which the caller reads as a refusal.
+	 * Delegates to FLOSC_Token_Ledger. When the balance will not cover the turn nothing is.
+	 * Charged and charged comes back false, which the caller reads as a refusal.
 	 *
 	 * @param string $flow_id        Flow stem the wallet belongs to.
 	 * @param int    $session_id     Visitor session id.
 	 * @param object $token_provider Provider used to price the turn.
 	 * @param array  $billing_meta   Usage the provider reported, used to price it.
-	 * @return array{charged:bool,charge_tokens:int,balance_before:int,balance_after:int}
+	 * @return Array{charged:bool,charge_tokens:int,balance_before:int,balance_after:int}.
 	 */
 	public function flosc_charge_visitor_session_tokens( $flow_id, $session_id, $token_provider, $billing_meta = array() ) {
 		return $this->token_ledger->flosc_charge_visitor_session_tokens( $flow_id, $session_id, $token_provider, $billing_meta );
@@ -1475,20 +1476,20 @@ class FLOSC_Framework {
 	/**
 	 * Hold tokens for a turn that has not been priced yet.
 	 *
-	 * Delegates to FLOSC_Token_Ledger. A turn's real cost is only known once the provider
-	 * answers, so an estimate is held first and settled afterwards. The hold is
-	 * taken under a lock, so two turns on one session cannot both spend the same
-	 * balance.
+	 * Delegates to FLOSC_Token_Ledger. A turn's real cost is only known once the provider.
+	 * Answers, so an estimate is held first and settled afterwards. The hold is.
+	 * Taken under a lock, so two turns on one session cannot both spend the same.
+	 * Balance.
 	 *
 	 * @param string $flow_id        Flow stem the wallet belongs to.
 	 * @param int    $session_id     Visitor session id.
 	 * @param int    $estimated_cost Tokens to hold.
 	 * @param string $request_id     The request this hold belongs to.
 	 * @param object $token_provider Provider used to price the turn.
-	 * @return array{reserved:bool,id:string,amount:int,balance_after:int}
-	 *               reserved is false when the lock could not be taken or the
-	 *               balance will not cover the estimate. The id is what
-	 *               flosc_settle_visitor_reservation() takes back.
+	 * @return Array{reserved:bool,id:string,amount:int,balance_after:int}.
+	 * Reserved is false when the lock could not be taken or the.
+	 * Balance will not cover the estimate. The id is what.
+	 * flosc_settle_visitor_reservation() takes back.
 	 */
 	public function flosc_reserve_visitor_tokens( $flow_id, $session_id, $estimated_cost, $request_id, $token_provider ) {
 		return $this->token_ledger->reserve_visitor_tokens( $flow_id, $session_id, $estimated_cost, $request_id, $token_provider );
@@ -1497,15 +1498,15 @@ class FLOSC_Framework {
 	/**
 	 * Settle a held reservation against what the turn actually cost.
 	 *
-	 * Delegates to FLOSC_Token_Ledger. The reservation is consumed whether or not it settles
-	 * cleanly, so a turn can never be settled twice. Costing more than was held
-	 * takes the difference, up to what remains; costing less gives it back.
+	 * Delegates to FLOSC_Token_Ledger. The reservation is consumed whether or not it settles.
+	 * Cleanly, so a turn can never be settled twice. Costing more than was held.
+	 * Takes the difference, up to what remains; costing less gives it back.
 	 *
 	 * @param string $reservation_id The id flosc_reserve_visitor_tokens() returned.
 	 * @param object $token_provider Provider used to price the turn.
 	 * @param array  $billing_meta   Usage the provider reported.
-	 * @return array{charged:bool,charge_tokens:int,balance_after:int}
-	 *               charged is false when the reservation had already expired.
+	 * @return Array{charged:bool,charge_tokens:int,balance_after:int}.
+	 * Charged is false when the reservation had already expired.
 	 */
 	public function flosc_settle_visitor_reservation( $reservation_id, $token_provider, $billing_meta = array() ) {
 		return $this->token_ledger->settle_visitor_reservation( $reservation_id, $token_provider, $billing_meta );
@@ -1514,13 +1515,13 @@ class FLOSC_Framework {
 	/**
 	 * Format a token count for a label a person reads.
 	 *
-	 * Delegates to FLOSC_Token_Ledger. Up to 9999 the exact number is shown, because at that
-	 * size the person is watching it go down and wants the real figure. At 10000
-	 * and above it is truncated -- never rounded up -- to k, m or b, so a label
-	 * never claims more tokens than the wallet holds.
+	 * Delegates to FLOSC_Token_Ledger. Up to 9999 the exact number is shown, because at that.
+	 * Size the person is watching it go down and wants the real figure. At 10000.
+	 * And above it is truncated -- never rounded up -- to k, m or b, so a label.
+	 * Never claims more tokens than the wallet holds.
 	 *
 	 * @param int $value Token count. A negative value reads as zero.
-	 * @return string The label, for example 5000, 12k or 3m.
+	 * @return String The label, for example 5000, 12k or 3m.
 	 */
 	public function flosc_format_token_display( $value ) {
 		return $this->token_ledger->flosc_format_token_display( $value );
@@ -1529,10 +1530,10 @@ class FLOSC_Framework {
 	/**
 	 * REST: apply the visitor-to-guest token grant to the user who just logged in.
 	 *
-	 * Delegates to FLOSC_Token_Ledger. The client sends its visitor session id so
-	 * an unspent visitor balance can be carried across, which matters after SSO:
-	 * the grant that runs on wp_login may not have had the flow domain's visitor
-	 * cookie to read.
+	 * Delegates to FLOSC_Token_Ledger. The client sends its visitor session id so.
+	 * An unspent visitor balance can be carried across, which matters after SSO:
+	 * The grant that runs on wp_login may not have had the flow domain's visitor.
+	 * Cookie to read.
 	 *
 	 * @param WP_REST_Request $request Expects flow_id and visitor_session_id.
 	 * @return WP_REST_Response The grant result.
@@ -1544,8 +1545,8 @@ class FLOSC_Framework {
 	/**
 	 * REST: a visitor's own token balance.
 	 *
-	 * Delegates to FLOSC_Token_Ledger. Public and rate-limited -- a visitor has
-	 * no account, and this is how any surface shows them their own count.
+	 * Delegates to FLOSC_Token_Ledger. Public and rate-limited -- a visitor has.
+	 * No account, and this is how any surface shows them their own count.
 	 *
 	 * @since 8.0.0
 	 *
@@ -1596,12 +1597,12 @@ class FLOSC_Framework {
 	/**
 	 * Which of visitor, guest or member a user counts as for session limits.
 	 *
-	 * Delegates to FLOSC_Session_REST. Resolved per flow, because the same person can be a
-	 * member of one flow and a guest on another.
+	 * Delegates to FLOSC_Session_REST. Resolved per flow, because the same person can be a.
+	 * Member of one flow and a guest on another.
 	 *
 	 * @param int    $user_id The user.
 	 * @param string $flow_id Flow stem; '' for the current one.
-	 * @return string One of 'visitor', 'guest' or 'member'.
+	 * @return String One of 'visitor', 'guest' or 'member'.
 	 */
 	public function get_user_state_for_session_limits( $user_id, $flow_id = '' ) {
 		return $this->session_rest->get_user_state_for_session_limits( $user_id, $flow_id );
@@ -1610,12 +1611,12 @@ class FLOSC_Framework {
 	/**
 	 * Whether a guest chat sidebar permission is on for this flow.
 	 *
-	 * Delegates to FLOSC_Session_REST. A key that has never been saved defaults to true; '' and
+	 * Delegates to FLOSC_Session_REST. A key that has never been saved defaults to true; '' and.
 	 * '0' read as false.
 	 *
-	 * @param string $key Flow setting key: guest_can_delete_chats or
-	 *                    guest_can_rename_chats.
-	 * @return bool True when the permission is on.
+	 * @param string $key Flow setting key: guest_can_delete_chats or.
+	 * Guest_can_rename_chats.
+	 * @return Bool True when the permission is on.
 	 */
 	public function flosc_guest_chat_flag_enabled( $key ) {
 		return $this->session_rest->flosc_guest_chat_flag_enabled( $key );
@@ -1624,8 +1625,8 @@ class FLOSC_Framework {
 	/**
 	 * REST: delete a chat session.
 	 *
-	 * Delegates to FLOSC_Session_REST. A guest can only do this when the flow's
-	 * guest_can_delete_chats permission is on.
+	 * Delegates to FLOSC_Session_REST. A guest can only do this when the flow's.
+	 * Guest_can_delete_chats permission is on.
 	 *
 	 * @param WP_REST_Request $request The request, naming the session.
 	 * @return WP_REST_Response|WP_Error The result.
@@ -1637,8 +1638,8 @@ class FLOSC_Framework {
 	/**
 	 * REST: rename a chat session.
 	 *
-	 * Delegates to FLOSC_Session_REST. A guest can only do this when the flow's
-	 * guest_can_rename_chats permission is on.
+	 * Delegates to FLOSC_Session_REST. A guest can only do this when the flow's.
+	 * Guest_can_rename_chats permission is on.
 	 *
 	 * @param WP_REST_Request $request The request, naming the session and title.
 	 * @return WP_REST_Response|WP_Error The result.
@@ -1650,11 +1651,11 @@ class FLOSC_Framework {
 	/**
 	 * Remove a session's directory from the recording service, once its data is here.
 	 *
-	 * Delegates to FLOSC_Session_REST. Fire and forget: a failure is logged but does not hold
-	 * up the login it happens during.
+	 * Delegates to FLOSC_Session_REST. Fire and forget: a failure is logged but does not hold.
+	 * Up the login it happens during.
 	 *
 	 * @param int $session_id The session.
-	 * @return bool True when the delete was accepted.
+	 * @return Bool True when the delete was accepted.
 	 */
 	public function delete_session_from_do( $session_id ) {
 		return $this->session_rest->delete_session_from_do( $session_id );
@@ -1663,12 +1664,12 @@ class FLOSC_Framework {
 	/**
 	 * Turn whatever session id the client sent into a stable positive integer.
 	 *
-	 * Delegates to FLOSC_Session_REST. The front end has sent numeric ids, hex strings and
-	 * opaque strings across versions; storage, logging and token accounting all
-	 * need one shape.
+	 * Delegates to FLOSC_Session_REST. The front end has sent numeric ids, hex strings and.
+	 * Opaque strings across versions; storage, logging and token accounting all.
+	 * Need one shape.
 	 *
 	 * @param mixed $session_id_raw The value the client sent.
-	 * @return int A positive integer, or 0 when there was nothing usable.
+	 * @return Int A positive integer, or 0 when there was nothing usable.
 	 */
 	public function flosc_normalize_session_id( $session_id_raw ) {
 		return $this->session_rest->flosc_normalize_session_id( $session_id_raw );
@@ -1677,13 +1678,13 @@ class FLOSC_Framework {
 	/**
 	 * The key a visitor's concierge state is stored under.
 	 *
-	 * Delegates to FLOSC_Session_REST. An anonymous visitor is keyed by session id when there
-	 * is one, and otherwise by a salted hash of their IP. It must never fall back
-	 * to a shared constant such as "user_0": that would put one visitor's open
-	 * desk into every other anonymous visitor's chat, down to the greeting.
+	 * Delegates to FLOSC_Session_REST. An anonymous visitor is keyed by session id when there.
+	 * Is one, and otherwise by a salted hash of their IP. It must never fall back.
+	 * To a shared constant such as "user_0": that would put one visitor's open.
+	 * Desk into every other anonymous visitor's chat, down to the greeting.
 	 *
 	 * @param int $session_id Front-end session id; 0 when there is none.
-	 * @return string The storage key.
+	 * @return String The storage key.
 	 */
 	public function flosc_concierge_session_key( $session_id ) {
 		return $this->session_rest->flosc_concierge_session_key( $session_id );
@@ -1694,7 +1695,7 @@ class FLOSC_Framework {
 	 * Collaborator API: first-party login may trigger SSO email sequence.
 	 *
 	 * @param int $user_id The user who signed in.
-	 * @return bool True when a welcome was sent.
+	 * @return Bool True when a welcome was sent.
 	 */
 	public function maybe_run_sso_email_sequence_for_user( $user_id ) {
 		return $this->email_service->maybe_run_sso_email_sequence_for_user( $user_id );
@@ -1703,14 +1704,14 @@ class FLOSC_Framework {
 	/**
 	 * Start the flow's email sequence when someone arrives through SSO.
 	 *
-	 * Delegates to FLOSC_Email. Fires on a successful SSO login or auto-link, and
-	 * sends the welcome only when the user is new to that flow -- so someone who
-	 * signs in through a second provider is not welcomed twice.
+	 * Delegates to FLOSC_Email. Fires on a successful SSO login or auto-link, and.
+	 * Sends the welcome only when the user is new to that flow -- so someone who.
+	 * Signs in through a second provider is not welcomed twice.
 	 *
 	 * @param int    $user_id     The user who signed in.
 	 * @param string $provider_id Which provider they came from.
 	 * @param array  $user_data   Profile fields the provider returned.
-	 * @return bool True when a welcome was sent.
+	 * @return Bool True when a welcome was sent.
 	 */
 	public function maybe_process_sso_flow_email_sequence( $user_id, $provider_id, $user_data ) {
 		return $this->email_service->maybe_process_sso_flow_email_sequence( $user_id, $provider_id, $user_data );
@@ -1721,7 +1722,8 @@ class FLOSC_Framework {
 
 	/**
 	 * Canonical FLOSC UTC MTS format.
- * @return mixed Result produced by the utc mts operation.
+	 *
+	 * @return Mixed Result produced by the utc mts operation.
 	 */
 	private function get_utc_mts() {
 		return gmdate( 'Y' ) . 'y-' . gmdate( 'm' ) . 'm-' . gmdate( 'd' ) . 'd-UTC' . gmdate( 'H' ) . 'h-' . gmdate( 'i' ) . 'm-' . gmdate( 's' ) . 's';
@@ -1731,7 +1733,7 @@ class FLOSC_Framework {
 	 * Build signed outbound headers for provider requests.
 	 *
 	 * @param string $payload_json The request body the signature covers.
-	 * @return string[] Headers carrying the signature and identifying FLOSC.
+	 * @return String[] Headers carrying the signature and identifying FLOSC.
 	 */
 	private function build_flosc_signed_headers( $payload_json ) {
 		$site = wp_parse_url( home_url(), PHP_URL_HOST );
@@ -1755,7 +1757,7 @@ class FLOSC_Framework {
 	 *
 	 * @param string $session_id The recording session.
 	 * @param array  $targets    The files to convert.
-	 * @return bool True when the request was accepted. A failure updates the metadata status and nothing else.
+	 * @return Bool True when the request was accepted. A failure updates the metadata status and nothing else.
 	 */
 	private function dispatch_remote_playback_conversion( $session_id, $targets ) {
 		if ( ! preg_match( '/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $session_id ) ) {
@@ -1825,9 +1827,9 @@ class FLOSC_Framework {
 	/**
 	 * Build the runtime: load collaborators, then register hooks.
 	 *
-	 * Called from instance() after self::$instance has been assigned, never from
-	 * the constructor -- the wiring below calls back into instance() and would
-	 * otherwise recurse.
+	 * Called from instance() after self::$instance has been assigned, never from.
+	 * The constructor -- the wiring below calls back into instance() and would.
+	 * Otherwise recurse.
 	 */
 	private function boot() {
 		$this->load_dependencies();
@@ -1837,8 +1839,8 @@ class FLOSC_Framework {
 	/**
 	 * Require the collaborator files and construct the objects this class holds.
 	 *
-	 * Runs before init_hooks(), because a hook registered there points at a
-	 * method that delegates to one of these.
+	 * Runs before init_hooks(), because a hook registered there points at a.
+	 * Method that delegates to one of these.
 	 */
 	private function load_dependencies() {
 		$this->filesystem       = new FLOSC_Filesystem();
@@ -1928,9 +1930,10 @@ class FLOSC_Framework {
 	/**
 	 * Register every WordPress hook, shortcode, REST route and cron event FLOSC uses.
 	 *
-	 * The plugin's whole surface against WordPress is declared here, so what FLOSC
-	 * attaches to can be read in one place. Runs after load_dependencies().
- * @return mixed Result produced by the init hooks operation.
+	 * The plugin's whole surface against WordPress is declared here, so what FLOSC.
+	 * Attaches to can be read in one place. Runs after load_dependencies().
+	 *
+	 * @return Mixed Result produced by the init hooks operation.
 	 */
 	private function init_hooks() {
 		// v3.0.0: FLOSC Auth Token — cross-domain authentication.
@@ -2282,8 +2285,8 @@ class FLOSC_Framework {
 	/**
 	 * Initialize third-party quiz plugin hooks (v9.3.4)
 	 *
-	 * Captures quiz completion from external plugins and feeds them
-	 * into the FLOSC funnel system. Each integration is opt-in via admin.
+	 * Captures quiz completion from external plugins and feeds them.
+	 * Into the FLOSC funnel system. Each integration is opt-in via admin.
 	 */
 	private function init_quiz_plugin_hooks() {
 		// Wp-Pro-Quiz Integration.
@@ -2355,11 +2358,11 @@ class FLOSC_Framework {
 	 * Unified handler for scores from Wp-Pro-Quiz, LearnDash, QSM, etc.
 	 * Stores score for funnel progression regardless of login state.
 	 *
-	 * Uses signed cookies to prevent score forgery
+	 * Uses signed cookies to prevent score forgery.
 	 *
 	 * @param array $data Score data with source, quiz_id, score, user_id, timestamp.
 	 * @since 9.4.2
- * @return mixed Result produced by the capture external quiz score operation.
+	 * @return Mixed Result produced by the capture external quiz score operation.
 	 */
 	public function capture_external_quiz_score( $data ) {
 		$user_id = $data['user_id'] ?? get_current_user_id();
@@ -2391,8 +2394,9 @@ class FLOSC_Framework {
 	}
 
 	/**
-	 * Component accessors
- * @return mixed Result produced by the ai operation.
+	 * Component accessors.
+	 *
+	 * @return Mixed Result produced by the ai operation.
 	 */
 	public function ai() {
 		return $this->ai_chat_dispatch; }
@@ -2406,11 +2410,11 @@ class FLOSC_Framework {
 	/**
 	 * The quiz registry's class name, for static calls.
 	 *
-	 * Unlike the other accessors this returns a name rather than an object,
-	 * because the registry is static: it holds the quiz types the factory
-	 * discovered, and there is nothing per-instance to hold.
+	 * Unlike the other accessors this returns a name rather than an object,.
+	 * Because the registry is static: it holds the quiz types the factory.
+	 * Discovered, and there is nothing per-instance to hold.
 	 *
-	 * @return string The FLOSC_Quiz_Registry class name.
+	 * @return String The FLOSC_Quiz_Registry class name.
 	 */
 	public function quiz() {
 		return 'FLOSC_Quiz_Registry'; }
@@ -2454,10 +2458,10 @@ class FLOSC_Framework {
 	/**
 	 * The requesting client's IP address.
 	 *
-	 * Delegates to FLOSC_Request_Guard. Proxy headers are only trusted where the site is
-	 * configured to trust them, so this cannot be set by the caller.
+	 * Delegates to FLOSC_Request_Guard. Proxy headers are only trusted where the site is.
+	 * Configured to trust them, so this cannot be set by the caller.
 	 *
-	 * @return string The IP address, or '' when none could be determined.
+	 * @return String The IP address, or '' when none could be determined.
 	 */
 	private function get_client_ip() {
 		return $this->request_guard->get_client_ip();
@@ -2471,7 +2475,7 @@ class FLOSC_Framework {
 	 * @param string $endpoint Endpoint name the count is kept under.
 	 * @param int    $limit    Requests allowed inside the window.
 	 * @param int    $window   Window length in seconds.
-	 * @return bool True while the client is under the limit.
+	 * @return Bool True while the client is under the limit.
 	 */
 	private function check_rate_limit( $endpoint, $limit = 20, $window = 3600 ) {
 		return $this->request_guard->check_rate_limit( $endpoint, $limit, $window );
@@ -2483,7 +2487,7 @@ class FLOSC_Framework {
 	 * Delegates to FLOSC_Request_Guard.
 	 *
 	 * @param mixed $data The value to sign.
-	 * @return string The value and its signature, ready to be set as a cookie.
+	 * @return String The value and its signature, ready to be set as a cookie.
 	 */
 	private function sign_cookie_data( $data ) {
 		return $this->request_guard->sign_cookie_data( $data );
@@ -2492,11 +2496,11 @@ class FLOSC_Framework {
 	/**
 	 * Check a signed cookie and give back what it carried.
 	 *
-	 * Delegates to FLOSC_Request_Guard. A cookie whose signature does not match is rejected
-	 * outright rather than read and distrusted.
+	 * Delegates to FLOSC_Request_Guard. A cookie whose signature does not match is rejected.
+	 * Outright rather than read and distrusted.
 	 *
 	 * @param string $cookie_value The raw cookie value.
-	 * @return mixed|false The signed value, or false when the signature fails.
+	 * @return Mixed|false The signed value, or false when the signature fails.
 	 */
 	private function verify_signed_cookie( $cookie_value ) {
 		return $this->request_guard->verify_signed_cookie( $cookie_value );
@@ -2510,7 +2514,7 @@ class FLOSC_Framework {
 	 * @param string $name   Cookie name.
 	 * @param mixed  $data   Value to sign and store.
 	 * @param int    $expiry Expiry as a Unix time; 0 for a session cookie.
-	 * @return bool True when the header was sent.
+	 * @return Bool True when the header was sent.
 	 */
 	private function set_signed_cookie( $name, $data, $expiry = 0 ) {
 		return $this->request_guard->set_signed_cookie( $name, $data, $expiry );
@@ -2521,7 +2525,7 @@ class FLOSC_Framework {
 	 * Narrow public delegate over request-guard; not a broad private→public sweep.
 	 *
 	 * @param string $name Cookie name.
-	 * @return mixed|null
+	 * @return Mixed|null.
 	 */
 	public function get_signed_cookie( $name ) {
 		return $this->request_guard->get_signed_cookie( $name );
@@ -2529,14 +2533,14 @@ class FLOSC_Framework {
 
 
 	/**
-	 * Plugin Activation
+	 * Plugin Activation.
 	 */
 	// v9.1.1: Activation logic moved to global flosc_activate() function (line ~2285)
 	// to avoid duplication. WordPress requires activation hook to point to a function,.
 	// not a class method, so the global function is the single source of truth.
 
 	/**
-	 * Create default "works out of box" content
+	 * Create default "works out of box" content.
 	 */
 	private function create_default_content() {
 		// Set default messages.
@@ -2640,9 +2644,9 @@ The Team',
 	/**
 	 * Deactivation: drop the rewrite rules FLOSC added.
 	 *
-	 * Registered as the deactivation hook. Nothing else is removed -- flows,
-	 * settings, sessions and entitlements survive a deactivation, and only
-	 * uninstall.php takes them away.
+	 * Registered as the deactivation hook. Nothing else is removed -- flows,.
+	 * Settings, sessions and entitlements survive a deactivation, and only.
+	 * Uninstall.php takes them away.
 	 */
 	public function deactivate() {
 		flush_rewrite_rules();
@@ -2664,7 +2668,7 @@ The Team',
 	 *
 	 * @param int    $user_id The user.
 	 * @param string $flow_id Flow stem.
-	 * @return bool True when this flow has no record of them yet.
+	 * @return Bool True when this flow has no record of them yet.
 	 */
 	public function is_user_new_to_flow( $user_id, $flow_id ) {
 		$flow_stem = sanitize_key( pathinfo( basename( (string) $flow_id ), PATHINFO_FILENAME ) );
@@ -2689,7 +2693,7 @@ The Team',
 	 * @param int    $user_id The user.
 	 * @param string $flow_id Flow stem.
 	 * @param string $method  How they arrived, recorded alongside the count.
- * @return mixed Result produced by the record user flow usage operation.
+	 * @return Mixed Result produced by the record user flow usage operation.
 	 */
 	public function record_user_flow_usage( $user_id, $flow_id, $method = 'chat' ) {
 		$user_id = intval( $user_id );
@@ -2747,7 +2751,7 @@ The Team',
 	 * Resolve flow settings while tolerating legacy key variants.
 	 *
 	 * @param string $flow_stem Flow stem, in any of the spellings past versions have written.
-	 * @return array The flow settings, or an empty array when no option matches.
+	 * @return Array The flow settings, or an empty array when no option matches.
 	 */
 	private function resolve_flow_settings_by_stem( $flow_stem ) {
 		$flow_stem = sanitize_key( (string) $flow_stem );
@@ -2774,7 +2778,7 @@ The Team',
 	 * Users list: add FLOSC attribution columns.
 	 *
 	 * @param array $columns The columns WordPress means to show.
-	 * @return array The columns with FLOSC's added.
+	 * @return Array The columns with FLOSC's added.
 	 */
 	public function flosc_add_users_columns( $columns ) {
 		$with_flosc = array();
@@ -2800,7 +2804,7 @@ The Team',
 	 * @param string $value       The cell content so far.
 	 * @param string $column_name Which column is being rendered.
 	 * @param int    $user_id     The user in this row.
-	 * @return string The cell content, unchanged for a column FLOSC did not add.
+	 * @return String The cell content, unchanged for a column FLOSC did not add.
 	 */
 	public function flosc_render_users_custom_column( $value, $column_name, $user_id ) {
 		if ( 'flosc_source' === $column_name ) {
@@ -2857,7 +2861,7 @@ The Team',
 	}
 
 	/**
-	 * Store quiz score with quiz_id tracking for multi-quiz support
+	 * Store quiz score with quiz_id tracking for multi-quiz support.
 	 *
 	 * @since 8.0.3
 	 *
@@ -2929,16 +2933,16 @@ The Team',
 	}
 
 
-	// ─────────────────────────────────────────────────────────────────
+	// ─────────────────────────────────────────────────────────────────.
 	// SSO Guest Email Sequence.
-	// ─────────────────────────────────────────────────────────────────
+	// ─────────────────────────────────────────────────────────────────.
 
 	/**
 	 * Helper: load flow settings for a user (by stored meta, or first IVR file).
 	 * Collaborator API (Pass 1): used by FLOSC_Email.
 	 *
 	 * @param int $user_id The user.
-	 * @return array Their flow's settings. Falls back to the first IVR file on disk when they have no stored flow.
+	 * @return Array Their flow's settings. Falls back to the first IVR file on disk when they have no stored flow.
 	 */
 	public function get_flow_settings_for_user( $user_id ) {
 		$flow_id = get_user_meta( $user_id, '_flosc_registration_flow', true );
@@ -2956,7 +2960,7 @@ The Team',
 	/**
 	 * How many emails this cron run has sent so far.
 	 *
-	 * Reset each run, and compared against the per-run cap in
+	 * Reset each run, and compared against the per-run cap in.
 	 * send_email_throttled() so a daily batch cannot burst the mail server.
 	 *
 	 * @var int
@@ -2964,7 +2968,7 @@ The Team',
 	private $flosc_email_sent_this_run = 0;
 
 	/**
-	 * Rewrite Rules for Virtual Page - v1.3.4: Register ALL IVR files with defaults
+	 * Rewrite Rules for Virtual Page - v1.3.4: Register ALL IVR files with defaults.
 	 */
 	public function add_rewrite_rules() {
 		// v1.3.4: Register rewrite rules for ALL IVR files (even unsaved ones)
@@ -3006,7 +3010,7 @@ The Team',
 	}
 
 	/**
-	 * Process pending rewrite rules flush after plugin activation
+	 * Process pending rewrite rules flush after plugin activation.
 	 *
 	 * @since 1.2.9
 	 */
@@ -3018,7 +3022,7 @@ The Team',
 	}
 
 	/**
-	 * Handle slug change - auto flush permalinks
+	 * Handle slug change - auto flush permalinks.
 	 *
 	 * @param mixed $old_value The slug before the save.
 	 * @param mixed $new_value The slug after it.
@@ -3032,8 +3036,8 @@ The Team',
 
 	/**
 	 * Backfill missing defaults for every flow option in the DB.
-	 * Runs on Flush and on version upgrade so admins never need to manually
-	 * re-save tabs after a plugin update introduces new settings keys.
+	 * Runs on Flush and on version upgrade so admins never need to manually.
+	 * Re-save tabs after a plugin update introduces new settings keys.
 	 *
 	 * @since 4.0.1
 	 */
@@ -3102,7 +3106,7 @@ The Team',
 	}
 
 	/**
-	 * Handle manual permalink flush v1.2.9 with Michel timestamp
+	 * Handle manual permalink flush v1.2.9 with Michel timestamp.
 	 */
 	public function handle_flush_permalinks_v129() {
 		check_admin_referer( 'flosc_flush_v129' );
@@ -3130,9 +3134,9 @@ The Team',
 		exit;
 	}
 
-	// ─────────────────────────────────────────────────────────
+	// ─────────────────────────────────────────────────────────.
 	// Fix 6: Lesson Catalog Auto-Generation.
-	// ─────────────────────────────────────────────────────────
+	// ─────────────────────────────────────────────────────────.
 
 	/**
 	 * Hook: regenerate lesson catalog when a the product post is saved.
@@ -3140,7 +3144,7 @@ The Team',
 	 *
 	 * @param int     $post_id The post that was saved.
 	 * @param WP_Post $post    The post object.
- * @return mixed Result of the regenerate lesson catalog operation, or a WP_Error when it cannot complete.
+	 * @return Mixed Result of the regenerate lesson catalog operation, or a WP_Error when it cannot complete.
 	 */
 	public function maybe_regenerate_lesson_catalog( $post_id, $post ) {
 		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
@@ -3192,11 +3196,12 @@ The Team',
 	}
 
 	/**
-	 * Generate the flow lesson catalog markdown from published posts in the
-	 * configured lessons category (default category slug remains product BC).
+	 * Generate the flow lesson catalog markdown from published posts in the.
+	 * Configured lessons category (default category slug remains product BC).
 	 * Writes every basename from flosc_lesson_catalog_write_paths() (neutral + legacy).
 	 * Auto-updates on save_post hook; also callable manually.
- * @return mixed Result produced by the generate lesson catalog operation.
+	 *
+	 * @return Mixed Result produced by the generate lesson catalog operation.
 	 */
 	public function generate_lesson_catalog() {
 		if ( ! defined( 'FLOSC_PLUGIN_DIR' ) ) {
@@ -3326,16 +3331,16 @@ The Team',
 	/**
 	 * Where a knowledge-base admin-post handler should redirect back to.
 	 *
-	 * Every handler below ends in a redirect rather than a rendered page, so the
-	 * notice travels on the URL. The flow is carried too, so the operator lands
-	 * back on the flow they were editing rather than on whichever one resolves
-	 * by default.
+	 * Every handler below ends in a redirect rather than a rendered page, so the.
+	 * Notice travels on the URL. The flow is carried too, so the operator lands.
+	 * Back on the flow they were editing rather than on whichever one resolves.
+	 * By default.
 	 *
 	 * @param string $ivr    The flow to return to.
-	 * @param string $action What happened, for the notice: uploaded, deleted,
-	 *                       toggled, saved, created or error.
+	 * @param string $action What happened, for the notice: uploaded, deleted,.
+	 * Toggled, saved, created or error.
 	 * @param string $error  The message to show when $action is 'error'.
-	 * @return string The return URL.
+	 * @return String The return URL.
 	 */
 	private function kb_return_url( $ivr, $action, $error = '' ) {
 		$uid = get_current_user_id();
@@ -3357,7 +3362,7 @@ The Team',
 	 *
 	 * @param string $ivr   Current IVR filename.
 	 * @param string $kb_id Posted/get kb id.
-	 * @return string
+	 * @return String.
 	 */
 	private function kb_request_id( $ivr, $kb_id ) {
 		$kb_id = sanitize_key( (string) $kb_id );
@@ -3370,12 +3375,12 @@ The Team',
 	/**
 	 * Admin-post: add a file to a knowledge base.
 	 *
-	 * An admin-post handler, so it ends in a redirect back to the Knowledge Base
-	 * screen carrying a notice, never in a rendered page. Origin is checked
-	 * first, then capability, as two separate refusals.
+	 * An admin-post handler, so it ends in a redirect back to the Knowledge Base.
+	 * Screen carrying a notice, never in a rendered page. Origin is checked.
+	 * First, then capability, as two separate refusals.
 	 *
-	 * Creates the knowledge base record first when the id names one that does not
-	 * exist yet, so uploading into a new base works without a separate step.
+	 * Creates the knowledge base record first when the id names one that does not.
+	 * Exist yet, so uploading into a new base works without a separate step.
 	 */
 	public function handle_kb_upload() {
 		$post = wp_unslash( $_POST );
@@ -3514,10 +3519,10 @@ The Team',
 	/**
 	 * Admin-post: remove one file from a knowledge base.
 	 *
-	 * An admin-post handler, so it ends in a redirect back to the Knowledge Base
-	 * screen carrying a notice, never in a rendered page. Origin is checked
-	 * first, then capability, as two separate refusals. The nonce action names the base and the
-	 * file, so a link for one file cannot delete another.
+	 * An admin-post handler, so it ends in a redirect back to the Knowledge Base.
+	 * Screen carrying a notice, never in a rendered page. Origin is checked.
+	 * First, then capability, as two separate refusals. The nonce action names the base and the.
+	 * File, so a link for one file cannot delete another.
 	 */
 	public function handle_kb_delete() {
 		$get   = wp_unslash( $_GET );
@@ -3545,10 +3550,10 @@ The Team',
 	/**
 	 * Admin-post: turn one knowledge base file on or off.
 	 *
-	 * An admin-post handler, so it ends in a redirect back to the Knowledge Base
-	 * screen carrying a notice, never in a rendered page. Origin is checked
-	 * first, then capability, as two separate refusals. The nonce action names the base and the
-	 * file. The file stays on disk; only whether the AI is given it changes.
+	 * An admin-post handler, so it ends in a redirect back to the Knowledge Base.
+	 * Screen carrying a notice, never in a rendered page. Origin is checked.
+	 * First, then capability, as two separate refusals. The nonce action names the base and the.
+	 * File. The file stays on disk; only whether the AI is given it changes.
 	 */
 	public function handle_kb_toggle() {
 		$get   = wp_unslash( $_GET );
@@ -3579,9 +3584,9 @@ The Team',
 	/**
 	 * Admin-post: save an edit to a knowledge base file's contents.
 	 *
-	 * An admin-post handler, so it ends in a redirect back to the Knowledge Base
-	 * screen carrying a notice, never in a rendered page. Origin is checked
-	 * first, then capability, as two separate refusals.
+	 * An admin-post handler, so it ends in a redirect back to the Knowledge Base.
+	 * Screen carrying a notice, never in a rendered page. Origin is checked.
+	 * First, then capability, as two separate refusals.
 	 */
 	public function handle_kb_save_edit() {
 		$post = wp_unslash( $_POST );
@@ -3614,9 +3619,9 @@ The Team',
 	/**
 	 * Admin-post: create a knowledge base.
 	 *
-	 * An admin-post handler, so it ends in a redirect back to the Knowledge Base
-	 * screen carrying a notice, never in a rendered page. Origin is checked
-	 * first, then capability, as two separate refusals.
+	 * An admin-post handler, so it ends in a redirect back to the Knowledge Base.
+	 * Screen carrying a notice, never in a rendered page. Origin is checked.
+	 * First, then capability, as two separate refusals.
 	 */
 	public function handle_kb_create() {
 		$post = wp_unslash( $_POST );
@@ -3653,10 +3658,10 @@ The Team',
 	/**
 	 * AJAX: run one accuracy-test row against the flow's provider.
 	 *
-	 * Behind the accuracy test on the AI tab. Each row is a template the operator
-	 * wrote; this expands its placeholders, sends the result as one turn, and
-	 * returns both what was sent and what came back, so the two can be compared
-	 * side by side.
+	 * Behind the accuracy test on the AI tab. Each row is a template the operator.
+	 * Wrote; this expands its placeholders, sends the result as one turn, and.
+	 * Returns both what was sent and what came back, so the two can be compared.
+	 * Side by side.
 	 */
 	public function ajax_accuracy_test_message() {
 		// Origin first: check_ajax_referer() ran after $_POST was unslashed.
@@ -3818,14 +3823,14 @@ The Team',
 	}
 
 	/**
-	 * AJAX handler for inline SSO connection testing
+	 * AJAX handler for inline SSO connection testing.
 	 *
-	 * Performs real API calls to verify provider credentials work,
-	 * checks callback URL reachability, and returns structured diagnostics.
+	 * Performs real API calls to verify provider credentials work,.
+	 * Checks callback URL reachability, and returns structured diagnostics.
 	 * No popups — results display inline on the SSO settings page.
 	 *
 	 * @since 1.5.0
- * @return mixed Result of the test sso connection operation, or a WP_Error when it cannot complete.
+	 * @return Mixed Result of the test sso connection operation, or a WP_Error when it cannot complete.
 	 */
 	public function ajax_test_sso_connection() {
 		// Origin first: check_ajax_referer() ran after $_POST was unslashed.
@@ -3972,7 +3977,7 @@ The Team',
 	}
 
 	/**
-	 * Test Facebook App ID + App Secret via Graph API
+	 * Test Facebook App ID + App Secret via Graph API.
 	 *
 	 * Uses the app access token (app_id|app_secret) to call /app endpoint.
 	 * If valid: returns app name. If invalid: returns error.
@@ -3981,7 +3986,7 @@ The Team',
 	 *
 	 * @param string $app_id     The Facebook app id.
 	 * @param string $app_secret The Facebook app secret.
-	 * @return array Whether the credentials work, and the app name or the error.
+	 * @return Array Whether the credentials work, and the app name or the error.
 	 */
 	private function test_facebook_credentials( $app_id, $app_secret ) {
 		$checks           = array();
@@ -4037,18 +4042,18 @@ The Team',
 	}
 
 	/**
-	 * Test Google Client ID + Secret via token endpoint
+	 * Test Google Client ID + Secret via token endpoint.
 	 *
 	 * Sends a dummy code exchange to Google's token endpoint.
 	 * - "invalid_grant" → credentials are valid (code is wrong, but creds work)
-	 * - "invalid_client" → credentials are wrong
+	 * - "invalid_client" → credentials are wrong.
 	 *
 	 * @since 1.5.0
 	 *
 	 * @param string $client_id     The Google client id.
 	 * @param string $client_secret The Google client secret.
 	 * @param string $redirect_uri  The redirect URI registered with them.
-	 * @return array Whether the credentials work, and the error when they do not.
+	 * @return Array Whether the credentials work, and the error when they do not.
 	 */
 	private function test_google_credentials( $client_id, $client_secret, $redirect_uri ) {
 		$checks = array();
@@ -4123,10 +4128,10 @@ The Team',
 	}
 
 	/**
-	 * Add FLOSC post visibility meta box to post editor
+	 * Add FLOSC post visibility meta box to post editor.
 	 *
 	 * @since 1.4.3
- * @return mixed Result produced by the add post visibility meta box operation.
+	 * @return Mixed Result produced by the add post visibility meta box operation.
 	 */
 	public function flosc_add_post_visibility_meta_box() {
 		// v1.4.7: Only show on posts that are in a FLOSC-protected category.
@@ -4159,8 +4164,8 @@ The Team',
 	}
 
 	/**
-	 * Render the post visibility meta box
-	 * v1.8.2: Added 4-tier protection override (protected, title+excerpt, title+readmore, full)
+	 * Render the post visibility meta box.
+	 * V1.8.2: Added 4-tier protection override (protected, title+excerpt, title+readmore, full)
 	 *
 	 * @since 1.4.3
 	 *
@@ -4256,13 +4261,13 @@ The Team',
 	}
 
 	/**
-	 * Save post visibility meta box data
-	 * v1.8.2: Save 4-tier protection mode instead of binary checkbox
+	 * Save post visibility meta box data.
+	 * V1.8.2: Save 4-tier protection mode instead of binary checkbox.
 	 *
 	 * @since 1.4.3
 	 *
 	 * @param int $post_id The post being saved.
- * @return mixed Result produced by the post visibility meta operation.
+	 * @return Mixed Result produced by the post visibility meta operation.
 	 */
 	public function flosc_save_post_visibility_meta( $post_id ) {
 		$request_post = wp_unslash( $_POST );
@@ -4324,7 +4329,7 @@ The Team',
 	 * - Server must accept requests for the custom domain (ServerAlias in Apache/Nginx)
 	 *
 	 * @since 1.2.3
- * @return mixed Result produced by the custom domain operation.
+	 * @return Mixed Result produced by the custom domain operation.
 	 */
 	public function handle_custom_domain() {
 		$current_host = strtolower( sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ?? '' ) ) );
@@ -4377,24 +4382,24 @@ The Team',
 	/**
 	 * Pull a pending recording session down from the remote service after login.
 	 *
-	 * Before an SSO redirect the browser sets a flosc_pending_session cookie on
-	 * the flow domain, which survives the round trip to the provider and back.
-	 * The SSO handler in FLOSC_Magic_Link_Trait calls this once the user is
-	 * signed in, so their last quiz data is already in place when the page
-	 * renders rather than arriving a request later.
+	 * Before an SSO redirect the browser sets a flosc_pending_session cookie on.
+	 * The flow domain, which survives the round trip to the provider and back.
+	 * The SSO handler in FLOSC_Magic_Link_Trait calls this once the user is.
+	 * Signed in, so their last quiz data is already in place when the page.
+	 * Renders rather than arriving a request later.
 	 *
-	 * Returns early when the user already has phrase results, so a second login
-	 * does not overwrite what is there. The cookie is cleared as soon as it is
-	 * read, whether or not the pull succeeds.
+	 * Returns early when the user already has phrase results, so a second login.
+	 * Does not overwrite what is there. The cookie is cleared as soon as it is.
+	 * Read, whether or not the pull succeeds.
 	 *
-	 * The doc comment that sat here until v82.12 described the cross-domain SSO
-	 * token handler, which moved into FLOSC_Magic_Link_Trait and left its
-	 * description behind on this function.
+	 * The doc comment that sat here until v82.12 described the cross-domain SSO.
+	 * Token handler, which moved into FLOSC_Magic_Link_Trait and left its.
+	 * Description behind on this function.
 	 *
 	 * @since 8.0.0
 	 *
 	 * @param int $user_id The user who has just signed in.
- * @return mixed Result produced by the pull pending session from do operation.
+	 * @return Mixed Result produced by the pull pending session from do operation.
 	 */
 	private function pull_pending_session_from_do( $user_id ) {
 		$existing = get_user_meta( $user_id, '_flosc_last_quiz_data', true );
@@ -4428,9 +4433,9 @@ The Team',
 		$this->pull_session_from_do( $user_id, $session_id );
 	}
 
-	// =========================================================================
+	// =========================================================================.
 	// v3.0.0: FLOSC AUTH TOKEN — Cross-Domain Authentication.
-	// =========================================================================
+	// =========================================================================.
 	//
 	// WordPress sets auth cookies using COOKIE_DOMAIN (derived from site_url).
 	// When a custom domain (the flow domain) points to a WordPress host (the WordPress host),.
@@ -4446,7 +4451,7 @@ The Team',
 	//
 	// Token format: base64(user_id:expiry:hmac_signature)
 	// Signature: HMAC-SHA256(user_id:expiry, flosc_token_secret())  // §5: dedicated secret.
-	// =========================================================================
+	// =========================================================================.
 
 
 
@@ -4454,7 +4459,8 @@ The Team',
 	/**
 	 * Shared class-based styles for quiz/profile cards rendered from PHP.
 	 * Kept as an inline style handle to avoid inline style attributes in markup.
- * @return mixed Result produced by the enqueue flosc quiz ui styles operation.
+	 *
+	 * @return Mixed Result produced by the enqueue flosc quiz ui styles operation.
 	 */
 	private function enqueue_flosc_quiz_ui_styles() {
 		static $done = false;
@@ -4561,7 +4567,7 @@ The Team',
 	 * @param bool  $is_guest_user     True when they are a guest rather than a member.
 	 * @param bool  $profile_completed True when they have finished setting up their profile.
 	 * @param bool  $can_play_audio    True to include audio players in the card.
-	 * @return string The card as HTML.
+	 * @return String The card as HTML.
 	 */
 	private function render_session_result_card( $user_id, $quiz_data, $is_guest_user, $profile_completed, $can_play_audio = false ) {
 		if ( empty( $quiz_data ) || ! is_array( $quiz_data ) ) {
@@ -4606,17 +4612,17 @@ The Team',
 
 
 	/**
-	 * Get the current flow based on request
+	 * Get the current flow based on request.
 	 *
 	 * Priority:
-	 * 1. flosc_ivr query var (set by rewrite rules) → read from flosc_flow_{filename} option
-	 * 2. Custom domain match → read from flosc_flow_{filename} options
-	 * 3. URL slug match → read from flosc_flow_{filename} options
+	 * 1. flosc_ivr query var (set by rewrite rules) → read from flosc_flow_{filename} option.
+	 * 2. Custom domain match → read from flosc_flow_{filename} options.
+	 * 3. URL slug match → read from flosc_flow_{filename} options.
 	 *
 	 * Returns flow config array or null if no match.
 	 *
 	 * @since 1.3.6
- * @return mixed Result produced by the current flow operation.
+	 * @return Mixed Result produced by the current flow operation.
 	 */
 	public function get_current_flow() {
 		// v1.7.5: If flow was explicitly set (e.g., from REST API with flow_id param,.
@@ -4641,12 +4647,12 @@ The Team',
 
 	/**
 	 * Detect active flow from the HTTP route only (rewrite var, custom domain, slug).
-	 * Does not consult forced_flow — used by is_flosc_request() so companion hub
-	 * resolution (which sets forced_flow on normal WP pages) does not make those
-	 * pages look like the full-page chat SPA.
+	 * Does not consult forced_flow — used by is_flosc_request() so companion hub.
+	 * Resolution (which sets forced_flow on normal WP pages) does not make those.
+	 * Pages look like the full-page chat SPA.
 	 * Collaborator API (Pass 1): used by FLOSC_Full_Page_Mode.
 	 *
-	 * @return array|null Flow config or null when this request is not a FLOSC app route.
+	 * @return Array|null Flow config or null when this request is not a FLOSC app route.
 	 */
 	public function detect_flow_from_request_route() {
 		// A custom-domain host owns its flow even when a shared-host rewrite.
@@ -4719,13 +4725,13 @@ The Team',
 
 	/**
 	 * Explicitly set flow context for REST API calls.
-	 * Needed when purchase requests come from domains other than the custom domain
+	 * Needed when purchase requests come from domains other than the custom domain.
 	 * (e.g., the WordPress host, clickbank, any host embedding the FLOSC checkout).
 	 *
 	 * @since 1.7.5
 	 *
 	 * @param string $flow_id Flow stem to read settings from for the rest of this request.
- * @return mixed Result produced by the flow context operation.
+	 * @return Mixed Result produced by the flow context operation.
 	 */
 	public function set_flow_context( $flow_id ) {
 		if ( empty( $flow_id ) ) {
@@ -4765,14 +4771,14 @@ The Team',
 	}
 
 	/**
-	 * Build flow config from IVR filename
-	 * Reads from flosc_flow_{filename} option in wp_options
+	 * Build flow config from IVR filename.
+	 * Reads from flosc_flow_{filename} option in wp_options.
 	 * Public so companion-mode / other modules can resolve the same shape.
 	 *
 	 * @since 1.3.6
 	 *
 	 * @param string $filename The IVR file name.
-	 * @return array The flow, in the same shape the flows registry returns.
+	 * @return Array The flow, in the same shape the flows registry returns.
 	 */
 	public function build_flow_from_ivr_file( $filename ) {
 		$filename     = basename( $filename ); // Strip any directory part; only the file name is used below.
@@ -4815,12 +4821,12 @@ The Team',
 	}
 
 	/**
-	 * Get a setting value, checking flow-specific first, then global
+	 * Get a setting value, checking flow-specific first, then global.
 	 *
 	 * @param string      $key      Setting key, without the 'flosc_' prefix.
 	 * @param mixed       $fallback Returned when neither the flow nor the global option holds a value.
 	 * @param string|null $flow_id  Read this flow instead of the one the request resolves to.
-	 * @return mixed The stored value, or $fallback.
+	 * @return Mixed The stored value, or $fallback.
 	 * @since 1.2.4
 	 */
 	public function get_setting( $key, $fallback = '', $flow_id = null ) {
@@ -4887,13 +4893,13 @@ The Team',
 	/**
 	 * Whether this request is for the full-page chat app.
 	 *
-	 * Delegates to FLOSC_Full_Page_Mode. True for a custom flow domain, a flow slug, or the
-	 * flosc_ivr rewrite -- and deliberately not for a page that merely resolved
-	 * a flow. Companion mode sets a flow on ordinary WordPress pages so their
-	 * settings come from the owning flow; those pages keep the theme and the
-	 * companion widget, and must not get the full app's asset takeover.
+	 * Delegates to FLOSC_Full_Page_Mode. True for a custom flow domain, a flow slug, or the.
+	 * Flosc_ivr rewrite -- and deliberately not for a page that merely resolved.
+	 * A flow. Companion mode sets a flow on ordinary WordPress pages so their.
+	 * Settings come from the owning flow; those pages keep the theme and the.
+	 * Companion widget, and must not get the full app's asset takeover.
 	 *
-	 * @return bool True when the full app should render.
+	 * @return Bool True when the full app should render.
 	 */
 	public function is_flosc_request() {
 		return $this->full_page_mode->is_flosc_request();
@@ -4902,11 +4908,11 @@ The Team',
 	/**
 	 * The app URL for a flow.
 	 *
-	 * Delegates to FLOSC_Full_Page_Mode. Respects a flow's custom domain when it has one, and
-	 * falls back to the slug route on this site otherwise.
+	 * Delegates to FLOSC_Full_Page_Mode. Respects a flow's custom domain when it has one, and.
+	 * Falls back to the slug route on this site otherwise.
 	 *
 	 * @param array|string|null $flow The flow, or null for the current one.
-	 * @return string The absolute app URL.
+	 * @return String The absolute app URL.
 	 */
 	public function get_app_url( $flow = null ) {
 		return $this->full_page_mode->get_app_url( $flow );
@@ -4915,11 +4921,11 @@ The Team',
 	/**
 	 * Register the query variables FLOSC's rewrite rules set.
 	 *
-	 * Delegates to FLOSC_Full_Page_Mode. Filters query_vars. Without this WordPress drops them
-	 * before the route handler runs.
+	 * Delegates to FLOSC_Full_Page_Mode. Filters query_vars. Without this WordPress drops them.
+	 * Before the route handler runs.
 	 *
 	 * @param string[] $vars The query variables so far.
-	 * @return string[] The list with FLOSC's added.
+	 * @return String[] The list with FLOSC's added.
 	 */
 	public function add_query_vars( $vars ) {
 		return $this->full_page_mode->add_query_vars( $vars );
@@ -4928,10 +4934,11 @@ The Team',
 	/**
 	 * Serve the full-page app, or a legal page, when the request is for one.
 	 *
-	 * Delegates to FLOSC_Full_Page_Mode. Runs on template_redirect and takes over the response
-	 * for both the custom-domain and the slug route. Returns without doing
-	 * anything on any other request.
- * @return mixed Result produced by the app route operation.
+	 * Delegates to FLOSC_Full_Page_Mode. Runs on template_redirect and takes over the response.
+	 * For both the custom-domain and the slug route. Returns without doing.
+	 * Anything on any other request.
+	 *
+	 * @return Mixed Result produced by the app route operation.
 	 */
 	public function handle_app_route() {
 		return $this->full_page_mode->handle_app_route();
@@ -4940,13 +4947,13 @@ The Team',
 	/**
 	 * Which legal page this request is for, if any.
 	 *
-	 * Delegates to FLOSC_Full_Page_Mode. A flow domain serves its own privacy policy, terms,
-	 * data-deletion page, platform-compliance page and codex charter, because a
-	 * provider reviewing an SSO integration looks for them on the domain the
-	 * login happens on. Matched against a fixed list, so the path cannot name an
-	 * arbitrary template.
+	 * Delegates to FLOSC_Full_Page_Mode. A flow domain serves its own privacy policy, terms,.
+	 * Data-deletion page, platform-compliance page and codex charter, because a.
+	 * Provider reviewing an SSO integration looks for them on the domain the.
+	 * Login happens on. Matched against a fixed list, so the path cannot name an.
+	 * Arbitrary template.
 	 *
-	 * @return string|null The page path, or null when this is not one of them.
+	 * @return String|null The page path, or null when this is not one of them.
 	 */
 	private function get_requested_legal_page() {
 		return $this->full_page_mode->get_requested_legal_page();
@@ -4955,11 +4962,11 @@ The Team',
 	/**
 	 * The scheme and host this request arrived on, as a base URL.
 	 *
-	 * Delegates to FLOSC_Full_Page_Mode. Built from the request rather than from home_url(),
-	 * because a flow served on its own domain must generate links back to that
-	 * domain. Falls back to home_url() when the host header is absent.
+	 * Delegates to FLOSC_Full_Page_Mode. Built from the request rather than from home_url(),.
+	 * Because a flow served on its own domain must generate links back to that.
+	 * Domain. Falls back to home_url() when the host header is absent.
 	 *
-	 * @return string The base URL, with a trailing slash.
+	 * @return String The base URL, with a trailing slash.
 	 */
 	private function get_current_request_base_url() {
 		return $this->full_page_mode->get_current_request_base_url();
@@ -4971,7 +4978,7 @@ The Team',
 	 * Delegates to FLOSC_Full_Page_Mode.
 	 *
 	 * @param string $page The page path, as get_requested_legal_page() returned it.
- * @return mixed Result produced by the legal page operation.
+	 * @return Mixed Result produced by the legal page operation.
 	 */
 	private function render_legal_page( $page ) {
 		return $this->full_page_mode->render_legal_page( $page );
@@ -4980,12 +4987,12 @@ The Team',
 	/**
 	 * The body of the FLOSC Codex Charter page.
 	 *
-	 * Delegates to FLOSC_Full_Page_Mode. A public statement of how this codebase is worked on --
-	 * who decides, what gets verified before anything is called done, and what
-	 * will not be touched in the course of a change. Served at
+	 * Delegates to FLOSC_Full_Page_Mode. A public statement of how this codebase is worked on --.
+	 * Who decides, what gets verified before anything is called done, and what.
+	 * Will not be touched in the course of a change. Served at.
 	 * /flosc-codex-charter.html on a flow's own domain.
 	 *
-	 * @return string The page body as HTML.
+	 * @return String The page body as HTML.
 	 */
 	private function get_codex_charter_content() {
 		return $this->full_page_mode->get_codex_charter_content();
@@ -4994,9 +5001,10 @@ The Team',
 	/**
 	 * Print the full-page chat app and end the response.
 	 *
-	 * Delegates to FLOSC_Full_Page_Mode. Called by handle_app_route() for both the custom-domain
-	 * and the slug route, so the two produce the same page.
- * @return mixed Result produced by the app operation.
+	 * Delegates to FLOSC_Full_Page_Mode. Called by handle_app_route() for both the custom-domain.
+	 * And the slug route, so the two produce the same page.
+	 *
+	 * @return Mixed Result produced by the app operation.
 	 */
 	private function render_flosc_app() {
 		return $this->full_page_mode->render_flosc_app();
@@ -5006,7 +5014,8 @@ The Team',
 	/**
 	 * Get FloscFlow Identity — name, chatlogo, favicon, brand color, pricing.
 	 * Reads from $flow['identity'] sub-array, falls back to wp_options.
- * @return array Structured floscflow identity data.
+	 *
+	 * @return Array Structured floscflow identity data.
 	 */
 	public function get_floscflow_identity() {
 		$flow = $this->get_current_flow();
@@ -5052,7 +5061,7 @@ The Team',
 	 * Build AI context for phase-aware prompts (v04_04)
 	 *
 	 * @param array $frontend_context What the browser reported. A stale purchased or access_level in here is never allowed to demote a real member.
-	 * @return array The context to send with the prompt.
+	 * @return Array The context to send with the prompt.
 	 */
 	public function build_ai_context( $frontend_context = array() ) {
 		$context = array();
@@ -5147,13 +5156,13 @@ The Team',
 	}
 
 	/**
-	 * Determine current FLOSC phase
+	 * Determine current FLOSC phase.
 	 * Aligned with frontend determinePhase() logic:
-	 *   purchased → content, funnelCompleted → sale,
-	 *   freeLessonDelivered → offer, logged_in → login, else → freeline
+	 * Purchased → content, funnelCompleted → sale,.
+	 * FreeLessonDelivered → offer, logged_in → login, else → freeline.
 	 *
 	 * @since 1.4.9
- * @return mixed Result produced by the determine flosc phase operation.
+	 * @return Mixed Result produced by the determine flosc phase operation.
 	 */
 	public function determine_flosc_phase() {
 		if ( ! is_user_logged_in() ) {
@@ -5191,7 +5200,8 @@ The Team',
 
 	/**
 	 * Get user status (visitor, free, paid)
- * @return mixed Result produced by the user status operation.
+	 *
+	 * @return Mixed Result produced by the user status operation.
 	 */
 	private function get_user_status() {
 		if ( ! is_user_logged_in() ) {
@@ -5203,13 +5213,13 @@ The Team',
 	}
 
 	/**
-	 * REST Handlers
+	 * REST Handlers.
 	 *
 	 * @param string $message      What the visitor said.
 	 * @param string $flow_id      Flow stem.
 	 * @param string $ivr_file     The flow's IVR file.
 	 * @param string $access_level One of visitor, guest or member. Decides which catalog rows are visible.
-	 * @return string The catalog answer, or '' when the message is not a catalog query.
+	 * @return String The catalog answer, or '' when the message is not a catalog query.
 	 */
 	private function flosc_build_da1_catalog_reply( $message, $flow_id, $ivr_file, $access_level = 'visitor' ) {
 		return $this->da1_catalogs->build_catalog_reply( $message, $flow_id, $ivr_file, $access_level );
@@ -5218,16 +5228,16 @@ The Team',
 	/**
 	 * Whether a visitor's message is asking about this flow's catalog.
 	 *
-	 * Delegates to FLOSC_DA1_Catalogs. The rows are loaded and their items extracted first,
-	 * because the test is against what this flow actually carries rather than
-	 * against a fixed vocabulary. The access level decides which rows are visible
-	 * to ask about.
+	 * Delegates to FLOSC_DA1_Catalogs. The rows are loaded and their items extracted first,.
+	 * Because the test is against what this flow actually carries rather than.
+	 * Against a fixed vocabulary. The access level decides which rows are visible.
+	 * To ask about.
 	 *
 	 * @param string $message      What the visitor said.
 	 * @param string $flow_id      Flow stem; '' for the current one.
 	 * @param string $ivr_file     The flow's IVR file.
 	 * @param string $access_level One of 'visitor', 'guest' or 'member'.
-	 * @return bool True when the message is a catalog query.
+	 * @return Bool True when the message is a catalog query.
 	 */
 	private function flosc_is_catalog_query( $message, $flow_id = '', $ivr_file = '', $access_level = 'visitor' ) {
 		$rows  = $this->da1_catalogs->load_rows_for_flow( $flow_id, $ivr_file, $access_level );
@@ -5243,7 +5253,7 @@ The Team',
 	 * @param string $flow_id      Flow stem.
 	 * @param string $ivr_file     The flow's IVR file.
 	 * @param string $access_level One of 'visitor', 'guest' or 'member'.
-	 * @return array The visible rows.
+	 * @return Array The visible rows.
 	 */
 	private function flosc_load_da1_rows_for_flow( $flow_id, $ivr_file, $access_level = 'visitor' ) {
 		return $this->da1_catalogs->load_rows_for_flow( $flow_id, $ivr_file, $access_level );
@@ -5255,7 +5265,7 @@ The Team',
 	 * Delegates to FLOSC_DA1_Catalogs.
 	 *
 	 * @param string $content The file's contents.
-	 * @return array The parsed rows.
+	 * @return Array The parsed rows.
 	 */
 	private function flosc_da1_parse_tsv_content( $content ) {
 		return $this->da1_catalogs->parse_tsv_content( $content );
@@ -5268,7 +5278,7 @@ The Team',
 	 *
 	 * @param string $text  The text.
 	 * @param int    $limit Maximum length.
-	 * @return string The text, shortened if it needed to be.
+	 * @return String The text, shortened if it needed to be.
 	 */
 	private function flosc_shorten_text( $text, $limit ) {
 		return $this->da1_catalogs->shorten_text( $text, $limit );
@@ -5277,11 +5287,11 @@ The Team',
 	/**
 	 * Hold a chat reply to the length the flow allows.
 	 *
-	 * Delegates to FLOSC_DA1_Catalogs. A model asked for something brief will sometimes answer
-	 * at length anyway, and the chat surface is not built for it.
+	 * Delegates to FLOSC_DA1_Catalogs. A model asked for something brief will sometimes answer.
+	 * At length anyway, and the chat surface is not built for it.
 	 *
 	 * @param string $text The reply.
-	 * @return string The reply, within the limit.
+	 * @return String The reply, within the limit.
 	 */
 	private function flosc_limit_chat_response_length( $text ) {
 		return $this->da1_catalogs->limit_chat_response_length( $text );
@@ -5290,13 +5300,13 @@ The Team',
 	/**
 	 * Replace a provider reply that hedged, or let it stand.
 	 *
-	 * The chat-turn trait calls this on both the ordinary and the RAG path, so
-	 * the class that uses the trait has to define it. When it was missing, every
-	 * public visitor turn died inside handle_chat()'s Throwable catch and the
-	 * visitor was told "Something went wrong on our side just then" -- the fatal
-	 * was invisible because the catch swallowed it. This method and
+	 * The chat-turn trait calls this on both the ordinary and the RAG path, so.
+	 * The class that uses the trait has to define it. When it was missing, every.
+	 * Public visitor turn died inside handle_chat()'s Throwable catch and the.
+	 * Visitor was told "Something went wrong on our side just then" -- the fatal.
+	 * Was invisible because the catch swallowed it. This method and.
 	 * flosc_contains_forbidden_hedge() are a pair, and both call sites are
-	 * guarded with method_exists().
+	 * Guarded with method_exists().
 	 *
 	 * @param string $response_text The provider's reply.
 	 * @param string $user_message  What the visitor said.
@@ -5304,8 +5314,8 @@ The Team',
 	 * @param string $ivr_file      The flow's IVR file.
 	 * @param string $phase         Journey phase.
 	 * @param array  $eval_context  Request context.
-	 * @return string The reply to send: the provider's own words, or a
-	 *                replacement when it hedged and something better exists.
+	 * @return String The reply to send: the provider's own words, or a.
+	 * Replacement when it hedged and something better exists.
 	 */
 	private function flosc_enforce_no_hedge_response( $response_text, $user_message, $flow_id, $ivr_file, $phase, $eval_context ) {
 		$response_text = trim( (string) $response_text );
@@ -5338,14 +5348,14 @@ The Team',
 	/**
 	 * Whether a provider reply is undermining itself rather than answering.
 	 *
-	 * Matches the phrasings a model reaches for when it announces its own missing
-	 * context -- "I don't have that information in my system", "not configured".
-	 * A visitor reads those as the site being broken, not as the model being
-	 * careful, so a reply that matches gets sent to
+	 * Matches the phrasings a model reaches for when it announces its own missing.
+	 * Context -- "I don't have that information in my system", "not configured".
+	 * A visitor reads those as the site being broken, not as the model being.
+	 * Careful, so a reply that matches gets sent to.
 	 * flosc_build_professional_replacement() for something better.
 	 *
 	 * @param string $text The provider's reply.
-	 * @return bool True when the reply hedges.
+	 * @return Bool True when the reply hedges.
 	 */
 	private function flosc_contains_forbidden_hedge( $text ) {
 		$patterns = array(
@@ -5371,28 +5381,28 @@ The Team',
 	 * Tried in order, and the first that produces text wins:
 	 *
 	 * 1. A catalog answer, when the message is asking about this flow's catalog.
-	 * 2. A biography answer, from the flow's own identity settings. Nothing is
-	 *    hard-coded here -- a flow with no bio set gets a generic invitation
-	 *    naming whatever display name it has.
+	 * 2. A biography answer, from the flow's own identity settings. Nothing is.
+	 * Hard-coded here -- a flow with no bio set gets a generic invitation.
+	 * Naming whatever display name it has.
 	 * 3. The phase's default copy, but only when $allow_phase_default says so.
 	 *
-	 * The third is gated because of what it costs when it is wrong. Phase copy
-	 * tells a visitor the site is not configured yet. That is the right thing to
-	 * say when no provider answered at all, and the wrong thing to say when a
-	 * provider answered and merely hedged -- there, the provider's own words are
-	 * worth more to the visitor than copy claiming the site is unconfigured. So
-	 * the caller that has a real reply in hand passes false and takes '' back,
-	 * meaning "nothing better than what you already have".
+	 * The third is gated because of what it costs when it is wrong. Phase copy.
+	 * Tells a visitor the site is not configured yet. That is the right thing to.
+	 * Say when no provider answered at all, and the wrong thing to say when a.
+	 * Provider answered and merely hedged -- there, the provider's own words are.
+	 * Worth more to the visitor than copy claiming the site is unconfigured. So.
+	 * The caller that has a real reply in hand passes false and takes '' back,.
+	 * Meaning "nothing better than what you already have".
 	 *
-	 * @param string $user_message         What the visitor said.
-	 * @param string $flow_id              Flow stem.
-	 * @param string $ivr_file             The flow's IVR file.
-	 * @param string $phase                Journey phase, for the default copy.
-	 * @param array  $eval_context         Request context; its access_level decides
-	 *                                     which catalog rows are visible.
-	 * @param bool   $allow_phase_default  False to return '' rather than fall back
-	 *                                     to phase copy.
-	 * @return string The replacement, or '' when there is nothing better to say.
+	 * @param string $user_message        What the visitor said.
+	 * @param string $flow_id             Flow stem.
+	 * @param string $ivr_file            The flow's IVR file.
+	 * @param string $phase               Journey phase, for the default copy.
+	 * @param array  $eval_context        Request context; its access_level decides.
+	 * Which catalog rows are visible.
+	 * @param bool   $allow_phase_default False to return '' rather than fall back.
+	 * To phase copy.
+	 * @return String The replacement, or '' when there is nothing better to say.
 	 */
 	private function flosc_build_professional_replacement( $user_message, $flow_id, $ivr_file, $phase, $eval_context, $allow_phase_default = true ) {
 		$user_message = (string) $user_message;
@@ -5458,13 +5468,13 @@ The Team',
 	/**
 	 * Whether a message is asking who the host is.
 	 *
-	 * Generic identity phrasings only. A question about a particular named person
-	 * belongs in the flow's own IVR or trajectories, not in engine code -- FLOSC
-	 * ships to anyone, and a name compiled in here would be the wrong name on
-	 * every site but one.
+	 * Generic identity phrasings only. A question about a particular named person.
+	 * Belongs in the flow's own IVR or trajectories, not in engine code -- FLOSC.
+	 * Ships to anyone, and a name compiled in here would be the wrong name on.
+	 * Every site but one.
 	 *
 	 * @param string $message What the visitor said.
-	 * @return bool True when the message is asking about the host.
+	 * @return Bool True when the message is asking about the host.
 	 */
 	private function flosc_is_bio_query( $message ) {
 		$message = (string) $message;
@@ -5486,7 +5496,7 @@ The Team',
 	 *
 	 * @param string $flow_id    Flow stem the wallet belongs to.
 	 * @param int    $session_id Visitor session id.
-	 * @return string The transient key.
+	 * @return String The transient key.
 	 */
 	public function flosc_visitor_token_transient_key( $flow_id, $session_id ) {
 		unset( $flow_id );
@@ -5500,11 +5510,11 @@ The Team',
 
 
 	/**
-	 * Build system prompt for RAG chat
+	 * Build system prompt for RAG chat.
 	 * Fix 8: Use full FLOSC_Chatpack instead of the bare minimal prompt that had no rules/grounding.
 	 *
 	 * @param array $user_context Who the user is and where they are in the journey.
-	 * @return string The system prompt.
+	 * @return String The system prompt.
 	 */
 	private function build_rag_system_prompt( $user_context ) {
 
@@ -5598,14 +5608,14 @@ You are a GUIDE, not a teacher. Your job is to:
 	}
 
 	/**
-	 * Admin Introspection - Check if admin is asking about the system
+	 * Admin Introspection - Check if admin is asking about the system.
 	 * Allows WordPress admins to ask the chat about its configuration, files, offers, etc.
 	 *
 	 * @since 1.4.0
 	 *
 	 * @param string $message          What the admin said.
 	 * @param string $current_ivr_file The flow's IVR file, for answers that name it.
-	 * @return string|null The answer, or null when the message is not an introspection query.
+	 * @return String|null The answer, or null when the message is not an introspection query.
 	 */
 	private function check_admin_introspection( $message, $current_ivr_file = '' ) {
 		$message_lower = strtolower( $message );
@@ -5641,13 +5651,13 @@ You are a GUIDE, not a teacher. Your job is to:
 	}
 
 	/**
-	 * Generate admin introspection response
+	 * Generate admin introspection response.
 	 *
 	 * @since 1.4.0
 	 *
 	 * @param string $category         Which kind of question this is.
 	 * @param string $current_ivr_file The flow's IVR file.
-	 * @return string The answer.
+	 * @return String The answer.
 	 */
 	private function get_admin_introspection_response( $category, $current_ivr_file = '' ) {
 		// v1.9.1: Michel Date Stamp timestamp in introspection header.
@@ -5697,10 +5707,10 @@ You are a GUIDE, not a teacher. Your job is to:
 	}
 
 	/**
-	 * Get available IVR configuration files
+	 * Get available IVR configuration files.
 	 *
 	 * @since 1.4.0
- * @return mixed Result produced by the introspection files operation.
+	 * @return Mixed Result produced by the introspection files operation.
 	 */
 	private function get_introspection_files() {
 		$files = flosc_config_glob( '*.md' );
@@ -5733,10 +5743,10 @@ You are a GUIDE, not a teacher. Your job is to:
 	}
 
 	/**
-	 * Get configured offers
+	 * Get configured offers.
 	 *
 	 * @since 1.4.0
- * @return mixed Result produced by the introspection offers operation.
+	 * @return Mixed Result produced by the introspection offers operation.
 	 */
 	private function get_introspection_offers() {
 		$offers = $this->sale_manager->offers()->get_all_offers();
@@ -5766,12 +5776,12 @@ You are a GUIDE, not a teacher. Your job is to:
 	}
 
 	/**
-	 * Get system overview
+	 * Get system overview.
 	 *
 	 * @since 1.4.0
 	 *
 	 * @param string $current_ivr_file The flow's IVR file.
-	 * @return string The overview, as chat-formatted text.
+	 * @return String The overview, as chat-formatted text.
 	 */
 	private function get_introspection_system( $current_ivr_file = '' ) {
 		$output = "🖥️ **FLOSC System Overview:**\n\n";
@@ -5817,10 +5827,10 @@ You are a GUIDE, not a teacher. Your job is to:
 	}
 
 	/**
-	 * Get configured flows
+	 * Get configured flows.
 	 *
 	 * @since 1.4.0
- * @return mixed Result produced by the introspection flows operation.
+	 * @return Mixed Result produced by the introspection flows operation.
 	 */
 	private function get_introspection_flows() {
 		$flows = get_option( 'flosc_flows', array() );
@@ -5852,10 +5862,10 @@ You are a GUIDE, not a teacher. Your job is to:
 	}
 
 	/**
-	 * Get payment providers
+	 * Get payment providers.
 	 *
 	 * @since 1.4.0
- * @return mixed Result produced by the introspection providers operation.
+	 * @return Mixed Result produced by the introspection providers operation.
 	 */
 	private function get_introspection_providers() {
 		$providers = $this->sale_manager->get_providers();
@@ -5877,10 +5887,10 @@ You are a GUIDE, not a teacher. Your job is to:
 	}
 
 	/**
-	 * Get available quiz types
+	 * Get available quiz types.
 	 *
 	 * @since 1.4.0
- * @return mixed Result produced by the introspection quizzes operation.
+	 * @return Mixed Result produced by the introspection quizzes operation.
 	 */
 	private function get_introspection_quizzes() {
 		$quiz_types      = FLOSC_Quiz_Registry::get_all_quizzes();
@@ -5906,12 +5916,12 @@ You are a GUIDE, not a teacher. Your job is to:
 	}
 
 	/**
-	 * Get current configuration context
+	 * Get current configuration context.
 	 *
 	 * @since 1.4.0
 	 *
 	 * @param string $current_ivr_file The flow's IVR file.
-	 * @return string The current configuration, as chat-formatted text.
+	 * @return String The current configuration, as chat-formatted text.
 	 */
 	private function get_introspection_current( $current_ivr_file = '' ) {
 		$output = "📍 **Current Context:**\n\n";
@@ -5949,10 +5959,10 @@ You are a GUIDE, not a teacher. Your job is to:
 	}
 
 	/**
-	 * Get admin's own user status — WordPress + FLOSC data
+	 * Get admin's own user status — WordPress + FLOSC data.
 	 *
 	 * @since 1.9.2
- * @return mixed Result produced by the introspection user status operation.
+	 * @return Mixed Result produced by the introspection user status operation.
 	 */
 	private function get_introspection_user_status() {
 		$user_id = get_current_user_id();
@@ -6051,10 +6061,10 @@ You are a GUIDE, not a teacher. Your job is to:
 	}
 
 	/**
-	 * Admin introspection help
+	 * Admin introspection help.
 	 *
 	 * @since 1.4.0
- * @return mixed Result produced by the introspection help operation.
+	 * @return Mixed Result produced by the introspection help operation.
 	 */
 	private function get_introspection_help() {
 		return "🔧 **Admin Introspection Commands**\n\n" .
@@ -6071,10 +6081,10 @@ You are a GUIDE, not a teacher. Your job is to:
 	}
 
 	/**
-	 * Get admin introspection follow-up prompts
+	 * Get admin introspection follow-up prompts.
 	 *
 	 * @since 1.4.0
- * @return array Structured admin introspection prompts data.
+	 * @return Array Structured admin introspection prompts data.
 	 */
 	private function get_admin_introspection_prompts() {
 		return array(
@@ -6102,10 +6112,10 @@ You are a GUIDE, not a teacher. Your job is to:
 	}
 
 	/**
-	 * Get access level specific instructions
+	 * Get access level specific instructions.
 	 *
 	 * @param string $access_level One of visitor, guest or member.
-	 * @return string The instructions to add to the system prompt for that level.
+	 * @return String The instructions to add to the system prompt for that level.
 	 */
 	private function get_access_level_instructions( $access_level ) {
 
@@ -6215,7 +6225,7 @@ Example good response:
 	 * @param string $system_prompt The system prompt.
 	 * @param array  $tools         Function declarations the model may call.
 	 * @param array  $user_context  Who the user is and where they are in the journey.
-	 * @return string|WP_Error The reply, or an error from the provider.
+	 * @return String|WP_Error The reply, or an error from the provider.
 	 */
 	private function call_ai_with_rag( $message, $system_prompt, $tools, $user_context ) {
 
@@ -6274,14 +6284,14 @@ Example good response:
 	}
 
 	/**
-	 * Handle quiz submission
+	 * Handle quiz submission.
 	 *
 	 * Quiz scoring is handled by quiz-type-factory.
 	 * Bridge data is automatically created via flosc_quiz_completed hook.
 	 * This endpoint returns current bridge state for frontend reference.
 	 *
-	 * This endpoint only reads. Storing a result is store_quiz_result(); scoring
-	 * one is handle_process_quiz().
+	 * This endpoint only reads. Storing a result is store_quiz_result(); scoring.
+	 * One is handle_process_quiz().
 	 *
 	 * @since 1.0.3
 	 *
@@ -6308,14 +6318,14 @@ Example good response:
 	}
 
 	/**
-	 * Get quiz questions for in-chat quiz
+	 * Get quiz questions for in-chat quiz.
 	 *
-	 * When multiple quizzes are enabled, rotates ABAB pattern
+	 * When multiple quizzes are enabled, rotates ABAB pattern.
 	 *
 	 * @since 9.3.4
 	 *
-	 * @param WP_REST_Request $request Optionally names the quiz id; the flow's
-	 *                                 default quiz is used when it does not.
+	 * @param WP_REST_Request $request Optionally names the quiz id; the flow's.
+	 * Default quiz is used when it does not.
 	 * @return WP_REST_Response The questions.
 	 */
 	public function get_quiz_questions( $request ) {
@@ -6548,12 +6558,12 @@ Example good response:
 	}
 
 	/**
-	 * Parse multiple choice content from admin textarea
+	 * Parse multiple choice content from admin textarea.
 	 *
 	 * @since 9.3.4
 	 *
 	 * @param string $content The textarea contents, one question per line.
-	 * @return array One entry per question, each with its options and its correct answer.
+	 * @return Array One entry per question, each with its options and its correct answer.
 	 */
 	private function parse_multiplechoice_content( $content ) {
 		// Simple format: Question?|A:Answer1|B:Answer2|C:Answer3|correct:A.
@@ -6600,7 +6610,7 @@ Example good response:
 	}
 
 	/**
-	 * Store quiz result
+	 * Store quiz result.
 	 *
 	 * @since 9.3.2
 	 *
@@ -6700,13 +6710,13 @@ Example good response:
 	}
 
 	/**
-	 * Find matching IVR response based on phase and context
+	 * Find matching IVR response based on phase and context.
 	 *
 	 * @param string $phase        Journey phase.
 	 * @param string $user_message What the visitor said.
 	 * @param array  $context      Request context, for evaluating message conditions.
 	 * @param array  $ivr_config   The flow's parsed IVR.
-	 * @return array|null The matching message, or null when nothing matched.
+	 * @return Array|null The matching message, or null when nothing matched.
 	 */
 	private function find_ivr_response( $phase, $user_message, $context, $ivr_config ) {
 		// v1.0.8: Get messages for the phase using correct config structure.
@@ -6750,13 +6760,13 @@ Example good response:
 	}
 
 	/**
-	 * Substitute variables in message content
+	 * Substitute variables in message content.
 	 *
 	 * @since 1.0.9
 	 *
 	 * @param string $content Message text carrying {variable} tokens.
 	 * @param array  $context Request context the tokens are resolved against.
-	 * @return string The text with every token replaced.
+	 * @return String The text with every token replaced.
 	 */
 	private function substitute_ivr_variables( $content, $context ) {
 		$identity       = $this->get_floscflow_identity();
@@ -6794,11 +6804,11 @@ Example good response:
 
 	/**
 	 * Fill a flow-configured status template.
-	 * Placeholders: {first_name}, {product_name}, {member_level}, {name}, {email}
+	 * Placeholders: {first_name}, {product_name}, {member_level}, {name}, {email}.
 	 *
 	 * @param string $template Template text carrying {key} tokens.
 	 * @param array  $vars     Values to substitute, keyed by token name.
-	 * @return string The text with every token replaced.
+	 * @return String The text with every token replaced.
 	 */
 	private function flosc_fill_status_template( $template, array $vars ) {
 		$out = (string) $template;
@@ -6813,7 +6823,7 @@ Example good response:
 	 *
 	 * @param int    $user_id      The user.
 	 * @param string $current_stem The flow being served, so its row can be marked.
-	 * @return array One row per flow: what the user is there and what they hold.
+	 * @return Array One row per flow: what the user is there and what they hold.
 	 */
 	public function flosc_build_user_flow_statuses( $user_id, $current_stem = '' ) {
 		$user_id = absint( $user_id );
@@ -6904,7 +6914,8 @@ Example good response:
 
 	/**
 	 * User status text from real flow state and token data.
- * @return mixed Result produced by the generate user status response operation.
+	 *
+	 * @return Mixed Result produced by the generate user status response operation.
 	 */
 	private function generate_user_status_response() {
 		if ( ! is_user_logged_in() ) {
@@ -6976,9 +6987,9 @@ Example good response:
 	}
 
 	/**
-	 * Search for matching user_input in a message list
-	 * v1.0.9: Added variable substitution for dynamic content
-	 * v1.6.3: Added keyword-based fuzzy fallback when exact match fails
+	 * Search for matching user_input in a message list.
+	 * V1.0.9: Added variable substitution for dynamic content.
+	 * V1.6.3: Added keyword-based fuzzy fallback when exact match fails.
 	 *
 	 * @since 1.0.8
 	 *
@@ -6986,7 +6997,7 @@ Example good response:
 	 * @param string $user_message What the visitor said.
 	 * @param array  $context      Request context, for evaluating message conditions.
 	 * @param bool   $only_always  True to consider only messages whose condition is always.
-	 * @return array|null The matching message, or null. An exact user_input match wins; a keyword match is the fallback.
+	 * @return Array|null The matching message, or null. An exact user_input match wins; a keyword match is the fallback.
 	 */
 	private function search_ivr_match( $messages, $user_message, $context, $only_always = false ) {
 		// Pass 1: Exact match (original behavior).
@@ -7143,12 +7154,12 @@ Example good response:
 	}
 
 	/**
-	 * Find a message by its name in the IVR config
+	 * Find a message by its name in the IVR config.
 	 *
 	 * @param string $message_name The message name.
 	 * @param string $phase        Journey phase to look in first.
 	 * @param array  $ivr_config   The flow's parsed IVR.
-	 * @return array|null The message, or null when the name is not in the config.
+	 * @return Array|null The message, or null when the name is not in the config.
 	 */
 	private function find_message_by_name( $message_name, $phase, $ivr_config ) {
 		if ( empty( $message_name ) ) {
@@ -7178,7 +7189,7 @@ Example good response:
 	 *
 	 * @param string $message      What the visitor said.
 	 * @param array  $eval_context Request context, carrying their quiz state.
-	 * @return string|null The fallback, or null when the message is not about a quiz.
+	 * @return String|null The fallback, or null when the message is not about a quiz.
 	 */
 	private function build_quiz_fallback_response( $message, $eval_context ) {
 		$lower            = strtolower( $message );
@@ -7236,11 +7247,11 @@ Example good response:
 	}
 
 	/**
-	 * Get default response for a phase
+	 * Get default response for a phase.
 	 *
 	 * @param string $phase   Journey phase.
 	 * @param array  $context Request context, for variable substitution.
-	 * @return string The phase's default copy, or '' when the flow has none.
+	 * @return String The phase's default copy, or '' when the flow has none.
 	 */
 	private function get_phase_default_response( $phase, $context ) {
 		// Phase defaults for IVR-only mode (no AI configured / no keyword match).
@@ -7265,13 +7276,13 @@ Example good response:
 	}
 
 	/**
-	 * Get user autoprompts for a phase
+	 * Get user autoprompts for a phase.
 	 */
 	/**
 	 * Build enriched AI context from eval_context + backend data.
-	 * Gives the AI full awareness of who the user is, where they are in the FLOSC
-	 * journey, their quiz results, bridge data, and product context — without
-	 * leaking sensitive data (no API keys, payment details, or PII beyond display name).
+	 * Gives the AI full awareness of who the user is, where they are in the FLOSC.
+	 * Journey, their quiz results, bridge data, and product context — without.
+	 * Leaking sensitive data (no API keys, payment details, or PII beyond display name).
 	 *
 	 * Previously, ai_context was anemic: { phase, logged_in, is_admin, user_name, message_count }.
 	 * The AI was chatting blind about who the user is and where they are.
@@ -7282,7 +7293,7 @@ Example good response:
 	 * @param array  $eval_context Request context.
 	 * @param string $flow_id      Flow stem.
 	 * @param string $ivr_guidance Scripted guidance to carry into the prompt.
-	 * @return array The context to send with the prompt. Carries no API keys, no payment details, and no personal data beyond the display name.
+	 * @return Array The context to send with the prompt. Carries no API keys, no payment details, and no personal data beyond the display name.
 	 */
 	private function build_enriched_ai_context( $phase, $eval_context, $flow_id = '', $ivr_guidance = '' ) {
 		$user_id = $eval_context['user_id'] ?? 0;
@@ -7406,7 +7417,7 @@ Example good response:
 	 *
 	 * @param string      $message What the visitor said.
 	 * @param string|null $flow_id Flow stem; null for the current one.
-	 * @return array|null The matched offer, or null when nothing matched exactly.
+	 * @return Array|null The matched offer, or null when nothing matched exactly.
 	 */
 	private function match_offer_reveal_phrase( $message, $flow_id = null ) {
 		$normalized = strtolower( trim( $message ) );
@@ -7447,7 +7458,7 @@ Example good response:
 	 * @since 3.0.5
 	 *
 	 * @param string|null $flow_id Flow stem; null for the current one.
-	 * @return array The offers whose reveal phrases go into the system prompt.
+	 * @return Array The offers whose reveal phrases go into the system prompt.
 	 */
 	public function get_ai_interpretation_offers( $flow_id = null ) {
 		$offers    = $this->sale_manager->get_available_offers(
@@ -7473,15 +7484,15 @@ Example good response:
 	/**
 	 * The suggested prompts to offer the visitor in this phase.
 	 *
-	 * Walks the messages the flow's IVR assigns to the phase and keeps those
-	 * declared as suggested_user_autoprompt. A message carrying conditions is
-	 * kept only when FLOSC_Condition_Evaluator says they hold for this request,
-	 * so a prompt about upgrading is not offered to someone who already has.
+	 * Walks the messages the flow's IVR assigns to the phase and keeps those.
+	 * Declared as suggested_user_autoprompt. A message carrying conditions is.
+	 * Kept only when FLOSC_Condition_Evaluator says they hold for this request,.
+	 * So a prompt about upgrading is not offered to someone who already has.
 	 *
 	 * @param string $phase      Journey phase.
 	 * @param array  $context    Request context the conditions are evaluated against.
 	 * @param array  $ivr_config The flow's parsed IVR.
-	 * @return array One entry per prompt, each with its text and icon.
+	 * @return Array One entry per prompt, each with its text and icon.
 	 */
 	private function get_user_autoprompts_for_phase( $phase, $context, $ivr_config ) {
 		// v1.0.8: Use correct config structure.
@@ -7517,8 +7528,8 @@ Example good response:
 	/**
 	 * REST: answer one visitor turn.
 	 *
-	 * The main chat endpoint. Resolves the flow, builds the AI context, dispatches
-	 * to the provider or the scripted IVR, and returns what the visitor should see.
+	 * The main chat endpoint. Resolves the flow, builds the AI context, dispatches.
+	 * To the provider or the scripted IVR, and returns what the visitor should see.
 	 *
 	 * @param WP_REST_Request $request Expects message, and optionally context and flow_id.
 	 * @return WP_REST_Response|WP_Error The reply.
@@ -7619,11 +7630,11 @@ Example good response:
 	/**
 	 * REST: transcribe an uploaded recording and, when it belongs to a quiz, score it.
 	 *
-	 * The transcription is counted against the user's STT usage before it runs, so
-	 * a transcription that fails still counts -- it cost the same.
+	 * The transcription is counted against the user's STT usage before it runs, so.
+	 * A transcription that fails still counts -- it cost the same.
 	 *
-	 * A recording with no quiz_id comes back transcribed and unscored, which is
-	 * what the plain voice-input path wants.
+	 * A recording with no quiz_id comes back transcribed and unscored, which is.
+	 * What the plain voice-input path wants.
 	 *
 	 * @param WP_REST_Request $request Expects an audio file, and optionally quiz_id.
 	 * @return WP_REST_Response|WP_Error The transcript, and the analysis when there is one.
@@ -7718,28 +7729,28 @@ Example good response:
 	}
 
 	/**
-	 * Handle quiz processing
+	 * Handle quiz processing.
 	 *
-	 * STATUS: �
- FULLY FUNCTIONAL (v9.1.9)
+	 * STATUS: �.
+	 * FULLY FUNCTIONAL (v9.1.9)
 	 * - Accepts quiz input (e.g., "4,7,9")
 	 * - Scores against expected answer (e.g., "1,2,3,4,5,6,7,8,9,10")
-	 * - Calculates score percentage
-	 * - Fires flosc_quiz_completed action �
-
-	 * - Triggers Free Lesson Manager �
-
-	 * - Sets justCompletedQuiz transient for IVR �
-
+	 * - Calculates score percentage.
+	 * - Fires flosc_quiz_completed action �.
+	 *
+	 * - Triggers Free Lesson Manager �.
+	 *
+	 * - Sets justCompletedQuiz transient for IVR �.
+	 *
 	 *
 	 * FLOW:
-	 * 1. User submits quiz → this endpoint
+	 * 1. User submits quiz → this endpoint.
 	 * 2. Quiz scored → 30% (3 of 10 correct)
-	 * 3. do_action('flosc_quiz_completed') fires
+	 * 3. do_action('flosc_quiz_completed') fires.
 	 * 4. Free Lesson Manager calculates missed (1,2,3,5,6,8,10)
 	 * 5. Picks ONE random lesson (#8)
-	 * 6. Stores in user meta
-	 * 7. IVR/AI can deliver free lesson
+	 * 6. Stores in user meta.
+	 * 7. IVR/AI can deliver free lesson.
 	 *
 	 * @param WP_REST_Request $request Expects the visitor's answers and the quiz id.
 	 * @return WP_REST_Response|WP_Error The score, and whatever the completion hook produced.
@@ -7856,7 +7867,7 @@ Example good response:
 	 * A flow serves lessons only if it has configured lesson groups / category / free-lesson pool.
 	 *
 	 * @param string $stem Flow stem / id / ivr basename.
-	 * @return bool
+	 * @return Bool.
 	 */
 	public function flosc_flow_serves_lessons( $stem = '' ) {
 		$stem = $this->flosc_normalize_flow_stem( $stem );
@@ -7945,7 +7956,7 @@ Example good response:
 	 * Does not invent pronunciation_* defaults from global options.
 	 *
 	 * @param string $stem Flow stem; '' for the current flow.
-	 * @return string[] The quiz ids this flow has configured.
+	 * @return String[] The quiz ids this flow has configured.
 	 */
 	public function flosc_flow_quiz_ids( $stem = '' ) {
 		$stem = $this->flosc_normalize_flow_stem( $stem );
@@ -8018,15 +8029,15 @@ Example good response:
 	 * 1) Flow must list quiz id(s) in its own config.
 	 * 2) If quiz_data.flow_id is set, it must match this stem.
 	 * 3) If quiz_id is set, it must equal one of this flow’s configured quiz ids.
-	 * 4) Legacy meta with no quiz_id: only if this flow has default_audio_quiz_id
-	 *    (explicit audio quiz key on the flow bag) and data has phrase_results.
+	 * 4) Legacy meta with no quiz_id: only if this flow has default_audio_quiz_id.
+	 * (explicit audio quiz key on the flow bag) and data has phrase_results.
 	 *
 	 * @param string     $stem         Flow stem.
 	 * @param array|null $quiz_data    The stored payload, when the caller has it.
 	 * @param string     $quiz_id_meta The quiz id recorded in user meta.
-	 * @return bool True when the quiz belongs to this flow. Quiz meta is
-	 *              per-user rather than per-flow, so one flow must not display a
-	 *              result earned on another.
+	 * @return Bool True when the quiz belongs to this flow. Quiz meta is.
+	 * Per-user rather than per-flow, so one flow must not display a.
+	 * Result earned on another.
 	 */
 	public function flosc_flow_should_surface_quiz_data( $stem, $quiz_data = null, $quiz_id_meta = '' ) {
 		$configured = $this->flosc_flow_quiz_ids( $stem );
@@ -8091,11 +8102,11 @@ Example good response:
 	/**
 	 * Flow stem from REST request or current app flow (session isolation).
 	 *
-	 * @param WP_REST_Request|null $request The request, when there is one. A REST
-	 *                                      call carries no URL context, so the
-	 *                                      flow is read from flow_id or ivr_file
-	 *                                      on the request itself.
-	 * @return string The flow stem, or '' when none could be resolved.
+	 * @param WP_REST_Request|null $request The request, when there is one. A REST.
+	 * Call carries no URL context, so the.
+	 * Flow is read from flow_id or ivr_file.
+	 * On the request itself.
+	 * @return String The flow stem, or '' when none could be resolved.
 	 */
 	public function flosc_request_flow_stem( $request = null ) {
 		$raw = '';
@@ -8133,7 +8144,7 @@ Example good response:
 	 * Does not call AI. Used so admin Chat Logs show the full conversation.
 	 *
 	 * @param WP_REST_Request $request Request.
-	 * @return WP_REST_Response|WP_Error
+	 * @return WP_REST_Response|WP_Error.
 	 */
 	public function handle_client_chat_log( $request ) {
 		if ( ! class_exists( 'FLOSC_Chat_Logger' ) ) {
@@ -8362,10 +8373,10 @@ Example good response:
 	 * Score pending audio — called by JS after ANY login method.
 	 *
 	 * The visitor took the IPA quiz, audio was uploaded to flosc-temp/{temp_id}/.
-	 * After login (email, Facebook, Google, any SSO), JS sends the temp_id from
-	 * localStorage. This function scores the audio and returns full results.
+	 * After login (email, Facebook, Google, any SSO), JS sends the temp_id from.
+	 * LocalStorage. This function scores the audio and returns full results.
 	 *
-	 * This replaces the cookie-based SSO scoring path which fails cross-domain
+	 * This replaces the cookie-based SSO scoring path which fails cross-domain.
 	 * (third-party cookies are blocked by modern browsers).
 	 *
 	 * @since 8.0.7
@@ -8455,8 +8466,8 @@ Example good response:
 	/**
 	 * Handle email-only registration / guest-link request (v1.4.0+)
 	 *
-	 * Stashes visitor quiz payload and (when MagicLink is enabled) mints access
-	 * for an existing WP user only. MagicLink click never creates accounts;
+	 * Stashes visitor quiz payload and (when MagicLink is enabled) mints access.
+	 * For an existing WP user only. MagicLink click never creates accounts;
 	 * Convenience-link mint requires an existing WP user (never creates on mint).
 	 *
 	 * @param WP_REST_Request $request Expects the email and the visitor's quiz payload.
@@ -8511,7 +8522,7 @@ Example good response:
 	 * Consume quiz data stashed via /stash-visitor-quiz before an SSO redirect.
 	 *
 	 * @param int $user_id The user who has just signed in.
-	 * @return bool True when a stashed payload was found and attached.
+	 * @return Bool True when a stashed payload was found and attached.
 	 */
 	public function consume_stashed_visitor_quiz( $user_id ) {
 		$existing = get_user_meta( $user_id, '_flosc_last_quiz_data', true );
@@ -8643,7 +8654,7 @@ Example good response:
 	 * Generate unique username from email — consistent with WooCommerce convention on this site.
 	 *
 	 * @param string $email The address.
-	 * @return string A username not already taken on this site.
+	 * @return String A username not already taken on this site.
 	 */
 	private function generate_username_from_email( $email ) {
 		// Use email as username (consistent with WooCommerce convention on this site).
@@ -8661,11 +8672,11 @@ Example good response:
 	/**
 	 * Process pre-login data for newly logged in user (v1.4.0)
 	 *
-	 * Also falls back to the flosc_quiz_result signed cookie that the
-	 * in-chat multiple-choice quiz sets via POST /quiz-result. Previously only
-	 * flosc_prelogin_score (set by /store-score) was checked, so multiple-choice
-	 * quiz results were never transferred to the new user → free lesson never
-	 * assigned → flow broke at the "View free lesson" step.
+	 * Also falls back to the flosc_quiz_result signed cookie that the.
+	 * In-chat multiple-choice quiz sets via POST /quiz-result. Previously only.
+	 * Flosc_prelogin_score (set by /store-score) was checked, so multiple-choice.
+	 * Quiz results were never transferred to the new user → free lesson never.
+	 * Assigned → flow broke at the "View free lesson" step.
 	 *
 	 * @since 3.0.7
 	 *
@@ -8777,7 +8788,7 @@ Example good response:
 
 	/**
 	 * Get free lesson for logged-in user (v9.1.9)
-	 * Use deliver_free_lesson() to persist _flosc_free_content_item_delivered
+	 * Use deliver_free_lesson() to persist _flosc_free_content_item_delivered.
 	 *
 	 * @since 1.4.9
 	 *
@@ -9065,9 +9076,9 @@ Example good response:
 	 * The browser-supplied plan hint is only used as a consistency check.
 	 * The PayPal subscription plan ID is the source of truth.
 	 *
-	 * @param array  $sub Verified PayPal subscription payload.
+	 * @param array  $sub                 Verified PayPal subscription payload.
 	 * @param string $requested_plan_type Client-supplied plan hint.
-	 * @return string|WP_Error
+	 * @return String|WP_Error.
 	 */
 	private function resolve_paypal_subscription_plan_type( array $sub, $requested_plan_type = '' ) {
 		$plans  = array();
@@ -9118,10 +9129,10 @@ Example good response:
 	 * PayPal Subscriptions — Activate after user approves in PayPal popup.
 	 *
 	 * Order (correct):
-	 * 1) GET subscription from PayPal — ACTIVE only
-	 * 2) custom_id = server purchase_uuid — load intent
-	 * 3) plan/offer/amount from intent only
-	 * 4) then browser binding + account create + fulfill
+	 * 1) GET subscription from PayPal — ACTIVE only.
+	 * 2) custom_id = server purchase_uuid — load intent.
+	 * 3) plan/offer/amount from intent only.
+	 * 4) then browser binding + account create + fulfill.
 	 *
 	 * @param WP_REST_Request $request Expects the PayPal subscription id.
 	 * @return WP_REST_Response|WP_Error The granted access, or an error when PayPal does not report the subscription active.
@@ -9563,7 +9574,7 @@ Example good response:
 
 	/**
 	 * PayPal - Create Order (one-time Orders API).
-	 * Creates a PayPal order for the given offer. Works for guests and logged-in buyers
+	 * Creates a PayPal order for the given offer. Works for guests and logged-in buyers.
 	 * (guest capture provisions the account from the PayPal payer email).
 	 *
 	 * @param WP_REST_Request $request Expects the offer.
@@ -9671,9 +9682,9 @@ Example good response:
 
 	/**
 	 * PayPal - Capture Order (one-time Orders API).
-	 * After buyer approves in PayPal popup: capture funds, provision buyer account
-	 * if needed, grant membership from the offer. Works for logged-in buyers and
-	 * visitors (account created from PayPal payer email) — same model as subscriptions.
+	 * After buyer approves in PayPal popup: capture funds, provision buyer account.
+	 * If needed, grant membership from the offer. Works for logged-in buyers and.
+	 * Visitors (account created from PayPal payer email) — same model as subscriptions.
 	 *
 	 * @param WP_REST_Request $request Expects the PayPal order id.
 	 * @return WP_REST_Response|WP_Error The granted access.
@@ -10014,15 +10025,15 @@ Example good response:
 	/**
 	 * Bootstrap / rehydrate logged-in session for the app shell.
 	 *
-	 * When PHP rendered as visitor (WP cookie missing on this host) but the
-	 * browser still has flosc_auth_token (localStorage → X-FLOSC-Token), this
-	 * endpoint authenticates the user, sets the auth cookie for next paint,
-	 * and returns per-flow state + token balances from the USER PROFILE
+	 * When PHP rendered as visitor (WP cookie missing on this host) but the.
+	 * Browser still has flosc_auth_token (localStorage → X-FLOSC-Token), this.
+	 * Endpoint authenticates the user, sets the auth cookie for next paint,.
+	 * And returns per-flow state + token balances from the USER PROFILE.
 	 * (never the visitor wallet).
 	 *
-	 * @param WP_REST_Request $request The token is accepted from the
-	 *                                 Authorization header, and from the body or
-	 *                                 query string for the recovery paths.
+	 * @param WP_REST_Request $request The token is accepted from the.
+	 * Authorization header, and from the body or.
+	 * Query string for the recovery paths.
 	 * @return WP_REST_Response The state the app needs to paint its first frame.
 	 */
 	public function handle_session_bootstrap( $request ) {
@@ -10108,11 +10119,11 @@ Example good response:
 	 *
 	 * @param int    $user_id   The user.
 	 * @param string $flow_stem Flow stem.
-	 * @param array  $args {.
-	 *     @type bool $allow_guest_grant_without_session Apply V→G without visitor cookie.
-	 *     @type bool $consume_event_transients          Clear justLoggedIn etc. (page paint only).
-	 * }
-	 * @return array
+	 * @param array  $args      {.
+	 * @type bool $allow_guest_grant_without_session Apply V→G without visitor cookie.
+	 * @type bool $consume_event_transients          Clear justLoggedIn etc. (page paint only).
+	 * }.
+	 * @return Array.
 	 */
 	public function build_app_user_payload( $user_id, $flow_stem = '', $args = array() ) {
 		$user_id = absint( $user_id );
@@ -10318,14 +10329,14 @@ Example good response:
 	/**
 	 * REST: record what a user is looking for, so offers can be matched to it.
 	 *
-	 * Part of the affiliate path: rather than guessing, the user says what they
-	 * want, roughly what they expect to pay and how soon, and offers are found
-	 * against that.
+	 * Part of the affiliate path: rather than guessing, the user says what they.
+	 * Want, roughly what they expect to pay and how soon, and offers are found.
+	 * Against that.
 	 *
-	 * @param WP_REST_Request $request Expects description, and optionally category,
-	 *                                 expected_price, timeframe and notes.
-	 * @return WP_REST_Response|WP_Error The stored intent, or an error when the
-	 *                                   affiliate provider is not configured.
+	 * @param WP_REST_Request $request Expects description, and optionally category,.
+	 * Expected_price, timeframe and notes.
+	 * @return WP_REST_Response|WP_Error The stored intent, or an error when the.
+	 * Affiliate provider is not configured.
 	 */
 	public function declare_intent( $request ) {
 		$affiliate = $this->sale_manager->get_provider( 'affiliate' );
@@ -10351,12 +10362,12 @@ Example good response:
 	/**
 	 * REST: the offers matching one of the current user's declared intents.
 	 *
-	 * The intent must belong to the calling user: it is looked up in their own
-	 * intents rather than by id alone, so one user cannot read another's.
+	 * The intent must belong to the calling user: it is looked up in their own.
+	 * Intents rather than by id alone, so one user cannot read another's.
 	 *
 	 * @param WP_REST_Request $request Expects the intent id.
-	 * @return WP_REST_Response|WP_Error The matching offers, or a 404 when the
-	 *                                   intent is not theirs.
+	 * @return WP_REST_Response|WP_Error The matching offers, or a 404 when the.
+	 * Intent is not theirs.
 	 */
 	public function get_intent_offers( $request ) {
 		$intent_id = $request->get_param( 'id' );
@@ -10376,8 +10387,8 @@ Example good response:
 	/**
 	 * REST: the current user's referral link and code.
 	 *
-	 * The code is derived from the user id rather than stored, so it is stable
-	 * and needs no record.
+	 * The code is derived from the user id rather than stored, so it is stable.
+	 * And needs no record.
 	 *
 	 * @return WP_REST_Response The link and the code.
 	 */
@@ -10396,11 +10407,11 @@ Example good response:
 
 	/**
 	 * Debug endpoint for funnel state (TASK-108).
-	 * Returns complete state for testing the FLOSC funnel flow
-	 * Only available when FLOSC_DEBUG is true
+	 * Returns complete state for testing the FLOSC funnel flow.
+	 * Only available when FLOSC_DEBUG is true.
 	 *
 	 * @since 1.0.5
- * @return mixed Result produced by the debug funnel state operation.
+	 * @return Mixed Result produced by the debug funnel state operation.
 	 */
 	public function get_debug_funnel_state() {
 		$user_id = get_current_user_id();
@@ -10457,9 +10468,9 @@ Example good response:
 	/**
 	 * Get IVR messages for current phase and context (v9.2.6: Performance optimization)
 	 * Return messages from related phases for members (sale+content)
-	 *         Also include 'always' condition messages from freeline for all phases
-	 * v1.2.3: Multi-flow aware - loads IVR from current flow's ivr_file
-	 * v1.3.8: Accept explicit flow_id/ivr_file params from frontend (REST context fix)
+	 * Also include 'always' condition messages from freeline for all phases.
+	 * V1.2.3: Multi-flow aware - loads IVR from current flow's ivr_file.
+	 * V1.3.8: Accept explicit flow_id/ivr_file params from frontend (REST context fix)
 	 *
 	 * @since 1.1.0
 	 *
@@ -10599,10 +10610,10 @@ Example good response:
 
 	/**
 	 * Get bridge data for current user (TASK-008)
-	 * Returns quiz state preserved between phases for personalized offer targeting
+	 * Returns quiz state preserved between phases for personalized offer targeting.
 	 *
 	 * @since 1.0.4
- * @return mixed Result produced by the bridge data operation.
+	 * @return Mixed Result produced by the bridge data operation.
 	 */
 	public function get_bridge_data() {
 		$user_id = get_current_user_id();
@@ -10648,8 +10659,8 @@ Example good response:
 	 * - ?search=TERM -- title and content search inside the configured categories.
 	 * - neither      -- every configured category.
 	 *
-	 * A flow scope is required. Items the caller is not entitled to come back as
-	 * locked stubs: no excerpt, url, tags or phoneme metadata.
+	 * A flow scope is required. Items the caller is not entitled to come back as.
+	 * Locked stubs: no excerpt, url, tags or phoneme metadata.
 	 *
 	 * @since 3.0.8
 	 *
@@ -10789,7 +10800,7 @@ Example good response:
 
 	/**
 	 * Store pre-login quiz score (for visitors)
-	 * Uses signed cookies to prevent score forgery
+	 * Uses signed cookies to prevent score forgery.
 	 *
 	 * @since 9.4.2
 	 *
@@ -10854,11 +10865,11 @@ Example good response:
 	 *
 	 * Visitors record 5 phrases but their audio is NOT sent to the pronunciation API.
 	 * Instead it's saved to a temp directory keyed by a Michel-timestamp tempID.
-	 * After registration (visitor → guest), score_visitor_audio() sends the files
-	 * to the pronunciation API server-side and stores the results in user meta.
+	 * After registration (visitor → guest), score_visitor_audio() sends the files.
+	 * To the pronunciation API server-side and stores the results in user meta.
 	 *
-	 * Directory: wp-content/uploads/flosc-temp/{tempID}/
-	 * Files:     phrase-{n}.webm + metadata.json
+	 * Directory: wp-content/uploads/flosc-temp/{tempID}/.
+	 * Files:     phrase-{n}.webm + metadata.json.
 	 * Cleanup:   flosc_cleanup_visitor_audio cron deletes dirs older than 36 hours.
 	 *
 	 * @since 8.0.0
@@ -10999,16 +11010,16 @@ Example good response:
 	 * Store browser-computed quiz data in WordPress user meta.
 	 *
 	 * The browser already scored each phrase against the flow-configured pronunciation API during the quiz.
-	 * This method accepts those results, normalizes the data shape, stores in user meta
-	 * via store_quiz_score(), and moves audio files from flosc-temp/ to flosc-users/.
+	 * This method accepts those results, normalizes the data shape, stores in user meta.
+	 * Via store_quiz_score(), and moves audio files from flosc-temp/ to flosc-users/.
 	 *
-	 * This replaces the server-side re-scoring approach (score_visitor_audio) which
-	 * timed out on ChemiCloud shared hosting (5 phrases × 30s = 150s > 60s web server timeout).
+	 * This replaces the server-side re-scoring approach (score_visitor_audio) which.
+	 * Timed out on ChemiCloud shared hosting (5 phrases × 30s = 150s > 60s web server timeout).
 	 *
 	 * @param int    $user_id   The user.
 	 * @param array  $quiz_data The scores the browser computed during the quiz.
 	 * @param string $temp_id   The visitor temp directory to move audio out of; '' when there is none.
-	 * @return bool True when the data was stored.
+	 * @return Bool True when the data was stored.
 	 */
 	private function store_browser_quiz_data( $user_id, $quiz_data, $temp_id = '' ) {
 		// Validate and normalize quiz data from browser.
@@ -11133,7 +11144,7 @@ Example good response:
 	 * @param mixed $value Incoming browser value.
 	 * @param int   $depth Current depth.
 	 * @param int   $max   Max depth.
-	 * @return mixed
+	 * @return Mixed.
 	 */
 	private function flosc_sanitize_quiz_nested_value( $value, $depth = 0, $max = 6 ) {
 		if ( $depth > $max ) {
@@ -11180,7 +11191,7 @@ Example good response:
 	 *
 	 * @param int    $user_id The user the files now belong to.
 	 * @param string $temp_id The visitor temp directory.
-	 * @return bool True when the files were moved.
+	 * @return Bool True when the files were moved.
 	 */
 	private function move_visitor_audio_to_user( $user_id, $temp_id ) {
 		if ( ! preg_match( '/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $temp_id ) ) {
@@ -11221,11 +11232,11 @@ Example good response:
 	/**
 	 * Normalize phrase metadata for playback without local shell conversion.
 	 *
-	 * Local transcoding is intentionally disabled. Playback uses existing files
-	 * only, preferring mp4 when present. Original source files are retained.
+	 * Local transcoding is intentionally disabled. Playback uses existing files.
+	 * Only, preferring mp4 when present. Original source files are retained.
 	 *
 	 * @param string $session_dir The session's audio directory.
-	 * @return array The phrase metadata, naming the file each phrase plays.
+	 * @return Array The phrase metadata, naming the file each phrase plays.
 	 */
 	private function ensure_session_mp4_copies( $session_dir ) {
 		if ( ! is_dir( $session_dir ) ) {
@@ -11320,7 +11331,7 @@ Example good response:
 	 * Returns the owner user ID, or 0 when no owner is found.
 	 *
 	 * @param string $session_id The session.
-	 * @return int The owner's user id, or 0 when no owner is found.
+	 * @return Int The owner's user id, or 0 when no owner is found.
 	 */
 	private function find_session_owner_user_id( $session_id ) {
 		if ( ! preg_match( '/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $session_id ) ) {
@@ -11354,17 +11365,17 @@ Example good response:
 	 * Pull quiz session data (scores + audio) from Digital Ocean API.
 	 *
 	 * Called during registration or login when a session_id is available.
-	 * The DO API scored each phrase during the quiz and saved audio + results
-	 * in /opt/sessions/sessions/{session_id}/. This method:
-	 *   1. Fetches the finalized summary from GET /session/{session_id}
-	 *   2. Downloads each phrase audio file to flosc-users/{user_id}/
-	 *   3. Stores scores in user meta via store_quiz_score()
-	 *   4. Fires flosc_quiz_completed hook (triggers Free Lesson Manager)
-	 *   5. Sends score email
+	 * The DO API scored each phrase during the quiz and saved audio + results.
+	 * In /opt/sessions/sessions/{session_id}/. This method:
+	 * 1. Fetches the finalized summary from GET /session/{session_id}.
+	 * 2. Downloads each phrase audio file to flosc-users/{user_id}/.
+	 * 3. Stores scores in user meta via store_quiz_score()
+	 * 4. Fires flosc_quiz_completed hook (triggers Free Lesson Manager)
+	 * 5. Sends score email.
 	 *
-	 * @param int    $user_id     WordPress user ID.
-	 * @param string $session_id  Michel-timestamped session ID from DO.
-	 * @return bool  True on success, false on failure
+	 * @param int    $user_id    WordPress user ID.
+	 * @param string $session_id Michel-timestamped session ID from DO.
+	 * @return Bool  True on success, false on failure.
 	 * @since 8.0.0
 	 */
 	private function pull_session_from_do( $user_id, $session_id ) {
@@ -11673,19 +11684,19 @@ Example good response:
 	/**
 	 * Score visitor audio server-side after registration.
 	 *
-	 * Reads stored audio files from flosc-temp/{tempID}/, sends each to the
-	 * pronunciation API via wp_remote_post (server-to-server — never exposed to browser),
-	 * aggregates phoneme scores, maps to lessons, and returns a score_data array
-	 * compatible with store_quiz_score() / flosc_quiz_completed.
+	 * Reads stored audio files from flosc-temp/{tempID}/, sends each to the.
+	 * Pronunciation API via wp_remote_post (server-to-server — never exposed to browser),.
+	 * Aggregates phoneme scores, maps to lessons, and returns a score_data array.
+	 * Compatible with store_quiz_score() / flosc_quiz_completed.
 	 *
 	 * After scoring, moves the audio dir to flosc-users/{user_id}/ for retention.
 	 *
 	 * NOTE: Primary path is store_browser_quiz_data(); this method is a fallback.
 	 * This method is retained as a fallback for the /score-pending-audio endpoint.
 	 *
-	 * @param int    $user_id  The newly registered user's ID.
-	 * @param string $temp_id  The Michel-timestamp tempID from the signed cookie.
-	 * @return array|false     score_data array on success, false on failure
+	 * @param int    $user_id The newly registered user's ID.
+	 * @param string $temp_id The Michel-timestamp tempID from the signed cookie.
+	 * @return Array|false     score_data array on success, false on failure.
 	 * @since 8.0.0
 	 */
 	public function score_visitor_audio( $user_id, $temp_id ) {
@@ -11918,7 +11929,7 @@ Example good response:
 	 * TempID format: YYYY-MMm-DDd-HHh-MMm-SSs-XXXXX — parse the timestamp to determine age.
 	 *
 	 * @since 8.0.0
- * @return mixed Result produced by the cleanup expired visitor audio operation.
+	 * @return Mixed Result produced by the cleanup expired visitor audio operation.
 	 */
 	public function cleanup_expired_visitor_audio() {
 		$upload_dir = wp_upload_dir();
@@ -11963,7 +11974,8 @@ Example good response:
 	/**
 	 * Mark funnel as completed for user (v3.0.4)
 	 * Called after user completes the FLOSC flow (quiz → login → free lesson → upgrade prompt)
- * @return mixed Result of the mark funnel complete operation, or a WP_Error when it cannot complete.
+	 *
+	 * @return Mixed Result of the mark funnel complete operation, or a WP_Error when it cannot complete.
 	 */
 	public function mark_funnel_complete() {
 		$user_id = get_current_user_id();
@@ -11985,9 +11997,10 @@ Example good response:
 
 	/**
 	 * Test AI connection (v04_09)
-	 * Sends a test message to verify AI provider is configured and responding
-	 * Returns smart error messages with next steps if connection fails
- * @return mixed Result of the test ai operation, or a WP_Error when it cannot complete.
+	 * Sends a test message to verify AI provider is configured and responding.
+	 * Returns smart error messages with next steps if connection fails.
+	 *
+	 * @return Mixed Result of the test ai operation, or a WP_Error when it cannot complete.
 	 */
 	public function handle_test_ai() {
 		$start_time   = microtime( true );
@@ -12056,16 +12069,16 @@ Example good response:
 	}
 
 	/**
-	 * AJAX handler for AI connection test button in admin
-	 * Wraps handle_test_ai() for wp_ajax context
+	 * AJAX handler for AI connection test button in admin.
+	 * Wraps handle_test_ai() for wp_ajax context.
 	 *
 	 * @since 1.9.0
 	 */
 	/**
-	 * Ask the selected provider which models this key can use, and say which
-	 * of them the installed provider plugin can actually pin.
+	 * Ask the selected provider which models this key can use, and say which.
+	 * Of them the installed provider plugin can actually pin.
 	 *
-	 * @return void
+	 * @return Void.
 	 */
 	public function ajax_fetch_ai_models() {
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -12122,22 +12135,22 @@ Example good response:
 	/**
 	 * Ask the provider which models this key can use — the test's first step.
 	 *
-	 * This is the one step that isolates the key from everything built on top
-	 * of it:
+	 * This is the one step that isolates the key from everything built on top.
+	 * Of it:
 	 *
-	 *   the call succeeds  → the key reaches the provider. Whatever fails
-	 *                        after this is not the key, and the returned ids
-	 *                        are what the key is entitled to ask for.
-	 *   the call is 401    → the key itself is the problem, said plainly,
-	 *                        instead of a generation error that reads like one.
+	 * The call succeeds  → the key reaches the provider. Whatever fails.
+	 * After this is not the key, and the returned ids.
+	 * Are what the key is entitled to ask for.
+	 * The call is 401    → the key itself is the problem, said plainly,.
+	 * Instead of a generation error that reads like one.
 	 *
-	 * It reports the provider's list and nothing more. Whether a given id then
-	 * runs here is answered by the generation call this test makes next, so
+	 * It reports the provider's list and nothing more. Whether a given id then.
+	 * Runs here is answered by the generation call this test makes next, so.
 	 * FLOSC never has to speculate about it in the operator's UI.
 	 *
 	 * @param string $provider FLOSC provider slug.
 	 * @param string $api_key  The saved key.
-	 * @return array<string,mixed>
+	 * @return Array<string,mixed>.
 	 */
 	private function probe_provider_models( $provider, $api_key ) {
 		if ( '' === (string) $api_key || ! function_exists( 'flosc_fetch_model_catalog' ) ) {
@@ -12163,12 +12176,12 @@ Example good response:
 	/**
 	 * Save one provider's API key on its own, without saving the whole tab.
 	 *
-	 * A key is the one setting an operator wants to commit the moment they
-	 * paste it, and the only one where "did that save?" has to have an answer.
-	 * The full-page Save is at the foot of a long tab and its confirmation
-	 * banner renders at the top, so the answer arrived somewhere the operator
-	 * was not looking. This writes the key, to this flow, and says so where
-	 * the button is.
+	 * A key is the one setting an operator wants to commit the moment they.
+	 * Paste it, and the only one where "did that save?" has to have an answer.
+	 * The full-page Save is at the foot of a long tab and its confirmation.
+	 * Banner renders at the top, so the answer arrived somewhere the operator.
+	 * Was not looking. This writes the key, to this flow, and says so where.
+	 * The button is.
 	 */
 	public function ajax_save_ai_provider_key() {
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -12200,9 +12213,9 @@ Example good response:
 	/**
 	 * Save one provider's model id on its own.
 	 *
-	 * Choosing from the fetched list has to be the end of the job. A pick that
-	 * only fills a form field, and is then lost unless the operator finds a
-	 * page-wide Save, is not a choice — it is a suggestion.
+	 * Choosing from the fetched list has to be the end of the job. A pick that.
+	 * Only fills a form field, and is then lost unless the operator finds a.
+	 * Page-wide Save, is not a choice — it is a suggestion.
 	 */
 	public function ajax_save_ai_provider_model() {
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -12234,9 +12247,9 @@ Example good response:
 	/**
 	 * Ask the provider to describe the chosen model, and report it verbatim.
 	 *
-	 * Everything shown comes from the provider. FLOSC adds no judgement about
-	 * which model is better, and does not claim the list is complete —
-	 * sampling support, for one, is not in it.
+	 * Everything shown comes from the provider. FLOSC adds no judgement about.
+	 * Which model is better, and does not claim the list is complete —.
+	 * Sampling support, for one, is not in it.
 	 */
 	public function ajax_describe_ai_model() {
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -12276,12 +12289,12 @@ Example good response:
 	/**
 	 * Ask the configured model what one of its own request parameters does.
 	 *
-	 * FLOSC ships notes on the parameters it has measured, and that list is out
-	 * of date the day a provider adds one. This is the answer to that: the
-	 * operator types a name FLOSC has never heard of, and the provider's own
-	 * model is asked what it is. The answer is labelled as the model's, never
-	 * as FLOSC's, because a model can be wrong about its own API and the
-	 * operator has to know which of the two they are reading.
+	 * FLOSC ships notes on the parameters it has measured, and that list is out.
+	 * Of date the day a provider adds one. This is the answer to that: the.
+	 * Operator types a name FLOSC has never heard of, and the provider's own.
+	 * Model is asked what it is. The answer is labelled as the model's, never.
+	 * As FLOSC's, because a model can be wrong about its own API and the.
+	 * Operator has to know which of the two they are reading.
 	 */
 	public function ajax_explain_ai_parameter() {
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -12403,14 +12416,15 @@ Example good response:
 	/**
 	 * AJAX: run a live test against the flow's AI provider and report what happened.
 	 *
-	 * Behind the Test Connection button on the AI tab. The posted IVR sets the flow
-	 * context before anything is read, because admin-ajax carries no URL for
+	 * Behind the Test Connection button on the AI tab. The posted IVR sets the flow.
+	 * Context before anything is read, because admin-ajax carries no URL for.
 	 * get_current_flow() to work from -- without it the provider would resolve to
-	 * empty and the test would report a misconfiguration that is not there.
+	 * Empty and the test would report a misconfiguration that is not there.
 	 *
-	 * The request is made directly rather than through WP_REST_Request, which is
-	 * not always loaded during an admin-ajax request.
- * @return mixed Result of the test ai connection operation, or a WP_Error when it cannot complete.
+	 * The request is made directly rather than through WP_REST_Request, which is.
+	 * Not always loaded during an admin-ajax request.
+	 *
+	 * @return Mixed Result of the test ai connection operation, or a WP_Error when it cannot complete.
 	 */
 	public function ajax_test_ai_connection() {
 		// Origin first: check_ajax_referer() ran after $_POST was unslashed.
@@ -12595,8 +12609,8 @@ Example good response:
 	 * AJAX: return chat log rows for the Chat Logs tab.
 	 *
 	 * Polled by the tab, so it takes a since_id and returns only what is newer.
-	 * Permission is checked per flow, not site-wide: managing one flow's logs does
-	 * not grant another's.
+	 * Permission is checked per flow, not site-wide: managing one flow's logs does.
+	 * Not grant another's.
 	 */
 	public function ajax_flosc_get_chat_logs() {
 		// Origin first: check_ajax_referer() ran after $_POST was unslashed.
@@ -12632,7 +12646,7 @@ Example good response:
 	}
 
 	/**
-	 * AJAX handler to clear old chat logs
+	 * AJAX handler to clear old chat logs.
 	 *
 	 * @since 1.9.0
 	 */
@@ -12704,8 +12718,8 @@ Example good response:
 
 	/**
 	 * AJAX handler — delete one whole conversation from the chat logs.
-	 * Identified by (by, value) from FLOSC_Chat_Logger::flosc_session_descriptor,
-	 * optionally scoped to the flow currently shown.
+	 * Identified by (by, value) from FLOSC_Chat_Logger::flosc_session_descriptor,.
+	 * Optionally scoped to the flow currently shown.
 	 *
 	 * @since 8.0.0
 	 */
@@ -12806,7 +12820,8 @@ Example good response:
 
 	/**
 	 * Download one or more chat conversations as a TSV file.
- * @return mixed Result produced by the download chat tsv operation.
+	 *
+	 * @return Mixed Result produced by the download chat tsv operation.
 	 */
 	public function handle_download_chat_tsv() {
 		if ( ! current_user_can( 'manage_options' ) ) {
@@ -12914,9 +12929,9 @@ Example good response:
 	}
 
 	/**
-	 * Admin joins a conversation — post a human "(admin)" message into a
-	 * visitor's chat. Stored at the bottom of that session; the visitor's widget
-	 * picks it up on its next poll and shows it pale-green as "Name (admin)".
+	 * Admin joins a conversation — post a human "(admin)" message into a.
+	 * Visitor's chat. Stored at the bottom of that session; the visitor's widget.
+	 * Picks it up on its next poll and shows it pale-green as "Name (admin)".
 	 *
 	 * @since 8.0.0
 	 */
@@ -13040,8 +13055,8 @@ Example good response:
 	}
 
 	/**
-	 * Visitor poll — return admin "(admin)" messages posted into this
-	 * conversation since the given cursor. Public, read-only, lightweight.
+	 * Visitor poll — return admin "(admin)" messages posted into this.
+	 * Conversation since the given cursor. Public, read-only, lightweight.
 	 *
 	 * @since 8.0.0
 	 *
@@ -13070,8 +13085,8 @@ Example good response:
 	}
 
 	/**
-	 * Visitor poll — return admin "(admin)" messages posted into this
-	 * conversation since the given cursor. Public, read-only, lightweight.
+	 * Visitor poll — return admin "(admin)" messages posted into this.
+	 * Conversation since the given cursor. Public, read-only, lightweight.
 	 *
 	 * @since 8.0.0
 	 *
@@ -13178,7 +13193,7 @@ Example good response:
 	}
 
 	/**
-	 * REST handler — list all AI feedback for current flow
+	 * REST handler — list all AI feedback for current flow.
 	 *
 	 * @since 1.9.0
 	 *
@@ -13216,7 +13231,7 @@ Example good response:
 	}
 
 	/**
-	 * REST handler — delete one AI feedback by ID
+	 * REST handler — delete one AI feedback by ID.
 	 *
 	 * @since 1.9.0
 	 *
@@ -13320,7 +13335,7 @@ Example good response:
 	}
 
 	/**
-	 * REST handler — delete one AI praise by ID
+	 * REST handler — delete one AI praise by ID.
 	 *
 	 * @since 1.9.0
 	 *
@@ -13372,7 +13387,7 @@ Example good response:
 
 	/**
 	 * Handle IVR message tracking (v07.09)
-	 * Track which messages have been shown to users
+	 * Track which messages have been shown to users.
 	 *
 	 * @param WP_REST_Request $request Expects the message that was shown.
 	 * @return WP_REST_Response|WP_Error Confirmation. Recording what has been shown is what keeps a once-only message from repeating.
@@ -13522,7 +13537,7 @@ Example good response:
 	 * Shown on /wp-admin/profile.php only for the user viewing their own profile.
 	 *
 	 * @param WP_User $user The profile being viewed.
- * @return mixed Result produced by the credential setup reminder operation.
+	 * @return Mixed Result produced by the credential setup reminder operation.
 	 */
 	public function render_credential_setup_reminder( $user ) {
 		if ( get_current_user_id() !== $user->ID ) {
@@ -13552,7 +13567,7 @@ Example good response:
 	 * @since 8.0.5
 	 *
 	 * @param WP_User $user The profile being viewed.
- * @return mixed Result produced by the admin user audio section operation.
+	 * @return Mixed Result produced by the admin user audio section operation.
 	 */
 	public function render_admin_user_audio_section( $user ) {
 		// Admins can view any user's audio. Users can view their own.
@@ -13690,17 +13705,17 @@ Example good response:
 	/**
 	 * Serve one of a user's audio recordings to someone entitled to hear it.
 	 *
-	 * Needed because the flosc-users/ directories carry an .htaccess that denies
-	 * everything, so a recording cannot be linked to directly.
+	 * Needed because the flosc-users/ directories carry an .htaccess that denies.
+	 * Everything, so a recording cannot be linked to directly.
 	 *
-	 * The CSRF control here is an HMAC signature on the URL, not a nonce, and
-	 * the long comment in the body says why: a nonce cannot travel in an
+	 * The CSRF control here is an HMAC signature on the URL, not a nonce, and.
+	 * The long comment in the body says why: a nonce cannot travel in an.
 	 * <audio src>. That is also why the coding standard reports twelve
-	 * unverified GET reads against this method -- it looks for a nonce check and
-	 * there is none to find. The control it cannot see is
+	 * Unverified GET reads against this method -- it looks for a nonce check and.
+	 * There is none to find. The control it cannot see is.
 	 * is_valid_audio_access_signature(), called below, over
-	 * (user_id|session_id|file|expires) and keyed on the site secret. The
-	 * capability check is separate and runs first.
+	 * (user_id|session_id|file|expires) and keyed on the site secret. The.
+	 * Capability check is separate and runs first.
 	 *
 	 * @since 8.0.5
 	 */
@@ -13764,7 +13779,7 @@ Example good response:
 		);
 		$expires = is_int( $expires ) ? $expires : 0;
 
-		// The signature is REJECTED if it is not exactly 64 hex characters --
+		// The signature is REJECTED if it is not exactly 64 hex characters --.
 		// never stripped down to the characters that happen to qualify, which.
 		// would turn malformed input into different input.
 		$sig_raw = isset( $_GET['sig'] ) && is_scalar( $_GET['sig'] )
@@ -13858,7 +13873,7 @@ Example good response:
 	 * Empty on installs that never created those WP roles.
 	 *
 	 * @param array $groups The alias groups so far.
-	 * @return array The groups with FLOSC's levels added.
+	 * @return Array The groups with FLOSC's levels added.
 	 */
 	public function member_level_alias_groups( $groups ) {
 		if ( ! is_array( $groups ) ) {
@@ -13878,8 +13893,8 @@ Example good response:
 	 *
 	 * @param array  $slugs        The slugs to clear so far.
 	 * @param string $member_level The level being granted.
-	 * @return array The slugs to clear, so a new member stops carrying the guest
-	 *               levels the grant supersedes.
+	 * @return Array The slugs to clear, so a new member stops carrying the guest.
+	 * Levels the grant supersedes.
 	 */
 	public function guest_level_slugs_to_clear_on_member_grant( $slugs, $member_level ) {
 		if ( ! is_array( $slugs ) ) {
@@ -13897,7 +13912,7 @@ Example good response:
 	 * Guest role slugs that count as guest on the quiz profile tab.
 	 *
 	 * @param string $guest_level Current flow default_guest_level.
-	 * @return string[]
+	 * @return String[]
 	 */
 	private function guest_level_slugs_for_check( $guest_level ) {
 		$guest_level = sanitize_key( (string) $guest_level );
@@ -13912,8 +13927,8 @@ Example good response:
 	 * Paid membership on any flow, including historical learner role names.
 	 *
 	 * @param int $user_id The user.
-	 * @return bool True when they hold a membership that was paid for, as
-	 *              distinct from one granted by an access code or a guest window.
+	 * @return Bool True when they hold a membership that was paid for, as.
+	 * Distinct from one granted by an access code or a guest window.
 	 */
 	private function user_has_paid_membership( $user_id ) {
 		$user_id = absint( $user_id );
@@ -13953,7 +13968,7 @@ Example good response:
 	 * Visitors and guests never do — including an admin looking at the public profile.
 	 *
 	 * @param int $profile_user_id Profile owner.
-	 * @return bool
+	 * @return Bool.
 	 */
 	private function viewer_can_play_member_audio( $profile_user_id ) {
 		if ( ! is_user_logged_in() ) {
@@ -13971,7 +13986,7 @@ Example good response:
 	 * Audio stream: member owner, or admin (wp-admin user profile).
 	 *
 	 * @param int $profile_user_id Profile owner whose files are requested.
-	 * @return bool
+	 * @return Bool.
 	 */
 	private function viewer_can_stream_member_audio( $profile_user_id ) {
 		if ( current_user_can( 'manage_options' ) ) {
@@ -13984,7 +13999,7 @@ Example good response:
 	 * Session id from quiz payload — top-level, else nested STT phrase data.
 	 *
 	 * @param array $quiz_data The quiz payload.
-	 * @return string The session id it belongs to, or '' when it carries none.
+	 * @return String The session id it belongs to, or '' when it carries none.
 	 */
 	private function resolve_quiz_session_id( $quiz_data ) {
 		if ( ! is_array( $quiz_data ) ) {
@@ -14018,7 +14033,7 @@ Example good response:
 	 * @param int    $user_id      Whose recordings these are.
 	 * @param string $session_id   The session.
 	 * @param int    $phrase_count How many phrases the session should hold.
-	 * @return bool True when every phrase has a file present.
+	 * @return Bool True when every phrase has a file present.
 	 */
 	private function ensure_user_session_audio_files( $user_id, $session_id, $phrase_count = 5 ) {
 		$user_id      = absint( $user_id );
@@ -14141,7 +14156,7 @@ Example good response:
 	 * Hooked to bp_setup_nav — runs only if BuddyPress is active.
 	 *
 	 * @since 8.0.0
- * @return mixed Result produced by the setup buddyboss quiz tab operation.
+	 * @return Mixed Result produced by the setup buddyboss quiz tab operation.
 	 */
 	public function setup_buddyboss_quiz_tab() {
 		if ( ! function_exists( 'bp_core_new_nav_item' ) || ! function_exists( 'bp_displayed_user_id' ) ) {
@@ -14192,7 +14207,7 @@ Example good response:
 	 * Guests and visitors never get players here.
 	 *
 	 * @since 8.0.0
- * @return mixed Result produced by the buddyboss quiz tab operation.
+	 * @return Mixed Result produced by the buddyboss quiz tab operation.
 	 */
 	public function render_buddyboss_quiz_tab() {
 		$user_id       = bp_displayed_user_id();
@@ -14596,7 +14611,7 @@ Example good response:
 	 * @param int    $user_id           Whose quiz data to search.
 	 * @param string $session_id        The session wanted.
 	 * @param array  $current_quiz_data Already-loaded data to check before going to storage.
-	 * @return array The payload for that session, or an empty array when there is none.
+	 * @return Array The payload for that session, or an empty array when there is none.
 	 */
 	private function find_quiz_data_by_session( $user_id, $session_id, $current_quiz_data = array() ) {
 		if ( empty( $session_id ) ) {
@@ -14643,7 +14658,7 @@ Example good response:
 	 * @param string $session_id     The session.
 	 * @param int    $phrase_num     Which phrase.
 	 * @param string $user_audio_dir Their audio directory.
-	 * @return string The player and download link as HTML.
+	 * @return String The player and download link as HTML.
 	 */
 	private function render_phrase_audio_player_and_download( $user_id, $session_id, $phrase_num, $user_audio_dir ) {
 		$audio_file = '';
@@ -14685,7 +14700,7 @@ Example good response:
 	 * @param string $session_id The session.
 	 * @param string $file       The file name.
 	 * @param int    $expires    When the signature stops being valid, as a Unix time.
-	 * @return string The signature to put on the URL.
+	 * @return String The signature to put on the URL.
 	 */
 	private function build_audio_access_signature( $user_id, $session_id, $file, $expires ) {
 		$payload = implode(
@@ -14709,7 +14724,7 @@ Example good response:
 	 * @param string $file       The file name.
 	 * @param int    $expires    The expiry the URL carries.
 	 * @param string $sig        The signature the URL carries.
-	 * @return bool True when the signature covers exactly these values and has not expired.
+	 * @return Bool True when the signature covers exactly these values and has not expired.
 	 */
 	private function is_valid_audio_access_signature( $user_id, $session_id, $file, $expires, $sig ) {
 		if ( ! $expires || ! $sig ) {
@@ -14733,7 +14748,7 @@ Example good response:
 	 * @param bool  $is_guest_user     True when they are a guest rather than a member.
 	 * @param bool  $profile_completed True when they have finished setting up their profile.
 	 * @param bool  $can_play_audio    True to include audio players.
-	 * @return string The breakdown as HTML.
+	 * @return String The breakdown as HTML.
 	 */
 	private function render_phrase_breakdown_for_quiz_data( $user_id, $quiz_data, $is_guest_user, $profile_completed, $can_play_audio = false ) {
 		if ( empty( $quiz_data ) || ! is_array( $quiz_data ) ) {
@@ -14852,23 +14867,23 @@ Example good response:
 	}
 
 	/**
-	 * Enqueue Assets
-	 * Uses is_flosc_request() to check both slug and custom domain
-	 * v1.9.5: Nuclear dequeue - removes ALL theme/plugin CSS and JS.
-	 *   The FLOSC app page is a standalone SPA; it needs zero theme assets.
-	 *   Previously ran at priority 10 which let 22 theme CSS files and 93 scripts
-	 *   survive because BuddyBoss/Divi/WooCommerce enqueued at the same priority.
-	 *   Now runs at priority 9999 so everything is already in the queue when we clean it.
+	 * Enqueue Assets.
+	 * Uses is_flosc_request() to check both slug and custom domain.
+	 * V1.9.5: Nuclear dequeue - removes ALL theme/plugin CSS and JS.
+	 * The FLOSC app page is a standalone SPA; it needs zero theme assets.
+	 * Previously ran at priority 10 which let 22 theme CSS files and 93 scripts.
+	 * Survive because BuddyBoss/Divi/WooCommerce enqueued at the same priority.
+	 * Now runs at priority 9999 so everything is already in the queue when we clean it.
 	 *
 	 * @since 1.2.1
- * @return mixed Result produced by the enqueue assets operation.
+	 * @return Mixed Result produced by the enqueue assets operation.
 	 */
 	public function enqueue_assets() {
 		if ( ! $this->is_flosc_request() ) {
 			return;
 		}
 
-		// -- NUCLEAR DEQUEUE: Remove ALL non-FLOSC styles --
+		// -- NUCLEAR DEQUEUE: Remove ALL non-FLOSC styles --.
 		// At priority 9999, every theme/plugin has already enqueued.
 		// We iterate the full queue and remove everything not ours.
 		global $wp_styles, $wp_scripts;
@@ -14885,7 +14900,7 @@ Example good response:
 			}
 		}
 
-		// -- NUCLEAR DEQUEUE: Remove ALL non-FLOSC scripts --
+		// -- NUCLEAR DEQUEUE: Remove ALL non-FLOSC scripts --.
 		// Keep only flosc-app.js, companion, and payment SDKs (PayPal, Stripe).
 		$flosc_script_whitelist = array( 'flosc-app', 'flosc-companion', 'paypal-js', 'stripe-js' );
 		if ( isset( $wp_scripts->queue ) && is_array( $wp_scripts->queue ) ) {
@@ -15019,10 +15034,11 @@ Example good response:
 	/**
 	 * Load the companion widget on an ordinary WordPress page.
 	 *
-	 * Delegates to FLOSC_Companion_Mode. Companion mode puts the flow's chat on pages outside
-	 * the app, so nothing loads unless the current flow has it turned on. Which
-	 * flow that is, is resolved by handoff parameter, hub URL or post category.
- * @return mixed Result produced by the enqueue companion operation.
+	 * Delegates to FLOSC_Companion_Mode. Companion mode puts the flow's chat on pages outside.
+	 * The app, so nothing loads unless the current flow has it turned on. Which.
+	 * Flow that is, is resolved by handoff parameter, hub URL or post category.
+	 *
+	 * @return Mixed Result produced by the enqueue companion operation.
 	 */
 	public function enqueue_companion() {
 		return $this->companion_mode->enqueue_companion();
@@ -15031,13 +15047,13 @@ Example good response:
 	/**
 	 * Decide which flow the companion on this page belongs to.
 	 *
-	 * Delegates to FLOSC_Companion_Mode. Tried in order: the handoff parameter on the URL, the
-	 * current URL against each flow's companion hub URL, then the post's category
-	 * against each flow's content groups. If none matches, the flow already
-	 * resolved by domain or slug stands.
+	 * Delegates to FLOSC_Companion_Mode. Tried in order: the handoff parameter on the URL, the.
+	 * Current URL against each flow's companion hub URL, then the post's category.
+	 * Against each flow's content groups. If none matches, the flow already.
+	 * Resolved by domain or slug stands.
 	 *
 	 * @param bool $handoff_request True when this request is a companion handoff.
- * @return mixed Result produced by the companion flow context operation.
+	 * @return Mixed Result produced by the companion flow context operation.
 	 */
 	private function resolve_companion_flow_context( $handoff_request = false ) {
 		return $this->companion_mode->resolve_companion_flow_context( $handoff_request );
@@ -15050,8 +15066,8 @@ Example good response:
 	 *
 	 * @param string   $req_path       Normalised request path.
 	 * @param string[] $category_slugs Category slugs on this request.
-	 * @return array{hub:?string,category:?string} The flow matched by hub URL and
-	 *               the flow matched by category; either may be null.
+	 * @return Array{hub:?string,category:?string} The flow matched by hub URL and.
+	 * The flow matched by category; either may be null.
 	 */
 	private function find_companion_flows_for_request( $req_path, array $category_slugs ) {
 		return $this->companion_mode->find_companion_flows_for_request( $req_path, $category_slugs );
@@ -15062,7 +15078,7 @@ Example good response:
 	 *
 	 * Delegates to FLOSC_Companion_Mode. Covers both a category archive and a single post.
 	 *
-	 * @return string[] The slugs, empty when the request has no categories.
+	 * @return String[] The slugs, empty when the request has no categories.
 	 */
 	private function get_companion_request_category_slugs() {
 		return $this->companion_mode->get_companion_request_category_slugs();
@@ -15071,12 +15087,12 @@ Example good response:
 	/**
 	 * The URL the companion iframe should load.
 	 *
-	 * Delegates to FLOSC_Companion_Mode. Tried in order: the flow's companion URL setting, its
-	 * slug on this site, then its app URL. Only a URL that is a FLOSC app route
-	 * is returned, so a hub or home page is never framed. The fullscreen URL is a
-	 * separate setting and is never used here.
+	 * Delegates to FLOSC_Companion_Mode. Tried in order: the flow's companion URL setting, its.
+	 * Slug on this site, then its app URL. Only a URL that is a FLOSC app route.
+	 * Is returned, so a hub or home page is never framed. The fullscreen URL is a.
+	 * Separate setting and is never used here.
 	 *
-	 * @return string The iframe URL, or '' when none qualifies.
+	 * @return String The iframe URL, or '' when none qualifies.
 	 */
 	private function get_companion_chat_app_url() {
 		return $this->companion_mode->get_companion_chat_app_url();
@@ -15088,7 +15104,7 @@ Example good response:
 	 * Delegates to FLOSC_Companion_Mode.
 	 *
 	 * @param string $slug The flow slug.
-	 * @return array|null The flow, or null when no active flow has that slug.
+	 * @return Array|null The flow, or null when no active flow has that slug.
 	 */
 	private function get_flow_by_slug_for_companion( $slug ) {
 		return $this->companion_mode->get_flow_by_slug_for_companion( $slug );
@@ -15097,10 +15113,10 @@ Example good response:
 	/**
 	 * The page the visitor is on, for companion handoff context.
 	 *
-	 * Delegates to FLOSC_Companion_Mode. Lets the chat know which page it was opened from, so a
-	 * handoff into the full app can carry that across.
+	 * Delegates to FLOSC_Companion_Mode. Lets the chat know which page it was opened from, so a.
+	 * Handoff into the full app can carry that across.
 	 *
-	 * @return string The absolute URL.
+	 * @return String The absolute URL.
 	 */
 	private function get_current_frontend_url() {
 		return $this->companion_mode->get_current_frontend_url();
@@ -15109,10 +15125,10 @@ Example good response:
 	/**
 	 * The companion settings a flow starts with.
 	 *
-	 * Delegates to FLOSC_Companion_Mode. Filterable, so a site can change the starting point
-	 * without editing each flow.
+	 * Delegates to FLOSC_Companion_Mode. Filterable, so a site can change the starting point.
+	 * Without editing each flow.
 	 *
-	 * @return array The defaults, keyed by setting.
+	 * @return Array The defaults, keyed by setting.
 	 */
 	private function get_companion_defaults() {
 		return $this->companion_mode->get_companion_defaults();
@@ -15121,10 +15137,10 @@ Example good response:
 	/**
 	 * The bounds each numeric companion setting is clamped to.
 	 *
-	 * Delegates to FLOSC_Companion_Mode. Filterable. Sanitisation reads these, so a width or
-	 * offset saved out of range is brought back in rather than rejected.
+	 * Delegates to FLOSC_Companion_Mode. Filterable. Sanitisation reads these, so a width or.
+	 * Offset saved out of range is brought back in rather than rejected.
 	 *
-	 * @return array Minimum and maximum per setting.
+	 * @return Array Minimum and maximum per setting.
 	 */
 	private function get_companion_numeric_limits() {
 		return $this->companion_mode->get_companion_numeric_limits();
@@ -15133,11 +15149,11 @@ Example good response:
 	/**
 	 * The companion display modes a flow may be set to.
 	 *
-	 * Delegates to FLOSC_Companion_Mode. Settings sanitisation checks a saved value against this
-	 * list, so an unknown value falls back to the default rather than reaching
-	 * the front end.
+	 * Delegates to FLOSC_Companion_Mode. Settings sanitisation checks a saved value against this.
+	 * List, so an unknown value falls back to the default rather than reaching.
+	 * The front end.
 	 *
-	 * @return string[] The allowed mode keys.
+	 * @return String[] The allowed mode keys.
 	 */
 	private function get_companion_allowed_modes() {
 		return $this->companion_mode->get_companion_allowed_modes();
@@ -15146,11 +15162,11 @@ Example good response:
 	/**
 	 * The widget modes the launcher may use.
 	 *
-	 * Delegates to FLOSC_Companion_Mode. Settings sanitisation checks a saved value against this
-	 * list, so an unknown value falls back to the default rather than reaching
-	 * the front end.
+	 * Delegates to FLOSC_Companion_Mode. Settings sanitisation checks a saved value against this.
+	 * List, so an unknown value falls back to the default rather than reaching.
+	 * The front end.
 	 *
-	 * @return string[] The allowed widget mode keys.
+	 * @return String[] The allowed widget mode keys.
 	 */
 	private function get_companion_widget_modes() {
 		return $this->companion_mode->get_companion_widget_modes();
@@ -15159,11 +15175,11 @@ Example good response:
 	/**
 	 * The screen positions the companion may be anchored to.
 	 *
-	 * Delegates to FLOSC_Companion_Mode. Settings sanitisation checks a saved value against this
-	 * list, so an unknown value falls back to the default rather than reaching
-	 * the front end.
+	 * Delegates to FLOSC_Companion_Mode. Settings sanitisation checks a saved value against this.
+	 * List, so an unknown value falls back to the default rather than reaching.
+	 * The front end.
 	 *
-	 * @return string[] The allowed position keys.
+	 * @return String[] The allowed position keys.
 	 */
 	private function get_companion_allowed_positions() {
 		return $this->companion_mode->get_companion_allowed_positions();
@@ -15172,11 +15188,11 @@ Example good response:
 	/**
 	 * How the companion may behave on a small screen.
 	 *
-	 * Delegates to FLOSC_Companion_Mode. Settings sanitisation checks a saved value against this
-	 * list, so an unknown value falls back to the default rather than reaching
-	 * the front end.
+	 * Delegates to FLOSC_Companion_Mode. Settings sanitisation checks a saved value against this.
+	 * List, so an unknown value falls back to the default rather than reaching.
+	 * The front end.
 	 *
-	 * @return string[] The allowed behaviour keys.
+	 * @return String[] The allowed behaviour keys.
 	 */
 	private function get_companion_mobile_behaviors() {
 		return $this->companion_mode->get_companion_mobile_behaviors();
@@ -15185,11 +15201,11 @@ Example good response:
 	/**
 	 * How much of the host page the companion may pass to the chat.
 	 *
-	 * Delegates to FLOSC_Companion_Mode. Settings sanitisation checks a saved value against this
-	 * list, so an unknown value falls back to the default rather than reaching
-	 * the front end.
+	 * Delegates to FLOSC_Companion_Mode. Settings sanitisation checks a saved value against this.
+	 * List, so an unknown value falls back to the default rather than reaching.
+	 * The front end.
 	 *
-	 * @return string[] The allowed scope keys.
+	 * @return String[] The allowed scope keys.
 	 */
 	private function get_companion_context_scopes() {
 		return $this->companion_mode->get_companion_context_scopes();
@@ -15198,11 +15214,11 @@ Example good response:
 	/**
 	 * The motion settings the launcher may use.
 	 *
-	 * Delegates to FLOSC_Companion_Mode. Settings sanitisation checks a saved value against this
-	 * list, so an unknown value falls back to the default rather than reaching
-	 * the front end.
+	 * Delegates to FLOSC_Companion_Mode. Settings sanitisation checks a saved value against this.
+	 * List, so an unknown value falls back to the default rather than reaching.
+	 * The front end.
 	 *
-	 * @return string[] The allowed motion keys.
+	 * @return String[] The allowed motion keys.
 	 */
 	private function get_companion_motion_modes() {
 		return $this->companion_mode->get_companion_motion_modes();
@@ -15211,11 +15227,11 @@ Example good response:
 	/**
 	 * Where the companion may remember whether it was open.
 	 *
-	 * Delegates to FLOSC_Companion_Mode. Settings sanitisation checks a saved value against this
-	 * list, so an unknown value falls back to the default rather than reaching
-	 * the front end.
+	 * Delegates to FLOSC_Companion_Mode. Settings sanitisation checks a saved value against this.
+	 * List, so an unknown value falls back to the default rather than reaching.
+	 * The front end.
 	 *
-	 * @return string[] The allowed storage keys.
+	 * @return String[] The allowed storage keys.
 	 */
 	private function get_companion_state_storages() {
 		return $this->companion_mode->get_companion_state_storages();
@@ -15224,11 +15240,11 @@ Example good response:
 	/**
 	 * The launcher icons a flow may choose between.
 	 *
-	 * Delegates to FLOSC_Companion_Mode. Settings sanitisation checks a saved value against this
-	 * list, so an unknown value falls back to the default rather than reaching
-	 * the front end.
+	 * Delegates to FLOSC_Companion_Mode. Settings sanitisation checks a saved value against this.
+	 * List, so an unknown value falls back to the default rather than reaching.
+	 * The front end.
 	 *
-	 * @return array The icon keys and their SVG path data.
+	 * @return Array The icon keys and their SVG path data.
 	 */
 	private function get_companion_launcher_svg_paths() {
 		return $this->companion_mode->get_companion_launcher_svg_paths();
@@ -15237,12 +15253,12 @@ Example good response:
 	/**
 	 * The context parameters to put on the companion iframe URL.
 	 *
-	 * Delegates to FLOSC_Companion_Mode. What is included depends on the flow's context scope --
-	 * that setting is what decides how much of the host page the chat is told
-	 * about.
+	 * Delegates to FLOSC_Companion_Mode. What is included depends on the flow's context scope --.
+	 * That setting is what decides how much of the host page the chat is told.
+	 * About.
 	 *
 	 * @param string $scope The flow's configured context scope.
-	 * @return array The parameters, ready for add_query_arg().
+	 * @return Array The parameters, ready for add_query_arg().
 	 */
 	private function build_companion_context_params( $scope ) {
 		return $this->companion_mode->build_companion_context_params( $scope );
@@ -15254,7 +15270,7 @@ Example good response:
 	 * Delegates to FLOSC_Companion_Mode. One pattern per line as the operator typed it.
 	 *
 	 * @param string $raw_patterns The textarea contents.
-	 * @return string[] The normalised prefixes.
+	 * @return String[] The normalised prefixes.
 	 */
 	private function parse_companion_path_patterns( $raw_patterns ) {
 		return $this->companion_mode->parse_companion_path_patterns( $raw_patterns );
@@ -15263,11 +15279,11 @@ Example good response:
 	/**
 	 * The kinds of targeting rule a flow may write.
 	 *
-	 * Delegates to FLOSC_Companion_Mode. Settings sanitisation checks a saved value against this
-	 * list, so an unknown value falls back to the default rather than reaching
-	 * the front end.
+	 * Delegates to FLOSC_Companion_Mode. Settings sanitisation checks a saved value against this.
+	 * List, so an unknown value falls back to the default rather than reaching.
+	 * The front end.
 	 *
-	 * @return string[] The allowed rule types.
+	 * @return String[] The allowed rule types.
 	 */
 	private function get_companion_target_types() {
 		return $this->companion_mode->get_companion_target_types();
@@ -15276,10 +15292,10 @@ Example good response:
 	/**
 	 * Whether the companion belongs on the page being served.
 	 *
-	 * Delegates to FLOSC_Companion_Mode. Evaluates the flow's targeting rules, which are
-	 * newline-delimited and may name a path, page, post, category or tag.
+	 * Delegates to FLOSC_Companion_Mode. Evaluates the flow's targeting rules, which are.
+	 * Newline-delimited and may name a path, page, post, category or tag.
 	 *
-	 * @return bool True when the companion should load here.
+	 * @return Bool True when the companion should load here.
 	 */
 	private function should_show_companion_for_current_request() {
 		return $this->companion_mode->should_show_companion_for_current_request();
@@ -15288,11 +15304,11 @@ Example good response:
 	/**
 	 * Turn the targeting input into rule objects.
 	 *
-	 * Delegates to FLOSC_Companion_Mode. Accepts newline- or comma-separated input, because the
-	 * admin field has taken both.
+	 * Delegates to FLOSC_Companion_Mode. Accepts newline- or comma-separated input, because the.
+	 * Admin field has taken both.
 	 *
 	 * @param string $raw_rules The input as the operator typed it.
-	 * @return array The normalised rules.
+	 * @return Array The normalised rules.
 	 */
 	private function parse_companion_target_rules( $raw_rules ) {
 		return $this->companion_mode->parse_companion_target_rules( $raw_rules );
@@ -15301,11 +15317,11 @@ Example good response:
 	/**
 	 * Whether any targeting rule matches this request.
 	 *
-	 * Delegates to FLOSC_Companion_Mode. Any one match is enough; the rules are alternatives,
-	 * not conditions to be met together.
+	 * Delegates to FLOSC_Companion_Mode. Any one match is enough; the rules are alternatives,.
+	 * Not conditions to be met together.
 	 *
 	 * @param array $rules Normalised rules.
-	 * @return bool True when at least one matches.
+	 * @return Bool True when at least one matches.
 	 */
 	private function companion_target_matches_any_rule( $rules ) {
 		return $this->companion_mode->companion_target_matches_any_rule( $rules );
@@ -15316,7 +15332,7 @@ Example good response:
 	 *
 	 * Delegates to FLOSC_Companion_Mode.
 	 *
-	 * @return string The path, with no host and no query string.
+	 * @return String The path, with no host and no query string.
 	 */
 	private function get_companion_request_path() {
 		return $this->companion_mode->get_companion_request_path();
@@ -15329,10 +15345,10 @@ Example good response:
 	 * Architecture:
 	 * 1. flosc-layout.css - Structure only (already enqueued)
 	 * 2. flosc-theme.css - Variable consumption (already enqueued)
-	 * 3. This method - Variable definitions via inline CSS
+	 * 3. This method - Variable definitions via inline CSS.
 	 *
-	 * Presets: auto (system preference), light, dark
-	 * Customization: bubble style, accent color, font, scale
+	 * Presets: auto (system preference), light, dark.
+	 * Customization: bubble style, accent color, font, scale.
 	 */
 	private function enqueue_chat_style() {
 		// v1.6.1: Per-flow settings via FLOSC_Flow_Manager::get_setting().
@@ -15384,9 +15400,9 @@ Example good response:
 
 		$inline_css = '';
 
-		// ===========================================
+		// ===========================================.
 		// PRESET LOADING.
-		// ===========================================
+		// ===========================================.
 		if ( 'auto' === $preset ) {
 			// Auto mode: Light by default, dark via prefers-color-scheme.
 			if ( file_exists( $light_path ) && file_exists( $dark_path ) ) {
@@ -15421,9 +15437,9 @@ Example good response:
 			}
 		}
 
-		// ===========================================
+		// ===========================================.
 		// DYNAMIC OVERRIDES.
-		// ===========================================
+		// ===========================================.
 		$bubble_config = $bubble_styles[ $bubble ] ?? $bubble_styles['subtle-notch'];
 
 		$overrides   = array();
@@ -15488,11 +15504,11 @@ Example good response:
 	}
 
 	/**
-	 * Extract CSS variables from stylesheet content
-	 * Returns the inner content of :root { } block
+	 * Extract CSS variables from stylesheet content.
+	 * Returns the inner content of :root { } block.
 	 *
 	 * @param string $css_content Raw CSS file content.
-	 * @return string Variable declarations or empty string
+	 * @return String Variable declarations or empty string.
 	 */
 	private function extract_css_variables( $css_content ) {
 		if ( empty( $css_content ) ) {
@@ -15519,7 +15535,7 @@ Example good response:
 	 *
 	 * @param string $hex     Colour as #rgb or #rrggbb; the leading # is optional.
 	 * @param int    $percent Between -100 and 100. Positive lightens, negative darkens.
-	 * @return string The adjusted colour as #rrggbb.
+	 * @return String The adjusted colour as #rrggbb.
 	 */
 	private function adjust_color_brightness( $hex, $percent ) {
 		$hex = ltrim( $hex, '#' );
@@ -15545,7 +15561,7 @@ Example good response:
 	 *
 	 * @param string $hex   Colour as #rgb or #rrggbb; the leading # is optional.
 	 * @param float  $alpha Opacity between 0 and 1.
-	 * @return string The colour as an rgba() string.
+	 * @return String The colour as an rgba() string.
 	 */
 	private function hex_to_rgba( $hex, $alpha ) {
 		$hex = ltrim( $hex, '#' );

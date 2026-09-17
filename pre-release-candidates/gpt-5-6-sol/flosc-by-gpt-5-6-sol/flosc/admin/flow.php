@@ -1,11 +1,11 @@
 <?php
 /**
- * FLOSC Flow Tab — F→L→O→S→C read-only phase overview
+ * FLOSC Flow Tab — F→L→O→S→C read-only phase overview.
  *
  * Shows live counts and edit links for each of the five FLOSC flow phases.
  * Data sourced from $flosc_flow_settings (via $GLOBALS) and flosc() helper objects.
  *
- * Initial implementation
+ * Initial implementation.
  *
  * @package FLOSC
  * @since 4.0.0
@@ -563,12 +563,12 @@ if ( 'anthropic' === $flosc_ai_provider ) {
 /**
  * Render one phase card on the Flow tab.
  *
- * @param string $letter           Single-letter phase code. Lowercased for the
- *                                 CSS modifier, so the card is coloured by phase.
+ * @param string $letter           Single-letter phase code. Lowercased for the.
+ * CSS modifier, so the card is coloured by phase.
  * @param string $flosc_phase_name Phase name shown as the card heading.
  * @param string $subtitle         Line under the heading.
  * @param array  $rows             Rows to list inside the card.
- * @return void Echoes the card markup.
+ * @return Void Echoes the card markup.
  */
 function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 	$phase_class = strtolower( $letter );

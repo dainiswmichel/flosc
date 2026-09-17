@@ -1,11 +1,11 @@
 <?php
 /**
- * FLOSC Engagement Tab
+ * FLOSC Engagement Tab.
  *
  * Purpose: trigger floscFlow responses when profiles behave a certain way.
- * Structure: accordion by audience (Visitor / Guest / Member), each with
- * when → condition → then (chat and/or email). Freeform conditions use the same
- * language as Offers (FLOSC_Condition_Evaluator).
+ * Structure: accordion by audience (Visitor / Guest / Member), each with.
+ * When → condition → then (chat and/or email). Freeform conditions use the same.
+ * Language as Offers (FLOSC_Condition_Evaluator).
  *
  * Not: offer builder (→ Offers). Not: letter body editor (→ Email). Not: F→L→O→S→C map (→ Flow).
  *
@@ -152,10 +152,10 @@ $flosc_email_templates = array(
 /**
  * One rule as a collapsible accordion (title in summary).
  *
- * @param array  $rule
- * @param string $audience visitor|guest|member
- * @param int    $index
- * @param bool   $open
+ * @param array  $rule     Value consumed by this operation.
+ * @param string $audience Visitor|guest|member.
+ * @param int    $index    Value consumed by this operation.
+ * @param bool   $open     Value consumed by this operation.
  */
 $flosc_render_rule = static function ( $rule, $audience, $index, $open = false ) use ( $flosc_triggers, $flosc_email_templates ) {
 	$rid         = sanitize_key( (string) ( $rule['id'] ?? ( 'rule_' . $index ) ) );

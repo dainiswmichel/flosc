@@ -2,9 +2,9 @@
 /**
  * Starter Packs tab — install a complete working journey in one click.
  *
- * Deliberately plain: a card, a button, and the two steps that follow. Anything
- * an operator has to decide before their bot talks is a step between them and
- * seeing FLOSC work.
+ * Deliberately plain: a card, a button, and the two steps that follow. Anything.
+ * An operator has to decide before their bot talks is a step between them and.
+ * Seeing FLOSC work.
  *
  * @package FLOSC
  */
@@ -55,7 +55,7 @@ if ( ! function_exists( 'flosc_sp_tab_url' ) ) {
 	 *
 	 * @param string $tab      Tab id as registered in admin/settings.php.
 	 * @param string $ivr_file Flow file the tab should open against.
-	 * @return string
+	 * @return String.
 	 */
 	function flosc_sp_tab_url( $tab, $ivr_file = '' ) {
 		$args = array(

@@ -1,6 +1,6 @@
 <?php
 /**
- * OAuth2 Flow Handler
+ * OAuth2 Flow Handler.
  *
  * Manages the OAuth2 authentication flow for all SSO providers.
  * Handles redirects, callbacks, state verification, and error handling.
@@ -17,12 +17,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * OAuth2 Flow Handler Class
+ * OAuth2 Flow Handler Class.
  */
 class OAuth2_Handler {
 
 	/**
-	 * State transient prefix
+	 * State transient prefix.
 	 */
 	const STATE_PREFIX = 'flosc_sso_state_';
 
@@ -32,14 +32,14 @@ class OAuth2_Handler {
 	const STATE_EXPIRATION = 600;
 
 	/**
-	 * SSO Manager reference
+	 * SSO Manager reference.
 	 *
 	 * @var SSO_Manager
 	 */
 	private $manager;
 
 	/**
-	 * Constructor
+	 * Constructor.
 	 *
 	 * @param SSO_Manager $manager SSO Manager instance.
 	 */
@@ -48,14 +48,14 @@ class OAuth2_Handler {
 	}
 
 	/**
-	 * Initialize OAuth2 routes
+	 * Initialize OAuth2 routes.
 	 */
 	public function init() {
 		add_action( 'rest_api_init', array( $this, 'register_routes' ) );
 	}
 
 	/**
-	 * Register REST API routes for OAuth2 flow
+	 * Register REST API routes for OAuth2 flow.
 	 */
 	public function register_routes() {
 		// Initiate OAuth flow.
@@ -126,10 +126,10 @@ class OAuth2_Handler {
 	}
 
 	/**
-	 * Intentionally public: OAuth authorization and callbacks must be reachable
-	 * before a WordPress login exists.
+	 * Intentionally public: OAuth authorization and callbacks must be reachable.
+	 * Before a WordPress login exists.
 	 *
-	 * @return bool
+	 * @return Bool.
 	 */
 	public function check_public_sso_permission() {
 		return true;
@@ -138,27 +138,27 @@ class OAuth2_Handler {
 	/**
 	 * Intentionally public provider list endpoint for frontend discovery.
 	 *
-	 * @return bool
+	 * @return Bool.
 	 */
 	public function check_public_sso_provider_list_permission() {
 		return true;
 	}
 
 	/**
-	 * Validate provider parameter
+	 * Validate provider parameter.
 	 *
 	 * @param string $provider Provider ID.
-	 * @return bool
+	 * @return Bool.
 	 */
 	public function validate_provider( $provider ) {
 		return $this->manager->has_provider( $provider );
 	}
 
 	/**
-	 * Handle OAuth authorization redirect
+	 * Handle OAuth authorization redirect.
 	 *
-	 * @param WP_REST_Request $request
-	 * @return WP_REST_Response|WP_Error
+	 * @param WP_REST_Request $request Value consumed by this operation.
+	 * @return WP_REST_Response|WP_Error.
 	 */
 	public function handle_authorize( $request ) {
 		$provider_id = $request->get_param( 'provider' );
@@ -229,7 +229,7 @@ class OAuth2_Handler {
 	 * External redirect via wp_safe_redirect after temporarily allowlisting host.
 	 *
 	 * @param string $url Absolute http(s) URL.
-	 * @return void
+	 * @return Void.
 	 */
 	private function flosc_safe_external_redirect( $url ) {
 		$url  = esc_url_raw( (string) $url );
@@ -250,10 +250,10 @@ class OAuth2_Handler {
 	}
 
 	/**
-	 * Handle OAuth callback
+	 * Handle OAuth callback.
 	 *
-	 * @param WP_REST_Request $request
-	 * @return void Redirects on completion
+	 * @param WP_REST_Request $request Value consumed by this operation.
+	 * @return Void Redirects on completion.
 	 */
 	public function handle_callback( $request ) {
 		/*
@@ -580,12 +580,12 @@ class OAuth2_Handler {
 	/**
 	 * Whether a post-SSO redirect URL is an approved FLOSC / site origin.
 	 *
-	 * Allows: same-origin WP, configured custom domains / app URLs, flow SSO
-	 * post-login redirect hosts. Rejects: javascript:, data:, empty, unconfigured hosts.
+	 * Allows: same-origin WP, configured custom domains / app URLs, flow SSO.
+	 * Post-login redirect hosts. Rejects: javascript:, data:, empty, unconfigured hosts.
 	 *
 	 * @param string $url     Candidate redirect URL.
 	 * @param string $flow_id Optional flow context for domain settings.
-	 * @return bool
+	 * @return Bool.
 	 */
 	private function is_allowed_sso_redirect( $url, $flow_id = '' ) {
 		$url = trim( (string) $url );
@@ -634,7 +634,7 @@ class OAuth2_Handler {
 	 * Build allowlist of hosts for SSO redirects + login-token attachment.
 	 *
 	 * @param string $flow_id Optional flow id.
-	 * @return string[] Lowercase hosts.
+	 * @return String[] Lowercase hosts.
 	 */
 	private function get_allowed_sso_redirect_hosts( $flow_id = '' ) {
 		$hosts = array();
@@ -708,7 +708,7 @@ class OAuth2_Handler {
 		/**
 		 * Filter allowed SSO redirect hosts (lowercase hostnames only).
 		 *
-		 * @param string[] $hosts Hostnames.
+		 * @param string[] $hosts   Hostnames.
 		 * @param string   $flow_id Flow id.
 		 */
 		$hosts = apply_filters( 'flosc_sso_allowed_redirect_hosts', array_keys( $hosts ), $flow_id );
@@ -716,12 +716,12 @@ class OAuth2_Handler {
 	}
 
 	/**
-	 * Resolve the app URL from a flow_id by looking up the flow's custom domain
-	 * directly from the database. This works during REST API callbacks where
+	 * Resolve the app URL from a flow_id by looking up the flow's custom domain.
+	 * Directly from the database. This works during REST API callbacks where.
 	 * get_current_flow() fails because HTTP_HOST is the WordPress host, not the custom domain.
 	 *
 	 * @param string $flow_id Flow ID (e.g. 'flow_ivr').
-	 * @return string|false App URL (e.g. 'https://the flow domain/') or false if not found
+	 * @return String|false App URL (e.g. 'https://the flow domain/') or false if not found.
 	 */
 	private function resolve_app_url_from_flow_id( $flow_id ) {
 		if ( empty( $flow_id ) ) {
@@ -752,9 +752,9 @@ class OAuth2_Handler {
 	}
 
 	/**
-	 * Get available SSO providers for frontend
+	 * Get available SSO providers for frontend.
 	 *
-	 * @return WP_REST_Response
+	 * @return WP_REST_Response.
 	 */
 	public function get_providers() {
 		$providers = $this->manager->get_enabled_providers();
@@ -774,12 +774,12 @@ class OAuth2_Handler {
 	}
 
 	/**
-	 * Generate state token for CSRF protection
+	 * Generate state token for CSRF protection.
 	 *
 	 * @param string $provider_id Provider ID.
 	 * @param string $redirect_to Redirect URL after login.
-	 * @param string $flow_id Flow ID for per-flow credential loading (v1.4.9).
-	 * @return string State token
+	 * @param string $flow_id     Flow ID for per-flow credential loading (v1.4.9).
+	 * @return String State token.
 	 */
 	private function generate_state( $provider_id, $redirect_to = '', $flow_id = '' ) {
 		$state = wp_generate_password( 32, false );
@@ -816,10 +816,10 @@ class OAuth2_Handler {
 	}
 
 	/**
-	 * Verify state token
+	 * Verify state token.
 	 *
 	 * @param string $state State token.
-	 * @return array|false State data or false if invalid
+	 * @return Array|false State data or false if invalid.
 	 */
 	private function verify_state( $state ) {
 		// v8.0.4: All SSO logging ungated — SSO failures are rare and critical.
@@ -875,12 +875,12 @@ class OAuth2_Handler {
 	}
 
 	/**
-	 * Process SSO login - create or link user
+	 * Process SSO login - create or link user.
 	 *
-	 * @param SSO_Provider_Base $provider Provider instance.
-	 * @param array             $user_data Normalized user data.
+	 * @param SSO_Provider_Base $provider   Provider instance.
+	 * @param array             $user_data  Normalized user data.
 	 * @param array             $token_data Token response data.
-	 * @return int|WP_Error User ID or error
+	 * @return Int|WP_Error User ID or error.
 	 */
 	private function process_sso_login( $provider, $user_data, $token_data ) {
 		// Get the user linker.
@@ -957,7 +957,7 @@ class OAuth2_Handler {
 	}
 
 	/**
-	 * Log a user in programmatically
+	 * Log a user in programmatically.
 	 *
 	 * @param int $user_id User ID.
 	 */
@@ -973,13 +973,13 @@ class OAuth2_Handler {
 	}
 
 	/**
-	 * Generate a one-time login token for cross-domain redirect
-	 * Solves cookie domain problem — auth cookie set on the WordPress host
-	 * doesn't travel to flosc.ai/the flow domain. Token lets the target domain
-	 * authenticate the user on arrival.
+	 * Generate a one-time login token for cross-domain redirect.
+	 * Solves cookie domain problem — auth cookie set on the WordPress host.
+	 * Doesn't travel to flosc.ai/the flow domain. Token lets the target domain.
+	 * Authenticate the user on arrival.
 	 *
 	 * @param int $user_id User ID.
-	 * @return string Token
+	 * @return String Token.
 	 * @since 1.5.2
 	 */
 	private function generate_login_token( $user_id ) {
@@ -990,12 +990,12 @@ class OAuth2_Handler {
 	}
 
 	/**
-	 * Redirect with error message
+	 * Redirect with error message.
 	 *
-	 * Accept optional redirect_to so user returns to the app page
+	 * Accept optional redirect_to so user returns to the app page.
 	 * (where FLOSC JS is running), not the homepage where it isn't.
 	 *
-	 * @param string $message Error message.
+	 * @param string $message     Error message.
 	 * @param string $redirect_to URL to redirect to (falls back to home_url()).
 	 * @since 8.0.1
 	 */

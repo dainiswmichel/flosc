@@ -1,6 +1,6 @@
 <?php
 /**
- * FLOSC Bridge Analytics Tab
+ * FLOSC Bridge Analytics Tab.
  *
  * Admin dashboard for bridge data analytics (quiz complete → purchase).
  * Uses WP_User_Query / get_users / get_user_meta — no direct database queries in this view.
@@ -18,7 +18,7 @@ require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-bridge-data-manager.php';
  * Count users matching a meta_query (admin analytics).
  *
  * @param array $meta_query WP meta_query clauses.
- * @return int
+ * @return Int.
  */
 // Users who have bridge payload stored.
 $flosc_bridge_ids        = function_exists( 'flosc_get_user_ids_for_meta' )

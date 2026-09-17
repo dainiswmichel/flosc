@@ -2,19 +2,19 @@
 /**
  * Documentation, Part 3 reference: the admin screens and how they connect.
  *
- * Builds the navigation map for the Settings page — one row per tab, each
- * linking both to the tab itself and to the anchor in this documentation that
- * describes it — then prints the reference prose beneath it.
+ * Builds the navigation map for the Settings page — one row per tab, each.
+ * Linking both to the tab itself and to the anchor in this documentation that.
+ * Describes it — then prints the reference prose beneath it.
  *
- * Included by admin/documentation.php for the ref-admin topic, inside the
- * Documentation tab's markup, so the file opens at heading level 2 under the
- * card title the tab has already printed.
+ * Included by admin/documentation.php for the ref-admin topic, inside the.
+ * Documentation tab's markup, so the file opens at heading level 2 under the.
+ * Card title the tab has already printed.
  *
- * $selected_ivr is read out of the includer's scope rather than passed in,
- * because an include shares the caller's scope and this page is only ever
- * reached through that one caller. It names the flow the tab links should point
- * at; absent, the links resolve to the tab with no flow selected, which is what
- * the Settings page itself does on a first visit.
+ * $selected_ivr is read out of the includer's scope rather than passed in,.
+ * Because an include shares the caller's scope and this page is only ever.
+ * Reached through that one caller. It names the flow the tab links should point.
+ * At; absent, the links resolve to the tab with no flow selected, which is what.
+ * The Settings page itself does on a first visit.
  *
  * @package FLOSC
  */

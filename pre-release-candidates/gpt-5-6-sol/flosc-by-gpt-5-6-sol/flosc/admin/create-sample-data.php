@@ -1,15 +1,16 @@
 <?php
 /**
- * FLOSC Sample Data Creator
- * Creates 10 WordPress posts for testing the funnel
+ * FLOSC Sample Data Creator.
+ * Creates 10 WordPress posts for testing the funnel.
  *
- * STATUS: âœ… FULLY FUNCTIONAL
- * - Creates flosc_sample_data category
+ * STATUS: âœ.
+ * FULLY FUNCTIONAL.
+ * - Creates flosc_sample_data category.
  * - Creates 10 posts (1-10)
- * - Adds _flosc_lesson_number meta
- * - Adds _flosc_access_level meta
+ * - Adds _flosc_lesson_number meta.
+ * - Adds _flosc_access_level meta.
  *
- * Run via: wp eval-file admin/create-sample-data.php
+ * Run via: wp eval-file admin/create-sample-data.php.
  *
  * @since 9.1.8
  *
@@ -23,8 +24,9 @@ if ( ! defined( 'ABSPATH' ) && ! ( defined( 'WP_CLI' ) && WP_CLI ) ) {
 }
 
 /**
- * Create flosc_sample_data category if it doesn't exist
- * @return mixed Result produced by the sample category operation.
+ * Create flosc_sample_data category if it doesn't exist.
+ *
+ * @return Mixed Result produced by the sample category operation.
  */
 function flosc_create_sample_category() {
 	$flosc_cat = get_category_by_slug( 'flosc_sample_data' );
@@ -40,7 +42,7 @@ function flosc_create_sample_category() {
 }
 
 /**
- * Create the 10 sample posts
+ * Create the 10 sample posts.
  */
 function flosc_create_sample_posts() {
 
@@ -125,11 +127,12 @@ function flosc_create_sample_posts() {
 }
 
 /**
- * Generate post content with <!--more--> tag
- * MAGNIFICENT, ENTERTAINING, JOYFUL lessons with real IPA transcriptions
- * @param mixed $num Input consumed by the Coordinate the generate post content behavior implemented by this code path. operation.
+ * Generate post content with <!--more--> tag.
+ * MAGNIFICENT, ENTERTAINING, JOYFUL lessons with real IPA transcriptions.
+ *
+ * @param mixed $num  Input consumed by the Coordinate the generate post content behavior implemented by this code path. operation.
  * @param mixed $word Input consumed by the Coordinate the generate post content behavior implemented by this code path. operation.
- * @return mixed Result produced by the generate post content operation.
+ * @return Mixed Result produced by the generate post content operation.
  */
 function flosc_generate_post_content( $num, $word ) {
 
@@ -389,7 +392,7 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 /**
  * Coordinate the sample data admin ui behavior implemented by this code path.
  *
- * @return mixed Result produced by the sample data admin ui operation.
+ * @return Mixed Result produced by the sample data admin ui operation.
  */
 function flosc_sample_data_admin_ui() {
 	if ( ! current_user_can( 'manage_options' ) ) {

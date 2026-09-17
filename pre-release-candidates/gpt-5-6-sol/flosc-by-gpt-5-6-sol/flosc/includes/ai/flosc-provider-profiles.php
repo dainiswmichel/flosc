@@ -2,19 +2,19 @@
 /**
  * What each AI provider's API is shaped like.
  *
- * FLOSC is developed against Anthropic because that is the provider whose
- * behaviour can be measured here directly. The danger in that is writing
- * Anthropic into the logic — "if anthropic, do this" — until every other
- * provider is an afterthought bolted to the side of it.
+ * FLOSC is developed against Anthropic because that is the provider whose.
+ * Behaviour can be measured here directly. The danger in that is writing.
+ * Anthropic into the logic — "if anthropic, do this" — until every other.
+ * Provider is an afterthought bolted to the side of it.
  *
- * So provider differences live here as data. Anthropic is one filled-in row,
- * not a branch. Supporting another provider fully means measuring it and
- * filling its row; it does not mean editing the code that reads these rows.
+ * So provider differences live here as data. Anthropic is one filled-in row,.
+ * Not a branch. Supporting another provider fully means measuring it and.
+ * Filling its row; it does not mean editing the code that reads these rows.
  *
- * Every value below is either measured against the live API or taken from the
- * provider's published reference. A field left empty means "not measured yet",
- * which is different from "the provider does not do this" — and the code that
- * reads it must treat the two the same way: do nothing rather than assume.
+ * Every value below is either measured against the live API or taken from the.
+ * Provider's published reference. A field left empty means "not measured yet",.
+ * Which is different from "the provider does not do this" — and the code that.
+ * Reads it must treat the two the same way: do nothing rather than assume.
  *
  * @package FLOSC
  */
@@ -28,35 +28,35 @@ if ( ! function_exists( 'flosc_provider_api_profile' ) ) {
 	 * The API shape for one provider.
 	 *
 	 * Fields:
-	 *   model_detail_url    sprintf template taking the model id, or '' when the
-	 *                       provider publishes no per-model description FLOSC
-	 *                       can read.
-	 *   rejects_tuning      request parameters the provider refuses. FLOSC omits
-	 *                       these rather than sending them and failing.
-	 *   tuning_note         why, in one line, for the operator.
-	 *   example_params      a few parameters that provider is known to take,
-	 *                       shown as placeholder text. Examples only — FLOSC
-	 *                       sends whatever is typed and the provider rules on
-	 *                       it, so this list being incomplete costs nothing.
-	 *   docs_url            where that provider documents its own request body,
-	 *                       for the parameter FLOSC has no note on. A link the
-	 *                       operator follows; FLOSC never fetches it.
-	 *   param_doc_url       sprintf template taking a parameter name, landing on
-	 *                       that provider's entry for it rather than the top of
-	 *                       the page. Filled in only where the anchor scheme has
-	 *                       been read off the live page; '' everywhere else, and
-	 *                       the caller falls back to docs_url rather than
-	 *                       inventing an anchor that would land nowhere.
-	 *   model_parameter_notes  measured per-model differences, keyed by the
-	 *                       leading part of a model id. Parameters differ
-	 *                       between two models of the same provider more often
-	 *                       than between providers, and only measurement can
-	 *                       say so — an empty list means nobody has measured
-	 *                       that provider's models here, not that its models
-	 *                       are all alike.
+	 * Model_detail_url    sprintf template taking the model id, or '' when the.
+	 * Provider publishes no per-model description FLOSC.
+	 * Can read.
+	 * Rejects_tuning      request parameters the provider refuses. FLOSC omits.
+	 * These rather than sending them and failing.
+	 * Tuning_note         why, in one line, for the operator.
+	 * Example_params      a few parameters that provider is known to take,.
+	 * Shown as placeholder text. Examples only — FLOSC.
+	 * Sends whatever is typed and the provider rules on.
+	 * It, so this list being incomplete costs nothing.
+	 * Docs_url            where that provider documents its own request body,.
+	 * For the parameter FLOSC has no note on. A link the.
+	 * Operator follows; FLOSC never fetches it.
+	 * Param_doc_url       sprintf template taking a parameter name, landing on.
+	 * That provider's entry for it rather than the top of.
+	 * The page. Filled in only where the anchor scheme has.
+	 * Been read off the live page; '' everywhere else, and.
+	 * The caller falls back to docs_url rather than.
+	 * Inventing an anchor that would land nowhere.
+	 * Model_parameter_notes  measured per-model differences, keyed by the.
+	 * Leading part of a model id. Parameters differ.
+	 * Between two models of the same provider more often.
+	 * Than between providers, and only measurement can.
+	 * Say so — an empty list means nobody has measured.
+	 * That provider's models here, not that its models.
+	 * Are all alike.
 	 *
 	 * @param string $provider FLOSC provider slug.
-	 * @return array<string,mixed>|null Null when FLOSC knows nothing about it.
+	 * @return Array<string,mixed>|null Null when FLOSC knows nothing about it.
 	 */
 	function flosc_provider_api_profile( $provider ) {
 		$profiles = array(
@@ -169,13 +169,13 @@ if ( ! function_exists( 'flosc_provider_rejects_tuning' ) ) {
 	/**
 	 * Whether a provider refuses a given request parameter.
 	 *
-	 * Unknown provider, or a parameter nobody has measured, answers false —
-	 * FLOSC sends what it was configured to send rather than silently dropping
-	 * a setting on a guess.
+	 * Unknown provider, or a parameter nobody has measured, answers false —.
+	 * FLOSC sends what it was configured to send rather than silently dropping.
+	 * A setting on a guess.
 	 *
 	 * @param string $provider FLOSC provider slug.
 	 * @param string $param    Parameter name, e.g. 'temperature'.
-	 * @return bool
+	 * @return Bool.
 	 */
 	function flosc_provider_rejects_tuning( $provider, $param ) {
 		$profile = flosc_provider_api_profile( $provider );
@@ -194,7 +194,7 @@ if ( ! function_exists( 'flosc_provider_model_detail_url' ) ) {
 	 *
 	 * @param string $provider FLOSC provider slug.
 	 * @param string $model    Model id.
-	 * @return string
+	 * @return String.
 	 */
 	function flosc_provider_model_detail_url( $provider, $model ) {
 		$profile = flosc_provider_api_profile( $provider );
@@ -212,12 +212,12 @@ if ( ! function_exists( 'flosc_provider_docs_url' ) ) {
 	/**
 	 * Where the provider documents its own request body.
 	 *
-	 * For the parameter FLOSC has no note on — which is every parameter shipped
-	 * after this file was last edited. FLOSC never fetches this; the operator
-	 * opens it.
+	 * For the parameter FLOSC has no note on — which is every parameter shipped.
+	 * After this file was last edited. FLOSC never fetches this; the operator.
+	 * Opens it.
 	 *
 	 * @param string $provider FLOSC provider slug.
-	 * @return string URL, or '' when FLOSC has none for that provider.
+	 * @return String URL, or '' when FLOSC has none for that provider.
 	 */
 	function flosc_provider_docs_url( $provider ) {
 		$profile = flosc_provider_api_profile( $provider );
@@ -230,17 +230,17 @@ if ( ! function_exists( 'flosc_provider_model_parameter_note' ) ) {
 	/**
 	 * What has been measured about one model's parameters.
 	 *
-	 * Matched on the leading part of the model id, because providers date their
-	 * ids — claude-sonnet-4-5-20250929 is the model the note about
-	 * claude-sonnet-4-5 was measured on. The longest matching prefix wins, so a
-	 * note about a specific dated build beats a note about its family.
+	 * Matched on the leading part of the model id, because providers date their.
+	 * Ids — claude-sonnet-4-5-20250929 is the model the note about.
+	 * Claude-sonnet-4-5 was measured on. The longest matching prefix wins, so a.
+	 * Note about a specific dated build beats a note about its family.
 	 *
-	 * An unmeasured model answers with empty lists. The caller must show that
-	 * as "not measured", never as "accepts nothing".
+	 * An unmeasured model answers with empty lists. The caller must show that.
+	 * As "not measured", never as "accepts nothing".
 	 *
 	 * @param string $provider FLOSC provider slug.
 	 * @param string $model    Model id.
-	 * @return array{accepts:array<int,string>,refuses:array<int,string>,matched:string}
+	 * @return Array{accepts:array<int,string>,refuses:array<int,string>,matched:string}.
 	 */
 	function flosc_provider_model_parameter_note( $provider, $model ) {
 		$empty   = array(
@@ -285,17 +285,17 @@ if ( ! function_exists( 'flosc_provider_param_doc_url' ) ) {
 	 * Where the provider explains one parameter, in the provider's own words.
 	 *
 	 * FLOSC's note beside a parameter is a paraphrase written for an operator.
-	 * It is not the authority and should never be mistaken for it, so every
-	 * note carries the way out to the reference it was written from.
+	 * It is not the authority and should never be mistaken for it, so every.
+	 * Note carries the way out to the reference it was written from.
 	 *
-	 * Falls back to the provider's request reference where the anchor scheme
-	 * has not been read off the live page — a page the reader has to scan is
-	 * still the right page, and an invented anchor lands nowhere and reads as
-	 * a broken link.
+	 * Falls back to the provider's request reference where the anchor scheme.
+	 * Has not been read off the live page — a page the reader has to scan is.
+	 * Still the right page, and an invented anchor lands nowhere and reads as.
+	 * A broken link.
 	 *
 	 * @param string $provider FLOSC provider slug.
 	 * @param string $param    Parameter name.
-	 * @return string URL, or '' when FLOSC has nowhere to send them.
+	 * @return String URL, or '' when FLOSC has nowhere to send them.
 	 */
 	function flosc_provider_param_doc_url( $provider, $param ) {
 		$profile = flosc_provider_api_profile( $provider );
@@ -320,19 +320,19 @@ if ( ! function_exists( 'flosc_model_rejects_tuning' ) ) {
 	 * Whether this model refuses a parameter — model first, provider second.
 	 *
 	 * Capability belongs to the model wherever a model has been measured.
-	 * Anthropic's Sonnet 4.5 accepts temperature and its Sonnet 5 refuses it,
-	 * so "does Anthropic take temperature" is the wrong question and answering
-	 * it provider-wide suppressed a setting that works.
+	 * Anthropic's Sonnet 4.5 accepts temperature and its Sonnet 5 refuses it,.
+	 * So "does Anthropic take temperature" is the wrong question and answering.
+	 * It provider-wide suppressed a setting that works.
 	 *
-	 * The order is: what was measured on this model, then what was measured on
-	 * the provider, then no. An unmeasured parameter on an unmeasured model is
-	 * sent as configured — FLOSC does not refuse on a guess, it lets the
-	 * provider answer and reports what it said.
+	 * The order is: what was measured on this model, then what was measured on.
+	 * The provider, then no. An unmeasured parameter on an unmeasured model is.
+	 * Sent as configured — FLOSC does not refuse on a guess, it lets the.
+	 * Provider answer and reports what it said.
 	 *
 	 * @param string $provider FLOSC provider slug.
 	 * @param string $model    Model id, may be empty.
 	 * @param string $param    Parameter name, e.g. 'temperature'.
-	 * @return bool
+	 * @return Bool.
 	 */
 	function flosc_model_rejects_tuning( $provider, $model, $param ) {
 		$param = (string) $param;
@@ -356,15 +356,15 @@ if ( ! function_exists( 'flosc_sampling_conflicts_with_applied' ) ) {
 	/**
 	 * Whether adding $param would 400 because a sibling sampling control is already on the request.
 	 *
-	 * Anthropic Sonnet 4.5 accepts temperature and accepts top_p; it refuses
-	 * both on the same request. The first-class temperature field is applied
-	 * first, so this is how top_p from the request is held back rather than
-	 * sent and failed.
+	 * Anthropic Sonnet 4.5 accepts temperature and accepts top_p; it refuses.
+	 * Both on the same request. The first-class temperature field is applied.
+	 * First, so this is how top_p from the request is held back rather than.
+	 * Sent and failed.
 	 *
-	 * @param string            $provider FLOSC provider slug.
-	 * @param string            $param    Parameter about to be applied.
+	 * @param string            $provider        FLOSC provider slug.
+	 * @param string            $param           Parameter about to be applied.
 	 * @param array<int,string> $already_applied Names already on the builder.
-	 * @return bool
+	 * @return Bool.
 	 */
 	function flosc_sampling_conflicts_with_applied( $provider, $param, $already_applied ) {
 		$param   = (string) $param;

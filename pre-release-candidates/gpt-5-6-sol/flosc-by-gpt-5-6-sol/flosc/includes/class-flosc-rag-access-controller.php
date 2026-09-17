@@ -1,7 +1,7 @@
 <?php
 /**
- * FLOSC RAG Access Controller
- * Server-side enforcement layer - deny-by-default for RAG tool access
+ * FLOSC RAG Access Controller.
+ * Server-side enforcement layer - deny-by-default for RAG tool access.
  *
  * @package FLOSC
  * @since 1.9.0
@@ -19,11 +19,11 @@ class FLOSC_RAG_Access_Controller {
 	private $flosc_user_session;
 	private $flosc_rag_manager;
 
-		/**
-	 * Coordinate the construct behavior implemented by this code path.
-	 *
-	 * @param mixed $flosc_user_session Input consumed by the Coordinate the construct behavior implemented by this code path. operation.
-	 */
+/**
+ * Coordinate the construct behavior implemented by this code path.
+ *
+ * @param mixed $flosc_user_session Input consumed by the Coordinate the construct behavior implemented by this code path. operation.
+ */
 public function __construct( $flosc_user_session ) {
 		$this->flosc_user_session = $flosc_user_session;
 		$this->flosc_rag_manager  = FLOSC_RAG_Manager::instance();
@@ -33,8 +33,8 @@ public function __construct( $flosc_user_session ) {
 	 * Execute tool with access control (deny-by-default)
 	 *
 	 * @param string $flosc_tool_name Tool to execute.
-	 * @param array  $flosc_args Tool arguments.
-	 * @return mixed Tool result or denial payload
+	 * @param array  $flosc_args      Tool arguments.
+	 * @return Mixed Tool result or denial payload.
 	 */
 	public function flosc_execute_tool( $flosc_tool_name, $flosc_args ) {
 		// CHECK ACCESS BEFORE EXECUTING.
@@ -65,11 +65,11 @@ public function __construct( $flosc_user_session ) {
 	}
 
 	/**
-	 * Check tool access based on user session
+	 * Check tool access based on user session.
 	 *
-	 * @param string $flosc_tool_name
-	 * @param mixed $flosc_args Optional arguments that refine how the Coordinate the check tool access behavior implemented by this code path. operation runs.
-	 * @return array Access check result
+	 * @param string $flosc_tool_name Value consumed by this operation.
+	 * @param mixed  $flosc_args      Optional arguments that refine how the Coordinate the check tool access behavior implemented by this code path. operation runs.
+	 * @return Array Access check result.
 	 */
 	private function flosc_check_tool_access( $flosc_tool_name, $flosc_args ) {
 		$flosc_state = $this->flosc_user_session->flosc_get();
@@ -94,11 +94,11 @@ public function __construct( $flosc_user_session ) {
 	}
 
 	/**
-	 * Check lesson access
+	 * Check lesson access.
 	 *
-	 * @param int|null $flosc_lesson_number
-	 * @param mixed $flosc_state Input consumed by the Coordinate the check lesson access behavior implemented by this code path. operation.
-	 * @return array Access check result
+	 * @param int|null $flosc_lesson_number Value consumed by this operation.
+	 * @param mixed    $flosc_state         Input consumed by the Coordinate the check lesson access behavior implemented by this code path. operation.
+	 * @return Array Access check result.
 	 */
 	private function flosc_check_lesson_access( $flosc_lesson_number, $flosc_state ) {
 		$flosc_user_type    = $flosc_state['flosc_user_type'];
@@ -137,11 +137,11 @@ public function __construct( $flosc_user_session ) {
 	}
 
 	/**
-	 * Create denial payload
+	 * Create denial payload.
 	 *
-	 * @param string $flosc_reason
-	 * @param mixed $flosc_cta Input consumed by the Coordinate the denial payload behavior implemented by this code path. operation.
-	 * @return array Denial payload
+	 * @param string $flosc_reason Value consumed by this operation.
+	 * @param mixed  $flosc_cta    Input consumed by the Coordinate the denial payload behavior implemented by this code path. operation.
+	 * @return Array Denial payload.
 	 */
 	private function flosc_denial_payload( $flosc_reason, $flosc_cta ) {
 		$flosc_messages = array(
@@ -159,11 +159,11 @@ public function __construct( $flosc_user_session ) {
 	}
 
 	/**
-	 * Validate tool output
+	 * Validate tool output.
 	 *
-	 * @param mixed  $flosc_result
+	 * @param mixed $flosc_result    Value consumed by this operation.
 	 * @param mixed $flosc_tool_name Name or key used to select the Coordinate the output behavior implemented by this code path. value.
-	 * @return mixed
+	 * @return Mixed.
 	 */
 	private function flosc_validate_output( $flosc_result, $flosc_tool_name ) {
 		// If already denied, pass through.

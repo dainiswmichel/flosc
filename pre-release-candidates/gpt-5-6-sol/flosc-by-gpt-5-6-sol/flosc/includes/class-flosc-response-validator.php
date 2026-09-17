@@ -1,7 +1,7 @@
 <?php
 /**
- * FLOSC Response Validator
- * Last-resort validation of AI outputs before showing to users
+ * FLOSC Response Validator.
+ * Last-resort validation of AI outputs before showing to users.
  *
  * @package FLOSC
  * @since 1.9.0
@@ -18,21 +18,21 @@ class FLOSC_Response_Validator {
 
 	private $flosc_user_session;
 
-		/**
-	 * Coordinate the construct behavior implemented by this code path.
-	 *
-	 * @param mixed $flosc_user_session Input consumed by the Coordinate the construct behavior implemented by this code path. operation.
-	 */
+/**
+ * Coordinate the construct behavior implemented by this code path.
+ *
+ * @param mixed $flosc_user_session Input consumed by the Coordinate the construct behavior implemented by this code path. operation.
+ */
 public function __construct( $flosc_user_session ) {
 		$this->flosc_user_session = $flosc_user_session;
 	}
 
 	/**
-	 * Validate AI response
+	 * Validate AI response.
 	 *
-	 * @param string $flosc_response AI response text.
+	 * @param string $flosc_response        AI response text.
 	 * @param array  $flosc_tool_calls_made Tools that were called.
-	 * @return array Validation result
+	 * @return Array Validation result.
 	 */
 	public function flosc_validate( $flosc_response, $flosc_tool_calls_made = array() ) {
 		$flosc_violations = array();
@@ -69,22 +69,22 @@ public function __construct( $flosc_user_session ) {
 		);
 	}
 
-		/**
-	 * Coordinate the contains lesson content behavior implemented by this code path.
-	 *
-	 * @param mixed $flosc_response Input consumed by the Coordinate the contains lesson content behavior implemented by this code path. operation.
-	 * @return mixed Result produced by the contains lesson content operation.
-	 */
+/**
+ * Coordinate the contains lesson content behavior implemented by this code path.
+ *
+ * @param mixed $flosc_response Input consumed by the Coordinate the contains lesson content behavior implemented by this code path. operation.
+ * @return Mixed Result produced by the contains lesson content operation.
+ */
 private function flosc_contains_lesson_content( $flosc_response ) {
 		return strlen( $flosc_response ) > 3000 || preg_match( '/^Lesson \d+:/m', $flosc_response );
 	}
 
-		/**
-	 * Coordinate the used lesson tool behavior implemented by this code path.
-	 *
-	 * @param mixed $flosc_tool_calls Input consumed by the Coordinate the used lesson tool behavior implemented by this code path. operation.
-	 * @return bool Whether used lesson tool applies to the current state.
-	 */
+/**
+ * Coordinate the used lesson tool behavior implemented by this code path.
+ *
+ * @param mixed $flosc_tool_calls Input consumed by the Coordinate the used lesson tool behavior implemented by this code path. operation.
+ * @return Bool Whether used lesson tool applies to the current state.
+ */
 private function flosc_used_lesson_tool( $flosc_tool_calls ) {
 		foreach ( $flosc_tool_calls as $flosc_call ) {
 			if ( in_array( $flosc_call['name'], array( 'flosc_get_lesson_content', 'flosc_deliver_free_lesson' ), true ) ) {
@@ -94,12 +94,12 @@ private function flosc_used_lesson_tool( $flosc_tool_calls ) {
 		return false;
 	}
 
-		/**
-	 * Coordinate the contains pricing behavior implemented by this code path.
-	 *
-	 * @param mixed $flosc_response Input consumed by the Coordinate the contains pricing behavior implemented by this code path. operation.
-	 * @return bool Whether contains pricing applies to the current state.
-	 */
+/**
+ * Coordinate the contains pricing behavior implemented by this code path.
+ *
+ * @param mixed $flosc_response Input consumed by the Coordinate the contains pricing behavior implemented by this code path. operation.
+ * @return Bool Whether contains pricing applies to the current state.
+ */
 private function flosc_contains_pricing( $flosc_response ) {
 		$flosc_keywords = array( '$', 'price', 'cost', 'pay', 'purchase', 'buy' );
 		foreach ( $flosc_keywords as $flosc_keyword ) {
@@ -110,11 +110,11 @@ private function flosc_contains_pricing( $flosc_response ) {
 		return false;
 	}
 
-		/**
-	 * Coordinate the override response behavior implemented by this code path.
-	 *
-	 * @return mixed Result produced by the override response operation.
-	 */
+/**
+ * Coordinate the override response behavior implemented by this code path.
+ *
+ * @return Mixed Result produced by the override response operation.
+ */
 private function flosc_get_override_response() {
 		$flosc_user_type = $this->flosc_user_session->flosc_get( 'flosc_user_type' );
 

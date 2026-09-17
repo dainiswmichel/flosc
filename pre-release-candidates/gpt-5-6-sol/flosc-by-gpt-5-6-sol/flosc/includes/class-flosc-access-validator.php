@@ -1,9 +1,9 @@
 <?php
 /**
- * FLOSC Access Level Validator
- * Enforces strict content restrictions
+ * FLOSC Access Level Validator.
+ * Enforces strict content restrictions.
  *
- * CRITICAL: Prevents AI from leaking member content to visitors/guests
+ * CRITICAL: Prevents AI from leaking member content to visitors/guests.
  *
  * @since 9.1.7
  *
@@ -21,11 +21,11 @@ class FLOSC_Access_Validator {
 
 	private static $instance = null;
 
-		/**
-	 * Coordinate the instance behavior implemented by this code path.
-	 *
-	 * @return mixed Result produced by the instance operation.
-	 */
+/**
+ * Coordinate the instance behavior implemented by this code path.
+ *
+ * @return Mixed Result produced by the instance operation.
+ */
 public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
@@ -34,12 +34,12 @@ public static function instance() {
 	}
 
 	/**
-	 * Validate AI response before sending to user
-	 * CRITICAL: This catches any content leakage
+	 * Validate AI response before sending to user.
+	 * CRITICAL: This catches any content leakage.
 	 *
-	 * @param string $ai_response The AI's proposed response.
+	 * @param string $ai_response  The AI's proposed response.
 	 * @param string $access_level User's access level.
-	 * @return array ['valid' => bool, 'response' => string, 'violations' => array]
+	 * @return Array ['valid' => bool, 'response' => string, 'violations' => array]
 	 */
 	public function validate_response( $ai_response, $access_level ) {
 
@@ -96,9 +96,10 @@ public static function instance() {
 	}
 
 	/**
-	 * Get forbidden keywords for access level
- * @param mixed $access_level Input consumed by the Resolve the current forbidden keywords value from the available Word Press and flow state. operation.
- * @return array Structured forbidden keywords data.
+	 * Get forbidden keywords for access level.
+	 *
+	 * @param mixed $access_level Input consumed by the Resolve the current forbidden keywords value from the available Word Press and flow state. operation.
+	 * @return Array Structured forbidden keywords data.
 	 */
 	private function get_forbidden_keywords( $access_level ) {
 
@@ -123,10 +124,11 @@ public static function instance() {
 	}
 
 	/**
-	 * Check VISITOR-specific violations
-	 * VISITORS should ONLY see quiz prompts
- * @param mixed $response Input consumed by the Coordinate the check visitor violations behavior implemented by this code path. operation.
- * @return mixed Result produced by the check visitor violations operation.
+	 * Check VISITOR-specific violations.
+	 * VISITORS should ONLY see quiz prompts.
+	 *
+	 * @param mixed $response Input consumed by the Coordinate the check visitor violations behavior implemented by this code path. operation.
+	 * @return Mixed Result produced by the check visitor violations operation.
 	 */
 	private function check_visitor_violations( $response ) {
 
@@ -161,10 +163,11 @@ public static function instance() {
 	}
 
 	/**
-	 * Check GUEST-specific violations
-	 * GUESTS should see offers but NOT member content
- * @param mixed $response Input consumed by the Coordinate the check guest violations behavior implemented by this code path. operation.
- * @return mixed Result produced by the check guest violations operation.
+	 * Check GUEST-specific violations.
+	 * GUESTS should see offers but NOT member content.
+	 *
+	 * @param mixed $response Input consumed by the Coordinate the check guest violations behavior implemented by this code path. operation.
+	 * @return Mixed Result produced by the check guest violations operation.
 	 */
 	private function check_guest_violations( $response ) {
 
@@ -186,10 +189,11 @@ public static function instance() {
 	}
 
 	/**
-	 * Get safe fallback response for access level
-	 * This is shown when AI tries to leak content
- * @param mixed $access_level Input consumed by the Resolve the current safe fallback response value from the available Word Press and flow state. operation.
- * @return mixed Result produced by the safe fallback response operation.
+	 * Get safe fallback response for access level.
+	 * This is shown when AI tries to leak content.
+	 *
+	 * @param mixed $access_level Input consumed by the Resolve the current safe fallback response value from the available Word Press and flow state. operation.
+	 * @return Mixed Result produced by the safe fallback response operation.
 	 */
 	private function get_safe_fallback_response( $access_level ) {
 
@@ -205,11 +209,12 @@ public static function instance() {
 	}
 
 	/**
-	 * Validate system prompt for access level
-	 * Ensures AI is instructed correctly
- * @param mixed $system_prompt Input consumed by the Validate the input and trust conditions required for system prompt. operation.
- * @param mixed $access_level Input consumed by the Validate the input and trust conditions required for system prompt. operation.
- * @return mixed Result produced by the system prompt operation.
+	 * Validate system prompt for access level.
+	 * Ensures AI is instructed correctly.
+	 *
+	 * @param mixed $system_prompt Input consumed by the Validate the input and trust conditions required for system prompt. operation.
+	 * @param mixed $access_level  Input consumed by the Validate the input and trust conditions required for system prompt. operation.
+	 * @return Mixed Result produced by the system prompt operation.
 	 */
 	public function validate_system_prompt( $system_prompt, $access_level ) {
 
@@ -240,9 +245,10 @@ public static function instance() {
 	}
 
 	/**
-	 * Get required phrases in system prompt
- * @param mixed $access_level Input consumed by the Resolve the current required prompt phrases value from the available Word Press and flow state. operation.
- * @return mixed Result produced by the required prompt phrases operation.
+	 * Get required phrases in system prompt.
+	 *
+	 * @param mixed $access_level Input consumed by the Resolve the current required prompt phrases value from the available Word Press and flow state. operation.
+	 * @return Mixed Result produced by the required prompt phrases operation.
 	 */
 	private function get_required_prompt_phrases( $access_level ) {
 
@@ -267,10 +273,11 @@ public static function instance() {
 	}
 
 	/**
-	 * Get access level enforcement rules
-	 * Returns what AI CAN and CANNOT do at each level
- * @param mixed $access_level Input consumed by the Resolve the current enforcement rules value from the available Word Press and flow state. operation.
- * @return mixed Result produced by the enforcement rules operation.
+	 * Get access level enforcement rules.
+	 * Returns what AI CAN and CANNOT do at each level.
+	 *
+	 * @param mixed $access_level Input consumed by the Resolve the current enforcement rules value from the available Word Press and flow state. operation.
+	 * @return Mixed Result produced by the enforcement rules operation.
 	 */
 	public function get_enforcement_rules( $access_level ) {
 

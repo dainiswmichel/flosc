@@ -1,6 +1,6 @@
 <?php
 /**
- * FLOSC Lessons Table
+ * FLOSC Lessons Table.
  *
  * Custom table for structured pronunciation lesson data.
  * Stores structured pronunciation lessons with discrete, queryable fields.
@@ -28,11 +28,11 @@ class FLOSC_Lessons_Table {
 	private $db_version        = '1.0.0';
 	private $db_version_option = 'flosc_lessons_table_db_version';
 
-		/**
-	 * Coordinate the instance behavior implemented by this code path.
-	 *
-	 * @return mixed Result produced by the instance operation.
-	 */
+/**
+ * Coordinate the instance behavior implemented by this code path.
+ *
+ * @return Mixed Result produced by the instance operation.
+ */
 public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
@@ -40,9 +40,9 @@ public static function instance() {
 		return self::$instance;
 	}
 
-		/**
-	 * Coordinate the construct behavior implemented by this code path.
-	 */
+/**
+ * Coordinate the construct behavior implemented by this code path.
+ */
 private function __construct() {
 		global $wpdb;
 		$this->table_name = $wpdb->prefix . 'flosc_lessons';
@@ -50,14 +50,15 @@ private function __construct() {
 
 	/**
 	 * Get the full table name (with prefix)
- * @return mixed Result produced by the table name operation.
+	 *
+	 * @return Mixed Result produced by the table name operation.
 	 */
 	public function get_table_name() {
 		return $this->table_name;
 	}
 
 	/**
-	 * Create or update the lessons table via dbDelta
+	 * Create or update the lessons table via dbDelta.
 	 */
 	public function ensure_table() {
 		global $wpdb;
@@ -101,8 +102,9 @@ private function __construct() {
 	}
 
 	/**
-	 * Check if the table exists
- * @return mixed Result produced by the table exists operation.
+	 * Check if the table exists.
+	 *
+	 * @return Mixed Result produced by the table exists operation.
 	 */
 	public function table_exists() {
 		$cache_key = 'table_exists_' . $this->table_name;
@@ -125,8 +127,9 @@ private function __construct() {
 	}
 
 	/**
-	 * Get lesson count
- * @return mixed Result produced by the count operation.
+	 * Get lesson count.
+	 *
+	 * @return Mixed Result produced by the count operation.
 	 */
 	public function get_count() {
 		global $wpdb;
@@ -145,9 +148,9 @@ private function __construct() {
 		return $count;
 	}
 
-		/**
-	 * Coordinate the bust lessons cache behavior implemented by this code path.
-	 */
+/**
+ * Coordinate the bust lessons cache behavior implemented by this code path.
+ */
 private function flosc_bust_lessons_cache() {
 		wp_cache_delete( 'count_' . $this->table_name, 'flosc_lessons' );
 		wp_cache_delete( 'all_' . $this->table_name, 'flosc_lessons' );
@@ -156,10 +159,10 @@ private function flosc_bust_lessons_cache() {
 	}
 
 	/**
-	 * Insert a single lesson
+	 * Insert a single lesson.
 	 *
 	 * @param array $data Associative array with lesson fields.
-	 * @return int|false Inserted ID or false on failure
+	 * @return Int|false Inserted ID or false on failure.
 	 */
 	public function insert_lesson( $data ) {
 		global $wpdb;
@@ -190,9 +193,9 @@ private function flosc_bust_lessons_cache() {
 	}
 
 	/**
-	 * Get all lessons ordered by sort_order
+	 * Get all lessons ordered by sort_order.
 	 *
-	 * @return array
+	 * @return Array.
 	 */
 	public function get_all_lessons() {
 		global $wpdb;
@@ -224,8 +227,8 @@ private function flosc_bust_lessons_cache() {
 	/**
 	 * Get a single lesson by lesson_number (e.g. "1", "20.1")
 	 *
-	 * @param string $lesson_number
-	 * @return array|null
+	 * @param string $lesson_number Value consumed by this operation.
+	 * @return Array|null.
 	 */
 	public function get_lesson_by_number( $lesson_number ) {
 		global $wpdb;
@@ -254,10 +257,10 @@ private function flosc_bust_lessons_cache() {
 	}
 
 	/**
-	 * Get a single lesson by database ID
+	 * Get a single lesson by database ID.
 	 *
-	 * @param int $id
-	 * @return array|null
+	 * @param int $id Value consumed by this operation.
+	 * @return Array|null.
 	 */
 	public function get_lesson_by_id( $id ) {
 		global $wpdb;
@@ -288,8 +291,8 @@ private function flosc_bust_lessons_cache() {
 	/**
 	 * Get lessons by sound category (e.g. "vowel", "consonant")
 	 *
-	 * @param string $category
-	 * @return array
+	 * @param string $category Value consumed by this operation.
+	 * @return Array.
 	 */
 	public function get_lessons_by_category( $category ) {
 		global $wpdb;
@@ -323,7 +326,7 @@ private function flosc_bust_lessons_cache() {
 	/**
 	 * Get lesson metadata only (for listing, without full how_to content)
 	 *
-	 * @return array
+	 * @return Array.
 	 */
 	public function get_lesson_list() {
 		global $wpdb;
@@ -358,7 +361,7 @@ private function flosc_bust_lessons_cache() {
 	/**
 	 * Clear all lessons (for reimport)
 	 *
-	 * @return int|false Number of rows deleted or false on error
+	 * @return Int|false Number of rows deleted or false on error.
 	 */
 	public function truncate() {
 		global $wpdb;
@@ -370,11 +373,11 @@ private function flosc_bust_lessons_cache() {
 	}
 
 	/**
-	 * Format a lesson row for REST API output
+	 * Format a lesson row for REST API output.
 	 *
-	 * @param array $row Raw DB row.
+	 * @param array $row             Raw DB row.
 	 * @param bool  $include_content Include how_to and full word lists.
-	 * @return array Formatted lesson
+	 * @return Array Formatted lesson.
 	 */
 	public function format_for_api( $row, $include_content = false ) {
 		if ( ! $row ) {

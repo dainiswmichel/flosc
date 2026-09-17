@@ -1,10 +1,10 @@
 <?php
 /**
- * FLOSC Payments Configuration Tab
+ * FLOSC Payments Configuration Tab.
  *
  * Native processors (keys live here, per-flow WPDB):
- * - Stripe — cards, Apple Pay / Google Pay when enabled in Stripe, one-time + subscriptions
- * - PayPal — one-time capture and subscription plans via PayPal JS SDK
+ * - Stripe — cards, Apple Pay / Google Pay when enabled in Stripe, one-time + subscriptions.
+ * - PayPal — one-time capture and subscription plans via PayPal JS SDK.
  *
  * External carts (WooCommerce, Shopify, member sites, etc.) are NOT configured here.
  * On the Offers tab set Payment Processor → External / Redirect and paste the cart URL.

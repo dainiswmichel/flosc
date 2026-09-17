@@ -1,12 +1,12 @@
 <?php
 /**
- * FLOSC Admin Settings Helper
- * Helper for flow-aware settings in admin tabs
+ * FLOSC Admin Settings Helper.
+ * Helper for flow-aware settings in admin tabs.
  *
  * Usage in tab files:
- *   $value = flosc_admin_get_value('ai_provider', 'ivr');
- *   - When editing a flow: returns flow[$key] if set, else global
- *   - When editing global: returns global wp_option value
+ * $value = flosc_admin_get_value('ai_provider', 'ivr');
+ * - When editing a flow: returns flow[$key] if set, else global.
+ * - When editing global: returns global wp_option value.
  *
  * @package FLOSC
  * @since 1.2.4
@@ -17,11 +17,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Get the appropriate value for an admin settings field
+ * Get the appropriate value for an admin settings field.
  *
- * @param string $key Setting key (without 'flosc_' prefix).
+ * @param string $key      Setting key (without 'flosc_' prefix).
  * @param mixed  $fallback Default value.
- * @return mixed The value to display in the form
+ * @return Mixed The value to display in the form.
  */
 function flosc_admin_get_value( $key, $fallback = '' ) {
 	// Check if we're editing a specific flow.
@@ -43,11 +43,11 @@ function flosc_admin_get_value( $key, $fallback = '' ) {
 }
 
 /**
- * Get the global value for showing as placeholder when editing flow
+ * Get the global value for showing as placeholder when editing flow.
  *
- * @param string $key Setting key (without 'flosc_' prefix).
+ * @param string $key      Setting key (without 'flosc_' prefix).
  * @param mixed  $fallback Default value.
- * @return mixed The global value for placeholder text
+ * @return Mixed The global value for placeholder text.
  */
 function flosc_admin_get_global( $key, $fallback = '' ) {
 	return get_option( 'flosc_' . $key, $fallback );
@@ -56,7 +56,7 @@ function flosc_admin_get_global( $key, $fallback = '' ) {
 /**
  * Check if currently editing a specific flow (vs global)
  *
- * @return bool True if editing a flow, false if editing global
+ * @return Bool True if editing a flow, false if editing global.
  */
 function flosc_admin_is_editing_flow() {
 	return isset( $GLOBALS['flosc_editing_flow'] ) && ! empty( $GLOBALS['flosc_editing_flow'] );
@@ -65,18 +65,18 @@ function flosc_admin_is_editing_flow() {
 /**
  * Get the flow ID being edited (or empty string if global)
  *
- * @return string Flow ID or empty string
+ * @return String Flow ID or empty string.
  */
 function flosc_admin_get_editing_flow_id() {
 	return $GLOBALS['flosc_editing_flow'] ?? '';
 }
 
 /**
- * Render a text input with "using global" placeholder when editing flow
+ * Render a text input with "using global" placeholder when editing flow.
  *
- * @param string $key Setting key (without 'flosc_' prefix).
- * @param string $fallback Default value.
- * @param string $css_class CSS class.
+ * @param string $key         Setting key (without 'flosc_' prefix).
+ * @param string $fallback    Default value.
+ * @param string $css_class   CSS class.
  * @param string $placeholder Custom placeholder (overrides global value).
  */
 function flosc_admin_text_input( $key, $fallback = '', $css_class = 'regular-text', $placeholder = null ) {
@@ -100,10 +100,11 @@ function flosc_admin_text_input( $key, $fallback = '', $css_class = 'regular-tex
 }
 
 /**
- * Render a textarea with "using global" placeholder when editing flow
- * @param mixed $key Name or key used to select the Coordinate the admin textarea behavior implemented by this code path. value.
- * @param mixed $fallback Fallback value returned when no more specific value is available.
- * @param mixed $rows Input consumed by the Coordinate the admin textarea behavior implemented by this code path. operation.
+ * Render a textarea with "using global" placeholder when editing flow.
+ *
+ * @param mixed $key       Name or key used to select the Coordinate the admin textarea behavior implemented by this code path. value.
+ * @param mixed $fallback  Fallback value returned when no more specific value is available.
+ * @param mixed $rows      Input consumed by the Coordinate the admin textarea behavior implemented by this code path. operation.
  * @param mixed $css_class Input consumed by the Coordinate the admin textarea behavior implemented by this code path. operation.
  */
 function flosc_admin_textarea( $key, $fallback = '', $rows = 5, $css_class = 'large-text' ) {
@@ -128,9 +129,10 @@ function flosc_admin_textarea( $key, $fallback = '', $rows = 5, $css_class = 'la
 }
 
 /**
- * Render a select dropdown
- * @param mixed $key Name or key used to select the Render the Word Press interface for admin select. value.
- * @param mixed $options Optional arguments that refine how the Render the Word Press interface for admin select. operation runs.
+ * Render a select dropdown.
+ *
+ * @param mixed $key      Name or key used to select the Render the Word Press interface for admin select. value.
+ * @param mixed $options  Optional arguments that refine how the Render the Word Press interface for admin select. operation runs.
  * @param mixed $fallback Fallback value returned when no more specific value is available.
  */
 function flosc_admin_select( $key, $options, $fallback = '' ) {
@@ -168,20 +170,20 @@ function flosc_admin_select( $key, $options, $fallback = '' ) {
  * Derive companion hub defaults from a flow settings array (parameterized — no brand hardcodes).
  *
  * Uses only this flow's own Identity/Content fields:
- * - domain / custom_domain + slug → full-screen chat URL
- * - content_item_category or first content_item_groups[].category → knowledge-hub category archive
- * - companion_flow_slug or slug on WordPress site URL → companion iframe chat route
- *   (same origin as the knowledge hub so WP login cookies apply for guests/members)
+ * - domain / custom_domain + slug → full-screen chat URL.
+ * - content_item_category or first content_item_groups[].category → knowledge-hub category archive.
+ * - companion_flow_slug or slug on WordPress site URL → companion iframe chat route.
+ * (same origin as the knowledge hub so WP login cookies apply for guests/members)
  *
  * @param array $flow_settings Per-flow option payload (flosc_flow_*).
- * @return array{
- *   fullscreen: string,
- *   companion: string,
- *   chat_app: string,
- *   flow_slug: string,
- *   content_item_category: string,
- *   include_rules: string
- * }
+ * @return Array{.
+ * Fullscreen: string,.
+ * Companion: string,.
+ * Chat_app: string,.
+ * Flow_slug: string,.
+ * Content_item_category: string,.
+ * Include_rules: string.
+ * }.
  */
 function flosc_companion_hub_defaults_from_flow( array $flow_settings ) {
 	$slug   = sanitize_title( (string) ( $flow_settings['slug'] ?? '' ) );
@@ -268,15 +270,15 @@ function flosc_companion_hub_defaults_from_flow( array $flow_settings ) {
 /**
  * The two axes of content access, as the admin selects present them.
  *
- * One vocabulary, two screens. The Content tab and the member-levels screen
- * both render the same protection repeater, and when the two drifted apart
- * before, saving from one of them quietly rewrote what the other had stored.
+ * One vocabulary, two screens. The Content tab and the member-levels screen.
+ * Both render the same protection repeater, and when the two drifted apart.
+ * Before, saving from one of them quietly rewrote what the other had stored.
  *
- * The tier is a FLOOR: Visitors also covers guests and members, Guests excludes
- * visitors, Members excludes both. FLOSC_Site_Content_Index::TIERS and ::DEPTHS
- * are the same two lists on the reading side.
+ * The tier is a FLOOR: Visitors also covers guests and members, Guests excludes.
+ * Visitors, Members excludes both. FLOSC_Site_Content_Index::TIERS and ::DEPTHS.
+ * Are the same two lists on the reading side.
  *
- * @return array<string,string>
+ * @return Array<string,string>.
  */
 function flosc_vgm_tier_labels() {
 	return array(
@@ -289,7 +291,7 @@ function flosc_vgm_tier_labels() {
 /**
  * How much of a post a tier gets.
  *
- * @return array<string,string>
+ * @return Array<string,string>.
  */
 function flosc_vgm_depth_labels() {
 	return array(
@@ -305,7 +307,7 @@ function flosc_vgm_depth_labels() {
  *
  * @param array  $labels   From flosc_vgm_tier_labels() or flosc_vgm_depth_labels().
  * @param string $selected Key to mark selected.
- * @return string Escaped markup.
+ * @return String Escaped markup.
  */
 function flosc_vgm_options_markup( array $labels, $selected ) {
 	$out = '';

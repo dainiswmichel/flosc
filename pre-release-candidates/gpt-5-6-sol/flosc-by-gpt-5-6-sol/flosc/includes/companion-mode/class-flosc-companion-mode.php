@@ -14,14 +14,15 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class FLOSC_Companion_Mode {
 
-	/** @var FLOSC_Framework */
+	/**
+	 */
 	private $flosc;
 
-		/**
-	 * Coordinate the construct behavior implemented by this code path.
-	 *
-	 * @param mixed $flosc Input consumed by the Coordinate the construct behavior implemented by this code path. operation.
-	 */
+/**
+ * Coordinate the construct behavior implemented by this code path.
+ *
+ * @param mixed $flosc Input consumed by the Coordinate the construct behavior implemented by this code path. operation.
+ */
 public function __construct( $flosc ) {
 		$this->flosc = $flosc;
 	}
@@ -29,11 +30,11 @@ public function __construct( $flosc ) {
 	/**
 	 * Enqueue companion widget on non-app WordPress pages.
 	 * Only loads if companion mode is enabled for the current flow.
-	 * v1.6.3: Fixed to read from flat per-flow settings (matching admin save pattern)
-	 * v8.0.0: Knowledge hubs — resolve flow by handoff param, hub companion URL, or lessons category.
+	 * V1.6.3: Fixed to read from flat per-flow settings (matching admin save pattern)
+	 * V8.0.0: Knowledge hubs — resolve flow by handoff param, hub companion URL, or lessons category.
 	 *
 	 * @since 1.6.1
- * @return mixed Result produced by the enqueue companion operation.
+	 * @return Mixed Result produced by the enqueue companion operation.
 	 */
 	public function enqueue_companion() {
 		// Outer chrome is for normal WP host pages only.
@@ -446,7 +447,7 @@ public function __construct( $flosc ) {
 	 * Host-page Register/Log-In modal (theme Sign-in button). Not in-chat.
 	 *
 	 * @param string $flow_id Current flow id.
-	 * @return array
+	 * @return Array.
 	 */
 	private function get_host_auth_config( $flow_id ) {
 		$flow_id       = sanitize_key( (string) $flow_id );
@@ -520,12 +521,12 @@ public function __construct( $flosc ) {
 	 *
 	 * Priority:
 	 * 1) flosc_flow_id / flosc_ivr query (from full-chat dock handoff)
-	 * 2) Current URL matches a flow's companion_hub_companion_url
-	 * 3) Current WP category matches a flow's content_item_groups / content_item_category
+	 * 2) Current URL matches a flow's companion_hub_companion_url.
+	 * 3) Current WP category matches a flow's content_item_groups / content_item_category.
 	 * 4) Leave get_current_flow() as-is (domain/slug detection)
 	 *
 	 * @param bool $handoff_request Whether this is a companion handoff navigation.
- * @return mixed Result produced by the companion flow context operation.
+	 * @return Mixed Result produced by the companion flow context operation.
 	 */
 	private function resolve_companion_flow_context( $handoff_request = false ) {
 		$request_path   = $this->get_companion_request_path();
@@ -581,9 +582,9 @@ public function __construct( $flosc ) {
 	/**
 	 * Find companion-enabled flows that own the current request path or category.
 	 *
-	 * @param string   $req_path        Normalized request path.
-	 * @param string[] $category_slugs  Category slugs for this request.
-	 * @return array{hub:?string,category:?string}
+	 * @param string   $req_path       Normalized request path.
+	 * @param string[] $category_slugs Category slugs for this request.
+	 * @return Array{hub:?string,category:?string}.
 	 */
 	private function find_companion_flows_for_request( $req_path, array $category_slugs ) {
 		$hub_match      = null;
@@ -658,7 +659,7 @@ public function __construct( $flosc ) {
 	/**
 	 * Category slugs for the current frontend request (archive or single post).
 	 *
-	 * @return string[]
+	 * @return String[]
 	 */
 	private function get_companion_request_category_slugs() {
 		$slugs = array();
@@ -689,7 +690,7 @@ public function __construct( $flosc ) {
 	 * Empty / missing path and bare "/" all mean site root.
 	 *
 	 * @param string $url Absolute or relative URL.
-	 * @return string Path with leading slash, no trailing slash except root "/".
+	 * @return String Path with leading slash, no trailing slash except root "/".
 	 */
 	private function companion_normalize_url_path( $url ) {
 		$path = (string) wp_parse_url( (string) $url, PHP_URL_PATH );
@@ -702,11 +703,11 @@ public function __construct( $flosc ) {
 	 * Hub pages, posts, home, and arbitrary WP paths are not app routes.
 	 *
 	 * This is the structural invariant: companion iframe may only load such URLs.
-	 * App routes never enqueue outer companion chrome (is_flosc_request), so nesting
-	 * cannot occur.
+	 * App routes never enqueue outer companion chrome (is_flosc_request), so nesting.
+	 * Cannot occur.
 	 *
 	 * @param string $url Absolute http(s) URL.
-	 * @return bool
+	 * @return Bool.
 	 */
 	private function is_flosc_app_route_url( $url ) {
 		$url = esc_url_raw( (string) $url, array( 'http', 'https' ) );
@@ -810,7 +811,7 @@ public function __construct( $flosc ) {
 	 *
 	 * @param string $url_a First URL.
 	 * @param string $url_b Second URL.
-	 * @return bool
+	 * @return Bool.
 	 */
 	private function companion_app_routes_match( $url_a, $url_b ) {
 		$url_a = (string) $url_a;
@@ -827,11 +828,11 @@ public function __construct( $flosc ) {
 	}
 
 	/**
- * Coordinate the companion hosts match behavior implemented by this code path.
- *
+	 * Coordinate the companion hosts match behavior implemented by this code path.
+	 *
 	 * @param string $host_a Host A.
 	 * @param string $host_b Host B.
-	 * @return bool
+	 * @return Bool.
 	 */
 	private function companion_hosts_match( $host_a, $host_b ) {
 		$host_a = strtolower( (string) $host_a );
@@ -850,7 +851,7 @@ public function __construct( $flosc ) {
 	 *
 	 * @param string $path Normalized path (/ or /foo).
 	 * @param string $slug Flow slug.
-	 * @return bool
+	 * @return Bool.
 	 */
 	private function companion_path_is_flow_slug( $path, $slug ) {
 		$slug = sanitize_title( (string) $slug );
@@ -876,12 +877,13 @@ public function __construct( $flosc ) {
 	 * Priority matches the pre-nest order (session integrity / same chat surface):
 	 * 1) companion_chat_app_url (explicit Companion chat URL field)
 	 * 2) hub defaults chat_app (same-origin flow slug when available)
-	 * 3) companion_flow_slug / flow slug on this WordPress site
+	 * 3) companion_flow_slug / flow slug on this WordPress site.
 	 * 4) Flow get_app_url()
 	 *
 	 * Fullscreen / expand URL is separate (full_page_url) — not an iframe candidate.
 	 * Only URLs that pass is_flosc_app_route_url() are returned (no hub/home iframe).
- * @return mixed Result produced by the companion chat app url operation.
+	 *
+	 * @return Mixed Result produced by the companion chat app url operation.
 	 */
 	private function get_companion_chat_app_url() {
 		$candidates = array();
@@ -927,8 +929,9 @@ public function __construct( $flosc ) {
 
 	/**
 	 * Find active flow by slug for companion URL hardening.
- * @param mixed $slug Input consumed by the Resolve the current flow by slug for companion value from the available Word Press and flow state. operation.
- * @return mixed Result produced by the flow by slug for companion operation.
+	 *
+	 * @param mixed $slug Input consumed by the Resolve the current flow by slug for companion value from the available Word Press and flow state. operation.
+	 * @return Mixed Result produced by the flow by slug for companion operation.
 	 */
 	private function get_flow_by_slug_for_companion( $slug ) {
 		$slug = sanitize_title( (string) $slug );
@@ -961,7 +964,8 @@ public function __construct( $flosc ) {
 
 	/**
 	 * Build current frontend URL for companion handoff context.
- * @return mixed Result produced by the current frontend url operation.
+	 *
+	 * @return Mixed Result produced by the current frontend url operation.
 	 */
 	private function get_current_frontend_url() {
 		$request_uri = sanitize_text_field( (string) wp_unslash( $_SERVER['REQUEST_URI'] ?? '/' ) );
@@ -982,7 +986,8 @@ public function __construct( $flosc ) {
 
 	/**
 	 * Filterable companion defaults for stable parameterization.
- * @return mixed Result produced by the companion defaults operation.
+	 *
+	 * @return Mixed Result produced by the companion defaults operation.
 	 */
 	private function get_companion_defaults() {
 		$defaults = array(
@@ -1045,7 +1050,8 @@ public function __construct( $flosc ) {
 
 	/**
 	 * Filterable numeric bounds for companion setting sanitization.
- * @return mixed Result produced by the companion numeric limits operation.
+	 *
+	 * @return Mixed Result produced by the companion numeric limits operation.
 	 */
 	private function get_companion_numeric_limits() {
 		$limits = array(
@@ -1101,7 +1107,8 @@ public function __construct( $flosc ) {
 
 	/**
 	 * Filterable full mode list for validation/sanitization.
- * @return mixed Result produced by the companion allowed modes operation.
+	 *
+	 * @return Mixed Result produced by the companion allowed modes operation.
 	 */
 	private function get_companion_allowed_modes() {
 		$modes = apply_filters( 'flosc_companion_allowed_modes', array( 'in_chat', 'companion', 'both' ), $this );
@@ -1110,7 +1117,8 @@ public function __construct( $flosc ) {
 
 	/**
 	 * Filterable mode list that should render the widget shell.
- * @return mixed Result produced by the companion widget modes operation.
+	 *
+	 * @return Mixed Result produced by the companion widget modes operation.
 	 */
 	private function get_companion_widget_modes() {
 		$modes = apply_filters( 'flosc_companion_widget_modes', array( 'companion', 'both' ), $this );
@@ -1119,7 +1127,8 @@ public function __construct( $flosc ) {
 
 	/**
 	 * Filterable launcher position list.
- * @return mixed Result produced by the companion allowed positions operation.
+	 *
+	 * @return Mixed Result produced by the companion allowed positions operation.
 	 */
 	private function get_companion_allowed_positions() {
 		$positions = apply_filters( 'flosc_companion_allowed_positions', array( 'bottom-right', 'bottom-left' ), $this );
@@ -1128,7 +1137,8 @@ public function __construct( $flosc ) {
 
 	/**
 	 * Filterable mobile behavior list for companion panel.
- * @return mixed Result produced by the companion mobile behaviors operation.
+	 *
+	 * @return Mixed Result produced by the companion mobile behaviors operation.
 	 */
 	private function get_companion_mobile_behaviors() {
 		$behaviors = apply_filters( 'flosc_companion_mobile_behaviors', array( 'fullscreen', 'panel' ), $this );
@@ -1137,7 +1147,8 @@ public function __construct( $flosc ) {
 
 	/**
 	 * Filterable companion context scope list.
- * @return mixed Result produced by the companion context scopes operation.
+	 *
+	 * @return Mixed Result produced by the companion context scopes operation.
 	 */
 	private function get_companion_context_scopes() {
 		$scopes = apply_filters( 'flosc_companion_context_scopes', array( 'basic', 'extended' ), $this );
@@ -1146,7 +1157,8 @@ public function __construct( $flosc ) {
 
 	/**
 	 * Filterable motion mode list for companion interactions.
- * @return mixed Result produced by the companion motion modes operation.
+	 *
+	 * @return Mixed Result produced by the companion motion modes operation.
 	 */
 	private function get_companion_motion_modes() {
 		$modes = apply_filters( 'flosc_companion_motion_modes', array( 'system', 'reduce', 'full' ), $this );
@@ -1155,7 +1167,8 @@ public function __construct( $flosc ) {
 
 	/**
 	 * Filterable storage backends for companion browser state.
- * @return mixed Result produced by the companion state storages operation.
+	 *
+	 * @return Mixed Result produced by the companion state storages operation.
 	 */
 	private function get_companion_state_storages() {
 		$storages = apply_filters( 'flosc_companion_state_storages', array( 'session', 'local' ), $this );
@@ -1164,7 +1177,8 @@ public function __construct( $flosc ) {
 
 	/**
 	 * Filterable launcher SVG path map keyed by launcher icon id.
- * @return mixed Result produced by the companion launcher svg paths operation.
+	 *
+	 * @return Mixed Result produced by the companion launcher svg paths operation.
 	 */
 	private function get_companion_launcher_svg_paths() {
 		$paths = array(
@@ -1179,8 +1193,9 @@ public function __construct( $flosc ) {
 
 	/**
 	 * Build context parameters passed into companion iframe URL.
- * @param mixed $scope Input consumed by the Build the structured value consumed by companion context params. operation.
- * @return mixed Result produced by the companion context params operation.
+	 *
+	 * @param mixed $scope Input consumed by the Build the structured value consumed by companion context params. operation.
+	 * @return Mixed Result produced by the companion context params operation.
 	 */
 	private function build_companion_context_params( $scope ) {
 		global $wp;
@@ -1220,8 +1235,9 @@ public function __construct( $flosc ) {
 
 	/**
 	 * Parse path-pattern textarea into normalized prefix list.
- * @param mixed $raw_patterns Input consumed by the Coordinate the parse companion path patterns behavior implemented by this code path. operation.
- * @return mixed Result produced by the parse companion path patterns operation.
+	 *
+	 * @param mixed $raw_patterns Input consumed by the Coordinate the parse companion path patterns behavior implemented by this code path. operation.
+	 * @return Mixed Result produced by the parse companion path patterns operation.
 	 */
 	private function parse_companion_path_patterns( $raw_patterns ) {
 		$patterns = array();
@@ -1243,7 +1259,8 @@ public function __construct( $flosc ) {
 
 	/**
 	 * Filterable target rule type list.
- * @return mixed Result produced by the companion target types operation.
+	 *
+	 * @return Mixed Result produced by the companion target types operation.
 	 */
 	private function get_companion_target_types() {
 		$types = apply_filters( 'flosc_companion_target_rule_types', array( 'path', 'page', 'post', 'category', 'tag' ), $this );
@@ -1253,7 +1270,8 @@ public function __construct( $flosc ) {
 	/**
 	 * Companion targeting evaluator for the current frontend request.
 	 * Rules are newline-delimited and support path/page/post/category/tag formats.
- * @return bool Whether should show companion for current request applies to the current state.
+	 *
+	 * @return Bool Whether should show companion for current request applies to the current state.
 	 */
 	private function should_show_companion_for_current_request() {
 		$include_rules = $this->parse_companion_target_rules(
@@ -1278,8 +1296,9 @@ public function __construct( $flosc ) {
 
 	/**
 	 * Parse multiline/csv companion targeting input into normalized rule objects.
- * @param mixed $raw_rules Input consumed by the Coordinate the parse companion target rules behavior implemented by this code path. operation.
- * @return mixed Result produced by the parse companion target rules operation.
+	 *
+	 * @param mixed $raw_rules Input consumed by the Coordinate the parse companion target rules behavior implemented by this code path. operation.
+	 * @return Mixed Result produced by the parse companion target rules operation.
 	 */
 	private function parse_companion_target_rules( $raw_rules ) {
 		$rules  = array();
@@ -1328,8 +1347,9 @@ public function __construct( $flosc ) {
 
 	/**
 	 * Determine whether any targeting rule matches the current request context.
- * @param mixed $rules Input consumed by the Coordinate the companion target matches any rule behavior implemented by this code path. operation.
- * @return bool Whether companion target matches any rule applies to the current state.
+	 *
+	 * @param mixed $rules Input consumed by the Coordinate the companion target matches any rule behavior implemented by this code path. operation.
+	 * @return Bool Whether companion target matches any rule applies to the current state.
 	 */
 	private function companion_target_matches_any_rule( $rules ) {
 		if ( empty( $rules ) ) {
@@ -1402,7 +1422,8 @@ public function __construct( $flosc ) {
 
 	/**
 	 * Resolve current request path in a frontend-safe way.
- * @return mixed Result produced by the companion request path operation.
+	 *
+	 * @return Mixed Result produced by the companion request path operation.
 	 */
 	private function get_companion_request_path() {
 		$raw  = sanitize_text_field( (string) wp_unslash( $_SERVER['REQUEST_URI'] ?? '/' ) );

@@ -1,6 +1,6 @@
 <?php
 /**
- * Compatibility shim — implementation lives at includes/portability/class-flosc-ivr-parser.php
+ * Compatibility shim — implementation lives at includes/portability/class-flosc-ivr-parser.php.
  *
  * @package FLOSC
  */

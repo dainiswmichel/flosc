@@ -1,17 +1,17 @@
 <?php
 /**
- * FLOSC SSO / Social Login Settings
+ * FLOSC SSO / Social Login Settings.
  *
  * @package FLOSC
  * @subpackage Admin
  * @since v1.4.0
  *
  * Provides admin UI for configuring OAuth2/SSO providers:
- * - Google
- * - Apple
- * - Facebook
- * - Microsoft
- * - LinkedIn
+ * - Google.
+ * - Apple.
+ * - Facebook.
+ * - Microsoft.
+ * - LinkedIn.
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

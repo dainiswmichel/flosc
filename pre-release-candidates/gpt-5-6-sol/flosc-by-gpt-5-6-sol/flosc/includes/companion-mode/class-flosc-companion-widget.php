@@ -1,28 +1,28 @@
 <?php
 /**
- * FLOSC Companion Widget
+ * FLOSC Companion Widget.
  *
  * Renders a floating chat companion on WordPress pages.
- * This is the "Companion Mode" — a lightweight chatbot widget that
- * accompanies members as they browse lesson content on the WordPress site.
+ * This is the "Companion Mode" — a lightweight chatbot widget that.
+ * Accompanies members as they browse lesson content on the WordPress site.
  *
  * Separation of Concerns:
- * - This class handles ONLY widget registration, asset enqueueing, and HTML injection
- * - flosc-companion.js handles ONLY the widget UI and REST API communication
- * - flosc-companion.css handles ONLY the widget layout and styling
- * - The full FLOSC app (flosc-app.js) is NOT loaded — these are independent experiences
+ * - This class handles ONLY widget registration, asset enqueueing, and HTML injection.
+ * - flosc-companion.js handles ONLY the widget UI and REST API communication.
+ * - flosc-companion.css handles ONLY the widget layout and styling.
+ * - The full FLOSC app (flosc-app.js) is NOT loaded — these are independent experiences.
  *
  * Architecture:
- * - Hooks wp_footer to inject widget container on non-app WP pages
+ * - Hooks wp_footer to inject widget container on non-app WP pages.
  * - Enqueues companion-specific JS/CSS (NOT the full app assets)
  * - Generates FLOSC_COMPANION object with minimal config (REST, nonce, user, context)
- * - Detects current page context (lesson post, category, general) for contextual awareness
- * - Respects per-flow settings via companion override group
+ * - Detects current page context (lesson post, category, general) for contextual awareness.
+ * - Respects per-flow settings via companion override group.
  *
  * Display modes (admin-configured per-flow; labels: Full-page / Companion / Hybrid):
  * - 'in_chat'    — Full-page only (default)
- * - 'companion'  — Companion bubble on WP pages
- * - 'both'       — Hybrid: full-page + companion, expand/collapse
+ * - 'companion'  — Companion bubble on WP pages.
+ * - 'both'       — Hybrid: full-page + companion, expand/collapse.
  *
  * @package FLOSC
  * @since   1.6.0
@@ -38,23 +38,23 @@ if ( ! defined( 'ABSPATH' ) ) {
 class FLOSC_Companion_Widget {
 
 	/**
-	 * Singleton instance
+	 * Singleton instance.
 	 *
 	 * @var self|null
 	 */
 	private static $instance = null;
 
 	/**
-	 * Cached flow settings to avoid repeated lookups
+	 * Cached flow settings to avoid repeated lookups.
 	 *
 	 * @var array|null
 	 */
 	private $cached_settings = null;
 
 	/**
-	 * Get singleton instance
+	 * Get singleton instance.
 	 *
-	 * @return self
+	 * @return Self.
 	 */
 	public static function instance() {
 		if ( null === self::$instance ) {
@@ -64,7 +64,7 @@ class FLOSC_Companion_Widget {
 	}
 
 	/**
-	 * Private constructor — register hooks
+	 * Private constructor — register hooks.
 	 */
 	private function __construct() {
 		// Only hook on frontend, not admin.
@@ -78,11 +78,12 @@ class FLOSC_Companion_Widget {
 	/**
 	 * Apply no-cache policy for companion pages.
 	 *
-	 * Why: page/edge caches can hold stale HTML that references old asset
-	 * versions, forcing users to append query parameters to get fresh layout
-	 * behavior. For companion-enabled pages, always emit no-cache signals and
-	 * common cache-plugin bypass constants so normal URLs stay current.
- * @return mixed Result produced by the apply companion cache policy operation.
+	 * Why: page/edge caches can hold stale HTML that references old asset.
+	 * Versions, forcing users to append query parameters to get fresh layout.
+	 * Behavior. For companion-enabled pages, always emit no-cache signals and.
+	 * Common cache-plugin bypass constants so normal URLs stay current.
+	 *
+	 * @return Mixed Result produced by the apply companion cache policy operation.
 	 */
 	public function apply_companion_cache_policy() {
 		if ( ! $this->should_load() ) {
@@ -104,24 +105,24 @@ class FLOSC_Companion_Widget {
 		}
 	}
 
-	// ──────────────────────────────────────────────────────────────
+	// ──────────────────────────────────────────────────────────────.
 	// Settings.
-	// ──────────────────────────────────────────────────────────────
+	// ──────────────────────────────────────────────────────────────.
 
 	/**
 	 * Get companion settings for a flow (with caching)
 	 *
 	 * Falls back to global defaults when no flow or when use_global is true.
 	 *
-	 * @param  string|null $flow_id  Optional flow ID.
-	 * @return array {
-	 *     @type string $content_display_mode  'in_chat'|'companion'|'both'
-	 *     @type bool   $enabled               Whether companion is active
-	 *     @type string $position              'bottom-right'|'bottom-left'
-	 *     @type string $greeting              Greeting message in widget
-	 *     @type string $accent_color          Hex color or empty for theme default
-	 *     @type bool   $show_for_visitors     Whether non-logged-in users see the widget
-	 * }
+	 * @param string|null $flow_id Optional flow ID.
+	 * @return Array {.
+	 * @type string $content_display_mode  'in_chat'|'companion'|'both'
+	 * @type bool   $enabled               Whether companion is active
+	 * @type string $position              'bottom-right'|'bottom-left'
+	 * @type string $greeting              Greeting message in widget
+	 * @type string $accent_color          Hex color or empty for theme default
+	 * @type bool   $show_for_visitors     Whether non-logged-in users see the widget
+	 * }.
 	 */
 	public function get_settings( $flow_id = null ) {
 		if ( null !== $this->cached_settings && null === $flow_id ) {
@@ -164,15 +165,15 @@ class FLOSC_Companion_Widget {
 	}
 
 	/**
-	 * Check if companion mode is active for the current request
+	 * Check if companion mode is active for the current request.
 	 *
 	 * Companion should load when:
-	 * 1. Companion mode is enabled in admin settings
+	 * 1. Companion mode is enabled in admin settings.
 	 * 2. We are NOT on the full FLOSC app route (that has its own UI)
 	 * 3. We are on a frontend page (not admin)
 	 * 4. User meets visibility requirements (logged in, or show_for_visitors is on)
 	 *
-	 * @return bool
+	 * @return Bool.
 	 */
 	public function should_load() {
 		// Never load on admin pages.
@@ -206,17 +207,18 @@ class FLOSC_Companion_Widget {
 		return true;
 	}
 
-	// ──────────────────────────────────────────────────────────────
+	// ──────────────────────────────────────────────────────────────.
 	// Asset Enqueueing.
-	// ──────────────────────────────────────────────────────────────
+	// ──────────────────────────────────────────────────────────────.
 
 	/**
-	 * Conditionally enqueue companion assets
+	 * Conditionally enqueue companion assets.
 	 *
-	 * Hooked to wp_enqueue_scripts. Only loads companion JS/CSS when
+	 * Hooked to wp_enqueue_scripts. Only loads companion JS/CSS when.
 	 * should_load() returns true. Does NOT touch theme styles — the
-	 * companion lives alongside the WP theme, not instead of it.
- * @return mixed Result produced by the enqueue assets operation.
+	 * Companion lives alongside the WP theme, not instead of it.
+	 *
+	 * @return Mixed Result produced by the enqueue assets operation.
 	 */
 	public function maybe_enqueue_assets() {
 		if ( ! $this->should_load() ) {
@@ -258,19 +260,20 @@ class FLOSC_Companion_Widget {
 		}
 	}
 
-	// ──────────────────────────────────────────────────────────────
+	// ──────────────────────────────────────────────────────────────.
 	// Widget Rendering.
-	// ──────────────────────────────────────────────────────────────
+	// ──────────────────────────────────────────────────────────────.
 
 	/**
-	 * Conditionally render the widget HTML + inline config
+	 * Conditionally render the widget HTML + inline config.
 	 *
 	 * Hooked to wp_footer. Injects:
 	 * 1. FLOSC_COMPANION JS object (REST URL, nonce, user data, page context)
 	 * 2. Widget container HTML (the JS will populate it)
 	 *
 	 * Outputs minimal HTML — the JS module builds the UI.
- * @return mixed Result produced by the widget operation.
+	 *
+	 * @return Mixed Result produced by the widget operation.
 	 */
 	public function maybe_render_widget() {
 		if ( ! $this->should_load() ) {
@@ -328,24 +331,24 @@ class FLOSC_Companion_Widget {
 		<?php
 	}
 
-	// ──────────────────────────────────────────────────────────────
+	// ──────────────────────────────────────────────────────────────.
 	// Page Context Detection.
-	// ──────────────────────────────────────────────────────────────
+	// ──────────────────────────────────────────────────────────────.
 
 	/**
-	 * Detect what the user is currently viewing
+	 * Detect what the user is currently viewing.
 	 *
-	 * This is the "context-aware" piece — the companion knows what
-	 * lesson/page the member is reading and can offer relevant help.
+	 * This is the "context-aware" piece — the companion knows what.
+	 * Lesson/page the member is reading and can offer relevant help.
 	 *
-	 * @return array {
-	 *     @type string      $type       'lesson'|'lesson_archive'|'page'|'home'|'other'
-	 *     @type int|null    $post_id    Current post ID if applicable
-	 *     @type string|null $title      Current post/page title
-	 *     @type string|null $category   Lesson category slug if on a lesson
-	 *     @type array       $tags       Post tags (for quiz topic matching)
-	 *     @type string|null $url        Current page URL
-	 * }
+	 * @return Array {.
+	 * @type string      $type       'lesson'|'lesson_archive'|'page'|'home'|'other'
+	 * @type int|null    $post_id    Current post ID if applicable
+	 * @type string|null $title      Current post/page title
+	 * @type string|null $category   Lesson category slug if on a lesson
+	 * @type array       $tags       Post tags (for quiz topic matching)
+	 * @type string|null $url        Current page URL
+	 * }.
 	 */
 	public function detect_page_context() {
 		$context = array(
@@ -406,11 +409,11 @@ class FLOSC_Companion_Widget {
 	}
 
 	/**
-	 * Check if a post belongs to the configured lessons category
+	 * Check if a post belongs to the configured lessons category.
 	 *
-	 * @param  int    $post_id
+	 * @param int   $post_id         Value consumed by this operation.
 	 * @param mixed $lesson_category Input consumed by the Coordinate the post is lesson behavior implemented by this code path. operation.
-	 * @return bool
+	 * @return Bool.
 	 */
 	private function post_is_lesson( $post_id, $lesson_category ) {
 		if ( is_numeric( $lesson_category ) ) {
@@ -419,17 +422,17 @@ class FLOSC_Companion_Widget {
 		return has_category( sanitize_title( $lesson_category ), $post_id );
 	}
 
-	// ──────────────────────────────────────────────────────────────
+	// ──────────────────────────────────────────────────────────────.
 	// User Data.
-	// ──────────────────────────────────────────────────────────────
+	// ──────────────────────────────────────────────────────────────.
 
 	/**
-	 * Get minimal user data for the companion
+	 * Get minimal user data for the companion.
 	 *
 	 * Lighter than FLOSC_USER — only what the companion needs.
 	 * No IVR state, no quiz data, no offer history.
 	 *
-	 * @return array
+	 * @return Array.
 	 */
 	private function get_companion_user_data() {
 		if ( ! is_user_logged_in() ) {
@@ -472,14 +475,14 @@ class FLOSC_Companion_Widget {
 		);
 	}
 
-	// ──────────────────────────────────────────────────────────────
+	// ──────────────────────────────────────────────────────────────.
 	// Utilities.
-	// ──────────────────────────────────────────────────────────────
+	// ──────────────────────────────────────────────────────────────.
 
 	/**
-	 * Get FlowManager instance safely
+	 * Get FlowManager instance safely.
 	 *
-	 * @return FLOSC_Flow_Manager|null
+	 * @return FLOSC_Flow_Manager|null.
 	 */
 	private function get_flow_manager() {
 		if ( ! class_exists( 'FLOSC_Flow_Manager' ) ) {
@@ -489,9 +492,9 @@ class FLOSC_Companion_Widget {
 	}
 
 	/**
-	 * Get current URL cleanly
+	 * Get current URL cleanly.
 	 *
-	 * @return string
+	 * @return String.
 	 */
 	private function get_current_url() {
 		$protocol = is_ssl() ? 'https://' : 'http://';
@@ -507,11 +510,11 @@ class FLOSC_Companion_Widget {
 	}
 
 	/**
-	 * Adjust hex color brightness
+	 * Adjust hex color brightness.
 	 *
-	 * @param  string $hex     Hex color (#RRGGBB).
-	 * @param  int    $percent Negative = darker, positive = lighter.
-	 * @return string          Adjusted hex color
+	 * @param string $hex     Hex color (#RRGGBB).
+	 * @param int    $percent Negative = darker, positive = lighter.
+	 * @return String          Adjusted hex color.
 	 */
 	private function adjust_brightness( $hex, $percent ) {
 		$hex = ltrim( $hex, '#' );

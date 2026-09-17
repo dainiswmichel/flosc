@@ -1,15 +1,15 @@
 <?php
 /**
- * FLOSC Admin Settings Page v1.4.8
+ * FLOSC Admin Settings Page v1.4.8.
  *
  * Simple: IVR file = Flow. Pick file, edit all tabs, save.
  *
- * Added flosc_tab_header() helper, permalink status, Michel timestamp
- * v1.3.0: Fixed permalink status detection - save defaults on first access
- * v1.3.2: Identity tab shows URL mapping, DNS help
- * v1.3.3: All Flows = fully expanded inline editing, Domain field
- * v1.3.4: Register rewrite rules for ALL IVR files with default slugs, immediate version-flush
- * v1.4.8: Admin styling overhaul - WordPress-native colors, no gradients, no emojis in chrome
+ * Added flosc_tab_header() helper, permalink status, Michel timestamp.
+ * V1.3.0: Fixed permalink status detection - save defaults on first access.
+ * V1.3.2: Identity tab shows URL mapping, DNS help.
+ * V1.3.3: All Flows = fully expanded inline editing, Domain field.
+ * V1.3.4: Register rewrite rules for ALL IVR files with default slugs, immediate version-flush.
+ * V1.4.8: Admin styling overhaul - WordPress-native colors, no gradients, no emojis in chrome.
  *
  * @package FLOSC
  * @since 1.2.9
@@ -37,20 +37,20 @@ if ( ! current_user_can( 'edit_others_posts' ) ) {
 }
 
 /**
- * Tab Header Helper - displays consistent header across all tabs
+ * Tab Header Helper - displays consistent header across all tabs.
  * Format: {emoji} {Tab Name} Configuration for {FlowName} ({filename})
  *
- * @param string $emoji Tab emoji
- * @param string $tab_name Tab display name
- * @return void
+ * @param string $emoji    Tab emoji.
+ * @param string $tab_name Tab display name.
+ * @return Void.
  */
 if ( ! function_exists( 'flosc_tab_header' ) ) {
-		/**
-	 * Render the WordPress interface for tab header.
-	 *
-	 * @param mixed $emoji Input consumed by the Render the Word Press interface for tab header. operation.
-	 * @param mixed $tab_name Name or key used to select the Render the Word Press interface for tab header. value.
-	 */
+/**
+ * Render the WordPress interface for tab header.
+ *
+ * @param mixed $emoji    Input consumed by the Render the Word Press interface for tab header. operation.
+ * @param mixed $tab_name Name or key used to select the Render the Word Press interface for tab header. value.
+ */
 function flosc_tab_header( $emoji, $tab_name ) {
 		$flosc_ivr_file = $GLOBALS['flosc_current_ivr'] ?? '';
 		$flosc_settings = $GLOBALS['flosc_current_settings'] ?? array();
@@ -69,14 +69,14 @@ function flosc_tab_header( $emoji, $tab_name ) {
 }
 
 /**
- * Tab Footer Helper - displays version in footer of all tabs
+ * Tab Footer Helper - displays version in footer of all tabs.
  *
- * @return void
+ * @return Void.
  */
 if ( ! function_exists( 'flosc_tab_footer' ) ) {
-		/**
-	 * Render the WordPress interface for tab footer.
-	 */
+/**
+ * Render the WordPress interface for tab footer.
+ */
 function flosc_tab_footer() {
 		$flosc_version = defined( 'FLOSC_VERSION' ) ? FLOSC_VERSION : '?.?.?';
 		echo '<div class="flosc-tab-footer">';
@@ -86,35 +86,35 @@ function flosc_tab_footer() {
 }
 
 /**
- * Generate Michel Timestamp - overthetop silly specific format
- * Format: 2026y-02m-05d-UTC10h-43m-22s
+ * Generate Michel Timestamp - overthetop silly specific format.
+ * Format: 2026y-02m-05d-UTC10h-43m-22s.
  *
- * @return string
+ * @return String.
  */
 if ( ! function_exists( 'flosc_michel_timestamp' ) ) {
-		/**
-	 * Coordinate the michel timestamp behavior implemented by this code path.
-	 *
-	 * @return mixed Result produced by the michel timestamp operation.
-	 */
+/**
+ * Coordinate the michel timestamp behavior implemented by this code path.
+ *
+ * @return Mixed Result produced by the michel timestamp operation.
+ */
 function flosc_michel_timestamp() {
 		return gmdate( 'Y' ) . 'y-' . gmdate( 'm' ) . 'm-' . gmdate( 'd' ) . 'd-UTC' . gmdate( 'H' ) . 'h-' . gmdate( 'i' ) . 'm-' . gmdate( 's' ) . 's';
 	}
 }
 
 /**
- * Check if a flow's slug is registered in rewrite rules
+ * Check if a flow's slug is registered in rewrite rules.
  *
- * @param string $slug The slug to check
- * @return string 'ok', 'missing', or 'unknown'
+ * @param string $slug The slug to check.
+ * @return String 'ok', 'missing', or 'unknown'.
  */
 if ( ! function_exists( 'flosc_check_permalink_status' ) ) {
-		/**
-	 * Coordinate the check permalink status behavior implemented by this code path.
-	 *
-	 * @param mixed $slug Input consumed by the Coordinate the check permalink status behavior implemented by this code path. operation.
-	 * @return mixed Result produced by the check permalink status operation.
-	 */
+/**
+ * Coordinate the check permalink status behavior implemented by this code path.
+ *
+ * @param mixed $slug Input consumed by the Coordinate the check permalink status behavior implemented by this code path. operation.
+ * @return Mixed Result produced by the check permalink status operation.
+ */
 function flosc_check_permalink_status( $slug ) {
 		if ( empty( $slug ) ) {
 			return 'unknown';
@@ -143,18 +143,18 @@ function flosc_check_permalink_status( $slug ) {
 }
 
 /**
- * Render permalink status indicator
- * Green = OK, Yellow = Unknown, Red = Needs Flush
+ * Render permalink status indicator.
+ * Green = OK, Yellow = Unknown, Red = Needs Flush.
  *
- * @param string $slug The flow slug
- * @return void
+ * @param string $slug The flow slug.
+ * @return Void.
  */
 if ( ! function_exists( 'flosc_permalink_status_indicator' ) ) {
-		/**
-	 * Render the WordPress interface for permalink status indicator.
-	 *
-	 * @param mixed $slug Input consumed by the Render the Word Press interface for permalink status indicator. operation.
-	 */
+/**
+ * Render the WordPress interface for permalink status indicator.
+ *
+ * @param mixed $slug Input consumed by the Render the Word Press interface for permalink status indicator. operation.
+ */
 function flosc_permalink_status_indicator( $slug ) {
 		$flosc_status = flosc_check_permalink_status( $slug );
 		$last_flush   = get_option( 'flosc_last_permalink_flush', null );
@@ -204,8 +204,8 @@ function flosc_permalink_status_indicator( $slug ) {
  * Resolve the canonical flow option key for a given IVR file.
  * Prevents duplicate flow option construction for the same file.
  *
- * @param string $flosc_ivr_filename
- * @return string
+ * @param string $flosc_ivr_filename Value consumed by this operation.
+ * @return String.
  */
 // flosc_resolve_flow_option_key_for_ivr() now lives in.
 // includes/filesystem/flosc-data-paths.php, loaded before admin and admin-ajax.
@@ -214,17 +214,17 @@ function flosc_permalink_status_indicator( $slug ) {
 
 /**
  * §10: Allowlist of legitimate per-flow option keys.
- * Built from registered flows using the same resolver the render/save path uses,
- * so a posted flow key can be validated without being transformed.
+ * Built from registered flows using the same resolver the render/save path uses,.
+ * So a posted flow key can be validated without being transformed.
  *
- * @return string[]
+ * @return String[]
  */
 if ( ! function_exists( 'flosc_known_flow_option_keys' ) ) {
-		/**
-	 * Coordinate the known flow option keys behavior implemented by this code path.
-	 *
-	 * @return mixed Result produced by the known flow option keys operation.
-	 */
+/**
+ * Coordinate the known flow option keys behavior implemented by this code path.
+ *
+ * @return Mixed Result produced by the known flow option keys operation.
+ */
 function flosc_known_flow_option_keys() {
 		$keys = array();
 		if ( function_exists( 'flosc_flows' ) ) {

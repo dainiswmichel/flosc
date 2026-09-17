@@ -2,11 +2,11 @@
 /**
  * Documentation, Part 5: the glossary.
  *
- * Prose only — no settings are read and nothing is written. Every FLOSC-coined
- * term is defined here once, and the rest of the documentation links back to
- * this page rather than redefining them. Included by admin/documentation.php
- * inside the Documentation tab's markup, so the file opens at heading level 1
- * and inherits the surrounding page wrapper.
+ * Prose only — no settings are read and nothing is written. Every FLOSC-coined.
+ * Term is defined here once, and the rest of the documentation links back to.
+ * This page rather than redefining them. Included by admin/documentation.php.
+ * Inside the Documentation tab's markup, so the file opens at heading level 1.
+ * And inherits the surrounding page wrapper.
  *
  * @package FLOSC
  */

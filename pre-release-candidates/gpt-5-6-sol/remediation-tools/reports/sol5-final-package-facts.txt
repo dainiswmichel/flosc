@@ -1,0 +1,9 @@
+sha256=887630779e6127d759220918bb1b8f468d0d0f57cb20e7c6958caa0dab61fa21
+bytes=2833423
+entries=281
+tests_entries=0
+vendor_entries=0
+roots=flosc 
+5:Requires at least: 7.0
+7: * Requires at least: 7.0.
+6: * Version: 8.0.0.

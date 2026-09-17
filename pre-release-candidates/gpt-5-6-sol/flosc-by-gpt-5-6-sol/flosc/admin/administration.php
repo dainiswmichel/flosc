@@ -1,6 +1,6 @@
 <?php
 /**
- * FLOSC Administration Tab
+ * FLOSC Administration Tab.
  *
  * Global controls for account plan and debug mode.
  *

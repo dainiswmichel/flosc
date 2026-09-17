@@ -2,16 +2,16 @@
 /**
  * WordPress 7.0 AI Client hop for OpenAI, Anthropic, and Gemini.
  *
- * Entry: wp_ai_client_prompt(). Vendor HTTP lives in the official provider
- * plugins. FLOSC binds this install’s BYOK key onto the core registry
+ * Entry: wp_ai_client_prompt(). Vendor HTTP lives in the official provider.
+ * Plugins. FLOSC binds this install’s BYOK key onto the core registry.
  * (ApiKeyRequestAuthentication / Anthropic x-api-key / Google X-Goog-Api-Key)
- * and does not read Settings → Connectors.
+ * And does not read Settings → Connectors.
  *
- * Requires at least WordPress 7.0.4. Operators attach one provider per flow
- * and install that plugin. A developer testing all three activates all three.
+ * Requires at least WordPress 7.0.4. Operators attach one provider per flow.
+ * And install that plugin. A developer testing all three activates all three.
  *
- * xAI has no official plugin. Whisper transcription is not in AI Provider
- * for OpenAI. Those hops stay in FLOSC.
+ * XAI has no official plugin. Whisper transcription is not in AI Provider.
+ * For OpenAI. Those hops stay in FLOSC.
  *
  * @package FLOSC
  */
@@ -39,16 +39,16 @@ class FLOSC_WP_AI_Client {
 	/**
 	 * FLOSC chat slugs that go through the WordPress AI Client.
 	 *
-	 * @return array<int,string>
+	 * @return Array<int,string>.
 	 */
 	public static function client_provider_slugs() {
 		return array( 'anthropic', 'openai', 'gemini' );
 	}
 
 	/**
- * Coordinate the provider id map behavior implemented by this code path.
- *
-	 * @return array<string,string> FLOSC slug => WordPress provider id.
+	 * Coordinate the provider id map behavior implemented by this code path.
+	 *
+	 * @return Array<string,string> FLOSC slug => WordPress provider id.
 	 */
 	public static function provider_id_map() {
 		return array(
@@ -59,10 +59,10 @@ class FLOSC_WP_AI_Client {
 	}
 
 	/**
- * Coordinate the plugin slug behavior implemented by this code path.
- *
+	 * Coordinate the plugin slug behavior implemented by this code path.
+	 *
 	 * @param string $flosc_provider FLOSC slug.
-	 * @return string wordpress.org plugin slug, or empty.
+	 * @return String WordPress.org plugin slug, or empty.
 	 */
 	public static function plugin_slug( $flosc_provider ) {
 		$map            = array(
@@ -75,10 +75,10 @@ class FLOSC_WP_AI_Client {
 	}
 
 	/**
- * Coordinate the plugin name behavior implemented by this code path.
- *
+	 * Coordinate the plugin name behavior implemented by this code path.
+	 *
 	 * @param string $flosc_provider FLOSC slug.
-	 * @return string
+	 * @return String.
 	 */
 	public static function plugin_name( $flosc_provider ) {
 		$map            = array(
@@ -91,10 +91,10 @@ class FLOSC_WP_AI_Client {
 	}
 
 	/**
- * Coordinate the plugin directory url behavior implemented by this code path.
- *
+	 * Coordinate the plugin directory url behavior implemented by this code path.
+	 *
 	 * @param string $flosc_provider FLOSC slug.
-	 * @return string
+	 * @return String.
 	 */
 	public static function plugin_directory_url( $flosc_provider ) {
 		$slug = self::plugin_slug( $flosc_provider );
@@ -105,7 +105,7 @@ class FLOSC_WP_AI_Client {
 	 * Plugins screen search URL for this official plugin.
 	 *
 	 * @param string $flosc_provider FLOSC slug.
-	 * @return string
+	 * @return String.
 	 */
 	public static function plugin_install_url( $flosc_provider ) {
 		$slug = self::plugin_slug( $flosc_provider );
@@ -123,10 +123,10 @@ class FLOSC_WP_AI_Client {
 	}
 
 	/**
- * Coordinate the wordpress provider id behavior implemented by this code path.
- *
+	 * Coordinate the WordPress provider id behavior implemented by this code path.
+	 *
 	 * @param string $flosc_provider FLOSC slug.
-	 * @return string WordPress AI Client provider id, or empty.
+	 * @return String WordPress AI Client provider id, or empty.
 	 */
 	public static function wordpress_provider_id( $flosc_provider ) {
 		$map            = self::provider_id_map();
@@ -135,10 +135,10 @@ class FLOSC_WP_AI_Client {
 	}
 
 	/**
- * Coordinate the uses official plugin behavior implemented by this code path.
- *
+	 * Coordinate the uses official plugin behavior implemented by this code path.
+	 *
 	 * @param string $flosc_provider FLOSC slug.
-	 * @return bool
+	 * @return Bool.
 	 */
 	public static function uses_official_plugin( $flosc_provider ) {
 		return '' !== self::wordpress_provider_id( $flosc_provider );
@@ -147,8 +147,8 @@ class FLOSC_WP_AI_Client {
 	/**
 	 * Parameters the last request could not send, and why.
 	 *
-	 * Reported by the connection test. An operator who typed a parameter is
-	 * owed an answer about whether it arrived.
+	 * Reported by the connection test. An operator who typed a parameter is.
+	 * Owed an answer about whether it arrived.
 	 *
 	 * @var array<int,string>
 	 */
@@ -162,18 +162,18 @@ class FLOSC_WP_AI_Client {
 	private static $applied_parameters = array();
 
 	/**
- * Coordinate the unapplied parameters behavior implemented by this code path.
- *
-	 * @return array<int,string>
+	 * Coordinate the unapplied parameters behavior implemented by this code path.
+	 *
+	 * @return Array<int,string>.
 	 */
 	public static function unapplied_parameters() {
 		return self::$unapplied_parameters;
 	}
 
 	/**
- * Coordinate the applied parameters behavior implemented by this code path.
- *
-	 * @return array<int,string>
+	 * Coordinate the applied parameters behavior implemented by this code path.
+	 *
+	 * @return Array<int,string>.
 	 */
 	public static function applied_parameters() {
 		return self::$applied_parameters;
@@ -182,22 +182,22 @@ class FLOSC_WP_AI_Client {
 	/**
 	 * Put one operator-named parameter onto the request builder.
 	 *
-	 * The builder is asked to do it rather than interrogated about whether it
-	 * can. method_exists() is the wrong question here: the WordPress AI Client's
-	 * Prompt_Builder routes its snake_case setters through __call(), so
-	 * method_exists( $builder, 'using_top_p' ) answers false for a call that is
-	 * exactly the supported API. FLOSC used to believe that answer and drop
-	 * top_p, top_k and stop_sequences without ever attempting them.
+	 * The builder is asked to do it rather than interrogated about whether it.
+	 * Can. method_exists() is the wrong question here: the WordPress AI Client's.
+	 * Prompt_Builder routes its snake_case setters through __call(), so.
+	 * Method_exists( $builder, 'using_top_p' ) answers false for a call that is.
+	 * Exactly the supported API. FLOSC used to believe that answer and drop.
+	 * Top_p, top_k and stop_sequences without ever attempting them.
 	 *
-	 * Calling and catching is also strictly safer than asking: a setter that
-	 * genuinely does not exist raises Error, which is a Throwable, so the
-	 * failure is reported either way — and reported in the integration's own
-	 * words rather than as FLOSC's guess about it.
+	 * Calling and catching is also strictly safer than asking: a setter that.
+	 * Genuinely does not exist raises Error, which is a Throwable, so the.
+	 * Failure is reported either way — and reported in the integration's own.
+	 * Words rather than as FLOSC's guess about it.
 	 *
 	 * @param object $builder Prompt builder.
 	 * @param string $name    Parameter name as the operator wrote it.
 	 * @param mixed  $value   Parsed value.
-	 * @return true|WP_Error
+	 * @return True|WP_Error.
 	 */
 	private static function apply_extra_parameter( $builder, $name, $value ) {
 		$name = preg_replace( '/[^a-z0-9_]/', '', strtolower( (string) $name ) );
@@ -237,7 +237,7 @@ class FLOSC_WP_AI_Client {
 	 * Anthropic 400 when temperature and top_p are on the same request.
 	 *
 	 * @param WP_Error $error Generation error.
-	 * @return bool
+	 * @return Bool.
 	 */
 	private static function is_temperature_top_p_conflict( $error ) {
 		if ( ! is_wp_error( $error ) ) {
@@ -250,9 +250,9 @@ class FLOSC_WP_AI_Client {
 	}
 
 	/**
- * Coordinate the core client exists behavior implemented by this code path.
- *
-	 * @return bool
+	 * Coordinate the core client exists behavior implemented by this code path.
+	 *
+	 * @return Bool.
 	 */
 	public static function core_client_exists() {
 		return function_exists( 'wp_ai_client_prompt' ) && class_exists( AiClient::class );
@@ -262,7 +262,7 @@ class FLOSC_WP_AI_Client {
 	 * Official provider is in the core registry (plugin loaded and registered).
 	 *
 	 * @param string $flosc_provider FLOSC slug.
-	 * @return bool
+	 * @return Bool.
 	 */
 	public static function is_provider_registered( $flosc_provider ) {
 		if ( ! self::core_client_exists() ) {
@@ -280,10 +280,10 @@ class FLOSC_WP_AI_Client {
 	}
 
 	/**
-	 * Status rows for Anthropic, OpenAI, and Gemini — the three hops a
-	 * developer tests. Operators still attach only one per flow.
+	 * Status rows for Anthropic, OpenAI, and Gemini — the three hops a.
+	 * Developer tests. Operators still attach only one per flow.
 	 *
-	 * @return array<int,array<string,string|bool>>
+	 * @return Array<int,array<string,string|bool>>.
 	 */
 	public static function plugin_status_rows() {
 		$rows = array();
@@ -303,7 +303,7 @@ class FLOSC_WP_AI_Client {
 	/**
 	 * Admin table: Active / Not active for all three official plugins.
 	 *
-	 * @return string Escaped HTML.
+	 * @return String Escaped HTML.
 	 */
 	public static function plugin_status_table_html() {
 		if ( ! self::core_client_exists() ) {
@@ -344,7 +344,7 @@ class FLOSC_WP_AI_Client {
 	 * One chat hop through wp_ai_client_prompt().
 	 *
 	 * @param array $args See file header: provider, message, system_prompt, history, model, temperature, max_tokens, tools, function_responses, test_mode.
-	 * @return array|WP_Error { text, function_calls, model_message, usage, model, provider }
+	 * @return Array|WP_Error { text, function_calls, model_message, usage, model, provider }.
 	 */
 	public static function generate( $args ) {
 		// The provider plugins are third-party code reached through a builder.
@@ -372,11 +372,11 @@ class FLOSC_WP_AI_Client {
 	}
 
 	/**
-	 * The chat hop itself. Only ever called from generate(), which owns the
-	 * guarantee that no provider exception reaches WordPress.
+	 * The chat hop itself. Only ever called from generate(), which owns the.
+	 * Guarantee that no provider exception reaches WordPress.
 	 *
 	 * @param array $args See generate().
-	 * @return array|WP_Error
+	 * @return Array|WP_Error.
 	 */
 	private static function generate_inner( $args ) {
 		$args      = is_array( $args ) ? $args : array();
@@ -575,7 +575,7 @@ class FLOSC_WP_AI_Client {
 	 *
 	 * @param array    $args     Generate args plus tools.
 	 * @param callable $executor Tool runner.
-	 * @return array|WP_Error
+	 * @return Array|WP_Error.
 	 */
 	public static function generate_with_tools( $args, $executor ) {
 		try {
@@ -609,7 +609,7 @@ class FLOSC_WP_AI_Client {
 	 *
 	 * @param array    $args     Same as generate(), plus tools.
 	 * @param callable $executor Tool runner.
-	 * @return array|WP_Error
+	 * @return Array|WP_Error.
 	 */
 	private static function generate_with_tools_inner( $args, $executor ) {
 		$args      = is_array( $args ) ? $args : array();
@@ -701,10 +701,10 @@ class FLOSC_WP_AI_Client {
 	 *
 	 * PromptBuilder requires the first and last messages to be user role.
 	 *
-	 * @param array  $args  generate() args.
-	 * @param string $wp_id WordPress provider id.
- * @param mixed $model_resolved AI model identifier used for the provider request.
-	 * @return WP_AI_Client_Prompt_Builder|WP_Error
+	 * @param array  $args           Generate() args.
+	 * @param string $wp_id          WordPress provider id.
+	 * @param mixed  $model_resolved AI model identifier used for the provider request.
+	 * @return WP_AI_Client_Prompt_Builder|WP_Error.
 	 */
 	private static function make_builder( $args, $wp_id, &$model_resolved = null ) {
 		$model_resolved = true;
@@ -768,7 +768,7 @@ class FLOSC_WP_AI_Client {
 	 *
 	 * @param string $wp_id    WordPress provider id.
 	 * @param string $model_id Model id.
-	 * @return object|null ModelInterface
+	 * @return Object|null ModelInterface.
 	 */
 	private static function pin_model( $wp_id, $model_id ) {
 		try {
@@ -783,7 +783,7 @@ class FLOSC_WP_AI_Client {
 	 *
 	 * @param string $flosc_provider FLOSC slug.
 	 * @param string $api_key        FLOSC key.
-	 * @return true|WP_Error
+	 * @return True|WP_Error.
 	 */
 	private static function bind_flosc_key( $flosc_provider, $api_key ) {
 		$wp_id = self::wordpress_provider_id( $flosc_provider );
@@ -808,11 +808,11 @@ class FLOSC_WP_AI_Client {
 	}
 
 	/**
- * Coordinate the no key error behavior implemented by this code path.
- *
+	 * Coordinate the no key error behavior implemented by this code path.
+	 *
 	 * @param string $provider  FLOSC slug.
 	 * @param bool   $test_mode Rich copy.
-	 * @return WP_Error
+	 * @return WP_Error.
 	 */
 	private static function no_key_error( $provider, $test_mode ) {
 		if ( ! $test_mode ) {
@@ -866,8 +866,8 @@ class FLOSC_WP_AI_Client {
 	}
 
 	/**
- * Coordinate the tools to declarations behavior implemented by this code path.
- *
+	 * Coordinate the tools to declarations behavior implemented by this code path.
+	 *
 	 * @param array $tools FLOSC RAG tool arrays (name, description, input_schema).
 	 * @return FunctionDeclaration[]
 	 */
@@ -897,12 +897,12 @@ class FLOSC_WP_AI_Client {
 	}
 
 	/**
- * Coordinate the parse result behavior implemented by this code path.
- *
-	 * @param GenerativeAiResult $result         Core result.
-	 * @param string             $provider       FLOSC slug.
+	 * Coordinate the parse result behavior implemented by this code path.
+	 *
+	 * @param GenerativeAiResult $result          Core result.
+	 * @param string             $provider        FLOSC slug.
 	 * @param string             $requested_model Preferred model id.
-	 * @return array
+	 * @return Array.
 	 */
 	private static function parse_result( $result, $provider, $requested_model ) {
 		$text          = '';

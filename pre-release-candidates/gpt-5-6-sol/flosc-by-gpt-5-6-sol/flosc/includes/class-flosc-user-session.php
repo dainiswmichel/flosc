@@ -1,7 +1,7 @@
 <?php
 /**
- * FLOSC User Session
- * Single source of truth for user, flow, quiz, and conversational context
+ * FLOSC User Session.
+ * Single source of truth for user, flow, quiz, and conversational context.
  *
  * @package FLOSC
  * @since 1.9.0
@@ -20,7 +20,7 @@ class FLOSC_User_Session {
 	private $flosc_state;
 
 	/**
-	 * Constructor - builds unified state object
+	 * Constructor - builds unified state object.
 	 *
 	 * @param int    $flosc_user_id WordPress user ID (0 for visitors).
 	 * @param string $flosc_flow_id FLOSC flow ID (2-digit: 01, 02, etc.).
@@ -32,10 +32,10 @@ class FLOSC_User_Session {
 	}
 
 	/**
-	 * Build unified state array
-	 * Leverages existing Condition Evaluator - don't rebuild what works
+	 * Build unified state array.
+	 * Leverages existing Condition Evaluator - don't rebuild what works.
 	 *
-	 * @return array Complete state array with flosc_ prefixed keys
+	 * @return Array Complete state array with flosc_ prefixed keys.
 	 */
 	private function flosc_build_state() {
 		// Use existing Condition Evaluator's build_context()
@@ -95,10 +95,10 @@ class FLOSC_User_Session {
 	}
 
 	/**
-	 * Get state value by key, or entire state if no key provided
+	 * Get state value by key, or entire state if no key provided.
 	 *
 	 * @param string|null $flosc_key State key to retrieve.
-	 * @return mixed State value or entire state array
+	 * @return Mixed State value or entire state array.
 	 */
 	public function flosc_get( $flosc_key = null ) {
 		if ( null === $flosc_key ) {
@@ -108,10 +108,10 @@ class FLOSC_User_Session {
 	}
 
 	/**
-	 * Get state hash for cache keying
-	 * Only includes state properties that affect AI responses
+	 * Get state hash for cache keying.
+	 * Only includes state properties that affect AI responses.
 	 *
-	 * @return string MD5 hash of cache-relevant state
+	 * @return String MD5 hash of cache-relevant state.
 	 */
 	public function flosc_get_state_hash() {
 		$flosc_cache_relevant = array(
@@ -125,11 +125,11 @@ class FLOSC_User_Session {
 	}
 
 	/**
-	 * Determine user type based on context
-	 * Returns: flosc_admin, flosc_member, flosc_guest, or flosc_visitor
+	 * Determine user type based on context.
+	 * Returns: flosc_admin, flosc_member, flosc_guest, or flosc_visitor.
 	 *
 	 * @param array $flosc_context Condition evaluator context.
-	 * @return string User type with flosc_ prefix
+	 * @return String User type with flosc_ prefix.
 	 */
 	private function flosc_determine_user_type( $flosc_context ) {
 		// Admin: has manage_options capability (global).
@@ -152,10 +152,10 @@ class FLOSC_User_Session {
 	}
 
 	/**
-	 * Determine access level based on context
+	 * Determine access level based on context.
 	 *
 	 * @param array $flosc_context Condition evaluator context.
-	 * @return string Access level: member|guest|user|visitor
+	 * @return String Access level: member|guest|user|visitor.
 	 */
 	private function flosc_determine_access_level( $flosc_context ) {
 		if ( $flosc_context['purchased'] ?? false ) {
@@ -171,11 +171,11 @@ class FLOSC_User_Session {
 	}
 
 	/**
-	 * Get visible autoprompts for current phase and conditions
+	 * Get visible autoprompts for current phase and conditions.
 	 *
 	 * @param array $flosc_context Condition evaluator context.
-	 * @param array $flosc_flow Flow configuration.
-	 * @return array Visible autoprompt options
+	 * @param array $flosc_flow    Flow configuration.
+	 * @return Array Visible autoprompt options.
 	 */
 	private function flosc_get_visible_autoprompts( $flosc_context, $flosc_flow ) {
 		$flosc_autoprompts = array();
@@ -202,11 +202,11 @@ class FLOSC_User_Session {
 	}
 
 	/**
-	 * Get boundary rules based on user type
+	 * Get boundary rules based on user type.
 	 * Policy ladder: what can this user see/do?
 	 *
 	 * @param array $flosc_context Condition evaluator context.
-	 * @return array Boundary rules for current user type
+	 * @return Array Boundary rules for current user type.
 	 */
 	private function flosc_get_boundary_rules( $flosc_context ) {
 		$flosc_user_type = $this->flosc_determine_user_type( $flosc_context );
@@ -244,19 +244,19 @@ class FLOSC_User_Session {
 	}
 
 	/**
-	 * Export state as JSON for debugging or logging
+	 * Export state as JSON for debugging or logging.
 	 *
-	 * @return string JSON representation of state
+	 * @return String JSON representation of state.
 	 */
 	public function flosc_to_json() {
 		return wp_json_encode( $this->flosc_state, JSON_PRETTY_PRINT );
 	}
 
 	/**
-	 * Check if user has specific capability based on boundary rules
+	 * Check if user has specific capability based on boundary rules.
 	 *
 	 * @param string $flosc_capability Capability to check (e.g., 'flosc_can_see_all_lessons').
-	 * @return bool Whether user has this capability
+	 * @return Bool Whether user has this capability.
 	 */
 	public function flosc_can( $flosc_capability ) {
 		$flosc_rules = $this->flosc_state['flosc_ivr']['flosc_boundary_rules'] ?? array();
@@ -264,19 +264,19 @@ class FLOSC_User_Session {
 	}
 
 	/**
-	 * Generate 5-character random visitor ID
+	 * Generate 5-character random visitor ID.
 	 *
-	 * @return string 5-character alphanumeric ID
+	 * @return String 5-character alphanumeric ID.
 	 */
 	public static function flosc_generate_visitor_id_suffix() {
 		return substr( str_shuffle( '0123456789abcdefghijklmnopqrstuvwxyz' ), 0, 5 );
 	}
 
 	/**
-	 * Build full visitor ID with flow context
+	 * Build full visitor ID with flow context.
 	 *
 	 * @param string $flosc_flow_id 2-digit flow ID.
-	 * @return string Full visitor ID: flosc_flow_01_visitor_abc12
+	 * @return String Full visitor ID: flosc_flow_01_visitor_abc12.
 	 */
 	public static function flosc_build_visitor_id( $flosc_flow_id ) {
 		$flosc_suffix = self::flosc_generate_visitor_id_suffix();

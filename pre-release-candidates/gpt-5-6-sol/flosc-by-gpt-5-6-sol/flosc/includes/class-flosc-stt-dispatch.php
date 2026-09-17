@@ -1,7 +1,7 @@
 <?php
 /**
- * FLOSC STT Dispatch
- * Supports: AssemblyAI, OpenAI Whisper, Custom Endpoint
+ * FLOSC STT Dispatch.
+ * Supports: AssemblyAI, OpenAI Whisper, Custom Endpoint.
  *
  * @package FLOSC
  */
@@ -17,9 +17,9 @@ class FLOSC_STT_Dispatch {
 
 	private $provider;
 
-		/**
-	 * Coordinate the construct behavior implemented by this code path.
-	 */
+/**
+ * Coordinate the construct behavior implemented by this code path.
+ */
 public function __construct() {
 		// v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves).
 		$this->provider = flosc_get_setting( 'stt_provider', 'assemblyai' );
@@ -28,8 +28,8 @@ public function __construct() {
 	/**
 	 * Resolve multipart filename and MIME from the real source file.
 	 *
-	 * @param string $audio_path
-	 * @return array{filename:string,mime:string}
+	 * @param string $audio_path Value consumed by this operation.
+	 * @return Array{filename:string,mime:string}.
 	 */
 	private function resolve_audio_upload_meta( $audio_path ) {
 		$ext     = strtolower( (string) pathinfo( (string) $audio_path, PATHINFO_EXTENSION ) );
@@ -52,9 +52,10 @@ public function __construct() {
 	}
 
 	/**
-	 * Transcribe Audio File
- * @param mixed $audio_path Filesystem value identifying the file used by the Persist the transcribe state in Word Press storage. operation.
- * @return mixed Result of the transcribe operation, or a WP_Error when it cannot complete.
+	 * Transcribe Audio File.
+	 *
+	 * @param mixed $audio_path Filesystem value identifying the file used by the Persist the transcribe state in Word Press storage. operation.
+	 * @return Mixed Result of the transcribe operation, or a WP_Error when it cannot complete.
 	 */
 	public function transcribe( $audio_path ) {
 		// Check cache (useful for repeated test recordings).
@@ -88,10 +89,11 @@ public function __construct() {
 	}
 
 	/**
-	 * AssemblyAI - Recommended for accent handling
-	 * Cost: ~$0.00025/second = $0.0025 per 10s recording
- * @param mixed $audio_path Filesystem value identifying the file used by the Send the remote request required for assemblyai transcribe and normalize its result. operation.
- * @return mixed Result of the assemblyai transcribe operation, or a WP_Error when it cannot complete.
+	 * AssemblyAI - Recommended for accent handling.
+	 * Cost: ~$0.00025/second = $0.0025 per 10s recording.
+	 *
+	 * @param mixed $audio_path Filesystem value identifying the file used by the Send the remote request required for assemblyai transcribe and normalize its result. operation.
+	 * @return Mixed Result of the assemblyai transcribe operation, or a WP_Error when it cannot complete.
 	 */
 	private function assemblyai_transcribe( $audio_path ) {
 		// v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves).
@@ -198,10 +200,11 @@ public function __construct() {
 
 
 	/**
-	 * OpenAI Whisper
-	 * Cost: ~$0.006/minute = $0.001 per 10s recording
- * @param mixed $audio_path Filesystem value identifying the file used by the Send the remote request required for openai whisper transcribe and normalize its result. operation.
- * @return mixed Result of the openai whisper transcribe operation, or a WP_Error when it cannot complete.
+	 * OpenAI Whisper.
+	 * Cost: ~$0.006/minute = $0.001 per 10s recording.
+	 *
+	 * @param mixed $audio_path Filesystem value identifying the file used by the Send the remote request required for openai whisper transcribe and normalize its result. operation.
+	 * @return Mixed Result of the openai whisper transcribe operation, or a WP_Error when it cannot complete.
 	 */
 	private function openai_whisper_transcribe( $audio_path ) {
 		// v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves).
@@ -274,8 +277,9 @@ public function __construct() {
 
 	/**
 	 * Custom Endpoint (Self-hosted faster-whisper, etc.)
- * @param mixed $audio_path Filesystem value identifying the file used by the Coordinate the custom transcribe behavior implemented by this code path. operation.
- * @return mixed Result of the custom transcribe operation, or a WP_Error when it cannot complete.
+	 *
+	 * @param mixed $audio_path Filesystem value identifying the file used by the Coordinate the custom transcribe behavior implemented by this code path. operation.
+	 * @return Mixed Result of the custom transcribe operation, or a WP_Error when it cannot complete.
 	 */
 	private function custom_transcribe( $audio_path ) {
 		// v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves).
@@ -319,8 +323,9 @@ public function __construct() {
 	}
 
 	/**
-	 * Get Provider Info
- * @return mixed Result produced by the provider info operation.
+	 * Get Provider Info.
+	 *
+	 * @return Mixed Result produced by the provider info operation.
 	 */
 	public function get_provider_info() {
 		$providers = array(

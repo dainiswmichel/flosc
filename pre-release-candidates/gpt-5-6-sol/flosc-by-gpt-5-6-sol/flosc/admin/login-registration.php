@@ -1,11 +1,11 @@
 <?php
 /**
- * FLOSC Register & Login Tab
+ * FLOSC Register & Login Tab.
  *
  * Three product concerns on one tab:
- * 1. Registration — post-quiz / create-account modal copy and header Sign Up
- * 2. Login — general auth modal copy and header Log In
- * 3. Guest Access Link (MagicLink) — convenience login for existing users only
+ * 1. Registration — post-quiz / create-account modal copy and header Sign Up.
+ * 2. Login — general auth modal copy and header Log In.
+ * 3. Guest Access Link (MagicLink) — convenience login for existing users only.
  *
  * Defaults are product-neutral. Never hardcode a single product brand for all flows.
  *

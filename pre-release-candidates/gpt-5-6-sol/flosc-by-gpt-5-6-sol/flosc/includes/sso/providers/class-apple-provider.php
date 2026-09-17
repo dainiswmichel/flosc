@@ -1,12 +1,12 @@
 <?php
 /**
- * Apple SSO Provider
+ * Apple SSO Provider.
  *
  * Implements Apple Sign In for FLOSC.
  * Note: Apple Sign In has unique requirements:
  * - Uses JWT for client secret (generated from key file)
- * - User info is only returned on first authorization
- * - POST callback instead of GET
+ * - User info is only returned on first authorization.
+ * - POST callback instead of GET.
  *
  * @package FLOSC
  * @subpackage SSO\Providers
@@ -22,19 +22,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Apple Provider Class
+ * Apple Provider Class.
  */
 class Apple_Provider extends SSO_Provider_Base {
 
 	/**
-	 * Apple Team ID
+	 * Apple Team ID.
 	 *
 	 * @var string
 	 */
 	private $team_id;
 
 	/**
-	 * Apple Key ID
+	 * Apple Key ID.
 	 *
 	 * @var string
 	 */
@@ -48,7 +48,7 @@ class Apple_Provider extends SSO_Provider_Base {
 	private $private_key;
 
 	/**
-	 * Constructor
+	 * Constructor.
 	 */
 	public function __construct() {
 		$this->provider_id   = 'apple';
@@ -76,12 +76,12 @@ class Apple_Provider extends SSO_Provider_Base {
 	 * Set flow-specific Apple credentials (overrides global options)
 	 * Extends the base set_flow_credentials to include Apple's extra fields.
 	 *
-	 * @param string $client_id    Flow-specific Client/Service ID.
+	 * @param string $client_id     Flow-specific Client/Service ID.
 	 * @param string $client_secret Flow-specific Client Secret (unused for Apple, generated from keys).
-	 * @param bool   $enabled      Whether Apple SSO is enabled for this flow.
-	 * @param string $team_id      Flow-specific Apple Team ID.
-	 * @param string $key_id       Flow-specific Apple Key ID.
-	 * @param string $private_key  Flow-specific Apple Private Key (.p8 contents).
+	 * @param bool   $enabled       Whether Apple SSO is enabled for this flow.
+	 * @param string $team_id       Flow-specific Apple Team ID.
+	 * @param string $key_id        Flow-specific Apple Key ID.
+	 * @param string $private_key   Flow-specific Apple Private Key (.p8 contents).
 	 * @since 1.5.0
 	 */
 	public function set_flow_apple_credentials( $client_id, $client_secret, $enabled, $team_id, $key_id, $private_key ) {
@@ -101,10 +101,10 @@ class Apple_Provider extends SSO_Provider_Base {
 	}
 
 	/**
-	 * Check if provider has valid credentials
-	 * Apple requires additional credentials beyond client_id/secret
+	 * Check if provider has valid credentials.
+	 * Apple requires additional credentials beyond client_id/secret.
 	 *
-	 * @return bool
+	 * @return Bool.
 	 */
 	public function is_configured() {
 		return ! empty( $this->client_id ) &&
@@ -114,10 +114,10 @@ class Apple_Provider extends SSO_Provider_Base {
 	}
 
 	/**
-	 * Customize authorization parameters for Apple
+	 * Customize authorization parameters for Apple.
 	 *
 	 * @param array $params Default parameters.
-	 * @return array Modified parameters
+	 * @return Array Modified parameters.
 	 */
 	protected function customize_auth_params( $params ) {
 		// Apple uses 'response_mode' parameter.
@@ -130,12 +130,12 @@ class Apple_Provider extends SSO_Provider_Base {
 	}
 
 	/**
-	 * Exchange authorization code for access token
-	 * Apple requires a dynamically generated JWT as client_secret
+	 * Exchange authorization code for access token.
+	 * Apple requires a dynamically generated JWT as client_secret.
 	 *
-	 * @param string $code Authorization code.
+	 * @param string $code         Authorization code.
 	 * @param string $redirect_uri Callback URL.
-	 * @return array|WP_Error Token data or error
+	 * @return Array|WP_Error Token data or error.
 	 */
 	public function exchange_code_for_token( $code, $redirect_uri ) {
 		// Generate the client secret JWT.
@@ -183,12 +183,12 @@ class Apple_Provider extends SSO_Provider_Base {
 	}
 
 	/**
-	 * Get user info from Apple
-	 * Apple embeds user info in the id_token JWT
+	 * Get user info from Apple.
+	 * Apple embeds user info in the id_token JWT.
 	 *
 	 * @param string $access_token OAuth access token (we use id_token instead).
- * @param mixed $token_data Structured data consumed by the Resolve the current user info value from the available Word Press and flow state. operation.
-	 * @return array|WP_Error User data or error
+	 * @param mixed  $token_data   Structured data consumed by the Resolve the current user info value from the available Word Press and flow state. operation.
+	 * @return Array|WP_Error User data or error.
 	 */
 	public function get_user_info( $access_token, $token_data = array() ) {
 		// Standard OIDC: user claims come from a verified id_token (not access_token alone).
@@ -269,7 +269,7 @@ class Apple_Provider extends SSO_Provider_Base {
 	 * Fail closed on any check failure.
 	 *
 	 * @param string $id_token JWT from token endpoint.
-	 * @return array|\WP_Error Claims on success.
+	 * @return Array|\WP_Error Claims on success.
 	 */
 	private function verify_id_token( $id_token ) {
 		$parts = explode( '.', $id_token );
@@ -358,7 +358,7 @@ class Apple_Provider extends SSO_Provider_Base {
 	 * Fetch Apple JWKS and return the JWK for $kid (cached).
 	 *
 	 * @param string $kid JWT header kid.
-	 * @return array|\WP_Error
+	 * @return Array|\WP_Error.
 	 */
 	private function get_apple_jwk_by_kid( $kid ) {
 		$keys = $this->get_apple_jwks();
@@ -391,10 +391,10 @@ class Apple_Provider extends SSO_Provider_Base {
 	}
 
 	/**
- * Send the remote request required for apple jwks and normalize its result.
- *
+	 * Send the remote request required for apple jwks and normalize its result.
+	 *
 	 * @param bool $force Force network refresh.
-	 * @return array|\WP_Error List of JWK arrays.
+	 * @return Array|\WP_Error List of JWK arrays.
 	 */
 	private function get_apple_jwks( $force = false ) {
 		if ( ! $force ) {
@@ -434,7 +434,7 @@ class Apple_Provider extends SSO_Provider_Base {
 	 * Convert an RSA JWK to a PEM public key for openssl_verify.
 	 *
 	 * @param array $jwk JWK with n, e.
-	 * @return string|\WP_Error PEM
+	 * @return String|\WP_Error PEM.
 	 */
 	private function jwk_to_pem( array $jwk ) {
 		if ( empty( $jwk['n'] ) || empty( $jwk['e'] ) ) {
@@ -463,10 +463,10 @@ class Apple_Provider extends SSO_Provider_Base {
 	}
 
 	/**
- * Coordinate the asn1 integer behavior implemented by this code path.
- *
+	 * Coordinate the asn1 integer behavior implemented by this code path.
+	 *
 	 * @param string $bytes Unsigned big-endian integer bytes.
-	 * @return string ASN.1 INTEGER
+	 * @return String ASN.1 INTEGER.
 	 */
 	private function asn1_integer( $bytes ) {
 		if ( '' === $bytes || ord( $bytes[0] ) > 0x7f ) {
@@ -476,20 +476,20 @@ class Apple_Provider extends SSO_Provider_Base {
 	}
 
 	/**
- * Coordinate the asn1 sequence behavior implemented by this code path.
- *
+	 * Coordinate the asn1 sequence behavior implemented by this code path.
+	 *
 	 * @param string $contents Inner DER.
-	 * @return string ASN.1 SEQUENCE
+	 * @return String ASN.1 SEQUENCE.
 	 */
 	private function asn1_sequence( $contents ) {
 		return "\x30" . $this->asn1_length( strlen( $contents ) ) . $contents;
 	}
 
 	/**
- * Coordinate the asn1 length behavior implemented by this code path.
- *
-	 * @param int $length
-	 * @return string ASN.1 length encoding
+	 * Coordinate the asn1 length behavior implemented by this code path.
+	 *
+	 * @param int $length Value consumed by this operation.
+	 * @return String ASN.1 length encoding.
 	 */
 	private function asn1_length( $length ) {
 		if ( $length < 0x80 ) {
@@ -502,8 +502,8 @@ class Apple_Provider extends SSO_Provider_Base {
 	/**
 	 * Base64url decode (JWT).
 	 *
-	 * @param string $data
-	 * @return string|false
+	 * @param string $data Value consumed by this operation.
+	 * @return String|false.
 	 */
 	private function base64_url_decode( $data ) {
 		$remainder = strlen( $data ) % 4;
@@ -515,10 +515,10 @@ class Apple_Provider extends SSO_Provider_Base {
 	}
 
 	/**
-	 * Normalize Apple user data to standard format
+	 * Normalize Apple user data to standard format.
 	 *
 	 * @param array $raw_data Raw user data from Apple.
-	 * @return array Normalized user data
+	 * @return Array Normalized user data.
 	 */
 	protected function normalize_user_data( $raw_data ) {
 		$payload   = $raw_data['id_token_payload'] ?? array();
@@ -555,10 +555,10 @@ class Apple_Provider extends SSO_Provider_Base {
 	}
 
 	/**
-	 * Get provider-specific user ID
+	 * Get provider-specific user ID.
 	 *
 	 * @param array $raw_data Raw user data.
-	 * @return string Provider user ID
+	 * @return String Provider user ID.
 	 */
 	public function get_provider_user_id( $raw_data ) {
 		$payload = $raw_data['id_token_payload'] ?? array();
@@ -566,9 +566,9 @@ class Apple_Provider extends SSO_Provider_Base {
 	}
 
 	/**
-	 * Generate Apple client secret JWT
+	 * Generate Apple client secret JWT.
 	 *
-	 * @return string|WP_Error JWT client secret or error
+	 * @return String|WP_Error JWT client secret or error.
 	 */
 	private function generate_client_secret() {
 		// Check if we have the required credentials.
@@ -609,10 +609,10 @@ class Apple_Provider extends SSO_Provider_Base {
 	}
 
 	/**
-	 * Sign data with ES256 algorithm
+	 * Sign data with ES256 algorithm.
 	 *
 	 * @param string $data Data to sign.
-	 * @return string|WP_Error Base64 URL encoded signature or error
+	 * @return String|WP_Error Base64 URL encoded signature or error.
 	 */
 	private function sign_es256( $data ) {
 		if ( ! function_exists( 'openssl_sign' ) ) {
@@ -638,10 +638,10 @@ class Apple_Provider extends SSO_Provider_Base {
 	}
 
 	/**
-	 * Convert DER signature to raw format
+	 * Convert DER signature to raw format.
 	 *
 	 * @param string $der DER encoded signature.
-	 * @return string Raw signature
+	 * @return String Raw signature.
 	 */
 	private function der_to_raw( $der ) {
 		$pos  = 0;
@@ -675,10 +675,10 @@ class Apple_Provider extends SSO_Provider_Base {
 	}
 
 	/**
-	 * Base64 URL encode
+	 * Base64 URL encode.
 	 *
 	 * @param string $data Data to encode.
-	 * @return string Encoded data
+	 * @return String Encoded data.
 	 */
 	private function base64_url_encode( $data ) {
 		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- binary/JWT token encoding, not obfuscation
@@ -686,9 +686,9 @@ class Apple_Provider extends SSO_Provider_Base {
 	}
 
 	/**
-	 * Get button colors
+	 * Get button colors.
 	 *
-	 * @return array
+	 * @return Array.
 	 */
 	public function get_button_colors() {
 		return array(
@@ -699,10 +699,10 @@ class Apple_Provider extends SSO_Provider_Base {
 	}
 
 	/**
-	 * Get provider settings fields
-	 * Apple requires additional fields
+	 * Get provider settings fields.
+	 * Apple requires additional fields.
 	 *
-	 * @return array Settings fields configuration
+	 * @return Array Settings fields configuration.
 	 */
 	public function get_settings_fields() {
 		$fields = parent::get_settings_fields();
@@ -738,9 +738,9 @@ class Apple_Provider extends SSO_Provider_Base {
 	}
 
 	/**
-	 * Get setup instructions for Apple Sign In
+	 * Get setup instructions for Apple Sign In.
 	 *
-	 * @return string HTML instructions
+	 * @return String HTML instructions.
 	 */
 	public function get_setup_instructions() {
 		$callback_url = $this->get_callback_url();

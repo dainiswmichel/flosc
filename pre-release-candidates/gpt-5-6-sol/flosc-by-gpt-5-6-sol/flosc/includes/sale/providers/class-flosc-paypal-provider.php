@@ -1,15 +1,15 @@
 <?php
 /**
- * FLOSC PayPal Payment Provider
+ * FLOSC PayPal Payment Provider.
  * Definitive PayPal Orders API v2 integration (sandbox + live)
  *
- * v5.0.7 fixes:
- * - Stale OAuth token cache: clear transient on auth failure, retry once
- * - Better credential resolution: explicit fallback chain with logging
- * - Currency consistency: return resolved currency for SDK/order alignment
- * - Debug logging: every API call logged when FLOSC_DEBUG is on
+ * V5.0.7 fixes:
+ * - Stale OAuth token cache: clear transient on auth failure, retry once.
+ * - Better credential resolution: explicit fallback chain with logging.
+ * - Currency consistency: return resolved currency for SDK/order alignment.
+ * - Debug logging: every API call logged when FLOSC_DEBUG is on.
  *
- * Flow: Create Order → Approve (PayPal JS SDK) → Capture → Grant Access
+ * Flow: Create Order → Approve (PayPal JS SDK) → Capture → Grant Access.
  *
  * @package FLOSC
  * @since 5.0.7
@@ -24,47 +24,47 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 
-		/**
-	 * Resolve the current id value from the available WordPress and flow state.
-	 *
-	 * @return mixed Result produced by the id operation.
-	 */
+/**
+ * Resolve the current id value from the available WordPress and flow state.
+ *
+ * @return Mixed Result produced by the id operation.
+ */
 public function get_id() {
 		return 'paypal';
 	}
 
-		/**
-	 * Resolve the current name value from the available WordPress and flow state.
-	 *
-	 * @return mixed Result produced by the name operation.
-	 */
+/**
+ * Resolve the current name value from the available WordPress and flow state.
+ *
+ * @return Mixed Result produced by the name operation.
+ */
 public function get_name() {
 		return 'PayPal';
 	}
 
-		/**
-	 * Resolve the current description value from the available WordPress and flow state.
-	 *
-	 * @return mixed Result produced by the description operation.
-	 */
+/**
+ * Resolve the current description value from the available WordPress and flow state.
+ *
+ * @return Mixed Result produced by the description operation.
+ */
 public function get_description() {
 		return 'Accept payments via PayPal checkout.';
 	}
 
-		/**
-	 * Resolve the current icon value from the available WordPress and flow state.
-	 *
-	 * @return mixed Result produced by the icon operation.
-	 */
+/**
+ * Resolve the current icon value from the available WordPress and flow state.
+ *
+ * @return Mixed Result produced by the icon operation.
+ */
 public function get_icon() {
 		return '🅿️';
 	}
 
-		/**
-	 * Determine whether the current state satisfies configured.
-	 *
-	 * @return bool Whether configured applies to the current state.
-	 */
+/**
+ * Determine whether the current state satisfies configured.
+ *
+ * @return Bool Whether configured applies to the current state.
+ */
 public function is_configured() {
 		$has_id     = ! empty( $this->get_client_id() );
 		$has_secret = ! empty( $this->get_secret() );
@@ -76,11 +76,11 @@ public function is_configured() {
 
 	/**
 	 * Override base is_enabled() to read from per-flow settings.
-	 * Base class checks get_option('flosc_provider_paypal_enabled') which the
-	 * admin UI never writes to — admin saves 'paypal_enabled' to the flow option.
+	 * Base class checks get_option('flosc_provider_paypal_enabled') which the.
+	 * Admin UI never writes to — admin saves 'paypal_enabled' to the flow option.
 	 *
 	 * @since 1.7.3
- * @return bool Whether enabled applies to the current state.
+	 * @return Bool Whether enabled applies to the current state.
 	 */
 	public function is_enabled() {
 		if ( function_exists( 'flosc' ) ) {
@@ -97,17 +97,17 @@ public function is_configured() {
 	 * Full is_configured() also requires the secret (for server-side API calls)
 	 *
 	 * @since 1.7.3
- * @return bool Whether client id applies to the current state.
+	 * @return Bool Whether client id applies to the current state.
 	 */
 	public function has_client_id() {
 		return ! empty( $this->get_client_id() );
 	}
 
-		/**
-	 * Resolve the current settings fields value from the available WordPress and flow state.
-	 *
-	 * @return array Structured settings fields data.
-	 */
+/**
+ * Resolve the current settings fields value from the available WordPress and flow state.
+ *
+ * @return Array Structured settings fields data.
+ */
 public function get_settings_fields() {
 		return array(
 			'mode'       => array(
@@ -137,10 +137,11 @@ public function get_settings_fields() {
 
 	/**
 	 * Read PayPal settings.
-	 * 1. Per-flow setting → 2. Global wp_option → 3. Default
- * @param mixed $key Name or key used to select the Resolve the current flow setting value from the available Word Press and flow state. value.
- * @param mixed $fallback Fallback value returned when no more specific value is available.
- * @return mixed Result produced by the flow setting operation.
+	 * 1. Per-flow setting → 2. Global wp_option → 3. Default.
+	 *
+	 * @param mixed $key      Name or key used to select the Resolve the current flow setting value from the available Word Press and flow state. value.
+	 * @param mixed $fallback Fallback value returned when no more specific value is available.
+	 * @return Mixed Result produced by the flow setting operation.
 	 */
 	private function get_flow_setting( $key, $fallback = '' ) {
 		// 1. Per-flow setting (do not use empty() — "0" and falsey strings are valid)
@@ -158,14 +159,15 @@ public function get_settings_fields() {
 		return $fallback;
 	}
 
-	/** @var array|null Request-cached credential packs (reset when webhook id is persisted). */
+	/**
+	 */
 	private $credential_packs_cache = null;
 
 	/**
 	 * Collect PayPal credential packs from current flow, globals, and all flosc_flow_* options.
 	 * Each pack is from a single source (never stitched across sources).
 	 *
-	 * @return array<int, array{webhook_id:string,client_id:string,secret:string,mode:string}>
+	 * @return Array<int, array{webhook_id:string,client_id:string,secret:string,mode:string}>.
 	 */
 	private function collect_paypal_credential_packs() {
 		if ( null !== $this->credential_packs_cache ) {
@@ -234,7 +236,7 @@ public function get_settings_fields() {
 	 * Never stitch webhook_id from one source with client_id/secret from another.
 	 * Prefer complete packs; among complete packs prefer live (production) over sandbox.
 	 *
-	 * @return array{webhook_id:string,client_id:string,secret:string,mode:string}
+	 * @return Array{webhook_id:string,client_id:string,secret:string,mode:string}.
 	 */
 	private function resolve_webhook_credential_pack() {
 		$packs = $this->collect_paypal_credential_packs();
@@ -287,7 +289,7 @@ public function get_settings_fields() {
 	/**
 	 * Configured PayPal Webhook ID (required for signature verification).
 	 *
-	 * @return string
+	 * @return String.
 	 */
 	private function get_webhook_id() {
 		$pack = $this->resolve_webhook_credential_pack();
@@ -297,7 +299,7 @@ public function get_settings_fields() {
 	/**
 	 * Public webhook listener URL for this site.
 	 *
-	 * @return string
+	 * @return String.
 	 */
 	public function get_webhook_listener_url() {
 		$url = rest_url( 'flosc/v1/webhooks/paypal' );
@@ -315,7 +317,7 @@ public function get_settings_fields() {
 	/**
 	 * Event types for subscription lifecycle + renewal top-ups.
 	 *
-	 * @return array<int, array{name:string}>
+	 * @return Array<int, array{name:string}>.
 	 */
 	private function get_required_webhook_event_types() {
 		$names = array(
@@ -339,7 +341,7 @@ public function get_settings_fields() {
 	 * List → reuse matching URL → else create. Required for signature verification.
 	 *
 	 * @param bool $force_refresh Prefer re-list over trusting only local storage.
-	 * @return array{webhook_id:string,url:string,created:bool}|WP_Error
+	 * @return Array{webhook_id:string,url:string,created:bool}|WP_Error.
 	 */
 	public function ensure_webhook_registered( $force_refresh = false ) {
 		if ( ! $this->is_configured() ) {
@@ -521,7 +523,7 @@ public function get_settings_fields() {
 	 * Persist webhook ID to global + matching flow options; clear credential pack cache.
 	 *
 	 * @param string $webhook_id PayPal webhook id.
- * @return mixed Result produced by the persist webhook id operation.
+	 * @return Mixed Result produced by the persist webhook id operation.
 	 */
 	private function persist_webhook_id( $webhook_id ) {
 		$webhook_id = sanitize_text_field( (string) $webhook_id );
@@ -597,20 +599,22 @@ public function get_settings_fields() {
 
 	/**
 	 * Default mode for new installs. Credentials must be set via admin Payments tab.
- * @return mixed Result produced by the default mode operation.
+	 *
+	 * @return Mixed Result produced by the default mode operation.
 	 */
 	public static function get_default_mode() {
 		return 'sandbox';
 	}
 
-	/** @var array|null Request-scoped credential override for webhook OAuth. */
+	/**
+	 */
 	private $runtime_credential_override = null;
 
-		/**
-	 * Resolve the current mode value from the available WordPress and flow state.
-	 *
-	 * @return mixed Result produced by the mode operation.
-	 */
+/**
+ * Resolve the current mode value from the available WordPress and flow state.
+ *
+ * @return Mixed Result produced by the mode operation.
+ */
 private function get_mode() {
 		if ( is_array( $this->runtime_credential_override ) && ! empty( $this->runtime_credential_override['mode'] ) ) {
 			return (string) $this->runtime_credential_override['mode'];
@@ -618,11 +622,11 @@ private function get_mode() {
 		return $this->get_flow_setting( 'mode', 'sandbox' );
 	}
 
-		/**
-	 * Resolve the current client id value from the available WordPress and flow state.
-	 *
-	 * @return mixed Result produced by the client id operation.
-	 */
+/**
+ * Resolve the current client id value from the available WordPress and flow state.
+ *
+ * @return Mixed Result produced by the client id operation.
+ */
 private function get_client_id() {
 		if ( is_array( $this->runtime_credential_override ) && ! empty( $this->runtime_credential_override['client_id'] ) ) {
 			return (string) $this->runtime_credential_override['client_id'];
@@ -630,11 +634,11 @@ private function get_client_id() {
 		return $this->get_flow_setting( 'client_id', '' );
 	}
 
-		/**
-	 * Resolve the current secret value from the available WordPress and flow state.
-	 *
-	 * @return mixed Result produced by the secret operation.
-	 */
+/**
+ * Resolve the current secret value from the available WordPress and flow state.
+ *
+ * @return Mixed Result produced by the secret operation.
+ */
 private function get_secret() {
 		if ( is_array( $this->runtime_credential_override ) && ! empty( $this->runtime_credential_override['secret'] ) ) {
 			return (string) $this->runtime_credential_override['secret'];
@@ -647,7 +651,7 @@ private function get_secret() {
 	 * Centralised so SDK loading and order creation use the same value.
 	 *
 	 * @since 5.0.7
- * @return mixed Result produced by the currency operation.
+	 * @return Mixed Result produced by the currency operation.
 	 */
 	public function get_currency() {
 		// Offer-level currency is set by the caller; this is the global fallback.
@@ -661,8 +665,9 @@ private function get_secret() {
 	}
 
 	/**
-	 * API base URL based on mode
- * @return mixed Result produced by the api base operation.
+	 * API base URL based on mode.
+	 *
+	 * @return Mixed Result produced by the api base operation.
 	 */
 	private function get_api_base() {
 		return 'live' === $this->get_mode()
@@ -676,11 +681,11 @@ private function get_secret() {
 	 * Fixes vs prior versions:
 	 * - Clears cached token on ANY auth failure (prevents stale token loops)
 	 * - Retries once after clearing cache (handles token-expired edge case)
-	 * - Logs full error details when FLOSC_DEBUG is on
+	 * - Logs full error details when FLOSC_DEBUG is on.
 	 *
 	 * @since 5.0.7
- * @param mixed $force_refresh Input consumed by the Send the remote request required for access token and normalize its result. operation.
- * @return mixed Result of the access token operation, or a WP_Error when it cannot complete.
+	 * @param mixed $force_refresh Input consumed by the Send the remote request required for access token and normalize its result. operation.
+	 * @return Mixed Result of the access token operation, or a WP_Error when it cannot complete.
 	 */
 	private function get_access_token( $force_refresh = false ) {
 		$client_id = $this->get_client_id();
@@ -746,15 +751,15 @@ private function get_secret() {
 
 	/**
 	 * Create a PayPal order (called from REST endpoint)
-	 * Retries once on 401 (stale token), logs all steps
+	 * Retries once on 401 (stale token), logs all steps.
 	 *
 	 * @since 5.0.7
- * @param mixed $user Input consumed by the Send the remote request required for order and normalize its result. operation.
- * @param mixed $amount_dollars Input consumed by the Send the remote request required for order and normalize its result. operation.
- * @param mixed $currency Input consumed by the Send the remote request required for order and normalize its result. operation.
- * @param mixed $offer_id Identifier used to select the record involved in the Send the remote request required for order and normalize its result. operation.
- * @param mixed $purchase_uuid Identifier used to select the record involved in the Send the remote request required for order and normalize its result. operation.
- * @return array Structured order data.
+	 * @param mixed $user           Input consumed by the Send the remote request required for order and normalize its result. operation.
+	 * @param mixed $amount_dollars Input consumed by the Send the remote request required for order and normalize its result. operation.
+	 * @param mixed $currency       Input consumed by the Send the remote request required for order and normalize its result. operation.
+	 * @param mixed $offer_id       Identifier used to select the record involved in the Send the remote request required for order and normalize its result. operation.
+	 * @param mixed $purchase_uuid  Identifier used to select the record involved in the Send the remote request required for order and normalize its result. operation.
+	 * @return Array Structured order data.
 	 */
 	public function create_order( $user, $amount_dollars, $currency, $offer_id, $purchase_uuid = '' ) {
 		$token = $this->get_access_token();
@@ -877,12 +882,12 @@ private function get_secret() {
 	}
 
 	/**
-	 * Capture a PayPal order after buyer approves
-	 * Retries once on 401, logs all steps
+	 * Capture a PayPal order after buyer approves.
+	 * Retries once on 401, logs all steps.
 	 *
 	 * @since 5.0.7
- * @param mixed $order_id Identifier used to select the record involved in the Send the remote request required for capture order and normalize its result. operation.
- * @return array Structured capture order data.
+	 * @param mixed $order_id Identifier used to select the record involved in the Send the remote request required for capture order and normalize its result. operation.
+	 * @return Array Structured capture order data.
 	 */
 	public function capture_order( $order_id ) {
 		$token = $this->get_access_token();
@@ -1063,25 +1068,27 @@ private function get_secret() {
 
 	/**
 	 * Process payment (generic interface — not used directly for PayPal)
-	 * PayPal uses create_order + capture_order instead
- * @param mixed $user_id WordPress user ID whose Coordinate the payment behavior implemented by this code path. state is being processed.
- * @param mixed $offer Input consumed by the Coordinate the payment behavior implemented by this code path. operation.
- * @param mixed $payment_data Structured data consumed by the Coordinate the payment behavior implemented by this code path. operation.
- * @return mixed Result of the payment operation, or a WP_Error when it cannot complete.
+	 * PayPal uses create_order + capture_order instead.
+	 *
+	 * @param mixed $user_id      WordPress user ID whose Coordinate the payment behavior implemented by this code path. state is being processed.
+	 * @param mixed $offer        Input consumed by the Coordinate the payment behavior implemented by this code path. operation.
+	 * @param mixed $payment_data Structured data consumed by the Coordinate the payment behavior implemented by this code path. operation.
+	 * @return Mixed Result of the payment operation, or a WP_Error when it cannot complete.
 	 */
 	public function process_payment( $user_id, $offer, $payment_data = array() ) {
 		return new WP_Error( 'use_order_flow', __( 'PayPal uses the order creation flow. Use create_order() and capture_order() instead.', 'flosc' ) );
 	}
 
-	// ================================================================
+	// ================================================================.
 	// PayPal Subscriptions API — Products, Plans, Subscriptions.
-	// ================================================================
+	// ================================================================.
 
 	/**
 	 * Create a catalog product in PayPal (one-time setup)
- * @param mixed $name Name or key used to select the Send the remote request required for product and normalize its result. value.
- * @param mixed $description Input consumed by the Send the remote request required for product and normalize its result. operation.
- * @return mixed Result of the product operation, or a WP_Error when it cannot complete.
+	 *
+	 * @param mixed $name        Name or key used to select the Send the remote request required for product and normalize its result. value.
+	 * @param mixed $description Input consumed by the Send the remote request required for product and normalize its result. operation.
+	 * @return Mixed Result of the product operation, or a WP_Error when it cannot complete.
 	 */
 	public function create_product( $name, $description ) {
 		$token = $this->get_access_token();
@@ -1121,13 +1128,14 @@ private function get_secret() {
 	}
 
 	/**
-	 * Create a billing plan for a product
- * @param mixed $product_id Identifier used to select the record involved in the Send the remote request required for plan and normalize its result. operation.
- * @param mixed $name Name or key used to select the Send the remote request required for plan and normalize its result. value.
- * @param mixed $amount Input consumed by the Send the remote request required for plan and normalize its result. operation.
- * @param mixed $interval_unit Input consumed by the Send the remote request required for plan and normalize its result. operation.
- * @param mixed $interval_count Input consumed by the Send the remote request required for plan and normalize its result. operation.
- * @return mixed Result of the plan operation, or a WP_Error when it cannot complete.
+	 * Create a billing plan for a product.
+	 *
+	 * @param mixed $product_id     Identifier used to select the record involved in the Send the remote request required for plan and normalize its result. operation.
+	 * @param mixed $name           Name or key used to select the Send the remote request required for plan and normalize its result. value.
+	 * @param mixed $amount         Input consumed by the Send the remote request required for plan and normalize its result. operation.
+	 * @param mixed $interval_unit  Input consumed by the Send the remote request required for plan and normalize its result. operation.
+	 * @param mixed $interval_count Input consumed by the Send the remote request required for plan and normalize its result. operation.
+	 * @return Mixed Result of the plan operation, or a WP_Error when it cannot complete.
 	 */
 	public function create_plan( $product_id, $name, $amount, $interval_unit, $interval_count = 1 ) {
 		$token = $this->get_access_token();
@@ -1189,9 +1197,10 @@ private function get_secret() {
 	}
 
 	/**
-	 * Get subscription details from PayPal
- * @param mixed $subscription_id Identifier used to select the record involved in the Send the remote request required for subscription and normalize its result. operation.
- * @return mixed Result of the subscription operation, or a WP_Error when it cannot complete.
+	 * Get subscription details from PayPal.
+	 *
+	 * @param mixed $subscription_id Identifier used to select the record involved in the Send the remote request required for subscription and normalize its result. operation.
+	 * @return Mixed Result of the subscription operation, or a WP_Error when it cannot complete.
 	 */
 	public function get_subscription( $subscription_id ) {
 		$token = $this->get_access_token();
@@ -1216,9 +1225,10 @@ private function get_secret() {
 	}
 
 	/**
-	 * Option key for subscription plan IDs — scoped to mode + client so sandbox
-	 * plan IDs never get served under live credentials (or vice versa).
- * @return mixed Result produced by the plans option key operation.
+	 * Option key for subscription plan IDs — scoped to mode + client so sandbox.
+	 * Plan IDs never get served under live credentials (or vice versa).
+	 *
+	 * @return Mixed Result produced by the plans option key operation.
 	 */
 	private function get_plans_option_key() {
 		$mode = sanitize_key( (string) $this->get_mode() );
@@ -1232,7 +1242,8 @@ private function get_secret() {
 
 	/**
 	 * Fingerprint of the active credentials (mode + client id).
- * @return mixed Result produced by the credentials fingerprint operation.
+	 *
+	 * @return Mixed Result produced by the credentials fingerprint operation.
 	 */
 	private function get_credentials_fingerprint() {
 		return sanitize_key( (string) $this->get_mode() ) . ':' . md5( (string) $this->get_client_id() );
@@ -1241,7 +1252,8 @@ private function get_secret() {
 	/**
 	 * Stored product/plan IDs for the active PayPal credentials only.
 	 * Returns [] when nothing valid is stored for this mode/client.
- * @return array Structured stored plans data.
+	 *
+	 * @return Array Structured stored plans data.
 	 */
 	public function get_stored_plans() {
 		$key   = $this->get_plans_option_key();
@@ -1282,7 +1294,8 @@ private function get_secret() {
 	 * Ensure PayPal product + plans exist for the *current* mode/credentials.
 	 * Creates them on first call for that credential set.
 	 * Returns [ 'product_id' => ..., 'monthly_plan_id' => ..., 'yearly_plan_id' => ... ]
- * @return mixed Result of the ensure plans exist operation, or a WP_Error when it cannot complete.
+	 *
+	 * @return Mixed Result of the ensure plans exist operation, or a WP_Error when it cannot complete.
 	 */
 	public function ensure_plans_exist() {
 		$plans = $this->get_stored_plans();
@@ -1404,7 +1417,7 @@ private function get_secret() {
 	 * @param float  $monthly_price Recurring monthly amount.
 	 * @param float  $yearly_price  Recurring yearly amount.
 	 * @param string $product_name  Catalog label.
-	 * @return array|WP_Error
+	 * @return Array|WP_Error.
 	 */
 	public function ensure_plans_for_prices( $monthly_price, $yearly_price, $product_name = '' ) {
 		$monthly_price = round( max( 0.0, floatval( $monthly_price ) ), 2 );
@@ -1492,7 +1505,7 @@ private function get_secret() {
 	 * Resolve plan_id to monthly|yearly including promo plan caches.
 	 *
 	 * @param string $plan_id PayPal plan id.
-	 * @return string '' if unknown.
+	 * @return String '' if unknown.
 	 */
 	public function resolve_plan_type_for_id( $plan_id ) {
 		$plan_id = sanitize_text_field( (string) $plan_id );
@@ -1515,8 +1528,9 @@ private function get_secret() {
 	}
 
 	/**
-	 * Client-side config passed to JS
- * @return mixed Result produced by the client config operation.
+	 * Client-side config passed to JS.
+	 *
+	 * @return Mixed Result produced by the client config operation.
 	 */
 	public function get_client_config() {
 		$config = array(
@@ -1538,11 +1552,11 @@ private function get_secret() {
 	/**
 	 * Collect PayPal transmission headers from a REST request and/or PHP server vars.
 	 *
-	 * Single source of truth for the REST dispatcher and for handle_webhook() fallback
-	 * so verification cannot be left unwired by a dispatcher-only regression.
+	 * Single source of truth for the REST dispatcher and for handle_webhook() fallback.
+	 * So verification cannot be left unwired by a dispatcher-only regression.
 	 *
 	 * @param WP_REST_Request|null $request Optional REST request.
-	 * @return array<string,string> Map keyed by paypal-transmission-id, etc.
+	 * @return Array<string,string> Map keyed by paypal-transmission-id, etc.
 	 */
 	public static function collect_transmission_headers_from_request( $request = null ) {
 		$keys           = array(
@@ -1628,20 +1642,20 @@ private function get_secret() {
 	 *
 	 * Security (mandatory, before any mutation):
 	 * - Require PAYPAL-TRANSMISSION-* headers (dispatcher + environment fallback)
-	 * - Require configured Webhook ID
-	 * - Verify via PayPal POST /v1/notifications/verify-webhook-signature
-	 * - Reject unsigned / failed verification with 401
+	 * - Require configured Webhook ID.
+	 * - Verify via PayPal POST /v1/notifications/verify-webhook-signature.
+	 * - Reject unsigned / failed verification with 401.
 	 * - Raw body string only (never re-encoded JSON — would break signatures)
 	 *
 	 * After verification:
-	 * - Event-id claim (atomic) + sale/cycle idempotency on credits
-	 * - Subscription renewals / cancel / suspend / expire
+	 * - Event-id claim (atomic) + sale/cycle idempotency on credits.
+	 * - Subscription renewals / cancel / suspend / expire.
 	 *
 	 * First activation remains activate-subscription; this covers later cycles.
 	 *
 	 * @param string $payload Raw JSON body as received from PayPal (must be string).
 	 * @param array  $headers Transmission headers from the REST dispatcher.
-	 * @return array|WP_Error
+	 * @return Array|WP_Error.
 	 */
 	public function handle_webhook( $payload, $headers = array() ) {
 		// Signature verification requires the exact bytes PayPal signed — no re-encode.
@@ -1841,7 +1855,7 @@ private function get_secret() {
 	 * Whether a PayPal event id was already claimed/processed.
 	 *
 	 * @param string $event_id PayPal event id.
-	 * @return bool
+	 * @return Bool.
 	 */
 	private function is_paypal_event_processed( $event_id ) {
 		$event_id = sanitize_text_field( (string) $event_id );
@@ -1856,7 +1870,7 @@ private function get_secret() {
 	 * Uses add_option (atomic under concurrent deliveries) + transient for fast path.
 	 *
 	 * @param string $event_id PayPal event id.
-	 * @return bool True if this request owns the claim.
+	 * @return Bool True if this request owns the claim.
 	 */
 	private function claim_paypal_event( $event_id ) {
 		$event_id = sanitize_text_field( (string) $event_id );
@@ -1886,7 +1900,7 @@ private function get_secret() {
 	 * Mark a PayPal webhook event id as processed (durable claim + transient).
 	 *
 	 * @param string $event_id PayPal event id.
- * @return mixed Result produced by the mark paypal event processed operation.
+	 * @return Mixed Result produced by the mark paypal event processed operation.
 	 */
 	private function mark_paypal_event_processed( $event_id ) {
 		$event_id = sanitize_text_field( (string) $event_id );
@@ -1937,7 +1951,7 @@ private function get_secret() {
 	 * Extract PayPal transmission headers (case-insensitive).
 	 *
 	 * @param array $headers Headers from REST dispatcher or raw map.
-	 * @return array{transmission_id:string,transmission_time:string,transmission_sig:string,cert_url:string,auth_algo:string}|WP_Error
+	 * @return Array{transmission_id:string,transmission_time:string,transmission_sig:string,cert_url:string,auth_algo:string}|WP_Error.
 	 */
 	private function extract_paypal_transmission_headers( array $headers ) {
 		$normalized = array();
@@ -1997,7 +2011,7 @@ private function get_secret() {
 	 * Allow only PayPal-owned certificate URLs (defense in depth before verify API).
 	 *
 	 * @param string $cert_url Certificate URL from PAYPAL-CERT-URL.
-	 * @return true|WP_Error
+	 * @return True|WP_Error.
 	 */
 	private function assert_paypal_cert_url( $cert_url ) {
 		$cert_url = esc_url_raw( (string) $cert_url );
@@ -2034,17 +2048,17 @@ private function get_secret() {
 	 * Verify webhook authenticity via PayPal Notifications API.
 	 *
 	 * Official endpoint (sandbox/live API base):
-	 *   POST /v1/notifications/verify-webhook-signature
+	 * POST /v1/notifications/verify-webhook-signature.
 	 * Required transmission headers from the inbound webhook HTTP request:
-	 *   PAYPAL-TRANSMISSION-ID, PAYPAL-TRANSMISSION-TIME, PAYPAL-TRANSMISSION-SIG,
-	 *   PAYPAL-CERT-URL, PAYPAL-AUTH-ALGO
+	 * PAYPAL-TRANSMISSION-ID, PAYPAL-TRANSMISSION-TIME, PAYPAL-TRANSMISSION-SIG,.
+	 * PAYPAL-CERT-URL, PAYPAL-AUTH-ALGO.
 	 * Plus configured webhook_id and the exact raw webhook JSON body.
 	 *
 	 * @see https://developer.paypal.com/docs/api/webhooks/v1/#verify-webhook-signature_post
 	 *
 	 * @param string $raw_body Exact request body as received (never re-encoded for the event).
 	 * @param array  $headers  Transmission headers.
-	 * @return true|WP_Error
+	 * @return True|WP_Error.
 	 */
 	private function verify_webhook_signature( $raw_body, array $headers ) {
 		// Fail closed: no configured webhook / app credentials ⇒ reject before mutation.
@@ -2247,9 +2261,9 @@ private function get_secret() {
 	/**
 	 * Record subscription ownership when a subscription is created/activated.
 	 *
-	 * @param int    $user_id
+	 * @param int   $user_id         Value consumed by this operation.
 	 * @param mixed $subscription_id Identifier used to select the record involved in the Persist the index subscription state in Word Press storage. operation.
- * @return mixed Result produced by the index subscription operation.
+	 * @return Mixed Result produced by the index subscription operation.
 	 */
 	public static function index_subscription( $user_id, $subscription_id ) {
 		$user_id         = absint( $user_id );
@@ -2270,8 +2284,8 @@ private function get_secret() {
 	 * Resolve WP user id for a PayPal subscription id.
 	 * Uses the reverse index (built at activation / on first need), not meta_key queries.
 	 *
-	 * @param string $subscription_id
-	 * @return int
+	 * @param string $subscription_id Value consumed by this operation.
+	 * @return Int.
 	 */
 	public static function get_user_id_for_subscription( $subscription_id ) {
 		$subscription_id = sanitize_text_field( (string) $subscription_id );
@@ -2291,7 +2305,7 @@ private function get_secret() {
 	 * Build subscription id → user id map via user meta reads (WP APIs only).
 	 * Runs once when the index option is missing; subsequent lookups are option reads.
 	 *
-	 * @return array<string,int>
+	 * @return Array<string,int>.
 	 */
 	private static function build_subscription_index() {
 		$index = array();

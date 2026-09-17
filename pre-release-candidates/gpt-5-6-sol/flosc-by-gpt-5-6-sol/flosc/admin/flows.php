@@ -1,7 +1,7 @@
 <?php
 /**
- * FLOSC Flows Overview Page
- * Simple list of flows with quick actions
+ * FLOSC Flows Overview Page.
+ * Simple list of flows with quick actions.
  *
  * @package FLOSC
  * @since 1.2.5

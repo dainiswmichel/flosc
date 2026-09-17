@@ -5,10 +5,10 @@
  * Clean architecture with:
  * - Structured theme preset (Auto/Light/Dark)
  * - Bubble geometry (Subtle Notch, Classic, Modern, Minimal, Sharp)
- * - Accent color cascade
- * - Font family
- * - Text scaling
- * - CSS variables generated from structured controls
+ * - Accent color cascade.
+ * - Font family.
+ * - Text scaling.
+ * - CSS variables generated from structured controls.
  *
  * @package FLOSC
  */

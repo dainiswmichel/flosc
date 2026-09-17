@@ -1,10 +1,10 @@
 <?php
 /**
- * FLOSC Token Management Tab
+ * FLOSC Token Management Tab.
  *
  * Per-flow wallet economics + product token grants.
- * Products (offers) are editable accordion rows — set grant mode, amount, and cap
- * per product, or inherit flow defaults.
+ * Products (offers) are editable accordion rows — set grant mode, amount, and cap.
+ * Per product, or inherit flow defaults.
  *
  * @package FLOSC
  */

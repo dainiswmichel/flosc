@@ -2,11 +2,11 @@
 /**
  * Documentation, Part 3 reference: the quiz system.
  *
- * Prose only — no settings are read and nothing is written. The variable names
- * that appear below are inside <code> samples showing how a quiz type is
- * registered; they are page text, not live code. Included by
- * admin/documentation.php inside the Documentation tab's markup, so the file
- * opens at heading level 1 and inherits the surrounding page wrapper.
+ * Prose only — no settings are read and nothing is written. The variable names.
+ * That appear below are inside <code> samples showing how a quiz type is.
+ * Registered; they are page text, not live code. Included by.
+ * Admin/documentation.php inside the Documentation tab's markup, so the file.
+ * Opens at heading level 1 and inherits the surrounding page wrapper.
  *
  * @package FLOSC
  */

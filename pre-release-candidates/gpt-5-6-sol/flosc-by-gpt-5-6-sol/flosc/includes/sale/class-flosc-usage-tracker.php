@@ -1,18 +1,18 @@
 <?php
 /**
- * FLOSC Usage Tracker
+ * FLOSC Usage Tracker.
  *
  * Tracks usage of metered features:
- * - AI queries
- * - STT minutes
- * - Quiz attempts
- * - Lesson views
- * - Custom events
+ * - AI queries.
+ * - STT minutes.
+ * - Quiz attempts.
+ * - Lesson views.
+ * - Custom events.
  *
  * Supports:
  * - Usage limits (free tier caps)
- * - Metered billing
- * - Usage analytics
+ * - Metered billing.
+ * - Usage analytics.
  *
  * @package FLOSC
  */
@@ -30,12 +30,13 @@ class FLOSC_Usage_Tracker {
 	private $limits_meta_key = '_flosc_usage_limits';
 
 	/**
-	 * Track a usage event
- * @param mixed $user_id WordPress user ID whose Persist the track state in Word Press storage. state is being processed.
- * @param mixed $event Input consumed by the Persist the track state in Word Press storage. operation.
- * @param mixed $quantity Input consumed by the Persist the track state in Word Press storage. operation.
- * @param mixed $meta Input consumed by the Persist the track state in Word Press storage. operation.
- * @return mixed Result produced by the track operation.
+	 * Track a usage event.
+	 *
+	 * @param mixed $user_id  WordPress user ID whose Persist the track state in Word Press storage. state is being processed.
+	 * @param mixed $event    Input consumed by the Persist the track state in Word Press storage. operation.
+	 * @param mixed $quantity Input consumed by the Persist the track state in Word Press storage. operation.
+	 * @param mixed $meta     Input consumed by the Persist the track state in Word Press storage. operation.
+	 * @return Mixed Result produced by the track operation.
 	 */
 	public function track( $user_id, $event, $quantity = 1, $meta = array() ) {
 		$usage  = $this->get_user_usage( $user_id );
@@ -86,10 +87,11 @@ class FLOSC_Usage_Tracker {
 	}
 
 	/**
-	 * Get user's usage data
- * @param mixed $user_id WordPress user ID whose Resolve the current user usage value from the available Word Press and flow state. state is being processed.
- * @param mixed $period Input consumed by the Resolve the current user usage value from the available Word Press and flow state. operation.
- * @return mixed Result produced by the user usage operation.
+	 * Get user's usage data.
+	 *
+	 * @param mixed $user_id WordPress user ID whose Resolve the current user usage value from the available Word Press and flow state. state is being processed.
+	 * @param mixed $period  Input consumed by the Resolve the current user usage value from the available Word Press and flow state. operation.
+	 * @return Mixed Result produced by the user usage operation.
 	 */
 	public function get_user_usage( $user_id, $period = null ) {
 		$usage = get_user_meta( $user_id, $this->meta_key, true );
@@ -105,20 +107,22 @@ class FLOSC_Usage_Tracker {
 	}
 
 	/**
-	 * Get usage for current period
- * @param mixed $user_id WordPress user ID whose Resolve the current current usage value from the available Word Press and flow state. state is being processed.
- * @return mixed Result produced by the current usage operation.
+	 * Get usage for current period.
+	 *
+	 * @param mixed $user_id WordPress user ID whose Resolve the current current usage value from the available Word Press and flow state. state is being processed.
+	 * @return Mixed Result produced by the current usage operation.
 	 */
 	public function get_current_usage( $user_id ) {
 		return $this->get_user_usage( $user_id, $this->get_current_period() );
 	}
 
 	/**
-	 * Get usage count for a specific event
- * @param mixed $user_id WordPress user ID whose Resolve the current event count value from the available Word Press and flow state. state is being processed.
- * @param mixed $event Input consumed by the Resolve the current event count value from the available Word Press and flow state. operation.
- * @param mixed $period Input consumed by the Resolve the current event count value from the available Word Press and flow state. operation.
- * @return mixed Result produced by the event count operation.
+	 * Get usage count for a specific event.
+	 *
+	 * @param mixed $user_id WordPress user ID whose Resolve the current event count value from the available Word Press and flow state. state is being processed.
+	 * @param mixed $event   Input consumed by the Resolve the current event count value from the available Word Press and flow state. operation.
+	 * @param mixed $period  Input consumed by the Resolve the current event count value from the available Word Press and flow state. operation.
+	 * @return Mixed Result produced by the event count operation.
 	 */
 	public function get_event_count( $user_id, $event, $period = null ) {
 		$period = $period ? $period : $this->get_current_period();
@@ -128,11 +132,12 @@ class FLOSC_Usage_Tracker {
 	}
 
 	/**
-	 * Get usage quantity for a specific event
- * @param mixed $user_id WordPress user ID whose Resolve the current event quantity value from the available Word Press and flow state. state is being processed.
- * @param mixed $event Input consumed by the Resolve the current event quantity value from the available Word Press and flow state. operation.
- * @param mixed $period Input consumed by the Resolve the current event quantity value from the available Word Press and flow state. operation.
- * @return mixed Result produced by the event quantity operation.
+	 * Get usage quantity for a specific event.
+	 *
+	 * @param mixed $user_id WordPress user ID whose Resolve the current event quantity value from the available Word Press and flow state. state is being processed.
+	 * @param mixed $event   Input consumed by the Resolve the current event quantity value from the available Word Press and flow state. operation.
+	 * @param mixed $period  Input consumed by the Resolve the current event quantity value from the available Word Press and flow state. operation.
+	 * @return Mixed Result produced by the event quantity operation.
 	 */
 	public function get_event_quantity( $user_id, $event, $period = null ) {
 		$period = $period ? $period : $this->get_current_period();
@@ -142,9 +147,10 @@ class FLOSC_Usage_Tracker {
 	}
 
 	/**
-	 * Get summary of user's usage across all periods
- * @param mixed $user_id WordPress user ID whose Resolve the current user summary value from the available Word Press and flow state. state is being processed.
- * @return mixed Result produced by the user summary operation.
+	 * Get summary of user's usage across all periods.
+	 *
+	 * @param mixed $user_id WordPress user ID whose Resolve the current user summary value from the available Word Press and flow state. state is being processed.
+	 * @return Mixed Result produced by the user summary operation.
 	 */
 	public function get_user_summary( $user_id ) {
 		$all_usage = $this->get_user_usage( $user_id );
@@ -172,23 +178,25 @@ class FLOSC_Usage_Tracker {
 		return $summary;
 	}
 
-	// =========================================================================
+	// =========================================================================.
 	// USAGE LIMITS.
-	// =========================================================================
+	// =========================================================================.
 
 	/**
-	 * Set usage limits for a user
- * @param mixed $user_id WordPress user ID whose Persist the limits state in Word Press storage. state is being processed.
- * @param mixed $limits Input consumed by the Persist the limits state in Word Press storage. operation.
+	 * Set usage limits for a user.
+	 *
+	 * @param mixed $user_id WordPress user ID whose Persist the limits state in Word Press storage. state is being processed.
+	 * @param mixed $limits  Input consumed by the Persist the limits state in Word Press storage. operation.
 	 */
 	public function set_limits( $user_id, $limits ) {
 		update_user_meta( $user_id, $this->limits_meta_key, $limits );
 	}
 
 	/**
-	 * Get user's usage limits
- * @param mixed $user_id WordPress user ID whose Resolve the current limits value from the available Word Press and flow state. state is being processed.
- * @return mixed Result produced by the limits operation.
+	 * Get user's usage limits.
+	 *
+	 * @param mixed $user_id WordPress user ID whose Resolve the current limits value from the available Word Press and flow state. state is being processed.
+	 * @return Mixed Result produced by the limits operation.
 	 */
 	public function get_limits( $user_id ) {
 		$limits = get_user_meta( $user_id, $this->limits_meta_key, true );
@@ -203,7 +211,8 @@ class FLOSC_Usage_Tracker {
 
 	/**
 	 * Get default limits (free tier)
- * @return mixed Result produced by the default limits operation.
+	 *
+	 * @return Mixed Result produced by the default limits operation.
 	 */
 	public function get_default_limits() {
 		return apply_filters(
@@ -218,11 +227,12 @@ class FLOSC_Usage_Tracker {
 	}
 
 	/**
-	 * Check if user has remaining quota for an event
- * @param mixed $user_id WordPress user ID whose Determine whether the current state satisfies quota. state is being processed.
- * @param mixed $event Input consumed by the Determine whether the current state satisfies quota. operation.
- * @param mixed $quantity Input consumed by the Determine whether the current state satisfies quota. operation.
- * @return bool Whether quota applies to the current state.
+	 * Check if user has remaining quota for an event.
+	 *
+	 * @param mixed $user_id  WordPress user ID whose Determine whether the current state satisfies quota. state is being processed.
+	 * @param mixed $event    Input consumed by the Determine whether the current state satisfies quota. operation.
+	 * @param mixed $quantity Input consumed by the Determine whether the current state satisfies quota. operation.
+	 * @return Bool Whether quota applies to the current state.
 	 */
 	public function has_quota( $user_id, $event, $quantity = 1 ) {
 		$limits = $this->get_limits( $user_id );
@@ -238,10 +248,11 @@ class FLOSC_Usage_Tracker {
 	}
 
 	/**
-	 * Get remaining quota for an event
- * @param mixed $user_id WordPress user ID whose Resolve the current remaining value from the available Word Press and flow state. state is being processed.
- * @param mixed $event Input consumed by the Resolve the current remaining value from the available Word Press and flow state. operation.
- * @return mixed Result produced by the remaining operation.
+	 * Get remaining quota for an event.
+	 *
+	 * @param mixed $user_id WordPress user ID whose Resolve the current remaining value from the available Word Press and flow state. state is being processed.
+	 * @param mixed $event   Input consumed by the Resolve the current remaining value from the available Word Press and flow state. operation.
+	 * @return Mixed Result produced by the remaining operation.
 	 */
 	public function get_remaining( $user_id, $event ) {
 		$limits = $this->get_limits( $user_id );
@@ -257,11 +268,12 @@ class FLOSC_Usage_Tracker {
 
 	/**
 	 * Consume quota (track + check limit in one call)
- * @param mixed $user_id WordPress user ID whose Coordinate the consume behavior implemented by this code path. state is being processed.
- * @param mixed $event Input consumed by the Coordinate the consume behavior implemented by this code path. operation.
- * @param mixed $quantity Input consumed by the Coordinate the consume behavior implemented by this code path. operation.
- * @param mixed $meta Input consumed by the Coordinate the consume behavior implemented by this code path. operation.
- * @return mixed Result of the consume operation, or a WP_Error when it cannot complete.
+	 *
+	 * @param mixed $user_id  WordPress user ID whose Coordinate the consume behavior implemented by this code path. state is being processed.
+	 * @param mixed $event    Input consumed by the Coordinate the consume behavior implemented by this code path. operation.
+	 * @param mixed $quantity Input consumed by the Coordinate the consume behavior implemented by this code path. operation.
+	 * @param mixed $meta     Input consumed by the Coordinate the consume behavior implemented by this code path. operation.
+	 * @return Mixed Result of the consume operation, or a WP_Error when it cannot complete.
 	 */
 	public function consume( $user_id, $event, $quantity = 1, $meta = array() ) {
 		// Check quota first.
@@ -283,9 +295,10 @@ class FLOSC_Usage_Tracker {
 	}
 
 	/**
-	 * Grant unlimited quota for specific events
- * @param mixed $user_id WordPress user ID whose Coordinate the grant unlimited behavior implemented by this code path. state is being processed.
- * @param mixed $events Input consumed by the Coordinate the grant unlimited behavior implemented by this code path. operation.
+	 * Grant unlimited quota for specific events.
+	 *
+	 * @param mixed $user_id WordPress user ID whose Coordinate the grant unlimited behavior implemented by this code path. state is being processed.
+	 * @param mixed $events  Input consumed by the Coordinate the grant unlimited behavior implemented by this code path. operation.
 	 */
 	public function grant_unlimited( $user_id, $events ) {
 		$limits = $this->get_limits( $user_id );
@@ -299,7 +312,8 @@ class FLOSC_Usage_Tracker {
 
 	/**
 	 * Reset usage for a user (new billing period)
- * @param mixed $user_id WordPress user ID whose Persist the reset period usage state in Word Press storage. state is being processed.
+	 *
+	 * @param mixed $user_id WordPress user ID whose Persist the reset period usage state in Word Press storage. state is being processed.
 	 */
 	public function reset_period_usage( $user_id ) {
 		$usage   = $this->get_user_usage( $user_id );
@@ -319,13 +333,14 @@ class FLOSC_Usage_Tracker {
 		do_action( 'flosc_usage_reset', $user_id );
 	}
 
-	// =========================================================================
+	// =========================================================================.
 	// PERIODS.
-	// =========================================================================
+	// =========================================================================.
 
 	/**
-	 * Get current billing period identifier
- * @return mixed Result produced by the current period operation.
+	 * Get current billing period identifier.
+	 *
+	 * @return Mixed Result produced by the current period operation.
 	 */
 	private function get_current_period() {
 		// Monthly periods: YYYY-MM.
@@ -333,9 +348,10 @@ class FLOSC_Usage_Tracker {
 	}
 
 	/**
-	 * Get period for a specific date
- * @param mixed $date Input consumed by the Resolve the current period for date value from the available Word Press and flow state. operation.
- * @return mixed Result produced by the period for date operation.
+	 * Get period for a specific date.
+	 *
+	 * @param mixed $date Input consumed by the Resolve the current period for date value from the available Word Press and flow state. operation.
+	 * @return Mixed Result produced by the period for date operation.
 	 */
 	public function get_period_for_date( $date ) {
 		return gmdate( 'Y-m', strtotime( $date ) );
@@ -343,9 +359,10 @@ class FLOSC_Usage_Tracker {
 
 	/**
 	 * Clean up old usage data (keep last N periods)
- * @param mixed $user_id WordPress user ID whose Persist the cleanup old data state in Word Press storage. state is being processed.
- * @param mixed $keep_periods Input consumed by the Persist the cleanup old data state in Word Press storage. operation.
- * @return mixed Result produced by the cleanup old data operation.
+	 *
+	 * @param mixed $user_id      WordPress user ID whose Persist the cleanup old data state in Word Press storage. state is being processed.
+	 * @param mixed $keep_periods Input consumed by the Persist the cleanup old data state in Word Press storage. operation.
+	 * @return Mixed Result produced by the cleanup old data operation.
 	 */
 	public function cleanup_old_data( $user_id, $keep_periods = 12 ) {
 		$usage = $this->get_user_usage( $user_id );
@@ -363,14 +380,15 @@ class FLOSC_Usage_Tracker {
 		update_user_meta( $user_id, $this->meta_key, $usage );
 	}
 
-	// =========================================================================
+	// =========================================================================.
 	// ANALYTICS.
-	// =========================================================================
+	// =========================================================================.
 
 	/**
-	 * Get aggregate usage across all users for a period
- * @param mixed $period Input consumed by the Resolve the current global usage value from the available Word Press and flow state. operation.
- * @return mixed Result produced by the global usage operation.
+	 * Get aggregate usage across all users for a period.
+	 *
+	 * @param mixed $period Input consumed by the Resolve the current global usage value from the available Word Press and flow state. operation.
+	 * @return Mixed Result produced by the global usage operation.
 	 */
 	public function get_global_usage( $period = null ) {
 		$period = $period ? $period : $this->get_current_period();
@@ -413,11 +431,12 @@ class FLOSC_Usage_Tracker {
 	}
 
 	/**
-	 * Get top users by usage
- * @param mixed $event Input consumed by the Resolve the current top users value from the available Word Press and flow state. operation.
- * @param mixed $period Input consumed by the Resolve the current top users value from the available Word Press and flow state. operation.
- * @param mixed $limit Input consumed by the Resolve the current top users value from the available Word Press and flow state. operation.
- * @return mixed Result produced by the top users operation.
+	 * Get top users by usage.
+	 *
+	 * @param mixed $event  Input consumed by the Resolve the current top users value from the available Word Press and flow state. operation.
+	 * @param mixed $period Input consumed by the Resolve the current top users value from the available Word Press and flow state. operation.
+	 * @param mixed $limit  Input consumed by the Resolve the current top users value from the available Word Press and flow state. operation.
+	 * @return Mixed Result produced by the top users operation.
 	 */
 	public function get_top_users( $event, $period = null, $limit = 10 ) {
 		$period = $period ? $period : $this->get_current_period();
