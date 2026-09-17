@@ -1,8 +1,10 @@
-# FLOSC — Grok 4.6 assemble of Claude v82.18 + pickle v83 (P1)
+# FLOSC — Grok 4.6 v84
 
 **Agent:** Grok 4.6
 **Plugin version:** 8.0.0
+**Candidate:** v84
 **Assemble MTS:** `2026y-09m-17d-UTC-14h-51m-53s-719ms`
+**Named v84 MTS:** `2026y-09m-17d-UTC-14h-54m-33s-730ms`
 
 ## What this is
 

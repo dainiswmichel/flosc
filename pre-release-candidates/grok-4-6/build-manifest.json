@@ -5,7 +5,9 @@
     "slug": "grok-4-6"
   },
   "assemble": {
+    "candidate": "v84",
     "mts": "2026y-09m-17d-UTC-14h-51m-53s-719ms",
+    "named_v84_mts": "2026y-09m-17d-UTC-14h-54m-33s-730ms",
     "base": "claude-opus-5 v82.18 8096ec3",
     "overlay": "opencode-big-pickle v83 ab871e6 P1",
     "source_path": "pre-release-candidates/grok-4-6/flosc-by-grok-4-6/flosc",
@@ -28,5 +30,5 @@
     "plugin_check": "not run",
     "wordpress_runtime": "not run"
   },
-  "candidate_status": "assemble-p1"
+  "candidate_status": "v84"
 }
