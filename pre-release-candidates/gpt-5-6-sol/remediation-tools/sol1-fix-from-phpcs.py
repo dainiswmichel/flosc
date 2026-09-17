@@ -146,7 +146,7 @@ for f,b in (data.get('files') or {}).items():
 log=[];changed_files=0
 for path,msgs in files.items():
     if not path.is_file():continue
-    original=path.read_text(encoding='utf-8')
+    original=path.read_text(encoding='utf-8', errors='surrogateescape')
     lines=original.splitlines()
     trailing='\n' if original.endswith('\n') else ''
     # Multiple findings can share a line. Group and process highest line first so
@@ -249,7 +249,7 @@ for path,msgs in files.items():
                 if m0:lines[idx]=m0.group(1)+sentence(m0.group(2));log.append(f'{path.name}:{idx+1} doc-capital')
     new='\n'.join(lines)+trailing
     if new!=original:
-        path.write_text(new,encoding='utf-8');changed_files+=1
+        path.write_text(new,encoding='utf-8', errors='surrogateescape');changed_files+=1
 
 changelog.write_text('\n'.join(log)+f'\nSOL1_FIX_SUMMARY files={changed_files} edits={len(log)}\n',encoding='utf-8')
 print(f'SOL1_FIX_SUMMARY files={changed_files} edits={len(log)}')
