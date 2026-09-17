@@ -1,0 +1,125 @@
+{
+  "categories": [
+    {
+      "slug": "flosc-da1-catalog-posts",
+      "name": "FLOSC DA1 Catalog Posts",
+      "description": "Posts that pitch the Extremely Ordinary Instruction Manual Collection and the UberManual.",
+      "parent": null,
+      "term_meta": {
+        "_flosc_protected": "yes"
+      }
+    }
+  ],
+  "posts": [
+    {
+      "title": "Fifty Manuals Nobody Asked For",
+      "content": "We wrote instruction manuals for fifty things that do not have instruction manuals. Opening a jar that has decided otherwise. Locating the end of the sticky tape. Getting a sock out from behind the washing machine.\n\nNone of this is useful. All of it is real. Ask the assistant to show you one.",
+      "excerpt": "Fifty manuals for fifty things nobody writes manuals for.",
+      "slug": "",
+      "item": 1,
+      "access": "visitor",
+      "starter_access": "freeline",
+      "protection_mode": "full",
+      "category": "flosc-da1-catalog-posts"
+    },
+    {
+      "title": "The Jar Has Taken a Position",
+      "content": "Manual 1 opens with a claim we stand behind: the jar is not stuck. The jar has taken a position.\n\nWhat follows is four minutes on negotiation, leverage, and the warm-water concession. It is the most-read page in the collection and we think that says something about all of us.",
+      "excerpt": "On negotiation, leverage, and the warm-water concession.",
+      "slug": "",
+      "item": 2,
+      "access": "visitor",
+      "starter_access": "freeline",
+      "protection_mode": "full",
+      "category": "flosc-da1-catalog-posts"
+    },
+    {
+      "title": "Step Four Is Just Giving Up",
+      "content": "Our manual on folding a fitted sheet has seven steps. Step four reads, in full: roll it into a ball and close the cupboard.\n\nWe considered removing it. We left it in, because a manual that lies to you is worse than a manual that gives up honestly.",
+      "excerpt": "The only honest manual on folding a fitted sheet.",
+      "slug": "",
+      "item": 3,
+      "access": "visitor",
+      "starter_access": "freeline",
+      "protection_mode": "full",
+      "category": "flosc-da1-catalog-posts"
+    },
+    {
+      "title": "Introducing the UberManual",
+      "content": "All fifty manuals, compiled into one PDF. Four hundred pages of procedure for things that need no procedure.\n\nWe believe it is the most boring document ever assembled, and we mean that as a specification rather than an apology. Have an AI voice read it aloud at bedtime. Nobody has finished chapter two.",
+      "excerpt": "All fifty manuals in one PDF. The most boring document ever assembled.",
+      "slug": "",
+      "item": 4,
+      "access": "visitor",
+      "starter_access": "freeline",
+      "protection_mode": "full",
+      "category": "flosc-da1-catalog-posts"
+    },
+    {
+      "title": "What the Guest Shelf Adds",
+      "content": "You now have four more manuals than a visitor does. Emergency procedures for a jammed zipper. Parallel parking without an audience. Refolding a road map, which we rate Advanced and mean it.\n\nMembers reach all fifty. The assistant will tell you which shelf you are on if you ask.",
+      "excerpt": "Four more manuals, and a note on what members reach.",
+      "slug": "",
+      "item": 5,
+      "access": "guest",
+      "starter_access": "guest",
+      "protection_mode": "protected",
+      "category": "flosc-da1-catalog-posts"
+    },
+    {
+      "title": "The Road Map Problem",
+      "content": "Manual 13 covers refolding a road map along its original creases. We rate it Advanced. Fifteen minutes.\n\nThe manual concludes by accepting that you will not succeed. We think that is the correct ending and we have not been persuaded otherwise.",
+      "excerpt": "Fifteen minutes on a task the manual admits you will fail.",
+      "slug": "",
+      "item": 6,
+      "access": "guest",
+      "starter_access": "guest",
+      "protection_mode": "protected",
+      "category": "flosc-da1-catalog-posts"
+    },
+    {
+      "title": "On Being Read to Sleep",
+      "content": "Several people have asked whether the UberManual audio actually works as a sleep aid. It does.\n\nThe mechanism is not mystery. It is four hundred pages of measured procedure delivered in an even voice, with no narrative tension of any kind. Chapter one is about a jar.",
+      "excerpt": "Why four hundred pages of procedure works as a sleep aid.",
+      "slug": "",
+      "item": 7,
+      "access": "guest",
+      "starter_access": "guest",
+      "protection_mode": "protected",
+      "category": "flosc-da1-catalog-posts"
+    },
+    {
+      "title": "The Full Shelf",
+      "content": "All fifty manuals are open to you. Getting a duvet, a cat, and yourself into bed — the cat is a fixed variable. Opening a tin without a tin opener, three methods in ascending order of alarm. Carrying a mattress up a staircase alone, which ends by recommending you ask a friend.\n\nAsk the assistant for any of them by name.",
+      "excerpt": "All fifty manuals, including the ones we hesitated over.",
+      "slug": "",
+      "item": 8,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-da1-catalog-posts"
+    },
+    {
+      "title": "Manual 50 Is About Manual 50",
+      "content": "The last manual is called Finishing a Manual You Started Reading. It covers bookmark discipline and the final-chapter push.\n\nIt is two minutes long and it ends with the line: you are doing it now. We are quietly proud of this.",
+      "excerpt": "The last manual is about finishing the last manual.",
+      "slug": "",
+      "item": 9,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-da1-catalog-posts"
+    },
+    {
+      "title": "How This Journey Was Built",
+      "content": "What you just walked through is a FLOSC journey. A catalog of fifty rows, each tagged Freeline, Guest or Member. A flow that decides what the assistant says at each stage. An offer at the end.\n\nNothing here is special to manuals. Swap the catalog for recipes, properties, courses or compositions and the journey works the same way. That is the point of the demonstration.",
+      "excerpt": "The pattern behind the joke, and how to reuse it.",
+      "slug": "",
+      "item": 10,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-da1-catalog-posts"
+    }
+  ]
+}

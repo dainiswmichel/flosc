@@ -1,0 +1,30 @@
+# Local junk — never commit, never ship.
+.DS_Store
+Thumbs.db
+*.swp
+*.log
+*.zip
+*.bundle
+
+# ...except a candidate's own built artifact. *.zip above silently skipped it
+# on `git add -A`, so main carried a v7 zip beside a v9 SHA256SUMS that did not
+# match it. The candidate folder is excluded from the shipped artifact by
+# .distignore and by build-dist-zip's hard deny list, so nothing here can ride
+# along into a release.
+!pre-release-candidates/*/flosc.zip
+
+# Composer / PHPCS tooling (local only; .distignore + build-dist-zip deny)
+vendor/
+composer.json
+composer.lock
+.venv/
+node_modules/
+
+# Dev / review scratch — NEVER ship (hard deny in build-dist-zip.sh)
+flosc_development_worknotes/
+flosc_development_archives/
+tmp/
+zip-files/
+
+# Transcripts from tests/verify-standards.sh — run artifacts, never committed.
+tests/verify-standards-*.log

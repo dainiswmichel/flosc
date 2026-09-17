@@ -1,0 +1,158 @@
+.flosc-contact-form-wrap {
+    max-width: 980px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.flosc-contact-form-wrap .flosc-contact-form-card {
+    background: var(--flosc-contact-bg, #ffffff);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-top: 6px solid var(--flosc-contact-accent, #2e8b57);
+    border-radius: 18px;
+    box-shadow: 0 12px 26px rgba(0, 0, 0, 0.08);
+    padding: 1.6rem;
+}
+
+.flosc-contact-form-wrap .flosc-contact-form-title {
+    margin: 0 0 0.4rem;
+    font-size: clamp(1.55rem, 2.2vw, 2rem);
+    line-height: 1.2;
+}
+
+.flosc-contact-form-wrap .flosc-contact-form-intro {
+    margin: 0 0 1rem;
+    font-size: 1rem;
+    color: #334155;
+}
+
+.flosc-contact-form-wrap .flosc-contact-notice {
+    border-radius: 12px;
+    margin: 0 0 1rem;
+    padding: 0.8rem 0.95rem;
+    font-size: 0.96rem;
+}
+
+.flosc-contact-form-wrap .flosc-contact-notice-success {
+    background: linear-gradient(180deg, #f2fff7 0%, #e6f9ef 100%);
+    border: 1px solid #86efac;
+    color: #065f46;
+    font-size: 1.08rem;
+    font-weight: 650;
+    line-height: 1.45;
+    padding: 1.05rem 1.1rem;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
+}
+
+.flosc-contact-form-wrap .flosc-contact-notice-error {
+    background: #fff4f4;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+}
+
+.flosc-contact-form-wrap .flosc-contact-form {
+    display: block;
+}
+
+.flosc-contact-form-wrap .flosc-contact-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.9rem 1rem;
+}
+
+.flosc-contact-form-wrap .flosc-contact-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.flosc-contact-form-wrap .flosc-contact-field label {
+    font-weight: 600;
+    font-size: 0.92rem;
+}
+
+.flosc-contact-form-wrap .flosc-contact-field input,
+.flosc-contact-form-wrap .flosc-contact-field textarea {
+    width: 100%;
+    border: 1px solid rgba(15, 23, 42, 0.18) !important;
+    border-radius: 10px;
+    padding: 0.72rem 0.78rem;
+    font-size: 1rem;
+    line-height: 1.4;
+    background: #fff !important;
+    color: #0f172a !important;
+    box-shadow: none !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    pointer-events: auto !important;
+    opacity: 1 !important;
+}
+
+.flosc-contact-form-wrap .flosc-contact-field input:-webkit-autofill,
+.flosc-contact-form-wrap .flosc-contact-field input:-webkit-autofill:hover,
+.flosc-contact-form-wrap .flosc-contact-field input:-webkit-autofill:focus,
+.flosc-contact-form-wrap .flosc-contact-field textarea:-webkit-autofill,
+.flosc-contact-form-wrap .flosc-contact-field textarea:-webkit-autofill:hover,
+.flosc-contact-form-wrap .flosc-contact-field textarea:-webkit-autofill:focus {
+    -webkit-text-fill-color: #0f172a !important;
+    box-shadow: 0 0 0 1000px #ffffff inset !important;
+    transition: background-color 9999s ease-out 0s;
+}
+
+.flosc-contact-form-wrap .flosc-contact-field input:focus,
+.flosc-contact-form-wrap .flosc-contact-field textarea:focus {
+    outline: 2px solid color-mix(in srgb, var(--flosc-contact-accent, #2e8b57), white 72%);
+    border-color: var(--flosc-contact-accent, #2e8b57);
+}
+
+.flosc-contact-form-wrap .flosc-contact-field-message {
+    margin-top: 0.95rem;
+}
+
+.flosc-contact-form-wrap .flosc-contact-field-message textarea {
+    min-height: 210px;
+    font-family: var(--flosc-contact-msg-font, 'Courier New', Courier, monospace);
+    font-size: var(--flosc-contact-msg-size, 20px);
+}
+
+.flosc-contact-form-wrap .flosc-contact-submit {
+    margin-top: 1rem;
+    border: 0;
+    border-radius: 999px;
+    padding: 0.82rem 1.55rem;
+    font-size: 1.02rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    background: var(--flosc-contact-button-bg, #1f6feb);
+    color: var(--flosc-contact-button-text, #ffffff);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
+    cursor: pointer;
+    transition: transform 0.16s ease, box-shadow 0.16s ease, opacity 0.16s ease;
+}
+
+.flosc-contact-form-wrap .flosc-contact-submit:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 22px rgba(0, 0, 0, 0.16);
+}
+
+.flosc-contact-form-wrap .flosc-contact-submit:active {
+    transform: translateY(0);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+}
+
+.flosc-contact-hp {
+    position: absolute !important;
+    left: -9999px !important;
+    width: 1px !important;
+    height: 1px !important;
+    overflow: hidden !important;
+}
+
+@media (max-width: 720px) {
+    .flosc-contact-form-wrap .flosc-contact-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .flosc-contact-form-wrap .flosc-contact-form-card {
+        padding: 1.2rem;
+    }
+}

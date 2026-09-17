@@ -1,0 +1,34 @@
+{
+  "candidate": "v85",
+  "agent": "GPT-5.6 Sol",
+  "slug": "gpt-5-6-sol",
+  "base": {
+    "candidate": "v84",
+    "agent": "Grok 4.6",
+    "commit": "5cc4b9fbd2527357a949492689480c506fde4ea9",
+    "composition": "Claude v82.18 base + Pickle v83 P1 overlay"
+  },
+  "paths": {
+    "candidate": "pre-release-candidates/gpt-5-6-sol",
+    "source": "pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc",
+    "zip": "pre-release-candidates/gpt-5-6-sol/flosc.zip"
+  },
+  "artifact": {
+    "sha256": "ccdb7ab39ecf476d96d43d1912329a116c26ef3e6f6deedef1d1e691d6126ad4",
+    "size_bytes": 2793531,
+    "entries": 281,
+    "root": "flosc/",
+    "plugin_version": "8.0.0",
+    "requires_at_least": "7.0",
+    "tests_in_zip": 0
+  },
+  "baseline_note": "Initial v85 publication is byte-identical to Grok v84 before SOL-1 through SOL-5 remediation.",
+  "remediation": {
+    "SOL-1": "not yet applied",
+    "SOL-2": "not yet applied",
+    "SOL-3": "not yet applied",
+    "SOL-4": "not yet applied",
+    "SOL-5": "not yet applied"
+  },
+  "readiness_claim": "none"
+}
