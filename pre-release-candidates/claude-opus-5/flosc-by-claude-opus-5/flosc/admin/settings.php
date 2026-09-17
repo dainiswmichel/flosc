@@ -1683,8 +1683,8 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 			$flosc_new_settings['free_content_item_count'] = max( 1, min( 50, intval( $flosc_new_settings['free_content_item_count'] ) ) );
 		}
 
-		// Sync to term_meta while class-content-protection.php still reads term_meta.
-		// Follow-up: move class-content-protection.php to flow_settings['protected_content']
+		// Sync to term_meta while class-flosc-content-protection.php still reads term_meta.
+		// Follow-up: move class-flosc-content-protection.php to flow_settings['protected_content']
 		// and then remove this compatibility sync.
 		// First clear old protection flags from categories no longer protected.
 		$flosc_old_protected = $flosc_flow_settings['protected_content'] ?? array();

@@ -318,7 +318,7 @@ class FLOSC_Content_Protection {
 			return false;
 		}
 
-		require_once FLOSC_PLUGIN_DIR . 'includes/class-member-access.php';
+		require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-member-access.php';
 		$member_access = FLOSC_Member_Access::instance();
 
 		$required_level = $this->get_category_required_level( $category_id );
@@ -461,7 +461,7 @@ class FLOSC_Content_Protection {
 		}
 
 		$user_id = get_current_user_id();
-		require_once FLOSC_PLUGIN_DIR . 'includes/class-member-access.php';
+		require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-member-access.php';
 		$member_access = FLOSC_Member_Access::instance();
 
 		// Check if user has guest access to this specific post (free lesson).

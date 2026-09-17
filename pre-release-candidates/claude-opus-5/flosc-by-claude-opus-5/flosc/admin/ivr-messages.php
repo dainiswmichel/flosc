@@ -321,7 +321,7 @@ function flosc_run_ivr_diagnostics() {
 		$file_modified = gmdate( 'Y-m-d H:i:s', filemtime( $ivr_file ) );
 
 		// Try to parse it.
-		require_once FLOSC_PLUGIN_DIR . 'includes/portability/class-ivr-parser.php';
+		require_once FLOSC_PLUGIN_DIR . 'includes/portability/class-flosc-ivr-parser.php';
 		$flosc_parser = FLOSC_IVR_Parser::flosc_instance();
 		$markdown     = flosc_fs_get_contents( $ivr_file );
 		$config       = $flosc_parser->flosc_parse( $markdown );
@@ -1749,7 +1749,7 @@ if ( null !== $flosc_import_preview ) :
 	$flosc_db_messages_for_compare   = flosc_flow_get_messages( $flosc_flow_settings );
 	$flosc_file_messages_for_compare = array();
 	if ( file_exists( $flosc_ivr_file_path ) ) {
-		require_once FLOSC_PLUGIN_DIR . 'includes/portability/class-ivr-parser.php';
+		require_once FLOSC_PLUGIN_DIR . 'includes/portability/class-flosc-ivr-parser.php';
 		$flosc_preview_parser            = FLOSC_IVR_Parser::flosc_instance();
 		$flosc_preview_markdown          = flosc_fs_get_contents( $flosc_ivr_file_path );
 		$flosc_preview_config            = $flosc_preview_parser->flosc_parse( $flosc_preview_markdown ? $flosc_preview_markdown : '' );

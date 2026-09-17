@@ -1844,32 +1844,32 @@ class FLOSC_Framework {
 		$this->token_ledger     = new FLOSC_Token_Ledger( $this );
 		$this->session_rest     = new FLOSC_Session_Rest( $this );
 		// Core components.
-		require_once FLOSC_PLUGIN_DIR . 'includes/class-ai-chat-dispatch.php';
-		require_once FLOSC_PLUGIN_DIR . 'includes/class-stt-dispatch.php';
-		require_once FLOSC_PLUGIN_DIR . 'includes/class-quiz-registry.php';
-		require_once FLOSC_PLUGIN_DIR . 'includes/sessions/class-session-manager.php';
-		require_once FLOSC_PLUGIN_DIR . 'includes/class-pronunciation-analyzer.php';
-		require_once FLOSC_PLUGIN_DIR . 'includes/class-lesson-manager.php';
+		require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-ai-chat-dispatch.php';
+		require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-stt-dispatch.php';
+		require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-quiz-registry.php';
+		require_once FLOSC_PLUGIN_DIR . 'includes/sessions/class-flosc-session-manager.php';
+		require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-pronunciation-analyzer.php';
+		require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-lesson-manager.php';
 
 		// IVR system (v07.08).
-		require_once FLOSC_PLUGIN_DIR . 'includes/portability/class-ivr-parser.php';
-		require_once FLOSC_PLUGIN_DIR . 'includes/class-condition-evaluator.php';
+		require_once FLOSC_PLUGIN_DIR . 'includes/portability/class-flosc-ivr-parser.php';
+		require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-condition-evaluator.php';
 
 		// RAG system (v9.1.6).
-		require_once FLOSC_PLUGIN_DIR . 'includes/class-user-access-manager.php';
-		require_once FLOSC_PLUGIN_DIR . 'includes/class-content-filter.php';
-		require_once FLOSC_PLUGIN_DIR . 'includes/class-rag-manager.php';
+		require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-user-access-manager.php';
+		require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-content-filter.php';
+		require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-rag-manager.php';
 		require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-site-content-index.php';
 		if ( function_exists( 'flosc_site_content_index' ) ) {
 			flosc_site_content_index(); // Register admin-post handlers for site index.
 		}
-		require_once FLOSC_PLUGIN_DIR . 'includes/class-access-validator.php'; // Access validator, added in 9.1.7.
-		require_once FLOSC_PLUGIN_DIR . 'includes/class-free-content-item-manager.php'; // Free content item manager, added in 9.1.8.
-		require_once FLOSC_PLUGIN_DIR . 'includes/class-member-access.php'; // Member access, added in 9.1.8.
-		require_once FLOSC_PLUGIN_DIR . 'includes/class-content-protection.php'; // Visibility tiers, added in 1.0.1.
-		require_once FLOSC_PLUGIN_DIR . 'includes/class-bridge-data-manager.php'; // Quiz state tracking, added in 1.0.2.
-		require_once FLOSC_PLUGIN_DIR . 'includes/class-quiz-manager.php'; // External quiz integration, added in 1.0.2.
-		require_once FLOSC_PLUGIN_DIR . 'includes/class-flow-manager.php'; // Multi-flow system, added in 1.2.2.
+		require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-access-validator.php'; // Access validator, added in 9.1.7.
+		require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-free-content-item-manager.php'; // Free content item manager, added in 9.1.8.
+		require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-member-access.php'; // Member access, added in 9.1.8.
+		require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-content-protection.php'; // Visibility tiers, added in 1.0.1.
+		require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-bridge-data-manager.php'; // Quiz state tracking, added in 1.0.2.
+		require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-quiz-manager.php'; // External quiz integration, added in 1.0.2.
+		require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-flow-manager.php'; // Multi-flow system, added in 1.2.2.
 		require_once FLOSC_PLUGIN_DIR . 'includes/logging/class-flosc-chat-logger.php'; // Chat logging, added in 1.9.0.
 		require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-concierge.php'; // Concierge primers, added in 8.0.0.
 		require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-trajectory.php'; // Trajectory guidance, on the same AI engine, added in 8.0.0.
@@ -1883,13 +1883,14 @@ class FLOSC_Framework {
 		require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-response-validator.php';
 
 		// SALE system.
-		require_once FLOSC_PLUGIN_DIR . 'includes/sale/class-sale-manager.php';
+		require_once FLOSC_PLUGIN_DIR . 'includes/sale/class-flosc-sale-manager.php';
 
 		// SSO system (v1.4.0).
 		require_once FLOSC_PLUGIN_DIR . 'includes/sso/class-sso-provider-base.php';
 		require_once FLOSC_PLUGIN_DIR . 'includes/sso/class-oauth2-handler.php';
 		require_once FLOSC_PLUGIN_DIR . 'includes/sso/class-user-linker.php';
 		require_once FLOSC_PLUGIN_DIR . 'includes/sso/class-sso-manager.php';
+		require_once FLOSC_PLUGIN_DIR . 'includes/sso/flosc-sso-accessor.php';
 
 		$this->ai_chat_dispatch       = new FLOSC_AI_Chat_Dispatch();
 		$this->stt_dispatch           = new FLOSC_STT_Dispatch();
@@ -6627,7 +6628,7 @@ Example good response:
 			// Parse answers to determine correct/incorrect
 			// NOTE: This is a generic fallback. Quiz types with their own grade() method
 			// produce structured incorrect/missed arrays that the Free Lesson Manager
-			// checks first (see get_missed_lessons() in class-free-content-item-manager.php).
+			// checks first (see get_missed_lessons() in class-flosc-free-content-item-manager.php).
 			$user_nums     = array_filter( array_map( 'trim', is_array( $answers ) ? $answers : explode( ',', $answers ) ), 'is_numeric' );
 			$expected_nums = array( '1', '2', '3', '4', '5', '6', '7', '8', '9', '10' );
 			foreach ( $expected_nums as $num ) {
@@ -13412,7 +13413,7 @@ Example good response:
 		$ivr_file = sanitize_file_name( $request->get_param( 'ivr_file' ) ?? '' );
 
 		// Build context.
-		require_once FLOSC_PLUGIN_DIR . 'includes/class-condition-evaluator.php';
+		require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-condition-evaluator.php';
 		$context = FLOSC_Condition_Evaluator::build_context(
 			is_user_logged_in() ? get_current_user_id() : null,
 			array(

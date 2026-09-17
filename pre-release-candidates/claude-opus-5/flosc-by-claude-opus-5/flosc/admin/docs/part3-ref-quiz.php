@@ -22,13 +22,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 <h2 id="quiz-architecture">Architecture Overview</h2>
 <p>Three layers:</p>
 <ol>
-	<li><strong>Abstract base</strong> (<code>abstract-quiz-type.php</code>) — defines the contract every quiz type must fulfill, plus shared scoring and lesson-lookup logic</li>
-	<li><strong>Factory</strong> (<code>class-quiz-type-factory.php</code>) — discovers and instantiates quiz types</li>
+	<li><strong>Abstract base</strong> (<code>class-flosc-abstract-quiz-type.php</code>) — defines the contract every quiz type must fulfill, plus shared scoring and lesson-lookup logic</li>
+	<li><strong>Factory</strong> (<code>class-flosc-quiz-type-factory.php</code>) — discovers and instantiates quiz types</li>
 	<li><strong>Implementations</strong> — one PHP class per quiz format (Sample Assessment Quiz — subject-neutral defaults — plus Multiple Choice, True/False, Numbers, Audio)</li>
 </ol>
 <p>The admin quiz tab exposes two UI zones: <strong>Active Quizzes</strong> (summary of what is live in the flow) and <strong>Quiz Deck</strong> (library of all quiz types with enable toggle and inline editor).</p>
 
-<h2 id="quiz-manager">class-quiz-manager.php — External Integration Bridge</h2>
+<h2 id="quiz-manager">class-flosc-quiz-manager.php — External Integration Bridge</h2>
 <p>Handles integration with <em>external</em> quiz plugins. Not used for FLOSC native quiz types.</p>
 
 <h3 id="quiz-manager-purpose">What It Does</h3>
@@ -69,7 +69,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 Auth: valid <code>X-FLOSC-API-Key</code> header OR logged-in WordPress user.<br>
 Params: <code>user_id</code>, <code>quiz_id</code>, <code>score_data</code> (object with <code>score</code>, <code>correct_items</code>, <code>incorrect_items</code>).</p>
 
-<h2 id="quiz-type-factory">class-quiz-type-factory.php — The Factory</h2>
+<h2 id="quiz-type-factory">class-flosc-quiz-type-factory.php — The Factory</h2>
 <p>Auto-discovers and instantiates quiz type classes from the <code>includes/quiz-types/</code> directory.</p>
 
 <h3 id="quiz-factory-purpose">What It Does</h3>
@@ -82,7 +82,7 @@ Params: <code>user_id</code>, <code>quiz_id</code>, <code>score_data</code> (obj
 	<li><code>get_active_quiz_type()</code> — returns the currently selected quiz type from flow settings</li>
 </ul>
 
-<h2 id="quiz-abstract">abstract-quiz-type.php — The Base Class</h2>
+<h2 id="quiz-abstract">class-flosc-abstract-quiz-type.php — The Base Class</h2>
 <p>All quiz types extend <code>FLOSC_Abstract_Quiz_Type</code>. Defines the full contract for content format, scoring, and lesson mapping.</p>
 
 <h3 id="quiz-abstract-contract">Required Abstract Methods</h3>
@@ -172,7 +172,7 @@ TOPIC: short-a-vowel</code></pre>
 </table>
 <p>To activate TOPIC-based lesson recommendations: create WordPress posts/categories/tags using these slugs (or customize the TOPIC: lines in the quiz editor to match your own WordPress structure).</p>
 
-<h3 id="quiz-multiplechoice">class-multiplechoice-quiz.php — Multiple Choice</h3>
+<h3 id="quiz-multiplechoice">class-flosc-multiplechoice-quiz.php — Multiple Choice</h3>
 <p>Classic format with 2–4 options per question. One question per line, pipe-delimited.</p>
 
 <h4 id="quiz-mc-format">Question Format</h4>
@@ -182,7 +182,7 @@ TOPIC: short-a-vowel</code></pre>
 <h4 id="quiz-mc-scoring">Scoring Logic</h4>
 <p>User submits comma-separated answer letters (e.g. <code>A,B,C,B</code>). Each answer compared against the parsed <code>Correct:</code> value (case-insensitive). Score = correct / total × 100.</p>
 
-<h3 id="quiz-truefalse">class-truefalse-quiz.php — True/False</h3>
+<h3 id="quiz-truefalse">class-flosc-truefalse-quiz.php — True/False</h3>
 <p>One statement per line, pipe-delimited. Accepts T/F, True/False, Yes/No, 1/0 as user answers (normalized internally).</p>
 
 <h4 id="quiz-tf-format">Question Format</h4>

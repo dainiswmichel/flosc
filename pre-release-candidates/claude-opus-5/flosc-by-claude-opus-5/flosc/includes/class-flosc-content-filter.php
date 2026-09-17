@@ -83,7 +83,7 @@ class flosc_content_filter {
 			// v8.1.0: Unified — use FLOSC_Member_Access (single source of truth)
 			// Previously used FLOSC_User_Access_Manager which checked flosc_member_status meta
 			// that was never written by any purchase flow.
-			require_once FLOSC_PLUGIN_DIR . 'includes/class-member-access.php';
+			require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-member-access.php';
 			$member_access = FLOSC_Member_Access::instance();
 
 			// Get current user's access level (visitor/guest/member) for the flow

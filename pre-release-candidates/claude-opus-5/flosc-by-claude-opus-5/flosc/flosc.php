@@ -95,6 +95,7 @@ if ( ! function_exists( 'flosc_log' ) ) {
 require_once FLOSC_PLUGIN_DIR . 'includes/filesystem/class-flosc-filesystem.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/filesystem/flosc-data-paths.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-request.php';
+require_once FLOSC_PLUGIN_DIR . 'includes/flosc-accessors.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-available-providers.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-wp-ai-client.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/ai/flosc-model-catalog.php';
@@ -313,7 +314,7 @@ if ( ! get_option( 'flosc_ivr_reparse_800' ) ) {
 		function () {
 			$ivr_dir = defined( 'FLOSC_PLUGIN_DIR' ) ? FLOSC_PLUGIN_DIR . 'ai_configuration_files/' : '';
 			if ( $ivr_dir && is_dir( $ivr_dir ) ) {
-				require_once FLOSC_PLUGIN_DIR . 'includes/portability/class-ivr-parser.php';
+				require_once FLOSC_PLUGIN_DIR . 'includes/portability/class-flosc-ivr-parser.php';
 				$parser = FLOSC_IVR_Parser::flosc_instance();
 				// See flosc_sync_flow_options_from_ivr_files(): glob() can
 				// return false, so each result is named and normalised before

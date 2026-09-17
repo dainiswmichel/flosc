@@ -26,7 +26,7 @@ function flosc_activate() {
 	// is deliberately imported or configured — not on every generic activate.
 
 	// v1.2.2: Migrate legacy settings to flows system.
-	require_once FLOSC_PLUGIN_DIR . 'includes/class-flow-manager.php';
+	require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-flow-manager.php';
 	flosc_flows()->maybe_migrate_from_legacy();
 
 	// Flush rewrite rules to register REST API routes.

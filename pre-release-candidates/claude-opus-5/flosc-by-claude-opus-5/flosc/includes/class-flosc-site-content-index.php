@@ -2040,10 +2040,3 @@ class FLOSC_Site_Content_Index {
 		$this->redirect_ai( $ivr, 'error', __( 'Could not reindex that post.', 'flosc' ) );
 	}
 }
-
-/**
- * Bootstrap singleton (admin hooks).
- */
-function flosc_site_content_index() {
-	return FLOSC_Site_Content_Index::instance();
-}

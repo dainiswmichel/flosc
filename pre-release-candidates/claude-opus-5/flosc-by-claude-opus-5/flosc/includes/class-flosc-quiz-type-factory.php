@@ -46,7 +46,7 @@ class FLOSC_Quiz_Type_Factory {
 		}
 
 		// Load abstract base class first.
-		require_once FLOSC_PLUGIN_DIR . 'includes/quiz-types/abstract-quiz-type.php';
+		require_once FLOSC_PLUGIN_DIR . 'includes/quiz-types/class-flosc-abstract-quiz-type.php';
 
 		// Get all quiz type files.
 		$quiz_types_dir = FLOSC_PLUGIN_DIR . 'includes/quiz-types/';

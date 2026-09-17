@@ -575,10 +575,3 @@ class FLOSC_Flow_Manager {
 		return update_option( self::OPTION_KEY, $flows );
 	}
 }
-
-/**
- * Global accessor function
- */
-function flosc_flows() {
-	return FLOSC_Flow_Manager::instance();
-}

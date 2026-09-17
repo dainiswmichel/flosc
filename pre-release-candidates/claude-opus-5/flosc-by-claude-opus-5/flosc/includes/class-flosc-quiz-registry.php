@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-require_once FLOSC_PLUGIN_DIR . 'includes/quiz-types/abstract-quiz-type.php';
+require_once FLOSC_PLUGIN_DIR . 'includes/quiz-types/class-flosc-abstract-quiz-type.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/quiz-types/class-flosc-sample-assessment-quiz.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/quiz-types/class-flosc-sample-text-based-quiz.php';
 

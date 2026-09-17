@@ -701,12 +701,3 @@ class SSO_Manager {
 		);
 	}
 }
-
-/**
- * Get SSO Manager instance
- *
- * @return SSO_Manager
- */
-function flosc_sso() {
-	return SSO_Manager::get_instance();
-}

@@ -81,7 +81,7 @@ class FLOSC_Free_Content_Item_Manager {
 		}
 
 		// Admin-configured complimentary count (flow free_content_item_count / proportion).
-		require_once FLOSC_PLUGIN_DIR . 'includes/class-member-access.php';
+		require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-member-access.php';
 		$member_access = FLOSC_Member_Access::instance();
 		$count         = max( 1, intval( $member_access->calculate_free_content_item_count( count( $missed ) ) ) );
 

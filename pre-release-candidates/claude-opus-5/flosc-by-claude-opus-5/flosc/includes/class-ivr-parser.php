@@ -1,6 +1,6 @@
 <?php
 /**
- * Compatibility shim — implementation lives at includes/portability/class-ivr-parser.php
+ * Compatibility shim — implementation lives at includes/portability/class-flosc-ivr-parser.php
  *
  * @package FLOSC
  */
@@ -11,4 +11,4 @@ if ( ! defined( 'ABSPATH' ) ) {
 if ( ! defined( 'FLOSC_PLUGIN_DIR' ) ) {
 	return;
 }
-require_once FLOSC_PLUGIN_DIR . 'includes/portability/class-ivr-parser.php';
+require_once FLOSC_PLUGIN_DIR . 'includes/portability/class-flosc-ivr-parser.php';

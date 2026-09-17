@@ -103,7 +103,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 <p>A numeric tier stored as user meta that controls which FLOSC content a user may access. Level 0 = Visitor, Level 1 = Guest, Level 2 = Member (purchased). Also used for token-based systems with higher levels for premium tiers.</p>
 
 <h3 id="term-access-manager">Access Manager (Sale)</h3>
-<p><code>includes/sale/class-access-manager.php</code>. Grants and revokes member access after a successful purchase. Updates user meta, logs the transaction, triggers post-purchase hooks.</p>
+<p><code>includes/sale/class-flosc-access-manager.php</code>. Grants and revokes member access after a successful purchase. Updates user meta, logs the transaction, triggers post-purchase hooks.</p>
 
 <h3 id="term-admin-introspection">Admin Introspection</h3>
 <p>A verification mechanism that checks whether the AI "knows" what FLOSC flow description it is operating for. The <code>check_admin_introspection()</code> method builds an <code>adminVerification</code> object (IVR file name, app slug, public title, tagline, domain) included in the FLOSC_USER config object sent to the JavaScript client. Used as a self-consistency check.</p>
@@ -145,7 +145,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 <p>Client-side storage of quiz results before login. When a visitor completes the quiz, their score and answers are stored in the browser (localStorage/sessionStorage). When they create an account, this data is "bridged" to the new user account via the <code>/flosc/v1/funnel-complete</code> REST endpoint. Prevents losing quiz context during the login flow.</p>
 
 <h3 id="term-bridge-data-manager">Bridge Data Manager</h3>
-<p><code>class-bridge-data-manager.php</code>. Server-side component that receives, stores, and retrieves bridge data. Manages the handoff of quiz scores from anonymous sessions to registered users.</p>
+<p><code>class-flosc-bridge-data-manager.php</code>. Server-side component that receives, stores, and retrieves bridge data. Manages the handoff of quiz scores from anonymous sessions to registered users.</p>
 
 <h3 id="term-build-context">build_context()</h3>
 <p>A method in the main FLOSC class that assembles the complete context array passed to AI chat dispatch and IVR evaluation. Includes: user ID, user state, quiz results, flow ID, phase, purchased status, and other variables used by condition evaluation.</p>
@@ -174,7 +174,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 <p>The complete structured context payload sent to the AI on the first message of a session. Built by <code>class-flosc-chatpack.php</code>. Contains sections: Identity, WordPress context, User state, Flow configuration, Knowledge base, IVR messages, and Behavioral rules. Subsequent messages send a slimmer "follow-up pack" instead of the full chatpack, to minimize token usage.</p>
 
 <h3 id="term-clickbank">ClickBank</h3>
-<p>One of the supported payment providers in FLOSC's sale system. Handles affiliate-tracked sales via ClickBank's IPN (Instant Payment Notification) webhook. Configured via <code>class-clickbank-provider.php</code>.</p>
+<p>One of the supported payment providers in FLOSC's sale system. Handles affiliate-tracked sales via ClickBank's IPN (Instant Payment Notification) webhook. Configured via <code>class-flosc-clickbank-provider.php</code>.</p>
 
 <h3 id="term-companion-widget">Companion Widget</h3>
 <p>A persistent chat button and panel rendered outside the main FLOSC app, available on any page of the WordPress site via the <code>[flosc_companion]</code> shortcode or the Companion Widget admin settings. The companion renders in an iframe pointing to the main FLOSC app URL, so it shares the same session and state.</p>
@@ -183,13 +183,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 <p>A boolean expression in the IVR markdown file that determines whether a message fires. Conditions reference variables from the user context: <code>user.state</code>, <code>score</code>, <code>purchased</code>, <code>flow_id</code>, and ~35 other whitelisted variables. Conditions can use AND/OR operators, comparison operators (<code>==</code>, <code>!=</code>, <code>&gt;</code>, <code>&lt;</code>, <code>&gt;=</code>, <code>&lt;=</code>), and array membership checks (<code>in</code>).</p>
 
 <h3 id="term-condition-evaluator">Condition Evaluator</h3>
-<p><code>class-condition-evaluator.php</code>. Safely evaluates IVR condition expressions against the user context. Uses a whitelist of allowed variables (preventing arbitrary PHP execution) and a custom expression parser rather than <code>eval()</code>.</p>
+<p><code>class-flosc-condition-evaluator.php</code>. Safely evaluates IVR condition expressions against the user context. Uses a whitelist of allowed variables (preventing arbitrary PHP execution) and a custom expression parser rather than <code>eval()</code>.</p>
 
 <h3 id="term-content-filter">Content Filter</h3>
-<p><code>class-content-filter.php</code>. Filters WordPress query results based on FLOSC access rules. Intercepts <code>pre_get_posts</code> and <code>the_posts</code> filters to hide protected lessons from users without the appropriate access level.</p>
+<p><code>class-flosc-content-filter.php</code>. Filters WordPress query results based on FLOSC access rules. Intercepts <code>pre_get_posts</code> and <code>the_posts</code> filters to hide protected lessons from users without the appropriate access level.</p>
 
 <h3 id="term-content-protection">Content Protection</h3>
-<p><code>class-content-protection.php</code>. Manages post-level visibility tiers. WordPress posts can be marked with a <code>_flosc_visibility</code> meta field that FLOSC respects when deciding whether to show the post to the current user. Categories can be marked as FLOSC-protected via the admin UI.</p>
+<p><code>class-flosc-content-protection.php</code>. Manages post-level visibility tiers. WordPress posts can be marked with a <code>_flosc_visibility</code> meta field that FLOSC respects when deciding whether to show the post to the current user. Categories can be marked as FLOSC-protected via the admin UI.</p>
 
 <h3 id="term-feedback">Feedback (AI Feedback)</h3>
 <p>Admin-written examples of AI responses that were wrong, with the correct response. Stored in WordPress options and injected into the AI system prompt as negative examples. The AI is instructed to avoid repeating the corrected mistakes. Configured from the AI Feedback admin page.</p>
@@ -200,7 +200,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 <h2 id="glossary-d">D</h2>
 
 <h3 id="term-dispatch">Dispatch (AI Chat)</h3>
-<p>The process of deciding how to respond to a chat message. FLOSC dispatch order: (1) Check IVR messages for a matching condition → return if found; (2) Call AI provider with full context → return AI response. The dispatch class is <code>class-ai-chat-dispatch.php</code>.</p>
+<p>The process of deciding how to respond to a chat message. FLOSC dispatch order: (1) Check IVR messages for a matching condition → return if found; (2) Call AI provider with full context → return AI response. The dispatch class is <code>class-flosc-ai-chat-dispatch.php</code>.</p>
 
 <h2 id="glossary-e">E</h2>
 
@@ -228,13 +228,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 <p>One independent FLOSC product instance. A flow has its own IVR file, AI configuration, quiz settings, offer set, branding (operator floscFlow name, public Public Title, Tagline, colors, logo), domain mapping, and app slug. Visitors see the attached personality, then Title, then Tagline. Multiple flows can run from one WordPress installation. Stored in the <code>flosc_flows</code> WordPress option.</p>
 
 <h3 id="term-flow-manager">Flow Manager</h3>
-<p><code>class-flow-manager.php</code>. Manages CRUD operations for flows. Provides <code>get_all_flows()</code>, <code>get_flow()</code>, <code>get_flow_by_slug()</code>, <code>get_flow_by_domain()</code>, and the user-flow access control logic.</p>
+<p><code>class-flosc-flow-manager.php</code>. Manages CRUD operations for flows. Provides <code>get_all_flows()</code>, <code>get_flow()</code>, <code>get_flow_by_slug()</code>, <code>get_flow_by_domain()</code>, and the user-flow access control logic.</p>
 
 <h3 id="term-flow-settings">Flow Settings</h3>
 <p>Per-flow overrides stored in a WordPress option keyed as <code>flosc_flow_{ivr_slug}</code>. When a setting is read via <code>flosc_get_setting()</code>, flow-level settings take precedence over global settings. This is how two flows can have different AI models, quiz content, or brand colors without conflicts.</p>
 
 <h3 id="term-free-lesson">Free Lesson</h3>
-<p>One lesson delivered to a Guest (logged-in, non-purchased) user based on their quiz results. The free lesson is the most powerful conversion tool in the flow — it shows the quality of the content before asking for payment. Configured as a lesson group tied to quiz performance. <code>class-free-content-item-manager.php</code> handles delivery.</p>
+<p>One lesson delivered to a Guest (logged-in, non-purchased) user based on their quiz results. The free lesson is the most powerful conversion tool in the flow — it shows the quality of the content before asking for payment. Configured as a lesson group tied to quiz performance. <code>class-flosc-free-content-item-manager.php</code> handles delivery.</p>
 
 <h3 id="term-freeline">FREELINE Phase</h3>
 <p>The phase a visitor is in before logging in. The "freeline" gives the user something of value (the quiz) before asking for anything. IVR messages in the freeline phase are designed to generate interest and drive toward the Login phase.</p>
@@ -248,7 +248,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 <p>The limited content access level granted to logged-in non-purchased users. Grants: quiz result details, one free lesson, AI conversation with purchase prompts. Does not grant: full lesson library, member-phase IVR messages.</p>
 
 <h3 id="term-guest-session">Guest Session</h3>
-<p>A server-side session record for a logged-in guest. Stores conversation history, quiz state, and free lesson delivery flag. Separate from WordPress's own session — managed by <code>class-session-manager.php</code>.</p>
+<p>A server-side session record for a logged-in guest. Stores conversation history, quiz state, and free lesson delivery flag. Separate from WordPress's own session — managed by <code>class-flosc-session-manager.php</code>.</p>
 
 <h2 id="glossary-h">H</h2>
 
@@ -267,7 +267,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 <p>In FLOSC: a library of scripted responses that the chatbot delivers based on conditions, without calling the AI API. Named after telecom IVR (phone tree) systems. The IVR-first dispatch model means scripted responses are always preferred over AI-generated ones — they are faster, cheaper, and fully under admin control. See Part 1: The IVR Inspiration.</p>
 
 <h3 id="term-ivr-config-file">IVR Config File</h3>
-<p>A Markdown file (e.g., <code>{flowname}_ivr.md</code>) in the <code>ai_configuration_files/</code> directory that defines all scripted responses for a flow. Each flow has one IVR file. The file is parsed by <code>class-ivr-parser.php</code> and the resulting message tree is stored in the database for fast lookups.</p>
+<p>A Markdown file (e.g., <code>{flowname}_ivr.md</code>) in the <code>ai_configuration_files/</code> directory that defines all scripted responses for a flow. Each flow has one IVR file. The file is parsed by <code>class-flosc-ivr-parser.php</code> and the resulting message tree is stored in the database for fast lookups.</p>
 
 <h3 id="term-ivr-message">IVR Message</h3>
 <p>One scripted response in the IVR config file. A message has: a phase, a name, a trigger condition, optional autoprompt pills, optional offer triggers, a style, and the message content (Markdown with template variables). The condition is evaluated against the current user context at dispatch time.</p>
@@ -281,7 +281,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 <h2 id="glossary-k">K</h2>
 
 <h3 id="term-knowledge-base">Knowledge Base</h3>
-<p>The collection of files and WordPress content that the AI draws on when answering questions. Includes: the orientation file (general product knowledge), uploaded knowledge files, and the current lesson catalog. Loaded and indexed by <code>class-rag-manager.php</code>.</p>
+<p>The collection of files and WordPress content that the AI draws on when answering questions. Includes: the orientation file (general product knowledge), uploaded knowledge files, and the current lesson catalog. Loaded and indexed by <code>class-flosc-rag-manager.php</code>.</p>
 
 <h3 id="term-knowledge-file">Knowledge File</h3>
 <p>A text or Markdown file uploaded through the AI Knowledge admin page that is included in the AI system prompt. Can contain product information, FAQs, lesson catalog details, or any background information the AI should know. Multiple files are supported; they are concatenated into the knowledge section of the chatpack.</p>
@@ -348,7 +348,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 <p>PayPal's testing environment for payment development. FLOSC supports sandbox mode via a toggle in the Payments admin page. Sandbox mode uses separate PayPal credentials and processes no real money. The admin can test the full purchase flow without actual payment.</p>
 
 <h3 id="term-payment-provider">Payment Provider</h3>
-<p>An implementation of <code>class-payment-provider.php</code> that handles a specific payment gateway. Current providers: Stripe (<code>class-stripe-provider.php</code>), PayPal (<code>class-paypal-provider.php</code>), ClickBank (<code>class-clickbank-provider.php</code>), Token (<code>class-token-provider.php</code>), and Affiliate (<code>class-affiliate-provider.php</code>).</p>
+<p>An implementation of <code>class-flosc-payment-provider.php</code> that handles a specific payment gateway. Current providers: Stripe (<code>class-flosc-stripe-provider.php</code>), PayPal (<code>class-flosc-paypal-provider.php</code>), ClickBank (<code>class-flosc-clickbank-provider.php</code>), Token (<code>class-flosc-token-provider.php</code>), and Affiliate (<code>class-flosc-affiliate-provider.php</code>).</p>
 
 <h3 id="term-phase">Phase (Visitor / Freeline / Member)</h3>
 <p>One of three runtime states that determine which IVR messages, AI context, and content access apply to the current user. Visitor = not logged in. Guest/Freeline = logged in, no purchase. Member = logged in, purchased. Determined by <code>determine_flosc_phase()</code>.</p>
@@ -369,7 +369,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 <p>The navigation bar rendered at the top of the FLOSC app for logged-in users. Shows the user's name, avatar, and links to their profile or logout. Different configurations for Guest vs. Member. Configurable from the Navigation admin page.</p>
 
 <h3 id="term-pronunciation-analyzer">Pronunciation Analyzer</h3>
-<p><code>class-pronunciation-analyzer.php</code>. Handles the comparison between expected pronunciation (from quiz questions) and actual pronunciation (from STT transcription). Normalizes text for comparison, handles IPA symbols, generates learner-friendly feedback on errors.</p>
+<p><code>class-flosc-pronunciation-analyzer.php</code>. Handles the comparison between expected pronunciation (from quiz questions) and actual pronunciation (from STT transcription). Normalizes text for comparison, handles IPA symbols, generates learner-friendly feedback on errors.</p>
 
 <h3 id="term-provider-pattern">Provider Pattern</h3>
 <p>An architectural pattern used throughout FLOSC where interchangeable implementations share a common interface. Payment providers, SSO providers, STT providers, and AI providers all follow this pattern — swap out the provider by changing a setting, not by changing code.</p>
@@ -380,7 +380,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 <p>A structured assessment that a user completes to receive a score and lesson recommendations. In FLOSC, a quiz is an instance of a quiz type class. The quiz produces an analysis result (score, correct items, incorrect items with topic slugs) that drives the entire subsequent experience.</p>
 
 <h3 id="term-quiz-factory">Quiz Factory</h3>
-<p><code>class-quiz-type-factory.php</code>. Creates quiz type instances. Loads all registered quiz type classes, provides <code>get_quiz_type()</code> by ID, and <code>get_all_quiz_types()</code> for the admin UI. Quiz type files are discovered by scanning the <code>includes/quiz-types/</code> directory.</p>
+<p><code>class-flosc-quiz-type-factory.php</code>. Creates quiz type instances. Loads all registered quiz type classes, provides <code>get_quiz_type()</code> by ID, and <code>get_all_quiz_types()</code> for the admin UI. Quiz type files are discovered by scanning the <code>includes/quiz-types/</code> directory.</p>
 
 <h3 id="term-quiz-type">Quiz Type</h3>
 <p>A PHP class extending <code>FLOSC_Abstract_Quiz_Type</code> that implements a specific question format. Each quiz type defines: its ID, name, description, icon, whether it needs audio/STT, question format instructions, default content, input validation, and the <code>analyze()</code> method that scores the user's answers and returns the result structure including incorrect items with topic slugs. Current types: Sample Assessment Quiz, Multiple Choice, True/False, Text Sequence (numbers), Audio, Word Matching.</p>
@@ -429,7 +429,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 <p>The primary payment processor for FLOSC. Supports one-time payments via Payment Intents, subscriptions via Stripe Subscriptions, and webhook-based purchase confirmation. Requires a Stripe publishable key (sent to frontend) and secret key (server-side only). Test mode and live mode use different key pairs.</p>
 
 <h3 id="term-system-prompt">System Prompt</h3>
-<p>The instruction set sent to the AI API along with the conversation history. In FLOSC, the system prompt is assembled from multiple sections: AI identity, FLOSC process instructions, phase-specific instructions, orientation files, user context, IVR guidance (when applicable), feedback (feedback/praise), and offer phrase triggers. Built by <code>build_system_prompt()</code> in <code>class-ai-chat-dispatch.php</code>.</p>
+<p>The instruction set sent to the AI API along with the conversation history. In FLOSC, the system prompt is assembled from multiple sections: AI identity, FLOSC process instructions, phase-specific instructions, orientation files, user context, IVR guidance (when applicable), feedback (feedback/praise), and offer phrase triggers. Built by <code>build_system_prompt()</code> in <code>class-flosc-ai-chat-dispatch.php</code>.</p>
 
 <h2 id="glossary-t">T</h2>
 
@@ -437,7 +437,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 <p>A quiz type (<code>class-flosc-sample-text-based-quiz.php</code>, now named "FLOSC Sample 1-10 Numbers Quiz") where the expected answer is a comma-separated sequence of numbers. Used as a simple pipeline test and demo quiz. The user types "1,2,3,4,5,6,7,8,9,10" and FLOSC scores which items they got right in sequence order.</p>
 
 <h3 id="term-token-virtual">Token (Virtual Currency)</h3>
-<p>A virtual currency system for metered access. Users can purchase token bundles; specific actions (requesting a lesson, starting a session) cost tokens. Implemented by <code>class-token-provider.php</code>. An alternative monetization model to one-time purchase or subscription.</p>
+<p>A virtual currency system for metered access. Users can purchase token bundles; specific actions (requesting a lesson, starting a session) cost tokens. Implemented by <code>class-flosc-token-provider.php</code>. An alternative monetization model to one-time purchase or subscription.</p>
 
 <h3 id="term-tool-use">Tool Use (Anthropic)</h3>
 <p>An Anthropic API feature where the AI can request that specific functions be called on the server. FLOSC defines tools like <code>deliver_lesson</code> and <code>show_offer</code> that the AI can call when it determines a lesson should be delivered or an offer shown. Tool results are returned to the AI as a follow-up message in the same API call chain.</p>
@@ -446,12 +446,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 <p>A placeholder in an IVR message content that is replaced at render time with a dynamic value. Format: <code>{variable_name}</code>. Available variables include: <code>{user_name}</code>, <code>{score}</code>, <code>{product_name}</code>, <code>{free_lesson_title}</code>, and others from the user context. Template variables make scripted messages feel personalized.</p>
 
 <h3 id="term-true-false-quiz">True/False Quiz</h3>
-<p><code>class-truefalse-quiz.php</code>. A quiz type where each question is a statement and the answer is True or False. Question format: <code>Statement.|True|Topic: slug</code>. Accepts <code>T/F/True/False/Yes/No</code> answers. Supports <code>|Topic:</code> pipe segment for lesson recommendations on incorrect answers.</p>
+<p><code>class-flosc-truefalse-quiz.php</code>. A quiz type where each question is a statement and the answer is True or False. Question format: <code>Statement.|True|Topic: slug</code>. Accepts <code>T/F/True/False/Yes/No</code> answers. Supports <code>|Topic:</code> pipe segment for lesson recommendations on incorrect answers.</p>
 
 <h2 id="glossary-u">U</h2>
 
 <h3 id="term-usage-tracker">Usage Tracker</h3>
-<p><code>class-usage-tracker.php</code>. Tracks how many times a user has used specific FLOSC features (AI requests, lesson deliveries, quiz attempts). Used for rate limiting metered features and for generating usage analytics.</p>
+<p><code>class-flosc-usage-tracker.php</code>. Tracks how many times a user has used specific FLOSC features (AI requests, lesson deliveries, quiz attempts). Used for rate limiting metered features and for generating usage analytics.</p>
 
 <h3 id="term-user-linker">User Linker</h3>
 <p><code>includes/sso/class-user-linker.php</code>. Handles the mapping between OAuth provider identities and WordPress user accounts. When a user logs in via Google for the first time, the User Linker either finds their existing WordPress account by email or creates a new one, then stores the provider-user association for future logins.</p>
@@ -479,10 +479,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 <p>An HTTP callback sent by a payment provider to FLOSC when a payment event occurs (purchase completed, subscription renewed, refund issued). FLOSC registers webhook endpoints under <code>/flosc/v1/webhooks/{provider}</code>. Webhooks are the authoritative source of payment confirmation — they are used alongside (not instead of) client-side callbacks for reliability.</p>
 
 <h3 id="term-whitelisted-variable">Whitelisted Variable</h3>
-<p>One of ~35 approved variable names that may be referenced in IVR conditions. The whitelist prevents arbitrary PHP variable access or code injection via condition expressions. Examples: <code>user.state</code>, <code>score</code>, <code>purchased</code>, <code>flow_id</code>, <code>quiz_type</code>, <code>lesson_count</code>, <code>free_lesson_delivered</code>. Managed in <code>class-condition-evaluator.php</code>.</p>
+<p>One of ~35 approved variable names that may be referenced in IVR conditions. The whitelist prevents arbitrary PHP variable access or code injection via condition expressions. Examples: <code>user.state</code>, <code>score</code>, <code>purchased</code>, <code>flow_id</code>, <code>quiz_type</code>, <code>lesson_count</code>, <code>free_lesson_delivered</code>. Managed in <code>class-flosc-condition-evaluator.php</code>.</p>
 
 <h3 id="term-word-matching-quiz">Word Matching Quiz</h3>
-<p><code>class-wordmatching-quiz.php</code>. A quiz type where the user matches words or phrases to their corresponding items. Used for vocabulary association, definition matching, or pairing exercises.</p>
+<p><code>class-flosc-wordmatching-quiz.php</code>. A quiz type where the user matches words or phrases to their corresponding items. Used for vocabulary association, definition matching, or pairing exercises.</p>
 
 <h3 id="term-wxr">WXR (WordPress eXtended RSS)</h3>
 <p>The XML export format WordPress uses for content import/export. FLOSC ships sample data as a WXR file that admins can import via WordPress's built-in Import tool. The WXR contains: 10 sample lesson posts with correct <code>_flosc_lesson_number</code> meta, the "Default FLOSC Lessons" category, and associated tags. This gives a new FLOSC install working content in one import step.</p>

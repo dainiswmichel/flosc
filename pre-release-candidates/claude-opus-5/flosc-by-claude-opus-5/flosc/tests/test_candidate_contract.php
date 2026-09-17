@@ -53,7 +53,7 @@ function ok( $label, $actual, $expected ) {
 }
 
 $chatpack = (string) file_get_contents( $root . '/includes/class-flosc-chatpack.php' );
-$dispatch = (string) file_get_contents( $root . '/includes/class-ai-chat-dispatch.php' );
+$dispatch = (string) file_get_contents( $root . '/includes/class-flosc-ai-chat-dispatch.php' );
 $turn     = (string) file_get_contents( $root . '/includes/chat-turn/trait-flosc-chat-turn.php' );
 $library  = (string) file_get_contents( $root . '/includes/flosc-personality-library.php' );
 

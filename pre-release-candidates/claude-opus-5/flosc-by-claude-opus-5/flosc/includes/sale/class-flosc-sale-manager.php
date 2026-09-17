@@ -37,15 +37,15 @@ class FLOSC_Sale_Manager {
 	}
 
 	private function load_components() {
-		require_once __DIR__ . '/class-offer-manager.php';
-		require_once __DIR__ . '/class-usage-tracker.php';
-		require_once __DIR__ . '/class-access-manager.php';
-		require_once __DIR__ . '/class-payment-provider.php';
-		require_once __DIR__ . '/providers/class-stripe-provider.php';
-		require_once __DIR__ . '/providers/class-token-provider.php';
-		require_once __DIR__ . '/providers/class-affiliate-provider.php';
-		require_once __DIR__ . '/providers/class-clickbank-provider.php'; // v07.07
-		require_once __DIR__ . '/providers/class-paypal-provider.php'; // v1.6.9
+		require_once __DIR__ . '/class-flosc-offer-manager.php';
+		require_once __DIR__ . '/class-flosc-usage-tracker.php';
+		require_once __DIR__ . '/class-flosc-access-manager.php';
+		require_once __DIR__ . '/class-flosc-payment-provider.php';
+		require_once __DIR__ . '/providers/class-flosc-stripe-provider.php';
+		require_once __DIR__ . '/providers/class-flosc-token-provider.php';
+		require_once __DIR__ . '/providers/class-flosc-affiliate-provider.php';
+		require_once __DIR__ . '/providers/class-flosc-clickbank-provider.php'; // v07.07
+		require_once __DIR__ . '/providers/class-flosc-paypal-provider.php'; // v1.6.9
 
 		$this->offer_manager  = new FLOSC_Offer_Manager();
 		$this->usage_tracker  = new FLOSC_Usage_Tracker();
@@ -562,11 +562,4 @@ class FLOSC_Sale_Manager {
 
 		return apply_filters( 'flosc_recommended_offer', $recommended, $user_id, $context, $offers );
 	}
-}
-
-/**
- * Global accessor
- */
-function flosc_sale() {
-	return FLOSC_Sale_Manager::instance();
 }

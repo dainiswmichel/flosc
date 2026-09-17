@@ -438,7 +438,7 @@ class FLOSC_Lesson_Manager {
 		}
 
 		// v1.8.2: Use FLOSC_Member_Access which has actual level/member checking.
-		require_once FLOSC_PLUGIN_DIR . 'includes/class-member-access.php';
+		require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-member-access.php';
 		$member_access = FLOSC_Member_Access::instance();
 		if ( $member_access->is_member( $user_id ) ) {
 			return true;

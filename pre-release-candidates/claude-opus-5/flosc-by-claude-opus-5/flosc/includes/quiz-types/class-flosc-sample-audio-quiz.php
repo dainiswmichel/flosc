@@ -66,7 +66,7 @@ class FLOSC_Sample_Audio_Quiz extends FLOSC_Abstract_Quiz_Type {
 		$transcript = is_string( $input ) ? $input : '';
 
 		// Use existing pronunciation analyzer.
-		require_once FLOSC_PLUGIN_DIR . 'includes/class-pronunciation-analyzer.php';
+		require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-pronunciation-analyzer.php';
 		$analyzer        = new FLOSC_Pronunciation_Analyzer();
 		$analysis_result = $analyzer->analyze( $transcript, $expected_content );
 

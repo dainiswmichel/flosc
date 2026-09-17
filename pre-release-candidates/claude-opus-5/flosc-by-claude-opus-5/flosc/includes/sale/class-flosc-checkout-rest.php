@@ -95,7 +95,7 @@ class FLOSC_Checkout_Rest {
 				}
 				// REST is not is_singular(); content protection filters do not apply.
 				// Enforce FLOSC entitlement before returning post body.
-				require_once FLOSC_PLUGIN_DIR . 'includes/class-content-protection.php';
+				require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-content-protection.php';
 				if ( ! FLOSC_Content_Protection::instance()->user_can_access( $post_id )
 					&& ! current_user_can( 'manage_options' ) ) {
 					return new WP_REST_Response(

@@ -175,7 +175,7 @@ $stored = flosc_personality_compiled_profile( 'lesaep_com_ivr' );
 flosc_profile_vars_check( 'compiled profile preserves stored variables', $stored, 'You are {personality_name} on {current_url}.' );
 $library_source = (string) file_get_contents( $root . '/includes/flosc-personality-library.php' );
 $chatpack_source = (string) file_get_contents( $root . '/includes/class-flosc-chatpack.php' );
-$dispatch_source = (string) file_get_contents( $root . '/includes/class-ai-chat-dispatch.php' );
+$dispatch_source = (string) file_get_contents( $root . '/includes/class-flosc-ai-chat-dispatch.php' );
 $trait_source = (string) file_get_contents( $root . '/includes/chat-turn/trait-flosc-chat-turn.php' );
 flosc_profile_vars_check( 'generic compiled-profile function does not expand', strpos( substr( $library_source, strpos( $library_source, 'function flosc_personality_compiled_profile' ), 900 ), 'flosc_personality_expand_variables' ), false );
 flosc_profile_vars_check( 'Chatpack expands the request copy', strpos( $chatpack_source, 'flosc_personality_expand_variables( $compiled_profile' ) !== false, true );

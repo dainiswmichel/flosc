@@ -208,7 +208,7 @@ class FLOSC_Access_Manager {
 		// 3) Levels listed on THIS flow only — prevents cross-flow bleed when
 		// several flows share a similar default level name in config.
 		if ( class_exists( 'FLOSC_Member_Access' ) ) {
-			require_once FLOSC_PLUGIN_DIR . 'includes/class-member-access.php';
+			require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-member-access.php';
 			$ma = FLOSC_Member_Access::instance();
 			foreach ( $this->get_flow_member_levels( $stem ) as $level ) {
 				if ( $ma->has_level( $user_id, $level ) ) {
@@ -294,7 +294,7 @@ class FLOSC_Access_Manager {
 		}
 
 		if ( class_exists( 'FLOSC_Member_Access' ) ) {
-			require_once FLOSC_PLUGIN_DIR . 'includes/class-member-access.php';
+			require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-member-access.php';
 			$ma = FLOSC_Member_Access::instance();
 			foreach ( (array) $ma->get_user_levels( $user_id ) as $level ) {
 				$level = sanitize_key( (string) $level );
