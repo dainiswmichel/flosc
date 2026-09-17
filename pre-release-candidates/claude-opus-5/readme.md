@@ -105,6 +105,24 @@ instrument.
 `--report=summary` prints nothing when there is nothing to report, and phpcs
 exits 0 only when it found neither errors nor warnings. The v76 run exited 1.
 
+Empty output and exit 0 is also what a scan of *zero files* looks like, so the
+run was repeated with `-p`, which prints one character per file -- a dot for a
+clean file, `W` for warnings, `E` for errors:
+
+    ............................................................  60 / 218
+    ............................................................ 120 / 218
+    ............................................................ 180 / 218
+    ......................................                       218 / 218
+
+    Time: 17.28 secs; Memory: 192.01MB
+
+218 dots, no `W`, no `E`. The count reconciles exactly against the tree:
+187 `.php` + 11 `.js` + 20 `.css` = 218. Every file phpcs can read was read.
+
+The tree carries 187 PHP files; the zip ships 149. The other 38 are `tests/`
+and build scripts, which do not ship -- so the scan covered more than the
+artifact does, not less.
+
 **This is not the same claim the v70 readme made.** That one also read "exit 0,
 no output", but it was produced under a filter that excluded warnings, and this
 sniff only ever emits warnings -- so it could not have reported a problem on any

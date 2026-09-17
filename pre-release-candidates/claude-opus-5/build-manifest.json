@@ -417,7 +417,14 @@
     "v78_result": "no output, exit 0",
     "reading": "--report=summary prints nothing when there is nothing to report, and phpcs exits 0 only when it found neither errors nor warnings. 84 -> 0.",
     "not_the_v70_claim": "v70_verification below records 'exit 0, no output' for this same sniff. That run carried a filter that excluded warnings, and NonceVerification only ever emits warnings, so it could not have reported a problem on any codebase. The v78 run carries no such filter. The two lines look identical and mean different things; this is the distinction the bench exists to make.",
-    "still_unmeasured": "Full WPCS, the broader WordPress.Security set, PHPStan, Plugin Check, and whether WordPress.org accepts the submission."
+    "still_unmeasured": "Full WPCS, the broader WordPress.Security set, PHPStan, Plugin Check, and whether WordPress.org accepts the submission.",
+    "zero_files_ruled_out": {
+      "why": "Empty output with exit 0 is also what a scan of zero files produces. The run was repeated with -p, which prints one character per file.",
+      "result": "218 / 218, all dots. No W, no E.",
+      "reconciliation": "187 .php + 11 .js + 20 .css = 218. Every file phpcs can read in this tree was read.",
+      "scan_is_wider_than_the_artifact": "The tree carries 187 PHP files; the zip ships 149. The other 38 are tests/ and build scripts that do not ship, so the measurement covers a superset of the submission.",
+      "runtime": "17.28 secs, 192.01MB peak -- above PHP's 128M default, which is why -d memory_limit=1G is part of the command."
+    }
   },
   "artifact_entry_breakdown": "278 zip entries = 238 files + 40 directory entries. Earlier manifests said 277; that was one short and is corrected here. tree_files 295 is the source tree, which is larger because tests/ and build scripts are excluded from the zip."
 }
