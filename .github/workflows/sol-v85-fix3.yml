@@ -1,0 +1,213 @@
+name: FLOSC v85 one-file SOL-1 and narrow SOL-2
+
+on:
+  push:
+    branches:
+      - gpt-5-6-sol/wporg-remediation
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    if: ${{ contains(github.event.head_commit.message || '', '[sol-fix3]') && !contains(github.event.head_commit.message || '', '[sol-fix3-generated]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      TARGET: pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc
+      TOOLS: pre-release-candidates/gpt-5-6-sol/remediation-tools
+      REPORTS: pre-release-candidates/gpt-5-6-sol/remediation-tools/reports
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: gpt-5-6-sol/wporg-remediation
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          tools: composer
+
+      - name: Install WPCS and PHPStan
+        shell: bash
+        run: |
+          set -euo pipefail
+          composer global config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+          composer global require --no-interaction --no-progress \
+            squizlabs/php_codesniffer:^3.13 wp-coding-standards/wpcs:^3.4 \
+            dealerdirect/phpcodesniffer-composer-installer:^1.0 phpstan/phpstan:^2.1 \
+            szepeviktor/phpstan-wordpress:^2.0 php-stubs/wordpress-stubs:^6.7
+          mkdir -p "$REPORTS"
+
+      - name: SOL-1 executable-token baseline
+        shell: bash
+        run: |
+          php -r '
+          function fp($p){$c=file_get_contents($p);$a=[];foreach(token_get_all($c) as $t){if(is_array($t)){if(in_array($t[0],[T_WHITESPACE,T_COMMENT,T_DOC_COMMENT],true))continue;$a[]=token_name($t[0]).":".$t[1];}else{$a[]="C:".$t;}}return hash("sha256",implode("\0",$a));}
+          $root=getenv("TARGET");$out=[];$it=new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root));foreach($it as $f){$p=$f->getPathname();if($f->isFile()&&substr($p,-4)===".php"&&!str_contains($p,"/tests/")&&!str_contains($p,"/vendor/")){$out[$p]=fp($p);}}file_put_contents("/tmp/sol1-fp.json",json_encode($out));'
+
+      - name: SOL-1 one file at a time from PHPCS evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          : > "$REPORTS/sol1-one-file-tollgates.txt"
+          : > "$REPORTS/sol1-one-file-edits.txt"
+          set +e
+          "$HOME/.composer/vendor/bin/phpcs" --standard=WordPress --extensions=php \
+            --ignore="$TARGET/tests/*,$TARGET/vendor/*" --report=json "$TARGET" > /tmp/tree-before.json 2>/dev/null
+          set -e
+          cp /tmp/tree-before.json "$REPORTS/sol1-one-file-before.json"
+          python3 - <<'PY' > /tmp/sol1-files.txt
+          import json,os
+          d=json.load(open('/tmp/tree-before.json'))
+          marker='/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/'
+          keep=[]
+          for f,b in (d.get('files') or {}).items():
+              if not b.get('messages'): continue
+              fp=f.replace('\\','/')
+              if marker in fp:
+                  rel=fp.split(marker,1)[1]
+                  keep.append(os.path.join(os.environ['TARGET'],rel))
+          print('\n'.join(sorted(set(keep))))
+          PY
+          while IFS= read -r f; do
+            [[ -z "$f" ]] && continue
+            echo "===== FILE $f =====" | tee -a "$REPORTS/sol1-one-file-edits.txt"
+            for round in 1 2 3 4 5; do
+              set +e
+              "$HOME/.composer/vendor/bin/phpcs" --standard=WordPress --extensions=php --report=json "$f" > /tmp/one.json 2>/dev/null
+              set -e
+              python3 "$TOOLS/sol1-fix-from-phpcs.py" /tmp/one.json "$TARGET" /tmp/one-edits.txt
+              cat /tmp/one-edits.txt >> "$REPORTS/sol1-one-file-edits.txt"
+              edits=$(grep -o 'edits=[0-9]*' /tmp/one-edits.txt | tail -1 | cut -d= -f2 || true)
+              [[ "${edits:-0}" == 0 ]] && break
+            done
+            php -l "$f" >> "$REPORTS/sol1-one-file-tollgates.txt"
+            echo "===== SOURCE $f =====" >> "$REPORTS/sol1-one-file-tollgates.txt"
+            set +e
+            "$HOME/.composer/vendor/bin/phpcs" --standard=WordPress --extensions=php --report=source "$f" >> "$REPORTS/sol1-one-file-tollgates.txt" 2>&1
+            echo "PHPCS_EXIT=$?" >> "$REPORTS/sol1-one-file-tollgates.txt"
+            set -e
+          done < /tmp/sol1-files.txt
+
+      - name: SOL-1 prove comments/whitespace only
+        shell: bash
+        run: |
+          php -r '
+          function fp($p){$c=file_get_contents($p);$a=[];foreach(token_get_all($c) as $t){if(is_array($t)){if(in_array($t[0],[T_WHITESPACE,T_COMMENT,T_DOC_COMMENT],true))continue;$a[]=token_name($t[0]).":".$t[1];}else{$a[]="C:".$t;}}return hash("sha256",implode("\0",$a));}
+          $base=json_decode(file_get_contents("/tmp/sol1-fp.json"),true);$bad=0;$changed=0;foreach($base as $p=>$h){$now=fp($p);if($now!==$h){fwrite(STDERR,"EXEC_TOKEN_MISMATCH $p\n");$bad++;}}foreach(preg_split("/\R/",trim(shell_exec("git diff --name-only -- \"".getenv("TARGET")."\""))) as $p){if($p!==""&&substr($p,-4)===".php")$changed++;}echo "SOL1_EXEC_TOKEN_SUMMARY changed_php=$changed mismatches=$bad\n";exit($bad?1:0);' | tee "$REPORTS/sol1-one-file-token-proof.txt"
+
+      - name: SOL-1 final tree TOTAL after last SOL-1 edit
+        shell: bash
+        run: |
+          set +e
+          "$HOME/.composer/vendor/bin/phpcs" --standard=WordPress --extensions=php \
+            --ignore="$TARGET/tests/*,$TARGET/vendor/*" --report=source "$TARGET" \
+            > "$REPORTS/sol1-one-file-final-source.txt" 2>&1
+          echo "exit=$?" > "$REPORTS/sol1-one-file-final-exit.txt"
+          "$HOME/.composer/vendor/bin/phpcs" --standard=WordPress --extensions=php \
+            --ignore="$TARGET/tests/*,$TARGET/vendor/*" --report=json "$TARGET" \
+            > "$REPORTS/sol1-one-file-final.json" 2>/dev/null
+          set -e
+          python3 - <<'PY'
+          import json,collections,os
+          p=os.path.join(os.environ['REPORTS'],'sol1-one-file-final.json');d=json.load(open(p));c=collections.Counter()
+          for f,b in (d.get('files') or {}).items():
+              for m in b.get('messages',[]): c[m.get('source','')]+=1
+          out=os.path.join(os.environ['REPORTS'],'sol1-one-file-final-sources.txt')
+          with open(out,'w') as h:
+              for s,n in c.most_common(): h.write(f'{n}\t{s}\n')
+          print(open(out).read())
+          PY
+          tail -50 "$REPORTS/sol1-one-file-final-source.txt" || true
+
+      - name: SOL-2 narrow PHPStan repairs only
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/phpstan.neon <<NEON
+          includes:
+              - $HOME/.composer/vendor/szepeviktor/phpstan-wordpress/extension.neon
+          parameters:
+              level: 5
+              excludePaths:
+                  analyse:
+                      - */tests/*
+                      - */vendor/*
+                      - */node_modules/*
+              reportUnmatchedIgnoredErrors: false
+              parallel:
+                  maximumNumberOfProcesses: 1
+          NEON
+          set +e
+          "$HOME/.composer/vendor/bin/phpstan" analyse "$TARGET" --configuration=/tmp/phpstan.neon --error-format=json --no-progress --memory-limit=4G > /tmp/sol2-before.json 2>/dev/null
+          set -e
+          python3 - <<'PY'
+          import json,os,re,pathlib
+          root=pathlib.Path(os.environ['TARGET']).resolve();data=json.load(open('/tmp/sol2-before.json'))
+          marker='/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/'
+          changes=[];skips=[];by={}
+          for f,b in (data.get('files') or {}).items():
+              fp=f.replace('\\','/')
+              if marker not in fp: continue
+              rel=fp.split(marker,1)[1];p=(root/rel).resolve()
+              for m in b.get('messages',[]):
+                  ident=m.get('identifier') or '';msg=m.get('message') or '';line=int(m.get('line') or 0)
+                  if ident=='argument.type' and re.search(r'function esc_(?:attr|html|textarea|url) expects string, .*\b(?:int|float)',msg):
+                      by.setdefault(p,[]).append((line,msg))
+                  elif ident=='variable.undefined':
+                      skips.append((str(p.relative_to(root)),line,msg,'SKIP: intended value is not proven by local flow, sibling declaration, or explicit contract.'))
+          for p,rows in by.items():
+              raw=p.read_bytes();text=raw.decode('utf-8','surrogateescape');lines=text.splitlines(True)
+              for line,msg in sorted(rows,reverse=True):
+                  i=line-1
+                  if i<0 or i>=len(lines): continue
+                  pat=re.compile(r'(esc_(?:attr|html|textarea|url)\(\s*)(?!\(string\)\s*)')
+                  new,n=pat.subn(r'\1(string) ',lines[i],count=1)
+                  if n: lines[i]=new;changes.append((str(p.relative_to(root)),line,msg))
+              p.write_bytes(''.join(lines).encode('utf-8','surrogateescape'))
+          out=pathlib.Path(os.environ['REPORTS'])/'sol2-one-file-applied-skipped.txt'
+          with out.open('w') as h:
+              h.write(f'APPLIED_ESC_STRING_CASTS={len(changes)}\n')
+              for r in changes:h.write(f'APPLIED {r[0]}:{r[1]} {r[2]}\n')
+              h.write(f'SKIPPED_UNPROVEN_UNDEFINED_VARIABLES={len(skips)}\n')
+              for r in skips:h.write(f'SKIPPED {r[0]}:{r[1]} {r[2]} — {r[3]}\n')
+          print(out.read_text()[:16000])
+          PY
+          mapfile -t codefiles < <(git diff --name-only -- "$TARGET" | grep '\.php$' | grep -v '/tests/' | grep -v '/vendor/' || true)
+          for f in "${codefiles[@]}"; do php -l "$f"; done > "$REPORTS/sol2-one-file-php-l.txt"
+          set +e
+          "$HOME/.composer/vendor/bin/phpstan" analyse "$TARGET" --configuration=/tmp/phpstan.neon --error-format=json --no-progress --memory-limit=4G > "$REPORTS/sol2-one-file-after.json" 2> "$REPORTS/sol2-one-file-after.stderr.txt"
+          set -e
+          python3 - <<'PY'
+          import json,os,re,pathlib
+          d=json.load(open(os.path.join(os.environ['REPORTS'],'sol2-one-file-after.json')));rows=[]
+          for f,b in (d.get('files') or {}).items():
+              for m in b.get('messages',[]):
+                  ident=m.get('identifier') or '';msg=m.get('message') or ''
+                  if ident=='variable.undefined' or (ident=='argument.type' and re.search(r'esc_(?:attr|html|textarea|url)',msg,re.I)): rows.append((f,m.get('line'),ident,msg))
+          p=pathlib.Path(os.environ['REPORTS'])/'sol2-one-file-after-narrow.txt'
+          with p.open('w') as h:
+              h.write(f'SOL2_NARROW_REMAINING={len(rows)}\n')
+              for r in rows:h.write('%s:%s [%s] %s\n'%r)
+          print(p.read_text()[:12000])
+          PY
+
+      - name: Commit SOL-1 and SOL-2 result
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'GPT-5.6 Sol'
+          git config user.email 'noreply@openai.com'
+          git add "$TARGET" "$REPORTS"
+          totals=$(grep -E 'A TOTAL OF|FOUND [0-9]+ ERRORS|FOUND [0-9]+ ERROR' "$REPORTS/sol1-one-file-final-source.txt" | tail -1 || true)
+          token=$(cat "$REPORTS/sol1-one-file-token-proof.txt")
+          applied=$(head -1 "$REPORTS/sol2-one-file-applied-skipped.txt" || true)
+          skipped=$(grep '^SKIPPED_UNPROVEN' "$REPORTS/sol2-one-file-applied-skipped.txt" || true)
+          remain=$(head -1 "$REPORTS/sol2-one-file-after-narrow.txt" || true)
+          git commit -m "Home run candidate v85.3 coded by GPT-5.6 Sol — one-file SOL-1 and narrow SOL-2 [sol1-generated] [sol25-generated] [sol-finalized] [sol-fix3-generated]" \
+            -m "SOL-1 was processed one shipping PHP file at a time from WordPress-standard PHPCS evidence. Each changed file was linted and received its own --report=source tollgate. The complete tree was then measured after the final SOL-1 edit. ${totals}. ${token}. No whole-standard phpcbf and no @since generation." \
+            -m "SOL-2 remained deliberately narrow. ${applied}; ${skipped}; ${remain}. Undefined values without a locally proven intended declaration were recorded rather than guessed." \
+            -m "No submission-readiness claim is made by this commit."
+          git push origin HEAD:gpt-5-6-sol/wporg-remediation
