@@ -1,0 +1,39 @@
+name: FLOSC v85 SOL-1 PHPCBF probe
+on:
+  push:
+    branches: [gpt-5-6-sol/wporg-remediation]
+permissions:
+  contents: read
+jobs:
+  probe:
+    if: ${{ contains(github.event.head_commit.message || '', '[sol-probe]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: gpt-5-6-sol/wporg-remediation
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer
+      - name: Install WPCS
+        run: |
+          composer global config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+          composer global require --no-interaction --no-progress squizlabs/php_codesniffer:^3.13 wp-coding-standards/wpcs:^3.4 dealerdirect/phpcodesniffer-composer-installer:^1.0
+      - name: Probe PHPCBF on pristine pre-SOL1 source
+        shell: bash
+        run: |
+          set -uo pipefail
+          src='pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ai-configuration.php'
+          git show 4ed0570a9972c5b38c747934d76b4fa12d37a2ce:"$src" > /tmp/probe.php
+          cp /tmp/probe.php /tmp/before.php
+          echo '=== BEFORE SOURCE ==='
+          "$HOME/.composer/vendor/bin/phpcs" --standard=WordPress --report=source /tmp/probe.php || true
+          echo '=== PHPCBF DISCOVERY ==='
+          "$HOME/.composer/vendor/bin/phpcbf" --standard=WordPress --sniffs='Squiz.Commenting.DocCommentAlignment,Generic.Commenting.DocComment,WordPress.WP.CapitalPDangit,Squiz.Commenting.FunctionComment' /tmp/probe.php
+          echo "PHPCBF_EXIT=$?"
+          echo '=== DIFF ==='
+          diff -u /tmp/before.php /tmp/probe.php | head -400 || true
+          echo '=== AFTER SOURCE ==='
+          "$HOME/.composer/vendor/bin/phpcs" --standard=WordPress --report=source /tmp/probe.php || true

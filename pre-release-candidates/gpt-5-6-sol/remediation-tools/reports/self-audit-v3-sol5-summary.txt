@@ -1,0 +1,11 @@
+ZIP_SHA256=5313185d386e5f50f1f7b716ea11aaf32efdd27e431b850595576f8e509494b7
+ZIP_BYTES=2898356
+ZIP_ENTRIES=300
+TESTS_ENTRIES=0
+VENDOR_ENTRIES=0
+NODE_MODULES_ENTRIES=0
+WPCS_EXIT=2
+ZIP_WPCS_TOTAL=4134
+/tmp/v85zip/flosc/flosc.php:7: * Requires at least: 7.0
+/tmp/v85zip/flosc/readme.txt:5:Requires at least: 7.0
+6: * Version: 8.0.0

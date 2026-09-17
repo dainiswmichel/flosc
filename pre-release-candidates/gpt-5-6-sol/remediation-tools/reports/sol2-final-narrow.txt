@@ -1,0 +1,67 @@
+SOL2_NARROW_FINDINGS=66
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ai-configuration.php:3142 [argument.type] Parameter #1 $text of function esc_attr expects string, int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/companion.php:710 [argument.type] Parameter #1 $text of function esc_attr expects string, int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/companion.php:721 [argument.type] Parameter #1 $text of function esc_attr expects string, int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/companion.php:736 [argument.type] Parameter #1 $text of function esc_attr expects string, int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/companion.php:750 [argument.type] Parameter #1 $text of function esc_attr expects string, int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/companion.php:765 [argument.type] Parameter #1 $text of function esc_attr expects string, int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/companion.php:776 [argument.type] Parameter #1 $text of function esc_attr expects string, int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/companion.php:791 [argument.type] Parameter #1 $text of function esc_attr expects string, int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/companion.php:805 [argument.type] Parameter #1 $text of function esc_attr expects string, int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/companion.php:835 [argument.type] Parameter #1 $text of function esc_attr expects string, int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/companion.php:844 [argument.type] Parameter #1 $text of function esc_attr expects string, int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/companion.php:853 [argument.type] Parameter #1 $text of function esc_attr expects string, int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/companion.php:1072 [argument.type] Parameter #1 $text of function esc_attr expects string, int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/companion.php:1108 [argument.type] Parameter #1 $text of function esc_attr expects string, int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/companion.php:1129 [argument.type] Parameter #1 $text of function esc_attr expects string, int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/companion.php:1247 [argument.type] Parameter #1 $text of function esc_attr expects string, int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/content.php:416 [argument.type] Parameter #1 $text of function esc_attr expects string, int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/content.php:422 [argument.type] Parameter #1 $text of function esc_attr expects string, int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/content.php:755 [argument.type] Parameter #1 $text of function esc_attr expects string, int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/content.php:764 [argument.type] Parameter #1 $text of function esc_attr expects string, int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/email.php:130 [argument.type] Parameter #1 $text of function esc_attr expects string, int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flosc-app.php:150 [variable.undefined] Variable $identity might not be defined.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flosc-app.php:151 [variable.undefined] Variable $identity might not be defined.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flosc-app.php:152 [variable.undefined] Variable $identity might not be defined.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flosc-app.php:153 [argument.type] Parameter #1 $text of function esc_attr expects string, int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flosc-app.php:194 [variable.undefined] Variable $user_state might not be defined.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flosc-app.php:424 [variable.undefined] Variable $user_state might not be defined.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flosc-app.php:1095 [variable.undefined] Variable $flow_settings might not be defined.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flosc-app.php:1262 [variable.undefined] Variable $identity might not be defined.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flosc-app.php:1270 [variable.undefined] Variable $identity might not be defined.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flosc-app.php:1272 [variable.undefined] Variable $offers might not be defined.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flosc-app.php:1857 [variable.undefined] Variable $user_data might not be defined.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flow-edit.php:517 [argument.type] Parameter #1 $text of function esc_attr expects string, int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/login-registration.php:825 [argument.type] Parameter #1 $text of function esc_html expects string, int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/member-levels.php:177 [argument.type] Parameter #1 $text of function esc_attr expects string, int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/member-levels.php:184 [argument.type] Parameter #1 $text of function esc_attr expects string, int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/member-levels.php:402 [argument.type] Parameter #1 $text of function esc_attr expects string, int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/member-levels.php:412 [argument.type] Parameter #1 $text of function esc_attr expects string, int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/offers.php:823 [argument.type] Parameter #1 $text of function esc_attr expects string, int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/offers.php:824 [argument.type] Parameter #1 $text of function esc_attr expects string, int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/offers.php:834 [argument.type] Parameter #1 $text of function esc_attr expects string, int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/token-management.php:451 [argument.type] Parameter #1 $text of function esc_attr expects string, int<0, max> given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/token-management.php:458 [argument.type] Parameter #1 $text of function esc_attr expects string, int<0, max> given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/token-management.php:465 [argument.type] Parameter #1 $text of function esc_attr expects string, int<0, max> given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/token-management.php:472 [argument.type] Parameter #1 $text of function esc_attr expects string, int<0, max> given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/token-management.php:505 [argument.type] Parameter #1 $text of function esc_attr expects string, int<1, max> given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/token-management.php:511 [argument.type] Parameter #1 $text of function esc_attr expects string, int<0, max> given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/token-management.php:518 [argument.type] Parameter #1 $text of function esc_attr expects string, int<0, max> given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/token-management.php:577 [argument.type] Parameter #1 $text of function esc_attr expects string, int<0, max> given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php:4588 [argument.type] Parameter #1 $text of function esc_html expects string, int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php:13625 [argument.type] Parameter #1 $text of function esc_html expects string, int<1, max> given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php:14244 [argument.type] Parameter #1 $text of function esc_html expects string, int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php:14309 [argument.type] Parameter #1 $text of function esc_html expects string, float|int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php:14321 [argument.type] Parameter #1 $text of function esc_html expects string, float|int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php:14351 [argument.type] Parameter #1 $text of function esc_html expects string, int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php:14530 [argument.type] Parameter #1 $text of function esc_html expects string, (float|int) given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php:14532 [argument.type] Parameter #1 $text of function esc_html expects string, int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php:14556 [argument.type] Parameter #1 $text of function esc_html expects string, float given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php:14591 [argument.type] Parameter #1 $text of function esc_attr expects string, float|int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php:14592 [argument.type] Parameter #1 $text of function esc_html expects string, float given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php:14797 [argument.type] Parameter #1 $text of function esc_html expects string, int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php:14799 [argument.type] Parameter #1 $text of function esc_html expects string, int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php:14821 [argument.type] Parameter #1 $text of function esc_html expects string, float given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php:14854 [argument.type] Parameter #1 $text of function esc_attr expects string, float|int given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php:14855 [argument.type] Parameter #1 $text of function esc_html expects string, float given.
+/home/runner/work/flosc/flosc/pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-admin.php (in context of class FLOSC_Framework):1611 [argument.type] Parameter #1 $text of function esc_attr expects string, int<1, max> given.

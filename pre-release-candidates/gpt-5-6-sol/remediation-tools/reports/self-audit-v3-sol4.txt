@@ -1,0 +1,58 @@
+PASS flosc.php Requires at least 7.0
+PASS readme Requires at least 7.0
+PASS no executable hardcoded WordPress Importer plugin path
+PASS no executable direct wp-admin/includes/import.php load
+PASS no executable FILTER_UNSAFE_RAW/FILTER_DEFAULT
+PASS SSO allowlist function found
+PASS SSO allowlist does not trust HTTP_HOST
+PASS KB save path located — pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php
+PASS KB file_content input located
+PASS KB writer receives named variable
+PASS KB scalar/type guard precedes write
+PASS KB size/length guard precedes write
+PASS KB sanitized value reaches writer — raw=content_raw clean=content
+FAILURES=0
+===========================================================================
+ FLOSC — the rules WordPress.org rejected this plugin for
+ Encoded from the review emails of 14 Jun, 27 Jun, 12 Jul and 13 Sep 2026.
+ Plugin Check was clean on every one of those submissions.
+===========================================================================
+
+WPORG-02   A core file is loaded and then actually used         clear
+           source: T12 13Sep26
+
+WPORG-03   Locations resolved, not built from WP_* constants    clear
+           source: T12 13Sep26
+
+WPORG-04   filter_input carries a sanitizing filter             clear
+           source: T12 13Sep26
+
+WPORG-06   register_setting() declares a sanitize_callback      clear
+           source: T10 27Jun26, T11 12Jul26
+
+WPORG-07   Every REST route has a permission_callback that fits it clear
+           source: T10 27Jun26
+
+WPORG-09   No inline script or style tags                       clear
+           source: T10, T11, T12
+
+WPORG-10   Origin or identity checked BEFORE request data is read clear
+           source: T13 14Sep26
+
+---------------------------------------------------------------------------
+  active exceptions : 3  (tests/wporg-rule-exceptions.txt)
+  files scanned     : 144
+  findings          : 0  (exit code counts these)
+---------------------------------------------------------------------------
+
+OUT OF REACH OF THIS FILE — do not read a clear run as coverage of these:
+  * The T12 SSO redirect-host finding. CLOSED on 15 Sep 2026 by removing the
+    HTTP_HOST entry from get_allowed_sso_redirect_hosts() in
+    includes/sso/class-oauth2-handler.php. The Host header is client-supplied,
+    so it put an attacker-named host into the one allowlist that
+    flosc_safe_external_redirect() consults. Closed by reading the call paths,
+    not by this file -- pattern matching cannot follow taint across functions,
+    and it still cannot. Do not read a clear run as proof this stayed fixed.
+  * Anything their AI flags that has not been flagged before. This file
+    knows four emails. It cannot know the fifth.
+

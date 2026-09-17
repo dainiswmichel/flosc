@@ -1,0 +1,35 @@
+/* ========================================
+   FLOSC ACCESS GATE STYLES
+   Unlock prompts and access control UI
+   ======================================== */
+
+.flosc-access__unlock-panel {
+    background: #fefce8;
+    border: 1px solid #fcd34d;
+    border-radius: 12px;
+    padding: 24px;
+    text-align: center;
+    margin: 24px 0;
+}
+
+.flosc-access__unlock-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #854d0e;
+    margin-bottom: 12px;
+}
+
+.flosc-access__unlock-button {
+    background: #10b981;
+    color: white;
+    border: none;
+    padding: 14px 32px;
+    border-radius: 8px;
+    font-weight: 600;
+    margin-top: 16px;
+    cursor: pointer;
+}
+
+.flosc-access__unlock-button:hover {
+    background: #059669;
+}

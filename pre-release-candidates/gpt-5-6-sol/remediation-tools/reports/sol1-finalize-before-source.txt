@@ -1,0 +1,42 @@
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+--------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                    COUNT
+--------------------------------------------------------------------------------
+[x] Squiz     Commenting          Doc comment alignment space before star  2389
+[x] Generic   White space         Scope indent incorrect exact             395
+[x] Generic   Commenting          Doc comment spacing before tags          380
+[x] WordPres  WP                  Capital PDangit misspelled in comment    262
+[ ] Squiz     Commenting          Function comment missing param comment   207
+[x] Generic   White space         Scope indent incorrect                   159
+[x] Squiz     Commenting          Function comment spacing after param ty  121
+[ ] Squiz     Commenting          Variable comment missing                 50
+[ ] Squiz     Commenting          Block comment closer same line           27
+[ ] Squiz     Commenting          Block comment no empty line before       27
+[ ] Squiz     Commenting          Function comment missing param tag       26
+[ ] WordPres  Security            Nonce verification recommended           22
+[ ] Generic   Commenting          Doc comment missing short                15
+[ ] Squiz     Commenting          Inline comment invalid end char          11
+[ ] Generic   Commenting          Doc comment long not capital             7
+[ ] Squiz     Commenting          Function comment param comment full sto  5
+[ ] Squiz     Commenting          File comment missing                     4
+[ ] Squiz     Commenting          Function comment missing                 4
+[ ] WordPres  WP                  Posts per page posts_per_page_posts_per  4
+[ ] Generic   Code analysis       Unused function parameter found          3
+[ ] Generic   Commenting          Doc comment short not capital            3
+[ ] WordPres  Security            Nonce verification missing               3
+[ ] Squiz     Commenting          Class comment missing                    2
+[ ] Squiz     Commenting          Variable comment wrong style             2
+[x] Universa  White space         Precision alignment found                2
+[x] Generic   Formatting          Multiple statement alignment incorrect   1
+[ ] Squiz     Commenting          Block comment has empty line before      1
+[ ] Squiz     Commenting          Block comment no capital                 1
+[ ] Squiz     Commenting          Function comment throw tag missing       1
+--------------------------------------------------------------------------------
+A TOTAL OF 4134 SNIFF VIOLATIONS WERE FOUND IN 29 SOURCES
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 8 MARKED SOURCES AUTOMATICALLY (3709 VIOLATIONS IN TOTAL)
+--------------------------------------------------------------------------------
+
+Time: 23.96 secs; Memory: 182.01MB
+

@@ -1,0 +1,2063 @@
+/**
+ * FLOSC Companion Widget (v1.6.1)
+ * ================================
+ * Floating chat widget for non-app WordPress pages.
+ * Loads the FLOSC chat interface in an iframe.
+ *
+ * Usage (PHP enqueues this on non-app pages when companion mode is enabled):
+ *   <script>
+ *     FloscCompanion.init({
+ *       appUrl: 'https://example.com/your-flow-slug/',
+ *       title: 'Product Companion',
+ *       subtitle: 'We reply instantly',
+ *       headerIconUrl: 'https://example.com/logo.png',
+ *       accentColor: '#2563eb'
+ *     });
+ *   </script>
+ *
+ * Reference: mesolitica/nous-chat-widget
+ */
+(function(window, document) {
+    'use strict';
+
+    // Single boot: PHP enqueues this only on host pages with a validated FLOSC app
+    // route as iframe target. App routes never load this script (is_flosc_request).
+    // Nesting is impossible by that invariant — not by runtime "nest guards."
+    if (window.__FLOSC_COMPANION_BOOTED__) {
+        return;
+    }
+    window.__FLOSC_COMPANION_BOOTED__ = true;
+
+    var l10n = window.floscCompanionL10n || {};
+
+    var FloscCompanion = {
+        isOpen: false,
+        isFullscreen: false,
+        panelMode: 'panel',
+        container: null,
+        iframe: null,
+        browsingContext: null,
+        lastIframeContextSignature: '',
+        lastTokenUpdateTs: 0,
+        lastHandoffPayload: null,
+        lastHandoffIframeSrc: '',
+        _initialized: false,
+        _eventsBound: false,
+
+        destroyMount: function() {
+            // DOM only. Do not clear continuityParams / token cache / sessionStorage —
+            // collapse↔expand and dock handoff depend on those surviving remount.
+            if (this.container && this.container.parentNode) {
+                this.container.parentNode.removeChild(this.container);
+            }
+            this.container = null;
+            this.iframe = null;
+            this.isOpen = false;
+            this._initialized = false;
+        },
+
+        init: function(config) {
+            // Single mount: second init (double enqueue / SPA re-run) is a no-op
+            // once a live container is already on the page.
+            if (this._initialized && this.container && document.body.contains(this.container)) {
+                return;
+            }
+
+            this.destroyMount();
+
+            this.config = Object.assign({
+                appUrl: '',
+                productName: '',
+                title: l10n.chatWithUs || 'Chat with us',
+                subtitle: l10n.weReplyInstantly || 'We reply instantly',
+                showHeaderTitle: true,
+                showHeaderSubtitle: true,
+                showOpenFullpage: true,
+                showHeaderTokens: false,
+                headerIconUrl: '',
+                avatar: '',
+                accentColor: '#2563eb',
+                position: 'bottom-right',
+                width: '380px',
+                height: '560px',
+                allowFullscreen: true,
+                defaultFullscreen: false,
+                mobileBehavior: 'fullscreen',
+                autoOpenEnabled: false,
+                autoOpenDelayMs: 1500,
+                autoOpenOncePerSession: true,
+                sessionKey: 'flosc_companion_auto_open',
+                launchOnExitIntent: false,
+                launchOnScrollThreshold: false,
+                launchOnScrollPercent: 0,
+                launcherSvgPath: 'M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z',
+                launcherIconUrl: '',
+                launcherUsesProductLogo: false,
+                triggerDesktopOnly: true,
+                triggerMinPageTimeMs: 0,
+                triggerSuppressOnAuthCheckout: true,
+                triggerSuppressPathPatterns: [],
+                currentPath: '/',
+                motionMode: 'system',
+                focusOnOpen: true,
+                allowEscapeClose: true,
+                enableKeyboardShortcut: false,
+                keyboardShortcutKey: 'k',
+                launcherAriaLabel: l10n.openChat || 'Open Chat',
+                closeAriaLabel: l10n.collapseChat || 'Collapse Chat',
+                launcherOpenAriaLabel: l10n.openChat || 'Open Chat',
+                launcherCollapseAriaLabel: l10n.collapseChat || 'Collapse Chat',
+                assistantTitle: l10n.floscAssistant || 'Assistant',
+                fullscreenLabel: l10n.toggleFullscreen || 'Toggle fullscreen',
+                rememberOpenState: false,
+                stateStorage: 'session',
+                triggerCooldownMs: 0,
+                stateKey: 'flosc_companion_state',
+                cooldownKey: 'flosc_companion_cooldown',
+                skipBehaviorTriggers: false,
+                fullPageUrl: '',
+                returnUrl: ''
+            }, config);
+
+            // Wallet/username render under the chat input inside the iframe
+            // (companion-embed session strip). Header stays product chrome only.
+            this.config.headerTokenText = '';
+
+            this.pageStartMs = Date.now();
+
+            if (!this.config.appUrl) {
+                console.warn('[FLOSC Companion] appUrl is required');
+                return;
+            }
+
+            this.handoffRequested = this.detectHandoffRequest();
+            if (this.handoffRequested) {
+                this.config.skipBehaviorTriggers = true;
+            }
+            // Session integrity: snapshot continuity BEFORE render and BEFORE
+            // applyHandoffRequest cleans the hub address bar. buildIframeUrl
+            // forwards these into the app-route iframe (same chat session).
+            // Guest/member: flosc_session_id. Visitor: flosc_visitor_session + flosc_handoff.
+            this.continuityParams = this.captureContinuityParamsFromPage();
+
+            this.captureCurrentSiteContext();
+
+            // Shell mounts first; iframe src is assigned on first open (see open())
+            // via buildIframeUrl(), which reads this.continuityParams. That must stay
+            // snapshotted here so applyHandoffRequest can clean the hub URL without
+            // dropping flosc_session_id / visitor continuity on the chat app route.
+            this.render();
+            this._initialized = true;
+            this.applyMotionMode();
+            this.syncViewportCssVars();
+            this.bindEvents();
+            this.openHostAuthModalFromQuery();
+            this.applyHandoffRequest();
+            this.restoreNavigationStateIfNeeded();
+            this.restoreOpenStateIfNeeded();
+            this.scheduleAutoOpen();
+            this.bindBehaviorTriggers();
+        },
+
+        applyMotionMode: function() {
+            this.container.classList.remove('flosc-companion--motion-reduce', 'flosc-companion--motion-full');
+            if (this.config.motionMode === 'reduce') {
+                this.container.classList.add('flosc-companion--motion-reduce');
+            } else if (this.config.motionMode === 'full') {
+                this.container.classList.add('flosc-companion--motion-full');
+            }
+        },
+
+        render: function() {
+            // Container
+            this.container = document.createElement('div');
+            this.container.className = 'flosc-companion';
+            this.container.setAttribute('data-flosc-companion-root', '1');
+
+            // Position class keeps placement behavior deterministic from admin settings.
+            if (this.config.position === 'bottom-left') {
+                this.container.classList.add('flosc-companion--left');
+            } else {
+                this.container.classList.add('flosc-companion--right');
+            }
+
+            if (this.config.mobileBehavior === 'panel') {
+                this.container.classList.add('flosc-companion--mobile-panel');
+            }
+
+            // Chat window
+            var window_el = document.createElement('div');
+            window_el.className = 'flosc-companion-window';
+
+            // Header — product chrome only (parameterized title + brand icon).
+            // Wallet lives under the input in the iframe profile row.
+            // Exactly one header node per mount (never re-appended after init).
+            var header = document.createElement('div');
+            header.className = 'flosc-companion-header';
+            var subtitleHtml = (this.config.showHeaderSubtitle === false || !this.config.subtitle)
+                ? ''
+                : '<div class="flosc-companion-subtitle">' + this.escapeHtml(this.config.subtitle) + '</div>';
+            var titleHtml = (this.config.showHeaderTitle === false)
+                ? ''
+                : '<div class="flosc-companion-title">' + this.escapeHtml(this.config.title) + '</div>';
+            var avatarHtml = this.buildHeaderAvatarHtml();
+            header.innerHTML =
+                '<div class="flosc-companion-header-info">' +
+                    avatarHtml +
+                    '<div class="flosc-companion-header-text">' +
+                        titleHtml +
+                        subtitleHtml +
+                    '</div>' +
+                '</div>' +
+                '<div class="flosc-companion-header-actions">' +
+                    // The full-chat-page link is admin-optional; some flows keep chat docked-only.
+                    ((this.config.showOpenFullpage === false) ? '' : '<button class="flosc-companion-open-fullpage" aria-label="Open full chat page" title="Open full chat page"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" d="M8 16L16 8M10 8h6v6"/></svg></button>') +
+                    '<button class="flosc-companion-close" aria-label="' + this.escapeHtml(this.config.closeAriaLabel) + '"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg></button>' +
+                '</div>';
+
+            // Iframe
+            this.iframe = document.createElement('iframe');
+            this.iframe.className = 'flosc-companion-body';
+            this.iframe.setAttribute('loading', 'lazy');
+            this.iframe.setAttribute('title', this.config.assistantTitle || this.config.productName || 'Assistant');
+
+            window_el.appendChild(header);
+            window_el.appendChild(this.iframe);
+
+            // FAB button — product logo when configured, else path SVG glyph.
+            var fab = document.createElement('button');
+            fab.className = 'flosc-companion-fab flosc-launcher';
+            fab.setAttribute('aria-label', this.config.launcherAriaLabel);
+            fab.innerHTML = this.buildLauncherHtml();
+
+            // Badge (for future notification count)
+            var badge = document.createElement('span');
+            badge.className = 'flosc-companion-badge';
+            fab.appendChild(badge);
+
+            this.container.appendChild(window_el);
+            this.container.appendChild(fab);
+            document.body.appendChild(this.container);
+            this.updateLauncherA11y();
+        },
+
+        bindEvents: function() {
+            var self = this;
+            if (!this.container) {
+                return;
+            }
+
+            var fab = this.container.querySelector('.flosc-companion-fab');
+            var closeBtn = this.container.querySelector('.flosc-companion-close');
+            var fullPageBtn = this.container.querySelector('.flosc-companion-open-fullpage');
+
+            if (fab) {
+                fab.addEventListener('click', function() {
+                    self.toggle();
+                });
+            }
+
+            if (closeBtn) {
+                closeBtn.addEventListener('click', function() {
+                    self.close();
+                });
+            }
+
+            if (fullPageBtn) {
+                fullPageBtn.addEventListener('click', function() {
+                    self.openFullPage();
+                });
+            }
+
+            if (this.iframe) {
+                this.iframe.addEventListener('load', function() {
+                    self.deliverBrowsingContextToIframe();
+                    self.watchFrameHealth();
+                });
+            }
+
+            // Document/window listeners once — re-init must not stack handlers.
+            if (this._eventsBound) {
+                return;
+            }
+            this._eventsBound = true;
+
+            document.addEventListener('click', function(e) {
+                if (self.config.isLoggedIn) {
+                    return;
+                }
+                if (e.target && e.target.closest && e.target.closest('#flosc-host-auth-modal')) {
+                    return;
+                }
+                var anchor = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+                if (!anchor) {
+                    return;
+                }
+                if (!self.isThemeLoginHref(anchor.getAttribute('href') || '')) {
+                    return;
+                }
+                e.preventDefault();
+                e.stopPropagation();
+                self.openHostAuthModal();
+            }, true);
+
+            // Keyboard: Escape to close
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && document.getElementById('flosc-host-auth-modal')) {
+                    e.preventDefault();
+                    self.closeHostAuthModal();
+                    return;
+                }
+                if (!self.container) {
+                    return;
+                }
+                if (self.config.allowEscapeClose && e.key === 'Escape' && self.isOpen) {
+                    self.close();
+                    return;
+                }
+
+                if (self.config.enableKeyboardShortcut && e.altKey && e.shiftKey) {
+                    var key = String(e.key || '').toLowerCase();
+                    if (key === String(self.config.keyboardShortcutKey || 'k').toLowerCase() && !self.isTypingTarget(e.target)) {
+                        e.preventDefault();
+                        self.toggle();
+                    }
+                }
+            });
+
+            window.addEventListener('popstate', function() {
+                if (!self.container) {
+                    return;
+                }
+                self.captureCurrentSiteContext();
+                self.refreshIframeContextIfNeeded();
+            });
+
+            window.addEventListener('hashchange', function() {
+                if (!self.container) {
+                    return;
+                }
+                self.captureCurrentSiteContext();
+                self.refreshIframeContextIfNeeded();
+            });
+
+            document.addEventListener('visibilitychange', function() {
+                if (!self.container) {
+                    return;
+                }
+                if (document.visibilityState === 'visible') {
+                    self.captureCurrentSiteContext();
+                    self.refreshIframeContextIfNeeded();
+                } else if (document.visibilityState === 'hidden') {
+                    self.saveNavigationState();
+                }
+            });
+
+            window.addEventListener('pagehide', function() {
+                if (!self.container) {
+                    return;
+                }
+                self.saveNavigationState();
+            });
+
+            var syncViewport = function() {
+                if (!self.container) {
+                    return;
+                }
+                self.syncViewportCssVars();
+                self.scheduleViewportClamp();
+            };
+
+            window.addEventListener('resize', syncViewport, { passive: true });
+            window.addEventListener('orientationchange', syncViewport, { passive: true });
+
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', syncViewport, { passive: true });
+                window.visualViewport.addEventListener('scroll', syncViewport, { passive: true });
+            }
+
+            window.addEventListener('message', function(event) {
+                if (!self.iframe || event.source !== self.iframe.contentWindow) {
+                    return;
+                }
+
+                try {
+                    var appOrigin = new URL(self.config.appUrl, window.location.origin).origin;
+                    if (String(event.origin || '') !== appOrigin) {
+                        return;
+                    }
+                } catch (e) {
+                    return;
+                }
+
+                var data = event.data || {};
+                if (data.type === 'flosc_companion_token_update') {
+                    // Tokens/username render in the iframe session strip under the input.
+                    // Cache only for continuity; do not paint wallet into the purple header.
+                    self.cacheTokenUpdate(data.payload);
+                    return;
+                }
+                if (data.type === 'flosc_companion_context_request') {
+                    self.deliverBrowsingContextToIframe();
+                    return;
+                }
+                if (data.type === 'flosc_companion_auth_navigate') {
+                    self.navigateTopLevelForAuth(data.authUrl);
+                    return;
+                }
+                if (data.type === 'flosc_app_ready') {
+                    self._frameAlive = true;
+                    window.clearTimeout(self._frameHealthTimer);
+                    return;
+                }
+                if (data.type === 'flosc_companion_logout_complete') {
+                    self.handleLogoutComplete(data.redirect);
+                }
+            });
+        },
+
+        getTokenCacheKey: function() {
+            var flowId = String(this.config.flowId || 'default');
+            var appScope = '';
+            try {
+                appScope = new URL(this.config.appUrl, window.location.origin).pathname || '';
+            } catch (e) {
+                appScope = String(this.config.appUrl || '');
+            }
+            appScope = appScope.replace(/[^a-z0-9]+/gi, '_').toLowerCase() || 'app';
+            return 'flosc_companion_token_cache_' + flowId + '_' + appScope;
+        },
+
+        /**
+         * v10.1.0: Park a handoff pack in sessionStorage instead of the address bar.
+         *
+         * The pack used to ride the URL as base64. At 8000 characters plus the
+         * context params it exceeded nginx's request-line limit and the chat frame
+         * rendered "414 Request-URI Too Large" to the reader. sessionStorage is
+         * shared with a same-origin frame and survives a same-tab navigation, so
+         * the URL now carries a one-character marker instead of a transcript.
+         *
+         * @param {string} encoded Base64 pack.
+         * @return {boolean} Whether it was stored.
+         */
+        stashHandoffPack: function(encoded) {
+            try {
+                if (!encoded) {
+                    return false;
+                }
+                window.sessionStorage.setItem('flosc_handoff_pack', String(encoded));
+                return true;
+            } catch (e) {
+                return false;
+            }
+        },
+
+        readTokenCache: function() {
+            try {
+                var raw = window.sessionStorage.getItem(this.getTokenCacheKey());
+                if (!raw) {
+                    return null;
+                }
+                var parsed = JSON.parse(raw);
+                return parsed && typeof parsed === 'object' ? parsed : null;
+            } catch (e) {
+                return null;
+            }
+        },
+
+        persistTokenCache: function(payload) {
+            if (!payload || typeof payload !== 'object') {
+                return;
+            }
+
+            var formatted = String(payload.formatted || '').trim();
+            if (!formatted) {
+                return;
+            }
+
+            var ts = Math.max(0, parseInt(payload.ts, 10) || 0);
+            if (!ts) {
+                ts = Date.now();
+            }
+
+            try {
+                window.sessionStorage.setItem(this.getTokenCacheKey(), JSON.stringify({
+                    formatted: formatted,
+                    value: Math.max(0, parseInt(payload.value, 10) || 0),
+                    ts: ts
+                }));
+            } catch (e) {
+                // Ignore storage failures.
+            }
+        },
+
+        /**
+         * Header brand mark: flow Chat Logo / companion_header_icon_url.
+         * No hard-coded chat emoji — empty when no icon is parameterized.
+         */
+        buildHeaderAvatarHtml: function() {
+            var iconUrl = String(this.config.headerIconUrl || '').trim();
+            var product = String(this.config.productName || this.config.title || 'Brand').trim();
+            if (iconUrl) {
+                return '<div class="flosc-companion-avatar flosc-companion-avatar--image">' +
+                    '<img src="' + this.escapeHtml(iconUrl) + '" alt="' + this.escapeHtml(product) + '" class="flosc-companion-avatar-img">' +
+                    '</div>';
+            }
+            var emoji = String(this.config.avatar || '').trim();
+            if (emoji) {
+                return '<div class="flosc-companion-avatar flosc-companion-avatar--emoji">' +
+                    this.escapeHtml(emoji) +
+                    '</div>';
+            }
+            return '';
+        },
+
+        /**
+         * FAB content: product logo image or SVG path from admin launcher icon choice.
+         */
+        buildLauncherHtml: function() {
+            var logoUrl = String(this.config.launcherIconUrl || '').trim();
+            if (this.config.launcherUsesProductLogo && logoUrl) {
+                return '<img src="' + this.escapeHtml(logoUrl) + '" alt="" class="flosc-companion-fab-logo">';
+            }
+            // Prefer header brand icon for FAB when no SVG path and logo URL exists.
+            if (!this.config.launcherSvgPath && logoUrl) {
+                return '<img src="' + this.escapeHtml(logoUrl) + '" alt="" class="flosc-companion-fab-logo">';
+            }
+            var path = String(this.config.launcherSvgPath || '').trim();
+            if (!path) {
+                path = 'M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z';
+            }
+            return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">' +
+                '<path d="' + this.escapeHtml(path) + '"/>' +
+                '</svg>';
+        },
+
+        formatTokenCountForHeader: function(tokenValue) {
+            var n = Math.max(0, parseInt(tokenValue, 10) || 0);
+            try {
+                return n.toLocaleString();
+            } catch (e) {
+                return String(n);
+            }
+        },
+
+        getInitialHeaderTokenText: function() {
+            // Header never shows wallet; profile row under input is authoritative.
+            return '';
+        },
+
+        /**
+         * Persist token postMessage from the iframe (session continuity only).
+         * Does not mutate the companion chrome header.
+         */
+        cacheTokenUpdate: function(payload) {
+            if (!payload || typeof payload !== 'object') {
+                return;
+            }
+
+            var formatted = String(payload.formatted || '').trim();
+            if (!formatted) {
+                return;
+            }
+
+            var ts = Math.max(0, parseInt(payload.ts, 10) || 0);
+            if (!ts) {
+                ts = Date.now();
+                payload = Object.assign({}, payload, { ts: ts });
+            }
+            if (this.lastTokenUpdateTs > 0 && ts < this.lastTokenUpdateTs) {
+                return;
+            }
+
+            this.lastTokenUpdateTs = ts;
+            this.persistTokenCache(payload);
+            this.config.headerTokenText = formatted;
+        },
+
+        /** @deprecated Header no longer displays tokens; use cacheTokenUpdate. */
+        updateHeaderTokenText: function(payload) {
+            this.cacheTokenUpdate(payload);
+        },
+
+        toggle: function() {
+            if (this.isOpen) {
+                this.close();
+            } else {
+                this.open();
+            }
+        },
+
+        open: function(opts) {
+            opts = opts || {};
+            var shouldOpenFullscreen = !!(this.config.allowFullscreen && this.config.defaultFullscreen);
+
+            this.captureCurrentSiteContext();
+            this.syncViewportCssVars();
+
+            this.setPanelMode(shouldOpenFullscreen ? 'fullscreen' : 'panel');
+            this.isOpen = true;
+            this.container.classList.add('is-open');
+            this.updateLauncherA11y();
+            this.scheduleViewportClamp();
+
+            var payload = this.getBrowsingContextPayload();
+            var signature = this.getContextSignature(payload);
+
+            // Lazy-load iframe on first open only. Never hard-reload after load —
+            // reassigning iframe.src aborts in-flight turns, drops replies, and
+            // breaks session continuity (full-page chat is unaffected). Later
+            // context updates go via postMessage only. First src includes
+            // continuityParams (session_id / visitor / handoff pack).
+            if (!this.iframe.src) {
+                this._frameAlive = false;
+                this._frameRecovered = false;
+                this.lastIframeContextSignature = signature;
+                var iframeSrc = this.buildIframeUrl();
+                if (iframeSrc) {
+                    this.iframe.src = iframeSrc;
+                }
+            } else {
+                this.lastIframeContextSignature = signature;
+                this.deliverBrowsingContextToIframe();
+            }
+
+            if (this.config.focusOnOpen) {
+                this.focusCompanion();
+            }
+
+            this.saveOpenState(true);
+            this.saveNavigationState();
+        },
+
+        close: function() {
+            this.isOpen = false;
+            this.container.classList.remove('is-open');
+            this.updateLauncherA11y();
+            this.saveOpenState(false);
+            this.saveNavigationState();
+        },
+
+        /**
+         * v10.1.0: Confirm the frame that just loaded is actually the FLOSC app.
+         *
+         * A 414, a 500 or any other error page fires 'load' exactly like the app
+         * does, so the reader was shown raw server output inside a branded panel
+         * with no way back. The app announces itself on boot; silence means the
+         * frame is not the app, and we rebuild it once without the continuity
+         * params that are the likeliest cause of an over-long request.
+         *
+         * Rebuilds at most once per open, so a genuinely down backend cannot put
+         * the panel in a reload loop.
+         */
+        watchFrameHealth: function() {
+            var self = this;
+            window.clearTimeout(this._frameHealthTimer);
+
+            if (this._frameAlive || this._frameRecovered) {
+                return;
+            }
+
+            this._frameHealthTimer = window.setTimeout(function() {
+                if (self._frameAlive || self._frameRecovered || !self.iframe) {
+                    return;
+                }
+                self._frameRecovered = true;
+
+                // Drop everything that could have inflated the request, then rebuild.
+                self.continuityParams = {};
+                self.lastIframeContextSignature = '';
+                try {
+                    window.sessionStorage.removeItem('flosc_handoff_pack');
+                } catch (e) {
+                    // Storage unavailable in this context.
+                }
+
+                try {
+                    self.iframe.src = '';
+                    var retryUrl = self.buildIframeUrl();
+                    if (retryUrl) {
+                        self.iframe.src = retryUrl;
+                    }
+                } catch (e) {
+                    // Nothing further we can do from here.
+                }
+            }, 4000);
+        },
+
+        /**
+         * v10.1.0: The chat iframe finished logging out and handed the teardown here.
+         *
+         * Logout returns the reader to the page they were reading, with the bubble
+         * closed and nothing of the previous account holder left behind. Relabelling
+         * the panel is not resetting it, so the frame is destroyed outright: the next
+         * open builds a new one as a genuinely new visitor.
+         *
+         * @param {string} redirect Optional destination configured by the floscAdmin.
+         */
+        handleLogoutComplete: function(redirect) {
+            var self = this;
+            var target = String(redirect || '');
+
+            // Let the farewell finish being read before the panel goes.
+            window.setTimeout(function() {
+                try {
+                    self.close();
+                } catch (e) {
+                    // Panel may already be closed.
+                }
+
+                try {
+                    if (self.iframe) {
+                        self.iframe.src = '';
+                    }
+                    self.continuityParams = {};
+                    self.lastIframeContextSignature = '';
+                } catch (e) {
+                    // Frame already gone.
+                }
+
+                try {
+                    window.sessionStorage.removeItem('flosc_handoff_pack');
+                } catch (e) {
+                    // Storage unavailable in this context.
+                }
+
+                // A logged-out reader must never be shown the member or guest balance.
+                // Drop the cached wallet so the panel repaints from the visitor wallet
+                // the server issues, not the account's last known number.
+                try {
+                    window.sessionStorage.removeItem(self.getTokenCacheKey());
+                } catch (e) {
+                    // Storage unavailable, or the key was never written.
+                }
+
+                // An explicit non-app destination is a deliberate farewell page and is
+                // honoured. Otherwise stay put and repaint, so the theme header stops
+                // showing a signed-in member without yanking the reader off the page
+                // they were reading.
+                try {
+                    if (target && typeof self.isAppUrl === 'function' && !self.isAppUrl(target)) {
+                        window.location.href = target;
+                        return;
+                    }
+                } catch (e) {
+                    // Fall through to a plain reload.
+                }
+
+                window.location.reload();
+            }, 2000);
+        },
+
+        getNavigationStateKey: function() {
+            var originScope = '';
+            try {
+                originScope = String(window.location.origin || '').toLowerCase().replace(/[^a-z0-9]+/g, '_');
+            } catch (e) {
+                originScope = 'site';
+            }
+            if (!originScope) {
+                originScope = 'site';
+            }
+            return 'flosc_companion_nav_state_' + originScope;
+        },
+
+        getLegacyNavigationStateKey: function() {
+            return String(this.config.stateKey || 'flosc_companion_state') + '_nav';
+        },
+
+        saveNavigationState: function() {
+            var payload = {
+                isOpen: !!this.isOpen,
+                panelMode: String(this.panelMode || 'panel'),
+                ts: Date.now()
+            };
+            try {
+                window.sessionStorage.setItem(this.getNavigationStateKey(), JSON.stringify(payload));
+                // Backward-compatible write to previous key shape.
+                window.sessionStorage.setItem(this.getLegacyNavigationStateKey(), JSON.stringify(payload));
+            } catch (e) {
+                // Ignore storage failures.
+            }
+        },
+
+        restoreNavigationStateIfNeeded: function() {
+            if (this.handoffRequested) {
+                return;
+            }
+
+            try {
+                var raw = window.sessionStorage.getItem(this.getNavigationStateKey());
+                if (!raw) {
+                    raw = window.sessionStorage.getItem(this.getLegacyNavigationStateKey());
+                }
+                if (!raw) {
+                    return;
+                }
+
+                var state = JSON.parse(raw);
+                if (!state || !state.isOpen) {
+                    return;
+                }
+
+                this.open();
+
+                var mode = String(state.panelMode || 'panel').toLowerCase();
+                if (mode === 'expanded' || mode === 'fullscreen') {
+                    this.setPanelMode(mode);
+                }
+            } catch (e) {
+                // Ignore malformed nav state.
+            }
+        },
+
+        /**
+         * Iframe URL from PHP-validated appUrl (FLOSC app route only).
+         * Reject non-http(s) schemes; do not invent alternate targets.
+         */
+        resolveAllowedAppUrl: function() {
+            try {
+                if (!this.config.appUrl) {
+                    return null;
+                }
+                var app = new URL(this.config.appUrl, window.location.origin);
+                if (app.protocol !== 'http:' && app.protocol !== 'https:') {
+                    return null;
+                }
+                return app;
+            } catch (e) {
+                return null;
+            }
+        },
+
+        buildIframeUrl: function() {
+            try {
+                var url = this.resolveAllowedAppUrl();
+                if (!url) {
+                    return '';
+                }
+                // Embed surface flags for the *inner* app (CSS / layout), not outer chrome.
+                url.searchParams.set('flosc_surface', 'companion');
+                url.searchParams.set('flosc_companion', '1');
+
+                if (this.config.returnUrl) {
+                    url.searchParams.set('flosc_context_url', String(this.config.returnUrl));
+                }
+
+                if (this.config.contextParams && typeof this.config.contextParams === 'object') {
+                    Object.keys(this.config.contextParams).forEach(function(key) {
+                        var value = this.config.contextParams[key];
+                        if (value === null || typeof value === 'undefined' || value === '') {
+                            return;
+                        }
+                        url.searchParams.set(key, String(value));
+                    }, this);
+                }
+
+                // Forward collapse/expand continuity into the chat iframe
+                // (parent may be the WordPress host; iframe is the flow chat host domain).
+                // Prefer snapshotted params (survive address-bar cleanup), then live query.
+                try {
+                    var cont = (this.continuityParams && typeof this.continuityParams === 'object')
+                        ? this.continuityParams
+                        : {};
+                    var parentParams = new URLSearchParams(window.location.search || '');
+                    // v10.1.0: identifiers only. The transcript never rides a URL.
+                    ['flosc_session_id', 'flosc_visitor_session'].forEach(function(key) {
+                        var val = cont[key] || parentParams.get(key);
+                        if (val) {
+                            url.searchParams.set(key, String(val).slice(0, 120));
+                        }
+                    });
+
+                    var carriedPack = cont.flosc_handoff || parentParams.get('flosc_handoff');
+                    if (carriedPack && this.stashHandoffPack(carriedPack)) {
+                        url.searchParams.set('flosc_handoff_ref', '1');
+                    }
+                } catch (eFwd) {
+                    // Ignore parent URL parse failures.
+                }
+
+                var payload = this.getBrowsingContextPayload();
+                if (payload.page_url) {
+                    url.searchParams.set('flosc_context_url', payload.page_url);
+                }
+                if (payload.page_title) {
+                    url.searchParams.set('flosc_context_title', payload.page_title);
+                }
+                if (payload.page_path) {
+                    url.searchParams.set('flosc_context_path', payload.page_path);
+                }
+                if (payload.page_referrer) {
+                    url.searchParams.set('flosc_context_referrer', payload.page_referrer);
+                }
+                if (payload.surface) {
+                    url.searchParams.set('flosc_context_surface', payload.surface);
+                }
+                if (payload.page_post_id) {
+                    url.searchParams.set('flosc_context_post_id', String(payload.page_post_id));
+                } else if (this.config.currentPagePostId) {
+                    url.searchParams.set('flosc_context_post_id', String(this.config.currentPagePostId));
+                } else if (this.config.contextParams && this.config.contextParams.flosc_context_post_id) {
+                    url.searchParams.set('flosc_context_post_id', String(this.config.contextParams.flosc_context_post_id));
+                }
+
+                return url.toString();
+            } catch (e) {
+                return '';
+            }
+        },
+
+        normalizeUrl: function(value) {
+            var raw = String(value || '').trim();
+            if (!raw) {
+                return '';
+            }
+            try {
+                var parsed = new URL(raw, window.location.origin);
+                if (!/^https?:$/.test(parsed.protocol)) {
+                    return '';
+                }
+                return parsed.toString();
+            } catch (e) {
+                return '';
+            }
+        },
+
+        resolvePostIdFromPage: function() {
+            var configured = parseInt(this.config.currentPagePostId, 10);
+            if (Number.isFinite(configured) && configured > 0) {
+                return configured;
+            }
+
+            var body = document.body;
+            if (body) {
+                var dataId = parseInt(body.getAttribute('data-flosc-post-id') || body.dataset.floscPostId || '', 10);
+                if (Number.isFinite(dataId) && dataId > 0) {
+                    return dataId;
+                }
+            }
+
+            var className = String((body && body.className) || '');
+            // Support common WP/body class variants across themes:
+            // postid-123, postid123, page-id-456, pageid456.
+            var match = className.match(/\bpostid-?(\d+)\b/);
+            if (match) {
+                return parseInt(match[1], 10) || 0;
+            }
+            match = className.match(/\bpage-id-?(\d+)\b/);
+            if (match) {
+                return parseInt(match[1], 10) || 0;
+            }
+            match = className.match(/\bsingle-post-(\d+)\b/);
+            if (match) {
+                return parseInt(match[1], 10) || 0;
+            }
+            return 0;
+        },
+
+        readTrail: function() {
+            try {
+                var raw = window.sessionStorage.getItem('flosc_companion_surf_trail') || '[]';
+                var parsed = JSON.parse(raw);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (e) {
+                return [];
+            }
+        },
+
+        writeTrail: function(trail) {
+            try {
+                window.sessionStorage.setItem('flosc_companion_surf_trail', JSON.stringify(trail || []));
+            } catch (e) {
+                // Ignore storage failures.
+            }
+        },
+
+        upsertTrailEntry: function(entry) {
+            var next = this.readTrail();
+            var url = this.normalizeUrl(entry && entry.url ? entry.url : '');
+            if (!url) {
+                return next;
+            }
+
+            next = next.filter(function(item) {
+                return item && String(item.url || '') !== url;
+            });
+
+            next.push({
+                url: url,
+                title: String((entry && entry.title) || '').slice(0, 180),
+                path: String((entry && entry.path) || '').slice(0, 240)
+            });
+
+            if (next.length > 10) {
+                next = next.slice(next.length - 10);
+            }
+
+            this.writeTrail(next);
+            return next;
+        },
+
+        isAppUrl: function(url) {
+            try {
+                var current = new URL(url, window.location.origin);
+                var app = new URL(this.config.appUrl, window.location.origin);
+                var clean = function(pathname) {
+                    return String(pathname || '/').replace(/\/+$/, '') || '/';
+                };
+                return clean(current.pathname) === clean(app.pathname);
+            } catch (e) {
+                return false;
+            }
+        },
+
+        captureCurrentSiteContext: function() {
+            var pageUrl = this.normalizeUrl(window.location.href);
+            var title = String(document.title || '').trim().slice(0, 180);
+            var path = String(window.location.pathname || '/').trim().slice(0, 240);
+            var referrer = this.normalizeUrl(document.referrer || '');
+            var postId = this.resolvePostIdFromPage();
+            if (!postId && this.config.contextParams && this.config.contextParams.flosc_context_post_id) {
+                postId = parseInt(this.config.contextParams.flosc_context_post_id, 10) || 0;
+            }
+            if (!postId && this.config.currentPagePostId) {
+                postId = parseInt(this.config.currentPagePostId, 10) || 0;
+            }
+
+            var trail = this.upsertTrailEntry({
+                url: pageUrl,
+                title: title,
+                path: path
+            });
+
+            if (pageUrl && !this.isAppUrl(pageUrl)) {
+                try {
+                    window.sessionStorage.setItem('flosc_last_site_page', pageUrl);
+                } catch (e) {
+                    // Ignore storage failures.
+                }
+            }
+
+            this.browsingContext = {
+                page_url: pageUrl,
+                page_title: title,
+                page_path: path,
+                page_referrer: referrer,
+                page_post_id: postId,
+                surface: 'companion',
+                trail: trail
+            };
+        },
+
+        getBrowsingContextPayload: function() {
+            return this.browsingContext || {
+                page_url: '',
+                page_title: '',
+                page_path: '',
+                page_referrer: '',
+                page_post_id: 0,
+                surface: 'companion',
+                trail: []
+            };
+        },
+
+        getContextSignature: function(payload) {
+            try {
+                return JSON.stringify(payload || {});
+            } catch (e) {
+                return '';
+            }
+        },
+
+        postBrowsingContextToIframe: function() {
+            if (!this.iframe || !this.iframe.contentWindow) {
+                return;
+            }
+
+            var payload = this.getBrowsingContextPayload();
+            try {
+                var targetOrigin = new URL(this.iframe.src || this.config.appUrl, window.location.origin).origin;
+                this.iframe.contentWindow.postMessage({
+                    type: 'flosc_companion_context',
+                    payload: payload
+                }, targetOrigin);
+            } catch (e) {
+                // Ignore cross-window messaging failures.
+            }
+        },
+
+        isThemeLoginHref: function(href) {
+            var raw = String(href || '').trim();
+            if (!raw) {
+                return false;
+            }
+            try {
+                var url = new URL(raw, window.location.origin);
+                if (url.searchParams.has('flosc_open_login')) {
+                    return true;
+                }
+                var path = String(url.pathname || '').toLowerCase();
+                if (path.indexOf('wp-login.php') === -1) {
+                    return false;
+                }
+                var action = String(url.searchParams.get('action') || 'login').toLowerCase();
+                if (['lostpassword', 'retrievepassword', 'rp', 'resetpass', 'logout'].indexOf(action) !== -1) {
+                    return false;
+                }
+                return true;
+            } catch (e) {
+                return raw.indexOf('wp-login.php') !== -1 && raw.indexOf('lostpassword') === -1;
+            }
+        },
+
+        getHostVisitorSessionId: function() {
+            try {
+                var id = String(localStorage.getItem('flosc_visitor_session') || '').trim();
+                if (id) {
+                    return id.slice(0, 80);
+                }
+            } catch (e) {
+                // Ignore.
+            }
+            var minted = 'v_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+            try {
+                localStorage.setItem('flosc_visitor_session', minted);
+            } catch (e2) {
+                // Ignore.
+            }
+            return minted;
+        },
+
+        openHostAuthModalFromQuery: function() {
+            if (this.config.isLoggedIn) {
+                return;
+            }
+            try {
+                var url = new URL(window.location.href);
+                if (!url.searchParams.has('flosc_open_login')) {
+                    return;
+                }
+                url.searchParams.delete('flosc_open_login');
+                window.history.replaceState({}, document.title, url.toString());
+            } catch (e) {
+                return;
+            }
+            this.openHostAuthModal();
+        },
+
+        openHostAuthModal: function() {
+            var self = this;
+            this.closeHostAuthModal();
+            var title = this.escapeHtml(String(this.config.authTitle || 'Log In or Create an Account'));
+            var subtitle = this.escapeHtml(String(this.config.authSubtitle || ''));
+            var buttonText = this.escapeHtml(String(this.config.authButtonText || 'Continue with Email'));
+            var emailLabel = this.escapeHtml(String(this.config.authEmailLabel || 'Email Address'));
+            var emailPlaceholder = this.escapeHtml(String(this.config.authEmailPlaceholder || 'you@example.com'));
+            var termsText = this.escapeHtml(String(this.config.authTermsText || ''));
+            var ssoDivider = this.escapeHtml(String(this.config.authSsoDivider || 'or continue with'));
+            var providers = Array.isArray(this.config.ssoProviders) ? this.config.ssoProviders : [];
+            var ssoHtml = '';
+            if (providers.length) {
+                ssoHtml = '<div class="flosc-auth-divider"><span>' + ssoDivider + '</span></div><div class="flosc-sso-buttons">';
+                providers.forEach(function(p) {
+                    if (!p || !p.authUrl) {
+                        return;
+                    }
+                    var colors = p.colors && typeof p.colors === 'object' ? p.colors : {};
+                    ssoHtml += '<button type="button" class="flosc-sso-btn" data-auth-url="' + self.escapeHtml(String(p.authUrl)) + '"'
+                        + ' style="background:' + self.escapeHtml(String(colors.background || '#fff')) + ';color:' + self.escapeHtml(String(colors.text || '#111')) + '">'
+                        + '<span class="flosc-sso-icon">' + (p.icon || '') + '</span>'
+                        + '<span class="flosc-sso-label">' + self.escapeHtml(String(p.name || p.id || '')) + '</span>'
+                        + '</button>';
+                });
+                ssoHtml += '</div>';
+            }
+            var wrap = document.createElement('div');
+            wrap.id = 'flosc-host-auth-modal';
+            wrap.className = 'flosc-auth-modal-overlay';
+            wrap.innerHTML = '<div class="flosc-auth-modal" role="dialog" aria-modal="true">'
+                + '<button class="flosc-auth-close" type="button" aria-label="Close">&times;</button>'
+                + '<div class="flosc-auth-header"><h2>' + title + '</h2><p>' + subtitle + '</p></div>'
+                + '<form class="flosc-auth-form" id="flosc-host-auth-form">'
+                + '<div class="flosc-auth-field"><label for="flosc-host-auth-email">' + emailLabel + '</label>'
+                + '<input type="email" id="flosc-host-auth-email" placeholder="' + emailPlaceholder + '" required></div>'
+                + '<button type="submit" class="flosc-auth-submit">' + buttonText + '</button></form>'
+                + ssoHtml
+                + '<p class="flosc-auth-terms">' + termsText + '</p>'
+                + '<p class="flosc-auth-status" id="flosc-host-auth-status" hidden></p>'
+                + '</div>';
+            document.body.appendChild(wrap);
+            wrap.addEventListener('click', function(e) {
+                if (e.target === wrap) {
+                    self.closeHostAuthModal();
+                }
+            });
+            var closeBtn = wrap.querySelector('.flosc-auth-close');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', function() {
+                    self.closeHostAuthModal();
+                });
+            }
+            var form = wrap.querySelector('#flosc-host-auth-form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    self.submitHostEmailAuth();
+                });
+            }
+            wrap.querySelectorAll('.flosc-sso-btn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    self.navigateTopLevelForAuth(btn.getAttribute('data-auth-url'));
+                });
+            });
+            var emailInput = document.getElementById('flosc-host-auth-email');
+            if (emailInput) {
+                emailInput.focus();
+            }
+        },
+
+        closeHostAuthModal: function() {
+            var modal = document.getElementById('flosc-host-auth-modal');
+            if (modal && modal.parentNode) {
+                modal.parentNode.removeChild(modal);
+            }
+        },
+
+        submitHostEmailAuth: function() {
+            var self = this;
+            var emailEl = document.getElementById('flosc-host-auth-email');
+            var statusEl = document.getElementById('flosc-host-auth-status');
+            var submitBtn = document.querySelector('#flosc-host-auth-modal .flosc-auth-submit');
+            var email = emailEl ? String(emailEl.value || '').trim() : '';
+            var restUrl = String(this.config.restUrl || '');
+            if (!email || !restUrl) {
+                return;
+            }
+            var loadingText = String(this.config.authLoadingText || 'Sending link...');
+            var buttonText = String(this.config.authButtonText || 'Continue with Email');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = loadingText;
+            }
+            var body = {
+                email: email,
+                flow_id: String(this.config.flowId || ''),
+                visitor_session_id: this.getHostVisitorSessionId(),
+                redirect_to: window.location.href
+            };
+            try {
+                var flow = String(this.config.flowId || 'default').replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 80);
+                var stored = localStorage.getItem('flosc_quiz_result__' + flow) || localStorage.getItem('flosc_quiz_result');
+                if (stored) {
+                    var parsed = JSON.parse(stored);
+                    if (parsed && typeof parsed === 'object') {
+                        body.quiz_data = parsed;
+                        if (parsed.sessionId) {
+                            body.session_id = parsed.sessionId;
+                        }
+                        if (parsed.tempId) {
+                            body.temp_id = parsed.tempId;
+                        }
+                    }
+                }
+            } catch (e) {
+                // Quiz payload is optional.
+            }
+            fetch(restUrl.replace(/\/?$/, '/') + 'register-email', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-WP-Nonce': String(this.config.nonce || '')
+                },
+                body: JSON.stringify(body)
+            }).then(function(res) {
+                return res.json().then(function(data) {
+                    return { ok: res.ok, data: data };
+                });
+            }).then(function(out) {
+                var data = out.data || {};
+                if (!out.ok || !data.success) {
+                    throw new Error(data.message || 'Could not send login link');
+                }
+                if (statusEl) {
+                    statusEl.hidden = false;
+                    statusEl.textContent = data.message || 'Check your email and click the verification link to activate your account.';
+                }
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = buttonText;
+                }
+            }).catch(function(err) {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = buttonText;
+                }
+                if (statusEl) {
+                    statusEl.hidden = false;
+                    statusEl.textContent = (err && err.message) ? err.message : 'Registration failed.';
+                }
+            });
+        },
+
+        continuityFallbackPayload: function() {
+            var flow = String(this.config.flowId || 'default').replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 80) || 'default';
+            var remembered = '';
+            var visitorSid = '';
+            var journeyId = '';
+            var messages = [];
+            try {
+                remembered = String(localStorage.getItem('flosc_active_chat_session__' + flow) || '').trim();
+                visitorSid = String(localStorage.getItem('flosc_visitor_session') || '').trim();
+                // Chat Logs group by this, and it outlives the session id, so it has
+                // to travel with the handoff or the thread forks at the boundary.
+                journeyId = String(localStorage.getItem('flosc_journey_id') || '')
+                    .replace(/[^A-Za-z0-9_-]/g, '')
+                    .slice(0, 64);
+                var raw = localStorage.getItem('flosc_visitor_messages');
+                if (raw) {
+                    var parsed = JSON.parse(raw);
+                    if (Array.isArray(parsed)) {
+                        messages = parsed;
+                    }
+                }
+            } catch (e) {
+                // Ignore storage failures.
+            }
+            if (remembered) {
+                return { kind: 'user', sessionId: remembered, journeyId: journeyId, messages: [] };
+            }
+            if (visitorSid || messages.length) {
+                return { kind: 'visitor', sessionId: visitorSid, journeyId: journeyId, messages: messages };
+            }
+            return {};
+        },
+
+        // Only the flow's own authorize endpoint may move the host page, and the parent
+        // supplies redirect_to so the visitor returns to the page they were reading.
+        navigateTopLevelForAuth: function(rawAuthUrl) {
+            try {
+                var appOrigin = new URL(this.config.appUrl, window.location.origin).origin;
+                var authUrl = new URL(String(rawAuthUrl || ''), appOrigin);
+                if (!/^https?:$/.test(authUrl.protocol) || authUrl.origin !== appOrigin) {
+                    return;
+                }
+                authUrl.searchParams.set('redirect_to', window.location.href);
+                window.location.href = authUrl.toString();
+            } catch (e) {
+                // Ignore malformed auth handoffs.
+            }
+        },
+
+        deliverBrowsingContextToIframe: function() {
+            var self = this;
+            var delays = [0, 120, 500, 1200];
+            delays.forEach(function(delayMs) {
+                window.setTimeout(function() {
+                    self.captureCurrentSiteContext();
+                    self.postBrowsingContextToIframe();
+                }, delayMs);
+            });
+        },
+
+        isUsableHandoffPayload: function(payload) {
+            if (!payload || typeof payload !== 'object') {
+                return false;
+            }
+            if (String(payload.sessionId || payload.session_id || '').trim()) {
+                return true;
+            }
+            return Array.isArray(payload.messages) && payload.messages.length > 0;
+        },
+
+        cachedHandoffIfCurrent: function() {
+            var src = this.iframe && this.iframe.src ? String(this.iframe.src) : '';
+            if (!src || src !== String(this.lastHandoffIframeSrc || '')) {
+                return {};
+            }
+            var cached = this.lastHandoffPayload;
+            if (!cached || typeof cached !== 'object') {
+                return {};
+            }
+            var cachedSid = String(cached.sessionId || cached.session_id || '').trim();
+            var live = this.continuityParams && typeof this.continuityParams === 'object'
+                ? this.continuityParams
+                : {};
+            var liveSid = String(live.flosc_session_id || live.flosc_visitor_session || '').trim();
+            if (liveSid && cachedSid && liveSid !== cachedSid) {
+                return {};
+            }
+            return cached;
+        },
+
+        requestHandoffPayloadFromIframe: function() {
+            var self = this;
+            return new Promise(function(resolve) {
+                var settled = false;
+                var done = function(payload) {
+                    if (settled) {
+                        return;
+                    }
+                    settled = true;
+                    window.removeEventListener('message', onMessage);
+                    var usable = self.isUsableHandoffPayload(payload) ? payload : null;
+                    if (!usable && self.isUsableHandoffPayload(self.cachedHandoffIfCurrent())) {
+                        usable = self.cachedHandoffIfCurrent();
+                    }
+                    if (!usable) {
+                        usable = self.continuityFallbackPayload();
+                    }
+                    if (self.isUsableHandoffPayload(usable)) {
+                        self.lastHandoffPayload = usable;
+                        self.lastHandoffIframeSrc = self.iframe && self.iframe.src ? String(self.iframe.src) : '';
+                    }
+                    resolve(usable);
+                };
+
+                var onMessage = function(event) {
+                    if (!self.iframe || event.source !== self.iframe.contentWindow) {
+                        return;
+                    }
+
+                    try {
+                        var expectedOrigin = new URL(self.iframe.src || self.config.appUrl, window.location.origin).origin;
+                        if (String(event.origin || '') !== expectedOrigin) {
+                            return;
+                        }
+                    } catch (e) {
+                        return;
+                    }
+
+                    var data = event.data || {};
+                    if (data.type !== 'flosc_companion_session_handoff' || !data.payload || typeof data.payload !== 'object') {
+                        return;
+                    }
+
+                    done(data.payload);
+                };
+
+                var ask = function() {
+                    if (!self.iframe || !self.iframe.contentWindow) {
+                        done(self.cachedHandoffIfCurrent());
+                        return;
+                    }
+                    window.addEventListener('message', onMessage);
+                    var targetOrigin = '*';
+                    try {
+                        targetOrigin = new URL(self.iframe.src || self.config.appUrl, window.location.origin).origin;
+                    } catch (e) {
+                        targetOrigin = '*';
+                    }
+                    try {
+                        self.iframe.contentWindow.postMessage({ type: 'flosc_companion_request_session_handoff' }, targetOrigin);
+                    } catch (e) {
+                        done(self.cachedHandoffIfCurrent());
+                        return;
+                    }
+                    window.setTimeout(function() {
+                        done(self.cachedHandoffIfCurrent() || self.continuityFallbackPayload());
+                    }, 2000);
+                };
+
+                if (!self.iframe || !self.iframe.src) {
+                    if (typeof self.open === 'function') {
+                        self.open();
+                    }
+                    window.setTimeout(ask, 300);
+                    return;
+                }
+                ask();
+            });
+        },
+
+        refreshIframeContextIfNeeded: function() {
+            if (!this.iframe || !this.iframe.src) {
+                return;
+            }
+
+            var payload = this.getBrowsingContextPayload();
+            var signature = this.getContextSignature(payload);
+            if (signature === this.lastIframeContextSignature) {
+                this.postBrowsingContextToIframe();
+                return;
+            }
+
+            this.lastIframeContextSignature = signature;
+            this.postBrowsingContextToIframe();
+        },
+
+        updateLauncherA11y: function() {
+            var fab = this.container ? this.container.querySelector('.flosc-companion-fab') : null;
+            if (!fab) {
+                return;
+            }
+            var openLabel = this.config.launcherOpenAriaLabel || this.config.launcherAriaLabel || 'Open Chat';
+            var collapseLabel = this.config.launcherCollapseAriaLabel || this.config.closeAriaLabel || 'Collapse Chat';
+            fab.setAttribute('aria-label', this.isOpen ? collapseLabel : openLabel);
+            fab.setAttribute('aria-expanded', this.isOpen ? 'true' : 'false');
+        },
+
+        syncViewportCssVars: function() {
+            if (!this.container) {
+                return;
+            }
+
+            var viewport = window.visualViewport;
+            var vh = viewport && viewport.height ? viewport.height : window.innerHeight;
+            var vw = viewport && viewport.width ? viewport.width : window.innerWidth;
+
+            if (!vh || !vw) {
+                return;
+            }
+
+            this.container.style.setProperty('--flosc-companion-viewport-height', Math.max(1, Math.round(vh)) + 'px');
+            this.container.style.setProperty('--flosc-companion-viewport-width', Math.max(1, Math.round(vw)) + 'px');
+
+            this.clampWindowToViewport(vh, vw);
+        },
+
+        scheduleViewportClamp: function() {
+            if (!this.container) {
+                return;
+            }
+
+            var self = this;
+            if (this._viewportClampTimer) {
+                window.clearTimeout(this._viewportClampTimer);
+                this._viewportClampTimer = null;
+            }
+
+            var delays = [0, 120, 300, 650];
+            delays.forEach(function(delay) {
+                window.setTimeout(function() {
+                    self.syncViewportCssVars();
+                }, delay);
+            });
+
+            this._viewportClampTimer = window.setTimeout(function() {
+                self._viewportClampTimer = null;
+            }, 700);
+        },
+
+        clampWindowToViewport: function(viewportHeight, viewportWidth) {
+            if (!this.container || !this.isOpen || this.isFullscreen) {
+                return;
+            }
+
+            var windowEl = this.container.querySelector('.flosc-companion-window');
+            if (!windowEl) {
+                return;
+            }
+
+            var panelMode = String(this.panelMode || 'panel').toLowerCase();
+            var configuredHeight = parseInt(this.config && this.config.height, 10);
+            if (!Number.isFinite(configuredHeight) || configuredHeight <= 0) {
+                configuredHeight = 560;
+            }
+
+            var desiredHeight = panelMode === 'expanded' ? 820 : configuredHeight;
+            var edgeGap = 16;
+            var launcherSize = parseInt(this.config && this.config.launcherSize, 10);
+            if (!Number.isFinite(launcherSize) || launcherSize <= 0) {
+                launcherSize = 60;
+            }
+
+            var visual = window.visualViewport;
+            var offsetTop = visual && Number.isFinite(visual.offsetTop) ? Math.max(0, visual.offsetTop) : 0;
+            var availableHeight = Math.max(260, viewportHeight - edgeGap - (launcherSize + 16));
+            var targetHeight = Math.min(desiredHeight, Math.floor(availableHeight));
+
+            windowEl.style.maxHeight = targetHeight + 'px';
+            windowEl.style.height = targetHeight + 'px';
+
+            var self = this;
+            window.requestAnimationFrame(function() {
+                var rect = windowEl.getBoundingClientRect();
+                var minTop = Math.max(0, Math.floor(offsetTop + edgeGap));
+                if (rect.top >= minTop) {
+                    return;
+                }
+
+                // Final guard: if browser chrome/toolbar animation changed after
+                // resize, shrink just enough so header always remains visible.
+                var overflow = Math.ceil(minTop - rect.top);
+                var corrected = Math.max(260, Math.floor(targetHeight - overflow));
+                windowEl.style.maxHeight = corrected + 'px';
+                windowEl.style.height = corrected + 'px';
+                self.container.style.setProperty('--flosc-companion-viewport-width', Math.max(1, Math.round(viewportWidth)) + 'px');
+            });
+        },
+
+        scheduleAutoOpen: function() {
+            var self = this;
+            if (this.config.skipBehaviorTriggers) {
+                return;
+            }
+            if (!this.config.autoOpenEnabled) {
+                return;
+            }
+
+            if (this.config.autoOpenOncePerSession && this.getAutoOpenSessionFlag()) {
+                return;
+            }
+
+            var delay = Number(this.config.autoOpenDelayMs);
+            if (!isFinite(delay) || delay < 0) {
+                delay = 0;
+            }
+            delay = Math.max(delay, Number(this.config.triggerMinPageTimeMs) || 0);
+
+            window.setTimeout(function() {
+                self.tryOpenFromBehavior('auto_open_timer');
+            }, delay);
+        },
+
+        bindBehaviorTriggers: function() {
+            var self = this;
+
+            if (this.config.skipBehaviorTriggers) {
+                return;
+            }
+
+            if (this.config.launchOnExitIntent) {
+                document.addEventListener('mouseout', function(event) {
+                    if (!event || typeof event.clientY !== 'number') {
+                        return;
+                    }
+                    var leavingWindow = !event.relatedTarget && !event.toElement;
+                    if (leavingWindow && event.clientY <= 12) {
+                        self.tryOpenFromBehavior('exit_intent');
+                    }
+                });
+            }
+
+            if (this.config.launchOnScrollThreshold) {
+                var threshold = Number(this.config.launchOnScrollPercent);
+                if (!isFinite(threshold)) {
+                    threshold = 0;
+                }
+                threshold = Math.max(0, Math.min(100, threshold));
+
+                window.addEventListener('scroll', function onScroll() {
+                    var doc = document.documentElement;
+                    var maxScroll = Math.max(1, (doc.scrollHeight || 0) - (window.innerHeight || 0));
+                    var current = Math.max(0, window.scrollY || window.pageYOffset || 0);
+                    var percent = (current / maxScroll) * 100;
+
+                    if (percent >= threshold) {
+                        self.tryOpenFromBehavior('scroll_threshold');
+                        window.removeEventListener('scroll', onScroll);
+                    }
+                });
+            }
+        },
+
+        tryOpenFromBehavior: function(source) {
+            var isAutoOpenTimer = source === 'auto_open_timer';
+
+            if (this.isOpen) {
+                return;
+            }
+            if (!this.canRunBehaviorTrigger()) {
+                return;
+            }
+            if (isAutoOpenTimer && this.config.autoOpenOncePerSession && this.getAutoOpenSessionFlag()) {
+                return;
+            }
+            if (this.isTriggerCoolingDown()) {
+                return;
+            }
+
+            this.open();
+            this.markTriggerFired();
+
+            if (isAutoOpenTimer && this.config.autoOpenOncePerSession) {
+                this.setAutoOpenSessionFlag();
+            }
+        },
+
+        canRunBehaviorTrigger: function() {
+            if (this.config.triggerDesktopOnly && window.matchMedia && !window.matchMedia('(min-width: 768px)').matches) {
+                return false;
+            }
+
+            var minMs = Number(this.config.triggerMinPageTimeMs) || 0;
+            if (minMs > 0) {
+                var elapsed = Date.now() - this.pageStartMs;
+                if (elapsed < minMs) {
+                    return false;
+                }
+            }
+
+            var path = String(this.config.currentPath || window.location.pathname || '/');
+            if (this.config.triggerSuppressOnAuthCheckout && this.isAuthOrCheckoutPath(path)) {
+                return false;
+            }
+
+            if (Array.isArray(this.config.triggerSuppressPathPatterns)) {
+                for (var i = 0; i < this.config.triggerSuppressPathPatterns.length; i++) {
+                    var pattern = String(this.config.triggerSuppressPathPatterns[i] || '');
+                    if (pattern && this.pathStartsWith(path, pattern)) {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        },
+
+        isAuthOrCheckoutPath: function(path) {
+            var p = path.toLowerCase();
+            var keywords = ['/checkout', '/cart', '/login', '/register', '/my-account', '/account', '/password-reset', '/wp-login'];
+            for (var i = 0; i < keywords.length; i++) {
+                if (this.pathStartsWith(p, keywords[i])) {
+                    return true;
+                }
+            }
+            return false;
+        },
+
+        pathStartsWith: function(path, prefix) {
+            var a = '/' + String(path || '').replace(/^\/+/, '');
+            var b = '/' + String(prefix || '').replace(/^\/+/, '');
+            return a === b || (a + '/').indexOf(b + '/') === 0;
+        },
+
+        focusCompanion: function() {
+            var self = this;
+            window.setTimeout(function() {
+                if (!self.iframe) {
+                    return;
+                }
+                try {
+                    self.iframe.setAttribute('tabindex', '-1');
+                    self.iframe.focus();
+                } catch (e) {
+                    // Ignore focus failures.
+                }
+            }, 0);
+        },
+
+        isTypingTarget: function(target) {
+            if (!target || !target.tagName) {
+                return false;
+            }
+            var tag = String(target.tagName).toLowerCase();
+            if (tag === 'input' || tag === 'textarea' || tag === 'select') {
+                return true;
+            }
+            return !!target.isContentEditable;
+        },
+
+        getStorageBackend: function() {
+            try {
+                return this.config.stateStorage === 'local' ? window.localStorage : window.sessionStorage;
+            } catch (e) {
+                return null;
+            }
+        },
+
+        saveOpenState: function(isOpen) {
+            if (!this.config.rememberOpenState) {
+                return;
+            }
+            var storage = this.getStorageBackend();
+            if (!storage) {
+                return;
+            }
+            try {
+                storage.setItem(this.config.stateKey, isOpen ? 'open' : 'closed');
+            } catch (e) {
+                // Ignore storage failures.
+            }
+        },
+
+        restoreOpenStateIfNeeded: function() {
+            if (!this.config.rememberOpenState || this.isOpen) {
+                return;
+            }
+            var storage = this.getStorageBackend();
+            if (!storage) {
+                return;
+            }
+            try {
+                if (storage.getItem(this.config.stateKey) === 'open') {
+                    this.open();
+                }
+            } catch (e) {
+                // Ignore storage failures.
+            }
+        },
+
+        isTriggerCoolingDown: function() {
+            var cooldownMs = Number(this.config.triggerCooldownMs) || 0;
+            if (cooldownMs <= 0) {
+                return false;
+            }
+            var storage = this.getStorageBackend();
+            if (!storage) {
+                return false;
+            }
+            try {
+                var raw = storage.getItem(this.config.cooldownKey);
+                if (!raw) {
+                    return false;
+                }
+                var lastTs = Number(raw);
+                if (!isFinite(lastTs) || lastTs <= 0) {
+                    return false;
+                }
+                return (Date.now() - lastTs) < cooldownMs;
+            } catch (e) {
+                return false;
+            }
+        },
+
+        markTriggerFired: function() {
+            var storage = this.getStorageBackend();
+            if (!storage) {
+                return;
+            }
+            try {
+                storage.setItem(this.config.cooldownKey, String(Date.now()));
+            } catch (e) {
+                // Ignore storage failures.
+            }
+        },
+
+        getAutoOpenSessionFlag: function() {
+            try {
+                return window.sessionStorage.getItem(this.config.sessionKey) === '1';
+            } catch (e) {
+                return false;
+            }
+        },
+
+        setAutoOpenSessionFlag: function() {
+            try {
+                window.sessionStorage.setItem(this.config.sessionKey, '1');
+            } catch (e) {
+                // Ignore storage availability failures.
+            }
+        },
+
+        toggleFullscreen: function() {
+            this.setFullscreen(!this.isFullscreen);
+        },
+
+        setFullscreen: function(enabled) {
+            this.setPanelMode(enabled ? 'fullscreen' : 'panel');
+        },
+
+        setPanelMode: function(mode) {
+            mode = String(mode || 'panel').toLowerCase();
+
+            // Resize changes chrome only. Never rebuild iframe.src here.
+            if (this.iframe && this.iframe.src) {
+                this.deliverBrowsingContextToIframe();
+            }
+
+            this.container.classList.remove('is-panel', 'is-expanded', 'is-fullscreen');
+
+            if (mode === 'fullscreen') {
+                this.isFullscreen = true;
+                this.panelMode = 'fullscreen';
+                this.container.classList.add('is-fullscreen');
+                this.updateExpandA11y();
+                this.saveNavigationState();
+                return;
+            }
+
+            this.isFullscreen = false;
+            if (mode === 'expanded') {
+                this.panelMode = 'expanded';
+                this.container.classList.add('is-expanded');
+                this.updateExpandA11y();
+                this.saveNavigationState();
+                return;
+            }
+
+            this.panelMode = 'panel';
+            this.container.classList.add('is-panel');
+            this.updateExpandA11y();
+            this.saveNavigationState();
+        },
+
+        updateExpandA11y: function() {
+            var expandBtn = this.container ? this.container.querySelector('.flosc-companion-expand') : null;
+            if (!expandBtn) {
+                return;
+            }
+            var expanded = this.container.classList.contains('is-expanded');
+            var label = expanded ? 'Collapse chat' : 'Expand chat';
+            expandBtn.setAttribute('aria-label', label);
+            expandBtn.setAttribute('title', label);
+        },
+
+        detectHandoffRequest: function() {
+            try {
+                if (this.config.skipBehaviorTriggers) {
+                    return true;
+                }
+                var params = new URLSearchParams(window.location.search || '');
+                return params.get('flosc_companion_handoff') === '1';
+            } catch (e) {
+                return false;
+            }
+        },
+
+        /**
+         * Read continuity query args once at shell init (before consumeHandoffRequest).
+         * @return {Object}
+         */
+        captureContinuityParamsFromPage: function() {
+            var out = {};
+            try {
+                var params = new URLSearchParams(window.location.search || '');
+                ['flosc_session_id', 'flosc_visitor_session', 'flosc_handoff'].forEach(function(key) {
+                    var val = params.get(key);
+                    if (val) {
+                        out[key] = String(val);
+                    }
+                });
+            } catch (e) {
+                // Ignore.
+            }
+            return out;
+        },
+
+        consumeHandoffRequest: function() {
+            try {
+                var url = new URL(window.location.href);
+                if (!url.searchParams.has('flosc_companion_handoff')) {
+                    return;
+                }
+                url.searchParams.delete('flosc_companion_handoff');
+                url.searchParams.delete('flosc_companion_open');
+                url.searchParams.delete('flosc_companion_mode');
+                url.searchParams.delete('flosc_companion_expand_target');
+                // Continuity params were snapshotted into this.continuityParams and
+                // applied to the iframe src — safe to clean the hub address bar.
+                url.searchParams.delete('flosc_session_id');
+                url.searchParams.delete('flosc_visitor_session');
+                url.searchParams.delete('flosc_handoff');
+                window.history.replaceState({}, document.title, url.toString());
+            } catch (e) {
+                // Ignore URL update failures.
+            }
+        },
+
+        forceMinimizedStateForHandoff: function() {
+            var storage = this.getStorageBackend();
+            if (!storage) {
+                return;
+            }
+            try {
+                storage.setItem(this.config.stateKey, 'closed');
+            } catch (e) {
+                // Ignore storage failures.
+            }
+        },
+
+        applyHandoffRequest: function() {
+            try {
+                var params = new URLSearchParams(window.location.search || '');
+                if (params.get('flosc_companion_handoff') !== '1') {
+                    return;
+                }
+
+                var mode = String(params.get('flosc_companion_mode') || 'panel').toLowerCase();
+                this.open();
+
+                if (mode === 'expanded') {
+                    this.setPanelMode('expanded');
+                } else if (mode === 'fullscreen') {
+                    this.setPanelMode('fullscreen');
+                } else {
+                    this.setPanelMode('panel');
+                }
+
+                this.consumeHandoffRequest();
+            } catch (e) {
+                // Ignore malformed query params.
+            }
+        },
+
+        openFullPage: function() {
+            var self = this;
+
+            var navigate = function(handoffPayload) {
+                try {
+                    var target = new URL(self.config.fullPageUrl || self.config.appUrl, window.location.origin);
+                    target.searchParams.delete('flosc_companion');
+                    target.searchParams.set('flosc_surface', 'full');
+                    if (window.location.href) {
+                        target.searchParams.set('flosc_context_url', window.location.href);
+                    }
+
+                    if (!self.isUsableHandoffPayload(handoffPayload)) {
+                        handoffPayload = self.continuityFallbackPayload();
+                    }
+                    if (handoffPayload && typeof handoffPayload === 'object') {
+                        var sid = String(handoffPayload.sessionId || handoffPayload.session_id || '').trim();
+                        var kind = String(handoffPayload.kind || '').toLowerCase();
+                        if (sid) {
+                            self.lastHandoffPayload = handoffPayload;
+                        }
+                        // Guest/member: server session id. Visitor: client session + optional message pack.
+                        if (!sid && Array.isArray(handoffPayload.messages) && handoffPayload.messages.length) {
+                            kind = 'visitor';
+                            sid = String(handoffPayload.sessionId || handoffPayload.session_id || '').trim();
+                        }
+                        if (!sid && kind !== 'visitor') {
+                            // nothing to attach
+                        } else if (kind === 'visitor' || (!sid && Array.isArray(handoffPayload.messages))) {
+                            target.searchParams.set('flosc_visitor_session', sid.slice(0, 80));
+                            var handoffObj = {
+                                kind: 'visitor',
+                                sessionId: sid.slice(0, 80),
+                                // Re-encoding here drops anything not named, so carry
+                                // the journey id through explicitly.
+                                journeyId: String(handoffPayload.journeyId || handoffPayload.journey_id || '')
+                                    .replace(/[^A-Za-z0-9_-]/g, '')
+                                    .slice(0, 64),
+                                messages: Array.isArray(handoffPayload.messages) ? handoffPayload.messages.slice(-10) : []
+                            };
+                            try {
+                                var packed = btoa(unescape(encodeURIComponent(JSON.stringify(handoffObj))));
+                                // v10.1.0: sessionStorage survives a same-tab, same-origin
+                                // navigation and has room for a real transcript. The URL
+                                // gets a marker, never the payload.
+                                if (packed && self.stashHandoffPack(packed)) {
+                                    target.searchParams.set('flosc_handoff_ref', '1');
+                                }
+                            } catch (e) {
+                                // If encoding fails, continue with session id only.
+                            }
+                        } else {
+                            // Logged-in (or unknown-kind with a server session id from iframe).
+                            target.searchParams.set('flosc_session_id', sid.slice(0, 80));
+                        }
+                    }
+
+                    window.location.assign(target.toString());
+                } catch (e) {
+                    window.location.assign(self.config.fullPageUrl || self.config.appUrl);
+                }
+            };
+
+            this.requestHandoffPayloadFromIframe()
+                .then(navigate)
+                .catch(function() { navigate(self.continuityFallbackPayload()); });
+        },
+
+        escapeHtml: function(str) {
+            var div = document.createElement('div');
+            div.appendChild(document.createTextNode(str));
+            return div.innerHTML;
+        }
+    };
+
+    window.FloscCompanion = FloscCompanion;
+})(window, document);

@@ -1,0 +1,157 @@
+name: FLOSC v85 SOL remediation
+
+on:
+  push:
+    branches:
+      - gpt-5-6-sol/wporg-remediation
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: flosc-v85-sol
+  cancel-in-progress: false
+
+jobs:
+  sol1:
+    if: ${{ !contains(github.event.head_commit.message || '', '[sol1-generated]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      TARGET: pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc
+      REF: pre-release-candidates/codex-gpt5/flosc-by-codex-gpt5/flosc
+      TOOLS: pre-release-candidates/gpt-5-6-sol/remediation-tools
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: gpt-5-6-sol/wporg-remediation
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          tools: composer
+
+      - name: Install real PHPCS / WPCS / PHPStan tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          composer global config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+          composer global require --no-interaction --no-progress \
+            squizlabs/php_codesniffer:^3.13 \
+            wp-coding-standards/wpcs:^3.4 \
+            dealerdirect/phpcodesniffer-composer-installer:^1.0 \
+            phpcompatibility/phpcompatibility-wp:^2.1 \
+            phpstan/phpstan:^2.1 \
+            szepeviktor/phpstan-wordpress:^2.0 \
+            php-stubs/wordpress-stubs:^6.7
+          echo "$HOME/.composer/vendor/bin" >> "$GITHUB_PATH"
+          "$HOME/.composer/vendor/bin/phpcs" --version
+          "$HOME/.composer/vendor/bin/phpcs" -i
+          "$HOME/.composer/vendor/bin/phpstan" --version
+
+      - name: Baseline WordPress-standard report — shipping PHP only
+        shell: bash
+        run: |
+          set +e
+          mkdir -p "$TOOLS/reports"
+          "$HOME/.composer/vendor/bin/phpcs" --standard=WordPress --extensions=php \
+            --ignore="$TARGET/tests/*,$TARGET/vendor/*" \
+            --report=source "$TARGET" > "$TOOLS/reports/sol1-before-source.txt" 2>&1
+          status=$?
+          echo "baseline_phcs_exit=$status" | tee "$TOOLS/reports/sol1-before-exit.txt"
+          tail -40 "$TOOLS/reports/sol1-before-source.txt" || true
+          exit 0
+
+      - name: SOL-1 — declaration-safe documentation transplant
+        shell: bash
+        run: |
+          set -euo pipefail
+          # This reference file is deliberately unavailable to the transplant because
+          # the first dry run proved that its declaration mapping would change v85's
+          # executable-token stream. Nothing in either candidate is edited; only the
+          # reference pathname in this ephemeral checkout is hidden for this run.
+          ref_skip="$REF/includes/class-flosc-rag-chat-handler.php"
+          ref_hold="$REF/includes/.class-flosc-rag-chat-handler.php.sol-skip"
+          if [[ -f "$ref_skip" ]]; then mv "$ref_skip" "$ref_hold"; fi
+          set +e
+          php "$TOOLS/sol1-doc-transplant.php" "$TARGET" "$REF" | tee "$TOOLS/reports/sol1-transplant.txt"
+          rc=${PIPESTATUS[0]}
+          set -e
+          if [[ -f "$ref_hold" ]]; then mv "$ref_hold" "$ref_skip"; fi
+          exit "$rc"
+
+      - name: SOL-1 — executable-token identity proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          php -r '
+          function fp($p){$c=file_get_contents($p);$a=[];foreach(token_get_all($c) as $t){if(is_array($t)){if(in_array($t[0],[T_WHITESPACE,T_COMMENT,T_DOC_COMMENT],true))continue;$a[]=token_name($t[0]).":".$t[1];}else{$a[]="C:".$t;}}return hash("sha256",implode("\0",$a));}
+          $target=getenv("TARGET");
+          $changed=preg_split("/\R/",trim(shell_exec("git diff --name-only -- \"$target\"")));
+          $bad=0;$count=0;
+          foreach($changed as $path){if($path===""||substr($path,-4)!==".php")continue;$count++;$base=shell_exec("git show HEAD:".escapeshellarg($path));if($base===null||$base===""){fwrite(STDERR,"BASE_READ_FAIL $path\n");$bad++;continue;} $tmp=tempnam(sys_get_temp_dir(),"sol1");file_put_contents($tmp,$base);$before=fp($tmp);unlink($tmp);$after=fp($path);if($before!==$after){fwrite(STDERR,"EXEC_TOKEN_MISMATCH $path\n");$bad++;}else{echo "EXEC_TOKEN_IDENTICAL $path\n";}}
+          echo "EXEC_TOKEN_SUMMARY changed_php=$count mismatches=$bad\n";exit($bad?1:0);
+          ' | tee "$TOOLS/reports/sol1-executable-token-proof.txt"
+
+      - name: SOL-1 — one-file-at-a-time WPCS tollgate
+        shell: bash
+        run: |
+          set -euo pipefail
+          : > "$TOOLS/reports/sol1-per-file-source.txt"
+          mapfile -t files < <(git diff --name-only -- "$TARGET" | grep '\.php$' | grep -v '/tests/' | grep -v '/vendor/' || true)
+          for f in "${files[@]}"; do
+            echo "===== $f =====" | tee -a "$TOOLS/reports/sol1-per-file-source.txt"
+            php -l "$f" | tee -a "$TOOLS/reports/sol1-per-file-source.txt"
+            set +e
+            "$HOME/.composer/vendor/bin/phpcs" --standard=WordPress --extensions=php --report=source "$f" 2>&1 | tee -a "$TOOLS/reports/sol1-per-file-source.txt"
+            rc=${PIPESTATUS[0]}
+            set -e
+            echo "PHPCS_EXIT=$rc" | tee -a "$TOOLS/reports/sol1-per-file-source.txt"
+          done
+
+      - name: SOL-1 — full shipping tree TOTAL after last edit
+        shell: bash
+        run: |
+          set +e
+          "$HOME/.composer/vendor/bin/phpcs" --standard=WordPress --extensions=php \
+            --ignore="$TARGET/tests/*,$TARGET/vendor/*" \
+            --report=source "$TARGET" > "$TOOLS/reports/sol1-after-source.txt" 2>&1
+          rc=$?
+          echo "after_phcs_exit=$rc" | tee "$TOOLS/reports/sol1-after-exit.txt"
+          tail -50 "$TOOLS/reports/sol1-after-source.txt" || true
+          exit 0
+
+      - name: Commit SOL-1 result when changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- "$TARGET" "$TOOLS/reports"; then
+            echo "No SOL-1 changes to commit."
+            exit 0
+          fi
+          changed_php=$(git diff --name-only -- "$TARGET" | grep '\.php$' | grep -v '/tests/' | grep -v '/vendor/' | wc -l | tr -d ' ')
+          summary=$(grep 'SOL1_DOC_SUMMARY' "$TOOLS/reports/sol1-transplant.txt" | tail -1 || true)
+          before=$(grep -E 'A TOTAL OF|FOUND [0-9]+ ERRORS|FOUND [0-9]+ ERROR' "$TOOLS/reports/sol1-before-source.txt" | tail -1 || true)
+          after=$(grep -E 'A TOTAL OF|FOUND [0-9]+ ERRORS|FOUND [0-9]+ ERROR' "$TOOLS/reports/sol1-after-source.txt" | tail -1 || true)
+          git config user.name 'GPT-5.6 Sol'
+          git config user.email 'noreply@openai.com'
+          git add "$TARGET" "$TOOLS/reports"
+          git commit -m "Home run candidate v85.1 coded by GPT-5.6 Sol — SOL-1 PHPDoc remediation [sol1-generated]" \
+            -m "Comments/docblocks only. Codex v68 is used solely as a documentation reference, and a declaration is eligible only when its executable-token fingerprint is identical to v85. Existing v85 prose is retained; missing/weak tags are merged, and missing docblocks are inserted. @since is never imported into a file that did not already use it. No phpcbf is run." \
+            -m "Per-file tollgate: php -l plus PHPCS --standard=WordPress --report=source is run on every changed shipping PHP file. Full shipping-tree WordPress-standard report is rerun after the last edit. Executable-token identity is independently rechecked against HEAD before commit." \
+            -m "Changed shipping PHP files: ${changed_php}. ${summary}" \
+            -m "Baseline: ${before:-see remediation-tools/reports/sol1-before-source.txt}" \
+            -m "After: ${after:-see remediation-tools/reports/sol1-after-source.txt}" \
+            -m "This commit does not claim SOL-1 complete unless the stored after-report supports that conclusion."
+          git push origin HEAD:gpt-5-6-sol/wporg-remediation
+
+      - name: Upload SOL-1 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v85-sol1-evidence
+          path: pre-release-candidates/gpt-5-6-sol/remediation-tools/reports/
+          if-no-files-found: warn

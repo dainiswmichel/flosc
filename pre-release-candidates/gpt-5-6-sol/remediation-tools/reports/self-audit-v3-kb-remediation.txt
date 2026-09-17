@@ -1,0 +1,6 @@
+KB_REMEDIATION_APPLIED=1
+INPUT_TYPE_GUARD=is_string
+SIZE_GUARD=wp_max_upload_size_or_existing_file_size_whichever_is_larger
+TEXT_SANITIZATION=wp_check_invalid_utf8_then_wp_kses_no_null
+PRESERVATION_RULE=reject_if_sanitization_changes_submitted_bytes
+WRITE_VARIABLE=$content

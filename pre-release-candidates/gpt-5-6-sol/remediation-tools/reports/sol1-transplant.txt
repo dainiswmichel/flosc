@@ -1,0 +1,4 @@
+SOL1_DOC_SUMMARY files_seen=112 files_changed=0 inserted=0 merged=0 signature_skips=54 similarity_skips=4 no_reference=2
+SOL1_CODE_DOC_CHANGED includes/class-flosc-concierge.php
+SOL1_CODE_DOC_CHANGED includes/first-party-authentication/class-flosc-first-party-authentication.php
+SOL1_CODE_DOC_SUMMARY files=153 changed=2 function_docs=4 class_docs=2 param_work=34 inline_punctuation=3

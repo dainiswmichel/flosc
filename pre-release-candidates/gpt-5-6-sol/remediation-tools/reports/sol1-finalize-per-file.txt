@@ -1,0 +1,2068 @@
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/administration.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/administration.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/administration.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ai-all-flows.php
+COMMENT_CLEAN_SUMMARY changed=1
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ai-configuration-guide.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ai-configuration-guide.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ai-configuration-guide.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ai-configuration.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ai-configuration.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ai-configuration.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+---------------------------------------------------------------------------
+STANDARD  CATEGORY            SNIFF                                   COUNT
+---------------------------------------------------------------------------
+Squiz     Commenting          Block comment no empty line before      2
+Squiz     Commenting          Block comment closer same line          1
+---------------------------------------------------------------------------
+A TOTAL OF 3 SNIFF VIOLATIONS WERE FOUND IN 2 SOURCES
+---------------------------------------------------------------------------
+
+Time: 411ms; Memory: 26MB
+
+PHPCS_EXIT=1
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ai-feedback.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ai-feedback.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ai-feedback.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/autoprompts.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/autoprompts.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/autoprompts.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+----------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                          COUNT
+----------------------------------------------------------------------
+[x] Generic   White space         Scope indent incorrect         4
+[x] Generic   White space         Scope indent incorrect exact   3
+----------------------------------------------------------------------
+A TOTAL OF 7 SNIFF VIOLATIONS WERE FOUND IN 2 SOURCES
+----------------------------------------------------------------------
+PHPCBF CAN FIX THE 2 MARKED SOURCES AUTOMATICALLY (7 VIOLATIONS IN TOTAL)
+----------------------------------------------------------------------
+
+Time: 227ms; Memory: 18MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/bridge-analytics.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/bridge-analytics.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/bridge-analytics.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/chat-logs.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/chat-logs.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/chat-logs.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] WordPres  WP                  Capital PDangit misspelled in comment  1
+------------------------------------------------------------------------------
+A TOTAL OF 1 SNIFF VIOLATION WERE FOUND IN 1 SOURCE
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 1 MARKED SOURCES AUTOMATICALLY (1 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 241ms; Memory: 18MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/chat-navigation.php
+COMMENT_CLEAN_SUMMARY changed=1
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/chat-styling.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/chat-styling.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/chat-styling.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/companion.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/companion.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/companion.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+--------------------------------------------------------------------------------
+STANDARD  CATEGORY            SNIFF                                        COUNT
+--------------------------------------------------------------------------------
+WordPres  WP                  Posts per page posts_per_page_posts_per_pag  1
+--------------------------------------------------------------------------------
+A TOTAL OF 1 SNIFF VIOLATION WERE FOUND IN 1 SOURCE
+--------------------------------------------------------------------------------
+
+Time: 262ms; Memory: 20MB
+
+PHPCS_EXIT=1
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/concierge.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/concierge.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/concierge.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+--------------------------------------------------------------------------------
+STANDARD  CATEGORY            SNIFF                                        COUNT
+--------------------------------------------------------------------------------
+WordPres  WP                  Posts per page posts_per_page_posts_per_pag  1
+--------------------------------------------------------------------------------
+A TOTAL OF 1 SNIFF VIOLATION WERE FOUND IN 1 SOURCE
+--------------------------------------------------------------------------------
+
+Time: 143ms; Memory: 14MB
+
+PHPCS_EXIT=1
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/contact-form.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/contact-form.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/contact-form.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/content.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/content.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/content.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/create-sample-data.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/create-sample-data.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/create-sample-data.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/da1.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/da1.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/da1.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+---------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                               COUNT
+---------------------------------------------------------------------------
+[x] Generic   White space         Scope indent incorrect              1
+[x] Generic   White space         Scope indent incorrect exact        1
+[ ] Squiz     Commenting          Block comment no empty line before  1
+---------------------------------------------------------------------------
+A TOTAL OF 3 SNIFF VIOLATIONS WERE FOUND IN 3 SOURCES
+---------------------------------------------------------------------------
+PHPCBF CAN FIX THE 2 MARKED SOURCES AUTOMATICALLY (2 VIOLATIONS IN TOTAL)
+---------------------------------------------------------------------------
+
+Time: 369ms; Memory: 26MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part1-journey.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part1-journey.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part1-journey.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part3-ref-audio-quiz-flow.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part3-ref-audio-quiz-flow.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part3-ref-audio-quiz-flow.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part3-ref-personality-profile.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part3-ref-personality-profile.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part3-ref-personality-profile.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part3-ref-quiz.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part3-ref-quiz.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part3-ref-quiz.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part3-ref-settings-fields.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part3-ref-settings-fields.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part3-ref-settings-fields.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part5-glossary.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part5-glossary.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part5-glossary.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part6-development.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part6-development.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part6-development.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/ref-admin-skeleton.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/ref-admin-skeleton.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/ref-admin-skeleton.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/ref-core-skeleton.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/ref-core-skeleton.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/ref-core-skeleton.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/documentation.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/documentation.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/documentation.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/email.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/email.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/email.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/engagement.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/engagement.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/engagement.php
+PHPCS_EXIT=0
+COMMENT_UNCHANGED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flosc-app.php
+COMMENT_CLEAN_SUMMARY changed=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flow-edit.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flow-edit.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flow-edit.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flow.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flow.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flow.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+---------------------------------------------------------------------------
+STANDARD  CATEGORY            SNIFF                                   COUNT
+---------------------------------------------------------------------------
+Squiz     Commenting          Function comment invalid no return      1
+---------------------------------------------------------------------------
+A TOTAL OF 1 SNIFF VIOLATION WERE FOUND IN 1 SOURCE
+---------------------------------------------------------------------------
+
+Time: 306ms; Memory: 22MB
+
+PHPCS_EXIT=1
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flows.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flows.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flows.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-messages.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-messages.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-messages.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+----------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                          COUNT
+----------------------------------------------------------------------
+[x] Generic   White space         Scope indent incorrect         1
+[x] Generic   White space         Scope indent incorrect exact   1
+----------------------------------------------------------------------
+A TOTAL OF 2 SNIFF VIOLATIONS WERE FOUND IN 2 SOURCES
+----------------------------------------------------------------------
+PHPCBF CAN FIX THE 2 MARKED SOURCES AUTOMATICALLY (2 VIOLATIONS IN TOTAL)
+----------------------------------------------------------------------
+
+Time: 432ms; Memory: 30MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+---------------------------------------------------------------------------
+STANDARD  CATEGORY            SNIFF                                   COUNT
+---------------------------------------------------------------------------
+Squiz     Commenting          Block comment no empty line before      1
+---------------------------------------------------------------------------
+A TOTAL OF 1 SNIFF VIOLATION WERE FOUND IN 1 SOURCE
+---------------------------------------------------------------------------
+
+Time: 323ms; Memory: 24MB
+
+PHPCS_EXIT=1
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/knowledge-base.php
+COMMENT_CLEAN_SUMMARY changed=1
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/login-registration.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/login-registration.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/login-registration.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/member-levels.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/member-levels.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/member-levels.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/offers.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/offers.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/offers.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] WordPres  WP                  Capital PDangit misspelled in comment  3
+------------------------------------------------------------------------------
+A TOTAL OF 3 SNIFF VIOLATIONS WERE FOUND IN 1 SOURCE
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 1 MARKED SOURCES AUTOMATICALLY (3 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 347ms; Memory: 26MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/payments.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/payments.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/payments.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/quiz.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/quiz.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/quiz.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/settings-helper.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/settings-helper.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/settings-helper.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] WordPres  WP                  Capital PDangit misspelled in comment  2
+------------------------------------------------------------------------------
+A TOTAL OF 2 SNIFF VIOLATIONS WERE FOUND IN 1 SOURCE
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 1 MARKED SOURCES AUTOMATICALLY (2 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 159ms; Memory: 14MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/settings.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/settings.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/settings.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] Generic   White space         Scope indent incorrect                 6
+[x] Generic   White space         Scope indent incorrect exact           6
+[x] WordPres  WP                  Capital PDangit misspelled in comment  3
+------------------------------------------------------------------------------
+A TOTAL OF 15 SNIFF VIOLATIONS WERE FOUND IN 3 SOURCES
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 3 MARKED SOURCES AUTOMATICALLY (15 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 635ms; Memory: 42MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/sso.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/sso.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/sso.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/starter-packs.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/starter-packs.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/starter-packs.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/token-management.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/token-management.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/token-management.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/trajectories.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/trajectories.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/trajectories.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+--------------------------------------------------------------------------------
+STANDARD  CATEGORY            SNIFF                                        COUNT
+--------------------------------------------------------------------------------
+WordPres  WP                  Posts per page posts_per_page_posts_per_pag  1
+--------------------------------------------------------------------------------
+A TOTAL OF 1 SNIFF VIOLATION WERE FOUND IN 1 SOURCE
+--------------------------------------------------------------------------------
+
+Time: 143ms; Memory: 14MB
+
+PHPCS_EXIT=1
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ui-navigation.php
+COMMENT_CLEAN_SUMMARY changed=1
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/assets/personality-builder/flosc-personality-builder-markup.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/assets/personality-builder/flosc-personality-builder-markup.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/assets/personality-builder/flosc-personality-builder-markup.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/assets/personality-builder/index.php
+COMMENT_CLEAN_SUMMARY changed=1
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/flosc.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/flosc.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/flosc.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/ai/flosc-model-catalog.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/ai/flosc-model-catalog.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/ai/flosc-model-catalog.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/ai/flosc-model-parameters.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/ai/flosc-model-parameters.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/ai/flosc-model-parameters.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/ai/flosc-provider-identity.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/ai/flosc-provider-identity.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/ai/flosc-provider-identity.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/ai/flosc-provider-keys.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/ai/flosc-provider-keys.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/ai/flosc-provider-keys.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/ai/flosc-provider-profiles.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/ai/flosc-provider-profiles.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/ai/flosc-provider-profiles.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/chat-turn/trait-flosc-chat-turn.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/chat-turn/trait-flosc-chat-turn.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/chat-turn/trait-flosc-chat-turn.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+---------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                               COUNT
+---------------------------------------------------------------------------
+[x] Generic   White space         Scope indent incorrect              135
+[x] Generic   White space         Scope indent incorrect exact        53
+[ ] Squiz     Commenting          Function comment throw tag missing  1
+---------------------------------------------------------------------------
+A TOTAL OF 189 SNIFF VIOLATIONS WERE FOUND IN 3 SOURCES
+---------------------------------------------------------------------------
+PHPCBF CAN FIX THE 2 MARKED SOURCES AUTOMATICALLY (188 VIOLATIONS IN TOTAL)
+---------------------------------------------------------------------------
+
+Time: 382ms; Memory: 26MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-companion-widget.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-companion-widget.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-companion-widget.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-access-validator.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-access-validator.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-access-validator.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] WordPres  WP                  Capital PDangit misspelled in comment  4
+[x] Generic   White space         Scope indent incorrect                 1
+[x] Generic   White space         Scope indent incorrect exact           1
+[ ] Squiz     Commenting          Variable comment missing               1
+------------------------------------------------------------------------------
+A TOTAL OF 7 SNIFF VIOLATIONS WERE FOUND IN 4 SOURCES
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 3 MARKED SOURCES AUTOMATICALLY (6 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 150ms; Memory: 14MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-ai-chat-dispatch.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-ai-chat-dispatch.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-ai-chat-dispatch.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] WordPres  WP                  Capital PDangit misspelled in comment  7
+[ ] Squiz     Commenting          Variable comment missing               3
+[x] Generic   White space         Scope indent incorrect                 2
+[x] Generic   White space         Scope indent incorrect exact           2
+[ ] Generic   Commenting          Doc comment long not capital           1
+[ ] Squiz     Commenting          Block comment closer same line         1
+[ ] Squiz     Commenting          Inline comment invalid end char        1
+------------------------------------------------------------------------------
+A TOTAL OF 17 SNIFF VIOLATIONS WERE FOUND IN 7 SOURCES
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 3 MARKED SOURCES AUTOMATICALLY (11 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 358ms; Memory: 24MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-bridge-data-manager.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-bridge-data-manager.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-bridge-data-manager.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-chat-logger.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-chat-logger.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-chat-logger.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-chatpack.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-chatpack.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-chatpack.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] WordPres  WP                  Capital PDangit misspelled in comment  5
+------------------------------------------------------------------------------
+A TOTAL OF 5 SNIFF VIOLATIONS WERE FOUND IN 1 SOURCE
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 1 MARKED SOURCES AUTOMATICALLY (5 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 317ms; Memory: 22MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-concierge.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-concierge.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-concierge.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+---------------------------------------------------------------------------
+STANDARD  CATEGORY            SNIFF                                   COUNT
+---------------------------------------------------------------------------
+Generic   Commenting          Doc comment empty                       23
+Squiz     Commenting          Function comment missing param tag      19
+Squiz     Commenting          Block comment closer same line          2
+Squiz     Commenting          Function comment invalid no return      2
+Squiz     Commenting          Function comment missing                2
+Squiz     Commenting          Class comment missing                   1
+---------------------------------------------------------------------------
+A TOTAL OF 49 SNIFF VIOLATIONS WERE FOUND IN 6 SOURCES
+---------------------------------------------------------------------------
+
+Time: 309ms; Memory: 24MB
+
+PHPCS_EXIT=1
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-condition-evaluator.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-condition-evaluator.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-condition-evaluator.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] WordPres  WP                  Capital PDangit misspelled in comment  7
+[ ] Squiz     Commenting          Variable comment missing               3
+------------------------------------------------------------------------------
+A TOTAL OF 10 SNIFF VIOLATIONS WERE FOUND IN 2 SOURCES
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 1 MARKED SOURCES AUTOMATICALLY (7 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 227ms; Memory: 18MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-content-filter.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-content-filter.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-content-filter.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] Generic   White space         Scope indent incorrect                 2
+[x] Generic   White space         Scope indent incorrect exact           2
+[ ] Squiz     Commenting          Variable comment missing               1
+[x] WordPres  WP                  Capital PDangit misspelled in comment  1
+------------------------------------------------------------------------------
+A TOTAL OF 6 SNIFF VIOLATIONS WERE FOUND IN 4 SOURCES
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 3 MARKED SOURCES AUTOMATICALLY (5 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 157ms; Memory: 14MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-content-protection.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-content-protection.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-content-protection.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] Generic   White space         Scope indent incorrect                 2
+[x] Generic   White space         Scope indent incorrect exact           2
+[ ] Squiz     Commenting          Block comment closer same line         1
+[ ] Squiz     Commenting          Variable comment missing               1
+[x] WordPres  WP                  Capital PDangit misspelled in comment  1
+------------------------------------------------------------------------------
+A TOTAL OF 7 SNIFF VIOLATIONS WERE FOUND IN 5 SOURCES
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 3 MARKED SOURCES AUTOMATICALLY (5 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 228ms; Memory: 18MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-flow-manager.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-flow-manager.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-flow-manager.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] WordPres  WP                  Capital PDangit misspelled in comment  7
+[x] Generic   White space         Scope indent incorrect                 2
+[x] Generic   White space         Scope indent incorrect exact           2
+[ ] Squiz     Commenting          Variable comment missing               1
+------------------------------------------------------------------------------
+A TOTAL OF 12 SNIFF VIOLATIONS WERE FOUND IN 4 SOURCES
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 3 MARKED SOURCES AUTOMATICALLY (11 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 205ms; Memory: 16MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+---------------------------------------------------------------------------
+STANDARD  CATEGORY            SNIFF                                   COUNT
+---------------------------------------------------------------------------
+WordPres  Security            Nonce verification recommended          12
+Squiz     Commenting          Function comment invalid no return      5
+---------------------------------------------------------------------------
+A TOTAL OF 17 SNIFF VIOLATIONS WERE FOUND IN 2 SOURCES
+---------------------------------------------------------------------------
+
+Time: 2.65 secs; Memory: 142.01MB
+
+PHPCS_EXIT=1
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-free-content-item-manager.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-free-content-item-manager.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-free-content-item-manager.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] WordPres  WP                  Capital PDangit misspelled in comment  3
+[x] Generic   White space         Scope indent incorrect                 2
+[x] Generic   White space         Scope indent incorrect exact           2
+[ ] Squiz     Commenting          Variable comment missing               1
+------------------------------------------------------------------------------
+A TOTAL OF 8 SNIFF VIOLATIONS WERE FOUND IN 4 SOURCES
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 3 MARKED SOURCES AUTOMATICALLY (7 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 219ms; Memory: 18MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-lesson-manager.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-lesson-manager.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-lesson-manager.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] WordPres  WP                  Capital PDangit misspelled in comment  2
+[x] Generic   White space         Scope indent incorrect                 1
+[x] Generic   White space         Scope indent incorrect exact           1
+[ ] Squiz     Commenting          Variable comment missing               1
+------------------------------------------------------------------------------
+A TOTAL OF 5 SNIFF VIOLATIONS WERE FOUND IN 4 SOURCES
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 3 MARKED SOURCES AUTOMATICALLY (4 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 182ms; Memory: 16MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-lessons-table.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-lessons-table.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-lessons-table.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+----------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                          COUNT
+----------------------------------------------------------------------
+[ ] Squiz     Commenting          Variable comment missing       4
+[x] Generic   White space         Scope indent incorrect         3
+[x] Generic   White space         Scope indent incorrect exact   3
+----------------------------------------------------------------------
+A TOTAL OF 10 SNIFF VIOLATIONS WERE FOUND IN 3 SOURCES
+----------------------------------------------------------------------
+PHPCBF CAN FIX THE 2 MARKED SOURCES AUTOMATICALLY (6 VIOLATIONS IN TOTAL)
+----------------------------------------------------------------------
+
+Time: 158ms; Memory: 14MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-member-access.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-member-access.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-member-access.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] WordPres  WP                  Capital PDangit misspelled in comment  5
+[x] Generic   White space         Scope indent incorrect                 2
+[x] Generic   White space         Scope indent incorrect exact           2
+[ ] Squiz     Commenting          Variable comment missing               1
+------------------------------------------------------------------------------
+A TOTAL OF 10 SNIFF VIOLATIONS WERE FOUND IN 4 SOURCES
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 3 MARKED SOURCES AUTOMATICALLY (9 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 200ms; Memory: 16MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-page-context.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-page-context.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-page-context.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] Generic   White space         Scope indent incorrect                 12
+[x] Generic   White space         Scope indent incorrect exact           12
+[x] WordPres  WP                  Capital PDangit misspelled in comment  6
+[ ] Squiz     Commenting          Variable comment missing               1
+------------------------------------------------------------------------------
+A TOTAL OF 31 SNIFF VIOLATIONS WERE FOUND IN 4 SOURCES
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 3 MARKED SOURCES AUTOMATICALLY (30 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 172ms; Memory: 14MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-pronunciation-analyzer.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-pronunciation-analyzer.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-pronunciation-analyzer.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+----------------------------------------------------------------------
+STANDARD  CATEGORY            SNIFF                              COUNT
+----------------------------------------------------------------------
+Squiz     Commenting          Variable comment wrong style       2
+----------------------------------------------------------------------
+A TOTAL OF 2 SNIFF VIOLATIONS WERE FOUND IN 1 SOURCE
+----------------------------------------------------------------------
+
+Time: 148ms; Memory: 14MB
+
+PHPCS_EXIT=1
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-quiz-manager.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-quiz-manager.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-quiz-manager.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+--------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                    COUNT
+--------------------------------------------------------------------------------
+[x] WordPres  WP                  Capital PDangit misspelled in comment    2
+[ ] Squiz     Commenting          Function comment param comment full sto  1
+--------------------------------------------------------------------------------
+A TOTAL OF 3 SNIFF VIOLATIONS WERE FOUND IN 2 SOURCES
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 1 MARKED SOURCES AUTOMATICALLY (2 VIOLATIONS IN TOTAL)
+--------------------------------------------------------------------------------
+
+Time: 162ms; Memory: 14MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-quiz-registry.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-quiz-registry.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-quiz-registry.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+----------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                          COUNT
+----------------------------------------------------------------------
+[ ] Generic   Commenting          Doc comment empty              1
+[x] Generic   White space         Scope indent incorrect         1
+[x] Generic   White space         Scope indent incorrect exact   1
+[ ] Squiz     Commenting          Variable comment missing var   1
+----------------------------------------------------------------------
+A TOTAL OF 4 SNIFF VIOLATIONS WERE FOUND IN 4 SOURCES
+----------------------------------------------------------------------
+PHPCBF CAN FIX THE 2 MARKED SOURCES AUTOMATICALLY (2 VIOLATIONS IN TOTAL)
+----------------------------------------------------------------------
+
+Time: 122ms; Memory: 12MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-quiz-type-factory.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-quiz-type-factory.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-quiz-type-factory.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-rag-access-controller.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-rag-access-controller.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-rag-access-controller.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+----------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                          COUNT
+----------------------------------------------------------------------
+[ ] Squiz     Commenting          Variable comment missing       2
+[x] Generic   White space         Scope indent incorrect         1
+[x] Generic   White space         Scope indent incorrect exact   1
+----------------------------------------------------------------------
+A TOTAL OF 4 SNIFF VIOLATIONS WERE FOUND IN 3 SOURCES
+----------------------------------------------------------------------
+PHPCBF CAN FIX THE 2 MARKED SOURCES AUTOMATICALLY (2 VIOLATIONS IN TOTAL)
+----------------------------------------------------------------------
+
+Time: 133ms; Memory: 12MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-rag-chat-handler.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-rag-chat-handler.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-rag-chat-handler.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+----------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                          COUNT
+----------------------------------------------------------------------
+[ ] Squiz     Commenting          Variable comment missing       4
+[x] Generic   White space         Scope indent incorrect         1
+[x] Generic   White space         Scope indent incorrect exact   1
+----------------------------------------------------------------------
+A TOTAL OF 6 SNIFF VIOLATIONS WERE FOUND IN 3 SOURCES
+----------------------------------------------------------------------
+PHPCBF CAN FIX THE 2 MARKED SOURCES AUTOMATICALLY (2 VIOLATIONS IN TOTAL)
+----------------------------------------------------------------------
+
+Time: 179ms; Memory: 14MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-rag-manager.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-rag-manager.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-rag-manager.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+----------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                          COUNT
+----------------------------------------------------------------------
+[x] Generic   White space         Scope indent incorrect         2
+[x] Generic   White space         Scope indent incorrect exact   2
+[ ] Squiz     Commenting          Variable comment missing       2
+----------------------------------------------------------------------
+A TOTAL OF 6 SNIFF VIOLATIONS WERE FOUND IN 3 SOURCES
+----------------------------------------------------------------------
+PHPCBF CAN FIX THE 2 MARKED SOURCES AUTOMATICALLY (4 VIOLATIONS IN TOTAL)
+----------------------------------------------------------------------
+
+Time: 175ms; Memory: 14MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-response-validator.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-response-validator.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-response-validator.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+----------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                          COUNT
+----------------------------------------------------------------------
+[x] Generic   White space         Scope indent incorrect         5
+[x] Generic   White space         Scope indent incorrect exact   5
+[ ] Squiz     Commenting          Variable comment missing       1
+----------------------------------------------------------------------
+A TOTAL OF 11 SNIFF VIOLATIONS WERE FOUND IN 3 SOURCES
+----------------------------------------------------------------------
+PHPCBF CAN FIX THE 2 MARKED SOURCES AUTOMATICALLY (10 VIOLATIONS IN TOTAL)
+----------------------------------------------------------------------
+
+Time: 126ms; Memory: 12MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-site-content-index.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-site-content-index.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-site-content-index.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+--------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                    COUNT
+--------------------------------------------------------------------------------
+[ ] Squiz     Commenting          Block comment no empty line before       10
+[ ] Squiz     Commenting          Function comment invalid no return       9
+[x] Generic   White space         Scope indent incorrect                   5
+[x] Generic   White space         Scope indent incorrect exact             5
+[ ] Squiz     Commenting          Block comment closer same line           3
+[x] WordPres  WP                  Capital PDangit misspelled in comment    3
+[ ] Generic   Commenting          Doc comment empty                        2
+[ ] Squiz     Commenting          Block comment no capital                 1
+[ ] Squiz     Commenting          Variable comment missing var             1
+[ ] WordPres  WP                  Posts per page posts_per_page_posts_per  1
+--------------------------------------------------------------------------------
+A TOTAL OF 40 SNIFF VIOLATIONS WERE FOUND IN 10 SOURCES
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 3 MARKED SOURCES AUTOMATICALLY (13 VIOLATIONS IN TOTAL)
+--------------------------------------------------------------------------------
+
+Time: 428ms; Memory: 30MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-stt-dispatch.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-stt-dispatch.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-stt-dispatch.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] Generic   White space         Scope indent incorrect                 1
+[x] Generic   White space         Scope indent incorrect exact           1
+[ ] Squiz     Commenting          Variable comment missing               1
+[x] WordPres  WP                  Capital PDangit misspelled in comment  1
+------------------------------------------------------------------------------
+A TOTAL OF 4 SNIFF VIOLATIONS WERE FOUND IN 4 SOURCES
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 3 MARKED SOURCES AUTOMATICALLY (3 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 162ms; Memory: 14MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-trajectory.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-trajectory.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-trajectory.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] Generic   White space         Scope indent incorrect exact           43
+[x] Generic   White space         Scope indent incorrect                 17
+[x] WordPres  WP                  Capital PDangit misspelled in comment  3
+------------------------------------------------------------------------------
+A TOTAL OF 63 SNIFF VIOLATIONS WERE FOUND IN 3 SOURCES
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 3 MARKED SOURCES AUTOMATICALLY (63 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 215ms; Memory: 18MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-user-access-manager.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-user-access-manager.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-user-access-manager.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] WordPres  WP                  Capital PDangit misspelled in comment  2
+[x] Generic   White space         Scope indent incorrect                 1
+[x] Generic   White space         Scope indent incorrect exact           1
+[ ] Squiz     Commenting          Variable comment missing               1
+------------------------------------------------------------------------------
+A TOTAL OF 5 SNIFF VIOLATIONS WERE FOUND IN 4 SOURCES
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 3 MARKED SOURCES AUTOMATICALLY (4 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 154ms; Memory: 14MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-user-session.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-user-session.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-user-session.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+----------------------------------------------------------------------
+STANDARD  CATEGORY            SNIFF                              COUNT
+----------------------------------------------------------------------
+Squiz     Commenting          Variable comment missing           3
+----------------------------------------------------------------------
+A TOTAL OF 3 SNIFF VIOLATIONS WERE FOUND IN 1 SOURCE
+----------------------------------------------------------------------
+
+Time: 153ms; Memory: 14MB
+
+PHPCS_EXIT=1
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-wp-ai-client.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-wp-ai-client.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-wp-ai-client.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-ivr-parser.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-ivr-parser.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-ivr-parser.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-rag-chat-handler.php
+COMMENT_CLEAN_SUMMARY changed=1
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-session-manager.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-session-manager.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-session-manager.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/companion-mode/class-flosc-companion-mode.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/companion-mode/class-flosc-companion-mode.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/companion-mode/class-flosc-companion-mode.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[ ] Generic   Commenting          Doc comment empty                      1
+[x] Generic   White space         Scope indent incorrect                 1
+[x] Generic   White space         Scope indent incorrect exact           1
+[ ] Squiz     Commenting          Variable comment missing var           1
+[x] WordPres  WP                  Capital PDangit misspelled in comment  1
+------------------------------------------------------------------------------
+A TOTAL OF 5 SNIFF VIOLATIONS WERE FOUND IN 5 SOURCES
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 3 MARKED SOURCES AUTOMATICALLY (3 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 359ms; Memory: 26MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/companion-mode/class-flosc-companion-widget.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/companion-mode/class-flosc-companion-widget.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/companion-mode/class-flosc-companion-widget.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/content-item/flosc-content-item-keys.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/content-item/flosc-content-item-keys.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/content-item/flosc-content-item-keys.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] WordPres  WP                  Capital PDangit misspelled in comment  1
+------------------------------------------------------------------------------
+A TOTAL OF 1 SNIFF VIOLATION WERE FOUND IN 1 SOURCE
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 1 MARKED SOURCES AUTOMATICALLY (1 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 137ms; Memory: 12MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/da1/class-flosc-da1-catalogs.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/da1/class-flosc-da1-catalogs.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/da1/class-flosc-da1-catalogs.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] Generic   White space         Scope indent incorrect                 16
+[x] Generic   White space         Scope indent incorrect exact           16
+[x] WordPres  WP                  Capital PDangit misspelled in comment  4
+------------------------------------------------------------------------------
+A TOTAL OF 36 SNIFF VIOLATIONS WERE FOUND IN 3 SOURCES
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 3 MARKED SOURCES AUTOMATICALLY (36 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 229ms; Memory: 18MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/da1/class-flosc-da1-compositions.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/da1/class-flosc-da1-compositions.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/da1/class-flosc-da1-compositions.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+----------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                          COUNT
+----------------------------------------------------------------------
+[x] Generic   White space         Scope indent incorrect         1
+[x] Generic   White space         Scope indent incorrect exact   1
+----------------------------------------------------------------------
+A TOTAL OF 2 SNIFF VIOLATIONS WERE FOUND IN 2 SOURCES
+----------------------------------------------------------------------
+PHPCBF CAN FIX THE 2 MARKED SOURCES AUTOMATICALLY (2 VIOLATIONS IN TOTAL)
+----------------------------------------------------------------------
+
+Time: 120ms; Memory: 12MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/email/class-flosc-email.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/email/class-flosc-email.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/email/class-flosc-email.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] WordPres  WP                  Capital PDangit misspelled in comment  21
+[x] Generic   White space         Scope indent incorrect                 3
+[x] Generic   White space         Scope indent incorrect exact           3
+[ ] Generic   Commenting          Doc comment empty                      2
+[ ] Squiz     Commenting          Variable comment missing var           2
+[ ] Squiz     Commenting          Block comment no empty line before     1
+------------------------------------------------------------------------------
+A TOTAL OF 32 SNIFF VIOLATIONS WERE FOUND IN 6 SOURCES
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 3 MARKED SOURCES AUTOMATICALLY (27 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 254ms; Memory: 20MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/email/flosc-guest-followup-slots.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/email/flosc-guest-followup-slots.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/email/flosc-guest-followup-slots.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/filesystem/class-flosc-filesystem.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/filesystem/class-flosc-filesystem.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/filesystem/class-flosc-filesystem.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+---------------------------------------------------------------------------
+STANDARD  CATEGORY            SNIFF                                   COUNT
+---------------------------------------------------------------------------
+Squiz     Commenting          Function comment invalid no return      3
+---------------------------------------------------------------------------
+A TOTAL OF 3 SNIFF VIOLATIONS WERE FOUND IN 1 SOURCE
+---------------------------------------------------------------------------
+
+Time: 172ms; Memory: 14MB
+
+PHPCS_EXIT=1
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/filesystem/flosc-data-paths.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/filesystem/flosc-data-paths.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/filesystem/flosc-data-paths.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] Generic   White space         Scope indent incorrect                 8
+[x] Generic   White space         Scope indent incorrect exact           8
+[ ] Squiz     Commenting          Block comment closer same line         5
+[ ] Generic   Commenting          Doc comment missing short              1
+[ ] Squiz     Commenting          Function comment invalid no return     1
+[x] WordPres  WP                  Capital PDangit misspelled in comment  1
+------------------------------------------------------------------------------
+A TOTAL OF 24 SNIFF VIOLATIONS WERE FOUND IN 6 SOURCES
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 3 MARKED SOURCES AUTOMATICALLY (17 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 278ms; Memory: 20MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/first-party-authentication/class-flosc-first-party-authentication.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/first-party-authentication/class-flosc-first-party-authentication.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/first-party-authentication/class-flosc-first-party-authentication.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+---------------------------------------------------------------------------
+STANDARD  CATEGORY            SNIFF                                   COUNT
+---------------------------------------------------------------------------
+Squiz     Commenting          Function comment missing param tag      7
+Generic   Commenting          Doc comment empty                       3
+Squiz     Commenting          Function comment missing                2
+Squiz     Commenting          Class comment missing                   1
+Squiz     Commenting          Variable comment missing var            1
+---------------------------------------------------------------------------
+A TOTAL OF 14 SNIFF VIOLATIONS WERE FOUND IN 5 SOURCES
+---------------------------------------------------------------------------
+
+Time: 236ms; Memory: 18MB
+
+PHPCS_EXIT=1
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-accessors.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-accessors.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-accessors.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-admin.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-admin.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-admin.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] Generic   White space         Scope indent incorrect                 34
+[x] Generic   White space         Scope indent incorrect exact           33
+[x] WordPres  WP                  Capital PDangit misspelled in comment  3
+[ ] Squiz     Commenting          File comment missing                   1
+[ ] Squiz     Commenting          Function comment invalid no return     1
+------------------------------------------------------------------------------
+A TOTAL OF 72 SNIFF VIOLATIONS WERE FOUND IN 5 SOURCES
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 3 MARKED SOURCES AUTOMATICALLY (70 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 394ms; Memory: 26MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-available-providers.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-available-providers.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-available-providers.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+---------------------------------------------------------------------------
+STANDARD  CATEGORY            SNIFF                                   COUNT
+---------------------------------------------------------------------------
+Squiz     Commenting          Function comment invalid no return      2
+---------------------------------------------------------------------------
+A TOTAL OF 2 SNIFF VIOLATIONS WERE FOUND IN 1 SOURCE
+---------------------------------------------------------------------------
+
+Time: 198ms; Memory: 16MB
+
+PHPCS_EXIT=1
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-flow-runtime.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-flow-runtime.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-flow-runtime.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-ivr-sync.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-ivr-sync.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-ivr-sync.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-knowledge-bases.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-knowledge-bases.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-knowledge-bases.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+---------------------------------------------------------------------------
+STANDARD  CATEGORY            SNIFF                                   COUNT
+---------------------------------------------------------------------------
+Squiz     Commenting          Function comment invalid no return      1
+---------------------------------------------------------------------------
+A TOTAL OF 1 SNIFF VIOLATION WERE FOUND IN 1 SOURCE
+---------------------------------------------------------------------------
+
+Time: 162ms; Memory: 14MB
+
+PHPCS_EXIT=1
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-lifecycle.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-lifecycle.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-lifecycle.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+---------------------------------------------------------------------------
+STANDARD  CATEGORY            SNIFF                                   COUNT
+---------------------------------------------------------------------------
+Squiz     Commenting          Function comment invalid no return      1
+---------------------------------------------------------------------------
+A TOTAL OF 1 SNIFF VIOLATION WERE FOUND IN 1 SOURCE
+---------------------------------------------------------------------------
+
+Time: 144ms; Memory: 12MB
+
+PHPCS_EXIT=1
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-personality-library.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-personality-library.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-personality-library.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+---------------------------------------------------------------------------
+STANDARD  CATEGORY            SNIFF                                   COUNT
+---------------------------------------------------------------------------
+Squiz     Commenting          Block comment no empty line before      10
+Squiz     Commenting          Block comment closer same line          9
+Squiz     Commenting          Function comment invalid no return      5
+---------------------------------------------------------------------------
+A TOTAL OF 24 SNIFF VIOLATIONS WERE FOUND IN 3 SOURCES
+---------------------------------------------------------------------------
+
+Time: 607ms; Memory: 42MB
+
+PHPCS_EXIT=1
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-request.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-request.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-request.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+-----------------------------------------------------------------------
+STANDARD  CATEGORY            SNIFF                               COUNT
+-----------------------------------------------------------------------
+WordPres  Security            Nonce verification recommended      4
+-----------------------------------------------------------------------
+A TOTAL OF 4 SNIFF VIOLATIONS WERE FOUND IN 1 SOURCE
+-----------------------------------------------------------------------
+
+Time: 125ms; Memory: 12MB
+
+PHPCS_EXIT=1
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+----------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                COUNT
+----------------------------------------------------------------------------
+[x] Generic   White space         Scope indent incorrect               1
+[x] Generic   White space         Scope indent incorrect exact         1
+[ ] Squiz     Commenting          Block comment has empty line before  1
+[ ] Squiz     Commenting          File comment missing                 1
+[ ] Squiz     Commenting          Function comment invalid no return   1
+----------------------------------------------------------------------------
+A TOTAL OF 5 SNIFF VIOLATIONS WERE FOUND IN 5 SOURCES
+----------------------------------------------------------------------------
+PHPCBF CAN FIX THE 2 MARKED SOURCES AUTOMATICALLY (2 VIOLATIONS IN TOTAL)
+----------------------------------------------------------------------------
+
+Time: 292ms; Memory: 20MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/full-page-mode/class-flosc-full-page-mode.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/full-page-mode/class-flosc-full-page-mode.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/full-page-mode/class-flosc-full-page-mode.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] Generic   White space         Scope indent incorrect                 8
+[x] Generic   White space         Scope indent incorrect exact           8
+[x] WordPres  WP                  Capital PDangit misspelled in comment  2
+[ ] Generic   Commenting          Doc comment empty                      1
+[ ] Squiz     Commenting          Variable comment missing var           1
+------------------------------------------------------------------------------
+A TOTAL OF 20 SNIFF VIOLATIONS WERE FOUND IN 5 SOURCES
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 3 MARKED SOURCES AUTOMATICALLY (18 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 190ms; Memory: 16MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/logging/class-flosc-chat-logger.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/logging/class-flosc-chat-logger.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/logging/class-flosc-chat-logger.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] Generic   White space         Scope indent incorrect exact           13
+[x] Generic   White space         Scope indent incorrect                 12
+[x] WordPres  WP                  Capital PDangit misspelled in comment  4
+[ ] Squiz     Commenting          Variable comment missing               2
+[ ] Squiz     Commenting          Function comment invalid no return     1
+------------------------------------------------------------------------------
+A TOTAL OF 32 SNIFF VIOLATIONS WERE FOUND IN 5 SOURCES
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 3 MARKED SOURCES AUTOMATICALLY (29 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 332ms; Memory: 24MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/magic-link/class-flosc-magic-link-trait.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/magic-link/class-flosc-magic-link-trait.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/magic-link/class-flosc-magic-link-trait.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] Generic   White space         Scope indent incorrect                 18
+[x] Generic   White space         Scope indent incorrect exact           18
+[x] WordPres  WP                  Capital PDangit misspelled in comment  10
+[ ] WordPres  Security            Nonce verification recommended         3
+[ ] Squiz     Commenting          Block comment no empty line before     1
+[ ] Squiz     Commenting          File comment missing                   1
+[ ] Squiz     Commenting          Function comment invalid no return     1
+------------------------------------------------------------------------------
+A TOTAL OF 52 SNIFF VIOLATIONS WERE FOUND IN 7 SOURCES
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 3 MARKED SOURCES AUTOMATICALLY (46 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 467ms; Memory: 30MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/class-flosc-ivr-parser.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/class-flosc-ivr-parser.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/class-flosc-ivr-parser.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] WordPres  WP                  Capital PDangit misspelled in comment  5
+[x] Generic   White space         Scope indent incorrect                 3
+[x] Generic   White space         Scope indent incorrect exact           3
+[ ] Squiz     Commenting          Variable comment missing               2
+------------------------------------------------------------------------------
+A TOTAL OF 13 SNIFF VIOLATIONS WERE FOUND IN 4 SOURCES
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 3 MARKED SOURCES AUTOMATICALLY (11 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 199ms; Memory: 16MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/flosc-ivr-sync.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/flosc-ivr-sync.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/flosc-ivr-sync.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] WordPres  WP                  Capital PDangit misspelled in comment  4
+------------------------------------------------------------------------------
+A TOTAL OF 4 SNIFF VIOLATIONS WERE FOUND IN 1 SOURCE
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 1 MARKED SOURCES AUTOMATICALLY (4 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 360ms; Memory: 26MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-abstract-quiz-type.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-abstract-quiz-type.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-abstract-quiz-type.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] WordPres  WP                  Capital PDangit misspelled in comment  1
+------------------------------------------------------------------------------
+A TOTAL OF 1 SNIFF VIOLATION WERE FOUND IN 1 SOURCE
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 1 MARKED SOURCES AUTOMATICALLY (1 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 170ms; Memory: 14MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-multiplechoice-quiz.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-multiplechoice-quiz.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-multiplechoice-quiz.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+----------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                          COUNT
+----------------------------------------------------------------------
+[x] Generic   White space         Scope indent incorrect         12
+[x] Generic   White space         Scope indent incorrect exact   12
+----------------------------------------------------------------------
+A TOTAL OF 24 SNIFF VIOLATIONS WERE FOUND IN 2 SOURCES
+----------------------------------------------------------------------
+PHPCBF CAN FIX THE 2 MARKED SOURCES AUTOMATICALLY (24 VIOLATIONS IN TOTAL)
+----------------------------------------------------------------------
+
+Time: 150ms; Memory: 14MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-sample-assessment-quiz.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-sample-assessment-quiz.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-sample-assessment-quiz.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+----------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                          COUNT
+----------------------------------------------------------------------
+[x] Generic   White space         Scope indent incorrect         8
+[x] Generic   White space         Scope indent incorrect exact   8
+----------------------------------------------------------------------
+A TOTAL OF 16 SNIFF VIOLATIONS WERE FOUND IN 2 SOURCES
+----------------------------------------------------------------------
+PHPCBF CAN FIX THE 2 MARKED SOURCES AUTOMATICALLY (16 VIOLATIONS IN TOTAL)
+----------------------------------------------------------------------
+
+Time: 173ms; Memory: 14MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-sample-audio-quiz.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-sample-audio-quiz.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-sample-audio-quiz.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+----------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                          COUNT
+----------------------------------------------------------------------
+[x] Generic   White space         Scope indent incorrect         15
+[x] Generic   White space         Scope indent incorrect exact   15
+----------------------------------------------------------------------
+A TOTAL OF 30 SNIFF VIOLATIONS WERE FOUND IN 2 SOURCES
+----------------------------------------------------------------------
+PHPCBF CAN FIX THE 2 MARKED SOURCES AUTOMATICALLY (30 VIOLATIONS IN TOTAL)
+----------------------------------------------------------------------
+
+Time: 150ms; Memory: 12MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-sample-text-based-quiz.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-sample-text-based-quiz.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-sample-text-based-quiz.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+----------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                          COUNT
+----------------------------------------------------------------------
+[x] Generic   White space         Scope indent incorrect         14
+[x] Generic   White space         Scope indent incorrect exact   14
+----------------------------------------------------------------------
+A TOTAL OF 28 SNIFF VIOLATIONS WERE FOUND IN 2 SOURCES
+----------------------------------------------------------------------
+PHPCBF CAN FIX THE 2 MARKED SOURCES AUTOMATICALLY (28 VIOLATIONS IN TOTAL)
+----------------------------------------------------------------------
+
+Time: 171ms; Memory: 14MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-truefalse-quiz.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-truefalse-quiz.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-truefalse-quiz.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+----------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                          COUNT
+----------------------------------------------------------------------
+[x] Generic   White space         Scope indent incorrect         12
+[x] Generic   White space         Scope indent incorrect exact   12
+----------------------------------------------------------------------
+A TOTAL OF 24 SNIFF VIOLATIONS WERE FOUND IN 2 SOURCES
+----------------------------------------------------------------------
+PHPCBF CAN FIX THE 2 MARKED SOURCES AUTOMATICALLY (24 VIOLATIONS IN TOTAL)
+----------------------------------------------------------------------
+
+Time: 151ms; Memory: 14MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-wordmatching-quiz.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-wordmatching-quiz.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-wordmatching-quiz.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+----------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                          COUNT
+----------------------------------------------------------------------
+[x] Generic   White space         Scope indent incorrect         13
+[x] Generic   White space         Scope indent incorrect exact   13
+----------------------------------------------------------------------
+A TOTAL OF 26 SNIFF VIOLATIONS WERE FOUND IN 2 SOURCES
+----------------------------------------------------------------------
+PHPCBF CAN FIX THE 2 MARKED SOURCES AUTOMATICALLY (26 VIOLATIONS IN TOTAL)
+----------------------------------------------------------------------
+
+Time: 146ms; Memory: 12MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/request-guard/class-flosc-request-guard.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/request-guard/class-flosc-request-guard.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/request-guard/class-flosc-request-guard.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] WordPres  WP                  Capital PDangit misspelled in comment  3
+------------------------------------------------------------------------------
+A TOTAL OF 3 SNIFF VIOLATIONS WERE FOUND IN 1 SOURCE
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 1 MARKED SOURCES AUTOMATICALLY (3 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 137ms; Memory: 12MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/class-flosc-access-manager.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/class-flosc-access-manager.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/class-flosc-access-manager.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] WordPres  WP                  Capital PDangit misspelled in comment  12
+[ ] Squiz     Commenting          Variable comment missing               1
+------------------------------------------------------------------------------
+A TOTAL OF 13 SNIFF VIOLATIONS WERE FOUND IN 2 SOURCES
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 1 MARKED SOURCES AUTOMATICALLY (12 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 218ms; Memory: 18MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/class-flosc-checkout-rest.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/class-flosc-checkout-rest.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/class-flosc-checkout-rest.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+----------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                          COUNT
+----------------------------------------------------------------------
+[x] Generic   White space         Scope indent incorrect         15
+[x] Generic   White space         Scope indent incorrect exact   14
+[ ] Generic   Commenting          Doc comment empty              1
+[ ] Squiz     Commenting          Variable comment missing var   1
+----------------------------------------------------------------------
+A TOTAL OF 31 SNIFF VIOLATIONS WERE FOUND IN 4 SOURCES
+----------------------------------------------------------------------
+PHPCBF CAN FIX THE 2 MARKED SOURCES AUTOMATICALLY (29 VIOLATIONS IN TOTAL)
+----------------------------------------------------------------------
+
+Time: 290ms; Memory: 22MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/class-flosc-offer-manager.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/class-flosc-offer-manager.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/class-flosc-offer-manager.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] WordPres  WP                  Capital PDangit misspelled in comment  11
+[ ] Squiz     Commenting          Inline comment invalid end char        5
+[ ] Generic   Commenting          Doc comment empty                      1
+[ ] Squiz     Commenting          Variable comment missing               1
+[ ] Squiz     Commenting          Variable comment missing var           1
+------------------------------------------------------------------------------
+A TOTAL OF 19 SNIFF VIOLATIONS WERE FOUND IN 5 SOURCES
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 1 MARKED SOURCES AUTOMATICALLY (11 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 254ms; Memory: 20MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/class-flosc-payment-provider.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/class-flosc-payment-provider.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/class-flosc-payment-provider.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] WordPres  WP                  Capital PDangit misspelled in comment  5
+[ ] Generic   Code analysis       Unused function parameter found        3
+------------------------------------------------------------------------------
+A TOTAL OF 8 SNIFF VIOLATIONS WERE FOUND IN 2 SOURCES
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 1 MARKED SOURCES AUTOMATICALLY (5 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 136ms; Memory: 12MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/class-flosc-sale-manager.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/class-flosc-sale-manager.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/class-flosc-sale-manager.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] WordPres  WP                  Capital PDangit misspelled in comment  7
+[x] Generic   White space         Scope indent incorrect                 6
+[x] Generic   White space         Scope indent incorrect exact           6
+[ ] Squiz     Commenting          Variable comment missing               5
+------------------------------------------------------------------------------
+A TOTAL OF 24 SNIFF VIOLATIONS WERE FOUND IN 4 SOURCES
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 3 MARKED SOURCES AUTOMATICALLY (19 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 196ms; Memory: 16MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/class-flosc-usage-tracker.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/class-flosc-usage-tracker.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/class-flosc-usage-tracker.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] WordPres  WP                  Capital PDangit misspelled in comment  27
+[ ] Squiz     Commenting          Variable comment missing               2
+[ ] Squiz     Commenting          Inline comment invalid end char        1
+------------------------------------------------------------------------------
+A TOTAL OF 30 SNIFF VIOLATIONS WERE FOUND IN 3 SOURCES
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 1 MARKED SOURCES AUTOMATICALLY (27 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 178ms; Memory: 14MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/providers/class-flosc-affiliate-provider.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/providers/class-flosc-affiliate-provider.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/providers/class-flosc-affiliate-provider.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+--------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                    COUNT
+--------------------------------------------------------------------------------
+[x] WordPres  WP                  Capital PDangit misspelled in comment    18
+[x] Generic   White space         Scope indent incorrect                   12
+[x] Generic   White space         Scope indent incorrect exact             8
+[ ] Squiz     Commenting          Variable comment missing                 2
+[ ] Squiz     Commenting          Function comment param comment full sto  1
+--------------------------------------------------------------------------------
+A TOTAL OF 41 SNIFF VIOLATIONS WERE FOUND IN 5 SOURCES
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 3 MARKED SOURCES AUTOMATICALLY (38 VIOLATIONS IN TOTAL)
+--------------------------------------------------------------------------------
+
+Time: 218ms; Memory: 18MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/providers/class-flosc-clickbank-provider.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/providers/class-flosc-clickbank-provider.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/providers/class-flosc-clickbank-provider.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+--------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                    COUNT
+--------------------------------------------------------------------------------
+[x] WordPres  WP                  Capital PDangit misspelled in comment    7
+[x] Generic   White space         Scope indent incorrect                   6
+[x] Generic   White space         Scope indent incorrect exact             6
+[x] Generic   Formatting          Multiple statement alignment incorrect   1
+--------------------------------------------------------------------------------
+A TOTAL OF 20 SNIFF VIOLATIONS WERE FOUND IN 4 SOURCES
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 4 MARKED SOURCES AUTOMATICALLY (20 VIOLATIONS IN TOTAL)
+--------------------------------------------------------------------------------
+
+Time: 242ms; Memory: 18MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/providers/class-flosc-paypal-provider.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/providers/class-flosc-paypal-provider.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/providers/class-flosc-paypal-provider.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] Generic   White space         Scope indent incorrect                 9
+[x] Generic   White space         Scope indent incorrect exact           9
+[ ] Generic   Commenting          Doc comment empty                      2
+[ ] Squiz     Commenting          Variable comment missing var           2
+[x] WordPres  WP                  Capital PDangit misspelled in comment  2
+------------------------------------------------------------------------------
+A TOTAL OF 24 SNIFF VIOLATIONS WERE FOUND IN 5 SOURCES
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 3 MARKED SOURCES AUTOMATICALLY (20 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 474ms; Memory: 34MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/providers/class-flosc-stripe-provider.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/providers/class-flosc-stripe-provider.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/providers/class-flosc-stripe-provider.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] WordPres  WP                  Capital PDangit misspelled in comment  15
+[x] Generic   White space         Scope indent incorrect                 11
+[x] Generic   White space         Scope indent incorrect exact           11
+------------------------------------------------------------------------------
+A TOTAL OF 37 SNIFF VIOLATIONS WERE FOUND IN 3 SOURCES
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 3 MARKED SOURCES AUTOMATICALLY (37 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 227ms; Memory: 18MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/providers/class-flosc-token-provider.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/providers/class-flosc-token-provider.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/providers/class-flosc-token-provider.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] WordPres  WP                  Capital PDangit misspelled in comment  13
+[x] Generic   White space         Scope indent incorrect                 5
+[x] Generic   White space         Scope indent incorrect exact           5
+[ ] Squiz     Commenting          Variable comment missing               2
+------------------------------------------------------------------------------
+A TOTAL OF 25 SNIFF VIOLATIONS WERE FOUND IN 4 SOURCES
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 3 MARKED SOURCES AUTOMATICALLY (23 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 195ms; Memory: 16MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sessions/class-flosc-session-manager.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sessions/class-flosc-session-manager.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sessions/class-flosc-session-manager.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] WordPres  WP                  Capital PDangit misspelled in comment  7
+[ ] Squiz     Commenting          Variable comment missing               1
+------------------------------------------------------------------------------
+A TOTAL OF 8 SNIFF VIOLATIONS WERE FOUND IN 2 SOURCES
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 1 MARKED SOURCES AUTOMATICALLY (7 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 176ms; Memory: 16MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sessions/class-flosc-session-rest.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sessions/class-flosc-session-rest.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sessions/class-flosc-session-rest.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] Generic   White space         Scope indent incorrect                 3
+[x] Generic   White space         Scope indent incorrect exact           3
+[ ] Generic   Commenting          Doc comment empty                      1
+[ ] Squiz     Commenting          Variable comment missing var           1
+[x] WordPres  WP                  Capital PDangit misspelled in comment  1
+------------------------------------------------------------------------------
+A TOTAL OF 9 SNIFF VIOLATIONS WERE FOUND IN 5 SOURCES
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 3 MARKED SOURCES AUTOMATICALLY (7 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 185ms; Memory: 16MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/class-oauth2-handler.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/class-oauth2-handler.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/class-oauth2-handler.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+---------------------------------------------------------------------------
+STANDARD  CATEGORY            SNIFF                                   COUNT
+---------------------------------------------------------------------------
+WordPres  Security            Nonce verification missing              3
+WordPres  Security            Nonce verification recommended          3
+Squiz     Commenting          Function comment invalid no return      1
+---------------------------------------------------------------------------
+A TOTAL OF 7 SNIFF VIOLATIONS WERE FOUND IN 3 SOURCES
+---------------------------------------------------------------------------
+
+Time: 277ms; Memory: 20MB
+
+PHPCS_EXIT=1
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/class-sso-manager.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/class-sso-manager.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/class-sso-manager.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/class-sso-provider-base.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/class-sso-provider-base.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/class-sso-provider-base.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/class-user-linker.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/class-user-linker.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/class-user-linker.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/flosc-sso-accessor.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/flosc-sso-accessor.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/flosc-sso-accessor.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/providers/class-apple-provider.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/providers/class-apple-provider.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/providers/class-apple-provider.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] WordPres  WP                  Capital PDangit misspelled in comment  1
+------------------------------------------------------------------------------
+A TOTAL OF 1 SNIFF VIOLATION WERE FOUND IN 1 SOURCE
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 1 MARKED SOURCES AUTOMATICALLY (1 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 214ms; Memory: 18MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/providers/class-facebook-provider.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/providers/class-facebook-provider.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/providers/class-facebook-provider.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/providers/class-google-provider.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/providers/class-google-provider.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/providers/class-google-provider.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/providers/class-linkedin-provider.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/providers/class-linkedin-provider.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/providers/class-linkedin-provider.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/providers/class-microsoft-provider.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/providers/class-microsoft-provider.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/providers/class-microsoft-provider.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/starter-packs/class-flosc-starter-packs.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/starter-packs/class-flosc-starter-packs.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/starter-packs/class-flosc-starter-packs.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+-----------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                           COUNT
+-----------------------------------------------------------------------
+[ ] Generic   Commenting          Doc comment empty               4
+[ ] Squiz     Commenting          Block comment closer same line  4
+[x] Generic   White space         Scope indent incorrect          1
+[x] Generic   White space         Scope indent incorrect exact    1
+-----------------------------------------------------------------------
+A TOTAL OF 10 SNIFF VIOLATIONS WERE FOUND IN 4 SOURCES
+-----------------------------------------------------------------------
+PHPCBF CAN FIX THE 2 MARKED SOURCES AUTOMATICALLY (2 VIOLATIONS IN TOTAL)
+-----------------------------------------------------------------------
+
+Time: 421ms; Memory: 30MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/tokens/class-flosc-token-ledger.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/tokens/class-flosc-token-ledger.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/tokens/class-flosc-token-ledger.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/tokens/class-flosc-visitor-token-trait.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/tokens/class-flosc-visitor-token-trait.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/tokens/class-flosc-visitor-token-trait.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                  COUNT
+------------------------------------------------------------------------------
+[x] WordPres  WP                  Capital PDangit misspelled in comment  6
+[ ] Generic   Commenting          Doc comment missing short              1
+------------------------------------------------------------------------------
+A TOTAL OF 7 SNIFF VIOLATIONS WERE FOUND IN 2 SOURCES
+------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 1 MARKED SOURCES AUTOMATICALLY (6 VIOLATIONS IN TOTAL)
+------------------------------------------------------------------------------
+
+Time: 244ms; Memory: 20MB
+
+PHPCS_EXIT=2
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/traits/class-flosc-magic-link-trait.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/traits/class-flosc-magic-link-trait.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/traits/class-flosc-magic-link-trait.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/traits/class-flosc-visitor-token-trait.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/traits/class-flosc-visitor-token-trait.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/traits/class-flosc-visitor-token-trait.php
+PHPCS_EXIT=0
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/languages/index.php
+COMMENT_CLEAN_SUMMARY changed=1
+COMMENT_CLEANED pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/uninstall.php
+COMMENT_CLEAN_SUMMARY changed=1
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/uninstall.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/uninstall.php
+PHPCS_EXIT=0

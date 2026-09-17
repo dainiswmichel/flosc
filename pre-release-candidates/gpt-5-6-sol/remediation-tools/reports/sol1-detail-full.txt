@@ -1,0 +1,2799 @@
+
+FILE: ...ndidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ai-configuration.php
+--------------------------------------------------------------------------------
+FOUND 3 ERRORS AFFECTING 3 LINES
+--------------------------------------------------------------------------------
+   42 | ERROR | Empty line required before block comment
+  157 | ERROR | Comment closer must be on a new line
+ 2998 | ERROR | Empty line required before block comment
+--------------------------------------------------------------------------------
+
+
+FILE: ...e-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flow.php
+--------------------------------------------------------------------------------
+FOUND 1 ERROR AFFECTING 1 LINE
+--------------------------------------------------------------------------------
+ 571 | ERROR | Function return type is not void, but function has no return
+     |       | statement
+--------------------------------------------------------------------------------
+
+
+FILE: ...andidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/settings-helper.php
+--------------------------------------------------------------------------------
+FOUND 0 ERRORS AND 2 WARNINGS AFFECTING 2 LINES
+--------------------------------------------------------------------------------
+ 134 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 135 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 2 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...ease-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/companion.php
+--------------------------------------------------------------------------------
+FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
+--------------------------------------------------------------------------------
+ 275 | WARNING | Detected high pagination limit, `posts_per_page` is set to
+     |         | `500`
+--------------------------------------------------------------------------------
+
+
+FILE: ...re-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/da1.php
+--------------------------------------------------------------------------------
+FOUND 3 ERRORS AFFECTING 3 LINES
+--------------------------------------------------------------------------------
+  30 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  38 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 690 | ERROR | [ ] Empty line required before block comment
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 2 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...se-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/autoprompts.php
+--------------------------------------------------------------------------------
+FOUND 7 ERRORS AFFECTING 7 LINES
+--------------------------------------------------------------------------------
+ 311 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 318 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 335 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+ 336 | ERROR | [x] Line indented incorrectly; expected at least 4 tabs, found 3
+ 337 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+ 339 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found 2
+ 346 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found 2
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 7 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...e-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-messages.php
+--------------------------------------------------------------------------------
+FOUND 2 ERRORS AFFECTING 2 LINES
+--------------------------------------------------------------------------------
+ 27 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 33 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 2 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...e-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/trajectories.php
+--------------------------------------------------------------------------------
+FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
+--------------------------------------------------------------------------------
+ 57 | WARNING | Detected high pagination limit, `posts_per_page` is set to
+    |         | `200`
+--------------------------------------------------------------------------------
+
+
+FILE: ...ease-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/concierge.php
+--------------------------------------------------------------------------------
+FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
+--------------------------------------------------------------------------------
+ 61 | WARNING | Detected high pagination limit, `posts_per_page` is set to
+    |         | `200`
+--------------------------------------------------------------------------------
+
+
+FILE: ...release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/offers.php
+--------------------------------------------------------------------------------
+FOUND 0 ERRORS AND 3 WARNINGS AFFECTING 3 LINES
+--------------------------------------------------------------------------------
+ 960 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 961 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 963 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 3 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...idates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php
+--------------------------------------------------------------------------------
+FOUND 1 ERROR AFFECTING 1 LINE
+--------------------------------------------------------------------------------
+ 632 | ERROR | Empty line required before block comment
+--------------------------------------------------------------------------------
+
+
+FILE: ...lease-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/settings.php
+--------------------------------------------------------------------------------
+FOUND 12 ERRORS AND 3 WARNINGS AFFECTING 15 LINES
+--------------------------------------------------------------------------------
+  48 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  51 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+  52 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+  54 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  77 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  80 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  95 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 100 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 112 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 118 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 153 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 156 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 158 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 223 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 228 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 15 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...ease-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/chat-logs.php
+--------------------------------------------------------------------------------
+FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
+--------------------------------------------------------------------------------
+ 831 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 1 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...ease-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flosc-app.php
+--------------------------------------------------------------------------------
+FOUND 3 ERRORS AFFECTING 3 LINES
+--------------------------------------------------------------------------------
+    1 | ERROR | Missing file doc comment
+   81 | ERROR | Comment closer must be on a new line
+ 1193 | ERROR | Empty line required before block comment
+--------------------------------------------------------------------------------
+
+
+FILE: .../flosc-by-gpt-5-6-sol/flosc/includes/sessions/class-flosc-session-rest.php
+--------------------------------------------------------------------------------
+FOUND 8 ERRORS AND 1 WARNING AFFECTING 9 LINES
+--------------------------------------------------------------------------------
+  17 | ERROR   | [ ] Doc comment is empty
+  18 | ERROR   | [ ] Missing @var tag in member variable comment
+  21 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  26 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  30 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  36 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 118 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 124 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 421 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 7 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...osc-by-gpt-5-6-sol/flosc/includes/sessions/class-flosc-session-manager.php
+--------------------------------------------------------------------------------
+FOUND 1 ERROR AND 7 WARNINGS AFFECTING 8 LINES
+--------------------------------------------------------------------------------
+  21 | ERROR   | [ ] Missing member variable doc comment
+ 158 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 160 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 247 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 285 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 316 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 318 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 384 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 7 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...ol/flosc-by-gpt-5-6-sol/flosc/includes/logging/class-flosc-chat-logger.php
+--------------------------------------------------------------------------------
+FOUND 28 ERRORS AND 4 WARNINGS AFFECTING 32 LINES
+--------------------------------------------------------------------------------
+   25 | ERROR   | [ ] Missing member variable doc comment
+   26 | ERROR   | [ ] Missing member variable doc comment
+   28 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+   33 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+   40 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+   43 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+   51 | ERROR   | [ ] Function return type is not void, but function has no
+      |         |     return statement
+   61 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+   66 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+   70 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+   76 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+   99 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+  106 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  131 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+  137 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  153 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+  156 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+      |         |     misspelling(s): Word Press
+  157 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+      |         |     misspelling(s): Word Press
+  159 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+      |         |     misspelling(s): Word Press
+  162 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  194 | ERROR   | [x] Line indented incorrectly; expected 3 tabs, found 2
+  196 | ERROR   | [x] Line indented incorrectly; expected 3 tabs, found 2
+  197 | ERROR   | [x] Line indented incorrectly; expected at least 4 tabs,
+      |         |     found 3
+  198 | ERROR   | [x] Line indented incorrectly; expected 3 tabs, found 2
+  199 | ERROR   | [x] Line indented incorrectly; expected at least 4 tabs,
+      |         |     found 3
+  200 | ERROR   | [x] Line indented incorrectly; expected 3 tabs, found 2
+  202 | ERROR   | [x] Line indented incorrectly; expected at least 3 tabs,
+      |         |     found 2
+  447 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+      |         |     misspelling(s): Word Press
+  710 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+  716 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1486 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1494 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 29 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-admin.php
+--------------------------------------------------------------------------------
+FOUND 69 ERRORS AND 3 WARNINGS AFFECTING 72 LINES
+--------------------------------------------------------------------------------
+    1 | ERROR   | [ ] Missing file doc comment
+  527 | ERROR   | [ ] Function return type is not void, but function has no
+      |         |     return statement
+ 1302 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1305 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1309 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1312 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1316 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1319 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1323 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1326 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1330 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1333 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1337 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1340 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1344 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1347 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1351 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1354 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1358 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1361 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1365 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1368 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1372 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1375 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1379 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1382 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1386 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1389 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1393 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1396 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1400 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1403 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1407 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1410 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1414 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1417 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1421 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1424 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1428 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1431 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1435 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1438 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1442 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1445 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1449 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1452 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1456 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1459 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1463 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1466 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1470 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1473 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1477 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1480 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1492 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1495 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1553 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+      |         |     misspelling(s): Word Press
+ 1650 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1653 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1685 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1688 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+      |         |     misspelling(s): Word Press
+ 1690 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+      |         |     misspelling(s): Word Press
+ 1693 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1792 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1798 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1805 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1811 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1830 | ERROR   | [x] Line indented incorrectly; expected 3 tabs, found 2
+ 1832 | ERROR   | [x] Line indented incorrectly; expected at least 3 tabs,
+      |         |     found 2
+ 1849 | ERROR   | [x] Line indented incorrectly; expected at least 3 tabs,
+      |         |     found 2
+ 1852 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1859 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 70 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...idates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-lifecycle.php
+--------------------------------------------------------------------------------
+FOUND 1 ERROR AFFECTING 1 LINE
+--------------------------------------------------------------------------------
+ 22 | ERROR | Function return type is not void, but function has no return
+    |       | statement
+--------------------------------------------------------------------------------
+
+
+FILE: ...pt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-rag-manager.php
+--------------------------------------------------------------------------------
+FOUND 6 ERRORS AFFECTING 6 LINES
+--------------------------------------------------------------------------------
+ 41 | ERROR | [ ] Missing member variable doc comment
+ 42 | ERROR | [ ] Missing member variable doc comment
+ 44 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 49 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 56 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 59 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 4 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-content-protection.php
+--------------------------------------------------------------------------------
+FOUND 6 ERRORS AND 1 WARNING AFFECTING 7 LINES
+--------------------------------------------------------------------------------
+  36 | ERROR   | [ ] Missing member variable doc comment
+  38 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  43 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  50 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  53 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 551 | ERROR   | [ ] Comment closer must be on a new line
+ 874 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 5 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-lessons-table.php
+--------------------------------------------------------------------------------
+FOUND 10 ERRORS AFFECTING 10 LINES
+--------------------------------------------------------------------------------
+  26 | ERROR | [ ] Missing member variable doc comment
+  27 | ERROR | [ ] Missing member variable doc comment
+  28 | ERROR | [ ] Missing member variable doc comment
+  29 | ERROR | [ ] Missing member variable doc comment
+  31 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  36 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  43 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  46 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 151 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 154 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 6 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...c-by-gpt-5-6-sol/flosc/includes/tokens/class-flosc-visitor-token-trait.php
+--------------------------------------------------------------------------------
+FOUND 1 ERROR AND 6 WARNINGS AFFECTING 7 LINES
+--------------------------------------------------------------------------------
+ 258 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 260 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 370 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 372 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 373 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 714 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 753 | ERROR   | [ ] Missing short description in doc comment
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 6 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-ai-chat-dispatch.php
+--------------------------------------------------------------------------------
+FOUND 10 ERRORS AND 7 WARNINGS AFFECTING 17 LINES
+--------------------------------------------------------------------------------
+   18 | ERROR   | [ ] Missing member variable doc comment
+   19 | ERROR   | [ ] Missing member variable doc comment
+   20 | ERROR   | [ ] Missing member variable doc comment
+   22 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+   25 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  333 | ERROR   | [ ] Comment closer must be on a new line
+  514 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+      |         |     misspelling(s): Word Press
+  627 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+      |         |     misspelling(s): Word Press
+  956 | ERROR   | [ ] Doc comment long description must start with a capital
+      |         |     letter
+  964 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+      |         |     misspelling(s): Word Press
+  965 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+      |         |     misspelling(s): Word Press
+ 1092 | ERROR   | [ ] Inline comments must end in full-stops, exclamation
+      |         |     marks, or question marks
+ 1170 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+      |         |     misspelling(s): Word Press
+ 1171 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+      |         |     misspelling(s): Word Press
+ 1544 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1547 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+      |         |     misspelling(s): Word Press
+ 1550 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 11 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: .../flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-rag-access-controller.php
+--------------------------------------------------------------------------------
+FOUND 4 ERRORS AFFECTING 4 LINES
+--------------------------------------------------------------------------------
+ 19 | ERROR | [ ] Missing member variable doc comment
+ 20 | ERROR | [ ] Missing member variable doc comment
+ 22 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 27 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 2 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: .../gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-concierge.php
+--------------------------------------------------------------------------------
+FOUND 49 ERRORS AFFECTING 30 LINES
+--------------------------------------------------------------------------------
+   30 | ERROR | Missing doc comment for class FLOSC_Concierge
+   32 | ERROR | Doc comment is empty
+   36 | ERROR | Doc comment is empty
+   40 | ERROR | Doc comment is empty
+   44 | ERROR | Doc comment is empty
+   48 | ERROR | Doc comment is empty
+  385 | ERROR | Comment closer must be on a new line
+  387 | ERROR | Doc comment is empty
+  387 | ERROR | Doc comment for parameter "$session_key" missing
+  403 | ERROR | Function return type is not void, but function has no return
+      |       | statement
+  426 | ERROR | Doc comment is empty
+  426 | ERROR | Doc comment for parameter "$session_key" missing
+  508 | ERROR | Comment closer must be on a new line
+  510 | ERROR | Doc comment is empty
+  516 | ERROR | Doc comment is empty
+  675 | ERROR | Function return type is not void, but function has no return
+      |       | statement
+  916 | ERROR | Doc comment is empty
+  916 | ERROR | Doc comment for parameter "$post" missing
+  949 | ERROR | Doc comment is empty
+  949 | ERROR | Doc comment for parameter "$post" missing
+  956 | ERROR | Doc comment is empty
+  956 | ERROR | Doc comment for parameter "$flow_file" missing
+  966 | ERROR | Doc comment is empty
+  966 | ERROR | Doc comment for parameter "$value" missing
+ 1038 | ERROR | Doc comment is empty
+ 1038 | ERROR | Doc comment for parameter "$body" missing
+ 1038 | ERROR | Doc comment for parameter "$label" missing
+ 1070 | ERROR | Doc comment is empty
+ 1070 | ERROR | Doc comment for parameter "$text" missing
+ 1089 | ERROR | Doc comment is empty
+ 1089 | ERROR | Doc comment for parameter "$text" missing
+ 1089 | ERROR | Doc comment for parameter "$params" missing
+ 1089 | ERROR | Doc comment for parameter "$expires_utc_mts" missing
+ 1108 | ERROR | Doc comment is empty
+ 1114 | ERROR | Doc comment is empty
+ 1114 | ERROR | Doc comment for parameter "$value" missing
+ 1124 | ERROR | Doc comment is empty
+ 1124 | ERROR | Doc comment for parameter "$value" missing
+ 1158 | ERROR | Doc comment is empty
+ 1158 | ERROR | Doc comment for parameter "$msg" missing
+ 1172 | ERROR | Doc comment is empty
+ 1172 | ERROR | Doc comment for parameter "$msg" missing
+ 1190 | ERROR | Doc comment is empty
+ 1190 | ERROR | Doc comment for parameter "$body" missing
+ 1190 | ERROR | Doc comment for parameter "$label" missing
+ 1200 | ERROR | Doc comment is empty
+ 1200 | ERROR | Doc comment for parameter "$value" missing
+ 1214 | ERROR | Missing doc comment for function off_ramp_exactness()
+ 1222 | ERROR | Missing doc comment for function off_ramp_guidance()
+--------------------------------------------------------------------------------
+
+
+FILE: ...ndidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-request.php
+--------------------------------------------------------------------------------
+FOUND 0 ERRORS AND 4 WARNINGS AFFECTING 3 LINES
+--------------------------------------------------------------------------------
+  70 | WARNING | Processing form data without nonce verification.
+  70 | WARNING | Processing form data without nonce verification.
+  74 | WARNING | Processing form data without nonce verification.
+ 122 | WARNING | Processing form data without nonce verification.
+--------------------------------------------------------------------------------
+
+
+FILE: ...t-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-flow-manager.php
+--------------------------------------------------------------------------------
+FOUND 5 ERRORS AND 7 WARNINGS AFFECTING 12 LINES
+--------------------------------------------------------------------------------
+  21 | ERROR   | [ ] Missing member variable doc comment
+  25 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  30 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  37 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  40 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  56 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 102 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 118 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 144 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 188 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 370 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 395 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 11 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: .../flosc-by-gpt-5-6-sol/flosc/includes/filesystem/class-flosc-filesystem.php
+--------------------------------------------------------------------------------
+FOUND 3 ERRORS AFFECTING 3 LINES
+--------------------------------------------------------------------------------
+ 317 | ERROR | Function return type is not void, but function has no return
+     |       | statement
+ 337 | ERROR | Function return type is not void, but function has no return
+     |       | statement
+ 366 | ERROR | Function return type is not void, but function has no return
+     |       | statement
+--------------------------------------------------------------------------------
+
+
+FILE: ...-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/filesystem/flosc-data-paths.php
+--------------------------------------------------------------------------------
+FOUND 23 ERRORS AND 1 WARNING AFFECTING 24 LINES
+--------------------------------------------------------------------------------
+   93 | ERROR   | [ ] Comment closer must be on a new line
+  129 | ERROR   | [ ] Function return type is not void, but function has no
+      |         |     return statement
+  553 | ERROR   | [ ] Comment closer must be on a new line
+  555 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+  561 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  627 | ERROR   | [ ] Comment closer must be on a new line
+  629 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+  634 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  667 | ERROR   | [ ] Comment closer must be on a new line
+  806 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+      |         |     misspelling(s): Word Press
+  890 | ERROR   | [ ] Comment closer must be on a new line
+  895 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+  901 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  918 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+  923 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  926 | ERROR   | [ ] Missing short description in doc comment
+  941 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+  946 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  976 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+  981 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1000 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1006 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1035 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1041 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 17 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...ol/flosc-by-gpt-5-6-sol/flosc/includes/chat-turn/trait-flosc-chat-turn.php
+--------------------------------------------------------------------------------
+FOUND 189 ERRORS AFFECTING 189 LINES
+--------------------------------------------------------------------------------
+   59 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found
+      |       |     0
+   64 | ERROR | [ ] Missing @throws tag in function comment
+   65 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  422 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+  424 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+  425 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+  428 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+  429 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+  430 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+  431 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+  432 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+  433 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+  434 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+  435 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+  436 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+  437 | ERROR | [x] Line indented incorrectly; expected at least 4 tabs, found
+      |       |     3
+  439 | ERROR | [x] Line indented incorrectly; expected 4 tabs, found 3
+  440 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     4
+  441 | ERROR | [x] Line indented incorrectly; expected 4 tabs, found 3
+  442 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     4
+  443 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     4
+  446 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     4
+  447 | ERROR | [x] Line indented incorrectly; expected 4 tabs, found 3
+  449 | ERROR | [x] Line indented incorrectly; expected 4 tabs, found 3
+  450 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     4
+  454 | ERROR | [x] Line indented incorrectly; expected at least 6 tabs, found
+      |       |     4
+  455 | ERROR | [x] Line indented incorrectly; expected 4 tabs, found 3
+  456 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     4
+  458 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     4
+  461 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     4
+  462 | ERROR | [x] Line indented incorrectly; expected 4 tabs, found 3
+  463 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+  464 | ERROR | [x] Line indented incorrectly; expected at least 4 tabs, found
+      |       |     3
+  465 | ERROR | [x] Line indented incorrectly; expected at least 4 tabs, found
+      |       |     3
+  468 | ERROR | [x] Line indented incorrectly; expected at least 4 tabs, found
+      |       |     3
+  469 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+  471 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+  472 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+  473 | ERROR | [x] Line indented incorrectly; expected at least 4 tabs, found
+      |       |     3
+  474 | ERROR | [x] Line indented incorrectly; expected 4 tabs, found 3
+  475 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     4
+  482 | ERROR | [x] Line indented incorrectly; expected at least 6 tabs, found
+      |       |     4
+  483 | ERROR | [x] Line indented incorrectly; expected 4 tabs, found 3
+  485 | ERROR | [x] Line indented incorrectly; expected at least 4 tabs, found
+      |       |     3
+  486 | ERROR | [x] Line indented incorrectly; expected 4 tabs, found 3
+  487 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     4
+  488 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     4
+  489 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     4
+  499 | ERROR | [x] Line indented incorrectly; expected at least 6 tabs, found
+      |       |     4
+  501 | ERROR | [x] Line indented incorrectly; expected at least 6 tabs, found
+      |       |     4
+  502 | ERROR | [x] Line indented incorrectly; expected at least 6 tabs, found
+      |       |     5
+  521 | ERROR | [x] Line indented incorrectly; expected at least 6 tabs, found
+      |       |     5
+  522 | ERROR | [x] Line indented incorrectly; expected at least 6 tabs, found
+      |       |     4
+  524 | ERROR | [x] Line indented incorrectly; expected at least 6 tabs, found
+      |       |     4
+  525 | ERROR | [x] Line indented incorrectly; expected at least 6 tabs, found
+      |       |     5
+  533 | ERROR | [x] Line indented incorrectly; expected at least 6 tabs, found
+      |       |     5
+  534 | ERROR | [x] Line indented incorrectly; expected at least 6 tabs, found
+      |       |     4
+  535 | ERROR | [x] Line indented incorrectly; expected 4 tabs, found 3
+  537 | ERROR | [x] Line indented incorrectly; expected at least 4 tabs, found
+      |       |     3
+  552 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     3
+  554 | ERROR | [x] Line indented incorrectly; expected 5 tabs, found 3
+  555 | ERROR | [x] Line indented incorrectly; expected at least 6 tabs, found
+      |       |     4
+  556 | ERROR | [x] Line indented incorrectly; expected at least 6 tabs, found
+      |       |     5
+  560 | ERROR | [x] Line indented incorrectly; expected at least 6 tabs, found
+      |       |     5
+  561 | ERROR | [x] Line indented incorrectly; expected at least 6 tabs, found
+      |       |     5
+  562 | ERROR | [x] Line indented incorrectly; expected at least 8 tabs, found
+      |       |     4
+  563 | ERROR | [x] Line indented incorrectly; expected 5 tabs, found 3
+  565 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     3
+  566 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     3
+  567 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     3
+  568 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     3
+  569 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     3
+  570 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     4
+  571 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     4
+  572 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     3
+  573 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     3
+  574 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     4
+  575 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     4
+  582 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     4
+  583 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     3
+  585 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     3
+  586 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     4
+  605 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     4
+  606 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     3
+  608 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     3
+  609 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     3
+  610 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     3
+  611 | ERROR | [x] Line indented incorrectly; expected 5 tabs, found 3
+  612 | ERROR | [x] Line indented incorrectly; expected at least 6 tabs, found
+      |       |     4
+  613 | ERROR | [x] Line indented incorrectly; expected at least 6 tabs, found
+      |       |     5
+  614 | ERROR | [x] Line indented incorrectly; expected at least 6 tabs, found
+      |       |     5
+  615 | ERROR | [x] Line indented incorrectly; expected at least 6 tabs, found
+      |       |     5
+  616 | ERROR | [x] Line indented incorrectly; expected at least 8 tabs, found
+      |       |     4
+  617 | ERROR | [x] Line indented incorrectly; expected 5 tabs, found 3
+  619 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     3
+  620 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     4
+  628 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     4
+  629 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     3
+  630 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+  632 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+  633 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+  634 | ERROR | [x] Line indented incorrectly; expected at least 4 tabs, found
+      |       |     3
+  635 | ERROR | [x] Line indented incorrectly; expected at least 4 tabs, found
+      |       |     3
+  636 | ERROR | [x] Line indented incorrectly; expected at least 4 tabs, found
+      |       |     3
+  638 | ERROR | [x] Line indented incorrectly; expected at least 4 tabs, found
+      |       |     3
+  659 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     3
+  661 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     3
+  662 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     4
+  670 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     4
+  671 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     3
+  672 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+  674 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+  676 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+  677 | ERROR | [x] Line indented incorrectly; expected at least 4 tabs, found
+      |       |     3
+  681 | ERROR | [x] Line indented incorrectly; expected at least 4 tabs, found
+      |       |     3
+  682 | ERROR | [x] Line indented incorrectly; expected at least 4 tabs, found
+      |       |     3
+  683 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+  685 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+  686 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+  687 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+  688 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+ 1084 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+ 1086 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+ 1087 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+ 1088 | ERROR | [x] Line indented incorrectly; expected at least 4 tabs, found
+      |       |     3
+ 1095 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     3
+ 1096 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+ 1098 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+ 1099 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+ 1100 | ERROR | [x] Line indented incorrectly; expected at least 4 tabs, found
+      |       |     3
+ 1101 | ERROR | [x] Line indented incorrectly; expected at least 4 tabs, found
+      |       |     3
+ 1102 | ERROR | [x] Line indented incorrectly; expected at least 4 tabs, found
+      |       |     3
+ 1103 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+ 1105 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+ 1106 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+ 1107 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+ 1108 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+ 1110 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+ 1111 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+ 1112 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+ 1113 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+ 1114 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+ 1115 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+ 1116 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+ 1117 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+ 1118 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+ 1119 | ERROR | [x] Line indented incorrectly; expected at least 4 tabs, found
+      |       |     3
+ 1120 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+ 1121 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+ 1122 | ERROR | [x] Line indented incorrectly; expected at least 4 tabs, found
+      |       |     3
+ 1123 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+ 1124 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+ 1125 | ERROR | [x] Line indented incorrectly; expected at least 4 tabs, found
+      |       |     3
+ 1126 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+ 1127 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+ 1128 | ERROR | [x] Line indented incorrectly; expected at least 4 tabs, found
+      |       |     3
+ 1129 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+ 1130 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+ 1131 | ERROR | [x] Line indented incorrectly; expected at least 4 tabs, found
+      |       |     3
+ 1132 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+ 1133 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+ 1134 | ERROR | [x] Line indented incorrectly; expected at least 4 tabs, found
+      |       |     3
+ 1135 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+ 1136 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+ 1137 | ERROR | [x] Line indented incorrectly; expected at least 4 tabs, found
+      |       |     3
+ 1138 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+ 1139 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+ 1140 | ERROR | [x] Line indented incorrectly; expected at least 4 tabs, found
+      |       |     3
+ 1141 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+ 1142 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+ 1143 | ERROR | [x] Line indented incorrectly; expected at least 4 tabs, found
+      |       |     3
+ 1144 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+ 1145 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+ 1146 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+ 1147 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+ 1148 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+ 1149 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+ 1150 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+ 1151 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+ 1152 | ERROR | [x] Line indented incorrectly; expected at least 4 tabs, found
+      |       |     3
+ 1153 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+ 1154 | ERROR | [x] Line indented incorrectly; expected at least 4 tabs, found
+      |       |     3
+ 1157 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+ 1158 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+ 1160 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+ 1294 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+ 1296 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+ 1353 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found
+      |       |     0
+ 1359 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 188 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...t-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-quiz-manager.php
+--------------------------------------------------------------------------------
+FOUND 1 ERROR AND 2 WARNINGS AFFECTING 3 LINES
+--------------------------------------------------------------------------------
+ 157 | ERROR   | [ ] Parameter comment must end with a full stop
+ 190 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 318 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 2 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php
+--------------------------------------------------------------------------------
+FOUND 5 ERRORS AFFECTING 5 LINES
+--------------------------------------------------------------------------------
+   1 | ERROR | [ ] Missing file doc comment
+  11 | ERROR | [ ] Empty line not required before block comment
+  23 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  28 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 513 | ERROR | [ ] Function return type is not void, but function has no return
+     |       |     statement
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 2 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...flosc-by-gpt-5-6-sol/flosc/includes/sso/providers/class-apple-provider.php
+--------------------------------------------------------------------------------
+FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
+--------------------------------------------------------------------------------
+ 190 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 1 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...t-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/class-oauth2-handler.php
+--------------------------------------------------------------------------------
+FOUND 4 ERRORS AND 3 WARNINGS AFFECTING 5 LINES
+--------------------------------------------------------------------------------
+ 232 | ERROR   | Function return type is not void, but function has no return
+     |         | statement
+ 281 | WARNING | Processing form data without nonce verification.
+ 281 | WARNING | Processing form data without nonce verification.
+ 282 | WARNING | Processing form data without nonce verification.
+ 287 | ERROR   | Processing form data without nonce verification.
+ 287 | ERROR   | Processing form data without nonce verification.
+ 288 | ERROR   | Processing form data without nonce verification.
+--------------------------------------------------------------------------------
+
+
+FILE: ...l/flosc-by-gpt-5-6-sol/flosc/includes/da1/class-flosc-da1-compositions.php
+--------------------------------------------------------------------------------
+FOUND 2 ERRORS AFFECTING 2 LINES
+--------------------------------------------------------------------------------
+ 15 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 18 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 2 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...6-sol/flosc-by-gpt-5-6-sol/flosc/includes/da1/class-flosc-da1-catalogs.php
+--------------------------------------------------------------------------------
+FOUND 32 ERRORS AND 4 WARNINGS AFFECTING 36 LINES
+--------------------------------------------------------------------------------
+ 159 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 165 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 170 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 176 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 181 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 187 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 204 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 423 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 426 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 427 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 430 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 493 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 499 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 542 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 549 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 566 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 572 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 582 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 588 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 596 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 602 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 674 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 681 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 714 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 721 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 739 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 746 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 767 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 770 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 773 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 793 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 799 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 809 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 815 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 821 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 827 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 36 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/class-flosc-usage-tracker.php
+--------------------------------------------------------------------------------
+FOUND 3 ERRORS AND 27 WARNINGS AFFECTING 30 LINES
+--------------------------------------------------------------------------------
+  29 | ERROR   | [ ] Missing member variable doc comment
+  30 | ERROR   | [ ] Missing member variable doc comment
+  35 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+  36 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+  37 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+  38 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+  92 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+  93 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 112 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 122 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 123 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 124 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 137 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 138 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 139 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 152 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 188 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 189 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 198 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 224 | ERROR   | [ ] Inline comments must end in full-stops, exclamation marks,
+     |         |     or question marks
+ 253 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 254 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 316 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 353 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 363 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 364 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 390 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 436 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 437 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 438 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 27 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...-gpt-5-6-sol/flosc/includes/sale/providers/class-flosc-stripe-provider.php
+--------------------------------------------------------------------------------
+FOUND 22 ERRORS AND 15 WARNINGS AFFECTING 37 LINES
+--------------------------------------------------------------------------------
+  19 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  24 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  28 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  33 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  37 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  42 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  46 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  51 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  55 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  60 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  64 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  69 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 130 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 135 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 140 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 145 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 156 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 219 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 221 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 239 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 240 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 241 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 242 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 364 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 366 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 523 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 583 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 584 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 676 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 724 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 727 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 730 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 745 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 748 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 751 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 766 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 772 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 37 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...t-5-6-sol/flosc/includes/sale/providers/class-flosc-clickbank-provider.php
+--------------------------------------------------------------------------------
+FOUND 12 ERRORS AND 8 WARNINGS AFFECTING 20 LINES
+--------------------------------------------------------------------------------
+  23 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  28 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  32 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  37 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  41 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  46 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  50 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  55 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  59 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  64 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  70 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  75 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 381 | WARNING | [x] Equals sign not aligned correctly; expected 1 space but
+     |         |     found 8 spaces
+ 518 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 663 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 664 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 708 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 774 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 803 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 831 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 20 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...-gpt-5-6-sol/flosc/includes/sale/providers/class-flosc-paypal-provider.php
+--------------------------------------------------------------------------------
+FOUND 22 ERRORS AND 2 WARNINGS AFFECTING 24 LINES
+--------------------------------------------------------------------------------
+   27 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+   32 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+   36 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+   41 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+   45 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+   50 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+   54 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+   59 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+   63 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+   68 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  106 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+  111 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  142 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+      |         |     misspelling(s): Word Press
+  162 | ERROR   | [ ] Doc comment is empty
+  163 | ERROR   | [ ] Missing @var tag in member variable comment
+  609 | ERROR   | [ ] Doc comment is empty
+  610 | ERROR   | [ ] Missing @var tag in member variable comment
+  613 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+  618 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  625 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+  630 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  637 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+  642 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 2265 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+      |         |     misspelling(s): Word Press
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 20 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...t-5-6-sol/flosc/includes/sale/providers/class-flosc-affiliate-provider.php
+--------------------------------------------------------------------------------
+FOUND 23 ERRORS AND 18 WARNINGS AFFECTING 40 LINES
+--------------------------------------------------------------------------------
+  34 | ERROR   | [ ] Missing member variable doc comment
+  35 | ERROR   | [ ] Missing member variable doc comment
+  37 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  42 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  46 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  51 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  55 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  60 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  64 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  69 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  73 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  78 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 252 | ERROR   | [ ] Parameter comment must end with a full stop
+ 252 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 294 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 295 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 319 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 320 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 321 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 344 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 511 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 512 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 513 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 616 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 628 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 629 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 630 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 746 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 747 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 748 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 749 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 793 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 800 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 805 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 812 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 824 | ERROR   | [x] Line indented incorrectly; expected 3 tabs, found 2
+ 826 | ERROR   | [x] Line indented incorrectly; expected at least 3 tabs, found
+     |         |     2
+ 827 | ERROR   | [x] Line indented incorrectly; expected at least 3 tabs, found
+     |         |     2
+ 828 | ERROR   | [x] Line indented incorrectly; expected at least 3 tabs, found
+     |         |     2
+ 830 | ERROR   | [x] Line indented incorrectly; expected at least 3 tabs, found
+     |         |     2
+ 836 | ERROR   | [x] Line indented incorrectly; expected at least 3 tabs, found
+     |         |     2
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 38 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...y-gpt-5-6-sol/flosc/includes/sale/providers/class-flosc-token-provider.php
+--------------------------------------------------------------------------------
+FOUND 12 ERRORS AND 13 WARNINGS AFFECTING 25 LINES
+--------------------------------------------------------------------------------
+  20 | ERROR   | [ ] Missing member variable doc comment
+  21 | ERROR   | [ ] Missing member variable doc comment
+  23 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  28 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  32 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  37 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  41 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  46 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  50 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  55 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  59 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  64 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 119 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 246 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 258 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 259 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 260 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 261 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 412 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 413 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 414 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 440 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 441 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 459 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 460 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 23 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/class-flosc-offer-manager.php
+--------------------------------------------------------------------------------
+FOUND 8 ERRORS AND 11 WARNINGS AFFECTING 19 LINES
+--------------------------------------------------------------------------------
+  23 | ERROR   | [ ] Missing member variable doc comment
+  24 | ERROR   | [ ] Doc comment is empty
+  25 | ERROR   | [ ] Missing @var tag in member variable comment
+ 124 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 141 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 157 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 186 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 187 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 216 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 480 | ERROR   | [ ] Inline comments must end in full-stops, exclamation marks,
+     |         |     or question marks
+ 485 | ERROR   | [ ] Inline comments must end in full-stops, exclamation marks,
+     |         |     or question marks
+ 486 | ERROR   | [ ] Inline comments must end in full-stops, exclamation marks,
+     |         |     or question marks
+ 515 | ERROR   | [ ] Inline comments must end in full-stops, exclamation marks,
+     |         |     or question marks
+ 516 | ERROR   | [ ] Inline comments must end in full-stops, exclamation marks,
+     |         |     or question marks
+ 844 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 845 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 862 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 891 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 947 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 11 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...ol/flosc-by-gpt-5-6-sol/flosc/includes/sale/class-flosc-access-manager.php
+--------------------------------------------------------------------------------
+FOUND 1 ERROR AND 12 WARNINGS AFFECTING 13 LINES
+--------------------------------------------------------------------------------
+  30 | ERROR   | [ ] Missing member variable doc comment
+  35 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 459 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 460 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 461 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 592 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 593 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 611 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 612 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 651 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 674 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 675 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 696 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 12 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...-sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/class-flosc-sale-manager.php
+--------------------------------------------------------------------------------
+FOUND 17 ERRORS AND 7 WARNINGS AFFECTING 24 LINES
+--------------------------------------------------------------------------------
+  23 | ERROR   | [ ] Missing member variable doc comment
+  25 | ERROR   | [ ] Missing member variable doc comment
+  26 | ERROR   | [ ] Missing member variable doc comment
+  27 | ERROR   | [ ] Missing member variable doc comment
+  28 | ERROR   | [ ] Missing member variable doc comment
+  30 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  35 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  42 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  45 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  50 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  53 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  69 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  72 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  87 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 126 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 131 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 135 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 140 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 554 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 555 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 556 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 557 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 583 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 612 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 19 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: .../flosc-by-gpt-5-6-sol/flosc/includes/sale/class-flosc-payment-provider.php
+--------------------------------------------------------------------------------
+FOUND 0 ERRORS AND 8 WARNINGS AFFECTING 8 LINES
+--------------------------------------------------------------------------------
+  78 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+  95 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 139 | WARNING | [ ] The method parameter $transaction_id is never used
+ 189 | WARNING | [ ] The method parameter $offer is never used
+ 235 | WARNING | [ ] The method parameter $user_id is never used
+ 242 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 243 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 252 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 5 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...sol/flosc-by-gpt-5-6-sol/flosc/includes/sale/class-flosc-checkout-rest.php
+--------------------------------------------------------------------------------
+FOUND 31 ERRORS AFFECTING 31 LINES
+--------------------------------------------------------------------------------
+   17 | ERROR | [ ] Doc comment is empty
+   18 | ERROR | [ ] Missing @var tag in member variable comment
+   21 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found
+      |       |     0
+   26 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+   30 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found
+      |       |     0
+   36 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  738 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found
+      |       |     0
+  744 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  783 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+  784 | ERROR | [x] Line indented incorrectly; expected at least 4 tabs, found
+      |       |     3
+  785 | ERROR | [x] Line indented incorrectly; expected 4 tabs, found 3
+  786 | ERROR | [x] Line indented incorrectly; expected at least 5 tabs, found
+      |       |     4
+  787 | ERROR | [x] Line indented incorrectly; expected 4 tabs, found 3
+  788 | ERROR | [x] Line indented incorrectly; expected at least 4 tabs, found
+      |       |     3
+  789 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+  790 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+  791 | ERROR | [x] Line indented incorrectly; expected at least 4 tabs, found
+      |       |     3
+  792 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+  794 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+  796 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+  797 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+  799 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+  800 | ERROR | [x] Line indented incorrectly; expected at least 4 tabs, found
+      |       |     3
+  801 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+  803 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+  959 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found
+      |       |     0
+  965 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  989 | ERROR | [x] Line indented incorrectly; expected 3 tabs, found 2
+  991 | ERROR | [x] Line indented incorrectly; expected at least 3 tabs, found
+      |       |     2
+ 1003 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found
+      |       |     0
+ 1009 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 29 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...ol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-condition-evaluator.php
+--------------------------------------------------------------------------------
+FOUND 3 ERRORS AND 7 WARNINGS AFFECTING 10 LINES
+--------------------------------------------------------------------------------
+  21 | ERROR   | [ ] Missing member variable doc comment
+  22 | ERROR   | [ ] Missing member variable doc comment
+  23 | ERROR   | [ ] Missing member variable doc comment
+ 484 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 485 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 532 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 546 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 547 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 576 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 577 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 7 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...-by-gpt-5-6-sol/flosc/includes/request-guard/class-flosc-request-guard.php
+--------------------------------------------------------------------------------
+FOUND 0 ERRORS AND 3 WARNINGS AFFECTING 3 LINES
+--------------------------------------------------------------------------------
+ 47 | WARNING | [x] Please spell "WordPress" correctly. Found 1 misspelling(s):
+    |         |     Word Press
+ 48 | WARNING | [x] Please spell "WordPress" correctly. Found 1 misspelling(s):
+    |         |     Word Press
+ 49 | WARNING | [x] Please spell "WordPress" correctly. Found 1 misspelling(s):
+    |         |     Word Press
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 3 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...sc-by-gpt-5-6-sol/flosc/includes/class-flosc-free-content-item-manager.php
+--------------------------------------------------------------------------------
+FOUND 5 ERRORS AND 3 WARNINGS AFFECTING 8 LINES
+--------------------------------------------------------------------------------
+  39 | ERROR   | [ ] Missing member variable doc comment
+  41 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  46 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  53 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  56 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 249 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 296 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 692 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 7 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-site-content-index.php
+--------------------------------------------------------------------------------
+FOUND 36 ERRORS AND 4 WARNINGS AFFECTING 40 LINES
+--------------------------------------------------------------------------------
+   23 | ERROR   | [ ] Doc comment is empty
+   24 | ERROR   | [ ] Missing @var tag in member variable comment
+   39 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+   42 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+   67 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+      |         |     misspelling(s): Word Press
+   92 | ERROR   | [ ] Function return type is not void, but function has no
+      |         |     return statement
+  110 | ERROR   | [ ] Function return type is not void, but function has no
+      |         |     return statement
+  233 | ERROR   | [ ] Empty line required before block comment
+  673 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+  679 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  692 | ERROR   | [ ] Empty line required before block comment
+  719 | ERROR   | [ ] Doc comment is empty
+  918 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+      |         |     misspelling(s): Word Press
+ 1045 | WARNING | [ ] Detected high pagination limit, `posts_per_page` is set
+      |         |     to `200`
+ 1106 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1112 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1121 | ERROR   | [ ] Empty line required before block comment
+ 1122 | ERROR   | [ ] Block comments must start with a capital letter
+ 1123 | ERROR   | [ ] Comment closer must be on a new line
+ 1127 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1134 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1215 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1218 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+      |         |     misspelling(s): Word Press
+ 1221 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1265 | ERROR   | [ ] Empty line required before block comment
+ 1268 | ERROR   | [ ] Comment closer must be on a new line
+ 1381 | ERROR   | [ ] Empty line required before block comment
+ 1609 | ERROR   | [ ] Empty line required before block comment
+ 1660 | ERROR   | [ ] Empty line required before block comment
+ 1675 | ERROR   | [ ] Empty line required before block comment
+ 1688 | ERROR   | [ ] Empty line required before block comment
+ 1941 | ERROR   | [ ] Empty line required before block comment
+ 1944 | ERROR   | [ ] Comment closer must be on a new line
+ 1984 | ERROR   | [ ] Function return type is not void, but function has no
+      |         |     return statement
+ 2009 | ERROR   | [ ] Function return type is not void, but function has no
+      |         |     return statement
+ 2030 | ERROR   | [ ] Function return type is not void, but function has no
+      |         |     return statement
+ 2058 | ERROR   | [ ] Function return type is not void, but function has no
+      |         |     return statement
+ 2075 | ERROR   | [ ] Function return type is not void, but function has no
+      |         |     return statement
+ 2092 | ERROR   | [ ] Function return type is not void, but function has no
+      |         |     return statement
+ 2110 | ERROR   | [ ] Function return type is not void, but function has no
+      |         |     return statement
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 13 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-rag-chat-handler.php
+--------------------------------------------------------------------------------
+FOUND 6 ERRORS AFFECTING 6 LINES
+--------------------------------------------------------------------------------
+ 19 | ERROR | [ ] Missing member variable doc comment
+ 20 | ERROR | [ ] Missing member variable doc comment
+ 21 | ERROR | [ ] Missing member variable doc comment
+ 22 | ERROR | [ ] Missing member variable doc comment
+ 24 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 27 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 2 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-personality-library.php
+--------------------------------------------------------------------------------
+FOUND 24 ERRORS AFFECTING 24 LINES
+--------------------------------------------------------------------------------
+  914 | ERROR | Comment closer must be on a new line
+ 1270 | ERROR | Empty line required before block comment
+ 1272 | ERROR | Comment closer must be on a new line
+ 2180 | ERROR | Function return type is not void, but function has no return
+      |       | statement
+ 2415 | ERROR | Empty line required before block comment
+ 2758 | ERROR | Empty line required before block comment
+ 2761 | ERROR | Comment closer must be on a new line
+ 2786 | ERROR | Empty line required before block comment
+ 2788 | ERROR | Comment closer must be on a new line
+ 2807 | ERROR | Empty line required before block comment
+ 2809 | ERROR | Comment closer must be on a new line
+ 2841 | ERROR | Comment closer must be on a new line
+ 2921 | ERROR | Comment closer must be on a new line
+ 2986 | ERROR | Function return type is not void, but function has no return
+      |       | statement
+ 3280 | ERROR | Function return type is not void, but function has no return
+      |       | statement
+ 3303 | ERROR | Empty line required before block comment
+ 3336 | ERROR | Comment closer must be on a new line
+ 3359 | ERROR | Function return type is not void, but function has no return
+      |       | statement
+ 3485 | ERROR | Empty line required before block comment
+ 3498 | ERROR | Empty line required before block comment
+ 3508 | ERROR | Empty line required before block comment
+ 3511 | ERROR | Comment closer must be on a new line
+ 3538 | ERROR | Empty line required before block comment
+ 3791 | ERROR | Function return type is not void, but function has no return
+      |       | statement
+--------------------------------------------------------------------------------
+
+
+FILE: ...sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-response-validator.php
+--------------------------------------------------------------------------------
+FOUND 11 ERRORS AFFECTING 11 LINES
+--------------------------------------------------------------------------------
+  19 | ERROR | [ ] Missing member variable doc comment
+  21 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  26 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  72 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  78 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  82 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  88 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  97 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 103 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 113 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 118 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 10 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...-by-gpt-5-6-sol/flosc/includes/starter-packs/class-flosc-starter-packs.php
+--------------------------------------------------------------------------------
+FOUND 10 ERRORS AFFECTING 10 LINES
+--------------------------------------------------------------------------------
+   24 | ERROR | [ ] Doc comment is empty
+   28 | ERROR | [ ] Doc comment is empty
+   32 | ERROR | [ ] Doc comment is empty
+   36 | ERROR | [ ] Doc comment is empty
+  295 | ERROR | [ ] Comment closer must be on a new line
+ 1501 | ERROR | [ ] Comment closer must be on a new line
+ 1774 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found
+      |       |     0
+ 1781 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1874 | ERROR | [ ] Comment closer must be on a new line
+ 2020 | ERROR | [ ] Comment closer must be on a new line
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 2 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...flosc-by-gpt-5-6-sol/flosc/includes/portability/class-flosc-ivr-parser.php
+--------------------------------------------------------------------------------
+FOUND 8 ERRORS AND 5 WARNINGS AFFECTING 13 LINES
+--------------------------------------------------------------------------------
+  21 | ERROR   | [ ] Missing member variable doc comment
+  22 | ERROR   | [ ] Missing member variable doc comment
+  24 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  29 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 431 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 436 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 449 | ERROR   | [x] Line indented incorrectly; expected 3 tabs, found 2
+ 451 | ERROR   | [x] Line indented incorrectly; expected at least 3 tabs, found
+     |         |     2
+ 495 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 516 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 551 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 568 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 584 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 11 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/flosc-ivr-sync.php
+--------------------------------------------------------------------------------
+FOUND 0 ERRORS AND 4 WARNINGS AFFECTING 4 LINES
+--------------------------------------------------------------------------------
+ 1027 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+      |         |     misspelling(s): Word Press
+ 1459 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+      |         |     misspelling(s): Word Press
+ 1816 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+      |         |     misspelling(s): Word Press
+ 1817 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+      |         |     misspelling(s): Word Press
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 4 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...pt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/email/class-flosc-email.php
+--------------------------------------------------------------------------------
+FOUND 11 ERRORS AND 21 WARNINGS AFFECTING 32 LINES
+--------------------------------------------------------------------------------
+  17 | ERROR   | [ ] Doc comment is empty
+  18 | ERROR   | [ ] Missing @var tag in member variable comment
+  21 | ERROR   | [ ] Doc comment is empty
+  22 | ERROR   | [ ] Missing @var tag in member variable comment
+  25 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  30 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 118 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 194 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 228 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 229 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 250 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 263 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 264 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 265 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 361 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 490 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 493 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 494 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 497 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 546 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 585 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 588 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 592 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 607 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 628 | ERROR   | [ ] Empty line required before block comment
+ 651 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 652 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 653 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 654 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 812 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 813 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 814 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 27 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-member-access.php
+--------------------------------------------------------------------------------
+FOUND 5 ERRORS AND 5 WARNINGS AFFECTING 10 LINES
+--------------------------------------------------------------------------------
+  32 | ERROR   | [ ] Missing member variable doc comment
+  34 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  39 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  46 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  49 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 107 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 205 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 302 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 347 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 598 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 9 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...y-gpt-5-6-sol/flosc/includes/full-page-mode/class-flosc-full-page-mode.php
+--------------------------------------------------------------------------------
+FOUND 18 ERRORS AND 2 WARNINGS AFFECTING 20 LINES
+--------------------------------------------------------------------------------
+  17 | ERROR   | [ ] Doc comment is empty
+  18 | ERROR   | [ ] Missing @var tag in member variable comment
+  21 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  26 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  30 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  35 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  59 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+  99 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 105 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 113 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 118 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 204 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 209 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 231 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 236 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 245 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 248 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 250 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 337 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 342 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 18 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...t-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-user-session.php
+--------------------------------------------------------------------------------
+FOUND 3 ERRORS AFFECTING 3 LINES
+--------------------------------------------------------------------------------
+ 18 | ERROR | Missing member variable doc comment
+ 19 | ERROR | Missing member variable doc comment
+ 20 | ERROR | Missing member variable doc comment
+--------------------------------------------------------------------------------
+
+
+FILE: ...y-gpt-5-6-sol/flosc/includes/companion-mode/class-flosc-companion-mode.php
+--------------------------------------------------------------------------------
+FOUND 4 ERRORS AND 1 WARNING AFFECTING 5 LINES
+--------------------------------------------------------------------------------
+  17 | ERROR   | [ ] Doc comment is empty
+  18 | ERROR   | [ ] Missing @var tag in member variable comment
+  21 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  26 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 933 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 3 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...osc-by-gpt-5-6-sol/flosc/includes/content-item/flosc-content-item-keys.php
+--------------------------------------------------------------------------------
+FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
+--------------------------------------------------------------------------------
+ 165 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 1 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-quiz-registry.php
+--------------------------------------------------------------------------------
+FOUND 4 ERRORS AFFECTING 4 LINES
+--------------------------------------------------------------------------------
+ 25 | ERROR | [ ] Doc comment is empty
+ 26 | ERROR | [ ] Missing @var tag in member variable comment
+ 29 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 34 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 2 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...ol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-user-access-manager.php
+--------------------------------------------------------------------------------
+FOUND 3 ERRORS AND 2 WARNINGS AFFECTING 5 LINES
+--------------------------------------------------------------------------------
+  20 | ERROR   | [ ] Missing member variable doc comment
+  22 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  27 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  37 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 134 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 4 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: .../gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-knowledge-bases.php
+--------------------------------------------------------------------------------
+FOUND 1 ERROR AFFECTING 1 LINE
+--------------------------------------------------------------------------------
+ 58 | ERROR | Function return type is not void, but function has no return
+    |       | statement
+--------------------------------------------------------------------------------
+
+
+FILE: ...t-5-6-sol/flosc/includes/quiz-types/class-flosc-sample-text-based-quiz.php
+--------------------------------------------------------------------------------
+FOUND 28 ERRORS AFFECTING 28 LINES
+--------------------------------------------------------------------------------
+  27 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  32 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  36 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  41 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  45 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  50 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  54 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  59 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  63 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  68 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  72 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  77 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  81 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  86 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  90 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  95 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  99 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 104 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 120 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 126 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 141 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 149 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 222 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 227 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 250 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 255 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 264 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 272 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 28 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...by-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-wordmatching-quiz.php
+--------------------------------------------------------------------------------
+FOUND 26 ERRORS AFFECTING 26 LINES
+--------------------------------------------------------------------------------
+  21 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  26 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  30 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  35 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  39 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  44 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  48 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  53 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  57 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  62 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  66 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  71 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  75 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  80 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  84 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  89 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  93 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  98 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 102 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 108 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 116 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 124 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 176 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 181 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 234 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 242 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 26 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-multiplechoice-quiz.php
+--------------------------------------------------------------------------------
+FOUND 24 ERRORS AFFECTING 24 LINES
+--------------------------------------------------------------------------------
+  21 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  26 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  30 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  35 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  39 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  44 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  48 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  53 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  57 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  62 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  66 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  71 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  75 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  80 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  84 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  89 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  93 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  98 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 103 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 109 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 117 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 125 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 175 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 180 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 24 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...sc-by-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-truefalse-quiz.php
+--------------------------------------------------------------------------------
+FOUND 24 ERRORS AFFECTING 24 LINES
+--------------------------------------------------------------------------------
+  21 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  26 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  30 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  35 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  39 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  44 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  48 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  53 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  57 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  62 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  66 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  71 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  75 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  80 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  84 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  89 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  93 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  98 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 103 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 109 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 117 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 125 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 179 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 184 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 24 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...y-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-abstract-quiz-type.php
+--------------------------------------------------------------------------------
+FOUND 0 ERRORS AND 1 WARNING AFFECTING 1 LINE
+--------------------------------------------------------------------------------
+ 481 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 1 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...by-gpt-5-6-sol/flosc/includes/quiz-types/class-flosc-sample-audio-quiz.php
+--------------------------------------------------------------------------------
+FOUND 30 ERRORS AFFECTING 30 LINES
+--------------------------------------------------------------------------------
+  21 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  26 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  30 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  35 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  39 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  44 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  48 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  53 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  57 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  62 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  66 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  71 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  75 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  80 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  84 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  89 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+  93 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+  98 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 102 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 108 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 117 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 125 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 170 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 176 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 181 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 186 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 217 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 222 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 231 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 239 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 30 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...t-5-6-sol/flosc/includes/quiz-types/class-flosc-sample-assessment-quiz.php
+--------------------------------------------------------------------------------
+FOUND 16 ERRORS AFFECTING 16 LINES
+--------------------------------------------------------------------------------
+ 25 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 30 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 34 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 39 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 43 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 48 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 52 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 57 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 61 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 66 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 70 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 75 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 79 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 84 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 88 | ERROR | [x] Line indented incorrectly; expected at least 1 tabs, found 0
+ 93 | ERROR | [x] Line indented incorrectly; expected 1 tabs, found 0
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 16 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: .../gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php
+--------------------------------------------------------------------------------
+FOUND 5 ERRORS AND 12 WARNINGS AFFECTING 13 LINES
+--------------------------------------------------------------------------------
+  1936 | ERROR   | Function return type is not void, but function has no return
+       |         | statement
+  3833 | ERROR   | Function return type is not void, but function has no return
+       |         | statement
+ 12081 | ERROR   | Function return type is not void, but function has no return
+       |         | statement
+ 12427 | ERROR   | Function return type is not void, but function has no return
+       |         | statement
+ 12824 | ERROR   | Function return type is not void, but function has no return
+       |         | statement
+ 13768 | WARNING | Processing form data without nonce verification.
+ 13768 | WARNING | Processing form data without nonce verification.
+ 13769 | WARNING | Processing form data without nonce verification.
+ 13785 | WARNING | Processing form data without nonce verification.
+ 13785 | WARNING | Processing form data without nonce verification.
+ 13786 | WARNING | Processing form data without nonce verification.
+ 13790 | WARNING | Processing form data without nonce verification.
+ 13790 | WARNING | Processing form data without nonce verification.
+ 13791 | WARNING | Processing form data without nonce verification.
+ 13794 | WARNING | Processing form data without nonce verification.
+ 13794 | WARNING | Processing form data without nonce verification.
+ 13795 | WARNING | Processing form data without nonce verification.
+--------------------------------------------------------------------------------
+
+
+FILE: ...5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-lesson-manager.php
+--------------------------------------------------------------------------------
+FOUND 3 ERRORS AND 2 WARNINGS AFFECTING 5 LINES
+--------------------------------------------------------------------------------
+  22 | ERROR   | [ ] Missing member variable doc comment
+  24 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  29 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 304 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 384 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 4 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-available-providers.php
+--------------------------------------------------------------------------------
+FOUND 2 ERRORS AFFECTING 2 LINES
+--------------------------------------------------------------------------------
+ 293 | ERROR | Function return type is not void, but function has no return
+     |       | statement
+ 484 | ERROR | Function return type is not void, but function has no return
+     |       | statement
+--------------------------------------------------------------------------------
+
+
+FILE: ...gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-trajectory.php
+--------------------------------------------------------------------------------
+FOUND 60 ERRORS AND 3 WARNINGS AFFECTING 63 LINES
+--------------------------------------------------------------------------------
+ 156 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 159 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 161 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 201 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 207 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 243 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 249 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 269 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 2
+ 271 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 2
+ 274 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 2
+ 276 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 2
+ 277 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 2
+ 279 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 2
+ 282 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 2
+ 284 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 2
+ 285 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 2
+ 287 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 2
+ 288 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 2
+ 290 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 2
+ 293 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 2
+ 295 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 2
+ 298 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 2
+ 300 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 2
+ 301 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 2
+ 303 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 2
+ 306 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 2
+ 308 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 2
+ 311 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 2
+ 313 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 2
+ 317 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 2
+ 319 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 2
+ 320 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 2
+ 322 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 2
+ 334 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 337 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 340 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 377 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 380 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 383 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 413 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 420 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 434 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 440 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 445 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 451 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 459 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 465 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 472 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 478 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 497 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 503 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 531 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 538 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 543 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 550 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 570 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 576 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 584 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 590 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 613 | ERROR   | [x] Line indented incorrectly; expected 3 tabs, found 2
+ 615 | ERROR   | [x] Line indented incorrectly; expected at least 3 tabs, found
+     |         |     2
+ 618 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 624 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 63 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...t-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-page-context.php
+--------------------------------------------------------------------------------
+FOUND 25 ERRORS AND 6 WARNINGS AFFECTING 31 LINES
+--------------------------------------------------------------------------------
+  18 | ERROR   | [ ] Missing member variable doc comment
+  23 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  28 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 138 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 144 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 148 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 151 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 154 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 161 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 166 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 171 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 177 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 195 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 199 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 200 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 203 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 225 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 228 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 231 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 242 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 245 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 248 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 279 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 285 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 297 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 304 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 419 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 425 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 459 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+ 463 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 466 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 30 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...-by-gpt-5-6-sol/flosc/includes/magic-link/class-flosc-magic-link-trait.php
+--------------------------------------------------------------------------------
+FOUND 39 ERRORS AND 13 WARNINGS AFFECTING 51 LINES
+--------------------------------------------------------------------------------
+    1 | ERROR   | [ ] Missing file doc comment
+  193 | ERROR   | [ ] Function return type is not void, but function has no
+      |         |     return statement
+  206 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+  211 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  230 | WARNING | [ ] Processing form data without nonce verification.
+  230 | WARNING | [ ] Processing form data without nonce verification.
+  231 | WARNING | [ ] Processing form data without nonce verification.
+  794 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+      |         |     misspelling(s): Word Press
+  887 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+      |         |     misspelling(s): Word Press
+  889 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+      |         |     misspelling(s): Word Press
+  966 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+      |         |     misspelling(s): Word Press
+ 1149 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1155 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1456 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+      |         |     misspelling(s): Word Press
+ 1512 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1515 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+      |         |     misspelling(s): Word Press
+ 1518 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1522 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1527 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1532 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1535 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+      |         |     misspelling(s): Word Press
+ 1537 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1541 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1546 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1551 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1554 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+      |         |     misspelling(s): Word Press
+ 1556 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1560 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1566 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1575 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1583 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1619 | ERROR   | [x] Line indented incorrectly; expected 3 tabs, found 2
+ 1621 | ERROR   | [x] Line indented incorrectly; expected at least 3 tabs,
+      |         |     found 2
+ 1624 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1632 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1666 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1669 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+      |         |     misspelling(s): Word Press
+ 1672 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1687 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1694 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1712 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1718 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1915 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1918 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 1947 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 1950 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 2015 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 2018 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 2046 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs,
+      |         |     found 0
+ 2049 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 2088 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+      |         |     misspelling(s): Word Press
+ 2143 | ERROR   | [ ] Empty line required before block comment
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 46 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...s/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-chatpack.php
+--------------------------------------------------------------------------------
+FOUND 0 ERRORS AND 5 WARNINGS AFFECTING 5 LINES
+--------------------------------------------------------------------------------
+  172 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+      |         |     misspelling(s): Word Press
+ 1264 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+      |         |     misspelling(s): Word Press
+ 1352 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+      |         |     misspelling(s): Word Press
+ 1370 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+      |         |     misspelling(s): Word Press
+ 1463 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+      |         |     misspelling(s): Word Press
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 5 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-pronunciation-analyzer.php
+--------------------------------------------------------------------------------
+FOUND 2 ERRORS AFFECTING 2 LINES
+--------------------------------------------------------------------------------
+ 19 | ERROR | You must use "/**" style comments for a member variable comment
+ 43 | ERROR | You must use "/**" style comments for a member variable comment
+--------------------------------------------------------------------------------
+
+
+FILE: ...6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-access-validator.php
+--------------------------------------------------------------------------------
+FOUND 3 ERRORS AND 4 WARNINGS AFFECTING 7 LINES
+--------------------------------------------------------------------------------
+  22 | ERROR   | [ ] Missing member variable doc comment
+  24 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  29 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 101 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 195 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 250 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+ 279 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 6 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...t-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-stt-dispatch.php
+--------------------------------------------------------------------------------
+FOUND 3 ERRORS AND 1 WARNING AFFECTING 4 LINES
+--------------------------------------------------------------------------------
+ 18 | ERROR   | [ ] Missing member variable doc comment
+ 20 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+    |         |     0
+ 23 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 57 | WARNING | [x] Please spell "WordPress" correctly. Found 1 misspelling(s):
+    |         |     Word Press
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 3 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+
+FILE: ...udes/first-party-authentication/class-flosc-first-party-authentication.php
+--------------------------------------------------------------------------------
+FOUND 14 ERRORS AFFECTING 11 LINES
+--------------------------------------------------------------------------------
+  12 | ERROR | Missing doc comment for class FLOSC_First_Party_Authentication
+  14 | ERROR | Doc comment is empty
+  15 | ERROR | Missing @var tag in member variable comment
+  26 | ERROR | Missing doc comment for function __construct()
+  30 | ERROR | Doc comment is empty
+  37 | ERROR | Doc comment is empty
+  66 | ERROR | Missing doc comment for function handle_user_registration()
+ 105 | ERROR | Doc comment for parameter "$user_login" missing
+ 105 | ERROR | Doc comment for parameter "$user" missing
+ 220 | ERROR | Doc comment for parameter "$redirect_to" missing
+ 220 | ERROR | Doc comment for parameter "$requested_redirect_to" missing
+ 220 | ERROR | Doc comment for parameter "$user" missing
+ 315 | ERROR | Doc comment for parameter "$redirect" missing
+ 721 | ERROR | Doc comment for parameter "$user_id" missing
+--------------------------------------------------------------------------------
+
+
+FILE: ...5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-content-filter.php
+--------------------------------------------------------------------------------
+FOUND 5 ERRORS AND 1 WARNING AFFECTING 6 LINES
+--------------------------------------------------------------------------------
+  24 | ERROR   | [ ] Missing member variable doc comment
+  26 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  29 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+  35 | ERROR   | [x] Line indented incorrectly; expected at least 1 tabs, found
+     |         |     0
+  40 | ERROR   | [x] Line indented incorrectly; expected 1 tabs, found 0
+ 336 | WARNING | [x] Please spell "WordPress" correctly. Found 1
+     |         |     misspelling(s): Word Press
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 5 MARKED SNIFF VIOLATIONS AUTOMATICALLY
+--------------------------------------------------------------------------------
+
+Time: 1 mins, 16.84 secs; Memory: 182.01MB
+

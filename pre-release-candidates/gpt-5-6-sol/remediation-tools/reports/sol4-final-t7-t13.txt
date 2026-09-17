@@ -1,0 +1,553 @@
+== Requires at least ==
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/flosc.php:7: * Requires at least: 7.0.
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/readme.txt:5:Requires at least: 7.0
+== hardcoded importer path ==
+== direct import.php load ==
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php:633:		 * wp-admin/includes/import.php is NOT loaded here.
+== unsafe filter input ==
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-request.php:13: * An earlier version read through filter_input( ..., FILTER_UNSAFE_RAW ) and.
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-request.php:21: * From the 13 Sep 2026 rejection, reports FILTER_UNSAFE_RAW as not sanitizing,.
+== SSO HTTP_HOST ==
+369-		}
+370-
+371-		// ── Resolve the correct app URL from state ──.
+372-		// The callback runs on the WordPress host (registered with Google), but the user.
+373-		// came from the flow domain. get_current_flow() fails here because it matches.
+374:		// by HTTP_HOST = the WordPress host. Instead, use the flow_id stored in state to.
+375-		// look up the flow's custom_domain directly from the database.
+376-		$app_url           = home_url(); // absolute last resort.
+377-		$error_redirect_to = '';
+378-
+379-		if ( ! empty( $state ) ) {
+--
+552-			}
+553-			$redirect_to = $fallback;
+554-		}
+555-
+556-		// Cross-domain login token: only on allowlisted hosts (never arbitrary external).
+557:		$callback_host = strtolower( sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ?? '' ) ) );
+558-		$redirect_host = strtolower( (string) ( wp_parse_url( $redirect_to, PHP_URL_HOST ) ?? '' ) );
+559-		if ( $redirect_host && $callback_host && $redirect_host !== $callback_host
+560-			&& $this->is_allowed_sso_redirect( $redirect_to, $flow_id_for_redirect )
+561-		) {
+562-			$token       = $this->generate_login_token( $result );
+--
+668-		}
+669-
+670-		// The current request host is deliberately NOT added here.
+671-		//
+672-		// WordPress.org review T12, 13 Sep 2026, on this function:
+673:		// "An untrusted HTTP_HOST value is also added to the SSO redirect-host.
+674-		// allowlist, which can permit an attacker-controlled redirect host.".
+675-		//
+676:		// HTTP_HOST is the Host header. The client sends it. sanitize_text_field()
+677-		// makes it a clean string; it does not make it trustworthy. Adding it here.
+678-		// let a request carrying "Host: evil.com" put evil.com into this allowlist,.
+679-		// which is the one gate flosc_safe_external_redirect() consults before it.
+680-		// adds a host to WordPress's allowed_redirect_hosts filter and redirects.
+681-		// That turned wp_safe_redirect() into a no-op for the attacker's own host.
+--
+716-	}
+717-
+718-	/**
+719-	 * Resolve the app URL from a flow_id by looking up the flow's custom domain.
+720-	 * Directly from the database. This works during REST API callbacks where.
+721:	 * get_current_flow() fails because HTTP_HOST is the WordPress host, not the custom domain.
+722-	 *
+723-	 * @param string $flow_id Flow ID (e.g. 'flow_ivr').
+724-	 * @return String|false App URL (e.g. 'https://the flow domain/') or false if not found.
+725-	 */
+726-	private function resolve_app_url_from_flow_id( $flow_id ) {
+== file_content / writes ==
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flow.php-188-			: '';
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flow.php-189-
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flow.php-190-		if ( ! file_exists( (string) $flosc_source_path ) ) {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flow.php-191-			add_settings_error( 'flosc_settings', 'duplicate_invalid', 'Source IVR file not found.', 'error' );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flow.php:192:		} elseif ( ! function_exists( 'flosc_data_file_path' ) || ! function_exists( 'flosc_write_data_file' ) ) {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flow.php-193-			add_settings_error( 'flosc_settings', 'duplicate_failed', 'Uploads data directory is not available. Cannot duplicate IVR file.', 'error' );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flow.php-194-		} else {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flow.php-195-			$flosc_extension      = pathinfo( $flosc_source_file, PATHINFO_EXTENSION );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flow.php-196-			$flosc_base_name      = pathinfo( $flosc_source_file, PATHINFO_FILENAME );
+--
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flow.php-204-				++$flosc_counter;
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flow.php-205-			}
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flow.php-206-
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flow.php-207-			$flosc_source_body = ( '' !== $flosc_duplicate_path ) ? flosc_fs_get_contents( $flosc_source_path ) : false;
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flow.php:208:			if ( false === $flosc_source_body || '' === $flosc_duplicate_path || ! flosc_write_data_file( $flosc_duplicate_path, $flosc_source_body ) ) {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flow.php-209-				add_settings_error( 'flosc_settings', 'duplicate_failed', 'Could not duplicate IVR file. Check file permissions or uploads availability.', 'error' );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flow.php-210-			} else {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flow.php-211-				add_settings_error( 'flosc_settings', 'duplicate_success', 'Duplicated IVR file: ' . $flosc_duplicate_file, 'success' );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/flow.php-212-			}
+--
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/knowledge-base.php-257-		<input type="hidden" name="flosc_return_ivr" value="<?php echo esc_attr( $flosc_current_ivr ); ?>">
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/knowledge-base.php-258-		<input type="hidden" name="kb_id" value="<?php echo esc_attr( $flosc_kid ); ?>">
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/knowledge-base.php-259-		<input type="hidden" name="editing_file" value="<?php echo esc_attr( $flosc_editing ); ?>">
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/knowledge-base.php-260-		<h4><?php echo esc_html( sprintf( /* translators: %s: filename */ __( 'Editing %s', 'flosc' ), $flosc_editing ) ); ?></h4>
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/knowledge-base.php:261:		<textarea name="file_content" rows="24" class="large-text code"><?php echo esc_textarea( (string) $flosc_edit_body ); ?></textarea>
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/knowledge-base.php-262-		<p>
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/knowledge-base.php-263-			<button type="submit" class="button button-primary"><?php echo esc_html__( 'Save file', 'flosc' ); ?></button>
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/knowledge-base.php-264-			<a class="button" href="<?php echo esc_url( 'all' === $flosc_kb_view ? $flosc_all_url : $flosc_single_url ); ?>"><?php echo esc_html__( 'Cancel', 'flosc' ); ?></a>
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/knowledge-base.php-265-		</p>
+--
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part3-ref-settings-fields.php-2055-<ul>
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part3-ref-settings-fields.php-2056-<li><strong>Portable:</strong> yes (Settings YAML)</li>
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part3-ref-settings-fields.php-2057-<li><strong>Admin tab:</strong> AI</li>
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part3-ref-settings-fields.php-2058-</ul>
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part3-ref-settings-fields.php:2059:<h4 id="field-file_content"><code>file_content</code></h4>
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part3-ref-settings-fields.php:2060:<p>Flow option used on the <strong>AI</strong> admin tab. Stored as <code>file_content</code> on the flow settings array.</p>
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part3-ref-settings-fields.php-2061-<ul>
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part3-ref-settings-fields.php-2062-<li><strong>Portable:</strong> yes (Settings YAML)</li>
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part3-ref-settings-fields.php-2063-<li><strong>Admin tab:</strong> AI</li>
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/part3-ref-settings-fields.php-2064-</ul>
+--
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-messages.php-808-		$flosc_full_write_path = function_exists( 'flosc_data_file_path' )
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-messages.php-809-			? flosc_data_file_path( $flosc_active_ivr_file )
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-messages.php-810-			: $flosc_ivr_file_write_path;
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-messages.php-811-		// Write edited IVR text using the uploads-only API.
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-messages.php:812:		$flosc_save_ok = ( '' !== $flosc_full_write_path && function_exists( 'flosc_write_data_file' ) )
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-messages.php:813:			? flosc_write_data_file( $flosc_full_write_path, $flosc_full_text )
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-messages.php-814-			: false;
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-messages.php-815-
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-messages.php-816-		if ( false === $flosc_save_ok ) {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-messages.php-817-			add_settings_error( 'flosc_settings', 'full_text_save_failed', 'Could not save IVR file text. Check file permissions or uploads availability.', 'error' );
+--
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-messages.php-866-	$flosc_source_path = flosc_resolve_ivr_file_path( $flosc_source_file );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-messages.php-867-
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-messages.php-868-	if ( ! file_exists( $flosc_source_path ) || ( function_exists( 'flosc_is_allowed_ivr_source_path' ) && ! flosc_is_allowed_ivr_source_path( $flosc_source_path ) ) ) {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-messages.php-869-		add_settings_error( 'flosc_settings', 'duplicate_invalid', 'Source IVR file not found.', 'error' );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-messages.php:870:	} elseif ( ! function_exists( 'flosc_data_file_path' ) || ! function_exists( 'flosc_write_data_file' ) ) {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-messages.php-871-		add_settings_error( 'flosc_settings', 'duplicate_failed', 'Uploads data directory is not available. Cannot duplicate IVR file.', 'error' );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-messages.php-872-	} else {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-messages.php-873-		$flosc_extension      = pathinfo( $flosc_source_file, PATHINFO_EXTENSION );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-messages.php-874-		$flosc_base_name      = pathinfo( $flosc_source_file, PATHINFO_FILENAME );
+--
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-messages.php-882-			++$flosc_counter;
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-messages.php-883-		}
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-messages.php-884-
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-messages.php-885-		$flosc_source_body = ( '' !== $flosc_duplicate_path ) ? flosc_fs_get_contents( $flosc_source_path ) : false;
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-messages.php:886:		if ( false === $flosc_source_body || '' === $flosc_duplicate_path || ! flosc_write_data_file( $flosc_duplicate_path, $flosc_source_body ) ) {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-messages.php-887-			add_settings_error( 'flosc_settings', 'duplicate_failed', 'Could not duplicate IVR file. Check file permissions or uploads availability.', 'error' );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-messages.php-888-		} else {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-messages.php-889-			add_settings_error( 'flosc_settings', 'duplicate_success', 'Duplicated IVR file: ' . $flosc_duplicate_file, 'success' );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-messages.php-890-		}
+--
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php-988-				return;
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php-989-			}
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php-990-
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php-991-			$target_path = function_exists( 'flosc_data_file_path' ) ? flosc_data_file_path( $filename ) : '';
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php:992:			if ( '' === $target_path || ! function_exists( 'flosc_write_data_file' ) ) {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php-993-				add_settings_error( 'flosc_settings', 'upload_failed', esc_html__( 'FLOSC data directory is not available.', 'flosc' ), 'error' );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php-994-				return;
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php-995-			}
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php-996-
+--
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php-1022-						'error'
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php-1023-					);
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php-1024-					return;
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php-1025-				}
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php:1026:				if ( ! flosc_write_data_file( $target_path, $body ) ) {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php-1027-					add_settings_error( 'flosc_settings', 'upload_failed', esc_html__( 'Could not store the IVR file.', 'flosc' ), 'error' );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php-1028-					return;
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php-1029-				}
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php-1030-
+--
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php-1092-				}
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php-1093-				// Staging under data dir (must pass IVR path allowlist). Name must NOT match *_ivr.md glob.
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php-1094-				$stage_name = 'portability_stage_' . $work_stem . '_' . wp_generate_password( 8, false, false ) . '.md';
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php-1095-				$stage_path = function_exists( 'flosc_data_file_path' ) ? flosc_data_file_path( $stage_name ) : '';
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php:1096:				if ( '' === $stage_path || ! flosc_write_data_file( $stage_path, $body ) ) {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php-1097-					add_settings_error( 'flosc_settings', 'upload_failed', esc_html__( 'Could not stage the uploaded IVR for Apply.', 'flosc' ), 'error' );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php-1098-					return;
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php-1099-				}
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php-1100-				$import = flosc_import_ivr_to_database( false, $stage_path, $flow_key, 'merge' );
+--
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php-1117-				}
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php-1118-				// Write merged export to the current flow file (DB already updated).
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php-1119-				if ( function_exists( 'flosc_auto_export_ivr_to_file' ) ) {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php-1120-					flosc_auto_export_ivr_to_file( $flow_key, $work_path );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php:1121:				} elseif ( ! flosc_write_data_file( $work_path, $body ) ) {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php-1122-					add_settings_error( 'flosc_settings', 'upload_partial', esc_html__( 'Settings merged, but current flow file could not be updated on disk.', 'flosc' ), 'error' );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php-1123-				}
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php-1124-				$redirect_ivr = $working_ivr;
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/ivr-upload-handler.php-1125-				$notes[]      = sprintf(
+--
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-lifecycle.php-75-		$default_ivr = FLOSC_PLUGIN_DIR . 'ai_configuration_files/flosc_default_technical_ivr.md';
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-lifecycle.php-76-		if ( file_exists( $default_ivr ) ) {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-lifecycle.php-77-			// Pass 5: read shipped default (plugin dir is read-only source); write only under uploads.
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-lifecycle.php-78-			$default_body = flosc_fs_get_contents( $default_ivr );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-lifecycle.php:79:			if ( false !== $default_body && function_exists( 'flosc_write_data_file' ) ) {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-lifecycle.php:80:				flosc_write_data_file( $ivr_file, $default_body );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-lifecycle.php-81-			}
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-lifecycle.php-82-		} else {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-lifecycle.php-83-			// Create minimal working ivr.md.
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-lifecycle.php-84-			$minimal_ivr = implode(
+--
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-lifecycle.php-127-					'MessageConditions: !quiz_taken',
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-lifecycle.php-128-					'',
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-lifecycle.php-129-				)
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-lifecycle.php-130-			);
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-lifecycle.php:131:			// Pass 5: seed only under uploads via flosc_write_data_file.
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-lifecycle.php:132:			if ( function_exists( 'flosc_write_data_file' ) ) {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-lifecycle.php:133:				flosc_write_data_file( $ivr_file, $minimal_ivr );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-lifecycle.php-134-			}
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-lifecycle.php-135-		}
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-lifecycle.php-136-	}
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-lifecycle.php-137-
+--
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/filesystem/flosc-data-paths.php-446-		return trailingslashit( $dir );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/filesystem/flosc-data-paths.php-447-	}
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/filesystem/flosc-data-paths.php-448-}
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/filesystem/flosc-data-paths.php-449-
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/filesystem/flosc-data-paths.php:450:if ( ! function_exists( 'flosc_write_data_file' ) ) {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/filesystem/flosc-data-paths.php-451-	/**
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/filesystem/flosc-data-paths.php-452-	 * The only sanctioned way to write a FLOSC data file.
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/filesystem/flosc-data-paths.php-453-	 *
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/filesystem/flosc-data-paths.php-454-	 * Resolves both the data directory and the write target through realpath.
+--
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/filesystem/flosc-data-paths.php-460-	 * @param string $target  Absolute file path inside flosc_data_dir().
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/filesystem/flosc-data-paths.php-461-	 * @param string $content File content.
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/filesystem/flosc-data-paths.php-462-	 * @return Bool Whether the write happened.
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/filesystem/flosc-data-paths.php-463-	 */
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/filesystem/flosc-data-paths.php:464:	function flosc_write_data_file( $target, $content ) {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/filesystem/flosc-data-paths.php-465-		$base = flosc_data_dir();
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/filesystem/flosc-data-paths.php-466-		if ( '' === $base || ! is_string( $target ) || '' === $target ) {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/filesystem/flosc-data-paths.php-467-			return false;
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/filesystem/flosc-data-paths.php-468-		}
+--
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/filesystem/flosc-data-paths.php-890- * ========================================================================== */
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/filesystem/flosc-data-paths.php-891-if ( ! function_exists( 'flosc_config_file' ) ) {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/filesystem/flosc-data-paths.php-892-	// Single config file: the uploads copy if it exists, else the shipped.
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/filesystem/flosc-data-paths.php-893-	// default. The plugin path is a READ-ONLY resolution — every write goes.
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/filesystem/flosc-data-paths.php:894:	// through flosc_write_data_file(), which only accepts uploads targets.
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/filesystem/flosc-data-paths.php-895-/**
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/filesystem/flosc-data-paths.php-896- * Coordinate the config file behavior implemented by this code path.
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/filesystem/flosc-data-paths.php-897- *
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/filesystem/flosc-data-paths.php-898- * @param mixed $filename Filesystem value identifying the file used by the Coordinate the config file behavior implemented by this code path. operation.
+--
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-site-content-index.php-281-	 * @return Bool.
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-site-content-index.php-282-	 */
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-site-content-index.php-283-	public function save( $flow_stem, array $doc ) {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-site-content-index.php-284-		$path = $this->index_path( $flow_stem );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-site-content-index.php:285:		if ( '' === $path || ! function_exists( 'flosc_write_data_file' ) ) {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-site-content-index.php-286-			return false;
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-site-content-index.php-287-		}
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-site-content-index.php-288-		$payload = wp_json_encode( $doc, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-site-content-index.php-289-		if ( ! is_string( $payload ) ) {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-site-content-index.php-290-			return false;
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-site-content-index.php-291-		}
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-site-content-index.php:292:		return (bool) flosc_write_data_file( $path, $payload );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-site-content-index.php-293-	}
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-site-content-index.php-294-
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-site-content-index.php-295-	/**
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-site-content-index.php-296-	 * Category slugs configured for this flow (content_item_groups + content_item_category).
+--
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/starter-packs/class-flosc-starter-packs.php-895-		}
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/starter-packs/class-flosc-starter-packs.php-896-
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/starter-packs/class-flosc-starter-packs.php-897-		// The flow directory has its own guarded writer; everything else goes.
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/starter-packs/class-flosc-starter-packs.php-898-		// through the uploads-restricted one.
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/starter-packs/class-flosc-starter-packs.php:899:		if ( function_exists( 'flosc_write_data_file' ) && 0 === strpos( $target, self::flow_dir() ) ) {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/starter-packs/class-flosc-starter-packs.php:900:			return (bool) flosc_write_data_file( $target, $content );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/starter-packs/class-flosc-starter-packs.php-901-		}
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/starter-packs/class-flosc-starter-packs.php-902-
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/starter-packs/class-flosc-starter-packs.php-903-		if ( ! class_exists( 'FLOSC_Filesystem' ) ) {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/starter-packs/class-flosc-starter-packs.php-904-			return false;
+--
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/class-flosc-ivr-parser.php-471-			return false;
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/class-flosc-ivr-parser.php-472-		}
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/class-flosc-ivr-parser.php-473-
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/class-flosc-ivr-parser.php-474-		// Use the uploads-only write API with realpath validation.
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/class-flosc-ivr-parser.php:475:		$write_ok = function_exists( 'flosc_write_data_file' )
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/class-flosc-ivr-parser.php:476:			? flosc_write_data_file( $ivr_file, $markdown )
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/class-flosc-ivr-parser.php-477-			: false;
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/class-flosc-ivr-parser.php-478-
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/class-flosc-ivr-parser.php-479-		if ( ! $write_ok ) {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/class-flosc-ivr-parser.php-480-			return false;
+--
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/flosc-ivr-sync.php-655-		'feedback_bad_response',
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/flosc-ivr-sync.php-656-		'feedback_preferred_response',
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/flosc-ivr-sync.php-657-		'feedback_user_message',
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/flosc-ivr-sync.php-658-		'file_access_level',
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/flosc-ivr-sync.php:659:		'file_content',
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/flosc-ivr-sync.php-660-		'flosc_add_feedback',
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/flosc-ivr-sync.php-661-		'flosc_add_praise',
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/flosc-ivr-sync.php-662-		'flosc_clear_ivr_db',
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/flosc-ivr-sync.php-663-		'flosc_cncrg_content',
+--
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/flosc-ivr-sync.php-1444-	}
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/flosc-ivr-sync.php-1445-	$timestamp   = current_time( 'Y-m-d_H-i-s' );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/flosc-ivr-sync.php-1446-	$backup_file = $backup_dir . "ivr-backup-{$timestamp}.md";
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/flosc-ivr-sync.php-1447-
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/flosc-ivr-sync.php:1448:	if ( flosc_write_data_file( $backup_file, $markdown ) ) {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/flosc-ivr-sync.php-1449-		return basename( $backup_file );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/flosc-ivr-sync.php-1450-	}
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/flosc-ivr-sync.php-1451-
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/flosc-ivr-sync.php-1452-	return false;
+--
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/flosc-ivr-sync.php-1677-
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/flosc-ivr-sync.php-1678-	if ( 0 !== strpos( $ivr_file, $data_dir ) ) {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/flosc-ivr-sync.php-1679-		$ivr_file = $data_dir . basename( $ivr_file );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/flosc-ivr-sync.php-1680-	}
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/flosc-ivr-sync.php:1681:	$result = flosc_write_data_file( $ivr_file, $markdown );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/flosc-ivr-sync.php-1682-
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/flosc-ivr-sync.php-1683-	if ( $result ) {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/flosc-ivr-sync.php-1684-		// Update last export timestamp.
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/portability/flosc-ivr-sync.php-1685-		update_option( 'flosc_ivr_last_export', current_time( 'mysql' ) );
+--
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-knowledge-bases.php-343-				$tier     = flosc_knowledge_base_file_access( $kb_id, $filename );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-knowledge-bases.php-344-				if ( ( $rank[ $tier ] ?? 0 ) > $user_rank ) {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-knowledge-bases.php-345-					continue;
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-knowledge-bases.php-346-				}
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-knowledge-bases.php:347:				$file_content = function_exists( 'flosc_fs_get_contents' ) ? flosc_fs_get_contents( $path ) : false;
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-knowledge-bases.php:348:				if ( false === $file_content || '' === $file_content ) {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-knowledge-bases.php-349-					continue;
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-knowledge-bases.php-350-				}
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-knowledge-bases.php:351:				if ( strlen( $file_content ) > $kb_limit ) {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-knowledge-bases.php:352:					$file_content = substr( $file_content, 0, $kb_limit ) . "\n[...truncated]";
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-knowledge-bases.php-353-				}
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-knowledge-bases.php:354:				$content .= '### ' . $kb_label . ' / ' . $filename . "\n" . $file_content . "\n\n";
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-knowledge-bases.php-355-			}
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-knowledge-bases.php-356-		}
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-knowledge-bases.php-357-
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-knowledge-bases.php-358-		return $content;
+--
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php-3317-		$content .= "*If a lesson is not in this table, you do not have information about it — say so.*\n";
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php-3318-
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php-3319-		$wrote = false;
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php-3320-		foreach ( $write_paths as $catalog_path ) {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php:3321:			if ( flosc_write_data_file( $catalog_path, $content ) ) {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php-3322-				$wrote = true;
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php-3323-			}
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php-3324-		}
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php-3325-		if ( $wrote ) {
+--
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php-3493-			$target        = $kb_dir . $filename;
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php-3494-			$uploaded_body = ( ! empty( $handled_upload['file'] ) && is_readable( $handled_upload['file'] ) )
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php-3495-				? flosc_fs_get_contents( $handled_upload['file'] )
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php-3496-				: false;
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php:3497:			if ( false === $uploaded_body || ! function_exists( 'flosc_write_data_file' ) || ! flosc_write_data_file( $target, $uploaded_body ) ) {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php-3498-				if ( ! empty( $handled_upload['file'] ) ) {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php-3499-					$this->delete_file_safely( $handled_upload['file'] );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php-3500-				}
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php-3501-				$err = 'Upload failed. Check directory permissions.';
+--
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php-3605-			wp_safe_redirect( $this->kb_return_url( $ivr, 'error', 'File not found.' ) );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php-3606-			exit;
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php-3607-		}
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php-3608-
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php:3609:		$content = $post['file_content'] ?? '';
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php:3610:		if ( ! flosc_write_data_file( $target, $content ) ) {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php-3611-			wp_safe_redirect( $this->kb_return_url( $ivr, 'error', 'The file could not be written. Uploads folder permissions need attention.' ) );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php-3612-			exit;
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php-3613-		}
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php-3614-
+== REST permission callbacks ==
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/admin/docs/ref-core-skeleton.php:56:<p>Namespace: <code>/wp-json/flosc/v1</code>. Routes are registered in <code>register_rest_routes()</code>.</p>
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-quiz-manager.php:68:		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-quiz-manager.php:74:	public function register_rest_routes() {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-quiz-manager.php:75:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-quiz-manager.php:81:				'permission_callback' => array( $this, 'check_external_quiz_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:515:	public function register_rest_routes() {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:518:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:524:				'permission_callback' => array( $this, 'check_public_endpoint_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:530:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:536:				'permission_callback' => array( $this, 'check_public_endpoint_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:546:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:553:				'permission_callback' => array( $this, 'check_visitor_session_poll_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:558:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:564:				'permission_callback' => array( $this, 'check_admin_messages_token_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:571:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:577:				'permission_callback' => array( $this, 'check_public_endpoint_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:582:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:588:				'permission_callback' => array( $this, 'check_authenticated_user_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:596:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:602:				'permission_callback' => array( $this, 'check_public_endpoint_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:608:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:614:				'permission_callback' => array( $this, 'check_public_endpoint_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:620:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:626:				'permission_callback' => array( $this, 'check_public_endpoint_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:631:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:637:				'permission_callback' => array( $this, 'check_metered_visitor_compute_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:642:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:648:				'permission_callback' => array( $this, 'check_metered_visitor_compute_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:653:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:659:				'permission_callback' => array( $this, 'check_metered_visitor_compute_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:664:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:670:				'permission_callback' => array( $this, 'check_metered_visitor_compute_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:675:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:681:				'permission_callback' => array( $this, 'check_authenticated_user_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:685:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:691:				'permission_callback' => array( $this, 'check_authenticated_user_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:696:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:702:				'permission_callback' => array( $this, 'check_authenticated_user_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:707:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:713:				'permission_callback' => array( $this, 'check_authenticated_user_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:718:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:724:				'permission_callback' => array( $this, 'check_authenticated_user_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:730:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:743:				'permission_callback' => array( $this, 'check_public_nonce_endpoint_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:749:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:755:				'permission_callback' => array( $this, 'check_public_endpoint_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:760:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:766:				'permission_callback' => array( $this, 'check_public_endpoint_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:771:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:777:				'permission_callback' => array( $this, 'check_authenticated_user_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:782:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:788:				'permission_callback' => array( $this, 'check_admin_endpoint_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:793:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:799:				'permission_callback' => array( $this, 'check_authenticated_user_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:805:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:811:				'permission_callback' => array( $this, 'check_checkout_endpoint_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:817:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:823:				'permission_callback' => array( $this, 'check_checkout_finalization_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:828:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:834:				'permission_callback' => array( $this, 'check_checkout_endpoint_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:839:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:845:				'permission_callback' => array( $this, 'check_checkout_finalization_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:851:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:857:				'permission_callback' => array( $this, 'check_checkout_endpoint_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:862:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:868:				'permission_callback' => array( $this, 'check_checkout_endpoint_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:873:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:879:				'permission_callback' => array( $this, 'check_checkout_finalization_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:889:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:895:				'permission_callback' => array( $this, 'check_public_endpoint_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:902:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:908:				'permission_callback' => array( $this, 'check_webhook_endpoint_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:914:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:920:				'permission_callback' => array( $this, 'check_public_endpoint_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:926:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:932:				'permission_callback' => array( $this, 'check_public_endpoint_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:937:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:943:				'permission_callback' => array( $this, 'check_authenticated_user_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:948:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:954:				'permission_callback' => array( $this, 'check_authenticated_user_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:958:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:964:				'permission_callback' => array( $this, 'check_authenticated_user_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:969:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:975:				'permission_callback' => array( $this, 'check_authenticated_user_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:981:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:987:				'permission_callback' => array( $this, 'check_authenticated_user_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:991:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:997:				'permission_callback' => array( $this, 'check_authenticated_user_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1001:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1007:				'permission_callback' => array( $this, 'check_authenticated_user_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1013:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1019:				'permission_callback' => array( $this, 'check_ivr_messages_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1024:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1030:				'permission_callback' => array( $this, 'check_public_endpoint_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1035:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1041:				'permission_callback' => array( $this, 'check_authenticated_user_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1048:			register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1054:					'permission_callback' => array( $this, 'check_admin_endpoint_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1061:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1067:				'permission_callback' => array( $this, 'check_public_endpoint_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1074:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1080:				'permission_callback' => array( $this, 'check_public_endpoint_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1085:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1091:				'permission_callback' => array( $this, 'check_authenticated_user_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1096:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1102:				'permission_callback' => array( $this, 'check_admin_endpoint_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1108:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1114:				'permission_callback' => array( $this, 'check_public_endpoint_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1120:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1126:				'permission_callback' => array( $this, 'check_ivr_messages_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1131:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1137:				'permission_callback' => array( $this, 'check_public_endpoint_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1142:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1148:				'permission_callback' => array( $this, 'check_public_endpoint_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1153:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1159:				'permission_callback' => array( $this, 'check_authenticated_user_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1166:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1172:				'permission_callback' => array( $this, 'check_authenticated_user_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1180:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1186:				'permission_callback' => array( $this, 'check_authenticated_user_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1191:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1197:				'permission_callback' => array( $this, 'check_admin_endpoint_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1201:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1207:				'permission_callback' => array( $this, 'check_admin_endpoint_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1211:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1217:				'permission_callback' => array( $this, 'check_admin_endpoint_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1222:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1228:				'permission_callback' => array( $this, 'check_admin_endpoint_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1232:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1238:				'permission_callback' => array( $this, 'check_admin_endpoint_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1243:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1249:				'permission_callback' => array( $this, 'check_authenticated_user_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1254:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1260:				'permission_callback' => array( $this, 'check_authenticated_user_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1265:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-rest.php:1271:				'permission_callback' => array( $this, 'check_public_endpoint_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/class-oauth2-handler.php:62:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/class-oauth2-handler.php:68:				'permission_callback' => array( $this, 'check_public_sso_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/class-oauth2-handler.php:88:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/class-oauth2-handler.php:94:				'permission_callback' => array( $this, 'check_public_sso_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/class-oauth2-handler.php:117:		register_rest_route(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/class-oauth2-handler.php:123:				'permission_callback' => array( $this, 'check_public_sso_provider_list_permission' ),
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php:2012:		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php:8571:		// (REST permission_callback = check_authenticated_user_permission).
+== register_setting ==
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-admin.php:301:	public function register_settings() {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-admin.php:303:		$this->register_settings_group(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-admin.php:357:		$this->register_settings_group(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-admin.php:426:			$this->register_setting_value( 'flosc_quiz_content_' . $quiz_id, 'textarea' );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-admin.php:449:				$this->register_setting_value( $option_name, $field_type );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-admin.php:454:				$this->register_setting_value( 'flosc_quiz_' . $quiz_id . '_template_' . $template_key, 'textarea' );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-admin.php:467:	private function register_settings_group( $settings ) {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-admin.php:470:				$this->register_setting_value( $value, 'text' );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-admin.php:472:				$this->register_setting_value( $key, $value );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-admin.php:484:	private function register_setting_value( $option_name, $sanitize_type = 'text' ) {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-admin.php:511:		register_setting(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-admin.php:533:		register_setting(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-admin.php:556:	 * Map sanitizer type to register_setting type metadata.
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-admin.php:594:	 * MUST stay public: registered as a register_setting() sanitize_callback,.
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/flosc-admin.php:619:	 * Named register_setting sanitize_callback (Pass 3).
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/class-sso-manager.php:139:		add_action( 'admin_init', array( $this, 'register_settings' ) );
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/class-sso-manager.php:434:	public function register_settings() {
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/sso/class-sso-manager.php:483:				register_setting(
+pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-framework.php:1987:		add_action( 'admin_init', array( $this, 'register_settings' ) );
+== historical rules gate ==
+===========================================================================
+ FLOSC — the rules WordPress.org rejected this plugin for
+ Encoded from the review emails of 14 Jun, 27 Jun, 12 Jul and 13 Sep 2026.
+ Plugin Check was clean on every one of those submissions.
+===========================================================================
+
+WPORG-02   A core file is loaded and then actually used         clear
+           source: T12 13Sep26
+
+WPORG-03   Locations resolved, not built from WP_* constants    clear
+           source: T12 13Sep26
+
+WPORG-04   filter_input carries a sanitizing filter             clear
+           source: T12 13Sep26
+
+WPORG-06   register_setting() declares a sanitize_callback      clear
+           source: T10 27Jun26, T11 12Jul26
+
+WPORG-07   Every REST route has a permission_callback that fits it clear
+           source: T10 27Jun26
+
+WPORG-09   No inline script or style tags                       clear
+           source: T10, T11, T12
+
+WPORG-10   Origin or identity checked BEFORE request data is read clear
+           source: T13 14Sep26
+
+---------------------------------------------------------------------------
+  active exceptions : 3  (tests/wporg-rule-exceptions.txt)
+  files scanned     : 144
+  findings          : 0  (exit code counts these)
+---------------------------------------------------------------------------
+
+OUT OF REACH OF THIS FILE — do not read a clear run as coverage of these:
+  * The T12 SSO redirect-host finding. CLOSED on 15 Sep 2026 by removing the
+    HTTP_HOST entry from get_allowed_sso_redirect_hosts() in
+    includes/sso/class-oauth2-handler.php. The Host header is client-supplied,
+    so it put an attacker-named host into the one allowlist that
+    flosc_safe_external_redirect() consults. Closed by reading the call paths,
+    not by this file -- pattern matching cannot follow taint across functions,
+    and it still cannot. Do not read a clear run as proof this stayed fixed.
+  * Anything their AI flags that has not been flagged before. This file
+    knows four emails. It cannot know the fifth.
+
+rules_gate_exit=0

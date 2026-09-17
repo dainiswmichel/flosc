@@ -1,0 +1,45 @@
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-concierge.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/class-flosc-concierge.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+--------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                    COUNT
+--------------------------------------------------------------------------------
+[x] Squiz     Commenting          Doc comment alignment space before star  78
+[ ] Generic   Commenting          Doc comment empty                        7
+[x] Generic   White space         Scope indent incorrect exact             3
+[ ] Squiz     Commenting          Block comment closer same line           2
+[ ] Squiz     Commenting          Function comment invalid no return       2
+[x] Generic   White space         Scope indent incorrect                   1
+--------------------------------------------------------------------------------
+A TOTAL OF 93 SNIFF VIOLATIONS WERE FOUND IN 6 SOURCES
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 3 MARKED SOURCES AUTOMATICALLY (82 VIOLATIONS IN TOTAL)
+--------------------------------------------------------------------------------
+
+Time: 313ms; Memory: 24MB
+
+PHPCS_EXIT=2
+===== pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/first-party-authentication/class-flosc-first-party-authentication.php =====
+No syntax errors detected in pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/includes/first-party-authentication/class-flosc-first-party-authentication.php
+
+PHP CODE SNIFFER VIOLATION SOURCE SUMMARY
+--------------------------------------------------------------------------------
+    STANDARD  CATEGORY            SNIFF                                    COUNT
+--------------------------------------------------------------------------------
+[x] Squiz     Commenting          Doc comment alignment space before star  26
+[x] Generic   Commenting          Doc comment spacing before tags          2
+[x] Generic   White space         Scope indent incorrect exact             2
+[x] WordPres  WP                  Capital PDangit misspelled in comment    2
+[ ] Generic   Commenting          Doc comment empty                        1
+[x] Generic   Commenting          Doc comment spacing after                1
+[ ] Squiz     Commenting          Variable comment missing var             1
+--------------------------------------------------------------------------------
+A TOTAL OF 35 SNIFF VIOLATIONS WERE FOUND IN 7 SOURCES
+--------------------------------------------------------------------------------
+PHPCBF CAN FIX THE 5 MARKED SOURCES AUTOMATICALLY (33 VIOLATIONS IN TOTAL)
+--------------------------------------------------------------------------------
+
+Time: 230ms; Memory: 18MB
+
+PHPCS_EXIT=2

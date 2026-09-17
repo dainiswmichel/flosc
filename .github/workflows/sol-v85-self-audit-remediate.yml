@@ -1,0 +1,404 @@
+name: FLOSC v85 SOL-1 through SOL-5 self-audit remediation
+
+on:
+  push:
+    branches:
+      - gpt-5-6-sol/wporg-remediation
+
+permissions:
+  contents: write
+
+concurrency:
+  group: flosc-v85-self-audit
+  cancel-in-progress: false
+
+jobs:
+  self-audit:
+    if: ${{ !contains(github.event.head_commit.message || '', '[sol-self-audited]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      CAND: pre-release-candidates/gpt-5-6-sol
+      TARGET: pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc
+      REPORTS: pre-release-candidates/gpt-5-6-sol/remediation-tools/reports
+      PRE_SOL1: 4ed0570a9972c5b38c747934d76b4fa12d37a2ce
+      FIRST_SOL1: 22a6bb2d004e8eb7f33331306ac77586425412da
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: gpt-5-6-sol/wporg-remediation
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          tools: composer
+
+      - name: Install WPCS and PHPStan
+        shell: bash
+        run: |
+          set -euo pipefail
+          composer global config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+          composer global require --no-interaction --no-progress \
+            squizlabs/php_codesniffer:^3.13 \
+            wp-coding-standards/wpcs:^3.4 \
+            dealerdirect/phpcodesniffer-composer-installer:^1.0 \
+            phpstan/phpstan:^2.1 \
+            szepeviktor/phpstan-wordpress:^2.0 \
+            php-stubs/wordpress-stubs:^6.7
+          mkdir -p "$REPORTS"
+          cat > /tmp/fingerprint.php <<'PHP'
+          <?php
+          function fp(string $p): string {
+              $c=file_get_contents($p); $a=[];
+              foreach(token_get_all($c) as $t){
+                  if(is_array($t)){
+                      if(in_array($t[0],[T_WHITESPACE,T_COMMENT,T_DOC_COMMENT],true)) continue;
+                      $a[]=token_name($t[0]).':'.$t[1];
+                  } else { $a[]='C:'.$t; }
+              }
+              return hash('sha256',implode("\0",$a));
+          }
+          echo fp($argv[1]);
+          PHP
+
+      - name: SELF-AUDIT SOL-1 restore prose damaged by first pass
+        shell: bash
+        run: |
+          set -euo pipefail
+          : > "$REPORTS/self-audit-sol1-restoration.txt"
+          restored=0
+          while IFS= read -r f; do
+            [[ -z "$f" || "${f##*.}" != php ]] && continue
+            git show "$PRE_SOL1:$f" > /tmp/pre-sol1.php
+            current_fp=$(php /tmp/fingerprint.php "$f")
+            original_fp=$(php /tmp/fingerprint.php /tmp/pre-sol1.php)
+            if [[ "$current_fp" != "$original_fp" ]]; then
+              echo "ABORT executable-token mismatch prevents safe prose restoration: $f" | tee -a "$REPORTS/self-audit-sol1-restoration.txt"
+              exit 1
+            fi
+            if ! cmp -s "$f" /tmp/pre-sol1.php; then
+              cp /tmp/pre-sol1.php "$f"
+              php -l "$f" >> "$REPORTS/self-audit-sol1-restoration.txt"
+              echo "RESTORED $f" >> "$REPORTS/self-audit-sol1-restoration.txt"
+              restored=$((restored+1))
+            fi
+          done < <(git diff --name-only "$PRE_SOL1" "$FIRST_SOL1" -- "$TARGET")
+          echo "RESTORED_PHP_FILES=$restored" | tee -a "$REPORTS/self-audit-sol1-restoration.txt"
+
+      - name: SELF-AUDIT SOL-1 safe comment formatting only
+        shell: bash
+        run: |
+          set -euo pipefail
+          SNIFFS='Squiz.Commenting.DocCommentAlignment.SpaceBeforeStar,Generic.Commenting.DocComment.SpacingBeforeTags,Squiz.Commenting.FunctionComment.SpacingAfterParamType,WordPress.WP.CapitalPDangit.MisspelledInComment'
+          : > "$REPORTS/self-audit-sol1-per-file.txt"
+          changed=0
+          while IFS= read -r f; do
+            before_file=$(sha256sum "$f" | awk '{print $1}')
+            before_exec=$(php /tmp/fingerprint.php "$f")
+            set +e
+            "$HOME/.composer/vendor/bin/phpcbf" --standard=WordPress --sniffs="$SNIFFS" --extensions=php "$f" >> "$REPORTS/self-audit-sol1-per-file.txt" 2>&1
+            set -e
+            after_file=$(sha256sum "$f" | awk '{print $1}')
+            after_exec=$(php /tmp/fingerprint.php "$f")
+            if [[ "$before_exec" != "$after_exec" ]]; then
+              echo "ABORT executable-token mismatch after targeted PHPCBF: $f" | tee -a "$REPORTS/self-audit-sol1-per-file.txt"
+              exit 1
+            fi
+            if [[ "$before_file" != "$after_file" ]]; then
+              changed=$((changed+1))
+              echo "===== $f =====" >> "$REPORTS/self-audit-sol1-per-file.txt"
+              php -l "$f" >> "$REPORTS/self-audit-sol1-per-file.txt"
+              set +e
+              "$HOME/.composer/vendor/bin/phpcs" --standard=WordPress --extensions=php --report=source "$f" >> "$REPORTS/self-audit-sol1-per-file.txt" 2>&1
+              rc=$?
+              set -e
+              echo "PHPCS_EXIT=$rc" >> "$REPORTS/self-audit-sol1-per-file.txt"
+            fi
+          done < <(find "$TARGET" -type f -name '*.php' -not -path '*/tests/*' -not -path '*/vendor/*' | sort)
+          echo "TARGETED_FORMAT_CHANGED_FILES=$changed" | tee -a "$REPORTS/self-audit-sol1-per-file.txt"
+
+      - name: SELF-AUDIT SOL-1 final tree evidence
+        shell: bash
+        run: |
+          set +e
+          "$HOME/.composer/vendor/bin/phpcs" --standard=WordPress --extensions=php --ignore="$TARGET/tests/*,$TARGET/vendor/*" --report=source "$TARGET" > "$REPORTS/self-audit-sol1-final-source.txt" 2>&1
+          phpcs_rc=$?
+          "$HOME/.composer/vendor/bin/phpcs" --standard=WordPress --extensions=php --ignore="$TARGET/tests/*,$TARGET/vendor/*" --report=json "$TARGET" > "$REPORTS/self-audit-sol1-final.json" 2>/dev/null
+          set -e
+          echo "PHPCS_EXIT=$phpcs_rc" > "$REPORTS/self-audit-sol1-final-exit.txt"
+          python3 - <<'PY'
+          import json,collections,os
+          d=json.load(open(os.path.join(os.environ['REPORTS'],'self-audit-sol1-final.json')))
+          c=collections.Counter(); total=0; files=0
+          for _,b in (d.get('files') or {}).items():
+              ms=b.get('messages') or []
+              if ms: files+=1
+              for m in ms: c[m.get('source','')]+=1; total+=1
+          p=os.path.join(os.environ['REPORTS'],'self-audit-sol1-final-summary.txt')
+          with open(p,'w') as h:
+              h.write(f'SOL1_WPCS_TOTAL={total}\nSOL1_FILES_WITH_FINDINGS={files}\n')
+              for k,v in c.most_common(): h.write(f'{v}\t{k}\n')
+          print(open(p).read())
+          PY
+
+      - name: SELF-AUDIT SOL-2 narrow PHPStan and conservative repairs
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/phpstan.neon <<NEON
+          includes:
+              - $HOME/.composer/vendor/szepeviktor/phpstan-wordpress/extension.neon
+          parameters:
+              level: 5
+              excludePaths:
+                  analyse:
+                      - */tests/*
+                      - */vendor/*
+                      - */node_modules/*
+              reportUnmatchedIgnoredErrors: false
+              parallel:
+                  maximumNumberOfProcesses: 1
+          NEON
+          set +e
+          "$HOME/.composer/vendor/bin/phpstan" analyse "$TARGET" --configuration=/tmp/phpstan.neon --error-format=json --no-progress --memory-limit=4G > /tmp/sol2-before.json 2> "$REPORTS/self-audit-sol2-before.stderr.txt"
+          set -e
+          python3 - <<'PY'
+          import json,os,re,pathlib
+          root=pathlib.Path(os.environ['TARGET']).resolve(); d=json.load(open('/tmp/sol2-before.json'))
+          by={}; undefined=[]; skipped=[]
+          for raw,b in (d.get('files') or {}).items():
+              clean=re.sub(r' \(in context of .+\)$','',raw.replace('\\','/'))
+              p=pathlib.Path(clean)
+              if not p.is_absolute(): p=(pathlib.Path.cwd()/p).resolve()
+              try: p.relative_to(root)
+              except Exception: continue
+              for m in b.get('messages') or []:
+                  ident=m.get('identifier') or ''; msg=m.get('message') or ''; line=int(m.get('line') or 0)
+                  if ident=='variable.undefined': undefined.append((p,line,msg))
+                  elif ident=='argument.type' and re.search(r'esc_(?:attr|html|textarea|url).*expects string.*\b(?:int|float)\b',msg,re.I):
+                      by.setdefault(p,[]).append((line,msg))
+          applied=[]
+          for p,rows in by.items():
+              if not p.is_file():
+                  skipped.extend((str(p),line,msg,'resolved PHPStan path is not a file') for line,msg in rows); continue
+              text=p.read_bytes().decode('utf-8','surrogateescape'); lines=text.splitlines(True)
+              for line,msg in sorted(set(rows),reverse=True):
+                  i=line-1
+                  if not (0<=i<len(lines)):
+                      skipped.append((str(p),line,msg,'line outside file')); continue
+                  pat=re.compile(r'(esc_(?:attr|html|textarea|url)\(\s*)(?!\(string\)\s*)')
+                  new,n=pat.subn(r'\1(string) ',lines[i],count=1)
+                  if n:
+                      lines[i]=new; applied.append((str(p.relative_to(root)),line,msg))
+                  else: skipped.append((str(p.relative_to(root)),line,msg,'no uncast esc_* call at reported line'))
+              p.write_bytes(''.join(lines).encode('utf-8','surrogateescape'))
+          out=pathlib.Path(os.environ['REPORTS'])/'self-audit-sol2-applied-skipped.txt'
+          with out.open('w') as h:
+              h.write(f'APPLIED_ESC_STRING_CASTS={len(applied)}\n')
+              for r in applied: h.write(f'APPLIED {r[0]}:{r[1]} {r[2]}\n')
+              h.write(f'UNDEFINED_VARIABLES_NOT_GUESSED={len(undefined)}\n')
+              for p,line,msg in undefined: h.write(f'SKIPPED {p.relative_to(root)}:{line} {msg} — intent requires code-path proof\n')
+              h.write(f'OTHER_SKIPS={len(skipped)}\n')
+              for r in skipped: h.write(f'SKIPPED {r[0]}:{r[1]} {r[2]} — {r[3]}\n')
+          print(out.read_text()[:16000])
+          PY
+          mapfile -t changed_php < <(git diff --name-only -- "$TARGET" | grep '\.php$' || true)
+          for f in "${changed_php[@]}"; do php -l "$f"; done > "$REPORTS/self-audit-sol2-php-l.txt"
+          set +e
+          "$HOME/.composer/vendor/bin/phpstan" analyse "$TARGET" --configuration=/tmp/phpstan.neon --error-format=json --no-progress --memory-limit=4G > "$REPORTS/self-audit-sol2-after.json" 2> "$REPORTS/self-audit-sol2-after.stderr.txt"
+          set -e
+          python3 - <<'PY'
+          import json,os,re
+          d=json.load(open(os.path.join(os.environ['REPORTS'],'self-audit-sol2-after.json'))); rows=[]
+          for f,b in (d.get('files') or {}).items():
+              for m in b.get('messages') or []:
+                  ident=m.get('identifier') or ''; msg=m.get('message') or ''
+                  if ident=='variable.undefined' or (ident=='argument.type' and re.search(r'esc_(?:attr|html|textarea|url)',msg,re.I)):
+                      rows.append((f,m.get('line'),ident,msg))
+          p=os.path.join(os.environ['REPORTS'],'self-audit-sol2-final-narrow.txt')
+          with open(p,'w') as h:
+              h.write(f'SOL2_NARROW_REMAINING={len(rows)}\n')
+              for r in rows: h.write('%s:%s [%s] %s\n'%r)
+          print(open(p).read()[:16000])
+          PY
+
+      - name: SELF-AUDIT SOL-3 outbound/readme reconciliation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os,re,pathlib,urllib.parse
+          root=pathlib.Path(os.environ['TARGET']); readme=(root/'readme.txt').read_text(encoding='utf-8',errors='replace').lower()
+          urlrx=re.compile(r'https?://[^\s\"\'<>`)]+' ,re.I)
+          callrx=re.compile(r'\bwp_remote_(?:get|post|request)\s*\(|\bfetch\s*\(',re.I)
+          rows=[]; domains=set(); dynamic=[]
+          for p in root.rglob('*'):
+              if not p.is_file() or any(x in p.parts for x in ('tests','vendor','node_modules')) or p.suffix.lower() not in ('.php','.js','.mjs'): continue
+              text=p.read_text(encoding='utf-8',errors='replace')
+              for m in callrx.finditer(text):
+                  line=text.count('\n',0,m.start())+1; window=text[max(0,m.start()-500):m.start()+900]
+                  urls=urlrx.findall(window)
+                  ds=[]
+                  for u in urls:
+                      try:
+                          d=(urllib.parse.urlparse(u).hostname or '').lower()
+                          if d: ds.append(d); domains.add(d)
+                      except Exception: pass
+                  if ds: rows.append((str(p.relative_to(root)),line,sorted(set(ds))))
+                  else: dynamic.append((str(p.relative_to(root)),line))
+          missing=sorted(d for d in domains if d not in readme)
+          out=pathlib.Path(os.environ['REPORTS'])/'self-audit-sol3-reconciliation.txt'
+          with out.open('w') as h:
+              h.write(f'OUTBOUND_CALL_SITES_WITH_NEARBY_LITERAL_URL={len(rows)}\n')
+              h.write(f'DYNAMIC_OR_INTERNAL_CALL_SITES={len(dynamic)}\n')
+              h.write(f'NEARBY_LITERAL_DOMAINS={len(domains)}\n')
+              h.write(f'LITERAL_DOMAINS_NOT_NAMED_IN_README={len(missing)}\n')
+              for d in missing: h.write(f'REVIEW_DOMAIN {d}\n')
+              h.write('\n== literal call sites ==\n')
+              for r in rows: h.write(f'{r[0]}:{r[1]} {", ".join(r[2])}\n')
+              h.write('\n== dynamic/internal call sites ==\n')
+              for r in dynamic: h.write(f'{r[0]}:{r[1]}\n')
+          print(out.read_text()[:16000])
+          PY
+
+      - name: SELF-AUDIT SOL-4 historical review classes plus explicit cross-function checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          out="$REPORTS/self-audit-sol4.txt"
+          : > "$out"
+          echo '== Requires at least ==' >> "$out"
+          grep -n 'Requires at least:' "$TARGET/flosc.php" "$TARGET/readme.txt" >> "$out"
+          echo '== importer ==' >> "$out"
+          grep -RInE "WP_PLUGIN_DIR.*wordpress-importer|require_once .*wp-admin/includes/import\.php" "$TARGET" --include='*.php' >> "$out" || true
+          echo '== unsafe filter input ==' >> "$out"
+          grep -RInE 'FILTER_(UNSAFE_RAW|DEFAULT)' "$TARGET" --include='*.php' >> "$out" || true
+          echo '== SSO allowlist function ==' >> "$out"
+          python3 - <<'PY' >> "$out"
+          import os,re,pathlib
+          p=pathlib.Path(os.environ['TARGET'])/'includes/sso/class-oauth2-handler.php'; s=p.read_text(encoding='utf-8',errors='replace')
+          m=re.search(r'function\s+get_allowed_sso_redirect_hosts\s*\([^)]*\)\s*\{',s)
+          if not m: print('SSO_ALLOWLIST_FUNCTION=NOT_FOUND'); raise SystemExit(1)
+          i=m.end(); depth=1; j=i
+          while j<len(s) and depth:
+              depth += (s[j]=='{')-(s[j]=='}'); j+=1
+          body=s[m.start():j]
+          executable='\n'.join(x for x in body.splitlines() if not x.lstrip().startswith(('//','*','/*')))
+          bad='HTTP_HOST' in executable
+          print('SSO_HTTP_HOST_IN_ALLOWLIST_EXECUTABLE='+('YES' if bad else 'NO'))
+          if bad: raise SystemExit(1)
+          PY
+          echo '== KB save validation ==' >> "$out"
+          python3 - <<'PY' >> "$out"
+          import os,re,pathlib
+          p=pathlib.Path(os.environ['TARGET'])/'flosc.php'; s=p.read_text(encoding='utf-8',errors='replace')
+          m=re.search(r'function\s+handle_kb_save_edit\s*\([^)]*\)\s*\{',s)
+          if not m: print('KB_HANDLER=NOT_FOUND'); raise SystemExit(1)
+          i=m.end(); depth=1; j=i
+          while j<len(s) and depth:
+              depth += (s[j]=='{')-(s[j]=='}'); j+=1
+          body=s[m.start():j]
+          read=body.find("file_content")
+          write=body.find('flosc_write_data_file')
+          validators=[x for x in ('sanitize_textarea_field','wp_kses','flosc_validate','flosc_sanitize','preg_match','mb_check_encoding','strlen') if x in body]
+          print('KB_FILE_CONTENT_READ_INDEX='+str(read)); print('KB_WRITE_INDEX='+str(write)); print('KB_VALIDATION_SIGNALS='+','.join(validators))
+          if read<0 or write<0 or write<read or not validators: raise SystemExit(1)
+          PY
+          if [[ -f "$TARGET/tests/check_wporg_rules.php" ]]; then
+            php "$TARGET/tests/check_wporg_rules.php" >> "$out" 2>&1
+          elif [[ -f "$TARGET/tests/check_wporg_review.php" ]]; then
+            php "$TARGET/tests/check_wporg_review.php" >> "$out" 2>&1
+          fi
+          cat "$out" | tail -120
+
+      - name: SELF-AUDIT SOL-5 rebuild exact artifact and re-audit extracted ZIP
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f "$CAND/flosc.zip"
+          tmp=$(mktemp -d); mkdir -p "$tmp/flosc"
+          rsync -a --delete --exclude='tests/' --exclude='vendor/' --exclude='node_modules/' --exclude='.git/' "$TARGET/" "$tmp/flosc/"
+          (cd "$tmp" && zip -qr "$GITHUB_WORKSPACE/$CAND/flosc.zip" flosc)
+          sha=$(sha256sum "$CAND/flosc.zip" | awk '{print $1}')
+          bytes=$(stat -c%s "$CAND/flosc.zip")
+          entries=$(unzip -Z1 "$CAND/flosc.zip" | wc -l | tr -d ' ')
+          tests=$(unzip -Z1 "$CAND/flosc.zip" | grep -c '^flosc/tests/' || true)
+          vendor=$(unzip -Z1 "$CAND/flosc.zip" | grep -c '^flosc/vendor/' || true)
+          printf '%s  flosc.zip\n' "$sha" > "$CAND/SHA256SUMS"
+          rm -rf /tmp/v85-extracted; mkdir /tmp/v85-extracted; unzip -q "$CAND/flosc.zip" -d /tmp/v85-extracted
+          find /tmp/v85-extracted/flosc -type f -name '*.php' -print0 | while IFS= read -r -d '' f; do php -l "$f"; done > "$REPORTS/self-audit-sol5-php-l.txt"
+          set +e
+          "$HOME/.composer/vendor/bin/phpcs" --standard=WordPress --extensions=php --report=source /tmp/v85-extracted/flosc > "$REPORTS/self-audit-sol5-wpcs.txt" 2>&1
+          wpcs_rc=$?
+          set -e
+          {
+            echo "ZIP_SHA256=$sha"
+            echo "ZIP_BYTES=$bytes"
+            echo "ZIP_ENTRIES=$entries"
+            echo "TESTS_ENTRIES=$tests"
+            echo "VENDOR_ENTRIES=$vendor"
+            echo "WPCS_EXIT=$wpcs_rc"
+            grep -n 'Requires at least:' /tmp/v85-extracted/flosc/flosc.php /tmp/v85-extracted/flosc/readme.txt
+            grep -n 'Version:' /tmp/v85-extracted/flosc/flosc.php | head -1
+          } | tee "$REPORTS/self-audit-sol5-summary.txt"
+          [[ "$tests" == 0 && "$vendor" == 0 ]]
+
+      - name: Write candid SOL-1 through SOL-5 self-audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          sol1=$(grep '^SOL1_WPCS_TOTAL=' "$REPORTS/self-audit-sol1-final-summary.txt" | cut -d= -f2)
+          sol2=$(grep '^SOL2_NARROW_REMAINING=' "$REPORTS/self-audit-sol2-final-narrow.txt" | cut -d= -f2)
+          zipsha=$(grep '^ZIP_SHA256=' "$REPORTS/self-audit-sol5-summary.txt" | cut -d= -f2)
+          restored=$(grep '^RESTORED_PHP_FILES=' "$REPORTS/self-audit-sol1-restoration.txt" | cut -d= -f2)
+          cat > "$CAND/SELF-AUDIT-SOL-1-5.md" <<EOF
+          # GPT-5.6 Sol self-audit — SOL-1 through SOL-5
+
+          This document is intentionally suitable for independent team review. It does not certify WordPress.org readiness.
+
+          ## Material failures found in my own first pass
+
+          1. My first SOL-1 normalizer rewrote prose rather than merely repairing PHPDoc structure. Examples included sentence fragments such as "Configures ... personality,." and generic/generated descriptions. That violated the quality intent of SOL-1 even though executable-token fingerprints stayed unchanged.
+          2. I reported a large WPCS reduction without first treating that prose degradation as a blocker. The numeric reduction was real; the quality implication was not acceptable.
+          3. A later one-file SOL-1 workflow selected only one file because its PHPCS-path parser assumed one path shape. Its final 1,388 count therefore did not prove the intended one-file remediation had occurred across all findings.
+          4. The first SOL-2 repair workflow failed on PHPStan filenames carrying "(in context of class ...)" suffixes. No SOL-2 source repair from that failed run was committed.
+          5. Two helper workflows also failed for tooling reasons (non-UTF8 decoding and an attempted workflow self-update without workflow permission). Those were engineering failures in my test machinery and are part of this performance record.
+
+          ## Corrections made by this self-audit
+
+          - Restored $restored PHP source files' pre-SOL-1 prose only after proving executable-token identity against the pre-SOL-1 versions.
+          - Replaced prose rewriting with four narrowly scoped, comment-only WPCS format sniffs. No whole-standard PHPCBF is used.
+          - Every targeted SOL-1 file edit is executable-token checked and PHP-linted; a complete-tree PHPCS report follows the last edit.
+          - SOL-2 now strips PHPStan's context suffix before resolving filenames and only applies behavior-identical string casts at proven esc_* boundaries. Undefined-variable intent is never guessed.
+          - SOL-3 is regenerated from actual wp_remote_* / fetch call sites with literal-vs-dynamic call sites separated.
+          - SOL-4 adds explicit cross-function assertions for the SSO HTTP_HOST allowlist issue and KB file-content validation in addition to the historical pattern gate.
+          - SOL-5 rebuilds the ZIP after all source edits, re-extracts that exact ZIP, PHP-lints it, reruns WPCS on the extracted artifact, and records a new SHA-256.
+
+          ## Current measured state
+
+          - SOL-1 final WordPress-standard PHPCS findings: $sol1. This is an evidence count, not a pass claim.
+          - SOL-2 narrow PHPStan findings remaining: $sol2. Any undefined-variable items left in the report are explicitly unresolved rather than guessed.
+          - SOL-3 evidence: remediation-tools/reports/self-audit-sol3-reconciliation.txt.
+          - SOL-4 evidence: remediation-tools/reports/self-audit-sol4.txt.
+          - SOL-5 exact ZIP SHA-256: $zipsha.
+
+          ## Evaluation rule
+
+          The team should evaluate the commit that contains this file and the exact flosc.zip hash above. Any later source edit invalidates this evaluation target until SOL-5 is rebuilt and the evidence rerun.
+          EOF
+
+      - name: Commit frozen self-audit evaluation candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'GPT-5.6 Sol'
+          git config user.email 'noreply@openai.com'
+          git add "$CAND"
+          if git diff --cached --quiet; then
+            echo 'No candidate changes to commit.'
+            exit 0
+          fi
+          git commit -m 'v85 self-audit remediation — restore prose, rerun SOL-1 through SOL-5, freeze evaluation evidence [sol-self-audited] [sol-finalized] [sol1-generated] [sol25-generated]'
+          git push origin HEAD:gpt-5-6-sol/wporg-remediation
