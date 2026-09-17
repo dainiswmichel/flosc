@@ -1,0 +1,45 @@
+name: Patch SOL-1 byte-preserving reader
+
+on:
+  push:
+    branches:
+      - gpt-5-6-sol/wporg-remediation
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: ${{ contains(github.event.head_commit.message || '', '[patch-sol1]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gpt-5-6-sol/wporg-remediation
+      - name: Preserve non-UTF8 source bytes while editing comments
+        shell: bash
+        run: |
+          set -euo pipefail
+          p='pre-release-candidates/gpt-5-6-sol/remediation-tools/sol1-fix-from-phpcs.py'
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('pre-release-candidates/gpt-5-6-sol/remediation-tools/sol1-fix-from-phpcs.py')
+          s=p.read_text(encoding='utf-8')
+          old="original=path.read_text(encoding='utf-8')"
+          new="original=path.read_text(encoding='utf-8', errors='surrogateescape')"
+          if old not in s:
+              raise SystemExit('read_text target not found')
+          s=s.replace(old,new,1)
+          old2="path.write_text(new,encoding='utf-8');changed_files+=1"
+          new2="path.write_text(new,encoding='utf-8', errors='surrogateescape');changed_files+=1"
+          if old2 not in s:
+              raise SystemExit('write_text target not found')
+          s=s.replace(old2,new2,1)
+          p.write_text(s,encoding='utf-8')
+          PY
+          git diff --check
+          git config user.name 'GPT-5.6 Sol'
+          git config user.email 'noreply@openai.com'
+          git add "$p"
+          git commit -m "v85 SOL-1 tooling — preserve non-UTF8 source bytes with surrogateescape [sol1-generated] [sol25-generated] [sol-finalized]"
+          git push origin HEAD:gpt-5-6-sol/wporg-remediation
