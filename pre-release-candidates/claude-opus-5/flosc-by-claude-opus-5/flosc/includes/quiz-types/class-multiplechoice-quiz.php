@@ -61,10 +61,10 @@ class FLOSC_MultipleChoice_Quiz extends FLOSC_Abstract_Quiz_Type {
 	}
 
 	public function analyze( $input, $expected_content, $context = array() ) {
-		// Parse questions
+		// Parse questions.
 		$questions = $this->parse_questions( $expected_content );
 
-		// Parse user answers (e.g., "A,B,C" or "a,b,c")
+		// Parse user answers (e.g., "A,B,C" or "a,b,c").
 		$user_answers = $this->parse_user_answers( $input );
 
 		$correct       = array();
@@ -156,14 +156,14 @@ class FLOSC_MultipleChoice_Quiz extends FLOSC_Abstract_Quiz_Type {
 				$part = trim( $parts[ $i ] );
 
 				if ( stripos( $part, 'correctcontent:' ) === 0 ) {
-					// Appends — multiple |CorrectContent: segments are all tier-1
+					// Appends — multiple |CorrectContent: segments are all tier-1.
 					foreach ( array_map( 'trim', explode( ',', trim( substr( $part, strlen( 'correctcontent:' ) ) ) ) ) as $r ) {
 						if ( $r !== '' ) {
 							$correct_content[] = $r;
 						}
 					}
 				} elseif ( stripos( $part, 'relatedcontent:' ) === 0 ) {
-					// Appends — multiple |RelatedContent: pipe segments are cumulative
+					// Appends — multiple |RelatedContent: pipe segments are cumulative.
 					foreach ( array_map( 'trim', explode( ',', trim( substr( $part, strlen( 'relatedcontent:' ) ) ) ) ) as $r ) {
 						if ( $r !== '' ) {
 							$related_content[] = $r;
@@ -198,11 +198,11 @@ class FLOSC_MultipleChoice_Quiz extends FLOSC_Abstract_Quiz_Type {
 	 * Accepts: "A,B,C" or "a,b,c" or "A\nB\nC"
 	 */
 	private function parse_user_answers( $input ) {
-		// Try comma-separated first
+		// Try comma-separated first.
 		if ( strpos( $input, ',' ) !== false ) {
 			$answers = explode( ',', $input );
 		} else {
-			// Try newline-separated
+			// Try newline-separated.
 			$answers = explode( "\n", $input );
 		}
 

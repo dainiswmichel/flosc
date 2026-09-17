@@ -14,23 +14,23 @@ $flosc_flow_id  = sanitize_key( wp_unslash( $_GET['flow_id'] ?? '' ) );
 $flosc_is_new   = ( $flosc_flow_id === 'new' );
 $flosc_flow     = $flosc_is_new ? null : flosc_flows()->get_flow( $flosc_flow_id );
 
-// Permission check
+// Permission check.
 if ( ! $flosc_is_new && $flosc_flow && ! flosc_flows()->can_access_flow_admin( $flosc_flow_id ) ) {
 	wp_die( 'You do not have permission to edit this flow.' );
 }
 
-// Only admins can create new flows
+// Only admins can create new flows.
 if ( $flosc_is_new && ! $flosc_is_admin ) {
 	wp_die( 'Only administrators can create new flows.' );
 }
 
-// Redirect if flow not found
+// Redirect if flow not found.
 if ( ! $flosc_is_new && ! $flosc_flow ) {
 	wp_safe_redirect( admin_url( 'admin.php?page=flosc-flows&error=not_found' ) );
 	exit;
 }
 
-// Get current tab
+// Get current tab.
 $flosc_current_tab = sanitize_key( wp_unslash( $_GET['tab'] ?? 'identity' ) );
 $tabs              = array(
 	'identity' => 'Identity',
@@ -41,7 +41,7 @@ if ( $flosc_is_admin && ! $flosc_is_new ) {
 	$tabs['team'] = 'Team';
 }
 
-// Handle form submission
+// Handle form submission.
 if ( isset( $_POST['flosc_save_flow'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ?? '' ) ), 'flosc_save_flow' ) ) {
 	// Re-check capability at mutation time (page-load check is not enough for CSRF+authz).
 	if ( $flosc_is_new && ! $flosc_is_admin ) {
@@ -101,7 +101,7 @@ if ( isset( $_POST['flosc_save_flow'] ) && wp_verify_nonce( sanitize_text_field(
 	);
 
 	if ( $flosc_is_new ) {
-		// Generate ID from slug or random
+		// Generate ID from slug or random.
 		$flosc_data['id'] = ! empty( $flosc_data['slug'] ) ? sanitize_key( $flosc_data['slug'] ) : 'flow_' . wp_generate_password( 6, false, false );
 		$flosc_result     = flosc_flows()->create_flow( $flosc_data );
 
@@ -117,19 +117,19 @@ if ( isset( $_POST['flosc_save_flow'] ) && wp_verify_nonce( sanitize_text_field(
 		if ( is_wp_error( $flosc_result ) ) {
 			$flosc_error_message = $flosc_result->get_error_message();
 		} else {
-			// Refresh flow data
+			// Refresh flow data.
 			$flosc_flow            = flosc_flows()->get_flow( $flosc_flow_id );
 			$flosc_success_message = 'Flow updated successfully.';
 		}
 	}
 }
 
-// Handle team updates (admin only)
+// Handle team updates (admin only).
 if ( isset( $_POST['flosc_update_team'] ) && $flosc_is_admin && ! $flosc_is_new && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ?? '' ) ), 'flosc_update_team' ) ) {
 	// Sanitize at intake: every submitted value becomes an integer user ID.
 	$flosc_selected_users = isset( $_POST['team_users'] ) ? array_map( 'intval', (array) wp_unslash( $_POST['team_users'] ) ) : array();
 
-	// Get all users who currently have access
+	// Get all users who currently have access.
 	$flosc_current_users    = flosc_flows()->get_flow_users( $flosc_flow_id );
 	$flosc_current_user_ids = array_map(
 		function ( $u ) {
@@ -138,14 +138,14 @@ if ( isset( $_POST['flosc_update_team'] ) && $flosc_is_admin && ! $flosc_is_new 
 		$flosc_current_users
 	);
 
-	// Revoke from users no longer selected
+	// Revoke from users no longer selected.
 	foreach ( $flosc_current_user_ids as $flosc_uid ) {
 		if ( ! in_array( $flosc_uid, $flosc_selected_users ) ) {
 			flosc_flows()->revoke_flow_access( $flosc_uid, $flosc_flow_id );
 		}
 	}
 
-	// Grant to newly selected users
+	// Grant to newly selected users.
 	foreach ( $flosc_selected_users as $flosc_uid ) {
 		if ( ! in_array( $flosc_uid, $flosc_current_user_ids ) ) {
 			flosc_flows()->grant_flow_access( $flosc_uid, $flosc_flow_id );
@@ -155,7 +155,7 @@ if ( isset( $_POST['flosc_update_team'] ) && $flosc_is_admin && ! $flosc_is_new 
 	$flosc_success_message = 'Team updated successfully.';
 }
 
-// Get available options
+// Get available options.
 $flosc_ivr_files  = flosc_flows()->get_available_ivr_files();
 $flosc_quiz_types = flosc_flows()->get_available_quiz_types();
 $flosc_categories = get_categories( array( 'hide_empty' => false ) );
@@ -410,7 +410,7 @@ $flosc_categories = get_categories( array( 'hide_empty' => false ) );
 								)
 							);
 
-							// Legacy migration: convert old indexed format to associative
+							// Legacy migration: convert old indexed format to associative.
 							if ( is_array( $flosc_visitor_menu ) && ! empty( $flosc_visitor_menu ) &&
 								is_numeric( key( $flosc_visitor_menu ) ) &&
 								isset( $flosc_visitor_menu[0]['action'] ) ) {
@@ -543,7 +543,7 @@ $flosc_categories = get_categories( array( 'hide_empty' => false ) );
 				<p class="description">Select which Editors and Authors can manage this flow. Administrators always have access to all flows.</p>
 				
 				<?php
-				// Get all editors and authors
+				// Get all editors and authors.
 				$flosc_team_users = get_users(
 					array(
 						'role__in' => array( 'editor', 'author', 'contributor' ),
@@ -551,7 +551,7 @@ $flosc_categories = get_categories( array( 'hide_empty' => false ) );
 					)
 				);
 
-				// Get users who currently have access
+				// Get users who currently have access.
 				$flosc_current_team     = flosc_flows()->get_flow_users( $flosc_flow_id );
 				$flosc_current_team_ids = array_map(
 					function ( $u ) {

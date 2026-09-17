@@ -498,7 +498,7 @@ if ( ! function_exists( 'flosc_admin_save_available_providers' ) ) {
 				$all[ $slug ]['api_key']    = $new;
 				$all[ $slug ]['updated_at'] = current_time( 'mysql' );
 			}
-			// blank password field = keep existing
+			// blank password field = keep existing.
 		}
 		flosc_available_providers_save_all( $all );
 

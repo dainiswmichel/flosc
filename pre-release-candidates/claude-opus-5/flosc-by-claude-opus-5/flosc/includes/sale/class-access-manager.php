@@ -349,17 +349,17 @@ class FLOSC_Access_Manager {
 		$access  = $this->get_user_access( $user_id );
 		$feature = (string) $feature;
 
-		// Check explicit feature flags
+		// Check explicit feature flags.
 		if ( in_array( $feature, $access['features'], true ) ) {
 			return true;
 		}
 
-		// Check offers for feature grants
+		// Check offers for feature grants.
 		foreach ( $access['offers'] as $offer_id => $offer_data ) {
 			if ( isset( $offer_data['grants']['features'] ) &&
 				in_array( $feature, $offer_data['grants']['features'], true ) ) {
 
-				// Check if offer has expired
+				// Check if offer has expired.
 				if ( $this->is_offer_active( $offer_data ) ) {
 					return true;
 				}
@@ -400,7 +400,7 @@ class FLOSC_Access_Manager {
 	 * - other strings → feature flag via has_feature()
 	 */
 	public function can_access( $user_id, $requirement ) {
-		// If requirement is a feature name
+		// If requirement is a feature name.
 		if ( is_string( $requirement ) ) {
 			$requirement = strtolower( trim( $requirement ) );
 			// Full membership (not a narrow feature id) — keep userState consistent for AI/IVR.
@@ -410,16 +410,16 @@ class FLOSC_Access_Manager {
 			return $this->has_feature( $user_id, $requirement );
 		}
 
-		// If requirement is an array with conditions
+		// If requirement is an array with conditions.
 		if ( is_array( $requirement ) ) {
-			// Check feature requirement
+			// Check feature requirement.
 			if ( isset( $requirement['feature'] ) ) {
 				if ( ! $this->has_feature( $user_id, $requirement['feature'] ) ) {
 					return false;
 				}
 			}
 
-			// Check offer requirement
+			// Check offer requirement.
 			if ( isset( $requirement['offer'] ) ) {
 				if ( ! $this->has_offer( $user_id, $requirement['offer'] ) ) {
 					return false;
@@ -438,7 +438,7 @@ class FLOSC_Access_Manager {
 	public function grant_from_offer( $user_id, $offer, $transaction = array() ) {
 		$access = $this->get_user_access( $user_id );
 
-		// Record the offer purchase
+		// Record the offer purchase.
 		$offer_flow_id = (string) ( $transaction['flow_id'] ?? $offer['flow_id'] ?? '' );
 		if ( $offer_flow_id === '' ) {
 			$offer_flow_id = $this->normalize_flow_stem( null );
@@ -451,10 +451,10 @@ class FLOSC_Access_Manager {
 			'flow_id'      => $offer_flow_id,
 		);
 
-		// Apply grants
+		// Apply grants.
 		$grants = $offer['grants'];
 
-		// Merge features
+		// Merge features.
 		if ( ! empty( $grants['features'] ) ) {
 			$access['features'] = array_unique(
 				array_merge(
@@ -464,11 +464,11 @@ class FLOSC_Access_Manager {
 			);
 		}
 
-		// Set/extend expiration
+		// Set/extend expiration.
 		if ( ! empty( $grants['duration_days'] ) && $grants['duration_days'] > 0 ) {
 			$new_expiration = gmdate( 'Y-m-d H:i:s', strtotime( '+' . $grants['duration_days'] . ' days' ) );
 
-			// Extend if already has access
+			// Extend if already has access.
 			if ( $access['expires_at'] ) {
 				$current              = strtotime( $access['expires_at'] );
 				$new                  = strtotime( $new_expiration );
@@ -477,11 +477,11 @@ class FLOSC_Access_Manager {
 				$access['expires_at'] = $new_expiration;
 			}
 		} elseif ( empty( $grants['duration_days'] ) ) {
-			// Lifetime access
+			// Lifetime access.
 			$access['expires_at'] = null;
 		}
 
-		// Handle subscription
+		// Handle subscription.
 		if ( $offer['type'] === 'subscription' && isset( $transaction['subscription_id'] ) ) {
 			$access['subscription'] = array(
 				'id'         => $transaction['subscription_id'],
@@ -491,7 +491,7 @@ class FLOSC_Access_Manager {
 			);
 		}
 
-		// Handle token grants
+		// Handle token grants.
 		if ( $offer['type'] === 'tokens' && ! empty( $offer['tokens']['amount'] ) ) {
 			$token_provider = flosc_sale()->get_provider( 'tokens' );
 			if ( $token_provider ) {
@@ -500,7 +500,7 @@ class FLOSC_Access_Manager {
 			}
 		}
 
-		// Apply usage limits from offer
+		// Apply usage limits from offer.
 		if ( ! empty( $grants['usage_limits'] ) ) {
 			$usage_tracker  = flosc_sale()->usage();
 			$current_limits = $usage_tracker->get_limits( $user_id );
@@ -521,7 +521,7 @@ class FLOSC_Access_Manager {
 		update_user_meta( $user_id, $this->meta_key, $access );
 
 		// v9.5.5: Store member level for IVR conditions
-		// v8.0.1: Fixed — offer schema stores level at grants.level, not member_level
+		// v8.0.1: Fixed — offer schema stores level at grants.level, not member_level.
 		$member_level = $offer['grants']['level'] ?? $offer['member_level'] ?? $offer['id'] ?? 'member';
 		update_user_meta( $user_id, '_flosc_member_level', $member_level );
 		update_user_meta( $user_id, '_flosc_purchased', true );

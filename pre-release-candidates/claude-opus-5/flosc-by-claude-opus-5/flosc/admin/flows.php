@@ -12,7 +12,7 @@ $flosc_flows    = flosc_flows()->get_user_flows();
 $flosc_is_admin = current_user_can( 'manage_options' );
 $flosc_get      = wp_unslash( $_GET );
 
-// Handle delete
+// Handle delete.
 if ( isset( $flosc_get['delete_flow'] ) && $flosc_is_admin && isset( $flosc_get['_wpnonce'] ) && wp_verify_nonce( sanitize_text_field( $flosc_get['_wpnonce'] ), 'flosc_delete_flow' ) ) {
 	$flosc_result = flosc_flows()->delete_flow( sanitize_key( $flosc_get['delete_flow'] ) );
 	if ( ! is_wp_error( $flosc_result ) ) {

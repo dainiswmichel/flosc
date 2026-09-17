@@ -101,19 +101,19 @@ function flosc_handle_autoprompts_save() {
 	$states      = array( 'visitor', 'guest', 'member' );
 	$autoprompts = array();
 
-	// Save panel header text per state
+	// Save panel header text per state.
 	$flosc_panel_headers = array();
 	foreach ( $states as $state ) {
 		$flosc_panel_headers[ $state ] = sanitize_text_field( $flosc_post[ 'panel_header_' . $state ] ?? 'Try these AutoPrompts!' );
 	}
 
-	// Save panel show/hide toggle per state (checkbox — absent means unchecked = 0)
+	// Save panel show/hide toggle per state (checkbox — absent means unchecked = 0).
 	$flosc_panel_enabled = array();
 	foreach ( $states as $state ) {
 		$flosc_panel_enabled[ $state ] = isset( $flosc_post[ 'panel_enabled_' . $state ] ) ? 1 : 0;
 	}
 
-	// Companion Mode panel visibility (ship default: off)
+	// Companion Mode panel visibility (ship default: off).
 	$flosc_companion_panel_enabled = isset( $flosc_post['panel_enabled_companion'] ) ? 1 : 0;
 
 	foreach ( $states as $state ) {
@@ -194,7 +194,7 @@ if ( $flosc_flow_display_name === '' ) {
 	$flosc_flow_display_name = 'Flow';
 }
 
-// Strip all accumulated backslash layers from previously corrupted DB data
+// Strip all accumulated backslash layers from previously corrupted DB data.
 $flosc_ap_raw  = $flosc_fs['autoprompts'] ?? array();
 $flosc_ap_prev = null;
 while ( $flosc_ap_prev !== $flosc_ap_raw ) {
@@ -256,7 +256,7 @@ foreach ( $flosc_prompts as $flosc_state => &$flosc_state_pills ) {
 }
 unset( $flosc_state_pills );
 
-// Available offers for trigger dropdown
+// Available offers for trigger dropdown.
 $flosc_offers_for_trigger = array();
 $flosc_flow_id_for_offers = $flosc_flow_key ? str_replace( 'flosc_flow_', '', $flosc_flow_key ) : null;
 if ( function_exists( 'flosc' ) && $flosc_flow_id_for_offers ) {
@@ -265,7 +265,7 @@ if ( function_exists( 'flosc' ) && $flosc_flow_id_for_offers ) {
 	}
 }
 
-// Available actions
+// Available actions.
 $flosc_available_actions = array(
 	'open_quiz'            => 'open_quiz — Take Quiz',
 	'open_free_lesson'     => 'open_free_lesson — View Free Lesson',
@@ -443,7 +443,7 @@ foreach ( $flosc_state_config as $flosc_state => $flosc_sc ) :
 		foreach ( $flosc_pills as $flosc_pill ) :
 			$flosc_ttype = $flosc_pill['trigger_type'] ?? 'ai';
 			$flosc_tval  = $flosc_pill['trigger_value'] ?? '';
-			// Back-compat: derive trigger_type from action field
+			// Back-compat: derive trigger_type from action field.
 			if ( ! isset( $flosc_pill['trigger_type'] ) && ! empty( $flosc_pill['action'] ) ) {
 				if ( strpos( $flosc_pill['action'], 'show_offer_' ) === 0 ) {
 					$flosc_ttype = 'offer';

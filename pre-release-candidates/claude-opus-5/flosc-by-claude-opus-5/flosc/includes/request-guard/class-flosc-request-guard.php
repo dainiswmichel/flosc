@@ -18,16 +18,16 @@ class FLOSC_Request_Guard {
 	 * Checks trusted proxy headers in priority order, falls back to REMOTE_ADDR
 	 */
 	public function get_client_ip() {
-		// Cloudflare (most specific, hardest to spoof when CF is in use)
+		// Cloudflare (most specific, hardest to spoof when CF is in use).
 		if ( ! empty( $_SERVER['HTTP_CF_CONNECTING_IP'] ) ) {
 			return sanitize_text_field( wp_unslash( $_SERVER['HTTP_CF_CONNECTING_IP'] ) );
 		}
-		// Standard proxy header (X-Forwarded-For can be comma-separated; first = real client)
+		// Standard proxy header (X-Forwarded-For can be comma-separated; first = real client).
 		if ( ! empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
 			$ips = explode( ',', sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) );
 			return sanitize_text_field( trim( $ips[0] ) );
 		}
-		// AWS ALB / generic proxy
+		// AWS ALB / generic proxy.
 		if ( ! empty( $_SERVER['HTTP_X_REAL_IP'] ) ) {
 			return sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_REAL_IP'] ) );
 		}
@@ -39,7 +39,7 @@ class FLOSC_Request_Guard {
 	 * Prevents API abuse on public endpoints
 	 */
 	public function check_rate_limit( $endpoint, $limit = 20, $window = 3600 ) {
-		// v1.7.7: Use real client IP behind CDN/proxy (Cloudflare, AWS ALB, etc.)
+		// v1.7.7: Use real client IP behind CDN/proxy (Cloudflare, AWS ALB, etc.).
 		$ip    = $this->get_client_ip();
 		$key   = 'flosc_rate_' . md5( $endpoint . $ip );
 		$count = get_transient( $key ) ?: 0;
@@ -92,14 +92,14 @@ class FLOSC_Request_Guard {
 
 		list($encoded, $signature) = $parts;
 
-		// Verify signature
+		// Verify signature.
 		$expected_signature = hash_hmac( 'sha256', $encoded, flosc_token_secret() );
 		if ( ! hash_equals( $expected_signature, $signature ) ) {
-			// Invalid signature - possible tampering
+			// Invalid signature - possible tampering.
 			return false;
 		}
 
-		// Decode and return data
+		// Decode and return data.
         // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- binary/JWT token decoding, not obfuscation
 		$json = base64_decode( $encoded );
 		if ( $json === false ) {
@@ -126,12 +126,12 @@ class FLOSC_Request_Guard {
 		$value = $this->sign_cookie_data( $data );
 
 		// v1.7.7: Explicit threshold — values under 1 year are treated as seconds-from-now
-		// Values over 1 year (31536000) are treated as absolute Unix timestamps
+		// Values over 1 year (31536000) are treated as absolute Unix timestamps.
 		if ( $expiry > 0 && $expiry < 31536000 ) {
 			$expiry = time() + $expiry;
 		}
 
-		// v1.0.7: Use array syntax with SameSite for security
+		// v1.0.7: Use array syntax with SameSite for security.
 		setcookie(
 			$name,
 			$value,

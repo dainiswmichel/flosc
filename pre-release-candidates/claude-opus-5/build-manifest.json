@@ -1,15 +1,15 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": "82.1",
+  "candidate_iteration": "82.2",
   "creator": "Claude Opus 5",
   "status": "WPCS_FORMATTING_APPLIED_FUNCTIONALLY_UNVERIFIED",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v82",
+  "base": "claude-opus-5 v82.1",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "e945c8708f5a798f234fb2b9dcbb5277f55bd54ecdcda4c4ec0d7eab08328bb5",
-  "artifact_bytes": 2754757,
+  "artifact_sha256": "6316e0442381c4dbcfd134c6c505cfb1ebdd96c55522c8e55a8789da4cdd3558",
+  "artifact_bytes": 2754886,
   "artifact_entries": 278,
   "tree_files": 295,
   "why_this_iteration": {
@@ -568,5 +568,18 @@
       "needs_human_edits": "Yoda conditions 2,382; inline comment end punctuation 1,690; missing function docblock param tags 797; missing function docblocks 467; short ternaries 172.",
       "functionality": "0 of 30 behavioural tests executed. There is no WordPress in this container. This pass is formatting only and no logic was intentionally changed, but that is a statement about intent, not a measurement."
     }
+  },
+  "v82_2_standards_continued": {
+    "wpcs_php_shipping": "8,511 -> 6,104 errors",
+    "staged_per_file": "phpcbf plateaued tree-wide at 8,122 with 1,449 still claimed fixable. Applying one sniff at a time to the six worst files -- flosc.php, class-paypal-provider.php, settings.php, flosc-admin.php, class-ai-chat-dispatch.php, class-flosc-magic-link-trait.php -- moved it to 7,632. A single fixer has nothing to fight with; the tree-wide run exhausts its loop limit and discards its work.",
+    "inline_comment_punctuation": "1,528 line comments terminated with a full stop, taken from phpcs's own CSV of flagged lines rather than by pattern. 162 flagged lines were not line comments and were left alone. Tooling directives -- phpcs:, phpstan:, translators: -- were skipped: their text is parsed, not prose, and appending a full stop to a sniff name would break it.",
+    "a_real_catch": "The staged reformat moved a phpcs:ignore off the line it annotates in class-stt-dispatch.php and class-ai-chat-dispatch.php, and shifted a line-pinned WPORG-02 exception. Both fixed in v82.1. WPORG-02's window was also widened from 30 lines to 120: WordPress-formatted code is not the same amount of code per line, and a legitimate wp_handle_upload() use in flosc.php moved from inside the window to 31 lines away. Verified the rule still fires on a genuinely unused include.",
+    "measured_here": {
+      "php_l": "0 errors / 187 files",
+      "cli_gates": "37 of 37 pass",
+      "wporg_gate": "exit 0",
+      "wpcs_php_shipping": "6,104 errors, 185 warnings"
+    },
+    "still_open": "Yoda conditions 2,382; docblock work about 1,900; short ternaries 172; 0 of 30 behavioural tests executed."
   }
 }

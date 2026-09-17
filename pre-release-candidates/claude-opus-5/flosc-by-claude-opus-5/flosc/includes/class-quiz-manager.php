@@ -58,10 +58,10 @@ class FLOSC_Quiz_Manager {
 	 * Constructor
 	 */
 	private function __construct() {
-		// Load registered quizzes from options
+		// Load registered quizzes from options.
 		self::$quiz_registry = get_option( 'flosc_quiz_registry', array() );
 
-		// Register REST endpoint for external submissions
+		// Register REST endpoint for external submissions.
 		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
 	}
 
@@ -174,7 +174,7 @@ class FLOSC_Quiz_Manager {
 
 		self::$quiz_registry[ $quiz_id ] = wp_parse_args( $metadata, $defaults );
 
-		// Persist to database
+		// Persist to database.
 		update_option( 'flosc_quiz_registry', self::$quiz_registry );
 
 		return true;
@@ -241,7 +241,7 @@ class FLOSC_Quiz_Manager {
 			return false;
 		}
 
-		// Ensure score is set
+		// Ensure score is set.
 		if ( ! isset( $score_data['score'] ) ) {
 			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
 				flosc_log( 'FLOSC Quiz Manager: Missing score in score_data' );
@@ -251,22 +251,22 @@ class FLOSC_Quiz_Manager {
 
 		$quiz_id = sanitize_key( $quiz_id );
 
-		// Get quiz metadata if registered
+		// Get quiz metadata if registered.
 		$quiz_meta = self::get_quiz( $quiz_id );
 
-		// Map question IDs to lesson numbers if mapping exists
+		// Map question IDs to lesson numbers if mapping exists.
 		if ( $quiz_meta && ! empty( $quiz_meta['lesson_mapping'] ) ) {
 			$score_data = self::apply_lesson_mapping( $score_data, $quiz_meta['lesson_mapping'] );
 		}
 
-		// Add source info
+		// Add source info.
 		$score_data['plugin']     = $quiz_meta['source'] ?? 'external';
 		$score_data['quiz_title'] = $quiz_meta['title'] ?? $quiz_id;
 
-		// Fire the external quiz hook (Bridge Data Manager listens to this)
+		// Fire the external quiz hook (Bridge Data Manager listens to this).
 		do_action( 'flosc_external_quiz_score', $user_id, $quiz_id, $score_data );
 
-		// Fire completion action
+		// Fire completion action.
 		do_action( 'flosc_quiz_manager_score_submitted', $user_id, $quiz_id, $score_data );
 
 		if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
@@ -286,7 +286,7 @@ class FLOSC_Quiz_Manager {
 	 * @return array Modified score data
 	 */
 	private static function apply_lesson_mapping( $score_data, $mapping ) {
-		// Map correct items
+		// Map correct items.
 		if ( ! empty( $score_data['correct_items'] ) ) {
 			$mapped_correct = array();
 			foreach ( $score_data['correct_items'] as $item ) {
@@ -295,7 +295,7 @@ class FLOSC_Quiz_Manager {
 			$score_data['correct_items'] = $mapped_correct;
 		}
 
-		// Map incorrect items
+		// Map incorrect items.
 		if ( ! empty( $score_data['incorrect_items'] ) ) {
 			$mapped_incorrect = array();
 			foreach ( $score_data['incorrect_items'] as $item ) {
@@ -418,7 +418,7 @@ class FLOSC_Quiz_Manager {
 	}
 }
 
-// Initialize
+// Initialize.
 add_action(
 	'plugins_loaded',
 	function () {
@@ -427,5 +427,5 @@ add_action(
 	10
 );
 
-// Register shortcode
+// Register shortcode.
 add_shortcode( 'flosc_quiz_results', array( 'FLOSC_Quiz_Manager', 'shortcode_quiz_results' ) );

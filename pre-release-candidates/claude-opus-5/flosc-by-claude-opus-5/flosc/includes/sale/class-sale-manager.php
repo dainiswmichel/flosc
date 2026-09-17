@@ -51,14 +51,14 @@ class FLOSC_Sale_Manager {
 	}
 
 	private function register_providers() {
-		// Register built-in payment providers
+		// Register built-in payment providers.
 		$this->providers['stripe']    = new FLOSC_Stripe_Provider();
 		$this->providers['tokens']    = new FLOSC_Token_Provider();
 		$this->providers['affiliate'] = new FLOSC_Affiliate_Provider();
 		$this->providers['clickbank'] = new FLOSC_ClickBank_Provider(); // v07.07
 		$this->providers['paypal']    = new FLOSC_PayPal_Provider(); // v1.6.9
 
-		// Allow plugins to register additional providers
+		// Allow plugins to register additional providers.
 		$this->providers = apply_filters( 'flosc_payment_providers', $this->providers );
 	}
 
@@ -417,7 +417,7 @@ class FLOSC_Sale_Manager {
 	 * @return array|WP_Error
 	 */
 	public function process_purchase( $user_id, $offer_id, $provider_id, $payment_data = array() ) {
-		// Get offer
+		// Get offer.
 		$offer = $this->offer_manager->get_offer( $offer_id );
 		if ( ! $offer ) {
 				return new WP_Error( 'invalid_offer', __( 'Offer not found', 'flosc' ) );
@@ -428,7 +428,7 @@ class FLOSC_Sale_Manager {
 			return $valid;
 		}
 
-		// Get provider
+		// Get provider.
 		$provider = $this->get_provider( $provider_id );
 		if ( ! $provider ) {
 				return new WP_Error( 'invalid_provider', __( 'Payment provider not found', 'flosc' ) );
@@ -438,7 +438,7 @@ class FLOSC_Sale_Manager {
 				return new WP_Error( 'provider_not_configured', __( 'Payment provider not configured', 'flosc' ) );
 		}
 
-		// Process payment through provider
+		// Process payment through provider.
 		$result = $provider->process_payment( $user_id, $offer, $payment_data );
 
 		if ( is_wp_error( $result ) ) {
@@ -523,11 +523,11 @@ class FLOSC_Sale_Manager {
 
 		$user_access = $this->access_manager->get_user_access( $user_id );
 
-		// Filter out offers user already has
+		// Filter out offers user already has.
 		return array_filter(
 			$all_offers,
 			function ( $offer ) use ( $user_access ) {
-				// Don't show one-time offers they already purchased
+				// Don't show one-time offers they already purchased.
 				if ( $offer['type'] === 'one_time' && isset( $user_access['offers'][ $offer['id'] ] ) ) {
 					return false;
 				}
@@ -547,10 +547,10 @@ class FLOSC_Sale_Manager {
 		// Logic to recommend best offer based on:
 		// - User's current access level
 		// - Usage patterns
-		// - Funnel context (quiz score, engagement, etc.)
+		// - Funnel context (quiz score, engagement, etc.).
 
 		// Default: return first available offer
-		// Override with flosc_recommended_offer filter for custom logic
+		// Override with flosc_recommended_offer filter for custom logic.
 		$recommended = ! empty( $offers ) ? reset( $offers ) : null;
 
 		return apply_filters( 'flosc_recommended_offer', $recommended, $user_id, $context, $offers );

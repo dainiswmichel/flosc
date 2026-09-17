@@ -210,9 +210,27 @@ foreach ( $src as $file => $lines ) {
 		}
 		$i--; /* the for-loop increments past the last include */
 
-		$window   = implode( "\n", array_slice( $lines, $i + 1, 30 ) );
-		$used     = false;
-		$unknown  = array();
+		/*
+		 * The window is 120 lines, not 30.
+		 *
+		 * It used to be the next 30 lines. A WordPress Coding Standards pass --
+		 * braces added around inline control structures, one array element per
+		 * line -- pushed a legitimate use in flosc.php from inside that window to
+		 * 31 lines away, and this rule reported an unused include on an upload
+		 * path that has always called wp_handle_upload(). A line count is a proxy
+		 * for "is anything from this include used nearby", and 30 lines of
+		 * pre-standards code is not the same amount of code as 30 lines of
+		 * WordPress-formatted code. 120 keeps the window local while leaving room
+		 * for the expansion, and the rule still fails when nothing the include
+		 * provides is used at all -- which is the objection WordPress.org raised.
+		 *
+		 * Scoping this to the enclosing block was tried and is wrong: these
+		 * includes sit inside `if ( ! function_exists( ... ) ) { ... }`, so the
+		 * block closes on the very next line and the window collapses to nothing.
+		 */
+		$window  = implode( "\n", array_slice( $lines, $i + 1, 120 ) );
+		$used    = false;
+		$unknown = array();
 
 		foreach ( array_keys( $block ) as $core ) {
 			if ( isset( $core_classes[ $core ] ) ) {
@@ -240,7 +258,7 @@ foreach ( $src as $file => $lines ) {
 		if ( ! empty( $unknown ) ) {
 			finding( 'WPORG-02', $file, $first + 1, "loads {$names} — " . implode( ', ', $unknown ) . " unknown to this rule, verify a symbol from the block is used right after" );
 		} else {
-			finding( 'WPORG-02', $file, $first + 1, "loads {$names} and uses nothing from any of them within 30 lines" );
+			finding( 'WPORG-02', $file, $first + 1, "loads {$names} and uses nothing from any of them within 120 lines" );
 		}
 	}
 }

@@ -35,10 +35,10 @@ class FLOSC_Access_Validator {
 
 		$violations = array();
 
-		// Get forbidden keywords for this access level
+		// Get forbidden keywords for this access level.
 		$forbidden = $this->get_forbidden_keywords( $access_level );
 
-		// Check for forbidden keywords
+		// Check for forbidden keywords.
 		foreach ( $forbidden as $keyword => $reason ) {
 			if ( stripos( $ai_response, $keyword ) !== false ) {
 				$violations[] = array(
@@ -49,17 +49,17 @@ class FLOSC_Access_Validator {
 			}
 		}
 
-		// Check for VISITOR-specific violations
+		// Check for VISITOR-specific violations.
 		if ( $access_level === 'visitor' ) {
 			$violations = array_merge( $violations, $this->check_visitor_violations( $ai_response ) );
 		}
 
-		// Check for GUEST-specific violations
+		// Check for GUEST-specific violations.
 		if ( $access_level === 'guest' ) {
 			$violations = array_merge( $violations, $this->check_guest_violations( $ai_response ) );
 		}
 
-		// If violations found, replace with safe response
+		// If violations found, replace with safe response.
 		if ( ! empty( $violations ) ) {
 			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
 				if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
@@ -92,12 +92,12 @@ class FLOSC_Access_Validator {
 
 		$all_forbidden = array(
 			// IPA and pronunciation terms (MEMBER ONLY)
-			// v1.4.9: Use regex-style boundaries to avoid false positives on URLs/paths
+			// v1.4.9: Use regex-style boundaries to avoid false positives on URLs/paths.
 			'/ʌ/'            => 'IPA transcription',
 			'IPA:'           => 'IPA format',
 			'transcription:' => 'Pronunciation transcription',
 
-			// Member-only phrases
+			// Member-only phrases.
 			'member content' => 'Direct reference to member content',
 			'full lesson'    => 'Member lesson reference',
 			'complete guide' => 'Member guide reference',
@@ -119,7 +119,7 @@ class FLOSC_Access_Validator {
 		$violations = array();
 
 		// VISITORS should NOT see pricing
-		// v1.4.9: Removed '$' — too many false positives (currency mentions, variable names, etc.)
+		// v1.4.9: Removed '$' — too many false positives (currency mentions, variable names, etc.).
 		$pricing_keywords = array( 'price', 'cost', 'discount', 'offer', 'purchase', 'buy' );
 		foreach ( $pricing_keywords as $keyword ) {
 			if ( stripos( $response, $keyword ) !== false ) {
@@ -131,7 +131,7 @@ class FLOSC_Access_Validator {
 			}
 		}
 
-		// VISITORS should NOT see lesson details
+		// VISITORS should NOT see lesson details.
 		$lesson_keywords = array( 'lesson 1', 'lesson 2', 'lesson 3', 'pronunciation guide', 'video demonstration' );
 		foreach ( $lesson_keywords as $keyword ) {
 			if ( stripos( $response, $keyword ) !== false ) {
@@ -155,9 +155,9 @@ class FLOSC_Access_Validator {
 		$violations = array();
 
 		// GUESTS should NOT see full lesson content
-		// They can see lesson TITLES and DESCRIPTIONS but not content
+		// They can see lesson TITLES and DESCRIPTIONS but not content.
 
-		// Check for detailed content (paragraphs with technical details)
+		// Check for detailed content (paragraphs with technical details).
 		if ( preg_match( '/\b(specifically|detailed|step-by-step|complete breakdown)\b/i', $response ) ) {
 			$violations[] = array(
 				'keyword'  => 'detailed_content',
@@ -300,7 +300,7 @@ class FLOSC_Access_Validator {
 					'Celebrate their membership',
 				),
 				'CANNOT' => array(
-					// Nothing restricted for members
+					// Nothing restricted for members.
 				),
 				'MUST'   => array(
 					'Guide them to relevant lessons',

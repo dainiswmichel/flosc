@@ -48,7 +48,7 @@ class FLOSC_Offer_Manager {
 	 * v1.6.5: Seeds defaults into per-flow storage on first access so admin can edit them
 	 */
 	public function get_all_offers( $flow_id = null ) {
-		// v1.6.2: Try per-flow storage first (where admin offers.php saves)
+		// v1.6.2: Try per-flow storage first (where admin offers.php saves).
 		if ( $flow_id ) {
 			$flow_key      = 'flosc_flow_' . sanitize_key( $flow_id );
 			$flow_settings = get_option( $flow_key, array() );
@@ -64,10 +64,10 @@ class FLOSC_Offer_Manager {
 			}
 		}
 
-		// Fallback to global option for backward compat
+		// Fallback to global option for backward compat.
 		$offers = get_option( $this->option_key, array() );
 
-		// Ensure default structure
+		// Ensure default structure.
 		if ( empty( $offers ) ) {
 			$offers = $this->get_default_offers();
 			update_option( $this->option_key, $offers );
@@ -75,7 +75,7 @@ class FLOSC_Offer_Manager {
 
 		$offers = $this->sync_ivr_offers_into_offers( $offers, $flow_id );
 
-		// v1.6.5: Seed defaults into per-flow storage so admin UI can see/edit them
+		// v1.6.5: Seed defaults into per-flow storage so admin UI can see/edit them.
 		if ( $flow_id ) {
 			$flow_key                = 'flosc_flow_' . sanitize_key( $flow_id );
 			$flow_settings           = get_option( $flow_key, array() );
@@ -411,7 +411,7 @@ class FLOSC_Offer_Manager {
 			'type'           => self::TYPE_ONE_TIME,
 			'status'         => 'active',
 
-			// Pricing (provider-specific)
+			// Pricing (provider-specific).
 			'pricing'        => array(
 				'stripe'       => array(
 					'price_id'   => '',       // Stripe Price ID
@@ -426,30 +426,30 @@ class FLOSC_Offer_Manager {
 				'redirect_url' => '',       // MTS-2026-02-03: External checkout URL
 			),
 
-			// Display pricing (for UI, not for charging)
+			// Display pricing (for UI, not for charging).
 			'display_price'  => '',          // e.g., "€144" or "500 tokens" or "Free with purchase"
 			'original_price' => '',         // MTS-2026-02-03: Original price (for strikethrough)
 
-			// MTS-2026-02-03: [DISPLAY-OPTIONS] Configurable display format
+			// MTS-2026-02-03: [DISPLAY-OPTIONS] Configurable display format.
 			'display_format' => 'card',     // pill, card, compact, banner, featured, text, inline-checkout
 			'cta'            => '',                    // Custom CTA button text
 			'timer_seconds'  => 3600,        // Countdown timer (0 = no timer)
 			'guarantee'      => '',              // Guarantee text (e.g., "30-day money-back guarantee")
 
-			// For subscriptions
+			// For subscriptions.
 			'subscription'   => array(
 				'interval'       => self::INTERVAL_MONTHLY,
 				'interval_count' => 1,
 				'trial_days'     => 0,
 			),
 
-			// For token packs
+			// For token packs.
 			'tokens'         => array(
 				'amount' => 0,              // How many tokens this grants
 				'bonus'  => 0,               // Bonus tokens
 			),
 
-			// Access grants
+			// Access grants.
 			'grants'         => array(
 				'features'      => array(),           // Feature flags to enable
 				'level'         => '',              // Member level to grant (MTS-2026-02-03)
@@ -457,7 +457,7 @@ class FLOSC_Offer_Manager {
 				'usage_limits'  => array(),       // e.g., ['ai_queries' => 1000]
 			),
 
-			// Metadata
+			// Metadata.
 			'meta'           => array(
 				'badge'   => '',              // Badge text (e.g., "Most Popular")
 				'savings' => '',            // Savings text (e.g., "Save 20%")

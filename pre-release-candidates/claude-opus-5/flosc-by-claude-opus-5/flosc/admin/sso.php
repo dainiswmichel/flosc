@@ -18,11 +18,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// Get callback base URL
+// Get callback base URL.
 $flosc_site_url      = get_site_url();
 $flosc_callback_base = $flosc_site_url . '/wp-json/flosc/v1/sso/callback/';
 
-// Provider configurations
+// Provider configurations.
 $flosc_providers = array(
 	'google'    => array(
 		'name'         => 'Google',
@@ -102,7 +102,7 @@ $flosc_providers = array(
 	),
 );
 
-// v1.4.9: SSO settings are PER-FLOW, stored in the flow settings array
+// v1.4.9: SSO settings are PER-FLOW, stored in the flow settings array.
 $flosc_flow_settings          = $GLOBALS['flosc_current_settings'] ?? array();
 $flosc_selected_ivr           = $GLOBALS['flosc_current_ivr'] ?? '';
 $flosc_sso_docs_url           = add_query_arg(

@@ -21,21 +21,21 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @return mixed The value to display in the form
  */
 function flosc_admin_get_value( $key, $default = '' ) {
-	// Check if we're editing a specific flow
+	// Check if we're editing a specific flow.
 	if ( isset( $GLOBALS['flosc_editing_flow'] ) && isset( $GLOBALS['flosc_editing_flow_data'] ) ) {
 		$flow = $GLOBALS['flosc_editing_flow_data'];
 
-		// Return flow-specific value if it exists
+		// Return flow-specific value if it exists.
 		if ( isset( $flow[ $key ] ) && $flow[ $key ] !== '' && $flow[ $key ] !== null ) {
 			return $flow[ $key ];
 		}
 
 		// Return empty to indicate "using global"
-		// The placeholder will show the global value
+		// The placeholder will show the global value.
 		return '';
 	}
 
-	// Editing global settings - return wp_option
+	// Editing global settings - return wp_option.
 	return get_option( 'flosc_' . $key, $default );
 }
 
@@ -80,7 +80,7 @@ function flosc_admin_text_input( $key, $default = '', $class = 'regular-text', $
 	$value      = flosc_admin_get_value( $key, $default );
 	$flosc_name = 'flosc_' . $key;
 
-	// When editing flow, show global value as placeholder
+	// When editing flow, show global value as placeholder.
 	if ( flosc_admin_is_editing_flow() && $placeholder === null ) {
 		$global_value = flosc_admin_get_global( $key, $default );
 		$placeholder  = $global_value ? 'Using global: ' . $global_value : '';
@@ -127,7 +127,7 @@ function flosc_admin_select( $key, $options, $default = '' ) {
 	$value      = flosc_admin_get_value( $key, $default );
 	$flosc_name = 'flosc_' . $key;
 
-	// When editing flow and no value set, show "Use Global" option
+	// When editing flow and no value set, show "Use Global" option.
 	$show_use_global = flosc_admin_is_editing_flow();
 	$global_value    = flosc_admin_get_global( $key, $default );
 

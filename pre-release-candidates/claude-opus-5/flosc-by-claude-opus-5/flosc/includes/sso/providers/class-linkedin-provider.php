@@ -35,7 +35,7 @@ class LinkedIn_Provider extends SSO_Provider_Base {
 		$this->token_url     = 'https://www.linkedin.com/oauth/v2/accessToken';
 		$this->user_info_url = 'https://api.linkedin.com/v2/userinfo';
 
-		// Use OpenID Connect scopes (replaces legacy r_liteprofile, r_emailaddress)
+		// Use OpenID Connect scopes (replaces legacy r_liteprofile, r_emailaddress).
 		$this->scopes = array(
 			'openid',
 			'profile',
@@ -52,7 +52,7 @@ class LinkedIn_Provider extends SSO_Provider_Base {
 	 * @return array|WP_Error User data or error
 	 */
 	public function get_user_info( $access_token, $token_data = array() ) {
-		// LinkedIn now supports OpenID Connect userinfo endpoint
+		// LinkedIn now supports OpenID Connect userinfo endpoint.
 		$response = wp_remote_get(
 			$this->user_info_url,
 			array(

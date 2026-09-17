@@ -619,7 +619,7 @@ function flosc_render_chat_log_row( $log ) {
 	}
 	$ms = intval( $log['response_time_ms'] ?? 0 );
 
-	// v1.9.5: Rating widget
+	// v1.9.5: Rating widget.
 	$rating       = intval( $log['admin_rating'] ?? 0 );
 	$note         = esc_attr( $log['admin_note'] ?? '' );
 	$log_id       = intval( $log['id'] );
@@ -876,7 +876,7 @@ function flosc_render_chat_session( $flosc_s ) {
 		// VGM state change — a divider, not a message. It has no speaker, so it
 		// gets no u-/b-/a- sequence number and does not count as a turn.
 		// +G  account created just now      G  signed in, account already existed
-		// +M  became a member just now      M  signed in, already a member here
+		// +M  became a member just now      M  signed in, already a member here.
 		if ( $src === 'state_change' ) {
 			$thread .= '<div class="flosc-msg flosc-msg-state" title="row ' . $rid . '">'
 				. '<span class="flosc-msg-state-rule" aria-hidden="true"></span>'

@@ -45,17 +45,17 @@ class FLOSC_Condition_Evaluator {
 	public function evaluate( $condition_string ) {
 		$condition_string = trim( $condition_string );
 
-		// Always show
+		// Always show.
 		if ( $condition_string === 'always' || empty( $condition_string ) ) {
 			return true;
 		}
 
-		// Never show
+		// Never show.
 		if ( $condition_string === 'never' ) {
 			return false;
 		}
 
-		// Parse and evaluate complex conditions
+		// Parse and evaluate complex conditions.
 		return $this->evaluate_expression( $condition_string );
 	}
 
@@ -65,13 +65,13 @@ class FLOSC_Condition_Evaluator {
 	private function evaluate_expression( $expr ) {
 		$expr = trim( $expr );
 
-		// Handle parentheses first
+		// Handle parentheses first.
 		while ( preg_match( '/\(([^()]+)\)/', $expr, $matches ) ) {
 			$inner_result = $this->evaluate_expression( $matches[1] ) ? 'TRUE' : 'FALSE';
 			$expr         = str_replace( $matches[0], $inner_result, $expr );
 		}
 
-		// Handle OR (||)
+		// Handle OR (||).
 		if ( strpos( $expr, '||' ) !== false ) {
 			$parts = preg_split( '/\s*\|\|\s*/', $expr );
 			foreach ( $parts as $part ) {
@@ -82,7 +82,7 @@ class FLOSC_Condition_Evaluator {
 			return false;
 		}
 
-		// Handle AND (&&)
+		// Handle AND (&&).
 		if ( strpos( $expr, '&&' ) !== false ) {
 			$parts = preg_split( '/\s*&&\s*/', $expr );
 			foreach ( $parts as $part ) {
@@ -93,12 +93,12 @@ class FLOSC_Condition_Evaluator {
 			return true;
 		}
 
-		// Handle NOT (!)
+		// Handle NOT (!).
 		if ( strpos( $expr, '!' ) === 0 ) {
 			return ! $this->evaluate_expression( substr( $expr, 1 ) );
 		}
 
-		// Handle TRUE/FALSE placeholders
+		// Handle TRUE/FALSE placeholders.
 		if ( $expr === 'TRUE' ) {
 			return true;
 		}
@@ -106,7 +106,7 @@ class FLOSC_Condition_Evaluator {
 			return false;
 		}
 
-		// Evaluate single condition
+		// Evaluate single condition.
 		return $this->evaluate_single( $expr );
 	}
 
@@ -121,7 +121,7 @@ class FLOSC_Condition_Evaluator {
 		// Examples:
 		// - active_until_mts("2026-06m-08d-T20h:00m:00s UTC+2")
 		// - active_until_mts("2026-06m-08d-T20h:00m:00s UTC-05:30")
-		// - active_from_mts("2026-06m-08d-T09h:00m:00s UTC")
+		// - active_from_mts("2026-06m-08d-T09h:00m:00s UTC").
 		if ( preg_match( '/^active_until_mts\("([^"]+)"\)$/', $condition, $matches ) ) {
 			$target_ts = $this->parse_mts_with_timezone( $matches[1] );
 			return ( $target_ts !== null ) ? ( time() <= $target_ts ) : false;
@@ -142,7 +142,7 @@ class FLOSC_Condition_Evaluator {
 			return ( $target_ts !== null ) ? ( time() > $target_ts ) : false;
 		}
 
-		// Score comparisons
+		// Score comparisons.
 		if ( preg_match( '/^score\s*(>=|<=|>|<|==)\s*(\d+)$/', $condition, $matches ) ) {
 			$operator = $matches[1];
 			$value    = intval( $matches[2] );
@@ -150,7 +150,7 @@ class FLOSC_Condition_Evaluator {
 			return $this->compare( $score, $operator, $value );
 		}
 
-		// v8.0.3: Initial score comparisons
+		// v8.0.3: Initial score comparisons.
 		if ( preg_match( '/^initial_score\s*(>=|<=|>|<|==)\s*(\d+)$/', $condition, $matches ) ) {
 			$operator      = $matches[1];
 			$value         = intval( $matches[2] );
@@ -158,7 +158,7 @@ class FLOSC_Condition_Evaluator {
 			return $this->compare( $initial_score, $operator, $value );
 		}
 
-		// Message count comparisons
+		// Message count comparisons.
 		if ( preg_match( '/^message_count\s*(>=|<=|>|<|==)\s*(\d+)$/', $condition, $matches ) ) {
 			$operator = $matches[1];
 			$value    = intval( $matches[2] );
@@ -166,7 +166,7 @@ class FLOSC_Condition_Evaluator {
 			return $this->compare( $count, $operator, $value );
 		}
 
-		// Lessons completed comparisons
+		// Lessons completed comparisons.
 		if ( preg_match( '/^lessons_completed\s*(>=|<=|>|<|==)\s*(\d+)$/', $condition, $matches ) ) {
 			$operator  = $matches[1];
 			$value     = intval( $matches[2] );
@@ -174,7 +174,7 @@ class FLOSC_Condition_Evaluator {
 			return $this->compare( $completed, $operator, $value );
 		}
 
-		// Time-based conditions
+		// Time-based conditions.
 		if ( preg_match( '/^inactive_seconds\s*(>=|<=|>|<|==)\s*(\d+)$/', $condition, $matches ) ) {
 			$operator = $matches[1];
 			$value    = intval( $matches[2] );
@@ -196,7 +196,7 @@ class FLOSC_Condition_Evaluator {
 			return $this->compare( $minutes, $operator, $value );
 		}
 
-		// Login / registration tenure (MagicLink admin gates, IVR, offers)
+		// Login / registration tenure (MagicLink admin gates, IVR, offers).
 		if ( preg_match( '/^login_count\s*(>=|<=|>|<|==)\s*(\d+)$/', $condition, $matches ) ) {
 			return $this->compare( intval( $this->context['login_count'] ?? 0 ), $matches[1], intval( $matches[2] ) );
 		}
@@ -210,12 +210,12 @@ class FLOSC_Condition_Evaluator {
 			return (string) ( $this->context['registration_method'] ?? '' ) !== $matches[1];
 		}
 
-		// Command conditions
+		// Command conditions.
 		if ( preg_match( '/^command\s*==\s*"([^"]+)"$/', $condition, $matches ) ) {
 			return ( $this->context['command'] ?? '' ) === $matches[1];
 		}
 
-		// v8.0.3: Quiz ID comparisons
+		// v8.0.3: Quiz ID comparisons.
 		if ( preg_match( '/^quiz_id\s*==\s*"([^"]+)"$/', $condition, $matches ) ) {
 			return ( $this->context['quiz_id'] ?? '' ) === $matches[1];
 		}
@@ -226,7 +226,7 @@ class FLOSC_Condition_Evaluator {
 			return ( $this->context['initial_quiz_id'] ?? '' ) === $matches[1];
 		}
 
-		// Offer tracking conditions
+		// Offer tracking conditions.
 		if ( preg_match( '/^offer_shown_(\w+)$/', $condition, $matches ) ) {
 			return $this->check_offer_state( $matches[1], 'shown' );
 		}
@@ -237,7 +237,7 @@ class FLOSC_Condition_Evaluator {
 			return $this->check_offer_state( $matches[1], 'purchased' );
 		}
 
-		// Boolean conditions
+		// Boolean conditions.
 		switch ( $condition ) {
 			case 'quiz_taken':
 				return ! empty( $this->context['quiz_taken'] );
@@ -265,7 +265,7 @@ class FLOSC_Condition_Evaluator {
 			case 'first_message_after_free_lesson':
 				return ! empty( $this->context['first_message_after_free_content_item'] );
 
-			// Access level conditions (v9.2.7)
+			// Access level conditions (v9.2.7).
 			case 'is_visitor':
 				return ( $this->context['access_level'] ?? 'visitor' ) === 'visitor';
 			case 'is_guest':
@@ -278,7 +278,7 @@ class FLOSC_Condition_Evaluator {
 				return ! empty( $this->context['has_sso'] );
 		}
 
-		// Unknown condition - default to false
+		// Unknown condition - default to false.
 		return false;
 	}
 
@@ -339,7 +339,7 @@ class FLOSC_Condition_Evaluator {
 				return new DateTimeZone( 'UTC' );
 			}
 
-			// UTC offsets: UTC+2, UTC+02, UTC+02:00, UTC-05:30
+			// UTC offsets: UTC+2, UTC+02, UTC+02:00, UTC-05:30.
 			if ( preg_match( '/^UTC([+-])(\d{1,2})(?::?(\d{2}))?$/', $token, $m ) ) {
 				$sign    = $m[1];
 				$hours   = str_pad( (string) min( 14, (int) $m[2] ), 2, '0', STR_PAD_LEFT );
@@ -348,12 +348,12 @@ class FLOSC_Condition_Evaluator {
 				try {
 					return new DateTimeZone( $offset );
 				} catch ( Exception $e ) {
-					// fall through to fallback order
+					// fall through to fallback order.
 				}
 			}
 		}
 
-		// Fallback 1: site timezone (WordPress)
+		// Fallback 1: site timezone (WordPress).
 		if ( function_exists( 'wp_timezone' ) ) {
 			try {
 				$site_tz = wp_timezone();
@@ -361,7 +361,7 @@ class FLOSC_Condition_Evaluator {
 					return $site_tz;
 				}
 			} catch ( Exception $e ) {
-				// continue fallback
+				// continue fallback.
 			}
 		}
 
@@ -371,22 +371,22 @@ class FLOSC_Condition_Evaluator {
 				try {
 					return new DateTimeZone( $site_tz_string );
 				} catch ( Exception $e ) {
-					// continue fallback
+					// continue fallback.
 				}
 			}
 		}
 
-		// Fallback 2: system timezone
+		// Fallback 2: system timezone.
 		$system_tz = trim( (string) date_default_timezone_get() );
 		if ( $system_tz !== '' ) {
 			try {
 				return new DateTimeZone( $system_tz );
 			} catch ( Exception $e ) {
-				// continue fallback
+				// continue fallback.
 			}
 		}
 
-		// Final fallback
+		// Final fallback.
 		return new DateTimeZone( 'UTC' );
 	}
 
@@ -475,17 +475,17 @@ class FLOSC_Condition_Evaluator {
 		$applicable = array();
 
 		foreach ( $messages as $message ) {
-			// Filter by type if specified
+			// Filter by type if specified.
 			if ( $type !== null && $message['type'] !== $type ) {
 				continue;
 			}
 
-			// Skip if already shown this session (for auto and offer messages)
+			// Skip if already shown this session (for auto and offer messages).
 			if ( ( $message['type'] === 'auto' || $message['type'] === 'offer' ) && $this->was_shown_this_session( $message['name'] ) ) {
 				continue;
 			}
 
-			// Evaluate conditions
+			// Evaluate conditions.
 			if ( $this->evaluate( $message['conditions'] ) ) {
 				$applicable[] = $message;
 			}
@@ -521,14 +521,14 @@ class FLOSC_Condition_Evaluator {
 			'first_message_after_login'             => false,
 			'first_message_after_purchase'          => false,
 			'first_message_after_free_content_item' => false,
-			// v1.0.4: Bridge data variables for IVR targeting (TASK-009)
+			// v1.0.4: Bridge data variables for IVR targeting (TASK-009).
 			'in_bridge_state'                       => false,
 			'has_quiz_profile'                      => false,
 			'bridge_score'                          => 0,
 			'bridge_correct_count'                  => 0,
 			'bridge_incorrect_count'                => 0,
 			'weakest_category'                      => '',
-			// Access-link / engagement gates (defaults when no user)
+			// Access-link / engagement gates (defaults when no user).
 			'login_count'                           => 0,
 			'days_since_registration'               => 0,
 			'registration_method'                   => '',
@@ -578,7 +578,7 @@ class FLOSC_Condition_Evaluator {
 				|| (bool) get_user_meta( $user_id, '_flosc_sso_created_via', true )
 				|| ( strpos( $reg_method, 'sso' ) === 0 );
 
-			// v1.9.6: Phase — needed by FLOSC_User_Session for RAG handler
+			// v1.9.6: Phase — needed by FLOSC_User_Session for RAG handler.
 			$context['phase'] = flosc()->determine_flosc_phase();
 
 			// Freeline content-item number/id (RAG guest access + IVR).
@@ -625,7 +625,7 @@ class FLOSC_Condition_Evaluator {
 				$context['access_level'] = FLOSC_Member_Access::instance()->get_access_level( $user_id, $flow_for_level );
 			}
 
-			// v1.0.4: Populate bridge data context (TASK-009)
+			// v1.0.4: Populate bridge data context (TASK-009).
 			if ( class_exists( 'FLOSC_Bridge_Data_Manager' ) ) {
 				$bridge_mgr                  = FLOSC_Bridge_Data_Manager::instance();
 				$context['in_bridge_state']  = $bridge_mgr->is_in_flosc_bridge_state( $user_id );
@@ -646,7 +646,7 @@ class FLOSC_Condition_Evaluator {
 			}
 		}
 
-		// Merge additional context
+		// Merge additional context.
 		return array_merge( $context, $additional );
 	}
 }

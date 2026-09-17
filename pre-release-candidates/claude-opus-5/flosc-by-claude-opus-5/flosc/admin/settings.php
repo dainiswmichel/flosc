@@ -103,13 +103,13 @@ if ( ! function_exists( 'flosc_check_permalink_status' ) ) {
 		}
 
 		// Check if any rule contains our slug pattern
-		// Rules are stored as: '^app/?$' => 'index.php?flosc_app=1&flosc_ivr=...'
+		// Rules are stored as: '^app/?$' => 'index.php?flosc_app=1&flosc_ivr=...'.
 		foreach ( $rules as $regex => $flosc_query ) {
-			// Check if this rule matches our slug (the regex starts with ^slug)
+			// Check if this rule matches our slug (the regex starts with ^slug).
 			if ( preg_match( '/^\^' . preg_quote( $slug, '/' ) . '/', $regex ) ) {
 				return 'ok';
 			}
-			// Also check query string for flosc_app (indicates FLOSC route)
+			// Also check query string for flosc_app (indicates FLOSC route).
 			if ( strpos( $regex, $slug ) !== false && strpos( $flosc_query, 'flosc_app=1' ) !== false ) {
 				return 'ok';
 			}
@@ -150,12 +150,12 @@ if ( ! function_exists( 'flosc_permalink_status_indicator' ) ) {
 
 		echo '<div class="flosc-permalink-status">';
 
-		// Badge 1: Permalinks status
+		// Badge 1: Permalinks status.
 		echo '<span class="flosc-permalink-badge ' . esc_attr( $color['class'] ) . '">';
 		echo esc_html( $color['text'] );
 		echo '</span>';
 
-		// Badge 2: FLOW settings backfill status
+		// Badge 2: FLOW settings backfill status.
 		$last_backfill = get_option( 'flosc_last_flow_backfill', null );
 		if ( $last_backfill ) {
 			echo '<span class="flosc-permalink-badge flosc-permalink-badge--ok">&#10003; FLOW Settings OK</span>';
@@ -165,7 +165,7 @@ if ( ! function_exists( 'flosc_permalink_status_indicator' ) ) {
 			echo '<span class="flosc-permalink-last-flush">Last flush: ' . esc_html( $last_flush ) . '</span>';
 		}
 
-		// Flush button
+		// Flush button.
 		$flush_url = wp_nonce_url( admin_url( 'admin-post.php?action=flosc_flush_permalinks_v129' ), 'flosc_flush_v129' );
 		echo '<a href="' . esc_url( $flush_url ) . '" class="button button-small flosc-permalink-flush-btn">Flush Now</a>';
 		echo '</div>';
@@ -261,13 +261,13 @@ if ( empty( $flosc_ivr_files ) ) {
 
 // Read request vars early. The flow selector below reads $flosc_get['ivr'] to know
 // which flow is selected. ($get was previously first defined further down — after
-// this point — so the selector always fell back to $flosc_ivr_files[0] and ignored the URL.)
+// this point — so the selector always fell back to $flosc_ivr_files[0] and ignored the URL.).
 $flosc_get = wp_unslash( $_GET );
 
 $flosc_default_ivr_meta_key = '_flosc_admin_default_ivr';
 $flosc_current_user_id      = get_current_user_id();
 
-// Selected IVR file (flow)
+// Selected IVR file (flow).
 $flosc_selected_ivr  = '';
 $flosc_requested_ivr = isset( $flosc_get['ivr'] ) ? sanitize_file_name( $flosc_get['ivr'] ) : '';
 if ( $flosc_requested_ivr !== '' && in_array( $flosc_requested_ivr, $flosc_ivr_files, true ) ) {
@@ -289,10 +289,10 @@ if ( ! flosc_flows()->can_access_flow_admin( $flosc_selected_flow_id ) ) {
 }
 $flosc_can_view_administration = flosc_flows()->can_access_flow_admin( $flosc_selected_flow_id );
 
-// Settings key for this flow
+// Settings key for this flow.
 $flosc_settings_key = flosc_resolve_flow_option_key_for_ivr( $flosc_selected_ivr );
 
-// Load settings for this flow
+// Load settings for this flow.
 $flosc_flow_settings = get_option( $flosc_settings_key, array() );
 if ( ! is_array( $flosc_flow_settings ) ) {
 	$flosc_flow_settings = array();
@@ -308,7 +308,7 @@ if ( function_exists( 'flosc_normalize_content_item_flow_settings' ) ) {
 	$flosc_flow_settings = flosc_normalize_content_item_flow_settings( $flosc_flow_settings, $flosc_settings_key );
 }
 
-// v1.3.5: Preserve underscores in default slug (don't use sanitize_title which converts to hyphens)
+// v1.3.5: Preserve underscores in default slug (don't use sanitize_title which converts to hyphens).
 $flosc_default_slug = strtolower( preg_replace( '/[^a-z0-9_-]/i', '', pathinfo( $flosc_selected_ivr, PATHINFO_FILENAME ) ) );
 if ( $flosc_default_slug === '' ) {
 	$flosc_default_slug = 'flosc';
@@ -644,25 +644,25 @@ if ( isset( $flosc_post['flosc_create_trajectory_post'] ) && wp_verify_nonce( sa
 	exit;
 }
 
-// Handle save
+// Handle save.
 if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field( $flosc_post['_wpnonce'] ?? '' ), 'flosc_save_settings' ) ) {
 	if ( ! flosc_flows()->can_access_flow_admin( $flosc_selected_flow_id ) ) {
 		wp_die( esc_html__( 'You do not have permission to save this FLOSC flow.', 'flosc' ) );
 	}
 
-	// Collect all POST data for this flow
+	// Collect all POST data for this flow.
 	$flosc_new_settings = $flosc_flow_settings; // Start with existing
 
-	// v1.5.0: Keys that contain multiline content (stored in flow settings via flow_ prefix)
+	// v1.5.0: Keys that contain multiline content (stored in flow settings via flow_ prefix).
 	$flosc_textarea_flow_keys = array(
 		'sso_apple_private_key',
 		// AI tab: brand facts are a multiline prompt injection — keep newlines.
 		'ai_brand_facts',
-		// Companion targeting
+		// Companion targeting.
 		'companion_target_include',
 		'companion_target_exclude',
 		'companion_trigger_suppress_path_patterns',
-		// AI configuration
+		// AI configuration.
 		'ai_base_prompt',
 		'ai_prompt_freeline',
 		'ai_prompt_login',
@@ -674,7 +674,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		'phase_outcomes_offer',
 		'phase_outcomes_sale',
 		'phase_outcomes_content',
-		// AI knowledge
+		// AI knowledge.
 		'ai_personality_traits',
 		'ai_mission',
 		'ai_context_awareness',
@@ -685,7 +685,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		'ai_off_topic_message',
 		'ai_off_topic_links',
 		'ai_accuracy_test_questions',
-		// Email
+		// Email.
 		'email_body',
 		// Guest email bodies — follow-up slots are guest_followup_N_body (legacy guest_day*_body still accepted).
 		'guest_welcome_body',
@@ -695,14 +695,14 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		'guest_day10_body',
 		'guest_day20_body',
 		'guest_day28_body',
-		// Payments
+		// Payments.
 		'manual_payment_instructions',
-		// Identity policy pages
+		// Identity policy pages.
 		'privacy_policy_content',
 		'terms_of_service_content',
 		'data_deletion_content',
 		'platform_compliance_content',
-		// Guest / chat list copy
+		// Guest / chat list copy.
 		'guest_new_chat_limit_message',
 		'guest_new_chat_welcome_message',
 		'member_new_chat_welcome_message',
@@ -719,7 +719,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 	foreach ( $flosc_post as $flosc_key => $flosc_value ) {
 		if ( strpos( $flosc_key, 'flow_' ) === 0 ) {
 			$flosc_setting_key = substr( $flosc_key, 5 ); // Remove 'flow_' prefix
-			// Check static textarea keys OR dynamic quiz content/template keys
+			// Check static textarea keys OR dynamic quiz content/template keys.
 			$flosc_is_textarea = in_array( $flosc_setting_key, $flosc_textarea_flow_keys, true )
 				|| strpos( $flosc_setting_key, 'quiz_content_' ) === 0
 				|| strpos( $flosc_setting_key, '_template_' ) !== false
@@ -780,7 +780,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 	}
 
 	// v1.5.0: Handle checkbox unchecking — checkboxes don't POST when unchecked
-	// Only handle checkboxes for the current tab to avoid wiping other tabs' values
+	// Only handle checkboxes for the current tab to avoid wiping other tabs' values.
 	if ( $flosc_active_tab === 'sso' ) {
 		$flosc_sso_providers = array( 'google', 'apple', 'facebook', 'microsoft', 'linkedin' );
 		foreach ( $flosc_sso_providers as $flosc_provider ) {
@@ -915,7 +915,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 				continue;
 			}
 			if ( ( $flosc_rr['email_template'] ?? '' ) !== 'reengagement' && ( $flosc_rr['email_template'] ?? '' ) !== '' ) {
-				// still count as reeng if inactive email of any template
+				// still count as reeng if inactive email of any template.
 			}
 			$flosc_reeng_on   = '1';
 			$flosc_reeng_days = max( 1, min( 365, intval( $flosc_rr['trigger_days'] ?? 7 ) ) );
@@ -1162,7 +1162,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 						unset( $flosc_tokens['cap'] ); // flow cap
 					}
 				} else {
-					// flow defaults — clear overrides so runtime uses flow params
+					// flow defaults — clear overrides so runtime uses flow params.
 					unset( $flosc_tokens['amount'], $flosc_tokens['cap'], $flosc_tokens['bonus'] );
 					$flosc_tokens['cap_mode'] = 'flow';
 				}
@@ -1579,9 +1579,9 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 
 	}
 
-	// v8.1.0: Member Levels tab — parse level registry + content protection repeaters
+	// v8.1.0: Member Levels tab — parse level registry + content protection repeaters.
 	if ( in_array( $flosc_active_tab, array( 'member-levels', 'content' ), true ) ) {
-		// Level registry repeater
+		// Level registry repeater.
 		$flosc_level_slugs        = $flosc_post['level_slug'] ?? array();
 		$flosc_level_names        = $flosc_post['level_name'] ?? array();
 		$flosc_level_descriptions = $flosc_post['level_description'] ?? array();
@@ -1599,7 +1599,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		}
 		$flosc_new_settings['member_levels'] = $flosc_member_levels;
 
-		// Content protection repeater
+		// Content protection repeater.
 		$flosc_prot_types  = $flosc_post['protection_type'] ?? array();
 		$flosc_prot_values = $flosc_post['protection_value'] ?? array();
 		$flosc_prot_levels = $flosc_post['protection_level'] ?? array();
@@ -1630,7 +1630,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 				'vgm'   => $flosc_vgm,
 				'depth' => $flosc_depth,
 			);
-			// Resolve names for display
+			// Resolve names for display.
 			if ( in_array( $flosc_type, array( 'category', 'tag' ) ) ) {
 				$flosc_term = get_term( intval( $flosc_value ) );
 				if ( $flosc_term && ! is_wp_error( $flosc_term ) ) {
@@ -1680,7 +1680,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		// Sync to term_meta while class-content-protection.php still reads term_meta.
 		// Follow-up: move class-content-protection.php to flow_settings['protected_content']
 		// and then remove this compatibility sync.
-		// First clear old protection flags from categories no longer protected
+		// First clear old protection flags from categories no longer protected.
 		$flosc_old_protected = $flosc_flow_settings['protected_content'] ?? array();
 		foreach ( $flosc_old_protected as $flosc_old_item ) {
 			if ( $flosc_old_item['type'] === 'category' ) {
@@ -1688,7 +1688,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 				delete_term_meta( intval( $flosc_old_item['id'] ), '_flosc_required_level' );
 			}
 		}
-		// Set new protection flags
+		// Set new protection flags.
 		foreach ( $flosc_protected_content as $flosc_item ) {
 			if ( $flosc_item['type'] === 'category' ) {
 				update_term_meta( intval( $flosc_item['id'] ), '_flosc_protected', 'yes' );
@@ -1700,7 +1700,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 	}
 
 	// v3.0.0: Lessons tab — parse content_item_groups repeater
-	// Repeater fields are NOT flow_-prefixed (content_item_group_quiz[], content_item_group_category[])
+	// Repeater fields are NOT flow_-prefixed (content_item_group_quiz[], content_item_group_category[]).
 	if ( in_array( $flosc_active_tab, array( 'lessons', 'content' ), true ) ) {
 		$flosc_group_quizzes       = $flosc_post['content_item_group_quiz'] ?? array();
 		$flosc_group_categories    = $flosc_post['content_item_group_category'] ?? array();
@@ -1722,7 +1722,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 			$flosc_new_settings['content_item_groups']   = $flosc_content_item_groups;
 			$flosc_new_settings['content_item_category'] = $flosc_content_item_groups[0]['category'];
 		}
-		// Free-sample pool = WP category (often a child of the main lessons category)
+		// Free-sample pool = WP category (often a child of the main lessons category).
 		if ( isset( $flosc_new_settings['free_content_item_pool_category'] ) ) {
 			$flosc_new_settings['free_content_item_pool_category'] = sanitize_title(
 				(string) $flosc_new_settings['free_content_item_pool_category']
@@ -1808,7 +1808,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 			);
 		}
 
-		// Visitor menu — dynamic items from repeater
+		// Visitor menu — dynamic items from repeater.
 		$flosc_menu_labels  = $flosc_post['visitor_menu_label'] ?? array();
 		$flosc_menu_actions = $flosc_post['visitor_menu_action'] ?? array();
 		$flosc_new_menu     = array();
@@ -1845,7 +1845,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		}
 		update_option( 'flosc_guest_menu_items', $flosc_new_guest_menu );
 
-		// v1.9.8: Member menu — dynamic items from repeater
+		// v1.9.8: Member menu — dynamic items from repeater.
 		$flosc_member_labels   = $flosc_post['member_menu_label'] ?? array();
 		$flosc_member_actions  = $flosc_post['member_menu_action'] ?? array();
 		$flosc_new_member_menu = array();
@@ -1865,7 +1865,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		}
 		update_option( 'flosc_member_menu_items', $flosc_new_member_menu );
 
-		// Login destination — v1.9.8: now a URL, not a key
+		// Login destination — v1.9.8: now a URL, not a key.
 		$flosc_login_dest = trim( $flosc_post['flosc_login_destination'] ?? '' );
 		update_option( 'flosc_login_destination', $flosc_login_dest !== '' ? esc_url_raw( $flosc_login_dest ) : '' );
 	}
@@ -1887,7 +1887,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 			$flosc_member_avatar_radius = '8px';
 		}
 
-		// Profile bar per-state settings
+		// Profile bar per-state settings.
 		$flosc_profile_bar = array(
 			'visitor' => array(
 				'name'          => sanitize_text_field( $flosc_post['profile_bar_visitor_name'] ?? 'Visitor' ),
@@ -2049,7 +2049,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 	}
 	$flosc_new_settings['identity'] = $flosc_identity;
 
-	// Save flow settings (ALL tabs now per-flow)
+	// Save flow settings (ALL tabs now per-flow).
 	update_option( $flosc_settings_key, $flosc_new_settings );
 
 	// Record the save in its own option, after the write it reports on. Keeping
@@ -2087,10 +2087,10 @@ if ( ! empty( $GLOBALS['flosc_settings_early_post_running'] ) ) {
 	return;
 }
 
-// Build flow URL
+// Build flow URL.
 $flosc_flow_url = home_url( '/' . ( $flosc_flow_settings['slug'] ?? 'flosc' ) . '/' );
 
-// Set global context for tab includes
+// Set global context for tab includes.
 $GLOBALS['flosc_current_ivr']      = $flosc_selected_ivr;
 $GLOBALS['flosc_current_settings'] = $flosc_flow_settings;
 $GLOBALS['flosc_settings_key']     = $flosc_settings_key;
@@ -2416,16 +2416,16 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 			<!-- Identity Tab v1.3.3 - All Flows = fully expanded inline editing -->
 			
 			<?php
-			// View mode: single flow or all flows
+			// View mode: single flow or all flows.
 			$flosc_view_mode = $flosc_identity_view;
 
-			// Get all flows data
+			// Get all flows data.
 			$flosc_all_flows = array();
 			foreach ( $flosc_ivr_files as $flosc_ivr_file ) {
 				$flosc_key      = flosc_resolve_flow_option_key_for_ivr( $flosc_ivr_file );
 				$flosc_settings = get_option( $flosc_key, array() );
 				if ( empty( $flosc_settings ) ) {
-					// v1.3.5: Preserve underscores in default slug
+					// v1.3.5: Preserve underscores in default slug.
 					$flosc_default_slug = strtolower( preg_replace( '/[^a-z0-9_-]/i', '', pathinfo( $flosc_ivr_file, PATHINFO_FILENAME ) ) );
 					$flosc_settings     = array(
 						'name'          => ucwords( str_replace( array( '_', '-', 'ivr', '.md' ), array( ' ', ' ', '', '' ), $flosc_ivr_file ) ),
@@ -2443,7 +2443,7 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 				);
 			}
 
-			// Handle individual flow save via AJAX or form
+			// Handle individual flow save via AJAX or form.
 			if ( isset( $flosc_post['flosc_save_flow'] ) && wp_verify_nonce( sanitize_text_field( $flosc_post['_wpnonce'] ?? '' ), 'flosc_save_settings' ) ) {
 				if ( ! current_user_can( 'manage_options' ) ) {
 					wp_die( esc_html__( 'You do not have permission to save multi-flow identity settings.', 'flosc' ) );
@@ -2453,7 +2453,7 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 					$flosc_flow_key     = $flosc_all_flows[ $flosc_save_ivr ]['key'];
 					$flosc_new_settings = $flosc_all_flows[ $flosc_save_ivr ]['settings'];
 
-					// Update from POST data (fields prefixed with ivr filename hash)
+					// Update from POST data (fields prefixed with ivr filename hash).
 					$flosc_prefix             = 'flow_' . md5( $flosc_save_ivr ) . '_';
 					$flosc_identity_html_keys = array( 'privacy_policy_content', 'terms_of_service_content', 'data_deletion_content', 'platform_compliance_content' );
 					foreach ( $flosc_post as $flosc_key => $flosc_value ) {
@@ -2467,7 +2467,7 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 						}
 					}
 
-					// v2.0.0: Nest identity fields into identity sub-array
+					// v2.0.0: Nest identity fields into identity sub-array.
 					$flosc_id_keys = array(
 						'name',
 						'title',
@@ -2497,7 +2497,7 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 				}
 			}
 
-			// Handle save all flows
+			// Handle save all flows.
 			if ( isset( $flosc_post['flosc_save_all_flows'] ) && wp_verify_nonce( sanitize_text_field( $flosc_post['_wpnonce'] ?? '' ), 'flosc_save_settings' ) ) {
 				if ( ! current_user_can( 'manage_options' ) ) {
 					wp_die( esc_html__( 'You do not have permission to save multi-flow identity settings.', 'flosc' ) );
@@ -2519,7 +2519,7 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 						}
 					}
 
-					// v2.0.0: Nest identity fields into identity sub-array
+					// v2.0.0: Nest identity fields into identity sub-array.
 					$flosc_id_keys = array(
 						'name',
 						'title',
@@ -2598,7 +2598,7 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 				foreach ( $flosc_all_flows as $flosc_ivr_file => $flosc_flow_data ) :
 					$flosc_settings = $flosc_flow_data['settings'];
 					// v2.0.0: Merge identity sub-array up for form display
-					// Identity fields are stored nested but form fields read flat
+					// Identity fields are stored nested but form fields read flat.
 					$flosc_si = $flosc_settings['identity'] ?? array();
 					foreach ( array( 'name', 'title', 'tagline', 'primary_color', 'chatlogo_url', 'favicon_url', 'badgeUrl', 'share_text', 'privacy_policy_content', 'terms_of_service_content', 'data_deletion_content', 'platform_compliance_content' ) as $flosc__ik ) {
 						if ( isset( $flosc_si[ $flosc__ik ] ) && ! isset( $flosc_settings[ $flosc__ik ] ) ) {
@@ -2608,7 +2608,7 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 					$flosc_prefix             = 'flow_' . md5( $flosc_ivr_file ) . '_';
 					$flosc_is_current         = ( $flosc_ivr_file === $flosc_selected_ivr );
 					$flosc_flow_block_classes = 'flosc-flow-block' . ( $flosc_is_current ? ' is-current' : '' );
-					// v1.3.5: Preserve underscores in default slug
+					// v1.3.5: Preserve underscores in default slug.
 					$flosc_default_slug       = strtolower( preg_replace( '/[^a-z0-9_-]/i', '', pathinfo( $flosc_ivr_file, PATHINFO_FILENAME ) ) );
 					$flosc_slug               = $flosc_settings['slug'] ?? $flosc_default_slug;
 					$flosc_flow_url           = home_url( '/' . $flosc_slug . '/' );
@@ -2875,7 +2875,7 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 				
 				<!-- URL Mapping Info Box -->
 				<?php
-				// v1.3.5: Preserve underscores in default slug
+				// v1.3.5: Preserve underscores in default slug.
 				$flosc_default_slug = strtolower( preg_replace( '/[^a-z0-9_-]/i', '', pathinfo( $flosc_selected_ivr, PATHINFO_FILENAME ) ) );
 				$flosc_current_slug = $flosc_flow_settings['slug'] ?? $flosc_default_slug;
 				$flosc_flow_url     = home_url( '/' . $flosc_current_slug . '/' );

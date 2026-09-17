@@ -17,21 +17,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 // Topic registry: each entry has an id, title, status ('ready' or 'pending'), and group.
 // This registry will later support helpID lookups from inline help links elsewhere in the admin.
 $flosc_doc_topics = array(
-	// Part 1: The Journey
+	// Part 1: The Journey.
 	array(
 		'id'     => 'the-journey',
 		'group'  => 'journey',
 		'title'  => 'The Journey — Why FLOSC Exists',
 		'status' => 'ready',
 	),
-	// Part 2: Architecture
+	// Part 2: Architecture.
 	array(
 		'id'     => 'architecture',
 		'group'  => 'architecture',
 		'title'  => 'Architecture Overview',
 		'status' => 'pending',
 	),
-	// Part 3: Reference
+	// Part 3: Reference.
 	array(
 		'id'     => 'ref-ivr',
 		'group'  => 'reference',
@@ -110,21 +110,21 @@ $flosc_doc_topics = array(
 		'title'  => 'SSO & OAuth Reference',
 		'status' => 'pending',
 	),
-	// Part 4: Security
+	// Part 4: Security.
 	array(
 		'id'     => 'security',
 		'group'  => 'security',
 		'title'  => 'Security',
 		'status' => 'pending',
 	),
-	// Part 5: Glossary
+	// Part 5: Glossary.
 	array(
 		'id'     => 'glossary',
 		'group'  => 'glossary',
 		'title'  => 'Glossary — Every FLOSC Term Defined',
 		'status' => 'ready',
 	),
-	// Part 6: Development
+	// Part 6: Development.
 	array(
 		'id'     => 'development-team',
 		'group'  => 'development',
@@ -161,7 +161,7 @@ if ( ! isset( $flosc_get ) || ! is_array( $flosc_get ) ) {
 }
 $flosc_doc_topic = isset( $flosc_get['doc'] ) ? sanitize_text_field( (string) $flosc_get['doc'] ) : '';
 
-// Group labels for the sidebar
+// Group labels for the sidebar.
 $flosc_group_labels = array(
 	'journey'      => 'Part 1: The Journey',
 	'architecture' => 'Part 2: Architecture',
@@ -254,7 +254,7 @@ foreach ( $flosc_doc_topics as $flosc_topic ) {
 				<div class="flosc-doc-card-grid">
 					<?php
 					foreach ( $flosc_group_labels as $flosc_gid => $flosc_glabel ) :
-						// Find first topic in this group
+						// Find first topic in this group.
 						$flosc_first = isset( $flosc_group_first_topic[ $flosc_gid ] ) ? $flosc_group_first_topic[ $flosc_gid ] : null;
 						if ( ! $flosc_first ) {
 							continue;
@@ -339,7 +339,7 @@ foreach ( $flosc_doc_topics as $flosc_topic ) {
 		<?php elseif ( $flosc_doc_topic === 'ref-ai-config' ) : ?>
 			<div class="flosc-doc-article flosc-doc-card">
 				<?php
-				// Suppress the tab header when including guide from documentation
+				// Suppress the tab header when including guide from documentation.
 				$GLOBALS['flosc_suppress_tab_header'] = true;
 				include FLOSC_PLUGIN_DIR . 'admin/ai-configuration-guide.php';
 				unset( $GLOBALS['flosc_suppress_tab_header'] );
@@ -348,7 +348,7 @@ foreach ( $flosc_doc_topics as $flosc_topic ) {
 
 		<?php else : ?>
 			<?php
-			// Pending topic — show heading skeleton
+			// Pending topic — show heading skeleton.
 			$flosc_current_topic = null;
 			foreach ( $flosc_doc_topics as $flosc_t ) {
 				if ( $flosc_t['id'] === $flosc_doc_topic ) {
@@ -363,7 +363,7 @@ foreach ( $flosc_doc_topics as $flosc_topic ) {
 					<strong>🔲 Content pending</strong> — This section has a heading structure prepared. Content will be written as the corresponding features stabilize.
 				</div>
 				<?php
-				// Load the skeleton file if it exists
+				// Load the skeleton file if it exists.
 				$flosc_skeleton_file = FLOSC_PLUGIN_DIR . 'admin/docs/' . str_replace( '-', '_', $flosc_doc_topic ) . '_skeleton.php';
 				if ( file_exists( $flosc_skeleton_file ) ) {
 					include $flosc_skeleton_file;

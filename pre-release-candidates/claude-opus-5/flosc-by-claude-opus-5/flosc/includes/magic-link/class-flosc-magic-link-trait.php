@@ -283,7 +283,7 @@ trait FLOSC_Magic_Link_Trait {
 			exit;
 		}
 
-		// Case 0: Guest MagicLink access (existing users only; never creates accounts)
+		// Case 0: Guest MagicLink access (existing users only; never creates accounts).
 		if ( ! empty( $get['flosc_magic'] ) ) {
 			$token = sanitize_text_field( $get['flosc_magic'] );
 			if ( ! $this->check_rate_limit( 'magic_consume', 30, 15 * MINUTE_IN_SECONDS ) ) {
@@ -310,14 +310,14 @@ trait FLOSC_Magic_Link_Trait {
 			$email          = sanitize_email( $payload['email'] );
 			$is_first_click = ( $payload['status'] === 'pending' );
 
-			// Check membership before applying use-count limits — members of this guest-link flow get unlimited access
+			// Check membership before applying use-count limits — members of this guest-link flow get unlimited access.
 			$_pre_user      = get_user_by( 'email', $email );
 			$_link_flow     = sanitize_key( (string) ( $payload['flow_id'] ?? get_user_meta( $_pre_user ? $_pre_user->ID : 0, '_flosc_registration_flow', true ) ) );
 			$is_member_user = $_pre_user &&
 				$this->sale_manager->access()->get_simple_state( $_pre_user->ID, $_link_flow ) === 'member';
 
 			if ( $is_first_click ) {
-				// Phase 1 → Phase 2: Activate link on first click
+				// Phase 1 → Phase 2: Activate link on first click.
 				$payload['status']           = 'active';
 				$payload['first_clicked_at'] = time();
 				if ( ! $is_member_user ) {
@@ -325,7 +325,7 @@ trait FLOSC_Magic_Link_Trait {
 				}
 				set_transient( $transient_key, $payload, $window_ttl );
 			} else {
-				// Phase 2: Enforce active window; enforce max-use limit only for non-members
+				// Phase 2: Enforce active window; enforce max-use limit only for non-members.
 				$expired = (
 					$payload['status'] !== 'active' ||
 					( time() - $payload['first_clicked_at'] ) > $window_ttl ||
@@ -341,7 +341,7 @@ trait FLOSC_Magic_Link_Trait {
 					exit;
 				}
 				if ( ! $is_member_user ) {
-					// Increment use_count and re-save with remaining TTL
+					// Increment use_count and re-save with remaining TTL.
 					++$payload['use_count'];
 				}
 				$elapsed       = time() - $payload['first_clicked_at'];
@@ -435,7 +435,7 @@ trait FLOSC_Magic_Link_Trait {
 			}
 			set_transient( $transient_key, $payload, $ttl_save );
 
-			// Log in the known user only
+			// Log in the known user only.
 			wp_set_current_user( $user_id );
 			wp_set_auth_cookie( $user_id, true );
 			$flosc_token = $this->generate_flosc_auth_token( $user_id );
@@ -446,10 +446,10 @@ trait FLOSC_Magic_Link_Trait {
 			}
 			$this->process_prelogin_data_for_user( $user_id );
 
-			// Store token for credential-save email (email-registered users)
+			// Store token for credential-save email (email-registered users).
 			update_user_meta( $user_id, '_flosc_magic_link_token', $token );
 
-			// First click only: snapshot send count to user meta for admin profile visibility
+			// First click only: snapshot send count to user meta for admin profile visibility.
 			if ( $is_first_click ) {
 				$log  = get_option( 'flosc_guest_link_log', array() );
 				$hash = md5( strtolower( $email ) );
@@ -552,7 +552,7 @@ trait FLOSC_Magic_Link_Trait {
 			exit;
 		}
 
-		// Case 1: Cross-domain login token
+		// Case 1: Cross-domain login token.
 		if ( ! empty( $get['flosc_login_token'] ) ) {
 			$token         = sanitize_text_field( $get['flosc_login_token'] );
 			$transient_key = 'flosc_login_token_' . $token;
@@ -562,7 +562,7 @@ trait FLOSC_Magic_Link_Trait {
 				return;
 			}
 
-			// One-time use — delete immediately
+			// One-time use — delete immediately.
 			delete_transient( $transient_key );
 
 			$user_id = absint( is_array( $user_id ) ? ( $user_id['user_id'] ?? $user_id['uid'] ?? 0 ) : $user_id );
@@ -576,11 +576,11 @@ trait FLOSC_Magic_Link_Trait {
 			wp_set_auth_cookie( $user_id, true );
 
 			// v3.0.0: Set FLOSC auth token cookie (empty domain = current host)
-			// This works even when COOKIE_DOMAIN doesn't match the custom domain
+			// This works even when COOKIE_DOMAIN doesn't match the custom domain.
 			$flosc_token = $this->generate_flosc_auth_token( $user_id );
 			$this->set_flosc_auth_cookie( $flosc_token );
 
-			// v1.5.3: Call FLOSC's login handler directly (not do_action)
+			// v1.5.3: Call FLOSC's login handler directly (not do_action).
 			$this->handle_user_login( $user->user_login, $user );
 
 			// v8.0.0: Pull quiz session from DO if pending.
@@ -589,18 +589,18 @@ trait FLOSC_Magic_Link_Trait {
 			// Pull now so FLOSC_USER.lastQuizData is ready when the page renders.
 			$this->pull_pending_session_from_do( $user_id );
 
-			// Redirect to clean URL (strip token + sso_success params)
+			// Redirect to clean URL (strip token + sso_success params).
 			$clean_url = remove_query_arg( array( 'flosc_login_token', 'flosc_sso_success' ) );
 			wp_safe_redirect( $clean_url );
 			exit;
 		}
 
-		// Case 2: Same-domain SSO success (no token needed, cookie already valid)
+		// Case 2: Same-domain SSO success (no token needed, cookie already valid).
 		if ( ! empty( $get['flosc_sso_success'] ) && is_user_logged_in() ) {
 			$user = wp_get_current_user();
 			$this->handle_user_login( $user->user_login, $user );
 
-			// v8.0.0: Pull quiz session from DO if pending (same as Case 1)
+			// v8.0.0: Pull quiz session from DO if pending (same as Case 1).
 			$this->pull_pending_session_from_do( $user->ID );
 
 			$clean_url = remove_query_arg( 'flosc_sso_success' );
@@ -1242,7 +1242,7 @@ trait FLOSC_Magic_Link_Trait {
 			$purchase_data = array();
 		}
 
-		// Extract flow context
+		// Extract flow context.
 		$flow_id = sanitize_key( (string) ( $purchase_data['flow_id'] ?? get_user_meta( $user_id, '_flosc_registration_flow', true ) ) );
 		if ( empty( $flow_id ) ) {
 			return; // No flow context — skip
@@ -1254,7 +1254,7 @@ trait FLOSC_Magic_Link_Trait {
 		$body_tpl    = trim( (string) ( $settings['purchase_confirmation_body'] ?? "Hi {name}!\n\nThank you for your purchase!\n\nYour access is now active. Log in with the account email used at checkout to continue.\n\n{chat_url}\n\n— The {team_name}" ) );
 
 		// Pass 2 / E1: passwordless post-purchase login token is OFF by default.
-		// Private deploys: add_filter( 'flosc_post_purchase_login_token', '__return_true' );
+		// Private deploys: add_filter( 'flosc_post_purchase_login_token', '__return_true' );.
 		$mint_login_token = (bool) apply_filters( 'flosc_post_purchase_login_token', false, $user_id, $purchase_data );
 		$login_url        = '';
 		$button_url       = $context['chat_url'];
@@ -1740,7 +1740,7 @@ trait FLOSC_Magic_Link_Trait {
 			wp_send_json_error( array( 'message' => 'Please enter a valid email address.' ) );
 		}
 
-		// Set flow context so flosc_get_setting reads the correct per-flow settings
+		// Set flow context so flosc_get_setting reads the correct per-flow settings.
 		$ivr = sanitize_file_name( $post['ivr'] ?? '' );
 		if ( ! empty( $ivr ) ) {
 			$this->set_flow_context( pathinfo( $ivr, PATHINFO_FILENAME ) );

@@ -376,7 +376,7 @@ if ( $flosc_quiz_configured && class_exists( 'FLOSC_Quiz_Registry' ) ) {
 $flosc_visitor_pills  = count( $flosc_flow_settings['autoprompts']['visitor'] ?? array() );
 $flosc_ivr_file_label = $flosc_selected_ivr ? esc_html( $flosc_selected_ivr ) : 'None configured';
 
-// L — Login: SSO providers
+// L — Login: SSO providers.
 $flosc_sso_providers = array();
 foreach ( array( 'google', 'apple', 'facebook', 'microsoft', 'linkedin' ) as $flosc_p ) {
 	if ( ! empty( $flosc_flow_settings[ 'sso_' . $flosc_p . '_enabled' ] ) ) {
@@ -385,7 +385,7 @@ foreach ( array( 'google', 'apple', 'facebook', 'microsoft', 'linkedin' ) as $fl
 }
 $flosc_sso_label = $flosc_sso_providers ? implode( ', ', $flosc_sso_providers ) : 'WordPress native';
 
-// O — Offer: offers count + guest pills
+// O — Offer: offers count + guest pills.
 $flosc_flow_id_key  = $flosc_selected_ivr ? pathinfo( $flosc_selected_ivr, PATHINFO_FILENAME ) : null;
 $flosc_all_offers   = array();
 $flosc_active_count = 0;
@@ -403,7 +403,7 @@ if ( function_exists( 'flosc' ) && $flosc_flow_id_key ) {
 $flosc_offers_label = $flosc_active_count . ' active' . ( $flosc_draft_count ? ', ' . $flosc_draft_count . ' draft' : '' );
 $flosc_guest_pills  = count( $flosc_flow_settings['autoprompts']['guest'] ?? array() ) + $flosc_ivr_pill_counts['offer'];
 
-// S — Sale: payment providers (read directly from flow_settings — same source as Payments tab)
+// S — Sale: payment providers (read directly from flow_settings — same source as Payments tab).
 $flosc_paypal_cfg  = ! empty( $flosc_flow_settings['paypal_enabled'] )
 				&& ! empty( $flosc_flow_settings['paypal_client_id'] )
 				&& ! empty( $flosc_flow_settings['paypal_secret'] );
@@ -415,7 +415,7 @@ $flosc_stripe_sk   = $flosc_stripe_mode === 'live'
 				: ( $flosc_flow_settings['stripe_test_sk'] ?? '' );
 $flosc_stripe_cfg  = ! empty( $flosc_flow_settings['stripe_enabled'] ) && ! empty( $flosc_stripe_sk );
 
-// C — Content: lessons + member pills + AI provider
+// C — Content: lessons + member pills + AI provider.
 $flosc_content_item_groups = $flosc_flow_settings['content_item_groups'] ?? array();
 if ( empty( $flosc_content_item_groups ) && ! empty( $flosc_flow_settings['content_item_category'] ) ) {
 	$flosc_content_item_groups = array( array( 'category' => $flosc_flow_settings['content_item_category'] ) );

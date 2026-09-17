@@ -15,9 +15,9 @@
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
-	// Allow running from WP-CLI
+	// Allow running from WP-CLI.
 	if ( defined( 'WP_CLI' ) && WP_CLI ) {
-		// Running from CLI is OK
+		// Running from CLI is OK.
 	} else {
 		exit( 'Direct access not allowed' );
 	}
@@ -59,7 +59,7 @@ function flosc_create_sample_posts() {
 		10 => 'ten',
 	);
 
-	// Magnificent titles for each lesson
+	// Magnificent titles for each lesson.
 	$lesson_titles = array(
 		1  => 'One: The Loneliest Number (But Not Really)',
 		2  => 'Two: The Sound That Launched a Thousand Puns',
@@ -96,7 +96,7 @@ function flosc_create_sample_posts() {
 			continue;
 		}
 
-		// Create the post
+		// Create the post.
 		$post_data = array(
 			'post_title'    => $lesson_titles[ $num ],
 			'post_content'  => flosc_generate_post_content( $num, $word ),
@@ -109,7 +109,7 @@ function flosc_create_sample_posts() {
 		$post_id = wp_insert_post( $post_data );
 
 		if ( $post_id && ! is_wp_error( $post_id ) ) {
-			// Add custom meta
+			// Add custom meta.
 			update_post_meta( $post_id, '_flosc_lesson_number', $num );
 			update_post_meta( $post_id, '_flosc_access_level', 'member' ); // Default: member-only
 
@@ -130,7 +130,7 @@ function flosc_create_sample_posts() {
  */
 function flosc_generate_post_content( $num, $word ) {
 
-	// Lesson data: title, teaser, IPA, sound breakdown, fun facts
+	// Lesson data: title, teaser, IPA, sound breakdown, fun facts.
 	$lessons = array(
 		1  => array(
 			'title'    => 'One: The Loneliest Number (But Not Really)',
@@ -247,7 +247,7 @@ function flosc_generate_post_content( $num, $word ) {
 
 	$lesson = $lessons[ $num ];
 
-	// Build the content
+	// Build the content.
 	$content  = "# {$lesson['title']}\n\n";
 	$content .= "{$lesson['teaser']}\n\n";
 	$content .= "**Spoiler alert:** There's actual linguistic science below. Members get the full IPA breakdown, pronunciation secrets, and fun facts that'll make you the hit of parties (nerdy parties, but still).\n\n";
@@ -278,12 +278,12 @@ function flosc_generate_post_content( $num, $word ) {
 	return $content;
 }
 
-// Run if called from WP-CLI
+// Run if called from WP-CLI.
 if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	flosc_create_sample_posts();
 }
 
-// Provide admin UI button (future enhancement)
+// Provide admin UI button (future enhancement).
 function flosc_sample_data_admin_ui() {
 	if ( ! current_user_can( 'manage_options' ) ) {
 		return;

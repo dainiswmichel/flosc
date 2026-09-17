@@ -56,17 +56,17 @@ class FLOSC_Bridge_Data_Manager {
 	 * Constructor - register hooks
 	 */
 	private function __construct() {
-		// Hook into FLOSC quiz completion
+		// Hook into FLOSC quiz completion.
 		add_action( 'flosc_quiz_completed', array( $this, 'handle_quiz_completion' ), 5, 2 );
 
-		// Hook for external quiz plugins
+		// Hook for external quiz plugins.
 		add_action( 'flosc_external_quiz_score', array( $this, 'handle_external_quiz' ), 10, 3 );
 
-		// Alternative hook names for common quiz plugins
+		// Alternative hook names for common quiz plugins.
 		add_action( 'learndash_quiz_completed', array( $this, 'handle_learndash_quiz' ), 10, 2 );
 		add_action( 'tutor_quiz_finished', array( $this, 'handle_tutor_quiz' ), 10, 3 );
 
-		// v1.0.3: Clear bridge state when user purchases
+		// v1.0.3: Clear bridge state when user purchases.
 		add_action( 'flosc_purchase_completed', array( $this, 'handle_purchase_completed' ), 10, 2 );
 	}
 
@@ -109,7 +109,7 @@ class FLOSC_Bridge_Data_Manager {
 			$total = 10; // legacy fallback when callers omit item lists
 		}
 
-		// Build scoring results from quiz data
+		// Build scoring results from quiz data.
 		$scoring_results = array(
 			'score'           => $quiz_result['score'] ?? 0,
 			'percentage'      => $quiz_result['score'] ?? 0,
@@ -191,7 +191,7 @@ class FLOSC_Bridge_Data_Manager {
 			return;
 		}
 
-		// Get attempt data from Tutor
+		// Get attempt data from Tutor.
 		$attempt = function_exists( 'tutor_utils' ) ? tutor_utils()->get_attempt( $attempt_id ) : null;
 
 		$score_data = array(
@@ -267,7 +267,7 @@ class FLOSC_Bridge_Data_Manager {
 	 * @return string Category name
 	 */
 	private function get_item_category( $item ) {
-		// Allow filtering for custom categorization
+		// Allow filtering for custom categorization.
 		$category = apply_filters( 'flosc_item_category', null, $item );
 		if ( $category ) {
 			return $category;
@@ -280,7 +280,7 @@ class FLOSC_Bridge_Data_Manager {
 			$item = $item['question_index'] ?? $item['lesson_number'] ?? $item['id'] ?? 0;
 		}
 
-		// Default: group by lesson number ranges
+		// Default: group by lesson number ranges.
 		$num = intval( $item );
 		if ( $num <= 3 ) {
 			return 'basics';
@@ -315,10 +315,10 @@ class FLOSC_Bridge_Data_Manager {
 			return false;
 		}
 
-		// Sanitize quiz_id for use in meta key
+		// Sanitize quiz_id for use in meta key.
 		$safe_quiz_id = sanitize_key( $quiz_id );
 
-		// Store quiz results
+		// Store quiz results.
 		$bridge_data = array(
 			'date'            => current_time( 'mysql' ),
 			'timestamp'       => time(),
@@ -334,16 +334,16 @@ class FLOSC_Bridge_Data_Manager {
 			'source'          => $scoring_results['source'] ?? 'flosc',
 		);
 
-		// Store this quiz attempt
+		// Store this quiz attempt.
 		update_user_meta( $user_id, '_flosc_completed_quiz_' . $safe_quiz_id, $bridge_data );
 
-		// Mark user as in bridge data state (took quiz, not yet purchased)
+		// Mark user as in bridge data state (took quiz, not yet purchased).
 		$has_purchased = get_user_meta( $user_id, '_flosc_has_purchased', true );
 		if ( ! $has_purchased ) {
 			update_user_meta( $user_id, '_flosc_bridge_data_state', true );
 		}
 
-		// Track quiz attempt
+		// Track quiz attempt.
 		$attempts = get_user_meta( $user_id, '_flosc_quiz_attempts', true );
 		if ( ! is_array( $attempts ) ) {
 			$attempts = array();
@@ -355,13 +355,13 @@ class FLOSC_Bridge_Data_Manager {
 		);
 		update_user_meta( $user_id, '_flosc_quiz_attempts', $attempts );
 
-		// Calculate and store weakest category
+		// Calculate and store weakest category.
 		$weakest = $this->calculate_weakest_category( $user_id );
 		if ( $weakest ) {
 			update_user_meta( $user_id, '_flosc_weakest_category', $weakest );
 		}
 
-		// Fire action for other systems to hook into
+		// Fire action for other systems to hook into.
 		do_action( 'flosc_bridge_data_created', $user_id, $quiz_id, $bridge_data );
 
 		if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
@@ -383,13 +383,13 @@ class FLOSC_Bridge_Data_Manager {
 			return false;
 		}
 
-		// If no quiz_id specified, get most recent
+		// If no quiz_id specified, get most recent.
 		if ( ! $quiz_id ) {
 			$attempts = get_user_meta( $user_id, '_flosc_quiz_attempts', true );
 			if ( empty( $attempts ) || ! is_array( $attempts ) ) {
 				return false;
 			}
-			// Get most recent attempt
+			// Get most recent attempt.
 			$latest  = end( $attempts );
 			$quiz_id = $latest['quiz_id'] ?? 'default';
 		}
@@ -414,20 +414,20 @@ class FLOSC_Bridge_Data_Manager {
 			return false;
 		}
 
-		// Check if user has purchased (exits bridge state)
+		// Check if user has purchased (exits bridge state).
 		$has_purchased = get_user_meta( $user_id, '_flosc_has_purchased', true );
 		if ( $has_purchased ) {
 			return false;
 		}
 
-		// Check if specific quiz completed
+		// Check if specific quiz completed.
 		if ( $quiz_id ) {
 			$safe_quiz_id = sanitize_key( $quiz_id );
 			$quiz_data    = get_user_meta( $user_id, '_flosc_completed_quiz_' . $safe_quiz_id, true );
 			return ! empty( $quiz_data );
 		}
 
-		// Check general bridge state
+		// Check general bridge state.
 		return (bool) get_user_meta( $user_id, '_flosc_bridge_data_state', true );
 	}
 
@@ -517,7 +517,7 @@ class FLOSC_Bridge_Data_Manager {
 				: "✗ {$title}";
 		}
 
-		// Fallback
+		// Fallback.
 		return $correct
 			? "✓ Lesson {$item_id}"
 			: "✗ Lesson {$item_id}";
@@ -533,7 +533,7 @@ class FLOSC_Bridge_Data_Manager {
 	 * @return string|null Category name or null
 	 */
 	public function get_flosc_weakest_category( $user_id, $quiz_id = null ) {
-		// Return cached value if available
+		// Return cached value if available.
 		$cached = get_user_meta( $user_id, '_flosc_weakest_category', true );
 		if ( $cached && ! $quiz_id ) {
 			return $cached;
@@ -553,7 +553,7 @@ class FLOSC_Bridge_Data_Manager {
 		$bridge_data = $this->get_flosc_bridge_data( $user_id, $quiz_id );
 
 		if ( ! $bridge_data || empty( $bridge_data['item_results'] ) ) {
-			// Try from incorrect_items
+			// Try from incorrect_items.
 			if ( ! empty( $bridge_data['incorrect_items'] ) ) {
 				$category_counts = array();
 				foreach ( $bridge_data['incorrect_items'] as $item ) {
@@ -568,7 +568,7 @@ class FLOSC_Bridge_Data_Manager {
 			return null;
 		}
 
-		// Count incorrect by category
+		// Count incorrect by category.
 		$category_counts = array();
 		foreach ( $bridge_data['item_results'] as $item_id => $result ) {
 			if ( ! ( $result['correct'] ?? true ) ) {
@@ -581,7 +581,7 @@ class FLOSC_Bridge_Data_Manager {
 			return null;
 		}
 
-		// Return category with most incorrect
+		// Return category with most incorrect.
 		arsort( $category_counts );
 		return array_key_first( $category_counts );
 	}
@@ -688,7 +688,7 @@ class FLOSC_Bridge_Data_Manager {
 	}
 }
 
-// Initialize singleton
+// Initialize singleton.
 add_action(
 	'plugins_loaded',
 	function () {

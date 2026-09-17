@@ -26,12 +26,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// Tab header
+// Tab header.
 flosc_tab_header( '🤝', 'Companion' );
 
 $flosc_flow_settings = $GLOBALS['flosc_current_settings'] ?? array();
 
-// Read current values with defaults
+// Read current values with defaults.
 $flosc_content_display_mode = $flosc_flow_settings['companion_content_display_mode'] ?? 'in_chat';
 // Normalize enabled to '1'/'' for checkbox + summary (DB may store 1/true/"1").
 $flosc_enabled  = ! empty( $flosc_flow_settings['companion_enabled'] ) ? '1' : '';

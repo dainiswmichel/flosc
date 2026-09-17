@@ -58,7 +58,7 @@ class OAuth2_Handler {
 	 * Register REST API routes for OAuth2 flow
 	 */
 	public function register_routes() {
-		// Initiate OAuth flow
+		// Initiate OAuth flow.
 		register_rest_route(
 			'flosc/v1',
 			'/sso/authorize/(?P<provider>[a-z_]+)',
@@ -75,7 +75,7 @@ class OAuth2_Handler {
 						'required' => false,
 						'default'  => '',
 					),
-					// v1.4.9: Flow context for per-flow SSO credentials
+					// v1.4.9: Flow context for per-flow SSO credentials.
 					'flow_id'     => array(
 						'required' => false,
 						'default'  => '',
@@ -84,7 +84,7 @@ class OAuth2_Handler {
 			)
 		);
 
-		// OAuth callback (GET for most providers, POST for Apple form_post)
+		// OAuth callback (GET for most providers, POST for Apple form_post).
 		register_rest_route(
 			'flosc/v1',
 			'/sso/callback/(?P<provider>[a-z_]+)',
@@ -113,7 +113,7 @@ class OAuth2_Handler {
 			)
 		);
 
-		// Get available providers (for frontend)
+		// Get available providers (for frontend).
 		register_rest_route(
 			'flosc/v1',
 			'/sso/providers',
@@ -173,7 +173,7 @@ class OAuth2_Handler {
 			return new \WP_Error( 'invalid_provider', 'Invalid SSO provider', array( 'status' => 400 ) );
 		}
 
-		// v1.4.9: Load per-flow credentials if flow_id is provided
+		// v1.4.9: Load per-flow credentials if flow_id is provided.
 		if ( ! empty( $flow_id ) ) {
 			$flow_settings_key  = 'flosc_flow_' . sanitize_key( $flow_id );
 			$flow_settings      = get_option( $flow_settings_key, array() );
@@ -182,7 +182,7 @@ class OAuth2_Handler {
 			$flow_enabled       = ! empty( $flow_settings[ "sso_{$provider_id}_enabled" ] );
 
 			if ( ! empty( $flow_client_id ) ) {
-				// v1.5.0: Apple has extra fields (team_id, key_id, private_key)
+				// v1.5.0: Apple has extra fields (team_id, key_id, private_key).
 				if ( $provider_id === 'apple' && method_exists( $provider, 'set_flow_apple_credentials' ) ) {
 					$provider->set_flow_apple_credentials(
 						$flow_client_id,
@@ -214,10 +214,10 @@ class OAuth2_Handler {
 		}
 
 		// Generate state for CSRF protection
-		// v1.4.9: Include flow_id in state for per-flow credential loading on callback
+		// v1.4.9: Include flow_id in state for per-flow credential loading on callback.
 		$state = $this->generate_state( $provider_id, $redirect_to, $flow_id );
 
-		// Get authorization URL
+		// Get authorization URL.
 		$auth_url = $provider->get_authorization_url( $state, $provider->get_callback_url() );
 		if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
 			flosc_log( '[FLOSC SSO] handle_authorize: provider=' . $provider_id . ' | state=' . substr( $state, 0, 8 ) . '... | flow_id=' . $flow_id );
@@ -301,7 +301,7 @@ class OAuth2_Handler {
 			$server[ $flosc_sk ] = is_string( $sv ) ? $sv : '';
 		}
 
-		// v8.0.4: Prevent caching of callback responses
+		// v8.0.4: Prevent caching of callback responses.
 		header( 'Cache-Control: no-store, no-cache, must-revalidate, private' );
 		nocache_headers();
 
@@ -344,7 +344,7 @@ class OAuth2_Handler {
 		}
 
 		// v8.0.5: Also try QUERY_STRING directly (another FastCGI variable that
-		// may survive when $_GET doesn't)
+		// may survive when $_GET doesn't).
 		if ( empty( $state ) && ! empty( $server['QUERY_STRING'] ) ) {
 			parse_str( $server['QUERY_STRING'], $qs_params );
 			if ( ! empty( $qs_params['state'] ) ) {
@@ -359,7 +359,7 @@ class OAuth2_Handler {
 		}
 
 		// v8.0.5: Last resort — WP_REST_Request may have parsed them from the
-		// matched route's query args
+		// matched route's query args.
 		if ( empty( $state ) ) {
 			$state = sanitize_text_field( $request->get_param( 'state' ) ?? '' );
 		}
@@ -385,11 +385,11 @@ class OAuth2_Handler {
 				$peek_data = get_option( $transient_key );
 			}
 			if ( $peek_data ) {
-				// Use stored redirect_to (the URL the user was on: the flow domain)
+				// Use stored redirect_to (the URL the user was on: the flow domain).
 				if ( ! empty( $peek_data['redirect_to'] ) ) {
 					$error_redirect_to = $peek_data['redirect_to'];
 				}
-				// Resolve app URL from flow_id → flow settings → domain
+				// Resolve app URL from flow_id → flow settings → domain.
 				if ( ! empty( $peek_data['flow_id'] ) ) {
 					$resolved = $this->resolve_app_url_from_flow_id( $peek_data['flow_id'] );
 					if ( $resolved ) {
@@ -399,7 +399,7 @@ class OAuth2_Handler {
 			}
 		}
 
-		// If we couldn't get redirect_to from state, use the flow-resolved app URL
+		// If we couldn't get redirect_to from state, use the flow-resolved app URL.
 		if ( empty( $error_redirect_to ) ) {
 			$error_redirect_to = $app_url;
 		}
@@ -429,7 +429,7 @@ class OAuth2_Handler {
 			return;
 		}
 
-		// State verified — update redirect targets from authoritative state data
+		// State verified — update redirect targets from authoritative state data.
 		if ( ! empty( $state_data['redirect_to'] ) ) {
 			$error_redirect_to = $state_data['redirect_to'];
 		}
@@ -523,7 +523,7 @@ class OAuth2_Handler {
 		$flow_id_for_redirect = sanitize_key( (string) ( $state_data['flow_id'] ?? '' ) );
 		$redirect_to          = ! empty( $state_data['redirect_to'] ) ? $state_data['redirect_to'] : $app_url;
 
-		// If redirect_to is a wp-login.php URL, extract the inner redirect_to
+		// If redirect_to is a wp-login.php URL, extract the inner redirect_to.
 		if ( strpos( $redirect_to, 'wp-login.php' ) !== false ) {
 			$parsed = wp_parse_url( $redirect_to );
 			if ( ! empty( $parsed['query'] ) ) {
@@ -535,7 +535,7 @@ class OAuth2_Handler {
 		}
 
 		// Resolve slug-based URLs to custom domain
-		// e.g. the WordPress host/flow_path/ → the flow domain/
+		// e.g. the WordPress host/flow_path/ → the flow domain/.
 		if ( function_exists( 'flosc' ) ) {
 			$app_slug = get_option( 'flosc_app_slug', 'flosc' );
 			if ( strpos( $redirect_to, '/' . $app_slug ) !== false ) {
@@ -798,7 +798,7 @@ class OAuth2_Handler {
 		$transient_key = self::STATE_PREFIX . $state;
 		$saved         = set_transient( $transient_key, $state_data, self::STATE_EXPIRATION );
 
-		// v8.0.4: Ungated logging — SSO failures are rare and critical
+		// v8.0.4: Ungated logging — SSO failures are rare and critical.
 		if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
 			flosc_log( '[FLOSC SSO] State generated: provider=' . $provider_id . ' | token=' . substr( $state, 0, 8 ) . '... | saved=' . ( $saved ? 'yes' : 'NO' ) . ' | flow_id=' . $flow_id );
 		}
@@ -807,7 +807,7 @@ class OAuth2_Handler {
 		// Transients can disappear between requests due to object cache eviction.
 		update_option( $transient_key, $state_data, false );
 
-		// Verify state is retrievable
+		// Verify state is retrievable.
 		$verify = get_transient( $transient_key );
 		if ( ! $verify ) {
 			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
@@ -825,7 +825,7 @@ class OAuth2_Handler {
 	 * @return array|false State data or false if invalid
 	 */
 	private function verify_state( $state ) {
-		// v8.0.4: All SSO logging ungated — SSO failures are rare and critical
+		// v8.0.4: All SSO logging ungated — SSO failures are rare and critical.
 		if ( empty( $state ) ) {
 			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
 				flosc_log( '[FLOSC SSO] State verification failed: empty state parameter' );
@@ -840,7 +840,7 @@ class OAuth2_Handler {
 
 		$state_data = get_transient( $transient_key );
 
-		// Fallback: check options table directly
+		// Fallback: check options table directly.
 		if ( ! $state_data ) {
 			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
 				flosc_log( '[FLOSC SSO] Transient not found, checking options table fallback' );
@@ -886,17 +886,17 @@ class OAuth2_Handler {
 	 * @return int|WP_Error User ID or error
 	 */
 	private function process_sso_login( $provider, $user_data, $token_data ) {
-		// Get the user linker
+		// Get the user linker.
 		$linker = $this->manager->get_user_linker();
 
-		// Try to find existing linked user
+		// Try to find existing linked user.
 		$user_id = $linker->find_linked_user( $provider->get_id(), $user_data['provider_id'] );
 
 		if ( $user_id ) {
-			// Update stored tokens
+			// Update stored tokens.
 			$linker->update_user_tokens( $user_id, $provider->get_id(), $token_data );
 
-			// Log the user in
+			// Log the user in.
 			$this->log_user_in( $user_id );
 
 			do_action( 'flosc_sso_login_success', $user_id, $provider->get_id(), $user_data );
@@ -904,7 +904,7 @@ class OAuth2_Handler {
 			return $user_id;
 		}
 
-		// Check if user is currently logged in (linking account)
+		// Check if user is currently logged in (linking account).
 		if ( is_user_logged_in() ) {
 			$user_id = get_current_user_id();
 			$linker->link_account( $user_id, $provider->get_id(), $user_data, $token_data );
@@ -914,7 +914,7 @@ class OAuth2_Handler {
 			return $user_id;
 		}
 
-		// Try to find user by email
+		// Try to find user by email.
 		$email = isset( $user_data['email'] ) ? $user_data['email'] : '';
 
 		if ( $email ) {
@@ -938,7 +938,7 @@ class OAuth2_Handler {
 					return $existing_user->ID;
 				}
 
-				// Email exists but auto-link disabled
+				// Email exists but auto-link disabled.
 				return new \WP_Error(
 					'email_exists',
 					'An account with this email already exists. Please log in with your password first, then link your social account.'
@@ -946,14 +946,14 @@ class OAuth2_Handler {
 			}
 		}
 
-		// Create new user
+		// Create new user.
 		$new_user_id = $linker->create_user_from_sso( $provider->get_id(), $user_data, $token_data );
 
 		if ( is_wp_error( $new_user_id ) ) {
 			return $new_user_id;
 		}
 
-		// Log the new user in
+		// Log the new user in.
 		$this->log_user_in( $new_user_id );
 
 		return $new_user_id;
@@ -986,7 +986,7 @@ class OAuth2_Handler {
 	 */
 	private function generate_login_token( $user_id ) {
 		$token = wp_generate_password( 40, false );
-		// v1.5.3: 60s TTL (was 30s) — allows for slow DNS/CDN on custom domains
+		// v1.5.3: 60s TTL (was 30s) — allows for slow DNS/CDN on custom domains.
 		set_transient( 'flosc_login_token_' . $token, $user_id, 60 );
 		return $token;
 	}
@@ -1003,13 +1003,13 @@ class OAuth2_Handler {
 	private function redirect_with_error( $message, $redirect_to = '' ) {
 		// Store error in transient for display
 		// v8.0.2: Increased TTL from 60s to 300s — slow redirects or CDN delays
-		// could cause the transient to expire before the page loads
+		// could cause the transient to expire before the page loads.
 		$error_token = wp_generate_password( 8, false );
 		$error_key   = 'flosc_sso_error_' . $error_token;
 		set_transient( $error_key, $message, 300 );
 
 		// v8.0.2: Always log SSO errors (ungated) — SSO failures are rare and
-		// critical enough that the log line is justified without a debug flag
+		// critical enough that the log line is justified without a debug flag.
 		if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
 			flosc_log( '[FLOSC SSO ERROR] ' . $message . ' | redirect_to: ' . ( $redirect_to ?: '(empty)' ) );
 		}

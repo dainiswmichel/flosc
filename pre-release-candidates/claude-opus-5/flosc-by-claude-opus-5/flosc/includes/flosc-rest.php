@@ -38,17 +38,17 @@ trait FLOSC_REST_Trait {
 		if ( $protection['enabled'] !== '1' ) {
 			return true;
 		}
-		// Check rate limit first
+		// Check rate limit first.
 		if ( ! $this->check_rate_limit( 'metered_compute', absint( $protection['metered_compute_limit'] ), HOUR_IN_SECONDS ) ) {
 			return new WP_Error( 'rate_limit', __( 'Too many requests. Please try again later.', 'flosc' ), array( 'status' => 429 ) );
 		}
 
-		// Allow logged-in users with usage tracking
+		// Allow logged-in users with usage tracking.
 		if ( is_user_logged_in() ) {
 			return true;
 		}
 
-		// For visitors: strict rate limit
+		// For visitors: strict rate limit.
 		if ( ! $this->check_rate_limit( 'visitor_metered_compute', absint( $protection['visitor_compute_limit'] ), HOUR_IN_SECONDS ) ) {
 			return new WP_Error( 'rate_limit', __( 'Free tier limit reached. Please log in.', 'flosc' ), array( 'status' => 429 ) );
 		}
@@ -485,7 +485,7 @@ trait FLOSC_REST_Trait {
 	 */
 	public function register_rest_routes() {
 		// IVR Chat (primary endpoint)
-		// v9.4.2: Now rate-limited via check_public_endpoint_permission
+		// v9.4.2: Now rate-limited via check_public_endpoint_permission.
 		register_rest_route(
 			'flosc/v1',
 			'/chat',
@@ -497,7 +497,7 @@ trait FLOSC_REST_Trait {
 		);
 
 		// RAG Chat (v9.1.6 - AI with search capabilities)
-		// v9.4.2: Now rate-limited via check_public_endpoint_permission
+		// v9.4.2: Now rate-limited via check_public_endpoint_permission.
 		register_rest_route(
 			'flosc/v1',
 			'/chat-rag',
@@ -563,7 +563,7 @@ trait FLOSC_REST_Trait {
 		// Quiz Submission (NEW: for collecting quiz answers)
 		// v9.4.2: Now rate-limited via check_public_endpoint_permission
 		// v1.0.5: This endpoint returns bridge data status (reads, not writes)
-		// Actual quiz storage: POST /quiz-result | Processing: POST /process-quiz
+		// Actual quiz storage: POST /quiz-result | Processing: POST /process-quiz.
 		register_rest_route(
 			'flosc/v1',
 			'/quiz',
@@ -575,7 +575,7 @@ trait FLOSC_REST_Trait {
 		);
 
 		// v9.3.2: GET quiz questions for in-chat quiz
-		// v9.4.2: Now rate-limited via check_public_endpoint_permission
+		// v9.4.2: Now rate-limited via check_public_endpoint_permission.
 		register_rest_route(
 			'flosc/v1',
 			'/quiz',
@@ -587,7 +587,7 @@ trait FLOSC_REST_Trait {
 		);
 
 		// v9.3.2: Store quiz results
-		// v9.4.2: Now rate-limited via check_public_endpoint_permission
+		// v9.4.2: Now rate-limited via check_public_endpoint_permission.
 		register_rest_route(
 			'flosc/v1',
 			'/quiz-result',
@@ -598,7 +598,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// AI Query
+		// AI Query.
 		register_rest_route(
 			'flosc/v1',
 			'/ai-query',
@@ -609,7 +609,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// Process Audio (for audio-based quiz types)
+		// Process Audio (for audio-based quiz types).
 		register_rest_route(
 			'flosc/v1',
 			'/process-audio',
@@ -620,7 +620,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// v1.7.7: Transcribe alias — JS voice recording and quiz audio both call /transcribe
+		// v1.7.7: Transcribe alias — JS voice recording and quiz audio both call /transcribe.
 		register_rest_route(
 			'flosc/v1',
 			'/transcribe',
@@ -631,7 +631,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// Process Quiz (for text-based quiz types)
+		// Process Quiz (for text-based quiz types).
 		register_rest_route(
 			'flosc/v1',
 			'/process-quiz',
@@ -642,7 +642,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// Sessions
+		// Sessions.
 		register_rest_route(
 			'flosc/v1',
 			'/sessions',
@@ -663,7 +663,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// v1.7.0: Get single session by ID
+		// v1.7.0: Get single session by ID.
 		register_rest_route(
 			'flosc/v1',
 			'/sessions/(?P<id>\d+)',
@@ -674,7 +674,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// v8.0.11: Delete a session
+		// v8.0.11: Delete a session.
 		register_rest_route(
 			'flosc/v1',
 			'/sessions/(?P<id>\d+)',
@@ -685,7 +685,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// v8.0.11: Rename a session
+		// v8.0.11: Rename a session.
 		register_rest_route(
 			'flosc/v1',
 			'/sessions/(?P<id>\d+)',
@@ -697,7 +697,7 @@ trait FLOSC_REST_Trait {
 		);
 
 		// v1.7.1: Nonce refresh endpoint
-		// v4.0.8: Open to visitors — they need a nonce to call payment endpoints before account creation
+		// v4.0.8: Open to visitors — they need a nonce to call payment endpoints before account creation.
 		register_rest_route(
 			'flosc/v1',
 			'/nonce',
@@ -716,7 +716,7 @@ trait FLOSC_REST_Trait {
 		);
 
 		// Offers
-		// v9.4.2: Now rate-limited via check_public_endpoint_permission
+		// v9.4.2: Now rate-limited via check_public_endpoint_permission.
 		register_rest_route(
 			'flosc/v1',
 			'/offers',
@@ -727,7 +727,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// v1.6.2: Offer content source (HtmlFile, WooProduct, PostID)
+		// v1.6.2: Offer content source (HtmlFile, WooProduct, PostID).
 		register_rest_route(
 			'flosc/v1',
 			'/offer-content',
@@ -738,7 +738,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// Purchase
+		// Purchase.
 		register_rest_route(
 			'flosc/v1',
 			'/purchase',
@@ -749,7 +749,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// v1.3.1: Sandbox Purchase (fun "pay what you want" testing)
+		// v1.3.1: Sandbox Purchase (fun "pay what you want" testing).
 		register_rest_route(
 			'flosc/v1',
 			'/sandbox-purchase',
@@ -760,7 +760,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// Free Lesson (v9.1.9) — v1.4.6: Accept both GET and POST (JS sends POST)
+		// Free Lesson (v9.1.9) — v1.4.6: Accept both GET and POST (JS sends POST).
 		register_rest_route(
 			'flosc/v1',
 			'/free-lesson',
@@ -772,7 +772,7 @@ trait FLOSC_REST_Trait {
 		);
 
 		// Create Payment Intent (for Stripe)
-		// v4.0.8: Open to visitors — Stripe checkout starts before account creation
+		// v4.0.8: Open to visitors — Stripe checkout starts before account creation.
 		register_rest_route(
 			'flosc/v1',
 			'/create-payment-intent',
@@ -784,7 +784,7 @@ trait FLOSC_REST_Trait {
 		);
 
 		// v1.4.1: Complete purchase (verify and grant access after client-side payment)
-		// v4.0.8: Open to visitors — account creation happens inside complete_purchase
+		// v4.0.8: Open to visitors — account creation happens inside complete_purchase.
 		register_rest_route(
 			'flosc/v1',
 			'/complete-purchase',
@@ -795,7 +795,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// PayPal - Create Order
+		// PayPal - Create Order.
 		register_rest_route(
 			'flosc/v1',
 			'/paypal/create-order',
@@ -806,7 +806,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// PayPal - Capture Order
+		// PayPal - Capture Order.
 		register_rest_route(
 			'flosc/v1',
 			'/paypal/capture-order',
@@ -840,7 +840,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// PayPal Subscriptions - Activate after user approves
+		// PayPal Subscriptions - Activate after user approves.
 		register_rest_route(
 			'flosc/v1',
 			'/paypal/activate-subscription',
@@ -881,7 +881,7 @@ trait FLOSC_REST_Trait {
 		);
 
 		// Access check
-		// v9.4.2: Now rate-limited via check_public_endpoint_permission
+		// v9.4.2: Now rate-limited via check_public_endpoint_permission.
 		register_rest_route(
 			'flosc/v1',
 			'/access',
@@ -904,7 +904,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// Token balance
+		// Token balance.
 		register_rest_route(
 			'flosc/v1',
 			'/tokens',
@@ -915,7 +915,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// Purchase intents (affiliate system)
+		// Purchase intents (affiliate system).
 		register_rest_route(
 			'flosc/v1',
 			'/intents',
@@ -936,7 +936,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// Referral
+		// Referral.
 		register_rest_route(
 			'flosc/v1',
 			'/referral',
@@ -948,7 +948,7 @@ trait FLOSC_REST_Trait {
 		);
 
 		// Lessons
-		// v1.7.8: Lesson list requires login (matches JS access gate)
+		// v1.7.8: Lesson list requires login (matches JS access gate).
 		register_rest_route(
 			'flosc/v1',
 			'/lessons',
@@ -980,7 +980,7 @@ trait FLOSC_REST_Trait {
 		);
 
 		// IVR Messages (v9.2.2)
-		// v9.4.2: Now rate-limited via check_public_endpoint_permission
+		// v9.4.2: Now rate-limited via check_public_endpoint_permission.
 		register_rest_route(
 			'flosc/v1',
 			'/ivr-messages',
@@ -1002,7 +1002,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// v1.0.4: Bridge Data endpoint (TASK-008) - quiz state between phases
+		// v1.0.4: Bridge Data endpoint (TASK-008) - quiz state between phases.
 		register_rest_route(
 			'flosc/v1',
 			'/bridge-data',
@@ -1014,7 +1014,7 @@ trait FLOSC_REST_Trait {
 		);
 
 		// v1.0.5: Debug endpoint - full funnel state (TASK-108)
-		// Only available when FLOSC_DEBUG is true
+		// Only available when FLOSC_DEBUG is true.
 		if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
 			register_rest_route(
 				'flosc/v1',
@@ -1028,7 +1028,7 @@ trait FLOSC_REST_Trait {
 		}
 
 		// Store pre-login score
-		// v9.4.2: Now rate-limited via check_public_endpoint_permission
+		// v9.4.2: Now rate-limited via check_public_endpoint_permission.
 		register_rest_route(
 			'flosc/v1',
 			'/store-score',
@@ -1052,7 +1052,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// Mark funnel completed (v3.0.4)
+		// Mark funnel completed (v3.0.4).
 		register_rest_route(
 			'flosc/v1',
 			'/funnel-complete',
@@ -1063,7 +1063,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// Test AI connection (v04_05)
+		// Test AI connection (v04_05).
 		register_rest_route(
 			'flosc/v1',
 			'/test-ai',
@@ -1075,7 +1075,7 @@ trait FLOSC_REST_Trait {
 		);
 
 		// v07.09: IVR message tracking
-		// v9.4.2: Now rate-limited via check_public_endpoint_permission
+		// v9.4.2: Now rate-limited via check_public_endpoint_permission.
 		register_rest_route(
 			'flosc/v1',
 			'/ivr/track',
@@ -1087,7 +1087,7 @@ trait FLOSC_REST_Trait {
 		);
 
 		// v9.4.2: Now rate-limited via check_public_endpoint_permission
-		// Task 4: Add entitlement gating — phase-level (permission callback) and per-message (handler filtering)
+		// Task 4: Add entitlement gating — phase-level (permission callback) and per-message (handler filtering).
 		register_rest_route(
 			'flosc/v1',
 			'/ivr/messages',
@@ -1098,7 +1098,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// v1.4.0: Email registration (sends guest link — deferred user creation)
+		// v1.4.0: Email registration (sends guest link — deferred user creation).
 		register_rest_route(
 			'flosc/v1',
 			'/register-email',
@@ -1120,7 +1120,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// Guest profile setup — save nickname + optional password from in-chat card
+		// Guest profile setup — save nickname + optional password from in-chat card.
 		register_rest_route(
 			'flosc/v1',
 			'/update-guest-profile',
@@ -1158,7 +1158,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// v1.9.0: AI Feedback — admin flags bad AI responses to improve quality
+		// v1.9.0: AI Feedback — admin flags bad AI responses to improve quality.
 		register_rest_route(
 			'flosc/v1',
 			'/feedback',
@@ -1189,7 +1189,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// v1.9.0: AI Praise — admin reinforces good AI responses
+		// v1.9.0: AI Praise — admin reinforces good AI responses.
 		register_rest_route(
 			'flosc/v1',
 			'/praises',
@@ -1210,7 +1210,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// v8.0.0: Redeem access code — grants role directly, no payment
+		// v8.0.0: Redeem access code — grants role directly, no payment.
 		register_rest_route(
 			'flosc/v1',
 			'/redeem-access-code',

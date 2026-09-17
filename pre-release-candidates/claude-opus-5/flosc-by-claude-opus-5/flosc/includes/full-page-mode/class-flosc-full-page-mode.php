@@ -61,7 +61,7 @@ class FLOSC_Full_Page_Mode {
 			return home_url( '/' . $flow['slug'] . '/' );
 		}
 
-		// Fallback to legacy settings
+		// Fallback to legacy settings.
 		$custom_domain = get_option( 'flosc_custom_domain', '' );
 
 		if ( ! empty( $custom_domain ) ) {
@@ -70,7 +70,7 @@ class FLOSC_Full_Page_Mode {
 			return ( is_ssl() ? 'https://' : 'http://' ) . $custom_domain . '/';
 		}
 
-		// Fall back to slug-based URL
+		// Fall back to slug-based URL.
 		$slug = get_option( 'flosc_app_slug', 'flosc' );
 		return home_url( '/' . $slug . '/' );
 	}
@@ -85,7 +85,7 @@ class FLOSC_Full_Page_Mode {
 
 	public function handle_app_route() {
 		// v1.2.1: Use centralized is_flosc_request() helper
-		// This reads from flosc_custom_domain setting (not hardcoded)
+		// This reads from flosc_custom_domain setting (not hardcoded).
 		if ( ! $this->is_flosc_request() ) {
 			return;
 		}
@@ -109,7 +109,7 @@ class FLOSC_Full_Page_Mode {
 		// Instead: clear everything, re-add only the three core WP functions:
 		// 1. wp_enqueue_scripts (priority 1) — fires our nuclear dequeue
 		// 2. wp_print_styles (priority 8) — outputs surviving CSS
-		// 3. wp_print_head_scripts (priority 9) — outputs surviving head JS
+		// 3. wp_print_head_scripts (priority 9) — outputs surviving head JS.
 		remove_all_actions( 'wp_head' );
 		add_action( 'wp_head', 'wp_enqueue_scripts', 1 );
 		add_action( 'wp_head', 'wp_print_styles', 8 );
@@ -334,10 +334,10 @@ class FLOSC_Full_Page_Mode {
 	 * Called by handle_app_route() for both custom domain and slug routing
 	 */
 	public function render_flosc_app() {
-		// v2.0.0: Prevent page caching — identity data is dynamic per-flow
+		// v2.0.0: Prevent page caching — identity data is dynamic per-flow.
 		nocache_headers();
 
-		// Track referral (v1.0.7: use array syntax with SameSite)
+		// Track referral (v1.0.7: use array syntax with SameSite).
 		$get = wp_unslash( $_GET );
 		$ref = get_query_var( 'ref' ) ?: ( $get['ref'] ?? '' );
 		if ( $ref && ! is_user_logged_in() ) {
@@ -354,7 +354,7 @@ class FLOSC_Full_Page_Mode {
 
 		// Real-world state on this host only:
 		// not logged in → visitor
-		// logged in     → guest | member for THIS flow (never visitor)
+		// logged in     → guest | member for THIS flow (never visitor).
 		$user_state             = 'visitor';
 		$user_data              = array();
 		$current_flow_for_state = $this->flosc->get_current_flow();
@@ -384,7 +384,7 @@ class FLOSC_Full_Page_Mode {
 			$user_data['state'] = $user_state;
 		}
 
-		// v1.3.5: Add admin verification data for in-chat message
+		// v1.3.5: Add admin verification data for in-chat message.
 		$flow     = $this->flosc->get_current_flow();
 		$ivr_file = $flow['ivr_file'] ?? '';
 
@@ -400,7 +400,7 @@ class FLOSC_Full_Page_Mode {
 			$ivr_basename      = basename( $ivr_file );
 			$flow_settings_key = 'flosc_flow_' . sanitize_key( pathinfo( $ivr_basename, PATHINFO_FILENAME ) );
 
-			// v2.0.0: Read from identity sub-array (where settings.php saves them)
+			// v2.0.0: Read from identity sub-array (where settings.php saves them).
 			$av_identity                    = $flow_settings['identity'] ?? array();
 			$user_data['adminVerification'] = array(
 				'ivrFile' => $ivr_basename,
@@ -412,11 +412,11 @@ class FLOSC_Full_Page_Mode {
 			);
 		}
 
-		// Get flow identity (name, logo, favicon, brand color, pricing)
+		// Get flow identity (name, logo, favicon, brand color, pricing).
 		$identity = $this->flosc->get_floscflow_identity();
 
 		// Get available offers
-		// v1.6.2: Pass flow_id so offers load from per-flow storage
+		// v1.6.2: Pass flow_id so offers load from per-flow storage.
 		$flow_id = null;
 		if ( $flow && ! empty( $flow['ivr_file'] ) ) {
 			$flow_id = pathinfo( basename( $flow['ivr_file'] ), PATHINFO_FILENAME );
@@ -429,7 +429,7 @@ class FLOSC_Full_Page_Mode {
 			)
 			: array();
 
-		// Admin test-offer mode: bypass conditions/draft status to preview any offer
+		// Admin test-offer mode: bypass conditions/draft status to preview any offer.
 		$test_offer_id = '';
 		$get           = wp_unslash( $_GET );
 		if ( current_user_can( 'manage_options' ) && ! empty( $get['flosc_test_offer'] ) ) {
@@ -447,7 +447,7 @@ class FLOSC_Full_Page_Mode {
 			}
 		}
 
-		// v4.0.0: Admin test mode — expose ALL offers (incl. drafts) for direct testing in chat
+		// v4.0.0: Admin test mode — expose ALL offers (incl. drafts) for direct testing in chat.
 		$admin_test_offers = array();
 		if ( is_user_logged_in() && current_user_can( 'manage_options' ) && $sale && method_exists( $sale, 'offers' ) ) {
 			$all_raw = $sale->offers()->get_all_offers( $flow_id );
@@ -456,7 +456,7 @@ class FLOSC_Full_Page_Mode {
 			}
 		}
 
-		// Get payment providers config for frontend
+		// Get payment providers config for frontend.
 		$providers = array();
 		if ( $sale && method_exists( $sale, 'get_active_providers' ) ) {
 			foreach ( $sale->get_active_providers() as $id => $provider ) {
@@ -480,7 +480,7 @@ class FLOSC_Full_Page_Mode {
 			$this->flosc->set_flosc_auth_cookie( $flosc_auth_token );
 		}
 
-		// Load template
+		// Load template.
 		include FLOSC_PLUGIN_DIR . 'admin/flosc-app.php';
 		exit;
 	}

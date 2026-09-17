@@ -299,7 +299,7 @@ $flosc_render_rule = static function ( $rule, $audience, $index, $open = false )
 	<?php
 };
 
-// Split rules by audience (form index assigned when rendering so arrays stay aligned)
+// Split rules by audience (form index assigned when rendering so arrays stay aligned).
 $flosc_visitor_rules = array();
 $flosc_guest_rules   = array();
 $flosc_member_rules  = array();

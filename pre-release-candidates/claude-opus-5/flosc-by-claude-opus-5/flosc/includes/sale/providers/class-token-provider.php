@@ -32,7 +32,7 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 	}
 
 	public function is_configured() {
-		// Tokens are always "configured" - it's an internal system
+		// Tokens are always "configured" - it's an internal system.
 		return true;
 	}
 
@@ -371,7 +371,7 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 	private function log_transaction( $user_id, $transaction ) {
 		$ledger = get_user_meta( $user_id, $this->ledger_meta_key, true ) ?: array();
 
-		// Keep last 100 transactions
+		// Keep last 100 transactions.
 		$ledger   = array_slice( $ledger, -99 );
 		$ledger[] = $transaction;
 
@@ -421,7 +421,7 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 	 * Convert tokens from affiliate earnings
 	 */
 	public function credit_from_affiliate( $user_id, $affiliate_amount, $affiliate_meta = array() ) {
-		// Conversion rate: $1 affiliate commission = X tokens
+		// Conversion rate: $1 affiliate commission = X tokens.
 		$rate   = intval( $this->get_setting( 'affiliate_conversion_rate', 10 ) ); // Default: $1 = 10 tokens
 		$tokens = round( $affiliate_amount * $rate );
 

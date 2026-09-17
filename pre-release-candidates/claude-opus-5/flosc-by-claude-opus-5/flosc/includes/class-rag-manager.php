@@ -173,11 +173,11 @@ class FLOSC_RAG_Manager {
 
 		$results = array();
 
-		// Get knowledge base path
+		// Get knowledge base path.
 		$kb_path = trailingslashit( wp_upload_dir()['basedir'] ) . 'flosc-knowledge/';
 
 		// Check if knowledge-base directory exists
-		// In future, admin will upload files here via interface
+		// In future, admin will upload files here via interface.
 		if ( ! is_dir( $kb_path ) ) {
 			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
 				flosc_log( "FLOSC RAG: Knowledge base directory not found at {$kb_path}" );
@@ -185,7 +185,7 @@ class FLOSC_RAG_Manager {
 			return 'Knowledge base not yet configured. Please add content files.';
 		}
 
-		// Search markdown files
+		// Search markdown files.
 		$files = glob( $kb_path . '*.md' );
 
 		if ( empty( $files ) ) {
@@ -195,13 +195,13 @@ class FLOSC_RAG_Manager {
 		foreach ( $files as $file ) {
 			$content = flosc_fs_get_contents( $file );
 
-			// Simple keyword search (case-insensitive)
+			// Simple keyword search (case-insensitive).
 			if ( stripos( $content, $query ) !== false ) {
 
-				// Filter by access level
+				// Filter by access level.
 				$filtered = $this->content_filter->filter_markdown_by_access( $content, $access_level );
 
-				// Extract relevant section
+				// Extract relevant section.
 				$relevant = $this->content_filter->extract_relevant_section( $filtered, $query, 800 );
 
 				$results[] = array(
@@ -215,7 +215,7 @@ class FLOSC_RAG_Manager {
 			return "No results found in knowledge base for: {$query}";
 		}
 
-		// Format results
+		// Format results.
 		$formatted = "**Knowledge Base Search Results for '{$query}':**\n\n";
 		foreach ( $results as $idx => $result ) {
 			$formatted .= "**Source: {$result['source']}**\n";
@@ -333,7 +333,7 @@ class FLOSC_RAG_Manager {
 
 		$post = null;
 
-		// Try to find by lesson number first
+		// Try to find by lesson number first.
 		if ( $lesson_number ) {
 			$pids = function_exists( 'flosc_get_post_ids_for_meta' )
 				? flosc_get_post_ids_for_meta( '_flosc_lesson_number', (string) $lesson_number, 1 )
@@ -343,7 +343,7 @@ class FLOSC_RAG_Manager {
 			}
 		}
 
-		// Fall back to post ID
+		// Fall back to post ID.
 		if ( ! $post && $post_id ) {
 			$post = get_post( $post_id );
 		}
@@ -352,10 +352,10 @@ class FLOSC_RAG_Manager {
 			return 'Lesson not found.';
 		}
 
-		// Filter content by access level
+		// Filter content by access level.
 		$content = $this->content_filter->filter_post_content( $post->post_content, $access_level );
 
-		// Build response
+		// Build response.
 		$response  = "**{$post->post_title}**\n\n";
 		$response .= 'URL: ' . get_permalink( $post->ID ) . "\n\n";
 		$response .= "---\n\n";
@@ -448,7 +448,7 @@ class FLOSC_RAG_Manager {
 			$lesson_num    = get_post_meta( $post->ID, '_flosc_lesson_number', true );
 			$lesson_access = get_post_meta( $post->ID, '_flosc_access_level', true ) ?: 'member';
 
-			// Check if user can access
+			// Check if user can access.
 			$can_access = $this->can_user_access_level( $access_level, $lesson_access );
 			$status     = $can_access ? '✓' : '🔒';
 

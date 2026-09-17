@@ -37,10 +37,10 @@ class FLOSC_Quiz_Type_Factory {
 			return;
 		}
 
-		// Load abstract base class first
+		// Load abstract base class first.
 		require_once FLOSC_PLUGIN_DIR . 'includes/quiz-types/abstract-quiz-type.php';
 
-		// Get all quiz type files
+		// Get all quiz type files.
 		$quiz_types_dir = FLOSC_PLUGIN_DIR . 'includes/quiz-types/';
 		$files          = glob( $quiz_types_dir . 'class-*-quiz.php' );
 
@@ -48,7 +48,7 @@ class FLOSC_Quiz_Type_Factory {
 			require_once $file;
 
 			// Extract class name from filename
-			// class-flosc-sample-text-based-quiz.php → FLOSC_Sample_Text_Based_Quiz
+			// class-flosc-sample-text-based-quiz.php → FLOSC_Sample_Text_Based_Quiz.
 			$filename   = basename( $file, '.php' );
 			$class_name = str_replace( 'class-', '', $filename );
 			$class_name = str_replace( '-', ' ', $class_name );
@@ -56,7 +56,7 @@ class FLOSC_Quiz_Type_Factory {
 			$class_name = ucwords( $class_name );
 			$class_name = str_replace( ' ', '_', $class_name );
 
-			// Instantiate and register
+			// Instantiate and register.
 			if ( class_exists( $class_name ) ) {
 				$instance = new $class_name();
 				if ( $instance instanceof FLOSC_Abstract_Quiz_Type ) {
@@ -175,14 +175,14 @@ class FLOSC_Quiz_Type_Factory {
 
 		$quiz_type = self::get_quiz_type( $quiz_type_id );
 
-		// Check if content is set
+		// Check if content is set.
 		$content = get_option( 'flosc_quiz_content_' . $quiz_type_id, '' );
 		if ( empty( $content ) ) {
 			$content = $quiz_type->get_default_content();
 			update_option( 'flosc_quiz_content_' . $quiz_type_id, $content );
 		}
 
-		// Check if audio/STT providers are configured (if needed)
+		// Check if audio/STT providers are configured (if needed).
 		if ( $quiz_type->needs_audio() ) {
 			$audio_provider = get_option( 'flosc_audio_provider', '' );
 			if ( empty( $audio_provider ) ) {

@@ -87,7 +87,7 @@ $flosc_rated_count = count( $flosc_rated_logs );
 $flosc_feedback_items = $flosc_flow_settings['ai_feedback'] ?? array();
 $flosc_feedback_count = count( $flosc_feedback_items );
 
-// Handle delete feedback
+// Handle delete feedback.
 if ( isset( $_POST['flosc_delete_feedback'] ) ) {
 	$flosc_post = wp_unslash( $_POST );
 	if ( wp_verify_nonce( sanitize_text_field( $flosc_post['_wpnonce'] ?? '' ), 'flosc_save_settings' ) ) {
@@ -110,7 +110,7 @@ if ( isset( $_POST['flosc_delete_feedback'] ) ) {
 	}
 }
 
-// Handle add feedback
+// Handle add feedback.
 if ( isset( $_POST['flosc_add_feedback'] ) ) {
 	$flosc_post = wp_unslash( $_POST );
 	if ( wp_verify_nonce( sanitize_text_field( $flosc_post['_wpnonce'] ?? '' ), 'flosc_save_settings' ) ) {
@@ -141,7 +141,7 @@ if ( isset( $_POST['flosc_add_feedback'] ) ) {
 $flosc_praises       = $flosc_flow_settings['ai_praises'] ?? array();
 $flosc_praises_count = count( $flosc_praises );
 
-// Handle delete praise
+// Handle delete praise.
 if ( isset( $_POST['flosc_delete_praise'] ) ) {
 	$flosc_post = wp_unslash( $_POST );
 	if ( wp_verify_nonce( sanitize_text_field( $flosc_post['_wpnonce'] ?? '' ), 'flosc_save_settings' ) ) {
@@ -164,7 +164,7 @@ if ( isset( $_POST['flosc_delete_praise'] ) ) {
 	}
 }
 
-// Handle add praise
+// Handle add praise.
 if ( isset( $_POST['flosc_add_praise'] ) ) {
 	$flosc_post = wp_unslash( $_POST );
 	if ( wp_verify_nonce( sanitize_text_field( $flosc_post['_wpnonce'] ?? '' ), 'flosc_save_settings' ) ) {

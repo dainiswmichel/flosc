@@ -62,17 +62,17 @@ class FLOSC_WordMatching_Quiz extends FLOSC_Abstract_Quiz_Type {
 	public function analyze( $input, $expected_content, $context = array() ) {
 		$case_sensitive = $this->get_setting( 'case_sensitive', false );
 
-		// Parse correct matches
+		// Parse correct matches.
 		$correct_matches = $this->parse_matches( $expected_content, $case_sensitive );
 
-		// Parse user matches
+		// Parse user matches.
 		$user_matches = $this->parse_matches( $input, $case_sensitive );
 
 		$correct       = array();
 		$incorrect     = array();
 		$total_correct = 0;
 
-		// Check each word
+		// Check each word.
 		$all_words = array_keys( $correct_matches );
 
 		foreach ( $all_words as $word ) {
@@ -165,10 +165,10 @@ class FLOSC_WordMatching_Quiz extends FLOSC_Abstract_Quiz_Type {
 		$response_key = $analysis['response_key'];
 		$details      = $analysis['details'];
 
-		// Get template
+		// Get template.
 		$template = $response_templates[ $response_key ] ?? $response_templates['31-60'] ?? 'Score: {score}%';
 
-		// Build lesson text
+		// Build lesson text.
 		$lesson_text = '';
 		if ( ! empty( $lessons ) ) {
 			$free_lesson  = $lessons[0];
@@ -186,7 +186,7 @@ class FLOSC_WordMatching_Quiz extends FLOSC_Abstract_Quiz_Type {
 			}
 		}
 
-		// Show correct matches
+		// Show correct matches.
 		if ( ! empty( $analysis['correct'] ) ) {
 			$lesson_text .= "\n\n✅ **Correct Matches:**\n";
 			foreach ( $analysis['correct'] as $match ) {
@@ -194,7 +194,7 @@ class FLOSC_WordMatching_Quiz extends FLOSC_Abstract_Quiz_Type {
 			}
 		}
 
-		// Show incorrect matches
+		// Show incorrect matches.
 		if ( ! empty( $analysis['incorrect'] ) ) {
 			$lesson_text .= "\n❌ **Review These:**\n";
 			foreach ( $analysis['incorrect'] as $match ) {
@@ -202,7 +202,7 @@ class FLOSC_WordMatching_Quiz extends FLOSC_Abstract_Quiz_Type {
 			}
 		}
 
-		// Replace placeholders
+		// Replace placeholders.
 		$message = str_replace(
 			array(
 				'{score}',

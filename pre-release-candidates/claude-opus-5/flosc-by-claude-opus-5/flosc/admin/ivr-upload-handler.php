@@ -171,7 +171,7 @@ if ( ! function_exists( 'flosc_portability_ingest_da1_tsv' ) ) {
 		}
 
 		$stem = (string) pathinfo( $raw_name, PATHINFO_FILENAME );
-		// flosc_da1_catalog_vegan_latvian_kitchen → vegan_latvian_kitchen
+		// flosc_da1_catalog_vegan_latvian_kitchen → vegan_latvian_kitchen.
 		$stem = preg_replace( '/^flosc_da1_catalog_/i', '', $stem );
 		$stem = preg_replace( '/^flosc_da1_/i', '', (string) $stem );
 		$key  = sanitize_key( str_replace( array( ' ', '-' ), '_', (string) $stem ) );

@@ -24,7 +24,7 @@ class FLOSC_Flow_Manager {
 	}
 
 	private function __construct() {
-		// Constructor
+		// Constructor.
 	}
 
 	/**
@@ -41,12 +41,12 @@ class FLOSC_Flow_Manager {
 		$user_id   = $user_id ?: get_current_user_id();
 		$all_flows = $this->get_all_flows();
 
-		// Administrators see all flows
+		// Administrators see all flows.
 		if ( user_can( $user_id, 'manage_options' ) ) {
 			return $all_flows;
 		}
 
-		// Others see only assigned flows
+		// Others see only assigned flows.
 		$allowed = get_user_meta( $user_id, '_flosc_flow_access', true ) ?: array();
 
 		if ( ! is_array( $allowed ) ) {
@@ -111,17 +111,17 @@ class FLOSC_Flow_Manager {
 	public function create_flow( $data ) {
 		$flows = $this->get_all_flows();
 
-		// Generate ID if not provided
+		// Generate ID if not provided.
 		if ( empty( $data['id'] ) ) {
 			$data['id'] = sanitize_key( $data['slug'] ?? 'flow_' . wp_generate_password( 6, false, false ) );
 		}
 
-		// Validate unique ID
+		// Validate unique ID.
 		if ( isset( $flows[ $data['id'] ] ) ) {
 			return new WP_Error( 'duplicate_id', 'Flow ID already exists' );
 		}
 
-		// Validate unique slug
+		// Validate unique slug.
 		if ( ! empty( $data['slug'] ) ) {
 			foreach ( $flows as $flow ) {
 				if ( $flow['slug'] === $data['slug'] ) {
@@ -130,16 +130,16 @@ class FLOSC_Flow_Manager {
 			}
 		}
 
-		// Normalize data
+		// Normalize data.
 		$flow               = $this->normalize_flow_data( $data );
 		$flow['created_at'] = current_time( 'mysql' );
 		$flow['updated_at'] = current_time( 'mysql' );
 
-		// Save
+		// Save.
 		$flows[ $flow['id'] ] = $flow;
 		update_option( self::OPTION_KEY, $flows );
 
-		// Flush rewrite rules for new slug
+		// Flush rewrite rules for new slug.
 		flush_rewrite_rules();
 
 		return $flow;
@@ -155,7 +155,7 @@ class FLOSC_Flow_Manager {
 			return new WP_Error( 'not_found', 'Flow not found' );
 		}
 
-		// Check slug uniqueness if changed
+		// Check slug uniqueness if changed.
 		if ( ! empty( $data['slug'] ) && $data['slug'] !== $flows[ $flow_id ]['slug'] ) {
 			foreach ( $flows as $id => $flow ) {
 				if ( $id !== $flow_id && $flow['slug'] === $data['slug'] ) {
@@ -164,17 +164,17 @@ class FLOSC_Flow_Manager {
 			}
 		}
 
-		// Merge with existing data
+		// Merge with existing data.
 		$flow               = array_merge( $flows[ $flow_id ], $data );
 		$flow               = $this->normalize_flow_data( $flow );
 		$flow['id']         = $flow_id; // Preserve ID
 		$flow['updated_at'] = current_time( 'mysql' );
 
-		// Save
+		// Save.
 		$flows[ $flow_id ] = $flow;
 		update_option( self::OPTION_KEY, $flows );
 
-		// Flush rewrite rules in case slug changed
+		// Flush rewrite rules in case slug changed.
 		flush_rewrite_rules();
 
 		return $flow;
@@ -190,7 +190,7 @@ class FLOSC_Flow_Manager {
 			return new WP_Error( 'not_found', 'Flow not found' );
 		}
 
-		// Don't allow deleting the last flow
+		// Don't allow deleting the last flow.
 		if ( count( $flows ) <= 1 ) {
 			return new WP_Error( 'last_flow', 'Cannot delete the last flow' );
 		}
@@ -198,7 +198,7 @@ class FLOSC_Flow_Manager {
 		unset( $flows[ $flow_id ] );
 		update_option( self::OPTION_KEY, $flows );
 
-		// v1.2.3: Properly remove flow access from users (handles serialized arrays correctly)
+		// v1.2.3: Properly remove flow access from users (handles serialized arrays correctly).
 		$users_with_access = $this->get_flow_users( $flow_id );
 		foreach ( $users_with_access as $user ) {
 			$this->revoke_flow_access( $user->ID, $flow_id );
@@ -234,7 +234,7 @@ class FLOSC_Flow_Manager {
 			'enabled_quizzes' => array(),
 			'created_at'      => '',
 			'updated_at'      => '',
-			// v1.2.3: Per-flow settings overrides
+			// v1.2.3: Per-flow settings overrides.
 			'overrides'       => array(
 				'style'        => array( 'use_global' => true ),
 				'ai'           => array( 'use_global' => true ),
@@ -248,18 +248,18 @@ class FLOSC_Flow_Manager {
 
 		$flow = wp_parse_args( $data, $defaults );
 
-		// Normalize identity sub-array
+		// Normalize identity sub-array.
 		$flow['identity'] = wp_parse_args(
 			$data['identity'] ?? array(),
 			$defaults['identity']
 		);
 
-		// v1.2.3: Normalize overrides sub-array
+		// v1.2.3: Normalize overrides sub-array.
 		$flow['overrides'] = wp_parse_args(
 			$data['overrides'] ?? array(),
 			$defaults['overrides']
 		);
-		// Ensure each override group has use_global flag
+		// Ensure each override group has use_global flag.
 		foreach ( $defaults['overrides'] as $key => $default_override ) {
 			if ( ! isset( $flow['overrides'][ $key ] ) ) {
 				$flow['overrides'][ $key ] = $default_override;
@@ -268,17 +268,17 @@ class FLOSC_Flow_Manager {
 			}
 		}
 
-		// Sanitize
+		// Sanitize.
 		$flow['id']            = sanitize_key( $flow['id'] );
 		$flow['slug']          = sanitize_title( $flow['slug'] );
 		$flow['custom_domain'] = sanitize_text_field( $flow['custom_domain'] );
 		$flow['status']        = in_array( $flow['status'], array( 'active', 'draft' ) ) ? $flow['status'] : 'draft';
-		// v1.2.3: Allow subdirectory paths for IVR files (e.g., '{flowname}/ivr.md')
+		// v1.2.3: Allow subdirectory paths for IVR files (e.g., '{flowname}/ivr.md').
 		$flow['ivr_file']       = preg_replace( '#[^a-zA-Z0-9/_.-]#', '', $flow['ivr_file'] );
 		$flow['wp_category_id'] = intval( $flow['wp_category_id'] );
 		$flow['quiz_type']      = sanitize_key( $flow['quiz_type'] );
 
-		// Sanitize identity
+		// Sanitize identity.
 		$flow['identity']['name']          = sanitize_text_field( $flow['identity']['name'] );
 		$flow['identity']['tagline']       = sanitize_text_field( $flow['identity']['tagline'] );
 		$flow['identity']['chatlogo_url']  = esc_url_raw( $flow['identity']['chatlogo_url'] );
@@ -295,17 +295,17 @@ class FLOSC_Flow_Manager {
 	public function can_access_flow_admin( $flow_id, $user_id = null ) {
 		$user_id = $user_id ?: get_current_user_id();
 
-		// Administrators see all flows
+		// Administrators see all flows.
 		if ( user_can( $user_id, 'manage_options' ) ) {
 			return true;
 		}
 
-		// Must be at least Editor
+		// Must be at least Editor.
 		if ( ! user_can( $user_id, 'edit_others_posts' ) ) {
 			return false;
 		}
 
-		// Check flow assignment
+		// Check flow assignment.
 		$allowed = get_user_meta( $user_id, '_flosc_flow_access', true );
 		return is_array( $allowed ) && in_array( $flow_id, $allowed );
 	}
@@ -399,12 +399,12 @@ class FLOSC_Flow_Manager {
 			$files[] = basename( $file );
 		}
 
-		// Also check for legacy ivr.md (backward compatibility)
+		// Also check for legacy ivr.md (backward compatibility).
 		if ( file_exists( flosc_config_file( 'ivr.md' ) ) ) {
 			$files[] = 'ivr.md';
 		}
 
-		// Sort alphabetically
+		// Sort alphabetically.
 		sort( $files );
 
 		return $files;
@@ -427,7 +427,7 @@ class FLOSC_Flow_Manager {
 	 * Migrate from legacy settings (v1.2.1) to flows (v1.2.2)
 	 */
 	public function maybe_migrate_from_legacy() {
-		// If flows already exist, don't migrate
+		// If flows already exist, don't migrate.
 		if ( get_option( self::OPTION_KEY ) !== false ) {
 			return false;
 		}
@@ -483,26 +483,26 @@ class FLOSC_Flow_Manager {
 	 * @return mixed The setting value
 	 */
 	public function get_setting( $option_name, $override_group, $override_key = null, $default = null, $flow_id = null ) {
-		// Determine flow
+		// Determine flow.
 		if ( $flow_id === null ) {
 			$flow = $this->get_current_flow();
 		} else {
 			$flow = $this->get_flow( $flow_id );
 		}
 
-		// If no flow found, use global
+		// If no flow found, use global.
 		if ( ! $flow ) {
 			return get_option( $option_name, $default );
 		}
 
-		// Check if flow uses global settings for this group
+		// Check if flow uses global settings for this group.
 		$use_global = $flow['overrides'][ $override_group ]['use_global'] ?? true;
 
 		if ( $use_global ) {
 			return get_option( $option_name, $default );
 		}
 
-		// Use flow override
+		// Use flow override.
 		$key = $override_key ?: $option_name;
 		return $flow['overrides'][ $override_group ][ $key ] ?? get_option( $option_name, $default );
 	}
@@ -536,12 +536,12 @@ class FLOSC_Flow_Manager {
 			return new WP_Error( 'not_found', 'Flow not found' );
 		}
 
-		// Initialize overrides if needed
+		// Initialize overrides if needed.
 		if ( ! isset( $flows[ $flow_id ]['overrides'] ) ) {
 			$flows[ $flow_id ]['overrides'] = array();
 		}
 
-		// Set the override
+		// Set the override.
 		$flows[ $flow_id ]['overrides'][ $override_group ] = array_merge(
 			array( 'use_global' => $use_global ),
 			$values

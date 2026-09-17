@@ -46,7 +46,7 @@ class FLOSC_Email {
 		$correct   = $score_data['correct'] ?? array();
 		$incorrect = $score_data['incorrect'] ?? array();
 
-		// Get OTO offer
+		// Get OTO offer.
 		$oto_offer_id = sanitize_text_field( (string) ( $flow_settings['oto_offer_id'] ?? get_option( 'flosc_oto_offer_id', '' ) ) );
 		$oto_offer    = null;
 		$oto_link     = $context['chat_url'] ?: home_url( '/' . get_option( 'flosc_app_slug', 'flosc' ) . '/' );
@@ -58,11 +58,11 @@ class FLOSC_Email {
 			}
 		}
 
-		// Build email
+		// Build email.
 		$subject = (string) ( $flow_settings['email_subject'] ?? get_option( 'flosc_email_subject', "Your {$product_name} Quiz Results: {$score}%" ) );
 		$subject = str_replace( array( '{score}', '{product_name}' ), array( $score, $product_name ), $subject );
 
-		// Email body
+		// Email body.
 		$body_template = (string) ( $flow_settings['email_body'] ?? get_option( 'flosc_email_body', $this->get_default_email_template() ) );
 
 		$correct_list   = ! empty( $correct ) ? implode( ', ', $correct ) : 'None';
@@ -82,14 +82,14 @@ class FLOSC_Email {
 			$body_template
 		);
 
-		// Send
+		// Send.
 		$headers = array_merge(
 			array( 'Content-Type: text/plain; charset=UTF-8' ),
 			$this->get_flosc_mail_headers( $flow_id, (int) $user->ID, false )
 		);
 		wp_mail( $user->user_email, $subject, $body, $headers );
 
-		// Track
+		// Track.
 		do_action( 'flosc_score_email_sent', $user->ID, $score_data );
 	}
 

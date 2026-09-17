@@ -43,7 +43,7 @@ class FLOSC_Companion_Mode {
 		$defaults       = $this->get_companion_defaults();
 		$numeric_limits = $this->get_companion_numeric_limits();
 
-		// Read from per-flow settings (flat keys, not overrides)
+		// Read from per-flow settings (flat keys, not overrides).
 		$enabled = filter_var( $this->flosc->get_setting( 'companion_enabled', $defaults['enabled'] ), FILTER_VALIDATE_BOOLEAN );
 		if ( ! $enabled ) {
 			return;

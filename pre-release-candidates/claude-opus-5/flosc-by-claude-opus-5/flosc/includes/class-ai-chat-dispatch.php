@@ -16,7 +16,7 @@ class FLOSC_AI_Chat_Dispatch {
 
 	public function __construct() {
 		// v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves),
-		// then falls back to global options
+		// then falls back to global options.
 		$this->provider = flosc_get_setting( 'ai_provider', 'ivr' );
 	}
 
@@ -40,10 +40,10 @@ class FLOSC_AI_Chat_Dispatch {
 
 		// 5. Build context variables string
 		$context_string = $this->build_context_string( $context );
-		// v1.9.0: IVR Interpreter — when IVR matched, AI uses it as response guidance
+		// v1.9.0: IVR Interpreter — when IVR matched, AI uses it as response guidance.
 		$ivr_guidance = $context['ivr_guidance'] ?? '';
 
-		// v1.9.5: Unified admin feedback — reads rated chat logs from DB
+		// v1.9.5: Unified admin feedback — reads rated chat logs from DB.
 		$feedback_prompt = $this->build_feedback_prompt();
 
 		$user_sticky_content = function_exists( 'flosc_get_user_sticky_prompt' )
@@ -179,7 +179,7 @@ class FLOSC_AI_Chat_Dispatch {
 						. 'Do NOT claim they are a guest. Do NOT push upgrades or free-lesson funnels. '
 						. "Do NOT say you already answered, refuse, or make excuses — find the content and help.\n";
 				} else {
-					// Guest — logged in, not a full member
+					// Guest — logged in, not a full member.
 					$quiz_results_section .= "\n**Context:** This user is a **Guest** (logged in, not a full member yet). "
 						. 'You MAY share their quiz score and which topics they missed. '
 						. 'Do NOT deliver full member content (videos, exercises, detailed how-to). '
@@ -188,13 +188,13 @@ class FLOSC_AI_Chat_Dispatch {
 			}
 		}
 
-		// v4.0.0: Admin context report — full config summary when speaking with an admin
+		// v4.0.0: Admin context report — full config summary when speaking with an admin.
 		$admin_context_section = '';
 		if ( is_user_logged_in() && current_user_can( 'manage_options' ) ) {
 			$flow_id = $context['flow_id'] ?? null;
 			$lines   = array();
 
-			// Offers
+			// Offers.
 			if ( function_exists( 'flosc' ) ) {
 				$all_offers = flosc()->sale()->offers()->get_all_offers( $flow_id );
 				if ( $all_offers ) {
@@ -208,7 +208,7 @@ class FLOSC_AI_Chat_Dispatch {
 				}
 			}
 
-			// Quizzes
+			// Quizzes.
 			if ( function_exists( 'flosc_get_setting' ) && class_exists( 'FLOSC_Quiz_Registry' ) ) {
 				$enabled_quizzes = flosc_get_setting( 'enabled_quizzes', array() );
 				if ( ! is_array( $enabled_quizzes ) ) {
@@ -224,7 +224,7 @@ class FLOSC_AI_Chat_Dispatch {
 				}
 			}
 
-			// AutoPrompt pills per state
+			// AutoPrompt pills per state.
 			if ( function_exists( 'flosc_get_setting' ) ) {
 				$raw_pills = flosc_get_setting( 'autoprompts', array() );
 				foreach ( array( 'visitor', 'guest', 'member' ) as $state ) {
@@ -503,7 +503,7 @@ class FLOSC_AI_Chat_Dispatch {
 		$prompt .= "4. **SALE** - Help them purchase when ready (don't be pushy)\n";
 		$prompt .= "5. **CONTENT** - Members get full access to lessons and personalized coaching\n\n";
 
-		// v1.9.2: Admin gets full context PLUS admin-specific guidance (no early return)
+		// v1.9.2: Admin gets full context PLUS admin-specific guidance (no early return).
 		if ( $is_admin ) {
 			$prompt .= "## Current User: ADMIN\n";
 			$prompt .= "This user is a site administrator, not a customer. Adjust your behavior:\n";
@@ -513,10 +513,10 @@ class FLOSC_AI_Chat_Dispatch {
 			$prompt .= "- If they ask about the FLOSC process, explain how it works rather than performing it\n";
 			$prompt .= "- Answer admin questions with factual data from the context provided, not generic statements\n";
 			$prompt .= "- When asked about user status, use the session context data below — do not make things up\n\n";
-			// Don't return early — admin still needs phase/topic context below
+			// Don't return early — admin still needs phase/topic context below.
 		}
 
-		// Off-topic handling: only included if floscAdmin configured it
+		// Off-topic handling: only included if floscAdmin configured it.
 		$topic_scope       = function_exists( 'flosc_personality_library_resolve_field' )
 			? flosc_personality_library_resolve_field( 'ai_topic_scope', '' )
 			: flosc_get_setting( 'ai_topic_scope', '' );
@@ -540,7 +540,7 @@ class FLOSC_AI_Chat_Dispatch {
 			}
 		}
 
-		// Phase-specific instructions for regular users
+		// Phase-specific instructions for regular users.
 		switch ( $phase ) {
 			case 'freeline':
 				$rules   = flosc_get_setting( 'ai_freeline_restrictions', '' );
@@ -602,7 +602,7 @@ class FLOSC_AI_Chat_Dispatch {
 	 * Load phase-specific prompt from admin settings
 	 */
 	private function load_phase_prompt( $phase ) {
-		// v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves)
+		// v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves).
 		return flosc_get_setting( "ai_prompt_{$phase}", '' );
 	}
 
@@ -723,7 +723,7 @@ class FLOSC_AI_Chat_Dispatch {
 		}
 
 		$lines = array();
-		// v1.9.0: Skip keys handled separately in build_system_prompt()
+		// v1.9.0: Skip keys handled separately in build_system_prompt().
 		$skip_keys = array( 'ivr_guidance' );
 
 		// Put identity fields first so the model sees them before long KB/quiz blocks.
@@ -751,7 +751,7 @@ class FLOSC_AI_Chat_Dispatch {
 			if ( $formatted_value === null || $formatted_value === '' ) {
 				continue; // Skip null values
 			}
-			// Format key: flosc_version → Flosc Version, quiz_score → Quiz Score
+			// Format key: flosc_version → Flosc Version, quiz_score → Quiz Score.
 			$label   = ucwords( str_replace( '_', ' ', $key ) );
 			$lines[] = "- **{$label}:** {$formatted_value}";
 		}
@@ -854,7 +854,7 @@ class FLOSC_AI_Chat_Dispatch {
 		$use_cache  = ! $test_mode && ! $is_admin && ! $is_visitor;
 
 		if ( $use_cache ) {
-			// Include user_id in cache key so different users never share cached responses
+			// Include user_id in cache key so different users never share cached responses.
 			$user_id      = get_current_user_id();
 			$context_hash = ! empty( $context ) ? md5( wp_json_encode( $context ) ) : '';
 			$cache_key    = 'flosc_ai_' . md5( $provider . $message . $system_prompt . $context_hash . $user_id );
@@ -877,7 +877,7 @@ class FLOSC_AI_Chat_Dispatch {
 
 		// v1.9.2: Reduced cache TTL from 1 hour to 5 minutes.
 		// AI responses are dynamic and context-dependent — long caches cause stale/wrong responses.
-		// Fix 1: Response validation — correct wrong acronym expansions before caching/returning
+		// Fix 1: Response validation — correct wrong acronym expansions before caching/returning.
 		if ( $response && ! is_wp_error( $response ) ) {
 			$response = $this->validate_ai_response( $response );
 		}
@@ -886,7 +886,7 @@ class FLOSC_AI_Chat_Dispatch {
 			set_transient( $cache_key, $response, 5 * MINUTE_IN_SECONDS );
 		}
 
-		// Fix 3: Full debug logging — every interaction logged when FLOSC_DEBUG is true
+		// Fix 3: Full debug logging — every interaction logged when FLOSC_DEBUG is true.
 		if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
 			$log   = get_option( 'flosc_debug_log', array() );
 			$log[] = array(
@@ -896,7 +896,7 @@ class FLOSC_AI_Chat_Dispatch {
 				'message'  => $message,
 				'response' => is_wp_error( $response ) ? 'WP_Error: ' . $response->get_error_message() : $response,
 			);
-			// Keep last 200 entries
+			// Keep last 200 entries.
 			if ( count( $log ) > 200 ) {
 				$log = array_slice( $log, -200 );
 			}
@@ -1091,7 +1091,7 @@ class FLOSC_AI_Chat_Dispatch {
 			case 'ivr':
 				return $this->ivr_response( $message ); // Explicit IVR mode — correct
 			default:
-				// v1.9.3: Unknown/misconfigured provider — return null, not silent IVR
+				// v1.9.3: Unknown/misconfigured provider — return null, not silent IVR.
 				if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
 					flosc_log( 'FLOSC: Unknown AI provider: ' . $provider );
 				}
@@ -1114,7 +1114,7 @@ class FLOSC_AI_Chat_Dispatch {
 			}
 		}
 
-		// Need at least 2 providers for chaining — otherwise just use single provider
+		// Need at least 2 providers for chaining — otherwise just use single provider.
 		if ( count( $chain ) < 2 ) {
 			return $this->call_provider( $chain[0] ?? $this->provider, $message, $system_prompt, $context, false );
 		}
@@ -1129,21 +1129,21 @@ class FLOSC_AI_Chat_Dispatch {
 			if ( ! is_wp_error( $result ) && ! empty( $result ) ) {
 				$response    = $result;
 				$chain_log[] = $provider_name;
-				// Add this provider's response as assistant context for the next provider
+				// Add this provider's response as assistant context for the next provider.
 				$chain_context[] = array(
 					'role'    => 'assistant',
 					'content' => $response,
 				);
 			} else {
-				// Chain link failed — return whatever we have so far
+				// Chain link failed — return whatever we have so far.
 				break;
 			}
 		}
 
-		// Store chain detail for logging
+		// Store chain detail for logging.
 		$this->last_chain_detail = $chain_log;
 
-		// v1.9.3: Return null on total chain failure — caller decides fallback, not dispatch
+		// v1.9.3: Return null on total chain failure — caller decides fallback, not dispatch.
 		return $response ?: null;
 	}
 
@@ -1160,42 +1160,42 @@ class FLOSC_AI_Chat_Dispatch {
 			$name = 'this app';
 		}
 
-		// Connection test pattern
+		// Connection test pattern.
 		if ( preg_match( '/connection.*test/i', $message_lower ) ) {
 			return "Connection successful! I'm ready to help you.";
 		}
 
-		// Presence/confirmation patterns (are you there, are you listening, etc.)
+		// Presence/confirmation patterns (are you there, are you listening, etc.).
 		if ( preg_match( '/\b(are you (there|here|listening|available|online|active|responding)|can you hear me|anyone there)\b/', $message_lower ) ) {
 			return "Yes, I'm here and ready to help! What would you like to know?";
 		}
 
-		// Identity patterns (who are you, who is this, what are you)
+		// Identity patterns (who are you, who is this, what are you).
 		if ( preg_match( '/\b(who (are you|is this)|what are you|introduce yourself)\b/', $message_lower ) ) {
 			return "I'm your {$name} AI assistant! I'm here to help you learn and answer your questions. What can I help you with?";
 		}
 
-		// Greeting
+		// Greeting.
 		if ( preg_match( '/\b(hi|hello|hey|good morning|good afternoon|good evening)\b/', $message_lower ) ) {
 			return "Hello! Welcome to {$name}. I'm your AI assistant, ready to help you.\n\nWould you like to start with a free assessment?";
 		}
 
-		// Quiz-related triggers - more specific to avoid false positives
+		// Quiz-related triggers - more specific to avoid false positives.
 		if ( preg_match( '/\b(take.*quiz|start.*quiz|begin.*quiz|quiz.*me|assessment)\b/', $message_lower ) ) {
 			return "Great! Let's get you started with the quiz. I'll walk you through it and show you exactly where you can improve.";
 		}
 
-		// How it works
+		// How it works.
 		if ( preg_match( '/\bhow.*(work|does)\b/', $message_lower ) ) {
 			return "Here's how {$name} works:\n\n1. **Take the free quiz** - See where you stand\n2. **Get instant analysis** - I'll identify areas for improvement\n3. **Try a free lesson** - Experience the teaching method\n4. **Unlock all lessons** - Full access to everything\n\nWant to start with the free quiz?";
 		}
 
-		// What will I learn
+		// What will I learn.
 		if ( preg_match( '/\bwhat.*(learn|teach|will i)\b/', $message_lower ) ) {
 			return "With {$name}, you'll develop skills tailored to your needs based on your quiz results.\n\nThe best way to see what you'll learn is to take the free quiz. Want to try it?";
 		}
 
-		// Pricing — read from offers, not identity
+		// Pricing — read from offers, not identity.
 		if ( preg_match( '/\b(price|cost|pay|money|expensive|cheap|how much)\b/', $message_lower ) ) {
 			$offers        = flosc_sale()->offers()->get_active_offers();
 			$main_offer    = reset( $offers );
@@ -1204,17 +1204,17 @@ class FLOSC_AI_Chat_Dispatch {
 			return "Full lifetime access to {$name} is {$price_display} — that's a one-time payment with no subscriptions or hidden fees.\n\nBut first, take the free quiz to see exactly what you'll get!";
 		}
 
-		// Help
+		// Help.
 		if ( preg_match( '/\b(help|support|question|assist)\b/', $message_lower ) ) {
 			return "I'm here to help! You can:\n\n• **Take the free quiz** to assess your current level\n• **Ask questions** about {$name}\n• **Start a lesson** if you have access\n\nWhat would you like to do?";
 		}
 
-		// Thank you
+		// Thank you.
 		if ( preg_match( '/\b(thank|thanks)\b/', $message_lower ) ) {
 			return "You're welcome! Is there anything else I can help you with?";
 		}
 
-		// Default - more conversational
+		// Default - more conversational.
 		return "I'm here to help! I can answer questions about {$name}, help you get started, or guide you through the free quiz. What would you like to know?";
 	}
 
@@ -1292,7 +1292,7 @@ class FLOSC_AI_Chat_Dispatch {
 	 * xAI Grok
 	 */
 	private function xai_request( $message, $system_prompt, $context = array(), $test_mode = false ) {
-		// v1.9.0: Use flosc_get_setting() — reads flow settings first
+		// v1.9.0: Use flosc_get_setting() — reads flow settings first.
 		$api_key = function_exists( 'flosc_get_provider_api_key' ) ? flosc_get_provider_api_key( 'xai' ) : flosc_get_setting( 'xai_api_key', '' );
 
 		if ( empty( $api_key ) ) {
@@ -1326,7 +1326,7 @@ class FLOSC_AI_Chat_Dispatch {
 			'content' => $message,
 		);
 
-		// v1.8.7: Per-flow model, temperature, max_tokens
+		// v1.8.7: Per-flow model, temperature, max_tokens.
 		$flosc_xai_default = flosc_default_model( 'xai' );
 		$model             = (string) flosc_get_setting( 'ai_xai_model', $flosc_xai_default );
 		if ( $model === '' ) {
@@ -1446,7 +1446,7 @@ class FLOSC_AI_Chat_Dispatch {
 		}
 		$feedback_log = array();
 
-		// Correct wrong FLOSC expansions
+		// Correct wrong FLOSC expansions.
 		if ( preg_match( '/FLOSC\s+stands?\s+for\b/i', $response ) ) {
 			if ( ! preg_match( '/Freeline.*Login.*Offer.*Sale.*Content/i', $response ) ) {
 				$original = $response;
@@ -1461,7 +1461,7 @@ class FLOSC_AI_Chat_Dispatch {
 			}
 		}
 
-		// Log feedback
+		// Log feedback.
 		if ( ! empty( $feedback_log ) ) {
 			$log   = get_option( 'flosc_validation_feedback', array() );
 			$log[] = array(

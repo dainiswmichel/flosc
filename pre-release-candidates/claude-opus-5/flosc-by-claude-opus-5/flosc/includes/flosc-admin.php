@@ -10,9 +10,9 @@ trait FLOSC_Admin_Trait {
 	 */
 	public function add_admin_menu() {
 		// v1.2.8: Simplified - Settings page IS the main page
-		// IVR file dropdown selects which flow to edit
+		// IVR file dropdown selects which flow to edit.
 
-		// Main FLOSC menu - goes directly to Settings
+		// Main FLOSC menu - goes directly to Settings.
 		add_menu_page(
 			'FLOSC',
 			'FLOSC',
@@ -43,7 +43,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_flow_tab' )
 		);
 
-		// Identity
+		// Identity.
 		add_submenu_page(
 			'flosc-settings',
 			'Identity',
@@ -63,7 +63,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_ivr_tab' )
 		);
 
-		// AutoPrompt Panel
+		// AutoPrompt Panel.
 		add_submenu_page(
 			'flosc-settings',
 			'AutoPrompt Panel',
@@ -73,7 +73,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_autoprompts_tab' )
 		);
 
-		// Content (levels + groups + pool; replaces Member Levels + Lessons)
+		// Content (levels + groups + pool; replaces Member Levels + Lessons).
 		add_submenu_page(
 			'flosc-settings',
 			'Content',
@@ -82,7 +82,7 @@ trait FLOSC_Admin_Trait {
 			'flosc-content',
 			array( $this, 'redirect_to_content_tab' )
 		);
-		// Legacy submenu slugs → Content
+		// Legacy submenu slugs → Content.
 		add_submenu_page(
 			null,
 			'Member Levels',
@@ -101,7 +101,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_knowledge_base_tab' )
 		);
 
-		// Trajectories
+		// Trajectories.
 		add_submenu_page(
 			'flosc-settings',
 			'Trajectories',
@@ -111,7 +111,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_trajectories_tab' )
 		);
 
-		// Offers
+		// Offers.
 		add_submenu_page(
 			'flosc-settings',
 			'Offers',
@@ -121,7 +121,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_offers_tab' )
 		);
 
-		// Register & Login
+		// Register & Login.
 		add_submenu_page(
 			'flosc-settings',
 			'Register & Login',
@@ -141,7 +141,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_style_tab' )
 		);
 
-		// v1.8.0: UI & Navigation
+		// v1.8.0: UI & Navigation.
 		add_submenu_page(
 			'flosc-settings',
 			'UI & Nav',
@@ -161,7 +161,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_ai_tab' )
 		);
 
-		// Token Management
+		// Token Management.
 		add_submenu_page(
 			'flosc-settings',
 			'Token Management',
@@ -171,7 +171,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_token_management_tab' )
 		);
 
-		// Concierge
+		// Concierge.
 		add_submenu_page(
 			'flosc-settings',
 			'Concierge',
@@ -181,7 +181,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_concierge_tab' )
 		);
 
-		// Quiz
+		// Quiz.
 		add_submenu_page(
 			'flosc-settings',
 			'Quiz Settings',
@@ -191,7 +191,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_quiz_tab' )
 		);
 
-		// Email
+		// Email.
 		add_submenu_page(
 			'flosc-settings',
 			'Email Settings',
@@ -201,7 +201,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_email_tab' )
 		);
 
-		// Contact Form
+		// Contact Form.
 		add_submenu_page(
 			'flosc-settings',
 			'Contact Form',
@@ -211,7 +211,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_contact_form_tab' )
 		);
 
-		// Payments
+		// Payments.
 		add_submenu_page(
 			'flosc-settings',
 			'Payments',
@@ -221,7 +221,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_payments_tab' )
 		);
 
-		// Legacy Lessons slug → Content (hidden from menu)
+		// Legacy Lessons slug → Content (hidden from menu).
 		add_submenu_page(
 			null,
 			'Lessons',
@@ -231,7 +231,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_content_tab' )
 		);
 
-		// SSO / Social Login (v1.4.0)
+		// SSO / Social Login (v1.4.0).
 		add_submenu_page(
 			'flosc-settings',
 			'SSO / Social Login',
@@ -241,7 +241,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_sso_tab' )
 		);
 
-		// Engagement (journey parameters + profile summary; between SSO and Chat Logs)
+		// Engagement (journey parameters + profile summary; between SSO and Chat Logs).
 		add_submenu_page(
 			'flosc-settings',
 			'Engagement',
@@ -251,7 +251,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_engagement_tab' )
 		);
 
-		// Chat Logs
+		// Chat Logs.
 		add_submenu_page(
 			'flosc-settings',
 			'Chat Logs',
@@ -261,7 +261,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_chat_logs_tab' )
 		);
 
-		// Administration (global account/debug controls)
+		// Administration (global account/debug controls).
 		add_submenu_page(
 			'flosc-settings',
 			'Administration',
@@ -271,7 +271,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_administration_tab' )
 		);
 
-		// Docs
+		// Docs.
 		add_submenu_page(
 			'flosc-settings',
 			'Docs',
@@ -281,7 +281,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_docs_tab' )
 		);
 
-		// DA1 Catalog — standalone page (not flow-specific)
+		// DA1 Catalog — standalone page (not flow-specific).
 		add_submenu_page(
 			'flosc-settings',
 			'DA1 Catalog',
@@ -395,7 +395,7 @@ trait FLOSC_Admin_Trait {
 				'flosc_ai_context_awareness'        => 'textarea',
 				'flosc_ai_freeline_restrictions'    => 'textarea',
 				'flosc_ai_member_access'            => 'textarea',
-				// Global communication-token economics (integer/rational, saved by Payments tab)
+				// Global communication-token economics (integer/rational, saved by Payments tab).
 				'flosc_tokens_communication_tokens_per_message' => 'text',
 				'flosc_tokens_nominal_millicents_per_token_numerator' => 'text',
 				'flosc_tokens_nominal_millicents_per_token_denominator' => 'text',
@@ -404,20 +404,20 @@ trait FLOSC_Admin_Trait {
 			)
 		);
 
-		// User Profile Bar (v1.8.0: unified 3-state bar replaces v1.7.8 visitor-only settings)
+		// User Profile Bar (v1.8.0: unified 3-state bar replaces v1.7.8 visitor-only settings).
 
-		// v1.8.0: UI & Navigation
+		// v1.8.0: UI & Navigation.
 
 		// v1.7.7: Removed duplicate AI settings registration (was under both flosc_settings and flosc_ai_settings)
-		// All settings now live under flosc_settings only
+		// All settings now live under flosc_settings only.
 
-		// STT Provider
+		// STT Provider.
 
-		// Quiz Type System
+		// Quiz Type System.
 
-		// Third-party quiz plugin integrations (v9.3.4)
+		// Third-party quiz plugin integrations (v9.3.4).
 
-		// Register quiz content settings for each quiz type dynamically
+		// Register quiz content settings for each quiz type dynamically.
 		$quiz_types = FLOSC_Quiz_Registry::get_all_quizzes();
 		foreach ( $quiz_types as $quiz_id => $quiz_type ) {
 			$this->register_setting_value( 'flosc_quiz_content_' . $quiz_id, 'textarea' );
@@ -453,7 +453,7 @@ trait FLOSC_Admin_Trait {
 		}
 
 		// v1.7.7: Removed auto-seeded PayPal sandbox credentials (security)
-		// PayPal credentials must be configured via Settings > FLOSC > PayPal
+		// PayPal credentials must be configured via Settings > FLOSC > PayPal.
 	}
 
 	/**
@@ -798,7 +798,7 @@ trait FLOSC_Admin_Trait {
 		}
 
 		// Only load on FLOSC admin pages
-		// v1.2.8: Simplified - just check for 'flosc'
+		// v1.2.8: Simplified - just check for 'flosc'.
 		if ( strpos( $hook, 'flosc' ) === false &&
 			$hook !== 'toplevel_page_flosc-settings' ) {
 			return;
@@ -903,7 +903,7 @@ trait FLOSC_Admin_Trait {
 			}
 		}
 
-		// Debug mode badge
+		// Debug mode badge.
 		if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
 			wp_add_inline_style(
 				'flosc-admin',
@@ -965,15 +965,15 @@ trait FLOSC_Admin_Trait {
 		return $text;
 	}
 
-	// Offers now integrated into main settings page
+	// Offers now integrated into main settings page.
 
-	// Payments now integrated into main settings page
+	// Payments now integrated into main settings page.
 
-	// AI Config now integrated into main settings page
+	// AI Config now integrated into main settings page.
 
-	// AI Knowledge now integrated into main settings page
+	// AI Knowledge now integrated into main settings page.
 
-	// Chat Style now integrated into main settings page
+	// Chat Style now integrated into main settings page.
 
 	/**
 	 * Early admin_init redirects for FLOSC sidebar shortcuts.
@@ -1094,7 +1094,7 @@ trait FLOSC_Admin_Trait {
 		 * settings writer is worth the microsecond.
 		 */
 		$flosc_routes = array(
-			// POST key                      => array( nonce action, nonce field )
+			// POST key                      => array( nonce action, nonce field ).
 			'flosc_upload_ivr_file'         => array( 'flosc_upload_ivr_file', '_wpnonce' ),
 			'flosc_portability_submit'      => array( 'flosc_portability_kit', '_wpnonce' ),
 			'flosc_portability_pack_action' => array( 'flosc_portability_pack', '_wpnonce' ),
@@ -1415,7 +1415,7 @@ trait FLOSC_Admin_Trait {
 	 * @return string
 	 */
 	public function shortcode_member_only( $atts, $content = '' ) {
-		// Parse attributes
+		// Parse attributes.
 		$atts = shortcode_atts(
 			array(
 				'fallback' => '', // Optional fallback message for non-members
@@ -1434,7 +1434,7 @@ trait FLOSC_Admin_Trait {
 			return wp_kses_post( do_shortcode( $content ) );
 		}
 
-		// Not a member - show fallback if provided
+		// Not a member - show fallback if provided.
 		return $atts['fallback'] ? wp_kses_post( '<div class="flosc-member-only-fallback">' . esc_html( $atts['fallback'] ) . '</div>' ) : '';
 	}
 
@@ -1731,7 +1731,7 @@ trait FLOSC_Admin_Trait {
 			return;
 		}
 
-		// Read from per-flow settings (flat keys, not overrides)
+		// Read from per-flow settings (flat keys, not overrides).
 		$enabled = $this->get_setting( 'companion_enabled', false );
 		if ( ! $enabled ) {
 			return;
@@ -1803,7 +1803,7 @@ trait FLOSC_Admin_Trait {
 	 * Customization: bubble style, accent color, font, scale
 	 */
 	private function enqueue_chat_style() {
-		// v1.6.1: Per-flow settings via FLOSC_Flow_Manager::get_setting()
+		// v1.6.1: Per-flow settings via FLOSC_Flow_Manager::get_setting().
 		$fm     = FLOSC_Flow_Manager::instance();
 		$preset = $fm->get_setting( 'flosc_chat_style_preset', 'style', 'preset', 'light' );
 		$bubble = $fm->get_setting( 'flosc_chat_style_bubble', 'style', 'bubble', 'subtle-notch' );
@@ -1811,7 +1811,7 @@ trait FLOSC_Admin_Trait {
 		$font   = $fm->get_setting( 'flosc_chat_style_font', 'style', 'font', 'system' );
 		$scale  = intval( $fm->get_setting( 'flosc_chat_style_scale', 'style', 'scale', 100 ) );
 
-		// Bubble style presets (border-radius values per FLOSC_STYLE_GUIDE.md)
+		// Bubble style presets (border-radius values per FLOSC_STYLE_GUIDE.md).
 		$bubble_styles = array(
 			'subtle-notch' => array(
 				'user'      => '18px 18px 4px 18px',
@@ -1835,7 +1835,7 @@ trait FLOSC_Admin_Trait {
 			),
 		);
 
-		// Font family map
+		// Font family map.
 		$font_families = array(
 			'system'        => '',
 			'inter'         => '"Inter", -apple-system, sans-serif',
@@ -1846,7 +1846,7 @@ trait FLOSC_Admin_Trait {
 			'fira-code'     => '"Fira Code", "SF Mono", Monaco, monospace',
 		);
 
-		// File paths
+		// File paths.
 		$light_path = FLOSC_PLUGIN_DIR . 'assets/css/chat-style-light.css';
 		$dark_path  = FLOSC_PLUGIN_DIR . 'assets/css/chat-style-dark.css';
 
@@ -1856,7 +1856,7 @@ trait FLOSC_Admin_Trait {
 		// PRESET LOADING
 		// ===========================================
 		if ( $preset === 'auto' ) {
-			// Auto mode: Light by default, dark via prefers-color-scheme
+			// Auto mode: Light by default, dark via prefers-color-scheme.
 			if ( file_exists( $light_path ) && file_exists( $dark_path ) ) {
 				$light_content = flosc_fs_get_contents( $light_path );
 				$dark_content  = flosc_fs_get_contents( $dark_path );
@@ -1876,7 +1876,7 @@ trait FLOSC_Admin_Trait {
 				}
 			}
 		} else {
-			// Named preset (light, dark, chatgpt, claude, grok): load as external stylesheet
+			// Named preset (light, dark, chatgpt, claude, grok): load as external stylesheet.
 			$safe_preset = preg_replace( '/[^a-z0-9-]/', '', $preset );
 			$preset_path = FLOSC_PLUGIN_DIR . 'assets/css/chat-style-' . $safe_preset . '.css';
 			if ( file_exists( $preset_path ) ) {
@@ -1898,20 +1898,20 @@ trait FLOSC_Admin_Trait {
 		$overrides[] = "--flosc-user-message-radius: {$bubble_config['user']}";
 		$overrides[] = "--flosc-assistant-message-radius: {$bubble_config['assistant']}";
 
-		// v1.6.1: Full accent color cascade (5→15 derived variables)
+		// v1.6.1: Full accent color cascade (5→15 derived variables).
 		if ( ! empty( $accent ) && $accent !== '#2563eb' ) {
-			// Compute derived colors from hex accent
+			// Compute derived colors from hex accent.
 			$hover   = $this->adjust_color_brightness( $accent, -15 );
 			$subtle  = $this->hex_to_rgba( $accent, 0.06 );
 			$subtle4 = $this->hex_to_rgba( $accent, 0.04 );
 			$light   = $this->adjust_color_brightness( $accent, 40 );
 
-			// Core accent
+			// Core accent.
 			$overrides[] = "--flosc-accent: {$accent}";
 			$overrides[] = "--flosc-accent-hover: {$hover}";
 			$overrides[] = "--flosc-accent-subtle: {$subtle}";
 
-			// Components that derive from accent
+			// Components that derive from accent.
 			$overrides[] = "--flosc-user-message-bg: {$accent}";
 			$overrides[] = "--flosc-user-avatar-bg: {$accent}";
 			$overrides[] = "--flosc-send-btn-bg: {$accent}";
@@ -1927,13 +1927,13 @@ trait FLOSC_Admin_Trait {
 			$overrides[] = "--flosc-quiz-input-focus-border: {$accent}";
 		}
 
-		// Scale factor
+		// Scale factor.
 		if ( $scale !== 100 && $scale > 0 ) {
 			$scale_factor = $scale / 100;
 			$overrides[]  = "--flosc-scale: {$scale_factor}";
 		}
 
-		// Font family
+		// Font family.
 		if ( $font !== 'system' && isset( $font_families[ $font ] ) && ! empty( $font_families[ $font ] ) ) {
 			$overrides[] = "--flosc-font-family: {$font_families[$font]}";
 		}
@@ -1942,14 +1942,14 @@ trait FLOSC_Admin_Trait {
 			$inline_css .= "/* Dynamic Overrides */\n:root {\n    " . implode( ";\n    ", $overrides ) . ";\n}\n\n";
 		}
 
-		// Font application
+		// Font application.
 		if ( $font !== 'system' && isset( $font_families[ $font ] ) && ! empty( $font_families[ $font ] ) ) {
 			$inline_css .= "/* Font Application */\n";
 			$inline_css .= ".flosc-app,\n.flosc-app .messages,\n.flosc-app .message-text {\n";
 			$inline_css .= "    font-family: var(--flosc-font-family) !important;\n}\n\n";
 		}
 
-		// Attach inline styles to flosc-chat handle (always exists on app requests)
+		// Attach inline styles to flosc-chat handle (always exists on app requests).
 		if ( ! empty( trim( $inline_css ) ) ) {
 			wp_add_inline_style( 'flosc-chat', $inline_css );
 		}
@@ -1967,10 +1967,10 @@ trait FLOSC_Admin_Trait {
 			return '';
 		}
 
-		// Remove CSS comments
+		// Remove CSS comments.
 		$css = preg_replace( '/\/\*[\s\S]*?\*\//', '', $css_content );
 
-		// Extract content inside :root { }
+		// Extract content inside :root { }.
 		if ( preg_match( '/:root\s*\{([^}]+)\}/s', $css, $matches ) ) {
 			return trim( $matches[1] ) . "\n";
 		}

@@ -29,7 +29,7 @@ class FLOSC_RAG_Access_Controller {
 	 * @return mixed Tool result or denial payload
 	 */
 	public function flosc_execute_tool( $flosc_tool_name, $flosc_args ) {
-		// CHECK ACCESS BEFORE EXECUTING
+		// CHECK ACCESS BEFORE EXECUTING.
 		$flosc_access_check = $this->flosc_check_tool_access( $flosc_tool_name, $flosc_args );
 
 		if ( ! $flosc_access_check['flosc_allowed'] ) {
@@ -39,12 +39,12 @@ class FLOSC_RAG_Access_Controller {
 			);
 		}
 
-		// Get user's access level and flow context
+		// Get user's access level and flow context.
 		$flosc_state            = $this->flosc_user_session->flosc_get();
 		$flosc_access_level     = $flosc_state['flosc_access_level'];
 		$flosc_flow_category_id = $flosc_state['flosc_flow']['flosc_wp_category_id'] ?? 0;
 
-		// Execute tool via RAG manager's execute_tool() method
+		// Execute tool via RAG manager's execute_tool() method.
 		$flosc_result = $this->flosc_rag_manager->execute_tool(
 			$flosc_tool_name,
 			$flosc_args,
@@ -52,7 +52,7 @@ class FLOSC_RAG_Access_Controller {
 			$flosc_flow_category_id
 		);
 
-		// Validate output
+		// Validate output.
 		return $this->flosc_validate_output( $flosc_result, $flosc_tool_name );
 	}
 
@@ -72,11 +72,11 @@ class FLOSC_RAG_Access_Controller {
 
 			case 'search_posts':
 			case 'search_knowledge_base':
-				// Always allowed (but results filtered by access level)
+				// Always allowed (but results filtered by access level).
 				return array( 'flosc_allowed' => true );
 
 			default:
-				// Deny by default for unknown tools
+				// Deny by default for unknown tools.
 				return array(
 					'flosc_allowed' => false,
 					'flosc_reason'  => 'Unknown tool',
@@ -96,17 +96,17 @@ class FLOSC_RAG_Access_Controller {
 		$flosc_user_type    = $flosc_state['flosc_user_type'];
 		$flosc_access_level = $flosc_state['flosc_access_level'];
 
-		// Admin: always allowed
+		// Admin: always allowed.
 		if ( $flosc_user_type === 'flosc_admin' ) {
 			return array( 'flosc_allowed' => true );
 		}
 
-		// Member: always allowed
+		// Member: always allowed.
 		if ( $flosc_access_level === 'member' ) {
 			return array( 'flosc_allowed' => true );
 		}
 
-		// Guest: ONLY their free lesson
+		// Guest: ONLY their free lesson.
 		if ( $flosc_user_type === 'flosc_guest' ) {
 			$flosc_free_lesson = $flosc_state['flosc_quiz']['flosc_free_lesson_number'];
 			if ( $flosc_lesson_number == $flosc_free_lesson ) {
@@ -119,7 +119,7 @@ class FLOSC_RAG_Access_Controller {
 			);
 		}
 
-		// Visitor: MUST take quiz
+		// Visitor: MUST take quiz.
 		return array(
 			'flosc_allowed' => false,
 			'flosc_reason'  => 'Take quiz to unlock your free lesson',
@@ -157,12 +157,12 @@ class FLOSC_RAG_Access_Controller {
 	 * @return mixed
 	 */
 	private function flosc_validate_output( $flosc_result, $flosc_tool_name ) {
-		// If already denied, pass through
+		// If already denied, pass through.
 		if ( isset( $flosc_result['flosc_denied'] ) ) {
 			return $flosc_result;
 		}
 
-		// Log suspicious patterns
+		// Log suspicious patterns.
 		if ( $flosc_tool_name === 'flosc_get_lesson_content' && strlen( $flosc_result['content'] ?? '' ) > 5000 ) {
 			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
 				flosc_log( 'FLOSC RAG Access Controller: Potential content leak detected' );

@@ -54,16 +54,16 @@ class FLOSC_IVR_Parser {
 		foreach ( $lines as $line ) {
 			$trimmed = trim( $line );
 
-			// Skip empty lines unless in message content
+			// Skip empty lines unless in message content.
 			if ( empty( $trimmed ) && ! $in_message_content ) {
 				continue;
 			}
 
 			// Phase headers - v1.0.9: Support both old and new naming conventions
 			// Old: "# Freeline Messages", "# Login Messages", "# Sale Messages", etc.
-			// New: "# Freeline Messages", "# Guest Messages", "# Member Messages"
+			// New: "# Freeline Messages", "# Guest Messages", "# Member Messages".
 			if ( preg_match( '/^#\s+(Freeline|Login|Guest|Offer|Sale|Member|Content)\s+Messages/i', $trimmed, $matches ) ) {
-				// Save previous message if exists
+				// Save previous message if exists.
 				if ( $current_message ) {
 					if ( $in_message_content ) {
 						$current_message['content'] = trim( implode( "\n", $message_content_lines ) );
@@ -74,7 +74,7 @@ class FLOSC_IVR_Parser {
 				}
 				// Map section names to FLOSC phases
 				// v1.1.0: Member Messages → content phase (where most members are)
-				// first_message_after_purchase condition handles sale phase
+				// first_message_after_purchase condition handles sale phase.
 				$section         = strtolower( $matches[1] );
 				$phase_map       = array(
 					'freeline' => 'freeline',
@@ -90,7 +90,7 @@ class FLOSC_IVR_Parser {
 				continue;
 			}
 
-			// MessageStyle block start
+			// MessageStyle block start.
 			if ( preg_match( '/^##\s+MessageStyle:\s*(\w+)/i', $trimmed, $matches ) ) {
 				$in_style_block    = true;
 				$style_name        = $matches[1];
@@ -99,7 +99,7 @@ class FLOSC_IVR_Parser {
 				continue;
 			}
 
-			// Inside style block
+			// Inside style block.
 			if ( $in_style_block ) {
 				if ( strpos( $trimmed, 'Description:' ) === 0 ) {
 					$style_description = trim( substr( $trimmed, 12 ) );
@@ -110,7 +110,7 @@ class FLOSC_IVR_Parser {
 					$style_css .= $line . "\n";
 					continue;
 				}
-				// End of style block
+				// End of style block.
 				if ( strpos( $trimmed, '##' ) === 0 || strpos( $trimmed, '---' ) === 0 ) {
 					$config['styles'][ $style_name ] = array(
 						'name'        => $style_name,
@@ -121,17 +121,17 @@ class FLOSC_IVR_Parser {
 				}
 			}
 
-			// Available Variables section
+			// Available Variables section.
 			if ( strpos( $trimmed, '## Available Variables' ) === 0 ) {
 				continue;
 			}
 
-			// Available Conditions section
+			// Available Conditions section.
 			if ( strpos( $trimmed, '## Available Conditions' ) === 0 ) {
 				continue;
 			}
 
-			// Section divider - save current message
+			// Section divider - save current message.
 			if ( $trimmed === '---' ) {
 				if ( $current_message ) {
 					if ( $in_message_content ) {
@@ -145,9 +145,9 @@ class FLOSC_IVR_Parser {
 				continue;
 			}
 
-			// Message header (## MessageName or ## Something descriptive)
+			// Message header (## MessageName or ## Something descriptive).
 			if ( preg_match( '/^##\s+(.+)$/', $trimmed, $matches ) && ! $in_style_block ) {
-				// Save previous message
+				// Save previous message.
 				if ( $current_message ) {
 					if ( $in_message_content ) {
 						$current_message['content'] = trim( implode( "\n", $message_content_lines ) );
@@ -156,7 +156,7 @@ class FLOSC_IVR_Parser {
 					}
 					$this->flosc_add_message_to_config( $config, $current_message, $current_phase );
 				}
-				// Start new message
+				// Start new message.
 				$current_message = array(
 					'title'      => $matches[1],
 					'name'       => '',
@@ -174,7 +174,7 @@ class FLOSC_IVR_Parser {
 				continue;
 			}
 
-			// Message properties
+			// Message properties.
 			if ( $current_message && ! $in_message_content ) {
 				if ( preg_match( '/^MessageName:\s*(.+)$/i', $trimmed, $matches ) ) {
 					$current_message['name'] = trim( $matches[1] );
@@ -188,7 +188,7 @@ class FLOSC_IVR_Parser {
 					$current_message['style'] = trim( $matches[1] );
 					continue;
 				}
-				// v1.2.5: MessagePanel for IntroPanel vs PromptPanel
+				// v1.2.5: MessagePanel for IntroPanel vs PromptPanel.
 				if ( preg_match( '/^MessagePanel:\s*(.+)$/i', $trimmed, $matches ) ) {
 					$current_message['panel'] = trim( $matches[1] );
 					continue;
@@ -201,7 +201,7 @@ class FLOSC_IVR_Parser {
 					$current_message['user_input'] = trim( $matches[1] );
 					continue;
 				}
-				// v1.6.3: Keywords for fuzzy IVR matching
+				// v1.6.3: Keywords for fuzzy IVR matching.
 				if ( preg_match( '/^Keywords:\s*(.+)$/i', $trimmed, $matches ) ) {
 					$current_message['keywords'] = trim( $matches[1] );
 					continue;
@@ -226,12 +226,12 @@ class FLOSC_IVR_Parser {
 					$current_message['timer'] = intval( trim( $matches[1] ) );
 					continue;
 				}
-				// MTS-2026-02-03: [DISPLAY-FORMAT] Parse DisplayFormat for offers
+				// MTS-2026-02-03: [DISPLAY-FORMAT] Parse DisplayFormat for offers.
 				if ( preg_match( '/^DisplayFormat:\s*(.+)$/i', $trimmed, $matches ) ) {
 					$current_message['display_format'] = trim( $matches[1] );
 					continue;
 				}
-				// v1.6.2: Offer content source fields
+				// v1.6.2: Offer content source fields.
 				if ( preg_match( '/^HtmlFile:\s*(.+)$/i', $trimmed, $matches ) ) {
 					$current_message['html_file'] = trim( $matches[1] );
 					continue;
@@ -283,17 +283,17 @@ class FLOSC_IVR_Parser {
 				}
 			}
 
-			// Collecting message content (multi-line)
+			// Collecting message content (multi-line).
 			if ( $in_message_content ) {
-				// Check if we hit the next property or section
+				// Check if we hit the next property or section.
 				if ( preg_match( '/^(MessageName|MessageType|MessageStyle|MessagePanel|Icon|UserInput|Keywords|Action|OfferID|Price|DiscountPrice|Timer|DisplayFormat|HtmlFile|WooProduct|PostID|MessageConditions|IndividualMessagePassword|PasswordPrompt|PasswordSuccess|PasswordMaxTries|PasswordRetry|##|---):/i', $trimmed ) ||
 					strpos( $trimmed, '##' ) === 0 || $trimmed === '---' ) {
-					// End of content
+					// End of content.
 					$current_message['content'] = trim( implode( "\n", $message_content_lines ) );
 					$in_message_content         = false;
 					$message_content_lines      = array();
 
-					// Re-process this line
+					// Re-process this line.
 					if ( preg_match( '/^MessageConditions:\s*(.+)$/i', $trimmed, $matches ) ) {
 						$current_message['conditions'] = trim( $matches[1] );
 					}
@@ -303,7 +303,7 @@ class FLOSC_IVR_Parser {
 			}
 		}
 
-		// Save last message
+		// Save last message.
 		if ( $current_message ) {
 			if ( $in_message_content ) {
 				$current_message['content'] = trim( implode( "\n", $message_content_lines ) );
@@ -380,7 +380,7 @@ class FLOSC_IVR_Parser {
 			}
 		}
 
-		// Try to get current flow
+		// Try to get current flow.
 		if ( function_exists( 'flosc' ) && method_exists( flosc(), 'get_current_flow' ) ) {
 			$current_flow = flosc()->get_current_flow();
 			if ( $current_flow && ! empty( $current_flow['ivr_file'] ) ) {
@@ -408,16 +408,16 @@ class FLOSC_IVR_Parser {
 	}
 
 	public function flosc_load_config() {
-		// v1.2.3: Always reload from file - multi-flow aware, no global caching
+		// v1.2.3: Always reload from file - multi-flow aware, no global caching.
 
-		// v1.2.2: Use flow-aware IVR file path
+		// v1.2.2: Use flow-aware IVR file path.
 		$ivr_file = $this->get_ivr_file_path();
 		if ( file_exists( $ivr_file ) ) {
 			$markdown           = flosc_fs_get_contents( $ivr_file );
 			$this->flosc_config = $this->flosc_parse( $markdown );
 
 			// v1.2.3: DO NOT sync to global wp_options - that would break multi-flow
-			// Each flow has its own IVR file, parsed fresh per-request
+			// Each flow has its own IVR file, parsed fresh per-request.
 		} else {
 			$this->flosc_config = $this->get_flosc_default_config();
 		}

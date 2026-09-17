@@ -32,22 +32,22 @@ class FLOSC_User_Access_Manager {
 			$user_id = get_current_user_id();
 		}
 
-		// Not logged in = visitor
+		// Not logged in = visitor.
 		if ( ! $user_id ) {
 			return 'visitor';
 		}
 
-		// v1.1.0: WordPress admins are ALWAYS members (for testing all content)
+		// v1.1.0: WordPress admins are ALWAYS members (for testing all content).
 		if ( user_can( $user_id, 'manage_options' ) ) {
 			return 'member';
 		}
 
-		// Check if member
+		// Check if member.
 		if ( $this->is_member( $user_id, $flow_id ) ) {
 			return 'member';
 		}
 
-		// Logged in but not member = guest
+		// Logged in but not member = guest.
 		return 'guest';
 	}
 
@@ -124,12 +124,12 @@ class FLOSC_User_Access_Manager {
 		update_user_meta( $user_id, 'flosc_member_granted_date', current_time( 'mysql' ) );
 		update_user_meta( $user_id, 'flosc_member_granted_reason', $reason );
 
-		// Log the grant
+		// Log the grant.
 		if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
 			flosc_log( "FLOSC: Granted member access to user {$user_id} - Reason: {$reason}" );
 		}
 
-		// Fire action for extensibility
+		// Fire action for extensibility.
 		do_action( 'flosc_member_access_granted', $user_id, $reason );
 	}
 
@@ -175,17 +175,17 @@ class FLOSC_User_Access_Manager {
 			'logged_in'    => $user_id > 0, // Alias for backward compatibility
 		);
 
-		// v9.5.5: Add admin status
+		// v9.5.5: Add admin status.
 		if ( $user_id > 0 ) {
 			$context['is_admin'] = user_can( $user_id, 'manage_options' );
 
-			// v9.5.5: Add membership level from WishList Member if available
+			// v9.5.5: Add membership level from WishList Member if available.
 			if ( function_exists( 'wlmapi_get_member_levels' ) ) {
 				try {
 					$levels = wlmapi_get_member_levels( $user_id );
 					if ( ! empty( $levels ) && is_array( $levels ) ) {
 						$context['membership_levels'] = $levels;
-						// Add individual level flags for IVR conditions
+						// Add individual level flags for IVR conditions.
 						foreach ( $levels as $level ) {
 							if ( is_array( $level ) && isset( $level['id'] ) ) {
 								$level_key             = 'is_member_level_' . sanitize_key( $level['id'] );
@@ -202,7 +202,7 @@ class FLOSC_User_Access_Manager {
 				}
 			}
 
-			// v9.5.5: Alternative - check user meta for membership level
+			// v9.5.5: Alternative - check user meta for membership level.
 			$member_level = get_user_meta( $user_id, '_flosc_member_level', true );
 			if ( $member_level ) {
 				$context['member_level']                                       = $member_level;
@@ -210,9 +210,9 @@ class FLOSC_User_Access_Manager {
 			}
 		}
 
-		// Add quiz results if available
+		// Add quiz results if available.
 		if ( $user_id ) {
-			// v1.6.8: Use correct meta keys (underscore-prefixed, matching save locations)
+			// v1.6.8: Use correct meta keys (underscore-prefixed, matching save locations).
 			$quiz_results = get_user_meta( $user_id, '_flosc_last_quiz_data', true );
 			$quiz_score   = get_user_meta( $user_id, '_flosc_last_quiz_score', true );
 			$quiz_date    = get_user_meta( $user_id, '_flosc_quiz_completed_at', true );
@@ -222,7 +222,7 @@ class FLOSC_User_Access_Manager {
 				$context['quiz_score']   = $quiz_score;
 				$context['quiz_date']    = $quiz_date;
 
-				// Calculate time since quiz for pricing
+				// Calculate time since quiz for pricing.
 				if ( $quiz_date ) {
 					$quiz_timestamp                    = strtotime( $quiz_date );
 					$minutes_since_quiz                = ( time() - $quiz_timestamp ) / 60;
@@ -231,7 +231,7 @@ class FLOSC_User_Access_Manager {
 				}
 			}
 
-			// v1.6.7: Condition evaluator fields — matches JS buildIVRContext
+			// v1.6.7: Condition evaluator fields — matches JS buildIVRContext.
 			$context['quiz_taken']        = ! empty( $quiz_score ) || ! empty( get_user_meta( $user_id, '_flosc_quiz_completed_at', true ) );
 			$context['score']             = intval( $quiz_score ?: 0 );
 			$context['purchased']         = $this->is_member( $user_id, $flow_id );

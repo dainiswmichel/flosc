@@ -52,12 +52,12 @@ class FLOSC_Usage_Tracker {
 			$usage[ $period ][ $event ]['first_at'] = current_time( 'mysql' );
 		}
 
-		// Store event detail if meta provided
+		// Store event detail if meta provided.
 		if ( ! empty( $meta ) ) {
 			if ( ! isset( $usage[ $period ][ $event ]['details'] ) ) {
 				$usage[ $period ][ $event ]['details'] = array();
 			}
-			// Keep last 50 details per event
+			// Keep last 50 details per event.
 			$usage[ $period ][ $event ]['details'][] = array_merge(
 				$meta,
 				array(
@@ -127,7 +127,7 @@ class FLOSC_Usage_Tracker {
 			'periods'        => array_keys( $all_usage ),
 		);
 
-		// Aggregate totals
+		// Aggregate totals.
 		foreach ( $all_usage as $period => $events ) {
 			foreach ( $events as $event => $data ) {
 				if ( ! isset( $summary['total'][ $event ] ) ) {
@@ -162,7 +162,7 @@ class FLOSC_Usage_Tracker {
 		$limits = get_user_meta( $user_id, $this->limits_meta_key, true );
 
 		if ( empty( $limits ) ) {
-			// Return default limits
+			// Return default limits.
 			return $this->get_default_limits();
 		}
 
@@ -190,7 +190,7 @@ class FLOSC_Usage_Tracker {
 	public function has_quota( $user_id, $event, $quantity = 1 ) {
 		$limits = $this->get_limits( $user_id );
 
-		// No limit for this event
+		// No limit for this event.
 		if ( ! isset( $limits[ $event ] ) || $limits[ $event ] === -1 ) {
 			return true;
 		}
@@ -219,7 +219,7 @@ class FLOSC_Usage_Tracker {
 	 * Consume quota (track + check limit in one call)
 	 */
 	public function consume( $user_id, $event, $quantity = 1, $meta = array() ) {
-		// Check quota first
+		// Check quota first.
 		if ( ! $this->has_quota( $user_id, $event, $quantity ) ) {
 			return new WP_Error(
 				'quota_exceeded',
@@ -233,7 +233,7 @@ class FLOSC_Usage_Tracker {
 			);
 		}
 
-		// Track usage
+		// Track usage.
 		return $this->track( $user_id, $event, $quantity, $meta );
 	}
 
@@ -257,12 +257,12 @@ class FLOSC_Usage_Tracker {
 		$usage   = $this->get_user_usage( $user_id );
 		$current = $this->get_current_period();
 
-		// Archive current period
+		// Archive current period.
 		if ( isset( $usage[ $current ] ) ) {
 			$usage[ $current ]['_archived'] = true;
 		}
 
-		// Start fresh for new period
+		// Start fresh for new period.
 		$new_period           = $this->get_current_period();
 		$usage[ $new_period ] = array();
 
@@ -279,7 +279,7 @@ class FLOSC_Usage_Tracker {
 	 * Get current billing period identifier
 	 */
 	private function get_current_period() {
-		// Monthly periods: YYYY-MM
+		// Monthly periods: YYYY-MM.
 		return gmdate( 'Y-m' );
 	}
 
@@ -300,10 +300,10 @@ class FLOSC_Usage_Tracker {
 			return;
 		}
 
-		// Sort by period (newest first)
+		// Sort by period (newest first).
 		krsort( $usage );
 
-		// Keep only recent periods
+		// Keep only recent periods.
 		$usage = array_slice( $usage, 0, $keep_periods, true );
 
 		update_user_meta( $user_id, $this->meta_key, $usage );
@@ -380,7 +380,7 @@ class FLOSC_Usage_Tracker {
 			);
 		}
 
-		// Sort by quantity descending
+		// Sort by quantity descending.
 		usort(
 			$users,
 			function ( $a, $b ) {

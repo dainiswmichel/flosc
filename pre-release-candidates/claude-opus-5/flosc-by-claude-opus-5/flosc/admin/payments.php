@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// v1.2.9: Output tab header
+// v1.2.9: Output tab header.
 flosc_tab_header( '💳', 'Payments' );
 
 $flosc_flow_settings               = $GLOBALS['flosc_current_settings'] ?? array();

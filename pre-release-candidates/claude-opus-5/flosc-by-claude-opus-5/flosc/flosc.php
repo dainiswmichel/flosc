@@ -14,9 +14,11 @@
  * Domain Path: /languages
  */
 
-if ( ! defined( 'ABSPATH' )) exit;
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 
-// Plugin constants
+// Plugin constants.
 define( 'FLOSC_VERSION', '8.0.0' );
 
 /*
@@ -101,15 +103,15 @@ require_once FLOSC_PLUGIN_DIR . 'includes/ai/flosc-provider-identity.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-personality-library.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-knowledge-bases.php';
 
-// v1.2.9: Auto-flush permalinks on activation
+// v1.2.9: Auto-flush permalinks on activation.
 register_activation_hook( __FILE__, 'flosc_activation_flush' );
 function flosc_activation_flush() {
-	// Schedule flush for next init (after rewrite rules are registered)
+	// Schedule flush for next init (after rewrite rules are registered).
 	update_option( 'flosc_needs_flush', true );
 	update_option( 'flosc_last_permalink_flush', flosc_michel_timestamp_global() );
 }
 
-// v1.3.4: Version-based auto-flush on plugin update - IMMEDIATE flush
+// v1.3.4: Version-based auto-flush on plugin update - IMMEDIATE flush.
 add_action( 'admin_init', 'flosc_version_flush_check' );
 function flosc_version_flush_check() {
 	$last_flushed_version = get_option( 'flosc_last_flushed_version', '0.0.0' );
@@ -124,14 +126,18 @@ function flosc_version_flush_check() {
 		}
 
 		if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
-if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC: Version change detected ({$last_flushed_version} → " . FLOSC_VERSION . ") - flushed permalinks" );
+			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+				flosc_log( "FLOSC: Version change detected ({$last_flushed_version} → " . FLOSC_VERSION . ') - flushed permalinks' );
+			}
 		}
 	}
 }
 
 if ( ! function_exists( 'flosc_legacy_autoprompt_is_sandbox_pill' ) ) {
 	function flosc_legacy_autoprompt_is_sandbox_pill( $pill ) {
-		if ( ! is_array( $pill )) return false;
+		if ( ! is_array( $pill ) ) {
+			return false;
+		}
 
 		$fields   = array(
 			strtolower( trim( (string)( $pill['label'] ?? '' ) ) ),
@@ -141,16 +147,18 @@ if ( ! function_exists( 'flosc_legacy_autoprompt_is_sandbox_pill' ) ) {
 			strtolower( trim( (string)( $pill['trigger_value'] ?? '' ) ) ),
 		);
 		$haystack = implode(
-            ' ',
-            array_filter(
-                $fields,
-                static function( $value ) {
-                return $value !== '';
-                }
-            )
-        );
+			' ',
+			array_filter(
+				$fields,
+				static function ( $value ) {
+					return $value !== '';
+				}
+			)
+		);
 
-		if ($haystack === '') return false;
+		if ( $haystack === '' ) {
+			return false;
+		}
 
 		return (
 			strpos( $haystack, 'sandbox' ) !== false &&
@@ -166,7 +174,9 @@ if ( ! function_exists( 'flosc_legacy_autoprompt_is_sandbox_pill' ) ) {
 
 if ( ! function_exists( 'flosc_legacy_autoprompt_purge_sandbox_pills' ) ) {
 	function flosc_legacy_autoprompt_purge_sandbox_pills( $autoprompts ) {
-		if ( ! is_array( $autoprompts )) return array();
+		if ( ! is_array( $autoprompts ) ) {
+			return array();
+		}
 
 		$cleaned = array();
 		foreach ( array( 'visitor', 'guest', 'member' ) as $state ) {
@@ -185,10 +195,14 @@ if ( ! function_exists( 'flosc_legacy_autoprompt_purge_sandbox_pills' ) ) {
 
 add_action( 'init', 'flosc_purge_legacy_sandbox_autoprompts', 4 );
 function flosc_purge_legacy_sandbox_autoprompts() {
-	if (get_option( 'flosc_legacy_sandbox_autoprompt_purged' )) return;
+	if ( get_option( 'flosc_legacy_sandbox_autoprompt_purged' ) ) {
+		return;
+	}
 
 	$ivr_dir = defined( 'FLOSC_PLUGIN_DIR' ) ? FLOSC_PLUGIN_DIR . 'ai_configuration_files/' : '';
-	if ( ! $ivr_dir || ! is_dir( $ivr_dir )) return;
+	if ( ! $ivr_dir || ! is_dir( $ivr_dir ) ) {
+		return;
+	}
 
 	$files = array_merge(
 		glob( $ivr_dir . '*_ivr.md' ) ?: array(),
@@ -214,7 +228,9 @@ function flosc_purge_legacy_sandbox_autoprompts() {
 
 	if ( $changed ) {
 		update_option( 'flosc_legacy_sandbox_autoprompt_purged', true );
-		if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( 'FLOSC: Purged legacy sandbox autoprompts from flow settings' );
+		if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+			flosc_log( 'FLOSC: Purged legacy sandbox autoprompts from flow settings' );
+		}
 	} else {
 		update_option( 'flosc_legacy_sandbox_autoprompt_purged', true );
 	}
@@ -224,94 +240,104 @@ function flosc_purge_legacy_sandbox_autoprompts() {
 // Runs once on next page load, then sets a flag so it never runs again.
 if ( ! get_option( 'flosc_ivr_reparse_800' ) ) {
 	add_action(
-        'init',
-        function() {
-		$ivr_dir = defined( 'FLOSC_PLUGIN_DIR' ) ? FLOSC_PLUGIN_DIR . 'ai_configuration_files/' : '';
-		if ( $ivr_dir && is_dir( $ivr_dir ) ) {
-			require_once FLOSC_PLUGIN_DIR . 'includes/portability/class-ivr-parser.php';
-			$parser = FLOSC_IVR_Parser::flosc_instance();
-			$files  = array_merge(
-				glob( $ivr_dir . '*_ivr.md' ) ?: array(),
-				glob( $ivr_dir . 'ivr*.md' ) ?: array()
-			);
-			foreach ( array_unique( $files ) as $ivr_file ) {
-				$fname    = basename( $ivr_file );
-				$key      = 'flosc_flow_' . sanitize_key( pathinfo( $fname, PATHINFO_FILENAME ) );
-				$fs       = get_option( $key, array() );
-				$markdown = flosc_fs_get_contents( $ivr_file );
-				if ( ! $markdown) continue;
-				$config   = $parser->flosc_parse( $markdown );
-				$messages = $config['messages'] ?? array();
-				$pills    = array( 'visitor' => array(), 'guest' => array(), 'member' => array() );
-				foreach ( $messages as $msg ) {
-					if (( $msg['type'] ?? '' ) !== 'suggested_user_autoprompt') continue;
-					$cond = $msg['conditions'] ?? $msg['condition'] ?? '';
-					foreach ( array( 'visitor', 'guest', 'member' ) as $s ) {
-						if ( $cond === 'always' || strpos( $cond, 'is_' . $s ) !== false ) {
-							$pills[ $s ][] = array(
-								'icon'          => $msg['icon'] ?? '',
-								'label'         => $msg['label'] ?? ( $msg['name'] ?? '' ),
-								'user_input'    => $msg['user_input'] ?? ( $msg['label'] ?? '' ),
-								'trigger_type'  => $msg['trigger_type'] ?? 'ai',
-								'trigger_value' => $msg['trigger_value'] ?? '',
-								'action'        => $msg['action'] ?? '',
-								'conditions'    => $cond,
-								'style'         => $msg['style'] ?? ( $msg['message_style'] ?? 'pill' ),
-							);
+		'init',
+		function () {
+			$ivr_dir = defined( 'FLOSC_PLUGIN_DIR' ) ? FLOSC_PLUGIN_DIR . 'ai_configuration_files/' : '';
+			if ( $ivr_dir && is_dir( $ivr_dir ) ) {
+				require_once FLOSC_PLUGIN_DIR . 'includes/portability/class-ivr-parser.php';
+				$parser = FLOSC_IVR_Parser::flosc_instance();
+				$files  = array_merge(
+					glob( $ivr_dir . '*_ivr.md' ) ?: array(),
+					glob( $ivr_dir . 'ivr*.md' ) ?: array()
+				);
+				foreach ( array_unique( $files ) as $ivr_file ) {
+					$fname    = basename( $ivr_file );
+					$key      = 'flosc_flow_' . sanitize_key( pathinfo( $fname, PATHINFO_FILENAME ) );
+					$fs       = get_option( $key, array() );
+					$markdown = flosc_fs_get_contents( $ivr_file );
+					if ( ! $markdown ) {
+						continue;
+					}
+					$config   = $parser->flosc_parse( $markdown );
+					$messages = $config['messages'] ?? array();
+					$pills    = array(
+					'visitor' => array(),
+					'guest'   => array(),
+					'member'  => array(),
+					);
+					foreach ( $messages as $msg ) {
+						if ( ( $msg['type'] ?? '' ) !== 'suggested_user_autoprompt' ) {
+							continue;
+						}
+						$cond = $msg['conditions'] ?? $msg['condition'] ?? '';
+						foreach ( array( 'visitor', 'guest', 'member' ) as $s ) {
+							if ( $cond === 'always' || strpos( $cond, 'is_' . $s ) !== false ) {
+								$pills[ $s ][] = array(
+									'icon'          => $msg['icon'] ?? '',
+									'label'         => $msg['label'] ?? ( $msg['name'] ?? '' ),
+									'user_input'    => $msg['user_input'] ?? ( $msg['label'] ?? '' ),
+									'trigger_type'  => $msg['trigger_type'] ?? 'ai',
+									'trigger_value' => $msg['trigger_value'] ?? '',
+									'action'        => $msg['action'] ?? '',
+									'conditions'    => $cond,
+									'style'         => $msg['style'] ?? ( $msg['message_style'] ?? 'pill' ),
+								);
+							}
 						}
 					}
-				}
-				$fs['autoprompts'] = $pills;
-				// Runtime lists: flow_messages / flow_phases / flow_styles only.
-				if ( function_exists( 'flosc_flow_set_runtime' ) ) {
-					flosc_flow_set_runtime(
-						$fs,
-						$messages,
-						$config['phases'] ?? array(),
-						$config['styles'] ?? array()
-					);
-				} else {
-					$fs['flow_messages'] = $messages;
-					$fs['flow_phases']   = $config['phases'] ?? array();
-					$fs['flow_styles']   = $config['styles'] ?? array();
-					unset( $fs['ivr_messages'], $fs['ivr_phases'], $fs['ivr_styles'] );
-				}
-				// Fresh install: re-parse used to write messages-only options, skipping
-				// admin seed (empty() false) and hiding View Flow (needs status+slug).
-				$stem_slug = strtolower( preg_replace( '/[^a-z0-9_-]/i', '', pathinfo( $fname, PATHINFO_FILENAME ) ) );
-				if ( $stem_slug === '' ) {
-					$stem_slug = 'flosc';
-				}
-				if ( empty( $fs['slug'] ) || ! is_string( $fs['slug'] ) ) {
-					$fs['slug'] = $stem_slug;
-				}
-				if ( empty( $fs['status'] ) || ! is_string( $fs['status'] ) ) {
-					$fs['status'] = 'active';
-				} elseif ( ! in_array( $fs['status'], array( 'active', 'draft' ), true ) ) {
-					$fs['status'] = 'active';
-				}
-				if ( empty( $fs['name'] ) || ! is_string( $fs['name'] ) ) {
-					$shipped    = function_exists( 'flosc_shipped_flow_display_name' )
+					$fs['autoprompts'] = $pills;
+					// Runtime lists: flow_messages / flow_phases / flow_styles only.
+					if ( function_exists( 'flosc_flow_set_runtime' ) ) {
+						flosc_flow_set_runtime(
+							$fs,
+							$messages,
+							$config['phases'] ?? array(),
+							$config['styles'] ?? array()
+						);
+					} else {
+						$fs['flow_messages'] = $messages;
+						$fs['flow_phases']   = $config['phases'] ?? array();
+						$fs['flow_styles']   = $config['styles'] ?? array();
+						unset( $fs['ivr_messages'], $fs['ivr_phases'], $fs['ivr_styles'] );
+					}
+					// Fresh install: re-parse used to write messages-only options, skipping
+					// admin seed (empty() false) and hiding View Flow (needs status+slug).
+					$stem_slug = strtolower( preg_replace( '/[^a-z0-9_-]/i', '', pathinfo( $fname, PATHINFO_FILENAME ) ) );
+					if ( $stem_slug === '' ) {
+						$stem_slug = 'flosc';
+					}
+					if ( empty( $fs['slug'] ) || ! is_string( $fs['slug'] ) ) {
+						$fs['slug'] = $stem_slug;
+					}
+					if ( empty( $fs['status'] ) || ! is_string( $fs['status'] ) ) {
+						$fs['status'] = 'active';
+					} elseif ( ! in_array( $fs['status'], array( 'active', 'draft' ), true ) ) {
+						$fs['status'] = 'active';
+					}
+					if ( empty( $fs['name'] ) || ! is_string( $fs['name'] ) ) {
+						$shipped    = function_exists( 'flosc_shipped_flow_display_name' )
 						? flosc_shipped_flow_display_name( $fname )
 						: '';
-					$fs['name'] = $shipped !== ''
+						$fs['name'] = $shipped !== ''
 						? $shipped
 						: ucwords( str_replace( array( '_', '-', 'ivr', '.md' ), array( ' ', ' ', '', '' ), $fname ) );
+					}
+					if ( ! isset( $fs['primary_color'] ) || $fs['primary_color'] === '' ) {
+						$fs['primary_color'] = '#4f46e5';
+					}
+					update_option( $key, $fs );
 				}
-				if ( ! isset( $fs['primary_color'] ) || $fs['primary_color'] === '' ) {
-					$fs['primary_color'] = '#4f46e5';
-				}
-				update_option( $key, $fs );
 			}
-		}
-		update_option( 'flosc_ivr_reparse_800', true );
-		if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( 'FLOSC v8.0.0: One-time IVR re-parse complete' );
-        },
-        5
-    );
+			update_option( 'flosc_ivr_reparse_800', true );
+			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+				flosc_log( 'FLOSC v8.0.0: One-time IVR re-parse complete' );
+			}
+		},
+		5
+	);
 }
 
-// v1.2.9: Michel timestamp generator (global scope for activation hook)
+// v1.2.9: Michel timestamp generator (global scope for activation hook).
 function flosc_michel_timestamp_global() {
 	return gmdate( 'Y' ) . 'y-' . gmdate( 'm' ) . 'm-' . gmdate( 'd' ) . 'd-UTC' . gmdate( 'H' ) . 'h-' . gmdate( 'i' ) . 'm-' . gmdate( 's' ) . 's';
 }
@@ -454,7 +480,7 @@ class FLOSC_Framework {
 
 	private static $instance = null;
 
-	// Core components
+	// Core components.
 	private $filesystem;
 	private $request_guard;
 	private $da1_catalogs;
@@ -471,29 +497,29 @@ class FLOSC_Framework {
 	private $session_manager;
 	private $pronunciation_analyzer;
 
-	// SALE system (loaded separately)
+	// SALE system (loaded separately).
 	private $sale_manager;
 
-	// v1.7.5: Explicit flow context for REST API calls (domain-independent)
+	// v1.7.5: Explicit flow context for REST API calls (domain-independent).
 	private $forced_flow = null;
 
-	// RAG system (v9.1.6)
+	// RAG system (v9.1.6).
 	private $user_access_manager;
 	private $content_filter;
 	private $rag_manager;
 
-	// v9.1.8 systems
+	// v9.1.8 systems.
 	private $free_lesson_manager;
 	private $member_access;
 
-	// SSO system (v1.4.0)
+	// SSO system (v1.4.0).
 	private $sso_manager;
 
-	// Lesson manager
+	// Lesson manager.
 	private $lesson_manager;
 
 	// v3.0.0: Flag set when FLOSC auth token authenticated the user
-	// Used by allow_flosc_token_auth() to bypass WordPress nonce check
+	// Used by allow_flosc_token_auth() to bypass WordPress nonce check.
 	private $flosc_token_auth_used = false;
 
 	// v8.0.4: Fallback temp_id from registration request body.
@@ -505,7 +531,7 @@ class FLOSC_Framework {
 	public static function instance() {
 		if ( null === self::$instance ) {
 			// Assign instance BEFORE constructor work so flosc_get_setting()
-			// can call instance() without infinite recursion
+			// can call instance() without infinite recursion.
 			self::$instance = new self();
 			self::$instance->boot();
 		}
@@ -513,7 +539,7 @@ class FLOSC_Framework {
 	}
 
 	private function __construct() {
-		// Intentionally empty — boot() runs after self::$instance is assigned
+		// Intentionally empty — boot() runs after self::$instance is assigned.
 	}
 
 	/** @return WP_Filesystem_Base|null */
@@ -943,7 +969,7 @@ class FLOSC_Framework {
 		}
 
 		$intent = flosc_paypal_purchase_intent_create(
-            array(
+			array(
 			'offer_id'   => sanitize_text_field( (string) ( $offer['id'] ?? $offer_id ) ),
 			'plan_id'    => $plan_id,
 			'plan_type'  => $plan_type,
@@ -953,14 +979,14 @@ class FLOSC_Framework {
 			'user_id'    => get_current_user_id(),
 			'session_id' => $session_id,
 			'mode'       => $mode,
-            )
-        );
+			)
+		);
 		if ( is_wp_error( $intent ) ) {
 			return $intent;
 		}
 
 		return new WP_REST_Response(
-            array(
+			array(
 			'success'       => true,
 			'purchase_uuid' => $intent['purchase_uuid'],
 			'plan_id'       => $plan_id,
@@ -968,9 +994,9 @@ class FLOSC_Framework {
 			'amount'        => $amount,
 			'currency'      => $currency,
 			'offer_id'      => $intent['offer_id'],
-            ),
-            200
-        );
+			),
+			200
+		);
 	}
 
 	public function handle_webhook( $request ) {
@@ -1182,17 +1208,26 @@ class FLOSC_Framework {
 	 */
 	private function dispatch_remote_playback_conversion( $session_id, $targets ) {
 		if ( ! preg_match( '/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $session_id ) ) {
-			return array( 'ok' => false, 'status' => 'invalid_session' );
+			return array(
+			'ok'     => false,
+			'status' => 'invalid_session',
+			);
 		}
 
 		$provider = strtolower( (string) flosc_get_setting( 'audio_conversion_provider', 'none' ) );
 		if ( $provider !== 'external' ) {
-			return array( 'ok' => false, 'status' => 'provider_none' );
+			return array(
+			'ok'     => false,
+			'status' => 'provider_none',
+			);
 		}
 
 		$api_base = untrailingslashit( (string) flosc_get_setting( 'ipa_api_base_url', '' ) );
 		if ( $api_base === '' ) {
-			return array( 'ok' => false, 'status' => 'missing_api_base' );
+			return array(
+			'ok'     => false,
+			'status' => 'missing_api_base',
+			);
 		}
 
 		$payload      = array(
@@ -1206,25 +1241,34 @@ class FLOSC_Framework {
 		);
 
 		$response = flosc_safe_remote_request(
-            'POST',
-            $api_base . '/convert-session-playback',
-            array(
+			'POST',
+			$api_base . '/convert-session-playback',
+			array(
 			'headers' => $headers,
 			'body'    => $payload_json,
 			'timeout' => 6,
-            )
-        );
+			)
+		);
 
 		if ( is_wp_error( $response ) ) {
-			return array( 'ok' => false, 'status' => 'request_error' );
+			return array(
+			'ok'     => false,
+			'status' => 'request_error',
+			);
 		}
 
 		$code = (int) wp_remote_retrieve_response_code( $response );
 		if ( $code >= 200 && $code < 300 ) {
-			return array( 'ok' => true, 'status' => 'requested' );
+			return array(
+			'ok'     => true,
+			'status' => 'requested',
+			);
 		}
 
-		return array( 'ok' => false, 'status' => 'http_' . $code );
+		return array(
+		'ok'     => false,
+		'status' => 'http_' . $code,
+		);
 	}
 
 	private function boot() {
@@ -1243,7 +1287,7 @@ class FLOSC_Framework {
 		$this->checkout_rest    = new FLOSC_Checkout_Rest( $this );
 		$this->token_ledger     = new FLOSC_Token_Ledger( $this );
 		$this->session_rest     = new FLOSC_Session_Rest( $this );
-		// Core components
+		// Core components.
 		require_once FLOSC_PLUGIN_DIR . 'includes/class-ai-chat-dispatch.php';
 		require_once FLOSC_PLUGIN_DIR . 'includes/class-stt-dispatch.php';
 		require_once FLOSC_PLUGIN_DIR . 'includes/class-quiz-registry.php';
@@ -1251,11 +1295,11 @@ class FLOSC_Framework {
 		require_once FLOSC_PLUGIN_DIR . 'includes/class-pronunciation-analyzer.php';
 		require_once FLOSC_PLUGIN_DIR . 'includes/class-lesson-manager.php';
 
-		// IVR system (v07.08)
+		// IVR system (v07.08).
 		require_once FLOSC_PLUGIN_DIR . 'includes/portability/class-ivr-parser.php';
 		require_once FLOSC_PLUGIN_DIR . 'includes/class-condition-evaluator.php';
 
-		// RAG system (v9.1.6)
+		// RAG system (v9.1.6).
 		require_once FLOSC_PLUGIN_DIR . 'includes/class-user-access-manager.php';
 		require_once FLOSC_PLUGIN_DIR . 'includes/class-content-filter.php';
 		require_once FLOSC_PLUGIN_DIR . 'includes/class-rag-manager.php';
@@ -1276,16 +1320,16 @@ class FLOSC_Framework {
 		require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-chatpack.php'; // v1.9.2 - unified AI context builder
 		require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-page-context.php';
 
-		// v1.9.0 - Unified AI architecture with enforceable structure
+		// v1.9.0 - Unified AI architecture with enforceable structure.
 		require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-user-session.php';
 		require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-rag-chat-handler.php';
 		require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-rag-access-controller.php';
 		require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-response-validator.php';
 
-		// SALE system
+		// SALE system.
 		require_once FLOSC_PLUGIN_DIR . 'includes/sale/class-sale-manager.php';
 
-		// SSO system (v1.4.0)
+		// SSO system (v1.4.0).
 		require_once FLOSC_PLUGIN_DIR . 'includes/sso/class-sso-provider-base.php';
 		require_once FLOSC_PLUGIN_DIR . 'includes/sso/class-oauth2-handler.php';
 		require_once FLOSC_PLUGIN_DIR . 'includes/sso/class-user-linker.php';
@@ -1297,21 +1341,21 @@ class FLOSC_Framework {
 		$this->pronunciation_analyzer = new FLOSC_Pronunciation_Analyzer();
 		$this->lesson_manager         = FLOSC_Lesson_Manager::instance();
 
-		// Quiz types loaded dynamically by factory
+		// Quiz types loaded dynamically by factory.
 
-		// Initialize SALE system
+		// Initialize SALE system.
 		$this->sale_manager = FLOSC_Sale_Manager::instance();
 
-		// Initialize RAG system (v9.1.6)
+		// Initialize RAG system (v9.1.6).
 		$this->user_access_manager = FLOSC_User_Access_Manager::instance();
 		$this->content_filter      = FLOSC_Content_Protection::instance();
 		$this->rag_manager         = FLOSC_RAG_Manager::instance();
 
-		// Initialize v9.1.8 systems
+		// Initialize v9.1.8 systems.
 		$this->free_lesson_manager = FLOSC_Free_Content_Item_Manager::instance();
 		$this->member_access       = FLOSC_Member_Access::instance();
 
-		// Initialize SSO system (v1.4.0)
+		// Initialize SSO system (v1.4.0).
 		$this->sso_manager = \FLOSC\SSO\SSO_Manager::get_instance();
 		$this->sso_manager->init();
 	}
@@ -1344,26 +1388,26 @@ class FLOSC_Framework {
 		// Specialty roles (the product, etc.) are created when that product is
 		// imported/configured — not on every request for a generic install.
 
-		// v8.0.0: Instant logout via AJAX — bypasses wp-login.php confirmation screen
+		// v8.0.0: Instant logout via AJAX — bypasses wp-login.php confirmation screen.
 		add_action( 'wp_ajax_flosc_logout',        array( $this, 'ajax_logout' ) );
 		add_action( 'admin_post_flosc_contact_submit', array( $this, 'handle_contact_form_submit' ) );
 		add_action( 'admin_post_nopriv_flosc_contact_submit', array( $this, 'handle_contact_form_submit' ) );
 
-		// v1.5.2: Cross-domain SSO login token — must run before anything else
+		// v1.5.2: Cross-domain SSO login token — must run before anything else.
 		add_action( 'init', array( $this, 'handle_login_token' ), 0 );
 
-		// v1.1.9: Custom domain mapping - check early before WP routing
+		// v1.1.9: Custom domain mapping - check early before WP routing.
 		add_action( 'init', array( $this, 'handle_custom_domain' ), 1 );
 
-		// Virtual page routing
+		// Virtual page routing.
 		add_action( 'init', array( $this, 'add_rewrite_rules' ) );
 		add_filter( 'query_vars', array( $this, 'add_query_vars' ) );
 		add_action( 'template_redirect', array( $this, 'handle_app_route' ) );
 
-		// v1.2.9: Check if we need to flush after activation (MUST run AFTER add_rewrite_rules)
+		// v1.2.9: Check if we need to flush after activation (MUST run AFTER add_rewrite_rules).
 		add_action( 'init', array( $this, 'check_activation_rewrite_flush' ), 99 );
 
-		// Admin - priority 5 to ensure Settings submenu is added first
+		// Admin - priority 5 to ensure Settings submenu is added first.
 		add_action( 'admin_menu', array( $this, 'add_admin_menu' ), 5 );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) ); // v1.0.4: TASK-006
@@ -1373,23 +1417,23 @@ class FLOSC_Framework {
 		add_filter( 'update_footer', array( $this, 'relabel_admin_footer' ), 20 );
 		add_filter( 'admin_footer_text', array( $this, 'relabel_admin_footer_left' ) );
 
-		// v8.0.5: Show user audio files on WP admin user profile page
+		// v8.0.5: Show user audio files on WP admin user profile page.
 		add_action( 'edit_user_profile', array( $this, 'render_admin_user_audio_section' ) );
 		add_action( 'show_user_profile', array( $this, 'render_admin_user_audio_section' ) );
-		// Profile reminder for email-registered users who haven't set nickname/password yet
+		// Profile reminder for email-registered users who haven't set nickname/password yet.
 		add_action( 'show_user_profile', array( $this, 'render_credential_setup_reminder' ) );
 		add_filter( 'manage_users_columns', array( $this, 'flosc_add_users_columns' ) );
 		add_filter( 'manage_users_custom_column', array( $this, 'flosc_render_users_custom_column' ), 10, 3 );
 		add_action( 'wp_ajax_flosc_serve_user_audio', array( $this, 'ajax_serve_user_audio' ) );
 		add_action( 'wp_ajax_nopriv_flosc_serve_user_audio', array( $this, 'ajax_serve_user_audio' ) );
 
-		// Auto-flush permalinks when slug changes
+		// Auto-flush permalinks when slug changes.
 		add_action( 'update_option_flosc_app_slug', array( $this, 'handle_slug_change' ), 10, 2 );
 
-		// v1.2.9: New flush permalinks handler with Michel timestamp
+		// v1.2.9: New flush permalinks handler with Michel timestamp.
 		add_action( 'admin_post_flosc_flush_permalinks_v129', array( $this, 'handle_flush_permalinks_v129' ) );
 
-		// REST API
+		// REST API.
 		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
 
 		// Assets
@@ -1399,31 +1443,44 @@ class FLOSC_Framework {
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_assets' ), 9999 );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_companion' ) );
 
-		// Register shortcodes (v9.2.0)
+		// Register shortcodes (v9.2.0).
 		add_shortcode( 'flosc_visitor_only', array( $this, 'shortcode_visitor_only' ) );
 		add_shortcode( 'flosc_member_only', array( $this, 'shortcode_member_only' ) );
 		add_shortcode( 'flosc_contact_form_01', array( $this, 'shortcode_contact_form_01' ) );
 		add_shortcode( 'flosc-contact-form-01', array( $this, 'shortcode_contact_form_01' ) );
 
-		// User registration hook (for signup bonus)
+		// User registration hook (for signup bonus).
 		add_action( 'user_register', array( $this, 'handle_user_registration' ) );
 
-		// User login hook (for pre-login score processing)
+		// User login hook (for pre-login score processing).
 		add_action( 'wp_login', array( $this, 'handle_user_login' ), 10, 2 );
 
-		// v8.0.0: Cron hook to clean up expired visitor audio temp dirs (>36h)
+		// v8.0.0: Cron hook to clean up expired visitor audio temp dirs (>36h).
 		add_action( 'flosc_cleanup_visitor_audio', array( $this, 'cleanup_expired_visitor_audio' ) );
 		if ( ! wp_next_scheduled( 'flosc_cleanup_visitor_audio' ) ) {
 			wp_schedule_event( time(), 'twicedaily', 'flosc_cleanup_visitor_audio' );
 		}
 
-		// v8.0.0: One-time migration — ensure My Profile + Log Out in guest/member dropdown menus
+		// v8.0.0: One-time migration — ensure My Profile + Log Out in guest/member dropdown menus.
 		if ( ! get_option( 'flosc_menus_v800' ) ) {
 			foreach ( array( 'flosc_guest_menu_items', 'flosc_member_menu_items' ) as $_menu_key ) {
 				$_menu    = get_option( $_menu_key, array() );
 				$_actions = array_column( $_menu, 'action' );
-				if ( ! in_array( 'view_profile', $_actions )) array_unshift( $_menu, array( 'label' => 'My Profile', 'action' => 'view_profile' ) );
-				if ( ! in_array( 'logout', $_actions ))       $_menu[] = array( 'label' => 'Log Out', 'action' => 'logout' );
+				if ( ! in_array( 'view_profile', $_actions ) ) {
+					array_unshift(
+					$_menu,
+					array(
+					'label'  => 'My Profile',
+					'action' => 'view_profile',
+					) 
+					);
+				}
+				if ( ! in_array( 'logout', $_actions ) ) {
+					$_menu[] = array(
+					'label'  => 'Log Out',
+					'action' => 'logout',
+					);
+				}
 				update_option( $_menu_key, $_menu );
 			}
 			update_option( 'flosc_menus_v800', true );
@@ -1499,14 +1556,14 @@ class FLOSC_Framework {
 					continue;
 				}
 				$_menu = array_values(
-                    array_filter(
-                        $_menu,
-                        static function ( $item ) {
-                        $action = is_array( $item ) ? (string) ( $item['action'] ?? '' ) : '';
-                        return $action !== 'open_sandbox_purchase' && strpos( $action, 'show_offer' ) !== 0;
-                        }
-                    )
-                );
+					array_filter(
+						$_menu,
+						static function ( $item ) {
+							$action = is_array( $item ) ? (string) ( $item['action'] ?? '' ) : '';
+							return $action !== 'open_sandbox_purchase' && strpos( $action, 'show_offer' ) !== 0;
+						}
+					)
+				);
 				update_option( $_menu_key, $_menu );
 			}
 			// Ensure guest Upgrade button is on when we remove the menu-row fallback.
@@ -1527,16 +1584,16 @@ class FLOSC_Framework {
 			update_option( 'flosc_menus_upgrade_btn_v800', true );
 		}
 
-		// v8.0.0: SSO guest email sequence — welcome on registration, day 10/20/28 follow-ups
+		// v8.0.0: SSO guest email sequence — welcome on registration, day 10/20/28 follow-ups.
 		add_action( 'flosc_sso_user_created',   array( $this, 'send_sso_welcome_email' ), 10, 3 );
 		add_action( 'flosc_user_registered',     array( $this, 'send_sso_welcome_email' ), 10, 3 );
 		add_action( 'flosc_sso_login_success',  array( $this, 'maybe_process_sso_flow_email_sequence' ), 10, 3 );
 		add_action( 'flosc_sso_account_auto_linked', array( $this, 'maybe_process_sso_flow_email_sequence' ), 10, 3 );
-		// Task 5: Post-purchase single-use magic link for cross-domain login
+		// Task 5: Post-purchase single-use magic link for cross-domain login.
 		add_action( 'flosc_purchase_completed', array( $this, 'handle_purchase_completed' ), 10, 2 );
-		// Member welcome — fires for every purchase path (grant_member_access → flosc_member_access_granted)
+		// Member welcome — fires for every purchase path (grant_member_access → flosc_member_access_granted).
 		add_action( 'flosc_member_access_granted', array( $this, 'dispatch_member_welcome_email' ), 10, 2 );
-		// G→M additive token grant (remaining + member_token_grant), once per flow
+		// G→M additive token grant (remaining + member_token_grant), once per flow.
 		add_action( 'flosc_member_access_granted', array( $this, 'apply_member_token_grant_on_access' ), 15, 2 );
 		// Chat Logs journey marks. These only observe -- they queue a note that the
 		// next logged turn turns into a row -- so no auth or purchase path changes.
@@ -1546,7 +1603,7 @@ class FLOSC_Framework {
 		// purchase-driven creates without touching any of them.
 		add_action( 'user_register', array( $this, 'flosc_mark_journey_account_created' ), 20, 1 );
 		add_action( 'flosc_member_access_granted', array( $this, 'flosc_mark_journey_member_granted' ), 20, 2 );
-		// Newsletter opt-in profile checkbox (optional lead-gen)
+		// Newsletter opt-in profile checkbox (optional lead-gen).
 		add_action( 'show_user_profile', array( $this, 'render_newsletter_profile_field' ) );
 		add_action( 'edit_user_profile', array( $this, 'render_newsletter_profile_field' ) );
 		add_action( 'personal_options_update', array( $this, 'save_newsletter_profile_field' ) );
@@ -1560,14 +1617,14 @@ class FLOSC_Framework {
 			wp_schedule_event( time(), 'daily', 'flosc_guest_followup_cron' );
 		}
 
-		// Login redirect - send users to FLOSC app after login (v9.5.7)
+		// Login redirect - send users to FLOSC app after login (v9.5.7).
 		add_filter( 'login_redirect', array( $this, 'handle_login_redirect' ), 999, 3 );
 		add_filter( 'woocommerce_login_redirect', array( $this, 'handle_woocommerce_login_redirect' ), 999, 2 );
 
-		// Admin post handler for flush permalinks (v9.5.1)
+		// Admin post handler for flush permalinks (v9.5.1).
 		add_action( 'admin_post_flosc_flush_permalinks', array( $this, 'handle_flush_permalinks' ) );
 
-		// Set default flow (must run before admin HTML — not inside settings.php render)
+		// Set default flow (must run before admin HTML — not inside settings.php render).
 		add_action( 'admin_post_flosc_set_default_flow', array( $this, 'handle_set_default_flow' ) );
 
 		// Settings Save / trajectory / concierge POSTs redirect — must run before admin HTML
@@ -1578,28 +1635,28 @@ class FLOSC_Framework {
 		// Late menu callbacks + headers_sent + exit = blank main content area.
 		add_action( 'admin_init', array( $this, 'maybe_redirect_flosc_admin_shortcuts' ), 1 );
 
-		// Fix 6: Lesson catalog auto-regeneration on post save + manual admin-post handler
+		// Fix 6: Lesson catalog auto-regeneration on post save + manual admin-post handler.
 		add_action( 'save_post', array( $this, 'maybe_regenerate_lesson_catalog' ), 20, 2 );
 		add_action( 'admin_post_flosc_regenerate_lesson_catalog', array( $this, 'handle_regenerate_lesson_catalog' ) );
 
-		// Fix 15: KB file operation handlers (upload, delete, toggle, save edit)
+		// Fix 15: KB file operation handlers (upload, delete, toggle, save edit).
 		add_action( 'admin_post_flosc_kb_upload',    array( $this, 'handle_kb_upload' ) );
 		add_action( 'admin_post_flosc_kb_delete',    array( $this, 'handle_kb_delete' ) );
 		add_action( 'admin_post_flosc_kb_toggle',    array( $this, 'handle_kb_toggle' ) );
 		add_action( 'admin_post_flosc_kb_save_edit', array( $this, 'handle_kb_save_edit' ) );
 		add_action( 'admin_post_flosc_kb_create',    array( $this, 'handle_kb_create' ) );
 
-		// Fix 14: Provider Accuracy Test AJAX
+		// Fix 14: Provider Accuracy Test AJAX.
 		add_action( 'wp_ajax_flosc_accuracy_test_message', array( $this, 'ajax_accuracy_test_message' ) );
 
-		// Category protection AJAX (v1.0.1)
+		// Category protection AJAX (v1.0.1).
 		add_action( 'wp_ajax_flosc_protect_category', array( $this, 'ajax_protect_category' ) );
 		add_action( 'wp_ajax_flosc_unprotect_category', array( $this, 'ajax_unprotect_category' ) );
 
-		// v1.5.0: SSO connection test AJAX (inline diagnostics — no popups)
+		// v1.5.0: SSO connection test AJAX (inline diagnostics — no popups).
 		add_action( 'wp_ajax_flosc_test_sso_connection', array( $this, 'ajax_test_sso_connection' ) );
 
-		// v1.9.0: AI connection test AJAX
+		// v1.9.0: AI connection test AJAX.
 		add_action( 'wp_ajax_flosc_test_ai_connection', array( $this, 'ajax_test_ai_connection' ) );
 		add_action( 'wp_ajax_flosc_fetch_ai_models', array( $this, 'ajax_fetch_ai_models' ) );
 		add_action( 'wp_ajax_flosc_save_ai_provider_key', array( $this, 'ajax_save_ai_provider_key' ) );
@@ -1608,7 +1665,7 @@ class FLOSC_Framework {
 		add_action( 'wp_ajax_flosc_explain_ai_parameter', array( $this, 'ajax_explain_ai_parameter' ) );
 		add_action( 'wp_ajax_flosc_save_model_tuning', array( $this, 'ajax_save_model_tuning' ) );
 
-		// Admin: send Guest Access Link to any email (Register & Login tab)
+		// Admin: send Guest Access Link to any email (Register & Login tab).
 		add_action( 'wp_ajax_flosc_send_guest_link', array( $this, 'ajax_send_guest_link' ) );
 		add_action( 'admin_post_flosc_guest_request_approve', array( $this, 'handle_guest_request_approve' ) );
 		add_action( 'admin_post_flosc_guest_request_approve_send', array( $this, 'handle_guest_request_approve_send' ) );
@@ -1619,30 +1676,30 @@ class FLOSC_Framework {
 		add_action( 'admin_post_flosc_activate_email_account', array( $this, 'handle_admin_activate_email_account' ) );
 		add_filter( 'wp_authenticate_user', array( $this, 'flosc_block_pending_email_login' ), 10, 2 );
 
-		// v1.9.0: Chat logs AJAX (real-time polling)
+		// v1.9.0: Chat logs AJAX (real-time polling).
 		add_action( 'wp_ajax_flosc_get_chat_logs', array( $this, 'ajax_flosc_get_chat_logs' ) );
 		add_action( 'wp_ajax_flosc_clear_chat_logs', array( $this, 'ajax_flosc_clear_chat_logs' ) );
 
-		// v1.9.5: Rate a chat log entry (-10 to +10)
+		// v1.9.5: Rate a chat log entry (-10 to +10).
 		add_action( 'wp_ajax_flosc_rate_log', array( $this, 'ajax_flosc_rate_log' ) );
 		add_action( 'wp_ajax_flosc_delete_chat_session', array( $this, 'ajax_flosc_delete_chat_session' ) );
 		add_action( 'wp_ajax_flosc_manage_chat_sessions', array( $this, 'ajax_flosc_manage_chat_sessions' ) );
-		// v8.0.0: Admin joins a conversation (posts a human, pale-green "(admin)" message)
+		// v8.0.0: Admin joins a conversation (posts a human, pale-green "(admin)" message).
 		add_action( 'wp_ajax_flosc_admin_join', array( $this, 'ajax_flosc_admin_join' ) );
 		add_action( 'wp_ajax_flosc_admin_assign_tokens', array( $this, 'ajax_flosc_admin_assign_tokens' ) );
 		add_action( 'admin_post_flosc_download_chat_tsv', array( $this, 'handle_download_chat_tsv' ) );
 
-		// v8.0.0: PayPal connection test AJAX
+		// v8.0.0: PayPal connection test AJAX.
 		add_action( 'wp_ajax_flosc_test_paypal', array( $this, 'ajax_test_paypal' ) );
 
-		// v1.4.3: Post visibility meta box
+		// v1.4.3: Post visibility meta box.
 		add_action( 'add_meta_boxes', array( $this, 'flosc_add_post_visibility_meta_box' ) );
 		add_action( 'save_post', array( $this, 'flosc_save_post_visibility_meta' ), 10, 2 );
 
-		// Third-party quiz plugin integrations (v9.3.4)
+		// Third-party quiz plugin integrations (v9.3.4).
 		$this->init_quiz_plugin_hooks();
 
-		// v8.0.0: BuddyBoss/BuddyPress "Quiz Results" profile tab
+		// v8.0.0: BuddyBoss/BuddyPress "Quiz Results" profile tab.
 		add_action( 'bp_setup_nav', array( $this, 'setup_buddyboss_quiz_tab' ), 100 );
 
 		// Historical member/guest role renames on this install (pronunciation_learners ↔ lesaep_learners).
@@ -1657,66 +1714,66 @@ class FLOSC_Framework {
 	 * into the FLOSC funnel system. Each integration is opt-in via admin.
 	 */
 	private function init_quiz_plugin_hooks() {
-		// Wp-Pro-Quiz Integration
+		// Wp-Pro-Quiz Integration.
 		if ( get_option( 'flosc_wpq_integration', 0 ) && class_exists( 'WpProQuiz_Controller_Quiz' ) ) {
 			add_action(
-                'wp_pro_quiz_completed_quiz',
-                function( $quiz_id, $score, $user_id ) {
-				$this->capture_external_quiz_score(
-                    array(
-					'source'    => 'wp_pro_quiz',
-					'quiz_id'   => $quiz_id,
-					'score'     => $score,
-					'user_id'   => $user_id,
-					'timestamp' => time()
-                    )
-                );
-                },
-                10,
-                3
-            );
+				'wp_pro_quiz_completed_quiz',
+				function ( $quiz_id, $score, $user_id ) {
+					$this->capture_external_quiz_score(
+						array(
+						'source'    => 'wp_pro_quiz',
+						'quiz_id'   => $quiz_id,
+						'score'     => $score,
+						'user_id'   => $user_id,
+						'timestamp' => time(),
+						)
+					);
+				},
+				10,
+				3
+			);
 		}
 
-		// LearnDash Integration
+		// LearnDash Integration.
 		if ( get_option( 'flosc_ld_integration', 0 ) && defined( 'LEARNDASH_VERSION' ) ) {
 			add_action(
-                'learndash_quiz_completed',
-                function( $data, $user ) {
-				$this->capture_external_quiz_score(
-                    array(
-					'source'    => 'learndash',
-					'quiz_id'   => $data['quiz'] ?? 0,
-					'score'     => $data['percentage'] ?? 0,
-					'user_id'   => $user->ID,
-					'timestamp' => time()
-                    )
-                );
-                },
-                10,
-                2
-            );
+				'learndash_quiz_completed',
+				function ( $data, $user ) {
+					$this->capture_external_quiz_score(
+						array(
+						'source'    => 'learndash',
+						'quiz_id'   => $data['quiz'] ?? 0,
+						'score'     => $data['percentage'] ?? 0,
+						'user_id'   => $user->ID,
+						'timestamp' => time(),
+						)
+					);
+				},
+				10,
+				2
+			);
 		}
 
-		// Quiz & Survey Master Integration
+		// Quiz & Survey Master Integration.
 		if ( get_option( 'flosc_qsm_integration', 0 ) && ( class_exists( 'QSM_Quiz' ) || function_exists( 'qsm_register_quiz_setting' ) ) ) {
 			add_action(
-                'qsm_quiz_submitted',
-                function( $results, $quiz_id ) {
-				$total   = $results['total_questions'] ?? 1;
-				$correct = $results['total_correct'] ?? 0;
-				$this->capture_external_quiz_score(
-                    array(
-					'source'    => 'qsm',
-					'quiz_id'   => $quiz_id,
-					'score'     => ( $total > 0 ) ? round( ( $correct / $total ) * 100 ) : 0,
-					'user_id'   => get_current_user_id(),
-					'timestamp' => time()
-                    )
-                );
-                },
-                10,
-                2
-            );
+				'qsm_quiz_submitted',
+				function ( $results, $quiz_id ) {
+					$total   = $results['total_questions'] ?? 1;
+					$correct = $results['total_correct'] ?? 0;
+					$this->capture_external_quiz_score(
+						array(
+						'source'    => 'qsm',
+						'quiz_id'   => $quiz_id,
+						'score'     => ( $total > 0 ) ? round( ( $correct / $total ) * 100 ) : 0,
+						'user_id'   => get_current_user_id(),
+						'timestamp' => time(),
+						)
+					);
+				},
+				10,
+				2
+			);
 		}
 	}
 
@@ -1733,7 +1790,7 @@ class FLOSC_Framework {
 	public function capture_external_quiz_score( $data ) {
 		$user_id = $data['user_id'] ?? get_current_user_id();
 
-		// Format for FLOSC
+		// Format for FLOSC.
 		$score_data = array(
 			'score'            => intval( $data['score'] ),
 			'correct'          => array(),
@@ -1745,31 +1802,39 @@ class FLOSC_Framework {
 
 		if ( ! $user_id ) {
 			// Visitor: store in signed cookie for login gate to pick up
-			// v9.4.2: Cookie is now signed to prevent score forgery
+			// v9.4.2: Cookie is now signed to prevent score forgery.
 			$this->set_signed_cookie( 'flosc_prelogin_score', $score_data, HOUR_IN_SECONDS );
 			return;
 		}
 
-		// Logged-in user: store in user meta
+		// Logged-in user: store in user meta.
 		update_user_meta( $user_id, '_flosc_last_quiz_score', $score_data['score'] );
 		update_user_meta( $user_id, '_flosc_last_quiz_data', $score_data );
 		update_user_meta( $user_id, '_flosc_quiz_completed_at', current_time( 'mysql' ) );
 
-		// Trigger FLOSC phase transition
+		// Trigger FLOSC phase transition.
 		do_action( 'flosc_quiz_completed', $score_data, $user_id );
 	}
 
 	/**
 	 * Component accessors
 	 */
-	public function ai() { return $this->ai_chat_dispatch; }
-	public function stt() { return $this->stt_dispatch; }
-	public function quiz() { return 'FLOSC_Quiz_Registry'; }
-	public function sessions() { return $this->session_manager; }
-	public function analyzer() { return $this->pronunciation_analyzer; }
-	public function sale() { return $this->sale_manager; }
-	public function lessons() { return $this->lesson_manager; }
-	public function member_access() { return $this->member_access; }
+	public function ai() {
+		return $this->ai_chat_dispatch; }
+	public function stt() {
+		return $this->stt_dispatch; }
+	public function quiz() {
+		return 'FLOSC_Quiz_Registry'; }
+	public function sessions() {
+		return $this->session_manager; }
+	public function analyzer() {
+		return $this->pronunciation_analyzer; }
+	public function sale() {
+		return $this->sale_manager; }
+	public function lessons() {
+		return $this->lesson_manager; }
+	public function member_access() {
+		return $this->member_access; }
 
 
 	private function get_client_ip() {
@@ -1815,7 +1880,7 @@ class FLOSC_Framework {
 	 * Create default "works out of box" content
 	 */
 	private function create_default_content() {
-		// Set default messages
+		// Set default messages.
 		$default_messages = array(
 			'flosc_welcome_message'        => 'Default FLOSC Welcome Message: Hey, welcome to your FLOSC training! Here you\'ll discover exactly where you can improve. Ready to take a quick 30-second quiz to get started?',
 			'flosc_get_started_message'    => 'Default FLOSC Get Started Message: Great! The best way to begin is with our free quiz. It takes just 30 seconds and shows you exactly where you can improve. Would you like to try it?',
@@ -1840,7 +1905,7 @@ The Team',
 			}
 		}
 
-		// Create default quiz
+		// Create default quiz.
 		$quiz_config = array(
 			'id'            => 'default-flosc-quiz',
 			'name'          => 'Default FLOSC Quick Assessment',
@@ -1850,33 +1915,33 @@ The Team',
 		);
 		update_option( 'flosc_quiz_config', $quiz_config );
 
-		// Create "Default FLOSC Lessons" category
+		// Create "Default FLOSC Lessons" category.
 		$cat_id = wp_create_category( 'Default FLOSC Lessons' );
 		if ( $cat_id && ! is_wp_error( $cat_id ) ) {
 			update_option( 'flosc_content_item_category', $cat_id );
 
-			// Auto-protect the category (hide from public by default)
+			// Auto-protect the category (hide from public by default).
 			update_term_meta( $cat_id, '_flosc_protected', 'yes' );
 
-			// Create 10 default lesson posts
+			// Create 10 default lesson posts.
 			for ( $i = 1; $i <= 10; $i++ ) {
 				$post_id = wp_insert_post(
-                    array(
+					array(
 					'post_title'    => "Default FLOSC Lesson $i: Sample Training Topic",
 					'post_content'  => "Default FLOSC Lesson Content: This is a sample lesson for quiz item $i. Replace this with your actual training content.\n\nThis lesson addresses the skills tested in item $i of the quiz.",
 					'post_status'   => 'publish',
 					'post_type'     => 'post',
 					'post_category' => array( $cat_id ),
 					'tags_input'    => array( "$i", "lesson-$i", "phoneme-$i" ),
-                    )
-                );
+					)
+				);
 			}
 		}
 
-		// Create default offer
+		// Create default offer.
 		$offer_manager = $this->sale_manager->offers();
 		$offer_manager->create_offer(
-            array(
+			array(
 			'id'            => 'default-flosc-full-access',
 			'name'          => 'Default FLOSC Full Access',
 			'description'   => 'Default FLOSC Offer: Unlock all lessons and premium features',
@@ -1903,13 +1968,13 @@ The Team',
 				'badge' => 'Best Value',
 			),
 			'sort_order'    => 1,
-            )
-        );
+			)
+		);
 
-		// Set as default OTO
+		// Set as default OTO.
 		update_option( 'flosc_default_oto_offer', 'default-flosc-full-access' );
 
-		// Mark as created
+		// Mark as created.
 		update_option( 'flosc_default_content_created', true );
 	}
 
@@ -2074,13 +2139,13 @@ The Team',
 			}
 
 			$chat_logs_url = add_query_arg(
-                array(
+				array(
 				'page'          => 'flosc-settings',
 				'tab'           => 'chat-logs',
 				'flosc_user_id' => intval( $user_id ),
-                ),
-                admin_url( 'admin.php' )
-            );
+				),
+				admin_url( 'admin.php' )
+			);
 
 			$time_html = $at !== '' ? '<br><small class="flosc-muted-meta">' . esc_html( $at ) . '</small>' : '';
 			return implode( ' | ', $parts ) . $time_html . '<br><a href="' . esc_url( $chat_logs_url ) . '">View chats</a>';
@@ -2139,20 +2204,20 @@ The Team',
 			update_user_meta( $user_id, '_flosc_quiz_data_history', $history );
 		}
 
-		// Store most recent score
+		// Store most recent score.
 		update_user_meta( $user_id, '_flosc_last_quiz_score', $score );
 		update_user_meta( $user_id, '_flosc_last_quiz_id', $quiz_id );
 		update_user_meta( $user_id, '_flosc_last_quiz_data', $score_data );
 		update_user_meta( $user_id, '_flosc_quiz_completed_at', current_time( 'mysql' ) );
 
-		// Store initial score if this is first quiz ever
+		// Store initial score if this is first quiz ever.
 		$initial_score = get_user_meta( $user_id, '_flosc_initial_score', true );
 		if ( empty( $initial_score ) ) {
 			update_user_meta( $user_id, '_flosc_initial_score', $score );
 			update_user_meta( $user_id, '_flosc_initial_quiz_id', $quiz_id );
 		}
 
-		// Track all quiz attempts
+		// Track all quiz attempts.
 		$attempts = get_user_meta( $user_id, '_flosc_quiz_attempts', true );
 		if ( ! is_array( $attempts ) ) {
 			$attempts = array();
@@ -2187,7 +2252,9 @@ The Team',
 			$ivr_files = flosc_flows()->get_available_ivr_files();
 			$flow_id   = ! empty( $ivr_files ) ? $ivr_files[0] : '';
 		}
-		if (empty( $flow_id )) return array();
+		if ( empty( $flow_id ) ) {
+			return array();
+		}
 		$key = 'flosc_flow_' . sanitize_key( pathinfo( $flow_id, PATHINFO_FILENAME ) );
 		return get_option( $key, array() );
 	}
@@ -2205,14 +2272,16 @@ The Team',
 		if ( ! empty( $files ) ) {
 			foreach ( $files as $file ) {
 				$filename = basename( $file );
-				if (strpos( $filename, 'backup' ) !== false) continue;
+				if ( strpos( $filename, 'backup' ) !== false ) {
+					continue;
+				}
 
-				// Get settings for this IVR file
+				// Get settings for this IVR file.
 				$settings_key  = 'flosc_flow_' . sanitize_key( pathinfo( $filename, PATHINFO_FILENAME ) );
 				$flow_settings = get_option( $settings_key, array() );
 
 				// v1.3.5: Generate default slug preserving underscores (user-friendly for IVR filenames)
-				// sanitize_title converts underscores to hyphens, but we want to keep underscores
+				// sanitize_title converts underscores to hyphens, but we want to keep underscores.
 				$default_slug = strtolower( preg_replace( '/[^a-z0-9_-]/i', '', pathinfo( $filename, PATHINFO_FILENAME ) ) );
 				$slug         = ! empty( $flow_settings['slug'] )
 					? $flow_settings['slug']
@@ -2230,7 +2299,7 @@ The Team',
 			}
 		}
 
-		// Fallback: legacy slug from settings (if no IVR flows defined yet)
+		// Fallback: legacy slug from settings (if no IVR flows defined yet).
 		$slug = get_option( 'flosc_app_slug', 'flosc' );
 		add_rewrite_rule( '^' . $slug . '/?$', 'index.php?flosc_app=1', 'top' );
 	}
@@ -2266,7 +2335,9 @@ The Team',
 
 		foreach ( $files as $file ) {
 			$basename = basename( $file );
-			if ( strpos( $basename, 'backup' ) !== false ) continue;
+			if ( strpos( $basename, 'backup' ) !== false ) {
+				continue;
+			}
 			$option_key = 'flosc_flow_' . sanitize_key( pathinfo( $basename, PATHINFO_FILENAME ) );
 			$settings   = get_option( $option_key, array() );
 			$changed    = false;
@@ -2301,7 +2372,7 @@ The Team',
 			}
 		}
 
-		// v4.0.1: Record timestamp so the admin status bar can show "✅ FLOW Settings OK"
+		// v4.0.1: Record timestamp so the admin status bar can show "✅ FLOW Settings OK".
 		update_option( 'flosc_last_flow_backfill', flosc_michel_timestamp_global() );
 	}
 
@@ -2336,7 +2407,7 @@ The Team',
 		$this->backfill_flow_defaults();
 		update_option( 'flosc_last_permalink_flush', flosc_michel_timestamp_global() );
 
-		// Get current IVR from referer or default
+		// Get current IVR from referer or default.
 		$referer = wp_get_referer();
 		$ivr     = '';
 		if ( preg_match( '/ivr=([^&]+)/', $referer, $matches ) ) {
@@ -2360,8 +2431,12 @@ The Team',
 	 * Only fires for published posts in the lessons category.
 	 */
 	public function maybe_regenerate_lesson_catalog( $post_id, $post ) {
-		if (defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE) return;
-		if ($post->post_status !== 'publish') return;
+		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+			return;
+		}
+		if ( $post->post_status !== 'publish' ) {
+			return;
+		}
 		// Regenerate only when the post is in this flow's configured lessons category
 		// (instance content — not a hard-coded product brand).
 		$category = '';
@@ -2392,7 +2467,9 @@ The Team',
 	 */
 	public function handle_regenerate_lesson_catalog() {
 		check_admin_referer( 'flosc_regen_catalog' );
-		if ( ! current_user_can( 'manage_options' )) wp_die( 'Unauthorized' );
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( 'Unauthorized' );
+		}
 		$this->generate_lesson_catalog();
 		$referer = wp_get_referer() ?: admin_url( 'admin.php?page=flosc-settings&tab=ai' );
 		wp_safe_redirect( add_query_arg( 'catalog_regenerated', '1', $referer ) );
@@ -2406,7 +2483,9 @@ The Team',
 	 * Auto-updates on save_post hook; also callable manually.
 	 */
 	public function generate_lesson_catalog() {
-		if ( ! defined( 'FLOSC_PLUGIN_DIR' )) return;
+		if ( ! defined( 'FLOSC_PLUGIN_DIR' ) ) {
+			return;
+		}
 		$write_paths = function_exists( 'flosc_lesson_catalog_write_paths' )
 			? flosc_lesson_catalog_write_paths()
 			: array();
@@ -2430,7 +2509,7 @@ The Team',
 			return; // No lessons category configured for this flow — nothing to generate.
 		}
 
-		// Query all published posts in the lessons category
+		// Query all published posts in the lessons category.
 		$args  = array(
 			'category_name'  => $category,
 			'post_status'    => 'publish',
@@ -2440,29 +2519,29 @@ The Team',
 		);
 		$posts = get_posts( $args );
 
-		// Filter to actual lesson posts only: title must start with "Lesson N:" or "Lesson N.N:"
+		// Filter to actual lesson posts only: title must start with "Lesson N:" or "Lesson N.N:".
 		$lessons = array_filter(
-            $posts,
-            function( $p ) {
-			return (bool) preg_match( '/^Lesson\s+\d+[\d.]*\s*[:\-]/i', $p->post_title );
-            }
-        );
+			$posts,
+			function ( $p ) {
+				return (bool) preg_match( '/^Lesson\s+\d+[\d.]*\s*[:\-]/i', $p->post_title );
+			}
+		);
 
 		if ( empty( $lessons ) ) {
 			return; // Nothing to write — don't overwrite a valid catalog with empty content
 		}
 
-		// Sort by lesson number (handles 20.1, 20.2, 20.3 correctly)
+		// Sort by lesson number (handles 20.1, 20.2, 20.3 correctly).
 		usort(
-            $lessons,
-            function( $a, $b ) {
-			preg_match( '/^Lesson\s+([\d.]+)/i', $a->post_title, $ma );
-			preg_match( '/^Lesson\s+([\d.]+)/i', $b->post_title, $mb );
-			$na = isset( $ma[1] ) ? (float) $ma[1] : 0;
-			$nb = isset( $mb[1] ) ? (float) $mb[1] : 0;
-			return $na <=> $nb;
-            }
-        );
+			$lessons,
+			function ( $a, $b ) {
+				preg_match( '/^Lesson\s+([\d.]+)/i', $a->post_title, $ma );
+				preg_match( '/^Lesson\s+([\d.]+)/i', $b->post_title, $mb );
+				$na = isset( $ma[1] ) ? (float) $ma[1] : 0;
+				$nb = isset( $mb[1] ) ? (float) $mb[1] : 0;
+				return $na <=> $nb;
+			}
+		);
 
 		$lesson_count  = count( $lessons );
 		$date          = current_time( 'Y-m-d' );
@@ -2493,15 +2572,15 @@ The Team',
 			$title     = $post->post_title;
 			$permalink = get_permalink( $post->ID );
 
-			// Extract lesson number from title
+			// Extract lesson number from title.
 			preg_match( '/^Lesson\s+([\d.]+)/i', $title, $m );
 			$num = isset( $m[1] ) ? $m[1] : '';
 
-			// Extract IPA sound: prefer custom meta, fall back to first [...] in title
+			// Extract IPA sound: prefer custom meta, fall back to first [...] in title.
 			$sound = get_post_meta( $post->ID, 'sound_covered', true )
 				  ?: get_post_meta( $post->ID, 'ipa_sound', true );
 			if ( ! $sound ) {
-				// Extract from title: text between first [ ] after "Lesson N: "
+				// Extract from title: text between first [ ] after "Lesson N: ".
 				if ( preg_match( '/^Lesson\s+[\d.]+[:\s]+\[([^\]]+)\]/u', $title, $sm ) ) {
 					$sound = $sm[1];
 				}
@@ -2574,7 +2653,13 @@ The Team',
 			exit;
 		}
 		if ( function_exists( 'flosc_knowledge_base_put' ) && ! flosc_knowledge_base_get( $kb_id ) ) {
-			flosc_knowledge_base_put( array( 'id' => $kb_id, 'label' => $kb_id, 'access' => array() ) );
+			flosc_knowledge_base_put(
+				array(
+				'id'     => $kb_id,
+				'label'  => $kb_id,
+				'access' => array(),
+				) 
+			);
 		}
 
 		$kb_dir = flosc_knowledge_base_dir( $kb_id );
@@ -2630,7 +2715,10 @@ The Team',
 		}
 		$upload_overrides = array(
 			'test_form' => false,
-			'mimes'     => array( 'md' => 'text/markdown', 'txt' => 'text/plain' ),
+			'mimes'     => array(
+		'md'  => 'text/markdown',
+		'txt' => 'text/plain',
+		),
 		);
 
 		$ok  = 0;
@@ -2721,7 +2809,11 @@ The Team',
 		$current = function_exists( 'flosc_knowledge_base_file_access' )
 			? flosc_knowledge_base_file_access( $kb_id, $file )
 			: 'visitor';
-		$cycle   = array( 'visitor' => 'guest', 'guest' => 'member', 'member' => 'visitor' );
+		$cycle   = array(
+		'visitor' => 'guest',
+		'guest'   => 'member',
+		'member'  => 'visitor',
+		);
 		$next    = $cycle[ $current ] ?? 'visitor';
 		if ( function_exists( 'flosc_knowledge_base_set_file_access' ) ) {
 			flosc_knowledge_base_set_file_access( $kb_id, $file, $next );
@@ -2778,7 +2870,13 @@ The Team',
 			$id = $id . '_' . wp_generate_password( 4, false, false );
 		}
 		if ( function_exists( 'flosc_knowledge_base_put' ) ) {
-			flosc_knowledge_base_put( array( 'id' => $id, 'label' => $label, 'access' => array() ) );
+			flosc_knowledge_base_put(
+				array(
+				'id'     => $id,
+				'label'  => $label,
+				'access' => array(),
+				) 
+			);
 		}
 		wp_safe_redirect( $this->kb_return_url( $ivr, 'created' ) );
 		exit;
@@ -2796,7 +2894,9 @@ The Team',
 		check_ajax_referer( 'flosc_accuracy_test', 'nonce' );
 
 		$post = wp_unslash( $_POST );
-		if ( ! current_user_can( 'manage_options' )) wp_send_json_error( array( 'message' => 'Unauthorized' ) );
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => 'Unauthorized' ) );
+		}
 
 		$message = sanitize_textarea_field( $post['message'] ?? '' );
 		$msg_idx = (int) ( $post['message_index'] ?? 0 );
@@ -2824,12 +2924,12 @@ The Team',
 			}
 		}
 
-		// Set flow context so flosc_get_setting reads the right flow settings (same as ajax_test_ai_connection)
+		// Set flow context so flosc_get_setting reads the right flow settings (same as ajax_test_ai_connection).
 		if ( ! empty( $ivr ) ) {
 			$this->set_flow_context( pathinfo( $ivr, PATHINFO_FILENAME ) );
 		}
 
-		// Build chatpack using real FLOSC_Chatpack with a test eval context
+		// Build chatpack using real FLOSC_Chatpack with a test eval context.
 		if ( ! class_exists( 'FLOSC_Chatpack' ) || ! $this->ai_chat_dispatch ) {
 			wp_send_json_error( array( 'message' => 'Chatpack or AI dispatch not available.' ) );
 		}
@@ -2852,7 +2952,7 @@ The Team',
 			$system_prompt = FLOSC_Chatpack::build_followup_chatpack( 'content', $eval_context, $session_hash, $pair_num );
 		}
 
-		// Run through AI — force fresh (no cache) by using test_mode=true
+		// Run through AI — force fresh (no cache) by using test_mode=true.
 		$response = $this->ai_chat_dispatch->get_response( $message, $system_prompt, $history, true );
 		if ( is_wp_error( $response ) ) {
 			wp_send_json_error( array( 'message' => $response->get_error_message() ) );
@@ -2860,7 +2960,7 @@ The Team',
 
 		$response_text = $response ?? '(no response)';
 
-		// Pass/fail evaluation
+		// Pass/fail evaluation.
 		$pass      = true;
 		$corrected = false;
 
@@ -2873,13 +2973,13 @@ The Team',
 			}
 		}
 		wp_send_json_success(
-            array(
+			array(
 			'response'  => $response_text,
 			'tokens_in' => 0, // Token tracking requires provider-specific response parsing; placeholder
 			'pass'      => $pass,
 			'corrected' => $corrected,
-            )
-        );
+			)
+		);
 	}
 
 	/**
@@ -2905,7 +3005,7 @@ The Team',
 			wp_send_json_error( 'Invalid category' );
 		}
 
-		// Set term meta
+		// Set term meta.
 		update_term_meta( $cat_id, '_flosc_protected', 'yes' );
 		if ( $level ) {
 			update_term_meta( $cat_id, '_flosc_required_level', $level );
@@ -2938,7 +3038,7 @@ The Team',
 			wp_send_json_error( 'Invalid category' );
 		}
 
-		// Remove term meta
+		// Remove term meta.
 		delete_term_meta( $cat_id, '_flosc_protected' );
 		delete_term_meta( $cat_id, '_flosc_required_level' );
 
@@ -2971,7 +3071,7 @@ The Team',
 		}
 
 		// v1.5.0: Read SSO settings from per-flow storage
-		// The flow_id is passed from the admin SSO tab (knows which flow is selected)
+		// The flow_id is passed from the admin SSO tab (knows which flow is selected).
 		$flow_id = sanitize_text_field( $post['flow_id'] ?? '' );
 		if ( ! empty( $flow_id ) ) {
 			$flow_settings_key = 'flosc_flow_' . sanitize_key( $flow_id );
@@ -2980,7 +3080,7 @@ The Team',
 			$client_secret     = $flow_settings[ "sso_{$provider_id}_client_secret" ] ?? '';
 			$is_enabled        = ! empty( $flow_settings[ "sso_{$provider_id}_enabled" ] );
 		} else {
-			// Fallback to global (shouldn't happen with per-flow architecture)
+			// Fallback to global (shouldn't happen with per-flow architecture).
 			$client_id     = get_option( "flosc_sso_{$provider_id}_client_id", '' );
 			$client_secret = get_option( "flosc_sso_{$provider_id}_client_secret", '' );
 			$is_enabled    = get_option( "flosc_sso_{$provider_id}_enabled", false );
@@ -3014,13 +3114,13 @@ The Team',
 
 		// ── Check 4: Callback URL reachable ──
 		$cb_result = flosc_safe_remote_request(
-            'GET',
-            $callback_url,
-            array(
+			'GET',
+			$callback_url,
+			array(
 			'timeout'     => 10,
 			'redirection' => 0,
-            )
-        );
+			)
+		);
 
 		if ( is_wp_error( $cb_result ) ) {
 			$checks[] = array(
@@ -3030,7 +3130,7 @@ The Team',
 			);
 		} else {
 			$cb_code = wp_remote_retrieve_response_code( $cb_result );
-			// REST API will return 400 (missing code/state) or 200 — both mean reachable
+			// REST API will return 400 (missing code/state) or 200 — both mean reachable.
 			$cb_ok    = ( $cb_code >= 200 && $cb_code < 500 );
 			$checks[] = array(
 				'label'  => 'Callback URL',
@@ -3081,17 +3181,18 @@ The Team',
 		// ── Summary ──
 		$all_pass = true;
 		foreach ( $checks as $c ) {
-			if ( ! $c['pass'] ) { $all_pass = false; break; }
+			if ( ! $c['pass'] ) {
+				$all_pass = false; break; }
 		}
 
 		wp_send_json_success(
-            array(
+			array(
 			'provider'     => $provider_id,
 			'checks'       => $checks,
 			'all_pass'     => $all_pass,
 			'callback_url' => $callback_url,
-            )
-        );
+			)
+		);
 	}
 
 	/**
@@ -3104,10 +3205,13 @@ The Team',
 		$checks           = array();
 		$app_access_token = $app_id . '|' . $app_secret;
 
-		// Call /app with the app access token
+		// Call /app with the app access token.
 		$response = wp_remote_get(
 			'https://graph.facebook.com/v19.0/app?access_token=' . rawurlencode( $app_access_token ),
-			array( 'timeout' => 15, 'sslverify' => true )
+			array(
+			'timeout'   => 15,
+			'sslverify' => true,
+			)
 		);
 
 		if ( is_wp_error( $response ) ) {
@@ -3133,10 +3237,10 @@ The Team',
 			$checks[]   = array(
 				'label'  => 'Credentials verification',
 				'pass'   => true,
-				'detail' => "VALID — App: \"{$app_name}\" (ID: " . ( $body['id'] ?? $app_id ) . ")",
+				'detail' => "VALID — App: \"{$app_name}\" (ID: " . ( $body['id'] ?? $app_id ) . ')',
 			);
 
-			// Check if app is in live mode (if the field is available)
+			// Check if app is in live mode (if the field is available).
 			if ( isset( $body['status'] ) ) {
 				$is_live  = ( $body['status'] === 'live' );
 				$checks[] = array(
@@ -3161,8 +3265,8 @@ The Team',
 		$checks = array();
 
 		$response = wp_remote_post(
-            'https://oauth2.googleapis.com/token',
-            array(
+			'https://oauth2.googleapis.com/token',
+			array(
 			'timeout'   => 15,
 			'sslverify' => true,
 			'body'      => array(
@@ -3172,8 +3276,8 @@ The Team',
 				'grant_type'    => 'authorization_code',
 				'redirect_uri'  => $redirect_uri,
 			),
-            )
-        );
+			)
+		);
 
 		if ( is_wp_error( $response ) ) {
 			$checks[] = array(
@@ -3196,7 +3300,7 @@ The Team',
 			);
 		} elseif ( $error === 'invalid_grant' || $error === 'redirect_uri_mismatch' ) {
 			// invalid_grant = creds work, code is fake (expected)
-			// redirect_uri_mismatch = creds work, but redirect URI doesn't match
+			// redirect_uri_mismatch = creds work, but redirect URI doesn't match.
 			$creds_ok = ( $error !== 'redirect_uri_mismatch' );
 			$checks[] = array(
 				'label'  => 'Credentials verification',
@@ -3208,7 +3312,7 @@ The Team',
 				$checks[] = array(
 					'label'  => 'Redirect URI match',
 					'pass'   => false,
-					'detail' => "Mismatch — add your callback URL to Google Console → Authorized redirect URIs",
+					'detail' => 'Mismatch — add your callback URL to Google Console → Authorized redirect URIs',
 				);
 			} else {
 				$checks[] = array(
@@ -3218,7 +3322,7 @@ The Team',
 				);
 			}
 		} else {
-			// Unexpected error
+			// Unexpected error.
 			$checks[] = array(
 				'label'  => 'Credentials verification',
 				'pass'   => false,
@@ -3233,9 +3337,11 @@ The Team',
 	 * v1.4.3: Add FLOSC post visibility meta box to post editor
 	 */
 	public function flosc_add_post_visibility_meta_box() {
-		// v1.4.7: Only show on posts that are in a FLOSC-protected category
+		// v1.4.7: Only show on posts that are in a FLOSC-protected category.
 		global $post;
-		if ( ! $post || ! $post->ID) return;
+		if ( ! $post || ! $post->ID ) {
+			return;
+		}
 
 		$categories   = wp_get_post_categories( $post->ID );
 		$in_protected = false;
@@ -3246,7 +3352,9 @@ The Team',
 			}
 		}
 
-		if ( ! $in_protected) return;
+		if ( ! $in_protected ) {
+			return;
+		}
 
 		add_meta_box(
 			'flosc_post_visibility',
@@ -3265,15 +3373,15 @@ The Team',
 	public function flosc_render_post_visibility_meta_box( $post ) {
 		wp_nonce_field( 'flosc_post_visibility_nonce', 'flosc_post_visibility_nonce' );
 
-		// v1.8.2: Read protection mode (replaces binary _flosc_public_post)
+		// v1.8.2: Read protection mode (replaces binary _flosc_public_post).
 		$protection_mode = get_post_meta( $post->ID, '_flosc_protection_mode', true );
-		// Backward compat: old _flosc_public_post = 'yes' → 'full'
+		// Backward compat: old _flosc_public_post = 'yes' → 'full'.
 		if ( empty( $protection_mode ) ) {
 			$is_public_override = get_post_meta( $post->ID, '_flosc_public_post', true ) === 'yes';
 			$protection_mode    = $is_public_override ? 'full' : 'protected';
 		}
 
-		// Find the protected category name for display
+		// Find the protected category name for display.
 		$categories         = wp_get_post_categories( $post->ID );
 		$protected_cat_name = '';
 		foreach ( $categories as $cat_id ) {
@@ -3357,7 +3465,7 @@ The Team',
 	 */
 	public function flosc_save_post_visibility_meta( $post_id, $post ) {
 		$request_post = wp_unslash( $_POST );
-		// Security checks
+		// Security checks.
 		if ( ! isset( $request_post['flosc_post_visibility_nonce'] ) ||
 			! wp_verify_nonce( sanitize_text_field( $request_post['flosc_post_visibility_nonce'] ), 'flosc_post_visibility_nonce' ) ) {
 			return;
@@ -3371,7 +3479,7 @@ The Team',
 			return;
 		}
 
-		// v1.8.2: Save protection mode (protected, title_excerpt, title_readmore, full)
+		// v1.8.2: Save protection mode (protected, title_excerpt, title_readmore, full).
 		$valid_modes = array( 'protected', 'title_excerpt', 'title_readmore', 'full' );
 		$mode        = isset( $request_post['flosc_protection_mode'] ) ? sanitize_text_field( $request_post['flosc_protection_mode'] ) : 'protected';
 		if ( ! in_array( $mode, $valid_modes, true ) ) {
@@ -3396,7 +3504,7 @@ The Team',
 			}
 		}
 
-		// Backward compat: also update _flosc_public_post for existing code that checks it
+		// Backward compat: also update _flosc_public_post for existing code that checks it.
 		if ( $mode === 'full' ) {
 			update_post_meta( $post_id, '_flosc_public_post', 'yes' );
 		} else {
@@ -3420,7 +3528,7 @@ The Team',
 			return;
 		}
 
-		// Check all flows for custom domain match
+		// Check all flows for custom domain match.
 		$flows = get_option( 'flosc_flows', array() );
 
 		foreach ( $flows as $flow ) {
@@ -3428,18 +3536,18 @@ The Team',
 				continue;
 			}
 
-			// Normalize flow's custom domain
+			// Normalize flow's custom domain.
 			$flow_domain = strtolower( trim( $flow['custom_domain'] ) );
 			$flow_domain = preg_replace( '#^https?://#', '', $flow_domain );
 			$flow_domain = rtrim( $flow_domain, '/' );
 
-			// Check for match (with or without www)
+			// Check for match (with or without www).
 			if ( $current_host === $flow_domain || $current_host === 'www.' . $flow_domain ) {
-				// Set query vars so handle_app_route() will render the correct flow
+				// Set query vars so handle_app_route() will render the correct flow.
 				set_query_var( 'flosc_app', 1 );
 				set_query_var( 'flosc_flow', $flow['id'] );
 
-				// Store flag so we know we're on custom domain
+				// Store flag so we know we're on custom domain.
 				if ( ! defined( 'FLOSC_CUSTOM_DOMAIN_ACTIVE' ) ) {
 					define( 'FLOSC_CUSTOM_DOMAIN_ACTIVE', true );
 				}
@@ -3447,7 +3555,7 @@ The Team',
 			}
 		}
 
-		// Fallback: Check legacy global setting for backward compatibility
+		// Fallback: Check legacy global setting for backward compatibility.
 		$legacy_domain = get_option( 'flosc_custom_domain', '' );
 		if ( ! empty( $legacy_domain ) ) {
 			$legacy_domain = strtolower( preg_replace( '#^https?://#', '', trim( $legacy_domain ) ) );
@@ -3495,7 +3603,7 @@ The Team',
 
 		$session_id = sanitize_text_field( urldecode( $pending_raw ) );
 
-		// Clear the cookie immediately (one-time use)
+		// Clear the cookie immediately (one-time use).
 		setcookie( 'flosc_pending_session', '', time() - 3600, '/' );
 
 		if ( empty( $session_id ) ) {
@@ -3503,7 +3611,9 @@ The Team',
 		}
 
 		if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
-if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC: pull_pending_session_from_do — user={$user_id}, session={$session_id}" );
+			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+				flosc_log( "FLOSC: pull_pending_session_from_do — user={$user_id}, session={$session_id}" );
+			}
 		}
 
 		$this->pull_session_from_do( $user_id, $session_id );
@@ -3546,8 +3656,8 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC: pull_pending_ses
 		wp_register_style( 'flosc-quiz-ui', false, array(), FLOSC_VERSION );
 		wp_enqueue_style( 'flosc-quiz-ui' );
 		wp_add_inline_style(
-            'flosc-quiz-ui',
-            '
+			'flosc-quiz-ui',
+			'
             .flosc-score-wrap { text-align: center; margin-bottom: 24px; }
             .flosc-score-ring { display: inline-flex; align-items: center; justify-content: center; width: 120px; height: 120px; border-radius: 50%; border: 6px solid currentColor; font-size: 36px; font-weight: 700; }
             .flosc-score-date { margin-top: 8px; color: #666; font-size: 14px; }
@@ -3630,7 +3740,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC: pull_pending_ses
             details[open] > summary .flosc-bb-chevron { transform: rotate(90deg); }
             details summary::-webkit-details-marker { display: none; }
         '
-        );
+		);
 	}
 
 	/**
@@ -3699,7 +3809,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC: pull_pending_ses
 		static $current_flow = null;
 		static $checked      = false;
 
-		// Cache result within request
+		// Cache result within request.
 		if ( $checked ) {
 			return $current_flow;
 		}
@@ -3743,7 +3853,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC: pull_pending_ses
 		}
 
 		// v1.3.6: Check flosc_ivr query var FIRST (set by rewrite rules)
-		// v1.8.8 FIX: $wp_query doesn't exist during plugins_loaded — guard it
+		// v1.8.8 FIX: $wp_query doesn't exist during plugins_loaded — guard it.
 		global $wp_query;
 		$ivr_file = ( $wp_query instanceof WP_Query ) ? get_query_var( 'flosc_ivr' ) : '';
 		if ( ! empty( $ivr_file ) ) {
@@ -3769,7 +3879,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC: pull_pending_ses
 				continue;
 			}
 
-			// Check custom domain
+			// Check custom domain.
 			if ( ! empty( $flow['custom_domain'] ) ) {
 				$domain = strtolower( preg_replace( '#^https?://#', '', trim( $flow['custom_domain'] ) ) );
 				$domain = rtrim( $domain, '/' );
@@ -3778,7 +3888,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC: pull_pending_ses
 				}
 			}
 
-			// Check slug
+			// Check slug.
 			if ( ! empty( $flow['slug'] ) && preg_match( '#^/' . preg_quote( $flow['slug'], '#' ) . '/?#', $request_uri ) ) {
 				return $flow;
 			}
@@ -3793,11 +3903,13 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC: pull_pending_ses
 	 * (e.g., the WordPress host, clickbank, any host embedding the FLOSC checkout).
 	 */
 	public function set_flow_context( $flow_id ) {
-		if (empty( $flow_id )) return;
+		if ( empty( $flow_id ) ) {
+			return;
+		}
 
 		// Try to find the IVR file for this flow_id
 		// flow_id is the base name, e.g. "flosc_default_ivr"
-		// Try common extensions
+		// Try common extensions.
 		$candidates = array(
 			$flow_id . '.md',
 			$flow_id,
@@ -3813,17 +3925,17 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC: pull_pending_ses
 		}
 
 		// Even without an IVR file, load settings from the flow option
-		// This handles cases where the flow exists in DB but the IVR file name doesn't match
+		// This handles cases where the flow exists in DB but the IVR file name doesn't match.
 		$settings_key = 'flosc_flow_' . sanitize_key( $flow_id );
 		$settings     = get_option( $settings_key, array() );
 		if ( ! empty( $settings ) ) {
 			$this->forced_flow = array_merge(
-                $settings,
-                array(
+				$settings,
+				array(
 				'id'     => $flow_id,
 				'status' => $settings['status'] ?? 'active',
-                )
-            );
+				)
+			);
 		}
 	}
 
@@ -3838,25 +3950,25 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC: pull_pending_ses
 		$settings_key = 'flosc_flow_' . sanitize_key( $base_name );
 		$settings     = get_option( $settings_key, array() );
 
-		// Generate defaults if no settings saved
+		// Generate defaults if no settings saved.
 		$default_slug = strtolower( preg_replace( '/[^a-z0-9_-]/i', '', $base_name ) );
 
 		// v1.7.3: Merge ALL saved settings into flow array so get_setting() can
 		// find payment credentials, SSO keys, etc. — not just the core flow props.
 		$flow = array_merge(
-            $settings,
-            array(
+			$settings,
+			array(
 			'id'            => $base_name,
 			'ivr_file'      => $filename,
 			'slug'          => $settings['slug'] ?? $default_slug,
 			'custom_domain' => $settings['domain'] ?? '',
 			'status'        => $settings['status'] ?? 'active',
-            )
-        );
+			)
+		);
 
-		// Ensure identity sub-array exists with defaults
+		// Ensure identity sub-array exists with defaults.
 		$flow['identity'] = array_merge(
-            array(
+			array(
 			'name'          => ucwords( str_replace( array( '_', '-' ), ' ', $base_name ) ),
 			'title'         => '',
 			'tagline'       => '',
@@ -3865,9 +3977,9 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC: pull_pending_ses
 			'favicon_url'   => '',
 			'badgeUrl'      => '',
 			'share_text'    => '',
-            ),
-            $flow['identity'] ?? array()
-        );
+			),
+			$flow['identity'] ?? array()
+		);
 
 		return $flow;
 	}
@@ -3884,7 +3996,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC: pull_pending_ses
 		if ( function_exists( 'flosc_content_item_canonical_option_key' ) ) {
 			$key = flosc_content_item_canonical_option_key( $key );
 		}
-		// Get flow context
+		// Get flow context.
 		if ( $flow_id !== null ) {
 			$flow = flosc_flows()->get_flow( $flow_id );
 			if ( ! $flow ) {
@@ -3923,7 +4035,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC: pull_pending_ses
 			return $flow[ $key ];
 		}
 
-		// Fallback to global wp_option (canonical then legacy)
+		// Fallback to global wp_option (canonical then legacy).
 		$val = get_option( 'flosc_' . $key, null );
 		if ( $val !== null && $val !== false && $val !== '' ) {
 			return $val;
@@ -4007,7 +4119,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC: pull_pending_ses
 			);
 		}
 
-		// No flow loaded — fall back to global settings
+		// No flow loaded — fall back to global settings.
 		return array(
 			'name'            => get_option( 'flosc_product_name', 'FLOSC App' ),
 			'title'           => get_option( 'flosc_product_title', '' ),
@@ -4041,11 +4153,11 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC: pull_pending_ses
 			$context['user_status'] = $this->get_user_status();
 			$context['is_admin']    = user_can( $user->ID, 'manage_options' );
 
-			// v1.0.3: Bridge data from manager
+			// v1.0.3: Bridge data from manager.
 			$bridge_mgr  = FLOSC_Bridge_Data_Manager::instance();
 			$bridge_data = $bridge_mgr->get_flosc_bridge_data( $user->ID );
 
-			// Bridge state info
+			// Bridge state info.
 			$context['in_bridge_state']  = $bridge_mgr->is_in_flosc_bridge_state( $user->ID );
 			$context['has_quiz_profile'] = $bridge_mgr->flosc_has_profile( $user->ID );
 
@@ -4056,14 +4168,14 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC: pull_pending_ses
 				$context['bridge_incorrect_count'] = count( $bridge_data['incorrect_items'] ?? array() );
 				$context['weakest_category']       = $bridge_mgr->get_flosc_weakest_category( $user->ID );
 			} else {
-				// Fallback to legacy user meta
+				// Fallback to legacy user meta.
 				$quiz_score = get_user_meta( $user->ID, '_flosc_last_quiz_score', true );
 				if ( $quiz_score ) {
 					$context['quiz_score'] = $quiz_score . '%';
 				}
 			}
 
-			// Free lesson delivered
+			// Free lesson delivered.
 			$free_lesson_delivered            = get_user_meta( $user->ID, '_flosc_free_content_item_delivered', true );
 			$context['free_lesson_delivered'] = $free_lesson_delivered ? 'Yes' : 'No';
 
@@ -4140,20 +4252,20 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC: pull_pending_ses
 			return 'content';
 		}
 
-		// Frontend: if (this.user?.funnelCompleted) return 'sale';
+		// Frontend: if (this.user?.funnelCompleted) return 'sale';.
 		$funnel_complete = get_user_meta( $user_id, '_flosc_funnel_completed', true );
 		if ( $funnel_complete ) {
 			return 'sale';
 		}
 
-		// Frontend: if (this.user?.freeLessonDelivered) return 'offer';
+		// Frontend: if (this.user?.freeLessonDelivered) return 'offer';.
 		$free_lesson_delivered = get_user_meta( $user_id, '_flosc_free_content_item_delivered', true );
 		if ( $free_lesson_delivered ) {
 			return 'offer';
 		}
 
 		// Frontend: if (this.state !== 'visitor') return 'login';
-		// Logged-in user who hasn't received free lesson yet
+		// Logged-in user who hasn't received free lesson yet.
 		return 'login';
 	}
 
@@ -4370,21 +4482,21 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC: pull_pending_ses
 			$session_hash    = FLOSC_Chatpack::generate_session_hash( $flosc_hash, $eval_context['user_id'] );
 			$chatpack_prompt = FLOSC_Chatpack::build_full_chatpack( $phase, $eval_context, '', $flosc_hash, $session_hash, 1, null );
 
-			// Append RAG-specific tool usage instructions after the full chatpack
+			// Append RAG-specific tool usage instructions after the full chatpack.
 			$chatpack_prompt .= "\n\n**RAG TOOL USAGE:**\n"
 				. "- When you need information about specific lessons, use search_knowledge_base or search_posts\n"
 				. "- When asked about available content, use search_posts\n"
 				. "- When you need full lesson details, use get_lesson_content\n"
 				. "- Always filter responses based on the user's access level\n"
-				. "- DO NOT teach content yourself — point to the actual WordPress lessons";
+				. '- DO NOT teach content yourself — point to the actual WordPress lessons';
 			return $chatpack_prompt;
 		}
 
-		// Fallback if chatpack not available
+		// Fallback if chatpack not available.
 		$personality_name = flosc_get_setting( 'ai_identity_name', 'AI Assistant' );
 		$personality_desc = flosc_get_setting( 'ai_identity_role', 'friendly and knowledgeable learning guide' );
 
-		// Get access level instructions
+		// Get access level instructions.
 		$access_instructions = $this->get_access_level_instructions( $access_level );
 
 		$prompt = "You are {$personality_name}, a {$personality_desc}.
@@ -4398,18 +4510,18 @@ You are a GUIDE, not a teacher. Your job is to:
 
 **CURRENT USER:**
 - Access Level: **{$access_level}**
-- Logged in: " . ( $user_context['is_logged_in'] ? 'Yes' : 'No' ) . "
-- Member: " . ( $user_context['is_member'] ? 'Yes' : 'No' ) . "
-";
+- Logged in: " . ( $user_context['is_logged_in'] ? 'Yes' : 'No' ) . '
+- Member: ' . ( $user_context['is_member'] ? 'Yes' : 'No' ) . '
+';
 
-		// Add quiz results if available
+		// Add quiz results if available.
 		if ( isset( $user_context['quiz_results'] ) ) {
 			$quiz_score = $user_context['quiz_score'] ?? 0;
 			$prompt    .= "\n**QUIZ RESULTS:**\n";
 			$prompt    .= "Score: {$quiz_score}%\n";
-			$prompt    .= "Details: " . wp_json_encode( $user_context['quiz_results'] ) . "\n";
+			$prompt    .= 'Details: ' . wp_json_encode( $user_context['quiz_results'] ) . "\n";
 
-			// Add pricing info if applicable
+			// Add pricing info if applicable.
 			if ( isset( $user_context['within_discount_window'] ) && $user_context['within_discount_window'] ) {
 				$minutes_left   = 30 - intval( $user_context['minutes_since_quiz'] );
 				$discount_price = flosc_get_setting( 'discount_price', '' );
@@ -4446,7 +4558,7 @@ You are a GUIDE, not a teacher. Your job is to:
 	private function check_admin_introspection( $message, $current_ivr_file = '' ) {
 		$message_lower = strtolower( $message );
 
-		// Introspection trigger patterns
+		// Introspection trigger patterns.
 		$triggers = array(
 			'files'     => array( 'what files', 'which files', 'ivr files', 'configuration files', 'config files', 'available files' ),
 			'offers'    => array( 'what offers', 'which offers', 'available offers', 'configured offers', 'show offers', 'list offers' ),
@@ -4480,9 +4592,9 @@ You are a GUIDE, not a teacher. Your job is to:
 	 * v1.4.0: Generate admin introspection response
 	 */
 	private function get_admin_introspection_response( $category, $current_ivr_file = '' ) {
-		// v1.9.1: Michel Date Stamp timestamp in introspection header
+		// v1.9.1: Michel Date Stamp timestamp in introspection header.
 		$now      = gmdate( 'Y' ) . '-' . gmdate( 'm' ) . 'm-' . gmdate( 'd' ) . 'd-T' . gmdate( 'H' ) . 'h:' . gmdate( 'i' ) . 'm:' . gmdate( 's' ) . 's';
-		$response = "🔧 **FLOSC Admin Introspection** (v" . FLOSC_VERSION . ") — {$now}\n\n";
+		$response = '🔧 **FLOSC Admin Introspection** (v' . FLOSC_VERSION . ") — {$now}\n\n";
 
 		switch ( $category ) {
 			case 'files':
@@ -4540,18 +4652,18 @@ You are a GUIDE, not a teacher. Your job is to:
 			foreach ( $files as $file ) {
 				$basename = basename( $file );
 				$size     = filesize( $file );
-				// v1.9.1: Michel Date Stamp format
+				// v1.9.1: Michel Date Stamp format.
 				$mtime    = filemtime( $file );
 				$modified = gmdate( 'Y', $mtime ) . '-' . gmdate( 'm', $mtime ) . 'm-' . gmdate( 'd', $mtime ) . 'd-T' . gmdate( 'H', $mtime ) . 'h:' . gmdate( 'i', $mtime ) . 'm';
 
-				// Parse to get message count
+				// Parse to get message count.
 				$content = flosc_fs_get_contents( $file );
 				preg_match_all( '/^## /m', $content, $matches );
 				$message_count = count( $matches[0] );
 
 				$output .= "• **{$basename}**\n";
 				$output .= "  - Messages: ~{$message_count}\n";
-				$output .= "  - Size: " . number_format( $size ) . " bytes\n";
+				$output .= '  - Size: ' . number_format( $size ) . " bytes\n";
 				$output .= "  - Modified: {$modified}\n\n";
 			}
 		}
@@ -4595,21 +4707,21 @@ You are a GUIDE, not a teacher. Your job is to:
 	private function get_introspection_system( $current_ivr_file = '' ) {
 		$output = "🖥️ **FLOSC System Overview:**\n\n";
 
-		// Version info
-		$output .= "**Version:** " . FLOSC_VERSION . "\n";
-		$output .= "**Debug Mode:** " . ( FLOSC_DEBUG ? 'Enabled' : 'Disabled' ) . "\n";
-		$output .= "**Plugin Path:** `" . FLOSC_PLUGIN_DIR . "`\n\n";
+		// Version info.
+		$output .= '**Version:** ' . FLOSC_VERSION . "\n";
+		$output .= '**Debug Mode:** ' . ( FLOSC_DEBUG ? 'Enabled' : 'Disabled' ) . "\n";
+		$output .= '**Plugin Path:** `' . FLOSC_PLUGIN_DIR . "`\n\n";
 
-		// Current IVR
+		// Current IVR.
 		if ( $current_ivr_file ) {
 			$output .= "**Current IVR:** `{$current_ivr_file}`\n\n";
 		}
 
-		// AI Provider
+		// AI Provider.
 		$ai_provider = flosc_get_setting( 'ai_provider', 'ivr' );
 		$output     .= "**AI Provider:** {$ai_provider}\n";
 
-		// STT Provider
+		// STT Provider.
 		$stt_provider = flosc_get_setting( 'stt_provider', 'assemblyai' );
 		$output      .= "**STT Provider:** {$stt_provider}\n\n";
 
@@ -4625,7 +4737,7 @@ You are a GUIDE, not a teacher. Your job is to:
 		$output .= "**Users with Member Levels:** {$member_count}\n\n";
 
 		// Personality
-		// v1.9.1: No hardcoded personality — admin sets this in settings
+		// v1.9.1: No hardcoded personality — admin sets this in settings.
 		$personality_name = get_option( 'flosc_personality_name', '' );
 		if ( empty( $personality_name ) ) {
 			$personality_name = '_Not configured — set in FLOSC Settings → Personality Name_';
@@ -4657,11 +4769,11 @@ You are a GUIDE, not a teacher. Your job is to:
 			}
 		}
 
-		// Also list available IVR files that could be used
+		// Also list available IVR files that could be used.
 		$output .= "**Available IVR Files for Flows:**\n";
 		$files   = flosc_config_glob( '*_ivr.md' );
 		foreach ( $files as $file ) {
-			$output .= "• `" . basename( $file ) . "`\n";
+			$output .= '• `' . basename( $file ) . "`\n";
 		}
 
 		return $output;
@@ -4719,18 +4831,18 @@ You are a GUIDE, not a teacher. Your job is to:
 	private function get_introspection_current( $current_ivr_file = '' ) {
 		$output = "📍 **Current Context:**\n\n";
 
-		// Current IVR
-		$output .= "**IVR File:** " . ( $current_ivr_file ?: '_default/unknown_' ) . "\n";
+		// Current IVR.
+		$output .= '**IVR File:** ' . ( $current_ivr_file ?: '_default/unknown_' ) . "\n";
 
-		// Current flow
+		// Current flow.
 		$flow = $this->get_current_flow();
 		if ( $flow ) {
 			$output .= "**Flow Name:** {$flow['name']}\n";
 			$output .= "**Flow Slug:** {$flow['slug']}\n";
-			$output .= "**Flow Domain:** " . ( $flow['domain'] ?? '_any_' ) . "\n\n";
+			$output .= '**Flow Domain:** ' . ( $flow['domain'] ?? '_any_' ) . "\n\n";
 		}
 
-		// Current user context
+		// Current user context.
 		if ( is_user_logged_in() ) {
 			$user_id       = get_current_user_id();
 			$user          = get_userdata( $user_id );
@@ -4743,9 +4855,9 @@ You are a GUIDE, not a teacher. Your job is to:
 			$output .= "**Your User:**\n";
 			$output .= "  - ID: {$user_id}\n";
 			$output .= "  - Name: {$user->display_name}\n";
-			$output .= "  - Member Levels: " . ( empty( $member_levels ) ? '_none_' : implode( ', ', $member_levels ) ) . "\n";
-			$output .= "  - Last Quiz Score: " . ( $quiz_score ?: '_no quiz taken_' ) . "\n";
-			$output .= "  - Purchased: " . ( $purchased ? 'Yes' : 'No' ) . "\n";
+			$output .= '  - Member Levels: ' . ( empty( $member_levels ) ? '_none_' : implode( ', ', $member_levels ) ) . "\n";
+			$output .= '  - Last Quiz Score: ' . ( $quiz_score ?: '_no quiz taken_' ) . "\n";
+			$output .= '  - Purchased: ' . ( $purchased ? 'Yes' : 'No' ) . "\n";
 		}
 
 		return $output;
@@ -4763,26 +4875,26 @@ You are a GUIDE, not a teacher. Your job is to:
 
 		$output = "👤 **Your User Status:**\n\n";
 
-		// WordPress identity
+		// WordPress identity.
 		$output .= "**WordPress Account:**\n";
 		$output .= "  - User ID: {$user_id}\n";
 		$output .= "  - Display Name: {$user->display_name}\n";
 		$output .= "  - Username: {$user->user_login}\n";
 		$output .= "  - Email: {$user->user_email}\n";
-		$output .= "  - Roles: " . implode( ', ', $user->roles ) . "\n";
-		// v1.9.1: Michel Date Stamp format for registration
+		$output .= '  - Roles: ' . implode( ', ', $user->roles ) . "\n";
+		// v1.9.1: Michel Date Stamp format for registration.
 		$reg_ts     = strtotime( $user->user_registered );
 		$registered = gmdate( 'Y', $reg_ts ) . '-' . gmdate( 'm', $reg_ts ) . 'm-' . gmdate( 'd', $reg_ts ) . 'd';
 		$output    .= "  - Registered: {$registered}\n";
-		$output    .= "  - Is Admin: " . ( current_user_can( 'manage_options' ) ? '✅ Yes' : '❌ No' ) . "\n\n";
+		$output    .= '  - Is Admin: ' . ( current_user_can( 'manage_options' ) ? '✅ Yes' : '❌ No' ) . "\n\n";
 
-		// FLOSC-specific data
+		// FLOSC-specific data.
 		$output .= "**FLOSC Status:**\n";
 		$phase   = $this->determine_flosc_phase();
-		$output .= "  - Backend Phase: " . strtoupper( $phase ) . "\n";
+		$output .= '  - Backend Phase: ' . strtoupper( $phase ) . "\n";
 		$output .= "  - Role: ADMIN (transcends funnel — full access to all phases)\n";
 
-		// Quiz data
+		// Quiz data.
 		$bridge_mgr  = FLOSC_Bridge_Data_Manager::instance();
 		$bridge_data = $bridge_mgr->get_flosc_bridge_data( $user_id );
 		if ( $bridge_data ) {
@@ -4790,18 +4902,18 @@ You are a GUIDE, not a teacher. Your job is to:
 			$correct   = $bridge_data['correct_items'] ?? array();
 			$incorrect = $bridge_data['incorrect_items'] ?? array();
 			$output   .= "  - Quiz Score: {$score}%\n";
-			$output   .= "  - Quiz Correct: " . count( $correct ) . " items\n";
-			$output   .= "  - Quiz Incorrect: " . count( $incorrect ) . " items\n";
+			$output   .= '  - Quiz Correct: ' . count( $correct ) . " items\n";
+			$output   .= '  - Quiz Incorrect: ' . count( $incorrect ) . " items\n";
 			$weakest   = $bridge_mgr->get_flosc_weakest_category( $user_id );
 			if ( $weakest ) {
 				$output .= "  - Weakest Category: {$weakest}\n";
 			}
 		} else {
 			$legacy_score = get_user_meta( $user_id, '_flosc_last_quiz_score', true );
-			$output      .= "  - Quiz Score: " . ( $legacy_score ? "{$legacy_score}%" : '_No quiz taken_' ) . "\n";
+			$output      .= '  - Quiz Score: ' . ( $legacy_score ? "{$legacy_score}%" : '_No quiz taken_' ) . "\n";
 		}
 
-		// Member access — report current-flow state (not global legacy flag)
+		// Member access — report current-flow state (not global legacy flag).
 		$member_levels = ( $this->member_access && method_exists( $this->member_access, 'get_user_levels' ) )
 			? $this->member_access->get_user_levels( $user_id )
 			: array();
@@ -4818,34 +4930,34 @@ You are a GUIDE, not a teacher. Your job is to:
 		} elseif ( $this->member_access && method_exists( $this->member_access, 'is_member' ) ) {
 			$is_member = (bool) $this->member_access->is_member( $user_id, $status_stem );
 		}
-		$output .= "  - Flow: " . ( $status_stem !== '' ? $status_stem : '_unknown_' ) . "\n";
-		$output .= "  - Member Access (this flow): " . ( $is_member ? '✅ Yes' : '❌ No (guest if logged in)' ) . "\n";
-		$output .= "  - Member Levels: " . ( empty( $member_levels ) ? '_none_' : implode( ', ', $member_levels ) ) . "\n";
+		$output .= '  - Flow: ' . ( $status_stem !== '' ? $status_stem : '_unknown_' ) . "\n";
+		$output .= '  - Member Access (this flow): ' . ( $is_member ? '✅ Yes' : '❌ No (guest if logged in)' ) . "\n";
+		$output .= '  - Member Levels: ' . ( empty( $member_levels ) ? '_none_' : implode( ', ', $member_levels ) ) . "\n";
 
-		// Free lesson
+		// Free lesson.
 		$free_lesson_delivered = get_user_meta( $user_id, '_flosc_free_content_item_delivered', true );
 		$free_lesson_num       = get_user_meta( $user_id, '_flosc_free_content_item_number', true );
-		$output               .= "  - Free Lesson Delivered: " . ( $free_lesson_delivered ? "Yes ({$free_lesson_delivered})" : 'No' ) . "\n";
+		$output               .= '  - Free Lesson Delivered: ' . ( $free_lesson_delivered ? "Yes ({$free_lesson_delivered})" : 'No' ) . "\n";
 		if ( $free_lesson_num ) {
 			$output .= "  - Free Lesson Number: {$free_lesson_num}\n";
 		}
 
-		// Commerce purchase flag (may be empty for sandbox/admin grants)
+		// Commerce purchase flag (may be empty for sandbox/admin grants).
 		$purchased = get_user_meta( $user_id, '_flosc_purchased', true );
-		$output   .= "  - Purchased meta: " . ( $purchased ? 'Yes' : 'No' ) . "\n";
-		$output   .= "  - Full entitlement: " . ( $is_member ? 'Yes' : 'No' ) . "\n";
+		$output   .= '  - Purchased meta: ' . ( $purchased ? 'Yes' : 'No' ) . "\n";
+		$output   .= '  - Full entitlement: ' . ( $is_member ? 'Yes' : 'No' ) . "\n";
 
-		// Funnel completion
+		// Funnel completion.
 		$funnel_completed = get_user_meta( $user_id, '_flosc_funnel_completed', true );
-		$output          .= "  - Funnel Completed: " . ( $funnel_completed ? 'Yes' : 'No' ) . "\n";
+		$output          .= '  - Funnel Completed: ' . ( $funnel_completed ? 'Yes' : 'No' ) . "\n";
 
-		// Profile status
+		// Profile status.
 		$has_profile = $bridge_mgr->flosc_has_profile( $user_id );
-		$output     .= "  - Has Profile: " . ( $has_profile ? 'Yes' : 'No' ) . "\n";
+		$output     .= '  - Has Profile: ' . ( $has_profile ? 'Yes' : 'No' ) . "\n";
 
-		// Access level label
+		// Access level label.
 		$access_level = $is_member ? 'member' : 'guest';
-		$output      .= "  - Access Level: " . strtoupper( $access_level ) . "\n";
+		$output      .= '  - Access Level: ' . strtoupper( $access_level ) . "\n";
 
 		return $output;
 	}
@@ -4864,7 +4976,7 @@ You are a GUIDE, not a teacher. Your job is to:
 			"**📝 Quizzes:** \"What quiz types are available?\"\n" .
 			"**📍 Current:** \"What IVR am I using?\" or \"Current config\"\n" .
 			"**👤 Status:** \"What's my user status?\" or \"My account\"\n\n" .
-			"_This introspection is only available to WordPress administrators._";
+			'_This introspection is only available to WordPress administrators._';
 	}
 
 	/**
@@ -4872,11 +4984,26 @@ You are a GUIDE, not a teacher. Your job is to:
 	 */
 	private function get_admin_introspection_prompts() {
 		return array(
-			array( 'text' => '📁 Show IVR files', 'input' => 'What files do you have access to?' ),
-			array( 'text' => '🏷️ Show offers', 'input' => 'What offers are configured?' ),
-			array( 'text' => '🖥️ System status', 'input' => 'System status' ),
-			array( 'text' => '👤 My status', 'input' => 'What is my user status?' ),
-			array( 'text' => '📍 Current config', 'input' => 'What is the current config?' ),
+			array(
+		'text'  => '📁 Show IVR files',
+		'input' => 'What files do you have access to?',
+		),
+			array(
+		'text'  => '🏷️ Show offers',
+		'input' => 'What offers are configured?',
+		),
+			array(
+		'text'  => '🖥️ System status',
+		'input' => 'System status',
+		),
+			array(
+		'text'  => '👤 My status',
+		'input' => 'What is my user status?',
+		),
+			array(
+		'text'  => '📍 Current config',
+		'input' => 'What is the current config?',
+		),
 		);
 	}
 
@@ -4989,18 +5116,18 @@ Example good response:
 	 */
 	private function call_ai_with_rag( $message, $system_prompt, $tools, $user_context ) {
 
-		// v1.9.1: Check which provider is configured — this method only supports Anthropic
+		// v1.9.1: Check which provider is configured — this method only supports Anthropic.
 		$provider = flosc_get_setting( 'ai_provider', 'ivr' );
 		if ( $provider !== 'anthropic' ) {
 			return "RAG tools require Anthropic as the AI provider. Current provider: {$provider}. Switch to Anthropic in AI Configuration, or use standard chat which works with all providers.";
 		}
 
 		// Get AI configuration
-		// v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves)
+		// v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves).
 		$api_key = function_exists( 'flosc_get_provider_api_key' ) ? flosc_get_provider_api_key( 'anthropic' ) : flosc_get_setting( 'anthropic_api_key', '' );
 
 		if ( empty( $api_key ) ) {
-			return "Anthropic API key not configured. Add it in FLOSC Settings → AI Configuration.";
+			return 'Anthropic API key not configured. Add it in FLOSC Settings → AI Configuration.';
 		}
 
 		if ( ! class_exists( 'FLOSC_WP_AI_Client' ) || ! FLOSC_WP_AI_Client::is_provider_registered( 'anthropic' ) ) {
@@ -5040,7 +5167,7 @@ Example good response:
 		}
 
 		$text = isset( $result['text'] ) ? (string) $result['text'] : '';
-		return $text !== '' ? $text : "I encountered an issue processing your request. Please try again.";
+		return $text !== '' ? $text : 'I encountered an issue processing your request. Please try again.';
 	}
 
 	/**
@@ -5054,16 +5181,16 @@ Example good response:
 	 * @return WP_REST_Response
 	 */
 	// v1.0.5: This endpoint READS bridge data status (not writes)
-	// Quiz storage: store_quiz_result() | Processing: handle_process_quiz()
+	// Quiz storage: store_quiz_result() | Processing: handle_process_quiz().
 	public function handle_quiz_submission( $request ) {
 		$user_id    = get_current_user_id();
 		$bridge_mgr = FLOSC_Bridge_Data_Manager::instance();
 
-		// Get bridge data if user is logged in
+		// Get bridge data if user is logged in.
 		$bridge_data = $user_id ? $bridge_mgr->get_flosc_bridge_data( $user_id ) : null;
 
 		return new WP_REST_Response(
-            array(
+			array(
 			'success'            => true,
 			'bridge_data_active' => $user_id ? $bridge_mgr->is_in_flosc_bridge_state( $user_id ) : false,
 			'score'              => $bridge_data['score'] ?? 0,
@@ -5071,8 +5198,8 @@ Example good response:
 			'correct_items'      => $bridge_data['correct_items'] ?? array(),
 			'incorrect_items'    => $bridge_data['incorrect_items'] ?? array(),
 			'weakest_category'   => $user_id ? $bridge_mgr->get_flosc_weakest_category( $user_id ) : null,
-            )
-        );
+			)
+		);
 	}
 
 	/**
@@ -5104,18 +5231,18 @@ Example good response:
 				$enabled_quizzes = array();
 			}
 			$enabled_quizzes = array_values(
-                array_unique(
-                    array_filter(
-                        array_map(
-                            static function ( $id ) {
-                            $id = sanitize_key( (string) $id );
-                            return $id !== '' ? FLOSC_Quiz_Registry::resolve_id( $id ) : '';
-                            },
-                            $enabled_quizzes
-                        )
-                    )
-                )
-            );
+				array_unique(
+					array_filter(
+						array_map(
+							static function ( $id ) {
+								$id = sanitize_key( (string) $id );
+								return $id !== '' ? FLOSC_Quiz_Registry::resolve_id( $id ) : '';
+							},
+							$enabled_quizzes
+						)
+					)
+				)
+			);
 			if ( empty( $enabled_quizzes ) ) {
 				return new WP_Error(
 					'flosc_no_quiz',
@@ -5124,11 +5251,11 @@ Example good response:
 				);
 			}
 
-			// Get rotation counter and increment
+			// Get rotation counter and increment.
 			$rotation_count = intval( get_option( 'flosc_quiz_rotation_count', 0 ) );
 			update_option( 'flosc_quiz_rotation_count', $rotation_count + 1 );
 
-			// Pick quiz based on rotation (ABAB pattern)
+			// Pick quiz based on rotation (ABAB pattern).
 			$quiz_index = $rotation_count % count( $enabled_quizzes );
 			$quiz_id    = $enabled_quizzes[ $quiz_index ];
 		}
@@ -5144,22 +5271,22 @@ Example good response:
 				$content = get_option( 'flosc_quiz_content_' . $resolved_id, $quiz_type->get_default_content() );
 			}
 
-			// Check if this is a TEXT SEQUENCE quiz (type: 1,2,3...10)
+			// Check if this is a TEXT SEQUENCE quiz (type: 1,2,3...10).
 			if ( $resolved_id === 'flosc_sample_data_numbers_quiz' ) {
-				// Parse expected values - ensure we have valid content
+				// Parse expected values - ensure we have valid content.
 				$expected = array_filter(
-                    array_map( 'trim', explode( ',', $content ) ),
-                    function( $v ) {
-					return $v !== '';
-                    }
-                );
-				// Fallback to default if empty
+					array_map( 'trim', explode( ',', $content ) ),
+					function ( $v ) {
+						return $v !== '';
+					}
+				);
+				// Fallback to default if empty.
 				if ( empty( $expected ) ) {
-					$expected = array( '1','2','3','4','5','6','7','8','9','10' );
+					$expected = array( '1', '2', '3', '4', '5', '6', '7', '8', '9', '10' );
 				}
-				// Return text sequence quiz format
+				// Return text sequence quiz format.
 				return new WP_REST_Response(
-                    array(
+					array(
 					'success'      => true,
 					'id'           => $resolved_id,
 					'title'        => $quiz_type->get_name(),
@@ -5167,14 +5294,14 @@ Example good response:
 					'prompt'       => 'Type the sequence from 1 to 10 (e.g., "1, 2, 3, 4, 5, 6, 7, 8, 9, 10")',
 					'expected'     => array_values( $expected ),
 					'instructions' => $quiz_type->get_instructions(),
-                    )
-                );
+					)
+				);
 			}
 
-			// Check if this is AUDIO quiz
+			// Check if this is AUDIO quiz.
 			if ( $resolved_id === 'flosc_sample_audio_quiz' ) {
 				return new WP_REST_Response(
-                    array(
+					array(
 					'success'      => true,
 					'id'           => $resolved_id,
 					'title'        => $quiz_type->get_name(),
@@ -5182,30 +5309,30 @@ Example good response:
 					'prompt'       => 'Record yourself saying the sequence from 1 to 10',
 					'expected'     => array_map( 'trim', explode( ',', $content ) ),
 					'instructions' => $quiz_type->get_instructions(),
-                    )
-                );
+					)
+				);
 			}
 
-			// Check if this is MULTIPLE CHOICE (pipe format)
+			// Check if this is MULTIPLE CHOICE (pipe format).
 			if ( $resolved_id === 'multiplechoice' ) {
-				// Parse content as JSON or structured format
+				// Parse content as JSON or structured format.
 				$questions = $this->parse_multiplechoice_content( $content );
 				return new WP_REST_Response(
-                    array(
+					array(
 					'success'   => true,
 					'id'        => $resolved_id,
 					'title'     => $quiz_type->get_name(),
 					'type'      => 'multiple_choice',
 					'questions' => $questions,
-                    )
-                );
+					)
+				);
 			}
 
-			// Sample / flow assessment quiz types with block parser + default questions
+			// Sample / flow assessment quiz types with block parser + default questions.
 			if ( method_exists( $quiz_type, 'parse_content_to_questions' )
 				&& method_exists( $quiz_type, 'get_default_questions' ) ) {
 				$questions = array();
-				// Content key for this quiz id only: quiz_content_{id}
+				// Content key for this quiz id only: quiz_content_{id}.
 				$saved_content = $content;
 				if ( ( $saved_content === '' || $saved_content === null ) && $resolved_id !== '' ) {
 					$saved_content = flosc_get_setting( 'quiz_content_' . $resolved_id, '' );
@@ -5217,27 +5344,39 @@ Example good response:
 					$questions = $quiz_type->get_default_questions();
 				}
 				return new WP_REST_Response(
-                    array(
+					array(
 					'success'   => true,
 					'id'        => $resolved_id,
 					'title'     => $quiz_type->get_name(),
 					'type'      => 'multiple_choice',
 					'questions' => $questions,
-                    )
-                );
+					)
+				);
 			}
 		}
 
-		// Fallback: return sample assessment quiz
+		// Fallback: return sample assessment quiz.
 		$sample_questions = array(
 			array(
 				'id'      => 'q1',
 				'text'    => 'How would you rate your current skill level?',
 				'options' => array(
-					array( 'key' => 'A', 'text' => 'Complete beginner' ),
-					array( 'key' => 'B', 'text' => 'Some basics' ),
-					array( 'key' => 'C', 'text' => 'Intermediate' ),
-					array( 'key' => 'D', 'text' => 'Advanced' ),
+					array(
+		'key'  => 'A',
+		'text' => 'Complete beginner',
+				),
+					array(
+				'key'  => 'B',
+				'text' => 'Some basics',
+				),
+					array(
+				'key'  => 'C',
+				'text' => 'Intermediate',
+				),
+					array(
+				'key'  => 'D',
+				'text' => 'Advanced',
+				),
 				),
 				'correct' => null,
 			),
@@ -5245,10 +5384,22 @@ Example good response:
 				'id'      => 'q2',
 				'text'    => 'How much time can you dedicate to practice each week?',
 				'options' => array(
-					array( 'key' => 'A', 'text' => 'Less than 1 hour' ),
-					array( 'key' => 'B', 'text' => '1-3 hours' ),
-					array( 'key' => 'C', 'text' => '3-5 hours' ),
-					array( 'key' => 'D', 'text' => 'More than 5 hours' ),
+					array(
+		'key'  => 'A',
+		'text' => 'Less than 1 hour',
+				),
+					array(
+				'key'  => 'B',
+				'text' => '1-3 hours',
+				),
+					array(
+				'key'  => 'C',
+				'text' => '3-5 hours',
+				),
+					array(
+				'key'  => 'D',
+				'text' => 'More than 5 hours',
+				),
 				),
 				'correct' => null,
 			),
@@ -5256,40 +5407,56 @@ Example good response:
 				'id'      => 'q3',
 				'text'    => 'What is your primary goal?',
 				'options' => array(
-					array( 'key' => 'A', 'text' => 'Personal improvement' ),
-					array( 'key' => 'B', 'text' => 'Professional development' ),
-					array( 'key' => 'C', 'text' => 'Academic requirements' ),
-					array( 'key' => 'D', 'text' => 'Just curious to learn' ),
+					array(
+		'key'  => 'A',
+		'text' => 'Personal improvement',
+				),
+					array(
+				'key'  => 'B',
+				'text' => 'Professional development',
+				),
+					array(
+				'key'  => 'C',
+				'text' => 'Academic requirements',
+				),
+					array(
+				'key'  => 'D',
+				'text' => 'Just curious to learn',
+				),
 				),
 				'correct' => null,
 			),
 		);
 
 		return new WP_REST_Response(
-            array(
+			array(
 			'success'   => true,
 			'id'        => 'sample',
 			'title'     => 'Quick Assessment',
 			'type'      => 'multiple_choice',
 			'questions' => $sample_questions,
-            )
-        );
+			)
+		);
 	}
 
 	/**
 	 * v9.3.4: Parse multiple choice content from admin textarea
 	 */
 	private function parse_multiplechoice_content( $content ) {
-		// Simple format: Question?|A:Answer1|B:Answer2|C:Answer3|correct:A
+		// Simple format: Question?|A:Answer1|B:Answer2|C:Answer3|correct:A.
 		$questions = array();
 		$lines     = explode( "\n", trim( $content ) );
 
 		foreach ( $lines as $line ) {
 			$line = trim( $line );
-			if (empty( $line )) continue;
+			if ( empty( $line ) ) {
+				continue;
+			}
 
 			$parts = explode( '|', $line );
-			if (count( $parts ) < 3) continue;
+			if ( count( $parts ) < 3 ) {
+				continue;
+			}
 
 			$question = array(
 				'id'      => 'q' . ( count( $questions ) + 1 ),
@@ -5303,7 +5470,10 @@ Example good response:
 				if ( strpos( $part, 'correct:' ) === 0 ) {
 					$question['correct'] = substr( $part, 8 );
 				} elseif ( preg_match( '/^([A-D]):(.+)$/', $part, $m ) ) {
-					$question['options'][] = array( 'key' => $m[1], 'text' => trim( $m[2] ) );
+					$question['options'][] = array(
+					'key'  => $m[1],
+					'text' => trim( $m[2] ),
+					);
 				}
 			}
 
@@ -5328,7 +5498,7 @@ Example good response:
 		$completed_at = intval( $request->get_param( 'completedAt' ) ?? time() * 1000 );
 		$duration     = intval( $request->get_param( 'duration' ) ?? 0 );
 
-		// v1.0.7 TASK-603: Store in signed cookie for visitors (not PHP session - avoids "headers sent" errors)
+		// v1.0.7 TASK-603: Store in signed cookie for visitors (not PHP session - avoids "headers sent" errors).
 		if ( ! is_user_logged_in() ) {
 			$quiz_data = array(
 				'quiz_id'      => $quiz_id,
@@ -5340,17 +5510,17 @@ Example good response:
 			$this->set_signed_cookie( 'flosc_quiz_result', $quiz_data, HOUR_IN_SECONDS );
 		}
 
-		// If user is logged in, store in user meta
+		// If user is logged in, store in user meta.
 		if ( is_user_logged_in() ) {
 			$user_id = get_current_user_id();
 
-			// v1.0.4: TASK-013 - Consolidated quiz storage with underscore prefix
+			// v1.0.4: TASK-013 - Consolidated quiz storage with underscore prefix.
 			update_user_meta( $user_id, '_flosc_last_quiz_id', $quiz_id );
 			update_user_meta( $user_id, '_flosc_last_quiz_score', $score ); // Canonical score location
 			update_user_meta( $user_id, '_flosc_quiz_completed_at', $completed_at );
 			update_user_meta( $user_id, '_flosc_quiz_answers_' . $quiz_id, $answers );
 
-			// Add to completed quizzes array
+			// Add to completed quizzes array.
 			$completed = get_user_meta( $user_id, '_flosc_completed_quizzes', true ) ?: array();
 			if ( ! in_array( $quiz_id, $completed ) ) {
 				$completed[] = $quiz_id;
@@ -5376,7 +5546,7 @@ Example good response:
 			// produce structured incorrect/missed arrays that the Free Lesson Manager
 			// checks first (see get_missed_lessons() in class-free-content-item-manager.php).
 			$user_nums     = array_filter( array_map( 'trim', is_array( $answers ) ? $answers : explode( ',', $answers ) ), 'is_numeric' );
-			$expected_nums = array( '1','2','3','4','5','6','7','8','9','10' );
+			$expected_nums = array( '1', '2', '3', '4', '5', '6', '7', '8', '9', '10' );
 			foreach ( $expected_nums as $num ) {
 				if ( in_array( $num, $user_nums ) ) {
 					$quiz_result['correct'][] = $num;
@@ -5388,23 +5558,25 @@ Example good response:
 			// Fire the action — this triggers:
 			// 1. FLOSC_Bridge_Data_Manager::handle_quiz_completion() — creates bridge data
 			// 2. FLOSC_Free_Content_Item_Manager::handle_quiz_completion() — offers free lesson if score < 100
-			//    v3.0.0: Uses quiz_id to resolve category from content_item_groups
+			//    v3.0.0: Uses quiz_id to resolve category from content_item_groups.
 			do_action( 'flosc_quiz_completed', $quiz_result, $user_id );
 
-			// Set justCompletedQuiz transient for IVR
+			// Set justCompletedQuiz transient for IVR.
 			set_transient( 'flosc_just_completed_quiz_' . $user_id, true, MINUTE_IN_SECONDS * 5 );
 
-			if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC v1.0.7: Quiz stored for user {$user_id}, score {$score}%, fired flosc_quiz_completed" );
+			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+				flosc_log( "FLOSC v1.0.7: Quiz stored for user {$user_id}, score {$score}%, fired flosc_quiz_completed" );
+			}
 		}
 
 		return new WP_REST_Response(
-            array(
+			array(
 			'success'         => true,
 			'message'         => 'Quiz result stored',
 			'stored_for_user' => is_user_logged_in(),
 			'score'           => $score,
-            )
-        );
+			)
+		);
 	}
 
 	/**
@@ -5412,11 +5584,11 @@ Example good response:
 	 */
 	private function find_ivr_response( $phase, $user_message, $context, $ivr_config ) {
 		// v1.0.8: Get messages for the phase using correct config structure
-		// Config structure: { 'messages' => {...}, 'phases' => { 'freeline' => [...], ... } }
+		// Config structure: { 'messages' => {...}, 'phases' => { 'freeline' => [...], ... } }.
 		$all_messages        = $ivr_config['messages'] ?? array();
 		$phase_message_names = $ivr_config['phases'][ $phase ] ?? array();
 
-		// Build phase messages array from names
+		// Build phase messages array from names.
 		$phase_messages = array();
 		foreach ( $phase_message_names as $msg_name ) {
 			if ( isset( $all_messages[ $msg_name ] ) ) {
@@ -5430,7 +5602,7 @@ Example good response:
 		}
 
 		// v1.0.8: If not found in current phase, check freeline phase for 'always' condition messages
-		// This ensures global input-output pairs (like "Are you there?") work across all phases
+		// This ensures global input-output pairs (like "Are you there?") work across all phases.
 		if ( $phase !== 'freeline' ) {
 			$freeline_message_names = $ivr_config['phases']['freeline'] ?? array();
 			$freeline_messages      = array();
@@ -5447,7 +5619,7 @@ Example good response:
 		}
 
 		// v1.9.0: No IVR match — return null so AI fallback path activates in handle_chat()
-		// When ai_provider is 'ivr', handle_chat() will use get_phase_default_response() as last resort
+		// When ai_provider is 'ivr', handle_chat() will use get_phase_default_response() as last resort.
 		return null;
 	}
 
@@ -5480,7 +5652,7 @@ Example good response:
 			'{lessons_completed}' => $context['lessons_completed'] ?? '0',
 		);
 
-		// v1.0.9: Special handling for {user_status_response}
+		// v1.0.9: Special handling for {user_status_response}.
 		if ( strpos( $content, '{user_status_response}' ) !== false ) {
 			$replacements['{user_status_response}'] = $this->generate_user_status_response( $context );
 		}
@@ -5580,16 +5752,16 @@ Example good response:
 		}
 
 		usort(
-            $rows,
-            function ( $a, $b ) {
-			$ac = ! empty( $a['current'] ) ? 1 : 0;
-			$bc = ! empty( $b['current'] ) ? 1 : 0;
-			if ( $ac !== $bc ) {
-				return ( $ac > $bc ) ? -1 : 1;
+			$rows,
+			function ( $a, $b ) {
+				$ac = ! empty( $a['current'] ) ? 1 : 0;
+				$bc = ! empty( $b['current'] ) ? 1 : 0;
+				if ( $ac !== $bc ) {
+					return ( $ac > $bc ) ? -1 : 1;
+				}
+				return strcasecmp( (string) ( $a['name'] ?? '' ), (string) ( $b['name'] ?? '' ) );
 			}
-			return strcasecmp( (string) ( $a['name'] ?? '' ), (string) ( $b['name'] ?? '' ) );
-            }
-        );
+		);
 
 		return array_values( $rows );
 	}
@@ -5672,9 +5844,9 @@ Example good response:
 	 * v1.6.3: Added keyword-based fuzzy fallback when exact match fails
 	 */
 	private function search_ivr_match( $messages, $user_message, $context, $only_always = false ) {
-		// Pass 1: Exact match (original behavior)
+		// Pass 1: Exact match (original behavior).
 		foreach ( $messages as $msg ) {
-			// v1.6.2: Match suggested_user_autoprompt AND offer-type messages with user_input
+			// v1.6.2: Match suggested_user_autoprompt AND offer-type messages with user_input.
 			$matchable_types = array( 'suggested_user_autoprompt', 'offer' );
 			if ( ! isset( $msg['type'] ) || ! in_array( $msg['type'], $matchable_types, true ) ) {
 				continue;
@@ -5698,7 +5870,7 @@ Example good response:
 				}
 			}
 
-			// v1.0.9: Return content with variable substitution
+			// v1.0.9: Return content with variable substitution.
 			if ( ! empty( $msg['content'] ) ) {
 				return array(
 					'content'          => $this->substitute_ivr_variables( $msg['content'], $context ),
@@ -5709,16 +5881,16 @@ Example good response:
 		}
 
 		// Pass 2: Keyword fuzzy match (v1.6.3)
-		// Normalize user input: lowercase, strip punctuation, split into words
+		// Normalize user input: lowercase, strip punctuation, split into words.
 		$input_normalized = strtolower( preg_replace( '/[^\w\s]/', '', $user_message ) );
 		$input_words      = array_filter( preg_split( '/\s+/', $input_normalized ) );
 
-		// Skip fuzzy match for very short inputs (1 word or less)
+		// Skip fuzzy match for very short inputs (1 word or less).
 		if ( count( $input_words ) < 2 ) {
 			return null;
 		}
 
-		// Common stop words to ignore in matching
+		// Common stop words to ignore in matching.
 		$stop_words       = array( 'i', 'me', 'my', 'the', 'a', 'an', 'is', 'are', 'was', 'do', 'does', 'did', 'can', 'to', 'for', 'of', 'in', 'on', 'it', 'and', 'or', 'but', 'not', 'this', 'that', 'with', 'have', 'has', 'what', 'how', 'please', 'want', 'would', 'like', 'just', 'about' );
 		$input_meaningful = array_diff( $input_words, $stop_words );
 
@@ -5753,16 +5925,16 @@ Example good response:
 				continue;
 			}
 
-			// Build keyword pool: explicit Keywords field + words from user_input
+			// Build keyword pool: explicit Keywords field + words from user_input.
 			$keyword_pool = array();
 
-			// Explicit keywords (comma-separated in IVR config)
+			// Explicit keywords (comma-separated in IVR config).
 			if ( ! empty( $msg['keywords'] ) ) {
 				$explicit_keywords = array_map( 'trim', explode( ',', strtolower( $msg['keywords'] ) ) );
 				$keyword_pool      = array_merge( $keyword_pool, $explicit_keywords );
 			}
 
-			// Words from the user_input field itself
+			// Words from the user_input field itself.
 			if ( ! empty( $msg['user_input'] ) ) {
 				$ui_words      = array_filter( preg_split( '/\s+/', strtolower( preg_replace( '/[^\w\s]/', '', $msg['user_input'] ) ) ) );
 				$ui_meaningful = array_diff( $ui_words, $stop_words );
@@ -5775,16 +5947,16 @@ Example good response:
 
 			$keyword_pool = array_unique( $keyword_pool );
 
-			// Score: count how many user words match keywords (including partial/stem matches)
+			// Score: count how many user words match keywords (including partial/stem matches).
 			$score = 0;
 			foreach ( $input_meaningful as $word ) {
 				foreach ( $keyword_pool as $keyword ) {
-					// Exact word match
+					// Exact word match.
 					if ( $word === $keyword ) {
 						$score += 2;
 						break;
 					}
-					// Stem match: user word starts with keyword or keyword starts with user word (min 4 chars)
+					// Stem match: user word starts with keyword or keyword starts with user word (min 4 chars).
 					if ( strlen( $word ) >= 4 && strlen( $keyword ) >= 4 ) {
 						if ( strpos( $word, $keyword ) === 0 || strpos( $keyword, $word ) === 0 ) {
 							$score += 1;
@@ -5861,7 +6033,9 @@ Example good response:
 			strpos( $lower, 'topic' ) !== false ||
 			strpos( $lower, 'results' ) !== false
 		);
-		if ( ! $is_quiz_question) return null;
+		if ( ! $is_quiz_question ) {
+			return null;
+		}
 
 		$quiz_taken = $eval_context['quiz_taken'] ?? false;
 		if ( ! $quiz_taken ) {
@@ -5871,7 +6045,7 @@ Example good response:
 		$score    = $eval_context['score'] ?? $eval_context['quiz_score'] ?? '?';
 		$response = "Based on your quiz, you scored **{$score}%**.\n\n";
 
-		// Try bridge data for logged-in users
+		// Try bridge data for logged-in users.
 		$incorrect = array();
 		if ( ! empty( $eval_context['user_id'] ) && is_user_logged_in() ) {
 			$bridge_mgr  = FLOSC_Bridge_Data_Manager::instance();
@@ -5881,13 +6055,13 @@ Example good response:
 			}
 		}
 
-		// Fallback to frontend context
+		// Fallback to frontend context.
 		if ( empty( $incorrect ) ) {
 			$incorrect = $eval_context['incorrect_items'] ?? $eval_context['incorrectItems'] ?? array();
 		}
 
 		if ( ! empty( $incorrect ) && is_array( $incorrect ) ) {
-			// incorrect_items may be plain labels/ids or structured rows
+			// incorrect_items may be plain labels/ids or structured rows.
 			$labels = array();
 			foreach ( array_slice( $incorrect, 0, 10 ) as $item ) {
 				if ( is_array( $item ) ) {
@@ -5896,10 +6070,10 @@ Example good response:
 					$labels[] = (string) $item;
 				}
 			}
-			$response .= "Here are the topics to work on: **" . implode( ', ', $labels ) . "**.\n\n";
-			$response .= "Member content covers each of these in more depth. Would you like to try a free lesson (if one is available for your flow)?";
+			$response .= 'Here are the topics to work on: **' . implode( ', ', $labels ) . "**.\n\n";
+			$response .= 'Member content covers each of these in more depth. Would you like to try a free lesson (if one is available for your flow)?';
 		} else {
-			$response .= "Member content covers the topics from this assessment in more depth. Would you like to try a free lesson (if one is available for your flow)?";
+			$response .= 'Member content covers the topics from this assessment in more depth. Would you like to try a free lesson (if one is available for your flow)?';
 		}
 
 		return $response;
@@ -5945,7 +6119,7 @@ Example good response:
 	private function build_enriched_ai_context( $phase, $eval_context, $flow_id = '', $ivr_guidance = '' ) {
 		$user_id = $eval_context['user_id'] ?? 0;
 
-		// FLOSC Identity — tell the AI what system it's part of
+		// FLOSC Identity — tell the AI what system it's part of.
 		$identity   = $this->get_floscflow_identity();
 		$ai_context = array(
 			'flosc_version'  => FLOSC_VERSION,
@@ -5955,16 +6129,16 @@ Example good response:
 			'public_tagline' => trim( (string) ( $identity['tagline'] ?? '' ) ),
 		);
 
-		// User Identity
+		// User Identity.
 		$ai_context['logged_in']     = $eval_context['logged_in'] ?? false;
 		$ai_context['is_admin']      = $eval_context['is_admin'] ?? false;
 		$ai_context['user_name']     = $eval_context['user_name'] ?? 'there';
 		$ai_context['access_level']  = $eval_context['access_level'] ?? 'visitor';
 		$ai_context['message_count'] = $eval_context['message_count'] ?? 0;
 
-		// v1.9.2: Enrich admin context — give AI factual data so it doesn't hallucinate
+		// v1.9.2: Enrich admin context — give AI factual data so it doesn't hallucinate.
 		if ( $ai_context['is_admin'] && $user_id ) {
-			// Admin transcends the funnel — use backend phase determination, not frontend's
+			// Admin transcends the funnel — use backend phase determination, not frontend's.
 			$backend_phase            = $this->determine_flosc_phase();
 			$ai_context['phase']      = 'admin (backend: ' . $backend_phase . ', frontend sent: ' . $phase . ')';
 			$ai_context['admin_note'] = 'Admin users are not regular funnel participants. They have full access to all phases, lessons, and configuration. Do not treat them as visitors or guide them through the funnel.';
@@ -5980,7 +6154,7 @@ Example good response:
 			$ai_context['phase'] = $phase;
 		}
 
-		// Quiz & Bridge Data (for logged-in users)
+		// Quiz & Bridge Data (for logged-in users).
 		if ( $user_id && is_user_logged_in() ) {
 			$bridge_mgr  = FLOSC_Bridge_Data_Manager::instance();
 			$bridge_data = $bridge_mgr->get_flosc_bridge_data( $user_id );
@@ -5992,7 +6166,7 @@ Example good response:
 				$incorrect                          = $bridge_data['incorrect_items'] ?? array();
 				$ai_context['quiz_correct_count']   = count( $correct );
 				$ai_context['quiz_incorrect_count'] = count( $incorrect );
-				// Send item names (not IDs) so AI can reference them naturally
+				// Send item names (not IDs) so AI can reference them naturally.
 				if ( ! empty( $incorrect ) ) {
 					$ai_context['quiz_missed_items'] = implode( ', ', array_slice( $incorrect, 0, 10 ) );
 				}
@@ -6004,7 +6178,7 @@ Example good response:
 					$ai_context['weakest_category'] = $weakest;
 				}
 			} else {
-				// Fallback to legacy user meta
+				// Fallback to legacy user meta.
 				$legacy_score             = get_user_meta( $user_id, '_flosc_last_quiz_score', true );
 				$ai_context['quiz_taken'] = ! empty( $legacy_score );
 				if ( $legacy_score ) {
@@ -6037,7 +6211,7 @@ Example good response:
 				$ai_context['member_entitlement'] = 'Member (full member access)';
 			}
 		} else {
-			// Visitor — check eval_context for pre-login quiz data
+			// Visitor — check eval_context for pre-login quiz data.
 			$ai_context['quiz_taken'] = (bool) ( $eval_context['quiz_taken'] ?? false );
 			if ( ! empty( $eval_context['score'] ) ) {
 				$ai_context['quiz_score'] = $eval_context['score'] . '%';
@@ -6047,7 +6221,7 @@ Example good response:
 			$ai_context['purchased']    = false;
 		}
 
-		// IVR guidance (if IVR matched a scripted response)
+		// IVR guidance (if IVR matched a scripted response).
 		if ( ! empty( $ivr_guidance ) ) {
 			$ai_context['ivr_guidance'] = $ivr_guidance;
 		}
@@ -6062,7 +6236,9 @@ Example good response:
 	 */
 	private function match_offer_reveal_phrase( $message, $flow_id = null ) {
 		$normalized = strtolower( trim( $message ) );
-		if (empty( $normalized )) return null;
+		if ( empty( $normalized ) ) {
+			return null;
+		}
 
 		$offers = $this->sale_manager->get_available_offers(
 			is_user_logged_in() ? get_current_user_id() : null,
@@ -6070,11 +6246,17 @@ Example good response:
 		);
 
 		foreach ( $offers as $offer ) {
-			if (empty( $offer['reveal_phrase'] )) continue;
-			// Only match "exact" type server-side; AI interpretation goes through AI prompt
+			if ( empty( $offer['reveal_phrase'] ) ) {
+				continue;
+			}
+			// Only match "exact" type server-side; AI interpretation goes through AI prompt.
 			$match_type = $offer['match_type'] ?? 'exact';
-			if ($match_type !== 'exact') continue;
-			if (( $offer['status'] ?? 'active' ) !== 'active') continue;
+			if ( $match_type !== 'exact' ) {
+				continue;
+			}
+			if ( ( $offer['status'] ?? 'active' ) !== 'active' ) {
+				continue;
+			}
 
 			$phrase = strtolower( trim( $offer['reveal_phrase'] ) );
 			if ( $phrase === $normalized ) {
@@ -6095,26 +6277,34 @@ Example good response:
 		);
 		$ai_offers = array();
 		foreach ( $offers as $offer ) {
-			if (empty( $offer['reveal_phrase'] )) continue;
-			if (( $offer['match_type'] ?? 'exact' ) !== 'ai_interpretation') continue;
-			if (( $offer['status'] ?? 'active' ) !== 'active') continue;
+			if ( empty( $offer['reveal_phrase'] ) ) {
+				continue;
+			}
+			if ( ( $offer['match_type'] ?? 'exact' ) !== 'ai_interpretation' ) {
+				continue;
+			}
+			if ( ( $offer['status'] ?? 'active' ) !== 'active' ) {
+				continue;
+			}
 			$ai_offers[] = $offer;
 		}
 		return $ai_offers;
 	}
 
 	private function get_user_autoprompts_for_phase( $phase, $context, $ivr_config ) {
-		// v1.0.8: Use correct config structure
+		// v1.0.8: Use correct config structure.
 		$all_messages        = $ivr_config['messages'] ?? array();
 		$phase_message_names = $ivr_config['phases'][ $phase ] ?? array();
 		$replies             = array();
 
 		foreach ( $phase_message_names as $msg_name ) {
 			$msg = $all_messages[ $msg_name ] ?? null;
-			if ( ! $msg) continue;
+			if ( ! $msg ) {
+				continue;
+			}
 
 			if ( isset( $msg['type'] ) && $msg['type'] === 'suggested_user_autoprompt' ) {
-				// Check conditions if present
+				// Check conditions if present.
 				if ( isset( $msg['conditions'] ) && $msg['conditions'] !== 'always' ) {
 					$evaluator = new FLOSC_Condition_Evaluator( $context );
 					if ( ! $evaluator->evaluate( $msg['conditions'] ) ) {
@@ -6143,7 +6333,7 @@ Example good response:
 
 		$flow_token_enforced = $this->flosc_is_flow_chat_token_enforced( $flow_id );
 
-		// Check usage limits if user is logged in
+		// Check usage limits if user is logged in.
 		$needs_token_charge = false;
 		$token_provider     = null;
 		$user_id            = 0;
@@ -6151,9 +6341,9 @@ Example good response:
 			$user_id = get_current_user_id();
 			$usage   = $this->sale_manager->usage();
 
-			// Check if user has quota (or paid access)
+			// Check if user has quota (or paid access).
 			if ( ! $usage->has_quota( $user_id, 'ai_queries' ) ) {
-				// Check if they can pay with tokens
+				// Check if they can pay with tokens.
 				$token_provider = $this->sale_manager->get_provider( 'tokens' );
 				if ( ! $flow_token_enforced ) {
 					$token_provider     = null;
@@ -6167,11 +6357,11 @@ Example good response:
 				$needs_token_charge = true;
 			}
 
-			// Track usage
+			// Track usage.
 			$usage->track( $user_id, 'ai_queries' );
 		}
 
-		// v04_04: Build context for phase-aware AI
+		// v04_04: Build context for phase-aware AI.
 		$ai_context = $this->build_ai_context( $context );
 
 		// v8.0.1: Fail closed — never serve unpersonified answers. An empty
@@ -6191,7 +6381,7 @@ Example good response:
 			);
 		}
 
-		// v04_04: Build system prompt (base + phase-specific + context)
+		// v04_04: Build system prompt (base + phase-specific + context).
 		$phase         = $ai_context['phase'] ?? '';
 		$system_prompt = $this->ai_chat_dispatch->build_system_prompt( $phase, $ai_context );
 
@@ -6218,11 +6408,11 @@ Example good response:
 		}
 
 		return new WP_REST_Response(
-            array(
+			array(
 			'success'  => true,
 			'response' => $response,
-            )
-        );
+			)
+		);
 	}
 
 	public function handle_process_audio( $request ) {
@@ -6232,7 +6422,7 @@ Example good response:
 			return new WP_Error( 'no_audio', __( 'No audio file provided', 'flosc' ), array( 'status' => 400 ) );
 		}
 
-		// Track STT usage
+		// Track STT usage.
 		if ( is_user_logged_in() ) {
 			$this->sale_manager->usage()->track( get_current_user_id(), 'stt_minutes', 1 );
 		}
@@ -6248,12 +6438,12 @@ Example good response:
 
 		if ( ! $quiz_type ) {
 			return new WP_REST_Response(
-                array(
+				array(
 				'success'    => true,
 				'transcript' => $transcript,
 				'analysis'   => null,
-                )
-            );
+				)
+			);
 		}
 
 		// Flow settings first, then global option, then type default.
@@ -6266,32 +6456,32 @@ Example good response:
 			$expected_content = $quiz_type->get_default_content();
 		}
 
-		// Analyze using quiz type
+		// Analyze using quiz type.
 		$analysis = $quiz_type->analyze(
-            $transcript,
-            $expected_content,
-            array(
+			$transcript,
+			$expected_content,
+			array(
 			'user_id' => is_user_logged_in() ? get_current_user_id() : null,
-            )
-        );
+			)
+		);
 
-		// Track quiz completion
+		// Track quiz completion.
 		if ( is_user_logged_in() && ! is_wp_error( $analysis ) ) {
 			$this->sale_manager->usage()->track(
-                get_current_user_id(),
-                'quizzes',
-                1,
-                array(
+				get_current_user_id(),
+				'quizzes',
+				1,
+				array(
 				'score'     => $analysis['score'],
 				'quiz_type' => $quiz_type->get_id(),
-                )
-            );
+				)
+			);
 		}
 
-		// Map to lessons
+		// Map to lessons.
 		$lessons = $quiz_type->map_to_lessons( $analysis );
 
-		// Get response templates
+		// Get response templates.
 		$templates = array();
 		foreach ( $quiz_type->get_default_response_templates() as $key => $default ) {
 			$templates[ $key ] = get_option(
@@ -6300,18 +6490,18 @@ Example good response:
 			);
 		}
 
-		// Format results
+		// Format results.
 		$message = $quiz_type->format_results( $analysis, $lessons, $templates );
 
 		return new WP_REST_Response(
-            array(
+			array(
 			'success'    => true,
 			'transcript' => $transcript,
 			'analysis'   => $analysis,
 			'lessons'    => $lessons,
 			'message'    => $message,
-            )
-        );
+			)
+		);
 	}
 
 	/**
@@ -6348,7 +6538,7 @@ Example good response:
 			return new WP_Error( 'invalid_quiz_type', __( 'Quiz type not found', 'flosc' ), array( 'status' => 404 ) );
 		}
 
-		// Validate input
+		// Validate input.
 		$validation = $quiz_type->validate_input( $input );
 		if ( is_wp_error( $validation ) ) {
 			return $validation;
@@ -6364,38 +6554,38 @@ Example good response:
 			$expected_content = $quiz_type->get_default_content();
 		}
 
-		// Analyze
+		// Analyze.
 		$analysis = $quiz_type->analyze(
-            $input,
-            $expected_content,
-            array(
+			$input,
+			$expected_content,
+			array(
 			'user_id' => is_user_logged_in() ? get_current_user_id() : null,
-            )
-        );
+			)
+		);
 
 		if ( is_wp_error( $analysis ) ) {
 			return $analysis;
 		}
 
-		// Track quiz completion
+		// Track quiz completion.
 		if ( is_user_logged_in() ) {
 			$user_id = get_current_user_id();
 			$this->sale_manager->usage()->track(
-                $user_id,
-                'quizzes',
-                1,
-                array(
+				$user_id,
+				'quizzes',
+				1,
+				array(
 				'score'     => $analysis['score'],
 				'quiz_type' => $quiz_type->get_id(),
-                )
-            );
+				)
+			);
 
-			// v07.09: Set justCompletedQuiz flag for IVR
+			// v07.09: Set justCompletedQuiz flag for IVR.
 			set_transient( 'flosc_just_completed_quiz_' . $user_id, true, MINUTE_IN_SECONDS * 5 );
 
 			// v1.0.5 TASK-103: Fire flosc_quiz_completed for ALL scores
 			// Bridge data should be created regardless of score.
-			// Free Lesson Manager will only offer lesson if score < 100%
+			// Free Lesson Manager will only offer lesson if score < 100%.
 			$quiz_result = array(
 				'quiz_id'        => $quiz_type->get_id(),
 				'score'          => $analysis['score'],
@@ -6403,19 +6593,21 @@ Example good response:
 				'correct_answer' => $expected_content,
 				'correct'        => $analysis['correct'] ?? array(),
 				'incorrect'      => $analysis['incorrect'] ?? array(),
-				'missed'         => $analysis['incorrect'] ?? array()
+				'missed'         => $analysis['incorrect'] ?? array(),
 			);
 
-			// Fire hook - triggers Bridge Data Manager and Free Lesson Manager
+			// Fire hook - triggers Bridge Data Manager and Free Lesson Manager.
 			do_action( 'flosc_quiz_completed', $quiz_result, $user_id );
 
-			if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC v1.0.7: Quiz completed for user {$user_id} with score {$analysis['score']}%" );
+			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+				flosc_log( "FLOSC v1.0.7: Quiz completed for user {$user_id} with score {$analysis['score']}%" );
+			}
 		}
 
-		// Map to lessons
+		// Map to lessons.
 		$lessons = $quiz_type->map_to_lessons( $analysis );
 
-		// Get response templates
+		// Get response templates.
 		$templates = array();
 		foreach ( $quiz_type->get_default_response_templates() as $key => $default ) {
 			$templates[ $key ] = get_option(
@@ -6424,17 +6616,17 @@ Example good response:
 			);
 		}
 
-		// Format results
+		// Format results.
 		$message = $quiz_type->format_results( $analysis, $lessons, $templates );
 
 		return new WP_REST_Response(
-            array(
+			array(
 			'success'  => true,
 			'analysis' => $analysis,
 			'lessons'  => $lessons,
 			'message'  => $message,
-            )
-        );
+			)
+		);
 	}
 
 	/**
@@ -6765,7 +6957,10 @@ Example good response:
 		if ( $user_id > 0 && $session_id > 0 && $this->session_manager ) {
 			$hist_flow = $flow_id;
 			$hist_meta = ( $source === 'engagement_admin' )
-				? array( 'source' => 'engagement_admin', 'name' => 'Engagement' )
+				? array(
+			'source' => 'engagement_admin',
+			'name'   => 'Engagement',
+				)
 				: null;
 			if ( $user_message !== '' ) {
 				$this->session_manager->add_flosc_message( $session_id, 'user', $user_message, $user_id, null, $hist_flow );
@@ -6783,7 +6978,7 @@ Example good response:
 		}
 
 		$insert_id = FLOSC_Chat_Logger::instance()->flosc_log_chat(
-            array(
+			array(
 			'flow_id'          => $flow_id,
 			'phase'            => $phase !== '' ? $phase : 'content',
 			'user_id'          => $user_id,
@@ -6796,15 +6991,15 @@ Example good response:
 			'response_source'  => $source !== '' ? $source : 'client_ui',
 			'response_time_ms' => 0,
 			'billing_source'   => 'none',
-            )
-        );
+			)
+		);
 
 		return new WP_REST_Response(
-            array(
+			array(
 			'success' => (bool) $insert_id,
 			'log_id'  => $insert_id ? (int) $insert_id : 0,
-            )
-        );
+			)
+		);
 	}
 
 
@@ -6893,29 +7088,29 @@ Example good response:
 
 		$member_access = FLOSC_Member_Access::instance();
 		$member_access->grant_member_access(
-            $user_id,
-            array(
+			$user_id,
+			array(
 			'offer_id'       => $matched_offer_id,
 			'grants_level'   => $grants_level,
 			'provider'       => 'access_code',
 			'transaction_id' => 'access_code_' . $user_id . '_' . time(),
 			'amount'         => 0,
 			'flow_id'        => $flow_id,
-            )
-        );
+			)
+		);
 
 		// Also grant offer tokens/features when we matched a real offer.
 		if ( $matched_offer_id !== 'access_code' && $this->sale_manager ) {
 			$offer = $this->sale_manager->offers()->get_offer( $matched_offer_id, $flow_id ?: null );
 			if ( $offer && method_exists( $this->sale_manager->access(), 'grant_from_offer' ) ) {
 				$this->sale_manager->access()->grant_from_offer(
-                    $user_id,
-                    $offer,
-                    array(
+					$user_id,
+					$offer,
+					array(
 					'transaction_id' => 'access_code_' . $user_id . '_' . time(),
 					'provider'       => 'access_code',
-                    )
-                );
+					)
+				);
 			}
 		}
 
@@ -6926,12 +7121,12 @@ Example good response:
 		}
 
 		return new WP_REST_Response(
-            array(
+			array(
 			'success'  => true,
 			'message'  => 'Access granted',
 			'offer_id' => $matched_offer_id,
-            )
-        );
+			)
+		);
 	}
 
 
@@ -6948,29 +7143,49 @@ Example good response:
 	public function handle_score_pending_audio( $request ) {
 		$user_id = get_current_user_id();
 		if ( ! $user_id ) {
-			return new WP_REST_Response( array( 'success' => false, 'message' => 'Not logged in' ), 401 );
+			return new WP_REST_Response(
+				array(
+				'success' => false,
+				'message' => 'Not logged in',
+				),
+				401 
+			);
 		}
-if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "[FLOSC v8.0.7] score-pending-audio called for user {$user_id}" );
+		if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+			flosc_log( "[FLOSC v8.0.7] score-pending-audio called for user {$user_id}" );
+		}
 
-		// Check if user already has scored quiz data
+		// Check if user already has scored quiz data.
 		$existing = get_user_meta( $user_id, '_flosc_last_quiz_data', true );
 		if ( $existing && ! empty( $existing['phrase_results'] ) ) {
-	if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "[FLOSC v8.0.7] User {$user_id} already has scored data, returning it" );
+			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+				flosc_log( "[FLOSC v8.0.7] User {$user_id} already has scored data, returning it" );
+			}
 			return new WP_REST_Response(
-                array(
+				array(
 				'success'        => true,
 				'already_scored' => true,
 				'score_data'     => $existing,
-                )
-            );
+				)
+			);
 		}
 
 		$temp_id = sanitize_text_field( $request->get_param( 'temp_id' ) ?? '' );
 		if ( ! $temp_id || ! preg_match( '/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $temp_id ) ) {
-	if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "[FLOSC v8.0.7] Invalid temp_id: {$temp_id}" );
-			return new WP_REST_Response( array( 'success' => false, 'message' => 'Invalid session ID' ), 400 );
+			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+				flosc_log( "[FLOSC v8.0.7] Invalid temp_id: {$temp_id}" );
+			}
+			return new WP_REST_Response(
+				array(
+				'success' => false,
+				'message' => 'Invalid session ID',
+				),
+				400 
+			);
 		}
-	if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "[FLOSC v8.0.7] Scoring audio for user {$user_id}, temp_id={$temp_id}" );
+		if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+			flosc_log( "[FLOSC v8.0.7] Scoring audio for user {$user_id}, temp_id={$temp_id}" );
+		}
 		$audio_score = $this->score_visitor_audio( $user_id, $temp_id );
 
 		if ( $audio_score ) {
@@ -6982,22 +7197,26 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "[FLOSC v8.0.7] score-pe
 			if ( $user ) {
 				$this->send_score_email( $user, $audio_score );
 			}
-if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "[FLOSC v8.0.7] Scoring complete: {$audio_score['score']}%" );
+			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+				flosc_log( "[FLOSC v8.0.7] Scoring complete: {$audio_score['score']}%" );
+			}
 			return new WP_REST_Response(
-                array(
+				array(
 				'success'    => true,
 				'score_data' => $audio_score,
-                )
-            );
+				)
+			);
 		}
-if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "[FLOSC v8.0.7] score_visitor_audio returned false" );
+		if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+			flosc_log( '[FLOSC v8.0.7] score_visitor_audio returned false' );
+		}
 		return new WP_REST_Response(
-            array(
+			array(
 			'success' => false,
 			'message' => 'Could not score audio. Files may have expired.',
-            ),
-            500
-        );
+			),
+			500
+		);
 	}
 
 	/**
@@ -7011,24 +7230,24 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "[FLOSC v8.0.7] score_vi
 		$quiz_data = $request->get_param( 'quiz_data' );
 		if ( ! is_array( $quiz_data ) || empty( $quiz_data['phraseResults'] ) || ! is_array( $quiz_data['phraseResults'] ) ) {
 			return new WP_REST_Response(
-                array(
+				array(
 				'success' => false,
 				'message' => 'Missing quiz_data.phraseResults',
-                ),
-                400
-            );
+				),
+				400
+			);
 		}
 
 		// Cap payload so public stash cannot fill object cache / options with megabytes.
 		$encoded = wp_json_encode( $quiz_data );
 		if ( ! is_string( $encoded ) || strlen( $encoded ) > 200000 ) {
 			return new WP_REST_Response(
-                array(
+				array(
 				'success' => false,
 				'message' => 'Quiz data too large',
-                ),
-                400
-            );
+				),
+				400
+			);
 		}
 
 		// Keep only fields the login handoff needs; drop unexpected keys.
@@ -7045,11 +7264,11 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "[FLOSC v8.0.7] score_vi
 		set_transient( 'flosc_quiz_stash_' . $token, $safe, HOUR_IN_SECONDS );
 
 		return new WP_REST_Response(
-            array(
+			array(
 			'success' => true,
 			'token'   => $token,
-            )
-        );
+			)
+		);
 	}
 
 	/**
@@ -7090,10 +7309,10 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "[FLOSC v8.0.7] score_vi
 	}
 
 
-/**
-	 * Save guest profile nickname and optional password from the in-chat profile card.
-	 * Called on first (and every subsequent) guest link login.
-	 */
+	/**
+		 * Save guest profile nickname and optional password from the in-chat profile card.
+		 * Called on first (and every subsequent) guest link login.
+		 */
 	public function handle_update_guest_profile( $request ) {
 		// Pass 6: password/cookie only for an already authenticated WordPress user
 		// (REST permission_callback = check_authenticated_user_permission).
@@ -7111,25 +7330,25 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "[FLOSC v8.0.7] score_vi
 
 		if ( ! empty( $display_name ) ) {
 			wp_update_user(
-                array(
+				array(
 				'ID'           => $user_id,
 				'display_name' => $display_name,
 				'nickname'     => $display_name,
 				'first_name'   => $display_name,   // fixes WP Admin Name column + AI context
-                )
-            );
-			// Set BuddyBoss xprofile Name field if available (field 1 = Name by default)
+				)
+			);
+			// Set BuddyBoss xprofile Name field if available (field 1 = Name by default).
 			if ( function_exists( 'xprofile_set_field_data' ) ) {
 				xprofile_set_field_data( 1, $user_id, $display_name );
 			}
 		}
 
-		// Mark credentials as set — clears pendingCredentialSetup flag permanently
+		// Mark credentials as set — clears pendingCredentialSetup flag permanently.
 		update_user_meta( $user_id, '_flosc_magic_link_user_credentials_set', true );
 
 		if ( ! empty( $password ) && is_string( $password ) && strlen( $password ) >= 6 ) {
 			wp_set_password( $password, $user_id );
-			// wp_set_password() clears all sessions — re-issue auth cookies for this user only
+			// wp_set_password() clears all sessions — re-issue auth cookies for this user only.
 			wp_set_auth_cookie( $user_id, true );
 			$flosc_token = $this->generate_flosc_auth_token( $user_id );
 			$this->set_flosc_auth_cookie( $flosc_token );
@@ -7154,7 +7373,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "[FLOSC v8.0.7] score_vi
 				$body         = "Hi {$name_for_email},\n\n"
 						 . "Your {$guest_email_context['app_name']} account is all set.\n\n"
 						 . "  Email: {$user_email}\n\n"
-						 . "For security, your password is not included in this email. "
+						 . 'For security, your password is not included in this email. '
 						 . "Use the password you just set, or reset it from the login screen if needed:\n"
 						 . "{$login_url}\n\n"
 						 . $magic_link_line
@@ -7171,22 +7390,22 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "[FLOSC v8.0.7] score_vi
 		}
 
 		return new WP_REST_Response(
-            array(
+			array(
 			'success'      => true,
 			'display_name' => $display_name ?: get_userdata( $user_id )->display_name,
-            )
-        );
+			)
+		);
 	}
 
 	/**
 	 * Generate unique username from email — consistent with WooCommerce convention on this site.
 	 */
 	private function generate_username_from_email( $email ) {
-		// Use email as username (consistent with WooCommerce convention on this site)
+		// Use email as username (consistent with WooCommerce convention on this site).
 		if ( ! username_exists( $email ) ) {
 			return $email;
 		}
-		// Edge case: email already taken as user_login by a different account
+		// Edge case: email already taken as user_login by a different account.
 		$i = 2;
 		do {
 			$candidate = $email . '_' . $i++;
@@ -7204,15 +7423,15 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "[FLOSC v8.0.7] score_vi
 	 * assigned → flow broke at the "View free lesson" step.
 	 */
 	private function process_prelogin_data_for_user( $user_id ) {
-		// Primary: flosc_prelogin_score (set by /store-score — text-sequence + audio quiz path)
+		// Primary: flosc_prelogin_score (set by /store-score — text-sequence + audio quiz path).
 		$score_data = $this->get_signed_cookie( 'flosc_prelogin_score' );
 
-		// v3.0.7 Fallback: flosc_quiz_result (set by /quiz-result — in-chat MC quiz path)
+		// v3.0.7 Fallback: flosc_quiz_result (set by /quiz-result — in-chat MC quiz path).
 		if ( ! $score_data || ! isset( $score_data['score'] ) ) {
 			$raw = $this->get_signed_cookie( 'flosc_quiz_result' );
 			if ( $raw && isset( $raw['score'] ) ) {
 				// Normalize flosc_quiz_result format → flosc_prelogin_score format
-				// flosc_quiz_result: { quiz_id, score, answers:[{questionId,answer,correct},...], completed_at, duration }
+				// flosc_quiz_result: { quiz_id, score, answers:[{questionId,answer,correct},...], completed_at, duration }.
 				$answers   = is_array( $raw['answers'] ?? null ) ? $raw['answers'] : array();
 				$correct   = array();
 				$incorrect = array();
@@ -7232,10 +7451,20 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "[FLOSC v8.0.7] score_vi
 					'timestamp' => isset( $raw['completed_at'] ) ? intval( $raw['completed_at'] / 1000 ) : time(),
 				);
 				if ( FLOSC_DEBUG ) {
-if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC v3.0.7: Using flosc_quiz_result fallback cookie for user {$user_id}" );
+					if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+						flosc_log( "FLOSC v3.0.7: Using flosc_quiz_result fallback cookie for user {$user_id}" );
+					}
 				}
-				// Clear the fallback cookie
-				setcookie( 'flosc_quiz_result', '', array( 'expires' => time() - 3600, 'path' => '/', 'samesite' => 'Lax' ) );
+				// Clear the fallback cookie.
+				setcookie(
+					'flosc_quiz_result',
+					'',
+					array(
+					'expires'  => time() - 3600,
+					'path'     => '/',
+					'samesite' => 'Lax',
+					) 
+				);
 			}
 		}
 
@@ -7243,13 +7472,13 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC v3.0.7: Using flo
 			$score   = intval( $score_data['score'] );
 			$quiz_id = sanitize_key( (string) ( $score_data['quiz_id'] ?? '' ) );
 
-			// v3.0.2: Store full quiz meta (mirrors store_quiz_result)
+			// v3.0.2: Store full quiz meta (mirrors store_quiz_result).
 			update_user_meta( $user_id, '_flosc_last_quiz_id', $quiz_id );
 			update_user_meta( $user_id, '_flosc_last_quiz_score', $score );
 			update_user_meta( $user_id, '_flosc_prelogin_score', $score );
 			update_user_meta( $user_id, '_flosc_quiz_completed_at', ( $score_data['timestamp'] ?? time() ) * 1000 );
 
-			// Add to completed quizzes array
+			// Add to completed quizzes array.
 			$completed = get_user_meta( $user_id, '_flosc_completed_quizzes', true ) ?: array();
 			if ( ! in_array( $quiz_id, $completed ) ) {
 				$completed[] = $quiz_id;
@@ -7257,36 +7486,38 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC v3.0.7: Using flo
 			}
 
 			// v1.8.2: Fire flosc_quiz_completed so Free Lesson Manager assigns lessons
-			// v3.0.2: $score_data now includes quiz_id for category resolution
+			// v3.0.2: $score_data now includes quiz_id for category resolution.
 			do_action( 'flosc_quiz_completed', $score_data, $user_id );
 
 			// v8.0.5: Set transient so buildIVRContext() can set first_message_after_quiz
 			// even when the handle_user_login() cookie path didn't fire.
 			set_transient( 'flosc_just_completed_quiz_' . $user_id, true, MINUTE_IN_SECONDS * 5 );
 
-			// Store in bridge data if available
+			// Store in bridge data if available.
 			$bridge_manager = FLOSC_Bridge_Data_Manager::instance();
 			if ( $bridge_manager ) {
-				// Merge with any existing bridge data
+				// Merge with any existing bridge data.
 				$existing = $bridge_manager->get_flosc_bridge_data( $user_id );
 				if ( ! $existing ) {
 					$bridge_manager->update_flosc_bridge_data( $user_id, array( 'score' => $score ) );
 				}
 			}
 
-			// Clear the cookie after transfer
+			// Clear the cookie after transfer.
 			setcookie(
-                'flosc_prelogin_score',
-                '',
-                array(
+				'flosc_prelogin_score',
+				'',
+				array(
 				'expires'  => time() - 3600,
 				'path'     => '/',
-				'samesite' => 'Lax'
-                )
-            );
+				'samesite' => 'Lax',
+				)
+			);
 
 			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
-if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred pre-login score {$score}% (quiz: {$quiz_id}) for user {$user_id}" );
+				if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+					flosc_log( "FLOSC Auth: Transferred pre-login score {$score}% (quiz: {$quiz_id}) for user {$user_id}" );
+				}
 			}
 		}
 	}
@@ -7309,32 +7540,32 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 		$stem = $this->flosc_normalize_flow_stem( $flow_raw );
 		if ( ! $this->flosc_flow_serves_lessons( $stem ) ) {
 			return new WP_REST_Response(
-                array(
+				array(
 				'success' => false,
 				'code'    => 'lessons_not_on_flow',
 				'message' => 'Lessons are not available in this chat.',
-                ),
-                404
-            );
+				),
+				404
+			);
 		}
 
 		$free_lesson_mgr = FLOSC_Free_Content_Item_Manager::instance();
 
 		// v1.4.9 FIX: Call deliver_free_lesson() instead of get_free_lesson()
-		// so _flosc_free_content_item_delivered is set and phase transitions to OFFER on reload
+		// so _flosc_free_content_item_delivered is set and phase transitions to OFFER on reload.
 		$result = $free_lesson_mgr->deliver_free_lesson( $user_id, 'chat' );
 
 		if ( ! $result['success'] ) {
 			return new WP_REST_Response(
-                array(
+				array(
 				'success' => false,
 				'message' => $result['message'] ?? 'No free lesson available. Please take the quiz first.',
-                ),
-                404
-            );
+				),
+				404
+			);
 		}
 
-		// v1.5.4: Return multiple lessons
+		// v1.5.4: Return multiple lessons.
 		$lessons_data = array();
 		if ( ! empty( $result['lessons'] ) ) {
 			foreach ( $result['lessons'] as $lesson ) {
@@ -7346,15 +7577,15 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 				);
 			}
 		} else {
-			// Backward compat: single lesson
+			// Backward compat: single lesson.
 			if ( empty( $result['title'] ) ) {
 				return new WP_REST_Response(
-                    array(
+					array(
 					'success' => false,
 					'message' => 'No free lesson available. Please take the quiz first.',
-                    ),
-                    404
-                );
+					),
+					404
+				);
 			}
 			$lessons_data[] = array(
 				'title'         => $result['title'],
@@ -7365,14 +7596,14 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 		}
 
 		return new WP_REST_Response(
-            array(
+			array(
 			'success' => true,
 			'count'   => count( $lessons_data ),
 			'lessons' => $lessons_data,
-			// Backward compat
+			// Backward compat.
 			'lesson'  => $lessons_data[0],
-            )
-        );
+			)
+		);
 	}
 
 
@@ -7396,12 +7627,14 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 		$mode                         = $cfg['mode'] ?? 'sandbox';
 		$client_id                    = $cfg['clientId'] ?? '';
 		$secret                       = flosc()->get_setting( 'paypal_secret', '' );
-		if (empty( $secret )) $secret = get_option( 'flosc_paypal_secret', '' );
+		if ( empty( $secret ) ) {
+			$secret = get_option( 'flosc_paypal_secret', '' );
+		}
 		$api_base                     = $mode === 'live' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com';
 
 		$response = wp_remote_post(
-            $api_base . '/v1/oauth2/token',
-            array(
+			$api_base . '/v1/oauth2/token',
+			array(
 			'headers' => array(
                 // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- binary/JWT token encoding, not obfuscation
 				'Authorization' => 'Basic ' . base64_encode( $client_id . ':' . $secret ),
@@ -7409,8 +7642,8 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 			),
 			'body'    => 'grant_type=client_credentials',
 			'timeout' => 15,
-            )
-        );
+			)
+		);
 
 		if ( is_wp_error( $response ) ) {
 			wp_send_json_error( 'Connection failed: ' . $response->get_error_message() );
@@ -7430,12 +7663,12 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 			$wh = $pp->ensure_webhook_registered( true );
 			if ( is_wp_error( $wh ) ) {
 				wp_send_json_success(
-                    array(
+					array(
 					'mode'     => ucfirst( $mode ),
 					'app_name' => $body['app_id'] ?? 'PayPal',
 					'webhook'  => 'error: ' . $wh->get_error_message(),
-                    )
-                );
+					)
+				);
 			}
 			$webhook_info = array(
 				'id'      => $wh['webhook_id'] ?? '',
@@ -7445,7 +7678,11 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 		}
 
 		// P0-A security matrix (same path as production REST dispatcher).
-		$p0a = array( 'unsigned' => null, 'forged' => null, 'headers_wired' => false );
+		$p0a = array(
+		'unsigned'      => null,
+		'forged'        => null,
+		'headers_wired' => false,
+		);
 		if ( method_exists( $pp, 'handle_webhook' ) && class_exists( 'WP_REST_Request' ) ) {
 			$unsigned        = $pp->handle_webhook( '{"id":"WH-ADMIN-UNSIGNED"}', array() );
 			$p0a['unsigned'] = is_wp_error( $unsigned )
@@ -7486,13 +7723,13 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 		}
 
 		wp_send_json_success(
-            array(
+			array(
 			'mode'     => ucfirst( $mode ),
 			'app_name' => $body['app_id'] ?? 'PayPal',
 			'webhook'  => $webhook_info,
 			'p0a'      => $p0a,
-            )
-        );
+			)
+		);
 	}
 
 	/**
@@ -7536,7 +7773,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 				return $plans;
 			}
 			return new WP_REST_Response(
-                array(
+				array(
 				'monthly_plan_id' => $plans['monthly_plan_id'],
 				'yearly_plan_id'  => $plans['yearly_plan_id'],
 				'monthly_price'   => $sub['monthly'],
@@ -7544,8 +7781,8 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 				'list_monthly'    => $sub['list_monthly'],
 				'list_yearly'     => $sub['list_yearly'],
 				'coupon_code'     => $sub['coupon_code'],
-                )
-            );
+				)
+			);
 		}
 
 		$plans = $paypal->ensure_plans_exist();
@@ -7554,11 +7791,11 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 		}
 
 		return new WP_REST_Response(
-            array(
+			array(
 			'monthly_plan_id' => $plans['monthly_plan_id'],
 			'yearly_plan_id'  => $plans['yearly_plan_id'],
-            )
-        );
+			)
+		);
 	}
 
 	/**
@@ -7708,14 +7945,14 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 		}
 		if ( ( $intent['status'] ?? '' ) === 'fulfilled' ) {
 			return new WP_REST_Response(
-                array(
+				array(
 				'success'           => true,
 				'already_fulfilled' => true,
 				'subscription_id'   => $subscription_id,
 				'offer_id'          => sanitize_text_field( (string) ( $intent['offer_id'] ?? '' ) ),
-                ),
-                200
-            );
+				),
+				200
+			);
 		}
 		if ( ( $intent['status'] ?? '' ) !== 'pending' ) {
 			return new WP_Error( 'intent_not_pending', __( 'Purchase intent is not pending', 'flosc' ), array( 'status' => 409 ) );
@@ -7866,13 +8103,13 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 				if ( $subscriber_name !== '' ) {
 					$name_parts = explode( ' ', $subscriber_name, 2 );
 					wp_update_user(
-                        array(
+						array(
 						'ID'           => $user_id,
 						'first_name'   => sanitize_text_field( (string) ( $name_parts[0] ?? '' ) ),
 						'last_name'    => sanitize_text_field( (string) ( $name_parts[1] ?? '' ) ),
 						'display_name' => sanitize_text_field( $subscriber_name ),
-                        )
-                    );
+						)
+					);
 				}
 				update_user_meta( $user_id, '_flosc_registration_method', 'paypal_purchase' );
 				update_user_meta( $user_id, '_flosc_registered_at', current_time( 'mysql' ) );
@@ -7928,7 +8165,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 			flosc_paypal_purchase_intent_mark_fulfilled( $purchase_uuid, $subscription_id, $user_id );
 		}
 
-		// Store subscription metadata (incl. sold offer for renewals / token grants)
+		// Store subscription metadata (incl. sold offer for renewals / token grants).
 		update_user_meta( $user_id, '_flosc_subscription_id', $subscription_id );
 		update_user_meta( $user_id, '_flosc_subscription_plan', $plan_type );
 		update_user_meta( $user_id, '_flosc_subscription_status', 'active' );
@@ -8004,9 +8241,9 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 		// flosc_purchase_completed already fired inside fulfill_settled_purchase.
 		if ( empty( $fulfill['already_fulfilled'] ) ) {
 			do_action(
-                'flosc_paypal_subscription_activated',
-                $user_id,
-                array(
+				'flosc_paypal_subscription_activated',
+				$user_id,
+				array(
 				'offer_id'       => $resolved_offer_id,
 				'provider'       => 'paypal',
 				'transaction_id' => $subscription_id,
@@ -8015,8 +8252,8 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 				'subscription'   => true,
 				'plan_type'      => $plan_type,
 				'timestamp'      => time(),
-                )
-            );
+				)
+			);
 		}
 
 		if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
@@ -8036,7 +8273,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 		}
 
 		return new WP_REST_Response(
-            array(
+			array(
 			'success'           => true,
 			'message'           => sprintf( /* translators: %s: product / flow name */ __( 'Welcome to %s!', 'flosc' ), $product_name ),
 			'product_name'      => $product_name,
@@ -8053,8 +8290,8 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 			'auth_token'        => $auth_token ?: null,
 			'login_handoff'     => $login_handoff,
 			'token_topup'       => $token_topup,
-            )
-        );
+			)
+		);
 	}
 
 	/**
@@ -8082,14 +8319,18 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 		$offer = $this->sale_manager->offers()->get_offer( $offer_id, $flow_id ?: null );
 
 		if ( ! $offer ) {
-			if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( '[FLOSC-PAYPAL] create_order FAIL: offer "' . $offer_id . '" not found' );
+			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+				flosc_log( '[FLOSC-PAYPAL] create_order FAIL: offer "' . $offer_id . '" not found' );
+			}
 			return new WP_Error( 'invalid_offer', 'Offer not found: ' . $offer_id, array( 'status' => 404 ) );
 		}
 
 		$paypal = $this->sale_manager->get_provider( 'paypal' );
 		if ( ! $paypal || ! $paypal->is_configured() ) {
 			$has_id = ! empty( $paypal ) ? ( $paypal->has_client_id() ? 'yes' : 'no' ) : 'no_provider';
-			if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( '[FLOSC-PAYPAL] create_order FAIL: not configured (client_id: ' . $has_id . ')' );
+			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+				flosc_log( '[FLOSC-PAYPAL] create_order FAIL: not configured (client_id: ' . $has_id . ')' );
+			}
 			return new WP_Error( 'paypal_not_configured', 'PayPal is not configured (client_id: ' . $has_id . ', flow: ' . ( $flow_id ?: 'none' ) . ')', array( 'status' => 500 ) );
 		}
 
@@ -8100,7 +8341,9 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 		}
 		$amount = floatval( $payable['amount'] );
 		if ( $amount <= 0 ) {
-			if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( '[FLOSC-PAYPAL] create_order FAIL: no price for offer "' . $offer_id . '"' );
+			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+				flosc_log( '[FLOSC-PAYPAL] create_order FAIL: no price for offer "' . $offer_id . '"' );
+			}
 			return new WP_Error( 'no_price', 'No price configured for offer "' . $offer_id . '". Set the price in FLOSC Offers tab.', array( 'status' => 400 ) );
 		}
 
@@ -8117,7 +8360,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 		$purchase_uuid = '';
 		if ( function_exists( 'flosc_paypal_purchase_intent_create' ) ) {
 			$intent = flosc_paypal_purchase_intent_create(
-                array(
+				array(
 				'offer_id'   => sanitize_text_field( (string) ( $offer['id'] ?? $offer_id ) ),
 				'plan_id'    => 'order', // one-time Orders API (not a billing plan)
 				'plan_type'  => 'onetime',
@@ -8127,8 +8370,8 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 				'user_id'    => (int) ( $user->ID ?? 0 ),
 				'session_id' => $session_id,
 				'mode'       => method_exists( $paypal, 'get_setting' ) ? sanitize_key( (string) $paypal->get_setting( 'mode', 'live' ) ) : 'live',
-                )
-            );
+				)
+			);
 			if ( is_wp_error( $intent ) ) {
 				return $intent;
 			}
@@ -8224,7 +8467,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 			return $capture_result;
 		}
 
-		// Forward PayPal error details (e.g. INSTRUMENT_DECLINED) to frontend
+		// Forward PayPal error details (e.g. INSTRUMENT_DECLINED) to frontend.
 		if ( isset( $capture_result['success'] ) && $capture_result['success'] === false ) {
 			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
 				flosc_log( '[FLOSC-PAYPAL] capture_order: PayPal error forwarded — ' . ( $capture_result['issue'] ?? $capture_result['message'] ?? 'unknown' ) );
@@ -8243,14 +8486,14 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 			}
 			if ( is_array( $intent ) && ( $intent['status'] ?? '' ) === 'fulfilled' ) {
 				return new WP_REST_Response(
-                    array(
+					array(
 					'success'           => true,
 					'already_fulfilled' => true,
 					'order_id'          => $order_id,
 					'offer_id'          => $bound_offer_id,
-                    ),
-                    200
-                );
+					),
+					200
+				);
 			}
 		}
 		if ( $bound_offer_id === '' ) {
@@ -8309,7 +8552,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 			);
 		}
 
-		// Only check user mismatch for logged-in users (user_id > 0)
+		// Only check user mismatch for logged-in users (user_id > 0).
 		$captured_user_id = $capture_result['user_id'] ?? null;
 		if ( $user_id > 0 && $captured_user_id && intval( $captured_user_id ) > 0 && intval( $captured_user_id ) !== $user_id ) {
 			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
@@ -8344,13 +8587,13 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 				if ( $payer_name !== '' ) {
 					$name_parts = explode( ' ', $payer_name, 2 );
 					wp_update_user(
-                        array(
+						array(
 						'ID'           => $user_id,
 						'first_name'   => sanitize_text_field( (string) ( $name_parts[0] ?? '' ) ),
 						'last_name'    => sanitize_text_field( (string) ( $name_parts[1] ?? '' ) ),
 						'display_name' => $payer_name,
-                        )
-                    );
+						)
+					);
 				}
 				update_user_meta( $user_id, '_flosc_registration_method', 'paypal_purchase' );
 				update_user_meta( $user_id, '_flosc_registered_at', current_time( 'mysql' ) );
@@ -8445,9 +8688,9 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 			// Flow id may not have been on the fulfill payload; emit a flow-enriched companion only when needed.
 			// Primary purchase_completed is from fulfill_settled_purchase — do not double-grant listeners.
 			do_action(
-                'flosc_paypal_capture_completed',
-                $user_id,
-                array(
+				'flosc_paypal_capture_completed',
+				$user_id,
+				array(
 				'offer_id'       => $offer_id,
 				'grants_level'   => $member_level,
 				'provider'       => 'paypal',
@@ -8455,8 +8698,8 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 				'amount'         => $capture_result['amount'],
 				'flow_id'        => $capture_flow_id,
 				'timestamp'      => time(),
-                )
-            );
+				)
+			);
 		}
 
 		if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
@@ -8466,7 +8709,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 		$user_data = get_userdata( $user_id );
 
 		return new WP_REST_Response(
-            array(
+			array(
 			'success'           => true,
 			'message'           => 'Access granted',
 			'access'            => $access_manager->get_user_access( $user_id ),
@@ -8479,8 +8722,8 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 			'auth_token'        => $auth_token ?: null,
 			'login_handoff'     => $login_handoff,
 			'token_topup'       => $token_topup,
-            )
-        );
+			)
+		);
 	}
 
 
@@ -8523,13 +8766,13 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 
 		if ( ! is_user_logged_in() ) {
 			return new WP_REST_Response(
-                array(
+				array(
 				'success' => false,
 				'state'   => 'visitor',
 				'user'    => null,
-                ),
-                200
-            );
+				),
+				200
+			);
 		}
 
 		$user_id  = get_current_user_id();
@@ -8552,26 +8795,26 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 		}
 
 		$payload = $this->build_app_user_payload(
-            $user_id,
-            $flow_stem,
-            array(
+			$user_id,
+			$flow_stem,
+			array(
 			'allow_guest_grant_without_session' => true,
-            )
-        );
+			)
+		);
 
 		// Stick auth on this host so the next full page load is not visitor.
 		$auth_token = $this->generate_flosc_auth_token( $user_id );
 		$this->set_flosc_auth_cookie( $auth_token );
 
 		return new WP_REST_Response(
-            array(
+			array(
 			'success'   => true,
 			'state'     => $payload['state'] ?? 'guest',
 			'flow_id'   => $flow_stem,
 			'user'      => $payload,
 			'authToken' => $auth_token,
-            )
-        );
+			)
+		);
 	}
 
 	/**
@@ -8589,12 +8832,12 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 	public function build_app_user_payload( $user_id, $flow_stem = '', $args = array() ) {
 		$user_id = absint( $user_id );
 		$args    = wp_parse_args(
-            $args,
-            array(
+			$args,
+			array(
 			'allow_guest_grant_without_session' => false,
 			'consume_event_transients'          => false,
-            )
-        );
+			)
+		);
 		$user    = get_userdata( $user_id );
 		if ( ! $user ) {
 			return array();
@@ -8761,11 +9004,11 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 		$user_id        = get_current_user_id();
 
 		return new WP_REST_Response(
-            array(
+			array(
 			'balance' => $token_provider->get_balance( $user_id ),
 			'ledger'  => $token_provider->get_ledger( $user_id, 10 ),
-            )
-        );
+			)
+		);
 	}
 
 	public function declare_intent( $request ) {
@@ -8776,15 +9019,15 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 		}
 
 		$intent = $affiliate->declare_intent(
-            get_current_user_id(),
-            array(
+			get_current_user_id(),
+			array(
 			'description'    => sanitize_text_field( $request->get_param( 'description' ) ),
 			'category'       => sanitize_text_field( $request->get_param( 'category' ) ?? 'general' ),
 			'expected_price' => floatval( $request->get_param( 'expected_price' ) ?? 0 ),
 			'timeframe'      => sanitize_text_field( $request->get_param( 'timeframe' ) ?? 'exploring' ),
 			'notes'          => sanitize_textarea_field( $request->get_param( 'notes' ) ?? '' ),
-            )
-        );
+			)
+		);
 
 		return new WP_REST_Response( array( 'intent' => $intent ) );
 	}
@@ -8810,11 +9053,11 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 		$app_url = home_url( '/' . get_option( 'flosc_app_slug', 'flosc' ) . '/' );
 
 		return new WP_REST_Response(
-            array(
+			array(
 			'link' => add_query_arg( 'ref', $code, $app_url ),
 			'code' => $code,
-            )
-        );
+			)
+		);
 	}
 
 	/**
@@ -8825,21 +9068,21 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 	public function get_debug_funnel_state( $request ) {
 		$user_id = get_current_user_id();
 
-		// Get bridge data (class loaded at plugin init)
+		// Get bridge data (class loaded at plugin init).
 		$bridge_mgr = FLOSC_Bridge_Data_Manager::instance();
 
-		// Get member access (class loaded at plugin init)
+		// Get member access (class loaded at plugin init).
 		$member_access = FLOSC_Member_Access::instance();
 
-		// Get token balance
+		// Get token balance.
 		$token_provider = $this->sale_manager->get_provider( 'tokens' );
 		$token_balance  = $token_provider ? $token_provider->get_balance( $user_id ) : 0;
 
-		// Get free lesson info
+		// Get free lesson info.
 		$free_lesson_num = get_user_meta( $user_id, '_flosc_free_content_item_number', true );
 
 		return new WP_REST_Response(
-            array(
+			array(
 			'success'      => true,
 			'debug'        => true,
 			'version'      => FLOSC_VERSION,
@@ -8870,8 +9113,8 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 				'just_completed_quiz' => (bool) get_transient( 'flosc_just_completed_quiz_' . $user_id ),
 				'just_logged_in'      => (bool) get_transient( 'flosc_just_logged_in_' . $user_id ),
 			),
-            )
-        );
+			)
+		);
 	}
 
 	/**
@@ -8887,23 +9130,23 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 			return $phase;
 		}
 
-		// v1.3.8: Get flow context from request (same pattern as handle_chat)
+		// v1.3.8: Get flow context from request (same pattern as handle_chat).
 		$flow_id    = $this->flosc_request_flow_stem( $request );
 		$ivr_file   = sanitize_file_name( $request->get_param( 'ivr_file' ) ?? '' );
 		$ivr_source = 'unknown'; // Track source for debugging
 
-		// Get user context
+		// Get user context.
 		$user_context = $this->user_access_manager->get_user_context( null, $flow_id );
 
 		// v9.2.7: Add session-based defaults (frontend handles actual session logic)
 		// Backend is permissive - returns messages that COULD show
-		// Frontend decides based on actual session state
+		// Frontend decides based on actual session state.
 		$user_context['first_show_session']           = true; // Let welcome messages through
 		$user_context['first_message_after_quiz']     = $request->get_param( 'after_quiz' ) === 'true';
 		$user_context['first_message_after_login']    = $request->get_param( 'after_login' ) === 'true';
 		$user_context['first_message_after_purchase'] = $request->get_param( 'after_purchase' ) === 'true';
 
-		// v1.3.8: Resolve flow runtime config (DB first, file fallback only when flow bag is empty)
+		// v1.3.8: Resolve flow runtime config (DB first, file fallback only when flow bag is empty).
 		$config     = flosc_resolve_flow_runtime( $flow_id, $ivr_file );
 		$ivr_source = $config['source'] ?? 'empty';
 
@@ -8913,7 +9156,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 		// Phase access matrix (P0-E):
 		// - Public content → 403
 		// - Public sale → sale only (never merge content IVR)
-		// - Member/admin → may merge sale+content
+		// - Member/admin → may merge sale+content.
 		$is_member = ! empty( $user_context['is_member'] )
 			|| ( isset( $user_context['access_level'] ) && in_array( (string) $user_context['access_level'], array( 'member', 'full' ), true ) );
 		if ( ! $is_member && is_user_logged_in() && $this->member_access ) {
@@ -8946,7 +9189,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 			$phases_to_check[] = 'freeline';
 		}
 
-		// Collect message IDs from all relevant phases
+		// Collect message IDs from all relevant phases.
 		$phase_message_ids = array();
 		foreach ( $phases_to_check as $p ) {
 			$ids               = $phases[ $p ] ?? array();
@@ -8954,7 +9197,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 		}
 		$phase_message_ids = array_unique( $phase_message_ids );
 
-		// Initialize condition evaluator (v1.0.7: class already loaded at plugin init)
+		// Initialize condition evaluator (v1.0.7: class already loaded at plugin init).
 		$evaluator = new FLOSC_Condition_Evaluator( $user_context );
 
 		// v1.6.8: Send ALL phase-matched messages to the frontend.
@@ -8963,24 +9206,28 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 		// Server-side filtering was blocking offers because PHP lacked session context.
 		$filtered_messages = array();
 		foreach ( $phase_message_ids as $msg_id ) {
-			if ( ! isset( $all_messages[ $msg_id ] )) continue;
+			if ( ! isset( $all_messages[ $msg_id ] ) ) {
+				continue;
+			}
 			// Concierge messages are handled entirely server-side by FLOSC_Concierge
 			// (keyword-gated, AI-hosted, revealed in fragments). They must NEVER reach
 			// the browser: doing so leaks the private brief into client JS AND lets the
 			// frontend keyword-matcher send the raw content back as ivr_guidance, which
 			// bypasses the concierge flow and dumps the whole letter at the visitor.
-			if (( $all_messages[ $msg_id ]['type'] ?? '' ) === 'concierge') continue;
+			if ( ( $all_messages[ $msg_id ]['type'] ?? '' ) === 'concierge' ) {
+				continue;
+			}
 			$filtered_messages[] = $all_messages[ $msg_id ];
 		}
 
 		// v1.1.0: Substitute server-side variables in message content
-		// This is needed for {user_status_response} which requires PHP context
+		// This is needed for {user_status_response} which requires PHP context.
 		$eval_context = array_merge(
-            $user_context,
-            array(
+			$user_context,
+			array(
 			'user_name' => is_user_logged_in() ? wp_get_current_user()->display_name : 'there',
-            )
-        );
+			)
+		);
 		foreach ( $filtered_messages as &$msg ) {
 			if ( ! empty( $msg['content'] ) ) {
 				$msg['content'] = $this->substitute_ivr_variables( $msg['content'], $eval_context );
@@ -8989,7 +9236,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 		unset( $msg ); // Break reference
 
 		return new WP_REST_Response(
-            array(
+			array(
 			'success'        => true,
 			'phase'          => $phase,
 			'phases_checked' => $phases_to_check,
@@ -8998,14 +9245,14 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 				'access_level' => $user_context['access_level'],
 				'is_logged_in' => is_user_logged_in(),
 			),
-			// v1.3.8: Debug info for flow context
+			// v1.3.8: Debug info for flow context.
 			'flow_context'   => array(
 				'flow_id'    => $flow_id ?: null,
 				'ivr_file'   => $ivr_file ?: null,
 				'ivr_source' => $ivr_source,
 			),
-            )
-        );
+			)
+		);
 	}
 
 	/**
@@ -9015,10 +9262,16 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 	public function get_bridge_data( $request ) {
 		$user_id = get_current_user_id();
 		if ( ! $user_id ) {
-			return new WP_REST_Response( array( 'success' => false, 'error' => 'Not logged in' ), 401 );
+			return new WP_REST_Response(
+				array(
+				'success' => false,
+				'error'   => 'Not logged in',
+				),
+				401 
+			);
 		}
 
-		// Class loaded at plugin init
+		// Class loaded at plugin init.
 		$bridge_mgr = FLOSC_Bridge_Data_Manager::instance();
 
 		$bridge_data      = $bridge_mgr->get_flosc_bridge_data( $user_id );
@@ -9027,7 +9280,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 		$has_profile      = $bridge_mgr->flosc_has_profile( $user_id );
 
 		return new WP_REST_Response(
-            array(
+			array(
 			'success'          => true,
 			'in_bridge_state'  => $in_bridge,
 			'has_profile'      => $has_profile,
@@ -9037,8 +9290,8 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 				'user_id' => $user_id,
 				'phase'   => $this->determine_flosc_phase(),
 			) : null,
-            )
-        );
+			)
+		);
 	}
 
 	/**
@@ -9194,17 +9447,17 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 		);
 
 		// v9.4.2: Store in SIGNED cookie to prevent forgery
-		// JS will also store in localStorage as backup (but server only trusts signed cookie)
+		// JS will also store in localStorage as backup (but server only trusts signed cookie).
 		$this->set_signed_cookie( 'flosc_prelogin_score', $score_data, HOUR_IN_SECONDS );
 
 		// v3.0.2: For LOGGED-IN users, also fire flosc_quiz_completed so bridge data
-		// and free lesson assignment happen immediately (not just for pre-login visitors)
+		// and free lesson assignment happen immediately (not just for pre-login visitors).
 		if ( is_user_logged_in() ) {
 			$user_id = get_current_user_id();
 			$quiz_id = $score_data['quiz_id'];
 			$score   = $score_data['score'];
 
-			// Store quiz meta (mirrors store_quiz_result)
+			// Store quiz meta (mirrors store_quiz_result).
 			update_user_meta( $user_id, '_flosc_last_quiz_id', $quiz_id );
 			update_user_meta( $user_id, '_flosc_last_quiz_score', $score );
 			update_user_meta( $user_id, '_flosc_quiz_completed_at', time() * 1000 );
@@ -9218,15 +9471,17 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 			do_action( 'flosc_quiz_completed', $score_data, $user_id );
 			set_transient( 'flosc_just_completed_quiz_' . $user_id, true, MINUTE_IN_SECONDS * 5 );
 
-			if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC v3.0.2: /store-score fired flosc_quiz_completed for logged-in user {$user_id}, score {$score}%, quiz {$quiz_id}" );
+			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+				flosc_log( "FLOSC v3.0.2: /store-score fired flosc_quiz_completed for logged-in user {$user_id}, score {$score}%, quiz {$quiz_id}" );
+			}
 		}
 
 		return new WP_REST_Response(
-            array(
+			array(
 			'stored'    => true,
 			'logged_in' => is_user_logged_in(),
-            )
-        );
+			)
+		);
 	}
 
 	/**
@@ -9277,10 +9532,10 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 					 . gmdate( 'H' ) . 'h-' . gmdate( 'i' ) . 'm-' . gmdate( 's' ) . 's-'
 					 . substr( bin2hex( random_bytes( 3 ) ), 0, 5 );
 		}
-		// Always set/refresh the cookie for the registration handler
+		// Always set/refresh the cookie for the registration handler.
 		$this->set_signed_cookie( 'flosc_visitor_temp_id', $temp_id, 36 * HOUR_IN_SECONDS );
 
-		// Validate tempID format: YYYY-MMm-DDd-HHh-MMm-SSs-XXXXX
+		// Validate tempID format: YYYY-MMm-DDd-HHh-MMm-SSs-XXXXX.
 		if ( ! preg_match( '/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $temp_id ) ) {
 			return new WP_Error( 'bad_temp_id', __( 'Invalid session', 'flosc' ), array( 'status' => 400 ) );
 		}
@@ -9296,7 +9551,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 			}
 		}
 
-		// Whitelist extensions
+		// Whitelist extensions.
 		$ext      = in_array( $format, array( 'webm', 'mp4', 'ogg' ), true ) ? $format : 'webm';
 		$filename = 'phrase-' . $phrase_num . '.' . $ext;
 		$filepath = $temp_dir . '/' . $filename;
@@ -9311,7 +9566,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 			return new WP_Error( 'write_failed', __( 'Could not save audio', 'flosc' ), array( 'status' => 500 ) );
 		}
 
-		// Update metadata.json (append phrase data)
+		// Update metadata.json (append phrase data).
 		$meta_path             = $temp_dir . '/metadata.json';
 		$default_audio_quiz_id = flosc_get_setting( 'default_audio_quiz_id', '' );
 		$meta                  = file_exists( $meta_path ) ? json_decode( flosc_fs_get_contents( $meta_path ), true ) : array(
@@ -9321,15 +9576,15 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 			'phrases'    => array(),
 		);
 
-		// Replace existing phrase entry if re-recorded, otherwise append
+		// Replace existing phrase entry if re-recorded, otherwise append.
 		$meta['phrases']   = array_values(
-            array_filter(
-                $meta['phrases'],
-                function( $p ) use ( $phrase_num ) {
-                    return ( $p['num'] ?? 0 ) !== $phrase_num;
-                }
-            )
-        );
+			array_filter(
+				$meta['phrases'],
+				function ( $p ) use ( $phrase_num ) {
+					return ( $p['num'] ?? 0 ) !== $phrase_num;
+				}
+			)
+		);
 		$meta['phrases'][] = array(
 			'num'        => $phrase_num,
 			'text'       => $phrase_text,
@@ -9338,23 +9593,29 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 			'target_ipa' => json_decode( $target_ipa_json, true ) ?: array(),
 		);
 
-		// Sort by phrase number
-		usort( $meta['phrases'], function( $a, $b ) { return $a['num'] - $b['num']; } );
+		// Sort by phrase number.
+		usort(
+			$meta['phrases'],
+			function ( $a, $b ) {
+				return $a['num'] - $b['num']; } 
+		);
 		if ( ! $this->write_json_atomic( $meta_path, $meta ) ) {
 			return new WP_Error( 'write_failed', __( 'Could not update session metadata', 'flosc' ), array( 'status' => 500 ) );
 		}
 
 		if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
-	if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC v8.0.0: Stored visitor audio phrase-{$phrase_num} in {$temp_id}/ (" . filesize( $filepath ) . " bytes)" );
+			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+				flosc_log( "FLOSC v8.0.0: Stored visitor audio phrase-{$phrase_num} in {$temp_id}/ (" . filesize( $filepath ) . ' bytes)' );
+			}
 		}
 
 		return new WP_REST_Response(
-            array(
+			array(
 			'stored'  => true,
 			'phrase'  => $phrase_num,
 			'temp_id' => $temp_id,
-            )
-        );
+			)
+		);
 	}
 
 	/**
@@ -9368,9 +9629,11 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 	 * timed out on ChemiCloud shared hosting (5 phrases × 30s = 150s > 60s web server timeout).
 	 */
 	private function store_browser_quiz_data( $user_id, $quiz_data, $temp_id = '' ) {
-		// Validate and normalize quiz data from browser
+		// Validate and normalize quiz data from browser.
 		$score = intval( $quiz_data['score'] ?? 0 );
-		if ($score < 0 || $score > 100) return false;
+		if ( $score < 0 || $score > 100 ) {
+			return false;
+		}
 		$default_audio_quiz_id = flosc_get_setting( 'default_audio_quiz_id', '' );
 
 		$score_data = array(
@@ -9389,33 +9652,33 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 		// phraseResults: array of {phrase, data} — STT payloads from the browser (schema-sanitize, depth-capped).
 		if ( ! empty( $quiz_data['phraseResults'] ) && is_array( $quiz_data['phraseResults'] ) ) {
 			$score_data['phrase_results'] = array_map(
-                function ( $pr ) {
-				if ( ! is_array( $pr ) ) {
-					return array(
+				function ( $pr ) {
+					if ( ! is_array( $pr ) ) {
+						return array(
 						'phrase' => '',
 						'data'   => array(),
-					);
-				}
-				return array(
+						);
+					}
+					return array(
 					'phrase' => sanitize_text_field( (string) ( $pr['phrase'] ?? '' ) ),
 					'data'   => $this->flosc_sanitize_quiz_nested_value( $pr['data'] ?? array(), 0, 6 ),
-				);
-                },
-                array_slice( array_values( $quiz_data['phraseResults'] ), 0, 20 )
-            );
+					);
+				},
+				array_slice( array_values( $quiz_data['phraseResults'] ), 0, 20 )
+			);
 		}
 
-		// rankedPhonemes: array of IPA strings (worst → best)
+		// rankedPhonemes: array of IPA strings (worst → best).
 		if ( ! empty( $quiz_data['rankedPhonemes'] ) && is_array( $quiz_data['rankedPhonemes'] ) ) {
 			$score_data['ranked_phonemes'] = array_map( 'sanitize_text_field', array_slice( $quiz_data['rankedPhonemes'], 0, 30 ) );
 		}
 
-		// Rebuild incorrect lesson numbers and ranked_worst_lessons from ranked phonemes + phoneme map
+		// Rebuild incorrect lesson numbers and ranked_worst_lessons from ranked phonemes + phoneme map.
 		$phoneme_map = json_decode( flosc_get_setting( 'audio_quiz_phoneme_lesson_map', '{}' ), true ) ?: array();
 		if ( $phoneme_map && $score_data['ranked_phonemes'] ) {
 			$incorrect    = array();
 			$ranked_worst = array();
-			// Try to get scores from ranked_worst_lessons (JS sends them)
+			// Try to get scores from ranked_worst_lessons (JS sends them).
 			$js_scores = array();
 			foreach ( ( $score_data['ranked_worst_lessons'] ?? array() ) as $rwl ) {
 				if ( isset( $rwl['ipa'], $rwl['score'] ) ) {
@@ -9426,10 +9689,17 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 				if ( isset( $phoneme_map[ $ipa ] ) ) {
 					$val     = $phoneme_map[ $ipa ];
 					$lessons = is_array( $val ) ? array_map( 'intval', $val ) : array( intval( $val ) );
-					$entry   = array( 'ipa' => $ipa, 'lessons' => $lessons );
-					if (isset( $js_scores[ $ipa ] )) $entry['score'] = $js_scores[ $ipa ];
+					$entry   = array(
+					'ipa'     => $ipa,
+					'lessons' => $lessons,
+					);
+					if ( isset( $js_scores[ $ipa ] ) ) {
+						$entry['score'] = $js_scores[ $ipa ];
+					}
 					$ranked_worst[]                                  = $entry;
-					foreach ($lessons as $l) $incorrect[]            = $l;
+					foreach ( $lessons as $l ) {
+						$incorrect[]            = $l;
+					}
 				}
 			}
 			$score_data['incorrect']            = array_values( array_unique( $incorrect ) );
@@ -9448,18 +9718,18 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 			$temp_id = $score_data['session_id'];
 		}
 
-		// Store in user meta via existing store_quiz_score()
+		// Store in user meta via existing store_quiz_score().
 		$this->store_quiz_score( $user_id, $score_data );
 		do_action( 'flosc_quiz_completed', $score_data, $user_id );
 		set_transient( 'flosc_just_completed_quiz_' . $user_id, true, MINUTE_IN_SECONDS * 5 );
 
-		// Send score email
+		// Send score email.
 		$user = get_userdata( $user_id );
 		if ( $user ) {
 			$this->send_score_email( $user, $score_data );
 		}
 
-		// Move audio files from flosc-temp/{temp_id}/ to flosc-users/{user_id}/
+		// Move audio files from flosc-temp/{temp_id}/ to flosc-users/{user_id}/.
 		if ( $temp_id ) {
 			$this->move_visitor_audio_to_user( $user_id, $temp_id );
 		}
@@ -9528,7 +9798,9 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 
 		$upload_dir = wp_upload_dir();
 		$temp_dir   = $upload_dir['basedir'] . '/flosc-temp/' . $temp_id;
-		if ( ! is_dir( $temp_dir )) return false;
+		if ( ! is_dir( $temp_dir ) ) {
+			return false;
+		}
 
 		$user_dir = $upload_dir['basedir'] . '/flosc-users/' . $user_id;
 		if ( ! file_exists( $user_dir ) ) {
@@ -9538,7 +9810,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 			}
 		}
 
-		// Per-session storage: flosc-users/{user_id}/sessions/{session_id}/
+		// Per-session storage: flosc-users/{user_id}/sessions/{session_id}/.
 		$session_dir = $user_dir . '/sessions/' . $temp_id;
 		wp_mkdir_p( $session_dir );
 
@@ -9583,7 +9855,10 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 					foreach ( array( 'mp4', 'm4a', 'wav' ) as $ext ) {
 						$name = 'phrase-' . $num . '.' . $ext;
 						if ( file_exists( $session_dir . '/' . $name ) ) {
-							$ready = array( 'file' => $name, 'format' => $ext );
+							$ready = array(
+							'file'   => $name,
+							'format' => $ext,
+							);
 							break;
 						}
 					}
@@ -9609,7 +9884,10 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 								$phrase['format'] = $ext;
 								$updated          = true;
 							}
-							$conversion_targets[] = array( 'phrase_num' => $num, 'source_format' => $ext );
+							$conversion_targets[] = array(
+							'phrase_num'    => $num,
+							'source_format' => $ext,
+							);
 							break;
 						}
 					}
@@ -9692,9 +9970,11 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 	 * @return bool  True on success, false on failure
 	 */
 	private function pull_session_from_do( $user_id, $session_id ) {
-		// Validate session_id format
+		// Validate session_id format.
 		if ( ! preg_match( '/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $session_id ) ) {
-			if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC: pull_session_from_do — invalid session_id: {$session_id}" );
+			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+				flosc_log( "FLOSC: pull_session_from_do — invalid session_id: {$session_id}" );
+			}
 			return false;
 		}
 
@@ -9702,7 +9982,9 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC Auth: Transferred
 		$existing_owner = $this->find_session_owner_user_id( $session_id );
 		if ( $existing_owner && intval( $existing_owner ) !== intval( $user_id ) ) {
 			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
-if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC: pull_session_from_do — blocked cross-user session reuse: session {$session_id}, requested user {$user_id}, existing owner {$existing_owner}" );
+				if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+					flosc_log( "FLOSC: pull_session_from_do — blocked cross-user session reuse: session {$session_id}, requested user {$user_id}, existing owner {$existing_owner}" );
+				}
 			}
 			return false;
 		}
@@ -9711,27 +9993,33 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC: pull_session_fro
 
 		// 1. Fetch session summary (scores, ranked phonemes, phrase results)
 		$response = flosc_safe_remote_request(
-            'GET',
-            $api_base . '/session/' . $session_id,
-            array(
+			'GET',
+			$api_base . '/session/' . $session_id,
+			array(
 			'timeout' => 15,
-            )
-        );
+			)
+		);
 
 		if ( is_wp_error( $response ) ) {
-			if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC: pull_session_from_do — GET /session failed: " . $response->get_error_message() );
+			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+				flosc_log( 'FLOSC: pull_session_from_do — GET /session failed: ' . $response->get_error_message() );
+			}
 			return false;
 		}
 
 		$status = wp_remote_retrieve_response_code( $response );
 		if ( $status !== 200 ) {
-			if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC: pull_session_from_do — GET /session returned HTTP {$status}" );
+			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+				flosc_log( "FLOSC: pull_session_from_do — GET /session returned HTTP {$status}" );
+			}
 			return false;
 		}
 
 		$session_data = json_decode( wp_remote_retrieve_body( $response ), true );
 		if ( ! $session_data || empty( $session_data['phrase_results'] ) ) {
-			if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC: pull_session_from_do — empty or invalid session data" );
+			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+				flosc_log( 'FLOSC: pull_session_from_do — empty or invalid session data' );
+			}
 			return false;
 		}
 
@@ -9763,10 +10051,17 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC: pull_session_fro
 			if ( isset( $phoneme_map[ $ipa ] ) ) {
 				$val     = $phoneme_map[ $ipa ];
 				$lessons = array_map( 'intval', is_array( $val ) ? $val : array( $val ) );
-				$entry   = array( 'ipa' => $ipa, 'lessons' => $lessons );
-				if (isset( $do_phoneme_scores[ $ipa ] )) $entry['score'] = $do_phoneme_scores[ $ipa ];
+				$entry   = array(
+				'ipa'     => $ipa,
+				'lessons' => $lessons,
+				);
+				if ( isset( $do_phoneme_scores[ $ipa ] ) ) {
+					$entry['score'] = $do_phoneme_scores[ $ipa ];
+				}
 				$ranked_worst_lessons[]                                  = $entry;
-				foreach ($lessons as $l) $incorrect[]                    = $l;
+				foreach ( $lessons as $l ) {
+					$incorrect[]                    = $l;
+				}
 			}
 		}
 		$incorrect = array_values( array_unique( $incorrect ) );
@@ -9808,18 +10103,21 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC: pull_session_fro
 		$session_phrases = array();
 		for ( $n = 1; $n <= $phrase_count; $n++ ) {
 			$audio_resp = flosc_safe_remote_request(
-                'GET',
-                $api_base . '/session/' . $session_id . '/audio/' . $n,
-                array(
+				'GET',
+				$api_base . '/session/' . $session_id . '/audio/' . $n,
+				array(
 				'timeout' => 15,
-                )
-            );
+				)
+			);
 
 			if ( ! is_wp_error( $audio_resp ) && wp_remote_retrieve_response_code( $audio_resp ) === 200 ) {
 				$content_type = wp_remote_retrieve_header( $audio_resp, 'content-type' );
 				$ext          = 'webm';
-				if (strpos( $content_type, 'mp4' ) !== false) $ext     = 'mp4';
-				elseif (strpos( $content_type, 'ogg' ) !== false) $ext = 'ogg';
+				if ( strpos( $content_type, 'mp4' ) !== false ) {
+					$ext     = 'mp4';
+				} elseif ( strpos( $content_type, 'ogg' ) !== false ) {
+					$ext = 'ogg';
+				}
 
 				$filename = "phrase-{$n}.{$ext}";
 				$this->write_file_safely( $session_dir . '/' . $filename, wp_remote_retrieve_body( $audio_resp ) );
@@ -9832,19 +10130,19 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC: pull_session_fro
 			}
 		}
 
-		// Write metadata.json so admin audio section can find files
+		// Write metadata.json so admin audio section can find files.
 		if ( $session_phrases ) {
 			$this->write_json_atomic(
-                $session_dir . '/metadata.json',
-                array(
+				$session_dir . '/metadata.json',
+				array(
 				'session_id' => $session_id,
 				'quiz_id'    => $default_audio_quiz_id,
 				'phrases'    => $session_phrases,
 				'scored_at'  => gmdate( 'Y' ) . '-' . gmdate( 'm' ) . 'm-' . gmdate( 'd' ) . 'd-'
 							 . gmdate( 'H' ) . 'h-' . gmdate( 'i' ) . 'm-' . gmdate( 's' ) . 's',
 				'score'      => $score,
-                )
-            );
+				)
+			);
 
 			// Keep source files and add mp4 copies when conversion tooling is available.
 			$this->ensure_session_mp4_copies( $session_dir );
@@ -9855,7 +10153,9 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC: pull_session_fro
 		if ( $user ) {
 			$this->send_score_email( $user, $score_data );
 		}
-if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC v8.0.0: pull_session_from_do() — user {$user_id}, session {$session_id}, score: {$score}%" );
+		if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+			flosc_log( "FLOSC v8.0.0: pull_session_from_do() — user {$user_id}, session {$session_id}, score: {$score}%" );
+		}
 		return true;
 	}
 
@@ -9866,9 +10166,17 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC v8.0.0: pull_sess
 	 */
 	public function handle_store_quiz_data( $request ) {
 		$user_id = get_current_user_id();
-if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: called. user_id={$user_id}, session_id=" . ( $request->get_param( 'session_id' ) ?? 'null' ) );
+		if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+			flosc_log( "FLOSC store-quiz-data: called. user_id={$user_id}, session_id=" . ( $request->get_param( 'session_id' ) ?? 'null' ) );
+		}
 		if ( ! $user_id ) {
-			return new WP_REST_Response( array( 'success' => false, 'message' => 'Not logged in' ), 401 );
+			return new WP_REST_Response(
+				array(
+				'success' => false,
+				'message' => 'Not logged in',
+				),
+				401 
+			);
 		}
 
 		// Check if this user already has scored quiz data from a PREVIOUS session.
@@ -9876,14 +10184,16 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		$session_id = sanitize_text_field( $request->get_param( 'session_id' ) ?? '' );
 		$existing   = get_user_meta( $user_id, '_flosc_last_quiz_data', true );
 		if ( is_array( $existing ) && ! empty( $existing['phrase_results'] ) && ! $session_id ) {
-if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: user {$user_id} has existing data, no new session_id — returning cached" );
+			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+				flosc_log( "FLOSC store-quiz-data: user {$user_id} has existing data, no new session_id — returning cached" );
+			}
 			return new WP_REST_Response(
-                array(
+				array(
 				'success'        => true,
 				'already_scored' => true,
 				'quiz_data'      => $existing,
-                )
-            );
+				)
+			);
 		}
 
 		$quiz_data = $request->get_param( 'quiz_data' );
@@ -9901,41 +10211,53 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 			if ( $stored ) {
 				delete_user_meta( $user_id, '_flosc_audio_temp_id' );
 				return new WP_REST_Response(
-                    array(
+					array(
 					'success'   => true,
 					'quiz_data' => get_user_meta( $user_id, '_flosc_last_quiz_data', true ),
-                    )
-                );
+					)
+				);
 			}
 		}
 
 		if ( $session_id && $this->pull_session_from_do( $user_id, $session_id ) ) {
 			return new WP_REST_Response(
-                array(
+				array(
 				'success'   => true,
 				'quiz_data' => get_user_meta( $user_id, '_flosc_last_quiz_data', true ),
-                )
-            );
+				)
+			);
 		}
 
 		if ( ! $quiz_data || ! is_array( $quiz_data ) ) {
-			return new WP_REST_Response( array( 'success' => false, 'message' => 'Missing quiz_data' ), 400 );
+			return new WP_REST_Response(
+				array(
+				'success' => false,
+				'message' => 'Missing quiz_data',
+				),
+				400 
+			);
 		}
 
 		$stored = $this->store_browser_quiz_data( $user_id, $quiz_data, $temp_id );
 		if ( ! $stored ) {
-			return new WP_REST_Response( array( 'success' => false, 'message' => 'Failed to store quiz data' ), 500 );
+			return new WP_REST_Response(
+				array(
+				'success' => false,
+				'message' => 'Failed to store quiz data',
+				),
+				500 
+			);
 		}
 
-		// Clean up temp_id reference
+		// Clean up temp_id reference.
 		delete_user_meta( $user_id, '_flosc_audio_temp_id' );
 
 		return new WP_REST_Response(
-            array(
+			array(
 			'success'   => true,
 			'quiz_data' => get_user_meta( $user_id, '_flosc_last_quiz_data', true ),
-            )
-        );
+			)
+		);
 	}
 
 	/**
@@ -9957,7 +10279,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 	 */
 	public function score_visitor_audio( $user_id, $temp_id ) {
 		// Validate tempID format: YYYY-MMm-DDd-HHh-MMm-SSs-XXXXX
-		// (Do not call set_time_limit — Plugin Check / WPCS discourage it.)
+		// (Do not call set_time_limit — Plugin Check / WPCS discourage it.).
 		if ( ! preg_match( '/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $temp_id ) ) {
 			return false;
 		}
@@ -9967,7 +10289,9 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		$meta_path  = $temp_dir . '/metadata.json';
 
 		if ( ! file_exists( $meta_path ) ) {
-			if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC v8.0.0: No metadata.json for temp_id {$temp_id}" );
+			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+				flosc_log( "FLOSC v8.0.0: No metadata.json for temp_id {$temp_id}" );
+			}
 			return false;
 		}
 
@@ -9982,7 +10306,9 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 
 		foreach ( $meta['phrases'] as $phrase_info ) {
 			$audio_path = $temp_dir . '/' . $phrase_info['file'];
-			if ( ! file_exists( $audio_path )) continue;
+			if ( ! file_exists( $audio_path ) ) {
+				continue;
+			}
 
             // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- binary/JWT token encoding, not obfuscation
 			$audio_b64 = base64_encode( flosc_fs_get_contents( $audio_path ) );
@@ -10001,20 +10327,22 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 
 			$payload_json = wp_json_encode( $body );
 			$response     = flosc_safe_remote_request(
-                'POST',
-                $api_base . $endpoint,
-                array(
+				'POST',
+				$api_base . $endpoint,
+				array(
 				'headers' => array_merge(
 					array( 'Content-Type' => 'application/json' ),
 					$this->build_flosc_signed_headers( $payload_json )
 				),
 				'body'    => $payload_json,
 				'timeout' => 30,
-                )
-            );
+				)
+			);
 
 			if ( is_wp_error( $response ) ) {
-				if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC v8.0.0: API error for phrase {$phrase_info['num']}: " . $response->get_error_message() );
+				if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+					flosc_log( "FLOSC v8.0.0: API error for phrase {$phrase_info['num']}: " . $response->get_error_message() );
+				}
 				continue;
 			}
 
@@ -10028,11 +10356,13 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		}
 
 		if ( empty( $all_results ) ) {
-			if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC v8.0.0: No successful API responses for temp_id {$temp_id}" );
+			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+				flosc_log( "FLOSC v8.0.0: No successful API responses for temp_id {$temp_id}" );
+			}
 			return false;
 		}
 
-		// Aggregate phoneme scores — mirrors showIpaQuizSummary() in flosc-app.js
+		// Aggregate phoneme scores — mirrors showIpaQuizSummary() in flosc-app.js.
 		$all_phonemes = array();
 		foreach ( $all_results as $r ) {
 			$words_data = $r['data']['words'] ?? array( array( 'phonemes' => $r['data']['phonemes'] ?? array() ) );
@@ -10047,28 +10377,37 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		$avg   = $total > 0 ? array_sum( array_column( $all_phonemes, 'confidence' ) ) / $total : 0;
 		$score = (int) round( $avg * 100 );
 
-		// Per-phoneme averages
+		// Per-phoneme averages.
 		$phoneme_scores = array();
 		foreach ( $all_phonemes as $ph ) {
 			$ipa = $ph['ipa'] ?? '';
-			if ($ipa === '') continue;
+			if ( $ipa === '' ) {
+				continue;
+			}
 			$phoneme_scores[ $ipa ][] = $ph['confidence'];
 		}
 
 		$ranked = array();
 		foreach ( $phoneme_scores as $ipa => $scores ) {
-			$ranked[] = array( 'ipa' => $ipa, 'avg' => array_sum( $scores ) / count( $scores ) );
+			$ranked[] = array(
+			'ipa' => $ipa,
+			'avg' => array_sum( $scores ) / count( $scores ),
+			);
 		}
-		usort( $ranked, function( $a, $b ) { return $a['avg'] <=> $b['avg']; } );
+		usort(
+			$ranked,
+			function ( $a, $b ) {
+				return $a['avg'] <=> $b['avg']; } 
+		);
 
-		// Map worst 10 phonemes to lesson numbers
+		// Map worst 10 phonemes to lesson numbers.
 		$phoneme_map  = json_decode( flosc_get_setting( 'audio_quiz_phoneme_lesson_map', '{}' ), true ) ?: array();
 		$mapped_worst = array_filter(
-            array_slice( $ranked, 0, 10 ),
-            function( $p ) use ( $phoneme_map ) {
-			return isset( $phoneme_map[ $p['ipa'] ] );
-            }
-        );
+			array_slice( $ranked, 0, 10 ),
+			function ( $p ) use ( $phoneme_map ) {
+				return isset( $phoneme_map[ $p['ipa'] ] );
+			}
+		);
 
 		$incorrect = array();
 		foreach ( $mapped_worst as $p ) {
@@ -10087,12 +10426,20 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		foreach ( array_values( $mapped_worst ) as $p ) {
 			$val                    = $phoneme_map[ $p['ipa'] ];
 			$lessons                = array_map( 'intval', is_array( $val ) ? $val : array( $val ) );
-			$ranked_worst_lessons[] = array( 'ipa' => $p['ipa'], 'score' => round( $p['avg'], 3 ), 'lessons' => $lessons );
+			$ranked_worst_lessons[] = array(
+			'ipa'     => $p['ipa'],
+			'score'   => round( $p['avg'], 3 ),
+			'lessons' => $lessons,
+			);
 		}
 
-		$ranked_for_upsell = array_map( function( $p ) { return $p['ipa']; }, array_slice( $ranked, 0, 10 ) );
+		$ranked_for_upsell = array_map(
+			function ( $p ) {
+				return $p['ipa']; },
+			array_slice( $ranked, 0, 10 ) 
+		);
 
-		// Move audio files to user profile directory (per-session)
+		// Move audio files to user profile directory (per-session).
 		$user_dir = $upload_dir['basedir'] . '/flosc-users/' . $user_id;
 		if ( ! file_exists( $user_dir ) ) {
 			wp_mkdir_p( $user_dir );
@@ -10102,12 +10449,12 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		}
 		$session_dir = $user_dir . '/sessions/' . $temp_id;
 		wp_mkdir_p( $session_dir );
-		// Move entire temp dir contents
+		// Move entire temp dir contents.
 		foreach ( glob( $temp_dir . '/*' ) as $file ) {
 			$dest = $session_dir . '/' . basename( $file );
 			$this->move_file_safely( $file, $dest );
 		}
-		// Store scoring results in the session's metadata.json
+		// Store scoring results in the session's metadata.json.
 		$user_meta_path               = $session_dir . '/metadata.json';
 		$user_meta                    = file_exists( $user_meta_path ) ? json_decode( flosc_fs_get_contents( $user_meta_path ), true ) : $meta;
 		$user_meta['scored_at']       = gmdate( 'Y' ) . '-' . gmdate( 'm' ) . 'm-' . gmdate( 'd' ) . 'd-'
@@ -10116,24 +10463,34 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		$user_meta['ranked_phonemes'] = $ranked_for_upsell;
 		$user_meta['results']         = $all_results;
 		if ( ! $this->write_json_atomic( $user_meta_path, $user_meta ) ) {
-			if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC v8.0.0: failed to persist scored metadata for session {$temp_id}" );
+			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+				flosc_log( "FLOSC v8.0.0: failed to persist scored metadata for session {$temp_id}" );
+			}
 		}
 
 		// Keep source files and add mp4 copies when conversion tooling is available.
 		$this->ensure_session_mp4_copies( $session_dir );
 
-		// Clean up empty temp dir
+		// Clean up empty temp dir.
 		$this->delete_file_safely( $temp_dir . '/.htaccess' );
 		$this->delete_directory_safely( $temp_dir );
 
 		if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
-	if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC v8.0.0: Scored visitor audio for user {$user_id}: {$score}% — " . count( $incorrect ) . " lesson(s) mapped" );
+			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+				flosc_log( "FLOSC v8.0.0: Scored visitor audio for user {$user_id}: {$score}% — " . count( $incorrect ) . ' lesson(s) mapped' );
+			}
 			$now                  = gmdate( 'Y' ) . '-' . gmdate( 'm' ) . 'm-' . gmdate( 'd' ) . 'd-T' . gmdate( 'H' ) . 'h:' . gmdate( 'i' ) . 'm:' . gmdate( 's' ) . 's';
 						$modified = gmdate( 'Y', $mtime ) . '-' . gmdate( 'm', $mtime ) . 'm-' . gmdate( 'd', $mtime ) . 'd-T' . gmdate( 'H', $mtime ) . 'h:' . gmdate( 'i', $mtime ) . 'm';
 			$registered           = gmdate( 'Y', $reg_ts ) . '-' . gmdate( 'm', $reg_ts ) . 'm-' . gmdate( 'd', $reg_ts ) . 'd';
-	if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( '[FLOSC-PAYPAL] activate-subscription HIT at ' . gmdate( 'Y-m-d H:i:s' ) );
-	if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( '[FLOSC-PAYPAL] create_order ENDPOINT REACHED at ' . gmdate( 'Y-m-d H:i:s' ) . ' user=' . get_current_user_id() );
-	if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( '[FLOSC-PAYPAL] capture_order ENDPOINT REACHED at ' . gmdate( 'Y-m-d H:i:s' ) . ' user=' . get_current_user_id() );
+			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+				flosc_log( '[FLOSC-PAYPAL] activate-subscription HIT at ' . gmdate( 'Y-m-d H:i:s' ) );
+			}
+			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+				flosc_log( '[FLOSC-PAYPAL] create_order ENDPOINT REACHED at ' . gmdate( 'Y-m-d H:i:s' ) . ' user=' . get_current_user_id() );
+			}
+			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+				flosc_log( '[FLOSC-PAYPAL] capture_order ENDPOINT REACHED at ' . gmdate( 'Y-m-d H:i:s' ) . ' user=' . get_current_user_id() );
+			}
 		}
 
 		return array(
@@ -10161,7 +10518,9 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		$upload_dir = wp_upload_dir();
 		$temp_base  = $upload_dir['basedir'] . '/flosc-temp';
 
-		if ( ! is_dir( $temp_base )) return;
+		if ( ! is_dir( $temp_base ) ) {
+			return;
+		}
 
 		$now     = time();
 		$max_age = 36 * HOUR_IN_SECONDS;
@@ -10169,14 +10528,14 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 
 		foreach ( glob( $temp_base . '/*', GLOB_ONLYDIR ) as $dir ) {
 			$dirname = basename( $dir );
-			// Parse Michel timestamp: YYYY-MMm-DDd-HHh-MMm-SSs-XXXXX
+			// Parse Michel timestamp: YYYY-MMm-DDd-HHh-MMm-SSs-XXXXX.
 			if ( ! preg_match( '/^(\d{4})-(\d{2})m-(\d{2})d-(\d{2})h-(\d{2})m-(\d{2})s-[0-9a-f]{5}$/', $dirname, $m ) ) {
 				continue; // Skip any non-matching dirs
 			}
 
 			$dir_time = gmmktime( (int)$m[4], (int)$m[5], (int)$m[6], (int)$m[2], (int)$m[3], (int)$m[1] );
 			if ( ( $now - $dir_time ) > $max_age ) {
-				// Delete all files in the dir, then the dir itself
+				// Delete all files in the dir, then the dir itself.
 				$files = glob( $dir . '/{,.}*', GLOB_BRACE );
 				foreach ( $files as $f ) {
 					if ( is_file( $f ) ) {
@@ -10189,7 +10548,9 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		}
 
 		if ( $cleaned > 0 && FLOSC_DEBUG ) {
-	if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC v8.0.0: Cleaned up {$cleaned} expired visitor audio dirs" );
+			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+				flosc_log( "FLOSC v8.0.0: Cleaned up {$cleaned} expired visitor audio dirs" );
+			}
 		}
 	}
 
@@ -10204,15 +10565,15 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 			return new WP_Error( 'not_logged_in', __( 'User must be logged in', 'flosc' ), array( 'status' => 401 ) );
 		}
 
-		// Mark funnel completed
+		// Mark funnel completed.
 		update_user_meta( $user_id, '_flosc_funnel_completed', true );
 
 		return new WP_REST_Response(
-            array(
+			array(
 			'success' => true,
 			'message' => 'Funnel marked as completed',
-            )
-        );
+			)
+		);
 	}
 
 	/**
@@ -10224,7 +10585,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		$start_time   = microtime( true );
 		$test_message = "Hello, this is a connection test. Please respond with 'Connection successful'.";
 
-		// v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves)
+		// v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves).
 		$provider = flosc_get_setting( 'ai_provider', 'ivr' );
 		if ( $provider === '' || $provider === null ) {
 			$provider = 'ivr';
@@ -10232,57 +10593,57 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 
 		if ( $provider === 'ivr' ) {
 			return new WP_REST_Response(
-                array(
+				array(
 				'success'    => false,
 				'provider'   => 'ivr',
 				'error_code' => 'ivr_not_external_api',
 				'message'    => 'Provider is IVR (scripted only). No external API call was made. Select Anthropic, OpenAI, xAI, or Gemini, Save Settings, then test again.',
-                ),
-                200
-            );
+				),
+				200
+			);
 		}
 
 		try {
-			// Build AI context for freeline phase (simplest phase)
+			// Build AI context for freeline phase (simplest phase).
 			$ai_context    = array( 'phase' => 'freeline' );
 			$system_prompt = $this->ai_chat_dispatch->build_system_prompt( 'freeline', $ai_context );
 
-			// Get AI response with test_mode = true (no IVR fallback)
+			// Get AI response with test_mode = true (no IVR fallback).
 			$response = $this->ai_chat_dispatch->get_response( $test_message, $system_prompt, array(), true );
 
-			// Check if response is WP_Error (connection failed)
+			// Check if response is WP_Error (connection failed).
 			if ( is_wp_error( $response ) ) {
 				return new WP_REST_Response(
-                    array(
+					array(
 					'success'    => false,
 					'provider'   => $provider,
 					'error_code' => $response->get_error_code(),
-					'message'    => $response->get_error_message()
-                    ),
-                    200
-                );
+					'message'    => $response->get_error_message(),
+					),
+					200
+				);
 			}
 
-			// Calculate response time
+			// Calculate response time.
 			$response_time = round( ( microtime( true ) - $start_time ) * 1000 );
 
 			return new WP_REST_Response(
-                array(
+				array(
 				'success'       => true,
 				'provider'      => $provider,
 				'response_time' => $response_time,
 				'test_message'  => $test_message,
-				'ai_response'   => $response
-                )
-            );
+				'ai_response'   => $response,
+				)
+			);
 		} catch ( \Throwable $e ) {
 			return new WP_REST_Response(
-                array(
+				array(
 				'success' => false,
-				'message' => $e->getMessage()
-                ),
-                500
-            );
+				'message' => $e->getMessage(),
+				),
+				500
+			);
 		}
 	}
 
@@ -10339,10 +10700,10 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 
 		if ( is_wp_error( $result ) ) {
 			wp_send_json_error(
-                array(
+				array(
 				'message' => $result->get_error_message(),
-                )
-            );
+				)
+			);
 		}
 
 		wp_send_json_success( $result );
@@ -10418,12 +10779,12 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		}
 
 		wp_send_json_success(
-            array(
+			array(
 			'provider' => $provider,
 			'suffix'   => $stored['suffix'],
 			'message'  => __( 'API key saved for this flow.', 'flosc' ),
-            )
-        );
+			)
+		);
 	}
 
 	/**
@@ -10452,12 +10813,12 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		}
 
 		wp_send_json_success(
-            array(
+			array(
 			'provider' => $provider,
 			'model'    => $stored['model'],
 			'message'  => __( 'Model saved for this flow.', 'flosc' ),
-            )
-        );
+			)
+		);
 	}
 
 	/**
@@ -10538,10 +10899,10 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 
 		if ( $provider === '' || $provider === 'ivr' ) {
 			wp_send_json_error(
-                array(
+				array(
 				'message' => __( 'Pick an AI provider for this flow first — the answer comes from the provider\'s own model.', 'flosc' ),
-                )
-            );
+				)
+			);
 		}
 
 		$model_setting_key = array(
@@ -10582,14 +10943,14 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		}
 
 		wp_send_json_success(
-            array(
+			array(
 			'param'    => $param,
 			'provider' => $provider,
 			'model'    => $model,
 			'answer'   => $answer,
 			'docs_url' => function_exists( 'flosc_provider_docs_url' ) ? flosc_provider_docs_url( $provider ) : '',
-            )
-        );
+			)
+		);
 	}
 
 	/**
@@ -10661,7 +11022,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		// IVR is scripted local copy — not an external API. Do not report as API success.
 		if ( $provider === 'ivr' ) {
 			wp_send_json_error(
-                array(
+				array(
 				'provider' => 'ivr',
 				'message'  => "Provider is IVR (scripted only). No external API call was made.\n\n"
 					. "1. Primary AI Provider → Anthropic, OpenAI, xAI Grok, or Gemini\n"
@@ -10669,9 +11030,9 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 					. "3. Paste the API key for that provider in FLOSC\n"
 					. "4. Click Save Settings (bottom of this page)\n"
 					. "5. Confirm the URL has saved=1, then Test again\n\n"
-					. "Expected success line: Provider: xai (or openai / anthropic / gemini), not ivr.",
-                )
-            );
+					. 'Expected success line: Provider: xai (or openai / anthropic / gemini), not ivr.',
+				)
+			);
 		}
 
 		// Resolved model + key presence (for diagnostics; never return full secrets).
@@ -10706,27 +11067,30 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		$model_probe = $this->probe_provider_models( $provider, $key_raw );
 
 		try {
-			$ai_context    = array( 'phase' => 'freeline', 'is_admin' => true );
+			$ai_context    = array(
+			'phase'    => 'freeline',
+			'is_admin' => true,
+			);
 			$system_prompt = $this->ai_chat_dispatch->build_system_prompt( 'freeline', $ai_context );
 			$response      = $this->ai_chat_dispatch->get_response( $test_message, $system_prompt, array(), true );
 			$response_time = round( ( microtime( true ) - $start_time ) * 1000 );
 
 			if ( is_wp_error( $response ) ) {
 				wp_send_json_error(
-                    array_merge(
-                        array(
-                        'message'         => $response->get_error_message(),
-                        'provider'        => $provider,
-                        'model'           => $configured_model,
-                        'endpoint'        => $endpoint_url,
-                        'api_key_present' => $key_present,
-                        'api_key_suffix'  => $key_suffix,
-                        'response_time'   => $response_time,
-                        'flow_ivr'        => $ivr,
-                        ),
-                        $model_probe
-                    )
-                );
+					array_merge(
+						array(
+						'message'         => $response->get_error_message(),
+						'provider'        => $provider,
+						'model'           => $configured_model,
+						'endpoint'        => $endpoint_url,
+						'api_key_present' => $key_present,
+						'api_key_suffix'  => $key_suffix,
+						'response_time'   => $response_time,
+						'flow_ivr'        => $ivr,
+						),
+						$model_probe
+					)
+				);
 			}
 
 			$billing    = method_exists( $this->ai_chat_dispatch, 'get_last_billing_meta' )
@@ -10766,7 +11130,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 				: array();
 
 			wp_send_json_success(
-                array(
+				array(
 				'params_configured' => $configured_params,
 				'params_applied'    => $applied,
 				'params_unapplied'  => $unapplied,
@@ -10786,23 +11150,23 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 				'flow_label'        => $flow_label,
 				'http_ok'           => true,
 				'test_message'      => $test_message,
-                ) + $model_probe
-            );
+				) + $model_probe
+			);
 		} catch ( \Throwable $e ) {
 			wp_send_json_error(
-                array_merge(
-                    array(
-                    'message'         => $e->getMessage(),
-                    'provider'        => $provider,
-                    'model'           => $configured_model,
-                    'endpoint'        => $endpoint_url,
-                    'api_key_present' => $key_present,
-                    'api_key_suffix'  => $key_suffix,
-                    'flow_ivr'        => $ivr,
-                    ),
-                    $model_probe
-                )
-            );
+				array_merge(
+					array(
+					'message'         => $e->getMessage(),
+					'provider'        => $provider,
+					'model'           => $configured_model,
+					'endpoint'        => $endpoint_url,
+					'api_key_present' => $key_present,
+					'api_key_suffix'  => $key_suffix,
+					'flow_ivr'        => $ivr,
+					),
+					$model_probe
+				)
+			);
 		}
 	}
 	public function ajax_flosc_get_chat_logs() {
@@ -10831,11 +11195,11 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		$total = $logger->flosc_get_log_count( $filters['flow_id'] );
 
 		wp_send_json_success(
-            array(
+			array(
 			'logs'  => $logs,
 			'total' => $total,
-            )
-        );
+			)
+		);
 	}
 
 	/**
@@ -10858,11 +11222,11 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		$deleted = $logger->flosc_clear_old_logs( $days );
 
 		wp_send_json_success(
-            array(
+			array(
 			'deleted'   => $deleted,
 			'remaining' => $logger->flosc_get_log_count(),
-            )
-        );
+			)
+		);
 	}
 
 	/**
@@ -10894,7 +11258,12 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		$result = $logger->flosc_rate_log( $log_id, $rating, $note );
 
 		if ( $result ) {
-			wp_send_json_success( array( 'log_id' => $log_id, 'rating' => $rating ) );
+			wp_send_json_success(
+				array(
+				'log_id' => $log_id,
+				'rating' => $rating,
+				) 
+			);
 		} else {
 			wp_send_json_error( array( 'message' => 'Failed to save rating' ) );
 		}
@@ -10992,12 +11361,12 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		}
 
 		wp_send_json_success(
-            array(
+			array(
 			'processed'     => $processed,
 			'affected_rows' => $affected_rows,
 			'operation'     => $operation,
-            )
-        );
+			)
+		);
 	}
 
 	/**
@@ -11071,16 +11440,16 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		$headers     = array_keys( $rows[0] );
 		$to_tsv_line = static function ( array $columns ) {
 			$encoded = array_map(
-                static function ( $value ) {
-				$value = (string) $value;
-				$value = str_replace( array( "\r\n", "\r", "\n" ), "\\n", $value );
-				if ( strpos( $value, "\t" ) !== false || strpos( $value, '"' ) !== false ) {
-					$value = '"' . str_replace( '"', '""', $value ) . '"';
-				}
-				return $value;
-                },
-                $columns
-            );
+				static function ( $value ) {
+					$value = (string) $value;
+					$value = str_replace( array( "\r\n", "\r", "\n" ), "\\n", $value );
+					if ( strpos( $value, "\t" ) !== false || strpos( $value, '"' ) !== false ) {
+						$value = '"' . str_replace( '"', '""', $value ) . '"';
+					}
+					return $value;
+				},
+				$columns
+			);
 
 			return implode( "\t", $encoded ) . "\n";
 		};
@@ -11149,7 +11518,14 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 
 		$id = FLOSC_Chat_Logger::instance()->flosc_insert_admin_message( $session_id, $flow, $name, $text, $as );
 		if ( $id ) {
-			wp_send_json_success( array( 'id' => $id, 'name' => $name, 'text' => $text, 'as' => $as ) );
+			wp_send_json_success(
+				array(
+				'id'   => $id,
+				'name' => $name,
+				'text' => $text,
+				'as'   => $as,
+				) 
+			);
 		}
 		wp_send_json_error( array( 'message' => 'Could not post the message.' ) );
 	}
@@ -11186,43 +11562,43 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 
 		if ( $owner_user_id > 0 ) {
 			$result = $token_provider->credit(
-                $owner_user_id,
-                $amount,
-                'Admin chat token assignment',
-                array(
+				$owner_user_id,
+				$amount,
+				'Admin chat token assignment',
+				array(
 				'flow_id'       => $flow,
 				'session_id'    => $session_id,
 				'admin_user_id' => get_current_user_id(),
-                )
-            );
+				)
+			);
 
 			if ( is_wp_error( $result ) ) {
 				wp_send_json_error( array( 'message' => $result->get_error_message() ) );
 			}
 
 			wp_send_json_success(
-                array(
+				array(
 				'scope'     => 'user',
 				'user_id'   => $owner_user_id,
 				'assigned'  => $amount,
 				'balance'   => intval( $result ),
 				'formatted' => $this->flosc_format_token_display( intval( $result ) ),
-                )
-            );
+				)
+			);
 		}
 
 		$balance = $this->flosc_get_visitor_session_token_balance( $flow, $session_id, $token_provider );
 		$updated = $this->flosc_set_visitor_session_token_balance( $flow, $session_id, $balance + $amount );
 
 		wp_send_json_success(
-            array(
+			array(
 			'scope'      => 'visitor_session',
 			'session_id' => $session_id,
 			'assigned'   => $amount,
 			'balance'    => intval( $updated ),
 			'formatted'  => $this->flosc_format_token_display( intval( $updated ) ),
-            )
-        );
+			)
+		);
 	}
 
 	/**
@@ -11243,11 +11619,11 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		$token = $this->issue_admin_poll_token( $session_id );
 
 		return new WP_REST_Response(
-            array(
+			array(
 			'success'    => true,
 			'poll_token' => $token,
-            )
-        );
+			)
+		);
 	}
 
 	/**
@@ -11286,11 +11662,11 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		}
 
 		return new WP_REST_Response(
-            array(
+			array(
 			'messages'      => $messages,
 			'token_balance' => $token_balance_payload,
-            )
-        );
+			)
+		);
 	}
 
 
@@ -11310,7 +11686,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 			return new WP_Error( 'missing_fields', 'user_message, bad_response, and admin_note are required', array( 'status' => 400 ) );
 		}
 
-		// Resolve flow settings key
+		// Resolve flow settings key.
 		if ( empty( $flow_id ) ) {
 			$flow    = $this->get_current_flow();
 			$flow_id = $flow['ivr_file'] ?? '';
@@ -11324,7 +11700,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		$flow_settings  = get_option( $settings_key, array() );
 		$feedback_items = $flow_settings['ai_feedback'] ?? array();
 
-		// Build feedback entry
+		// Build feedback entry.
 		$feedback_item = array(
 			'id'                 => uniqid( 'corr_' ),
 			'timestamp'          => current_time( 'mysql' ),
@@ -11340,12 +11716,12 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		update_option( $settings_key, $flow_settings );
 
 		return new WP_REST_Response(
-            array(
+			array(
 			'success'  => true,
 			'feedback' => $feedback_item,
 			'total'    => count( $feedback_items ),
-            )
-        );
+			)
+		);
 	}
 
 	/**
@@ -11360,7 +11736,12 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		}
 
 		if ( empty( $flow_id ) ) {
-			return new WP_REST_Response( array( 'success' => true, 'feedback' => array() ) );
+			return new WP_REST_Response(
+				array(
+				'success'  => true,
+				'feedback' => array(),
+				) 
+			);
 		}
 
 		$settings_key   = 'flosc_flow_' . sanitize_key( pathinfo( basename( $flow_id ), PATHINFO_FILENAME ) );
@@ -11368,12 +11749,12 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		$feedback_items = $flow_settings['ai_feedback'] ?? array();
 
 		return new WP_REST_Response(
-            array(
+			array(
 			'success'  => true,
 			'feedback' => $feedback_items,
 			'total'    => count( $feedback_items ),
-            )
-        );
+			)
+		);
 	}
 
 	/**
@@ -11398,13 +11779,13 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 
 		$original_count = count( $feedback_items );
 		$feedback_items = array_values(
-            array_filter(
-                $feedback_items,
-                function( $c ) use ( $feedback_id ) {
-                    return ( $c['id'] ?? '' ) !== $feedback_id;
-                }
-            )
-        );
+			array_filter(
+				$feedback_items,
+				function ( $c ) use ( $feedback_id ) {
+					return ( $c['id'] ?? '' ) !== $feedback_id;
+				}
+			)
+		);
 
 		if ( count( $feedback_items ) === $original_count ) {
 			return new WP_Error( 'not_found', 'Feedback not found', array( 'status' => 404 ) );
@@ -11414,12 +11795,12 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		update_option( $settings_key, $flow_settings );
 
 		return new WP_REST_Response(
-            array(
+			array(
 			'success'   => true,
 			'deleted'   => $feedback_id,
 			'remaining' => count( $feedback_items ),
-            )
-        );
+			)
+		);
 	}
 
 	/**
@@ -11462,12 +11843,12 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		update_option( $settings_key, $flow_settings );
 
 		return new WP_REST_Response(
-            array(
+			array(
 			'success' => true,
 			'praise'  => $praise,
 			'total'   => count( $praises ),
-            )
-        );
+			)
+		);
 	}
 
 	/**
@@ -11492,13 +11873,13 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 
 		$original_count = count( $praises );
 		$praises        = array_values(
-            array_filter(
-                $praises,
-                function( $p ) use ( $praise_id ) {
-                    return ( $p['id'] ?? '' ) !== $praise_id;
-                }
-            )
-        );
+			array_filter(
+				$praises,
+				function ( $p ) use ( $praise_id ) {
+					return ( $p['id'] ?? '' ) !== $praise_id;
+				}
+			)
+		);
 
 		if ( count( $praises ) === $original_count ) {
 			return new WP_Error( 'not_found', 'Praise not found', array( 'status' => 404 ) );
@@ -11508,12 +11889,12 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		update_option( $settings_key, $flow_settings );
 
 		return new WP_REST_Response(
-            array(
+			array(
 			'success'   => true,
 			'deleted'   => $praise_id,
 			'remaining' => count( $praises ),
-            )
-        );
+			)
+		);
 	}
 
 	/**
@@ -11530,7 +11911,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		}
 
 		if ( ! is_user_logged_in() ) {
-			// For visitors, track in transient by IP
+			// For visitors, track in transient by IP.
 			$ip   = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ?? 'unknown' ) );
 			$key  = 'flosc_visitor_' . md5( $ip );
 			$data = get_transient( $key ) ?: array();
@@ -11544,10 +11925,15 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 
 			set_transient( $key, $data, DAY_IN_SECONDS );
 
-			return new WP_REST_Response( array( 'success' => true, 'tracked' => 'visitor' ) );
+			return new WP_REST_Response(
+				array(
+				'success' => true,
+				'tracked' => 'visitor',
+				) 
+			);
 		}
 
-		// For logged-in users, track in user meta
+		// For logged-in users, track in user meta.
 		$user_id = get_current_user_id();
 
 		if ( $message_name ) {
@@ -11560,7 +11946,12 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 			update_user_meta( $user_id, $key, current_time( 'mysql' ) );
 		}
 
-		return new WP_REST_Response( array( 'success' => true, 'tracked' => 'user' ) );
+		return new WP_REST_Response(
+			array(
+			'success' => true,
+			'tracked' => 'user',
+			) 
+		);
 	}
 
 	/**
@@ -11575,7 +11966,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		$flow_id  = $this->flosc_request_flow_stem( $request );
 		$ivr_file = sanitize_file_name( $request->get_param( 'ivr_file' ) ?? '' );
 
-		// Build context
+		// Build context.
 		require_once FLOSC_PLUGIN_DIR . 'includes/class-condition-evaluator.php';
 		$context = FLOSC_Condition_Evaluator::build_context(
 			is_user_logged_in() ? get_current_user_id() : null,
@@ -11601,25 +11992,25 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		$config   = flosc_resolve_flow_runtime( $flow_id, $ivr_file );
 		$messages = flosc_flow_phase_messages( $config, $phase );
 
-		// Filter by type if specified
+		// Filter by type if specified.
 		if ( $type ) {
 			$messages = array_filter(
-                $messages,
-                function( $m ) use ( $type ) {
-				return $m['type'] === $type;
-                }
-            );
+				$messages,
+				function ( $m ) use ( $type ) {
+					return $m['type'] === $type;
+				}
+			);
 		}
 
 		// Same non-leak rule as get_ivr_messages: concierge never reaches the browser.
 		$messages = array_values(
-            array_filter(
-                $messages,
-                static function ( $m ) {
-                return ( ( $m['type'] ?? '' ) !== 'concierge' );
-                }
-            )
-        );
+			array_filter(
+				$messages,
+				static function ( $m ) {
+					return ( ( $m['type'] ?? '' ) !== 'concierge' );
+				}
+			)
+		);
 
 		// Evaluate conditions. The Condition Evaluator is the per-message
 		// authority: it resolves each message's MessageConditions expression
@@ -11631,15 +12022,15 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		// Best-in-class (WPORG E3/E7): never return full evaluation context to the browser.
 		// Only public-safe flags; quiz scores / user_id / bridge internals stay server-side.
 		return new WP_REST_Response(
-            array(
+			array(
 			'success'      => true,
 			'messages'     => array_values( $applicable ),
 			'user_context' => array(
 				'access_level' => sanitize_key( (string) ( $context['access_level'] ?? 'visitor' ) ),
 				'is_logged_in' => ! empty( $context['logged_in'] ),
 			),
-            )
-        );
+			)
+		);
 	}
 
 
@@ -11648,9 +12039,15 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 	 * Shown on /wp-admin/profile.php only for the user viewing their own profile.
 	 */
 	public function render_credential_setup_reminder( $user ) {
-		if ($user->ID !== get_current_user_id()) return;
-		if (get_user_meta( $user->ID, '_flosc_registration_method', true ) !== 'email') return;
-		if (get_user_meta( $user->ID, '_flosc_magic_link_user_credentials_set', true )) return;
+		if ( $user->ID !== get_current_user_id() ) {
+			return;
+		}
+		if ( get_user_meta( $user->ID, '_flosc_registration_method', true ) !== 'email' ) {
+			return;
+		}
+		if ( get_user_meta( $user->ID, '_flosc_magic_link_user_credentials_set', true ) ) {
+			return;
+		}
 		$this->enqueue_flosc_quiz_ui_styles();
 
 		$chat_url = $this->get_app_url();
@@ -11678,7 +12075,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		$upload_dir     = wp_upload_dir();
 		$user_audio_dir = $upload_dir['basedir'] . '/flosc-users/' . $user_id;
 
-		// v8.0.0: Per-session storage — find audio dir via session_id in user meta
+		// v8.0.0: Per-session storage — find audio dir via session_id in user meta.
 		$quiz_data = get_user_meta( $user_id, '_flosc_last_quiz_data', true );
 		$sess_id   = $this->resolve_quiz_session_id( is_array( $quiz_data ) ? $quiz_data : array() );
 		$meta_path = '';
@@ -11689,19 +12086,19 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 				$user_audio_dir = $session_dir;
 			}
 		}
-		// Fallback: flat path (pre-session layout)
+		// Fallback: flat path (pre-session layout).
 		if ( ! $meta_path && file_exists( $user_audio_dir . '/metadata.json' ) ) {
 			$meta_path = $user_audio_dir . '/metadata.json';
 		}
 
-		// Also check flosc-temp for unscored audio (linked via user meta)
+		// Also check flosc-temp for unscored audio (linked via user meta).
 		$temp_dir       = null;
 		$temp_meta_path = null;
 		$has_user_dir   = $meta_path && file_exists( $meta_path );
 
 		if ( ! $has_user_dir ) {
 			if ( empty( $quiz_data ) ) {
-				// No scored audio and no quiz data — nothing to show
+				// No scored audio and no quiz data — nothing to show.
 				echo '<h2>FLOSC Audio Quiz</h2>';
 				echo '<p>No audio quiz data for this user.</p>';
 				return;
@@ -11711,7 +12108,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		echo '<h2>FLOSC Audio Quiz</h2>';
 		echo '<table class="form-table" role="presentation">';
 
-		// Show guest link send count if present
+		// Show guest link send count if present.
 		$links_sent = (int) get_user_meta( $user_id, '_flosc_links_sent', true );
 		if ( $links_sent > 0 ) {
 			$log        = get_option( 'flosc_guest_link_log', array() );
@@ -11723,7 +12120,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 			echo ' <span class="flosc-links-sent-meta">(first: ' . esc_html( $first_sent ) . ' / last: ' . esc_html( $last_sent ) . ')</span></td></tr>';
 		}
 
-		// Show score summary from user meta (already loaded above)
+		// Show score summary from user meta (already loaded above).
 		if ( $quiz_data ) {
 			$score       = $quiz_data['score'] ?? '—';
 			$quiz_type   = $quiz_data['quiz_type'] ?? $quiz_data['quiz_id'] ?? '—';
@@ -11739,7 +12136,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 			}
 		}
 
-		// Show audio files if user dir exists
+		// Show audio files if user dir exists.
 		if ( $has_user_dir ) {
 			$meta    = json_decode( flosc_fs_get_contents( $meta_path ), true );
 			$phrases = $meta['phrases'] ?? array();
@@ -11753,24 +12150,30 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 					$text   = $phrase['text'] ?? '';
 					$file   = $phrase['file'] ?? '';
 					$format = $phrase['format'] ?? 'webm';
-					if ( ! $file) continue;
+					if ( ! $file ) {
+						continue;
+					}
 
 					// Signed: ajax_serve_user_audio() refuses an unsigned link.
 					$flosc_audio_exp = time() + HOUR_IN_SECONDS;
 					$audio_url       = admin_url( 'admin-ajax.php' ) . '?' . http_build_query(
-                        array(
+						array(
 						'action'    => 'flosc_serve_user_audio',
 						'user_id'   => $user_id,
 						'flosc_sid' => $sess_id,
 						'file'      => $file,
 						'exp'       => $flosc_audio_exp,
 						'sig'       => $this->build_audio_access_signature( $user_id, $sess_id, $file, $flosc_audio_exp ),
-                        )
-                    );
+						)
+					);
 
 					$mime                        = 'audio/webm';
-					if ($format === 'mp4') $mime = 'audio/mp4';
-					if ($format === 'ogg') $mime = 'audio/ogg';
+					if ( $format === 'mp4' ) {
+						$mime = 'audio/mp4';
+					}
+					if ( $format === 'ogg' ) {
+						$mime = 'audio/ogg';
+					}
 
 					echo '<div class="flosc-audio-item">';
 					echo '<div class="flosc-audio-item-title"><strong>Phrase ' . esc_html( $num ) . ':</strong> ' . esc_html( $text ) . '</div>';
@@ -11784,7 +12187,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 				echo '</td></tr>';
 			}
 
-			// Show scored_at from file metadata
+			// Show scored_at from file metadata.
 			if ( ! empty( $meta['scored_at'] ) ) {
 				echo '<tr><th>Audio Scored At</th><td>' . esc_html( $meta['scored_at'] ) . '</td></tr>';
 			}
@@ -11880,7 +12283,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 			wp_die( 'Missing parameters', 400 );
 		}
 
-		// Validate filename: only allow phrase-N.ext pattern
+		// Validate filename: only allow phrase-N.ext pattern.
 		if ( ! preg_match( '/^phrase-\d+\.(webm|mp4|m4a|ogg|wav)$/', $file ) ) {
 			wp_die( 'Invalid file', 400 );
 		}
@@ -11908,7 +12311,13 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		}
 
 		$ext   = pathinfo( $file, PATHINFO_EXTENSION );
-		$mimes = array( 'webm' => 'audio/webm', 'mp4' => 'audio/mp4', 'm4a' => 'audio/mp4', 'ogg' => 'audio/ogg', 'wav' => 'audio/wav' );
+		$mimes = array(
+		'webm' => 'audio/webm',
+		'mp4'  => 'audio/mp4',
+		'm4a'  => 'audio/mp4',
+		'ogg'  => 'audio/ogg',
+		'wav'  => 'audio/wav',
+		);
 		$mime  = $mimes[ $ext ] ?? 'application/octet-stream';
 
 		$download_name = $file;
@@ -12169,12 +12578,12 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 			}
 
 			$audio_resp = flosc_safe_remote_request(
-                'GET',
-                $api_base . '/session/' . $session_id . '/audio/' . $n,
-                array(
+				'GET',
+				$api_base . '/session/' . $session_id . '/audio/' . $n,
+				array(
 				'timeout' => 20,
-                )
-            );
+				)
+			);
 			if ( is_wp_error( $audio_resp ) || wp_remote_retrieve_response_code( $audio_resp ) !== 200 ) {
 				continue;
 			}
@@ -12205,14 +12614,14 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 
 		if ( $session_phrases ) {
 			$this->write_json_atomic(
-                $session_dir . '/metadata.json',
-                array(
+				$session_dir . '/metadata.json',
+				array(
 				'session_id' => $session_id,
 				'phrases'    => $session_phrases,
 				'scored_at'  => gmdate( 'Y' ) . '-' . gmdate( 'm' ) . 'm-' . gmdate( 'd' ) . 'd-'
 					. gmdate( 'H' ) . 'h-' . gmdate( 'i' ) . 'm-' . gmdate( 's' ) . 's',
-                )
-            );
+				)
+			);
 			$this->ensure_session_mp4_copies( $session_dir );
 		}
 
@@ -12230,18 +12639,20 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		}
 
 		$displayed_user_id = bp_displayed_user_id();
-		if ( ! $displayed_user_id) return;
+		if ( ! $displayed_user_id ) {
+			return;
+		}
 
 		bp_core_new_nav_item(
-            array(
+			array(
 			'name'                    => __( 'Quiz Results', 'flosc' ),
 			'slug'                    => 'flosc_quiz_tab',
 			'position'                => 80,
 			'screen_function'         => array( $this, 'buddyboss_quiz_tab_screen' ),
 			'default_subnav_slug'     => 'flosc_quiz_tab',
 			'show_for_displayed_user' => true,
-            )
-        );
+			)
+		);
 	}
 
 	/**
@@ -12251,11 +12662,11 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 	public function buddyboss_quiz_tab_screen() {
 		nocache_headers();
 		add_action(
-            'bp_template_title',
-            function() {
-			echo esc_html__( 'Quiz Results', 'flosc' );
-            }
-        );
+			'bp_template_title',
+			function () {
+				echo esc_html__( 'Quiz Results', 'flosc' );
+			}
+		);
 		add_action( 'bp_template_content', array( $this, 'render_buddyboss_quiz_tab' ) );
 		// BuddyPress members plugin template (core BP path; no third-party filter needed).
 		bp_core_load_template( 'members/single/plugins' );
@@ -12288,7 +12699,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		$timestamp       = $quiz_data['timestamp'] ?? 0;
 		$date_str        = $timestamp ? wp_date( 'F j, Y', $timestamp ) : '';
 
-		// Score tier: good ≥80, warn ≥60, bad <60
+		// Score tier: good ≥80, warn ≥60, bad <60.
 		$score_class = $score >= 80 ? 'flosc-score--good' : ( $score >= 60 ? 'flosc-score--warn' : 'flosc-score--bad' );
 		$this->enqueue_flosc_quiz_ui_styles();
 
@@ -12297,7 +12708,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		// Legacy-only fallback: render top-level score + areas when there are no per-session attempts.
 		// With attempts, render_session_result_card() inside each session accordion already renders these.
 		if ( empty( $quiz_attempts ) ) {
-			// Score circle
+			// Score circle.
 			echo '<div class="flosc-score-wrap">';
 			echo '<div class="flosc-score-ring ' . esc_attr( $score_class ) . '">';
 			echo esc_html( $score ) . '%';
@@ -12307,7 +12718,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 			}
 			echo '</div>';
 
-			// Weakest phonemes
+			// Weakest phonemes.
 			if ( $ranked_phonemes ) {
 				$top_weak = array_slice( $ranked_phonemes, 0, 10 );
 				echo '<div class="flosc-weakness-wrap">';
@@ -12362,7 +12773,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		$upgrade_url = flosc_get_setting( 'guest_link_upgrade_url', '' );
 
 		if ( ! $profile_completed && $is_guest_user ) {
-			// Anonymous public page notice — shown until guest completes profile
+			// Anonymous public page notice — shown until guest completes profile.
 			$upgrade_link = $upgrade_url ? ' <a href="' . esc_url( $upgrade_url ) . '" class="flosc-guest-warning-link">Upgrade for full access.</a>' : '';
 			$days_note    = ( $days_remaining !== null )
 				? 'This page and all associated data will be removed from our servers in <strong>' . esc_html( $days_remaining ) . '</strong> day' . ( $days_remaining !== 1 ? 's' : '' ) . ' if you don\'t upgrade.' . $upgrade_link
@@ -12370,7 +12781,9 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 			echo '<div class="flosc-guest-warning-card">';
 			echo '<p class="flosc-guest-warning-title">This is your anonymous, public quiz score page.</p>';
 			echo '<p class="flosc-guest-warning-copy">It becomes <strong>private</strong> once you complete your guest learner profile. Listening to recordings is for members.</p>';
-			if ($days_note) echo '<p class="flosc-guest-warning-copy flosc-guest-warning-copy--tight">' . wp_kses_post( $days_note ) . '</p>';
+			if ( $days_note ) {
+				echo '<p class="flosc-guest-warning-copy flosc-guest-warning-copy--tight">' . wp_kses_post( $days_note ) . '</p>';
+			}
 			echo '</div>';
 		} elseif ( $is_guest_user && get_current_user_id() === (int) $user_id ) {
 			$upgrade_link = $upgrade_url ? ' <a href="' . esc_url( $upgrade_url ) . '" class="flosc-guest-remaining-link">Upgrade for full access here.</a>' : '';
@@ -12486,7 +12899,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 					// Signed: ajax_serve_user_audio() refuses an unsigned link.
 					$flosc_dl_exp = time() + HOUR_IN_SECONDS;
 					$download_url = admin_url( 'admin-ajax.php' ) . '?' . http_build_query(
-                        array(
+						array(
 						'action'    => 'flosc_serve_user_audio',
 						'user_id'   => $user_id,
 						'flosc_sid' => $sid,
@@ -12494,8 +12907,8 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 						'download'  => 1,
 						'exp'       => $flosc_dl_exp,
 						'sig'       => $this->build_audio_access_signature( $user_id, $sid, $basename, $flosc_dl_exp ),
-                        )
-                    );
+						)
+					);
 
 					$recording_items[] = array(
 						'sid'         => $sid,
@@ -12509,14 +12922,14 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 
 			if ( ! empty( $recording_items ) ) {
 				usort(
-                    $recording_items,
-                    function( $a, $b ) {
-					if ( $a['sid'] === $b['sid'] ) {
-						return strcmp( $a['name'], $b['name'] );
+					$recording_items,
+					function ( $a, $b ) {
+						if ( $a['sid'] === $b['sid'] ) {
+							return strcmp( $a['name'], $b['name'] );
+						}
+						return strcmp( $b['sid'], $a['sid'] );
 					}
-					return strcmp( $b['sid'], $a['sid'] );
-                    }
-                );
+				);
 
 				echo '<div class="flosc-my-files">';
 				echo '<div class="flosc-my-files-head">';
@@ -12549,7 +12962,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 			}
 		}
 
-		// Phrase-level results — clickable accordions with word-level IPA + audio
+		// Phrase-level results — clickable accordions with word-level IPA + audio.
 		if ( $phrase_results && empty( $quiz_attempts ) ) {
 			$word_ipa   = $quiz_data['word_ipa'] ?? array();
 			$session_id = $this->resolve_quiz_session_id( $quiz_data );
@@ -12564,7 +12977,12 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 				$phrase_score  = 0;
 				$phoneme_count = 0;
 
-				$words_data = $data['words'] ?? array( array( 'word' => $data['target_text'] ?? '', 'expected_ipa' => $data['expected_ipa'] ?? '', 'phonemes' => $data['phonemes'] ?? array() ) );
+				$words_data = $data['words'] ?? array(
+				array(
+				'word'         => $data['target_text'] ?? '',
+				'expected_ipa' => $data['expected_ipa'] ?? '',
+				'phonemes'     => $data['phonemes'] ?? array(),
+				), );
 				foreach ( $words_data as $w ) {
 					foreach ( ( $w['phonemes'] ?? array() ) as $ph ) {
 						$phrase_score += floatval( $ph['confidence'] ?? 0 );
@@ -12591,7 +13009,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 					$this->render_phrase_audio_player_and_download( $user_id, $session_id, $phrase_num, $user_audio_dir );
 				}
 
-				// Word-level breakdown
+				// Word-level breakdown.
 				foreach ( $words_data as $w ) {
 					$word_text  = $w['word'] ?? '';
 					$w_phonemes = $w['phonemes'] ?? array();
@@ -12607,14 +13025,22 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 					echo '<span class="flosc-word-score ' . esc_attr( $w_avg >= 0.5 ? 'flosc-score--good' : ( $w_avg >= 0.1 ? 'flosc-score--warn' : 'flosc-score--bad' ) ) . '">' . esc_html( $w_pct ) . '%</span>';
 					echo '</div>';
 
-					// IPA reference rows (when word_ipa data is available)
+					// IPA reference rows (when word_ipa data is available).
 					if ( ! empty( $ipa_data ) ) {
 						$ipa_rows = array();
-						if ( ! empty( $ipa_data['mw'] )) $ipa_rows['merriam-webster'] = $ipa_data['mw'];
+						if ( ! empty( $ipa_data['mw'] ) ) {
+							$ipa_rows['merriam-webster'] = $ipa_data['mw'];
+						}
 						$da1ni5_val                              = $ipa_data['da1ni5'] ?? '';
-						if (is_array( $da1ni5_val )) $da1ni5_val = implode( ' | ', $da1ni5_val );
-						if ($da1ni5_val) $ipa_rows['da1ni5']     = $da1ni5_val;
-						if ( ! empty( $w['expected_ipa'] )) $ipa_rows['scored as'] = $w['expected_ipa'];
+						if ( is_array( $da1ni5_val ) ) {
+							$da1ni5_val = implode( ' | ', $da1ni5_val );
+						}
+						if ( $da1ni5_val ) {
+							$ipa_rows['da1ni5']     = $da1ni5_val;
+						}
+						if ( ! empty( $w['expected_ipa'] ) ) {
+							$ipa_rows['scored as'] = $w['expected_ipa'];
+						}
 						foreach ( $ipa_rows as $label => $val ) {
 							echo '<div class="flosc-ipa-row">';
 							echo '<span class="flosc-ipa-label">' . esc_html( $label ) . '</span>';
@@ -12623,7 +13049,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 						}
 					}
 
-					// Phoneme confidence bars
+					// Phoneme confidence bars.
 					foreach ( $w_phonemes as $ph ) {
 						$conf     = floatval( $ph['confidence'] ?? 0 );
 						$ph_pct   = round( $conf * 100, 1 );
@@ -12709,15 +13135,15 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		$sig     = $this->build_audio_access_signature( $user_id, $session_id, $audio_file, $expires );
 
 		$audio_url = admin_url( 'admin-ajax.php' ) . '?' . http_build_query(
-            array(
+			array(
 			'action'    => 'flosc_serve_user_audio',
 			'user_id'   => $user_id,
 			'flosc_sid' => $session_id,
 			'file'      => $audio_file,
 			'exp'       => $expires,
 			'sig'       => $sig,
-            )
-        );
+			)
+		);
 
 		echo '<div class="flosc-audio-wrap">';
 		echo '<audio class="flosc-audio-stream" controls controlsList="nodownload" src="' . esc_url( $audio_url ) . '"></audio>';
@@ -12730,14 +13156,14 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 	 */
 	private function build_audio_access_signature( $user_id, $session_id, $file, $expires ) {
 		$payload = implode(
-            '|',
-            array(
+			'|',
+			array(
 			(int) $user_id,
 			(string) $session_id,
 			(string) $file,
 			(int) $expires,
-            )
-        );
+			)
+		);
 
 		return hash_hmac( 'sha256', $payload, flosc_token_secret() );
 	}
@@ -12786,7 +13212,12 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 			$phrase_score  = 0;
 			$phoneme_count = 0;
 
-			$words_data = $data['words'] ?? array( array( 'word' => $data['target_text'] ?? '', 'expected_ipa' => $data['expected_ipa'] ?? '', 'phonemes' => $data['phonemes'] ?? array() ) );
+			$words_data = $data['words'] ?? array(
+			array(
+			'word'         => $data['target_text'] ?? '',
+			'expected_ipa' => $data['expected_ipa'] ?? '',
+			'phonemes'     => $data['phonemes'] ?? array(),
+			), );
 			foreach ( $words_data as $w ) {
 				foreach ( ( $w['phonemes'] ?? array() ) as $ph ) {
 					$phrase_score += floatval( $ph['confidence'] ?? 0 );
@@ -12829,11 +13260,19 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 
 				if ( ! empty( $ipa_data ) ) {
 					$ipa_rows = array();
-					if ( ! empty( $ipa_data['mw'] )) $ipa_rows['merriam-webster'] = $ipa_data['mw'];
+					if ( ! empty( $ipa_data['mw'] ) ) {
+						$ipa_rows['merriam-webster'] = $ipa_data['mw'];
+					}
 					$da1ni5_val                              = $ipa_data['da1ni5'] ?? '';
-					if (is_array( $da1ni5_val )) $da1ni5_val = implode( ' | ', $da1ni5_val );
-					if ($da1ni5_val) $ipa_rows['da1ni5']     = $da1ni5_val;
-					if ( ! empty( $w['expected_ipa'] )) $ipa_rows['scored as'] = $w['expected_ipa'];
+					if ( is_array( $da1ni5_val ) ) {
+						$da1ni5_val = implode( ' | ', $da1ni5_val );
+					}
+					if ( $da1ni5_val ) {
+						$ipa_rows['da1ni5']     = $da1ni5_val;
+					}
+					if ( ! empty( $w['expected_ipa'] ) ) {
+						$ipa_rows['scored as'] = $w['expected_ipa'];
+					}
 					foreach ( $ipa_rows as $label => $val ) {
 						echo '<div class="flosc-ipa-row">';
 						echo '<span class="flosc-ipa-label">' . esc_html( $label ) . '</span>';
@@ -12909,7 +13348,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		}
 
 		// Our assets - v9.3.7 Clean CSS Architecture
-		// 1. Layout CSS (structure only, no colors)
+		// 1. Layout CSS (structure only, no colors).
 		wp_enqueue_style(
 			'flosc-layout',
 			FLOSC_PLUGIN_URL . 'assets/css/flosc-layout.css',
@@ -12925,7 +13364,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 			filemtime( FLOSC_PLUGIN_DIR . 'assets/css/flosc-theme.css' )
 		);
 
-		// v1.6.2: Offer/checkout/autoprompt CSS (extracted from inline JS)
+		// v1.6.2: Offer/checkout/autoprompt CSS (extracted from inline JS).
 		wp_enqueue_style(
 			'flosc-offers',
 			FLOSC_PLUGIN_URL . 'assets/css/flosc-offers.css',
@@ -13004,16 +13443,16 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		// Strip WP ?ver= from third-party payment CDN scripts (PayPal SDK query contract).
 		if ( ! empty( $flosc_app_deps ) ) {
 			add_filter(
-                'script_loader_src',
-                static function ( $src, $handle ) {
-				if ( in_array( $handle, array( 'paypal-js', 'stripe-js' ), true ) && is_string( $src ) && $src !== '' ) {
-					return remove_query_arg( 'ver', $src );
-				}
-				return $src;
-                },
-                10,
-                2
-            );
+				'script_loader_src',
+				static function ( $src, $handle ) {
+					if ( in_array( $handle, array( 'paypal-js', 'stripe-js' ), true ) && is_string( $src ) && $src !== '' ) {
+						return remove_query_arg( 'ver', $src );
+					}
+					return $src;
+				},
+				10,
+				2
+			);
 		}
 
 		$flosc_app_js = FLOSC_PLUGIN_DIR . 'assets/js/flosc-app.js';
@@ -13135,7 +13574,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 	* Customization: bubble style, accent color, font, scale
 	 */
 	private function enqueue_chat_style() {
-		// v1.6.1: Per-flow settings via FLOSC_Flow_Manager::get_setting()
+		// v1.6.1: Per-flow settings via FLOSC_Flow_Manager::get_setting().
 		$fm     = FLOSC_Flow_Manager::instance();
 		$preset = $fm->get_setting( 'flosc_chat_style_preset', 'style', 'preset', 'light' );
 		$bubble = $fm->get_setting( 'flosc_chat_style_bubble', 'style', 'bubble', 'subtle-notch' );
@@ -13143,16 +13582,31 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		$font   = $fm->get_setting( 'flosc_chat_style_font', 'style', 'font', 'system' );
 		$scale  = intval( $fm->get_setting( 'flosc_chat_style_scale', 'style', 'scale', 100 ) );
 
-		// Bubble style presets (border-radius values per FLOSC_STYLE_GUIDE.md)
+		// Bubble style presets (border-radius values per FLOSC_STYLE_GUIDE.md).
 		$bubble_styles = array(
-			'subtle-notch' => array( 'user' => '18px 18px 4px 18px', 'assistant' => '4px 18px 18px 18px' ),
-			'classic'      => array( 'user' => '18px 18px 0 18px',   'assistant' => '0 18px 18px 18px' ),
-			'modern'       => array( 'user' => '20px 20px 6px 20px', 'assistant' => '6px 20px 20px 20px' ),
-			'minimal'      => array( 'user' => '16px',               'assistant' => '16px' ),
-			'sharp'        => array( 'user' => '12px 12px 2px 12px', 'assistant' => '2px 12px 12px 12px' ),
+			'subtle-notch' => array(
+		'user'      => '18px 18px 4px 18px',
+		'assistant' => '4px 18px 18px 18px',
+		),
+			'classic'      => array(
+		'user'      => '18px 18px 0 18px',
+		'assistant' => '0 18px 18px 18px',
+		),
+			'modern'       => array(
+		'user'      => '20px 20px 6px 20px',
+		'assistant' => '6px 20px 20px 20px',
+		),
+			'minimal'      => array(
+		'user'      => '16px',
+		'assistant' => '16px',
+		),
+			'sharp'        => array(
+		'user'      => '12px 12px 2px 12px',
+		'assistant' => '2px 12px 12px 12px',
+		),
 		);
 
-		// Font family map
+		// Font family map.
 		$font_families = array(
 			'system'        => '',
 			'inter'         => '"Inter", -apple-system, sans-serif',
@@ -13163,7 +13617,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 			'fira-code'     => '"Fira Code", "SF Mono", Monaco, monospace',
 		);
 
-		// File paths
+		// File paths.
 		$light_path = FLOSC_PLUGIN_DIR . 'assets/css/chat-style-light.css';
 		$dark_path  = FLOSC_PLUGIN_DIR . 'assets/css/chat-style-dark.css';
 
@@ -13173,7 +13627,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		// PRESET LOADING
 		// ===========================================
 		if ( $preset === 'auto' ) {
-			// Auto mode: Light by default, dark via prefers-color-scheme
+			// Auto mode: Light by default, dark via prefers-color-scheme.
 			if ( file_exists( $light_path ) && file_exists( $dark_path ) ) {
 				$light_content = flosc_fs_get_contents( $light_path );
 				$dark_content  = flosc_fs_get_contents( $dark_path );
@@ -13193,7 +13647,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 				}
 			}
 		} else {
-			// Named preset (light, dark, chatgpt, claude, grok): load as external stylesheet
+			// Named preset (light, dark, chatgpt, claude, grok): load as external stylesheet.
 			$safe_preset = preg_replace( '/[^a-z0-9-]/', '', $preset );
 			$preset_path = FLOSC_PLUGIN_DIR . 'assets/css/chat-style-' . $safe_preset . '.css';
 			if ( file_exists( $preset_path ) ) {
@@ -13215,20 +13669,20 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 		$overrides[] = "--flosc-user-message-radius: {$bubble_config['user']}";
 		$overrides[] = "--flosc-assistant-message-radius: {$bubble_config['assistant']}";
 
-		// v1.6.1: Full accent color cascade (5->15 derived variables)
+		// v1.6.1: Full accent color cascade (5->15 derived variables).
 		if ( ! empty( $accent ) && $accent !== '#2563eb' ) {
-			// Compute derived colors from hex accent
+			// Compute derived colors from hex accent.
 			$hover   = $this->adjust_color_brightness( $accent, -15 );
 			$subtle  = $this->hex_to_rgba( $accent, 0.06 );
 			$subtle4 = $this->hex_to_rgba( $accent, 0.04 );
 			$light   = $this->adjust_color_brightness( $accent, 40 );
 
-			// Core accent
+			// Core accent.
 			$overrides[] = "--flosc-accent: {$accent}";
 			$overrides[] = "--flosc-accent-hover: {$hover}";
 			$overrides[] = "--flosc-accent-subtle: {$subtle}";
 
-			// Components that derive from accent
+			// Components that derive from accent.
 			$overrides[] = "--flosc-user-message-bg: {$accent}";
 			$overrides[] = "--flosc-user-avatar-bg: {$accent}";
 			$overrides[] = "--flosc-send-btn-bg: {$accent}";
@@ -13244,13 +13698,13 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 			$overrides[] = "--flosc-quiz-input-focus-border: {$accent}";
 		}
 
-		// Scale factor
+		// Scale factor.
 		if ( $scale !== 100 && $scale > 0 ) {
 			$scale_factor = $scale / 100;
 			$overrides[]  = "--flosc-scale: {$scale_factor}";
 		}
 
-		// Font family
+		// Font family.
 		if ( $font !== 'system' && isset( $font_families[ $font ] ) && ! empty( $font_families[ $font ] ) ) {
 			$overrides[] = "--flosc-font-family: {$font_families[$font]}";
 		}
@@ -13259,14 +13713,14 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 			$inline_css .= "/* Dynamic Overrides */\n:root {\n    " . implode( ";\n    ", $overrides ) . ";\n}\n\n";
 		}
 
-		// Font application
+		// Font application.
 		if ( $font !== 'system' && isset( $font_families[ $font ] ) && ! empty( $font_families[ $font ] ) ) {
 			$inline_css .= "/* Font Application */\n";
 			$inline_css .= ".flosc-app,\n.flosc-app .messages,\n.flosc-app .message-text {\n";
 			$inline_css .= "    font-family: var(--flosc-font-family) !important;\n}\n\n";
 		}
 
-		// Attach inline styles to flosc-theme handle (always exists)
+		// Attach inline styles to flosc-theme handle (always exists).
 		if ( ! empty( trim( $inline_css ) ) ) {
 			wp_add_inline_style( 'flosc-theme', $inline_css );
 		}
@@ -13284,10 +13738,10 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 			return '';
 		}
 
-		// Remove CSS comments
+		// Remove CSS comments.
 		$css = preg_replace( '/\/\*[\s\S]*?\*\//', '', $css_content );
 
-		// Extract content inside :root { }
+		// Extract content inside :root { }.
 		if ( preg_match( '/:root\s*\{([^}]+)\}/s', $css, $matches ) ) {
 			return trim( $matches[1] ) . "\n";
 		}
@@ -13332,7 +13786,7 @@ if (defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG) flosc_log( "FLOSC store-quiz-data: 
 	}
 }
 
-// Initialize
+// Initialize.
 function flosc() {
 	return FLOSC_Framework::instance();
 }
@@ -13371,14 +13825,14 @@ require_once FLOSC_PLUGIN_DIR . 'includes/flosc-lifecycle.php';
  * file focused on framework bootstrapping.
  */
 
-// Register activation hook
+// Register activation hook.
 register_activation_hook( __FILE__, 'flosc_activate' );
 register_deactivation_hook( __FILE__, 'flosc_deactivate' );
 
 // Translations load automatically on WordPress.org-hosted plugins (WP 4.6+);
 // no load_plugin_textdomain() call is needed.
 
-// Start the plugin
+// Start the plugin.
 add_action( 'plugins_loaded', 'flosc' );
 
 /**
@@ -13402,7 +13856,9 @@ function flosc_get_setting( $key, $default = '', $flow_id = null ) {
  */
 function flosc_get_favicon_url( $size = '' ) {
 	$identity = FLOSC_Framework::instance()->get_floscflow_identity();
-	if ( ! empty( $identity['favicon_url'] )) return $identity['favicon_url'];
+	if ( ! empty( $identity['favicon_url'] ) ) {
+		return $identity['favicon_url'];
+	}
 	$suffix = $size ? "-{$size}" : '';
 	return FLOSC_PLUGIN_URL . "assets/img/flosc-icon{$suffix}.png";
 }

@@ -367,7 +367,7 @@ class FLOSC_Sample_Assessment_Quiz extends FLOSC_Abstract_Quiz_Type {
 			}
 		}
 
-		// Comma- or newline-separated letter list: A,B,C or A\nB\nC
+		// Comma- or newline-separated letter list: A,B,C or A\nB\nC.
 		if ( strpos( $trim, ',' ) !== false ) {
 			$parts = explode( ',', $trim );
 		} else {

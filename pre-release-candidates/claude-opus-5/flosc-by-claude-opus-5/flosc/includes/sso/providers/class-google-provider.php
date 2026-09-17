@@ -32,10 +32,10 @@ class Google_Provider extends SSO_Provider_Base {
 
 		$this->auth_url  = 'https://accounts.google.com/o/oauth2/v2/auth';
 		$this->token_url = 'https://oauth2.googleapis.com/token';
-		// v1.4.6: Use v2 userinfo endpoint (aligned with BuddyBoss proven implementation)
+		// v1.4.6: Use v2 userinfo endpoint (aligned with BuddyBoss proven implementation).
 		$this->user_info_url = 'https://www.googleapis.com/oauth2/v2/userinfo';
 
-		// v1.4.6: Scopes aligned with BuddyBoss (email + profile)
+		// v1.4.6: Scopes aligned with BuddyBoss (email + profile).
 		$this->scopes = array(
 			'email',
 			'profile',
@@ -51,7 +51,7 @@ class Google_Provider extends SSO_Provider_Base {
 	 * @return array Modified parameters
 	 */
 	protected function customize_auth_params( $params ) {
-		// Add Google-specific parameters
+		// Add Google-specific parameters.
 		$params['access_type']   = 'offline';  // Get refresh token
 		$params['prompt']        = 'select_account'; // Always show account selector
 		$params['response_mode'] = 'form_post'; // Deliver code/state via POST callback
@@ -113,7 +113,7 @@ class Google_Provider extends SSO_Provider_Base {
 		// Pass 8: json_decode of provider JSON does not sanitize — field-sanitize here.
 		$provider_id = sanitize_text_field( (string) ( $raw_data['id'] ?? ( $raw_data['sub'] ?? '' ) ) );
 
-		// v1.4.6: Get larger avatar (BuddyBoss pattern: replace s96 with s360)
+		// v1.4.6: Get larger avatar (BuddyBoss pattern: replace s96 with s360).
 		$avatar = esc_url_raw( (string) ( $raw_data['picture'] ?? '' ) );
 		if ( $avatar !== '' && strpos( $avatar, '=s96-c' ) !== false ) {
 			$avatar = str_replace( '=s96-c', '=s360-c', $avatar );
@@ -145,7 +145,7 @@ class Google_Provider extends SSO_Provider_Base {
 	 * @return string Provider user ID
 	 */
 	public function get_provider_user_id( $raw_data ) {
-		// v1.4.6: Handle both v2 (id) and v3 (sub) formats
+		// v1.4.6: Handle both v2 (id) and v3 (sub) formats.
 		return $raw_data['id'] ?? ( $raw_data['sub'] ?? '' );
 	}
 

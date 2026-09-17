@@ -578,7 +578,7 @@ class FLOSC_Concierge {
 		// Tried in order of how a person would name it:
 		// 1. an explicit .md filename in floscFlow/Flow/FlowName ("… (flow_ivr.md)")
 		// 2. the flow's NAME in floscFlow/Flow/FlowName (flow identity name)
-		// 3. the human-facing Deployment ("the WordPress host/chat", "flosc.ai")
+		// 3. the human-facing Deployment ("the WordPress host/chat", "flosc.ai").
 		if ( '' === $flow ) {
 			$flow = self::flow_file( $flow_hint );
 		}

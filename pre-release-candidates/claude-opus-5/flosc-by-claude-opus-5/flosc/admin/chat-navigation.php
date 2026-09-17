@@ -13,11 +13,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// Visitor menu
+// Visitor menu.
 $flosc_visitor_menu_raw = get_option( 'flosc_visitor_menu_items', array() );
 $flosc_visitor_menu     = array();
 if ( ! empty( $flosc_visitor_menu_raw ) ) {
-	// Backward compatibility: old associative format (signup/login/quiz)
+	// Backward compatibility: old associative format (signup/login/quiz).
 	if ( isset( $flosc_visitor_menu_raw['signup'] ) || isset( $flosc_visitor_menu_raw['login'] ) || isset( $flosc_visitor_menu_raw['quiz'] ) ) {
 		$flosc_action_map = array(
 			'signup' => 'open_registration',

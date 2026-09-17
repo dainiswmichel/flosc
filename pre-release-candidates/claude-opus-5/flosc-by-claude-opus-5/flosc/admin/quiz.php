@@ -233,7 +233,7 @@ $flosc_quiz_demos = array(
 	</div>
 
 	<?php
-	// Split quiz types: ready (functional) vs coming soon (needs STT/microphone)
+	// Split quiz types: ready (functional) vs coming soon (needs STT/microphone).
 	$flosc_ready_quizzes  = array();
 	$flosc_coming_quizzes = array();
 	foreach ( $flosc_all_quiz_types as $flosc_qid => $flosc_qt ) {

@@ -31,7 +31,7 @@ if ( ! current_user_can( 'edit_others_posts' ) ) {
 	wp_die( esc_html__( 'You do not have permission to access this page.', 'flosc' ), 403 );
 }
 
-// v1.2.9: Output tab header
+// v1.2.9: Output tab header.
 flosc_tab_header( '💰', 'Offers' );
 
 $flosc_flow_settings = $GLOBALS['flosc_current_settings'] ?? array();
@@ -333,7 +333,7 @@ flosc_handle_offer_save(); // v1.6.5: Execute at include time
  * anything about the request. Removed.
  */
 
-// Handle delete
+// Handle delete.
 if ( isset( $_GET['delete_offer'] ) && isset( $_GET['_wpnonce'] ) ) {
 	/*
 	 * Capability and nonce as two separate refusals, matching the toggle_status
@@ -365,9 +365,9 @@ if ( isset( $_GET['delete_offer'] ) && isset( $_GET['_wpnonce'] ) ) {
 	add_settings_error( 'flosc_settings', 'offer_deleted', 'Offer deleted.', 'success' );
 }
 
-// Handle toggle status
+// Handle toggle status.
 if ( isset( $_GET['toggle_status'] ) ) {
-	// Task 6: Verify nonce and capability
+	// Task 6: Verify nonce and capability.
 	if ( ! current_user_can( 'manage_options' ) ) {
 		wp_die( 'Unauthorized action.', 'Insufficient permissions', array( 'response' => 403 ) );
 	}
@@ -402,9 +402,9 @@ if ( isset( $_GET['toggle_status'] ) ) {
 	}
 }
 
-// Handle explicit status set (draft|inactive|active)
+// Handle explicit status set (draft|inactive|active).
 if ( isset( $_GET['set_status'] ) && isset( $_GET['status'] ) ) {
-	// Task 6: Verify nonce and capability
+	// Task 6: Verify nonce and capability.
 	if ( ! current_user_can( 'manage_options' ) ) {
 		wp_die( 'Unauthorized action.', 'Insufficient permissions', array( 'response' => 403 ) );
 	}
@@ -429,7 +429,7 @@ if ( isset( $_GET['set_status'] ) && isset( $_GET['status'] ) ) {
 	}
 }
 
-// Load offers
+// Load offers.
 $flosc_flow_id_for_offers = null;
 if ( ! empty( $flosc_flow_key ) ) {
 	$flosc_flow_id_for_offers = str_replace( 'flosc_flow_', '', $flosc_flow_key );
@@ -438,7 +438,7 @@ $flosc_offers    = flosc()->sale()->offers()->get_all_offers( $flosc_flow_id_for
 $flosc_get       = wp_unslash( $_GET );
 $flosc_expand_id = $flosc_get['edit_offer'] ?? $flosc_get['expand'] ?? null;
 
-// All 7 display formats with metadata
+// All 7 display formats with metadata.
 $flosc_all_format_meta = array(
 	'card'            => array(
 		'icon'  => '🃏',
@@ -598,7 +598,7 @@ foreach ( $flosc_offers as $flosc_offer ) :
 	$flosc_rate              = $flosc_views > 0 ? round( ( $flosc_conversions / $flosc_views ) * 100, 1 ) : 0;
 	$flosc_safe_id           = esc_attr( $flosc_offer['id'] );
 
-	// Determine enabled formats
+	// Determine enabled formats.
 	$flosc_df           = $flosc_offer['display_formats'] ?? array();
 	$flosc_enabled_fmts = array();
 	foreach ( $flosc_all_format_meta as $flosc_fid => $flosc_fm ) {
@@ -606,7 +606,7 @@ foreach ( $flosc_offers as $flosc_offer ) :
 			$flosc_enabled_fmts[] = $flosc_fm['icon'] . ' ' . $flosc_fm['label'];
 		}
 	}
-	// Backward compat: old single display_format
+	// Backward compat: old single display_format.
 	if ( empty( $flosc_enabled_fmts ) && ! empty( $flosc_offer['display_format'] ) ) {
 		$flosc_bf = $flosc_offer['display_format'];
 		if ( isset( $flosc_all_format_meta[ $flosc_bf ] ) ) {
@@ -941,9 +941,9 @@ function flosc_render_offer_editor_v2( $flosc_offer, $flosc_flow_key, $flosc_cur
 	$flosc_offer_id = $flosc_offer['id'] ?? 'new';
 	$flosc_safe_id  = esc_attr( $flosc_offer_id );
 
-	// Merge display_formats with defaults
+	// Merge display_formats with defaults.
 	$flosc_df = $flosc_offer['display_formats'] ?? array();
-	// Backward compat
+	// Backward compat.
 	if ( empty( $flosc_df ) && ! empty( $flosc_offer['display_format'] ) ) {
 		$flosc_df[ $flosc_offer['display_format'] ] = array( 'enabled' => true );
 	}
@@ -1310,7 +1310,7 @@ function flosc_render_offer_editor_v2( $flosc_offer, $flosc_flow_key, $flosc_cur
 				<th><label>Grants Level</label></th>
 				<td>
 					<?php
-					// v8.1.0: Dropdown from Member Levels registry (single source of truth)
+					// v8.1.0: Dropdown from Member Levels registry (single source of truth).
 					if ( ! isset( $flosc_fs_for_editor ) || ! is_array( $flosc_fs_for_editor ) ) {
 						$flosc_fs_for_editor = get_option( $flosc_flow_key, array() );
 						if ( ! is_array( $flosc_fs_for_editor ) ) {

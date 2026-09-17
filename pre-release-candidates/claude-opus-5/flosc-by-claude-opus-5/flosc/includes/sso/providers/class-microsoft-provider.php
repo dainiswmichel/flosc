@@ -61,10 +61,10 @@ class Microsoft_Provider extends SSO_Provider_Base {
 	 * @return array Modified parameters
 	 */
 	protected function customize_auth_params( $params ) {
-		// Microsoft prefers 'response_mode=query' for web apps
+		// Microsoft prefers 'response_mode=query' for web apps.
 		$params['response_mode'] = 'query';
 
-		// Prompt for account selection
+		// Prompt for account selection.
 		$params['prompt'] = 'select_account';
 
 		return $params;
@@ -101,7 +101,7 @@ class Microsoft_Provider extends SSO_Provider_Base {
 			);
 		}
 
-		// Try to get profile photo
+		// Try to get profile photo.
 		$avatar             = $this->get_profile_photo( $access_token );
 		$body['avatar_url'] = $avatar;
 
@@ -134,7 +134,7 @@ class Microsoft_Provider extends SSO_Provider_Base {
 			return '';
 		}
 
-		// Convert binary image to base64 data URI
+		// Convert binary image to base64 data URI.
 		$image_data   = wp_remote_retrieve_body( $response );
 		$content_type = wp_remote_retrieve_header( $response, 'content-type' );
 

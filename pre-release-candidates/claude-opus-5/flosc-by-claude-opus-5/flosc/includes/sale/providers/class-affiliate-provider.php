@@ -46,7 +46,7 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 	}
 
 	public function is_configured() {
-		// Check if any affiliate network is configured
+		// Check if any affiliate network is configured.
 		return ! empty( $this->get_setting( 'amazon_tag', '' ) ) ||
 				! empty( $this->get_setting( 'cj_id', '' ) ) ||
 				! empty( $this->get_setting( 'shareasale_id', '' ) ) ||
@@ -64,7 +64,7 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 				'description' => 'Users declare what they plan to buy. When they purchase through your affiliate links, they earn credits toward free access.',
 			),
 
-			// Amazon Associates
+			// Amazon Associates.
 			'amazon_tag'           => array(
 				'type'        => 'text',
 				'label'       => 'Amazon Associates Tag',
@@ -78,7 +78,7 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 				'description' => 'Comma-separated: US, UK, DE, FR, IT, ES, CA, etc.',
 			),
 
-			// Impact/CJ (Commission Junction)
+			// Impact/CJ (Commission Junction).
 			'cj_id'                => array(
 				'type'        => 'text',
 				'label'       => 'CJ (Commission Junction) ID',
@@ -89,7 +89,7 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 				'label' => 'CJ API Key',
 			),
 
-			// ShareASale
+			// ShareASale.
 			'shareasale_id'        => array(
 				'type'  => 'text',
 				'label' => 'ShareASale Affiliate ID',
@@ -99,7 +99,7 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 				'label' => 'ShareASale API Token',
 			),
 
-			// Custom affiliate endpoint (for aggregators or your own system)
+			// Custom affiliate endpoint (for aggregators or your own system).
 			'custom_endpoint'      => array(
 				'type'        => 'url',
 				'label'       => 'Custom Affiliate API Endpoint',
@@ -110,7 +110,7 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 				'label' => 'Custom API Key',
 			),
 
-			// Conversion settings
+			// Conversion settings.
 			'credit_rate'          => array(
 				'type'        => 'number',
 				'label'       => 'Credit Rate',
@@ -124,7 +124,7 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 				'description' => 'Minimum expected purchase value ($) to show offers',
 			),
 
-			// Categories
+			// Categories.
 			'enabled_categories'   => array(
 				'type'        => 'text',
 				'label'       => 'Enabled Categories',
@@ -292,31 +292,31 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 	public function find_offers_for_intent( $intent ) {
 		$offers = array();
 
-		// Amazon search
+		// Amazon search.
 		if ( $this->get_setting( 'amazon_tag' ) ) {
 			$amazon_offers = $this->search_amazon( $intent['description'], $intent['category'] );
 			$offers        = array_merge( $offers, $amazon_offers );
 		}
 
-		// CJ search
+		// CJ search.
 		if ( $this->get_setting( 'cj_id' ) && $this->get_setting( 'cj_api_key' ) ) {
 			$cj_offers = $this->search_cj( $intent['description'], $intent['category'] );
 			$offers    = array_merge( $offers, $cj_offers );
 		}
 
-		// ShareASale search
+		// ShareASale search.
 		if ( $this->get_setting( 'shareasale_id' ) ) {
 			$sas_offers = $this->search_shareasale( $intent['description'], $intent['category'] );
 			$offers     = array_merge( $offers, $sas_offers );
 		}
 
-		// Custom endpoint
+		// Custom endpoint.
 		if ( $this->get_setting( 'custom_endpoint' ) ) {
 			$custom_offers = $this->search_custom( $intent );
 			$offers        = array_merge( $offers, $custom_offers );
 		}
 
-		// Sort by potential commission
+		// Sort by potential commission.
 		usort(
 			$offers,
 			function ( $a, $b ) {
@@ -337,10 +337,10 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 		}
 
 		// Amazon Product Advertising API would go here
-		// For now, return affiliate link format
+		// For now, return affiliate link format.
 		$offers = array();
 
-		// Basic Amazon search link (users can search themselves)
+		// Basic Amazon search link (users can search themselves).
 		$search_url = 'https://www.amazon.com/s?' . http_build_query(
 			array(
 				'k'   => $query,
@@ -372,7 +372,7 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 		}
 
 		// CJ API integration would go here
-		// Returns merchant offers matching the query
+		// Returns merchant offers matching the query.
 
 		return array();
 	}
@@ -387,7 +387,7 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 			return array();
 		}
 
-		// ShareASale API integration would go here
+		// ShareASale API integration would go here.
 
 		return array();
 	}
@@ -483,11 +483,11 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 			return new WP_Error( 'invalid_data', __( 'Invalid conversion data', 'flosc' ) );
 		}
 
-		// Apply credit rate
+		// Apply credit rate.
 		$rate   = floatval( $this->get_setting( 'credit_rate', 100 ) ) / 100;
 		$credit = $commission * $rate;
 
-		// Add credits
+		// Add credits.
 		$this->add_credits(
 			$user_id,
 			$credit,
@@ -499,7 +499,7 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 			)
 		);
 
-		// Update intent if provided
+		// Update intent if provided.
 		if ( $safe['intent_id'] !== '' ) {
 			$this->update_intent(
 				$user_id,
@@ -514,7 +514,7 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 			);
 		}
 
-		// Also credit tokens if token provider is active
+		// Also credit tokens if token provider is active.
 		$token_provider = flosc_sale()->get_provider( 'tokens' );
 		if ( $token_provider ) {
 			$token_provider->credit_from_affiliate( $user_id, $credit, $safe );
@@ -550,7 +550,7 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 
 		update_user_meta( $user_id, $this->credits_meta_key, $new_balance );
 
-		// Log
+		// Log.
 		$this->log_credit_change( $user_id, 'credit', $amount, $meta );
 
 		return $new_balance;
@@ -664,7 +664,7 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 			$meta
 		);
 
-		// Keep last 100
+		// Keep last 100.
 		$log = array_slice( $log, -100 );
 
 		update_user_meta( $user_id, '_flosc_affiliate_credit_log', $log );
@@ -674,10 +674,10 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 	 * Handle webhook from affiliate networks
 	 */
 	public function handle_webhook( $payload, $headers = array() ) {
-		// Determine source from headers or payload
+		// Determine source from headers or payload.
 		$source = $this->detect_webhook_source( $headers, $payload );
 
-		// Parse payload based on source
+		// Parse payload based on source.
 		$tracking_data = $this->parse_webhook_payload( $source, $payload );
 
 		if ( is_wp_error( $tracking_data ) ) {
@@ -688,7 +688,7 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 	}
 
 	private function detect_webhook_source( $headers, $payload ) {
-		// Logic to detect Amazon, CJ, ShareASale, etc. from webhook
+		// Logic to detect Amazon, CJ, ShareASale, etc. from webhook.
 		return 'custom';
 	}
 

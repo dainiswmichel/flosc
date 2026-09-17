@@ -29,13 +29,13 @@ class FLOSC_Response_Validator {
 	public function flosc_validate( $flosc_response, $flosc_tool_calls_made = array() ) {
 		$flosc_violations = array();
 
-		// Check 1: Lesson content without tool use
+		// Check 1: Lesson content without tool use.
 		if ( $this->flosc_contains_lesson_content( $flosc_response ) &&
 			! $this->flosc_used_lesson_tool( $flosc_tool_calls_made ) ) {
 			$flosc_violations[] = 'lesson_content_without_tool';
 		}
 
-		// Check 2: Pricing to visitors
+		// Check 2: Pricing to visitors.
 		if ( $this->flosc_contains_pricing( $flosc_response ) &&
 			$this->flosc_user_session->flosc_get( 'flosc_user_type' ) === 'flosc_visitor' ) {
 			$flosc_violations[] = 'premature_pricing';

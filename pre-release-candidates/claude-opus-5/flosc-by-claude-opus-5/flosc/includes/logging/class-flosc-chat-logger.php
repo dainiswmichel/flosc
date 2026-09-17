@@ -232,10 +232,10 @@ class FLOSC_Chat_Logger {
 	public function flosc_rate_log( $log_id, $rating, $note = '' ) {
 		global $wpdb;
 
-		// Clamp to -10..+10
+		// Clamp to -10..+10.
 		$rating = max( -10, min( 10, intval( $rating ) ) );
 
-		// Any non-zero rating auto-protects the row from auto-expunge
+		// Any non-zero rating auto-protects the row from auto-expunge.
 		$is_protected = ( $rating !== 0 ) ? 1 : 0;
 
 		$this->flosc_ensure_table();
@@ -651,7 +651,7 @@ class FLOSC_Chat_Logger {
 	public function flosc_log_chat( $data ) {
 		global $wpdb;
 
-		// Ensure table exists (lightweight check — cached after first call)
+		// Ensure table exists (lightweight check — cached after first call).
 		$this->flosc_ensure_table();
 
 		// Any VGM state change goes in FIRST, so the marker sits above the turn

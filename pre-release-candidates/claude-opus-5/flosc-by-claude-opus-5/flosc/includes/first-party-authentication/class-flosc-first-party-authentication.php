@@ -66,7 +66,7 @@ class FLOSC_First_Party_Authentication {
 		if ( ! empty( $this->flosc->flosc_skip_registration_token_grants ) ) {
 			return;
 		}
-		// Grant signup bonus tokens + flow-specific guest token baseline
+		// Grant signup bonus tokens + flow-specific guest token baseline.
 		$token_provider = $this->get_token_provider();
 		if ( $token_provider && method_exists( $token_provider, 'grant_signup_bonus' ) ) {
 			$token_provider->grant_signup_bonus( $user_id );
@@ -82,7 +82,7 @@ class FLOSC_First_Party_Authentication {
 			$this->flosc->flosc_ensure_guest_token_baseline( $user_id, $token_provider, $flow_id, 'Guest registration baseline' );
 		}
 
-		// Check for referrer
+		// Check for referrer.
 		$referrer = isset( $_COOKIE['flosc_referrer'] ) ? sanitize_text_field( wp_unslash( $_COOKIE['flosc_referrer'] ) ) : null;
 		if ( $referrer && preg_match( '/^REF(\d+)$/', $referrer, $matches ) ) {
 			$referrer_id = intval( $matches[1] );
@@ -114,13 +114,13 @@ class FLOSC_First_Party_Authentication {
 			$this->flosc->flosc_ensure_guest_token_baseline( $user->ID, $token_provider, $flow_id, 'Guest login baseline' );
 		}
 
-		// v07.09: Set justLoggedIn flag for IVR
+		// v07.09: Set justLoggedIn flag for IVR.
 		set_transient( 'flosc_just_logged_in_' . $user->ID, true, MINUTE_IN_SECONDS * 5 );
 
 		// Restore browser-computed quiz data stashed before SSO redirect.
 		$this->flosc->consume_stashed_visitor_quiz( $user->ID );
 
-		// v2.0.2: Track login count for IVR condition evaluation (login_count)
+		// v2.0.2: Track login count for IVR condition evaluation (login_count).
 		$current_count = (int) get_user_meta( $user->ID, '_flosc_login_count', true );
 		update_user_meta( $user->ID, '_flosc_login_count', $current_count + 1 );
 
@@ -128,7 +128,7 @@ class FLOSC_First_Party_Authentication {
 		// If WP-Cron is delayed, process welcome/follow-up checks when an SSO user logs in.
 		$this->flosc->maybe_run_sso_email_sequence_for_user( $user->ID );
 
-		// v9.4.2: Check for pre-login score in SIGNED cookie
+		// v9.4.2: Check for pre-login score in SIGNED cookie.
 		$score_data = $this->flosc->get_signed_cookie( 'flosc_prelogin_score' );
 
 		// v8.0.5: Score visitor audio on login — covers SSO path (Google/Facebook) where
@@ -175,7 +175,7 @@ class FLOSC_First_Party_Authentication {
 					'incorrect' => $incorrect,
 					'timestamp' => isset( $raw['completed_at'] ) ? intval( $raw['completed_at'] / 1000 ) : time(),
 				);
-				// Clear the fallback cookie
+				// Clear the fallback cookie.
 				setcookie(
 					'flosc_quiz_result',
 					'',
@@ -189,19 +189,19 @@ class FLOSC_First_Party_Authentication {
 		}
 
 		if ( $score_data && isset( $score_data['score'] ) ) {
-			// v8.0.3: Store score with quiz_id tracking
+			// v8.0.3: Store score with quiz_id tracking.
 			$this->flosc->store_quiz_score( $user->ID, $score_data );
 
-			// v1.8.2: Fire flosc_quiz_completed so Free Lesson Manager assigns lessons
+			// v1.8.2: Fire flosc_quiz_completed so Free Lesson Manager assigns lessons.
 			do_action( 'flosc_quiz_completed', $score_data, $user->ID );
 
-			// v07.09: Set justCompletedQuiz flag for IVR
+			// v07.09: Set justCompletedQuiz flag for IVR.
 			set_transient( 'flosc_just_completed_quiz_' . $user->ID, true, MINUTE_IN_SECONDS * 5 );
 
-			// Send email with score and OTO
+			// Send email with score and OTO.
 			$this->flosc->send_score_email( $user, $score_data );
 
-			// Clear the cookie (v1.0.7: use array syntax)
+			// Clear the cookie (v1.0.7: use array syntax).
 			setcookie(
 				'flosc_prelogin_score',
 				'',
@@ -224,7 +224,7 @@ class FLOSC_First_Party_Authentication {
 	 */
 	public function handle_login_redirect( $redirect_to, $requested_redirect_to, $user ) {
 		$app_slug = get_option( 'flosc_app_slug', 'flosc' );
-		// v1.4.9: Use flow-aware URL so custom domains redirect correctly
+		// v1.4.9: Use flow-aware URL so custom domains redirect correctly.
 		$app_url = $this->flosc->get_app_url();
 		// v1.9.8: FloscAdmin-configured destination URL (empty = use app_url)
 		// v10.0.0: Per-flow login_destination is resolved first; global
@@ -261,12 +261,12 @@ class FLOSC_First_Party_Authentication {
 			}
 		}
 
-		// Check 1: If requested redirect is already to FLOSC app, allow it
+		// Check 1: If requested redirect is already to FLOSC app, allow it.
 		if ( ! empty( $requested_redirect_to ) && strpos( $requested_redirect_to, '/' . $app_slug ) !== false ) {
 			return $requested_redirect_to;
 		}
 
-		// v1.4.9: Also check if requested redirect is to a custom domain flow
+		// v1.4.9: Also check if requested redirect is to a custom domain flow.
 		if ( ! empty( $requested_redirect_to ) ) {
 			$flows = get_option( 'flosc_flows', array() );
 			foreach ( $flows as $flow ) {
@@ -276,20 +276,20 @@ class FLOSC_First_Party_Authentication {
 			}
 		}
 
-		// Check 2: If user has a pre-login quiz score cookie, redirect to configured destination
+		// Check 2: If user has a pre-login quiz score cookie, redirect to configured destination.
 		$score_data = $this->flosc->get_signed_cookie( 'flosc_prelogin_score' );
 		if ( $score_data && isset( $score_data['score'] ) ) {
 			return $dest_url;
 		}
 
-		// Check 3: If referrer was the FLOSC app, redirect to configured destination
+		// Check 3: If referrer was the FLOSC app, redirect to configured destination.
 		$referer = wp_get_referer();
 		if ( $referer ) {
-			// Check slug-based URL
+			// Check slug-based URL.
 			if ( strpos( $referer, '/' . $app_slug ) !== false ) {
 				return $dest_url;
 			}
-			// v1.4.9: Check custom domain referrers
+			// v1.4.9: Check custom domain referrers.
 			$referer_host = wp_parse_url( $referer, PHP_URL_HOST );
 			if ( $referer_host ) {
 				$current_flow = $this->flosc->get_current_flow();
@@ -303,7 +303,7 @@ class FLOSC_First_Party_Authentication {
 		}
 
 		// Otherwise, respect WordPress's default redirect behavior
-		// This allows normal WordPress posts/pages to work properly
+		// This allows normal WordPress posts/pages to work properly.
 		return $redirect_to;
 	}
 
@@ -315,13 +315,13 @@ class FLOSC_First_Party_Authentication {
 	public function handle_woocommerce_login_redirect( $redirect, $user ) {
 		$app_slug = get_option( 'flosc_app_slug', 'flosc' );
 
-		// Only redirect if referrer was FLOSC app
+		// Only redirect if referrer was FLOSC app.
 		$referer = wp_get_referer();
 		if ( $referer && strpos( $referer, '/' . $app_slug ) !== false ) {
 			return $this->flosc->get_app_url();
 		}
 
-		// Otherwise, let WooCommerce handle it normally
+		// Otherwise, let WooCommerce handle it normally.
 		return $redirect;
 	}
 
@@ -531,7 +531,7 @@ class FLOSC_First_Party_Authentication {
 			return false;
 		}
 
-		// Verify user exists
+		// Verify user exists.
 		$user = get_userdata( $user_id );
 		if ( ! $user || ! $user->exists() ) {
 			return false;
@@ -586,12 +586,12 @@ class FLOSC_First_Party_Authentication {
 	 * @return int Authenticated user ID
 	 */
 	public function authenticate_flosc_token( $user_id ) {
-		// If WordPress already authenticated via cookies, skip
+		// If WordPress already authenticated via cookies, skip.
 		if ( $user_id ) {
 			return $user_id;
 		}
 
-		// Check X-FLOSC-Token header first (API calls)
+		// Check X-FLOSC-Token header first (API calls).
 		$token = '';
 		if ( ! empty( $_SERVER['HTTP_X_FLOSC_TOKEN'] ) ) {
 			$token = sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FLOSC_TOKEN'] ) );
@@ -611,7 +611,7 @@ class FLOSC_First_Party_Authentication {
 
 		$validated_user_id = $this->validate_flosc_auth_token( $token );
 		if ( $validated_user_id ) {
-			// Set flag so allow_flosc_token_auth() can bypass WordPress nonce check
+			// Set flag so allow_flosc_token_auth() can bypass WordPress nonce check.
 			$this->flosc_token_auth_used = true;
 
 			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
@@ -663,7 +663,7 @@ class FLOSC_First_Party_Authentication {
 			return $flow_dest !== '' ? esc_url_raw( $flow_dest ) : $this->flosc->get_app_url();
 		}
 
-		// entry_flow (default)
+		// entry_flow (default).
 		if ( $entry_flow !== '' ) {
 			$recall = flosc_get_setting( 'logout_destination', '', $entry_flow );
 			if ( $recall !== '' ) {
@@ -782,7 +782,7 @@ class FLOSC_First_Party_Authentication {
 			return null;
 		}
 
-		// If FLOSC token was used, signal "auth succeeded" to skip nonce check
+		// If FLOSC token was used, signal "auth succeeded" to skip nonce check.
 		return $this->flosc_token_auth_used ? true : null;
 	}
 

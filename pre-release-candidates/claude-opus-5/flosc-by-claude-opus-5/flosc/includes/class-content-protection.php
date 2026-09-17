@@ -38,16 +38,16 @@ class FLOSC_Content_Protection {
 	}
 
 	private function __construct() {
-		// Hook into the_content with high priority (runs after other filters)
+		// Hook into the_content with high priority (runs after other filters).
 		add_filter( 'the_content', array( $this, 'filter_by_visibility' ), 20 );
 
-		// Hook into the_excerpt for teaser tier
+		// Hook into the_excerpt for teaser tier.
 		add_filter( 'get_the_excerpt', array( $this, 'filter_excerpt' ), 20, 2 );
 
-		// v1.4.7: Hide protected-category posts from public queries (archives, feeds, search)
+		// v1.4.7: Hide protected-category posts from public queries (archives, feeds, search).
 		add_action( 'pre_get_posts', array( $this, 'hide_protected_from_public_queries' ) );
 
-		// v1.4.7: Auto-protect flosc_sample_data category (runs once, stores flag in options)
+		// v1.4.7: Auto-protect flosc_sample_data category (runs once, stores flag in options).
 		add_action( 'init', array( $this, 'maybe_auto_protect_sample_category' ), 20 );
 	}
 
@@ -61,22 +61,22 @@ class FLOSC_Content_Protection {
 	 * @param WP_Query $query
 	 */
 	public function hide_protected_from_public_queries( $query ) {
-		// Only modify public front-end queries
+		// Only modify public front-end queries.
 		if ( is_admin() || ! $query->is_main_query() ) {
 			return;
 		}
 
-		// Don't filter singular post views (content protection handles those)
+		// Don't filter singular post views (content protection handles those).
 		if ( $query->is_singular() ) {
 			return;
 		}
 
-		// Admins see everything
+		// Admins see everything.
 		if ( current_user_can( 'manage_options' ) ) {
 			return;
 		}
 
-		// Collect all protected category IDs
+		// Collect all protected category IDs.
 		$protected_cat_ids = $this->get_protected_category_ids();
 
 		// Entitled members must still see their flow lessons on category archives
@@ -127,7 +127,7 @@ class FLOSC_Content_Protection {
 			}
 		}
 
-		// Exclude protected categories from the query
+		// Exclude protected categories from the query.
 		$existing_cat_not_in = $query->get( 'category__not_in' );
 		if ( ! is_array( $existing_cat_not_in ) ) {
 			$existing_cat_not_in = array();
@@ -243,7 +243,7 @@ class FLOSC_Content_Protection {
 	 * @return string 'hidden' | 'teaser' | 'preview' | 'public'
 	 */
 	public function get_post_visibility( $post_id ) {
-		// v1.8.2: Check new 4-tier protection mode
+		// v1.8.2: Check new 4-tier protection mode.
 		$protection_mode = get_post_meta( $post_id, '_flosc_protection_mode', true );
 		if ( $protection_mode ) {
 			switch ( $protection_mode ) {
@@ -254,23 +254,23 @@ class FLOSC_Content_Protection {
 				case 'title_readmore':
 					return 'preview';
 				case 'protected':
-					// Fall through to category check below
+					// Fall through to category check below.
 					break;
 			}
 		}
 
-		// Legacy: check old _flosc_public_post override
+		// Legacy: check old _flosc_public_post override.
 		if ( get_post_meta( $post_id, '_flosc_public_post', true ) === 'yes' ) {
 			return 'public';
 		}
 
-		// Legacy: check old _flosc_post_visibility override
+		// Legacy: check old _flosc_post_visibility override.
 		$visibility = get_post_meta( $post_id, '_flosc_post_visibility', true );
 		if ( $visibility && in_array( $visibility, array( 'hidden', 'teaser', 'preview', 'public' ) ) ) {
 			return $visibility;
 		}
 
-		// Check if in protected category
+		// Check if in protected category.
 		$protection = $this->check_post_protection( $post_id );
 
 		if ( $protection['protected'] ) {
@@ -422,18 +422,18 @@ class FLOSC_Content_Protection {
 	 * @return bool
 	 */
 	public function user_can_access( $post_id ) {
-		// v1.8.2: Check 4-tier protection mode — 'full' always accessible
+		// v1.8.2: Check 4-tier protection mode — 'full' always accessible.
 		$protection_mode = get_post_meta( $post_id, '_flosc_protection_mode', true );
 		if ( $protection_mode === 'full' ) {
 			return true;
 		}
 
-		// v1.4.3: Legacy public posts are always accessible
+		// v1.4.3: Legacy public posts are always accessible.
 		if ( get_post_meta( $post_id, '_flosc_public_post', true ) === 'yes' ) {
 			return true;
 		}
 
-		// v1.4.3: Check explicit public visibility
+		// v1.4.3: Check explicit public visibility.
 		$visibility = get_post_meta( $post_id, '_flosc_post_visibility', true );
 		if ( $visibility === 'public' ) {
 			return true;
@@ -441,12 +441,12 @@ class FLOSC_Content_Protection {
 
 		$protection = $this->check_post_protection( $post_id );
 
-		// Not protected = can access
+		// Not protected = can access.
 		if ( ! $protection['protected'] ) {
 			return true;
 		}
 
-		// Not logged in = cannot access protected content
+		// Not logged in = cannot access protected content.
 		if ( ! is_user_logged_in() ) {
 			return false;
 		}
@@ -455,7 +455,7 @@ class FLOSC_Content_Protection {
 		require_once FLOSC_PLUGIN_DIR . 'includes/class-member-access.php';
 		$member_access = FLOSC_Member_Access::instance();
 
-		// Check if user has guest access to this specific post (free lesson)
+		// Check if user has guest access to this specific post (free lesson).
 		if ( $member_access->has_guest_access( $user_id, $post_id ) ) {
 			return true;
 		}
@@ -483,7 +483,7 @@ class FLOSC_Content_Protection {
 						}
 					}
 				}
-				// If yes, check if user has ANY level from this flow's categories
+				// If yes, check if user has ANY level from this flow's categories.
 				if ( $post_in_flow ) {
 					foreach ( $flow['content_item_groups'] as $group ) {
 						if ( ! empty( $group['category'] ) ) {
@@ -528,17 +528,17 @@ class FLOSC_Content_Protection {
 		 * here would strip oEmbed iframes and other plugins' markup from
 		 * lessons readers are entitled to see. */
 
-		// Skip admin dashboard pages
+		// Skip admin dashboard pages.
 		if ( is_admin() ) {
 			return $content;
 		}
 
-		// Admin users on the frontend see everything unfiltered
+		// Admin users on the frontend see everything unfiltered.
 		if ( current_user_can( 'manage_options' ) ) {
 			return $content;
 		}
 
-		// Skip non-singular pages
+		// Skip non-singular pages.
 		if ( ! is_singular( 'post' ) ) {
 			return $content;
 		}
@@ -548,17 +548,17 @@ class FLOSC_Content_Protection {
 			return $content;
 		}
 
-		// Check if post is protected
+		// Check if post is protected.
 		$protection = $this->check_post_protection( $post_id );
 
 		if ( ! $protection['protected'] ) {
-			// Not protected, return full content
+			// Not protected, return full content.
 			return $content;
 		}
 
-		// Check user access
+		// Check user access.
 		if ( $this->user_can_access( $post_id ) ) {
-			// Member with access - return full content
+			// Member with access - return full content.
 			return $content;
 		}
 
@@ -594,7 +594,7 @@ class FLOSC_Content_Protection {
 
 			case 'public':
 			default:
-				// v1.4.3: Add free sample CTAs if this is a free sample post
+				// v1.4.3: Add free sample CTAs if this is a free sample post.
 				if ( get_post_meta( $post_id, '_flosc_public_post', true ) === 'yes' ) {
 					$content = $this->flosc_add_public_post_ctas( $content, $post_id );
 				}
@@ -667,7 +667,7 @@ class FLOSC_Content_Protection {
 		$excerpt = $post->post_excerpt;
 
 		if ( empty( $excerpt ) ) {
-			// Generate excerpt from content
+			// Generate excerpt from content.
 			$excerpt = wp_trim_words( wp_strip_all_tags( $post->post_content ), 55, '...' );
 		}
 
@@ -691,10 +691,10 @@ class FLOSC_Content_Protection {
 	 * @return string
 	 */
 	private function get_preview_content( $content, $post_id ) {
-		// Split by <!--flosc_read_more--> tag (FLOSC's custom tag)
+		// Split by <!--flosc_read_more--> tag (FLOSC's custom tag).
 		$parts = preg_split( '/<!--flosc_read_more(.*?)?-->/', $content, 2 );
 
-		// If no FLOSC tag, try WordPress <!--more--> as fallback
+		// If no FLOSC tag, try WordPress <!--more--> as fallback.
 		if ( count( $parts ) <= 1 ) {
 			$parts = preg_split( '/<!--more(.*?)?-->/', $content, 2 );
 		}
@@ -732,7 +732,7 @@ class FLOSC_Content_Protection {
 		$app_slug = get_option( 'flosc_app_slug', 'app' );
 		$app_url  = home_url( '/' . $app_slug . '/' );
 
-		// Add tracking params so chat knows where user came from
+		// Add tracking params so chat knows where user came from.
 		if ( $post_id ) {
 			$post     = get_post( $post_id );
 			$tracking = array(
@@ -794,18 +794,18 @@ class FLOSC_Content_Protection {
 			return $excerpt;
 		}
 
-		// Only filter on singular post pages
+		// Only filter on singular post pages.
 		if ( ! is_singular( 'post' ) ) {
 			return $excerpt;
 		}
 
-		// Check protection
+		// Check protection.
 		if ( $this->user_can_access( $post->ID ) ) {
 			return $excerpt;
 		}
 
 		// Protected and no access - return excerpt unchanged
-		// (visibility tier handles the main content)
+		// (visibility tier handles the main content).
 		return $excerpt;
 	}
 
@@ -879,5 +879,5 @@ class FLOSC_Content_Protection {
 	}
 }
 
-// Initialize
+// Initialize.
 FLOSC_Content_Protection::instance();

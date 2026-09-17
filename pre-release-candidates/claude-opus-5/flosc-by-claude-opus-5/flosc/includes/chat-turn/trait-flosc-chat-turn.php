@@ -186,7 +186,7 @@ trait FLOSC_Chat_Turn_Trait {
 			}
 		}
 
-		// v1.3.7: Get flow context from request
+		// v1.3.7: Get flow context from request.
 		$flow_id  = sanitize_text_field( $request->get_param( 'flow_id' ) ?? '' );
 		$ivr_file = sanitize_file_name( $request->get_param( 'ivr_file' ) ?? '' );
 		// Normalize stem so visitor charge keys match V→G remaining lookup.
@@ -232,7 +232,7 @@ trait FLOSC_Chat_Turn_Trait {
 			);
 		}
 
-		// v1.4.0: Admin Introspection - Let admins ask the chat about itself
+		// v1.4.0: Admin Introspection - Let admins ask the chat about itself.
 		if ( is_user_logged_in() && current_user_can( 'manage_options' ) ) {
 			$introspection_response = $this->check_admin_introspection( $message, $ivr_file );
 			if ( $introspection_response ) {
@@ -270,7 +270,7 @@ trait FLOSC_Chat_Turn_Trait {
 			}
 		}
 
-		// Fallback: try global option or default parser
+		// Fallback: try global option or default parser.
 		if ( empty( $ivr_config ) || empty( $ivr_config['messages'] ) ) {
 			$ivr_config = get_option( 'flosc_ivr_config', array() );
 		}
@@ -367,7 +367,7 @@ trait FLOSC_Chat_Turn_Trait {
 		// This prevents frontend from spoofing logged_in, user_id, etc.
 		$eval_context = $context; // Frontend context first
 
-		// Authoritative backend values (cannot be overridden by frontend)
+		// Authoritative backend values (cannot be overridden by frontend).
 		$eval_context['logged_in']     = is_user_logged_in();
 		$eval_context['user_id']       = is_user_logged_in() ? get_current_user_id() : 0;
 		$eval_context['phase']         = $phase;
@@ -692,7 +692,7 @@ trait FLOSC_Chat_Turn_Trait {
 
 		// v1.9.4: Chatpack — compute session tracking metadata (backend-authoritative)
 		// FloscHash: permanent installation ID (generated once, stored in wp_options)
-		// Session hash: per-session ID linked to parent via fingerprint prefix
+		// Session hash: per-session ID linked to parent via fingerprint prefix.
 		$chatpack_user_id      = $eval_context['user_id'] ?? 0;
 		$chatpack_flosc_hash   = FLOSC_Chatpack::generate_flosc_hash();
 		$chatpack_session_hash = FLOSC_Chatpack::generate_session_hash( $chatpack_flosc_hash, $chatpack_user_id, $session_id );
@@ -747,7 +747,7 @@ trait FLOSC_Chat_Turn_Trait {
 					},
 					array_slice( $visitor_history, -10 )
 				);
-				// Update pair number based on visitor history
+				// Update pair number based on visitor history.
 				$chatpack_pair_number = (int) floor( count( $chatpack_conv_history ) / 2 ) + 1;
 				$chatpack_is_first    = ( $chatpack_pair_number <= 1 );
 
@@ -829,7 +829,7 @@ trait FLOSC_Chat_Turn_Trait {
 
 		if ( $response_message === null ) {
 			if ( ! empty( $frontend_ivr_guidance ) ) {
-				// Frontend matched — use its IVR content as guidance
+				// Frontend matched — use its IVR content as guidance.
 				$response_message = array(
 					'content'          => $frontend_ivr_guidance,
 					'name'             => $frontend_ivr_name,
@@ -852,7 +852,7 @@ trait FLOSC_Chat_Turn_Trait {
 					);
 					$flosc_response_source = 'offer_phrase';
 				} else {
-					// No frontend match, no phrase match — try server-side IVR matching
+					// No frontend match, no phrase match — try server-side IVR matching.
 					$response_message = $this->find_ivr_response( $phase, $message, $eval_context, $ivr_config );
 				}
 			}
@@ -937,7 +937,7 @@ trait FLOSC_Chat_Turn_Trait {
 		try {
 			if ( $response_message && $ai_available ) {
 				// IVR matched AND AI is configured — AI interprets the IVR guidance
-				// v1.9.2: Chatpack — unified prompt with session tracking + conversation history
+				// v1.9.2: Chatpack — unified prompt with session tracking + conversation history.
 				$chatpack_prompt = $chatpack_is_first
 				? FLOSC_Chatpack::build_full_chatpack( $phase, $eval_context, $flow_id, $chatpack_flosc_hash, $chatpack_session_hash, $chatpack_pair_number, $response_message['content'] )
 				: FLOSC_Chatpack::build_followup_chatpack( $phase, $eval_context, $chatpack_session_hash, $chatpack_pair_number, $response_message['content'] );
@@ -953,11 +953,11 @@ trait FLOSC_Chat_Turn_Trait {
 
 				if ( $ai_response && ! is_wp_error( $ai_response ) ) {
 					// AI interpreted the IVR guidance — use AI's version
-					// Keep IVR's autoprompts and phase_change (structural, not content)
+					// Keep IVR's autoprompts and phase_change (structural, not content).
 					$response_message['content'] = $ai_response;
 					$flosc_response_source       = 'ai+ivr';
 				}
-				// If AI fails, fall through with original IVR content as-is
+				// If AI fails, fall through with original IVR content as-is.
 			}
 
 			if ( ! $response_message ) {
@@ -979,7 +979,7 @@ trait FLOSC_Chat_Turn_Trait {
 
 					if ( $flosc_use_rag ) {
 						// Anthropic provider — use RAG handler with tools + memory
-						// v1.9.2: Chatpack provides the system prompt (feedback, praise, KB, WP info)
+						// v1.9.2: Chatpack provides the system prompt (feedback, praise, KB, WP info).
 						$flosc_user_id      = $eval_context['user_id'] ?? 0;
 						$flosc_user_session = new FLOSC_User_Session( $flosc_user_id, $flow_id );
 						$flosc_rag_handler  = new FLOSC_RAG_Chat_Handler();
@@ -1014,7 +1014,7 @@ trait FLOSC_Chat_Turn_Trait {
 
 					if ( ! $flosc_use_rag && ! $response_message ) {
 						// All non-Anthropic providers (OpenAI, xAI, etc.) — use dispatch
-						// v1.9.2: Chatpack — unified prompt with session tracking + conversation history
+						// v1.9.2: Chatpack — unified prompt with session tracking + conversation history.
 						$chatpack_prompt = $chatpack_is_first
 						? FLOSC_Chatpack::build_full_chatpack( $phase, $eval_context, $flow_id, $chatpack_flosc_hash, $chatpack_session_hash, $chatpack_pair_number )
 						: FLOSC_Chatpack::build_followup_chatpack( $phase, $eval_context, $chatpack_session_hash, $chatpack_pair_number );
@@ -1057,7 +1057,7 @@ trait FLOSC_Chat_Turn_Trait {
 						$flosc_response_source = ( $dispatch_source === 'ai' && $ai_response !== '' ) ? 'ai' : 'fallback';
 					}
 				} else {
-					// IVR mode or no AI - use phase default + autoprompts
+					// IVR mode or no AI - use phase default + autoprompts.
 					$response_message = array(
 						'content'          => $this->get_phase_default_response( $phase, $eval_context ),
 						'user_autoprompts' => $this->get_user_autoprompts_for_phase( $phase, $eval_context, $ivr_config ),
@@ -1092,7 +1092,7 @@ trait FLOSC_Chat_Turn_Trait {
 			$this->session_manager->add_flosc_message( $session_id, 'assistant', $response_message['content'], get_current_user_id(), null, $msg_flow );
 		}
 
-		// v1.9.0: Log chat exchange for admin monitoring
+		// v1.9.0: Log chat exchange for admin monitoring.
 		$flosc_chat_elapsed  = round( ( microtime( true ) - $flosc_chat_start_time ) * 1000 );
 		$flosc_provider_used = $ai_available ? flosc_get_setting( 'ai_provider', 'ivr' ) : 'ivr';
 		$flosc_chain_detail  = ( $this->ai_chat_dispatch && ! empty( $this->ai_chat_dispatch->last_chain_detail ) )
@@ -1485,13 +1485,13 @@ trait FLOSC_Chat_Turn_Trait {
 			flosc_log( "FLOSC RAG Chat: User {$user_context['user_id']} ({$user_context['access_level']}) - Message: {$message}" );
 		}
 
-		// Build system prompt for AI
+		// Build system prompt for AI.
 		$system_prompt = $this->build_rag_system_prompt( $user_context );
 
-		// Get available lessons list (for AI to know what exists)
+		// Get available lessons list (for AI to know what exists).
 		$lessons_list = $this->rag_manager->get_available_lessons( $user_context['access_level'] );
 
-		// Add lessons to system prompt
+		// Add lessons to system prompt.
 		$system_prompt .= "\n\n**AVAILABLE CONTENT:**\n{$lessons_list}";
 
 		if ( $trajectory_guidance !== '' ) {
@@ -1501,18 +1501,18 @@ trait FLOSC_Chat_Turn_Trait {
 		if ( $concierge_guidance !== '' ) {
 			$system_prompt .= $concierge_guidance; }
 
-		// Get AI tools
+		// Get AI tools.
 		$tools = $this->rag_manager->get_ai_tools();
 
-		// Call AI with tools (RAG enabled)
+		// Call AI with tools (RAG enabled).
 		$ai_response = $this->call_ai_with_rag( $message, $system_prompt, $tools, $user_context );
 
-		// CRITICAL: Validate response for access level compliance (v9.1.7)
+		// CRITICAL: Validate response for access level compliance (v9.1.7).
 		$validator         = FLOSC_Access_Validator::instance();
 		$validation_result = $validator->validate_response( $ai_response, $user_context['access_level'] );
 
 		if ( ! $validation_result['valid'] ) {
-			// Content leakage detected - use safe fallback
+			// Content leakage detected - use safe fallback.
 			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
 				if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
 					flosc_log( 'FLOSC SECURITY ALERT: Content leakage prevented' );
