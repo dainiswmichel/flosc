@@ -1,15 +1,15 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": 78,
+  "candidate_iteration": 79,
   "creator": "Claude Opus 5",
-  "status": "NONCE_ACCEPTANCE_PASSED_ON_CAPTAINS_MACHINE",
+  "status": "STATICALLY_CLEAN_FUNCTIONALLY_UNVERIFIED",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v77",
+  "base": "claude-opus-5 v78",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "798196386dc5738fd6bb55d65ced8890132d836f1974121de3699a7bfa6ed065",
-  "artifact_bytes": 2762442,
+  "artifact_sha256": "a80b7340fa53f21c17464b0a6d1d03fc58e9d050f1629388115f4a8e9f06af26",
+  "artifact_bytes": 2763076,
   "artifact_entries": 278,
   "tree_files": 295,
   "why_this_iteration": {
@@ -426,5 +426,37 @@
       "runtime": "17.28 secs, 192.01MB peak -- above PHP's 128M default, which is why -d memory_limit=1G is part of the command."
     }
   },
-  "artifact_entry_breakdown": "278 zip entries = 238 files + 40 directory entries. Earlier manifests said 277; that was one short and is corrected here. tree_files 295 is the source tree, which is larger because tests/ and build scripts are excluded from the zip."
+  "artifact_entry_breakdown": "278 zip entries = 238 files + 40 directory entries. Earlier manifests said 277; that was one short and is corrected here. tree_files 295 is the source tree, which is larger because tests/ and build scripts are excluded from the zip.",
+  "v79_regression_accounting": {
+    "why": "v78 was advanced on a phpcs PASS alone. Two functional defects of the same class were then found by tracing the diff. The full accounting is in v79-regression-accounting.html.",
+    "standard": "A static-analysis PASS is not a completed repair if the repair changes executable behavior and that behavior has not been regression-tested.",
+    "R1_site_index_notices": {
+      "introduced_by": "v78",
+      "what": "admin/ai-configuration.php changed $flosc_get's fallback from wp_unslash($_GET) to array(). $GLOBALS['flosc_get'] is never written anywhere in the plugin, so the fallback is always taken and the reads of site_index_action / site_index_error became permanently empty.",
+      "impact": "FLOSC_Site_Content_Index::redirect_ai() carries the outcome in the query string on all ten paths; set_transient() runs on exactly one (successful full rebuild). Nine of ten Site Index outcomes displayed no notice. The action still ran; only the confirmation vanished.",
+      "fix": "Both values read through flosc_nav_param(). No bulk superglobal read restored, no suppression added. The dead $flosc_get indirection for 'view' removed -- its isset() was permanently false.",
+      "test": "T-AI-2. NOT YET EXECUTED."
+    },
+    "R2_knowledge_base_params": {
+      "introduced_by": "pre-existing -- present in every candidate commit in this repo, 3c15b22 through 7a720c4, each checked",
+      "what": "admin/knowledge-base.php read view, kb_edit and kb_id from the same never-written global with the same array() fallback, so all three were permanently empty and the edit-a-KB-by-URL route was dead.",
+      "fix": "All three read through flosc_nav_param().",
+      "test": "T-KB-1. NOT YET EXECUTED."
+    },
+    "static_checks_executed": {
+      "route_to_form_nonce_pairings": "25 of 25 match, extracted from the form blocks themselves",
+      "ivr_post_branches_vs_table": "11 branches, 11 table keys, exact match",
+      "settings_routes_vs_pre_v78": "7 old keys, 7 new routes, same effect and order",
+      "nav_param_allowlists": "19 sites checked against what the old code accepted; no over-narrowing found",
+      "php_l_whole_tree": "0 errors, 187 files",
+      "nonce_suppressions_plugin_wide": 0,
+      "caveat": "All of the above is code analysis, not a functional test."
+    },
+    "behavioral_acceptance": "0 of 30 tests executed. There is no WordPress, phpcs, wp-env or browser in the build container.",
+    "verdict": "STATICALLY CLEAN -- FUNCTIONALLY UNVERIFIED. Not complete, not ready, not verified, not safe to advance.",
+    "new_behavior_not_required_by_the_nonce_work": [
+      "class-oauth2-handler.php: new strlen <= 2048 cap on code/state/error/error_description. A provider sending longer would now be dropped.",
+      "class-apple-provider.php: new strlen <= 8192 cap on the 'user' form_post field."
+    ]
+  }
 }

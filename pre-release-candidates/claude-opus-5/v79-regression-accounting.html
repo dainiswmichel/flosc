@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FLOSC v79 Regression Accounting</title>
+<style>
+:root{--bg:#fff;--fg:#1a1a1a;--mut:#5b5b5b;--line:#d8d8d8;--hl:#f6f6f4;
+--fail:#8a1b1b;--failbg:#fdf0f0;--pass:#14532d;--passbg:#eef7f0;--todo:#7a4a00;--todobg:#fdf6e8;}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141414;--fg:#e8e8e6;--mut:#a0a09c;
+--line:#333;--hl:#1d1d1d;--fail:#ff8d8d;--failbg:#2a1414;--pass:#8ee0a6;--passbg:#12240f;--todo:#f0c674;--todobg:#2a2110;}}
+:root[data-theme="dark"]{--bg:#141414;--fg:#e8e8e6;--mut:#a0a09c;--line:#333;--hl:#1d1d1d;
+--fail:#ff8d8d;--failbg:#2a1414;--pass:#8ee0a6;--passbg:#12240f;--todo:#f0c674;--todobg:#2a2110;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);
+font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;}
+.wrap{max-width:1100px;margin:0 auto;padding:40px 16px 80px}
+h1{font-size:1.9rem;line-height:1.2;margin:0 0 4px}
+h2{font-size:1.25rem;margin:44px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+h3{font-size:1rem;margin:26px 0 6px}
+.sub{color:var(--mut);margin:0 0 28px}
+code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.86em}
+pre{background:var(--hl);border:1px solid var(--line);border-radius:6px;padding:12px 14px;overflow-x:auto}
+table{border-collapse:collapse;width:100%;margin:14px 0;font-size:.88rem}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+th{background:var(--hl);font-weight:600}
+.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.76rem;font-weight:700;
+letter-spacing:.02em;white-space:nowrap}
+.t-fail{background:var(--failbg);color:var(--fail)}
+.t-pass{background:var(--passbg);color:var(--pass)}
+.t-todo{background:var(--todobg);color:var(--todo)}
+.box{border:1px solid var(--line);border-left-width:4px;border-radius:6px;padding:14px 16px;margin:18px 0}
+.box.fail{border-left-color:var(--fail);background:var(--failbg)}
+.box.note{border-left-color:var(--mut);background:var(--hl)}
+.box h3{margin-top:0}
+ol li,ul li{margin:4px 0}
+.small{font-size:.86rem;color:var(--mut)}
+@media(max-width:700px){table{font-size:.8rem}th,td{padding:6px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>FLOSC v79 — Regression Accounting</h1>
+<p class="sub">Every executable change v78 made, what could break, and whether that has actually been tested.
+Plugin version 8.0.0 throughout. Candidate counter v78 → v79.</p>
+
+<div class="box note">
+<h3>The standard this document exists to satisfy</h3>
+<p>A static-analysis PASS is not a completed repair if the repair changes executable
+behavior and the affected behavior has not been regression-tested.</p>
+<p>What is established: <code>WordPress.Security.NonceVerification</code> reports 0 findings across
+218 files, phpcs exit 0, measured on the Captain's machine.</p>
+<p>What is <strong>not</strong> established by that: that settings save, IVR actions work, audio plays,
+OAuth completes, magic links authenticate, or navigation behaves. Those are separate gates and
+most of them are still open.</p>
+<p><strong>There is no WordPress, no phpcs, no wp-env and no browser in the container this candidate
+was built in.</strong> Every runtime row below is therefore NOT YET EXECUTED, and says so.</p>
+</div>
+
+<h2>1. Defects found by this audit</h2>
+
+<div class="box fail">
+<h3><span class="tag t-fail">EXECUTED — FAIL</span> &nbsp; R-1 · Site Index notices stopped rendering</h3>
+<p><strong>Introduced by v78.</strong> Found by static trace, fixed in v79.</p>
+<table>
+<tr><th style="width:22%">Field</th><th>Detail</th></tr>
+<tr><td>Before</td><td><code>admin/ai-configuration.php:37</code> — <code>$flosc_get = $GLOBALS['flosc_get'] ?: wp_unslash($_GET)</code>.
+Lines 2957–2958 read <code>site_index_action</code> and <code>site_index_error</code> from it.</td></tr>
+<tr><td>Changed</td><td>v78 replaced the fallback with <code>array()</code> to remove a bulk superglobal read.</td></tr>
+<tr><td>Why</td><td>The bulk <code>wp_unslash($_GET)</code> carried a <code>NonceVerification.Recommended</code> suppression.</td></tr>
+<tr><td>What depends on it</td><td>The admin notice after every Site Index action on the AI tab:
+Rebuild, Exclude post, Include post, Save keywords, Reindex one — and all five error paths.</td></tr>
+<tr><td>What broke</td><td><code>$GLOBALS['flosc_get']</code> is <strong>never written anywhere in the plugin</strong>
+(verified across every candidate commit). So the fallback is always taken, so both reads became
+permanently empty.<br>
+<code>FLOSC_Site_Content_Index::redirect_ai()</code> carries the outcome in the query string on
+<em>all ten</em> paths. <code>set_transient()</code> runs on exactly <em>one</em> — the successful full
+rebuild, at line 1947. The other nine had no other carrier.<br>
+Net effect: nine of ten Site Index outcomes silently displayed nothing. The action still ran and
+still wrote; only the confirmation vanished — which is the failure mode that makes an admin click
+a second time.</td></tr>
+<tr><td>Fix in v79</td><td>Both values sourced through <code>flosc_nav_param()</code>. No bulk superglobal read
+returns, no suppression added. The dead <code>$flosc_get</code> indirection for <code>view</code> is gone too —
+its <code>isset()</code> was permanently false.</td></tr>
+<tr><td>Test that proves it</td><td>T-AI-2 below. <strong>NOT YET EXECUTED.</strong></td></tr>
+</table>
+</div>
+
+<div class="box fail">
+<h3><span class="tag t-fail">EXECUTED — FAIL</span> &nbsp; R-2 · Knowledge Base tab could not read its own URL</h3>
+<p><strong>Pre-existing — not v78.</strong> Present in every candidate commit in this repository
+(<code>3c15b22</code> through <code>7a720c4</code>, checked individually). Fixed in v79 because it is the identical
+defect and was found by the same trace.</p>
+<table>
+<tr><th style="width:22%">Field</th><th>Detail</th></tr>
+<tr><td>Before</td><td><code>admin/knowledge-base.php:15</code> read <code>view</code>, <code>kb_edit</code> and
+<code>kb_id</code> from <code>$GLOBALS['flosc_get']</code>, fallback <code>array()</code>.</td></tr>
+<tr><td>What broke</td><td>Same root cause as R-1: that global is never written. All three reads were
+permanently empty, so the tab could not see <code>?view</code>, <code>?kb_edit</code> or <code>?kb_id</code>
+— the entire edit-a-knowledge-base-by-URL route.</td></tr>
+<tr><td>Fix in v79</td><td>All three read through <code>flosc_nav_param()</code>.</td></tr>
+<tr><td>Test that proves it</td><td>T-KB-1 below. <strong>NOT YET EXECUTED.</strong></td></tr>
+</table>
+</div>
+
+<h2>2. Static verification that was executed</h2>
+
+<p>These ran in the build container. They are code analysis, <strong>not functional tests</strong>, and are
+labelled accordingly.</p>
+
+<table>
+<tr><th style="width:46%">Check</th><th style="width:16%">Status</th><th>Result</th></tr>
+<tr><td>Every dispatcher route matched against the <code>wp_nonce_field()</code> its own form prints —
+extracted from the form blocks, not from my notes</td><td><span class="tag t-pass">EXECUTED — PASS</span></td>
+<td>25 of 25 pairings match, across <code>settings.php</code>, <code>flow.php</code>,
+<code>trajectories.php</code>, <code>concierge.php</code>, <code>ivr-messages.php</code>. Zero mismatches.
+A mismatch here is the one way this rewrite produces a <code>wp_die()</code> on submit.</td></tr>
+<tr><td>Every <code>$flosc_post[...]</code> branch in <code>ivr-messages.php</code> has its trigger key in the
+route table</td><td><span class="tag t-pass">EXECUTED — PASS</span></td>
+<td>11 branches, 11 table keys, exact match. A key present in the code but missing from the table
+would make that action silently no-op.</td></tr>
+<tr><td>The settings dispatcher's 7 routes vs. what the pre-v78 function handled</td>
+<td><span class="tag t-pass">EXECUTED — PASS</span></td>
+<td>Old code handled 3 keys inline plus 4 in a <code>$redirect_post_keys</code> list = 7. Same 7, same order
+of effect. The early <code>return</code> when no route matches mirrors the old
+<code>if (!$hit) return;</code>.</td></tr>
+<tr><td><code>flosc_save</code> submit buttons that live outside the form element</td>
+<td><span class="tag t-pass">EXECUTED — PASS</span></td>
+<td>All use HTML5 <code>form="flosc-settings-form"</code>, binding to the single form at
+<code>settings.php:2314</code> carrying <code>wp_nonce_field('flosc_save_settings')</code>. Table entry correct.</td></tr>
+<tr><td>Every <code>flosc_nav_param()</code> allowlist vs. what the old code accepted</td>
+<td><span class="tag t-pass">EXECUTED — PASS</span></td>
+<td>19 sites. The three <code>view</code> allowlists that omit <code>design</code> feed comparisons that only
+test <code>=== 'all'</code> or <code>!== 'all'</code>, so <code>design</code> → <code>''</code> takes the same branch it
+took before. The designer's own two sites do include <code>design</code>. The shortcut-redirect map does
+not contain the designer.</td></tr>
+<tr><td><code>php -l</code>, whole tree</td><td><span class="tag t-pass">EXECUTED — PASS</span></td>
+<td>0 errors across 187 files.</td></tr>
+<tr><td><code>NonceVerification</code> suppressions, plugin-wide</td><td><span class="tag t-pass">EXECUTED — PASS</span></td>
+<td>0.</td></tr>
+<tr><td>Artifact shape</td><td><span class="tag t-pass">EXECUTED — PASS</span></td>
+<td>278 entries (238 files + 40 dirs), 0 under <code>tests/</code>, single <code>flosc/</code> root,
+header version 8.0.0.</td></tr>
+<tr><td><code>WordPress.Security.NonceVerification</code>, phpcs</td><td><span class="tag t-pass">EXECUTED — PASS</span></td>
+<td>218 files, 0 findings, exit 0. <strong>Run by the Captain on v78.</strong> v79 changes two files and adds
+no superglobal reads, but this has <em>not</em> been re-run on v79.</td></tr>
+</table>
+
+<h2>3. Behavioral surfaces changed — runtime status</h2>
+
+<p>Every row is <span class="tag t-todo">NOT YET EXECUTED</span> unless stated. Nothing below has been
+exercised in a running WordPress.</p>
+
+<table>
+<tr><th style="width:20%">Surface</th><th style="width:26%">What changed &amp; why</th>
+<th style="width:30%">What could break</th><th style="width:24%">Test</th></tr>
+
+<tr><td><strong>Settings POST dispatch</strong><br><code>maybe_process_flosc_settings_post()</code></td>
+<td>Route table; <code>check_admin_referer()</code> for the matched route runs before <code>$_POST</code> is
+unslashed. Was: unslash first, verify inside handlers.</td>
+<td>Wrong action or field name in the table → <code>wp_die()</code> on submit instead of a save. Highest-risk
+change in the release.</td><td>T-SET-1, T-SET-2, T-SET-3, T-SET-4</td></tr>
+
+<tr><td><strong>Settings tab after save</strong><br><code>redirect_to_settings_tab()</code>,
+<code>settings.php:358</code></td>
+<td>Stopped writing into <code>$_GET</code>; carries the tab in <code>$GLOBALS['flosc_forced_tab']</code>,
+read at the top of settings.php.</td>
+<td>If the global is set after settings.php reads it, the admin lands on the wrong tab after saving.
+Ordering is not provable statically — it depends on hook order at runtime.</td><td>T-SET-5</td></tr>
+
+<tr><td><strong>IVR administration</strong><br><code>admin/ivr-messages.php</code></td>
+<td>File-scope dispatcher: 11 submit keys, nonce verified before the body is unslashed. GET nav params
+through the boundary.</td>
+<td>A missing key → that button silently does nothing. A wrong action → <code>wp_die()</code>.
+Both tables verified statically; neither clicked.</td><td>T-IVR-1 … T-IVR-6</td></tr>
+
+<tr><td><strong>IVR upload / portability</strong><br><code>ivr-upload-handler.php</code></td>
+<td>Suppressions removed only; reads and order unchanged.</td>
+<td>Low. No read was rewritten.</td><td>T-IVR-7, T-IVR-8</td></tr>
+
+<tr><td><strong>Signed audio</strong><br><code>ajax_serve_user_audio()</code> + 2 URL builders</td>
+<td><code>FILTER_VALIDATE_INT</code> with ranges for <code>user_id</code>/<code>exp</code>, 64-hex match for
+<code>sig</code>; HMAC now verified before bytes are sent; both previously-unsigned builders now sign.</td>
+<td>A URL minted by an older build has no signature → 403. Cached pages holding old URLs stop playing.
+Typed parsing rejects values the old <code>FILTER_SANITIZE_NUMBER_INT</code> silently coerced.</td>
+<td>T-AUD-1, T-AUD-2, T-AUD-3</td></tr>
+
+<tr><td><strong>Magic link</strong><br><code>handle_admin_activate_email_account()</code></td>
+<td>Real defect fixed: the nonce action was built from <code>absint()</code> of the raw id, so an empty id
+produced the live action <code>flosc_activate_email_0</code>. Now validated then verified.</td>
+<td>Activation links generated before this change use the same action string, so they should still
+verify — but that is an assumption, not a measurement.</td><td>T-ML-1, T-ML-2</td></tr>
+
+<tr><td><strong>Newsletter opt-in</strong><br><code>save_newsletter_profile_field()</code></td>
+<td>Now calls <code>check_admin_referer('update-user_'.$user_id)</code> itself instead of relying on core
+verifying it in an invisible caller.</td>
+<td>If the hook ever fires outside the profile-update request, this now <code>wp_die()</code>s where it
+previously proceeded.</td><td>T-EM-1</td></tr>
+
+<tr><td><strong>OAuth callback</strong><br><code>handle_callback()</code></td>
+<td>Reads through <code>filter_input()</code>; <strong>new</strong> <code>strlen &lt;= 2048</code> cap on
+<code>code</code>, <code>state</code>, <code>error</code>, <code>error_description</code>.</td>
+<td>The cap is new behavior not required by the nonce work. A provider sending a code or state longer
+than 2048 chars would now be dropped and the login would fail. Google and Apple are well under;
+other providers are untested.</td><td>T-SSO-1, T-SSO-2</td></tr>
+
+<tr><td><strong>Apple provider</strong><br><code>class-apple-provider.php</code></td>
+<td>Reads the <code>user</code> form_post field via <code>filter_input()</code>; <strong>new</strong>
+<code>strlen &lt;= 8192</code> cap.</td>
+<td>Same class as above. Apple sends this only on first authorization and it is small, but the cap is
+an added failure mode.</td><td>T-SSO-3</td></tr>
+
+<tr><td><strong>SSO error notice</strong><br><code>handle_sso_error_display()</code></td>
+<td>Reads <code>flosc_sso_error</code> through the boundary; token still selects from a fixed table.</td>
+<td>Low — display only.</td><td>T-SSO-4</td></tr>
+
+<tr><td><strong>Companion Mode</strong><br><code>class-flosc-companion-mode.php</code></td>
+<td><code>flosc_companion_handoff</code> allowlisted to <code>'1'</code>; flow hint reads
+<code>flosc_flow_id</code> then <code>flosc_ivr</code>.</td>
+<td>A handoff URL carrying any other truthy value now reads as absent.</td>
+<td>T-CM-1, T-CM-2</td></tr>
+
+<tr><td><strong>Companion embed toggle</strong><br><code>admin/flosc-app.php</code></td>
+<td><code>flosc_nav_param_present()</code> replaces a broken <code>null !== filter_input()</code> that was
+always true.</td>
+<td>This is a <em>fix</em> for a v69-era defect that made every page render as an embed. Needs confirming
+in both directions.</td><td>T-CM-3</td></tr>
+
+<tr><td><strong>Personality designer routing</strong><br>3 functions in
+<code>flosc-personality-library.php</code></td>
+<td>Nav params through the boundary; <code>view</code> allowlist includes <code>design</code>.</td>
+<td>If <code>design</code> were dropped the designer would not open. Allowlist verified statically.</td>
+<td>T-PD-1, T-PD-2</td></tr>
+
+<tr><td><strong>Admin assets</strong><br><code>enqueue_admin_assets()</code></td>
+<td>8 reads through the boundary.</td>
+<td>A wrongly-narrowed value → a stylesheet or script not enqueued → a tab renders unstyled or a
+control does nothing.</td><td>T-NAV-1</td></tr>
+
+<tr><td><strong>Admin shortcuts</strong><br><code>maybe_redirect_flosc_admin_shortcuts()</code></td>
+<td>Nav params through the boundary.</td>
+<td>The 24 shortcut slugs must still land on their tab.</td><td>T-NAV-2</td></tr>
+
+<tr><td><strong>Token management</strong><br><code>admin/token-management.php</code></td>
+<td><code>flosc_product_filter</code> allowlisted to <code>active|all</code>, default <code>active</code> —
+same values the old corrective <code>if</code> enforced.</td>
+<td>Low.</td><td>T-TOK-1</td></tr>
+
+<tr><td><strong>Site Index admin actions</strong><br>4 methods in
+<code>class-flosc-site-content-index.php</code></td>
+<td>Suppressions removed only; <code>check_admin_referer()</code> already ran first.</td>
+<td>Low for the action itself. The <em>notice</em> was the regression — R-1.</td>
+<td>T-AI-1, T-AI-2</td></tr>
+
+<tr><td><strong>Providers save redirect</strong><br><code>flosc_admin_save_available_providers()</code></td>
+<td><code>flosc_return_ivr</code> via <code>filter_input()</code>.</td>
+<td>Wrong flow in the redirect target after saving providers.</td><td>T-AI-3</td></tr>
+
+<tr><td><strong>AI tab view + Site Index notices</strong></td>
+<td>R-1, fixed in v79.</td><td>See R-1.</td><td>T-AI-2</td></tr>
+
+<tr><td><strong>Knowledge Base tab</strong></td>
+<td>R-2, fixed in v79.</td><td>See R-2.</td><td>T-KB-1</td></tr>
+</table>
+
+<h2>4. Test procedures</h2>
+
+<p>Smallest reproducible steps, for a local WordPress with the v79 zip installed and
+<code>WP_DEBUG</code> plus <code>WP_DEBUG_LOG</code> on. A PHP notice in the log counts as a failure even
+when the screen looks right.</p>
+
+<h3>Settings</h3>
+<ul>
+<li><strong>T-SET-1</strong> — FLOSC → Settings, change any field on the Identity tab, Save Settings.
+Expect: saved confirmation, value persists after reload. Fail: "Are you sure you want to do this?"
+(= nonce mismatch) or a blank page.</li>
+<li><strong>T-SET-2</strong> — Same, but Save from the <em>AI</em> tab's "Save AI Settings" button. This
+button lives outside the form and binds by <code>form=</code> attribute; it is the one most likely to
+break.</li>
+<li><strong>T-SET-3</strong> — Trajectories tab → create a trajectory, then toggle one on/off.
+Two separate nonce fields, both in the route table.</li>
+<li><strong>T-SET-4</strong> — Concierge tab → create a concierge post.</li>
+<li><strong>T-SET-5</strong> — After each save above, confirm the page returns to the <em>same tab</em>,
+not to Identity. This is the <code>flosc_forced_tab</code> mechanism.</li>
+</ul>
+
+<h3>IVR</h3>
+<ul>
+<li><strong>T-IVR-1</strong> — IVR Messages tab → edit a message → Save. Confirm the text persists.</li>
+<li><strong>T-IVR-2</strong> — Upload an IVR file.</li>
+<li><strong>T-IVR-3</strong> — Duplicate a file, then delete the duplicate.</li>
+<li><strong>T-IVR-4</strong> — Export IVR; confirm a file downloads.</li>
+<li><strong>T-IVR-5</strong> — Preview import, then Confirm import.</li>
+<li><strong>T-IVR-6</strong> — Force resync, and Clear IVR DB on a throwaway flow.</li>
+<li><strong>T-IVR-7 / T-IVR-8</strong> — Flow tab → Portability: create a kit, then apply one.</li>
+</ul>
+<p class="small">Any of these doing <em>nothing at all</em> (no notice, no change, no error) is the
+signature of a submit key missing from the dispatcher table. Any of them showing "Are you sure you
+want to do this?" is the signature of a wrong nonce action.</p>
+
+<h3>Audio</h3>
+<ul>
+<li><strong>T-AUD-1</strong> — Play a member audio file from the member view. Expect: plays.</li>
+<li><strong>T-AUD-2</strong> — Download the same file via its download link.</li>
+<li><strong>T-AUD-3</strong> — Take a working audio URL, alter one character of <code>sig</code>, reload.
+Expect: 403 "Invalid or expired link". This proves the HMAC is actually enforced rather than present.</li>
+</ul>
+
+<h3>Auth</h3>
+<ul>
+<li><strong>T-ML-1</strong> — Send a magic link to a test address and use it. Expect: logged in.</li>
+<li><strong>T-ML-2</strong> — Users list → activate an email account via the admin action.
+Then re-load that same URL. Expect: the second load is refused, not silently re-run.</li>
+<li><strong>T-EM-1</strong> — Edit a user profile, toggle the newsletter checkbox, Update User.
+Expect: saved, no <code>wp_die()</code>.</li>
+<li><strong>T-SSO-1</strong> — Complete a Google sign-in end to end.</li>
+<li><strong>T-SSO-2</strong> — Cancel at the provider consent screen. Expect: a readable FLOSC error
+notice, not a blank page.</li>
+<li><strong>T-SSO-3</strong> — Complete an Apple sign-in with a <em>new</em> account, so Apple sends
+the <code>user</code> payload. Confirm the name is captured.</li>
+<li><strong>T-SSO-4</strong> — Load any FLOSC page with <code>?flosc_sso_error=access_denied</code>.
+Expect: the matching notice.</li>
+</ul>
+
+<h3>Navigation and display</h3>
+<ul>
+<li><strong>T-AI-1</strong> — AI tab → Site Index → Rebuild. Expect: "Site content index rebuilt."
+(this is the one path that also sets a transient, so it worked even with R-1 present).</li>
+<li><strong>T-AI-2</strong> — <em>The R-1 test.</em> AI tab → Site Index → Exclude a post.
+Expect a notice naming the outcome. Repeat for Include, Save keywords, Reindex one.
+On v78 all four showed nothing. Four notices = R-1 fixed.</li>
+<li><strong>T-AI-3</strong> — AI tab → save available providers; confirm the page returns to the
+same flow.</li>
+<li><strong>T-KB-1</strong> — <em>The R-2 test.</em> Knowledge Base tab → click Edit on a knowledge base.
+Expect the editor to open on that KB. Also confirm the all/single view toggle changes the list.
+On v78 and earlier neither worked.</li>
+<li><strong>T-NAV-1</strong> — Visit each Settings tab; confirm styling and controls are present,
+especially Flow in "all" view (portability assets load only there).</li>
+<li><strong>T-NAV-2</strong> — Visit three shortcut slugs directly, e.g.
+<code>?page=flosc-token-management</code>, <code>?page=flosc-concierge</code>,
+<code>?page=flosc-ivr-messages</code>. Each should redirect to its tab.</li>
+<li><strong>T-PD-1</strong> — Open the Personality Designer from the AI tab.</li>
+<li><strong>T-PD-2</strong> — Open <code>?page=flosc-personality-builder</code> directly; expect the
+redirect into the designer.</li>
+<li><strong>T-TOK-1</strong> — Token Management → toggle the filter between active and all.</li>
+<li><strong>T-CM-1 / T-CM-2</strong> — Load a page with <code>?flosc_companion_handoff=1</code>, and with
+<code>?flosc_flow_id=&lt;flow&gt;</code>.</li>
+<li><strong>T-CM-3</strong> — Load any front-end page <em>without</em> <code>?flosc_companion</code> and
+confirm normal chrome; then <em>with</em> it and confirm embed chrome. Both directions matter — the
+v69 defect made every page an embed.</li>
+</ul>
+
+<h2>5. Status</h2>
+
+<pre>STATIC ACCEPTANCE     NonceVerification 0 / 218 files / exit 0   (measured on v78, not re-run on v79)
+                      php -l 0 errors / 187 files                 (v79)
+                      suppressions 0                              (v79)
+
+BEHAVIORAL ACCEPTANCE 0 of 30 tests executed
+
+VERDICT               STATICALLY CLEAN — FUNCTIONALLY UNVERIFIED</pre>
+
+<p>Not complete. Not ready. Not verified. Not safe to advance.</p>
+
+<p class="small">Two static checks still owed on v79 before even the static column is current:
+re-run the NonceVerification sniff, and run the broader <code>WordPress.Security</code> set for the first
+time honestly — the v69 numbers for <code>EscapeOutput</code>, <code>ValidatedSanitizedInput</code>,
+<code>SafeRedirect</code> and the DB sniffs were produced under an errors-only filter and mean nothing.</p>
+
+</div>
+</body>
+</html>

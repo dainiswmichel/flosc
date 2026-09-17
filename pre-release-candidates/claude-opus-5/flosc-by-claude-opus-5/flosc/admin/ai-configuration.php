@@ -34,15 +34,17 @@ flosc_tab_header('🤖', 'AI');
 
 $flosc_flow_settings = $GLOBALS['flosc_current_settings'] ?? [];
 $flosc_current_ivr   = $GLOBALS['flosc_current_ivr'] ?? '';
-// Which view of the AI tab to paint. The bulk wp_unslash( $_GET ) fallback that
-// stood here pulled in the entire query string to read one display selector.
-$flosc_get     = isset( $GLOBALS['flosc_get'] ) && is_array( $GLOBALS['flosc_get'] ) ? $GLOBALS['flosc_get'] : array();
-$flosc_ai_view = isset( $flosc_get['view'] )
-	? sanitize_key( (string) $flosc_get['view'] )
-	: flosc_nav_param( 'view', array( 'single', 'all' ), 'single' );
-if ( ! in_array( $flosc_ai_view, array( 'single', 'all' ), true ) ) {
-	$flosc_ai_view = 'single';
-}
+/*
+ * Which view of the AI tab to paint.
+ *
+ * A $GLOBALS['flosc_get'] indirection stood here, with a bulk wp_unslash( $_GET )
+ * fallback behind it. Nothing in the plugin ever writes that global, so the
+ * indirection was always false and the fallback was always the real read -- it
+ * pulled in the entire query string to select one of two words. The allowlist
+ * below is the whole rule now, including the default, so no corrective if()
+ * follows it.
+ */
+$flosc_ai_view = flosc_nav_param( 'view', array( 'single', 'all' ), 'single' );
 $flosc_personality_id = sanitize_key( (string) ( $flosc_flow_settings['personality_library_id'] ?? '' ) );
 if ( $flosc_personality_id === '' && function_exists( 'flosc_personality_library_id_for_flow' ) ) {
 	$flosc_personality_id = flosc_personality_library_id_for_flow(
@@ -2954,8 +2956,26 @@ $flosc_sci_notice = get_transient( 'flosc_site_index_notice_' . get_current_user
 if ( is_array( $flosc_sci_notice ) ) {
 	delete_transient( 'flosc_site_index_notice_' . get_current_user_id() );
 }
-$flosc_sci_action = is_array( $flosc_sci_notice ) ? sanitize_key( (string) ( $flosc_sci_notice['action'] ?? '' ) ) : ( isset( $flosc_get['site_index_action'] ) ? sanitize_key( (string) $flosc_get['site_index_action'] ) : '' );
-$flosc_sci_err    = is_array( $flosc_sci_notice ) ? sanitize_text_field( (string) ( $flosc_sci_notice['message'] ?? '' ) ) : ( isset( $flosc_get['site_index_error'] ) ? sanitize_text_field( rawurldecode( (string) $flosc_get['site_index_error'] ) ) : '' );
+/*
+ * The URL is the fallback, and it is the ONLY carrier for nine of the ten
+ * outcomes. FLOSC_Site_Content_Index::redirect_ai() puts site_index_action --
+ * and site_index_error when the action failed -- in the query string on every
+ * path; set_transient() runs on exactly one of them, the successful full
+ * rebuild. So the read below is what makes "Excluded.", "Keywords saved.",
+ * "Could not reindex that post." and the rest appear at all.
+ *
+ * v78 changed $flosc_get's fallback from wp_unslash( $_GET ) to array() and
+ * nothing writes $GLOBALS['flosc_get'], so these two reads silently became
+ * permanently empty and those nine notices stopped rendering. Sourcing them
+ * through the request boundary restores the notice without restoring the bulk
+ * superglobal read.
+ */
+$flosc_sci_action = is_array( $flosc_sci_notice )
+	? sanitize_key( (string) ( $flosc_sci_notice['action'] ?? '' ) )
+	: flosc_nav_param( 'site_index_action' );
+$flosc_sci_err    = is_array( $flosc_sci_notice )
+	? sanitize_text_field( (string) ( $flosc_sci_notice['message'] ?? '' ) )
+	: sanitize_text_field( rawurldecode( flosc_nav_param( 'site_index_error', array(), '', 'sanitize_text_field' ) ) );
 $flosc_sci_msg    = '';
 if ( $flosc_sci_action === 'rebuilt' ) {
 	$flosc_sci_msg = $flosc_sci_err !== '' ? $flosc_sci_err : __( 'Site content index rebuilt.', 'flosc' );

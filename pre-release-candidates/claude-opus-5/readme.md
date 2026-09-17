@@ -1,14 +1,44 @@
-# FLOSC 8.0.0 — candidate v78
+# FLOSC 8.0.0 — candidate v79
 
-**NonceVerification: 84 → 0.** Measured on the Captain's machine, phpcs exit 0.
-See *the acceptance test* below. The zip is unchanged by this note; it is the
-same 278-entry artifact that was measured.
+**STATICALLY CLEAN — FUNCTIONALLY UNVERIFIED.** NonceVerification is 84 → 0,
+measured. Two functional defects were then found by auditing v78's own diff and
+fixed here. 0 of 30 behavioral tests have been executed.
+
+Full accounting: **`v79-regression-accounting.html`**.
 
     artifact   flosc.zip
-    sha256     798196386dc5738f… (full value in sha256sums)
+    sha256     a80b7340fa53f21c… (full value in sha256sums)
     entries    278, single flosc/ root, 0 under tests/
-    base       claude-opus-5 v77
+    base       claude-opus-5 v78
     version    8.0.0 — unchanged; this is the release being resubmitted
+
+## What v79 did
+
+v78 was advanced on a phpcs PASS alone. That was the wrong standard, and it hid
+two real defects of the same class -- a read narrowed for the scanner, with a
+consumer downstream that depended on the breadth.
+
+**R-1, introduced by v78.** `admin/ai-configuration.php` changed `$flosc_get`'s
+fallback from `wp_unslash( $_GET )` to `array()`. Nothing in the plugin ever
+writes `$GLOBALS['flosc_get']`, so the fallback is always taken and the reads of
+`site_index_action` and `site_index_error` went permanently empty.
+`redirect_ai()` carries the outcome in the query string on all ten of its paths;
+`set_transient()` runs on exactly one. Nine of ten Site Index outcomes stopped
+showing any notice at all -- the action ran, the write landed, the screen said
+nothing. Both values now read through `flosc_nav_param()`.
+
+**R-2, pre-existing.** `admin/knowledge-base.php` read `view`, `kb_edit` and
+`kb_id` from the same never-written global, so the edit-a-knowledge-base route
+was dead in every candidate commit in this repository. Same fix.
+
+Neither fix restores a bulk superglobal read and neither adds a suppression.
+
+## The standard v78 failed
+
+A static-analysis PASS is not a completed repair if the repair changes
+executable behavior and that behavior has not been regression-tested. The nonce
+work can be called `WPCS NonceVerification: PASS`. It cannot be called complete,
+ready, verified, or safe to advance until the changed flows have been exercised.
 
 ## What v78 did
 
