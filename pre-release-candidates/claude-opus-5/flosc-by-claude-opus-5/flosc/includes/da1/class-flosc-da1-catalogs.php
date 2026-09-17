@@ -414,7 +414,7 @@ class FLOSC_DA1_Catalogs {
 					$score += 2;
 				}
 				if ( '' !== $payload && false !== strpos( $payload, $token ) ) {
-					$score += 1;
+					++$score;
 				}
 			}
 

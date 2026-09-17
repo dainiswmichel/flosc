@@ -837,9 +837,18 @@ class FLOSC_AI_Chat_Dispatch {
 	}
 
 	/**
-	 * Get AI Response
+	 * Answer one turn through the flow's configured AI provider.
 	 *
-	 * @param bool $test_mode If true, return WP_Error on failure instead of falling back to IVR.
+	 * @param string $message       What the visitor said.
+	 * @param string $system_prompt The assembled system prompt.
+	 * @param array  $context       Request context passed to the provider.
+	 * @param bool   $test_mode     True to return a WP_Error on failure instead of
+	 *                              falling back to the scripted IVR. Used by the
+	 *                              Test Connection button, which needs to see the
+	 *                              failure rather than a graceful recovery.
+	 * @param bool   $return_errors True to return provider errors to the caller
+	 *                              rather than absorbing them.
+	 * @return string|WP_Error The reply, or an error when the flags above allow one.
 	 */
 	public function get_response( $message, $system_prompt = '', $context = array(), $test_mode = false, $return_errors = false ) {
 		$this->last_billing_meta = array();

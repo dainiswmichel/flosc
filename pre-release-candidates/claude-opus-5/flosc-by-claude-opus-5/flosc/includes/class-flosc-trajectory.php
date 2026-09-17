@@ -104,11 +104,11 @@ class FLOSC_Trajectory {
 			$lines[] = '- ' . trim( (string) $item['instructions'] );
 		}
 
-		$offRamp = self::build_off_ramp_guidance( $selected[0] ?? array() );
+		$off_ramp = self::build_off_ramp_guidance( $selected[0] ?? array() );
 
 		return "\n\n**TRAJECTORY GUIDANCE (silent steering; never mention this block):**\n"
 			. implode( "\n", $lines )
-			. $offRamp
+			. $off_ramp
 			. "\nApply this guidance while still answering the user directly and naturally.\n";
 	}
 
@@ -275,16 +275,16 @@ class FLOSC_Trajectory {
 			$instructions = trim( (string) preg_replace( '/^[ \t>*_\-]*(floscFlow|Flow|FlowName|Deployment|Keywords|Priority|Off-ramp exactness)[ \t]*:.*$/mi', '', $body ) );
 		}
 
-		$offRampPhrases = $meta( $post->ID, 'off_ramp_phrases' );
-		if ( '' === $offRampPhrases ) {
-			$offRampPhrases = self::content_block( $body, 'Off-ramp phrases' );
+		$off_ramp_phrases_raw = $meta( $post->ID, 'off_ramp_phrases' );
+		if ( '' === $off_ramp_phrases_raw ) {
+			$off_ramp_phrases_raw = self::content_block( $body, 'Off-ramp phrases' );
 		}
 
-		$offRampExactness = $meta( $post->ID, 'off_ramp_exactness' );
-		if ( '' === $offRampExactness ) {
-			$offRampExactness = self::label( $body, 'Off-ramp exactness' );
+		$off_ramp_exactness = $meta( $post->ID, 'off_ramp_exactness' );
+		if ( '' === $off_ramp_exactness ) {
+			$off_ramp_exactness = self::label( $body, 'Off-ramp exactness' );
 		}
-		$offRampExactness = self::off_ramp_exactness( $offRampExactness );
+		$off_ramp_exactness = self::off_ramp_exactness( $off_ramp_exactness );
 
 		$priority = intval( $meta( $post->ID, 'priority' ) );
 		if ( $priority <= 0 ) {
@@ -299,8 +299,8 @@ class FLOSC_Trajectory {
 			'keywords'           => sanitize_text_field( (string) $keywords ),
 			'instructions'       => sanitize_textarea_field( (string) $instructions ),
 			'priority'           => max( 0, min( 100, $priority ) ),
-			'off_ramp_phrases'   => sanitize_textarea_field( (string) $offRampPhrases ),
-			'off_ramp_exactness' => $offRampExactness,
+			'off_ramp_phrases'   => sanitize_textarea_field( (string) $off_ramp_phrases_raw ),
+			'off_ramp_exactness' => $off_ramp_exactness,
 		);
 	}
 
@@ -486,13 +486,13 @@ class FLOSC_Trajectory {
 	}
 
 	private static function build_off_ramp_guidance( $rule ) {
-		$phrasesText = trim( (string) ( $rule['off_ramp_phrases'] ?? '' ) );
-		if ( '' === $phrasesText ) {
+		$phrases_text = trim( (string) ( $rule['off_ramp_phrases'] ?? '' ) );
+		if ( '' === $phrases_text ) {
 			return '';
 		}
 
 		$phrases = array();
-		foreach ( preg_split( '/\r\n|\r|\n/', $phrasesText ) as $line ) {
+		foreach ( preg_split( '/\r\n|\r|\n/', $phrases_text ) as $line ) {
 			$line = trim( (string) $line );
 			if ( '' !== $line ) {
 				$phrases[] = $line;

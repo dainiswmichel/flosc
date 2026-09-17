@@ -156,11 +156,13 @@ function flosc_uninstall_rm_rf( $dir ) {
 			flosc_uninstall_rm_rf( $path );
 		} elseif ( function_exists( 'wp_delete_file' ) ) {
 			wp_delete_file( $path );
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_is_writable -- this branch runs only because WP_Filesystem is unavailable.
 		} elseif ( is_writable( $path ) ) {
 			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- uninstall fallback when WP_Filesystem rmdir unavailable
 			unlink( $path );
 		}
 	}
+	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_is_writable -- as above: the WP_Filesystem path was already tried and failed.
 	if ( is_dir( $dir ) && is_writable( $dir ) ) {
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- uninstall fallback when WP_Filesystem rmdir unavailable
 		rmdir( $dir );

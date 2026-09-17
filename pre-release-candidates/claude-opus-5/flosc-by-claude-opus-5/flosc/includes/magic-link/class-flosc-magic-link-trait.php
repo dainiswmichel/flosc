@@ -54,18 +54,18 @@ trait FLOSC_Magic_Link_Trait {
 	private function flosc_magic_access_links_enabled( $flow_id = '' ) {
 		// Package-level gate: constant wins when defined; else filter (default false).
 		if ( defined( 'FLOSC_ENABLE_MAGIC_ACCESS_LINKS' ) ) {
-			if ( ! (bool) FLOSC_ENABLE_MAGIC_ACCESS_LINKS ) {
-				return false;
-			}
+			$flosc_package_enabled = (bool) FLOSC_ENABLE_MAGIC_ACCESS_LINKS;
 		} else {
 			/**
 			 * Filter: package-level enable/disable MagicLink (mint + consume + guest emails + wp_sync).
 			 *
 			 * @param bool $enabled Default false for directory-safe ship.
 			 */
-			if ( ! (bool) apply_filters( 'flosc_enable_magic_access_links', false ) ) {
-				return false;
-			}
+			$flosc_package_enabled = (bool) apply_filters( 'flosc_enable_magic_access_links', false );
+		}
+
+		if ( ! $flosc_package_enabled ) {
+			return false;
 		}
 
 		// Cookie sync hop: Case 0 already validated the flow; package gate is enough.

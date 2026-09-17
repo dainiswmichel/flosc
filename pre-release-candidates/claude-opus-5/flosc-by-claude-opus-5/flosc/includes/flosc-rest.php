@@ -95,7 +95,6 @@ trait FLOSC_REST_Trait {
 	/**
 	 * Permission callback for routes that require a logged-in user.
 	 *
-	 * @param WP_REST_Request $request Request object.
 	 * @return true|WP_Error
 	 */
 	public function check_authenticated_user_permission() {

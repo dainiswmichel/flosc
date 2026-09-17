@@ -1329,7 +1329,6 @@ class FLOSC_Starter_Packs {
 	 * items are created again.
 	 *
 	 * @param array<string,mixed> $pack   Manifest.
-	 * @param array<string,mixed> $record Install record.
 	 * @return array{ok:bool,message:string,record:array<string,mixed>}
 	 */
 	private static function repair_content( $pack ) {

@@ -20,10 +20,10 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Get the appropriate value for an admin settings field
  *
  * @param string $key Setting key (without 'flosc_' prefix).
- * @param mixed  $default Default value.
+ * @param mixed  $fallback Default value.
  * @return mixed The value to display in the form
  */
-function flosc_admin_get_value( $key, $default = '' ) {
+function flosc_admin_get_value( $key, $fallback = '' ) {
 	// Check if we're editing a specific flow.
 	if ( isset( $GLOBALS['flosc_editing_flow'] ) && isset( $GLOBALS['flosc_editing_flow_data'] ) ) {
 		$flow = $GLOBALS['flosc_editing_flow_data'];
@@ -39,18 +39,18 @@ function flosc_admin_get_value( $key, $default = '' ) {
 	}
 
 	// Editing global settings - return wp_option.
-	return get_option( 'flosc_' . $key, $default );
+	return get_option( 'flosc_' . $key, $fallback );
 }
 
 /**
  * Get the global value for showing as placeholder when editing flow
  *
  * @param string $key Setting key (without 'flosc_' prefix).
- * @param mixed  $default Default value.
+ * @param mixed  $fallback Default value.
  * @return mixed The global value for placeholder text
  */
-function flosc_admin_get_global( $key, $default = '' ) {
-	return get_option( 'flosc_' . $key, $default );
+function flosc_admin_get_global( $key, $fallback = '' ) {
+	return get_option( 'flosc_' . $key, $fallback );
 }
 
 /**
@@ -75,17 +75,17 @@ function flosc_admin_get_editing_flow_id() {
  * Render a text input with "using global" placeholder when editing flow
  *
  * @param string $key Setting key (without 'flosc_' prefix).
- * @param string $default Default value.
- * @param string $class CSS class.
+ * @param string $fallback Default value.
+ * @param string $css_class CSS class.
  * @param string $placeholder Custom placeholder (overrides global value).
  */
-function flosc_admin_text_input( $key, $default = '', $class = 'regular-text', $placeholder = null ) {
-	$value      = flosc_admin_get_value( $key, $default );
+function flosc_admin_text_input( $key, $fallback = '', $css_class = 'regular-text', $placeholder = null ) {
+	$value      = flosc_admin_get_value( $key, $fallback );
 	$flosc_name = 'flosc_' . $key;
 
 	// When editing flow, show global value as placeholder.
 	if ( flosc_admin_is_editing_flow() && null === $placeholder ) {
-		$global_value = flosc_admin_get_global( $key, $default );
+		$global_value = flosc_admin_get_global( $key, $fallback );
 		$placeholder  = $global_value ? 'Using global: ' . $global_value : '';
 	}
 
@@ -94,7 +94,7 @@ function flosc_admin_text_input( $key, $default = '', $class = 'regular-text', $
 		esc_attr( $flosc_name ),
 		esc_attr( $flosc_name ),
 		esc_attr( $value ),
-		esc_attr( $class ),
+		esc_attr( $css_class ),
 		esc_attr( $placeholder ?? '' )
 	);
 }
@@ -102,13 +102,13 @@ function flosc_admin_text_input( $key, $default = '', $class = 'regular-text', $
 /**
  * Render a textarea with "using global" placeholder when editing flow
  */
-function flosc_admin_textarea( $key, $default = '', $rows = 5, $class = 'large-text' ) {
-	$value      = flosc_admin_get_value( $key, $default );
+function flosc_admin_textarea( $key, $fallback = '', $rows = 5, $css_class = 'large-text' ) {
+	$value      = flosc_admin_get_value( $key, $fallback );
 	$flosc_name = 'flosc_' . $key;
 
 	$placeholder = '';
 	if ( flosc_admin_is_editing_flow() ) {
-		$global_value = flosc_admin_get_global( $key, $default );
+		$global_value = flosc_admin_get_global( $key, $fallback );
 		$placeholder  = $global_value ? 'Using global setting...' : '';
 	}
 
@@ -117,7 +117,7 @@ function flosc_admin_textarea( $key, $default = '', $rows = 5, $class = 'large-t
 		esc_attr( $flosc_name ),
 		esc_attr( $flosc_name ),
 		absint( $rows ),
-		esc_attr( $class ),
+		esc_attr( $css_class ),
 		esc_attr( $placeholder ),
 		esc_textarea( $value )
 	);
@@ -126,13 +126,13 @@ function flosc_admin_textarea( $key, $default = '', $rows = 5, $class = 'large-t
 /**
  * Render a select dropdown
  */
-function flosc_admin_select( $key, $options, $default = '' ) {
-	$value      = flosc_admin_get_value( $key, $default );
+function flosc_admin_select( $key, $options, $fallback = '' ) {
+	$value      = flosc_admin_get_value( $key, $fallback );
 	$flosc_name = 'flosc_' . $key;
 
 	// When editing flow and no value set, show "Use Global" option.
 	$show_use_global = flosc_admin_is_editing_flow();
-	$global_value    = flosc_admin_get_global( $key, $default );
+	$global_value    = flosc_admin_get_global( $key, $fallback );
 
 	echo '<select id="' . esc_attr( $flosc_name ) . '" name="' . esc_attr( $flosc_name ) . '">';
 

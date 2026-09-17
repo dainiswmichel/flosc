@@ -350,7 +350,7 @@ class FLOSC_Lesson_Manager {
 			$post_tags = wp_get_post_tags( $post->ID, array( 'fields' => 'slugs' ) );
 			foreach ( $missed_items as $item ) {
 				$item_slug = sanitize_title( $item );
-				if ( in_array( $item_slug, $post_tags ) || in_array( 'phoneme-' . $item_slug, $post_tags ) ) {
+				if ( in_array( $item_slug, $post_tags, true ) || in_array( 'phoneme-' . $item_slug, $post_tags, true ) ) {
 					$lesson['addresses_item'] = $item;
 					break;
 				}

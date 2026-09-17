@@ -129,7 +129,6 @@ class OAuth2_Handler {
 	 * Intentionally public: OAuth authorization and callbacks must be reachable
 	 * before a WordPress login exists.
 	 *
-	 * @param \WP_REST_Request $request Request object.
 	 * @return bool
 	 */
 	public function check_public_sso_permission() {
@@ -139,7 +138,6 @@ class OAuth2_Handler {
 	/**
 	 * Intentionally public provider list endpoint for frontend discovery.
 	 *
-	 * @param \WP_REST_Request $request Request object.
 	 * @return bool
 	 */
 	public function check_public_sso_provider_list_permission() {
@@ -756,7 +754,6 @@ class OAuth2_Handler {
 	/**
 	 * Get available SSO providers for frontend
 	 *
-	 * @param WP_REST_Request $request
 	 * @return WP_REST_Response
 	 */
 	public function get_providers() {

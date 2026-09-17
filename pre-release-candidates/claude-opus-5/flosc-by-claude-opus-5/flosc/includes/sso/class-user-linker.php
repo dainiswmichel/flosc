@@ -80,7 +80,7 @@ class User_Linker {
 		if ( ! is_array( $linked_providers ) ) {
 			$linked_providers = array();
 		}
-		if ( ! in_array( $provider_id, $linked_providers ) ) {
+		if ( ! in_array( (string) $provider_id, array_map( 'strval', $linked_providers ), true ) ) {
 			$linked_providers[] = $provider_id;
 			update_user_meta( $user_id, self::META_PREFIX . 'linked_providers', $linked_providers );
 		}
@@ -134,7 +134,7 @@ class User_Linker {
 	 * @return bool
 	 */
 	public function is_provider_linked( $user_id, $provider_id ) {
-		return in_array( $provider_id, $this->get_linked_providers( $user_id ) );
+		return in_array( (string) $provider_id, array_map( 'strval', $this->get_linked_providers( $user_id ) ), true );
 	}
 
 	/**

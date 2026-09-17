@@ -1146,7 +1146,7 @@ if ( isset( $flosc_post['save_ivr_message'] ) ) {
 				if ( ! isset( $flosc_phases[ $flosc_phase ] ) ) {
 					$flosc_phases[ $flosc_phase ] = array();
 				}
-				if ( ! in_array( $flosc_msg_id, $flosc_phases[ $flosc_phase ] ) ) {
+				if ( ! in_array( (string) $flosc_msg_id, array_map( 'strval', $flosc_phases[ $flosc_phase ] ), true ) ) {
 					$flosc_phases[ $flosc_phase ][] = $flosc_msg_id;
 				}
 				flosc_flow_set_runtime( $flosc_fs, $flosc_messages, $flosc_phases, $flosc_styles );

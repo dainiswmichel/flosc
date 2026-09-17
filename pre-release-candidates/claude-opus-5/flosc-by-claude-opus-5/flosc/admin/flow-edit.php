@@ -141,16 +141,22 @@ if ( isset( $_POST['flosc_update_team'] ) && $flosc_is_admin && ! $flosc_is_new 
 		$flosc_current_users
 	);
 
+	// Both lists are compared as integers. A strict test between an id stored
+	// as a string by an older save and one read back as an int would revoke
+	// every current member and re-grant every selected one.
+	$flosc_selected_ids = array_map( 'intval', $flosc_selected_users );
+
 	// Revoke from users no longer selected.
 	foreach ( $flosc_current_user_ids as $flosc_uid ) {
-		if ( ! in_array( $flosc_uid, $flosc_selected_users ) ) {
+		if ( ! in_array( (int) $flosc_uid, $flosc_selected_ids, true ) ) {
 			flosc_flows()->revoke_flow_access( $flosc_uid, $flosc_flow_id );
 		}
 	}
 
 	// Grant to newly selected users.
+	$flosc_current_ids = array_map( 'intval', $flosc_current_user_ids );
 	foreach ( $flosc_selected_users as $flosc_uid ) {
-		if ( ! in_array( $flosc_uid, $flosc_current_user_ids ) ) {
+		if ( ! in_array( (int) $flosc_uid, $flosc_current_ids, true ) ) {
 			flosc_flows()->grant_flow_access( $flosc_uid, $flosc_flow_id );
 		}
 	}
@@ -580,7 +586,7 @@ $flosc_categories = get_categories( array( 'hide_empty' => false ) );
 								<tr>
 									<td>
 										<input type="checkbox" name="team_users[]" value="<?php echo esc_attr( $flosc_user->ID ); ?>"
-												<?php checked( in_array( $flosc_user->ID, $flosc_current_team_ids ) ); ?>>
+												<?php checked( in_array( (int) $flosc_user->ID, array_map( 'intval', $flosc_current_team_ids ), true ) ); ?>>
 									</td>
 									<td>
 										<strong><?php echo esc_html( $flosc_user->display_name ); ?></strong><br>

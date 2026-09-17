@@ -41,7 +41,7 @@ class FLOSC_RAG_Manager {
 	}
 
 	private function __construct() {
-		$this->content_filter = flosc_content_filter::instance();
+		$this->content_filter = FLOSC_Content_Filter::instance();
 	}
 
 	/**
@@ -159,7 +159,6 @@ class FLOSC_RAG_Manager {
 	 *
 	 * @param string $query
 	 * @param string $access_level
-	 * @param string $category
 	 * @return string
 	 */
 	private function search_knowledge_base( $query, $access_level ) {

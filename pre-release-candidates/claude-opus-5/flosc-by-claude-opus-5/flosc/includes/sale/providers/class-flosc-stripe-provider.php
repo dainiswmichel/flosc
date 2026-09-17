@@ -108,7 +108,7 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 	 *
 	 * @since 1.6.3
 	 */
-	private function get_flow_setting( $key, $default = '' ) {
+	private function get_flow_setting( $key, $fallback = '' ) {
 		// Try per-flow via flosc()->get_setting() (checks flow array first, then global).
 		if ( function_exists( 'flosc' ) ) {
 			$value = flosc()->get_setting( 'stripe_' . $key, '' );
@@ -117,7 +117,7 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 			}
 		}
 		// Fallback to legacy global option (flosc_stripe_*).
-		return get_option( 'flosc_stripe_' . $key, $default );
+		return get_option( 'flosc_stripe_' . $key, $fallback );
 	}
 
 	/**

@@ -209,11 +209,11 @@ class FLOSC_TrueFalse_Quiz extends FLOSC_Abstract_Quiz_Type {
 	private function normalize_answer( $answer ) {
 		$answer = strtolower( trim( $answer ) );
 
-		if ( in_array( $answer, array( 't', 'true', 'yes', '1' ) ) ) {
+		if ( in_array( $answer, array( 't', 'true', 'yes', '1' ), true ) ) {
 			return 'true';
 		}
 
-		if ( in_array( $answer, array( 'f', 'false', 'no', '0' ) ) ) {
+		if ( in_array( $answer, array( 'f', 'false', 'no', '0' ), true ) ) {
 			return 'false';
 		}
 

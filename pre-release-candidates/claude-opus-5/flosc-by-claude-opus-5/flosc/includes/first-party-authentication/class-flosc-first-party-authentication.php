@@ -44,7 +44,6 @@ class FLOSC_First_Party_Authentication {
 	 * Block WP password login for pending email-registered accounts until verification.
 	 *
 	 * @param WP_User|WP_Error $user
-	 * @param string           $password
 	 * @return WP_User|WP_Error
 	 */
 	public function flosc_block_pending_email_login( $user ) {

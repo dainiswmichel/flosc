@@ -571,7 +571,7 @@ class FLOSC_Access_Manager {
 	public function grant_feature( $user_id, $feature ) {
 		$access = $this->get_user_access( $user_id );
 
-		if ( ! in_array( $feature, $access['features'] ) ) {
+		if ( ! in_array( (string) $feature, array_map( 'strval', (array) $access['features'] ), true ) ) {
 			$access['features'][] = $feature;
 			$access['updated_at'] = current_time( 'mysql' );
 			update_user_meta( $user_id, $this->meta_key, $access );

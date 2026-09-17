@@ -220,7 +220,6 @@ class SSO_Manager {
 	 *
 	 * @param string $url Current avatar URL.
 	 * @param mixed  $id_or_email User ID or email.
-	 * @param array  $args Avatar arguments.
 	 * @return string
 	 */
 	public function filter_avatar_url( $url, $id_or_email ) {

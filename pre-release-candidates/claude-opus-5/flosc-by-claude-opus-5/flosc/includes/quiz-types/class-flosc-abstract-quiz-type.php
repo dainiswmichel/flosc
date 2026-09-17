@@ -451,11 +451,11 @@ abstract class FLOSC_Abstract_Quiz_Type {
 	 * Get setting value for this quiz type
 	 *
 	 * @param string $key Setting key.
-	 * @param mixed  $default Default value.
+	 * @param mixed  $fallback Default value.
 	 * @return mixed
 	 */
-	protected function get_setting( $key, $default = '' ) {
-		return get_option( "flosc_quiz_{$this->get_id()}_{$key}", $default );
+	protected function get_setting( $key, $fallback = '' ) {
+		return get_option( "flosc_quiz_{$this->get_id()}_{$key}", $fallback );
 	}
 
 	/**

@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class flosc_content_filter {
+class FLOSC_Content_Filter {
 
 	private static $instance = null;
 

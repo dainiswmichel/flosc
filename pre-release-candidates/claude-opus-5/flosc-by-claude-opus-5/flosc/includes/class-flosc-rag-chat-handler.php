@@ -127,7 +127,6 @@ class FLOSC_RAG_Chat_Handler {
 	/**
 	 * Build system prompt from FLOSC User Session
 	 *
-	 * @param FLOSC_User_Session $flosc_user_session
 	 * @return string System prompt
 	 */
 	private function flosc_build_system_prompt_from_state( $flosc_user_session ) {
@@ -230,11 +229,10 @@ class FLOSC_RAG_Chat_Handler {
 	/**
 	 * Execute RAG loop with tools
 	 *
-	 * @param string             $flosc_message User message.
-	 * @param string             $flosc_system_prompt System prompt.
-	 * @param array              $flosc_history Conversation history.
-	 * @param array              $flosc_tools Available tools.
-	 * @param FLOSC_User_Session $flosc_user_session
+	 * @param string $flosc_message       User message.
+	 * @param string $flosc_system_prompt System prompt.
+	 * @param array  $flosc_history       Conversation history.
+	 * @param array  $flosc_tools         Available tools.
 	 * @return string AI response
 	 */
 	private function flosc_execute_rag_loop( $flosc_message, $flosc_system_prompt, $flosc_history, $flosc_tools ) {
@@ -365,7 +363,6 @@ class FLOSC_RAG_Chat_Handler {
 	 * @param FLOSC_User_Session $flosc_user_session
 	 * @param int|null           $flosc_session_id
 	 * @param string             $flosc_message
-	 * @param string             $flosc_response
 	 */
 	private function flosc_store_conversation( $flosc_user_session, $flosc_session_id, $flosc_message, $flosc_response ) {
 		$flosc_state   = $flosc_user_session->flosc_get();
@@ -382,8 +379,7 @@ class FLOSC_RAG_Chat_Handler {
 	/**
 	 * Get contextual autoprompts
 	 *
-	 * @param FLOSC_User_Session $flosc_user_session
-	 * @param string             $flosc_response
+	 * @param FLOSC_User_Session $flosc_user_session The session to read state from.
 	 * @return array Autoprompt options
 	 */
 	private function flosc_get_contextual_autoprompts( $flosc_user_session ) {

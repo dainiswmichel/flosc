@@ -184,7 +184,6 @@ class FLOSC_Quiz_Manager {
 	/**
 	 * Get quiz metadata
 	 *
-	 * @param string $quiz_id
 	 * @return array|null
 	 */
 	public static function get_quiz( $quiz_id ) {
@@ -350,8 +349,7 @@ class FLOSC_Quiz_Manager {
 	/**
 	 * Get user's best score for a quiz
 	 *
-	 * @param int    $user_id
-	 * @param string $quiz_id
+	 * @param int $user_id The user.
 	 * @return int|null Best score or null if never taken
 	 */
 	public static function get_best_score( $user_id ) {

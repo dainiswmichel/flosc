@@ -197,24 +197,24 @@ class FLOSC_Concierge {
 	 *
 	 * @param array  $msg     IVR message.
 	 * @param string $key     Field key.
-	 * @param string $default Fallback text.
+	 * @param string $fallback Fallback text.
 	 * @return string
 	 */
-	protected static function text( $msg, $key, $default ) {
+	protected static function text( $msg, $key, $fallback ) {
 		$value = trim( (string) ( $msg[ $key ] ?? '' ) );
-		return '' !== $value ? $value : $default;
+		return '' !== $value ? $value : $fallback;
 	}
 
 	/**
 	 * Substitute {try} and {max} into a retry line.
 	 *
 	 * @param string $text Retry text.
-	 * @param int    $try  Which attempt this was.
+	 * @param int    $attempt  Which attempt this was.
 	 * @param int    $max  Allowed attempts.
 	 * @return string
 	 */
-	protected static function fill_counts( $text, $try, $max ) {
-		return str_replace( array( '{try}', '{max}' ), array( (string) $try, (string) $max ), (string) $text );
+	protected static function fill_counts( $text, $attempt, $max ) {
+		return str_replace( array( '{try}', '{max}' ), array( (string) $attempt, (string) $max ), (string) $text );
 	}
 
 	/**
@@ -225,11 +225,11 @@ class FLOSC_Concierge {
 	 * in. The final line is typically the "reach out to me directly" escape note.
 	 *
 	 * @param array $msg IVR message.
-	 * @param int   $try Which miss this is (1-based).
+	 * @param int   $attempt Which miss this is (1-based).
 	 * @param int   $max Allowed attempts.
 	 * @return string
 	 */
-	protected static function retry_line( $msg, $try, $max ) {
+	protected static function retry_line( $msg, $attempt, $max ) {
 		$list = array();
 		if ( isset( $msg['password_retry_messages'] ) && is_array( $msg['password_retry_messages'] ) ) {
 			foreach ( $msg['password_retry_messages'] as $line ) {
@@ -242,8 +242,8 @@ class FLOSC_Concierge {
 		if ( empty( $list ) ) {
 			$list = array( 'Hmm, not quite — that’s try {try} of {max}.' );
 		}
-		$idx = min( $try - 1, count( $list ) - 1 );
-		return self::fill_counts( $list[ $idx ], $try, $max );
+		$idx = min( $attempt - 1, count( $list ) - 1 );
+		return self::fill_counts( $list[ $idx ], $attempt, $max );
 	}
 
 	/**

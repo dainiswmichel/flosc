@@ -59,10 +59,12 @@ class FLOSC_Flow_Manager {
 			$allowed = array();
 		}
 
+		$allowed_ids = array_map( 'strval', $allowed );
+
 		return array_filter(
 			$all_flows,
-			function ( $flow ) use ( $allowed ) {
-				return in_array( $flow['id'], $allowed );
+			function ( $flow ) use ( $allowed_ids ) {
+				return in_array( (string) $flow['id'], $allowed_ids, true );
 			}
 		);
 	}
@@ -318,7 +320,7 @@ class FLOSC_Flow_Manager {
 
 		// Check flow assignment.
 		$allowed = get_user_meta( $user_id, '_flosc_flow_access', true );
-		return is_array( $allowed ) && in_array( $flow_id, $allowed );
+		return is_array( $allowed ) && in_array( (string) $flow_id, array_map( 'strval', $allowed ), true );
 	}
 
 	/**
@@ -334,8 +336,8 @@ class FLOSC_Flow_Manager {
 			$allowed = array();
 		}
 
-		if ( ! in_array( $flow_id, $allowed ) ) {
-			$allowed[] = $flow_id;
+		if ( ! in_array( (string) $flow_id, array_map( 'strval', $allowed ), true ) ) {
+			$allowed[] = (string) $flow_id;
 			update_user_meta( $user_id, '_flosc_flow_access', $allowed );
 		}
 
@@ -358,7 +360,7 @@ class FLOSC_Flow_Manager {
 		$allowed = array_filter(
 			$allowed,
 			function ( $id ) use ( $flow_id ) {
-				return $id !== $flow_id;
+				return (string) $id !== (string) $flow_id;
 			}
 		);
 
@@ -499,12 +501,12 @@ class FLOSC_Flow_Manager {
 	 * @param string      $option_name The wp_options key.
 	 * @param string      $override_group Which override group (style, ai, email, etc.).
 	 * @param string      $override_key Key within the override group (optional, defaults to option_name).
-	 * @param mixed       $default Default value if neither found.
+	 * @param mixed       $fallback Default value if neither found.
 	 * @param string|null $flow_id Flow ID (null = use current flow).
 	 * @return mixed The setting value
 	 * @since 1.2.3
 	 */
-	public function get_setting( $option_name, $override_group, $override_key = null, $default = null, $flow_id = null ) {
+	public function get_setting( $option_name, $override_group, $override_key = null, $fallback = null, $flow_id = null ) {
 		// Determine flow.
 		if ( null === $flow_id ) {
 			$flow = $this->get_current_flow();
@@ -514,19 +516,19 @@ class FLOSC_Flow_Manager {
 
 		// If no flow found, use global.
 		if ( ! $flow ) {
-			return get_option( $option_name, $default );
+			return get_option( $option_name, $fallback );
 		}
 
 		// Check if flow uses global settings for this group.
 		$use_global = $flow['overrides'][ $override_group ]['use_global'] ?? true;
 
 		if ( $use_global ) {
-			return get_option( $option_name, $default );
+			return get_option( $option_name, $fallback );
 		}
 
 		// Use flow override.
 		$key = $override_key ? $override_key : $option_name;
-		return $flow['overrides'][ $override_group ][ $key ] ?? get_option( $option_name, $default );
+		return $flow['overrides'][ $override_group ][ $key ] ?? get_option( $option_name, $fallback );
 	}
 
 	/**

@@ -444,7 +444,7 @@ class FLOSC_Free_Content_Item_Manager {
 
 		$missed = array();
 		foreach ( $correct_numbers as $num ) {
-			if ( ! in_array( $num, $user_numbers ) ) {
+			if ( ! in_array( $num, $user_numbers, true ) ) {
 				$missed[] = intval( $num );
 			}
 		}

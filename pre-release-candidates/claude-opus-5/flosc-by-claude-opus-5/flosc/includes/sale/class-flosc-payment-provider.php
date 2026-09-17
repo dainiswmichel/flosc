@@ -223,7 +223,7 @@ abstract class FLOSC_Payment_Provider {
 	/**
 	 * Helper: Get a setting
 	 */
-	protected function get_setting( $key, $default = '' ) {
-		return get_option( 'flosc_' . $this->get_id() . '_' . $key, $default );
+	protected function get_setting( $key, $fallback = '' ) {
+		return get_option( 'flosc_' . $this->get_id() . '_' . $key, $fallback );
 	}
 }

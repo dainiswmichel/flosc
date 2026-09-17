@@ -116,7 +116,7 @@ class FLOSC_Sample_Text_Based_Quiz extends FLOSC_Abstract_Quiz_Type {
 		$total_correct = 0;
 
 		foreach ( $user_answers as $answer ) {
-			if ( in_array( $answer, $correct_answers ) ) {
+			if ( in_array( $answer, $correct_answers, true ) ) {
 				$correct[] = $answer;
 				++$total_correct;
 			} else {

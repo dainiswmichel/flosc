@@ -104,7 +104,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 	 * Read PayPal settings.
 	 * 1. Per-flow setting → 2. Global wp_option → 3. Default
 	 */
-	private function get_flow_setting( $key, $default = '' ) {
+	private function get_flow_setting( $key, $fallback = '' ) {
 		// 1. Per-flow setting (do not use empty() — "0" and falsey strings are valid)
 		if ( function_exists( 'flosc' ) ) {
 			$value = flosc()->get_setting( 'paypal_' . $key, null );
@@ -117,7 +117,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 		if ( null !== $global && false !== $global && '' !== $global ) {
 			return $global;
 		}
-		return $default;
+		return $fallback;
 	}
 
 	/** @var array|null Request-cached credential packs (reset when webhook id is persisted). */

@@ -635,7 +635,7 @@ foreach ( $flosc_offers as $flosc_offer ) :
 		<span class="toggle">▶</span>
 		<span class="offer-name"><?php echo esc_html( $flosc_offer['name'] ); ?></span>
 		<span class="offer-price">
-			<?php if ( ! empty( $flosc_offer['original_price'] ) && (float) $flosc_offer['original_price'] !== (float) ( $flosc_offer['price'] ?? 0 ) ) : ?>
+			<?php if ( ! empty( $flosc_offer['original_price'] ) && (float) ( $flosc_offer['price'] ?? 0 ) !== (float) $flosc_offer['original_price'] ) : ?>
 				<span class="original">$<?php echo esc_html( number_format( $flosc_offer['original_price'], 2 ) ); ?></span>
 			<?php endif; ?>
 			$<?php echo esc_html( number_format( $flosc_offer['price'] ?? 0, 2 ) ); ?>

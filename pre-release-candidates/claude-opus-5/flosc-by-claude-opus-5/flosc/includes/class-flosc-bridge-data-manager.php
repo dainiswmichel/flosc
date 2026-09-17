@@ -73,8 +73,7 @@ class FLOSC_Bridge_Data_Manager {
 	/**
 	 * Handle purchase completion - exit bridge state
 	 *
-	 * @param int   $user_id User ID.
-	 * @param array $purchase_data Purchase details.
+	 * @param int $user_id User ID.
 	 */
 	public function handle_purchase_completed( $user_id ) {
 		if ( ! $user_id ) {

@@ -2037,11 +2037,11 @@ if ( ! function_exists( 'flosc_personality_library_resolve_field' ) ) {
 	 * Value for a personality field: attached library entry wins when non-empty; else flow setting.
 	 *
 	 * @param string      $field   Field key (e.g. ai_personality_name).
-	 * @param mixed       $default Default.
+	 * @param mixed       $fallback Default.
 	 * @param string|null $flow_id Optional flow stem.
 	 * @return mixed
 	 */
-	function flosc_personality_library_resolve_field( $field, $default = '', $flow_id = null ) {
+	function flosc_personality_library_resolve_field( $field, $fallback = '', $flow_id = null ) {
 		$field = (string) $field;
 		$pid   = '';
 		if ( function_exists( 'flosc_get_setting' ) ) {
@@ -2057,9 +2057,9 @@ if ( ! function_exists( 'flosc_personality_library_resolve_field' ) ) {
 			}
 		}
 		if ( function_exists( 'flosc_get_setting' ) ) {
-			return flosc_get_setting( $field, $default, $flow_id );
+			return flosc_get_setting( $field, $fallback, $flow_id );
 		}
-		return $default;
+		return $fallback;
 	}
 }
 

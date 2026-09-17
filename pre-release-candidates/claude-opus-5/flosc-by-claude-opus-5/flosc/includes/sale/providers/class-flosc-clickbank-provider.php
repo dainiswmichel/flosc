@@ -333,7 +333,9 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
 			return new WP_Error( 'openssl_missing', __( 'OpenSSL is required for ClickBank INS decryption', 'flosc' ), array( 'status' => 500 ) );
 		}
 
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- ClickBank sends the INS payload and IV base64-encoded; this is transport decoding, not obfuscation.
 		$encrypted = base64_decode( (string) $encrypted_b64, true );
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- as above.
 		$iv        = base64_decode( (string) $iv_b64, true );
 		if ( false === $encrypted || false === $iv || '' === $iv ) {
 			return new WP_Error( 'invalid_ins_encoding', __( 'Invalid ClickBank INS encoding', 'flosc' ), array( 'status' => 400 ) );

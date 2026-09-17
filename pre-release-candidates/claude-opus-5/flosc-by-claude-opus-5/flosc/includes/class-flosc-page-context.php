@@ -402,7 +402,7 @@ class FLOSC_Page_Context {
 			}
 		}
 
-		$filter = flosc_content_filter::instance();
+		$filter = FLOSC_Content_Filter::instance();
 		$raw    = $filter->filter_post_content( $raw, $access_level );
 
 		$text = wp_strip_all_tags( $raw );

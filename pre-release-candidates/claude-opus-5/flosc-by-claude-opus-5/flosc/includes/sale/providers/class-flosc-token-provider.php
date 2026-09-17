@@ -84,13 +84,13 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 	/**
 	 * Read a positive integer token-economics setting.
 	 */
-	private function get_positive_setting_int( $key, $default ) {
+	private function get_positive_setting_int( $key, $fallback ) {
 		if ( function_exists( 'flosc_get_setting' ) ) {
-			$value = intval( flosc_get_setting( 'tokens_' . $key, $this->get_setting( $key, $default ) ) );
+			$value = intval( flosc_get_setting( 'tokens_' . $key, $this->get_setting( $key, $fallback ) ) );
 		} else {
-			$value = intval( $this->get_setting( $key, $default ) );
+			$value = intval( $this->get_setting( $key, $fallback ) );
 		}
-		return $value > 0 ? $value : intval( $default );
+		return $value > 0 ? $value : intval( $fallback );
 	}
 
 	/**
