@@ -274,7 +274,7 @@ class FLOSC_Flow_Manager {
 		$flow['id']            = sanitize_key( $flow['id'] );
 		$flow['slug']          = sanitize_title( $flow['slug'] );
 		$flow['custom_domain'] = sanitize_text_field( $flow['custom_domain'] );
-		$flow['status']        = in_array( $flow['status'], array( 'active', 'draft' ) ) ? $flow['status'] : 'draft';
+		$flow['status']        = in_array( $flow['status'], array( 'active', 'draft' ), true ) ? $flow['status'] : 'draft';
 		// v1.2.3: Allow subdirectory paths for IVR files (e.g., '{flowname}/ivr.md').
 		$flow['ivr_file']       = preg_replace( '#[^a-zA-Z0-9/_.-]#', '', $flow['ivr_file'] );
 		$flow['wp_category_id'] = intval( $flow['wp_category_id'] );

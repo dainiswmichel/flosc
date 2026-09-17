@@ -357,7 +357,7 @@ if ( '' !== $flosc_flow_id || '' !== $flosc_current_ivr ) {
 					$flosc_flow_id,
 					$flosc_ivr_base,
 					pathinfo( $flosc_ivr_base, PATHINFO_FILENAME ),
-					sanitize_key( $flosc_ivr_base ), // e.g. flow_ivrmd when source was …ivr.md
+					sanitize_key( $flosc_ivr_base ), // For example flow_ivrmd when the source was …ivr.md.
 					sanitize_key( (string) $flosc_current_ivr ),
 				),
 				static function ( $v ) {

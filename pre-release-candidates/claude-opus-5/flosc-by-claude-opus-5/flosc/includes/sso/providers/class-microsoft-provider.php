@@ -71,10 +71,17 @@ class Microsoft_Provider extends SSO_Provider_Base {
 	}
 
 	/**
-	 * Get user info from Microsoft Graph
+	 * Get user info from Microsoft Graph.
+	 *
+	 * Microsoft serves its claims from the Graph /me endpoint, so the token
+	 * response is not consulted here.
 	 *
 	 * @param string $access_token OAuth access token.
-	 * @return array|WP_Error User data or error
+	 * @param array  $token_data   Full token response. Unused by this provider;
+	 *                             present because OAuth2_Handler passes the same
+	 *                             arguments to every provider, and Apple reads
+	 *                             its id_token and form_post claims from it.
+	 * @return array|WP_Error User data, or WP_Error if the call fails.
 	 */
 	public function get_user_info( $access_token, $token_data = array() ) {
 		$response = wp_remote_get(

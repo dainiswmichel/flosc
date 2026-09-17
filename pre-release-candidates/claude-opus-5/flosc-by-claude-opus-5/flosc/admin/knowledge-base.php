@@ -12,6 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 flosc_tab_header( '📚', 'Knowledge Base' );
 
 $flosc_current_ivr = (string) ( $GLOBALS['flosc_current_ivr'] ?? '' );
+
 /*
  * PRE-EXISTING DEFECT, not introduced by v78 -- present in every candidate
  * commit in this repository. $GLOBALS['flosc_get'] is never written anywhere in

@@ -67,7 +67,7 @@ class FLOSC_Response_Validator {
 
 	private function flosc_used_lesson_tool( $flosc_tool_calls ) {
 		foreach ( $flosc_tool_calls as $flosc_call ) {
-			if ( in_array( $flosc_call['name'], array( 'flosc_get_lesson_content', 'flosc_deliver_free_lesson' ) ) ) {
+			if ( in_array( $flosc_call['name'], array( 'flosc_get_lesson_content', 'flosc_deliver_free_lesson' ), true ) ) {
 				return true;
 			}
 		}

@@ -530,7 +530,7 @@ if ( ! function_exists( 'flosc_format_model_parameter_value' ) ) {
 	/**
 	 * One parameter value, written the way a person would write it.
 	 *
-	 * var_export() on a float prints its full binary expansion — 0.9 comes back
+	 * Var_export() on a float prints its full binary expansion — 0.9 comes back
 	 * as 0.90000000000000002220446049250313080847263336181640625, which is the
 	 * same number and an unusable thing to show anybody. json_encode gives the
 	 * shortest decimal that round-trips, which is what was typed.

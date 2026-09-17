@@ -71,11 +71,18 @@ class Facebook_Provider extends SSO_Provider_Base {
 	}
 
 	/**
-	 * Get user info from Facebook
-	 * Facebook requires specifying fields explicitly
+	 * Get user info from Facebook.
+	 *
+	 * Facebook returns nothing by default: the fields wanted have to be named
+	 * explicitly in the request, which is why this method builds a field list
+	 * rather than simply calling the endpoint.
 	 *
 	 * @param string $access_token OAuth access token.
-	 * @return array|WP_Error User data or error
+	 * @param array  $token_data   Full token response. Unused by this provider;
+	 *                             present because OAuth2_Handler passes the same
+	 *                             arguments to every provider, and Apple reads
+	 *                             its id_token and form_post claims from it.
+	 * @return array|WP_Error User data, or WP_Error if the call fails.
 	 */
 	public function get_user_info( $access_token, $token_data = array() ) {
 		// Facebook requires explicit field requests.

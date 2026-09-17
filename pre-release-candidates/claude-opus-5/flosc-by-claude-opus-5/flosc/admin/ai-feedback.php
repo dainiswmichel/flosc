@@ -1,7 +1,10 @@
 <?php
 /**
- * v1.9.0: AI Feedback & Praise Editor
- * v1.9.5: Added "Rated Responses" section showing DB-rated chat log entries.
+ * AI Feedback & Praise Editor.
+ *
+ * @since 1.9.0
+ * @since 1.9.5 Added the "Rated Responses" section, which lists chat log
+ *              entries that carry a rating in the database.
  *
  * Admin can view, add, and delete feedback (flag bad responses) and
  * praises (reinforce good responses) that guide AI behavior.

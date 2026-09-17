@@ -1751,7 +1751,7 @@ function flosc_render_offer_editor_v2( $flosc_offer, $flosc_flow_key, $flosc_cur
 					</div>
 					<?php endif; ?>
 					
-					<?php if ( in_array( $fmt_id, array( 'card', 'featured', 'banner' ) ) ) : ?>
+					<?php if ( in_array( $fmt_id, array( 'card', 'featured', 'banner' ), true ) ) : ?>
 					<div class="field-row">
 						<label>Headline override:</label>
 						<input type="text" name="fmt_<?php echo esc_attr( $flosc_fmt_key ); ?>_headline" 

@@ -1633,13 +1633,13 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 				'depth' => $flosc_depth,
 			);
 			// Resolve names for display.
-			if ( in_array( $flosc_type, array( 'category', 'tag' ) ) ) {
+			if ( in_array( $flosc_type, array( 'category', 'tag' ), true ) ) {
 				$flosc_term = get_term( intval( $flosc_value ) );
 				if ( $flosc_term && ! is_wp_error( $flosc_term ) ) {
 					$flosc_item['slug'] = $flosc_term->slug;
 					$flosc_item['name'] = $flosc_term->name;
 				}
-			} elseif ( in_array( $flosc_type, array( 'post', 'page' ) ) ) {
+			} elseif ( in_array( $flosc_type, array( 'post', 'page' ), true ) ) {
 				$flosc_post_obj = get_post( intval( $flosc_value ) );
 				if ( $flosc_post_obj ) {
 					$flosc_item['name'] = $flosc_post_obj->post_title;

@@ -120,6 +120,7 @@ if ( is_readable( $exc_path ) ) {
 
 $FINDINGS = array();
 $RULES    = array();
+$exc_used = array();
 
 function rule( $id, $title, $source ) {
 	global $RULES;
@@ -127,9 +128,10 @@ function rule( $id, $title, $source ) {
 }
 
 function finding( $id, $file, $line, $text ) {
-	global $FINDINGS, $RULES, $exceptions;
+	global $FINDINGS, $RULES, $exceptions, $exc_used;
 	$key = $file . ':' . $line . ':' . $id;
 	if ( isset( $exceptions[ $key ] ) ) {
+		$exc_used[ $key ] = true;
 		return;
 	}
 	$FINDINGS[ $id ][] = array( 'file' => $file, 'line' => $line, 'text' => trim( $text ) );
@@ -494,6 +496,21 @@ foreach ( $RULES as $id => $r ) {
 
 echo "---------------------------------------------------------------------------\n";
 printf( "  active exceptions : %d  (tests/wporg-rule-exceptions.txt)\n", count( $exceptions ) );
+
+/*
+ * An exception is pinned to a file and a LINE NUMBER, so it stops applying the
+ * moment anything above it grows -- adding a docblock is enough. When that
+ * happens the finding it covered reappears and reads like a new defect rather
+ * than a line that moved. Naming the unused ones makes the drift diagnosable
+ * instead of mysterious.
+ */
+$flosc_stale = array_diff( array_keys( $exceptions ), array_keys( $exc_used ) );
+if ( ! empty( $flosc_stale ) ) {
+	printf( "  STALE exceptions  : %d  (line pinned; nothing matched them this run)\n", count( $flosc_stale ) );
+	foreach ( $flosc_stale as $flosc_s ) {
+		printf( "      %s\n", $flosc_s );
+	}
+}
 printf( "  files scanned     : %d\n", count( $src ) );
 printf( "  findings          : %d  (exit code counts these)\n", $total );
 echo "---------------------------------------------------------------------------\n\n";

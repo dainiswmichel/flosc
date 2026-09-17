@@ -268,7 +268,7 @@ class FLOSC_Content_Protection {
 
 		// Legacy: check old _flosc_post_visibility override.
 		$visibility = get_post_meta( $post_id, '_flosc_post_visibility', true );
-		if ( $visibility && in_array( $visibility, array( 'hidden', 'teaser', 'preview', 'public' ) ) ) {
+		if ( $visibility && in_array( $visibility, array( 'hidden', 'teaser', 'preview', 'public' ), true ) ) {
 			return $visibility;
 		}
 
@@ -849,7 +849,7 @@ class FLOSC_Content_Protection {
 	 * @return bool
 	 */
 	public function set_post_visibility( $post_id, $visibility ) {
-		if ( ! in_array( $visibility, array( 'hidden', 'teaser', 'preview', 'public' ) ) ) {
+		if ( ! in_array( $visibility, array( 'hidden', 'teaser', 'preview', 'public' ), true ) ) {
 			return false;
 		}
 

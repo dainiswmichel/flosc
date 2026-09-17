@@ -1,15 +1,15 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": "82.6",
+  "candidate_iteration": "82.7",
   "creator": "Claude Opus 5",
   "status": "WPCS_FORMATTING_APPLIED_FUNCTIONALLY_UNVERIFIED",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v82.5",
+  "base": "claude-opus-5 v82.6",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "947a088795ac8bcdf09439850657cabfdbfaee9700533e657b912de34a71c782",
-  "artifact_bytes": 2757726,
+  "artifact_sha256": "2988d32c4306d5e2dfcc352d38b44c446c4432725de50e338ee0706bfbb9adfa",
+  "artifact_bytes": 2759350,
   "artifact_entries": 278,
   "tree_files": 295,
   "why_this_iteration": {
@@ -641,5 +641,33 @@
       "wpcs_php_shipping": "2,536 errors, 191 warnings, 114 files"
     },
     "still_open": "Roughly 1,900 documentation findings across 113 files, led by flosc.php with 451. This is authorship at the rate of one file at a time. 0 of 30 behavioural tests executed."
+  },
+  "v82_7": {
+    "wpcs_php_shipping": "2,536 -> 2,522 errors, 114 files -> 105",
+    "documented": [
+      "class-linkedin-provider, class-facebook-provider and class-microsoft-provider: the token_data parameter, explaining that it is unused by those three and present because OAuth2_Handler passes the same arguments to every provider, and Apple reads its claims from it.",
+      "includes/flosc-flow-runtime.php: a header naming the two representations of a floscFlow -- the runtime option the chat reads on every turn, and the portable markdown that is import/export only -- and why runtime lists must not be stored under ivr_* keys.",
+      "admin/concierge.php and admin/trajectories.php: headers saying these are included by admin/settings.php and render rather than bootstrap.",
+      "class-flosc-filesystem::get_wp_filesystem(): that callers must handle null rather than assume an object, because on a host that needs credentials FLOSC does not have there is nothing to return.",
+      "flosc_guest_followup_slots(): what the slots are and why the result is held in a static.",
+      "admin/ai-feedback.php: two version markers moved from the description into @since tags, which is what PHPDoc has for them."
+    ],
+    "in_array_strictness": {
+      "made_strict": 10,
+      "left_alone": 25,
+      "why": "Adding true turns == into ===. Where the haystack is a literal array of non-numeric strings the two cannot disagree, so those ten are safe and now say what they mean. The other 25 compare against a variable -- quiz ids, user ids, message ids, plain numbers -- where a numeric string and an integer match loosely and not strictly. Changing those without tracing what fills each array would be a behaviour change, so they are listed rather than touched."
+    },
+    "index_stubs": "assets/personality-builder/index.php and languages/index.php got a file header, which pushed them past the 200-byte threshold under which check_packaging.php exempts index stubs from needing an ABSPATH guard, and the gate went red. The header was shortened instead of adding a guard: the file exists to be empty, and the gate was right.",
+    "gate_improvement": {
+      "problem": "Exceptions in tests/wporg-rule-exceptions.txt are pinned to a line number, so they stop applying the moment anything above them grows. Adding a docblock to class-flosc-filesystem.php moved two includes down six lines and the rules gate reported them as new findings.",
+      "fix": "The gate now records which exceptions actually matched and prints the ones that did not, as STALE. Drift announces itself instead of arriving as a mystery finding.",
+      "what_it_immediately_found": "admin/flosc-app.php:110:WPORG-10 was dead. It was written when that file read [flosc_companion] directly; v79 replaced that with flosc_nav_param_present(), so the rule stopped firing there. A dead exception is worse than none -- it reads as though a suppression is load-bearing when it is not. Removed, with the reason recorded in the file."
+    },
+    "measured_here": {
+      "php_l": "0 errors / 187 files",
+      "cli_gates": "37 of 37 pass",
+      "wporg_gate": "exit 0, 3 active exceptions, 0 stale",
+      "wpcs_php_shipping": "2,522 errors, 181 warnings, 105 files"
+    }
   }
 }

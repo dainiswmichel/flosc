@@ -742,7 +742,7 @@ trait FLOSC_Chat_Turn_Trait {
 				$chatpack_conv_history = array_map(
 					function ( $msg ) {
 						return array(
-							'role'    => in_array( $msg['role'] ?? '', array( 'user', 'assistant' ) ) ? $msg['role'] : 'user',
+							'role'    => in_array( $msg['role'] ?? '', array( 'user', 'assistant' ), true ) ? $msg['role'] : 'user',
 							'content' => sanitize_textarea_field( substr( $msg['content'] ?? '', 0, 1500 ) ), // Fix 10: raised from 500
 						);
 					},

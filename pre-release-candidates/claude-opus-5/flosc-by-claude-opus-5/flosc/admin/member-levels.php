@@ -163,7 +163,7 @@ $flosc_vgm_depths = flosc_vgm_depth_labels();
 				<td>
 					<?php
 					$flosc_item_type = $flosc_item['type'] ?? 'category';
-					if ( in_array( $flosc_item_type, array( 'post', 'page' ) ) ) :
+					if ( in_array( $flosc_item_type, array( 'post', 'page' ), true ) ) :
 						?>
 						<input type="text" name="protection_value[]" 
 								value="<?php echo esc_attr( $flosc_item['id'] ?? '' ); ?>" 

@@ -699,7 +699,7 @@ class FLOSC_Access_Manager {
 			return false;
 		}
 
-		return in_array( $subscription['status'], array( 'active', 'trialing' ) );
+		return in_array( $subscription['status'], array( 'active', 'trialing' ), true );
 	}
 
 	/**

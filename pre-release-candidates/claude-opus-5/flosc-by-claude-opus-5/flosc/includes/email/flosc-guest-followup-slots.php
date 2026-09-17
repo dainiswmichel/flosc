@@ -13,7 +13,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * @return array<string, array<string, mixed>>
+ * The follow-up slots a guest can be emailed into, keyed by slot id.
+ *
+ * Computed once per request and held in a static, because the list is derived
+ * from settings that cannot change mid-request and several callers ask for it
+ * on the same page load.
+ *
+ * @return array<string, array<string, mixed>> Slot id => slot definition.
  */
 function flosc_guest_followup_slots() {
 	static $slots = null;

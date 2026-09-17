@@ -17,6 +17,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 class FLOSC_Filesystem {
 
 	/**
+	 * The initialised WordPress filesystem, or null if it cannot be brought up.
+	 *
+	 * Callers must handle null rather than assume an object: on a host where the
+	 * filesystem API needs credentials FLOSC does not have, there is nothing to
+	 * return and a fatal would be the wrong answer.
+	 *
 	 * @return WP_Filesystem_Base|null
 	 */
 	public function get_wp_filesystem() {

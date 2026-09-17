@@ -1,4 +1,15 @@
 <?php
+/**
+ * Trajectories tab — the FLOSC admin screen for trajectory posts.
+ *
+ * Included by admin/settings.php, which has already resolved the flow being
+ * edited and prepared $flosc_get. This file renders and does not bootstrap:
+ * requesting it directly does nothing, because the ABSPATH guard below stops
+ * it before anything else runs.
+ *
+ * @package FLOSC
+ */
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
