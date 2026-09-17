@@ -454,18 +454,17 @@ trait FLOSC_REST_Trait {
 		// providers are not re-fetched on every render.
 		$cache_key = 'flosc_oembed_' . md5( $url );
 		$cached    = get_transient( $cache_key );
-		if ( is_string( $cached ) ) {
-			if ( '' === $cached && $retry ) {
-				// Retry path bypasses short-lived negative cache in case a provider
-				// had a transient miss on first resolution.
-			} else {
-				return new WP_REST_Response(
-					array(
-						'success' => '' !== $cached,
-						'html'    => $cached,
-					)
-				);
-			}
+		// A cache hit is served as-is, with one exception: an explicit retry
+		// looks past a negative entry, in case the provider simply missed on the
+		// first resolution rather than being unsupported.
+		$flosc_bypass_negative_cache = ( '' === $cached && $retry );
+		if ( is_string( $cached ) && ! $flosc_bypass_negative_cache ) {
+			return new WP_REST_Response(
+				array(
+					'success' => '' !== $cached,
+					'html'    => $cached,
+				)
+			);
 		}
 
 		$html  = wp_oembed_get( $url, array( 'width' => 480 ) );

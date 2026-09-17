@@ -140,7 +140,10 @@ function flosc_uninstall_rm_rf( $dir ) {
 		return;
 	}
 
-	$items = @scandir( $dir );
+	if ( ! is_readable( $dir ) ) {
+		return;
+	}
+	$items = scandir( $dir );
 	if ( ! is_array( $items ) ) {
 		return;
 	}
@@ -153,13 +156,15 @@ function flosc_uninstall_rm_rf( $dir ) {
 			flosc_uninstall_rm_rf( $path );
 		} elseif ( function_exists( 'wp_delete_file' ) ) {
 			wp_delete_file( $path );
-		} else {
+		} elseif ( is_writable( $path ) ) {
 			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- uninstall fallback when WP_Filesystem rmdir unavailable
-			@unlink( $path );
+			unlink( $path );
 		}
 	}
-	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- uninstall fallback when WP_Filesystem rmdir unavailable
-	@rmdir( $dir );
+	if ( is_dir( $dir ) && is_writable( $dir ) ) {
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- uninstall fallback when WP_Filesystem rmdir unavailable
+		rmdir( $dir );
+	}
 }
 
 // FLOSC data under uploads only (never touch plugins/flosc — core removes that).

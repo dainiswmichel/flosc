@@ -100,7 +100,9 @@ if ( ! function_exists( 'flosc_sanitize_ivr_markdown' ) ) {
 
 		if ( function_exists( 'mb_check_encoding' ) && ! mb_check_encoding( $text, 'UTF-8' ) ) {
 			if ( function_exists( 'mb_convert_encoding' ) ) {
-				$converted = @mb_convert_encoding( $text, 'UTF-8', 'UTF-8' );
+				// Substitutes an unconvertible byte rather than failing, so the
+				// result is checked rather than the call being silenced.
+				$converted = mb_convert_encoding( $text, 'UTF-8', 'UTF-8' );
 				$text      = is_string( $converted ) ? $converted : '';
 			} else {
 				return new WP_Error( 'flosc_ivr_encoding', 'IVR content must be valid UTF-8.' );

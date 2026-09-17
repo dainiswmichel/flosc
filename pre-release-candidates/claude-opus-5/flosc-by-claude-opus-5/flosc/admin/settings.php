@@ -917,9 +917,8 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 			if ( 'inactive_days' !== ( $flosc_rr['trigger'] ?? '' ) ) {
 				continue;
 			}
-			if ( 'reengagement' !== ( $flosc_rr['email_template'] ?? '' ) && '' !== ( $flosc_rr['email_template'] ?? '' ) ) {
-				// still count as reeng if inactive email of any template.
-			}
+			// Any inactive-days rule counts as re-engagement, whichever email
+			// template it names.
 			$flosc_reeng_on   = '1';
 			$flosc_reeng_days = max( 1, min( 365, intval( $flosc_rr['trigger_days'] ?? 7 ) ) );
 			break;
@@ -1822,12 +1821,12 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		$flosc_menu_actions = $flosc_post['visitor_menu_action'] ?? array();
 		$flosc_new_menu     = array();
 		foreach ( $flosc_menu_labels as $flosc_i => $flosc_label ) {
-			$flosc_label = sanitize_text_field( $flosc_label );
-			$action      = sanitize_text_field( $flosc_menu_actions[ $flosc_i ] ?? '' );
-			if ( '' !== $flosc_label && '' !== $action ) {
+			$flosc_label       = sanitize_text_field( $flosc_label );
+			$flosc_menu_action = sanitize_text_field( $flosc_menu_actions[ $flosc_i ] ?? '' );
+			if ( '' !== $flosc_label && '' !== $flosc_menu_action ) {
 				$flosc_new_menu[] = array(
 					'label'  => $flosc_label,
-					'action' => $action,
+					'action' => $flosc_menu_action,
 				);
 			}
 		}
@@ -1839,17 +1838,17 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		$flosc_guest_actions  = $flosc_post['guest_menu_action'] ?? array();
 		$flosc_new_guest_menu = array();
 		foreach ( $flosc_guest_labels as $flosc_i => $flosc_label ) {
-			$flosc_label = sanitize_text_field( $flosc_label );
-			$action      = sanitize_text_field( $flosc_guest_actions[ $flosc_i ] ?? '' );
-			if ( '' === $flosc_label || '' === $action ) {
+			$flosc_label       = sanitize_text_field( $flosc_label );
+			$flosc_menu_action = sanitize_text_field( $flosc_guest_actions[ $flosc_i ] ?? '' );
+			if ( '' === $flosc_label || '' === $flosc_menu_action ) {
 				continue;
 			}
-			if ( 'open_sandbox_purchase' === $action || 0 === strpos( $action, 'show_offer' ) ) {
+			if ( 'open_sandbox_purchase' === $flosc_menu_action || 0 === strpos( $flosc_menu_action, 'show_offer' ) ) {
 				continue;
 			}
 			$flosc_new_guest_menu[] = array(
 				'label'  => $flosc_label,
-				'action' => $action,
+				'action' => $flosc_menu_action,
 			);
 		}
 		update_option( 'flosc_guest_menu_items', $flosc_new_guest_menu );
@@ -1859,17 +1858,17 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		$flosc_member_actions  = $flosc_post['member_menu_action'] ?? array();
 		$flosc_new_member_menu = array();
 		foreach ( $flosc_member_labels as $flosc_i => $flosc_label ) {
-			$flosc_label = sanitize_text_field( $flosc_label );
-			$action      = sanitize_text_field( $flosc_member_actions[ $flosc_i ] ?? '' );
-			if ( '' === $flosc_label || '' === $action ) {
+			$flosc_label       = sanitize_text_field( $flosc_label );
+			$flosc_menu_action = sanitize_text_field( $flosc_member_actions[ $flosc_i ] ?? '' );
+			if ( '' === $flosc_label || '' === $flosc_menu_action ) {
 				continue;
 			}
-			if ( 'open_sandbox_purchase' === $action || 0 === strpos( $action, 'show_offer' ) ) {
+			if ( 'open_sandbox_purchase' === $flosc_menu_action || 0 === strpos( $flosc_menu_action, 'show_offer' ) ) {
 				continue;
 			}
 			$flosc_new_member_menu[] = array(
 				'label'  => $flosc_label,
-				'action' => $action,
+				'action' => $flosc_menu_action,
 			);
 		}
 		update_option( 'flosc_member_menu_items', $flosc_new_member_menu );
@@ -2343,7 +2342,7 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 	<!-- Tabs -->
 	<nav class="nav-tab-wrapper flosc-settings-tabs" aria-label="FLOSC Settings Tabs">
 		<?php
-		$tabs = array(
+		$flosc_settings_tabs = array(
 			'flow'             => '🗺 Flow',
 			'identity'         => 'Identity',
 			'ivr-messages'     => 'IVR Management',
@@ -2371,13 +2370,13 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 			'starter-packs'    => 'Starter Packs',
 		);
 		if ( ! $flosc_can_view_administration ) {
-			unset( $tabs['administration'] );
+			unset( $flosc_settings_tabs['administration'] );
 		}
 		// Tabs that are global rather than per-flow do not carry the flow
 		// selection, so their URL never implies Switch Flow changes what they do.
 		$flosc_global_tabs = array( 'starter-packs' );
 
-		foreach ( $tabs as $flosc_tab_id => $flosc_tab_label ) :
+		foreach ( $flosc_settings_tabs as $flosc_tab_id => $flosc_tab_label ) :
 			$flosc_tab_args = array(
 				'page' => 'flosc-settings',
 				'tab'  => $flosc_tab_id,

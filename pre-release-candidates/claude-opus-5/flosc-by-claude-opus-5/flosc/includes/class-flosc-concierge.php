@@ -775,9 +775,9 @@ class FLOSC_Concierge {
 		if ( ! $post instanceof WP_Post || ! self::is_concierge_post( $post ) ) {
 			return;
 		}
-		if ( in_array( (string) $post->post_status, array( 'publish', 'private' ), true ) ) {
-			// Keep syncing only from statuses that are intended to be live.
-		} else {
+		// Only a status meant to be live keeps its sync; anything else is
+		// removed from the index rather than left there stale.
+		if ( ! in_array( (string) $post->post_status, array( 'publish', 'private' ), true ) ) {
 			self::unsync_post( $post );
 			return;
 		}

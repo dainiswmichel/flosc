@@ -670,7 +670,8 @@ class FLOSC_First_Party_Authentication {
 			return '' !== $flow_dest ? esc_url_raw( $flow_dest ) : $this->flosc->get_app_url();
 		}
 
-		// entry_flow (default).
+		// The default mode: return them to the flow they entered through, when
+		// that flow names a logout destination of its own.
 		if ( '' !== $entry_flow ) {
 			$recall = flosc_get_setting( 'logout_destination', '', $entry_flow );
 			if ( '' !== $recall ) {

@@ -460,9 +460,13 @@ class FLOSC_Offer_Manager {
 			// Access grants.
 			'grants'         => array(
 				'features'      => array(),           // Feature flags to enable
-				'level'         => '',              // Member level to grant (MTS-2026-02-03)
-				'duration_days' => 0,       // 0 = lifetime
-				'usage_limits'  => array(),       // e.g., ['ai_queries' => 1000]
+				// Member level to grant, recorded 2026-02-03.
+				'level'         => '',
+				// Days of access. Zero means it never expires.
+				'duration_days' => 0,
+				// Per-event caps, keyed by event name; an AI query cap is the
+				// usual one. Empty means no cap.
+				'usage_limits'  => array(),
 			),
 
 			// Metadata.

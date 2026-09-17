@@ -73,7 +73,8 @@ class FLOSC_Condition_Evaluator {
 			$expr         = str_replace( $matches[0], $inner_result, $expr );
 		}
 
-		// Handle OR (||).
+		// An "or" expression: each side is evaluated in turn and the first true
+		// one ends it, so a later side with a side effect is never reached.
 		if ( false !== strpos( $expr, '||' ) ) {
 			$parts = preg_split( '/\s*\|\|\s*/', $expr );
 			foreach ( $parts as $part ) {
@@ -84,7 +85,8 @@ class FLOSC_Condition_Evaluator {
 			return false;
 		}
 
-		// Handle AND (&&).
+		// An "and" expression: each side is evaluated in turn and the first
+		// false one ends it.
 		if ( false !== strpos( $expr, '&&' ) ) {
 			$parts = preg_split( '/\s*&&\s*/', $expr );
 			foreach ( $parts as $part ) {
@@ -95,7 +97,8 @@ class FLOSC_Condition_Evaluator {
 			return true;
 		}
 
-		// Handle NOT (!).
+		// A negation: everything after the leading mark is evaluated and
+		// inverted.
 		if ( 0 === strpos( $expr, '!' ) ) {
 			return ! $this->evaluate_expression( substr( $expr, 1 ) );
 		}
@@ -327,68 +330,89 @@ class FLOSC_Condition_Evaluator {
 	}
 
 	/**
-	 * Resolve timezone in this order:
-	 * 1) explicit token (if provided and valid)
-	 * 2) site timezone (WordPress)
-	 * 3) system timezone
-	 * 4) UTC
+	 * Build a DateTimeZone from a name or offset, or say it could not be done.
+	 *
+	 * DateTimeZone throws on anything it does not recognise, and the resolver
+	 * below has four sources to try in turn. Answering "no" by returning null
+	 * lets that chain read as a chain, instead of four try/catch blocks whose
+	 * catch has nothing to do.
+	 *
+	 * @param string $name A timezone name, or a UTC offset like '+02:00'.
+	 * @return DateTimeZone|null The zone, or null when $name is empty or unusable.
+	 */
+	private function timezone_or_null( $name ) {
+		$name = trim( (string) $name );
+		if ( '' === $name ) {
+			return null;
+		}
+		try {
+			return new DateTimeZone( $name );
+		} catch ( Exception $e ) {
+			return null;
+		}
+	}
+
+	/**
+	 * The timezone a scheduled condition should be judged in.
+	 *
+	 * Four sources, in order, first usable one wins:
+	 *
+	 * 1. The token on the condition itself, when it names one.
+	 * 2. The site's timezone, as WordPress has it.
+	 * 3. The system timezone PHP is running under.
+	 * 4. UTC, which always resolves.
+	 *
+	 * @param string $token Timezone token from the condition: 'UTC', or an
+	 *                      offset such as UTC+2, UTC+02, UTC+02:00 or UTC-05:30.
+	 * @return DateTimeZone The resolved zone. Never null -- UTC is the floor.
 	 */
 	private function resolve_timezone( $token = '' ) {
 		$token = strtoupper( trim( (string) $token ) );
 
-		if ( '' !== $token ) {
-			if ( 'UTC' === $token ) {
-				return new DateTimeZone( 'UTC' );
-			}
+		if ( 'UTC' === $token ) {
+			return new DateTimeZone( 'UTC' );
+		}
 
-			// UTC offsets: UTC+2, UTC+02, UTC+02:00, UTC-05:30.
-			if ( preg_match( '/^UTC([+-])(\d{1,2})(?::?(\d{2}))?$/', $token, $m ) ) {
-				$sign    = $m[1];
-				$hours   = str_pad( (string) min( 14, (int) $m[2] ), 2, '0', STR_PAD_LEFT );
-				$minutes = str_pad( (string) min( 59, (int) ( $m[3] ?? 0 ) ), 2, '0', STR_PAD_LEFT );
-				$offset  = $sign . $hours . ':' . $minutes;
-				try {
-					return new DateTimeZone( $offset );
-				} catch ( Exception $e ) {
-					// fall through to fallback order.
-				}
+		// An offset token: UTC+2, UTC+02, UTC+02:00, UTC-05:30. The hours and
+		// minutes are clamped, so a token claiming UTC+99 becomes UTC+14.
+		if ( '' !== $token && preg_match( '/^UTC([+-])(\d{1,2})(?::?(\d{2}))?$/', $token, $m ) ) {
+			$offset = $m[1]
+				. str_pad( (string) min( 14, (int) $m[2] ), 2, '0', STR_PAD_LEFT )
+				. ':'
+				. str_pad( (string) min( 59, (int) ( $m[3] ?? 0 ) ), 2, '0', STR_PAD_LEFT );
+
+			$zone = $this->timezone_or_null( $offset );
+			if ( $zone instanceof DateTimeZone ) {
+				return $zone;
 			}
 		}
 
-		// Fallback 1: site timezone (WordPress).
 		if ( function_exists( 'wp_timezone' ) ) {
+			// wp_timezone() builds a DateTimeZone itself and throws on a site
+			// whose stored timezone is not one PHP knows, so the throw is caught
+			// here rather than escaping into a scheduled condition.
 			try {
-				$site_tz = wp_timezone();
-				if ( $site_tz instanceof DateTimeZone ) {
-					return $site_tz;
-				}
+				$site_zone = wp_timezone();
 			} catch ( Exception $e ) {
-				// continue fallback.
+				$site_zone = null;
+			}
+			if ( $site_zone instanceof DateTimeZone ) {
+				return $site_zone;
 			}
 		}
 
 		if ( function_exists( 'wp_timezone_string' ) ) {
-			$site_tz_string = trim( (string) wp_timezone_string() );
-			if ( '' !== $site_tz_string ) {
-				try {
-					return new DateTimeZone( $site_tz_string );
-				} catch ( Exception $e ) {
-					// continue fallback.
-				}
+			$zone = $this->timezone_or_null( wp_timezone_string() );
+			if ( $zone instanceof DateTimeZone ) {
+				return $zone;
 			}
 		}
 
-		// Fallback 2: system timezone.
-		$system_tz = trim( (string) date_default_timezone_get() );
-		if ( '' !== $system_tz ) {
-			try {
-				return new DateTimeZone( $system_tz );
-			} catch ( Exception $e ) {
-				// continue fallback.
-			}
+		$zone = $this->timezone_or_null( date_default_timezone_get() );
+		if ( $zone instanceof DateTimeZone ) {
+			return $zone;
 		}
 
-		// Final fallback.
 		return new DateTimeZone( 'UTC' );
 	}
 

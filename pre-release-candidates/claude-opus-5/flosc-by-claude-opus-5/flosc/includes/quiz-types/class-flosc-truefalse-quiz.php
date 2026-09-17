@@ -153,7 +153,7 @@ class FLOSC_TrueFalse_Quiz extends FLOSC_Abstract_Quiz_Type {
 			$topics          = array();
 			$correct_content = array();
 			$related_content = array();
-			$part_count = count( $parts );
+			$part_count      = count( $parts );
 			for ( $i = 2; $i < $part_count; $i++ ) {
 				$seg = trim( $parts[ $i ] );
 				if ( 0 === stripos( $seg, 'correctcontent:' ) ) {

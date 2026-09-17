@@ -35,13 +35,13 @@ if ( ! $flosc_is_new && ! $flosc_flow ) {
 
 // Get current tab.
 $flosc_current_tab = sanitize_key( wp_unslash( $_GET['tab'] ?? 'identity' ) );
-$tabs              = array(
+$flosc_flow_tabs   = array(
 	'identity' => 'Identity',
 	'ivr'      => 'IVR',
 	'content'  => 'Content',
 );
 if ( $flosc_is_admin && ! $flosc_is_new ) {
-	$tabs['team'] = 'Team';
+	$flosc_flow_tabs['team'] = 'Team';
 }
 
 // Handle form submission.
@@ -186,7 +186,7 @@ $flosc_categories = get_categories( array( 'hide_empty' => false ) );
 	<?php if ( ! $flosc_is_new ) : ?>
 		<!-- Tabs -->
 		<nav class="nav-tab-wrapper">
-			<?php foreach ( $tabs as $flosc_tab_id => $flosc_tab_label ) : ?>
+			<?php foreach ( $flosc_flow_tabs as $flosc_tab_id => $flosc_tab_label ) : ?>
 				<a href="<?php echo esc_url( admin_url( 'admin.php?page=flosc-flow-edit&flow_id=' . rawurlencode( $flosc_flow_id ) . '&tab=' . $flosc_tab_id ) ); ?>"
 					class="nav-tab <?php echo esc_attr( $flosc_current_tab === $flosc_tab_id ? 'nav-tab-active' : '' ); ?>">
 					<?php echo esc_html( $flosc_tab_label ); ?>
@@ -420,9 +420,9 @@ $flosc_categories = get_categories( array( 'hide_empty' => false ) );
 								$flosc_legacy       = $flosc_visitor_menu;
 								$flosc_visitor_menu = array();
 								foreach ( $flosc_legacy as $flosc_item ) {
-									$action = $flosc_item['action'] ?? '';
-									if ( $action ) {
-										$flosc_visitor_menu[ $action ] = array(
+									$flosc_item_action = $flosc_item['action'] ?? '';
+									if ( $flosc_item_action ) {
+										$flosc_visitor_menu[ $flosc_item_action ] = array(
 											'label'   => $flosc_item['label'] ?? '',
 											'enabled' => (bool) ( $flosc_item['enabled'] ?? false ),
 										);

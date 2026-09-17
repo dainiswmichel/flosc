@@ -430,8 +430,8 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 	 * Convert tokens from affiliate earnings
 	 */
 	public function credit_from_affiliate( $user_id, $affiliate_amount, $affiliate_meta = array() ) {
-		// Conversion rate: $1 affiliate commission = X tokens.
-		$rate   = intval( $this->get_setting( 'affiliate_conversion_rate', 10 ) ); // Default: $1 = 10 tokens
+		// How many tokens one unit of affiliate commission buys. Ten by default.
+		$rate   = intval( $this->get_setting( 'affiliate_conversion_rate', 10 ) );
 		$tokens = round( $affiliate_amount * $rate );
 
 		if ( $tokens > 0 ) {

@@ -1190,10 +1190,12 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 						if ( ! $stripe || ! method_exists( $stripe, 'get_client_config' ) ) {
 							return '';
 						}
-						// Only expose when Stripe is enabled for this flow (or legacy configured).
-						if ( method_exists( $stripe, 'is_enabled' ) && ! $stripe->is_enabled() ) {
-							// Still allow if publishable key present (admin may enable per-offer only).
-						}
+						/*
+						 * The publishable key is exposed even when Stripe is
+						 * off for the flow as a whole, because an operator may
+						 * have enabled it on individual offers only. It is a
+						 * publishable key; the secret is never sent here.
+						 */
 						$cfg = $stripe->get_client_config();
 						return (string) ( $cfg['publishableKey'] ?? '' );
 					} )(),
