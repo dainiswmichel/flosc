@@ -313,23 +313,45 @@ function flosc_handle_offer_save() {
     exit;
 }
 flosc_handle_offer_save(); // v1.6.5: Execute at include time
-$flosc_get = wp_unslash($_GET);
+
+/*
+ * There was an unconditional `$flosc_get = wp_unslash($_GET);` here, before any
+ * of the gates below. Every branch that follows re-reads $_GET for itself after
+ * its own checks, and the display block further down does the same, so nothing
+ * used this value -- it only made the file read request input before proving
+ * anything about the request. Removed.
+ */
 
 // Handle delete
 if (isset($_GET['delete_offer']) && isset($_GET['_wpnonce'])) {
+    /*
+     * Capability and nonce as two separate refusals, matching the toggle_status
+     * and set_status branches below.
+     *
+     * These two tests used to be joined with && inside a single if, and a
+     * failure fell through to "do nothing" rather than stopping. One combined
+     * condition governing a destructive action is exactly the shape the plugin
+     * review warns about: it is harder to read, harder to prove, and it fails
+     * open into the rest of the page instead of ending the request.
+     */
+    if (!current_user_can('manage_options')) {
+        wp_die('Unauthorized action.', 'Insufficient permissions', ['response' => 403]);
+    }
     $flosc_get = wp_unslash($_GET);
     $flosc_del_id = sanitize_text_field($flosc_get['delete_offer'] ?? '');
-    if (wp_verify_nonce(sanitize_text_field($flosc_get['_wpnonce'] ?? ''), 'flosc_delete_offer_' . $flosc_del_id) && current_user_can('manage_options')) {
-        if ($flosc_flow_key) {
-            $flosc_fs = get_option($flosc_flow_key, []);
-            $flosc_all = $flosc_fs['offers'] ?? [];
-            unset($flosc_all[$flosc_del_id]);
-            $flosc_fs['offers'] = $flosc_all;
-            update_option($flosc_flow_key, $flosc_fs);
-            $flosc_flow_settings = $flosc_fs;
-        }
-        add_settings_error('flosc_settings', 'offer_deleted', 'Offer deleted.', 'success');
+    if (!wp_verify_nonce(sanitize_text_field($flosc_get['_wpnonce'] ?? ''), 'flosc_delete_offer_' . $flosc_del_id)) {
+        wp_die('Nonce verification failed.', 'Invalid token', ['response' => 403]);
     }
+
+    if ($flosc_flow_key) {
+        $flosc_fs = get_option($flosc_flow_key, []);
+        $flosc_all = $flosc_fs['offers'] ?? [];
+        unset($flosc_all[$flosc_del_id]);
+        $flosc_fs['offers'] = $flosc_all;
+        update_option($flosc_flow_key, $flosc_fs);
+        $flosc_flow_settings = $flosc_fs;
+    }
+    add_settings_error('flosc_settings', 'offer_deleted', 'Offer deleted.', 'success');
 }
 
 // Handle toggle status

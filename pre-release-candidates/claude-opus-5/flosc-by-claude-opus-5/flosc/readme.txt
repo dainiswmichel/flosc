@@ -5,7 +5,7 @@ Tags: leads, sales, access, ai, chatbot
 Requires at least: 7.0
 Requires PHP: 7.4
 Tested up to: 7.1
-Stable tag: 8.0.0
+Stable tag: 8.0.1
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -340,6 +340,12 @@ Platform Compliance: https://flosc.ai/platform-compliance/
 Production-ready 8.x release with guided IVR flows, offer gating, BYOK AI support, and optional social sign-in providers.
 
 == Changelog ==
+
+= 8.0.1 =
+* Security: the protected audio endpoint now verifies the HMAC signature on its URL. The verifier existed but was never called, and two of the three places that built those URLs did not sign them at all.
+* Security: eleven admin-ajax handlers verified their nonce only after unslashing $_POST, and several after a capability branch that can exit. The nonce is now the first statement in each.
+* Security: offer deletion checked capability and nonce in one combined condition and fell through to the rest of the page on failure. Each is now a separate refusal that ends the request, matching the sibling handlers.
+* The IVR tab no longer unslashes $_POST on plain GET renders.
 
 = 8.0.0 =
 * Initial stable 8.0.0 release for WordPress 7.0+ and PHP 7.4+

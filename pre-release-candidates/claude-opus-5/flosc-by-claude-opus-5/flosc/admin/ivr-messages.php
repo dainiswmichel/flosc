@@ -121,8 +121,33 @@ if (!function_exists('flosc_sanitize_ivr_markdown')) {
     }
 }
 
+/*
+ * Request input for this tab.
+ *
+ * WHO is already settled: this file wp_die()s at the top unless the viewer has
+ * edit_others_posts, so nothing below is reachable by an unauthorized request.
+ *
+ * WHETHER THEY MEANT TO is settled per branch: every state-changing handler
+ * further down calls check_admin_referer() with its own action before it writes
+ * anything, and the download branch verifies its own nonce. Those are the only
+ * places a nonce belongs, because those are the only places anything changes.
+ *
+ * What is read here without a nonce is navigation state -- which IVR file,
+ * which view, which phase to display. Requiring a nonce for those would break
+ * bookmarks and the back button while protecting nothing, since they write
+ * nothing.
+ *
+ * $_POST is now read only on an actual POST. It was unslashed on every render
+ * of the tab, including plain GETs that could not possibly carry a submission.
+ */
+// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only display state; capability gate above, per-branch nonces below.
 $flosc_get = wp_unslash($_GET);
-$flosc_post = wp_unslash($_POST);
+
+$flosc_request_method = isset($_SERVER['REQUEST_METHOD'])
+    ? strtoupper(sanitize_text_field(wp_unslash($_SERVER['REQUEST_METHOD'])))
+    : '';
+// phpcs:ignore WordPress.Security.NonceVerification.Missing -- every handler below calls check_admin_referer() with its own action before writing.
+$flosc_post = ('POST' === $flosc_request_method) ? wp_unslash($_POST) : array();
 
 // v1.2.8: Resolve active IVR file from explicit request first, then context fallback.
 $flosc_requested_ivr_file = sanitize_file_name((string)($flosc_get['ivr'] ?? ''));

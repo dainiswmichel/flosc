@@ -3,7 +3,7 @@
  * Plugin Name: FLOSC
  * Plugin URI: https://flosc.ai
  * Description: (F)reeline --> (L)ogin --> (O)ffer --> (S)ale --> (C)ontent: try-before-you-buy WordPress journeys.
- * Version: 8.0.0
+ * Version: 8.0.1
  * Requires at least: 7.0
  * Requires PHP: 7.4
  * Author: Dainis W. Michel
@@ -17,7 +17,7 @@
 if (!defined('ABSPATH')) exit;
 
 // Plugin constants
-define('FLOSC_VERSION', '8.0.0');
+define('FLOSC_VERSION', '8.0.1');
 
 /*
  * The personality builder versions independently of the plugin. It ships here
@@ -2731,8 +2731,13 @@ The Team',
     // ─────────────────────────────────────────────────────────
 
     public function ajax_accuracy_test_message() {
-        $post = wp_unslash($_POST);
+        // Origin first: check_ajax_referer() ran after $_POST was unslashed
+        // and, in some of these, after a capability branch that can exit. The
+        // request was therefore parsed before anything proved it came from this
+        // site. Nonce, then identity, then the body.
         check_ajax_referer('flosc_accuracy_test', 'nonce');
+
+        $post = wp_unslash($_POST);
         if (!current_user_can('manage_options')) wp_send_json_error(['message' => 'Unauthorized']);
 
         $message = sanitize_textarea_field($post['message'] ?? '');
@@ -2821,8 +2826,13 @@ The Team',
      * AJAX: Protect a category (v1.0.1)
      */
     public function ajax_protect_category() {
-        $post = wp_unslash($_POST);
+        // Origin first: check_ajax_referer() ran after $_POST was unslashed
+        // and, in some of these, after a capability branch that can exit. The
+        // request was therefore parsed before anything proved it came from this
+        // site. Nonce, then identity, then the body.
         check_ajax_referer('flosc_protect_category', 'nonce');
+
+        $post = wp_unslash($_POST);
 
         if (!current_user_can('manage_options')) {
             wp_send_json_error('Unauthorized');
@@ -2850,8 +2860,13 @@ The Team',
      * AJAX: Unprotect a category (v1.0.1)
      */
     public function ajax_unprotect_category() {
-        $post = wp_unslash($_POST);
+        // Origin first: check_ajax_referer() ran after $_POST was unslashed
+        // and, in some of these, after a capability branch that can exit. The
+        // request was therefore parsed before anything proved it came from this
+        // site. Nonce, then identity, then the body.
         check_ajax_referer('flosc_unprotect_category', 'nonce');
+
+        $post = wp_unslash($_POST);
 
         if (!current_user_can('manage_options')) {
             wp_send_json_error('Unauthorized');
@@ -2878,8 +2893,13 @@ The Team',
      * No popups — results display inline on the SSO settings page.
      */
     public function ajax_test_sso_connection() {
-        $post = wp_unslash($_POST);
+        // Origin first: check_ajax_referer() ran after $_POST was unslashed
+        // and, in some of these, after a capability branch that can exit. The
+        // request was therefore parsed before anything proved it came from this
+        // site. Nonce, then identity, then the body.
         check_ajax_referer('flosc_test_sso', 'nonce');
+
+        $post = wp_unslash($_POST);
 
         if (!current_user_can('manage_options')) {
             wp_send_json_error('Unauthorized');
@@ -10303,12 +10323,16 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
     }
 
     public function ajax_test_ai_connection() {
+        // Origin first: check_ajax_referer() ran after $_POST was unslashed
+        // and, in some of these, after a capability branch that can exit. The
+        // request was therefore parsed before anything proved it came from this
+        // site. Nonce, then identity, then the body.
+        check_ajax_referer('flosc_test_ai', 'nonce');
+
         $post = wp_unslash($_POST);
         if (!current_user_can('manage_options')) {
             wp_send_json_error(['message' => 'Unauthorized'], 403);
         }
-
-        check_ajax_referer('flosc_test_ai', 'nonce');
 
         // v5.0.2 FIX: Set flow context from posted IVR so flosc_get_setting reads
         // the correct per-flow ai_provider. Without this, admin-ajax has no URL
@@ -10461,13 +10485,17 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         }
     }
     public function ajax_flosc_get_chat_logs() {
+        // Origin first: check_ajax_referer() ran after $_POST was unslashed
+        // and, in some of these, after a capability branch that can exit. The
+        // request was therefore parsed before anything proved it came from this
+        // site. Nonce, then identity, then the body.
+        check_ajax_referer('flosc_chat_logs', 'nonce');
+
         $post = wp_unslash($_POST);
         $flow_id = sanitize_key((string) ($post['flow_id'] ?? ''));
         if (!$this->can_manage_flow_chat_logs($flow_id)) {
             wp_send_json_error(['message' => 'Unauthorized'], 403);
         }
-
-        check_ajax_referer('flosc_chat_logs', 'nonce');
 
         $logger = FLOSC_Chat_Logger::instance();
         $filters = [
@@ -10491,12 +10519,16 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
      * v1.9.0: AJAX handler to clear old chat logs
      */
     public function ajax_flosc_clear_chat_logs() {
+        // Origin first: check_ajax_referer() ran after $_POST was unslashed
+        // and, in some of these, after a capability branch that can exit. The
+        // request was therefore parsed before anything proved it came from this
+        // site. Nonce, then identity, then the body.
+        check_ajax_referer('flosc_chat_logs', 'nonce');
+
         $post = wp_unslash($_POST);
         if (!current_user_can('manage_options')) {
             wp_send_json_error(['message' => 'Unauthorized'], 403);
         }
-
-        check_ajax_referer('flosc_chat_logs', 'nonce');
 
         $days = intval($post['days'] ?? 30);
         $logger = FLOSC_Chat_Logger::instance();
@@ -10513,12 +10545,17 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
      * Saves score + admin note directly to the chat log row.
      */
     public function ajax_flosc_rate_log() {
-        $post = wp_unslash($_POST);
+        // Origin first, then identity, then the body. The nonce was verified
+        // here before, but only after $_POST had been unslashed and after a
+        // capability branch that can exit -- so nothing proved the request came
+        // from this site until several statements in.
+        check_ajax_referer('flosc_chat_logs', 'nonce');
+
         if (!current_user_can('manage_options')) {
             wp_send_json_error(['message' => 'Unauthorized'], 403);
         }
 
-        check_ajax_referer('flosc_chat_logs', 'nonce');
+        $post = wp_unslash($_POST);
 
         $log_id = intval($post['log_id'] ?? 0);
         $rating = intval($post['rating'] ?? 0);
@@ -10544,13 +10581,16 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
      * optionally scoped to the flow currently shown.
      */
     public function ajax_flosc_delete_chat_session() {
+        // Origin before body, for the same reason as the sibling handlers: the
+        // nonce ran after $_POST was unslashed and after a capability branch
+        // that can exit, so an off-site request was parsed before being refused.
+        check_ajax_referer('flosc_chat_logs', 'nonce');
+
         $post = wp_unslash($_POST);
         $flow  = sanitize_key((string) ($post['flow_id'] ?? ''));
         if (!$this->can_manage_flow_chat_logs($flow)) {
             wp_send_json_error(['message' => 'Unauthorized'], 403);
         }
-
-        check_ajax_referer('flosc_chat_logs', 'nonce');
 
         $by    = sanitize_text_field($post['by'] ?? '');
         $value = sanitize_text_field($post['value'] ?? '');
@@ -10744,12 +10784,17 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
      * picks it up on its next poll and shows it pale-green as "Name (admin)".
      */
     public function ajax_flosc_admin_join() {
+        // Origin first: check_ajax_referer() ran after $_POST was unslashed
+        // and, in some of these, after a capability branch that can exit. The
+        // request was therefore parsed before anything proved it came from this
+        // site. Nonce, then identity, then the body.
+        check_ajax_referer('flosc_chat_logs', 'nonce');
+
         $post = wp_unslash($_POST);
         $flow = sanitize_key((string) ($post['flow_id'] ?? ''));
         if (!$this->can_manage_flow_chat_logs($flow)) {
             wp_send_json_error(['message' => 'Unauthorized'], 403);
         }
-        check_ajax_referer('flosc_chat_logs', 'nonce');
 
         $session_id = intval($post['session_id'] ?? 0);
         $text       = sanitize_textarea_field($post['text'] ?? '');
@@ -10783,13 +10828,17 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
      * Admin token assignment from Chat Logs session view.
      */
     public function ajax_flosc_admin_assign_tokens() {
+        // Origin first: check_ajax_referer() ran after $_POST was unslashed
+        // and, in some of these, after a capability branch that can exit. The
+        // request was therefore parsed before anything proved it came from this
+        // site. Nonce, then identity, then the body.
+        check_ajax_referer('flosc_chat_logs', 'nonce');
+
         $post = wp_unslash($_POST);
         $flow = sanitize_key((string) ($post['flow_id'] ?? ''));
         if (!$this->can_manage_flow_chat_logs($flow)) {
             wp_send_json_error(['message' => 'Unauthorized'], 403);
         }
-
-        check_ajax_referer('flosc_chat_logs', 'nonce');
 
         $session_id = intval($post['session_id'] ?? 0);
         $amount = intval($post['amount'] ?? 0);
@@ -11333,11 +11382,15 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
                     $format = $phrase['format'] ?? 'webm';
                     if (!$file) continue;
 
+                    // Signed: ajax_serve_user_audio() refuses an unsigned link.
+                    $flosc_audio_exp = time() + HOUR_IN_SECONDS;
                     $audio_url = admin_url('admin-ajax.php') . '?' . http_build_query([
                         'action' => 'flosc_serve_user_audio',
                         'user_id' => $user_id,
                         'flosc_sid' => $sess_id,
                         'file' => $file,
+                        'exp' => $flosc_audio_exp,
+                        'sig' => $this->build_audio_access_signature($user_id, $sess_id, $file, $flosc_audio_exp),
                     ]);
 
                     $mime = 'audio/webm';
@@ -11371,15 +11424,23 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
      */
     public function ajax_serve_user_audio() {
         /*
-         * Authorize before parsing.
+         * Authorize before parsing, then prove the request originated here.
          *
-         * This read six query parameters and then asked whether the viewer was
-         * allowed any of them. The check was real but it was last, so an
-         * unauthorized request still walked through the whole parser. Read the
-         * one value the decision needs, decide, and refuse before touching
-         * anything else. A signed URL is the origin proof here -- it has to work
-         * from an <audio src>, where a nonce cannot go -- and the capability
-         * check is what makes it safe.
+         * Two separate questions, both answered before a byte is served:
+         *
+         *   WHO is asking      -- viewer_can_stream_member_audio(), below.
+         *   DID THEY MEAN TO   -- the HMAC signature in ?exp= and ?sig=.
+         *
+         * A nonce cannot travel in an <audio src>, so the origin proof is a
+         * short-lived signature over (user_id|session_id|file|expires), keyed on
+         * the site secret. build_audio_access_signature() mints it and
+         * is_valid_audio_access_signature() checks it with hash_equals().
+         *
+         * Both of those functions already existed. Nothing called the verifier:
+         * ?sig= and ?exp= were parsed into variables and then never looked at
+         * again, and two of the three URL builders did not sign at all. The
+         * comment that used to sit here claimed a signed URL was the origin
+         * proof, which was not true of the code beneath it. It is now.
          */
         $user_id = absint( (string) filter_input( INPUT_GET, 'user_id', FILTER_SANITIZE_NUMBER_INT ) );
         if ( ! $user_id ) {
@@ -11420,6 +11481,17 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         // Validate filename: only allow phrase-N.ext pattern
         if (!preg_match('/^phrase-\d+\.(webm|mp4|m4a|ogg|wav)$/', $file)) {
             wp_die('Invalid file', 400);
+        }
+
+        /*
+         * Origin proof. The signature covers exactly the four values that decide
+         * which file is served, so a tampered user_id, session, filename or
+         * expiry invalidates it. is_valid_audio_access_signature() also rejects
+         * an expired or absurdly-distant expiry, and compares with hash_equals()
+         * so the comparison is not timing-dependent.
+         */
+        if (!$this->is_valid_audio_access_signature($user_id, $session_id, $file, $expires, $sig)) {
+            wp_die('Invalid or expired link', 403);
         }
 
         $upload_dir = wp_upload_dir();
@@ -11997,12 +12069,16 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
 
                     $mts_stamp = preg_replace('/-[0-9a-f]{5}$/', '', $sid);
                     $display_name = 'phrase_' . $phrase_num . '_' . $mts_stamp . '.' . $ext;
+                    // Signed: ajax_serve_user_audio() refuses an unsigned link.
+                    $flosc_dl_exp = time() + HOUR_IN_SECONDS;
                     $download_url = admin_url('admin-ajax.php') . '?' . http_build_query([
                         'action' => 'flosc_serve_user_audio',
                         'user_id' => $user_id,
                         'flosc_sid' => $sid,
                         'file' => $basename,
                         'download' => 1,
+                        'exp' => $flosc_dl_exp,
+                        'sig' => $this->build_audio_access_signature($user_id, $sid, $basename, $flosc_dl_exp),
                     ]);
 
                     $recording_items[] = [
@@ -12516,7 +12592,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             'flosc-app',
             FLOSC_PLUGIN_URL . 'assets/js/flosc-app.js',
             $flosc_app_deps,
-            file_exists($flosc_app_js) ? filemtime($flosc_app_js) : (defined('FLOSC_VERSION') ? FLOSC_VERSION : '8.0.0'),
+            file_exists($flosc_app_js) ? filemtime($flosc_app_js) : (defined('FLOSC_VERSION') ? FLOSC_VERSION : '8.0.1'),
             true
         );
     }
