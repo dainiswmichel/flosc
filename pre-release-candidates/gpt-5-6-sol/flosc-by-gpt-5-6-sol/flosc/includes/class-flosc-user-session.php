@@ -11,6 +11,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC User Session behavior and the WordPress services used by its methods.
+ */
 class FLOSC_User_Session {
 	private $flosc_user_id;
 	private $flosc_flow_id;
@@ -218,21 +221,21 @@ class FLOSC_User_Session {
 			),
 			'flosc_member'  => array(
 				'flosc_can_see_all_lessons' => true,
-				'flosc_can_see_pricing'     => false, // Already purchased
+				'flosc_can_see_pricing'     => false, // Already purchased.
 				'flosc_can_see_catalog'     => true,
 				'flosc_description'         => 'Full lesson access, supportive learning coach mode',
 			),
 			'flosc_guest'   => array(
 				'flosc_can_see_free_lesson'     => true,
-				'flosc_can_see_catalog'         => true, // Titles only
+				'flosc_can_see_catalog'         => true, // Titles only.
 				'flosc_can_see_pricing'         => true,
 				'flosc_must_encourage_purchase' => true,
 				'flosc_description'             => 'Quiz completed - can access assigned free lesson only',
 			),
 			'flosc_visitor' => array(
-				'flosc_can_see_catalog'     => true, // Titles only
+				'flosc_can_see_catalog'     => true, // Titles only.
 				'flosc_must_encourage_quiz' => true,
-				'flosc_can_see_pricing'     => false, // Only after quiz
+				'flosc_can_see_pricing'     => false, // Only after quiz.
 				'flosc_description'         => 'New visitor - primary goal is quiz completion',
 			),
 		);

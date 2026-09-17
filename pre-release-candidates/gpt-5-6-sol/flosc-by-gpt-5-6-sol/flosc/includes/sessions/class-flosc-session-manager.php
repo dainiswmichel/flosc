@@ -13,6 +13,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC Session Manager behavior and the WordPress services used by its methods.
+ */
 class FLOSC_Session_Manager {
 
 	private $flosc_session_meta_key = '_flosc_sessions';
@@ -58,7 +61,7 @@ class FLOSC_Session_Manager {
 	 * Whether a session belongs to the requested flow.
 	 *
 	 * @param array  $session
-	 * @param string $stem Requested flow stem (empty = no filter / all flows).
+	 * @param mixed $stem Input consumed by the Coordinate the session belongs to flow behavior implemented by this code path. operation.
 	 * @param int    $user_id For legacy untagged sessions.
 	 * @return bool
 	 */
@@ -90,7 +93,7 @@ class FLOSC_Session_Manager {
 	 * Get sessions for a user, optionally filtered to one flow (grouped by date).
 	 *
 	 * @param int    $user_id
-	 * @param string $flow_id Flow stem / ivr / id. Empty = all (admin only use).
+	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
 	 * @return array
 	 */
 	public function get_flosc_user_sessions( $user_id, $flow_id = '' ) {
@@ -152,8 +155,9 @@ class FLOSC_Session_Manager {
 	 * Create a new session on a flow.
 	 *
 	 * @param int    $user_id
-	 * @param string $title
+	 * @param mixed $title Input consumed by the Persist the session state in Word Press storage. operation.
 	 * @param string $flow_id Flow stem for isolation.
+ * @param mixed $seed_messages Input consumed by the Persist the session state in Word Press storage. operation.
 	 * @return array
 	 */
 	public function flosc_create_session( $user_id, $title = 'New Chat', $flow_id = '', $seed_messages = array() ) {
@@ -240,7 +244,7 @@ class FLOSC_Session_Manager {
 	 * Get a specific session (must belong to user; optional flow match).
 	 *
 	 * @param int         $session_id
-	 * @param int|null    $user_id
+	 * @param mixed $user_id WordPress user ID whose Resolve the current session value from the available Word Press and flow state. state is being processed.
 	 * @param string|null $flow_id When set, reject sessions from other flows.
 	 * @return array|null
 	 */
@@ -278,7 +282,7 @@ class FLOSC_Session_Manager {
 	 * Sidebar listing stays flow-filtered; history/handoff restore may cross floscDomains.
 	 *
 	 * @param int      $session_id
-	 * @param int|null $user_id
+	 * @param mixed $user_id WordPress user ID whose Resolve the current session by id value from the available Word Press and flow state. state is being processed.
 	 * @return array|null
 	 */
 	public function get_flosc_session_by_id( $session_id, $user_id = null ) {
@@ -309,11 +313,11 @@ class FLOSC_Session_Manager {
 	 * Add message to session.
 	 *
 	 * @param int         $session_id
-	 * @param string      $role
+	 * @param mixed $role Input consumed by the Persist the add flosc message state in Word Press storage. operation.
 	 * @param string      $content
-	 * @param int|null    $user_id
+	 * @param mixed $user_id WordPress user ID whose Persist the add flosc message state in Word Press storage. state is being processed.
 	 * @param array|null  $meta
-	 * @param string|null $flow_id Optional flow guard.
+	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
 	 * @return bool
 	 */
 	public function add_flosc_message( $session_id, $role, $content, $user_id = null, $meta = null, $flow_id = null ) {
@@ -335,7 +339,7 @@ class FLOSC_Session_Manager {
 			if ( (int) ( $session['id'] ?? 0 ) !== (int) $session_id ) {
 				continue;
 			}
-			// Keep the existing session even when the destination floscDomain/flow
+			// Keep the existing session even when the destination floscDomain/flow.
 			// differs. Sidebar listing stays flow-filtered; this append is the live journey.
 			if ( empty( $session['flow_id'] ) && '' !== $stem ) {
 				$session['flow_id'] = $stem;
@@ -377,7 +381,7 @@ class FLOSC_Session_Manager {
 	 * Delete a session (optional flow guard).
 	 *
 	 * @param int         $session_id
-	 * @param int|null    $user_id
+	 * @param mixed $user_id WordPress user ID whose Persist the session state in Word Press storage. state is being processed.
 	 * @param string|null $flow_id
 	 * @return bool
 	 */
@@ -405,9 +409,9 @@ class FLOSC_Session_Manager {
 						return true;
 					}
 					if ( ! $this->session_belongs_to_flow( $s, $stem, $user_id ) ) {
-						return true; // wrong flow — do not delete
+						return true; // wrong flow — do not delete.
 					}
-					return false; // drop matching session
+					return false; // drop matching session.
 				}
 			)
 		);
@@ -449,7 +453,7 @@ class FLOSC_Session_Manager {
 	 * Session count for user (optional per-flow).
 	 *
 	 * @param int    $user_id
-	 * @param string $flow_id
+	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
 	 * @return int
 	 */
 	public function get_flosc_session_count( $user_id, $flow_id = '' ) {

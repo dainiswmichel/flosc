@@ -12,11 +12,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC User Access Manager behavior and the WordPress services used by its methods.
+ */
 class FLOSC_User_Access_Manager {
 
 	private static $instance = null;
 
-	public static function instance() {
+		/**
+	 * Coordinate the instance behavior implemented by this code path.
+	 *
+	 * @return mixed Result produced by the instance operation.
+	 */
+public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
 		}
@@ -26,6 +34,8 @@ class FLOSC_User_Access_Manager {
 	/**
 	 * Get current user's access level
 	 *
+ * @param mixed $user_id WordPress user ID whose Resolve the current access level value from the available Word Press and flow state. state is being processed.
+ * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
 	 * @return string 'visitor', 'guest', or 'member'
 	 */
 	public function get_access_level( $user_id = null, $flow_id = null ) {
@@ -63,8 +73,11 @@ class FLOSC_User_Access_Manager {
 	 * @return bool
 	 */
 	/**
+ * Determine whether the current state satisfies member.
+ *
 	 * @param int         $user_id
-	 * @param string|null $flow_id Per-flow stem when known.
+	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+ * @return bool Whether member applies to the current state.
 	 */
 	public function is_member( $user_id, $flow_id = null ) {
 		if ( ! $user_id ) {
@@ -118,7 +131,7 @@ class FLOSC_User_Access_Manager {
 	 * Grant member access to user
 	 *
 	 * @param int    $user_id
-	 * @param string $reason 'quiz_completion', 'payment', 'admin_grant'.
+	 * @param mixed $reason Input consumed by the Persist the grant member access state in Word Press storage. operation.
 	 */
 	public function grant_member_access( $user_id, $reason = 'quiz_completion' ) {
 
@@ -156,7 +169,7 @@ class FLOSC_User_Access_Manager {
 	 * Returns all relevant user data
 	 *
 	 * @param int         $user_id
-	 * @param string|null $flow_id Per-flow stem when known.
+	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
 	 * @return array
 	 */
 	public function get_user_context( $user_id = null, $flow_id = null ) {
@@ -174,7 +187,7 @@ class FLOSC_User_Access_Manager {
 			'is_visitor'   => 'visitor' === $access_level,
 			'is_guest'     => 'guest' === $access_level,
 			'is_member'    => 'member' === $access_level,
-			'logged_in'    => $user_id > 0, // Alias for backward compatibility
+			'logged_in'    => $user_id > 0, // Alias for backward compatibility.
 		);
 
 		// v9.5.5: Add admin status.

@@ -26,6 +26,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC Quiz Manager behavior and the WordPress services used by its methods.
+ */
 class FLOSC_Quiz_Manager {
 
 	/**
@@ -184,6 +187,7 @@ class FLOSC_Quiz_Manager {
 	/**
 	 * Get quiz metadata
 	 *
+ * @param mixed $quiz_id Identifier used to select the record involved in the Resolve the current quiz value from the available Word Press and flow state. operation.
 	 * @return array|null
 	 */
 	public static function get_quiz( $quiz_id ) {
@@ -311,7 +315,7 @@ class FLOSC_Quiz_Manager {
 	 * Get user's quiz history
 	 *
 	 * @param int    $user_id
-	 * @param string $quiz_id Optional specific quiz.
+	 * @param mixed $quiz_id Identifier used to select the record involved in the Resolve the current user quiz history value from the available Word Press and flow state. operation.
 	 * @return array
 	 */
 	public static function get_user_quiz_history( $user_id, $quiz_id = null ) {
@@ -329,7 +333,7 @@ class FLOSC_Quiz_Manager {
 	 * Check if user passed a quiz
 	 *
 	 * @param int    $user_id
-	 * @param string $quiz_id
+	 * @param mixed $quiz_id Identifier used to select the record involved in the Coordinate the user passed quiz behavior implemented by this code path. operation.
 	 * @return bool|null True if passed, false if failed, null if not taken
 	 */
 	public static function user_passed_quiz( $user_id, $quiz_id ) {

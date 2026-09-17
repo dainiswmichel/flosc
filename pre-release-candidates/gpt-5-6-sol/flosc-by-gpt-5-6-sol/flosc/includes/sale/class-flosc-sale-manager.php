@@ -15,6 +15,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC Sale Manager behavior and the WordPress services used by its methods.
+ */
 class FLOSC_Sale_Manager {
 
 	private static $instance = null;
@@ -24,19 +27,30 @@ class FLOSC_Sale_Manager {
 	private $access_manager;
 	private $providers = array();
 
-	public static function instance() {
+		/**
+	 * Coordinate the instance behavior implemented by this code path.
+	 *
+	 * @return mixed Result produced by the instance operation.
+	 */
+public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
 		}
 		return self::$instance;
 	}
 
-	private function __construct() {
+		/**
+	 * Coordinate the construct behavior implemented by this code path.
+	 */
+private function __construct() {
 		$this->load_components();
 		$this->register_providers();
 	}
 
-	private function load_components() {
+		/**
+	 * Resolve the current components value from the available WordPress and flow state.
+	 */
+private function load_components() {
 		require_once __DIR__ . '/class-flosc-offer-manager.php';
 		require_once __DIR__ . '/class-flosc-usage-tracker.php';
 		require_once __DIR__ . '/class-flosc-access-manager.php';
@@ -44,21 +58,24 @@ class FLOSC_Sale_Manager {
 		require_once __DIR__ . '/providers/class-flosc-stripe-provider.php';
 		require_once __DIR__ . '/providers/class-flosc-token-provider.php';
 		require_once __DIR__ . '/providers/class-flosc-affiliate-provider.php';
-		require_once __DIR__ . '/providers/class-flosc-clickbank-provider.php'; // v07.07
-		require_once __DIR__ . '/providers/class-flosc-paypal-provider.php'; // v1.6.9
+		require_once __DIR__ . '/providers/class-flosc-clickbank-provider.php'; // v07.07.
+		require_once __DIR__ . '/providers/class-flosc-paypal-provider.php'; // v1.6.9.
 
 		$this->offer_manager  = new FLOSC_Offer_Manager();
 		$this->usage_tracker  = new FLOSC_Usage_Tracker();
 		$this->access_manager = new FLOSC_Access_Manager();
 	}
 
-	private function register_providers() {
+		/**
+	 * Coordinate the providers behavior implemented by this code path.
+	 */
+private function register_providers() {
 		// Register built-in payment providers.
 		$this->providers['stripe']    = new FLOSC_Stripe_Provider();
 		$this->providers['tokens']    = new FLOSC_Token_Provider();
 		$this->providers['affiliate'] = new FLOSC_Affiliate_Provider();
-		$this->providers['clickbank'] = new FLOSC_ClickBank_Provider(); // v07.07
-		$this->providers['paypal']    = new FLOSC_PayPal_Provider(); // v1.6.9
+		$this->providers['clickbank'] = new FLOSC_ClickBank_Provider(); // v07.07.
+		$this->providers['paypal']    = new FLOSC_PayPal_Provider(); // v1.6.9.
 
 		// Allow plugins to register additional providers.
 		$this->providers = apply_filters( 'flosc_payment_providers', $this->providers );
@@ -66,6 +83,8 @@ class FLOSC_Sale_Manager {
 
 	/**
 	 * Get a payment provider by ID
+ * @param mixed $provider_id Provider identifier or object used for the Resolve the current provider value from the available Word Press and flow state. operation.
+ * @return mixed Result produced by the provider operation.
 	 */
 	public function get_provider( $provider_id ) {
 		return $this->providers[ $provider_id ] ?? null;
@@ -73,6 +92,7 @@ class FLOSC_Sale_Manager {
 
 	/**
 	 * Get all registered providers
+ * @return mixed Result produced by the providers operation.
 	 */
 	public function get_providers() {
 		return $this->providers;
@@ -80,6 +100,7 @@ class FLOSC_Sale_Manager {
 
 	/**
 	 * Get active providers (configured and enabled)
+ * @return mixed Result produced by the active providers operation.
 	 */
 	public function get_active_providers() {
 		return array_filter(
@@ -92,16 +113,27 @@ class FLOSC_Sale_Manager {
 
 	/**
 	 * Access component getters
+ * @return mixed Result produced by the offers operation.
 	 */
 	public function offers() {
 		return $this->offer_manager;
 	}
 
-	public function usage() {
+		/**
+	 * Coordinate the usage behavior implemented by this code path.
+	 *
+	 * @return mixed Result produced by the usage operation.
+	 */
+public function usage() {
 		return $this->usage_tracker;
 	}
 
-	public function access() {
+		/**
+	 * Coordinate the access behavior implemented by this code path.
+	 *
+	 * @return mixed Result produced by the access operation.
+	 */
+public function access() {
 		return $this->access_manager;
 	}
 
@@ -158,7 +190,7 @@ class FLOSC_Sale_Manager {
 			return false;
 		}
 
-		// trialing is not settled payment unless the provider set settled/paid explicitly
+		// trialing is not settled payment unless the provider set settled/paid explicitly.
 		// after an offer-level allow_trial check (see Stripe create_subscription).
 		if ( 'trialing' === $status && empty( $result['settled'] ) && empty( $result['paid'] ) ) {
 			return false;
@@ -333,9 +365,9 @@ class FLOSC_Sale_Manager {
 	 * Call only after payment is confirmed settled (not requires_action / redirect).
 	 *
 	 * @param int    $user_id
-	 * @param array  $offer
+	 * @param array $offer Input consumed by the Coordinate the fulfill settled purchase behavior implemented by this code path. operation.
 	 * @param string $provider_id
-	 * @param array  $transaction Must include transaction_id; may include amount/currency.
+	 * @param array $transaction Input consumed by the Coordinate the fulfill settled purchase behavior implemented by this code path. operation.
 	 * @return array|WP_Error
 	 */
 	public function fulfill_settled_purchase( $user_id, array $offer, $provider_id, array $transaction ) {
@@ -413,9 +445,9 @@ class FLOSC_Sale_Manager {
 	 * Process a purchase
 	 *
 	 * @param int    $user_id
-	 * @param string $offer_id
+	 * @param mixed $offer_id Identifier used to select the record involved in the Coordinate the purchase behavior implemented by this code path. operation.
 	 * @param string $provider_id
-	 * @param array  $payment_data Provider-specific data.
+	 * @param mixed $payment_data Structured data consumed by the Coordinate the purchase behavior implemented by this code path. operation.
 	 * @return array|WP_Error
 	 */
 	public function process_purchase( $user_id, $offer_id, $provider_id, $payment_data = array() ) {
@@ -467,6 +499,9 @@ class FLOSC_Sale_Manager {
 
 	/**
 	 * Check if user can access a feature
+ * @param mixed $user_id WordPress user ID whose Determine whether the current state satisfies access. state is being processed.
+ * @param mixed $feature Input consumed by the Determine whether the current state satisfies access. operation.
+ * @return bool Whether access applies to the current state.
 	 */
 	public function can_access( $user_id, $feature ) {
 		return $this->access_manager->can_access( $user_id, $feature );
@@ -474,6 +509,11 @@ class FLOSC_Sale_Manager {
 
 	/**
 	 * Track usage of a feature
+ * @param mixed $user_id WordPress user ID whose Coordinate the track usage behavior implemented by this code path. state is being processed.
+ * @param mixed $event Input consumed by the Coordinate the track usage behavior implemented by this code path. operation.
+ * @param mixed $quantity Input consumed by the Coordinate the track usage behavior implemented by this code path. operation.
+ * @param mixed $meta Input consumed by the Coordinate the track usage behavior implemented by this code path. operation.
+ * @return mixed Result produced by the track usage operation.
 	 */
 	public function track_usage( $user_id, $event, $quantity = 1, $meta = array() ) {
 		return $this->usage_tracker->track( $user_id, $event, $quantity, $meta );
@@ -481,6 +521,9 @@ class FLOSC_Sale_Manager {
 
 	/**
 	 * Check if user has enough tokens/credits for an action
+ * @param mixed $user_id WordPress user ID whose Determine whether the current state satisfies credits. state is being processed.
+ * @param mixed $amount Input consumed by the Determine whether the current state satisfies credits. operation.
+ * @return bool Whether credits applies to the current state.
 	 */
 	public function has_credits( $user_id, $amount ) {
 		return $this->providers['tokens']->get_balance( $user_id ) >= $amount;
@@ -488,6 +531,10 @@ class FLOSC_Sale_Manager {
 
 	/**
 	 * Deduct credits for an action
+ * @param mixed $user_id WordPress user ID whose Coordinate the deduct credits behavior implemented by this code path. state is being processed.
+ * @param mixed $amount Input consumed by the Coordinate the deduct credits behavior implemented by this code path. operation.
+ * @param mixed $reason Input consumed by the Coordinate the deduct credits behavior implemented by this code path. operation.
+ * @return mixed Result produced by the deduct credits operation.
 	 */
 	public function deduct_credits( $user_id, $amount, $reason = '' ) {
 		return $this->providers['tokens']->deduct( $user_id, $amount, $reason );
@@ -495,6 +542,10 @@ class FLOSC_Sale_Manager {
 
 	/**
 	 * Log purchase for records
+ * @param mixed $user_id WordPress user ID whose Persist the log purchase state in Word Press storage. state is being processed.
+ * @param mixed $offer Input consumed by the Persist the log purchase state in Word Press storage. operation.
+ * @param mixed $provider_id Provider identifier or object used for the Persist the log purchase state in Word Press storage. operation.
+ * @param mixed $transaction Input consumed by the Persist the log purchase state in Word Press storage. operation.
 	 */
 	private function log_purchase( $user_id, $offer, $provider_id, $transaction ) {
 		$purchases = get_user_meta( $user_id, '_flosc_purchases', true );
@@ -520,6 +571,9 @@ class FLOSC_Sale_Manager {
 	 * Flow-aware — accepts flow_id to read from per-flow storage
 	 *
 	 * @since 1.6.2
+ * @param mixed $user_id WordPress user ID whose Resolve the current available offers value from the available Word Press and flow state. state is being processed.
+ * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+ * @return bool Whether available offers applies to the current state.
 	 */
 	public function get_available_offers( $user_id = null, $flow_id = null ) {
 		$all_offers = $this->offer_manager->get_active_offers( $flow_id );
@@ -545,6 +599,9 @@ class FLOSC_Sale_Manager {
 
 	/**
 	 * Get recommended offer based on user state and funnel position
+ * @param mixed $user_id WordPress user ID whose Resolve the current recommended offer value from the available Word Press and flow state. state is being processed.
+ * @param mixed $context Context values used to resolve request- or flow-specific behavior.
+ * @return mixed Result produced by the recommended offer operation.
 	 */
 	public function get_recommended_offer( $user_id, $context = array() ) {
 		$offers = $this->get_available_offers( $user_id );
@@ -552,11 +609,11 @@ class FLOSC_Sale_Manager {
 		$access = $this->access_manager->get_user_access( $user_id );
 
 		// Logic to recommend best offer based on:
-		// - User's current access level
-		// - Usage patterns
+		// - User's current access level.
+		// - Usage patterns.
 		// - Funnel context (quiz score, engagement, etc.).
 
-		// Default: return first available offer
+		// Default: return first available offer.
 		// Override with flosc_recommended_offer filter for custom logic.
 		$recommended = ! empty( $offers ) ? reset( $offers ) : null;
 

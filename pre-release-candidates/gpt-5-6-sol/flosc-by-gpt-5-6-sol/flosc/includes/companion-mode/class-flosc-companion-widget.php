@@ -32,6 +32,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC Companion Widget behavior and the WordPress services used by its methods.
+ */
 class FLOSC_Companion_Widget {
 
 	/**
@@ -79,13 +82,14 @@ class FLOSC_Companion_Widget {
 	 * versions, forcing users to append query parameters to get fresh layout
 	 * behavior. For companion-enabled pages, always emit no-cache signals and
 	 * common cache-plugin bypass constants so normal URLs stay current.
+ * @return mixed Result produced by the apply companion cache policy operation.
 	 */
 	public function apply_companion_cache_policy() {
 		if ( ! $this->should_load() ) {
 			return;
 		}
 
-		// Cache plugins (WP Super Cache, W3TC, LiteSpeed, etc.) look for this
+		// Cache plugins (WP Super Cache, W3TC, LiteSpeed, etc.) look for this.
 		// exact unprefixed constant — cannot use a flosc_ prefix.
 		if ( ! defined( 'DONOTCACHEPAGE' ) ) {
 			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- industry-standard cache-bypass flag; name is not under our control
@@ -101,7 +105,7 @@ class FLOSC_Companion_Widget {
 	}
 
 	// ──────────────────────────────────────────────────────────────
-	// Settings
+	// Settings.
 	// ──────────────────────────────────────────────────────────────
 
 	/**
@@ -203,7 +207,7 @@ class FLOSC_Companion_Widget {
 	}
 
 	// ──────────────────────────────────────────────────────────────
-	// Asset Enqueueing
+	// Asset Enqueueing.
 	// ──────────────────────────────────────────────────────────────
 
 	/**
@@ -212,6 +216,7 @@ class FLOSC_Companion_Widget {
 	 * Hooked to wp_enqueue_scripts. Only loads companion JS/CSS when
 	 * should_load() returns true. Does NOT touch theme styles — the
 	 * companion lives alongside the WP theme, not instead of it.
+ * @return mixed Result produced by the enqueue assets operation.
 	 */
 	public function maybe_enqueue_assets() {
 		if ( ! $this->should_load() ) {
@@ -222,11 +227,11 @@ class FLOSC_Companion_Widget {
 		$js_path  = FLOSC_PLUGIN_DIR . 'assets/js/flosc-companion.js';
 
 		// Cache-buster: use the file's modification time, not FLOSC_VERSION.
-		// FLOSC_VERSION only changes on a release, so an edited companion asset
+		// FLOSC_VERSION only changes on a release, so an edited companion asset.
 		// keeps serving from the browser cache until the version string moves.
-		// class-flosc-companion-mode.php already enqueues this same handle with
-		// filemtime(); the two enqueues have to agree or whichever runs first wins
-		// with a stale ?ver=. filemtime() returns false on failure — fall back to
+		// class-flosc-companion-mode.php already enqueues this same handle with.
+		// filemtime(); the two enqueues have to agree or whichever runs first wins.
+		// with a stale ?ver=. filemtime() returns false on failure — fall back to.
 		// the version string in that case.
 
 		// Companion CSS — standalone, no dependencies on FLOSC layout/theme.
@@ -248,13 +253,13 @@ class FLOSC_Companion_Widget {
 				FLOSC_PLUGIN_URL . 'assets/js/flosc-companion.js',
 				array(),
 				$js_ver ? $js_ver : ( defined( 'FLOSC_VERSION' ) ? FLOSC_VERSION : '8.0.0' ),
-				true // footer
+				true // footer.
 			);
 		}
 	}
 
 	// ──────────────────────────────────────────────────────────────
-	// Widget Rendering
+	// Widget Rendering.
 	// ──────────────────────────────────────────────────────────────
 
 	/**
@@ -265,6 +270,7 @@ class FLOSC_Companion_Widget {
 	 * 2. Widget container HTML (the JS will populate it)
 	 *
 	 * Outputs minimal HTML — the JS module builds the UI.
+ * @return mixed Result produced by the widget operation.
 	 */
 	public function maybe_render_widget() {
 		if ( ! $this->should_load() ) {
@@ -275,9 +281,9 @@ class FLOSC_Companion_Widget {
 		$page_context = $this->detect_page_context();
 		$user_data    = $this->get_companion_user_data();
 
-		// §12: Attach the accent override + config to the enqueued flosc-companion handles
-		// (wp_add_inline_style/script) rather than echoing raw <style>/<script> tags. This runs
-		// on wp_footer before wp_print_footer_scripts, so the data prints with — and just before —
+		// §12: Attach the accent override + config to the enqueued flosc-companion handles.
+		// (wp_add_inline_style/script) rather than echoing raw <style>/<script> tags. This runs.
+		// on wp_footer before wp_print_footer_scripts, so the data prints with — and just before —.
 		// flosc-companion.js. WordPress prints the late inline style via print_late_styles().
 		if ( ! empty( $settings['accent_color'] ) ) {
 			$accent = sanitize_hex_color( $settings['accent_color'] );
@@ -323,7 +329,7 @@ class FLOSC_Companion_Widget {
 	}
 
 	// ──────────────────────────────────────────────────────────────
-	// Page Context Detection
+	// Page Context Detection.
 	// ──────────────────────────────────────────────────────────────
 
 	/**
@@ -403,7 +409,7 @@ class FLOSC_Companion_Widget {
 	 * Check if a post belongs to the configured lessons category
 	 *
 	 * @param  int    $post_id
-	 * @param  string $lesson_category  Category slug or ID.
+	 * @param mixed $lesson_category Input consumed by the Coordinate the post is lesson behavior implemented by this code path. operation.
 	 * @return bool
 	 */
 	private function post_is_lesson( $post_id, $lesson_category ) {
@@ -414,7 +420,7 @@ class FLOSC_Companion_Widget {
 	}
 
 	// ──────────────────────────────────────────────────────────────
-	// User Data
+	// User Data.
 	// ──────────────────────────────────────────────────────────────
 
 	/**
@@ -467,7 +473,7 @@ class FLOSC_Companion_Widget {
 	}
 
 	// ──────────────────────────────────────────────────────────────
-	// Utilities
+	// Utilities.
 	// ──────────────────────────────────────────────────────────────
 
 	/**

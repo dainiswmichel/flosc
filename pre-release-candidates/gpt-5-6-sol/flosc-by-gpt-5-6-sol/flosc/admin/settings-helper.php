@@ -33,7 +33,7 @@ function flosc_admin_get_value( $key, $fallback = '' ) {
 			return $flow[ $key ];
 		}
 
-		// Return empty to indicate "using global"
+		// Return empty to indicate "using global".
 		// The placeholder will show the global value.
 		return '';
 	}
@@ -101,6 +101,10 @@ function flosc_admin_text_input( $key, $fallback = '', $css_class = 'regular-tex
 
 /**
  * Render a textarea with "using global" placeholder when editing flow
+ * @param mixed $key Name or key used to select the Coordinate the admin textarea behavior implemented by this code path. value.
+ * @param mixed $fallback Fallback value returned when no more specific value is available.
+ * @param mixed $rows Input consumed by the Coordinate the admin textarea behavior implemented by this code path. operation.
+ * @param mixed $css_class Input consumed by the Coordinate the admin textarea behavior implemented by this code path. operation.
  */
 function flosc_admin_textarea( $key, $fallback = '', $rows = 5, $css_class = 'large-text' ) {
 	$value      = flosc_admin_get_value( $key, $fallback );
@@ -125,6 +129,9 @@ function flosc_admin_textarea( $key, $fallback = '', $rows = 5, $css_class = 'la
 
 /**
  * Render a select dropdown
+ * @param mixed $key Name or key used to select the Render the Word Press interface for admin select. value.
+ * @param mixed $options Optional arguments that refine how the Render the Word Press interface for admin select. operation runs.
+ * @param mixed $fallback Fallback value returned when no more specific value is available.
  */
 function flosc_admin_select( $key, $options, $fallback = '' ) {
 	$value      = flosc_admin_get_value( $key, $fallback );

@@ -26,28 +26,56 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC Affiliate Provider behavior and the WordPress services used by its methods.
+ */
 class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 
 	private $intents_meta_key = '_flosc_purchase_intents';
 	private $credits_meta_key = '_flosc_affiliate_credits';
 
-	public function get_id() {
+		/**
+	 * Resolve the current id value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the id operation.
+	 */
+public function get_id() {
 		return 'affiliate';
 	}
 
-	public function get_name() {
+		/**
+	 * Resolve the current name value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the name operation.
+	 */
+public function get_name() {
 		return 'Purchase Intent';
 	}
 
-	public function get_description() {
+		/**
+	 * Resolve the current description value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the description operation.
+	 */
+public function get_description() {
 		return 'Users earn access by declaring purchase intent. When they buy through affiliate links, the commission funds their access.';
 	}
 
-	public function get_icon() {
+		/**
+	 * Resolve the current icon value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the icon operation.
+	 */
+public function get_icon() {
 		return '🎁';
 	}
 
-	public function is_configured() {
+		/**
+	 * Determine whether the current state satisfies configured.
+	 *
+	 * @return bool Whether configured applies to the current state.
+	 */
+public function is_configured() {
 		// Check if any affiliate network is configured.
 		return ! empty( $this->get_setting( 'amazon_tag', '' ) ) ||
 				! empty( $this->get_setting( 'cj_id', '' ) ) ||
@@ -57,6 +85,7 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Settings for admin
+ * @return array Structured settings fields data.
 	 */
 	public function get_settings_fields() {
 		return array(
@@ -138,6 +167,10 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Process payment via affiliate credits
+ * @param mixed $user_id WordPress user ID whose Coordinate the payment behavior implemented by this code path. state is being processed.
+ * @param mixed $offer Input consumed by the Coordinate the payment behavior implemented by this code path. operation.
+ * @param mixed $payment_data Structured data consumed by the Coordinate the payment behavior implemented by this code path. operation.
+ * @return array Structured payment data.
 	 */
 	public function process_payment( $user_id, $offer, $payment_data = array() ) {
 		if ( ! is_array( $offer['pricing']['affiliate'] ?? null )
@@ -195,6 +228,7 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Get client config
+ * @return array Structured client config data.
 	 */
 	public function get_client_config() {
 		return array(
@@ -205,20 +239,21 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 	}
 
 	// =========================================================================
-	// PURCHASE INTENT SYSTEM
+	// PURCHASE INTENT SYSTEM.
 	// =========================================================================
 
 	/**
 	 * User declares a purchase intent
 	 *
 	 * @param int   $user_id
-	 * @param array $intent [.
+	 * @param mixed $intent Input consumed by the Persist the declare intent state in Word Press storage. operation.
 	 *   'description' => 'MacBook Pro 14"',
 	 *   'category' => 'electronics',
 	 *   'expected_price' => 2000,
 	 *   'timeframe' => 'this_week', // this_week, this_month, exploring
 	 *   'notes' => 'Need for music production',
 	 * ]
+ * @return mixed Result produced by the declare intent operation.
 	 */
 	public function declare_intent( $user_id, $intent ) {
 		$intents = $this->get_intents( $user_id );
@@ -234,7 +269,7 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 				'expected_price' => 0,
 				'timeframe'      => 'exploring',
 				'notes'          => '',
-				'status'         => 'active', // active, fulfilled, expired, canceled
+				'status'         => 'active', // active, fulfilled, expired, canceled.
 				'created_at'     => current_time( 'mysql' ),
 				'offers_shown'   => array(),
 				'clicks'         => array(),
@@ -252,6 +287,9 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Get user's purchase intents
+ * @param mixed $user_id WordPress user ID whose Resolve the current intents value from the available Word Press and flow state. state is being processed.
+ * @param mixed $status Input consumed by the Resolve the current intents value from the available Word Press and flow state. operation.
+ * @return mixed Result produced by the intents operation.
 	 */
 	public function get_intents( $user_id, $status = null ) {
 		$intents = get_user_meta( $user_id, $this->intents_meta_key, true );
@@ -273,6 +311,10 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Update intent status
+ * @param mixed $user_id WordPress user ID whose Persist the intent state in Word Press storage. state is being processed.
+ * @param mixed $intent_id Identifier used to select the record involved in the Persist the intent state in Word Press storage. operation.
+ * @param mixed $updates Input consumed by the Persist the intent state in Word Press storage. operation.
+ * @return mixed Result of the intent operation, or a WP_Error when it cannot complete.
 	 */
 	public function update_intent( $user_id, $intent_id, $updates ) {
 		$intents = $this->get_intents( $user_id );
@@ -288,11 +330,13 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 	}
 
 	// =========================================================================
-	// AFFILIATE OFFER MATCHING
+	// AFFILIATE OFFER MATCHING.
 	// =========================================================================
 
 	/**
 	 * Find affiliate offers for an intent
+ * @param mixed $intent Input consumed by the Resolve the current offers for intent value from the available Word Press and flow state. operation.
+ * @return mixed Result produced by the offers for intent operation.
 	 */
 	public function find_offers_for_intent( $intent ) {
 		$offers = array();
@@ -334,6 +378,9 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Search Amazon for products
+ * @param mixed $query Input consumed by the Coordinate the search amazon behavior implemented by this code path. operation.
+ * @param mixed $category Input consumed by the Coordinate the search amazon behavior implemented by this code path. operation.
+ * @return array Structured search amazon data.
 	 */
 	private function search_amazon( $query, $category = null ) {
 		$tag = $this->get_setting( 'amazon_tag' );
@@ -341,7 +388,7 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 			return array();
 		}
 
-		// Amazon Product Advertising API would go here
+		// Amazon Product Advertising API would go here.
 		// For now, return affiliate link format.
 		$offers = array();
 
@@ -357,7 +404,7 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 			'source'               => 'amazon',
 			'title'                => 'Search Amazon for: ' . $query,
 			'url'                  => $search_url,
-			'estimated_commission' => 0, // Unknown until purchase
+			'estimated_commission' => 0, // Unknown until purchase.
 			'commission_rate'      => '1-10%',
 			'note'                 => 'Earn affiliate credit when you purchase through this link',
 		);
@@ -367,6 +414,9 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Search CJ (Commission Junction)
+ * @param mixed $query Input consumed by the Coordinate the search cj behavior implemented by this code path. operation.
+ * @param mixed $category Input consumed by the Coordinate the search cj behavior implemented by this code path. operation.
+ * @return array Structured search cj data.
 	 */
 	private function search_cj( $query, $category = null ) {
 		$cj_id   = $this->get_setting( 'cj_id' );
@@ -376,7 +426,7 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 			return array();
 		}
 
-		// CJ API integration would go here
+		// CJ API integration would go here.
 		// Returns merchant offers matching the query.
 
 		return array();
@@ -384,6 +434,9 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Search ShareASale
+ * @param mixed $query Input consumed by the Coordinate the search shareasale behavior implemented by this code path. operation.
+ * @param mixed $category Input consumed by the Coordinate the search shareasale behavior implemented by this code path. operation.
+ * @return array Structured search shareasale data.
 	 */
 	private function search_shareasale( $query, $category = null ) {
 		$sas_id = $this->get_setting( 'shareasale_id' );
@@ -399,6 +452,8 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Search custom endpoint (your own aggregation service)
+ * @param mixed $intent Input consumed by the Coordinate the search custom behavior implemented by this code path. operation.
+ * @return array Structured search custom data.
 	 */
 	private function search_custom( $intent ) {
 		$endpoint = $this->get_setting( 'custom_endpoint' );
@@ -437,11 +492,14 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 	}
 
 	// =========================================================================
-	// TRACKING & CONVERSIONS
+	// TRACKING & CONVERSIONS.
 	// =========================================================================
 
 	/**
 	 * Track a click on an affiliate offer
+ * @param mixed $user_id WordPress user ID whose Persist the track click state in Word Press storage. state is being processed.
+ * @param mixed $intent_id Identifier used to select the record involved in the Persist the track click state in Word Press storage. operation.
+ * @param mixed $offer Input consumed by the Persist the track click state in Word Press storage. operation.
 	 */
 	public function track_click( $user_id, $intent_id, $offer ) {
 		$user_id    = absint( $user_id );
@@ -469,6 +527,8 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Record a conversion (called by webhook or postback)
+ * @param mixed $tracking_data Structured data consumed by the Coordinate the record conversion behavior implemented by this code path. operation.
+ * @return array Structured record conversion data.
 	 */
 	public function record_conversion( $tracking_data ) {
 		// Tracking data comes from affiliate network postback.
@@ -535,11 +595,13 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 	}
 
 	// =========================================================================
-	// CREDITS MANAGEMENT
+	// CREDITS MANAGEMENT.
 	// =========================================================================
 
 	/**
 	 * Get user's affiliate credits (in dollars)
+ * @param mixed $user_id WordPress user ID whose Resolve the current credits value from the available Word Press and flow state. state is being processed.
+ * @return mixed Result produced by the credits operation.
 	 */
 	public function get_credits( $user_id ) {
 		$credits     = get_user_meta( $user_id, $this->credits_meta_key, true );
@@ -549,6 +611,10 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Add affiliate credits
+ * @param mixed $user_id WordPress user ID whose Persist the add credits state in Word Press storage. state is being processed.
+ * @param mixed $amount Input consumed by the Persist the add credits state in Word Press storage. operation.
+ * @param mixed $meta Input consumed by the Persist the add credits state in Word Press storage. operation.
+ * @return mixed Result produced by the add credits operation.
 	 */
 	public function add_credits( $user_id, $amount, $meta = array() ) {
 		$current     = $this->get_credits( $user_id );
@@ -564,6 +630,10 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Deduct affiliate credits (atomic conditional debit — PAY-ACC-01).
+ * @param mixed $user_id WordPress user ID whose Coordinate the deduct credits behavior implemented by this code path. state is being processed.
+ * @param mixed $amount Input consumed by the Coordinate the deduct credits behavior implemented by this code path. operation.
+ * @param mixed $reason Input consumed by the Coordinate the deduct credits behavior implemented by this code path. operation.
+ * @return mixed Result of the deduct credits operation, or a WP_Error when it cannot complete.
 	 */
 	public function deduct_credits( $user_id, $amount, $reason = '' ) {
 		$user_id = absint( $user_id );
@@ -657,6 +727,10 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Log credit changes
+ * @param mixed $user_id WordPress user ID whose Persist the log credit change state in Word Press storage. state is being processed.
+ * @param mixed $type Input consumed by the Persist the log credit change state in Word Press storage. operation.
+ * @param mixed $amount Input consumed by the Persist the log credit change state in Word Press storage. operation.
+ * @param mixed $meta Input consumed by the Persist the log credit change state in Word Press storage. operation.
 	 */
 	private function log_credit_change( $user_id, $type, $amount, $meta = array() ) {
 		$log = get_user_meta( $user_id, '_flosc_affiliate_credit_log', true );
@@ -681,6 +755,9 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Handle webhook from affiliate networks
+ * @param mixed $payload Structured data consumed by the Coordinate the webhook behavior implemented by this code path. operation.
+ * @param mixed $headers Input consumed by the Coordinate the webhook behavior implemented by this code path. operation.
+ * @return mixed Result of the webhook operation, or a WP_Error when it cannot complete.
 	 */
 	public function handle_webhook( $payload, $headers = array() ) {
 		// Determine source from headers or payload.
@@ -696,12 +773,26 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 		return $this->record_conversion( $tracking_data );
 	}
 
-	private function detect_webhook_source( $headers, $payload ) {
+		/**
+	 * Coordinate the detect webhook source behavior implemented by this code path.
+	 *
+	 * @param mixed $headers Input consumed by the Coordinate the detect webhook source behavior implemented by this code path. operation.
+	 * @param mixed $payload Structured data consumed by the Coordinate the detect webhook source behavior implemented by this code path. operation.
+	 * @return mixed Result produced by the detect webhook source operation.
+	 */
+private function detect_webhook_source( $headers, $payload ) {
 		// Logic to detect Amazon, CJ, ShareASale, etc. from webhook.
 		return 'custom';
 	}
 
-	private function parse_webhook_payload( $source, $payload ) {
+		/**
+	 * Coordinate the parse webhook payload behavior implemented by this code path.
+	 *
+	 * @param mixed $source Input consumed by the Coordinate the parse webhook payload behavior implemented by this code path. operation.
+	 * @param mixed $payload Structured data consumed by the Coordinate the parse webhook payload behavior implemented by this code path. operation.
+	 * @return array Structured parse webhook payload data.
+	 */
+private function parse_webhook_payload( $source, $payload ) {
 		// Pass 8: field-sanitize after json_decode of untrusted webhook body.
 		$data = array();
 		if ( is_string( $payload ) ) {

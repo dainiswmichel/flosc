@@ -45,7 +45,13 @@ if ( ! current_user_can( 'edit_others_posts' ) ) {
  * @return void
  */
 if ( ! function_exists( 'flosc_tab_header' ) ) {
-	function flosc_tab_header( $emoji, $tab_name ) {
+		/**
+	 * Render the WordPress interface for tab header.
+	 *
+	 * @param mixed $emoji Input consumed by the Render the Word Press interface for tab header. operation.
+	 * @param mixed $tab_name Name or key used to select the Render the Word Press interface for tab header. value.
+	 */
+function flosc_tab_header( $emoji, $tab_name ) {
 		$flosc_ivr_file = $GLOBALS['flosc_current_ivr'] ?? '';
 		$flosc_settings = $GLOBALS['flosc_current_settings'] ?? array();
 		$flow_name      = $flosc_settings['identity']['name'] ?? ucwords( str_replace( array( '_', '-', '.md' ), array( ' ', ' ', '' ), $flosc_ivr_file ) );
@@ -68,7 +74,10 @@ if ( ! function_exists( 'flosc_tab_header' ) ) {
  * @return void
  */
 if ( ! function_exists( 'flosc_tab_footer' ) ) {
-	function flosc_tab_footer() {
+		/**
+	 * Render the WordPress interface for tab footer.
+	 */
+function flosc_tab_footer() {
 		$flosc_version = defined( 'FLOSC_VERSION' ) ? FLOSC_VERSION : '?.?.?';
 		echo '<div class="flosc-tab-footer">';
 		echo '<span class="flosc-tab-footer__version">FLOSC v' . esc_html( $flosc_version ) . '</span>';
@@ -83,7 +92,12 @@ if ( ! function_exists( 'flosc_tab_footer' ) ) {
  * @return string
  */
 if ( ! function_exists( 'flosc_michel_timestamp' ) ) {
-	function flosc_michel_timestamp() {
+		/**
+	 * Coordinate the michel timestamp behavior implemented by this code path.
+	 *
+	 * @return mixed Result produced by the michel timestamp operation.
+	 */
+function flosc_michel_timestamp() {
 		return gmdate( 'Y' ) . 'y-' . gmdate( 'm' ) . 'm-' . gmdate( 'd' ) . 'd-UTC' . gmdate( 'H' ) . 'h-' . gmdate( 'i' ) . 'm-' . gmdate( 's' ) . 's';
 	}
 }
@@ -95,7 +109,13 @@ if ( ! function_exists( 'flosc_michel_timestamp' ) ) {
  * @return string 'ok', 'missing', or 'unknown'
  */
 if ( ! function_exists( 'flosc_check_permalink_status' ) ) {
-	function flosc_check_permalink_status( $slug ) {
+		/**
+	 * Coordinate the check permalink status behavior implemented by this code path.
+	 *
+	 * @param mixed $slug Input consumed by the Coordinate the check permalink status behavior implemented by this code path. operation.
+	 * @return mixed Result produced by the check permalink status operation.
+	 */
+function flosc_check_permalink_status( $slug ) {
 		if ( empty( $slug ) ) {
 			return 'unknown';
 		}
@@ -105,7 +125,7 @@ if ( ! function_exists( 'flosc_check_permalink_status' ) ) {
 			return 'unknown';
 		}
 
-		// Check if any rule contains our slug pattern
+		// Check if any rule contains our slug pattern.
 		// Rules are stored as: '^app/?$' => 'index.php?flosc_app=1&flosc_ivr=...'.
 		foreach ( $rules as $regex => $flosc_query ) {
 			// Check if this rule matches our slug (the regex starts with ^slug).
@@ -130,7 +150,12 @@ if ( ! function_exists( 'flosc_check_permalink_status' ) ) {
  * @return void
  */
 if ( ! function_exists( 'flosc_permalink_status_indicator' ) ) {
-	function flosc_permalink_status_indicator( $slug ) {
+		/**
+	 * Render the WordPress interface for permalink status indicator.
+	 *
+	 * @param mixed $slug Input consumed by the Render the Word Press interface for permalink status indicator. operation.
+	 */
+function flosc_permalink_status_indicator( $slug ) {
 		$flosc_status = flosc_check_permalink_status( $slug );
 		$last_flush   = get_option( 'flosc_last_permalink_flush', null );
 
@@ -182,8 +207,8 @@ if ( ! function_exists( 'flosc_permalink_status_indicator' ) ) {
  * @param string $flosc_ivr_filename
  * @return string
  */
-// flosc_resolve_flow_option_key_for_ivr() now lives in
-// includes/filesystem/flosc-data-paths.php, loaded before admin and admin-ajax
+// flosc_resolve_flow_option_key_for_ivr() now lives in.
+// includes/filesystem/flosc-data-paths.php, loaded before admin and admin-ajax.
 // alike, so a key saved over AJAX lands in the same row this page reads.
 
 
@@ -195,7 +220,12 @@ if ( ! function_exists( 'flosc_permalink_status_indicator' ) ) {
  * @return string[]
  */
 if ( ! function_exists( 'flosc_known_flow_option_keys' ) ) {
-	function flosc_known_flow_option_keys() {
+		/**
+	 * Coordinate the known flow option keys behavior implemented by this code path.
+	 *
+	 * @return mixed Result produced by the known flow option keys operation.
+	 */
+function flosc_known_flow_option_keys() {
 		$keys = array();
 		if ( function_exists( 'flosc_flows' ) ) {
 			foreach ( flosc_flows()->get_all_flows() as $flow ) {
@@ -210,7 +240,7 @@ if ( ! function_exists( 'flosc_known_flow_option_keys' ) ) {
 	}
 }
 
-// Get available IVR files
+// Get available IVR files.
 // §2: union shipped defaults with uploaded/edited IVR files (uploads wins).
 $flosc_ivr_files = array();
 $flosc_files     = flosc_config_glob( array( '*_ivr.md', 'ivr*.md' ) );
@@ -223,11 +253,11 @@ if ( ! empty( $flosc_files ) ) {
 		}
 	}
 }
-// De-dupe: the glob unions the uploads copy with the shipped plugin defaults,
+// De-dupe: the glob unions the uploads copy with the shipped plugin defaults,.
 // so the same flow file can appear twice. Keep one entry per filename.
 $flosc_ivr_files = array_values( array_unique( $flosc_ivr_files ) );
 
-// Which flow the chrome should stay on. Display selection, read through the
+// Which flow the chrome should stay on. Display selection, read through the.
 // shared boundary; nothing here writes.
 $flosc_keep_ivr = flosc_nav_param( 'ivr', array(), '', 'sanitize_file_name' );
 if ( '' === $flosc_keep_ivr && is_user_logged_in() ) {
@@ -262,8 +292,8 @@ if ( empty( $flosc_ivr_files ) ) {
 	return;
 }
 
-// Read request vars early. The flow selector below reads $flosc_get['ivr'] to know
-// which flow is selected. ($get was previously first defined further down — after
+// Read request vars early. The flow selector below reads $flosc_get['ivr'] to know.
+// which flow is selected. ($get was previously first defined further down — after.
 // this point — so the selector always fell back to $flosc_ivr_files[0] and ignored the URL.).
 $flosc_get = wp_unslash( $_GET );
 
@@ -317,7 +347,7 @@ if ( '' === $flosc_default_slug ) {
 	$flosc_default_slug = 'flosc';
 }
 
-// Seed empty options fully; also backfill status/slug when a partial option exists
+// Seed empty options fully; also backfill status/slug when a partial option exists.
 // (e.g. IVR re-parse wrote messages first — empty() is false, old seed skipped).
 $flosc_flow_seed_needed = false;
 $flosc_shipped_name     = function_exists( 'flosc_shipped_flow_display_name' )
@@ -368,8 +398,8 @@ if ( $flosc_flow_seed_needed ) {
 
 $flosc_get  = wp_unslash( $_GET );
 $flosc_post = wp_unslash( $_POST );
-// redirect_to_settings_tab() sets flosc_forced_tab when headers are already
-// sent and it cannot redirect. It takes precedence over the URL because it is
+// redirect_to_settings_tab() sets flosc_forced_tab when headers are already.
+// sent and it cannot redirect. It takes precedence over the URL because it is.
 // the tab the admin actually asked for.
 $flosc_active_tab                = isset( $GLOBALS['flosc_forced_tab'] )
 	? sanitize_key( (string) $GLOBALS['flosc_forced_tab'] )
@@ -654,7 +684,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 	}
 
 	// Collect all POST data for this flow.
-	$flosc_new_settings = $flosc_flow_settings; // Start with existing
+	$flosc_new_settings = $flosc_flow_settings; // Start with existing.
 
 	// v1.5.0: Keys that contain multiline content (stored in flow settings via flow_ prefix).
 	$flosc_textarea_flow_keys = array(
@@ -721,16 +751,16 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 
 	foreach ( $flosc_post as $flosc_key => $flosc_value ) {
 		if ( 0 === strpos( $flosc_key, 'flow_' ) ) {
-			$flosc_setting_key = substr( $flosc_key, 5 ); // Remove 'flow_' prefix
+			$flosc_setting_key = substr( $flosc_key, 5 ); // Remove 'flow_' prefix.
 			// Check static textarea keys OR dynamic quiz content/template keys.
 			$flosc_is_textarea = in_array( $flosc_setting_key, $flosc_textarea_flow_keys, true )
 				|| 0 === strpos( $flosc_setting_key, 'quiz_content_' )
 				|| false !== strpos( $flosc_setting_key, '_template_' )
-				// The AI request per provider: one parameter per line, so the
-				// newlines are the format. sanitize_text_field would collapse
+				// The AI request per provider: one parameter per line, so the.
+				// newlines are the format. sanitize_text_field would collapse.
 				// a four-line request into one unreadable line and lose it.
 				|| (bool) preg_match( '/^ai_[a-z0-9_]+_params$/', $flosc_setting_key )
-				|| '_body' === substr( $flosc_setting_key, -5 ); // email bodies (guest/member/newsletter) — preserve newlines
+				|| '_body' === substr( $flosc_setting_key, -5 ); // email bodies (guest/member/newsletter) — preserve newlines.
 			if ( in_array( $flosc_setting_key, $flosc_identity_html_keys, true ) ) {
 				$flosc_new_settings[ $flosc_setting_key ] = wp_kses_post( $flosc_value );
 			} elseif ( 'ai_base_prompt' === $flosc_setting_key && function_exists( 'flosc_sanitize_personality_profile_text' ) ) {
@@ -782,7 +812,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		}
 	}
 
-	// v1.5.0: Handle checkbox unchecking — checkboxes don't POST when unchecked
+	// v1.5.0: Handle checkbox unchecking — checkboxes don't POST when unchecked.
 	// Only handle checkboxes for the current tab to avoid wiping other tabs' values.
 	if ( 'sso' === $flosc_active_tab ) {
 		$flosc_sso_providers = array( 'google', 'apple', 'facebook', 'microsoft', 'linkedin' );
@@ -809,7 +839,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		if ( ! isset( $flosc_post['flow_takeover_wp_auth'] ) ) {
 			$flosc_new_settings['takeover_wp_auth'] = '';
 		}
-		// Store the global fallback option (non-flow) so non-BuddyBoss installs
+		// Store the global fallback option (non-flow) so non-BuddyBoss installs.
 		// have a working default without an IVR-flow settings bag.
 		if ( isset( $flosc_new_settings['login_destination'] ) && '' !== $flosc_new_settings['login_destination'] ) {
 			update_option( 'flosc_login_destination', esc_url_raw( $flosc_new_settings['login_destination'] ) );
@@ -829,8 +859,8 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 			$flosc_new_settings['logout_farewell_message'] = sanitize_textarea_field( $flosc_new_settings['logout_farewell_message'] );
 		}
 	}
-	// The AI tab's parameter box is the request; Temperature and Max Tokens are
-	// a way of writing into it. So after a save the fields must show what the
+	// The AI tab's parameter box is the request; Temperature and Max Tokens are.
+	// a way of writing into it. So after a save the fields must show what the.
 	// text says, or the page displays one number and sends another.
 	if ( 'ai' === $flosc_active_tab ) {
 		$flosc_sticky_pid = sanitize_key( (string) ( $flosc_new_settings['personality_library_id'] ?? '' ) );
@@ -917,7 +947,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 			if ( 'inactive_days' !== ( $flosc_rr['trigger'] ?? '' ) ) {
 				continue;
 			}
-			// Any inactive-days rule counts as re-engagement, whichever email
+			// Any inactive-days rule counts as re-engagement, whichever email.
 			// template it names.
 			$flosc_reeng_on   = '1';
 			$flosc_reeng_days = max( 1, min( 365, intval( $flosc_rr['trigger_days'] ?? 7 ) ) );
@@ -1154,14 +1184,14 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 					if ( isset( $flosc_pt_row['amount'] ) && '' !== $flosc_pt_row['amount'] ) {
 						$flosc_tokens['amount'] = max( 0, intval( $flosc_pt_row['amount'] ) );
 					} else {
-						unset( $flosc_tokens['amount'] ); // inherit flow default for mode
+						unset( $flosc_tokens['amount'] ); // inherit flow default for mode.
 					}
 					if ( 'none' === $flosc_cap_mode ) {
 						$flosc_tokens['cap'] = 0;
 					} elseif ( 'custom' === $flosc_cap_mode && isset( $flosc_pt_row['cap'] ) && '' !== $flosc_pt_row['cap'] ) {
 						$flosc_tokens['cap'] = max( 0, intval( $flosc_pt_row['cap'] ) );
 					} else {
-						unset( $flosc_tokens['cap'] ); // flow cap
+						unset( $flosc_tokens['cap'] ); // flow cap.
 					}
 				} else {
 					// flow defaults — clear overrides so runtime uses flow params.
@@ -1704,7 +1734,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		}
 	}
 
-	// v3.0.0: Lessons tab — parse content_item_groups repeater
+	// v3.0.0: Lessons tab — parse content_item_groups repeater.
 	// Repeater fields are NOT flow_-prefixed (content_item_group_quiz[], content_item_group_category[]).
 	if ( in_array( $flosc_active_tab, array( 'lessons', 'content' ), true ) ) {
 		$flosc_group_quizzes       = $flosc_post['content_item_group_quiz'] ?? array();
@@ -1713,7 +1743,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		foreach ( $flosc_group_categories as $flosc_i => $flosc_cat ) {
 			$flosc_cat = sanitize_text_field( $flosc_cat );
 			if ( '' === $flosc_cat ) {
-				continue; // Skip rows with no category selected
+				continue; // Skip rows with no category selected.
 			}
 			$flosc_quiz                  = sanitize_text_field( $flosc_group_quizzes[ $flosc_i ] ?? '' );
 			$flosc_content_item_groups[] = array(
@@ -1832,7 +1862,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		}
 		update_option( 'flosc_visitor_menu_items', $flosc_new_menu );
 
-		// v1.9.8: Guest menu — dynamic items from repeater
+		// v1.9.8: Guest menu — dynamic items from repeater.
 		// Purchase/offer actions are the profile-bar Upgrade button, not plain menu rows.
 		$flosc_guest_labels   = $flosc_post['guest_menu_label'] ?? array();
 		$flosc_guest_actions  = $flosc_post['guest_menu_action'] ?? array();
@@ -1933,8 +1963,8 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 
 	if ( 'administration' === $flosc_active_tab ) {
 		if ( current_user_can( 'manage_options' ) ) {
-			// Public Request Protection. Global for this installation, not per
-			// floscFlow: the buckets are keyed by visitor IP and endpoint, so a
+			// Public Request Protection. Global for this installation, not per.
+			// floscFlow: the buckets are keyed by visitor IP and endpoint, so a.
 			// per-flow setting would be a promise the storage cannot keep.
 			$flosc_protection_defaults = array(
 				'enabled'                  => '1',
@@ -1954,7 +1984,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 						: '0';
 					continue;
 				}
-				// Clamped rather than trusted: a zero would lock every visitor
+				// Clamped rather than trusted: a zero would lock every visitor.
 				// out of the site, and an unbounded value is not a limit.
 				$flosc_protection[ $flosc_protection_key ] = max(
 					1,
@@ -2031,7 +2061,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		}
 	}
 
-	// Nest identity fields into the identity sub-array
+	// Nest identity fields into the identity sub-array.
 	// The generic POST loop saves them flat (e.g. $flosc_new_settings['chatlogo_url']).
 	// get_floscflow_identity() reads from $flow['identity']['chatlogo_url'].
 	$flosc_identity_keys = array(
@@ -2060,9 +2090,9 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 	// Save flow settings (ALL tabs now per-flow).
 	update_option( $flosc_settings_key, $flosc_new_settings );
 
-	// Record the save in its own option, after the write it reports on. Keeping
-	// it inside $flosc_new_settings made it one more key in a bag that is
-	// rebuilt from POST, normalised on load and seeded when partial — a record
+	// Record the save in its own option, after the write it reports on. Keeping.
+	// it inside $flosc_new_settings made it one more key in a bag that is.
+	// rebuilt from POST, normalised on load and seeded when partial — a record.
 	// of whether a write happened must not ride on the thing being written.
 	if ( function_exists( 'flosc_stamp_flow_saved' ) ) {
 		flosc_stamp_flow_saved( $flosc_selected_ivr );
@@ -2073,7 +2103,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		flosc_available_providers_promote_from_flow( $flosc_new_settings );
 	}
 
-	// Post/Redirect/Get so save feedback is deterministic and browser back/refresh
+	// Post/Redirect/Get so save feedback is deterministic and browser back/refresh.
 	// does not resubmit the form.
 	$flosc_redirect_url = add_query_arg(
 		array(
@@ -2167,7 +2197,7 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 			<p>✓ Settings saved for <strong><?php echo esc_html( $flosc_flow_settings['identity']['name'] ?? $flosc_selected_ivr ); ?></strong></p>
 		</div>
 		<?php
-		// One notice only (bottom duplicate removed). After PRG reload, bring it into view
+		// One notice only (bottom duplicate removed). After PRG reload, bring it into view.
 		// and drop ?saved=1 so refresh does not re-flash the banner.
 		ob_start();
 		?>
@@ -2211,7 +2241,7 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 			<label class="flosc-flow-selector__select-label" for="ivr-select">Switch Flow:</label>
 			<select id="ivr-select" class="flosc-flow-selector__select-control" aria-label="Switch Flow">
 				<?php
-				// Always-work cue only: append " (default)" to the label. No option CSS
+				// Always-work cue only: append " (default)" to the label. No option CSS.
 				// (font-weight/color on <option> is OS-dependent and often ignored).
 				foreach ( $flosc_ivr_files as $flosc_file ) :
 					$flosc_opt_label = (string) ( $flosc_flow_selector_labels[ $flosc_file ] ?? $flosc_file );
@@ -2372,7 +2402,7 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 		if ( ! $flosc_can_view_administration ) {
 			unset( $flosc_settings_tabs['administration'] );
 		}
-		// Tabs that are global rather than per-flow do not carry the flow
+		// Tabs that are global rather than per-flow do not carry the flow.
 		// selection, so their URL never implies Switch Flow changes what they do.
 		$flosc_global_tabs = array( 'starter-packs' );
 
@@ -2605,7 +2635,7 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 				<?php
 				foreach ( $flosc_all_flows as $flosc_ivr_file => $flosc_flow_data ) :
 					$flosc_settings = $flosc_flow_data['settings'];
-					// v2.0.0: Merge identity sub-array up for form display
+					// v2.0.0: Merge identity sub-array up for form display.
 					// Identity fields are stored nested but form fields read flat.
 					$flosc_si = $flosc_settings['identity'] ?? array();
 					foreach ( array( 'name', 'title', 'tagline', 'primary_color', 'chatlogo_url', 'favicon_url', 'badgeUrl', 'share_text', 'privacy_policy_content', 'terms_of_service_content', 'data_deletion_content', 'platform_compliance_content' ) as $flosc__ik ) {
@@ -3240,19 +3270,19 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 				Save Settings for <?php echo esc_html( $flosc_flow_settings['identity']['name'] ?? $flosc_selected_ivr ); ?>
 			</button>
 			<?php
-			// Always say something. A line that appears only after the first
-			// save reads, on a flow that has never been saved, as the feature
+			// Always say something. A line that appears only after the first.
+			// save reads, on a flow that has never been saved, as the feature.
 			// not working — which is the opposite of what it is here to do.
-			// Pressing Save always writes and always restamps, so the line
-			// always moves, and an operator can tell the press landed without
+			// Pressing Save always writes and always restamps, so the line.
+			// always moves, and an operator can tell the press landed without.
 			// having to remember what it said a moment ago.
 			$flosc_last_save = function_exists( 'flosc_flow_last_saved_at' )
 				? flosc_flow_last_saved_at( $flosc_selected_ivr )
 				: '';
 
-			// Whether the save handler ran at all. It redirects with saved=1,
-			// so this separates "the button never submitted" from "it submitted
-			// and the write did not land" — two different faults that look
+			// Whether the save handler ran at all. It redirects with saved=1,.
+			// so this separates "the button never submitted" from "it submitted.
+			// and the write did not land" — two different faults that look.
 			// identical on screen, and one screenshot now tells them apart.
 			$flosc_save_ran = ( '1' === flosc_nav_param( 'saved', array( '1' ) ) );
 			?>

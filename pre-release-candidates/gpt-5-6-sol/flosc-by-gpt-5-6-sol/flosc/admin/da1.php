@@ -27,7 +27,15 @@ if ( ! current_user_can( 'manage_options' ) ) {
 }
 
 if ( ! function_exists( 'flosc_da1_safe_json_decode' ) ) {
-	function flosc_da1_safe_json_decode( $raw, $max_bytes = 200000, $depth = 32 ) {
+		/**
+	 * Coordinate the da1 safe json decode behavior implemented by this code path.
+	 *
+	 * @param mixed $raw Input consumed by the Coordinate the da1 safe json decode behavior implemented by this code path. operation.
+	 * @param mixed $max_bytes Input consumed by the Coordinate the da1 safe json decode behavior implemented by this code path. operation.
+	 * @param mixed $depth Input consumed by the Coordinate the da1 safe json decode behavior implemented by this code path. operation.
+	 * @return mixed Result of the da1 safe json decode operation, or a WP_Error when it cannot complete.
+	 */
+function flosc_da1_safe_json_decode( $raw, $max_bytes = 200000, $depth = 32 ) {
 		$raw = (string) $raw;
 		if ( '' === $raw || strlen( $raw ) > $max_bytes ) {
 			return new WP_Error( 'flosc_da1_payload_too_large', 'Payload is invalid or too large.' );
@@ -112,6 +120,12 @@ if ( ! isset( $flosc_post ) || ! is_array( $flosc_post ) ) {
 $flosc_da1_get  = $flosc_get;
 $flosc_da1_post = $flosc_post;
 
+/**
+ * Coordinate the da1 slugify behavior implemented by this code path.
+ *
+ * @param mixed $value Value consumed or normalized by the Coordinate the da1 slugify behavior implemented by this code path. operation.
+ * @return mixed Result produced by the da1 slugify operation.
+ */
 function flosc_da1_slugify( $value ) {
 	$value = strtolower( trim( (string) $value ) );
 	$value = preg_replace( '/[^a-z0-9_-]+/', '-', $value );
@@ -119,6 +133,12 @@ function flosc_da1_slugify( $value ) {
 	return '' === $value ? 'catalog' : $value;
 }
 
+/**
+ * Coordinate the da1 normalize key behavior implemented by this code path.
+ *
+ * @param mixed $value Value consumed or normalized by the Coordinate the da1 normalize key behavior implemented by this code path. operation.
+ * @return mixed Result produced by the da1 normalize key operation.
+ */
 function flosc_da1_normalize_key( $value ) {
 	$value = strtolower( trim( (string) $value ) );
 	if ( '' === $value ) {
@@ -127,6 +147,12 @@ function flosc_da1_normalize_key( $value ) {
 	return preg_replace( '/[^a-z0-9._-]/', '', $value );
 }
 
+/**
+ * Coordinate the da1 parse tsv behavior implemented by this code path.
+ *
+ * @param mixed $flosc_da1_content Input consumed by the Coordinate the da1 parse tsv behavior implemented by this code path. operation.
+ * @return mixed Result produced by the da1 parse tsv operation.
+ */
 function flosc_da1_parse_tsv( $flosc_da1_content ) {
 	$flosc_da1_rows = array();
 	$flosc_da1_row  = array();
@@ -172,6 +198,12 @@ function flosc_da1_parse_tsv( $flosc_da1_content ) {
 	return $flosc_da1_rows;
 }
 
+/**
+ * Coordinate the da1 tsv cell behavior implemented by this code path.
+ *
+ * @param mixed $value Value consumed or normalized by the Coordinate the da1 tsv cell behavior implemented by this code path. operation.
+ * @return mixed Result produced by the da1 tsv cell operation.
+ */
 function flosc_da1_tsv_cell( $value ) {
 	$value = str_replace( array( "\r\n", "\r" ), "\n", (string) $value );
 	if ( false !== strpos( $value, "\t" ) || false !== strpos( $value, "\n" ) || false !== strpos( $value, '"' ) ) {
@@ -180,6 +212,13 @@ function flosc_da1_tsv_cell( $value ) {
 	return $value;
 }
 
+/**
+ * Coordinate the da1 normalize columns behavior implemented by this code path.
+ *
+ * @param mixed $flosc_da1_columns Input consumed by the Coordinate the da1 normalize columns behavior implemented by this code path. operation.
+ * @param mixed $required_columns Input consumed by the Coordinate the da1 normalize columns behavior implemented by this code path. operation.
+ * @return mixed Result produced by the da1 normalize columns operation.
+ */
 function flosc_da1_normalize_columns( $flosc_da1_columns, $required_columns ) {
 	$payload_columns = array();
 
@@ -205,6 +244,13 @@ function flosc_da1_normalize_columns( $flosc_da1_columns, $required_columns ) {
 	return array_merge( $required_columns, $payload_columns );
 }
 
+/**
+ * Coordinate the da1 sanitize payload columns behavior implemented by this code path.
+ *
+ * @param mixed $value Value consumed or normalized by the Coordinate the da1 sanitize payload columns behavior implemented by this code path. operation.
+ * @param mixed $required_columns Input consumed by the Coordinate the da1 sanitize payload columns behavior implemented by this code path. operation.
+ * @return mixed Result produced by the da1 sanitize payload columns operation.
+ */
 function flosc_da1_sanitize_payload_columns( $value, $required_columns ) {
 	$columns = preg_split( '/[,\r\n]+/', (string) $value );
 	$clean   = array();
@@ -225,6 +271,12 @@ function flosc_da1_sanitize_payload_columns( $value, $required_columns ) {
 	return $clean;
 }
 
+/**
+ * Coordinate the da1 col index map behavior implemented by this code path.
+ *
+ * @param mixed $flosc_da1_columns Input consumed by the Coordinate the da1 col index map behavior implemented by this code path. operation.
+ * @return mixed Result produced by the da1 col index map operation.
+ */
 function flosc_da1_col_index_map( $flosc_da1_columns ) {
 	$map = array();
 	foreach ( $flosc_da1_columns as $flosc_da1_i => $flosc_da1_col ) {
@@ -233,6 +285,13 @@ function flosc_da1_col_index_map( $flosc_da1_columns ) {
 	return $map;
 }
 
+/**
+ * Coordinate the da1 next parent key behavior implemented by this code path.
+ *
+ * @param mixed $flosc_da1_rows Input consumed by the Coordinate the da1 next parent key behavior implemented by this code path. operation.
+ * @param mixed $row_idx_key Identifier used to select the record involved in the Coordinate the da1 next parent key behavior implemented by this code path. operation.
+ * @return mixed Result produced by the da1 next parent key operation.
+ */
 function flosc_da1_next_parent_key( $flosc_da1_rows, $row_idx_key ) {
 	$max = 0;
 	foreach ( $flosc_da1_rows as $flosc_da1_row ) {
@@ -247,6 +306,14 @@ function flosc_da1_next_parent_key( $flosc_da1_rows, $row_idx_key ) {
 	return (string) ( $max + 1 );
 }
 
+/**
+ * Coordinate the da1 next child key behavior implemented by this code path.
+ *
+ * @param mixed $flosc_da1_rows Input consumed by the Coordinate the da1 next child key behavior implemented by this code path. operation.
+ * @param mixed $row_idx_key Identifier used to select the record involved in the Coordinate the da1 next child key behavior implemented by this code path. operation.
+ * @param mixed $flosc_da1_parent_key Name or key used to select the Coordinate the da1 next child key behavior implemented by this code path. value.
+ * @return mixed Result produced by the da1 next child key operation.
+ */
 function flosc_da1_next_child_key( $flosc_da1_rows, $row_idx_key, $flosc_da1_parent_key ) {
 	$max    = 0;
 	$prefix = trim( (string) $flosc_da1_parent_key ) . '.';
@@ -265,6 +332,12 @@ function flosc_da1_next_child_key( $flosc_da1_rows, $row_idx_key, $flosc_da1_par
 	return $prefix . ( $max + 1 );
 }
 
+/**
+ * Coordinate the da1 normalize vgm behavior implemented by this code path.
+ *
+ * @param mixed $value Value consumed or normalized by the Coordinate the da1 normalize vgm behavior implemented by this code path. operation.
+ * @return mixed Result produced by the da1 normalize vgm operation.
+ */
 function flosc_da1_normalize_vgm( $value ) {
 	$flosc_da1_raw = strtolower( trim( (string) $value ) );
 	if ( '' === $flosc_da1_raw ) {
@@ -331,6 +404,15 @@ function flosc_da1_normalize_vgm( $value ) {
 	return implode( ' ', $out );
 }
 
+/**
+ * Coordinate the da1 apply defaults behavior implemented by this code path.
+ *
+ * @param mixed $flosc_da1_row Input consumed by the Coordinate the da1 apply defaults behavior implemented by this code path. operation.
+ * @param mixed $flosc_da1_columns Input consumed by the Coordinate the da1 apply defaults behavior implemented by this code path. operation.
+ * @param mixed $flosc_da1_col_idx Identifier used to select the record involved in the Coordinate the da1 apply defaults behavior implemented by this code path. operation.
+ * @param mixed $defaults Input consumed by the Coordinate the da1 apply defaults behavior implemented by this code path. operation.
+ * @param mixed $catalog_key Name or key used to select the Coordinate the da1 apply defaults behavior implemented by this code path. value.
+ */
 function flosc_da1_apply_defaults( &$flosc_da1_row, $flosc_da1_columns, $flosc_da1_col_idx, $defaults, $catalog_key ) {
 	foreach ( $flosc_da1_columns as $flosc_da1_ci => $column ) {
 		if ( ! isset( $flosc_da1_row[ $flosc_da1_ci ] ) ) {
@@ -363,10 +445,24 @@ function flosc_da1_apply_defaults( &$flosc_da1_row, $flosc_da1_columns, $flosc_d
 	}
 }
 
+/**
+ * Coordinate the da1 catalog file behavior implemented by this code path.
+ *
+ * @param mixed $catalog_dir Input consumed by the Coordinate the da1 catalog file behavior implemented by this code path. operation.
+ * @param mixed $catalog_key Name or key used to select the Coordinate the da1 catalog file behavior implemented by this code path. value.
+ * @return mixed Result produced by the da1 catalog file operation.
+ */
 function flosc_da1_catalog_file( $catalog_dir, $catalog_key ) {
 	return trailingslashit( $catalog_dir ) . 'flosc_da1_catalog_' . $catalog_key . '.tsv';
 }
 
+/**
+ * Coordinate the da1 is allowed catalog path behavior implemented by this code path.
+ *
+ * @param mixed $path Filesystem value identifying the file used by the Coordinate the da1 is allowed catalog path behavior implemented by this code path. operation.
+ * @param mixed $catalog_dir Input consumed by the Coordinate the da1 is allowed catalog path behavior implemented by this code path. operation.
+ * @return mixed Result produced by the da1 is allowed catalog path operation.
+ */
 function flosc_da1_is_allowed_catalog_path( $path, $catalog_dir ) {
 	$catalog_dir = wp_normalize_path( trailingslashit( (string) $catalog_dir ) );
 	$path        = wp_normalize_path( (string) $path );
@@ -638,10 +734,10 @@ if ( ! is_array( $flosc_da1_flow_assignments ) ) {
 	$flosc_da1_flow_assignments = array();
 }
 
-// Show only attributions naming a flow that exists. Switch Flow has always
-// filtered backups out; this page used to render whatever was stored, which is
-// how backup filenames came to appear under "Attributed to". Filtering here as
-// well as at the source means a record written by some older build, or by hand,
+// Show only attributions naming a flow that exists. Switch Flow has always.
+// filtered backups out; this page used to render whatever was stored, which is.
+// how backup filenames came to appear under "Attributed to". Filtering here as.
+// well as at the source means a record written by some older build, or by hand,.
 // cannot put a name on this page that the rest of FLOSC would not recognise.
 if ( function_exists( 'flosc_da1_prune_flow_assignments' ) ) {
 	$flosc_da1_flow_assignments = flosc_da1_prune_flow_assignments( $flosc_da1_flow_assignments );
@@ -927,7 +1023,7 @@ $flosc_da1_col_idx = flosc_da1_col_index_map( $flosc_da1_columns );
 $flosc_da1_ncols   = count( $flosc_da1_columns );
 
 foreach ( $flosc_da1_rows as &$flosc_da1_row ) {
-	// Pad the row out to the column count. It grows inside the loop, so the
+	// Pad the row out to the column count. It grows inside the loop, so the.
 	// count is re-taken each pass.
 	for ( $flosc_da1_filled = count( $flosc_da1_row ); $flosc_da1_filled < $flosc_da1_ncols; $flosc_da1_filled = count( $flosc_da1_row ) ) {
 		$flosc_da1_row[] = '';
@@ -954,7 +1050,7 @@ if ( isset( $flosc_da1_col_idx['Row Key'] ) ) {
 if ( isset( $flosc_da1_post['da1_save_catalog'] ) ) {
 	$flosc_post = $flosc_da1_post;
 	// Large catalogs exceed PHP max_input_vars when posted as per-cell fields.
-	// The grid submits the whole table as one JSON field instead; decode it
+	// The grid submits the whole table as one JSON field instead; decode it.
 	// into the shape the rest of this handler expects.
 	if ( ! empty( $flosc_post['da1_payload'] ) ) {
 		$flosc_da1_decoded = flosc_da1_safe_json_decode( (string) $flosc_post['da1_payload'] );
@@ -1016,7 +1112,7 @@ if ( isset( $flosc_da1_post['da1_save_catalog'] ) ) {
 				}
 
 				// Never block a floscAdmin's save on a missing control value:
-				// fill the column's safe default so edits always save. Status is
+				// fill the column's safe default so edits always save. Status is.
 				// always "active" unless explicitly "paused".
 				if ( '' === trim( $flosc_da1_val ) && isset( $flosc_control_defaults[ $flosc_da1_col ] ) ) {
 					$flosc_da1_val = $flosc_control_defaults[ $flosc_da1_col ];
@@ -1111,7 +1207,7 @@ if ( isset( $flosc_da1_post['da1_save_catalog'] ) ) {
 				$flosc_da1_rows           = array_slice( $flosc_da1_parsed, 1 );
 				$flosc_da1_ncols          = count( $flosc_da1_columns );
 				foreach ( $flosc_da1_rows as &$flosc_da1_row ) {
-					// Pad the row out to the column count. It grows inside the
+					// Pad the row out to the column count. It grows inside the.
 					// loop, so the count is re-taken each pass.
 					for ( $flosc_da1_filled = count( $flosc_da1_row ); $flosc_da1_filled < $flosc_da1_ncols; $flosc_da1_filled = count( $flosc_da1_row ) ) {
 						$flosc_da1_row[] = '';

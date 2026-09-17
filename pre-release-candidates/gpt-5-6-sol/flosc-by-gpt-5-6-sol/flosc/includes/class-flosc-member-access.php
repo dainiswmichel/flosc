@@ -23,18 +23,29 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC Member Access behavior and the WordPress services used by its methods.
+ */
 class FLOSC_Member_Access {
 
 	private static $instance = null;
 
-	public static function instance() {
+		/**
+	 * Coordinate the instance behavior implemented by this code path.
+	 *
+	 * @return mixed Result produced by the instance operation.
+	 */
+public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
 		}
 		return self::$instance;
 	}
 
-	private function __construct() {
+		/**
+	 * Register the WordPress hooks that connect construct to this object.
+	 */
+private function __construct() {
 		// Hook into purchase completion.
 		add_action( 'flosc_purchase_completed', array( $this, 'grant_member_access' ), 10, 2 );
 	}
@@ -45,7 +56,7 @@ class FLOSC_Member_Access {
 	 * Prefer FLOSC_Access_Manager when available so UI, tokens, and IVR share one rule.
 	 *
 	 * @param int         $user_id
-	 * @param string|null $flow_id Flow id / ivr / stem. Null = current flow when possible.
+	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
 	 * @return bool
 	 */
 	public function is_member( $user_id, $flow_id = null ) {
@@ -92,7 +103,7 @@ class FLOSC_Member_Access {
 	 * Grant member access after purchase
 	 *
 	 * @param int   $user_id
-	 * @param array $purchase_data Contains offer_id, grants_level, flow_id, etc.
+	 * @param mixed $purchase_data Structured data consumed by the Persist the grant member access state in Word Press storage. operation.
 	 */
 	public function grant_member_access( $user_id, $purchase_data = array() ) {
 		$purchase_data = is_array( $purchase_data ) ? $purchase_data : array();
@@ -148,7 +159,7 @@ class FLOSC_Member_Access {
 	 * Get user's access level for a flow.
 	 *
 	 * @param int         $user_id
-	 * @param string|null $flow_id
+	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
 	 * @return string 'visitor', 'guest', or 'member'
 	 */
 	public function get_access_level( $user_id, $flow_id = null ) {
@@ -167,7 +178,7 @@ class FLOSC_Member_Access {
 	 * Check if user can access specific content
 	 *
 	 * @param int    $user_id
-	 * @param string $required_level 'visitor', 'guest', or 'member'.
+	 * @param mixed $required_level Input consumed by the Determine whether the current state satisfies access. operation.
 	 * @return bool
 	 */
 	public function can_access( $user_id, $required_level = 'member' ) {
@@ -190,7 +201,7 @@ class FLOSC_Member_Access {
 	 * Revoke member access (for refunds, etc.)
 	 *
 	 * @param int    $user_id
-	 * @param string $reason
+	 * @param mixed $reason Input consumed by the Persist the revoke member access state in Word Press storage. operation.
 	 */
 	public function revoke_member_access( $user_id, $reason = '' ) {
 
@@ -257,7 +268,7 @@ class FLOSC_Member_Access {
 	 * Checks _flosc_memberlevel_{level} user meta, WP role, and legacy aliases.
 	 *
 	 * @param int    $user_id
-	 * @param string $level e.g. 'samplecourse', 'spanishcourse', 'pronunciation_learners'.
+	 * @param mixed $level Input consumed by the Determine whether the current state satisfies level. operation.
 	 * @return bool
 	 */
 	public function has_level( $user_id, $level ) {
@@ -287,7 +298,8 @@ class FLOSC_Member_Access {
 	 * Grant a specific membership level to user
 	 *
 	 * @param int    $user_id
-	 * @param string $level
+	 * @param mixed $level Input consumed by the Persist the grant level state in Word Press storage. operation.
+ * @return bool Whether grant level applies to the current state.
 	 */
 	public function grant_level( $user_id, $level ) {
 		if ( ! $user_id || ! $level ) {
@@ -331,8 +343,9 @@ class FLOSC_Member_Access {
 	 * Revoke a specific membership level from user
 	 *
 	 * @param int    $user_id
-	 * @param string $level
+	 * @param mixed $level Input consumed by the Persist the revoke level state in Word Press storage. operation.
 	 * @param string $reason
+ * @return bool Whether revoke level applies to the current state.
 	 */
 	public function revoke_level( $user_id, $level, $reason = '' ) {
 		if ( ! $user_id || ! $level ) {
@@ -432,7 +445,7 @@ class FLOSC_Member_Access {
 	 * Used for free lessons after quiz completion
 	 *
 	 * @param int $user_id
-	 * @param int $post_id
+	 * @param mixed $post_id WordPress post ID used to resolve the content involved in this operation.
 	 * @return bool
 	 */
 	public function grant_guest_access( $user_id, $post_id ) {
@@ -462,7 +475,7 @@ class FLOSC_Member_Access {
 	 * Check if user has guest access to a specific post
 	 *
 	 * @param int $user_id
-	 * @param int $post_id
+	 * @param mixed $post_id WordPress post ID used to resolve the content involved in this operation.
 	 * @return bool
 	 */
 	public function has_guest_access( $user_id, $post_id ) {
@@ -491,7 +504,7 @@ class FLOSC_Member_Access {
 	 * Revoke guest access to a specific post
 	 *
 	 * @param int $user_id
-	 * @param int $post_id
+	 * @param mixed $post_id WordPress post ID used to resolve the content involved in this operation.
 	 * @return bool
 	 */
 	public function revoke_guest_access( $user_id, $post_id ) {
@@ -570,18 +583,18 @@ class FLOSC_Member_Access {
 
 			if ( $denominator > 0 ) {
 				$calculated = ceil( $missed_count * $numerator / $denominator );
-				return max( 1, $calculated ); // At least 1
+				return max( 1, $calculated ); // At least 1.
 			}
 		}
 
-		return 1; // Default fallback
+		return 1; // Default fallback.
 	}
 
 	/**
 	 * Grant free lesson access to a user based on missed quiz items
 	 *
 	 * @param int   $user_id
-	 * @param array $missed_post_ids Array of post IDs for missed items.
+	 * @param mixed $missed_post_ids Identifier used to select the record involved in the Persist the grant free lessons state in Word Press storage. operation.
 	 * @return array Array of post IDs that were granted
 	 */
 	public function grant_free_lessons( $user_id, $missed_post_ids ) {

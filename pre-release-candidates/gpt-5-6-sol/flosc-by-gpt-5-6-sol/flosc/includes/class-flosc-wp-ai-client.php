@@ -31,6 +31,9 @@ use WordPress\AiClient\Tools\DTO\FunctionResponse;
 use WordPress\AnthropicAiProvider\Authentication\AnthropicApiKeyRequestAuthentication;
 use WordPress\GoogleAiProvider\Authentication\GoogleApiKeyRequestAuthentication;
 
+/**
+ * Coordinate FLOSC WP AI Client behavior and the WordPress services used by its methods.
+ */
 class FLOSC_WP_AI_Client {
 
 	/**
@@ -43,6 +46,8 @@ class FLOSC_WP_AI_Client {
 	}
 
 	/**
+ * Coordinate the provider id map behavior implemented by this code path.
+ *
 	 * @return array<string,string> FLOSC slug => WordPress provider id.
 	 */
 	public static function provider_id_map() {
@@ -54,6 +59,8 @@ class FLOSC_WP_AI_Client {
 	}
 
 	/**
+ * Coordinate the plugin slug behavior implemented by this code path.
+ *
 	 * @param string $flosc_provider FLOSC slug.
 	 * @return string wordpress.org plugin slug, or empty.
 	 */
@@ -68,6 +75,8 @@ class FLOSC_WP_AI_Client {
 	}
 
 	/**
+ * Coordinate the plugin name behavior implemented by this code path.
+ *
 	 * @param string $flosc_provider FLOSC slug.
 	 * @return string
 	 */
@@ -82,6 +91,8 @@ class FLOSC_WP_AI_Client {
 	}
 
 	/**
+ * Coordinate the plugin directory url behavior implemented by this code path.
+ *
 	 * @param string $flosc_provider FLOSC slug.
 	 * @return string
 	 */
@@ -112,6 +123,8 @@ class FLOSC_WP_AI_Client {
 	}
 
 	/**
+ * Coordinate the wordpress provider id behavior implemented by this code path.
+ *
 	 * @param string $flosc_provider FLOSC slug.
 	 * @return string WordPress AI Client provider id, or empty.
 	 */
@@ -122,6 +135,8 @@ class FLOSC_WP_AI_Client {
 	}
 
 	/**
+ * Coordinate the uses official plugin behavior implemented by this code path.
+ *
 	 * @param string $flosc_provider FLOSC slug.
 	 * @return bool
 	 */
@@ -147,6 +162,8 @@ class FLOSC_WP_AI_Client {
 	private static $applied_parameters = array();
 
 	/**
+ * Coordinate the unapplied parameters behavior implemented by this code path.
+ *
 	 * @return array<int,string>
 	 */
 	public static function unapplied_parameters() {
@@ -154,6 +171,8 @@ class FLOSC_WP_AI_Client {
 	}
 
 	/**
+ * Coordinate the applied parameters behavior implemented by this code path.
+ *
 	 * @return array<int,string>
 	 */
 	public static function applied_parameters() {
@@ -190,11 +209,11 @@ class FLOSC_WP_AI_Client {
 		$setter = 'using_' . $name;
 
 		try {
-			// A few setters take their values one per argument rather than as
-			// one array — using_stop_sequences( 'User:', 'Visitor:' ). Passing
-			// the array whole raises a TypeError, so the splat is tried first
-			// and the whole array kept as the fallback for any setter that does
-			// want it. Which of the two a given client wants is the client's
+			// A few setters take their values one per argument rather than as.
+			// one array — using_stop_sequences( 'User:', 'Visitor:' ). Passing.
+			// the array whole raises a TypeError, so the splat is tried first.
+			// and the whole array kept as the fallback for any setter that does.
+			// want it. Which of the two a given client wants is the client's.
 			// business, and this asks it rather than assuming.
 			if ( is_array( $value ) && array_values( $value ) === $value ) {
 				try {
@@ -231,6 +250,8 @@ class FLOSC_WP_AI_Client {
 	}
 
 	/**
+ * Coordinate the core client exists behavior implemented by this code path.
+ *
 	 * @return bool
 	 */
 	public static function core_client_exists() {
@@ -326,8 +347,8 @@ class FLOSC_WP_AI_Client {
 	 * @return array|WP_Error { text, function_calls, model_message, usage, model, provider }
 	 */
 	public static function generate( $args ) {
-		// The provider plugins are third-party code reached through a builder
-		// that throws. Anything escaping this method becomes a WordPress fatal
+		// The provider plugins are third-party code reached through a builder.
+		// that throws. Anything escaping this method becomes a WordPress fatal.
 		// in the middle of a visitor's conversation, so nothing escapes it.
 		try {
 			return self::generate_inner( $args );
@@ -414,11 +435,11 @@ class FLOSC_WP_AI_Client {
 		self::$applied_parameters   = array();
 		self::$unapplied_parameters = array();
 
-		// Whether temperature is accepted is a fact about the model first and
-		// the provider only second: Anthropic's Sonnet 4.5 takes it and its
-		// Sonnet 5 refuses it, and both are Anthropic. The resolver in
-		// includes/ai/flosc-provider-profiles.php answers from what has been
-		// measured on this model where anything has, and falls back to the
+		// Whether temperature is accepted is a fact about the model first and.
+		// the provider only second: Anthropic's Sonnet 4.5 takes it and its.
+		// Sonnet 5 refuses it, and both are Anthropic. The resolver in.
+		// includes/ai/flosc-provider-profiles.php answers from what has been.
+		// measured on this model where anything has, and falls back to the.
 		// provider-wide measurement where nothing has.
 		$flosc_model_id = (string) ( $args['model'] ?? '' );
 
@@ -436,15 +457,15 @@ class FLOSC_WP_AI_Client {
 			}
 		}
 
-		// Extra model parameters, named by the operator. FLOSC keeps no list of
-		// valid parameters — providers add them faster than any list survives —
-		// so each one is applied by convention: the builder names its setters
-		// using_<parameter>, so top_p reaches using_top_p. What each one is
-		// worth is recorded either way, so the connection test can say what the
+		// Extra model parameters, named by the operator. FLOSC keeps no list of.
+		// valid parameters — providers add them faster than any list survives —.
+		// so each one is applied by convention: the builder names its setters.
+		// using_<parameter>, so top_p reaches using_top_p. What each one is.
+		// worth is recorded either way, so the connection test can say what the.
 		// request carried rather than what was configured.
 		if ( function_exists( 'flosc_get_model_parameters' ) ) {
 			foreach ( flosc_get_model_parameters( $provider ) as $flosc_param => $flosc_value ) {
-				// temperature and max_tokens have first-class setters above and
+				// temperature and max_tokens have first-class setters above and.
 				// were already applied from the fields that mirror them.
 				// Applying them twice would send one of them twice.
 				if ( in_array( (string) $flosc_param, array( 'temperature', 'max_tokens' ), true ) ) {
@@ -452,7 +473,7 @@ class FLOSC_WP_AI_Client {
 				}
 
 				// Anthropic 400: temperature and top_p cannot both be specified.
-				// Inline so this does not depend on a helper PHP-FPM may still
+				// Inline so this does not depend on a helper PHP-FPM may still.
 				// be serving from an older cached copy of the profiles file.
 				if ( 'anthropic' === $provider
 					&& 'top_p' === (string) $flosc_param
@@ -464,7 +485,7 @@ class FLOSC_WP_AI_Client {
 				$flosc_applied = self::apply_extra_parameter( $builder, $flosc_param, $flosc_value );
 
 				if ( is_wp_error( $flosc_applied ) ) {
-					// The integration refused it. That is its answer to give,
+					// The integration refused it. That is its answer to give,.
 					// so carry it up rather than deciding on its behalf.
 					self::$unapplied_parameters[] = (string) $flosc_param . ' (' . $flosc_applied->get_error_message() . ')';
 					continue;
@@ -484,8 +505,8 @@ class FLOSC_WP_AI_Client {
 		$plugin_name  = self::plugin_name( $provider );
 		$model_wanted = (string) ( $args['model'] ?? '' );
 
-		// The provider could not resolve this model id. FLOSC does not quietly
-		// answer as some other model — the flow would then be curated by
+		// The provider could not resolve this model id. FLOSC does not quietly.
+		// answer as some other model — the flow would then be curated by.
 		// something nobody chose. It names the id that failed and stops.
 		if ( ! $model_resolved ) {
 			return new WP_Error(
@@ -682,6 +703,7 @@ class FLOSC_WP_AI_Client {
 	 *
 	 * @param array  $args  generate() args.
 	 * @param string $wp_id WordPress provider id.
+ * @param mixed $model_resolved AI model identifier used for the provider request.
 	 * @return WP_AI_Client_Prompt_Builder|WP_Error
 	 */
 	private static function make_builder( $args, $wp_id, &$model_resolved = null ) {
@@ -715,7 +737,7 @@ class FLOSC_WP_AI_Client {
 			if ( $pinned ) {
 				$builder->using_model( $pinned );
 			} else {
-				// This id did not resolve. Say so upward rather than letting a
+				// This id did not resolve. Say so upward rather than letting a.
 				// preference silently answer as some other model.
 				$model_resolved = false;
 				$builder->using_model_preference( array( $wp_id, $model ) );
@@ -786,6 +808,8 @@ class FLOSC_WP_AI_Client {
 	}
 
 	/**
+ * Coordinate the no key error behavior implemented by this code path.
+ *
 	 * @param string $provider  FLOSC slug.
 	 * @param bool   $test_mode Rich copy.
 	 * @return WP_Error
@@ -842,6 +866,8 @@ class FLOSC_WP_AI_Client {
 	}
 
 	/**
+ * Coordinate the tools to declarations behavior implemented by this code path.
+ *
 	 * @param array $tools FLOSC RAG tool arrays (name, description, input_schema).
 	 * @return FunctionDeclaration[]
 	 */
@@ -871,6 +897,8 @@ class FLOSC_WP_AI_Client {
 	}
 
 	/**
+ * Coordinate the parse result behavior implemented by this code path.
+ *
 	 * @param GenerativeAiResult $result         Core result.
 	 * @param string             $provider       FLOSC slug.
 	 * @param string             $requested_model Preferred model id.

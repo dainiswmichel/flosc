@@ -37,7 +37,7 @@ $flosc_member_levels_docs_url = add_query_arg(
 	admin_url( 'admin.php' )
 ) . '#tab-member-levels';
 
-// ─── 1. Level Registry ──────────────────────────────────────────────────────
+// ─── 1. Level Registry ──────────────────────────────────────────────────────.
 
 $flosc_member_levels = $flosc_flow_settings['member_levels'] ?? array();
 
@@ -109,7 +109,7 @@ if ( empty( $flosc_member_levels ) ) {
 </p>
 
 <?php
-// ─── 2. Content Protection ──────────────────────────────────────────────────
+// ─── 2. Content Protection ──────────────────────────────────────────────────.
 
 // Build the level list for dropdowns (from saved levels, not from the form — form hasn't been submitted yet).
 $flosc_saved_levels = $flosc_flow_settings['member_levels'] ?? $flosc_member_levels;
@@ -235,7 +235,7 @@ $flosc_vgm_depths = flosc_vgm_depth_labels();
 </p>
 
 <?php
-// ─── 3. Guest Access, Freeline & Chats ──────────────────────────────────────
+// ─── 3. Guest Access, Freeline & Chats ──────────────────────────────────────.
 
 $flosc_free_content_item_mode       = $flosc_flow_settings['free_content_item_mode'] ?? 'fixed';
 $flosc_free_content_item_count      = $flosc_flow_settings['free_content_item_count'] ?? 1;

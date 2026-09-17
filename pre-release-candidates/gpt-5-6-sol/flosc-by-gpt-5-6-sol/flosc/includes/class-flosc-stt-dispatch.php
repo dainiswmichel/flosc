@@ -10,11 +10,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC STT Dispatch behavior and the WordPress services used by its methods.
+ */
 class FLOSC_STT_Dispatch {
 
 	private $provider;
 
-	public function __construct() {
+		/**
+	 * Coordinate the construct behavior implemented by this code path.
+	 */
+public function __construct() {
 		// v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves).
 		$this->provider = flosc_get_setting( 'stt_provider', 'assemblyai' );
 	}
@@ -47,6 +53,8 @@ class FLOSC_STT_Dispatch {
 
 	/**
 	 * Transcribe Audio File
+ * @param mixed $audio_path Filesystem value identifying the file used by the Persist the transcribe state in Word Press storage. operation.
+ * @return mixed Result of the transcribe operation, or a WP_Error when it cannot complete.
 	 */
 	public function transcribe( $audio_path ) {
 		// Check cache (useful for repeated test recordings).
@@ -82,6 +90,8 @@ class FLOSC_STT_Dispatch {
 	/**
 	 * AssemblyAI - Recommended for accent handling
 	 * Cost: ~$0.00025/second = $0.0025 per 10s recording
+ * @param mixed $audio_path Filesystem value identifying the file used by the Send the remote request required for assemblyai transcribe and normalize its result. operation.
+ * @return mixed Result of the assemblyai transcribe operation, or a WP_Error when it cannot complete.
 	 */
 	private function assemblyai_transcribe( $audio_path ) {
 		// v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves).
@@ -131,7 +141,7 @@ class FLOSC_STT_Dispatch {
 					array(
 						'audio_url'     => $upload_body['upload_url'],
 						// English only, matching the hint hard-coded for Whisper.
-						// The $options array that used to feed this was never passed
+						// The $options array that used to feed this was never passed.
 						// by any caller, so it always resolved to exactly this value.
 						'language_code' => 'en_us',
 					)
@@ -190,6 +200,8 @@ class FLOSC_STT_Dispatch {
 	/**
 	 * OpenAI Whisper
 	 * Cost: ~$0.006/minute = $0.001 per 10s recording
+ * @param mixed $audio_path Filesystem value identifying the file used by the Send the remote request required for openai whisper transcribe and normalize its result. operation.
+ * @return mixed Result of the openai whisper transcribe operation, or a WP_Error when it cannot complete.
 	 */
 	private function openai_whisper_transcribe( $audio_path ) {
 		// v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves).
@@ -215,7 +227,7 @@ class FLOSC_STT_Dispatch {
 		$body .= "Content-Disposition: form-data; name=\"model\"\r\n\r\n";
 		$body .= "whisper-1\r\n";
 
-		// Add language hint. English, as with AssemblyAI above: transcription
+		// Add language hint. English, as with AssemblyAI above: transcription.
 		// is not language-configurable yet.
 		$body .= "--{$boundary}\r\n";
 		$body .= "Content-Disposition: form-data; name=\"language\"\r\n\r\n";
@@ -262,6 +274,8 @@ class FLOSC_STT_Dispatch {
 
 	/**
 	 * Custom Endpoint (Self-hosted faster-whisper, etc.)
+ * @param mixed $audio_path Filesystem value identifying the file used by the Coordinate the custom transcribe behavior implemented by this code path. operation.
+ * @return mixed Result of the custom transcribe operation, or a WP_Error when it cannot complete.
 	 */
 	private function custom_transcribe( $audio_path ) {
 		// v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves).
@@ -306,6 +320,7 @@ class FLOSC_STT_Dispatch {
 
 	/**
 	 * Get Provider Info
+ * @return mixed Result produced by the provider info operation.
 	 */
 	public function get_provider_info() {
 		$providers = array(

@@ -63,27 +63,27 @@ if ( ! function_exists( 'flosc_provider_api_profile' ) ) {
 			'anthropic' => array(
 				// phpcs:ignore PluginCheck.CodeAnalysis.AIProvider.DirectIntegration -- model metadata, not a prompt: this reads one model's context window, maximum reply length and capabilities so the admin screen can show them. wp_ai_client_prompt() sends prompts and cannot describe a model. Requested only when an administrator clicks "Describe this model"; declared in readme.txt External Services.
 				'model_detail_url'      => 'https://api.anthropic.com/v1/models/%s',
-				// Measured 2026-08-30 against a live key: of the ten models it
-				// lists, Opus 5, Sonnet 5, Fable 5, Opus 4.8 and Opus 4.7 answer
-				// 400 "`temperature` is deprecated for this model", and all ten
+				// Measured 2026-08-30 against a live key: of the ten models it.
+				// lists, Opus 5, Sonnet 5, Fable 5, Opus 4.8 and Opus 4.7 answer.
+				// 400 "`temperature` is deprecated for this model", and all ten.
 				// answer 200 without it.
 				'rejects_tuning'        => array( 'temperature' ),
-				// Measured 2026-08-30 on claude-sonnet-4-5-20250929: each of
-				// temperature and top_p is accepted alone; the pair is 400
+				// Measured 2026-08-30 on claude-sonnet-4-5-20250929: each of.
+				// temperature and top_p is accepted alone; the pair is 400.
 				// "`temperature` and `top_p` cannot both be specified".
 				'sampling_exclusive'    => array( 'temperature', 'top_p' ),
 				'tuning_note'           => __( 'Anthropic has deprecated temperature on its newer models, so FLOSC leaves sampling to Claude. Temperature and top_p cannot be sent together.', 'flosc' ),
-				// Measured against a live key on 2026-08-30: Sonnet 4.5 takes
-				// top_p and top_k, Sonnet 5 refuses them and takes thinking,
+				// Measured against a live key on 2026-08-30: Sonnet 4.5 takes.
+				// top_p and top_k, Sonnet 5 refuses them and takes thinking,.
 				// stop_sequences works on both.
 				'example_params'        => "top_p: 0.9\ntop_k: 40\nstop_sequences: [\"User:\"]\nthinking: {\"type\":\"adaptive\"}",
 				'docs_url'              => 'https://platform.claude.com/docs/en/api/messages/create',
-				// Read off that page on 2026-08-30: every top-level body
-				// parameter it documents is anchored #create.<name>, all
-				// nineteen of them, so a parameter added later is reachable by
+				// Read off that page on 2026-08-30: every top-level body.
+				// parameter it documents is anchored #create.<name>, all.
+				// nineteen of them, so a parameter added later is reachable by.
 				// the same template rather than by another edit here.
 				'param_doc_url'         => 'https://platform.claude.com/docs/en/api/messages/create#create.%s',
-				// Measured 2026-08-30 against a live key, one request per
+				// Measured 2026-08-30 against a live key, one request per.
 				// parameter per model, reading the 200 or the 400 back.
 				'model_parameter_notes' => array(
 					'claude-sonnet-4-5' => array(
@@ -96,7 +96,7 @@ if ( ! function_exists( 'flosc_provider_api_profile' ) ) {
 						'accepts' => array( 'stop_sequences', 'thinking' ),
 						'refuses' => array( 'temperature', 'top_p', 'top_k' ),
 					),
-					// The temperature 400 was seen on each of these; nothing
+					// The temperature 400 was seen on each of these; nothing.
 					// else has been tried on them, so nothing else is claimed.
 					'claude-opus-5'     => array(
 						'accepts' => array(),
@@ -117,42 +117,42 @@ if ( ! function_exists( 'flosc_provider_api_profile' ) ) {
 				),
 			),
 			'openai'    => array(
-				// OpenAI's spec documents no per-model capability endpoint of
+				// OpenAI's spec documents no per-model capability endpoint of.
 				// this kind, and nothing here has measured its tuning limits.
 				'model_detail_url'      => '',
 				'rejects_tuning'        => array(),
 				'tuning_note'           => '',
 				'example_params'        => "top_p: 0.9\npresence_penalty: 0.5\nfrequency_penalty: 0.3\nseed: 42",
 				'docs_url'              => 'https://platform.openai.com/docs/api-reference/chat/create',
-				// Anchor scheme not read off the live page, so no per-parameter
+				// Anchor scheme not read off the live page, so no per-parameter.
 				// link is offered and the reader is sent to the page itself.
 				'param_doc_url'         => '',
 				'model_parameter_notes' => array(),
 			),
 			'xai'       => array(
-				// /v1/language-models/{id} exists per xAI's reference but has
+				// /v1/language-models/{id} exists per xAI's reference but has.
 				// not been measured here, so FLOSC does not call it yet.
 				'model_detail_url'      => '',
 				'rejects_tuning'        => array(),
 				'tuning_note'           => '',
 				'example_params'        => "top_p: 0.9\npresence_penalty: 0.0\nfrequency_penalty: 0.0\nseed: 12345",
 				'docs_url'              => 'https://docs.x.ai/docs/api-reference',
-				// Anchor scheme not read off the live page, so no per-parameter
+				// Anchor scheme not read off the live page, so no per-parameter.
 				// link is offered and the reader is sent to the page itself.
 				'param_doc_url'         => '',
 				'model_parameter_notes' => array(),
 			),
 			'gemini'    => array(
-				// GET /v1beta/models/{model} exists per Google's reference but
+				// GET /v1beta/models/{model} exists per Google's reference but.
 				// has not been measured here.
 				'model_detail_url'      => '',
 				'rejects_tuning'        => array(),
 				'tuning_note'           => '',
-				// Gemini nests sampling inside generationConfig rather than
+				// Gemini nests sampling inside generationConfig rather than.
 				// putting it at the top level.
 				'example_params'        => 'generationConfig: {"temperature":0.4,"topP":0.95}',
 				'docs_url'              => 'https://ai.google.dev/api/generate-content',
-				// Anchor scheme not read off the live page, so no per-parameter
+				// Anchor scheme not read off the live page, so no per-parameter.
 				// link is offered and the reader is sent to the page itself.
 				'param_doc_url'         => '',
 				'model_parameter_notes' => array(),

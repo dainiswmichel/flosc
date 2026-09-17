@@ -492,8 +492,8 @@ $flosc_signup_action  = $flosc_flow_settings['header_signup_action'] ?? 'open_lo
 </table>
 
 <?php
-// ─── Guest Access Link (MagicLink) ─────────────────────────────────────────
-// Neutral product defaults. Never hardcode a site-specific brand name here —
+// ─── Guest Access Link (MagicLink) ─────────────────────────────────────────.
+// Neutral product defaults. Never hardcode a site-specific brand name here —.
 // each flow sets its own labels. MagicLink logs in an EXISTING WP user only;
 // it never creates accounts on click.
 $flosc_guest_link_name_default = 'Guest Access Link';

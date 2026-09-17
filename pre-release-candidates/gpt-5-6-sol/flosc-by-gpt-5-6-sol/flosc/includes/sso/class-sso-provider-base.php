@@ -251,7 +251,7 @@ abstract class SSO_Provider_Base {
 		$body = json_decode( wp_remote_retrieve_body( $response ), true );
 
 		if ( isset( $body['error'] ) ) {
-			// v1.4.6: Handle both flat and nested error formats
+			// v1.4.6: Handle both flat and nested error formats.
 			// Flat: { "error": "invalid_grant", "error_description": "Code expired" }
 			// Nested (Facebook/Google): { "error": { "message": "...", "code": 190 } }.
 			if ( is_array( $body['error'] ) && isset( $body['error']['message'] ) ) {
@@ -279,9 +279,9 @@ abstract class SSO_Provider_Base {
 	 * @return array|WP_Error User data or error
 	 */
 	public function get_user_info( $access_token, $token_data = array() ) {
-		// The base implementation reads its claims from user_info_url and has no
-		// use for the token response. The parameter is part of the contract
-		// because Apple overrides this method and takes its id_token and
+		// The base implementation reads its claims from user_info_url and has no.
+		// use for the token response. The parameter is part of the contract.
+		// because Apple overrides this method and takes its id_token and.
 		// form_post claims from there.
 		unset( $token_data );
 

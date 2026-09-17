@@ -19,6 +19,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 if ( ! function_exists( 'flosc_portability_normalize_ivr_filename' ) ) {
 	/**
+ * Coordinate the portability normalize ivr filename behavior implemented by this code path.
+ *
 	 * @param string $raw_name Original upload basename.
 	 * @return string Sanitized *_ivr.md name.
 	 */
@@ -35,6 +37,8 @@ if ( ! function_exists( 'flosc_portability_normalize_ivr_filename' ) ) {
 
 if ( ! function_exists( 'flosc_portability_display_name_from_stem' ) ) {
 	/**
+ * Coordinate the portability display name from stem behavior implemented by this code path.
+ *
 	 * @param string $stem Flow stem (e.g. vegan_latvian_kitchen_ivr).
 	 * @return string
 	 */
@@ -246,6 +250,8 @@ if ( ! function_exists( 'flosc_portability_ingest_da1_tsv' ) ) {
 
 if ( ! function_exists( 'flosc_portability_pack_assets_option_key' ) ) {
 	/**
+ * Coordinate the portability pack assets option key behavior implemented by this code path.
+ *
 	 * @return string
 	 */
 	function flosc_portability_pack_assets_option_key() {
@@ -296,6 +302,8 @@ if ( ! function_exists( 'flosc_portability_get_pack_assets' ) ) {
 
 if ( ! function_exists( 'flosc_portability_save_pack_assets' ) ) {
 	/**
+ * Persist the portability save pack assets state in WordPress storage.
+ *
 	 * @param string              $ivr_file Flow IVR basename.
 	 * @param array<string,mixed> $row      Pack row (wxr + media; catalogs stay in DA1 options).
 	 * @return void
@@ -338,7 +346,7 @@ if ( ! function_exists( 'flosc_portability_pack_dir' ) ) {
 		if ( ! wp_mkdir_p( $base ) ) {
 			return '';
 		}
-		// Block directory listing. Do not write Deny-from-all here: pack files
+		// Block directory listing. Do not write Deny-from-all here: pack files.
 		// are addressed by URL for admin download of staged WXR.
 		$silence = "<?php\n// Silence is golden.\n";
 		if ( ! file_exists( $base . '/index.php' ) ) {
@@ -381,6 +389,8 @@ if ( ! function_exists( 'flosc_portability_path_is_in_pack_dir' ) ) {
 
 if ( ! function_exists( 'flosc_portability_allowed_media_ext' ) ) {
 	/**
+ * Coordinate the portability allowed media ext behavior implemented by this code path.
+ *
 	 * @return array<int,string>
 	 */
 	function flosc_portability_allowed_media_ext() {
@@ -802,8 +812,8 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 			wp_die( esc_html__( 'You do not have permission to upload flow files.', 'flosc' ) );
 		}
 
-		// The clicked button is the only source of intent, already narrowed to
-		// create|apply by the $is_kit test above. Create is the safe default: it
+		// The clicked button is the only source of intent, already narrowed to.
+		// create|apply by the $is_kit test above. Create is the safe default: it.
 		// writes a new flow rather than merging into an existing one.
 		$action = $submit_raw;
 		if ( ! in_array( $action, array( 'create', 'apply' ), true ) ) {
@@ -959,7 +969,7 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 		$redirect_ivr = $working_ivr;
 		$created_file = '';
 
-		// ── IVR .md ───────────────────────────────────────────────────────────
+		// ── IVR .md ───────────────────────────────────────────────────────────.
 		if ( null !== $md ) {
 			$tmp  = (string) $md['tmp'];
 			$size = (int) $md['size'];
@@ -1120,7 +1130,7 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 			}
 		}
 
-		// ── DA1 .tsv (0–10; each added to the flow’s catalog list) ────────────
+		// ── DA1 .tsv (0–10; each added to the flow’s catalog list) ────────────.
 		if ( ! empty( $tsv_list ) ) {
 			$assign_ivr = ( 'create' === $action && '' !== $created_file ) ? $created_file : $working_ivr;
 			if ( '' === $assign_ivr ) {
@@ -1163,7 +1173,7 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 			}
 		}
 
-		// ── WXR .xml + media (need a flow to attach to) ───────────────────────
+		// ── WXR .xml + media (need a flow to attach to) ───────────────────────.
 		$assign_ivr = ( 'create' === $action && '' !== $created_file ) ? $created_file : $working_ivr;
 		if ( ( ! empty( $wxr_list ) || ! empty( $media_list ) ) && '' === $assign_ivr ) {
 			add_settings_error(

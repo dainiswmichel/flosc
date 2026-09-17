@@ -28,18 +28,29 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC Content Protection behavior and the WordPress services used by its methods.
+ */
 class FLOSC_Content_Protection {
 
 	private static $instance = null;
 
-	public static function instance() {
+		/**
+	 * Coordinate the instance behavior implemented by this code path.
+	 *
+	 * @return mixed Result produced by the instance operation.
+	 */
+public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
 		}
 		return self::$instance;
 	}
 
-	private function __construct() {
+		/**
+	 * Register the WordPress hooks that connect construct to this object.
+	 */
+private function __construct() {
 		// Hook into the_content with high priority (runs after other filters).
 		add_filter( 'the_content', array( $this, 'filter_by_visibility' ), 20 );
 
@@ -62,6 +73,7 @@ class FLOSC_Content_Protection {
 	 *
 	 * @param WP_Query $query
 	 * @since 1.4.7
+ * @return mixed Result produced by the hide protected from public queries operation.
 	 */
 	public function hide_protected_from_public_queries( $query ) {
 		// Only modify public front-end queries.
@@ -82,8 +94,8 @@ class FLOSC_Content_Protection {
 		// Collect all protected category IDs.
 		$protected_cat_ids = $this->get_protected_category_ids();
 
-		// Entitled members must still see their flow lessons on category archives
-		// (knowledge hub). Without this, only _flosc_public_post / mode=full posts
+		// Entitled members must still see their flow lessons on category archives.
+		// (knowledge hub). Without this, only _flosc_public_post / mode=full posts.
 		// appear and paid members get an empty-looking hub.
 		if ( is_user_logged_in() && ! empty( $protected_cat_ids ) ) {
 			$user_id           = get_current_user_id();
@@ -101,7 +113,7 @@ class FLOSC_Content_Protection {
 			return;
 		}
 
-		// Visibility overrides without meta_query: load IDs in protected cats,
+		// Visibility overrides without meta_query: load IDs in protected cats,.
 		// prime meta cache, classify in PHP (public/mode override vs hidden).
 		$candidate_ids = get_posts(
 			array(
@@ -180,6 +192,7 @@ class FLOSC_Content_Protection {
 	 * Uses an option flag so this only runs once per site.
 	 *
 	 * @since 1.4.7
+ * @return mixed Result produced by the auto protect sample category operation.
 	 */
 	public function maybe_auto_protect_sample_category() {
 		if ( get_option( 'flosc_sample_data_auto_protected' ) ) {
@@ -343,7 +356,7 @@ class FLOSC_Content_Protection {
 	 * True when the user holds a non-guest member level for a flow that owns this category.
 	 *
 	 * @param int                 $user_id
-	 * @param int                 $category_id
+	 * @param mixed $category_id Identifier used to select the record involved in the Coordinate the user has flow member level for category behavior implemented by this code path. operation.
 	 * @param FLOSC_Member_Access $member_access
 	 * @return bool
 	 */
@@ -474,8 +487,8 @@ class FLOSC_Content_Protection {
 			return true;
 		}
 
-		// v3.0.1: Flow-wide member access — if this post's category is in ANY
-		// of the current flow's content_item_groups, check if the user has the required
+		// v3.0.1: Flow-wide member access — if this post's category is in ANY.
+		// of the current flow's content_item_groups, check if the user has the required.
 		// level for ANY category in that flow. One purchase unlocks all flow categories.
 		if ( function_exists( 'flosc' ) ) {
 			$flow = flosc()->get_current_flow();
@@ -572,7 +585,7 @@ class FLOSC_Content_Protection {
 		}
 
 		// User doesn't have access - apply visibility tier.
-		// Tier output is escaped where it is built (each tier helper ends in
+		// Tier output is escaped where it is built (each tier helper ends in.
 		// wp_kses_post() after its filter), so it arrives here already safe.
 		$visibility = $this->get_post_visibility( $post_id );
 
@@ -589,8 +602,8 @@ class FLOSC_Content_Protection {
 	 */
 	public function apply_visibility_tier( $content, $visibility, $post_id ) {
 		switch ( $visibility ) {
-			// Each tier helper escapes its own constructed markup with
-			// wp_kses_post() as its final act — escaping lives at the one
+			// Each tier helper escapes its own constructed markup with.
+			// wp_kses_post() as its final act — escaping lives at the one.
 			// place the HTML is built, not re-applied at every relay point.
 			case 'hidden':
 				return $this->get_hidden_message( $post_id );
@@ -616,7 +629,7 @@ class FLOSC_Content_Protection {
 	 * Guides visitors to the chat for engagement
 	 *
 	 * @param string $content
-	 * @param int    $post_id
+	 * @param mixed $post_id WordPress post ID used to resolve the content involved in this operation.
 	 * @return string
 	 * @since 1.4.3
 	 */
@@ -639,10 +652,10 @@ class FLOSC_Content_Protection {
 		$cta_box .= '<a href="' . esc_url( $chat_url ) . '">💬 Chat with us</a>';
 		$cta_box .= '</div>';
 
-		// Escape ONLY the markup FLOSC constructs (the CTA box). The post body
-		// is core's own content and is relayed untouched, exactly as the_content
-		// would output it — re-filtering it through wp_kses_post() here would
-		// strip oEmbed iframes (video lessons) and other legitimate embeds from
+		// Escape ONLY the markup FLOSC constructs (the CTA box). The post body.
+		// is core's own content and is relayed untouched, exactly as the_content.
+		// would output it — re-filtering it through wp_kses_post() here would.
+		// strip oEmbed iframes (video lessons) and other legitimate embeds from.
 		// free posts. Escape-what-we-build; never re-filter relayed core content.
 		$content .= wp_kses_post( $cta_box );
 
@@ -699,7 +712,7 @@ class FLOSC_Content_Protection {
 	 * Added post_id tracking to CTA
 	 *
 	 * @param string $content
-	 * @param int    $post_id
+	 * @param mixed $post_id WordPress post ID used to resolve the content involved in this operation.
 	 * @return string
 	 * @since 1.4.3
 	 */
@@ -715,14 +728,14 @@ class FLOSC_Content_Protection {
 		$preview  = $parts[0];
 		$has_more = count( $parts ) > 1;
 
-		// Preview body is partial post content from the_content — relay without
+		// Preview body is partial post content from the_content — relay without.
 		// wp_kses_post so oEmbed iframes survive. FLOSC-built chrome is kses'd.
 		$notice_and_cta = '';
 		if ( $has_more ) {
 			$notice_and_cta  = '<div class="flosc-protected-notice">';
 			$notice_and_cta .= '<p>' . esc_html__( 'The rest of this lesson is for members only.', 'flosc' ) . '</p>';
 			$notice_and_cta .= '</div>';
-			$notice_and_cta .= $this->get_chatbot_cta( $post_id ); // already wp_kses_post inside helper
+			$notice_and_cta .= $this->get_chatbot_cta( $post_id ); // already wp_kses_post inside helper.
 			$notice_and_cta  = wp_kses_post( $notice_and_cta );
 		}
 
@@ -764,11 +777,11 @@ class FLOSC_Content_Protection {
 		$cta .= '</a>';
 		$cta .= '</div>';
 
-		// Escape at the source. The CTA is FLOSC-built markup with no relayed
-		// core content, so wp_kses_post() here is safe (it strips nothing from
+		// Escape at the source. The CTA is FLOSC-built markup with no relayed.
+		// core content, so wp_kses_post() here is safe (it strips nothing from.
 		// this hardcoded fragment) and idempotent where a caller wraps again.
-		// This guarantees the CTA is escaped in every consumption path —
-		// including the preview tier, which deliberately leaves its own return
+		// This guarantees the CTA is escaped in every consumption path —.
+		// including the preview tier, which deliberately leaves its own return.
 		// unwrapped to preserve oEmbed embeds in the relayed $preview.
 		return wp_kses_post( apply_filters( 'flosc_chatbot_cta', $cta, $post_id ) );
 	}
@@ -799,11 +812,11 @@ class FLOSC_Content_Protection {
 	 * Filter excerpt for teaser tier
 	 *
 	 * @param string  $excerpt
-	 * @param WP_Post $post
+	 * @param mixed $post Input consumed by the Coordinate the filter excerpt behavior implemented by this code path. operation.
 	 * @return string
 	 */
 	public function filter_excerpt( $excerpt, $post = null ) {
-		// This filter never builds markup — every branch relays core's own
+		// This filter never builds markup — every branch relays core's own.
 		// excerpt untouched, so there is nothing of FLOSC's to escape here.
 		if ( ! $post ) {
 			return $excerpt;
@@ -819,7 +832,7 @@ class FLOSC_Content_Protection {
 			return $excerpt;
 		}
 
-		// Protected and no access - return excerpt unchanged
+		// Protected and no access - return excerpt unchanged.
 		// (visibility tier handles the main content).
 		return $excerpt;
 	}
@@ -828,7 +841,7 @@ class FLOSC_Content_Protection {
 	 * Set category as protected
 	 *
 	 * @param int    $category_id
-	 * @param string $required_level Optional membership level required.
+	 * @param mixed $required_level Input consumed by the Coordinate the protect category behavior implemented by this code path. operation.
 	 * @return bool
 	 */
 	public function protect_category( $category_id, $required_level = null ) {
@@ -858,7 +871,7 @@ class FLOSC_Content_Protection {
 	 * Set post visibility
 	 *
 	 * @param int    $post_id
-	 * @param string $visibility 'hidden' | 'teaser' | 'preview' | 'public'.
+	 * @param mixed $visibility Input consumed by the Persist the post visibility state in Word Press storage. operation.
 	 * @return bool
 	 */
 	public function set_post_visibility( $post_id, $visibility ) {

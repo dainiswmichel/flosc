@@ -17,19 +17,30 @@ if ( ! defined( 'ABSPATH' ) ) {
 // Custom table {prefix}flosc_chat_logs — no WP API equivalent for schema/CRUD.
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange -- custom table flosc_chat_logs; no WP API
 
+/**
+ * Coordinate FLOSC Chat Logger behavior and the WordPress services used by its methods.
+ */
 class FLOSC_Chat_Logger {
 
 	private static $instance = null;
 	private $table_name;
 
-	public static function instance() {
+		/**
+	 * Coordinate the instance behavior implemented by this code path.
+	 *
+	 * @return mixed Result produced by the instance operation.
+	 */
+public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
 		}
 		return self::$instance;
 	}
 
-	private function __construct() {
+		/**
+	 * Coordinate the construct behavior implemented by this code path.
+	 */
+private function __construct() {
 		global $wpdb;
 		$this->table_name = $wpdb->prefix . 'flosc_chat_logs';
 	}
@@ -47,11 +58,22 @@ class FLOSC_Chat_Logger {
 		wp_cache_delete( 'log_count_' . md5( '' ), 'flosc_chat_logs' );
 	}
 
-	private function flosc_archived_sessions_option_name() {
+		/**
+	 * Coordinate the archived sessions option name behavior implemented by this code path.
+	 *
+	 * @return mixed Result produced by the archived sessions option name operation.
+	 */
+private function flosc_archived_sessions_option_name() {
 		return 'flosc_archived_chat_sessions';
 	}
 
-	private function flosc_archive_bucket_key( $flow_id = '' ) {
+		/**
+	 * Coordinate the archive bucket key behavior implemented by this code path.
+	 *
+	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+	 * @return mixed Result produced by the archive bucket key operation.
+	 */
+private function flosc_archive_bucket_key( $flow_id = '' ) {
 		$flow_id = sanitize_text_field( (string) $flow_id );
 		return '' !== $flow_id ? $flow_id : '__all';
 	}
@@ -74,7 +96,14 @@ class FLOSC_Chat_Logger {
 		return substr( (string) $raw, 0, 64 );
 	}
 
-	public static function flosc_session_key_from_descriptor( $by, $value ) {
+		/**
+	 * Coordinate the session key from descriptor behavior implemented by this code path.
+	 *
+	 * @param mixed $by Input consumed by the Coordinate the session key from descriptor behavior implemented by this code path. operation.
+	 * @param mixed $value Value consumed or normalized by the Coordinate the session key from descriptor behavior implemented by this code path. operation.
+	 * @return mixed Result produced by the session key from descriptor operation.
+	 */
+public static function flosc_session_key_from_descriptor( $by, $value ) {
 		$by = in_array( $by, array( 'journey', 'session', 'user', 'ip' ), true ) ? $by : '';
 		if ( '' === $by ) {
 			return '';
@@ -99,7 +128,13 @@ class FLOSC_Chat_Logger {
 		return '' !== $ip ? 'ip' . $ip : '';
 	}
 
-	public function flosc_get_archived_session_keys( $flow_id = '' ) {
+		/**
+	 * Coordinate the archived session keys behavior implemented by this code path.
+	 *
+	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+	 * @return array Structured archived session keys data.
+	 */
+public function flosc_get_archived_session_keys( $flow_id = '' ) {
 		$bucket = $this->flosc_archive_bucket_key( $flow_id );
 		$all    = get_option( $this->flosc_archived_sessions_option_name(), array() );
 		if ( ! is_array( $all ) ) {
@@ -115,7 +150,16 @@ class FLOSC_Chat_Logger {
 		return array_values( array_unique( $keys ) );
 	}
 
-	public function flosc_set_session_archived( $by, $value, $flow_id = '', $archived = true ) {
+		/**
+	 * Persist the session archived state in WordPress storage.
+	 *
+	 * @param mixed $by Input consumed by the Persist the session archived state in Word Press storage. operation.
+	 * @param mixed $value Value consumed or normalized by the Persist the session archived state in Word Press storage. operation.
+	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+	 * @param mixed $archived Input consumed by the Persist the session archived state in Word Press storage. operation.
+	 * @return bool Whether session archived applies to the current state.
+	 */
+public function flosc_set_session_archived( $by, $value, $flow_id = '', $archived = true ) {
 		$key = self::flosc_session_key_from_descriptor( $by, $value );
 		if ( '' === $key ) {
 			return false;
@@ -161,6 +205,7 @@ class FLOSC_Chat_Logger {
 	/**
 	 * Create the chat logs table if it doesn't exist.
 	 * Called on plugin activation and on first use.
+ * @return bool Whether ensure table applies to the current state.
 	 */
 	public function flosc_ensure_table() {
 		global $wpdb;
@@ -358,7 +403,7 @@ class FLOSC_Chat_Logger {
 	}
 
 	// ──────────────────────────────────────────────────────────────
-	// Journey marks — VGM state changes as rows in the thread
+	// Journey marks — VGM state changes as rows in the thread.
 	// ──────────────────────────────────────────────────────────────
 
 	/**
@@ -398,7 +443,7 @@ class FLOSC_Chat_Logger {
 	 * second "+M".
 	 *
 	 * @param int    $user_id
-	 * @param string $mark    '+G' or '+M'.
+	 * @param mixed $mark Input consumed by the Persist the queue journey mark state in Word Press storage. operation.
 	 * @param string $flow_id Flow the acquisition belongs to. '' = account-wide.
 	 * @return void
 	 */
@@ -411,7 +456,7 @@ class FLOSC_Chat_Logger {
 
 		$stem = self::flosc_journey_flow_stem( $flow_id );
 
-		// One-shot guard. Kept as its own meta key rather than scanning the queue,
+		// One-shot guard. Kept as its own meta key rather than scanning the queue,.
 		// because the queue is emptied as soon as the marks are written.
 		$once_key = '_flosc_journey_marked_' . ( '+M' === $mark ? 'm' : 'g' ) . ( '' !== $stem ? '_' . $stem : '' );
 		if ( get_user_meta( $user_id, $once_key, true ) ) {
@@ -459,7 +504,7 @@ class FLOSC_Chat_Logger {
 		$journey_id = self::flosc_sanitize_journey_id( $data['journey_id'] ?? '' );
 		$user_id    = intval( $data['user_id'] ?? 0 );
 		if ( '' === $journey_id || $user_id <= 0 ) {
-			// A visitor has nothing to transition from yet, and a thread with no
+			// A visitor has nothing to transition from yet, and a thread with no.
 			// journey id has nowhere to put the row.
 			return;
 		}
@@ -467,7 +512,7 @@ class FLOSC_Chat_Logger {
 		$flow_id = sanitize_text_field( (string) ( $data['flow_id'] ?? '' ) );
 		$stem    = self::flosc_journey_flow_stem( $flow_id );
 
-		// Previous row of THIS conversation, to see whether the signer-in just
+		// Previous row of THIS conversation, to see whether the signer-in just.
 		// crossed out of visitor.
 		$previous             = $wpdb->get_row(
 			$wpdb->prepare(
@@ -517,7 +562,7 @@ class FLOSC_Chat_Logger {
 			}
 		}
 
-		// Nothing was acquired, so this is a recognition: they already had the
+		// Nothing was acquired, so this is a recognition: they already had the.
 		// account, and possibly the entitlement, before this conversation began.
 		if ( empty( $marks ) ) {
 			$level = 'guest';
@@ -527,7 +572,7 @@ class FLOSC_Chat_Logger {
 			$marks[] = ( 'member' === $level ) ? 'M' : 'G';
 		}
 
-		// Where they came from. Only 'V' is directly evidenced; otherwise they were
+		// Where they came from. Only 'V' is directly evidenced; otherwise they were.
 		// already signed in on this thread, which for an unqueued +M means guest.
 		$from = '';
 		if ( $crossed_from_visitor ) {
@@ -558,7 +603,7 @@ class FLOSC_Chat_Logger {
 				),
 				array( '%s', '%s', '%s', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d' )
 			);
-			// Only the first mark of a batch carries the "came from" side; a
+			// Only the first mark of a batch carries the "came from" side; a.
 			// +G immediately followed by +M reads as V → +G then +M.
 			$from = '';
 		}
@@ -584,6 +629,8 @@ class FLOSC_Chat_Logger {
 	 */
 	/**
 	 * A turn id is opaque and browser-minted; accept only what we mint.
+ * @param mixed $raw Input consumed by the Coordinate the turn id behavior implemented by this code path. operation.
+ * @return mixed Result produced by the turn id operation.
 	 */
 	public static function flosc_sanitize_turn_id( $raw ) {
 		$raw = strtolower( trim( (string) $raw ) );
@@ -597,6 +644,8 @@ class FLOSC_Chat_Logger {
 	 * request in flight: the browser drops the connection, PHP runs to
 	 * completion and writes the answer, and nobody reads it. The reply exists.
 	 * This is how the reloaded page finds it.
+ * @param mixed $turn_id Identifier used to select the record involved in the Coordinate the turn behavior implemented by this code path. operation.
+ * @return mixed Result produced by the turn operation.
 	 */
 	public function flosc_find_turn( $turn_id ) {
 		global $wpdb;
@@ -625,6 +674,8 @@ class FLOSC_Chat_Logger {
 	 * Mark a turn abandoned. An abandoned turn is not conversation history:
 	 * replaying it makes the next prompt look like a question nobody answered,
 	 * which is how a normal follow-up came back as scripted IVR copy.
+ * @param mixed $turn_id Identifier used to select the record involved in the Coordinate the mark turn abandoned behavior implemented by this code path. operation.
+ * @return bool Whether mark turn abandoned applies to the current state.
 	 */
 	public function flosc_mark_turn_abandoned( $turn_id ) {
 		global $wpdb;
@@ -652,14 +703,20 @@ class FLOSC_Chat_Logger {
 		return (bool) $updated;
 	}
 
-	public function flosc_log_chat( $data ) {
+		/**
+	 * Coordinate the log chat behavior implemented by this code path.
+	 *
+	 * @param mixed $data Structured data consumed by the Coordinate the log chat behavior implemented by this code path. operation.
+	 * @return bool Whether log chat applies to the current state.
+	 */
+public function flosc_log_chat( $data ) {
 		global $wpdb;
 
 		// Ensure table exists (lightweight check — cached after first call).
 		$this->flosc_ensure_table();
 
-		// Any VGM state change goes in FIRST, so the marker sits above the turn
-		// that triggered it. Done here rather than at each call site so every path
+		// Any VGM state change goes in FIRST, so the marker sits above the turn.
+		// that triggered it. Done here rather than at each call site so every path.
 		// that logs a turn -- /chat, /chat-rag, /chat-log -- is covered by one hook.
 		$this->flosc_write_journey_marks( $data );
 
@@ -692,7 +749,7 @@ class FLOSC_Chat_Logger {
 		$personality_name = isset( $data['personality_name'] ) ? sanitize_text_field( (string) $data['personality_name'] ) : '';
 		$profile_hash     = isset( $data['profile_hash'] ) ? sanitize_text_field( (string) $data['profile_hash'] ) : '';
 
-		// Paths that do not build a prompt — IVR replies, scripted fallbacks —
+		// Paths that do not build a prompt — IVR replies, scripted fallbacks —.
 		// still record who was attached for the turn, resolved from the flow.
 		if ( '' === $personality_id && function_exists( 'flosc_personality_library_id_for_flow' ) ) {
 			$personality_id = sanitize_key( (string) flosc_personality_library_id_for_flow( (string) ( $data['flow_id'] ?? '' ) ) );
@@ -704,22 +761,22 @@ class FLOSC_Chat_Logger {
 			$profile_hash = sanitize_text_field( (string) flosc_personality_resolved_fingerprint( (string) ( $data['flow_id'] ?? '' ) ) );
 		}
 
-		// Explicit, never inferred from absence: an empty surface used to mean
+		// Explicit, never inferred from absence: an empty surface used to mean.
 		// either full page or "the client did not say".
 		$surface = sanitize_key( (string) ( $data['surface'] ?? '' ) );
 		if ( '' === $surface ) {
 			$surface = 'unknown';
 		}
 
-		// complete | abandoned. An abandoned turn is one whose request the
+		// complete | abandoned. An abandoned turn is one whose request the.
 		// visitor dropped, so it must not be replayed as conversation history.
 		$turn_status = sanitize_key( (string) ( $data['turn_status'] ?? 'complete' ) );
 		if ( ! in_array( $turn_status, array( 'complete', 'abandoned' ), true ) ) {
 			$turn_status = 'complete';
 		}
 
-		// Minted in the browser before the request leaves. It is what lets a
-		// reload find the answer that was written while the tab was gone, and
+		// Minted in the browser before the request leaves. It is what lets a.
+		// reload find the answer that was written while the tab was gone, and.
 		// what stops the same turn being billed twice.
 		$turn_id = self::flosc_sanitize_turn_id( $data['turn_id'] ?? '' );
 
@@ -792,9 +849,9 @@ class FLOSC_Chat_Logger {
 				'billing_real_millicents' => max( 0, intval( $data['billing_real_millicents'] ?? 0 ) ),
 				'provider_request_id'     => $provider_request_id,
 			),
-			// One specifier per column, in column order. A format list shorter
-			// than the column list makes $wpdb->insert() write the right values
-			// into the wrong columns, silently and with no error — so this line
+			// One specifier per column, in column order. A format list shorter.
+			// than the column list makes $wpdb->insert() write the right values.
+			// into the wrong columns, silently and with no error — so this line.
 			// is edited in the same breath as the array above, never after.
 			array( '%s', '%s', '%s', '%s', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%d', '%d', '%d', '%d', '%s' )
 		);
@@ -825,13 +882,13 @@ class FLOSC_Chat_Logger {
 
 		$this->flosc_ensure_table();
 
-		// Every filter is optional. Rather than assemble a dynamic WHERE string
-		// (which a static analyser cannot prove is injection-safe, even when the
-		// pieces are all hardcoded), the query uses a single fully-literal format
-		// string with "pass-through" guards. For each filter we bind a neutral
-		// sentinel ('' or 0) when it is inactive: the guard's left side is then
-		// true, so that column is not filtered. When the filter is active we bind
-		// the real value (twice), and the column filters normally. Nothing is
+		// Every filter is optional. Rather than assemble a dynamic WHERE string.
+		// (which a static analyser cannot prove is injection-safe, even when the.
+		// pieces are all hardcoded), the query uses a single fully-literal format.
+		// string with "pass-through" guards. For each filter we bind a neutral.
+		// sentinel ('' or 0) when it is inactive: the guard's left side is then.
+		// true, so that column is not filtered. When the filter is active we bind.
+		// the real value (twice), and the column filters normally. Nothing is.
 		// interpolated into the SQL — every value travels through prepare().
 		$flow_id  = ! empty( $filters['flow_id'] ) ? sanitize_text_field( $filters['flow_id'] ) : '';
 		$phase    = ! empty( $filters['phase'] ) ? sanitize_text_field( $filters['phase'] ) : '';
@@ -912,6 +969,8 @@ class FLOSC_Chat_Logger {
 
 	/**
 	 * Get total log count (for admin stats).
+ * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+ * @return mixed Result produced by the log count operation.
 	 */
 	public function flosc_get_log_count( $flow_id = '' ) {
 		global $wpdb;
@@ -971,6 +1030,7 @@ class FLOSC_Chat_Logger {
 	 * @param string $flow_id    Flow the conversation belongs to.
 	 * @param string $admin_name The admin's display name (shown as "Name (admin)").
 	 * @param string $text       The message text.
+ * @param mixed $source Input consumed by the Coordinate the insert admin message behavior implemented by this code path. operation.
 	 * @return int|false New row id, or false.
 	 */
 	public function flosc_insert_admin_message( $session_id, $flow_id, $admin_name, $text, $source = 'admin' ) {
@@ -985,12 +1045,12 @@ class FLOSC_Chat_Logger {
 			return false;
 		}
 
-		// 'admin' → renders pale-green "(admin)"; 'bot' → renders as a normal AI
+		// 'admin' → renders pale-green "(admin)"; 'bot' → renders as a normal AI.
 		// (assistant) message, but still admin-authored and delivered via the poll.
 		$response_source = ( 'bot' === $source ) ? 'admin_bot' : 'admin';
 
-		// Inherit the conversation's journey id from its newest row. Without it the
-		// admin's reply would carry journey_id '' and split off into its own thread
+		// Inherit the conversation's journey id from its newest row. Without it the.
+		// admin's reply would carry journey_id '' and split off into its own thread.
 		// in the log view, right next to the conversation it was answering.
 		$journey_id = self::flosc_sanitize_journey_id(
 			$wpdb->get_var(
@@ -1072,6 +1132,9 @@ class FLOSC_Chat_Logger {
 
 	/**
 	 * Resolve the most recent logged-in user associated with a chat session.
+ * @param mixed $session_id Identifier used to select the record involved in the Coordinate the session owner user id behavior implemented by this code path. operation.
+ * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+ * @return mixed Result produced by the session owner user id operation.
 	 */
 	public function flosc_get_session_owner_user_id( $session_id, $flow_id = '' ) {
 		global $wpdb;
@@ -1169,11 +1232,11 @@ class FLOSC_Chat_Logger {
 		$user_id    = intval( $row['user_id'] ?? 0 );
 		$ip         = (string) ( $row['visitor_ip'] ?? '' );
 
-		// Journey first. session_id changes at login (hashed visitor id -> numeric
-		// user-meta session id), so grouping by it splits one conversation in two
-		// at the moment someone signs in. The journey id is minted once in the
-		// browser and carried across that boundary, so it keeps the whole thread
-		// together. Rows written before this column existed have journey_id '',
+		// Journey first. session_id changes at login (hashed visitor id -> numeric.
+		// user-meta session id), so grouping by it splits one conversation in two.
+		// at the moment someone signs in. The journey id is minted once in the.
+		// browser and carried across that boundary, so it keeps the whole thread.
+		// together. Rows written before this column existed have journey_id '',.
 		// and fall through to the original session/user/ip grouping unchanged.
 		if ( '' !== $journey_id ) {
 			$code  = substr( md5( 'j' . $journey_id ), 0, 6 );
@@ -1187,9 +1250,9 @@ class FLOSC_Chat_Logger {
 			);
 		}
 
-		// Every conversation gets a stable 6-char "code" — shown in the label and
-		// used as the prefix of each message id (e.g. 4f09a2-b-002). For IP-keyed
-		// visitors it's the first 6 of their (already hashed) IP, so it matches the
+		// Every conversation gets a stable 6-char "code" — shown in the label and.
+		// used as the prefix of each message id (e.g. 4f09a2-b-002). For IP-keyed.
+		// visitors it's the first 6 of their (already hashed) IP, so it matches the.
 		// pretty code you've seen; for session/user it's a short md5 of the key.
 		if ( $session_id > 0 ) {
 			$code  = substr( md5( 's' . $session_id ), 0, 6 );
@@ -1231,6 +1294,7 @@ class FLOSC_Chat_Logger {
 	 *
 	 * @param string $flow_id  Restrict to a flow (no extension), or '' for all.
 	 * @param int    $max_rows Safety cap on rows scanned (default 800).
+ * @param mixed $archive_status Input consumed by the Coordinate the sessions behavior implemented by this code path. operation.
 	 * @return array List of session arrays.
 	 */
 	public function flosc_get_sessions( $flow_id = '', $max_rows = 800, $archive_status = 'active' ) {
@@ -1282,9 +1346,9 @@ class FLOSC_Chat_Logger {
 					'last_ts'            => (string) $r['timestamp'],
 					'is_archived'        => $is_archived,
 					'turns'              => 0,
-					// Newest row first, so the first non-zero session_id we see is
-					// the conversation's current one. A journey-grouped thread is
-					// keyed by journey_id, but admin-join still has to deliver to a
+					// Newest row first, so the first non-zero session_id we see is.
+					// the conversation's current one. A journey-grouped thread is.
+					// keyed by journey_id, but admin-join still has to deliver to a.
 					// real session id — this is where it comes from.
 					'deliver_session_id' => intval( $r['session_id'] ?? 0 ),
 					'rows'               => array(),
@@ -1298,7 +1362,7 @@ class FLOSC_Chat_Logger {
 			if ( (string) $r['timestamp'] < $sessions[ $k ]['first_ts'] ) {
 				$sessions[ $k ]['first_ts'] = (string) $r['timestamp'];
 			}
-			// A state-change divider has no speaker, and the auto-welcome's
+			// A state-change divider has no speaker, and the auto-welcome's.
 			// "[SYSTEM: …]" prompt is machinery, so neither counts as a message.
 			$is_marker = ( (string) ( $r['response_source'] ?? '' ) === 'state_change' );
 			if ( ! $is_marker && 0 !== strncmp( (string) $r['user_message'], '[SYSTEM:', 8 ) ) {
@@ -1342,9 +1406,9 @@ class FLOSC_Chat_Logger {
 			return 0;
 		}
 
-		// The four branches must stay mutually exclusive, or one conversation's
-		// rows would show up under two headings and a delete would reach into a
-		// neighbouring thread. Journey rows are claimed by the journey branch, so
+		// The four branches must stay mutually exclusive, or one conversation's.
+		// rows would show up under two headings and a delete would reach into a.
+		// neighbouring thread. Journey rows are claimed by the journey branch, so.
 		// the other three exclude them with journey_id = ''.
 		if ( 'journey' === $by ) {
 			$jid = self::flosc_sanitize_journey_id( $value );
@@ -1413,7 +1477,15 @@ class FLOSC_Chat_Logger {
 		);
 	}
 
-	public function flosc_get_session_rows( $by, $value, $flow_id = '' ) {
+		/**
+	 * Coordinate the session rows behavior implemented by this code path.
+	 *
+	 * @param mixed $by Input consumed by the Coordinate the session rows behavior implemented by this code path. operation.
+	 * @param mixed $value Value consumed or normalized by the Coordinate the session rows behavior implemented by this code path. operation.
+	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+	 * @return array Structured session rows data.
+	 */
+public function flosc_get_session_rows( $by, $value, $flow_id = '' ) {
 		global $wpdb;
 		$flosc_cache_probe = wp_cache_get( 'flosc_chat_logs_list', 'flosc_chat_logs' );
 		$this->flosc_ensure_table();
@@ -1424,7 +1496,7 @@ class FLOSC_Chat_Logger {
 			return array();
 		}
 
-		// Mirrors flosc_delete_session() exactly: journey rows belong to the
+		// Mirrors flosc_delete_session() exactly: journey rows belong to the.
 		// journey branch, so the other three exclude them with journey_id = ''.
 		if ( 'journey' === $by ) {
 			$jid = self::flosc_sanitize_journey_id( $value );
@@ -1443,7 +1515,7 @@ class FLOSC_Chat_Logger {
 				),
 				ARRAY_A
 			);
-			// get_results() returns null on a query error, and every
+			// get_results() returns null on a query error, and every.
 			// caller walks the result.
 			return $flosc_rows ? $flosc_rows : array();
 		}
@@ -1465,7 +1537,7 @@ class FLOSC_Chat_Logger {
 				),
 				ARRAY_A
 			);
-			// get_results() returns null on a query error, and every
+			// get_results() returns null on a query error, and every.
 			// caller walks the result.
 			return $flosc_rows ? $flosc_rows : array();
 		}
@@ -1486,7 +1558,7 @@ class FLOSC_Chat_Logger {
 				),
 				ARRAY_A
 			);
-			// get_results() returns null on a query error, and every
+			// get_results() returns null on a query error, and every.
 			// caller walks the result.
 			return $flosc_rows ? $flosc_rows : array();
 		}
@@ -1506,7 +1578,7 @@ class FLOSC_Chat_Logger {
 			),
 			ARRAY_A
 		);
-		// get_results() returns null on a query error, and every
+		// get_results() returns null on a query error, and every.
 		// caller walks the result.
 		return $flosc_rows ? $flosc_rows : array();
 	}
@@ -1514,6 +1586,7 @@ class FLOSC_Chat_Logger {
 	/**
 	 * Hash the visitor IP for privacy.
 	 * We don't store raw IPs — just a one-way hash for grouping sessions.
+ * @return mixed Result produced by the hashed ip operation.
 	 */
 	private function flosc_get_hashed_ip() {
 		$ip = 'unknown';

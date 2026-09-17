@@ -60,8 +60,8 @@ class FLOSC_Filesystem {
 			return false;
 		}
 
-		// Never follow a pre-existing destination symlink. WP_Filesystem writes
-		// and moves would otherwise modify the link target outside uploads after
+		// Never follow a pre-existing destination symlink. WP_Filesystem writes.
+		// and moves would otherwise modify the link target outside uploads after.
 		// the parent directory itself had passed this containment check.
 		if ( is_link( $path ) ) {
 			return false;
@@ -82,8 +82,8 @@ class FLOSC_Filesystem {
 			return false;
 		}
 
-		// Existing ordinary destinations must resolve under uploads too. This is
-		// redundant for regular files with a real parent, but keeps the boundary
+		// Existing ordinary destinations must resolve under uploads too. This is.
+		// redundant for regular files with a real parent, but keeps the boundary.
 		// explicit if another filesystem implementation resolves paths differently.
 		$path_real = realpath( $path );
 		if ( false !== $path_real && 0 !== strpos( trailingslashit( $path_real ), $base_prefix ) ) {

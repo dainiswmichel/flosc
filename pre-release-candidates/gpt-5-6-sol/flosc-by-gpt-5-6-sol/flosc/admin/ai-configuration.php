@@ -402,9 +402,9 @@ endif;
 		<th scope="row"><label for="flow_ai_anthropic_model">Anthropic Model</label></th>
 		<td>
 			<?php
-			// A typed field with suggestions, not a fixed list. Model ids change
-			// faster than any list shipped in a plugin, and the ids that work are
-			// the ones the installed provider plugin carries — so the operator
+			// A typed field with suggestions, not a fixed list. Model ids change.
+			// faster than any list shipped in a plugin, and the ids that work are.
+			// the ones the installed provider plugin carries — so the operator.
 			// must always be able to enter one FLOSC has never heard of.
 			$flosc_anthropic_model_options = array(
 				'claude-sonnet-4-5-20250929' => 'Claude Sonnet 4.5',
@@ -532,10 +532,10 @@ endif;
 		<th scope="row"><label for="flow_ai_xai_model">xAI Model</label></th>
 		<td>
 			<?php
-			// Typed field with suggestions, not a fixed list — the ids that work
+			// Typed field with suggestions, not a fixed list — the ids that work.
 			// are whichever ones xAI currently serves this key. Fetch asks.
-			// xAI aliases <modelname> to the latest stable release and
-			// <modelname>-latest to the newest, so the alias keeps working after
+			// xAI aliases <modelname> to the latest stable release and.
+			// <modelname>-latest to the newest, so the alias keeps working after.
 			// a version turns over. Older ids retire on announced dates.
 			$flosc_xai_model_options = array(
 				'grok-4.6'        => 'Grok 4.6',
@@ -599,7 +599,7 @@ endif;
 		<th scope="row"><label for="flow_ai_gemini_model">Gemini Model</label></th>
 		<td>
 			<?php
-			// Stable text endpoints only. The image, TTS, embedding and video
+			// Stable text endpoints only. The image, TTS, embedding and video.
 			// ids Google lists alongside these cannot hold a conversation.
 			$flosc_gemini_model_options = array(
 				'gemini-3.7-flash'      => 'Gemini 3.7 Flash',
@@ -676,7 +676,7 @@ endif;
 			$flosc_params_raw = (string) ( $flosc_flow_settings[ $flosc_params_key ] ?? '' );
 			?>
 			<?php
-			// Examples for the provider actually selected, taken from the same
+			// Examples for the provider actually selected, taken from the same.
 			// profile table the request path reads.
 			$flosc_params_profile = function_exists( 'flosc_provider_api_profile' )
 				? flosc_provider_api_profile( $flosc_ai_provider )
@@ -686,9 +686,9 @@ endif;
 				: '';
 			?>
 			<?php
-			// Built from the fields above plus anything the operator added, the
-			// way the personality preview is built from its parts. Locked until
-			// they ask to edit it, so it reads as a statement of what will be
+			// Built from the fields above plus anything the operator added, the.
+			// way the personality preview is built from its parts. Locked until.
+			// they ask to edit it, so it reads as a statement of what will be.
 			// sent rather than another box to fill in.
 			$flosc_params_preview = function_exists( 'flosc_build_model_parameter_preview' )
 				? flosc_build_model_parameter_preview( $flosc_ai_provider, $flosc_flow_settings )
@@ -716,10 +716,10 @@ endif;
 			<p class="description flosc-params-status" id="flosc-params-status"></p>
 
 			<?php
-			// The catalogue, below the request it writes into. Rendered by the
-			// browser from every provider's rows at once so that switching
-			// provider or model changes what is listed without a page load —
-			// the parameters a flow can use are a property of the model it is
+			// The catalogue, below the request it writes into. Rendered by the.
+			// browser from every provider's rows at once so that switching.
+			// provider or model changes what is listed without a page load —.
+			// the parameters a flow can use are a property of the model it is.
 			// pointed at, and the operator is pointing it at one right here.
 			?>
 			<div class="flosc-param-menu" id="flosc-param-menu">
@@ -852,9 +852,9 @@ endif;
 	</table>
 
 	<?php
-	// Save where the work happens. The page's main Save button is far below,
+	// Save where the work happens. The page's main Save button is far below,.
 	// and a key typed here but not saved is invisible to the connection test.
-	// Bound to the settings form by id rather than nested inside it, because
+	// Bound to the settings form by id rather than nested inside it, because.
 	// the AI tab closes that form early for its own sibling forms.
 	?>
 	<p class="submit flosc-ai-save-row">
@@ -3171,15 +3171,15 @@ unset( $flosc_sci_types_available['attachment'] );
 	</tr>
 </table>
 <?php
-// The rebuild control below is its own form posting to admin-post.php, so the
-// settings form has to end before it. That end tag has to be emitted HERE,
-// outside the table — a </form> written inside a <td>, for a form opened
-// outside the table, does not close anything: the HTML parser clears its form
-// pointer and leaves the element open. Everything after it then stayed inside
-// #flosc-settings-form, the inline form nested inside it was discarded (forms
-// cannot nest), and that inline form's own _wpnonce landed in the settings
-// form — overwriting the settings nonce, because PHP keeps the last value for
-// a repeated field name. wp_verify_nonce() then failed on every page-wide
+// The rebuild control below is its own form posting to admin-post.php, so the.
+// settings form has to end before it. That end tag has to be emitted HERE,.
+// outside the table — a </form> written inside a <td>, for a form opened.
+// outside the table, does not close anything: the HTML parser clears its form.
+// pointer and leaves the element open. Everything after it then stayed inside.
+// #flosc-settings-form, the inline form nested inside it was discarded (forms.
+// cannot nest), and that inline form's own _wpnonce landed in the settings.
+// form — overwriting the settings nonce, because PHP keeps the last value for.
+// a repeated field name. wp_verify_nonce() then failed on every page-wide.
 // Save, the handler never ran, and the button did nothing at all.
 if ( empty( $GLOBALS['flosc_settings_form_closed_early'] ) ) {
 	echo '</form>';
@@ -3533,7 +3533,7 @@ if ( '' !== trim( $flosc_acc_saved_raw ) ) {
 		// Mangled one-line save — use content-agnostic templates.
 		$flosc_acc_saved_lines = $flosc_acc_templates;
 	} else {
-		// preg_split() returns false on a pattern error rather than an empty
+		// preg_split() returns false on a pattern error rather than an empty.
 		// list, and array_map() cannot take false.
 		$flosc_acc_split       = preg_split( '/\r\n|\r|\n/', $flosc_acc_saved_raw );
 		$flosc_acc_saved_lines = array_values(
@@ -3562,7 +3562,7 @@ if ( array() === $flosc_acc_saved_lines ) {
 	}
 }
 $flosc_acc_row_count = max( count( $flosc_acc_templates ), count( $flosc_acc_edit_lines ) );
-// The list grows inside the loop, so the count is re-taken after each pass
+// The list grows inside the loop, so the count is re-taken after each pass.
 // rather than hoisted -- hoisting it would never terminate.
 for ( $flosc_idx = count( $flosc_acc_edit_lines ); $flosc_idx < $flosc_acc_row_count; $flosc_idx = count( $flosc_acc_edit_lines ) ) {
 	$flosc_acc_edit_lines[] = $flosc_acc_templates[ $flosc_idx ] ?? '';

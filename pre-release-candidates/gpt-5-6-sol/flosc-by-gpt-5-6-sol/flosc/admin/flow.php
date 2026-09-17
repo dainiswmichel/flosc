@@ -330,9 +330,9 @@ if ( 'all' === $flosc_flow_view ) {
 	}
 }
 
-// ── Gather live data ──────────────────────────────────────────────────────────
+// ── Gather live data ──────────────────────────────────────────────────────────.
 
-// ── Parse IVR file once — used for pill counts across all phases ──────────────
+// ── Parse IVR file once — used for pill counts across all phases ──────────────.
 $flosc_ivr_pill_counts = array(
 	'freeline' => 0,
 	'offer'    => 0,
@@ -351,7 +351,7 @@ if ( $flosc_selected_ivr && file_exists( $flosc_ivr_path ) && class_exists( 'FLO
 	}
 }
 
-// F — Freeline: quiz + visitor pills + IVR file
+// F — Freeline: quiz + visitor pills + IVR file.
 // Empty enabled_quizzes = no quiz for this flow. Never invent a sample quiz.
 $flosc_enabled_quizzes = $flosc_flow_settings['enabled_quizzes'] ?? array();
 if ( ! is_array( $flosc_enabled_quizzes ) ) {
@@ -595,7 +595,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 	echo '</div>';
 }
 
-// ── Output ────────────────────────────────────────────────────────────────────
+// ── Output ────────────────────────────────────────────────────────────────────.
 ?>
 <div class="flosc-flow-overview">
 
@@ -621,7 +621,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 	</div>
 
 	<?php
-	// ── F — Freeline ──────────────────────────────────────────────────────────
+	// ── F — Freeline ──────────────────────────────────────────────────────────.
 	flosc_flow_card(
 		'F',
 		'Freeline',
@@ -645,7 +645,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 		)
 	);
 
-	// ── L — Login ─────────────────────────────────────────────────────────────
+	// ── L — Login ─────────────────────────────────────────────────────────────.
 	flosc_flow_card(
 		'L',
 		'Login',
@@ -659,8 +659,8 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 		)
 	);
 
-	// ── O — Offer ─────────────────────────────────────────────────────────────
-	// v8.1.0: Member levels summary
+	// ── O — Offer ─────────────────────────────────────────────────────────────.
+	// v8.1.0: Member levels summary.
 	$flosc_ml_registry = $flosc_flow_settings['member_levels'] ?? array();
 	$flosc_ml_count    = count( array_filter( $flosc_ml_registry, fn( $l ) => ! empty( $l['slug'] ?? '' ) ) );
 	$flosc_ml_names    = array_map( fn( $l ) => $l['name'] ? $l['name'] : ( $l['slug'] ?? '?' ), array_filter( $flosc_ml_registry, fn( $l ) => ! empty( $l['slug'] ?? '' ) ) );
@@ -689,7 +689,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 		)
 	);
 
-	// ── S — Sale ──────────────────────────────────────────────────────────────
+	// ── S — Sale ──────────────────────────────────────────────────────────────.
 	$flosc_stripe_status = $flosc_stripe_cfg
 		? '✅ configured' . ( $flosc_stripe_mode ? ' (' . esc_html( $flosc_stripe_mode ) . ')' : '' )
 		: '❌ not configured';
@@ -715,7 +715,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 		)
 	);
 
-	// ── C — Content ───────────────────────────────────────────────────────────
+	// ── C — Content ───────────────────────────────────────────────────────────.
 	flosc_flow_card(
 		'C',
 		'Content',

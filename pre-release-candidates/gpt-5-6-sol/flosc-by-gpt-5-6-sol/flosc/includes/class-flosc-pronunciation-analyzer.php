@@ -10,6 +10,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC Pronunciation Analyzer behavior and the WordPress services used by its methods.
+ */
 class FLOSC_Pronunciation_Analyzer {
 
 	// Number words to digits mapping.
@@ -72,6 +75,7 @@ class FLOSC_Pronunciation_Analyzer {
 
 	/**
 	 * Get lesson mapping (from WP posts or fallback to defaults)
+ * @return mixed Result produced by the lesson mapping operation.
 	 */
 	private function get_lesson_mapping() {
 		// Try to get from lesson manager.
@@ -87,6 +91,9 @@ class FLOSC_Pronunciation_Analyzer {
 
 	/**
 	 * Analyze transcript against expected text
+ * @param mixed $transcript Input consumed by the Coordinate the analyze behavior implemented by this code path. operation.
+ * @param mixed $expected Input consumed by the Coordinate the analyze behavior implemented by this code path. operation.
+ * @return mixed Result produced by the analyze operation.
 	 */
 	public function analyze( $transcript, $expected ) {
 		$transcript = $this->normalize( $transcript );
@@ -156,6 +163,8 @@ class FLOSC_Pronunciation_Analyzer {
 
 	/**
 	 * Normalize text for comparison
+ * @param mixed $text Input consumed by the Coordinate the normalize behavior implemented by this code path. operation.
+ * @return mixed Result produced by the normalize operation.
 	 */
 	private function normalize( $text ) {
 		// Lowercase.
@@ -184,6 +193,9 @@ class FLOSC_Pronunciation_Analyzer {
 
 	/**
 	 * Check if two items match (with fuzzy matching)
+ * @param mixed $expected Input consumed by the Coordinate the items match behavior implemented by this code path. operation.
+ * @param mixed $actual Input consumed by the Coordinate the items match behavior implemented by this code path. operation.
+ * @return bool Whether items match applies to the current state.
 	 */
 	private function items_match( $expected, $actual ) {
 		// Exact match.
@@ -206,6 +218,8 @@ class FLOSC_Pronunciation_Analyzer {
 
 	/**
 	 * Generate human-readable feedback
+ * @param mixed $results Input consumed by the Coordinate the generate feedback behavior implemented by this code path. operation.
+ * @return mixed Result produced by the generate feedback operation.
 	 */
 	private function generate_feedback( $results ) {
 		$score        = $results['score'];
@@ -234,6 +248,7 @@ class FLOSC_Pronunciation_Analyzer {
 
 	/**
 	 * Get available lessons (for paid users)
+ * @return array Structured all lessons data.
 	 */
 	public function get_all_lessons() {
 		return array(

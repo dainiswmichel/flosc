@@ -13,45 +13,99 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC Word Matching Quiz behavior and the WordPress services used by its methods.
+ */
 class FLOSC_WordMatching_Quiz extends FLOSC_Abstract_Quiz_Type {
 
-	public function get_id() {
+		/**
+	 * Resolve the current id value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the id operation.
+	 */
+public function get_id() {
 		return 'wordmatching';
 	}
 
-	public function get_name() {
+		/**
+	 * Resolve the current name value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the name operation.
+	 */
+public function get_name() {
 		return 'Word Matching';
 	}
 
-	public function get_description() {
+		/**
+	 * Resolve the current description value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the description operation.
+	 */
+public function get_description() {
 		return 'Match words to categories or definitions. Great for vocabulary and classification.';
 	}
 
-	public function get_icon() {
+		/**
+	 * Resolve the current icon value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the icon operation.
+	 */
+public function get_icon() {
 		return '🔗';
 	}
 
-	public function needs_audio() {
+		/**
+	 * Coordinate the needs audio behavior implemented by this code path.
+	 *
+	 * @return bool Whether needs audio applies to the current state.
+	 */
+public function needs_audio() {
 		return false;
 	}
 
-	public function needs_stt() {
+		/**
+	 * Coordinate the needs stt behavior implemented by this code path.
+	 *
+	 * @return bool Whether needs stt applies to the current state.
+	 */
+public function needs_stt() {
 		return false;
 	}
 
-	public function needs_ai_analysis() {
+		/**
+	 * Coordinate the needs ai analysis behavior implemented by this code path.
+	 *
+	 * @return bool Whether needs ai analysis applies to the current state.
+	 */
+public function needs_ai_analysis() {
 		return false;
 	}
 
-	public function get_instructions() {
+		/**
+	 * Resolve the current instructions value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the instructions operation.
+	 */
+public function get_instructions() {
 		return 'Match each word to its category (format: word:category).';
 	}
 
-	public function get_default_content() {
+		/**
+	 * Resolve the current default content value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the default content operation.
+	 */
+public function get_default_content() {
 		return "cat:mammal\ndog:mammal\nfish:aquatic\nbird:avian\nsnake:reptile";
 	}
 
-	public function validate_input( $input ) {
+		/**
+	 * Validate the input and trust conditions required for input.
+	 *
+	 * @param mixed $input Input consumed by the Validate the input and trust conditions required for input. operation.
+	 * @return bool Whether input applies to the current state.
+	 */
+public function validate_input( $input ) {
 		if ( empty( $input ) || ! is_string( $input ) ) {
 			return new WP_Error( 'invalid_input', __( 'Please enter your matches.', 'flosc' ) );
 		}
@@ -59,7 +113,15 @@ class FLOSC_WordMatching_Quiz extends FLOSC_Abstract_Quiz_Type {
 		return true;
 	}
 
-	public function analyze( $input, $expected_content, $context = array() ) {
+		/**
+	 * Coordinate the analyze behavior implemented by this code path.
+	 *
+	 * @param mixed $input Input consumed by the Coordinate the analyze behavior implemented by this code path. operation.
+	 * @param mixed $expected_content Input consumed by the Coordinate the analyze behavior implemented by this code path. operation.
+	 * @param mixed $context Context values used to resolve request- or flow-specific behavior.
+	 * @return array Structured analyze data.
+	 */
+public function analyze( $input, $expected_content, $context = array() ) {
 		$case_sensitive = $this->get_setting( 'case_sensitive', false );
 
 		// Parse correct matches.
@@ -111,7 +173,12 @@ class FLOSC_WordMatching_Quiz extends FLOSC_Abstract_Quiz_Type {
 		);
 	}
 
-	public function get_settings_fields() {
+		/**
+	 * Resolve the current settings fields value from the available WordPress and flow state.
+	 *
+	 * @return array Structured settings fields data.
+	 */
+public function get_settings_fields() {
 		return array(
 			'case_sensitive'  => array(
 				'type'        => 'checkbox',
@@ -132,6 +199,9 @@ class FLOSC_WordMatching_Quiz extends FLOSC_Abstract_Quiz_Type {
 	 * Parse matches from content
 	 * Format: "word:category\nanotherword:category"
 	 * Returns: ['word' => 'category', ...]
+ * @param mixed $content Input consumed by the Coordinate the parse matches behavior implemented by this code path. operation.
+ * @param mixed $case_sensitive Input consumed by the Coordinate the parse matches behavior implemented by this code path. operation.
+ * @return mixed Result produced by the parse matches operation.
 	 */
 	private function parse_matches( $content, $case_sensitive = false ) {
 		$matches = array();
@@ -160,7 +230,15 @@ class FLOSC_WordMatching_Quiz extends FLOSC_Abstract_Quiz_Type {
 		return $matches;
 	}
 
-	public function format_results( $analysis, $lessons, $response_templates ) {
+		/**
+	 * Coordinate the format results behavior implemented by this code path.
+	 *
+	 * @param mixed $analysis Input consumed by the Coordinate the format results behavior implemented by this code path. operation.
+	 * @param mixed $lessons Input consumed by the Coordinate the format results behavior implemented by this code path. operation.
+	 * @param mixed $response_templates Input consumed by the Coordinate the format results behavior implemented by this code path. operation.
+	 * @return mixed Result produced by the format results operation.
+	 */
+public function format_results( $analysis, $lessons, $response_templates ) {
 		$score        = $analysis['score'];
 		$response_key = $analysis['response_key'];
 		$details      = $analysis['details'];

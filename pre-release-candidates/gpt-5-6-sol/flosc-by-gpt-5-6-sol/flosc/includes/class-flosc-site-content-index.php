@@ -12,6 +12,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC Site Content Index behavior and the WordPress services used by its methods.
+ */
 class FLOSC_Site_Content_Index {
 
 	const MAX_BODY_CHARS         = 200000;
@@ -21,6 +24,8 @@ class FLOSC_Site_Content_Index {
 	private static $instance = null;
 
 	/**
+ * Coordinate the instance behavior implemented by this code path.
+ *
 	 * @return self
 	 */
 	public static function instance() {
@@ -30,7 +35,10 @@ class FLOSC_Site_Content_Index {
 		return self::$instance;
 	}
 
-	private function __construct() {
+		/**
+	 * Register the WordPress hooks that connect construct to this object.
+	 */
+private function __construct() {
 		/*
 		 * Categories and tags get the same two fields the post metabox and the
 		 * Content tab carry. A floscAdmin setting up a category is on the
@@ -55,7 +63,7 @@ class FLOSC_Site_Content_Index {
 	 * The two selects, shared by the add and edit forms.
 	 *
 	 * @param string $tier
-	 * @param string $depth
+	 * @param mixed $depth Input consumed by the Render the Word Press interface for term vgm selects. operation.
 	 * @return void
 	 */
 	private function term_vgm_selects( $tier, $depth ) {
@@ -78,6 +86,8 @@ class FLOSC_Site_Content_Index {
 	}
 
 	/**
+ * Render the WordPress interface for term vgm add fields.
+ *
 	 * @return void
 	 */
 	public function render_term_vgm_add_fields() {
@@ -93,6 +103,8 @@ class FLOSC_Site_Content_Index {
 	}
 
 	/**
+ * Render the WordPress interface for term vgm edit fields.
+ *
 	 * @param WP_Term $term
 	 * @return void
 	 */
@@ -115,8 +127,10 @@ class FLOSC_Site_Content_Index {
 	}
 
 	/**
+ * Save the validated term vgm state for later requests.
+ *
 	 * @param int    $term_id
-	 * @param int    $tt_id
+	 * @param mixed $tt_id Identifier used to select the record involved in the Save the validated term vgm state for later requests. operation.
 	 * @param string $taxonomy
 	 * @return void
 	 */
@@ -262,7 +276,7 @@ class FLOSC_Site_Content_Index {
 	 * Persist index document.
 	 *
 	 * @param string $flow_stem
-	 * @param array  $doc
+	 * @param array $doc Input consumed by the Coordinate the save behavior implemented by this code path. operation.
 	 * @return bool
 	 */
 	public function save( $flow_stem, array $doc ) {
@@ -349,6 +363,8 @@ class FLOSC_Site_Content_Index {
 	}
 
 	/**
+ * Coordinate the category ids from slugs behavior implemented by this code path.
+ *
 	 * @param string[] $slugs
 	 * @return int[]
 	 */
@@ -439,7 +455,7 @@ class FLOSC_Site_Content_Index {
 				continue;
 			}
 
-			// Not public. Naming it is a choice the floscAdmin already made by
+			// Not public. Naming it is a choice the floscAdmin already made by.
 			// putting this tier in the row's VGM. Describing it is not.
 			if ( self::viewer_is_group_member( (int) ( $row['group_id'] ?? 0 ) ) ) {
 				$open[] = '- ' . $name . ' — you are a member. '
@@ -653,7 +669,13 @@ class FLOSC_Site_Content_Index {
 	 */
 	const INTERNAL_CATEGORY_ALIASES = array( 'internal', 'trajectory', 'trajectories', 'concierge' );
 
-	public static function is_internal_post( $post_id ) {
+		/**
+	 * Determine whether the current state satisfies internal post.
+	 *
+	 * @param mixed $post_id WordPress post ID used to resolve the content involved in this operation.
+	 * @return bool Whether internal post applies to the current state.
+	 */
+public static function is_internal_post( $post_id ) {
 		$terms = get_the_terms( (int) $post_id, 'category' );
 		if ( ! is_array( $terms ) ) {
 			return false;
@@ -891,7 +913,7 @@ class FLOSC_Site_Content_Index {
 	 * would make the second of those impossible.
 	 *
 	 * @param int    $post_id
-	 * @param string $flow_stem
+	 * @param mixed $flow_stem Input consumed by the Resolve the current vgm value from the available Word Press and flow state. operation.
 	 * @return array<string,string>
 	 */
 	public static function resolve_vgm( $post_id, $flow_stem = '' ) {
@@ -1079,7 +1101,13 @@ class FLOSC_Site_Content_Index {
 		);
 	}
 
-	public static function vgm_list( $raw ) {
+		/**
+	 * Coordinate the vgm list behavior implemented by this code path.
+	 *
+	 * @param mixed $raw Input consumed by the Coordinate the vgm list behavior implemented by this code path. operation.
+	 * @return array Structured vgm list data.
+	 */
+public static function vgm_list( $raw ) {
 		$raw = strtolower( trim( (string) $raw ) );
 		if ( '' === $raw ) {
 			return array();
@@ -1094,12 +1122,19 @@ class FLOSC_Site_Content_Index {
 		return array_values( array_intersect( array( 'visitor', 'guest', 'member' ), $parts ) );
 	}
 
-	public static function group_vgm( array $policy, $group_id ) {
+		/**
+	 * Coordinate the group vgm behavior implemented by this code path.
+	 *
+	 * @param array $policy Input consumed by the Coordinate the group vgm behavior implemented by this code path. operation.
+	 * @param mixed $group_id Identifier used to select the record involved in the Coordinate the group vgm behavior implemented by this code path. operation.
+	 * @return mixed Result produced by the group vgm operation.
+	 */
+public static function group_vgm( array $policy, $group_id ) {
 		$key = 'bb_group:' . (int) $group_id;
 		$raw = isset( $policy['vgm_rows'][ $key ] ) ? $policy['vgm_rows'][ $key ] : $policy['vgm_default'];
 		$raw = strtolower( trim( (string) $raw ) );
 
-		// preg_split() returns false on a pattern error, which
+		// preg_split() returns false on a pattern error, which.
 		// array_intersect() cannot take.
 		$named   = preg_split( '/[\s,]+/', $raw );
 		$allowed = array_values(
@@ -1126,7 +1161,7 @@ class FLOSC_Site_Content_Index {
 		if ( ctype_digit( $raw ) ) {
 			return (int) $raw > 0 ? $raw : '';
 		}
-		// kind:id — both halves restricted, so a key can never carry markup or
+		// kind:id — both halves restricted, so a key can never carry markup or.
 		// a path separator into the library file.
 		if ( preg_match( '/^([a-z0-9_]+):([a-z0-9_-]+)$/i', $raw, $m ) ) {
 			return strtolower( $m[1] ) . ':' . strtolower( $m[2] );
@@ -1151,13 +1186,13 @@ class FLOSC_Site_Content_Index {
 			$types = array_map( 'sanitize_key', (array) $saved );
 		}
 
-		// 'post' is not optional: the index has always held posts, and removing
+		// 'post' is not optional: the index has always held posts, and removing.
 		// them on upgrade would empty a working library without anyone asking.
 		$types[] = 'post';
 
 		$types = array_values( array_unique( array_filter( $types ) ) );
 
-		// Only types this site actually registers. A stale saved value for a
+		// Only types this site actually registers. A stale saved value for a.
 		// plugin that has since been deactivated must not break the rebuild.
 		$types = array_values(
 			array_filter(
@@ -1175,7 +1210,13 @@ class FLOSC_Site_Content_Index {
 		return (array) apply_filters( 'flosc_site_content_index_post_types', $types, $flow_stem );
 	}
 
-	public function rebuild( $flow_stem = '' ) {
+		/**
+	 * Persist the rebuild state in WordPress storage.
+	 *
+	 * @param mixed $flow_stem Input consumed by the Persist the rebuild state in Word Press storage. operation.
+	 * @return array Structured rebuild data.
+	 */
+public function rebuild( $flow_stem = '' ) {
 		$previous   = $this->load( $flow_stem );
 		$prev_posts = is_array( $previous['posts'] ) ? $previous['posts'] : array();
 
@@ -1303,8 +1344,10 @@ class FLOSC_Site_Content_Index {
 	}
 
 	/**
+ * Build the structured value consumed by row from post.
+ *
 	 * @param WP_Post $post
-	 * @param string  $keywords_manual
+	 * @param mixed $keywords_manual Name or key used to select the Build the structured value consumed by row from post. value.
 	 * @param bool    $excluded
 	 * @return array
 	 */
@@ -1441,8 +1484,8 @@ class FLOSC_Site_Content_Index {
 		$snippet = function_exists( 'mb_substr' ) ? mb_substr( $body, 0, 160 ) : substr( $body, 0, 160 );
 
 		return array(
-			// Every row now carries an id and a kind. For a WordPress post the
-			// id is the post id as a string, so nothing that keyed on post_id
+			// Every row now carries an id and a kind. For a WordPress post the.
+			// id is the post id as a string, so nothing that keyed on post_id.
 			// changes meaning.
 			'id'              => (string) (int) $post->ID,
 			'kind'            => 'post',
@@ -1470,8 +1513,10 @@ class FLOSC_Site_Content_Index {
 	}
 
 	/**
+ * Coordinate the derive keywords behavior implemented by this code path.
+ *
 	 * @param WP_Post $post
-	 * @param string  $body
+	 * @param mixed $body Input consumed by the Coordinate the derive keywords behavior implemented by this code path. operation.
 	 * @return string comma-separated
 	 */
 	private function derive_keywords( WP_Post $post, $body ) {
@@ -1520,8 +1565,10 @@ class FLOSC_Site_Content_Index {
 	}
 
 	/**
+ * Coordinate the merge keywords behavior implemented by this code path.
+ *
 	 * @param string $base
-	 * @param string $extra
+	 * @param mixed $extra Input consumed by the Coordinate the merge keywords behavior implemented by this code path. operation.
 	 * @return string
 	 */
 	private function merge_keywords( $base, $extra ) {
@@ -1543,7 +1590,7 @@ class FLOSC_Site_Content_Index {
 	 * Light hierarchy map for AI (titles / ids / access) — no full bodies.
 	 *
 	 * @param string $flow_stem
-	 * @param string $access_level visitor|guest|member.
+	 * @param mixed $access_level Input consumed by the Coordinate the format map for ai behavior implemented by this code path. operation.
 	 * @return string
 	 */
 	public function format_map_for_ai( $flow_stem, $access_level = 'visitor' ) {
@@ -1586,9 +1633,9 @@ class FLOSC_Site_Content_Index {
 	 * Selective full-text retrieval from the index.
 	 *
 	 * @param string $flow_stem
-	 * @param string $keywords
+	 * @param mixed $keywords Name or key used to select the Coordinate the search behavior implemented by this code path. value.
 	 * @param string $access_level
-	 * @param int    $limit
+	 * @param mixed $limit Input consumed by the Coordinate the search behavior implemented by this code path. operation.
 	 * @return string Human-readable block for the model
 	 */
 	public function search( $flow_stem, $keywords, $access_level = 'visitor', $limit = self::DEFAULT_RETRIEVE_LIMIT ) {
@@ -1661,7 +1708,7 @@ class FLOSC_Site_Content_Index {
 					}
 				}
 			} else {
-				$score = 1; // empty query: allow first N
+				$score = 1; // empty query: allow first N.
 			}
 			// Numeric lesson / post id match.
 			if ( is_numeric( $q ) ) {
@@ -1755,7 +1802,7 @@ class FLOSC_Site_Content_Index {
 	 * file written by an older build keeps working until it is rebuilt.
 	 *
 	 * @param array  $row
-	 * @param string $tier visitor|guest|member.
+	 * @param mixed $tier Input consumed by the Coordinate the row depth behavior implemented by this code path. operation.
 	 * @return string title|excerpt|readmore|full
 	 */
 	public function row_depth( array $row, $tier ) {
@@ -1776,7 +1823,7 @@ class FLOSC_Site_Content_Index {
 	 * The slice of body this depth returns. Empty string at title depth.
 	 *
 	 * @param array  $row
-	 * @param string $depth
+	 * @param mixed $depth Input consumed by the Coordinate the row body at behavior implemented by this code path. operation.
 	 * @return string
 	 */
 	public function row_body_at( array $row, $depth ) {
@@ -1807,8 +1854,10 @@ class FLOSC_Site_Content_Index {
 	}
 
 	/**
+ * Coordinate the access allows behavior implemented by this code path.
+ *
 	 * @param string $user_level
-	 * @param string $required
+	 * @param mixed $required Input consumed by the Coordinate the access allows behavior implemented by this code path. operation.
 	 * @return bool
 	 */
 	public function access_allows( $user_level, $required ) {
@@ -1848,7 +1897,7 @@ class FLOSC_Site_Content_Index {
 	 * Set excluded flag and save.
 	 *
 	 * @param string $flow_stem
-	 * @param int    $post_id
+	 * @param mixed $post_id WordPress post ID used to resolve the content involved in this operation.
 	 * @param bool   $excluded
 	 * @return bool
 	 */
@@ -1866,8 +1915,10 @@ class FLOSC_Site_Content_Index {
 	}
 
 	/**
+ * Coordinate the manual keywords behavior implemented by this code path.
+ *
 	 * @param string $flow_stem
-	 * @param int    $post_id
+	 * @param mixed $post_id WordPress post ID used to resolve the content involved in this operation.
 	 * @param string $manual_keywords
 	 * @return bool
 	 */
@@ -1898,7 +1949,7 @@ class FLOSC_Site_Content_Index {
 	 * Reindex a single post if still in category.
 	 *
 	 * @param string $flow_stem
-	 * @param int    $post_id
+	 * @param mixed $post_id WordPress post ID used to resolve the content involved in this operation.
 	 * @return bool
 	 */
 	public function reindex_one( $flow_stem, $post_id ) {
@@ -1923,9 +1974,11 @@ class FLOSC_Site_Content_Index {
 		return $this->save( $flow_stem, $doc );
 	}
 
-	// ─── Admin POST handlers ─────────────────────────────────────────────
+	// ─── Admin POST handlers ─────────────────────────────────────────────.
 
 	/**
+ * Coordinate the require admin behavior implemented by this code path.
+ *
 	 * @return void
 	 */
 	private function require_admin() {
@@ -1935,6 +1988,9 @@ class FLOSC_Site_Content_Index {
 	}
 
 	/**
+ * Coordinate the ivr from request behavior implemented by this code path.
+ *
+ * @param mixed $request Request object carrying the input consumed by this handler.
 	 * @return string
 	 */
 	private function ivr_from_request( $request ) {
@@ -1943,8 +1999,10 @@ class FLOSC_Site_Content_Index {
 	}
 
 	/**
+ * Resolve and perform the redirect required for redirect ai.
+ *
 	 * @param string $ivr
-	 * @param string $action
+	 * @param mixed $action Input consumed by the Resolve and perform the redirect required for redirect ai. operation.
 	 * @param string $error
 	 * @return void
 	 */
@@ -1965,12 +2023,14 @@ class FLOSC_Site_Content_Index {
 	}
 
 	/**
+ * Persist the rebuild state in WordPress storage.
+ *
 	 * @return void
 	 */
 	public function handle_rebuild() {
 		$this->require_admin();
-		// Its own field name, not the default _wpnonce. This form renders on the
-		// same page as the settings form, and two fields called _wpnonce in one
+		// Its own field name, not the default _wpnonce. This form renders on the.
+		// same page as the settings form, and two fields called _wpnonce in one.
 		// submission leave PHP holding only the last of them.
 		check_admin_referer( 'flosc_site_index_rebuild', 'flosc_sci_nonce' );
 		$ivr    = $this->ivr_from_request( wp_unslash( $_POST ) );
@@ -1991,6 +2051,8 @@ class FLOSC_Site_Content_Index {
 	}
 
 	/**
+ * Coordinate the exclude behavior implemented by this code path.
+ *
 	 * @return void
 	 */
 	public function handle_exclude() {
@@ -2006,6 +2068,8 @@ class FLOSC_Site_Content_Index {
 	}
 
 	/**
+ * Coordinate the include behavior implemented by this code path.
+ *
 	 * @return void
 	 */
 	public function handle_include() {
@@ -2021,6 +2085,8 @@ class FLOSC_Site_Content_Index {
 	}
 
 	/**
+ * Coordinate the keywords behavior implemented by this code path.
+ *
 	 * @return void
 	 */
 	public function handle_keywords() {
@@ -2037,6 +2103,8 @@ class FLOSC_Site_Content_Index {
 	}
 
 	/**
+ * Coordinate the reindex one behavior implemented by this code path.
+ *
 	 * @return void
 	 */
 	public function handle_reindex_one() {

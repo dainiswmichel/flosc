@@ -54,12 +54,12 @@ if ( empty( $flosc_all_quiz_types ) ) {
 	return;
 }
 
-// ── Demo library ──────────────────────────────────────────────────────────────
+// ── Demo library ──────────────────────────────────────────────────────────────.
 // Each entry: [ 'name', 'desc', 'content' ]
 // Content format must match the quiz type's own get_instructions() format.
 $flosc_quiz_demos = array(
 
-	// ── Sample Assessment (Q+options block format) ─────────────────
+	// ── Sample Assessment (Q+options block format) ─────────────────.
 	// Subject-neutral sample. floscAdmins replace content per flow.
 	'sample_assessment_quiz'         => array(
 
@@ -93,7 +93,7 @@ $flosc_quiz_demos = array(
 
 	),
 
-	// ── Multiple Choice (pipe-delimited format) ────────────────────────────
+	// ── Multiple Choice (pipe-delimited format) ────────────────────────────.
 	'multiplechoice'                 => array(
 
 		array(
@@ -139,7 +139,7 @@ $flosc_quiz_demos = array(
 		),
 	),
 
-	// ── True/False (Statement.|True or Statement.|False format) ────────────
+	// ── True/False (Statement.|True or Statement.|False format) ────────────.
 	'truefalse'                      => array(
 
 		array(
@@ -185,7 +185,7 @@ $flosc_quiz_demos = array(
 		),
 	),
 
-	// ── 1-10 Numbers (comma-separated format) ─────────────────────────────
+	// ── 1-10 Numbers (comma-separated format) ─────────────────────────────.
 	'flosc_sample_data_numbers_quiz' => array(
 
 		array(

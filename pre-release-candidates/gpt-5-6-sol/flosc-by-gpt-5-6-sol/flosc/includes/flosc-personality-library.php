@@ -15,6 +15,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 if ( ! function_exists( 'flosc_personality_library_option_key' ) ) {
 	/**
+ * Coordinate the personality library option key behavior implemented by this code path.
+ *
 	 * @return string
 	 */
 	function flosc_personality_library_option_key() {
@@ -1905,6 +1907,8 @@ if ( ! function_exists( 'flosc_personality_library_defaults' ) ) {
 
 if ( ! function_exists( 'flosc_personality_library_get_all' ) ) {
 	/**
+ * Persist the personality library get all state in WordPress storage.
+ *
 	 * @return array<string,array<string,string>>
 	 */
 	function flosc_personality_library_get_all() {
@@ -1941,6 +1945,8 @@ if ( ! function_exists( 'flosc_personality_library_get_all' ) ) {
 
 if ( ! function_exists( 'flosc_personality_library_get' ) ) {
 	/**
+ * Coordinate the personality library get behavior implemented by this code path.
+ *
 	 * @param string $id Personality id.
 	 * @return array<string,string>|null
 	 */
@@ -1953,6 +1959,8 @@ if ( ! function_exists( 'flosc_personality_library_get' ) ) {
 
 if ( ! function_exists( 'flosc_personality_library_save_all' ) ) {
 	/**
+ * Persist the personality library save all state in WordPress storage.
+ *
 	 * @param array<string,array<string,mixed>> $library Full map.
 	 * @return void
 	 */
@@ -1999,18 +2007,18 @@ if ( ! function_exists( 'flosc_personality_library_save_all' ) ) {
 					$entry[ $fk ] = sanitize_text_field( $val );
 				}
 			}
-			// Genome and runtime prompt are one versioned deployment unit. The
-			// browser compiler submits both in the same save; this server-owned
-			// fingerprint lets previews, upgrades and diagnostics prove which
+			// Genome and runtime prompt are one versioned deployment unit. The.
+			// browser compiler submits both in the same save; this server-owned.
+			// fingerprint lets previews, upgrades and diagnostics prove which.
 			// exact compiled character public chat will resolve.
 			$profile = trim( (string) ( $entry['ai_base_prompt'] ?? '' ) );
 			$genome  = (string) ( $entry['workshop_json'] ?? '' );
 			$hash    = flosc_personality_fingerprint( $genome, $profile );
 
-			// The version counts edits that changed something. A save that
-			// rewrote nothing keeps its number and its timestamp, so "version 3"
-			// means the third distinct BubblyBetty and not the third time
-			// somebody pressed Save. A field that reads 1 forever cannot tell
+			// The version counts edits that changed something. A save that.
+			// rewrote nothing keeps its number and its timestamp, so "version 3".
+			// means the third distinct BubblyBetty and not the third time.
+			// somebody pressed Save. A field that reads 1 forever cannot tell.
 			// two downloads apart, which is the only reason to carry it.
 			$prior_hash    = isset( $prior['profile_hash'] ) ? (string) $prior['profile_hash'] : '';
 			$prior_version = max( 1, (int) ( $prior['profile_version'] ?? 0 ) );
@@ -2245,9 +2253,9 @@ if ( ! function_exists( 'flosc_admin_save_personality_library' ) ) {
 			60
 		);
 
-		// Where to send the admin back to after the save. This runs after the
-		// save handler above has already verified its nonce and capability, so
-		// the request is proven by the time this line is reached; the value only
+		// Where to send the admin back to after the save. This runs after the.
+		// save handler above has already verified its nonce and capability, so.
+		// the request is proven by the time this line is reached; the value only.
 		// picks a redirect target on this site's own admin.php.
 		$ivr = ( isset( $_POST['flosc_return_ivr'] ) && is_scalar( $_POST['flosc_return_ivr'] ) )
 			? sanitize_file_name( wp_unslash( $_POST['flosc_return_ivr'] ) )
@@ -2887,7 +2895,7 @@ if ( ! function_exists( 'flosc_personality_builder_request_context' ) ) {
 			$ivr_files = array_values( array_unique( $ivr_files ) );
 		}
 
-		// Which flow file the builder is pointed at. Display selection; validated
+		// Which flow file the builder is pointed at. Display selection; validated.
 		// against the known file list immediately below.
 		$ivr = flosc_nav_param( 'ivr', array(), '', 'sanitize_file_name' );
 		if ( '' !== $ivr && ! empty( $ivr_files ) && ! in_array( $ivr, $ivr_files, true ) ) {
@@ -2950,6 +2958,8 @@ if ( ! function_exists( 'flosc_personality_builder_url' ) ) {
 
 if ( ! function_exists( 'flosc_personality_library_url' ) ) {
 	/**
+ * Coordinate the personality library url behavior implemented by this code path.
+ *
 	 * @param string $ivr Optional current IVR filename.
 	 * @return string
 	 */
@@ -3255,7 +3265,7 @@ function flosc_admin_nocache_headers() {
 	if ( ! function_exists( 'nocache_headers' ) ) {
 		return;
 	}
-	// Which admin screen is being painted; decides whether to send no-cache
+	// Which admin screen is being painted; decides whether to send no-cache.
 	// headers. Reads nothing else and writes nothing.
 	if ( 'flosc-settings' === flosc_nav_param( 'page' ) ) {
 		nocache_headers();
@@ -3435,7 +3445,7 @@ if ( ! function_exists( 'flosc_ajax_attach_personality' ) ) {
 				'persona'  => $stored,
 				'label'    => $label,
 				'flow'     => $option_key,
-				// Same stamp the page-wide Save writes, so the two agree about
+				// Same stamp the page-wide Save writes, so the two agree about.
 				// when something happened.
 				'saved_at' => function_exists( 'flosc_mts_utc' ) ? flosc_mts_utc() : gmdate( 'Y-m-d H:i:s' ),
 			)
@@ -3517,9 +3527,9 @@ if ( ! function_exists( 'flosc_personality_builder_boot_json' ) ) {
 				'name'        => isset( $entry['ai_personality_name'] ) ? (string) $entry['ai_personality_name'] : '',
 				'role'        => isset( $entry['ai_personality_role'] ) ? (string) $entry['ai_personality_role'] : '',
 				'profile'     => isset( $entry['ai_base_prompt'] ) ? (string) $entry['ai_base_prompt'] : '',
-				// From the last save. The version counts changes, not saves, and
-				// the hash covers the genome and the runtime profile together —
-				// so an exported file can be checked against a running site
+				// From the last save. The version counts changes, not saves, and.
+				// the hash covers the genome and the runtime profile together —.
+				// so an exported file can be checked against a running site.
 				// without reading both documents side by side.
 				'version'     => isset( $entry['profile_version'] ) ? (string) $entry['profile_version'] : '',
 				'hash'        => isset( $entry['profile_hash'] ) ? (string) $entry['profile_hash'] : '',
@@ -3635,12 +3645,12 @@ if ( ! function_exists( 'flosc_enqueue_personality_builder_assets' ) ) {
 		$ctx     = function_exists( 'flosc_personality_builder_request_context' ) ? flosc_personality_builder_request_context() : array();
 		$persona = isset( $ctx['persona'] ) ? (string) $ctx['persona'] : '';
 		$ivr     = isset( $ctx['ivr'] ) ? (string) $ctx['ivr'] : '';
-		// Do NOT bail when persona resolves empty. The accordion markup renders
-		// regardless (its persona comes from the current flow's saved settings —
-		// a DIFFERENT resolution than this request-context re-derivation, and the
-		// two can disagree). Bailing here shipped a page with full static markup
+		// Do NOT bail when persona resolves empty. The accordion markup renders.
+		// regardless (its persona comes from the current flow's saved settings —.
+		// a DIFFERENT resolution than this request-context re-derivation, and the.
+		// two can disagree). Bailing here shipped a page with full static markup.
 		// but no CSS and no JS: empty #cols/#editor panels and a silent console.
-		// With an empty persona the boot JSON still builds a valid default entry
+		// With an empty persona the boot JSON still builds a valid default entry.
 		// and the save bridge refuses gracefully, so loading assets is always safe.
 
 		$css_path = FLOSC_PLUGIN_DIR . 'assets/css/flosc-personality-builder.css';
@@ -3792,6 +3802,8 @@ if ( ! function_exists( 'flosc_admin_personality_builder_page' ) ) {
 
 if ( ! function_exists( 'flosc_personality_builder_admin_body_class' ) ) {
 	/**
+ * Coordinate the personality builder admin body class behavior implemented by this code path.
+ *
 	 * @param string $classes Body classes.
 	 * @return string
 	 */

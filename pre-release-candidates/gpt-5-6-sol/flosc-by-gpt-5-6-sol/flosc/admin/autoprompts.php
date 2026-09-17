@@ -80,8 +80,13 @@ $flosc_autoprompt_docs_anchor = array(
 );
 
 // ============================================
-// SAVE HANDLER
+// SAVE HANDLER.
 // ============================================
+/**
+ * Persist the autoprompts save state in WordPress storage.
+ *
+ * @return mixed Result produced by the autoprompts save operation.
+ */
 function flosc_handle_autoprompts_save() {
 	$flosc_post = wp_unslash( $_POST );
 
@@ -184,7 +189,7 @@ if ( ! isset( $flosc_get ) || ! is_array( $flosc_get ) ) {
 }
 
 // ============================================
-// LOAD CURRENT DATA
+// LOAD CURRENT DATA.
 // ============================================
 $flosc_fs = $flosc_flow_key ? get_option( $flosc_flow_key, array() ) : array();
 
@@ -303,7 +308,14 @@ $flosc_available_conditions = array(
 
 // Declare before table rendering so expected-behavior rows can call it safely.
 if ( ! function_exists( 'flosc_autoprompt_expected_behavior_text' ) ) {
-	function flosc_autoprompt_expected_behavior_text( $flosc_state, array $flosc_item ) {
+		/**
+	 * Coordinate the autoprompt expected behavior text behavior implemented by this code path.
+	 *
+	 * @param mixed $flosc_state Input consumed by the Coordinate the autoprompt expected behavior text behavior implemented by this code path. operation.
+	 * @param array $flosc_item Input consumed by the Coordinate the autoprompt expected behavior text behavior implemented by this code path. operation.
+	 * @return mixed Result produced by the autoprompt expected behavior text operation.
+	 */
+function flosc_autoprompt_expected_behavior_text( $flosc_state, array $flosc_item ) {
 		$flosc_label         = trim( (string) ( $flosc_item['label'] ?? '' ) );
 		$flosc_user_input    = trim( (string) ( $flosc_item['user_input'] ?? '' ) );
 		$flosc_input_to_send = '' !== $flosc_user_input ? $flosc_user_input : $flosc_label;

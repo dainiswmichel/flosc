@@ -129,7 +129,7 @@ class SSO_Manager {
 		add_filter( 'get_avatar_url', array( $this, 'filter_avatar_url' ), 10, 2 );
 
 		// v1.4.8: FLOSC SSO buttons only appear inside FLOSC flows (chat widget auth modal).
-		// Removed login_form and register_form hooks to prevent interference with
+		// Removed login_form and register_form hooks to prevent interference with.
 		// BuddyBoss or other site-wide login systems.
 
 		// Handle SSO errors on frontend (only on FLOSC pages).
@@ -255,6 +255,7 @@ class SSO_Manager {
 
 	/**
 	 * Add SSO buttons to WordPress login form
+ * @return mixed Result produced by the add sso buttons to login operation.
 	 */
 	public function add_sso_buttons_to_login() {
 		$providers = $this->get_enabled_providers();
@@ -278,6 +279,7 @@ class SSO_Manager {
 
 	/**
 	 * Output login button styles
+ * @return mixed Result produced by the output login button styles operation.
 	 */
 	private function output_login_button_styles() {
 		static $styles_output = false;
@@ -352,7 +354,7 @@ class SSO_Manager {
         '
 		);
 
-		// Add click handler script
+		// Add click handler script.
 		// v1.4.6: Use URL-safe separator (handles non-pretty permalinks)
 		// §12: attached via an inline-only script handle instead of a raw <script> tag.
 		wp_register_script( 'flosc-sso', false, array(), FLOSC_VERSION, true );
@@ -386,10 +388,11 @@ class SSO_Manager {
 	 * auth modal so the user can try a different login method.
 	 *
 	 * @since 8.0.1
+ * @return mixed Result produced by the sso error display operation.
 	 */
 	public function handle_sso_error_display() {
 		// Which failure notice to paint after a provider bounced the user back.
-		// Display only: the token selects a translated string from a fixed table
+		// Display only: the token selects a translated string from a fixed table.
 		// below and never reaches a mutation or a redirect target.
 		$err_raw = flosc_nav_param( 'flosc_sso_error' );
 		if ( '' !== $err_raw ) {
@@ -409,7 +412,7 @@ class SSO_Manager {
 				$error_message = 'Login didn\'t complete. Please try again — if the issue persists, try a different login method or contact support.';
 			}
 
-			// v8.0.1: Set a JS variable instead of alert() so flosc-app.js can
+			// v8.0.1: Set a JS variable instead of alert() so flosc-app.js can.
 			// show the error in-chat and re-present the auth modal.
 			add_action(
 				'wp_footer',

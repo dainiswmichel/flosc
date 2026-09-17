@@ -18,6 +18,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 // Custom table {prefix}flosc_lessons — no WP API equivalent for schema/CRUD.
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange -- custom table flosc_lessons; no WP API
 
+/**
+ * Coordinate FLOSC Lessons Table behavior and the WordPress services used by its methods.
+ */
 class FLOSC_Lessons_Table {
 
 	private static $instance = null;
@@ -25,20 +28,29 @@ class FLOSC_Lessons_Table {
 	private $db_version        = '1.0.0';
 	private $db_version_option = 'flosc_lessons_table_db_version';
 
-	public static function instance() {
+		/**
+	 * Coordinate the instance behavior implemented by this code path.
+	 *
+	 * @return mixed Result produced by the instance operation.
+	 */
+public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
 		}
 		return self::$instance;
 	}
 
-	private function __construct() {
+		/**
+	 * Coordinate the construct behavior implemented by this code path.
+	 */
+private function __construct() {
 		global $wpdb;
 		$this->table_name = $wpdb->prefix . 'flosc_lessons';
 	}
 
 	/**
 	 * Get the full table name (with prefix)
+ * @return mixed Result produced by the table name operation.
 	 */
 	public function get_table_name() {
 		return $this->table_name;
@@ -90,6 +102,7 @@ class FLOSC_Lessons_Table {
 
 	/**
 	 * Check if the table exists
+ * @return mixed Result produced by the table exists operation.
 	 */
 	public function table_exists() {
 		$cache_key = 'table_exists_' . $this->table_name;
@@ -113,6 +126,7 @@ class FLOSC_Lessons_Table {
 
 	/**
 	 * Get lesson count
+ * @return mixed Result produced by the count operation.
 	 */
 	public function get_count() {
 		global $wpdb;
@@ -131,7 +145,10 @@ class FLOSC_Lessons_Table {
 		return $count;
 	}
 
-	private function flosc_bust_lessons_cache() {
+		/**
+	 * Coordinate the bust lessons cache behavior implemented by this code path.
+	 */
+private function flosc_bust_lessons_cache() {
 		wp_cache_delete( 'count_' . $this->table_name, 'flosc_lessons' );
 		wp_cache_delete( 'all_' . $this->table_name, 'flosc_lessons' );
 		wp_cache_delete( 'list_' . $this->table_name, 'flosc_lessons' );

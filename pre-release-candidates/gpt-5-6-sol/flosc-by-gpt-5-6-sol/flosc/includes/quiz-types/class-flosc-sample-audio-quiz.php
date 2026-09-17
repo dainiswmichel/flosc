@@ -13,45 +13,99 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC Sample Audio Quiz behavior and the WordPress services used by its methods.
+ */
 class FLOSC_Sample_Audio_Quiz extends FLOSC_Abstract_Quiz_Type {
 
-	public function get_id() {
+		/**
+	 * Resolve the current id value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the id operation.
+	 */
+public function get_id() {
 		return 'flosc_sample_audio_quiz';
 	}
 
-	public function get_name() {
+		/**
+	 * Resolve the current name value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the name operation.
+	 */
+public function get_name() {
 		return 'FLOSC Sample Audio Quiz';
 	}
 
-	public function get_description() {
+		/**
+	 * Resolve the current description value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the description operation.
+	 */
+public function get_description() {
 		return 'Read the following series of numbers in order: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10';
 	}
 
-	public function get_icon() {
+		/**
+	 * Resolve the current icon value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the icon operation.
+	 */
+public function get_icon() {
 		return '🎤';
 	}
 
-	public function needs_audio() {
+		/**
+	 * Coordinate the needs audio behavior implemented by this code path.
+	 *
+	 * @return bool Whether needs audio applies to the current state.
+	 */
+public function needs_audio() {
 		return true;
 	}
 
-	public function needs_stt() {
+		/**
+	 * Coordinate the needs stt behavior implemented by this code path.
+	 *
+	 * @return bool Whether needs stt applies to the current state.
+	 */
+public function needs_stt() {
 		return true;
 	}
 
-	public function needs_ai_analysis() {
-		return false; // Uses phoneme analysis, not AI
+		/**
+	 * Coordinate the needs ai analysis behavior implemented by this code path.
+	 *
+	 * @return bool Whether needs ai analysis applies to the current state.
+	 */
+public function needs_ai_analysis() {
+		return false; // Uses phoneme analysis, not AI.
 	}
 
-	public function get_instructions() {
+		/**
+	 * Resolve the current instructions value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the instructions operation.
+	 */
+public function get_instructions() {
 		return "Read the following series of numbers in order:\n\n1, 2, 3, 4, 5, 6, 7, 8, 9, 10";
 	}
 
-	public function get_default_content() {
+		/**
+	 * Resolve the current default content value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the default content operation.
+	 */
+public function get_default_content() {
 		return '1,2,3,4,5,6,7,8,9,10';
 	}
 
-	public function validate_input( $input ) {
+		/**
+	 * Validate the input and trust conditions required for input.
+	 *
+	 * @param mixed $input Input consumed by the Validate the input and trust conditions required for input. operation.
+	 * @return bool Whether input applies to the current state.
+	 */
+public function validate_input( $input ) {
 		// Input is audio file path or STT transcript.
 		if ( empty( $input ) ) {
 			return new WP_Error( 'invalid_input', __( 'No audio input received.', 'flosc' ) );
@@ -60,8 +114,16 @@ class FLOSC_Sample_Audio_Quiz extends FLOSC_Abstract_Quiz_Type {
 		return true;
 	}
 
-	public function analyze( $input, $expected_content, $context = array() ) {
-		// If input is already a transcript (from STT), use it
+		/**
+	 * Coordinate the analyze behavior implemented by this code path.
+	 *
+	 * @param mixed $input Input consumed by the Coordinate the analyze behavior implemented by this code path. operation.
+	 * @param mixed $expected_content Input consumed by the Coordinate the analyze behavior implemented by this code path. operation.
+	 * @param mixed $context Context values used to resolve request- or flow-specific behavior.
+	 * @return array Structured analyze data.
+	 */
+public function analyze( $input, $expected_content, $context = array() ) {
+		// If input is already a transcript (from STT), use it.
 		// Otherwise, input would be audio file path (handled by main plugin).
 		$transcript = is_string( $input ) ? $input : '';
 
@@ -105,12 +167,23 @@ class FLOSC_Sample_Audio_Quiz extends FLOSC_Abstract_Quiz_Type {
 		);
 	}
 
-	public function map_to_lessons( $analysis ) {
+		/**
+	 * Coordinate the map to lessons behavior implemented by this code path.
+	 *
+	 * @param mixed $analysis Input consumed by the Coordinate the map to lessons behavior implemented by this code path. operation.
+	 * @return mixed Result produced by the map to lessons operation.
+	 */
+public function map_to_lessons( $analysis ) {
 		// Already done in analyze().
 		return $analysis['lessons'] ?? array();
 	}
 
-	public function get_settings_fields() {
+		/**
+	 * Resolve the current settings fields value from the available WordPress and flow state.
+	 *
+	 * @return array Structured settings fields data.
+	 */
+public function get_settings_fields() {
 		return array(
 			'language'      => array(
 				'type'        => 'select',
@@ -141,7 +214,12 @@ class FLOSC_Sample_Audio_Quiz extends FLOSC_Abstract_Quiz_Type {
 		);
 	}
 
-	public function get_default_response_templates() {
+		/**
+	 * Resolve the current default response templates value from the available WordPress and flow state.
+	 *
+	 * @return array Structured default response templates data.
+	 */
+public function get_default_response_templates() {
 		return array(
 			'0-30'   => "**Pronunciation Score: {score}%**\n\nYou need significant practice with these sounds.\n\n{lesson_recommendations}",
 			'31-60'  => "**Pronunciation Score: {score}%**\n\nGood effort! Focus on improving these sounds:\n\n{lesson_recommendations}",
@@ -150,7 +228,15 @@ class FLOSC_Sample_Audio_Quiz extends FLOSC_Abstract_Quiz_Type {
 		);
 	}
 
-	public function format_results( $analysis, $lessons, $response_templates ) {
+		/**
+	 * Coordinate the format results behavior implemented by this code path.
+	 *
+	 * @param mixed $analysis Input consumed by the Coordinate the format results behavior implemented by this code path. operation.
+	 * @param mixed $lessons Input consumed by the Coordinate the format results behavior implemented by this code path. operation.
+	 * @param mixed $response_templates Input consumed by the Coordinate the format results behavior implemented by this code path. operation.
+	 * @return mixed Result produced by the format results operation.
+	 */
+public function format_results( $analysis, $lessons, $response_templates ) {
 		$score        = $analysis['score'];
 		$response_key = $analysis['response_key'];
 		$details      = $analysis['details'];

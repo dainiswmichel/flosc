@@ -38,7 +38,7 @@ if ( ! current_user_can( 'edit_others_posts' ) ) {
 	wp_die( esc_html__( 'You do not have permission to access this page.', 'flosc' ), 403 );
 }
 
-// ── v1.9.5: Rated Responses from DB (via logger data API; schema ensured there) ──
+// ── v1.9.5: Rated Responses from DB (via logger data API; schema ensured there) ──.
 $flosc_rated_logs  = FLOSC_Chat_Logger::instance()->flosc_get_rated_logs( 50 );
 $flosc_rated_count = count( $flosc_rated_logs );
 ?>
@@ -88,7 +88,7 @@ $flosc_rated_count = count( $flosc_rated_logs );
 <?php endif; ?>
 
 <?php
-// ── Feedback ──
+// ── Feedback ──.
 $flosc_settings_key   = $GLOBALS['flosc_settings_key'] ?? '';
 $flosc_feedback_items = $flosc_flow_settings['ai_feedback'] ?? array();
 $flosc_feedback_count = count( $flosc_feedback_items );
@@ -143,7 +143,7 @@ if ( isset( $_POST['flosc_add_feedback'] ) ) {
 	}
 }
 
-// ── Praises ──
+// ── Praises ──.
 $flosc_praises       = $flosc_flow_settings['ai_praises'] ?? array();
 $flosc_praises_count = count( $flosc_praises );
 

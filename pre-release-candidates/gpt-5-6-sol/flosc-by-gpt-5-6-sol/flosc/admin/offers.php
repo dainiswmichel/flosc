@@ -133,8 +133,13 @@ function flosc_parse_offer_access_codes_from_post( array $flosc_post ) {
 
 // ============================================
 // SAVE HANDLER — runs at include time (same as delete/toggle handlers below)
-// v1.6.5: Removed dead add_action('init',...) — file loads after init fires
+// v1.6.5: Removed dead add_action('init',...) — file loads after init fires.
 // ============================================
+/**
+ * Persist the offer save state in WordPress storage.
+ *
+ * @return mixed Result produced by the offer save operation.
+ */
 function flosc_handle_offer_save() {
 	$flosc_post = wp_unslash( $_POST );
 
@@ -186,8 +191,8 @@ function flosc_handle_offer_save() {
 		$display_formats['card']['enabled'] = true;
 	}
 
-	// The currency is named here rather than inside the array below, because
-	// sanitising an operator-typed value can leave nothing, and a purchase
+	// The currency is named here rather than inside the array below, because.
+	// sanitising an operator-typed value can leave nothing, and a purchase.
 	// record with an empty currency is worse than one that says USD.
 	$flosc_offer_currency = strtoupper( sanitize_text_field( $flosc_post['offer_currency'] ?? 'USD' ) );
 	if ( '' === $flosc_offer_currency ) {
@@ -336,7 +341,7 @@ function flosc_handle_offer_save() {
 	wp_safe_redirect( esc_url_raw( admin_url( 'admin.php?page=flosc-settings&ivr=' . rawurlencode( $ivr ) . '&tab=offers&saved=1' ) ) );
 	exit;
 }
-flosc_handle_offer_save(); // v1.6.5: Execute at include time
+flosc_handle_offer_save(); // v1.6.5: Execute at include time.
 
 /*
  * There was an unconditional `$flosc_get = wp_unslash($_GET);` here, before any
@@ -504,7 +509,7 @@ $flosc_all_format_meta = array(
 
 <?php
 // ============================================
-// ACTIVE OFFERS SUMMARY
+// ACTIVE OFFERS SUMMARY.
 // ============================================
 $flosc_active_offers = array();
 foreach ( $flosc_offers as $flosc_offer_id => $flosc_offer ) {
@@ -947,8 +952,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <?php
 // ============================================
-// OFFER EDITOR RENDER FUNCTION
+// OFFER EDITOR RENDER FUNCTION.
 // ============================================
+/**
+ * Render the WordPress interface for offer editor v2.
+ *
+ * @param mixed $flosc_offer Input consumed by the Render the Word Press interface for offer editor v2. operation.
+ * @param mixed $flosc_flow_key Name or key used to select the Render the Word Press interface for offer editor v2. value.
+ * @param mixed $flosc_current_ivr IVR identifier or filename used to select the flow configuration.
+ * @param mixed $flosc_all_format_meta Input consumed by the Render the Word Press interface for offer editor v2. operation.
+ */
 function flosc_render_offer_editor_v2( $flosc_offer, $flosc_flow_key, $flosc_current_ivr, $flosc_all_format_meta ) {
 	$is_new         = empty( $flosc_offer );
 	$flosc_offer_id = $flosc_offer['id'] ?? 'new';

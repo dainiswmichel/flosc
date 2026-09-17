@@ -22,12 +22,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC Access Manager behavior and the WordPress services used by its methods.
+ */
 class FLOSC_Access_Manager {
 
 	private $meta_key = '_flosc_access';
 
 	/**
 	 * Get user's complete access state
+ * @param mixed $user_id WordPress user ID whose Resolve the current user access value from the available Word Press and flow state. state is being processed.
+ * @return mixed Result produced by the user access operation.
 	 */
 	public function get_user_access( $user_id ) {
 		$access = get_user_meta( $user_id, $this->meta_key, true );
@@ -39,9 +44,9 @@ class FLOSC_Access_Manager {
 			$access,
 			array(
 				'features'     => array(),
-				'offers'       => array(),          // Purchased offers and their grants
-				'subscription' => null,  // Active subscription details
-				'expires_at'   => null,    // Overall access expiration
+				'offers'       => array(),          // Purchased offers and their grants.
+				'subscription' => null,  // Active subscription details.
+				'expires_at'   => null,    // Overall access expiration.
 				'granted_at'   => null,
 				'updated_at'   => null,
 			)
@@ -124,8 +129,8 @@ class FLOSC_Access_Manager {
 			}
 		}
 
-		// Do NOT call flosc_get_setting() here: without a real flow row it falls back
-		// to global flosc_default_member_level (often pronunciation_learners) and
+		// Do NOT call flosc_get_setting() here: without a real flow row it falls back.
+		// to global flosc_default_member_level (often pronunciation_learners) and.
 		// incorrectly treats every flow as member-eligible.
 
 		$levels = array_values( array_unique( array_filter( $levels ) ) );
@@ -150,7 +155,7 @@ class FLOSC_Access_Manager {
 	 * - Does NOT treat global _flosc_member_access or any other-flow roles as membership on other flows
 	 *
 	 * @param int         $user_id
-	 * @param string|null $flow_id Flow id / ivr / stem. Null = resolve current flow when possible.
+	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
 	 * @return bool
 	 */
 	public function is_member( $user_id, $flow_id = null ) {
@@ -181,7 +186,7 @@ class FLOSC_Access_Manager {
 	 * levels declared on this flow only (never a global product brand branch).
 	 *
 	 * @param int    $user_id
-	 * @param string $stem
+	 * @param mixed $stem Input consumed by the Determine whether the current state satisfies member of flow. operation.
 	 * @return bool
 	 */
 	public function is_member_of_flow( $user_id, $stem ) {
@@ -205,7 +210,7 @@ class FLOSC_Access_Manager {
 			return true;
 		}
 
-		// 3) Levels listed on THIS flow only — prevents cross-flow bleed when
+		// 3) Levels listed on THIS flow only — prevents cross-flow bleed when.
 		// several flows share a similar default level name in config.
 		if ( class_exists( 'FLOSC_Member_Access' ) ) {
 			require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-member-access.php';
@@ -221,8 +226,10 @@ class FLOSC_Access_Manager {
 	}
 
 	/**
+ * Determine whether the current state satisfies purchase history for flow.
+ *
 	 * @param int    $user_id
-	 * @param string $stem
+	 * @param mixed $stem Input consumed by the Determine whether the current state satisfies purchase history for flow. operation.
 	 * @return bool
 	 */
 	private function has_purchase_history_for_flow( $user_id, $stem ) {
@@ -311,7 +318,7 @@ class FLOSC_Access_Manager {
 	 * Whether an active _flosc_access offer belongs to this flow.
 	 *
 	 * @param int    $user_id
-	 * @param string $stem
+	 * @param mixed $stem Input consumed by the Determine whether the current state satisfies active offer for flow. operation.
 	 * @return bool
 	 */
 	private function has_active_offer_for_flow( $user_id, $stem ) {
@@ -329,7 +336,7 @@ class FLOSC_Access_Manager {
 			if ( ! $this->is_offer_active( $offer_data ) ) {
 				continue;
 			}
-			// Require explicit flow_id on the grant — do not treat "offer id exists
+			// Require explicit flow_id on the grant — do not treat "offer id exists.
 			// in this flow's catalog" as purchase of this flow (cross-flow bleed).
 			$offer_flow = sanitize_key( (string) ( $offer_data['flow_id'] ?? '' ) );
 			if ( '' === $offer_flow ) {
@@ -349,6 +356,9 @@ class FLOSC_Access_Manager {
 
 	/**
 	 * Check if user has a specific feature
+ * @param mixed $user_id WordPress user ID whose Determine whether the current state satisfies feature. state is being processed.
+ * @param mixed $feature Input consumed by the Determine whether the current state satisfies feature. operation.
+ * @return bool Whether feature applies to the current state.
 	 */
 	public function has_feature( $user_id, $feature ) {
 		$access  = $this->get_user_access( $user_id );
@@ -403,6 +413,9 @@ class FLOSC_Access_Manager {
 	 * String aliases:
 	 * - 'full' / 'member' → any full member (offer, subscription, or FLOSC_Member_Access)
 	 * - other strings → feature flag via has_feature()
+ * @param mixed $user_id WordPress user ID whose Determine whether the current state satisfies access. state is being processed.
+ * @param mixed $requirement Input consumed by the Determine whether the current state satisfies access. operation.
+ * @return bool Whether access applies to the current state.
 	 */
 	public function can_access( $user_id, $requirement ) {
 		// If requirement is a feature name.
@@ -439,6 +452,10 @@ class FLOSC_Access_Manager {
 
 	/**
 	 * Grant access from an offer purchase
+ * @param mixed $user_id WordPress user ID whose Persist the grant from offer state in Word Press storage. state is being processed.
+ * @param mixed $offer Input consumed by the Persist the grant from offer state in Word Press storage. operation.
+ * @param mixed $transaction Input consumed by the Persist the grant from offer state in Word Press storage. operation.
+ * @return mixed Result produced by the grant from offer operation.
 	 */
 	public function grant_from_offer( $user_id, $offer, $transaction = array() ) {
 		$access = $this->get_user_access( $user_id );
@@ -511,7 +528,7 @@ class FLOSC_Access_Manager {
 			$current_limits = $usage_tracker->get_limits( $user_id );
 
 			foreach ( $grants['usage_limits'] as $event => $limit ) {
-				// -1 means unlimited
+				// -1 means unlimited.
 				if ( -1 === $limit || ! isset( $current_limits[ $event ] ) || $limit > $current_limits[ $event ] ) {
 					$current_limits[ $event ] = $limit;
 				}
@@ -525,7 +542,7 @@ class FLOSC_Access_Manager {
 
 		update_user_meta( $user_id, $this->meta_key, $access );
 
-		// v9.5.5: Store member level for IVR conditions
+		// v9.5.5: Store member level for IVR conditions.
 		// v8.0.1: Fixed — offer schema stores level at grants.level, not member_level.
 		$member_level = $offer['grants']['level'] ?? $offer['member_level'] ?? $offer['id'] ?? 'member';
 		update_user_meta( $user_id, '_flosc_member_level', $member_level );
@@ -567,6 +584,9 @@ class FLOSC_Access_Manager {
 
 	/**
 	 * Grant feature directly
+ * @param mixed $user_id WordPress user ID whose Persist the grant feature state in Word Press storage. state is being processed.
+ * @param mixed $feature Input consumed by the Persist the grant feature state in Word Press storage. operation.
+ * @return bool Whether grant feature applies to the current state.
 	 */
 	public function grant_feature( $user_id, $feature ) {
 		$access = $this->get_user_access( $user_id );
@@ -582,6 +602,9 @@ class FLOSC_Access_Manager {
 
 	/**
 	 * Revoke feature
+ * @param mixed $user_id WordPress user ID whose Persist the revoke feature state in Word Press storage. state is being processed.
+ * @param mixed $feature Input consumed by the Persist the revoke feature state in Word Press storage. operation.
+ * @return bool Whether revoke feature applies to the current state.
 	 */
 	public function revoke_feature( $user_id, $feature ) {
 		$access = $this->get_user_access( $user_id );
@@ -601,6 +624,9 @@ class FLOSC_Access_Manager {
 
 	/**
 	 * Check if user has purchased a specific offer
+ * @param mixed $user_id WordPress user ID whose Determine whether the current state satisfies offer. state is being processed.
+ * @param mixed $offer_id Identifier used to select the record involved in the Determine whether the current state satisfies offer. operation.
+ * @return bool Whether offer applies to the current state.
 	 */
 	public function has_offer( $user_id, $offer_id ) {
 		$access = $this->get_user_access( $user_id );
@@ -614,6 +640,8 @@ class FLOSC_Access_Manager {
 
 	/**
 	 * Revoke all access (reset to guest)
+ * @param mixed $user_id WordPress user ID whose Persist the revoke all state in Word Press storage. state is being processed.
+ * @return bool Whether revoke all applies to the current state.
 	 */
 	public function revoke_all( $user_id ) {
 		$access = array(
@@ -634,6 +662,9 @@ class FLOSC_Access_Manager {
 
 	/**
 	 * Update subscription status
+ * @param mixed $user_id WordPress user ID whose Persist the subscription state in Word Press storage. state is being processed.
+ * @param mixed $subscription_data Structured data consumed by the Persist the subscription state in Word Press storage. operation.
+ * @return mixed Result produced by the subscription operation.
 	 */
 	public function update_subscription( $user_id, $subscription_data ) {
 		$access = $this->get_user_access( $user_id );
@@ -652,6 +683,8 @@ class FLOSC_Access_Manager {
 
 	/**
 	 * Cancel subscription access
+ * @param mixed $user_id WordPress user ID whose Persist the cancel subscription state in Word Press storage. state is being processed.
+ * @return bool Whether cancel subscription applies to the current state.
 	 */
 	public function cancel_subscription( $user_id ) {
 		$access = $this->get_user_access( $user_id );
@@ -670,17 +703,19 @@ class FLOSC_Access_Manager {
 	}
 
 	// =========================================================================
-	// HELPERS
+	// HELPERS.
 	// =========================================================================
 
 	/**
 	 * Calculate expiration date from offer
+ * @param mixed $offer Input consumed by the Coordinate the calculate expiration behavior implemented by this code path. operation.
+ * @return mixed Result produced by the calculate expiration operation.
 	 */
 	private function calculate_expiration( $offer ) {
 		$duration = $offer['grants']['duration_days'] ?? 0;
 
 		if ( $duration <= 0 ) {
-			return null; // Lifetime
+			return null; // Lifetime.
 		}
 
 		return gmdate( 'Y-m-d H:i:s', strtotime( '+' . $duration . ' days' ) );
@@ -688,10 +723,12 @@ class FLOSC_Access_Manager {
 
 	/**
 	 * Check if an offer is still active (not expired)
+ * @param mixed $offer_data Structured data consumed by the Determine whether the current state satisfies offer active. operation.
+ * @return bool Whether offer active applies to the current state.
 	 */
 	private function is_offer_active( $offer_data ) {
 		if ( empty( $offer_data['expires_at'] ) ) {
-			return true; // Lifetime
+			return true; // Lifetime.
 		}
 
 		return strtotime( $offer_data['expires_at'] ) > time();
@@ -699,6 +736,8 @@ class FLOSC_Access_Manager {
 
 	/**
 	 * Check if subscription is active
+ * @param mixed $subscription Input consumed by the Determine whether the current state satisfies subscription active. operation.
+ * @return bool Whether subscription active applies to the current state.
 	 */
 	private function is_subscription_active( $subscription ) {
 		if ( ! $subscription ) {

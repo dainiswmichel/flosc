@@ -31,6 +31,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC Bridge Data Manager behavior and the WordPress services used by its methods.
+ */
 class FLOSC_Bridge_Data_Manager {
 
 	/**
@@ -74,6 +77,7 @@ class FLOSC_Bridge_Data_Manager {
 	 * Handle purchase completion - exit bridge state
 	 *
 	 * @param int $user_id User ID.
+ * @return mixed Result produced by the purchase completed operation.
 	 */
 	public function handle_purchase_completed( $user_id ) {
 		if ( ! $user_id ) {
@@ -92,6 +96,7 @@ class FLOSC_Bridge_Data_Manager {
 	 *
 	 * @param array $quiz_result Quiz results.
 	 * @param int   $user_id User ID.
+ * @return mixed Result produced by the quiz completion operation.
 	 */
 	public function handle_quiz_completion( $quiz_result, $user_id ) {
 		if ( ! $user_id ) {
@@ -105,7 +110,7 @@ class FLOSC_Bridge_Data_Manager {
 		$total     = ( is_array( $correct ) ? count( $correct ) : 0 )
 			+ ( is_array( $incorrect ) ? count( $incorrect ) : 0 );
 		if ( $total < 1 ) {
-			$total = 10; // legacy fallback when callers omit item lists
+			$total = 10; // legacy fallback when callers omit item lists.
 		}
 
 		// Build scoring results from quiz data.
@@ -135,6 +140,7 @@ class FLOSC_Bridge_Data_Manager {
 	 *    - correct_items: (array) IDs/names of correct answers
 	 *    - incorrect_items: (array) IDs/names of incorrect answers
 	 *    - categories: (array) Optional category breakdown
+ * @return mixed Result produced by the external quiz operation.
 	 */
 	public function handle_external_quiz( $user_id, $quiz_id, $score_data ) {
 		if ( ! $user_id || ! is_array( $score_data ) ) {
@@ -160,6 +166,7 @@ class FLOSC_Bridge_Data_Manager {
 	 *
 	 * @param array   $quiz_data LearnDash quiz data.
 	 * @param WP_User $user User object.
+ * @return mixed Result produced by the learndash quiz operation.
 	 */
 	public function handle_learndash_quiz( $quiz_data, $user ) {
 		if ( ! $user || ! isset( $user->ID ) ) {
@@ -168,7 +175,7 @@ class FLOSC_Bridge_Data_Manager {
 
 		$score_data = array(
 			'score'           => $quiz_data['percentage'] ?? 0,
-			'correct_items'   => array(), // LearnDash structure varies
+			'correct_items'   => array(), // LearnDash structure varies.
 			'incorrect_items' => array(),
 			'plugin'          => 'learndash',
 		);
@@ -184,6 +191,7 @@ class FLOSC_Bridge_Data_Manager {
 	 * @param int $attempt_id Attempt ID.
 	 * @param int $course_id Course ID.
 	 * @param int $user_id User ID.
+ * @return mixed Result produced by the tutor quiz operation.
 	 */
 	public function handle_tutor_quiz( $attempt_id, $course_id, $user_id ) {
 		if ( ! $user_id ) {

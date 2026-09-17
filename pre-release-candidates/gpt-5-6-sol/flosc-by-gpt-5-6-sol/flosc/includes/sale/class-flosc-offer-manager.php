@@ -15,6 +15,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC Offer Manager behavior and the WordPress services used by its methods.
+ */
 class FLOSC_Offer_Manager {
 
 	private $option_key = 'flosc_offers';
@@ -22,6 +25,8 @@ class FLOSC_Offer_Manager {
 	private $offer_aliases = array();
 
 	/**
+ * Resolve the current offer aliases value from the available WordPress and flow state.
+ *
 	 * @return array<string,string>
 	 */
 	private function get_offer_aliases() {
@@ -50,6 +55,8 @@ class FLOSC_Offer_Manager {
 	 * v1.6.5: Seeds defaults into per-flow storage on first access so admin can edit them
 	 *
 	 * @since 1.6.2
+ * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+ * @return mixed Result produced by the all offers operation.
 	 */
 	public function get_all_offers( $flow_id = null ) {
 		// v1.6.2: Try per-flow storage first (where admin offers.php saves).
@@ -95,6 +102,8 @@ class FLOSC_Offer_Manager {
 	 * Flow-aware
 	 *
 	 * @since 1.6.2
+ * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+ * @return mixed Result produced by the active offers operation.
 	 */
 	public function get_active_offers( $flow_id = null ) {
 		$offers = $this->get_all_offers( $flow_id );
@@ -111,6 +120,9 @@ class FLOSC_Offer_Manager {
 	 * Flow-aware
 	 *
 	 * @since 1.6.2
+ * @param mixed $offer_id Identifier used to select the record involved in the Resolve the current offer value from the available Word Press and flow state. operation.
+ * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+ * @return mixed Result produced by the offer operation.
 	 */
 	public function get_offer( $offer_id, $flow_id = null ) {
 		$offers = $this->get_all_offers( $flow_id );
@@ -124,6 +136,8 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Get offers by type
+ * @param mixed $type Input consumed by the Resolve the current offers by type value from the available Word Press and flow state. operation.
+ * @return mixed Result produced by the offers by type operation.
 	 */
 	public function get_offers_by_type( $type ) {
 		$offers = $this->get_active_offers();
@@ -137,6 +151,8 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Create a new offer
+ * @param mixed $data Structured data consumed by the Persist the offer state in Word Press storage. operation.
+ * @return mixed Result produced by the offer operation.
 	 */
 	public function create_offer( $data ) {
 		$offers = $this->get_all_offers();
@@ -163,6 +179,9 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Update an offer
+ * @param mixed $offer_id Identifier used to select the record involved in the Persist the offer state in Word Press storage. operation.
+ * @param mixed $data Structured data consumed by the Persist the offer state in Word Press storage. operation.
+ * @return mixed Result of the offer operation, or a WP_Error when it cannot complete.
 	 */
 	public function update_offer( $offer_id, $data ) {
 		$offers = $this->get_all_offers();
@@ -189,6 +208,8 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Delete an offer
+ * @param mixed $offer_id Identifier used to select the record involved in the Persist the offer state in Word Press storage. operation.
+ * @return bool Whether offer applies to the current state.
 	 */
 	public function delete_offer( $offer_id ) {
 		$offers = $this->get_all_offers();
@@ -209,6 +230,9 @@ class FLOSC_Offer_Manager {
 	/**
 	 * Sync IVR-defined offer messages into the editable offer registry.
 	 * Keeps the IVR file as the source of truth for visible offer copy/format.
+ * @param mixed $offers Input consumed by the Coordinate the sync ivr offers into offers behavior implemented by this code path. operation.
+ * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+ * @return mixed Result produced by the sync ivr offers into offers operation.
 	 */
 	private function sync_ivr_offers_into_offers( $offers, $flow_id = null ) {
 		if ( empty( $flow_id ) ) {
@@ -279,6 +303,10 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Build a normalized offer record from an IVR offer message.
+ * @param mixed $existing Input consumed by the Normalize the input into the canonical form required for normalize ivr offer message. operation.
+ * @param mixed $msg Input consumed by the Normalize the input into the canonical form required for normalize ivr offer message. operation.
+ * @param mixed $offer_id Identifier used to select the record involved in the Normalize the input into the canonical form required for normalize ivr offer message. operation.
+ * @return mixed Result produced by the normalize ivr offer message operation.
 	 */
 	private function normalize_ivr_offer_message( $existing, $msg, $offer_id ) {
 		$name = trim( (string) ( $msg['title'] ?? '' ) );
@@ -303,7 +331,7 @@ class FLOSC_Offer_Manager {
 			}
 		}
 
-		// Preserve admin status/active. Previously this always forced status=active,
+		// Preserve admin status/active. Previously this always forced status=active,.
 		// which re-enabled sandbox offers after floscAdmin turned them off.
 		if ( ! empty( $existing ) && is_array( $existing ) ) {
 			$status = strtolower( (string) ( $existing['status'] ?? 'active' ) );
@@ -364,6 +392,8 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Resolve the active IVR file for a flow.
+ * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+ * @return mixed Result produced by the flow ivr file operation.
 	 */
 	private function get_flow_ivr_file( $flow_id ) {
 		$flow_key        = 'flosc_flow_' . sanitize_key( $flow_id );
@@ -410,6 +440,8 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Validate and normalize offer data
+ * @param mixed $data Structured data consumed by the Validate the input and trust conditions required for offer data. operation.
+ * @return mixed Result produced by the offer data operation.
 	 */
 	private function validate_offer_data( $data ) {
 		$defaults = array(
@@ -422,25 +454,25 @@ class FLOSC_Offer_Manager {
 			// Pricing (provider-specific).
 			'pricing'        => array(
 				'stripe'       => array(
-					'price_id'   => '',       // Stripe Price ID
-					'product_id' => '',     // Stripe Product ID
+					'price_id'   => '',       // Stripe Price ID.
+					'product_id' => '',     // Stripe Product ID.
 				),
 				'tokens'       => array(
-					'cost' => 0,            // Cost in tokens
+					'cost' => 0,            // Cost in tokens.
 				),
 				'affiliate'    => array(
-					'credit_amount' => 0,   // How much affiliate credit unlocks this
+					'credit_amount' => 0,   // How much affiliate credit unlocks this.
 				),
-				'redirect_url' => '',       // MTS-2026-02-03: External checkout URL
+				'redirect_url' => '',       // MTS-2026-02-03: External checkout URL.
 			),
 
 			// Display pricing (for UI, not for charging).
-			'display_price'  => '',          // e.g., "€144" or "500 tokens" or "Free with purchase"
+			'display_price'  => '',          // e.g., "€144" or "500 tokens" or "Free with purchase".
 			'original_price' => '',         // MTS-2026-02-03: Original price (for strikethrough)
 
 			// MTS-2026-02-03: [DISPLAY-OPTIONS] Configurable display format.
-			'display_format' => 'card',     // pill, card, compact, banner, featured, text, inline-checkout
-			'cta'            => '',                    // Custom CTA button text
+			'display_format' => 'card',     // pill, card, compact, banner, featured, text, inline-checkout.
+			'cta'            => '',                    // Custom CTA button text.
 			'timer_seconds'  => 3600,        // Countdown timer (0 = no timer)
 			'guarantee'      => '',              // Guarantee text (e.g., "30-day money-back guarantee")
 
@@ -453,18 +485,18 @@ class FLOSC_Offer_Manager {
 
 			// For token packs.
 			'tokens'         => array(
-				'amount' => 0,              // How many tokens this grants
-				'bonus'  => 0,               // Bonus tokens
+				'amount' => 0,              // How many tokens this grants.
+				'bonus'  => 0,               // Bonus tokens.
 			),
 
 			// Access grants.
 			'grants'         => array(
-				'features'      => array(),           // Feature flags to enable
+				'features'      => array(),           // Feature flags to enable.
 				// Member level to grant, recorded 2026-02-03.
 				'level'         => '',
 				// Days of access. Zero means it never expires.
 				'duration_days' => 0,
-				// Per-event caps, keyed by event name; an AI query cap is the
+				// Per-event caps, keyed by event name; an AI query cap is the.
 				// usual one. Empty means no cap.
 				'usage_limits'  => array(),
 			),
@@ -473,7 +505,7 @@ class FLOSC_Offer_Manager {
 			'meta'           => array(
 				'badge'   => '',              // Badge text (e.g., "Most Popular")
 				'savings' => '',            // Savings text (e.g., "Save 20%")
-				'icon'    => '',               // Emoji or icon
+				'icon'    => '',               // Emoji or icon.
 			),
 
 			'sort_order'     => 0,
@@ -486,6 +518,7 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Get default offers (starter configuration)
+ * @return array Structured default offers data.
 	 */
 	private function get_default_offers() {
 		return array(
@@ -534,7 +567,7 @@ class FLOSC_Offer_Manager {
 				'pricing'        => array(
 					'price'     => 49.00,
 					'currency'  => 'USD',
-					'processor' => 'paypal',  // Change to 'stripe' when Stripe is configured
+					'processor' => 'paypal',  // Change to 'stripe' when Stripe is configured.
 					'stripe'    => array(
 						'price_id'   => '',
 						'product_id' => '',
@@ -545,7 +578,7 @@ class FLOSC_Offer_Manager {
 				'grants'         => array(
 					'features'      => array( 'quiz', 'all_lessons', 'ai_coach', 'certificates' ),
 					'level'         => 'full_access',
-					'duration_days' => 0, // Lifetime
+					'duration_days' => 0, // Lifetime.
 					'usage_limits'  => array(),
 				),
 				'grants_level'   => 'full_access',
@@ -563,7 +596,7 @@ class FLOSC_Offer_Manager {
 				'name'          => '100 Tokens',
 				'description'   => 'Pay-per-use credits',
 				'type'          => self::TYPE_TOKENS,
-				'status'        => 'draft', // Not active by default
+				'status'        => 'draft', // Not active by default.
 				'display_price' => 'Configure in Stripe',
 				'pricing'       => array(
 					'stripe'    => array( 'price_id' => '' ),
@@ -588,7 +621,7 @@ class FLOSC_Offer_Manager {
 				'name'          => 'Monthly Access',
 				'description'   => 'Full access, billed monthly',
 				'type'          => self::TYPE_SUBSCRIPTION,
-				'status'        => 'draft', // Not active by default
+				'status'        => 'draft', // Not active by default.
 				'display_price' => 'Configure in Stripe',
 				'pricing'       => array(
 					'stripe'    => array( 'price_id' => '' ),
@@ -611,7 +644,7 @@ class FLOSC_Offer_Manager {
 
 			// ============================================
 			// Example site-owner content offers only.
-			// Never seed a paid "buy the FLOSC plugin" / plugin-feature unlock
+			// Never seed a paid "buy the FLOSC plugin" / plugin-feature unlock.
 			// (WordPress.org guidelines 5 and 9 — WPORG-01).
 			// ============================================
 
@@ -639,7 +672,7 @@ class FLOSC_Offer_Manager {
 				'grants'         => array(
 					'features'      => array( 'solfeggio_lessons', 'solfeggio_exercises', 'ai_coach', 'all_quizzes' ),
 					'level'         => 'simplified_solfeggio_member',
-					'duration_days' => 0, // Lifetime
+					'duration_days' => 0, // Lifetime.
 					'usage_limits'  => array(),
 				),
 				'meta'           => array(
@@ -713,6 +746,7 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Get offer types for admin UI
+ * @return array Structured offer types data.
 	 */
 	public function get_offer_types() {
 		return array(
@@ -737,6 +771,7 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Get subscription intervals for admin UI
+ * @return array Structured intervals data.
 	 */
 	public function get_intervals() {
 		return array(
@@ -748,6 +783,7 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * MTS-2026-02-03: [DISPLAY-FORMATS] Get available display formats for admin UI
+ * @return array Structured display formats data.
 	 */
 	public function get_display_formats() {
 		return array(
@@ -791,6 +827,9 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Calculate effective price from an offer for a provider
+ * @param mixed $offer_id Identifier used to select the record involved in the Resolve the current offer price value from the available Word Press and flow state. operation.
+ * @param mixed $provider_id Provider identifier or object used for the Resolve the current offer price value from the available Word Press and flow state. operation.
+ * @return mixed Result produced by the offer price operation.
 	 */
 	public function get_offer_price( $offer_id, $provider_id ) {
 		$offer = $this->get_offer( $offer_id );
@@ -805,6 +844,8 @@ class FLOSC_Offer_Manager {
 	/**
 	 * Get offer by product ID (site-owner content products only).
 	 * Does not map a paid unlock of the FLOSC plugin itself.
+ * @param mixed $product_id Identifier used to select the record involved in the Resolve the current offer by product value from the available Word Press and flow state. operation.
+ * @return mixed Result produced by the offer by product operation.
 	 */
 	public function get_offer_by_product( $product_id ) {
 		$product_id = sanitize_key( (string) $product_id );
@@ -831,6 +872,8 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Get member level for a site-owner content product (flow default level).
+ * @param mixed $product_id Identifier used to select the record involved in the Resolve the current member level for product value from the available Word Press and flow state. operation.
+ * @return mixed Result produced by the member level for product operation.
 	 */
 	public function get_member_level_for_product( $product_id ) {
 		$product_id = sanitize_key( (string) $product_id );
@@ -846,6 +889,7 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Product IDs = configured flow IDs (site instances of FLOSC), not brand seeds.
+ * @return mixed Result produced by the product ids operation.
 	 */
 	public function get_product_ids() {
 		$ids = array();
@@ -882,6 +926,8 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Product metadata from a configured flow (instance), not hard-coded brands.
+ * @param mixed $product_id Identifier used to select the record involved in the Resolve the current product metadata value from the available Word Press and flow state. operation.
+ * @return array Structured product metadata data.
 	 */
 	public function get_product_metadata( $product_id ) {
 		$product_id = sanitize_key( (string) $product_id );

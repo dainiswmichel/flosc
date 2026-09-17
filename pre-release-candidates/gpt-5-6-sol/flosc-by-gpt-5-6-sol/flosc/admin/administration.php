@@ -29,9 +29,9 @@ $flosc_first_name = $flosc_user_id > 0 ? (string) get_user_meta( $flosc_user_id,
 $flosc_last_name  = $flosc_user_id > 0 ? (string) get_user_meta( $flosc_user_id, 'last_name', true ) : '';
 $flosc_roles      = ( ! empty( $flosc_user->roles ) && is_array( $flosc_user->roles ) ) ? implode( ', ', $flosc_user->roles ) : '';
 
-// Public Request Protection. These were fixed numbers inside includes/flosc-rest.php
-// until a live visitor was refused after one message and read "Rate limit reached"
-// as the AI provider saying no. It was FLOSC's own per-IP bucket. A limit nobody
+// Public Request Protection. These were fixed numbers inside includes/flosc-rest.php.
+// until a live visitor was refused after one message and read "Rate limit reached".
+// as the AI provider saying no. It was FLOSC's own per-IP bucket. A limit nobody.
 // can see or change is indistinguishable from a broken site.
 $flosc_protection_defaults = array(
 	'enabled'                  => '1',
@@ -53,8 +53,8 @@ $flosc_protection_fields = array(
 	'visitor_compute_limit'    => array( 'Visitor compute', 'The stricter ceiling for metered compute from someone who is not logged in.' ),
 );
 
-// What FLOSC tells an AI provider about itself. Both on by default; both are
-// one click to turn off. Nothing here reaches flosc.ai or da1.fm — it rides on
+// What FLOSC tells an AI provider about itself. Both on by default; both are.
+// one click to turn off. Nothing here reaches flosc.ai or da1.fm — it rides on.
 // the request the floscAdmin's own key is already paying for, and nowhere else.
 $flosc_identity_defaults = array(
 	'enabled'   => '1',

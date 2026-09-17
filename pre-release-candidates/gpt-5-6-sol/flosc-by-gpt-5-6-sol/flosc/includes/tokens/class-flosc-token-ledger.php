@@ -333,16 +333,16 @@ class FLOSC_Token_Ledger {
 		if ( ! $got ) {
 			global $wpdb;
 			$stale_before = time() - 30;
-			// Stale-lock steal. add_option() above is the atomic acquire (it returns
-			// false when the row already exists); this reclaims a lock whose holder
-			// died, and only when it is older than 30s. It must be one atomic
-			// conditional UPDATE: get_option() + update_option() is a race in which
-			// two requests both read the same stale lock and both believe they won,
-			// and WordPress exposes no compare-and-swap for options. $updated === 1
+			// Stale-lock steal. add_option() above is the atomic acquire (it returns.
+			// false when the row already exists); this reclaims a lock whose holder.
+			// died, and only when it is older than 30s. It must be one atomic.
+			// conditional UPDATE: get_option() + update_option() is a race in which.
+			// two requests both read the same stale lock and both believe they won,.
+			// and WordPress exposes no compare-and-swap for options. $updated === 1.
 			// is precisely how this request learns it took the lock.
 			//
-			// Caching is not applicable and would be harmful -- a lock is only a lock
-			// if the check reaches the database. Table is core wp_options, values are
+			// Caching is not applicable and would be harmful -- a lock is only a lock.
+			// if the check reaches the database. Table is core wp_options, values are.
 			// bound through prepare(), and the query runs only on lock contention.
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic lock steal; see above.
 			$updated = (int) $wpdb->query(
@@ -558,7 +558,7 @@ class FLOSC_Token_Ledger {
 			: 0;
 		$grant_amount     = max( 0, intval( $this->flosc->flosc_get_guest_token_grant_amount( $flow_id, $user_id ) ) );
 
-		// Client always sends visitor_session_id when available; allow 0 remaining + grant
+		// Client always sends visitor_session_id when available; allow 0 remaining + grant.
 		// even if session id is missing (first load without localStorage).
 		$balance = $this->flosc->flosc_apply_guest_token_grant_once( $user_id, $flow_id, $session_raw, true );
 
@@ -620,7 +620,7 @@ class FLOSC_Token_Ledger {
 
 		$value = intval( $this->flosc_get_visitor_session_token_balance( $flow_id, $session_id, $token_provider ) );
 
-		// Same low-balance resolution the chat response uses, so the header can
+		// Same low-balance resolution the chat response uses, so the header can.
 		// show the low-tokens nudge consistently across surfaces.
 		$low_token_threshold = $this->flosc->flosc_get_low_token_threshold( $flow_id );
 		$low_tokens_message  = $this->flosc->flosc_get_visitor_low_tokens_message( $flow_id );

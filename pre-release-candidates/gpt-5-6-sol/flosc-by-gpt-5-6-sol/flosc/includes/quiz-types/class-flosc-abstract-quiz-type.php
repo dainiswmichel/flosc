@@ -13,6 +13,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC Abstract Quiz Type behavior and the WordPress services used by its methods.
+ */
 abstract class FLOSC_Abstract_Quiz_Type {
 
 	/**
@@ -253,7 +256,7 @@ abstract class FLOSC_Abstract_Quiz_Type {
 			switch ( $type ) {
 				case 'post':
 					if ( false !== strpos( $value, '/' ) ) {
-						// Hierarchical path (e.g. vowels/lesson-1) — try all public post types
+						// Hierarchical path (e.g. vowels/lesson-1) — try all public post types.
 						// because the same slug can exist under different parents.
 						foreach ( get_post_types( array( 'public' => true ), 'names' ) as $pt ) {
 							$post = get_page_by_path( $value, OBJECT, $pt );
@@ -460,6 +463,9 @@ abstract class FLOSC_Abstract_Quiz_Type {
 
 	/**
 	 * Helper: Calculate percentage score
+ * @param mixed $correct_count Input consumed by the Coordinate the calculate percentage behavior implemented by this code path. operation.
+ * @param mixed $total_count Input consumed by the Coordinate the calculate percentage behavior implemented by this code path. operation.
+ * @return mixed Result produced by the calculate percentage operation.
 	 */
 	protected function calculate_percentage( $correct_count, $total_count ) {
 		if ( 0 === $total_count ) {
@@ -470,6 +476,8 @@ abstract class FLOSC_Abstract_Quiz_Type {
 
 	/**
 	 * Helper: Determine response key from score
+ * @param mixed $score Input consumed by the Resolve the current response key from score value from the available Word Press and flow state. operation.
+ * @return mixed Result produced by the response key from score operation.
 	 */
 	protected function get_response_key_from_score( $score ) {
 		if ( $score <= 30 ) {

@@ -21,25 +21,32 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC Payment Provider behavior and the WordPress services used by its methods.
+ */
 abstract class FLOSC_Payment_Provider {
 
 	/**
 	 * Unique provider ID
+ * @return bool Whether id applies to the current state.
 	 */
 	abstract public function get_id();
 
 	/**
 	 * Provider display name
+ * @return bool Whether name applies to the current state.
 	 */
 	abstract public function get_name();
 
 	/**
 	 * Description for admin
+ * @return bool Whether description applies to the current state.
 	 */
 	abstract public function get_description();
 
 	/**
 	 * Optional icon for admin UI
+ * @return mixed Result produced by the icon operation.
 	 */
 	public function get_icon() {
 		return '💳';
@@ -47,11 +54,13 @@ abstract class FLOSC_Payment_Provider {
 
 	/**
 	 * Check if provider is properly configured
+ * @return bool Whether configured applies to the current state.
 	 */
 	abstract public function is_configured();
 
 	/**
 	 * Check if provider is enabled
+ * @return bool Whether enabled applies to the current state.
 	 */
 	public function is_enabled() {
 		return get_option( 'flosc_provider_' . $this->get_id() . '_enabled', true );
@@ -59,6 +68,7 @@ abstract class FLOSC_Payment_Provider {
 
 	/**
 	 * Enable/disable the provider
+ * @param mixed $enabled Input consumed by the Persist the enabled state in Word Press storage. operation.
 	 */
 	public function set_enabled( $enabled ) {
 		update_option( 'flosc_provider_' . $this->get_id() . '_enabled', (bool) $enabled );
@@ -66,6 +76,7 @@ abstract class FLOSC_Payment_Provider {
 
 	/**
 	 * Get provider settings fields for admin
+ * @return bool Whether settings fields applies to the current state.
 	 */
 	abstract public function get_settings_fields();
 
@@ -73,7 +84,7 @@ abstract class FLOSC_Payment_Provider {
 	 * Process a payment
 	 *
 	 * @param int   $user_id
-	 * @param array $offer The offer being purchased.
+	 * @param mixed $offer Input consumed by the Persist the payment state in Word Press storage. operation.
 	 * @param array $payment_data Provider-specific data.
 	 * @return array|WP_Error Transaction result or error
 	 */
@@ -148,6 +159,7 @@ abstract class FLOSC_Payment_Provider {
 
 	/**
 	 * Get client-side config for JS
+ * @return array Structured client config data.
 	 */
 	public function get_client_config() {
 		return array();
@@ -171,6 +183,7 @@ abstract class FLOSC_Payment_Provider {
 
 	/**
 	 * Check if provider supports subscriptions
+ * @return bool Whether supports subscriptions applies to the current state.
 	 */
 	public function supports_subscriptions() {
 		return false;
@@ -215,6 +228,8 @@ abstract class FLOSC_Payment_Provider {
 
 	/**
 	 * Helper: Save a setting
+ * @param mixed $key Name or key used to select the Persist the setting state in Word Press storage. value.
+ * @param mixed $value Value consumed or normalized by the Persist the setting state in Word Press storage. operation.
 	 */
 	protected function save_setting( $key, $value ) {
 		update_option( 'flosc_' . $this->get_id() . '_' . $key, $value );
@@ -222,6 +237,9 @@ abstract class FLOSC_Payment_Provider {
 
 	/**
 	 * Helper: Get a setting
+ * @param mixed $key Name or key used to select the Resolve the current setting value from the available Word Press and flow state. value.
+ * @param mixed $fallback Fallback value returned when no more specific value is available.
+ * @return mixed Result produced by the setting operation.
 	 */
 	protected function get_setting( $key, $fallback = '' ) {
 		return get_option( 'flosc_' . $this->get_id() . '_' . $key, $fallback );

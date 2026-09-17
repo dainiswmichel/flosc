@@ -50,7 +50,7 @@ $flosc_engagement_docs_inventory_url = add_query_arg(
 	admin_url( 'admin.php' )
 ) . '#inventory-communication-family';
 
-// ── Default rule parameters (starter values only — floscAdmin edits these) ────
+// ── Default rule parameters (starter values only — floscAdmin edits these) ────.
 $flosc_default_rules = array(
 	array(
 		'id'             => 'visitor_chat_open',
@@ -340,7 +340,7 @@ $flosc_count_active = static function ( $rules ) {
 };
 
 // Profile activity (this flow only).
-// Match registration_flow / last_flow against stem variants — writers sometimes
+// Match registration_flow / last_flow against stem variants — writers sometimes.
 // sanitize_key() a full "file.md" (becomes filmd) while the admin stem is pathinfo().
 $flosc_summary_users = array();
 if ( '' !== $flosc_flow_id || '' !== $flosc_current_ivr ) {
@@ -529,7 +529,7 @@ $flosc_framework = class_exists( 'FLOSC_Framework' ) ? FLOSC_Framework::instance
 	<div class="flosc-eng-audience-accordions">
 
 		<?php
-		// ── Visitor ──────────────────────────────────────────────────────────
+		// ── Visitor ──────────────────────────────────────────────────────────.
 		$flosc_v_active = $flosc_count_active( $flosc_visitor_rules );
 		?>
 		<details class="flosc-eng-accordion flosc-eng-accordion--visitor">
@@ -554,7 +554,7 @@ $flosc_framework = class_exists( 'FLOSC_Framework' ) ? FLOSC_Framework::instance
 		</details>
 
 		<?php
-		// ── Guest ────────────────────────────────────────────────────────────
+		// ── Guest ────────────────────────────────────────────────────────────.
 		$flosc_g_active = $flosc_count_active( $flosc_guest_rules );
 		?>
 		<details class="flosc-eng-accordion flosc-eng-accordion--guest" open>
@@ -594,7 +594,7 @@ $flosc_framework = class_exists( 'FLOSC_Framework' ) ? FLOSC_Framework::instance
 		</details>
 
 		<?php
-		// ── Member ───────────────────────────────────────────────────────────
+		// ── Member ───────────────────────────────────────────────────────────.
 		$flosc_m_active = $flosc_count_active( $flosc_member_rules );
 		?>
 		<details class="flosc-eng-accordion flosc-eng-accordion--member">

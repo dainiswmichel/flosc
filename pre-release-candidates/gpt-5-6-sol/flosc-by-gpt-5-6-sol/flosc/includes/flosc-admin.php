@@ -3,13 +3,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC Admin Trait behavior and the WordPress services used by its methods.
+ */
 trait FLOSC_Admin_Trait {
 	/**
 	 * Admin Menu
 	 * v05_02: Menu shortcuts to Settings tabs in logical order
 	 */
 	public function add_admin_menu() {
-		// v1.2.8: Simplified - Settings page IS the main page
+		// v1.2.8: Simplified - Settings page IS the main page.
 		// IVR file dropdown selects which flow to edit.
 
 		// Main FLOSC menu - goes directly to Settings.
@@ -131,7 +134,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_login_tab' )
 		);
 
-		// 3. Chat Styling
+		// 3. Chat Styling.
 		add_submenu_page(
 			'flosc-settings',
 			'Style',
@@ -151,7 +154,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'render_ui_navigation_page' )
 		);
 
-		// 4. AI Configuration
+		// 4. AI Configuration.
 		add_submenu_page(
 			'flosc-settings',
 			'AI',
@@ -521,6 +524,7 @@ trait FLOSC_Admin_Trait {
 	 *
 	 * @param string $option_name Setting name.
 	 * @param array  $allowed_keys Allowed option keys from get_settings_fields()['options'].
+ * @return mixed Result produced by the select setting value operation.
 	 */
 	private function register_select_setting_value( $option_name, $allowed_keys ) {
 		$allowed_keys  = array_values( array_filter( array_map( 'sanitize_key', (array) $allowed_keys ) ) );
@@ -773,10 +777,12 @@ trait FLOSC_Admin_Trait {
 	 * Loads flosc-admin.css on FLOSC admin pages
 	 *
 	 * @since 1.0.4
+ * @param mixed $hook Input consumed by the Coordinate the enqueue admin assets behavior implemented by this code path. operation.
+ * @return mixed Result produced by the enqueue admin assets operation.
 	 */
 	public function enqueue_admin_assets( $hook ) {
-		// §12: Post-visibility metabox styles render on the post editor (post.php / post-new.php),
-		// which is a different screen than the FLOSC settings pages. Enqueue them there via an
+		// §12: Post-visibility metabox styles render on the post editor (post.php / post-new.php),.
+		// which is a different screen than the FLOSC settings pages. Enqueue them there via an.
 		// inline-only style handle instead of echoing a <style> tag inside the metabox markup.
 		if ( 'post.php' === $hook || 'post-new.php' === $hook ) {
 			wp_register_style( 'flosc-metabox', false, array(), FLOSC_VERSION );
@@ -789,9 +795,9 @@ trait FLOSC_Admin_Trait {
 				'.flosc-post-visibility-meta-box .flosc-protection-options label:hover { background: #f0f0f1; }' .
 				'.flosc-post-visibility-meta-box .flosc-protection-options .option-desc { color: #666; font-size: 11px; display: block; margin-left: 22px; }'
 			);
-			// Concierge metabox rules ride the same handle. They must be added
+			// Concierge metabox rules ride the same handle. They must be added.
 			// HERE (admin_enqueue_scripts) and not inside render_meta_box():
-			// by metabox render time the head styles have already printed, and
+			// by metabox render time the head styles have already printed, and.
 			// inline data attached to a printed handle is silently discarded.
 			wp_add_inline_style(
 				'flosc-metabox',
@@ -803,7 +809,7 @@ trait FLOSC_Admin_Trait {
 			return;
 		}
 
-		// Only load on FLOSC admin pages
+		// Only load on FLOSC admin pages.
 		// v1.2.8: Simplified - just check for 'flosc'.
 		if ( false === strpos( $hook, 'flosc' ) &&
 			'toplevel_page_flosc-settings' !== $hook ) {
@@ -820,10 +826,10 @@ trait FLOSC_Admin_Trait {
 			);
 		}
 
-		// §12: Footer-printed script handle (no src) that FLOSC admin page templates
-		// attach their page JS to via wp_add_inline_script('flosc-admin', ...), instead
+		// §12: Footer-printed script handle (no src) that FLOSC admin page templates.
+		// attach their page JS to via wp_add_inline_script('flosc-admin', ...), instead.
 		// of echoing raw <script> tags. Registering it here (on admin_enqueue_scripts)
-		// means the handle is enqueued before render, so inline JS added during the page
+		// means the handle is enqueued before render, so inline JS added during the page.
 		// body still prints in the admin footer. jQuery dep covers the existing jQuery use.
 		wp_register_script( 'flosc-admin', false, array( 'jquery' ), FLOSC_VERSION, true );
 		wp_enqueue_script( 'flosc-admin' );
@@ -933,7 +939,7 @@ trait FLOSC_Admin_Trait {
 		}
 
 		// Tame WordPress admin footer (#wpfooter) on FLOSC pages.
-		// WP core uses position:fixed/absolute which causes the "Version X.X.X" text
+		// WP core uses position:fixed/absolute which causes the "Version X.X.X" text.
 		// to float over FLOSC admin content at various zoom levels.
 		// Fix: make it flow normally in the document, properly positioned at the bottom.
 		wp_add_inline_style(
@@ -951,6 +957,8 @@ trait FLOSC_Admin_Trait {
 	 * Only applies on FLOSC admin pages (checked via current screen).
 	 *
 	 * @since 8.0.0
+ * @param mixed $text Input consumed by the Coordinate the relabel admin footer behavior implemented by this code path. operation.
+ * @return mixed Result produced by the relabel admin footer operation.
 	 */
 	public function relabel_admin_footer( $text ) {
 		$screen = get_current_screen();
@@ -966,6 +974,8 @@ trait FLOSC_Admin_Trait {
 	 * on FLOSC admin pages only.
 	 *
 	 * @since 8.0.0
+ * @param mixed $text Input consumed by the Coordinate the relabel admin footer left behavior implemented by this code path. operation.
+ * @return mixed Result produced by the relabel admin footer left operation.
 	 */
 	public function relabel_admin_footer_left( $text ) {
 		$screen = get_current_screen();
@@ -990,14 +1000,15 @@ trait FLOSC_Admin_Trait {
 	 * Menu callbacks run after admin chrome starts; if headers are already sent,
 	 * wp_safe_redirect is a no-op and exit leaves a blank content pane
 	 * (seen on UI & Nav → page=flosc-ui-navigation).
+ * @return mixed Result produced by the redirect flosc admin shortcuts operation.
 	 */
 	public function maybe_redirect_flosc_admin_shortcuts() {
 		if ( ! is_admin() || wp_doing_ajax() || ( defined( 'DOING_CRON' ) && DOING_CRON ) ) {
 			return;
 		}
 
-		// Read-only admin menu routing, capability-checked below. The comment that
-		// stood here claimed filter_input was used to avoid PHPCS noise; the code
+		// Read-only admin menu routing, capability-checked below. The comment that.
+		// stood here claimed filter_input was used to avoid PHPCS noise; the code.
 		// read $_GET directly and the warning was reported anyway.
 		$page = flosc_nav_param( 'page' );
 		if ( '' === $page || 'flosc-settings' === $page ) {
@@ -1064,13 +1075,14 @@ trait FLOSC_Admin_Trait {
 	/**
 	 * Process FLOSC Settings form POSTs that redirect (Save, trajectory, concierge).
 	 * Must run on admin_init — render_admin_page already has headers sent.
+ * @return mixed Result produced by the settings post operation.
 	 */
 	public function maybe_process_flosc_settings_post() {
 		if ( ! is_admin() || wp_doing_ajax() || ( defined( 'DOING_CRON' ) && DOING_CRON ) ) {
 			return;
 		}
 
-		// Which admin screen this is. Selection only; the POST body below is what
+		// Which admin screen this is. Selection only; the POST body below is what.
 		// carries intent, and each handler verifies its own nonce before writing.
 		if ( 'flosc-settings' !== flosc_nav_param( 'page' ) ) {
 			return;
@@ -1125,7 +1137,7 @@ trait FLOSC_Admin_Trait {
 			return;
 		}
 
-		// Ends the request on a bad or missing nonce. Nothing below runs unless
+		// Ends the request on a bad or missing nonce. Nothing below runs unless.
 		// this passes, so every $_POST read after it is verified input.
 		check_admin_referer( $flosc_routes[ $flosc_route ][0], $flosc_routes[ $flosc_route ][1] );
 
@@ -1285,107 +1297,185 @@ trait FLOSC_Admin_Trait {
 		$this->redirect_to_settings_tab( 'product' );
 	}
 
-	public function redirect_to_flow_tab() {
+		/**
+	 * Coordinate the redirect to flow tab behavior implemented by this code path.
+	 */
+public function redirect_to_flow_tab() {
 		$this->redirect_to_settings_tab( 'flow' );
 	}
 
-	public function redirect_to_identity_tab() {
+		/**
+	 * Coordinate the redirect to identity tab behavior implemented by this code path.
+	 */
+public function redirect_to_identity_tab() {
 		$this->redirect_to_settings_tab( 'identity' );
 	}
 
-	public function redirect_to_ivr_tab() {
+		/**
+	 * Coordinate the redirect to ivr tab behavior implemented by this code path.
+	 */
+public function redirect_to_ivr_tab() {
 		$this->redirect_to_settings_tab( 'ivr-messages' );
 	}
 
-	public function redirect_to_autoprompts_tab() {
+		/**
+	 * Coordinate the redirect to autoprompts tab behavior implemented by this code path.
+	 */
+public function redirect_to_autoprompts_tab() {
 		$this->redirect_to_settings_tab( 'autoprompts' );
 	}
 
-	public function redirect_to_content_tab() {
+		/**
+	 * Coordinate the redirect to content tab behavior implemented by this code path.
+	 */
+public function redirect_to_content_tab() {
 		$this->redirect_to_settings_tab( 'content' );
 	}
 
-	public function redirect_to_knowledge_base_tab() {
+		/**
+	 * Coordinate the redirect to knowledge base tab behavior implemented by this code path.
+	 */
+public function redirect_to_knowledge_base_tab() {
 		$this->redirect_to_settings_tab( 'knowledge-base' );
 	}
 
-	public function redirect_to_member_levels_tab() {
+		/**
+	 * Coordinate the redirect to member levels tab behavior implemented by this code path.
+	 */
+public function redirect_to_member_levels_tab() {
 		$this->redirect_to_content_tab();
 	}
 
-	public function redirect_to_trajectories_tab() {
+		/**
+	 * Coordinate the redirect to trajectories tab behavior implemented by this code path.
+	 */
+public function redirect_to_trajectories_tab() {
 		$this->redirect_to_settings_tab( 'trajectories' );
 	}
 
-	public function redirect_to_style_tab() {
+		/**
+	 * Coordinate the redirect to style tab behavior implemented by this code path.
+	 */
+public function redirect_to_style_tab() {
 		$this->redirect_to_settings_tab( 'style' );
 	}
 
-	public function redirect_to_ai_tab() {
+		/**
+	 * Coordinate the redirect to ai tab behavior implemented by this code path.
+	 */
+public function redirect_to_ai_tab() {
 		$this->redirect_to_settings_tab( 'ai' );
 	}
 
-	public function redirect_to_token_management_tab() {
+		/**
+	 * Coordinate the redirect to token management tab behavior implemented by this code path.
+	 */
+public function redirect_to_token_management_tab() {
 		$this->redirect_to_settings_tab( 'token-management' );
 	}
 
-	public function redirect_to_concierge_tab() {
+		/**
+	 * Coordinate the redirect to concierge tab behavior implemented by this code path.
+	 */
+public function redirect_to_concierge_tab() {
 		$this->redirect_to_settings_tab( 'concierge' );
 	}
 
-	public function redirect_to_quiz_tab() {
+		/**
+	 * Coordinate the redirect to quiz tab behavior implemented by this code path.
+	 */
+public function redirect_to_quiz_tab() {
 		$this->redirect_to_settings_tab( 'quiz' );
 	}
 
-	public function redirect_to_email_tab() {
+		/**
+	 * Coordinate the redirect to email tab behavior implemented by this code path.
+	 */
+public function redirect_to_email_tab() {
 		$this->redirect_to_settings_tab( 'email' );
 	}
 
-	public function redirect_to_contact_form_tab() {
+		/**
+	 * Coordinate the redirect to contact form tab behavior implemented by this code path.
+	 */
+public function redirect_to_contact_form_tab() {
 		$this->redirect_to_settings_tab( 'contact-form' );
 	}
 
-	public function redirect_to_ai_knowledge_tab() {
+		/**
+	 * Coordinate the redirect to ai knowledge tab behavior implemented by this code path.
+	 */
+public function redirect_to_ai_knowledge_tab() {
 		$this->redirect_to_settings_tab( 'ai' );
 	}
 
-	public function redirect_to_login_tab() {
+		/**
+	 * Coordinate the redirect to login tab behavior implemented by this code path.
+	 */
+public function redirect_to_login_tab() {
 		$this->redirect_to_settings_tab( 'login' );
 	}
 
-	public function redirect_to_offers_tab() {
+		/**
+	 * Coordinate the redirect to offers tab behavior implemented by this code path.
+	 */
+public function redirect_to_offers_tab() {
 		$this->redirect_to_settings_tab( 'offers' );
 	}
 
-	public function redirect_to_payments_tab() {
+		/**
+	 * Coordinate the redirect to payments tab behavior implemented by this code path.
+	 */
+public function redirect_to_payments_tab() {
 		$this->redirect_to_settings_tab( 'payments' );
 	}
 
-	public function redirect_to_lessons_tab() {
+		/**
+	 * Coordinate the redirect to lessons tab behavior implemented by this code path.
+	 */
+public function redirect_to_lessons_tab() {
 		$this->redirect_to_content_tab();
 	}
 
-	public function redirect_to_sso_tab() {
+		/**
+	 * Coordinate the redirect to sso tab behavior implemented by this code path.
+	 */
+public function redirect_to_sso_tab() {
 		$this->redirect_to_settings_tab( 'sso' );
 	}
 
-	public function redirect_to_engagement_tab() {
+		/**
+	 * Coordinate the redirect to engagement tab behavior implemented by this code path.
+	 */
+public function redirect_to_engagement_tab() {
 		$this->redirect_to_settings_tab( 'engagement' );
 	}
 
-	public function redirect_to_administration_tab() {
+		/**
+	 * Coordinate the redirect to administration tab behavior implemented by this code path.
+	 */
+public function redirect_to_administration_tab() {
 		$this->redirect_to_settings_tab( 'administration' );
 	}
 
-	public function redirect_to_chat_logs_tab() {
+		/**
+	 * Coordinate the redirect to chat logs tab behavior implemented by this code path.
+	 */
+public function redirect_to_chat_logs_tab() {
 		$this->redirect_to_settings_tab( 'chat-logs' );
 	}
 
-	public function redirect_to_docs_tab() {
+		/**
+	 * Coordinate the redirect to docs tab behavior implemented by this code path.
+	 */
+public function redirect_to_docs_tab() {
 		$this->redirect_to_settings_tab( 'documentation' );
 	}
 
-	public function redirect_to_da1_tab() {
+		/**
+	 * Coordinate the redirect to da1 tab behavior implemented by this code path.
+	 */
+public function redirect_to_da1_tab() {
 		$this->redirect_to_settings_tab( 'da1' );
 	}
 
@@ -1397,7 +1487,10 @@ trait FLOSC_Admin_Trait {
 		$this->redirect_to_settings_tab( 'ui' );
 	}
 
-	public function render_da1_page() {
+		/**
+	 * Render the WordPress interface for da1 page.
+	 */
+public function render_da1_page() {
 		echo '<div class="wrap">';
 		include FLOSC_PLUGIN_DIR . 'admin/da1.php';
 		echo '</div>';
@@ -1406,6 +1499,9 @@ trait FLOSC_Admin_Trait {
 	/**
 	 * Shortcode: [flosc_visitor_only]
 	 * Shows content only to non-logged-in visitors
+ * @param mixed $atts Input consumed by the Coordinate the shortcode visitor only behavior implemented by this code path. operation.
+ * @param mixed $content Input consumed by the Coordinate the shortcode visitor only behavior implemented by this code path. operation.
+ * @return mixed Result produced by the shortcode visitor only operation.
 	 */
 	public function shortcode_visitor_only( $atts, $content = '' ) {
 		if ( ! is_user_logged_in() ) {
@@ -1428,7 +1524,7 @@ trait FLOSC_Admin_Trait {
 		// Parse attributes.
 		$atts = shortcode_atts(
 			array(
-				'fallback' => '', // Optional fallback message for non-members
+				'fallback' => '', // Optional fallback message for non-members.
 			),
 			$atts
 		);
@@ -1450,6 +1546,8 @@ trait FLOSC_Admin_Trait {
 
 	/**
 	 * Shortcode: [flosc_contact_form_01] and [flosc-contact-form-01]
+ * @param mixed $atts Input consumed by the Render the Word Press interface for shortcode contact form 01. operation.
+ * @return mixed Result produced by the shortcode contact form 01 operation.
 	 */
 	public function shortcode_contact_form_01( $atts = array() ) {
 		$atts = shortcode_atts(
@@ -1545,7 +1643,10 @@ trait FLOSC_Admin_Trait {
 		return ob_get_clean();
 	}
 
-	public function handle_contact_form_submit() {
+		/**
+	 * Coordinate the contact form submit behavior implemented by this code path.
+	 */
+public function handle_contact_form_submit() {
 		$return_url = esc_url_raw( (string) wp_unslash( $_POST['flosc_contact_return'] ?? home_url( '/' ) ) );
 		$nonce      = sanitize_text_field( (string) wp_unslash( $_POST['flosc_contact_nonce'] ?? '' ) );
 		if ( ! wp_verify_nonce( $nonce, 'flosc_contact_submit' ) ) {
@@ -1577,7 +1678,15 @@ trait FLOSC_Admin_Trait {
 		$this->redirect_contact_form_result( $return_url, 'success' );
 	}
 
-	public function process_contact_form_submission( $data, $flow_id = '', $options = array() ) {
+		/**
+	 * Persist the contact form submission state in WordPress storage.
+	 *
+	 * @param mixed $data Structured data consumed by the Persist the contact form submission state in Word Press storage. operation.
+	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+	 * @param mixed $options Optional arguments that refine how the Persist the contact form submission state in Word Press storage. operation runs.
+	 * @return array Structured contact form submission data.
+	 */
+public function process_contact_form_submission( $data, $flow_id = '', $options = array() ) {
 		$flow_id  = sanitize_key( (string) $flow_id );
 		$settings = $this->get_contact_form_settings( $flow_id );
 
@@ -1676,14 +1785,26 @@ trait FLOSC_Admin_Trait {
 		);
 	}
 
-	private function redirect_contact_form_result( $return_url, $status ) {
+		/**
+	 * Resolve and perform the redirect required for redirect contact form result.
+	 *
+	 * @param mixed $return_url URL being resolved, validated, or used by the Resolve and perform the redirect required for redirect contact form result. operation.
+	 * @param mixed $status Input consumed by the Resolve and perform the redirect required for redirect contact form result. operation.
+	 */
+private function redirect_contact_form_result( $return_url, $status ) {
 		$target = $return_url ? $return_url : home_url( '/' );
 		$target = add_query_arg( 'flosc_contact_status', sanitize_key( $status ), $target );
 		wp_safe_redirect( $target );
 		exit;
 	}
 
-	private function get_contact_form_settings( $flow_id = '' ) {
+		/**
+	 * Resolve the current contact form settings value from the available WordPress and flow state.
+	 *
+	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+	 * @return array Structured contact form settings data.
+	 */
+private function get_contact_form_settings( $flow_id = '' ) {
 		$flow_id  = sanitize_key( (string) $flow_id );
 		$settings = array();
 
@@ -1724,7 +1845,14 @@ trait FLOSC_Admin_Trait {
 		);
 	}
 
-	private function sanitize_contact_color( $color, $fallback ) {
+		/**
+	 * Normalize the input into the canonical form required for contact color.
+	 *
+	 * @param mixed $color Input consumed by the Normalize the input into the canonical form required for contact color. operation.
+	 * @param mixed $fallback Fallback value returned when no more specific value is available.
+	 * @return mixed Result produced by the contact color operation.
+	 */
+private function sanitize_contact_color( $color, $fallback ) {
 		$clean = sanitize_hex_color( $color );
 		return $clean ? $clean : $fallback;
 	}
@@ -1735,6 +1863,7 @@ trait FLOSC_Admin_Trait {
 	 * v1.6.3: Fixed to read from flat per-flow settings (matching admin save pattern)
 	 *
 	 * @since 1.6.1
+ * @return mixed Result produced by the enqueue companion operation.
 	 */
 	public function enqueue_companion() {
 		// Production path is FLOSC_Companion_Mode::enqueue_companion (app-route-only iframe).
@@ -1865,7 +1994,7 @@ trait FLOSC_Admin_Trait {
 		$inline_css = '';
 
 		// ===========================================
-		// PRESET LOADING
+		// PRESET LOADING.
 		// ===========================================
 		if ( 'auto' === $preset ) {
 			// Auto mode: Light by default, dark via prefers-color-scheme.
@@ -1902,7 +2031,7 @@ trait FLOSC_Admin_Trait {
 		}
 
 		// ===========================================
-		// DYNAMIC OVERRIDES
+		// DYNAMIC OVERRIDES.
 		// ===========================================
 		$bubble_config = $bubble_styles[ $bubble ] ?? $bubble_styles['subtle-notch'];
 
@@ -1996,6 +2125,9 @@ trait FLOSC_Admin_Trait {
 	 * Used for accent color cascade.
 	 *
 	 * @since 1.6.1
+ * @param mixed $hex Input consumed by the Coordinate the adjust color brightness behavior implemented by this code path. operation.
+ * @param mixed $percent Input consumed by the Coordinate the adjust color brightness behavior implemented by this code path. operation.
+ * @return mixed Result produced by the adjust color brightness operation.
 	 */
 	private function adjust_color_brightness( $hex, $percent ) {
 		$hex = ltrim( $hex, '#' );
@@ -2018,6 +2150,9 @@ trait FLOSC_Admin_Trait {
 	 * Used for accent-subtle generation.
 	 *
 	 * @since 1.6.1
+ * @param mixed $hex Input consumed by the Coordinate the hex to rgba behavior implemented by this code path. operation.
+ * @param mixed $alpha Input consumed by the Coordinate the hex to rgba behavior implemented by this code path. operation.
+ * @return mixed Result produced by the hex to rgba operation.
 	 */
 	private function hex_to_rgba( $hex, $alpha ) {
 		$hex = ltrim( $hex, '#' );

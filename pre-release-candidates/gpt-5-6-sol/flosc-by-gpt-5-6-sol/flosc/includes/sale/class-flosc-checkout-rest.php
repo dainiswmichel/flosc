@@ -9,16 +9,30 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC Checkout Rest behavior and the WordPress services used by its methods.
+ */
 class FLOSC_Checkout_Rest {
 
 	/** @var FLOSC_Framework */
 	private $flosc;
 
-	public function __construct( $flosc ) {
+		/**
+	 * Coordinate the construct behavior implemented by this code path.
+	 *
+	 * @param mixed $flosc Input consumed by the Coordinate the construct behavior implemented by this code path. operation.
+	 */
+public function __construct( $flosc ) {
 		$this->flosc = $flosc;
 	}
 
-	public function get_offers( $request ) {
+		/**
+	 * Resolve the current offers value from the available WordPress and flow state.
+	 *
+	 * @param mixed $request Request object carrying the input consumed by this handler.
+	 * @return mixed Result produced by the offers operation.
+	 */
+public function get_offers( $request ) {
 		$user_id = is_user_logged_in() ? get_current_user_id() : null;
 		// v1.6.2: Flow-aware offer loading.
 		$flow_id = sanitize_text_field( $request->get_param( 'flow_id' ) ?? '' );
@@ -38,6 +52,8 @@ class FLOSC_Checkout_Rest {
 	 * Sanitizes output to prevent XSS.
 	 *
 	 * @since 1.6.2
+ * @param mixed $request Request object carrying the input consumed by this handler.
+ * @return mixed Result produced by the offer content operation.
 	 */
 	public function get_offer_content( $request ) {
 		$source = sanitize_text_field( $request->get_param( 'source' ) );
@@ -123,14 +139,21 @@ class FLOSC_Checkout_Rest {
 	/**
 	 * Handle purchase
 	 *
-	 * STATUS: âœ… FULLY FUNCTIONAL (v9.1.9)
+	 * STATUS: âœ
+ FULLY FUNCTIONAL (v9.1.9)
 	 * - Processes purchase via payment provider
-	 * - Fires flosc_purchase_completed action âœ…
-	 * - Grants member access automatically âœ…
-	 * - Sets _flosc_member_access = 'true' âœ…
-	 * - User can now access ALL 10 posts âœ…
+	 * - Fires flosc_purchase_completed action âœ
+
+	 * - Grants member access automatically âœ
+
+	 * - Sets _flosc_member_access = 'true' âœ
+
+	 * - User can now access ALL 10 posts âœ
+
 	 *
 	 * TESTING: Use 'tokens' provider for sandbox testing
+ * @param mixed $request Request object carrying the input consumed by this handler.
+ * @return mixed Result of the purchase operation, or a WP_Error when it cannot complete.
 	 */
 	public function handle_purchase( $request ) {
 		$user_id = get_current_user_id();
@@ -264,7 +287,7 @@ class FLOSC_Checkout_Rest {
 		if ( ! is_array( $coupons ) || empty( $coupons ) ) {
 			return new WP_Error( 'invalid_coupon', __( 'Invalid or expired coupon', 'flosc' ), array( 'status' => 403 ) );
 		}
-		$now  = time(); // UTC unix
+		$now  = time(); // UTC unix.
 		$list = $this->flosc_offer_list_price( $offer );
 
 		foreach ( $coupons as $c ) {
@@ -440,6 +463,8 @@ class FLOSC_Checkout_Rest {
 
 	/**
 	 * Whether offer is treated as subscription for checkout coupons.
+ * @param array $offer Input consumed by the Coordinate the offer is subscription behavior implemented by this code path. operation.
+ * @return bool Whether offer is subscription applies to the current state.
 	 */
 	private function flosc_offer_is_subscription( array $offer ) {
 		if ( 'subscription' === ( $offer['type'] ?? '' ) ) {
@@ -451,6 +476,8 @@ class FLOSC_Checkout_Rest {
 
 	/**
 	 * Preview coupon for payment modal (native only). Does not charge.
+ * @param mixed $request Request object carrying the input consumed by this handler.
+ * @return mixed Result of the apply offer coupon operation, or a WP_Error when it cannot complete.
 	 */
 	public function handle_apply_offer_coupon( $request ) {
 		$offer_id = sanitize_text_field( $request->get_param( 'offer_id' ) ?? '' );
@@ -547,6 +574,8 @@ class FLOSC_Checkout_Rest {
 	 * checks _flosc_memberlevel_{level} via has_level(). Mismatch = no access.
 	 *
 	 * @since 1.4.4
+ * @param mixed $request Request object carrying the input consumed by this handler.
+ * @return mixed Result of the sandbox purchase operation, or a WP_Error when it cannot complete.
 	 */
 	public function handle_sandbox_purchase( $request ) {
 		$user_id = get_current_user_id();
@@ -596,7 +625,7 @@ class FLOSC_Checkout_Rest {
 
 		// v3.0.5: Determine member level â€” check offer first (flow-aware), then product fallback.
 		$offer_manager = $this->flosc->sale()->offers();
-		$member_level  = 'member'; // Default fallback
+		$member_level  = 'member'; // Default fallback.
 		$product_name  = 'Full Access';
 		$product_icon  = 'ðŸŽ';
 
@@ -702,7 +731,13 @@ class FLOSC_Checkout_Rest {
 		);
 	}
 
-	public function create_payment_intent( $request ) {
+		/**
+	 * Create the WordPress data required for payment intent.
+	 *
+	 * @param mixed $request Request object carrying the input consumed by this handler.
+	 * @return mixed Result of the payment intent operation, or a WP_Error when it cannot complete.
+	 */
+public function create_payment_intent( $request ) {
 		// Stripe is first-class: requires publishable + secret keys on Payments (per-flow WPDB).
 		$stripe = $this->flosc->sale()->get_provider( 'stripe' );
 		if ( ! $stripe || ! $stripe->is_configured() ) {
@@ -769,6 +804,8 @@ class FLOSC_Checkout_Rest {
 	 * Verifies payment with Stripe and grants access (fallback if webhook is slow)
 	 *
 	 * @since 1.4.1
+ * @param mixed $request Request object carrying the input consumed by this handler.
+ * @return mixed Result of the complete purchase operation, or a WP_Error when it cannot complete.
 	 */
 	public function complete_purchase( $request ) {
 		$payment_intent_id = sanitize_text_field( $request->get_param( 'payment_intent_id' ) );
@@ -915,7 +952,13 @@ class FLOSC_Checkout_Rest {
 		);
 	}
 
-	public function handle_webhook( $request ) {
+		/**
+	 * Coordinate the webhook behavior implemented by this code path.
+	 *
+	 * @param mixed $request Request object carrying the input consumed by this handler.
+	 * @return mixed Result of the webhook operation, or a WP_Error when it cannot complete.
+	 */
+public function handle_webhook( $request ) {
 		$provider_id = $request->get_param( 'provider' );
 		$provider    = $this->flosc->sale()->get_provider( $provider_id );
 
@@ -953,7 +996,13 @@ class FLOSC_Checkout_Rest {
 		return new WP_REST_Response( $result );
 	}
 
-	public function check_access( $request ) {
+		/**
+	 * Coordinate the check access behavior implemented by this code path.
+	 *
+	 * @param mixed $request Request object carrying the input consumed by this handler.
+	 * @return mixed Result produced by the check access operation.
+	 */
+public function check_access( $request ) {
 		if ( ! is_user_logged_in() ) {
 			return new WP_REST_Response(
 				array(

@@ -11,6 +11,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC RAG Chat Handler behavior and the WordPress services used by its methods.
+ */
 class FLOSC_RAG_Chat_Handler {
 
 	private $flosc_rag_manager;
@@ -18,7 +21,10 @@ class FLOSC_RAG_Chat_Handler {
 	private $flosc_user_session;
 	private $flosc_last_billing_meta = array();
 
-	public function __construct() {
+		/**
+	 * Coordinate the construct behavior implemented by this code path.
+	 */
+public function __construct() {
 		$this->flosc_rag_manager = FLOSC_RAG_Manager::instance();
 		// Access controller will be set when handle_with_state is called.
 	}
@@ -30,6 +36,7 @@ class FLOSC_RAG_Chat_Handler {
 	 * @param FLOSC_User_Session $flosc_user_session User session with full context.
 	 * @param int|null           $flosc_session_id Session ID for conversation history.
 	 * @param string|null        $flosc_chatpack_prompt v1.9.2: Optional chatpack system prompt (overrides internal builder).
+ * @param mixed $flosc_conv_history Input consumed by the Coordinate the with state behavior implemented by this code path. operation.
 	 * @return array Response with content and autoprompts
 	 */
 	public function flosc_handle_with_state( $flosc_message, $flosc_user_session, $flosc_session_id = null, $flosc_chatpack_prompt = null, $flosc_conv_history = null ) {
@@ -42,9 +49,9 @@ class FLOSC_RAG_Chat_Handler {
 		// Load conversation history (server-side; populated for logged-in users).
 		$flosc_history = $this->flosc_load_conversation_history( $flosc_user_session, $flosc_session_id );
 
-		// Visitors have no server-side history, so the caller reconstructs it from the
-		// client's localStorage transcript and passes it in. Without this, the session
-		// continuity prompt ("continue the conversation, don't re-greet") has no history
+		// Visitors have no server-side history, so the caller reconstructs it from the.
+		// client's localStorage transcript and passes it in. Without this, the session.
+		// continuity prompt ("continue the conversation, don't re-greet") has no history.
 		// to act on and the model re-greets/repeats on every visitor follow-up.
 		if ( empty( $flosc_history ) && is_array( $flosc_conv_history ) && ! empty( $flosc_conv_history ) ) {
 			$flosc_normalized = array_map(
@@ -57,9 +64,9 @@ class FLOSC_RAG_Chat_Handler {
 				$flosc_conv_history
 			);
 			$flosc_normalized = array_slice( $flosc_normalized, -10 );
-			// Anthropic requires the messages array to begin with a user turn, so drop
-			// any leading assistant messages (e.g. the opening greeting). Preserve text
-			// in the system prompt so the model does not re-greet when history is only
+			// Anthropic requires the messages array to begin with a user turn, so drop.
+			// any leading assistant messages (e.g. the opening greeting). Preserve text.
+			// in the system prompt so the model does not re-greet when history is only.
 			// [opening assistant, current user].
 			$flosc_stripped_openings = array();
 			while ( ! empty( $flosc_normalized ) && 'user' !== $flosc_normalized[0]['role'] ) {
@@ -119,6 +126,7 @@ class FLOSC_RAG_Chat_Handler {
 	/**
 	 * Get billing metadata for the most recent RAG response.
 	 * Shape mirrors ai-chat-dispatch get_last_billing_meta().
+ * @return mixed Result produced by the last billing meta operation.
 	 */
 	public function get_last_billing_meta() {
 		return is_array( $this->flosc_last_billing_meta ) ? $this->flosc_last_billing_meta : array();
@@ -127,6 +135,7 @@ class FLOSC_RAG_Chat_Handler {
 	/**
 	 * Build system prompt from FLOSC User Session
 	 *
+ * @param mixed $flosc_user_session Input consumed by the Coordinate the system prompt from state behavior implemented by this code path. operation.
 	 * @return string System prompt
 	 */
 	private function flosc_build_system_prompt_from_state( $flosc_user_session ) {
@@ -192,7 +201,7 @@ class FLOSC_RAG_Chat_Handler {
 	 * Load conversation history
 	 *
 	 * @param FLOSC_User_Session $flosc_user_session
-	 * @param int|null           $flosc_session_id
+	 * @param mixed $flosc_session_id Identifier used to select the record involved in the Coordinate the conversation history behavior implemented by this code path. operation.
 	 * @return array Message history
 	 */
 	private function flosc_load_conversation_history( $flosc_user_session, $flosc_session_id ) {
@@ -247,7 +256,7 @@ class FLOSC_RAG_Chat_Handler {
 		$flosc_api_key = function_exists( 'flosc_get_provider_api_key' ) ? flosc_get_provider_api_key( 'anthropic' ) : flosc_get_setting( 'anthropic_api_key', '' );
 
 		if ( empty( $flosc_api_key ) ) {
-			return null; // No key — let handle_chat() fall through to dispatch
+			return null; // No key — let handle_chat() fall through to dispatch.
 		}
 
 		if ( ! class_exists( 'FLOSC_WP_AI_Client' ) || ! FLOSC_WP_AI_Client::is_provider_registered( 'anthropic' ) ) {
@@ -318,6 +327,8 @@ class FLOSC_RAG_Chat_Handler {
 	/**
 	 * Resolve Anthropics pricing (real millicents per 1M tokens) for billing math.
 	 * Flow-level overrides win when configured.
+ * @param mixed $flosc_model AI model identifier used for the provider request.
+ * @return array Structured anthropic price per 1m data.
 	 */
 	private function flosc_resolve_anthropic_price_per_1m( $flosc_model ) {
 		$override_in  = max( 0, intval( flosc_get_setting( 'ai_billing_anthropic_input_millicents_per_1m', 0 ) ) );
@@ -361,8 +372,9 @@ class FLOSC_RAG_Chat_Handler {
 	 * Store conversation
 	 *
 	 * @param FLOSC_User_Session $flosc_user_session
-	 * @param int|null           $flosc_session_id
+	 * @param mixed $flosc_session_id Identifier used to select the record involved in the Coordinate the store conversation behavior implemented by this code path. operation.
 	 * @param string             $flosc_message
+ * @param mixed $flosc_response Input consumed by the Coordinate the store conversation behavior implemented by this code path. operation.
 	 */
 	private function flosc_store_conversation( $flosc_user_session, $flosc_session_id, $flosc_message, $flosc_response ) {
 		$flosc_state   = $flosc_user_session->flosc_get();
@@ -425,6 +437,6 @@ class FLOSC_RAG_Chat_Handler {
 		);
 
 		$flosc_prompts = array_merge( $flosc_prompts, array_slice( $flosc_funnel_prompts[ $flosc_user_type ] ?? array(), 0, 2 ) );
-		return array_slice( $flosc_prompts, 0, 4 ); // Max 4 pills
+		return array_slice( $flosc_prompts, 0, 4 ); // Max 4 pills.
 	}
 }

@@ -57,7 +57,7 @@ class Apple_Provider extends SSO_Provider_Base {
 
 		$this->auth_url      = 'https://appleid.apple.com/auth/authorize';
 		$this->token_url     = 'https://appleid.apple.com/auth/token';
-		$this->user_info_url = ''; // Apple includes user info in ID token
+		$this->user_info_url = ''; // Apple includes user info in ID token.
 
 		$this->scopes = array(
 			'name',
@@ -121,7 +121,7 @@ class Apple_Provider extends SSO_Provider_Base {
 	 */
 	protected function customize_auth_params( $params ) {
 		// Apple uses 'response_mode' parameter.
-		$params['response_mode'] = 'form_post'; // Apple sends POST response
+		$params['response_mode'] = 'form_post'; // Apple sends POST response.
 
 		// Apple scopes are space-separated.
 		$params['scope'] = implode( ' ', $this->scopes );
@@ -187,6 +187,7 @@ class Apple_Provider extends SSO_Provider_Base {
 	 * Apple embeds user info in the id_token JWT
 	 *
 	 * @param string $access_token OAuth access token (we use id_token instead).
+ * @param mixed $token_data Structured data consumed by the Resolve the current user info value from the available Word Press and flow state. operation.
 	 * @return array|WP_Error User data or error
 	 */
 	public function get_user_info( $access_token, $token_data = array() ) {
@@ -390,6 +391,8 @@ class Apple_Provider extends SSO_Provider_Base {
 	}
 
 	/**
+ * Send the remote request required for apple jwks and normalize its result.
+ *
 	 * @param bool $force Force network refresh.
 	 * @return array|\WP_Error List of JWK arrays.
 	 */
@@ -448,7 +451,7 @@ class Apple_Provider extends SSO_Provider_Base {
 		$exponent  = $this->asn1_integer( $e );
 		$sequence  = $this->asn1_sequence( $modulus . $exponent );
 		$bitstring = "\x03" . $this->asn1_length( strlen( $sequence ) + 1 ) . "\x00" . $sequence;
-		$rsa_oid   = pack( 'H*', '300d06092a864886f70d0101010500' ); // rsaEncryption
+		$rsa_oid   = pack( 'H*', '300d06092a864886f70d0101010500' ); // rsaEncryption.
 		$pubkey    = $this->asn1_sequence( $rsa_oid . $bitstring );
 
 		$pem = "-----BEGIN PUBLIC KEY-----\n";
@@ -460,6 +463,8 @@ class Apple_Provider extends SSO_Provider_Base {
 	}
 
 	/**
+ * Coordinate the asn1 integer behavior implemented by this code path.
+ *
 	 * @param string $bytes Unsigned big-endian integer bytes.
 	 * @return string ASN.1 INTEGER
 	 */
@@ -471,6 +476,8 @@ class Apple_Provider extends SSO_Provider_Base {
 	}
 
 	/**
+ * Coordinate the asn1 sequence behavior implemented by this code path.
+ *
 	 * @param string $contents Inner DER.
 	 * @return string ASN.1 SEQUENCE
 	 */
@@ -479,6 +486,8 @@ class Apple_Provider extends SSO_Provider_Base {
 	}
 
 	/**
+ * Coordinate the asn1 length behavior implemented by this code path.
+ *
 	 * @param int $length
 	 * @return string ASN.1 length encoding
 	 */
@@ -537,7 +546,7 @@ class Apple_Provider extends SSO_Provider_Base {
 			'name'           => $name,
 			'first_name'     => $first_name,
 			'last_name'      => $last_name,
-			'avatar'         => '', // Apple doesn't provide avatars
+			'avatar'         => '', // Apple doesn't provide avatars.
 			'locale'         => '',
 			// Pass 8 / WPORG: never pass through the full decoded POST user JSON.
 			// Only sanitized fields above are exposed to hooks and storage.
@@ -642,7 +651,7 @@ class Apple_Provider extends SSO_Provider_Base {
 		$pos += 2;
 
 		// Get R.
-		++$pos; // Skip INTEGER tag
+		++$pos; // Skip INTEGER tag.
 		$r_len = ord( $der[ $pos++ ] );
 		if ( $r_len > 128 ) {
 			$r_len = ord( $der[ $pos++ ] );
@@ -651,7 +660,7 @@ class Apple_Provider extends SSO_Provider_Base {
 		$pos += $r_len;
 
 		// Get S.
-		++$pos; // Skip INTEGER tag
+		++$pos; // Skip INTEGER tag.
 		$s_len = ord( $der[ $pos++ ] );
 		if ( $s_len > 128 ) {
 			$s_len = ord( $der[ $pos++ ] );
@@ -717,7 +726,7 @@ class Apple_Provider extends SSO_Provider_Base {
 			array(
 				'id'          => 'flosc_sso_apple_private_key',
 				'title'       => __( 'Private Key', 'flosc' ),
-				// UI: multi-line textarea for .p8 body. Sanitizer: class-sso-manager maps
+				// UI: multi-line textarea for .p8 body. Sanitizer: class-sso-manager maps.
 				// field ids containing "private_key" to sanitize_secret_setting (Pass 2).
 				'type'        => 'textarea',
 				'default'     => '',

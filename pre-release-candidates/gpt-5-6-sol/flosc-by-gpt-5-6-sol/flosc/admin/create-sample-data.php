@@ -16,7 +16,7 @@
  * @package FLOSC
  */
 
-// Reachable without WordPress loaded only under WP-CLI, which is how the
+// Reachable without WordPress loaded only under WP-CLI, which is how the.
 // sample data is installed from a terminal.
 if ( ! defined( 'ABSPATH' ) && ! ( defined( 'WP_CLI' ) && WP_CLI ) ) {
 	exit( 'Direct access not allowed' );
@@ -24,6 +24,7 @@ if ( ! defined( 'ABSPATH' ) && ! ( defined( 'WP_CLI' ) && WP_CLI ) ) {
 
 /**
  * Create flosc_sample_data category if it doesn't exist
+ * @return mixed Result produced by the sample category operation.
  */
 function flosc_create_sample_category() {
 	$flosc_cat = get_category_by_slug( 'flosc_sample_data' );
@@ -102,7 +103,7 @@ function flosc_create_sample_posts() {
 			'post_status'   => 'publish',
 			'post_category' => array( $cat_id ),
 			'post_type'     => 'post',
-			'post_author'   => 1, // Admin user
+			'post_author'   => 1, // Admin user.
 		);
 
 		$post_id = wp_insert_post( $post_data );
@@ -110,7 +111,7 @@ function flosc_create_sample_posts() {
 		if ( $post_id && ! is_wp_error( $post_id ) ) {
 			// Add custom meta.
 			update_post_meta( $post_id, '_flosc_lesson_number', $num );
-			update_post_meta( $post_id, '_flosc_access_level', 'member' ); // Default: member-only
+			update_post_meta( $post_id, '_flosc_access_level', 'member' ); // Default: member-only.
 
 			WP_CLI::success( "Created post {$num}: ID {$post_id}" );
 			++$created;
@@ -126,6 +127,9 @@ function flosc_create_sample_posts() {
 /**
  * Generate post content with <!--more--> tag
  * MAGNIFICENT, ENTERTAINING, JOYFUL lessons with real IPA transcriptions
+ * @param mixed $num Input consumed by the Coordinate the generate post content behavior implemented by this code path. operation.
+ * @param mixed $word Input consumed by the Coordinate the generate post content behavior implemented by this code path. operation.
+ * @return mixed Result produced by the generate post content operation.
  */
 function flosc_generate_post_content( $num, $word ) {
 
@@ -382,6 +386,11 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 }
 
 // Provide admin UI button (future enhancement).
+/**
+ * Coordinate the sample data admin ui behavior implemented by this code path.
+ *
+ * @return mixed Result produced by the sample data admin ui operation.
+ */
 function flosc_sample_data_admin_ui() {
 	if ( ! current_user_can( 'manage_options' ) ) {
 		return;

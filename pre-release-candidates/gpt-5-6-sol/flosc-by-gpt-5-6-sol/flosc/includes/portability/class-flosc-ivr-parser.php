@@ -13,12 +13,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC IVR Parser behavior and the WordPress services used by its methods.
+ */
 class FLOSC_IVR_Parser {
 
 	private static $flosc_instance = null;
 	private $flosc_config          = null;
 
-	public static function flosc_instance() {
+		/**
+	 * Coordinate the instance behavior implemented by this code path.
+	 *
+	 * @return mixed Result produced by the instance operation.
+	 */
+public static function flosc_instance() {
 		if ( null === self::$flosc_instance ) {
 			self::$flosc_instance = new self();
 		}
@@ -27,6 +35,8 @@ class FLOSC_IVR_Parser {
 
 	/**
 	 * Parse IVR markdown content
+ * @param mixed $markdown Input consumed by the Coordinate the parse behavior implemented by this code path. operation.
+ * @return mixed Result produced by the parse operation.
 	 */
 	public function flosc_parse( $markdown ) {
 		$config = array(
@@ -61,7 +71,7 @@ class FLOSC_IVR_Parser {
 				continue;
 			}
 
-			// Phase headers - v1.0.9: Support both old and new naming conventions
+			// Phase headers - v1.0.9: Support both old and new naming conventions.
 			// Old: "# Freeline Messages", "# Login Messages", "# Sale Messages", etc.
 			// New: "# Freeline Messages", "# Guest Messages", "# Member Messages".
 			if ( preg_match( '/^#\s+(Freeline|Login|Guest|Offer|Sale|Member|Content)\s+Messages/i', $trimmed, $matches ) ) {
@@ -74,17 +84,17 @@ class FLOSC_IVR_Parser {
 					}
 					$this->flosc_add_message_to_config( $config, $current_message, $current_phase );
 				}
-				// Map section names to FLOSC phases
+				// Map section names to FLOSC phases.
 				// v1.1.0: Member Messages → content phase (where most members are)
 				// first_message_after_purchase condition handles sale phase.
 				$section         = strtolower( $matches[1] );
 				$phase_map       = array(
 					'freeline' => 'freeline',
 					'login'    => 'login',
-					'guest'    => 'login',      // v1.0.9: Guest Messages → login phase
+					'guest'    => 'login',      // v1.0.9: Guest Messages → login phase.
 					'offer'    => 'offer',
 					'sale'     => 'sale',
-					'member'   => 'content',   // v1.1.0: Member Messages → content phase
+					'member'   => 'content',   // v1.1.0: Member Messages → content phase.
 					'content'  => 'content',
 				);
 				$current_phase   = $phase_map[ $section ] ?? $section;
@@ -164,7 +174,7 @@ class FLOSC_IVR_Parser {
 					'name'       => '',
 					'type'       => 'auto',
 					'style'      => 'pill',
-					'panel'      => '', // v1.2.5: intro or prompt
+					'panel'      => '', // v1.2.5: intro or prompt.
 					'icon'       => '',
 					'user_input' => '',
 					'keywords'   => '',
@@ -250,7 +260,7 @@ class FLOSC_IVR_Parser {
 					$current_message['conditions'] = trim( $matches[1] );
 					continue;
 				}
-				// v8.0.0: Concierge fields — a keyword-triggered message with an
+				// v8.0.0: Concierge fields — a keyword-triggered message with an.
 				// optional password gate. PasswordRetry repeats, one line per try.
 				if ( preg_match( '/^IndividualMessagePassword:\s*(.*)$/i', $trimmed, $matches ) ) {
 					$current_message['individual_message_password'] = trim( $matches[1] );
@@ -319,6 +329,10 @@ class FLOSC_IVR_Parser {
 
 	/**
 	 * Add message to config
+ * @param mixed $config Configuration values used to control the Coordinate the add message to config behavior implemented by this code path. behavior.
+ * @param mixed $message Input consumed by the Coordinate the add message to config behavior implemented by this code path. operation.
+ * @param mixed $phase Input consumed by the Coordinate the add message to config behavior implemented by this code path. operation.
+ * @return mixed Result produced by the add message to config operation.
 	 */
 	private function flosc_add_message_to_config( &$config, $message, $phase ) {
 		if ( empty( $message['name'] ) ) {
@@ -334,6 +348,7 @@ class FLOSC_IVR_Parser {
 
 	/**
 	 * Get parsed config
+ * @return mixed Result produced by the config operation.
 	 */
 	public function get_flosc_config() {
 		if ( null === $this->flosc_config ) {
@@ -368,7 +383,7 @@ class FLOSC_IVR_Parser {
 			return $writable_dir . $filename;
 		}
 
-		// For reads: check uploads first (per §2: uploads-first read order),
+		// For reads: check uploads first (per §2: uploads-first read order),.
 		// then fall back to shipped defaults. Both are allowed for reads.
 		if ( $flow && ! empty( $flow['ivr_file'] ) ) {
 			if ( '' !== $writable_dir ) {
@@ -410,7 +425,12 @@ class FLOSC_IVR_Parser {
 		return FLOSC_PLUGIN_DIR . 'ai_configuration_files/flosc_default_technical_ivr.md';
 	}
 
-	public function flosc_load_config() {
+		/**
+	 * Coordinate the config behavior implemented by this code path.
+	 *
+	 * @return mixed Result produced by the config operation.
+	 */
+public function flosc_load_config() {
 		// v1.2.3: Always reload from file - multi-flow aware, no global caching.
 
 		// v1.2.2: Use flow-aware IVR file path.
@@ -419,7 +439,7 @@ class FLOSC_IVR_Parser {
 			$markdown           = flosc_fs_get_contents( $ivr_file );
 			$this->flosc_config = $this->flosc_parse( $markdown );
 
-			// v1.2.3: DO NOT sync to global wp_options - that would break multi-flow
+			// v1.2.3: DO NOT sync to global wp_options - that would break multi-flow.
 			// Each flow has its own IVR file, parsed fresh per-request.
 		} else {
 			$this->flosc_config = $this->get_flosc_default_config();
@@ -468,6 +488,8 @@ class FLOSC_IVR_Parser {
 
 	/**
 	 * Get messages for a phase
+ * @param mixed $phase Input consumed by the Resolve the current phase messages value from the available Word Press and flow state. operation.
+ * @return array Structured phase messages data.
 	 */
 	public function get_flosc_phase_messages( $phase ) {
 		$config = $this->get_flosc_config();
@@ -486,6 +508,8 @@ class FLOSC_IVR_Parser {
 
 	/**
 	 * Get message by name
+ * @param mixed $name Name or key used to select the Resolve the current message value from the available Word Press and flow state. value.
+ * @return mixed Result produced by the message operation.
 	 */
 	public function get_flosc_message( $name ) {
 		$config = $this->get_flosc_config();
@@ -494,6 +518,7 @@ class FLOSC_IVR_Parser {
 
 	/**
 	 * Get all styles
+ * @return mixed Result produced by the styles operation.
 	 */
 	public function get_flosc_styles() {
 		$config = $this->get_flosc_config();
@@ -502,6 +527,7 @@ class FLOSC_IVR_Parser {
 
 	/**
 	 * Get CSS for all styles
+ * @return mixed Result produced by the styles css operation.
 	 */
 	public function get_flosc_styles_css() {
 		$styles = $this->get_flosc_styles();
@@ -514,6 +540,8 @@ class FLOSC_IVR_Parser {
 
 	/**
 	 * Get messages by type
+ * @param mixed $type Input consumed by the Resolve the current messages by type value from the available Word Press and flow state. operation.
+ * @return mixed Result produced by the messages by type operation.
 	 */
 	public function get_flosc_messages_by_type( $type ) {
 		$config   = $this->get_flosc_config();
@@ -528,6 +556,8 @@ class FLOSC_IVR_Parser {
 
 	/**
 	 * Get user autoprompts for a phase
+ * @param mixed $phase Input consumed by the Resolve the current user autoprompts value from the available Word Press and flow state. operation.
+ * @return mixed Result produced by the user autoprompts operation.
 	 */
 	public function get_flosc_user_autoprompts( $phase ) {
 		$messages = $this->get_flosc_phase_messages( $phase );
@@ -541,6 +571,8 @@ class FLOSC_IVR_Parser {
 
 	/**
 	 * Get auto messages for a phase
+ * @param mixed $phase Input consumed by the Resolve the current auto messages value from the available Word Press and flow state. operation.
+ * @return mixed Result produced by the auto messages operation.
 	 */
 	public function get_flosc_auto_messages( $phase ) {
 		$messages = $this->get_flosc_phase_messages( $phase );
@@ -554,6 +586,7 @@ class FLOSC_IVR_Parser {
 
 	/**
 	 * Default config if no ivr.md exists
+ * @return array Structured default config data.
 	 */
 	private function get_flosc_default_config() {
 		return array(

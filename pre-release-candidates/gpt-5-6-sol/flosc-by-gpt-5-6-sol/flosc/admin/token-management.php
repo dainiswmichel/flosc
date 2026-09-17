@@ -254,7 +254,7 @@ $flosc_active_count = count(
 		}
 	)
 );
-// Which rows to list. Read-only navigation; the allowlist and the default are
+// Which rows to list. Read-only navigation; the allowlist and the default are.
 // now one expression instead of a read followed by a corrective if.
 $flosc_filter           = flosc_nav_param( 'flosc_product_filter', array( 'active', 'all' ), 'active' );
 $flosc_visible_products = array_values(

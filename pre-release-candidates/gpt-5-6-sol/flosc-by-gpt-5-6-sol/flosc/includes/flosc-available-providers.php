@@ -18,6 +18,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 if ( ! function_exists( 'flosc_available_providers_option_key' ) ) {
 	/**
+ * Coordinate the available providers option key behavior implemented by this code path.
+ *
 	 * @return string
 	 */
 	function flosc_available_providers_option_key() {
@@ -182,6 +184,8 @@ if ( ! function_exists( 'flosc_personality_pack_catalog' ) ) {
 
 if ( ! function_exists( 'flosc_personality_pack_label_list' ) ) {
 	/**
+ * Coordinate the personality pack label list behavior implemented by this code path.
+ *
 	 * @return string
 	 */
 	function flosc_personality_pack_label_list() {
@@ -341,6 +345,8 @@ if ( ! function_exists( 'flosc_available_providers_flow_key_map' ) ) {
 
 if ( ! function_exists( 'flosc_available_providers_get_all' ) ) {
 	/**
+ * Coordinate the available providers get all behavior implemented by this code path.
+ *
 	 * @return array<string,array<string,mixed>>
 	 */
 	function flosc_available_providers_get_all() {
@@ -363,6 +369,8 @@ if ( ! function_exists( 'flosc_available_providers_get_all' ) ) {
 
 if ( ! function_exists( 'flosc_available_providers_save_all' ) ) {
 	/**
+ * Persist the available providers save all state in WordPress storage.
+ *
 	 * @param array<string,array<string,mixed>> $providers Full map.
 	 * @return void
 	 */
@@ -391,6 +399,8 @@ if ( ! function_exists( 'flosc_available_providers_save_all' ) ) {
 
 if ( ! function_exists( 'flosc_available_providers_set_key' ) ) {
 	/**
+ * Coordinate the available providers set key behavior implemented by this code path.
+ *
 	 * @param string $provider Provider slug.
 	 * @param string $api_key  Secret (empty clears).
 	 * @return void
@@ -409,6 +419,8 @@ if ( ! function_exists( 'flosc_available_providers_set_key' ) ) {
 
 if ( ! function_exists( 'flosc_available_providers_has_key' ) ) {
 	/**
+ * Coordinate the available providers has key behavior implemented by this code path.
+ *
 	 * @param string $provider Provider slug.
 	 * @return bool
 	 */
@@ -511,7 +523,7 @@ if ( ! function_exists( 'flosc_admin_save_available_providers' ) ) {
 			60
 		);
 
-		// Redirect target after the save above, which verified its own nonce and
+		// Redirect target after the save above, which verified its own nonce and.
 		// capability before writing. Only picks a tab on this site's admin.php.
 		$ivr = ( isset( $_POST['flosc_return_ivr'] ) && is_scalar( $_POST['flosc_return_ivr'] ) )
 			? sanitize_file_name( wp_unslash( $_POST['flosc_return_ivr'] ) )

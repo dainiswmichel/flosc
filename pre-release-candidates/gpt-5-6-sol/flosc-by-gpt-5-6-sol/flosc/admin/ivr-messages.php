@@ -24,7 +24,13 @@ if ( ! current_user_can( 'edit_others_posts' ) ) {
 }
 
 if ( ! function_exists( 'flosc_resolve_ivr_file_path' ) ) {
-	function flosc_resolve_ivr_file_path( $flosc_ivr_filename ) {
+		/**
+	 * Coordinate the ivr file path behavior implemented by this code path.
+	 *
+	 * @param mixed $flosc_ivr_filename IVR identifier or filename used to select the flow configuration.
+	 * @return mixed Result produced by the ivr file path operation.
+	 */
+function flosc_resolve_ivr_file_path( $flosc_ivr_filename ) {
 		$flosc_ivr_filename = sanitize_file_name( trim( (string) $flosc_ivr_filename ) );
 		// Per WordPress.org policy: runtime-generated files must be written to uploads only.
 		// flosc_data_dir() returns the writable uploads directory or '' when unavailable.
@@ -100,7 +106,7 @@ if ( ! function_exists( 'flosc_sanitize_ivr_markdown' ) ) {
 
 		if ( function_exists( 'mb_check_encoding' ) && ! mb_check_encoding( $text, 'UTF-8' ) ) {
 			if ( function_exists( 'mb_convert_encoding' ) ) {
-				// Substitutes an unconvertible byte rather than failing, so the
+				// Substitutes an unconvertible byte rather than failing, so the.
 				// result is checked rather than the call being silenced.
 				$converted = mb_convert_encoding( $text, 'UTF-8', 'UTF-8' );
 				$text      = is_string( $converted ) ? $converted : '';
@@ -186,8 +192,8 @@ $flosc_nav_spec = array(
 	'phase'              => array( array(), '', 'sanitize_key' ),
 	'edit_message'       => array( array(), '', 'sanitize_key' ),
 	'expand'             => array( array(), '', 'sanitize_key' ),
-	// Verified by wp_verify_nonce() at the download branch. sanitize_text_field
-	// rather than sanitize_key: a nonce is compared, never used as a key, and
+	// Verified by wp_verify_nonce() at the download branch. sanitize_text_field.
+	// rather than sanitize_key: a nonce is compared, never used as a key, and.
 	// it must reach the comparison as the browser sent it.
 	'_wpnonce'           => array( array(), '', 'sanitize_text_field' ),
 );
@@ -227,8 +233,8 @@ if ( 'POST' === $flosc_request_method ) {
 		'save_ivr_message'               => 'flosc_save_ivr_message',
 	);
 	foreach ( $flosc_actions as $flosc_submit_key => $flosc_nonce_action ) {
-		// Presence selects the route. check_admin_referer() on the next line
-		// ends the request unless the nonce for THAT route verifies, so nothing
+		// Presence selects the route. check_admin_referer() on the next line.
+		// ends the request unless the nonce for THAT route verifies, so nothing.
 		// below this loop runs on an unverified body.
 		if ( isset( $_POST[ $flosc_submit_key ] ) ) {
 			check_admin_referer( $flosc_nonce_action );
@@ -259,6 +265,7 @@ if ( ! in_array( $flosc_ivr_management_view, array( 'single', 'all' ), true ) ) 
 
 /**
  * Run IVR diagnostics - checks DB, file, sync status
+ * @return mixed Result of the run ivr diagnostics operation, or a WP_Error when it cannot complete.
  */
 function flosc_run_ivr_diagnostics() {
 	// v1.2.8: Use current IVR file from context.
@@ -300,7 +307,7 @@ function flosc_run_ivr_diagnostics() {
 		),
 	);
 
-	// 1. DB Connection Test
+	// 1. DB Connection Test.
 	$test_key   = 'flosc_diagnostic_test_' . time();
 	$test_value = 'test_' . wp_rand();
 	update_option( $test_key, $test_value );
@@ -317,7 +324,7 @@ function flosc_run_ivr_diagnostics() {
 		$diagnostics['db_connection']['details'][] = "Write test failed: wrote '$test_value', got '$read_back'";
 	}
 
-	// 2. ivr.md File Check
+	// 2. ivr.md File Check.
 	if ( file_exists( $ivr_file ) ) {
 		$file_size     = filesize( $ivr_file );
 		$file_modified = gmdate( 'Y-m-d H:i:s', filemtime( $ivr_file ) );
@@ -409,7 +416,7 @@ function flosc_run_ivr_diagnostics() {
 				'content',
 			);
 
-			// Compare with normalized defaults so sparse DB rows and parser-defaulted
+			// Compare with normalized defaults so sparse DB rows and parser-defaulted.
 			// file rows are treated as equivalent when they are semantically identical.
 			$normalize_for_compare = static function ( $msg ) {
 				if ( ! is_array( $msg ) ) {
@@ -453,7 +460,7 @@ function flosc_run_ivr_diagnostics() {
 				foreach ( $compare_fields as $field ) {
 					if ( (string) ( $file_msg[ $field ] ?? '' ) !== (string) ( $db_msg[ $field ] ?? '' ) ) {
 						$mismatches[] = $flosc_id;
-						break; // one differing field is enough to flag this message
+						break; // one differing field is enough to flag this message.
 					}
 				}
 			}
@@ -611,7 +618,7 @@ function flosc_run_ivr_diagnostics() {
 		$diagnostics['offer_sync']['details'][] = 'Fast path: click "Save DB → IVR File", then click "Refresh Diagnostics".';
 	}
 
-	// 6. API Endpoint - actually test it server-side
+	// 6. API Endpoint - actually test it server-side.
 	$api_url = rest_url( 'flosc/v1/ivr-messages?phase=freeline' );
 
 	// v9.3.1: Michel Timestamp format for last checked.
@@ -1014,7 +1021,7 @@ if ( isset( $flosc_post['flosc_preview_import'] ) ) {
 	if ( ! file_exists( $flosc_ivr_file_path ) ) {
 		add_settings_error( 'flosc_settings', 'preview_file_missing', 'Compare unavailable: active IVR file is missing. Next step: Save DB → IVR File, then run Compare again.', 'warning' );
 	} else {
-		$flosc_result = flosc_import_ivr_to_database( true, $flosc_ivr_file_path, $flosc_flow_key, 'merge' ); // Preview only
+		$flosc_result = flosc_import_ivr_to_database( true, $flosc_ivr_file_path, $flosc_flow_key, 'merge' ); // Preview only.
 		if ( $flosc_result['success'] && isset( $flosc_result['preview'] ) ) {
 			$flosc_import_preview = $flosc_result['stats'];
 		} else {
@@ -1049,7 +1056,7 @@ if ( isset( $flosc_post['flosc_export_ivr'] ) ) {
 	}
 }
 
-// Handle message save/delete
+// Handle message save/delete.
 // Save message: always writes to both DB (live runtime) and IVR file (portable config).
 if ( isset( $flosc_post['save_ivr_message'] ) ) {
 	check_admin_referer( 'flosc_save_ivr_message' );
@@ -1115,7 +1122,7 @@ if ( isset( $flosc_post['save_ivr_message'] ) ) {
 				}
 			}
 
-			// v8.0.0: Concierge fields when type is 'concierge' — keyword-triggered message
+			// v8.0.0: Concierge fields when type is 'concierge' — keyword-triggered message.
 			// with an optional password gate. Retry messages are one per line (the retry list).
 			if ( 'concierge' === $flosc_message_data['type'] ) {
 				$flosc_message_data['individual_message_password'] = sanitize_text_field( $flosc_post['message_individual_password'] ?? '' );
@@ -1132,9 +1139,9 @@ if ( isset( $flosc_post['save_ivr_message'] ) ) {
 				$flosc_message_data['password_retry_messages'] = $flosc_retry_list;
 			}
 
-			// Save message to FLOSC DB (per-flow). Merge over the existing message so fields
-			// the editor does not expose (e.g. MessagePanel) survive an edit instead of being
-			// dropped. The form's fields still win — present-in-form values override the old
+			// Save message to FLOSC DB (per-flow). Merge over the existing message so fields.
+			// the editor does not expose (e.g. MessagePanel) survive an edit instead of being.
+			// dropped. The form's fields still win — present-in-form values override the old.
 			// ones — so a field can be edited or cleared; only untouched fields are preserved.
 			$flosc_existing_message          = ( isset( $flosc_messages[ $flosc_msg_id ] ) && is_array( $flosc_messages[ $flosc_msg_id ] ) ) ? $flosc_messages[ $flosc_msg_id ] : array();
 			$flosc_messages[ $flosc_msg_id ] = array_merge( $flosc_existing_message, $flosc_message_data );
@@ -1161,8 +1168,8 @@ if ( isset( $flosc_post['save_ivr_message'] ) ) {
 			: $flosc_ivr_file_write_path;
 			flosc_auto_export_ivr_to_file( $flosc_flow_key, $flosc_export_path );
 			add_settings_error( 'flosc_settings', 'message_saved', 'Saved to FLOSC DB (live) and IVR file (portable config).', 'success' );
-		} // end valid message content
-	} // end non-empty message_id
+		} // end valid message content.
+	} // end non-empty message_id.
 }
 
 if ( isset( $flosc_get['delete_message'] ) && isset( $flosc_get['phase'] ) ) {
@@ -1200,7 +1207,7 @@ if ( isset( $flosc_get['delete_message'] ) && isset( $flosc_get['phase'] ) ) {
 		flosc_auto_export_ivr_to_file( $flosc_flow_key, $flosc_export_path );
 
 		add_settings_error( 'flosc_settings', 'message_deleted', 'Message deleted from FLOSC DB and removed from Active IVR Messages MD file', 'success' );
-	} // end non-empty message_id
+	} // end non-empty message_id.
 }
 
 // Run diagnostics after mutations so cards reflect the current request actions.
@@ -1224,8 +1231,8 @@ if ( is_dir( $flosc_ivr_files_dir ) ) {
 		glob( $flosc_ivr_files_dir . '*_ivr.md' ),
 		glob( $flosc_ivr_files_dir . 'ivr*.md' )
 	);
-	$flosc_files = array_unique( $flosc_files ); // Remove duplicates
-	sort( $flosc_files ); // Alphabetical order
+	$flosc_files = array_unique( $flosc_files ); // Remove duplicates.
+	sort( $flosc_files ); // Alphabetical order.
 	foreach ( $flosc_files as $flosc_file ) {
 		$flosc_filename = basename( $flosc_file );
 		// Skip backup files.
@@ -1741,8 +1748,8 @@ function floscTestAPI() {
 if ( null !== $flosc_import_preview ) :
 	// v3.0.9: Pre-compute field_diffs early so we can split "updated" into changed vs unchanged.
 	$flosc_field_diffs           = $flosc_import_preview['field_diffs'] ?? array();
-	$flosc_changed_ids           = array_keys( $flosc_field_diffs );                                          // IDs with actual field differences
-	$flosc_unchanged_ids         = array_values( array_diff( $flosc_import_preview['updated'] ?? array(), $flosc_changed_ids ) ); // IDs in both, content identical
+	$flosc_changed_ids           = array_keys( $flosc_field_diffs );                                          // IDs with actual field differences.
+	$flosc_unchanged_ids         = array_values( array_diff( $flosc_import_preview['updated'] ?? array(), $flosc_changed_ids ) ); // IDs in both, content identical.
 	$flosc_after_merge_count     = (int) ( $flosc_import_preview['current_count'] ?? 0 ) + count( $flosc_import_preview['added'] ?? array() );
 	$flosc_after_replace_count   = (int) ( $flosc_import_preview['incoming_count'] ?? 0 );
 	$flosc_replace_removed_count = count( $flosc_import_preview['deleted'] ?? array() );

@@ -12,6 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Default per-flow option key when a caller omits $flow_key.
  * Runtime config is never stored in global flosc_ivr_messages / flosc_ivr_styles options.
+ * @return mixed Result produced by the default flow option key operation.
  */
 function flosc_default_flow_option_key() {
 	return 'flosc_flow_flosc_default_technical_ivr';
@@ -99,7 +100,7 @@ function flosc_portable_collect_exportable_settings( array $fs ) {
  * Remove secret subkeys recursively.
  *
  * @param mixed    $value
- * @param string[] $path
+ * @param array $path Filesystem value identifying the file used by the Coordinate the portable filter secret values behavior implemented by this code path. operation.
  * @return mixed|null
  */
 function flosc_portable_filter_secret_values( $value, array $path ) {
@@ -231,7 +232,7 @@ function flosc_portable_yaml_scalar( $value ) {
  * Emit YAML from a map-only array shape.
  *
  * @param array $map
- * @param int   $depth
+ * @param mixed $depth Input consumed by the Coordinate the portable emit yaml map behavior implemented by this code path. operation.
  * @return string
  */
 function flosc_portable_emit_yaml_map( array $map, $depth = 0 ) {
@@ -434,7 +435,7 @@ function flosc_portable_parse_yaml_scalar( $tail ) {
  * Merge settings recursively (incoming overrides existing values).
  *
  * @param array $base
- * @param array $incoming
+ * @param array $incoming Input consumed by the Coordinate the portable deep merge behavior implemented by this code path. operation.
  * @return array
  */
 function flosc_portable_deep_merge( array $base, array $incoming ) {
@@ -925,7 +926,7 @@ function flosc_portable_settings_bootstrap_allowlist() {
  * Apply parsed YAML settings to a flow settings array using top-level allow-list and secret deny-list.
  *
  * @param array $current_fs
- * @param array $incoming_settings
+ * @param array $incoming_settings Configuration values used to control the Coordinate the portable apply yaml settings behavior implemented by this code path. behavior.
  * @return array{applied:array,skipped:array,fs:array}
  */
 function flosc_portable_apply_yaml_settings( array $current_fs, array $incoming_settings ) {
@@ -1022,6 +1023,7 @@ function flosc_flow_load_runtime_triplet( $flow_key = null ) {
  * @param bool        $preview_only If true, returns preview without making changes.
  * @param string|null $custom_ivr_file Optional path to IVR file (defaults to flosc_default_technical_ivr.md).
  * @param string|null $flow_key Optional per-flow option key (e.g. 'flosc_flow_flosc_default_ivr').
+ * @param mixed $mode Input consumed by the Persist the import ivr to database state in Word Press storage. operation.
  * @return array Result with success, stats, message, and preview data
  * @since 9.2.2
  */
@@ -1164,7 +1166,7 @@ function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file =
 			'content',
 		);
 
-		// Normalize messages to a compare shape so sparse DB rows and parser-defaulted
+		// Normalize messages to a compare shape so sparse DB rows and parser-defaulted.
 		// file rows can be compared semantically instead of by raw array structure.
 		$normalize_for_compare = static function ( $msg ) {
 			if ( ! is_array( $msg ) ) {
@@ -1372,7 +1374,7 @@ function flosc_export_ivr_backup( $flow_key = null ) {
 	list($messages, $phases, $styles, $flow_key) = flosc_flow_load_runtime_triplet( $flow_key );
 
 	if ( empty( $messages ) ) {
-		return false; // No data to backup
+		return false; // No data to backup.
 	}
 
 	// Generate markdown (same format as export).
@@ -1453,6 +1455,8 @@ function flosc_export_ivr_backup( $flow_key = null ) {
  * Auto-export IVR database to ivr.md file (write-through)
  * Called after every save/delete to keep DB and file in sync
  *
+ * @param mixed $flow_key Name or key used to select the Persist the auto export ivr to file state in Word Press storage. value.
+ * @param mixed $target_ivr_file IVR identifier or filename used to select the flow configuration.
  * @return bool Success
  * @since 9.2.8
  */
@@ -1723,9 +1727,9 @@ function flosc_sync_flow_option_to_ivr_file( $option ) {
 add_action( 'updated_option', 'flosc_sync_flow_option_to_ivr_file', 20, 1 );
 add_action( 'added_option', 'flosc_sync_flow_option_to_ivr_file', 20, 1 );
 
-// v8.0.0: Concierge posts. A private post in the concierge category gets an admin
-// "FLOSC Concierge" meta box (editable settings); on save the plugin syncs it into
-// the post's flow as a concierge IVR message (which mirrors to the .md); on trash it
+// v8.0.0: Concierge posts. A private post in the concierge category gets an admin.
+// "FLOSC Concierge" meta box (editable settings); on save the plugin syncs it into.
+// the post's flow as a concierge IVR message (which mirrors to the .md); on trash it.
 // is removed. Admins also see a read-only "what FLOSC understands" summary on the post.
 add_action(
 	'add_meta_boxes_post',
@@ -1807,6 +1811,9 @@ add_filter(
 /**
  * Align per-flow offers registry with offer messages currently present in IVR messages.
  * Keeps referenced offers and snapshots removed extras for recovery.
+ * @param mixed $flow_key Name or key used to select the Persist the sync flow offers with ivr messages state in Word Press storage. value.
+ * @param mixed $messages Input consumed by the Persist the sync flow offers with ivr messages state in Word Press storage. operation.
+ * @return array Structured sync flow offers with ivr messages data.
  */
 function flosc_sync_flow_offers_with_ivr_messages( $flow_key, $messages ) {
 	if ( empty( $flow_key ) || ! is_array( $messages ) ) {

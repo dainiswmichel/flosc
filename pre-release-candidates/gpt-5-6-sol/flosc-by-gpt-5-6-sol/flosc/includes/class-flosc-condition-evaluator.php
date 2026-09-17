@@ -13,6 +13,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC Condition Evaluator behavior and the WordPress services used by its methods.
+ */
 class FLOSC_Condition_Evaluator {
 
 	private $context       = array();
@@ -21,6 +24,7 @@ class FLOSC_Condition_Evaluator {
 
 	/**
 	 * Constructor
+ * @param mixed $context Context values used to resolve request- or flow-specific behavior.
 	 */
 	public function __construct( $context = array() ) {
 		$this->context = $context;
@@ -29,6 +33,7 @@ class FLOSC_Condition_Evaluator {
 
 	/**
 	 * Set context
+ * @param mixed $context Context values used to resolve request- or flow-specific behavior.
 	 */
 	public function set_context( $context ) {
 		$this->context = $context;
@@ -36,6 +41,8 @@ class FLOSC_Condition_Evaluator {
 
 	/**
 	 * Update context value
+ * @param mixed $key Name or key used to select the Save the validated context state for later requests. value.
+ * @param mixed $value Value consumed or normalized by the Save the validated context state for later requests. operation.
 	 */
 	public function update_context( $key, $value ) {
 		$this->context[ $key ] = $value;
@@ -43,6 +50,8 @@ class FLOSC_Condition_Evaluator {
 
 	/**
 	 * Evaluate a condition string
+ * @param mixed $condition_string Input consumed by the Coordinate the evaluate behavior implemented by this code path. operation.
+ * @return bool Whether evaluate applies to the current state.
 	 */
 	public function evaluate( $condition_string ) {
 		$condition_string = trim( $condition_string );
@@ -63,6 +72,8 @@ class FLOSC_Condition_Evaluator {
 
 	/**
 	 * Evaluate a complex expression with && || ! ()
+ * @param mixed $expr Input consumed by the Coordinate the evaluate expression behavior implemented by this code path. operation.
+ * @return bool Whether evaluate expression applies to the current state.
 	 */
 	private function evaluate_expression( $expr ) {
 		$expr = trim( $expr );
@@ -73,7 +84,7 @@ class FLOSC_Condition_Evaluator {
 			$expr         = str_replace( $matches[0], $inner_result, $expr );
 		}
 
-		// An "or" expression: each side is evaluated in turn and the first true
+		// An "or" expression: each side is evaluated in turn and the first true.
 		// one ends it, so a later side with a side effect is never reached.
 		if ( false !== strpos( $expr, '||' ) ) {
 			$parts = preg_split( '/\s*\|\|\s*/', $expr );
@@ -85,7 +96,7 @@ class FLOSC_Condition_Evaluator {
 			return false;
 		}
 
-		// An "and" expression: each side is evaluated in turn and the first
+		// An "and" expression: each side is evaluated in turn and the first.
 		// false one ends it.
 		if ( false !== strpos( $expr, '&&' ) ) {
 			$parts = preg_split( '/\s*&&\s*/', $expr );
@@ -97,7 +108,7 @@ class FLOSC_Condition_Evaluator {
 			return true;
 		}
 
-		// A negation: everything after the leading mark is evaluated and
+		// A negation: everything after the leading mark is evaluated and.
 		// inverted.
 		if ( 0 === strpos( $expr, '!' ) ) {
 			return ! $this->evaluate_expression( substr( $expr, 1 ) );
@@ -117,6 +128,8 @@ class FLOSC_Condition_Evaluator {
 
 	/**
 	 * Evaluate a single condition
+ * @param mixed $condition Input consumed by the Coordinate the evaluate single behavior implemented by this code path. operation.
+ * @return bool Whether evaluate single applies to the current state.
 	 */
 	private function evaluate_single( $condition ) {
 		$condition = trim( $condition );
@@ -294,6 +307,8 @@ class FLOSC_Condition_Evaluator {
 	 * - UTC
 	 * - UTC+2, UTC+02, UTC+02:00, UTC-5, UTC-05:30
 	 * - No explicit token: fallback to site timezone, then system timezone
+ * @param mixed $raw_value Value consumed or normalized by the Coordinate the parse mts with timezone behavior implemented by this code path. operation.
+ * @return mixed Result produced by the parse mts with timezone operation.
 	 */
 	private function parse_mts_with_timezone( $raw_value ) {
 		$raw_value = trim( (string) $raw_value );
@@ -373,7 +388,7 @@ class FLOSC_Condition_Evaluator {
 			return new DateTimeZone( 'UTC' );
 		}
 
-		// An offset token: UTC+2, UTC+02, UTC+02:00, UTC-05:30. The hours and
+		// An offset token: UTC+2, UTC+02, UTC+02:00, UTC-05:30. The hours and.
 		// minutes are clamped, so a token claiming UTC+99 becomes UTC+14.
 		if ( '' !== $token && preg_match( '/^UTC([+-])(\d{1,2})(?::?(\d{2}))?$/', $token, $m ) ) {
 			$offset = $m[1]
@@ -388,8 +403,8 @@ class FLOSC_Condition_Evaluator {
 		}
 
 		if ( function_exists( 'wp_timezone' ) ) {
-			// wp_timezone() builds a DateTimeZone itself and throws on a site
-			// whose stored timezone is not one PHP knows, so the throw is caught
+			// wp_timezone() builds a DateTimeZone itself and throws on a site.
+			// whose stored timezone is not one PHP knows, so the throw is caught.
 			// here rather than escaping into a scheduled condition.
 			try {
 				$site_zone = wp_timezone();
@@ -418,6 +433,10 @@ class FLOSC_Condition_Evaluator {
 
 	/**
 	 * Compare values with operator
+ * @param mixed $left Input consumed by the Coordinate the compare behavior implemented by this code path. operation.
+ * @param mixed $operator Input consumed by the Coordinate the compare behavior implemented by this code path. operation.
+ * @param mixed $right Input consumed by the Coordinate the compare behavior implemented by this code path. operation.
+ * @return bool Whether compare applies to the current state.
 	 */
 	private function compare( $left, $operator, $right ) {
 		switch ( $operator ) {
@@ -438,6 +457,9 @@ class FLOSC_Condition_Evaluator {
 
 	/**
 	 * Check offer state
+ * @param mixed $offer_id Identifier used to select the record involved in the Coordinate the check offer state behavior implemented by this code path. operation.
+ * @param mixed $state Input consumed by the Coordinate the check offer state behavior implemented by this code path. operation.
+ * @return bool Whether check offer state applies to the current state.
 	 */
 	private function check_offer_state( $offer_id, $state ) {
 		if ( ! $this->user_id ) {
@@ -449,6 +471,9 @@ class FLOSC_Condition_Evaluator {
 
 	/**
 	 * Mark offer state
+ * @param mixed $offer_id Identifier used to select the record involved in the Persist the mark offer state state in Word Press storage. operation.
+ * @param mixed $state Input consumed by the Persist the mark offer state state in Word Press storage. operation.
+ * @return bool Whether mark offer state applies to the current state.
 	 */
 	public function mark_offer_state( $offer_id, $state ) {
 		if ( ! $this->user_id ) {
@@ -460,6 +485,8 @@ class FLOSC_Condition_Evaluator {
 
 	/**
 	 * Check if message was shown this session
+ * @param mixed $message_name Name or key used to select the Coordinate the was shown this session behavior implemented by this code path. value.
+ * @return mixed Result produced by the was shown this session operation.
 	 */
 	public function was_shown_this_session( $message_name ) {
 		return isset( $this->session_shown[ $message_name ] );
@@ -467,6 +494,7 @@ class FLOSC_Condition_Evaluator {
 
 	/**
 	 * Mark message as shown this session
+ * @param mixed $message_name Name or key used to select the Coordinate the mark shown this session behavior implemented by this code path. value.
 	 */
 	public function mark_shown_this_session( $message_name ) {
 		$this->session_shown[ $message_name ] = true;
@@ -474,6 +502,8 @@ class FLOSC_Condition_Evaluator {
 
 	/**
 	 * Check if message was ever shown to user
+ * @param mixed $message_name Name or key used to select the Coordinate the was ever shown behavior implemented by this code path. value.
+ * @return bool Whether was ever shown applies to the current state.
 	 */
 	public function was_ever_shown( $message_name ) {
 		if ( ! $this->user_id ) {
@@ -485,6 +515,8 @@ class FLOSC_Condition_Evaluator {
 
 	/**
 	 * Mark message as shown to user (persistent)
+ * @param mixed $message_name Name or key used to select the Persist the mark shown state in Word Press storage. value.
+ * @return bool Whether mark shown applies to the current state.
 	 */
 	public function mark_shown( $message_name ) {
 		if ( ! $this->user_id ) {
@@ -496,6 +528,9 @@ class FLOSC_Condition_Evaluator {
 
 	/**
 	 * Get all applicable messages for current state
+ * @param mixed $messages Input consumed by the Resolve the current applicable messages value from the available Word Press and flow state. operation.
+ * @param mixed $type Input consumed by the Resolve the current applicable messages value from the available Word Press and flow state. operation.
+ * @return mixed Result produced by the applicable messages operation.
 	 */
 	public function get_applicable_messages( $messages, $type = null ) {
 		$applicable = array();
@@ -522,6 +557,9 @@ class FLOSC_Condition_Evaluator {
 
 	/**
 	 * Build context from user state
+ * @param mixed $user_id WordPress user ID whose Persist the context state in Word Press storage. state is being processed.
+ * @param mixed $additional Input consumed by the Persist the context state in Word Press storage. operation.
+ * @return mixed Result produced by the context operation.
 	 */
 	public static function build_context( $user_id = null, $additional = array() ) {
 		$user_id = $user_id ? $user_id : get_current_user_id();
@@ -529,7 +567,7 @@ class FLOSC_Condition_Evaluator {
 		$context = array(
 			'logged_in'                             => is_user_logged_in(),
 			'user_id'                               => $user_id,
-			'access_level'                          => 'visitor', // v1.6.2: Default access level for is_guest/is_visitor/is_member conditions
+			'access_level'                          => 'visitor', // v1.6.2: Default access level for is_guest/is_visitor/is_member conditions.
 			'score'                                 => 0,
 			'quiz_taken'                            => false,
 			'purchased'                             => false,
@@ -629,7 +667,7 @@ class FLOSC_Condition_Evaluator {
 			$context['free_lessons_count'] = $context['free_content_items_count'];
 
 			// Per-flow access_level for is_guest / is_visitor / is_member.
-			// Global _flosc_member_access alone must not make a member on one
+			// Global _flosc_member_access alone must not make a member on one.
 			// flow appear as a member on another flow.
 			$flow_for_level = (string) ( $additional['flow_id'] ?? $context['flow_id'] ?? '' );
 			if ( '' === $flow_for_level && function_exists( 'flosc' ) && is_object( flosc() ) && method_exists( flosc(), 'get_current_flow' ) ) {

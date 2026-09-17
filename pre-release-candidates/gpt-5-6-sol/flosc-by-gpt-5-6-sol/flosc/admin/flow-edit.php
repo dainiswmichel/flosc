@@ -54,7 +54,7 @@ if ( isset( $_POST['flosc_save_flow'] ) && wp_verify_nonce( sanitize_text_field(
 		wp_die( esc_html__( 'You do not have permission to edit this flow.', 'flosc' ) );
 	}
 
-	// Save visitor profile bar settings (global settings) — only if posted from Identity tab
+	// Save visitor profile bar settings (global settings) — only if posted from Identity tab.
 	// v1.8.0: Now writes to unified flosc_profile_bar option. Global options require manage_options.
 	if ( $flosc_is_admin && ( isset( $_POST['visitor_bar_text'] ) || isset( $_POST['visitor_bar_icon'] ) ) ) {
 		$flosc_profile_bar = get_option( 'flosc_profile_bar', array() );
@@ -68,7 +68,7 @@ if ( isset( $_POST['flosc_save_flow'] ) && wp_verify_nonce( sanitize_text_field(
 	}
 
 	// Save visitor menu items — preserve associative keys (signup, login, quiz).
-	// map_deep() sanitizes every leaf value at intake; the loop below shapes
+	// map_deep() sanitizes every leaf value at intake; the loop below shapes.
 	// the structure and applies the final per-field types. Global option: admin only.
 	$flosc_visitor_menu_items_post = ( $flosc_is_admin && isset( $_POST['visitor_menu_items'] ) )
 		? map_deep( wp_unslash( $_POST['visitor_menu_items'] ), 'sanitize_text_field' )
@@ -141,8 +141,8 @@ if ( isset( $_POST['flosc_update_team'] ) && $flosc_is_admin && ! $flosc_is_new 
 		$flosc_current_users
 	);
 
-	// Both lists are compared as integers. A strict test between an id stored
-	// as a string by an older save and one read back as an int would revoke
+	// Both lists are compared as integers. A strict test between an id stored.
+	// as a string by an older save and one read back as an int would revoke.
 	// every current member and re-grant every selected one.
 	$flosc_selected_ids = array_map( 'intval', $flosc_selected_users );
 

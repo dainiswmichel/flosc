@@ -406,6 +406,7 @@ if ( ! function_exists( 'flosc_protect_uploads_directory' ) ) {
 	 * server-level security; they exist so a casual URL guess returns nothing.
 	 *
 	 * @param string $dir Absolute directory path (already created).
+ * @return mixed Result produced by the protect uploads directory operation.
 	 */
 	function flosc_protect_uploads_directory( $dir ) {
 		$dir = trailingslashit( $dir );
@@ -551,10 +552,16 @@ if ( ! function_exists( 'flosc_is_allowed_ivr_source_path' ) ) {
  * and created on first use. $flow_stem is the flow id (e.g. 'flow_ivr').
  * ========================================================================== */
 if ( ! function_exists( 'flosc_flow_kb_dir' ) ) {
-	function flosc_flow_kb_dir( $flow_stem ) {
+		/**
+	 * Coordinate the flow kb dir behavior implemented by this code path.
+	 *
+	 * @param mixed $flow_stem Input consumed by the Coordinate the flow kb dir behavior implemented by this code path. operation.
+	 * @return mixed Result produced by the flow kb dir operation.
+	 */
+function flosc_flow_kb_dir( $flow_stem ) {
 		$base = flosc_data_dir();
 		if ( '' === $base ) {
-			// Uploads unavailable — propagate the empty path so callers fail
+			// Uploads unavailable — propagate the empty path so callers fail.
 			// safely instead of building a path relative to nowhere.
 			return '';
 		}
@@ -619,7 +626,12 @@ if ( ! function_exists( 'flosc_chat_archive_dir' ) ) {
  * key uses this instead of wp_salt('auth').
  * ========================================================================== */
 if ( ! function_exists( 'flosc_token_secret' ) ) {
-	function flosc_token_secret() {
+		/**
+	 * Persist the token secret state in WordPress storage.
+	 *
+	 * @return mixed Result produced by the token secret operation.
+	 */
+function flosc_token_secret() {
 		$secret = get_option( 'flosc_token_secret' );
 		if ( ! $secret ) {
 			// Generated once on first use; autoload=false keeps it server-side only.
@@ -675,7 +687,7 @@ if ( ! function_exists( 'flosc_checkout_binding_create' ) ) {
 			'user_id'    => isset( $context['user_id'] ) ? absint( $context['user_id'] ) : get_current_user_id(),
 			'created_at' => time(),
 		);
-		// 1-hour lifetime: long enough to complete a payment, short enough that a
+		// 1-hour lifetime: long enough to complete a payment, short enough that a.
 		// leaked token expires quickly. autoload is irrelevant for transients.
 		set_transient( 'flosc_checkout_binding_' . $hash, $record, HOUR_IN_SECONDS );
 		return $token;
@@ -725,6 +737,8 @@ if ( ! function_exists( 'flosc_checkout_binding_verify' ) ) {
  */
 if ( ! function_exists( 'flosc_paypal_purchase_intent_create' ) ) {
 	/**
+ * Persist the paypal purchase intent create state in WordPress storage.
+ *
 	 * @param array $data offer_id, plan_id, plan_type, amount, currency, flow_id, user_id, session_id, mode.
 	 * @return array|WP_Error Intent record including purchase_uuid
 	 */
@@ -739,7 +753,7 @@ if ( ! function_exists( 'flosc_paypal_purchase_intent_create' ) ) {
 		if ( '' === $offer_id || '' === $plan_id ) {
 			return new WP_Error( 'invalid_intent', __( 'Offer and PayPal plan are required', 'flosc' ), array( 'status' => 400 ) );
 		}
-		// Named before the record, for the same reason as the offer form: a
+		// Named before the record, for the same reason as the offer form: a.
 		// purchase record with an empty currency is worse than one saying USD.
 		$flosc_record_currency = strtoupper( sanitize_text_field( (string) ( $data['currency'] ?? 'USD' ) ) );
 		if ( '' === $flosc_record_currency ) {
@@ -769,6 +783,8 @@ if ( ! function_exists( 'flosc_paypal_purchase_intent_create' ) ) {
 
 if ( ! function_exists( 'flosc_paypal_purchase_intent_get' ) ) {
 	/**
+ * Coordinate the paypal purchase intent get behavior implemented by this code path.
+ *
 	 * @param string $uuid
 	 * @return array|false
 	 */
@@ -784,8 +800,10 @@ if ( ! function_exists( 'flosc_paypal_purchase_intent_get' ) ) {
 
 if ( ! function_exists( 'flosc_paypal_purchase_intent_mark_fulfilled' ) ) {
 	/**
+ * Persist the paypal purchase intent mark fulfilled state in WordPress storage.
+ *
 	 * @param string $uuid
-	 * @param string $subscription_id
+	 * @param mixed $subscription_id Identifier used to select the record involved in the Persist the paypal purchase intent mark fulfilled state in Word Press storage. operation.
 	 * @param int    $user_id
 	 * @return bool
 	 */
@@ -840,9 +858,9 @@ if ( ! function_exists( 'flosc_issue_post_purchase_session' ) ) {
 		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- core WP action wp_login
 		do_action( 'wp_login', $user->user_login, $user );
 
-		// FLOSC's own cross-domain auth cookie rides alongside the WP cookie so a
-		// flow served on flosc.ai / the flow domain / the WordPress host authenticates even when
-		// COOKIE_DOMAIN does not match the custom domain. The methods live on the
+		// FLOSC's own cross-domain auth cookie rides alongside the WP cookie so a.
+		// flow served on flosc.ai / the flow domain / the WordPress host authenticates even when.
+		// COOKIE_DOMAIN does not match the custom domain. The methods live on the.
 		// framework singleton (flosc()), not a separate session class.
 		if ( function_exists( 'flosc' ) && method_exists( flosc(), 'generate_flosc_auth_token' ) ) {
 			$auth_token = flosc()->generate_flosc_auth_token( $user_id );
@@ -871,10 +889,16 @@ if ( ! function_exists( 'flosc_issue_post_purchase_session' ) ) {
  * THIS install's dirs only — no cross-flow or cross-install bleeding.
  * ========================================================================== */
 if ( ! function_exists( 'flosc_config_file' ) ) {
-	// Single config file: the uploads copy if it exists, else the shipped
-	// default. The plugin path is a READ-ONLY resolution — every write goes
+	// Single config file: the uploads copy if it exists, else the shipped.
+	// default. The plugin path is a READ-ONLY resolution — every write goes.
 	// through flosc_write_data_file(), which only accepts uploads targets.
-	function flosc_config_file( $filename ) {
+		/**
+	 * Coordinate the config file behavior implemented by this code path.
+	 *
+	 * @param mixed $filename Filesystem value identifying the file used by the Coordinate the config file behavior implemented by this code path. operation.
+	 * @return mixed Result produced by the config file operation.
+	 */
+function flosc_config_file( $filename ) {
 		$filename = ltrim( (string) $filename, '/' );
 		$base     = flosc_data_dir();
 		if ( '' !== $base && file_exists( $base . $filename ) ) {
@@ -891,7 +915,12 @@ if ( ! function_exists( 'flosc_config_file' ) ) {
  * @return string[]
  */
 if ( ! function_exists( 'flosc_lesson_catalog_basenames' ) ) {
-	function flosc_lesson_catalog_basenames() {
+		/**
+	 * Coordinate the lesson catalog basenames behavior implemented by this code path.
+	 *
+	 * @return mixed Result produced by the lesson catalog basenames operation.
+	 */
+function flosc_lesson_catalog_basenames() {
 		// Ship core: neutral name only. Instances may add legacy basenames via filter.
 		$names = array( 'lesson_catalog.md' );
 		/**
@@ -909,7 +938,12 @@ if ( ! function_exists( 'flosc_lesson_catalog_basenames' ) ) {
  * @return string Absolute path or empty string.
  */
 if ( ! function_exists( 'flosc_resolve_lesson_catalog_path' ) ) {
-	function flosc_resolve_lesson_catalog_path() {
+		/**
+	 * Coordinate the lesson catalog path behavior implemented by this code path.
+	 *
+	 * @return mixed Result produced by the lesson catalog path operation.
+	 */
+function flosc_resolve_lesson_catalog_path() {
 		if ( ! function_exists( 'flosc_config_file' ) ) {
 			return '';
 		}
@@ -939,7 +973,12 @@ if ( ! function_exists( 'flosc_resolve_lesson_catalog_path' ) ) {
  * @return string[] Absolute paths under flosc_data_dir(), or empty if uploads unavailable.
  */
 if ( ! function_exists( 'flosc_lesson_catalog_write_paths' ) ) {
-	function flosc_lesson_catalog_write_paths() {
+		/**
+	 * Coordinate the lesson catalog write paths behavior implemented by this code path.
+	 *
+	 * @return array Structured lesson catalog write paths data.
+	 */
+function flosc_lesson_catalog_write_paths() {
 		$dir = function_exists( 'flosc_data_dir' ) ? flosc_data_dir() : '';
 		if ( '' === $dir ) {
 			return array();
@@ -956,9 +995,15 @@ if ( ! function_exists( 'flosc_lesson_catalog_write_paths' ) ) {
 }
 
 if ( ! function_exists( 'flosc_config_glob' ) ) {
-	// Union of glob matches across uploads + plugin dirs, deduped by basename
+	// Union of glob matches across uploads + plugin dirs, deduped by basename.
 	// (uploads wins, since it is scanned first). $patterns is one pattern or a list.
-	function flosc_config_glob( $patterns ) {
+		/**
+	 * Coordinate the config glob behavior implemented by this code path.
+	 *
+	 * @param mixed $patterns Input consumed by the Coordinate the config glob behavior implemented by this code path. operation.
+	 * @return mixed Result produced by the config glob operation.
+	 */
+function flosc_config_glob( $patterns ) {
 		$patterns = (array) $patterns;
 		$dirs     = array();
 		$base     = flosc_data_dir();
@@ -987,7 +1032,13 @@ if ( ! function_exists( 'flosc_config_glob' ) ) {
 }
 
 if ( ! function_exists( 'flosc_resolve_flow_option_key_for_ivr' ) ) {
-	function flosc_resolve_flow_option_key_for_ivr( $flosc_ivr_filename ) {
+		/**
+	 * Coordinate the flow option key for ivr behavior implemented by this code path.
+	 *
+	 * @param mixed $flosc_ivr_filename IVR identifier or filename used to select the flow configuration.
+	 * @return mixed Result produced by the flow option key for ivr operation.
+	 */
+function flosc_resolve_flow_option_key_for_ivr( $flosc_ivr_filename ) {
 		$flosc_ivr_filename = basename( (string) $flosc_ivr_filename );
 		$target_stem        = sanitize_key( pathinfo( $flosc_ivr_filename, PATHINFO_FILENAME ) );
 		$default_key        = 'flosc_flow_' . $target_stem;
@@ -1031,7 +1082,7 @@ if ( ! function_exists( 'flosc_resolve_flow_option_key_for_ivr' ) ) {
 			}
 
 			$score = 0;
-			// Prefer rows explicitly bound to this IVR file over a plain default
+			// Prefer rows explicitly bound to this IVR file over a plain default.
 			// key, because legacy duplicate rows can leave default keys stale.
 			if ( $matches_primary ) {
 				$score += 2000;
@@ -1136,8 +1187,8 @@ if ( ! function_exists( 'flosc_stamp_flow_saved' ) ) {
 			return '';
 		}
 
-		// The helper lives with the AI code and is loaded at plugin boot, but a
-		// record of a save must not go missing because a require moved. The
+		// The helper lives with the AI code and is loaded at plugin boot, but a.
+		// record of a save must not go missing because a require moved. The.
 		// same format either way.
 		if ( function_exists( 'flosc_mts_utc' ) ) {
 			$stamp = flosc_mts_utc();

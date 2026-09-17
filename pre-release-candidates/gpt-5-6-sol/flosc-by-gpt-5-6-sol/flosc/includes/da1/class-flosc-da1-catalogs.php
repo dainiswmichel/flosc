@@ -15,6 +15,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC DA1 Catalogs behavior and the WordPress services used by its methods.
+ */
 class FLOSC_DA1_Catalogs {
 
 	/**
@@ -110,6 +113,9 @@ class FLOSC_DA1_Catalogs {
 	/**
 	 * Conservative catalog-intent check. The runtime is called on every chat
 	 * turn, so it must not hijack unrelated conversation.
+ * @param mixed $message Input consumed by the Determine whether the current state satisfies catalog query. operation.
+ * @param mixed $items Input consumed by the Determine whether the current state satisfies catalog query. operation.
+ * @return bool Whether catalog query applies to the current state.
 	 */
 	public function is_catalog_query( $message, $items = array() ) {
 		$text = $this->normalize_search_text( $message );
@@ -149,17 +155,35 @@ class FLOSC_DA1_Catalogs {
 		return false;
 	}
 
-	public function is_count_request( $message ) {
+		/**
+	 * Determine whether the current state satisfies count request.
+	 *
+	 * @param mixed $message Input consumed by the Determine whether the current state satisfies count request. operation.
+	 * @return bool Whether count request applies to the current state.
+	 */
+public function is_count_request( $message ) {
 		$text = $this->normalize_search_text( $message );
 		return (bool) preg_match( '/\b(how many|number of|count|total|cik)\b/u', $text );
 	}
 
-	public function is_full_list_request( $message ) {
+		/**
+	 * Determine whether the current state satisfies full list request.
+	 *
+	 * @param mixed $message Input consumed by the Determine whether the current state satisfies full list request. operation.
+	 * @return bool Whether full list request applies to the current state.
+	 */
+public function is_full_list_request( $message ) {
 		$text = $this->normalize_search_text( $message );
 		return (bool) preg_match( '/\b(full list|complete list|entire catalog|entire catalogue|show all|list all|everything)\b/u', $text );
 	}
 
-	public function detect_batch_size( $message ) {
+		/**
+	 * Coordinate the detect batch size behavior implemented by this code path.
+	 *
+	 * @param mixed $message Input consumed by the Coordinate the detect batch size behavior implemented by this code path. operation.
+	 * @return mixed Result produced by the detect batch size operation.
+	 */
+public function detect_batch_size( $message ) {
 		$text = $this->normalize_search_text( $message );
 		if ( preg_match( '/\b(one|1|single)\b/u', $text ) ) {
 			return 1;
@@ -173,6 +197,10 @@ class FLOSC_DA1_Catalogs {
 	/**
 	 * Load assigned catalog rows and enforce DA1 controls before any row can be
 	 * exposed to the chat layer.
+ * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+ * @param mixed $ivr_file IVR identifier or filename used to select the flow configuration.
+ * @param mixed $access_level Input consumed by the Resolve the current rows for flow value from the available Word Press and flow state. operation.
+ * @return array Structured rows for flow data.
 	 */
 	public function load_rows_for_flow( $flow_id, $ivr_file, $access_level = 'visitor' ) {
 		$upload_dir  = wp_upload_dir();
@@ -283,6 +311,8 @@ class FLOSC_DA1_Catalogs {
 
 	/**
 	 * Convert visible rows into content-agnostic catalog items.
+ * @param mixed $rows Input consumed by the Coordinate the extract items behavior implemented by this code path. operation.
+ * @return mixed Result produced by the extract items operation.
 	 */
 	public function extract_items( $rows ) {
 		$children_by_parent = array();
@@ -340,6 +370,8 @@ class FLOSC_DA1_Catalogs {
 	 * Dublin Core compatibility layer. It recognizes DC/DCMI field names without
 	 * forcing them into the source catalog. Categories and Tags can supplement
 	 * Subject when a catalog chooses to use those DA1-friendly fields.
+ * @param mixed $payload Structured data consumed by the Coordinate the extract dublin core metadata behavior implemented by this code path. operation.
+ * @return mixed Result produced by the extract dublin core metadata operation.
 	 */
 	public function extract_dublin_core_metadata( $payload ) {
 		$dc_fields = array(
@@ -384,7 +416,14 @@ class FLOSC_DA1_Catalogs {
 		return $dc;
 	}
 
-	public function find_matching_items( $message, $items ) {
+		/**
+	 * Resolve the current matching items value from the available WordPress and flow state.
+	 *
+	 * @param mixed $message Input consumed by the Resolve the current matching items value from the available Word Press and flow state. operation.
+	 * @param mixed $items Input consumed by the Resolve the current matching items value from the available Word Press and flow state. operation.
+	 * @return array Structured matching items data.
+	 */
+public function find_matching_items( $message, $items ) {
 		$query_tokens = $this->search_tokens( $message );
 		if ( empty( $query_tokens ) ) {
 			return array();
@@ -447,7 +486,13 @@ class FLOSC_DA1_Catalogs {
 		);
 	}
 
-	public function parse_tsv_content( $content ) {
+		/**
+	 * Coordinate the parse tsv content behavior implemented by this code path.
+	 *
+	 * @param mixed $content Input consumed by the Coordinate the parse tsv content behavior implemented by this code path. operation.
+	 * @return mixed Result produced by the parse tsv content operation.
+	 */
+public function parse_tsv_content( $content ) {
 		$rows      = array();
 		$row       = array();
 		$field     = '';
@@ -490,7 +535,14 @@ class FLOSC_DA1_Catalogs {
 		return $rows;
 	}
 
-	public function shorten_text( $text, $limit ) {
+		/**
+	 * Coordinate the shorten text behavior implemented by this code path.
+	 *
+	 * @param mixed $text Input consumed by the Coordinate the shorten text behavior implemented by this code path. operation.
+	 * @param mixed $limit Input consumed by the Coordinate the shorten text behavior implemented by this code path. operation.
+	 * @return mixed Result produced by the shorten text operation.
+	 */
+public function shorten_text( $text, $limit ) {
 		$text = trim( (string) $text );
 		if ( '' === $text ) {
 			return '';
@@ -507,7 +559,13 @@ class FLOSC_DA1_Catalogs {
 		return rtrim( substr( $text, 0, max( 1, $limit - 1 ) ) ) . '...';
 	}
 
-	public function limit_chat_response_length( $text ) {
+		/**
+	 * Coordinate the limit chat response length behavior implemented by this code path.
+	 *
+	 * @param mixed $text Input consumed by the Coordinate the limit chat response length behavior implemented by this code path. operation.
+	 * @return mixed Result produced by the limit chat response length operation.
+	 */
+public function limit_chat_response_length( $text ) {
 		$raw_limit = (string) flosc_get_setting( 'ai_max_response_length', '' );
 		$numeric   = preg_replace( '/[^0-9]/', '', $raw_limit );
 		$max       = intval( $numeric );
@@ -517,7 +575,13 @@ class FLOSC_DA1_Catalogs {
 		return $this->shorten_text( $text, $max );
 	}
 
-	private function canonicalize_column_name( $column ) {
+		/**
+	 * Coordinate the canonicalize column name behavior implemented by this code path.
+	 *
+	 * @param mixed $column Input consumed by the Coordinate the canonicalize column name behavior implemented by this code path. operation.
+	 * @return mixed Result produced by the canonicalize column name operation.
+	 */
+private function canonicalize_column_name( $column ) {
 		$column = trim( (string) $column );
 		if ( 'Record Type' === $column ) {
 			return 'Item Type';
@@ -525,7 +589,13 @@ class FLOSC_DA1_Catalogs {
 		return $column;
 	}
 
-	private function normalize_access_level( $access_level ) {
+		/**
+	 * Normalize the input into the canonical form required for normalize access level.
+	 *
+	 * @param mixed $access_level Input consumed by the Normalize the input into the canonical form required for normalize access level. operation.
+	 * @return mixed Result produced by the normalize access level operation.
+	 */
+private function normalize_access_level( $access_level ) {
 		$access_level = strtolower( trim( (string) $access_level ) );
 		return in_array( $access_level, array( 'visitor', 'guest', 'member' ), true ) ? $access_level : 'visitor';
 	}
@@ -597,7 +667,14 @@ class FLOSC_DA1_Catalogs {
 		return null === $lowest ? 3 : (int) $lowest;
 	}
 
-	private function row_allows_audience( $row, $access_level ) {
+		/**
+	 * Coordinate the row allows audience behavior implemented by this code path.
+	 *
+	 * @param mixed $row Input consumed by the Coordinate the row allows audience behavior implemented by this code path. operation.
+	 * @param mixed $access_level Input consumed by the Coordinate the row allows audience behavior implemented by this code path. operation.
+	 * @return mixed Result produced by the row allows audience operation.
+	 */
+private function row_allows_audience( $row, $access_level ) {
 		return $this->access_rank( $access_level ) >= $this->vgm_rank( $row['VGM'] ?? '' );
 	}
 
@@ -630,7 +707,14 @@ class FLOSC_DA1_Catalogs {
 		return false;
 	}
 
-	private function row_matches_flow_scope( $row, $flow_scope_tokens ) {
+		/**
+	 * Coordinate the row matches flow scope behavior implemented by this code path.
+	 *
+	 * @param mixed $row Input consumed by the Coordinate the row matches flow scope behavior implemented by this code path. operation.
+	 * @param mixed $flow_scope_tokens Token value used to authenticate or correlate this operation.
+	 * @return bool Whether row matches flow scope applies to the current state.
+	 */
+private function row_matches_flow_scope( $row, $flow_scope_tokens ) {
 		$scope = strtolower( trim( (string) ( $row['Flow Scope'] ?? 'all' ) ) );
 		if ( '' === $scope || 'all' === $scope ) {
 			return true;
@@ -648,7 +732,14 @@ class FLOSC_DA1_Catalogs {
 		return false;
 	}
 
-	private function render_item_lines( $item, $number ) {
+		/**
+	 * Coordinate the item lines behavior implemented by this code path.
+	 *
+	 * @param mixed $item Input consumed by the Coordinate the item lines behavior implemented by this code path. operation.
+	 * @param mixed $number Input consumed by the Coordinate the item lines behavior implemented by this code path. operation.
+	 * @return mixed Result produced by the item lines operation.
+	 */
+private function render_item_lines( $item, $number ) {
 		$label = $this->get_item_label( $item );
 		$dc    = (array) ( $item['dublin_core'] ?? array() );
 		$lines = array( $number . '. ' . $label );
@@ -669,7 +760,13 @@ class FLOSC_DA1_Catalogs {
 		return $lines;
 	}
 
-	private function get_item_label( $item ) {
+		/**
+	 * Resolve the current item label value from the available WordPress and flow state.
+	 *
+	 * @param mixed $item Input consumed by the Resolve the current item label value from the available Word Press and flow state. operation.
+	 * @return mixed Result produced by the item label operation.
+	 */
+private function get_item_label( $item ) {
 		$dc      = (array) ( $item['dublin_core'] ?? array() );
 		$payload = (array) ( $item['payload'] ?? array() );
 
@@ -689,7 +786,13 @@ class FLOSC_DA1_Catalogs {
 		return '' !== $row_key ? 'Item ' . $row_key : 'Catalog item';
 	}
 
-	private function extract_primary_url_from_payload( $payload ) {
+		/**
+	 * Coordinate the extract primary url from payload behavior implemented by this code path.
+	 *
+	 * @param mixed $payload Structured data consumed by the Coordinate the extract primary url from payload behavior implemented by this code path. operation.
+	 * @return mixed Result produced by the extract primary url from payload operation.
+	 */
+private function extract_primary_url_from_payload( $payload ) {
 		foreach ( (array) $payload as $value ) {
 			$text = trim( (string) $value );
 			if ( '' !== $text && preg_match( '/https?:\/\/[^\s"<>]+/i', $text, $match ) ) {
@@ -699,13 +802,25 @@ class FLOSC_DA1_Catalogs {
 		return '';
 	}
 
-	private function normalize_search_text( $text ) {
+		/**
+	 * Normalize the input into the canonical form required for normalize search text.
+	 *
+	 * @param mixed $text Input consumed by the Normalize the input into the canonical form required for normalize search text. operation.
+	 * @return mixed Result produced by the normalize search text operation.
+	 */
+private function normalize_search_text( $text ) {
 		$text = function_exists( 'mb_strtolower' ) ? mb_strtolower( (string) $text, 'UTF-8' ) : strtolower( (string) $text );
 		$text = preg_replace( '/[^\p{L}\p{N}]+/u', ' ', $text );
 		return trim( (string) preg_replace( '/\s+/', ' ', (string) $text ) );
 	}
 
-	private function search_tokens( $text ) {
+		/**
+	 * Coordinate the search tokens behavior implemented by this code path.
+	 *
+	 * @param mixed $text Input consumed by the Coordinate the search tokens behavior implemented by this code path. operation.
+	 * @return array Structured search tokens data.
+	 */
+private function search_tokens( $text ) {
 		$normalized = $this->normalize_search_text( $text );
 		if ( '' === $normalized ) {
 			return array();

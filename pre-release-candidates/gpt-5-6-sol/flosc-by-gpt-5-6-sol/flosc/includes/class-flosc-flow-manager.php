@@ -13,25 +13,37 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC Flow Manager behavior and the WordPress services used by its methods.
+ */
 class FLOSC_Flow_Manager {
 
 	private static $instance = null;
 
 	const OPTION_KEY = 'flosc_flows';
 
-	public static function instance() {
+		/**
+	 * Coordinate the instance behavior implemented by this code path.
+	 *
+	 * @return mixed Result produced by the instance operation.
+	 */
+public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
 		}
 		return self::$instance;
 	}
 
-	private function __construct() {
+		/**
+	 * Coordinate the construct behavior implemented by this code path.
+	 */
+private function __construct() {
 		// Constructor.
 	}
 
 	/**
 	 * Get all flows
+ * @return mixed Result produced by the all flows operation.
 	 */
 	public function get_all_flows() {
 		return get_option( self::OPTION_KEY, array() );
@@ -39,6 +51,8 @@ class FLOSC_Flow_Manager {
 
 	/**
 	 * Get flows accessible by a user
+ * @param mixed $user_id WordPress user ID whose Resolve the current user flows value from the available Word Press and flow state. state is being processed.
+ * @return mixed Result produced by the user flows operation.
 	 */
 	public function get_user_flows( $user_id = null ) {
 		$user_id   = $user_id ? $user_id : get_current_user_id();
@@ -71,6 +85,8 @@ class FLOSC_Flow_Manager {
 
 	/**
 	 * Get a single flow by ID
+ * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+ * @return mixed Result produced by the flow operation.
 	 */
 	public function get_flow( $flow_id ) {
 		$flows = $this->get_all_flows();
@@ -79,6 +95,8 @@ class FLOSC_Flow_Manager {
 
 	/**
 	 * Get flow by slug
+ * @param mixed $slug Input consumed by the Resolve the current flow by slug value from the available Word Press and flow state. operation.
+ * @return mixed Result produced by the flow by slug operation.
 	 */
 	public function get_flow_by_slug( $slug ) {
 		$flows = $this->get_all_flows();
@@ -92,6 +110,8 @@ class FLOSC_Flow_Manager {
 
 	/**
 	 * Get flow by custom domain
+ * @param mixed $domain Input consumed by the Resolve the current flow by domain value from the available Word Press and flow state. operation.
+ * @return mixed Result produced by the flow by domain operation.
 	 */
 	public function get_flow_by_domain( $domain ) {
 		$domain = strtolower( preg_replace( '#^https?://#', '', trim( $domain ) ) );
@@ -115,6 +135,8 @@ class FLOSC_Flow_Manager {
 
 	/**
 	 * Create a new flow
+ * @param mixed $data Structured data consumed by the Persist the flow state in Word Press storage. operation.
+ * @return mixed Result of the flow operation, or a WP_Error when it cannot complete.
 	 */
 	public function create_flow( $data ) {
 		$flows = $this->get_all_flows();
@@ -155,6 +177,9 @@ class FLOSC_Flow_Manager {
 
 	/**
 	 * Update an existing flow
+ * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+ * @param mixed $data Structured data consumed by the Persist the flow state in Word Press storage. operation.
+ * @return mixed Result of the flow operation, or a WP_Error when it cannot complete.
 	 */
 	public function update_flow( $flow_id, $data ) {
 		$flows = $this->get_all_flows();
@@ -175,7 +200,7 @@ class FLOSC_Flow_Manager {
 		// Merge with existing data.
 		$flow               = array_merge( $flows[ $flow_id ], $data );
 		$flow               = $this->normalize_flow_data( $flow );
-		$flow['id']         = $flow_id; // Preserve ID
+		$flow['id']         = $flow_id; // Preserve ID.
 		$flow['updated_at'] = current_time( 'mysql' );
 
 		// Save.
@@ -190,6 +215,8 @@ class FLOSC_Flow_Manager {
 
 	/**
 	 * Delete a flow
+ * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+ * @return bool Whether flow applies to the current state.
 	 */
 	public function delete_flow( $flow_id ) {
 		$flows = $this->get_all_flows();
@@ -222,6 +249,8 @@ class FLOSC_Flow_Manager {
 	 * Added 'overrides' for per-flow settings
 	 *
 	 * @since 1.2.3
+ * @param mixed $data Structured data consumed by the Normalize the input into the canonical form required for normalize flow data. operation.
+ * @return mixed Result produced by the normalize flow data operation.
 	 */
 	private function normalize_flow_data( $data ) {
 		$defaults = array(
@@ -293,7 +322,7 @@ class FLOSC_Flow_Manager {
 		$flow['identity']['tagline']      = sanitize_text_field( $flow['identity']['tagline'] );
 		$flow['identity']['chatlogo_url'] = esc_url_raw( $flow['identity']['chatlogo_url'] );
 		$flow['identity']['favicon_url']  = esc_url_raw( $flow['identity']['favicon_url'] ?? '' );
-		// sanitize_hex_color() returns null for anything that is not a hex
+		// sanitize_hex_color() returns null for anything that is not a hex.
 		// colour, so a malformed value falls back rather than reaching the page.
 		$flosc_primary_color               = sanitize_hex_color( $flow['identity']['primary_color'] );
 		$flow['identity']['primary_color'] = $flosc_primary_color ? $flosc_primary_color : '#4f46e5';
@@ -304,6 +333,9 @@ class FLOSC_Flow_Manager {
 
 	/**
 	 * Check if user can access flow admin
+ * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+ * @param mixed $user_id WordPress user ID whose Determine whether the current state satisfies access flow admin. state is being processed.
+ * @return bool Whether access flow admin applies to the current state.
 	 */
 	public function can_access_flow_admin( $flow_id, $user_id = null ) {
 		$user_id = $user_id ? $user_id : get_current_user_id();
@@ -325,6 +357,9 @@ class FLOSC_Flow_Manager {
 
 	/**
 	 * Grant user access to a flow
+ * @param mixed $user_id WordPress user ID whose Persist the grant flow access state in Word Press storage. state is being processed.
+ * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+ * @return bool Whether grant flow access applies to the current state.
 	 */
 	public function grant_flow_access( $user_id, $flow_id ) {
 		$allowed = get_user_meta( $user_id, '_flosc_flow_access', true );
@@ -346,6 +381,9 @@ class FLOSC_Flow_Manager {
 
 	/**
 	 * Revoke user access to a flow
+ * @param mixed $user_id WordPress user ID whose Persist the revoke flow access state in Word Press storage. state is being processed.
+ * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+ * @return bool Whether revoke flow access applies to the current state.
 	 */
 	public function revoke_flow_access( $user_id, $flow_id ) {
 		$allowed = get_user_meta( $user_id, '_flosc_flow_access', true );
@@ -374,6 +412,8 @@ class FLOSC_Flow_Manager {
 	 * More robust serialized array handling
 	 *
 	 * @since 1.2.3
+ * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+ * @return array Structured flow users data.
 	 */
 	public function get_flow_users( $flow_id ) {
 		$candidate_ids = function_exists( 'flosc_get_user_ids_for_meta' )
@@ -411,6 +451,7 @@ class FLOSC_Flow_Manager {
 	 * Per WordPress.org policy, files are resolved uploads-first via flosc_config_glob().
 	 *
 	 * @since 1.2.3
+ * @return mixed Result produced by the available ivr files operation.
 	 */
 	public function get_available_ivr_files() {
 		$files = array();
@@ -435,6 +476,7 @@ class FLOSC_Flow_Manager {
 
 	/**
 	 * Get available quiz types
+ * @return array Structured available quiz types data.
 	 */
 	public function get_available_quiz_types() {
 		return array(
@@ -448,6 +490,7 @@ class FLOSC_Flow_Manager {
 
 	/**
 	 * Migrate from legacy settings (v1.2.1) to flows (v1.2.2)
+ * @return bool Whether migrate from legacy applies to the current state.
 	 */
 	public function maybe_migrate_from_legacy() {
 		// If flows already exist, don't migrate.
@@ -455,8 +498,8 @@ class FLOSC_Flow_Manager {
 			return false;
 		}
 
-		// Generic WordPress.org / fresh-install model: ONE active example flow
-		// with an IVR that ships in the package. Specialty product flows (admin imports,
+		// Generic WordPress.org / fresh-install model: ONE active example flow.
+		// with an IVR that ships in the package. Specialty product flows (admin imports,.
 		// Solfeggio, assistant, etc.) are admin imports — not auto-activated.
 		$ivr_file = 'flosc_default_technical_ivr.md';
 		$shipped  = FLOSC_PLUGIN_DIR . 'ai_configuration_files/' . $ivr_file;
@@ -534,6 +577,7 @@ class FLOSC_Flow_Manager {
 	/**
 	 * Get current flow from context
 	 * Wrapper around global get_current_flow() function
+ * @return mixed Result produced by the current flow operation.
 	 */
 	public function get_current_flow() {
 		if ( function_exists( 'get_current_flow' ) ) {

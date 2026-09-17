@@ -10,6 +10,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC Page Context behavior and the WordPress services used by its methods.
+ */
 class FLOSC_Page_Context {
 
 	private static $instance = null;
@@ -17,7 +20,12 @@ class FLOSC_Page_Context {
 	const MAX_CONTENT_CHARS = 12000;
 	const SESSION_TTL       = HOUR_IN_SECONDS;
 
-	public static function instance() {
+		/**
+	 * Coordinate the instance behavior implemented by this code path.
+	 *
+	 * @return mixed Result produced by the instance operation.
+	 */
+public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
 		}
@@ -28,6 +36,7 @@ class FLOSC_Page_Context {
 	 * Resolve and persist browsing post ID for chat logs — never loads post body.
 	 *
 	 * @param array $eval_context By reference.
+ * @return mixed Result produced by the normalize browsing post id operation.
 	 */
 	public function normalize_browsing_post_id( array &$eval_context ) {
 		if ( ! $this->is_page_context_handoff_enabled() ) {
@@ -80,6 +89,7 @@ class FLOSC_Page_Context {
 	 * @param array  $eval_context By reference.
 	 * @param string $message      User message.
 	 * @param string $session_key  Visitor session id or server session id string.
+ * @return mixed Result produced by the attach to context operation.
 	 */
 	public function maybe_attach_to_context( array &$eval_context, $message, $session_key = '' ) {
 		if ( ! $this->is_page_context_handoff_enabled() ) {
@@ -125,23 +135,46 @@ class FLOSC_Page_Context {
 		}
 	}
 
-	private function session_transient_key( $session_key ) {
+		/**
+	 * Coordinate the session transient key behavior implemented by this code path.
+	 *
+	 * @param mixed $session_key Name or key used to select the Coordinate the session transient key behavior implemented by this code path. value.
+	 * @return mixed Result produced by the session transient key operation.
+	 */
+private function session_transient_key( $session_key ) {
 		return 'flosc_page_focus_' . md5( sanitize_text_field( (string) $session_key ) );
 	}
 
-	private function get_session_focus_post_id( $session_key ) {
+		/**
+	 * Resolve the current session focus post id value from the available WordPress and flow state.
+	 *
+	 * @param mixed $session_key Name or key used to select the Resolve the current session focus post id value from the available Word Press and flow state. value.
+	 * @return mixed Result produced by the session focus post id operation.
+	 */
+private function get_session_focus_post_id( $session_key ) {
 		if ( '' === $session_key ) {
 			return 0;
 		}
 		return absint( get_transient( $this->session_transient_key( $session_key ) ) );
 	}
 
-	private function is_page_context_handoff_enabled() {
+		/**
+	 * Determine whether the current state satisfies page context handoff enabled.
+	 *
+	 * @return bool Whether page context handoff enabled applies to the current state.
+	 */
+private function is_page_context_handoff_enabled() {
 		$pass_page_context = flosc_get_setting( 'companion_pass_page_context', '1' );
 		return filter_var( $pass_page_context, FILTER_VALIDATE_BOOLEAN );
 	}
 
-	private function resolve_current_browsing_post_id( array $eval_context ) {
+		/**
+	 * Resolve the current current browsing post id value from the available WordPress and flow state.
+	 *
+	 * @param array $eval_context Context values used to resolve request- or flow-specific behavior.
+	 * @return mixed Result produced by the current browsing post id operation.
+	 */
+private function resolve_current_browsing_post_id( array $eval_context ) {
 		// Companion already hands off the post ID — trust it when valid.
 		$explicit_id = absint( $eval_context['browsing_page_post_id'] ?? 0 );
 		if ( $explicit_id > 0 ) {
@@ -159,7 +192,15 @@ class FLOSC_Page_Context {
 		return 0;
 	}
 
-	private function resolve_post_id_for_content_injection( array $eval_context, $message, $session_key ) {
+		/**
+	 * Resolve the current post id for content injection value from the available WordPress and flow state.
+	 *
+	 * @param array $eval_context Context values used to resolve request- or flow-specific behavior.
+	 * @param mixed $message Input consumed by the Resolve the current post id for content injection value from the available Word Press and flow state. operation.
+	 * @param mixed $session_key Name or key used to select the Resolve the current post id for content injection value from the available Word Press and flow state. value.
+	 * @return mixed Result produced by the post id for content injection operation.
+	 */
+private function resolve_post_id_for_content_injection( array $eval_context, $message, $session_key ) {
 		$current_id = absint( $eval_context['browsing_page_post_id'] ?? 0 );
 		if ( $current_id <= 0 ) {
 			return 0;
@@ -181,7 +222,13 @@ class FLOSC_Page_Context {
 		return 0;
 	}
 
-	private function resolve_post_id( $explicit_id ) {
+		/**
+	 * Resolve the current post id value from the available WordPress and flow state.
+	 *
+	 * @param mixed $explicit_id Identifier used to select the record involved in the Resolve the current post id value from the available Word Press and flow state. operation.
+	 * @return mixed Result produced by the post id operation.
+	 */
+private function resolve_post_id( $explicit_id ) {
 		if ( $explicit_id > 0 ) {
 			$post = get_post( $explicit_id );
 			if ( $post && 'publish' === $post->post_status ) {
@@ -192,7 +239,13 @@ class FLOSC_Page_Context {
 		return 0;
 	}
 
-	private function resolve_post_id_from_url( $url ) {
+		/**
+	 * Resolve the current post id from url value from the available WordPress and flow state.
+	 *
+	 * @param mixed $url URL being resolved, validated, or used by the Resolve the current post id from url value from the available Word Press and flow state. operation.
+	 * @return mixed Result produced by the post id from url operation.
+	 */
+private function resolve_post_id_from_url( $url ) {
 		$url = esc_url_raw( (string) $url );
 		if ( '' === $url ) {
 			return 0;
@@ -223,7 +276,13 @@ class FLOSC_Page_Context {
 		return 0;
 	}
 
-	private function message_is_page_location_query( $message ) {
+		/**
+	 * Coordinate the message is page location query behavior implemented by this code path.
+	 *
+	 * @param mixed $message Input consumed by the Coordinate the message is page location query behavior implemented by this code path. operation.
+	 * @return bool Whether message is page location query applies to the current state.
+	 */
+private function message_is_page_location_query( $message ) {
 		$msg = strtolower( trim( (string) $message ) );
 		if ( '' === $msg ) {
 			return false;
@@ -235,7 +294,14 @@ class FLOSC_Page_Context {
 		);
 	}
 
-	private function message_targets_current_page( $message, $title ) {
+		/**
+	 * Coordinate the message targets current page behavior implemented by this code path.
+	 *
+	 * @param mixed $message Input consumed by the Coordinate the message targets current page behavior implemented by this code path. operation.
+	 * @param mixed $title Input consumed by the Coordinate the message targets current page behavior implemented by this code path. operation.
+	 * @return bool Whether message targets current page applies to the current state.
+	 */
+private function message_targets_current_page( $message, $title ) {
 		$msg = strtolower( trim( $message ) );
 
 		foreach ( $this->get_page_intent_phrases() as $phrase ) {
@@ -350,7 +416,13 @@ class FLOSC_Page_Context {
 		return is_array( $phrases ) ? $phrases : $defaults;
 	}
 
-	private function message_is_short_followup( $message ) {
+		/**
+	 * Coordinate the message is short followup behavior implemented by this code path.
+	 *
+	 * @param mixed $message Input consumed by the Coordinate the message is short followup behavior implemented by this code path. operation.
+	 * @return bool Whether message is short followup applies to the current state.
+	 */
+private function message_is_short_followup( $message ) {
 		$msg = strtolower( trim( $message ) );
 
 		if ( '' === $msg ) {
@@ -384,7 +456,14 @@ class FLOSC_Page_Context {
 		return false;
 	}
 
-	private function load_post_content( $post_id, $access_level ) {
+		/**
+	 * Resolve the current post content value from the available WordPress and flow state.
+	 *
+	 * @param mixed $post_id WordPress post ID used to resolve the content involved in this operation.
+	 * @param mixed $access_level Input consumed by the Resolve the current post content value from the available Word Press and flow state. operation.
+	 * @return mixed Result produced by the post content operation.
+	 */
+private function load_post_content( $post_id, $access_level ) {
 		$post = get_post( $post_id );
 		if ( ! $post || 'publish' !== $post->post_status ) {
 			return '';

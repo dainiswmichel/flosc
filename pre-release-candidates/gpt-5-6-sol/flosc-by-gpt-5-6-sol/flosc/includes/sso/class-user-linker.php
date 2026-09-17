@@ -310,7 +310,7 @@ class User_Linker {
 	 */
 	private function encrypt_tokens( $tokens ) {
 		$json = wp_json_encode( $tokens );
-		$key  = flosc_token_secret(); // §5: dedicated secret, not the auth salt
+		$key  = flosc_token_secret(); // §5: dedicated secret, not the auth salt.
 
 		// Simple XOR encryption with base64 encoding.
 		$encrypted   = '';
@@ -333,7 +333,7 @@ class User_Linker {
 	private function decrypt_tokens( $encrypted ) {
 		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- binary/JWT token decoding, not obfuscation
 		$encrypted = base64_decode( $encrypted );
-		$key       = flosc_token_secret(); // §5: dedicated secret, not the auth salt
+		$key       = flosc_token_secret(); // §5: dedicated secret, not the auth salt.
 
 		$decrypted        = '';
 		$encrypted_length = strlen( $encrypted );

@@ -14,11 +14,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC Access Validator behavior and the WordPress services used by its methods.
+ */
 class FLOSC_Access_Validator {
 
 	private static $instance = null;
 
-	public static function instance() {
+		/**
+	 * Coordinate the instance behavior implemented by this code path.
+	 *
+	 * @return mixed Result produced by the instance operation.
+	 */
+public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
 		}
@@ -76,7 +84,7 @@ class FLOSC_Access_Validator {
 				'valid'             => false,
 				'response'          => $this->get_safe_fallback_response( $access_level ),
 				'violations'        => $violations,
-				'original_response' => $ai_response, // For debugging
+				'original_response' => $ai_response, // For debugging.
 			);
 		}
 
@@ -89,6 +97,8 @@ class FLOSC_Access_Validator {
 
 	/**
 	 * Get forbidden keywords for access level
+ * @param mixed $access_level Input consumed by the Resolve the current forbidden keywords value from the available Word Press and flow state. operation.
+ * @return array Structured forbidden keywords data.
 	 */
 	private function get_forbidden_keywords( $access_level ) {
 
@@ -109,18 +119,20 @@ class FLOSC_Access_Validator {
 			return $all_forbidden;
 		}
 
-		return array(); // Members can see everything
+		return array(); // Members can see everything.
 	}
 
 	/**
 	 * Check VISITOR-specific violations
 	 * VISITORS should ONLY see quiz prompts
+ * @param mixed $response Input consumed by the Coordinate the check visitor violations behavior implemented by this code path. operation.
+ * @return mixed Result produced by the check visitor violations operation.
 	 */
 	private function check_visitor_violations( $response ) {
 
 		$violations = array();
 
-		// VISITORS should NOT see pricing
+		// VISITORS should NOT see pricing.
 		// v1.4.9: Removed '$' — too many false positives (currency mentions, variable names, etc.).
 		$pricing_keywords = array( 'price', 'cost', 'discount', 'offer', 'purchase', 'buy' );
 		foreach ( $pricing_keywords as $keyword ) {
@@ -151,12 +163,14 @@ class FLOSC_Access_Validator {
 	/**
 	 * Check GUEST-specific violations
 	 * GUESTS should see offers but NOT member content
+ * @param mixed $response Input consumed by the Coordinate the check guest violations behavior implemented by this code path. operation.
+ * @return mixed Result produced by the check guest violations operation.
 	 */
 	private function check_guest_violations( $response ) {
 
 		$violations = array();
 
-		// GUESTS should NOT see full lesson content
+		// GUESTS should NOT see full lesson content.
 		// They can see lesson TITLES and DESCRIPTIONS but not content.
 
 		// Check for detailed content (paragraphs with technical details).
@@ -174,6 +188,8 @@ class FLOSC_Access_Validator {
 	/**
 	 * Get safe fallback response for access level
 	 * This is shown when AI tries to leak content
+ * @param mixed $access_level Input consumed by the Resolve the current safe fallback response value from the available Word Press and flow state. operation.
+ * @return mixed Result produced by the safe fallback response operation.
 	 */
 	private function get_safe_fallback_response( $access_level ) {
 
@@ -191,6 +207,9 @@ class FLOSC_Access_Validator {
 	/**
 	 * Validate system prompt for access level
 	 * Ensures AI is instructed correctly
+ * @param mixed $system_prompt Input consumed by the Validate the input and trust conditions required for system prompt. operation.
+ * @param mixed $access_level Input consumed by the Validate the input and trust conditions required for system prompt. operation.
+ * @return mixed Result produced by the system prompt operation.
 	 */
 	public function validate_system_prompt( $system_prompt, $access_level ) {
 
@@ -222,6 +241,8 @@ class FLOSC_Access_Validator {
 
 	/**
 	 * Get required phrases in system prompt
+ * @param mixed $access_level Input consumed by the Resolve the current required prompt phrases value from the available Word Press and flow state. operation.
+ * @return mixed Result produced by the required prompt phrases operation.
 	 */
 	private function get_required_prompt_phrases( $access_level ) {
 
@@ -248,6 +269,8 @@ class FLOSC_Access_Validator {
 	/**
 	 * Get access level enforcement rules
 	 * Returns what AI CAN and CANNOT do at each level
+ * @param mixed $access_level Input consumed by the Resolve the current enforcement rules value from the available Word Press and flow state. operation.
+ * @return mixed Result produced by the enforcement rules operation.
 	 */
 	public function get_enforcement_rules( $access_level ) {
 

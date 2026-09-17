@@ -14,11 +14,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC Lesson Manager behavior and the WordPress services used by its methods.
+ */
 class FLOSC_Lesson_Manager {
 
 	private static $instance = null;
 
-	public static function instance() {
+		/**
+	 * Coordinate the instance behavior implemented by this code path.
+	 *
+	 * @return mixed Result produced by the instance operation.
+	 */
+public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
 		}
@@ -31,6 +39,7 @@ class FLOSC_Lesson_Manager {
 	 * The global flosc_content_item_category option may be empty if only per-flow was configured.
 	 *
 	 * @since 1.8.2
+ * @return mixed Result produced by the category operation.
 	 */
 	private function resolve_category() {
 		// 1. Try per-flow settings (where the admin actually saves it)
@@ -47,7 +56,7 @@ class FLOSC_Lesson_Manager {
 			return $global;
 		}
 
-		// 3. Last resort: scan all flow settings for any configured category
+		// 3. Last resort: scan all flow settings for any configured category.
 		// §2: union shipped defaults with uploaded/edited IVR files (uploads wins).
 		$files = function_exists( 'flosc_config_glob' ) ? flosc_config_glob( array( '*_ivr.md', 'ivr*.md' ) ) : array();
 		if ( ! empty( $files ) ) {
@@ -71,6 +80,7 @@ class FLOSC_Lesson_Manager {
 	 * Falls back to single content_item_category for flows without content_item_groups.
 	 *
 	 * @since 3.0.8
+ * @return array Structured all lessons data.
 	 */
 	public function get_all_lessons() {
 		// --- Collect every category slug/ID from content_item_groups first ---
@@ -149,6 +159,7 @@ class FLOSC_Lesson_Manager {
 	 * content library (e.g. FLOSC Sample Data 10 posts), not the standalone library.
 	 *
 	 * @since 3.0.8
+ * @return array Structured quiz lessons data.
 	 */
 	public function get_quiz_lessons() {
 		$categories = array();
@@ -226,6 +237,8 @@ class FLOSC_Lesson_Manager {
 	 * Results are scoped to the flow's lesson categories so members can't accidentally browse other content.
 	 *
 	 * @since 3.0.8
+ * @param mixed $search Input consumed by the Coordinate the search lessons behavior implemented by this code path. operation.
+ * @return mixed Result of the search lessons operation, or a WP_Error when it cannot complete.
 	 */
 	public function search_lessons( $search ) {
 		if ( empty( trim( $search ) ) ) {
@@ -287,6 +300,8 @@ class FLOSC_Lesson_Manager {
 
 	/**
 	 * Get a single lesson by ID
+ * @param mixed $lesson_id Identifier used to select the record involved in the Resolve the current lesson value from the available Word Press and flow state. operation.
+ * @return mixed Result produced by the lesson operation.
 	 */
 	public function get_lesson( $lesson_id ) {
 		$post = get_post( $lesson_id );
@@ -314,7 +329,7 @@ class FLOSC_Lesson_Manager {
 			return array();
 		}
 
-		// Build tag query from missed items
+		// Build tag query from missed items.
 		// Tags should match the quiz item (e.g., "5" or "phoneme-ai").
 		$tag_slugs = array();
 		foreach ( $missed_items as $item ) {
@@ -364,6 +379,8 @@ class FLOSC_Lesson_Manager {
 
 	/**
 	 * Get the first (free) lesson for a set of missed items
+ * @param mixed $missed_items Input consumed by the Resolve the current free lesson value from the available Word Press and flow state. operation.
+ * @return mixed Result produced by the free lesson operation.
 	 */
 	public function get_free_lesson( $missed_items ) {
 		$lessons = $this->get_lessons_for_missed_items( $missed_items );
@@ -379,13 +396,16 @@ class FLOSC_Lesson_Manager {
 
 	/**
 	 * Format a post as a lesson array
+ * @param mixed $post Input consumed by the Coordinate the format lesson behavior implemented by this code path. operation.
+ * @param mixed $include_content Input consumed by the Coordinate the format lesson behavior implemented by this code path. operation.
+ * @return mixed Result produced by the format lesson operation.
 	 */
 	private function format_lesson( $post, $include_content = false ) {
 		// v1.9.5: Decode HTML entities in title and excerpt.
 		// WordPress may store curly quotes as &#8217; or &rsquo; in the DB.
-		// The JS client calls escapeHtml() which would double-encode these
+		// The JS client calls escapeHtml() which would double-encode these.
 		// (e.g. &#8217; → &amp;#8217; rendering as literal "&#8217;" on screen).
-		// html_entity_decode() converts entities back to UTF-8 characters
+		// html_entity_decode() converts entities back to UTF-8 characters.
 		// so the JSON→JS→escapeHtml() pipeline produces clean output.
 		$title   = html_entity_decode( $post->post_title, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
 		$excerpt = html_entity_decode( get_the_excerpt( $post ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
@@ -421,6 +441,10 @@ class FLOSC_Lesson_Manager {
 
 	/**
 	 * Check if user has access to a lesson
+ * @param mixed $user_id WordPress user ID whose Coordinate the user can access behavior implemented by this code path. state is being processed.
+ * @param mixed $lesson_id Identifier used to select the record involved in the Coordinate the user can access behavior implemented by this code path. operation.
+ * @param mixed $is_free_lesson Input consumed by the Coordinate the user can access behavior implemented by this code path. operation.
+ * @return bool Whether user can access applies to the current state.
 	 */
 	public function user_can_access( $user_id, $lesson_id, $is_free_lesson = false ) {
 		// Free lesson is always accessible to logged-in users.
@@ -450,6 +474,7 @@ class FLOSC_Lesson_Manager {
 	/**
 	 * Get lesson mapping for pronunciation analyzer
 	 * Returns array compatible with existing lesson_mapping format
+ * @return mixed Result produced by the lesson mapping operation.
 	 */
 	public function get_lesson_mapping() {
 		$lessons = $this->get_all_lessons();

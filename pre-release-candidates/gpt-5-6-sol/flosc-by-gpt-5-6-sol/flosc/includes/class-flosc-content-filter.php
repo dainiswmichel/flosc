@@ -16,17 +16,28 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC Content Filter behavior and the WordPress services used by its methods.
+ */
 class FLOSC_Content_Filter {
 
 	private static $instance = null;
 
-	private function __construct() {
-		// Register WordPress content filter hook
+		/**
+	 * Register the WordPress hooks that connect construct to this object.
+	 */
+private function __construct() {
+		// Register WordPress content filter hook.
 		// Only applies when content contains FLOSC markers.
 		add_filter( 'the_content', array( $this, 'apply_content_filter' ), 10 );
 	}
 
-	public static function instance() {
+		/**
+	 * Coordinate the instance behavior implemented by this code path.
+	 *
+	 * @return mixed Result produced by the instance operation.
+	 */
+public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
 		}
@@ -71,7 +82,7 @@ class FLOSC_Content_Filter {
 			}
 		}
 
-		// SAFEGUARD 5: Skip if content doesn't contain FLOSC markers
+		// SAFEGUARD 5: Skip if content doesn't contain FLOSC markers.
 		// This is the PRIMARY check - if no FLOSC tag, return content unchanged.
 		if ( false === strpos( $content, '<!--flosc_read_more' ) &&
 			false === strpos( $content, '### ACCESS LEVEL:' ) ) {
@@ -81,15 +92,15 @@ class FLOSC_Content_Filter {
 		// Content has FLOSC markers, proceed with filtering.
 		try {
 			// v8.1.0: Unified — use FLOSC_Member_Access (single source of truth)
-			// Previously used FLOSC_User_Access_Manager which checked flosc_member_status meta
+			// Previously used FLOSC_User_Access_Manager which checked flosc_member_status meta.
 			// that was never written by any purchase flow.
 			require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-member-access.php';
 			$member_access = FLOSC_Member_Access::instance();
 
-			// Get current user's access level (visitor/guest/member) for the flow
-			// that owns this page. Membership is per-flow: buying Piano4America
-			// does not unlock a gated post on another flow's domain. Without a
-			// flow id, is_member() falls through to the legacy global
+			// Get current user's access level (visitor/guest/member) for the flow.
+			// that owns this page. Membership is per-flow: buying Piano4America.
+			// does not unlock a gated post on another flow's domain. Without a.
+			// flow id, is_member() falls through to the legacy global.
 			// _flosc_member_access marker, which grants every flow at once.
 			$flow_id      = $this->resolve_gate_flow_id();
 			$access_level = $member_access->get_access_level( get_current_user_id(), $flow_id );
@@ -187,13 +198,13 @@ class FLOSC_Content_Filter {
 			'member'  => array(),
 		);
 
-		$current_level   = 'visitor'; // Default
+		$current_level   = 'visitor'; // Default.
 		$current_content = '';
 
 		$lines = explode( "\n", $content );
 
 		foreach ( $lines as $line ) {
-			// Check for access level marker
+			// Check for access level marker.
 			// Matches: ### ACCESS LEVEL: VISITOR or ## ACCESS LEVEL: MEMBER etc.
 			if ( preg_match( '/^###?\s*ACCESS LEVEL:\s*(VISITOR|GUEST|MEMBER)/i', $line, $matches ) ) {
 
@@ -286,7 +297,7 @@ class FLOSC_Content_Filter {
 	 * Used for RAG to return focused results
 	 *
 	 * @param string $content
-	 * @param string $query
+	 * @param mixed $query Input consumed by the Coordinate the extract relevant section behavior implemented by this code path. operation.
 	 * @param int    $context_chars Number of characters of context.
 	 * @return string
 	 */
@@ -322,7 +333,7 @@ class FLOSC_Content_Filter {
 	 * Get excerpt from content
 	 *
 	 * @param string $content
-	 * @param int    $length Word count.
+	 * @param mixed $length Input consumed by the Resolve the current excerpt value from the available Word Press and flow state. operation.
 	 * @return string
 	 */
 	public function get_excerpt( $content, $length = 50 ) {

@@ -39,6 +39,7 @@ class FLOSC_Quiz_Type_Factory {
 
 	/**
 	 * Load all quiz types from quiz-types directory
+ * @return mixed Result produced by the quiz types operation.
 	 */
 	private static function load_quiz_types() {
 		if ( self::$loaded ) {
@@ -55,7 +56,7 @@ class FLOSC_Quiz_Type_Factory {
 		foreach ( $files as $file ) {
 			require_once $file;
 
-			// Extract class name from filename
+			// Extract class name from filename.
 			// class-flosc-sample-text-based-quiz.php → FLOSC_Sample_Text_Based_Quiz.
 			$filename   = basename( $file, '.php' );
 			$class_name = str_replace( 'class-', '', $filename );

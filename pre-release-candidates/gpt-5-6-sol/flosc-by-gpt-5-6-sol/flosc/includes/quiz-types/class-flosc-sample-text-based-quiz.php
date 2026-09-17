@@ -19,41 +19,89 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC Sample Text Based Quiz behavior and the WordPress services used by its methods.
+ */
 class FLOSC_Sample_Text_Based_Quiz extends FLOSC_Abstract_Quiz_Type {
 
-	public function get_id() {
+		/**
+	 * Resolve the current id value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the id operation.
+	 */
+public function get_id() {
 		return 'flosc_sample_data_numbers_quiz';
 	}
 
-	public function get_name() {
+		/**
+	 * Resolve the current name value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the name operation.
+	 */
+public function get_name() {
 		return 'FLOSC Sample 1-10 Numbers Quiz';
 	}
 
-	public function get_description() {
+		/**
+	 * Resolve the current description value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the description operation.
+	 */
+public function get_description() {
 		return 'Input the following numbers: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10';
 	}
 
-	public function get_icon() {
+		/**
+	 * Resolve the current icon value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the icon operation.
+	 */
+public function get_icon() {
 		return '✍️';
 	}
 
-	public function needs_audio() {
+		/**
+	 * Coordinate the needs audio behavior implemented by this code path.
+	 *
+	 * @return bool Whether needs audio applies to the current state.
+	 */
+public function needs_audio() {
 		return false;
 	}
 
-	public function needs_stt() {
+		/**
+	 * Coordinate the needs stt behavior implemented by this code path.
+	 *
+	 * @return bool Whether needs stt applies to the current state.
+	 */
+public function needs_stt() {
 		return false;
 	}
 
-	public function needs_ai_analysis() {
+		/**
+	 * Coordinate the needs ai analysis behavior implemented by this code path.
+	 *
+	 * @return bool Whether needs ai analysis applies to the current state.
+	 */
+public function needs_ai_analysis() {
 		return false;
 	}
 
-	public function get_instructions() {
+		/**
+	 * Resolve the current instructions value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the instructions operation.
+	 */
+public function get_instructions() {
 		return "One answer per block, separated by a blank line.\n\nEach block:\n  answer value\n  CorrectContent: post:my-post-slug\n  RelatedContent: post:slug-one, tag:my-tag\n\nScoring: set-based — order doesn't matter. Score = how many correct answers the user included / total.\n\nPrefixes — always required, no quotes:\n  post:slug         — post by URL slug; use post:parent/child if the same slug exists under multiple parents\n  id:1042           — one post by numeric ID\n  category:slug     — posts in a category; category:parent/child for sub-categories\n  tag:slug          — posts with a tag (use the tag slug, not the display name)\n  search:any words  — keyword search (avoid: unreliable, may match wrong posts)\n\nMultiple CorrectContent: and RelatedContent: lines all accumulate. CorrectContent items are shown first (tier 1) when a learner asks to review what they missed.\n\nLegacy flat format also accepted (no content refs): 1,2,3,4,5,6,7,8,9,10";
 	}
 
-	public function get_default_content() {
+		/**
+	 * Resolve the current default content value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the default content operation.
+	 */
+public function get_default_content() {
 		$blocks = array(
 			"1\nCorrectContent: post:lesson-one\nRelatedContent: post:lesson-two, post:lesson-three",
 			"2\nCorrectContent: post:lesson-two\nRelatedContent: post:lesson-one, post:lesson-three",
@@ -69,7 +117,13 @@ class FLOSC_Sample_Text_Based_Quiz extends FLOSC_Abstract_Quiz_Type {
 		return implode( "\n\n", $blocks );
 	}
 
-	public function validate_input( $input ) {
+		/**
+	 * Validate the input and trust conditions required for input.
+	 *
+	 * @param mixed $input Input consumed by the Validate the input and trust conditions required for input. operation.
+	 * @return bool Whether input applies to the current state.
+	 */
+public function validate_input( $input ) {
 		if ( empty( $input ) || ! is_string( $input ) ) {
 			return new WP_Error( 'invalid_input', __( 'Please enter your answers.', 'flosc' ) );
 		}
@@ -84,7 +138,15 @@ class FLOSC_Sample_Text_Based_Quiz extends FLOSC_Abstract_Quiz_Type {
 		return true;
 	}
 
-	public function analyze( $input, $expected_content, $context = array() ) {
+		/**
+	 * Coordinate the analyze behavior implemented by this code path.
+	 *
+	 * @param mixed $input Input consumed by the Coordinate the analyze behavior implemented by this code path. operation.
+	 * @param mixed $expected_content Input consumed by the Coordinate the analyze behavior implemented by this code path. operation.
+	 * @param mixed $context Context values used to resolve request- or flow-specific behavior.
+	 * @return array Structured analyze data.
+	 */
+public function analyze( $input, $expected_content, $context = array() ) {
 		$separator      = $this->get_setting( 'separator', ',' );
 		$case_sensitive = $this->get_setting( 'case_sensitive', false );
 
@@ -124,7 +186,7 @@ class FLOSC_Sample_Text_Based_Quiz extends FLOSC_Abstract_Quiz_Type {
 			}
 		}
 
-		// Missed = in correct_answers but NOT typed by user
+		// Missed = in correct_answers but NOT typed by user.
 		// These are the items we recommend lessons for.
 		$missed    = array_values( array_diff( $correct_answers, $user_answers ) );
 		$incorrect = array();
@@ -157,7 +219,12 @@ class FLOSC_Sample_Text_Based_Quiz extends FLOSC_Abstract_Quiz_Type {
 		);
 	}
 
-	public function get_settings_fields() {
+		/**
+	 * Resolve the current settings fields value from the available WordPress and flow state.
+	 *
+	 * @return array Structured settings fields data.
+	 */
+public function get_settings_fields() {
 		return array(
 			'separator'      => array(
 				'type'        => 'text',
@@ -180,7 +247,12 @@ class FLOSC_Sample_Text_Based_Quiz extends FLOSC_Abstract_Quiz_Type {
 		);
 	}
 
-	public function get_default_response_templates() {
+		/**
+	 * Resolve the current default response templates value from the available WordPress and flow state.
+	 *
+	 * @return array Structured default response templates data.
+	 */
+public function get_default_response_templates() {
 		return array(
 			'0-30'   => "**Score: {score}%**\n\nYou got {total_correct} out of {total_possible} correct.\n\n{lesson_recommendations}",
 			'31-60'  => "**Score: {score}%**\n\nGood effort! You got {total_correct} out of {total_possible} correct.\n\n{lesson_recommendations}",
@@ -189,7 +261,15 @@ class FLOSC_Sample_Text_Based_Quiz extends FLOSC_Abstract_Quiz_Type {
 		);
 	}
 
-	public function format_results( $analysis, $lessons, $response_templates ) {
+		/**
+	 * Coordinate the format results behavior implemented by this code path.
+	 *
+	 * @param mixed $analysis Input consumed by the Coordinate the format results behavior implemented by this code path. operation.
+	 * @param mixed $lessons Input consumed by the Coordinate the format results behavior implemented by this code path. operation.
+	 * @param mixed $response_templates Input consumed by the Coordinate the format results behavior implemented by this code path. operation.
+	 * @return mixed Result produced by the format results operation.
+	 */
+public function format_results( $analysis, $lessons, $response_templates ) {
 		$score        = $analysis['score'];
 		$response_key = $analysis['response_key'];
 		$details      = $analysis['details'];
@@ -242,6 +322,8 @@ class FLOSC_Sample_Text_Based_Quiz extends FLOSC_Abstract_Quiz_Type {
 	 * Legacy formats still accepted (backward compat):
 	 *   Flat:  1,2,3,4,5,6,7,8,9,10
 	 *   Pipe:  1|CorrectContent: post:lesson-one|RelatedContent: post:lesson-two
+ * @param mixed $expected_content Input consumed by the Coordinate the parse content behavior implemented by this code path. operation.
+ * @return array Structured parse content data.
 	 */
 	private function parse_content( $expected_content ) {
 		$answers     = array();
@@ -341,6 +423,9 @@ class FLOSC_Sample_Text_Based_Quiz extends FLOSC_Abstract_Quiz_Type {
 	/**
 	 * Parse a flat input string into an array of answer strings.
 	 * Used for user input only (never for expected_content).
+ * @param mixed $input Input consumed by the Coordinate the parse input behavior implemented by this code path. operation.
+ * @param mixed $separator Input consumed by the Coordinate the parse input behavior implemented by this code path. operation.
+ * @return array Structured parse input data.
 	 */
 	private function parse_input( $input, $separator ) {
 		if ( empty( $input ) ) {

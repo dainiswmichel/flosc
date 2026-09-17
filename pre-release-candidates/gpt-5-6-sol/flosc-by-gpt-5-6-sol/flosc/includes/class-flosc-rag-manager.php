@@ -28,19 +28,30 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC RAG Manager behavior and the WordPress services used by its methods.
+ */
 class FLOSC_RAG_Manager {
 
 	private static $instance = null;
 	private $content_filter;
 
-	public static function instance() {
+		/**
+	 * Coordinate the instance behavior implemented by this code path.
+	 *
+	 * @return mixed Result produced by the instance operation.
+	 */
+public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
 		}
 		return self::$instance;
 	}
 
-	private function __construct() {
+		/**
+	 * Coordinate the construct behavior implemented by this code path.
+	 */
+private function __construct() {
 		$this->content_filter = FLOSC_Content_Filter::instance();
 	}
 
@@ -109,7 +120,7 @@ class FLOSC_RAG_Manager {
 	 * Execute a tool call from the AI
 	 *
 	 * @param string $tool_name
-	 * @param array  $input Tool parameters.
+	 * @param mixed $input Input consumed by the Coordinate the execute tool behavior implemented by this code path. operation.
 	 * @param string $access_level User's access level.
 	 * @param int    $category_id WordPress category ID for the flow (0 for none).
 	 * @return string Tool result
@@ -158,7 +169,7 @@ class FLOSC_RAG_Manager {
 	 * Search knowledge base files
 	 *
 	 * @param string $query
-	 * @param string $access_level
+	 * @param mixed $access_level Input consumed by the Coordinate the search knowledge base behavior implemented by this code path. operation.
 	 * @return string
 	 */
 	private function search_knowledge_base( $query, $access_level ) {
@@ -168,7 +179,7 @@ class FLOSC_RAG_Manager {
 		// Get knowledge base path.
 		$kb_path = trailingslashit( wp_upload_dir()['basedir'] ) . 'flosc-knowledge/';
 
-		// Check if knowledge-base directory exists
+		// Check if knowledge-base directory exists.
 		// In future, admin will upload files here via interface.
 		if ( ! is_dir( $kb_path ) ) {
 			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
@@ -222,9 +233,9 @@ class FLOSC_RAG_Manager {
 	 * Search WordPress posts in flow's configured category
 	 *
 	 * @param string $keywords
-	 * @param int    $limit
+	 * @param mixed $limit Input consumed by the Coordinate the search posts behavior implemented by this code path. operation.
 	 * @param string $access_level
-	 * @param int    $category_id WordPress category ID (0 for all categories).
+	 * @param mixed $category_id Identifier used to select the record involved in the Coordinate the search posts behavior implemented by this code path. operation.
 	 * @return string
 	 */
 	private function search_posts( $keywords, $limit, $access_level, $category_id = 0 ) {
@@ -320,7 +331,7 @@ class FLOSC_RAG_Manager {
 	 * Get specific lesson content
 	 *
 	 * @param int    $lesson_number
-	 * @param int    $post_id
+	 * @param mixed $post_id WordPress post ID used to resolve the content involved in this operation.
 	 * @param string $access_level
 	 * @return string
 	 */
@@ -368,10 +379,10 @@ class FLOSC_RAG_Manager {
 	 */
 	public function get_available_lessons( $access_level ) {
 
-		// Scope to THIS flow's lesson categories. Without this the query returns
-		// EVERY flow's lessons site-wide, so one chatbot (e.g. the WordPress host) would
-		// surface another flow's lessons (e.g. pronunciation) — a cross-flow
-		// bleed. Flow isolation is the whole point, so we resolve the flow's
+		// Scope to THIS flow's lesson categories. Without this the query returns.
+		// EVERY flow's lessons site-wide, so one chatbot (e.g. the WordPress host) would.
+		// surface another flow's lessons (e.g. pronunciation) — a cross-flow.
+		// bleed. Flow isolation is the whole point, so we resolve the flow's.
 		// categories the same way FLOSC_Lesson_Manager does and filter on them.
 		$categories = array();
 		if ( function_exists( 'flosc' ) ) {
@@ -409,16 +420,16 @@ class FLOSC_RAG_Manager {
 			}
 		}
 		if ( empty( $cat_ids ) ) {
-			// This flow has no lessons of its own — say so rather than borrowing
+			// This flow has no lessons of its own — say so rather than borrowing.
 			// another flow's library.
 			return 'No lessons configured for this flow.';
 		}
 
 		$posts = get_posts(
 			array(
-				'post_type'              => 'post', // FUTURE: 'flosc_lesson'
+				'post_type'              => 'post', // FUTURE: 'flosc_lesson'.
 				'posts_per_page'         => -1,
-				'category__in'           => $cat_ids, // flow-scoped
+				'category__in'           => $cat_ids, // flow-scoped.
 				'orderby'                => 'date',
 				'order'                  => 'ASC',
 				'update_post_meta_cache' => true,
@@ -462,7 +473,7 @@ class FLOSC_RAG_Manager {
 	 * Helper to check access hierarchy
 	 *
 	 * @param string $user_level
-	 * @param string $required_level
+	 * @param mixed $required_level Input consumed by the Determine whether the current state satisfies user access level. operation.
 	 * @return bool
 	 */
 	private function can_user_access_level( $user_level, $required_level ) {

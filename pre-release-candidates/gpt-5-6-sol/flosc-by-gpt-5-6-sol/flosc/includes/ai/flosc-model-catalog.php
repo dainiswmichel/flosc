@@ -200,7 +200,7 @@ if ( ! function_exists( 'flosc_model_catalog_page' ) ) {
 					'label' => '',
 				);
 
-				// xAI documents aliases as ids the model field accepts. An alias
+				// xAI documents aliases as ids the model field accepts. An alias.
 				// survives the next version turning over, so it is worth offering.
 				$aliases = isset( $row['aliases'] ) && is_array( $row['aliases'] ) ? $row['aliases'] : array();
 
@@ -313,9 +313,9 @@ if ( ! function_exists( 'flosc_fetch_model_catalog' ) ) {
 					$detail = (string) ( $body['error']['message'] ?? $body['message'] ?? '' );
 				}
 
-				// Anthropic refuses an identity-linked key that does not name a
-				// workspace, and refuses it for chat as well as for this list —
-				// so the operator is not one header away from working, they are
+				// Anthropic refuses an identity-linked key that does not name a.
+				// workspace, and refuses it for chat as well as for this list —.
+				// so the operator is not one header away from working, they are.
 				// using a kind of key the provider plugin cannot drive at all.
 				// Say that, rather than relaying a status code.
 				if ( false !== stripos( $detail, 'anthropic-workspace-id' ) ) {
@@ -393,10 +393,10 @@ if ( ! function_exists( 'flosc_default_model' ) ) {
 	 */
 	function flosc_default_model( $provider ) {
 		$defaults = array(
-			// Proven to resolve through AI Provider for Anthropic on a real
-			// install. A default is only worth what the installed provider
-			// plugin can actually pin — a newer id that the plugin cannot
-			// resolve turns a working connection into a failing one, which is
+			// Proven to resolve through AI Provider for Anthropic on a real.
+			// install. A default is only worth what the installed provider.
+			// plugin can actually pin — a newer id that the plugin cannot.
+			// resolve turns a working connection into a failing one, which is.
 			// exactly what changing this to claude-sonnet-5 did.
 			'anthropic' => 'claude-sonnet-4-5-20250929',
 			'openai'    => 'gpt-5.4-mini',
@@ -450,7 +450,7 @@ if ( ! function_exists( 'flosc_fetch_model_details' ) ) {
 			return new WP_Error( 'flosc_model_details_no_model', __( 'Choose a model first.', 'flosc' ) );
 		}
 
-		// Reuse the same auth the list call uses, so a provider's credentials
+		// Reuse the same auth the list call uses, so a provider's credentials.
 		// are described in exactly one place.
 		$list = flosc_model_catalog_request( $provider, (string) $api_key );
 

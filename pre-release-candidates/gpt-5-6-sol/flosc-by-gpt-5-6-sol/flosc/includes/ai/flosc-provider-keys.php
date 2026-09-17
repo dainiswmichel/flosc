@@ -77,9 +77,9 @@ if ( ! function_exists( 'flosc_store_provider_api_key' ) ) {
 			return $plausible;
 		}
 
-		// The row the Settings page reads. A plain flosc_flow_<stem> key is not
-		// always that row on an install carrying legacy duplicates, and a key
-		// written to a row nothing reads is indistinguishable from a key that
+		// The row the Settings page reads. A plain flosc_flow_<stem> key is not.
+		// always that row on an install carrying legacy duplicates, and a key.
+		// written to a row nothing reads is indistinguishable from a key that.
 		// never saved.
 		$option = function_exists( 'flosc_resolve_flow_option_key_for_ivr' )
 			? flosc_resolve_flow_option_key_for_ivr( $ivr )
@@ -88,8 +88,8 @@ if ( ! function_exists( 'flosc_store_provider_api_key' ) ) {
 		$settings = get_option( $option, array() );
 		$settings = is_array( $settings ) ? $settings : array();
 
-		// Only this provider's entry changes. Every other key on the flow —
-		// including the other providers' — is carried through untouched, so
+		// Only this provider's entry changes. Every other key on the flow —.
+		// including the other providers' — is carried through untouched, so.
 		// saving a second key never costs the first.
 		$settings[ $map[ $provider ] ] = $api_key;
 
@@ -145,8 +145,8 @@ if ( ! function_exists( 'flosc_store_provider_model' ) ) {
 			return new WP_Error( 'flosc_model_empty', __( 'Choose or type a model id before saving.', 'flosc' ) );
 		}
 
-		// Deliberately permissive. Providers invent id shapes constantly and
-		// FLOSC must never refuse one that works. Only what an id cannot be is
+		// Deliberately permissive. Providers invent id shapes constantly and.
+		// FLOSC must never refuse one that works. Only what an id cannot be is.
 		// rejected: whitespace inside it, control characters, absurd length.
 		if ( strlen( $model ) > 200 || preg_match( '/[\s\x00-\x1F\x7F]/', $model ) ) {
 			return new WP_Error( 'flosc_model_shape', __( 'That does not look like a model id.', 'flosc' ) );
@@ -195,16 +195,16 @@ if ( ! function_exists( 'flosc_mts_utc' ) ) {
 	function flosc_mts_utc( $when = null ) {
 		$when = ( null === $when ) ? microtime( true ) : (float) $when;
 		$secs = (int) floor( $when );
-		// Rounded, not truncated: a float carrying .472 lands a hair under it,
-		// and floor would report 471. Clamped so a rounded 1000 cannot print a
+		// Rounded, not truncated: a float carrying .472 lands a hair under it,.
+		// and floor would report 471. Clamped so a rounded 1000 cannot print a.
 		// millisecond that belongs to the next second.
 		$ms = min( 999, (int) round( ( $when - $secs ) * 1000 ) );
 
-		// Only say UTC when it is UTC. gmdate() derives the zone from the Unix
-		// epoch rather than from a server setting, so on a sound install this
-		// always holds — and it is checked rather than assumed, because a stamp
+		// Only say UTC when it is UTC. gmdate() derives the zone from the Unix.
+		// epoch rather than from a server setting, so on a sound install this.
+		// always holds — and it is checked rather than assumed, because a stamp.
 		// that names a zone it is not in is worse than one that names none.
-		// Where the check cannot be satisfied the separator is a bare T, which
+		// Where the check cannot be satisfied the separator is a bare T, which.
 		// marks the boundary without claiming a zone.
 		$zone = ( 'UTC' === gmdate( 'e', $secs ) || 0 === (int) gmdate( 'Z', $secs ) ) ? 'UTC' : 'T';
 
@@ -255,8 +255,8 @@ if ( ! function_exists( 'flosc_store_model_tuning' ) ) {
 		if ( array_key_exists( 'params', $tuning ) ) {
 			$raw = (string) $tuning['params'];
 
-			// Refused before anything is written, and refused in the operator's
-			// own words: flosc_parse_model_parameters names the line it could
+			// Refused before anything is written, and refused in the operator's.
+			// own words: flosc_parse_model_parameters names the line it could.
 			// not read.
 			if ( function_exists( 'flosc_parse_model_parameters' ) ) {
 				$parsed = flosc_parse_model_parameters( $raw );
@@ -266,8 +266,8 @@ if ( ! function_exists( 'flosc_store_model_tuning' ) ) {
 				}
 			}
 
-			// Plain text, one parameter per line. sanitize_textarea_field keeps
-			// the newlines that are the format and strips what has no business
+			// Plain text, one parameter per line. sanitize_textarea_field keeps.
+			// the newlines that are the format and strips what has no business.
 			// in a request body.
 			$writes[ $params_key ] = function_exists( 'sanitize_textarea_field' )
 				? sanitize_textarea_field( $raw )
@@ -306,8 +306,8 @@ if ( ! function_exists( 'flosc_store_model_tuning' ) ) {
 		$settings = is_array( $settings ) ? $settings : array();
 		$settings = array_merge( $settings, $writes );
 
-		// The same fold the page-wide save performs: a temperature or a
-		// max_tokens named in the request moves into its own field, so the
+		// The same fold the page-wide save performs: a temperature or a.
+		// max_tokens named in the request moves into its own field, so the.
 		// controls never display one number while the request carries another.
 		if ( function_exists( 'flosc_reconcile_model_parameters' ) ) {
 			$settings = flosc_reconcile_model_parameters( $settings, $provider );
@@ -316,10 +316,10 @@ if ( ! function_exists( 'flosc_store_model_tuning' ) ) {
 		update_option( $option, $settings, false );
 
 		// Read it back rather than trusting the return value: update_option()
-		// answers false both when the write failed and when the new value was
-		// identical to the old one, so it cannot tell those apart and neither
-		// could anything built on it. Reading the row proves the values are
-		// there. A save that reports success it cannot demonstrate is how an
+		// answers false both when the write failed and when the new value was.
+		// identical to the old one, so it cannot tell those apart and neither.
+		// could anything built on it. Reading the row proves the values are.
+		// there. A save that reports success it cannot demonstrate is how an.
 		// operator comes to distrust every green tick on the page.
 		$stored = get_option( $option, array() );
 		$stored = is_array( $stored ) ? $stored : array();

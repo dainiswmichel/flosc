@@ -100,7 +100,7 @@ if ( ! function_exists( 'flosc_provider_identity_salt' ) ) {
 			: bin2hex( random_bytes( 32 ) );
 		add_option( 'flosc_provider_identity_salt', $salt, '', 'no' );
 
-		// add_option() is a no-op if a concurrent request won the race, so
+		// add_option() is a no-op if a concurrent request won the race, so.
 		// read back rather than trusting the value we generated.
 		return (string) get_option( 'flosc_provider_identity_salt', $salt );
 	}
@@ -238,26 +238,26 @@ if ( ! function_exists( 'flosc_provider_trace_header' ) ) {
 			$pairs['flow'] = $flow;
 		}
 
-		// The personality's profile_hash is already a sha256 of the compiled
-		// profile. Digesting it again with the install salt keeps two installs
+		// The personality's profile_hash is already a sha256 of the compiled.
+		// profile. Digesting it again with the install salt keeps two installs.
 		// running the same shipped personality from looking like one install.
 		$profile = flosc_provider_identity_digest( $context['profile'] );
 		if ( '' !== $profile ) {
 			$pairs['prof'] = $profile;
 		}
 
-		// Which knowledge base was in play. Salted like the rest: a provider
-		// can see that two turns drew on the same corpus without learning
+		// Which knowledge base was in play. Salted like the rest: a provider.
+		// can see that two turns drew on the same corpus without learning.
 		// what the corpus is called.
 		$kb = flosc_provider_identity_digest( $context['kb'] );
 		if ( '' !== $kb ) {
 			$pairs['kb'] = $kb;
 		}
 
-		// v | g | m. One letter, and the only field here about the person on
-		// the other end — no id, no name, no address, nothing that narrows it
-		// to one of them. It says what KIND of turn this was, which is what
-		// makes "guests are burning tokens and never buying" visible as a
+		// v | g | m. One letter, and the only field here about the person on.
+		// the other end — no id, no name, no address, nothing that narrows it.
+		// to one of them. It says what KIND of turn this was, which is what.
+		// makes "guests are burning tokens and never buying" visible as a.
 		// shape in a provider's traffic as well as in the floscAdmin's log.
 		$tier = strtolower( trim( $context['tier'] ) );
 		if ( in_array( $tier, array( 'visitor', 'guest', 'member' ), true ) ) {
@@ -268,16 +268,16 @@ if ( ! function_exists( 'flosc_provider_trace_header' ) ) {
 			$pairs['pair'] = (string) $context['pair'];
 		}
 
-		// The one field that names the site, and it names it plainly rather
-		// than as a hash pretending not to be one — a hashed domain is not
-		// anonymous, there are only so many domains and anyone can hash all
+		// The one field that names the site, and it names it plainly rather.
+		// than as a hash pretending not to be one — a hashed domain is not.
+		// anonymous, there are only so many domains and anyone can hash all.
 		// of them.
 		//
-		// On by default. The request it rides on already carries the entire
-		// conversation to a provider the floscAdmin configured with their own
-		// key and pays for; the domain adds nothing material beside that, and
-		// a provider that cannot tell which site it is serving cannot help
-		// when something goes wrong. Off in one click for anyone who
+		// On by default. The request it rides on already carries the entire.
+		// conversation to a provider the floscAdmin configured with their own.
+		// key and pays for; the domain adds nothing material beside that, and.
+		// a provider that cannot tell which site it is serving cannot help.
+		// when something goes wrong. Off in one click for anyone who.
 		// disagrees.
 		if ( flosc_provider_identity_site_enabled() ) {
 			$host = function_exists( 'wp_parse_url' ) ? wp_parse_url( get_bloginfo( 'url' ), PHP_URL_HOST ) : '';
@@ -288,8 +288,8 @@ if ( ! function_exists( 'flosc_provider_trace_header' ) ) {
 
 		$out = array();
 		foreach ( $pairs as $key => $value ) {
-			// A header value cannot contain CR, LF or ';' without changing
-			// what it means. Everything here is generated, but a filtered
+			// A header value cannot contain CR, LF or ';' without changing.
+			// what it means. Everything here is generated, but a filtered.
 			// host or a strange blogname is not.
 			$value = preg_replace( '/[^\x21-\x3A\x3C-\x7E]/', '', (string) $value );
 			if ( '' !== $value ) {
@@ -390,8 +390,8 @@ if ( ! function_exists( 'flosc_provider_identity_http_args' ) ) {
 			}
 		}
 
-		// user-agent is a top-level WP_Http argument, not a header, and WP
-		// writes it into the headers itself. Setting the header alone would be
+		// user-agent is a top-level WP_Http argument, not a header, and WP.
+		// writes it into the headers itself. Setting the header alone would be.
 		// overwritten; setting both would send it twice.
 		$args['user-agent'] = flosc_provider_user_agent();
 
@@ -464,7 +464,7 @@ if ( ! function_exists( 'flosc_provider_capture_request_id' ) ) {
 			}
 			$value = trim( (string) $value );
 			if ( '' !== $value ) {
-				// Stored in a VARCHAR(128) column; providers stay well under
+				// Stored in a VARCHAR(128) column; providers stay well under.
 				// that, but a header is whatever the far end chose to send.
 				flosc_provider_last_request_id( array( substr( sanitize_text_field( $value ), 0, 128 ) ) );
 				return $response;

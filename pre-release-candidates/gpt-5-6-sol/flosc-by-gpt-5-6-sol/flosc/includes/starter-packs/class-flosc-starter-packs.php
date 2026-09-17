@@ -16,6 +16,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC Starter Packs behavior and the WordPress services used by its methods.
+ */
 class FLOSC_Starter_Packs {
 
 	/** Post meta stamped on every post a pack creates. */
@@ -363,7 +366,7 @@ class FLOSC_Starter_Packs {
 		if ( ! empty( $pack['catalog']['file'] ) ) {
 			$source = $pack['dir'] . basename( (string) $pack['catalog']['file'] );
 
-			// The runtime resolves a catalog key to flosc_da1_catalog_{key}.tsv,
+			// The runtime resolves a catalog key to flosc_da1_catalog_{key}.tsv,.
 			// so the file name is the convention, not a free choice.
 			$catalog_key = sanitize_key( (string) ( $pack['catalog']['key'] ?? pathinfo( basename( (string) $pack['catalog']['file'] ), PATHINFO_FILENAME ) ) );
 
@@ -383,7 +386,7 @@ class FLOSC_Starter_Packs {
 			wp_mkdir_p( self::catalog_dir() );
 
 			// A catalog file this pack owns is replaced with the shipped one.
-			// One the operator keeps under the same key is moved aside first,
+			// One the operator keeps under the same key is moved aside first,.
 			// so their rows survive and the install still finishes.
 			$index   = get_option( 'flosc_da1_catalogs', array() );
 			$index   = is_array( $index ) ? $index : array();
@@ -408,7 +411,7 @@ class FLOSC_Starter_Packs {
 			/* translators: %s: catalog file name. */
 			$detail[] = sprintf( __( 'Catalog installed: %s', 'flosc' ), basename( $target ) );
 
-			// Register it in the index the DA1 tab lists catalogs from, or the
+			// Register it in the index the DA1 tab lists catalogs from, or the.
 			// operator has a catalog the runtime can read and the admin cannot see.
 			$index = get_option( 'flosc_da1_catalogs', array() );
 			$index = is_array( $index ) ? $index : array();
@@ -448,8 +451,8 @@ class FLOSC_Starter_Packs {
 		}
 
 		// --- register the flow ---
-		// Copying the markdown is not enough. A flow only exists once it has a
-		// per-flow option holding its messages, and the operator should not have
+		// Copying the markdown is not enough. A flow only exists once it has a.
+		// per-flow option holding its messages, and the operator should not have.
 		// to import it by hand after clicking install.
 		if ( '' !== $flow_path ) {
 			$registered = self::register_flow( $pack, $flow_path, (string) ( $record['category_slug'] ?? '' ) );
@@ -464,8 +467,8 @@ class FLOSC_Starter_Packs {
 		}
 
 		// --- content index ---
-		// The assistant retrieves posts from the site content index, and the
-		// index is a file that has to be built. Without this the pack installs
+		// The assistant retrieves posts from the site content index, and the.
+		// index is a file that has to be built. Without this the pack installs.
 		// a hundred posts the bot cannot see.
 		if ( ! empty( $record['post_count'] ) ) {
 			$detail[] = self::refresh_content_index();
@@ -512,14 +515,14 @@ class FLOSC_Starter_Packs {
 			return self::result( false, __( 'The pack content file names no categories.', 'flosc' ) ) + array( 'record' => array() );
 		}
 
-		// The flow references these category slugs by name, so a category with
-		// that slug is the one this pack means. An existing one is used, never
-		// treated as an obstacle — refusing to install over it stopped the whole
+		// The flow references these category slugs by name, so a category with.
+		// that slug is the one this pack means. An existing one is used, never.
+		// treated as an obstacle — refusing to install over it stopped the whole.
 		// journey from extracting because of a single term.
 		//
-		// What differs is what removal is then entitled to do. A category this
-		// pack created it may delete. A category that was already here is
-		// borrowed: the pack's posts and settings go in, and uninstall takes
+		// What differs is what removal is then entitled to do. A category this.
+		// pack created it may delete. A category that was already here is.
+		// borrowed: the pack's posts and settings go in, and uninstall takes.
 		// those back out again while leaving the category itself standing.
 		$adopted  = array();
 		$borrowed = array();
@@ -544,7 +547,7 @@ class FLOSC_Starter_Packs {
 				continue;
 			}
 
-			// Somebody else's category. Use it, apply the settings the journey
+			// Somebody else's category. Use it, apply the settings the journey.
 			// needs, and remember that it is not ours to delete later.
 			$adopted[ $slug ]  = $term_id;
 			$borrowed[ $slug ] = $term_id;
@@ -640,8 +643,8 @@ class FLOSC_Starter_Packs {
 			$term_id = isset( $term_ids[ $slug ] ) ? (int) $term_ids[ $slug ] : (int) reset( $term_ids );
 			$item    = isset( $entry['item'] ) ? (int) $entry['item'] : $count + 1;
 
-			// Already on the site and owned by this pack. Count it where it
-			// lives, so the card's per-category links stay truthful after an
+			// Already on the site and owned by this pack. Count it where it.
+			// lives, so the card's per-category links stay truthful after an.
 			// orphan is adopted.
 			if ( isset( $have[ $item ] ) ) {
 				++$count;
@@ -816,7 +819,7 @@ class FLOSC_Starter_Packs {
 			return 0;
 		}
 
-		// The tier the runtime gates on, plus the pack's own record of what it
+		// The tier the runtime gates on, plus the pack's own record of what it.
 		// called that tier.
 		$access = sanitize_key( (string) ( $entry['access'] ?? 'member' ) );
 
@@ -887,7 +890,7 @@ class FLOSC_Starter_Packs {
 			return false;
 		}
 
-		// The flow directory has its own guarded writer; everything else goes
+		// The flow directory has its own guarded writer; everything else goes.
 		// through the uploads-restricted one.
 		if ( function_exists( 'flosc_write_data_file' ) && 0 === strpos( $target, self::flow_dir() ) ) {
 			return (bool) flosc_write_data_file( $target, $content );
@@ -934,7 +937,7 @@ class FLOSC_Starter_Packs {
 
 		$flow_key = 'flosc_flow_' . $stem;
 
-		// The file check upstream cannot see a settings row left behind by a flow
+		// The file check upstream cannot see a settings row left behind by a flow.
 		// the operator deleted by hand. A row this pack owns is ours to rebuild;
 		// anything else is refused rather than overwritten.
 		$existing_bag = get_option( $flow_key, null );
@@ -965,13 +968,13 @@ class FLOSC_Starter_Packs {
 			'companion_show_for_visitors' => 1,
 		);
 
-		// Ownership, so a later install or repair can tell this flow apart from
+		// Ownership, so a later install or repair can tell this flow apart from.
 		// one the operator built themselves under the same name.
 		if ( ! empty( $pack['slug'] ) ) {
 			$bag['starter_pack_id'] = sanitize_key( (string) $pack['slug'] );
 		}
 
-		// The pack names a voice from the shipped library. Reference it — never
+		// The pack names a voice from the shipped library. Reference it — never.
 		// create or overwrite a personality record.
 		$personality = sanitize_key( (string) ( $pack['personality'] ?? '' ) );
 
@@ -998,18 +1001,18 @@ class FLOSC_Starter_Packs {
 			);
 		}
 
-		// Everything the operator put on this flow outlives a reinstall or a
-		// repair. This used to write $bag over the whole settings row, so an
-		// API key saved on the flow was destroyed by the next Extract & Install
-		// — the key had saved correctly and then been deleted, which is worse
+		// Everything the operator put on this flow outlives a reinstall or a.
+		// repair. This used to write $bag over the whole settings row, so an.
+		// API key saved on the flow was destroyed by the next Extract & Install.
+		// — the key had saved correctly and then been deleted, which is worse.
 		// than never saving, because nothing on screen says so.
 		//
-		// The pack owns the flow's structure. It does not own the operator's
+		// The pack owns the flow's structure. It does not own the operator's.
 		// secrets, provider choice, model, or tuning.
 		$preserved = is_array( $existing_bag ) ? $existing_bag : array();
 		$bag       = array_merge( $preserved, $bag );
 
-		// A voice switched live is a decision, not a leftover. Seed one only
+		// A voice switched live is a decision, not a leftover. Seed one only.
 		// when the flow has none, so a repair never undoes the switch.
 		if ( ! empty( $preserved['personality_library_id'] ) ) {
 			$bag['personality_library_id'] = $preserved['personality_library_id'];
@@ -1024,7 +1027,7 @@ class FLOSC_Starter_Packs {
 		$import = flosc_import_ivr_to_database( false, $flow_path, $flow_key, 'replace' );
 
 		if ( empty( $import['success'] ) ) {
-			// Put back what was here, rather than deleting a row that may have
+			// Put back what was here, rather than deleting a row that may have.
 			// been carrying the operator's key before this attempt.
 			if ( array() !== $preserved ) {
 				update_option( $flow_key, $preserved, false );
@@ -1670,8 +1673,8 @@ class FLOSC_Starter_Packs {
 		$stamp  = gmdate( 'Ymd-His' );
 		$backup = $dir . $name . '.replaced-' . $stamp . ( '' !== $ext ? '.' . $ext : '' );
 
-		// Write the copy through the same guarded writer every other file in
-		// this class uses, then drop the original. rename() would bypass the
+		// Write the copy through the same guarded writer every other file in.
+		// this class uses, then drop the original. rename() would bypass the.
 		// uploads restriction that writer exists to enforce.
 		if ( ! self::place_file( $target, $backup ) ) {
 			return '';
@@ -1764,7 +1767,14 @@ class FLOSC_Starter_Packs {
 		return ( '' !== $display ) ? ucwords( $display ) : $stem;
 	}
 
-	private static function flow_label( $stem, $bag ) {
+		/**
+	 * Coordinate the flow label behavior implemented by this code path.
+	 *
+	 * @param mixed $stem Input consumed by the Coordinate the flow label behavior implemented by this code path. operation.
+	 * @param mixed $bag Input consumed by the Coordinate the flow label behavior implemented by this code path. operation.
+	 * @return mixed Result produced by the flow label operation.
+	 */
+private static function flow_label( $stem, $bag ) {
 		$stem = sanitize_key( (string) $stem );
 
 		if ( '' === $stem ) {

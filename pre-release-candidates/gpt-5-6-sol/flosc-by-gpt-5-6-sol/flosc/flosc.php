@@ -49,6 +49,7 @@ if ( ! function_exists( 'flosc_log' ) ) {
 	 * Debug logger: writes under uploads/flosc-logs when FLOSC_DEBUG is on (no error_log).
 	 *
 	 * @param mixed $msg Message or structure to log.
+ * @return mixed Result produced by the log operation.
 	 */
 	function flosc_log( $msg ) {
 		if ( ! defined( 'FLOSC_DEBUG' ) || ! FLOSC_DEBUG ) {
@@ -258,6 +259,7 @@ add_action( 'init', 'flosc_purge_legacy_sandbox_autoprompts', 4 );
  * On init at priority 4, ahead of anything that reads AutoPrompts, so a visitor
  * on the request that performs the migration is served the cleaned set rather
  * than the old one.
+ * @return mixed Result produced by the purge legacy sandbox autoprompts operation.
  */
 function flosc_purge_legacy_sandbox_autoprompts() {
 	if ( get_option( 'flosc_legacy_sandbox_autoprompt_purged' ) ) {
@@ -269,8 +271,8 @@ function flosc_purge_legacy_sandbox_autoprompts() {
 		return;
 	}
 
-	// glob() returns false when the directory cannot be read, and an empty
-	// array when nothing matches. array_merge() accepts neither false nor a
+	// glob() returns false when the directory cannot be read, and an empty.
+	// array when nothing matches. array_merge() accepts neither false nor a.
 	// mixed pair, so each result is named and normalised first.
 	$suffix_named = glob( $ivr_dir . '*_ivr.md' );
 	$prefix_named = glob( $ivr_dir . 'ivr*.md' );
@@ -316,8 +318,8 @@ if ( ! get_option( 'flosc_ivr_reparse_800' ) ) {
 			if ( $ivr_dir && is_dir( $ivr_dir ) ) {
 				require_once FLOSC_PLUGIN_DIR . 'includes/portability/class-flosc-ivr-parser.php';
 				$parser = FLOSC_IVR_Parser::flosc_instance();
-				// See flosc_sync_flow_options_from_ivr_files(): glob() can
-				// return false, so each result is named and normalised before
+				// See flosc_sync_flow_options_from_ivr_files(): glob() can.
+				// return false, so each result is named and normalised before.
 				// the merge.
 				$suffix_named = glob( $ivr_dir . '*_ivr.md' );
 				$prefix_named = glob( $ivr_dir . 'ivr*.md' );
@@ -375,7 +377,7 @@ if ( ! get_option( 'flosc_ivr_reparse_800' ) ) {
 						$fs['flow_styles']   = $config['styles'] ?? array();
 						unset( $fs['ivr_messages'], $fs['ivr_phases'], $fs['ivr_styles'] );
 					}
-					// Fresh install: re-parse used to write messages-only options, skipping
+					// Fresh install: re-parse used to write messages-only options, skipping.
 					// admin seed (empty() false) and hiding View Flow (needs status+slug).
 					$stem_slug = strtolower( preg_replace( '/[^a-z0-9_-]/i', '', pathinfo( $fname, PATHINFO_FILENAME ) ) );
 					if ( '' === $stem_slug ) {
@@ -549,7 +551,7 @@ require_once FLOSC_PLUGIN_DIR . 'includes/email/class-flosc-email.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/sale/class-flosc-checkout-rest.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/tokens/class-flosc-token-ledger.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/sessions/class-flosc-session-rest.php';
-// WordPress.org package: define('FLOSC_ENABLE_MAGIC_ACCESS_LINKS', false) in wp-config.php
+// WordPress.org package: define('FLOSC_ENABLE_MAGIC_ACCESS_LINKS', false) in wp-config.php.
 // (or filter flosc_enable_magic_access_links) to shelve guest MagicLink without deleting code.
 
 
@@ -704,6 +706,7 @@ function flosc_resolve_chatlogo_url( $flow_settings = null, $use_plugin_default 
 /**
  * Get the flow's chatLogo URL (landing state header image, sidebar logo).
  * Reads chatlogo_url from flow identity. Falls back to bundled FLOSC default icon.
+ * @return mixed Result produced by the chatlogo url operation.
  */
 function flosc_get_chatlogo_url() {
 	return flosc_resolve_chatlogo_url( null, true );

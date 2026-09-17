@@ -19,25 +19,53 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC Pay Pal Provider behavior and the WordPress services used by its methods.
+ */
 class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 
-	public function get_id() {
+		/**
+	 * Resolve the current id value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the id operation.
+	 */
+public function get_id() {
 		return 'paypal';
 	}
 
-	public function get_name() {
+		/**
+	 * Resolve the current name value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the name operation.
+	 */
+public function get_name() {
 		return 'PayPal';
 	}
 
-	public function get_description() {
+		/**
+	 * Resolve the current description value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the description operation.
+	 */
+public function get_description() {
 		return 'Accept payments via PayPal checkout.';
 	}
 
-	public function get_icon() {
+		/**
+	 * Resolve the current icon value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the icon operation.
+	 */
+public function get_icon() {
 		return '🅿️';
 	}
 
-	public function is_configured() {
+		/**
+	 * Determine whether the current state satisfies configured.
+	 *
+	 * @return bool Whether configured applies to the current state.
+	 */
+public function is_configured() {
 		$has_id     = ! empty( $this->get_client_id() );
 		$has_secret = ! empty( $this->get_secret() );
 		if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
@@ -52,6 +80,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 	 * admin UI never writes to — admin saves 'paypal_enabled' to the flow option.
 	 *
 	 * @since 1.7.3
+ * @return bool Whether enabled applies to the current state.
 	 */
 	public function is_enabled() {
 		if ( function_exists( 'flosc' ) ) {
@@ -68,12 +97,18 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 	 * Full is_configured() also requires the secret (for server-side API calls)
 	 *
 	 * @since 1.7.3
+ * @return bool Whether client id applies to the current state.
 	 */
 	public function has_client_id() {
 		return ! empty( $this->get_client_id() );
 	}
 
-	public function get_settings_fields() {
+		/**
+	 * Resolve the current settings fields value from the available WordPress and flow state.
+	 *
+	 * @return array Structured settings fields data.
+	 */
+public function get_settings_fields() {
 		return array(
 			'mode'       => array(
 				'type'    => 'select',
@@ -103,6 +138,9 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 	/**
 	 * Read PayPal settings.
 	 * 1. Per-flow setting → 2. Global wp_option → 3. Default
+ * @param mixed $key Name or key used to select the Resolve the current flow setting value from the available Word Press and flow state. value.
+ * @param mixed $fallback Fallback value returned when no more specific value is available.
+ * @return mixed Result produced by the flow setting operation.
 	 */
 	private function get_flow_setting( $key, $fallback = '' ) {
 		// 1. Per-flow setting (do not use empty() — "0" and falsey strings are valid)
@@ -112,7 +150,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 				return $value;
 			}
 		}
-		// 2. Global option
+		// 2. Global option.
 		$global = get_option( 'flosc_paypal_' . $key, null );
 		if ( null !== $global && false !== $global && '' !== $global ) {
 			return $global;
@@ -483,6 +521,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 	 * Persist webhook ID to global + matching flow options; clear credential pack cache.
 	 *
 	 * @param string $webhook_id PayPal webhook id.
+ * @return mixed Result produced by the persist webhook id operation.
 	 */
 	private function persist_webhook_id( $webhook_id ) {
 		$webhook_id = sanitize_text_field( (string) $webhook_id );
@@ -490,7 +529,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 			return;
 		}
 
-		// Keep global webhook id aligned with the credential mode that registered it
+		// Keep global webhook id aligned with the credential mode that registered it.
 		// (prevents global sandbox client + live webhook_id mismatch on verify).
 		update_option( 'flosc_paypal_webhook_id', $webhook_id, false );
 		$mode = (string) $this->get_mode();
@@ -558,6 +597,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Default mode for new installs. Credentials must be set via admin Payments tab.
+ * @return mixed Result produced by the default mode operation.
 	 */
 	public static function get_default_mode() {
 		return 'sandbox';
@@ -566,21 +606,36 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 	/** @var array|null Request-scoped credential override for webhook OAuth. */
 	private $runtime_credential_override = null;
 
-	private function get_mode() {
+		/**
+	 * Resolve the current mode value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the mode operation.
+	 */
+private function get_mode() {
 		if ( is_array( $this->runtime_credential_override ) && ! empty( $this->runtime_credential_override['mode'] ) ) {
 			return (string) $this->runtime_credential_override['mode'];
 		}
 		return $this->get_flow_setting( 'mode', 'sandbox' );
 	}
 
-	private function get_client_id() {
+		/**
+	 * Resolve the current client id value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the client id operation.
+	 */
+private function get_client_id() {
 		if ( is_array( $this->runtime_credential_override ) && ! empty( $this->runtime_credential_override['client_id'] ) ) {
 			return (string) $this->runtime_credential_override['client_id'];
 		}
 		return $this->get_flow_setting( 'client_id', '' );
 	}
 
-	private function get_secret() {
+		/**
+	 * Resolve the current secret value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the secret operation.
+	 */
+private function get_secret() {
 		if ( is_array( $this->runtime_credential_override ) && ! empty( $this->runtime_credential_override['secret'] ) ) {
 			return (string) $this->runtime_credential_override['secret'];
 		}
@@ -592,6 +647,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 	 * Centralised so SDK loading and order creation use the same value.
 	 *
 	 * @since 5.0.7
+ * @return mixed Result produced by the currency operation.
 	 */
 	public function get_currency() {
 		// Offer-level currency is set by the caller; this is the global fallback.
@@ -606,6 +662,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * API base URL based on mode
+ * @return mixed Result produced by the api base operation.
 	 */
 	private function get_api_base() {
 		return 'live' === $this->get_mode()
@@ -622,6 +679,8 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 	 * - Logs full error details when FLOSC_DEBUG is on
 	 *
 	 * @since 5.0.7
+ * @param mixed $force_refresh Input consumed by the Send the remote request required for access token and normalize its result. operation.
+ * @return mixed Result of the access token operation, or a WP_Error when it cannot complete.
 	 */
 	private function get_access_token( $force_refresh = false ) {
 		$client_id = $this->get_client_id();
@@ -690,6 +749,12 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 	 * Retries once on 401 (stale token), logs all steps
 	 *
 	 * @since 5.0.7
+ * @param mixed $user Input consumed by the Send the remote request required for order and normalize its result. operation.
+ * @param mixed $amount_dollars Input consumed by the Send the remote request required for order and normalize its result. operation.
+ * @param mixed $currency Input consumed by the Send the remote request required for order and normalize its result. operation.
+ * @param mixed $offer_id Identifier used to select the record involved in the Send the remote request required for order and normalize its result. operation.
+ * @param mixed $purchase_uuid Identifier used to select the record involved in the Send the remote request required for order and normalize its result. operation.
+ * @return array Structured order data.
 	 */
 	public function create_order( $user, $amount_dollars, $currency, $offer_id, $purchase_uuid = '' ) {
 		$token = $this->get_access_token();
@@ -816,6 +881,8 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 	 * Retries once on 401, logs all steps
 	 *
 	 * @since 5.0.7
+ * @param mixed $order_id Identifier used to select the record involved in the Send the remote request required for capture order and normalize its result. operation.
+ * @return array Structured capture order data.
 	 */
 	public function capture_order( $order_id ) {
 		$token = $this->get_access_token();
@@ -997,17 +1064,24 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 	/**
 	 * Process payment (generic interface — not used directly for PayPal)
 	 * PayPal uses create_order + capture_order instead
+ * @param mixed $user_id WordPress user ID whose Coordinate the payment behavior implemented by this code path. state is being processed.
+ * @param mixed $offer Input consumed by the Coordinate the payment behavior implemented by this code path. operation.
+ * @param mixed $payment_data Structured data consumed by the Coordinate the payment behavior implemented by this code path. operation.
+ * @return mixed Result of the payment operation, or a WP_Error when it cannot complete.
 	 */
 	public function process_payment( $user_id, $offer, $payment_data = array() ) {
 		return new WP_Error( 'use_order_flow', __( 'PayPal uses the order creation flow. Use create_order() and capture_order() instead.', 'flosc' ) );
 	}
 
 	// ================================================================
-	// PayPal Subscriptions API — Products, Plans, Subscriptions
+	// PayPal Subscriptions API — Products, Plans, Subscriptions.
 	// ================================================================
 
 	/**
 	 * Create a catalog product in PayPal (one-time setup)
+ * @param mixed $name Name or key used to select the Send the remote request required for product and normalize its result. value.
+ * @param mixed $description Input consumed by the Send the remote request required for product and normalize its result. operation.
+ * @return mixed Result of the product operation, or a WP_Error when it cannot complete.
 	 */
 	public function create_product( $name, $description ) {
 		$token = $this->get_access_token();
@@ -1048,6 +1122,12 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Create a billing plan for a product
+ * @param mixed $product_id Identifier used to select the record involved in the Send the remote request required for plan and normalize its result. operation.
+ * @param mixed $name Name or key used to select the Send the remote request required for plan and normalize its result. value.
+ * @param mixed $amount Input consumed by the Send the remote request required for plan and normalize its result. operation.
+ * @param mixed $interval_unit Input consumed by the Send the remote request required for plan and normalize its result. operation.
+ * @param mixed $interval_count Input consumed by the Send the remote request required for plan and normalize its result. operation.
+ * @return mixed Result of the plan operation, or a WP_Error when it cannot complete.
 	 */
 	public function create_plan( $product_id, $name, $amount, $interval_unit, $interval_count = 1 ) {
 		$token = $this->get_access_token();
@@ -1110,6 +1190,8 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Get subscription details from PayPal
+ * @param mixed $subscription_id Identifier used to select the record involved in the Send the remote request required for subscription and normalize its result. operation.
+ * @return mixed Result of the subscription operation, or a WP_Error when it cannot complete.
 	 */
 	public function get_subscription( $subscription_id ) {
 		$token = $this->get_access_token();
@@ -1136,6 +1218,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 	/**
 	 * Option key for subscription plan IDs — scoped to mode + client so sandbox
 	 * plan IDs never get served under live credentials (or vice versa).
+ * @return mixed Result produced by the plans option key operation.
 	 */
 	private function get_plans_option_key() {
 		$mode = sanitize_key( (string) $this->get_mode() );
@@ -1149,6 +1232,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Fingerprint of the active credentials (mode + client id).
+ * @return mixed Result produced by the credentials fingerprint operation.
 	 */
 	private function get_credentials_fingerprint() {
 		return sanitize_key( (string) $this->get_mode() ) . ':' . md5( (string) $this->get_client_id() );
@@ -1157,6 +1241,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 	/**
 	 * Stored product/plan IDs for the active PayPal credentials only.
 	 * Returns [] when nothing valid is stored for this mode/client.
+ * @return array Structured stored plans data.
 	 */
 	public function get_stored_plans() {
 		$key   = $this->get_plans_option_key();
@@ -1197,6 +1282,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 	 * Ensure PayPal product + plans exist for the *current* mode/credentials.
 	 * Creates them on first call for that credential set.
 	 * Returns [ 'product_id' => ..., 'monthly_plan_id' => ..., 'yearly_plan_id' => ... ]
+ * @return mixed Result of the ensure plans exist operation, or a WP_Error when it cannot complete.
 	 */
 	public function ensure_plans_exist() {
 		$plans = $this->get_stored_plans();
@@ -1430,6 +1516,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Client-side config passed to JS
+ * @return mixed Result produced by the client config operation.
 	 */
 	public function get_client_config() {
 		$config = array(
@@ -1592,7 +1679,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 			);
 		}
 
-		// Event-level idempotency (after auth only). Claim lock before mutation to
+		// Event-level idempotency (after auth only). Claim lock before mutation to.
 		// prevent concurrent double-processing; sale/cycle keys still protect credits.
 		$event_id = sanitize_text_field( (string) ( $data['id'] ?? '' ) );
 		if ( '' !== $event_id && $this->is_paypal_event_processed( $event_id ) ) {
@@ -1799,6 +1886,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 	 * Mark a PayPal webhook event id as processed (durable claim + transient).
 	 *
 	 * @param string $event_id PayPal event id.
+ * @return mixed Result produced by the mark paypal event processed operation.
 	 */
 	private function mark_paypal_event_processed( $event_id ) {
 		$event_id = sanitize_text_field( (string) $event_id );
@@ -2009,7 +2097,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 				);
 			}
 
-			// Industry standard for PHP: splice the raw event JSON into the verify
+			// Industry standard for PHP: splice the raw event JSON into the verify.
 			// request so field order / unicode is not altered by a second encode.
 			// PayPal signs the original body; re-encoding webhook_event can fail verify.
 			$flags   = JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE;
@@ -2160,7 +2248,8 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 	 * Record subscription ownership when a subscription is created/activated.
 	 *
 	 * @param int    $user_id
-	 * @param string $subscription_id
+	 * @param mixed $subscription_id Identifier used to select the record involved in the Persist the index subscription state in Word Press storage. operation.
+ * @return mixed Result produced by the index subscription operation.
 	 */
 	public static function index_subscription( $user_id, $subscription_id ) {
 		$user_id         = absint( $user_id );

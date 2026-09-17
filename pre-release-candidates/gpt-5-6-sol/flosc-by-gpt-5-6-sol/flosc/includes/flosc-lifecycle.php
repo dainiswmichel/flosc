@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @return void
  */
 function flosc_activate() {
-	// Specialty product roles are created when that flow/product
+	// Specialty product roles are created when that flow/product.
 	// is deliberately imported or configured — not on every generic activate.
 
 	// v1.2.2: Migrate legacy settings to flows system.
@@ -34,8 +34,8 @@ function flosc_activate() {
 
 	// First-install defaults only — never clobber floscAdmin choices on reactivate.
 	$defaults = array(
-		'flosc_app_slug'                                   => 'flosc', // Since 1.1.9 the default is 'flosc'; was 'app' to 'flosc'
-		'flosc_custom_domain'                              => '', // Since 1.1.9. Optional custom domain mapping
+		'flosc_app_slug'                                   => 'flosc', // Since 1.1.9 the default is 'flosc'; was 'app' to 'flosc'.
+		'flosc_custom_domain'                              => '', // Since 1.1.9. Optional custom domain mapping.
 		'flosc_product_name'                               => '',
 		'flosc_product_title'                              => '',
 		'flosc_product_tagline'                            => '',
@@ -64,8 +64,8 @@ function flosc_activate() {
 		update_option( 'flosc_paypal_mode', 'sandbox' );
 	}
 
-	// v1.2.3: Ensure default flosc_default_technical_ivr.md exists in the uploads data
-	// directory. When uploads are unavailable the seed is skipped — readers
+	// v1.2.3: Ensure default flosc_default_technical_ivr.md exists in the uploads data.
+	// directory. When uploads are unavailable the seed is skipped — readers.
 	// fall back to the shipped read-only default via flosc_config_file().
 	$seed_dir = flosc_data_dir();
 	$ivr_file = '' !== $seed_dir ? $seed_dir . 'flosc_default_technical_ivr.md' : '';
@@ -138,8 +138,8 @@ function flosc_activate() {
 	// v9.2.3: Import IVR messages to database on first activation.
 	flosc_import_ivr_to_database( false ); // False means execute the import, not preview it.
 
-	// v1.9.0: Create chat logs table
-	// Must require the file here — activation hook fires before plugins_loaded,
+	// v1.9.0: Create chat logs table.
+	// Must require the file here — activation hook fires before plugins_loaded,.
 	// so the FLOSC_Framework constructor hasn't loaded class files yet.
 	require_once FLOSC_PLUGIN_DIR . 'includes/logging/class-flosc-chat-logger.php';
 	FLOSC_Chat_Logger::instance()->flosc_ensure_table();
@@ -168,6 +168,7 @@ function flosc_deactivate() {
 
 /**
  * Suggested privacy policy text for Settings → Privacy.
+ * @return mixed Result produced by the add privacy policy content operation.
  */
 function flosc_add_privacy_policy_content() {
 	if ( ! function_exists( 'wp_add_privacy_policy_content' ) ) {

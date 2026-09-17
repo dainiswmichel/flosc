@@ -135,7 +135,7 @@ function flosc_content_item_canonical_option_key( $key ) {
  * Get_user_meta with legacy freeline meta fallback.
  *
  * @param int    $user_id
- * @param string $new_key Canonical meta key.
+ * @param mixed $new_key Name or key used to select the Coordinate the content item get user meta behavior implemented by this code path. value.
  * @param bool   $single
  * @return mixed
  */
@@ -162,7 +162,7 @@ function flosc_content_item_get_user_meta( $user_id, $new_key, $single = true ) 
  * Update_user_meta for freeline state (writes new key only).
  *
  * @param int    $user_id
- * @param string $new_key
+ * @param mixed $new_key Name or key used to select the Persist the content item update user meta state in Word Press storage. value.
  * @param mixed  $value
  * @return int|bool
  */

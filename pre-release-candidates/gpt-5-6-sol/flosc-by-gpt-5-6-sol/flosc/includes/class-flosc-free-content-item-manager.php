@@ -30,18 +30,29 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC Free Content Item Manager behavior and the WordPress services used by its methods.
+ */
 class FLOSC_Free_Content_Item_Manager {
 
 	private static $instance = null;
 
-	public static function instance() {
+		/**
+	 * Coordinate the instance behavior implemented by this code path.
+	 *
+	 * @return mixed Result produced by the instance operation.
+	 */
+public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
 		}
 		return self::$instance;
 	}
 
-	private function __construct() {
+		/**
+	 * Register the WordPress hooks that connect construct to this object.
+	 */
+private function __construct() {
 		// Hook into quiz completion.
 		add_action( 'flosc_quiz_completed', array( $this, 'handle_quiz_completion' ), 10, 2 );
 	}
@@ -220,6 +231,8 @@ class FLOSC_Free_Content_Item_Manager {
 	}
 
 	/**
+ * Determine whether the current state satisfies excluded from freeline.
+ *
 	 * @param int $lesson_num Lesson number.
 	 * @return bool
 	 */
@@ -232,7 +245,7 @@ class FLOSC_Free_Content_Item_Manager {
 	 * Find a published lesson post by number inside a specific category slug.
 	 *
 	 * @param int    $lesson_num
-	 * @param string $category_slug
+	 * @param mixed $category_slug Input consumed by the Persist the lesson post in category state in Word Press storage. operation.
 	 * @return WP_Post|null
 	 */
 	private function find_lesson_post_in_category( $lesson_num, $category_slug ) {
@@ -279,7 +292,7 @@ class FLOSC_Free_Content_Item_Manager {
 	 * Resolve free-sample post: only from free_content_item_pool_category when set.
 	 *
 	 * @param int    $lesson_num
-	 * @param string $quiz_id
+	 * @param mixed $quiz_id Identifier used to select the record involved in the Resolve the current free eligible lesson post value from the available Word Press and flow state. operation.
 	 * @return WP_Post|null
 	 */
 	private function find_free_eligible_lesson_post( $lesson_num, $quiz_id = '' ) {
@@ -292,8 +305,10 @@ class FLOSC_Free_Content_Item_Manager {
 	}
 
 	/**
+ * Coordinate the lesson number is free eligible behavior implemented by this code path.
+ *
 	 * @param int    $lesson_num
-	 * @param string $quiz_id
+	 * @param mixed $quiz_id Identifier used to select the record involved in the Coordinate the lesson number is free eligible behavior implemented by this code path. operation.
 	 * @return bool
 	 */
 	private function lesson_number_is_free_eligible( $lesson_num, $quiz_id = '' ) {
@@ -309,7 +324,7 @@ class FLOSC_Free_Content_Item_Manager {
 	 * Collect eligible lesson numbers from a score tier (shuffled).
 	 *
 	 * @param array  $tier_entries
-	 * @param string $quiz_id
+	 * @param mixed $quiz_id Identifier used to select the record involved in the Coordinate the collect eligible from tier behavior implemented by this code path. operation.
 	 * @param int[]  $exclude Already selected numbers.
 	 * @return int[]
 	 */
@@ -335,7 +350,7 @@ class FLOSC_Free_Content_Item_Manager {
 	 * Returns up to $count lesson numbers (admin free_content_item_count).
 	 *
 	 * @param array  $tiers
-	 * @param string $quiz_id
+	 * @param mixed $quiz_id Identifier used to select the record involved in the Coordinate the pick eligible lessons from tiers behavior implemented by this code path. operation.
 	 * @param int    $count
 	 * @return int[]
 	 */
@@ -348,7 +363,7 @@ class FLOSC_Free_Content_Item_Manager {
 		$selected = array();
 
 		// Prefer multi-phoneme tiers first (protect unique worst as upsell when possible).
-		// $tiers is fixed, so its size is taken once; $selected grows inside the
+		// $tiers is fixed, so its size is taken once; $selected grows inside the.
 		// loop, so its size is re-taken after each pass.
 		$tier_count = count( $tiers );
 		for ( $i = 0, $selected_count = 0; $i < $tier_count && $selected_count < $count; $i++, $selected_count = count( $selected ) ) {
@@ -382,10 +397,12 @@ class FLOSC_Free_Content_Item_Manager {
 	}
 
 	/**
+ * Coordinate the pick eligible lesson from tiers behavior implemented by this code path.
+ *
 	 * @deprecated Use pick_eligible_lessons_from_tiers — kept for any external callers.
 	 *
 	 * @param array  $tiers
-	 * @param string $quiz_id
+	 * @param mixed $quiz_id Identifier used to select the record involved in the Coordinate the pick eligible lesson from tiers behavior implemented by this code path. operation.
 	 * @return int[]
 	 */
 	private function pick_eligible_lesson_from_tiers( array $tiers, $quiz_id = '' ) {
@@ -399,7 +416,7 @@ class FLOSC_Free_Content_Item_Manager {
 	 * @return array Array of missed lesson numbers
 	 */
 	private function get_missed_lessons( $quiz_result ) {
-		// Quiz types may return either plain lesson numbers or structured rows
+		// Quiz types may return either plain lesson numbers or structured rows.
 		// (question_index / topics / correct_content) from analyze().
 		$incorrect = $quiz_result['incorrect'] ?? $quiz_result['missed'] ?? array();
 		if ( ! empty( $incorrect ) && is_array( $incorrect ) ) {
@@ -475,7 +492,7 @@ class FLOSC_Free_Content_Item_Manager {
 					return $group['category'];
 				}
 			}
-			// Second pass: if quiz_id is empty or not found, use the first group
+			// Second pass: if quiz_id is empty or not found, use the first group.
 			// that has no quiz (standalone) or just the first group as fallback.
 			foreach ( $flow['content_item_groups'] as $group ) {
 				if ( empty( $group['quiz_id'] ) && ! empty( $group['category'] ) ) {
@@ -559,7 +576,7 @@ class FLOSC_Free_Content_Item_Manager {
 		}
 
 		// 2. Slug / title fallback via get_posts (no direct $wpdb).
-		// lesson posts follow the convention: lesson-{N}-description
+		// lesson posts follow the convention: lesson-{N}-description.
 		$slug_prefix = 'lesson-' . intval( $lesson_num ) . '-';
 		$list_args   = array(
 			'posts_per_page'         => -1,
@@ -671,7 +688,7 @@ class FLOSC_Free_Content_Item_Manager {
 	 * Supports multiple lessons
 	 *
 	 * @param int    $user_id
-	 * @param string $delivery_mode 'chat' or 'redirect'.
+	 * @param mixed $delivery_mode Input consumed by the Persist the deliver free lesson state in Word Press storage. operation.
 	 * @return array Response data
 	 * @since 1.5.4
 	 */

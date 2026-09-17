@@ -580,16 +580,16 @@ if ( ! function_exists( 'flosc_build_model_parameter_preview' ) ) {
 		$provider = sanitize_key( (string) $provider );
 		$stored   = (string) ( $settings[ 'ai_' . $provider . '_params' ] ?? '' );
 
-		// The stored request is the request. If there is one, it is shown as it
+		// The stored request is the request. If there is one, it is shown as it.
 		// was written — same lines, same order, same spelling of every number.
-		// Composing a replacement from the fields is what used to drop a
-		// temperature line the moment a provider was known to refuse that
+		// Composing a replacement from the fields is what used to drop a.
+		// temperature line the moment a provider was known to refuse that.
 		// parameter, which read as Save deleting the operator's work.
 		if ( '' !== trim( $stored ) ) {
 			return $stored;
 		}
 
-		// Nothing stored yet, so compose a first one from the fields. This is
+		// Nothing stored yet, so compose a first one from the fields. This is.
 		// the only moment FLOSC writes this text rather than the operator.
 		$lines       = array();
 		$temperature = trim( (string) ( $settings['ai_temperature'] ?? '' ) );
@@ -642,7 +642,7 @@ if ( ! function_exists( 'flosc_reconcile_model_parameters' ) ) {
 		$parsed = flosc_parse_model_parameters( (string) $settings[ $key ] );
 
 		if ( is_wp_error( $parsed ) ) {
-			// Leave what they typed exactly as typed, so the error they see on
+			// Leave what they typed exactly as typed, so the error they see on.
 			// the page is about the text in front of them.
 			return $settings;
 		}

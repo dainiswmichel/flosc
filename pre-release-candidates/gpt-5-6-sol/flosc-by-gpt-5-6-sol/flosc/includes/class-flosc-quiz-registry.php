@@ -17,12 +17,20 @@ require_once FLOSC_PLUGIN_DIR . 'includes/quiz-types/class-flosc-abstract-quiz-t
 require_once FLOSC_PLUGIN_DIR . 'includes/quiz-types/class-flosc-sample-assessment-quiz.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/quiz-types/class-flosc-sample-text-based-quiz.php';
 
+/**
+ * Coordinate FLOSC Quiz Registry behavior and the WordPress services used by its methods.
+ */
 class FLOSC_Quiz_Registry {
 
 	/** @var FLOSC_Abstract_Quiz_Type[]|null */
 	private static $quizzes = null;
 
-	private static function init() {
+		/**
+	 * Coordinate the init behavior implemented by this code path.
+	 *
+	 * @return mixed Result produced by the init operation.
+	 */
+private static function init() {
 		if ( null !== self::$quizzes ) {
 			return;
 		}

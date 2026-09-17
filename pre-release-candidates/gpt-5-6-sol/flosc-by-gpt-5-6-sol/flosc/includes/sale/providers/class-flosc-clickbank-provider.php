@@ -15,36 +15,70 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC Click Bank Provider behavior and the WordPress services used by its methods.
+ */
 class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
 
-	public function get_id() {
+		/**
+	 * Resolve the current id value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the id operation.
+	 */
+public function get_id() {
 		return 'clickbank';
 	}
 
-	public function get_name() {
+		/**
+	 * Resolve the current name value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the name operation.
+	 */
+public function get_name() {
 		return 'ClickBank';
 	}
 
-	public function get_description() {
+		/**
+	 * Resolve the current description value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the description operation.
+	 */
+public function get_description() {
 		return 'Accept payments via ClickBank marketplace with affiliate support.';
 	}
 
-	public function get_icon() {
+		/**
+	 * Resolve the current icon value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the icon operation.
+	 */
+public function get_icon() {
 		return '🛒';
 	}
 
-	public function is_configured() {
+		/**
+	 * Determine whether the current state satisfies configured.
+	 *
+	 * @return bool Whether configured applies to the current state.
+	 */
+public function is_configured() {
 		$vendor = $this->get_setting( 'vendor', '' );
 		$secret = $this->get_setting( 'secret', '' );
 		return ! empty( $vendor ) && ! empty( $secret );
 	}
 
-	public function supports_subscriptions() {
+		/**
+	 * Coordinate the supports subscriptions behavior implemented by this code path.
+	 *
+	 * @return bool Whether supports subscriptions applies to the current state.
+	 */
+public function supports_subscriptions() {
 		return true;
 	}
 
 	/**
 	 * Get settings fields for admin UI
+ * @return array Structured settings fields data.
 	 */
 	public function get_settings_fields() {
 		return array(
@@ -107,6 +141,10 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
 	 *
 	 * PAY-01: Must not report settled payment. Redirect initiation only;
 	 * IPN/INS webhook is the sole fulfillment path.
+ * @param mixed $user_id WordPress user ID whose Coordinate the payment behavior implemented by this code path. state is being processed.
+ * @param mixed $offer Input consumed by the Coordinate the payment behavior implemented by this code path. operation.
+ * @param mixed $payment_data Structured data consumed by the Coordinate the payment behavior implemented by this code path. operation.
+ * @return array Structured payment data.
 	 */
 	public function process_payment( $user_id, $offer, $payment_data = array() ) {
 		// Redirect only — never settled. Webhook is the only grant path.
@@ -166,6 +204,7 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Get client-side config (for checkout buttons, etc.)
+ * @return array Structured client config data.
 	 */
 	public function get_client_config() {
 		return array(
@@ -472,6 +511,8 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
 	 * 1) product item matches configured cbitems when both present
 	 * 2) FLOSC offer_id setting is required (no synthetic grant)
 	 * 3) claim receipt → fulfill_settled_purchase once
+ * @param mixed $params Input consumed by the Persist the sale state in Word Press storage. operation.
+ * @return mixed Result of the sale operation, or a WP_Error when it cannot complete.
 	 */
 	private function handle_sale( $params ) {
 		$email    = sanitize_email( (string) ( $params['ccustemail'] ?? '' ) );
@@ -614,6 +655,9 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Create new user from ClickBank purchase
+ * @param mixed $email Email address used by the Persist the user from purchase state in Word Press storage. operation.
+ * @param mixed $name Name or key used to select the Persist the user from purchase state in Word Press storage. value.
+ * @return mixed Result of the user from purchase operation, or a WP_Error when it cannot complete.
 	 */
 	private function create_user_from_purchase( $email, $name ) {
 		$base_username = sanitize_user( explode( '@', $email )[0], true );
@@ -655,6 +699,8 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Get unique username
+ * @param mixed $base Input consumed by the Resolve the current unique username value from the available Word Press and flow state. operation.
+ * @return mixed Result produced by the unique username operation.
 	 */
 	private function get_unique_username( $base ) {
 		if ( ! username_exists( $base ) ) {
@@ -678,9 +724,10 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
 	 * Send welcome email (no plaintext password — use WordPress reset link).
 	 *
 	 * @param int    $user_id
-	 * @param string $email
+	 * @param mixed $email Email address used by the Prepare and send the email required for send welcome email. operation.
 	 * @param string $name
-	 * @param string $username
+	 * @param mixed $username Name or key used to select the Prepare and send the email required for send welcome email. value.
+ * @return mixed Result of the send welcome email operation, or a WP_Error when it cannot complete.
 	 */
 	private function send_welcome_email( $user_id, $email, $name, $username ) {
 		$product_name = get_option( 'flosc_product_name', 'Our Product' );
@@ -717,6 +764,8 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Handle refund/chargeback
+ * @param mixed $params Input consumed by the Persist the refund state in Word Press storage. operation.
+ * @return mixed Result produced by the refund operation.
 	 */
 	private function handle_refund( $params ) {
 		$email = sanitize_email( $params['ccustemail'] );
@@ -743,6 +792,8 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Handle subscription rebill
+ * @param mixed $params Input consumed by the Persist the rebill state in Word Press storage. operation.
+ * @return mixed Result produced by the rebill operation.
 	 */
 	private function handle_rebill( $params ) {
 		$email   = sanitize_email( $params['ccustemail'] );
@@ -768,6 +819,8 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Handle subscription cancellation/uncancellation
+ * @param mixed $params Input consumed by the Persist the subscription change state in Word Press storage. operation.
+ * @return mixed Result produced by the subscription change operation.
 	 */
 	private function handle_subscription_change( $params ) {
 		$email            = sanitize_email( $params['ccustemail'] );

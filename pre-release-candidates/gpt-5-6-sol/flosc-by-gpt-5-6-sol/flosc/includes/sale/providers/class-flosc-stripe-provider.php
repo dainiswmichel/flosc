@@ -11,34 +11,68 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC Stripe Provider behavior and the WordPress services used by its methods.
+ */
 class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 
-	public function get_id() {
+		/**
+	 * Resolve the current id value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the id operation.
+	 */
+public function get_id() {
 		return 'stripe';
 	}
 
-	public function get_name() {
+		/**
+	 * Resolve the current name value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the name operation.
+	 */
+public function get_name() {
 		return 'Stripe';
 	}
 
-	public function get_description() {
+		/**
+	 * Resolve the current description value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the description operation.
+	 */
+public function get_description() {
 		return 'Accept credit cards, Apple Pay, Google Pay, and subscriptions via Stripe.';
 	}
 
-	public function get_icon() {
+		/**
+	 * Resolve the current icon value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the icon operation.
+	 */
+public function get_icon() {
 		return '💳';
 	}
 
-	public function is_configured() {
+		/**
+	 * Determine whether the current state satisfies configured.
+	 *
+	 * @return bool Whether configured applies to the current state.
+	 */
+public function is_configured() {
 		return ! empty( $this->get_secret_key() ) && ! empty( $this->get_publishable_key() );
 	}
 
-	public function supports_subscriptions() {
+		/**
+	 * Coordinate the supports subscriptions behavior implemented by this code path.
+	 *
+	 * @return bool Whether supports subscriptions applies to the current state.
+	 */
+public function supports_subscriptions() {
 		return true;
 	}
 
 	/**
 	 * Get settings fields for admin UI
+ * @return array Structured settings fields data.
 	 */
 	public function get_settings_fields() {
 		return array(
@@ -86,17 +120,28 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 	 * Key mapping: provider asks for 'test_publishable_key' → admin stores 'stripe_test_pk'
 	 *
 	 * @since 1.6.3
+ * @return mixed Result produced by the mode operation.
 	 */
 	private function get_mode() {
 		return $this->get_flow_setting( 'mode', 'test' );
 	}
 
-	private function get_publishable_key() {
+		/**
+	 * Resolve the current publishable key value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the publishable key operation.
+	 */
+private function get_publishable_key() {
 		$mode = $this->get_mode();
 		return $this->get_flow_setting( $mode . '_pk', '' );
 	}
 
-	private function get_secret_key() {
+		/**
+	 * Resolve the current secret key value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the secret key operation.
+	 */
+private function get_secret_key() {
 		$mode = $this->get_mode();
 		return $this->get_flow_setting( $mode . '_sk', '' );
 	}
@@ -107,6 +152,9 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 	 * All under the per-flow array option (flosc_flow_{name})
 	 *
 	 * @since 1.6.3
+ * @param mixed $key Name or key used to select the Resolve the current flow setting value from the available Word Press and flow state. value.
+ * @param mixed $fallback Fallback value returned when no more specific value is available.
+ * @return mixed Result produced by the flow setting operation.
 	 */
 	private function get_flow_setting( $key, $fallback = '' ) {
 		// Try per-flow via flosc()->get_setting() (checks flow array first, then global).
@@ -122,6 +170,7 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Client-side config (passed to JavaScript)
+ * @return array Structured client config data.
 	 */
 	public function get_client_config() {
 		return array(
@@ -132,6 +181,10 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Process payment
+ * @param mixed $user_id WordPress user ID whose Coordinate the payment behavior implemented by this code path. state is being processed.
+ * @param mixed $offer Input consumed by the Coordinate the payment behavior implemented by this code path. operation.
+ * @param mixed $payment_data Structured data consumed by the Coordinate the payment behavior implemented by this code path. operation.
+ * @return mixed Result of the payment operation, or a WP_Error when it cannot complete.
 	 */
 	public function process_payment( $user_id, $offer, $payment_data = array() ) {
 		$pricing  = $offer['pricing']['stripe'] ?? array();
@@ -160,9 +213,10 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 	 * Create one-time payment
 	 *
 	 * @param WP_User $user
-	 * @param string  $price_id
+	 * @param mixed $price_id Identifier used to select the record involved in the Create the Word Press data required for payment. operation.
 	 * @param array   $payment_data
-	 * @param string  $offer_id Bound offer for metadata (PAY-02).
+	 * @param mixed $offer_id Identifier used to select the record involved in the Create the Word Press data required for payment. operation.
+ * @return mixed Result produced by the payment operation.
 	 */
 	private function create_payment( $user, $price_id, $payment_data, $offer_id = '' ) {
 		// If we have a payment_method_id, create PaymentIntent and confirm.
@@ -179,6 +233,11 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 	 * Added offer_id parameter to track which offer is being purchased
 	 *
 	 * @since 1.4.1
+ * @param mixed $user Input consumed by the Create the Word Press data required for payment intent. operation.
+ * @param mixed $price_id_or_amount Identifier used to select the record involved in the Create the Word Press data required for payment intent. operation.
+ * @param mixed $currency Input consumed by the Create the Word Press data required for payment intent. operation.
+ * @param mixed $offer_id Identifier used to select the record involved in the Create the Word Press data required for payment intent. operation.
+ * @return array Structured payment intent data.
 	 */
 	public function create_payment_intent( $user, $price_id_or_amount, $currency = 'usd', $offer_id = '' ) {
 		// First, get the price details from Stripe.
@@ -229,9 +288,10 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 	 * Confirm a payment (server-side)
 	 *
 	 * @param WP_User $user
-	 * @param string  $price_id
+	 * @param mixed $price_id Identifier used to select the record involved in the Coordinate the confirm payment behavior implemented by this code path. operation.
 	 * @param string  $payment_method_id
-	 * @param string  $offer_id
+	 * @param mixed $offer_id Identifier used to select the record involved in the Coordinate the confirm payment behavior implemented by this code path. operation.
+ * @return array Structured confirm payment data.
 	 */
 	private function confirm_payment( $user, $price_id, $payment_method_id, $offer_id = '' ) {
 		// Get price details.
@@ -298,9 +358,9 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 	 * Only status=active is settled for process_purchase fulfillment.
 	 *
 	 * @param WP_User $user
-	 * @param string  $price_id Stripe Price id.
+	 * @param mixed $price_id Identifier used to select the record involved in the Persist the subscription state in Word Press storage. operation.
 	 * @param array   $payment_data
-	 * @param string  $offer_id Bound offer for metadata (PAY-02).
+	 * @param mixed $offer_id Identifier used to select the record involved in the Persist the subscription state in Word Press storage. operation.
 	 * @return array|WP_Error
 	 */
 	private function create_subscription( $user, $price_id, $payment_data, $offer_id = '' ) {
@@ -456,6 +516,8 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Get or create Stripe Customer
+ * @param mixed $user Input consumed by the Persist the or create customer state in Word Press storage. operation.
+ * @return mixed Result of the or create customer operation, or a WP_Error when it cannot complete.
 	 */
 	private function get_or_create_customer( $user ) {
 		$customer_id = get_user_meta( $user->ID, '_flosc_stripe_customer', true );
@@ -493,6 +555,8 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Cancel subscription
+ * @param mixed $subscription_id Identifier used to select the record involved in the Coordinate the cancel subscription behavior implemented by this code path. operation.
+ * @return array Structured cancel subscription data.
 	 */
 	public function cancel_subscription( $subscription_id ) {
 		$response = $this->api_request( 'DELETE', '/subscriptions/' . $subscription_id );
@@ -510,6 +574,9 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Handle Stripe webhook
+ * @param mixed $payload Structured data consumed by the Persist the webhook state in Word Press storage. operation.
+ * @param mixed $headers Input consumed by the Persist the webhook state in Word Press storage. operation.
+ * @return array Structured webhook data.
 	 */
 	public function handle_webhook( $payload, $headers = array() ) {
 		$webhook_secret = $this->get_flow_setting( 'webhook_secret', '' );
@@ -540,7 +607,7 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 		}
 
 		// SECURITY: Validate timestamp (prevent replay attacks).
-		$tolerance = 300; // 5 minutes
+		$tolerance = 300; // 5 minutes.
 		if ( empty( $timestamp ) || abs( time() - intval( $timestamp ) ) > $tolerance ) {
 			return new WP_Error( 'expired_webhook', __( 'Webhook timestamp too old or invalid', 'flosc' ), array( 'status' => 400 ) );
 		}
@@ -600,6 +667,8 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 	 * PAY-01/PAY-02: only metadata-bound offer; claim txn before grant (idempotent with complete_purchase).
 	 *
 	 * @since 1.4.1
+ * @param mixed $payment_intent Input consumed by the Persist the payment succeeded state in Word Press storage. operation.
+ * @return array Structured payment succeeded data.
 	 */
 	private function handle_payment_succeeded( $payment_intent ) {
 		$meta           = ( isset( $payment_intent['metadata'] ) && is_array( $payment_intent['metadata'] ) )
@@ -646,7 +715,13 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 		return array( 'success' => true );
 	}
 
-	private function handle_subscription_updated( $subscription ) {
+		/**
+	 * Persist the subscription updated state in WordPress storage.
+	 *
+	 * @param mixed $subscription Input consumed by the Persist the subscription updated state in Word Press storage. operation.
+	 * @return array Structured subscription updated data.
+	 */
+private function handle_subscription_updated( $subscription ) {
 		$meta    = ( isset( $subscription['metadata'] ) && is_array( $subscription['metadata'] ) )
 			? $subscription['metadata']
 			: array();
@@ -661,7 +736,13 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 		return array( 'success' => true );
 	}
 
-	private function handle_subscription_deleted( $subscription ) {
+		/**
+	 * Persist the subscription deleted state in WordPress storage.
+	 *
+	 * @param mixed $subscription Input consumed by the Persist the subscription deleted state in Word Press storage. operation.
+	 * @return array Structured subscription deleted data.
+	 */
+private function handle_subscription_deleted( $subscription ) {
 		$meta    = ( isset( $subscription['metadata'] ) && is_array( $subscription['metadata'] ) )
 			? $subscription['metadata']
 			: array();
@@ -676,7 +757,13 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 		return array( 'success' => true );
 	}
 
-	private function handle_payment_failed( $invoice ) {
+		/**
+	 * Coordinate the payment failed behavior implemented by this code path.
+	 *
+	 * @param mixed $invoice Input consumed by the Coordinate the payment failed behavior implemented by this code path. operation.
+	 * @return array Structured payment failed data.
+	 */
+private function handle_payment_failed( $invoice ) {
 		$customer_id = sanitize_text_field( (string) ( $invoice['customer'] ?? '' ) );
 
 		// Find user by customer ID (cached usermeta lookup — no SlowDBQuery meta_query).
@@ -695,6 +782,8 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 	 * Retrieve a PaymentIntent to verify payment status
 	 *
 	 * @since 1.4.1
+ * @param mixed $payment_intent_id Identifier used to select the record involved in the Coordinate the retrieve payment intent behavior implemented by this code path. operation.
+ * @return mixed Result produced by the retrieve payment intent operation.
 	 */
 	public function retrieve_payment_intent( $payment_intent_id ) {
 		return $this->api_request( 'GET', '/payment_intents/' . $payment_intent_id );
@@ -702,6 +791,10 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Make Stripe API request
+ * @param mixed $method Input consumed by the Send the remote request required for api request and normalize its result. operation.
+ * @param mixed $endpoint Input consumed by the Send the remote request required for api request and normalize its result. operation.
+ * @param mixed $data Structured data consumed by the Send the remote request required for api request and normalize its result. operation.
+ * @return mixed Result of the api request operation, or a WP_Error when it cannot complete.
 	 */
 	private function api_request( $method, $endpoint, $data = array() ) {
 		$url = 'https://api.stripe.com/v1' . $endpoint;

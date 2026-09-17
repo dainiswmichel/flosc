@@ -11,6 +11,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC Request Guard behavior and the WordPress services used by its methods.
+ */
 class FLOSC_Request_Guard {
 
 	/**
@@ -18,6 +21,7 @@ class FLOSC_Request_Guard {
 	 * Checks trusted proxy headers in priority order, falls back to REMOTE_ADDR
 	 *
 	 * @since 1.7.7
+ * @return mixed Result produced by the client ip operation.
 	 */
 	public function get_client_ip() {
 		// Cloudflare (most specific, hardest to spoof when CF is in use).
@@ -39,6 +43,10 @@ class FLOSC_Request_Guard {
 	/**
 	 * Rate Limiting Helper
 	 * Prevents API abuse on public endpoints
+ * @param mixed $endpoint Input consumed by the Persist the check rate limit state in Word Press storage. operation.
+ * @param mixed $limit Input consumed by the Persist the check rate limit state in Word Press storage. operation.
+ * @param mixed $window Input consumed by the Persist the check rate limit state in Word Press storage. operation.
+ * @return bool Whether check rate limit applies to the current state.
 	 */
 	public function check_rate_limit( $endpoint, $limit = 20, $window = 3600 ) {
 		// v1.7.7: Use real client IP behind CDN/proxy (Cloudflare, AWS ALB, etc.).
@@ -130,7 +138,7 @@ class FLOSC_Request_Guard {
 	public function set_signed_cookie( $name, $data, $expiry = 0 ) {
 		$value = $this->sign_cookie_data( $data );
 
-		// v1.7.7: Explicit threshold — values under 1 year are treated as seconds-from-now
+		// v1.7.7: Explicit threshold — values under 1 year are treated as seconds-from-now.
 		// Values over 1 year (31536000) are treated as absolute Unix timestamps.
 		if ( $expiry > 0 && $expiry < 31536000 ) {
 			$expiry = time() + $expiry;

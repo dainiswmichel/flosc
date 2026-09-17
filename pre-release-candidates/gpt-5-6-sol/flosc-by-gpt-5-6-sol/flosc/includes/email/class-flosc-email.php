@@ -9,6 +9,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC Email behavior and the WordPress services used by its methods.
+ */
 class FLOSC_Email {
 
 	/** @var FLOSC_Framework */
@@ -17,12 +20,20 @@ class FLOSC_Email {
 	/** @var int Emails sent in current cron/run (rate limit). */
 	private $flosc_email_sent_this_run = 0;
 
-	public function __construct( $flosc ) {
+		/**
+	 * Coordinate the construct behavior implemented by this code path.
+	 *
+	 * @param mixed $flosc Input consumed by the Coordinate the construct behavior implemented by this code path. operation.
+	 */
+public function __construct( $flosc ) {
 		$this->flosc = $flosc;
 	}
 
 	/**
 	 * Send quiz score email with OTO
+ * @param mixed $user Input consumed by the Prepare and send the email required for send score email. operation.
+ * @param mixed $score_data Structured data consumed by the Prepare and send the email required for send score email. operation.
+ * @return mixed Result produced by the send score email operation.
 	 */
 	public function send_score_email( $user, $score_data ) {
 		$context       = $this->get_guest_email_context( '', (int) $user->ID );
@@ -99,6 +110,9 @@ class FLOSC_Email {
 
 	/**
 	 * Helper: resolve guest email identity for a flow.
+ * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+ * @param mixed $user_id WordPress user ID whose Resolve the current guest email context value from the available Word Press and flow state. state is being processed.
+ * @return array Structured guest email context data.
 	 */
 	public function get_guest_email_context( $flow_id = '', $user_id = 0 ) {
 		$flow_id = sanitize_key( (string) $flow_id );
@@ -146,6 +160,10 @@ class FLOSC_Email {
 
 	/**
 	 * Helper: replace guest email placeholders.
+ * @param mixed $text Input consumed by the Coordinate the replace guest email placeholders behavior implemented by this code path. operation.
+ * @param mixed $user Input consumed by the Coordinate the replace guest email placeholders behavior implemented by this code path. operation.
+ * @param mixed $days_remaining Input consumed by the Coordinate the replace guest email placeholders behavior implemented by this code path. operation.
+ * @return mixed Result produced by the replace guest email placeholders operation.
 	 */
 	public function replace_guest_email_placeholders( $text, $user, $days_remaining ) {
 		$context     = $this->get_guest_email_context( '', (int) $user->ID );
@@ -166,6 +184,9 @@ class FLOSC_Email {
 
 	/**
 	 * Resolve flow-aware sender identity for FLOSC emails.
+ * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+ * @param mixed $user_id WordPress user ID whose Resolve the current mail identity value from the available Word Press and flow state. state is being processed.
+ * @return array Structured mail identity data.
 	 */
 	public function get_flosc_mail_identity( $flow_id = '', $user_id = 0 ) {
 		$context  = $this->get_guest_email_context( $flow_id, (int) $user_id );
@@ -196,6 +217,10 @@ class FLOSC_Email {
 
 	/**
 	 * Build standard FLOSC email headers for consistent sender identity.
+ * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+ * @param mixed $user_id WordPress user ID whose Resolve the current mail headers value from the available Word Press and flow state. state is being processed.
+ * @param mixed $is_html Input consumed by the Resolve the current mail headers value from the available Word Press and flow state. operation.
+ * @return mixed Result produced by the mail headers operation.
 	 */
 	public function get_flosc_mail_headers( $flow_id = '', $user_id = 0, $is_html = false ) {
 		$identity = $this->get_flosc_mail_identity( $flow_id, $user_id );
@@ -213,6 +238,9 @@ class FLOSC_Email {
 
 	/**
 	 * Build Reply-To header for FLOSC emails.
+ * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+ * @param mixed $user_id WordPress user ID whose Resolve the current reply to header value from the available Word Press and flow state. state is being processed.
+ * @return mixed Result produced by the reply to header operation.
 	 */
 	public function get_flosc_reply_to_header( $flow_id = '', $user_id = 0 ) {
 		$identity = $this->get_flosc_mail_identity( $flow_id, $user_id );
@@ -223,6 +251,10 @@ class FLOSC_Email {
 	 * SSO welcome email (no MagicLink).
 	 * Provider login already authenticated the user; MagicLink is admin/opt-in only.
 	 * Skips non-SSO registration methods (email pending flow, purchase, etc.).
+ * @param mixed $user_id WordPress user ID whose Persist the send sso welcome email state in Word Press storage. state is being processed.
+ * @param mixed $provider_id Provider identifier or object used for the Persist the send sso welcome email state in Word Press storage. operation.
+ * @param mixed $user_data Structured data consumed by the Persist the send sso welcome email state in Word Press storage. operation.
+ * @return mixed Result produced by the send sso welcome email operation.
 	 */
 	public function send_sso_welcome_email( $user_id, $provider_id, $user_data = array() ) {
 		$user_id     = absint( $user_id );
@@ -316,6 +348,8 @@ class FLOSC_Email {
 
 	/**
 	 * Send due guest follow-up emails for a single guest user (slot-based windows).
+ * @param mixed $user_id WordPress user ID whose Persist the send due guest followups for user state in Word Press storage. state is being processed.
+ * @return mixed Result produced by the send due guest followups for user operation.
 	 */
 	public function send_due_guest_followups_for_user( $user_id ) {
 		$user = get_userdata( $user_id );
@@ -398,6 +432,11 @@ class FLOSC_Email {
 	 * daily run cannot burst the mail server. Welcome emails are event-driven and NOT throttled.
 	 * Cap is filterable via 'flosc_email_max_per_run' (0 = unlimited). Returns false when the cap
 	 * is reached so callers can stop and resume on the next run.
+ * @param mixed $to Input consumed by the Prepare and send the email required for send email throttled. operation.
+ * @param mixed $subject Input consumed by the Prepare and send the email required for send email throttled. operation.
+ * @param mixed $body Input consumed by the Prepare and send the email required for send email throttled. operation.
+ * @param mixed $headers Input consumed by the Prepare and send the email required for send email throttled. operation.
+ * @return bool Whether send email throttled applies to the current state.
 	 */
 	public function send_email_throttled( $to, $subject, $body, $headers ) {
 		$max = (int) apply_filters( 'flosc_email_max_per_run', 50 );
@@ -410,6 +449,12 @@ class FLOSC_Email {
 
 	/**
 	 * Shared HTML email card (matches the guest/member welcome styling).
+ * @param mixed $context Context values used to resolve request- or flow-specific behavior.
+ * @param mixed $user Input consumed by the Coordinate the email html card behavior implemented by this code path. operation.
+ * @param mixed $body_text Input consumed by the Coordinate the email html card behavior implemented by this code path. operation.
+ * @param mixed $button_url URL being resolved, validated, or used by the Coordinate the email html card behavior implemented by this code path. operation.
+ * @param mixed $button_label Input consumed by the Coordinate the email html card behavior implemented by this code path. operation.
+ * @return mixed Result produced by the email html card operation.
 	 */
 	public function flosc_email_html_card( $context, $user, $body_text, $button_url = '', $button_label = '' ) {
 		$safe_email = esc_html( $user->user_email );
@@ -430,7 +475,14 @@ class FLOSC_Email {
 		return $html;
 	}
 
-	public function dispatch_member_welcome_email( $user_id, $purchase_data = array() ) {
+		/**
+	 * Persist the dispatch member welcome email state in WordPress storage.
+	 *
+	 * @param mixed $user_id WordPress user ID whose Persist the dispatch member welcome email state in Word Press storage. state is being processed.
+	 * @param mixed $purchase_data Structured data consumed by the Persist the dispatch member welcome email state in Word Press storage. operation.
+	 * @return mixed Result produced by the dispatch member welcome email operation.
+	 */
+public function dispatch_member_welcome_email( $user_id, $purchase_data = array() ) {
 		$user = get_userdata( $user_id );
 		if ( ! $user || empty( $user->user_email ) ) {
 			return;
@@ -452,7 +504,7 @@ class FLOSC_Email {
 			$sent = array();
 		}
 		if ( ! empty( $sent[ $dedup_key ] ) ) {
-			return; // already welcomed for this flow+level
+			return; // already welcomed for this flow+level.
 		}
 
 		$context     = $this->get_guest_email_context( $flow_id, (int) $user_id );
@@ -478,6 +530,9 @@ class FLOSC_Email {
 
 	/**
 	 * Newsletter welcome — one per user per flow. Records send time (anchors newsletter follow-ups).
+ * @param mixed $user_id WordPress user ID whose Persist the dispatch newsletter welcome email state in Word Press storage. state is being processed.
+ * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+ * @return mixed Result produced by the dispatch newsletter welcome email operation.
 	 */
 	public function dispatch_newsletter_welcome_email( $user_id, $flow_id = '' ) {
 		$user = get_userdata( $user_id );
@@ -514,13 +569,20 @@ class FLOSC_Email {
 		}
 	}
 
-	public function subscribe_to_newsletter( $user_id, $flow_id = '' ) {
+		/**
+	 * Persist the subscribe to newsletter state in WordPress storage.
+	 *
+	 * @param mixed $user_id WordPress user ID whose Persist the subscribe to newsletter state in Word Press storage. state is being processed.
+	 * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+	 * @return mixed Result produced by the subscribe to newsletter operation.
+	 */
+public function subscribe_to_newsletter( $user_id, $flow_id = '' ) {
 		$user_id = (int) $user_id;
 		if ( $user_id <= 0 ) {
 			return;
 		}
 		if ( get_user_meta( $user_id, 'flosc_newsletter_optin', true ) ) {
-			return; // already subscribed
+			return; // already subscribed.
 		}
 		update_user_meta( $user_id, 'flosc_newsletter_optin', time() );
 		$this->dispatch_newsletter_welcome_email( $user_id, $flow_id );
@@ -528,6 +590,7 @@ class FLOSC_Email {
 
 	/**
 	 * Render the optional newsletter opt-in checkbox on the WP user profile.
+ * @param mixed $user Input consumed by the Render the Word Press interface for newsletter profile field. operation.
 	 */
 	public function render_newsletter_profile_field( $user ) {
 		$checked = get_user_meta( $user->ID, 'flosc_newsletter_optin', true ) ? 'checked' : '';
@@ -540,6 +603,8 @@ class FLOSC_Email {
 
 	/**
 	 * Save the newsletter opt-in checkbox; sends the welcome on first opt-in.
+ * @param mixed $user_id WordPress user ID whose Remove the stored state associated with newsletter profile field. state is being processed.
+ * @return mixed Result produced by the newsletter profile field operation.
 	 */
 	public function save_newsletter_profile_field( $user_id ) {
 		if ( ! current_user_can( 'edit_user', $user_id ) ) {
@@ -567,6 +632,12 @@ class FLOSC_Email {
 	 * Generic per-series follow-up sender. Reads <prefix>_followups (repeater rows: day/subject/body)
 	 * and sends those whose day offset has elapsed since $anchor_ts (the welcome-email send time)
 	 * and were not already sent. Idempotent; flow- and series-aware sent-state.
+ * @param mixed $user Input consumed by the Persist the send due series followups state in Word Press storage. operation.
+ * @param mixed $prefix Input consumed by the Persist the send due series followups state in Word Press storage. operation.
+ * @param mixed $anchor_ts Input consumed by the Persist the send due series followups state in Word Press storage. operation.
+ * @param mixed $sent_meta_key Name or key used to select the Persist the send due series followups state in Word Press storage. value.
+ * @param mixed $flow_id Flow identifier used to resolve flow-scoped configuration and state.
+ * @return mixed Result produced by the send due series followups operation.
 	 */
 	public function send_due_series_followups( $user, $prefix, $anchor_ts, $sent_meta_key, $flow_id ) {
 		if ( ! $user || empty( $user->user_email ) ) {
@@ -574,7 +645,7 @@ class FLOSC_Email {
 		}
 		$anchor_ts = (int) $anchor_ts;
 		if ( $anchor_ts <= 0 ) {
-			return; // follow-ups only start once the welcome has been sent
+			return; // follow-ups only start once the welcome has been sent.
 		}
 
 		$context   = $this->get_guest_email_context( $flow_id, (int) $user->ID );
@@ -603,7 +674,7 @@ class FLOSC_Email {
 				if ( '' !== $subject || '' !== $body ) {
 					$ok = $this->send_email_throttled( $user->user_email, $subject, $body, $this->get_flosc_mail_headers( $flow_id, (int) $user->ID, false ) );
 					if ( false === $ok ) {
-						break; } // per-run send cap reached — resume on the next cron run
+						break; } // per-run send cap reached — resume on the next cron run.
 				}
 				$done[]  = $i;
 				$updated = true;
@@ -623,7 +694,7 @@ class FLOSC_Email {
 	 * Member/newsletter follow-up day offsets are measured from the welcome-email send time.
 	 */
 	public function run_guest_followup_emails() {
-		$this->flosc_email_sent_this_run = 0; // reset per-run rate-limit counter
+		$this->flosc_email_sent_this_run = 0; // reset per-run rate-limit counter.
 		// Guest pass: SSO/email guests (excludes purchased) — existing behavior.
 		$guest_ids = function_exists( 'flosc_get_user_ids_for_meta' )
 			? flosc_get_user_ids_for_meta( '_flosc_sso_linked_providers' )
@@ -671,6 +742,7 @@ class FLOSC_Email {
 
 	/**
 	 * Default email template
+ * @return mixed Result produced by the default email template operation.
 	 */
 	public function get_default_email_template() {
 		return 'Hi {name},
@@ -694,6 +766,8 @@ The {product_name} Team';
 	 * Reliability guard for SSO email sequence.
 	 * - Ensures welcome email exists once for SSO-created users
 	 * - Sends any due guest follow-up emails (slot windows)
+ * @param mixed $user_id WordPress user ID whose Coordinate the run sso email sequence for user behavior implemented by this code path. state is being processed.
+ * @return mixed Result produced by the run sso email sequence for user operation.
 	 */
 	public function maybe_run_sso_email_sequence_for_user( $user_id ) {
 		$user_id = (int) $user_id;
@@ -716,6 +790,10 @@ The {product_name} Team';
 	/**
 	 * Process SSO flow email sequence on SSO entry events.
 	 * Fires on successful SSO login/auto-link and sends welcome only when user is new to that flow.
+ * @param mixed $user_id WordPress user ID whose Persist the sso flow email sequence state in Word Press storage. state is being processed.
+ * @param mixed $provider_id Provider identifier or object used for the Persist the sso flow email sequence state in Word Press storage. operation.
+ * @param mixed $user_data Structured data consumed by the Persist the sso flow email sequence state in Word Press storage. operation.
+ * @return mixed Result produced by the sso flow email sequence operation.
 	 */
 	public function maybe_process_sso_flow_email_sequence( $user_id, $provider_id, $user_data ) {
 		$user_id = (int) $user_id;

@@ -116,7 +116,7 @@ class Google_Provider extends SSO_Provider_Base {
 	 * @return array Normalized user data
 	 */
 	protected function normalize_user_data( $raw_data ) {
-		// v1.4.6: Handle both v2 (id) and v3 (sub) response formats
+		// v1.4.6: Handle both v2 (id) and v3 (sub) response formats.
 		// Pass 8: json_decode of provider JSON does not sanitize — field-sanitize here.
 		$provider_id = sanitize_text_field( (string) ( $raw_data['id'] ?? ( $raw_data['sub'] ?? '' ) ) );
 

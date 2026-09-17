@@ -17,37 +17,80 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Coordinate FLOSC Sample Assessment Quiz behavior and the WordPress services used by its methods.
+ */
 class FLOSC_Sample_Assessment_Quiz extends FLOSC_Abstract_Quiz_Type {
 
-	public function get_id() {
+		/**
+	 * Resolve the current id value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the id operation.
+	 */
+public function get_id() {
 		return 'sample_assessment_quiz';
 	}
 
-	public function get_name() {
+		/**
+	 * Resolve the current name value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the name operation.
+	 */
+public function get_name() {
 		return 'Sample Assessment Quiz';
 	}
 
-	public function get_description() {
+		/**
+	 * Resolve the current description value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the description operation.
+	 */
+public function get_description() {
 		return 'Sample multi-topic assessment (10 generic questions). Replace with your own items; topics drive freeline, guest gifts, and member content via admin config.';
 	}
 
-	public function get_icon() {
+		/**
+	 * Resolve the current icon value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the icon operation.
+	 */
+public function get_icon() {
 		return '📋';
 	}
 
-	public function needs_audio() {
+		/**
+	 * Coordinate the needs audio behavior implemented by this code path.
+	 *
+	 * @return bool Whether needs audio applies to the current state.
+	 */
+public function needs_audio() {
 		return false;
 	}
 
-	public function needs_stt() {
+		/**
+	 * Coordinate the needs stt behavior implemented by this code path.
+	 *
+	 * @return bool Whether needs stt applies to the current state.
+	 */
+public function needs_stt() {
 		return false;
 	}
 
-	public function needs_ai_analysis() {
+		/**
+	 * Coordinate the needs ai analysis behavior implemented by this code path.
+	 *
+	 * @return bool Whether needs ai analysis applies to the current state.
+	 */
+public function needs_ai_analysis() {
 		return false;
 	}
 
-	public function get_instructions() {
+		/**
+	 * Resolve the current instructions value from the available WordPress and flow state.
+	 *
+	 * @return mixed Result produced by the instructions operation.
+	 */
+public function get_instructions() {
 		return "One question per block, separated by a blank line.\n\n"
 			. "Each block:\n"
 			. "  Question text\n"
@@ -64,6 +107,7 @@ class FLOSC_Sample_Assessment_Quiz extends FLOSC_Abstract_Quiz_Type {
 
 	/**
 	 * Default content as admin-editable text (sample only — replace in Quiz admin).
+ * @return mixed Result produced by the default content operation.
 	 */
 	public function get_default_content() {
 		$lines = array();
