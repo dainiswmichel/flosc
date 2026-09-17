@@ -1,34 +1,66 @@
-# FLOSC 8.0.0 — candidate v81
+# FLOSC 8.0.0 — candidate v82.1
 
-**RETRACTION: the "84 → 0" headline was substantially scanner gaming.**
+**WordPress Coding Standards applied to the shipping PHP.**
 
-WPCS's `NonceVerification` sniff detects reads of the `$_GET` and `$_POST`
-*variables*. It does not model `filter_input()`. v78 routed about thirty
-read-only navigation reads through `filter_input()` and added no nonce and no
-capability check at those sites. The warnings went to zero because the scanner
-could no longer see the read. `includes/flosc-request.php` opened with "Not to
-quieten a sniff", which was false.
+    full WordPress standard, shipping PHP
+    before   153,957 errors   7,533 warnings   139 files
+    after      8,511 errors     174 warnings   136 files
 
-FLOSC's own gate caught it: `tests/check_wporg_rules.php` WPORG-04, written from
-the 13 Sep 2026 rejection, reports `FILTER_UNSAFE_RAW` as not sanitizing. On v80
-it found 14, all in shipping code, none in the exceptions file, and exited 1.
+    php -l        0 errors / 187 files
+    CLI gates     37 of 37 pass
+    WPORG gate    exit 0
+    zip           278 entries, 0 under tests/, version 8.0.0
+    sha256        e945c8708f5a798f…
 
-v81 reads every one of those superglobals directly again -- `isset()` /
-`is_scalar()`, then `wp_unslash()`, then a named sanitizer, then the allowlist.
-`flosc_nav_param()` still exists and still allowlists; what it legitimately
-provides is centralization, one read instead of thirty, not invisibility.
+JavaScript and CSS were left alone: WPCS's JS tokenizer mishandles modern
+syntax, and roughly 69,000 of the original 222,714 came from `.js` and `.css`,
+which WordPress.org does not reject on.
 
-**Expect NonceVerification to report a non-zero number on this candidate.** Every
-warning it reports is true: that code reads a request parameter without a nonce,
-deliberately, because the parameter selects what to display or because the right
-control there is an HMAC, an OAuth `state`, or an emailed token. That number is
-not measured here and is not predicted here.
+## What the fixer could not do by itself
 
-    artifact   flosc.zip
-    sha256     0280e535a4713c3a… (full value in sha256sums)
-    entries    278, single flosc/ root, 0 under tests/
-    base       claude-opus-5 v80
-    version    8.0.0 — unchanged; this is the release being resubmitted
+`phpcbf` refused to write `flosc.php` (577KB) and `class-paypal-provider.php`.
+It reports *FAILED TO FIX* and discards its work when conflicting fixers exhaust
+its internal loop limit, so those two files came back byte-identical, holding
+31,357 of the remainder. Applying one sniff group at a time — indent, then
+superfluous whitespace, then short array syntax, then call signatures, and so on
+— converges, because a single fixer has nothing to fight with. 31,357 → 3,199,
+with `php -l` between every step.
+
+## What the gates caught
+
+The reformat broke 11 of the 37 gates. Nine were the gates' own fault: they
+asserted formatting. One needle required a run of exactly twenty-one alignment
+spaces; another searched for a newline followed by eight spaces. Those now strip
+whitespace from both sides of the comparison, or accept either array syntax —
+same assertion, formatting no longer decides it. Each was verified by breaking
+the thing under test and confirming the gate still goes red.
+
+**Two were real.**
+
+`class-stt-dispatch.php` and `class-ai-chat-dispatch.php` each carried a
+`phpcs:ignore` for `PluginCheck.CodeAnalysis.AIProvider.DirectIntegration`
+directly above a `wp_remote_post()` whose endpoint URL sat on the same line.
+The fixer split that call across lines, leaving the suppression above
+`wp_remote_post(` and the host it annotates one line further down, out of its
+reach. The endpoint is now named on its own line under the annotation, which
+survives any future reformat.
+
+`tests/wporg-rule-exceptions.txt` pins its reviewed exceptions by line number.
+The WPORG-02 exception for `flosc-data-paths.php` moved from line 382 to 383 and
+stopped applying, so your rules gate went red on code that had not changed.
+
+## Not done
+
+    auto-fixable, still stuck on convergence   ~1,759
+    Yoda conditions                             2,382
+    inline comment end punctuation              1,690
+    missing docblock @param tags                  797
+    missing function docblocks                    467
+    short ternaries                               172
+
+**0 of 30 behavioural tests executed.** No WordPress in this container. This pass
+changed formatting and nothing else on purpose — but that is a statement about
+intent, not a measurement.
 
 ## What v78 got right, and keeps
 

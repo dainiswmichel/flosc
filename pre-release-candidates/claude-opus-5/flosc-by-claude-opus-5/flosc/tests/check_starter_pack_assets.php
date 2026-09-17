@@ -137,9 +137,25 @@ foreach ( $packs as $pack_json ) {
 	// library installs a flow with no character at all.
 	$personality = (string) ( $pack['personality'] ?? '' );
 	if ( $personality !== '' ) {
-		$library = (string) file_get_contents( $root . '/includes/flosc-personality-library.php' );
-		ok( "  attaches '" . $personality . "', which the library ships",
-			strpos( $library, "'id'                     => '" . $personality . "'" ) !== false, true );
+		/*
+		 * Matched with every whitespace character stripped from both sides.
+		 *
+		 * This used to search for "'id'" followed by exactly twenty-one spaces
+		 * and "=> '". A WordPress Coding Standards pass realigned the array
+		 * arrows, the run of spaces changed length, and this went red on a
+		 * library that still shipped every personality it had before. A gate
+		 * that asserts alignment is not testing what it says it tests.
+		 */
+		$library = (string) preg_replace(
+			'/\s+/',
+			'',
+			(string) file_get_contents( $root . '/includes/flosc-personality-library.php' )
+		);
+		ok(
+			"  attaches '" . $personality . "', which the library ships",
+			strpos( $library, "'id'=>'" . $personality . "'" ) !== false,
+			true
+		);
 	}
 }
 

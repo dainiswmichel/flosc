@@ -98,7 +98,12 @@ function flosc_nav_param_int( $key, $min = 0, $max = PHP_INT_MAX, $default = 0 )
 		INPUT_GET,
 		$key,
 		FILTER_VALIDATE_INT,
-		array( 'options' => array( 'min_range' => (int) $min, 'max_range' => (int) $max ) )
+		array(
+			'options' => array(
+				'min_range' => (int) $min,
+				'max_range' => (int) $max,
+			),
+		)
 	);
 
 	return ( null === $value || false === $value ) ? (int) $default : (int) $value;

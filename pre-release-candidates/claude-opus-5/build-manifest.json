@@ -1,15 +1,15 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": 82,
+  "candidate_iteration": "82.1",
   "creator": "Claude Opus 5",
-  "status": "WPORG_GATE_GREEN_NONCE_COUNT_HONEST_FUNCTIONALLY_UNVERIFIED",
+  "status": "WPCS_FORMATTING_APPLIED_FUNCTIONALLY_UNVERIFIED",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v81",
+  "base": "claude-opus-5 v82",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "d015bc871c5a63245cd960846add59431b32f17eef1a9b3474a26dd49e135854",
-  "artifact_bytes": 2764329,
+  "artifact_sha256": "e945c8708f5a798f234fb2b9dcbb5277f55bd54ecdcda4c4ec0d7eab08328bb5",
+  "artifact_bytes": 2754757,
   "artifact_entries": 278,
   "tree_files": 295,
   "why_this_iteration": {
@@ -538,6 +538,35 @@
       "filter_unsafe_raw_in_shipping_code": 0,
       "zip": "278 entries, 0 under tests/, 8.0.0",
       "not_measured": "phpcs. There is none in this container. The 9->3 error count is reasoned from where the reads moved, NOT measured."
+    }
+  },
+  "v82_1_wpcs_formatting": {
+    "why": "The Captain measured the full WordPress standard for the first time: 222,714 errors and 14,052 warnings, 96.9 percent of them machine-fixable. None of those violations should ever have been written. This is the pass that removes them.",
+    "scope": "Shipping PHP only. JavaScript and CSS were excluded: WPCS's JS tokenizer mishandles modern syntax and roughly 69,000 of the original count came from .js and .css, which WordPress.org does not reject on.",
+    "php_only_before": "153,957 errors, 7,533 warnings, 139 files",
+    "php_only_after": "8,511 errors, 174 warnings, 136 files",
+    "how": {
+      "first_pass": "phpcbf tree-wide. It refused to write flosc.php (577KB) and class-paypal-provider.php at all -- it reports 'FAILED TO FIX' and discards its work when conflicting fixers exhaust its internal loop limit. Those two files alone held 31,357 of the remainder, unchanged.",
+      "then": "Applied one sniff group at a time to those two files -- indent, then superfluous whitespace, then short array syntax, then call signatures, then control structure spacing, and so on. Each single-fixer pass converges. 31,357 -> 3,199.",
+      "verification_after_every_step": "php -l on the file before moving to the next sniff."
+    },
+    "what_the_gates_caught": {
+      "summary": "The reformat broke 11 of the 37 CLI gates. Nine were the gates' own fault -- they asserted formatting. Two were real.",
+      "real_1": "includes/class-stt-dispatch.php and includes/class-ai-chat-dispatch.php: a phpcs:ignore for PluginCheck AIProvider.DirectIntegration sat directly above a wp_remote_post() whose endpoint URL was on the same line. phpcbf split the call across lines, so the suppression came to sit above `wp_remote_post(` while the host it annotates moved one line down, out of its reach. Fixed by naming the endpoint on its own line under the annotation, which is stable under any future reformat.",
+      "real_2": "tests/wporg-rule-exceptions.txt pins exceptions by line number. The reviewed WPORG-02 exception for flosc-data-paths.php moved from line 382 to 383 and stopped applying, so the rules gate went red on code that had not changed. Line updated.",
+      "test_fixes": "The other nine matched source text literally, including one needle that required a run of exactly twenty-one alignment spaces and another that searched for a newline followed by eight spaces. Those assertions now strip all whitespace from both sides, or accept either array syntax. The assertion is unchanged; the formatting no longer decides it. Verified by breaking the thing under test and confirming the gate still goes red."
+    },
+    "measured_here": {
+      "php_l": "0 errors / 187 files",
+      "cli_gates": "37 of 37 pass",
+      "wporg_gate": "exit 0",
+      "wpcs_php_shipping": "8,511 errors, 174 warnings (was 153,957 / 7,533)",
+      "zip": "278 entries, 0 under tests/, 8.0.0"
+    },
+    "still_open": {
+      "auto_fixable_remaining": "phpcbf still reports about 1,759 fixable; the tree-wide run is stuck on the same convergence limit and needs the staged treatment.",
+      "needs_human_edits": "Yoda conditions 2,382; inline comment end punctuation 1,690; missing function docblock param tags 797; missing function docblocks 467; short ternaries 172.",
+      "functionality": "0 of 30 behavioural tests executed. There is no WordPress in this container. This pass is formatting only and no logic was intentionally changed, but that is a statement about intent, not a measurement."
     }
   }
 }

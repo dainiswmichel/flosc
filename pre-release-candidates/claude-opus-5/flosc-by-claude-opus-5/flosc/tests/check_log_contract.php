@@ -25,6 +25,26 @@ if ( PHP_SAPI !== 'cli' ) {
 	exit;
 }
 
+if ( ! function_exists( 'flosc_nows' ) ) {
+	/**
+	 * Strip every whitespace character.
+	 *
+	 * Source-text assertions below compare code, not the way it is laid out. A
+	 * WordPress Coding Standards pass reformatted the plugin -- tabs for spaces,
+	 * spaces inside call parentheses, realigned array arrows -- and every literal
+	 * match went red on behaviour that had not changed. Both sides of those
+	 * comparisons now pass through here, so the assertion is the same and the
+	 * formatting no longer decides it. Assertions that use a regular expression
+	 * are deliberately left reading the raw source.
+	 *
+	 * @param string $s Source text.
+	 * @return string
+	 */
+	function flosc_nows( $s ) {
+		return (string) preg_replace( '/\s+/', '', (string) $s );
+	}
+}
+
 $root = dirname( __DIR__ );
 $fail = 0;
 
@@ -67,8 +87,16 @@ echo "\nThe insert's placeholders match its columns\n";
 // run past the end of the insert and count 41 placeholders against 13
 // columns — a false failure, and the kind that teaches you to distrust the
 // gate rather than the code.
-$insert_at    = strpos( $logger, '$wpdb->insert(', (int) strpos( $logger, 'function flosc_log_chat' ) );
-$insert_end   = $insert_at !== false ? strpos( $logger, "\n        );", $insert_at ) : false;
+// The close is found by pattern, not by a literal newline-plus-eight-spaces.
+// That literal was what this used, and a WordPress Coding Standards pass
+// replaced the space indent with tabs, so the string stopped existing anywhere
+// in the file and the whole insert block came back empty -- reported as "the
+// insert was found at all: false" on a logger that had not changed.
+$insert_at  = strpos( $logger, '$wpdb->insert(', (int) strpos( $logger, 'function flosc_log_chat' ) );
+$insert_end = false;
+if ( $insert_at !== false && preg_match( '/\n\s*\);/', $logger, $flosc_m, PREG_OFFSET_CAPTURE, $insert_at ) ) {
+	$insert_end = $flosc_m[0][1];
+}
 $insert_block = ( $insert_at !== false && $insert_end !== false )
 	? substr( $logger, $insert_at, $insert_end - $insert_at )
 	: '';
@@ -108,7 +136,7 @@ foreach ( array( 'personality_id', 'personality_name', 'profile_hash' ) as $key 
 		(bool) preg_match( "/'" . $key . "'\s*=>\s*function_exists/", $turn ), true );
 }
 ok( 'and the logger resolves it for paths that build no prompt',
-	strpos( $logger, "flosc_personality_library_id_for_flow((string) (\$data['flow_id'] ?? ''))" ) !== false, true );
+	strpos( flosc_nows( $logger ), flosc_nows( "flosc_personality_library_id_for_flow((string) (\$data['flow_id'] ?? ''))"  )) !== false, true );
 
 // profile_hash is written when a personality is saved, so a row never saved
 // since the field existed has none — which is every shipped default on a fresh
@@ -120,7 +148,7 @@ ok( 'the fingerprint formula has one definition',
 ok( '  and it is computed when the stored field is empty',
 	strpos( $library, 'function flosc_personality_resolved_fingerprint' ) !== false, true );
 ok( 'the chat turn reads it through that resolver',
-	strpos( $turn, 'flosc_personality_resolved_fingerprint($flow_id)' ) !== false, true );
+	strpos( flosc_nows( $turn ), flosc_nows( 'flosc_personality_resolved_fingerprint($flow_id)'  )) !== false, true );
 ok( '  and so does the logger',
 	strpos( $logger, 'flosc_personality_resolved_fingerprint(' ) !== false, true );
 
@@ -129,7 +157,7 @@ echo "\nSurface is explicit, never inferred from an empty field\n";
 ok( "an unset surface is recorded as 'unknown'",
 	strpos( $logger, "\$surface = 'unknown';" ) !== false, true );
 ok( 'and the chat turn names the surface it was on',
-	strpos( $turn, "'surface'         => \$flosc_ctx_surface !== '' ? \$flosc_ctx_surface : 'full_page'" ) !== false, true );
+	strpos( flosc_nows( $turn ), flosc_nows( "'surface'         => \$flosc_ctx_surface !== '' ? \$flosc_ctx_surface : 'full_page'"  )) !== false, true );
 
 // FLOSC computed the VGM tier on every turn and threw it away at logging
 // time: $eval_context['access_level'] built the prompt, gated the content and
@@ -157,8 +185,11 @@ ok( 'only the turns that called a provider record an id',
 	substr_count( $turn_src_for_id, "'provider_request_id'" ), 2 );
 
 echo "\nThe row records which VGM tier answered\n";
+// Long array syntax, because WordPress Coding Standards require it and the
+// plugin was converted to it. This needle used to spell the same call with
+// short array syntax and stopped matching code that had not changed meaning.
 ok( 'only visitor, guest or member is stored',
-	strpos( $logger, "in_array(\$user_tier, ['visitor', 'guest', 'member'], true)" ) !== false, true );
+	strpos( flosc_nows( $logger ), flosc_nows( "in_array( \$user_tier, array( 'visitor', 'guest', 'member' ), true )" ) ) !== false, true );
 ok( '  and anything else is left blank rather than guessed',
 	strpos( $logger, "\$user_tier = '';" ) !== false, true );
 
@@ -166,24 +197,24 @@ ok( '  and anything else is left blank rather than guessed',
 // others is worse than none: the gaps look like Visitors.
 $turn_src = (string) file_get_contents( $root . '/includes/chat-turn/trait-flosc-chat-turn.php' );
 ok( 'every flosc_log_chat call site names a tier',
-	substr_count( $turn_src, "'user_tier'" ),
-	substr_count( $turn_src, 'flosc_log_chat([' ) );
+	substr_count( flosc_nows( $turn_src ), flosc_nows( "'user_tier'" ) ),
+	substr_count( flosc_nows( $turn_src ), flosc_nows( 'flosc_log_chat( array(' ) ) );
 
 // A row from before the column has no tier, and must still render as it did.
 ok( 'the screen appends the tier only when the row has one',
-	strpos( $screen, "in_array(\$tier, array('visitor', 'guest', 'member'), true)" ) !== false, true );
+	strpos( flosc_nows( $screen ), flosc_nows( "in_array(\$tier, array('visitor', 'guest', 'member'), true)"  )) !== false, true );
 
 echo "\nturn_status can only be one of the two things it means\n";
 ok( 'complete or abandoned, nothing else',
-	strpos( $logger, "in_array(\$turn_status, ['complete', 'abandoned'], true)" ) !== false, true );
+	strpos( flosc_nows( $logger ), flosc_nows( "in_array( \$turn_status, array( 'complete', 'abandoned' ), true )" ) ) !== false, true );
 
 echo "\nThe transcript names who answered\n";
 ok( 'bot bubbles use the row\'s own personality name',
-	strpos( $screen, "\$speaker = trim((string) (\$r['personality_name'] ?? ''));" ) !== false, true );
+	strpos( flosc_nows( $screen ), flosc_nows( "\$speaker = trim( (string) ( \$r['personality_name'] ?? '' ) );" ) ) !== false, true );
 ok( '  falling back to the old label for rows written before the column',
 	strpos( $screen, "\$speaker = 'AI';" ) !== false, true );
 ok( 'and the visitor bubble prefers the page_url column',
-	strpos( $screen, "\$visitor_context_url = trim((string) (\$r['page_url'] ?? ''));" ) !== false, true );
+	strpos( flosc_nows( $screen ), flosc_nows( "\$visitor_context_url = trim((string) (\$r['page_url'] ?? ''));"  )) !== false, true );
 
 // Plugin Check, 2026-09-05: one query still built its FROM clause by string
 // interpolation while every other query in the file used %i. $wpdb->prepare()

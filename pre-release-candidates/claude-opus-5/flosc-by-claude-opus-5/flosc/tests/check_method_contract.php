@@ -155,9 +155,30 @@ ok( '  and it can still build a replacement to return',
 
 // A guard is not a substitute for the method, but it is what keeps a future
 // tree from fataling if someone removes one. Both call sites carry it.
-$turn_src = (string) file_get_contents( $trait_files['FLOSC_Chat_Turn_Trait'] );
-ok( 'both call sites are guarded with method_exists',
-	substr_count( $turn_src, "method_exists(\$this, 'flosc_enforce_no_hedge_response')" ), 2 );
+/**
+ * Strip every whitespace character, so a source match tests the code and not
+ * its formatting.
+ *
+ * This assertion used to read the source literally and broke the day a
+ * WordPress Coding Standards pass reformatted the plugin: the guard was still
+ * there, spelled method_exists( $this, '...' ) instead of
+ * method_exists($this, '...'), and the test went red on a codebase that had not
+ * changed behaviour at all. A gate that fails on indentation is not testing the
+ * contract it claims to test.
+ *
+ * @param string $s Source text.
+ * @return string
+ */
+function flosc_nows( $s ) {
+	return (string) preg_replace( '/\s+/', '', (string) $s );
+}
+
+$turn_src = flosc_nows( (string) file_get_contents( $trait_files['FLOSC_Chat_Turn_Trait'] ) );
+ok(
+	'both call sites are guarded with method_exists',
+	substr_count( $turn_src, flosc_nows( "method_exists( \$this, 'flosc_enforce_no_hedge_response' )" ) ),
+	2
+);
 
 echo $fail ? "\n$fail FAILURES\n" : "\nEvery trait call resolves on the class that uses it\n";
 exit( $fail ? 1 : 0 );

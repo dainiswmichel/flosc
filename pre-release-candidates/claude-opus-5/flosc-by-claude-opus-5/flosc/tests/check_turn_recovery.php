@@ -26,6 +26,26 @@ if ( PHP_SAPI !== 'cli' ) {
 	exit;
 }
 
+if ( ! function_exists( 'flosc_nows' ) ) {
+	/**
+	 * Strip every whitespace character.
+	 *
+	 * Source-text assertions below compare code, not the way it is laid out. A
+	 * WordPress Coding Standards pass reformatted the plugin -- tabs for spaces,
+	 * spaces inside call parentheses, realigned array arrows -- and every literal
+	 * match went red on behaviour that had not changed. Both sides of those
+	 * comparisons now pass through here, so the assertion is the same and the
+	 * formatting no longer decides it. Assertions that use a regular expression
+	 * are deliberately left reading the raw source.
+	 *
+	 * @param string $s Source text.
+	 * @return string
+	 */
+	function flosc_nows( $s ) {
+		return (string) preg_replace( '/\s+/', '', (string) $s );
+	}
+}
+
 $root = dirname( __DIR__ );
 $fail = 0;
 
@@ -46,7 +66,7 @@ ok( 'turn_id is a column',
 ok( '  and it is indexed, because it is looked up by',
 	strpos( $logger, 'KEY idx_flosc_chat_turn (turn_id)' ) !== false, true );
 ok( 'the id is validated, never trusted as given',
-	strpos( $logger, "preg_match('/^[a-f0-9-]{8,64}\$/', \$raw)" ) !== false, true );
+	strpos( flosc_nows( $logger ), flosc_nows( "preg_match('/^[a-f0-9-]{8,64}\$/', \$raw)"  )) !== false, true );
 ok( 'the browser mints one before the request leaves',
 	strpos( $client, 'this._floscTurnId = this.floscMintTurnId();' ) !== false, true );
 ok( '  marks it pending',
@@ -58,11 +78,11 @@ ok( '  and clears it when the answer arrives',
 
 echo "\nThe next page load asks what became of an unfinished turn\n";
 ok( 'the client resumes a pending turn',
-	strpos( $turn, "\$resume_turn_id = class_exists('FLOSC_Chat_Logger')" ) !== false, true );
+	strpos( flosc_nows( $turn ), flosc_nows( "\$resume_turn_id = class_exists('FLOSC_Chat_Logger')"  )) !== false, true );
 ok( 'the server can find the row a turn id wrote',
 	strpos( $logger, 'public function flosc_find_turn(' ) !== false, true );
 ok( 'a written answer is returned to the reloaded page',
-	strpos( $turn, "'recovered'       => true," ) !== false, true );
+	strpos( flosc_nows( $turn ), flosc_nows( "'recovered'       => true,"  )) !== false, true );
 ok( 'and the visitor is shown the reply they reloaded away from',
 	strpos( $client, "this.addMessage('assistant', html, true);" ) !== false, true );
 
@@ -70,7 +90,7 @@ echo "\nA turn that never completed leaves nothing behind\n";
 ok( 'the row is marked abandoned',
 	strpos( $logger, 'public function flosc_mark_turn_abandoned(' ) !== false, true );
 ok( '  by the resume path when nothing was written',
-	strpos( $turn, 'flosc_mark_turn_abandoned($resume_turn_id)' ) !== false, true );
+	strpos( flosc_nows( $turn ), flosc_nows( 'flosc_mark_turn_abandoned( $resume_turn_id )' ) ) !== false, true );
 ok( 'the orphaned visitor message is dropped',
 	strpos( $client, 'floscDropOrphanVisitorMessage(pending.message)' ) !== false, true );
 ok( '  and only when it is the message we were waiting on',
@@ -90,7 +110,7 @@ ok( 'the thread is checked before the answer is appended',
 ok( '  comparing normalised plain text, not markup',
 	strpos( $client, 'const candidate = this._normalizeAssistantPlain(text);' ) !== false, true );
 ok( 'because a signed-in turn is written to the session by PHP before the browser sees it',
-	strpos( $turn, "\$this->session_manager->add_flosc_message(\$session_id, 'assistant'" ) !== false, true );
+	strpos( flosc_nows( $turn ), flosc_nows( "\$this->session_manager->add_flosc_message( \$session_id, 'assistant'" ) ) !== false, true );
 
 echo "\nBoth kinds of visitor recover\n";
 ok( 'the anonymous path resumes after restoring its thread',

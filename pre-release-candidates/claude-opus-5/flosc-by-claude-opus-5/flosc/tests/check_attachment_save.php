@@ -22,6 +22,26 @@ if ( PHP_SAPI !== 'cli' ) {
 	exit;
 }
 
+if ( ! function_exists( 'flosc_nows' ) ) {
+	/**
+	 * Strip every whitespace character.
+	 *
+	 * Source-text assertions below compare code, not the way it is laid out. A
+	 * WordPress Coding Standards pass reformatted the plugin -- tabs for spaces,
+	 * spaces inside call parentheses, realigned array arrows -- and every literal
+	 * match went red on behaviour that had not changed. Both sides of those
+	 * comparisons now pass through here, so the assertion is the same and the
+	 * formatting no longer decides it. Assertions that use a regular expression
+	 * are deliberately left reading the raw source.
+	 *
+	 * @param string $s Source text.
+	 * @return string
+	 */
+	function flosc_nows( $s ) {
+		return (string) preg_replace( '/\s+/', '', (string) $s );
+	}
+}
+
 $root = dirname( __DIR__ );
 $fail = 0;
 
@@ -44,7 +64,7 @@ ok( 'and success requires the stored value to match what was asked for',
 ok( 'a write that did not land is reported as an error',
 	strpos( $library, 'The attachment was not saved.' ) !== false, true );
 ok( 'success carries what is stored, not what was sent',
-	strpos( $library, "'persona'   => \$stored," ) !== false, true );
+	strpos( flosc_nows( $library ), flosc_nows( "'persona'   => \$stored,"  )) !== false, true );
 ok( 'and when it happened, in the same stamp the page-wide Save uses',
 	strpos( $library, "flosc_mts_utc()" ) !== false, true );
 

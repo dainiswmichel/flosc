@@ -8,6 +8,6 @@
 
 includes/filesystem/class-flosc-filesystem.php:179:WPORG-02:file.php is loaded under `! function_exists( 'WP_Filesystem' )` so the filesystem API exists around the WP_Filesystem_Direct fallback four lines below. WordPress.org reviewed this exact tree on 13 Sep 2026 and flagged only the import.php include, not this one. Removing it risks the direct-write path used when the global filesystem is not ready.
 includes/filesystem/class-flosc-filesystem.php:253:WPORG-02:Same shape as :179 in the sibling method. Same reasoning, same review evidence.
-includes/filesystem/flosc-data-paths.php:382:WPORG-02:Same shape again: file.php loaded to bring up the filesystem API before the WP_Filesystem_Direct fallback. Not flagged by WordPress.org on 13 Sep 2026.
+includes/filesystem/flosc-data-paths.php:383:WPORG-02:Same shape again: file.php loaded to bring up the filesystem API before the WP_Filesystem_Direct fallback. Not flagged by WordPress.org on 13 Sep 2026.
 
 admin/flosc-app.php:110:WPORG-10:NOT an admin page despite living in admin/. It is the public full-page chat app, included by includes/full-page-mode/class-flosc-full-page-mode.php:467 and rendered for logged-out visitors. Adding an admin capability gate here would return 403 to every visitor on the site. The reads it performs are presence tests and display hints, never state changes.

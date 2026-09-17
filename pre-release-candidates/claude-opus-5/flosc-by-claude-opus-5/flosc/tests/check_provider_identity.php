@@ -24,6 +24,26 @@ if ( PHP_SAPI !== 'cli' ) {
 	exit;
 }
 
+if ( ! function_exists( 'flosc_nows' ) ) {
+	/**
+	 * Strip every whitespace character.
+	 *
+	 * Source-text assertions below compare code, not the way it is laid out. A
+	 * WordPress Coding Standards pass reformatted the plugin -- tabs for spaces,
+	 * spaces inside call parentheses, realigned array arrows -- and every literal
+	 * match went red on behaviour that had not changed. Both sides of those
+	 * comparisons now pass through here, so the assertion is the same and the
+	 * formatting no longer decides it. Assertions that use a regular expression
+	 * are deliberately left reading the raw source.
+	 *
+	 * @param string $s Source text.
+	 * @return string
+	 */
+	function flosc_nows( $s ) {
+		return (string) preg_replace( '/\s+/', '', (string) $s );
+	}
+}
+
 $root = dirname( __DIR__ );
 $fail = 0;
 
@@ -127,7 +147,7 @@ ok( 'the site-address toggle is rendered',
 // An unticked checkbox posts nothing, and both of these default to on when
 // the key is absent. Writing '0' explicitly is what makes "off" possible.
 ok( 'and both are written explicitly, so unticking sticks',
-	strpos( $save, "\$flosc_identity[\$flosc_identity_key] = isset(\$flosc_post['flosc_provider_identity'][\$flosc_identity_key])" ) !== false, true );
+	strpos( flosc_nows( $save ), flosc_nows( "\$flosc_identity[\$flosc_identity_key] = isset(\$flosc_post['flosc_provider_identity'][\$flosc_identity_key])"  )) !== false, true );
 
 // Plugin Check flags every literal LLM-provider hostname it finds and points
 // at wp_ai_client_prompt(). Five of ours are model DISCOVERY — listing what an

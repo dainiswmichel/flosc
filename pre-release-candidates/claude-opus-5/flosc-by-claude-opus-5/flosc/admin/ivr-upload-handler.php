@@ -210,7 +210,7 @@ if ( ! function_exists( 'flosc_portability_ingest_da1_tsv' ) ) {
 		if ( ! is_array( $index ) ) {
 			$index = array();
 		}
-		$label = flosc_portability_display_name_from_stem( $key );
+		$label         = flosc_portability_display_name_from_stem( $key );
 		$index[ $key ] = array(
 			'label'      => $label,
 			'key'        => $key,
@@ -296,8 +296,8 @@ if ( ! function_exists( 'flosc_portability_get_pack_assets' ) ) {
 
 if ( ! function_exists( 'flosc_portability_save_pack_assets' ) ) {
 	/**
-	 * @param string               $ivr_file Flow IVR basename.
-	 * @param array<string,mixed>  $row      Pack row (wxr + media; catalogs stay in DA1 options).
+	 * @param string              $ivr_file Flow IVR basename.
+	 * @param array<string,mixed> $row      Pack row (wxr + media; catalogs stay in DA1 options).
 	 * @return void
 	 */
 	function flosc_portability_save_pack_assets( $ivr_file, $row ) {
@@ -443,9 +443,9 @@ if ( ! function_exists( 'flosc_portability_ingest_wxr' ) ) {
 			return new WP_Error( 'flosc_wxr_write', __( 'Could not store the WXR file.', 'flosc' ) );
 		}
 
-		$upload  = wp_upload_dir();
-		$rel     = '';
-		$url     = '';
+		$upload = wp_upload_dir();
+		$rel    = '';
+		$url    = '';
 		if ( empty( $upload['error'] ) && ! empty( $upload['basedir'] ) && 0 === strpos( $path, (string) $upload['basedir'] ) ) {
 			$rel = ltrim( str_replace( (string) $upload['basedir'], '', $path ), '/\\' );
 			$url = trailingslashit( (string) $upload['baseurl'] ) . str_replace( '\\', '/', $rel );
@@ -463,7 +463,7 @@ if ( ! function_exists( 'flosc_portability_ingest_wxr' ) ) {
 			}
 			$wxr[] = $item;
 		}
-		$wxr[] = array(
+		$wxr[]       = array(
 			'filename'    => $filename,
 			'path'        => $path,
 			'rel'         => $rel,
@@ -520,7 +520,7 @@ if ( ! function_exists( 'flosc_portability_ingest_media' ) ) {
 		}
 
 		// media_handle_sideload expects a $_FILES-like array and moves the temp file.
-		$file_array = array(
+		$file_array    = array(
 			'name'     => $raw_name,
 			'tmp_name' => $tmp_name,
 			'error'    => 0,
@@ -549,7 +549,7 @@ if ( ! function_exists( 'flosc_portability_ingest_media' ) ) {
 			}
 			$media[] = $item;
 		}
-		$media[] = array(
+		$media[]       = array(
 			'attachment_id' => $attachment_id,
 			'filename'      => $raw_name,
 			'url'           => (string) wp_get_attachment_url( $attachment_id ),
@@ -645,7 +645,7 @@ if ( ! function_exists( 'flosc_portability_run_wxr_import' ) ) {
 		ob_end_clean();
 
 		if ( $idx >= 0 && isset( $pack['wxr'][ $idx ] ) && is_array( $pack['wxr'][ $idx ] ) ) {
-			$pack['wxr'][ $idx ]['status']     = 'imported';
+			$pack['wxr'][ $idx ]['status']      = 'imported';
 			$pack['wxr'][ $idx ]['imported_at'] = current_time( 'mysql' );
 			flosc_portability_save_pack_assets( $ivr_file, $pack );
 		}
@@ -681,17 +681,17 @@ if ( ! function_exists( 'flosc_admin_handle_portability_pack_actions' ) ) {
 		}
 		check_admin_referer( 'flosc_portability_pack' );
 
-		$ivr_file = isset( $_POST['flosc_working_ivr'] )
+		$ivr_file      = isset( $_POST['flosc_working_ivr'] )
 			? sanitize_file_name( (string) wp_unslash( $_POST['flosc_working_ivr'] ) )
 			: '';
-		$filename = isset( $_POST['flosc_pack_filename'] )
+		$filename      = isset( $_POST['flosc_pack_filename'] )
 			? sanitize_file_name( (string) wp_unslash( $_POST['flosc_pack_filename'] ) )
 			: '';
 		$attachment_id = isset( $_POST['flosc_pack_attachment_id'] )
 			? (int) $_POST['flosc_pack_attachment_id']
 			: 0;
 
-		$notes   = array();
+		$notes    = array();
 		$is_error = false;
 		if ( 'import_wxr' === $action ) {
 			$result = flosc_portability_run_wxr_import( $ivr_file, $filename );
@@ -784,7 +784,7 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 			? sanitize_key( (string) wp_unslash( $_POST['flosc_portability_submit'] ) )
 			: '';
 		$is_kit     = in_array( $submit_raw, array( 'create', 'apply' ), true );
-		$is_legacy = ! empty( $_POST['flosc_upload_ivr_file'] ) && ! empty( $_FILES['ivr_file_upload']['name'] );
+		$is_legacy  = ! empty( $_POST['flosc_upload_ivr_file'] ) && ! empty( $_FILES['ivr_file_upload']['name'] );
 
 		if ( ! $is_kit && ! $is_legacy ) {
 			return;
@@ -820,16 +820,16 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 		$max_media = 10;
 		$media_ext = flosc_portability_allowed_media_ext();
 
-		$files      = flosc_portability_collect_kit_files( $_FILES );
-		$md         = null;
-		$tsv_list   = array();
-		$wxr_list   = array();
-		$media_list = array();
-		$md_count   = 0;
-		$tsv_count  = 0;
-		$wxr_count  = 0;
+		$files       = flosc_portability_collect_kit_files( $_FILES );
+		$md          = null;
+		$tsv_list    = array();
+		$wxr_list    = array();
+		$media_list  = array();
+		$md_count    = 0;
+		$tsv_count   = 0;
+		$wxr_count   = 0;
 		$media_count = 0;
-		$unknown    = array();
+		$unknown     = array();
 		foreach ( $files as $f ) {
 			if ( (int) ( $f['error'] ?? UPLOAD_ERR_NO_FILE ) === UPLOAD_ERR_NO_FILE || (string) ( $f['name'] ?? '' ) === '' ) {
 				continue;
@@ -955,9 +955,9 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 			$working_ivr = sanitize_file_name( (string) wp_unslash( $_GET['ivr'] ) );
 		}
 
-		$notes         = array();
-		$redirect_ivr  = $working_ivr;
-		$created_file  = '';
+		$notes        = array();
+		$redirect_ivr = $working_ivr;
+		$created_file = '';
 
 		// ── IVR .md ───────────────────────────────────────────────────────────
 		if ( null !== $md ) {

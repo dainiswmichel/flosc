@@ -440,7 +440,7 @@ if ( ! function_exists( 'flosc_model_parameter_recipes' ) ) {
 				array(
 					'name'   => __( 'Never writes the visitor\'s line', 'flosc' ),
 					'why'    => __( 'Cuts the reply the moment the model starts inventing the other half of the conversation. The classic chat-bubble fix.', 'flosc' ),
-					'params' => "stop_sequences: [\"User:\", \"Visitor:\", \"Human:\"]",
+					'params' => 'stop_sequences: ["User:", "Visitor:", "Human:"]',
 					'models' => __( 'Every Anthropic model tested.', 'flosc' ),
 				),
 				array(
@@ -488,7 +488,7 @@ if ( ! function_exists( 'flosc_model_parameter_recipes' ) ) {
 				array(
 					'name'   => __( 'Tight and factual', 'flosc' ),
 					'why'    => __( 'Gemini keeps its sampling inside generationConfig rather than at the top level, so a whole block is set at once.', 'flosc' ),
-					'params' => "generationConfig: {\"temperature\":0.2,\"topP\":0.8}",
+					'params' => 'generationConfig: {"temperature":0.2,"topP":0.8}',
 					'models' => '',
 				),
 			),
