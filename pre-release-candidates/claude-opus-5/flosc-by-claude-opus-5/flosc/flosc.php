@@ -3,7 +3,7 @@
  * Plugin Name: FLOSC
  * Plugin URI: https://flosc.ai
  * Description: (F)reeline --> (L)ogin --> (O)ffer --> (S)ale --> (C)ontent: try-before-you-buy WordPress journeys.
- * Version: 8.0.1
+ * Version: 8.0.0
  * Requires at least: 7.0
  * Requires PHP: 7.4
  * Author: Dainis W. Michel
@@ -17,7 +17,7 @@
 if (!defined('ABSPATH')) exit;
 
 // Plugin constants
-define('FLOSC_VERSION', '8.0.1');
+define('FLOSC_VERSION', '8.0.0');
 
 /*
  * The personality builder versions independently of the plugin. It ships here
@@ -12592,7 +12592,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             'flosc-app',
             FLOSC_PLUGIN_URL . 'assets/js/flosc-app.js',
             $flosc_app_deps,
-            file_exists($flosc_app_js) ? filemtime($flosc_app_js) : (defined('FLOSC_VERSION') ? FLOSC_VERSION : '8.0.1'),
+            file_exists($flosc_app_js) ? filemtime($flosc_app_js) : (defined('FLOSC_VERSION') ? FLOSC_VERSION : '8.0.0'),
             true
         );
     }
