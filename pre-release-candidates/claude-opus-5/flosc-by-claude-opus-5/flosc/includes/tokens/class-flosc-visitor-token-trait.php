@@ -57,7 +57,7 @@ trait FLOSC_Visitor_Token_Trait {
 	 * of e.g. 3876 fail the gate when the wallet baseline was 5000, while the UI
 	 * still showed thousands remaining ("Token limit reached" false positive).
 	 */
-	private function flosc_get_ai_query_token_cost( $flow_id = '', $token_provider = null ) {
+	private function flosc_get_ai_query_token_cost( $flow_id = '' ) {
 		$flow_stem = $this->flosc_normalize_flow_stem( (string) $flow_id );
 		$settings  = get_option( 'flosc_flow_' . $flow_stem, array() );
 		if ( is_array( $settings ) && isset( $settings['cost_ai_query'] ) ) {

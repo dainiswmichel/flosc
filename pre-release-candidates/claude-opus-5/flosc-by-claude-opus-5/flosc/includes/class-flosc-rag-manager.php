@@ -58,14 +58,9 @@ class FLOSC_RAG_Manager {
 				'input_schema' => array(
 					'type'       => 'object',
 					'properties' => array(
-						'query'    => array(
+						'query' => array(
 							'type'        => 'string',
 							'description' => 'Search query (e.g., "number 7", "pronunciation lesson")',
-						),
-						'category' => array(
-							'type'        => 'string',
-							'description' => 'Optional category to narrow search',
-							'enum'        => array( 'numbers', 'pronunciation', 'lessons', 'all' ),
 						),
 					),
 					'required'   => array( 'query' ),
@@ -133,11 +128,7 @@ class FLOSC_RAG_Manager {
 		try {
 			switch ( $tool_name ) {
 				case 'search_knowledge_base':
-					return $this->search_knowledge_base(
-						$input['query'],
-						$access_level,
-						$input['category'] ?? 'all'
-					);
+					return $this->search_knowledge_base( $input['query'], $access_level );
 
 				case 'search_posts':
 					return $this->search_posts(
@@ -171,7 +162,7 @@ class FLOSC_RAG_Manager {
 	 * @param string $category
 	 * @return string
 	 */
-	private function search_knowledge_base( $query, $access_level, $category = 'all' ) {
+	private function search_knowledge_base( $query, $access_level ) {
 
 		$results = array();
 

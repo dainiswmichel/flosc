@@ -47,7 +47,7 @@ class FLOSC_First_Party_Authentication {
 	 * @param string           $password
 	 * @return WP_User|WP_Error
 	 */
-	public function flosc_block_pending_email_login( $user, $password ) {
+	public function flosc_block_pending_email_login( $user ) {
 		if ( is_wp_error( $user ) || ! ( $user instanceof WP_User ) ) {
 			return $user;
 		}
@@ -317,7 +317,7 @@ class FLOSC_First_Party_Authentication {
 	 *
 	 * @since 9.5.7
 	 */
-	public function handle_woocommerce_login_redirect( $redirect, $user ) {
+	public function handle_woocommerce_login_redirect( $redirect ) {
 		$app_slug = get_option( 'flosc_app_slug', 'flosc' );
 
 		// Only redirect if referrer was FLOSC app.

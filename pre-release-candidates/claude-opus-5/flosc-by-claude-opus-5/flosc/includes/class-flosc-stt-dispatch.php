@@ -48,7 +48,7 @@ class FLOSC_STT_Dispatch {
 	/**
 	 * Transcribe Audio File
 	 */
-	public function transcribe( $audio_path, $options = array() ) {
+	public function transcribe( $audio_path ) {
 		// Check cache (useful for repeated test recordings).
 		$cache_key = 'flosc_stt_' . md5_file( $audio_path );
 		$cached    = get_transient( $cache_key );
@@ -59,13 +59,13 @@ class FLOSC_STT_Dispatch {
 
 		switch ( $this->provider ) {
 			case 'assemblyai':
-				$result = $this->assemblyai_transcribe( $audio_path, $options );
+				$result = $this->assemblyai_transcribe( $audio_path );
 				break;
 			case 'openai':
-				$result = $this->openai_whisper_transcribe( $audio_path, $options );
+				$result = $this->openai_whisper_transcribe( $audio_path );
 				break;
 			case 'custom':
-				$result = $this->custom_transcribe( $audio_path, $options );
+				$result = $this->custom_transcribe( $audio_path );
 				break;
 			default:
 				return new WP_Error( 'invalid_provider', __( 'Invalid STT provider', 'flosc' ) );
@@ -83,7 +83,7 @@ class FLOSC_STT_Dispatch {
 	 * AssemblyAI - Recommended for accent handling
 	 * Cost: ~$0.00025/second = $0.0025 per 10s recording
 	 */
-	private function assemblyai_transcribe( $audio_path, $options = array() ) {
+	private function assemblyai_transcribe( $audio_path ) {
 		// v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves).
 		$api_key = function_exists( 'flosc_get_provider_api_key' ) ? flosc_get_provider_api_key( 'assemblyai' ) : flosc_get_setting( 'assemblyai_api_key', '' );
 
@@ -130,7 +130,10 @@ class FLOSC_STT_Dispatch {
 				'body'    => wp_json_encode(
 					array(
 						'audio_url'     => $upload_body['upload_url'],
-						'language_code' => $options['language'] ?? 'en_us',
+						// English only, matching the hint hard-coded for Whisper.
+						// The $options array that used to feed this was never passed
+						// by any caller, so it always resolved to exactly this value.
+						'language_code' => 'en_us',
 					)
 				),
 				'timeout' => 30,
@@ -188,7 +191,7 @@ class FLOSC_STT_Dispatch {
 	 * OpenAI Whisper
 	 * Cost: ~$0.006/minute = $0.001 per 10s recording
 	 */
-	private function openai_whisper_transcribe( $audio_path, $options = array() ) {
+	private function openai_whisper_transcribe( $audio_path ) {
 		// v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves).
 		$api_key = function_exists( 'flosc_get_provider_api_key' ) ? flosc_get_provider_api_key( 'openai' ) : flosc_get_setting( 'openai_api_key', '' );
 
@@ -212,7 +215,8 @@ class FLOSC_STT_Dispatch {
 		$body .= "Content-Disposition: form-data; name=\"model\"\r\n\r\n";
 		$body .= "whisper-1\r\n";
 
-		// Add language hint.
+		// Add language hint. English, as with AssemblyAI above: transcription
+		// is not language-configurable yet.
 		$body .= "--{$boundary}\r\n";
 		$body .= "Content-Disposition: form-data; name=\"language\"\r\n\r\n";
 		$body .= "en\r\n";
@@ -259,7 +263,7 @@ class FLOSC_STT_Dispatch {
 	/**
 	 * Custom Endpoint (Self-hosted faster-whisper, etc.)
 	 */
-	private function custom_transcribe( $audio_path, $options = array() ) {
+	private function custom_transcribe( $audio_path ) {
 		// v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves).
 		$endpoint = flosc_get_setting( 'custom_stt_endpoint', '' );
 

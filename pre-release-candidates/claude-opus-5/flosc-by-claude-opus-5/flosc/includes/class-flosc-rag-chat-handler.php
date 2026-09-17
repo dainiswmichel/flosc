@@ -95,8 +95,7 @@ class FLOSC_RAG_Chat_Handler {
 			$flosc_message,
 			$flosc_system_prompt,
 			$flosc_history,
-			$flosc_tools,
-			$flosc_user_session
+			$flosc_tools
 		);
 
 		// If RAG loop returned null (e.g. missing API key), signal failure so handle_chat falls through to dispatch.
@@ -108,7 +107,7 @@ class FLOSC_RAG_Chat_Handler {
 		$this->flosc_store_conversation( $flosc_user_session, $flosc_session_id, $flosc_message, $flosc_response );
 
 		// Get contextual autoprompts.
-		$flosc_autoprompts = $this->flosc_get_contextual_autoprompts( $flosc_user_session, $flosc_response );
+		$flosc_autoprompts = $this->flosc_get_contextual_autoprompts( $flosc_user_session );
 
 		return array(
 			'content'          => $flosc_response,
@@ -238,7 +237,7 @@ class FLOSC_RAG_Chat_Handler {
 	 * @param FLOSC_User_Session $flosc_user_session
 	 * @return string AI response
 	 */
-	private function flosc_execute_rag_loop( $flosc_message, $flosc_system_prompt, $flosc_history, $flosc_tools, $flosc_user_session ) {
+	private function flosc_execute_rag_loop( $flosc_message, $flosc_system_prompt, $flosc_history, $flosc_tools ) {
 
 		// RAG tool-calling is Anthropic-only, through the WordPress AI Client.
 		// If the provider isn't Anthropic, return null so handle_chat() falls through to dispatch.
@@ -387,7 +386,7 @@ class FLOSC_RAG_Chat_Handler {
 	 * @param string             $flosc_response
 	 * @return array Autoprompt options
 	 */
-	private function flosc_get_contextual_autoprompts( $flosc_user_session, $flosc_response ) {
+	private function flosc_get_contextual_autoprompts( $flosc_user_session ) {
 		$flosc_state       = $flosc_user_session->flosc_get();
 		$flosc_user_type   = $flosc_state['flosc_user_type'];
 		$flosc_ivr_prompts = $flosc_state['flosc_ivr']['flosc_visible_autoprompts'];

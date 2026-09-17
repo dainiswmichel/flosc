@@ -1235,7 +1235,7 @@ class FLOSC_Starter_Packs {
 		}
 
 		// --- categories and posts ---
-		$restored = self::repair_content( $pack, $record );
+		$restored = self::repair_content( $pack );
 
 		if ( ! $restored['ok'] ) {
 			return self::result( false, $restored['message'] );
@@ -1332,7 +1332,7 @@ class FLOSC_Starter_Packs {
 	 * @param array<string,mixed> $record Install record.
 	 * @return array{ok:bool,message:string,record:array<string,mixed>}
 	 */
-	private static function repair_content( $pack, $record ) {
+	private static function repair_content( $pack ) {
 		if ( empty( $pack['content']['file'] ) ) {
 			return array(
 				'ok'      => true,

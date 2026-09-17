@@ -109,7 +109,8 @@ class FLOSC_RAG_Access_Controller {
 		// Guest: ONLY their free lesson.
 		if ( 'flosc_guest' === $flosc_user_type ) {
 			$flosc_free_lesson = $flosc_state['flosc_quiz']['flosc_free_lesson_number'];
-			if ( $flosc_lesson_number == $flosc_free_lesson ) {
+			if ( null !== $flosc_free_lesson && null !== $flosc_lesson_number
+				&& (int) $flosc_lesson_number === (int) $flosc_free_lesson ) {
 				return array( 'flosc_allowed' => true );
 			}
 			return array(

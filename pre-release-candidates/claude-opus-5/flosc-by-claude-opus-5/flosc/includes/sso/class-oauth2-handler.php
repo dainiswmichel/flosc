@@ -132,7 +132,7 @@ class OAuth2_Handler {
 	 * @param \WP_REST_Request $request Request object.
 	 * @return bool
 	 */
-	public function check_public_sso_permission( $request ) {
+	public function check_public_sso_permission() {
 		return true;
 	}
 
@@ -142,7 +142,7 @@ class OAuth2_Handler {
 	 * @param \WP_REST_Request $request Request object.
 	 * @return bool
 	 */
-	public function check_public_sso_provider_list_permission( $request ) {
+	public function check_public_sso_provider_list_permission() {
 		return true;
 	}
 
@@ -759,7 +759,7 @@ class OAuth2_Handler {
 	 * @param WP_REST_Request $request
 	 * @return WP_REST_Response
 	 */
-	public function get_providers( $request ) {
+	public function get_providers() {
 		$providers = $this->manager->get_enabled_providers();
 		$result    = array();
 

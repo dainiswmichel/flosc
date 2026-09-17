@@ -343,12 +343,11 @@ class FLOSC_Framework {
 	 *
 	 * Delegates to FLOSC_First_Party_Authentication. Filters authenticate.
 	 *
-	 * @param WP_User|WP_Error $user     Result so far from the authenticate filter.
-	 * @param string           $password The submitted password.
+	 * @param WP_User|WP_Error $user Result so far from the authenticate filter.
 	 * @return WP_User|WP_Error The user, or a WP_Error naming the pending state.
 	 */
-	public function flosc_block_pending_email_login( $user, $password ) {
-		return $this->first_party_auth->flosc_block_pending_email_login( $user, $password );
+	public function flosc_block_pending_email_login( $user ) {
+		return $this->first_party_auth->flosc_block_pending_email_login( $user );
 	}
 
 	/**
@@ -398,12 +397,11 @@ class FLOSC_Framework {
 	 * Delegates to FLOSC_First_Party_Authentication. Same rule: redirect only
 	 * when there is FLOSC context.
 	 *
-	 * @param string  $redirect Where WooCommerce means to send them.
-	 * @param WP_User $user     The user who logged in.
+	 * @param string $redirect Where WooCommerce means to send them.
 	 * @return string The destination URL.
 	 */
-	public function handle_woocommerce_login_redirect( $redirect, $user ) {
-		return $this->first_party_auth->handle_woocommerce_login_redirect( $redirect, $user );
+	public function handle_woocommerce_login_redirect( $redirect ) {
+		return $this->first_party_auth->handle_woocommerce_login_redirect( $redirect );
 	}
 
 	/**
@@ -2182,7 +2180,7 @@ class FLOSC_Framework {
 
 		// Login redirect - send users to FLOSC app after login (v9.5.7).
 		add_filter( 'login_redirect', array( $this, 'handle_login_redirect' ), 999, 3 );
-		add_filter( 'woocommerce_login_redirect', array( $this, 'handle_woocommerce_login_redirect' ), 999, 2 );
+		add_filter( 'woocommerce_login_redirect', array( $this, 'handle_woocommerce_login_redirect' ), 999, 1 );
 
 		// Admin post handler for flush permalinks (v9.5.1).
 		add_action( 'admin_post_flosc_flush_permalinks', array( $this, 'handle_flush_permalinks' ) );
@@ -2237,7 +2235,7 @@ class FLOSC_Framework {
 		add_action( 'show_user_profile', array( $this, 'render_email_account_status_profile' ) );
 		add_action( 'edit_user_profile', array( $this, 'render_email_account_status_profile' ) );
 		add_action( 'admin_post_flosc_activate_email_account', array( $this, 'handle_admin_activate_email_account' ) );
-		add_filter( 'wp_authenticate_user', array( $this, 'flosc_block_pending_email_login' ), 10, 2 );
+		add_filter( 'wp_authenticate_user', array( $this, 'flosc_block_pending_email_login' ), 10, 1 );
 
 		// v1.9.0: Chat logs AJAX (real-time polling).
 		add_action( 'wp_ajax_flosc_get_chat_logs', array( $this, 'ajax_flosc_get_chat_logs' ) );
@@ -7514,7 +7512,7 @@ Example good response:
 					$needs_token_charge = false;
 				}
 				$user_balance = $this->flosc_get_user_flow_token_balance( $user_id, $flow_id );
-				$min_cost     = max( 0, intval( $this->flosc_get_ai_query_token_cost( $flow_id, $token_provider ) ) );
+				$min_cost     = max( 0, intval( $this->flosc_get_ai_query_token_cost( $flow_id ) ) );
 				if ( ! $token_provider || ( $min_cost > 0 && $user_balance < $min_cost ) ) {
 					return new WP_Error( 'limit_reached', __( 'AI query limit reached. Upgrade for more!', 'flosc' ), array( 'status' => 403 ) );
 				}

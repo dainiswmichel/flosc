@@ -354,7 +354,7 @@ class FLOSC_Quiz_Manager {
 	 * @param string $quiz_id
 	 * @return int|null Best score or null if never taken
 	 */
-	public static function get_best_score( $user_id, $quiz_id = null ) {
+	public static function get_best_score( $user_id ) {
 		$bridge_manager = FLOSC_Bridge_Data_Manager::instance();
 		$summary        = $bridge_manager->get_flosc_user_summary( $user_id );
 

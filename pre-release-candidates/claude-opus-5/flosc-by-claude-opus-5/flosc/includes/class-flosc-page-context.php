@@ -105,7 +105,7 @@ class FLOSC_Page_Context {
 
 		$access_level = sanitize_key( (string) ( $eval_context['access_level'] ?? 'visitor' ) );
 		$user_id      = absint( $eval_context['user_id'] ?? 0 );
-		$content      = $this->load_post_content( $post_id, $access_level, $user_id );
+		$content      = $this->load_post_content( $post_id, $access_level );
 
 		if ( '' === $content ) {
 			return;
@@ -384,7 +384,7 @@ class FLOSC_Page_Context {
 		return false;
 	}
 
-	private function load_post_content( $post_id, $access_level, $user_id ) {
+	private function load_post_content( $post_id, $access_level ) {
 		$post = get_post( $post_id );
 		if ( ! $post || 'publish' !== $post->post_status ) {
 			return '';

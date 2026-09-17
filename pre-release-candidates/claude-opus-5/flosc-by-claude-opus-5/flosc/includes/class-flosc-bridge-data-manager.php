@@ -67,7 +67,7 @@ class FLOSC_Bridge_Data_Manager {
 		add_action( 'tutor_quiz_finished', array( $this, 'handle_tutor_quiz' ), 10, 3 );
 
 		// v1.0.3: Clear bridge state when user purchases.
-		add_action( 'flosc_purchase_completed', array( $this, 'handle_purchase_completed' ), 10, 2 );
+		add_action( 'flosc_purchase_completed', array( $this, 'handle_purchase_completed' ), 10, 1 );
 	}
 
 	/**
@@ -76,7 +76,7 @@ class FLOSC_Bridge_Data_Manager {
 	 * @param int   $user_id User ID.
 	 * @param array $purchase_data Purchase details.
 	 */
-	public function handle_purchase_completed( $user_id, $purchase_data = array() ) {
+	public function handle_purchase_completed( $user_id ) {
 		if ( ! $user_id ) {
 			return;
 		}

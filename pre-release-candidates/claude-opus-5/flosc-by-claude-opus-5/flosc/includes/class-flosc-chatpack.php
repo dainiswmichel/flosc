@@ -269,7 +269,7 @@ class FLOSC_Chatpack {
 
 		// ── 6. IVR GUIDANCE ─────────────────────────────────
 		if ( $ivr_guidance ) {
-			$sections[] = self::build_ivr_section( $ivr_guidance, $flow_id, $eval_context );
+			$sections[] = self::build_ivr_section( $ivr_guidance );
 		}
 
 		// ── 7. CONVERSATION RULES ───────────────────────────
@@ -360,7 +360,7 @@ class FLOSC_Chatpack {
 		if ( $previous_phase && $previous_phase !== $phase ) {
 			$sections[] = "**PHASE CHANGED:** {$previous_phase} → {$phase}\n"
 				. 'Adjust your behavior to the new phase rules. '
-				. self::get_phase_one_liner( $phase, $eval_context );
+				. self::get_phase_one_liner( $phase );
 		}
 
 		// ── UPDATED USER STATE ──────────────────────────────
@@ -397,7 +397,7 @@ class FLOSC_Chatpack {
 
 		// ── IVR GUIDANCE ────────────────────────────────────
 		if ( $ivr_guidance ) {
-			$sections[] = self::build_ivr_section( $ivr_guidance, null, $eval_context );
+			$sections[] = self::build_ivr_section( $ivr_guidance );
 		}
 
 		// ── PAGE CONTEXT (must ride EVERY turn) ─────────────
@@ -1086,7 +1086,7 @@ class FLOSC_Chatpack {
 	/**
 	 * Section 6: IVR Guidance — scripted response the AI should rewrite.
 	 */
-	private static function build_ivr_section( $ivr_guidance, $flow_id = null, $eval_context = array() ) {
+	private static function build_ivr_section( $ivr_guidance ) {
 		return "## IVR RESPONSE GUIDANCE\n\n"
 			. "The scripted system matched the following reference material for the user's input. "
 			. 'This is AUTHORITATIVE product information written by the site administrator. '
@@ -1310,7 +1310,7 @@ class FLOSC_Chatpack {
 	/**
 	 * Get a one-liner description for phase change notifications.
 	 */
-	private static function get_phase_one_liner( $phase, $eval_context = array() ) {
+	private static function get_phase_one_liner( $phase ) {
 		$liners = array(
 			'freeline' => 'Goal: encourage quiz.',
 			'login'    => 'Goal: celebrate score, deliver free lesson.',
@@ -1348,7 +1348,7 @@ class FLOSC_Chatpack {
 			}
 		}
 
-		return self::get_default_phase_outcomes( $phase, $eval_context, $flow_id );
+		return self::get_default_phase_outcomes( $phase, $eval_context );
 	}
 
 	/**
@@ -1407,7 +1407,7 @@ class FLOSC_Chatpack {
 	/**
 	 * Backward-compatible defaults when no explicit outcomes are configured.
 	 */
-	private static function get_default_phase_outcomes( $phase, $eval_context = array(), $flow_id = null ) {
+	private static function get_default_phase_outcomes( $phase, $eval_context = array() ) {
 		$quiz_in_progress = ! empty( $eval_context['quiz_in_progress'] );
 
 		switch ( $phase ) {

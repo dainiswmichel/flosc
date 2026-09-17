@@ -33,7 +33,7 @@ trait FLOSC_REST_Trait {
 	/**
 	 * Permission Callbacks for REST API
 	 */
-	public function check_metered_visitor_compute_permission( $request ) {
+	public function check_metered_visitor_compute_permission() {
 		$protection = $this->flosc_public_request_protection();
 		if ( '1' !== $protection['enabled'] ) {
 			return true;
@@ -98,7 +98,7 @@ trait FLOSC_REST_Trait {
 	 * @param WP_REST_Request $request Request object.
 	 * @return true|WP_Error
 	 */
-	public function check_authenticated_user_permission( $request ) {
+	public function check_authenticated_user_permission() {
 		if ( ! is_user_logged_in() ) {
 			return new WP_Error( 'flosc_login_required', __( 'Login is required.', 'flosc' ), array( 'status' => 401 ) );
 		}
@@ -110,7 +110,7 @@ trait FLOSC_REST_Trait {
 	 * §4: Permission callback for privileged admin-only REST actions.
 	 * Grants only to users who can manage_options; everyone else gets 403.
 	 */
-	public function check_admin_endpoint_permission( $request ) {
+	public function check_admin_endpoint_permission() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return new WP_Error( 'forbidden', __( 'Administrator privileges required.', 'flosc' ), array( 'status' => 403 ) );
 		}

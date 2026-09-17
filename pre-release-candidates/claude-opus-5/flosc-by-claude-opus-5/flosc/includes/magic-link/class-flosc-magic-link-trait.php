@@ -1025,11 +1025,15 @@ trait FLOSC_Magic_Link_Trait {
 	 * - If magic links are enabled, a fresh token is minted and seeded as active.
 	 * - Optional refresh email can be enabled via filter.
 	 *
-	 * @param string       $password      New password (unused).
-	 * @param int          $user_id       User ID.
-	 * @param WP_User|null $old_user_data Previous user object.
+	 * Nothing in the plugin registers this on a hook; it is reached only by a
+	 * site that wires it up itself, which is why the signature keeps the leading
+	 * $password that WordPress password hooks pass first.
+	 *
+	 * @param string $password New password. Not read -- the decision is made from
+	 *                         the user's stored magic-link state.
+	 * @param int    $user_id  The user whose password changed.
 	 */
-	public function flosc_handle_password_change_revoke_magic_access( $password, $user_id, $old_user_data = null ) {
+	public function flosc_handle_password_change_revoke_magic_access( $password, $user_id ) {
 		$user_id = absint( $user_id );
 		if ( $user_id <= 0 ) {
 			return;

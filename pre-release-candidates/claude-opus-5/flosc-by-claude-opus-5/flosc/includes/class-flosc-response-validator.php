@@ -57,7 +57,7 @@ class FLOSC_Response_Validator {
 		return array(
 			'flosc_valid'      => false,
 			'flosc_violations' => $flosc_violations,
-			'flosc_response'   => $this->flosc_get_override_response( $flosc_violations ),
+			'flosc_response'   => $this->flosc_get_override_response(),
 		);
 	}
 
@@ -84,7 +84,7 @@ class FLOSC_Response_Validator {
 		return false;
 	}
 
-	private function flosc_get_override_response( $flosc_violations ) {
+	private function flosc_get_override_response() {
 		$flosc_user_type = $this->flosc_user_session->flosc_get( 'flosc_user_type' );
 
 		$flosc_overrides = array(

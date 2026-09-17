@@ -126,7 +126,7 @@ class SSO_Manager {
 	 */
 	private function register_hooks() {
 		// Avatar filter.
-		add_filter( 'get_avatar_url', array( $this, 'filter_avatar_url' ), 10, 3 );
+		add_filter( 'get_avatar_url', array( $this, 'filter_avatar_url' ), 10, 2 );
 
 		// v1.4.8: FLOSC SSO buttons only appear inside FLOSC flows (chat widget auth modal).
 		// Removed login_form and register_form hooks to prevent interference with
@@ -223,7 +223,7 @@ class SSO_Manager {
 	 * @param array  $args Avatar arguments.
 	 * @return string
 	 */
-	public function filter_avatar_url( $url, $id_or_email, $args ) {
+	public function filter_avatar_url( $url, $id_or_email ) {
 		// Get user ID.
 		$user_id = null;
 

@@ -430,7 +430,7 @@ class FLOSC_Condition_Evaluator {
 			case '<=':
 				return $left <= $right;
 			case '==':
-				return $left == $right;
+				return $left === $right;
 			default:
 				return false;
 		}

@@ -895,7 +895,7 @@ trait FLOSC_Chat_Turn_Trait {
 			if ( is_user_logged_in() ) {
 				$charge_user_id      = get_current_user_id();
 				$user_balance_before = $this->flosc_get_user_flow_token_balance( $charge_user_id, $flow_id );
-				$min_cost            = max( 0, intval( $this->flosc_get_ai_query_token_cost( $flow_id, $token_provider ) ) );
+				$min_cost            = max( 0, intval( $this->flosc_get_ai_query_token_cost( $flow_id ) ) );
 				if ( $min_cost > 0 && $user_balance_before < $min_cost ) {
 					return new WP_REST_Response(
 						array(
@@ -917,7 +917,7 @@ trait FLOSC_Chat_Turn_Trait {
 						403
 					);
 				}
-				$min_cost            = max( 0, intval( $this->flosc_get_ai_query_token_cost( $flow_id, $token_provider ) ) );
+				$min_cost            = max( 0, intval( $this->flosc_get_ai_query_token_cost( $flow_id ) ) );
 				$request_id          = substr( hash( 'sha256', (string) $session_id . '|' . microtime( true ) . '|' . wp_rand() ), 0, 12 );
 				$visitor_reservation = $this->flosc_reserve_visitor_tokens( $flow_id, $session_id, $min_cost, $request_id, $token_provider );
 				if ( empty( $visitor_reservation['reserved'] ) ) {
