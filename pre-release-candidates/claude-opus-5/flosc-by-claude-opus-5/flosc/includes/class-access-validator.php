@@ -40,7 +40,7 @@ class FLOSC_Access_Validator {
 
 		// Check for forbidden keywords.
 		foreach ( $forbidden as $keyword => $reason ) {
-			if ( stripos( $ai_response, $keyword ) !== false ) {
+			if ( false !== stripos( $ai_response, $keyword ) ) {
 				$violations[] = array(
 					'keyword'      => $keyword,
 					'reason'       => $reason,
@@ -50,12 +50,12 @@ class FLOSC_Access_Validator {
 		}
 
 		// Check for VISITOR-specific violations.
-		if ( $access_level === 'visitor' ) {
+		if ( 'visitor' === $access_level ) {
 			$violations = array_merge( $violations, $this->check_visitor_violations( $ai_response ) );
 		}
 
 		// Check for GUEST-specific violations.
-		if ( $access_level === 'guest' ) {
+		if ( 'guest' === $access_level ) {
 			$violations = array_merge( $violations, $this->check_guest_violations( $ai_response ) );
 		}
 
@@ -103,7 +103,7 @@ class FLOSC_Access_Validator {
 			'complete guide' => 'Member guide reference',
 		);
 
-		if ( $access_level === 'visitor' || $access_level === 'guest' ) {
+		if ( 'visitor' === $access_level || 'guest' === $access_level ) {
 			return $all_forbidden;
 		}
 
@@ -122,7 +122,7 @@ class FLOSC_Access_Validator {
 		// v1.4.9: Removed '$' — too many false positives (currency mentions, variable names, etc.).
 		$pricing_keywords = array( 'price', 'cost', 'discount', 'offer', 'purchase', 'buy' );
 		foreach ( $pricing_keywords as $keyword ) {
-			if ( stripos( $response, $keyword ) !== false ) {
+			if ( false !== stripos( $response, $keyword ) ) {
 				$violations[] = array(
 					'keyword'  => $keyword,
 					'reason'   => 'Pricing information shown to visitor',
@@ -134,7 +134,7 @@ class FLOSC_Access_Validator {
 		// VISITORS should NOT see lesson details.
 		$lesson_keywords = array( 'lesson 1', 'lesson 2', 'lesson 3', 'pronunciation guide', 'video demonstration' );
 		foreach ( $lesson_keywords as $keyword ) {
-			if ( stripos( $response, $keyword ) !== false ) {
+			if ( false !== stripos( $response, $keyword ) ) {
 				$violations[] = array(
 					'keyword'  => $keyword,
 					'reason'   => 'Lesson details shown to visitor',
@@ -196,7 +196,7 @@ class FLOSC_Access_Validator {
 
 		$missing = array();
 		foreach ( $required_phrases as $phrase => $reason ) {
-			if ( stripos( $system_prompt, $phrase ) === false ) {
+			if ( false === stripos( $system_prompt, $phrase ) ) {
 				$missing[] = array(
 					'phrase' => $phrase,
 					'reason' => $reason,

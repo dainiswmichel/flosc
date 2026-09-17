@@ -95,7 +95,7 @@ class FLOSC_Offer_Manager {
 		return array_filter(
 			$offers,
 			function ( $offer ) {
-				return ( $offer['status'] ?? 'active' ) === 'active';
+				return 'active' === ( $offer['status'] ?? 'active' );
 			}
 		);
 	}
@@ -247,11 +247,11 @@ class FLOSC_Offer_Manager {
 			$msg_phase  = strtolower( trim( (string) ( $msg['phase'] ?? '' ) ) );
 			$msg_action = strtolower( trim( (string) ( $msg['action'] ?? '' ) ) );
 
-			$is_offer_scope = ( $msg_type === 'offer' )
-				|| ( $msg_phase === 'offer' && $msg_type === 'suggested_user_autoprompt' )
-				|| strpos( $msg_action, 'show_offer' ) !== false
-				|| strpos( $msg_action, 'checkout' ) !== false
-				|| strpos( $msg_action, 'sandbox_purchase' ) !== false;
+			$is_offer_scope = ( 'offer' === $msg_type )
+				|| ( 'offer' === $msg_phase && 'suggested_user_autoprompt' === $msg_type )
+				|| false !== strpos( $msg_action, 'show_offer' )
+				|| false !== strpos( $msg_action, 'checkout' )
+				|| false !== strpos( $msg_action, 'sandbox_purchase' );
 
 			if ( ! $is_offer_scope ) {
 				continue;
@@ -274,21 +274,21 @@ class FLOSC_Offer_Manager {
 	 */
 	private function normalize_ivr_offer_message( $existing, $msg, $offer_id ) {
 		$name = trim( (string) ( $msg['title'] ?? '' ) );
-		if ( $name === '' ) {
+		if ( '' === $name ) {
 			$name = trim( (string) ( $msg['name'] ?? '' ) );
 		}
-		if ( $name === '' ) {
+		if ( '' === $name ) {
 			$name = $offer_id;
 		}
 
 		$description = trim( (string) ( $msg['content'] ?? '' ) );
-		if ( $description === '' && ! empty( $existing['description'] ) ) {
+		if ( '' === $description && ! empty( $existing['description'] ) ) {
 			$description = $existing['description'];
 		}
 
 		$display_format = trim( (string) ( $msg['display_format'] ?? '' ) );
-		if ( $display_format === '' ) {
-			if ( ( $msg['type'] ?? '' ) === 'suggested_user_autoprompt' ) {
+		if ( '' === $display_format ) {
+			if ( 'suggested_user_autoprompt' === ( $msg['type'] ?? '' ) ) {
 				$display_format = 'pill';
 			} else {
 				$display_format = $existing['display_format'] ?? 'featured';
@@ -305,13 +305,13 @@ class FLOSC_Offer_Manager {
 			if ( array_key_exists( 'active', $existing ) ) {
 				$is_active = ! empty( $existing['active'] );
 			} else {
-				$is_active = ( $status === 'active' );
+				$is_active = ( 'active' === $status );
 			}
 			// Keep status/active consistent with each other.
-			if ( $status === 'active' && ! $is_active ) {
+			if ( 'active' === $status && ! $is_active ) {
 				$status = 'inactive';
 			}
-			if ( $is_active && $status !== 'active' ) {
+			if ( $is_active && 'active' !== $status ) {
 				$is_active = false;
 			}
 		} else {
@@ -364,7 +364,7 @@ class FLOSC_Offer_Manager {
 
 		// Primary source: per-flow selected IVR file in settings UI.
 		$active_ivr_file = sanitize_file_name( (string) ( $flow_settings['active_ivr_file'] ?? '' ) );
-		if ( $active_ivr_file !== '' ) {
+		if ( '' !== $active_ivr_file ) {
 			$candidate_files[] = $active_ivr_file;
 		}
 
@@ -372,14 +372,14 @@ class FLOSC_Offer_Manager {
 		$all_flows = get_option( 'flosc_flows', array() );
 		if ( is_array( $all_flows ) && ! empty( $all_flows[ $flow_id ]['ivr_file'] ) ) {
 			$registry_ivr_file = sanitize_file_name( (string) $all_flows[ $flow_id ]['ivr_file'] );
-			if ( $registry_ivr_file !== '' ) {
+			if ( '' !== $registry_ivr_file ) {
 				$candidate_files[] = $registry_ivr_file;
 			}
 		}
 
 		// If flow_id itself includes .md, try it directly.
 		$flow_id_file = sanitize_file_name( (string) $flow_id );
-		if ( substr( $flow_id_file, -3 ) === '.md' ) {
+		if ( '.md' === substr( $flow_id_file, -3 ) ) {
 			$candidate_files[] = $flow_id_file;
 		}
 
@@ -796,7 +796,7 @@ class FLOSC_Offer_Manager {
 	 */
 	public function get_offer_by_product( $product_id ) {
 		$product_id = sanitize_key( (string) $product_id );
-		if ( $product_id === '' || $product_id === 'flosc_plugin' ) {
+		if ( '' === $product_id || 'flosc_plugin' === $product_id ) {
 			return null;
 		}
 		// Resolve from the named flow's default offer (instance config), not a brand map.
@@ -804,13 +804,13 @@ class FLOSC_Offer_Manager {
 		if ( function_exists( 'flosc_get_setting' ) ) {
 			$offer_id = sanitize_key( (string) flosc_get_setting( 'default_offer_id', '', $product_id ) );
 		}
-		if ( $offer_id === '' && function_exists( 'flosc_flows' ) ) {
+		if ( '' === $offer_id && function_exists( 'flosc_flows' ) ) {
 			$flow = flosc_flows()->get_flow( $product_id );
 			if ( is_array( $flow ) && ! empty( $flow['default_offer_id'] ) ) {
 				$offer_id = sanitize_key( (string) $flow['default_offer_id'] );
 			}
 		}
-		if ( $offer_id !== '' ) {
+		if ( '' !== $offer_id ) {
 			return $this->get_offer( $offer_id );
 		}
 
@@ -822,14 +822,14 @@ class FLOSC_Offer_Manager {
 	 */
 	public function get_member_level_for_product( $product_id ) {
 		$product_id = sanitize_key( (string) $product_id );
-		if ( $product_id === '' || $product_id === 'flosc_plugin' ) {
+		if ( '' === $product_id || 'flosc_plugin' === $product_id ) {
 			return 'member';
 		}
 		$level = '';
 		if ( function_exists( 'flosc_get_setting' ) ) {
 			$level = sanitize_key( (string) flosc_get_setting( 'default_member_level', '', $product_id ) );
 		}
-		return $level !== '' ? $level : 'member';
+		return '' !== $level ? $level : 'member';
 	}
 
 	/**
@@ -845,7 +845,7 @@ class FLOSC_Offer_Manager {
 						continue;
 					}
 					$id = sanitize_key( (string) ( $flow['id'] ?? '' ) );
-					if ( $id !== '' && $id !== 'flosc_plugin' ) {
+					if ( '' !== $id && 'flosc_plugin' !== $id ) {
 						$ids[] = $id;
 					}
 				}
@@ -859,7 +859,7 @@ class FLOSC_Offer_Manager {
 						continue;
 					}
 					$id = sanitize_key( (string) ( $flow['id'] ?? '' ) );
-					if ( $id !== '' && $id !== 'flosc_plugin' ) {
+					if ( '' !== $id && 'flosc_plugin' !== $id ) {
 						$ids[] = $id;
 					}
 				}
@@ -873,7 +873,7 @@ class FLOSC_Offer_Manager {
 	 */
 	public function get_product_metadata( $product_id ) {
 		$product_id = sanitize_key( (string) $product_id );
-		if ( $product_id === '' || $product_id === 'flosc_plugin' ) {
+		if ( '' === $product_id || 'flosc_plugin' === $product_id ) {
 			return null;
 		}
 		$flow = null;

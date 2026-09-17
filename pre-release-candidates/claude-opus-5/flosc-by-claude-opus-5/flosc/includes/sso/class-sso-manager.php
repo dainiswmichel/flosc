@@ -393,7 +393,7 @@ class SSO_Manager {
 		$err_raw = flosc_nav_param( 'flosc_sso_error' );
 		if ( '' !== $err_raw ) {
 			$error_token = sanitize_key( $err_raw );
-			if ( $error_token === '' ) {
+			if ( '' === $error_token ) {
 				return;
 			}
 
@@ -445,9 +445,9 @@ class SSO_Manager {
 				// PEM / private keys: always secret pass-through (even when UI type is textarea).
 				// Must be checked before the generic textarea branch (Pass 2 audit).
 				$is_pem_field    = ( false !== strpos( $field_id, 'private_key' ) );
-				$is_secret_field = ( $field_type === 'password' || $field_type === 'secret' || $is_pem_field );
+				$is_secret_field = ( 'password' === $field_type || 'secret' === $field_type || $is_pem_field );
 
-				if ( $field_type === 'checkbox' ) {
+				if ( 'checkbox' === $field_type ) {
 					$setting_args = array(
 						'type'              => 'integer',
 						'sanitize_callback' => array( $this, 'sanitize_checkbox_setting' ),
@@ -460,7 +460,7 @@ class SSO_Manager {
 						'sanitize_callback' => array( $this, 'sanitize_secret_setting' ),
 						'default'           => $field['default'] ?? '',
 					);
-				} elseif ( $field_type === 'textarea' ) {
+				} elseif ( 'textarea' === $field_type ) {
 					$setting_args = array(
 						'type'              => 'string',
 						'sanitize_callback' => array( $this, 'sanitize_textarea_setting' ),
@@ -543,11 +543,11 @@ class SSO_Manager {
 		}
 
 		if ( ! is_string( $value ) ) {
-			return $option_name !== '' ? (string) get_option( $option_name, '' ) : '';
+			return '' !== $option_name ? (string) get_option( $option_name, '' ) : '';
 		}
 
 		if ( '' === $value ) {
-			return $option_name !== '' ? (string) get_option( $option_name, '' ) : '';
+			return '' !== $option_name ? (string) get_option( $option_name, '' ) : '';
 		}
 
 		return $value;

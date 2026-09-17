@@ -144,7 +144,7 @@ class FLOSC_WordMatching_Quiz extends FLOSC_Abstract_Quiz_Type {
 			}
 
 			$parts = explode( ':', $line );
-			if ( count( $parts ) === 2 ) {
+			if ( 2 === count( $parts ) ) {
 				$word     = trim( $parts[0] );
 				$category = trim( $parts[1] );
 

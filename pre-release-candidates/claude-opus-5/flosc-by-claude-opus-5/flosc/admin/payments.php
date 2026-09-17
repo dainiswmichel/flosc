@@ -179,7 +179,7 @@ $flosc_manual_payments_enabled     = $flosc_flow_settings['manual_payments_enabl
 </p>
 <?php
 $flosc_paypal_webhook_id_admin = trim( (string) ( $flosc_flow_settings['paypal_webhook_id'] ?? '' ) );
-if ( ! empty( $flosc_paypal_enabled ) && $flosc_paypal_webhook_id_admin === '' ) :
+if ( ! empty( $flosc_paypal_enabled ) && '' === $flosc_paypal_webhook_id_admin ) :
 	?>
 	<div class="notice notice-warning inline">
 		<p>

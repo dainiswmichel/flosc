@@ -130,7 +130,7 @@ class FLOSC_MultipleChoice_Quiz extends FLOSC_Abstract_Quiz_Type {
 		$questions = array();
 		$blocks    = explode( "\n\n", $content );
 
-		if ( count( $blocks ) === 1 ) {
+		if ( 1 === count( $blocks ) ) {
 			$blocks = explode( "\n", $content );
 		}
 
@@ -155,23 +155,23 @@ class FLOSC_MultipleChoice_Quiz extends FLOSC_Abstract_Quiz_Type {
 			for ( $i = 1; $i < count( $parts ); $i++ ) {
 				$part = trim( $parts[ $i ] );
 
-				if ( stripos( $part, 'correctcontent:' ) === 0 ) {
+				if ( 0 === stripos( $part, 'correctcontent:' ) ) {
 					// Appends — multiple |CorrectContent: segments are all tier-1.
 					foreach ( array_map( 'trim', explode( ',', trim( substr( $part, strlen( 'correctcontent:' ) ) ) ) ) as $r ) {
-						if ( $r !== '' ) {
+						if ( '' !== $r ) {
 							$correct_content[] = $r;
 						}
 					}
-				} elseif ( stripos( $part, 'relatedcontent:' ) === 0 ) {
+				} elseif ( 0 === stripos( $part, 'relatedcontent:' ) ) {
 					// Appends — multiple |RelatedContent: pipe segments are cumulative.
 					foreach ( array_map( 'trim', explode( ',', trim( substr( $part, strlen( 'relatedcontent:' ) ) ) ) ) as $r ) {
-						if ( $r !== '' ) {
+						if ( '' !== $r ) {
 							$related_content[] = $r;
 						}
 					}
-				} elseif ( stripos( $part, 'correct:' ) === 0 ) {
+				} elseif ( 0 === stripos( $part, 'correct:' ) ) {
 					$correct = trim( str_ireplace( 'correct:', '', $part ) );
-				} elseif ( stripos( $part, 'topic:' ) === 0 ) {
+				} elseif ( 0 === stripos( $part, 'topic:' ) ) {
 					$topics = array_map( 'trim', explode( ',', trim( str_ireplace( 'topic:', '', $part ) ) ) );
 				} else {
 					$options[] = $part;
@@ -199,7 +199,7 @@ class FLOSC_MultipleChoice_Quiz extends FLOSC_Abstract_Quiz_Type {
 	 */
 	private function parse_user_answers( $input ) {
 		// Try comma-separated first.
-		if ( strpos( $input, ',' ) !== false ) {
+		if ( false !== strpos( $input, ',' ) ) {
 			$answers = explode( ',', $input );
 		} else {
 			// Try newline-separated.

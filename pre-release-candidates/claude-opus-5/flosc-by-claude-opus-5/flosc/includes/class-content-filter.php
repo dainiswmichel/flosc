@@ -64,15 +64,15 @@ class flosc_content_filter {
 			if ( isset( $_SERVER['REQUEST_URI'] ) ) {
 				$request_uri = sanitize_text_field( wp_unslash( (string) $_SERVER['REQUEST_URI'] ) );
 			}
-			if ( strpos( $request_uri, '/flosc/' ) === false ) {
+			if ( false === strpos( $request_uri, '/flosc/' ) ) {
 				return $content;
 			}
 		}
 
 		// SAFEGUARD 5: Skip if content doesn't contain FLOSC markers
 		// This is the PRIMARY check - if no FLOSC tag, return content unchanged.
-		if ( strpos( $content, '<!--flosc_read_more' ) === false &&
-			strpos( $content, '### ACCESS LEVEL:' ) === false ) {
+		if ( false === strpos( $content, '<!--flosc_read_more' ) &&
+			false === strpos( $content, '### ACCESS LEVEL:' ) ) {
 			return $content;
 		}
 
@@ -131,7 +131,7 @@ class flosc_content_filter {
 		$flow_id = (string) ( $flow['ivr_file'] ?? $flow['ivr'] ?? $flow['id'] ?? '' );
 		$flow_id = trim( $flow_id );
 
-		return ( $flow_id === '' ) ? null : $flow_id;
+		return ( '' === $flow_id ) ? null : $flow_id;
 	}
 
 	/**
@@ -296,7 +296,7 @@ class flosc_content_filter {
 		// Find position of query.
 		$pos = strpos( $content_lower, $query_lower );
 
-		if ( $pos === false ) {
+		if ( false === $pos ) {
 			// Query not found, return beginning.
 			return substr( $content, 0, $context_chars ) . '...';
 		}

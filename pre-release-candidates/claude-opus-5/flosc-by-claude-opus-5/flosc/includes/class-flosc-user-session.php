@@ -98,7 +98,7 @@ class FLOSC_User_Session {
 	 * @return mixed State value or entire state array
 	 */
 	public function flosc_get( $flosc_key = null ) {
-		if ( $flosc_key === null ) {
+		if ( null === $flosc_key ) {
 			return $this->flosc_state;
 		}
 		return $this->flosc_state[ $flosc_key ] ?? null;
@@ -135,7 +135,7 @@ class FLOSC_User_Session {
 		}
 
 		// Member: purchased full access (per-flow).
-		if ( ( $flosc_context['access_level'] ?? '' ) === 'member' || ( $flosc_context['purchased'] ?? false ) ) {
+		if ( 'member' === ( $flosc_context['access_level'] ?? '' ) || ( $flosc_context['purchased'] ?? false ) ) {
 			return 'flosc_member';
 		}
 

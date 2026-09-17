@@ -60,14 +60,14 @@ if ( ! function_exists( 'flosc_personality_resolved_fingerprint' ) ) {
 		}
 
 		$stored = trim( (string) flosc_personality_library_resolve_field( 'profile_hash', '', $flow_id ) );
-		if ( $stored !== '' ) {
+		if ( '' !== $stored ) {
 			return $stored;
 		}
 
 		$profile = (string) flosc_personality_library_resolve_field( 'ai_base_prompt', '', $flow_id );
 		$genome  = (string) flosc_personality_library_resolve_field( 'workshop_json', '', $flow_id );
 
-		if ( trim( $profile ) === '' && trim( $genome ) === '' ) {
+		if ( '' === trim( $profile ) && '' === trim( $genome ) ) {
 			return '';
 		}
 
@@ -1923,7 +1923,7 @@ if ( ! function_exists( 'flosc_personality_library_get_all' ) ) {
 				continue;
 			}
 			$id = sanitize_key( (string) ( $row['id'] ?? $id ) );
-			if ( $id === '' ) {
+			if ( '' === $id ) {
 				continue;
 			}
 			$entry = array(
@@ -1947,7 +1947,7 @@ if ( ! function_exists( 'flosc_personality_library_get' ) ) {
 	function flosc_personality_library_get( $id ) {
 		$id  = sanitize_key( (string) $id );
 		$all = flosc_personality_library_get_all();
-		return ( $id !== '' && isset( $all[ $id ] ) ) ? $all[ $id ] : null;
+		return ( '' !== $id && isset( $all[ $id ] ) ) ? $all[ $id ] : null;
 	}
 }
 
@@ -1967,7 +1967,7 @@ if ( ! function_exists( 'flosc_personality_library_save_all' ) ) {
 				continue;
 			}
 			$id = sanitize_key( (string) ( $row['id'] ?? $id ) );
-			if ( $id === '' ) {
+			if ( '' === $id ) {
 				continue;
 			}
 			$prior = isset( $previous[ $id ] ) && is_array( $previous[ $id ] ) ? $previous[ $id ] : array();
@@ -1987,7 +1987,7 @@ if ( ! function_exists( 'flosc_personality_library_save_all' ) ) {
 				$val = isset( $row[ $fk ] ) ? (string) $row[ $fk ] : '';
 				if ( 'ai_base_prompt' === $fk ) {
 					$incoming = array_key_exists( $fk, $row ) ? trim( (string) $row[ $fk ] ) : '';
-					if ( $incoming === '' ) {
+					if ( '' === $incoming ) {
 						$entry[ $fk ] = isset( $prior['ai_base_prompt'] ) ? (string) $prior['ai_base_prompt'] : '';
 					} else {
 						$entry[ $fk ] = flosc_sanitize_personality_profile_text( (string) $row[ $fk ] );
@@ -2047,12 +2047,12 @@ if ( ! function_exists( 'flosc_personality_library_resolve_field' ) ) {
 		if ( function_exists( 'flosc_get_setting' ) ) {
 			$pid = sanitize_key( (string) flosc_get_setting( 'personality_library_id', '', $flow_id ) );
 		}
-		if ( $pid === '' && function_exists( 'flosc_personality_library_id_for_flow' ) ) {
+		if ( '' === $pid && function_exists( 'flosc_personality_library_id_for_flow' ) ) {
 			$pid = flosc_personality_library_id_for_flow( $flow_id );
 		}
-		if ( $pid !== '' ) {
+		if ( '' !== $pid ) {
 			$entry = flosc_personality_library_get( $pid );
-			if ( is_array( $entry ) && isset( $entry[ $field ] ) && trim( (string) $entry[ $field ] ) !== '' ) {
+			if ( is_array( $entry ) && isset( $entry[ $field ] ) && '' !== trim( (string) $entry[ $field ] ) ) {
 				return $entry[ $field ];
 			}
 		}
@@ -2075,7 +2075,7 @@ if ( ! function_exists( 'flosc_flow_name' ) ) {
 		if ( function_exists( 'flosc_get_setting' ) ) {
 			$name = trim( (string) flosc_get_setting( 'name', '', $flow_id ) );
 		}
-		if ( $name === '' && $flow_id === null && function_exists( 'flosc' ) ) {
+		if ( '' === $name && null === $flow_id && function_exists( 'flosc' ) ) {
 			$inst = flosc();
 			if ( is_object( $inst ) && method_exists( $inst, 'get_floscflow_identity' ) ) {
 				$id   = $inst->get_floscflow_identity();
@@ -2099,10 +2099,10 @@ if ( ! function_exists( 'flosc_personality_name' ) ) {
 		if ( function_exists( 'flosc_personality_library_resolve_field' ) ) {
 			$name = trim( (string) flosc_personality_library_resolve_field( 'ai_personality_name', '', $flow_id ) );
 		}
-		if ( $name === '' && function_exists( 'flosc_get_setting' ) ) {
+		if ( '' === $name && function_exists( 'flosc_get_setting' ) ) {
 			$name = trim( (string) flosc_get_setting( 'ai_personality_name', '', $flow_id ) );
 		}
-		return $name !== '' ? $name : 'FLOSC';
+		return '' !== $name ? $name : 'FLOSC';
 	}
 }
 
@@ -2131,7 +2131,7 @@ if ( ! function_exists( 'flosc_flow_public_title' ) ) {
 		if ( function_exists( 'flosc_get_setting' ) ) {
 			$title = trim( (string) flosc_get_setting( 'title', '', $flow_id ) );
 		}
-		if ( $title === '' && $flow_id === null && function_exists( 'flosc' ) ) {
+		if ( '' === $title && null === $flow_id && function_exists( 'flosc' ) ) {
 			$inst = flosc();
 			if ( is_object( $inst ) && method_exists( $inst, 'get_floscflow_identity' ) ) {
 				$id    = $inst->get_floscflow_identity();
@@ -2154,7 +2154,7 @@ if ( ! function_exists( 'flosc_flow_public_tagline' ) ) {
 		if ( function_exists( 'flosc_get_setting' ) ) {
 			$tagline = trim( (string) flosc_get_setting( 'tagline', '', $flow_id ) );
 		}
-		if ( $tagline === '' && $flow_id === null && function_exists( 'flosc' ) ) {
+		if ( '' === $tagline && null === $flow_id && function_exists( 'flosc' ) ) {
 			$inst = flosc();
 			if ( is_object( $inst ) && method_exists( $inst, 'get_floscflow_identity' ) ) {
 				$id      = $inst->get_floscflow_identity();
@@ -2185,13 +2185,13 @@ if ( ! function_exists( 'flosc_admin_save_personality_library' ) ) {
 					continue;
 				}
 				$id = isset( $row['id'] ) ? sanitize_key( (string) $row['id'] ) : '';
-				if ( $id === '' ) {
+				if ( '' === $id ) {
 					continue;
 				}
 				$label         = isset( $row['label'] ) ? sanitize_text_field( (string) $row['label'] ) : '';
 				$posted[ $id ] = array(
 					'id'    => $id,
-					'label' => $label !== '' ? $label : $id,
+					'label' => '' !== $label ? $label : $id,
 				);
 			}
 		}
@@ -2199,7 +2199,7 @@ if ( ! function_exists( 'flosc_admin_save_personality_library' ) ) {
 		if ( isset( $_POST['persona_delete'] ) && is_array( $_POST['persona_delete'] ) ) {
 			foreach ( wp_unslash( $_POST['persona_delete'] ) as $did => $on ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- key sanitized, value is a flag.
 				$did = sanitize_key( (string) $did );
-				if ( $did !== '' && $on ) {
+				if ( '' !== $did && $on ) {
 					$delete[ $did ] = true;
 				}
 			}
@@ -2219,17 +2219,17 @@ if ( ! function_exists( 'flosc_admin_save_personality_library' ) ) {
 			}
 		}
 
-		if ( $new_id !== '' && ! isset( $lib[ $new_id ] ) && empty( $delete[ $new_id ] ) ) {
+		if ( '' !== $new_id && ! isset( $lib[ $new_id ] ) && empty( $delete[ $new_id ] ) ) {
 			$lib[ $new_id ] = array(
 				'id'    => $new_id,
-				'label' => $new_lab !== '' ? $new_lab : $new_id,
+				'label' => '' !== $new_lab ? $new_lab : $new_id,
 			);
 			foreach ( flosc_personality_library_field_keys() as $fk ) {
 				$lib[ $new_id ][ $fk ] = '';
 			}
 		}
 
-		if ( $posted === array() && $new_id === '' && $delete === array() ) {
+		if ( $posted === array() && '' === $new_id && $delete === array() ) {
 			$lib = null;
 		}
 		if ( is_array( $lib ) ) {
@@ -2328,7 +2328,7 @@ if ( ! function_exists( 'flosc_sanitize_personality_workshop' ) ) {
 			return '';
 		}
 		$raw = trim( $raw );
-		if ( $raw === '' ) {
+		if ( '' === $raw ) {
 			return '';
 		}
 		$max = flosc_personality_workshop_max_bytes();
@@ -2347,7 +2347,7 @@ if ( ! function_exists( 'flosc_sanitize_personality_workshop' ) ) {
 			unset( $decoded['derived']['provider_packs'] );
 		}
 		$encoded = wp_json_encode( $decoded );
-		if ( ! is_string( $encoded ) || $encoded === '' ) {
+		if ( ! is_string( $encoded ) || '' === $encoded ) {
 			return '';
 		}
 		if ( strlen( $encoded ) > $max ) {
@@ -2637,9 +2637,9 @@ if ( ! function_exists( 'flosc_personality_flow_variable_context' ) ) {
 					}
 				); },
 			'product_name'     => static function () use ( $public_title, $flow_name ) {
-				return $public_title !== '' ? $public_title : $flow_name; },
+				return '' !== $public_title ? $public_title : $flow_name; },
 			'app_name'         => static function () use ( $public_title, $flow_name ) {
-				return $public_title !== '' ? $public_title : $flow_name; },
+				return '' !== $public_title ? $public_title : $flow_name; },
 			'timezone'         => static function () use ( $get ) {
 				return $get(
 					'timezone',
@@ -2880,7 +2880,7 @@ if ( ! function_exists( 'flosc_personality_builder_request_context' ) ) {
 			sort( $found );
 			foreach ( $found as $file ) {
 				$name = basename( (string) $file );
-				if ( strpos( $name, 'backup' ) === false ) {
+				if ( false === strpos( $name, 'backup' ) ) {
 					$ivr_files[] = $name;
 				}
 			}
@@ -2890,22 +2890,22 @@ if ( ! function_exists( 'flosc_personality_builder_request_context' ) ) {
 		// Which flow file the builder is pointed at. Display selection; validated
 		// against the known file list immediately below.
 		$ivr = flosc_nav_param( 'ivr', array(), '', 'sanitize_file_name' );
-		if ( $ivr !== '' && ! empty( $ivr_files ) && ! in_array( $ivr, $ivr_files, true ) ) {
+		if ( '' !== $ivr && ! empty( $ivr_files ) && ! in_array( $ivr, $ivr_files, true ) ) {
 			$ivr = '';
 		}
-		if ( $ivr === '' && function_exists( 'get_current_user_id' ) ) {
+		if ( '' === $ivr && function_exists( 'get_current_user_id' ) ) {
 			$user_default = sanitize_file_name( (string) get_user_meta( get_current_user_id(), '_flosc_admin_default_ivr', true ) );
-			if ( $user_default !== '' && ( empty( $ivr_files ) || in_array( $user_default, $ivr_files, true ) ) ) {
+			if ( '' !== $user_default && ( empty( $ivr_files ) || in_array( $user_default, $ivr_files, true ) ) ) {
 				$ivr = $user_default;
 			}
 		}
-		if ( $ivr === '' && ! empty( $ivr_files ) ) {
+		if ( '' === $ivr && ! empty( $ivr_files ) ) {
 			$ivr = $ivr_files[0];
 		}
 
 		$persona    = '';
-		$flosc_stem = ( $ivr !== '' ) ? sanitize_key( pathinfo( $ivr, PATHINFO_FILENAME ) ) : '';
-		if ( $flosc_stem !== '' ) {
+		$flosc_stem = ( '' !== $ivr ) ? sanitize_key( pathinfo( $ivr, PATHINFO_FILENAME ) ) : '';
+		if ( '' !== $flosc_stem ) {
 			/*
 			Primary source is the flow settings bag — the same value the
 				Attached-personality select and the designer hint render.
@@ -2915,7 +2915,7 @@ if ( ! function_exists( 'flosc_personality_builder_request_context' ) ) {
 			if ( is_array( $flow_bag ) ) {
 				$persona = sanitize_key( (string) ( $flow_bag['personality_library_id'] ?? '' ) );
 			}
-			if ( $persona === '' && function_exists( 'flosc_personality_library_id_for_flow' ) ) {
+			if ( '' === $persona && function_exists( 'flosc_personality_library_id_for_flow' ) ) {
 				$persona = flosc_personality_library_id_for_flow( $flosc_stem );
 			}
 		}
@@ -2941,7 +2941,7 @@ if ( ! function_exists( 'flosc_personality_builder_url' ) ) {
 			'view' => 'single',
 		);
 		$ivr  = sanitize_file_name( (string) $ivr );
-		if ( $ivr !== '' ) {
+		if ( '' !== $ivr ) {
 			$args['ivr'] = $ivr;
 		}
 		return add_query_arg( $args, admin_url( 'admin.php' ) ) . '#flosc-personality-designer';
@@ -2960,7 +2960,7 @@ if ( ! function_exists( 'flosc_personality_library_url' ) ) {
 			'view' => 'all',
 		);
 		$ivr  = sanitize_file_name( (string) $ivr );
-		if ( $ivr !== '' ) {
+		if ( '' !== $ivr ) {
 			$args['ivr'] = $ivr;
 		}
 		return add_query_arg( $args, admin_url( 'admin.php' ) ) . '#flosc-personality-library';
@@ -2988,7 +2988,7 @@ if ( ! function_exists( 'flosc_render_ai_tab_nav' ) ) {
 			'tab'  => 'ai',
 			'view' => 'all',
 		);
-		if ( $ivr !== '' ) {
+		if ( '' !== $ivr ) {
 			$single_args['ivr'] = $ivr;
 			$all_args['ivr']    = $ivr;
 		}
@@ -3017,7 +3017,7 @@ if ( ! function_exists( 'flosc_personality_library_update_entry' ) ) {
 	 */
 	function flosc_personality_library_update_entry( $id, $fields ) {
 		$id = sanitize_key( (string) $id );
-		if ( $id === '' || ! is_array( $fields ) ) {
+		if ( '' === $id || ! is_array( $fields ) ) {
 			return false;
 		}
 		$lib = flosc_personality_library_get_all();
@@ -3059,7 +3059,7 @@ if ( ! function_exists( 'flosc_personality_library_promote_custom_flow_voices' )
 		if ( ! is_admin() || ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
-		if ( get_option( 'flosc_personality_library_promoted', '' ) === '1' ) {
+		if ( '1' === get_option( 'flosc_personality_library_promoted', '' ) ) {
 			$ran = true;
 			return;
 		}
@@ -3077,41 +3077,41 @@ if ( ! function_exists( 'flosc_personality_library_promote_custom_flow_voices' )
 
 		foreach ( $paths as $path ) {
 			$file = basename( (string) $path );
-			if ( $file === '' || false !== strpos( $file, 'backup' ) || false !== strpos( $file, '_bak_' ) ) {
+			if ( '' === $file || false !== strpos( $file, 'backup' ) || false !== strpos( $file, '_bak_' ) ) {
 				continue;
 			}
 			$picked = flosc_personality_flow_settings_for_ivr( $file );
 			$fs     = $picked['settings'];
 			$key    = $picked['option_key'];
-			if ( $key === '' || ! is_array( $fs ) ) {
+			if ( '' === $key || ! is_array( $fs ) ) {
 				continue;
 			}
 			$attached = sanitize_key( (string) ( $fs['personality_library_id'] ?? '' ) );
 			$id       = function_exists( 'flosc_implied_personality_library_id' )
 				? flosc_implied_personality_library_id( $file )
 				: '';
-			if ( $id === '' ) {
+			if ( '' === $id ) {
 				$name = trim( (string) ( $fs['ai_personality_name'] ?? '' ) );
-				if ( $name === '' ) {
+				if ( '' === $name ) {
 					continue;
 				}
 				$id = sanitize_key( $name );
 			}
-			if ( $id === '' ) {
+			if ( '' === $id ) {
 				continue;
 			}
-			if ( $attached !== '' && isset( $lib[ $attached ] ) && $attached === $id ) {
+			if ( '' !== $attached && isset( $lib[ $attached ] ) && $attached === $id ) {
 				continue;
 			}
 
 			$name = trim( (string) ( $fs['ai_personality_name'] ?? '' ) );
-			if ( $name === '' && isset( $fs['identity'] ) && is_array( $fs['identity'] ) ) {
+			if ( '' === $name && isset( $fs['identity'] ) && is_array( $fs['identity'] ) ) {
 				$name = trim( (string) ( $fs['identity']['name'] ?? '' ) );
 			}
-			if ( $name === '' ) {
+			if ( '' === $name ) {
 				$name = trim( (string) ( $fs['name'] ?? '' ) );
 			}
-			if ( $name === '' ) {
+			if ( '' === $name ) {
 				$name = $id;
 			}
 
@@ -3127,7 +3127,7 @@ if ( ! function_exists( 'flosc_personality_library_promote_custom_flow_voices' )
 					}
 					$entry[ $fk ] = isset( $fs[ $fk ] ) ? (string) $fs[ $fk ] : '';
 				}
-				if ( $entry['ai_personality_name'] === '' ) {
+				if ( '' === $entry['ai_personality_name'] ) {
 					$entry['ai_personality_name'] = $name;
 				}
 				$lib[ $id ] = $entry;
@@ -3162,7 +3162,7 @@ if ( ! function_exists( 'flosc_personality_flow_settings_for_ivr' ) ) {
 			$candidates[] = flosc_resolve_flow_option_key_for_ivr( $ivr_filename );
 		}
 		$candidates[] = 'flosc_flow_' . $stem;
-		if ( substr( $stem, -4 ) === '_ivr' ) {
+		if ( '_ivr' === substr( $stem, -4 ) ) {
 			$candidates[] = 'flosc_flow_' . substr( $stem, 0, -4 );
 		}
 		$best_key   = '';
@@ -3171,7 +3171,7 @@ if ( ! function_exists( 'flosc_personality_flow_settings_for_ivr' ) ) {
 		$seen       = array();
 		foreach ( $candidates as $key ) {
 			$key = (string) $key;
-			if ( $key === '' || isset( $seen[ $key ] ) ) {
+			if ( '' === $key || isset( $seen[ $key ] ) ) {
 				continue;
 			}
 			$seen[ $key ] = true;
@@ -3187,7 +3187,7 @@ if ( ! function_exists( 'flosc_personality_flow_settings_for_ivr' ) ) {
 			if ( isset( $fs['identity'] ) && is_array( $fs['identity'] ) ) {
 				$ident = trim( (string) ( $fs['identity']['name'] ?? '' ) );
 			}
-			if ( $ident === '' ) {
+			if ( '' === $ident ) {
 				$ident = trim( (string) ( $fs['name'] ?? '' ) );
 			}
 			$score += $ident !== '' ? 20 : 0;
@@ -3216,24 +3216,24 @@ if ( ! function_exists( 'flosc_personality_library_id_for_flow' ) ) {
 		if ( function_exists( 'flosc_get_setting' ) ) {
 			$pid = sanitize_key( (string) flosc_get_setting( 'personality_library_id', '', $flow_id ) );
 		}
-		if ( $pid !== '' ) {
+		if ( '' !== $pid ) {
 			return $pid;
 		}
 		$stem = sanitize_key( (string) $flow_id );
-		if ( $stem === '' && function_exists( 'flosc' ) ) {
+		if ( '' === $stem && function_exists( 'flosc' ) ) {
 			$inst = flosc();
 			if ( is_object( $inst ) && method_exists( $inst, 'get_current_flow' ) ) {
 				$flow = $inst->get_current_flow();
 				if ( is_array( $flow ) ) {
 					$ivr  = (string) ( $flow['ivr_file'] ?? $flow['id'] ?? '' );
 					$stem = sanitize_key( pathinfo( basename( $ivr ), PATHINFO_FILENAME ) );
-					if ( $stem === '' ) {
+					if ( '' === $stem ) {
 						$stem = sanitize_key( (string) ( $flow['id'] ?? '' ) );
 					}
 				}
 			}
 		}
-		if ( $stem === '' || ! function_exists( 'flosc_implied_personality_library_id' ) ) {
+		if ( '' === $stem || ! function_exists( 'flosc_implied_personality_library_id' ) ) {
 			return '';
 		}
 		return flosc_implied_personality_library_id( $stem );
@@ -3276,7 +3276,7 @@ if ( ! function_exists( 'flosc_ajax_save_personality_design' ) ) {
 		check_ajax_referer( 'flosc_personality_design', 'nonce' );
 
 		$id = isset( $_POST['persona_id'] ) ? sanitize_key( wp_unslash( (string) $_POST['persona_id'] ) ) : '';
-		if ( $id === '' ) {
+		if ( '' === $id ) {
 			wp_send_json_error( array( 'message' => __( 'Missing personality id.', 'flosc' ) ), 400 );
 		}
 
@@ -3311,7 +3311,7 @@ if ( ! function_exists( 'flosc_ajax_save_personality_design' ) ) {
 			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- flosc_sanitize_personality_workshop validates JSON object.
 			$workshop_raw            = wp_unslash( $_POST['workshop_json'] );
 			$fields['workshop_json'] = flosc_sanitize_personality_workshop( $workshop_raw );
-			if ( $fields['workshop_json'] === '' && trim( $workshop_raw ) !== '' ) {
+			if ( '' === $fields['workshop_json'] && '' !== trim( $workshop_raw ) ) {
 				wp_send_json_error( array( 'message' => __( 'Workshop file was not valid JSON.', 'flosc' ) ), 400 );
 			}
 		}
@@ -3356,7 +3356,7 @@ if ( ! function_exists( 'flosc_ajax_attach_personality' ) ) {
 
 		$ivr     = isset( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( (string) $_POST['ivr'] ) ) : '';
 		$persona = isset( $_POST['persona'] ) ? sanitize_key( wp_unslash( (string) $_POST['persona'] ) ) : '';
-		if ( $ivr === '' ) {
+		if ( '' === $ivr ) {
 			wp_send_json_error( array( 'message' => __( 'Missing flow.', 'flosc' ) ), 400 );
 		}
 
@@ -3375,7 +3375,7 @@ if ( ! function_exists( 'flosc_ajax_attach_personality' ) ) {
 		 * immediately. Runtime resolution prefers the library row anyway;
 		 * this keeps the two views honest. Empty sources never overwrite.
 		 */
-		if ( $persona !== '' && function_exists( 'flosc_personality_library_get' ) ) {
+		if ( '' !== $persona && function_exists( 'flosc_personality_library_get' ) ) {
 			$row = flosc_personality_library_get( $persona );
 			if ( is_array( $row ) ) {
 				$map     = array(
@@ -3389,7 +3389,7 @@ if ( ! function_exists( 'flosc_ajax_attach_personality' ) ) {
 				);
 				$changed = false;
 				foreach ( $map as $src => $dst ) {
-					if ( isset( $row[ $src ] ) && trim( (string) $row[ $src ] ) !== '' && (string) $settings[ $dst ] !== (string) $row[ $src ] ) {
+					if ( isset( $row[ $src ] ) && '' !== trim( (string) $row[ $src ] ) && (string) $settings[ $dst ] !== (string) $row[ $src ] ) {
 						$settings[ $dst ] = (string) $row[ $src ];
 						$changed          = true;
 					}
@@ -3423,7 +3423,7 @@ if ( ! function_exists( 'flosc_ajax_attach_personality' ) ) {
 		}
 
 		$label = '';
-		if ( $persona !== '' && function_exists( 'flosc_personality_library_get' ) ) {
+		if ( '' !== $persona && function_exists( 'flosc_personality_library_get' ) ) {
 			$entry = flosc_personality_library_get( $persona );
 			if ( is_array( $entry ) && isset( $entry['label'] ) ) {
 				$label = (string) $entry['label'];
@@ -3695,16 +3695,16 @@ if ( ! function_exists( 'flosc_render_personality_designer_accordion' ) ) {
 		}
 		$persona_id = sanitize_key( (string) $persona_id );
 		$ivr        = sanitize_file_name( (string) $ivr );
-		$entry      = ( $persona_id !== '' && function_exists( 'flosc_personality_library_get' ) ) ? flosc_personality_library_get( $persona_id ) : null;
+		$entry      = ( '' !== $persona_id && function_exists( 'flosc_personality_library_get' ) ) ? flosc_personality_library_get( $persona_id ) : null;
 		$label      = '';
 		if ( is_array( $entry ) && isset( $entry['label'] ) && (string) $entry['label'] !== '' ) {
 			$label = (string) $entry['label'];
-		} elseif ( $persona_id !== '' ) {
+		} elseif ( '' !== $persona_id ) {
 			$label = $persona_id;
 		}
 		/* Flow name and personality label are different things; name them both. */
 		$flow_name = '';
-		if ( $ivr !== '' ) {
+		if ( '' !== $ivr ) {
 			$flow_id   = sanitize_key( pathinfo( $ivr, PATHINFO_FILENAME ) );
 			$flow_name = trim( (string) flosc_get_setting( 'name', '', $flow_id ) );
 		}
@@ -3714,8 +3714,8 @@ if ( ! function_exists( 'flosc_render_personality_designer_accordion' ) ) {
 	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'DA1 AI Personality Builder', 'flosc' ); ?></span>
 	<span class="flosc-ai-acc__hint">
 		<?php
-		if ( $label !== '' ) {
-			echo $flow_name !== ''
+		if ( '' !== $label ) {
+			echo '' !== $flow_name
 			? esc_html( sprintf( /* translators: 1: personality label, 2: flow name */ __( 'Personality: %1$s · Flow: %2$s', 'flosc' ), $label, $flow_name ) )
 			: esc_html( sprintf( /* translators: %s: attached personality label */ __( 'Personality: %s', 'flosc' ), $label ) );
 		} else {
@@ -3725,11 +3725,11 @@ if ( ! function_exists( 'flosc_render_personality_designer_accordion' ) ) {
 	</span>
 </summary>
 <div class="flosc-ai-acc__body">
-		<?php if ( $persona_id !== '' ) : ?>
+		<?php if ( '' !== $persona_id ) : ?>
 	<p class="flosc-personality-builder-toolbar">
 		<button type="button" class="button button-primary" id="flosc-personality-builder-save">
 			<?php
-			echo $label !== ''
+			echo '' !== $label
 				? esc_html( sprintf( /* translators: %s: personality name */ __( 'Save changes to %s', 'flosc' ), $label ) )
 				: esc_html__( 'Save to FLOSC library', 'flosc' );
 			?>
@@ -3745,7 +3745,7 @@ if ( ! function_exists( 'flosc_render_personality_designer_accordion' ) ) {
 			?>
 		<span id="flosc-personality-builder-mts" class="flosc-personality-builder-mts">
 			<?php
-			echo $saved_mts !== ''
+			echo '' !== $saved_mts
 			? esc_html( sprintf( /* translators: %s: UTC timestamp */ __( 'Last saved %s UTC', 'flosc' ), $saved_mts ) )
 			: esc_html__( 'Not saved yet', 'flosc' );
 			?>
@@ -3800,7 +3800,7 @@ if ( ! function_exists( 'flosc_personality_builder_admin_body_class' ) ) {
 		$page = flosc_nav_param( 'page' );
 		$tab  = flosc_nav_param( 'tab' );
 		$view = flosc_nav_param( 'view', array( 'single', 'all', 'design' ) );
-		if ( $page === 'flosc-settings' && $tab === 'ai' && $view !== 'all' ) {
+		if ( 'flosc-settings' === $page && 'ai' === $tab && 'all' !== $view ) {
 			$classes .= ' flosc-personality-builder-admin';
 		}
 		return $classes;
@@ -3823,7 +3823,7 @@ if ( ! function_exists( 'flosc_redirect_nested_personality_designer' ) ) {
 		$page   = flosc_nav_param( 'page' );
 		$tab    = flosc_nav_param( 'tab' );
 		$view   = flosc_nav_param( 'view', array( 'single', 'all', 'design' ) );
-		$legacy = ( $page === 'flosc-personality-builder' ) || ( $page === 'flosc-settings' && $tab === 'ai' && $view === 'design' );
+		$legacy = ( 'flosc-personality-builder' === $page ) || ( 'flosc-settings' === $page && 'ai' === $tab && 'design' === $view );
 		if ( ! $legacy ) {
 			return;
 		}

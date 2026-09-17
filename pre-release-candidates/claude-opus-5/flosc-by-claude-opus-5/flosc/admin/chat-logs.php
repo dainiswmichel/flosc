@@ -34,13 +34,13 @@ if ( ! isset( $flosc_get ) || ! is_array( $flosc_get ) ) {
 $flosc_selected_user_id = isset( $flosc_get['flosc_user_id'] ) ? absint( $flosc_get['flosc_user_id'] ) : 0;
 // Scope chat logs to the selected flow. Stored flow_id has no file extension
 // (e.g. "flow_ivr"), while $current_ivr is the filename ("flow_ivr.md").
-$flosc_current_flow_id = $flosc_current_ivr !== '' ? pathinfo( $flosc_current_ivr, PATHINFO_FILENAME ) : '';
+$flosc_current_flow_id = '' !== $flosc_current_ivr ? pathinfo( $flosc_current_ivr, PATHINFO_FILENAME ) : '';
 $flosc_total_logs      = $flosc_logger->flosc_get_log_count( $flosc_current_flow_id );
 $flosc_chat_logs_nonce = wp_create_nonce( 'flosc_chat_logs' );
 
 // Two ways to read the same logs: grouped by conversation (default) or the flat
 // chronological table. The flat view keeps the live 5s poll + rating widgets.
-$flosc_logview               = ( isset( $flosc_get['logview'] ) && $flosc_get['logview'] === 'flat' ) ? 'flat' : 'sessions';
+$flosc_logview               = ( isset( $flosc_get['logview'] ) && 'flat' === $flosc_get['logview'] ) ? 'flat' : 'sessions';
 $flosc_view_base             = add_query_arg(
 	array(
 		'page' => 'flosc-settings',
@@ -51,7 +51,7 @@ $flosc_view_base             = add_query_arg(
 );
 $flosc_sessions_url          = add_query_arg( 'logview', 'sessions', $flosc_view_base );
 $flosc_flat_url              = add_query_arg( 'logview', 'flat', $flosc_view_base );
-$flosc_session_scope         = ( isset( $flosc_get['session_scope'] ) && $flosc_get['session_scope'] === 'archived' ) ? 'archived' : 'active';
+$flosc_session_scope         = ( isset( $flosc_get['session_scope'] ) && 'archived' === $flosc_get['session_scope'] ) ? 'archived' : 'active';
 $flosc_sessions_active_url   = add_query_arg(
 	array(
 		'logview'       => 'sessions',
@@ -73,7 +73,7 @@ $flosc_sessions_archived_url = add_query_arg(
 		<span>Chat Logs</span>
 		<a href="<?php echo esc_url( $flosc_chat_logs_docs_url ); ?>" class="flosc-chat-logs-docs-link">Docs</a>
 	</h2>
-	<p class="description">All chat exchanges for this flow.<?php echo esc_html( $flosc_logview === 'sessions' ? ' Grouped by conversation, newest first — click a session to read the thread.' : ' Flat view, newest first. Auto-refreshes every 5 seconds.' ); ?></p>
+	<p class="description">All chat exchanges for this flow.<?php echo esc_html( 'sessions' === $flosc_logview ? ' Grouped by conversation, newest first — click a session to read the thread.' : ' Flat view, newest first. Auto-refreshes every 5 seconds.' ); ?></p>
 	<?php if ( $flosc_selected_user_id > 0 ) : ?>
 		<p class="description"><strong>User filter:</strong> Showing only User #<?php echo intval( $flosc_selected_user_id ); ?>. <a href="<?php echo esc_url( admin_url( 'admin.php?page=flosc-settings&tab=chat-logs' ) ); ?>">Clear filter</a></p>
 	<?php endif; ?>
@@ -83,19 +83,19 @@ $flosc_sessions_archived_url = add_query_arg(
 
 		<span class="flosc-log-viewswitch flosc-log-viewswitch-spaced">
 			View:
-			<a href="<?php echo esc_url( $flosc_sessions_url ); ?>" class="<?php echo esc_attr( $flosc_logview === 'sessions' ? 'button button-primary button-small' : 'button button-small' ); ?>">Sessions</a>
-			<a href="<?php echo esc_url( $flosc_flat_url ); ?>" class="<?php echo esc_attr( $flosc_logview === 'flat' ? 'button button-primary button-small' : 'button button-small' ); ?>">All entries</a>
+			<a href="<?php echo esc_url( $flosc_sessions_url ); ?>" class="<?php echo esc_attr( 'sessions' === $flosc_logview ? 'button button-primary button-small' : 'button button-small' ); ?>">Sessions</a>
+			<a href="<?php echo esc_url( $flosc_flat_url ); ?>" class="<?php echo esc_attr( 'flat' === $flosc_logview ? 'button button-primary button-small' : 'button button-small' ); ?>">All entries</a>
 		</span>
 
-		<?php if ( $flosc_logview === 'sessions' ) : ?>
+		<?php if ( 'sessions' === $flosc_logview ) : ?>
 			<span class="flosc-log-viewswitch flosc-log-viewswitch-spaced">
 				Scope:
-				<a href="<?php echo esc_url( $flosc_sessions_active_url ); ?>" class="<?php echo esc_attr( $flosc_session_scope === 'active' ? 'button button-primary button-small' : 'button button-small' ); ?>">Active</a>
-				<a href="<?php echo esc_url( $flosc_sessions_archived_url ); ?>" class="<?php echo esc_attr( $flosc_session_scope === 'archived' ? 'button button-primary button-small' : 'button button-small' ); ?>">Archived</a>
+				<a href="<?php echo esc_url( $flosc_sessions_active_url ); ?>" class="<?php echo esc_attr( 'active' === $flosc_session_scope ? 'button button-primary button-small' : 'button button-small' ); ?>">Active</a>
+				<a href="<?php echo esc_url( $flosc_sessions_archived_url ); ?>" class="<?php echo esc_attr( 'archived' === $flosc_session_scope ? 'button button-primary button-small' : 'button button-small' ); ?>">Archived</a>
 			</span>
 		<?php endif; ?>
 
-		<?php if ( $flosc_logview === 'flat' ) : ?>
+		<?php if ( 'flat' === $flosc_logview ) : ?>
 			<label for="flosc-log-filter-phase">Phase:</label>
 			<select id="flosc-log-filter-phase" class="flosc-ai-model-select">
 				<option value="">All</option>
@@ -118,7 +118,7 @@ $flosc_sessions_archived_url = add_query_arg(
 		<button type="button" id="flosc-log-clear-btn" class="button" title="Clear logs older than 30 days">Clear Old Logs</button>
 	</div>
 
-<?php if ( $flosc_logview === 'sessions' ) : ?>
+<?php if ( 'sessions' === $flosc_logview ) : ?>
 	<?php $flosc_sessions = $flosc_logger->flosc_get_sessions( $flosc_current_flow_id, 800, $flosc_session_scope ); ?>
 	<?php // Chat Logs styles (.flosc-session*, .flosc-msg*) live in assets/css/flosc-admin.css, enqueued on FLOSC admin pages. ?>
 	<div class="flosc-session-bulk-toolbar">
@@ -127,7 +127,7 @@ $flosc_sessions_archived_url = add_query_arg(
 			<span>Select all</span>
 		</label>
 		<button type="button" class="button" id="flosc-session-download-selected">Download Selected TSV</button>
-		<button type="button" class="button" id="flosc-session-archive-selected"><?php echo esc_html( $flosc_session_scope === 'archived' ? 'Restore Selected' : 'Archive Selected' ); ?></button>
+		<button type="button" class="button" id="flosc-session-archive-selected"><?php echo esc_html( 'archived' === $flosc_session_scope ? 'Restore Selected' : 'Archive Selected' ); ?></button>
 		<button type="button" class="button button-link-delete" id="flosc-session-delete-selected">Delete Selected</button>
 		<span class="flosc-session-selection-status" id="flosc-session-selection-status">0 selected</span>
 	</div>
@@ -141,7 +141,7 @@ $flosc_sessions_archived_url = add_query_arg(
 
 	<div id="flosc-sessions">
 		<?php if ( empty( $flosc_sessions ) ) : ?>
-			<p class="description"><?php echo esc_html( $flosc_session_scope === 'archived' ? 'No archived conversations for this flow yet.' : 'No conversations yet. They\'ll appear here as people chat.' ); ?></p>
+			<p class="description"><?php echo esc_html( 'archived' === $flosc_session_scope ? 'No archived conversations for this flow yet.' : 'No conversations yet. They\'ll appear here as people chat.' ); ?></p>
 		<?php else : ?>
 			<?php foreach ( $flosc_sessions as $flosc_session ) : ?>
 				<?php echo wp_kses( flosc_render_chat_session( $flosc_session ), flosc_chat_session_allowed_html() ); ?>
@@ -152,7 +152,7 @@ $flosc_sessions_archived_url = add_query_arg(
 	<?php ob_start(); ?>
 	jQuery(function($) {
 		var nonce = '<?php echo esc_js( $flosc_chat_logs_nonce ); ?>';
-		var archiveOperation = '<?php echo esc_js( $flosc_session_scope === 'archived' ? 'restore' : 'archive' ); ?>';
+		var archiveOperation = '<?php echo esc_js( 'archived' === $flosc_session_scope ? 'restore' : 'archive' ); ?>';
 
 		function getSelectedSessions() {
 			return $('.flosc-session-select:checked').map(function() {
@@ -710,7 +710,7 @@ function flosc_chat_session_allowed_html() {
  */
 function flosc_format_mts_utc( $timestamp ) {
 	$raw = trim( (string) $timestamp );
-	if ( $raw === '' ) {
+	if ( '' === $raw ) {
 		return '';
 	}
 
@@ -730,13 +730,13 @@ function flosc_format_mts_utc( $timestamp ) {
 function flosc_get_chain_context_value( $chain_detail, $key ) {
 	$chain_detail = (string) $chain_detail;
 	$needle       = $key . ':';
-	if ( $chain_detail === '' || strpos( $chain_detail, $needle ) === false ) {
+	if ( '' === $chain_detail || false === strpos( $chain_detail, $needle ) ) {
 		return '';
 	}
 
 	$parts = array_map( 'trim', explode( '→', $chain_detail ) );
 	foreach ( $parts as $part ) {
-		if ( strpos( $part, $needle ) === 0 ) {
+		if ( 0 === strpos( $part, $needle ) ) {
 			return trim( substr( $part, strlen( $needle ) ) );
 		}
 	}
@@ -769,7 +769,7 @@ function flosc_render_msg_bubbles( $code, $letter, $n, $content, $who, $time, $r
 	// line breaks and all), so the log must mirror that, not fragment it.
 	$flosc_id = $code . '-' . $letter . '-' . $n;
 	$meta     = '<div class="flosc-msg-meta">';
-	if ( $time !== '' ) {
+	if ( '' !== $time ) {
 		$meta .= '<span class="flosc-msg-t">' . esc_html( $time ) . '</span> ';
 	}
 	$meta .= '<span class="flosc-msg-id">' . esc_html( $flosc_id ) . '</span> '
@@ -778,8 +778,8 @@ function flosc_render_msg_bubbles( $code, $letter, $n, $content, $who, $time, $r
 	$hint            = '';
 	$trimmed_content = trim( (string) $content );
 	if (
-		strncmp( $trimmed_content, '[GUEST ACCOUNT REQUEST SUBMITTED]', 33 ) === 0
-		|| strncmp( $trimmed_content, '[CONTACT FORM SUBMITTED]', 24 ) === 0
+		0 === strncmp( $trimmed_content, '[GUEST ACCOUNT REQUEST SUBMITTED]', 33 )
+		|| 0 === strncmp( $trimmed_content, '[CONTACT FORM SUBMITTED]', 24 )
 	) {
 		$current_ivr        = sanitize_file_name( (string) ( $GLOBALS['flosc_current_ivr'] ?? '' ) );
 		$register_login_url = add_query_arg(
@@ -793,9 +793,9 @@ function flosc_render_msg_bubbles( $code, $letter, $n, $content, $who, $time, $r
 		$hint               = '<p class="description">Moderation actions are in <a href="' . esc_url( $register_login_url ) . '">Register &amp; Login</a>: Approve, Approve + Send MagicLink, Deny + Block, or Delete.</p>';
 	}
 
-	if ( $letter === 'u' ) {
+	if ( 'u' === $letter ) {
 		$safe_context_url = esc_url( (string) $context_url );
-		if ( $safe_context_url !== '' ) {
+		if ( '' !== $safe_context_url ) {
 			$hint .= '<p class="description">Visitor URL: <a href="' . $safe_context_url . '" target="_blank" rel="noopener noreferrer">' . esc_html( (string) $context_url ) . '</a></p>';
 		}
 	}
@@ -823,7 +823,7 @@ function flosc_render_chat_session( $flosc_s ) {
 	$flosc_preview = '';
 	foreach ( ( $flosc_s['rows'] ?? array() ) as $r ) {
 		$um = (string) ( $r['user_message'] ?? '' );
-		if ( $um !== '' && strncmp( $um, '[SYSTEM:', 8 ) !== 0 ) {
+		if ( '' !== $um && 0 !== strncmp( $um, '[SYSTEM:', 8 ) ) {
 			$flosc_preview = mb_substr( $um, 0, 70 );
 			break;
 		}
@@ -851,7 +851,7 @@ function flosc_render_chat_session( $flosc_s ) {
 		. '<span class="flosc-session-when">' . $when . '</span>'
 		. '<span class="flosc-session-label">' . $label . '</span>'
 		. '<span class="flosc-session-turns">' . $turns . ' msg</span>'
-		. '<span class="flosc-session-preview">' . ( $flosc_preview !== '' ? esc_html( $flosc_preview ) : '<em>opened — no messages</em>' ) . '</span>'
+		. '<span class="flosc-session-preview">' . ( '' !== $flosc_preview ? esc_html( $flosc_preview ) : '<em>opened — no messages</em>' ) . '</span>'
 		. '<a href="' . esc_url( $download_url ) . '" class="button button-small flosc-session-download flosc-session-control">Download TSV</a>'
 		. '<button type="button" class="button button-small flosc-session-archive flosc-session-control" data-operation="' . ( $is_archived ? 'restore' : 'archive' ) . '" data-by="' . $by . '" data-value="' . $val . '" data-flow="' . $flow . '">' . ( $is_archived ? 'Restore' : 'Archive' ) . '</button>'
 		. '<button type="button" class="button button-small flosc-session-delete" data-by="' . $by . '" data-value="' . $val . '" data-flow="' . $flow . '">Delete</button>'
@@ -877,7 +877,7 @@ function flosc_render_chat_session( $flosc_s ) {
 		// gets no u-/b-/a- sequence number and does not count as a turn.
 		// +G  account created just now      G  signed in, account already existed
 		// +M  became a member just now      M  signed in, already a member here.
-		if ( $src === 'state_change' ) {
+		if ( 'state_change' === $src ) {
 			$thread .= '<div class="flosc-msg flosc-msg-state" title="row ' . $rid . '">'
 				. '<span class="flosc-msg-state-rule" aria-hidden="true"></span>'
 				. '<span class="flosc-msg-state-label">' . esc_html( trim( $ar ) ) . '</span>'
@@ -889,10 +889,10 @@ function flosc_render_chat_session( $flosc_s ) {
 		}
 
 		// Admin-joined human message — pale green, "Name (admin)" (italic), letter 'a'.
-		if ( $src === 'admin' ) {
+		if ( 'admin' === $src ) {
 			++$a_seq;
 			$aid     = $code . '-a-' . str_pad( (string) $a_seq, 3, '0', STR_PAD_LEFT );
-			$aname   = esc_html( ( $r['provider'] ?? '' ) !== '' ? $r['provider'] : 'Admin' );
+			$aname   = esc_html( '' !== ( $r['provider'] ?? '' ) ? $r['provider'] : 'Admin' );
 			$thread .= '<div class="flosc-msg flosc-msg-admin" data-msg-id="' . esc_attr( $aid ) . '" title="row ' . $rid . '">'
 				. '<div class="flosc-msg-meta"><span class="flosc-msg-t">' . esc_html( $t ) . '</span> '
 				. '<span class="flosc-msg-id">' . esc_html( $aid ) . '</span> '
@@ -904,7 +904,7 @@ function flosc_render_chat_session( $flosc_s ) {
 		}
 
 		// Admin posted AS the bot — renders like a normal assistant message.
-		if ( $src === 'admin_bot' ) {
+		if ( 'admin_bot' === $src ) {
 			++$b_seq;
 			$admin_bot_name = trim( (string) ( $r['personality_name'] ?? '' ) );
 			$thread        .= flosc_render_msg_bubbles(
@@ -912,7 +912,7 @@ function flosc_render_chat_session( $flosc_s ) {
 				'b',
 				str_pad( (string) $b_seq, 3, '0', STR_PAD_LEFT ),
 				$ar,
-				( $admin_bot_name !== '' ? $admin_bot_name : 'AI' ),
+				( '' !== $admin_bot_name ? $admin_bot_name : 'AI' ),
 				$t,
 				$rid,
 				'flosc-msg-ai'
@@ -927,17 +927,17 @@ function flosc_render_chat_session( $flosc_s ) {
 		// switching test needs to read back. Older rows have no name and keep
 		// the old label.
 		$speaker = trim( (string) ( $r['personality_name'] ?? '' ) );
-		if ( $speaker === '' ) {
+		if ( '' === $speaker ) {
 			$speaker = 'AI';
 		}
 
-		$is_system = ( strncmp( $um, '[SYSTEM:', 8 ) === 0 ); // the auto-welcome row
+		$is_system = ( 0 === strncmp( $um, '[SYSTEM:', 8 ) ); // the auto-welcome row
 
 		// The visitor's message — hidden only for the auto-welcome's "[SYSTEM:…]" prompt.
 		if ( ! $is_system ) {
 			++$u_seq;
 			$visitor_context_url = trim( (string) ( $r['page_url'] ?? '' ) );
-			if ( $visitor_context_url === '' ) {
+			if ( '' === $visitor_context_url ) {
 				$visitor_context_url = flosc_get_chain_context_value( (string) ( $r['chain_detail'] ?? '' ), 'ctx_url' );
 			}
 			$thread .= flosc_render_msg_bubbles(
@@ -968,7 +968,7 @@ function flosc_render_chat_session( $flosc_s ) {
 		);
 		++$shown;
 	}
-	if ( $shown === 0 ) {
+	if ( 0 === $shown ) {
 		$thread .= '<p class="description">No messages in this conversation yet.</p>';
 	}
 	$thread .= '</div>';
@@ -982,14 +982,14 @@ function flosc_render_chat_session( $flosc_s ) {
 	// (which flosc_get_sessions() fills from the newest row that carries one).
 	// For a session-grouped conversation the two are the same value.
 	$flosc_deliver_session = intval( $flosc_s['deliver_session_id'] ?? 0 );
-	if ( $flosc_deliver_session <= 0 && ( $flosc_s['by'] ?? '' ) === 'session' ) {
+	if ( $flosc_deliver_session <= 0 && 'session' === ( $flosc_s['by'] ?? '' ) ) {
 		$flosc_deliver_session = intval( $flosc_s['value'] ?? 0 );
 	}
 
 	$composer = '';
 	if ( $flosc_deliver_session > 0 ) {
 		$admin_name = wp_get_current_user()->display_name;
-		if ( $admin_name === '' ) {
+		if ( '' === $admin_name ) {
 			$admin_name = 'Admin';
 		}
 		$bot_name = flosc_get_setting( 'ai_personality_name', flosc_get_setting( 'ai_identity_name', 'Site Assistant' ) );
@@ -1011,7 +1011,7 @@ function flosc_render_chat_session( $flosc_s ) {
 			}
 
 			$chain_detail = (string) ( $row['chain_detail'] ?? '' );
-			if ( ! is_array( $latest_context_row ) && strpos( $chain_detail, 'ctx_' ) !== false ) {
+			if ( ! is_array( $latest_context_row ) && false !== strpos( $chain_detail, 'ctx_' ) ) {
 				$latest_context_row = $row;
 			}
 
@@ -1031,33 +1031,33 @@ function flosc_render_chat_session( $flosc_s ) {
 				'ref'     => '',
 			);
 			foreach ( $ctx_parts as $part ) {
-				if ( strpos( $part, 'ctx_surface:' ) === 0 ) {
+				if ( 0 === strpos( $part, 'ctx_surface:' ) ) {
 					$ctx['surface'] = trim( substr( $part, strlen( 'ctx_surface:' ) ) );
-				} elseif ( strpos( $part, 'ctx_url:' ) === 0 ) {
+				} elseif ( 0 === strpos( $part, 'ctx_url:' ) ) {
 					$ctx['url'] = trim( substr( $part, strlen( 'ctx_url:' ) ) );
-				} elseif ( strpos( $part, 'ctx_path:' ) === 0 ) {
+				} elseif ( 0 === strpos( $part, 'ctx_path:' ) ) {
 					$ctx['path'] = trim( substr( $part, strlen( 'ctx_path:' ) ) );
-				} elseif ( strpos( $part, 'ctx_title:' ) === 0 ) {
+				} elseif ( 0 === strpos( $part, 'ctx_title:' ) ) {
 					$ctx['title'] = trim( substr( $part, strlen( 'ctx_title:' ) ) );
-				} elseif ( strpos( $part, 'ctx_ref:' ) === 0 ) {
+				} elseif ( 0 === strpos( $part, 'ctx_ref:' ) ) {
 					$ctx['ref'] = trim( substr( $part, strlen( 'ctx_ref:' ) ) );
 				}
 			}
 
 			$ctx_lines = array();
-			if ( $ctx['surface'] !== '' ) {
+			if ( '' !== $ctx['surface'] ) {
 				$ctx_lines[] = 'Surface: ' . esc_html( $ctx['surface'] );
 			}
-			if ( $ctx['url'] !== '' ) {
+			if ( '' !== $ctx['url'] ) {
 				$ctx_lines[] = 'Page URL: ' . esc_html( $ctx['url'] );
 			}
-			if ( $ctx['path'] !== '' ) {
+			if ( '' !== $ctx['path'] ) {
 				$ctx_lines[] = 'Path: ' . esc_html( $ctx['path'] );
 			}
-			if ( $ctx['title'] !== '' ) {
+			if ( '' !== $ctx['title'] ) {
 				$ctx_lines[] = 'Title: ' . esc_html( $ctx['title'] );
 			}
-			if ( $ctx['ref'] !== '' ) {
+			if ( '' !== $ctx['ref'] ) {
 				$ctx_lines[] = 'Referrer: ' . esc_html( $ctx['ref'] );
 			}
 

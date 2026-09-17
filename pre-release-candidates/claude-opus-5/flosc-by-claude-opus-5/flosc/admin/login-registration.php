@@ -37,7 +37,7 @@ $flosc_login_docs_url = add_query_arg(
 // Prefer one-shot transient; fall back to sanitized query flag from parent $flosc_get.
 $flosc_guest_request_notice = '';
 $flosc_guest_notice_t       = get_transient( 'flosc_guest_request_notice_' . get_current_user_id() );
-if ( is_string( $flosc_guest_notice_t ) && $flosc_guest_notice_t !== '' ) {
+if ( is_string( $flosc_guest_notice_t ) && '' !== $flosc_guest_notice_t ) {
 	delete_transient( 'flosc_guest_request_notice_' . get_current_user_id() );
 	$flosc_guest_request_notice = sanitize_key( $flosc_guest_notice_t );
 } elseif ( isset( $flosc_get['flosc_guest_request_notice'] ) ) {
@@ -71,7 +71,7 @@ $flosc_guest_request_messages = array(
 );
 if ( isset( $flosc_guest_request_messages[ $flosc_guest_request_notice ] ) ) {
 	$flosc_notice       = $flosc_guest_request_messages[ $flosc_guest_request_notice ];
-	$flosc_notice_class = ( $flosc_notice['type'] === 'error' ) ? 'notice notice-error' : 'notice notice-success';
+	$flosc_notice_class = ( 'error' === $flosc_notice['type'] ) ? 'notice notice-error' : 'notice notice-success';
 	echo '<div class="' . esc_attr( $flosc_notice_class ) . '"><p>' . esc_html( $flosc_notice['text'] ) . '</p></div>';
 }
 ?>
@@ -746,7 +746,7 @@ if ( empty( $flosc_queue_rows ) ) {
 
 	foreach ( $flosc_queue_rows as $flosc_request_row ) {
 		$flosc_email = sanitize_email( (string) ( $flosc_request_row['email'] ?? '' ) );
-		if ( $flosc_email === '' ) {
+		if ( '' === $flosc_email ) {
 			continue;
 		}
 		$flosc_status = sanitize_key( (string) ( $flosc_request_row['status'] ?? 'pending' ) );
@@ -757,13 +757,13 @@ if ( empty( $flosc_queue_rows ) ) {
 		$flosc_requested_at   = intval( $flosc_request_row['last_requested_at'] ?? ( $flosc_request_row['requested_at'] ?? 0 ) );
 		$flosc_requested_text = $flosc_requested_at > 0 ? wp_date( 'Y-m-d H:i', $flosc_requested_at ) : '—';
 		$flosc_note           = sanitize_textarea_field( (string) ( $flosc_request_row['last_message_excerpt'] ?? '' ) );
-		$flosc_note           = $flosc_note !== '' ? wp_html_excerpt( $flosc_note, 120, '...' ) : '—';
+		$flosc_note           = '' !== $flosc_note ? wp_html_excerpt( $flosc_note, 120, '...' ) : '—';
 		$flosc_blocked        = isset( $flosc_request_denylist[ md5( strtolower( $flosc_email ) ) ] );
 		$flosc_status_display = ucfirst( $flosc_status ) . ( $flosc_blocked ? ' (blocked)' : '' );
 
 		echo '<tr>';
 		echo '<td>' . esc_html( $flosc_email ) . '</td>';
-		echo '<td>' . esc_html( $flosc_flow_id !== '' ? $flosc_flow_id : '—' ) . '</td>';
+		echo '<td>' . esc_html( '' !== $flosc_flow_id ? $flosc_flow_id : '—' ) . '</td>';
 		echo '<td>' . esc_html( $flosc_requested_text ) . '</td>';
 		echo '<td>' . esc_html( $flosc_status_display ) . '</td>';
 		echo '<td>' . esc_html( $flosc_note ) . '</td>';

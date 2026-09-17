@@ -221,7 +221,7 @@ foreach ( $flosc_doc_topics as $flosc_topic ) {
 				<?php endif; ?>
 				<?php
 				$flosc_is_active   = ( $flosc_doc_topic === $flosc_topic['id'] );
-				$flosc_status_icon = $flosc_topic['status'] === 'ready' ? '✅' : '🔲';
+				$flosc_status_icon = 'ready' === $flosc_topic['status'] ? '✅' : '🔲';
 				$flosc_link_url    = add_query_arg(
 					array(
 						'page' => 'flosc-settings',
@@ -264,7 +264,7 @@ foreach ( $flosc_doc_topics as $flosc_topic ) {
 						foreach ( $flosc_doc_topics as $flosc_t ) {
 							if ( $flosc_t['group'] === $flosc_gid ) {
 								++$flosc_total_count;
-								if ( $flosc_t['status'] === 'ready' ) {
+								if ( 'ready' === $flosc_t['status'] ) {
 									++$flosc_ready_count;
 								}
 							}
@@ -291,22 +291,22 @@ foreach ( $flosc_doc_topics as $flosc_topic ) {
 				</div>
 			</div>
 
-		<?php elseif ( $flosc_doc_topic === 'the-journey' ) : ?>
+		<?php elseif ( 'the-journey' === $flosc_doc_topic ) : ?>
 			<div class="flosc-doc-article flosc-doc-card">
 				<?php include FLOSC_PLUGIN_DIR . 'admin/docs/part1-journey.php'; ?>
 			</div>
 
-		<?php elseif ( $flosc_doc_topic === 'ref-quiz' ) : ?>
+		<?php elseif ( 'ref-quiz' === $flosc_doc_topic ) : ?>
 			<div class="flosc-doc-article flosc-doc-card">
 				<?php include FLOSC_PLUGIN_DIR . 'admin/docs/part3-ref-quiz.php'; ?>
 			</div>
 
-		<?php elseif ( $flosc_doc_topic === 'ref-audio-quiz-flow' ) : ?>
+		<?php elseif ( 'ref-audio-quiz-flow' === $flosc_doc_topic ) : ?>
 			<div class="flosc-doc-article flosc-doc-card">
 				<?php include FLOSC_PLUGIN_DIR . 'admin/docs/part3-ref-audio-quiz-flow.php'; ?>
 			</div>
 
-		<?php elseif ( $flosc_doc_topic === 'glossary' ) : ?>
+		<?php elseif ( 'glossary' === $flosc_doc_topic ) : ?>
 			<div class="flosc-doc-article flosc-doc-card">
 				<?php include FLOSC_PLUGIN_DIR . 'admin/docs/part5-glossary.php'; ?>
 			</div>
@@ -316,27 +316,27 @@ foreach ( $flosc_doc_topics as $flosc_topic ) {
 				<?php include FLOSC_PLUGIN_DIR . 'admin/docs/part6-development.php'; ?>
 			</div>
 
-		<?php elseif ( $flosc_doc_topic === 'ref-core' ) : ?>
+		<?php elseif ( 'ref-core' === $flosc_doc_topic ) : ?>
 			<div class="flosc-doc-article flosc-doc-card">
 				<?php include FLOSC_PLUGIN_DIR . 'admin/docs/ref_core_skeleton.php'; ?>
 			</div>
 
-		<?php elseif ( $flosc_doc_topic === 'ref-admin' ) : ?>
+		<?php elseif ( 'ref-admin' === $flosc_doc_topic ) : ?>
 			<div class="flosc-doc-article flosc-doc-card">
 				<?php include FLOSC_PLUGIN_DIR . 'admin/docs/ref_admin_skeleton.php'; ?>
 			</div>
 
-		<?php elseif ( $flosc_doc_topic === 'ref-personality' ) : ?>
+		<?php elseif ( 'ref-personality' === $flosc_doc_topic ) : ?>
 			<div class="flosc-doc-article flosc-doc-card">
 				<?php include FLOSC_PLUGIN_DIR . 'admin/docs/part3-ref-personality-profile.php'; ?>
 			</div>
 
-		<?php elseif ( $flosc_doc_topic === 'ref-settings-fields' ) : ?>
+		<?php elseif ( 'ref-settings-fields' === $flosc_doc_topic ) : ?>
 			<div class="flosc-doc-article flosc-doc-card">
 				<?php include FLOSC_PLUGIN_DIR . 'admin/docs/part3-ref-settings-fields.php'; ?>
 			</div>
 
-		<?php elseif ( $flosc_doc_topic === 'ref-ai-config' ) : ?>
+		<?php elseif ( 'ref-ai-config' === $flosc_doc_topic ) : ?>
 			<div class="flosc-doc-article flosc-doc-card">
 				<?php
 				// Suppress the tab header when including guide from documentation.

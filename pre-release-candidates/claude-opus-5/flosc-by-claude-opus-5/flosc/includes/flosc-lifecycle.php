@@ -39,13 +39,13 @@ function flosc_activate() {
 	);
 
 	foreach ( $defaults as $key => $value ) {
-		if ( get_option( $key ) === false ) {
+		if ( false === get_option( $key ) ) {
 			add_option( $key, $value );
 		}
 	}
 
 	// Set PayPal mode to sandbox on fresh install (credentials set via admin Payments tab).
-	if ( get_option( 'flosc_paypal_mode' ) === false ) {
+	if ( false === get_option( 'flosc_paypal_mode' ) ) {
 		update_option( 'flosc_paypal_mode', 'sandbox' );
 	}
 

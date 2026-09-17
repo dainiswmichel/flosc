@@ -24,7 +24,7 @@ class FLOSC_Session_Manager {
 	public function normalize_flow_stem( $flow_id = '' ) {
 		$raw  = (string) $flow_id;
 		$stem = sanitize_key( pathinfo( basename( $raw ), PATHINFO_FILENAME ) );
-		if ( $stem === '' && $raw !== '' ) {
+		if ( '' === $stem && '' !== $raw ) {
 			$stem = sanitize_key( $raw );
 		}
 		return $stem;
@@ -38,7 +38,7 @@ class FLOSC_Session_Manager {
 	 */
 	public function resolve_flow_stem( $flow_id = '' ) {
 		$stem = $this->normalize_flow_stem( $flow_id );
-		if ( $stem !== '' && $stem !== 'default' ) {
+		if ( '' !== $stem && 'default' !== $stem ) {
 			return $stem;
 		}
 		if ( function_exists( 'flosc' ) && is_object( flosc() ) && method_exists( flosc(), 'get_current_flow' ) ) {
@@ -49,7 +49,7 @@ class FLOSC_Session_Manager {
 				);
 			}
 		}
-		return ( $stem !== '' && $stem !== 'default' ) ? $stem : '';
+		return ( '' !== $stem && 'default' !== $stem ) ? $stem : '';
 	}
 
 	/**
@@ -63,12 +63,12 @@ class FLOSC_Session_Manager {
 	public function session_belongs_to_flow( array $session, $stem, $user_id = 0 ) {
 		$stem = $this->normalize_flow_stem( $stem );
 		// Fail closed: unscoped stem never matches (prevents cross-flow history bleed).
-		if ( $stem === '' ) {
+		if ( '' === $stem ) {
 			return false;
 		}
 
 		$session_stem = $this->normalize_flow_stem( (string) ( $session['flow_id'] ?? '' ) );
-		if ( $session_stem !== '' && $session_stem !== 'default' ) {
+		if ( '' !== $session_stem && 'default' !== $session_stem ) {
 			return $session_stem === $stem;
 		}
 
@@ -76,7 +76,7 @@ class FLOSC_Session_Manager {
 		$reg = $this->normalize_flow_stem(
 			(string) get_user_meta( (int) $user_id, '_flosc_registration_flow', true )
 		);
-		if ( $reg !== '' && $reg !== 'default' ) {
+		if ( '' !== $reg && 'default' !== $reg ) {
 			return $reg === $stem;
 		}
 
@@ -106,7 +106,7 @@ class FLOSC_Session_Manager {
 
 		$stem = $this->resolve_flow_stem( $flow_id );
 		// No stem = no sessions for normal runtime (fail closed). Admin tools must pass a stem or use a dedicated API.
-		if ( $stem === '' ) {
+		if ( '' === $stem ) {
 			return $empty;
 		}
 		$sessions = array_values(
@@ -157,7 +157,7 @@ class FLOSC_Session_Manager {
 	public function flosc_create_session( $user_id, $title = 'New Chat', $flow_id = '', $seed_messages = array() ) {
 
 		$stem = $this->resolve_flow_stem( $flow_id );
-		if ( $stem === '' ) {
+		if ( '' === $stem ) {
 			return null;
 		}
 
@@ -209,13 +209,13 @@ class FLOSC_Session_Manager {
 			}
 
 			$role = sanitize_key( (string) ( $raw['role'] ?? '' ) );
-			if ( $role !== 'user' && $role !== 'assistant' ) {
+			if ( 'user' !== $role && 'assistant' !== $role ) {
 				continue;
 			}
 
 			$content = wp_kses_post( (string) ( $raw['content'] ?? '' ) );
 			$content = trim( $content );
-			if ( $content === '' ) {
+			if ( '' === $content ) {
 				continue;
 			}
 			if ( function_exists( 'mb_substr' ) ) {
@@ -248,7 +248,7 @@ class FLOSC_Session_Manager {
 		}
 
 		$stem = $this->resolve_flow_stem( (string) ( $flow_id ?? '' ) );
-		if ( $stem === '' ) {
+		if ( '' === $stem ) {
 			return null;
 		}
 
@@ -325,7 +325,7 @@ class FLOSC_Session_Manager {
 		}
 
 		$stem = $this->resolve_flow_stem( (string) ( $flow_id ?? '' ) );
-		if ( $stem === '' ) {
+		if ( '' === $stem ) {
 			return false;
 		}
 
@@ -335,7 +335,7 @@ class FLOSC_Session_Manager {
 			}
 			// Keep the existing session even when the destination floscDomain/flow
 			// differs. Sidebar listing stays flow-filtered; this append is the live journey.
-			if ( empty( $session['flow_id'] ) && $stem !== '' ) {
+			if ( empty( $session['flow_id'] ) && '' !== $stem ) {
 				$session['flow_id'] = $stem;
 			}
 
@@ -348,7 +348,7 @@ class FLOSC_Session_Manager {
 			if ( is_array( $meta ) ) {
 				$source = sanitize_text_field( (string) ( $meta['source'] ?? '' ) );
 				$name   = sanitize_text_field( (string) ( $meta['name'] ?? '' ) );
-				if ( $source !== '' || $name !== '' ) {
+				if ( '' !== $source || '' !== $name ) {
 					$message['meta'] = array(
 						'source' => $source,
 						'name'   => $name,
@@ -360,7 +360,7 @@ class FLOSC_Session_Manager {
 			$session['updated_at'] = current_time( 'mysql' );
 
 			$current_title = trim( (string) ( $session['title'] ?? '' ) );
-			if ( $role === 'user' && ( $current_title === '' || $current_title === 'New Chat' ) ) {
+			if ( 'user' === $role && ( '' === $current_title || 'New Chat' === $current_title ) ) {
 				$session['title'] = $this->generate_flosc_session_title( $content );
 			}
 
@@ -390,7 +390,7 @@ class FLOSC_Session_Manager {
 		}
 
 		$stem = $this->resolve_flow_stem( (string) ( $flow_id ?? '' ) );
-		if ( $stem === '' ) {
+		if ( '' === $stem ) {
 			return false;
 		}
 
@@ -427,7 +427,7 @@ class FLOSC_Session_Manager {
 	private function generate_flosc_session_title( $content ) {
 		$plain = wp_strip_all_tags( (string) $content );
 		$plain = trim( preg_replace( '/\s+/u', ' ', $plain ) ?? '' );
-		if ( $plain === '' ) {
+		if ( '' === $plain ) {
 			return 'New Chat';
 		}
 		if ( function_exists( 'mb_substr' ) ) {
@@ -440,7 +440,7 @@ class FLOSC_Session_Manager {
 		if ( $longer ) {
 			$title .= '...';
 		}
-		return $title !== '' ? $title : 'New Chat';
+		return '' !== $title ? $title : 'New Chat';
 	}
 
 	/**
@@ -456,7 +456,7 @@ class FLOSC_Session_Manager {
 			return 0;
 		}
 		$stem = $this->resolve_flow_stem( $flow_id );
-		if ( $stem === '' ) {
+		if ( '' === $stem ) {
 			return count( $sessions );
 		}
 		$n = 0;

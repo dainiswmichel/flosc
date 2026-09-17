@@ -31,7 +31,7 @@ class FLOSC_Trajectory {
 	 */
 	public static function active_guidance( $message, $flow_settings ) {
 		$message = trim( (string) $message );
-		if ( $message === '' || strncmp( $message, '[SYSTEM:', 8 ) === 0 ) {
+		if ( '' === $message || 0 === strncmp( $message, '[SYSTEM:', 8 ) ) {
 			return '';
 		}
 
@@ -47,13 +47,13 @@ class FLOSC_Trajectory {
 		$always  = array();
 		foreach ( $rules as $rule ) {
 			$instructions = trim( (string) ( $rule['instructions'] ?? '' ) );
-			if ( $instructions === '' ) {
+			if ( '' === $instructions ) {
 				continue;
 			}
 
 			$priority = intval( $rule['priority'] ?? 0 );
 			$keywords = trim( (string) ( $rule['keywords'] ?? '' ) );
-			if ( $keywords === '' ) {
+			if ( '' === $keywords ) {
 				$always[] = array(
 					'priority'           => $priority,
 					'instructions'       => $instructions,
@@ -155,7 +155,7 @@ class FLOSC_Trajectory {
 		echo '<option value="">— choose a flow —</option>';
 		foreach ( (array) $files as $file ) {
 			$name = basename( (string) $file );
-			if ( $name === '' || isset( $seen[ $name ] ) ) {
+			if ( '' === $name || isset( $seen[ $name ] ) ) {
 				continue;
 			}
 			$seen[ $name ] = true;
@@ -166,7 +166,7 @@ class FLOSC_Trajectory {
 			}
 			echo '<option value="' . esc_attr( $name ) . '" ' . selected( $current, $name, false ) . '>' . esc_html( $label ) . '</option>';
 		}
-		if ( $current !== '' && ! $have_current ) {
+		if ( '' !== $current && ! $have_current ) {
 			echo '<option value="' . esc_attr( $current ) . '" selected>' . esc_html( $current ) . '</option>';
 		}
 		echo '</select></div>';
@@ -204,13 +204,13 @@ class FLOSC_Trajectory {
 			if ( ! isset( $_POST[ $field ] ) ) {
 				continue;
 			}
-			if ( $key === 'instructions' ) {
+			if ( 'instructions' === $key ) {
 				$value = sanitize_textarea_field( wp_unslash( $_POST[ $field ] ) );
-			} elseif ( $key === 'off_ramp_phrases' ) {
+			} elseif ( 'off_ramp_phrases' === $key ) {
 				$value = sanitize_textarea_field( wp_unslash( $_POST[ $field ] ) );
-			} elseif ( $key === 'off_ramp_exactness' ) {
+			} elseif ( 'off_ramp_exactness' === $key ) {
 				$value = self::off_ramp_exactness( sanitize_key( wp_unslash( $_POST[ $field ] ) ) );
-			} elseif ( $key === 'priority' ) {
+			} elseif ( 'priority' === $key ) {
 				$value = (string) max( 0, min( 100, absint( wp_unslash( $_POST[ $field ] ) ) ) );
 			} else {
 				$value = sanitize_text_field( wp_unslash( $_POST[ $field ] ) );
@@ -239,49 +239,49 @@ class FLOSC_Trajectory {
 		};
 
 		$deployment = self::label( $body, 'Deployment' );
-		if ( $deployment === '' ) {
+		if ( '' === $deployment ) {
 			$deployment = self::label( $body, 'deployment' );
 		}
 
 		$flow_hint = self::label( $body, 'floscFlow' );
-		if ( $flow_hint === '' ) {
+		if ( '' === $flow_hint ) {
 			$flow_hint = self::label( $body, 'Flow' );
 		}
-		if ( $flow_hint === '' ) {
+		if ( '' === $flow_hint ) {
 			$flow_hint = self::label( $body, 'FlowName' );
 		}
 
 		$flow = $meta( $post->ID, 'flow' );
-		if ( $flow === '' ) {
+		if ( '' === $flow ) {
 			$flow = self::flow_file( $flow_hint );
 		}
-		if ( $flow === '' && $flow_hint !== '' ) {
+		if ( '' === $flow && '' !== $flow_hint ) {
 			$flow = self::flow_by_name( $flow_hint );
 		}
-		if ( $flow === '' ) {
+		if ( '' === $flow ) {
 			$flow = self::flow_from_deployment( $deployment );
 		}
 
 		$keywords = $meta( $post->ID, 'keywords' );
-		if ( $keywords === '' ) {
+		if ( '' === $keywords ) {
 			$keywords = self::label( $body, 'Keywords' );
 		}
 
 		$instructions = $meta( $post->ID, 'instructions' );
-		if ( $instructions === '' ) {
+		if ( '' === $instructions ) {
 			$instructions = self::content_block( $body, 'Instructions' );
 		}
-		if ( $instructions === '' ) {
+		if ( '' === $instructions ) {
 			$instructions = trim( (string) preg_replace( '/^[ \t>*_\-]*(floscFlow|Flow|FlowName|Deployment|Keywords|Priority|Off-ramp exactness)[ \t]*:.*$/mi', '', $body ) );
 		}
 
 		$offRampPhrases = $meta( $post->ID, 'off_ramp_phrases' );
-		if ( $offRampPhrases === '' ) {
+		if ( '' === $offRampPhrases ) {
 			$offRampPhrases = self::content_block( $body, 'Off-ramp phrases' );
 		}
 
 		$offRampExactness = $meta( $post->ID, 'off_ramp_exactness' );
-		if ( $offRampExactness === '' ) {
+		if ( '' === $offRampExactness ) {
 			$offRampExactness = self::label( $body, 'Off-ramp exactness' );
 		}
 		$offRampExactness = self::off_ramp_exactness( $offRampExactness );
@@ -309,14 +309,14 @@ class FLOSC_Trajectory {
 		if ( ! $post instanceof WP_Post || ! self::is_trajectory_post( $post ) ) {
 			return;
 		}
-		if ( $post->post_status === 'trash' ) {
+		if ( 'trash' === $post->post_status ) {
 			self::unsync_post( $post );
 			return;
 		}
 
 		$c        = self::config_from_post( $post );
 		$flow_key = self::flow_key( $c['flow'] );
-		if ( $flow_key === '' || $c['instructions'] === '' ) {
+		if ( '' === $flow_key || '' === $c['instructions'] ) {
 			return;
 		}
 
@@ -352,7 +352,7 @@ class FLOSC_Trajectory {
 		$c       = self::config_from_post( $post );
 		$keys    = array();
 		$primary = self::flow_key( $c['flow'] ?? '' );
-		if ( $primary !== '' ) {
+		if ( '' !== $primary ) {
 			$keys[] = $primary;
 		}
 
@@ -375,10 +375,10 @@ class FLOSC_Trajectory {
 		$haystack = mb_strtolower( (string) $message );
 		foreach ( explode( ',', (string) $keywords ) as $keyword ) {
 			$keyword = mb_strtolower( trim( (string) $keyword ) );
-			if ( $keyword === '' ) {
+			if ( '' === $keyword ) {
 				continue;
 			}
-			if ( mb_strpos( $haystack, $keyword ) !== false ) {
+			if ( false !== mb_strpos( $haystack, $keyword ) ) {
 				return true;
 			}
 		}
@@ -386,13 +386,13 @@ class FLOSC_Trajectory {
 	}
 
 	private static function post_rule_id( $post ) {
-		$slug = ( $post->post_name !== '' ) ? $post->post_name : ( 'post' . intval( $post->ID ) );
+		$slug = ( '' !== $post->post_name ) ? $post->post_name : ( 'post' . intval( $post->ID ) );
 		return 'trajectory_' . sanitize_key( $slug );
 	}
 
 	private static function flow_key( $flow_file ) {
 		$flow_file = (string) $flow_file;
-		if ( $flow_file === '' ) {
+		if ( '' === $flow_file ) {
 			return '';
 		}
 		return 'flosc_flow_' . sanitize_key( pathinfo( $flow_file, PATHINFO_FILENAME ) );
@@ -407,7 +407,7 @@ class FLOSC_Trajectory {
 
 	private static function flow_by_name( $value ) {
 		$name = mb_strtolower( self::unquote( (string) $value ) );
-		if ( $name === '' ) {
+		if ( '' === $name ) {
 			return '';
 		}
 
@@ -416,7 +416,7 @@ class FLOSC_Trajectory {
 			$fname = basename( (string) $file );
 			$opt   = get_option( 'flosc_flow_' . sanitize_key( pathinfo( $fname, PATHINFO_FILENAME ) ), array() );
 			$iname = ( is_array( $opt ) && ! empty( $opt['identity']['name'] ) ) ? mb_strtolower( (string) $opt['identity']['name'] ) : '';
-			if ( $iname !== '' && $iname === $name ) {
+			if ( '' !== $iname && $iname === $name ) {
 				return $fname;
 			}
 		}
@@ -426,7 +426,7 @@ class FLOSC_Trajectory {
 
 	private static function flow_from_deployment( $deployment ) {
 		$host = strtolower( trim( (string) $deployment ) );
-		if ( $host === '' ) {
+		if ( '' === $host ) {
 			return '';
 		}
 
@@ -434,7 +434,7 @@ class FLOSC_Trajectory {
 		$host = preg_replace( '#[/?#].*$#', '', $host );
 		$host = preg_replace( '#^www\.#', '', $host );
 		$stem = trim( (string) preg_replace( '/[^a-z0-9]+/', '_', $host ), '_' );
-		if ( $stem === '' ) {
+		if ( '' === $stem ) {
 			return '';
 		}
 
@@ -442,7 +442,7 @@ class FLOSC_Trajectory {
 		foreach ( (array) $files as $file ) {
 			$name  = basename( (string) $file );
 			$fstem = pathinfo( $name, PATHINFO_FILENAME );
-			if ( $fstem === $stem || strpos( $fstem, $stem . '_' ) === 0 ) {
+			if ( $fstem === $stem || 0 === strpos( $fstem, $stem . '_' ) ) {
 				if ( ! empty( get_option( 'flosc_flow_' . sanitize_key( $fstem ) ) ) ) {
 					return $name;
 				}
@@ -466,7 +466,7 @@ class FLOSC_Trajectory {
 
 		$start = intval( $match[0][1] ) + strlen( (string) $match[0][0] );
 		$tail  = substr( $body, $start );
-		if ( $tail === false ) {
+		if ( false === $tail ) {
 			return '';
 		}
 
@@ -487,14 +487,14 @@ class FLOSC_Trajectory {
 
 	private static function build_off_ramp_guidance( $rule ) {
 		$phrasesText = trim( (string) ( $rule['off_ramp_phrases'] ?? '' ) );
-		if ( $phrasesText === '' ) {
+		if ( '' === $phrasesText ) {
 			return '';
 		}
 
 		$phrases = array();
 		foreach ( preg_split( '/\r\n|\r|\n/', $phrasesText ) as $line ) {
 			$line = trim( (string) $line );
-			if ( $line !== '' ) {
+			if ( '' !== $line ) {
 				$phrases[] = $line;
 			}
 		}
@@ -504,9 +504,9 @@ class FLOSC_Trajectory {
 
 		$exactness = self::off_ramp_exactness( (string) ( $rule['off_ramp_exactness'] ?? 'preferred' ) );
 		$lead      = 'Use one of these off-ramp phrases before ending, keeping the meaning that they can continue this trajectory or switch topics.';
-		if ( $exactness === 'exact' ) {
+		if ( 'exact' === $exactness ) {
 			$lead = 'Use ONE of these off-ramp phrases VERBATIM before ending.';
-		} elseif ( $exactness === 'preferred' ) {
+		} elseif ( 'preferred' === $exactness ) {
 			$lead = 'Prefer using one of these off-ramp phrases with close wording.';
 		}
 
@@ -518,7 +518,7 @@ class FLOSC_Trajectory {
 		if ( strlen( $s ) >= 2 ) {
 			$a = $s[0];
 			$b = $s[ strlen( $s ) - 1 ];
-			if ( ( $a === '"' && $b === '"' ) || ( $a === "'" && $b === "'" ) ) {
+			if ( ( '"' === $a && '"' === $b ) || ( "'" === $a && "'" === $b ) ) {
 				return substr( $s, 1, -1 );
 			}
 		}

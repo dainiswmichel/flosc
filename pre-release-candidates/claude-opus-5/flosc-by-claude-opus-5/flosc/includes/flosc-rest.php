@@ -35,7 +35,7 @@ trait FLOSC_REST_Trait {
 	 */
 	public function check_metered_visitor_compute_permission( $request ) {
 		$protection = $this->flosc_public_request_protection();
-		if ( $protection['enabled'] !== '1' ) {
+		if ( '1' !== $protection['enabled'] ) {
 			return true;
 		}
 		// Check rate limit first.
@@ -68,7 +68,7 @@ trait FLOSC_REST_Trait {
 	public function check_public_endpoint_permission( $request ) {
 		$endpoint   = $request->get_route();
 		$protection = $this->flosc_public_request_protection();
-		if ( $protection['enabled'] !== '1' ) {
+		if ( '1' !== $protection['enabled'] ) {
 			return true;
 		}
 
@@ -82,7 +82,7 @@ trait FLOSC_REST_Trait {
 		// Visitors get stricter limits. Chat carries its own budget: a
 		// conversation costs more requests than reading IVR content does, and
 		// sharing one bucket meant a talkative visitor exhausted both.
-		$limit = $endpoint === '/flosc/v1/chat' ? absint( $protection['anonymous_chat_limit'] ) : absint( $protection['anonymous_ivr_limit'] );
+		$limit = '/flosc/v1/chat' === $endpoint ? absint( $protection['anonymous_chat_limit'] ) : absint( $protection['anonymous_ivr_limit'] );
 		if ( ! $this->check_rate_limit( 'public_visitor_' . $endpoint, $limit, HOUR_IN_SECONDS ) ) {
 			return new WP_Error( 'rate_limit', __( 'Rate limit reached. Please try again later.', 'flosc' ), array( 'status' => 429 ) );
 		}
@@ -141,14 +141,14 @@ trait FLOSC_REST_Trait {
 	 */
 	public function check_checkout_finalization_permission( $request ) {
 		$nonce_result = $this->check_checkout_endpoint_permission( $request );
-		if ( $nonce_result !== true ) {
+		if ( true !== $nonce_result ) {
 			return $nonce_result;
 		}
 
 		$binding_token = sanitize_text_field( (string) $request->get_param( 'binding_token' ) );
 		$session_id    = sanitize_text_field( (string) $request->get_param( 'session_id' ) );
 
-		if ( $binding_token === '' || $session_id === '' ) {
+		if ( '' === $binding_token || '' === $session_id ) {
 			return new WP_Error( 'flosc_checkout_binding_required', __( 'Checkout binding token and session_id are required.', 'flosc' ), array( 'status' => 403 ) );
 		}
 
@@ -159,33 +159,33 @@ trait FLOSC_REST_Trait {
 		}
 
 		$bound_session_id = sanitize_text_field( (string) ( $binding_record['session_id'] ?? '' ) );
-		if ( $bound_session_id === '' || ! hash_equals( $bound_session_id, $session_id ) ) {
+		if ( '' === $bound_session_id || ! hash_equals( $bound_session_id, $session_id ) ) {
 			return new WP_Error( 'flosc_checkout_session_mismatch', __( 'Checkout session mismatch.', 'flosc' ), array( 'status' => 403 ) );
 		}
 
 		$request_provider = sanitize_key( (string) $request->get_param( 'provider' ) );
 		$route            = (string) $request->get_route();
-		if ( $request_provider === '' ) {
-			if ( strpos( $route, '/paypal/' ) !== false ) {
+		if ( '' === $request_provider ) {
+			if ( false !== strpos( $route, '/paypal/' ) ) {
 				$request_provider = 'paypal';
-			} elseif ( strpos( $route, '/complete-purchase' ) !== false ) {
+			} elseif ( false !== strpos( $route, '/complete-purchase' ) ) {
 				$request_provider = 'stripe';
 			}
 		}
 		$bound_provider = sanitize_key( (string) ( $binding_record['provider'] ?? '' ) );
-		if ( $request_provider !== '' && $bound_provider !== '' && ! hash_equals( $bound_provider, $request_provider ) ) {
+		if ( '' !== $request_provider && '' !== $bound_provider && ! hash_equals( $bound_provider, $request_provider ) ) {
 			return new WP_Error( 'flosc_checkout_provider_mismatch', __( 'Checkout provider mismatch.', 'flosc' ), array( 'status' => 403 ) );
 		}
 
 		$request_flow_id = sanitize_text_field( (string) $request->get_param( 'flow_id' ) );
 		$bound_flow_id   = sanitize_text_field( (string) ( $binding_record['flow_id'] ?? '' ) );
-		if ( $request_flow_id !== '' && $bound_flow_id !== '' && ! hash_equals( $bound_flow_id, $request_flow_id ) ) {
+		if ( '' !== $request_flow_id && '' !== $bound_flow_id && ! hash_equals( $bound_flow_id, $request_flow_id ) ) {
 			return new WP_Error( 'flosc_checkout_flow_mismatch', __( 'Checkout flow mismatch.', 'flosc' ), array( 'status' => 403 ) );
 		}
 
 		$request_offer_id = sanitize_text_field( (string) $request->get_param( 'offer_id' ) );
 		$bound_offer_id   = sanitize_text_field( (string) ( $binding_record['offer_id'] ?? '' ) );
-		if ( $request_offer_id !== '' && $bound_offer_id !== '' && ! hash_equals( $bound_offer_id, $request_offer_id ) ) {
+		if ( '' !== $request_offer_id && '' !== $bound_offer_id && ! hash_equals( $bound_offer_id, $request_offer_id ) ) {
 			return new WP_Error( 'flosc_checkout_offer_mismatch', __( 'Checkout offer mismatch.', 'flosc' ), array( 'status' => 403 ) );
 		}
 
@@ -261,7 +261,7 @@ trait FLOSC_REST_Trait {
 	public function check_ivr_messages_permission( $request ) {
 		// Keep the existing public rate-limit behavior for the visitor funnel.
 		$rate = $this->check_public_endpoint_permission( $request );
-		if ( $rate !== true ) {
+		if ( true !== $rate ) {
 			return $rate;
 		}
 
@@ -271,7 +271,7 @@ trait FLOSC_REST_Trait {
 		}
 
 		// Content phase is member-entitled only (sale stays public for guest purchase).
-		if ( $phase === 'content' ) {
+		if ( 'content' === $phase ) {
 			$user_id           = get_current_user_id();
 			$flow_id           = $this->flosc_request_flow_stem( $request );
 			$has_member_access = current_user_can( 'manage_options' );
@@ -330,7 +330,7 @@ trait FLOSC_REST_Trait {
 	private function verify_admin_poll_token( $session_id, $poll_token ) {
 		$session_id = absint( $session_id );
 		$poll_token = sanitize_text_field( (string) $poll_token );
-		if ( $session_id <= 0 || $poll_token === '' ) {
+		if ( $session_id <= 0 || '' === $poll_token ) {
 			return false;
 		}
 
@@ -380,7 +380,7 @@ trait FLOSC_REST_Trait {
 		);
 		$poll_token = sanitize_text_field( (string) $request->get_param( 'poll_token' ) );
 
-		if ( $session_id <= 0 || $poll_token === '' ) {
+		if ( $session_id <= 0 || '' === $poll_token ) {
 			return new WP_Error( 'flosc_missing_session_token', __( 'Missing session token.', 'flosc' ), array( 'status' => 403 ) );
 		}
 
@@ -444,7 +444,7 @@ trait FLOSC_REST_Trait {
 	public function handle_oembed( $request ) {
 		$url   = esc_url_raw( (string) $request->get_param( 'url' ) );
 		$retry = '1' === sanitize_text_field( (string) $request->get_param( 'retry' ) );
-		if ( $url === '' || ! wp_http_validate_url( $url ) ) {
+		if ( '' === $url || ! wp_http_validate_url( $url ) ) {
 			return new WP_REST_Response( array( 'success' => false ), 400 );
 		}
 
@@ -453,13 +453,13 @@ trait FLOSC_REST_Trait {
 		$cache_key = 'flosc_oembed_' . md5( $url );
 		$cached    = get_transient( $cache_key );
 		if ( is_string( $cached ) ) {
-			if ( $cached === '' && $retry ) {
+			if ( '' === $cached && $retry ) {
 				// Retry path bypasses short-lived negative cache in case a provider
 				// had a transient miss on first resolution.
 			} else {
 				return new WP_REST_Response(
 					array(
-						'success' => $cached !== '',
+						'success' => '' !== $cached,
 						'html'    => $cached,
 					)
 				);
@@ -468,12 +468,12 @@ trait FLOSC_REST_Trait {
 
 		$html  = wp_oembed_get( $url, array( 'width' => 480 ) );
 		$store = is_string( $html ) ? $html : '';
-		$ttl   = $store !== '' ? DAY_IN_SECONDS : ( 5 * MINUTE_IN_SECONDS );
+		$ttl   = '' !== $store ? DAY_IN_SECONDS : ( 5 * MINUTE_IN_SECONDS );
 		set_transient( $cache_key, $store, $ttl );
 
 		return new WP_REST_Response(
 			array(
-				'success' => $store !== '',
+				'success' => '' !== $store,
 				'html'    => $store,
 			)
 		);

@@ -145,7 +145,7 @@ class Facebook_Provider extends SSO_Provider_Base {
 		return array(
 			'provider_id'    => sanitize_text_field( (string) ( $raw_data['id'] ?? '' ) ),
 			'email'          => $email,
-			'email_verified' => $email !== '', // Facebook only returns verified emails
+			'email_verified' => '' !== $email, // Facebook only returns verified emails
 			'name'           => sanitize_text_field( (string) ( $raw_data['name'] ?? '' ) ),
 			'first_name'     => sanitize_text_field( $first ),
 			'last_name'      => sanitize_text_field( $last ),
@@ -285,7 +285,7 @@ class Facebook_Provider extends SSO_Provider_Base {
 			return $response;
 		}
 
-		if ( wp_remote_retrieve_response_code( $response ) !== 200 ) {
+		if ( 200 !== wp_remote_retrieve_response_code( $response ) ) {
 			return new \WP_Error( 'long_lived_token_error', 'Failed to exchange for long-lived token' );
 		}
 

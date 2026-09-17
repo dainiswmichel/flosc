@@ -30,7 +30,7 @@ if ( ! function_exists( 'flosc_resolve_ivr_file_path' ) ) {
 		$flosc_plugin_dir = FLOSC_PLUGIN_DIR . 'ai_configuration_files/';
 
 		$uploads_path = ( '' !== $uploads_dir ) ? $uploads_dir . $flosc_ivr_filename : '';
-		if ( $uploads_path !== '' && file_exists( $uploads_path ) ) {
+		if ( '' !== $uploads_path && file_exists( $uploads_path ) ) {
 			return $uploads_path;
 		}
 
@@ -42,7 +42,7 @@ if ( ! function_exists( 'flosc_resolve_ivr_file_path' ) ) {
 		}
 
 		$flosc_plugin_path = $flosc_plugin_dir . $flosc_ivr_filename;
-		if ( $flosc_ivr_filename !== '' && file_exists( $flosc_plugin_path ) ) {
+		if ( '' !== $flosc_ivr_filename && file_exists( $flosc_plugin_path ) ) {
 			return $flosc_plugin_path;
 		}
 
@@ -61,7 +61,7 @@ if ( ! function_exists( 'flosc_ivr_safe_json_decode' ) ) {
 	 */
 	function flosc_ivr_safe_json_decode( $raw, $max_bytes = 200000, $depth = 32 ) {
 		$raw = (string) $raw;
-		if ( $raw === '' || strlen( $raw ) > $max_bytes ) {
+		if ( '' === $raw || strlen( $raw ) > $max_bytes ) {
 			return false;
 		}
 
@@ -236,9 +236,9 @@ if ( 'POST' === $flosc_request_method ) {
 
 // v1.2.8: Resolve active IVR file from explicit request first, then context fallback.
 $flosc_requested_ivr_file     = sanitize_file_name( (string) ( $flosc_get['ivr'] ?? '' ) );
-$flosc_active_ivr_file        = $flosc_requested_ivr_file !== ''
+$flosc_active_ivr_file        = '' !== $flosc_requested_ivr_file
 	? $flosc_requested_ivr_file
-	: ( ( $GLOBALS['flosc_current_ivr'] ?? '' ) !== '' ? sanitize_file_name( (string) $GLOBALS['flosc_current_ivr'] ) : 'flosc_default_technical_ivr.md' );
+	: ( '' !== ( $GLOBALS['flosc_current_ivr'] ?? '' ) ? sanitize_file_name( (string) $GLOBALS['flosc_current_ivr'] ) : 'flosc_default_technical_ivr.md' );
 $GLOBALS['flosc_current_ivr'] = $flosc_active_ivr_file;
 // Per WordPress.org policy: writable paths must be in uploads only.
 $flosc_ivr_dir             = function_exists( 'flosc_data_dir' ) ? flosc_data_dir() : '';
@@ -433,7 +433,7 @@ function flosc_run_ivr_diagnostics() {
 
 				$normalized['title'] = (string) ( $msg['title'] ?? $normalized['name'] );
 
-				if ( strtolower( trim( $normalized['type'] ) ) === 'offer' && $normalized['display_format'] === '' ) {
+				if ( 'offer' === strtolower( trim( $normalized['type'] ) ) && '' === $normalized['display_format'] ) {
 					$normalized['display_format'] = 'card';
 				}
 
@@ -501,12 +501,12 @@ function flosc_run_ivr_diagnostics() {
 		$ivr_offers = array();
 		foreach ( ( $config['messages'] ?? array() ) as $message_id => $flosc_msg ) {
 			$flosc_msg_type = strtolower( trim( (string) ( $flosc_msg['type'] ?? '' ) ) );
-			if ( $flosc_msg_type !== 'offer' ) {
+			if ( 'offer' !== $flosc_msg_type ) {
 				continue;
 			}
 
 			$offer_id = sanitize_key( (string) ( $flosc_msg['offer_id'] ?? $message_id ) );
-			if ( $offer_id === '' ) {
+			if ( '' === $offer_id ) {
 				continue;
 			}
 
@@ -528,7 +528,7 @@ function flosc_run_ivr_diagnostics() {
 				}
 
 				$offer_id = sanitize_key( (string) ( $offer['id'] ?? $db_offer_id ) );
-				if ( $offer_id === '' ) {
+				if ( '' === $offer_id ) {
 					continue;
 				}
 
@@ -697,7 +697,7 @@ if ( isset( $flosc_get['flosc_ivr_uploaded'] ) && '1' === (string) $flosc_get['f
 	add_settings_error(
 		'flosc_settings',
 		'upload_success',
-		$flosc_up_name !== ''
+		'' !== $flosc_up_name
 			? sprintf(
 				/* translators: %s: IVR filename for the new flow */
 				esc_html__( 'New flow ready: %s. It is selected in Switch Flow.', 'flosc' ),
@@ -801,7 +801,7 @@ if ( isset( $flosc_post['flosc_save_full_ivr'] ) && isset( $flosc_post['ivr_full
 			? flosc_write_data_file( $flosc_full_write_path, $flosc_full_text )
 			: false;
 
-		if ( $flosc_save_ok === false ) {
+		if ( false === $flosc_save_ok ) {
 			add_settings_error( 'flosc_settings', 'full_text_save_failed', 'Could not save IVR file text. Check file permissions or uploads availability.', 'error' );
 		} else {
 			add_settings_error( 'flosc_settings', 'full_text_saved', 'Saved full IVR file text. Use "Merge IVR File → DB" to refresh runtime DB from file.', 'success' );
@@ -825,7 +825,7 @@ if ( isset( $flosc_get['flosc_download_ivr'] ) && isset( $flosc_get['_wpnonce'] 
 			global $wp_filesystem;
 			WP_Filesystem();
 			$flosc_download_content = is_object( $wp_filesystem ) ? $wp_filesystem->get_contents( $flosc_download_path ) : '';
-			if ( $flosc_download_content === false ) {
+			if ( false === $flosc_download_content ) {
 				$flosc_download_content = '';
 			}
 			$flosc_fs_dl = class_exists( 'FLOSC_Filesystem' ) ? new FLOSC_Filesystem() : null;
@@ -894,7 +894,7 @@ if ( isset( $flosc_post['flosc_delete_ivr_file'] ) && isset( $flosc_post['delete
 	// Only delete files that live under the FLOSC uploads data directory.
 	if ( '' === $flosc_delete_path || ! file_exists( $flosc_delete_path ) ) {
 		add_settings_error( 'flosc_settings', 'delete_invalid', 'File not found or not a managed IVR file.', 'error' );
-	} elseif ( wp_delete_file( $flosc_delete_path ) === false ) {
+	} elseif ( false === wp_delete_file( $flosc_delete_path ) ) {
 		add_settings_error( 'flosc_settings', 'delete_failed', 'Failed to delete IVR file. Check file permissions.', 'error' );
 	} else {
 		add_settings_error( 'flosc_settings', 'delete_success', 'Deleted IVR file: ' . $flosc_delete_file, 'success' );
@@ -972,11 +972,11 @@ if ( isset( $flosc_post['flosc_confirm_import'] ) ) {
 		wp_die( esc_html__( 'You do not have permission to import IVR data.', 'flosc' ) );
 	}
 
-	$flosc_import_mode = ( isset( $flosc_post['flosc_import_mode'] ) && $flosc_post['flosc_import_mode'] === 'replace' ) ? 'replace' : 'merge';
+	$flosc_import_mode = ( isset( $flosc_post['flosc_import_mode'] ) && 'replace' === $flosc_post['flosc_import_mode'] ) ? 'replace' : 'merge';
 	$flosc_result      = flosc_import_ivr_to_database( false, $flosc_ivr_file_path, $flosc_flow_key, $flosc_import_mode );
 
 	if ( $flosc_result['success'] ) {
-		$flosc_did_merge = ( $flosc_import_mode !== 'replace' );
+		$flosc_did_merge = ( 'replace' !== $flosc_import_mode );
 		$flosc_export_ok = true;
 		if ( $flosc_did_merge ) {
 			// Merge must end with file parity to pass status cards.
@@ -988,7 +988,7 @@ if ( isset( $flosc_post['flosc_confirm_import'] ) ) {
 			$GLOBALS['flosc_current_settings'] = get_option( $flosc_flow_key, array() );
 			$flosc_flow_settings               = $GLOBALS['flosc_current_settings'];
 		}
-		if ( $flosc_import_mode === 'replace' ) {
+		if ( 'replace' === $flosc_import_mode ) {
 			add_settings_error( 'flosc_settings', 'ivr_imported', 'Replaced FLOSC DB to match Active IVR Messages MD file: ' . esc_html( $flosc_result['message'] ), 'success' );
 		} elseif ( $flosc_export_ok ) {
 			add_settings_error( 'flosc_settings', 'ivr_imported', 'Merged Active IVR Messages MD file and synced FLOSC DB ↔ IVR file: ' . esc_html( $flosc_result['message'] ) . '. No discrepancies remain.', 'success' );
@@ -1090,7 +1090,7 @@ if ( isset( $flosc_post['save_ivr_message'] ) ) {
 			);
 
 			// v1.6.2: Include offer-specific fields when type is 'offer'.
-			if ( $flosc_message_data['type'] === 'offer' ) {
+			if ( 'offer' === $flosc_message_data['type'] ) {
 				$flosc_offer_fields = array(
 					'offer_id'       => sanitize_text_field( $flosc_post['message_offer_id'] ?? '' ),
 					'price'          => sanitize_text_field( $flosc_post['message_price'] ?? '' ),
@@ -1103,9 +1103,9 @@ if ( isset( $flosc_post['save_ivr_message'] ) ) {
 				);
 				// Only store non-empty values (timer 0 is valid — use array_key_exists path for ints).
 				foreach ( $flosc_offer_fields as $flosc_k => $flosc_v ) {
-					if ( $flosc_k === 'timer' || $flosc_k === 'post_id' ) {
+					if ( 'timer' === $flosc_k || 'post_id' === $flosc_k ) {
 						$flosc_message_data[ $flosc_k ] = $flosc_v;
-					} elseif ( $flosc_v !== '' && $flosc_v !== null ) {
+					} elseif ( '' !== $flosc_v && null !== $flosc_v ) {
 						$flosc_message_data[ $flosc_k ] = $flosc_v;
 					}
 				}
@@ -1113,7 +1113,7 @@ if ( isset( $flosc_post['save_ivr_message'] ) ) {
 
 			// v8.0.0: Concierge fields when type is 'concierge' — keyword-triggered message
 			// with an optional password gate. Retry messages are one per line (the retry list).
-			if ( $flosc_message_data['type'] === 'concierge' ) {
+			if ( 'concierge' === $flosc_message_data['type'] ) {
 				$flosc_message_data['individual_message_password'] = sanitize_text_field( $flosc_post['message_individual_password'] ?? '' );
 				$flosc_message_data['password_prompt']             = sanitize_text_field( $flosc_post['message_password_prompt'] ?? '' );
 				$flosc_message_data['password_success']            = sanitize_text_field( $flosc_post['message_password_success'] ?? '' );
@@ -1121,7 +1121,7 @@ if ( isset( $flosc_post['save_ivr_message'] ) ) {
 				$flosc_retry_list                                  = array();
 				foreach ( preg_split( '/\r\n|\r|\n/', (string) ( $flosc_post['message_password_retry'] ?? '' ) ) as $flosc_retry_line ) {
 					$flosc_retry_line = sanitize_text_field( $flosc_retry_line );
-					if ( $flosc_retry_line !== '' ) {
+					if ( '' !== $flosc_retry_line ) {
 						$flosc_retry_list[] = $flosc_retry_line;
 					}
 				}
@@ -1225,7 +1225,7 @@ if ( is_dir( $flosc_ivr_files_dir ) ) {
 	foreach ( $flosc_files as $flosc_file ) {
 		$flosc_filename = basename( $flosc_file );
 		// Skip backup files.
-		if ( strpos( $flosc_filename, 'backup' ) === false ) {
+		if ( false === strpos( $flosc_filename, 'backup' ) ) {
 			$flosc_available_ivr_files[] = $flosc_filename;
 		}
 	}
@@ -1233,7 +1233,7 @@ if ( is_dir( $flosc_ivr_files_dir ) ) {
 
 // In single-flow view, the selected flow/file must remain the active IVR target.
 // Only fall back to stored active_ivr_file when there is no selected flow context.
-if ( $flosc_requested_ivr_file !== '' ) {
+if ( '' !== $flosc_requested_ivr_file ) {
 	$flosc_active_ivr_file = $flosc_requested_ivr_file;
 } elseif ( $flosc_editing_flow_data && ! empty( $flosc_editing_flow_data['ivr_file'] ) ) {
 	$flosc_active_ivr_file = $flosc_editing_flow_data['ivr_file'];
@@ -1280,7 +1280,7 @@ flosc_tab_header( '💬', 'IVR Management' );
 	</h3>
 	
 	<p class="description flosc-ivr-panel__intro">
-		<?php if ( $flosc_ivr_management_view === 'single' ) : ?>
+		<?php if ( 'single' === $flosc_ivr_management_view ) : ?>
 			Single Flow view: edit message entries for the currently selected flow.
 		<?php else : ?>
 			All Flows view: manage IVR files and full-text file content across flows.
@@ -1288,10 +1288,10 @@ flosc_tab_header( '💬', 'IVR Management' );
 	</p>
 
 	<div class="flosc-ivr-actions-row">
-		<a href="<?php echo esc_url( admin_url( 'admin.php?page=flosc-settings&tab=ivr-messages&ivr=' . rawurlencode( $flosc_active_ivr_file ) . '&view=single' ) ); ?>" class="button <?php echo esc_attr( $flosc_ivr_management_view === 'single' ? 'button-primary' : '' ); ?>">
+		<a href="<?php echo esc_url( admin_url( 'admin.php?page=flosc-settings&tab=ivr-messages&ivr=' . rawurlencode( $flosc_active_ivr_file ) . '&view=single' ) ); ?>" class="button <?php echo esc_attr( 'single' === $flosc_ivr_management_view ? 'button-primary' : '' ); ?>">
 			Single Flow: Message Editing
 		</a>
-		<a href="<?php echo esc_url( admin_url( 'admin.php?page=flosc-settings&tab=ivr-messages&ivr=' . rawurlencode( $flosc_active_ivr_file ) . '&view=all' ) ); ?>" class="button <?php echo esc_attr( $flosc_ivr_management_view === 'all' ? 'button-primary' : '' ); ?>">
+		<a href="<?php echo esc_url( admin_url( 'admin.php?page=flosc-settings&tab=ivr-messages&ivr=' . rawurlencode( $flosc_active_ivr_file ) . '&view=all' ) ); ?>" class="button <?php echo esc_attr( 'all' === $flosc_ivr_management_view ? 'button-primary' : '' ); ?>">
 			All Flows: File Management
 		</a>
 	</div>
@@ -1552,10 +1552,10 @@ function floscTestAPI() {
 
 <?php wp_add_inline_script( 'flosc-admin', ob_get_clean() ); ?>
 
-<h2><?php echo esc_html( $flosc_ivr_management_view === 'all' ? 'IVR Management - All Flows File Management' : 'IVR Management - Single Flow Message Editing' ); ?></h2>
+<h2><?php echo esc_html( 'all' === $flosc_ivr_management_view ? 'IVR Management - All Flows File Management' : 'IVR Management - Single Flow Message Editing' ); ?></h2>
 
 <!-- File Management + Full Text Editor -->
-<?php if ( $flosc_ivr_management_view === 'all' ) : ?>
+<?php if ( 'all' === $flosc_ivr_management_view ) : ?>
 <div class="flosc-info-box flosc-ivr-info-box">
 	<h3 class="flosc-ivr-info-box__title">All Flows File Management</h3>
 	<p class="flosc-ivr-info-box__lead">Manage files across flows: refresh, upload, duplicate, import, delete, and edit full file text.</p>
@@ -1705,7 +1705,7 @@ function floscTestAPI() {
 	$flosc_active_ivr_full_text = '';
 	if ( file_exists( $flosc_ivr_file_path ) ) {
 		$flosc_active_ivr_full_text = flosc_fs_get_contents( $flosc_ivr_file_path );
-		if ( $flosc_active_ivr_full_text === false ) {
+		if ( false === $flosc_active_ivr_full_text ) {
 			$flosc_active_ivr_full_text = '';
 		}
 	}
@@ -1734,7 +1734,7 @@ function floscTestAPI() {
 </div>
 
 <?php
-if ( $flosc_import_preview !== null ) :
+if ( null !== $flosc_import_preview ) :
 	// v3.0.9: Pre-compute field_diffs early so we can split "updated" into changed vs unchanged.
 	$flosc_field_diffs           = $flosc_import_preview['field_diffs'] ?? array();
 	$flosc_changed_ids           = array_keys( $flosc_field_diffs );                                          // IDs with actual field differences
@@ -1867,11 +1867,11 @@ if ( $flosc_import_preview !== null ) :
 		<!-- v3.0.9: Field-level diff table — one <details> row per changed message -->
 		<?php if ( ! empty( $flosc_field_diffs ) ) : ?>
 		<div class="flosc-ivr-field-diff-wrap">
-			<h4 class="flosc-ivr-field-diff-wrap__title">🔍 Field-Level Differences (<?php echo count( $flosc_field_diffs ); ?> message<?php echo count( $flosc_field_diffs ) !== 1 ? 's' : ''; ?> changed):</h4>
+			<h4 class="flosc-ivr-field-diff-wrap__title">🔍 Field-Level Differences (<?php echo count( $flosc_field_diffs ); ?> message<?php echo 1 !== count( $flosc_field_diffs ) ? 's' : ''; ?> changed):</h4>
 			<?php foreach ( $flosc_field_diffs as $flosc_msg_id => $flosc_diffs ) : ?>
 			<details class="flosc-ivr-field-diff-item">
 				<summary class="flosc-ivr-field-diff-item__summary">
-					▶ <?php echo esc_html( $flosc_msg_id ); ?> — <?php echo count( $flosc_diffs ); ?> field<?php echo count( $flosc_diffs ) !== 1 ? 's' : ''; ?> changed
+					▶ <?php echo esc_html( $flosc_msg_id ); ?> — <?php echo count( $flosc_diffs ); ?> field<?php echo 1 !== count( $flosc_diffs ) ? 's' : ''; ?> changed
 				</summary>
 				<table class="flosc-ivr-field-diff-table">
 					<thead>
@@ -1886,10 +1886,10 @@ if ( $flosc_import_preview !== null ) :
 					foreach ( $flosc_diffs as $flosc_field => $flosc_vals ) :
 						$flosc_db_display   = esc_html( $vals['db'] );
 						$flosc_file_display = esc_html( $vals['file'] );
-						if ( $flosc_db_display === '' ) {
+						if ( '' === $flosc_db_display ) {
 							$flosc_db_display = '<em class="flosc-ivr-empty-value">(empty)</em>';
 						}
-						if ( $flosc_file_display === '' ) {
+						if ( '' === $flosc_file_display ) {
 							$flosc_file_display = '<em class="flosc-ivr-empty-value">(empty)</em>';
 						}
 						?>
@@ -2146,7 +2146,7 @@ foreach ( $flosc_phase_meta as $flosc_phase_id => $flosc_pm ) :
 				</table>
 				
 				<!-- Offer-specific fields -->
-				<div class="flosc-offer-fields-inner <?php echo esc_attr( ( $flosc_msg['type'] ?? '' ) === 'offer' ? '' : 'flosc-hidden' ); ?>" id="offer-fields-<?php echo esc_attr( $flosc_safe_id ); ?>">
+				<div class="flosc-offer-fields-inner <?php echo esc_attr( 'offer' === ( $flosc_msg['type'] ?? '' ) ? '' : 'flosc-hidden' ); ?>" id="offer-fields-<?php echo esc_attr( $flosc_safe_id ); ?>">
 					<h4 class="flosc-ivr-subsection-title">🏷️ Offer Fields</h4>
 					<table class="form-table flosc-form-table-reset">
 						<tr><th>Offer ID</th><td><input type="text" name="message_offer_id" value="<?php echo esc_attr( $flosc_msg['offer_id'] ?? '' ); ?>" class="regular-text" placeholder="full_access"></td></tr>
@@ -2175,7 +2175,7 @@ foreach ( $flosc_phase_meta as $flosc_phase_id => $flosc_pm ) :
 				</div>
 				
 				<!-- Concierge-specific fields -->
-				<div class="flosc-concierge-fields-inner <?php echo esc_attr( ( $flosc_msg['type'] ?? '' ) === 'concierge' ? '' : 'flosc-hidden' ); ?>" id="concierge-fields-<?php echo esc_attr( $flosc_safe_id ); ?>">
+				<div class="flosc-concierge-fields-inner <?php echo esc_attr( 'concierge' === ( $flosc_msg['type'] ?? '' ) ? '' : 'flosc-hidden' ); ?>" id="concierge-fields-<?php echo esc_attr( $flosc_safe_id ); ?>">
 					<h4 class="flosc-ivr-subsection-title">🔐 Concierge Fields</h4>
 					<table class="form-table flosc-form-table-reset">
 						<tr><th>Individual Message Password</th><td><input type="text" name="message_individual_password" value="<?php echo esc_attr( $flosc_msg['individual_message_password'] ?? '' ); ?>" class="regular-text" placeholder="usually blank; exact, case-sensitive"></td></tr>

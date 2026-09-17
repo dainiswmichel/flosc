@@ -26,7 +26,7 @@ function flosc_admin_get_value( $key, $default = '' ) {
 		$flow = $GLOBALS['flosc_editing_flow_data'];
 
 		// Return flow-specific value if it exists.
-		if ( isset( $flow[ $key ] ) && $flow[ $key ] !== '' && $flow[ $key ] !== null ) {
+		if ( isset( $flow[ $key ] ) && '' !== $flow[ $key ] && null !== $flow[ $key ] ) {
 			return $flow[ $key ];
 		}
 
@@ -81,7 +81,7 @@ function flosc_admin_text_input( $key, $default = '', $class = 'regular-text', $
 	$flosc_name = 'flosc_' . $key;
 
 	// When editing flow, show global value as placeholder.
-	if ( flosc_admin_is_editing_flow() && $placeholder === null ) {
+	if ( flosc_admin_is_editing_flow() && null === $placeholder ) {
 		$global_value = flosc_admin_get_global( $key, $default );
 		$placeholder  = $global_value ? 'Using global: ' . $global_value : '';
 	}
@@ -180,7 +180,7 @@ function flosc_companion_hub_defaults_from_flow( array $flow_settings ) {
 	$domain = rtrim( (string) $domain, '/' );
 
 	$lessons_cat = sanitize_title( (string) ( $flow_settings['content_item_category'] ?? '' ) );
-	if ( $lessons_cat === '' && ! empty( $flow_settings['content_item_groups'] ) && is_array( $flow_settings['content_item_groups'] ) ) {
+	if ( '' === $lessons_cat && ! empty( $flow_settings['content_item_groups'] ) && is_array( $flow_settings['content_item_groups'] ) ) {
 		foreach ( $flow_settings['content_item_groups'] as $group ) {
 			if ( ! empty( $group['category'] ) ) {
 				$lessons_cat = sanitize_title( (string) $group['category'] );
@@ -190,10 +190,10 @@ function flosc_companion_hub_defaults_from_flow( array $flow_settings ) {
 	}
 
 	$flow_for_app = $flow_settings;
-	if ( empty( $flow_for_app['custom_domain'] ) && $domain !== '' ) {
+	if ( empty( $flow_for_app['custom_domain'] ) && '' !== $domain ) {
 		$flow_for_app['custom_domain'] = $domain;
 	}
-	if ( empty( $flow_for_app['slug'] ) && $slug !== '' ) {
+	if ( empty( $flow_for_app['slug'] ) && '' !== $slug ) {
 		$flow_for_app['slug'] = $slug;
 	}
 
@@ -203,17 +203,17 @@ function flosc_companion_hub_defaults_from_flow( array $flow_settings ) {
 	if ( function_exists( 'flosc' ) && is_object( flosc() ) && method_exists( flosc(), 'get_app_url' ) ) {
 		$fullscreen = (string) flosc()->get_app_url( $flow_for_app );
 	}
-	if ( $fullscreen === '' && $slug !== '' ) {
+	if ( '' === $fullscreen && '' !== $slug ) {
 		$fullscreen = home_url( '/' . $slug . '/' );
 	}
 	$fullscreen = esc_url_raw( $fullscreen, array( 'http', 'https' ) );
 
 	// Collapse/hub destination (WP content) — not an iframe chat target.
-	$companion = $lessons_cat !== ''
+	$companion = '' !== $lessons_cat
 		? home_url( '/category/' . $lessons_cat . '/' )
 		: home_url( '/' );
 	$companion = esc_url_raw( $companion, array( 'http', 'https' ) );
-	if ( $companion === '' ) {
+	if ( '' === $companion ) {
 		$companion = home_url( '/' );
 	}
 
@@ -221,17 +221,17 @@ function flosc_companion_hub_defaults_from_flow( array $flow_settings ) {
 
 	// Iframe chat route: flow slug on this host, else full-page app URL from get_app_url.
 	$chat_app = '';
-	if ( $flow_slug !== '' ) {
+	if ( '' !== $flow_slug ) {
 		$chat_app = esc_url_raw( home_url( '/' . $flow_slug . '/' ), array( 'http', 'https' ) );
 	}
-	if ( $chat_app === '' && $fullscreen !== '' ) {
+	if ( '' === $chat_app && '' !== $fullscreen ) {
 		$chat_app = $fullscreen;
 	}
 	$chat_app = esc_url_raw( (string) $chat_app, array( 'http', 'https' ) );
 
 	// Suggested include rules from Content → lessons category (still editable in admin).
 	$include = array();
-	if ( $lessons_cat !== '' ) {
+	if ( '' !== $lessons_cat ) {
 		if ( function_exists( 'get_term_by' ) ) {
 			$term = get_term_by( 'slug', $lessons_cat, 'category' );
 			if ( $term && ! is_wp_error( $term ) && ! empty( $term->term_id ) ) {

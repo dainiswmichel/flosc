@@ -145,7 +145,7 @@ abstract class FLOSC_Abstract_Quiz_Type {
 		foreach ( $analysis['incorrect'] ?? array() as $item ) {
 			foreach ( (array) ( $item['correct_content'] ?? array() ) as $ref ) {
 				$ref = trim( $ref );
-				if ( $ref === '' ) {
+				if ( '' === $ref ) {
 					continue;
 				}
 				foreach ( $this->lookup_lesson_by_tag( $ref ) as $post ) {
@@ -165,7 +165,7 @@ abstract class FLOSC_Abstract_Quiz_Type {
 		foreach ( $analysis['incorrect'] ?? array() as $item ) {
 			foreach ( (array) ( $item['related_content'] ?? array() ) as $t ) {
 				$t = trim( $t );
-				if ( $t === '' ) {
+				if ( '' === $t ) {
 					continue;
 				}
 				foreach ( $this->lookup_lesson_by_tag( $t ) as $post ) {
@@ -186,7 +186,7 @@ abstract class FLOSC_Abstract_Quiz_Type {
 		foreach ( $analysis['incorrect'] ?? array() as $item ) {
 			foreach ( (array) ( $item['topics'] ?? array() ) as $t ) {
 				$t = trim( $t );
-				if ( $t !== '' ) {
+				if ( '' !== $t ) {
 					$topics[] = $t;
 				}
 			}
@@ -240,24 +240,24 @@ abstract class FLOSC_Abstract_Quiz_Type {
 	 */
 	protected function lookup_lesson_by_tag( $ref ) {
 		$ref = trim( $ref );
-		if ( $ref === '' ) {
+		if ( '' === $ref ) {
 			return array();
 		}
 
 		// Typed dispatch — prefix:value.
-		if ( strpos( $ref, ':' ) !== false ) {
+		if ( false !== strpos( $ref, ':' ) ) {
 			list( $type, $value ) = explode( ':', $ref, 2 );
 			$type                 = strtolower( trim( $type ) );
 			$value                = trim( $value );
 
 			switch ( $type ) {
 				case 'post':
-					if ( strpos( $value, '/' ) !== false ) {
+					if ( false !== strpos( $value, '/' ) ) {
 						// Hierarchical path (e.g. vowels/lesson-1) — try all public post types
 						// because the same slug can exist under different parents.
 						foreach ( get_post_types( array( 'public' => true ), 'names' ) as $pt ) {
 							$post = get_page_by_path( $value, OBJECT, $pt );
-							if ( $post && $post->post_status === 'publish' ) {
+							if ( $post && 'publish' === $post->post_status ) {
 								return array( $post );
 							}
 						}
@@ -265,7 +265,7 @@ abstract class FLOSC_Abstract_Quiz_Type {
 					}
 					// Flat slug — globally unique within 'post' type.
 					$post = get_page_by_path( $value, OBJECT, 'post' );
-					if ( $post && $post->post_status === 'publish' ) {
+					if ( $post && 'publish' === $post->post_status ) {
 						return array( $post );
 					}
 					return array();
@@ -273,7 +273,7 @@ abstract class FLOSC_Abstract_Quiz_Type {
 				case 'id':
 					if ( is_numeric( $value ) ) {
 						$post = get_post( (int) $value );
-						if ( $post && $post->post_status === 'publish' ) {
+						if ( $post && 'publish' === $post->post_status ) {
 							return array( $post );
 						}
 					}
@@ -282,7 +282,7 @@ abstract class FLOSC_Abstract_Quiz_Type {
 				case 'category':
 					// Supports parent/child path: category:parent-slug/child-slug.
 					$cat = null;
-					if ( strpos( $value, '/' ) !== false ) {
+					if ( false !== strpos( $value, '/' ) ) {
 						$parent_id = 0;
 						foreach ( explode( '/', $value ) as $slug ) {
 							$args = array(
@@ -348,22 +348,22 @@ abstract class FLOSC_Abstract_Quiz_Type {
 		// Legacy auto-resolve (no prefix — supports old saved content only).
 		if ( is_numeric( $ref ) ) {
 			$post = get_post( (int) $ref );
-			if ( $post && $post->post_status === 'publish' ) {
+			if ( $post && 'publish' === $post->post_status ) {
 				return array( $post );
 			}
 		}
-		if ( strpos( $ref, '/' ) !== false ) {
+		if ( false !== strpos( $ref, '/' ) ) {
 			// Hierarchical path — try all public post types.
 			foreach ( get_post_types( array( 'public' => true ), 'names' ) as $pt ) {
 				$post = get_page_by_path( $ref, OBJECT, $pt );
-				if ( $post && $post->post_status === 'publish' ) {
+				if ( $post && 'publish' === $post->post_status ) {
 					return array( $post );
 				}
 			}
 			return array();
 		}
 		$post = get_page_by_path( $ref, OBJECT, 'post' );
-		if ( $post && $post->post_status === 'publish' ) {
+		if ( $post && 'publish' === $post->post_status ) {
 			return array( $post );
 		}
 		$cat = get_category_by_slug( $ref );
@@ -460,7 +460,7 @@ abstract class FLOSC_Abstract_Quiz_Type {
 	 * Helper: Calculate percentage score
 	 */
 	protected function calculate_percentage( $correct_count, $total_count ) {
-		if ( $total_count === 0 ) {
+		if ( 0 === $total_count ) {
 			return 0;
 		}
 		return round( ( $correct_count / $total_count ) * 100 );

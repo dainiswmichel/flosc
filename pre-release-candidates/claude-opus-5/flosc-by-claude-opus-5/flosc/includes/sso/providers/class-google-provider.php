@@ -115,7 +115,7 @@ class Google_Provider extends SSO_Provider_Base {
 
 		// v1.4.6: Get larger avatar (BuddyBoss pattern: replace s96 with s360).
 		$avatar = esc_url_raw( (string) ( $raw_data['picture'] ?? '' ) );
-		if ( $avatar !== '' && strpos( $avatar, '=s96-c' ) !== false ) {
+		if ( '' !== $avatar && false !== strpos( $avatar, '=s96-c' ) ) {
 			$avatar = str_replace( '=s96-c', '=s360-c', $avatar );
 		}
 

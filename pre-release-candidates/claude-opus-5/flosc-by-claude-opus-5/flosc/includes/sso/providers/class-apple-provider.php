@@ -217,7 +217,7 @@ class Apple_Provider extends SSO_Provider_Base {
 			'email_verified' => $email_verified,
 		);
 
-		if ( $payload['sub'] === '' ) {
+		if ( '' === $payload['sub'] ) {
 			return new \WP_Error( 'invalid_id_token', 'Apple ID token missing subject' );
 		}
 
@@ -235,7 +235,7 @@ class Apple_Provider extends SSO_Provider_Base {
 			? sanitize_textarea_field( $token_data['flosc_form_post_user'] )
 			: '';
 		$user_data_raw = array();
-		if ( $raw_user_json !== '' && strlen( $raw_user_json ) <= 20000 ) {
+		if ( '' !== $raw_user_json && strlen( $raw_user_json ) <= 20000 ) {
 			$decoded_user = json_decode( $raw_user_json, true, 8 );
 			if ( JSON_ERROR_NONE === json_last_error() && is_array( $decoded_user ) ) {
 				$user_data_raw = $decoded_user;
@@ -271,7 +271,7 @@ class Apple_Provider extends SSO_Provider_Base {
 	 */
 	private function verify_id_token( $id_token ) {
 		$parts = explode( '.', $id_token );
-		if ( count( $parts ) !== 3 ) {
+		if ( 3 !== count( $parts ) ) {
 			return new \WP_Error( 'invalid_id_token', 'Invalid Apple ID token format' );
 		}
 
@@ -281,17 +281,17 @@ class Apple_Provider extends SSO_Provider_Base {
 		$payload = json_decode( $this->base64_url_decode( $payload_b64 ), true );
 		$sig     = $this->base64_url_decode( $sig_b64 );
 
-		if ( ! is_array( $header ) || ! is_array( $payload ) || $sig === '' || $sig === false ) {
+		if ( ! is_array( $header ) || ! is_array( $payload ) || '' === $sig || false === $sig ) {
 			return new \WP_Error( 'invalid_id_token', 'Failed to decode Apple ID token' );
 		}
 
 		$alg = isset( $header['alg'] ) ? (string) $header['alg'] : '';
-		if ( $alg !== 'RS256' ) {
+		if ( 'RS256' !== $alg ) {
 			return new \WP_Error( 'invalid_id_token', 'Unsupported Apple ID token algorithm' );
 		}
 
 		$kid = isset( $header['kid'] ) ? (string) $header['kid'] : '';
-		if ( $kid === '' ) {
+		if ( '' === $kid ) {
 			return new \WP_Error( 'invalid_id_token', 'Apple ID token missing key id' );
 		}
 
@@ -312,13 +312,13 @@ class Apple_Provider extends SSO_Provider_Base {
 		}
 
 		$iss = isset( $payload['iss'] ) ? (string) $payload['iss'] : '';
-		if ( $iss !== 'https://appleid.apple.com' ) {
+		if ( 'https://appleid.apple.com' !== $iss ) {
 			return new \WP_Error( 'invalid_id_token', 'Apple ID token issuer mismatch' );
 		}
 
 		$aud    = $payload['aud'] ?? '';
 		$aud_ok = false;
-		if ( is_string( $aud ) && $aud !== '' && hash_equals( (string) $this->client_id, $aud ) ) {
+		if ( is_string( $aud ) && '' !== $aud && hash_equals( (string) $this->client_id, $aud ) ) {
 			$aud_ok = true;
 		} elseif ( is_array( $aud ) ) {
 			foreach ( $aud as $a ) {
@@ -345,7 +345,7 @@ class Apple_Provider extends SSO_Provider_Base {
 		}
 
 		$sub = isset( $payload['sub'] ) ? (string) $payload['sub'] : '';
-		if ( $sub === '' ) {
+		if ( '' === $sub ) {
 			return new \WP_Error( 'invalid_id_token', 'Apple ID token missing subject' );
 		}
 
@@ -439,7 +439,7 @@ class Apple_Provider extends SSO_Provider_Base {
 
 		$n = $this->base64_url_decode( $jwk['n'] );
 		$e = $this->base64_url_decode( $jwk['e'] );
-		if ( $n === '' || $n === false || $e === '' || $e === false ) {
+		if ( '' === $n || false === $n || '' === $e || false === $e ) {
 			return new \WP_Error( 'apple_jwks', 'Invalid Apple JWK modulus/exponent' );
 		}
 
@@ -463,7 +463,7 @@ class Apple_Provider extends SSO_Provider_Base {
 	 * @return string ASN.1 INTEGER
 	 */
 	private function asn1_integer( $bytes ) {
-		if ( $bytes === '' || ord( $bytes[0] ) > 0x7f ) {
+		if ( '' === $bytes || ord( $bytes[0] ) > 0x7f ) {
 			$bytes = "\x00" . $bytes;
 		}
 		return "\x02" . $this->asn1_length( strlen( $bytes ) ) . $bytes;
@@ -532,7 +532,7 @@ class Apple_Provider extends SSO_Provider_Base {
 		return array(
 			'provider_id'    => $provider_id,
 			'email'          => $email,
-			'email_verified' => $email_verified === 'true',
+			'email_verified' => 'true' === $email_verified,
 			'name'           => $name,
 			'first_name'     => $first_name,
 			'last_name'      => $last_name,

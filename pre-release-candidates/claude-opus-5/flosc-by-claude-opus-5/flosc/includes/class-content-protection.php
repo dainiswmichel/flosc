@@ -119,7 +119,7 @@ class FLOSC_Content_Protection {
 			$post_id     = (int) $post_id;
 			$public      = (string) get_post_meta( $post_id, '_flosc_public_post', true );
 			$mode        = (string) get_post_meta( $post_id, '_flosc_protection_mode', true );
-			$is_override = ( 'yes' === $public ) || ( $mode !== '' && 'protected' !== $mode );
+			$is_override = ( 'yes' === $public ) || ( '' !== $mode && 'protected' !== $mode );
 			if ( $is_override ) {
 				$override_post_ids[] = $post_id;
 			} else {
@@ -155,7 +155,7 @@ class FLOSC_Content_Protection {
 	 */
 	public function get_protected_category_ids() {
 		static $cached = null;
-		if ( $cached !== null ) {
+		if ( null !== $cached ) {
 			return $cached;
 		}
 
@@ -196,7 +196,7 @@ class FLOSC_Content_Protection {
 	 */
 	public function is_category_protected( $category_id ) {
 		$protected = get_term_meta( $category_id, '_flosc_protected', true );
-		return $protected === 'yes' || $protected === 'true' || $protected === true || $protected === '1';
+		return 'yes' === $protected || 'true' === $protected || true === $protected || '1' === $protected;
 	}
 
 	/**
@@ -260,7 +260,7 @@ class FLOSC_Content_Protection {
 		}
 
 		// Legacy: check old _flosc_public_post override.
-		if ( get_post_meta( $post_id, '_flosc_public_post', true ) === 'yes' ) {
+		if ( 'yes' === get_post_meta( $post_id, '_flosc_public_post', true ) ) {
 			return 'public';
 		}
 
@@ -293,7 +293,7 @@ class FLOSC_Content_Protection {
 			return true;
 		}
 
-		if ( $user_id === null ) {
+		if ( null === $user_id ) {
 			$user_id = get_current_user_id();
 		}
 		$user_id = absint( $user_id );
@@ -352,14 +352,14 @@ class FLOSC_Content_Protection {
 				continue;
 			}
 			$default_member = sanitize_key( (string) ( $flow['default_member_level'] ?? '' ) );
-			if ( $default_member !== '' && $member_access->has_level( $user_id, $default_member ) ) {
+			if ( '' !== $default_member && $member_access->has_level( $user_id, $default_member ) ) {
 				return true;
 			}
 			$levels = $flow['member_levels'] ?? array();
 			if ( is_array( $levels ) ) {
 				foreach ( array_keys( $levels ) as $level_key ) {
 					$level_key = sanitize_key( (string) $level_key );
-					if ( $level_key === '' || strpos( $level_key, 'guest' ) !== false ) {
+					if ( '' === $level_key || false !== strpos( $level_key, 'guest' ) ) {
 						continue;
 					}
 					if ( $member_access->has_level( $user_id, $level_key ) ) {
@@ -380,14 +380,14 @@ class FLOSC_Content_Protection {
 	 */
 	private function get_flows_owning_content_item_category( $category_slug ) {
 		$category_slug = sanitize_title( (string) $category_slug );
-		if ( $category_slug === '' || ! function_exists( 'flosc_config_glob' ) ) {
+		if ( '' === $category_slug || ! function_exists( 'flosc_config_glob' ) ) {
 			return array();
 		}
 
 		$found     = array();
 		$ivr_files = array_unique( array_map( 'basename', flosc_config_glob( array( '*_ivr.md', 'ivr*.md' ) ) ) );
 		foreach ( $ivr_files as $filename ) {
-			if ( strpos( $filename, 'backup' ) !== false ) {
+			if ( false !== strpos( $filename, 'backup' ) ) {
 				continue;
 			}
 			$base     = pathinfo( $filename, PATHINFO_FILENAME );
@@ -424,18 +424,18 @@ class FLOSC_Content_Protection {
 	public function user_can_access( $post_id ) {
 		// v1.8.2: Check 4-tier protection mode — 'full' always accessible.
 		$protection_mode = get_post_meta( $post_id, '_flosc_protection_mode', true );
-		if ( $protection_mode === 'full' ) {
+		if ( 'full' === $protection_mode ) {
 			return true;
 		}
 
 		// v1.4.3: Legacy public posts are always accessible.
-		if ( get_post_meta( $post_id, '_flosc_public_post', true ) === 'yes' ) {
+		if ( 'yes' === get_post_meta( $post_id, '_flosc_public_post', true ) ) {
 			return true;
 		}
 
 		// v1.4.3: Check explicit public visibility.
 		$visibility = get_post_meta( $post_id, '_flosc_post_visibility', true );
-		if ( $visibility === 'public' ) {
+		if ( 'public' === $visibility ) {
 			return true;
 		}
 
@@ -497,7 +497,7 @@ class FLOSC_Content_Protection {
 						}
 					}
 					$default_member = sanitize_key( (string) ( $flow['default_member_level'] ?? '' ) );
-					if ( $default_member !== '' && $member_access->has_level( $user_id, $default_member ) ) {
+					if ( '' !== $default_member && $member_access->has_level( $user_id, $default_member ) ) {
 						return true;
 					}
 				}
@@ -595,7 +595,7 @@ class FLOSC_Content_Protection {
 			case 'public':
 			default:
 				// v1.4.3: Add free sample CTAs if this is a free sample post.
-				if ( get_post_meta( $post_id, '_flosc_public_post', true ) === 'yes' ) {
+				if ( 'yes' === get_post_meta( $post_id, '_flosc_public_post', true ) ) {
 					$content = $this->flosc_add_public_post_ctas( $content, $post_id );
 				}
 				return $content;

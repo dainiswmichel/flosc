@@ -48,7 +48,7 @@ $flosc_current_ivr   = $GLOBALS['flosc_current_ivr'] ?? '';
  */
 $flosc_ai_view        = flosc_nav_param( 'view', array( 'single', 'all' ), 'single' );
 $flosc_personality_id = sanitize_key( (string) ( $flosc_flow_settings['personality_library_id'] ?? '' ) );
-if ( $flosc_personality_id === '' && function_exists( 'flosc_personality_library_id_for_flow' ) ) {
+if ( '' === $flosc_personality_id && function_exists( 'flosc_personality_library_id_for_flow' ) ) {
 	$flosc_personality_id = flosc_personality_library_id_for_flow(
 		sanitize_key( pathinfo( (string) $flosc_current_ivr, PATHINFO_FILENAME ) )
 	);
@@ -108,7 +108,7 @@ $flosc_chain_provider_1      = $flosc_flow_settings['ai_chain_provider_1'] ?? ''
 $flosc_chain_provider_2      = $flosc_flow_settings['ai_chain_provider_2'] ?? '';
 $flosc_chain_provider_3      = $flosc_flow_settings['ai_chain_provider_3'] ?? '';
 $flosc_personas              = function_exists( 'flosc_personality_library_get_all' ) ? flosc_personality_library_get_all() : array();
-$flosc_personality_label     = isset( $flosc_personas[ $flosc_personality_id ]['label'] ) && $flosc_personas[ $flosc_personality_id ]['label'] !== ''
+$flosc_personality_label     = isset( $flosc_personas[ $flosc_personality_id ]['label'] ) && '' !== $flosc_personas[ $flosc_personality_id ]['label']
 	? (string) $flosc_personas[ $flosc_personality_id ]['label']
 	: $flosc_personality_id;
 $flosc_avail                 = function_exists( 'flosc_available_providers_get_all' ) ? flosc_available_providers_get_all() : array();
@@ -153,10 +153,10 @@ if ( (float) $flosc_ai_temperature > 0.5 ) {
 Fail-closed visibility: if this flow has no resolvable personality
 	profile, the chat refuses unpersonified answers — tell the admin why. */
 $flosc_admin_stem    = sanitize_key( pathinfo( (string) $flosc_current_ivr, PATHINFO_FILENAME ) );
-$flosc_admin_profile = ( $flosc_admin_stem !== '' && function_exists( 'flosc_personality_compiled_profile' ) )
+$flosc_admin_profile = ( '' !== $flosc_admin_stem && function_exists( 'flosc_personality_compiled_profile' ) )
 	? trim( (string) flosc_personality_compiled_profile( $flosc_admin_stem ) )
 	: '';
-if ( $flosc_admin_profile === '' ) :
+if ( '' === $flosc_admin_profile ) :
 	?>
 <div class="notice notice-error flosc-inline-notice">
 	<p><strong><?php esc_html_e( 'Personality not configured.', 'flosc' ); ?></strong>
@@ -201,7 +201,7 @@ foreach ( $flosc_key_catalog as $flosc_slug => $flosc_meta ) {
 				<option value="" <?php selected( $flosc_personality_id, '' ); ?>><?php echo esc_html__( 'No attached personality', 'flosc' ); ?></option>
 				<?php foreach ( $flosc_personas as $flosc_pid => $flosc_p ) : ?>
 				<option value="<?php echo esc_attr( $flosc_pid ); ?>" <?php selected( $flosc_personality_id, $flosc_pid ); ?>>
-					<?php echo esc_html( $flosc_p['label'] !== '' ? $flosc_p['label'] : $flosc_pid ); ?>
+					<?php echo esc_html( '' !== $flosc_p['label'] ? $flosc_p['label'] : $flosc_pid ); ?>
 				</option>
 				<?php endforeach; ?>
 			</select>
@@ -228,13 +228,13 @@ foreach ( $flosc_key_catalog as $flosc_slug => $flosc_meta ) {
 		<td>
 			<?php
 			$flosc_enable_user_sticky = false;
-			if ( $flosc_personality_id !== '' && function_exists( 'flosc_personality_library_get' ) ) {
+			if ( '' !== $flosc_personality_id && function_exists( 'flosc_personality_library_get' ) ) {
 				$flosc_sticky_row         = flosc_personality_library_get( $flosc_personality_id );
 				$flosc_enable_user_sticky = is_array( $flosc_sticky_row ) && ! empty( $flosc_sticky_row['enable_user_sticky'] );
 			}
 			?>
 			<label for="flosc_personality_enable_user_sticky">
-				<input type="checkbox" name="flosc_personality_enable_user_sticky" id="flosc_personality_enable_user_sticky" value="1" <?php checked( $flosc_enable_user_sticky ); ?> <?php disabled( $flosc_personality_id === '' ); ?>>
+				<input type="checkbox" name="flosc_personality_enable_user_sticky" id="flosc_personality_enable_user_sticky" value="1" <?php checked( $flosc_enable_user_sticky ); ?> <?php disabled( '' === $flosc_personality_id ); ?>>
 				<?php echo esc_html__( 'Enable Sticky for Users', 'flosc' ); ?>
 			</label>
 			<p class="description">
@@ -3013,21 +3013,21 @@ $flosc_sci_err    = is_array( $flosc_sci_notice )
 	? sanitize_text_field( (string) ( $flosc_sci_notice['message'] ?? '' ) )
 	: sanitize_text_field( rawurldecode( flosc_nav_param( 'site_index_error', array(), '', 'sanitize_text_field' ) ) );
 $flosc_sci_msg    = '';
-if ( $flosc_sci_action === 'rebuilt' ) {
-	$flosc_sci_msg = $flosc_sci_err !== '' ? $flosc_sci_err : __( 'Site content index rebuilt.', 'flosc' );
-} elseif ( $flosc_sci_action === 'excluded' ) {
+if ( 'rebuilt' === $flosc_sci_action ) {
+	$flosc_sci_msg = '' !== $flosc_sci_err ? $flosc_sci_err : __( 'Site content index rebuilt.', 'flosc' );
+} elseif ( 'excluded' === $flosc_sci_action ) {
 	$flosc_sci_msg = __( 'Post excluded from the index.', 'flosc' );
-} elseif ( $flosc_sci_action === 'included' ) {
+} elseif ( 'included' === $flosc_sci_action ) {
 	$flosc_sci_msg = __( 'Post included in the index again.', 'flosc' );
-} elseif ( $flosc_sci_action === 'keywords' ) {
+} elseif ( 'keywords' === $flosc_sci_action ) {
 	$flosc_sci_msg = __( 'Keywords saved.', 'flosc' );
-} elseif ( $flosc_sci_action === 'reindexed' ) {
+} elseif ( 'reindexed' === $flosc_sci_action ) {
 	$flosc_sci_msg = __( 'Post reindexed.', 'flosc' );
-} elseif ( $flosc_sci_action === 'error' ) {
-	$flosc_sci_msg = $flosc_sci_err !== '' ? $flosc_sci_err : __( 'Site index action failed.', 'flosc' );
+} elseif ( 'error' === $flosc_sci_action ) {
+	$flosc_sci_msg = '' !== $flosc_sci_err ? $flosc_sci_err : __( 'Site index action failed.', 'flosc' );
 }
 ?>
-<details class="flosc-ai-acc" id="flosc-site-index-section"<?php echo $flosc_sci_msg !== '' ? ' open' : ''; ?>>
+<details class="flosc-ai-acc" id="flosc-site-index-section"<?php echo '' !== $flosc_sci_msg ? ' open' : ''; ?>>
 <summary class="flosc-ai-acc__summary">
 	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'Site content index', 'flosc' ); ?></span>
 	<span class="flosc-ai-acc__hint"><?php echo esc_html__( 'Posts this flow’s chat may cite.', 'flosc' ); ?></span>
@@ -3039,8 +3039,8 @@ if ( $flosc_sci_action === 'rebuilt' ) {
 	<?php echo esc_html__( 'Indexes published posts across the site into a reference library. Chat pulls only matching posts when useful — never the whole library on every message. Set this flow’s content category on the Content tab for freeline, guest, and member product scope.', 'flosc' ); ?>
 </p>
 
-<?php if ( $flosc_sci_msg !== '' ) : ?>
-	<div class="notice <?php echo esc_attr( $flosc_sci_action === 'error' ? 'notice-error' : 'notice-success' ); ?> inline flosc-margin-bottom-15"><p><?php echo esc_html( $flosc_sci_msg ); ?></p></div>
+<?php if ( '' !== $flosc_sci_msg ) : ?>
+	<div class="notice <?php echo esc_attr( 'error' === $flosc_sci_action ? 'notice-error' : 'notice-success' ); ?> inline flosc-margin-bottom-15"><p><?php echo esc_html( $flosc_sci_msg ); ?></p></div>
 <?php endif; ?>
 
 <?php
@@ -3304,7 +3304,7 @@ if ( empty( $GLOBALS['flosc_settings_form_closed_early'] ) ) {
 				$flosc_sci_cats  = isset( $flosc_sci_row['categories'] ) && is_array( $flosc_sci_row['categories'] ) ? $flosc_sci_row['categories'] : array();
 				$flosc_sci_edit  = $flosc_sci_pid ? get_edit_post_link( $flosc_sci_pid, 'raw' ) : '';
 				$flosc_sci_stale = false;
-				if ( $flosc_sci_pid && $flosc_sci_mod !== '' ) {
+				if ( $flosc_sci_pid && '' !== $flosc_sci_mod ) {
 					$flosc_sci_wp = get_post( $flosc_sci_pid );
 					if ( $flosc_sci_wp && $flosc_sci_wp->post_modified_gmt > $flosc_sci_mod ) {
 						$flosc_sci_stale = true;
@@ -3466,25 +3466,25 @@ $flosc_regen_url      = wp_nonce_url( admin_url( 'admin-post.php?action=flosc_re
 <!-- ============================================ -->
 <?php
 $flosc_acc_flow_name = (string) ( $flosc_flow_settings['identity']['name'] ?? $flosc_flow_settings['name'] ?? '' );
-if ( $flosc_acc_flow_name === '' ) {
+if ( '' === $flosc_acc_flow_name ) {
 	$flosc_acc_flow_name = (string) ( $GLOBALS['flosc_current_ivr'] ?? 'this floscFlow' );
 	$flosc_acc_flow_name = pathinfo( $flosc_acc_flow_name, PATHINFO_FILENAME );
-	$flosc_acc_flow_name = $flosc_acc_flow_name !== '' ? $flosc_acc_flow_name : 'this floscFlow';
+	$flosc_acc_flow_name = '' !== $flosc_acc_flow_name ? $flosc_acc_flow_name : 'this floscFlow';
 }
 $flosc_acc_title   = trim( (string) ( $flosc_flow_settings['identity']['title'] ?? $flosc_flow_settings['title'] ?? '' ) );
 $flosc_acc_tagline = trim( (string) ( $flosc_flow_settings['identity']['tagline'] ?? $flosc_flow_settings['tagline'] ?? '' ) );
 $flosc_acc_scope   = trim( (string) ( $flosc_flow_settings['ai_topic_scope'] ?? '' ) );
-if ( $flosc_acc_scope === '' && function_exists( 'flosc_personality_library_resolve_field' ) ) {
+if ( '' === $flosc_acc_scope && function_exists( 'flosc_personality_library_resolve_field' ) ) {
 	$flosc_acc_scope = trim( (string) flosc_personality_library_resolve_field( 'ai_topic_scope', '' ) );
 }
-if ( $flosc_acc_scope === '' ) {
+if ( '' === $flosc_acc_scope ) {
 	$flosc_acc_scope = __( '(topic scope not set)', 'flosc' );
 }
 $flosc_acc_site = (string) get_bloginfo( 'name' );
-if ( $flosc_acc_site === '' ) {
+if ( '' === $flosc_acc_site ) {
 	$flosc_acc_site = (string) wp_parse_url( home_url(), PHP_URL_HOST );
 }
-if ( $flosc_acc_site === '' ) {
+if ( '' === $flosc_acc_site ) {
 	$flosc_acc_site = 'this site';
 }
 
@@ -3501,7 +3501,7 @@ $flosc_acc_templates        = array(
 	'If someone asks for details you do not have about this floscFlow, what do you do instead of inventing them?',
 	'What is this floscFlow about: title {title}, tagline {tagline}, and how you help? Based on the title and tagline, what is going on here?',
 );
-$flosc_acc_title_for_prompt = $flosc_acc_title !== ''
+$flosc_acc_title_for_prompt = '' !== $flosc_acc_title
 	? $flosc_acc_title
 	: '(none)';
 $flosc_acc_var_map          = array(
@@ -3522,8 +3522,8 @@ foreach ( $flosc_acc_templates as $flosc_acc_t ) {
 // Saved suite: prefer templates with {placeholders}. Expanded-only legacy saves map back to templates when they match.
 $flosc_acc_saved_raw   = (string) ( $flosc_flow_settings['ai_accuracy_test_questions'] ?? '' );
 $flosc_acc_saved_lines = array();
-if ( trim( $flosc_acc_saved_raw ) !== '' ) {
-	if ( strpos( $flosc_acc_saved_raw, "\n" ) === false && strpos( $flosc_acc_saved_raw, "\r" ) === false ) {
+if ( '' !== trim( $flosc_acc_saved_raw ) ) {
+	if ( false === strpos( $flosc_acc_saved_raw, "\n" ) && false === strpos( $flosc_acc_saved_raw, "\r" ) ) {
 		// Mangled one-line save — use content-agnostic templates.
 		$flosc_acc_saved_lines = $flosc_acc_templates;
 	} else {
@@ -3531,7 +3531,7 @@ if ( trim( $flosc_acc_saved_raw ) !== '' ) {
 			array_filter(
 				array_map( 'trim', preg_split( '/\r\n|\r|\n/', $flosc_acc_saved_raw ) ?: array() ),
 				static function ( $l ) {
-					return $l !== '';
+					return '' !== $l;
 				}
 			)
 		);
@@ -3545,7 +3545,7 @@ if ( $flosc_acc_saved_lines === array() ) {
 	foreach ( $flosc_acc_saved_lines as $flosc_acc_si => $flosc_acc_line ) {
 		$flosc_acc_tpl_i    = $flosc_acc_templates[ $flosc_acc_si ] ?? '';
 		$flosc_acc_filled_i = $flosc_acc_defaults_filled[ $flosc_acc_si ] ?? '';
-		if ( $flosc_acc_tpl_i !== '' && ( $flosc_acc_line === $flosc_acc_filled_i || $flosc_acc_line === $flosc_acc_expand( $flosc_acc_tpl_i, $flosc_acc_var_map ) ) ) {
+		if ( '' !== $flosc_acc_tpl_i && ( $flosc_acc_line === $flosc_acc_filled_i || $flosc_acc_line === $flosc_acc_expand( $flosc_acc_tpl_i, $flosc_acc_var_map ) ) ) {
 			$flosc_acc_edit_lines[] = $flosc_acc_tpl_i;
 		} else {
 			$flosc_acc_edit_lines[] = $flosc_acc_line;
@@ -3558,7 +3558,7 @@ while ( count( $flosc_acc_edit_lines ) < $flosc_acc_row_count ) {
 	$flosc_acc_edit_lines[] = $flosc_acc_templates[ $flosc_idx ] ?? '';
 }
 $flosc_acc_line_count             = max( 1, count( array_filter( $flosc_acc_edit_lines ) ) );
-$flosc_accuracy_personality_label = $flosc_personality_label !== ''
+$flosc_accuracy_personality_label = '' !== $flosc_personality_label
 	? $flosc_personality_label
 	: __( 'the selected personality', 'flosc' );
 ?>
@@ -3601,7 +3601,7 @@ $flosc_accuracy_personality_label = $flosc_personality_label !== ''
 		$flosc_acc_tpl = $flosc_acc_templates[ $flosc_acc_i ] ?? '';
 		$flosc_acc_val = $flosc_acc_edit_lines[ $flosc_acc_i ] ?? $flosc_acc_tpl;
 		// Prefer template with placeholders in the edit box.
-		if ( $flosc_acc_val === '' && $flosc_acc_tpl !== '' ) {
+		if ( '' === $flosc_acc_val && '' !== $flosc_acc_tpl ) {
 			$flosc_acc_val = $flosc_acc_tpl;
 		}
 		$flosc_acc_preview = $flosc_acc_expand( $flosc_acc_val, $flosc_acc_var_map );
@@ -3620,7 +3620,7 @@ $flosc_accuracy_personality_label = $flosc_personality_label !== ''
 			><?php echo esc_textarea( $flosc_acc_val ); ?></textarea>
 			<p class="description flosc-acc-row__default">
 				<strong><?php echo esc_html__( 'Default template:', 'flosc' ); ?></strong>
-				<code class="flosc-acc-row__template"><?php echo esc_html( $flosc_acc_tpl !== '' ? $flosc_acc_tpl : '—' ); ?></code>
+				<code class="flosc-acc-row__template"><?php echo esc_html( '' !== $flosc_acc_tpl ? $flosc_acc_tpl : '—' ); ?></code>
 			</p>
 			<p class="flosc-acc-row__preview-wrap">
 				<strong><?php echo esc_html__( 'User input (sent to AI):', 'flosc' ); ?></strong>
@@ -3649,7 +3649,7 @@ $flosc_accuracy_personality_label = $flosc_personality_label !== ''
 	<div class="flosc-ai-accuracy-controls">
 		<button type="button" class="button button-secondary" id="flosc-accuracy-reset-defaults"><?php echo esc_html__( 'Reset all to default templates', 'flosc' ); ?></button>
 		<?php
-		$flosc_accuracy_personality_label = $flosc_personality_label !== ''
+		$flosc_accuracy_personality_label = '' !== $flosc_personality_label
 			? $flosc_personality_label
 			: __( 'selected personality', 'flosc' );
 		?>

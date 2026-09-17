@@ -1,15 +1,15 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": "82.2",
+  "candidate_iteration": "82.3",
   "creator": "Claude Opus 5",
   "status": "WPCS_FORMATTING_APPLIED_FUNCTIONALLY_UNVERIFIED",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v82.1",
+  "base": "claude-opus-5 v82.2",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "6316e0442381c4dbcfd134c6c505cfb1ebdd96c55522c8e55a8789da4cdd3558",
-  "artifact_bytes": 2754886,
+  "artifact_sha256": "87b16553b942504454d780be6bea6f0188cecc35b70d09a20d0147e2feb410f5",
+  "artifact_bytes": 2754819,
   "artifact_entries": 278,
   "tree_files": 295,
   "why_this_iteration": {
@@ -581,5 +581,19 @@
       "wpcs_php_shipping": "6,104 errors, 185 warnings"
     },
     "still_open": "Yoda conditions 2,382; docblock work about 1,900; short ternaries 172; 0 of 30 behavioural tests executed."
+  },
+  "v82_3_yoda": {
+    "wpcs_php_shipping": "6,104 -> 3,774 errors",
+    "what": "2,701 comparisons rewritten Yoda-style: $thing === 'literal' became 'literal' === $thing, for ===, !==, == and !=. 22 were refused.",
+    "how": "A token-based transform, never a regular expression -- a regex cannot tell a comparison in code from the same characters inside a string or a comment. It swaps only when the left operand is a shape it can prove it bounded correctly: a variable, property or array access, a method or function call, or a class constant, with an unambiguous boundary token in front of it.",
+    "what_it_refuses": "Concatenations and arithmetic.  means  because concatenation binds tighter than comparison, so treating the dot as a boundary would have taken $q alone as the operand. The first draft did exactly that and produced a syntax error on the second line of the fixture. Refused rather than guessed.",
+    "verified": "A 16-case fixture covering property chains, array access on a method call, class constants, a switch case, an already-Yoda comparison, a concatenation, an arithmetic expression, a comparison inside a double-quoted string and one inside a comment. All correct, including both refusals. Then php -l on every file as the transform ran, then all 37 gates.",
+    "three_gates_updated": "check_log_contract, check_request_protection and test_candidate_contract had needles spelling the old operand order. Updated to what the code now says.",
+    "measured_here": {
+      "php_l": "0 errors / 187 files",
+      "cli_gates": "37 of 37 pass",
+      "wpcs_php_shipping": "3,774 errors, 185 warnings, 132 files"
+    },
+    "still_open": "Docblock work about 2,100 -- missing @param tags 797, missing function docblocks 467, @param descriptions 655, class and file docblocks 113. Array indentation 764 which phpcbf still will not converge on. Short ternaries 172. 0 of 30 behavioural tests executed."
   }
 }

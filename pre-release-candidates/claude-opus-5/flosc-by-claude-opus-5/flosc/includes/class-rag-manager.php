@@ -196,7 +196,7 @@ class FLOSC_RAG_Manager {
 			$content = flosc_fs_get_contents( $file );
 
 			// Simple keyword search (case-insensitive).
-			if ( stripos( $content, $query ) !== false ) {
+			if ( false !== stripos( $content, $query ) ) {
 
 				// Filter by access level.
 				$filtered = $this->content_filter->filter_markdown_by_access( $content, $access_level );
@@ -249,14 +249,14 @@ class FLOSC_RAG_Manager {
 					$stem = sanitize_key( (string) $flow['id'] );
 				}
 			}
-			if ( $stem === '' && ! empty( $GLOBALS['flosc_current_ivr'] ) ) {
+			if ( '' === $stem && ! empty( $GLOBALS['flosc_current_ivr'] ) ) {
 				$stem = $index->stem_from_ivr( (string) $GLOBALS['flosc_current_ivr'] );
 			}
-			if ( $stem !== '' ) {
+			if ( '' !== $stem ) {
 				$doc = $index->load( $stem );
 				if ( ! empty( $doc['posts'] ) ) {
 					$from_index = $index->search( $stem, (string) $keywords, (string) $access_level, (int) $limit );
-					if ( is_string( $from_index ) && $from_index !== '' ) {
+					if ( is_string( $from_index ) && '' !== $from_index ) {
 						return $from_index;
 					}
 				}
@@ -396,7 +396,7 @@ class FLOSC_RAG_Manager {
 		}
 		if ( empty( $categories ) ) {
 			$global = get_option( 'flosc_content_item_category', '' );
-			if ( $global !== '' ) {
+			if ( '' !== $global ) {
 				$categories[] = $global;
 			}
 		}

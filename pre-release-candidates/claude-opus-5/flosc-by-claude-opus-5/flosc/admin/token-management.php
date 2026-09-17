@@ -75,10 +75,10 @@ $flosc_nominal_rate         = $flosc_nom_den > 0 ? ( $flosc_nom_num / $flosc_nom
 $flosc_real_rate            = $flosc_real_den > 0 ? ( $flosc_real_num / $flosc_real_den ) : 1.0;
 $flosc_nominal_rate_display = rtrim( rtrim( number_format( $flosc_nominal_rate, 3, '.', '' ), '0' ), '.' );
 $flosc_real_rate_display    = rtrim( rtrim( number_format( $flosc_real_rate, 3, '.', '' ), '0' ), '.' );
-if ( $flosc_nominal_rate_display === '' ) {
+if ( '' === $flosc_nominal_rate_display ) {
 	$flosc_nominal_rate_display = '1';
 }
-if ( $flosc_real_rate_display === '' ) {
+if ( '' === $flosc_real_rate_display ) {
 	$flosc_real_rate_display = '1';
 }
 
@@ -125,12 +125,12 @@ $flosc_product_token_grant_onetime          = max(
 $flosc_low_token_threshold = max( 0, intval( $flosc_flow_settings['visitor_low_token_threshold'] ?? 0 ) );
 $flosc_default_low_message = 'You\'re running low on chat tokens. Pretty soon, you\'ll be invited to register or log in to receive {token_grant} more tokens.';
 $flosc_low_message         = trim( (string) ( $flosc_flow_settings['visitor_low_tokens_message'] ?? $flosc_default_low_message ) );
-if ( $flosc_low_message === '' ) {
+if ( '' === $flosc_low_message ) {
 	$flosc_low_message = $flosc_default_low_message;
 }
 $flosc_default_depleted_message = 'Dear guest, your chat tokens are used up for now. Please contact the site operator directly, or make sure your purchases have been registered to your account so you have more chat tokens. I\'ll be shutting down this chat for now. Thanks for stopping by!';
 $flosc_depleted_message         = trim( (string) ( $flosc_flow_settings['visitor_tokens_depleted_message'] ?? $flosc_default_depleted_message ) );
-if ( $flosc_depleted_message === '' ) {
+if ( '' === $flosc_depleted_message ) {
 	$flosc_depleted_message = $flosc_default_depleted_message;
 }
 $flosc_session_end_redirect_url = trim( (string) ( $flosc_flow_settings['visitor_session_end_redirect_url'] ?? '' ) );
@@ -147,8 +147,8 @@ foreach ( $flosc_offers as $flosc_oid => $flosc_offer ) {
 		continue;
 	}
 	$flosc_status = strtolower( (string) ( $flosc_offer['status'] ?? '' ) );
-	$flosc_active = ! empty( $flosc_offer['active'] ) || $flosc_status === 'active';
-	if ( $flosc_status === 'draft' ) {
+	$flosc_active = ! empty( $flosc_offer['active'] ) || 'active' === $flosc_status;
+	if ( 'draft' === $flosc_status ) {
 		$flosc_active = false;
 	}
 	$flosc_type      = strtolower( (string) ( $flosc_offer['type'] ?? 'one_time' ) );
@@ -158,37 +158,37 @@ foreach ( $flosc_offers as $flosc_oid => $flosc_offer ) {
 	$flosc_source    = sanitize_key( (string) ( $flosc_tokens['source'] ?? 'flow' ) );
 	if ( ! in_array( $flosc_source, array( 'flow', 'custom', 'none' ), true ) ) {
 		// Infer: explicit amount means custom.
-		$flosc_source = ( isset( $flosc_tokens['amount'] ) && $flosc_tokens['amount'] !== '' && $flosc_tokens['amount'] !== null ) ? 'custom' : 'flow';
+		$flosc_source = ( isset( $flosc_tokens['amount'] ) && '' !== $flosc_tokens['amount'] && null !== $flosc_tokens['amount'] ) ? 'custom' : 'flow';
 	}
 	$flosc_mode = sanitize_key( (string) ( $flosc_tokens['mode'] ?? '' ) );
-	if ( $flosc_mode === '' ) {
-		$flosc_mode = ( $flosc_type === 'subscription' ) ? 'recurring' : 'onetime';
+	if ( '' === $flosc_mode ) {
+		$flosc_mode = ( 'subscription' === $flosc_type ) ? 'recurring' : 'onetime';
 	}
 	if ( ! in_array( $flosc_mode, array( 'onetime', 'recurring', 'recurring_yearly' ), true ) ) {
 		$flosc_mode = 'onetime';
 	}
 	$flosc_cap_mode = sanitize_key( (string) ( $flosc_tokens['cap_mode'] ?? 'flow' ) );
 	if ( ! in_array( $flosc_cap_mode, array( 'flow', 'none', 'custom' ), true ) ) {
-		if ( array_key_exists( 'cap', $flosc_tokens ) && $flosc_tokens['cap'] !== '' && $flosc_tokens['cap'] !== null ) {
-			$flosc_cap_mode = ( intval( $flosc_tokens['cap'] ) === 0 && array_key_exists( 'cap', $flosc_tokens ) ) ? 'none' : 'custom';
+		if ( array_key_exists( 'cap', $flosc_tokens ) && '' !== $flosc_tokens['cap'] && null !== $flosc_tokens['cap'] ) {
+			$flosc_cap_mode = ( 0 === intval( $flosc_tokens['cap'] ) && array_key_exists( 'cap', $flosc_tokens ) ) ? 'none' : 'custom';
 		} else {
 			$flosc_cap_mode = 'flow';
 		}
 	}
 
 	// Effective preview numbers for the summary chip.
-	if ( $flosc_source === 'none' ) {
+	if ( 'none' === $flosc_source ) {
 		$flosc_eff_grant      = 0;
 		$flosc_eff_cap_label  = '—';
 		$flosc_eff_mode_label = 'No tokens';
 	} else {
-		if ( $flosc_source === 'custom' && isset( $flosc_tokens['amount'] ) && $flosc_tokens['amount'] !== '' ) {
+		if ( 'custom' === $flosc_source && isset( $flosc_tokens['amount'] ) && '' !== $flosc_tokens['amount'] ) {
 			$flosc_eff_grant      = max( 0, intval( $flosc_tokens['amount'] ) );
 			$flosc_eff_mode_label = $flosc_mode;
 		} else {
-			if ( $flosc_type === 'subscription' || $flosc_mode === 'recurring_yearly' ) {
+			if ( 'subscription' === $flosc_type || 'recurring_yearly' === $flosc_mode ) {
 				// Prefer yearly if mode says so, else recurring for subs.
-				if ( $flosc_mode === 'recurring_yearly' ) {
+				if ( 'recurring_yearly' === $flosc_mode ) {
 					$flosc_eff_grant      = $flosc_product_token_grant_recurring_yearly;
 					$flosc_eff_mode_label = 'recurring_yearly';
 				} else {
@@ -199,13 +199,13 @@ foreach ( $flosc_offers as $flosc_oid => $flosc_offer ) {
 				$flosc_eff_grant      = $flosc_product_token_grant_onetime;
 				$flosc_eff_mode_label = 'onetime';
 			}
-			if ( $flosc_source === 'flow' ) {
+			if ( 'flow' === $flosc_source ) {
 				$flosc_eff_mode_label = 'flow → ' . $flosc_eff_mode_label;
 			}
 		}
-		if ( $flosc_cap_mode === 'none' ) {
+		if ( 'none' === $flosc_cap_mode ) {
 			$flosc_eff_cap_label = 'no cap';
-		} elseif ( $flosc_cap_mode === 'custom' && isset( $flosc_tokens['cap'] ) && $flosc_tokens['cap'] !== '' ) {
+		} elseif ( 'custom' === $flosc_cap_mode && isset( $flosc_tokens['cap'] ) && '' !== $flosc_tokens['cap'] ) {
 			$flosc_eff_cap_label = 'cap ' . number_format_i18n( max( 0, intval( $flosc_tokens['cap'] ) ) );
 		} else {
 			$flosc_eff_cap_label = $flosc_product_token_cap > 0
@@ -222,12 +222,12 @@ foreach ( $flosc_offers as $flosc_oid => $flosc_offer ) {
 		'price'          => $flosc_price,
 		'display_price'  => (string) ( $flosc_offer['display_price'] ?? '' ),
 		'active'         => $flosc_active,
-		'status'         => $flosc_status !== '' ? $flosc_status : ( $flosc_active ? 'active' : 'inactive' ),
+		'status'         => '' !== $flosc_status ? $flosc_status : ( $flosc_active ? 'active' : 'inactive' ),
 		'source'         => $flosc_source,
 		'mode'           => $flosc_mode,
-		'amount'         => isset( $flosc_tokens['amount'] ) && $flosc_tokens['amount'] !== '' ? max( 0, intval( $flosc_tokens['amount'] ) ) : '',
+		'amount'         => isset( $flosc_tokens['amount'] ) && '' !== $flosc_tokens['amount'] ? max( 0, intval( $flosc_tokens['amount'] ) ) : '',
 		'cap_mode'       => $flosc_cap_mode,
-		'cap'            => isset( $flosc_tokens['cap'] ) && $flosc_tokens['cap'] !== '' ? max( 0, intval( $flosc_tokens['cap'] ) ) : '',
+		'cap'            => isset( $flosc_tokens['cap'] ) && '' !== $flosc_tokens['cap'] ? max( 0, intval( $flosc_tokens['cap'] ) ) : '',
 		'eff_grant'      => $flosc_eff_grant,
 		'eff_cap_label'  => $flosc_eff_cap_label,
 		'eff_mode_label' => $flosc_eff_mode_label,
@@ -259,7 +259,7 @@ $flosc_visible_products = array_values(
 	array_filter(
 		$flosc_product_rows,
 		static function ( $flosc_row ) use ( $flosc_filter ) {
-			return $flosc_filter === 'all' || ! empty( $flosc_row['active'] );
+			return 'all' === $flosc_filter || ! empty( $flosc_row['active'] );
 		}
 	)
 );
@@ -298,7 +298,7 @@ $flosc_visible_products = array_values(
 
 		<?php if ( empty( $flosc_visible_products ) ) : ?>
 			<div class="flosc-token-empty">
-				<strong>No <?php echo esc_html( $flosc_filter === 'active' ? 'active ' : '' ); ?>products on this flow.</strong>
+				<strong>No <?php echo esc_html( 'active' === $flosc_filter ? 'active ' : '' ); ?>products on this flow.</strong>
 				<p>Create or activate an offer under Offers, then return here to set token grants.</p>
 				<a class="button button-primary" href="<?php echo esc_url( $flosc_offers_url ); ?>">Go to Offers</a>
 			</div>
@@ -307,13 +307,13 @@ $flosc_visible_products = array_values(
 				<?php
 				foreach ( $flosc_visible_products as $flosc_p ) :
 					$flosc_pid            = (string) $flosc_p['id'];
-					$flosc_is_custom      = ( $flosc_p['source'] === 'custom' );
-					$flosc_is_none        = ( $flosc_p['source'] === 'none' );
+					$flosc_is_custom      = ( 'custom' === $flosc_p['source'] );
+					$flosc_is_none        = ( 'none' === $flosc_p['source'] );
 					$flosc_status_class   = $flosc_p['active'] ? 'flosc-is-active' : 'flosc-is-inactive';
-					$flosc_price_label    = $flosc_p['display_price'] !== ''
+					$flosc_price_label    = '' !== $flosc_p['display_price']
 						? $flosc_p['display_price']
 						: ( '$' . number_format( (float) $flosc_p['price'], 2 ) );
-					$flosc_type_label     = $flosc_p['type'] === 'subscription' ? 'Subscription' : ( $flosc_p['type'] === 'tokens' ? 'Token pack' : 'One-time' );
+					$flosc_type_label     = 'subscription' === $flosc_p['type'] ? 'Subscription' : ( 'tokens' === $flosc_p['type'] ? 'Token pack' : 'One-time' );
 					$flosc_summary_tokens = $flosc_is_none
 						? 'No product tokens'
 						: ( '+' . number_format_i18n( (int) $flosc_p['eff_grant'] ) . ' · ' . $flosc_p['eff_cap_label'] );
@@ -365,7 +365,7 @@ $flosc_visible_products = array_values(
 										<input
 											type="number"
 											name="flosc_product_tokens[<?php echo esc_attr( $flosc_pid ); ?>][amount]"
-											value="<?php echo esc_attr( $flosc_p['amount'] === '' ? '' : (string) $flosc_p['amount'] ); ?>"
+											value="<?php echo esc_attr( '' === $flosc_p['amount'] ? '' : (string) $flosc_p['amount'] ); ?>"
 											min="0"
 											step="1"
 											class="regular-text"
@@ -387,12 +387,12 @@ $flosc_visible_products = array_values(
 										</select>
 									</label>
 
-									<label class="flosc-token-field flosc-token-cap-custom <?php echo esc_attr( $flosc_p['cap_mode'] === 'custom' ? '' : 'flosc-is-disabled' ); ?>" data-flosc-token-cap-input="<?php echo esc_attr( $flosc_pid ); ?>">
+									<label class="flosc-token-field flosc-token-cap-custom <?php echo esc_attr( 'custom' === $flosc_p['cap_mode'] ? '' : 'flosc-is-disabled' ); ?>" data-flosc-token-cap-input="<?php echo esc_attr( $flosc_pid ); ?>">
 										<span class="flosc-token-field__label">Custom cap value</span>
 										<input
 											type="number"
 											name="flosc_product_tokens[<?php echo esc_attr( $flosc_pid ); ?>][cap]"
-											value="<?php echo esc_attr( $flosc_p['cap'] === '' ? '' : (string) $flosc_p['cap'] ); ?>"
+											value="<?php echo esc_attr( '' === $flosc_p['cap'] ? '' : (string) $flosc_p['cap'] ); ?>"
 											min="0"
 											step="1"
 											class="regular-text"

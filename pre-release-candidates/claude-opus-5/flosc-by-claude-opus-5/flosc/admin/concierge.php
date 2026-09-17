@@ -13,13 +13,13 @@ $flosc_files        = function_exists( 'flosc_config_glob' ) ? flosc_config_glob
 $flosc_flow_options = array();
 foreach ( (array) $flosc_files as $flosc_file ) {
 	$flosc_name = basename( (string) $flosc_file );
-	if ( $flosc_name === '' || strpos( $flosc_name, 'backup' ) !== false ) {
+	if ( '' === $flosc_name || false !== strpos( $flosc_name, 'backup' ) ) {
 		continue;
 	}
 	$flosc_key      = 'flosc_flow_' . sanitize_key( pathinfo( $flosc_name, PATHINFO_FILENAME ) );
 	$flosc_settings = get_option( $flosc_key, array() );
 	$flosc_label    = trim( (string) ( $flosc_settings['identity']['name'] ?? '' ) );
-	if ( $flosc_label === '' ) {
+	if ( '' === $flosc_label ) {
 		$flosc_label = ucwords( str_replace( array( '_', '-', '.md' ), array( ' ', ' ', '' ), $flosc_name ) );
 	}
 	$flosc_flow_options[ $flosc_name ] = $flosc_label;
@@ -61,7 +61,7 @@ $flosc_concierge_posts = array_values(
 			}
 			$flosc_cfg  = FLOSC_Concierge::config_from_post( $flosc_post );
 			$flosc_flow = sanitize_file_name( (string) ( $flosc_cfg['flow'] ?? '' ) );
-			return $flosc_flow !== '' && $flosc_flow === $flosc_selected_ivr;
+			return '' !== $flosc_flow && $flosc_flow === $flosc_selected_ivr;
 		}
 	)
 );
@@ -72,9 +72,9 @@ $flosc_concierge_posts = array_values(
 	<?php if ( ! empty( $flosc_get['concierge_created'] ) ) : ?>
 		<div class="notice notice-success"><p>Concierge post created and synced to chat.</p></div>
 	<?php endif; ?>
-	<?php if ( ( $flosc_get['concierge_error'] ?? '' ) === 'missing_required' ) : ?>
+	<?php if ( 'missing_required' === ( $flosc_get['concierge_error'] ?? '' ) ) : ?>
 		<div class="notice notice-error"><p>Keyword and content are required.</p></div>
-	<?php elseif ( ( $flosc_get['concierge_error'] ?? '' ) === 'create_failed' ) : ?>
+	<?php elseif ( 'create_failed' === ( $flosc_get['concierge_error'] ?? '' ) ) : ?>
 		<div class="notice notice-error"><p>Could not create concierge post. Please try again.</p></div>
 	<?php endif; ?>
 
@@ -212,7 +212,7 @@ Would you like to continue this concierge exchange, or would you like to chat ab
 			$flosc_cfg            = class_exists( 'FLOSC_Concierge' ) ? FLOSC_Concierge::config_from_post( $flosc_post ) : null;
 			$flosc_flow           = is_array( $flosc_cfg ) ? (string) ( $flosc_cfg['flow'] ?? '' ) : '';
 			$flosc_keyword        = is_array( $flosc_cfg ) ? (string) ( $flosc_cfg['keyword'] ?? '' ) : '';
-			$flosc_has_password   = is_array( $flosc_cfg ) ? ( trim( (string) ( $flosc_cfg['password'] ?? '' ) ) !== '' ) : false;
+			$flosc_has_password   = is_array( $flosc_cfg ) ? ( '' !== trim( (string) ( $flosc_cfg['password'] ?? '' ) ) ) : false;
 			$flosc_preview_source = is_array( $flosc_cfg ) ? (string) ( $flosc_cfg['content'] ?? '' ) : '';
 			$flosc_preview        = wp_html_excerpt( trim( preg_replace( '/\s+/', ' ', $flosc_preview_source ) ), 140, '...' );
 			$flosc_is_live        = in_array( (string) ( $flosc_post->post_status ?? '' ), array( 'private', 'publish' ), true );
@@ -222,13 +222,13 @@ Would you like to continue this concierge exchange, or would you like to chat ab
 					<span class="flosc-cncrg-accordion__chevron" aria-hidden="true">▸</span>
 					<span class="flosc-cncrg-accordion__title"><?php echo esc_html( get_the_title( $flosc_post ) ); ?></span>
 					<span class="flosc-status <?php echo esc_attr( $flosc_is_live ? 'flosc-status--active' : 'flosc-status--inactive' ); ?>"><?php echo esc_html( $flosc_is_live ? 'LIVE' : 'OFF' ); ?></span>
-					<span class="flosc-cncrg-accordion__meta"><?php echo esc_html( $flosc_flow !== '' ? $flosc_flow : 'No flow' ); ?></span>
-					<span class="flosc-cncrg-accordion__meta">Keyword: <?php echo esc_html( $flosc_keyword !== '' ? $flosc_keyword : '-' ); ?></span>
+					<span class="flosc-cncrg-accordion__meta"><?php echo esc_html( '' !== $flosc_flow ? $flosc_flow : 'No flow' ); ?></span>
+					<span class="flosc-cncrg-accordion__meta">Keyword: <?php echo esc_html( '' !== $flosc_keyword ? $flosc_keyword : '-' ); ?></span>
 					<span class="flosc-cncrg-accordion__meta"><?php echo esc_html( $flosc_has_password ? 'Password: Yes' : 'Password: No' ); ?></span>
 					<span class="flosc-cncrg-accordion__when"><?php echo esc_html( get_the_modified_date( 'Y-m-d H:i', $flosc_post ) ); ?></span>
 				</summary>
 				<div class="flosc-cncrg-accordion__body">
-					<p><strong>Preview:</strong> <?php echo esc_html( $flosc_preview !== '' ? $flosc_preview : '(empty)' ); ?></p>
+					<p><strong>Preview:</strong> <?php echo esc_html( '' !== $flosc_preview ? $flosc_preview : '(empty)' ); ?></p>
 					<p>
 						<a class="button button-small" href="<?php echo esc_url( get_edit_post_link( $flosc_post->ID ) ); ?>">Edit Post</a>
 					</p>

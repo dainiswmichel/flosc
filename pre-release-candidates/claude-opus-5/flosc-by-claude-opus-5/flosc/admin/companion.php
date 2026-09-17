@@ -109,15 +109,15 @@ $flosc_default_fullscreen    = (string) ( $flosc_hub_defaults['fullscreen'] ?? h
 $flosc_default_companion_hub = (string) ( $flosc_hub_defaults['companion'] ?? home_url( '/' ) );
 $flosc_default_chat_app      = (string) ( $flosc_hub_defaults['chat_app'] ?? home_url( '/' ) );
 $flosc_hub_fullscreen_url    = esc_url( (string) ( $flosc_flow_settings['companion_hub_fullscreen_url'] ?? $flosc_default_fullscreen ) );
-if ( $flosc_hub_fullscreen_url === '' ) {
+if ( '' === $flosc_hub_fullscreen_url ) {
 	$flosc_hub_fullscreen_url = esc_url( $flosc_default_fullscreen );
 }
 $flosc_hub_companion_url = esc_url( (string) ( $flosc_flow_settings['companion_hub_companion_url'] ?? $flosc_default_companion_hub ) );
-if ( $flosc_hub_companion_url === '' ) {
+if ( '' === $flosc_hub_companion_url ) {
 	$flosc_hub_companion_url = esc_url( $flosc_default_companion_hub );
 }
 $flosc_chat_app_url = esc_url( (string) ( $flosc_flow_settings['companion_chat_app_url'] ?? $flosc_default_chat_app ) );
-if ( $flosc_chat_app_url === '' ) {
+if ( '' === $flosc_chat_app_url ) {
 	$flosc_chat_app_url = esc_url( $flosc_default_chat_app );
 }
 $flosc_companion_flow_slug = sanitize_title( (string) ( $flosc_flow_settings['companion_flow_slug'] ?? ( $flosc_hub_defaults['flow_slug'] ?? '' ) ) );
@@ -131,11 +131,11 @@ $flosc_parse_target_rules = static function ( $raw_rules ) {
 
 	foreach ( $chunks as $raw_rule ) {
 		$raw_rule = trim( (string) $raw_rule );
-		if ( $raw_rule === '' ) {
+		if ( '' === $raw_rule ) {
 			continue;
 		}
 
-		if ( strpos( $raw_rule, ':' ) === false ) {
+		if ( false === strpos( $raw_rule, ':' ) ) {
 			$rules[] = array(
 				'type'  => 'path',
 				'value' => '/' . ltrim( $raw_rule, '/' ),
@@ -146,11 +146,11 @@ $flosc_parse_target_rules = static function ( $raw_rules ) {
 		list($flosc_type, $value) = array_map( 'trim', explode( ':', $raw_rule, 2 ) );
 		$flosc_type               = strtolower( $flosc_type );
 		$value                    = (string) $value;
-		if ( $value === '' ) {
+		if ( '' === $value ) {
 			continue;
 		}
 
-		if ( $flosc_type === 'path' ) {
+		if ( 'path' === $flosc_type ) {
 			$value = '/' . ltrim( $value, '/' );
 		}
 
@@ -181,17 +181,17 @@ $flosc_target_exclude_custom     = array();
 foreach ( $flosc_include_rules as $flosc_rule ) {
 	$flosc_rule_type  = (string) ( $flosc_rule['type'] ?? '' );
 	$flosc_rule_value = trim( (string) ( $flosc_rule['value'] ?? '' ) );
-	if ( $flosc_rule_value === '' ) {
+	if ( '' === $flosc_rule_value ) {
 		continue;
 	}
 
-	if ( $flosc_rule_type === 'page' && ctype_digit( $flosc_rule_value ) ) {
+	if ( 'page' === $flosc_rule_type && ctype_digit( $flosc_rule_value ) ) {
 		$flosc_target_include_pages[] = (int) $flosc_rule_value;
-	} elseif ( $flosc_rule_type === 'post' && ctype_digit( $flosc_rule_value ) ) {
+	} elseif ( 'post' === $flosc_rule_type && ctype_digit( $flosc_rule_value ) ) {
 		$flosc_target_include_posts[] = (int) $flosc_rule_value;
-	} elseif ( $flosc_rule_type === 'category' && ctype_digit( $flosc_rule_value ) ) {
+	} elseif ( 'category' === $flosc_rule_type && ctype_digit( $flosc_rule_value ) ) {
 		$flosc_target_include_categories[] = (int) $flosc_rule_value;
-	} elseif ( $flosc_rule_type === 'tag' && ctype_digit( $flosc_rule_value ) ) {
+	} elseif ( 'tag' === $flosc_rule_type && ctype_digit( $flosc_rule_value ) ) {
 		$flosc_target_include_tags[] = (int) $flosc_rule_value;
 	} else {
 		$flosc_target_include_custom[] = $flosc_rule_type . ':' . $flosc_rule_value;
@@ -201,17 +201,17 @@ foreach ( $flosc_include_rules as $flosc_rule ) {
 foreach ( $flosc_exclude_rules as $flosc_rule ) {
 	$flosc_rule_type  = (string) ( $flosc_rule['type'] ?? '' );
 	$flosc_rule_value = trim( (string) ( $flosc_rule['value'] ?? '' ) );
-	if ( $flosc_rule_value === '' ) {
+	if ( '' === $flosc_rule_value ) {
 		continue;
 	}
 
-	if ( $flosc_rule_type === 'page' && ctype_digit( $flosc_rule_value ) ) {
+	if ( 'page' === $flosc_rule_type && ctype_digit( $flosc_rule_value ) ) {
 		$flosc_target_exclude_pages[] = (int) $flosc_rule_value;
-	} elseif ( $flosc_rule_type === 'post' && ctype_digit( $flosc_rule_value ) ) {
+	} elseif ( 'post' === $flosc_rule_type && ctype_digit( $flosc_rule_value ) ) {
 		$flosc_target_exclude_posts[] = (int) $flosc_rule_value;
-	} elseif ( $flosc_rule_type === 'category' && ctype_digit( $flosc_rule_value ) ) {
+	} elseif ( 'category' === $flosc_rule_type && ctype_digit( $flosc_rule_value ) ) {
 		$flosc_target_exclude_categories[] = (int) $flosc_rule_value;
-	} elseif ( $flosc_rule_type === 'tag' && ctype_digit( $flosc_rule_value ) ) {
+	} elseif ( 'tag' === $flosc_rule_type && ctype_digit( $flosc_rule_value ) ) {
 		$flosc_target_exclude_tags[] = (int) $flosc_rule_value;
 	} else {
 		$flosc_target_exclude_custom[] = $flosc_rule_type . ':' . $flosc_rule_value;
@@ -244,13 +244,13 @@ $flosc_target_has_any_rules     = $flosc_target_include_has_rules || $flosc_targ
 $flosc_target_mode              = $flosc_target_include_has_rules ? 'selected' : 'sitewide';
 
 $flosc_companion_effective_summary = '';
-if ( $flosc_content_display_mode === 'in_chat' || $flosc_enabled !== '1' ) {
+if ( 'in_chat' === $flosc_content_display_mode || '1' !== $flosc_enabled ) {
 	$flosc_companion_effective_summary = 'Full-page mode: chat at the flow URL only. Companion widget is OFF.';
-} elseif ( $flosc_target_mode === 'selected' ) {
-	$flosc_companion_effective_summary = ( $flosc_content_display_mode === 'both' ? 'Hybrid' : 'Companion' )
+} elseif ( 'selected' === $flosc_target_mode ) {
+	$flosc_companion_effective_summary = ( 'both' === $flosc_content_display_mode ? 'Hybrid' : 'Companion' )
 		. ': widget ON for selected targets only (Include/Exclude rules).';
 } else {
-	$flosc_companion_effective_summary = ( $flosc_content_display_mode === 'both' ? 'Hybrid' : 'Companion' )
+	$flosc_companion_effective_summary = ( 'both' === $flosc_content_display_mode ? 'Hybrid' : 'Companion' )
 		. ': widget ON sitewide (except full-page chat route).';
 }
 
@@ -557,7 +557,7 @@ $flosc_companion_snippet_frontend_config = implode(
 		<th scope="row"><label for="flow_companion_content_display_mode">Display Mode</label></th>
 		<td>
 			<fieldset>
-				<label class="flosc-companion-mode-card <?php echo esc_attr( $flosc_content_display_mode === 'in_chat' ? 'is-active' : '' ); ?>">
+				<label class="flosc-companion-mode-card <?php echo esc_attr( 'in_chat' === $flosc_content_display_mode ? 'is-active' : '' ); ?>">
 					<input type="radio" name="flow_companion_content_display_mode" value="in_chat" <?php checked( $flosc_content_display_mode, 'in_chat' ); ?>>
 					<strong>Full-page</strong> <em class="flosc-companion-mode-default">(default)</em>
 					<br><span class="flosc-companion-mode-copy">
@@ -565,7 +565,7 @@ $flosc_companion_snippet_frontend_config = implode(
 					</span>
 				</label>
 				
-				<label class="flosc-companion-mode-card <?php echo esc_attr( $flosc_content_display_mode === 'companion' ? 'is-active' : '' ); ?>">
+				<label class="flosc-companion-mode-card <?php echo esc_attr( 'companion' === $flosc_content_display_mode ? 'is-active' : '' ); ?>">
 					<input type="radio" name="flow_companion_content_display_mode" value="companion" <?php checked( $flosc_content_display_mode, 'companion' ); ?>>
 					<strong>Companion</strong>
 					<br><span class="flosc-companion-mode-copy">
@@ -574,7 +574,7 @@ $flosc_companion_snippet_frontend_config = implode(
 					</span>
 				</label>
 				
-				<label class="flosc-companion-mode-card <?php echo esc_attr( $flosc_content_display_mode === 'both' ? 'is-active' : '' ); ?>">
+				<label class="flosc-companion-mode-card <?php echo esc_attr( 'both' === $flosc_content_display_mode ? 'is-active' : '' ); ?>">
 					<input type="radio" name="flow_companion_content_display_mode" value="both" <?php checked( $flosc_content_display_mode, 'both' ); ?>>
 					<strong>Hybrid</strong>
 					<br><span class="flosc-companion-mode-copy">
@@ -588,7 +588,7 @@ $flosc_companion_snippet_frontend_config = implode(
 </table>
 
 <!-- Companion Widget Settings (only relevant when companion or both mode is active) -->
-<div id="companion-widget-settings" class="<?php echo esc_attr( $flosc_content_display_mode === 'in_chat' ? 'flosc-companion-disabled' : '' ); ?>">
+<div id="companion-widget-settings" class="<?php echo esc_attr( 'in_chat' === $flosc_content_display_mode ? 'flosc-companion-disabled' : '' ); ?>">
 	
 	<hr class="flosc-companion-divider">
 	<h2>Companion Widget Settings</h2>
@@ -877,9 +877,9 @@ $flosc_companion_snippet_frontend_config = implode(
 					$flosc_id_arr            = is_array( $flosc_flow_settings['identity'] ?? null ) ? $flosc_flow_settings['identity'] : array();
 					$flosc_identity_chatlogo = esc_url( (string) ( $flosc_id_arr['chatlogo_url'] ?? $flosc_flow_settings['chatlogo_url'] ?? '' ) );
 				}
-				$flosc_preview_icon = $flosc_header_icon_url !== '' ? $flosc_header_icon_url : $flosc_identity_chatlogo;
+				$flosc_preview_icon = '' !== $flosc_header_icon_url ? $flosc_header_icon_url : $flosc_identity_chatlogo;
 				?>
-				<input type="url" name="flow_companion_header_icon_url" id="flow_companion_header_icon_url" class="large-text" value="<?php echo esc_attr( $flosc_header_icon_url ); ?>" placeholder="<?php echo esc_attr( $flosc_identity_chatlogo !== '' ? $flosc_identity_chatlogo : '' ); ?>">
+				<input type="url" name="flow_companion_header_icon_url" id="flow_companion_header_icon_url" class="large-text" value="<?php echo esc_attr( $flosc_header_icon_url ); ?>" placeholder="<?php echo esc_attr( '' !== $flosc_identity_chatlogo ? $flosc_identity_chatlogo : '' ); ?>">
 				<?php
 				$flosc_identity_tab_url = add_query_arg(
 					array(
@@ -894,15 +894,15 @@ $flosc_companion_snippet_frontend_config = implode(
 				<p class="description">
 					Optional override for the companion header icon only.
 					<strong>Leave blank</strong> to use this flow’s <strong>Identity → Chat Logo</strong>
-					<?php if ( $flosc_identity_chatlogo !== '' ) : ?>
+					<?php if ( '' !== $flosc_identity_chatlogo ) : ?>
 						(<a href="<?php echo esc_url( $flosc_identity_tab_url ); ?>">Identity tab</a> — already set for this flow).
 					<?php else : ?>
 						(set a Chat Logo on the <a href="<?php echo esc_url( $flosc_identity_tab_url ); ?>">Identity tab</a> for this flow).
 					<?php endif; ?>
 				</p>
-				<?php if ( $flosc_preview_icon !== '' ) : ?>
+				<?php if ( '' !== $flosc_preview_icon ) : ?>
 					<p class="description flosc-companion-desc-spaced">
-						<?php if ( $flosc_header_icon_url !== '' ) : ?>
+						<?php if ( '' !== $flosc_header_icon_url ) : ?>
 							<strong>Using override:</strong>
 						<?php else : ?>
 							<strong>Using Identity Chat Logo:</strong>
@@ -1313,7 +1313,7 @@ $flosc_companion_snippet_frontend_config = implode(
 	</p>
 	<p class="flosc-companion-preview-copy flosc-companion-preview-copy-spaced">
 		The floating <strong class="flosc-companion-preview-dot">●</strong> launcher is positioned in the
-		<strong><?php echo esc_html( $flosc_position === 'bottom-left' ? 'bottom-left' : 'bottom-right' ); ?></strong>
+		<strong><?php echo esc_html( 'bottom-left' === $flosc_position ? 'bottom-left' : 'bottom-right' ); ?></strong>
 		corner when companion is active.
 	</p>
 	<p class="flosc-companion-preview-copy flosc-companion-preview-copy-spaced">
@@ -1322,7 +1322,7 @@ $flosc_companion_snippet_frontend_config = implode(
 	<p class="flosc-companion-preview-copy flosc-companion-preview-copy-spaced">
 		If the member is reading a lesson, the companion will know which lesson they're on and offer contextual help.
 	</p>
-	<div class="flosc-companion-preview-bubble-wrap <?php echo esc_attr( $flosc_position === 'bottom-left' ? 'flosc-companion-preview-bubble-wrap--left' : 'flosc-companion-preview-bubble-wrap--right' ); ?>">
+	<div class="flosc-companion-preview-bubble-wrap <?php echo esc_attr( 'bottom-left' === $flosc_position ? 'flosc-companion-preview-bubble-wrap--left' : 'flosc-companion-preview-bubble-wrap--right' ); ?>">
 		<div class="flosc-companion-preview-bubble">
 			💬
 		</div>

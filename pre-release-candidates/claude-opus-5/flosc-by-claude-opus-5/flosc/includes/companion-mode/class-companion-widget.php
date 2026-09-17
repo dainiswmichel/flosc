@@ -120,7 +120,7 @@ class FLOSC_Companion_Widget {
 	 * }
 	 */
 	public function get_settings( $flow_id = null ) {
-		if ( $this->cached_settings !== null && $flow_id === null ) {
+		if ( null !== $this->cached_settings && null === $flow_id ) {
 			return $this->cached_settings;
 		}
 
@@ -152,7 +152,7 @@ class FLOSC_Companion_Widget {
 		$defaults['enabled']           = filter_var( $defaults['enabled'], FILTER_VALIDATE_BOOLEAN );
 		$defaults['show_for_visitors'] = filter_var( $defaults['show_for_visitors'], FILTER_VALIDATE_BOOLEAN );
 
-		if ( $flow_id === null ) {
+		if ( null === $flow_id ) {
 			$this->cached_settings = $defaults;
 		}
 
@@ -190,7 +190,7 @@ class FLOSC_Companion_Widget {
 
 		// Content display mode must include companion.
 		$mode = $settings['content_display_mode'];
-		if ( $mode !== 'companion' && $mode !== 'both' ) {
+		if ( 'companion' !== $mode && 'both' !== $mode ) {
 			return false;
 		}
 
@@ -509,7 +509,7 @@ class FLOSC_Companion_Widget {
 	 */
 	private function adjust_brightness( $hex, $percent ) {
 		$hex = ltrim( $hex, '#' );
-		if ( strlen( $hex ) === 3 ) {
+		if ( 3 === strlen( $hex ) ) {
 			$hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
 		}
 		$r = max( 0, min( 255, hexdec( substr( $hex, 0, 2 ) ) + ( 255 * $percent / 100 ) ) );

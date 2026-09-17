@@ -23,7 +23,7 @@ class FLOSC_Quiz_Registry {
 	private static $quizzes = null;
 
 	private static function init() {
-		if ( self::$quizzes !== null ) {
+		if ( null !== self::$quizzes ) {
 			return;
 		}
 		self::$quizzes = array(

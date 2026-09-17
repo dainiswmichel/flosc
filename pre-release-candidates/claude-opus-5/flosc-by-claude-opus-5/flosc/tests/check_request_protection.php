@@ -83,7 +83,7 @@ ok( 'the permission callbacks were found', $callbacks !== '', true );
 ok( 'no check_rate_limit() carries a literal count',
 	(bool) preg_match( "/check_rate_limit\(\s*'[^']*'\s*,\s*\d+/", $callbacks ), false );
 ok( 'the chat route gets its own budget, apart from content reads',
-	strpos( $rest, "\$endpoint === '/flosc/v1/chat'" ) !== false, true );
+	strpos( flosc_nows( $rest ), flosc_nows( "'/flosc/v1/chat' === \$endpoint" ) ) !== false, true );
 
 echo "\nThe floscAdmin can see and change every one of them\n";
 

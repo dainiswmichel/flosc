@@ -428,7 +428,7 @@ class FLOSC_Flow_Manager {
 	 */
 	public function maybe_migrate_from_legacy() {
 		// If flows already exist, don't migrate.
-		if ( get_option( self::OPTION_KEY ) !== false ) {
+		if ( false !== get_option( self::OPTION_KEY ) ) {
 			return false;
 		}
 
@@ -484,7 +484,7 @@ class FLOSC_Flow_Manager {
 	 */
 	public function get_setting( $option_name, $override_group, $override_key = null, $default = null, $flow_id = null ) {
 		// Determine flow.
-		if ( $flow_id === null ) {
+		if ( null === $flow_id ) {
 			$flow = $this->get_current_flow();
 		} else {
 			$flow = $this->get_flow( $flow_id );

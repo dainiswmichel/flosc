@@ -243,7 +243,7 @@ class FLOSC_Bridge_Data_Manager {
 	 */
 	private function item_result_key( $item ) {
 		if ( is_array( $item ) ) {
-			if ( isset( $item['question_id'] ) && $item['question_id'] !== '' ) {
+			if ( isset( $item['question_id'] ) && '' !== $item['question_id'] ) {
 				return (string) $item['question_id'];
 			}
 			if ( isset( $item['question_index'] ) && is_numeric( $item['question_index'] ) ) {

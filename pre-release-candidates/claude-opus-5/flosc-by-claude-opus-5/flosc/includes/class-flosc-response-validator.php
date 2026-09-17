@@ -37,7 +37,7 @@ class FLOSC_Response_Validator {
 
 		// Check 2: Pricing to visitors.
 		if ( $this->flosc_contains_pricing( $flosc_response ) &&
-			$this->flosc_user_session->flosc_get( 'flosc_user_type' ) === 'flosc_visitor' ) {
+			'flosc_visitor' === $this->flosc_user_session->flosc_get( 'flosc_user_type' ) ) {
 			$flosc_violations[] = 'premature_pricing';
 		}
 
@@ -77,7 +77,7 @@ class FLOSC_Response_Validator {
 	private function flosc_contains_pricing( $flosc_response ) {
 		$flosc_keywords = array( '$', 'price', 'cost', 'pay', 'purchase', 'buy' );
 		foreach ( $flosc_keywords as $flosc_keyword ) {
-			if ( stripos( $flosc_response, $flosc_keyword ) !== false ) {
+			if ( false !== stripos( $flosc_response, $flosc_keyword ) ) {
 				return true;
 			}
 		}

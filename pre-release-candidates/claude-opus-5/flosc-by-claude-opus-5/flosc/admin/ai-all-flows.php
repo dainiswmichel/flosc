@@ -27,7 +27,7 @@ if ( is_array( $flosc_ai_all_notice ) ) {
 	delete_transient( 'flosc_ai_all_notice_' . get_current_user_id() );
 	$flosc_n_type = ( isset( $flosc_ai_all_notice['type'] ) && 'error' === $flosc_ai_all_notice['type'] ) ? 'notice-error' : 'notice-success';
 	$flosc_n_msg  = isset( $flosc_ai_all_notice['message'] ) ? (string) $flosc_ai_all_notice['message'] : '';
-	if ( $flosc_n_msg !== '' ) {
+	if ( '' !== $flosc_n_msg ) {
 		echo '<div class="notice ' . esc_attr( $flosc_n_type ) . ' inline"><p>' . esc_html( $flosc_n_msg ) . '</p></div>';
 	}
 }

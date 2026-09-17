@@ -46,12 +46,12 @@ class FLOSC_Condition_Evaluator {
 		$condition_string = trim( $condition_string );
 
 		// Always show.
-		if ( $condition_string === 'always' || empty( $condition_string ) ) {
+		if ( 'always' === $condition_string || empty( $condition_string ) ) {
 			return true;
 		}
 
 		// Never show.
-		if ( $condition_string === 'never' ) {
+		if ( 'never' === $condition_string ) {
 			return false;
 		}
 
@@ -72,7 +72,7 @@ class FLOSC_Condition_Evaluator {
 		}
 
 		// Handle OR (||).
-		if ( strpos( $expr, '||' ) !== false ) {
+		if ( false !== strpos( $expr, '||' ) ) {
 			$parts = preg_split( '/\s*\|\|\s*/', $expr );
 			foreach ( $parts as $part ) {
 				if ( $this->evaluate_expression( trim( $part ) ) ) {
@@ -83,7 +83,7 @@ class FLOSC_Condition_Evaluator {
 		}
 
 		// Handle AND (&&).
-		if ( strpos( $expr, '&&' ) !== false ) {
+		if ( false !== strpos( $expr, '&&' ) ) {
 			$parts = preg_split( '/\s*&&\s*/', $expr );
 			foreach ( $parts as $part ) {
 				if ( ! $this->evaluate_expression( trim( $part ) ) ) {
@@ -94,15 +94,15 @@ class FLOSC_Condition_Evaluator {
 		}
 
 		// Handle NOT (!).
-		if ( strpos( $expr, '!' ) === 0 ) {
+		if ( 0 === strpos( $expr, '!' ) ) {
 			return ! $this->evaluate_expression( substr( $expr, 1 ) );
 		}
 
 		// Handle TRUE/FALSE placeholders.
-		if ( $expr === 'TRUE' ) {
+		if ( 'TRUE' === $expr ) {
 			return true;
 		}
-		if ( $expr === 'FALSE' ) {
+		if ( 'FALSE' === $expr ) {
 			return false;
 		}
 
@@ -124,22 +124,22 @@ class FLOSC_Condition_Evaluator {
 		// - active_from_mts("2026-06m-08d-T09h:00m:00s UTC").
 		if ( preg_match( '/^active_until_mts\("([^"]+)"\)$/', $condition, $matches ) ) {
 			$target_ts = $this->parse_mts_with_timezone( $matches[1] );
-			return ( $target_ts !== null ) ? ( time() <= $target_ts ) : false;
+			return ( null !== $target_ts ) ? ( time() <= $target_ts ) : false;
 		}
 
 		if ( preg_match( '/^active_from_mts\("([^"]+)"\)$/', $condition, $matches ) ) {
 			$target_ts = $this->parse_mts_with_timezone( $matches[1] );
-			return ( $target_ts !== null ) ? ( time() >= $target_ts ) : false;
+			return ( null !== $target_ts ) ? ( time() >= $target_ts ) : false;
 		}
 
 		if ( preg_match( '/^now_before_mts\("([^"]+)"\)$/', $condition, $matches ) ) {
 			$target_ts = $this->parse_mts_with_timezone( $matches[1] );
-			return ( $target_ts !== null ) ? ( time() < $target_ts ) : false;
+			return ( null !== $target_ts ) ? ( time() < $target_ts ) : false;
 		}
 
 		if ( preg_match( '/^now_after_mts\("([^"]+)"\)$/', $condition, $matches ) ) {
 			$target_ts = $this->parse_mts_with_timezone( $matches[1] );
-			return ( $target_ts !== null ) ? ( time() > $target_ts ) : false;
+			return ( null !== $target_ts ) ? ( time() > $target_ts ) : false;
 		}
 
 		// Score comparisons.
@@ -267,11 +267,11 @@ class FLOSC_Condition_Evaluator {
 
 			// Access level conditions (v9.2.7).
 			case 'is_visitor':
-				return ( $this->context['access_level'] ?? 'visitor' ) === 'visitor';
+				return 'visitor' === ( $this->context['access_level'] ?? 'visitor' );
 			case 'is_guest':
-				return ( $this->context['access_level'] ?? 'visitor' ) === 'guest';
+				return 'guest' === ( $this->context['access_level'] ?? 'visitor' );
 			case 'is_member':
-				return ( $this->context['access_level'] ?? 'visitor' ) === 'member';
+				return 'member' === ( $this->context['access_level'] ?? 'visitor' );
 			case 'has_profile':
 				return ! empty( $this->context['has_profile'] ) || is_user_logged_in();
 			case 'has_sso':
@@ -292,7 +292,7 @@ class FLOSC_Condition_Evaluator {
 	 */
 	private function parse_mts_with_timezone( $raw_value ) {
 		$raw_value = trim( (string) $raw_value );
-		if ( $raw_value === '' ) {
+		if ( '' === $raw_value ) {
 			return null;
 		}
 
@@ -334,8 +334,8 @@ class FLOSC_Condition_Evaluator {
 	private function resolve_timezone( $token = '' ) {
 		$token = strtoupper( trim( (string) $token ) );
 
-		if ( $token !== '' ) {
-			if ( $token === 'UTC' ) {
+		if ( '' !== $token ) {
+			if ( 'UTC' === $token ) {
 				return new DateTimeZone( 'UTC' );
 			}
 
@@ -367,7 +367,7 @@ class FLOSC_Condition_Evaluator {
 
 		if ( function_exists( 'wp_timezone_string' ) ) {
 			$site_tz_string = trim( (string) wp_timezone_string() );
-			if ( $site_tz_string !== '' ) {
+			if ( '' !== $site_tz_string ) {
 				try {
 					return new DateTimeZone( $site_tz_string );
 				} catch ( Exception $e ) {
@@ -378,7 +378,7 @@ class FLOSC_Condition_Evaluator {
 
 		// Fallback 2: system timezone.
 		$system_tz = trim( (string) date_default_timezone_get() );
-		if ( $system_tz !== '' ) {
+		if ( '' !== $system_tz ) {
 			try {
 				return new DateTimeZone( $system_tz );
 			} catch ( Exception $e ) {
@@ -476,12 +476,12 @@ class FLOSC_Condition_Evaluator {
 
 		foreach ( $messages as $message ) {
 			// Filter by type if specified.
-			if ( $type !== null && $message['type'] !== $type ) {
+			if ( null !== $type && $message['type'] !== $type ) {
 				continue;
 			}
 
 			// Skip if already shown this session (for auto and offer messages).
-			if ( ( $message['type'] === 'auto' || $message['type'] === 'offer' ) && $this->was_shown_this_session( $message['name'] ) ) {
+			if ( ( 'auto' === $message['type'] || 'offer' === $message['type'] ) && $this->was_shown_this_session( $message['name'] ) ) {
 				continue;
 			}
 
@@ -547,7 +547,7 @@ class FLOSC_Condition_Evaluator {
 				&& count( $quiz_data['phrase_results'] ) > 0;
 			$context['quiz_taken']                  = $has_phrase_results
 				|| get_user_meta( $user_id, '_flosc_quiz_completed_at', true )
-				|| get_user_meta( $user_id, '_flosc_last_quiz_score', true ) !== '';
+				|| '' !== get_user_meta( $user_id, '_flosc_last_quiz_score', true );
 			$context['purchased']                   = (bool) get_user_meta( $user_id, '_flosc_purchased', true );
 			$flosc_fci_delivered                    = function_exists( 'flosc_content_item_get_user_meta' )
 				? flosc_content_item_get_user_meta( $user_id, '_flosc_free_content_item_delivered', true )
@@ -569,14 +569,14 @@ class FLOSC_Condition_Evaluator {
 				}
 			}
 			$reg_method = sanitize_key( (string) get_user_meta( $user_id, '_flosc_registration_method', true ) );
-			if ( $reg_method === '' && get_user_meta( $user_id, '_flosc_sso_created_via', true ) ) {
+			if ( '' === $reg_method && get_user_meta( $user_id, '_flosc_sso_created_via', true ) ) {
 				$reg_method = 'sso';
 			}
 			$context['registration_method'] = $reg_method;
 			$linked                         = get_user_meta( $user_id, '_flosc_sso_linked_providers', true );
 			$context['has_sso']             = ( is_array( $linked ) && ! empty( $linked ) )
 				|| (bool) get_user_meta( $user_id, '_flosc_sso_created_via', true )
-				|| ( strpos( $reg_method, 'sso' ) === 0 );
+				|| ( 0 === strpos( $reg_method, 'sso' ) );
 
 			// v1.9.6: Phase — needed by FLOSC_User_Session for RAG handler.
 			$context['phase'] = flosc()->determine_flosc_phase();
@@ -606,7 +606,7 @@ class FLOSC_Condition_Evaluator {
 			// Global _flosc_member_access alone must not make a member on one
 			// flow appear as a member on another flow.
 			$flow_for_level = (string) ( $additional['flow_id'] ?? $context['flow_id'] ?? '' );
-			if ( $flow_for_level === '' && function_exists( 'flosc' ) && is_object( flosc() ) && method_exists( flosc(), 'get_current_flow' ) ) {
+			if ( '' === $flow_for_level && function_exists( 'flosc' ) && is_object( flosc() ) && method_exists( flosc(), 'get_current_flow' ) ) {
 				$cf = flosc()->get_current_flow();
 				if ( is_array( $cf ) ) {
 					$flow_for_level = (string) ( $cf['ivr_file'] ?? $cf['ivr'] ?? $cf['id'] ?? '' );

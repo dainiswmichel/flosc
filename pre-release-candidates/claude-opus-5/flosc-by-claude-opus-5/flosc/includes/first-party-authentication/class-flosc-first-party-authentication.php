@@ -51,7 +51,7 @@ class FLOSC_First_Party_Authentication {
 			return $user;
 		}
 		$status = (string) get_user_meta( $user->ID, '_flosc_email_account_status', true );
-		if ( $status === 'pending' ) {
+		if ( 'pending' === $status ) {
 			return new WP_Error(
 				'flosc_email_pending',
 				__( 'Please verify your email address before signing in. Check your inbox for the verification link.', 'flosc' )
@@ -73,10 +73,10 @@ class FLOSC_First_Party_Authentication {
 		}
 
 		$flow_id = sanitize_key( (string) get_user_meta( $user_id, '_flosc_registration_flow', true ) );
-		if ( $flow_id === '' ) {
+		if ( '' === $flow_id ) {
 			$current_flow = $this->flosc->get_current_flow();
 			$ivr_file     = (string) ( $current_flow['ivr_file'] ?? $current_flow['ivr'] ?? '' );
-			$flow_id      = $this->flosc->flosc_normalize_flow_stem( $ivr_file !== '' ? $ivr_file : (string) ( $current_flow['id'] ?? '' ) );
+			$flow_id      = $this->flosc->flosc_normalize_flow_stem( '' !== $ivr_file ? $ivr_file : (string) ( $current_flow['id'] ?? '' ) );
 		}
 		if ( $this->flosc->flosc_user_should_receive_guest_tokens( $user_id, $flow_id ) ) {
 			$this->flosc->flosc_ensure_guest_token_baseline( $user_id, $token_provider, $flow_id, 'Guest registration baseline' );
@@ -105,10 +105,10 @@ class FLOSC_First_Party_Authentication {
 	public function handle_user_login( $user_login, $user ) {
 		$token_provider = $this->get_token_provider();
 		$flow_id        = sanitize_key( (string) get_user_meta( $user->ID, '_flosc_registration_flow', true ) );
-		if ( $flow_id === '' ) {
+		if ( '' === $flow_id ) {
 			$current_flow = $this->flosc->get_current_flow();
 			$ivr_file     = (string) ( $current_flow['ivr_file'] ?? $current_flow['ivr'] ?? '' );
-			$flow_id      = $this->flosc->flosc_normalize_flow_stem( $ivr_file !== '' ? $ivr_file : (string) ( $current_flow['id'] ?? '' ) );
+			$flow_id      = $this->flosc->flosc_normalize_flow_stem( '' !== $ivr_file ? $ivr_file : (string) ( $current_flow['id'] ?? '' ) );
 		}
 		if ( $this->flosc->flosc_user_should_receive_guest_tokens( $user->ID, $flow_id ) ) {
 			$this->flosc->flosc_ensure_guest_token_baseline( $user->ID, $token_provider, $flow_id, 'Guest login baseline' );
@@ -162,7 +162,7 @@ class FLOSC_First_Party_Authentication {
 				$incorrect = array();
 				foreach ( $answers as $i => $a ) {
 					$lesson = $i + 1;
-					if ( isset( $a['correct'] ) && $a['correct'] === true ) {
+					if ( isset( $a['correct'] ) && true === $a['correct'] ) {
 						$correct[] = $lesson;
 					} else {
 						$incorrect[] = $lesson;
@@ -232,7 +232,7 @@ class FLOSC_First_Party_Authentication {
 		// Slice 2: explicit login_destination wins first; then multi-flow
 		// routing per login_destination_mode; else single-flow app URL.
 		$explicit_dest = flosc_get_setting( 'login_destination', '' );
-		if ( $explicit_dest !== '' ) {
+		if ( '' !== $explicit_dest ) {
 			$dest_url = esc_url_raw( $explicit_dest );
 		} else {
 			$dest_user_id = ( $user instanceof WP_User ) ? (int) $user->ID : 0;
@@ -246,11 +246,11 @@ class FLOSC_First_Party_Authentication {
 			}
 			if ( $flow_count > 1 ) {
 				$mode = flosc_get_setting( 'login_destination_mode', 'auto' );
-				if ( $mode === 'core_profile' ) {
+				if ( 'core_profile' === $mode ) {
 					$dest_url = admin_url( 'profile.php' );
-				} elseif ( $mode === 'custom_url' ) {
+				} elseif ( 'custom_url' === $mode ) {
 					$accounts = flosc_get_setting( 'login_destination_accounts_url', '' );
-					$dest_url = $accounts !== '' ? esc_url_raw( $accounts ) : admin_url( 'profile.php' );
+					$dest_url = '' !== $accounts ? esc_url_raw( $accounts ) : admin_url( 'profile.php' );
 				} elseif ( function_exists( 'bp_core_get_user_domain' ) && $dest_user_id ) {
 					$dest_url = bp_core_get_user_domain( $dest_user_id );
 				} else {
@@ -262,7 +262,7 @@ class FLOSC_First_Party_Authentication {
 		}
 
 		// Check 1: If requested redirect is already to FLOSC app, allow it.
-		if ( ! empty( $requested_redirect_to ) && strpos( $requested_redirect_to, '/' . $app_slug ) !== false ) {
+		if ( ! empty( $requested_redirect_to ) && false !== strpos( $requested_redirect_to, '/' . $app_slug ) ) {
 			return $requested_redirect_to;
 		}
 
@@ -270,7 +270,7 @@ class FLOSC_First_Party_Authentication {
 		if ( ! empty( $requested_redirect_to ) ) {
 			$flows = get_option( 'flosc_flows', array() );
 			foreach ( $flows as $flow ) {
-				if ( ! empty( $flow['custom_domain'] ) && strpos( $requested_redirect_to, $flow['custom_domain'] ) !== false ) {
+				if ( ! empty( $flow['custom_domain'] ) && false !== strpos( $requested_redirect_to, $flow['custom_domain'] ) ) {
 					return $requested_redirect_to;
 				}
 			}
@@ -286,7 +286,7 @@ class FLOSC_First_Party_Authentication {
 		$referer = wp_get_referer();
 		if ( $referer ) {
 			// Check slug-based URL.
-			if ( strpos( $referer, '/' . $app_slug ) !== false ) {
+			if ( false !== strpos( $referer, '/' . $app_slug ) ) {
 				return $dest_url;
 			}
 			// v1.4.9: Check custom domain referrers.
@@ -317,7 +317,7 @@ class FLOSC_First_Party_Authentication {
 
 		// Only redirect if referrer was FLOSC app.
 		$referer = wp_get_referer();
-		if ( $referer && strpos( $referer, '/' . $app_slug ) !== false ) {
+		if ( $referer && false !== strpos( $referer, '/' . $app_slug ) ) {
 			return $this->flosc->get_app_url();
 		}
 
@@ -357,7 +357,7 @@ class FLOSC_First_Party_Authentication {
 		// FLOSC's own auth still works for those users via the normal login path,
 		// but we must not loop the admin back into a modal that can't complete
 		// a re-login from a non-FLOSC-context screen.
-		$in_admin = ( is_admin() && ! wp_doing_ajax() ) || ( function_exists( 'wp_get_referer' ) && strpos( (string) wp_get_referer(), '/wp-admin/' ) !== false );
+		$in_admin = ( is_admin() && ! wp_doing_ajax() ) || ( function_exists( 'wp_get_referer' ) && false !== strpos( (string) wp_get_referer(), '/wp-admin/' ) );
 		if ( $in_admin || $force_reauth ) {
 			return $url;
 		}
@@ -379,7 +379,7 @@ class FLOSC_First_Party_Authentication {
 	private function get_front_current_url() {
 		if ( $this->is_takeover_enabled() && ! is_admin() && ! empty( $_SERVER['REQUEST_URI'] ) ) {
 			$request_path = explode( '?', sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ), 2 )[0];
-			if ( $request_path !== '' && $request_path !== false ) {
+			if ( '' !== $request_path && false !== $request_path ) {
 				return home_url( $request_path );
 			}
 		}
@@ -393,7 +393,7 @@ class FLOSC_First_Party_Authentication {
 	 */
 	private function is_takeover_enabled() {
 		$setting = flosc_get_setting( 'takeover_wp_auth', '' );
-		return $setting !== '' && filter_var( (string) $setting, FILTER_VALIDATE_BOOLEAN );
+		return '' !== $setting && filter_var( (string) $setting, FILTER_VALIDATE_BOOLEAN );
 	}
 
 	/**
@@ -489,13 +489,13 @@ class FLOSC_First_Party_Authentication {
 		$token = trim( (string) $token );
 
 		// Nothing this long is a FLOSC token; refuse before decoding it.
-		if ( $token === '' || strlen( $token ) > 1024 ) {
+		if ( '' === $token || strlen( $token ) > 1024 ) {
 			return false;
 		}
 
         // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- binary/JWT token decoding, not obfuscation
 		$decoded = base64_decode( $token, true );
-		if ( ! is_string( $decoded ) || $decoded === '' ) {
+		if ( ! is_string( $decoded ) || '' === $decoded ) {
 			return false;
 		}
 
@@ -505,7 +505,7 @@ class FLOSC_First_Party_Authentication {
 		// could not be revoked. They are refused rather than honoured: a
 		// credential that cannot be withdrawn is the thing being fixed here,
 		// and one fresh login costs less than leaving that door open.
-		if ( count( $parts ) !== 6 || $parts[0] !== 'v2' ) {
+		if ( 6 !== count( $parts ) || 'v2' !== $parts[0] ) {
 			return false;
 		}
 
@@ -519,7 +519,7 @@ class FLOSC_First_Party_Authentication {
 		$expiry     = (int) $expiry_raw;
 		$generation = (int) $generation_raw;
 
-		if ( ! $user_id || $nonce === '' || time() > $expiry ) {
+		if ( ! $user_id || '' === $nonce || time() > $expiry ) {
 			return false;
 		}
 
@@ -654,25 +654,25 @@ class FLOSC_First_Party_Authentication {
 			$entry_flow = sanitize_key( (string) wp_unslash( $_COOKIE['flosc_entry_flow'] ) );
 		}
 
-		if ( $mode === 'fallback' ) {
-			return $fallback !== '' ? esc_url_raw( $fallback ) : $this->flosc->get_app_url();
+		if ( 'fallback' === $mode ) {
+			return '' !== $fallback ? esc_url_raw( $fallback ) : $this->flosc->get_app_url();
 		}
 
-		if ( $mode === 'flow' ) {
+		if ( 'flow' === $mode ) {
 			$flow_dest = flosc_get_setting( 'logout_destination', '' );
-			return $flow_dest !== '' ? esc_url_raw( $flow_dest ) : $this->flosc->get_app_url();
+			return '' !== $flow_dest ? esc_url_raw( $flow_dest ) : $this->flosc->get_app_url();
 		}
 
 		// entry_flow (default).
-		if ( $entry_flow !== '' ) {
+		if ( '' !== $entry_flow ) {
 			$recall = flosc_get_setting( 'logout_destination', '', $entry_flow );
-			if ( $recall !== '' ) {
+			if ( '' !== $recall ) {
 				return esc_url_raw( $recall );
 			}
 			return $this->flosc->get_app_url();
 		}
 
-		return $fallback !== '' ? esc_url_raw( $fallback ) : $this->flosc->get_app_url();
+		return '' !== $fallback ? esc_url_raw( $fallback ) : $this->flosc->get_app_url();
 	}
 
 	/**
@@ -686,7 +686,7 @@ class FLOSC_First_Party_Authentication {
 			return;
 		}
 		$flow_id = sanitize_key( (string) $flow_id );
-		if ( $flow_id === '' ) {
+		if ( '' === $flow_id ) {
 			return;
 		}
 		// First visit only — don't overwrite the original entry flow mid-session.
@@ -803,7 +803,7 @@ class FLOSC_First_Party_Authentication {
 			}
 		}
 
-		if ( $route === '' && isset( $GLOBALS['wp']->query_vars['rest_route'] ) ) {
+		if ( '' === $route && isset( $GLOBALS['wp']->query_vars['rest_route'] ) ) {
 			$route = (string) $GLOBALS['wp']->query_vars['rest_route'];
 		}
 
@@ -811,11 +811,11 @@ class FLOSC_First_Party_Authentication {
 		// current request, so neither source above is populated yet. Read the
 		// path directly in that window, through WordPress's own prefix so a
 		// site that renamed wp-json is still recognised.
-		if ( $route === '' && isset( $_SERVER['REQUEST_URI'] ) && function_exists( 'rest_get_url_prefix' ) ) {
+		if ( '' === $route && isset( $_SERVER['REQUEST_URI'] ) && function_exists( 'rest_get_url_prefix' ) ) {
 			$path   = (string) wp_parse_url( esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ), PHP_URL_PATH );
 			$prefix = trim( (string) rest_get_url_prefix(), '/' );
 
-			if ( $path !== '' && $prefix !== '' && preg_match( '#/' . preg_quote( $prefix, '#' ) . '(/.*)$#', $path, $m ) ) {
+			if ( '' !== $path && '' !== $prefix && preg_match( '#/' . preg_quote( $prefix, '#' ) . '(/.*)$#', $path, $m ) ) {
 				$route = $m[1];
 			}
 		}

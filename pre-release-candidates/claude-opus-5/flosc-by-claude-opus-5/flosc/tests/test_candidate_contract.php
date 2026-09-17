@@ -88,7 +88,7 @@ ok( 'the turn asks for it',
 ok( 'failure raises an event for admin monitors',
 	strpos( flosc_nows( $turn ), flosc_nows( "do_action('flosc_ai_dispatch_failed'"  )) !== false, true );
 ok( 'and response_source is read from the dispatch, not from a non-empty string',
-	strpos( $turn, "\$dispatch_source === 'ai' && \$ai_response !== ''" ) !== false, true );
+	strpos( flosc_nows( $turn ), flosc_nows( "'ai' === \$dispatch_source && '' !== \$ai_response" ) ) !== false, true );
 
 echo "\nRetrieval is optional, scripted copy is the last resort\n";
 ok( 'a RAG miss falls through to the ordinary provider',

@@ -210,7 +210,7 @@ class FLOSC_Pronunciation_Analyzer {
 		$missed       = $results['missed_items'];
 		$product_name = get_option( 'flosc_product_name', 'our course' );
 
-		if ( $score === 100 ) {
+		if ( 100 === $score ) {
 			return '🎉 Perfect score! You pronounced everything correctly. Want to explore advanced lessons?';
 		}
 

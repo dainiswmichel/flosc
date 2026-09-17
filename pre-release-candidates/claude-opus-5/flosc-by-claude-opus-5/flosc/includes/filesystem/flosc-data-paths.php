@@ -51,7 +51,7 @@ if ( ! function_exists( 'flosc_safe_remote_request' ) ) {
 	 */
 	function flosc_safe_remote_request( $method, $url, $args = array() ) {
 		$url = esc_url_raw( (string) $url );
-		if ( $url === '' || ! wp_http_validate_url( $url ) ) {
+		if ( '' === $url || ! wp_http_validate_url( $url ) ) {
 			return new WP_Error(
 				'flosc_invalid_remote_url',
 				__( 'Invalid or disallowed remote URL.', 'flosc' )
@@ -63,10 +63,10 @@ if ( ! function_exists( 'flosc_safe_remote_request' ) ) {
 		// Certificate verification required.
 		$args['sslverify'] = true;
 		$method            = strtoupper( (string) $method );
-		if ( $method === 'GET' ) {
+		if ( 'GET' === $method ) {
 			return wp_safe_remote_get( $url, $args );
 		}
-		if ( $method === 'POST' ) {
+		if ( 'POST' === $method ) {
 			return wp_safe_remote_post( $url, $args );
 		}
 		$args['method'] = $method;
@@ -146,7 +146,7 @@ if ( ! function_exists( 'flosc_get_user_ids_for_meta' ) ) {
 	 */
 	function flosc_get_user_ids_for_meta( $meta_key, $meta_value = null, $compare = '=', $limit = 0 ) {
 		$meta_key = (string) $meta_key;
-		if ( $meta_key === '' ) {
+		if ( '' === $meta_key ) {
 			return array();
 		}
 		$compare   = ( 'LIKE' === strtoupper( (string) $compare ) ) ? 'LIKE' : '=';
@@ -237,7 +237,7 @@ if ( ! function_exists( 'flosc_get_user_ids_for_meta_in' ) ) {
 		$meta_key = (string) $meta_key;
 		$values   = array_values( array_unique( array_filter( array_map( 'strval', (array) $values ) ) ) );
 		$limit    = max( 1, (int) $limit );
-		if ( $meta_key === '' || empty( $values ) ) {
+		if ( '' === $meta_key || empty( $values ) ) {
 			return array();
 		}
 		// Cap value list (engagement flow stems, status enums — small sets).
@@ -277,7 +277,7 @@ if ( ! function_exists( 'flosc_get_post_ids_for_meta' ) ) {
 		$meta_key   = (string) $meta_key;
 		$meta_value = (string) $meta_value;
 		$limit      = max( 1, (int) $limit );
-		if ( $meta_key === '' ) {
+		if ( '' === $meta_key ) {
 			return array();
 		}
 		$cache_key = 'pids_' . md5( $meta_key . '|' . $meta_value . '|' . $limit );
@@ -313,7 +313,7 @@ if ( ! function_exists( 'flosc_fs_path_is_allowed_read' ) ) {
 	 * @return bool
 	 */
 	function flosc_fs_path_is_allowed_read( $path ) {
-		if ( ! is_string( $path ) || $path === '' ) {
+		if ( ! is_string( $path ) || '' === $path ) {
 			return false;
 		}
 		if ( is_uploaded_file( $path ) ) {
@@ -324,7 +324,7 @@ if ( ! function_exists( 'flosc_fs_path_is_allowed_read' ) ) {
 		if ( false !== $real ) {
 			$norm = wp_normalize_path( $real );
 		}
-		if ( $norm === '' ) {
+		if ( '' === $norm ) {
 			return false;
 		}
 		$uploads = wp_upload_dir();
@@ -559,7 +559,7 @@ if ( ! function_exists( 'flosc_flow_kb_dir' ) ) {
 			return '';
 		}
 		$flow_stem = sanitize_key( (string) $flow_stem );
-		if ( $flow_stem === '' ) {
+		if ( '' === $flow_stem ) {
 			// No flow context — fall back to the shared base rather than guess a flow.
 			return $base;
 		}
@@ -731,12 +731,12 @@ if ( ! function_exists( 'flosc_paypal_purchase_intent_create' ) ) {
 	function flosc_paypal_purchase_intent_create( array $data ) {
 		$uuid = function_exists( 'wp_generate_uuid4' ) ? wp_generate_uuid4() : wp_generate_password( 32, false, false );
 		$uuid = sanitize_text_field( (string) $uuid );
-		if ( $uuid === '' ) {
+		if ( '' === $uuid ) {
 			return new WP_Error( 'intent_failed', __( 'Could not create purchase intent', 'flosc' ), array( 'status' => 500 ) );
 		}
 		$offer_id = sanitize_text_field( (string) ( $data['offer_id'] ?? '' ) );
 		$plan_id  = sanitize_text_field( (string) ( $data['plan_id'] ?? '' ) );
-		if ( $offer_id === '' || $plan_id === '' ) {
+		if ( '' === $offer_id || '' === $plan_id ) {
 			return new WP_Error( 'invalid_intent', __( 'Offer and PayPal plan are required', 'flosc' ), array( 'status' => 400 ) );
 		}
 		$record = array(
@@ -767,7 +767,7 @@ if ( ! function_exists( 'flosc_paypal_purchase_intent_get' ) ) {
 	 */
 	function flosc_paypal_purchase_intent_get( $uuid ) {
 		$uuid = sanitize_text_field( (string) $uuid );
-		if ( $uuid === '' ) {
+		if ( '' === $uuid ) {
 			return false;
 		}
 		$record = get_transient( 'flosc_pp_pi_' . $uuid );
@@ -909,11 +909,11 @@ if ( ! function_exists( 'flosc_resolve_lesson_catalog_path' ) ) {
 		$preferred = '';
 		foreach ( flosc_lesson_catalog_basenames() as $i => $base ) {
 			$base = ltrim( (string) $base, '/' );
-			if ( $base === '' ) {
+			if ( '' === $base ) {
 				continue;
 			}
 			$path = flosc_config_file( $base );
-			if ( $i === 0 ) {
+			if ( 0 === $i ) {
 				$preferred = $path;
 			}
 			// flosc_config_file returns plugin path even when missing; require real file for match.
@@ -934,13 +934,13 @@ if ( ! function_exists( 'flosc_resolve_lesson_catalog_path' ) ) {
 if ( ! function_exists( 'flosc_lesson_catalog_write_paths' ) ) {
 	function flosc_lesson_catalog_write_paths() {
 		$dir = function_exists( 'flosc_data_dir' ) ? flosc_data_dir() : '';
-		if ( $dir === '' ) {
+		if ( '' === $dir ) {
 			return array();
 		}
 		$out = array();
 		foreach ( flosc_lesson_catalog_basenames() as $base ) {
 			$base = ltrim( (string) $base, '/' );
-			if ( $base !== '' ) {
+			if ( '' !== $base ) {
 				$out[] = $dir . $base;
 			}
 		}
@@ -995,7 +995,7 @@ if ( ! function_exists( 'flosc_resolve_flow_option_key_for_ivr' ) ) {
 
 		foreach ( $flosc_rows as $flosc_row ) {
 			$option_name = (string) ( $flosc_row['option_name'] ?? '' );
-			if ( $option_name === '' || strpos( $option_name, 'flosc_flow_' ) !== 0 ) {
+			if ( '' === $option_name || 0 !== strpos( $option_name, 'flosc_flow_' ) ) {
 				continue;
 			}
 
@@ -1006,8 +1006,8 @@ if ( ! function_exists( 'flosc_resolve_flow_option_key_for_ivr' ) ) {
 
 			$active          = basename( (string) ( $flosc_settings['active_ivr_file'] ?? '' ) );
 			$primary         = basename( (string) ( $flosc_settings['ivr_file'] ?? '' ) );
-			$matches_active  = ( $active !== '' && $active === $flosc_ivr_filename );
-			$matches_primary = ( $primary !== '' && $primary === $flosc_ivr_filename );
+			$matches_active  = ( '' !== $active && $active === $flosc_ivr_filename );
+			$matches_primary = ( '' !== $primary && $primary === $flosc_ivr_filename );
 
 			// Only consider keys that are explicitly tied to this IVR filename.
 			if ( ! $matches_active && ! $matches_primary && $option_name !== $default_key ) {

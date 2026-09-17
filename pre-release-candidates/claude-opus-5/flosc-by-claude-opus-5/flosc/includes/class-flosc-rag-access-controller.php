@@ -97,17 +97,17 @@ class FLOSC_RAG_Access_Controller {
 		$flosc_access_level = $flosc_state['flosc_access_level'];
 
 		// Admin: always allowed.
-		if ( $flosc_user_type === 'flosc_admin' ) {
+		if ( 'flosc_admin' === $flosc_user_type ) {
 			return array( 'flosc_allowed' => true );
 		}
 
 		// Member: always allowed.
-		if ( $flosc_access_level === 'member' ) {
+		if ( 'member' === $flosc_access_level ) {
 			return array( 'flosc_allowed' => true );
 		}
 
 		// Guest: ONLY their free lesson.
-		if ( $flosc_user_type === 'flosc_guest' ) {
+		if ( 'flosc_guest' === $flosc_user_type ) {
 			$flosc_free_lesson = $flosc_state['flosc_quiz']['flosc_free_lesson_number'];
 			if ( $flosc_lesson_number == $flosc_free_lesson ) {
 				return array( 'flosc_allowed' => true );
@@ -163,7 +163,7 @@ class FLOSC_RAG_Access_Controller {
 		}
 
 		// Log suspicious patterns.
-		if ( $flosc_tool_name === 'flosc_get_lesson_content' && strlen( $flosc_result['content'] ?? '' ) > 5000 ) {
+		if ( 'flosc_get_lesson_content' === $flosc_tool_name && strlen( $flosc_result['content'] ?? '' ) > 5000 ) {
 			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
 				flosc_log( 'FLOSC RAG Access Controller: Potential content leak detected' );
 			}

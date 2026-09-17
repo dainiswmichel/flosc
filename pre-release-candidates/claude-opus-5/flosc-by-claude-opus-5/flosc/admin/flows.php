@@ -88,7 +88,7 @@ if ( isset( $flosc_get['delete_flow'] ) && $flosc_is_admin && isset( $flosc_get[
 						<code class="flosc-flows-ivr-code"><?php echo esc_html( $flosc_flow['ivr_file'] ?? 'default' ); ?></code>
 					</td>
 					<td>
-						<?php if ( $flosc_flow['status'] === 'active' ) : ?>
+						<?php if ( 'active' === $flosc_flow['status'] ) : ?>
 							<span class="flosc-flows-status flosc-flows-status--active">● Active</span>
 						<?php else : ?>
 							<span class="flosc-flows-status flosc-flows-status--draft">○ Draft</span>
@@ -98,7 +98,7 @@ if ( isset( $flosc_get['delete_flow'] ) && $flosc_is_admin && isset( $flosc_get[
 								<a href="<?php echo esc_url( admin_url( 'admin.php?page=flosc-settings&flow=' . rawurlencode( $flosc_flow['id'] ) ) ); ?>" 
 							class="button button-primary button-small">Configure</a>
 						
-						<?php if ( $flosc_flow_url && $flosc_flow['status'] === 'active' ) : ?>
+						<?php if ( $flosc_flow_url && 'active' === $flosc_flow['status'] ) : ?>
 							<a href="<?php echo esc_url( $flosc_flow_url ); ?>" target="_blank" 
 								class="button button-small">View ↗</a>
 						<?php endif; ?>

@@ -68,10 +68,10 @@ class FLOSC_Token_Ledger {
 		if ( is_array( $purchase_data ) && ! empty( $purchase_data['flow_id'] ) ) {
 			$flow_id = sanitize_key( (string) $purchase_data['flow_id'] );
 		}
-		if ( $flow_id === '' ) {
+		if ( '' === $flow_id ) {
 			$flow_id = sanitize_key( (string) get_user_meta( $user_id, '_flosc_registration_flow', true ) );
 		}
-		if ( $flow_id === '' ) {
+		if ( '' === $flow_id ) {
 			$current_flow = $this->flosc->get_current_flow();
 			$ivr_file     = (string) ( $current_flow['ivr_file'] ?? $current_flow['ivr'] ?? '' );
 			$flow_id      = sanitize_key( pathinfo( basename( $ivr_file ), PATHINFO_FILENAME ) );
@@ -212,7 +212,7 @@ class FLOSC_Token_Ledger {
 		$session_id     = absint( $session_id );
 		$estimated_cost = max( 0, intval( $estimated_cost ) );
 		$request_id     = sanitize_key( (string) $request_id );
-		if ( $session_id <= 0 || $request_id === '' || ! $token_provider ) {
+		if ( $session_id <= 0 || '' === $request_id || ! $token_provider ) {
 			return array(
 				'reserved'      => false,
 				'id'            => '',
@@ -251,7 +251,7 @@ class FLOSC_Token_Ledger {
 					$stale_before
 				)
 			);
-			$got     = ( $updated === 1 );
+			$got     = ( 1 === $updated );
 			if ( ! $got ) {
 				return array(
 					'reserved'      => false,
@@ -403,7 +403,7 @@ class FLOSC_Token_Ledger {
 		}
 
 		$flow_id = $this->flosc->flosc_normalize_flow_stem( (string) ( $request->get_param( 'flow_id' ) ?? '' ) );
-		if ( $flow_id === '' || $flow_id === 'default' ) {
+		if ( '' === $flow_id || 'default' === $flow_id ) {
 			$flow_id = $this->flosc->flosc_normalize_flow_stem(
 				(string) get_user_meta( $user_id, '_flosc_registration_flow', true )
 			);
@@ -428,13 +428,13 @@ class FLOSC_Token_Ledger {
 		}
 
 		$session_raw = sanitize_text_field( (string) ( $request->get_param( 'visitor_session_id' ) ?? '' ) );
-		if ( $session_raw === '' ) {
+		if ( '' === $session_raw ) {
 			$session_raw = $this->flosc->flosc_resolve_visitor_session_id_for_grant();
 		}
 
 		$flag_key         = $this->flosc->flosc_guest_token_grant_flag_key( $flow_id );
 		$already          = (bool) get_user_meta( $user_id, $flag_key, true );
-		$remaining_before = $session_raw !== ''
+		$remaining_before = '' !== $session_raw
 			? $this->flosc->flosc_get_visitor_remaining_for_session( $flow_id, $session_raw )
 			: 0;
 		$grant_amount     = max( 0, intval( $this->flosc->flosc_get_guest_token_grant_amount( $flow_id, $user_id ) ) );
@@ -452,7 +452,7 @@ class FLOSC_Token_Ledger {
 				'applied_new'       => ! $already,
 				'visitor_remaining' => $remaining_before,
 				'grant'             => $grant_amount,
-				'had_session'       => ( $session_raw !== '' ),
+				'had_session'       => ( '' !== $session_raw ),
 			)
 		);
 	}
@@ -478,7 +478,7 @@ class FLOSC_Token_Ledger {
 		$session_id = $this->flosc->flosc_normalize_session_id( (string) ( $request->get_param( 'session_id' ) ?? '' ) );
 		$flow_id    = $this->flosc->flosc_normalize_flow_stem( (string) ( $request->get_param( 'flow_id' ) ?? '' ) );
 
-		if ( $session_id <= 0 || $flow_id === '' ) {
+		if ( $session_id <= 0 || '' === $flow_id ) {
 			return new WP_REST_Response(
 				array(
 					'success'       => false,

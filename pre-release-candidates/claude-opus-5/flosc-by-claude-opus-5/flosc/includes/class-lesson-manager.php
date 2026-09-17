@@ -283,7 +283,7 @@ class FLOSC_Lesson_Manager {
 	public function get_lesson( $lesson_id ) {
 		$post = get_post( $lesson_id );
 
-		if ( ! $post || $post->post_status !== 'publish' ) {
+		if ( ! $post || 'publish' !== $post->post_status ) {
 			return null;
 		}
 
@@ -453,7 +453,7 @@ class FLOSC_Lesson_Manager {
 				$item = null;
 				if ( is_numeric( $tag ) ) {
 					$item = $tag;
-				} elseif ( strpos( $tag, 'phoneme-' ) === 0 ) {
+				} elseif ( 0 === strpos( $tag, 'phoneme-' ) ) {
 					$item = str_replace( 'phoneme-', '', $tag );
 				}
 

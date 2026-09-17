@@ -53,7 +53,7 @@ function flosc_content_item_user_meta_key_map() {
  * @return bool
  */
 function flosc_content_item_value_present( $value ) {
-	if ( $value === null || $value === '' ) {
+	if ( null === $value || '' === $value ) {
 		return false;
 	}
 	if ( is_array( $value ) && $value === array() ) {
@@ -105,7 +105,7 @@ function flosc_normalize_content_item_flow_settings( array $fs, $option_key = ''
 		}
 	}
 
-	if ( $changed && $option_key !== '' && strpos( (string) $option_key, 'flosc_flow_' ) === 0 ) {
+	if ( $changed && '' !== $option_key && 0 === strpos( (string) $option_key, 'flosc_flow_' ) ) {
 		update_option( $option_key, $fs, false );
 	}
 
@@ -148,7 +148,7 @@ function flosc_content_item_get_user_meta( $user_id, $new_key, $single = true ) 
 	}
 	$map = flosc_content_item_user_meta_key_map();
 	$old = $map[ $new_key ] ?? '';
-	if ( $old === '' ) {
+	if ( '' === $old ) {
 		return $val;
 	}
 	$legacy = get_user_meta( $user_id, $old, $single );

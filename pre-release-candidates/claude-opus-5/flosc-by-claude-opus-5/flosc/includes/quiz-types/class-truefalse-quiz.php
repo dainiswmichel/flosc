@@ -155,21 +155,21 @@ class FLOSC_TrueFalse_Quiz extends FLOSC_Abstract_Quiz_Type {
 			$related_content = array();
 			for ( $i = 2; $i < count( $parts ); $i++ ) {
 				$seg = trim( $parts[ $i ] );
-				if ( stripos( $seg, 'correctcontent:' ) === 0 ) {
+				if ( 0 === stripos( $seg, 'correctcontent:' ) ) {
 					// Appends — multiple |CorrectContent: segments are all tier-1.
 					foreach ( array_map( 'trim', explode( ',', trim( substr( $seg, strlen( 'correctcontent:' ) ) ) ) ) as $r ) {
-						if ( $r !== '' ) {
+						if ( '' !== $r ) {
 							$correct_content[] = $r;
 						}
 					}
-				} elseif ( stripos( $seg, 'relatedcontent:' ) === 0 ) {
+				} elseif ( 0 === stripos( $seg, 'relatedcontent:' ) ) {
 					// Appends — multiple |RelatedContent: pipe segments are cumulative.
 					foreach ( array_map( 'trim', explode( ',', trim( substr( $seg, strlen( 'relatedcontent:' ) ) ) ) ) as $r ) {
-						if ( $r !== '' ) {
+						if ( '' !== $r ) {
 							$related_content[] = $r;
 						}
 					}
-				} elseif ( stripos( $seg, 'topic:' ) === 0 ) {
+				} elseif ( 0 === stripos( $seg, 'topic:' ) ) {
 					$topics = array_map( 'trim', explode( ',', trim( str_ireplace( 'topic:', '', $seg ) ) ) );
 				}
 			}
@@ -192,7 +192,7 @@ class FLOSC_TrueFalse_Quiz extends FLOSC_Abstract_Quiz_Type {
 	 */
 	private function parse_user_answers( $input ) {
 		// Try comma-separated first.
-		if ( strpos( $input, ',' ) !== false ) {
+		if ( false !== strpos( $input, ',' ) ) {
 			$answers = explode( ',', $input );
 		} else {
 			// Try newline-separated.

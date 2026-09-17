@@ -143,7 +143,7 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 		$offer_id = sanitize_text_field( (string) ( $offer['id'] ?? ( $payment_data['offer_id'] ?? '' ) ) );
 
 		// Handle based on offer type.
-		if ( ( $offer['type'] ?? '' ) === 'subscription' ) {
+		if ( 'subscription' === ( $offer['type'] ?? '' ) ) {
 			return $this->create_subscription( $user, $price_id, $payment_data, $offer_id );
 		}
 
@@ -174,7 +174,7 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 	 */
 	public function create_payment_intent( $user, $price_id_or_amount, $currency = 'usd', $offer_id = '' ) {
 		// First, get the price details from Stripe.
-		if ( strpos( $price_id_or_amount, 'price_' ) === 0 ) {
+		if ( 0 === strpos( $price_id_or_amount, 'price_' ) ) {
 			$price = $this->api_request( 'GET', '/prices/' . $price_id_or_amount );
 			if ( is_wp_error( $price ) ) {
 				return $price;
@@ -213,7 +213,7 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 		return array(
 			'client_secret'     => $response['client_secret'],
 			'payment_intent_id' => $response['id'],
-			'requires_action'   => $response['status'] === 'requires_action',
+			'requires_action'   => 'requires_action' === $response['status'],
 		);
 	}
 
@@ -236,7 +236,7 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 			'user_id'    => $user->ID,
 			'user_email' => $user->user_email,
 		);
-		if ( $offer_id !== '' ) {
+		if ( '' !== $offer_id ) {
 			$metadata['offer_id'] = $offer_id;
 		}
 
@@ -258,7 +258,7 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 			return $response;
 		}
 
-		if ( $response['status'] === 'succeeded' ) {
+		if ( 'succeeded' === $response['status'] ) {
 			return array(
 				'success'        => true,
 				'transaction_id' => $response['id'],
@@ -268,7 +268,7 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 			);
 		}
 
-		if ( $response['status'] === 'requires_action' ) {
+		if ( 'requires_action' === $response['status'] ) {
 			// Incomplete — sale manager must not grant on this payload.
 			return array(
 				'success'           => false,
@@ -304,7 +304,7 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 		$metadata = array(
 			'user_id' => (string) $user->ID,
 		);
-		if ( $offer_id !== '' ) {
+		if ( '' !== $offer_id ) {
 			$metadata['offer_id'] = $offer_id;
 		}
 
@@ -326,7 +326,7 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 		}
 
 		$subscription_id = sanitize_text_field( (string) ( $response['id'] ?? '' ) );
-		if ( $subscription_id === '' ) {
+		if ( '' === $subscription_id ) {
 			return new WP_Error( 'subscription_failed', __( 'Stripe returned no subscription id', 'flosc' ) );
 		}
 
@@ -339,7 +339,7 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 		if ( is_array( $payment_intent ) ) {
 			$pi_status     = strtolower( (string) ( $payment_intent['status'] ?? '' ) );
 			$client_secret = (string) ( $payment_intent['client_secret'] ?? '' );
-			if ( $client_secret !== '' && in_array(
+			if ( '' !== $client_secret && in_array(
 				$pi_status,
 				array(
 					'requires_action',
@@ -409,7 +409,7 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 			sprintf(
 				/* translators: %s: Stripe subscription status */
 				__( 'Failed to create subscription (status: %s)', 'flosc' ),
-				$status !== '' ? $status : 'unknown'
+				'' !== $status ? $status : 'unknown'
 			)
 		);
 	}
@@ -423,7 +423,7 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 	private function extract_subscription_payment_intent( array $subscription ) {
 		$invoice = $subscription['latest_invoice'] ?? null;
 
-		if ( is_string( $invoice ) && $invoice !== '' ) {
+		if ( is_string( $invoice ) && '' !== $invoice ) {
 			$invoice = $this->api_request( 'GET', '/invoices/' . rawurlencode( $invoice ) );
 			if ( is_wp_error( $invoice ) || ! is_array( $invoice ) ) {
 				return null;
@@ -436,7 +436,7 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 
 		$payment_intent = $invoice['payment_intent'] ?? null;
 
-		if ( is_string( $payment_intent ) && $payment_intent !== '' ) {
+		if ( is_string( $payment_intent ) && '' !== $payment_intent ) {
 			$payment_intent = $this->api_request( 'GET', '/payment_intents/' . rawurlencode( $payment_intent ) );
 			if ( is_wp_error( $payment_intent ) || ! is_array( $payment_intent ) ) {
 				return null;
@@ -523,10 +523,10 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 		$signature = null;
 		foreach ( explode( ',', $sig ) as $part ) {
 			[$key, $value] = explode( '=', $part, 2 );
-			if ( $key === 't' ) {
+			if ( 't' === $key ) {
 				$timestamp = $value;
 			}
-			if ( $key === 'v1' ) {
+			if ( 'v1' === $key ) {
 				$signature = $value;
 			}
 		}
@@ -553,7 +553,7 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 
 		// SECURITY: Idempotency - check if already processed.
 		$event_id = sanitize_text_field( (string) ( $event['id'] ?? '' ) );
-		if ( $event_id !== '' ) {
+		if ( '' !== $event_id ) {
 			$processed_key = 'flosc_stripe_event_' . $event_id;
 			if ( get_transient( $processed_key ) ) {
 				return array(
@@ -602,7 +602,7 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 		$currency       = sanitize_text_field( (string) ( $payment_intent['currency'] ?? '' ) );
 
 		// Unbound payments must not grant — offer_id was set at PaymentIntent creation.
-		if ( $user_id > 0 && $offer_id !== '' && $transaction_id !== '' && function_exists( 'flosc_sale' ) ) {
+		if ( $user_id > 0 && '' !== $offer_id && '' !== $transaction_id && function_exists( 'flosc_sale' ) ) {
 			$sale_manager = flosc_sale();
 			$offer        = $sale_manager->offers()->get_offer( $offer_id );
 
@@ -702,7 +702,7 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 			'timeout' => 30,
 		);
 
-		if ( $method === 'GET' && ! empty( $data ) ) {
+		if ( 'GET' === $method && ! empty( $data ) ) {
 			$url .= '?' . http_build_query( $data );
 		} elseif ( ! empty( $data ) ) {
 			$args['headers']['Content-Type'] = 'application/x-www-form-urlencoded';

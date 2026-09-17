@@ -55,10 +55,10 @@ if ( ! is_array( $flosc_content_types ) ) {
 if ( empty( $flosc_content_types ) ) {
 	$flosc_legacy_s = trim( (string) ( $flosc_flow_settings['content_item_label_singular'] ?? '' ) );
 	$flosc_legacy_p = trim( (string) ( $flosc_flow_settings['content_item_label_plural'] ?? '' ) );
-	if ( $flosc_legacy_s !== '' || $flosc_legacy_p !== '' ) {
+	if ( '' !== $flosc_legacy_s || '' !== $flosc_legacy_p ) {
 		$flosc_content_types[] = array(
 			'singular' => $flosc_legacy_s,
-			'plural'   => $flosc_legacy_p !== '' ? $flosc_legacy_p : $flosc_legacy_s,
+			'plural'   => '' !== $flosc_legacy_p ? $flosc_legacy_p : $flosc_legacy_s,
 		);
 	}
 }
@@ -73,13 +73,13 @@ $flosc_item_p_disp = '';
 foreach ( $flosc_content_types as $flosc_ct ) {
 	$flosc_s = trim( (string) ( $flosc_ct['singular'] ?? '' ) );
 	$flosc_p = trim( (string) ( $flosc_ct['plural'] ?? '' ) );
-	if ( $flosc_s !== '' ) {
+	if ( '' !== $flosc_s ) {
 		$flosc_item_s_disp = $flosc_s;
-		$flosc_item_p_disp = $flosc_p !== '' ? $flosc_p : $flosc_s;
+		$flosc_item_p_disp = '' !== $flosc_p ? $flosc_p : $flosc_s;
 		break;
 	}
 }
-if ( $flosc_item_s_disp === '' ) {
+if ( '' === $flosc_item_s_disp ) {
 	$flosc_item_s_disp = __( 'content item', 'flosc' );
 	$flosc_item_p_disp = __( 'content items', 'flosc' );
 }

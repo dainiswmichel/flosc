@@ -74,7 +74,7 @@ if ( ! function_exists( 'flosc_parse_model_parameters' ) ) {
 
 			$parts = explode( ':', $line, 2 );
 
-			if ( count( $parts ) !== 2 ) {
+			if ( 2 !== count( $parts ) ) {
 				return new WP_Error(
 					'flosc_params_line',
 					sprintf(

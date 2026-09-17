@@ -157,7 +157,7 @@ echo "\nSurface is explicit, never inferred from an empty field\n";
 ok( "an unset surface is recorded as 'unknown'",
 	strpos( $logger, "\$surface = 'unknown';" ) !== false, true );
 ok( 'and the chat turn names the surface it was on',
-	strpos( flosc_nows( $turn ), flosc_nows( "'surface'         => \$flosc_ctx_surface !== '' ? \$flosc_ctx_surface : 'full_page'"  )) !== false, true );
+	strpos( flosc_nows( $turn ), flosc_nows( "'surface' => '' !== \$flosc_ctx_surface ? \$flosc_ctx_surface : 'full_page'" ) ) !== false, true );
 
 // FLOSC computed the VGM tier on every turn and threw it away at logging
 // time: $eval_context['access_level'] built the prompt, gated the content and

@@ -17,7 +17,7 @@ class FLOSC_IVR_Parser {
 	private $flosc_config          = null;
 
 	public static function flosc_instance() {
-		if ( self::$flosc_instance === null ) {
+		if ( null === self::$flosc_instance ) {
 			self::$flosc_instance = new self();
 		}
 		return self::$flosc_instance;
@@ -101,17 +101,17 @@ class FLOSC_IVR_Parser {
 
 			// Inside style block.
 			if ( $in_style_block ) {
-				if ( strpos( $trimmed, 'Description:' ) === 0 ) {
+				if ( 0 === strpos( $trimmed, 'Description:' ) ) {
 					$style_description = trim( substr( $trimmed, 12 ) );
 					continue;
 				}
-				if ( strpos( $trimmed, '.flosc-style-' ) === 0 || strpos( $trimmed, '}' ) !== false ||
-					strpos( $trimmed, '{' ) !== false || preg_match( '/^\s*(background|border|padding|font|color|display|align|gap|min-width|text-align|border-radius)/', $trimmed ) ) {
+				if ( 0 === strpos( $trimmed, '.flosc-style-' ) || false !== strpos( $trimmed, '}' ) ||
+					false !== strpos( $trimmed, '{' ) || preg_match( '/^\s*(background|border|padding|font|color|display|align|gap|min-width|text-align|border-radius)/', $trimmed ) ) {
 					$style_css .= $line . "\n";
 					continue;
 				}
 				// End of style block.
-				if ( strpos( $trimmed, '##' ) === 0 || strpos( $trimmed, '---' ) === 0 ) {
+				if ( 0 === strpos( $trimmed, '##' ) || 0 === strpos( $trimmed, '---' ) ) {
 					$config['styles'][ $style_name ] = array(
 						'name'        => $style_name,
 						'description' => $style_description,
@@ -122,17 +122,17 @@ class FLOSC_IVR_Parser {
 			}
 
 			// Available Variables section.
-			if ( strpos( $trimmed, '## Available Variables' ) === 0 ) {
+			if ( 0 === strpos( $trimmed, '## Available Variables' ) ) {
 				continue;
 			}
 
 			// Available Conditions section.
-			if ( strpos( $trimmed, '## Available Conditions' ) === 0 ) {
+			if ( 0 === strpos( $trimmed, '## Available Conditions' ) ) {
 				continue;
 			}
 
 			// Section divider - save current message.
-			if ( $trimmed === '---' ) {
+			if ( '---' === $trimmed ) {
 				if ( $current_message ) {
 					if ( $in_message_content ) {
 						$current_message['content'] = trim( implode( "\n", $message_content_lines ) );
@@ -287,7 +287,7 @@ class FLOSC_IVR_Parser {
 			if ( $in_message_content ) {
 				// Check if we hit the next property or section.
 				if ( preg_match( '/^(MessageName|MessageType|MessageStyle|MessagePanel|Icon|UserInput|Keywords|Action|OfferID|Price|DiscountPrice|Timer|DisplayFormat|HtmlFile|WooProduct|PostID|MessageConditions|IndividualMessagePassword|PasswordPrompt|PasswordSuccess|PasswordMaxTries|PasswordRetry|##|---):/i', $trimmed ) ||
-					strpos( $trimmed, '##' ) === 0 || $trimmed === '---' ) {
+					0 === strpos( $trimmed, '##' ) || '---' === $trimmed ) {
 					// End of content.
 					$current_message['content'] = trim( implode( "\n", $message_content_lines ) );
 					$in_message_content         = false;
@@ -334,7 +334,7 @@ class FLOSC_IVR_Parser {
 	 * Get parsed config
 	 */
 	public function get_flosc_config() {
-		if ( $this->flosc_config === null ) {
+		if ( null === $this->flosc_config ) {
 			$this->flosc_load_config();
 		}
 		return $this->flosc_config;
@@ -530,7 +530,7 @@ class FLOSC_IVR_Parser {
 		return array_filter(
 			$messages,
 			function ( $m ) {
-				return $m['type'] === 'suggested_user_autoprompt';
+				return 'suggested_user_autoprompt' === $m['type'];
 			}
 		);
 	}
@@ -543,7 +543,7 @@ class FLOSC_IVR_Parser {
 		return array_filter(
 			$messages,
 			function ( $m ) {
-				return $m['type'] === 'auto';
+				return 'auto' === $m['type'];
 			}
 		);
 	}

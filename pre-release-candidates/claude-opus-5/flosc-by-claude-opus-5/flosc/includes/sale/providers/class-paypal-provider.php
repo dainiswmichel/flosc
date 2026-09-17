@@ -51,7 +51,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 	public function is_enabled() {
 		if ( function_exists( 'flosc' ) ) {
 			$value = flosc()->get_setting( 'paypal_enabled', '' );
-			if ( $value !== '' ) {
+			if ( '' !== $value ) {
 				return ! empty( $value );
 			}
 		}
@@ -101,13 +101,13 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 		// 1. Per-flow setting (do not use empty() — "0" and falsey strings are valid)
 		if ( function_exists( 'flosc' ) ) {
 			$value = flosc()->get_setting( 'paypal_' . $key, null );
-			if ( $value !== null && $value !== '' ) {
+			if ( null !== $value && '' !== $value ) {
 				return $value;
 			}
 		}
 		// 2. Global option
 		$global = get_option( 'flosc_paypal_' . $key, null );
-		if ( $global !== null && $global !== false && $global !== '' ) {
+		if ( null !== $global && false !== $global && '' !== $global ) {
 			return $global;
 		}
 		return $default;
@@ -123,7 +123,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 	 * @return array<int, array{webhook_id:string,client_id:string,secret:string,mode:string}>
 	 */
 	private function collect_paypal_credential_packs() {
-		if ( $this->credential_packs_cache !== null ) {
+		if ( null !== $this->credential_packs_cache ) {
 			return $this->credential_packs_cache;
 		}
 
@@ -133,11 +133,11 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 			$client_id  = sanitize_text_field( (string) $client_id );
 			$secret     = (string) $secret;
 			$mode       = sanitize_key( (string) $mode );
-			if ( $mode !== 'live' ) {
+			if ( 'live' !== $mode ) {
 				$mode = 'sandbox';
 			}
 			// Skip empty packs.
-			if ( $webhook_id === '' && $client_id === '' && $secret === '' ) {
+			if ( '' === $webhook_id && '' === $client_id && '' === $secret ) {
 				return;
 			}
 			$packs[] = array(
@@ -196,7 +196,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 
 		$complete = array();
 		foreach ( $packs as $pack ) {
-			if ( $pack['webhook_id'] !== '' && $pack['client_id'] !== '' && $pack['secret'] !== '' ) {
+			if ( '' !== $pack['webhook_id'] && '' !== $pack['client_id'] && '' !== $pack['secret'] ) {
 				$complete[] = $pack;
 			}
 		}
@@ -206,8 +206,8 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 			usort(
 				$complete,
 				static function ( $a, $b ) {
-					$a_live = ( ( $a['mode'] ?? '' ) === 'live' ) ? 1 : 0;
-					$b_live = ( ( $b['mode'] ?? '' ) === 'live' ) ? 1 : 0;
+					$a_live = ( 'live' === ( $a['mode'] ?? '' ) ) ? 1 : 0;
+					$b_live = ( 'live' === ( $b['mode'] ?? '' ) ) ? 1 : 0;
 					if ( $a_live !== $b_live ) {
 						return $b_live - $a_live;
 					}
@@ -221,12 +221,12 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 		// Partial only when no complete pack exists — still do not cross-stitch sources.
 		// Return first pack that has credentials, else first with webhook_id, else empty.
 		foreach ( $packs as $pack ) {
-			if ( $pack['client_id'] !== '' && $pack['secret'] !== '' ) {
+			if ( '' !== $pack['client_id'] && '' !== $pack['secret'] ) {
 				return $pack;
 			}
 		}
 		foreach ( $packs as $pack ) {
-			if ( $pack['webhook_id'] !== '' ) {
+			if ( '' !== $pack['webhook_id'] ) {
 				return $pack;
 			}
 		}
@@ -261,7 +261,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 		}
 		// Prefer https for public PayPal callbacks when site URL is https.
 		$home = home_url( '/' );
-		if ( is_string( $home ) && strpos( $home, 'https://' ) === 0 ) {
+		if ( is_string( $home ) && 0 === strpos( $home, 'https://' ) ) {
 			$url = set_url_scheme( $url, 'https' );
 		}
 		return esc_url_raw( $url );
@@ -306,7 +306,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 		}
 
 		$listener_url = $this->get_webhook_listener_url();
-		if ( $this->get_mode() === 'live' && strpos( $listener_url, 'https://' ) !== 0 ) {
+		if ( 'live' === $this->get_mode() && 0 !== strpos( $listener_url, 'https://' ) ) {
 			return new WP_Error(
 				'webhook_https_required',
 				__( 'Live PayPal webhooks require an HTTPS endpoint', 'flosc' ),
@@ -315,7 +315,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 		}
 
 		$stored_id = sanitize_text_field( (string) $this->get_flow_setting( 'webhook_id', '' ) );
-		if ( $stored_id === '' ) {
+		if ( '' === $stored_id ) {
 			$pack      = $this->resolve_webhook_credential_pack();
 			$stored_id = sanitize_text_field( (string) ( $pack['webhook_id'] ?? '' ) );
 		}
@@ -341,7 +341,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 		}
 
 		$list_code = (int) wp_remote_retrieve_response_code( $list );
-		if ( $list_code === 401 ) {
+		if ( 401 === $list_code ) {
 			$token = $this->get_access_token( true );
 			if ( is_wp_error( $token ) ) {
 				return $token;
@@ -384,18 +384,18 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 			}
 			$wh_url = $normalize( $wh['url'] ?? '' );
 			$wh_id  = sanitize_text_field( (string) ( $wh['id'] ?? '' ) );
-			if ( $wh_id !== '' && $wh_url !== '' && $wh_url === $target ) {
+			if ( '' !== $wh_id && '' !== $wh_url && $wh_url === $target ) {
 				$matched_id = $wh_id;
 				break;
 			}
-			if ( ! $force_refresh && $stored_id !== '' && $wh_id === $stored_id ) {
+			if ( ! $force_refresh && '' !== $stored_id && $wh_id === $stored_id ) {
 				$matched_id = $wh_id;
 				break;
 			}
 		}
 
 		$created = false;
-		if ( $matched_id === '' ) {
+		if ( '' === $matched_id ) {
 			$create = wp_remote_post(
 				$api_base . '/v1/notifications/webhooks',
 				array(
@@ -447,7 +447,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 						}
 					}
 				}
-				if ( $matched_id === '' ) {
+				if ( '' === $matched_id ) {
 					$msg = is_array( $create_body )
 						? (string) ( $create_body['message'] ?? $create_body['name'] ?? __( 'PayPal webhook create failed', 'flosc' ) )
 						: __( 'PayPal webhook create failed', 'flosc' );
@@ -479,7 +479,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 	 */
 	private function persist_webhook_id( $webhook_id ) {
 		$webhook_id = sanitize_text_field( (string) $webhook_id );
-		if ( $webhook_id === '' ) {
+		if ( '' === $webhook_id ) {
 			return;
 		}
 
@@ -487,15 +487,15 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 		// (prevents global sandbox client + live webhook_id mismatch on verify).
 		update_option( 'flosc_paypal_webhook_id', $webhook_id, false );
 		$mode = (string) $this->get_mode();
-		if ( $mode === 'live' || $mode === 'sandbox' ) {
+		if ( 'live' === $mode || 'sandbox' === $mode ) {
 			update_option( 'flosc_paypal_mode', $mode, false );
 		}
 		$client = (string) $this->get_client_id();
 		$secret = (string) $this->get_secret();
-		if ( $client !== '' ) {
+		if ( '' !== $client ) {
 			update_option( 'flosc_paypal_client_id', $client, false );
 		}
-		if ( $secret !== '' ) {
+		if ( '' !== $secret ) {
 			update_option( 'flosc_paypal_secret', $secret, false );
 		}
 
@@ -504,10 +504,10 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 			$flow = flosc()->get_current_flow();
 			if ( is_array( $flow ) ) {
 				$stem = sanitize_key( (string) ( $flow['id'] ?? '' ) );
-				if ( $stem === '' ) {
+				if ( '' === $stem ) {
 					$stem = sanitize_key( pathinfo( (string) ( $flow['ivr_file'] ?? '' ), PATHINFO_FILENAME ) );
 				}
-				if ( $stem !== '' ) {
+				if ( '' !== $stem ) {
 					$stems[] = $stem;
 				}
 			}
@@ -517,12 +517,12 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 		foreach ( $rows as $row ) {
 			$name = (string) ( $row['option_name'] ?? '' );
 			$data = maybe_unserialize( $row['option_value'] ?? '' );
-			if ( ! is_array( $data ) || $name === '' ) {
+			if ( ! is_array( $data ) || '' === $name ) {
 				continue;
 			}
 			$flow_client = (string) ( $data['paypal_client_id'] ?? '' );
 			$stem        = str_replace( 'flosc_flow_', '', $name );
-			$same_client = ( $client !== '' && $flow_client !== '' && hash_equals( $flow_client, $client ) );
+			$same_client = ( '' !== $client && '' !== $flow_client && hash_equals( $flow_client, $client ) );
 			$is_current  = in_array( $stem, $stems, true );
 			if ( $same_client || $is_current ) {
 				$data['paypal_webhook_id'] = $webhook_id;
@@ -599,7 +599,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 	 * API base URL based on mode
 	 */
 	private function get_api_base() {
-		return $this->get_mode() === 'live'
+		return 'live' === $this->get_mode()
 			? 'https://api-m.paypal.com'
 			: 'https://api-m.sandbox.paypal.com';
 	}
@@ -689,7 +689,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 		$purchase_uuid = sanitize_text_field( (string) $purchase_uuid );
 		// Industry standard: custom_id is the server purchase intent UUID when present.
 		// Fall back to JSON bind for older clients (still includes offer_id).
-		$custom_id = $purchase_uuid !== ''
+		$custom_id = '' !== $purchase_uuid
 			? substr( $purchase_uuid, 0, 127 )
 			: wp_json_encode(
 				array(
@@ -755,7 +755,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 		}
 
 		// v5.0.7: If 401 Unauthorized, the cached token is stale — refresh and retry once.
-		if ( $status_code === 401 ) {
+		if ( 401 === $status_code ) {
 			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
 				flosc_log( '[FLOSC-PAYPAL] create_order got 401 — clearing cached token and retrying' );
 			}
@@ -842,7 +842,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 		}
 
 		// v5.0.7: Retry once on 401 (stale token).
-		if ( $status_code === 401 ) {
+		if ( 401 === $status_code ) {
 			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
 				flosc_log( '[FLOSC-PAYPAL] capture_order got 401 — refreshing token and retrying' );
 			}
@@ -902,19 +902,19 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 		// PP-01: require completed order + completed capture (HTTP 2xx alone is not settlement).
 		$order_status   = strtoupper( (string) ( $body['status'] ?? '' ) );
 		$capture_status = strtoupper( (string) ( $capture['status'] ?? '' ) );
-		if ( $order_status !== 'COMPLETED' ) {
+		if ( 'COMPLETED' !== $order_status ) {
 			return new WP_Error(
 				'payment_not_completed',
 				/* translators: %s: PayPal order status string. */
-				sprintf( __( 'PayPal order status is not COMPLETED (%s)', 'flosc' ), $order_status !== '' ? $order_status : 'empty' ),
+				sprintf( __( 'PayPal order status is not COMPLETED (%s)', 'flosc' ), '' !== $order_status ? $order_status : 'empty' ),
 				array( 'status' => 400 )
 			);
 		}
-		if ( $capture_status !== 'COMPLETED' ) {
+		if ( 'COMPLETED' !== $capture_status ) {
 			return new WP_Error(
 				'payment_not_completed',
 				/* translators: %s: PayPal capture status string. */
-				sprintf( __( 'PayPal capture status is not COMPLETED (%s)', 'flosc' ), $capture_status !== '' ? $capture_status : 'empty' ),
+				sprintf( __( 'PayPal capture status is not COMPLETED (%s)', 'flosc' ), '' !== $capture_status ? $capture_status : 'empty' ),
 				array( 'status' => 400 )
 			);
 		}
@@ -925,21 +925,21 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 		$custom_offer_id = '';
 		$purchase_uuid   = '';
 
-		if ( $custom_raw !== '' && isset( $custom_raw[0] ) && $custom_raw[0] === '{' ) {
+		if ( '' !== $custom_raw && isset( $custom_raw[0] ) && '{' === $custom_raw[0] ) {
 			$decoded_custom = json_decode( $custom_raw, true, 8 );
 			if ( JSON_ERROR_NONE === json_last_error() && is_array( $decoded_custom ) ) {
 				$custom_user_id  = isset( $decoded_custom['user_id'] ) ? absint( $decoded_custom['user_id'] ) : 0;
 				$custom_offer_id = sanitize_text_field( (string) ( $decoded_custom['offer_id'] ?? '' ) );
 				$purchase_uuid   = sanitize_text_field( (string) ( $decoded_custom['purchase_uuid'] ?? '' ) );
 			}
-		} elseif ( $custom_raw !== '' ) {
+		} elseif ( '' !== $custom_raw ) {
 			$purchase_uuid = $custom_raw;
 		}
 
-		if ( $purchase_uuid !== '' && function_exists( 'flosc_paypal_purchase_intent_get' ) ) {
+		if ( '' !== $purchase_uuid && function_exists( 'flosc_paypal_purchase_intent_get' ) ) {
 			$intent = flosc_paypal_purchase_intent_get( $purchase_uuid );
 			if ( is_array( $intent ) ) {
-				if ( $custom_offer_id === '' && ! empty( $intent['offer_id'] ) ) {
+				if ( '' === $custom_offer_id && ! empty( $intent['offer_id'] ) ) {
 					$custom_offer_id = sanitize_text_field( (string) $intent['offer_id'] );
 				}
 				if ( $custom_user_id <= 0 && ! empty( $intent['user_id'] ) ) {
@@ -956,7 +956,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 		$payer_name            = trim( $given . ' ' . $surname );
 
 		$txn_id = sanitize_text_field( (string) ( $capture['id'] ?? '' ) );
-		if ( $txn_id === '' ) {
+		if ( '' === $txn_id ) {
 			return new WP_Error( 'payment_not_completed', __( 'PayPal capture has no transaction id', 'flosc' ), array( 'status' => 400 ) );
 		}
 
@@ -972,8 +972,8 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 			'amount'         => sanitize_text_field( (string) ( $capture['amount']['value'] ?? '0.00' ) ),
 			'currency'       => sanitize_text_field( (string) ( $capture['amount']['currency_code'] ?? 'USD' ) ),
 			'user_id'        => $custom_user_id > 0 ? $custom_user_id : null,
-			'offer_id'       => $custom_offer_id !== '' ? $custom_offer_id : null,
-			'purchase_uuid'  => $purchase_uuid !== '' ? $purchase_uuid : null,
+			'offer_id'       => '' !== $custom_offer_id ? $custom_offer_id : null,
+			'purchase_uuid'  => '' !== $purchase_uuid ? $purchase_uuid : null,
 			'payer_email'    => $payer_email,
 			'payer_name'     => $payer_name,
 		);
@@ -1124,11 +1124,11 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 	 */
 	private function get_plans_option_key() {
 		$mode = sanitize_key( (string) $this->get_mode() );
-		if ( $mode === '' ) {
+		if ( '' === $mode ) {
 			$mode = 'sandbox';
 		}
 		$client = (string) $this->get_client_id();
-		$fp     = $client !== '' ? substr( md5( $client ), 0, 12 ) : 'none';
+		$fp     = '' !== $client ? substr( md5( $client ), 0, 12 ) : 'none';
 		return 'flosc_paypal_plans_' . $mode . '_' . $fp;
 	}
 
@@ -1206,10 +1206,10 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 			$flow = flosc()->get_current_flow();
 			if ( is_array( $flow ) ) {
 				$identity_name = trim( (string) ( $flow['identity']['name'] ?? $flow['product']['name'] ?? '' ) );
-				if ( $identity_name !== '' ) {
+				if ( '' !== $identity_name ) {
 					$product_name = $identity_name . ' Subscription';
 					$product_desc = trim( (string) ( $flow['identity']['tagline'] ?? $flow['product']['tagline'] ?? '' ) );
-					if ( $product_desc === '' ) {
+					if ( '' === $product_desc ) {
 						$product_desc = $identity_name . ' membership';
 					}
 				}
@@ -1217,7 +1217,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 				$offers = is_array( $flow['offers'] ?? null ) ? $flow['offers'] : array();
 				if ( empty( $offers ) ) {
 					$stem = sanitize_key( (string) ( $flow['id'] ?? pathinfo( (string) ( $flow['ivr_file'] ?? '' ), PATHINFO_FILENAME ) ) );
-					if ( $stem !== '' ) {
+					if ( '' !== $stem ) {
 						$fs     = get_option( 'flosc_flow_' . $stem, array() );
 						$offers = is_array( $fs['offers'] ?? null ) ? $fs['offers'] : array();
 					}
@@ -1226,7 +1226,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 					if ( ! is_array( $offer ) ) {
 						continue;
 					}
-					$active = ! empty( $offer['active'] ) || ( ( $offer['status'] ?? '' ) === 'active' );
+					$active = ! empty( $offer['active'] ) || ( 'active' === ( $offer['status'] ?? '' ) );
 					if ( ! $active ) {
 						continue;
 					}
@@ -1248,10 +1248,10 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 
 		$monthly_price = $monthly_price > 0 ? $monthly_price : 10.00;
 		$yearly_price  = $yearly_price > 0 ? $yearly_price : 100.00;
-		if ( $monthly_label === '' ) {
+		if ( '' === $monthly_label ) {
 			$monthly_label = sprintf( '%s Monthly — $%s/month', $product_name, number_format( $monthly_price, 2, '.', '' ) );
 		}
-		if ( $yearly_label === '' ) {
+		if ( '' === $yearly_label ) {
 			$yearly_label = sprintf( '%s Yearly — $%s/year', $product_name, number_format( $yearly_price, 2, '.', '' ) );
 		}
 
@@ -1331,7 +1331,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 		}
 
 		$product_name = trim( (string) $product_name );
-		if ( $product_name === '' ) {
+		if ( '' === $product_name ) {
 			$product_name = 'FLOSC Subscription';
 		}
 		$product_desc = $product_name . ' (promo ' . $amt_key . ')';
@@ -1395,7 +1395,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 	 */
 	public function resolve_plan_type_for_id( $plan_id ) {
 		$plan_id = sanitize_text_field( (string) $plan_id );
-		if ( $plan_id === '' ) {
+		if ( '' === $plan_id ) {
 			return '';
 		}
 		$stored = $this->get_stored_plans();
@@ -1475,12 +1475,12 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 			if ( $request instanceof WP_REST_Request ) {
 				$value = $request->get_header( $key );
 				// Some stacks expose original case via get_header with HTTP name.
-				if ( ( $value === null || $value === '' ) && strpos( $key, 'paypal-' ) === 0 ) {
+				if ( ( null === $value || '' === $value ) && 0 === strpos( $key, 'paypal-' ) ) {
 					$http_name = strtoupper( str_replace( '-', '-', $key ) );
 					$value     = $request->get_header( $http_name );
 				}
 			}
-			if ( ( $value === null || $value === '' ) && isset( $server_aliases[ $key ] ) ) {
+			if ( ( null === $value || '' === $value ) && isset( $server_aliases[ $key ] ) ) {
 				foreach ( $server_aliases[ $key ] as $server_key ) {
 					if ( ! empty( $_SERVER[ $server_key ] ) ) {
 						$value = sanitize_text_field( wp_unslash( (string) $_SERVER[ $server_key ] ) );
@@ -1488,11 +1488,11 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 					}
 				}
 			}
-			if ( ( $value === null || $value === '' ) && isset( $all_headers[ $key ] ) ) {
+			if ( ( null === $value || '' === $value ) && isset( $all_headers[ $key ] ) ) {
 				$value = $all_headers[ $key ];
 			}
 			// getallheaders may use original casing (e.g. Paypal-Transmission-Id).
-			if ( ( $value === null || $value === '' ) && ! empty( $all_headers ) ) {
+			if ( ( null === $value || '' === $value ) && ! empty( $all_headers ) ) {
 				foreach ( $all_headers as $hk => $hv ) {
 					if ( strtolower( str_replace( '_', '-', (string) $hk ) ) === $key ) {
 						$value = $hv;
@@ -1500,18 +1500,18 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 					}
 				}
 			}
-			if ( $value === null || $value === '' ) {
+			if ( null === $value || '' === $value ) {
 				continue;
 			}
 			$raw = is_array( $value ) ? (string) $value[0] : (string) $value;
 			$raw = trim( $raw );
-			if ( $raw === '' ) {
+			if ( '' === $raw ) {
 				continue;
 			}
 			// Never sanitize_text_field transmission-sig (base64) or cert-url.
-			if ( $key === 'paypal-transmission-sig' ) {
+			if ( 'paypal-transmission-sig' === $key ) {
 				$headers[ $key ] = preg_replace( '/\s+/', '', $raw );
-			} elseif ( $key === 'paypal-cert-url' ) {
+			} elseif ( 'paypal-cert-url' === $key ) {
 				$headers[ $key ] = esc_url_raw( $raw );
 			} else {
 				$headers[ $key ] = sanitize_text_field( $raw );
@@ -1543,7 +1543,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 	 */
 	public function handle_webhook( $payload, $headers = array() ) {
 		// Signature verification requires the exact bytes PayPal signed — no re-encode.
-		if ( ! is_string( $payload ) || $payload === '' ) {
+		if ( ! is_string( $payload ) || '' === $payload ) {
 			return new WP_Error(
 				'invalid_payload',
 				__( 'Invalid PayPal webhook payload: raw body string required', 'flosc' ),
@@ -1557,7 +1557,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 		$merged   = is_array( $headers ) ? $headers : array();
 		$from_env = self::collect_transmission_headers_from_request( null );
 		foreach ( $from_env as $k => $v ) {
-			if ( ! isset( $merged[ $k ] ) || $merged[ $k ] === '' ) {
+			if ( ! isset( $merged[ $k ] ) || '' === $merged[ $k ] ) {
 				$merged[ $k ] = $v;
 			}
 		}
@@ -1580,7 +1580,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 		// Event-level idempotency (after auth only). Claim lock before mutation to
 		// prevent concurrent double-processing; sale/cycle keys still protect credits.
 		$event_id = sanitize_text_field( (string) ( $data['id'] ?? '' ) );
-		if ( $event_id !== '' && $this->is_paypal_event_processed( $event_id ) ) {
+		if ( '' !== $event_id && $this->is_paypal_event_processed( $event_id ) ) {
 			return array(
 				'received'  => true,
 				'processed' => false,
@@ -1599,7 +1599,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 		);
 
 		// Renewal sale against a subscription (billing agreement).
-		if ( $event_type === 'PAYMENT.SALE.COMPLETED' || $event_type === 'PAYMENT.CAPTURE.COMPLETED' ) {
+		if ( 'PAYMENT.SALE.COMPLETED' === $event_type || 'PAYMENT.CAPTURE.COMPLETED' === $event_type ) {
 			$subscription_id = sanitize_text_field(
 				(string) (
 				$resource['billing_agreement_id']
@@ -1608,7 +1608,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 			);
 			$sale_id         = sanitize_text_field( (string) ( $resource['id'] ?? '' ) );
 
-			if ( $subscription_id === '' ) {
+			if ( '' === $subscription_id ) {
 				$result['reason'] = 'not_subscription_sale';
 				$this->mark_paypal_event_processed( $event_id );
 				return $result;
@@ -1623,7 +1623,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 			}
 
 			// Claim event lock only once we know we will mutate.
-			if ( $event_id !== '' && ! $this->claim_paypal_event( $event_id ) ) {
+			if ( '' !== $event_id && ! $this->claim_paypal_event( $event_id ) ) {
 				return array(
 					'received'  => true,
 					'processed' => false,
@@ -1633,23 +1633,23 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 			}
 
 			$plan_type = sanitize_key( (string) get_user_meta( $user_id, '_flosc_subscription_plan', true ) );
-			if ( $plan_type === '' ) {
+			if ( '' === $plan_type ) {
 				$plan_type = 'monthly';
 			}
 			$flow_id = sanitize_key( (string) get_user_meta( $user_id, '_flosc_subscription_flow_id', true ) );
-			if ( $flow_id === '' ) {
+			if ( '' === $flow_id ) {
 				$flow_id = sanitize_key( (string) get_user_meta( $user_id, '_flosc_purchased_flow_id', true ) );
 			}
 
-			$idem = $sale_id !== '' ? ( 'sale_' . $sale_id ) : ( 'sub_cycle_' . $subscription_id . '_' . gmdate( 'Y-m' ) );
+			$idem = '' !== $sale_id ? ( 'sale_' . $sale_id ) : ( 'sub_cycle_' . $subscription_id . '_' . gmdate( 'Y-m' ) );
 
 			// Prefer the offer that was sold at activate (custom token packs); else flow defaults.
 			$sold_offer_id = sanitize_text_field( (string) get_user_meta( $user_id, '_flosc_subscription_offer_id', true ) );
-			if ( $sold_offer_id === '' ) {
+			if ( '' === $sold_offer_id ) {
 				$sold_offer_id = sanitize_text_field( (string) get_user_meta( $user_id, '_flosc_purchased_offer_id', true ) );
 			}
 			$renewal_offer = null;
-			if ( $sold_offer_id !== '' && function_exists( 'flosc_sale' ) ) {
+			if ( '' !== $sold_offer_id && function_exists( 'flosc_sale' ) ) {
 				$om = flosc_sale()->offers();
 				if ( $om && method_exists( $om, 'get_offer' ) ) {
 					$renewal_offer = $om->get_offer( $sold_offer_id, $flow_id ?: null );
@@ -1658,7 +1658,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 
 			$topup = array( 'skipped' => true );
 			if ( function_exists( 'flosc' ) ) {
-				$mode       = ( $plan_type === 'yearly' ) ? 'recurring_yearly' : 'recurring';
+				$mode       = ( 'yearly' === $plan_type ) ? 'recurring_yearly' : 'recurring';
 				$credit_ctx = array(
 					'idempotency_key' => $idem,
 					'subscription_id' => $subscription_id,
@@ -1707,10 +1707,10 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 			true
 		) ) {
 			$subscription_id = sanitize_text_field( (string) ( $resource['id'] ?? '' ) );
-			if ( $subscription_id !== '' ) {
+			if ( '' !== $subscription_id ) {
 				$user_id = self::get_user_id_for_subscription( $subscription_id );
 				if ( $user_id > 0 ) {
-					if ( $event_id !== '' && ! $this->claim_paypal_event( $event_id ) ) {
+					if ( '' !== $event_id && ! $this->claim_paypal_event( $event_id ) ) {
 						return array(
 							'received'  => true,
 							'processed' => false,
@@ -1743,7 +1743,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 	 */
 	private function is_paypal_event_processed( $event_id ) {
 		$event_id = sanitize_text_field( (string) $event_id );
-		if ( $event_id === '' ) {
+		if ( '' === $event_id ) {
 			return false;
 		}
 		return (bool) get_transient( 'flosc_paypal_event_' . md5( $event_id ) );
@@ -1758,7 +1758,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 	 */
 	private function claim_paypal_event( $event_id ) {
 		$event_id = sanitize_text_field( (string) $event_id );
-		if ( $event_id === '' ) {
+		if ( '' === $event_id ) {
 			return true;
 		}
 		$hash = md5( $event_id );
@@ -1774,7 +1774,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 		}
 		set_transient( 'flosc_paypal_event_' . $hash, 1, WEEK_IN_SECONDS );
 		// Probabilistic cleanup of expired claim options (avoid per-event cron spam).
-		if ( wp_rand( 1, 50 ) === 1 ) {
+		if ( 1 === wp_rand( 1, 50 ) ) {
 			$this->cleanup_expired_paypal_event_claims();
 		}
 		return true;
@@ -1787,12 +1787,12 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 	 */
 	private function mark_paypal_event_processed( $event_id ) {
 		$event_id = sanitize_text_field( (string) $event_id );
-		if ( $event_id === '' ) {
+		if ( '' === $event_id ) {
 			return;
 		}
 		$hash    = md5( $event_id );
 		$opt_key = 'flosc_pp_evt_' . $hash;
-		if ( get_option( $opt_key ) === false ) {
+		if ( false === get_option( $opt_key ) ) {
 			add_option( $opt_key, (string) time(), '', 'no' );
 		}
 		set_transient( 'flosc_paypal_event_' . $hash, 1, WEEK_IN_SECONDS );
@@ -1862,11 +1862,11 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 			foreach ( $keys as $candidate ) {
 				$dash       = strtolower( str_replace( '_', '-', (string) $candidate ) );
 				$underscore = str_replace( '-', '_', $dash );
-				if ( isset( $normalized[ $dash ] ) && $normalized[ $dash ] !== '' ) {
+				if ( isset( $normalized[ $dash ] ) && '' !== $normalized[ $dash ] ) {
 					$out[ $field ] = $normalized[ $dash ];
 					break;
 				}
-				if ( isset( $normalized[ $underscore ] ) && $normalized[ $underscore ] !== '' ) {
+				if ( isset( $normalized[ $underscore ] ) && '' !== $normalized[ $underscore ] ) {
 					$out[ $field ] = $normalized[ $underscore ];
 					break;
 				}
@@ -1875,7 +1875,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 
 		// Unsigned request = unauthenticated (401), not a generic client error.
 		foreach ( array( 'transmission_id', 'transmission_time', 'transmission_sig', 'cert_url', 'auth_algo' ) as $required ) {
-			if ( $out[ $required ] === '' ) {
+			if ( '' === $out[ $required ] ) {
 				return new WP_Error(
 					'missing_signature',
 					__( 'Missing PayPal webhook transmission headers', 'flosc' ),
@@ -1898,7 +1898,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 	 */
 	private function assert_paypal_cert_url( $cert_url ) {
 		$cert_url = esc_url_raw( (string) $cert_url );
-		if ( $cert_url === '' || strpos( $cert_url, 'https://' ) !== 0 ) {
+		if ( '' === $cert_url || 0 !== strpos( $cert_url, 'https://' ) ) {
 			return new WP_Error(
 				'invalid_cert_url',
 				__( 'Invalid PayPal certificate URL', 'flosc' ),
@@ -1907,7 +1907,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 		}
 
 		$host = strtolower( (string) wp_parse_url( $cert_url, PHP_URL_HOST ) );
-		if ( $host === '' ) {
+		if ( '' === $host ) {
 			return new WP_Error(
 				'invalid_cert_url',
 				__( 'Invalid PayPal certificate URL host', 'flosc' ),
@@ -1947,14 +1947,14 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 		// Fail closed: no configured webhook / app credentials ⇒ reject before mutation.
 		$pack       = $this->resolve_webhook_credential_pack();
 		$webhook_id = sanitize_text_field( $pack['webhook_id'] ?? '' );
-		if ( $webhook_id === '' ) {
+		if ( '' === $webhook_id ) {
 			return new WP_Error(
 				'webhook_not_configured',
 				__( 'PayPal Webhook ID required', 'flosc' ),
 				array( 'status' => 503 )
 			);
 		}
-		if ( ( $pack['client_id'] ?? '' ) === '' || ( $pack['secret'] ?? '' ) === '' ) {
+		if ( '' === ( $pack['client_id'] ?? '' ) || '' === ( $pack['secret'] ?? '' ) ) {
 			return new WP_Error(
 				'webhook_not_configured',
 				__( 'PayPal Client ID and Secret required to verify webhooks', 'flosc' ),
@@ -2038,7 +2038,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 			$body        = json_decode( $body_raw, true );
 
 			// Stale OAuth token — refresh once and retry verify.
-			if ( $status_code === 401 ) {
+			if ( 401 === $status_code ) {
 				$token = $this->get_access_token( true );
 				if ( is_wp_error( $token ) ) {
 					return new WP_Error(
@@ -2077,7 +2077,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 			// Explicit SUCCESS only path that allows mutation.
 			if ( is_array( $body ) && isset( $body['verification_status'] ) ) {
 				$verification_status = strtoupper( (string) $body['verification_status'] );
-				if ( $verification_status === 'SUCCESS' ) {
+				if ( 'SUCCESS' === $verification_status ) {
 					return true;
 				}
 				// FAILURE or any other status ⇒ unauthenticated.
@@ -2150,7 +2150,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 	public static function index_subscription( $user_id, $subscription_id ) {
 		$user_id         = absint( $user_id );
 		$subscription_id = sanitize_text_field( (string) $subscription_id );
-		if ( $user_id <= 0 || $subscription_id === '' ) {
+		if ( $user_id <= 0 || '' === $subscription_id ) {
 			return;
 		}
 
@@ -2171,7 +2171,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 	 */
 	public static function get_user_id_for_subscription( $subscription_id ) {
 		$subscription_id = sanitize_text_field( (string) $subscription_id );
-		if ( $subscription_id === '' ) {
+		if ( '' === $subscription_id ) {
 			return 0;
 		}
 
@@ -2207,12 +2207,12 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 			foreach ( $batch as $user_id ) {
 				$user_id = absint( $user_id );
 				$sid     = sanitize_text_field( (string) get_user_meta( $user_id, '_flosc_subscription_id', true ) );
-				if ( $sid !== '' ) {
+				if ( '' !== $sid ) {
 					$index[ $sid ] = $user_id;
 				}
 			}
 			$page++;
-		} while ( count( $batch ) === 100 );
+		} while ( 100 === count( $batch ) );
 
 		update_option( self::SUBSCRIPTION_INDEX_OPTION, $index, false );
 		return $index;

@@ -91,7 +91,7 @@ if ( ! function_exists( 'flosc_provider_identity_salt' ) ) {
 	 */
 	function flosc_provider_identity_salt() {
 		$salt = (string) get_option( 'flosc_provider_identity_salt', '' );
-		if ( $salt !== '' ) {
+		if ( '' !== $salt ) {
 			return $salt;
 		}
 
@@ -118,7 +118,7 @@ if ( ! function_exists( 'flosc_provider_install_id' ) ) {
 	 */
 	function flosc_provider_install_id() {
 		$id = (string) get_option( 'flosc_install_id', '' );
-		if ( $id !== '' ) {
+		if ( '' !== $id ) {
 			return $id;
 		}
 
@@ -139,7 +139,7 @@ if ( ! function_exists( 'flosc_provider_identity_digest' ) ) {
 	 */
 	function flosc_provider_identity_digest( $value, $length = 8 ) {
 		$value = trim( (string) $value );
-		if ( $value === '' ) {
+		if ( '' === $value ) {
 			return '';
 		}
 
@@ -201,7 +201,7 @@ if ( ! function_exists( 'flosc_provider_user_agent' ) ) {
 
 		if ( function_exists( 'get_bloginfo' ) ) {
 			$wp = (string) get_bloginfo( 'version' );
-			if ( $wp !== '' ) {
+			if ( '' !== $wp ) {
 				$parts[] = 'WordPress/' . $wp;
 			}
 		}
@@ -234,7 +234,7 @@ if ( ! function_exists( 'flosc_provider_trace_header' ) ) {
 		);
 
 		$flow = flosc_provider_identity_digest( $context['flow'] );
-		if ( $flow !== '' ) {
+		if ( '' !== $flow ) {
 			$pairs['flow'] = $flow;
 		}
 
@@ -242,7 +242,7 @@ if ( ! function_exists( 'flosc_provider_trace_header' ) ) {
 		// profile. Digesting it again with the install salt keeps two installs
 		// running the same shipped personality from looking like one install.
 		$profile = flosc_provider_identity_digest( $context['profile'] );
-		if ( $profile !== '' ) {
+		if ( '' !== $profile ) {
 			$pairs['prof'] = $profile;
 		}
 
@@ -250,7 +250,7 @@ if ( ! function_exists( 'flosc_provider_trace_header' ) ) {
 		// can see that two turns drew on the same corpus without learning
 		// what the corpus is called.
 		$kb = flosc_provider_identity_digest( $context['kb'] );
-		if ( $kb !== '' ) {
+		if ( '' !== $kb ) {
 			$pairs['kb'] = $kb;
 		}
 
@@ -281,7 +281,7 @@ if ( ! function_exists( 'flosc_provider_trace_header' ) ) {
 		// disagrees.
 		if ( flosc_provider_identity_site_enabled() ) {
 			$host = function_exists( 'wp_parse_url' ) ? wp_parse_url( get_bloginfo( 'url' ), PHP_URL_HOST ) : '';
-			if ( is_string( $host ) && $host !== '' ) {
+			if ( is_string( $host ) && '' !== $host ) {
 				$pairs['site'] = $host;
 			}
 		}
@@ -292,7 +292,7 @@ if ( ! function_exists( 'flosc_provider_trace_header' ) ) {
 			// what it means. Everything here is generated, but a filtered
 			// host or a strange blogname is not.
 			$value = preg_replace( '/[^\x21-\x3A\x3C-\x7E]/', '', (string) $value );
-			if ( $value !== '' ) {
+			if ( '' !== $value ) {
 				$out[] = $key . '=' . $value;
 			}
 		}
@@ -362,7 +362,7 @@ if ( ! function_exists( 'flosc_provider_identity_http_args' ) ) {
 		}
 
 		$host = function_exists( 'wp_parse_url' ) ? wp_parse_url( (string) $url, PHP_URL_HOST ) : '';
-		if ( ! is_string( $host ) || $host === '' ) {
+		if ( ! is_string( $host ) || '' === $host ) {
 			return $args;
 		}
 		if ( ! in_array( strtolower( $host ), array_map( 'strtolower', flosc_provider_identity_hosts() ), true ) ) {
@@ -376,7 +376,7 @@ if ( ! function_exists( 'flosc_provider_identity_http_args' ) ) {
 		// Do not overwrite a header the caller set deliberately.
 		$has = function ( $name ) use ( $args ) {
 			foreach ( array_keys( $args['headers'] ) as $key ) {
-				if ( strcasecmp( (string) $key, $name ) === 0 ) {
+				if ( 0 === strcasecmp( (string) $key, $name ) ) {
 					return true;
 				}
 			}
@@ -385,7 +385,7 @@ if ( ! function_exists( 'flosc_provider_identity_http_args' ) ) {
 
 		if ( ! $has( 'X-DA1-Trace' ) ) {
 			$trace = flosc_provider_trace_header();
-			if ( $trace !== '' ) {
+			if ( '' !== $trace ) {
 				$args['headers']['X-DA1-Trace'] = $trace;
 			}
 		}
@@ -445,7 +445,7 @@ if ( ! function_exists( 'flosc_provider_capture_request_id' ) ) {
 	 */
 	function flosc_provider_capture_request_id( $response, $args, $url ) {
 		$host = function_exists( 'wp_parse_url' ) ? wp_parse_url( (string) $url, PHP_URL_HOST ) : '';
-		if ( ! is_string( $host ) || $host === '' ) {
+		if ( ! is_string( $host ) || '' === $host ) {
 			return $response;
 		}
 		if ( ! in_array( strtolower( $host ), array_map( 'strtolower', flosc_provider_identity_hosts() ), true ) ) {
@@ -463,7 +463,7 @@ if ( ! function_exists( 'flosc_provider_capture_request_id' ) ) {
 				$value = reset( $value );
 			}
 			$value = trim( (string) $value );
-			if ( $value !== '' ) {
+			if ( '' !== $value ) {
 				// Stored in a VARCHAR(128) column; providers stay well under
 				// that, but a header is whatever the far end chose to send.
 				flosc_provider_last_request_id( array( substr( sanitize_text_field( $value ), 0, 128 ) ) );

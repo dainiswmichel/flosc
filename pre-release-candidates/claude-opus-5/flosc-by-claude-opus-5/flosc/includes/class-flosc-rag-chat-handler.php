@@ -62,18 +62,18 @@ class FLOSC_RAG_Chat_Handler {
 			// in the system prompt so the model does not re-greet when history is only
 			// [opening assistant, current user].
 			$flosc_stripped_openings = array();
-			while ( ! empty( $flosc_normalized ) && $flosc_normalized[0]['role'] !== 'user' ) {
+			while ( ! empty( $flosc_normalized ) && 'user' !== $flosc_normalized[0]['role'] ) {
 				$flosc_lead = array_shift( $flosc_normalized );
-				if ( ( $flosc_lead['role'] ?? '' ) === 'assistant' ) {
+				if ( 'assistant' === ( $flosc_lead['role'] ?? '' ) ) {
 					$flosc_lead_c = trim( (string) ( $flosc_lead['content'] ?? '' ) );
-					if ( $flosc_lead_c !== '' ) {
+					if ( '' !== $flosc_lead_c ) {
 						$flosc_stripped_openings[] = $flosc_lead_c;
 					}
 				}
 			}
 			$flosc_history = array_values( $flosc_normalized );
 			if ( ! empty( $flosc_stripped_openings ) && is_string( $flosc_chatpack_prompt )
-				&& strpos( $flosc_chatpack_prompt, 'ALREADY DELIVERED IN THIS CHAT' ) === false ) {
+				&& false === strpos( $flosc_chatpack_prompt, 'ALREADY DELIVERED IN THIS CHAT' ) ) {
 				$flosc_chatpack_prompt .= "\n\n## ALREADY DELIVERED IN THIS CHAT (do not repeat)\n"
 					. 'The following assistant message(s) were already shown to the user in this session. '
 					. "Do NOT re-greet, re-introduce, or re-ask language preference. Answer the current message directly.\n\n"
@@ -100,7 +100,7 @@ class FLOSC_RAG_Chat_Handler {
 		);
 
 		// If RAG loop returned null (e.g. missing API key), signal failure so handle_chat falls through to dispatch.
-		if ( $flosc_response === null ) {
+		if ( null === $flosc_response ) {
 			return null;
 		}
 
@@ -243,7 +243,7 @@ class FLOSC_RAG_Chat_Handler {
 		// RAG tool-calling is Anthropic-only, through the WordPress AI Client.
 		// If the provider isn't Anthropic, return null so handle_chat() falls through to dispatch.
 		$flosc_provider = flosc_get_setting( 'ai_provider', 'ivr' );
-		if ( $flosc_provider !== 'anthropic' ) {
+		if ( 'anthropic' !== $flosc_provider ) {
 			return null;
 		}
 
@@ -315,7 +315,7 @@ class FLOSC_RAG_Chat_Handler {
 		);
 
 		$flosc_text = isset( $flosc_result['text'] ) ? (string) $flosc_result['text'] : '';
-		return $flosc_text !== '' ? $flosc_text : 'I encountered an issue processing your request. Please try again.';
+		return '' !== $flosc_text ? $flosc_text : 'I encountered an issue processing your request. Please try again.';
 	}
 
 	/**
@@ -337,17 +337,17 @@ class FLOSC_RAG_Chat_Handler {
 			'input'  => 300000,
 			'output' => 1500000,
 		);
-		if ( strpos( $m, 'haiku' ) !== false ) {
+		if ( false !== strpos( $m, 'haiku' ) ) {
 			$seed = array(
 				'input'  => 100000,
 				'output' => 500000,
 			);
-		} elseif ( strpos( $m, 'opus' ) !== false ) {
+		} elseif ( false !== strpos( $m, 'opus' ) ) {
 			$seed = array(
 				'input'  => 500000,
 				'output' => 2500000,
 			);
-		} elseif ( strpos( $m, 'sonnet' ) !== false ) {
+		} elseif ( false !== strpos( $m, 'sonnet' ) ) {
 			$seed = array(
 				'input'  => 300000,
 				'output' => 1500000,

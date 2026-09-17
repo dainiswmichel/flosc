@@ -42,7 +42,7 @@ function flosc_portable_settings_runtime_excludes() {
  */
 function flosc_portable_is_secret_segment( $segment ) {
 	$segment = strtolower( (string) $segment );
-	if ( $segment === '' ) {
+	if ( '' === $segment ) {
 		return false;
 	}
 	return (bool) preg_match(
@@ -78,14 +78,14 @@ function flosc_portable_collect_exportable_settings( array $fs ) {
 
 	foreach ( $fs as $key => $value ) {
 		$key = (string) $key;
-		if ( $key === '' || isset( $excluded[ $key ] ) ) {
+		if ( '' === $key || isset( $excluded[ $key ] ) ) {
 			continue;
 		}
 		if ( flosc_portable_is_secret_path( array( $key ) ) ) {
 			continue;
 		}
 		$filtered = flosc_portable_filter_secret_values( $value, array( $key ) );
-		if ( $filtered === null && $value !== null ) {
+		if ( null === $filtered && null !== $value ) {
 			continue;
 		}
 		$out[ $key ] = $filtered;
@@ -116,7 +116,7 @@ function flosc_portable_filter_secret_values( $value, array $path ) {
 		$child_path   = $path;
 		$child_path[] = (string) $k;
 		$filtered     = flosc_portable_filter_secret_values( $v, $child_path );
-		if ( $filtered !== null || $v === null ) {
+		if ( null !== $filtered || null === $v ) {
 			$result[ $k ] = $filtered;
 		}
 	}
@@ -211,7 +211,7 @@ function flosc_portable_yaml_key( $key ) {
  * @return string
  */
 function flosc_portable_yaml_scalar( $value ) {
-	if ( $value === null ) {
+	if ( null === $value ) {
 		return 'null';
 	}
 	if ( is_bool( $value ) ) {
@@ -278,7 +278,7 @@ function flosc_portable_build_settings_block( array $settings ) {
  */
 function flosc_portable_extract_settings_yaml( $markdown ) {
 	$markdown = (string) $markdown;
-	if ( $markdown === '' ) {
+	if ( '' === $markdown ) {
 		return '';
 	}
 
@@ -297,7 +297,7 @@ function flosc_portable_extract_settings_yaml( $markdown ) {
  */
 function flosc_portable_strip_settings_block( $markdown ) {
 	$markdown = (string) $markdown;
-	if ( $markdown === '' ) {
+	if ( '' === $markdown ) {
 		return $markdown;
 	}
 	return preg_replace( '/^\s*#{1,2}\s+Settings(?:\s*\(YAML\))?\s*\R```yaml\R.*?\R```\s*\R?/ims', '', $markdown );
@@ -311,7 +311,7 @@ function flosc_portable_strip_settings_block( $markdown ) {
  */
 function flosc_portable_parse_yaml_map( $yaml ) {
 	$yaml = (string) $yaml;
-	if ( trim( $yaml ) === '' ) {
+	if ( '' === trim( $yaml ) ) {
 		return array(
 			'success' => true,
 			'data'    => array(),
@@ -329,7 +329,7 @@ function flosc_portable_parse_yaml_map( $yaml ) {
 
 	foreach ( $lines as $raw_line ) {
 		$line = rtrim( (string) $raw_line, "\r\n" );
-		if ( trim( $line ) === '' || preg_match( '/^\s*#/', $line ) ) {
+		if ( '' === trim( $line ) || preg_match( '/^\s*#/', $line ) ) {
 			continue;
 		}
 
@@ -342,7 +342,7 @@ function flosc_portable_parse_yaml_map( $yaml ) {
 		}
 
 		$indent = strlen( $m[1] );
-		if ( ( $indent % 2 ) !== 0 ) {
+		if ( 0 !== ( $indent % 2 ) ) {
 			return array(
 				'success' => false,
 				'data'    => array(),
@@ -369,7 +369,7 @@ function flosc_portable_parse_yaml_map( $yaml ) {
 		$tail       = ltrim( (string) $m[3] );
 		$parent_ref = &$stack[ count( $stack ) - 1 ]['ref'];
 
-		if ( $tail === '' ) {
+		if ( '' === $tail ) {
 			$parent_ref[ $key ] = array();
 			$stack[]            = array(
 				'indent' => $indent,
@@ -378,7 +378,7 @@ function flosc_portable_parse_yaml_map( $yaml ) {
 			continue;
 		}
 
-		if ( $tail === '{}' ) {
+		if ( '{}' === $tail ) {
 			$parent_ref[ $key ] = array();
 			continue;
 		}
@@ -403,13 +403,13 @@ function flosc_portable_parse_yaml_scalar( $tail ) {
 	$tail  = trim( (string) $tail );
 	$lower = strtolower( $tail );
 
-	if ( $lower === 'null' ) {
+	if ( 'null' === $lower ) {
 		return null;
 	}
-	if ( $lower === 'true' ) {
+	if ( 'true' === $lower ) {
 		return true;
 	}
-	if ( $lower === 'false' ) {
+	if ( 'false' === $lower ) {
 		return false;
 	}
 	if ( preg_match( '/^-?\d+$/', $tail ) ) {
@@ -938,7 +938,7 @@ function flosc_portable_apply_yaml_settings( array $current_fs, array $incoming_
 
 	foreach ( $incoming_settings as $key => $value ) {
 		$key = (string) $key;
-		if ( $key === '' ) {
+		if ( '' === $key ) {
 			continue;
 		}
 
@@ -956,7 +956,7 @@ function flosc_portable_apply_yaml_settings( array $current_fs, array $incoming_
 		}
 
 		$filtered = flosc_portable_filter_secret_values( $value, array( $key ) );
-		if ( $filtered === null && $value !== null ) {
+		if ( null === $filtered && null !== $value ) {
 			$skipped[ $key ] = 'secret';
 			continue;
 		}
@@ -1025,7 +1025,7 @@ function flosc_flow_load_runtime_triplet( $flow_key = null ) {
  */
 function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file = null, $flow_key = null, $mode = 'merge' ) {
 	$ivr_file = $custom_ivr_file ?? flosc_config_file( 'flosc_default_technical_ivr.md' );
-	$mode     = ( $mode === 'replace' ) ? 'replace' : 'merge';
+	$mode     = ( 'replace' === $mode ) ? 'replace' : 'merge';
 
 	if ( ! file_exists( $ivr_file ) ) {
 		return array(
@@ -1043,9 +1043,9 @@ function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file =
 	}
 
 	// flow_key must be a per-flow option name, never an arbitrary options row.
-	if ( $flow_key !== null && $flow_key !== '' ) {
+	if ( null !== $flow_key && '' !== $flow_key ) {
 		$flow_key = (string) $flow_key;
-		if ( strpos( $flow_key, 'flosc_flow_' ) !== 0 || $flow_key === 'flosc_flow_' ) {
+		if ( 0 !== strpos( $flow_key, 'flosc_flow_' ) || 'flosc_flow_' === $flow_key ) {
 			return array(
 				'success' => false,
 				'message' => 'Invalid flow option key',
@@ -1100,7 +1100,7 @@ function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file =
 	// Normalize DB defaults so compare logic matches runtime/export behavior.
 	foreach ( $current_messages as &$current_msg ) {
 		$msg_type = strtolower( trim( (string) ( $current_msg['type'] ?? '' ) ) );
-		if ( $msg_type === 'offer' && empty( $current_msg['display_format'] ) ) {
+		if ( 'offer' === $msg_type && empty( $current_msg['display_format'] ) ) {
 			$current_msg['display_format'] = 'card';
 		}
 	}
@@ -1111,7 +1111,7 @@ function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file =
 	// Normalize defaults so preview/compare and runtime storage use the same shape.
 	foreach ( $incoming_messages as &$incoming_msg ) {
 		$msg_type = strtolower( trim( (string) ( $incoming_msg['type'] ?? '' ) ) );
-		if ( $msg_type === 'offer' && empty( $incoming_msg['display_format'] ) ) {
+		if ( 'offer' === $msg_type && empty( $incoming_msg['display_format'] ) ) {
 			$incoming_msg['display_format'] = 'card';
 		}
 	}
@@ -1190,7 +1190,7 @@ function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file =
 
 			$normalized['title'] = (string) ( $msg['title'] ?? $normalized['name'] );
 
-			if ( strtolower( trim( $normalized['type'] ) ) === 'offer' && $normalized['display_format'] === '' ) {
+			if ( 'offer' === strtolower( trim( $normalized['type'] ) ) && '' === $normalized['display_format'] ) {
 				$normalized['display_format'] = 'card';
 			}
 
@@ -1239,12 +1239,12 @@ function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file =
 		'member'  => array(),
 	);
 	foreach ( $incoming_messages as $msg ) {
-		if ( ( $msg['type'] ?? '' ) !== 'suggested_user_autoprompt' ) {
+		if ( 'suggested_user_autoprompt' !== ( $msg['type'] ?? '' ) ) {
 			continue;
 		}
 		$cond = $msg['conditions'] ?? $msg['condition'] ?? '';
 		foreach ( array( 'visitor', 'guest', 'member' ) as $s ) {
-			if ( $cond === 'always' || strpos( $cond, 'is_' . $s ) !== false ) {
+			if ( 'always' === $cond || false !== strpos( $cond, 'is_' . $s ) ) {
 				$autoprompts_from_ivr[ $s ][] = array(
 					'icon'          => $msg['icon'] ?? '',
 					'label'         => $msg['label'] ?? ( $msg['name'] ?? '' ),
@@ -1262,7 +1262,7 @@ function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file =
 	$final_messages = $incoming_messages;
 	$final_phases   = $config['phases'] ?? array();
 
-	if ( $mode === 'merge' ) {
+	if ( 'merge' === $mode ) {
 		$final_messages = $current_messages;
 		foreach ( $incoming_messages as $msg_id => $incoming_msg ) {
 			$final_messages[ $msg_id ] = $incoming_msg;
@@ -1278,7 +1278,7 @@ function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file =
 				continue;
 			}
 			$phase_name = $current_msg['phase'] ?? '';
-			if ( $phase_name === '' ) {
+			if ( '' === $phase_name ) {
 				continue;
 			}
 			if ( ! isset( $final_phases[ $phase_name ] ) ) {
@@ -1317,7 +1317,7 @@ function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file =
 				continue;
 			}
 			$oid = sanitize_key( (string) ( $yaml_offer['id'] ?? $offer_key ) );
-			if ( $oid === '' ) {
+			if ( '' === $oid ) {
 				continue;
 			}
 			$yaml_offer['id']       = $oid;
@@ -1329,7 +1329,7 @@ function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file =
 	}
 
 	// Generate success message.
-	if ( $mode === 'replace' ) {
+	if ( 'replace' === $mode ) {
 		$message = sprintf(
 			'Database replaced from IVR file. Added: %d, Updated: %d, Deleted: %d',
 			count( $stats['added'] ),
@@ -1486,7 +1486,7 @@ function flosc_auto_export_ivr_to_file( $flow_key = null, $target_ivr_file = nul
 
 	foreach ( $messages as $msg_id => $msg ) {
 		$msg_phase = sanitize_key( (string) ( $msg['phase'] ?? '' ) );
-		if ( $msg_phase === '' || ! isset( $normalized_phases[ $msg_phase ] ) ) {
+		if ( '' === $msg_phase || ! isset( $normalized_phases[ $msg_phase ] ) ) {
 			$msg_phase = 'freeline';
 		}
 		if ( ! in_array( $msg_id, $normalized_phases[ $msg_phase ], true ) ) {
@@ -1567,7 +1567,7 @@ function flosc_auto_export_ivr_to_file( $flow_key = null, $target_ivr_file = nul
 			$markdown .= 'MessageName: ' . $msg_id . "\n";
 			$markdown .= 'MessageType: ' . ( $msg['type'] ?? 'auto' ) . "\n";
 
-			if ( ! empty( $msg['style'] ) && $msg['style'] !== 'default' ) {
+			if ( ! empty( $msg['style'] ) && 'default' !== $msg['style'] ) {
 				$markdown .= 'MessageStyle: ' . $msg['style'] . "\n";
 			}
 			if ( ! empty( $msg['panel'] ) ) {
@@ -1602,7 +1602,7 @@ function flosc_auto_export_ivr_to_file( $flow_key = null, $target_ivr_file = nul
 			if ( ! empty( $msg['password_retry_messages'] ) && is_array( $msg['password_retry_messages'] ) ) {
 				foreach ( $msg['password_retry_messages'] as $retry_line ) {
 					$retry_line = trim( (string) $retry_line );
-					if ( $retry_line !== '' ) {
+					if ( '' !== $retry_line ) {
 						$markdown .= 'PasswordRetry: ' . $retry_line . "\n";
 					}
 				}
@@ -1621,10 +1621,10 @@ function flosc_auto_export_ivr_to_file( $flow_key = null, $target_ivr_file = nul
 				$markdown .= 'Timer: ' . $msg['timer'] . "\n";
 			}
 			$display_format = trim( (string) ( $msg['display_format'] ?? '' ) );
-			if ( strtolower( trim( (string) ( $msg['type'] ?? '' ) ) ) === 'offer' && $display_format === '' ) {
+			if ( 'offer' === strtolower( trim( (string) ( $msg['type'] ?? '' ) ) ) && '' === $display_format ) {
 				$display_format = 'card';
 			}
-			if ( $display_format !== '' ) {
+			if ( '' !== $display_format ) {
 				$markdown .= 'DisplayFormat: ' . $display_format . "\n";
 			}
 			// v1.6.2: Offer content source fields.
@@ -1640,7 +1640,7 @@ function flosc_auto_export_ivr_to_file( $flow_key = null, $target_ivr_file = nul
 
 			$markdown .= 'MessageContent: ' . ( $msg['content'] ?? '' ) . "\n";
 
-			if ( ! empty( $msg['conditions'] ) && $msg['conditions'] !== 'always' ) {
+			if ( ! empty( $msg['conditions'] ) && 'always' !== $msg['conditions'] ) {
 				$markdown .= 'MessageConditions: ' . $msg['conditions'] . "\n";
 			}
 
@@ -1666,7 +1666,7 @@ function flosc_auto_export_ivr_to_file( $flow_key = null, $target_ivr_file = nul
 		$ivr_file = $data_dir . 'flosc_default_technical_ivr.md';
 	}
 
-	if ( strpos( $ivr_file, $data_dir ) !== 0 ) {
+	if ( 0 !== strpos( $ivr_file, $data_dir ) ) {
 		$ivr_file = $data_dir . basename( $ivr_file );
 	}
 	$result = flosc_write_data_file( $ivr_file, $markdown );
@@ -1705,11 +1705,11 @@ function flosc_sync_flow_option_to_ivr_file( $option ) {
 	if ( $mirroring ) {
 		return;
 	}
-	if ( strpos( (string) $option, 'flosc_flow_' ) !== 0 ) {
+	if ( 0 !== strpos( (string) $option, 'flosc_flow_' ) ) {
 		return;
 	}
 	$stem = substr( $option, strlen( 'flosc_flow_' ) );
-	if ( $stem === '' ) {
+	if ( '' === $stem ) {
 		return;
 	}
 	$mirroring = true;
@@ -1818,12 +1818,12 @@ function flosc_sync_flow_offers_with_ivr_messages( $flow_key, $messages ) {
 	$referenced_offers = array();
 	foreach ( $messages as $msg_id => $msg ) {
 		$msg_type = strtolower( trim( (string) ( $msg['type'] ?? '' ) ) );
-		if ( $msg_type !== 'offer' ) {
+		if ( 'offer' !== $msg_type ) {
 			continue;
 		}
 
 		$offer_id = sanitize_key( (string) ( $msg['offer_id'] ?? $msg_id ) );
-		if ( $offer_id === '' ) {
+		if ( '' === $offer_id ) {
 			continue;
 		}
 
@@ -1843,7 +1843,7 @@ function flosc_sync_flow_offers_with_ivr_messages( $flow_key, $messages ) {
 
 		// Optional commercial hints from IVR lines (Price / DiscountPrice).
 		$price_raw = trim( (string) ( $msg['price'] ?? '' ) );
-		if ( $price_raw !== '' && is_numeric( $price_raw ) ) {
+		if ( '' !== $price_raw && is_numeric( $price_raw ) ) {
 			$price_val             = (float) $price_raw;
 			$seed['price']         = $price_val;
 			$seed['pricing']       = array(
@@ -1852,7 +1852,7 @@ function flosc_sync_flow_offers_with_ivr_messages( $flow_key, $messages ) {
 			$seed['display_price'] = '$' . rtrim( rtrim( number_format( $price_val, 2, '.', '' ), '0' ), '.' );
 		}
 		$discount_raw = trim( (string) ( $msg['discount_price'] ?? '' ) );
-		if ( $discount_raw !== '' && is_numeric( $discount_raw ) ) {
+		if ( '' !== $discount_raw && is_numeric( $discount_raw ) ) {
 			$seed['discount_price'] = (float) $discount_raw;
 		}
 
@@ -1880,7 +1880,7 @@ function flosc_sync_flow_offers_with_ivr_messages( $flow_key, $messages ) {
 
 		// If Settings YAML already activated the offer, do not force draft from the seed default.
 		$existing_status = strtolower( trim( (string) ( $existing_offer['status'] ?? '' ) ) );
-		if ( $existing_status !== '' && $existing_status !== 'draft' ) {
+		if ( '' !== $existing_status && 'draft' !== $existing_status ) {
 			$merged_offer['status'] = $existing_offer['status'];
 			if ( array_key_exists( 'active', $existing_offer ) ) {
 				$merged_offer['active'] = $existing_offer['active'];
