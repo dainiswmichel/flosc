@@ -5,9 +5,10 @@
  * Shows live counts and edit links for each of the five FLOSC flow phases.
  * Data sourced from $flosc_flow_settings (via $GLOBALS) and flosc() helper objects.
  *
- * v4.0.0: Initial implementation
+ * Initial implementation
  *
  * @package FLOSC
+ * @since 4.0.0
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

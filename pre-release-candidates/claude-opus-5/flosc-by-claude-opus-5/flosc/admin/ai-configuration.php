@@ -5,12 +5,13 @@
  * Configures AI provider connections, model tuning, personality,
  * and phase-specific behavior for each FLOSC flow.
  *
- * v1.9.0: Moved all inline styles to assets/css/flosc-admin.css
+ * Moved all inline styles to assets/css/flosc-admin.css
  *         Removed hardcoded default prompts (floscAdmin configures all)
  *         Added provider-aware show/hide for API key sections
  *         Cleaned up unbuilt feature UI
  *
  * @package FLOSC
+ * @since 1.9.0
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -3114,7 +3115,10 @@ unset( $flosc_sci_types_available['attachment'] );
 		);
 		$flosc_bb_groups = isset( $flosc_bb_found['groups'] ) ? (array) $flosc_bb_found['groups'] : array();
 	}
-	$flosc_bb_default = preg_split( '/\s+/', (string) $flosc_bb_policy['vgm_default'] ) ?: array();
+	$flosc_bb_default = preg_split( '/\s+/', (string) $flosc_bb_policy['vgm_default'] );
+	if ( ! $flosc_bb_default ) {
+		$flosc_bb_default = array();
+	}
 	?>
 	<tr>
 		<th scope="row"><?php echo esc_html__( 'BuddyBoss groups', 'flosc' ); ?></th>
@@ -3420,7 +3424,7 @@ $flosc_kb_ids     = function_exists( 'flosc_flow_knowledge_base_ids' ) ? flosc_f
 	<?php echo esc_html__( 'Markdown knowledge bases this flow may inject into chat, gated by Visitor / Guest / Member. Upload and attach them on the Knowledge Base tab.', 'flosc' ); ?>
 	<a href="<?php echo esc_url( $flosc_kb_tab_url ); ?>"><?php echo esc_html__( 'Open Knowledge Base tab', 'flosc' ); ?></a>
 </p>
-<?php if ( $flosc_kb_ids === array() ) : ?>
+<?php if ( array() === $flosc_kb_ids ) : ?>
 <p class="description"><?php echo esc_html__( 'None attached to this flow.', 'flosc' ); ?></p>
 <?php else : ?>
 <ul>
@@ -3529,9 +3533,12 @@ if ( '' !== trim( $flosc_acc_saved_raw ) ) {
 		// Mangled one-line save — use content-agnostic templates.
 		$flosc_acc_saved_lines = $flosc_acc_templates;
 	} else {
+		// preg_split() returns false on a pattern error rather than an empty
+		// list, and array_map() cannot take false.
+		$flosc_acc_split       = preg_split( '/\r\n|\r|\n/', $flosc_acc_saved_raw );
 		$flosc_acc_saved_lines = array_values(
 			array_filter(
-				array_map( 'trim', preg_split( '/\r\n|\r|\n/', $flosc_acc_saved_raw ) ?: array() ),
+				array_map( 'trim', $flosc_acc_split ? $flosc_acc_split : array() ),
 				static function ( $l ) {
 					return '' !== $l;
 				}
@@ -3541,7 +3548,7 @@ if ( '' !== trim( $flosc_acc_saved_raw ) ) {
 }
 // Edit fields hold templates (with {vars}). If a saved line equals the expanded default, show the template instead.
 $flosc_acc_edit_lines = array();
-if ( $flosc_acc_saved_lines === array() ) {
+if ( array() === $flosc_acc_saved_lines ) {
 	$flosc_acc_edit_lines = $flosc_acc_templates;
 } else {
 	foreach ( $flosc_acc_saved_lines as $flosc_acc_si => $flosc_acc_line ) {

@@ -344,7 +344,7 @@ class FLOSC_Token_Ledger {
 			// Caching is not applicable and would be harmful -- a lock is only a lock
 			// if the check reaches the database. Table is core wp_options, values are
 			// bound through prepare(), and the query runs only on lock contention.
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic lock steal; see above.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic lock steal; see above.
 			$updated = (int) $wpdb->query(
 				$wpdb->prepare(
 					"UPDATE {$wpdb->options}

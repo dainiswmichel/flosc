@@ -469,8 +469,8 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 					foreach ( $flosc_visitor_menu as $flosc_item ) :
 						$flosc_is_offer = (
 							0 === strpos( (string) $flosc_item['action'], 'show_offer' )
-							|| (string) $flosc_item['action'] === 'show_upgrade'
-							|| (string) $flosc_item['action'] === 'open_sandbox_purchase'
+							|| 'show_upgrade' === (string) $flosc_item['action']
+							|| 'open_sandbox_purchase' === (string) $flosc_item['action']
 						);
 						?>
 						<?php if ( $flosc_is_offer ) : ?>
@@ -480,7 +480,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 								<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
 							</svg>
-								<?php echo esc_html( $flosc_pb_visitor['upgrade_label'] ?: $flosc_item['label'] ); ?>
+								<?php echo esc_html( '' !== (string) $flosc_pb_visitor['upgrade_label'] ? $flosc_pb_visitor['upgrade_label'] : $flosc_item['label'] ); ?>
 						</button>
 					</div>
 					<?php endif; ?>
@@ -986,6 +986,18 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 		?>
 		window.FLOSC_CONFIG = 
 		<?php
+			/*
+			 * The phoneme-to-lesson map is decoded here rather than inside the
+			 * config array, because json_decode() returns null for a malformed
+			 * setting and an empty array for the '{}' default -- and the front
+			 * end reads this with dot notation, so it has to arrive as an object
+			 * either way, not as a JSON list.
+			 */
+			$flosc_phoneme_lesson_map = json_decode( flosc_get_setting( 'audio_quiz_phoneme_lesson_map', '{}' ), true );
+		if ( ! $flosc_phoneme_lesson_map ) {
+			$flosc_phoneme_lesson_map = (object) array();
+		}
+
 			// v1.4.9: Get SSO providers from per-flow settings (not global options).
 			$flosc_sso_providers = array();
 		if ( class_exists( '\FLOSC\SSO\SSO_Manager' ) ) {
@@ -1066,7 +1078,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 			$flosc_request_host = strtolower( sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ?? '' ) ) );
 			$flosc_flow_domain  = strtolower( preg_replace( '#^https?://#', '', trim( (string) ( $flosc_current_flow['custom_domain'] ?? '' ) ) ) );
 			$flosc_flow_domain  = rtrim( $flosc_flow_domain, '/' );
-			if ( $flosc_request_host === $flosc_flow_domain || $flosc_request_host === 'www.' . $flosc_flow_domain ) {
+			if ( $flosc_flow_domain === $flosc_request_host || 'www.' . $flosc_flow_domain === $flosc_request_host ) {
 				$flosc_same_host_base = ( is_ssl() ? 'https://' : 'http://' ) . $flosc_request_host;
 				$flosc_ajax_url       = $flosc_same_host_base . '/wp-admin/admin-ajax.php';
 				$flosc_logout_parts   = wp_parse_url( html_entity_decode( $flosc_logout_url ) );
@@ -1447,7 +1459,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 					'audioQuizCompleteMessage'       => flosc_get_setting( 'audio_quiz_complete_message', 'Pronunciation assessment complete! All {total} phrases recorded and analyzed. Sign up to see your results.' ),
 					'audioQuizResultsMessage'        => flosc_get_setting( 'audio_quiz_results_message', 'Welcome! Here are your assessment results.' ),
 					'audioQuizUpsellMessage'         => flosc_get_setting( 'audio_quiz_upsell_message', 'Our accent analysis shows you would benefit from lessons on {1st}, {2nd}, and {4th}. Upgrade today for full access to all lessons.' ),
-					'audioQuizPhonemeLessonMap'      => json_decode( flosc_get_setting( 'audio_quiz_phoneme_lesson_map', '{}' ), true ) ?: (object) array(),
+					'audioQuizPhonemeLessonMap'      => $flosc_phoneme_lesson_map,
 					// Between-phrase escape hatch (upgrade / softer tier) — per-flow admin params.
 					'audioQuizEscapeEnabled'         => ( function () {
 						$v = flosc_get_setting( 'audio_quiz_escape_enabled', '1' );

@@ -106,15 +106,16 @@ class FLOSC_Quiz_Manager {
 	 * @return WP_REST_Response
 	 */
 	public function handle_external_quiz_rest( $request ) {
-		$user_id    = absint( $request->get_param( 'user_id' ) ?: get_current_user_id() );
-		$quiz_id    = $request->get_param( 'quiz_id' );
-		$score_data = $request->get_param( 'score_data' );
+		$flosc_requested_user = $request->get_param( 'user_id' );
+		$user_id              = absint( $flosc_requested_user ? $flosc_requested_user : get_current_user_id() );
+		$quiz_id              = $request->get_param( 'quiz_id' );
+		$score_data           = $request->get_param( 'score_data' );
 
 		$api_key       = sanitize_text_field( (string) $request->get_header( 'X-FLOSC-API-Key' ) );
 		$stored_key    = (string) get_option( 'flosc_external_api_key', '' );
 		$using_api_key = ( '' !== $api_key && '' !== $stored_key && hash_equals( $stored_key, $api_key ) );
 
-		if ( ! $using_api_key && ! current_user_can( 'manage_options' ) && $user_id !== get_current_user_id() ) {
+		if ( ! $using_api_key && ! current_user_can( 'manage_options' ) && get_current_user_id() !== $user_id ) {
 			return new WP_REST_Response(
 				array(
 					'success' => false,

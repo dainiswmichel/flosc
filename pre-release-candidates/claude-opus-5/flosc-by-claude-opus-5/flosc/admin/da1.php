@@ -626,7 +626,7 @@ $flosc_da1_view     = ( 'all' === $flosc_da1_view_raw ) ? 'all' : 'single';
  */
 if ( '' === $flosc_da1_requested_catalog_key || ! isset( $flosc_da1_catalogs[ $flosc_da1_requested_catalog_key ] ) ) {
 	$flosc_da1_catalog_keys          = array_keys( $flosc_da1_catalogs );
-	$flosc_da1_requested_catalog_key = $flosc_da1_catalog_keys === array() ? '' : (string) $flosc_da1_catalog_keys[0];
+	$flosc_da1_requested_catalog_key = array() === $flosc_da1_catalog_keys ? '' : (string) $flosc_da1_catalog_keys[0];
 }
 
 $flosc_da1_notice_success = '';
@@ -1206,7 +1206,7 @@ foreach ( $flosc_da1_flow_assignments as $flosc_da1_assigned_flow => $flosc_da1_
 
 $flosc_da1_all_flows = ( isset( $flosc_ivr_files ) && is_array( $flosc_ivr_files ) ) ? $flosc_ivr_files : array();
 
-if ( isset( $flosc_da1_get['da1_export'] ) && (string) $flosc_da1_get['da1_export'] === '1' ) {
+if ( isset( $flosc_da1_get['da1_export'] ) && '1' === (string) $flosc_da1_get['da1_export'] ) {
 	$flosc_da1_nonce = sanitize_text_field( (string) ( $flosc_da1_get['_wpnonce'] ?? '' ) );
 	if ( ! wp_verify_nonce( $flosc_da1_nonce, 'flosc_da1_export_' . $flosc_da1_requested_catalog_key ) ) {
 		wp_die( esc_html__( 'Invalid export link.', 'flosc' ) );

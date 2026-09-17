@@ -254,7 +254,10 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 	 * Get user's purchase intents
 	 */
 	public function get_intents( $user_id, $status = null ) {
-		$intents = get_user_meta( $user_id, $this->intents_meta_key, true ) ?: array();
+		$intents = get_user_meta( $user_id, $this->intents_meta_key, true );
+		if ( ! $intents ) {
+			$intents = array();
+		}
 
 		if ( $status ) {
 			$intents = array_filter(
@@ -539,8 +542,9 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 	 * Get user's affiliate credits (in dollars)
 	 */
 	public function get_credits( $user_id ) {
-		$credits = get_user_meta( $user_id, $this->credits_meta_key, true );
-		return floatval( $credits ) ?: 0;
+		$credits     = get_user_meta( $user_id, $this->credits_meta_key, true );
+		$flosc_value = floatval( $credits );
+		return $flosc_value ? $flosc_value : 0;
 	}
 
 	/**
@@ -576,9 +580,9 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 		$locked   = false;
 		$current  = 0.0;
 
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic debit under row lock
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic debit under row lock
 		$wpdb->query( 'START TRANSACTION' );
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic token/affiliate ledger under transaction; no WP API for row lock
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic token/affiliate ledger under transaction; no WP API for row lock
 		$row = $wpdb->get_row(
 			$wpdb->prepare(
 				"SELECT umeta_id, meta_value FROM {$wpdb->usermeta} WHERE user_id = %d AND meta_key = %s LIMIT 1 FOR UPDATE",
@@ -601,7 +605,7 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 				array( '%d', '%s', '%s' )
 			);
             // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.SlowDBQuery.slow_db_query_meta_key,WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- end of atomic ledger block
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic token/affiliate ledger under transaction; no WP API for row lock
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic token/affiliate ledger under transaction; no WP API for row lock
 			$row = $wpdb->get_row(
 				$wpdb->prepare(
 					"SELECT umeta_id, meta_value FROM {$wpdb->usermeta} WHERE user_id = %d AND meta_key = %s LIMIT 1 FOR UPDATE",
@@ -616,13 +620,13 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 		}
 
 		if ( ! $locked ) {
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic token/affiliate ledger under transaction; no WP API for row lock
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic token/affiliate ledger under transaction; no WP API for row lock
 			$wpdb->query( 'ROLLBACK' );
 			return new WP_Error( 'debit_failed', __( 'Could not lock affiliate credit balance', 'flosc' ) );
 		}
 
 		if ( $current < $amount ) {
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic token/affiliate ledger under transaction; no WP API for row lock
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic token/affiliate ledger under transaction; no WP API for row lock
 			$wpdb->query( 'ROLLBACK' );
 			return new WP_Error( 'insufficient', __( 'Insufficient credits', 'flosc' ) );
 		}
@@ -638,11 +642,11 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 		);
         // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- end of atomic ledger block
 		if ( false === $updated ) {
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic token/affiliate ledger under transaction; no WP API for row lock
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic token/affiliate ledger under transaction; no WP API for row lock
 			$wpdb->query( 'ROLLBACK' );
 			return new WP_Error( 'debit_failed', __( 'Affiliate credit debit failed', 'flosc' ) );
 		}
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic token/affiliate ledger under transaction; no WP API for row lock
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic token/affiliate ledger under transaction; no WP API for row lock
 		$wpdb->query( 'COMMIT' );
 		wp_cache_delete( $user_id, 'user_meta' );
 
@@ -655,7 +659,10 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 	 * Log credit changes
 	 */
 	private function log_credit_change( $user_id, $type, $amount, $meta = array() ) {
-		$log = get_user_meta( $user_id, '_flosc_affiliate_credit_log', true ) ?: array();
+		$log = get_user_meta( $user_id, '_flosc_affiliate_credit_log', true );
+		if ( ! $log ) {
+			$log = array();
+		}
 
 		$log[] = array_merge(
 			array(

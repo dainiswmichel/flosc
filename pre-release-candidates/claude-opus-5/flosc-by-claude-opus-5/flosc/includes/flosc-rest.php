@@ -57,13 +57,15 @@ trait FLOSC_REST_Trait {
 	}
 
 	/**
-	 * v9.4.2: Permission callback for public endpoints that need rate limiting
+	 * Permission callback for public endpoints that need rate limiting
 	 *
 	 * Unlike check_metered_visitor_compute_permission(), this is for truly public endpoints
 	 * like IVR chat that don't consume expensive AI credits but should still
 	 * be protected from abuse.
 	 *
 	 * Limits: 60 requests/hour for logged-in users, 30/hour for visitors
+	 *
+	 * @since 9.4.2
 	 */
 	public function check_public_endpoint_permission( $request ) {
 		$endpoint   = $request->get_route();
@@ -481,7 +483,9 @@ trait FLOSC_REST_Trait {
 
 	/**
 	 * REST API Routes
-	 * v9.4.2: Added rate limiting to public endpoints
+	 * Added rate limiting to public endpoints
+	 *
+	 * @since 9.4.2
 	 */
 	public function register_rest_routes() {
 		// IVR Chat (primary endpoint)

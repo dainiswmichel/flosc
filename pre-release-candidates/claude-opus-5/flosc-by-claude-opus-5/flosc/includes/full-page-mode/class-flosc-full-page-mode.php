@@ -28,16 +28,19 @@ class FLOSC_Full_Page_Mode {
 	}
 
 	/**
-	 * v1.1.9: Check if currently serving via custom domain
+	 * Check if currently serving via custom domain
 	 *
 	 * @deprecated Use is_flosc_request() instead for most cases
+	 * @since 1.1.9
 	 */
 	public static function is_custom_domain() {
 		return defined( 'FLOSC_CUSTOM_DOMAIN_ACTIVE' ) && FLOSC_CUSTOM_DOMAIN_ACTIVE;
 	}
 
 	/**
-	 * v1.2.2: Get the appropriate app URL for current or specified flow
+	 * Get the appropriate app URL for current or specified flow
+	 *
+	 * @since 1.2.2
 	 */
 	public function get_app_url( $flow = null ) {
 		if ( null === $flow ) {
@@ -331,8 +334,10 @@ class FLOSC_Full_Page_Mode {
 	}
 
 	/**
-	 * v1.2.0: Extracted app rendering to separate method
+	 * Extracted app rendering to separate method
 	 * Called by handle_app_route() for both custom domain and slug routing
+	 *
+	 * @since 1.2.0
 	 */
 	public function render_flosc_app() {
 		// v2.0.0: Prevent page caching — identity data is dynamic per-flow.
@@ -340,7 +345,10 @@ class FLOSC_Full_Page_Mode {
 
 		// Track referral (v1.0.7: use array syntax with SameSite).
 		$get = wp_unslash( $_GET );
-		$ref = get_query_var( 'ref' ) ?: ( $get['ref'] ?? '' );
+		$ref = get_query_var( 'ref' );
+		if ( ! $ref ) {
+			$ref = ( $get['ref'] ?? '' );
+		}
 		if ( $ref && ! is_user_logged_in() ) {
 			setcookie(
 				'flosc_referrer',

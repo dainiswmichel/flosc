@@ -1015,13 +1015,14 @@ function flosc_flow_load_runtime_triplet( $flow_key = null ) {
 
 /**
  * Import IVR from ivr.md to database (REPLACE MODE - ivr.md is source of truth)
- * v9.2.2: IVR Database Integration
+ * IVR Database Integration
  * v1.6.4: Added $custom_ivr_file and $flow_key params for per-flow storage
  *
  * @param bool        $preview_only If true, returns preview without making changes.
  * @param string|null $custom_ivr_file Optional path to IVR file (defaults to flosc_default_technical_ivr.md).
  * @param string|null $flow_key Optional per-flow option key (e.g. 'flosc_flow_flosc_default_ivr').
  * @return array Result with success, stats, message, and preview data
+ * @since 9.2.2
  */
 function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file = null, $flow_key = null, $mode = 'merge' ) {
 	$ivr_file = $custom_ivr_file ?? flosc_config_file( 'flosc_default_technical_ivr.md' );
@@ -1360,10 +1361,11 @@ function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file =
 
 /**
  * Create timestamped backup of current IVR database state
- * v1.6.4: Added $flow_key param for per-flow storage
+ * Added $flow_key param for per-flow storage
  *
  * @param string|null $flow_key Optional per-flow option key.
  * @return string|false Backup filename on success, false on failure
+ * @since 1.6.4
  */
 function flosc_export_ivr_backup( $flow_key = null ) {
 	list($messages, $phases, $styles, $flow_key) = flosc_flow_load_runtime_triplet( $flow_key );
@@ -1448,9 +1450,10 @@ function flosc_export_ivr_backup( $flow_key = null ) {
 
 /**
  * Auto-export IVR database to ivr.md file (write-through)
- * v9.2.8: Called after every save/delete to keep DB and file in sync
+ * Called after every save/delete to keep DB and file in sync
  *
  * @return bool Success
+ * @since 9.2.8
  */
 function flosc_auto_export_ivr_to_file( $flow_key = null, $target_ivr_file = null ) {
 	list($messages, $phases, $styles, $flow_key) = flosc_flow_load_runtime_triplet( $flow_key );
@@ -1865,7 +1868,7 @@ function flosc_sync_flow_offers_with_ivr_messages( $flow_key, $messages ) {
 		// Portable Settings / prior admin values keep commercial fields; IVR wins on message copy + display.
 		$merged_offer = array_merge( $seed_offer, $existing_offer );
 		foreach ( array( 'name', 'description', 'display_format', 'condition', 'reveal_phrase' ) as $msg_field ) {
-			if ( isset( $seed_offer[ $msg_field ] ) && (string) $seed_offer[ $msg_field ] !== '' ) {
+			if ( isset( $seed_offer[ $msg_field ] ) && '' !== (string) $seed_offer[ $msg_field ] ) {
 				$merged_offer[ $msg_field ] = $seed_offer[ $msg_field ];
 			}
 		}

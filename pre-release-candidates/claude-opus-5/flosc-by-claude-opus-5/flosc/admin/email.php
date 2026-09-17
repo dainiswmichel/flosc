@@ -21,9 +21,10 @@
  *
  * BACKEND STATUS: Email templates functional. Guest/member automation sequences are live.
  *
- * v1.2.9: Added tab header for flow context
+ * Added tab header for flow context
  *
  * @package FLOSC
+ * @since 1.2.9
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

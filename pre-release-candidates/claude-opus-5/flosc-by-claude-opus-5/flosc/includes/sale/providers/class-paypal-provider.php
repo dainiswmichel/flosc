@@ -1,7 +1,7 @@
 <?php
 /**
  * FLOSC PayPal Payment Provider
- * v5.0.7: Definitive PayPal Orders API v2 integration (sandbox + live)
+ * Definitive PayPal Orders API v2 integration (sandbox + live)
  *
  * v5.0.7 fixes:
  * - Stale OAuth token cache: clear transient on auth failure, retry once
@@ -12,6 +12,7 @@
  * Flow: Create Order → Approve (PayPal JS SDK) → Capture → Grant Access
  *
  * @package FLOSC
+ * @since 5.0.7
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -46,9 +47,11 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 	}
 
 	/**
-	 * v1.7.3: Override base is_enabled() to read from per-flow settings.
+	 * Override base is_enabled() to read from per-flow settings.
 	 * Base class checks get_option('flosc_provider_paypal_enabled') which the
 	 * admin UI never writes to — admin saves 'paypal_enabled' to the flow option.
+	 *
+	 * @since 1.7.3
 	 */
 	public function is_enabled() {
 		if ( function_exists( 'flosc' ) ) {
@@ -61,8 +64,10 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 	}
 
 	/**
-	 * v1.7.3: Check if client ID is set (enough for SDK loading + button rendering)
+	 * Check if client ID is set (enough for SDK loading + button rendering)
 	 * Full is_configured() also requires the secret (for server-side API calls)
+	 *
+	 * @since 1.7.3
 	 */
 	public function has_client_id() {
 		return ! empty( $this->get_client_id() );
@@ -334,7 +339,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 				'headers' => array(
 					'Authorization' => 'Bearer ' . $token,
 					'Content-Type'  => 'application/json',
-			),
+				),
 				'timeout' => 30,
 			)
 		);
@@ -354,7 +359,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 					'headers' => array(
 						'Authorization' => 'Bearer ' . $token,
 						'Content-Type'  => 'application/json',
-				),
+					),
 					'timeout' => 30,
 				)
 			);
@@ -404,13 +409,13 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 					'headers' => array(
 						'Authorization' => 'Bearer ' . $token,
 						'Content-Type'  => 'application/json',
-				),
+					),
 					'body'    => wp_json_encode(
-					array(
-						'url'         => $listener_url,
-						'event_types' => $this->get_required_webhook_event_types(),
-					)
-				),
+						array(
+							'url'         => $listener_url,
+							'event_types' => $this->get_required_webhook_event_types(),
+						)
+					),
 					'timeout' => 30,
 				)
 			);
@@ -432,7 +437,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 						'headers' => array(
 							'Authorization' => 'Bearer ' . $token,
 							'Content-Type'  => 'application/json',
-					),
+						),
 						'timeout' => 30,
 					)
 				);
@@ -583,8 +588,10 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 	}
 
 	/**
-	 * v5.0.7: Get the currency for PayPal orders.
+	 * Get the currency for PayPal orders.
 	 * Centralised so SDK loading and order creation use the same value.
+	 *
+	 * @since 5.0.7
 	 */
 	public function get_currency() {
 		// Offer-level currency is set by the caller; this is the global fallback.
@@ -607,12 +614,14 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 	}
 
 	/**
-	 * v5.0.7: Get OAuth2 access token from PayPal.
+	 * Get OAuth2 access token from PayPal.
 	 *
 	 * Fixes vs prior versions:
 	 * - Clears cached token on ANY auth failure (prevents stale token loops)
 	 * - Retries once after clearing cache (handles token-expired edge case)
 	 * - Logs full error details when FLOSC_DEBUG is on
+	 *
+	 * @since 5.0.7
 	 */
 	private function get_access_token( $force_refresh = false ) {
 		$client_id = $this->get_client_id();
@@ -640,10 +649,10 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 			$api_base . '/v1/oauth2/token',
 			array(
 				'headers' => array(
-                // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- binary/JWT token encoding, not obfuscation
-				'Authorization' => 'Basic ' . base64_encode( $client_id . ':' . $secret ),
+					// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- binary/JWT token encoding, not obfuscation
+					'Authorization' => 'Basic ' . base64_encode( $client_id . ':' . $secret ),
 					'Content-Type'  => 'application/x-www-form-urlencoded',
-			),
+				),
 				'body'    => 'grant_type=client_credentials',
 				'timeout' => 30,
 			)
@@ -678,7 +687,9 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Create a PayPal order (called from REST endpoint)
-	 * v5.0.7: Retries once on 401 (stale token), logs all steps
+	 * Retries once on 401 (stale token), logs all steps
+	 *
+	 * @since 5.0.7
 	 */
 	public function create_order( $user, $amount_dollars, $currency, $offer_id, $purchase_uuid = '' ) {
 		$token = $this->get_access_token();
@@ -714,9 +725,9 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 					'amount'       => array(
 						'currency_code' => $currency,
 						'value'         => $amount,
+					),
 				),
 			),
-		),
 			'payment_source' => array(
 				'paypal' => array(
 					'experience_context' => array(
@@ -736,7 +747,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 					'Authorization' => 'Bearer ' . $token,
 					'Content-Type'  => 'application/json',
 					'Prefer'        => 'return=representation',
-			),
+				),
 				'body'    => wp_json_encode( $order_body ),
 				'timeout' => 30,
 			)
@@ -773,7 +784,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 						'Authorization' => 'Bearer ' . $token,
 						'Content-Type'  => 'application/json',
 						'Prefer'        => 'return=representation',
-				),
+					),
 					'body'    => wp_json_encode( $order_body ),
 					'timeout' => 30,
 				)
@@ -802,7 +813,9 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Capture a PayPal order after buyer approves
-	 * v5.0.7: Retries once on 401, logs all steps
+	 * Retries once on 401, logs all steps
+	 *
+	 * @since 5.0.7
 	 */
 	public function capture_order( $order_id ) {
 		$token = $this->get_access_token();
@@ -823,7 +836,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 					'Authorization' => 'Bearer ' . $token,
 					'Content-Type'  => 'application/json',
 					'Prefer'        => 'return=representation',
-			),
+				),
 				'body'    => '{}',
 				'timeout' => 30,
 			)
@@ -860,7 +873,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 						'Authorization' => 'Bearer ' . $token,
 						'Content-Type'  => 'application/json',
 						'Prefer'        => 'return=representation',
-				),
+					),
 					'body'    => '{}',
 					'timeout' => 30,
 				)
@@ -1008,15 +1021,15 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 				'headers' => array(
 					'Authorization' => 'Bearer ' . $token,
 					'Content-Type'  => 'application/json',
-			),
+				),
 				'body'    => wp_json_encode(
-				array(
-					'name'        => $name,
-					'description' => $description,
-					'type'        => 'DIGITAL',
-					'category'    => 'EDUCATIONAL_AND_TEXTBOOKS',
-				)
-			),
+					array(
+						'name'        => $name,
+						'description' => $description,
+						'type'        => 'DIGITAL',
+						'category'    => 'EDUCATIONAL_AND_TEXTBOOKS',
+					)
+				),
 				'timeout' => 30,
 			)
 		);
@@ -1050,35 +1063,35 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 				'headers' => array(
 					'Authorization' => 'Bearer ' . $token,
 					'Content-Type'  => 'application/json',
-			),
+				),
 				'body'    => wp_json_encode(
-				array(
-					'product_id'          => $product_id,
-					'name'                => $name,
-					'status'              => 'ACTIVE',
-					'billing_cycles'      => array(
-						array(
-							'frequency'      => array(
-								'interval_unit'  => strtoupper( $interval_unit ),
-								'interval_count' => $interval_count,
-						),
-							'tenure_type'    => 'REGULAR',
-							'sequence'       => 1,
-							'total_cycles'   => 0,
-							'pricing_scheme' => array(
-								'fixed_price' => array(
-									'value'         => number_format( (float) $amount, 2, '.', '' ),
-									'currency_code' => $currency,
+					array(
+						'product_id'          => $product_id,
+						'name'                => $name,
+						'status'              => 'ACTIVE',
+						'billing_cycles'      => array(
+							array(
+								'frequency'      => array(
+									'interval_unit'  => strtoupper( $interval_unit ),
+									'interval_count' => $interval_count,
+								),
+								'tenure_type'    => 'REGULAR',
+								'sequence'       => 1,
+								'total_cycles'   => 0,
+								'pricing_scheme' => array(
+									'fixed_price' => array(
+										'value'         => number_format( (float) $amount, 2, '.', '' ),
+										'currency_code' => $currency,
+									),
+								),
 							),
 						),
-					),
+						'payment_preferences' => array(
+							'auto_bill_outstanding'     => true,
+							'payment_failure_threshold' => 3,
+						),
+					)
 				),
-					'payment_preferences' => array(
-						'auto_bill_outstanding'     => true,
-						'payment_failure_threshold' => 3,
-				),
-				)
-			),
 				'timeout' => 30,
 			)
 		);
@@ -1109,7 +1122,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 			array(
 				'headers' => array(
 					'Authorization' => 'Bearer ' . $token,
-			),
+				),
 				'timeout' => 30,
 			)
 		);
@@ -1810,7 +1823,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 		$rows      = wp_cache_get( $cache_key, 'flosc_paypal' );
 		if ( ! is_array( $rows ) ) {
 			// Claims use add_option( ..., '', 'no' ) — bulk LIKE has no WP API.
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- bulk LIKE on autoload=no options; object-cached
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- bulk LIKE on autoload=no options; object-cached
 			$rows = $wpdb->get_results(
 				$wpdb->prepare(
 					"SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE %s LIMIT 100",
@@ -2018,7 +2031,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 					'headers' => array(
 						'Authorization' => 'Bearer ' . $token,
 						'Content-Type'  => 'application/json',
-				),
+					),
 					'body'    => $encoded,
 					'timeout' => 30,
 				)
@@ -2055,7 +2068,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 						'headers' => array(
 							'Authorization' => 'Bearer ' . $token,
 							'Content-Type'  => 'application/json',
-					),
+						),
 						'body'    => $encoded,
 						'timeout' => 30,
 					)

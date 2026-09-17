@@ -148,7 +148,10 @@ function flosc_handle_autoprompts_save() {
 				continue;
 			}
 
-			$flosc_ttype   = sanitize_key( $trigger_types[ $i ] ?? 'ai' ) ?: 'ai';
+			$flosc_ttype = sanitize_key( $trigger_types[ $i ] ?? 'ai' );
+			if ( ! $flosc_ttype ) {
+				$flosc_ttype = 'ai';
+			}
 			$flosc_tval    = sanitize_text_field( $trigger_values[ $i ] ?? '' );
 			$flosc_pills[] = array(
 				'icon'          => sanitize_text_field( $icons[ $i ] ?? '' ),
@@ -817,7 +820,7 @@ $flosc_pill_demos = array(
 							<?php foreach ( (array) $flosc_set['pills'] as $flosc_item_index => $flosc_item ) : ?>
 								<?php
 								$flosc_behavior_text = flosc_autoprompt_expected_behavior_text( $flosc_state, (array) $flosc_item );
-								$flosc_pair_class    = ( (int) $flosc_item_index % 2 === 0 ) ? 'is-even' : 'is-odd';
+								$flosc_pair_class    = ( 0 === (int) $flosc_item_index % 2 ) ? 'is-even' : 'is-odd';
 								?>
 							<tr class="flosc-demo-item-row <?php echo esc_attr( $flosc_pair_class ); ?>">
 								<td><?php echo esc_html( (string) ( $flosc_item['icon'] ?? '' ) ); ?></td>

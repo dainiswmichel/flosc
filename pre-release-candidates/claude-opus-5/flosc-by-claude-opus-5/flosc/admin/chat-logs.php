@@ -1,7 +1,7 @@
 <?php
 /**
  * FLOSC Chat Logs Admin Page
- * v1.9.0: Real-time chat log viewer with AJAX polling.
+ * Real-time chat log viewer with AJAX polling.
  * v8.0.0: Session view — conversations grouped, click to expand the thread, the
  *         auto-welcome "[SYSTEM: …]" greetings filtered out, and a per-session
  *         delete. The original flat table lives on under the "All entries" view.
@@ -12,6 +12,7 @@
  * one file.
  *
  * @package FLOSC
+ * @since 1.9.0
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

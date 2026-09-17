@@ -977,12 +977,13 @@ class OAuth2_Handler {
 
 	/**
 	 * Generate a one-time login token for cross-domain redirect
-	 * v1.5.2: Solves cookie domain problem — auth cookie set on the WordPress host
+	 * Solves cookie domain problem — auth cookie set on the WordPress host
 	 * doesn't travel to flosc.ai/the flow domain. Token lets the target domain
 	 * authenticate the user on arrival.
 	 *
 	 * @param int $user_id User ID.
 	 * @return string Token
+	 * @since 1.5.2
 	 */
 	private function generate_login_token( $user_id ) {
 		$token = wp_generate_password( 40, false );
@@ -994,11 +995,12 @@ class OAuth2_Handler {
 	/**
 	 * Redirect with error message
 	 *
-	 * v8.0.1: Accept optional redirect_to so user returns to the app page
+	 * Accept optional redirect_to so user returns to the app page
 	 * (where FLOSC JS is running), not the homepage where it isn't.
 	 *
 	 * @param string $message Error message.
 	 * @param string $redirect_to URL to redirect to (falls back to home_url()).
+	 * @since 8.0.1
 	 */
 	private function redirect_with_error( $message, $redirect_to = '' ) {
 		// Store error in transient for display

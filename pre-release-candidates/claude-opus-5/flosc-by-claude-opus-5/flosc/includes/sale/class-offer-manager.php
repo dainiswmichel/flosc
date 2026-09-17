@@ -46,8 +46,10 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Get all offers
-	 * v1.6.2: Flow-aware — reads from per-flow storage first, falls back to global
+	 * Flow-aware — reads from per-flow storage first, falls back to global
 	 * v1.6.5: Seeds defaults into per-flow storage on first access so admin can edit them
+	 *
+	 * @since 1.6.2
 	 */
 	public function get_all_offers( $flow_id = null ) {
 		// v1.6.2: Try per-flow storage first (where admin offers.php saves).
@@ -90,7 +92,9 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Get active (published) offers
-	 * v1.6.2: Flow-aware
+	 * Flow-aware
+	 *
+	 * @since 1.6.2
 	 */
 	public function get_active_offers( $flow_id = null ) {
 		$offers = $this->get_all_offers( $flow_id );
@@ -104,7 +108,9 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Get a specific offer by ID
-	 * v1.6.2: Flow-aware
+	 * Flow-aware
+	 *
+	 * @since 1.6.2
 	 */
 	public function get_offer( $offer_id, $flow_id = null ) {
 		$offers = $this->get_all_offers( $flow_id );

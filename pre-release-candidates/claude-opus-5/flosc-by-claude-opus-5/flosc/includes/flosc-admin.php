@@ -751,22 +751,28 @@ trait FLOSC_Admin_Trait {
 	}
 
 	/**
-	 * v1.2.2: Render Flows list page
+	 * Render Flows list page
+	 *
+	 * @since 1.2.2
 	 */
 	public function render_flows_page() {
 		include FLOSC_PLUGIN_DIR . 'admin/flows.php';
 	}
 
 	/**
-	 * v1.2.2: Render Flow edit page
+	 * Render Flow edit page
+	 *
+	 * @since 1.2.2
 	 */
 	public function render_flow_edit_page() {
 		include FLOSC_PLUGIN_DIR . 'admin/flow-edit.php';
 	}
 
 	/**
-	 * v1.0.4: Enqueue admin assets (TASK-006)
+	 * Enqueue admin assets (TASK-006)
 	 * Loads flosc-admin.css on FLOSC admin pages
+	 *
+	 * @since 1.0.4
 	 */
 	public function enqueue_admin_assets( $hook ) {
 		// §12: Post-visibility metabox styles render on the post editor (post.php / post-new.php),
@@ -939,10 +945,12 @@ trait FLOSC_Admin_Trait {
 	}
 
 	/**
-	 * v8.0.0: Relabel right side of WP admin footer on FLOSC pages.
+	 * Relabel right side of WP admin footer on FLOSC pages.
 	 * WordPress shows "Version 6.9.3" — we relabel to "WordPress 6.9.3 | FLOSC v8.0.0"
 	 * so it's clear what each version number refers to.
 	 * Only applies on FLOSC admin pages (checked via current screen).
+	 *
+	 * @since 8.0.0
 	 */
 	public function relabel_admin_footer( $text ) {
 		$screen = get_current_screen();
@@ -954,8 +962,10 @@ trait FLOSC_Admin_Trait {
 	}
 
 	/**
-	 * v8.0.0: Replace left-side "Thank you for creating with WordPress" with FLOSC branding
+	 * Replace left-side "Thank you for creating with WordPress" with FLOSC branding
 	 * on FLOSC admin pages only.
+	 *
+	 * @since 8.0.0
 	 */
 	public function relabel_admin_footer_left( $text ) {
 		$screen = get_current_screen();
@@ -1720,9 +1730,11 @@ trait FLOSC_Admin_Trait {
 	}
 
 	/**
-	 * v1.6.1: Enqueue companion widget on non-app WordPress pages.
+	 * Enqueue companion widget on non-app WordPress pages.
 	 * Only loads if companion mode is enabled for the current flow.
 	 * v1.6.3: Fixed to read from flat per-flow settings (matching admin save pattern)
+	 *
+	 * @since 1.6.1
 	 */
 	public function enqueue_companion() {
 		// Production path is FLOSC_Companion_Mode::enqueue_companion (app-route-only iframe).
@@ -1981,7 +1993,9 @@ trait FLOSC_Admin_Trait {
 	/**
 	 * Adjust hex color brightness by a percentage (-100 to +100).
 	 * Negative = darker, positive = lighter.
-	 * v1.6.1: Used for accent color cascade.
+	 * Used for accent color cascade.
+	 *
+	 * @since 1.6.1
 	 */
 	private function adjust_color_brightness( $hex, $percent ) {
 		$hex = ltrim( $hex, '#' );
@@ -2001,7 +2015,9 @@ trait FLOSC_Admin_Trait {
 
 	/**
 	 * Convert hex color to rgba string.
-	 * v1.6.1: Used for accent-subtle generation.
+	 * Used for accent-subtle generation.
+	 *
+	 * @since 1.6.1
 	 */
 	private function hex_to_rgba( $hex, $alpha ) {
 		$hex = ltrim( $hex, '#' );

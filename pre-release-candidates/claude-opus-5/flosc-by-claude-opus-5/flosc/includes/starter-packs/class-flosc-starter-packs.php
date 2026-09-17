@@ -539,7 +539,7 @@ class FLOSC_Starter_Packs {
 
 			$term_id = (int) $existing->term_id;
 
-			if ( $pack['slug'] === get_term_meta( $term_id, self::TERM_STAMP, true ) ) {
+			if ( get_term_meta( $term_id, self::TERM_STAMP, true ) === $pack['slug'] ) {
 				$adopted[ $slug ] = $term_id;
 				continue;
 			}
@@ -1598,7 +1598,7 @@ class FLOSC_Starter_Packs {
 					$bag  = maybe_unserialize( $row['option_value'] ?? '' );
 					$stem = substr( $name, strlen( 'flosc_flow_' ) );
 
-					if ( is_array( $bag ) && $id === sanitize_key( (string) ( $bag['personality_library_id'] ?? '' ) ) ) {
+					if ( is_array( $bag ) && sanitize_key( (string) ( $bag['personality_library_id'] ?? '' ) ) === $id ) {
 						$label = self::flow_label( $stem, $bag );
 
 						if ( '' !== $label ) {
@@ -1623,7 +1623,7 @@ class FLOSC_Starter_Packs {
 
 			$bag = get_option( 'flosc_flow_' . $stem, array() );
 
-			if ( is_array( $bag ) && $id === sanitize_key( (string) ( $bag['personality_library_id'] ?? '' ) ) ) {
+			if ( is_array( $bag ) && sanitize_key( (string) ( $bag['personality_library_id'] ?? '' ) ) === $id ) {
 				$label = self::flow_label( $stem, $bag );
 
 				if ( '' !== $label ) {

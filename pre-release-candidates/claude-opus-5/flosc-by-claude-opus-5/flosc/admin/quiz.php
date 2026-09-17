@@ -4,10 +4,11 @@
  *
  * Enable/disable quizzes, edit questions inline, and load ready-made demo sets.
  *
- * v4.0.2: Stripped dead weight; added per-card inline edit panel + demo library
+ * Stripped dead weight; added per-card inline edit panel + demo library
  *         with Load → buttons that fill the editor directly.
  *
  * @package FLOSC
+ * @since 4.0.2
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

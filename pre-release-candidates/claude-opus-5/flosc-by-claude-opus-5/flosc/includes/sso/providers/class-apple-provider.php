@@ -73,7 +73,7 @@ class Apple_Provider extends SSO_Provider_Base {
 	}
 
 	/**
-	 * v1.5.0: Set flow-specific Apple credentials (overrides global options)
+	 * Set flow-specific Apple credentials (overrides global options)
 	 * Extends the base set_flow_credentials to include Apple's extra fields.
 	 *
 	 * @param string $client_id    Flow-specific Client/Service ID.
@@ -82,6 +82,7 @@ class Apple_Provider extends SSO_Provider_Base {
 	 * @param string $team_id      Flow-specific Apple Team ID.
 	 * @param string $key_id       Flow-specific Apple Key ID.
 	 * @param string $private_key  Flow-specific Apple Private Key (.p8 contents).
+	 * @since 1.5.0
 	 */
 	public function set_flow_apple_credentials( $client_id, $client_secret, $enabled, $team_id, $key_id, $private_key ) {
 		// Set base credentials (client_id, client_secret, enabled).
@@ -451,7 +452,7 @@ class Apple_Provider extends SSO_Provider_Base {
 		$pubkey    = $this->asn1_sequence( $rsa_oid . $bitstring );
 
 		$pem = "-----BEGIN PUBLIC KEY-----\n";
-        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- binary/JWT token encoding, not obfuscation
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- binary/JWT token encoding, not obfuscation
 		$pem .= chunk_split( base64_encode( $pubkey ), 64, "\n" );
 		$pem .= "-----END PUBLIC KEY-----\n";
 
@@ -500,7 +501,7 @@ class Apple_Provider extends SSO_Provider_Base {
 		if ( $remainder ) {
 			$data .= str_repeat( '=', 4 - $remainder );
 		}
-        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- binary/JWT token decoding, not obfuscation
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- binary/JWT token decoding, not obfuscation
 		return base64_decode( strtr( $data, '-_', '+/' ), true );
 	}
 
@@ -671,7 +672,7 @@ class Apple_Provider extends SSO_Provider_Base {
 	 * @return string Encoded data
 	 */
 	private function base64_url_encode( $data ) {
-        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- binary/JWT token encoding, not obfuscation
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- binary/JWT token encoding, not obfuscation
 		return rtrim( strtr( base64_encode( $data ), '+/', '-_' ), '=' );
 	}
 

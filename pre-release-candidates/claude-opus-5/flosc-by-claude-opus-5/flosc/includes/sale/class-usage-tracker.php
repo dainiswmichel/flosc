@@ -81,7 +81,10 @@ class FLOSC_Usage_Tracker {
 	 * Get user's usage data
 	 */
 	public function get_user_usage( $user_id, $period = null ) {
-		$usage = get_user_meta( $user_id, $this->meta_key, true ) ?: array();
+		$usage = get_user_meta( $user_id, $this->meta_key, true );
+		if ( ! $usage ) {
+			$usage = array();
+		}
 
 		if ( $period ) {
 			return $usage[ $period ] ?? array();
@@ -193,7 +196,7 @@ class FLOSC_Usage_Tracker {
 		$limits = $this->get_limits( $user_id );
 
 		// No limit for this event.
-		if ( ! isset( $limits[ $event ] ) || $limits[ $event ] === -1 ) {
+		if ( ! isset( $limits[ $event ] ) || -1 === $limits[ $event ] ) {
 			return true;
 		}
 
@@ -208,7 +211,7 @@ class FLOSC_Usage_Tracker {
 	public function get_remaining( $user_id, $event ) {
 		$limits = $this->get_limits( $user_id );
 
-		if ( ! isset( $limits[ $event ] ) || $limits[ $event ] === -1 ) {
+		if ( ! isset( $limits[ $event ] ) || -1 === $limits[ $event ] ) {
 			return PHP_INT_MAX; // Unlimited
 		}
 

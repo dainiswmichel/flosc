@@ -1,7 +1,7 @@
 <?php
 /**
  * FLOSC Admin Settings Helper
- * v1.2.4: Helper for flow-aware settings in admin tabs
+ * Helper for flow-aware settings in admin tabs
  *
  * Usage in tab files:
  *   $value = flosc_admin_get_value('ai_provider', 'ivr');
@@ -9,6 +9,7 @@
  *   - When editing global: returns global wp_option value
  *
  * @package FLOSC
+ * @since 1.2.4
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

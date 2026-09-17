@@ -198,8 +198,9 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 	 * Get user's token balance
 	 */
 	public function get_balance( $user_id ) {
-		$balance = get_user_meta( $user_id, $this->balance_meta_key, true );
-		return intval( $balance ) ?: 0;
+		$balance     = get_user_meta( $user_id, $this->balance_meta_key, true );
+		$flosc_value = intval( $balance );
+		return $flosc_value ? $flosc_value : 0;
 	}
 
 	/**
@@ -254,9 +255,9 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 		$locked   = false;
 		$current  = 0;
 
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic debit under row lock
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic debit under row lock
 		$wpdb->query( 'START TRANSACTION' );
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- atomic token/affiliate ledger under transaction; no WP API for row lock
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- atomic token/affiliate ledger under transaction; no WP API for row lock
 		$row = $wpdb->get_row(
 			$wpdb->prepare(
 				"SELECT umeta_id, meta_value FROM {$wpdb->usermeta} WHERE user_id = %d AND meta_key = %s LIMIT 1 FOR UPDATE",
@@ -281,7 +282,7 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 				array( '%d', '%s', '%s' )
 			);
             // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.SlowDBQuery.slow_db_query_meta_key,WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- end of atomic ledger block
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic token/affiliate ledger under transaction; no WP API for row lock
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic token/affiliate ledger under transaction; no WP API for row lock
 			$row = $wpdb->get_row(
 				$wpdb->prepare(
 					"SELECT umeta_id, meta_value FROM {$wpdb->usermeta} WHERE user_id = %d AND meta_key = %s LIMIT 1 FOR UPDATE",
@@ -296,13 +297,13 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 		}
 
 		if ( ! $locked ) {
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic token/affiliate ledger under transaction; no WP API for row lock
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic token/affiliate ledger under transaction; no WP API for row lock
 			$wpdb->query( 'ROLLBACK' );
 			return new WP_Error( 'debit_failed', __( 'Could not lock token balance', 'flosc' ) );
 		}
 
 		if ( $current < $amount ) {
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic token/affiliate ledger under transaction; no WP API for row lock
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic token/affiliate ledger under transaction; no WP API for row lock
 			$wpdb->query( 'ROLLBACK' );
 			return new WP_Error( 'insufficient_balance', __( 'Insufficient token balance', 'flosc' ) );
 		}
@@ -318,11 +319,11 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 		);
         // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- end of atomic ledger block
 		if ( false === $updated ) {
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic token/affiliate ledger under transaction; no WP API for row lock
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic token/affiliate ledger under transaction; no WP API for row lock
 			$wpdb->query( 'ROLLBACK' );
 			return new WP_Error( 'debit_failed', __( 'Token debit failed', 'flosc' ) );
 		}
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic token/affiliate ledger under transaction; no WP API for row lock
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic token/affiliate ledger under transaction; no WP API for row lock
 		$wpdb->query( 'COMMIT' );
 		wp_cache_delete( $user_id, 'user_meta' );
 
@@ -371,7 +372,10 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 	 * Log transaction to ledger
 	 */
 	private function log_transaction( $user_id, $transaction ) {
-		$ledger = get_user_meta( $user_id, $this->ledger_meta_key, true ) ?: array();
+		$ledger = get_user_meta( $user_id, $this->ledger_meta_key, true );
+		if ( ! $ledger ) {
+			$ledger = array();
+		}
 
 		// Keep last 100 transactions.
 		$ledger   = array_slice( $ledger, -99 );
@@ -384,7 +388,10 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 	 * Get user's transaction ledger
 	 */
 	public function get_ledger( $user_id, $limit = 50 ) {
-		$ledger = get_user_meta( $user_id, $this->ledger_meta_key, true ) ?: array();
+		$ledger = get_user_meta( $user_id, $this->ledger_meta_key, true );
+		if ( ! $ledger ) {
+			$ledger = array();
+		}
 		return array_slice( array_reverse( $ledger ), 0, $limit );
 	}
 

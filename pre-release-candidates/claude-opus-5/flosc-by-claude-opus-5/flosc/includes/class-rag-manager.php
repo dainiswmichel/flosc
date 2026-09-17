@@ -299,7 +299,10 @@ class FLOSC_RAG_Manager {
 		foreach ( $posts as $post ) {
 
 			$lesson_num      = get_post_meta( $post->ID, '_flosc_lesson_number', true );
-			$required_access = get_post_meta( $post->ID, '_flosc_access_level', true ) ?: 'member';
+			$required_access = get_post_meta( $post->ID, '_flosc_access_level', true );
+			if ( ! $required_access ) {
+				$required_access = 'member';
+			}
 
 			$lesson_label = $lesson_num ? "Lesson {$lesson_num}: " : '';
 
@@ -448,7 +451,10 @@ class FLOSC_RAG_Manager {
 
 		foreach ( $posts as $post ) {
 			$lesson_num    = get_post_meta( $post->ID, '_flosc_lesson_number', true );
-			$lesson_access = get_post_meta( $post->ID, '_flosc_access_level', true ) ?: 'member';
+			$lesson_access = get_post_meta( $post->ID, '_flosc_access_level', true );
+			if ( ! $lesson_access ) {
+				$lesson_access = 'member';
+			}
 
 			// Check if user can access.
 			$can_access = $this->can_user_access_level( $access_level, $lesson_access );

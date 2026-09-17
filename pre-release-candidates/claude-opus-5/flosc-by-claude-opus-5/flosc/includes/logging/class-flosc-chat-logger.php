@@ -1,12 +1,13 @@
 <?php
 /**
  * FLOSC Chat Logger
- * v1.9.0: Logs all chat exchanges for real-time monitoring and later retrieval.
+ * Logs all chat exchanges for real-time monitoring and later retrieval.
  *
  * Storage: Custom WordPress table {prefix}flosc_chat_logs
  * Access: Admin-only viewer via FLOSC Settings → Chat Logs tab
  *
  * @package FLOSC
+ * @since 1.9.0
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -223,13 +224,14 @@ class FLOSC_Chat_Logger {
 	}
 
 	/**
-	 * v1.9.5: Rate a chat log entry. Score from -10 to +10 with optional note.
+	 * Rate a chat log entry. Score from -10 to +10 with optional note.
 	 * Any non-zero rating auto-protects the log from expunge.
 	 *
 	 * @param int    $log_id  The chat log row ID.
 	 * @param int    $rating  Score from -10 to +10.
 	 * @param string $note    Admin's note (why this score).
 	 * @return bool True on success
+	 * @since 1.9.5
 	 */
 	public function flosc_rate_log( $log_id, $rating, $note = '' ) {
 		global $wpdb;
@@ -330,7 +332,7 @@ class FLOSC_Chat_Logger {
 				ARRAY_A
 			);
 		}
-		if ( ! is_array( $rows ) || $rows === array() ) {
+		if ( ! is_array( $rows ) || array() === $rows ) {
 			return array();
 		}
 
@@ -507,8 +509,8 @@ class FLOSC_Chat_Logger {
 			return;
 		}
 
-		if ( $marks !== array() || $queue !== $keep ) {
-			if ( $keep === array() ) {
+		if ( array() !== $marks || $queue !== $keep ) {
+			if ( array() === $keep ) {
 				delete_user_meta( $user_id, self::flosc_journey_marks_meta_key() );
 			} else {
 				update_user_meta( $user_id, self::flosc_journey_marks_meta_key(), $keep );
@@ -606,7 +608,7 @@ class FLOSC_Chat_Logger {
 
 		$this->flosc_ensure_table();
 
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table, single indexed row, must not be cached across a turn.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table, single indexed row, must not be cached across a turn.
 		$row = $wpdb->get_row(
 			$wpdb->prepare(
 				'SELECT id, ai_response, response_source, turn_status, personality_name FROM %i WHERE turn_id = %s ORDER BY id DESC LIMIT 1',
@@ -634,7 +636,7 @@ class FLOSC_Chat_Logger {
 
 		$this->flosc_ensure_table();
 
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table, targeted update.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- plugin-owned table, targeted update.
 		$updated = $wpdb->update(
 			$this->table_name,
 			array( 'turn_status' => 'abandoned' ),
@@ -1431,7 +1433,7 @@ class FLOSC_Chat_Logger {
 			}
 
 			wp_cache_set( 'flosc_chat_logs_list', true, 'flosc_chat_logs', 30 );
-			return $wpdb->get_results(
+			$flosc_rows = $wpdb->get_results(
 				$wpdb->prepare(
 					"SELECT * FROM %i WHERE journey_id = %s AND ( %s = '' OR flow_id = %s ) ORDER BY id ASC",
 					$this->table_name,
@@ -1440,7 +1442,10 @@ class FLOSC_Chat_Logger {
 					$flow_id
 				),
 				ARRAY_A
-			) ?: array();
+			);
+			// get_results() returns null on a query error, and every
+			// caller walks the result.
+			return $flosc_rows ? $flosc_rows : array();
 		}
 
 		if ( 'session' === $by ) {
@@ -1450,7 +1455,7 @@ class FLOSC_Chat_Logger {
 			}
 
 			wp_cache_set( 'flosc_chat_logs_list', true, 'flosc_chat_logs', 30 );
-			return $wpdb->get_results(
+			$flosc_rows = $wpdb->get_results(
 				$wpdb->prepare(
 					"SELECT * FROM %i WHERE session_id = %d AND journey_id = '' AND ( %s = '' OR flow_id = %s ) ORDER BY id ASC",
 					$this->table_name,
@@ -1459,7 +1464,10 @@ class FLOSC_Chat_Logger {
 					$flow_id
 				),
 				ARRAY_A
-			) ?: array();
+			);
+			// get_results() returns null on a query error, and every
+			// caller walks the result.
+			return $flosc_rows ? $flosc_rows : array();
 		}
 
 		if ( 'user' === $by ) {
@@ -1468,7 +1476,7 @@ class FLOSC_Chat_Logger {
 				return array();
 			}
 
-			return $wpdb->get_results(
+			$flosc_rows = $wpdb->get_results(
 				$wpdb->prepare(
 					"SELECT * FROM %i WHERE user_id = %d AND session_id = 0 AND journey_id = '' AND ( %s = '' OR flow_id = %s ) ORDER BY id ASC",
 					$this->table_name,
@@ -1477,7 +1485,10 @@ class FLOSC_Chat_Logger {
 					$flow_id
 				),
 				ARRAY_A
-			) ?: array();
+			);
+			// get_results() returns null on a query error, and every
+			// caller walks the result.
+			return $flosc_rows ? $flosc_rows : array();
 		}
 
 		$ip = sanitize_text_field( (string) $value );
@@ -1485,7 +1496,7 @@ class FLOSC_Chat_Logger {
 			return array();
 		}
 
-		return $wpdb->get_results(
+		$flosc_rows = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT * FROM %i WHERE visitor_ip = %s AND user_id = 0 AND session_id = 0 AND journey_id = '' AND ( %s = '' OR flow_id = %s ) ORDER BY id ASC",
 				$this->table_name,
@@ -1494,7 +1505,10 @@ class FLOSC_Chat_Logger {
 				$flow_id
 			),
 			ARRAY_A
-		) ?: array();
+		);
+		// get_results() returns null on a query error, and every
+		// caller walks the result.
+		return $flosc_rows ? $flosc_rows : array();
 	}
 
 	/**

@@ -50,7 +50,10 @@ class FLOSC_Email {
 		// Get OTO offer.
 		$oto_offer_id = sanitize_text_field( (string) ( $flow_settings['oto_offer_id'] ?? get_option( 'flosc_oto_offer_id', '' ) ) );
 		$oto_offer    = null;
-		$oto_link     = $context['chat_url'] ?: home_url( '/' . get_option( 'flosc_app_slug', 'flosc' ) . '/' );
+		$oto_link     = $context['chat_url'];
+		if ( ! $oto_link ) {
+			$oto_link = home_url( '/' . get_option( 'flosc_app_slug', 'flosc' ) . '/' );
+		}
 
 		if ( $oto_offer_id ) {
 			$sale = method_exists( $this->flosc, 'sale' ) ? $this->flosc->sale() : null;
@@ -150,7 +153,10 @@ class FLOSC_Email {
 		$profile_url = function_exists( 'bp_core_get_user_domain' )
 			? bp_core_get_user_domain( $user->ID )
 			: home_url( '/members/' . $user->user_login . '/' );
-		$upgrade_url = $context['upgrade_url'] ?: home_url();
+		$upgrade_url = $context['upgrade_url'];
+		if ( ! $upgrade_url ) {
+			$upgrade_url = home_url();
+		}
 		return str_replace(
 			array( '{name}', '{days_remaining}', '{chat_url}', '{profile_url}', '{upgrade_url}', '{app_name}', '{team_name}', '{link_name}' ),
 			array( $user->display_name, $days_remaining, $chat_url, $profile_url, $upgrade_url, $context['app_name'], $context['team_name'], $context['link_name'] ),
@@ -329,7 +335,10 @@ class FLOSC_Email {
 		}
 
 		$days_elapsed = (int) floor( ( time() - strtotime( $user->user_registered ) ) / DAY_IN_SECONDS );
-		$sent         = get_user_meta( $user->ID, '_flosc_guest_emails_sent', true ) ?: array();
+		$sent         = get_user_meta( $user->ID, '_flosc_guest_emails_sent', true );
+		if ( ! $sent ) {
+			$sent = array();
+		}
 		if ( ! is_array( $sent ) ) {
 			$sent = array();
 		}
@@ -632,7 +641,10 @@ class FLOSC_Email {
 			if ( ! $user ) {
 				continue;
 			}
-			$level     = sanitize_key( (string) get_user_meta( $user->ID, '_flosc_member_level', true ) ) ?: 'member';
+			$level = sanitize_key( (string) get_user_meta( $user->ID, '_flosc_member_level', true ) );
+			if ( ! $level ) {
+				$level = 'member';
+			}
 			$flow_id   = (string) get_user_meta( $user->ID, '_flosc_registration_flow', true );
 			$flow_stem = sanitize_key( pathinfo( basename( $flow_id ), PATHINFO_FILENAME ) );
 			$wsent     = get_user_meta( $user->ID, '_flosc_member_welcome_sent', true );

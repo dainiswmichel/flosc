@@ -138,9 +138,10 @@ abstract class SSO_Provider_Base {
 
 	/**
 	 * Check if provider is enabled and configured
-	 * v1.4.9: Checks flow-specific enabled flag if set, otherwise falls back to global
+	 * Checks flow-specific enabled flag if set, otherwise falls back to global
 	 *
 	 * @return bool
+	 * @since 1.4.9
 	 */
 	public function is_enabled() {
 		if ( null !== $this->flow_enabled ) {

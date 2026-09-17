@@ -6,10 +6,11 @@
  * This guide explains how FLOSC works with AI providers and how to configure
  * personality, knowledge base, and phase instructions.
  *
- * v1.7.8: Initial documentation system
+ * Initial documentation system
  * Fix 15: Moved from standalone tab to Documentation > AI Configuration Guide
  *
  * @package FLOSC
+ * @since 1.7.8
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

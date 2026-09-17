@@ -334,13 +334,14 @@ abstract class FLOSC_Abstract_Quiz_Type {
 					return array();
 
 				case 'search':
-					return get_posts(
+					$flosc_found = get_posts(
 						array(
 							's'           => $value,
 							'post_status' => 'publish',
 							'numberposts' => 3,
 						)
-					) ?: array();
+					);
+					return $flosc_found ? $flosc_found : array();
 			}
 			// Unrecognised prefix — fall through to legacy auto-resolve.
 		}
@@ -392,13 +393,14 @@ abstract class FLOSC_Abstract_Quiz_Type {
 				return $posts;
 			}
 		}
-		return get_posts(
+		$flosc_found = get_posts(
 			array(
 				's'           => $ref,
 				'post_status' => 'publish',
 				'numberposts' => 3,
 			)
-		) ?: array();
+		);
+		return $flosc_found ? $flosc_found : array();
 	}
 
 	/**

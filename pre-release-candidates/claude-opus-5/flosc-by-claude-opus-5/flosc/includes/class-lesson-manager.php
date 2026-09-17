@@ -26,9 +26,11 @@ class FLOSC_Lesson_Manager {
 	}
 
 	/**
-	 * v1.8.2: Resolve lessons category from per-flow settings first, then global option.
+	 * Resolve lessons category from per-flow settings first, then global option.
 	 * The admin Lessons tab saves to flow_content_item_category → $flow_settings['content_item_category'].
 	 * The global flosc_content_item_category option may be empty if only per-flow was configured.
+	 *
+	 * @since 1.8.2
 	 */
 	private function resolve_category() {
 		// 1. Try per-flow settings (where the admin actually saves it)
@@ -64,9 +66,11 @@ class FLOSC_Lesson_Manager {
 	/**
 	 * Get all lessons from ALL configured categories (content_item_groups + content_item_category).
 	 *
-	 * v3.0.8: Queries every category across all content_item_groups in the current flow so
+	 * Queries every category across all content_item_groups in the current flow so
 	 * "show all lessons" returns the full library across enabled lesson groups.
 	 * Falls back to single content_item_category for flows without content_item_groups.
+	 *
+	 * @since 3.0.8
 	 */
 	public function get_all_lessons() {
 		// --- Collect every category slug/ID from content_item_groups first ---
@@ -140,9 +144,11 @@ class FLOSC_Lesson_Manager {
 	}
 
 	/**
-	 * v3.0.8: Get lessons from quiz-linked categories only (content_item_groups with quiz_id set).
+	 * Get lessons from quiz-linked categories only (content_item_groups with quiz_id set).
 	 * Used for "show me the lessons covered in the quiz" — returns the quiz-mapped
 	 * content library (e.g. FLOSC Sample Data 10 posts), not the standalone library.
+	 *
+	 * @since 3.0.8
 	 */
 	public function get_quiz_lessons() {
 		$categories = array();
@@ -215,9 +221,11 @@ class FLOSC_Lesson_Manager {
 	}
 
 	/**
-	 * v3.0.8: Search lessons by keyword within all configured categories.
+	 * Search lessons by keyword within all configured categories.
 	 * Matches against post title and content so "vowel sounds", "TH", "rhotic R", etc. work naturally.
 	 * Results are scoped to the flow's lesson categories so members can't accidentally browse other content.
+	 *
+	 * @since 3.0.8
 	 */
 	public function search_lessons( $search ) {
 		if ( empty( trim( $search ) ) ) {
@@ -404,7 +412,7 @@ class FLOSC_Lesson_Manager {
 
 		if ( $include_content ) {
 			// WordPress content filters (shortcodes, embeds, blocks, etc.).
-            // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- core WP content filter required for oEmbed/shortcodes
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- core WP content filter required for oEmbed/shortcodes
 			$lesson['content'] = apply_filters( 'the_content', $post->post_content );
 		}
 

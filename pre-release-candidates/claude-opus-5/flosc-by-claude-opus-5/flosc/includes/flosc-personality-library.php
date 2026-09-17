@@ -2229,7 +2229,7 @@ if ( ! function_exists( 'flosc_admin_save_personality_library' ) ) {
 			}
 		}
 
-		if ( $posted === array() && '' === $new_id && $delete === array() ) {
+		if ( array() === $posted && '' === $new_id && array() === $delete ) {
 			$lib = null;
 		}
 		if ( is_array( $lib ) ) {
@@ -2336,11 +2336,11 @@ if ( ! function_exists( 'flosc_sanitize_personality_workshop' ) ) {
 			return '';
 		}
 		$decoded = json_decode( $raw, true );
-		if ( ! is_array( $decoded ) || $decoded === array() ) {
+		if ( ! is_array( $decoded ) || array() === $decoded ) {
 			return '';
 		}
 		$keys = array_keys( $decoded );
-		if ( $keys === range( 0, count( $decoded ) - 1 ) ) {
+		if ( range( 0, count( $decoded ) - 1 ) === $keys ) {
 			return '';
 		}
 		if ( isset( $decoded['derived'] ) && is_array( $decoded['derived'] ) ) {
@@ -3190,7 +3190,7 @@ if ( ! function_exists( 'flosc_personality_flow_settings_for_ivr' ) ) {
 			if ( '' === $ident ) {
 				$ident = trim( (string) ( $fs['name'] ?? '' ) );
 			}
-			$score += $ident !== '' ? 20 : 0;
+			$score += '' !== $ident ? 20 : 0;
 			if ( $score > $best_score ) {
 				$best_score = $score;
 				$best_key   = $key;
@@ -3697,7 +3697,7 @@ if ( ! function_exists( 'flosc_render_personality_designer_accordion' ) ) {
 		$ivr        = sanitize_file_name( (string) $ivr );
 		$entry      = ( '' !== $persona_id && function_exists( 'flosc_personality_library_get' ) ) ? flosc_personality_library_get( $persona_id ) : null;
 		$label      = '';
-		if ( is_array( $entry ) && isset( $entry['label'] ) && (string) $entry['label'] !== '' ) {
+		if ( is_array( $entry ) && isset( $entry['label'] ) && '' !== (string) $entry['label'] ) {
 			$label = (string) $entry['label'];
 		} elseif ( '' !== $persona_id ) {
 			$label = $persona_id;

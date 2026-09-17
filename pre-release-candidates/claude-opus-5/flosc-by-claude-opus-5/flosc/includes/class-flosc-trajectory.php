@@ -128,7 +128,7 @@ class FLOSC_Trajectory {
 
 		foreach ( $terms as $term ) {
 			$slug = sanitize_title( (string) ( $term->slug ?? '' ) );
-			if ( $slug === self::INTERNAL_TRAJECTORY_CHILD_SLUG ) {
+			if ( self::INTERNAL_TRAJECTORY_CHILD_SLUG === $slug ) {
 				return true;
 			}
 

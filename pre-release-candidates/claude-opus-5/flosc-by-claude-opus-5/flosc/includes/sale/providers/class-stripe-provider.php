@@ -82,8 +82,10 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Get appropriate keys based on mode
-	 * v1.6.3: Fixed to read from per-flow settings via flosc()->get_setting()
+	 * Fixed to read from per-flow settings via flosc()->get_setting()
 	 * Key mapping: provider asks for 'test_publishable_key' → admin stores 'stripe_test_pk'
+	 *
+	 * @since 1.6.3
 	 */
 	private function get_mode() {
 		return $this->get_flow_setting( 'mode', 'test' );
@@ -100,9 +102,11 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 	}
 
 	/**
-	 * v1.6.3: Read Stripe setting from per-flow settings, falling back to global
+	 * Read Stripe setting from per-flow settings, falling back to global
 	 * Admin saves: stripe_test_pk, stripe_test_sk, stripe_live_pk, stripe_live_sk, stripe_mode, stripe_webhook_secret
 	 * All under the per-flow array option (flosc_flow_{name})
+	 *
+	 * @since 1.6.3
 	 */
 	private function get_flow_setting( $key, $default = '' ) {
 		// Try per-flow via flosc()->get_setting() (checks flow array first, then global).
@@ -172,7 +176,9 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Create PaymentIntent for client-side confirmation
-	 * v1.4.1: Added offer_id parameter to track which offer is being purchased
+	 * Added offer_id parameter to track which offer is being purchased
+	 *
+	 * @since 1.4.1
 	 */
 	public function create_payment_intent( $user, $price_id_or_amount, $currency = 'usd', $offer_id = '' ) {
 		// First, get the price details from Stripe.
@@ -590,8 +596,10 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 	}
 
 	/**
-	 * v1.4.1: Handle successful payment - grant access based on offer
+	 * Handle successful payment - grant access based on offer
 	 * PAY-01/PAY-02: only metadata-bound offer; claim txn before grant (idempotent with complete_purchase).
+	 *
+	 * @since 1.4.1
 	 */
 	private function handle_payment_succeeded( $payment_intent ) {
 		$meta           = ( isset( $payment_intent['metadata'] ) && is_array( $payment_intent['metadata'] ) )
@@ -684,7 +692,9 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 	}
 
 	/**
-	 * v1.4.1: Retrieve a PaymentIntent to verify payment status
+	 * Retrieve a PaymentIntent to verify payment status
+	 *
+	 * @since 1.4.1
 	 */
 	public function retrieve_payment_intent( $payment_intent_id ) {
 		return $this->api_request( 'GET', '/payment_intents/' . $payment_intent_id );

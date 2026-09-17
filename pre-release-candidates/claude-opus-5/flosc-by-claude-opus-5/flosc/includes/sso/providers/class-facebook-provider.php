@@ -29,8 +29,10 @@ class Facebook_Provider extends SSO_Provider_Base {
 
 	/**
 	 * Graph API version
-	 * v1.4.6: Aligned with BuddyBoss proven working version (v19.0)
+	 * Aligned with BuddyBoss proven working version (v19.0)
 	 * Facebook deprecates versions ~2 years after release
+	 *
+	 * @since 1.4.6
 	 */
 	const GRAPH_VERSION = 'v19.0';
 
@@ -234,11 +236,12 @@ class Facebook_Provider extends SSO_Provider_Base {
 
 	/**
 	 * Exchange authorization code for access token
-	 * v1.4.6: Override to add long-lived token exchange (BuddyBoss pattern)
+	 * Override to add long-lived token exchange (BuddyBoss pattern)
 	 *
 	 * @param string $code Authorization code.
 	 * @param string $redirect_uri Callback URL.
 	 * @return array|WP_Error Token data or error
+	 * @since 1.4.6
 	 */
 	public function exchange_code_for_token( $code, $redirect_uri ) {
 		// Standard token exchange first.
@@ -264,10 +267,11 @@ class Facebook_Provider extends SSO_Provider_Base {
 
 	/**
 	 * Request long-lived access token from Facebook
-	 * v1.4.6: BuddyBoss pattern — exchanges short-lived token for ~60 day token
+	 * BuddyBoss pattern — exchanges short-lived token for ~60 day token
 	 *
 	 * @param string $short_lived_token The short-lived access token.
 	 * @return array|WP_Error Long-lived token data or error
+	 * @since 1.4.6
 	 */
 	private function request_long_lived_token( $short_lived_token ) {
 		// v1.4.6: Use add_query_arg, NOT wp_remote_get body — GET request bodies are ignored by Facebook.

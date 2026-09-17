@@ -117,8 +117,11 @@ function flosc_parse_offer_access_codes_from_post( array $flosc_post ) {
 	if ( '' === $raw ) {
 		return array();
 	}
-	$parts = preg_split( '/[\s,;]+/', $raw ) ?: array();
-	$out   = array();
+	$parts = preg_split( '/[\s,;]+/', $raw );
+	if ( ! $parts ) {
+		$parts = array();
+	}
+	$out = array();
 	foreach ( $parts as $p ) {
 		$c = strtoupper( sanitize_text_field( $p ) );
 		if ( '' !== $c ) {
@@ -183,6 +186,14 @@ function flosc_handle_offer_save() {
 		$display_formats['card']['enabled'] = true;
 	}
 
+	// The currency is named here rather than inside the array below, because
+	// sanitising an operator-typed value can leave nothing, and a purchase
+	// record with an empty currency is worse than one that says USD.
+	$flosc_offer_currency = strtoupper( sanitize_text_field( $flosc_post['offer_currency'] ?? 'USD' ) );
+	if ( '' === $flosc_offer_currency ) {
+		$flosc_offer_currency = 'USD';
+	}
+
 	$offer_data = array(
 		'id'                    => $flosc_offer_id,
 		'name'                  => sanitize_text_field( $flosc_post['offer_name'] ?? '' ),
@@ -207,7 +218,7 @@ function flosc_handle_offer_save() {
 		),
 		'pricing'               => array(
 			'price'        => floatval( $flosc_post['offer_price'] ?? 0 ),
-			'currency'     => strtoupper( sanitize_text_field( $flosc_post['offer_currency'] ?? 'USD' ) ) ?: 'USD',
+			'currency'     => $flosc_offer_currency,
 			'processor'    => sanitize_key( $flosc_post['offer_processor'] ?? 'paypal' ),
 			'stripe'       => array(
 				'price_id'   => sanitize_text_field( $flosc_post['offer_stripe_price_id'] ?? '' ),
@@ -547,8 +558,8 @@ foreach ( $flosc_offers as $flosc_offer_id => $flosc_offer ) {
 			<tr>
 				<td class="pill-source"><?php echo esc_html( $flosc_item['name'] ); ?></td>
 				<td><?php echo esc_html( $flosc_item['formats'] ); ?></td>
-				<td><code><?php echo esc_html( $flosc_item['cta'] ?: '(none)' ); ?></code></td>
-				<td><code><?php echo esc_html( $flosc_item['condition'] ?: 'always' ); ?></code></td>
+				<td><code><?php echo esc_html( '' !== (string) $flosc_item['cta'] ? $flosc_item['cta'] : '(none)' ); ?></code></td>
+				<td><code><?php echo esc_html( '' !== (string) $flosc_item['condition'] ? $flosc_item['condition'] : 'always' ); ?></code></td>
 				<td><a class="button button-small" href="<?php echo esc_url( admin_url( 'admin.php?page=flosc-settings&ivr=' . rawurlencode( $flosc_current_ivr ) . '&tab=offers&edit_offer=' . rawurlencode( $flosc_item['id'] ) ) ); ?>">Edit</a></td>
 				<td>
 					<select data-flosc-action="redirect-on-change">
@@ -1264,7 +1275,7 @@ function flosc_render_offer_editor_v2( $flosc_offer, $flosc_flow_key, $flosc_cur
 								continue;
 							}
 							$flosc_pid = (string) ( $flosc_poff['id'] ?? $flosc_pid );
-							if ( '' === $flosc_pid || $flosc_pid === (string) ( $flosc_offer['id'] ?? '' ) ) {
+							if ( '' === $flosc_pid || (string) ( $flosc_offer['id'] ?? '' ) === $flosc_pid ) {
 								continue;
 							}
 							$flosc_plabel = (string) ( $flosc_poff['name'] ?? $flosc_pid );
@@ -1327,7 +1338,10 @@ function flosc_render_offer_editor_v2( $flosc_offer, $flosc_flow_key, $flosc_cur
 						<?php
 						foreach ( $ml_registry as $lk => $lv ) :
 							$slug  = $lv['slug'] ?? $lk;
-							$label = ( $lv['name'] ?? '' ) ?: $slug;
+							$label = ( $lv['name'] ?? '' );
+							if ( ! $label ) {
+								$label = $slug;
+							}
 							if ( empty( $slug ) ) {
 								continue;
 							}

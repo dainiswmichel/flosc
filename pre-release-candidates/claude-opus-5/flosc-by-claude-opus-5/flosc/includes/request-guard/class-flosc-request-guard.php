@@ -14,8 +14,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 class FLOSC_Request_Guard {
 
 	/**
-	 * v1.7.7: Get real client IP, accounting for CDN/proxy headers
+	 * Get real client IP, accounting for CDN/proxy headers
 	 * Checks trusted proxy headers in priority order, falls back to REMOTE_ADDR
+	 *
+	 * @since 1.7.7
 	 */
 	public function get_client_ip() {
 		// Cloudflare (most specific, hardest to spoof when CF is in use).
@@ -42,7 +44,10 @@ class FLOSC_Request_Guard {
 		// v1.7.7: Use real client IP behind CDN/proxy (Cloudflare, AWS ALB, etc.).
 		$ip    = $this->get_client_ip();
 		$key   = 'flosc_rate_' . md5( $endpoint . $ip );
-		$count = get_transient( $key ) ?: 0;
+		$count = get_transient( $key );
+		if ( ! $count ) {
+			$count = 0;
+		}
 
 		if ( $count >= $limit ) {
 			return false;
@@ -68,7 +73,7 @@ class FLOSC_Request_Guard {
 	 */
 	public function sign_cookie_data( $data ) {
 		$json = wp_json_encode( $data );
-        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- binary/JWT token encoding, not obfuscation
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- binary/JWT token encoding, not obfuscation
 		$encoded   = base64_encode( $json );
 		$signature = hash_hmac( 'sha256', $encoded, flosc_token_secret() );
 		return $encoded . '|' . $signature;
@@ -100,7 +105,7 @@ class FLOSC_Request_Guard {
 		}
 
 		// Decode and return data.
-        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- binary/JWT token decoding, not obfuscation
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- binary/JWT token decoding, not obfuscation
 		$json = base64_decode( $encoded );
 		if ( false === $json ) {
 			return false;

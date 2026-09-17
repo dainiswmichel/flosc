@@ -187,10 +187,10 @@ class FLOSC_Sale_Manager {
 		if ( ! empty( $offer['is_free'] ) ) {
 			return true;
 		}
-		if ( isset( $offer['pricing']['type'] ) && (string) $offer['pricing']['type'] === 'free' ) {
+		if ( isset( $offer['pricing']['type'] ) && 'free' === (string) $offer['pricing']['type'] ) {
 			return true;
 		}
-		if ( isset( $offer['type'] ) && (string) $offer['type'] === 'free' ) {
+		if ( isset( $offer['type'] ) && 'free' === (string) $offer['type'] ) {
 			return true;
 		}
 		// Explicit numeric zero only when the price key is present.
@@ -497,7 +497,10 @@ class FLOSC_Sale_Manager {
 	 * Log purchase for records
 	 */
 	private function log_purchase( $user_id, $offer, $provider_id, $transaction ) {
-		$purchases = get_user_meta( $user_id, '_flosc_purchases', true ) ?: array();
+		$purchases = get_user_meta( $user_id, '_flosc_purchases', true );
+		if ( ! $purchases ) {
+			$purchases = array();
+		}
 
 		$purchases[] = array(
 			'offer_id'       => $offer['id'],
@@ -514,7 +517,9 @@ class FLOSC_Sale_Manager {
 
 	/**
 	 * Get available offers for a user (considering their current access)
-	 * v1.6.2: Flow-aware — accepts flow_id to read from per-flow storage
+	 * Flow-aware — accepts flow_id to read from per-flow storage
+	 *
+	 * @since 1.6.2
 	 */
 	public function get_available_offers( $user_id = null, $flow_id = null ) {
 		$all_offers = $this->offer_manager->get_active_offers( $flow_id );

@@ -318,7 +318,7 @@ class User_Linker {
 			$encrypted .= chr( ord( $json[ $i ] ) ^ ord( $key[ $i % strlen( $key ) ] ) );
 		}
 
-        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- binary/JWT token encoding, not obfuscation
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- binary/JWT token encoding, not obfuscation
 		return base64_encode( $encrypted );
 	}
 
@@ -329,7 +329,7 @@ class User_Linker {
 	 * @return array Token data
 	 */
 	private function decrypt_tokens( $encrypted ) {
-        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- binary/JWT token decoding, not obfuscation
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- binary/JWT token decoding, not obfuscation
 		$encrypted = base64_decode( $encrypted );
 		$key       = flosc_token_secret(); // §5: dedicated secret, not the auth salt
 
@@ -338,7 +338,8 @@ class User_Linker {
 			$decrypted .= chr( ord( $encrypted[ $i ] ) ^ ord( $key[ $i % strlen( $key ) ] ) );
 		}
 
-		return json_decode( $decrypted, true ) ?: array();
+		$flosc_value = json_decode( $decrypted, true );
+		return $flosc_value ? $flosc_value : array();
 	}
 
 	/**

@@ -49,12 +49,13 @@ class FLOSC_Free_Content_Item_Manager {
 	/**
 	 * Handle quiz completion and select free lesson(s)
 	 *
-	 * v3.0.0: Now quiz-aware — reads quiz_id from $quiz_result to resolve
+	 * Now quiz-aware — reads quiz_id from $quiz_result to resolve
 	 * the correct lesson category via the flow's content_item_groups config.
 	 *
 	 * @param array $quiz_result Quiz results with score, answers, quiz_id.
 	 * @param int   $user_id    User ID.
 	 * @return array|void Selected lesson numbers, or void if no lessons needed
+	 * @since 3.0.0
 	 */
 	public function handle_quiz_completion( $quiz_result, $user_id ) {
 
@@ -204,8 +205,11 @@ class FLOSC_Free_Content_Item_Manager {
 		if ( '' === $raw ) {
 			return array();
 		}
-		$parts = preg_split( '/[\s,;]+/', $raw ) ?: array();
-		$out   = array();
+		$parts = preg_split( '/[\s,;]+/', $raw );
+		if ( ! $parts ) {
+			$parts = array();
+		}
+		$out = array();
 		foreach ( $parts as $p ) {
 			$n = intval( $p );
 			if ( $n > 0 ) {
@@ -447,11 +451,12 @@ class FLOSC_Free_Content_Item_Manager {
 	/**
 	 * Resolve the lesson category for a given quiz_id using content_item_groups
 	 *
-	 * v3.0.0: Searches the current flow's content_item_groups array for a matching
+	 * Searches the current flow's content_item_groups array for a matching
 	 * quiz_id → category mapping. Falls back to legacy content_item_category.
 	 *
 	 * @param string $quiz_id The quiz ID to look up (e.g., "flosc_sample_data_numbers_quiz").
 	 * @return string Category slug, or empty string if not found
+	 * @since 3.0.0
 	 */
 	private function resolve_category_for_quiz( $quiz_id ) {
 		$flow = null;
@@ -494,12 +499,13 @@ class FLOSC_Free_Content_Item_Manager {
 	/**
 	 * Find a lesson post by lesson number
 	 *
-	 * v3.0.0: Quiz-aware — resolves category from content_item_groups
+	 * Quiz-aware — resolves category from content_item_groups
 	 * v1.4.4: Fallback to common slug patterns
 	 *
 	 * @param int    $lesson_num Lesson number to find.
 	 * @param string $quiz_id    Optional quiz ID for category resolution.
 	 * @return WP_Post|null
+	 * @since 3.0.0
 	 */
 	private function find_lesson_post( $lesson_num, $quiz_id = '' ) {
 		// v3.0.0: Resolve category through content_item_groups → legacy → global → scan.
@@ -594,11 +600,12 @@ class FLOSC_Free_Content_Item_Manager {
 	}
 
 	/**
-	 * v1.5.4: Get all free lessons for user
+	 * Get all free lessons for user
 	 * v3.0.0: Uses stored quiz_id to resolve the correct category
 	 *
 	 * @param int $user_id
 	 * @return array Array of lesson data arrays
+	 * @since 1.5.4
 	 */
 	public function get_free_lessons( $user_id ) {
 		$lesson_nums = get_user_meta( $user_id, '_flosc_free_content_item_numbers', true );
@@ -614,7 +621,10 @@ class FLOSC_Free_Content_Item_Manager {
 		}
 
 		// v3.0.0: Read the quiz_id that was stored at completion time.
-		$quiz_id = get_user_meta( $user_id, '_flosc_free_content_item_quiz_id', true ) ?: '';
+		$quiz_id = get_user_meta( $user_id, '_flosc_free_content_item_quiz_id', true );
+		if ( ! $quiz_id ) {
+			$quiz_id = '';
+		}
 
 		$lessons = array();
 		foreach ( $lesson_nums as $lesson_num ) {
@@ -626,7 +636,7 @@ class FLOSC_Free_Content_Item_Manager {
 			$post = $this->find_free_eligible_lesson_post( $lesson_num, $quiz_id );
 			if ( $post ) {
 				// WordPress content filters (shortcodes, embeds, blocks, etc.).
-                // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- core WP content filter required for oEmbed/shortcodes
+				// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- core WP content filter required for oEmbed/shortcodes
 				$rendered_content = apply_filters( 'the_content', $post->post_content );
 				$lessons[]        = array(
 					'post_id'       => $post->ID,
@@ -655,11 +665,12 @@ class FLOSC_Free_Content_Item_Manager {
 
 	/**
 	 * Deliver free lesson(s) via chat or redirect
-	 * v1.5.4: Supports multiple lessons
+	 * Supports multiple lessons
 	 *
 	 * @param int    $user_id
 	 * @param string $delivery_mode 'chat' or 'redirect'.
 	 * @return array Response data
+	 * @since 1.5.4
 	 */
 	public function deliver_free_lesson( $user_id, $delivery_mode = 'chat' ) {
 

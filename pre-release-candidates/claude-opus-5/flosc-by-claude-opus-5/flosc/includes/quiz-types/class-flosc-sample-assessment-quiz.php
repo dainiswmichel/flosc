@@ -152,7 +152,7 @@ class FLOSC_Sample_Assessment_Quiz extends FLOSC_Abstract_Quiz_Type {
 	 * @return true|WP_Error
 	 */
 	public function validate_input( $input ) {
-		if ( null === $input || '' === $input || $input === array() ) {
+		if ( null === $input || '' === $input || array() === $input ) {
 			return new WP_Error( 'invalid_input', __( 'Please answer the questions before submitting.', 'flosc' ) );
 		}
 		if ( ! is_string( $input ) && ! is_array( $input ) ) {

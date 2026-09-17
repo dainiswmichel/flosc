@@ -739,13 +739,20 @@ if ( ! function_exists( 'flosc_paypal_purchase_intent_create' ) ) {
 		if ( '' === $offer_id || '' === $plan_id ) {
 			return new WP_Error( 'invalid_intent', __( 'Offer and PayPal plan are required', 'flosc' ), array( 'status' => 400 ) );
 		}
+		// Named before the record, for the same reason as the offer form: a
+		// purchase record with an empty currency is worse than one saying USD.
+		$flosc_record_currency = strtoupper( sanitize_text_field( (string) ( $data['currency'] ?? 'USD' ) ) );
+		if ( '' === $flosc_record_currency ) {
+			$flosc_record_currency = 'USD';
+		}
+
 		$record = array(
 			'purchase_uuid' => $uuid,
 			'offer_id'      => $offer_id,
 			'plan_id'       => $plan_id,
 			'plan_type'     => sanitize_key( (string) ( $data['plan_type'] ?? '' ) ),
 			'amount'        => number_format( (float) ( $data['amount'] ?? 0 ), 2, '.', '' ),
-			'currency'      => strtoupper( sanitize_text_field( (string) ( $data['currency'] ?? 'USD' ) ) ) ?: 'USD',
+			'currency'      => $flosc_record_currency,
 			'flow_id'       => sanitize_key( (string) ( $data['flow_id'] ?? '' ) ),
 			'user_id'       => absint( $data['user_id'] ?? 0 ),
 			'session_id'    => sanitize_text_field( (string) ( $data['session_id'] ?? '' ) ),
@@ -830,7 +837,7 @@ if ( ! function_exists( 'flosc_issue_post_purchase_session' ) ) {
 		wp_set_current_user( $user_id );
 		wp_set_auth_cookie( $user_id, true );
 		// Core WP login action (required for session-aware plugins).
-        // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- core WP action wp_login
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- core WP action wp_login
 		do_action( 'wp_login', $user->user_login, $user );
 
 		// FLOSC's own cross-domain auth cookie rides alongside the WP cookie so a
@@ -963,7 +970,9 @@ if ( ! function_exists( 'flosc_config_glob' ) ) {
 		$out    = array();
 		foreach ( $dirs as $dir ) {
 			foreach ( $patterns as $pattern ) {
-				foreach ( glob( $dir . $pattern ) ?: array() as $match ) {
+				// glob() returns false when the directory cannot be read.
+				$flosc_matches = glob( $dir . $pattern );
+				foreach ( $flosc_matches ? $flosc_matches : array() as $match ) {
 					$base = basename( $match );
 					if ( isset( $seen[ $base ] ) ) {
 						continue;

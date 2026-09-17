@@ -622,6 +622,7 @@ class FLOSC_Member_Access {
 			return array();
 		}
 
-		return get_user_meta( $user_id, '_flosc_free_lessons', true ) ?: array();
+		$flosc_value = get_user_meta( $user_id, '_flosc_free_lessons', true );
+		return $flosc_value ? $flosc_value : array();
 	}
 }

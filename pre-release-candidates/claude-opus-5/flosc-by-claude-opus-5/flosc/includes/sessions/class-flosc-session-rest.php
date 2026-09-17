@@ -254,7 +254,9 @@ class FLOSC_Session_Rest {
 	}
 
 	/**
-	 * v8.0.11: Delete a session
+	 * Delete a session
+	 *
+	 * @since 8.0.11
 	 */
 	public function delete_session( $request ) {
 		$session_id = absint( $request->get_param( 'id' ) );

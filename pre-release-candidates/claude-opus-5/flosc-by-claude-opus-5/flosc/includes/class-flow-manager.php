@@ -2,10 +2,11 @@
 /**
  * FLOSC Flow Manager
  *
- * v1.2.2: Handles CRUD operations for FLOSC Flows
+ * Handles CRUD operations for FLOSC Flows
  * Enables multiple independent chatbots from a single WordPress installation
  *
  * @package FLOSC
+ * @since 1.2.2
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -49,7 +50,10 @@ class FLOSC_Flow_Manager {
 		}
 
 		// Others see only assigned flows.
-		$allowed = get_user_meta( $user_id, '_flosc_flow_access', true ) ?: array();
+		$allowed = get_user_meta( $user_id, '_flosc_flow_access', true );
+		if ( ! $allowed ) {
+			$allowed = array();
+		}
 
 		if ( ! is_array( $allowed ) ) {
 			$allowed = array();
@@ -213,7 +217,9 @@ class FLOSC_Flow_Manager {
 
 	/**
 	 * Normalize flow data with defaults
-	 * v1.2.3: Added 'overrides' for per-flow settings
+	 * Added 'overrides' for per-flow settings
+	 *
+	 * @since 1.2.3
 	 */
 	private function normalize_flow_data( $data ) {
 		$defaults = array(
@@ -281,11 +287,14 @@ class FLOSC_Flow_Manager {
 		$flow['quiz_type']      = sanitize_key( $flow['quiz_type'] );
 
 		// Sanitize identity.
-		$flow['identity']['name']          = sanitize_text_field( $flow['identity']['name'] );
-		$flow['identity']['tagline']       = sanitize_text_field( $flow['identity']['tagline'] );
-		$flow['identity']['chatlogo_url']  = esc_url_raw( $flow['identity']['chatlogo_url'] );
-		$flow['identity']['favicon_url']   = esc_url_raw( $flow['identity']['favicon_url'] ?? '' );
-		$flow['identity']['primary_color'] = sanitize_hex_color( $flow['identity']['primary_color'] ) ?: '#4f46e5';
+		$flow['identity']['name']         = sanitize_text_field( $flow['identity']['name'] );
+		$flow['identity']['tagline']      = sanitize_text_field( $flow['identity']['tagline'] );
+		$flow['identity']['chatlogo_url'] = esc_url_raw( $flow['identity']['chatlogo_url'] );
+		$flow['identity']['favicon_url']  = esc_url_raw( $flow['identity']['favicon_url'] ?? '' );
+		// sanitize_hex_color() returns null for anything that is not a hex
+		// colour, so a malformed value falls back rather than reaching the page.
+		$flosc_primary_color               = sanitize_hex_color( $flow['identity']['primary_color'] );
+		$flow['identity']['primary_color'] = $flosc_primary_color ? $flosc_primary_color : '#4f46e5';
 		$flow['identity']['share_text']    = sanitize_text_field( $flow['identity']['share_text'] );
 
 		return $flow;
@@ -316,7 +325,10 @@ class FLOSC_Flow_Manager {
 	 * Grant user access to a flow
 	 */
 	public function grant_flow_access( $user_id, $flow_id ) {
-		$allowed = get_user_meta( $user_id, '_flosc_flow_access', true ) ?: array();
+		$allowed = get_user_meta( $user_id, '_flosc_flow_access', true );
+		if ( ! $allowed ) {
+			$allowed = array();
+		}
 
 		if ( ! is_array( $allowed ) ) {
 			$allowed = array();
@@ -334,7 +346,10 @@ class FLOSC_Flow_Manager {
 	 * Revoke user access to a flow
 	 */
 	public function revoke_flow_access( $user_id, $flow_id ) {
-		$allowed = get_user_meta( $user_id, '_flosc_flow_access', true ) ?: array();
+		$allowed = get_user_meta( $user_id, '_flosc_flow_access', true );
+		if ( ! $allowed ) {
+			$allowed = array();
+		}
 
 		if ( ! is_array( $allowed ) ) {
 			return true;
@@ -354,7 +369,9 @@ class FLOSC_Flow_Manager {
 
 	/**
 	 * Get users with access to a flow
-	 * v1.2.3: More robust serialized array handling
+	 * More robust serialized array handling
+	 *
+	 * @since 1.2.3
 	 */
 	public function get_flow_users( $flow_id ) {
 		$candidate_ids = function_exists( 'flosc_get_user_ids_for_meta' )
@@ -388,8 +405,10 @@ class FLOSC_Flow_Manager {
 
 	/**
 	 * Get available IVR files.
-	 * v1.2.3: Looks for *_ivr.md files in ai_configuration_files/.
+	 * Looks for *_ivr.md files in ai_configuration_files/.
 	 * Per WordPress.org policy, files are resolved uploads-first via flosc_config_glob().
+	 *
+	 * @since 1.2.3
 	 */
 	public function get_available_ivr_files() {
 		$files = array();
@@ -475,7 +494,7 @@ class FLOSC_Flow_Manager {
 
 	/**
 	 * Get setting value with flow override support
-	 * v1.2.3: Checks flow override first, falls back to global option
+	 * Checks flow override first, falls back to global option
 	 *
 	 * @param string      $option_name The wp_options key.
 	 * @param string      $override_group Which override group (style, ai, email, etc.).
@@ -483,6 +502,7 @@ class FLOSC_Flow_Manager {
 	 * @param mixed       $default Default value if neither found.
 	 * @param string|null $flow_id Flow ID (null = use current flow).
 	 * @return mixed The setting value
+	 * @since 1.2.3
 	 */
 	public function get_setting( $option_name, $override_group, $override_key = null, $default = null, $flow_id = null ) {
 		// Determine flow.
@@ -523,13 +543,14 @@ class FLOSC_Flow_Manager {
 
 	/**
 	 * Update flow override settings
-	 * v1.2.3: Sets override values for a specific group
+	 * Sets override values for a specific group
 	 *
 	 * @param string $flow_id The flow ID.
 	 * @param string $override_group Which override group (style, ai, email, etc.).
 	 * @param array  $values The settings values.
 	 * @param bool   $use_global Whether to use global settings.
 	 * @return bool|WP_Error
+	 * @since 1.2.3
 	 */
 	public function update_override( $flow_id, $override_group, $values, $use_global = false ) {
 		$flows = $this->get_all_flows();

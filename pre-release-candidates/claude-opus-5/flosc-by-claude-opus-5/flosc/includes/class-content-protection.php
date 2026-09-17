@@ -54,13 +54,14 @@ class FLOSC_Content_Protection {
 	}
 
 	/**
-	 * v1.4.7: Hide posts in protected categories from public queries
+	 * Hide posts in protected categories from public queries
 	 *
 	 * Excludes protected-category posts from archives, feeds, and search
 	 * unless the post has _flosc_public_post override set to 'yes'.
 	 * Skips admin, single post views, and users with manage_options.
 	 *
 	 * @param WP_Query $query
+	 * @since 1.4.7
 	 */
 	public function hide_protected_from_public_queries( $query ) {
 		// Only modify public front-end queries.
@@ -151,9 +152,10 @@ class FLOSC_Content_Protection {
 	}
 
 	/**
-	 * v1.4.7: Get all protected category IDs (cached per request)
+	 * Get all protected category IDs (cached per request)
 	 *
 	 * @return array of category IDs
+	 * @since 1.4.7
 	 */
 	public function get_protected_category_ids() {
 		static $cached = null;
@@ -174,8 +176,10 @@ class FLOSC_Content_Protection {
 	}
 
 	/**
-	 * v1.4.7: Auto-protect flosc_sample_data category on first run
+	 * Auto-protect flosc_sample_data category on first run
 	 * Uses an option flag so this only runs once per site.
+	 *
+	 * @since 1.4.7
 	 */
 	public function maybe_auto_protect_sample_category() {
 		if ( get_option( 'flosc_sample_data_auto_protected' ) ) {
@@ -208,7 +212,8 @@ class FLOSC_Content_Protection {
 	 * @return string|null Level name or null if not set
 	 */
 	public function get_category_required_level( $category_id ) {
-		return get_term_meta( $category_id, '_flosc_required_level', true ) ?: null;
+		$flosc_value = get_term_meta( $category_id, '_flosc_required_level', true );
+		return $flosc_value ? $flosc_value : null;
 	}
 
 	/**
@@ -239,10 +244,11 @@ class FLOSC_Content_Protection {
 
 	/**
 	 * Get visibility tier for a post
-	 * v1.8.2: Check _flosc_protection_mode first (4-tier: protected, title_excerpt, title_readmore, full)
+	 * Check _flosc_protection_mode first (4-tier: protected, title_excerpt, title_readmore, full)
 	 *
 	 * @param int $post_id
 	 * @return string 'hidden' | 'teaser' | 'preview' | 'public'
+	 * @since 1.8.2
 	 */
 	public function get_post_visibility( $post_id ) {
 		// v1.8.2: Check new 4-tier protection mode.
@@ -418,10 +424,11 @@ class FLOSC_Content_Protection {
 
 	/**
 	 * Check if current user can access a post
-	 * v1.8.2: Check _flosc_protection_mode for granular access
+	 * Check _flosc_protection_mode for granular access
 	 *
 	 * @param int $post_id
 	 * @return bool
+	 * @since 1.8.2
 	 */
 	public function user_can_access( $post_id ) {
 		// v1.8.2: Check 4-tier protection mode — 'full' always accessible.
@@ -605,12 +612,13 @@ class FLOSC_Content_Protection {
 	}
 
 	/**
-	 * v1.4.3: Add CTAs to public posts
+	 * Add CTAs to public posts
 	 * Guides visitors to the chat for engagement
 	 *
 	 * @param string $content
 	 * @param int    $post_id
 	 * @return string
+	 * @since 1.4.3
 	 */
 	private function flosc_add_public_post_ctas( $content, $post_id ) {
 		$app_slug = get_option( 'flosc_app_slug', 'app' );
@@ -643,10 +651,11 @@ class FLOSC_Content_Protection {
 
 	/**
 	 * Get message for hidden content
-	 * v1.4.3: Added post_id tracking
+	 * Added post_id tracking
 	 *
 	 * @param int $post_id
 	 * @return string
+	 * @since 1.4.3
 	 */
 	private function get_hidden_message( $post_id ) {
 		$message  = '<div class="flosc-protected-content flosc-hidden">';
@@ -659,10 +668,11 @@ class FLOSC_Content_Protection {
 
 	/**
 	 * Get teaser content (title + excerpt only)
-	 * v1.4.3: Added post_id tracking to CTA
+	 * Added post_id tracking to CTA
 	 *
 	 * @param int $post_id
 	 * @return string
+	 * @since 1.4.3
 	 */
 	private function get_teaser_content( $post_id ) {
 		$post    = get_post( $post_id );
@@ -686,11 +696,12 @@ class FLOSC_Content_Protection {
 
 	/**
 	 * Get preview content (up to <!--flosc_read_more-->)
-	 * v1.4.3: Added post_id tracking to CTA
+	 * Added post_id tracking to CTA
 	 *
 	 * @param string $content
 	 * @param int    $post_id
 	 * @return string
+	 * @since 1.4.3
 	 */
 	private function get_preview_content( $content, $post_id ) {
 		// Split by <!--flosc_read_more--> tag (FLOSC's custom tag).
@@ -725,10 +736,11 @@ class FLOSC_Content_Protection {
 
 	/**
 	 * Get CTA to chatbot with tracking
-	 * v1.4.3: Added post tracking for chat context
+	 * Added post tracking for chat context
 	 *
 	 * @param int $post_id Optional post ID for tracking.
 	 * @return string
+	 * @since 1.4.3
 	 */
 	private function get_chatbot_cta( $post_id = null ) {
 		$app_slug = get_option( 'flosc_app_slug', 'app' );
@@ -762,11 +774,12 @@ class FLOSC_Content_Protection {
 	}
 
 	/**
-	 * v1.4.3: Get chat URL with tracking for a specific post
+	 * Get chat URL with tracking for a specific post
 	 * Used for redirect-to-chat functionality
 	 *
 	 * @param int $post_id
 	 * @return string
+	 * @since 1.4.3
 	 */
 	public function get_chat_url_for_post( $post_id ) {
 		$app_slug = get_option( 'flosc_app_slug', 'app' );

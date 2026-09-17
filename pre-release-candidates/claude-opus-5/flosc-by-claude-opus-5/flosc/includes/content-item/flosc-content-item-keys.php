@@ -56,7 +56,7 @@ function flosc_content_item_value_present( $value ) {
 	if ( null === $value || '' === $value ) {
 		return false;
 	}
-	if ( is_array( $value ) && $value === array() ) {
+	if ( is_array( $value ) && array() === $value ) {
 		return false;
 	}
 	return true;

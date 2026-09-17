@@ -4,7 +4,7 @@
  *
  * Simple: IVR file = Flow. Pick file, edit all tabs, save.
  *
- * v1.2.9: Added flosc_tab_header() helper, permalink status, Michel timestamp
+ * Added flosc_tab_header() helper, permalink status, Michel timestamp
  * v1.3.0: Fixed permalink status detection - save defaults on first access
  * v1.3.2: Identity tab shows URL mapping, DNS help
  * v1.3.3: All Flows = fully expanded inline editing, Domain field
@@ -12,6 +12,7 @@
  * v1.4.8: Admin styling overhaul - WordPress-native colors, no gradients, no emojis in chrome
  *
  * @package FLOSC
+ * @since 1.2.9
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -1410,7 +1411,10 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 
 		$flosc_accent = sanitize_hex_color( (string) ( $flosc_post['flow_companion_accent_color'] ?? $flosc_companion_defaults['accent_color'] ) );
 		if ( empty( $flosc_accent ) ) {
-			$flosc_accent = sanitize_hex_color( (string) $flosc_companion_defaults['accent_color'] ) ?: '#6366f1';
+			$flosc_accent = sanitize_hex_color( (string) $flosc_companion_defaults['accent_color'] );
+			if ( ! $flosc_accent ) {
+				$flosc_accent = '#6366f1';
+			}
 		}
 
 		$flosc_panel_width   = absint( $flosc_post['flow_companion_panel_width'] ?? $flosc_companion_defaults['panel_width'] );
@@ -1732,8 +1736,11 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		}
 		if ( isset( $flosc_new_settings['exclude_items_from_freeline'] ) ) {
 			$flosc_raw_nf = (string) $flosc_new_settings['exclude_items_from_freeline'];
-			$flosc_parts  = preg_split( '/[\s,;]+/', $flosc_raw_nf ) ?: array();
-			$flosc_nums   = array();
+			$flosc_parts  = preg_split( '/[\s,;]+/', $flosc_raw_nf );
+			if ( ! $flosc_parts ) {
+				$flosc_parts = array();
+			}
+			$flosc_nums = array();
 			foreach ( $flosc_parts as $flosc_part ) {
 				$flosc_n = intval( $flosc_part );
 				if ( $flosc_n > 0 ) {

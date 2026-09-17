@@ -382,9 +382,11 @@ class SSO_Manager {
 	/**
 	 * Handle SSO error display on frontend
 	 *
-	 * v8.0.1: Instead of a browser alert(), output a JS variable that flosc-app.js
+	 * Instead of a browser alert(), output a JS variable that flosc-app.js
 	 * picks up on init. This lets the app show the error in-chat and re-show the
 	 * auth modal so the user can try a different login method.
+	 *
+	 * @since 8.0.1
 	 */
 	public function handle_sso_error_display() {
 		// Which failure notice to paint after a provider bounced the user back.
@@ -590,7 +592,7 @@ class SSO_Manager {
 					esc_attr( $field['id'] ),
 					esc_textarea( $flosc_ta_value )
 				);
-				if ( $flosc_is_pem && ! flosc_admin_may_view_secrets() && (string) $value !== '' ) {
+				if ( $flosc_is_pem && ! flosc_admin_may_view_secrets() && '' !== (string) $value ) {
 					echo '<p class="description">' . esc_html__( 'Key is saved. Leave blank to keep the current value.', 'flosc' ) . '</p>';
 				}
 				break;
@@ -600,7 +602,7 @@ class SSO_Manager {
 				$flosc_show_secret = function_exists( 'flosc_admin_secret_input_value' )
 					? flosc_admin_secret_input_value( $value )
 					: ( current_user_can( 'manage_options' ) ? (string) $value : '' );
-				$flosc_has_saved   = ( (string) $value !== '' && ! flosc_admin_may_view_secrets() );
+				$flosc_has_saved   = ( '' !== (string) $value && ! flosc_admin_may_view_secrets() );
 				printf(
 					'<input type="password" id="%s" name="%s" value="%s" class="regular-text" autocomplete="new-password" placeholder="%s" />',
 					esc_attr( $field['id'] ),

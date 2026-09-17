@@ -610,7 +610,7 @@ trait FLOSC_Magic_Link_Trait {
 	}
 
 	/**
-	 * v8.0.0: Pull quiz session from DO at login time.
+	 * Pull quiz session from DO at login time.
 	 *
 	 * Called during handle_login_token() — before the page renders.
 	 * JS sets a flosc_pending_session cookie before SSO redirect with the
@@ -624,6 +624,8 @@ trait FLOSC_Magic_Link_Trait {
 	 * Even with FLOSC token auth, the timing is fragile. The server knows
 	 * the user is logged in (we just set the cookie) and knows the session_id
 	 * (from the cookie). Pull now, no client help needed.
+	 *
+	 * @since 8.0.0
 	 */
 
 
@@ -1946,9 +1948,11 @@ trait FLOSC_Magic_Link_Trait {
 	}
 
 	/**
-	 * v1.9.0: AJAX handler for chat logs polling
+	 * AJAX handler for chat logs polling
 	 * Returns recent chat log entries for the admin Chat Logs tab.
 	 * Supports since_id for incremental polling (new entries only).
+	 *
+	 * @since 1.9.0
 	 */
 
 

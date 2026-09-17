@@ -30,7 +30,10 @@ class FLOSC_Access_Manager {
 	 * Get user's complete access state
 	 */
 	public function get_user_access( $user_id ) {
-		$access = get_user_meta( $user_id, $this->meta_key, true ) ?: array();
+		$access = get_user_meta( $user_id, $this->meta_key, true );
+		if ( ! $access ) {
+			$access = array();
+		}
 
 		return wp_parse_args(
 			$access,
@@ -509,7 +512,7 @@ class FLOSC_Access_Manager {
 
 			foreach ( $grants['usage_limits'] as $event => $limit ) {
 				// -1 means unlimited
-				if ( $limit === -1 || ! isset( $current_limits[ $event ] ) || $limit > $current_limits[ $event ] ) {
+				if ( -1 === $limit || ! isset( $current_limits[ $event ] ) || $limit > $current_limits[ $event ] ) {
 					$current_limits[ $event ] = $limit;
 				}
 			}
@@ -535,7 +538,10 @@ class FLOSC_Access_Manager {
 		$count = (int) get_user_meta( $user_id, '_flosc_purchase_count', true );
 		update_user_meta( $user_id, '_flosc_purchase_count', $count + 1 );
 
-		$history      = get_user_meta( $user_id, '_flosc_purchase_history', true ) ?: array();
+		$history = get_user_meta( $user_id, '_flosc_purchase_history', true );
+		if ( ! $history ) {
+			$history = array();
+		}
 		$history_flow = (string) ( $transaction['flow_id'] ?? $offer['flow_id'] ?? '' );
 		if ( '' === $history_flow ) {
 			$history_flow = $this->normalize_flow_stem( null );

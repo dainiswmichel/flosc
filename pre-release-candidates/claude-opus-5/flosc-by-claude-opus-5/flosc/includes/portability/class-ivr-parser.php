@@ -343,7 +343,7 @@ class FLOSC_IVR_Parser {
 	}
 
 	/**
-	 * v1.2.3: Get IVR file path for current or specified flow.
+	 * Get IVR file path for current or specified flow.
 	 * Returns the appropriate ivr.md path based on flow configuration.
 	 * When $for_write is true, returns a path in uploads (for writes); otherwise,
 	 * may return a read-only shipped default.
@@ -351,6 +351,7 @@ class FLOSC_IVR_Parser {
 	 * @param array|null $flow Flow to retrieve config for (optional).
 	 * @param bool       $for_write If true, return a write target (uploads only).
 	 * @return string File path, or empty string if unavailable
+	 * @since 1.2.3
 	 */
 	private function get_ivr_file_path( $flow = null, $for_write = false ) {
 		// Per WordPress.org policy: writable paths must be in uploads only.
@@ -429,12 +430,13 @@ class FLOSC_IVR_Parser {
 
 	/**
 	 * Save and re-parse config.
-	 * v1.2.3: Flow-aware -- can specify target flow for admin editing.
+	 * Flow-aware -- can specify target flow for admin editing.
 	 * Per WordPress.org policy, writes are uploads-only and validated via realpath containment.
 	 *
 	 * @param string     $markdown The IVR markdown content.
 	 * @param array|null $target_flow Optional flow to save to (for admin editing).
 	 * @return array|bool Parsed config on success, false if write failed or uploads unavailable
+	 * @since 1.2.3
 	 */
 	public function flosc_save_config( $markdown, $target_flow = null ) {
 		// v1.2.3: Use specified flow or fall back to current flow detection.

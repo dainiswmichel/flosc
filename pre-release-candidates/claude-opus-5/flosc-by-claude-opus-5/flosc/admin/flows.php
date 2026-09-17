@@ -1,9 +1,10 @@
 <?php
 /**
  * FLOSC Flows Overview Page
- * v1.2.5: Simple list of flows with quick actions
+ * Simple list of flows with quick actions
  *
  * @package FLOSC
+ * @since 1.2.5
  */
 
 if ( ! defined( 'ABSPATH' ) ) {

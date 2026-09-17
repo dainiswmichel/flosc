@@ -173,7 +173,7 @@ class FLOSC_Chatpack {
 		}
 
 		$map_messages = static function ( $messages, $max_messages ) {
-			if ( ! is_array( $messages ) || $messages === array() ) {
+			if ( ! is_array( $messages ) || array() === $messages ) {
 				return array();
 			}
 			return array_slice(

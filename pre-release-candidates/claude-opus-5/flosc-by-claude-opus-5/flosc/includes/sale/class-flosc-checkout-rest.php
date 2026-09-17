@@ -33,9 +33,11 @@ class FLOSC_Checkout_Rest {
 	}
 
 	/**
-	 * v1.6.2: Serve offer content from external sources
+	 * Serve offer content from external sources
 	 * Supports: HtmlFile (static HTML in plugin), WooProduct (WooCommerce), PostID (WP post)
 	 * Sanitizes output to prevent XSS.
+	 *
+	 * @since 1.6.2
 	 */
 	public function get_offer_content( $request ) {
 		$source = sanitize_text_field( $request->get_param( 'source' ) );
@@ -105,7 +107,7 @@ class FLOSC_Checkout_Rest {
 					);
 				}
 				// WordPress content filters (shortcodes, embeds, blocks, etc.).
-                // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- core WP content filter required for oEmbed/shortcodes
+				// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- core WP content filter required for oEmbed/shortcodes
 				$html = apply_filters( 'the_content', $post->post_content );
 				return new WP_REST_Response(
 					array(
@@ -138,7 +140,10 @@ class FLOSC_Checkout_Rest {
 		}
 
 		// Verify nonce for REST security.
-		$nonce = $request->get_header( 'X-WP-Nonce' ) ?: $request->get_param( '_wpnonce' );
+		$nonce = $request->get_header( 'X-WP-Nonce' );
+		if ( ! $nonce ) {
+			$nonce = $request->get_param( '_wpnonce' );
+		}
 		if ( ! wp_verify_nonce( sanitize_text_field( (string) $nonce ), 'wp_rest' ) ) {
 			return new WP_Error( 'invalid_nonce', __( 'Security token invalid. Please refresh.', 'flosc' ), array( 'status' => 403 ) );
 		}
@@ -482,7 +487,10 @@ class FLOSC_Checkout_Rest {
 				}
 			}
 		}
-		$currency = strtoupper( (string) ( $offer['pricing']['currency'] ?? 'USD' ) ) ?: 'USD';
+		$currency = strtoupper( (string) ( $offer['pricing']['currency'] ?? 'USD' ) );
+		if ( ! $currency ) {
+			$currency = 'USD';
+		}
 
 		// Subscription: return monthly/yearly payable (for plan UI + PayPal plan create).
 		if ( $this->flosc_offer_is_subscription( $offer ) ) {
@@ -529,7 +537,7 @@ class FLOSC_Checkout_Rest {
 	}
 
 	/**
-	 * v1.4.4: Product-Aware Sandbox Purchase
+	 * Product-Aware Sandbox Purchase
 	 * Grants product-specific membership level based on product_id
 	 * Fun "Pay What You Want" for testing the full purchase flow
 	 *
@@ -537,6 +545,8 @@ class FLOSC_Checkout_Rest {
 	 * FLOSC_Member_Access::grant_level() so content protection works immediately.
 	 * Previous bug: sandbox set _flosc_member_level but content protection
 	 * checks _flosc_memberlevel_{level} via has_level(). Mismatch = no access.
+	 *
+	 * @since 1.4.4
 	 */
 	public function handle_sandbox_purchase( $request ) {
 		$user_id = get_current_user_id();
@@ -552,7 +562,10 @@ class FLOSC_Checkout_Rest {
 		}
 
 		// Verify nonce for REST security.
-		$nonce = $request->get_header( 'X-WP-Nonce' ) ?: $request->get_param( '_wpnonce' );
+		$nonce = $request->get_header( 'X-WP-Nonce' );
+		if ( ! $nonce ) {
+			$nonce = $request->get_param( '_wpnonce' );
+		}
 		if ( ! wp_verify_nonce( sanitize_text_field( (string) $nonce ), 'wp_rest' ) ) {
 			return new WP_REST_Response(
 				array(
@@ -646,7 +659,10 @@ class FLOSC_Checkout_Rest {
 			)
 		);
 
-		$existing_levels = get_user_meta( $user_id, '_flosc_member_levels', true ) ?: array();
+		$existing_levels = get_user_meta( $user_id, '_flosc_member_levels', true );
+		if ( ! $existing_levels ) {
+			$existing_levels = array();
+		}
 		if ( ! in_array( $member_level, $existing_levels, true ) ) {
 			$existing_levels[] = $member_level;
 			update_user_meta( $user_id, '_flosc_member_levels', $existing_levels );
@@ -711,7 +727,10 @@ class FLOSC_Checkout_Rest {
 		}
 
 		$price_id = $offer['pricing']['stripe']['price_id'] ?? '';
-		$currency = strtolower( (string) ( $offer['pricing']['currency'] ?? 'usd' ) ) ?: 'usd';
+		$currency = strtolower( (string) ( $offer['pricing']['currency'] ?? 'usd' ) );
+		if ( ! $currency ) {
+			$currency = 'usd';
+		}
 
 		// With a coupon, always charge dynamic amount (cents) — Stripe Price ID is full list price.
 		if ( '' !== $coupon_code ) {
@@ -746,8 +765,10 @@ class FLOSC_Checkout_Rest {
 	}
 
 	/**
-	 * v1.4.1: Complete purchase after client-side payment confirmation
+	 * Complete purchase after client-side payment confirmation
 	 * Verifies payment with Stripe and grants access (fallback if webhook is slow)
+	 *
+	 * @since 1.4.1
 	 */
 	public function complete_purchase( $request ) {
 		$payment_intent_id = sanitize_text_field( $request->get_param( 'payment_intent_id' ) );

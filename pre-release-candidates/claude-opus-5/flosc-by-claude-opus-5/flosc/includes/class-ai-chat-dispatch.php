@@ -272,8 +272,10 @@ class FLOSC_AI_Chat_Dispatch {
 	}
 
 	/**
-	 * v1.4.1: Build AI identity from Knowledge tab settings
+	 * Build AI identity from Knowledge tab settings
 	 * v1.9.2: Added FLOSC framework description to prevent identity hallucination
+	 *
+	 * @since 1.4.1
 	 */
 	private function build_identity_prompt( $context = array() ) {
 		// Personality: attached library entry (one per flow) wins when set; else flow bag.
@@ -380,12 +382,14 @@ class FLOSC_AI_Chat_Dispatch {
 	}
 
 	/**
-	 * v1.9.5: Build unified feedback prompt from rated chat log entries.
+	 * Build unified feedback prompt from rated chat log entries.
 	 * Reads directly from the flosc_chat_logs table (admin_rating != 0).
 	 * Negative ratings = feedback. Positive ratings = praise. Magnitude = weight.
 	 *
 	 * Also includes legacy ai_feedback/ai_praises from flow settings
 	 * for backward compatibility with manually-added entries.
+	 *
+	 * @since 1.9.5
 	 */
 	private function build_feedback_prompt() {
 		$sections = array();
@@ -701,7 +705,9 @@ class FLOSC_AI_Chat_Dispatch {
 
 	/**
 	 * Build context string from context array
-	 * v1.9.2: Handle arrays and nested values gracefully
+	 * Handle arrays and nested values gracefully
+	 *
+	 * @since 1.9.2
 	 */
 	private function build_context_string( $context ) {
 		if ( empty( $context ) ) {
@@ -1102,10 +1108,12 @@ class FLOSC_AI_Chat_Dispatch {
 	}
 
 	/**
-	 * v1.9.0: Provider Chaining
+	 * Provider Chaining
 	 * Sends the user message through multiple AI providers sequentially.
 	 * Each provider sees the previous provider's response as context.
 	 * Example: OpenAI drafts → Anthropic refines → final response.
+	 *
+	 * @since 1.9.0
 	 */
 	private function get_chained_response( $message, $system_prompt, $context ) {
 		$chain = array();

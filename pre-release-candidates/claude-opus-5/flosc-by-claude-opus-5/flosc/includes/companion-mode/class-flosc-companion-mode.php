@@ -19,10 +19,12 @@ class FLOSC_Companion_Mode {
 	}
 
 	/**
-	 * v1.6.1: Enqueue companion widget on non-app WordPress pages.
+	 * Enqueue companion widget on non-app WordPress pages.
 	 * Only loads if companion mode is enabled for the current flow.
 	 * v1.6.3: Fixed to read from flat per-flow settings (matching admin save pattern)
 	 * v8.0.0: Knowledge hubs — resolve flow by handoff param, hub companion URL, or lessons category.
+	 *
+	 * @since 1.6.1
 	 */
 	public function enqueue_companion() {
 		// Outer chrome is for normal WP host pages only.
@@ -828,7 +830,7 @@ class FLOSC_Companion_Mode {
 		if ( $host_a === $host_b ) {
 			return true;
 		}
-		return $host_a === 'www.' . $host_b || $host_b === 'www.' . $host_a;
+		return 'www.' . $host_b === $host_a || 'www.' . $host_a === $host_b;
 	}
 
 	/**

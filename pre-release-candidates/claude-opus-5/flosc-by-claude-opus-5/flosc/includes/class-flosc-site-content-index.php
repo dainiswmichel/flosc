@@ -416,7 +416,10 @@ class FLOSC_Site_Content_Index {
 				continue;
 			}
 
-			$allowed = preg_split( '/\s+/', (string) ( $row['access'] ?? '' ) ) ?: array();
+			$allowed = preg_split( '/\s+/', (string) ( $row['access'] ?? '' ) );
+			if ( ! $allowed ) {
+				$allowed = array();
+			}
 			if ( ! in_array( $tier, $allowed, true ) ) {
 				continue;
 			}
@@ -1070,7 +1073,10 @@ class FLOSC_Site_Content_Index {
 		if ( '' === $raw ) {
 			return array();
 		}
-		$parts = preg_split( '/[\s,]+/', $raw ) ?: array();
+		$parts = preg_split( '/[\s,]+/', $raw );
+		if ( ! $parts ) {
+			$parts = array();
+		}
 		/*
 		array_intersect keeps the first array's order, so the list always
 			reads visitor, guest, member however it was typed. */
@@ -1082,10 +1088,13 @@ class FLOSC_Site_Content_Index {
 		$raw = isset( $policy['vgm_rows'][ $key ] ) ? $policy['vgm_rows'][ $key ] : $policy['vgm_default'];
 		$raw = strtolower( trim( (string) $raw ) );
 
+		// preg_split() returns false on a pattern error, which
+		// array_intersect() cannot take.
+		$named   = preg_split( '/[\s,]+/', $raw );
 		$allowed = array_values(
 			array_intersect(
 				array( 'visitor', 'guest', 'member' ),
-				preg_split( '/[\s,]+/', $raw ) ?: array()
+				$named ? $named : array()
 			)
 		);
 
@@ -1645,10 +1654,10 @@ class FLOSC_Site_Content_Index {
 			}
 			// Numeric lesson / post id match.
 			if ( is_numeric( $q ) ) {
-				if ( (int) $q === (int) ( $row['post_id'] ?? 0 ) ) {
+				if ( (int) ( $row['post_id'] ?? 0 ) === (int) $q ) {
 					$score += 100;
 				}
-				if ( (string) $q === (string) ( $row['lesson_number'] ?? '' ) ) {
+				if ( (string) ( $row['lesson_number'] ?? '' ) === (string) $q ) {
 					$score += 80;
 				}
 			}
