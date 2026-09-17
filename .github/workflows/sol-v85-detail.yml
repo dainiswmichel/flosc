@@ -1,0 +1,62 @@
+name: FLOSC v85 detailed WPCS evidence
+
+on:
+  push:
+    branches:
+      - gpt-5-6-sol/wporg-remediation
+
+permissions:
+  contents: write
+
+jobs:
+  detail:
+    if: ${{ contains(github.event.head_commit.message || '', '[sol1-detail]') && !contains(github.event.head_commit.message || '', '[sol1-detail-generated]') }}
+    runs-on: ubuntu-latest
+    env:
+      TARGET: pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc
+      REPORTS: pre-release-candidates/gpt-5-6-sol/remediation-tools/reports
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: gpt-5-6-sol/wporg-remediation
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer
+      - name: Install WPCS
+        run: |
+          composer global config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
+          composer global require --no-interaction --no-progress squizlabs/php_codesniffer:^3.13 wp-coding-standards/wpcs:^3.4 dealerdirect/phpcodesniffer-composer-installer:^1.0
+      - name: Capture full and JSON reports
+        shell: bash
+        run: |
+          set +e
+          mkdir -p "$REPORTS"
+          "$HOME/.composer/vendor/bin/phpcs" --standard=WordPress --extensions=php --ignore="$TARGET/tests/*,$TARGET/vendor/*" --report=full "$TARGET" > "$REPORTS/sol1-detail-full.txt" 2>&1
+          "$HOME/.composer/vendor/bin/phpcs" --standard=WordPress --extensions=php --ignore="$TARGET/tests/*,$TARGET/vendor/*" --report=json "$TARGET" > "$REPORTS/sol1-detail.json" 2>/dev/null
+          set -e
+          python3 - <<'PY'
+          import json,os,collections
+          p=os.path.join(os.environ['REPORTS'],'sol1-detail.json')
+          data=json.load(open(p,encoding='utf-8'))
+          rows=[]
+          for f,b in (data.get('files') or {}).items():
+              for m in b.get('messages',[]):
+                  rows.append((m.get('source',''),f,m.get('line'),m.get('column'),m.get('message','')))
+          c=collections.Counter(r[0] for r in rows)
+          out=os.path.join(os.environ['REPORTS'],'sol1-detail-sources.txt')
+          with open(out,'w',encoding='utf-8') as h:
+              for s,n in c.most_common():h.write(f'{n}\t{s}\n')
+              h.write('\n== COMMENTING / DOC / SCOPE DETAIL ==\n')
+              for r in rows:
+                  if any(x in r[0] for x in ('Comment','ScopeIndent','CapitalPDangit')):
+                      h.write(f'{r[0]}\t{r[1]}:{r[2]}:{r[3]}\t{r[4]}\n')
+          print(open(out,encoding='utf-8').read()[:20000])
+          PY
+      - name: Commit detail evidence
+        run: |
+          git config user.name 'GPT-5.6 Sol'
+          git config user.email 'noreply@openai.com'
+          git add "$REPORTS/sol1-detail-full.txt" "$REPORTS/sol1-detail.json" "$REPORTS/sol1-detail-sources.txt"
+          git commit -m "v85 SOL-1 detailed WPCS evidence [sol1-generated] [sol25-generated] [sol-finalized] [sol1-detail-generated]"
+          git push origin HEAD:gpt-5-6-sol/wporg-remediation
