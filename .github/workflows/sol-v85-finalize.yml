@@ -59,25 +59,24 @@ jobs:
               target = pathlib.Path(os.environ['TARGET']) / 'includes/class-flosc-framework.php'
               text = target.read_text(encoding='utf-8', errors='surrogateescape')
               needle = "\t\t$content = $post['file_content'] ?? '';\n\t\tif ( ! flosc_write_data_file( $target, $content ) ) {"
-              replacement = """\t\t$content_raw = $post['file_content'] ?? null;
-\t\tif ( ! is_string( $content_raw ) ) {
-\t\t\twp_safe_redirect( $this->kb_return_url( $ivr, 'error', 'File content must be text.' ) );
-\t\t\texit;
-\t\t}
-
-\t\t$max_content_bytes = max( (int) wp_max_upload_size(), (int) filesize( $target ) );
-\t\tif ( $max_content_bytes > 0 && strlen( $content_raw ) > $max_content_bytes ) {
-\t\t\twp_safe_redirect( $this->kb_return_url( $ivr, 'error', 'File content exceeds the allowed upload size.' ) );
-\t\t\texit;
-\t\t}
-
-\t\t$content = wp_kses_no_null( wp_check_invalid_utf8( $content_raw, true ) );
-\t\tif ( $content !== $content_raw ) {
-\t\t\twp_safe_redirect( $this->kb_return_url( $ivr, 'error', 'File content contains invalid text bytes.' ) );
-\t\t\texit;
-\t\t}
-
-\t\tif ( ! flosc_write_data_file( $target, $content ) ) {"""
+              replacement = (
+                  "\t\t$content_raw = $post['file_content'] ?? null;\n"
+                  "\t\tif ( ! is_string( $content_raw ) ) {\n"
+                  "\t\t\twp_safe_redirect( $this->kb_return_url( $ivr, 'error', 'File content must be text.' ) );\n"
+                  "\t\t\texit;\n"
+                  "\t\t}\n\n"
+                  "\t\t$max_content_bytes = max( (int) wp_max_upload_size(), (int) filesize( $target ) );\n"
+                  "\t\tif ( $max_content_bytes > 0 && strlen( $content_raw ) > $max_content_bytes ) {\n"
+                  "\t\t\twp_safe_redirect( $this->kb_return_url( $ivr, 'error', 'File content exceeds the allowed upload size.' ) );\n"
+                  "\t\t\texit;\n"
+                  "\t\t}\n\n"
+                  "\t\t$content = wp_kses_no_null( wp_check_invalid_utf8( $content_raw, true ) );\n"
+                  "\t\tif ( $content !== $content_raw ) {\n"
+                  "\t\t\twp_safe_redirect( $this->kb_return_url( $ivr, 'error', 'File content contains invalid text bytes.' ) );\n"
+                  "\t\t\texit;\n"
+                  "\t\t}\n\n"
+                  "\t\tif ( ! flosc_write_data_file( $target, $content ) ) {"
+              )
               count = text.count(needle)
               if count != 1:
                   raise SystemExit(f'KB_PATCH_NEEDLE_COUNT={count}; refusing ambiguous edit')
@@ -94,7 +93,7 @@ jobs:
                   'INPUT_TYPE_GUARD=is_string\n'
                   'SIZE_GUARD=wp_max_upload_size_or_existing_file_size_whichever_is_larger\n'
                   'TEXT_SANITIZATION=wp_check_invalid_utf8_then_wp_kses_no_null\n'
-                  'PRESERVATION_RULE=reject_if_sanitization_changes_validly_submitted_bytes\n'
+                  'PRESERVATION_RULE=reject_if_sanitization_changes_submitted_bytes\n'
                   'WRITE_VARIABLE=$content\n',
                   encoding='utf-8',
               )
@@ -104,10 +103,6 @@ jobs:
               name = step.get('name', f'run block {number}')
               script = step['run']
 
-              # The SOL-4 checker originally recognized only literal/constant size
-              # limits and a narrower sanitizer list. The production fix deliberately
-              # uses the site's upload limit and byte-preserving WordPress text
-              # sanitizers, so extend only those two assertions to match that design.
               if name.startswith('SOL-4 historical rejection'):
                   old_size = r'(?:\d+|[A-Z_][A-Z0-9_]*)'
                   new_size = r'(?:\d+|[A-Z_][A-Z0-9_]*|\$[A-Za-z_][A-Za-z0-9_]*)'
@@ -130,8 +125,6 @@ jobs:
                   raise SystemExit(proc.returncode)
               print(f'V3_STEP_PASSED={name}', flush=True)
 
-              # Restoration intentionally runs first so the remediation cannot be
-              # erased by the PRE_SOL1 recovery pass on repeated self-audit runs.
               if name.startswith('SOL-1 erase my defective first-pass prose'):
                   remediate_kb_input()
           PY
