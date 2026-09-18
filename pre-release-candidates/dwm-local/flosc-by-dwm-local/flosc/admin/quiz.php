@@ -223,7 +223,7 @@ DEMO,
         <?php
         $flosc_helplink_url = add_query_arg([
             'page' => 'flosc-settings',
-            'ivr'  => isset($selected_ivr) ? $selected_ivr : '',
+            'ivr'  => isset($flosc_selected_ivr) ? $flosc_selected_ivr : '',
             'tab'  => 'documentation',
             'doc'  => 'ref-audio-quiz-flow',
         ], admin_url('admin.php'));

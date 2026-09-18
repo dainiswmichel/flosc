@@ -80,7 +80,7 @@ if (isset($_POST['flosc_delete_feedback'])) {
             return ($c['id'] ?? '') !== $flosc_delete_id;
         }));
         $flosc_flow_settings['ai_feedback'] = $flosc_feedback_items;
-        update_option($settings_key, $flosc_flow_settings);
+        update_option($flosc_settings_key, $flosc_flow_settings);
         $flosc_feedback_count = count($flosc_feedback_items);
         echo '<div class="notice notice-success is-dismissible"><p>Feedback deleted.</p></div>';
     }
@@ -106,7 +106,7 @@ if (isset($_POST['flosc_add_feedback'])) {
         if (!empty($flosc_new_feedback_item['user_message']) && !empty($flosc_new_feedback_item['admin_note'])) {
             $flosc_feedback_items[] = $flosc_new_feedback_item;
             $flosc_flow_settings['ai_feedback'] = $flosc_feedback_items;
-            update_option($settings_key, $flosc_flow_settings);
+            update_option($flosc_settings_key, $flosc_flow_settings);
             $flosc_feedback_count = count($flosc_feedback_items);
             echo '<div class="notice notice-success is-dismissible"><p>Feedback added. The AI will follow this guidance on next response.</p></div>';
         }
@@ -129,7 +129,7 @@ if (isset($_POST['flosc_delete_praise'])) {
             return ($p['id'] ?? '') !== $flosc_delete_id;
         }));
         $flosc_flow_settings['ai_praises'] = $flosc_praises;
-        update_option($settings_key, $flosc_flow_settings);
+        update_option($flosc_settings_key, $flosc_flow_settings);
         $flosc_praises_count = count($flosc_praises);
         echo '<div class="notice notice-success is-dismissible"><p>Praise deleted.</p></div>';
     }
@@ -154,7 +154,7 @@ if (isset($_POST['flosc_add_praise'])) {
         if (!empty($flosc_new_praise['user_message']) && !empty($flosc_new_praise['admin_note'])) {
             $flosc_praises[] = $flosc_new_praise;
             $flosc_flow_settings['ai_praises'] = $flosc_praises;
-            update_option($settings_key, $flosc_flow_settings);
+            update_option($flosc_settings_key, $flosc_flow_settings);
             $flosc_praises_count = count($flosc_praises);
             echo '<div class="notice notice-success is-dismissible"><p>Praise added. The AI will reinforce this behavior.</p></div>';
         }

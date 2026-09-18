@@ -1,7 +1,7 @@
 <?php if (!defined('ABSPATH')) exit; // Admin docs pass order and navigation map ?>
 
 <?php
-$flosc_ref_ivr = isset($selected_ivr) ? sanitize_file_name((string) $selected_ivr) : '';
+$flosc_ref_ivr = isset($flosc_selected_ivr) ? sanitize_file_name((string) $flosc_selected_ivr) : '';
 $flosc_ref_admin_doc_url = add_query_arg([
   'page' => 'flosc-settings',
   'ivr' => $flosc_ref_ivr,

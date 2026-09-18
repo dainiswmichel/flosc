@@ -6,7 +6,7 @@ if (!defined('ABSPATH')) exit;
  * Secrets are listed separately and are never portable.
  */
 
-$flosc_ref_ivr = isset($selected_ivr) ? sanitize_file_name((string) $selected_ivr) : (isset($flosc_selected_ivr) ? sanitize_file_name((string) $flosc_selected_ivr) : '');
+$flosc_ref_ivr = isset($flosc_selected_ivr) ? sanitize_file_name((string) $flosc_selected_ivr) : '';
 if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_feature_links = []; }
 ?>
 <h1 id="ref-settings-fields">Part 3: Reference — Flow settings fields</h1>

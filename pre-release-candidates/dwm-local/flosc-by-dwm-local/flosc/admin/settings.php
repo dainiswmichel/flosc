@@ -1698,9 +1698,9 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
         $flosc_new_menu = [];
         foreach ($flosc_menu_labels as $flosc_i => $flosc_label) {
             $flosc_label  = sanitize_text_field($flosc_label);
-            $action = sanitize_text_field($flosc_menu_actions[$flosc_i] ?? '');
-            if ($flosc_label !== '' && $action !== '') {
-                $flosc_new_menu[] = ['label' => $flosc_label, 'action' => $action];
+            $flosc_action = sanitize_text_field($flosc_menu_actions[$flosc_i] ?? '');
+            if ($flosc_label !== '' && $flosc_action !== '') {
+                $flosc_new_menu[] = ['label' => $flosc_label, 'action' => $flosc_action];
             }
         }
         update_option('flosc_visitor_menu_items', $flosc_new_menu);
@@ -1712,14 +1712,14 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
         $flosc_new_guest_menu = [];
         foreach ($flosc_guest_labels as $flosc_i => $flosc_label) {
             $flosc_label  = sanitize_text_field($flosc_label);
-            $action = sanitize_text_field($flosc_guest_actions[$flosc_i] ?? '');
-            if ($flosc_label === '' || $action === '') {
+            $flosc_action = sanitize_text_field($flosc_guest_actions[$flosc_i] ?? '');
+            if ($flosc_label === '' || $flosc_action === '') {
                 continue;
             }
-            if ($action === 'open_sandbox_purchase' || strpos($action, 'show_offer') === 0) {
+            if ($flosc_action === 'open_sandbox_purchase' || strpos($flosc_action, 'show_offer') === 0) {
                 continue;
             }
-            $flosc_new_guest_menu[] = ['label' => $flosc_label, 'action' => $action];
+            $flosc_new_guest_menu[] = ['label' => $flosc_label, 'action' => $flosc_action];
         }
         update_option('flosc_guest_menu_items', $flosc_new_guest_menu);
 
@@ -1729,14 +1729,14 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
         $flosc_new_member_menu = [];
         foreach ($flosc_member_labels as $flosc_i => $flosc_label) {
             $flosc_label  = sanitize_text_field($flosc_label);
-            $action = sanitize_text_field($flosc_member_actions[$flosc_i] ?? '');
-            if ($flosc_label === '' || $action === '') {
+            $flosc_action = sanitize_text_field($flosc_member_actions[$flosc_i] ?? '');
+            if ($flosc_label === '' || $flosc_action === '') {
                 continue;
             }
-            if ($action === 'open_sandbox_purchase' || strpos($action, 'show_offer') === 0) {
+            if ($flosc_action === 'open_sandbox_purchase' || strpos($flosc_action, 'show_offer') === 0) {
                 continue;
             }
-            $flosc_new_member_menu[] = ['label' => $flosc_label, 'action' => $action];
+            $flosc_new_member_menu[] = ['label' => $flosc_label, 'action' => $flosc_action];
         }
         update_option('flosc_member_menu_items', $flosc_new_member_menu);
 
@@ -1975,7 +1975,8 @@ if (function_exists('wp_add_inline_style')) {
     settings_errors( 'flosc_settings' );
     ?>
     
-    <?php if (isset($flosc_saved) || isset($flosc_get['saved'])): ?>
+    <?php // $flosc_saved was read here and assigned nowhere, so its isset() was always false. The live path is the ?saved=1 redirect. ?>
+    <?php if (isset($flosc_get['saved'])): ?>
         <div id="flosc-save-feedback" class="notice notice-success is-dismissible" role="status" tabindex="-1">
             <p>✓ Settings saved for <strong><?php echo esc_html($flosc_flow_settings['identity']['name'] ?? $flosc_selected_ivr); ?></strong></p>
         </div>
@@ -2155,7 +2156,7 @@ if (function_exists('wp_add_inline_style')) {
     <!-- Tabs -->
     <nav class="nav-tab-wrapper flosc-settings-tabs" aria-label="FLOSC Settings Tabs">
         <?php
-        $tabs = [
+        $flosc_tabs = [
             'flow'          => '🗺 Flow',
             'identity'      => 'Identity',
             'ivr-messages'  => 'IVR Management',
@@ -2182,9 +2183,9 @@ if (function_exists('wp_add_inline_style')) {
             'da1'           => 'DA1',
         ];
         if (!$flosc_can_view_administration) {
-            unset($tabs['administration']);
+            unset($flosc_tabs['administration']);
         }
-        foreach ($tabs as $flosc_tab_id => $flosc_tab_label):
+        foreach ($flosc_tabs as $flosc_tab_id => $flosc_tab_label):
             $flosc_tab_url = add_query_arg([
                 'page' => 'flosc-settings',
                 'ivr' => $flosc_selected_ivr,
@@ -2364,7 +2365,7 @@ if (function_exists('wp_add_inline_style')) {
                 </a>
             </div>
             
-            <?php if (isset($all_saved)): ?>
+            <?php if (isset($flosc_all_saved)): ?>
                 <div class="notice notice-success is-dismissible"><p>✓ All flows saved!</p></div>
             <?php endif; ?>
             <?php if (isset($flosc_individual_saved)): ?>

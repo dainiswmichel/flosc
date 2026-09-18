@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) exit;
 wp_enqueue_media();
 
 // Parent settings.php defines $flow_settings; never assume it when included alone.
-$flosc_flow_settings = (isset($flow_settings) && is_array($flow_settings)) ? $flow_settings : [];
+$flosc_flow_settings = (isset($flosc_flow_settings) && is_array($flosc_flow_settings)) ? $flosc_flow_settings : [];
 
 $flosc_profile_bar = get_option('flosc_profile_bar', [
     'visitor' => ['name' => 'Visitor', 'badge' => 'Hope you enjoy our chat :-)', 'icon' => '👋', 'icon_url' => '', 'avatar_radius' => '8px', 'show_upgrade' => true, 'upgrade_label' => 'Upgrade'],

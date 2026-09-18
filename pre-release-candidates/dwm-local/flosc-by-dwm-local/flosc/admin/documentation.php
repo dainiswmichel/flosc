@@ -85,7 +85,7 @@ foreach ($flosc_doc_topics as $flosc_topic) {
                         $flosc_group_heading_topic = $flosc_group_first_topic[$flosc_current_group];
                         $flosc_group_heading_url = add_query_arg([
                             'page' => 'flosc-settings',
-                            'ivr'  => isset($selected_ivr) ? $selected_ivr : '',
+                            'ivr'  => isset($flosc_selected_ivr) ? $flosc_selected_ivr : '',
                             'tab'  => 'documentation',
                             'doc'  => $flosc_group_heading_topic['id'],
                         ], admin_url('admin.php'));
@@ -109,7 +109,7 @@ foreach ($flosc_doc_topics as $flosc_topic) {
                 $flosc_status_icon = $flosc_topic['status'] === 'ready' ? '✅' : '🔲';
                 $flosc_link_url = add_query_arg([
                     'page' => 'flosc-settings',
-                    'ivr'  => isset($selected_ivr) ? $selected_ivr : '',
+                    'ivr'  => isset($flosc_selected_ivr) ? $flosc_selected_ivr : '',
                     'tab'  => 'documentation',
                     'doc'  => $flosc_topic['id'],
                 ], admin_url('admin.php'));
@@ -148,7 +148,7 @@ foreach ($flosc_doc_topics as $flosc_topic) {
                         }
                         $flosc_card_url = add_query_arg([
                             'page' => 'flosc-settings',
-                            'ivr'  => isset($selected_ivr) ? $selected_ivr : '',
+                            'ivr'  => isset($flosc_selected_ivr) ? $flosc_selected_ivr : '',
                             'tab'  => 'documentation',
                             'doc'  => $flosc_first['id'],
                         ], admin_url('admin.php'));

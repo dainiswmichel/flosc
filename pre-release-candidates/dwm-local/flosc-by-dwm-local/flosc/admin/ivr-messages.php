@@ -1681,13 +1681,13 @@ document.addEventListener('submit', function(event) {
                     </thead>
                     <tbody>
                     <?php foreach ($flosc_diffs as $flosc_field => $flosc_vals):
-                        $flosc_db_display   = esc_html($vals['db']);
-                        $flosc_file_display = esc_html($vals['file']);
+                        $flosc_db_display   = esc_html($flosc_vals['db']);
+                        $flosc_file_display = esc_html($flosc_vals['file']);
                         if ($flosc_db_display === '') $flosc_db_display = '<em class="flosc-ivr-empty-value">(empty)</em>';
                         if ($flosc_file_display === '') $flosc_file_display = '<em class="flosc-ivr-empty-value">(empty)</em>';
                     ?>
                         <tr class="flosc-ivr-field-diff-table__row">
-                            <td class="flosc-ivr-field-diff-table__cell flosc-ivr-field-diff-table__cell--field"><?php echo esc_html($field); ?></td>
+                            <td class="flosc-ivr-field-diff-table__cell flosc-ivr-field-diff-table__cell--field"><?php echo esc_html($flosc_field); ?></td>
                             <td class="flosc-ivr-field-diff-table__cell flosc-ivr-field-diff-table__cell--db"><pre class="flosc-ivr-field-diff-table__pre"><?php echo wp_kses_post( $flosc_db_display ); ?></pre></td>
                             <td class="flosc-ivr-field-diff-table__cell flosc-ivr-field-diff-table__cell--file"><pre class="flosc-ivr-field-diff-table__pre"><?php echo wp_kses_post( $flosc_file_display ); ?></pre></td>
                         </tr>

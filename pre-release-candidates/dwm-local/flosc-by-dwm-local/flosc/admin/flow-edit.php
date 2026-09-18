@@ -30,13 +30,13 @@ if (!$flosc_is_new && !$flosc_flow) {
 
 // Get current tab
 $flosc_current_tab = sanitize_key(wp_unslash($_GET['tab'] ?? 'identity'));
-$tabs = [
+$flosc_tabs = [
     'identity' => 'Identity',
     'ivr' => 'IVR',
     'content' => 'Content',
 ];
 if ($flosc_is_admin && !$flosc_is_new) {
-    $tabs['team'] = 'Team';
+    $flosc_tabs['team'] = 'Team';
 }
 
 // Handle form submission
@@ -176,7 +176,7 @@ $flosc_categories = get_categories(['hide_empty' => false]);
     <?php if (!$flosc_is_new): ?>
         <!-- Tabs -->
         <nav class="nav-tab-wrapper">
-            <?php foreach ($tabs as $flosc_tab_id => $flosc_tab_label): ?>
+            <?php foreach ($flosc_tabs as $flosc_tab_id => $flosc_tab_label): ?>
                 <a href="<?php echo esc_url( admin_url('admin.php?page=flosc-flow-edit&flow_id=' . rawurlencode($flosc_flow_id) . '&tab=' . $flosc_tab_id) ); ?>"
                    class="nav-tab <?php echo esc_attr( $flosc_current_tab === $flosc_tab_id ? 'nav-tab-active' : '' ); ?>">
                     <?php echo esc_html($flosc_tab_label); ?>
@@ -398,9 +398,9 @@ $flosc_categories = get_categories(['hide_empty' => false]);
                                 $flosc_legacy = $flosc_visitor_menu;
                                 $flosc_visitor_menu = [];
                                 foreach ($flosc_legacy as $flosc_item) {
-                                    $action = $flosc_item['action'] ?? '';
-                                    if ($action) {
-                                        $flosc_visitor_menu[$action] = [
+                                    $flosc_action = $flosc_item['action'] ?? '';
+                                    if ($flosc_action) {
+                                        $flosc_visitor_menu[$flosc_action] = [
                                             'label'   => $flosc_item['label'] ?? '',
                                             'enabled' => (bool) ($flosc_item['enabled'] ?? false),
                                         ];
@@ -500,8 +500,8 @@ $flosc_categories = get_categories(['hide_empty' => false]);
                         <td>
                             <select id="quiz_type" name="quiz_type" class="regular-text">
                                 <?php foreach ($flosc_quiz_types as $flosc_type_id => $flosc_type_label): ?>
-                                    <option value="<?php echo esc_attr($type_id); ?>" <?php selected($flosc_flow['quiz_type'] ?? '', $type_id); ?>>
-                                        <?php echo esc_html($type_label); ?>
+                                    <option value="<?php echo esc_attr($flosc_type_id); ?>" <?php selected($flosc_flow['quiz_type'] ?? '', $flosc_type_id); ?>>
+                                        <?php echo esc_html($flosc_type_label); ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
