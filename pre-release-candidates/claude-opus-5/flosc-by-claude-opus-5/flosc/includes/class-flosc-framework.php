@@ -11846,9 +11846,6 @@ Example good response:
 
 		if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
 			flosc_log( "FLOSC v8.0.0: Scored visitor audio for user {$user_id}: {$score}% — " . count( $incorrect ) . ' lesson(s) mapped' );
-			flosc_log( '[FLOSC-PAYPAL] activate-subscription HIT at ' . gmdate( 'Y-m-d H:i:s' ) );
-			flosc_log( '[FLOSC-PAYPAL] create_order ENDPOINT REACHED at ' . gmdate( 'Y-m-d H:i:s' ) . ' user=' . get_current_user_id() );
-			flosc_log( '[FLOSC-PAYPAL] capture_order ENDPOINT REACHED at ' . gmdate( 'Y-m-d H:i:s' ) . ' user=' . get_current_user_id() );
 		}
 
 		return array(

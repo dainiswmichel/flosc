@@ -1898,7 +1898,7 @@ if ( null !== $flosc_import_preview ) :
 						}
 						?>
 						<tr class="flosc-ivr-field-diff-table__row">
-							<td class="flosc-ivr-field-diff-table__cell flosc-ivr-field-diff-table__cell--field"><?php echo esc_html( $field ); ?></td>
+							<td class="flosc-ivr-field-diff-table__cell flosc-ivr-field-diff-table__cell--field"><?php echo esc_html( $flosc_field ); ?></td>
 							<td class="flosc-ivr-field-diff-table__cell flosc-ivr-field-diff-table__cell--db"><pre class="flosc-ivr-field-diff-table__pre"><?php echo wp_kses_post( $flosc_db_display ); ?></pre></td>
 							<td class="flosc-ivr-field-diff-table__cell flosc-ivr-field-diff-table__cell--file"><pre class="flosc-ivr-field-diff-table__pre"><?php echo wp_kses_post( $flosc_file_display ); ?></pre></td>
 						</tr>

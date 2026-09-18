@@ -113,13 +113,18 @@ function flosc_uv_files( $root ) {
 }
 
 /**
- * Walk a file's tokens and separate the names it writes from the names it reads.
+ * Walk ONE scope's tokens and separate the names it writes from the names it reads.
  *
- * @param string $path Absolute file path.
+ * A scope is a single function body plus its parameter list, or the file-level
+ * remainder once every function has been lifted out of it. Callers split a file
+ * with flosc_uv_units() and pass each unit here separately, because PHP resolves
+ * a variable inside a function against that function and nothing else.
+ *
+ * @param array $tokens Token list for one scope.
  * @return array{writes:array<string,bool>,reads:array<string,int>,unanalysable:string}
  */
-function flosc_uv_scan( $path ) {
-	$tokens = token_get_all( (string) file_get_contents( $path ) );
+function flosc_uv_scan_unit( $tokens ) {
+	$tokens = array_values( $tokens );
 	$count  = count( $tokens );
 
 	$writes       = array();
@@ -542,14 +547,155 @@ function flosc_uv_scan( $path ) {
 }
 
 /**
+ * Split a file's tokens into one unit per function scope.
+ *
+ * Unit 0 is the file itself with every function lifted out of it, which is the
+ * scope a template runs in. Each remaining unit is one function: its parameter
+ * list and its body, with any function nested inside IT lifted out in turn.
+ *
+ * A closure is its own unit, because a closure sees nothing of the scope around
+ * it except the names it lists in use(). An arrow function is deliberately NOT
+ * split out: fn() => ... captures the enclosing scope automatically, so its body
+ * has to resolve against the unit it sits in.
+ *
+ * @param array $tokens Token list for a whole file.
+ * @return array<int,array> One token list per scope.
+ */
+function flosc_uv_units( $tokens ) {
+	$count = count( $tokens );
+	$units = array();
+	$outer = array();
+
+	for ( $i = 0; $i < $count; $i++ ) {
+		$token = $tokens[ $i ];
+
+		if ( ! is_array( $token ) || T_FUNCTION !== $token[0] ) {
+			$outer[] = $token;
+			continue;
+		}
+
+		// Walk to this function's body, past its parameter list, any use()
+		// clause and any return type. An abstract or interface method has no
+		// body and ends at the semicolon instead.
+		$j     = $i;
+		$depth = 0;
+		$open  = -1;
+		for ( ; $j < $count; $j++ ) {
+			$t = $tokens[ $j ];
+			if ( '(' === $t ) {
+				++$depth;
+				continue;
+			}
+			if ( ')' === $t ) {
+				--$depth;
+				continue;
+			}
+			if ( 0 !== $depth ) {
+				continue;
+			}
+			if ( '{' === $t ) {
+				$open = $j;
+				break;
+			}
+			if ( ';' === $t ) {
+				break;
+			}
+		}
+
+		if ( -1 === $open ) {
+			// No body: the declaration itself carries no scope worth reading.
+			for ( $k = $i; $k <= $j && $k < $count; $k++ ) {
+				$outer[] = $tokens[ $k ];
+			}
+			$i = $j;
+			continue;
+		}
+
+		// Match the body's braces. Only bare { and } count; an interpolated
+		// "{$x}" arrives inside a single string token, never as a brace token.
+		$body  = 0;
+		$close = $count - 1;
+		for ( $k = $open; $k < $count; $k++ ) {
+			$t = $tokens[ $k ];
+			if ( '{' === $t || ( is_array( $t ) && in_array( $t[0], array( T_CURLY_OPEN, T_DOLLAR_OPEN_CURLY_BRACES ), true ) ) ) {
+				++$body;
+			} elseif ( '}' === $t ) {
+				--$body;
+				if ( 0 === $body ) {
+					$close = $k;
+					break;
+				}
+			}
+		}
+
+		// Recurse into the BODY, never into the whole function: the slice has to
+		// exclude this function's own T_FUNCTION token, or the recursion finds
+		// it again at index 0 and descends on itself forever.
+		$header = array_slice( $tokens, $i, $open - $i + 1 );
+		$body   = array_slice( $tokens, $open + 1, $close - $open - 1 );
+		$nested = flosc_uv_units( $body );
+
+		// Unit 0 of the body is the body with its own nested functions lifted
+		// out; joined to the parameter list, that is this function's scope.
+		$units[] = array_merge( $header, (array) array_shift( $nested ) );
+		foreach ( $nested as $sub ) {
+			$units[] = $sub;
+		}
+		$i = $close;
+	}
+
+	array_unshift( $units, $outer );
+	return $units;
+}
+
+/**
+ * Scan every scope in a file.
+ *
+ * @param string $path Absolute file path.
+ * @return array{file:array{writes:array<string,bool>,reads:array<string,int>},inner:array<int,array>,unanalysable:string}
+ */
+function flosc_uv_scan( $root, $rel ) {
+	$units        = flosc_uv_units( token_get_all( (string) file_get_contents( $root . '/' . $rel ) ) );
+	$scanned      = array();
+	$unanalysable = '';
+
+	foreach ( $units as $unit_index => $unit ) {
+		$result = flosc_uv_scan_unit( $unit );
+		if ( '' !== $result['unanalysable'] && '' === $unanalysable ) {
+			$unanalysable = $result['unanalysable'];
+		}
+
+		// Which files THIS scope includes. It matters that this is per unit and
+		// not per file: an included template runs in the scope of whatever
+		// included it, and a template pulled in from inside a method sees that
+		// method's variables, not the file-level ones.
+		$text = '';
+		foreach ( $unit as $token ) {
+			$text .= is_array( $token ) ? $token[1] : $token;
+		}
+		$result['includes'] = flosc_uv_includes( $root, $rel, $text );
+		$result['unit']     = $unit_index;
+
+		$scanned[] = $result;
+	}
+
+	return array(
+		'units'        => $scanned,
+		'unanalysable' => $unanalysable,
+	);
+}
+
+/**
  * The files a given file includes, by literal path.
  *
  * @param string $root Plugin root.
  * @param string $rel  Relative path of the including file.
  * @return string[] Relative paths of included files.
  */
-function flosc_uv_includes( $root, $rel ) {
-	$src = (string) file_get_contents( $root . '/' . $rel );
+function flosc_uv_includes( $root, $rel, $src = null ) {
+	if ( null === $src ) {
+		$src = (string) file_get_contents( $root . '/' . $rel );
+	}
 	$out = array();
 	if ( ! preg_match_all(
 		'/(?:require|include)(?:_once)?\s+(?<base>FLOSC_PLUGIN_DIR|__DIR__)\s*\.\s*\'(?<path>[^\']+)\'/',
@@ -576,20 +722,21 @@ function flosc_uv_includes( $root, $rel ) {
 	return array_values( array_unique( $out ) );
 }
 
-$flosc_files    = flosc_uv_files( $flosc_root );
-$flosc_scans    = array();
-$flosc_includes = array();
+$flosc_files = flosc_uv_files( $flosc_root );
+$flosc_scans = array();
 
 foreach ( $flosc_files as $flosc_rel ) {
-	$flosc_scans[ $flosc_rel ]    = flosc_uv_scan( $flosc_root . '/' . $flosc_rel );
-	$flosc_includes[ $flosc_rel ] = flosc_uv_includes( $flosc_root, $flosc_rel );
+	$flosc_scans[ $flosc_rel ] = flosc_uv_scan( $flosc_root, $flosc_rel );
 }
 
-// Who includes whom, so an included template inherits its includer's scope.
+// Who includes whom, recorded down to the SCOPE that holds the include, so an
+// included template inherits the scope it actually runs in.
 $flosc_included_by = array();
-foreach ( $flosc_includes as $flosc_parent => $flosc_children ) {
-	foreach ( $flosc_children as $flosc_child ) {
-		$flosc_included_by[ $flosc_child ][] = $flosc_parent;
+foreach ( $flosc_scans as $flosc_parent => $flosc_scan ) {
+	foreach ( $flosc_scan['units'] as $flosc_unit ) {
+		foreach ( $flosc_unit['includes'] as $flosc_child ) {
+			$flosc_included_by[ $flosc_child ][] = array( $flosc_parent, $flosc_unit['unit'] );
+		}
 	}
 }
 
@@ -608,9 +755,26 @@ function flosc_uv_scope( $rel, $scans, $parents, $seen = array() ) {
 	}
 	$seen[ $rel ] = true;
 
-	$names = isset( $scans[ $rel ] ) ? $scans[ $rel ]['writes'] : array();
+	$names = isset( $scans[ $rel ]['units'][0] ) ? $scans[ $rel ]['units'][0]['writes'] : array();
+
 	foreach ( $parents[ $rel ] ?? array() as $parent ) {
-		$names += flosc_uv_scope( $parent, $scans, $parents, $seen );
+		list( $parent_rel, $parent_unit ) = $parent;
+
+		// The scope the include sits in, which is what the template inherits.
+		if ( isset( $scans[ $parent_rel ]['units'] ) ) {
+			foreach ( $scans[ $parent_rel ]['units'] as $candidate ) {
+				if ( $candidate['unit'] === $parent_unit ) {
+					$names += $candidate['writes'];
+					break;
+				}
+			}
+		}
+
+		// A parent template's own file scope keeps climbing, because it in turn
+		// may have been included by something that set the names up.
+		if ( 0 === $parent_unit ) {
+			$names += flosc_uv_scope( $parent_rel, $scans, $parents, $seen );
+		}
 	}
 	return $names;
 }
@@ -624,9 +788,11 @@ foreach ( $flosc_files as $flosc_rel ) {
 		continue;
 	}
 
+	// File scope: a template inherits whatever its includer had written by the
+	// time it pulled the template in, so the include graph counts here.
 	$flosc_scope = flosc_uv_scope( $flosc_rel, $flosc_scans, $flosc_included_by );
 
-	foreach ( $flosc_scans[ $flosc_rel ]['reads'] as $flosc_name => $flosc_line ) {
+	foreach ( $flosc_scans[ $flosc_rel ]['units'][0]['reads'] as $flosc_name => $flosc_line ) {
 		if ( isset( $flosc_scope[ $flosc_name ] ) ) {
 			continue;
 		}
@@ -634,6 +800,24 @@ foreach ( $flosc_files as $flosc_rel ) {
 			continue;
 		}
 		$flosc_findings[] = sprintf( '%s:%d  $%s is read and never assigned', $flosc_rel, $flosc_line, $flosc_name );
+	}
+
+	// Function scope: a name assigned in another function does not reach this
+	// one, however close by it sits. Nothing is inherited here -- not the file
+	// around the function, not the include graph.
+	foreach ( $flosc_scans[ $flosc_rel ]['units'] as $flosc_unit ) {
+		if ( 0 === $flosc_unit['unit'] ) {
+			continue;
+		}
+		foreach ( $flosc_unit['reads'] as $flosc_name => $flosc_line ) {
+			if ( isset( $flosc_unit['writes'][ $flosc_name ] ) ) {
+				continue;
+			}
+			if ( in_array( $flosc_name, $flosc_always_defined, true ) ) {
+				continue;
+			}
+			$flosc_findings[] = sprintf( '%s:%d  $%s is read and never assigned', $flosc_rel, $flosc_line, $flosc_name );
+		}
 	}
 }
 
