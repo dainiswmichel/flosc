@@ -1,0 +1,19 @@
+{
+  "agent": {
+    "name": "Dainis W. Michel",
+    "slug": "dwm-local"
+  },
+  "candidate": "v88",
+  "plugin_version": "8.0.0",
+  "source": "mvp_sprint/flosc_8_0_0/flosc",
+  "requires_at_least": "7.1",
+  "tested_up_to": "7.1",
+  "artifact": {
+    "filename": "flosc.zip",
+    "sha256": "e5fc02bf214a553e326f6ebbf523d34d75a3d2f10c6704b9824e2d3d5b6bcfc7",
+    "size_bytes": 2134063,
+    "file_count": 242,
+    "top_level_dirs": ["flosc"],
+    "tests_entries": 0
+  }
+}
