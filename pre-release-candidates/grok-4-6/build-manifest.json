@@ -4,31 +4,35 @@
     "exact_agent_model": "grok-4.6",
     "slug": "grok-4-6"
   },
-  "assemble": {
-    "candidate": "v84",
-    "mts": "2026y-09m-17d-UTC-14h-51m-53s-719ms",
-    "named_v84_mts": "2026y-09m-17d-UTC-14h-54m-33s-730ms",
-    "base": "claude-opus-5 v82.18 8096ec3",
-    "overlay": "opencode-big-pickle v83 ab871e6 P1",
-    "source_path": "pre-release-candidates/grok-4-6/flosc-by-grok-4-6/flosc",
-    "artifact_path": "pre-release-candidates/grok-4-6/flosc.zip"
-  },
+  "candidate": "v87",
+  "plugin_version": "8.0.0",
+  "base": "claude-opus-5 v86 146409c",
+  "source_path": "pre-release-candidates/grok-4-6/flosc-by-grok-4-6/flosc",
+  "artifact_path": "pre-release-candidates/grok-4-6/flosc.zip",
+  "pass": 1,
+  "shipping_changes": [
+    "includes/sso/class-oauth2-handler.php — verify_state() first; peek/delete removed; home_url() on invalid state",
+    "includes/class-flosc-framework.php — comment only, HMAC reason replaces false nonce-cannot-travel sentences"
+  ],
+  "new_gate": "tests/check_oauth_state_ordering.php",
+  "unchanged": [
+    "includes/flosc-request.php",
+    "includes/magic-link/class-flosc-magic-link-trait.php"
+  ],
   "artifact": {
     "filename": "flosc.zip",
-    "sha256": "ccdb7ab39ecf476d96d43d1912329a116c26ef3e6f6deedef1d1e691d6126ad4",
+    "sha256": "c106c84612bbb003d18485042e5bbe02265813d2135039342b6254bfd28f78e3",
     "entry_count": 281,
-    "size_bytes": 2793531,
+    "size_bytes": 2793712,
     "top_level_dirs": ["flosc"],
     "tests_entries": 0
   },
-  "measured_after_assemble": {
-    "php_l_overlay_files": "clean",
-    "phpstan_variable_undefined_overlay": "empty",
-    "requires_at_least": "7.0",
-    "version": "8.0.0",
-    "wpcs_full": "not run",
-    "plugin_check": "not run",
-    "wordpress_runtime": "not run"
+  "measured": {
+    "php_l": "195 files, 0 errors",
+    "gates": "42 of 42 (40 PHP + 2 JS)",
+    "phpcs_nonceverification_four_files": "25 remaining (6 oauth + 12 audio + 4 request + 3 magic-link)"
   },
-  "candidate_status": "v84"
+  "named_behaviour_change": "Invalid or expired OAuth state redirects to home_url(). Abandoned login that previously resumed on the flow URL lands on the WordPress site root.",
+  "plugin_check": "not run here",
+  "suppressions_added": 0
 }

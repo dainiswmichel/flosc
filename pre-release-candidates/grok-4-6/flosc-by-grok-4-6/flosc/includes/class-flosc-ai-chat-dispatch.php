@@ -318,7 +318,8 @@ class FLOSC_AI_Chat_Dispatch {
 			The heading matches the field's name on the AI tab, so a
 				floscAdmin reading the compiled prompt finds what they typed
 				under the label they typed it under. The storage key stays
-				ai_brand_facts: renaming it would orphan every existing flow. */
+				ai_brand_facts: renaming it would orphan every existing flow.
+			 */
 			$prompt .= "## Sticky aspects\n";
 			$prompt .= "Facts and aspects configured for this flow. These override any guess you could make. Never invent or substitute expansions, categories, or claims.\n\n";
 			$prompt .= $brand_facts . "\n\n";

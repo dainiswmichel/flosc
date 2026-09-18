@@ -89,7 +89,6 @@ $flosc_rated_count = count( $flosc_rated_logs );
 
 <?php
 // ── Feedback ──
-$flosc_settings_key   = $GLOBALS['flosc_settings_key'] ?? '';
 $flosc_feedback_items = $flosc_flow_settings['ai_feedback'] ?? array();
 $flosc_feedback_count = count( $flosc_feedback_items );
 

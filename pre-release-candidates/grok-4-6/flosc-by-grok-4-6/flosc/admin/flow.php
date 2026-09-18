@@ -1188,7 +1188,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 		* form[data-confirm-message]. A second listener on document does not
 		* override the first — both run, both call confirm(), and the floscAdmin
 		* is asked twice to delete one flow.
-		*/
+		 */
 		?>
 	<?php endif; ?>
 

@@ -90,7 +90,8 @@ if ( ! function_exists( 'flosc_safe_remote_request' ) ) {
  * The plugin's own ai_configuration_files/ folder still exists, but strictly
  * as READ-ONLY shipped defaults (see flosc_config_file() below for the
  * uploads-first read order).
- * ========================================================================== */
+ * ==========================================================================
+ */
 if ( ! function_exists( 'flosc_get_flow_option_rows' ) ) {
 	/**
 	 * All flosc_flow_* option rows (autoload=no). Prepared query + object cache.
@@ -549,7 +550,8 @@ if ( ! function_exists( 'flosc_is_allowed_ivr_source_path' ) ) {
  * bleed) — uploading a resume to the the WordPress host flow's basket can never surface
  * in the this flow. The folder is web-protected (Deny from all + silent index)
  * and created on first use. $flow_stem is the flow id (e.g. 'flow_ivr').
- * ========================================================================== */
+ * ==========================================================================
+ */
 if ( ! function_exists( 'flosc_flow_kb_dir' ) ) {
 	function flosc_flow_kb_dir( $flow_stem ) {
 		$base = flosc_data_dir();
@@ -617,7 +619,8 @@ if ( ! function_exists( 'flosc_chat_archive_dir' ) ) {
  * returns a dedicated 64-char secret, generated once and stored with
  * autoload=false so it is never shipped to the browser. Every FLOSC HMAC/XOR
  * key uses this instead of wp_salt('auth').
- * ========================================================================== */
+ * ==========================================================================
+ */
 if ( ! function_exists( 'flosc_token_secret' ) ) {
 	function flosc_token_secret() {
 		$secret = get_option( 'flosc_token_secret' );
@@ -652,7 +655,8 @@ if ( ! function_exists( 'flosc_token_secret' ) ) {
  * token and calls flosc_issue_post_purchase_session(). Server-to-server paths
  * (webhooks, IPN) have no browser and never issue sessions — the buyer reaches
  * those through the emailed single-use link instead.
- * ========================================================================== */
+ * ==========================================================================
+ */
 if ( ! function_exists( 'flosc_checkout_binding_create' ) ) {
 	/**
 	 * Mint a single-use binding token for a checkout that is about to begin.
@@ -869,7 +873,8 @@ if ( ! function_exists( 'flosc_issue_post_purchase_session' ) ) {
  * newly-uploaded copy from uploads while still falling back to the shipped default,
  * so saved edits are actually read back. They resolve a SPECIFIC filename within
  * THIS install's dirs only — no cross-flow or cross-install bleeding.
- * ========================================================================== */
+ * ==========================================================================
+ */
 if ( ! function_exists( 'flosc_config_file' ) ) {
 	// Single config file: the uploads copy if it exists, else the shipped
 	// default. The plugin path is a READ-ONLY resolution — every write goes

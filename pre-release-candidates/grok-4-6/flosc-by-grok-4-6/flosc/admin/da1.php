@@ -591,6 +591,7 @@ if ( isset( $flosc_da1_post['catalog'] ) ) {
 } elseif ( isset( $flosc_da1_get['catalog'] ) ) {
 	$flosc_da1_requested_catalog_key = flosc_da1_normalize_key( sanitize_text_field( (string) $flosc_da1_get['catalog'] ) );
 }
+
 /*
  * A catalog is a .tsv file in the catalogs folder. The index option only carries
  * optional presentation — a label, when someone has given one — so discovery reads

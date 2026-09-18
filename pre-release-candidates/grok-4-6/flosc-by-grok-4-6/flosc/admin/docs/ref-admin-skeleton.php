@@ -10,7 +10,7 @@
  * Documentation tab's markup, so the file opens at heading level 2 under the
  * card title the tab has already printed.
  *
- * $selected_ivr is read out of the includer's scope rather than passed in,
+ * $flosc_selected_ivr is read out of the includer's scope rather than passed in,
  * because an include shares the caller's scope and this page is only ever
  * reached through that one caller. It names the flow the tab links should point
  * at; absent, the links resolve to the tab with no flow selected, which is what
@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$flosc_ref_ivr           = isset( $selected_ivr ) ? sanitize_file_name( (string) $selected_ivr ) : '';
+$flosc_ref_ivr           = isset( $flosc_selected_ivr ) ? sanitize_file_name( (string) $flosc_selected_ivr ) : '';
 $flosc_ref_admin_doc_url = add_query_arg(
 	array(
 		'page' => 'flosc-settings',

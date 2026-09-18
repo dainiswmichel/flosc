@@ -269,8 +269,13 @@ class OAuth2_Handler {
 		 * in this loop is gone; the reads are a typed boundary now.
 		 *
 		 * Every value here is provider-supplied and untrusted until state
-		 * verifies. They are read and sanitized; none of them is
-		 * used before verify_state() has passed.
+		 * verifies. They are read and sanitized. The first use of `$state`
+		 * against the store is verify_state(); handle_callback() does not
+		 * read or write a transient or option keyed on callback state before
+		 * that call. Invalid or expired state redirects to home_url() — the
+		 * WordPress site root — because unverified state cannot name a
+		 * trustworthy flow-domain URL. An abandoned login that previously
+		 * resumed on the flow URL now lands there. That is deliberate.
 		 */
 		$get  = array();
 		$post = array();
@@ -368,56 +373,17 @@ class OAuth2_Handler {
 			flosc_log( '[FLOSC SSO] handle_callback: provider=' . $provider_id . ' | state=' . ( $state ? $state : '(empty)' ) . ' | code=' . ( $code ? 'present' : 'absent' ) . ' | error=' . ( $error ? $error : 'none' ) . ' | method=' . sanitize_text_field( $server['REQUEST_METHOD'] ?? 'unknown' ) . ' | source=' . ( ! empty( $get['state'] ) ? '$_GET' : ( ! empty( $server['REQUEST_URI'] ) && false !== strpos( $server['REQUEST_URI'], 'state=' ) ? 'REQUEST_URI' : ( ! empty( $server['QUERY_STRING'] ) ? 'QUERY_STRING' : 'WP_REST' ) ) ) );
 		}
 
-		// ── Resolve the correct app URL from state ──
-		// The callback runs on the WordPress host (registered with Google), but the user
-		// came from the flow domain. get_current_flow() fails here because it matches
-		// by HTTP_HOST = the WordPress host. Instead, use the flow_id stored in state to
-		// look up the flow's custom_domain directly from the database.
-		$app_url           = home_url(); // absolute last resort
-		$error_redirect_to = '';
+		// Last-resort URL when state is missing, invalid, or expired.
+		// Named behaviour change from v86: an abandoned login that previously
+		// peeked unverified state for the flow-domain redirect now lands on
+		// the WordPress site root. Unverified state cannot name a trustworthy
+		// redirect target. A dedicated "try again from where you started"
+		// page is a later UX pass, not this one.
+		$app_url           = home_url();
+		$error_redirect_to = $app_url;
 
-		if ( ! empty( $state ) ) {
-			$transient_key = self::STATE_PREFIX . $state;
-			$peek_data     = get_transient( $transient_key );
-			if ( ! $peek_data ) {
-				$peek_data = get_option( $transient_key );
-			}
-			if ( $peek_data ) {
-				// Use stored redirect_to (the URL the user was on: the flow domain).
-				if ( ! empty( $peek_data['redirect_to'] ) ) {
-					$error_redirect_to = $peek_data['redirect_to'];
-				}
-				// Resolve app URL from flow_id → flow settings → domain.
-				if ( ! empty( $peek_data['flow_id'] ) ) {
-					$resolved = $this->resolve_app_url_from_flow_id( $peek_data['flow_id'] );
-					if ( $resolved ) {
-						$app_url = $resolved;
-					}
-				}
-			}
-		}
-
-		// If we couldn't get redirect_to from state, use the flow-resolved app URL.
-		if ( empty( $error_redirect_to ) ) {
-			$error_redirect_to = $app_url;
-		}
-
-		// ── Handle provider-side errors (user denied permission, etc.) ──
-		if ( $error ) {
-			$error_description = isset( $post['error_description'] ) ? sanitize_text_field( $post['error_description'] ) : ( isset( $get['error_description'] ) ? sanitize_text_field( $get['error_description'] ) : $error );
-			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
-				flosc_log( '[FLOSC SSO] Provider error: ' . $error_description );
-			}
-			if ( ! empty( $state ) ) {
-				$transient_key = self::STATE_PREFIX . $state;
-				delete_transient( $transient_key );
-				delete_option( $transient_key );
-			}
-			$this->redirect_with_error( $error_description, $error_redirect_to );
-			return;
-		}
-
-		// ── Verify state (CSRF protection, one-time use) ──
+		// CSRF: OAuth state is the control. Consume it once, here, before
+		// any transient or option keyed on callback $state is read or written.
 		$state_data = $this->verify_state( $state );
 		if ( ! $state_data ) {
 			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
@@ -427,15 +393,26 @@ class OAuth2_Handler {
 			return;
 		}
 
-		// State verified — update redirect targets from authoritative state data.
-		if ( ! empty( $state_data['redirect_to'] ) ) {
-			$error_redirect_to = $state_data['redirect_to'];
-		}
+		// State verified — redirect targets come from the returned record.
 		if ( ! empty( $state_data['flow_id'] ) ) {
 			$resolved = $this->resolve_app_url_from_flow_id( $state_data['flow_id'] );
 			if ( $resolved ) {
 				$app_url = $resolved;
 			}
+		}
+		$error_redirect_to = ! empty( $state_data['redirect_to'] ) ? $state_data['redirect_to'] : $app_url;
+
+		// Provider-side errors (user denied permission, etc.). State is already
+		// verified and consumed; a valid cancelled-login may use the verified
+		// redirect. Invalid state never reaches this branch, so nothing here
+		// deletes a store record keyed on raw callback state.
+		if ( $error ) {
+			$error_description = isset( $post['error_description'] ) ? sanitize_text_field( $post['error_description'] ) : ( isset( $get['error_description'] ) ? sanitize_text_field( $get['error_description'] ) : $error );
+			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+				flosc_log( '[FLOSC SSO] Provider error: ' . $error_description );
+			}
+			$this->redirect_with_error( $error_description, $error_redirect_to );
+			return;
 		}
 
 		// ── Verify provider matches ──

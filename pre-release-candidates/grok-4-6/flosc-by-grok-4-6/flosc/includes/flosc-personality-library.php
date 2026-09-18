@@ -909,7 +909,8 @@ if ( ! function_exists( 'flosc_personality_library_default_workshop' ) ) {
 			case 'dadjokedan':
 				/*
 				Parked cards wait for Dainis’s own jokes: paste one into the
-					instruction field, switch the card on, done. */
+					instruction field, switch the card on, done.
+				 */
 				$parked = static function ( $id, $density ) use ( $t ) {
 					return $t(
 						$id,
@@ -1265,9 +1266,11 @@ Punchline — "Over and PUNder."',
 							)
 						),
 					),
+
 					/*
 					One clouds key only: a duplicate key here used to make
-						PHP's last-one-wins silently drop the first block. */
+						PHP's last-one-wins silently drop the first block.
+					 */
 					'clouds'      => array(),
 				);
 
@@ -2404,6 +2407,7 @@ if ( ! function_exists( 'flosc_personality_variable_catalog' ) ) {
 			'quiz_title'         => 'Title of that quiz',
 			'message_count'      => 'Messages in this session',
 		);
+
 		/*
 		 * Four tokens print the same string on most flows. They keep working —
 		 * flow files, IVR greetings and the accuracy-test templates documented
@@ -2747,10 +2751,12 @@ if ( ! function_exists( 'flosc_personality_variable_tokens' ) ) {
 			if ( ! isset( $catalog[ $name ] ) ) {
 				continue;
 			}
+
 			/*
 			A qualifier names one quiz: {score:ipa_basics}. It is carried
 				whole so the expander knows which quiz to read, and so the same
-				base token can appear twice for two different quizzes. */
+				base token can appear twice for two different quizzes.
+			 */
 			$full = isset( $hit[2] ) && '' !== $hit[2] ? $name . ':' . $hit[2] : $name;
 			if ( ! in_array( $full, $out, true ) ) {
 				$out[] = $full;
@@ -2775,9 +2781,11 @@ if ( ! function_exists( 'flosc_personality_expand_variables' ) ) {
 		}
 		$tokens = flosc_personality_variable_tokens( $text );
 		$map    = array();
+
 		/*
 		Quiz values for the unnamed case are read once, and only if the
-			document asks for one the turn did not carry. */
+			document asks for one the turn did not carry.
+		 */
 		$latest = null;
 		foreach ( $tokens as $token ) {
 			$colon = strpos( $token, ':' );
@@ -2796,9 +2804,11 @@ if ( ! function_exists( 'flosc_personality_expand_variables' ) ) {
 				$map[ '{' . $token . '}' ] = flosc_personality_variable_clean( $context[ $token ] );
 				continue;
 			}
+
 			/*
 			Unqualified and not in the turn: fall back to the most recent
-				quiz, which is what an unnamed quiz token means. */
+				quiz, which is what an unnamed quiz token means.
+			 */
 			if ( in_array( $token, array( 'score', 'total_correct', 'total_possible', 'correct_items', 'missed_items', 'weak_area', 'quiz_id', 'quiz_title' ), true ) ) {
 				if ( null === $latest ) {
 					$latest = flosc_personality_quiz_values(
@@ -2830,7 +2840,8 @@ if ( ! function_exists( 'flosc_personality_variable_boot' ) ) {
 		foreach ( $catalog as $token => $meta ) {
 			/*
 			An alias resolves, but is not advertised. Listing it would show
-				the same value under a second name and read as a second thing. */
+				the same value under a second name and read as a second thing.
+			 */
 			if ( isset( $meta['alias_of'] ) ) {
 				continue;
 			}
@@ -2910,7 +2921,8 @@ if ( ! function_exists( 'flosc_personality_builder_request_context' ) ) {
 			Primary source is the flow settings bag — the same value the
 				Attached-personality select and the designer hint render.
 				Registry/implied lookups are fallbacks for flows that never
-				saved an attachment, never overrides. */
+				saved an attachment, never overrides.
+			 */
 			$flow_bag = get_option( 'flosc_flow_' . $flosc_stem, array() );
 			if ( is_array( $flow_bag ) ) {
 				$persona = sanitize_key( (string) ( $flow_bag['personality_library_id'] ?? '' ) );
@@ -3290,6 +3302,7 @@ if ( ! function_exists( 'flosc_ajax_save_personality_design' ) ) {
 		if ( isset( $_POST['ai_personality_role'] ) ) {
 			$fields['ai_personality_role'] = sanitize_text_field( wp_unslash( (string) $_POST['ai_personality_role'] ) );
 		}
+
 		/*
 		 * The four the designer computes. They were already in
 		 * flosc_personality_library_field_keys(), already built by the
@@ -3323,7 +3336,8 @@ if ( ! function_exists( 'flosc_ajax_save_personality_design' ) ) {
 		/*
 		The stamp the toolbar prints, in UTC like every other MTS line in
 			FLOSC. Read back from the row so it is the value that was stored,
-			not one the browser guessed. */
+			not one the browser guessed.
+		 */
 		$saved_row = flosc_personality_library_get( $id );
 		$saved_at  = is_array( $saved_row ) && isset( $saved_row['profile_modified_gmt'] )
 			? (string) $saved_row['profile_modified_gmt']
@@ -3472,6 +3486,7 @@ if ( ! function_exists( 'flosc_personality_builder_boot_json' ) ) {
 			}
 		}
 		return array(
+
 			/*
 			 * Who made the file, so a profile in the wild can say where it came
 			 * from and how someone gets one of their own. Edition is a label,
@@ -3485,6 +3500,7 @@ if ( ! function_exists( 'flosc_personality_builder_boot_json' ) ) {
 				'home'    => 'https://da1.fm',
 				'host'    => 'https://flosc.ai',
 			),
+
 			/*
 			 * The site's own host, for the optional source_site line in a
 			 * downloaded profile's footer. Sent to the browser so the builder
@@ -3495,10 +3511,12 @@ if ( ! function_exists( 'flosc_personality_builder_boot_json' ) ) {
 			'siteHost'          => (string) wp_parse_url( get_bloginfo( 'url' ), PHP_URL_HOST ),
 			'ajaxUrl'           => admin_url( 'admin-ajax.php' ),
 			'nonce'             => wp_create_nonce( 'flosc_personality_design' ),
+
 			/*
 			Creating a personality writes a new library row and then attaches
 				it to this flow, which is a different capability and a different
-				nonce. Without the flow file there is nothing to attach it to. */
+				nonce. Without the flow file there is nothing to attach it to.
+			 */
 			'attachNonce'       => wp_create_nonce( 'flosc_attach_personality' ),
 			'ivr'               => (string) $ivr,
 			'existingIds'       => array_keys( flosc_personality_library_get_all() ),
@@ -3525,6 +3543,7 @@ if ( ! function_exists( 'flosc_personality_builder_boot_json' ) ) {
 				'hash'        => isset( $entry['profile_hash'] ) ? (string) $entry['profile_hash'] : '',
 				'modifiedGmt' => isset( $entry['profile_modified_gmt'] ) ? (string) $entry['profile_modified_gmt'] : '',
 			),
+
 			/*
 			 * Published posts and pages, so a trajectory can be one of them.
 			 * The floscAdmin types what WordPress already shows them — 412,
@@ -3740,7 +3759,7 @@ if ( ! function_exists( 'flosc_render_personality_designer_accordion' ) ) {
 			* Last save, in UTC, as everywhere else in FLOSC. Seeded from the row so
 			* the line is right before anything is saved in this session; the bridge
 			* rewrites it after each save.
-			*/
+			 */
 			$saved_mts = isset( $entry['profile_modified_gmt'] ) ? trim( (string) $entry['profile_modified_gmt'] ) : '';
 			?>
 		<span id="flosc-personality-builder-mts" class="flosc-personality-builder-mts">
@@ -3756,7 +3775,7 @@ if ( ! function_exists( 'flosc_render_personality_designer_accordion' ) ) {
 			* there — eleven stations, three bands, prohibitions split between Soul
 			* and Behavior on purpose — and nothing said so, so anyone arriving with
 			* the soul.md pattern in mind had to infer it from the station labels.
-			*/
+			 */
 			?>
 		<a class="flosc-personality-builder-ref" href="<?php echo esc_url( admin_url( 'admin.php?page=flosc-settings&tab=documentation&doc=ref-personality' ) ); ?>">
 			<?php esc_html_e( 'What goes where', 'flosc' ); ?>

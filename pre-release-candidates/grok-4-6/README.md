@@ -1,41 +1,45 @@
-# FLOSC — Grok 4.6 v84
+# FLOSC — Grok 4.6 v87
 
 **Agent:** Grok 4.6
 **Plugin version:** 8.0.0
-**Candidate:** v84
-**Assemble MTS:** `2026y-09m-17d-UTC-14h-51m-53s-719ms`
-**Named v84 MTS:** `2026y-09m-17d-UTC-14h-54m-33s-730ms`
+**Candidate:** v87
+**Base:** Claude Opus 5 v86 (`146409c`)
+
+Pass 1 of the Plugin Check nonce findings. Not a live hotfix.
 
 ## What this is
 
-Claude v82.18 (`8096ec3`) shipping tree as the WPCS/security base, with pickle v83 (`ab871e6`) P1 files overlaid:
+Claude v86 shipping tree, with:
 
-- `admin/ai-feedback.php` — `$settings_key` → `$flosc_settings_key` (four sites)
-- `admin/flow-edit.php` — quiz dropdown uses `$flosc_type_id` / `$flosc_type_label`
-- `admin/ivr-messages.php` — diff table uses `$flosc_vals` / `$flosc_field`
-- `includes/class-flosc-framework.php` — dead DEBUG `$now/$modified/$registered` assembly removed (block had moved out of `flosc.php`)
-- `flosc.php` and `admin/companion.php` — byte-identical to Claude v82.18 (casts already present)
+- `includes/sso/class-oauth2-handler.php` — `handle_callback()` calls `verify_state()` once, immediately after `$state` is resolved. The unverified peek/delete is gone. Invalid or expired state redirects to `home_url()`. That is a named behaviour change: an abandoned login that previously resumed on the flow URL now lands on the WordPress site root.
+- `includes/class-flosc-framework.php` — comment only. The false “a nonce cannot travel in an `<audio src>`” sentences are replaced with the HMAC/capability-URL reason.
+- `tests/check_oauth_state_ordering.php` — new gate. Red on the v86 body; green after the repair. Does not ship in the zip.
 
-`flosc.php` and `companion.php` were copied in the overlay; they match Claude.
+`includes/flosc-request.php` and `includes/magic-link/class-flosc-magic-link-trait.php` are unchanged.
 
-## Measured on this machine after assemble
+No `phpcs:ignore`, `phpcs:disable`, severity changes, or WordPress nonce added on OAuth / audio / magic / nav GET.
 
-- `php -l` clean on the six overlay files
-- PHPStan level 5 `variable.undefined` on those files: **EMPTY** (re-run here, not pickle’s word)
-- Zip: top-level `flosc/` only; `tests/` entries **0**
-- `Requires at least: 7.0` in `readme.txt` and `flosc.php`
-- Version **8.0.0**
+## Named behaviour change
 
-Not measured this assemble: full-tree WPCS, Plugin Check, wp-env, human walk.
+Invalid or expired OAuth state → `home_url()`. Unverified state cannot name a trustworthy flow-domain redirect.
+
+## Measured here
+
+- `php -l` 195 files, 0 errors
+- gates 42 of 42 (40 PHP + 2 JS)
+- PHPCS `WordPress.Security.NonceVerification` on the four Plugin Check files: still 25 warnings/errors (expected; sniff does not treat `verify_state()` or HMAC as a nonce)
+- Plugin Check: not run here
 
 ## Artifact
 
 ```text
 pre-release-candidates/grok-4-6/flosc.zip
-sha256  ccdb7ab39ecf476d96d43d1912329a116c26ef3e6f6deedef1d1e691d6126ad4
-size    2793531
+sha256  c106c84612bbb003d18485042e5bbe02265813d2135039342b6254bfd28f78e3
+size    2,793,712
 entries 281
 root    flosc/
+tests/  0
+version 8.0.0
 ```
 
 ```sh

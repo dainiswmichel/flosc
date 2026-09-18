@@ -11846,9 +11846,6 @@ Example good response:
 
 		if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
 			flosc_log( "FLOSC v8.0.0: Scored visitor audio for user {$user_id}: {$score}% — " . count( $incorrect ) . ' lesson(s) mapped' );
-			flosc_log( '[FLOSC-PAYPAL] activate-subscription HIT at ' . gmdate( 'Y-m-d H:i:s' ) );
-			flosc_log( '[FLOSC-PAYPAL] create_order ENDPOINT REACHED at ' . gmdate( 'Y-m-d H:i:s' ) . ' user=' . get_current_user_id() );
-			flosc_log( '[FLOSC-PAYPAL] capture_order ENDPOINT REACHED at ' . gmdate( 'Y-m-d H:i:s' ) . ' user=' . get_current_user_id() );
 		}
 
 		return array(
@@ -13641,11 +13638,13 @@ Example good response:
 	 * Needed because the flosc-users/ directories carry an .htaccess that denies
 	 * everything, so a recording cannot be linked to directly.
 	 *
-	 * The CSRF control here is an HMAC signature on the URL, not a nonce, and
-	 * the long comment in the body says why: a nonce cannot travel in an
-	 * <audio src>. That is also why the coding standard reports twelve
-	 * unverified GET reads against this method -- it looks for a nonce check and
-	 * there is none to find. The control it cannot see is
+	 * The CSRF control here is an HMAC signature on the URL, not a nonce.
+	 * A nonce can physically travel in an <audio src> query string; it is
+	 * the wrong control. This endpoint uses a short-lived signed capability
+	 * URL: the HMAC authenticates the resource-selection parameters and
+	 * expires. That is also why the coding standard reports twelve unverified
+	 * GET reads against this method -- it looks for a nonce check and there
+	 * is none to find. The control it cannot see is
 	 * is_valid_audio_access_signature(), called below, over
 	 * (user_id|session_id|file|expires) and keyed on the site secret. The
 	 * capability check is separate and runs first.
@@ -13661,9 +13660,11 @@ Example good response:
 		 *   WHO is asking      -- viewer_can_stream_member_audio(), below.
 		 *   DID THEY MEAN TO   -- the HMAC signature in ?exp= and ?sig=.
 		 *
-		 * A nonce cannot travel in an <audio src>, so the origin proof is a
-		 * short-lived signature over (user_id|session_id|file|expires), keyed on
-		 * the site secret. build_audio_access_signature() mints it and
+		 * A nonce can physically travel in an <audio src> query string; it is
+		 * the wrong control. The origin proof is a short-lived signed
+		 * capability URL: HMAC over (user_id|session_id|file|expires), keyed on
+		 * the site secret, which authenticates those resource-selection
+		 * parameters and expires. build_audio_access_signature() mints it and
 		 * is_valid_audio_access_signature() checks it with hash_equals().
 		 *
 		 * Both of those functions already existed. Nothing called the verifier:

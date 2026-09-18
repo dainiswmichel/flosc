@@ -7,7 +7,7 @@
  * separate section and never travel in a portable flow file.
  *
  * Included by admin/documentation.php inside the Documentation tab's markup.
- * $selected_ivr (or $flosc_selected_ivr) is read out of the includer's scope
+ * $flosc_selected_ivr (or $flosc_selected_ivr) is read out of the includer's scope
  * rather than passed in, because an include shares the caller's scope and this
  * page is only ever reached through that one caller. It names the flow the
  * "Open admin tab" links should point at. Either name is accepted because the
@@ -21,8 +21,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-if ( isset( $selected_ivr ) ) {
-	$flosc_ref_ivr = sanitize_file_name( (string) $selected_ivr );
+if ( isset( $flosc_selected_ivr ) ) {
+	$flosc_ref_ivr = sanitize_file_name( (string) $flosc_selected_ivr );
 } elseif ( isset( $flosc_selected_ivr ) ) {
 	$flosc_ref_ivr = sanitize_file_name( (string) $flosc_selected_ivr );
 } else {

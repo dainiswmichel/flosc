@@ -215,6 +215,7 @@ class FLOSC_Site_Content_Index {
 			return $empty;
 		}
 		$posts = isset( $data['posts'] ) && is_array( $data['posts'] ) ? $data['posts'] : array();
+
 		/*
 		 * Row keys are strings, not post IDs.
 		 *
@@ -666,6 +667,7 @@ class FLOSC_Site_Content_Index {
 			if ( 'flosc-internal' === $slug || 0 === strpos( $slug, 'flosc-internal-' ) ) {
 				return true;
 			}
+
 			/*
 			 * The bare aliases the readers themselves accept.
 			 *
@@ -1088,9 +1090,11 @@ class FLOSC_Site_Content_Index {
 		if ( ! $parts ) {
 			$parts = array();
 		}
+
 		/*
-		array_intersect keeps the first array's order, so the list always
-			reads visitor, guest, member however it was typed. */
+		 * array_intersect() keeps the first array's order, so the list always
+		 * reads visitor, guest, member however it was typed.
+		 */
 		return array_values( array_intersect( array( 'visitor', 'guest', 'member' ), $parts ) );
 	}
 
@@ -1219,10 +1223,12 @@ class FLOSC_Site_Content_Index {
 			if ( ! $post instanceof WP_Post ) {
 				continue;
 			}
+
 			/*
 			FLOSC's own plumbing is not site content. Skipping it here also
 				drops any internal row an earlier build wrote, because $indexed
-				is what gets saved. */
+				is what gets saved.
+			 */
 			if ( self::is_internal_post( $post->ID ) ) {
 				continue;
 			}
@@ -1333,6 +1339,7 @@ class FLOSC_Site_Content_Index {
 		}
 
 		$body = strip_shortcodes( $raw_body );
+
 		/*
 		 * strip_shortcodes() only knows shortcodes that are REGISTERED, and a page
 		 * builder registers its own only when the builder loads. A rebuild runs in
@@ -1557,6 +1564,7 @@ class FLOSC_Site_Content_Index {
 			if ( ! empty( $row['excluded'] ) ) {
 				continue;
 			}
+
 			/*
 			 * No sanitize_key() on the way in.
 			 *
@@ -1608,6 +1616,7 @@ class FLOSC_Site_Content_Index {
 			if ( ! is_array( $row ) || ! empty( $row['excluded'] ) ) {
 				continue;
 			}
+
 			/*
 			 * A post the visitor may not READ is still a post that EXISTS.
 			 *
@@ -1623,6 +1632,7 @@ class FLOSC_Site_Content_Index {
 			 * the gate. That is what the comment here always said it wanted:
 			 * "list locked title only".
 			 */
+
 			/*
 			 * No sanitize_key() on the way in.
 			 *
@@ -1636,6 +1646,7 @@ class FLOSC_Site_Content_Index {
 			$depth  = $this->row_depth( $row, $access_level );
 			$slice  = $this->row_body_at( $row, $depth );
 			$locked = ( 'title' === $depth );
+
 			/*
 			 * A row is searched at the depth it is returned at, never deeper.
 			 * At title depth the body is not searched and not returned; at
@@ -1885,10 +1896,12 @@ class FLOSC_Site_Content_Index {
 		$title                                   = (string) ( $doc['posts'][ $key ]['title'] ?? '' );
 		$content                                 = (string) ( $doc['posts'][ $key ]['content'] ?? '' );
 		// Re-derive light auto keywords from title + body, then fold in manual overrides.
+
 		/*
 		Saving a keyword rebuilt the row's searchable field from the first 24
 			words of the body, throwing away everything derive_keywords() had
-			built from the whole post. Adding one word quietly shrank the row. */
+			built from the whole post. Adding one word quietly shrank the row.
+		 */
 		$auto                             = $this->merge_keywords( $title, (string) ( $doc['posts'][ $key ]['keywords'] ?? '' ) );
 		$doc['posts'][ $key ]['keywords'] = '' !== $manual ? $this->merge_keywords( $auto, $manual ) : $auto;
 		return $this->save( $flow_stem, $doc );

@@ -255,7 +255,7 @@ $flosc_quiz_demos = array(
 		$flosc_helplink_url = add_query_arg(
 			array(
 				'page' => 'flosc-settings',
-				'ivr'  => isset( $selected_ivr ) ? $selected_ivr : '',
+				'ivr'  => isset( $flosc_selected_ivr ) ? $flosc_selected_ivr : '',
 				'tab'  => 'documentation',
 				'doc'  => 'ref-audio-quiz-flow',
 			),

@@ -8,7 +8,7 @@
 
 includes/filesystem/class-flosc-filesystem.php:185:WPORG-02:file.php is loaded under `! function_exists( 'WP_Filesystem' )` so the filesystem API exists around the WP_Filesystem_Direct fallback four lines below. WordPress.org reviewed this exact tree on 13 Sep 2026 and flagged only the import.php include, not this one. Removing it risks the direct-write path used when the global filesystem is not ready.
 includes/filesystem/class-flosc-filesystem.php:259:WPORG-02:Same shape as :185 in the sibling method. Same reasoning, same review evidence.
-includes/filesystem/flosc-data-paths.php:383:WPORG-02:Same shape again: file.php loaded to bring up the filesystem API before the WP_Filesystem_Direct fallback. Not flagged by WordPress.org on 13 Sep 2026.
+includes/filesystem/flosc-data-paths.php:384:WPORG-02:Same shape again: file.php loaded to bring up the filesystem API before the WP_Filesystem_Direct fallback. Not flagged by WordPress.org on 13 Sep 2026.
 
 # REMOVED 17 Sep 2026 — admin/flosc-app.php:110:WPORG-10.
 # The exception was written when that file read $_GET['flosc_companion']
