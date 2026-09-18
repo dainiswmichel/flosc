@@ -9890,13 +9890,13 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
      * Bulk session management for chat logs: archive, restore, or delete.
      */
     public function ajax_flosc_manage_chat_sessions() {
+        check_ajax_referer('flosc_chat_logs', 'nonce');
+
         $post = wp_unslash($_POST);
         $flow = sanitize_key((string) ($post['flow_id'] ?? ''));
         if (!$this->can_manage_flow_chat_logs($flow)) {
             wp_send_json_error(['message' => 'Unauthorized'], 403);
         }
-
-        check_ajax_referer('flosc_chat_logs', 'nonce');
 
         $operation = sanitize_key((string) ($post['operation'] ?? ''));
         if (!in_array($operation, ['archive', 'restore', 'delete'], true)) {
