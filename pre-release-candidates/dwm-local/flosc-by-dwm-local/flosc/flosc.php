@@ -6774,7 +6774,14 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log( "FLOSC v3.0.7: Using flosc
                 // Merge with any existing bridge data
                 $existing = $bridge_manager->get_flosc_bridge_data($user_id);
                 if (!$existing) {
-                    $bridge_manager->update_flosc_bridge_data($user_id, ['score' => $score]);
+                    // update_flosc_bridge_data() does not exist on
+                    // FLOSC_Bridge_Data_Manager and that class has no __call, so
+                    // this branch raised a fatal Error every time it was taken --
+                    // which is exactly the pre-login score transfer it exists to
+                    // perform. flosc_create_bridge_data() is the real method;
+                    // $quiz_id and $score_data are both already in scope above,
+                    // and every field it reads is ?? guarded.
+                    $bridge_manager->flosc_create_bridge_data($user_id, $quiz_id, $score_data);
                 }
             }
 

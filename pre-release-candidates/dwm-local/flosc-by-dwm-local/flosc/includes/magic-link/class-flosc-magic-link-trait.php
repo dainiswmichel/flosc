@@ -41,6 +41,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 trait FLOSC_Magic_Link_Trait {
 
     /**
+     * Suppress registration-time token grants while a MagicLink consume is in flight.
+     *
+     * Set true/false around that window here, and read from outside as
+     * $this->flosc->flosc_skip_registration_token_grants by
+     * FLOSC_First_Party_Authentication. It is declared because PHP 8.2
+     * deprecated creating a property that was never declared: without this line
+     * every consume emitted "Creation of dynamic property" on modern PHP, and a
+     * later PHP makes that an Error.
+     *
+     * @var bool
+     */
+    public $flosc_skip_registration_token_grants = false;
+
+    /**
      * Whether guest MagicLink access (flosc_magic) is enabled.
      *
      * Requires package-level allow AND per-flow enable (both default false).

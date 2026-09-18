@@ -425,7 +425,11 @@ class FLOSC_Trajectory {
         }
 
         $host = preg_replace('#^[a-z][a-z0-9+.-]*://#', '', $host);
-        $host = preg_replace('#[/?#].*$#', '', $host);
+        // Delimiter is ~, not #: the character class contains a literal # and a
+        // #-delimited pattern ends at it, leaving ].*$ to be read as modifiers.
+        // That made preg_replace() return null for EVERY input, so $host became
+        // null here and this function returned '' for every deployment.
+        $host = preg_replace('~[/?#].*$~', '', $host);
         $host = preg_replace('#^www\.#', '', $host);
         $stem = trim((string) preg_replace('/[^a-z0-9]+/', '_', $host), '_');
         if ($stem === '') {
