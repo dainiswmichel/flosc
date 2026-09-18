@@ -2162,7 +2162,8 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 	settings_errors( 'flosc_settings' );
 	?>
 	
-	<?php if ( isset( $flosc_saved ) || isset( $flosc_get['saved'] ) ) : ?>
+	<?php // The save redirects with ?saved=1; $flosc_saved was a second, older signal that nothing ever set. ?>
+	<?php if ( isset( $flosc_get['saved'] ) ) : ?>
 		<div id="flosc-save-feedback" class="notice notice-success is-dismissible" role="status" tabindex="-1">
 			<p>✓ Settings saved for <strong><?php echo esc_html( $flosc_flow_settings['identity']['name'] ?? $flosc_selected_ivr ); ?></strong></p>
 		</div>
@@ -2570,7 +2571,7 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 				</a>
 			</div>
 			
-			<?php if ( isset( $all_saved ) ) : ?>
+			<?php if ( isset( $flosc_all_saved ) ) : ?>
 				<div class="notice notice-success is-dismissible"><p>✓ All flows saved!</p></div>
 			<?php endif; ?>
 			<?php if ( isset( $flosc_individual_saved ) ) : ?>
@@ -3215,7 +3216,7 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 			* The form posts exactly the fields it contains, the same set a native
 			* submit would have sent. flosc_save rides along as a hidden field
 			* because form.submit() does not carry the pressed button's own name.
-			*/
+			 */
 			wp_add_inline_script(
 				'flosc-admin',
 				"document.addEventListener('click', function (e) {\n"

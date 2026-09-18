@@ -545,6 +545,7 @@ class FLOSC_Email {
 		if ( ! current_user_can( 'edit_user', $user_id ) ) {
 			return;
 		}
+
 		/*
 		 * Core already verified this nonce -- personal_options_update and
 		 * edit_user_profile_update only fire after core's own

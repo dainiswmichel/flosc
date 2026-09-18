@@ -108,7 +108,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	* trajectories — WordPress posts in the trajectory category, managed on the
 	* Trajectories tab and keyword-matched per turn by FLOSC_Trajectory. A
 	* trajectory is a parameter of an aspect, and the aspect card carries it.
-	*/
+	 */
 	?>
 	<div class="traj-pair">
 	<section class="panel spec-panel" id="spec">
@@ -171,7 +171,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 		* much of the personality survives the trip. A character designed at
 		* one temperature and run at another is a different character, and
 		* nothing on either page said so.
-		*/
+		 */
 		?>
 		<p class="note"><strong><?php echo esc_html__( 'Model settings and this personality', 'flosc' ); ?></strong><br>
 		<?php echo esc_html__( 'Temperature above about 0.9 loosens what you designed here: gain and binding still reach the model, but it wanders further from them. Below about 0.3 it flattens — the character reads as correct and lifeless. Between 0.6 and 0.8 is where a designed personality holds. Top-P is a second loosening knob; move one or the other, not both, and leave it at 1.0 while you tune temperature. Top-K is offered by some providers only, and 40 is a sane value where it exists. These are set on the flow AI tab, not in the builder.', 'flosc' ); ?></p>

@@ -200,7 +200,7 @@ foreach ( $flosc_doc_topics as $flosc_topic ) {
 						$flosc_group_heading_url   = add_query_arg(
 							array(
 								'page' => 'flosc-settings',
-								'ivr'  => isset( $selected_ivr ) ? $selected_ivr : '',
+								'ivr'  => isset( $flosc_selected_ivr ) ? $flosc_selected_ivr : '',
 								'tab'  => 'documentation',
 								'doc'  => $flosc_group_heading_topic['id'],
 							),
@@ -227,7 +227,7 @@ foreach ( $flosc_doc_topics as $flosc_topic ) {
 				$flosc_link_url    = add_query_arg(
 					array(
 						'page' => 'flosc-settings',
-						'ivr'  => isset( $selected_ivr ) ? $selected_ivr : '',
+						'ivr'  => isset( $flosc_selected_ivr ) ? $flosc_selected_ivr : '',
 						'tab'  => 'documentation',
 						'doc'  => $flosc_topic['id'],
 					),
@@ -274,7 +274,7 @@ foreach ( $flosc_doc_topics as $flosc_topic ) {
 						$flosc_card_url = add_query_arg(
 							array(
 								'page' => 'flosc-settings',
-								'ivr'  => isset( $selected_ivr ) ? $selected_ivr : '',
+								'ivr'  => isset( $flosc_selected_ivr ) ? $flosc_selected_ivr : '',
 								'tab'  => 'documentation',
 								'doc'  => $flosc_first['id'],
 							),

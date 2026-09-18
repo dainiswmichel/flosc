@@ -39,6 +39,7 @@ flosc_tab_header( '🤖', 'AI' );
 
 $flosc_flow_settings = $GLOBALS['flosc_current_settings'] ?? array();
 $flosc_current_ivr   = $GLOBALS['flosc_current_ivr'] ?? '';
+
 /*
  * Which view of the AI tab to paint.
  *
@@ -154,7 +155,8 @@ if ( (float) $flosc_ai_temperature > 0.5 ) {
 <?php
 /*
 Fail-closed visibility: if this flow has no resolvable personality
-	profile, the chat refuses unpersonified answers — tell the admin why. */
+	profile, the chat refuses unpersonified answers — tell the admin why.
+ */
 $flosc_admin_stem    = sanitize_key( pathinfo( (string) $flosc_current_ivr, PATHINFO_FILENAME ) );
 $flosc_admin_profile = ( '' !== $flosc_admin_stem && function_exists( 'flosc_personality_compiled_profile' ) )
 	? trim( (string) flosc_personality_compiled_profile( $flosc_admin_stem ) )
@@ -2995,6 +2997,7 @@ $flosc_sci_notice = get_transient( 'flosc_site_index_notice_' . get_current_user
 if ( is_array( $flosc_sci_notice ) ) {
 	delete_transient( 'flosc_site_index_notice_' . get_current_user_id() );
 }
+
 /*
  * The URL is the fallback, and it is the ONLY carrier for nine of the ten
  * outcomes. FLOSC_Site_Content_Index::redirect_ai() puts site_index_action --

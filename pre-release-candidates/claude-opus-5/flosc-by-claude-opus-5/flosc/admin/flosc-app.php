@@ -78,7 +78,8 @@ ICON & BUTTON CHECKLIST (verify all work before deployment):
 □ Recording controls (circle, square) - quiz audio panel
 
 ================================================================================
-==== end source documentation ==== */
+==== end source documentation ====
+ */
 ?>
 <html lang="en">
 <head>
@@ -1190,6 +1191,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 						if ( ! $stripe || ! method_exists( $stripe, 'get_client_config' ) ) {
 							return '';
 						}
+
 						/*
 						 * The publishable key is exposed even when Stripe is
 						 * off for the flow as a whole, because an operator may

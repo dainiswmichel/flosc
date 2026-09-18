@@ -1888,8 +1888,8 @@ if ( null !== $flosc_import_preview ) :
 					<tbody>
 					<?php
 					foreach ( $flosc_diffs as $flosc_field => $flosc_vals ) :
-						$flosc_db_display   = esc_html( $vals['db'] );
-						$flosc_file_display = esc_html( $vals['file'] );
+						$flosc_db_display   = esc_html( $flosc_vals['db'] );
+						$flosc_file_display = esc_html( $flosc_vals['file'] );
 						if ( '' === $flosc_db_display ) {
 							$flosc_db_display = '<em class="flosc-ivr-empty-value">(empty)</em>';
 						}

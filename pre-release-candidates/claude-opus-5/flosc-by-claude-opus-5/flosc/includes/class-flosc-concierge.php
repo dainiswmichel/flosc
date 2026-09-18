@@ -377,7 +377,8 @@ class FLOSC_Concierge {
 	 * open, appends it to the AI's system prompt. handle() itself returns null on
 	 * unlock so the message flows on into the normal AI path (which also means the
 	 * exchange is logged like any other turn, instead of being short-circuited).
-	 * ======================================================================== */
+	 * ========================================================================
+	 */
 
 	/** Per-session transient key for an open desk. */
 	protected static function open_key( $session_key ) {
@@ -498,7 +499,8 @@ class FLOSC_Concierge {
 	 * the integrity hook then mirrors to the .md. There is no authoring surface to
 	 * build: the WordPress post IS the surface. On the post, admins see a read-only
 	 * "what FLOSC understands" confirmation so they can check the setup landed.
-	 * ======================================================================== */
+	 * ========================================================================
+	 */
 
 	/** Default category that marks a concierge post. */
 	const CATEGORY                      = 'concierge';

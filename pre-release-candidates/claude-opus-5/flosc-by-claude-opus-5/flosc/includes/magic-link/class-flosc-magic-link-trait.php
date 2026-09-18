@@ -2015,6 +2015,7 @@ trait FLOSC_Magic_Link_Trait {
 		if ( ! current_user_can( 'promote_users' ) ) {
 			wp_die( esc_html__( 'Unauthorized', 'flosc' ), '', array( 'response' => 403 ) );
 		}
+
 		/*
 		 * The nonce action is per-user, so the id has to be read before the
 		 * nonce can be named. That is unavoidable and safe, but only if the id

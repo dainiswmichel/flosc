@@ -619,6 +619,7 @@ if ( ! function_exists( 'flosc_portability_run_wxr_import' ) ) {
 			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- WordPress core importer bootstrap flag.
 			define( 'WP_LOAD_IMPORTERS', true );
 		}
+
 		/*
 		 * wp-admin/includes/import.php is NOT loaded here.
 		 *

@@ -535,7 +535,8 @@ class FLOSC_Content_Protection {
 		 * their public filters run). Post content that merely passes through
 		 * unmodified is core's pipeline, not plugin output: re-filtering it
 		 * here would strip oEmbed iframes and other plugins' markup from
-		 * lessons readers are entitled to see. */
+		 * lessons readers are entitled to see.
+		 */
 
 		// Skip admin dashboard pages.
 		if ( is_admin() ) {

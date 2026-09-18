@@ -4,7 +4,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 trait FLOSC_REST_Trait {
-
 	/*
 	 * Public throttles, owned by the floscAdmin instead of the source.
 	 *

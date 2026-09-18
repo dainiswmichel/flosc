@@ -528,8 +528,8 @@ $flosc_categories = get_categories( array( 'hide_empty' => false ) );
 						<td>
 							<select id="quiz_type" name="quiz_type" class="regular-text">
 								<?php foreach ( $flosc_quiz_types as $flosc_type_id => $flosc_type_label ) : ?>
-									<option value="<?php echo esc_attr( $type_id ); ?>" <?php selected( $flosc_flow['quiz_type'] ?? '', $type_id ); ?>>
-										<?php echo esc_html( $type_label ); ?>
+									<option value="<?php echo esc_attr( $flosc_type_id ); ?>" <?php selected( $flosc_flow['quiz_type'] ?? '', $flosc_type_id ); ?>>
+										<?php echo esc_html( $flosc_type_label ); ?>
 									</option>
 								<?php endforeach; ?>
 							</select>
