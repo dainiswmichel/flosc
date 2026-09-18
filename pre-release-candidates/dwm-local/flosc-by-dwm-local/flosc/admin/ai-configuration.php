@@ -116,7 +116,7 @@ $flosc_admin_profile = ( $flosc_admin_stem !== '' && function_exists( 'flosc_per
 	: '';
 if ( $flosc_admin_profile === '' ) :
 	?>
-<div class="notice notice-error" style="margin:8px 0 16px">
+<div class="notice notice-error flosc-ai-personality-notice">
 	<p><strong><?php esc_html_e( 'Personality not configured.', 'flosc' ); ?></strong>
 	<?php echo esc_html__( 'This flow refuses AI replies until a personality loads — visitors see a setup notice instead of answers. Attach one above (applies instantly), or write a custom profile and save.', 'flosc' ); ?></p>
 </div>

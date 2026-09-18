@@ -1013,7 +1013,7 @@
                     }
                     var colors = p.colors && typeof p.colors === 'object' ? p.colors : {};
                     ssoHtml += '<button type="button" class="flosc-sso-btn" data-auth-url="' + self.escapeHtml(String(p.authUrl)) + '"'
-                        + ' style="background:' + self.escapeHtml(String(colors.background || '#fff')) + ';color:' + self.escapeHtml(String(colors.text || '#111')) + '">'
+                        + ' data-sso-bg="' + self.escapeHtml(String(colors.background || '#fff')) + '" data-sso-fg="' + self.escapeHtml(String(colors.text || '#111')) + '">'
                         + '<span class="flosc-sso-icon">' + (p.icon || '') + '</span>'
                         + '<span class="flosc-sso-label">' + self.escapeHtml(String(p.name || p.id || '')) + '</span>'
                         + '</button>';
@@ -1054,6 +1054,10 @@
                 });
             }
             wrap.querySelectorAll('.flosc-sso-btn').forEach(function(btn) {
+                btn.style.setProperty('--flosc-sso-bg', btn.getAttribute('data-sso-bg') || '#fff');
+                btn.style.setProperty('--flosc-sso-fg', btn.getAttribute('data-sso-fg') || '#111');
+                btn.removeAttribute('data-sso-bg');
+                btn.removeAttribute('data-sso-fg');
                 btn.addEventListener('click', function() {
                     self.navigateTopLevelForAuth(btn.getAttribute('data-auth-url'));
                 });

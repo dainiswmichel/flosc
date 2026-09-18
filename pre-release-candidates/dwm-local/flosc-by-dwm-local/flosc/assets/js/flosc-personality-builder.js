@@ -37,6 +37,35 @@
       document.head.appendChild(style);
     }
   }
+  function pbApply(root) {
+    if (!root || !root.querySelectorAll) {
+      return;
+    }
+    [
+      ["data-pb-bg", "--pb-bg"],
+      ["data-pb-fg", "--pb-fg"],
+      ["data-pb-top", "--pb-top"],
+      ["data-pb-left", "--pb-left"],
+      ["data-pb-flex", "--pb-flex"],
+      ["data-pb-op", "--pb-op"]
+    ].forEach(function (pair) {
+      root.querySelectorAll("[" + pair[0] + "]").forEach(function (el) {
+        el.style.setProperty(pair[1], el.getAttribute(pair[0]));
+        el.removeAttribute(pair[0]);
+      });
+    });
+  }
+  function pbWatch() {
+    var el = document.querySelector(".flosc-personality-workshop");
+    if (!el || el.getAttribute("data-pb-watch") === "1") {
+      return;
+    }
+    el.setAttribute("data-pb-watch", "1");
+    new MutationObserver(function () {
+      pbApply(el);
+    }).observe(el, { childList: true, subtree: true });
+    pbApply(el);
+  }
   /* Band floors: a density belongs to the highest band whose floor it
      has reached. Soul from 0, character from 34, behavior from 67. */
   const DENSITY_BANDS = { soul: 0, character: 34, behavior: 67 };
@@ -2269,7 +2298,7 @@
           '<div class="trib-top">' +
           '<span class="drag-handle" title="Drag to insert or reorder" draggable="true" data-drag-trib="' + t.id + '">⋮⋮</span>' +
           '<input type="checkbox" data-toggle="' + t.id + '"' + (st.on ? " checked" : "") + ">" +
-          '<label><span><i class="swatch" style="background:' + esc(tribColor(t)) + '"></i>' + esc(t.label) + "</span><small>" + (st.on ? "on · " + rungLabel(t.id) + " · G" + st.weight + " · " + st.binding : "off") + (t.character ? " · " + esc(t.character.split(". ")[0] + ".") : "") + "</small></label>" +
+          '<label><span><i class="swatch" data-pb-bg="' + esc(tribColor(t)) + '"></i>' + esc(t.label) + "</span><small>" + (st.on ? "on · " + rungLabel(t.id) + " · G" + st.weight + " · " + st.binding : "off") + (t.character ? " · " + esc(t.character.split(". ")[0] + ".") : "") + "</small></label>" +
           "</div></div>";
       }).join("");
       const colSel = (state.focus.kind === "col" && state.focus.id === c.id) ||
@@ -2302,7 +2331,7 @@
       const st = tribState(t.id);
       if (state.hideOff && !st.on) return "";
       const rg = rungOf(t.id);
-      return '<i class="' + (st.density === 0 ? "zero" : "") + '" title="' + esc(t.label) + " " + rungLabel(t.id) + '" style="top:' + st.density + "%;left:" + ((rg.n - 1) * 3) + 'px"></i>';
+      return '<i class="' + (st.density === 0 ? "zero" : "") + '" title="' + esc(t.label) + " " + rungLabel(t.id) + '" data-pb-top="' + st.density + '%" data-pb-left="' + ((rg.n - 1) * 3) + 'px"></i>';
     }).join("");
     const wrap = rail.closest(".seq-den");
     const box = wrap && wrap.querySelector(".seq-den-items");
@@ -2379,7 +2408,7 @@
     const role = tribRole(t);
     return teachHtml(t) +
       '<div class="color-row"><label>Hue</label><input type="color" data-color="' + t.id + '" value="' + esc(tribColor(t)) + '"><code class="color-hex">' + esc(tribColor(t)) + "</code><span>tag only · not a mix</span></div>" +
-      '<div class="wrow"><label style="font-family:var(--ui);font-size:0.68rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--accent-2)">Gain</label><input type="range" min="-100" max="100" step="5" data-weight="' + t.id + '" value="' + st.weight + '"' + (st.on ? "" : " disabled") + '><span class="wn">' + st.weight + "</span></div>" +
+      '<div class="wrow"><label class="wrow-lab">Gain</label><input type="range" min="-100" max="100" step="5" data-weight="' + t.id + '" value="' + st.weight + '"' + (st.on ? "" : " disabled") + '><span class="wn">' + st.weight + "</span></div>" +
       '<p class="figure-readout"><strong>How to name it:</strong> name the behavior positively. <em>Truth-telling +50</em> means reinforce truthfulness, so it supports “do not lie.” Use <em>Lying -100</em> when you want a dam against lying. Negative Gain suppresses the named behavior; it never reverses the instruction.</p>' +
       '<label class="excerpt-lab">Aspect explanation · plain text meaning of this aspect</label>' +
       '<textarea class="traj-phrase" data-cloud="' + t.id + '" placeholder="e.g. do not lie">' + esc(st.cloud || "") + "</textarea>" +
@@ -2387,7 +2416,7 @@
       '<button type="button" class="btn ghost" data-cloud-new="' + t.id + '"' + (cloudOfTrib(t.id) ? " disabled" : "") + '>Start a cloud with this aspect</button>' +
       '<p class="figure-readout">' + esc(gainMeaning(t)) + '. Negative Gain never means “perform the opposite.” For example, <em>Lying</em> −100 means do not lie.</p>' +
       '<div class="den-row"><div class="den-slider-wrap"><input class="den-vert" type="range" min="0" max="100" step="any" data-density="' + t.id + '" value="' + st.density + '" title="Density: 0 at top (white / least dense) to 100 at bottom (black / ink). Not Gain."></div>' +
-      '<div class="den-lab"><span class="den-swatch" style="background:' + densityGray(st.density) + '"></span><b>Density <input type="number" min="0" max="100" step="any" data-density-num="' + t.id + '" value="' + formatDensity(st.density) + '" style="width:7.5rem"></b>' +
+      '<div class="den-lab"><span class="den-swatch" data-pb-bg="' + densityGray(st.density) + '"></span><b>Density <input class="den-num" type="number" min="0" max="100" step="any" data-density-num="' + t.id + '" value="' + formatDensity(st.density) + '"></b>' +
       (rungOf(t.id).of > 1 ? '<br><strong>On this rung: ' + rungLabel(t.id) + "</strong> — place among cards that share this ink. Not a new axis. Drag among them to change # only." : "") +
       "<br>0 = top = white = least dense. 100 = bottom = black = ink.<br>Not hue. Not Gain. Enter or leave the number to place the card. Soul ≈ 0–33 · Character ≈ 33–67 · Behavior ≈ 67–100 — bands, not separate architecture.</div></div>" +
       '<div class="param-row">' +
@@ -2426,8 +2455,8 @@
       "<span>User understands the distinction without being pressured.</span>" +
       "</div>";
     trajs.forEach(function (tr, i) {
-      html += '<div class="field" style="margin-top:8px">' +
-        '<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-traj-on="' + i + '"' + (tr.on !== false ? " checked" : "") + "> On</label>" +
+      html += '<div class="field field-gap">' +
+        '<label class="check-row"><input type="checkbox" data-traj-on="' + i + '"' + (tr.on !== false ? " checked" : "") + "> On</label>" +
         '<input type="text" data-traj-label="' + i + '" value="' + esc(tr.label || "") + '" placeholder="Short name (optional)">' +
         '<textarea data-traj-text="' + i + '" placeholder="e.g. User can accurately retell the key fact tomorrow.">' + esc(tr.text || "") + "</textarea>" +
         '<button type="button" class="btn ghost" data-traj-del="' + i + '">Remove</button></div>';
@@ -2447,8 +2476,8 @@
     const ink = densityInk(st.density);
     const light = ink === "#ffffff";
     return '<details class="acc' + (sel ? " sel" : "") + '"' + (open ? " open" : "") + ' data-acc="trib:' + t.id + '" data-open-key="trib:' + t.id + '" data-drag-trib="' + t.id + '">' +
-      '<summary class="row-sum' + (light ? " ink-light" : "") + '" style="background:' + bg + ';color:' + ink + '" title="Density ' + formatDensity(st.density) + ' · gain ' + st.weight + ' · marker at far left is -100, centre is 0, far right is 100">' +
-      '<span class="gain-mark" style="left:calc((100% - 10px) * ' + frac.toFixed(4) + ')"></span>' +
+      '<summary class="row-sum' + (light ? " ink-light" : "") + '" data-pb-bg="' + bg + '" data-pb-fg="' + ink + '" title="Density ' + formatDensity(st.density) + ' · gain ' + st.weight + ' · marker at far left is -100, centre is 0, far right is 100">' +
+      '<span class="gain-mark" data-pb-left="calc((100% - 10px) * ' + frac.toFixed(4) + ')"></span>' +
       '<span class="drag-handle" title="Drag to reorder by density · drop between rows or onto a cloud. Aspects are not drop targets." draggable="true" data-drag-trib="' + t.id + '">\u22ee\u22ee</span>' +
       '<span class="row-lab">' + esc(t.label) + '</span>' +
       '<span class="meta-bit ' + (st.on ? "on-dot" : "off-dot") + '">' + rungLabel(t.id) + " \u00b7 " + (st.on ? "G" + st.weight + " \u00b7 " + st.binding + " \u00b7 " + st.shape2 + "/" + st.shape3 : "off") + (st.trajectory ? " \u00b7 traj" : "") + "</span></summary>" +
@@ -2462,7 +2491,7 @@
       return allTribs().find(function (x) { return x.id === id; });
     }).filter(Boolean);
     const color = c.color || "#eef4ee";
-    return '<div class="cloud" data-drop-cloud="' + c.id + '" style="--cloud-bg:' + esc(color) + '">' +
+    return '<div class="cloud" data-drop-cloud="' + c.id + '" data-pb-bg="' + esc(color) + '">' +
       '<div class="cloud-head">' +
       '<input class="cloud-name" data-cloud-name="' + c.id + '" value="' + esc(c.name || "") + '" placeholder="Name this cloud">' +
       '<input type="color" data-cloud-color="' + c.id + '" value="' + esc(color) + '" title="Cloud background">' +
@@ -2471,7 +2500,7 @@
       "</div>" +
       '<label class="excerpt-lab">Cloud explanation · what this group of aspects means</label>' +
       '<textarea class="traj-phrase" data-cloud-exp="' + c.id + '" placeholder="e.g. This personality never lies or manipulates and always tells the truth.">' + esc(c.explanation || "") + "</textarea>" +
-      '<div class="cloud-grid" style="grid-template-columns:minmax(0,1fr)">' +
+      '<div class="cloud-grid cloud-grid-1">' +
       members.map(tribRowHtml).join("") +
       "</div></div>";
   }
@@ -2516,12 +2545,12 @@
     parts.push('<p class="note">The personality document, live. Headings sort by density: 0 = top = white, 100 = bottom = ink. Every heading holds its topics; a cloud inside a heading groups topics under one name. Removed aspects return to the unused wellsprings palette on the left.</p>');
     const place = state.denPlace || "avg";
     parts.push('<div class="density-label"><span>Drop between</span><span>working sort = density</span></div>' +
-      '<div class="seg" style="margin:0 0 8px">' +
+      '<div class="seg seg-tight">' +
       [["avg", "average"], ["above", "same as above"], ["below", "same as below"]].map(function (p) {
         return '<button type="button" data-den-place="' + p[0] + '"' + (place === p[0] ? ' class="on"' : "") + ">" + p[1] + "</button>";
       }).join("") +
       '</div><button type="button" class="btn ghost" data-add-heading="1" title="Add an H1 container">+ Heading</button>' +
-      '<p class="figure-readout" style="margin:0 0 8px">Average of the two neighbors. Or match above / below. If both neighbors are 55, you stay at 55 and take a visible place on that rung. Type 47 and it stays 47. Midpoints keep up to 3 decimal places, no float garbage.</p>');
+      '<p class="figure-readout readout-tight">Average of the two neighbors. Or match above / below. If both neighbors are 55, you stay at 55 and take a visible place on that rung. Type 47 and it stays 47. Midpoints keep up to 3 decimal places, no float garbage.</p>');
     parts.push('<div class="seq-den"><div class="seq-den-rail"><div class="cap">0</div><div class="rail-body"><div class="rail-bands"><span>Soul</span><span>Character</span><span>Behavior</span></div><div class="den-rail" id="denRail" title="0 white at top · 100 ink at bottom"></div></div><div class="cap">100</div></div><div class="seq-den-items" data-drop-den="1">');
 
     const seq = containersSorted().map(function (L) {
@@ -2877,38 +2906,38 @@
         "</div>";
     } else if (view === "cols") {
       if (!pigment.length) {
-        stage.innerHTML = '<div class="spec-cols"><div class="bar" style="background:#d8d2c4;flex:1"></div></div>';
+        stage.innerHTML = '<div class="spec-cols"><div class="bar bar-empty"></div></div>';
       } else {
         stage.innerHTML = '<div class="spec-cols">' + pigment.map(function (t) {
           const w = tribState(t.id).weight;
-          return '<div class="bar" title="' + esc(t.label) + " · " + w + '" style="background:' + esc(tribColor(t)) + ";flex:" + w + '"><i>' + esc(t.label) + "</i></div>";
+          return '<div class="bar" title="' + esc(t.label) + " · " + w + '" data-pb-bg="' + esc(tribColor(t)) + '" data-pb-flex="' + w + '"><i>' + esc(t.label) + "</i></div>";
         }).join("") + "</div>";
       }
     } else if (view === "blend") {
       if (!pigment.length) {
-        stage.innerHTML = '<div class="spec-blend" style="background:#d8d2c4"></div>';
+        stage.innerHTML = '<div class="spec-blend spec-blend-empty"></div>';
       } else {
         const stops = pigment.map(function (t, i) {
           const pct = ((i + 0.5) / pigment.length) * 100;
           return esc(tribColor(t)) + " " + pct.toFixed(1) + "%";
         }).join(", ");
-        stage.innerHTML = '<div class="spec-blend" style="background:linear-gradient(90deg, ' + stops + ')"></div>';
+        stage.innerHTML = '<div class="spec-blend" data-pb-bg="linear-gradient(90deg, ' + stops + ')"></div>';
       }
     } else if (view === "calc") {
       const rgb = hexToRgb(calc);
       const light = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000 > 150;
-      stage.innerHTML = '<div class="spec-calc' + (light ? " light" : "") + '" style="background:' + esc(calc) + '"><span>Wash only</span><span>' + esc(calc) + " · " + esc(colorName(calc)) + "</span></div>";
+      stage.innerHTML = '<div class="spec-calc' + (light ? " light" : "") + '" data-pb-bg="' + esc(calc) + '"><span>Wash only</span><span>' + esc(calc) + " · " + esc(colorName(calc)) + "</span></div>";
     } else if (view === "paper") {
       const plate = (state.soul && state.soul.content_plate) || "White sheet. Texture and paper-color later.";
       stage.innerHTML = '<div class="spec-paper"><div class="plate">' + esc(plate) + "</div></div>";
     } else if (view === "together") {
       const rgb = hexToRgb(calc);
       const light = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000 > 150;
-      stage.innerHTML = '<div class="spec-paper"><div class="wash" style="background:' + esc(calc) + ';opacity:0.32"></div><div class="plate"><strong>' + esc(expectedPhrase()) + "</strong><br>" + esc((state.soul && state.soul.content_plate) || "") + "</div></div>";
+      stage.innerHTML = '<div class="spec-paper"><div class="wash" data-pb-bg="' + esc(calc) + '"></div><div class="plate"><strong>' + esc(expectedPhrase()) + "</strong><br>" + esc((state.soul && state.soul.content_plate) || "") + "</div></div>";
     } else {
       const rgb = hexToRgb(calc);
       const light = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000 > 150;
-      stage.innerHTML = '<div class="spec-calc' + (light ? " light" : "") + '" style="background:' + esc(calc) + '"><span>Wash only</span><span>' + esc(calc) + "</span></div>";
+      stage.innerHTML = '<div class="spec-calc' + (light ? " light" : "") + '" data-pb-bg="' + esc(calc) + '"><span>Wash only</span><span>' + esc(calc) + "</span></div>";
     }
     if (!banned.length) {
       excl.innerHTML = "";
@@ -2916,7 +2945,7 @@
       excl.innerHTML = '<span class="chip">Excluded / disallowed</span>' + banned.map(function (t) {
         const w = tribState(t.id).weight;
         const op = Math.min(1, Math.abs(w) / 100);
-        return '<span class="chip" style="background:' + esc(tribColor(t)) + ";opacity:" + op + ';color:#fff;text-shadow:0 1px 1px #000">' + esc(t.label) + " " + w + "</span>";
+        return '<span class="chip chip-pigment" data-pb-bg="' + esc(tribColor(t)) + '" data-pb-op="' + op + '">' + esc(t.label) + " " + w + "</span>";
       }).join("");
     }
   }
@@ -3678,7 +3707,7 @@
         const pair = items.slice(i, i + 2).sort(function (a, b) {
           return Number(tribState(a.id).weight) - Number(tribState(b.id).weight);
         });
-        rows.push('<div class="pair-row" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">' + pair.map(previewCard).join("") + '</div>');
+        rows.push('<div class="pair-row">' + pair.map(previewCard).join("") + '</div>');
       }
       return '<section class="layer"><div class="layer-label">' + esc(band) + '</div><div class="layer-items">' +
         (rows.length ? rows.join("") : '<p class="empty">No active influences in this layer.</p>') + '</div></section>';
@@ -3692,7 +3721,7 @@
     const trajectory = esc(expectedPhrase() || "No active trajectory selected");
     const plate = esc(s.content_plate || "No content plate defined.");
     return '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>' + title + ' · FLOSC personality preview</title><style>' +
-      ':root{--ink:#17211b;--muted:#66716a;--paper:#f5f1e8;--card:#fffdf8;--line:#d9d0bf;--green:#155b3a;--gold:#c27a1a;--shadow:0 14px 36px rgba(23,33,27,.10)}*{box-sizing:border-box}body{margin:0;color:var(--ink);background:linear-gradient(135deg,#f5f1e8,#e8efe7);font:16px/1.6 Georgia,"Times New Roman",serif}.page{max-width:980px;margin:0 auto;padding:42px 22px 70px}.hero,.section{background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow)}.hero{padding:34px;border-radius:22px;margin-bottom:20px}.eyebrow,.layer-label,.tags{font:700 11px/1.3 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:.12em;text-transform:uppercase}.eyebrow{color:var(--gold)}h1{margin:8px 0 4px;font-size:clamp(2rem,5vw,4rem);line-height:1.02}h2{margin:0 0 12px;font-size:1.35rem}h3{margin:0 0 6px;font-size:1rem}.role{color:var(--muted);font-size:1.1rem}.hero-grid{display:grid;grid-template-columns:1.3fr .7fr;gap:24px;margin-top:26px}.signal{border-left:3px solid var(--green);padding-left:15px}.signal strong{display:block;color:var(--green)}.section{padding:24px;border-radius:16px;margin-top:20px}.layer{display:grid;grid-template-columns:130px 1fr;gap:18px;padding:18px 0;border-top:1px solid var(--line)}.layer:first-child{border-top:0;padding-top:4px}.layer-label{color:var(--green);padding-top:5px}.layer-items{display:grid;gap:10px}.layer article{border:1px solid var(--line);border-radius:10px;padding:13px 15px;background:#fff}.layer article p{margin:0;color:#435047}.tags{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px;color:var(--muted);letter-spacing:.04em;text-transform:none}.tags span{border:1px solid var(--line);border-radius:999px;padding:3px 8px}.empty{margin:0;color:var(--muted)}.plate,.profile{white-space:normal;background:#f1f5f0;border-left:3px solid var(--green);padding:16px;overflow:auto}.profile{font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace}.footer{margin-top:24px;color:var(--muted);font:12px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}@media(max-width:700px){.hero-grid,.layer{grid-template-columns:1fr}.page{padding:20px 12px 45px}.hero,.section{padding:20px}}' +
+      ':root{--ink:#17211b;--muted:#66716a;--paper:#f5f1e8;--card:#fffdf8;--line:#d9d0bf;--green:#155b3a;--gold:#c27a1a;--shadow:0 14px 36px rgba(23,33,27,.10)}*{box-sizing:border-box}body{margin:0;color:var(--ink);background:linear-gradient(135deg,#f5f1e8,#e8efe7);font:16px/1.6 Georgia,"Times New Roman",serif}.page{max-width:980px;margin:0 auto;padding:42px 22px 70px}.hero,.section{background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow)}.hero{padding:34px;border-radius:22px;margin-bottom:20px}.eyebrow,.layer-label,.tags{font:700 11px/1.3 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:.12em;text-transform:uppercase}.eyebrow{color:var(--gold)}h1{margin:8px 0 4px;font-size:clamp(2rem,5vw,4rem);line-height:1.02}h2{margin:0 0 12px;font-size:1.35rem}h3{margin:0 0 6px;font-size:1rem}.role{color:var(--muted);font-size:1.1rem}.hero-grid{display:grid;grid-template-columns:1.3fr .7fr;gap:24px;margin-top:26px}.signal{border-left:3px solid var(--green);padding-left:15px}.signal strong{display:block;color:var(--green)}.section{padding:24px;border-radius:16px;margin-top:20px}.layer{display:grid;grid-template-columns:130px 1fr;gap:18px;padding:18px 0;border-top:1px solid var(--line)}.layer:first-child{border-top:0;padding-top:4px}.layer-label{color:var(--green);padding-top:5px}.layer-items{display:grid;gap:10px}.pair-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.layer article{border:1px solid var(--line);border-radius:10px;padding:13px 15px;background:#fff}.layer article p{margin:0;color:#435047}.tags{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px;color:var(--muted);letter-spacing:.04em;text-transform:none}.tags span{border:1px solid var(--line);border-radius:999px;padding:3px 8px}.empty{margin:0;color:var(--muted)}.plate,.profile{white-space:normal;background:#f1f5f0;border-left:3px solid var(--green);padding:16px;overflow:auto}.profile{font:13px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace}.footer{margin-top:24px;color:var(--muted);font:12px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}@media(max-width:700px){.hero-grid,.layer{grid-template-columns:1fr}.page{padding:20px 12px 45px}.hero,.section{padding:20px}}' +
       '</style></head><body><main class="page"><header class="hero"><div class="eyebrow">FLOSC · HTML AI personality preview</div><h1>' + title + '</h1><div class="role">' + role + '</div><div class="hero-grid"><div><p>' + esc(s.identity_lock || s.character || "This personality is generated from the active builder configuration.") + '</p><div class="signal"><strong>Current trajectory</strong>' + trajectory + '</div></div><div class="signal"><strong>Content plate</strong>' + plate + '</div></div></header><section class="section"><h2>Personality layers</h2>' + layers + '</section><section class="section"><h2>Test questions</h2><p>Run these through the configured FLOSC agent to compare live behavior with this preview.</p><ul>' + questions + '</ul></section><section class="section"><h2>Compiled personality profile</h2><div class="profile">' + profile + '</div></section><div class="footer">Generated by FLOSC Personality Builder v33. This preview is derived from the current workshop state; it is not a second source of truth.</div></main></body></html>';
   }
 
@@ -3832,6 +3861,7 @@
   });
 
   applyFloscHostChrome();
+  pbWatch();
   if (floscHosted()) {
     applyPreset("blank");
   } else {

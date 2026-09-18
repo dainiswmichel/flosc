@@ -7622,3 +7622,16 @@ label[for^="flosc_acc_q_"] {
 	border-color: #2271b1;
 	background: #f0f6fc;
 }
+.flosc-wp-ai-status-table {
+	max-width: 720px;
+	margin: 12px 0;
+}
+.flosc-ai-guide-table {
+	max-width: 48rem;
+}
+.flosc-ai-personality-notice {
+	margin: 8px 0 16px;
+}
+.flosc-glossary-table {
+	max-width: 42rem;
+}
