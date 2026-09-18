@@ -281,14 +281,7 @@ Configuration note: floscAdmins can configure a per-flow external scoring endpoi
 Service terms: determined by the configured endpoint provider.
 Privacy policy: determined by the configured endpoint provider.
 
-16. Amazon product search links (optional affiliate offers)
-Endpoint examples: https://www.amazon.com/s (search results URL with affiliate tag when Amazon affiliate is enabled)
-Purpose: generate outbound search links so visitors can find products; FLOSC does not call Amazon Product Advertising API by default.
-Data sent: search keywords and the site's Amazon associate tag in the query string when the visitor follows the link.
-Service terms: https://affiliate-program.amazon.com/help/operating/agreement
-Privacy policy: https://www.amazon.com/gp/help/customer/display.html?nodeId=GX7NJQ4ZB8MHFRNJ
-
-17. WordPress core oEmbed (in-chat media players)
+16. WordPress core oEmbed (in-chat media players)
 Endpoint: this site's own `/flosc/v1/oembed` (GET). Resolution is performed by WordPress core `wp_oembed_get()` against core's provider allow-list; results are cached in a transient (one day on success, five minutes on a miss).
 Purpose: render provider-native players under media links in assistant messages. The chat script only requests resolution for links matching youtube.com, youtu.be, tiktok.com, spotify.com, soundcloud.com, music.apple.com and vimeo.com.
 Data sent: the media URL alone. The visitor's browser then loads the provider's player, at which point the provider sees the visitor's IP and whatever its own embed sets. FLOSC does not send visitor identity or email on this path.
