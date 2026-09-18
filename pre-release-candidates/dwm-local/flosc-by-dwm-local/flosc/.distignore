@@ -27,6 +27,10 @@ phpcs.xml.dist
 # Archive-only output of other coding agents — reference only, never ships
 pre-release-candidates/
 
+# Gates and harnesses. This tree has no tests/ today; if one is ever added it
+# must not reach the artifact. WordPress.org reads everything in the zip.
+tests/
+
 # Python/local env
 .venv/
 

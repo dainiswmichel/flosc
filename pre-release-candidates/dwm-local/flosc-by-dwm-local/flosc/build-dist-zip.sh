@@ -62,6 +62,7 @@ DENY_PATTERNS=(
   'flosc_development_worknotes'
   'flosc_development_archives'
   'pre-release-candidates'
+  'tests'
   'sample-data'
   'admin/create-sample-data.php'
   'vendor'
