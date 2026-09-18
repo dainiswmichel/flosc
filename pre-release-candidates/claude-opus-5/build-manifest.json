@@ -1,17 +1,17 @@
 {
   "candidate": "claude-opus-5",
-  "candidate_iteration": "82.8",
+  "candidate_iteration": "86",
   "creator": "Claude Opus 5",
   "status": "WPCS_FORMATTING_APPLIED_FUNCTIONALLY_UNVERIFIED",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v82.7",
+  "base": "claude-opus-5 v82.21",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "a39d7c95065daba4c976b7d8b56a10f209cb33f39fe424e5336e3da0e2c8938a",
-  "artifact_bytes": 2760831,
-  "artifact_entries": 278,
-  "tree_files": 295,
+  "artifact_sha256": "5230a31606a687c48b1d47ad82f28221ea026939567a7419136825b9501f87e0",
+  "artifact_bytes": 2793531,
+  "artifact_entries": 281,
+  "tree_files": 302,
   "why_this_iteration": {
     "symptom": "phpcs --sniffs=WordPress.Security.NonceVerification measured 84 warnings in 8 files on the Captain's machine. v76 did not move it.",
     "chain": "v75 reordered eleven admin-ajax handlers, which answered the reviewer's ordering complaint but could never change this number: WPCS is satisfied by a nonce anywhere in the enclosing function, not by its position, so those handlers were never counted. The 84 were reads in functions that verify no nonce at all.",
@@ -694,5 +694,33 @@
       "wpcs_php_shipping": "2,499 errors, 177 warnings, 92 files"
     },
     "functionality": "Still 0 of 30 behavioural tests executed. There is no WordPress in this container. Nothing in this session has been exercised in a browser."
+  },
+  "v86": {
+    "what_this_is": "The claude-opus-5 candidate renumbered onto the shared candidate counter, alongside opencode-big-pickle v83, grok-4-6 v84 and gpt-5-6-sol v85. Iterations 82.9 through 82.21 are recorded in git history rather than here; this entry covers the work that is not already described above.",
+    "runtime_bugs_fixed": [
+      "admin/flow-edit.php -- the Quiz Type dropdown rendered every option with an empty value and an empty label. Introduced by this candidate in v82.1: the $flosc_ prefixing pass renamed the loop bindings and not the reads in the loop body.",
+      "admin/ai-feedback.php -- four update_option() calls named a variable nothing assigns. settings.php, the only includer, defines $flosc_settings_key. Every AI feedback and praise save was written to nothing.",
+      "admin/ivr-messages.php:1891 and :1901 -- the IVR file-vs-database diff table rendered all three columns empty. 1891 was fixed in v82.19; 1901, the field name column, was missed there and found afterwards by the function-scoped checker.",
+      "admin/settings.php -- isset( $all_saved ) was never true, so the \"All flows saved!\" notice never appeared. The dead isset( $flosc_saved ) half of a separate condition was removed; the redirect that reaches it uses ?saved=1.",
+      "admin/documentation.php, admin/quiz.php, admin/docs/part3-ref-settings-fields.php, admin/docs/ref-admin-skeleton.php -- 14 reads of $selected_ivr repointed to $flosc_selected_ivr. Every documentation deep-link was building ivr= with nothing after it.",
+      "admin/ui-navigation.php:19 -- the guard read isset( $flow_settings ) while settings.php assigns $flosc_flow_settings, so it was always false and the page always fell back to array(); $flosc_legacy_avatar_radius always took its 8px default. NOT introduced by this remediation -- the canonical tree carries the same mismatch, so it has been live.",
+      "includes/class-flosc-framework.php, score_visitor_audio() -- read $mtime and $reg_ts, which are assigned only in get_introspection_files() (5686) and get_introspection_user_status() (5938), different methods six thousand lines away. With FLOSC_DEBUG on that emitted two undefined-variable warnings. Three further assignments there were never read.",
+      "includes/class-flosc-framework.php, score_visitor_audio() -- three [FLOSC-PAYPAL] log lines asserted activate-subscription, create_order and capture_order had been reached, from inside audio scoring. Verified as copies before deletion: all three texts also exist at the real endpoints (9088, 9531, 9640), so no logging was lost."
+    ],
+    "ingested_from_other_candidates": {
+      "opencode-big-pickle v83": "Its PHPStan run named two of the bugs above -- flow-edit.php and ai-feedback.php. Taken in v82.19. Its remaining finding classes were not examined.",
+      "grok-4-6 v84 and gpt-5-6-sol v85": "Byte-identical trees: diff -rq between them reports zero differing files, and both are this candidate at v82.18. Their one contribution is the score_visitor_audio() dead-code removal above, taken verbatim."
+    },
+    "new_gate": "tests/check_undefined_variables.php. Token-based. Splits each file into one unit per function scope and resolves each unit against itself, with the include graph recorded per scope so a template included from inside a method inherits that method. Arrow functions are deliberately not split out, because fn() => captures the enclosing scope; closures are, because they see only what they name in use(). Verified red on reintroduction of both the flow-edit.php bug and the framework case.",
+    "known_looseness": "WordPress globals such as $wpdb are treated as always defined even inside a function that never declares global $wpdb. That hides a real WordPress bug class and is deliberate for now: tightening it without a survey would bury real findings under noise.",
+    "standards_progress": "Squiz.Commenting.BlockComment reached zero: 55 blank lines inserted before block-comment openers across 14 files and 31 closers realigned with their openers, applied by the sniff's own reported line numbers rather than by a regex over the source, because a regex for the opener cannot tell a comment from the same two characters inside a string literal.",
+    "measured_here": {
+      "php_l": "194 files, 0 errors",
+      "gates": "41 of 41 green (39 PHP, 2 JS)",
+      "phpcs_wordpress": "1524 errors, 30 warnings, 87 files",
+      "zip": "281 entries, 0 under tests/, version 8.0.0",
+      "sha256": "5230a31606a687c48b1d47ad82f28221ea026939567a7419136825b9501f87e0"
+    },
+    "not_done": "The documentation sniffs are the bulk of the remaining phpcs count. Comment formatting is being done by hand by the maintainer, not by this candidate."
   }
 }
