@@ -240,13 +240,15 @@ Privacy policy: https://support.clickbank.com/en/articles/10535346-clickbank-pri
 Endpoint examples: https://accounts.google.com/o/oauth2/v2/auth, https://oauth2.googleapis.com/token, https://www.googleapis.com/oauth2/v2/userinfo
 Purpose: authenticate users who choose Google single sign-on.
 Data sent: OAuth authorization data and account profile fields returned by Google for authentication.
+Also sent, only when an administrator clicks "Test connection" on the SSO settings screen: the site's own Google client ID and client secret are posted to https://oauth2.googleapis.com/token with a placeholder authorization code, so the credentials can be validated. No visitor data is involved in that test.
 Service terms: https://policies.google.com/terms
 Privacy policy: https://policies.google.com/privacy
 
 11. Facebook OAuth (for social login)
-Endpoint examples: https://www.facebook.com/v19.0/dialog/oauth, https://graph.facebook.com/v19.0/oauth/access_token, https://graph.facebook.com/v19.0/me
+Endpoint examples: https://www.facebook.com/v19.0/dialog/oauth, https://graph.facebook.com/v19.0/oauth/access_token, https://graph.facebook.com/v19.0/me, https://graph.facebook.com/v19.0/app (credential test only)
 Purpose: authenticate users who choose Facebook single sign-on.
 Data sent: OAuth authorization data and profile fields returned by Meta Graph API for authentication.
+Also sent, only when an administrator clicks "Test connection" on the SSO settings screen: an app access token formed from the site's own Facebook app ID and app secret is sent to the /app endpoint, so the credentials can be validated. No visitor data is involved in that test.
 Service terms: https://www.facebook.com/terms.php
 Privacy policy: https://www.facebook.com/privacy/policy/
 
@@ -276,6 +278,8 @@ Endpoint examples: https://api.yourdomain.tld/analyze, https://api.yourdomain.tl
 Purpose: score quiz submissions and finalize/retrieve session scoring data for flows that use an external scoring provider.
 Data sent: quiz audio, answer payloads, and session-finalization data required by the configured provider. FLOSC also sends request-signing headers: X-FLOSC-Site, X-FLOSC-MTS (UTC Michel timestamp), and X-FLOSC-Signature (HMAC-SHA256 over payload_json + newline + mts + newline + site).
 Configuration note: floscAdmins can configure a per-flow external scoring endpoint. If a flow uses an external scoring provider, quiz audio and related scoring payloads may be sent to that provider. Audio playback conversion dispatch is optional and flow-scoped through the Audio Conversion Provider setting (none|external).
+Service terms: determined by the configured endpoint provider.
+Privacy policy: determined by the configured endpoint provider.
 
 16. Amazon product search links (optional affiliate offers)
 Endpoint examples: https://www.amazon.com/s (search results URL with affiliate tag when Amazon affiliate is enabled)
@@ -283,6 +287,13 @@ Purpose: generate outbound search links so visitors can find products; FLOSC doe
 Data sent: search keywords and the site's Amazon associate tag in the query string when the visitor follows the link.
 Service terms: https://affiliate-program.amazon.com/help/operating/agreement
 Privacy policy: https://www.amazon.com/gp/help/customer/display.html?nodeId=GX7NJQ4ZB8MHFRNJ
+
+17. WordPress core oEmbed (in-chat media players)
+Endpoint: this site's own `/flosc/v1/oembed` (GET). Resolution is performed by WordPress core `wp_oembed_get()` against core's provider allow-list; results are cached in a transient (one day on success, five minutes on a miss).
+Purpose: render provider-native players under media links in assistant messages. The chat script only requests resolution for links matching youtube.com, youtu.be, tiktok.com, spotify.com, soundcloud.com, music.apple.com and vimeo.com.
+Data sent: the media URL alone. The visitor's browser then loads the provider's player, at which point the provider sees the visitor's IP and whatever its own embed sets. FLOSC does not send visitor identity or email on this path.
+Service terms: https://www.youtube.com/t/terms , https://www.tiktok.com/legal/page/us/terms-of-service , https://www.spotify.com/legal/end-user-agreement/ , https://soundcloud.com/terms-of-use , https://www.apple.com/legal/internet-services/itunes/dev/stdeula/ , https://vimeo.com/terms
+Privacy policy: https://policies.google.com/privacy , https://www.tiktok.com/legal/page/us/privacy-policy , https://www.spotify.com/legal/privacy-policy/ , https://soundcloud.com/pages/privacy , https://www.apple.com/legal/privacy/ , https://vimeo.com/privacy
 
 = FLOSC Site Policies =
 
