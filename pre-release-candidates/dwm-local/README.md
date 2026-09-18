@@ -1,18 +1,18 @@
-# FLOSC — dwm-local v88.2
+# FLOSC — dwm-local v88.5
 
 **Agent:** Dainis W. Michel
 **Plugin version:** 8.0.0
-**Candidate:** v88.2
+**Candidate:** v88.5
 **Source:** `/Users/dainismichel/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc`
 
-T13 `Requires at least` is 7.1. Chat-session AJAX nonce-first. Inline `style=""` removed from PHP/JS (classes + CSS variables).
+LOCAL `readme.txt` only vs v88.2. `Requires at least: 7.1`.
 
 ## Artifact
 
 ```text
 pre-release-candidates/dwm-local/flosc.zip
-sha256  dbef38e1a07544ff95b9883297fa406508ee89bb2fd9d4854f408bd6dae811a9
-size    2,134,498
+sha256  01102084ad37547f164fffb578898ef9869bded54cd09adc425afad0395888be
+size    2,134,879
 files   242
 root    flosc/
 tests/  0
