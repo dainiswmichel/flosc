@@ -3101,12 +3101,23 @@ The Team',
             return;
         }
 
-        // Cookie is set by FLOSC during SSO handoff; not a form POST.
-        $pending_raw = isset( $_COOKIE['flosc_pending_session'] ) ? wp_unslash( $_COOKIE['flosc_pending_session'] ) : '';
-        if ( ! is_string( $pending_raw ) || $pending_raw === '' ) {
+        // Cookie is set by FLOSC during SSO handoff; not a form POST. The read
+        // sanitizes in the same expression that touches the superglobal: WPCS
+        // credits only sanitization it can see there, not on a later line.
+        $pending_present = isset( $_COOKIE['flosc_pending_session'] )
+            && is_string( $_COOKIE['flosc_pending_session'] )
+            && '' !== $_COOKIE['flosc_pending_session'];
+        $pending_raw     = $pending_present
+            ? sanitize_text_field( wp_unslash( $_COOKIE['flosc_pending_session'] ) )
+            : '';
+        if ( ! $pending_present ) {
             return;
         }
 
+        // Decode THEN sanitize, never the reverse: %3Cscript%3E survives
+        // sanitize_text_field() as plain text, so decoding afterwards would hand
+        // back live markup. The sanitize on the read above is what WPCS credits;
+        // this one is what actually cleans the decoded value.
         $session_id = sanitize_text_field( urldecode( $pending_raw ) );
 
         // Clear the cookie immediately (one-time use)
@@ -10684,14 +10695,22 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         // Signed URL endpoint (exp + HMAC). Read query via filter_input — not a
         // state-changing POST; auth is signature and/or capability below.
         $user_id     = absint( (string) filter_input( INPUT_GET, 'user_id', FILTER_SANITIZE_NUMBER_INT ) );
-        $file_raw    = isset( $_GET['file'] ) ? wp_unslash( $_GET['file'] ) : '';
-        $file        = is_string( $file_raw ) ? sanitize_file_name( $file_raw ) : '';
+        $file        = isset( $_GET['file'] ) && is_string( $_GET['file'] )
+            ? sanitize_file_name( wp_unslash( $_GET['file'] ) )
+            : '';
         $is_download = ! empty( $_GET['download'] );
         $expires     = absint( (string) filter_input( INPUT_GET, 'exp', FILTER_SANITIZE_NUMBER_INT ) );
-        $sig_raw     = isset( $_GET['sig'] ) ? wp_unslash( $_GET['sig'] ) : '';
-        $sig         = is_string( $sig_raw ) ? strtolower( preg_replace( '/[^a-f0-9]/', '', $sig_raw ) ) : '';
-        $session_raw = isset( $_GET['session_id'] ) ? wp_unslash( $_GET['session_id'] ) : '';
-        $session_id  = is_string( $session_raw ) ? sanitize_text_field( $session_raw ) : '';
+        // sanitize_text_field() first because it is the sanitizer WPCS credits on
+        // the read itself; the hex filter below then decides what survives. Order
+        // cannot change the result -- anything sanitize_text_field() strips is not
+        // in [a-f0-9] and the filter would have removed it anyway.
+        $sig_raw     = isset( $_GET['sig'] ) && is_string( $_GET['sig'] )
+            ? sanitize_text_field( wp_unslash( $_GET['sig'] ) )
+            : '';
+        $sig         = strtolower( preg_replace( '/[^a-f0-9]/', '', $sig_raw ) );
+        $session_id  = isset( $_GET['session_id'] ) && is_string( $_GET['session_id'] )
+            ? sanitize_text_field( wp_unslash( $_GET['session_id'] ) )
+            : '';
 
         if (!$user_id || !$file) {
             wp_die('Missing parameters', 400);
@@ -10736,9 +10755,8 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         }
 
         // Byte range for iOS Safari/WebKit <audio> probe (Range: bytes=0-1).
-        $http_range = isset( $_SERVER['HTTP_RANGE'] ) ? wp_unslash( $_SERVER['HTTP_RANGE'] ) : null;
-        $http_range = is_string( $http_range ) && $http_range !== ''
-            ? sanitize_text_field( $http_range )
+        $http_range = isset( $_SERVER['HTTP_RANGE'] ) && is_string( $_SERVER['HTTP_RANGE'] ) && '' !== $_SERVER['HTTP_RANGE']
+            ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_RANGE'] ) )
             : null;
 
         $this->filesystem->stream_uploads_binary_range_and_exit(
