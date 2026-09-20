@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 wp_enqueue_media();
 
 // Parent settings.php defines $flow_settings; never assume it when included alone.
-$flosc_flow_settings = ( isset( $flow_settings ) && is_array( $flow_settings ) ) ? $flow_settings : array();
+$flosc_flow_settings = ( isset( $flosc_flow_settings ) && is_array( $flosc_flow_settings ) ) ? $flosc_flow_settings : array();
 
 $flosc_profile_bar = get_option(
 	'flosc_profile_bar',

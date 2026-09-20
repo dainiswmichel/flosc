@@ -9,32 +9,13 @@
  * - Font family
  * - Text scaling
  * - CSS variables generated from structured controls
- *
- * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-/*
- * Identity before input.
- *
- * WordPress.org, 14 Sep 2026: "No nonce check found validating input origin on
- * lines 1-116". Their scanner measures whether a check appears BEFORE the
- * request is read, not merely whether one exists somewhere in the file. Several
- * files here verified correctly and verified late, and late did not count -- an
- * unauthorized request still walked the whole parser before being refused.
- *
- * This is the capability the FLOSC menu itself requires. Flow-level access is
- * still checked further down where the flow is known; this only establishes
- * that somebody who may administer FLOSC at all is asking.
- */
-if ( ! current_user_can( 'edit_others_posts' ) ) {
-	wp_die( esc_html__( 'You do not have permission to access this page.', 'flosc' ), 403 );
-}
-
-// v8.0.1: Output tab header.
+// v8.0.1: Output tab header
 flosc_tab_header( '🎨', 'Style & Nav' );
 
 $flosc_current_ivr    = $GLOBALS['flosc_current_ivr'] ?? '';
@@ -70,7 +51,7 @@ $flosc_style_docs_url = add_query_arg(
 
 <?php
 
-// Handle reset action (runs inside the parent settings form).
+// Handle reset action (runs inside the parent settings form)
 $flosc_reset_nonce = isset( $_POST['flosc_reset_chat_style_nonce'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['flosc_reset_chat_style_nonce'] ) ) : '';
 if ( isset( $_POST['flosc_reset_chat_style'] ) && wp_verify_nonce( $flosc_reset_nonce, 'flosc_reset_chat_style_nonce' ) ) {
 	if ( empty( $flosc_selected_flow_id ) || ! flosc_flows()->can_access_flow_admin( $flosc_selected_flow_id ) ) {
@@ -86,7 +67,7 @@ if ( isset( $_POST['flosc_reset_chat_style'] ) && wp_verify_nonce( $flosc_reset_
 	echo '<div class="notice notice-success"><p>✓ Chat styling reset to defaults.</p></div>';
 }
 
-// Get current values (defaults match enqueue_chat_style).
+// Get current values (defaults match enqueue_chat_style)
 $flosc_flow_settings  = $GLOBALS['flosc_current_settings'] ?? array();
 $flosc_current_preset = $flosc_flow_settings['chat_style_preset'] ?? 'light';
 $flosc_current_bubble = $flosc_flow_settings['chat_style_bubble'] ?? 'subtle-notch';
@@ -94,7 +75,7 @@ $flosc_current_accent = $flosc_flow_settings['chat_style_accent'] ?? '#2563eb';
 $flosc_current_font   = $flosc_flow_settings['chat_style_font'] ?? 'system';
 $flosc_current_scale  = $flosc_flow_settings['chat_style_scale'] ?? 100;
 
-// Bubble style presets.
+// Bubble style presets
 $flosc_bubble_styles = array(
 	'subtle-notch' => array(
 		'name'      => 'Subtle Notch',

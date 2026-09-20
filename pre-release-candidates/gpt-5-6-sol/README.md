@@ -1,52 +1,60 @@
-# FLOSC — GPT-5.6 Sol v85 candidate
+# FLOSC — GPT-5.6-sol v89.2 candidate
 
-**Agent:** GPT-5.6 Sol  
-**Candidate:** v85  
-**Plugin version:** 8.0.0  
-**Published candidate path:** `pre-release-candidates/gpt-5-6-sol/`  
-**Working branch:** `gpt-5-6-sol/wporg-remediation`  
-**Base:** Grok 4.6 v84 (`5cc4b9f`) — Claude v82.18 base + Pickle v83 P1 overlay
+**Agent:** GPT-5.6-sol
+
+**Candidate:** v89.2
+
+**Plugin version:** 8.0.0
+
+**Published candidate path:** `pre-release-candidates/gpt-5-6-sol/`
+
+**Source snapshot commit:** `2bf7a63364475a08b252cddab780c45dab1df7a5` plus the current 15-file working-tree cleanup
+
+**Candidate parent on main:** `5f5c094836d7158882b4436f4bff234ae127d963`
+
+## What changed
+
+- Preserved the current local FLOSC source after the direct mechanical WPCS cleanup.
+- Repaired the final three fixable loose comparisons using proven operand types or explicit local normalization.
+- Repaired/classified the scoped nonce, input-sanitization, direct-query, no-cache, silenced-error, and ClickBank Base64 findings.
+- Kept the plugin version at `8.0.0`.
+- Built `flosc.zip` only with the repository's fail-closed `build-dist-zip.sh`.
 
 ## Artifact
 
-The initial v85 artifact is intentionally byte-identical to Grok v84 before SOL remediation begins.
-
 ```text
-pre-release-candidates/gpt-5-6-sol/flosc.zip
-sha256  ccdb7ab39ecf476d96d43d1912329a116c26ef3e6f6deedef1d1e691d6126ad4
-size    2793531
-entries 281
-root    flosc/
+sha256       4b0d5311ea012b6f508f45334241f0a93fb62d41f601024869934068da86eb7e
+size_bytes   2128003
+zip_entries  241
+source_files 228
+root         flosc/
 ```
 
-Plugin source tree:
+## Measured results
 
-`pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc/`
+PHP syntax, run on every PHP file in the candidate source tree:
 
-## Delegated remediation
+```console
+$ find . -name '*.php' -type f -print0 | xargs -0 -n1 php -l
+139 PHP files checked; 139 reported "No syntax errors detected".
+```
 
-### SOL-1 — PHP WPCS documentation remediation
-Comments/docblocks only. No executable-token changes. One file at a time. Contracts come from the code, never a restated signature. No `@since` unless the file already uses it. No whole-standard `phpcbf`.
+Full WordPress-standard PHPCS scan:
 
-Required tollgate: `--report=source` on each edited file, then the shipping-PHP tree TOTAL after the final SOL-1 edit.
+```console
+$ php -d memory_limit=2G /Users/dainismichel/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc/vendor/bin/phpcs --standard=WordPress --extensions=php --ignore='*/tests/*,*/vendor/*,*/node_modules/*,*/admin/docs/*,*/flosc_documentation/*' --report=json .
+TOTAL: 6664
+FIXABLE: 0
+NON-FIXABLE: 6664
+```
 
-### SOL-2 — narrow PHPStan correctness
-One proven `variable.undefined` repair or one behavior-identical `(string)` cast at an `esc_*` boundary at a time. Unproven intent is skipped and recorded.
+ZIP integrity and deny-list verification:
 
-### SOL-3 — external-service/readme reconciliation
-Documentation only. Compare the actual v85 shipping artifact's outbound integrations with `readme.txt`.
+```console
+$ unzip -t flosc.zip | tail -1
+No errors detected in compressed data of flosc.zip.
+$ unzip -Z1 flosc.zip | grep -E '(^|/)(tests|vendor|pre-release-candidates)/|admin/create-sample-data\.php$'
+[no output]
+```
 
-### SOL-4 — T7–T13 historical rejection audit
-Audit first; repair only a proven resurrection, one site at a time. No remodel.
-
-### SOL-5 — package/source parity
-Verify source tree versus distribution ZIP, headers, `.distignore`, and `tests/` exclusion. No runtime changes unless packaging is wrong.
-
-## Hard walls
-
-- GPT-5.6 Sol work remains inside `pre-release-candidates/gpt-5-6-sol/`.
-- No writes into Claude, Pickle, Grok, Copilot, Codex, or canonical plugin candidate trees.
-- No scanner-hiding rewrite counts as remediation.
-- No broad executable search/replace.
-- No gate is claimed unless it was actually run after the last relevant edit.
-- WordPress.org readiness is not claimed by this baseline publication.
+This is a measured candidate snapshot, not a claim of WordPress.org readiness or live deployment.

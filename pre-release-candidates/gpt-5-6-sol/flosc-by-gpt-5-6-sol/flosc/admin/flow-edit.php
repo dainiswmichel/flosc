@@ -2,10 +2,7 @@
 /**
  * FLOSC Flow Edit Page
  *
- * Create/edit a single flow
- *
- * @package FLOSC
- * @since 1.2.2
+ * v1.2.2: Create/edit a single flow
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -14,37 +11,37 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $flosc_is_admin = current_user_can( 'manage_options' );
 $flosc_flow_id  = sanitize_key( wp_unslash( $_GET['flow_id'] ?? '' ) );
-$flosc_is_new   = ( 'new' === $flosc_flow_id );
+$flosc_is_new   = ( $flosc_flow_id === 'new' );
 $flosc_flow     = $flosc_is_new ? null : flosc_flows()->get_flow( $flosc_flow_id );
 
-// Permission check.
+// Permission check
 if ( ! $flosc_is_new && $flosc_flow && ! flosc_flows()->can_access_flow_admin( $flosc_flow_id ) ) {
 	wp_die( 'You do not have permission to edit this flow.' );
 }
 
-// Only admins can create new flows.
+// Only admins can create new flows
 if ( $flosc_is_new && ! $flosc_is_admin ) {
 	wp_die( 'Only administrators can create new flows.' );
 }
 
-// Redirect if flow not found.
+// Redirect if flow not found
 if ( ! $flosc_is_new && ! $flosc_flow ) {
 	wp_safe_redirect( admin_url( 'admin.php?page=flosc-flows&error=not_found' ) );
 	exit;
 }
 
-// Get current tab.
+// Get current tab
 $flosc_current_tab = sanitize_key( wp_unslash( $_GET['tab'] ?? 'identity' ) );
-$flosc_flow_tabs   = array(
+$flosc_tabs        = array(
 	'identity' => 'Identity',
 	'ivr'      => 'IVR',
 	'content'  => 'Content',
 );
 if ( $flosc_is_admin && ! $flosc_is_new ) {
-	$flosc_flow_tabs['team'] = 'Team';
+	$flosc_tabs['team'] = 'Team';
 }
 
-// Handle form submission.
+// Handle form submission
 if ( isset( $_POST['flosc_save_flow'] ) && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ?? '' ) ), 'flosc_save_flow' ) ) {
 	// Re-check capability at mutation time (page-load check is not enough for CSRF+authz).
 	if ( $flosc_is_new && ! $flosc_is_admin ) {
@@ -78,7 +75,7 @@ if ( isset( $_POST['flosc_save_flow'] ) && wp_verify_nonce( sanitize_text_field(
 		foreach ( $flosc_visitor_menu_items_post as $flosc_key => $flosc_item ) {
 			$flosc_visitor_menu_items[ $flosc_key ] = array(
 				'label'   => sanitize_text_field( $flosc_item['label'] ?? '' ),
-				'enabled' => isset( $flosc_item['enabled'] ) && '1' === $flosc_item['enabled'],
+				'enabled' => isset( $flosc_item['enabled'] ) && $flosc_item['enabled'] === '1',
 			);
 		}
 		update_option( 'flosc_visitor_menu_items', $flosc_visitor_menu_items );
@@ -104,7 +101,7 @@ if ( isset( $_POST['flosc_save_flow'] ) && wp_verify_nonce( sanitize_text_field(
 	);
 
 	if ( $flosc_is_new ) {
-		// Generate ID from slug or random.
+		// Generate ID from slug or random
 		$flosc_data['id'] = ! empty( $flosc_data['slug'] ) ? sanitize_key( $flosc_data['slug'] ) : 'flow_' . wp_generate_password( 6, false, false );
 		$flosc_result     = flosc_flows()->create_flow( $flosc_data );
 
@@ -120,19 +117,19 @@ if ( isset( $_POST['flosc_save_flow'] ) && wp_verify_nonce( sanitize_text_field(
 		if ( is_wp_error( $flosc_result ) ) {
 			$flosc_error_message = $flosc_result->get_error_message();
 		} else {
-			// Refresh flow data.
+			// Refresh flow data
 			$flosc_flow            = flosc_flows()->get_flow( $flosc_flow_id );
 			$flosc_success_message = 'Flow updated successfully.';
 		}
 	}
 }
 
-// Handle team updates (admin only).
+// Handle team updates (admin only)
 if ( isset( $_POST['flosc_update_team'] ) && $flosc_is_admin && ! $flosc_is_new && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ?? '' ) ), 'flosc_update_team' ) ) {
 	// Sanitize at intake: every submitted value becomes an integer user ID.
 	$flosc_selected_users = isset( $_POST['team_users'] ) ? array_map( 'intval', (array) wp_unslash( $_POST['team_users'] ) ) : array();
 
-	// Get all users who currently have access.
+	// Get all users who currently have access
 	$flosc_current_users    = flosc_flows()->get_flow_users( $flosc_flow_id );
 	$flosc_current_user_ids = array_map(
 		function ( $u ) {
@@ -141,22 +138,16 @@ if ( isset( $_POST['flosc_update_team'] ) && $flosc_is_admin && ! $flosc_is_new 
 		$flosc_current_users
 	);
 
-	// Both lists are compared as integers. A strict test between an id stored
-	// as a string by an older save and one read back as an int would revoke
-	// every current member and re-grant every selected one.
-	$flosc_selected_ids = array_map( 'intval', $flosc_selected_users );
-
-	// Revoke from users no longer selected.
+	// Revoke from users no longer selected
 	foreach ( $flosc_current_user_ids as $flosc_uid ) {
-		if ( ! in_array( (int) $flosc_uid, $flosc_selected_ids, true ) ) {
+		if ( ! in_array( $flosc_uid, $flosc_selected_users ) ) {
 			flosc_flows()->revoke_flow_access( $flosc_uid, $flosc_flow_id );
 		}
 	}
 
-	// Grant to newly selected users.
-	$flosc_current_ids = array_map( 'intval', $flosc_current_user_ids );
+	// Grant to newly selected users
 	foreach ( $flosc_selected_users as $flosc_uid ) {
-		if ( ! in_array( (int) $flosc_uid, $flosc_current_ids, true ) ) {
+		if ( ! in_array( $flosc_uid, $flosc_current_user_ids ) ) {
 			flosc_flows()->grant_flow_access( $flosc_uid, $flosc_flow_id );
 		}
 	}
@@ -164,7 +155,7 @@ if ( isset( $_POST['flosc_update_team'] ) && $flosc_is_admin && ! $flosc_is_new 
 	$flosc_success_message = 'Team updated successfully.';
 }
 
-// Get available options.
+// Get available options
 $flosc_ivr_files  = flosc_flows()->get_available_ivr_files();
 $flosc_quiz_types = flosc_flows()->get_available_quiz_types();
 $flosc_categories = get_categories( array( 'hide_empty' => false ) );
@@ -192,7 +183,7 @@ $flosc_categories = get_categories( array( 'hide_empty' => false ) );
 	<?php if ( ! $flosc_is_new ) : ?>
 		<!-- Tabs -->
 		<nav class="nav-tab-wrapper">
-			<?php foreach ( $flosc_flow_tabs as $flosc_tab_id => $flosc_tab_label ) : ?>
+			<?php foreach ( $flosc_tabs as $flosc_tab_id => $flosc_tab_label ) : ?>
 				<a href="<?php echo esc_url( admin_url( 'admin.php?page=flosc-flow-edit&flow_id=' . rawurlencode( $flosc_flow_id ) . '&tab=' . $flosc_tab_id ) ); ?>"
 					class="nav-tab <?php echo esc_attr( $flosc_current_tab === $flosc_tab_id ? 'nav-tab-active' : '' ); ?>">
 					<?php echo esc_html( $flosc_tab_label ); ?>
@@ -203,7 +194,7 @@ $flosc_categories = get_categories( array( 'hide_empty' => false ) );
 	
 	<div class="card flosc-flow-edit-card">
 		
-		<?php if ( 'identity' === $flosc_current_tab || $flosc_is_new ) : ?>
+		<?php if ( $flosc_current_tab === 'identity' || $flosc_is_new ) : ?>
 			<!-- IDENTITY TAB -->
 			<form method="post">
 				<?php wp_nonce_field( 'flosc_save_flow' ); ?>
@@ -419,16 +410,16 @@ $flosc_categories = get_categories( array( 'hide_empty' => false ) );
 								)
 							);
 
-							// Legacy migration: convert old indexed format to associative.
+							// Legacy migration: convert old indexed format to associative
 							if ( is_array( $flosc_visitor_menu ) && ! empty( $flosc_visitor_menu ) &&
 								is_numeric( key( $flosc_visitor_menu ) ) &&
 								isset( $flosc_visitor_menu[0]['action'] ) ) {
 								$flosc_legacy       = $flosc_visitor_menu;
 								$flosc_visitor_menu = array();
 								foreach ( $flosc_legacy as $flosc_item ) {
-									$flosc_item_action = $flosc_item['action'] ?? '';
-									if ( $flosc_item_action ) {
-										$flosc_visitor_menu[ $flosc_item_action ] = array(
+									$flosc_action = $flosc_item['action'] ?? '';
+									if ( $flosc_action ) {
+										$flosc_visitor_menu[ $flosc_action ] = array(
 											'label'   => $flosc_item['label'] ?? '',
 											'enabled' => (bool) ( $flosc_item['enabled'] ?? false ),
 										);
@@ -458,7 +449,7 @@ $flosc_categories = get_categories( array( 'hide_empty' => false ) );
 				</p>
 			</form>
 			
-		<?php elseif ( 'ivr' === $flosc_current_tab ) : ?>
+		<?php elseif ( $flosc_current_tab === 'ivr' ) : ?>
 			<!-- IVR TAB -->
 			<form method="post">
 				<?php wp_nonce_field( 'flosc_save_flow' ); ?>
@@ -500,7 +491,7 @@ $flosc_categories = get_categories( array( 'hide_empty' => false ) );
 				<p class="description">The IVR editor currently edits the global IVR messages. In a future version, it will be flow-aware.</p>
 			</form>
 			
-		<?php elseif ( 'content' === $flosc_current_tab ) : ?>
+		<?php elseif ( $flosc_current_tab === 'content' ) : ?>
 			<!-- CONTENT TAB -->
 			<form method="post">
 				<?php wp_nonce_field( 'flosc_save_flow' ); ?>
@@ -543,7 +534,7 @@ $flosc_categories = get_categories( array( 'hide_empty' => false ) );
 				</p>
 			</form>
 			
-		<?php elseif ( 'team' === $flosc_current_tab && $flosc_is_admin ) : ?>
+		<?php elseif ( $flosc_current_tab === 'team' && $flosc_is_admin ) : ?>
 			<!-- TEAM TAB (Admin only) -->
 			<form method="post">
 				<?php wp_nonce_field( 'flosc_update_team' ); ?>
@@ -552,7 +543,7 @@ $flosc_categories = get_categories( array( 'hide_empty' => false ) );
 				<p class="description">Select which Editors and Authors can manage this flow. Administrators always have access to all flows.</p>
 				
 				<?php
-				// Get all editors and authors.
+				// Get all editors and authors
 				$flosc_team_users = get_users(
 					array(
 						'role__in' => array( 'editor', 'author', 'contributor' ),
@@ -560,7 +551,7 @@ $flosc_categories = get_categories( array( 'hide_empty' => false ) );
 					)
 				);
 
-				// Get users who currently have access.
+				// Get users who currently have access
 				$flosc_current_team     = flosc_flows()->get_flow_users( $flosc_flow_id );
 				$flosc_current_team_ids = array_map(
 					function ( $u ) {
@@ -586,7 +577,7 @@ $flosc_categories = get_categories( array( 'hide_empty' => false ) );
 								<tr>
 									<td>
 										<input type="checkbox" name="team_users[]" value="<?php echo esc_attr( $flosc_user->ID ); ?>"
-												<?php checked( in_array( (int) $flosc_user->ID, array_map( 'intval', $flosc_current_team_ids ), true ) ); ?>>
+												<?php checked( in_array( $flosc_user->ID, $flosc_current_team_ids ) ); ?>>
 									</td>
 									<td>
 										<strong><?php echo esc_html( $flosc_user->display_name ); ?></strong><br>

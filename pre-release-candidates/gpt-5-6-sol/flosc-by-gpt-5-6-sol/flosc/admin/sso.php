@@ -18,11 +18,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// Get callback base URL.
+// Get callback base URL
 $flosc_site_url      = get_site_url();
 $flosc_callback_base = $flosc_site_url . '/wp-json/flosc/v1/sso/callback/';
 
-// Provider configurations.
+// Provider configurations
 $flosc_providers = array(
 	'google'    => array(
 		'name'         => 'Google',
@@ -102,7 +102,7 @@ $flosc_providers = array(
 	),
 );
 
-// v1.4.9: SSO settings are PER-FLOW, stored in the flow settings array.
+// v1.4.9: SSO settings are PER-FLOW, stored in the flow settings array
 $flosc_flow_settings          = $GLOBALS['flosc_current_settings'] ?? array();
 $flosc_selected_ivr           = $GLOBALS['flosc_current_ivr'] ?? '';
 $flosc_sso_docs_url           = add_query_arg(
@@ -124,10 +124,10 @@ $flosc_sso_docs_inventory_url = add_query_arg(
 	admin_url( 'admin.php' )
 ) . '#inventory-auth-family';
 $flosc_flow_display_name      = trim( (string) ( $flosc_flow_settings['identity']['name'] ?? '' ) );
-if ( '' === $flosc_flow_display_name ) {
+if ( $flosc_flow_display_name === '' ) {
 	$flosc_flow_display_name = trim( (string) ( $flosc_flow_settings['name'] ?? '' ) );
 }
-if ( '' === $flosc_flow_display_name ) {
+if ( $flosc_flow_display_name === '' ) {
 	$flosc_flow_display_name = $flosc_selected_ivr;
 }
 $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key( pathinfo( $flosc_selected_ivr, PATHINFO_FILENAME ) ) : '';
@@ -159,7 +159,7 @@ $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key( pathinfo( $flosc_se
 		$flosc_configured_domain = trim( $flosc_configured_domain, " \t\n\r\0\x0B/" );
 		$flosc_flow_slug         = trim( (string) ( $flosc_flow_settings['slug'] ?? '' ), '/' );
 
-		if ( 'chat' === $flosc_flow_slug ) {
+		if ( $flosc_flow_slug === 'chat' ) {
 			$flosc_flow_fallback_url = home_url( '/chat' );
 			$flosc_redirect_source   = '/chat slug shortcut';
 		} elseif ( ! empty( $flosc_configured_domain ) ) {
@@ -177,8 +177,8 @@ $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key( pathinfo( $flosc_se
 
 	<div class="card flosc-sso-flow-card">
 		<h3 class="flosc-sso-flow-title">Flow Redirect Context <a href="<?php echo esc_url( $flosc_sso_docs_url ); ?>" class="flosc-sso-docs-link">Docs</a></h3>
-		<p class="flosc-sso-flow-row"><strong>IVR file:</strong> <code><?php echo esc_html( $flosc_selected_ivr ? $flosc_selected_ivr : '(none selected)' ); ?></code></p>
-		<p class="flosc-sso-flow-row"><strong>flow_id parameter:</strong> <code><?php echo esc_html( $flosc_current_flow_id ? $flosc_current_flow_id : '(none)' ); ?></code></p>
+		<p class="flosc-sso-flow-row"><strong>IVR file:</strong> <code><?php echo esc_html( $flosc_selected_ivr ?: '(none selected)' ); ?></code></p>
+		<p class="flosc-sso-flow-row"><strong>flow_id parameter:</strong> <code><?php echo esc_html( $flosc_current_flow_id ?: '(none)' ); ?></code></p>
 		<p class="flosc-sso-flow-row"><strong>Runtime redirect_to (primary):</strong> <code>window.location.href</code> from chat page at click-time</p>
 		<p class="flosc-sso-flow-row"><strong>Configured Post-login redirect URL:</strong>
 			<input type="url"
@@ -238,7 +238,7 @@ $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key( pathinfo( $flosc_se
 								name="flow_sso_<?php echo esc_attr( $flosc_provider_id ); ?>_client_id" 
 								value="<?php echo esc_attr( $flosc_client_id ); ?>" 
 								class="regular-text"
-								placeholder="<?php echo esc_attr( 'apple' === $flosc_provider_id ? 'Service ID (e.g., com.example.app)' : 'Your ' . $flosc_provider['name'] . ' Client/App ID' ); ?>">
+								placeholder="<?php echo esc_attr( $flosc_provider_id === 'apple' ? 'Service ID (e.g., com.example.app)' : 'Your ' . $flosc_provider['name'] . ' Client/App ID' ); ?>">
 					</td>
 				</tr>
 				
@@ -248,19 +248,19 @@ $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key( pathinfo( $flosc_se
 							<input type="password" 
 								name="flow_sso_<?php echo esc_attr( $flosc_provider_id ); ?>_client_secret" 
 								value="<?php echo esc_attr( $flosc_client_secret ); ?>" 
-								class="regular-text <?php echo esc_attr( 'apple' === $flosc_provider_id ? 'flosc-sso-apple-secret' : '' ); ?>"
-								placeholder="<?php echo esc_attr( 'apple' === $flosc_provider_id ? 'Leave empty - auto-generated from keys' : 'Your ' . $flosc_provider['name'] . ' Client Secret' ); ?>"
+								class="regular-text <?php echo esc_attr( $flosc_provider_id === 'apple' ? 'flosc-sso-apple-secret' : '' ); ?>"
+								placeholder="<?php echo esc_attr( $flosc_provider_id === 'apple' ? 'Leave empty - auto-generated from keys' : 'Your ' . $flosc_provider['name'] . ' Client Secret' ); ?>"
 								<?php
-								if ( 'apple' === $flosc_provider_id ) :
+								if ( $flosc_provider_id === 'apple' ) :
 									?>
 									readonly <?php endif; ?>>
-						<?php if ( 'apple' === $flosc_provider_id ) : ?>
+						<?php if ( $flosc_provider_id === 'apple' ) : ?>
 							<p class="description">Apple client secrets are automatically generated from Team ID, Key ID, and Private Key below.</p>
 						<?php endif; ?>
 					</td>
 				</tr>
 				
-				<?php if ( isset( $flosc_provider['extra_fields'] ) && in_array( 'team_id', $flosc_provider['extra_fields'], true ) ) : ?>
+				<?php if ( isset( $flosc_provider['extra_fields'] ) && in_array( 'team_id', $flosc_provider['extra_fields'] ) ) : ?>
 					<?php
 					$flosc_team_id     = $flosc_flow_settings[ "sso_{$flosc_provider_id}_team_id" ] ?? '';
 					$flosc_key_id      = $flosc_flow_settings[ "sso_{$flosc_provider_id}_key_id" ] ?? '';

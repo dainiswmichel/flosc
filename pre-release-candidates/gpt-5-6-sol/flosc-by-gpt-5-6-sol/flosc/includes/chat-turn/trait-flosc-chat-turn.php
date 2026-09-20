@@ -6,144 +6,19 @@
  *
  * @package FLOSC
  */
-
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 trait FLOSC_Chat_Turn_Trait {
-	/**
-	 * A visitor's turn must never end as WordPress fatal HTML inside a chat
-	 * bubble. Everything below this point may touch third-party provider code,
-	 * so the whole turn is wrapped: any Throwable becomes a controlled FLOSC
-	 * reply, with the technical reason kept for the log rather than the visitor.
-	 *
-	 * @param WP_REST_Request $request
-	 * @return WP_REST_Response|WP_Error
-	 */
 	public function handle_chat( $request ) {
-		try {
-			return $this->handle_chat_turn( $request );
-		} catch ( Throwable $e ) {
-			if ( function_exists( 'flosc_log' ) ) {
-				flosc_log(
-					sprintf(
-						'Chat turn failed: %s in %s:%d — %s',
-						get_class( $e ),
-						$e->getFile(),
-						$e->getLine(),
-						$e->getMessage()
-					)
-				);
-			}
-
-			$flosc_error_code       = 'flosc_chat_turn_exception';
-			$flosc_friendly_message = __( 'Something went wrong on our side just then. Please try that again.', 'flosc' );
-
-			return new WP_REST_Response(
-				array(
-					'success'    => false,
-					'message'    => $flosc_friendly_message,
-					'response'   => $flosc_friendly_message, // Backward compatibility.
-					'error'      => $flosc_error_code,        // Backward compatibility / machine code.
-					'error_code' => $flosc_error_code,
-				),
-				200
-			);
-		}
-	}
-
-	private function handle_chat_turn( $request ) {
 		$flosc_chat_start_time = microtime( true );
 		$flosc_response_source = 'ivr'; // Track how response was generated
 
-		$message = sanitize_text_field( $request->get_param( 'message' ) );
-
-		/*
-		 * Refresh while the assistant is still typing.
-		 *
-		 * /flosc/v1/chat is an ordinary POST, so a reload drops the browser's
-		 * end of it while PHP runs to completion and writes the answer. The
-		 * reply exists; nobody ever read it. The reloaded page then held a
-		 * visitor message with no assistant reply, and sent that as history —
-		 * so the next turn looked like a question the assistant had ignored,
-		 * and came back as scripted IVR copy on the same subject.
-		 *
-		 * The browser mints a turn id before the request leaves. Two things
-		 * follow from it: a reload can ask for the answer it missed, and the
-		 * same turn can never be billed twice.
-		 */
-		$turn_id        = class_exists( 'FLOSC_Chat_Logger' )
-			? FLOSC_Chat_Logger::flosc_sanitize_turn_id( $request->get_param( 'turn_id' ) )
-			: '';
-		$resume_turn_id = class_exists( 'FLOSC_Chat_Logger' )
-			? FLOSC_Chat_Logger::flosc_sanitize_turn_id( $request->get_param( 'resume_turn_id' ) )
-			: '';
-
-		if ( '' !== $resume_turn_id ) {
-			$resumed = FLOSC_Chat_Logger::instance()->flosc_find_turn( $resume_turn_id );
-
-			if ( is_array( $resumed ) && '' !== trim( (string) ( $resumed['ai_response'] ?? '' ) ) ) {
-				return new WP_REST_Response(
-					array(
-						'success'          => true,
-						'recovered'        => true,
-						'message'          => (string) $resumed['ai_response'],
-						'response'         => (string) $resumed['ai_response'],
-						'response_source'  => (string) ( $resumed['response_source'] ?? '' ),
-						'personality_name' => (string) ( $resumed['personality_name'] ?? '' ),
-						'turn_id'          => $resume_turn_id,
-					),
-					200
-				);
-			}
-
-			// Nothing was written, so the turn never completed. Say so plainly:
-			// the client drops its orphaned message rather than sending a
-			// half-turn as history.
-			FLOSC_Chat_Logger::instance()->flosc_mark_turn_abandoned( $resume_turn_id );
-
-			return new WP_REST_Response(
-				array(
-					'success'   => true,
-					'recovered' => false,
-					'message'   => '',
-					'response'  => '',
-					'turn_id'   => $resume_turn_id,
-				),
-				200
-			);
-		}
-
-		// The same turn arriving twice — a resend after a reload, a double tap,
-		// a client retry — answers from what was written rather than calling
-		// the provider again and billing for it.
-		if ( '' !== $turn_id ) {
-			$already = FLOSC_Chat_Logger::instance()->flosc_find_turn( $turn_id );
-			if ( is_array( $already ) && '' !== trim( (string) ( $already['ai_response'] ?? '' ) ) ) {
-				return new WP_REST_Response(
-					array(
-						'success'         => true,
-						'replayed'        => true,
-						'message'         => (string) $already['ai_response'],
-						'response'        => (string) $already['ai_response'],
-						'response_source' => (string) ( $already['response_source'] ?? '' ),
-						'turn_id'         => $turn_id,
-					),
-					200
-				);
-			}
-		}
-
+		$message        = sanitize_text_field( $request->get_param( 'message' ) );
 		$session_id_raw = sanitize_text_field( (string) ( $request->get_param( 'session_id' ) ?? '' ) );
 		$session_id     = $this->flosc_normalize_session_id( $session_id_raw );
-		// Opaque per-conversation id minted in the browser and kept across login.
-		// session_id changes at that moment (hashed visitor id -> numeric session
-		// id), so without this the chat log splits one conversation into two.
-		$journey_id = class_exists( 'FLOSC_Chat_Logger' )
-			? FLOSC_Chat_Logger::flosc_sanitize_journey_id( $request->get_param( 'journey_id' ) )
-			: '';
-		$context    = $request->get_param( 'context' ) ?? array();
+		$context        = $request->get_param( 'context' ) ?? array();
 		if ( is_array( $context ) ) {
 			if ( isset( $context['browsing_page_url'] ) ) {
 				$context['browsing_page_url'] = esc_url_raw( (string) $context['browsing_page_url'] );
@@ -187,16 +62,16 @@ trait FLOSC_Chat_Turn_Trait {
 			}
 		}
 
-		// v1.3.7: Get flow context from request.
+		// v1.3.7: Get flow context from request
 		$flow_id  = sanitize_text_field( $request->get_param( 'flow_id' ) ?? '' );
 		$ivr_file = sanitize_file_name( $request->get_param( 'ivr_file' ) ?? '' );
 		// Normalize stem so visitor charge keys match V→G remaining lookup.
-		if ( '' !== $flow_id ) {
+		if ( $flow_id !== '' ) {
 			$flow_id = $this->flosc_normalize_flow_stem( $flow_id );
 		}
 
 		// Chat always belongs to a flow. Prefer request params; else current route.
-		if ( '' === $flow_id && '' === $ivr_file && method_exists( $this, 'get_current_flow' ) ) {
+		if ( $flow_id === '' && $ivr_file === '' && method_exists( $this, 'get_current_flow' ) ) {
 			$current_flow = $this->get_current_flow();
 			if ( is_array( $current_flow ) ) {
 				$ivr_file = sanitize_file_name( (string) ( $current_flow['ivr_file'] ?? $current_flow['ivr'] ?? '' ) );
@@ -205,7 +80,7 @@ trait FLOSC_Chat_Turn_Trait {
 				);
 			}
 		}
-		if ( '' === $flow_id && '' === $ivr_file ) {
+		if ( $flow_id === '' && $ivr_file === '' ) {
 			return new WP_REST_Response(
 				array(
 					'success' => false,
@@ -233,7 +108,7 @@ trait FLOSC_Chat_Turn_Trait {
 			);
 		}
 
-		// v1.4.0: Admin Introspection - Let admins ask the chat about itself.
+		// v1.4.0: Admin Introspection - Let admins ask the chat about itself
 		if ( is_user_logged_in() && current_user_can( 'manage_options' ) ) {
 			$introspection_response = $this->check_admin_introspection( $message, $ivr_file );
 			if ( $introspection_response ) {
@@ -253,10 +128,10 @@ trait FLOSC_Chat_Turn_Trait {
 		$ivr_config = array();
 		$flow_key   = '';
 		$fs         = array();
-		if ( '' !== $flow_id || '' !== $ivr_file ) {
+		if ( $flow_id !== '' || $ivr_file !== '' ) {
 			$resolved = flosc_resolve_flow_runtime( $flow_id, $ivr_file );
 			$flow_key = (string) ( $resolved['flow_key'] ?? '' );
-			if ( '' !== $flow_key ) {
+			if ( $flow_key !== '' ) {
 				$fs = get_option( $flow_key, array() );
 				if ( ! is_array( $fs ) ) {
 					$fs = array();
@@ -271,7 +146,7 @@ trait FLOSC_Chat_Turn_Trait {
 			}
 		}
 
-		// Fallback: try global option or default parser.
+		// Fallback: try global option or default parser
 		if ( empty( $ivr_config ) || empty( $ivr_config['messages'] ) ) {
 			$ivr_config = get_option( 'flosc_ivr_config', array() );
 		}
@@ -322,7 +197,7 @@ trait FLOSC_Chat_Turn_Trait {
 					// A canned gate response (password prompt / retry) — short-circuit.
 					return new WP_REST_Response( $concierge_response );
 				}
-				if ( 'revealing' === $concierge_state ) {
+				if ( $concierge_state === 'revealing' ) {
 					$concierge_seed_response = array(
 						'content' => (string) ( $concierge_response['content'] ?? '' ),
 					);
@@ -333,7 +208,7 @@ trait FLOSC_Chat_Turn_Trait {
 			// normal chat path is byte-for-byte unchanged. The brief speaks ONLY in
 			// reply to the guest's own messages — never the auto-welcome or any other
 			// "[SYSTEM:…]" generation — so the content surfaces only after the keyword.
-			$concierge_guidance = ( 0 !== strncmp( $message, '[SYSTEM:', 8 ) )
+			$concierge_guidance = ( strncmp( $message, '[SYSTEM:', 8 ) !== 0 )
 				? FLOSC_Concierge::active_guidance( $concierge_session )
 				: '';
 		}
@@ -346,12 +221,12 @@ trait FLOSC_Chat_Turn_Trait {
 		// Now: Backend determines phase from user meta (is_member, funnel_completed, etc.)
 		// Frontend context['phase'] is accepted only as a hint if backend can't determine.
 		$phase = $this->determine_flosc_phase();
-		if ( is_user_logged_in() && '' !== $flow_id && $this->sale_manager && method_exists( $this->sale_manager, 'access' ) ) {
+		if ( is_user_logged_in() && $flow_id !== '' && $this->sale_manager && method_exists( $this->sale_manager, 'access' ) ) {
 			$phase_user  = get_current_user_id();
 			$flow_member = (bool) $this->sale_manager->access()->is_member( $phase_user, $flow_id );
 			if ( $flow_member ) {
 				$phase = 'content';
-			} elseif ( 'content' === $phase ) {
+			} elseif ( $phase === 'content' ) {
 				$funnel_complete = get_user_meta( $phase_user, '_flosc_funnel_completed', true );
 				$free_delivered  = get_user_meta( $phase_user, '_flosc_free_content_item_delivered', true );
 				if ( $funnel_complete ) {
@@ -368,7 +243,7 @@ trait FLOSC_Chat_Turn_Trait {
 		// This prevents frontend from spoofing logged_in, user_id, etc.
 		$eval_context = $context; // Frontend context first
 
-		// Authoritative backend values (cannot be overridden by frontend).
+		// Authoritative backend values (cannot be overridden by frontend)
 		$eval_context['logged_in']     = is_user_logged_in();
 		$eval_context['user_id']       = is_user_logged_in() ? get_current_user_id() : 0;
 		$eval_context['phase']         = $phase;
@@ -377,14 +252,11 @@ trait FLOSC_Chat_Turn_Trait {
 		$eval_context['flow_id']       = $flow_id;
 
 		if ( is_user_logged_in() ) {
-			$user_id                           = get_current_user_id();
-			$user_data                         = get_userdata( $user_id );
-			$eval_context['user_name']         = $user_data->display_name ?? 'there';
-			$eval_context['user_display_name'] = $user_data->display_name ?? 'there';
-			$eval_context['user_first_name']   = $user_data->first_name ?? '';
-			$eval_context['user_login']        = $user_data->user_login ?? '';
-			$eval_context['user_email']        = $user_data->user_email ?? '';
-			$eval_context['is_admin']          = user_can( $user_id, 'manage_options' );
+			$user_id                    = get_current_user_id();
+			$user_data                  = get_userdata( $user_id );
+			$eval_context['user_name']  = $user_data->display_name ?? 'there';
+			$eval_context['user_email'] = $user_data->user_email;
+			$eval_context['is_admin']   = user_can( $user_id, 'manage_options' );
 			// Per-flow userState: member only when entitled on this flow's stem.
 			$simple_state = 'guest';
 			$state_flow   = ! empty( $flow_id ) ? $flow_id : '';
@@ -393,8 +265,8 @@ trait FLOSC_Chat_Turn_Trait {
 			} elseif ( $this->member_access && method_exists( $this->member_access, 'is_member' ) ) {
 				$simple_state = $this->member_access->is_member( $user_id, $state_flow ) ? 'member' : 'guest';
 			}
-			$eval_context['access_level'] = ( 'member' === $simple_state ) ? 'member' : 'guest';
-			$eval_context['is_member']    = ( 'member' === $eval_context['access_level'] );
+			$eval_context['access_level'] = ( $simple_state === 'member' ) ? 'member' : 'guest';
+			$eval_context['is_member']    = ( $eval_context['access_level'] === 'member' );
 			// "purchased" for AI/IVR: entitlement (full access), not only _flosc_purchased meta.
 			// Actual commerce flag remains on FLOSC_USER.purchased for frontend messaging.
 			$eval_context['purchased'] = $eval_context['is_member'];
@@ -444,7 +316,7 @@ trait FLOSC_Chat_Turn_Trait {
 					$page_context_session_key
 				);
 			} catch ( \Throwable $flosc_body_error ) {
-				$flosc_page_ctx_note = ( '' !== $flosc_page_ctx_note ? $flosc_page_ctx_note . ';' : '' )
+				$flosc_page_ctx_note = ( $flosc_page_ctx_note !== '' ? $flosc_page_ctx_note . ';' : '' )
 					. 'body_err:' . $flosc_body_error->getMessage();
 				flosc_log(
 					'[FLOSC] Page context body failed: ' . $flosc_body_error->getMessage()
@@ -474,7 +346,7 @@ trait FLOSC_Chat_Turn_Trait {
 			}
 
 			$contact_email = sanitize_email( (string) ( $contact_form['email'] ?? '' ) );
-			if ( '' !== $contact_email && is_email( $contact_email ) && $this->is_guest_request_email_blocked( $contact_email ) ) {
+			if ( $contact_email !== '' && is_email( $contact_email ) && $this->is_guest_request_email_blocked( $contact_email ) ) {
 				$thank_you_message   = __( 'Thanks, dear guest. Your request has been recorded and an administrator will respond by email.', 'flosc' );
 				$redirect_url        = $this->flosc_get_visitor_session_end_redirect_url( $flow_id );
 				$contact_log_message = implode(
@@ -493,10 +365,8 @@ trait FLOSC_Chat_Turn_Trait {
 					array(
 						'flow_id'                 => $flow_id,
 						'phase'                   => $phase,
-						'user_tier'               => (string) ( $eval_context['access_level'] ?? '' ),
 						'user_id'                 => 0,
 						'session_id'              => $session_id,
-						'journey_id'              => $journey_id,
 						'user_message'            => $contact_log_message,
 						'ai_response'             => $thank_you_message,
 						'provider'                => 'ivr',
@@ -577,10 +447,8 @@ trait FLOSC_Chat_Turn_Trait {
 				array(
 					'flow_id'                 => $flow_id,
 					'phase'                   => $phase,
-					'user_tier'               => (string) ( $eval_context['access_level'] ?? '' ),
 					'user_id'                 => 0,
 					'session_id'              => $session_id,
-					'journey_id'              => $journey_id,
 					'user_message'            => $contact_log_message,
 					'ai_response'             => $thank_you_message,
 					'provider'                => 'ivr',
@@ -630,10 +498,8 @@ trait FLOSC_Chat_Turn_Trait {
 				array(
 					'flow_id'                 => $flow_id,
 					'phase'                   => $phase,
-					'user_tier'               => (string) ( $eval_context['access_level'] ?? '' ),
 					'user_id'                 => 0,
 					'session_id'              => $session_id,
-					'journey_id'              => $journey_id,
 					'user_message'            => $contact_details,
 					'ai_response'             => $thank_you_message,
 					'provider'                => 'ivr',
@@ -654,7 +520,7 @@ trait FLOSC_Chat_Turn_Trait {
 					'success'     => true,
 					'message'     => $thank_you_message,
 					'session_end' => array(
-						'contact_saved' => ( '' !== $contact_details ),
+						'contact_saved' => ( $contact_details !== '' ),
 						'input_locked'  => true,
 						'redirect_url'  => $redirect_url,
 					),
@@ -664,7 +530,7 @@ trait FLOSC_Chat_Turn_Trait {
 
 		$response_message = null;
 
-		if ( is_array( $concierge_seed_response ) && '' !== trim( (string) ( $concierge_seed_response['content'] ?? '' ) ) ) {
+		if ( is_array( $concierge_seed_response ) && trim( (string) ( $concierge_seed_response['content'] ?? '' ) ) !== '' ) {
 			$response_message      = array(
 				'content'          => (string) ( $concierge_seed_response['content'] ?? '' ),
 				'user_autoprompts' => $this->get_user_autoprompts_for_phase( $phase, $eval_context, $ivr_config ),
@@ -673,16 +539,10 @@ trait FLOSC_Chat_Turn_Trait {
 			$flosc_response_source = 'concierge';
 		}
 
-		// DA1 catalog path: content-agnostic and access-aware across all phases.
-		// Rows are filtered by Status, parent Status, Flow Scope, and VGM before
-		// any catalog payload can reach the conversational layer.
-		$da1_catalog_reply = $this->flosc_build_da1_catalog_reply(
-			$message,
-			$flow_id,
-			$ivr_file,
-			(string) ( $eval_context['access_level'] ?? 'visitor' )
-		);
-		if ( '' !== $da1_catalog_reply ) {
+		// DA1 compositions path: available across all phases and all user levels.
+		// This gives deterministic, bounded catalog answers before IVR/AI fallbacks.
+		$da1_catalog_reply = $this->flosc_build_da1_composition_reply( $message, $flow_id, $ivr_file );
+		if ( $da1_catalog_reply !== '' ) {
 			$response_message      = array(
 				'content'          => $da1_catalog_reply,
 				'user_autoprompts' => $this->get_user_autoprompts_for_phase( $phase, $eval_context, $ivr_config ),
@@ -693,43 +553,12 @@ trait FLOSC_Chat_Turn_Trait {
 
 		// v1.9.4: Chatpack — compute session tracking metadata (backend-authoritative)
 		// FloscHash: permanent installation ID (generated once, stored in wp_options)
-		// Session hash: per-session ID linked to parent via fingerprint prefix.
-		$chatpack_user_id      = $eval_context['user_id'] ?? 0;
-		$chatpack_flosc_hash   = FLOSC_Chatpack::generate_flosc_hash();
-		$chatpack_session_hash = FLOSC_Chatpack::generate_session_hash( $chatpack_flosc_hash, $chatpack_user_id, $session_id );
-		$chatpack_pair_number  = FLOSC_Chatpack::count_message_pairs( $session_id, $chatpack_user_id, $flow_id, $session_id_raw ) + 1;
-		$chatpack_is_first     = ( 1 === $chatpack_pair_number );
-
-		/*
-		 * What this turn tells the provider about itself.
-		 *
-		 * Set once, here, before any of the four dispatch paths below. The
-		 * http_request_args filter that writes the header runs deep inside the
-		 * WordPress AI Client and knows nothing about flows or personalities,
-		 * so the facts worth carrying are left here on the way past.
-		 *
-		 * Nothing in this block touches the prompt. If a single token of any
-		 * chatpack section moves because of it, it has been written wrongly.
-		 */
-		if ( function_exists( 'flosc_provider_identity_context' ) ) {
-			$flosc_identity_kb = function_exists( 'flosc_flow_knowledge_base_ids' )
-				? implode( ',', (array) flosc_flow_knowledge_base_ids( (string) $flow_id ) )
-				: '';
-			flosc_provider_identity_context(
-				array(
-					'flow'    => (string) $flow_id,
-					'profile' => function_exists( 'flosc_personality_resolved_fingerprint' )
-						? (string) flosc_personality_resolved_fingerprint( $flow_id )
-						: '',
-					'pair'    => (int) $chatpack_pair_number,
-					// From eval_context directly: $flosc_ctx_surface is not
-					// assigned until the logging block far below this one.
-					'surface' => sanitize_key( (string) ( $eval_context['browsing_surface'] ?? '' ) ),
-					'kb'      => $flosc_identity_kb,
-					'tier'    => (string) ( $eval_context['access_level'] ?? '' ),
-				)
-			);
-		}
+		// Session hash: per-session ID linked to parent via fingerprint prefix
+		$chatpack_user_id          = $eval_context['user_id'] ?? 0;
+		$chatpack_flosc_hash       = FLOSC_Chatpack::generate_flosc_hash();
+		$chatpack_session_hash     = FLOSC_Chatpack::generate_session_hash( $chatpack_flosc_hash, $chatpack_user_id, $session_id );
+		$chatpack_pair_number      = FLOSC_Chatpack::count_message_pairs( $session_id, $chatpack_user_id, $flow_id, $session_id_raw ) + 1;
+		$chatpack_is_first         = ( $chatpack_pair_number === 1 );
 		$chatpack_conv_history     = FLOSC_Chatpack::load_conversation_history( $session_id, $chatpack_user_id, 10, $flow_id, $session_id_raw );
 		$flosc_prior_opening_block = '';
 
@@ -742,13 +571,13 @@ trait FLOSC_Chat_Turn_Trait {
 				$chatpack_conv_history = array_map(
 					function ( $msg ) {
 						return array(
-							'role'    => in_array( $msg['role'] ?? '', array( 'user', 'assistant' ), true ) ? $msg['role'] : 'user',
+							'role'    => in_array( $msg['role'] ?? '', array( 'user', 'assistant' ) ) ? $msg['role'] : 'user',
 							'content' => sanitize_textarea_field( substr( $msg['content'] ?? '', 0, 1500 ) ), // Fix 10: raised from 500
 						);
 					},
 					array_slice( $visitor_history, -10 )
 				);
-				// Update pair number based on visitor history.
+				// Update pair number based on visitor history
 				$chatpack_pair_number = (int) floor( count( $chatpack_conv_history ) / 2 ) + 1;
 				$chatpack_is_first    = ( $chatpack_pair_number <= 1 );
 
@@ -768,14 +597,14 @@ trait FLOSC_Chat_Turn_Trait {
 				$flosc_stripped_openings = array();
 				if ( ! empty( $chatpack_conv_history ) ) {
 					$flosc_tail = end( $chatpack_conv_history );
-					if ( is_array( $flosc_tail ) && 'user' === ( $flosc_tail['role'] ?? '' ) ) {
+					if ( is_array( $flosc_tail ) && ( $flosc_tail['role'] ?? '' ) === 'user' ) {
 						array_pop( $chatpack_conv_history );
 					}
-					while ( ! empty( $chatpack_conv_history ) && ( 'user' !== ( $chatpack_conv_history[0]['role'] ?? '' ) ) ) {
+					while ( ! empty( $chatpack_conv_history ) && ( ( $chatpack_conv_history[0]['role'] ?? '' ) !== 'user' ) ) {
 						$flosc_lead = array_shift( $chatpack_conv_history );
-						if ( is_array( $flosc_lead ) && 'assistant' === ( $flosc_lead['role'] ?? '' ) ) {
+						if ( is_array( $flosc_lead ) && ( $flosc_lead['role'] ?? '' ) === 'assistant' ) {
 							$flosc_lead_c = trim( (string) ( $flosc_lead['content'] ?? '' ) );
-							if ( '' !== $flosc_lead_c ) {
+							if ( $flosc_lead_c !== '' ) {
 								$flosc_stripped_openings[] = $flosc_lead_c;
 							}
 						}
@@ -805,11 +634,11 @@ trait FLOSC_Chat_Turn_Trait {
 					continue;
 				}
 				$flosc_eng_c = sanitize_textarea_field( substr( (string) ( $flosc_eng_note['content'] ?? '' ), 0, 500 ) );
-				if ( '' === $flosc_eng_c ) {
+				if ( $flosc_eng_c === '' ) {
 					continue;
 				}
 				$flosc_eng_rid     = sanitize_key( (string) ( $flosc_eng_note['rule_id'] ?? '' ) );
-				$flosc_eng_lines[] = '' !== $flosc_eng_rid
+				$flosc_eng_lines[] = $flosc_eng_rid !== ''
 					? '(' . $flosc_eng_rid . ') ' . $flosc_eng_c
 					: $flosc_eng_c;
 			}
@@ -828,9 +657,9 @@ trait FLOSC_Chat_Turn_Trait {
 		$frontend_ivr_guidance = sanitize_textarea_field( $request->get_param( 'ivr_guidance' ) ?? '' );
 		$frontend_ivr_name     = sanitize_text_field( $request->get_param( 'ivr_message_name' ) ?? '' );
 
-		if ( null === $response_message ) {
+		if ( $response_message === null ) {
 			if ( ! empty( $frontend_ivr_guidance ) ) {
-				// Frontend matched — use its IVR content as guidance.
+				// Frontend matched — use its IVR content as guidance
 				$response_message = array(
 					'content'          => $frontend_ivr_guidance,
 					'name'             => $frontend_ivr_name,
@@ -853,7 +682,7 @@ trait FLOSC_Chat_Turn_Trait {
 					);
 					$flosc_response_source = 'offer_phrase';
 				} else {
-					// No frontend match, no phrase match — try server-side IVR matching.
+					// No frontend match, no phrase match — try server-side IVR matching
 					$response_message = $this->find_ivr_response( $phase, $message, $eval_context, $ivr_config );
 				}
 			}
@@ -863,14 +692,14 @@ trait FLOSC_Chat_Turn_Trait {
 		// IVR tells us WHAT to communicate. AI decides HOW to say it.
 		// AI always manages the conversation — IVR is guidance, not a direct pipeline.
 		$ai_provider         = flosc_get_setting( 'ai_provider', 'ivr' );
-		$ai_available        = ( 'ivr' !== $ai_provider && $this->ai_chat_dispatch );
+		$ai_available        = ( $ai_provider !== 'ivr' && $this->ai_chat_dispatch );
 		$token_provider      = $this->sale_manager->get_provider( 'tokens' );
-		$is_system_generated = ( 0 === strncmp( (string) $message, '[SYSTEM:', 8 ) );
+		$is_system_generated = ( strncmp( (string) $message, '[SYSTEM:', 8 ) === 0 );
 		$flow_token_enforced = $this->flosc_is_flow_chat_token_enforced( $flow_id );
 		// Charge only AI-backed turns. IVR/default scripted responses should not
 		// debit wallets unless a separate explicit model is added for them.
 		$charge_applies        = ( $ai_available && $token_provider && ! $is_system_generated && $flow_token_enforced );
-		$concierge_desk_active = ( '' !== trim( (string) $concierge_guidance ) );
+		$concierge_desk_active = ( trim( (string) $concierge_guidance ) !== '' );
 		if ( $concierge_desk_active ) {
 			$charge_applies = false;
 		}
@@ -895,7 +724,7 @@ trait FLOSC_Chat_Turn_Trait {
 			if ( is_user_logged_in() ) {
 				$charge_user_id      = get_current_user_id();
 				$user_balance_before = $this->flosc_get_user_flow_token_balance( $charge_user_id, $flow_id );
-				$min_cost            = max( 0, intval( $this->flosc_get_ai_query_token_cost( $flow_id ) ) );
+				$min_cost            = max( 0, intval( $this->flosc_get_ai_query_token_cost( $flow_id, $token_provider ) ) );
 				if ( $min_cost > 0 && $user_balance_before < $min_cost ) {
 					return new WP_REST_Response(
 						array(
@@ -917,7 +746,7 @@ trait FLOSC_Chat_Turn_Trait {
 						403
 					);
 				}
-				$min_cost            = max( 0, intval( $this->flosc_get_ai_query_token_cost( $flow_id ) ) );
+				$min_cost            = max( 0, intval( $this->flosc_get_ai_query_token_cost( $flow_id, $token_provider ) ) );
 				$request_id          = substr( hash( 'sha256', (string) $session_id . '|' . microtime( true ) . '|' . wp_rand() ), 0, 12 );
 				$visitor_reservation = $this->flosc_reserve_visitor_tokens( $flow_id, $session_id, $min_cost, $request_id, $token_provider );
 				if ( empty( $visitor_reservation['reserved'] ) ) {
@@ -938,27 +767,27 @@ trait FLOSC_Chat_Turn_Trait {
 		try {
 			if ( $response_message && $ai_available ) {
 				// IVR matched AND AI is configured — AI interprets the IVR guidance
-				// v1.9.2: Chatpack — unified prompt with session tracking + conversation history.
+				// v1.9.2: Chatpack — unified prompt with session tracking + conversation history
 				$chatpack_prompt = $chatpack_is_first
 				? FLOSC_Chatpack::build_full_chatpack( $phase, $eval_context, $flow_id, $chatpack_flosc_hash, $chatpack_session_hash, $chatpack_pair_number, $response_message['content'] )
 				: FLOSC_Chatpack::build_followup_chatpack( $phase, $eval_context, $chatpack_session_hash, $chatpack_pair_number, $response_message['content'] );
-				if ( '' !== $trajectory_guidance ) {
+				if ( $trajectory_guidance !== '' ) {
 					$chatpack_prompt .= $trajectory_guidance; }
-				if ( '' !== $concierge_guidance ) {
+				if ( $concierge_guidance !== '' ) {
 					$chatpack_prompt .= $concierge_guidance; }
-				if ( '' !== $flosc_engagement_prompt_block ) {
+				if ( $flosc_engagement_prompt_block !== '' ) {
 					$chatpack_prompt .= $flosc_engagement_prompt_block; }
-				if ( '' !== $flosc_prior_opening_block ) {
+				if ( $flosc_prior_opening_block !== '' ) {
 					$chatpack_prompt .= $flosc_prior_opening_block; }
 				$ai_response = $this->ai_chat_dispatch->get_response( $message, $chatpack_prompt, $chatpack_conv_history );
 
 				if ( $ai_response && ! is_wp_error( $ai_response ) ) {
 					// AI interpreted the IVR guidance — use AI's version
-					// Keep IVR's autoprompts and phase_change (structural, not content).
+					// Keep IVR's autoprompts and phase_change (structural, not content)
 					$response_message['content'] = $ai_response;
 					$flosc_response_source       = 'ai+ivr';
 				}
-				// If AI fails, fall through with original IVR content as-is.
+				// If AI fails, fall through with original IVR content as-is
 			}
 
 			if ( ! $response_message ) {
@@ -976,24 +805,24 @@ trait FLOSC_Chat_Turn_Trait {
 					// the RAG handler owns the real-cost metadata for rag turns, and
 					// the decrement must read from whichever path produced the reply.
 					$flosc_rag_handler = null;
-					$flosc_use_rag     = ( 'anthropic' === $ai_provider ) && class_exists( 'FLOSC_RAG_Chat_Handler' );
+					$flosc_use_rag     = ( $ai_provider === 'anthropic' ) && class_exists( 'FLOSC_RAG_Chat_Handler' );
 
 					if ( $flosc_use_rag ) {
 						// Anthropic provider — use RAG handler with tools + memory
-						// v1.9.2: Chatpack provides the system prompt (feedback, praise, KB, WP info).
+						// v1.9.2: Chatpack provides the system prompt (feedback, praise, KB, WP info)
 						$flosc_user_id      = $eval_context['user_id'] ?? 0;
 						$flosc_user_session = new FLOSC_User_Session( $flosc_user_id, $flow_id );
 						$flosc_rag_handler  = new FLOSC_RAG_Chat_Handler();
 						$chatpack_prompt    = $chatpack_is_first
 						? FLOSC_Chatpack::build_full_chatpack( $phase, $eval_context, $flow_id, $chatpack_flosc_hash, $chatpack_session_hash, $chatpack_pair_number )
 						: FLOSC_Chatpack::build_followup_chatpack( $phase, $eval_context, $chatpack_session_hash, $chatpack_pair_number );
-						if ( '' !== $trajectory_guidance ) {
+						if ( $trajectory_guidance !== '' ) {
 							$chatpack_prompt .= $trajectory_guidance; }
-						if ( '' !== $concierge_guidance ) {
+						if ( $concierge_guidance !== '' ) {
 							$chatpack_prompt .= $concierge_guidance; }
-						if ( '' !== $flosc_engagement_prompt_block ) {
+						if ( $flosc_engagement_prompt_block !== '' ) {
 							$chatpack_prompt .= $flosc_engagement_prompt_block; }
-						if ( '' !== $flosc_prior_opening_block ) {
+						if ( $flosc_prior_opening_block !== '' ) {
 							$chatpack_prompt .= $flosc_prior_opening_block; }
 						$flosc_rag_response = $flosc_rag_handler->flosc_handle_with_state( $message, $flosc_user_session, $session_id, $chatpack_prompt, $chatpack_conv_history );
 
@@ -1005,60 +834,52 @@ trait FLOSC_Chat_Turn_Trait {
 							);
 							$flosc_response_source = 'rag';
 						} else {
-							// Retrieval is optional. A RAG failure must fall through to
-							// the ordinary provider before any scripted fallback: a
-							// scripted reply to a question the model could have answered
-							// reads to the visitor as the chatbot having nothing to say.
-							$flosc_use_rag = false;
+							// RAG failed — try quiz fallback before falling through to dispatch
+							$quiz_fallback = $this->build_quiz_fallback_response( $message, $eval_context );
+							if ( $quiz_fallback ) {
+								$response_message      = array(
+									'content'          => $quiz_fallback,
+									'user_autoprompts' => $this->get_user_autoprompts_for_phase( $phase, $eval_context, $ivr_config ),
+									'phase_change'     => null,
+								);
+								$flosc_response_source = 'quiz_fallback';
+							} else {
+								$flosc_use_rag = false;
+							}
 						}
 					}
 
 					if ( ! $flosc_use_rag && ! $response_message ) {
 						// All non-Anthropic providers (OpenAI, xAI, etc.) — use dispatch
-						// v1.9.2: Chatpack — unified prompt with session tracking + conversation history.
+						// v1.9.2: Chatpack — unified prompt with session tracking + conversation history
 						$chatpack_prompt = $chatpack_is_first
 						? FLOSC_Chatpack::build_full_chatpack( $phase, $eval_context, $flow_id, $chatpack_flosc_hash, $chatpack_session_hash, $chatpack_pair_number )
 						: FLOSC_Chatpack::build_followup_chatpack( $phase, $eval_context, $chatpack_session_hash, $chatpack_pair_number );
-						if ( '' !== $trajectory_guidance ) {
+						if ( $trajectory_guidance !== '' ) {
 							$chatpack_prompt .= $trajectory_guidance; }
-						if ( '' !== $concierge_guidance ) {
+						if ( $concierge_guidance !== '' ) {
 							$chatpack_prompt .= $concierge_guidance; }
-						if ( '' !== $flosc_engagement_prompt_block ) {
+						if ( $flosc_engagement_prompt_block !== '' ) {
 							$chatpack_prompt .= $flosc_engagement_prompt_block; }
-						if ( '' !== $flosc_prior_opening_block ) {
+						if ( $flosc_prior_opening_block !== '' ) {
 							$chatpack_prompt .= $flosc_prior_opening_block; }
-						// A dispatch that reports why it failed lets response_source say
-						// 'fallback' honestly. Reading success from a non-empty string
-						// cannot tell a real answer from a canned apology.
-						$dispatch_result = method_exists( $this->ai_chat_dispatch, 'get_response_result' )
-						? $this->ai_chat_dispatch->get_response_result( $message, $chatpack_prompt, $chatpack_conv_history )
-						: array(
-							'content'    => $this->ai_chat_dispatch->get_response( $message, $chatpack_prompt, $chatpack_conv_history ),
-							'source'     => 'ai',
-							'error_code' => '',
-							'error'      => '',
-						);
-						$ai_response     = trim( (string) ( $dispatch_result['content'] ?? '' ) );
-						$dispatch_source = (string) ( $dispatch_result['source'] ?? 'fallback' );
+						$ai_response = $this->ai_chat_dispatch->get_response( $message, $chatpack_prompt, $chatpack_conv_history );
 
-						if ( 'fallback' === $dispatch_source ) {
-							/*
-							 * Provider failure detail goes to capability-gated admin
-							 * monitors and redacted log listeners. Never to the visitor:
-							 * an API error message in a chat bubble is a support ticket
-							 * and, if it carries a key fragment, worse than that.
-							 */
-							do_action( 'flosc_ai_dispatch_failed', $dispatch_result, $phase, $flow_id );
+						// v5.0.2: When AI fails, provide a useful fallback instead of generic error.
+						// If user asked about quiz results and we have quiz data, give them that.
+						if ( ! $ai_response ) {
+							$quiz_fallback = $this->build_quiz_fallback_response( $message, $eval_context );
+							$ai_response   = $quiz_fallback ?: null;
 						}
 						$response_message      = array(
-							'content'          => $ai_response ? $ai_response : 'I apologize, but I\'m having trouble responding right now. Please try again.',
+							'content'          => $ai_response ?: 'I apologize, but I\'m having trouble responding right now. Please try again.',
 							'user_autoprompts' => $this->get_user_autoprompts_for_phase( $phase, $eval_context, $ivr_config ),
 							'phase_change'     => null,
 						);
-						$flosc_response_source = ( 'ai' === $dispatch_source && '' !== $ai_response ) ? 'ai' : 'fallback';
+						$flosc_response_source = $ai_response ? 'ai' : 'fallback';
 					}
 				} else {
-					// IVR mode or no AI - use phase default + autoprompts.
+					// IVR mode or no AI - use phase default + autoprompts
 					$response_message = array(
 						'content'          => $this->get_phase_default_response( $phase, $eval_context ),
 						'user_autoprompts' => $this->get_user_autoprompts_for_phase( $phase, $eval_context, $ivr_config ),
@@ -1075,16 +896,14 @@ trait FLOSC_Chat_Turn_Trait {
 		}
 
 		// Reputation guard: never return self-undermining hedge language.
-		if ( method_exists( $this, 'flosc_enforce_no_hedge_response' ) ) {
-			$response_message['content'] = $this->flosc_enforce_no_hedge_response(
-				$response_message['content'] ?? '',
-				$message,
-				$flow_id,
-				$ivr_file,
-				$phase,
-				$eval_context
-			);
-		}
+		$response_message['content'] = $this->flosc_enforce_no_hedge_response(
+			$response_message['content'] ?? '',
+			$message,
+			$flow_id,
+			$ivr_file,
+			$phase,
+			$eval_context
+		);
 
 		// Store message in session if user is logged in (guarded to this flow).
 		if ( is_user_logged_in() && $session_id ) {
@@ -1093,7 +912,7 @@ trait FLOSC_Chat_Turn_Trait {
 			$this->session_manager->add_flosc_message( $session_id, 'assistant', $response_message['content'], get_current_user_id(), null, $msg_flow );
 		}
 
-		// v1.9.0: Log chat exchange for admin monitoring.
+		// v1.9.0: Log chat exchange for admin monitoring
 		$flosc_chat_elapsed  = round( ( microtime( true ) - $flosc_chat_start_time ) * 1000 );
 		$flosc_provider_used = $ai_available ? flosc_get_setting( 'ai_provider', 'ivr' ) : 'ivr';
 		$flosc_chain_detail  = ( $this->ai_chat_dispatch && ! empty( $this->ai_chat_dispatch->last_chain_detail ) )
@@ -1109,7 +928,7 @@ trait FLOSC_Chat_Turn_Trait {
 		if ( ! is_array( $flosc_chain_detail ) ) {
 			$flosc_chain_detail = array();
 		}
-		if ( '' !== $flosc_ctx_surface ) {
+		if ( $flosc_ctx_surface !== '' ) {
 			$flosc_chain_detail[] = 'ctx_surface:' . $flosc_ctx_surface;
 		}
 		if ( $flosc_ctx_post_id > 0 ) {
@@ -1121,16 +940,16 @@ trait FLOSC_Chat_Turn_Trait {
 		if ( ! empty( $flosc_page_ctx_note ) ) {
 			$flosc_chain_detail[] = 'page_ctx_note:' . sanitize_text_field( (string) $flosc_page_ctx_note );
 		}
-		if ( '' !== $flosc_ctx_url ) {
+		if ( $flosc_ctx_url !== '' ) {
 			$flosc_chain_detail[] = 'ctx_url:' . $flosc_ctx_url;
 		}
-		if ( '' !== $flosc_ctx_path ) {
+		if ( $flosc_ctx_path !== '' ) {
 			$flosc_chain_detail[] = 'ctx_path:' . $flosc_ctx_path;
 		}
-		if ( '' !== $flosc_ctx_title ) {
+		if ( $flosc_ctx_title !== '' ) {
 			$flosc_chain_detail[] = 'ctx_title:' . $flosc_ctx_title;
 		}
-		if ( '' !== $flosc_ctx_ref ) {
+		if ( $flosc_ctx_ref !== '' ) {
 			$flosc_chain_detail[] = 'ctx_ref:' . $flosc_ctx_ref;
 		}
 		// Read billing metadata from whichever code path actually produced this
@@ -1139,7 +958,7 @@ trait FLOSC_Chat_Turn_Trait {
 		// served by the dispatch class. Reading the wrong source leaves
 		// real_millicents at 0, which silently collapses the decrement to the
 		// 1-token "billing unavailable" fallback.
-		if ( 'rag' === $flosc_response_source && $flosc_rag_handler && method_exists( $flosc_rag_handler, 'get_last_billing_meta' ) ) {
+		if ( $flosc_response_source === 'rag' && $flosc_rag_handler && method_exists( $flosc_rag_handler, 'get_last_billing_meta' ) ) {
 			$billing_meta = (array) $flosc_rag_handler->get_last_billing_meta();
 		} else {
 			$billing_meta = method_exists( $this->ai_chat_dispatch, 'get_last_billing_meta' )
@@ -1152,41 +971,13 @@ trait FLOSC_Chat_Turn_Trait {
 			array(
 				'flow_id'                 => $flow_id,
 				'phase'                   => $phase,
-				'user_tier'               => (string) ( $eval_context['access_level'] ?? '' ),
-				// The provider's own id for the call that produced this answer,
-				// read from the http_response filter that saw it. Empty when the
-				// turn was answered without calling a provider — an IVR reply has
-				// no provider request to point at, and inventing one would put a
-				// value in the ledger that no provider can look up.
-				'provider_request_id'     => function_exists( 'flosc_provider_last_request_id' )
-					? flosc_provider_last_request_id()
-					: '',
 				'user_id'                 => is_user_logged_in() ? get_current_user_id() : 0,
 				'session_id'              => $session_id ?? 0,
-				'journey_id'              => $journey_id,
 				'user_message'            => $message,
 				'ai_response'             => $response_message['content'],
 				'provider'                => $flosc_provider_used,
 				'chain_detail'            => $flosc_chain_detail,
 				'response_source'         => $flosc_response_source,
-				// Columns, not tokens inside chain_detail. Which personality
-				// answered, on which surface, over which page — the three facts a
-				// switching test needs and the log could not previously supply.
-				// Resolved from the same library row the prompt was built from, so
-				// a row records the character that produced the text.
-				'turn_id'                 => $turn_id,
-				'surface'                 => '' !== $flosc_ctx_surface ? $flosc_ctx_surface : 'full_page',
-				'page_url'                => $flosc_ctx_url,
-				'page_title'              => $flosc_ctx_title,
-				'personality_id'          => function_exists( 'flosc_personality_library_id_for_flow' )
-					? (string) flosc_personality_library_id_for_flow( $flow_id )
-					: '',
-				'personality_name'        => function_exists( 'flosc_personality_library_resolve_field' )
-					? (string) flosc_personality_library_resolve_field( 'ai_personality_name', '', $flow_id )
-					: '',
-				'profile_hash'            => function_exists( 'flosc_personality_resolved_fingerprint' )
-					? (string) flosc_personality_resolved_fingerprint( $flow_id )
-					: '',
 				'response_time_ms'        => $flosc_chat_elapsed,
 				'billing_source'          => (string) ( $billing_meta['source'] ?? '' ),
 				'billing_model'           => (string) ( $billing_meta['model'] ?? '' ),
@@ -1254,7 +1045,7 @@ trait FLOSC_Chat_Turn_Trait {
 		$token_balance_payload = null;
 		$low_token_threshold   = $this->flosc_get_low_token_threshold( $flow_id );
 		$low_tokens_message    = $this->flosc_get_visitor_low_tokens_message( $flow_id );
-		if ( is_user_logged_in() && null !== $user_balance_after_charge ) {
+		if ( is_user_logged_in() && $user_balance_after_charge !== null ) {
 			$is_low_balance        = ( $low_token_threshold > 0 && $user_balance_after_charge <= $low_token_threshold );
 			$token_balance_payload = array(
 				'scope'           => 'user_flow',
@@ -1300,48 +1091,7 @@ trait FLOSC_Chat_Turn_Trait {
 	 * Handle chat with RAG (Retrieval Augmented Generation) - v9.1.6
 	 * AI can search WordPress content dynamically
 	 */
-	/**
-	 * A visitor's turn must never end as WordPress fatal HTML inside a chat
-	 * bubble. Everything below this point may touch third-party provider code,
-	 * so the whole turn is wrapped: any Throwable becomes a controlled FLOSC
-	 * reply, with the technical reason kept for the log rather than the visitor.
-	 *
-	 * @param WP_REST_Request $request
-	 * @return WP_REST_Response|WP_Error
-	 */
 	public function handle_chat_with_rag( $request ) {
-		try {
-			return $this->handle_chat_with_rag_turn( $request );
-		} catch ( Throwable $e ) {
-			if ( function_exists( 'flosc_log' ) ) {
-				flosc_log(
-					sprintf(
-						'Chat turn failed: %s in %s:%d — %s',
-						get_class( $e ),
-						$e->getFile(),
-						$e->getLine(),
-						$e->getMessage()
-					)
-				);
-			}
-
-			$flosc_error_code       = 'flosc_chat_turn_exception';
-			$flosc_friendly_message = __( 'Something went wrong on our side just then. Please try that again.', 'flosc' );
-
-			return new WP_REST_Response(
-				array(
-					'success'    => false,
-					'message'    => $flosc_friendly_message,
-					'response'   => $flosc_friendly_message, // Backward compatibility.
-					'error'      => $flosc_error_code,        // Backward compatibility / machine code.
-					'error_code' => $flosc_error_code,
-				),
-				200
-			);
-		}
-	}
-
-	private function handle_chat_with_rag_turn( $request ) {
 		$message = sanitize_text_field( $request->get_param( 'message' ) );
 		$context = $request->get_param( 'context' ) ?? array();
 		if ( is_array( $context ) ) {
@@ -1400,9 +1150,6 @@ trait FLOSC_Chat_Turn_Trait {
 		$flow_stem            = sanitize_key( pathinfo( $ivr_file, PATHINFO_FILENAME ) );
 		$session_id_raw       = sanitize_text_field( (string) ( $request->get_param( 'session_id' ) ?? '' ) );
 		$session_id           = $this->flosc_normalize_session_id( $session_id_raw );
-		$journey_id           = class_exists( 'FLOSC_Chat_Logger' )
-			? FLOSC_Chat_Logger::flosc_sanitize_journey_id( $request->get_param( 'journey_id' ) )
-			: '';
 		$user_context         = $this->user_access_manager->get_user_context();
 		$phase                = sanitize_key( (string) ( $user_context['phase'] ?? 'content' ) );
 
@@ -1419,10 +1166,10 @@ trait FLOSC_Chat_Turn_Trait {
 			if ( ! empty( $flow_id ) ) {
 				$this->set_flow_context( $flow_id );
 			}
-			if ( '' !== $flow_id || '' !== $ivr_file ) {
+			if ( $flow_id !== '' || $ivr_file !== '' ) {
 				$resolved = flosc_resolve_flow_runtime( $flow_id, $ivr_file );
 				$flow_key = (string) ( $resolved['flow_key'] ?? '' );
-				$fs       = ( '' !== $flow_key ) ? get_option( $flow_key, array() ) : array();
+				$fs       = ( $flow_key !== '' ) ? get_option( $flow_key, array() ) : array();
 				if ( ! is_array( $fs ) ) {
 					$fs = array();
 				}
@@ -1443,12 +1190,10 @@ trait FLOSC_Chat_Turn_Trait {
 
 							FLOSC_Chat_Logger::instance()->flosc_log_chat(
 								array(
-									'flow_id'          => $flow_id ? $flow_id : $flow_stem,
+									'flow_id'          => $flow_id ?: $flow_stem,
 									'phase'            => $phase,
-									'user_tier'        => (string) ( $user_context['access_level'] ?? '' ),
 									'user_id'          => is_user_logged_in() ? get_current_user_id() : 0,
 									'session_id'       => $session_id,
-									'journey_id'       => $journey_id,
 									'user_message'     => $message,
 									'ai_response'      => $concierge_message,
 									'provider'         => 'concierge',
@@ -1475,7 +1220,7 @@ trait FLOSC_Chat_Turn_Trait {
 					// Desk open for this guest? Carry the authorized brief into the prompt
 					// below — but ONLY in reply to the guest's own messages, never the
 					// auto-welcome or other "[SYSTEM:…]" generations.
-					$concierge_guidance = ( 0 !== strncmp( $message, '[SYSTEM:', 8 ) )
+					$concierge_guidance = ( strncmp( $message, '[SYSTEM:', 8 ) !== 0 )
 						? FLOSC_Concierge::active_guidance( $concierge_session )
 						: '';
 				}
@@ -1486,34 +1231,34 @@ trait FLOSC_Chat_Turn_Trait {
 			flosc_log( "FLOSC RAG Chat: User {$user_context['user_id']} ({$user_context['access_level']}) - Message: {$message}" );
 		}
 
-		// Build system prompt for AI.
+		// Build system prompt for AI
 		$system_prompt = $this->build_rag_system_prompt( $user_context );
 
-		// Get available lessons list (for AI to know what exists).
+		// Get available lessons list (for AI to know what exists)
 		$lessons_list = $this->rag_manager->get_available_lessons( $user_context['access_level'] );
 
-		// Add lessons to system prompt.
+		// Add lessons to system prompt
 		$system_prompt .= "\n\n**AVAILABLE CONTENT:**\n{$lessons_list}";
 
-		if ( '' !== $trajectory_guidance ) {
+		if ( $trajectory_guidance !== '' ) {
 			$system_prompt .= $trajectory_guidance; }
 
 		// Concierge desk open for this guest → host the authorized reveal in voice.
-		if ( '' !== $concierge_guidance ) {
+		if ( $concierge_guidance !== '' ) {
 			$system_prompt .= $concierge_guidance; }
 
-		// Get AI tools.
+		// Get AI tools
 		$tools = $this->rag_manager->get_ai_tools();
 
-		// Call AI with tools (RAG enabled).
+		// Call AI with tools (RAG enabled)
 		$ai_response = $this->call_ai_with_rag( $message, $system_prompt, $tools, $user_context );
 
-		// CRITICAL: Validate response for access level compliance (v9.1.7).
+		// CRITICAL: Validate response for access level compliance (v9.1.7)
 		$validator         = FLOSC_Access_Validator::instance();
 		$validation_result = $validator->validate_response( $ai_response, $user_context['access_level'] );
 
 		if ( ! $validation_result['valid'] ) {
-			// Content leakage detected - use safe fallback.
+			// Content leakage detected - use safe fallback
 			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
 				if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
 					flosc_log( 'FLOSC SECURITY ALERT: Content leakage prevented' );
@@ -1527,34 +1272,27 @@ trait FLOSC_Chat_Turn_Trait {
 			}
 		}
 
-		$safe_rag_response = method_exists( $this, 'flosc_enforce_no_hedge_response' )
-			? $this->flosc_enforce_no_hedge_response(
-				$validation_result['response'] ?? '',
-				$message,
-				$flow_id,
-				$ivr_file,
-				$user_context['phase'] ?? 'freeline',
-				$user_context
-			)
-			: (string) ( $validation_result['response'] ?? '' );
+		$safe_rag_response = $this->flosc_enforce_no_hedge_response(
+			$validation_result['response'] ?? '',
+			$message,
+			$flow_id,
+			$ivr_file,
+			$user_context['phase'] ?? 'freeline',
+			$user_context
+		);
 
 		FLOSC_Chat_Logger::instance()->flosc_log_chat(
 			array(
-				'flow_id'             => $flow_id ? $flow_id : $flow_stem,
-				'phase'               => $phase,
-				'user_tier'           => (string) ( $user_context['access_level'] ?? '' ),
-				'provider_request_id' => function_exists( 'flosc_provider_last_request_id' )
-					? flosc_provider_last_request_id()
-					: '',
-				'user_id'             => is_user_logged_in() ? get_current_user_id() : 0,
-				'session_id'          => $session_id,
-				'journey_id'          => $journey_id,
-				'user_message'        => $message,
-				'ai_response'         => $safe_rag_response,
-				'provider'            => flosc_get_setting( 'ai_provider', 'rag' ),
-				'chain_detail'        => array( 'rag' ),
-				'response_source'     => 'rag',
-				'response_time_ms'    => round( ( microtime( true ) - $flosc_rag_start_time ) * 1000 ),
+				'flow_id'          => $flow_id ?: $flow_stem,
+				'phase'            => $phase,
+				'user_id'          => is_user_logged_in() ? get_current_user_id() : 0,
+				'session_id'       => $session_id,
+				'user_message'     => $message,
+				'ai_response'      => $safe_rag_response,
+				'provider'         => flosc_get_setting( 'ai_provider', 'rag' ),
+				'chain_detail'     => array( 'rag' ),
+				'response_source'  => 'rag',
+				'response_time_ms' => round( ( microtime( true ) - $flosc_rag_start_time ) * 1000 ),
 			)
 		);
 

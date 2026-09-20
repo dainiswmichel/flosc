@@ -5,8 +5,6 @@
  * Runs only when the plugin is deleted from WordPress admin.
  * Keep this fast and dependency-free so Delete can finish removing plugins/flosc/.
  * Do not load the main plugin, loop all users/posts, or call optional helpers.
- *
- * @package FLOSC
  */
 
 if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
@@ -22,7 +20,7 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 function flosc_uninstall_delete_options_by_prefix( $prefix ) {
 	global $wpdb;
 	$prefix = (string) $prefix;
-	if ( '' === $prefix ) {
+	if ( $prefix === '' ) {
 		return;
 	}
 	$wpdb->query(
@@ -45,7 +43,7 @@ function flosc_uninstall_delete_sitemeta_by_prefix( $prefix ) {
 	}
 	global $wpdb;
 	$prefix = (string) $prefix;
-	if ( '' === $prefix ) {
+	if ( $prefix === '' ) {
 		return;
 	}
 	$wpdb->query(
@@ -67,7 +65,7 @@ function flosc_uninstall_delete_meta_table_prefix( $table, $prefix ) {
 	global $wpdb;
 	$table  = (string) $table;
 	$prefix = (string) $prefix;
-	if ( '' === $table || '' === $prefix ) {
+	if ( $table === '' || $prefix === '' ) {
 		return;
 	}
 	$wpdb->query(
@@ -124,7 +122,7 @@ if ( function_exists( 'wp_clear_scheduled_hook' ) ) {
  */
 function flosc_uninstall_rm_rf( $dir ) {
 	$dir = untrailingslashit( (string) $dir );
-	if ( '' === $dir || ! is_dir( $dir ) ) {
+	if ( $dir === '' || ! is_dir( $dir ) ) {
 		return;
 	}
 
@@ -140,10 +138,8 @@ function flosc_uninstall_rm_rf( $dir ) {
 		return;
 	}
 
-	if ( ! is_readable( $dir ) ) {
-		return;
-	}
-	$items = scandir( $dir );
+	// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Best-effort uninstall fallback must tolerate permission changes and filesystem races after WP_Filesystem deletion fails.
+	$items = @scandir( $dir );
 	if ( ! is_array( $items ) ) {
 		return;
 	}
@@ -156,17 +152,13 @@ function flosc_uninstall_rm_rf( $dir ) {
 			flosc_uninstall_rm_rf( $path );
 		} elseif ( function_exists( 'wp_delete_file' ) ) {
 			wp_delete_file( $path );
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_is_writable -- this branch runs only because WP_Filesystem is unavailable.
-		} elseif ( is_writable( $path ) ) {
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- uninstall fallback when WP_Filesystem rmdir unavailable
-			unlink( $path );
+		} else {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink,WordPress.PHP.NoSilencedErrors.Discouraged -- Best-effort uninstall fallback must tolerate permission changes and filesystem races.
+			@unlink( $path );
 		}
 	}
-	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_is_writable -- as above: the WP_Filesystem path was already tried and failed.
-	if ( is_dir( $dir ) && is_writable( $dir ) ) {
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- uninstall fallback when WP_Filesystem rmdir unavailable
-		rmdir( $dir );
-	}
+	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir,WordPress.PHP.NoSilencedErrors.Discouraged -- Best-effort uninstall fallback must tolerate permission changes and filesystem races.
+	@rmdir( $dir );
 }
 
 // FLOSC data under uploads only (never touch plugins/flosc — core removes that).

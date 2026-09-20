@@ -6,18 +6,15 @@
  * This guide explains how FLOSC works with AI providers and how to configure
  * personality, knowledge base, and phase instructions.
  *
- * Initial documentation system
+ * v1.7.8: Initial documentation system
  * Fix 15: Moved from standalone tab to Documentation > AI Configuration Guide
- *
- * @package FLOSC
- * @since 1.7.8
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// Suppress tab header when included from documentation.php.
+// Suppress tab header when included from documentation.php
 if ( empty( $GLOBALS['flosc_suppress_tab_header'] ) ) {
 	flosc_tab_header( '📖', 'AI Guide' );
 }
@@ -37,7 +34,7 @@ if ( empty( $GLOBALS['flosc_suppress_tab_header'] ) ) {
 <div class="flosc-guide-section">
 	<h3>Where floscAdmin configures AI (streamlined dual view)</h3>
 	<p>The <strong>AI</strong> admin tab has two views. Use the buttons at the top of the tab to switch.</p>
-	<table class="widefat striped flosc-measure-48">
+	<table class="widefat striped flosc-ai-guide-table">
 		<thead>
 			<tr>
 				<th>View</th>

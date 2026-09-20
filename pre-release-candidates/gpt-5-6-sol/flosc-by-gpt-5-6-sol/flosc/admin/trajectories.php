@@ -1,15 +1,4 @@
 <?php
-/**
- * Trajectories tab — the FLOSC admin screen for trajectory posts.
- *
- * Included by admin/settings.php, which has already resolved the flow being
- * edited and prepared $flosc_get. This file renders and does not bootstrap:
- * requesting it directly does nothing, because the ABSPATH guard below stops
- * it before anything else runs.
- *
- * @package FLOSC
- */
-
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -24,13 +13,13 @@ $flosc_files        = function_exists( 'flosc_config_glob' ) ? flosc_config_glob
 $flosc_flow_options = array();
 foreach ( (array) $flosc_files as $flosc_file ) {
 	$flosc_name = basename( (string) $flosc_file );
-	if ( '' === $flosc_name || false !== strpos( $flosc_name, 'backup' ) ) {
+	if ( $flosc_name === '' || strpos( $flosc_name, 'backup' ) !== false ) {
 		continue;
 	}
 	$flosc_key      = 'flosc_flow_' . sanitize_key( pathinfo( $flosc_name, PATHINFO_FILENAME ) );
 	$flosc_settings = get_option( $flosc_key, array() );
 	$flosc_label    = trim( (string) ( $flosc_settings['identity']['name'] ?? '' ) );
-	if ( '' === $flosc_label ) {
+	if ( $flosc_label === '' ) {
 		$flosc_label = ucwords( str_replace( array( '_', '-', '.md' ), array( ' ', ' ', '' ), $flosc_name ) );
 	}
 	$flosc_flow_options[ $flosc_name ] = $flosc_label;
@@ -44,12 +33,6 @@ $flosc_contact_trj_default_off_ramp_exactness = 'preferred';
 $flosc_contact_trj_default_off_ramp_phrases   = "Would you like me to continue facilitating human-to-human connection between you and the site operator, or would you like to chat about something else?\nDo you want to keep chatting about this trajectory, or would you like to chat about something else?\nDo you have any other questions, or are you interested in something else?";
 $flosc_contact_trj_default_instructions       = "Encourage direct human-to-human connection when relevant.\nInvite exchange of contact information (email, phone, or message).\nAsk for one concrete next step and keep tone warm, concise, and natural.\nOffer a clear off-ramp: Would you like me to continue facilitating human-to-human connection between you and the site operator, or would you like to chat about something else?";
 
-/*
- * 200 is a deliberate ceiling, not an oversight. This feeds the trajectory
- * picker below, so anything the query drops is a post the admin cannot choose.
- * WPCS warns above 100; a lower number here would hide content rather than save
- * work, and the query is admin-only, category-scoped and ordered by modified.
- */
 $flosc_trajectory_posts = get_posts(
 	array(
 		'post_type'      => 'post',
@@ -74,7 +57,7 @@ $flosc_trajectory_posts = array_values(
 			}
 			$flosc_cfg  = FLOSC_Trajectory::config_from_post( $flosc_post );
 			$flosc_flow = sanitize_file_name( (string) ( $flosc_cfg['flow'] ?? '' ) );
-			return '' !== $flosc_flow && $flosc_flow === $flosc_selected_ivr;
+			return $flosc_flow !== '' && $flosc_flow === $flosc_selected_ivr;
 		}
 	)
 );
@@ -85,17 +68,17 @@ $flosc_trajectory_posts = array_values(
 	<?php if ( ! empty( $flosc_get['trajectory_created'] ) ) : ?>
 		<div class="notice notice-success"><p>Trajectory post created and synced to flow guidance.</p></div>
 	<?php endif; ?>
-	<?php if ( 'missing_required' === ( $flosc_get['trajectory_error'] ?? '' ) ) : ?>
+	<?php if ( ( $flosc_get['trajectory_error'] ?? '' ) === 'missing_required' ) : ?>
 		<div class="notice notice-error"><p>Trajectory instructions are required.</p></div>
-	<?php elseif ( 'create_failed' === ( $flosc_get['trajectory_error'] ?? '' ) ) : ?>
+	<?php elseif ( ( $flosc_get['trajectory_error'] ?? '' ) === 'create_failed' ) : ?>
 		<div class="notice notice-error"><p>Could not create trajectory post. Please try again.</p></div>
-	<?php elseif ( 'toggle_failed' === ( $flosc_get['trajectory_error'] ?? '' ) ) : ?>
+	<?php elseif ( ( $flosc_get['trajectory_error'] ?? '' ) === 'toggle_failed' ) : ?>
 		<div class="notice notice-error"><p>Could not update trajectory status. Please try again.</p></div>
 	<?php endif; ?>
 
-	<?php if ( 'on' === ( $flosc_get['trajectory_toggled'] ?? '' ) ) : ?>
+	<?php if ( ( $flosc_get['trajectory_toggled'] ?? '' ) === 'on' ) : ?>
 		<div class="notice notice-success"><p>Trajectory entry set to LIVE.</p></div>
-	<?php elseif ( 'off' === ( $flosc_get['trajectory_toggled'] ?? '' ) ) : ?>
+	<?php elseif ( ( $flosc_get['trajectory_toggled'] ?? '' ) === 'off' ) : ?>
 		<div class="notice notice-success"><p>Trajectory entry set to OFF.</p></div>
 	<?php endif; ?>
 
@@ -219,13 +202,13 @@ Would you like me to continue facilitating human-to-human connection between you
 					<span class="flosc-cncrg-accordion__chevron" aria-hidden="true">▸</span>
 					<span class="flosc-cncrg-accordion__title"><?php echo esc_html( get_the_title( $flosc_post ) ); ?></span>
 					<span class="flosc-status <?php echo esc_attr( $flosc_is_live ? 'flosc-status--active' : 'flosc-status--inactive' ); ?>"><?php echo esc_html( $flosc_is_live ? 'LIVE' : 'OFF' ); ?></span>
-					<span class="flosc-cncrg-accordion__meta"><?php echo esc_html( '' !== $flosc_flow ? $flosc_flow : 'No flow' ); ?></span>
-					<span class="flosc-cncrg-accordion__meta">Keywords: <?php echo esc_html( '' !== $flosc_keywords ? $flosc_keywords : 'general' ); ?></span>
+					<span class="flosc-cncrg-accordion__meta"><?php echo esc_html( $flosc_flow !== '' ? $flosc_flow : 'No flow' ); ?></span>
+					<span class="flosc-cncrg-accordion__meta">Keywords: <?php echo esc_html( $flosc_keywords !== '' ? $flosc_keywords : 'general' ); ?></span>
 					<span class="flosc-cncrg-accordion__meta">Priority: <?php echo esc_html( (string) $flosc_priority ); ?></span>
 					<span class="flosc-cncrg-accordion__when"><?php echo esc_html( get_the_modified_date( 'Y-m-d H:i', $flosc_post ) ); ?></span>
 				</summary>
 				<div class="flosc-cncrg-accordion__body">
-					<p><strong>Guidance preview:</strong> <?php echo esc_html( '' !== $flosc_preview ? $flosc_preview : '(empty)' ); ?></p>
+					<p><strong>Guidance preview:</strong> <?php echo esc_html( $flosc_preview !== '' ? $flosc_preview : '(empty)' ); ?></p>
 					<p>
 						<form method="post" action="
 						<?php

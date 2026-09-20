@@ -29,8 +29,8 @@ class User_Linker {
 	/**
 	 * Find WordPress user linked to a provider account
 	 *
-	 * @param string $provider_id SSO provider ID.
-	 * @param string $provider_user_id User ID from provider.
+	 * @param string $provider_id SSO provider ID
+	 * @param string $provider_user_id User ID from provider
 	 * @return int|false User ID or false if not found
 	 */
 	public function find_linked_user( $provider_id, $provider_user_id ) {
@@ -48,17 +48,17 @@ class User_Linker {
 	/**
 	 * Link a provider account to a WordPress user
 	 *
-	 * @param int    $user_id WordPress user ID.
-	 * @param string $provider_id SSO provider ID.
-	 * @param array  $user_data Normalized user data from provider.
-	 * @param array  $token_data Token response data.
+	 * @param int    $user_id WordPress user ID
+	 * @param string $provider_id SSO provider ID
+	 * @param array  $user_data Normalized user data from provider
+	 * @param array  $token_data Token response data
 	 * @return bool Success
 	 */
 	public function link_account( $user_id, $provider_id, $user_data, $token_data ) {
-		// Store provider user ID.
+		// Store provider user ID
 		update_user_meta( $user_id, self::META_PREFIX . $provider_id . '_id', $user_data['provider_id'] );
 
-		// Store linked timestamp.
+		// Store linked timestamp
 		update_user_meta( $user_id, self::META_PREFIX . $provider_id . '_linked_at', time() );
 
 		// Store user data snapshot (re-sanitize at sink; never store decoded raw_data blobs).
@@ -72,15 +72,15 @@ class User_Linker {
 			)
 		);
 
-		// Store tokens (encrypted).
+		// Store tokens (encrypted)
 		$this->store_tokens( $user_id, $provider_id, $token_data );
 
-		// Update linked providers list.
+		// Update linked providers list
 		$linked_providers = get_user_meta( $user_id, self::META_PREFIX . 'linked_providers', true );
 		if ( ! is_array( $linked_providers ) ) {
 			$linked_providers = array();
 		}
-		if ( ! in_array( (string) $provider_id, array_map( 'strval', $linked_providers ), true ) ) {
+		if ( ! in_array( $provider_id, $linked_providers ) ) {
 			$linked_providers[] = $provider_id;
 			update_user_meta( $user_id, self::META_PREFIX . 'linked_providers', $linked_providers );
 		}
@@ -93,8 +93,8 @@ class User_Linker {
 	/**
 	 * Unlink a provider account from a WordPress user
 	 *
-	 * @param int    $user_id WordPress user ID.
-	 * @param string $provider_id SSO provider ID.
+	 * @param int    $user_id WordPress user ID
+	 * @param string $provider_id SSO provider ID
 	 * @return bool Success
 	 */
 	public function unlink_account( $user_id, $provider_id ) {
@@ -103,7 +103,7 @@ class User_Linker {
 		delete_user_meta( $user_id, self::META_PREFIX . $provider_id . '_data' );
 		delete_user_meta( $user_id, self::META_PREFIX . $provider_id . '_tokens' );
 
-		// Update linked providers list.
+		// Update linked providers list
 		$linked_providers = get_user_meta( $user_id, self::META_PREFIX . 'linked_providers', true );
 		if ( is_array( $linked_providers ) ) {
 			$linked_providers = array_diff( $linked_providers, array( $provider_id ) );
@@ -118,7 +118,7 @@ class User_Linker {
 	/**
 	 * Get all linked providers for a user
 	 *
-	 * @param int $user_id WordPress user ID.
+	 * @param int $user_id WordPress user ID
 	 * @return array Array of provider IDs
 	 */
 	public function get_linked_providers( $user_id ) {
@@ -129,20 +129,20 @@ class User_Linker {
 	/**
 	 * Check if user has a specific provider linked
 	 *
-	 * @param int    $user_id WordPress user ID.
-	 * @param string $provider_id SSO provider ID.
+	 * @param int    $user_id WordPress user ID
+	 * @param string $provider_id SSO provider ID
 	 * @return bool
 	 */
 	public function is_provider_linked( $user_id, $provider_id ) {
-		return in_array( (string) $provider_id, array_map( 'strval', $this->get_linked_providers( $user_id ) ), true );
+		return in_array( $provider_id, $this->get_linked_providers( $user_id ) );
 	}
 
 	/**
 	 * Create a new WordPress user from SSO data
 	 *
-	 * @param string $provider_id SSO provider ID.
-	 * @param array  $user_data Normalized user data.
-	 * @param array  $token_data Token response data.
+	 * @param string $provider_id SSO provider ID
+	 * @param array  $user_data Normalized user data
+	 * @param array  $token_data Token response data
 	 * @return int|WP_Error User ID or error
 	 */
 	public function create_user_from_sso( $provider_id, $user_data, $token_data ) {
@@ -151,23 +151,23 @@ class User_Linker {
 		$first_name = isset( $user_data['first_name'] ) ? sanitize_text_field( $user_data['first_name'] ) : '';
 		$last_name  = isset( $user_data['last_name'] ) ? sanitize_text_field( $user_data['last_name'] ) : '';
 
-		// Generate username from email or name.
+		// Generate username from email or name
 		$username = $this->generate_unique_username( $email, $name );
 
-		// Generate secure random password (user won't need it for SSO).
+		// Generate secure random password (user won't need it for SSO)
 		$password = wp_generate_password( 24, true, true );
 
 		$user_data_wp = array(
 			'user_login'   => $username,
 			'user_email'   => $email,
 			'user_pass'    => $password,
-			'display_name' => $name ? $name : $username,
+			'display_name' => $name ?: $username,
 			'first_name'   => $first_name,
 			'last_name'    => $last_name,
 			'role'         => apply_filters( 'flosc_sso_default_role', 'subscriber' ),
 		);
 
-		// Allow filtering before creation.
+		// Allow filtering before creation
 		$user_data_wp = apply_filters( 'flosc_sso_new_user_data', $user_data_wp, $provider_id, $user_data );
 
 		// Best-in-class: re-sanitize after filter so third-party hooks cannot inject raw fields.
@@ -196,15 +196,15 @@ class User_Linker {
 			return $user_id;
 		}
 
-		// Link the SSO account.
+		// Link the SSO account
 		$this->link_account( $user_id, $provider_id, $user_data, $token_data );
 
-		// Store avatar if available.
+		// Store avatar if available
 		if ( ! empty( $user_data['avatar'] ) ) {
 			update_user_meta( $user_id, self::META_PREFIX . 'avatar', esc_url_raw( (string) $user_data['avatar'] ) );
 		}
 
-		// Mark as SSO-created user.
+		// Mark as SSO-created user
 		update_user_meta( $user_id, self::META_PREFIX . 'created_via', $provider_id );
 		update_user_meta( $user_id, self::META_PREFIX . 'created_at', time() );
 		// Canonical registration method for condition evaluator / Engagement summary.
@@ -221,12 +221,12 @@ class User_Linker {
 	/**
 	 * Generate a unique username
 	 *
-	 * @param string $email User email.
-	 * @param string $name User display name.
+	 * @param string $email User email
+	 * @param string $name User display name
 	 * @return string Unique username
 	 */
 	private function generate_unique_username( $email, $name = '' ) {
-		// Try email-based username first.
+		// Try email-based username first
 		if ( $email ) {
 			$base = strstr( $email, '@', true );
 			$base = sanitize_user( $base, true );
@@ -236,12 +236,12 @@ class User_Linker {
 			$base = 'user';
 		}
 
-		// Ensure minimum length.
+		// Ensure minimum length
 		if ( strlen( $base ) < 3 ) {
 			$base = 'user_' . $base;
 		}
 
-		// Make unique.
+		// Make unique
 		$username = $base;
 		$counter  = 1;
 
@@ -256,9 +256,9 @@ class User_Linker {
 	/**
 	 * Store OAuth tokens (encrypted)
 	 *
-	 * @param int    $user_id WordPress user ID.
-	 * @param string $provider_id SSO provider ID.
-	 * @param array  $token_data Token response data.
+	 * @param int    $user_id WordPress user ID
+	 * @param string $provider_id SSO provider ID
+	 * @param array  $token_data Token response data
 	 */
 	private function store_tokens( $user_id, $provider_id, $token_data ) {
 		$tokens = array(
@@ -268,7 +268,7 @@ class User_Linker {
 			'token_type'    => isset( $token_data['token_type'] ) ? $token_data['token_type'] : 'Bearer',
 		);
 
-		// Simple encryption using WP salts.
+		// Simple encryption using WP salts
 		$encrypted = $this->encrypt_tokens( $tokens );
 
 		update_user_meta( $user_id, self::META_PREFIX . $provider_id . '_tokens', $encrypted );
@@ -277,8 +277,8 @@ class User_Linker {
 	/**
 	 * Get stored tokens for a user/provider
 	 *
-	 * @param int    $user_id WordPress user ID.
-	 * @param string $provider_id SSO provider ID.
+	 * @param int    $user_id WordPress user ID
+	 * @param string $provider_id SSO provider ID
 	 * @return array|false Token data or false
 	 */
 	public function get_tokens( $user_id, $provider_id ) {
@@ -294,9 +294,9 @@ class User_Linker {
 	/**
 	 * Update stored tokens
 	 *
-	 * @param int    $user_id WordPress user ID.
-	 * @param string $provider_id SSO provider ID.
-	 * @param array  $token_data New token data.
+	 * @param int    $user_id WordPress user ID
+	 * @param string $provider_id SSO provider ID
+	 * @param array  $token_data New token data
 	 */
 	public function update_user_tokens( $user_id, $provider_id, $token_data ) {
 		$this->store_tokens( $user_id, $provider_id, $token_data );
@@ -305,52 +305,47 @@ class User_Linker {
 	/**
 	 * Encrypt tokens using the dedicated FLOSC token secret (§5)
 	 *
-	 * @param array $tokens Token data.
+	 * @param array $tokens Token data
 	 * @return string Encrypted string
 	 */
 	private function encrypt_tokens( $tokens ) {
 		$json = wp_json_encode( $tokens );
 		$key  = flosc_token_secret(); // §5: dedicated secret, not the auth salt
 
-		// Simple XOR encryption with base64 encoding.
-		$encrypted   = '';
-		$json_length = strlen( $json );
-		$key_length  = strlen( $key );
-		for ( $i = 0; $i < $json_length; $i++ ) {
-			$encrypted .= chr( ord( $json[ $i ] ) ^ ord( $key[ $i % $key_length ] ) );
+		// Simple XOR encryption with base64 encoding
+		$encrypted = '';
+		for ( $i = 0; $i < strlen( $json ); $i++ ) {
+			$encrypted .= chr( ord( $json[ $i ] ) ^ ord( $key[ $i % strlen( $key ) ] ) );
 		}
 
-		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- binary/JWT token encoding, not obfuscation
+        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- binary/JWT token encoding, not obfuscation
 		return base64_encode( $encrypted );
 	}
 
 	/**
 	 * Decrypt tokens
 	 *
-	 * @param string $encrypted Encrypted string.
+	 * @param string $encrypted Encrypted string
 	 * @return array Token data
 	 */
 	private function decrypt_tokens( $encrypted ) {
-		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- binary/JWT token decoding, not obfuscation
+        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- binary/JWT token decoding, not obfuscation
 		$encrypted = base64_decode( $encrypted );
 		$key       = flosc_token_secret(); // §5: dedicated secret, not the auth salt
 
-		$decrypted        = '';
-		$encrypted_length = strlen( $encrypted );
-		$key_length       = strlen( $key );
-		for ( $i = 0; $i < $encrypted_length; $i++ ) {
-			$decrypted .= chr( ord( $encrypted[ $i ] ) ^ ord( $key[ $i % $key_length ] ) );
+		$decrypted = '';
+		for ( $i = 0; $i < strlen( $encrypted ); $i++ ) {
+			$decrypted .= chr( ord( $encrypted[ $i ] ) ^ ord( $key[ $i % strlen( $key ) ] ) );
 		}
 
-		$flosc_value = json_decode( $decrypted, true );
-		return $flosc_value ? $flosc_value : array();
+		return json_decode( $decrypted, true ) ?: array();
 	}
 
 	/**
 	 * Get linked account info for display
 	 *
-	 * @param int    $user_id WordPress user ID.
-	 * @param string $provider_id SSO provider ID.
+	 * @param int    $user_id WordPress user ID
+	 * @param string $provider_id SSO provider ID
 	 * @return array|false Account info or false
 	 */
 	public function get_linked_account_info( $user_id, $provider_id ) {
@@ -373,17 +368,17 @@ class User_Linker {
 	/**
 	 * Get SSO avatar for user profile
 	 *
-	 * @param int $user_id WordPress user ID.
+	 * @param int $user_id WordPress user ID
 	 * @return string|false Avatar URL or false
 	 */
 	public function get_sso_avatar( $user_id ) {
-		// Try stored avatar first.
+		// Try stored avatar first
 		$avatar = get_user_meta( $user_id, self::META_PREFIX . 'avatar', true );
 		if ( $avatar ) {
 			return $avatar;
 		}
 
-		// Try linked provider avatars.
+		// Try linked provider avatars
 		$providers = $this->get_linked_providers( $user_id );
 		foreach ( $providers as $provider_id ) {
 			$data = get_user_meta( $user_id, self::META_PREFIX . $provider_id . '_data', true );
