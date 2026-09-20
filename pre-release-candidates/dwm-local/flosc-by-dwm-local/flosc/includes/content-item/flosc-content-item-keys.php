@@ -19,14 +19,14 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 function flosc_content_item_option_key_map() {
 	return array(
-		'free_content_item_count'          => 'free_lesson_count',
-		'free_content_item_pool_category'  => 'free_lesson_pool_category',
-		'free_content_item_mode'           => 'free_lesson_mode',
-		'free_content_item_proportion'     => 'free_lesson_proportion',
-		'free_content_item_guaranteed'     => 'free_lesson_guaranteed',
-		'exclude_items_from_freeline'      => 'free_lesson_never_free',
-		'content_item_category'            => 'lessons_category',
-		'content_item_groups'              => 'lesson_groups',
+		'free_content_item_count'         => 'free_lesson_count',
+		'free_content_item_pool_category' => 'free_lesson_pool_category',
+		'free_content_item_mode'          => 'free_lesson_mode',
+		'free_content_item_proportion'    => 'free_lesson_proportion',
+		'free_content_item_guaranteed'    => 'free_lesson_guaranteed',
+		'exclude_items_from_freeline'     => 'free_lesson_never_free',
+		'content_item_category'           => 'lessons_category',
+		'content_item_groups'             => 'lesson_groups',
 	);
 }
 
@@ -95,7 +95,7 @@ function flosc_normalize_content_item_flow_settings( array $fs, $option_key = ''
 				'category' => sanitize_title( (string) $fs['content_item_category'] ),
 			),
 		);
-		$changed = true;
+		$changed                   = true;
 	}
 	if ( ! empty( $fs['content_item_groups'] ) && is_array( $fs['content_item_groups'] ) && empty( $fs['content_item_category'] ) ) {
 		$first = reset( $fs['content_item_groups'] );

@@ -350,7 +350,7 @@ if ( ! function_exists( 'flosc_available_providers_get_all' ) ) {
 		}
 		$out = array();
 		foreach ( flosc_available_provider_slugs() as $slug ) {
-			$row = isset( $raw[ $slug ] ) && is_array( $raw[ $slug ] ) ? $raw[ $slug ] : array();
+			$row          = isset( $raw[ $slug ] ) && is_array( $raw[ $slug ] ) ? $raw[ $slug ] : array();
 			$out[ $slug ] = array(
 				'api_key'    => isset( $row['api_key'] ) ? (string) $row['api_key'] : '',
 				'label'      => isset( $row['label'] ) ? (string) $row['label'] : '',
@@ -400,7 +400,7 @@ if ( ! function_exists( 'flosc_available_providers_set_key' ) ) {
 		if ( ! in_array( $provider, flosc_available_provider_slugs(), true ) ) {
 			return;
 		}
-		$all = flosc_available_providers_get_all();
+		$all                            = flosc_available_providers_get_all();
 		$all[ $provider ]['api_key']    = (string) $api_key;
 		$all[ $provider ]['updated_at'] = $api_key !== '' ? current_time( 'mysql' ) : '';
 		flosc_available_providers_save_all( $all );
@@ -413,7 +413,7 @@ if ( ! function_exists( 'flosc_available_providers_has_key' ) ) {
 	 * @return bool
 	 */
 	function flosc_available_providers_has_key( $provider ) {
-		$all = flosc_available_providers_get_all();
+		$all      = flosc_available_providers_get_all();
 		$provider = sanitize_key( (string) $provider );
 		return $provider !== '' && ! empty( $all[ $provider ]['api_key'] );
 	}
@@ -450,9 +450,9 @@ if ( ! function_exists( 'flosc_get_provider_api_key' ) ) {
 	 * @return string
 	 */
 	function flosc_get_provider_api_key( $provider, $flow_id = null ) {
-		$provider = sanitize_key( (string) $provider );
-		$map      = flosc_available_providers_flow_key_map();
-		$flow_key = $map[ $provider ] ?? '';
+		$provider  = sanitize_key( (string) $provider );
+		$map       = flosc_available_providers_flow_key_map();
+		$flow_key  = $map[ $provider ] ?? '';
 		$from_flow = '';
 		if ( $flow_key !== '' && function_exists( 'flosc_get_setting' ) ) {
 			$from_flow = trim( (string) flosc_get_setting( $flow_key, '', $flow_id ) );

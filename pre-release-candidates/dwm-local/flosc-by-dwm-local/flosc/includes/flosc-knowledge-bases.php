@@ -334,7 +334,7 @@ if ( ! function_exists( 'flosc_knowledge_bases_prompt_text' ) ) {
 				continue;
 			}
 			$kb_label = is_array( $kb ) ? (string) ( $kb['label'] ?? $kb_id ) : $kb_id;
-			$found = glob( $dir . '*.{md,txt}', GLOB_BRACE );
+			$found    = glob( $dir . '*.{md,txt}', GLOB_BRACE );
 			if ( ! is_array( $found ) ) {
 				$found = array();
 			}

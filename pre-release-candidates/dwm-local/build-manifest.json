@@ -3,16 +3,16 @@
     "name": "Dainis W. Michel",
     "slug": "dwm-local"
   },
-  "candidate": "v88.5",
+  "candidate": "v89.1",
   "plugin_version": "8.0.0",
   "source": "mvp_sprint/flosc_8_0_0/flosc",
   "requires_at_least": "7.1",
   "tested_up_to": "7.1",
   "artifact": {
     "filename": "flosc.zip",
-    "sha256": "01102084ad37547f164fffb578898ef9869bded54cd09adc425afad0395888be",
-    "size_bytes": 2134879,
-    "file_count": 242,
+    "sha256": "4b0d5311ea012b6f508f45334241f0a93fb62d41f601024869934068da86eb7e",
+    "size_bytes": 2128003,
+    "file_count": 241,
     "top_level_dirs": ["flosc"],
     "tests_entries": 0
   }

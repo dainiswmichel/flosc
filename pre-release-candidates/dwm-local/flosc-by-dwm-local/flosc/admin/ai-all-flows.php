@@ -9,9 +9,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$flosc_current_ivr = $GLOBALS['flosc_current_ivr'] ?? '';
-$flosc_avail       = function_exists( 'flosc_available_providers_get_all' ) ? flosc_available_providers_get_all() : array();
-$flosc_personas    = function_exists( 'flosc_personality_library_get_all' ) ? flosc_personality_library_get_all() : array();
+$flosc_current_ivr  = $GLOBALS['flosc_current_ivr'] ?? '';
+$flosc_avail        = function_exists( 'flosc_available_providers_get_all' ) ? flosc_available_providers_get_all() : array();
+$flosc_personas     = function_exists( 'flosc_personality_library_get_all' ) ? flosc_personality_library_get_all() : array();
 $flosc_attached_pid = '';
 if ( function_exists( 'flosc_personality_library_id_for_flow' ) ) {
 	$flosc_attached_pid = flosc_personality_library_id_for_flow(
@@ -60,7 +60,8 @@ if ( is_array( $flosc_ai_all_notice ) ) {
 		<input type="hidden" name="flosc_return_ivr" value="<?php echo esc_attr( $flosc_current_ivr ); ?>">
 
 		<table class="form-table" role="presentation">
-			<?php foreach ( $flosc_provider_meta as $flosc_slug => $flosc_meta ) :
+			<?php
+			foreach ( $flosc_provider_meta as $flosc_slug => $flosc_meta ) :
 				$flosc_row = $flosc_avail[ $flosc_slug ] ?? array();
 				$flosc_has = ! empty( $flosc_row['api_key'] );
 				?>
@@ -131,7 +132,7 @@ if ( is_array( $flosc_ai_all_notice ) ) {
 			<?php
 			$flosc_i = 0;
 			foreach ( $flosc_personas as $flosc_pid => $flosc_p ) :
-				$flosc_i++;
+				++$flosc_i;
 				$flosc_on_file = ! empty( $flosc_p['workshop_json'] ) || ! empty( $flosc_p['ai_base_prompt'] );
 				?>
 				<tr>

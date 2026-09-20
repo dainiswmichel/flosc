@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class FLOSC_Site_Content_Index {
 
-	const MAX_BODY_CHARS = 200000;
+	const MAX_BODY_CHARS         = 200000;
 	const DEFAULT_RETRIEVE_LIMIT = 5;
 
 	/** @var self|null */
@@ -78,7 +78,7 @@ class FLOSC_Site_Content_Index {
 			'category_ids'   => array(),
 			'posts'          => array(),
 		);
-		$path = $this->index_path( $flow_stem );
+		$path  = $this->index_path( $flow_stem );
 		if ( $path === '' || ! is_readable( $path ) ) {
 			// Legacy: one earlier build wrote per-flow files — try once if site file missing.
 			$legacy_stem = sanitize_key( (string) $flow_stem );
@@ -112,7 +112,7 @@ class FLOSC_Site_Content_Index {
 			if ( $id <= 0 ) {
 				continue;
 			}
-			$row['post_id'] = $id;
+			$row['post_id']             = $id;
 			$normalized[ (string) $id ] = $row;
 		}
 		return array(
@@ -373,20 +373,20 @@ class FLOSC_Site_Content_Index {
 		$snippet = function_exists( 'mb_substr' ) ? mb_substr( $body, 0, 160 ) : substr( $body, 0, 160 );
 
 		return array(
-			'post_id'          => (int) $post->ID,
-			'title'            => sanitize_text_field( get_the_title( $post ) ),
-			'content'          => $body,
-			'snippet'          => sanitize_text_field( $snippet ),
-			'keywords'         => $merged,
-			'keywords_manual'  => $manual,
-			'access'           => $access,
-			'excluded'         => (bool) $excluded,
-			'parent'           => $parent,
-			'categories'       => $cats,
-			'modified'         => (string) $post->post_modified_gmt,
-			'indexed_at'       => gmdate( 'c' ),
-			'url'              => esc_url_raw( (string) get_permalink( $post ) ),
-			'lesson_number'    => sanitize_text_field( (string) get_post_meta( $post->ID, '_flosc_lesson_number', true ) ),
+			'post_id'         => (int) $post->ID,
+			'title'           => sanitize_text_field( get_the_title( $post ) ),
+			'content'         => $body,
+			'snippet'         => sanitize_text_field( $snippet ),
+			'keywords'        => $merged,
+			'keywords_manual' => $manual,
+			'access'          => $access,
+			'excluded'        => (bool) $excluded,
+			'parent'          => $parent,
+			'categories'      => $cats,
+			'modified'        => (string) $post->post_modified_gmt,
+			'indexed_at'      => gmdate( 'c' ),
+			'url'             => esc_url_raw( (string) get_permalink( $post ) ),
+			'lesson_number'   => sanitize_text_field( (string) get_post_meta( $post->ID, '_flosc_lesson_number', true ) ),
 		);
 	}
 
@@ -425,7 +425,7 @@ class FLOSC_Site_Content_Index {
 				if ( function_exists( 'mb_strlen' ) ? mb_strlen( $w ) < 5 : strlen( $w ) < 5 ) {
 					continue;
 				}
-				$lw = function_exists( 'mb_strtolower' ) ? mb_strtolower( $w ) : strtolower( $w );
+				$lw          = function_exists( 'mb_strtolower' ) ? mb_strtolower( $w ) : strtolower( $w );
 				$freq[ $lw ] = ( $freq[ $lw ] ?? 0 ) + 1;
 			}
 			arsort( $freq );
@@ -453,7 +453,7 @@ class FLOSC_Site_Content_Index {
 				if ( $piece === '' ) {
 					continue;
 				}
-				$key = function_exists( 'mb_strtolower' ) ? mb_strtolower( $piece ) : strtolower( $piece );
+				$key         = function_exists( 'mb_strtolower' ) ? mb_strtolower( $piece ) : strtolower( $piece );
 				$all[ $key ] = $piece;
 			}
 		}
@@ -478,9 +478,9 @@ class FLOSC_Site_Content_Index {
 			if ( ! empty( $row['excluded'] ) ) {
 				continue;
 			}
-			$req = sanitize_key( (string) ( $row['access'] ?? 'member' ) );
-			$ok  = $this->access_allows( $access_level, $req );
-			$lock = $ok ? '' : ' [locked]';
+			$req     = sanitize_key( (string) ( $row['access'] ?? 'member' ) );
+			$ok      = $this->access_allows( $access_level, $req );
+			$lock    = $ok ? '' : ' [locked]';
 			$lines[] = sprintf(
 				'- #%d %s%s (access: %s)',
 				(int) ( $row['post_id'] ?? 0 ),
@@ -569,7 +569,10 @@ class FLOSC_Site_Content_Index {
 				}
 			}
 			if ( $score > 0 ) {
-				$scored[] = array( 'score' => $score, 'row' => $row );
+				$scored[] = array(
+					'score' => $score,
+					'row'   => $row,
+				);
 			}
 		}
 
@@ -587,7 +590,7 @@ class FLOSC_Site_Content_Index {
 
 		$out = '**Site content index — full posts (' . count( $scored ) . "):**\n\n";
 		foreach ( $scored as $hit ) {
-			$row = $hit['row'];
+			$row  = $hit['row'];
 			$out .= '**' . (string) ( $row['title'] ?? '' ) . "**\n";
 			$out .= 'ID: ' . (int) ( $row['post_id'] ?? 0 );
 			if ( ! empty( $row['url'] ) ) {
@@ -613,8 +616,8 @@ class FLOSC_Site_Content_Index {
 			'guest'   => 2,
 			'member'  => 3,
 		);
-		$u = $hierarchy[ sanitize_key( (string) $user_level ) ] ?? 1;
-		$r = $hierarchy[ sanitize_key( (string) $required ) ] ?? 3;
+		$u         = $hierarchy[ sanitize_key( (string) $user_level ) ] ?? 1;
+		$r         = $hierarchy[ sanitize_key( (string) $required ) ] ?? 3;
 		return $u >= $r;
 	}
 
@@ -648,12 +651,12 @@ class FLOSC_Site_Content_Index {
 		if ( ! isset( $doc['posts'][ $key ] ) ) {
 			return false;
 		}
-		$manual = sanitize_text_field( (string) $manual_keywords );
+		$manual                                  = sanitize_text_field( (string) $manual_keywords );
 		$doc['posts'][ $key ]['keywords_manual'] = $manual;
-		$title   = (string) ( $doc['posts'][ $key ]['title'] ?? '' );
-		$content = (string) ( $doc['posts'][ $key ]['content'] ?? '' );
+		$title                                   = (string) ( $doc['posts'][ $key ]['title'] ?? '' );
+		$content                                 = (string) ( $doc['posts'][ $key ]['content'] ?? '' );
 		// Re-derive light auto keywords from title + body, then fold in manual overrides.
-		$auto = $this->merge_keywords( $title, implode( ', ', array_slice( preg_split( '/\s+/', $content ) ?: array(), 0, 24 ) ) );
+		$auto                             = $this->merge_keywords( $title, implode( ', ', array_slice( preg_split( '/\s+/', $content ) ?: array(), 0, 24 ) ) );
 		$doc['posts'][ $key ]['keywords'] = $manual !== '' ? $this->merge_keywords( $auto, $manual ) : $auto;
 		return $this->save( $flow_stem, $doc );
 	}
@@ -670,11 +673,11 @@ class FLOSC_Site_Content_Index {
 		if ( ! $post || $post->post_status !== 'publish' ) {
 			return false;
 		}
-		$doc  = $this->load( $flow_stem );
-		$key  = (string) (int) $post_id;
-		$prev = isset( $doc['posts'][ $key ] ) ? $doc['posts'][ $key ] : array();
-		$manual   = isset( $prev['keywords_manual'] ) ? (string) $prev['keywords_manual'] : '';
-		$excluded = ! empty( $prev['excluded'] );
+		$doc                  = $this->load( $flow_stem );
+		$key                  = (string) (int) $post_id;
+		$prev                 = isset( $doc['posts'][ $key ] ) ? $doc['posts'][ $key ] : array();
+		$manual               = isset( $prev['keywords_manual'] ) ? (string) $prev['keywords_manual'] : '';
+		$excluded             = ! empty( $prev['excluded'] );
 		$doc['posts'][ $key ] = $this->build_row_from_post( $post, $manual, $excluded );
 		if ( empty( $doc['built_at'] ) ) {
 			$doc['built_at'] = gmdate( 'c' );
@@ -709,9 +712,9 @@ class FLOSC_Site_Content_Index {
 	 */
 	private function redirect_ai( $ivr, $action, $error = '' ) {
 		$args = array(
-			'page'             => 'flosc-settings',
-			'tab'              => 'ai',
-			'site_index_action'=> sanitize_key( $action ),
+			'page'              => 'flosc-settings',
+			'tab'               => 'ai',
+			'site_index_action' => sanitize_key( $action ),
 		);
 		if ( $ivr !== '' ) {
 			$args['ivr'] = $ivr;
@@ -729,8 +732,8 @@ class FLOSC_Site_Content_Index {
 	public function handle_rebuild() {
 		$this->require_admin();
 		check_admin_referer( 'flosc_site_index_rebuild' );
-		$ivr  = $this->ivr_from_request( wp_unslash( $_POST ) );
-		$stem = $this->stem_from_ivr( $ivr );
+		$ivr    = $this->ivr_from_request( wp_unslash( $_POST ) );
+		$stem   = $this->stem_from_ivr( $ivr );
 		$result = $this->rebuild( $stem );
 		if ( empty( $result['ok'] ) ) {
 			$this->redirect_ai( $ivr, 'error', (string) ( $result['message'] ?? 'Rebuild failed.' ) );
@@ -788,8 +791,8 @@ class FLOSC_Site_Content_Index {
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified by check_admin_referer in this method before read
 		$post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified by check_admin_referer in this method before read
-		$kw      = isset( $_POST['keywords_manual'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['keywords_manual'] ) ) : '';
-		$stem    = $this->stem_from_ivr( $ivr );
+		$kw   = isset( $_POST['keywords_manual'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['keywords_manual'] ) ) : '';
+		$stem = $this->stem_from_ivr( $ivr );
 		if ( $post_id && $this->set_manual_keywords( $stem, $post_id, $kw ) ) {
 			$this->redirect_ai( $ivr, 'keywords' );
 		}

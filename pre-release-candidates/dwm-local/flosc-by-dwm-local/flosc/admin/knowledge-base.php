@@ -11,9 +11,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 flosc_tab_header( '📚', 'Knowledge Base' );
 
-$flosc_current_ivr   = (string) ( $GLOBALS['flosc_current_ivr'] ?? '' );
-$flosc_get           = isset( $GLOBALS['flosc_get'] ) && is_array( $GLOBALS['flosc_get'] ) ? $GLOBALS['flosc_get'] : array();
-$flosc_kb_view       = isset( $flosc_get['view'] ) ? sanitize_key( (string) $flosc_get['view'] ) : 'single';
+$flosc_current_ivr = (string) ( $GLOBALS['flosc_current_ivr'] ?? '' );
+$flosc_get         = isset( $GLOBALS['flosc_get'] ) && is_array( $GLOBALS['flosc_get'] ) ? $GLOBALS['flosc_get'] : array();
+$flosc_kb_view     = isset( $flosc_get['view'] ) ? sanitize_key( (string) $flosc_get['view'] ) : 'single';
 if ( ! in_array( $flosc_kb_view, array( 'single', 'all' ), true ) ) {
 	$flosc_kb_view = 'single';
 }

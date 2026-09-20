@@ -58,7 +58,7 @@ class FLOSC_WP_AI_Client {
 	 * @return string wordpress.org plugin slug, or empty.
 	 */
 	public static function plugin_slug( $flosc_provider ) {
-		$map = array(
+		$map            = array(
 			'openai'    => 'ai-provider-for-openai',
 			'anthropic' => 'ai-provider-for-anthropic',
 			'gemini'    => 'ai-provider-for-google',
@@ -72,7 +72,7 @@ class FLOSC_WP_AI_Client {
 	 * @return string
 	 */
 	public static function plugin_name( $flosc_provider ) {
-		$map = array(
+		$map            = array(
 			'openai'    => __( 'AI Provider for OpenAI', 'flosc' ),
 			'anthropic' => __( 'AI Provider for Anthropic', 'flosc' ),
 			'gemini'    => __( 'AI Provider for Google', 'flosc' ),
@@ -116,7 +116,7 @@ class FLOSC_WP_AI_Client {
 	 * @return string WordPress AI Client provider id, or empty.
 	 */
 	public static function wordpress_provider_id( $flosc_provider ) {
-		$map = self::provider_id_map();
+		$map            = self::provider_id_map();
 		$flosc_provider = sanitize_key( (string) $flosc_provider );
 		return isset( $map[ $flosc_provider ] ) ? $map[ $flosc_provider ] : '';
 	}
@@ -225,10 +225,10 @@ class FLOSC_WP_AI_Client {
 	 * @return array|WP_Error { text, function_calls, model_message, usage, model, provider }
 	 */
 	public static function generate( $args ) {
-		$args        = is_array( $args ) ? $args : array();
-		$provider    = sanitize_key( (string) ( $args['provider'] ?? '' ) );
-		$test_mode   = ! empty( $args['test_mode'] );
-		$wp_id       = self::wordpress_provider_id( $provider );
+		$args      = is_array( $args ) ? $args : array();
+		$provider  = sanitize_key( (string) ( $args['provider'] ?? '' ) );
+		$test_mode = ! empty( $args['test_mode'] );
+		$wp_id     = self::wordpress_provider_id( $provider );
 
 		if ( $wp_id === '' ) {
 			return new WP_Error(
@@ -316,9 +316,9 @@ class FLOSC_WP_AI_Client {
 	 * @return array|WP_Error
 	 */
 	public static function generate_with_tools( $args, $executor ) {
-		$args     = is_array( $args ) ? $args : array();
-		$history  = self::history_to_messages( isset( $args['history'] ) && is_array( $args['history'] ) ? $args['history'] : array() );
-		$message  = (string) ( $args['message'] ?? '' );
+		$args      = is_array( $args ) ? $args : array();
+		$history   = self::history_to_messages( isset( $args['history'] ) && is_array( $args['history'] ) ? $args['history'] : array() );
+		$message   = (string) ( $args['message'] ?? '' );
 		$total_in  = 0;
 		$total_out = 0;
 		$last      = null;
@@ -338,15 +338,15 @@ class FLOSC_WP_AI_Client {
 				return $hop;
 			}
 
-			$usage      = isset( $hop['usage'] ) && is_array( $hop['usage'] ) ? $hop['usage'] : array();
-			$total_in  += (int) ( $usage['prompt_tokens'] ?? 0 );
-			$total_out += (int) ( $usage['completion_tokens'] ?? 0 );
+			$usage        = isset( $hop['usage'] ) && is_array( $hop['usage'] ) ? $hop['usage'] : array();
+			$total_in    += (int) ( $usage['prompt_tokens'] ?? 0 );
+			$total_out   += (int) ( $usage['completion_tokens'] ?? 0 );
 			$hop['usage'] = array(
 				'prompt_tokens'     => $total_in,
 				'completion_tokens' => $total_out,
 				'total_tokens'      => $total_in + $total_out,
 			);
-			$last = $hop;
+			$last         = $hop;
 
 			$calls = isset( $hop['function_calls'] ) && is_array( $hop['function_calls'] ) ? $hop['function_calls'] : array();
 			if ( empty( $calls ) ) {
@@ -410,13 +410,13 @@ class FLOSC_WP_AI_Client {
 	 * @return WP_AI_Client_Prompt_Builder|WP_Error
 	 */
 	private static function make_builder( $args, $wp_id ) {
-		$message   = (string) ( $args['message'] ?? '' );
-		$system    = (string) ( $args['system_prompt'] ?? '' );
-		$model     = (string) ( $args['model'] ?? '' );
+		$message    = (string) ( $args['message'] ?? '' );
+		$system     = (string) ( $args['system_prompt'] ?? '' );
+		$model      = (string) ( $args['model'] ?? '' );
 		$max_tokens = isset( $args['max_tokens'] ) ? (int) $args['max_tokens'] : 500;
-		$tools     = isset( $args['tools'] ) && is_array( $args['tools'] ) ? $args['tools'] : array();
-		$fn_resps  = isset( $args['function_responses'] ) && is_array( $args['function_responses'] ) ? $args['function_responses'] : array();
-		$history   = self::history_to_messages( isset( $args['history'] ) && is_array( $args['history'] ) ? $args['history'] : array() );
+		$tools      = isset( $args['tools'] ) && is_array( $args['tools'] ) ? $args['tools'] : array();
+		$fn_resps   = isset( $args['function_responses'] ) && is_array( $args['function_responses'] ) ? $args['function_responses'] : array();
+		$history    = self::history_to_messages( isset( $args['history'] ) && is_array( $args['history'] ) ? $args['history'] : array() );
 
 		if ( ! empty( $fn_resps ) ) {
 			$builder = wp_ai_client_prompt();

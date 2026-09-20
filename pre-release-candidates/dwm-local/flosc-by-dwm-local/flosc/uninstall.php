@@ -138,6 +138,7 @@ function flosc_uninstall_rm_rf( $dir ) {
 		return;
 	}
 
+	// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Best-effort uninstall fallback must tolerate permission changes and filesystem races after WP_Filesystem deletion fails.
 	$items = @scandir( $dir );
 	if ( ! is_array( $items ) ) {
 		return;
@@ -152,11 +153,11 @@ function flosc_uninstall_rm_rf( $dir ) {
 		} elseif ( function_exists( 'wp_delete_file' ) ) {
 			wp_delete_file( $path );
 		} else {
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- uninstall fallback when WP_Filesystem rmdir unavailable
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink,WordPress.PHP.NoSilencedErrors.Discouraged -- Best-effort uninstall fallback must tolerate permission changes and filesystem races.
 			@unlink( $path );
 		}
 	}
-	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- uninstall fallback when WP_Filesystem rmdir unavailable
+	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir,WordPress.PHP.NoSilencedErrors.Discouraged -- Best-effort uninstall fallback must tolerate permission changes and filesystem races.
 	@rmdir( $dir );
 }
 
