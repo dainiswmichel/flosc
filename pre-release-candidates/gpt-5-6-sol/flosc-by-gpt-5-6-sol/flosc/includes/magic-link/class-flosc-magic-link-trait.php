@@ -1511,33 +1511,37 @@ trait FLOSC_Magic_Link_Trait {
 		return true;
 	}
 
-	private function build_guest_request_admin_redirect( $notice_key ) {
+	/**
+	 * Build the settings-screen redirect for a guest-request action.
+	 *
+	 * The flow file arrives as an argument rather than being read from the
+	 * request here. Every caller is an admin-post handler that has already
+	 * verified flosc_guest_request_nonce and manage_options, and it takes the
+	 * value from the payload it verified, so this helper reads no superglobal.
+	 *
+	 * @param string $notice_key Notice slug stored for the current user.
+	 * @param string $ivr        Flow file the calling handler resolved.
+	 * @return string Admin URL to redirect to.
+	 */
+	private function build_guest_request_admin_redirect( $notice_key, $ivr = '' ) {
 		$notice_key = sanitize_key( (string) $notice_key );
 		$uid        = get_current_user_id();
 		if ( $uid > 0 && $notice_key !== '' ) {
 			set_transient( 'flosc_guest_request_notice_' . $uid, $notice_key, MINUTE_IN_SECONDS );
 		}
-		// Prefer flow already resolved on the framework; fall back to sanitized filter_input.
-		$ivr = '';
+		// Prefer the flow already resolved on the framework; else the caller's value.
+		$flow = '';
 		if ( isset( $this->current_ivr_file ) && is_string( $this->current_ivr_file ) ) {
-			$ivr = sanitize_file_name( $this->current_ivr_file );
+			$flow = sanitize_file_name( $this->current_ivr_file );
 		}
-		if ( $ivr === '' ) {
-			// phpcs:ignore WordPress.Security.NonceVerification.Missing -- This private redirect helper is called only after a guest-request admin-post handler verifies manage_options and flosc_guest_request_nonce.
-			$ivr_in = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
-			if ( $ivr_in === '' ) {
-				// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only redirect fallback after the calling admin-post handler has verified its nonce and capability.
-				$ivr_in = isset( $_GET['ivr'] ) && is_string( $_GET['ivr'] ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
-			}
-			if ( $ivr_in !== '' ) {
-				$ivr = $ivr_in;
-			}
+		if ( $flow === '' ) {
+			$flow = sanitize_file_name( (string) $ivr );
 		}
 		return add_query_arg(
 			array(
 				'page' => 'flosc-settings',
 				'tab'  => 'login',
-				'ivr'  => $ivr,
+				'ivr'  => $flow,
 			),
 			admin_url( 'admin.php' )
 		);
@@ -1678,16 +1682,17 @@ trait FLOSC_Magic_Link_Trait {
 
 		$post  = wp_unslash( $_POST );
 		$email = sanitize_email( (string) ( $post['email'] ?? '' ) );
+		$ivr   = sanitize_file_name( (string) ( $post['ivr'] ?? '' ) );
 		$actor = get_current_user_id();
 		if ( empty( $email ) || ! is_email( $email ) ) {
-			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'invalid_email' ) );
+			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'invalid_email', $ivr ) );
 			exit;
 		}
 
 		$this->unblock_guest_account_request_email( $email );
 		$this->set_guest_account_request_status( $email, 'approved', $actor );
 
-		wp_safe_redirect( $this->build_guest_request_admin_redirect( 'approved' ) );
+		wp_safe_redirect( $this->build_guest_request_admin_redirect( 'approved', $ivr ) );
 		exit;
 	}
 
@@ -1701,15 +1706,16 @@ trait FLOSC_Magic_Link_Trait {
 		$post    = wp_unslash( $_POST );
 		$email   = sanitize_email( (string) ( $post['email'] ?? '' ) );
 		$flow_id = sanitize_key( (string) ( $post['flow_id'] ?? '' ) );
+		$ivr     = sanitize_file_name( (string) ( $post['ivr'] ?? '' ) );
 		$actor   = get_current_user_id();
 
 		if ( ! $this->flosc_magic_access_links_enabled( $flow_id ) ) {
-			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'approve_send_failed' ) );
+			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'approve_send_failed', $ivr ) );
 			exit;
 		}
 
 		if ( empty( $email ) || ! is_email( $email ) ) {
-			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'invalid_email' ) );
+			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'invalid_email', $ivr ) );
 			exit;
 		}
 
@@ -1719,7 +1725,7 @@ trait FLOSC_Magic_Link_Trait {
 		// Convenience link only: existing account required (never create user here).
 		$user_id = $this->flosc_resolve_existing_user_for_convenience_link( $email );
 		if ( is_wp_error( $user_id ) ) {
-			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'approve_send_failed' ) );
+			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'approve_send_failed', $ivr ) );
 			exit;
 		}
 
@@ -1732,20 +1738,20 @@ trait FLOSC_Magic_Link_Trait {
 			)
 		);
 		if ( is_wp_error( $token ) ) {
-			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'approve_send_failed' ) );
+			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'approve_send_failed', $ivr ) );
 			exit;
 		}
 
 		$sent = $this->send_guest_link_email( $email, $token, $flow_id );
 		if ( ! $sent ) {
 			delete_transient( 'flosc_magic_' . $token );
-			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'approve_send_failed' ) );
+			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'approve_send_failed', $ivr ) );
 			exit;
 		}
 
 		$this->record_guest_link_send( $email );
 
-		wp_safe_redirect( $this->build_guest_request_admin_redirect( 'approve_sent' ) );
+		wp_safe_redirect( $this->build_guest_request_admin_redirect( 'approve_sent', $ivr ) );
 		exit;
 	}
 
@@ -1758,15 +1764,16 @@ trait FLOSC_Magic_Link_Trait {
 
 		$post  = wp_unslash( $_POST );
 		$email = sanitize_email( (string) ( $post['email'] ?? '' ) );
+		$ivr   = sanitize_file_name( (string) ( $post['ivr'] ?? '' ) );
 		$actor = get_current_user_id();
 		if ( empty( $email ) || ! is_email( $email ) ) {
-			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'invalid_email' ) );
+			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'invalid_email', $ivr ) );
 			exit;
 		}
 
 		$this->deny_and_block_guest_account_request( $email, $actor );
 
-		wp_safe_redirect( $this->build_guest_request_admin_redirect( 'denied_blocked' ) );
+		wp_safe_redirect( $this->build_guest_request_admin_redirect( 'denied_blocked', $ivr ) );
 		exit;
 	}
 
@@ -1779,14 +1786,15 @@ trait FLOSC_Magic_Link_Trait {
 
 		$post  = wp_unslash( $_POST );
 		$email = sanitize_email( (string) ( $post['email'] ?? '' ) );
+		$ivr   = sanitize_file_name( (string) ( $post['ivr'] ?? '' ) );
 		if ( empty( $email ) || ! is_email( $email ) ) {
-			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'invalid_email' ) );
+			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'invalid_email', $ivr ) );
 			exit;
 		}
 
 		$this->delete_guest_account_request( $email );
 
-		wp_safe_redirect( $this->build_guest_request_admin_redirect( 'deleted' ) );
+		wp_safe_redirect( $this->build_guest_request_admin_redirect( 'deleted', $ivr ) );
 		exit;
 	}
 

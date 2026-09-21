@@ -1397,7 +1397,9 @@ if ( ! function_exists( 'flosc_admin_save_personality_library' ) ) {
 		$existing = flosc_personality_library_get_all();
 		$posted   = array();
 		if ( isset( $_POST['persona'] ) && is_array( $_POST['persona'] ) ) {
-			foreach ( wp_unslash( $_POST['persona'] ) as $row ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- keys/labels sanitized below.
+			// Sanitize every leaf of the submitted rows, not just the two read below.
+			$persona_rows = map_deep( wp_unslash( $_POST['persona'] ), 'sanitize_text_field' );
+			foreach ( $persona_rows as $row ) {
 				if ( ! is_array( $row ) ) {
 					continue;
 				}
@@ -1414,7 +1416,9 @@ if ( ! function_exists( 'flosc_admin_save_personality_library' ) ) {
 		}
 		$delete = array();
 		if ( isset( $_POST['persona_delete'] ) && is_array( $_POST['persona_delete'] ) ) {
-			foreach ( wp_unslash( $_POST['persona_delete'] ) as $did => $on ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- key sanitized, value is a flag.
+			// Keys are sanitized in the loop; sanitizing the flags keeps the whole array clean.
+			$persona_delete_flags = map_deep( wp_unslash( $_POST['persona_delete'] ), 'sanitize_text_field' );
+			foreach ( $persona_delete_flags as $did => $on ) {
 				$did = sanitize_key( (string) $did );
 				if ( $did !== '' && $on ) {
 					$delete[ $did ] = true;
@@ -2014,14 +2018,20 @@ if ( ! function_exists( 'flosc_ajax_save_personality_design' ) ) {
 			$fields['ai_personality_role'] = sanitize_text_field( wp_unslash( (string) $_POST['ai_personality_role'] ) );
 		}
 		if ( isset( $_POST['ai_base_prompt'] ) && is_string( $_POST['ai_base_prompt'] ) ) {
-			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- flosc_sanitize_personality_profile_text keeps Markdown.
 			$fields['ai_base_prompt'] = flosc_sanitize_personality_profile_text( wp_unslash( $_POST['ai_base_prompt'] ) );
 		}
 		if ( isset( $_POST['workshop_json'] ) && is_string( $_POST['workshop_json'] ) ) {
-			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- flosc_sanitize_personality_workshop validates JSON object.
-			$workshop_raw            = wp_unslash( $_POST['workshop_json'] );
-			$fields['workshop_json'] = flosc_sanitize_personality_workshop( $workshop_raw );
-			if ( $fields['workshop_json'] === '' && trim( $workshop_raw ) !== '' ) {
+			$workshop_clean = flosc_sanitize_personality_workshop( wp_unslash( $_POST['workshop_json'] ) );
+			/*
+			 * The sanitizer returns '' both for "nothing was submitted" and for
+			 * "something was submitted but is not a valid JSON object". Only the
+			 * second is worth reporting, and separating them needs to know only
+			 * whether the field arrived non-empty, never its contents.
+			 */
+			$workshop_given = trim( sanitize_text_field( wp_unslash( $_POST['workshop_json'] ) ) ) !== '';
+
+			$fields['workshop_json'] = $workshop_clean;
+			if ( $workshop_clean === '' && $workshop_given ) {
 				wp_send_json_error( array( 'message' => __( 'Workshop file was not valid JSON.', 'flosc' ) ), 400 );
 			}
 		}

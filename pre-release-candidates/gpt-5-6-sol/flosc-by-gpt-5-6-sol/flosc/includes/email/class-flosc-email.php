@@ -532,11 +532,21 @@ class FLOSC_Email {
 	 * Save the newsletter opt-in checkbox; sends the welcome on first opt-in.
 	 */
 	public function save_newsletter_profile_field( $user_id ) {
+		$user_id = (int) $user_id;
 		if ( ! current_user_can( 'edit_user', $user_id ) ) {
 			return;
 		}
-		// WP core verifies the profile-update nonce before these hooks fire.
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- personal_options_update and edit_user_profile_update run only after core verifies the profile-update nonce.
+		/*
+		 * Core verifies update-user_<id> before personal_options_update and
+		 * edit_user_profile_update fire, so this repeats a check that has
+		 * already passed. Repeating it puts the guard in the function that
+		 * acts on the data: the save stays refused if this hook is ever
+		 * reached by a path that did not verify the profile-update nonce.
+		 */
+		$flosc_nonce = isset( $_REQUEST['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_REQUEST['_wpnonce'] ) ) : '';
+		if ( ! wp_verify_nonce( $flosc_nonce, 'update-user_' . $user_id ) ) {
+			return;
+		}
 		$opted = isset( $_POST['flosc_newsletter_optin'] ) && $_POST['flosc_newsletter_optin'] !== '';
 		if ( $opted ) {
 			$this->subscribe_to_newsletter( $user_id );

@@ -19,6 +19,7 @@ Thumbs.db
 
 # AI agent instruction files (never runtime; keep them out of the artifact)
 AGENTS.md
+agents.md
 CLAUDE.md
 .cursorrules
 WORDPRESS-ORG-RELEASE.md

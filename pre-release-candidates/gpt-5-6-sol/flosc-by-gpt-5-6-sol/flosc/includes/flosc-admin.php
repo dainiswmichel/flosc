@@ -1073,14 +1073,55 @@ trait FLOSC_Admin_Trait {
 			return;
 		}
 
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified inside handlers
-		$post = isset( $_POST ) && is_array( $_POST ) ? wp_unslash( $_POST ) : array();
+		// The screen this dispatcher serves is registered with edit_others_posts.
+		if ( ! current_user_can( 'edit_others_posts' ) ) {
+			return;
+		}
+
+		/*
+		 * Every submit button below travels with the nonce its own form emitted.
+		 * Verifying that nonce here means an unverified POST is never routed at
+		 * all, instead of being routed and refused further down. The handler each
+		 * branch calls still verifies the same nonce, so both gates remain.
+		 *
+		 * A branch is taken only when its nonce verifies AND its button is
+		 * present, so the order of this list does not matter.
+		 */
+		$flosc_post_routes = array(
+			'flosc_upload_ivr_file'         => array( 'flosc_portability_kit', '_wpnonce' ),
+			'flosc_portability_submit'      => array( 'flosc_portability_kit', '_wpnonce' ),
+			'flosc_portability_pack_action' => array( 'flosc_portability_pack', '_wpnonce' ),
+			'flosc_save'                    => array( 'flosc_save_settings', '_wpnonce' ),
+			'flosc_toggle_trajectory_post'  => array( 'flosc_toggle_trajectory_post', 'flosc_toggle_trajectory_nonce' ),
+			'flosc_create_concierge_post'   => array( 'flosc_create_concierge_post', 'flosc_concierge_create_nonce' ),
+			'flosc_create_trajectory_post'  => array( 'flosc_create_trajectory_post', 'flosc_trajectory_create_nonce' ),
+		);
+
+		$flosc_route_verified = false;
+		foreach ( $flosc_post_routes as $flosc_button => $flosc_route ) {
+			list( $flosc_action, $flosc_field ) = $flosc_route;
+
+			$flosc_nonce = isset( $_POST[ $flosc_field ] )
+				? sanitize_text_field( wp_unslash( $_POST[ $flosc_field ] ) )
+				: '';
+			if ( $flosc_nonce === '' || ! wp_verify_nonce( $flosc_nonce, $flosc_action ) ) {
+				continue;
+			}
+			if ( ! empty( $_POST[ $flosc_button ] ) ) {
+				$flosc_route_verified = true;
+				break;
+			}
+		}
+		if ( ! $flosc_route_verified ) {
+			return;
+		}
+
+		$post = wp_unslash( $_POST );
 		if ( $post === array() ) {
 			return;
 		}
 
 		// IVR new-flow upload: must redirect before admin chrome (Set-as-default class of bug).
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified in handler
 		if ( ! empty( $post['flosc_upload_ivr_file'] ) && ! empty( $_FILES['ivr_file_upload'] ) ) {
 			if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 				require_once FLOSC_PLUGIN_DIR . 'admin/ivr-upload-handler.php';
@@ -1103,7 +1144,6 @@ trait FLOSC_Admin_Trait {
 		 * handler and being named. Nonce (flosc_portability_kit) and the
 		 * manage_options capability are verified inside the handler.
 		 */
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified in handler
 		$kit_action = isset( $post['flosc_portability_submit'] )
 			? sanitize_key( (string) $post['flosc_portability_submit'] )
 			: '';
@@ -1117,7 +1157,6 @@ trait FLOSC_Admin_Trait {
 		}
 
 		// Pack list actions (import staged WXR, remove WXR, unlink media).
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified in handler
 		if ( ! empty( $post['flosc_portability_pack_action'] ) ) {
 			if ( ! function_exists( 'flosc_admin_handle_portability_pack_actions' ) ) {
 				require_once FLOSC_PLUGIN_DIR . 'admin/ivr-upload-handler.php';

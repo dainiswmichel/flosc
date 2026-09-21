@@ -119,14 +119,20 @@ function flosc_parse_offer_access_codes_from_post( array $flosc_post ) {
 // v1.6.5: Removed dead add_action('init',...) — file loads after init fires
 // ============================================
 function flosc_handle_offer_save() {
-	$flosc_post = wp_unslash( $_POST );
-
-	if ( ! isset( $flosc_post['save_offer'] ) || ! wp_verify_nonce( sanitize_text_field( $flosc_post['flosc_save_offer_nonce'] ?? '' ), 'flosc_save_offer' ) ) {
+	if ( ! isset( $_POST['save_offer'] ) ) {
+		return;
+	}
+	$flosc_nonce = isset( $_POST['flosc_save_offer_nonce'] ) && is_scalar( $_POST['flosc_save_offer_nonce'] )
+		? sanitize_text_field( wp_unslash( $_POST['flosc_save_offer_nonce'] ) )
+		: '';
+	if ( ! wp_verify_nonce( $flosc_nonce, 'flosc_save_offer' ) ) {
 		return;
 	}
 	if ( ! current_user_can( 'manage_options' ) ) {
 		return;
 	}
+
+	$flosc_post = wp_unslash( $_POST );
 
 	// §10: accept the posted flow key only if it is a known flow option key.
 	// Validate without transforming, so the key matches where settings are stored.
@@ -312,13 +318,12 @@ function flosc_handle_offer_save() {
 	exit;
 }
 flosc_handle_offer_save(); // v1.6.5: Execute at include time
-$flosc_get = wp_unslash( $_GET );
 
 // Handle delete
 if ( isset( $_GET['delete_offer'] ) && isset( $_GET['_wpnonce'] ) ) {
-	$flosc_get    = wp_unslash( $_GET );
-	$flosc_del_id = sanitize_text_field( $flosc_get['delete_offer'] ?? '' );
-	if ( wp_verify_nonce( sanitize_text_field( $flosc_get['_wpnonce'] ?? '' ), 'flosc_delete_offer_' . $flosc_del_id ) && current_user_can( 'manage_options' ) ) {
+	$flosc_del_id = is_scalar( $_GET['delete_offer'] ) ? sanitize_text_field( wp_unslash( $_GET['delete_offer'] ) ) : '';
+	$flosc_nonce  = is_scalar( $_GET['_wpnonce'] ) ? sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ) : '';
+	if ( wp_verify_nonce( $flosc_nonce, 'flosc_delete_offer_' . $flosc_del_id ) && current_user_can( 'manage_options' ) ) {
 		if ( $flosc_flow_key ) {
 			$flosc_fs  = get_option( $flosc_flow_key, array() );
 			$flosc_all = $flosc_fs['offers'] ?? array();
@@ -342,8 +347,7 @@ if ( isset( $_GET['toggle_status'] ) ) {
 		wp_die( 'Nonce verification failed.', 'Invalid token', array( 'response' => 403 ) );
 	}
 
-	$flosc_get       = wp_unslash( $_GET );
-	$flosc_toggle_id = sanitize_text_field( $flosc_get['toggle_status'] ?? '' );
+	$flosc_toggle_id = is_scalar( $_GET['toggle_status'] ) ? sanitize_text_field( wp_unslash( $_GET['toggle_status'] ) ) : '';
 	if ( $flosc_flow_key ) {
 		$flosc_fs  = get_option( $flosc_flow_key, array() );
 		$flosc_all = $flosc_fs['offers'] ?? array();
@@ -379,9 +383,8 @@ if ( isset( $_GET['set_status'] ) && isset( $_GET['status'] ) ) {
 		wp_die( 'Nonce verification failed.', 'Invalid token', array( 'response' => 403 ) );
 	}
 
-	$flosc_get           = wp_unslash( $_GET );
-	$flosc_target_id     = sanitize_text_field( $flosc_get['set_status'] ?? '' );
-	$flosc_target_status = sanitize_key( $flosc_get['status'] ?? '' );
+	$flosc_target_id     = is_scalar( $_GET['set_status'] ) ? sanitize_text_field( wp_unslash( $_GET['set_status'] ) ) : '';
+	$flosc_target_status = is_scalar( $_GET['status'] ) ? sanitize_key( wp_unslash( $_GET['status'] ) ) : '';
 	if ( in_array( $flosc_target_status, array( 'draft', 'inactive', 'active' ), true ) && $flosc_flow_key ) {
 		$flosc_fs  = get_option( $flosc_flow_key, array() );
 		$flosc_all = $flosc_fs['offers'] ?? array();
@@ -401,8 +404,15 @@ if ( ! empty( $flosc_flow_key ) ) {
 	$flosc_flow_id_for_offers = str_replace( 'flosc_flow_', '', $flosc_flow_key );
 }
 $flosc_offers    = flosc()->sale()->offers()->get_all_offers( $flosc_flow_id_for_offers );
-$flosc_get       = wp_unslash( $_GET );
-$flosc_expand_id = $flosc_get['edit_offer'] ?? $flosc_get['expand'] ?? null;
+$flosc_saved     = isset( $_GET['saved'] ) && is_scalar( $_GET['saved'] )
+	? sanitize_text_field( wp_unslash( $_GET['saved'] ) )
+	: '';
+$flosc_expand_id = null;
+if ( isset( $_GET['edit_offer'] ) && is_scalar( $_GET['edit_offer'] ) ) {
+	$flosc_expand_id = sanitize_text_field( wp_unslash( $_GET['edit_offer'] ) );
+} elseif ( isset( $_GET['expand'] ) && is_scalar( $_GET['expand'] ) ) {
+	$flosc_expand_id = sanitize_text_field( wp_unslash( $_GET['expand'] ) );
+}
 
 // All 7 display formats with metadata
 $flosc_all_format_meta = array(
@@ -449,7 +459,7 @@ $flosc_all_format_meta = array(
 <h2>Offers & Pricing — All Offers</h2>
 <p>Create and manage product offers. Each offer can appear in <strong>multiple display formats</strong> — pill in the panel, card in chat, banner on timer, etc.</p>
 
-<?php if ( isset( $flosc_get['saved'] ) ) : ?>
+<?php if ( $flosc_saved !== '' ) : ?>
 <div class="notice notice-success is-dismissible"><p>Offer saved successfully.</p></div>
 <?php endif; ?>
 

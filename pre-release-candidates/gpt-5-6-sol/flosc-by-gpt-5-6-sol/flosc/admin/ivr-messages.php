@@ -111,8 +111,67 @@ if ( ! function_exists( 'flosc_sanitize_ivr_markdown' ) ) {
 	}
 }
 
-$flosc_get  = wp_unslash( $_GET );
-$flosc_post = wp_unslash( $_POST );
+$flosc_get = array();
+foreach ( array( '_wpnonce', 'delete_message', 'edit_message', 'expand', 'flosc_ivr_uploaded', 'ivr_phase', 'phase', 'view' ) as $flosc_get_key ) {
+	if ( isset( $_GET[ $flosc_get_key ] ) && is_scalar( $_GET[ $flosc_get_key ] ) ) {
+		$flosc_get[ $flosc_get_key ] = sanitize_text_field( wp_unslash( $_GET[ $flosc_get_key ] ) );
+	}
+}
+foreach ( array( 'flosc_download_ivr', 'ivr' ) as $flosc_get_file_key ) {
+	if ( isset( $_GET[ $flosc_get_file_key ] ) && is_scalar( $_GET[ $flosc_get_file_key ] ) ) {
+		$flosc_get[ $flosc_get_file_key ] = sanitize_file_name( wp_unslash( $_GET[ $flosc_get_file_key ] ) );
+	}
+}
+
+$flosc_post             = array();
+$flosc_post_text_fields = array(
+	'delete_ivr_file',
+	'duplicate_ivr_file',
+	'flosc_change_active_file',
+	'flosc_clear_ivr_db',
+	'flosc_confirm_import',
+	'flosc_delete_ivr_file',
+	'flosc_duplicate_ivr_file',
+	'flosc_export_ivr',
+	'flosc_force_resync',
+	'flosc_import_mode',
+	'flosc_import_selected_ivr_file',
+	'flosc_preview_import',
+	'flosc_save_full_ivr',
+	'import_ivr_file',
+	'ivr_file_select',
+	'message_action',
+	'message_conditions',
+	'message_discount_price',
+	'message_display_format',
+	'message_html_file',
+	'message_icon',
+	'message_id',
+	'message_individual_password',
+	'message_keywords',
+	'message_name',
+	'message_offer_id',
+	'message_password_max_tries',
+	'message_password_prompt',
+	'message_password_success',
+	'message_phase',
+	'message_post_id',
+	'message_price',
+	'message_style',
+	'message_timer',
+	'message_type',
+	'message_user_input',
+	'message_woo_product',
+	'save_ivr_message',
+);
+foreach ( $flosc_post_text_fields as $flosc_post_key ) {
+	if ( isset( $_POST[ $flosc_post_key ] ) && is_scalar( $_POST[ $flosc_post_key ] ) ) {
+		$flosc_post[ $flosc_post_key ] = sanitize_text_field( wp_unslash( $_POST[ $flosc_post_key ] ) );
+	}
+}
+if ( isset( $_POST['message_password_retry'] ) && is_scalar( $_POST['message_password_retry'] ) ) {
+	$flosc_post['message_password_retry'] = sanitize_textarea_field( wp_unslash( $_POST['message_password_retry'] ) );
+}
 
 // v1.2.8: Resolve active IVR file from explicit request first, then context fallback.
 $flosc_requested_ivr_file     = sanitize_file_name( (string) ( $flosc_get['ivr'] ?? '' ) );
@@ -658,13 +717,13 @@ if ( isset( $flosc_post['flosc_change_active_file'] ) && isset( $flosc_post['ivr
 }
 
 // Handle full text save for active IVR file (Pass 5 / E3: sanitize at sink).
-if ( isset( $flosc_post['flosc_save_full_ivr'] ) && isset( $flosc_post['ivr_full_text'] ) ) {
+if ( isset( $flosc_post['flosc_save_full_ivr'] ) && isset( $_POST['ivr_full_text'] ) && is_scalar( $_POST['ivr_full_text'] ) ) {
 	check_admin_referer( 'flosc_save_full_ivr' );
 	if ( ! current_user_can( 'manage_options' ) ) {
 		wp_die( esc_html__( 'You do not have permission to edit IVR files.', 'flosc' ) );
 	}
 
-	$flosc_full_text = flosc_sanitize_ivr_markdown( $flosc_post['ivr_full_text'] );
+	$flosc_full_text = flosc_sanitize_ivr_markdown( wp_unslash( $_POST['ivr_full_text'] ) );
 	if ( is_wp_error( $flosc_full_text ) ) {
 		add_settings_error(
 			'flosc_settings',
@@ -950,8 +1009,12 @@ if ( isset( $flosc_post['save_ivr_message'] ) ) {
 	} else {
 
 		// Pass 5: message bodies use IVR markdown sanitizer (null-byte/size/UTF-8).
-		$flosc_raw_content   = (string) ( $flosc_post['message_content'] ?? '' );
-		$flosc_clean_content = flosc_sanitize_ivr_markdown( $flosc_raw_content, 200000 );
+		$flosc_clean_content = flosc_sanitize_ivr_markdown(
+			isset( $_POST['message_content'] ) && is_scalar( $_POST['message_content'] )
+				? wp_unslash( $_POST['message_content'] )
+				: '',
+			200000
+		);
 		if ( is_wp_error( $flosc_clean_content ) ) {
 			add_settings_error( 'flosc_settings', 'message_content_invalid', $flosc_clean_content->get_error_message(), 'error' );
 		} else {

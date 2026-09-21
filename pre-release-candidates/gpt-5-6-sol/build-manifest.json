@@ -1,39 +1,44 @@
 {
-  "candidate": "v89.2",
+  "candidate": "v91",
   "agent": "GPT-5.6-sol",
   "slug": "gpt-5-6-sol",
-  "build_time_utc": "2026-09-20T22:59:13Z",
+  "build_time_utc": "2026-09-21T08:14:05Z",
   "source": {
     "commit": "2bf7a63364475a08b252cddab780c45dab1df7a5",
     "working_tree_changes_included": true,
+    "changed_files": 19,
     "changed_php_files": 15,
-    "file_count": 228
+    "file_count": 226
   },
-  "candidate_parent": "5f5c094836d7158882b4436f4bff234ae127d963",
+  "candidate_parent": "ea786bbd4a1a3cb78ab8d2313c563911615d094a",
   "paths": {
     "candidate": "pre-release-candidates/gpt-5-6-sol",
     "source": "pre-release-candidates/gpt-5-6-sol/flosc-by-gpt-5-6-sol/flosc",
     "zip": "pre-release-candidates/gpt-5-6-sol/flosc.zip"
   },
   "artifact": {
-    "sha256": "4b0d5311ea012b6f508f45334241f0a93fb62d41f601024869934068da86eb7e",
-    "size_bytes": 2128003,
-    "entries": 241,
+    "sha256": "db55f753fd5f62ab0a61b0e6282635ad227fb077cf04e4ddcb7a9c86652e0ff2",
+    "size_bytes": 2129283,
+    "entries": 240,
     "root": "flosc/",
     "plugin_version": "8.0.0",
     "requires_at_least": "7.1",
     "tests_in_zip": 0,
     "vendor_in_zip": 0,
     "candidate_tree_in_zip": 0,
-    "sample_data_creator_in_zip": 0
+    "sample_data_creator_in_zip": 0,
+    "agent_instructions_in_zip": 0,
+    "plugin_documentation_entries": 19
   },
   "verification": {
     "php_files_linted": 139,
     "php_l_failures": 0,
-    "wpcs_total": 6664,
+    "targeted_request_security_findings": 0,
+    "wpcs_total": 6669,
     "wpcs_fixable": 0,
-    "wpcs_non_fixable": 6664,
+    "wpcs_non_fixable": 6669,
     "zip_integrity": "passed"
   },
+  "runtime_verification": "not performed",
   "readiness_claim": "none"
 }

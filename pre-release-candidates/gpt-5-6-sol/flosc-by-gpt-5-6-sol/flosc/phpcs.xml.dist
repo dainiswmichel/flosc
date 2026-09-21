@@ -30,6 +30,37 @@
         </properties>
     </rule>
 
+    <!--
+        Project sanitizers, declared so the sniff can credit them.
+
+        These are not exemptions: both functions validate and rebuild their
+        input, and both are listed here rather than annotated at each call site
+        so one declaration covers every use and a reviewer checks two functions
+        instead of scattered comments.
+
+        flosc_sanitize_personality_profile_text - rejects invalid UTF-8, strips
+        C0 control characters, caps length. Keeps Markdown on purpose: the value
+        is an AI prompt, and it is escaped at every output point.
+
+        flosc_sanitize_personality_workshop - rejects invalid UTF-8, strips
+        control characters, caps length, requires the payload to decode to a
+        non-empty associative array, and returns only the result of
+        wp_json_encode() on that decoded structure. Anything else returns ''.
+
+        flosc_sanitize_ivr_markdown - requires scalar input, rejects invalid
+        UTF-8, strips null/control bytes and PHP tags, and caps content length.
+        It deliberately preserves Markdown and permitted IVR markup.
+    -->
+    <rule ref="WordPress.Security.ValidatedSanitizedInput">
+        <properties>
+            <property name="customSanitizingFunctions" type="array">
+                <element value="flosc_sanitize_personality_profile_text"/>
+                <element value="flosc_sanitize_personality_workshop"/>
+                <element value="flosc_sanitize_ivr_markdown"/>
+            </property>
+        </properties>
+    </rule>
+
     <!-- Function/class prefixes -->
     <rule ref="WordPress.NamingConventions.PrefixAllGlobals">
         <properties>

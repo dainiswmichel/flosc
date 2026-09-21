@@ -1,158 +1,146 @@
 # FLOSC — Project Rules for AI Coding Agents
 
-Read this file before writing any code. Every AI agent working in this repository
-(opencode, Claude Code, Cursor, Copilot, Codex, Grok) must load and obey these
-rules. This file is the single always-on source of project context — the
-equivalent of `.cursorrules` / `CLAUDE.md`. When a rule in a session prompt
-conflicts with this file, this file wins.
+These are durable project defaults. Dainis Michel's explicit instructions for
+the current task determine its scope and may authorize candidate creation,
+packaging, GitHub publication, testing, or deployment. Do not use this file to
+refuse an action Dainis has explicitly requested. System safety requirements
+and tool permission controls still apply.
 
----
+## Project identity
 
-## 1. Project Identity
+- FLOSC means Freeline → Login → Offer → Sale → Content.
+- It is a WordPress plugin for configurable conversational flows.
+- Author: Dainis W. Michel. Plugin URI: `https://flosc.ai`.
+- License: GPLv3 or later. Text domain and plugin slug: `flosc`.
+- Main plugin file: `flosc.php`.
+- Upstream repository: `https://github.com/dainiswmichel/flosc`, branch `main`.
+- Use “flow,” never “funnel,” in new or edited project language.
 
-- **FLOSC** (F)reeline → (L)ogin → (O)ffer → (S)ale → (C)ontent: a WordPress
-  plugin for try-before-you-buy conversational journeys (quizzes → personalized
-  content → offers → gated access).
-- **Author:** Dainis W. Michel · Plugin URI `https://flosc.ai`
-- **License:** GPLv3 or later. **Text Domain:** `flosc`.
-- **Slug / folder name:** `flosc`. Main file: `flosc.php`.
-- Upstream repo: `https://github.com/dainiswmichel/flosc` (branch `main`).
+## Compatibility and release metadata
 
-## 2. Compatibility Targets (from plugin header — do not contradict)
+- Preserve PHP 7.4 compatibility.
+- Keep `Requires at least` identical in `flosc.php` and `readme.txt`.
+- The current plugin version and stable tag are `8.0.0`. Do not change them
+  unless Dainis explicitly requests a plugin-version change.
+- Candidate numbers are release-candidate identifiers, not plugin versions.
+- Use Michel Date Stamp format for project dates: `YYYY-MMm-DDd`.
 
-- **Requires PHP:** 7.4
-- **Requires at least:** 7.1 (major-only) in both `flosc.php` AND `readme.txt`
-- **Tested up to:** 7.1
-- **Stable tag:** 8.0.0 (do not bump without Dainis requesting it)
+## Source and candidate scope
 
-## 3. Coding Standards — the minimum bar
+- The local working source is normally
+  `mvp_sprint/flosc_8_0_0/flosc`, unless the current task names another source.
+- `pre-release-candidates/` is a valid destination when Dainis explicitly asks
+  for candidate work. Modify only the named candidate folder and preserve every
+  other candidate.
+- Do not assume that candidate numbers represent one linear source lineage.
+  Verify the source commit, tree, artifact hash, and actual diff before treating
+  one candidate as the successor to another.
+- An explicit task may designate a candidate tree as the source of truth for
+  copying, testing, packaging, or deployment.
 
-Write **WordPress Coding Standards** (WPCS 3.x) compliant code, checked with
-PHPCS. Run the real checks below before declaring anything done; "looks right"
-is not verification.
+## Non-destructive work
 
-Current standards set used across the plugin (security-relevant sniffs from the
-release gate — treat all as non-optional):
+- Preserve unrelated working-tree changes.
+- Do not reset, restore, clean, force-push, rewrite history, or delete material
+  unless Dainis explicitly requests that exact operation.
+- Inspect exact targets before overwriting or transferring files.
+- Do not use broad recursive deletion or an unresolved path.
+- Do not invent deployment credentials, hosts, paths, or transfer methods.
+  When a task names a deployment script, read and use that script as directed.
+- Candidate creation, ZIP builds, GitHub pushes, and live deployment are allowed
+  only when the current task explicitly requests them.
+- A GitHub push is not a live-site deployment. Keep those actions distinct.
 
-- `WordPress.Security.EscapeOutput`
-- `WordPress.Security.ValidatedSanitizedInput`
-- `WordPress.Security.NonceVerification`
-- `WordPress.Security.PluginMenuSlug`
-- `WordPress.Security.SafeRedirect`
-- `WordPress.DB.PreparedSQL`
-- `WordPress.WP.GlobalVariablesOverride`
-- `WordPress.PHP.NoSilencedErrors`
+## WordPress engineering requirements
 
-### Non-Negotiable Code Rules
+- Sanitize input and escape output at the appropriate boundaries.
+- State-changing browser requests require authorization and CSRF protection
+  appropriate to their architecture.
+- Do not add fake WordPress nonces to bearer-token, HMAC, OAuth callback,
+  magic-link, signed-capability, webhook, or equivalent protocol flows. Trace
+  and verify their actual authentication design.
+- Use `$wpdb->prepare()` for dynamic SQL. Retain direct/custom queries only when
+  the architecture requires them and document the concrete reason narrowly.
+- Do not introduce inline script or style blocks in PHP. Use enqueued assets and
+  WordPress inline-asset APIs. Dynamic CSS custom properties in
+  `admin/flosc-app.php` are the established narrow exception.
+- Keep visual values in the established CSS-variable system.
+- Do not add credentials, API keys, sandbox identifiers, or passwords to source.
+- Do not add `error_log`, `var_dump`, `print_r`, or `console.log` debugging.
+  Conditional project logging must use the established `flosc_log()` facility.
+- Do not introduce process-execution functions.
+- Do not remove compatibility shims or rename public classes, hooks, endpoints,
+  option names, or files unless the task explicitly requires it and callers have
+  been traced.
+- Preserve IVR-driven behavior and administrator configuration. Do not replace
+  settings-driven decisions with hardcoded product behavior.
+- Sample data must remain clearly identified, realistic, customizable, and free
+  of fabricated social proof.
 
-1. **Sanitize input, escape output.** Every `$_GET`/`$_POST`/`$_SERVER` access is
-   filtered (`sanitize_*`, `esc_*`, `absint`, `wp_verify_nonce`, `current_user_can`).
-   Never echo raw data. Never use `FILTER_UNSAFE_RAW` or `FILTER_DEFAULT`.
-2. **Prepared SQL only.** No string-interpolated queries; use `$wpdb->prepare()`.
-3. **No direct DB pokes.** Module state lives in options (e.g. `flosc_flow_{id}`)
-   and WP tables — never hand-rolled flat files for app state.
-4. **No inline `<script>` / `<style>` blocks in PHP files.** All CSS goes in
-   `assets/css/*`, all JS in `assets/js/*`. The ONLY exception is `admin/flosc-app.php`
-   outputting dynamic PHP-generated CSS custom properties (`--flosc-primary`, etc.).
-5. **CSS variables for visual properties** — no hardcoded hex in component CSS.
-6. **No credentials, API keys, sandbox IDs, or test passwords in source.**
-7. **No `error_log`, `var_dump`, `console.log`, or `print_r` debugging.** Logging
-   only through the gated `flosc_log()` helper (writes under
-   `uploads/flosc-logs/debug.log` when `FLOSC_DEBUG` is on). This is not a license
-   to call `flosc_log()` everywhere — keep debug output minimal and conditional.
-8. **No `exec` / `shell_exec` / `system` / backticks.** Never introduce process
-   execution.
-9. **`phpcs:ignore` / `phpcs:disable` only with a written reason** after a
-   ` -- ` separator, e.g.
-   `// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Binary download body`.
-   Bare suppressions are a release-gate failure.
-10. **Spacing follows WPCS**: spaces inside parentheses, `if ( COND )`, function
-    braces on their own line, etc. When unsure, run the gate — the gate is the
-    referee, not your visual memory of WordPress style.
-11. **PHP 7.4 syntax only** for new code (no `fn`, no constructor promotion, and
-    PHPCompatibilityWP `testVersion 7.4` must stay clean). The plugin targets
-    shared hosting behind a conservative PHP floor.
+## Coding standards and suppressions
 
-## 4. Architecture — Do Not Violate
+- Write WordPress Coding Standards-compatible PHP.
+- Preserve PHP string semantics when changing quotes or escapes.
+- Do not run broad PHPCBF when the task asks for direct or narrow remediation.
+- Do not use a PHPCS suppression as a substitute for a repair.
+- When a proven false positive or architectural exception genuinely requires an
+  annotation, scope it to the exact sniff and line/block and include a concrete
+  reason after ` -- `. Obey stricter no-suppression instructions in the current
+  task.
+- Avoid unrelated refactors and formatting sweeps.
 
-- **IVR is king.** The IVR message flow (admin-configured `ai_configuration_files/*.md`)
-  drives the entire user experience. Code *renders what IVR specifies*; code never
-  makes content decisions.
-- **floscAdmin controls everything.** Visibility conditions, autoprompt pills,
-  offer timing, quiz result formatting — these are **settings**, not hardcoded
-  behaviors. New behavior should come from a setting, not a constant.
-- **Sample data is a deliverable.** It must be realistic, honest, clearly marked
-  as sample content, and easy for a floscAdmin to customize. Never fabricate
-  social proof or statistics.
-- **"flow", not "funnel."** The word *funnel* is retired project-wide
-  (code, UI, comments, docs, marketing). Use *flow*.
-- **Canonical sources.** Working codebase: `mvp_sprint/flosc_8_0_0/flosc`.
-  Archive-only (never edit): `flosc_development_archives/`, `tmp/`, any other
-  `flosc_*` folder outside the canonical path, and `pre-release-candidates/`
-  (other agents' outputs — reference only).
-- **Submitting to WordPress.org** means the build passes `flosc-gate.sh` on the
-  *built zip*, not just on a source tree.
+## Verification and honesty
 
-## 5. Verification — how to prove work is done
+- Never claim a check passed unless it was run after the final relevant change.
+- Distinguish verified facts, reasoned conclusions, and unverified runtime
+  behavior.
+- Run `php -l` on every touched PHP file. For release candidates, lint the full
+  shipping PHP tree.
+- Run PHPCS with the standard and scope required by the current task.
+- For release readiness, run PHPCompatibilityWP for PHP 7.4 and the repository
+  release gate against the built ZIP.
+- Official Plugin Check requires a booting WordPress installation. If it cannot
+  run, report it as unverified rather than passed.
+- Live behavior requires runtime testing. Static analysis, syntax checks, and
+  scanner counts do not prove behavior.
+- Report failed or unavailable checks directly. Do not hide them behind a
+  summary or describe “zero fixable findings” as WordPress.org readiness.
 
-Always verify; never claim "fixed/verified/done" without running the checks.
+Useful commands from the local plugin root:
 
 ```bash
-# PHP syntax on every file (fast, always run)
 find . -name '*.php' -type f -exec php -l {} \;
-
-# PHPCS full WordPress standard (from the plugin root, where vendor/ lives)
 vendor/bin/phpcs -p . --standard=WordPress
-
-# PHP 7.4 compatibility
 vendor/bin/phpcs -p . --standard=PHPCompatibilityWP --extensions=php --runtime-set testVersion 7.4-7.4
-
-# The release gate (the referee). Path is inside the project workspace:
-PHPCS_VENDOR=/Users/dainismichel/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc/vendor
-"/Users/dainismichel/2026/flosc_project_folder/mvp_sprint/wordpress-remediation-plan/flosc-gate.sh" "$PWD"
+PHPCS_VENDOR=/Users/dainismichel/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc/vendor \
+  /Users/dainismichel/2026/flosc_project_folder/mvp_sprint/wordpress-remediation-plan/flosc-gate.sh "$PWD"
 ```
 
-The gate includes WPCS security sniffs with suppressions **disabled**, the
-13-Sep-2026 review defect greps, readme external-service disclosure, `php -l`,
-and Plugin Check (needs a booting WP; set `WP_PATH`). Any FAIL or UNVERIFIED
-gate means *not submission ready* — include the gate output in your summary.
+## Packaging and deployment
 
-## 6. Iteration Protocol (from the AI Accountability Record)
+- Build distributable ZIPs only with `./build-dist-zip.sh`; do not hand-build
+  them or bypass its deny list.
+- `flosc_documentation/` and `admin/docs/` are shipping plugin documentation,
+  not development junk. Preserve them in release artifacts and deployments.
+- Do not deploy AI-agent instructions or development tooling such as
+  `AGENTS.md`, `agents.md`, `CLAUDE.md`, `.cursorrules`, or `phpcs.xml.dist`.
+- Regenerate and verify `SHA256SUMS` after every ZIP rebuild.
+- Confirm the ZIP itself contains the intended files and excludes development
+  dependencies and prohibited paths.
+- Before a requested live deployment, inspect the named deployment script,
+  identify its destination and deletion behavior, create the requested rollback
+  point, and verify transferred files afterward.
+- Account for server-side caches such as OPcache using the method specified by
+  the deployment task. CLI cache state does not prove web-server cache state.
 
-1. **Trace the user journey first.** Write out *"User does X → code calls Y → Y
-   returns Z → user sees W"* before editing. If you can't write that chain, you
-   don't understand the fix yet.
-2. **Read before writing.** Read 50+ lines of surrounding context — function,
-   callers, dependencies — not just the edit target.
-3. **Max 5 related changes per iteration.** Stop and let Dainis test.
-4. **Report what you cannot verify.** If you can't run WordPress / check the
-   browser / hit a remote service, say so explicitly: *"I made this edit but
-   cannot verify runtime behavior."* Never say "Fixed!" on an unverified edit.
-5. **No version bump, no zip, no deploy** until Dainis confirms the change
-   works. Fix → explain → WAIT.
-6. **Be declarative about scope.** If something is missing/not implemented, flag
-   it — never silently skip it.
-7. **Repeat failures must begin with *"the previous approach failed because…"***.
+## Working method
 
-## 7. Known Landmines — DO NOT Repeat
-
-- SSO redirects during REST callbacks: never use `get_current_flow()` /
-  `get_app_url()` / `home_url()` for redirect resolution. Use
-  `resolve_app_url_from_flow_id()` from OAuth2 state. Never put `HTTP_HOST` in
-  an SSO allowlist.
-- Don't hardcode `wordpress-importer` plugin paths or directly include
-  `wp-admin/includes/import.php` — never.
-- `Requires at least` must be identical in `flosc.php` and `readme.txt`.
-- Inline `<script>`/`<style>` in PHP is a gate violation, not a convenience.
-- `flosc.php` is a large monolithic file with heavy legacy weight — prefer
-  adding code in `includes/` as a class/trait, not growing the main file.
-- Michel Date Stamp format for all dates: `YYYY-MMm-DDd` (e.g. `2026-09m-15d`).
-  Never `MM/DD` or `DD/MM`. Non-negotiable.
-
-## 8. Build & Ship
-
-- `./build-dist-zip.sh` builds the distributable zip from the plugin root; the
-  resulting artifact is what WordPress.org receives.
-- `.distignore` controls what enters the zip. `vendor/` must never ship.
-- Keep app state in WP options/DB (`flosc_flow_*`), and keep `flosc.php` header +
-  `readme.txt` metadata in lockstep.
+- Read enough surrounding code and callers to understand behavior before editing.
+- For a behavior change, be able to state: user action → code path → result →
+  visible outcome.
+- Keep each change within the current task's declared scope. There is no fixed
+  numerical change limit; use a size that can be reviewed and verified.
+- When a prior approach fails, explain the concrete cause before trying a new
+  approach.
+- When blocked by missing authority or an external decision, stop and ask one
+  precise question. Do not manufacture certainty or activity.

@@ -136,6 +136,7 @@ done < <(find "$STAGE/flosc" \( \
   -name 'build-dist-zip.sh' -o \
   -name '.distignore' -o \
   -name 'AGENTS.md' -o \
+  -name 'agents.md' -o \
   -name 'CLAUDE.md' -o \
   -name '.cursorrules' -o \
   -name 'WORDPRESS-ORG-RELEASE.md' -o \
