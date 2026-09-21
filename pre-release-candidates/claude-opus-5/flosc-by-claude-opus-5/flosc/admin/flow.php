@@ -36,7 +36,102 @@ $flosc_flow_settings           = $GLOBALS['flosc_current_settings'] ?? array();
 $flosc_selected_ivr            = $GLOBALS['flosc_current_ivr'] ?? '';
 $flosc_flow_key                = $GLOBALS['flosc_settings_key'] ?? '';
 $flosc_get                     = flosc_nav_params();
-$flosc_post                    = wp_unslash( $_POST );
+
+/*
+ * Flow-file actions: duplicate, import, delete.
+ *
+ * This screen used to read wp_unslash( $_POST ) at file scope and then test
+ * that array in three branch conditions. WordPress.org raised that shape twice,
+ * in the T7 and T13 reviews -- "don't check for post submission outside of
+ * functions" -- and WPCS never reported it, because the nonce checks further
+ * down satisfy the sniff for the whole file scope.
+ *
+ * The two functions below put the request behind an origin check instead. The
+ * detector refuses anything that is not a POST from a user who can reach this
+ * screen, and it names an action only when BOTH the submit button and its file
+ * field are present, which is the condition the branches always used. The
+ * reader is called only after check_admin_referer() has run, so no posted value
+ * is touched before the nonce is verified.
+ *
+ * Neither belongs in includes/flosc-request.php: that file is for read-only
+ * navigation parameters and says so, and these feed writes.
+ *
+ * WPCS REPORTS BOTH OF THESE, AND THE REPORT IS TRUE
+ *
+ * WordPress.Security.NonceVerification.Missing fires five times across the two
+ * functions, and the findings are not suppressed. They are accurate about what
+ * the code does and wrong only about whether it is safe:
+ *
+ *   - The detector reads $_POST to see which submit button was pressed. A nonce
+ *     cannot be verified before knowing which action was submitted, so some
+ *     read has to come first. It reads presence only, never a value, and writes
+ *     nothing.
+ *   - The reader does read a value, but every caller runs check_admin_referer()
+ *     for its own action first. The sniff cannot follow that across a function
+ *     call, so it reports the read as unverified.
+ *
+ * Silencing them with phpcs:ignore would make the file look cleaner and change
+ * nothing about the code. Plugin Check, which is what WordPress.org runs,
+ * classes NonceVerification as a warning rather than an error.
+ */
+
+if ( ! function_exists( 'flosc_flow_requested_file_action' ) ) {
+	/**
+	 * Which flow-file action this request asks for.
+	 *
+	 * @return string One of 'duplicate', 'import', 'delete', or '' for none.
+	 */
+	function flosc_flow_requested_file_action() {
+		$flosc_method = isset( $_SERVER['REQUEST_METHOD'] )
+			? strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) )
+			: '';
+		if ( 'POST' !== $flosc_method ) {
+			return '';
+		}
+
+		// The capability the FLOSC menu itself registers. Each action re-checks
+		// manage_options after its own nonce; this is the outer refusal.
+		if ( ! current_user_can( 'edit_others_posts' ) ) {
+			return '';
+		}
+
+		$flosc_actions = array(
+			'duplicate' => array( 'flosc_duplicate_ivr_file', 'duplicate_ivr_file' ),
+			'import'    => array( 'flosc_import_selected_ivr_file', 'import_ivr_file' ),
+			'delete'    => array( 'flosc_delete_ivr_file', 'delete_ivr_file' ),
+		);
+
+		foreach ( $flosc_actions as $flosc_action => $flosc_fields ) {
+			list( $flosc_button, $flosc_field ) = $flosc_fields;
+			if ( isset( $_POST[ $flosc_button ] ) && isset( $_POST[ $flosc_field ] ) ) {
+				return $flosc_action;
+			}
+		}
+
+		return '';
+	}
+}
+
+if ( ! function_exists( 'flosc_flow_posted_file_name' ) ) {
+	/**
+	 * One posted filename, reduced to a bare basename.
+	 *
+	 * Call only after check_admin_referer() for the action concerned.
+	 *
+	 * @param string $key POST field name.
+	 * @return string Sanitized basename, or '' when absent or not a scalar.
+	 */
+	function flosc_flow_posted_file_name( $key ) {
+		if ( ! isset( $_POST[ $key ] ) || ! is_scalar( $_POST[ $key ] ) ) {
+			return '';
+		}
+
+		return basename( sanitize_file_name( wp_unslash( (string) $_POST[ $key ] ) ) );
+	}
+}
+
+$flosc_flow_file_action = flosc_flow_requested_file_action();
+
 $flosc_ivr_param               = rawurlencode( $flosc_selected_ivr );
 $flosc_base_url                = admin_url( 'admin.php?page=flosc-settings&ivr=' . $flosc_ivr_param . '&tab=' );
 $flosc_flow_docs_url           = add_query_arg(
@@ -176,13 +271,13 @@ if ( 'all' === $flosc_flow_view ) {
 		add_settings_error( 'flosc_settings', 'download_failed', 'Could not download IVR file.', 'error' );
 	}
 
-	if ( isset( $flosc_post['flosc_duplicate_ivr_file'] ) && isset( $flosc_post['duplicate_ivr_file'] ) ) {
+	if ( 'duplicate' === $flosc_flow_file_action ) {
 		check_admin_referer( 'flosc_duplicate_ivr_file' );
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have permission to duplicate IVR files.', 'flosc' ) );
 		}
 
-		$flosc_source_file = basename( sanitize_file_name( (string) $flosc_post['duplicate_ivr_file'] ) );
+		$flosc_source_file = flosc_flow_posted_file_name( 'duplicate_ivr_file' );
 		$flosc_source_path = function_exists( 'flosc_resolve_ivr_file_path' )
 			? flosc_resolve_ivr_file_path( $flosc_source_file )
 			: '';
@@ -214,13 +309,13 @@ if ( 'all' === $flosc_flow_view ) {
 	}
 
 	// Table "Apply": merge SOURCE file into CURRENT flow (Switch Flow); do not re-point current flow to the source filename.
-	if ( isset( $flosc_post['flosc_import_selected_ivr_file'] ) && isset( $flosc_post['import_ivr_file'] ) ) {
+	if ( 'import' === $flosc_flow_file_action ) {
 		check_admin_referer( 'flosc_import_selected_ivr_file' );
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have permission to import IVR files.', 'flosc' ) );
 		}
 
-		$flosc_source_file = basename( sanitize_file_name( (string) $flosc_post['import_ivr_file'] ) );
+		$flosc_source_file = flosc_flow_posted_file_name( 'import_ivr_file' );
 		$flosc_source_path = '';
 		if ( function_exists( 'flosc_resolve_ivr_file_path' ) ) {
 			$flosc_source_path = (string) flosc_resolve_ivr_file_path( $flosc_source_file );
@@ -292,13 +387,13 @@ if ( 'all' === $flosc_flow_view ) {
 		}
 	}
 
-	if ( isset( $flosc_post['flosc_delete_ivr_file'] ) && isset( $flosc_post['delete_ivr_file'] ) ) {
+	if ( 'delete' === $flosc_flow_file_action ) {
 		check_admin_referer( 'flosc_delete_ivr_file' );
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have permission to delete IVR files.', 'flosc' ) );
 		}
 
-		$flosc_delete_file = basename( sanitize_file_name( (string) $flosc_post['delete_ivr_file'] ) );
+		$flosc_delete_file = flosc_flow_posted_file_name( 'delete_ivr_file' );
 		$flosc_delete_path = function_exists( 'flosc_data_file_path' )
 			? flosc_data_file_path( $flosc_delete_file )
 			: '';

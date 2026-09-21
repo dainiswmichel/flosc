@@ -1,12 +1,12 @@
 {
-  "candidate": "v90.2",
+  "candidate": "v95",
   "agent": "Claude Opus 5",
   "slug": "claude-opus-5",
   "base": {
-    "candidate": "v89.1",
-    "agent": "Dainis W. Michel",
-    "commit": "5f5c094836d7158882b4436f4bff234ae127d963",
-    "note": "v89.2 (GPT-5.6-sol, 84f26d0) is byte-identical to v89.1; either is the same starting tree."
+    "commit": "c0ada219e3da8a1e1e62a59f5da177dad724277d",
+    "candidate": "v94.1",
+    "agent": "Codex GPT-5",
+    "note": "v94.1 restored two DA1 navigation keys that v94 omitted. This round reaches the same result in its own source tree rather than copying the Codex candidate."
   },
   "paths": {
     "candidate": "pre-release-candidates/claude-opus-5",
@@ -14,75 +14,68 @@
     "zip": "pre-release-candidates/claude-opus-5/flosc.zip"
   },
   "artifact": {
-    "sha256": "240c814dc03525bb619396a7c352495a6fb3dc97bb6ca457e80a527779e5598d",
-    "size_bytes": 2130303,
-    "entries": 240,
+    "sha256": "893c57366c84ae3155b79e4353a0fd738f34a02d9404712c8fa8f5d8f299b151",
+    "files": 241,
+    "size": "2.7M",
     "root": "flosc/",
     "plugin_version": "8.0.0",
     "requires_at_least": "7.1",
     "requires_php": "7.4",
-    "tests_in_zip": 0
+    "built_with": "./build-dist-zip.sh",
+    "excluded_and_verified_absent": [
+      "tests/",
+      "admin/create-sample-data.php",
+      "phpcs.xml.dist",
+      "agents.md",
+      "CLAUDE.md",
+      ".cursorrules",
+      ".distignore",
+      "build-dist-zip.sh",
+      "WORDPRESS-ORG-RELEASE.md"
+    ],
+    "starter_packs_in_zip": 4
   },
   "changes": {
-    "scope": "Security errors only. No formatting pass, no file moves, no version bump.",
-    "files_changed": 12,
-    "repairs": [
-      "includes/email/class-flosc-email.php - save_newsletter_profile_field() now verifies update-user_<id> itself instead of relying on the caller having done it.",
-      "includes/flosc-personality-library.php - persona and persona_delete arrays are sanitized at the read with map_deep(); workshop_json restructured so the project sanitizer wraps the superglobal read directly.",
-      "includes/magic-link/class-flosc-magic-link-trait.php - build_guest_request_admin_redirect() takes the flow file as an argument and reads no superglobal; all 12 call sites updated to pass the value their own verified payload carried.",
-      "includes/flosc-admin.php - maybe_process_flosc_settings_post() verifies the nonce each branch's form emitted before routing, and gates on edit_others_posts (the capability the FLOSC menu itself registers).",
-      "phpcs.xml.dist - declares the two project sanitizers via customSanitizingFunctions so the sniff credits them by name.",
-      "admin/{settings,flow,flows,offers,ivr-messages,ai-configuration}.php + includes/request-guard/class-flosc-request-guard.php - the eleven file-scope wp_unslash($_GET/$_POST) reads are gone. Query values come from FLOSC_Request_Guard::query_params(), which reads only the 36 declared admin keys and sanitizes each on the read. POST comes from admin_post_payload(), which returns an empty array unless the request is a POST from a user with edit_others_posts.",
-      "build-dist-zip.sh - the dev-file exclusions were case-sensitive -name patterns. LOCAL carries agents.md (lowercase) while the pattern said AGENTS.md, so find matched nothing and the file would have shipped in the release zip. All eleven exclusions are now -iname. AGENTS.md is renamed to agents.md to match, and .distignore, CLAUDE.md and WORDPRESS-ORG-RELEASE.md follow it.",
-      "fix-comment-punctuation.php and fix-yoda-conditions.php (candidate level, never shipped) clear the two largest style categories that phpcbf has no fixer for: 1,924 inline comments given a terminal full stop, and 2,246 comparisons flipped to Yoda order. Both use PHP tokenizers rather than regexes; the Yoda pass declines any comparison it cannot prove safe to reorder and re-parses every file with php -l before writing it."
+    "scope": "Three changes. No WPCS sweep, no phpcbf, no suppression pass, no refactor. Plugin version unchanged.",
+    "source_files_changed": 2,
+    "source_files_added": 1,
+    "detail": [
+      "includes/flosc-request.php - 'catalog' and 'da1_export' added to flosc_nav_param_keys(). They were omitted in v94, and because admin/da1.php copies the array into $flosc_da1_get, the DA1 screen could not select a catalog from a URL and its Export TSV button did nothing. Nothing failed loudly. Codex found it by reading the diff.",
+      "admin/flow.php - the file-scope wp_unslash( $_POST ) read is gone. Two guarded helpers replace it: flosc_flow_requested_file_action() refuses anything that is not a POST from a user with edit_others_posts and names an action only when both the submit button and its file field are present, which is the exact condition the three branches always used; flosc_flow_posted_file_name() reads one field and is called only after check_admin_referer(). The duplicate, import and delete branches keep their own nonce check, their manage_options check and their wp_die messages unchanged.",
+      "tests/check_nav_param_keys.php - new gate. Resolves aliases of $flosc_get, collects every literal key read through any of them, and requires each to be declared. Reports the reverse direction too."
     ],
-    "suppressions_removed": 16,
-    "suppressions_added": 0
+    "suppressions_added": 0,
+    "suppressions_removed": 0,
+    "suppressions_in_tree": 93,
+    "note_on_suppressions": "Three phpcs:ignore lines were written into admin/flow.php while drafting this round and then removed before commit. They hid five WordPress.Security.NonceVerification.Missing findings in the two new helpers. Those findings are true: the detector must read $_POST to learn which submit button was pressed, because a nonce cannot be verified before knowing which action was submitted, and the reader is called after check_admin_referer() but the sniff cannot follow that across a call. Both facts are written into the file's docblock instead of being silenced. The WPCS error count is 1525 rather than 1520 as a result. Plugin Check classes NonceVerification as a warning."
   },
   "measurements": {
-    "method": "PHPCS 3.13.6 + WPCS 3.4.0. Security figures are measured with every phpcs:ignore/disable directive in the tree switched off, so a suppression cannot flatter the number. Style totals use a ruleset mirroring the candidate's own phpcs.xml.dist minus PHPCompatibilityWP, which is not installed in the measuring container - so these totals are comparable between candidates but are not the same number the release gate prints.",
-    "security_errors_suppressions_disabled": {
-      "v89.1_base": 12,
-      "v90.1": 0,
-      "v90.2": 1
+    "method": "PHPCS 3.13.6 with WPCS 3.4.0 and PHPCompatibilityWP, run against a copy of the tree placed OUTSIDE pre-release-candidates/. phpcs.xml.dist carries <exclude-pattern>*/pre-release-candidates/*</exclude-pattern>, so a scan started inside a candidate folder matches zero files and completes in about 90ms. Any WPCS figure measured in place is meaningless.",
+    "php_lint": "196 of 196 files clean on PHP 8.4",
+    "gates": "41 PHP and 2 JS, all pass (40 PHP before this round; check_nav_param_keys.php is the 41st)",
+    "wpcs_shipped_code_only": "1525 errors / 35 warnings in 88 files, 6 phpcbf-fixable",
+    "wpcs_including_tests": "5999 errors / 567 warnings in 132 files, 3034 phpcbf-fixable",
+    "phpcompatibility_wp_7_4": "0 findings",
+    "file_scope_superglobal_reads": {
+      "v93": 7,
+      "v94": 2,
+      "v95": 1,
+      "remaining": "admin/settings.php:370"
     },
-    "security_warnings_suppressions_disabled": {
-      "v89.1_base": 145,
-      "v90.1": 139,
-      "v90.2": 142
-    },
-    "wpcs_total_project_ruleset": {
-      "v89.1_base": "7094 errors / 511 warnings",
-      "v90.2": "1938 errors / 514 warnings"
-    },
-    "phpcbf_fixable": {
-      "v89.1_base": 960,
-      "v90.1": 960
-    },
-    "suppression_directives": {
-      "v89.1_base": 103,
-      "v90.1": 89,
-      "v90.2": 87
-    },
-    "php_lint": "139/139 files clean on PHP 8.4.19",
-    "plugin_check_ruleset_shipped_zip": {
-      "v89.1_base": "2 errors / 69 warnings",
-      "v90.2": "0 errors / 72 warnings"
-    },
-    "wporg_audit": "17 PASS / 0 FAIL / 5 READ against every category raised in review rounds T7 through T13",
-    "yoda_conditions": {
-      "v89.1_base": 2282,
-      "v90.2": 36
-    },
-    "note_phpcbf": "1220 of the remaining 1938 are phpcbf-fixable. The measuring container cannot run phpcbf (its phar crashes writing the CBF report), so that pass is left for the local vendor/bin/phpcbf."
+    "nav_param_keys": {
+      "read_across_all_aliases": 32,
+      "declared": 32,
+      "aliases_found": "flosc_get, flosc_da1_get"
+    }
   },
   "not_verified": [
-    "No WordPress runtime was available in the build container: activation, admin screens and the FLOSC journeys are untested.",
-    "Official Plugin Check has not been run against this zip.",
-    "PHPCompatibilityWP (testVersion 7.4-) was not installed and was not run."
+    "No WordPress runtime was available. The plugin was not activated, no admin screen was rendered, and the duplicate, import and delete actions in admin/flow.php were not exercised against a real request.",
+    "Official Plugin Check (wp plugin check flosc) was not run: it needs wp-cli and a booting WordPress.",
+    "The release gate tests/verify-standards.sh was not run for the same reason - it requires wp-cli and refuses to report a pass for a tool that did not run."
   ],
   "readiness_claim": "none - static checks only",
-  "known_findings": [
-    "includes/request-guard/class-flosc-request-guard.php:282 - WordPress.Security.NonceVerification.Missing on admin_post_payload(). Reported, not suppressed. The settings screen reads 146 POST fields, iterates the whole payload three times and builds 24 keys dynamically, so the read cannot be nonce-gated without rewriting the save logic; every branch that writes verifies its own nonce. Note the count moved 0 -> 1 because the read moved from file scope (where a nonce check elsewhere in the file silenced it) into a function, where WPCS actually checks it. Plugin Check, which is what WordPress.org enforces, treats this as a warning and reports 0 errors."
+  "flagged_for_decision": [
+    "admin/create-sample-data.php is excluded from the artifact by both .distignore and the hard deny list in build-dist-zip.sh. That rule is inherited and was not changed in this round. It is a WP-CLI eval-file seeder: nothing requires or includes it and its own header says 'Run via: wp eval-file'. The Codex v94.1 candidate removed the rule, which is why that file is inside its zip. The decision belongs to a functional review, not to a remediation round.",
+    "admin/settings.php:370 still reads wp_unslash( $_POST ) at file scope. It is not being converted to a declared list: $flosc_post is read with 251 distinct keys across the tree and ten of them are built at runtime, such as $flosc_post[ $state . '_pill_icon' ]. An allowlist would silently drop fields and break saves."
   ]
 }

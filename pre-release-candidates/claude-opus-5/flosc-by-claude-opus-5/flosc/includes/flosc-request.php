@@ -129,13 +129,26 @@ function flosc_nav_param_present( $key ) {
  * place. Every name is one that some admin template reads from $flosc_get;
  * anything arriving in the URL that is not on this list is not read at all.
  *
+ * A key omitted here does not raise an error. The parameter simply never
+ * arrives and the feature that wanted it goes quiet: 'catalog' and
+ * 'da1_export' were left out when this list was first written, which left the
+ * DA1 screen unable to select a catalog from a URL and made its Export TSV
+ * button do nothing at all. Nothing failed loudly. tests/check_nav_param_keys.php
+ * exists so that the next omission is caught by a command rather than by
+ * someone noticing a dead button.
+ *
+ * admin/da1.php copies this array into $flosc_da1_get, so a key read through
+ * that alias is read through this list too.
+ *
  * @return string[] Query parameter names, in alphabetical order.
  */
 function flosc_nav_param_keys() {
 	return array(
 		'_wpnonce',
+		'catalog',
 		'concierge_created',
 		'concierge_error',
+		'da1_export',
 		'default_set',
 		'delete_flow',
 		'delete_message',
