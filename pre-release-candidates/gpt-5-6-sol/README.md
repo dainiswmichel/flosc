@@ -17,15 +17,16 @@
 - Replaced broad file-scope request reads in `admin/ivr-messages.php` with explicit, type-checked, per-key reads and field-appropriate sanitization.
 - Preserved IVR Markdown by using FLOSC's existing UTF-8, control-byte, PHP-tag, and length validator after nonce and capability checks. Registered that real sanitizer with PHPCS; no suppression was added.
 - Replaced broad file-scope GET reads in `admin/offers.php` with exact sanitized reads. The dynamic offer-save POST is read only after its nonce and `manage_options` checks.
-- Excluded lowercase `agents.md` from distributions while retaining the complete `flosc_documentation/` tree.
+- Standardized the repository instruction filename as lowercase `agents.md`; it remains excluded from distributions.
+- Restored core `admin/create-sample-data.php` to the installable artifact while retaining the complete `flosc_documentation/` tree.
 - Kept plugin version `8.0.0` and built `flosc.zip` only with `build-dist-zip.sh`.
 
 ## Artifact
 
 ```text
-sha256                       db55f753fd5f62ab0a61b0e6282635ad227fb077cf04e4ddcb7a9c86652e0ff2
-size_bytes                   2129283
-zip_entries                  240
+sha256                       684af0e5588d5c52a36e14e60d726ca7733d4e16694afc142f125ff0fdc7b996
+size_bytes                   2136123
+zip_entries                  241
 candidate_source_files       226
 plugin_documentation_entries 19
 root                         flosc/
@@ -61,8 +62,10 @@ admin/offers.php:135:\t$flosc_post = wp_unslash( $_POST );
 ```console
 $ unzip -t flosc.zip | tail -1
 No errors detected in compressed data of flosc.zip.
-$ unzip -Z1 flosc.zip | rg '(^|/)(tests|vendor|pre-release-candidates|sample-data)/|admin/create-sample-data\.php$|/(AGENTS|agents|CLAUDE)\.md$|/phpcs\.xml\.dist$|/WORDPRESS-ORG-RELEASE\.md$|/\.cursorrules$'
+$ unzip -Z1 flosc.zip | rg '(^|/)(tests|vendor|pre-release-candidates|sample-data)/|/(AGENTS|agents|CLAUDE)\.md$|/phpcs\.xml\.dist$|/WORDPRESS-ORG-RELEASE\.md$|/\.cursorrules$'
 [no output]
+$ unzip -Z1 flosc.zip | rg '^flosc/admin/create-sample-data\.php$'
+flosc/admin/create-sample-data.php
 $ unzip -Z1 flosc.zip | rg '^flosc/flosc_documentation/' | wc -l
 19
 ```
