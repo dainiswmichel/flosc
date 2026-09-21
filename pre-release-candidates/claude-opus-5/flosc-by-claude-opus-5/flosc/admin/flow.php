@@ -35,7 +35,7 @@ if ( ! current_user_can( 'edit_others_posts' ) ) {
 $flosc_flow_settings           = $GLOBALS['flosc_current_settings'] ?? array();
 $flosc_selected_ivr            = $GLOBALS['flosc_current_ivr'] ?? '';
 $flosc_flow_key                = $GLOBALS['flosc_settings_key'] ?? '';
-$flosc_get                     = wp_unslash( $_GET );
+$flosc_get                     = flosc_nav_params();
 $flosc_post                    = wp_unslash( $_POST );
 $flosc_ivr_param               = rawurlencode( $flosc_selected_ivr );
 $flosc_base_url                = admin_url( 'admin.php?page=flosc-settings&ivr=' . $flosc_ivr_param . '&tab=' );

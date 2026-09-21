@@ -265,7 +265,7 @@ if ( empty( $flosc_ivr_files ) ) {
 // Read request vars early. The flow selector below reads $flosc_get['ivr'] to know
 // which flow is selected. ($get was previously first defined further down — after
 // this point — so the selector always fell back to $flosc_ivr_files[0] and ignored the URL.).
-$flosc_get = wp_unslash( $_GET );
+$flosc_get = flosc_nav_params();
 
 $flosc_default_ivr_meta_key = '_flosc_admin_default_ivr';
 $flosc_current_user_id      = get_current_user_id();
@@ -366,7 +366,7 @@ if ( $flosc_flow_seed_needed ) {
 	update_option( $flosc_settings_key, $flosc_flow_settings );
 }
 
-$flosc_get  = wp_unslash( $_GET );
+$flosc_get  = flosc_nav_params();
 $flosc_post = wp_unslash( $_POST );
 // redirect_to_settings_tab() sets flosc_forced_tab when headers are already
 // sent and it cannot redirect. It takes precedence over the URL because it is

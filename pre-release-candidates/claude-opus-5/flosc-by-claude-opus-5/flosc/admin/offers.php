@@ -448,7 +448,7 @@ if ( ! empty( $flosc_flow_key ) ) {
 	$flosc_flow_id_for_offers = str_replace( 'flosc_flow_', '', $flosc_flow_key );
 }
 $flosc_offers    = flosc()->sale()->offers()->get_all_offers( $flosc_flow_id_for_offers );
-$flosc_get       = wp_unslash( $_GET );
+$flosc_get       = flosc_nav_params();
 $flosc_expand_id = $flosc_get['edit_offer'] ?? $flosc_get['expand'] ?? null;
 
 // All 7 display formats with metadata.

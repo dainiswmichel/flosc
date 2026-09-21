@@ -24,10 +24,12 @@ Instead of "Are you interested in buying?" FLOSC asks "What should I help you wi
 * **Content Gating** - Unlock premium content only after quiz completion or specific actions
 * **Offer Sequencing** - Show payment offers at the ideal moment in the visitor journey
 * **DA1 Catalogs** - Attach structured TSV catalogs to flows so floscAdmins can serve curated, flow-scoped datasets without hard-coding project-specific content
-* **Starter Packs** - Install a complete working journey in one click: a flow, the example posts it talks about, and the visitor / guest / member gating that makes the journey legible before you configure anything
+* **Starter Packs** - Install a complete working journey in one click: a flow, the example posts it talks about, and the visitor / guest / member gating already wired
 * **Locally Stored** - All visitor data stays in your WordPress database by default
-* **AI-Ready** - Bring-your-own-key chat with Anthropic, OpenAI, xAI, or Gemini (or IVR scripted only). OpenAI, Anthropic, and Gemini chat use the WordPress AI Client — install the official provider plugin for the agent this flow attaches. Speech-to-text: AssemblyAI, OpenAI Whisper, or a custom endpoint.
+* **AI-Ready** - Bring-your-own-key chat with Anthropic, OpenAI, xAI, or Gemini (or IVR scripted only). OpenAI, Anthropic, and Gemini chat use the WordPress 7.0 AI Client — install the official provider plugin for the agent this flow attaches. Speech-to-text: AssemblyAI, OpenAI Whisper, or a custom endpoint.
 * **WordPress Native** - Built as a standard WordPress plugin; no external platform required
+
+== Other Notes ==
 
 = Included Features =
 
@@ -145,7 +147,7 @@ Current per-provider pocket rules are dated MTS 26_08m_20d on the Personality De
 
 = What are DA1 Catalogs? =
 
-DA1 Catalogs are structured TSV datasets managed by the floscAdmin. They let a FLOSC flow answer from curated rows of content, media, links, records, or fallback responses without hard-coding that data into plugin PHP. Catalogs are stored in the WordPress uploads directory and can be assigned to specific flows.
+DA1 provides a content-agnostic catalog structure with native compatibility for Dublin Core metadata and unrestricted catalog-specific parameters. A FLOSC flow can expose selected catalog items to Visitors, Guests, or Members and use the assigned catalog during the conversational journey without hard-coding project-specific content into plugin PHP. Catalogs are stored as TSV datasets in the WordPress uploads directory and can be assigned to specific flows.
 
 = Where does visitor data get stored? =
 
@@ -178,7 +180,7 @@ In Settings → FLOSC → AI:
 
 = Is there one WordPress AI Client or three? =
 
-One client. WordPress ships a single AI Client (`wp_ai_client_prompt()`), introduced in WordPress 7.0. It does not bundle vendors. Three official plugins register with that one client: AI Provider for OpenAI, AI Provider for Anthropic, and AI Provider for Google. FLOSC calls the client; those plugins own the vendor HTTP. A flow attaches one provider. A developer testing all three activates all three plugins. IVR uses none. xAI is still a FLOSC hop because WordPress has no official xAI plugin.
+One client. WordPress 7.0 ships a single AI Client (`wp_ai_client_prompt()`). It does not bundle vendors. Three official plugins register with that one client: AI Provider for OpenAI, AI Provider for Anthropic, and AI Provider for Google. FLOSC calls the client; those plugins own the vendor HTTP. A flow attaches one provider. A developer testing all three activates all three plugins. IVR uses none. xAI is still a FLOSC hop because WordPress has no official xAI plugin.
 
 = Do I have to install all three official AI Provider plugins? =
 
@@ -189,32 +191,48 @@ No. Install only the plugin for the provider this flow attaches. IVR-only sites 
 Put it in FLOSC (this flow's AI tab, or All Flows AI API Management). FLOSC binds that key onto the WordPress AI Client for the prompt. Do not rely on Settings → Connectors for FLOSC chat.
 
 
-== External Services ==
+= External Services =
 
 FLOSC core flow logic runs locally in WordPress. The services below power specific FLOSC features. When those features are enabled, calling these services is intentional and required for full functionality.
 
+Note on "Ask the model what it does": in Settings -> AI, an administrator can ask the flow's own configured model what one of that provider's request parameters means. This sends a one-sentence question containing the parameter name to whichever provider is selected below, through the same chat path that provider's row already describes. It is never automatic; it happens only on that button click, and no visitor or site content is included.
+
+Note on how FLOSC identifies itself: every call to the providers below carries two headers so the provider can tell which software is calling. Administrators can turn both off in Settings -> Administration -> What FLOSC Tells Your AI Provider.
+
+`User-Agent` names FLOSC and its version, the DA1 AI Personality Builder and its version, WordPress and PHP.
+
+`X-DA1-Trace` is a single line of `key=value` pairs: `v` (header format version), `app` (FLOSC version), `bld` (builder version), `ed` (edition), `inst` (a random code identifying this FLOSC installation, generated once and not derived from the site address), `site` (this site's domain — included by default, and the only field naming the site), `flow` (the floscFlow), `prof` (the personality profile), `kb` (the knowledge bases in use), `tier` (whether the person was a Visitor, Guest or Member, as one letter), and `pair` (which message pair of the conversation this is). The `flow`, `prof` and `kb` values are one-way codes computed with a secret this installation generates and keeps, so a provider can see that two requests came from the same flow, personality or knowledge base without learning what any of them is named.
+
+Not sent in these headers: the visitor's user id, name, email address, IP address, or the page they were reading. Nothing that identifies an individual visitor. These headers go only to the AI provider the administrator configured; FLOSC sends nothing to flosc.ai, da1.fm, or any FLOSC-operated service.
+
+Note on what FLOSC records locally: when a provider returns an identifier for a request (`request-id`, `x-request-id`), FLOSC stores it in its own chat log table in this site's database, alongside the model and token counts it already records. It lets an administrator ask their provider to look up one specific call. It is stored only, never transmitted anywhere.
+
 1. OpenAI (via WordPress AI Client + AI Provider for OpenAI, and FLOSC Whisper STT)
 Chat: when this flow attaches OpenAI, FLOSC sends prompts through `wp_ai_client_prompt()` to the official AI Provider for OpenAI plugin, which communicates with OpenAI. FLOSC does not call OpenAI chat endpoints itself.
+Model list: when an administrator clicks "Fetch models this key can use", or runs the AI connection test, FLOSC requests https://api.openai.com/v1/models directly so the saved key can be offered the models it is entitled to. Only the API key is sent; no visitor or site content is included.
 Whisper: when OpenAI Whisper is selected as the STT provider, FLOSC transcribes audio at https://api.openai.com/v1/audio/transcriptions (the official OpenAI provider plugin does not implement transcription).
 Data sent: visitor prompt text, conversation context, and model parameters for chat; uploaded audio payloads for Whisper.
 Service terms: https://openai.com/policies/terms-of-use
 Privacy policy: https://openai.com/policies/privacy-policy
 
 2. Anthropic (via WordPress AI Client + AI Provider for Anthropic)
-When this flow attaches Anthropic, FLOSC sends prompts (including RAG tool declarations) through `wp_ai_client_prompt()` to the official AI Provider for Anthropic plugin, which communicates with Anthropic. FLOSC does not call Anthropic endpoints itself.
+When this flow attaches Anthropic, FLOSC sends prompts (including RAG tool declarations) through `wp_ai_client_prompt()` to the official AI Provider for Anthropic plugin, which communicates with Anthropic. FLOSC does not call Anthropic chat endpoints itself.
+Model list: when an administrator clicks "Fetch models this key can use", or runs the AI connection test, FLOSC requests https://api.anthropic.com/v1/models directly so the saved key can be offered the models it is entitled to. Only the API key and the anthropic-version header are sent; no visitor or site content is included.
+Model description: when an administrator clicks "Describe this model", FLOSC requests https://api.anthropic.com/v1/models/{model_id} to read that model's context window, maximum reply length and capabilities. Only the API key and the anthropic-version header are sent.
 Data sent: visitor prompt text, conversation context, model parameters, and tool results when RAG is active.
 Service terms: https://www.anthropic.com/legal/consumer-terms
 Privacy policy: https://www.anthropic.com/legal/privacy
 
 3. xAI (for AI chat responses)
-Endpoint: https://api.x.ai/v1/chat/completions
-Purpose: generate real-time AI chat responses when xAI/Grok is selected as the AI provider. There is no official WordPress xAI provider plugin yet, so this hop is FLOSC-owned.
-Data sent: visitor prompt text, conversation context, and model parameters.
+Endpoints: https://api.x.ai/v1/chat/completions and https://api.x.ai/v1/language-models
+Purpose: generate real-time AI chat responses when xAI/Grok is selected as the AI provider. There is no official WordPress xAI provider plugin yet, so this hop is FLOSC-owned. The language-models endpoint is requested only when an administrator clicks "Fetch models this key can use" or runs the AI connection test, to list the chat models the saved key can use.
+Data sent: visitor prompt text, conversation context, and model parameters for chat; only the API key for the model list.
 Service terms: https://x.ai/legal/terms-of-service
 Privacy policy: https://x.ai/legal/privacy-policy
 
 4. Google Gemini (via WordPress AI Client + AI Provider for Google)
 When this flow attaches Gemini, FLOSC sends prompts through `wp_ai_client_prompt()` to the official AI Provider for Google plugin, which communicates with Google. FLOSC does not call Gemini generateContent itself. The compiled personality profile is sent as the system instruction.
+Model list: when an administrator clicks "Fetch models this key can use", or runs the AI connection test, FLOSC requests https://generativelanguage.googleapis.com/v1beta/models directly so the saved key can be offered the models it is entitled to. Only the API key is sent; no visitor or site content is included.
 Data sent: visitor prompt text, conversation context, and model parameters.
 Service terms: https://developers.google.com/terms
 Privacy policy: https://policies.google.com/privacy
@@ -258,15 +276,13 @@ Privacy policy: https://support.clickbank.com/en/articles/10535346-clickbank-pri
 Endpoint examples: https://accounts.google.com/o/oauth2/v2/auth, https://oauth2.googleapis.com/token, https://www.googleapis.com/oauth2/v2/userinfo
 Purpose: authenticate users who choose Google single sign-on.
 Data sent: OAuth authorization data and account profile fields returned by Google for authentication.
-Also sent, only when an administrator clicks "Test connection" on the SSO settings screen: the site's own Google client ID and client secret are posted to https://oauth2.googleapis.com/token with a placeholder authorization code, so the credentials can be validated. No visitor data is involved in that test.
 Service terms: https://policies.google.com/terms
 Privacy policy: https://policies.google.com/privacy
 
 11. Facebook OAuth (for social login)
-Endpoint examples: https://www.facebook.com/v19.0/dialog/oauth, https://graph.facebook.com/v19.0/oauth/access_token, https://graph.facebook.com/v19.0/me, https://graph.facebook.com/v19.0/app (credential test only)
+Endpoint examples: https://www.facebook.com/v19.0/dialog/oauth, https://graph.facebook.com/v19.0/oauth/access_token, https://graph.facebook.com/v19.0/me
 Purpose: authenticate users who choose Facebook single sign-on.
 Data sent: OAuth authorization data and profile fields returned by Meta Graph API for authentication.
-Also sent, only when an administrator clicks "Test connection" on the SSO settings screen: an app access token formed from the site's own Facebook app ID and app secret is sent to the /app endpoint, so the credentials can be validated. No visitor data is involved in that test.
 Service terms: https://www.facebook.com/terms.php
 Privacy policy: https://www.facebook.com/privacy/policy/
 
@@ -296,13 +312,12 @@ Endpoint examples: https://api.yourdomain.tld/analyze, https://api.yourdomain.tl
 Purpose: score quiz submissions and finalize/retrieve session scoring data for flows that use an external scoring provider.
 Data sent: quiz audio, answer payloads, and session-finalization data required by the configured provider. FLOSC also sends request-signing headers: X-FLOSC-Site, X-FLOSC-MTS (UTC Michel timestamp), and X-FLOSC-Signature (HMAC-SHA256 over payload_json + newline + mts + newline + site).
 Configuration note: floscAdmins can configure a per-flow external scoring endpoint. If a flow uses an external scoring provider, quiz audio and related scoring payloads may be sent to that provider. Audio playback conversion dispatch is optional and flow-scoped through the Audio Conversion Provider setting (none|external).
-Service terms: determined by the configured endpoint provider.
-Privacy policy: determined by the configured endpoint provider.
 
-16. WordPress core oEmbed (in-chat media players)
-Endpoint: this site's own `/flosc/v1/oembed` (GET). Resolution is performed by WordPress core `wp_oembed_get()` against core's provider allow-list; results are cached in a transient (one day on success, five minutes on a miss).
-Purpose: render provider-native players under media links in assistant messages. The chat script only requests resolution for links matching youtube.com, youtu.be, tiktok.com, spotify.com, soundcloud.com, music.apple.com and vimeo.com.
-Data sent: the media URL alone. The visitor's browser then loads the provider's player, at which point the provider sees the visitor's IP and whatever its own embed sets. FLOSC does not send visitor identity or email on this path.
+
+17. WordPress core oEmbed (in-chat media players)
+Endpoint: this site's `/flosc/v1/oembed` (GET). Resolution uses WordPress core `wp_oembed_get()` against core's provider allow-list; results are cached in a transient.
+Purpose: render provider-native players under media links in assistant messages for YouTube, TikTok, Spotify, SoundCloud, Apple Music, and Vimeo.
+Data sent: the media URL. The visitor's browser then loads the provider player. FLOSC does not send visitor identity, email, or IP to these providers on this path.
 Service terms: https://www.youtube.com/t/terms , https://www.tiktok.com/legal/page/us/terms-of-service , https://www.spotify.com/legal/end-user-agreement/ , https://soundcloud.com/terms-of-use , https://www.apple.com/legal/internet-services/itunes/dev/stdeula/ , https://vimeo.com/terms
 Privacy policy: https://policies.google.com/privacy , https://www.tiktok.com/legal/page/us/privacy-policy , https://www.spotify.com/legal/privacy-policy/ , https://soundcloud.com/pages/privacy , https://www.apple.com/legal/privacy/ , https://vimeo.com/privacy
 
@@ -323,17 +338,17 @@ Production-ready 8.x release with guided IVR flows, offer gating, BYOK AI suppor
 == Changelog ==
 
 = 8.0.0 =
-* Initial stable 8.0.0 release for WordPress 7.1+ and PHP 7.4+
+* Initial stable 8.0.0 release for WordPress 7.0+ and PHP 7.4+
 * Guided flow architecture with IVR routes, quiz branching, and offer/content gating
 * Optional BYOK chat: one WordPress AI Client; official provider plugins for OpenAI, Anthropic, and Google; FLOSC hop for xAI; IVR scripted
 * Payment providers (including Stripe, PayPal, and ClickBank) and social sign-in
 * Included admin documentation updates for WordPress.org submission
 
-== Code standard ==
+= Code standard =
 
 FLOSC follows WordPress coding and security practices. Inputs are sanitized at read points using type-appropriate sanitizers, and output is escaped at render points. Runtime file writes are designed for uploads-based storage rather than the plugin directory. State-changing admin actions use nonce and capability checks. REST endpoints use explicit permission callbacks aligned to login state, capability, or metered public access. The codebase is sectioned and commented for maintainability.
 
-== Support & Contribution ==
+= Support & Contribution =
 
 For support, feature requests, or bug reports, visit:
 * [FLOSC.ai](https://flosc.ai)
@@ -341,7 +356,7 @@ For support, feature requests, or bug reports, visit:
 
 FLOSC is an open-source project. Contributions welcome!
 
-== Stay Connected ==
+= Stay Connected =
 
 * Author: [solopreneur Dainis W. Michel](https://dainis.net)
 * Project: [FLOSC.ai](https://flosc.ai)

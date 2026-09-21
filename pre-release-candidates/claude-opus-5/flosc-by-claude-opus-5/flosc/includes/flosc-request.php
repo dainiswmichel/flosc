@@ -121,3 +121,95 @@ function flosc_nav_param_int( $key, $min = 0, $max = PHP_INT_MAX, $fallback = 0 
 function flosc_nav_param_present( $key ) {
 	return isset( $_GET[ $key ] );
 }
+
+/**
+ * The query parameters this plugin's admin screens are allowed to read.
+ *
+ * Declared here rather than at each screen so the set is reviewable in one
+ * place. Every name is one that some admin template reads from $flosc_get;
+ * anything arriving in the URL that is not on this list is not read at all.
+ *
+ * @return string[] Query parameter names, in alphabetical order.
+ */
+function flosc_nav_param_keys() {
+	return array(
+		'_wpnonce',
+		'concierge_created',
+		'concierge_error',
+		'default_set',
+		'delete_flow',
+		'delete_message',
+		'delete_offer',
+		'doc',
+		'edit_message',
+		'edit_offer',
+		'expand',
+		'flosc_download_ivr',
+		'flosc_guest_request_notice',
+		'flosc_ivr_uploaded',
+		'flosc_portability_done',
+		'flosc_user_id',
+		'ivr',
+		'ivr_phase',
+		'logview',
+		'phase',
+		'saved',
+		'session_scope',
+		'set_status',
+		'status',
+		'tab',
+		'toggle_status',
+		'trajectory_created',
+		'trajectory_error',
+		'trajectory_toggled',
+		'view',
+	);
+}
+
+/**
+ * Read the declared navigation parameters into an array.
+ *
+ * This replaces `$flosc_get = wp_unslash( $_GET );` at the top of the admin
+ * screens. WordPress.org's reviewer raised that pattern twice -- T7 and T13,
+ * "don't check for post submission outside of functions" -- and WPCS never
+ * reported it, because a nonce check further down the same file satisfies the
+ * sniff for the whole file scope. The sniff measures scope; the reviewer reads
+ * execution order. This reads a closed set instead of whatever the URL carried.
+ *
+ * Absent keys are left out rather than set empty, because the callers test with
+ * isset() and filling the array would make every one of those tests true.
+ *
+ * Values get sanitize_text_field(), which strips tags and control bytes without
+ * altering the value otherwise. It deliberately is not sanitize_key(): 'ivr'
+ * and 'flosc_download_ivr' carry IVR filenames such as dainis_net_ivr.md, and
+ * sanitize_key() would silently drop the extension. The screens that use those
+ * two as paths apply sanitize_file_name() themselves, at the point of use, and
+ * this function does not take that job away from them.
+ *
+ * Like flosc_nav_param(), this is for deciding what to SHOW. Anything that
+ * writes needs check_admin_referer() and a capability check, as two separate
+ * refusals, before it reads the request body.
+ *
+ * @param string[] $keys Optional subset of flosc_nav_param_keys().
+ * @return array<string,string> The parameters present in this request.
+ */
+function flosc_nav_params( array $keys = array() ) {
+	$flosc_wanted = empty( $keys ) ? flosc_nav_param_keys() : $keys;
+	$flosc_out    = array();
+
+	foreach ( $flosc_wanted as $flosc_key ) {
+		$flosc_key = (string) $flosc_key;
+		if ( '' === $flosc_key || ! isset( $_GET[ $flosc_key ] ) ) {
+			continue;
+		}
+
+		// Arrays are not expected here; a scalar is the whole contract.
+		if ( is_array( $_GET[ $flosc_key ] ) ) {
+			continue;
+		}
+
+		$flosc_out[ $flosc_key ] = sanitize_text_field( wp_unslash( $_GET[ $flosc_key ] ) );
+	}
+
+	return $flosc_out;
+}
