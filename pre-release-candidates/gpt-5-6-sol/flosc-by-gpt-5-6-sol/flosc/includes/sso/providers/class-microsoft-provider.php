@@ -57,24 +57,31 @@ class Microsoft_Provider extends SSO_Provider_Base {
 	/**
 	 * Customize authorization parameters for Microsoft
 	 *
-	 * @param array $params Default parameters
+	 * @param array $params Default parameters.
 	 * @return array Modified parameters
 	 */
 	protected function customize_auth_params( $params ) {
-		// Microsoft prefers 'response_mode=query' for web apps
+		// Microsoft prefers 'response_mode=query' for web apps.
 		$params['response_mode'] = 'query';
 
-		// Prompt for account selection
+		// Prompt for account selection.
 		$params['prompt'] = 'select_account';
 
 		return $params;
 	}
 
 	/**
-	 * Get user info from Microsoft Graph
+	 * Get user info from Microsoft Graph.
 	 *
-	 * @param string $access_token OAuth access token
-	 * @return array|WP_Error User data or error
+	 * Microsoft serves its claims from the Graph /me endpoint, so the token
+	 * response is not consulted here.
+	 *
+	 * @param string $access_token OAuth access token.
+	 * @param array  $token_data   Full token response. Unused by this provider;
+	 *                             present because OAuth2_Handler passes the same
+	 *                             arguments to every provider, and Apple reads
+	 *                             its id_token and form_post claims from it.
+	 * @return array|WP_Error User data, or WP_Error if the call fails.
 	 */
 	public function get_user_info( $access_token, $token_data = array() ) {
 		$response = wp_remote_get(
@@ -101,7 +108,7 @@ class Microsoft_Provider extends SSO_Provider_Base {
 			);
 		}
 
-		// Try to get profile photo
+		// Try to get profile photo.
 		$avatar             = $this->get_profile_photo( $access_token );
 		$body['avatar_url'] = $avatar;
 
@@ -111,7 +118,7 @@ class Microsoft_Provider extends SSO_Provider_Base {
 	/**
 	 * Get user's profile photo from Microsoft Graph
 	 *
-	 * @param string $access_token OAuth access token
+	 * @param string $access_token OAuth access token.
 	 * @return string Photo URL or empty string
 	 */
 	private function get_profile_photo( $access_token ) {
@@ -130,16 +137,16 @@ class Microsoft_Provider extends SSO_Provider_Base {
 		}
 
 		$code = wp_remote_retrieve_response_code( $response );
-		if ( $code !== 200 ) {
+		if ( 200 !== $code ) {
 			return '';
 		}
 
-		// Convert binary image to base64 data URI
+		// Convert binary image to base64 data URI.
 		$image_data   = wp_remote_retrieve_body( $response );
 		$content_type = wp_remote_retrieve_header( $response, 'content-type' );
 
 		if ( $image_data && $content_type ) {
-            // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- binary/JWT token encoding, not obfuscation
+			// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- binary/JWT token encoding, not obfuscation
 			return 'data:' . $content_type . ';base64,' . base64_encode( $image_data );
 		}
 
@@ -149,7 +156,7 @@ class Microsoft_Provider extends SSO_Provider_Base {
 	/**
 	 * Normalize Microsoft user data to standard format
 	 *
-	 * @param array $raw_data Raw user data from Microsoft Graph
+	 * @param array $raw_data Raw user data from Microsoft Graph.
 	 * @return array Normalized user data
 	 */
 	protected function normalize_user_data( $raw_data ) {
@@ -157,7 +164,7 @@ class Microsoft_Provider extends SSO_Provider_Base {
 		return array(
 			'provider_id'    => sanitize_text_field( (string) ( $raw_data['id'] ?? '' ) ),
 			'email'          => sanitize_email( (string) ( $raw_data['mail'] ?? $raw_data['userPrincipalName'] ?? '' ) ),
-			'email_verified' => true, // Microsoft verifies emails
+			'email_verified' => true, // Microsoft verifies email addresses before returning them.
 			'name'           => sanitize_text_field( (string) ( $raw_data['displayName'] ?? '' ) ),
 			'first_name'     => sanitize_text_field( (string) ( $raw_data['givenName'] ?? '' ) ),
 			'last_name'      => sanitize_text_field( (string) ( $raw_data['surname'] ?? '' ) ),
@@ -171,7 +178,7 @@ class Microsoft_Provider extends SSO_Provider_Base {
 	/**
 	 * Get provider-specific user ID
 	 *
-	 * @param array $raw_data Raw user data
+	 * @param array $raw_data Raw user data.
 	 * @return string Provider user ID
 	 */
 	public function get_provider_user_id( $raw_data ) {

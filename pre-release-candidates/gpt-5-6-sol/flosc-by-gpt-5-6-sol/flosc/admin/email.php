@@ -21,14 +21,17 @@
  *
  * BACKEND STATUS: Email templates functional. Guest/member automation sequences are live.
  *
- * v1.2.9: Added tab header for flow context
+ * Added tab header for flow context
+ *
+ * @package FLOSC
+ * @since 1.2.9
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// v1.2.9: Output tab header
+// v1.2.9: Output tab header.
 flosc_tab_header( '📧', 'Email' );
 
 $flosc_flow_settings            = $GLOBALS['flosc_current_settings'] ?? array();
@@ -390,10 +393,11 @@ $flosc_member_levels = $flosc_flow_settings['member_levels'] ?? array();
 $flosc_has_levels    = false;
 foreach ( (array) $flosc_member_levels as $flosc_lvl_key => $flosc_lvl ) {
 	$flosc_slug = sanitize_key( $flosc_lvl['slug'] ?? $flosc_lvl_key );
-	if ( $flosc_slug === '' ) {
+	if ( '' === $flosc_slug ) {
 		continue; }
 	$flosc_has_levels = true;
-	$flosc_lname      = trim( (string) ( $flosc_lvl['name'] ?? '' ) ) ?: $flosc_slug;
+	$flosc_trimmed    = trim( (string) ( $flosc_lvl['name'] ?? '' ) );
+	$flosc_lname      = $flosc_trimmed ? $flosc_trimmed : $flosc_slug;
 	echo '<h4 class="flosc-email-level-title">Level: ' . esc_html( $flosc_lname ) . ' <code>' . esc_html( $flosc_slug ) . '</code></h4>';
 	$flosc_render_email_series(
 		'member_' . $flosc_slug,

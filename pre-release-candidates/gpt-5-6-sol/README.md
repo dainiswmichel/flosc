@@ -1,73 +1,81 @@
-# FLOSC — GPT-5.6-sol v91 candidate
+# FLOSC — GPT-5.6-sol v93.1 candidate
 
-**Agent:** GPT-5.6-sol
+Agent: GPT-5.6-sol
 
-**Candidate:** v91
+Candidate: v93.1
 
-**Plugin version:** 8.0.0
+Plugin version: 8.0.0
 
-**Published candidate path:** `pre-release-candidates/gpt-5-6-sol/`
+Source base: v93 commit `9ce0c0a5e6ffaed48590434c93c98b02554613ac`
 
-**Source snapshot commit:** `2bf7a63364475a08b252cddab780c45dab1df7a5` plus the current 19-file local working-tree cleanup
+## What changed from v93
 
-**Candidate parent on main:** `ea786bbd4a1a3cb78ab8d2313c563911615d094a`
+- Removed the obsolete Amazon external-service disclosure and renumbered the WordPress oEmbed declaration.
+- Read OAuth callback query and form fields through `WP_REST_Request`, retaining POST-over-GET precedence, Apple `user` support, ChemiCloud query-string fallbacks, and OAuth `state` verification before authentication.
+- Restored bounded callback input lengths from the earlier security work without restoring `FILTER_UNSAFE_RAW` or nonce suppressions.
+- Restored `admin/create-sample-data.php` to the installable artifact.
+- Excluded internal agent, release, and PHPCS files from the artifact.
 
-## What changed
+The candidate source differs from v93 in exactly five files:
 
-- Replaced broad file-scope request reads in `admin/ivr-messages.php` with explicit, type-checked, per-key reads and field-appropriate sanitization.
-- Preserved IVR Markdown by using FLOSC's existing UTF-8, control-byte, PHP-tag, and length validator after nonce and capability checks. Registered that real sanitizer with PHPCS; no suppression was added.
-- Replaced broad file-scope GET reads in `admin/offers.php` with exact sanitized reads. The dynamic offer-save POST is read only after its nonce and `manage_options` checks.
-- Standardized the repository instruction filename as lowercase `agents.md`; it remains excluded from distributions.
-- Restored core `admin/create-sample-data.php` to the installable artifact while retaining the complete `flosc_documentation/` tree.
-- Kept plugin version `8.0.0` and built `flosc.zip` only with `build-dist-zip.sh`.
+```text
+.distignore
+build-dist-zip.sh
+includes/magic-link/class-flosc-magic-link-trait.php
+includes/sso/class-oauth2-handler.php
+readme.txt
+```
 
 ## Artifact
 
 ```text
-sha256                       684af0e5588d5c52a36e14e60d726ca7733d4e16694afc142f125ff0fdc7b996
-size_bytes                   2136123
-zip_entries                  241
-candidate_source_files       226
-plugin_documentation_entries 19
-root                         flosc/
+sha256       0cc9a3d292d8e1c959a34316fa37486e5b64ff39ceac2d850d8a889c0d0211d5
+size_bytes   2801684
+zip_entries  283
+root         flosc/
 ```
 
 ## Measured results
 
 ```console
-$ find "$source_dir" -name '*.php' -type f -print0 | xargs -0 -n1 php -l
-PHP_FILES=139
+$ find "$source_dir" -type f -name '*.php' -print0 | xargs -0 -n1 php -l
+PHP_FILES=195
 PHP_L_FAILURES=0
 ```
 
 ```console
-$ vendor/bin/phpcs -q --no-colors --standard=phpcs.xml.dist --sniffs=WordPress.Security.NonceVerification,WordPress.Security.ValidatedSanitizedInput admin/ivr-messages.php admin/offers.php
-[no output; exit 0]
+$ php -d memory_limit=2G "$HOME/.composer/vendor/bin/phpcs" --standard=WordPress --extensions=php --ignore='*/tests/*,*/vendor/*,*/node_modules/*,*/admin/docs/*,*/flosc_documentation/*' --sniffs='WordPress.Security.NonceVerification,WordPress.WP.Capabilities' --report=summary -s "$source_dir"
+A TOTAL OF 0 ERRORS AND 19 WARNINGS WERE FOUND IN 3 FILES
 ```
 
-```console
-$ php -d memory_limit=2G vendor/bin/phpcs -q --no-colors --standard=WordPress --extensions=php --ignore='*/tests/*,*/vendor/*,*/node_modules/*,*/admin/docs/*,*/flosc_documentation/*' --report=json .
-TOTAL: 6669
-FIXABLE: 0
-NON-FIXABLE: 6669
-```
-
-The one remaining broad request read in these templates is function-scoped and occurs only after authorization:
+The 19 warnings are the known architectural reads: 12 in the HMAC-signed user-audio endpoint, four in read-only navigation helpers, and three in capability-token login callbacks. The OAuth callback now produces zero findings in this scan.
 
 ```console
-$ rg -n 'wp_unslash\( \$_(GET|POST|REQUEST) \)' admin/ivr-messages.php admin/offers.php
-admin/offers.php:135:\t$flosc_post = wp_unslash( $_POST );
+$ php tests/check_wporg_rules.php
+active exceptions : 3
+files scanned     : 144
+findings          : 0
+
+$ php tests/check_packaging.php
+Shipped PHP files: 153
+The tree is shippable
+
+$ php tests/check_inline_js.php
+Inline admin JavaScript parses cleanly
+
+$ php tests/check_oauth_state_ordering.php
+check_oauth_state_ordering: ok
 ```
 
 ```console
 $ unzip -t flosc.zip | tail -1
 No errors detected in compressed data of flosc.zip.
-$ unzip -Z1 flosc.zip | rg '(^|/)(tests|vendor|pre-release-candidates|sample-data)/|/(AGENTS|agents|CLAUDE)\.md$|/phpcs\.xml\.dist$|/WORDPRESS-ORG-RELEASE\.md$|/\.cursorrules$'
+
+$ unzip -l flosc.zip | grep 'admin/create-sample-data.php'
+19010  09-21-2026 14:56   flosc/admin/create-sample-data.php
+
+$ unzip -l flosc.zip | grep -E 'agents\.md|AGENTS\.md|CLAUDE\.md|WORDPRESS-ORG-RELEASE|phpcs\.xml'
 [no output]
-$ unzip -Z1 flosc.zip | rg '^flosc/admin/create-sample-data\.php$'
-flosc/admin/create-sample-data.php
-$ unzip -Z1 flosc.zip | rg '^flosc/flosc_documentation/' | wc -l
-19
 ```
 
-This is a measured candidate snapshot, not a claim of WordPress.org readiness. No live deployment or browser/runtime test was performed.
+The complete WPCS suite and Plugin Check were not completed as part of this packaging step. This is a live-testing candidate, not a WordPress.org-readiness claim.

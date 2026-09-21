@@ -4,22 +4,51 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 trait FLOSC_REST_Trait {
+	/*
+	 * Public throttles, owned by the floscAdmin instead of the source.
+	 *
+	 * These were fixed numbers in this file. A live visitor hit "Rate limit
+	 * reached. Please try again later." after one message and it read as the
+	 * AI provider refusing the request — it was FLOSC's own per-IP bucket at
+	 * 30/hour, and the client's nonce-refresh retry could spend two of those
+	 * on a single send. A limit nobody can see or change is indistinguishable
+	 * from a broken site.
+	 *
+	 * Global for this installation, not per floscFlow.
+	 */
+	private function flosc_public_request_protection() {
+		$defaults = array(
+			'enabled'                  => '1',
+			'anonymous_chat_limit'     => 60,
+			'authenticated_chat_limit' => 120,
+			'anonymous_ivr_limit'      => 120,
+			'metered_compute_limit'    => 20,
+			'visitor_compute_limit'    => 5,
+			'retry_after_429'          => '0',
+		);
+		$settings = get_option( 'flosc_public_request_protection', array() );
+		return is_array( $settings ) ? array_merge( $defaults, $settings ) : $defaults;
+	}
 	/**
 	 * Permission Callbacks for REST API
 	 */
-	public function check_metered_visitor_compute_permission( $request ) {
-		// Check rate limit first
-		if ( ! $this->check_rate_limit( 'metered_compute', 20, 3600 ) ) {
+	public function check_metered_visitor_compute_permission() {
+		$protection = $this->flosc_public_request_protection();
+		if ( '1' !== $protection['enabled'] ) {
+			return true;
+		}
+		// Check rate limit first.
+		if ( ! $this->check_rate_limit( 'metered_compute', absint( $protection['metered_compute_limit'] ), HOUR_IN_SECONDS ) ) {
 			return new WP_Error( 'rate_limit', __( 'Too many requests. Please try again later.', 'flosc' ), array( 'status' => 429 ) );
 		}
 
-		// Allow logged-in users with usage tracking
+		// Allow logged-in users with usage tracking.
 		if ( is_user_logged_in() ) {
 			return true;
 		}
 
-		// For visitors: strict rate limit
-		if ( ! $this->check_rate_limit( 'visitor_metered_compute', 5, 3600 ) ) {
+		// For visitors: strict rate limit.
+		if ( ! $this->check_rate_limit( 'visitor_metered_compute', absint( $protection['visitor_compute_limit'] ), HOUR_IN_SECONDS ) ) {
 			return new WP_Error( 'rate_limit', __( 'Free tier limit reached. Please log in.', 'flosc' ), array( 'status' => 429 ) );
 		}
 
@@ -27,26 +56,35 @@ trait FLOSC_REST_Trait {
 	}
 
 	/**
-	 * v9.4.2: Permission callback for public endpoints that need rate limiting
+	 * Permission callback for public endpoints that need rate limiting
 	 *
 	 * Unlike check_metered_visitor_compute_permission(), this is for truly public endpoints
 	 * like IVR chat that don't consume expensive AI credits but should still
 	 * be protected from abuse.
 	 *
 	 * Limits: 60 requests/hour for logged-in users, 30/hour for visitors
+	 *
+	 * @since 9.4.2
 	 */
 	public function check_public_endpoint_permission( $request ) {
-		$endpoint = $request->get_route();
+		$endpoint   = $request->get_route();
+		$protection = $this->flosc_public_request_protection();
+		if ( '1' !== $protection['enabled'] ) {
+			return true;
+		}
 
 		if ( is_user_logged_in() ) {
-			if ( ! $this->check_rate_limit( 'public_auth_' . $endpoint, 60, 3600 ) ) {
+			if ( ! $this->check_rate_limit( 'public_auth_' . $endpoint, absint( $protection['authenticated_chat_limit'] ), HOUR_IN_SECONDS ) ) {
 				return new WP_Error( 'rate_limit', __( 'Too many requests. Please slow down.', 'flosc' ), array( 'status' => 429 ) );
 			}
 			return true;
 		}
 
-		// Visitors get stricter limits.
-		if ( ! $this->check_rate_limit( 'public_visitor_' . $endpoint, 30, 3600 ) ) {
+		// Visitors get stricter limits. Chat carries its own budget: a
+		// conversation costs more requests than reading IVR content does, and
+		// sharing one bucket meant a talkative visitor exhausted both.
+		$limit = '/flosc/v1/chat' === $endpoint ? absint( $protection['anonymous_chat_limit'] ) : absint( $protection['anonymous_ivr_limit'] );
+		if ( ! $this->check_rate_limit( 'public_visitor_' . $endpoint, $limit, HOUR_IN_SECONDS ) ) {
 			return new WP_Error( 'rate_limit', __( 'Rate limit reached. Please try again later.', 'flosc' ), array( 'status' => 429 ) );
 		}
 
@@ -56,10 +94,9 @@ trait FLOSC_REST_Trait {
 	/**
 	 * Permission callback for routes that require a logged-in user.
 	 *
-	 * @param WP_REST_Request $request Request object.
 	 * @return true|WP_Error
 	 */
-	public function check_authenticated_user_permission( $request ) {
+	public function check_authenticated_user_permission() {
 		if ( ! is_user_logged_in() ) {
 			return new WP_Error( 'flosc_login_required', __( 'Login is required.', 'flosc' ), array( 'status' => 401 ) );
 		}
@@ -71,7 +108,7 @@ trait FLOSC_REST_Trait {
 	 * §4: Permission callback for privileged admin-only REST actions.
 	 * Grants only to users who can manage_options; everyone else gets 403.
 	 */
-	public function check_admin_endpoint_permission( $request ) {
+	public function check_admin_endpoint_permission() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return new WP_Error( 'forbidden', __( 'Administrator privileges required.', 'flosc' ), array( 'status' => 403 ) );
 		}
@@ -104,14 +141,14 @@ trait FLOSC_REST_Trait {
 	 */
 	public function check_checkout_finalization_permission( $request ) {
 		$nonce_result = $this->check_checkout_endpoint_permission( $request );
-		if ( $nonce_result !== true ) {
+		if ( true !== $nonce_result ) {
 			return $nonce_result;
 		}
 
 		$binding_token = sanitize_text_field( (string) $request->get_param( 'binding_token' ) );
 		$session_id    = sanitize_text_field( (string) $request->get_param( 'session_id' ) );
 
-		if ( $binding_token === '' || $session_id === '' ) {
+		if ( '' === $binding_token || '' === $session_id ) {
 			return new WP_Error( 'flosc_checkout_binding_required', __( 'Checkout binding token and session_id are required.', 'flosc' ), array( 'status' => 403 ) );
 		}
 
@@ -122,33 +159,33 @@ trait FLOSC_REST_Trait {
 		}
 
 		$bound_session_id = sanitize_text_field( (string) ( $binding_record['session_id'] ?? '' ) );
-		if ( $bound_session_id === '' || ! hash_equals( $bound_session_id, $session_id ) ) {
+		if ( '' === $bound_session_id || ! hash_equals( $bound_session_id, $session_id ) ) {
 			return new WP_Error( 'flosc_checkout_session_mismatch', __( 'Checkout session mismatch.', 'flosc' ), array( 'status' => 403 ) );
 		}
 
 		$request_provider = sanitize_key( (string) $request->get_param( 'provider' ) );
 		$route            = (string) $request->get_route();
-		if ( $request_provider === '' ) {
-			if ( strpos( $route, '/paypal/' ) !== false ) {
+		if ( '' === $request_provider ) {
+			if ( false !== strpos( $route, '/paypal/' ) ) {
 				$request_provider = 'paypal';
-			} elseif ( strpos( $route, '/complete-purchase' ) !== false ) {
+			} elseif ( false !== strpos( $route, '/complete-purchase' ) ) {
 				$request_provider = 'stripe';
 			}
 		}
 		$bound_provider = sanitize_key( (string) ( $binding_record['provider'] ?? '' ) );
-		if ( $request_provider !== '' && $bound_provider !== '' && ! hash_equals( $bound_provider, $request_provider ) ) {
+		if ( '' !== $request_provider && '' !== $bound_provider && ! hash_equals( $bound_provider, $request_provider ) ) {
 			return new WP_Error( 'flosc_checkout_provider_mismatch', __( 'Checkout provider mismatch.', 'flosc' ), array( 'status' => 403 ) );
 		}
 
 		$request_flow_id = sanitize_text_field( (string) $request->get_param( 'flow_id' ) );
 		$bound_flow_id   = sanitize_text_field( (string) ( $binding_record['flow_id'] ?? '' ) );
-		if ( $request_flow_id !== '' && $bound_flow_id !== '' && ! hash_equals( $bound_flow_id, $request_flow_id ) ) {
+		if ( '' !== $request_flow_id && '' !== $bound_flow_id && ! hash_equals( $bound_flow_id, $request_flow_id ) ) {
 			return new WP_Error( 'flosc_checkout_flow_mismatch', __( 'Checkout flow mismatch.', 'flosc' ), array( 'status' => 403 ) );
 		}
 
 		$request_offer_id = sanitize_text_field( (string) $request->get_param( 'offer_id' ) );
 		$bound_offer_id   = sanitize_text_field( (string) ( $binding_record['offer_id'] ?? '' ) );
-		if ( $request_offer_id !== '' && $bound_offer_id !== '' && ! hash_equals( $bound_offer_id, $request_offer_id ) ) {
+		if ( '' !== $request_offer_id && '' !== $bound_offer_id && ! hash_equals( $bound_offer_id, $request_offer_id ) ) {
 			return new WP_Error( 'flosc_checkout_offer_mismatch', __( 'Checkout offer mismatch.', 'flosc' ), array( 'status' => 403 ) );
 		}
 
@@ -224,7 +261,7 @@ trait FLOSC_REST_Trait {
 	public function check_ivr_messages_permission( $request ) {
 		// Keep the existing public rate-limit behavior for the visitor funnel.
 		$rate = $this->check_public_endpoint_permission( $request );
-		if ( $rate !== true ) {
+		if ( true !== $rate ) {
 			return $rate;
 		}
 
@@ -234,19 +271,12 @@ trait FLOSC_REST_Trait {
 		}
 
 		// Content phase is member-entitled only (sale stays public for guest purchase).
-		if ( $phase === 'content' ) {
-			$user_id = get_current_user_id();
-			// The meta is stored as the string 'true' / 'false' (see
-			// FLOSC_Member_Access). A (bool) cast would treat the revoked value
-			// 'false' as truthy and let a revoked member through — compare the
-			// string explicitly.
-			$has_member_access = $user_id && 'true' === get_user_meta( $user_id, '_flosc_member_access', true );
-			// Also honor flow-scoped membership when available.
-			if ( ! $has_member_access && $user_id && function_exists( 'flosc' ) && is_object( flosc() ) && method_exists( flosc(), 'sale' ) ) {
-				$sale = flosc()->sale();
-				if ( $sale && method_exists( $sale, 'access' ) && method_exists( $sale->access(), 'is_member' ) ) {
-					$has_member_access = (bool) $sale->access()->is_member( $user_id );
-				}
+		if ( 'content' === $phase ) {
+			$user_id           = get_current_user_id();
+			$flow_id           = $this->flosc_request_flow_stem( $request );
+			$has_member_access = current_user_can( 'manage_options' );
+			if ( ! $has_member_access && $user_id && $this->member_access && method_exists( $this->member_access, 'is_member' ) ) {
+				$has_member_access = (bool) $this->member_access->is_member( $user_id, $flow_id );
 			}
 			if ( ! $has_member_access ) {
 				return new WP_Error( 'forbidden', __( 'Not entitled to this content.', 'flosc' ), array( 'status' => 403 ) );
@@ -300,7 +330,7 @@ trait FLOSC_REST_Trait {
 	private function verify_admin_poll_token( $session_id, $poll_token ) {
 		$session_id = absint( $session_id );
 		$poll_token = sanitize_text_field( (string) $poll_token );
-		if ( $session_id <= 0 || $poll_token === '' ) {
+		if ( $session_id <= 0 || '' === $poll_token ) {
 			return false;
 		}
 
@@ -350,7 +380,7 @@ trait FLOSC_REST_Trait {
 		);
 		$poll_token = sanitize_text_field( (string) $request->get_param( 'poll_token' ) );
 
-		if ( $session_id <= 0 || $poll_token === '' ) {
+		if ( $session_id <= 0 || '' === $poll_token ) {
 			return new WP_Error( 'flosc_missing_session_token', __( 'Missing session token.', 'flosc' ), array( 'status' => 403 ) );
 		}
 
@@ -414,7 +444,7 @@ trait FLOSC_REST_Trait {
 	public function handle_oembed( $request ) {
 		$url   = esc_url_raw( (string) $request->get_param( 'url' ) );
 		$retry = '1' === sanitize_text_field( (string) $request->get_param( 'retry' ) );
-		if ( $url === '' || ! wp_http_validate_url( $url ) ) {
+		if ( '' === $url || ! wp_http_validate_url( $url ) ) {
 			return new WP_REST_Response( array( 'success' => false ), 400 );
 		}
 
@@ -422,28 +452,27 @@ trait FLOSC_REST_Trait {
 		// providers are not re-fetched on every render.
 		$cache_key = 'flosc_oembed_' . md5( $url );
 		$cached    = get_transient( $cache_key );
-		if ( is_string( $cached ) ) {
-			if ( $cached === '' && $retry ) {
-				// Retry path bypasses short-lived negative cache in case a provider
-				// had a transient miss on first resolution.
-			} else {
-				return new WP_REST_Response(
-					array(
-						'success' => $cached !== '',
-						'html'    => $cached,
-					)
-				);
-			}
+		// A cache hit is served as-is, with one exception: an explicit retry
+		// looks past a negative entry, in case the provider simply missed on the
+		// first resolution rather than being unsupported.
+		$flosc_bypass_negative_cache = ( '' === $cached && $retry );
+		if ( is_string( $cached ) && ! $flosc_bypass_negative_cache ) {
+			return new WP_REST_Response(
+				array(
+					'success' => '' !== $cached,
+					'html'    => $cached,
+				)
+			);
 		}
 
 		$html  = wp_oembed_get( $url, array( 'width' => 480 ) );
 		$store = is_string( $html ) ? $html : '';
-		$ttl   = $store !== '' ? DAY_IN_SECONDS : ( 5 * MINUTE_IN_SECONDS );
+		$ttl   = '' !== $store ? DAY_IN_SECONDS : ( 5 * MINUTE_IN_SECONDS );
 		set_transient( $cache_key, $store, $ttl );
 
 		return new WP_REST_Response(
 			array(
-				'success' => $store !== '',
+				'success' => '' !== $store,
 				'html'    => $store,
 			)
 		);
@@ -451,11 +480,13 @@ trait FLOSC_REST_Trait {
 
 	/**
 	 * REST API Routes
-	 * v9.4.2: Added rate limiting to public endpoints
+	 * Added rate limiting to public endpoints
+	 *
+	 * @since 9.4.2
 	 */
 	public function register_rest_routes() {
 		// IVR Chat (primary endpoint)
-		// v9.4.2: Now rate-limited via check_public_endpoint_permission
+		// v9.4.2: Now rate-limited via check_public_endpoint_permission.
 		register_rest_route(
 			'flosc/v1',
 			'/chat',
@@ -467,7 +498,7 @@ trait FLOSC_REST_Trait {
 		);
 
 		// RAG Chat (v9.1.6 - AI with search capabilities)
-		// v9.4.2: Now rate-limited via check_public_endpoint_permission
+		// v9.4.2: Now rate-limited via check_public_endpoint_permission.
 		register_rest_route(
 			'flosc/v1',
 			'/chat-rag',
@@ -533,7 +564,7 @@ trait FLOSC_REST_Trait {
 		// Quiz Submission (NEW: for collecting quiz answers)
 		// v9.4.2: Now rate-limited via check_public_endpoint_permission
 		// v1.0.5: This endpoint returns bridge data status (reads, not writes)
-		// Actual quiz storage: POST /quiz-result | Processing: POST /process-quiz
+		// Actual quiz storage: POST /quiz-result | Processing: POST /process-quiz.
 		register_rest_route(
 			'flosc/v1',
 			'/quiz',
@@ -545,7 +576,7 @@ trait FLOSC_REST_Trait {
 		);
 
 		// v9.3.2: GET quiz questions for in-chat quiz
-		// v9.4.2: Now rate-limited via check_public_endpoint_permission
+		// v9.4.2: Now rate-limited via check_public_endpoint_permission.
 		register_rest_route(
 			'flosc/v1',
 			'/quiz',
@@ -557,7 +588,7 @@ trait FLOSC_REST_Trait {
 		);
 
 		// v9.3.2: Store quiz results
-		// v9.4.2: Now rate-limited via check_public_endpoint_permission
+		// v9.4.2: Now rate-limited via check_public_endpoint_permission.
 		register_rest_route(
 			'flosc/v1',
 			'/quiz-result',
@@ -568,7 +599,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// AI Query
+		// AI Query.
 		register_rest_route(
 			'flosc/v1',
 			'/ai-query',
@@ -579,7 +610,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// Process Audio (for audio-based quiz types)
+		// Process Audio (for audio-based quiz types).
 		register_rest_route(
 			'flosc/v1',
 			'/process-audio',
@@ -590,7 +621,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// v1.7.7: Transcribe alias — JS voice recording and quiz audio both call /transcribe
+		// v1.7.7: Transcribe alias — JS voice recording and quiz audio both call /transcribe.
 		register_rest_route(
 			'flosc/v1',
 			'/transcribe',
@@ -601,7 +632,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// Process Quiz (for text-based quiz types)
+		// Process Quiz (for text-based quiz types).
 		register_rest_route(
 			'flosc/v1',
 			'/process-quiz',
@@ -612,7 +643,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// Sessions
+		// Sessions.
 		register_rest_route(
 			'flosc/v1',
 			'/sessions',
@@ -633,7 +664,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// v1.7.0: Get single session by ID
+		// v1.7.0: Get single session by ID.
 		register_rest_route(
 			'flosc/v1',
 			'/sessions/(?P<id>\d+)',
@@ -644,7 +675,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// v8.0.11: Delete a session
+		// v8.0.11: Delete a session.
 		register_rest_route(
 			'flosc/v1',
 			'/sessions/(?P<id>\d+)',
@@ -655,7 +686,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// v8.0.11: Rename a session
+		// v8.0.11: Rename a session.
 		register_rest_route(
 			'flosc/v1',
 			'/sessions/(?P<id>\d+)',
@@ -667,7 +698,7 @@ trait FLOSC_REST_Trait {
 		);
 
 		// v1.7.1: Nonce refresh endpoint
-		// v4.0.8: Open to visitors — they need a nonce to call payment endpoints before account creation
+		// v4.0.8: Open to visitors — they need a nonce to call payment endpoints before account creation.
 		register_rest_route(
 			'flosc/v1',
 			'/nonce',
@@ -686,7 +717,7 @@ trait FLOSC_REST_Trait {
 		);
 
 		// Offers
-		// v9.4.2: Now rate-limited via check_public_endpoint_permission
+		// v9.4.2: Now rate-limited via check_public_endpoint_permission.
 		register_rest_route(
 			'flosc/v1',
 			'/offers',
@@ -697,7 +728,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// v1.6.2: Offer content source (HtmlFile, WooProduct, PostID)
+		// v1.6.2: Offer content source (HtmlFile, WooProduct, PostID).
 		register_rest_route(
 			'flosc/v1',
 			'/offer-content',
@@ -708,7 +739,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// Purchase
+		// Purchase.
 		register_rest_route(
 			'flosc/v1',
 			'/purchase',
@@ -719,7 +750,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// v1.3.1: Sandbox Purchase (fun "pay what you want" testing)
+		// v1.3.1: Sandbox Purchase (fun "pay what you want" testing).
 		register_rest_route(
 			'flosc/v1',
 			'/sandbox-purchase',
@@ -730,7 +761,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// Free Lesson (v9.1.9) — v1.4.6: Accept both GET and POST (JS sends POST)
+		// Free Lesson (v9.1.9) — v1.4.6: Accept both GET and POST (JS sends POST).
 		register_rest_route(
 			'flosc/v1',
 			'/free-lesson',
@@ -742,7 +773,7 @@ trait FLOSC_REST_Trait {
 		);
 
 		// Create Payment Intent (for Stripe)
-		// v4.0.8: Open to visitors — Stripe checkout starts before account creation
+		// v4.0.8: Open to visitors — Stripe checkout starts before account creation.
 		register_rest_route(
 			'flosc/v1',
 			'/create-payment-intent',
@@ -754,7 +785,7 @@ trait FLOSC_REST_Trait {
 		);
 
 		// v1.4.1: Complete purchase (verify and grant access after client-side payment)
-		// v4.0.8: Open to visitors — account creation happens inside complete_purchase
+		// v4.0.8: Open to visitors — account creation happens inside complete_purchase.
 		register_rest_route(
 			'flosc/v1',
 			'/complete-purchase',
@@ -765,7 +796,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// PayPal - Create Order
+		// PayPal - Create Order.
 		register_rest_route(
 			'flosc/v1',
 			'/paypal/create-order',
@@ -776,7 +807,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// PayPal - Capture Order
+		// PayPal - Capture Order.
 		register_rest_route(
 			'flosc/v1',
 			'/paypal/capture-order',
@@ -810,7 +841,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// PayPal Subscriptions - Activate after user approves
+		// PayPal Subscriptions - Activate after user approves.
 		register_rest_route(
 			'flosc/v1',
 			'/paypal/activate-subscription',
@@ -851,7 +882,7 @@ trait FLOSC_REST_Trait {
 		);
 
 		// Access check
-		// v9.4.2: Now rate-limited via check_public_endpoint_permission
+		// v9.4.2: Now rate-limited via check_public_endpoint_permission.
 		register_rest_route(
 			'flosc/v1',
 			'/access',
@@ -874,7 +905,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// Token balance
+		// Token balance.
 		register_rest_route(
 			'flosc/v1',
 			'/tokens',
@@ -885,7 +916,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// Purchase intents (affiliate system)
+		// Purchase intents (affiliate system).
 		register_rest_route(
 			'flosc/v1',
 			'/intents',
@@ -906,7 +937,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// Referral
+		// Referral.
 		register_rest_route(
 			'flosc/v1',
 			'/referral',
@@ -918,7 +949,7 @@ trait FLOSC_REST_Trait {
 		);
 
 		// Lessons
-		// v1.7.8: Lesson list requires login (matches JS access gate)
+		// v1.7.8: Lesson list requires login (matches JS access gate).
 		register_rest_route(
 			'flosc/v1',
 			'/lessons',
@@ -950,7 +981,7 @@ trait FLOSC_REST_Trait {
 		);
 
 		// IVR Messages (v9.2.2)
-		// v9.4.2: Now rate-limited via check_public_endpoint_permission
+		// v9.4.2: Now rate-limited via check_public_endpoint_permission.
 		register_rest_route(
 			'flosc/v1',
 			'/ivr-messages',
@@ -972,7 +1003,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// v1.0.4: Bridge Data endpoint (TASK-008) - quiz state between phases
+		// v1.0.4: Bridge Data endpoint (TASK-008) - quiz state between phases.
 		register_rest_route(
 			'flosc/v1',
 			'/bridge-data',
@@ -984,7 +1015,7 @@ trait FLOSC_REST_Trait {
 		);
 
 		// v1.0.5: Debug endpoint - full funnel state (TASK-108)
-		// Only available when FLOSC_DEBUG is true
+		// Only available when FLOSC_DEBUG is true.
 		if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
 			register_rest_route(
 				'flosc/v1',
@@ -998,7 +1029,7 @@ trait FLOSC_REST_Trait {
 		}
 
 		// Store pre-login score
-		// v9.4.2: Now rate-limited via check_public_endpoint_permission
+		// v9.4.2: Now rate-limited via check_public_endpoint_permission.
 		register_rest_route(
 			'flosc/v1',
 			'/store-score',
@@ -1022,7 +1053,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// Mark funnel completed (v3.0.4)
+		// Mark funnel completed (v3.0.4).
 		register_rest_route(
 			'flosc/v1',
 			'/funnel-complete',
@@ -1033,7 +1064,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// Test AI connection (v04_05)
+		// Test AI connection (v04_05).
 		register_rest_route(
 			'flosc/v1',
 			'/test-ai',
@@ -1045,7 +1076,7 @@ trait FLOSC_REST_Trait {
 		);
 
 		// v07.09: IVR message tracking
-		// v9.4.2: Now rate-limited via check_public_endpoint_permission
+		// v9.4.2: Now rate-limited via check_public_endpoint_permission.
 		register_rest_route(
 			'flosc/v1',
 			'/ivr/track',
@@ -1057,7 +1088,7 @@ trait FLOSC_REST_Trait {
 		);
 
 		// v9.4.2: Now rate-limited via check_public_endpoint_permission
-		// Task 4: Add entitlement gating — phase-level (permission callback) and per-message (handler filtering)
+		// Task 4: Add entitlement gating — phase-level (permission callback) and per-message (handler filtering).
 		register_rest_route(
 			'flosc/v1',
 			'/ivr/messages',
@@ -1068,7 +1099,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// v1.4.0: Email registration (sends guest link — deferred user creation)
+		// v1.4.0: Email registration (sends guest link — deferred user creation).
 		register_rest_route(
 			'flosc/v1',
 			'/register-email',
@@ -1090,7 +1121,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// Guest profile setup — save nickname + optional password from in-chat card
+		// Guest profile setup — save nickname + optional password from in-chat card.
 		register_rest_route(
 			'flosc/v1',
 			'/update-guest-profile',
@@ -1128,7 +1159,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// v1.9.0: AI Feedback — admin flags bad AI responses to improve quality
+		// v1.9.0: AI Feedback — admin flags bad AI responses to improve quality.
 		register_rest_route(
 			'flosc/v1',
 			'/feedback',
@@ -1159,7 +1190,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// v1.9.0: AI Praise — admin reinforces good AI responses
+		// v1.9.0: AI Praise — admin reinforces good AI responses.
 		register_rest_route(
 			'flosc/v1',
 			'/praises',
@@ -1180,7 +1211,7 @@ trait FLOSC_REST_Trait {
 			)
 		);
 
-		// v8.0.0: Redeem access code — grants role directly, no payment
+		// v8.0.0: Redeem access code — grants role directly, no payment.
 		register_rest_route(
 			'flosc/v1',
 			'/redeem-access-code',

@@ -8,6 +8,8 @@
  * language as Offers (FLOSC_Condition_Evaluator).
  *
  * Not: offer builder (→ Offers). Not: letter body editor (→ Email). Not: F→L→O→S→C map (→ Flow).
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -18,7 +20,7 @@ flosc_tab_header( '📊', 'Engagement' );
 
 $flosc_flow_settings = $GLOBALS['flosc_current_settings'] ?? array();
 $flosc_current_ivr   = $GLOBALS['flosc_current_ivr'] ?? '';
-$flosc_flow_id       = $flosc_current_ivr !== '' ? pathinfo( $flosc_current_ivr, PATHINFO_FILENAME ) : '';
+$flosc_flow_id       = '' !== $flosc_current_ivr ? pathinfo( $flosc_current_ivr, PATHINFO_FILENAME ) : '';
 
 $flosc_base_q                        = array(
 	'page' => 'flosc-settings',
@@ -158,8 +160,8 @@ $flosc_email_templates = array(
 $flosc_render_rule = static function ( $rule, $audience, $index, $open = false ) use ( $flosc_triggers, $flosc_email_templates ) {
 	$rid         = sanitize_key( (string) ( $rule['id'] ?? ( 'rule_' . $index ) ) );
 	$flosc_title = trim( (string) ( $rule['title'] ?? '' ) );
-	if ( $flosc_title === '' ) {
-		$flosc_title = $rid !== '' ? $rid : ( 'Rule ' . ( (int) $index + 1 ) );
+	if ( '' === $flosc_title ) {
+		$flosc_title = '' !== $rid ? $rid : ( 'Rule ' . ( (int) $index + 1 ) );
 	}
 	$en           = ! empty( $rule['enabled'] );
 	$trig         = sanitize_key( (string) ( $rule['trigger'] ?? 'chat_open' ) );
@@ -299,7 +301,7 @@ $flosc_render_rule = static function ( $rule, $audience, $index, $open = false )
 	<?php
 };
 
-// Split rules by audience (form index assigned when rendering so arrays stay aligned)
+// Split rules by audience (form index assigned when rendering so arrays stay aligned).
 $flosc_visitor_rules = array();
 $flosc_guest_rules   = array();
 $flosc_member_rules  = array();
@@ -308,9 +310,9 @@ foreach ( $flosc_rules as $flosc_rule ) {
 		continue;
 	}
 	$flosc_aud = sanitize_key( (string) ( $flosc_rule['audience'] ?? 'guest' ) );
-	if ( $flosc_aud === 'visitor' ) {
+	if ( 'visitor' === $flosc_aud ) {
 		$flosc_visitor_rules[] = $flosc_rule;
-	} elseif ( $flosc_aud === 'member' ) {
+	} elseif ( 'member' === $flosc_aud ) {
 		$flosc_member_rules[] = $flosc_rule;
 	} else {
 		$flosc_guest_rules[] = $flosc_rule;
@@ -341,10 +343,10 @@ $flosc_count_active = static function ( $rules ) {
 // Match registration_flow / last_flow against stem variants — writers sometimes
 // sanitize_key() a full "file.md" (becomes filmd) while the admin stem is pathinfo().
 $flosc_summary_users = array();
-if ( $flosc_flow_id !== '' || $flosc_current_ivr !== '' ) {
+if ( '' !== $flosc_flow_id || '' !== $flosc_current_ivr ) {
 	$flosc_ivr_base = basename( (string) $flosc_current_ivr );
 	$flosc_stem     = sanitize_key( pathinfo( $flosc_ivr_base, PATHINFO_FILENAME ) );
-	if ( $flosc_stem === '' && $flosc_flow_id !== '' ) {
+	if ( '' === $flosc_stem && '' !== $flosc_flow_id ) {
 		$flosc_stem = sanitize_key( (string) $flosc_flow_id );
 	}
 	$flosc_flow_match_vals = array_values(
@@ -355,11 +357,11 @@ if ( $flosc_flow_id !== '' || $flosc_current_ivr !== '' ) {
 					$flosc_flow_id,
 					$flosc_ivr_base,
 					pathinfo( $flosc_ivr_base, PATHINFO_FILENAME ),
-					sanitize_key( $flosc_ivr_base ), // e.g. flow_ivrmd when source was …ivr.md
+					sanitize_key( $flosc_ivr_base ), // For example flow_ivrmd when the source was …ivr.md.
 					sanitize_key( (string) $flosc_current_ivr ),
 				),
 				static function ( $v ) {
-					return is_string( $v ) && $v !== '';
+					return is_string( $v ) && '' !== $v;
 				}
 			)
 		)
@@ -390,7 +392,7 @@ if ( $flosc_flow_id !== '' || $flosc_current_ivr !== '' ) {
 		}
 	}
 	// Also surface users who used this flow (counts array) even if registration_flow missing.
-	if ( $flosc_stem !== '' ) {
+	if ( '' !== $flosc_stem ) {
 		$flosc_count_ids   = function_exists( 'flosc_get_user_ids_for_meta' )
 			? flosc_get_user_ids_for_meta( '_flosc_flow_use_counts', null, '=', 100 )
 			: array();
@@ -674,11 +676,11 @@ $flosc_framework = class_exists( 'FLOSC_Framework' ) ? FLOSC_Framework::instance
 							$flosc_state = (string) $flosc_sale->access()->get_simple_state( $flosc_uid, $flosc_flow_id );
 						}
 					}
-					if ( $flosc_state === '—' && $flosc_purchased ) {
+					if ( '—' === $flosc_state && $flosc_purchased ) {
 						$flosc_state = 'member';
 					}
 					$flosc_edit     = get_edit_user_link( $flosc_uid );
-					$flosc_label    = $flosc_u->display_name !== '' ? $flosc_u->display_name : $flosc_u->user_email;
+					$flosc_label    = '' !== $flosc_u->display_name ? $flosc_u->display_name : $flosc_u->user_email;
 					$flosc_chat_url = add_query_arg(
 						array(
 							'page'          => 'flosc-settings',
@@ -699,7 +701,7 @@ $flosc_framework = class_exists( 'FLOSC_Framework' ) ? FLOSC_Framework::instance
 							<?php endif; ?>
 						</td>
 						<td><?php echo esc_html( mysql2date( 'Y-m-d', $flosc_u->user_registered ) ); ?></td>
-						<td><?php echo esc_html( $flosc_state !== '' ? $flosc_state : '—' ); ?></td>
+						<td><?php echo esc_html( '' !== $flosc_state ? $flosc_state : '—' ); ?></td>
 						<td><?php echo esc_html( $flosc_purchased ? 'yes' : 'no' ); ?></td>
 						<td><?php echo $flosc_logins > 0 ? esc_html( (string) $flosc_logins ) : '—'; ?></td>
 						<td><?php echo esc_html( $flosc_creds ? 'complete' : 'pending' ); ?></td>

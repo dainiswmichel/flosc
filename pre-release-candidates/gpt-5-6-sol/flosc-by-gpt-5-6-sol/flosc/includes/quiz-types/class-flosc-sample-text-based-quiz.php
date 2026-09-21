@@ -88,15 +88,15 @@ class FLOSC_Sample_Text_Based_Quiz extends FLOSC_Abstract_Quiz_Type {
 		$separator      = $this->get_setting( 'separator', ',' );
 		$case_sensitive = $this->get_setting( 'case_sensitive', false );
 
-		// Parse correct answers and per-answer content refs
+		// Parse correct answers and per-answer content refs.
 		$parsed          = $this->parse_content( $expected_content );
 		$correct_answers = $parsed['answers'];
 		$content_map     = $parsed['content_map'];
 
-		// Parse user answers
+		// Parse user answers.
 		$user_answers = $this->parse_input( $input, $separator );
 
-		// Normalize if case-insensitive
+		// Normalize if case-insensitive.
 		if ( ! $case_sensitive ) {
 			$correct_answers = array_map( 'strtolower', $correct_answers );
 			$user_answers    = array_map( 'strtolower', $user_answers );
@@ -110,13 +110,13 @@ class FLOSC_Sample_Text_Based_Quiz extends FLOSC_Abstract_Quiz_Type {
 		$correct_answers = array_map( 'trim', $correct_answers );
 		$user_answers    = array_map( 'trim', $user_answers );
 
-		// Correct = user typed something that IS in the correct set
+		// Correct = user typed something that IS in the correct set.
 		$correct       = array();
 		$wrong_typed   = array();
 		$total_correct = 0;
 
 		foreach ( $user_answers as $answer ) {
-			if ( in_array( $answer, $correct_answers ) ) {
+			if ( in_array( $answer, $correct_answers, true ) ) {
 				$correct[] = $answer;
 				++$total_correct;
 			} else {
@@ -125,7 +125,7 @@ class FLOSC_Sample_Text_Based_Quiz extends FLOSC_Abstract_Quiz_Type {
 		}
 
 		// Missed = in correct_answers but NOT typed by user
-		// These are the items we recommend lessons for
+		// These are the items we recommend lessons for.
 		$missed    = array_values( array_diff( $correct_answers, $user_answers ) );
 		$incorrect = array();
 		foreach ( $missed as $answer ) {
@@ -256,26 +256,27 @@ class FLOSC_Sample_Text_Based_Quiz extends FLOSC_Abstract_Quiz_Type {
 			}
 
 			// Legacy pipe format on a single line: 1|CorrectContent: ...|RelatedContent: ...
-			if ( strpos( $block, "\n" ) === false && strpos( $block, '|' ) !== false ) {
+			if ( false === strpos( $block, "\n" ) && false !== strpos( $block, '|' ) ) {
 				$parts  = explode( '|', $block );
 				$answer = trim( $parts[0] );
-				if ( $answer === '' ) {
+				if ( '' === $answer ) {
 					continue;
 				}
 				$answers[]       = $answer;
 				$correct_content = array();
 				$related_content = array();
-				for ( $i = 1; $i < count( $parts ); $i++ ) {
+				$part_count      = count( $parts );
+				for ( $i = 1; $i < $part_count; $i++ ) {
 					$seg = trim( $parts[ $i ] );
-					if ( stripos( $seg, 'correctcontent:' ) === 0 ) {
+					if ( 0 === stripos( $seg, 'correctcontent:' ) ) {
 						foreach ( array_map( 'trim', explode( ',', trim( substr( $seg, strlen( 'correctcontent:' ) ) ) ) ) as $r ) {
-							if ( $r !== '' ) {
+							if ( '' !== $r ) {
 								$correct_content[] = $r;
 							}
 						}
-					} elseif ( stripos( $seg, 'relatedcontent:' ) === 0 ) {
+					} elseif ( 0 === stripos( $seg, 'relatedcontent:' ) ) {
 						foreach ( array_map( 'trim', explode( ',', trim( substr( $seg, strlen( 'relatedcontent:' ) ) ) ) ) as $r ) {
-							if ( $r !== '' ) {
+							if ( '' !== $r ) {
 								$related_content[] = $r;
 							}
 						}
@@ -288,41 +289,41 @@ class FLOSC_Sample_Text_Based_Quiz extends FLOSC_Abstract_Quiz_Type {
 				continue;
 			}
 
-			// Legacy flat format on a single line: 1,2,3,4,5,6,7,8,9,10
-			if ( strpos( $block, "\n" ) === false && strpos( $block, ',' ) !== false ) {
+			// Legacy flat format on a single line: 1,2,3,4,5,6,7,8,9,10.
+			if ( false === strpos( $block, "\n" ) && false !== strpos( $block, ',' ) ) {
 				foreach ( array_map( 'trim', explode( ',', $block ) ) as $a ) {
-					if ( $a !== '' ) {
+					if ( '' !== $a ) {
 						$answers[] = $a;
 					}
 				}
 				continue;
 			}
 
-			// Primary block format
+			// Primary block format.
 			$lines           = array_values( array_filter( array_map( 'trim', explode( "\n", $block ) ) ) );
 			$answer          = '';
 			$correct_content = array();
 			$related_content = array();
 
 			foreach ( $lines as $line ) {
-				if ( stripos( $line, 'correctcontent:' ) === 0 ) {
+				if ( 0 === stripos( $line, 'correctcontent:' ) ) {
 					foreach ( array_map( 'trim', explode( ',', trim( substr( $line, strlen( 'correctcontent:' ) ) ) ) ) as $r ) {
-						if ( $r !== '' ) {
+						if ( '' !== $r ) {
 							$correct_content[] = $r;
 						}
 					}
-				} elseif ( stripos( $line, 'relatedcontent:' ) === 0 ) {
+				} elseif ( 0 === stripos( $line, 'relatedcontent:' ) ) {
 					foreach ( array_map( 'trim', explode( ',', trim( substr( $line, strlen( 'relatedcontent:' ) ) ) ) ) as $r ) {
-						if ( $r !== '' ) {
+						if ( '' !== $r ) {
 							$related_content[] = $r;
 						}
 					}
-				} elseif ( $answer === '' ) {
+				} elseif ( '' === $answer ) {
 					$answer = $line;
 				}
 			}
 
-			if ( $answer !== '' ) {
+			if ( '' !== $answer ) {
 				$answers[]              = $answer;
 				$content_map[ $answer ] = array(
 					'correct_content' => $correct_content,
@@ -346,8 +347,8 @@ class FLOSC_Sample_Text_Based_Quiz extends FLOSC_Abstract_Quiz_Type {
 			return array();
 		}
 
-		// Also accept space-separated
-		if ( $separator === ',' && strpos( $input, ',' ) === false && strpos( $input, ' ' ) !== false ) {
+		// Also accept space-separated.
+		if ( ',' === $separator && false === strpos( $input, ',' ) && false !== strpos( $input, ' ' ) ) {
 			$items = explode( ' ', $input );
 		} else {
 			$items = explode( $separator, $input );

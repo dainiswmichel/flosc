@@ -34,6 +34,25 @@ class FLOSC_Page_Context {
 			return;
 		}
 
+		/*
+		 * A BuddyBoss group page is not a WordPress post, so resolving a post
+		 * id for https://dainis.net/groups/lesaep-learners/ returns nothing and
+		 * the companion arrives on that page knowing nothing about it.
+		 *
+		 * Record the group instead. The chatpack's group catalogue already
+		 * carries the row; this just says which one the person is looking at.
+		 */
+		if ( function_exists( 'bp_is_group' ) && function_exists( 'bp_get_current_group_id' ) && bp_is_group() ) {
+			$flosc_group_id = (int) bp_get_current_group_id();
+			if ( $flosc_group_id > 0 ) {
+				$eval_context['browsing_row_id'] = 'bb_group:' . $flosc_group_id;
+				if ( empty( $eval_context['browsing_page_title'] ) && function_exists( 'bp_get_current_group_name' ) ) {
+					$eval_context['browsing_page_title'] = sanitize_text_field( (string) bp_get_current_group_name() );
+				}
+				return;
+			}
+		}
+
 		$current_id = $this->resolve_current_browsing_post_id( $eval_context );
 		if ( $current_id <= 0 ) {
 			return;
@@ -48,7 +67,7 @@ class FLOSC_Page_Context {
 			}
 			if ( empty( $eval_context['browsing_page_url'] ) ) {
 				$permalink = get_permalink( $post );
-				if ( is_string( $permalink ) && $permalink !== '' ) {
+				if ( is_string( $permalink ) && '' !== $permalink ) {
 					$eval_context['browsing_page_url'] = esc_url_raw( $permalink );
 				}
 			}
@@ -68,7 +87,7 @@ class FLOSC_Page_Context {
 		}
 
 		$message = trim( (string) $message );
-		if ( $message === '' ) {
+		if ( '' === $message ) {
 			return;
 		}
 
@@ -86,9 +105,9 @@ class FLOSC_Page_Context {
 
 		$access_level = sanitize_key( (string) ( $eval_context['access_level'] ?? 'visitor' ) );
 		$user_id      = absint( $eval_context['user_id'] ?? 0 );
-		$content      = $this->load_post_content( $post_id, $access_level, $user_id );
+		$content      = $this->load_post_content( $post_id, $access_level );
 
-		if ( $content === '' ) {
+		if ( '' === $content ) {
 			return;
 		}
 
@@ -101,7 +120,7 @@ class FLOSC_Page_Context {
 			$eval_context['browsing_page_title'] = sanitize_text_field( (string) get_the_title( $post ) );
 		}
 
-		if ( $session_key !== '' ) {
+		if ( '' !== $session_key ) {
 			set_transient( $this->session_transient_key( $session_key ), $post_id, self::SESSION_TTL );
 		}
 	}
@@ -111,7 +130,7 @@ class FLOSC_Page_Context {
 	}
 
 	private function get_session_focus_post_id( $session_key ) {
-		if ( $session_key === '' ) {
+		if ( '' === $session_key ) {
 			return 0;
 		}
 		return absint( get_transient( $this->session_transient_key( $session_key ) ) );
@@ -133,7 +152,7 @@ class FLOSC_Page_Context {
 		}
 
 		$page_url = esc_url_raw( (string) ( $eval_context['browsing_page_url'] ?? '' ) );
-		if ( $page_url !== '' ) {
+		if ( '' !== $page_url ) {
 			return $this->resolve_post_id_from_url( $page_url );
 		}
 
@@ -165,7 +184,7 @@ class FLOSC_Page_Context {
 	private function resolve_post_id( $explicit_id ) {
 		if ( $explicit_id > 0 ) {
 			$post = get_post( $explicit_id );
-			if ( $post && $post->post_status === 'publish' ) {
+			if ( $post && 'publish' === $post->post_status ) {
 				return (int) $post->ID;
 			}
 		}
@@ -175,7 +194,7 @@ class FLOSC_Page_Context {
 
 	private function resolve_post_id_from_url( $url ) {
 		$url = esc_url_raw( (string) $url );
-		if ( $url === '' ) {
+		if ( '' === $url ) {
 			return 0;
 		}
 
@@ -206,7 +225,7 @@ class FLOSC_Page_Context {
 
 	private function message_is_page_location_query( $message ) {
 		$msg = strtolower( trim( (string) $message ) );
-		if ( $msg === '' ) {
+		if ( '' === $msg ) {
 			return false;
 		}
 
@@ -220,12 +239,12 @@ class FLOSC_Page_Context {
 		$msg = strtolower( trim( $message ) );
 
 		foreach ( $this->get_page_intent_phrases() as $phrase ) {
-			if ( $phrase !== '' && strpos( $msg, $phrase ) !== false ) {
+			if ( '' !== $phrase && false !== strpos( $msg, $phrase ) ) {
 				return true;
 			}
 		}
 
-		if ( $title !== '' && strlen( $title ) > 4 ) {
+		if ( '' !== $title && strlen( $title ) > 4 ) {
 			$title_clean = strtolower( preg_replace( '/[^a-z0-9\s]/', ' ', $title ) );
 			$words       = array_filter(
 				explode( ' ', $title_clean ),
@@ -235,7 +254,7 @@ class FLOSC_Page_Context {
 			);
 			$hits        = 0;
 			foreach ( $words as $word ) {
-				if ( strpos( $msg, $word ) !== false ) {
+				if ( false !== strpos( $msg, $word ) ) {
 					++$hits;
 				}
 			}
@@ -310,10 +329,10 @@ class FLOSC_Page_Context {
 		// floscAdmin additions — per-flow setting, one phrase per line (or comma-separated).
 		$custom = array();
 		$raw    = (string) flosc_get_setting( 'companion_page_intent_phrases', '' );
-		if ( $raw !== '' ) {
+		if ( '' !== $raw ) {
 			foreach ( preg_split( '/[\r\n,]+/', $raw ) as $line ) {
 				$line = strtolower( trim( (string) $line ) );
-				if ( $line !== '' ) {
+				if ( '' !== $line ) {
 					$custom[] = $line;
 				}
 			}
@@ -334,7 +353,7 @@ class FLOSC_Page_Context {
 	private function message_is_short_followup( $message ) {
 		$msg = strtolower( trim( $message ) );
 
-		if ( $msg === '' ) {
+		if ( '' === $msg ) {
 			return false;
 		}
 
@@ -365,9 +384,9 @@ class FLOSC_Page_Context {
 		return false;
 	}
 
-	private function load_post_content( $post_id, $access_level, $user_id ) {
+	private function load_post_content( $post_id, $access_level ) {
 		$post = get_post( $post_id );
-		if ( ! $post || $post->post_status !== 'publish' ) {
+		if ( ! $post || 'publish' !== $post->post_status ) {
 			return '';
 		}
 
@@ -383,14 +402,14 @@ class FLOSC_Page_Context {
 			}
 		}
 
-		$filter = flosc_content_filter::instance();
+		$filter = FLOSC_Content_Filter::instance();
 		$raw    = $filter->filter_post_content( $raw, $access_level );
 
 		$text = wp_strip_all_tags( $raw );
 		$text = preg_replace( '/\s+/u', ' ', $text );
 		$text = trim( $text );
 
-		if ( $text === '' ) {
+		if ( '' === $text ) {
 			return '';
 		}
 

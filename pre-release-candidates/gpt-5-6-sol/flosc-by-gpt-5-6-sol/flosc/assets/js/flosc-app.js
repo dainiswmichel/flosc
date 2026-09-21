@@ -250,6 +250,27 @@ class floscApp {
     async init() {
         this.log('[FLOSC] Initializing app...');
 
+        // v10.1.0: Tell the companion parent this frame really is the FLOSC app.
+        // An HTTP error page satisfies the iframe 'load' event just as happily as
+        // the app does, which is how a reader ended up looking at a raw nginx 414
+        // inside a branded chat panel. Silence now means "not the app", and the
+        // parent rebuilds the frame. Sent first so a slow IVR fetch never reads
+        // as a failure.
+        if (window.self !== window.top) {
+            try {
+                let readyOrigin = '*';
+                if (document.referrer) {
+                    const ref = new URL(document.referrer, window.location.origin);
+                    if (/^https?:$/.test(ref.protocol)) {
+                        readyOrigin = ref.origin;
+                    }
+                }
+                window.parent.postMessage({ type: 'flosc_app_ready' }, readyOrigin);
+            } catch (e) {
+                // No parent access; the health check will rebuild once and stop.
+            }
+        }
+
         // v10.0.0: Record the entry flow in a host-global cookie (first visit only)
         // so logout can recall the per-flow logout destination. Server mirrors this
         // via set_entry_flow_cookie(); this keeps it correct even if JS is earliest.
@@ -388,9 +409,19 @@ class floscApp {
                 } else {
                     this.log('[FLOSC] Continuing session - restoring visitor messages');
                     this.restoreVisitorMessages();
+                    // After the thread is back, so a recovered answer lands
+                    // under the message it answers.
+                    this.floscResumePendingTurn().catch(() => {});
                 }
             }
-            
+
+            if (this.state !== 'visitor') {
+                // A signed-in thread restores from the server, so there is no
+                // orphaned message to drop — the server wrote both halves. The
+                // answer is simply unread, and this is how it arrives.
+                this.floscResumePendingTurn().catch(() => {});
+            }
+
             // Member magic-link login: show confirmation as first message, with fresh chat
             if (this.config.memberLinkLogin) {
                 this.currentSession = null;          // ensure new session on first message
@@ -1123,6 +1154,191 @@ class floscApp {
         }
     }
 
+    /*
+     * A turn that was in flight when the page went away.
+     *
+     * /flosc/v1/chat is an ordinary POST. Reloading mid-answer drops the
+     * browser's end of it while PHP runs to completion and writes the reply.
+     * The reply exists and nobody read it, and the restored thread held a
+     * visitor message with no assistant reply — which then went to the server
+     * as history, so the next turn read as a question the assistant had
+     * ignored and came back as scripted IVR copy on the same subject.
+     *
+     * The id is minted before the request leaves and cleared when the answer
+     * arrives. Anything still marked pending on the next page load is a turn
+     * whose outcome we do not know yet.
+     */
+    floscMintTurnId() {
+        try {
+            if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+                return window.crypto.randomUUID();
+            }
+        } catch (e) {
+            // Fall through to the manual form below.
+        }
+        const rand = () => Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
+        return `${rand()}${rand()}-${rand()}-${rand()}-${rand()}-${rand()}${rand()}${rand()}`;
+    }
+
+    floscMarkTurnPending(turnId, message) {
+        if (!turnId) return;
+        try {
+            this.writeVisitorJourneyItem('flosc_pending_turn', JSON.stringify({
+                turn_id: turnId,
+                message: String(message || '').substring(0, 2000),
+                at: Date.now(),
+            }));
+        } catch (e) {
+            // Storage is a convenience here; a turn that cannot be marked
+            // simply behaves the way it did before.
+        }
+    }
+
+    floscClearTurnPending() {
+        this._floscTurnId = null;
+        try {
+            this.removeVisitorJourneyItem('flosc_pending_turn');
+        } catch (e) {
+            // Ignore storage failures.
+        }
+    }
+
+    floscReadPendingTurn() {
+        try {
+            const raw = this.readVisitorJourneyItem('flosc_pending_turn');
+            if (!raw) return null;
+            const pending = JSON.parse(raw);
+            if (!pending || !pending.turn_id) return null;
+            // Older than a day is not a turn anyone is still waiting on.
+            if (pending.at && (Date.now() - Number(pending.at)) > 86400000) {
+                this.removeVisitorJourneyItem('flosc_pending_turn');
+                return null;
+            }
+            return pending;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    /*
+     * Ask the server what became of a turn we stopped listening to.
+     *
+     * Recovered: the answer was written, so show it and save it — the visitor
+     * gets the reply they reloaded away from. Not recovered: nothing was
+     * written, so drop the orphaned visitor message rather than sending half a
+     * turn as history on the next request.
+     */
+    async floscResumePendingTurn() {
+        const pending = this.floscReadPendingTurn();
+        if (!pending) return;
+
+        this.removeVisitorJourneyItem('flosc_pending_turn');
+
+        let data = null;
+        try {
+            const response = await this.authFetch(this.config.apiUrl + '/chat', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-WP-Nonce': this.config.nonce
+                },
+                body: JSON.stringify({
+                    resume_turn_id: pending.turn_id,
+                    flow_id: this.config?.flowId || '',
+                    journey_id: this.readVisitorJourneyItem('flosc_journey_id') || '',
+                })
+            });
+            data = await response.json();
+        } catch (e) {
+            this.logWarn('[FLOSC] Could not resolve the interrupted turn:', e);
+            // Unresolved is the one case where the orphan must still go, or the
+            // next request carries the half-turn this whole path exists to stop.
+            this.floscDropOrphanVisitorMessage(pending.message);
+            return;
+        }
+
+        if (data && data.recovered && data.message) {
+            /*
+             * The reply exists on the server. Whether it is already on screen
+             * depends on who is asking.
+             *
+             * A signed-in turn is written to the session by PHP — both halves,
+             * together, before the browser ever receives the response — so a
+             * reload restores the complete pair and appending the recovered
+             * reply says the same thing twice. That is what a live tester saw:
+             * "you glitched a tiny bit refreshing while waiting", and the model
+             * itself noticed, calling it an echo.
+             *
+             * An anonymous turn has no server session. The client writes the
+             * assistant message only after the fetch resolves, so a reload
+             * loses it and recovery is the only way it arrives.
+             *
+             * One check covers both: if it is already in the thread, leave it.
+             */
+            if (this.floscAssistantAlreadyInThread(String(data.message))) {
+                this.log('[FLOSC] The interrupted answer was already restored; not repeating it.');
+                return;
+            }
+
+            this.log('[FLOSC] Recovered the answer written while the page was reloading.');
+            const html = this.formatMarkdown(String(data.message));
+            this.addMessage('assistant', html, true);
+            if (this.state === 'visitor') {
+                this.saveVisitorMessage('assistant', html);
+            }
+            return;
+        }
+
+        this.log('[FLOSC] The interrupted turn never completed; dropping its unanswered message.');
+        this.floscDropOrphanVisitorMessage(pending.message);
+    }
+
+    /*
+     * Is this assistant text already on screen?
+     *
+     * Compared as normalised plain text, because the same reply renders
+     * differently depending on how it arrived — markdown converted here,
+     * HTML restored from a session, entities decoded by the browser.
+     */
+    floscAssistantAlreadyInThread(text) {
+        const candidate = this._normalizeAssistantPlain(text);
+        if (!candidate) {
+            return false;
+        }
+        const root = this.chatMessages || document.getElementById('flosc_app_messages');
+        if (!root) {
+            return false;
+        }
+        const nodes = root.querySelectorAll('.message-content, .flosc-message-content, .message.assistant, [data-role="assistant"]');
+        for (const el of nodes) {
+            if (this._normalizeAssistantPlain(el.textContent || el.innerText || '') === candidate) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /*
+     * Remove a trailing visitor message that never got an answer. Only the
+     * last one, and only if it is the message we were waiting on — an earlier
+     * unanswered message is somebody else's problem and not ours to rewrite.
+     */
+    floscDropOrphanVisitorMessage(message) {
+        if (this.state !== 'visitor' || !message) return;
+        try {
+            const stored = JSON.parse(this.readVisitorJourneyItem('flosc_visitor_messages') || '[]');
+            if (!Array.isArray(stored) || !stored.length) return;
+            const last = stored[stored.length - 1];
+            if (last && last.role === 'user' && String(last.content || '') === String(message)) {
+                stored.pop();
+                this.writeVisitorJourneyItem('flosc_visitor_messages', JSON.stringify(stored));
+            }
+        } catch (e) {
+            this.logWarn('[FLOSC] Could not drop the unanswered message:', e);
+        }
+    }
+
     removeVisitorJourneyItem(base) {
         try {
             localStorage.removeItem(this.visitorJourneyKey(base));
@@ -1173,6 +1389,30 @@ class floscApp {
         }
     }
 
+    /**
+     * v10.1.0: Collect a handoff pack parked in sessionStorage.
+     *
+     * The pack used to travel as base64 in the query string. At 8000 characters
+     * plus the context params it exceeded nginx's request-line limit, and the
+     * reader was shown "414 Request-URI Too Large" inside the chat panel. The URL
+     * now carries only flosc_handoff_ref=1 and the payload waits here.
+     *
+     * Read-once: cleared as soon as it is taken, so a reload cannot replay it.
+     *
+     * @return {string} Base64 pack, or an empty string.
+     */
+    readStashedHandoffPack() {
+        try {
+            const raw = window.sessionStorage.getItem('flosc_handoff_pack');
+            if (raw) {
+                window.sessionStorage.removeItem('flosc_handoff_pack');
+            }
+            return String(raw || '');
+        } catch (e) {
+            return '';
+        }
+    }
+
     decodeSessionHandoffPayload(encoded) {
         try {
             if (!encoded) {
@@ -1196,6 +1436,10 @@ class floscApp {
             const payload = {
                 kind: 'visitor',
                 sessionId: String(this.getVisitorSessionId() || '').slice(0, 80),
+                // Carried across the handoff so a conversation that moves between
+                // floscDomains (different origins, so different localStorage) stays
+                // one thread in Chat Logs.
+                journeyId: String(this.getJourneyId() || '').slice(0, 64),
                 messages: []
             };
             try {
@@ -1229,6 +1473,7 @@ class floscApp {
             const visitorFallback = {
                 kind: 'visitor',
                 sessionId: String(this.getVisitorSessionId() || '').slice(0, 80),
+                journeyId: String(this.getJourneyId() || '').slice(0, 64),
                 messages: []
             };
             try {
@@ -1245,6 +1490,7 @@ class floscApp {
         return {
             kind: 'user',
             sessionId: serverId.slice(0, 80),
+            journeyId: String(this.getJourneyId() || '').slice(0, 64),
             messages: []
         };
     }
@@ -1286,7 +1532,7 @@ class floscApp {
         try {
             const url = new URL(window.location.href);
             let changed = false;
-            ['flosc_visitor_session', 'flosc_handoff', 'flosc_session_id'].forEach((key) => {
+            ['flosc_visitor_session', 'flosc_handoff', 'flosc_handoff_ref', 'flosc_session_id'].forEach((key) => {
                 if (url.searchParams.has(key)) {
                     url.searchParams.delete(key);
                     changed = true;
@@ -1315,11 +1561,26 @@ class floscApp {
             }
 
             const sid = String(params.get('flosc_visitor_session') || '').trim();
-            const encoded = String(params.get('flosc_handoff') || '').trim();
+            // Stash first; the query-string form stays supported so links already
+            // in flight when this shipped still restore their thread.
+            const stashed = (params.get('flosc_handoff_ref') === '1')
+                ? this.readStashedHandoffPack()
+                : '';
+            const encoded = stashed || String(params.get('flosc_handoff') || '').trim();
 
             if (encoded) {
                 const payload = this.decodeSessionHandoffPayload(encoded);
                 if (payload && typeof payload === 'object') {
+                    // Adopt the originating page's journey before anything logs a
+                    // turn here, so the thread continues instead of forking.
+                    const payloadJourney = String(payload.journeyId || '')
+                        .replace(/[^A-Za-z0-9_-]/g, '')
+                        .slice(0, 64);
+                    if (payloadJourney) {
+                        this._journeyId = payloadJourney;
+                        this.writeVisitorJourneyItem('flosc_journey_id', payloadJourney);
+                    }
+
                     const payloadSid = String(payload.sessionId || '').trim();
                     const effectiveSid = payloadSid || sid;
                     if (effectiveSid) {
@@ -1436,8 +1697,15 @@ class floscApp {
                 ...payload,
                 messages: Array.isArray(payload.messages) ? payload.messages.slice(-10) : []
             });
-            if (packed && packed.length <= 8000) {
-                url.searchParams.set('flosc_handoff', packed);
+            // v10.1.0: park it, mark it. A transcript in the query string is what
+            // produced the 414 the reader used to see inside the panel.
+            if (packed) {
+                try {
+                    window.sessionStorage.setItem('flosc_handoff_pack', packed);
+                    url.searchParams.set('flosc_handoff_ref', '1');
+                } catch (e) {
+                    this.logWarn('[FLOSC] Could not stash handoff pack:', e);
+                }
             }
             return;
         }
@@ -1686,6 +1954,52 @@ class floscApp {
             this._persistVisitorSessionCookie(this._visitorSessionId);
             return this._visitorSessionId;
         }
+    }
+
+    /**
+     * Opaque id for one conversation, from first message to logout.
+     *
+     * session_id is not stable across the journey: a visitor sends the opaque
+     * flosc_visitor_session id, which the server hashes into an int, and the
+     * moment they log in the client switches to this.currentSession.id (a small
+     * numeric user-meta session id). Chat Logs group by session_id, so one
+     * conversation used to break into two threads at login, and client-UI turns
+     * (free lesson list, offer card, gate denial) sent session_id 0 and landed in
+     * a shared bucket with every other visitor's.
+     *
+     * This id is minted once, stored under its own key, and sent on every logged
+     * turn before and after login, so the whole conversation stays one thread.
+     * Kept separate from flosc_visitor_session on purpose: reading that one mints
+     * a visitor session cookie and a visitor token grant as a side effect, which
+     * a logged-in member must not get.
+     *
+     * Cleared by clearClientAuth() (logout) and restartChat(), so the next
+     * conversation is a new journey.
+     */
+    getJourneyId() {
+        if (this._journeyId) {
+            return this._journeyId;
+        }
+        try {
+            let id = this.readVisitorJourneyItem('flosc_journey_id');
+            if (!id) {
+                id = this._mintOpaqueVisitorSessionId();
+                this.writeVisitorJourneyItem('flosc_journey_id', id);
+            }
+            this._journeyId = String(id).slice(0, 64);
+            return this._journeyId;
+        } catch (e) {
+            // Storage unavailable: keep a stable id for this page lifetime so the
+            // turns logged on this page still group together.
+            this._journeyId = String(this._mintOpaqueVisitorSessionId()).slice(0, 64);
+            return this._journeyId;
+        }
+    }
+
+    /** Start a new journey: the next logged turn opens a fresh Chat Logs thread. */
+    resetJourneyId() {
+        this._journeyId = null;
+        this.removeVisitorJourneyItem('flosc_journey_id');
     }
 
     /**
@@ -3003,6 +3317,16 @@ class floscApp {
 
         content = content.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
         content = content.replace(/~~([^~]+)~~/g, '<del>$1</del>');
+
+        // Line breaks arrive three ways and must all render. Catalog rows and
+        // IVR messages store a literal backslash-n; the admin editor produces
+        // real newlines; older saved messages contain <br>. A visitor reading
+        // "\n" in a chat bubble is seeing a renderer bug, not a model mistake.
+        content = content
+            .replace(/\\n/g, '\n')
+            .replace(/<br\s*\/?>/gi, '\n')
+            .replace(/\r\n?/g, '\n')
+            .replace(/\n/g, '<br>');
 
         const isWelcomeMessage = !!(msg && msg.name && String(msg.name).includes('welcome'));
         if (this.state === 'visitor' && isWelcomeMessage && !/flosc-welcome-badge/i.test(content)) {
@@ -4556,10 +4880,15 @@ class floscApp {
         
         return text
             .replace(/{name}/g, ctx.name || 'there')
+            .replace(/{personality_name}/g, this.config?.personalityName || 'FLOSC')
+            .replace(/{personality_role}/g, this.config?.personalityRole || '')
+            .replace(/{flow_name}/g, this.config?.flowDisplayName || '')
+            .replace(/{public_title}/g, ctx.title || '')
             .replace(/{score}/g, ctx.score || '0')
             .replace(/{product_name}/g, ctx.product_name || 'the course')
             .replace(/{title}/g, ctx.title || ctx.product_name || 'the course')
             .replace(/{tagline}/g, ctx.tagline || '')
+            .replace(/{site_name}/g, this.config?.siteName || '')
             .replace(/{price}/g, ctx.price || '')
             .replace(/{discount_price}/g, ctx.discount_price || '')
             .replace(/{timer_remaining}/g, ctx.timer_remaining || '60:00')
@@ -4750,17 +5079,72 @@ class floscApp {
                 });
 
                 const redirectAfterLogout = (targetUrl) => {
+                    // v10.1.0: In companion mode the iframe must not navigate itself —
+                    // that leaves the bubble open on a stale document showing the
+                    // previous account holder's conversation. Hand the teardown to
+                    // the parent, which closes the bubble and repaints the host.
+                    if (window.self !== window.top) {
+                        try {
+                            let targetOrigin = '*';
+                            if (document.referrer) {
+                                const ref = new URL(document.referrer, window.location.origin);
+                                if (/^https?:$/.test(ref.protocol)) {
+                                    targetOrigin = ref.origin;
+                                }
+                            }
+                            window.parent.postMessage({
+                                type: 'flosc_companion_logout_complete',
+                                redirect: String(targetUrl || '')
+                            }, targetOrigin);
+                            return;
+                        } catch (e) {
+                            this.logWarn('[FLOSC Auth] Could not hand logout to companion parent:', e);
+                        }
+                    }
+
                     setTimeout(() => {
                         window.location.href = targetUrl || (this.config.appUrl || '/');
                     }, 2000);
                 };
+
+                // v10.1.0: Logout is a teardown, not a relabel. Every device-held
+                // trace of this person goes, so the next opener starts as a genuinely
+                // new visitor. Nothing here recognises anyone: a returning member gets
+                // their history back the ordinary way, by logging in again.
                 const clearClientAuth = () => {
                     this.authToken = '';
                     this.config.authToken = '';
+                    this.currentSession = null;
+                    this._visitorSessionId = null;
+
                     try {
                         localStorage.removeItem('flosc_auth_token');
                     } catch (e) {
                         this.logWarn('[FLOSC Auth] Could not clear browser auth token:', e);
+                    }
+
+                    try {
+                        localStorage.removeItem(this.getActiveChatSessionStorageKey());
+                    } catch (e) {
+                        this.logWarn('[FLOSC Auth] Could not clear active chat session key:', e);
+                    }
+
+                    // Clean slate: the device keeps nothing. Transcript and anonymous
+                    // visitor id both go, so the next opener is a new visitor in every
+                    // sense -- not because anything was detected about them, but because
+                    // nothing was kept. A returning member gets their history back the
+                    // ordinary way, by logging in again; it lives on the account, not
+                    // here. The cost is that a new visitor id draws a fresh token grant,
+                    // which is bounded by per-flow spend limits, not by device state.
+                    try {
+                        this.removeVisitorJourneyItem('flosc_visitor_messages');
+                        this.removeVisitorJourneyItem('flosc_visitor_session');
+                        // Ends the Chat Logs thread too: whoever opens the widget
+                        // next starts a new conversation, not a continuation of the
+                        // one that just logged out.
+                        this.resetJourneyId();
+                    } catch (e) {
+                        this.logWarn('[FLOSC Auth] Could not clear visitor journey keys:', e);
                     }
                 };
 
@@ -6250,6 +6634,28 @@ class floscApp {
         }, 50);
     }
 
+    _canHearQuizAudio() {
+        return this.state === 'member' || this.state === 'admin';
+    }
+
+    _announceQuizAudioAccess() {
+        if (this.state === 'visitor') {
+            return;
+        }
+        if (this._canHearQuizAudio()) {
+            const base = String(this.config.profileUrl || '').replace(/\/?$/, '/');
+            if (base && base !== '/') {
+                this.addMessage(
+                    'assistant',
+                    'Listen to your recordings on your <a href="' + this.escapeHtml(base + 'flosc_quiz_tab/') + '">Quiz Results</a> tab.',
+                    true
+                );
+            }
+            return;
+        }
+        this.addMessage('assistant', 'Your recordings are saved. Become a member to listen to them.', false);
+    }
+
     showIpaPhraseResult(data, audioUrl, phrase, phraseNum) {
         const words = data.words || [{ word: data.target_text, expected_ipa: data.expected_ipa, phonemes: data.phonemes }];
         const allPh = words.flatMap(w => w.phonemes);
@@ -6264,7 +6670,9 @@ class floscApp {
 
         let h = `<div class="flosc-ipa-result">`;
         h += `<div class="flosc-ipa-result-header"><span class="flosc-ipa-result-phrase">Phrase ${phraseNum}: ${this.escapeHtml(phrase)}</span></div>`;
-        h += `<div class="flosc-ipa-playback"><audio controls src="${audioUrl}"></audio></div>`;
+        if (this._canHearQuizAudio() && audioUrl) {
+            h += `<div class="flosc-ipa-playback"><audio controls src="${audioUrl}"></audio></div>`;
+        }
         h += `<div class="flosc-ipa-summary-line">${words.length} word${words.length > 1 ? 's' : ''}, ${total} phonemes &middot; avg ${(avg * 100).toFixed(0)}% &middot; <span class="flosc-ipa-c-high">${high} HIGH</span> &middot; <span class="flosc-ipa-c-med">${med} MED</span> &middot; <span class="flosc-ipa-c-low">${low} LOW</span></div>`;
 
         words.forEach(w => {
@@ -6342,7 +6750,10 @@ class floscApp {
 
         const introMsg = this.config.audioQuizResultsMessage || 'Welcome! Here are your assessment results.';
         this.addMessage('assistant', introMsg, false);
-        setTimeout(() => { this.addMessage('assistant', summary, true); }, 200);
+        setTimeout(() => {
+            this.addMessage('assistant', summary, true);
+            this._announceQuizAudioAccess();
+        }, 200);
 
         // Per-phrase accordions — each phrase is a collapsible <details> block
         setTimeout(() => {
@@ -6467,6 +6878,7 @@ class floscApp {
 
             h += `</div>`;
             this.addMessage('assistant', h, true);
+            this._announceQuizAudioAccess();
 
             // Admin detail: per-phrase accordion with word-level phoneme scores
             if (this.state === 'admin' || (this.user && this.user.isAdmin)) {
@@ -8459,8 +8871,19 @@ Purchased: ${ctx.purchased}
                     }
 
                     // Prevent duplicate wrappers when a message is re-rendered.
-                    const existingWrap = a.parentElement
-                        ? Array.from(a.parentElement.querySelectorAll('.flosc-oembed-wrap')).find(function(node) {
+                    // v10.1.0: scope the check to the whole message, not just the
+                    // anchor's immediate parent. A redraw -- restoring a thread after
+                    // a companion/full-page handoff, or re-rendering on resize --
+                    // rebuilds the anchor as a fresh node with no floscEmbedded flag,
+                    // and the earlier wrapper often sits in a sibling paragraph where
+                    // a parentElement-scoped lookup cannot see it. That produced two
+                    // players for one link, which for a TikTok music post reads as the
+                    // song caption printed twice.
+                    const dedupeScope = (typeof a.closest === 'function'
+                        ? a.closest('.message-text, .flosc-message-text, .message-content, .message')
+                        : null) || a.parentElement;
+                    const existingWrap = dedupeScope
+                        ? Array.from(dedupeScope.querySelectorAll('.flosc-oembed-wrap')).find(function(node) {
                             return String(node.dataset.oembedUrl || '') === normalizedUrl;
                         })
                         : null;
@@ -8474,12 +8897,70 @@ Purchased: ${ctx.purchased}
                     wrap.dataset.oembedUrl = normalizedUrl;
                     wrap.innerHTML = html;
                     a.insertAdjacentElement('afterend', wrap);
+                    // innerHTML never executes <script>. Providers that return a
+                    // blockquote plus a loader script (TikTok, Instagram) stay as
+                    // raw fallback markup without this -- which is why a TikTok link
+                    // rendered the whole caption as text instead of a player.
+                    self._activateOembedLoaderScripts(wrap);
                     a.dataset.floscEmbedded = 'done';
                     if (self.chatMessages) self.chatMessages.scrollTop = self.chatMessages.scrollHeight;
                 })
                 .catch(function () {
                     delete a.dataset.floscEmbedded;
                 });
+        });
+    }
+
+    /**
+     * v10.1.0: Re-create provider loader scripts so the browser runs them.
+     *
+     * wp_oembed_get() only answers for providers on WordPress core's allow-list,
+     * and several of them (TikTok, Instagram) return a blockquote that a loader
+     * script upgrades into a player. Assigning that markup via innerHTML leaves
+     * the script inert, so the reader is shown the blockquote's fallback text --
+     * for a TikTok music post, the entire song caption.
+     *
+     * Only external https scripts whose host is one of the providers we embed are
+     * re-created. Inline script from an oEmbed response is discarded outright:
+     * nothing legitimate needs it, and executing arbitrary third-party inline JS
+     * inside the chat is not a trade worth making.
+     *
+     * @param {HTMLElement} wrap The inserted oEmbed wrapper.
+     */
+    _activateOembedLoaderScripts(wrap) {
+        if (!wrap || typeof wrap.querySelectorAll !== 'function') {
+            return;
+        }
+
+        const allowedHosts = [
+            'www.tiktok.com',
+            'platform.twitter.com',
+            'www.instagram.com',
+            'platform.instagram.com',
+            'embed.music.apple.com',
+            'w.soundcloud.com'
+        ];
+
+        wrap.querySelectorAll('script').forEach((original) => {
+            const src = String(original.getAttribute('src') || '').trim();
+            let host = '';
+            try {
+                host = src ? new URL(src, window.location.origin).host : '';
+            } catch (e) {
+                host = '';
+            }
+
+            if (!/^https:\/\//i.test(src) || allowedHosts.indexOf(host) === -1) {
+                original.remove();
+                return;
+            }
+
+            const fresh = document.createElement('script');
+            fresh.src = src;
+            fresh.async = true;
+            if (original.parentNode) {
+                original.parentNode.replaceChild(fresh, original);
+            }
         });
     }
 
@@ -8513,6 +8994,7 @@ Purchased: ${ctx.purchased}
         if (!user || !(user.id || user.ID)) {
             return;
         }
+        const previousState = this.state;
         this.user = user;
         window.FLOSC_USER = user;
         this.state = this.resolveAppUserState(user, stateHint || user.state);
@@ -8525,6 +9007,124 @@ Purchased: ${ctx.purchased}
             this.user.tokens = tokens;
             this.user.tokenBalance = tokens;
             this.user.flowTokens = user.flowTokens ?? tokens;
+        }
+
+        // v10.1.0: Leaving visitor is a journey event, not just a repaint.
+        this.onAuthStateGained(previousState);
+    }
+
+    /**
+     * v10.1.0: Fires once, when this browser stops being a visitor.
+     *
+     * Login is a phase boundary: the reader has crossed out of Freeline. Before
+     * this, ivr.phase only ever advanced when a free lesson was delivered, so a
+     * signed-in guest stayed in 'freeline' and no offer was ever scheduled.
+     *
+     * Every step is guarded — a failure here leaves prior behaviour untouched.
+     *
+     * @param {string} previousState State before the auth shell was applied.
+     */
+    onAuthStateGained(previousState) {
+        if (previousState !== 'visitor' || this.state === 'visitor') {
+            return;
+        }
+
+        try {
+            if (this.ivr && this.ivr.phase === 'freeline') {
+                // Where they land depends on what they became. A guest has an
+                // account but no entitlement, so they are the Offer phase. A member
+                // already bought: pitching them what they own is wrong, and they
+                // should be reading with ai_prompt_content, not ai_prompt_offer.
+                this.ivr.phase = (this.state === 'member') ? 'content' : 'offer';
+                if (this.ivr.context) {
+                    this.ivr.context.just_authenticated = true;
+                    this.ivr.context.account_state = this.state;
+                }
+            }
+        } catch (e) {
+            this.logWarn('[FLOSC] Could not advance phase on auth:', e);
+        }
+
+        // Give the conversation somewhere durable to live before anything clears it.
+        void this.persistThreadOnAuth();
+
+        // No-op until a floscAdmin configures an offer with reveal_event "login".
+        try {
+            this._scheduleOffersForEvent('login');
+        } catch (e) {
+            this.logWarn('[FLOSC] Could not schedule login offers:', e);
+        }
+    }
+
+    /**
+     * v10.1.0: Write the visitor's existing turns into a real session the moment
+     * there is an account to hold them.
+     *
+     * Without this, a signed-in guest can hold an entire conversation with
+     * currentSession === null: the sidebar reads "No chats yet" beside a full
+     * transcript, and chat-log rows are written with session_id 0. Refusals
+     * (guest chat cap, nonce, network) are logged and ignored — the reader's
+     * conversation is never interrupted.
+     */
+    async persistThreadOnAuth() {
+        if (this.state === 'visitor' || this.currentSession?.id) {
+            return;
+        }
+
+        let pending = [];
+        try {
+            const stored = JSON.parse(this.readVisitorJourneyItem('flosc_visitor_messages') || '[]');
+            if (Array.isArray(stored)) {
+                pending = stored
+                    .filter((m) => m && (m.role === 'user' || m.role === 'assistant') && m.content)
+                    .slice(-50)
+                    .map((m) => ({ role: m.role, content: String(m.content).slice(0, 4000) }));
+            }
+        } catch (e) {
+            this.logWarn('[FLOSC] Could not read visitor thread for persistence:', e);
+        }
+
+        if (!pending.length) {
+            return;
+        }
+
+        try {
+            await this.refreshNonce?.();
+            const response = await this.authFetch(this.config.apiUrl + '/sessions' + this.sessionsQuery(), {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-WP-Nonce': this.config.nonce,
+                },
+                body: JSON.stringify({
+                    flow_id: this.config.flowId || '',
+                    messages: pending,
+                }),
+            });
+
+            const data = await response.json();
+            const sessionId = parseInt(data?.session?.id, 10);
+            if (!Number.isFinite(sessionId) || sessionId <= 0) {
+                this.logWarn('[FLOSC] Thread not persisted on auth:', data?.code || response.status);
+                return;
+            }
+
+            this.currentSession = Object.assign({}, this.currentSession || {}, data.session);
+            this.rememberActiveChatSessionId(sessionId);
+
+            // Migrated, so drop the device copy. Without this a reload with no
+            // currentSession would persist the same turns into a second session.
+            try {
+                this.removeVisitorJourneyItem('flosc_visitor_messages');
+            } catch (eClear) {
+                this.logWarn('[FLOSC] Could not clear migrated visitor thread:', eClear);
+            }
+
+            await this.loadSessions?.();
+            this.log('[FLOSC] Visitor thread persisted to session', sessionId);
+        } catch (e) {
+            this.logWarn('[FLOSC] Thread not persisted on auth:', e);
         }
     }
 
@@ -9309,6 +9909,10 @@ Purchased: ${ctx.purchased}
         this._adminPollSessionId = null;
         this._adminPollToken = '';
         this._adminSince = 0;
+
+        // New conversation means a new Chat Logs thread, for visitors and for
+        // logged-in users alike (the visitor branch below only resets visitor state).
+        this.resetJourneyId();
 
         // Clear session tracking (use same pattern as buildIVRContext)
         const sessionKey = 'flosc_session_' + this.getSessionKey();
@@ -10577,12 +11181,27 @@ Purchased: ${ctx.purchased}
                 this.log('FLOSC: IVR match found, routing through AI:', ivrGuidance.name);
             }
 
+            // A turn id, minted before the request leaves and remembered until
+            // the answer arrives. If the visitor reloads while the assistant is
+            // still typing, this is what the next page load uses to ask for the
+            // answer it missed — and what stops the same turn being billed
+            // twice if the message is resent.
+            this._floscTurnId = this.floscMintTurnId();
+            this.floscMarkTurnPending(this._floscTurnId, message);
+
             try {
                 let response;
                 try {
                     response = await this.callAPI(message, ivrGuidance, { allowSessionAutoCreate: true });
                 } catch (firstErr) {
                     if (firstErr?.floscCode === 'visitor_tokens_depleted') {
+                        throw firstErr;
+                    }
+                    // A 429 is FLOSC's own per-visitor bucket, not a stale
+                    // nonce. Refreshing and resending spends a second request
+                    // from the bucket that just refused, so the limit lands
+                    // twice as fast. Opt in under Public Request Protection.
+                    if (firstErr?.httpStatus === 429 && !this.config?.retryAfter429) {
                         throw firstErr;
                     }
                     // v8.0.0 FIX: Retry once with fresh nonce — handles stale-nonce after
@@ -10592,6 +11211,7 @@ Purchased: ${ctx.purchased}
                     response = await this.callAPI(message, ivrGuidance, { allowSessionAutoCreate: true });
                 }
                 this.hideTyping();
+                this.floscClearTurnPending();
 
                 if (response) {
                     // v3.0.5: Extract [ACTION:...] tags from AI response (for AI-interpretation offer triggers)
@@ -11461,6 +12081,8 @@ Purchased: ${ctx.purchased}
                 || (this.state === 'visitor' ? this.getVisitorSessionId() : undefined)
                 || this.readRememberedActiveChatSessionId()
                 || undefined,
+            // Stable across login, unlike session_id — keeps Chat Logs one thread.
+            journey_id: this.getJourneyId(),
             context: this.ivr.context,
             // v1.3.7: Flow context for multi-flow support
             flow_id: this.config.flowId,
@@ -11476,6 +12098,10 @@ Purchased: ${ctx.purchased}
             payload.request_guest_account = options.requestGuestAccount ? 1 : 0;
         }
         
+        if (this._floscTurnId) {
+            payload.turn_id = this._floscTurnId;
+        }
+
         // v2.0.7: Send visitor conversation history so AI has memory across messages.
         // Visitors have no server-side session, so we send localStorage history.
         // This prevents AI from repeating itself and enables conversation-awareness.
@@ -11535,6 +12161,7 @@ Purchased: ${ctx.purchased}
             const err = new Error(`Server error (${response.status})`);
             err.floscCode = 'invalid_json';
             err.floscPayload = null;
+            err.httpStatus = response.status;
             throw err;
         }
 
@@ -11542,18 +12169,20 @@ Purchased: ${ctx.purchased}
         this.syncVisitorTokenBalanceFromPayload(data);
 
         if (!response.ok) {
-            const errorMsg = data.error || data.message || `Server error (${response.status})`;
+            const errorMsg = data.message || data.response || data.error || `Server error (${response.status})`;
             const err = new Error(errorMsg);
-            err.floscCode = String(data.error_code || data.code || '');
+            err.floscCode = String(data.error_code || data.code || data.error || '');
             err.floscPayload = data;
+            err.httpStatus = response.status;
             throw err;
         }
 
         if (!data.success) {
-            const errorMsg = data.error || data.message || 'Unknown API error';
+            const errorMsg = data.message || data.response || data.error || 'Unknown API error';
             const err = new Error(errorMsg);
-            err.floscCode = String(data.error_code || '');
+            err.floscCode = String(data.error_code || data.code || data.error || '');
             err.floscPayload = data;
+            err.httpStatus = response.status;
             throw err;
         }
 
@@ -12475,6 +13104,10 @@ Purchased: ${ctx.purchased}
                     user_message: userMessage || '',
                     ai_response: aiResponse || '',
                     session_id: this.currentSession?.id || 0,
+                    // A visitor has no currentSession, so session_id is 0 here and
+                    // these turns used to pile into one shared bucket. journey_id
+                    // files them under the conversation they actually belong to.
+                    journey_id: this.getJourneyId(),
                     flow_id: this.config.flowId || '',
                     phase: this.ivr?.phase || meta.phase || 'content',
                     provider: meta.provider || 'client',

@@ -1,6 +1,6 @@
 # WORDPRESS-ORG-RELEASE.md — FLOSC submission policy and evidence
 
-Companion to `AGENTS.md`. This is the project's WordPress.org release policy:
+Companion to `agents.md`. This is the project's WordPress.org release policy:
 the standards we commit to, the exceptions we allow, and where the evidence
 lives. Any exception to a rule set here is NARROW and must be listed below with
 a reason — broad ruleset exclusions are prohibited.

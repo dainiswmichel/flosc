@@ -197,24 +197,24 @@ class FLOSC_Concierge {
 	 *
 	 * @param array  $msg     IVR message.
 	 * @param string $key     Field key.
-	 * @param string $default Fallback text.
+	 * @param string $fallback Fallback text.
 	 * @return string
 	 */
-	protected static function text( $msg, $key, $default ) {
+	protected static function text( $msg, $key, $fallback ) {
 		$value = trim( (string) ( $msg[ $key ] ?? '' ) );
-		return '' !== $value ? $value : $default;
+		return '' !== $value ? $value : $fallback;
 	}
 
 	/**
 	 * Substitute {try} and {max} into a retry line.
 	 *
 	 * @param string $text Retry text.
-	 * @param int    $try  Which attempt this was.
+	 * @param int    $attempt  Which attempt this was.
 	 * @param int    $max  Allowed attempts.
 	 * @return string
 	 */
-	protected static function fill_counts( $text, $try, $max ) {
-		return str_replace( array( '{try}', '{max}' ), array( (string) $try, (string) $max ), (string) $text );
+	protected static function fill_counts( $text, $attempt, $max ) {
+		return str_replace( array( '{try}', '{max}' ), array( (string) $attempt, (string) $max ), (string) $text );
 	}
 
 	/**
@@ -225,11 +225,11 @@ class FLOSC_Concierge {
 	 * in. The final line is typically the "reach out to me directly" escape note.
 	 *
 	 * @param array $msg IVR message.
-	 * @param int   $try Which miss this is (1-based).
+	 * @param int   $attempt Which miss this is (1-based).
 	 * @param int   $max Allowed attempts.
 	 * @return string
 	 */
-	protected static function retry_line( $msg, $try, $max ) {
+	protected static function retry_line( $msg, $attempt, $max ) {
 		$list = array();
 		if ( isset( $msg['password_retry_messages'] ) && is_array( $msg['password_retry_messages'] ) ) {
 			foreach ( $msg['password_retry_messages'] as $line ) {
@@ -242,8 +242,8 @@ class FLOSC_Concierge {
 		if ( empty( $list ) ) {
 			$list = array( 'Hmm, not quite — that’s try {try} of {max}.' );
 		}
-		$idx = min( $try - 1, count( $list ) - 1 );
-		return self::fill_counts( $list[ $idx ], $try, $max );
+		$idx = min( $attempt - 1, count( $list ) - 1 );
+		return self::fill_counts( $list[ $idx ], $attempt, $max );
 	}
 
 	/**
@@ -377,7 +377,8 @@ class FLOSC_Concierge {
 	 * open, appends it to the AI's system prompt. handle() itself returns null on
 	 * unlock so the message flows on into the normal AI path (which also means the
 	 * exchange is logged like any other turn, instead of being short-circuited).
-	 * ======================================================================== */
+	 * ========================================================================
+	 */
 
 	/** Per-session transient key for an open desk. */
 	protected static function open_key( $session_key ) {
@@ -498,7 +499,8 @@ class FLOSC_Concierge {
 	 * the integrity hook then mirrors to the .md. There is no authoring surface to
 	 * build: the WordPress post IS the surface. On the post, admins see a read-only
 	 * "what FLOSC understands" confirmation so they can check the setup landed.
-	 * ======================================================================== */
+	 * ========================================================================
+	 */
 
 	/** Default category that marks a concierge post. */
 	const CATEGORY                      = 'concierge';
@@ -578,7 +580,7 @@ class FLOSC_Concierge {
 		// Tried in order of how a person would name it:
 		// 1. an explicit .md filename in floscFlow/Flow/FlowName ("… (flow_ivr.md)")
 		// 2. the flow's NAME in floscFlow/Flow/FlowName (flow identity name)
-		// 3. the human-facing Deployment ("the WordPress host/chat", "flosc.ai")
+		// 3. the human-facing Deployment ("the WordPress host/chat", "flosc.ai").
 		if ( '' === $flow ) {
 			$flow = self::flow_file( $flow_hint );
 		}
@@ -775,9 +777,9 @@ class FLOSC_Concierge {
 		if ( ! $post instanceof WP_Post || ! self::is_concierge_post( $post ) ) {
 			return;
 		}
-		if ( in_array( (string) $post->post_status, array( 'publish', 'private' ), true ) ) {
-			// Keep syncing only from statuses that are intended to be live.
-		} else {
+		// Only a status meant to be live keeps its sync; anything else is
+		// removed from the index rather than left there stale.
+		if ( ! in_array( (string) $post->post_status, array( 'publish', 'private' ), true ) ) {
 			self::unsync_post( $post );
 			return;
 		}

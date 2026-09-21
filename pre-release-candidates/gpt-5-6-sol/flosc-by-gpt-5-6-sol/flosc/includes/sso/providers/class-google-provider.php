@@ -32,10 +32,10 @@ class Google_Provider extends SSO_Provider_Base {
 
 		$this->auth_url  = 'https://accounts.google.com/o/oauth2/v2/auth';
 		$this->token_url = 'https://oauth2.googleapis.com/token';
-		// v1.4.6: Use v2 userinfo endpoint (aligned with BuddyBoss proven implementation)
+		// v1.4.6: Use v2 userinfo endpoint (aligned with BuddyBoss proven implementation).
 		$this->user_info_url = 'https://www.googleapis.com/oauth2/v2/userinfo';
 
-		// v1.4.6: Scopes aligned with BuddyBoss (email + profile)
+		// v1.4.6: Scopes aligned with BuddyBoss (email + profile).
 		$this->scopes = array(
 			'email',
 			'profile',
@@ -47,24 +47,31 @@ class Google_Provider extends SSO_Provider_Base {
 	/**
 	 * Customize authorization parameters for Google
 	 *
-	 * @param array $params Default parameters
+	 * @param array $params Default parameters.
 	 * @return array Modified parameters
 	 */
 	protected function customize_auth_params( $params ) {
-		// Add Google-specific parameters
-		$params['access_type']   = 'offline';  // Get refresh token
-		$params['prompt']        = 'select_account'; // Always show account selector
-		$params['response_mode'] = 'form_post'; // Deliver code/state via POST callback
+		// Add Google-specific parameters.
+		$params['access_type']   = 'offline'; // Ask for a refresh token.
+		$params['prompt']        = 'select_account'; // Always show the account selector.
+		$params['response_mode'] = 'form_post'; // Deliver code and state via a POST callback.
 
 		return $params;
 	}
 
 	/**
-	 * Get user info from Google
-	 * v1.4.6: Override to request explicit fields (BuddyBoss pattern)
+	 * Get user info from Google.
 	 *
-	 * @param string $access_token OAuth access token
-	 * @return array|WP_Error User data or error
+	 * Overridden to request explicit fields rather than accept the default set.
+	 *
+	 * @since 1.4.6
+	 *
+	 * @param string $access_token OAuth access token.
+	 * @param array  $token_data   Full token response. Unused by this provider;
+	 *                             present because OAuth2_Handler passes the same
+	 *                             arguments to every provider, and Apple reads
+	 *                             its id_token and form_post claims from it.
+	 * @return array|WP_Error User data, or WP_Error if the call fails.
 	 */
 	public function get_user_info( $access_token, $token_data = array() ) {
 		$url = add_query_arg(
@@ -105,7 +112,7 @@ class Google_Provider extends SSO_Provider_Base {
 	/**
 	 * Normalize Google user data to standard format
 	 *
-	 * @param array $raw_data Raw user data from Google
+	 * @param array $raw_data Raw user data from Google.
 	 * @return array Normalized user data
 	 */
 	protected function normalize_user_data( $raw_data ) {
@@ -113,9 +120,9 @@ class Google_Provider extends SSO_Provider_Base {
 		// Pass 8: json_decode of provider JSON does not sanitize — field-sanitize here.
 		$provider_id = sanitize_text_field( (string) ( $raw_data['id'] ?? ( $raw_data['sub'] ?? '' ) ) );
 
-		// v1.4.6: Get larger avatar (BuddyBoss pattern: replace s96 with s360)
+		// v1.4.6: Get larger avatar (BuddyBoss pattern: replace s96 with s360).
 		$avatar = esc_url_raw( (string) ( $raw_data['picture'] ?? '' ) );
-		if ( $avatar !== '' && strpos( $avatar, '=s96-c' ) !== false ) {
+		if ( '' !== $avatar && false !== strpos( $avatar, '=s96-c' ) ) {
 			$avatar = str_replace( '=s96-c', '=s360-c', $avatar );
 		}
 
@@ -141,11 +148,11 @@ class Google_Provider extends SSO_Provider_Base {
 	/**
 	 * Get provider-specific user ID
 	 *
-	 * @param array $raw_data Raw user data
+	 * @param array $raw_data Raw user data.
 	 * @return string Provider user ID
 	 */
 	public function get_provider_user_id( $raw_data ) {
-		// v1.4.6: Handle both v2 (id) and v3 (sub) formats
+		// v1.4.6: Handle both v2 (id) and v3 (sub) formats.
 		return $raw_data['id'] ?? ( $raw_data['sub'] ?? '' );
 	}
 

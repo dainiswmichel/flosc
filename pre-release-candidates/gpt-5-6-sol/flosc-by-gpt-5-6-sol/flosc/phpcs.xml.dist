@@ -46,17 +46,12 @@
         control characters, caps length, requires the payload to decode to a
         non-empty associative array, and returns only the result of
         wp_json_encode() on that decoded structure. Anything else returns ''.
-
-        flosc_sanitize_ivr_markdown - requires scalar input, rejects invalid
-        UTF-8, strips null/control bytes and PHP tags, and caps content length.
-        It deliberately preserves Markdown and permitted IVR markup.
     -->
     <rule ref="WordPress.Security.ValidatedSanitizedInput">
         <properties>
             <property name="customSanitizingFunctions" type="array">
                 <element value="flosc_sanitize_personality_profile_text"/>
                 <element value="flosc_sanitize_personality_workshop"/>
-                <element value="flosc_sanitize_ivr_markdown"/>
             </property>
         </properties>
     </rule>

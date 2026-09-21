@@ -71,7 +71,7 @@ if ( ! function_exists( 'flosc_knowledge_base_get' ) ) {
 	 */
 	function flosc_knowledge_base_get( $kb_id ) {
 		$kb_id = sanitize_key( $kb_id );
-		if ( $kb_id === '' ) {
+		if ( '' === $kb_id ) {
 			return null;
 		}
 		$all = flosc_knowledge_bases_get_all();
@@ -93,13 +93,13 @@ if ( ! function_exists( 'flosc_knowledge_base_normalize' ) ) {
 			foreach ( $row['access'] as $file => $tier ) {
 				$file = sanitize_file_name( (string) $file );
 				$tier = (string) $tier;
-				if ( $tier === 'public' ) {
+				if ( 'public' === $tier ) {
 					$tier = 'visitor';
 				}
-				if ( $tier === 'members' ) {
+				if ( 'members' === $tier ) {
 					$tier = 'member';
 				}
-				if ( $file === '' || ! in_array( $tier, array( 'visitor', 'guest', 'member' ), true ) ) {
+				if ( '' === $file || ! in_array( $tier, array( 'visitor', 'guest', 'member' ), true ) ) {
 					continue;
 				}
 				$access[ $file ] = $tier;
@@ -122,7 +122,7 @@ if ( ! function_exists( 'flosc_knowledge_base_put' ) ) {
 	 */
 	function flosc_knowledge_base_put( $row ) {
 		$row = flosc_knowledge_base_normalize( $row );
-		if ( $row['id'] === '' ) {
+		if ( '' === $row['id'] ) {
 			return '';
 		}
 		$all               = flosc_knowledge_bases_get_all();
@@ -148,10 +148,10 @@ if ( ! function_exists( 'flosc_knowledge_base_file_access' ) ) {
 		if ( is_array( $kb ) && isset( $kb['access'][ $filename ] ) ) {
 			$tier = (string) $kb['access'][ $filename ];
 		}
-		if ( $tier === 'public' ) {
+		if ( 'public' === $tier ) {
 			$tier = 'visitor';
 		}
-		if ( $tier === 'members' ) {
+		if ( 'members' === $tier ) {
 			$tier = 'member';
 		}
 		return in_array( $tier, array( 'visitor', 'guest', 'member' ), true ) ? $tier : 'visitor';
@@ -170,13 +170,13 @@ if ( ! function_exists( 'flosc_knowledge_base_set_file_access' ) ) {
 	function flosc_knowledge_base_set_file_access( $kb_id, $filename, $tier ) {
 		$kb_id    = sanitize_key( $kb_id );
 		$filename = sanitize_file_name( $filename );
-		if ( $tier === 'public' ) {
+		if ( 'public' === $tier ) {
 			$tier = 'visitor';
 		}
-		if ( $tier === 'members' ) {
+		if ( 'members' === $tier ) {
 			$tier = 'member';
 		}
-		if ( $kb_id === '' || $filename === '' || ! in_array( $tier, array( 'visitor', 'guest', 'member' ), true ) ) {
+		if ( '' === $kb_id || '' === $filename || ! in_array( $tier, array( 'visitor', 'guest', 'member' ), true ) ) {
 			return;
 		}
 		$kb = flosc_knowledge_base_get( $kb_id );
@@ -204,7 +204,7 @@ if ( ! function_exists( 'flosc_knowledge_bases_migrate_legacy_flow' ) ) {
 	 */
 	function flosc_knowledge_bases_migrate_legacy_flow( $flow_stem ) {
 		$flow_stem = sanitize_key( $flow_stem );
-		if ( $flow_stem === '' ) {
+		if ( '' === $flow_stem ) {
 			return;
 		}
 		$settings_key = 'flosc_flow_' . $flow_stem;
@@ -218,7 +218,7 @@ if ( ! function_exists( 'flosc_knowledge_bases_migrate_legacy_flow' ) ) {
 
 		$dir   = function_exists( 'flosc_flow_kb_dir' ) ? flosc_flow_kb_dir( $flow_stem ) : '';
 		$files = array();
-		if ( $dir !== '' && is_dir( $dir ) ) {
+		if ( '' !== $dir && is_dir( $dir ) ) {
 			$found = glob( $dir . '*.{md,txt}', GLOB_BRACE );
 			if ( ! is_array( $found ) ) {
 				$found = array();
@@ -228,7 +228,7 @@ if ( ! function_exists( 'flosc_knowledge_bases_migrate_legacy_flow' ) ) {
 			}
 		}
 
-		if ( $files === array() ) {
+		if ( array() === $files ) {
 			$settings['knowledge_base_ids'] = array();
 			update_option( $settings_key, $settings );
 			return;
@@ -241,19 +241,19 @@ if ( ! function_exists( 'flosc_knowledge_bases_migrate_legacy_flow' ) ) {
 			if ( isset( $settings['identity'] ) && is_array( $settings['identity'] ) ) {
 				$label = trim( (string) ( $settings['identity']['name'] ?? '' ) );
 			}
-			if ( $label === '' ) {
+			if ( '' === $label ) {
 				$label = trim( (string) ( $settings['name'] ?? '' ) );
 			}
-			if ( $label === '' ) {
+			if ( '' === $label ) {
 				$label = $flow_stem;
 			}
 			$access = array();
 			foreach ( $files as $file ) {
 				$tier = (string) ( $settings[ 'knowledge_access_' . md5( $file ) ] ?? 'visitor' );
-				if ( $tier === 'public' ) {
+				if ( 'public' === $tier ) {
 					$tier = 'visitor';
 				}
-				if ( $tier === 'members' ) {
+				if ( 'members' === $tier ) {
 					$tier = 'member';
 				}
 				if ( ! in_array( $tier, array( 'visitor', 'guest', 'member' ), true ) ) {
@@ -292,7 +292,7 @@ if ( ! function_exists( 'flosc_flow_knowledge_base_ids' ) ) {
 		$out      = array();
 		foreach ( $ids as $id ) {
 			$id = sanitize_key( (string) $id );
-			if ( $id !== '' && ! in_array( $id, $out, true ) ) {
+			if ( '' !== $id && ! in_array( $id, $out, true ) ) {
 				$out[] = $id;
 			}
 		}
@@ -311,7 +311,7 @@ if ( ! function_exists( 'flosc_knowledge_bases_prompt_text' ) ) {
 	function flosc_knowledge_bases_prompt_text( $flow_stem, $user_level ) {
 		$flow_stem = sanitize_key( $flow_stem );
 		$ids       = flosc_flow_knowledge_base_ids( $flow_stem );
-		if ( $ids === array() ) {
+		if ( array() === $ids ) {
 			return '';
 		}
 

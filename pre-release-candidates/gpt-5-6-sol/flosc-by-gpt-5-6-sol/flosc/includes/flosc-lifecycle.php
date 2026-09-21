@@ -1,26 +1,41 @@
 <?php
+/**
+ * Plugin lifecycle — what happens on activation and deactivation.
+ *
+ * These functions run outside the main class on purpose. A registration hook
+ * pointed at a class method only fires if the class is already loaded at the
+ * moment WordPress calls it, which is not guaranteed during activation.
+ *
+ * @package FLOSC
+ */
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 /**
- * Plugin activation (v3.0.9 - Resolved: moved outside class so hook fires correctly)
+ * Seed options and run first-time setup when the plugin is activated.
+ *
+ * @since 3.0.9 Moved outside the main class so the activation hook fires
+ *              reliably, whether or not that class has loaded yet.
+ *
+ * @return void
  */
 function flosc_activate() {
 	// Specialty product roles are created when that flow/product
 	// is deliberately imported or configured — not on every generic activate.
 
-	// v1.2.2: Migrate legacy settings to flows system
-	require_once FLOSC_PLUGIN_DIR . 'includes/class-flow-manager.php';
+	// v1.2.2: Migrate legacy settings to flows system.
+	require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-flow-manager.php';
 	flosc_flows()->maybe_migrate_from_legacy();
 
-	// Flush rewrite rules to register REST API routes
+	// Flush rewrite rules to register REST API routes.
 	flush_rewrite_rules();
 
 	// First-install defaults only — never clobber floscAdmin choices on reactivate.
 	$defaults = array(
-		'flosc_app_slug'                                   => 'flosc', // v1.1.9: Changed default from 'app' to 'flosc'
-		'flosc_custom_domain'                              => '', // v1.1.9: Optional custom domain mapping
+		'flosc_app_slug'                                   => 'flosc', // Since 1.1.9 the default is 'flosc'; was 'app' to 'flosc'
+		'flosc_custom_domain'                              => '', // Since 1.1.9. Optional custom domain mapping
 		'flosc_product_name'                               => '',
 		'flosc_product_title'                              => '',
 		'flosc_product_tagline'                            => '',
@@ -39,13 +54,13 @@ function flosc_activate() {
 	);
 
 	foreach ( $defaults as $key => $value ) {
-		if ( get_option( $key ) === false ) {
+		if ( false === get_option( $key ) ) {
 			add_option( $key, $value );
 		}
 	}
 
-	// Set PayPal mode to sandbox on fresh install (credentials set via admin Payments tab)
-	if ( get_option( 'flosc_paypal_mode' ) === false ) {
+	// Set PayPal mode to sandbox on fresh install (credentials set via admin Payments tab).
+	if ( false === get_option( 'flosc_paypal_mode' ) ) {
 		update_option( 'flosc_paypal_mode', 'sandbox' );
 	}
 
@@ -56,7 +71,7 @@ function flosc_activate() {
 	$ivr_file = '' !== $seed_dir ? $seed_dir . 'flosc_default_technical_ivr.md' : '';
 	if ( '' !== $ivr_file && ! file_exists( $ivr_file ) ) {
 
-		// Copy the shipped canonical default if present, otherwise create minimal version
+		// Copy the shipped canonical default if present, otherwise create minimal version.
 		$default_ivr = FLOSC_PLUGIN_DIR . 'ai_configuration_files/flosc_default_technical_ivr.md';
 		if ( file_exists( $default_ivr ) ) {
 			// Pass 5: read shipped default (plugin dir is read-only source); write only under uploads.
@@ -65,50 +80,54 @@ function flosc_activate() {
 				flosc_write_data_file( $ivr_file, $default_body );
 			}
 		} else {
-			// Create minimal working ivr.md
-			$minimal_ivr = <<<'MD'
-# FLOSC IVR Configuration
-
-## MessageStyle: pill
-Description: Superlight chat bubble style
-.flosc-style-pill {
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 18px;
-  padding: 8px 16px;
-  font-size: 14px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
-  backdrop-filter: blur(4px);
-}
-.flosc-style-pill:hover {
-  background: rgba(255, 255, 255, 0.95);
-  border-color: rgba(0, 0, 0, 0.12);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-}
-
----
-
-# Freeline Messages
-
-## Welcome Message
-MessageName: welcome_freeline_001
-MessageType: auto
-MessageContent: Hi! I'm your {product_name} assistant. Ready to get started?
-MessageConditions: first_show_session && !logged_in
-
-## Get Started
-MessageName: get_started_001
-MessageType: suggested_user_autoprompt
-MessageStyle: pill
-Icon: 🚀
-UserInput: Get started
-MessageContent: Great! Let's begin with a quick quiz to see where you stand.
-MessageConditions: !quiz_taken
-MD;
+			// Create minimal working ivr.md.
+			$minimal_ivr = implode(
+				"\n",
+				array(
+					'# FLOSC IVR Configuration',
+					'',
+					'## MessageStyle: pill',
+					'Description: Superlight chat bubble style',
+					'.flosc-style-pill {',
+					'  background: rgba(255, 255, 255, 0.7);',
+					'  border: 1px solid rgba(0, 0, 0, 0.08);',
+					'  border-radius: 18px;',
+					'  padding: 8px 16px;',
+					'  font-size: 14px;',
+					'  display: inline-flex;',
+					'  align-items: center;',
+					'  gap: 6px;',
+					'  cursor: pointer;',
+					'  transition: all 0.2s;',
+					'  backdrop-filter: blur(4px);',
+					'}',
+					'.flosc-style-pill:hover {',
+					'  background: rgba(255, 255, 255, 0.95);',
+					'  border-color: rgba(0, 0, 0, 0.12);',
+					'  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);',
+					'}',
+					'',
+					'---',
+					'',
+					'# Freeline Messages',
+					'',
+					'## Welcome Message',
+					'MessageName: welcome_freeline_001',
+					'MessageType: auto',
+					'MessageContent: Hi! I\'m your {product_name} assistant. Ready to get started?',
+					'MessageConditions: first_show_session && !logged_in',
+					'',
+					'## Get Started',
+					'MessageName: get_started_001',
+					'MessageType: suggested_user_autoprompt',
+					'MessageStyle: pill',
+					'Icon: 🚀',
+					'UserInput: Get started',
+					'MessageContent: Great! Let\'s begin with a quick quiz to see where you stand.',
+					'MessageConditions: !quiz_taken',
+					'',
+				)
+			);
 			// Pass 5: seed only under uploads via flosc_write_data_file.
 			if ( function_exists( 'flosc_write_data_file' ) ) {
 				flosc_write_data_file( $ivr_file, $minimal_ivr );
@@ -116,8 +135,8 @@ MD;
 		}
 	}
 
-	// v9.2.3: Import IVR messages to database on first activation
-	flosc_import_ivr_to_database( false ); // Execute import (not preview)
+	// v9.2.3: Import IVR messages to database on first activation.
+	flosc_import_ivr_to_database( false ); // False means execute the import, not preview it.
 
 	// v1.9.0: Create chat logs table
 	// Must require the file here — activation hook fires before plugins_loaded,
@@ -125,13 +144,13 @@ MD;
 	require_once FLOSC_PLUGIN_DIR . 'includes/logging/class-flosc-chat-logger.php';
 	FLOSC_Chat_Logger::instance()->flosc_ensure_table();
 
-	// v1.4.7: Auto-protect flosc_sample_data category
+	// v1.4.7: Auto-protect flosc_sample_data category.
 	$sample_cat = get_category_by_slug( 'flosc_sample_data' );
 	if ( $sample_cat ) {
 		update_term_meta( $sample_cat->term_id, '_flosc_protected', 'yes' );
 	}
 
-	// Flush rewrite rules
+	// Flush rewrite rules.
 	flush_rewrite_rules();
 }
 

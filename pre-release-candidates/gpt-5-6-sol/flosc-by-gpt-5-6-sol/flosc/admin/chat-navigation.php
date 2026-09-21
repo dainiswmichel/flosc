@@ -13,11 +13,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// Visitor menu
+// Visitor menu.
 $flosc_visitor_menu_raw = get_option( 'flosc_visitor_menu_items', array() );
 $flosc_visitor_menu     = array();
 if ( ! empty( $flosc_visitor_menu_raw ) ) {
-	// Backward compatibility: old associative format (signup/login/quiz)
+	// Backward compatibility: old associative format (signup/login/quiz).
 	if ( isset( $flosc_visitor_menu_raw['signup'] ) || isset( $flosc_visitor_menu_raw['login'] ) || isset( $flosc_visitor_menu_raw['quiz'] ) ) {
 		$flosc_action_map = array(
 			'signup' => 'open_registration',
@@ -63,7 +63,7 @@ $flosc_guest_menu = array_values(
 		$flosc_guest_menu,
 		static function ( $item ) {
 			$action = is_array( $item ) ? (string) ( $item['action'] ?? '' ) : '';
-			return $action !== 'open_sandbox_purchase' && strpos( $action, 'show_offer' ) !== 0;
+			return 'open_sandbox_purchase' !== $action && 0 !== strpos( $action, 'show_offer' );
 		}
 	)
 );

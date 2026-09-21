@@ -3,6 +3,8 @@
  * Visitor token runtime helpers.
  *
  * Keeps token grant and depletion copy logic out of the main framework file.
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -55,7 +57,7 @@ trait FLOSC_Visitor_Token_Trait {
 	 * of e.g. 3876 fail the gate when the wallet baseline was 5000, while the UI
 	 * still showed thousands remaining ("Token limit reached" false positive).
 	 */
-	private function flosc_get_ai_query_token_cost( $flow_id = '', $token_provider = null ) {
+	private function flosc_get_ai_query_token_cost( $flow_id = '' ) {
 		$flow_stem = $this->flosc_normalize_flow_stem( (string) $flow_id );
 		$settings  = get_option( 'flosc_flow_' . $flow_stem, array() );
 		if ( is_array( $settings ) && isset( $settings['cost_ai_query'] ) ) {
@@ -178,10 +180,10 @@ trait FLOSC_Visitor_Token_Trait {
 	public function flosc_normalize_flow_stem( $flow_id = '' ) {
 		$flow_id = (string) $flow_id;
 		$stem    = sanitize_key( pathinfo( basename( $flow_id ), PATHINFO_FILENAME ) );
-		if ( $stem === '' ) {
+		if ( '' === $stem ) {
 			$stem = sanitize_key( $flow_id );
 		}
-		return $stem !== '' ? $stem : 'default';
+		return '' !== $stem ? $stem : 'default';
 	}
 
 	/**
@@ -247,7 +249,7 @@ trait FLOSC_Visitor_Token_Trait {
 	 */
 	public function flosc_get_visitor_remaining_for_session( $flow_id, $session_id_raw ) {
 		$session_id_raw = trim( (string) $session_id_raw );
-		if ( $session_id_raw === '' ) {
+		if ( '' === $session_id_raw ) {
 			return 0;
 		}
 
@@ -263,11 +265,11 @@ trait FLOSC_Visitor_Token_Trait {
 
 		$candidates = array();
 		$stem       = $this->flosc_normalize_flow_stem( $flow_id );
-		if ( $stem !== '' ) {
+		if ( '' !== $stem ) {
 			$candidates[] = $stem;
 		}
 		$raw = sanitize_key( (string) $flow_id );
-		if ( $raw !== '' && $raw !== $stem ) {
+		if ( '' !== $raw && $raw !== $stem ) {
 			$candidates[] = $raw;
 		}
 		if ( empty( $candidates ) ) {
@@ -290,9 +292,11 @@ trait FLOSC_Visitor_Token_Trait {
 	 */
 	public function flosc_resolve_visitor_session_id_for_grant() {
 		foreach ( array( 'flosc_visitor_session', 'flosc_vtok_session' ) as $cookie_name ) {
-			if ( isset( $_COOKIE[ $cookie_name ] ) && is_string( $_COOKIE[ $cookie_name ] ) && $_COOKIE[ $cookie_name ] !== '' ) {
-				$cookie_value = sanitize_text_field( wp_unslash( $_COOKIE[ $cookie_name ] ) );
-				return sanitize_text_field( rawurldecode( $cookie_value ) );
+			$raw = ( isset( $_COOKIE[ $cookie_name ] ) && is_scalar( $_COOKIE[ $cookie_name ] )
+				? sanitize_text_field( wp_unslash( $_COOKIE[ $cookie_name ] ) )
+				: '' );
+			if ( is_string( $raw ) && '' !== $raw ) {
+				return sanitize_text_field( rawurldecode( $raw ) );
 			}
 		}
 		return '';
@@ -318,18 +322,18 @@ trait FLOSC_Visitor_Token_Trait {
 			return $this->flosc_get_user_flow_token_balance( $user_id, $flow_stem );
 		}
 
-		if ( $session_id_raw === '' ) {
+		if ( '' === $session_id_raw ) {
 			$session_id_raw = $this->flosc_resolve_visitor_session_id_for_grant();
 		}
 
 		$session_id_raw = trim( (string) $session_id_raw );
-		if ( $session_id_raw === '' && ! $allow_without_session ) {
+		if ( '' === $session_id_raw && ! $allow_without_session ) {
 			// Defer until client provides visitor_session_id (common after cross-domain SSO).
 			return $this->flosc_get_user_flow_token_balance( $user_id, $flow_stem );
 		}
 
 		// Remaining = visitor session wallet for this flow (0 if none / not found).
-		$remaining   = $session_id_raw !== ''
+		$remaining   = '' !== $session_id_raw
 			? $this->flosc_get_visitor_remaining_for_session( $flow_stem, $session_id_raw )
 			: 0;
 		$grant       = max( 0, intval( $this->flosc_get_guest_token_grant_amount( $flow_stem, $user_id ) ) );
@@ -357,7 +361,7 @@ trait FLOSC_Visitor_Token_Trait {
 					$remaining,
 					$grant,
 					$new_balance,
-					$session_id_raw !== '' ? 'yes' : 'no'
+					'' !== $session_id_raw ? 'yes' : 'no'
 				)
 			);
 		}
@@ -431,8 +435,8 @@ trait FLOSC_Visitor_Token_Trait {
 	 *
 	 * @param int    $user_id
 	 * @param string $flow_id
-	 * @param string $mode    onetime|recurring|recurring_yearly|monthly|yearly
-	 * @param array  $context idempotency_key, reason, grant, cap, offer, subscription_id
+	 * @param string $mode    onetime|recurring|recurring_yearly|monthly|yearly.
+	 * @param array  $context idempotency_key, reason, grant, cap, offer, subscription_id.
 	 * @return array{credited:int,balance:int,cap:int,grant:int,capped:bool,skipped:bool,mode:string}
 	 */
 	public function flosc_apply_product_token_credit( $user_id, $flow_id = '', $mode = 'onetime', $context = array() ) {
@@ -453,9 +457,9 @@ trait FLOSC_Visitor_Token_Trait {
 		$flow_stem = $this->flosc_normalize_flow_stem( $flow_id );
 		$mode      = strtolower( sanitize_key( (string) $mode ) );
 		// Aliases used by subscription plan types.
-		if ( $mode === 'monthly' ) {
+		if ( 'monthly' === $mode ) {
 			$mode = 'recurring';
-		} elseif ( $mode === 'yearly' ) {
+		} elseif ( 'yearly' === $mode ) {
 			$mode = 'recurring_yearly';
 		}
 		if ( ! in_array( $mode, array( 'onetime', 'recurring', 'recurring_yearly' ), true ) ) {
@@ -464,7 +468,7 @@ trait FLOSC_Visitor_Token_Trait {
 		$result['mode'] = $mode;
 
 		$idem = sanitize_key( (string) ( $context['idempotency_key'] ?? '' ) );
-		if ( $idem !== '' ) {
+		if ( '' !== $idem ) {
 			$done = get_user_meta( $user_id, '_flosc_product_token_credits', true );
 			if ( ! is_array( $done ) ) {
 				// Legacy store from first subscription-only implementation.
@@ -489,7 +493,7 @@ trait FLOSC_Visitor_Token_Trait {
 		$offer        = is_array( $context['offer'] ?? null ) ? $context['offer'] : array();
 		$offer_tokens = is_array( $offer['tokens'] ?? null ) ? $offer['tokens'] : array();
 		$source       = sanitize_key( (string) ( $offer_tokens['source'] ?? '' ) );
-		if ( $source === 'none' ) {
+		if ( 'none' === $source ) {
 			$result['skipped'] = true;
 			$result['grant']   = 0;
 			$result['balance'] = $this->flosc_get_user_flow_token_balance( $user_id, $flow_stem );
@@ -499,19 +503,19 @@ trait FLOSC_Visitor_Token_Trait {
 		// Prefer offer.tokens.mode when source is custom (or mode explicitly set).
 		$offer_mode = sanitize_key( (string) ( $offer_tokens['mode'] ?? '' ) );
 		if ( in_array( $offer_mode, array( 'onetime', 'recurring', 'recurring_yearly' ), true )
-			&& ( $source === 'custom' || $source === '' )
+			&& ( 'custom' === $source || '' === $source )
 		) {
 			// Only force offer mode when custom; for flow source, keep caller mode
 			// (subscription activate already passes recurring / yearly).
-			if ( $source === 'custom' ) {
+			if ( 'custom' === $source ) {
 				$mode           = $offer_mode;
 				$result['mode'] = $mode;
 			}
 		}
 
-		if ( $mode === 'recurring_yearly' ) {
+		if ( 'recurring_yearly' === $mode ) {
 			$grant = $params['recurring_yearly'];
-		} elseif ( $mode === 'recurring' ) {
+		} elseif ( 'recurring' === $mode ) {
 			$grant = $params['recurring'];
 		} else {
 			$grant = $params['onetime'];
@@ -521,21 +525,21 @@ trait FLOSC_Visitor_Token_Trait {
 		$cap_mode = sanitize_key( (string) ( $offer_tokens['cap_mode'] ?? 'flow' ) );
 		// Only apply amount/cap overrides for explicit custom products.
 		// source=flow (or unset) always uses flow defaults for the caller's mode.
-		if ( $source === 'custom' ) {
-			if ( isset( $offer_tokens['amount'] ) && $offer_tokens['amount'] !== '' ) {
+		if ( 'custom' === $source ) {
+			if ( isset( $offer_tokens['amount'] ) && '' !== $offer_tokens['amount'] ) {
 				$grant = max( 0, intval( $offer_tokens['amount'] ) ) + max( 0, intval( $offer_tokens['bonus'] ?? 0 ) );
 			}
-			if ( $cap_mode === 'none' ) {
+			if ( 'none' === $cap_mode ) {
 				$cap = 0;
-			} elseif ( $cap_mode === 'custom' && array_key_exists( 'cap', $offer_tokens ) && $offer_tokens['cap'] !== '' ) {
+			} elseif ( 'custom' === $cap_mode && array_key_exists( 'cap', $offer_tokens ) && '' !== $offer_tokens['cap'] ) {
 				$cap = max( 0, intval( $offer_tokens['cap'] ) );
 			}
 		}
 		// Explicit context overrides win last.
-		if ( isset( $context['grant'] ) && $context['grant'] !== '' ) {
+		if ( isset( $context['grant'] ) && '' !== $context['grant'] ) {
 			$grant = max( 0, intval( $context['grant'] ) );
 		}
-		if ( array_key_exists( 'cap', $context ) && $context['cap'] !== '' && $context['cap'] !== null ) {
+		if ( array_key_exists( 'cap', $context ) && '' !== $context['cap'] && null !== $context['cap'] ) {
 			$cap = max( 0, intval( $context['cap'] ) );
 		}
 
@@ -586,7 +590,7 @@ trait FLOSC_Visitor_Token_Trait {
 			$result['skipped']  = false;
 		}
 
-		if ( $idem !== '' ) {
+		if ( '' !== $idem ) {
 			$done = get_user_meta( $user_id, '_flosc_product_token_credits', true );
 			if ( ! is_array( $done ) ) {
 				$done = array();
@@ -764,7 +768,7 @@ trait FLOSC_Visitor_Token_Trait {
 		$settings = (array) ( $context['settings'] ?? array() );
 		$template = trim( (string) ( $settings['visitor_low_tokens_message'] ?? '' ) );
 
-		if ( $template === '' ) {
+		if ( '' === $template ) {
 			$template = __( 'You\'re running low on chat tokens. Pretty soon, you\'ll be invited to register or log in to receive {token_grant} more tokens.', 'flosc' );
 		}
 
@@ -784,7 +788,7 @@ trait FLOSC_Visitor_Token_Trait {
 		$settings = (array) ( $context['settings'] ?? array() );
 		$template = trim( (string) ( $settings['visitor_tokens_depleted_message'] ?? '' ) );
 
-		if ( $template === '' ) {
+		if ( '' === $template ) {
 			$template = __( 'This session has run out of chat tokens. You can log in to receive {token_grant} tokens to use this chat. You can also share your phone number or email address, plus your preferred contact method and time, and an administrator can follow up with you.', 'flosc' );
 		}
 
@@ -802,7 +806,7 @@ trait FLOSC_Visitor_Token_Trait {
 		}
 
 		$url = trim( (string) ( $settings['visitor_session_end_redirect_url'] ?? '' ) );
-		if ( $url === '' ) {
+		if ( '' === $url ) {
 			return '';
 		}
 

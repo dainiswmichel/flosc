@@ -8,6 +8,8 @@
  * Content status: ✅ = written, 🔲 = placeholder (heading structure only)
  *
  * @since 8.0.1
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -17,21 +19,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 // Topic registry: each entry has an id, title, status ('ready' or 'pending'), and group.
 // This registry will later support helpID lookups from inline help links elsewhere in the admin.
 $flosc_doc_topics = array(
-	// Part 1: The Journey
+	// Part 1: The Journey.
 	array(
 		'id'     => 'the-journey',
 		'group'  => 'journey',
 		'title'  => 'The Journey — Why FLOSC Exists',
 		'status' => 'ready',
 	),
-	// Part 2: Architecture
+	// Part 2: Architecture.
 	array(
 		'id'     => 'architecture',
 		'group'  => 'architecture',
 		'title'  => 'Architecture Overview',
 		'status' => 'pending',
 	),
-	// Part 3: Reference
+	// Part 3: Reference.
 	array(
 		'id'     => 'ref-ivr',
 		'group'  => 'reference',
@@ -87,6 +89,12 @@ $flosc_doc_topics = array(
 		'status' => 'ready',
 	),
 	array(
+		'id'     => 'ref-personality',
+		'group'  => 'reference',
+		'title'  => 'Personality Profiles',
+		'status' => 'ready',
+	),
+	array(
 		'id'     => 'ref-payments',
 		'group'  => 'reference',
 		'title'  => 'Payments & Offers Reference',
@@ -104,21 +112,21 @@ $flosc_doc_topics = array(
 		'title'  => 'SSO & OAuth Reference',
 		'status' => 'pending',
 	),
-	// Part 4: Security
+	// Part 4: Security.
 	array(
 		'id'     => 'security',
 		'group'  => 'security',
 		'title'  => 'Security',
 		'status' => 'pending',
 	),
-	// Part 5: Glossary
+	// Part 5: Glossary.
 	array(
 		'id'     => 'glossary',
 		'group'  => 'glossary',
 		'title'  => 'Glossary — Every FLOSC Term Defined',
 		'status' => 'ready',
 	),
-	// Part 6: Development
+	// Part 6: Development.
 	array(
 		'id'     => 'development-team',
 		'group'  => 'development',
@@ -155,7 +163,7 @@ if ( ! isset( $flosc_get ) || ! is_array( $flosc_get ) ) {
 }
 $flosc_doc_topic = isset( $flosc_get['doc'] ) ? sanitize_text_field( (string) $flosc_get['doc'] ) : '';
 
-// Group labels for the sidebar
+// Group labels for the sidebar.
 $flosc_group_labels = array(
 	'journey'      => 'Part 1: The Journey',
 	'architecture' => 'Part 2: Architecture',
@@ -215,7 +223,7 @@ foreach ( $flosc_doc_topics as $flosc_topic ) {
 				<?php endif; ?>
 				<?php
 				$flosc_is_active   = ( $flosc_doc_topic === $flosc_topic['id'] );
-				$flosc_status_icon = $flosc_topic['status'] === 'ready' ? '✅' : '🔲';
+				$flosc_status_icon = 'ready' === $flosc_topic['status'] ? '✅' : '🔲';
 				$flosc_link_url    = add_query_arg(
 					array(
 						'page' => 'flosc-settings',
@@ -248,7 +256,7 @@ foreach ( $flosc_doc_topics as $flosc_topic ) {
 				<div class="flosc-doc-card-grid">
 					<?php
 					foreach ( $flosc_group_labels as $flosc_gid => $flosc_glabel ) :
-						// Find first topic in this group
+						// Find first topic in this group.
 						$flosc_first = isset( $flosc_group_first_topic[ $flosc_gid ] ) ? $flosc_group_first_topic[ $flosc_gid ] : null;
 						if ( ! $flosc_first ) {
 							continue;
@@ -258,7 +266,7 @@ foreach ( $flosc_doc_topics as $flosc_topic ) {
 						foreach ( $flosc_doc_topics as $flosc_t ) {
 							if ( $flosc_t['group'] === $flosc_gid ) {
 								++$flosc_total_count;
-								if ( $flosc_t['status'] === 'ready' ) {
+								if ( 'ready' === $flosc_t['status'] ) {
 									++$flosc_ready_count;
 								}
 							}
@@ -285,22 +293,22 @@ foreach ( $flosc_doc_topics as $flosc_topic ) {
 				</div>
 			</div>
 
-		<?php elseif ( $flosc_doc_topic === 'the-journey' ) : ?>
+		<?php elseif ( 'the-journey' === $flosc_doc_topic ) : ?>
 			<div class="flosc-doc-article flosc-doc-card">
 				<?php include FLOSC_PLUGIN_DIR . 'admin/docs/part1-journey.php'; ?>
 			</div>
 
-		<?php elseif ( $flosc_doc_topic === 'ref-quiz' ) : ?>
+		<?php elseif ( 'ref-quiz' === $flosc_doc_topic ) : ?>
 			<div class="flosc-doc-article flosc-doc-card">
 				<?php include FLOSC_PLUGIN_DIR . 'admin/docs/part3-ref-quiz.php'; ?>
 			</div>
 
-		<?php elseif ( $flosc_doc_topic === 'ref-audio-quiz-flow' ) : ?>
+		<?php elseif ( 'ref-audio-quiz-flow' === $flosc_doc_topic ) : ?>
 			<div class="flosc-doc-article flosc-doc-card">
 				<?php include FLOSC_PLUGIN_DIR . 'admin/docs/part3-ref-audio-quiz-flow.php'; ?>
 			</div>
 
-		<?php elseif ( $flosc_doc_topic === 'glossary' ) : ?>
+		<?php elseif ( 'glossary' === $flosc_doc_topic ) : ?>
 			<div class="flosc-doc-article flosc-doc-card">
 				<?php include FLOSC_PLUGIN_DIR . 'admin/docs/part5-glossary.php'; ?>
 			</div>
@@ -310,25 +318,30 @@ foreach ( $flosc_doc_topics as $flosc_topic ) {
 				<?php include FLOSC_PLUGIN_DIR . 'admin/docs/part6-development.php'; ?>
 			</div>
 
-		<?php elseif ( $flosc_doc_topic === 'ref-core' ) : ?>
+		<?php elseif ( 'ref-core' === $flosc_doc_topic ) : ?>
 			<div class="flosc-doc-article flosc-doc-card">
-				<?php include FLOSC_PLUGIN_DIR . 'admin/docs/ref_core_skeleton.php'; ?>
+				<?php include FLOSC_PLUGIN_DIR . 'admin/docs/ref-core-skeleton.php'; ?>
 			</div>
 
-		<?php elseif ( $flosc_doc_topic === 'ref-admin' ) : ?>
+		<?php elseif ( 'ref-admin' === $flosc_doc_topic ) : ?>
 			<div class="flosc-doc-article flosc-doc-card">
-				<?php include FLOSC_PLUGIN_DIR . 'admin/docs/ref_admin_skeleton.php'; ?>
+				<?php include FLOSC_PLUGIN_DIR . 'admin/docs/ref-admin-skeleton.php'; ?>
 			</div>
 
-		<?php elseif ( $flosc_doc_topic === 'ref-settings-fields' ) : ?>
+		<?php elseif ( 'ref-personality' === $flosc_doc_topic ) : ?>
+			<div class="flosc-doc-article flosc-doc-card">
+				<?php include FLOSC_PLUGIN_DIR . 'admin/docs/part3-ref-personality-profile.php'; ?>
+			</div>
+
+		<?php elseif ( 'ref-settings-fields' === $flosc_doc_topic ) : ?>
 			<div class="flosc-doc-article flosc-doc-card">
 				<?php include FLOSC_PLUGIN_DIR . 'admin/docs/part3-ref-settings-fields.php'; ?>
 			</div>
 
-		<?php elseif ( $flosc_doc_topic === 'ref-ai-config' ) : ?>
+		<?php elseif ( 'ref-ai-config' === $flosc_doc_topic ) : ?>
 			<div class="flosc-doc-article flosc-doc-card">
 				<?php
-				// Suppress the tab header when including guide from documentation
+				// Suppress the tab header when including guide from documentation.
 				$GLOBALS['flosc_suppress_tab_header'] = true;
 				include FLOSC_PLUGIN_DIR . 'admin/ai-configuration-guide.php';
 				unset( $GLOBALS['flosc_suppress_tab_header'] );
@@ -337,7 +350,7 @@ foreach ( $flosc_doc_topics as $flosc_topic ) {
 
 		<?php else : ?>
 			<?php
-			// Pending topic — show heading skeleton
+			// Pending topic — show heading skeleton.
 			$flosc_current_topic = null;
 			foreach ( $flosc_doc_topics as $flosc_t ) {
 				if ( $flosc_t['id'] === $flosc_doc_topic ) {
@@ -352,8 +365,23 @@ foreach ( $flosc_doc_topics as $flosc_topic ) {
 					<strong>🔲 Content pending</strong> — This section has a heading structure prepared. Content will be written as the corresponding features stabilize.
 				</div>
 				<?php
-				// Load the skeleton file if it exists
-				$flosc_skeleton_file = FLOSC_PLUGIN_DIR . 'admin/docs/' . str_replace( '-', '_', $flosc_doc_topic ) . '_skeleton.php';
+				/*
+				 * A topic with no branch of its own can still carry an outline:
+				 * drop admin/docs/<topic id>-skeleton.php in beside the written
+				 * pages and it renders under the "content pending" note. The
+				 * path is built from $flosc_doc_topic, but only after the loop
+				 * above matched it against $flosc_doc_topics, so it is one of
+				 * the ids declared at the top of this file and not free text
+				 * from the query string.
+				 *
+				 * Until v82.9 the name was assembled as <topic with hyphens
+				 * turned to underscores>_skeleton.php, which no longer matches
+				 * anything: WordPress requires hyphenated lowercase file names,
+				 * so the two skeletons were renamed to ref-admin-skeleton.php
+				 * and ref-core-skeleton.php. Both of those have explicit
+				 * branches above and never reached this line either way.
+				 */
+				$flosc_skeleton_file = FLOSC_PLUGIN_DIR . 'admin/docs/' . $flosc_doc_topic . '-skeleton.php';
 				if ( file_exists( $flosc_skeleton_file ) ) {
 					include $flosc_skeleton_file;
 				}

@@ -1,7 +1,10 @@
 <?php
 /**
- * v1.9.0: AI Feedback & Praise Editor
- * v1.9.5: Added "Rated Responses" section showing DB-rated chat log entries.
+ * AI Feedback & Praise Editor.
+ *
+ * @since 1.9.0
+ * @since 1.9.5 Added the "Rated Responses" section, which lists chat log
+ *              entries that carry a rating in the database.
  *
  * Admin can view, add, and delete feedback (flag bad responses) and
  * praises (reinforce good responses) that guide AI behavior.
@@ -10,10 +13,29 @@
  * Both are loaded into the system prompt via build_feedback_prompt().
  *
  * Included from settings.php within the Chat Logs tab.
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
+}
+
+/*
+ * Identity before input.
+ *
+ * WordPress.org, 14 Sep 2026: "No nonce check found validating input origin on
+ * lines 1-116". Their scanner measures whether a check appears BEFORE the
+ * request is read, not merely whether one exists somewhere in the file. Several
+ * files here verified correctly and verified late, and late did not count -- an
+ * unauthorized request still walked the whole parser before being refused.
+ *
+ * This is the capability the FLOSC menu itself requires. Flow-level access is
+ * still checked further down where the flow is known; this only establishes
+ * that somebody who may administer FLOSC at all is asking.
+ */
+if ( ! current_user_can( 'edit_others_posts' ) ) {
+	wp_die( esc_html__( 'You do not have permission to access this page.', 'flosc' ), 403 );
 }
 
 // ── v1.9.5: Rated Responses from DB (via logger data API; schema ensured there) ──
@@ -70,7 +92,7 @@ $flosc_rated_count = count( $flosc_rated_logs );
 $flosc_feedback_items = $flosc_flow_settings['ai_feedback'] ?? array();
 $flosc_feedback_count = count( $flosc_feedback_items );
 
-// Handle delete feedback
+// Handle delete feedback.
 if ( isset( $_POST['flosc_delete_feedback'] ) ) {
 	$flosc_post = wp_unslash( $_POST );
 	if ( wp_verify_nonce( sanitize_text_field( $flosc_post['_wpnonce'] ?? '' ), 'flosc_save_settings' ) ) {
@@ -93,7 +115,7 @@ if ( isset( $_POST['flosc_delete_feedback'] ) ) {
 	}
 }
 
-// Handle add feedback
+// Handle add feedback.
 if ( isset( $_POST['flosc_add_feedback'] ) ) {
 	$flosc_post = wp_unslash( $_POST );
 	if ( wp_verify_nonce( sanitize_text_field( $flosc_post['_wpnonce'] ?? '' ), 'flosc_save_settings' ) ) {
@@ -124,7 +146,7 @@ if ( isset( $_POST['flosc_add_feedback'] ) ) {
 $flosc_praises       = $flosc_flow_settings['ai_praises'] ?? array();
 $flosc_praises_count = count( $flosc_praises );
 
-// Handle delete praise
+// Handle delete praise.
 if ( isset( $_POST['flosc_delete_praise'] ) ) {
 	$flosc_post = wp_unslash( $_POST );
 	if ( wp_verify_nonce( sanitize_text_field( $flosc_post['_wpnonce'] ?? '' ), 'flosc_save_settings' ) ) {
@@ -147,7 +169,7 @@ if ( isset( $_POST['flosc_delete_praise'] ) ) {
 	}
 }
 
-// Handle add praise
+// Handle add praise.
 if ( isset( $_POST['flosc_add_praise'] ) ) {
 	$flosc_post = wp_unslash( $_POST );
 	if ( wp_verify_nonce( sanitize_text_field( $flosc_post['_wpnonce'] ?? '' ), 'flosc_save_settings' ) ) {

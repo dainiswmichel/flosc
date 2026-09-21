@@ -12,13 +12,15 @@
  * Also: manual payment instructions; webhooks for Stripe/PayPal grant after pay.
  *
  * Offers tab chooses which path each offer uses (paypal | stripe | free | redirect).
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// v1.2.9: Output tab header
+// v1.2.9: Output tab header.
 flosc_tab_header( '💳', 'Payments' );
 
 $flosc_flow_settings               = $GLOBALS['flosc_current_settings'] ?? array();
@@ -179,7 +181,7 @@ $flosc_manual_payments_enabled     = $flosc_flow_settings['manual_payments_enabl
 </p>
 <?php
 $flosc_paypal_webhook_id_admin = trim( (string) ( $flosc_flow_settings['paypal_webhook_id'] ?? '' ) );
-if ( ! empty( $flosc_paypal_enabled ) && $flosc_paypal_webhook_id_admin === '' ) :
+if ( ! empty( $flosc_paypal_enabled ) && '' === $flosc_paypal_webhook_id_admin ) :
 	?>
 	<div class="notice notice-warning inline">
 		<p>
@@ -268,6 +270,14 @@ endif;
 			<button type="button" id="flosc-paypal-test" class="button button-secondary">Test PayPal Connection</button>
 			<span id="flosc-paypal-test-result" class="flosc-paypal-test-result"></span>
 			<?php ob_start(); ?>
+			function floscSetPayPalTestResult(result, className, message) {
+				var status = document.createElement('span');
+				status.className = className;
+				status.textContent = message;
+				result.textContent = '';
+				result.appendChild(status);
+			}
+
 			document.getElementById('flosc-paypal-test').addEventListener('click', function() {
 				var btn = this;
 				var result = document.getElementById('flosc-paypal-test-result');
@@ -294,15 +304,15 @@ endif;
 									? ' · P0-A security OK'
 									: ' · P0-A check failed (unsigned=' + (p0.unsigned || '?') + ', forged=' + (p0.forged || '?') + ')';
 							}
-							result.innerHTML = '<span class="flosc-paypal-result-success">\u2705 Connected — ' + data.data.mode + ' mode, ' + data.data.app_name + whText + p0Text + '</span>';
+							floscSetPayPalTestResult(result, 'flosc-paypal-result-success', '\u2705 Connected — ' + data.data.mode + ' mode, ' + data.data.app_name + whText + p0Text);
 						} else {
-							result.innerHTML = '<span class="flosc-paypal-result-error">\u274c ' + (data.data || 'Connection failed') + '</span>';
+							floscSetPayPalTestResult(result, 'flosc-paypal-result-error', '\u274c ' + (data.data || 'Connection failed'));
 						}
 					})
 					.catch(() => {
 						btn.disabled = false;
 						btn.textContent = 'Test PayPal Connection';
-						result.innerHTML = '<span class="flosc-paypal-result-error-lite">\u274c Network error</span>';
+						floscSetPayPalTestResult(result, 'flosc-paypal-result-error-lite', '\u274c Network error');
 					});
 			});
 			<?php wp_add_inline_script( 'flosc-admin', ob_get_clean() ); ?>
@@ -427,4 +437,3 @@ Access will be granted within 24 hours of payment confirmation.'
 	</table>
 	<p class="flosc-payments-test-cards-link-wrap"><a href="https://stripe.com/docs/testing" target="_blank">See full list of test cards →</a></p>
 </div>
-

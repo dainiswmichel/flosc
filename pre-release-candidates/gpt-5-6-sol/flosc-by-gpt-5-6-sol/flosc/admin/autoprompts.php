@@ -16,10 +16,29 @@
  *   trigger_value — offer_id (for offer), action key (for action), empty for ai
  *   conditions    — when to show (is_visitor, is_guest, is_member, custom expression)
  *   style         — pill | button | chip
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
+}
+
+/*
+ * Identity before input.
+ *
+ * WordPress.org, 14 Sep 2026: "No nonce check found validating input origin on
+ * lines 1-116". Their scanner measures whether a check appears BEFORE the
+ * request is read, not merely whether one exists somewhere in the file. Several
+ * files here verified correctly and verified late, and late did not count -- an
+ * unauthorized request still walked the whole parser before being refused.
+ *
+ * This is the capability the FLOSC menu itself requires. Flow-level access is
+ * still checked further down where the flow is known; this only establishes
+ * that somebody who may administer FLOSC at all is asking.
+ */
+if ( ! current_user_can( 'edit_others_posts' ) ) {
+	wp_die( esc_html__( 'You do not have permission to access this page.', 'flosc' ), 403 );
 }
 
 flosc_tab_header( '💊', 'AutoPrompts' );
@@ -34,10 +53,10 @@ if ( ! function_exists( 'flosc_autoprompt_is_machine_label' ) ) {
 	 */
 	function flosc_autoprompt_is_machine_label( $label ) {
 		$label = trim( (string) $label );
-		if ( $label === '' ) {
+		if ( '' === $label ) {
 			return false;
 		}
-		return (bool) ( strpos( $label, '_' ) !== false && preg_match( '/^[a-z0-9_]+$/', $label ) );
+		return (bool) ( false !== strpos( $label, '_' ) && preg_match( '/^[a-z0-9_]+$/', $label ) );
 	}
 }
 
@@ -76,7 +95,7 @@ function flosc_handle_autoprompts_save() {
 	// §10: accept the posted flow key only if it is a known flow option key.
 	// Validate without transforming, so the key matches where settings are stored.
 	$fk = sanitize_text_field( $flosc_post['flosc_flow_key'] ?? '' );
-	if ( $fk === '' || ! in_array( $fk, flosc_known_flow_option_keys(), true ) ) {
+	if ( '' === $fk || ! in_array( $fk, flosc_known_flow_option_keys(), true ) ) {
 		return;
 	}
 
@@ -84,19 +103,19 @@ function flosc_handle_autoprompts_save() {
 	$states      = array( 'visitor', 'guest', 'member' );
 	$autoprompts = array();
 
-	// Save panel header text per state
+	// Save panel header text per state.
 	$flosc_panel_headers = array();
 	foreach ( $states as $state ) {
 		$flosc_panel_headers[ $state ] = sanitize_text_field( $flosc_post[ 'panel_header_' . $state ] ?? 'Try these AutoPrompts!' );
 	}
 
-	// Save panel show/hide toggle per state (checkbox — absent means unchecked = 0)
+	// Save panel show/hide toggle per state (checkbox — absent means unchecked = 0).
 	$flosc_panel_enabled = array();
 	foreach ( $states as $state ) {
 		$flosc_panel_enabled[ $state ] = isset( $flosc_post[ 'panel_enabled_' . $state ] ) ? 1 : 0;
 	}
 
-	// Companion Mode panel visibility (ship default: off)
+	// Companion Mode panel visibility (ship default: off).
 	$flosc_companion_panel_enabled = isset( $flosc_post['panel_enabled_companion'] ) ? 1 : 0;
 
 	foreach ( $states as $state ) {
@@ -113,31 +132,34 @@ function flosc_handle_autoprompts_save() {
 			$label      = sanitize_text_field( $label );
 			$input_text = sanitize_text_field( $inputs[ $i ] ?? '' );
 
-			if ( $label === '' && $input_text === '' ) {
+			if ( '' === $label && '' === $input_text ) {
 				continue;
 			}
 
-			if ( flosc_autoprompt_is_machine_label( $label ) && $input_text !== '' ) {
+			if ( flosc_autoprompt_is_machine_label( $label ) && '' !== $input_text ) {
 				$label = $input_text;
 			}
 
-			if ( $label === '' ) {
+			if ( '' === $label ) {
 				$label = $input_text;
 			}
 
-			if ( $label === '' ) {
+			if ( '' === $label ) {
 				continue;
 			}
 
-			$flosc_ttype   = sanitize_key( $trigger_types[ $i ] ?? 'ai' ) ?: 'ai';
+			$flosc_ttype = sanitize_key( $trigger_types[ $i ] ?? 'ai' );
+			if ( ! $flosc_ttype ) {
+				$flosc_ttype = 'ai';
+			}
 			$flosc_tval    = sanitize_text_field( $trigger_values[ $i ] ?? '' );
 			$flosc_pills[] = array(
 				'icon'          => sanitize_text_field( $icons[ $i ] ?? '' ),
 				'label'         => $label,
-				'user_input'    => $input_text !== '' ? $input_text : $label,
+				'user_input'    => '' !== $input_text ? $input_text : $label,
 				'trigger_type'  => $flosc_ttype,
 				'trigger_value' => $flosc_tval,
-				'action'        => $flosc_ttype === 'ai' ? '' : ( $flosc_ttype === 'offer' ? 'show_offer_' . $flosc_tval : $flosc_tval ),
+				'action'        => 'ai' === $flosc_ttype ? '' : ( 'offer' === $flosc_ttype ? 'show_offer_' . $flosc_tval : $flosc_tval ),
 				'conditions'    => sanitize_text_field( $flosc_conditions[ $i ] ?? ( 'is_' . $state ) ),
 				'style'         => 'pill',
 			);
@@ -167,17 +189,17 @@ if ( ! isset( $flosc_get ) || ! is_array( $flosc_get ) ) {
 $flosc_fs = $flosc_flow_key ? get_option( $flosc_flow_key, array() ) : array();
 
 $flosc_flow_display_name = trim( (string) ( $flosc_fs['identity']['name'] ?? '' ) );
-if ( $flosc_flow_display_name === '' ) {
+if ( '' === $flosc_flow_display_name ) {
 	$flosc_flow_display_name = trim( (string) ( $flosc_fs['name'] ?? '' ) );
 }
-if ( $flosc_flow_display_name === '' ) {
+if ( '' === $flosc_flow_display_name ) {
 	$flosc_flow_display_name = trim( (string) pathinfo( (string) $flosc_current_ivr, PATHINFO_FILENAME ) );
 }
-if ( $flosc_flow_display_name === '' ) {
+if ( '' === $flosc_flow_display_name ) {
 	$flosc_flow_display_name = 'Flow';
 }
 
-// Strip all accumulated backslash layers from previously corrupted DB data
+// Strip all accumulated backslash layers from previously corrupted DB data.
 $flosc_ap_raw  = $flosc_fs['autoprompts'] ?? array();
 $flosc_ap_prev = null;
 while ( $flosc_ap_prev !== $flosc_ap_raw ) {
@@ -223,12 +245,12 @@ foreach ( $flosc_prompts as $flosc_state => &$flosc_state_pills ) {
 		$flosc_current_label = trim( (string) ( $flosc_pill['label'] ?? '' ) );
 		$flosc_current_input = trim( (string) ( $flosc_pill['user_input'] ?? '' ) );
 
-		if ( flosc_autoprompt_is_machine_label( $flosc_current_label ) && $flosc_current_input !== '' ) {
+		if ( flosc_autoprompt_is_machine_label( $flosc_current_label ) && '' !== $flosc_current_input ) {
 			$flosc_pill['label'] = $flosc_current_input;
 			$flosc_current_label = $flosc_current_input;
 		}
 
-		if ( $flosc_current_label === '' && $flosc_current_input !== '' ) {
+		if ( '' === $flosc_current_label && '' !== $flosc_current_input ) {
 			$flosc_pill['label'] = $flosc_current_input;
 		}
 
@@ -239,7 +261,7 @@ foreach ( $flosc_prompts as $flosc_state => &$flosc_state_pills ) {
 }
 unset( $flosc_state_pills );
 
-// Available offers for trigger dropdown
+// Available offers for trigger dropdown.
 $flosc_offers_for_trigger = array();
 $flosc_flow_id_for_offers = $flosc_flow_key ? str_replace( 'flosc_flow_', '', $flosc_flow_key ) : null;
 if ( function_exists( 'flosc' ) && $flosc_flow_id_for_offers ) {
@@ -248,7 +270,7 @@ if ( function_exists( 'flosc' ) && $flosc_flow_id_for_offers ) {
 	}
 }
 
-// Available actions
+// Available actions.
 $flosc_available_actions = array(
 	'open_quiz'            => 'open_quiz — Take Quiz',
 	'open_free_lesson'     => 'open_free_lesson — View Free Lesson',
@@ -284,19 +306,19 @@ if ( ! function_exists( 'flosc_autoprompt_expected_behavior_text' ) ) {
 	function flosc_autoprompt_expected_behavior_text( $flosc_state, array $flosc_item ) {
 		$flosc_label         = trim( (string) ( $flosc_item['label'] ?? '' ) );
 		$flosc_user_input    = trim( (string) ( $flosc_item['user_input'] ?? '' ) );
-		$flosc_input_to_send = $flosc_user_input !== '' ? $flosc_user_input : $flosc_label;
+		$flosc_input_to_send = '' !== $flosc_user_input ? $flosc_user_input : $flosc_label;
 		$flosc_trigger_type  = strtolower( trim( (string) ( $flosc_item['trigger_type'] ?? 'ai' ) ) );
 		$flosc_trigger_value = trim( (string) ( $flosc_item['trigger_value'] ?? '' ) );
 		$flosc_condition     = trim( (string) ( $flosc_item['conditions'] ?? ( $flosc_item['condition'] ?? ( 'is_' . $flosc_state ) ) ) );
 		$flosc_style         = trim( (string) ( $flosc_item['style'] ?? 'pill' ) );
 
-		$flosc_visibility_text = $flosc_condition !== '' ? $flosc_condition : ( 'is_' . $flosc_state );
+		$flosc_visibility_text = '' !== $flosc_condition ? $flosc_condition : ( 'is_' . $flosc_state );
 
-		if ( $flosc_trigger_type === 'offer' ) {
-			$flosc_offer_id     = $flosc_trigger_value !== '' ? $flosc_trigger_value : 'full_access';
+		if ( 'offer' === $flosc_trigger_type ) {
+			$flosc_offer_id     = '' !== $flosc_trigger_value ? $flosc_trigger_value : 'full_access';
 			$flosc_trigger_text = 'The offer flow runs and attempts to display offer id "' . $flosc_offer_id . '" in chat.';
-		} elseif ( $flosc_trigger_type === 'action' ) {
-			$flosc_action       = $flosc_trigger_value !== '' ? $flosc_trigger_value : 'open_quiz';
+		} elseif ( 'action' === $flosc_trigger_type ) {
+			$flosc_action       = '' !== $flosc_trigger_value ? $flosc_trigger_value : 'open_quiz';
 			$flosc_trigger_text = 'The action trigger runs with value "' . $flosc_action . '" and should open the matching in-chat UI flow.';
 		} else {
 			$flosc_trigger_text = 'The AI trigger runs and sends this text into the chat pipeline for a conversational response.';
@@ -304,8 +326,8 @@ if ( ! function_exists( 'flosc_autoprompt_expected_behavior_text' ) ) {
 
 		return sprintf(
 			'User sees a %1$flosc_s labeled "%2$flosc_s" when condition "%3$flosc_s" is true. On click, "%4$flosc_s" is sent as user text. %5$flosc_s',
-			$flosc_style !== '' ? $flosc_style : 'pill',
-			$flosc_label !== '' ? $flosc_label : '(empty label)',
+			'' !== $flosc_style ? $flosc_style : 'pill',
+			'' !== $flosc_label ? $flosc_label : '(empty label)',
 			$flosc_visibility_text,
 			$flosc_input_to_send,
 			$flosc_trigger_text
@@ -426,9 +448,9 @@ foreach ( $flosc_state_config as $flosc_state => $flosc_sc ) :
 		foreach ( $flosc_pills as $flosc_pill ) :
 			$flosc_ttype = $flosc_pill['trigger_type'] ?? 'ai';
 			$flosc_tval  = $flosc_pill['trigger_value'] ?? '';
-			// Back-compat: derive trigger_type from action field
+			// Back-compat: derive trigger_type from action field.
 			if ( ! isset( $flosc_pill['trigger_type'] ) && ! empty( $flosc_pill['action'] ) ) {
-				if ( strpos( $flosc_pill['action'], 'show_offer_' ) === 0 ) {
+				if ( 0 === strpos( $flosc_pill['action'], 'show_offer_' ) ) {
 					$flosc_ttype = 'offer';
 					$flosc_tval  = str_replace( 'show_offer_', '', $flosc_pill['action'] );
 				} else {
@@ -483,8 +505,8 @@ foreach ( $flosc_state_config as $flosc_state => $flosc_sc ) :
 				</td>
 				<td class="flosc-trigger-value-cell">
 					<div class="flosc-ap-microlabel">Trigger Value</div>
-					<span class="flosc-tv-ai flosc-tv-hint<?php echo esc_attr( $flosc_ttype !== 'ai' ? ' flosc-hidden' : '' ); ?>">Sends user_input to AI</span>
-					<select name="<?php echo esc_attr( $flosc_state ); ?>_pill_trigger_value_offer[]" class="flosc-ap-select flosc-ap-select--w200 flosc-tv-offer<?php echo esc_attr( $flosc_ttype !== 'offer' ? ' flosc-hidden' : '' ); ?>">
+					<span class="flosc-tv-ai flosc-tv-hint<?php echo esc_attr( 'ai' !== $flosc_ttype ? ' flosc-hidden' : '' ); ?>">Sends user_input to AI</span>
+					<select name="<?php echo esc_attr( $flosc_state ); ?>_pill_trigger_value_offer[]" class="flosc-ap-select flosc-ap-select--w200 flosc-tv-offer<?php echo esc_attr( 'offer' !== $flosc_ttype ? ' flosc-hidden' : '' ); ?>">
 						<?php foreach ( $flosc_offers_for_trigger as $flosc_oid => $flosc_oname ) : ?>
 							<option value="<?php echo esc_attr( $flosc_oid ); ?>" <?php selected( $flosc_tval, $flosc_oid ); ?>><?php echo esc_html( $flosc_oname ); ?> (<?php echo esc_html( $flosc_oid ); ?>)</option>
 						<?php endforeach; ?>
@@ -492,7 +514,7 @@ foreach ( $flosc_state_config as $flosc_state => $flosc_sc ) :
 							<option value="full_access" <?php selected( $flosc_tval, 'full_access' ); ?>>full_access (default)</option>
 						<?php endif; ?>
 					</select>
-					<select name="<?php echo esc_attr( $flosc_state ); ?>_pill_trigger_value_action[]" class="flosc-ap-select flosc-ap-select--w200 flosc-tv-action<?php echo esc_attr( $flosc_ttype !== 'action' ? ' flosc-hidden' : '' ); ?>">
+					<select name="<?php echo esc_attr( $flosc_state ); ?>_pill_trigger_value_action[]" class="flosc-ap-select flosc-ap-select--w200 flosc-tv-action<?php echo esc_attr( 'action' !== $flosc_ttype ? ' flosc-hidden' : '' ); ?>">
 						<?php foreach ( $flosc_available_actions as $flosc_aval => $flosc_adesc ) : ?>
 							<option value="<?php echo esc_attr( $flosc_aval ); ?>" <?php selected( $flosc_tval, $flosc_aval ); ?>><?php echo esc_html( $flosc_adesc ); ?></option>
 						<?php endforeach; ?>
@@ -798,7 +820,7 @@ $flosc_pill_demos = array(
 							<?php foreach ( (array) $flosc_set['pills'] as $flosc_item_index => $flosc_item ) : ?>
 								<?php
 								$flosc_behavior_text = flosc_autoprompt_expected_behavior_text( $flosc_state, (array) $flosc_item );
-								$flosc_pair_class    = ( (int) $flosc_item_index % 2 === 0 ) ? 'is-even' : 'is-odd';
+								$flosc_pair_class    = ( 0 === (int) $flosc_item_index % 2 ) ? 'is-even' : 'is-odd';
 								?>
 							<tr class="flosc-demo-item-row <?php echo esc_attr( $flosc_pair_class ); ?>">
 								<td><?php echo esc_html( (string) ( $flosc_item['icon'] ?? '' ) ); ?></td>

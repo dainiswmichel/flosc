@@ -272,6 +272,7 @@
             if (this.iframe) {
                 this.iframe.addEventListener('load', function() {
                     self.deliverBrowsingContextToIframe();
+                    self.watchFrameHealth();
                 });
             }
 
@@ -402,6 +403,15 @@
                 }
                 if (data.type === 'flosc_companion_auth_navigate') {
                     self.navigateTopLevelForAuth(data.authUrl);
+                    return;
+                }
+                if (data.type === 'flosc_app_ready') {
+                    self._frameAlive = true;
+                    window.clearTimeout(self._frameHealthTimer);
+                    return;
+                }
+                if (data.type === 'flosc_companion_logout_complete') {
+                    self.handleLogoutComplete(data.redirect);
                 }
             });
         },
@@ -416,6 +426,30 @@
             }
             appScope = appScope.replace(/[^a-z0-9]+/gi, '_').toLowerCase() || 'app';
             return 'flosc_companion_token_cache_' + flowId + '_' + appScope;
+        },
+
+        /**
+         * v10.1.0: Park a handoff pack in sessionStorage instead of the address bar.
+         *
+         * The pack used to ride the URL as base64. At 8000 characters plus the
+         * context params it exceeded nginx's request-line limit and the chat frame
+         * rendered "414 Request-URI Too Large" to the reader. sessionStorage is
+         * shared with a same-origin frame and survives a same-tab navigation, so
+         * the URL now carries a one-character marker instead of a transcript.
+         *
+         * @param {string} encoded Base64 pack.
+         * @return {boolean} Whether it was stored.
+         */
+        stashHandoffPack: function(encoded) {
+            try {
+                if (!encoded) {
+                    return false;
+                }
+                window.sessionStorage.setItem('flosc_handoff_pack', String(encoded));
+                return true;
+            } catch (e) {
+                return false;
+            }
         },
 
         readTokenCache: function() {
@@ -576,6 +610,8 @@
             // context updates go via postMessage only. First src includes
             // continuityParams (session_id / visitor / handoff pack).
             if (!this.iframe.src) {
+                this._frameAlive = false;
+                this._frameRecovered = false;
                 this.lastIframeContextSignature = signature;
                 var iframeSrc = this.buildIframeUrl();
                 if (iframeSrc) {
@@ -600,6 +636,117 @@
             this.updateLauncherA11y();
             this.saveOpenState(false);
             this.saveNavigationState();
+        },
+
+        /**
+         * v10.1.0: Confirm the frame that just loaded is actually the FLOSC app.
+         *
+         * A 414, a 500 or any other error page fires 'load' exactly like the app
+         * does, so the reader was shown raw server output inside a branded panel
+         * with no way back. The app announces itself on boot; silence means the
+         * frame is not the app, and we rebuild it once without the continuity
+         * params that are the likeliest cause of an over-long request.
+         *
+         * Rebuilds at most once per open, so a genuinely down backend cannot put
+         * the panel in a reload loop.
+         */
+        watchFrameHealth: function() {
+            var self = this;
+            window.clearTimeout(this._frameHealthTimer);
+
+            if (this._frameAlive || this._frameRecovered) {
+                return;
+            }
+
+            this._frameHealthTimer = window.setTimeout(function() {
+                if (self._frameAlive || self._frameRecovered || !self.iframe) {
+                    return;
+                }
+                self._frameRecovered = true;
+
+                // Drop everything that could have inflated the request, then rebuild.
+                self.continuityParams = {};
+                self.lastIframeContextSignature = '';
+                try {
+                    window.sessionStorage.removeItem('flosc_handoff_pack');
+                } catch (e) {
+                    // Storage unavailable in this context.
+                }
+
+                try {
+                    self.iframe.src = '';
+                    var retryUrl = self.buildIframeUrl();
+                    if (retryUrl) {
+                        self.iframe.src = retryUrl;
+                    }
+                } catch (e) {
+                    // Nothing further we can do from here.
+                }
+            }, 4000);
+        },
+
+        /**
+         * v10.1.0: The chat iframe finished logging out and handed the teardown here.
+         *
+         * Logout returns the reader to the page they were reading, with the bubble
+         * closed and nothing of the previous account holder left behind. Relabelling
+         * the panel is not resetting it, so the frame is destroyed outright: the next
+         * open builds a new one as a genuinely new visitor.
+         *
+         * @param {string} redirect Optional destination configured by the floscAdmin.
+         */
+        handleLogoutComplete: function(redirect) {
+            var self = this;
+            var target = String(redirect || '');
+
+            // Let the farewell finish being read before the panel goes.
+            window.setTimeout(function() {
+                try {
+                    self.close();
+                } catch (e) {
+                    // Panel may already be closed.
+                }
+
+                try {
+                    if (self.iframe) {
+                        self.iframe.src = '';
+                    }
+                    self.continuityParams = {};
+                    self.lastIframeContextSignature = '';
+                } catch (e) {
+                    // Frame already gone.
+                }
+
+                try {
+                    window.sessionStorage.removeItem('flosc_handoff_pack');
+                } catch (e) {
+                    // Storage unavailable in this context.
+                }
+
+                // A logged-out reader must never be shown the member or guest balance.
+                // Drop the cached wallet so the panel repaints from the visitor wallet
+                // the server issues, not the account's last known number.
+                try {
+                    window.sessionStorage.removeItem(self.getTokenCacheKey());
+                } catch (e) {
+                    // Storage unavailable, or the key was never written.
+                }
+
+                // An explicit non-app destination is a deliberate farewell page and is
+                // honoured. Otherwise stay put and repaint, so the theme header stops
+                // showing a signed-in member without yanking the reader off the page
+                // they were reading.
+                try {
+                    if (target && typeof self.isAppUrl === 'function' && !self.isAppUrl(target)) {
+                        window.location.href = target;
+                        return;
+                    }
+                } catch (e) {
+                    // Fall through to a plain reload.
+                }
+
+                window.location.reload();
+            }, 2000);
         },
 
         getNavigationStateKey: function() {
@@ -715,12 +862,18 @@
                         ? this.continuityParams
                         : {};
                     var parentParams = new URLSearchParams(window.location.search || '');
-                    ['flosc_session_id', 'flosc_visitor_session', 'flosc_handoff'].forEach(function(key) {
+                    // v10.1.0: identifiers only. The transcript never rides a URL.
+                    ['flosc_session_id', 'flosc_visitor_session'].forEach(function(key) {
                         var val = cont[key] || parentParams.get(key);
                         if (val) {
-                            url.searchParams.set(key, String(val).slice(0, key === 'flosc_handoff' ? 8000 : 120));
+                            url.searchParams.set(key, String(val).slice(0, 120));
                         }
                     });
+
+                    var carriedPack = cont.flosc_handoff || parentParams.get('flosc_handoff');
+                    if (carriedPack && this.stashHandoffPack(carriedPack)) {
+                        url.searchParams.set('flosc_handoff_ref', '1');
+                    }
                 } catch (eFwd) {
                     // Ignore parent URL parse failures.
                 }
@@ -1013,7 +1166,7 @@
                     }
                     var colors = p.colors && typeof p.colors === 'object' ? p.colors : {};
                     ssoHtml += '<button type="button" class="flosc-sso-btn" data-auth-url="' + self.escapeHtml(String(p.authUrl)) + '"'
-                        + ' data-sso-bg="' + self.escapeHtml(String(colors.background || '#fff')) + '" data-sso-fg="' + self.escapeHtml(String(colors.text || '#111')) + '">'
+                        + ' style="background:' + self.escapeHtml(String(colors.background || '#fff')) + ';color:' + self.escapeHtml(String(colors.text || '#111')) + '">'
                         + '<span class="flosc-sso-icon">' + (p.icon || '') + '</span>'
                         + '<span class="flosc-sso-label">' + self.escapeHtml(String(p.name || p.id || '')) + '</span>'
                         + '</button>';
@@ -1054,10 +1207,6 @@
                 });
             }
             wrap.querySelectorAll('.flosc-sso-btn').forEach(function(btn) {
-                btn.style.setProperty('--flosc-sso-bg', btn.getAttribute('data-sso-bg') || '#fff');
-                btn.style.setProperty('--flosc-sso-fg', btn.getAttribute('data-sso-fg') || '#111');
-                btn.removeAttribute('data-sso-bg');
-                btn.removeAttribute('data-sso-fg');
                 btn.addEventListener('click', function() {
                     self.navigateTopLevelForAuth(btn.getAttribute('data-auth-url'));
                 });
@@ -1156,10 +1305,16 @@
             var flow = String(this.config.flowId || 'default').replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 80) || 'default';
             var remembered = '';
             var visitorSid = '';
+            var journeyId = '';
             var messages = [];
             try {
                 remembered = String(localStorage.getItem('flosc_active_chat_session__' + flow) || '').trim();
                 visitorSid = String(localStorage.getItem('flosc_visitor_session') || '').trim();
+                // Chat Logs group by this, and it outlives the session id, so it has
+                // to travel with the handoff or the thread forks at the boundary.
+                journeyId = String(localStorage.getItem('flosc_journey_id') || '')
+                    .replace(/[^A-Za-z0-9_-]/g, '')
+                    .slice(0, 64);
                 var raw = localStorage.getItem('flosc_visitor_messages');
                 if (raw) {
                     var parsed = JSON.parse(raw);
@@ -1171,10 +1326,10 @@
                 // Ignore storage failures.
             }
             if (remembered) {
-                return { kind: 'user', sessionId: remembered, messages: [] };
+                return { kind: 'user', sessionId: remembered, journeyId: journeyId, messages: [] };
             }
             if (visitorSid || messages.length) {
-                return { kind: 'visitor', sessionId: visitorSid, messages: messages };
+                return { kind: 'visitor', sessionId: visitorSid, journeyId: journeyId, messages: messages };
             }
             return {};
         },
@@ -1862,12 +2017,20 @@
                             var handoffObj = {
                                 kind: 'visitor',
                                 sessionId: sid.slice(0, 80),
+                                // Re-encoding here drops anything not named, so carry
+                                // the journey id through explicitly.
+                                journeyId: String(handoffPayload.journeyId || handoffPayload.journey_id || '')
+                                    .replace(/[^A-Za-z0-9_-]/g, '')
+                                    .slice(0, 64),
                                 messages: Array.isArray(handoffPayload.messages) ? handoffPayload.messages.slice(-10) : []
                             };
                             try {
                                 var packed = btoa(unescape(encodeURIComponent(JSON.stringify(handoffObj))));
-                                if (packed && packed.length <= 8000) {
-                                    target.searchParams.set('flosc_handoff', packed);
+                                // v10.1.0: sessionStorage survives a same-tab, same-origin
+                                // navigation and has room for a real transcript. The URL
+                                // gets a marker, never the payload.
+                                if (packed && self.stashHandoffPack(packed)) {
+                                    target.searchParams.set('flosc_handoff_ref', '1');
                                 }
                             } catch (e) {
                                 // If encoding fails, continue with session id only.
