@@ -44,7 +44,9 @@ Measured that way, the base tree had **12 errors and 145 warnings**, not 0.
 
 PHPCS 3.13.6 + WPCS 3.4.0, both trees, identical rulesets and identical method.
 
-| | v89.1 base | v90.1 |   (superseded by the v90.2 table at the end)
+*(v90.1 figures; the v90.2 table is at the end of this file.)*
+
+| | v89.1 base | v90.1 |
 |---|---|---|
 | Security errors, suppressions switched off | **12** | **0** |
 | Security warnings, suppressions switched off | 145 | 139 |
