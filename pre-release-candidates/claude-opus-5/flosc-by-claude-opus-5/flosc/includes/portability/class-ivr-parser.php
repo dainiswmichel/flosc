@@ -16,6 +16,11 @@ class FLOSC_IVR_Parser {
 	private static $flosc_instance = null;
 	private $flosc_config          = null;
 
+	/**
+	 * Flosc instance.
+	 *
+	 * @return mixed
+	 */
 	public static function flosc_instance() {
 		if ( null === self::$flosc_instance ) {
 			self::$flosc_instance = new self();
@@ -25,6 +30,8 @@ class FLOSC_IVR_Parser {
 
 	/**
 	 * Parse IVR markdown content
+	 *
+	 * @param mixed $markdown Markdown.
 	 */
 	public function flosc_parse( $markdown ) {
 		$config = array(
@@ -317,6 +324,10 @@ class FLOSC_IVR_Parser {
 
 	/**
 	 * Add message to config
+	 *
+	 * @param & $config Config.
+	 * @param mixed $message Message.
+	 * @param mixed $phase Phase.
 	 */
 	private function flosc_add_message_to_config( &$config, $message, $phase ) {
 		if ( empty( $message['name'] ) ) {
@@ -346,8 +357,8 @@ class FLOSC_IVR_Parser {
 	 * When $for_write is true, returns a path in uploads (for writes); otherwise,
 	 * may return a read-only shipped default.
 	 *
-	 * @param array|null $flow Flow to retrieve config for (optional)
-	 * @param bool       $for_write If true, return a write target (uploads only)
+	 * @param array|null $flow Flow to retrieve config for (optional).
+	 * @param bool       $for_write If true, return a write target (uploads only).
 	 * @return string File path, or empty string if unavailable
 	 */
 	private function get_ivr_file_path( $flow = null, $for_write = false ) {
@@ -407,6 +418,11 @@ class FLOSC_IVR_Parser {
 		return FLOSC_PLUGIN_DIR . 'ai_configuration_files/flosc_default_technical_ivr.md';
 	}
 
+	/**
+	 * Flosc load config.
+	 *
+	 * @return mixed
+	 */
 	public function flosc_load_config() {
 		// v1.2.3: Always reload from file - multi-flow aware, no global caching.
 
@@ -430,8 +446,8 @@ class FLOSC_IVR_Parser {
 	 * v1.2.3: Flow-aware -- can specify target flow for admin editing.
 	 * Per WordPress.org policy, writes are uploads-only and validated via realpath containment.
 	 *
-	 * @param string     $markdown The IVR markdown content
-	 * @param array|null $target_flow Optional flow to save to (for admin editing)
+	 * @param string     $markdown The IVR markdown content.
+	 * @param array|null $target_flow Optional flow to save to (for admin editing).
 	 * @return array|bool Parsed config on success, false if write failed or uploads unavailable
 	 */
 	public function flosc_save_config( $markdown, $target_flow = null ) {
@@ -464,6 +480,8 @@ class FLOSC_IVR_Parser {
 
 	/**
 	 * Get messages for a phase
+	 *
+	 * @param mixed $phase Phase.
 	 */
 	public function get_flosc_phase_messages( $phase ) {
 		$config = $this->get_flosc_config();
@@ -482,6 +500,8 @@ class FLOSC_IVR_Parser {
 
 	/**
 	 * Get message by name
+	 *
+	 * @param mixed $name Name.
 	 */
 	public function get_flosc_message( $name ) {
 		$config = $this->get_flosc_config();
@@ -510,6 +530,8 @@ class FLOSC_IVR_Parser {
 
 	/**
 	 * Get messages by type
+	 *
+	 * @param mixed $type Type.
 	 */
 	public function get_flosc_messages_by_type( $type ) {
 		$config   = $this->get_flosc_config();
@@ -524,6 +546,8 @@ class FLOSC_IVR_Parser {
 
 	/**
 	 * Get user autoprompts for a phase
+	 *
+	 * @param mixed $phase Phase.
 	 */
 	public function get_flosc_user_autoprompts( $phase ) {
 		$messages = $this->get_flosc_phase_messages( $phase );
@@ -537,6 +561,8 @@ class FLOSC_IVR_Parser {
 
 	/**
 	 * Get auto messages for a phase
+	 *
+	 * @param mixed $phase Phase.
 	 */
 	public function get_flosc_auto_messages( $phase ) {
 		$messages = $this->get_flosc_phase_messages( $phase );

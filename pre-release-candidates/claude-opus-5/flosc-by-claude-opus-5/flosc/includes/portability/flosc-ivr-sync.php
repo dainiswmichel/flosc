@@ -37,7 +37,7 @@ function flosc_portable_settings_runtime_excludes() {
 /**
  * Return true when a setting path segment should be treated as secret.
  *
- * @param string $segment
+ * @param string $segment Segment.
  * @return bool
  */
 function flosc_portable_is_secret_segment( $segment ) {
@@ -54,7 +54,7 @@ function flosc_portable_is_secret_segment( $segment ) {
 /**
  * Return true when a full setting path contains secret-looking segments.
  *
- * @param string[] $path
+ * @param string[] $path Path.
  * @return bool
  */
 function flosc_portable_is_secret_path( array $path ) {
@@ -69,7 +69,7 @@ function flosc_portable_is_secret_path( array $path ) {
 /**
  * Deep clone + filter to exportable settings (non-secret, non-runtime).
  *
- * @param array $fs
+ * @param array $fs Fs.
  * @return array
  */
 function flosc_portable_collect_exportable_settings( array $fs ) {
@@ -98,8 +98,8 @@ function flosc_portable_collect_exportable_settings( array $fs ) {
 /**
  * Remove secret subkeys recursively.
  *
- * @param mixed    $value
- * @param string[] $path
+ * @param mixed    $value Value.
+ * @param string[] $path Path.
  * @return mixed|null
  */
 function flosc_portable_filter_secret_values( $value, array $path ) {
@@ -126,7 +126,7 @@ function flosc_portable_filter_secret_values( $value, array $path ) {
 /**
  * Convert arrays to scalar-friendly YAML using maps only (no '-' list syntax).
  *
- * @param mixed $value
+ * @param mixed $value Value.
  * @return mixed
  */
 function flosc_portable_to_yaml_shape( $value ) {
@@ -151,7 +151,7 @@ function flosc_portable_to_yaml_shape( $value ) {
 /**
  * Convert numeric-key maps back to indexed arrays.
  *
- * @param mixed $value
+ * @param mixed $value Value.
  * @return mixed
  */
 function flosc_portable_from_yaml_shape( $value ) {
@@ -193,7 +193,7 @@ function flosc_portable_from_yaml_shape( $value ) {
 /**
  * YAML key formatter.
  *
- * @param string $key
+ * @param string $key Key.
  * @return string
  */
 function flosc_portable_yaml_key( $key ) {
@@ -207,7 +207,7 @@ function flosc_portable_yaml_key( $key ) {
 /**
  * YAML scalar formatter.
  *
- * @param mixed $value
+ * @param mixed $value Value.
  * @return string
  */
 function flosc_portable_yaml_scalar( $value ) {
@@ -230,8 +230,8 @@ function flosc_portable_yaml_scalar( $value ) {
 /**
  * Emit YAML from a map-only array shape.
  *
- * @param array $map
- * @param int   $depth
+ * @param array $map Map.
+ * @param int   $depth Depth.
  * @return string
  */
 function flosc_portable_emit_yaml_map( array $map, $depth = 0 ) {
@@ -256,7 +256,7 @@ function flosc_portable_emit_yaml_map( array $map, $depth = 0 ) {
 /**
  * Build YAML settings block text.
  *
- * @param array $settings
+ * @param array $settings Settings.
  * @return string
  */
 function flosc_portable_build_settings_block( array $settings ) {
@@ -273,7 +273,7 @@ function flosc_portable_build_settings_block( array $settings ) {
 /**
  * Extract YAML settings block from markdown.
  *
- * @param string $markdown
+ * @param string $markdown Markdown.
  * @return string
  */
 function flosc_portable_extract_settings_yaml( $markdown ) {
@@ -292,7 +292,7 @@ function flosc_portable_extract_settings_yaml( $markdown ) {
 /**
  * Remove settings block from markdown before IVR message parsing.
  *
- * @param string $markdown
+ * @param string $markdown Markdown.
  * @return string
  */
 function flosc_portable_strip_settings_block( $markdown ) {
@@ -306,7 +306,7 @@ function flosc_portable_strip_settings_block( $markdown ) {
 /**
  * Parse simple map-based YAML (emitted by flosc_portable_emit_yaml_map).
  *
- * @param string $yaml
+ * @param string $yaml Yaml.
  * @return array{success:bool,data:array,error:string}
  */
 function flosc_portable_parse_yaml_map( $yaml ) {
@@ -396,7 +396,7 @@ function flosc_portable_parse_yaml_map( $yaml ) {
 /**
  * Parse scalar values emitted by flosc_portable_yaml_scalar().
  *
- * @param string $tail
+ * @param string $tail Tail.
  * @return mixed
  */
 function flosc_portable_parse_yaml_scalar( $tail ) {
@@ -432,8 +432,8 @@ function flosc_portable_parse_yaml_scalar( $tail ) {
 /**
  * Merge settings recursively (incoming overrides existing values).
  *
- * @param array $base
- * @param array $incoming
+ * @param array $base Base.
+ * @param array $incoming Incoming.
  * @return array
  */
 function flosc_portable_deep_merge( array $base, array $incoming ) {
@@ -925,8 +925,8 @@ function flosc_portable_settings_bootstrap_allowlist() {
 /**
  * Apply parsed YAML settings to a flow settings array using top-level allow-list and secret deny-list.
  *
- * @param array $current_fs
- * @param array $incoming_settings
+ * @param array $current_fs Current fs.
+ * @param array $incoming_settings Incoming settings.
  * @return array{applied:array,skipped:array,fs:array}
  */
 function flosc_portable_apply_yaml_settings( array $current_fs, array $incoming_settings ) {
@@ -982,7 +982,7 @@ function flosc_portable_apply_yaml_settings( array $current_fs, array $incoming_
  * Load messages/phases/styles for import/export.
  * Prefer flosc_flow_* option. Fall back once to legacy global options if empty.
  *
- * @param string|null $flow_key
+ * @param string|null $flow_key Flow key.
  * @return array{0:array,1:array,2:array,3:string} messages, phases, styles, flow_key used
  */
 function flosc_flow_load_runtime_triplet( $flow_key = null ) {
@@ -1020,10 +1020,11 @@ function flosc_flow_load_runtime_triplet( $flow_key = null ) {
  * v9.2.2: IVR Database Integration
  * v1.6.4: Added $custom_ivr_file and $flow_key params for per-flow storage
  *
- * @param bool        $preview_only If true, returns preview without making changes
- * @param string|null $custom_ivr_file Optional path to IVR file (defaults to flosc_default_technical_ivr.md)
- * @param string|null $flow_key Optional per-flow option key (e.g. 'flosc_flow_flosc_default_ivr')
+ * @param bool        $preview_only If true, returns preview without making changes.
+ * @param string|null $custom_ivr_file Optional path to IVR file (defaults to flosc_default_technical_ivr.md).
+ * @param string|null $flow_key Optional per-flow option key (e.g. 'flosc_flow_flosc_default_ivr').
  * @return array Result with success, stats, message, and preview data
+ * @param string $mode Mode.
  */
 function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file = null, $flow_key = null, $mode = 'merge' ) {
 	$ivr_file = $custom_ivr_file ?? flosc_config_file( 'flosc_default_technical_ivr.md' );
@@ -1364,7 +1365,7 @@ function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file =
  * Create timestamped backup of current IVR database state
  * v1.6.4: Added $flow_key param for per-flow storage
  *
- * @param string|null $flow_key Optional per-flow option key
+ * @param string|null $flow_key Optional per-flow option key.
  * @return string|false Backup filename on success, false on failure
  */
 function flosc_export_ivr_backup( $flow_key = null ) {
@@ -1453,6 +1454,8 @@ function flosc_export_ivr_backup( $flow_key = null ) {
  * v9.2.8: Called after every save/delete to keep DB and file in sync
  *
  * @return bool Success
+ * @param mixed $flow_key Flow key.
+ * @param mixed $target_ivr_file Target IVR file.
  */
 function flosc_auto_export_ivr_to_file( $flow_key = null, $target_ivr_file = null ) {
 	list($messages, $phases, $styles, $flow_key) = flosc_flow_load_runtime_triplet( $flow_key );
@@ -1805,6 +1808,9 @@ add_filter(
 /**
  * Align per-flow offers registry with offer messages currently present in IVR messages.
  * Keeps referenced offers and snapshots removed extras for recovery.
+ *
+ * @param mixed $flow_key Flow key.
+ * @param mixed $messages Messages.
  */
 function flosc_sync_flow_offers_with_ivr_messages( $flow_key, $messages ) {
 	if ( empty( $flow_key ) || ! is_array( $messages ) ) {

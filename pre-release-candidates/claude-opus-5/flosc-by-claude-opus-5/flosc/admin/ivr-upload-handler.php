@@ -671,7 +671,7 @@ if ( ! function_exists( 'flosc_admin_handle_portability_pack_actions' ) ) {
 				$notes[]  = $result->get_error_message();
 			} else {
 				$notes[] = sprintf(
-					/* translators: %s: WXR filename */
+					/* translators: %s: WXR filename. */
 					__( 'Imported posts from %s.', 'flosc' ),
 					$filename
 				);
@@ -852,7 +852,7 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 				'flosc_settings',
 				'upload_failed',
 				sprintf(
-					/* translators: %d: max tsv count */
+					/* translators: %d: max tsv count. */
 					esc_html__( 'At most %d DA1 .tsv catalogs per upload. Use the DA1 tab for bulk catalog work beyond that.', 'flosc' ),
 					(int) $max_tsv
 				),
@@ -865,7 +865,7 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 				'flosc_settings',
 				'upload_failed',
 				sprintf(
-					/* translators: %d: max wxr count */
+					/* translators: %d: max wxr count. */
 					esc_html__( 'At most %d WXR (.xml) files per upload.', 'flosc' ),
 					(int) $max_wxr
 				),
@@ -878,7 +878,7 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 				'flosc_settings',
 				'upload_failed',
 				sprintf(
-					/* translators: %d: max media count */
+					/* translators: %d: max media count. */
 					esc_html__( 'At most %d media files per upload.', 'flosc' ),
 					(int) $max_media
 				),
@@ -891,7 +891,7 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 				'flosc_settings',
 				'upload_failed',
 				sprintf(
-					/* translators: %s: filenames */
+					/* translators: %s: filenames. */
 					esc_html__( 'Unsupported file type(s): %s. Use .md, .tsv, .xml (WXR), or media (PDF/images/audio).', 'flosc' ),
 					esc_html( implode( ', ', $unknown ) )
 				),
@@ -979,7 +979,7 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 						'flosc_settings',
 						'upload_failed',
 						sprintf(
-							/* translators: %s: IVR filename */
+							/* translators: %s: IVR filename. */
 							esc_html__( 'An IVR file named %s already exists. Choose Apply to current flow, or use a different filename.', 'flosc' ),
 							esc_html( $filename )
 						),
@@ -1019,7 +1019,7 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 						'flosc_settings',
 						'upload_failed',
 						sprintf(
-							/* translators: %s: reason */
+							/* translators: %s: reason. */
 							esc_html__( 'Flow creation failed: %s', 'flosc' ),
 							esc_html( (string) ( $import['message'] ?? __( 'Unknown error', 'flosc' ) ) )
 						),
@@ -1037,7 +1037,7 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 				$created_file = $filename;
 				$working_ivr  = $filename;
 				$notes[]      = sprintf(
-					/* translators: %s: filename */
+					/* translators: %s: filename. */
 					__( 'Created new flow from %s.', 'flosc' ),
 					$filename
 				);
@@ -1071,7 +1071,7 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 						'flosc_settings',
 						'upload_failed',
 						sprintf(
-							/* translators: %s: reason */
+							/* translators: %s: reason. */
 							esc_html__( 'Apply failed: %s', 'flosc' ),
 							esc_html( (string) ( $import['message'] ?? __( 'Unknown error', 'flosc' ) ) )
 						),
@@ -1087,7 +1087,7 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 				}
 				$redirect_ivr = $working_ivr;
 				$notes[]      = sprintf(
-					/* translators: %s: current flow filename */
+					/* translators: %s: current flow filename. */
 					__( 'Merged IVR + Settings YAML into current flow %s (other settings kept).', 'flosc' ),
 					$working_ivr
 				);
@@ -1113,7 +1113,7 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 			}
 			if ( $da1_ok > 0 ) {
 				$notes[] = sprintf(
-					/* translators: 1: count 2: flow ivr filename */
+					/* translators: 1: count 2: flow ivr filename. */
 					_n(
 						'%1$d DA1 catalog stored and assigned to %2$s.',
 						'%1$d DA1 catalogs stored and assigned to %2$s.',
@@ -1162,7 +1162,7 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 			}
 			if ( $wxr_ok > 0 ) {
 				$notes[] = sprintf(
-					/* translators: 1: count 2: flow ivr filename */
+					/* translators: 1: count 2: flow ivr filename. */
 					_n(
 						'%1$d WXR file staged for %2$s (Import posts from the pack list below, or Tools → Import).',
 						'%1$d WXR files staged for %2$s (Import posts from the pack list below, or Tools → Import).',
@@ -1198,7 +1198,7 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 			}
 			if ( $media_ok > 0 ) {
 				$notes[] = sprintf(
-					/* translators: 1: count 2: flow ivr filename */
+					/* translators: 1: count 2: flow ivr filename. */
 					_n(
 						'%1$d media file added to the Media Library and listed on %2$s.',
 						'%1$d media files added to the Media Library and listed on %2$s.',

@@ -29,7 +29,7 @@ if ( ! function_exists( 'flosc_autoprompt_is_machine_label' ) ) {
 	 * Detect technical key-style labels (e.g., host_flow_music_overview)
 	 * that should not be shown as user-facing autoprompt labels.
 	 *
-	 * @param string $label
+	 * @param string $label Label.
 	 * @return bool
 	 */
 	function flosc_autoprompt_is_machine_label( $label ) {
@@ -63,6 +63,9 @@ $flosc_autoprompt_docs_anchor = array(
 // ============================================
 // SAVE HANDLER.
 // ============================================
+/**
+ * Flosc handle autoprompts save.
+ */
 function flosc_handle_autoprompts_save() {
 	$flosc_post = wp_unslash( $_POST );
 
@@ -281,6 +284,13 @@ $flosc_available_conditions = array(
 
 // Declare before table rendering so expected-behavior rows can call it safely.
 if ( ! function_exists( 'flosc_autoprompt_expected_behavior_text' ) ) {
+	/**
+	 * Flosc autoprompt expected behavior text.
+	 *
+	 * @param mixed $flosc_state Flosc state.
+	 * @param array $flosc_item Flosc item.
+	 * @return mixed
+	 */
 	function flosc_autoprompt_expected_behavior_text( $flosc_state, array $flosc_item ) {
 		$flosc_label         = trim( (string) ( $flosc_item['label'] ?? '' ) );
 		$flosc_user_input    = trim( (string) ( $flosc_item['user_input'] ?? '' ) );

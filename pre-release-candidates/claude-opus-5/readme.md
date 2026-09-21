@@ -344,3 +344,43 @@ Check — the only one WordPress.org enforces — is still at zero errors.
 What is left is mostly missing docblocks (~1,560 across MissingParamTag,
 FunctionComment.Missing and ParamCommentFullStop). Those need real prose about
 what each parameter means, not a mechanical pass, so they are not scripted here.
+
+---
+
+## Docblocks
+
+`fix-docblocks.php` and `fix-docblocks-insert.php` (candidate level, never
+shipped) clear the remaining `Squiz.Commenting.*` categories. Tokenizer-based;
+every file is re-parsed with `php -l` before it is written, and a file that
+would not parse is refused.
+
+    474  docblocks inserted above functions that had none
+    749  @param tags added where a docblock omitted a parameter
+    335  @param descriptions given a terminal full stop
+    300  bare @param tags given a description
+     46  single-line block comments ended properly
+
+Parameter order and names come from the signature, so the tags match the code.
+Types come from the declared hint, then the default value, then the name
+(`_id` is int, `is_` is bool, a plural is array), and `mixed` when nothing
+indicates otherwise. `@return` is added only where the body returns a value.
+
+The first run of the inserter was wrong and was reverted: the whitespace token
+before a declaration already carries the line's indent, and the generator added
+it a second time, so every `/**` landed one level too deep and produced 2,022
+new alignment errors. Caught by re-measuring rather than by assuming, fixed in
+`flosc_build_doc()`, and the tree was restored from the last commit before the
+corrected pass ran.
+
+| | v89.1 base | v90.2 |
+|---|---|---|
+| WPCS total, project ruleset | 7094 errors / 511 warnings | **1938 / 514** |
+| Yoda conditions | 2282 | 36 |
+| Inline comment end char | ~1703 | 0 |
+| WPCS security, suppressions off | 12 errors / 145 warnings | 1 / 142 |
+| **Plugin Check ruleset, shipped zip** | **2 errors / 69 warnings** | **0 / 73** |
+| `php -l` | 139/139 | 139/139 |
+
+**1,220 of the remaining 1,938 are phpcbf-fixable.** The measuring container
+cannot run phpcbf — its phar crashes writing the CBF report — so that pass is
+left for a local `vendor/bin/phpcbf`, which takes the total to roughly 718.

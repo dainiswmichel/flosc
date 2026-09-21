@@ -14,7 +14,7 @@
     "zip": "pre-release-candidates/claude-opus-5/flosc.zip"
   },
   "artifact": {
-    "sha256": "87482fd7bb654d484a8f43e9638c85a28cb5b99131d3455ac5aee524559542d9",
+    "sha256": "240c814dc03525bb619396a7c352495a6fb3dc97bb6ca457e80a527779e5598d",
     "size_bytes": 2130303,
     "entries": 240,
     "root": "flosc/",
@@ -53,7 +53,7 @@
     },
     "wpcs_total_project_ruleset": {
       "v89.1_base": "7094 errors / 511 warnings",
-      "v90.2": "3517 errors / 514 warnings"
+      "v90.2": "1938 errors / 514 warnings"
     },
     "phpcbf_fixable": {
       "v89.1_base": 960,
@@ -73,7 +73,8 @@
     "yoda_conditions": {
       "v89.1_base": 2282,
       "v90.2": 36
-    }
+    },
+    "note_phpcbf": "1220 of the remaining 1938 are phpcbf-fixable. The measuring container cannot run phpcbf (its phar crashes writing the CBF report), so that pass is left for the local vendor/bin/phpcbf."
   },
   "not_verified": [
     "No WordPress runtime was available in the build container: activation, admin screens and the FLOSC journeys are untested.",

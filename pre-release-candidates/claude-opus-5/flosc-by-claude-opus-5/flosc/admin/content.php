@@ -269,7 +269,7 @@ $flosc_chat_list_settings_url          = add_query_arg(
 	<?php
 	echo esc_html(
 		sprintf(
-			/* translators: %s: plural content item label */
+			/* translators: %s: plural content item label. */
 			__( 'Map an optional quiz to a WordPress category of %s. Categories without a quiz are standalone libraries.', 'flosc' ),
 			$flosc_item_p_disp
 		)
@@ -415,7 +415,7 @@ $flosc_chat_list_settings_url          = add_query_arg(
 	<?php
 	echo esc_html(
 		sprintf(
-			/* translators: 1: content items plural, 2: example count */
+			/* translators: 1: content items plural, 2: example count. */
 			__( 'Content is the full set. The pool is the complimentary subset. Selection is how many a Guest receives (e.g. %2$flosc_s of your %1$flosc_s). More requires Member via Sale.', 'flosc' ),
 			$flosc_item_p_disp,
 			'2'
@@ -474,7 +474,7 @@ $flosc_chat_list_settings_url          = add_query_arg(
 				<?php
 				echo esc_html(
 					sprintf(
-						/* translators: %s: plural content label */
+						/* translators: %s: plural content label. */
 						__( 'How many %s a Guest receives from the pool (e.g. 2).', 'flosc' ),
 						$flosc_item_p_disp
 					)

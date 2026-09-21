@@ -91,6 +91,9 @@ require_once FLOSC_PLUGIN_DIR . 'includes/flosc-knowledge-bases.php';
 
 // v1.2.9: Auto-flush permalinks on activation.
 register_activation_hook( __FILE__, 'flosc_activation_flush' );
+/**
+ * Flosc activation flush.
+ */
 function flosc_activation_flush() {
 	// Schedule flush for next init (after rewrite rules are registered)
 	update_option( 'flosc_needs_flush', true );
@@ -99,6 +102,9 @@ function flosc_activation_flush() {
 
 // v1.3.4: Version-based auto-flush on plugin update - IMMEDIATE flush.
 add_action( 'admin_init', 'flosc_version_flush_check' );
+/**
+ * Flosc version flush check.
+ */
 function flosc_version_flush_check() {
 	$last_flushed_version = get_option( 'flosc_last_flushed_version', '0.0.0' );
 
@@ -120,6 +126,12 @@ function flosc_version_flush_check() {
 }
 
 if ( ! function_exists( 'flosc_legacy_autoprompt_is_sandbox_pill' ) ) {
+	/**
+	 * Flosc legacy autoprompt is sandbox pill.
+	 *
+	 * @param mixed $pill Pill.
+	 * @return mixed
+	 */
 	function flosc_legacy_autoprompt_is_sandbox_pill( $pill ) {
 		if ( ! is_array( $pill ) ) {
 			return false;
@@ -159,6 +171,12 @@ if ( ! function_exists( 'flosc_legacy_autoprompt_is_sandbox_pill' ) ) {
 }
 
 if ( ! function_exists( 'flosc_legacy_autoprompt_purge_sandbox_pills' ) ) {
+	/**
+	 * Flosc legacy autoprompt purge sandbox pills.
+	 *
+	 * @param mixed $autoprompts Autoprompts.
+	 * @return mixed
+	 */
 	function flosc_legacy_autoprompt_purge_sandbox_pills( $autoprompts ) {
 		if ( ! is_array( $autoprompts ) ) {
 			return array();
@@ -180,6 +198,9 @@ if ( ! function_exists( 'flosc_legacy_autoprompt_purge_sandbox_pills' ) ) {
 }
 
 add_action( 'init', 'flosc_purge_legacy_sandbox_autoprompts', 4 );
+/**
+ * Flosc purge legacy sandbox autoprompts.
+ */
 function flosc_purge_legacy_sandbox_autoprompts() {
 	if ( get_option( 'flosc_legacy_sandbox_autoprompt_purged' ) ) {
 		return;
@@ -324,6 +345,11 @@ if ( ! get_option( 'flosc_ivr_reparse_800' ) ) {
 }
 
 // v1.2.9: Michel timestamp generator (global scope for activation hook)
+/**
+ * Flosc michel timestamp global.
+ *
+ * @return mixed
+ */
 function flosc_michel_timestamp_global() {
 	return gmdate( 'Y' ) . 'y-' . gmdate( 'm' ) . 'm-' . gmdate( 'd' ) . 'd-UTC' . gmdate( 'H' ) . 'h-' . gmdate( 'i' ) . 'm-' . gmdate( 's' ) . 's';
 }
@@ -331,7 +357,7 @@ function flosc_michel_timestamp_global() {
 /**
  * Friendly display names for shipped sample IVR stems (Identity / sidebar).
  *
- * @param string $ivr_filename_or_stem e.g. flosc_default_technical_ivr.md
+ * @param string $ivr_filename_or_stem e.g. flosc_default_technical_ivr.md.
  * @return string Empty if not a known shipped sample (caller falls back).
  */
 function flosc_shipped_flow_display_name( $ivr_filename_or_stem ) {
@@ -513,6 +539,11 @@ class FLOSC_Framework {
 	// flosc_visitor_temp_id signed cookie didn't round-trip (cross-domain).
 	private $_pending_audio_temp_id = '';
 
+	/**
+	 * Instance.
+	 *
+	 * @return mixed
+	 */
 	public static function instance() {
 		if ( null === self::$instance ) {
 			// Assign instance BEFORE constructor work so flosc_get_setting()
@@ -523,6 +554,9 @@ class FLOSC_Framework {
 		return self::$instance;
 	}
 
+	/**
+	 * Construct.
+	 */
 	private function __construct() {
 		// Intentionally empty — boot() runs after self::$instance is assigned.
 	}
@@ -532,213 +566,556 @@ class FLOSC_Framework {
 		return $this->filesystem->get_wp_filesystem();
 	}
 
+	/**
+	 * Move file safely.
+	 *
+	 * @param mixed $source Source.
+	 * @param mixed $destination Destination.
+	 * @return mixed
+	 */
 	private function move_file_safely( $source, $destination ) {
 		return $this->filesystem->move_file_safely( $source, $destination );
 	}
 
+	/**
+	 * Delete file safely.
+	 *
+	 * @param mixed $path Path.
+	 * @return mixed
+	 */
 	private function delete_file_safely( $path ) {
 		return $this->filesystem->delete_file_safely( $path );
 	}
 
+	/**
+	 * Delete directory safely.
+	 *
+	 * @param mixed $path Path.
+	 * @return mixed
+	 */
 	private function delete_directory_safely( $path ) {
 		return $this->filesystem->delete_directory_safely( $path );
 	}
 
+	/**
+	 * Write file safely.
+	 *
+	 * @param mixed $path Path.
+	 * @param mixed $content Content.
+	 * @return mixed
+	 */
 	private function write_file_safely( $path, $content ) {
 		return $this->filesystem->write_file_safely( $path, $content );
 	}
 
+	/**
+	 * Write json atomic.
+	 *
+	 * @param mixed $path Path.
+	 * @param mixed $data Data.
+	 * @return mixed
+	 */
 	private function write_json_atomic( $path, $data ) {
 		return $this->filesystem->write_json_atomic( $path, $data );
 	}
 
+	/**
+	 * Flosc block pending email login.
+	 *
+	 * @param mixed $user User.
+	 * @param mixed $password Password.
+	 * @return mixed
+	 */
 	public function flosc_block_pending_email_login( $user, $password ) {
 		return $this->first_party_auth->flosc_block_pending_email_login( $user, $password );
 	}
 
+	/**
+	 * Handle user registration.
+	 *
+	 * @param int $user_id User ID.
+	 * @return mixed
+	 */
 	public function handle_user_registration( $user_id ) {
 		return $this->first_party_auth->handle_user_registration( $user_id );
 	}
 
+	/**
+	 * Handle user login.
+	 *
+	 * @param mixed $user_login User login.
+	 * @param mixed $user User.
+	 * @return mixed
+	 */
 	public function handle_user_login( $user_login, $user ) {
 		return $this->first_party_auth->handle_user_login( $user_login, $user );
 	}
 
+	/**
+	 * Handle login redirect.
+	 *
+	 * @param mixed $redirect_to Redirect to.
+	 * @param mixed $requested_redirect_to Requested redirect to.
+	 * @param mixed $user User.
+	 * @return mixed
+	 */
 	public function handle_login_redirect( $redirect_to, $requested_redirect_to, $user ) {
 		return $this->first_party_auth->handle_login_redirect( $redirect_to, $requested_redirect_to, $user );
 	}
 
+	/**
+	 * Handle woocommerce login redirect.
+	 *
+	 * @param mixed $redirect Redirect.
+	 * @param mixed $user User.
+	 * @return mixed
+	 */
 	public function handle_woocommerce_login_redirect( $redirect, $user ) {
 		return $this->first_party_auth->handle_woocommerce_login_redirect( $redirect, $user );
 	}
 
+	/**
+	 * Takeover wp auth URL.
+	 *
+	 * @param mixed $url URL.
+	 * @param string $redirect Redirect.
+	 * @param bool $force_reauth Force reauth.
+	 * @return mixed
+	 */
 	public function takeover_wp_auth_url( $url, $redirect = '', $force_reauth = false ) {
 		return $this->first_party_auth->takeover_wp_auth_url( $url, $redirect, $force_reauth );
 	}
 
+	/**
+	 * Take over wp registration URL.
+	 *
+	 * @param mixed $url URL.
+	 * @return mixed
+	 */
 	public function take_over_wp_registration_url( $url ) {
 		return $this->first_party_auth->takeover_wp_auth_url( $url );
 	}
 
+	/**
+	 * Generate flosc auth token.
+	 *
+	 * @param int $user_id User ID.
+	 * @param mixed $ttl Ttl.
+	 * @return mixed
+	 */
 	public function generate_flosc_auth_token( $user_id, $ttl = DAY_IN_SECONDS ) {
 		return $this->first_party_auth->generate_flosc_auth_token( $user_id, $ttl );
 	}
 
+	/**
+	 * Validate flosc auth token.
+	 *
+	 * @param mixed $token Token.
+	 * @return mixed
+	 */
 	public function validate_flosc_auth_token( $token ) {
 		return $this->first_party_auth->validate_flosc_auth_token( $token );
 	}
 
+	/**
+	 * Set flosc auth cookie.
+	 *
+	 * @param mixed $token Token.
+	 * @param mixed $ttl Ttl.
+	 * @return mixed
+	 */
 	public function set_flosc_auth_cookie( $token, $ttl = DAY_IN_SECONDS ) {
 		return $this->first_party_auth->set_flosc_auth_cookie( $token, $ttl );
 	}
 
+	/**
+	 * Authenticate flosc token.
+	 *
+	 * @param int $user_id User ID.
+	 * @return mixed
+	 */
 	public function authenticate_flosc_token( $user_id ) {
 		return $this->first_party_auth->authenticate_flosc_token( $user_id );
 	}
 
+	/**
+	 * Ajax logout.
+	 *
+	 * @return mixed
+	 */
 	public function ajax_logout() {
 		return $this->first_party_auth->ajax_logout();
 	}
 
+	/**
+	 * Clear flosc auth token.
+	 *
+	 * @return mixed
+	 */
 	public function clear_flosc_auth_token() {
 		return $this->first_party_auth->clear_flosc_auth_token();
 	}
 
+	/**
+	 * Set entry flow cookie.
+	 *
+	 * @param int $flow_id Flow ID.
+	 * @return mixed
+	 */
 	public function set_entry_flow_cookie( $flow_id ) {
 		return $this->first_party_auth->set_entry_flow_cookie( $flow_id );
 	}
 
+	/**
+	 * Allow flosc token auth.
+	 *
+	 * @param mixed $result Result.
+	 * @return mixed
+	 */
 	public function allow_flosc_token_auth( $result ) {
 		return $this->first_party_auth->allow_flosc_token_auth( $result );
 	}
 
 	/**
 	 * Collaborator API: first-party login path sends score email via email service.
+	 *
+	 * @param mixed $user User.
+	 * @param array $score_data Score data.
 	 */
 	public function send_score_email( $user, $score_data ) {
 		return $this->email_service->send_score_email( $user, $score_data );
 	}
 
+	/**
+	 * Get guest email context.
+	 *
+	 * @param string $flow_id Flow ID.
+	 * @param int $user_id User ID.
+	 * @return mixed
+	 */
 	private function get_guest_email_context( $flow_id = '', $user_id = 0 ) {
 		return $this->email_service->get_guest_email_context( $flow_id, $user_id );
 	}
 
+	/**
+	 * Replace guest email placeholders.
+	 *
+	 * @param mixed $text Text.
+	 * @param mixed $user User.
+	 * @param mixed $days_remaining Days remaining.
+	 * @return mixed
+	 */
 	private function replace_guest_email_placeholders( $text, $user, $days_remaining ) {
 		return $this->email_service->replace_guest_email_placeholders( $text, $user, $days_remaining );
 	}
 
+	/**
+	 * Get flosc mail identity.
+	 *
+	 * @param string $flow_id Flow ID.
+	 * @param int $user_id User ID.
+	 * @return mixed
+	 */
 	private function get_flosc_mail_identity( $flow_id = '', $user_id = 0 ) {
 		return $this->email_service->get_flosc_mail_identity( $flow_id, $user_id );
 	}
 
+	/**
+	 * Get flosc mail headers.
+	 *
+	 * @param string $flow_id Flow ID.
+	 * @param int $user_id User ID.
+	 * @param bool $is_html Is HTML.
+	 * @return mixed
+	 */
 	private function get_flosc_mail_headers( $flow_id = '', $user_id = 0, $is_html = false ) {
 		return $this->email_service->get_flosc_mail_headers( $flow_id, $user_id, $is_html );
 	}
 
+	/**
+	 * Get flosc reply to header.
+	 *
+	 * @param string $flow_id Flow ID.
+	 * @param int $user_id User ID.
+	 * @return mixed
+	 */
 	private function get_flosc_reply_to_header( $flow_id = '', $user_id = 0 ) {
 		return $this->email_service->get_flosc_reply_to_header( $flow_id, $user_id );
 	}
 
+	/**
+	 * Send SSO welcome email.
+	 *
+	 * @param int $user_id User ID.
+	 * @param int $provider_id Provider ID.
+	 * @param array $user_data User data.
+	 * @return mixed
+	 */
 	public function send_sso_welcome_email( $user_id, $provider_id, $user_data = array() ) {
 		return $this->email_service->send_sso_welcome_email( $user_id, $provider_id, $user_data );
 	}
 
+	/**
+	 * Send due guest followups for user.
+	 *
+	 * @param int $user_id User ID.
+	 * @return mixed
+	 */
 	private function send_due_guest_followups_for_user( $user_id ) {
 		return $this->email_service->send_due_guest_followups_for_user( $user_id );
 	}
 
+	/**
+	 * Send email throttled.
+	 *
+	 * @param mixed $to To.
+	 * @param mixed $subject Subject.
+	 * @param mixed $body Body.
+	 * @param mixed $headers Headers.
+	 * @return mixed
+	 */
 	private function send_email_throttled( $to, $subject, $body, $headers ) {
 		return $this->email_service->send_email_throttled( $to, $subject, $body, $headers );
 	}
 
+	/**
+	 * Flosc email HTML card.
+	 *
+	 * @param mixed $context Context.
+	 * @param mixed $user User.
+	 * @param mixed $body_text Body text.
+	 * @param string $button_url Button URL.
+	 * @param string $button_label Button label.
+	 * @return mixed
+	 */
 	private function flosc_email_html_card( $context, $user, $body_text, $button_url = '', $button_label = '' ) {
 		return $this->email_service->flosc_email_html_card( $context, $user, $body_text, $button_url, $button_label );
 	}
 
+	/**
+	 * Dispatch member welcome email.
+	 *
+	 * @param int $user_id User ID.
+	 * @param array $purchase_data Purchase data.
+	 * @return mixed
+	 */
 	public function dispatch_member_welcome_email( $user_id, $purchase_data = array() ) {
 		return $this->email_service->dispatch_member_welcome_email( $user_id, $purchase_data );
 	}
 
+	/**
+	 * Dispatch newsletter welcome email.
+	 *
+	 * @param int $user_id User ID.
+	 * @param string $flow_id Flow ID.
+	 * @return mixed
+	 */
 	public function dispatch_newsletter_welcome_email( $user_id, $flow_id = '' ) {
 		return $this->email_service->dispatch_newsletter_welcome_email( $user_id, $flow_id );
 	}
 
+	/**
+	 * Subscribe to newsletter.
+	 *
+	 * @param int $user_id User ID.
+	 * @param string $flow_id Flow ID.
+	 * @return mixed
+	 */
 	public function subscribe_to_newsletter( $user_id, $flow_id = '' ) {
 		return $this->email_service->subscribe_to_newsletter( $user_id, $flow_id );
 	}
 
+	/**
+	 * Render newsletter profile field.
+	 *
+	 * @param mixed $user User.
+	 * @return mixed
+	 */
 	public function render_newsletter_profile_field( $user ) {
 		return $this->email_service->render_newsletter_profile_field( $user );
 	}
 
+	/**
+	 * Save newsletter profile field.
+	 *
+	 * @param int $user_id User ID.
+	 * @return mixed
+	 */
 	public function save_newsletter_profile_field( $user_id ) {
 		return $this->email_service->save_newsletter_profile_field( $user_id );
 	}
 
+	/**
+	 * Send due series followups.
+	 *
+	 * @param mixed $user User.
+	 * @param mixed $prefix Prefix.
+	 * @param int $anchor_ts Anchor ts.
+	 * @param mixed $sent_meta_key Sent meta key.
+	 * @param int $flow_id Flow ID.
+	 * @return mixed
+	 */
 	private function send_due_series_followups( $user, $prefix, $anchor_ts, $sent_meta_key, $flow_id ) {
 		return $this->email_service->send_due_series_followups( $user, $prefix, $anchor_ts, $sent_meta_key, $flow_id );
 	}
 
+	/**
+	 * Run guest followup emails.
+	 *
+	 * @return mixed
+	 */
 	public function run_guest_followup_emails() {
 		return $this->email_service->run_guest_followup_emails();
 	}
 
+	/**
+	 * Get default email template.
+	 *
+	 * @return mixed
+	 */
 	private function get_default_email_template() {
 		return $this->email_service->get_default_email_template();
 	}
 
+	/**
+	 * Get offers.
+	 *
+	 * @param mixed $request Request.
+	 * @return mixed
+	 */
 	public function get_offers( $request ) {
 		return $this->checkout_rest->get_offers( $request );
 	}
 
+	/**
+	 * Get offer content.
+	 *
+	 * @param mixed $request Request.
+	 * @return mixed
+	 */
 	public function get_offer_content( $request ) {
 		return $this->checkout_rest->get_offer_content( $request );
 	}
 
+	/**
+	 * Handle purchase.
+	 *
+	 * @param mixed $request Request.
+	 * @return mixed
+	 */
 	public function handle_purchase( $request ) {
 		return $this->checkout_rest->handle_purchase( $request );
 	}
 
+	/**
+	 * Flosc offer list price.
+	 *
+	 * @param mixed $offer Offer.
+	 * @return mixed
+	 */
 	public function flosc_offer_list_price( $offer ) {
 		return $this->checkout_rest->flosc_offer_list_price( $offer );
 	}
 
+	/**
+	 * Flosc apply offer price coupon.
+	 *
+	 * @param array $offer Offer.
+	 * @param mixed $code Code.
+	 * @return mixed
+	 */
 	public function flosc_apply_offer_price_coupon( array $offer, $code ) {
 		return $this->checkout_rest->flosc_apply_offer_price_coupon( $offer, $code );
 	}
 
+	/**
+	 * Flosc resolve native payable amount.
+	 *
+	 * @param array $offer Offer.
+	 * @param string $coupon_code Coupon code.
+	 * @return mixed
+	 */
 	public function flosc_resolve_native_payable_amount( array $offer, $coupon_code = '' ) {
 		return $this->checkout_rest->flosc_resolve_native_payable_amount( $offer, $coupon_code );
 	}
 
+	/**
+	 * Flosc offer subscription list prices.
+	 *
+	 * @param array $offer Offer.
+	 * @return mixed
+	 */
 	public function flosc_offer_subscription_list_prices( array $offer ) {
 		return $this->checkout_rest->flosc_offer_subscription_list_prices( $offer );
 	}
 
+	/**
+	 * Flosc resolve subscription coupon prices.
+	 *
+	 * @param array $offer Offer.
+	 * @param string $coupon_code Coupon code.
+	 * @return mixed
+	 */
 	public function flosc_resolve_subscription_coupon_prices( array $offer, $coupon_code = '' ) {
 		return $this->checkout_rest->flosc_resolve_subscription_coupon_prices( $offer, $coupon_code );
 	}
 
+	/**
+	 * Flosc offer is subscription.
+	 *
+	 * @param array $offer Offer.
+	 * @return mixed
+	 */
 	public function flosc_offer_is_subscription( array $offer ) {
 		return $this->checkout_rest->flosc_offer_is_subscription( $offer );
 	}
 
+	/**
+	 * Handle apply offer coupon.
+	 *
+	 * @param mixed $request Request.
+	 * @return mixed
+	 */
 	public function handle_apply_offer_coupon( $request ) {
 		return $this->checkout_rest->handle_apply_offer_coupon( $request );
 	}
 
+	/**
+	 * Handle sandbox purchase.
+	 *
+	 * @param mixed $request Request.
+	 * @return mixed
+	 */
 	public function handle_sandbox_purchase( $request ) {
 		return $this->checkout_rest->handle_sandbox_purchase( $request );
 	}
 
+	/**
+	 * Create payment intent.
+	 *
+	 * @param mixed $request Request.
+	 * @return mixed
+	 */
 	public function create_payment_intent( $request ) {
 		return $this->checkout_rest->create_payment_intent( $request );
 	}
 
+	/**
+	 * Complete purchase.
+	 *
+	 * @param mixed $request Request.
+	 * @return mixed
+	 */
 	public function complete_purchase( $request ) {
 		return $this->checkout_rest->complete_purchase( $request );
 	}
 
+	/**
+	 * Handle checkout binding.
+	 *
+	 * @param mixed $request Request.
+	 * @return mixed
+	 */
 	public function handle_checkout_binding( $request ) {
 		return $this->checkout_rest->handle_checkout_binding( $request );
 	}
@@ -867,108 +1244,289 @@ class FLOSC_Framework {
 		);
 	}
 
+	/**
+	 * Handle webhook.
+	 *
+	 * @param mixed $request Request.
+	 * @return mixed
+	 */
 	public function handle_webhook( $request ) {
 		return $this->checkout_rest->handle_webhook( $request );
 	}
 
+	/**
+	 * Check access.
+	 *
+	 * @param mixed $request Request.
+	 * @return mixed
+	 */
 	public function check_access( $request ) {
 		return $this->checkout_rest->check_access( $request );
 	}
 
+	/**
+	 * Flosc parse utc mts timestamp.
+	 *
+	 * @param mixed $raw Raw.
+	 * @return mixed
+	 */
 	public function flosc_parse_utc_mts_timestamp( $raw ) {
 		return $this->checkout_rest->flosc_parse_utc_mts_timestamp( $raw );
 	}
 
 
+	/**
+	 * Flosc ensure guest token baseline.
+	 *
+	 * @param int $user_id User ID.
+	 * @param mixed $token_provider Token provider.
+	 * @param string $flow_id Flow ID.
+	 * @param string $reason Reason.
+	 * @return mixed
+	 */
 	public function flosc_ensure_guest_token_baseline( $user_id, $token_provider, $flow_id = '', $reason = '' ) {
 		return $this->token_ledger->flosc_ensure_guest_token_baseline( $user_id, $token_provider, $flow_id, $reason );
 	}
 
+	/**
+	 * Flosc apply product token credit public.
+	 *
+	 * @param int $user_id User ID.
+	 * @param string $flow_id Flow ID.
+	 * @param string $mode Mode.
+	 * @param array $context Context.
+	 * @return mixed
+	 */
 	public function flosc_apply_product_token_credit_public( $user_id, $flow_id = '', $mode = 'onetime', $context = array() ) {
 		return $this->token_ledger->flosc_apply_product_token_credit_public( $user_id, $flow_id, $mode, $context );
 	}
 
+	/**
+	 * Flosc apply subscription token topup public.
+	 *
+	 * @param int $user_id User ID.
+	 * @param string $flow_id Flow ID.
+	 * @param string $plan_type Plan type.
+	 * @param array $context Context.
+	 * @return mixed
+	 */
 	public function flosc_apply_subscription_token_topup_public( $user_id, $flow_id = '', $plan_type = 'monthly', $context = array() ) {
 		return $this->token_ledger->flosc_apply_subscription_token_topup_public( $user_id, $flow_id, $plan_type, $context );
 	}
 
+	/**
+	 * Apply member token grant on access.
+	 *
+	 * @param int $user_id User ID.
+	 * @param array $purchase_data Purchase data.
+	 * @return mixed
+	 */
 	public function apply_member_token_grant_on_access( $user_id, $purchase_data = array() ) {
 		return $this->token_ledger->apply_member_token_grant_on_access( $user_id, $purchase_data );
 	}
 
+	/**
+	 * Flosc user should receive guest tokens.
+	 *
+	 * @param int $user_id User ID.
+	 * @param string $flow_id Flow ID.
+	 * @return mixed
+	 */
 	public function flosc_user_should_receive_guest_tokens( $user_id, $flow_id = '' ) {
 		return $this->token_ledger->flosc_user_should_receive_guest_tokens( $user_id, $flow_id );
 	}
 
+	/**
+	 * Flosc get visitor session token balance.
+	 *
+	 * @param int $flow_id Flow ID.
+	 * @param int $session_id Session ID.
+	 * @param mixed $token_provider Token provider.
+	 * @return mixed
+	 */
 	public function flosc_get_visitor_session_token_balance( $flow_id, $session_id, $token_provider ) {
 		return $this->token_ledger->flosc_get_visitor_session_token_balance( $flow_id, $session_id, $token_provider );
 	}
 
+	/**
+	 * Flosc set visitor session token balance.
+	 *
+	 * @param int $flow_id Flow ID.
+	 * @param int $session_id Session ID.
+	 * @param mixed $balance Balance.
+	 * @return mixed
+	 */
 	public function flosc_set_visitor_session_token_balance( $flow_id, $session_id, $balance ) {
 		return $this->token_ledger->flosc_set_visitor_session_token_balance( $flow_id, $session_id, $balance );
 	}
 
+	/**
+	 * Flosc charge visitor session tokens.
+	 *
+	 * @param int $flow_id Flow ID.
+	 * @param int $session_id Session ID.
+	 * @param mixed $token_provider Token provider.
+	 * @param array $billing_meta Billing meta.
+	 * @return mixed
+	 */
 	public function flosc_charge_visitor_session_tokens( $flow_id, $session_id, $token_provider, $billing_meta = array() ) {
 		return $this->token_ledger->flosc_charge_visitor_session_tokens( $flow_id, $session_id, $token_provider, $billing_meta );
 	}
 
+	/**
+	 * Flosc reserve visitor tokens.
+	 *
+	 * @param int $flow_id Flow ID.
+	 * @param int $session_id Session ID.
+	 * @param mixed $estimated_cost Estimated cost.
+	 * @param int $request_id Request ID.
+	 * @param mixed $token_provider Token provider.
+	 * @return mixed
+	 */
 	public function flosc_reserve_visitor_tokens( $flow_id, $session_id, $estimated_cost, $request_id, $token_provider ) {
 		return $this->token_ledger->reserve_visitor_tokens( $flow_id, $session_id, $estimated_cost, $request_id, $token_provider );
 	}
 
+	/**
+	 * Flosc settle visitor reservation.
+	 *
+	 * @param int $reservation_id Reservation ID.
+	 * @param mixed $token_provider Token provider.
+	 * @param array $billing_meta Billing meta.
+	 * @return mixed
+	 */
 	public function flosc_settle_visitor_reservation( $reservation_id, $token_provider, $billing_meta = array() ) {
 		return $this->token_ledger->settle_visitor_reservation( $reservation_id, $token_provider, $billing_meta );
 	}
 
+	/**
+	 * Flosc format token display.
+	 *
+	 * @param mixed $value Value.
+	 * @return mixed
+	 */
 	public function flosc_format_token_display( $value ) {
 		return $this->token_ledger->flosc_format_token_display( $value );
 	}
 
+	/**
+	 * Handle apply guest token grant.
+	 *
+	 * @param mixed $request Request.
+	 * @return mixed
+	 */
 	public function handle_apply_guest_token_grant( $request ) {
 		return $this->token_ledger->handle_apply_guest_token_grant( $request );
 	}
 
+	/**
+	 * Handle visitor session balance.
+	 *
+	 * @param mixed $request Request.
+	 * @return mixed
+	 */
 	public function handle_visitor_session_balance( $request ) {
 		return $this->token_ledger->handle_visitor_session_balance( $request );
 	}
 
 
+	/**
+	 * Get sessions.
+	 *
+	 * @param mixed $request Request.
+	 * @return mixed
+	 */
 	public function get_sessions( $request ) {
 		return $this->session_rest->get_sessions( $request );
 	}
 
+	/**
+	 * Get single session.
+	 *
+	 * @param mixed $request Request.
+	 * @return mixed
+	 */
 	public function get_single_session( $request ) {
 		return $this->session_rest->get_single_session( $request );
 	}
 
+	/**
+	 * Create session.
+	 *
+	 * @param mixed $request Request.
+	 * @return mixed
+	 */
 	public function create_session( $request ) {
 		return $this->session_rest->create_session( $request );
 	}
 
+	/**
+	 * Get user state for session limits.
+	 *
+	 * @param int $user_id User ID.
+	 * @param string $flow_id Flow ID.
+	 * @return mixed
+	 */
 	public function get_user_state_for_session_limits( $user_id, $flow_id = '' ) {
 		return $this->session_rest->get_user_state_for_session_limits( $user_id, $flow_id );
 	}
 
+	/**
+	 * Flosc guest chat flag enabled.
+	 *
+	 * @param mixed $key Key.
+	 * @return mixed
+	 */
 	public function flosc_guest_chat_flag_enabled( $key ) {
 		return $this->session_rest->flosc_guest_chat_flag_enabled( $key );
 	}
 
+	/**
+	 * Delete session.
+	 *
+	 * @param mixed $request Request.
+	 * @return mixed
+	 */
 	public function delete_session( $request ) {
 		return $this->session_rest->delete_session( $request );
 	}
 
+	/**
+	 * Rename session.
+	 *
+	 * @param mixed $request Request.
+	 * @return mixed
+	 */
 	public function rename_session( $request ) {
 		return $this->session_rest->rename_session( $request );
 	}
 
+	/**
+	 * Delete session from do.
+	 *
+	 * @param int $session_id Session ID.
+	 * @return mixed
+	 */
 	public function delete_session_from_do( $session_id ) {
 		return $this->session_rest->delete_session_from_do( $session_id );
 	}
 
+	/**
+	 * Flosc normalize session ID.
+	 *
+	 * @param mixed $session_id_raw Session ID raw.
+	 * @return mixed
+	 */
 	public function flosc_normalize_session_id( $session_id_raw ) {
 		return $this->session_rest->flosc_normalize_session_id( $session_id_raw );
 	}
 
+	/**
+	 * Flosc concierge session key.
+	 *
+	 * @param int $session_id Session ID.
+	 * @return mixed
+	 */
 	public function flosc_concierge_session_key( $session_id ) {
 		return $this->session_rest->flosc_concierge_session_key( $session_id );
 	}
@@ -976,11 +1534,21 @@ class FLOSC_Framework {
 
 	/**
 	 * Collaborator API: first-party login may trigger SSO email sequence.
+	 *
+	 * @param int $user_id User ID.
 	 */
 	public function maybe_run_sso_email_sequence_for_user( $user_id ) {
 		return $this->email_service->maybe_run_sso_email_sequence_for_user( $user_id );
 	}
 
+	/**
+	 * Maybe process SSO flow email sequence.
+	 *
+	 * @param int $user_id User ID.
+	 * @param int $provider_id Provider ID.
+	 * @param array $user_data User data.
+	 * @return mixed
+	 */
 	public function maybe_process_sso_flow_email_sequence( $user_id, $provider_id, $user_data ) {
 		return $this->email_service->maybe_process_sso_flow_email_sequence( $user_id, $provider_id, $user_data );
 	}
@@ -997,6 +1565,8 @@ class FLOSC_Framework {
 
 	/**
 	 * Build signed outbound headers for provider requests.
+	 *
+	 * @param mixed $payload_json Payload json.
 	 */
 	private function build_flosc_signed_headers( $payload_json ) {
 		$site = wp_parse_url( home_url(), PHP_URL_HOST );
@@ -1017,6 +1587,9 @@ class FLOSC_Framework {
 	/**
 	 * Dispatch one best-effort remote conversion request for session playback copies.
 	 * Non-blocking by design: failures only update metadata status.
+	 *
+	 * @param int $session_id Session ID.
+	 * @param mixed $targets Targets.
 	 */
 	private function dispatch_remote_playback_conversion( $session_id, $targets ) {
 		if ( ! preg_match( '/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $session_id ) ) {
@@ -1083,11 +1656,17 @@ class FLOSC_Framework {
 		);
 	}
 
+	/**
+	 * Boot.
+	 */
 	private function boot() {
 		$this->load_dependencies();
 		$this->init_hooks();
 	}
 
+	/**
+	 * Load dependencies.
+	 */
 	private function load_dependencies() {
 		$this->filesystem       = new FLOSC_Filesystem();
 		$this->request_guard    = new FLOSC_Request_Guard();
@@ -1172,6 +1751,11 @@ class FLOSC_Framework {
 		$this->sso_manager->init();
 	}
 
+	/**
+	 * Init hooks.
+	 *
+	 * @return mixed
+	 */
 	private function init_hooks() {
 		// v3.0.0: FLOSC Auth Token — cross-domain authentication.
 		// Priority 20 runs AFTER WordPress's default cookie auth (priority 10).
@@ -1543,7 +2127,7 @@ class FLOSC_Framework {
 	 *
 	 * v9.4.2: Uses signed cookies to prevent score forgery
 	 *
-	 * @param array $data Score data with source, quiz_id, score, user_id, timestamp
+	 * @param array $data Score data with source, quiz_id, score, user_id, timestamp.
 	 */
 	public function capture_external_quiz_score( $data ) {
 		$user_id = $data['user_id'] ?? get_current_user_id();
@@ -1580,45 +2164,113 @@ class FLOSC_Framework {
 	public function ai() {
 		return $this->ai_chat_dispatch;
 	}
+	/**
+	 * Stt.
+	 *
+	 * @return mixed
+	 */
 	public function stt() {
 		return $this->stt_dispatch;
 	}
+	/**
+	 * Quiz.
+	 *
+	 * @return mixed
+	 */
 	public function quiz() {
 		return 'FLOSC_Quiz_Registry';
 	}
+	/**
+	 * Sessions.
+	 *
+	 * @return mixed
+	 */
 	public function sessions() {
 		return $this->session_manager;
 	}
+	/**
+	 * Analyzer.
+	 *
+	 * @return mixed
+	 */
 	public function analyzer() {
 		return $this->pronunciation_analyzer;
 	}
+	/**
+	 * Sale.
+	 *
+	 * @return mixed
+	 */
 	public function sale() {
 		return $this->sale_manager;
 	}
+	/**
+	 * Lessons.
+	 *
+	 * @return mixed
+	 */
 	public function lessons() {
 		return $this->lesson_manager;
 	}
+	/**
+	 * Member access.
+	 *
+	 * @return mixed
+	 */
 	public function member_access() {
 		return $this->member_access;
 	}
 
 
+	/**
+	 * Get client ip.
+	 *
+	 * @return mixed
+	 */
 	private function get_client_ip() {
 		return $this->request_guard->get_client_ip();
 	}
 
+	/**
+	 * Check rate limit.
+	 *
+	 * @param mixed $endpoint Endpoint.
+	 * @param int $limit Limit.
+	 * @param int $window Window.
+	 * @return mixed
+	 */
 	private function check_rate_limit( $endpoint, $limit = 20, $window = 3600 ) {
 		return $this->request_guard->check_rate_limit( $endpoint, $limit, $window );
 	}
 
+	/**
+	 * Sign cookie data.
+	 *
+	 * @param mixed $data Data.
+	 * @return mixed
+	 */
 	private function sign_cookie_data( $data ) {
 		return $this->request_guard->sign_cookie_data( $data );
 	}
 
+	/**
+	 * Verify signed cookie.
+	 *
+	 * @param mixed $cookie_value Cookie value.
+	 * @return mixed
+	 */
 	private function verify_signed_cookie( $cookie_value ) {
 		return $this->request_guard->verify_signed_cookie( $cookie_value );
 	}
 
+	/**
+	 * Set signed cookie.
+	 *
+	 * @param mixed $name Name.
+	 * @param mixed $data Data.
+	 * @param int $expiry Expiry.
+	 * @return mixed
+	 */
 	private function set_signed_cookie( $name, $data, $expiry = 0 ) {
 		return $this->request_guard->set_signed_cookie( $name, $data, $expiry );
 	}
@@ -1744,6 +2396,9 @@ The Team',
 		update_option( 'flosc_default_content_created', true );
 	}
 
+	/**
+	 * Deactivate.
+	 */
 	public function deactivate() {
 		flush_rewrite_rules();
 	}
@@ -1761,6 +2416,9 @@ The Team',
 	/**
 	 * Check if this is the user's first known entry for the given flow.
 	 * Collaborator API (Pass 1): used by FLOSC_Email.
+	 *
+	 * @param int $user_id User ID.
+	 * @param int $flow_id Flow ID.
 	 */
 	public function is_user_new_to_flow( $user_id, $flow_id ) {
 		$flow_stem = sanitize_key( pathinfo( basename( (string) $flow_id ), PATHINFO_FILENAME ) );
@@ -1781,6 +2439,10 @@ The Team',
 	/**
 	 * Track first/latest flow attribution and per-flow usage counts for each user.
 	 * Collaborator API (Pass 1): used by FLOSC_Email.
+	 *
+	 * @param int $user_id User ID.
+	 * @param int $flow_id Flow ID.
+	 * @param string $method Method.
 	 */
 	public function record_user_flow_usage( $user_id, $flow_id, $method = 'chat' ) {
 		$user_id = intval( $user_id );
@@ -1836,6 +2498,8 @@ The Team',
 
 	/**
 	 * Resolve flow settings while tolerating legacy key variants.
+	 *
+	 * @param mixed $flow_stem Flow stem.
 	 */
 	private function resolve_flow_settings_by_stem( $flow_stem ) {
 		$flow_stem = sanitize_key( (string) $flow_stem );
@@ -1860,6 +2524,8 @@ The Team',
 
 	/**
 	 * Users list: add FLOSC attribution columns.
+	 *
+	 * @param mixed $columns Columns.
 	 */
 	public function flosc_add_users_columns( $columns ) {
 		$with_flosc = array();
@@ -1881,6 +2547,10 @@ The Team',
 
 	/**
 	 * Users list: render FLOSC attribution cells.
+	 *
+	 * @param mixed $value Value.
+	 * @param mixed $column_name Column name.
+	 * @param int $user_id User ID.
 	 */
 	public function flosc_render_users_custom_column( $value, $column_name, $user_id ) {
 		if ( 'flosc_source' === $column_name ) {
@@ -1940,6 +2610,9 @@ The Team',
 
 	/**
 	 * v8.0.3: Store quiz score with quiz_id tracking for multi-quiz support
+	 *
+	 * @param int $user_id User ID.
+	 * @param array $score_data Score data.
 	 */
 	public function store_quiz_score( $user_id, $score_data ) {
 		$score   = intval( $score_data['score'] ?? 0 );
@@ -2008,6 +2681,8 @@ The Team',
 	/**
 	 * Helper: load flow settings for a user (by stored meta, or first IVR file).
 	 * Collaborator API (Pass 1): used by FLOSC_Email.
+	 *
+	 * @param int $user_id User ID.
 	 */
 	public function get_flow_settings_for_user( $user_id ) {
 		$flow_id = get_user_meta( $user_id, '_flosc_registration_flow', true );
@@ -2079,6 +2754,9 @@ The Team',
 
 	/**
 	 * Handle slug change - auto flush permalinks
+	 *
+	 * @param mixed $old_value Old value.
+	 * @param mixed $new_value New value.
 	 */
 	public function handle_slug_change( $old_value, $new_value ) {
 		if ( $old_value !== $new_value ) {
@@ -2192,6 +2870,9 @@ The Team',
 	/**
 	 * Hook: regenerate lesson catalog when a the product post is saved.
 	 * Only fires for published posts in the lessons category.
+	 *
+	 * @param int $post_id Post ID.
+	 * @param mixed $post Post.
 	 */
 	public function maybe_regenerate_lesson_catalog( $post_id, $post ) {
 		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
@@ -2372,6 +3053,14 @@ The Team',
 	// Fix 15: KB File Operation Handlers.
 	// ─────────────────────────────────────────────────────────
 
+	/**
+	 * Kb return URL.
+	 *
+	 * @param mixed $ivr IVR.
+	 * @param mixed $action Action.
+	 * @param string $error Error.
+	 * @return mixed
+	 */
 	private function kb_return_url( $ivr, $action, $error = '' ) {
 		$uid = get_current_user_id();
 		if ( $uid > 0 ) {
@@ -2402,6 +3091,9 @@ The Team',
 		return sanitize_key( pathinfo( (string) $ivr, PATHINFO_FILENAME ) );
 	}
 
+	/**
+	 * Handle kb upload.
+	 */
 	public function handle_kb_upload() {
 		$post = wp_unslash( $_POST );
 		check_admin_referer( 'flosc_kb_upload', 'flosc_kb_upload_nonce' );
@@ -2536,6 +3228,9 @@ The Team',
 		exit;
 	}
 
+	/**
+	 * Handle kb delete.
+	 */
 	public function handle_kb_delete() {
 		$get   = wp_unslash( $_GET );
 		$ivr   = sanitize_file_name( $get['return_ivr'] ?? '' );
@@ -2559,6 +3254,9 @@ The Team',
 		exit;
 	}
 
+	/**
+	 * Handle kb toggle.
+	 */
 	public function handle_kb_toggle() {
 		$get   = wp_unslash( $_GET );
 		$ivr   = sanitize_file_name( $get['return_ivr'] ?? '' );
@@ -2585,6 +3283,9 @@ The Team',
 		exit;
 	}
 
+	/**
+	 * Handle kb save edit.
+	 */
 	public function handle_kb_save_edit() {
 		$post = wp_unslash( $_POST );
 		check_admin_referer( 'flosc_kb_save_edit', 'flosc_kb_save_edit_nonce' );
@@ -2613,6 +3314,9 @@ The Team',
 		exit;
 	}
 
+	/**
+	 * Handle kb create.
+	 */
 	public function handle_kb_create() {
 		$post = wp_unslash( $_POST );
 		check_admin_referer( 'flosc_kb_create', 'flosc_kb_create_nonce' );
@@ -2649,6 +3353,9 @@ The Team',
 	// Fix 14: Provider Accuracy Test — AJAX handler.
 	// ─────────────────────────────────────────────────────────
 
+	/**
+	 * Ajax accuracy test message.
+	 */
 	public function ajax_accuracy_test_message() {
 		$post = wp_unslash( $_POST );
 		check_ajax_referer( 'flosc_accuracy_test', 'nonce' );
@@ -2945,6 +3652,9 @@ The Team',
 	 *
 	 * Uses the app access token (app_id|app_secret) to call /app endpoint.
 	 * If valid: returns app name. If invalid: returns error.
+	 *
+	 * @param int $app_id App ID.
+	 * @param mixed $app_secret App secret.
 	 */
 	private function test_facebook_credentials( $app_id, $app_secret ) {
 		$checks           = array();
@@ -3005,6 +3715,10 @@ The Team',
 	 * Sends a dummy code exchange to Google's token endpoint.
 	 * - "invalid_grant" → credentials are valid (code is wrong, but creds work)
 	 * - "invalid_client" → credentials are wrong
+	 *
+	 * @param int $client_id Client ID.
+	 * @param mixed $client_secret Client secret.
+	 * @param mixed $redirect_uri Redirect uri.
 	 */
 	private function test_google_credentials( $client_id, $client_secret, $redirect_uri ) {
 		$checks = array();
@@ -3114,6 +3828,8 @@ The Team',
 	/**
 	 * v1.4.3: Render the post visibility meta box
 	 * v1.8.2: Added 4-tier protection override (protected, title+excerpt, title+readmore, full)
+	 *
+	 * @param mixed $post Post.
 	 */
 	public function flosc_render_post_visibility_meta_box( $post ) {
 		wp_nonce_field( 'flosc_post_visibility_nonce', 'flosc_post_visibility_nonce' );
@@ -3172,6 +3888,9 @@ The Team',
 	/**
 	 * v1.4.3: Save post visibility meta box data
 	 * v1.8.2: Save 4-tier protection mode instead of binary checkbox
+	 *
+	 * @param int $post_id Post ID.
+	 * @param mixed $post Post.
 	 */
 	public function flosc_save_post_visibility_meta( $post_id, $post ) {
 		$request_post = wp_unslash( $_POST );
@@ -3280,6 +3999,8 @@ The Team',
 	 * NOTE: We call handle_user_login() directly instead of do_action('wp_login')
 	 * because other plugins (WooCommerce, BuddyBoss) hook wp_login and call
 	 * wp_redirect() + exit, which would hijack the SSO flow.
+	 *
+	 * @param int $user_id User ID.
 	 */
 	private function pull_pending_session_from_do( $user_id ) {
 		$existing = get_user_meta( $user_id, '_flosc_last_quiz_data', true );
@@ -3448,6 +4169,11 @@ The Team',
 
 	/**
 	 * Render the existing single-session result card format for one quiz payload.
+	 *
+	 * @param int $user_id User ID.
+	 * @param array $quiz_data Quiz data.
+	 * @param bool $is_guest_user Is guest user.
+	 * @param mixed $profile_completed Profile completed.
 	 */
 	private function render_session_result_card( $user_id, $quiz_data, $is_guest_user, $profile_completed ) {
 		if ( empty( $quiz_data ) || ! is_array( $quiz_data ) ) {
@@ -3604,6 +4330,8 @@ The Team',
 	 * v1.7.5: Explicitly set flow context for REST API calls.
 	 * Needed when purchase requests come from domains other than the custom domain
 	 * (e.g., the WordPress host, clickbank, any host embedding the FLOSC checkout).
+	 *
+	 * @param int $flow_id Flow ID.
 	 */
 	public function set_flow_context( $flow_id ) {
 		if ( empty( $flow_id ) ) {
@@ -3646,6 +4374,8 @@ The Team',
 	 * v1.3.6: Build flow config from IVR filename
 	 * Reads from flosc_flow_{filename} option in wp_options
 	 * Public so companion-mode / other modules can resolve the same shape.
+	 *
+	 * @param mixed $filename Filename.
 	 */
 	public function build_flow_from_ivr_file( $filename ) {
 		$filename     = basename( $filename ); // Ensure just filename.
@@ -3690,9 +4420,9 @@ The Team',
 	/**
 	 * v1.2.4: Get a setting value, checking flow-specific first, then global
 	 *
-	 * @param string      $key Setting key (without 'flosc_' prefix)
-	 * @param mixed       $default Default if neither flow nor global has value
-	 * @param string|null $flow_id Force specific flow (null = auto-detect current)
+	 * @param string      $key Setting key (without 'flosc_' prefix).
+	 * @param mixed       $default Default if neither flow nor global has value.
+	 * @param string|null $flow_id Force specific flow (null = auto-detect current).
 	 * @return mixed The setting value
 	 */
 	public function get_setting( $key, $default = '', $flow_id = null ) {
@@ -3756,38 +4486,86 @@ The Team',
 		return $default;
 	}
 
+	/**
+	 * Is flosc request.
+	 *
+	 * @return mixed
+	 */
 	public function is_flosc_request() {
 		return $this->full_page_mode->is_flosc_request();
 	}
 
+	/**
+	 * Get app URL.
+	 *
+	 * @param mixed $flow Flow.
+	 * @return mixed
+	 */
 	public function get_app_url( $flow = null ) {
 		return $this->full_page_mode->get_app_url( $flow );
 	}
 
+	/**
+	 * Add query vars.
+	 *
+	 * @param mixed $vars Vars.
+	 * @return mixed
+	 */
 	public function add_query_vars( $vars ) {
 		return $this->full_page_mode->add_query_vars( $vars );
 	}
 
+	/**
+	 * Handle app route.
+	 *
+	 * @return mixed
+	 */
 	public function handle_app_route() {
 		return $this->full_page_mode->handle_app_route();
 	}
 
+	/**
+	 * Get requested legal page.
+	 *
+	 * @return mixed
+	 */
 	private function get_requested_legal_page() {
 		return $this->full_page_mode->get_requested_legal_page();
 	}
 
+	/**
+	 * Get current request base URL.
+	 *
+	 * @return mixed
+	 */
 	private function get_current_request_base_url() {
 		return $this->full_page_mode->get_current_request_base_url();
 	}
 
+	/**
+	 * Render legal page.
+	 *
+	 * @param mixed $page Page.
+	 * @return mixed
+	 */
 	private function render_legal_page( $page ) {
 		return $this->full_page_mode->render_legal_page( $page );
 	}
 
+	/**
+	 * Get codex charter content.
+	 *
+	 * @return mixed
+	 */
 	private function get_codex_charter_content() {
 		return $this->full_page_mode->get_codex_charter_content();
 	}
 
+	/**
+	 * Render flosc app.
+	 *
+	 * @return mixed
+	 */
 	private function render_flosc_app() {
 		return $this->full_page_mode->render_flosc_app();
 	}
@@ -3839,6 +4617,8 @@ The Team',
 
 	/**
 	 * Build AI context for phase-aware prompts (v04_04)
+	 *
+	 * @param array $frontend_context Frontend context.
 	 */
 	public function build_ai_context( $frontend_context = array() ) {
 		$context = array();
@@ -3986,56 +4766,138 @@ The Team',
 
 	/**
 	 * REST Handlers
+	 *
+	 * @param mixed $message Message.
+	 * @param int $flow_id Flow ID.
+	 * @param mixed $ivr_file IVR file.
 	 */
 	private function flosc_build_da1_composition_reply( $message, $flow_id, $ivr_file ) {
 		return $this->da1_compositions->build_composition_reply( $message, $flow_id, $ivr_file );
 	}
 
+	/**
+	 * Flosc is composition query.
+	 *
+	 * @param mixed $message Message.
+	 * @return mixed
+	 */
 	private function flosc_is_composition_query( $message ) {
 		return $this->da1_compositions->is_composition_query( $message );
 	}
 
+	/**
+	 * Flosc da1 is count request.
+	 *
+	 * @param mixed $message Message.
+	 * @return mixed
+	 */
 	private function flosc_da1_is_count_request( $message ) {
 		return $this->da1_compositions->is_count_request( $message );
 	}
 
+	/**
+	 * Flosc da1 is full list request.
+	 *
+	 * @param mixed $message Message.
+	 * @return mixed
+	 */
 	private function flosc_da1_is_full_list_request( $message ) {
 		return $this->da1_compositions->is_full_list_request( $message );
 	}
 
+	/**
+	 * Flosc da1 detect batch size.
+	 *
+	 * @param mixed $message Message.
+	 * @return mixed
+	 */
 	private function flosc_da1_detect_batch_size( $message ) {
 		return $this->da1_compositions->detect_batch_size( $message );
 	}
 
+	/**
+	 * Flosc da1 get works list URL.
+	 *
+	 * @return mixed
+	 */
 	private function flosc_da1_get_works_list_url() {
 		return $this->da1_compositions->get_works_list_url();
 	}
 
+	/**
+	 * Flosc load da1 rows for flow.
+	 *
+	 * @param int $flow_id Flow ID.
+	 * @param mixed $ivr_file IVR file.
+	 * @return mixed
+	 */
 	private function flosc_load_da1_rows_for_flow( $flow_id, $ivr_file ) {
 		return $this->da1_compositions->load_rows_for_flow( $flow_id, $ivr_file );
 	}
 
+	/**
+	 * Flosc extract da1 composition items.
+	 *
+	 * @param mixed $rows Rows.
+	 * @return mixed
+	 */
 	private function flosc_extract_da1_composition_items( $rows ) {
 		return $this->da1_compositions->extract_composition_items( $rows );
 	}
 
+	/**
+	 * Flosc da1 extract primary media URL.
+	 *
+	 * @param mixed $text Text.
+	 * @return mixed
+	 */
 	private function flosc_da1_extract_primary_media_url( $text ) {
 		return $this->da1_compositions->extract_primary_media_url( $text );
 	}
 
+	/**
+	 * Flosc da1 parse tsv content.
+	 *
+	 * @param mixed $content Content.
+	 * @return mixed
+	 */
 	private function flosc_da1_parse_tsv_content( $content ) {
 		return $this->da1_compositions->parse_tsv_content( $content );
 	}
 
+	/**
+	 * Flosc shorten text.
+	 *
+	 * @param mixed $text Text.
+	 * @param mixed $limit Limit.
+	 * @return mixed
+	 */
 	private function flosc_shorten_text( $text, $limit ) {
 		return $this->da1_compositions->shorten_text( $text, $limit );
 	}
 
+	/**
+	 * Flosc limit chat response length.
+	 *
+	 * @param mixed $text Text.
+	 * @return mixed
+	 */
 	private function flosc_limit_chat_response_length( $text ) {
 		return $this->da1_compositions->limit_chat_response_length( $text );
 	}
 
 
+	/**
+	 * Flosc enforce no hedge response.
+	 *
+	 * @param mixed $response_text Response text.
+	 * @param mixed $user_message User message.
+	 * @param int $flow_id Flow ID.
+	 * @param mixed $ivr_file IVR file.
+	 * @param mixed $phase Phase.
+	 * @param mixed $eval_context Eval context.
+	 * @return mixed
+	 */
 	private function flosc_enforce_no_hedge_response( $response_text, $user_message, $flow_id, $ivr_file, $phase, $eval_context ) {
 		$response_text = trim( (string) $response_text );
 
@@ -4046,6 +4908,12 @@ The Team',
 		return $response_text;
 	}
 
+	/**
+	 * Flosc contains forbidden hedge.
+	 *
+	 * @param mixed $text Text.
+	 * @return mixed
+	 */
 	private function flosc_contains_forbidden_hedge( $text ) {
 		$text     = (string) $text;
 		$patterns = array(
@@ -4065,6 +4933,16 @@ The Team',
 		return false;
 	}
 
+	/**
+	 * Flosc build professional replacement.
+	 *
+	 * @param mixed $user_message User message.
+	 * @param int $flow_id Flow ID.
+	 * @param mixed $ivr_file IVR file.
+	 * @param mixed $phase Phase.
+	 * @param mixed $eval_context Eval context.
+	 * @return mixed
+	 */
 	private function flosc_build_professional_replacement( $user_message, $flow_id, $ivr_file, $phase, $eval_context ) {
 		$user_message = (string) $user_message;
 
@@ -4084,7 +4962,7 @@ The Team',
 					$identity_name = 'this host';
 				}
 				$bio_summary = sprintf(
-					/* translators: %s: flow identity display name */
+					/* translators: %s: flow identity display name. */
 					__( '%s — ask about background, work, or how to get started with this flow.', 'flosc' ),
 					$identity_name
 				);
@@ -4094,7 +4972,7 @@ The Team',
 			$reply   = $bio_summary;
 			if ( '' !== $bio_url && filter_var( $bio_url, FILTER_VALIDATE_URL ) ) {
 				$reply .= "\n" . sprintf(
-					/* translators: %s: biography URL */
+					/* translators: %s: biography URL. */
 					__( 'More info: %s', 'flosc' ),
 					$bio_url
 				);
@@ -4113,6 +4991,12 @@ The Team',
 		return 'I can help with a direct answer. Ask for biography, resume link, catalog count, full works list, or 1 to 3 composition recommendations.';
 	}
 
+	/**
+	 * Flosc is bio query.
+	 *
+	 * @param mixed $message Message.
+	 * @return mixed
+	 */
 	private function flosc_is_bio_query( $message ) {
 		$message = (string) $message;
 		$message = function_exists( 'mb_strtolower' )
@@ -4130,6 +5014,9 @@ The Team',
 
 	/**
 	 * Build transient key for visitor session token balance.
+	 *
+	 * @param int $flow_id Flow ID.
+	 * @param int $session_id Session ID.
 	 */
 	public function flosc_visitor_token_transient_key( $flow_id, $session_id ) {
 		unset( $flow_id );
@@ -4145,6 +5032,8 @@ The Team',
 	/**
 	 * Build system prompt for RAG chat
 	 * Fix 8: Use full FLOSC_Chatpack instead of the bare minimal prompt that had no rules/grounding.
+	 *
+	 * @param mixed $user_context User context.
 	 */
 	private function build_rag_system_prompt( $user_context ) {
 
@@ -4240,6 +5129,9 @@ You are a GUIDE, not a teacher. Your job is to:
 	/**
 	 * v1.4.0: Admin Introspection - Check if admin is asking about the system
 	 * Allows WordPress admins to ask the chat about its configuration, files, offers, etc.
+	 *
+	 * @param mixed $message Message.
+	 * @param string $current_ivr_file Current IVR file.
 	 */
 	private function check_admin_introspection( $message, $current_ivr_file = '' ) {
 		$message_lower = strtolower( $message );
@@ -4276,6 +5168,9 @@ You are a GUIDE, not a teacher. Your job is to:
 
 	/**
 	 * v1.4.0: Generate admin introspection response
+	 *
+	 * @param mixed $category Category.
+	 * @param string $current_ivr_file Current IVR file.
 	 */
 	private function get_admin_introspection_response( $category, $current_ivr_file = '' ) {
 		// v1.9.1: Michel Date Stamp timestamp in introspection header.
@@ -4389,6 +5284,8 @@ You are a GUIDE, not a teacher. Your job is to:
 
 	/**
 	 * v1.4.0: Get system overview
+	 *
+	 * @param string $current_ivr_file Current IVR file.
 	 */
 	private function get_introspection_system( $current_ivr_file = '' ) {
 		$output = "🖥️ **FLOSC System Overview:**\n\n";
@@ -4513,6 +5410,8 @@ You are a GUIDE, not a teacher. Your job is to:
 
 	/**
 	 * v1.4.0: Get current configuration context
+	 *
+	 * @param string $current_ivr_file Current IVR file.
 	 */
 	private function get_introspection_current( $current_ivr_file = '' ) {
 		$output = "📍 **Current Context:**\n\n";
@@ -4695,6 +5594,8 @@ You are a GUIDE, not a teacher. Your job is to:
 
 	/**
 	 * Get access level specific instructions
+	 *
+	 * @param mixed $access_level Access level.
 	 */
 	private function get_access_level_instructions( $access_level ) {
 
@@ -4799,6 +5700,11 @@ Example good response:
 	/**
 	 * Call AI with RAG tools (conversation loop).
 	 * Anthropic only, through wp_ai_client_prompt() + function declarations.
+	 *
+	 * @param mixed $message Message.
+	 * @param mixed $system_prompt System prompt.
+	 * @param mixed $tools Tools.
+	 * @param mixed $user_context User context.
 	 */
 	private function call_ai_with_rag( $message, $system_prompt, $tools, $user_context ) {
 
@@ -4863,11 +5769,17 @@ Example good response:
 	 * Bridge data is automatically created via flosc_quiz_completed hook.
 	 * This endpoint returns current bridge state for frontend reference.
 	 *
-	 * @param WP_REST_Request $request
+	 * @param WP_REST_Request $request Request.
 	 * @return WP_REST_Response
 	 */
 	// v1.0.5: This endpoint READS bridge data status (not writes)
 	// Quiz storage: store_quiz_result() | Processing: handle_process_quiz()
+	/**
+	 * Handle quiz submission.
+	 *
+	 * @param mixed $request Request.
+	 * @return mixed
+	 */
 	public function handle_quiz_submission( $request ) {
 		$user_id    = get_current_user_id();
 		$bridge_mgr = FLOSC_Bridge_Data_Manager::instance();
@@ -4893,7 +5805,7 @@ Example good response:
 	 *
 	 * When multiple quizzes are enabled, rotates ABAB pattern
 	 *
-	 * @param WP_REST_Request $request
+	 * @param WP_REST_Request $request Request.
 	 * @return WP_REST_Response
 	 */
 	public function get_quiz_questions( $request ) {
@@ -5127,6 +6039,8 @@ Example good response:
 
 	/**
 	 * v9.3.4: Parse multiple choice content from admin textarea
+	 *
+	 * @param mixed $content Content.
 	 */
 	private function parse_multiplechoice_content( $content ) {
 		// Simple format: Question?|A:Answer1|B:Answer2|C:Answer3|correct:A.
@@ -5174,7 +6088,7 @@ Example good response:
 	/**
 	 * v9.3.2: Store quiz result
 	 *
-	 * @param WP_REST_Request $request
+	 * @param WP_REST_Request $request Request.
 	 * @return WP_REST_Response
 	 */
 	public function store_quiz_result( $request ) {
@@ -5267,6 +6181,11 @@ Example good response:
 
 	/**
 	 * Find matching IVR response based on phase and context
+	 *
+	 * @param mixed $phase Phase.
+	 * @param mixed $user_message User message.
+	 * @param mixed $context Context.
+	 * @param mixed $ivr_config IVR config.
 	 */
 	private function find_ivr_response( $phase, $user_message, $context, $ivr_config ) {
 		// v1.0.8: Get messages for the phase using correct config structure.
@@ -5311,6 +6230,9 @@ Example good response:
 
 	/**
 	 * v1.0.9: Substitute variables in message content
+	 *
+	 * @param mixed $content Content.
+	 * @param mixed $context Context.
 	 */
 	private function substitute_ivr_variables( $content, $context ) {
 		$identity       = $this->get_floscflow_identity();
@@ -5350,8 +6272,8 @@ Example good response:
 	 * Fill a flow-configured status template.
 	 * Placeholders: {first_name}, {product_name}, {member_level}, {name}, {email}
 	 *
-	 * @param string $template
-	 * @param array  $vars
+	 * @param string $template Template.
+	 * @param array  $vars Vars.
 	 * @return string
 	 */
 	private function flosc_fill_status_template( $template, array $vars ) {
@@ -5364,6 +6286,9 @@ Example good response:
 
 	/**
 	 * Build per-flow status rows for the logged-in user.
+	 *
+	 * @param int $user_id User ID.
+	 * @param string $current_stem Current stem.
 	 */
 	public function flosc_build_user_flow_statuses( $user_id, $current_stem = '' ) {
 		$user_id = absint( $user_id );
@@ -5454,6 +6379,8 @@ Example good response:
 
 	/**
 	 * User status text from real flow state and token data.
+	 *
+	 * @param mixed $context Context.
 	 */
 	private function generate_user_status_response( $context ) {
 		if ( ! is_user_logged_in() ) {
@@ -5528,6 +6455,11 @@ Example good response:
 	 * v1.0.8: Search for matching user_input in a message list
 	 * v1.0.9: Added variable substitution for dynamic content
 	 * v1.6.3: Added keyword-based fuzzy fallback when exact match fails
+	 *
+	 * @param mixed $messages Messages.
+	 * @param mixed $user_message User message.
+	 * @param mixed $context Context.
+	 * @param bool $only_always Only always.
 	 */
 	private function search_ivr_match( $messages, $user_message, $context, $only_always = false ) {
 		// Pass 1: Exact match (original behavior)
@@ -5685,6 +6617,10 @@ Example good response:
 
 	/**
 	 * Find a message by its name in the IVR config
+	 *
+	 * @param mixed $message_name Message name.
+	 * @param mixed $phase Phase.
+	 * @param mixed $ivr_config IVR config.
 	 */
 	private function find_message_by_name( $message_name, $phase, $ivr_config ) {
 		if ( empty( $message_name ) ) {
@@ -5709,6 +6645,9 @@ Example good response:
 	/**
 	 * v5.0.2: Build a useful fallback when AI fails on quiz-related questions.
 	 * Returns null if the message isn't quiz-related.
+	 *
+	 * @param mixed $message Message.
+	 * @param mixed $eval_context Eval context.
 	 */
 	private function build_quiz_fallback_response( $message, $eval_context ) {
 		$lower            = strtolower( $message );
@@ -5767,6 +6706,9 @@ Example good response:
 
 	/**
 	 * Get default response for a phase
+	 *
+	 * @param mixed $phase Phase.
+	 * @param mixed $context Context.
 	 */
 	private function get_phase_default_response( $phase, $context ) {
 		// Phase defaults for IVR-only mode (no AI configured / no keyword match).
@@ -5797,6 +6739,11 @@ Example good response:
 	 *
 	 * Previously, ai_context was anemic: { phase, logged_in, is_admin, user_name, message_count }.
 	 * The AI was chatting blind about who the user is and where they are.
+	 *
+	 * @param mixed $phase Phase.
+	 * @param mixed $eval_context Eval context.
+	 * @param string $flow_id Flow ID.
+	 * @param string $ivr_guidance IVR guidance.
 	 */
 	private function build_enriched_ai_context( $phase, $eval_context, $flow_id = '', $ivr_guidance = '' ) {
 		$user_id = $eval_context['user_id'] ?? 0;
@@ -5915,6 +6862,9 @@ Example good response:
 	 * v3.0.5: Match user message against offer reveal phrases (exact match only).
 	 * Returns the matched offer array, or null if no match.
 	 * AI interpretation matching is handled by injecting phrases into the AI system prompt.
+	 *
+	 * @param mixed $message Message.
+	 * @param mixed $flow_id Flow ID.
 	 */
 	private function match_offer_reveal_phrase( $message, $flow_id = null ) {
 		$normalized = strtolower( trim( $message ) );
@@ -5951,6 +6901,8 @@ Example good response:
 	/**
 	 * v3.0.5: Get active offers that use AI interpretation matching.
 	 * Used by the AI chat dispatch to inject offer phrases into the system prompt.
+	 *
+	 * @param mixed $flow_id Flow ID.
 	 */
 	public function get_ai_interpretation_offers( $flow_id = null ) {
 		$offers    = $this->sale_manager->get_available_offers(
@@ -5973,6 +6925,14 @@ Example good response:
 		return $ai_offers;
 	}
 
+	/**
+	 * Get user autoprompts for phase.
+	 *
+	 * @param mixed $phase Phase.
+	 * @param mixed $context Context.
+	 * @param mixed $ivr_config IVR config.
+	 * @return mixed
+	 */
 	private function get_user_autoprompts_for_phase( $phase, $context, $ivr_config ) {
 		// v1.0.8: Use correct config structure.
 		$all_messages        = $ivr_config['messages'] ?? array();
@@ -6004,6 +6964,12 @@ Example good response:
 		return $replies;
 	}
 
+	/**
+	 * Handle AI query.
+	 *
+	 * @param mixed $request Request.
+	 * @return mixed
+	 */
 	public function handle_ai_query( $request ) {
 		$message = sanitize_text_field( $request->get_param( 'message' ) );
 		$context = $request->get_param( 'context' ) ?? array();
@@ -6097,6 +7063,12 @@ Example good response:
 		);
 	}
 
+	/**
+	 * Handle process audio.
+	 *
+	 * @param mixed $request Request.
+	 * @return mixed
+	 */
 	public function handle_process_audio( $request ) {
 		$files = $request->get_file_params();
 
@@ -6205,6 +7177,8 @@ Example good response:
 	 * 5. Picks ONE random lesson (#8)
 	 * 6. Stores in user meta
 	 * 7. IVR/AI can deliver free lesson
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function handle_process_quiz( $request ) {
 		$input        = sanitize_textarea_field( $request->get_param( 'input' ) );
@@ -6406,7 +7380,7 @@ Example good response:
 	 * Empty list = this flow does not run or surface quizzes (e.g. assistant).
 	 * Does not invent pronunciation_* defaults from global options.
 	 *
-	 * @param string $stem
+	 * @param string $stem Stem.
 	 * @return string[]
 	 */
 	public function flosc_flow_quiz_ids( $stem = '' ) {
@@ -6483,9 +7457,9 @@ Example good response:
 	 * 4) Legacy meta with no quiz_id: only if this flow has default_audio_quiz_id
 	 *    (explicit audio quiz key on the flow bag) and data has phrase_results.
 	 *
-	 * @param string     $stem
-	 * @param array|null $quiz_data
-	 * @param string     $quiz_id_meta
+	 * @param string     $stem Stem.
+	 * @param array|null $quiz_data Quiz data.
+	 * @param string     $quiz_id_meta Quiz ID meta.
 	 * @return bool
 	 */
 	public function flosc_flow_should_surface_quiz_data( $stem, $quiz_data = null, $quiz_id_meta = '' ) {
@@ -6551,7 +7525,7 @@ Example good response:
 	/**
 	 * Flow stem from REST request or current app flow (session isolation).
 	 *
-	 * @param WP_REST_Request|null $request
+	 * @param WP_REST_Request|null $request Request.
 	 * @return string
 	 */
 	public function flosc_request_flow_stem( $request = null ) {
@@ -6684,6 +7658,8 @@ Example good response:
 	/**
 	 * Redeem Access Code — flow-level and/or per-offer access_codes.
 	 * Full unlock: grant member for this flow (offer grants when code is on an offer).
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function handle_redeem_access_code( $request ) {
 		$code           = $request->get_param( 'code' );
@@ -6817,6 +7793,8 @@ Example good response:
 	 *
 	 * This replaces the cookie-based SSO scoring path which fails cross-domain
 	 * (third-party cookies are blocked by modern browsers).
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function handle_score_pending_audio( $request ) {
 		$user_id = get_current_user_id();
@@ -6903,6 +7881,8 @@ Example good response:
 	 * Stashes visitor quiz payload and (when MagicLink is enabled) mints access
 	 * for an existing WP user only. MagicLink click never creates accounts;
 	 * Convenience-link mint requires an existing WP user (never creates on mint).
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function handle_stash_visitor_quiz( $request ) {
 		$quiz_data = $request->get_param( 'quiz_data' );
@@ -6951,6 +7931,8 @@ Example good response:
 
 	/**
 	 * Consume quiz data stashed via /stash-visitor-quiz before an SSO redirect.
+	 *
+	 * @param int $user_id User ID.
 	 */
 	public function consume_stashed_visitor_quiz( $user_id ) {
 		$existing = get_user_meta( $user_id, '_flosc_last_quiz_data', true );
@@ -6990,6 +7972,8 @@ Example good response:
 	/**
 	 * Save guest profile nickname and optional password from the in-chat profile card.
 	 * Called on first (and every subsequent) guest link login.
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function handle_update_guest_profile( $request ) {
 		// Pass 6: password/cookie only for an already authenticated WordPress user.
@@ -7077,6 +8061,8 @@ Example good response:
 
 	/**
 	 * Generate unique username from email — consistent with WooCommerce convention on this site.
+	 *
+	 * @param mixed $email Email.
 	 */
 	private function generate_username_from_email( $email ) {
 		// Use email as username (consistent with WooCommerce convention on this site)
@@ -7099,6 +8085,8 @@ Example good response:
 	 * flosc_prelogin_score (set by /store-score) was checked, so multiple-choice
 	 * quiz results were never transferred to the new user → free lesson never
 	 * assigned → flow broke at the "View free lesson" step.
+	 *
+	 * @param int $user_id User ID.
 	 */
 	private function process_prelogin_data_for_user( $user_id ) {
 		// Primary: flosc_prelogin_score (set by /store-score — text-sequence + audio quiz path)
@@ -7210,6 +8198,8 @@ Example good response:
 	/**
 	 * Get free lesson for logged-in user (v9.1.9)
 	 * v1.4.9: Use deliver_free_lesson() to persist _flosc_free_content_item_delivered
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function get_free_lesson( $request ) {
 		$user_id = get_current_user_id();
@@ -7421,6 +8411,8 @@ Example good response:
 	 * PayPal Subscriptions — Get or create plans (auto-setup)
 	 * Returns plan IDs for monthly ($10) and yearly ($100).
 	 * Creates the PayPal product + plans on first call.
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function paypal_get_plans( $request ) {
 		$flow_id = sanitize_text_field( $request->get_param( 'flow_id' ) ?? '' );
@@ -7546,6 +8538,8 @@ Example good response:
 	 * 2) custom_id = server purchase_uuid — load intent
 	 * 3) plan/offer/amount from intent only
 	 * 4) then browser binding + account create + fulfill
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function paypal_activate_subscription( $request ) {
 		if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
@@ -7590,7 +8584,7 @@ Example good response:
 			return new WP_Error(
 				'subscription_not_active',
 				sprintf(
-					/* translators: %s: PayPal subscription status */
+					/* translators: %s: PayPal subscription status. */
 					__( 'Subscription is not ACTIVE (status: %s). Access is granted only after ACTIVE status.', 'flosc' ),
 					'' !== $status ? $status : 'empty'
 				),
@@ -7960,7 +8954,7 @@ Example good response:
 		return new WP_REST_Response(
 			array(
 				'success'           => true,
-				'message'           => sprintf( /* translators: %s: product / flow name */ __( 'Welcome to %s!', 'flosc' ), $product_name ),
+				'message'           => sprintf( /* translators: %s: product / flow name. */ __( 'Welcome to %s!', 'flosc' ), $product_name ),
 				'product_name'      => $product_name,
 				'access'            => $access_manager->get_user_access( $user_id ),
 				'member_level'      => $default_member_level,
@@ -7983,6 +8977,8 @@ Example good response:
 	 * PayPal - Create Order (one-time Orders API).
 	 * Creates a PayPal order for the given offer. Works for guests and logged-in buyers
 	 * (guest capture provisions the account from the PayPal payer email).
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function paypal_create_order( $request ) {
 		if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
@@ -8089,6 +9085,8 @@ Example good response:
 	 * After buyer approves in PayPal popup: capture funds, provision buyer account
 	 * if needed, grant membership from the offer. Works for logged-in buyers and
 	 * visitors (account created from PayPal payer email) — same model as subscriptions.
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function paypal_capture_order( $request ) {
 		if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
@@ -8422,7 +9420,7 @@ Example good response:
 	 * and returns per-flow state + token balances from the USER PROFILE
 	 * (never the visitor wallet).
 	 *
-	 * @param WP_REST_Request $request
+	 * @param WP_REST_Request $request Request.
 	 * @return WP_REST_Response
 	 */
 	public function handle_session_bootstrap( $request ) {
@@ -8506,9 +9504,9 @@ Example good response:
 	 * Build FLOSC_USER payload for a logged-in user on one flow.
 	 * Tokens always come from user meta for that flow (profile wallet), not visitor session.
 	 *
-	 * @param int    $user_id
-	 * @param string $flow_stem
-	 * @param array  $args {
+	 * @param int    $user_id User ID.
+	 * @param string $flow_stem Flow stem.
+	 * @param array  $args {.
 	 *     @type bool $allow_guest_grant_without_session Apply V→G without visitor cookie.
 	 *     @type bool $consume_event_transients          Clear justLoggedIn etc. (page paint only).
 	 * }
@@ -8684,6 +9682,12 @@ Example good response:
 		return $payload;
 	}
 
+	/**
+	 * Get token balance.
+	 *
+	 * @param mixed $request Request.
+	 * @return mixed
+	 */
 	public function get_token_balance( $request ) {
 		$token_provider = $this->sale_manager->get_provider( 'tokens' );
 		$user_id        = get_current_user_id();
@@ -8696,6 +9700,12 @@ Example good response:
 		);
 	}
 
+	/**
+	 * Declare intent.
+	 *
+	 * @param mixed $request Request.
+	 * @return mixed
+	 */
 	public function declare_intent( $request ) {
 		$affiliate = $this->sale_manager->get_provider( 'affiliate' );
 
@@ -8717,6 +9727,12 @@ Example good response:
 		return new WP_REST_Response( array( 'intent' => $intent ) );
 	}
 
+	/**
+	 * Get intent offers.
+	 *
+	 * @param mixed $request Request.
+	 * @return mixed
+	 */
 	public function get_intent_offers( $request ) {
 		$intent_id = $request->get_param( 'id' );
 		$affiliate = $this->sale_manager->get_provider( 'affiliate' );
@@ -8732,6 +9748,12 @@ Example good response:
 		return new WP_REST_Response( array( 'offers' => $offers ) );
 	}
 
+	/**
+	 * Generate referral.
+	 *
+	 * @param mixed $request Request.
+	 * @return mixed
+	 */
 	public function generate_referral( $request ) {
 		$user_id = get_current_user_id();
 		$code    = 'REF' . $user_id;
@@ -8749,6 +9771,8 @@ Example good response:
 	 * v1.0.5 TASK-108: Debug endpoint for funnel state
 	 * Returns complete state for testing the FLOSC funnel flow
 	 * Only available when FLOSC_DEBUG is true
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function get_debug_funnel_state( $request ) {
 		$user_id = get_current_user_id();
@@ -8808,6 +9832,8 @@ Example good response:
 	 *         Also include 'always' condition messages from freeline for all phases
 	 * v1.2.3: Multi-flow aware - loads IVR from current flow's ivr_file
 	 * v1.3.8: Accept explicit flow_id/ivr_file params from frontend (REST context fix)
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function get_ivr_messages( $request ) {
 		$phase = $this->normalize_ivr_phase( $request->get_param( 'phase' ) );
@@ -8943,6 +9969,8 @@ Example good response:
 	/**
 	 * v1.0.4: Get bridge data for current user (TASK-008)
 	 * Returns quiz state preserved between phases for personalized offer targeting
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function get_bridge_data( $request ) {
 		$user_id = get_current_user_id();
@@ -8987,6 +10015,8 @@ Example good response:
 	 *
 	 * Pass 4: requires flow scope; non-entitled items return locked stubs only
 	 * (no excerpt/url/tags/phoneme premium metadata).
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function get_lessons( $request ) {
 		$user_id = get_current_user_id();
@@ -9054,6 +10084,8 @@ Example good response:
 
 	/**
 	 * Get single lesson with content (Pass 4: flow + entitlement).
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function get_lesson( $request ) {
 		$user_id = get_current_user_id();
@@ -9119,6 +10151,8 @@ Example good response:
 	/**
 	 * Store pre-login quiz score (for visitors)
 	 * v9.4.2: Uses signed cookies to prevent score forgery
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function store_prelogin_score( $request ) {
 		$score_data = array(
@@ -9180,6 +10214,8 @@ Example good response:
 	 * Directory: wp-content/uploads/flosc-temp/{tempID}/
 	 * Files:     phrase-{n}.webm + metadata.json
 	 * Cleanup:   flosc_cleanup_visitor_audio cron deletes dirs older than 36 hours.
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function store_visitor_audio( $request ) {
 		$files = $request->get_file_params();
@@ -9313,6 +10349,10 @@ Example good response:
 	 *
 	 * This replaces the server-side re-scoring approach (score_visitor_audio) which
 	 * timed out on ChemiCloud shared hosting (5 phrases × 30s = 150s > 60s web server timeout).
+	 *
+	 * @param int $user_id User ID.
+	 * @param array $quiz_data Quiz data.
+	 * @param string $temp_id Temp ID.
 	 */
 	private function store_browser_quiz_data( $user_id, $quiz_data, $temp_id = '' ) {
 		// Validate and normalize quiz data from browser.
@@ -9469,6 +10509,9 @@ Example good response:
 	/**
 	 * Move visitor audio files from flosc-temp/{temp_id}/ to flosc-users/{user_id}/.
 	 * No scoring — just file relocation for permanent storage in the user's profile.
+	 *
+	 * @param int $user_id User ID.
+	 * @param int $temp_id Temp ID.
 	 */
 	private function move_visitor_audio_to_user( $user_id, $temp_id ) {
 		if ( ! preg_match( '/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $temp_id ) ) {
@@ -9511,6 +10554,8 @@ Example good response:
 	 *
 	 * Local transcoding is intentionally disabled. Playback uses existing files
 	 * only, preferring mp4 when present. Original source files are retained.
+	 *
+	 * @param mixed $session_dir Session dir.
 	 */
 	private function ensure_session_mp4_copies( $session_dir ) {
 		if ( ! is_dir( $session_dir ) ) {
@@ -9603,6 +10648,8 @@ Example good response:
 	/**
 	 * Find whether a session folder already exists under another user's audio tree.
 	 * Returns the owner user ID, or 0 when no owner is found.
+	 *
+	 * @param int $session_id Session ID.
 	 */
 	private function find_session_owner_user_id( $session_id ) {
 		if ( ! preg_match( '/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $session_id ) ) {
@@ -9644,8 +10691,8 @@ Example good response:
 	 *   4. Fires flosc_quiz_completed hook (triggers Free Lesson Manager)
 	 *   5. Sends score email
 	 *
-	 * @param int    $user_id     WordPress user ID
-	 * @param string $session_id  Michel-timestamped session ID from DO
+	 * @param int    $user_id     WordPress user ID.
+	 * @param string $session_id  Michel-timestamped session ID from DO.
 	 * @return bool  True on success, false on failure
 	 */
 	private function pull_session_from_do( $user_id, $session_id ) {
@@ -9842,6 +10889,8 @@ Example good response:
 	 * REST endpoint to store browser-computed quiz data after SSO login.
 	 * SSO triggers a full page redirect, so JS can't send quiz_data during registration.
 	 * After reload, JS reads localStorage and posts quiz data to this endpoint.
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function handle_store_quiz_data( $request ) {
 		$user_id = get_current_user_id();
@@ -9952,8 +11001,8 @@ Example good response:
 	 * NOTE: Primary path is store_browser_quiz_data(); this method is a fallback.
 	 * This method is retained as a fallback for the /score-pending-audio endpoint.
 	 *
-	 * @param int    $user_id  The newly registered user's ID
-	 * @param string $temp_id  The Michel-timestamp tempID from the signed cookie
+	 * @param int    $user_id  The newly registered user's ID.
+	 * @param string $temp_id  The Michel-timestamp tempID from the signed cookie.
 	 * @return array|false     score_data array on success, false on failure
 	 */
 	public function score_visitor_audio( $user_id, $temp_id ) {
@@ -10224,6 +11273,8 @@ Example good response:
 	/**
 	 * Mark funnel as completed for user (v3.0.4)
 	 * Called after user completes the FLOSC flow (quiz → login → free lesson → upgrade prompt)
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function mark_funnel_complete( $request ) {
 		$user_id = get_current_user_id();
@@ -10247,6 +11298,8 @@ Example good response:
 	 * Test AI connection (v04_09)
 	 * Sends a test message to verify AI provider is configured and responding
 	 * Returns smart error messages with next steps if connection fails
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function handle_test_ai( $request ) {
 		$start_time   = microtime( true );
@@ -10465,6 +11518,9 @@ Example good response:
 			);
 		}
 	}
+	/**
+	 * Ajax flosc get chat logs.
+	 */
 	public function ajax_flosc_get_chat_logs() {
 		$post    = wp_unslash( $_POST );
 		$flow_id = sanitize_key( (string) ( $post['flow_id'] ?? '' ) );
@@ -10864,6 +11920,8 @@ Example good response:
 	/**
 	 * v8.0.0: Visitor poll — return admin "(admin)" messages posted into this
 	 * conversation since the given cursor. Public, read-only, lightweight.
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function handle_admin_messages_token( $request ) {
 		$session_id_raw = sanitize_text_field( (string) ( $request->get_param( 'session_id' ) ?? '' ) );
@@ -10889,6 +11947,8 @@ Example good response:
 	/**
 	 * v8.0.0: Visitor poll — return admin "(admin)" messages posted into this
 	 * conversation since the given cursor. Public, read-only, lightweight.
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function handle_admin_messages_poll( $request ) {
 		nocache_headers(); // belt-and-suspenders against any caching layer.
@@ -10934,6 +11994,8 @@ Example good response:
 	/**
 	 * v1.9.0: REST handler — save an AI feedback (admin flags a bad response)
 	 * Stores feedback in flow settings under 'ai_feedback' key.
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function handle_save_feedback( $request ) {
 		$user_message = sanitize_textarea_field( $request->get_param( 'user_message' ) ?? '' );
@@ -10986,6 +12048,8 @@ Example good response:
 
 	/**
 	 * v1.9.0: REST handler — list all AI feedback for current flow
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function handle_get_feedback( $request ) {
 		$flow_id = sanitize_text_field( $request->get_param( 'flow_id' ) ?? '' );
@@ -11019,6 +12083,8 @@ Example good response:
 
 	/**
 	 * v1.9.0: REST handler — delete one AI feedback by ID
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function handle_delete_feedback( $request ) {
 		$feedback_id = sanitize_text_field( $request->get_param( 'feedback_id' ) );
@@ -11065,6 +12131,8 @@ Example good response:
 
 	/**
 	 * v1.9.0: REST handler — save an AI praise (admin reinforces good response)
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function handle_save_praise( $request ) {
 		$user_message  = sanitize_textarea_field( $request->get_param( 'user_message' ) ?? '' );
@@ -11113,6 +12181,8 @@ Example good response:
 
 	/**
 	 * v1.9.0: REST handler — delete one AI praise by ID
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function handle_delete_praise( $request ) {
 		$praise_id = sanitize_text_field( $request->get_param( 'praise_id' ) );
@@ -11160,6 +12230,8 @@ Example good response:
 	/**
 	 * Handle IVR message tracking (v07.09)
 	 * Track which messages have been shown to users
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function handle_ivr_track( $request ) {
 		$message_name = sanitize_text_field( $request->get_param( 'message_name' ) );
@@ -11216,6 +12288,8 @@ Example good response:
 
 	/**
 	 * Get applicable IVR messages for current user/context (v07.09)
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function handle_ivr_get_messages( $request ) {
 		$phase = $this->normalize_ivr_phase( $request->get_param( 'phase' ) );
@@ -11296,6 +12370,8 @@ Example good response:
 	/**
 	 * Render a profile reminder for email-registered users who have not yet set a nickname/password.
 	 * Shown on /wp-admin/profile.php only for the user viewing their own profile.
+	 *
+	 * @param mixed $user User.
 	 */
 	public function render_credential_setup_reminder( $user ) {
 		if ( $user->ID !== get_current_user_id() ) {
@@ -11321,6 +12397,8 @@ Example good response:
 	 * v8.0.5: Render audio files section on WP admin user profile page.
 	 * Reads flosc-users/{user_id}/metadata.json and lists playable audio for each phrase.
 	 * Audio served via AJAX endpoint (files are .htaccess-protected).
+	 *
+	 * @param mixed $user User.
 	 */
 	public function render_admin_user_audio_section( $user ) {
 		// Admins can view any user's audio. Users can view their own.
@@ -11958,6 +13036,10 @@ Example good response:
 
 	/**
 	 * Resolve a full quiz payload for a specific session id.
+	 *
+	 * @param int $user_id User ID.
+	 * @param int $session_id Session ID.
+	 * @param array $current_quiz_data Current quiz data.
 	 */
 	private function find_quiz_data_by_session( $user_id, $session_id, $current_quiz_data = array() ) {
 		if ( empty( $session_id ) ) {
@@ -11999,6 +13081,11 @@ Example good response:
 
 	/**
 	 * Render phrase audio player and MP4 download link for one phrase.
+	 *
+	 * @param int $user_id User ID.
+	 * @param int $session_id Session ID.
+	 * @param mixed $phrase_num Phrase num.
+	 * @param mixed $user_audio_dir User audio dir.
 	 */
 	private function render_phrase_audio_player_and_download( $user_id, $session_id, $phrase_num, $user_audio_dir ) {
 		$audio_file = '';
@@ -12038,6 +13125,11 @@ Example good response:
 
 	/**
 	 * Build short-lived signature for protected audio URLs.
+	 *
+	 * @param int $user_id User ID.
+	 * @param int $session_id Session ID.
+	 * @param mixed $file File.
+	 * @param mixed $expires Expires.
 	 */
 	private function build_audio_access_signature( $user_id, $session_id, $file, $expires ) {
 		$payload = implode(
@@ -12055,6 +13147,12 @@ Example good response:
 
 	/**
 	 * Validate signature for protected audio URL access.
+	 *
+	 * @param int $user_id User ID.
+	 * @param int $session_id Session ID.
+	 * @param mixed $file File.
+	 * @param mixed $expires Expires.
+	 * @param mixed $sig Sig.
 	 */
 	private function is_valid_audio_access_signature( $user_id, $session_id, $file, $expires, $sig ) {
 		if ( ! $expires || ! $sig ) {
@@ -12072,6 +13170,11 @@ Example good response:
 
 	/**
 	 * Render the formatted phrase breakdown block for a specific quiz payload.
+	 *
+	 * @param int $user_id User ID.
+	 * @param array $quiz_data Quiz data.
+	 * @param bool $is_guest_user Is guest user.
+	 * @param mixed $profile_completed Profile completed.
 	 */
 	private function render_phrase_breakdown_for_quiz_data( $user_id, $quiz_data, $is_guest_user, $profile_completed ) {
 		if ( empty( $quiz_data ) || ! is_array( $quiz_data ) ) {
@@ -12351,98 +13454,226 @@ Example good response:
 		);
 	}
 
+	/**
+	 * Enqueue companion.
+	 *
+	 * @return mixed
+	 */
 	public function enqueue_companion() {
 		return $this->companion_mode->enqueue_companion();
 	}
 
+	/**
+	 * Resolve companion flow context.
+	 *
+	 * @param bool $handoff_request Handoff request.
+	 * @return mixed
+	 */
 	private function resolve_companion_flow_context( $handoff_request = false ) {
 		return $this->companion_mode->resolve_companion_flow_context( $handoff_request );
 	}
 
+	/**
+	 * Find companion flows for request.
+	 *
+	 * @param mixed $req_path Req path.
+	 * @param array $category_slugs Category slugs.
+	 * @return mixed
+	 */
 	private function find_companion_flows_for_request( $req_path, array $category_slugs ) {
 		return $this->companion_mode->find_companion_flows_for_request( $req_path, $category_slugs );
 	}
 
+	/**
+	 * Get companion request category slugs.
+	 *
+	 * @return mixed
+	 */
 	private function get_companion_request_category_slugs() {
 		return $this->companion_mode->get_companion_request_category_slugs();
 	}
 
+	/**
+	 * Get companion chat app URL.
+	 *
+	 * @return mixed
+	 */
 	private function get_companion_chat_app_url() {
 		return $this->companion_mode->get_companion_chat_app_url();
 	}
 
+	/**
+	 * Get flow by slug for companion.
+	 *
+	 * @param mixed $slug Slug.
+	 * @return mixed
+	 */
 	private function get_flow_by_slug_for_companion( $slug ) {
 		return $this->companion_mode->get_flow_by_slug_for_companion( $slug );
 	}
 
+	/**
+	 * Get current frontend URL.
+	 *
+	 * @return mixed
+	 */
 	private function get_current_frontend_url() {
 		return $this->companion_mode->get_current_frontend_url();
 	}
 
+	/**
+	 * Get companion defaults.
+	 *
+	 * @return mixed
+	 */
 	private function get_companion_defaults() {
 		return $this->companion_mode->get_companion_defaults();
 	}
 
+	/**
+	 * Get companion numeric limits.
+	 *
+	 * @return mixed
+	 */
 	private function get_companion_numeric_limits() {
 		return $this->companion_mode->get_companion_numeric_limits();
 	}
 
+	/**
+	 * Get companion allowed modes.
+	 *
+	 * @return mixed
+	 */
 	private function get_companion_allowed_modes() {
 		return $this->companion_mode->get_companion_allowed_modes();
 	}
 
+	/**
+	 * Get companion widget modes.
+	 *
+	 * @return mixed
+	 */
 	private function get_companion_widget_modes() {
 		return $this->companion_mode->get_companion_widget_modes();
 	}
 
+	/**
+	 * Get companion allowed positions.
+	 *
+	 * @return mixed
+	 */
 	private function get_companion_allowed_positions() {
 		return $this->companion_mode->get_companion_allowed_positions();
 	}
 
+	/**
+	 * Get companion mobile behaviors.
+	 *
+	 * @return mixed
+	 */
 	private function get_companion_mobile_behaviors() {
 		return $this->companion_mode->get_companion_mobile_behaviors();
 	}
 
+	/**
+	 * Get companion context scopes.
+	 *
+	 * @return mixed
+	 */
 	private function get_companion_context_scopes() {
 		return $this->companion_mode->get_companion_context_scopes();
 	}
 
+	/**
+	 * Get companion motion modes.
+	 *
+	 * @return mixed
+	 */
 	private function get_companion_motion_modes() {
 		return $this->companion_mode->get_companion_motion_modes();
 	}
 
+	/**
+	 * Get companion state storages.
+	 *
+	 * @return mixed
+	 */
 	private function get_companion_state_storages() {
 		return $this->companion_mode->get_companion_state_storages();
 	}
 
+	/**
+	 * Get companion launcher svg paths.
+	 *
+	 * @return mixed
+	 */
 	private function get_companion_launcher_svg_paths() {
 		return $this->companion_mode->get_companion_launcher_svg_paths();
 	}
 
+	/**
+	 * Build companion context params.
+	 *
+	 * @param mixed $scope Scope.
+	 * @return mixed
+	 */
 	private function build_companion_context_params( $scope ) {
 		return $this->companion_mode->build_companion_context_params( $scope );
 	}
 
+	/**
+	 * Parse companion path patterns.
+	 *
+	 * @param mixed $raw_patterns Raw patterns.
+	 * @return mixed
+	 */
 	private function parse_companion_path_patterns( $raw_patterns ) {
 		return $this->companion_mode->parse_companion_path_patterns( $raw_patterns );
 	}
 
+	/**
+	 * Get companion target types.
+	 *
+	 * @return mixed
+	 */
 	private function get_companion_target_types() {
 		return $this->companion_mode->get_companion_target_types();
 	}
 
+	/**
+	 * Should show companion for current request.
+	 *
+	 * @return mixed
+	 */
 	private function should_show_companion_for_current_request() {
 		return $this->companion_mode->should_show_companion_for_current_request();
 	}
 
+	/**
+	 * Parse companion target rules.
+	 *
+	 * @param mixed $raw_rules Raw rules.
+	 * @return mixed
+	 */
 	private function parse_companion_target_rules( $raw_rules ) {
 		return $this->companion_mode->parse_companion_target_rules( $raw_rules );
 	}
 
+	/**
+	 * Companion target matches any rule.
+	 *
+	 * @param mixed $rules Rules.
+	 * @return mixed
+	 */
 	private function companion_target_matches_any_rule( $rules ) {
 		return $this->companion_mode->companion_target_matches_any_rule( $rules );
 	}
 
+	/**
+	 * Get companion request path.
+	 *
+	 * @return mixed
+	 */
 	private function get_companion_request_path() {
 		return $this->companion_mode->get_companion_request_path();
 	}
@@ -12616,7 +13847,7 @@ Example good response:
 	 * Extract CSS variables from stylesheet content
 	 * Returns the inner content of :root { } block
 	 *
-	 * @param string $css_content Raw CSS file content
+	 * @param string $css_content Raw CSS file content.
 	 * @return string Variable declarations or empty string
 	 */
 	private function extract_css_variables( $css_content ) {
@@ -12639,6 +13870,9 @@ Example good response:
 	 * Adjust hex color brightness by a percentage (-100 to +100).
 	 * Negative = darker, positive = lighter.
 	 * v1.6.1: Used for accent color cascade.
+	 *
+	 * @param mixed $hex Hex.
+	 * @param mixed $percent Percent.
 	 */
 	private function adjust_color_brightness( $hex, $percent ) {
 		$hex = ltrim( $hex, '#' );
@@ -12659,6 +13893,9 @@ Example good response:
 	/**
 	 * Convert hex color to rgba string.
 	 * v1.6.1: Used for accent-subtle generation.
+	 *
+	 * @param mixed $hex Hex.
+	 * @param mixed $alpha Alpha.
 	 */
 	private function hex_to_rgba( $hex, $alpha ) {
 		$hex = ltrim( $hex, '#' );
@@ -12673,12 +13910,20 @@ Example good response:
 }
 
 // Initialize.
+/**
+ * Flosc.
+ *
+ * @return mixed
+ */
 function flosc() {
 	return FLOSC_Framework::instance();
 }
 
 /**
  * Helper: Adjust hex color brightness
+ *
+ * @param mixed $hex Hex.
+ * @param mixed $percent Percent.
  */
 function flosc_adjust_brightness( $hex, $percent ) {
 	$hex = ltrim( $hex, '#' );
@@ -12727,9 +13972,9 @@ add_action( 'plugins_loaded', 'flosc' );
  * Usage: flosc_get_setting('ai_provider', 'ivr')
  * Checks: flow[$key] → get_option('flosc_' . $key) → $default
  *
- * @param string      $key Setting key (without 'flosc_' prefix)
- * @param mixed       $default Default if neither flow nor global has value
- * @param string|null $flow_id Force specific flow (null = auto-detect)
+ * @param string      $key Setting key (without 'flosc_' prefix).
+ * @param mixed       $default Default if neither flow nor global has value.
+ * @param string|null $flow_id Force specific flow (null = auto-detect).
  * @return mixed The setting value
  */
 function flosc_get_setting( $key, $default = '', $flow_id = null ) {
@@ -12739,6 +13984,8 @@ function flosc_get_setting( $key, $default = '', $flow_id = null ) {
 /**
  * Get the flow's favicon URL (browser tab icon).
  * Reads favicon_url from flow identity. Falls back to bundled FLOSC default icon.
+ *
+ * @param string $size Size.
  */
 function flosc_get_favicon_url( $size = '' ) {
 	$identity = FLOSC_Framework::instance()->get_floscflow_identity();

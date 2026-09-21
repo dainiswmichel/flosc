@@ -16,12 +16,20 @@ class FLOSC_Email {
 	/** @var int Emails sent in current cron/run (rate limit). */
 	private $flosc_email_sent_this_run = 0;
 
+	/**
+	 * Construct.
+	 *
+	 * @param mixed $flosc Flosc.
+	 */
 	public function __construct( $flosc ) {
 		$this->flosc = $flosc;
 	}
 
 	/**
 	 * Send quiz score email with OTO
+	 *
+	 * @param mixed $user User.
+	 * @param array $score_data Score data.
 	 */
 	public function send_score_email( $user, $score_data ) {
 		$context       = $this->get_guest_email_context( '', (int) $user->ID );
@@ -95,6 +103,9 @@ class FLOSC_Email {
 
 	/**
 	 * Helper: resolve guest email identity for a flow.
+	 *
+	 * @param string $flow_id Flow ID.
+	 * @param int $user_id User ID.
 	 */
 	public function get_guest_email_context( $flow_id = '', $user_id = 0 ) {
 		$flow_id = sanitize_key( (string) $flow_id );
@@ -142,6 +153,10 @@ class FLOSC_Email {
 
 	/**
 	 * Helper: replace guest email placeholders.
+	 *
+	 * @param mixed $text Text.
+	 * @param mixed $user User.
+	 * @param mixed $days_remaining Days remaining.
 	 */
 	public function replace_guest_email_placeholders( $text, $user, $days_remaining ) {
 		$context     = $this->get_guest_email_context( '', (int) $user->ID );
@@ -159,6 +174,9 @@ class FLOSC_Email {
 
 	/**
 	 * Resolve flow-aware sender identity for FLOSC emails.
+	 *
+	 * @param string $flow_id Flow ID.
+	 * @param int $user_id User ID.
 	 */
 	public function get_flosc_mail_identity( $flow_id = '', $user_id = 0 ) {
 		$context  = $this->get_guest_email_context( $flow_id, (int) $user_id );
@@ -189,6 +207,10 @@ class FLOSC_Email {
 
 	/**
 	 * Build standard FLOSC email headers for consistent sender identity.
+	 *
+	 * @param string $flow_id Flow ID.
+	 * @param int $user_id User ID.
+	 * @param bool $is_html Is HTML.
 	 */
 	public function get_flosc_mail_headers( $flow_id = '', $user_id = 0, $is_html = false ) {
 		$identity = $this->get_flosc_mail_identity( $flow_id, $user_id );
@@ -206,6 +228,9 @@ class FLOSC_Email {
 
 	/**
 	 * Build Reply-To header for FLOSC emails.
+	 *
+	 * @param string $flow_id Flow ID.
+	 * @param int $user_id User ID.
 	 */
 	public function get_flosc_reply_to_header( $flow_id = '', $user_id = 0 ) {
 		$identity = $this->get_flosc_mail_identity( $flow_id, $user_id );
@@ -216,6 +241,10 @@ class FLOSC_Email {
 	 * SSO welcome email (no MagicLink).
 	 * Provider login already authenticated the user; MagicLink is admin/opt-in only.
 	 * Skips non-SSO registration methods (email pending flow, purchase, etc.).
+	 *
+	 * @param int $user_id User ID.
+	 * @param int $provider_id Provider ID.
+	 * @param array $user_data User data.
 	 */
 	public function send_sso_welcome_email( $user_id, $provider_id, $user_data = array() ) {
 		$user_id     = absint( $user_id );
@@ -309,6 +338,8 @@ class FLOSC_Email {
 
 	/**
 	 * Send due guest follow-up emails for a single guest user (slot-based windows).
+	 *
+	 * @param int $user_id User ID.
 	 */
 	public function send_due_guest_followups_for_user( $user_id ) {
 		$user = get_userdata( $user_id );
@@ -388,6 +419,11 @@ class FLOSC_Email {
 	 * daily run cannot burst the mail server. Welcome emails are event-driven and NOT throttled.
 	 * Cap is filterable via 'flosc_email_max_per_run' (0 = unlimited). Returns false when the cap
 	 * is reached so callers can stop and resume on the next run.
+	 *
+	 * @param mixed $to To.
+	 * @param mixed $subject Subject.
+	 * @param mixed $body Body.
+	 * @param mixed $headers Headers.
 	 */
 	public function send_email_throttled( $to, $subject, $body, $headers ) {
 		$max = (int) apply_filters( 'flosc_email_max_per_run', 50 );
@@ -400,6 +436,12 @@ class FLOSC_Email {
 
 	/**
 	 * Shared HTML email card (matches the guest/member welcome styling).
+	 *
+	 * @param mixed $context Context.
+	 * @param mixed $user User.
+	 * @param mixed $body_text Body text.
+	 * @param string $button_url Button URL.
+	 * @param string $button_label Button label.
 	 */
 	public function flosc_email_html_card( $context, $user, $body_text, $button_url = '', $button_label = '' ) {
 		$safe_email = esc_html( $user->user_email );
@@ -420,6 +462,12 @@ class FLOSC_Email {
 		return $html;
 	}
 
+	/**
+	 * Dispatch member welcome email.
+	 *
+	 * @param int $user_id User ID.
+	 * @param array $purchase_data Purchase data.
+	 */
 	public function dispatch_member_welcome_email( $user_id, $purchase_data = array() ) {
 		$user = get_userdata( $user_id );
 		if ( ! $user || empty( $user->user_email ) ) {
@@ -468,6 +516,9 @@ class FLOSC_Email {
 
 	/**
 	 * Newsletter welcome — one per user per flow. Records send time (anchors newsletter follow-ups).
+	 *
+	 * @param int $user_id User ID.
+	 * @param string $flow_id Flow ID.
 	 */
 	public function dispatch_newsletter_welcome_email( $user_id, $flow_id = '' ) {
 		$user = get_userdata( $user_id );
@@ -504,6 +555,12 @@ class FLOSC_Email {
 		}
 	}
 
+	/**
+	 * Subscribe to newsletter.
+	 *
+	 * @param int $user_id User ID.
+	 * @param string $flow_id Flow ID.
+	 */
 	public function subscribe_to_newsletter( $user_id, $flow_id = '' ) {
 		$user_id = (int) $user_id;
 		if ( $user_id <= 0 ) {
@@ -518,6 +575,8 @@ class FLOSC_Email {
 
 	/**
 	 * Render the optional newsletter opt-in checkbox on the WP user profile.
+	 *
+	 * @param mixed $user User.
 	 */
 	public function render_newsletter_profile_field( $user ) {
 		$checked = get_user_meta( $user->ID, 'flosc_newsletter_optin', true ) ? 'checked' : '';
@@ -530,6 +589,8 @@ class FLOSC_Email {
 
 	/**
 	 * Save the newsletter opt-in checkbox; sends the welcome on first opt-in.
+	 *
+	 * @param int $user_id User ID.
 	 */
 	public function save_newsletter_profile_field( $user_id ) {
 		$user_id = (int) $user_id;
@@ -559,6 +620,11 @@ class FLOSC_Email {
 	 * Generic per-series follow-up sender. Reads <prefix>_followups (repeater rows: day/subject/body)
 	 * and sends those whose day offset has elapsed since $anchor_ts (the welcome-email send time)
 	 * and were not already sent. Idempotent; flow- and series-aware sent-state.
+	 *
+	 * @param mixed $user User.
+	 * @param mixed $prefix Prefix.
+	 * @param mixed $sent_meta_key Sent meta key.
+	 * @param int $flow_id Flow ID.
 	 */
 	public function send_due_series_followups( $user, $prefix, $anchor_ts, $sent_meta_key, $flow_id ) {
 		if ( ! $user || empty( $user->user_email ) ) {
@@ -683,6 +749,8 @@ The {product_name} Team';
 	 * Reliability guard for SSO email sequence.
 	 * - Ensures welcome email exists once for SSO-created users
 	 * - Sends any due guest follow-up emails (slot windows)
+	 *
+	 * @param int $user_id User ID.
 	 */
 	public function maybe_run_sso_email_sequence_for_user( $user_id ) {
 		$user_id = (int) $user_id;
@@ -705,6 +773,10 @@ The {product_name} Team';
 	/**
 	 * Process SSO flow email sequence on SSO entry events.
 	 * Fires on successful SSO login/auto-link and sends welcome only when user is new to that flow.
+	 *
+	 * @param int $user_id User ID.
+	 * @param int $provider_id Provider ID.
+	 * @param array $user_data User data.
 	 */
 	public function maybe_process_sso_flow_email_sequence( $user_id, $provider_id, $user_data ) {
 		$user_id = (int) $user_id;

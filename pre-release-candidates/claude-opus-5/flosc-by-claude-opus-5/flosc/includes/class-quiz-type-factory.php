@@ -71,7 +71,7 @@ class FLOSC_Quiz_Type_Factory {
 	/**
 	 * Get a specific quiz type by ID
 	 *
-	 * @param string $quiz_type_id The quiz type ID
+	 * @param string $quiz_type_id The quiz type ID.
 	 * @return FLOSC_Abstract_Quiz_Type|null Quiz type instance or null if not found
 	 */
 	public static function get_quiz_type( $quiz_type_id ) {
@@ -113,7 +113,7 @@ class FLOSC_Quiz_Type_Factory {
 	/**
 	 * Check if a quiz type exists
 	 *
-	 * @param string $quiz_type_id The quiz type ID
+	 * @param string $quiz_type_id The quiz type ID.
 	 * @return bool True if exists
 	 */
 	public static function quiz_type_exists( $quiz_type_id ) {
@@ -124,7 +124,7 @@ class FLOSC_Quiz_Type_Factory {
 	/**
 	 * Get quiz type metadata
 	 *
-	 * @param string $quiz_type_id The quiz type ID
+	 * @param string $quiz_type_id The quiz type ID.
 	 * @return array|null Metadata array or null if not found
 	 */
 	public static function get_quiz_type_meta( $quiz_type_id ) {
@@ -162,7 +162,7 @@ class FLOSC_Quiz_Type_Factory {
 	/**
 	 * Validate quiz type configuration
 	 *
-	 * @param string $quiz_type_id The quiz type ID
+	 * @param string $quiz_type_id The quiz type ID.
 	 * @return true|WP_Error True if valid, WP_Error if invalid
 	 */
 	public static function validate_quiz_type_config( $quiz_type_id ) {
@@ -237,7 +237,7 @@ class FLOSC_Quiz_Type_Factory {
 	/**
 	 * Get quiz types by capability requirement
 	 *
-	 * @param string $capability 'audio', 'stt', or 'ai'
+	 * @param string $capability 'audio', 'stt', or 'ai'.
 	 * @return array Array of quiz type IDs
 	 */
 	public static function get_quiz_types_by_capability( $capability ) {

@@ -11,6 +11,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 trait FLOSC_Chat_Turn_Trait {
+	/**
+	 * Handle chat.
+	 *
+	 * @param mixed $request Request.
+	 * @return mixed
+	 */
 	public function handle_chat( $request ) {
 		$flosc_chat_start_time = microtime( true );
 		$flosc_response_source = 'ivr'; // Track how response was generated.
@@ -1090,6 +1096,8 @@ trait FLOSC_Chat_Turn_Trait {
 	/**
 	 * Handle chat with RAG (Retrieval Augmented Generation) - v9.1.6
 	 * AI can search WordPress content dynamically
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function handle_chat_with_rag( $request ) {
 		$message = sanitize_text_field( $request->get_param( 'message' ) );

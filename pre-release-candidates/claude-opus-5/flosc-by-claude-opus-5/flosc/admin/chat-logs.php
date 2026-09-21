@@ -582,6 +582,8 @@ $flosc_sessions_archived_url = add_query_arg(
 <?php
 /**
  * Render a single chat log table row (flat "All entries" view).
+ *
+ * @param mixed $log Log.
  */
 function flosc_render_chat_log_row( $log ) {
 	$time  = substr( $log['timestamp'] ?? '', 11, 8 );
@@ -694,6 +696,8 @@ function flosc_chat_session_allowed_html() {
 /**
  * Format a MySQL timestamp into Michel Date Stamp (UTC).
  * Example: 2026-07m-10d-UTC08h:26m13s
+ *
+ * @param mixed $timestamp Timestamp.
  */
 function flosc_format_mts_utc( $timestamp ) {
 	$raw = trim( (string) $timestamp );
@@ -713,6 +717,9 @@ function flosc_format_mts_utc( $timestamp ) {
 
 /**
  * Extract one context token from chain_detail.
+ *
+ * @param mixed $chain_detail Chain detail.
+ * @param mixed $key Key.
  */
 function flosc_get_chain_context_value( $chain_detail, $key ) {
 	$chain_detail = (string) $chain_detail;
@@ -799,6 +806,8 @@ function flosc_render_msg_bubbles( $code, $letter, $n, $content, $who, $time, $r
  *
  * The auto-welcome "[SYSTEM: …]" rows are skipped so only the real back-and-forth
  * shows. The header carries a Delete control that removes the whole conversation.
+ *
+ * @param mixed $flosc_s Flosc s.
  */
 function flosc_render_chat_session( $flosc_s ) {
 	$when        = esc_html( flosc_format_mts_utc( (string) ( $flosc_s['last_ts'] ?? '' ) ) );

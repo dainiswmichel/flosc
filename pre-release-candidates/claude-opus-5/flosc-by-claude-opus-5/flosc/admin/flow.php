@@ -89,7 +89,7 @@ if ( 'all' === $flosc_flow_view ) {
 			'upload_success',
 			'' !== $flosc_up_name
 				? sprintf(
-					/* translators: %s: IVR filename for the new flow */
+					/* translators: %s: IVR filename for the new flow. */
 					esc_html__( 'New flow ready: %s. It is selected in Switch Flow.', 'flosc' ),
 					esc_html( $flosc_up_name )
 				)
@@ -247,7 +247,7 @@ if ( 'all' === $flosc_flow_view ) {
 						'flosc_settings',
 						'import_selected_success',
 						sprintf(
-							/* translators: 1: source file 2: current flow file */
+							/* translators: 1: source file 2: current flow file. */
 							esc_html__( 'Merged %1$s into current flow %2$s (settings merge; secrets unchanged).', 'flosc' ),
 							esc_html( $flosc_source_file ),
 							esc_html( $flosc_work_file )
@@ -259,7 +259,7 @@ if ( 'all' === $flosc_flow_view ) {
 						'flosc_settings',
 						'import_selected_partial',
 						sprintf(
-							/* translators: %s: current flow file */
+							/* translators: %s: current flow file. */
 							esc_html__( 'Merged into current flow, but file sync failed for: %s', 'flosc' ),
 							esc_html( $flosc_work_file )
 						),
@@ -541,6 +541,14 @@ if ( 'anthropic' === $flosc_ai_provider ) {
 }
 
 // ── Helper: render a phase card ───────────────────────────────────────────────
+/**
+ * Flosc flow card.
+ *
+ * @param mixed $letter Letter.
+ * @param mixed $flosc_phase_name Flosc phase name.
+ * @param mixed $subtitle Subtitle.
+ * @param mixed $rows Rows.
+ */
 function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 	$phase_class = strtolower( $letter );
 	echo '<div class="flosc-flow-card flosc-flow-card--' . esc_attr( $phase_class ) . '">';
@@ -1135,7 +1143,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 								<input type="hidden" name="import_ivr_file" value="<?php echo esc_attr( $flosc_ivr_filename ); ?>">
 								<button type="submit" name="flosc_import_selected_ivr_file" class="button button-small" title="<?php echo esc_attr__( 'Merge this file into the current flow', 'flosc' ); ?>"><?php echo esc_html__( 'Apply', 'flosc' ); ?></button>
 							</form>
-							<form method="post" action="<?php echo esc_url( $flosc_flow_all_url ); ?>" class="flosc-ivr-inline-form flosc-ivr-inline-form--warn" data-confirm-message="<?php echo esc_attr( sprintf( /* translators: %s filename */ __( 'Delete IVR file %s? This cannot be undone from this panel.', 'flosc' ), $flosc_ivr_filename ) ); ?>">
+							<form method="post" action="<?php echo esc_url( $flosc_flow_all_url ); ?>" class="flosc-ivr-inline-form flosc-ivr-inline-form--warn" data-confirm-message="<?php echo esc_attr( sprintf( /* translators: %s filename. */ __( 'Delete IVR file %s? This cannot be undone from this panel.', 'flosc' ), $flosc_ivr_filename ) ); ?>">
 								<?php wp_nonce_field( 'flosc_delete_ivr_file' ); ?>
 								<input type="hidden" name="delete_ivr_file" value="<?php echo esc_attr( $flosc_ivr_filename ); ?>">
 								<button type="submit" name="flosc_delete_ivr_file" class="button button-small"><?php echo esc_html__( 'Delete', 'flosc' ); ?></button>

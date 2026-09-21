@@ -10,6 +10,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 if ( ! function_exists( 'flosc_resolve_ivr_file_path' ) ) {
+	/**
+	 * Flosc resolve IVR file path.
+	 *
+	 * @param mixed $flosc_ivr_filename Flosc IVR filename.
+	 * @return mixed
+	 */
 	function flosc_resolve_ivr_file_path( $flosc_ivr_filename ) {
 		$flosc_ivr_filename = sanitize_file_name( trim( (string) $flosc_ivr_filename ) );
 		// Per WordPress.org policy: runtime-generated files must be written to uploads only.
@@ -579,7 +585,7 @@ if ( isset( $flosc_get['flosc_ivr_uploaded'] ) && '1' === (string) $flosc_get['f
 		'upload_success',
 		'' !== $flosc_up_name
 			? sprintf(
-				/* translators: %s: IVR filename for the new flow */
+				/* translators: %s: IVR filename for the new flow. */
 				esc_html__( 'New flow ready: %s. It is selected in Switch Flow.', 'flosc' ),
 				esc_html( $flosc_up_name )
 			)

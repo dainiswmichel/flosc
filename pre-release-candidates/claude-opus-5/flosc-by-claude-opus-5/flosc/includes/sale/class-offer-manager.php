@@ -46,6 +46,8 @@ class FLOSC_Offer_Manager {
 	 * Get all offers
 	 * v1.6.2: Flow-aware — reads from per-flow storage first, falls back to global
 	 * v1.6.5: Seeds defaults into per-flow storage on first access so admin can edit them
+	 *
+	 * @param mixed $flow_id Flow ID.
 	 */
 	public function get_all_offers( $flow_id = null ) {
 		// v1.6.2: Try per-flow storage first (where admin offers.php saves)
@@ -89,6 +91,8 @@ class FLOSC_Offer_Manager {
 	/**
 	 * Get active (published) offers
 	 * v1.6.2: Flow-aware
+	 *
+	 * @param mixed $flow_id Flow ID.
 	 */
 	public function get_active_offers( $flow_id = null ) {
 		$offers = $this->get_all_offers( $flow_id );
@@ -103,6 +107,9 @@ class FLOSC_Offer_Manager {
 	/**
 	 * Get a specific offer by ID
 	 * v1.6.2: Flow-aware
+	 *
+	 * @param int $offer_id Offer ID.
+	 * @param mixed $flow_id Flow ID.
 	 */
 	public function get_offer( $offer_id, $flow_id = null ) {
 		$offers = $this->get_all_offers( $flow_id );
@@ -116,6 +123,8 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Get offers by type
+	 *
+	 * @param mixed $type Type.
 	 */
 	public function get_offers_by_type( $type ) {
 		$offers = $this->get_active_offers();
@@ -129,6 +138,8 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Create a new offer
+	 *
+	 * @param mixed $data Data.
 	 */
 	public function create_offer( $data ) {
 		$offers = $this->get_all_offers();
@@ -155,6 +166,9 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Update an offer
+	 *
+	 * @param int $offer_id Offer ID.
+	 * @param mixed $data Data.
 	 */
 	public function update_offer( $offer_id, $data ) {
 		$offers = $this->get_all_offers();
@@ -181,6 +195,8 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Delete an offer
+	 *
+	 * @param int $offer_id Offer ID.
 	 */
 	public function delete_offer( $offer_id ) {
 		$offers = $this->get_all_offers();
@@ -201,6 +217,9 @@ class FLOSC_Offer_Manager {
 	/**
 	 * Sync IVR-defined offer messages into the editable offer registry.
 	 * Keeps the IVR file as the source of truth for visible offer copy/format.
+	 *
+	 * @param mixed $offers Offers.
+	 * @param mixed $flow_id Flow ID.
 	 */
 	private function sync_ivr_offers_into_offers( $offers, $flow_id = null ) {
 		if ( empty( $flow_id ) ) {
@@ -271,6 +290,10 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Build a normalized offer record from an IVR offer message.
+	 *
+	 * @param mixed $existing Existing.
+	 * @param mixed $msg Msg.
+	 * @param int $offer_id Offer ID.
 	 */
 	private function normalize_ivr_offer_message( $existing, $msg, $offer_id ) {
 		$name = trim( (string) ( $msg['title'] ?? '' ) );
@@ -356,6 +379,8 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Resolve the active IVR file for a flow.
+	 *
+	 * @param int $flow_id Flow ID.
 	 */
 	private function get_flow_ivr_file( $flow_id ) {
 		$flow_key        = 'flosc_flow_' . sanitize_key( $flow_id );
@@ -402,6 +427,8 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Validate and normalize offer data
+	 *
+	 * @param mixed $data Data.
 	 */
 	private function validate_offer_data( $data ) {
 		$defaults = array(
@@ -779,6 +806,9 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Calculate effective price from an offer for a provider
+	 *
+	 * @param int $offer_id Offer ID.
+	 * @param int $provider_id Provider ID.
 	 */
 	public function get_offer_price( $offer_id, $provider_id ) {
 		$offer = $this->get_offer( $offer_id );
@@ -793,6 +823,8 @@ class FLOSC_Offer_Manager {
 	/**
 	 * Get offer by product ID (site-owner content products only).
 	 * Does not map a paid unlock of the FLOSC plugin itself.
+	 *
+	 * @param int $product_id Product ID.
 	 */
 	public function get_offer_by_product( $product_id ) {
 		$product_id = sanitize_key( (string) $product_id );
@@ -819,6 +851,8 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Get member level for a site-owner content product (flow default level).
+	 *
+	 * @param int $product_id Product ID.
 	 */
 	public function get_member_level_for_product( $product_id ) {
 		$product_id = sanitize_key( (string) $product_id );
@@ -870,6 +904,8 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Product metadata from a configured flow (instance), not hard-coded brands.
+	 *
+	 * @param int $product_id Product ID.
 	 */
 	public function get_product_metadata( $product_id ) {
 		$product_id = sanitize_key( (string) $product_id );

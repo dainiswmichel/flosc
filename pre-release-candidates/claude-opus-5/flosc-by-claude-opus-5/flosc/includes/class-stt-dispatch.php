@@ -12,6 +12,9 @@ class FLOSC_STT_Dispatch {
 
 	private $provider;
 
+	/**
+	 * Construct.
+	 */
 	public function __construct() {
 		// v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves)
 		$this->provider = flosc_get_setting( 'stt_provider', 'assemblyai' );
@@ -20,7 +23,7 @@ class FLOSC_STT_Dispatch {
 	/**
 	 * Resolve multipart filename and MIME from the real source file.
 	 *
-	 * @param string $audio_path
+	 * @param string $audio_path Audio path.
 	 * @return array{filename:string,mime:string}
 	 */
 	private function resolve_audio_upload_meta( $audio_path ) {
@@ -45,6 +48,9 @@ class FLOSC_STT_Dispatch {
 
 	/**
 	 * Transcribe Audio File
+	 *
+	 * @param mixed $audio_path Audio path.
+	 * @param array $options Options.
 	 */
 	public function transcribe( $audio_path, $options = array() ) {
 		// Check cache (useful for repeated test recordings)
@@ -80,6 +86,9 @@ class FLOSC_STT_Dispatch {
 	/**
 	 * AssemblyAI - Recommended for accent handling
 	 * Cost: ~$0.00025/second = $0.0025 per 10s recording
+	 *
+	 * @param mixed $audio_path Audio path.
+	 * @param array $options Options.
 	 */
 	private function assemblyai_transcribe( $audio_path, $options = array() ) {
 		// v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves)
@@ -185,6 +194,9 @@ class FLOSC_STT_Dispatch {
 	/**
 	 * OpenAI Whisper
 	 * Cost: ~$0.006/minute = $0.001 per 10s recording
+	 *
+	 * @param mixed $audio_path Audio path.
+	 * @param array $options Options.
 	 */
 	private function openai_whisper_transcribe( $audio_path, $options = array() ) {
 		// v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves)
@@ -248,6 +260,9 @@ class FLOSC_STT_Dispatch {
 
 	/**
 	 * Custom Endpoint (Self-hosted faster-whisper, etc.)
+	 *
+	 * @param mixed $audio_path Audio path.
+	 * @param array $options Options.
 	 */
 	private function custom_transcribe( $audio_path, $options = array() ) {
 		// v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves)

@@ -82,7 +82,7 @@ abstract class FLOSC_Abstract_Quiz_Type {
 	/**
 	 * Validate user input before processing
 	 *
-	 * @param mixed $input User's answer (text, audio data, etc.)
+	 * @param mixed $input User's answer (text, audio data, etc.).
 	 * @return bool|WP_Error True if valid, WP_Error if invalid
 	 */
 	abstract public function validate_input( $input );
@@ -90,9 +90,9 @@ abstract class FLOSC_Abstract_Quiz_Type {
 	/**
 	 * Analyze the user's answer
 	 *
-	 * @param mixed  $input User's answer
-	 * @param string $expected_content Quiz content from admin settings
-	 * @param array  $context Additional context (STT result, user_id, etc.)
+	 * @param mixed  $input User's answer.
+	 * @param string $expected_content Quiz content from admin settings.
+	 * @param array  $context Additional context (STT result, user_id, etc.).
 	 * @return array {
 	 *     @type int $score Score 0-100
 	 *     @type array $correct Items answered correctly
@@ -134,7 +134,7 @@ abstract class FLOSC_Abstract_Quiz_Type {
 	 *
 	 * Results are sorted tier-1 first so callers get the highest-priority lessons up front.
 	 *
-	 * @param array $analysis Result from analyze()
+	 * @param array $analysis Result from analyze().
 	 * @return array [['id' => int, 'title' => string, 'reason' => string, 'tier' => int], ...]
 	 */
 	public function map_to_lessons( $analysis ) {
@@ -235,7 +235,7 @@ abstract class FLOSC_Abstract_Quiz_Type {
 	 *
 	 * A missing or non-existent reference always returns [] — never an error.
 	 *
-	 * @param string $ref
+	 * @param string $ref Ref.
 	 * @return WP_Post[]
 	 */
 	protected function lookup_lesson_by_tag( $ref ) {
@@ -405,9 +405,9 @@ abstract class FLOSC_Abstract_Quiz_Type {
 	 * Format results for chat display
 	 * Override for custom formatting
 	 *
-	 * @param array $analysis Result from analyze()
-	 * @param array $lessons Result from map_to_lessons()
-	 * @param array $response_templates Admin-configured templates
+	 * @param array $analysis Result from analyze().
+	 * @param array $lessons Result from map_to_lessons().
+	 * @param array $response_templates Admin-configured templates.
 	 * @return string Formatted message
 	 */
 	public function format_results( $analysis, $lessons, $response_templates ) {
@@ -448,8 +448,8 @@ abstract class FLOSC_Abstract_Quiz_Type {
 	/**
 	 * Get setting value for this quiz type
 	 *
-	 * @param string $key Setting key
-	 * @param mixed  $default Default value
+	 * @param string $key Setting key.
+	 * @param mixed  $default Default value.
 	 * @return mixed
 	 */
 	protected function get_setting( $key, $default = '' ) {
@@ -458,6 +458,9 @@ abstract class FLOSC_Abstract_Quiz_Type {
 
 	/**
 	 * Helper: Calculate percentage score
+	 *
+	 * @param int $correct_count Correct count.
+	 * @param int $total_count Total count.
 	 */
 	protected function calculate_percentage( $correct_count, $total_count ) {
 		if ( 0 === $total_count ) {
@@ -468,6 +471,8 @@ abstract class FLOSC_Abstract_Quiz_Type {
 
 	/**
 	 * Helper: Determine response key from score
+	 *
+	 * @param mixed $score Score.
 	 */
 	protected function get_response_key_from_score( $score ) {
 		if ( $score <= 30 ) {

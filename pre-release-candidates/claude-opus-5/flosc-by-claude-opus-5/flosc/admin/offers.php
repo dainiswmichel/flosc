@@ -118,6 +118,11 @@ function flosc_parse_offer_access_codes_from_post( array $flosc_post ) {
 // SAVE HANDLER — runs at include time (same as delete/toggle handlers below)
 // v1.6.5: Removed dead add_action('init',...) — file loads after init fires.
 // ============================================
+/**
+ * Flosc handle offer save.
+ *
+ * @return mixed
+ */
 function flosc_handle_offer_save() {
 	$flosc_post = wp_unslash( $_POST );
 
@@ -904,6 +909,14 @@ document.addEventListener('DOMContentLoaded', function() {
 // ============================================
 // OFFER EDITOR RENDER FUNCTION.
 // ============================================
+/**
+ * Flosc render offer editor v2.
+ *
+ * @param mixed $flosc_offer Flosc offer.
+ * @param mixed $flosc_flow_key Flosc flow key.
+ * @param mixed $flosc_current_ivr Flosc current IVR.
+ * @param mixed $flosc_all_format_meta Flosc all format meta.
+ */
 function flosc_render_offer_editor_v2( $flosc_offer, $flosc_flow_key, $flosc_current_ivr, $flosc_all_format_meta ) {
 	$is_new         = empty( $flosc_offer );
 	$flosc_offer_id = $flosc_offer['id'] ?? 'new';

@@ -19,6 +19,11 @@ class FLOSC_Chat_Logger {
 	private static $instance = null;
 	private $table_name;
 
+	/**
+	 * Instance.
+	 *
+	 * @return mixed
+	 */
 	public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
@@ -26,6 +31,9 @@ class FLOSC_Chat_Logger {
 		return self::$instance;
 	}
 
+	/**
+	 * Construct.
+	 */
 	private function __construct() {
 		global $wpdb;
 		$this->table_name = $wpdb->prefix . 'flosc_chat_logs';
@@ -44,15 +52,33 @@ class FLOSC_Chat_Logger {
 		wp_cache_delete( 'log_count_' . md5( '' ), 'flosc_chat_logs' );
 	}
 
+	/**
+	 * Flosc archived sessions option name.
+	 *
+	 * @return mixed
+	 */
 	private function flosc_archived_sessions_option_name() {
 		return 'flosc_archived_chat_sessions';
 	}
 
+	/**
+	 * Flosc archive bucket key.
+	 *
+	 * @param string $flow_id Flow ID.
+	 * @return mixed
+	 */
 	private function flosc_archive_bucket_key( $flow_id = '' ) {
 		$flow_id = sanitize_text_field( (string) $flow_id );
 		return '' !== $flow_id ? $flow_id : '__all';
 	}
 
+	/**
+	 * Flosc session key from descriptor.
+	 *
+	 * @param mixed $by By.
+	 * @param mixed $value Value.
+	 * @return mixed
+	 */
 	public static function flosc_session_key_from_descriptor( $by, $value ) {
 		$by = in_array( $by, array( 'session', 'user', 'ip' ), true ) ? $by : '';
 		if ( '' === $by ) {
@@ -73,6 +99,12 @@ class FLOSC_Chat_Logger {
 		return '' !== $ip ? 'ip' . $ip : '';
 	}
 
+	/**
+	 * Flosc get archived session keys.
+	 *
+	 * @param string $flow_id Flow ID.
+	 * @return mixed
+	 */
 	public function flosc_get_archived_session_keys( $flow_id = '' ) {
 		$bucket = $this->flosc_archive_bucket_key( $flow_id );
 		$all    = get_option( $this->flosc_archived_sessions_option_name(), array() );
@@ -89,6 +121,15 @@ class FLOSC_Chat_Logger {
 		return array_values( array_unique( $keys ) );
 	}
 
+	/**
+	 * Flosc set session archived.
+	 *
+	 * @param mixed $by By.
+	 * @param mixed $value Value.
+	 * @param string $flow_id Flow ID.
+	 * @param bool $archived Archived.
+	 * @return mixed
+	 */
 	public function flosc_set_session_archived( $by, $value, $flow_id = '', $archived = true ) {
 		$key = self::flosc_session_key_from_descriptor( $by, $value );
 		if ( '' === $key ) {
@@ -185,9 +226,9 @@ class FLOSC_Chat_Logger {
 	 * v1.9.5: Rate a chat log entry. Score from -10 to +10 with optional note.
 	 * Any non-zero rating auto-protects the log from expunge.
 	 *
-	 * @param int    $log_id  The chat log row ID
-	 * @param int    $rating  Score from -10 to +10
-	 * @param string $note    Admin's note (why this score)
+	 * @param int    $log_id  The chat log row ID.
+	 * @param int    $rating  Score from -10 to +10.
+	 * @param string $note    Admin's note (why this score).
 	 * @return bool True on success
 	 */
 	public function flosc_rate_log( $log_id, $rating, $note = '' ) {
@@ -315,7 +356,7 @@ class FLOSC_Chat_Logger {
 	/**
 	 * Log a chat exchange.
 	 *
-	 * @param array $data {
+	 * @param array $data {.
 	 *     @type string $flow_id        Flow identifier
 	 *     @type string $phase          Current funnel phase
 	 *     @type int    $user_id        WordPress user ID (0 for visitors)
@@ -382,7 +423,7 @@ class FLOSC_Chat_Logger {
 	/**
 	 * Get recent chat logs for admin viewer.
 	 *
-	 * @param array $filters {
+	 * @param array $filters {.
 	 *     @type string $flow_id  Filter by flow
 	 *     @type string $phase    Filter by phase
 	 *     @type int    $user_id  Filter by user
@@ -483,6 +524,8 @@ class FLOSC_Chat_Logger {
 
 	/**
 	 * Get total log count (for admin stats).
+	 *
+	 * @param string $flow_id Flow ID.
 	 */
 	public function flosc_get_log_count( $flow_id = '' ) {
 		global $wpdb;
@@ -508,7 +551,7 @@ class FLOSC_Chat_Logger {
 	/**
 	 * Clear logs older than X days.
 	 *
-	 * @param int $days Number of days to retain
+	 * @param int $days Number of days to retain.
 	 * @return int Number of rows deleted
 	 */
 	public function flosc_clear_old_logs( $days = 30 ) {
@@ -543,6 +586,7 @@ class FLOSC_Chat_Logger {
 	 * @param string $admin_name The admin's display name (shown as "Name (admin)").
 	 * @param string $text       The message text.
 	 * @return int|false New row id, or false.
+	 * @param string $source Source.
 	 */
 	public function flosc_insert_admin_message( $session_id, $flow_id, $admin_name, $text, $source = 'admin' ) {
 		global $wpdb;
@@ -629,6 +673,9 @@ class FLOSC_Chat_Logger {
 
 	/**
 	 * Resolve the most recent logged-in user associated with a chat session.
+	 *
+	 * @param int $session_id Session ID.
+	 * @param string $flow_id Flow ID.
 	 */
 	public function flosc_get_session_owner_user_id( $session_id, $flow_id = '' ) {
 		global $wpdb;
@@ -770,6 +817,7 @@ class FLOSC_Chat_Logger {
 	 * @param string $flow_id  Restrict to a flow (no extension), or '' for all.
 	 * @param int    $max_rows Safety cap on rows scanned (default 800).
 	 * @return array List of session arrays.
+	 * @param string $archive_status Archive status.
 	 */
 	public function flosc_get_sessions( $flow_id = '', $max_rows = 800, $archive_status = 'active' ) {
 		global $wpdb;
@@ -919,6 +967,14 @@ class FLOSC_Chat_Logger {
 		);
 	}
 
+	/**
+	 * Flosc get session rows.
+	 *
+	 * @param mixed $by By.
+	 * @param mixed $value Value.
+	 * @param string $flow_id Flow ID.
+	 * @return mixed
+	 */
 	public function flosc_get_session_rows( $by, $value, $flow_id = '' ) {
 		global $wpdb;
 		$flosc_cache_probe = wp_cache_get( 'flosc_chat_logs_list', 'flosc_chat_logs' );

@@ -127,6 +127,9 @@ function flosc_create_sample_posts() {
 /**
  * Generate post content with <!--more--> tag
  * MAGNIFICENT, ENTERTAINING, JOYFUL lessons with real IPA transcriptions
+ *
+ * @param mixed $num Num.
+ * @param mixed $word Word.
  */
 function flosc_generate_post_content( $num, $word ) {
 
@@ -284,6 +287,9 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 }
 
 // Provide admin UI button (future enhancement)
+/**
+ * Flosc sample data admin ui.
+ */
 function flosc_sample_data_admin_ui() {
 	if ( ! current_user_can( 'manage_options' ) ) {
 		return;

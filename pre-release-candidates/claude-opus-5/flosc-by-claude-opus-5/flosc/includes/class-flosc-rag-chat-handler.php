@@ -18,6 +18,9 @@ class FLOSC_RAG_Chat_Handler {
 	private $flosc_user_session;
 	private $flosc_last_billing_meta = array();
 
+	/**
+	 * Construct.
+	 */
 	public function __construct() {
 		$this->flosc_rag_manager = FLOSC_RAG_Manager::instance();
 		// Access controller will be set when handle_with_state is called.
@@ -26,11 +29,12 @@ class FLOSC_RAG_Chat_Handler {
 	/**
 	 * Handle chat with state object (v1.9.0)
 	 *
-	 * @param string             $flosc_message User's message
-	 * @param FLOSC_User_Session $flosc_user_session User session with full context
-	 * @param int|null           $flosc_session_id Session ID for conversation history
-	 * @param string|null        $flosc_chatpack_prompt v1.9.2: Optional chatpack system prompt (overrides internal builder)
+	 * @param string             $flosc_message User's message.
+	 * @param FLOSC_User_Session $flosc_user_session User session with full context.
+	 * @param int|null           $flosc_session_id Session ID for conversation history.
+	 * @param string|null        $flosc_chatpack_prompt v1.9.2: Optional chatpack system prompt (overrides internal builder).
 	 * @return array Response with content and autoprompts
+	 * @param mixed $flosc_conv_history Flosc conv history.
 	 */
 	public function flosc_handle_with_state( $flosc_message, $flosc_user_session, $flosc_session_id = null, $flosc_chatpack_prompt = null, $flosc_conv_history = null ) {
 		$this->flosc_last_billing_meta = array();
@@ -128,7 +132,7 @@ class FLOSC_RAG_Chat_Handler {
 	/**
 	 * Build system prompt from FLOSC User Session
 	 *
-	 * @param FLOSC_User_Session $flosc_user_session
+	 * @param FLOSC_User_Session $flosc_user_session Flosc user session.
 	 * @return string System prompt
 	 */
 	private function flosc_build_system_prompt_from_state( $flosc_user_session ) {
@@ -193,8 +197,8 @@ class FLOSC_RAG_Chat_Handler {
 	/**
 	 * Load conversation history
 	 *
-	 * @param FLOSC_User_Session $flosc_user_session
-	 * @param int|null           $flosc_session_id
+	 * @param FLOSC_User_Session $flosc_user_session Flosc user session.
+	 * @param int|null           $flosc_session_id Flosc session ID.
 	 * @return array Message history
 	 */
 	private function flosc_load_conversation_history( $flosc_user_session, $flosc_session_id ) {
@@ -231,11 +235,11 @@ class FLOSC_RAG_Chat_Handler {
 	/**
 	 * Execute RAG loop with tools
 	 *
-	 * @param string             $flosc_message User message
-	 * @param string             $flosc_system_prompt System prompt
-	 * @param array              $flosc_history Conversation history
-	 * @param array              $flosc_tools Available tools
-	 * @param FLOSC_User_Session $flosc_user_session
+	 * @param string             $flosc_message User message.
+	 * @param string             $flosc_system_prompt System prompt.
+	 * @param array              $flosc_history Conversation history.
+	 * @param array              $flosc_tools Available tools.
+	 * @param FLOSC_User_Session $flosc_user_session Flosc user session.
 	 * @return string AI response
 	 */
 	private function flosc_execute_rag_loop( $flosc_message, $flosc_system_prompt, $flosc_history, $flosc_tools, $flosc_user_session ) {
@@ -320,6 +324,8 @@ class FLOSC_RAG_Chat_Handler {
 	/**
 	 * Resolve Anthropics pricing (real millicents per 1M tokens) for billing math.
 	 * Flow-level overrides win when configured.
+	 *
+	 * @param mixed $flosc_model Flosc model.
 	 */
 	private function flosc_resolve_anthropic_price_per_1m( $flosc_model ) {
 		$override_in  = max( 0, intval( flosc_get_setting( 'ai_billing_anthropic_input_millicents_per_1m', 0 ) ) );
@@ -362,10 +368,10 @@ class FLOSC_RAG_Chat_Handler {
 	/**
 	 * Store conversation
 	 *
-	 * @param FLOSC_User_Session $flosc_user_session
-	 * @param int|null           $flosc_session_id
-	 * @param string             $flosc_message
-	 * @param string             $flosc_response
+	 * @param FLOSC_User_Session $flosc_user_session Flosc user session.
+	 * @param int|null           $flosc_session_id Flosc session ID.
+	 * @param string             $flosc_message Flosc message.
+	 * @param string             $flosc_response Flosc response.
 	 */
 	private function flosc_store_conversation( $flosc_user_session, $flosc_session_id, $flosc_message, $flosc_response ) {
 		$flosc_state   = $flosc_user_session->flosc_get();
@@ -382,8 +388,8 @@ class FLOSC_RAG_Chat_Handler {
 	/**
 	 * Get contextual autoprompts
 	 *
-	 * @param FLOSC_User_Session $flosc_user_session
-	 * @param string             $flosc_response
+	 * @param FLOSC_User_Session $flosc_user_session Flosc user session.
+	 * @param string             $flosc_response Flosc response.
 	 * @return array Autoprompt options
 	 */
 	private function flosc_get_contextual_autoprompts( $flosc_user_session, $flosc_response ) {

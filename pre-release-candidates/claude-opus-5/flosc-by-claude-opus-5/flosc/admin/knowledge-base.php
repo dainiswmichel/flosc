@@ -233,7 +233,7 @@ foreach ( $flosc_list_ids as $flosc_kid ) :
 				<td>
 					<a class="button button-small" href="<?php echo esc_url( $flosc_edit ); ?>"><?php echo esc_html__( 'Edit', 'flosc' ); ?></a>
 					<a class="button button-small" href="<?php echo esc_url( $flosc_toggle ); ?>"><?php echo esc_html__( 'Toggle Access', 'flosc' ); ?></a>
-					<a class="button button-small" href="<?php echo esc_url( $flosc_delete ); ?>" data-confirm-message="<?php echo esc_attr( sprintf( /* translators: %s: filename */ __( 'Delete %s? This cannot be undone.', 'flosc' ), $flosc_kbf ) ); ?>"><?php echo esc_html__( 'Delete', 'flosc' ); ?></a>
+					<a class="button button-small" href="<?php echo esc_url( $flosc_delete ); ?>" data-confirm-message="<?php echo esc_attr( sprintf( /* translators: %s: filename. */ __( 'Delete %s? This cannot be undone.', 'flosc' ), $flosc_kbf ) ); ?>"><?php echo esc_html__( 'Delete', 'flosc' ); ?></a>
 				</td>
 			</tr>
 		<?php endforeach; ?>
@@ -252,7 +252,7 @@ foreach ( $flosc_list_ids as $flosc_kid ) :
 		<input type="hidden" name="flosc_return_ivr" value="<?php echo esc_attr( $flosc_current_ivr ); ?>">
 		<input type="hidden" name="kb_id" value="<?php echo esc_attr( $flosc_kid ); ?>">
 		<input type="hidden" name="editing_file" value="<?php echo esc_attr( $flosc_editing ); ?>">
-		<h4><?php echo esc_html( sprintf( /* translators: %s: filename */ __( 'Editing %s', 'flosc' ), $flosc_editing ) ); ?></h4>
+		<h4><?php echo esc_html( sprintf( /* translators: %s: filename. */ __( 'Editing %s', 'flosc' ), $flosc_editing ) ); ?></h4>
 		<textarea name="file_content" rows="24" class="large-text code"><?php echo esc_textarea( (string) $flosc_edit_body ); ?></textarea>
 		<p>
 			<button type="submit" class="button button-primary"><?php echo esc_html__( 'Save file', 'flosc' ); ?></button>

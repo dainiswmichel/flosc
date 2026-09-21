@@ -22,6 +22,11 @@ class FLOSC_Sale_Manager {
 	private $access_manager;
 	private $providers = array();
 
+	/**
+	 * Instance.
+	 *
+	 * @return mixed
+	 */
 	public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
@@ -29,11 +34,17 @@ class FLOSC_Sale_Manager {
 		return self::$instance;
 	}
 
+	/**
+	 * Construct.
+	 */
 	private function __construct() {
 		$this->load_components();
 		$this->register_providers();
 	}
 
+	/**
+	 * Load components.
+	 */
 	private function load_components() {
 		require_once __DIR__ . '/class-offer-manager.php';
 		require_once __DIR__ . '/class-usage-tracker.php';
@@ -50,6 +61,9 @@ class FLOSC_Sale_Manager {
 		$this->access_manager = new FLOSC_Access_Manager();
 	}
 
+	/**
+	 * Register providers.
+	 */
 	private function register_providers() {
 		// Register built-in payment providers.
 		$this->providers['stripe']    = new FLOSC_Stripe_Provider();
@@ -64,6 +78,8 @@ class FLOSC_Sale_Manager {
 
 	/**
 	 * Get a payment provider by ID
+	 *
+	 * @param int $provider_id Provider ID.
 	 */
 	public function get_provider( $provider_id ) {
 		return $this->providers[ $provider_id ] ?? null;
@@ -95,10 +111,20 @@ class FLOSC_Sale_Manager {
 		return $this->offer_manager;
 	}
 
+	/**
+	 * Usage.
+	 *
+	 * @return mixed
+	 */
 	public function usage() {
 		return $this->usage_tracker;
 	}
 
+	/**
+	 * Access.
+	 *
+	 * @return mixed
+	 */
 	public function access() {
 		return $this->access_manager;
 	}
@@ -223,7 +249,7 @@ class FLOSC_Sale_Manager {
 	 * Validate offer before free or paid fulfillment.
 	 *
 	 * @param array  $offer Offer row.
-	 * @param string $mode  free|paid
+	 * @param string $mode  free|paid.
 	 * @return true|WP_Error
 	 */
 	public function validate_offer_for_purchase( array $offer, $mode = 'paid' ) {
@@ -330,9 +356,9 @@ class FLOSC_Sale_Manager {
 	 *
 	 * Call only after payment is confirmed settled (not requires_action / redirect).
 	 *
-	 * @param int    $user_id
-	 * @param array  $offer
-	 * @param string $provider_id
+	 * @param int    $user_id User ID.
+	 * @param array  $offer Offer.
+	 * @param string $provider_id Provider ID.
 	 * @param array  $transaction Must include transaction_id; may include amount/currency.
 	 * @return array|WP_Error
 	 */
@@ -410,10 +436,10 @@ class FLOSC_Sale_Manager {
 	/**
 	 * Process a purchase
 	 *
-	 * @param int    $user_id
-	 * @param string $offer_id
-	 * @param string $provider_id
-	 * @param array  $payment_data Provider-specific data
+	 * @param int    $user_id User ID.
+	 * @param string $offer_id Offer ID.
+	 * @param string $provider_id Provider ID.
+	 * @param array  $payment_data Provider-specific data.
 	 * @return array|WP_Error
 	 */
 	public function process_purchase( $user_id, $offer_id, $provider_id, $payment_data = array() ) {
@@ -465,6 +491,9 @@ class FLOSC_Sale_Manager {
 
 	/**
 	 * Check if user can access a feature
+	 *
+	 * @param int $user_id User ID.
+	 * @param mixed $feature Feature.
 	 */
 	public function can_access( $user_id, $feature ) {
 		return $this->access_manager->can_access( $user_id, $feature );
@@ -472,6 +501,11 @@ class FLOSC_Sale_Manager {
 
 	/**
 	 * Track usage of a feature
+	 *
+	 * @param int $user_id User ID.
+	 * @param mixed $event Event.
+	 * @param int $quantity Quantity.
+	 * @param array $meta Meta.
 	 */
 	public function track_usage( $user_id, $event, $quantity = 1, $meta = array() ) {
 		return $this->usage_tracker->track( $user_id, $event, $quantity, $meta );
@@ -479,6 +513,9 @@ class FLOSC_Sale_Manager {
 
 	/**
 	 * Check if user has enough tokens/credits for an action
+	 *
+	 * @param int $user_id User ID.
+	 * @param mixed $amount Amount.
 	 */
 	public function has_credits( $user_id, $amount ) {
 		return $this->providers['tokens']->get_balance( $user_id ) >= $amount;
@@ -486,6 +523,10 @@ class FLOSC_Sale_Manager {
 
 	/**
 	 * Deduct credits for an action
+	 *
+	 * @param int $user_id User ID.
+	 * @param mixed $amount Amount.
+	 * @param string $reason Reason.
 	 */
 	public function deduct_credits( $user_id, $amount, $reason = '' ) {
 		return $this->providers['tokens']->deduct( $user_id, $amount, $reason );
@@ -493,6 +534,11 @@ class FLOSC_Sale_Manager {
 
 	/**
 	 * Log purchase for records
+	 *
+	 * @param int $user_id User ID.
+	 * @param mixed $offer Offer.
+	 * @param int $provider_id Provider ID.
+	 * @param mixed $transaction Transaction.
 	 */
 	private function log_purchase( $user_id, $offer, $provider_id, $transaction ) {
 		$purchases = get_user_meta( $user_id, '_flosc_purchases', true ) ?: array();
@@ -513,6 +559,9 @@ class FLOSC_Sale_Manager {
 	/**
 	 * Get available offers for a user (considering their current access)
 	 * v1.6.2: Flow-aware — accepts flow_id to read from per-flow storage
+	 *
+	 * @param mixed $user_id User ID.
+	 * @param mixed $flow_id Flow ID.
 	 */
 	public function get_available_offers( $user_id = null, $flow_id = null ) {
 		$all_offers = $this->offer_manager->get_active_offers( $flow_id );
@@ -538,6 +587,9 @@ class FLOSC_Sale_Manager {
 
 	/**
 	 * Get recommended offer based on user state and funnel position
+	 *
+	 * @param int $user_id User ID.
+	 * @param array $context Context.
 	 */
 	public function get_recommended_offer( $user_id, $context = array() ) {
 		$offers = $this->get_available_offers( $user_id );

@@ -13,12 +13,22 @@ class FLOSC_Token_Ledger {
 	/** @var FLOSC_Framework */
 	private $flosc;
 
+	/**
+	 * Construct.
+	 *
+	 * @param mixed $flosc Flosc.
+	 */
 	public function __construct( $flosc ) {
 		$this->flosc = $flosc;
 	}
 
 	/**
 	 * V→G: apply guest_token_grant once per flow (visitor remaining + grant).
+	 *
+	 * @param int $user_id User ID.
+	 * @param mixed $token_provider Token provider.
+	 * @param string $flow_id Flow ID.
+	 * @param string $reason Reason.
 	 */
 	public function flosc_ensure_guest_token_baseline( $user_id, $token_provider, $flow_id = '', $reason = '' ) {
 		$user_id = absint( $user_id );
@@ -34,10 +44,10 @@ class FLOSC_Token_Ledger {
 	/**
 	 * Public entry for product token credits (one-time, recurring, renewals).
 	 *
-	 * @param int    $user_id
-	 * @param string $flow_id
-	 * @param string $mode    onetime|recurring|recurring_yearly|monthly|yearly
-	 * @param array  $context
+	 * @param int    $user_id User ID.
+	 * @param string $flow_id Flow ID.
+	 * @param string $mode    onetime|recurring|recurring_yearly|monthly|yearly.
+	 * @param array  $context Context.
 	 * @return array
 	 */
 	public function flosc_apply_product_token_credit_public( $user_id, $flow_id = '', $mode = 'onetime', $context = array() ) {
@@ -46,6 +56,10 @@ class FLOSC_Token_Ledger {
 
 	/**
 	 * @deprecated Use flosc_apply_product_token_credit_public.
+	 * @param int $user_id User ID.
+	 * @param string $flow_id Flow ID.
+	 * @param string $plan_type Plan type.
+	 * @param array $context Context.
 	 */
 	public function flosc_apply_subscription_token_topup_public( $user_id, $flow_id = '', $plan_type = 'monthly', $context = array() ) {
 		return $this->flosc->flosc_apply_product_token_credit( $user_id, $flow_id, $plan_type, $context );
@@ -55,8 +69,8 @@ class FLOSC_Token_Ledger {
 	 * G→M: apply member_token_grant once per flow (guest remaining + grant).
 	 * Hooked to flosc_member_access_granted (Access Code, PayPal, sandbox, etc.).
 	 *
-	 * @param int   $user_id
-	 * @param array $purchase_data
+	 * @param int   $user_id User ID.
+	 * @param array $purchase_data Purchase data.
 	 */
 	public function apply_member_token_grant_on_access( $user_id, $purchase_data = array() ) {
 		$user_id = absint( $user_id );
@@ -84,7 +98,7 @@ class FLOSC_Token_Ledger {
 	 * Whether this user should receive V→G guest tokens on a flow.
 	 * Members of *this* flow do not; members of other flows still do.
 	 *
-	 * @param int    $user_id
+	 * @param int    $user_id User ID.
 	 * @param string $flow_id Flow id / stem for the page or request.
 	 */
 	public function flosc_user_should_receive_guest_tokens( $user_id, $flow_id = '' ) {
@@ -114,6 +128,10 @@ class FLOSC_Token_Ledger {
 
 	/**
 	 * Read or initialize visitor session token balance.
+	 *
+	 * @param int $flow_id Flow ID.
+	 * @param int $session_id Session ID.
+	 * @param mixed $token_provider Token provider.
 	 */
 	public function flosc_get_visitor_session_token_balance( $flow_id, $session_id, $token_provider ) {
 		$session_id = absint( $session_id );
@@ -135,6 +153,10 @@ class FLOSC_Token_Ledger {
 
 	/**
 	 * Persist visitor session token balance.
+	 *
+	 * @param int $flow_id Flow ID.
+	 * @param int $session_id Session ID.
+	 * @param mixed $balance Balance.
 	 */
 	public function flosc_set_visitor_session_token_balance( $flow_id, $session_id, $balance ) {
 		$session_id = absint( $session_id );
@@ -149,6 +171,11 @@ class FLOSC_Token_Ledger {
 
 	/**
 	 * Apply one spend event against visitor session balance.
+	 *
+	 * @param int $flow_id Flow ID.
+	 * @param int $session_id Session ID.
+	 * @param mixed $token_provider Token provider.
+	 * @param array $billing_meta Billing meta.
 	 */
 	public function flosc_charge_visitor_session_tokens( $flow_id, $session_id, $token_provider, $billing_meta = array() ) {
 		$session_id = absint( $session_id );
@@ -201,11 +228,11 @@ class FLOSC_Token_Ledger {
 	 * the actual charge up to remaining balance. A provider attempt keeps the
 	 * hold (same policy as the previous post-call debit-on-attempt).
 	 *
-	 * @param string $flow_id
-	 * @param int    $session_id
-	 * @param int    $estimated_cost
-	 * @param string $request_id
-	 * @param object $token_provider
+	 * @param string $flow_id Flow ID.
+	 * @param int    $session_id Session ID.
+	 * @param int    $estimated_cost Estimated cost.
+	 * @param string $request_id Request ID.
+	 * @param object $token_provider Token provider.
 	 * @return array{reserved:bool,id:string,amount:int,balance_after:int}
 	 */
 	public function reserve_visitor_tokens( $flow_id, $session_id, $estimated_cost, $request_id, $token_provider ) {
@@ -288,9 +315,9 @@ class FLOSC_Token_Ledger {
 	/**
 	 * Adjust a visitor reservation to actual provider billing.
 	 *
-	 * @param string $reservation_id
-	 * @param object $token_provider
-	 * @param array  $billing_meta
+	 * @param string $reservation_id Reservation ID.
+	 * @param object $token_provider Token provider.
+	 * @param array  $billing_meta Billing meta.
 	 * @return array{charged:bool,charge_tokens:int,balance_after:int}
 	 */
 	public function settle_visitor_reservation( $reservation_id, $token_provider, $billing_meta = array() ) {
@@ -338,6 +365,8 @@ class FLOSC_Token_Ledger {
 	/**
 	 * Compact token display formatter for profile-bar labels.
 	 * <= 9999 stays full (e.g. 5000). >= 10000 uses compact suffixes.
+	 *
+	 * @param mixed $value Value.
 	 */
 	public function flosc_format_token_display( $value ) {
 		$value = max( 0, intval( $value ) );
@@ -374,7 +403,7 @@ class FLOSC_Token_Ledger {
 	 * Client sends visitor_session_id so visitor remaining can be carried after SSO
 	 * (when the grant on wp_login ran without the flow-domain visitor cookie).
 	 *
-	 * @param WP_REST_Request $request flow_id, visitor_session_id
+	 * @param WP_REST_Request $request flow_id, visitor_session_id.
 	 * @return WP_REST_Response
 	 */
 	public function handle_apply_guest_token_grant( $request ) {

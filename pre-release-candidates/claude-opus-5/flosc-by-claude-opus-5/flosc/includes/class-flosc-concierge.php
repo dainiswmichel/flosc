@@ -1188,6 +1188,12 @@ class FLOSC_Concierge {
 		return $value;
 	}
 
+	/**
+	 * Off ramp exactness.
+	 *
+	 * @param mixed $mode Mode.
+	 * @return mixed
+	 */
 	private static function off_ramp_exactness( $mode ) {
 		$mode = sanitize_key( (string) $mode );
 		if ( ! in_array( $mode, array( 'flexible', 'preferred', 'exact' ), true ) ) {
@@ -1196,6 +1202,13 @@ class FLOSC_Concierge {
 		return $mode;
 	}
 
+	/**
+	 * Off ramp guidance.
+	 *
+	 * @param mixed $phrases_text Phrases text.
+	 * @param mixed $exactness Exactness.
+	 * @return mixed
+	 */
 	private static function off_ramp_guidance( $phrases_text, $exactness ) {
 		$phrases = array();
 		foreach ( preg_split( '/\r\n|\r|\n/', (string) $phrases_text ) as $line ) {

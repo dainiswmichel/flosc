@@ -26,6 +26,11 @@ class FLOSC_Usage_Tracker {
 
 	/**
 	 * Track a usage event
+	 *
+	 * @param int $user_id User ID.
+	 * @param mixed $event Event.
+	 * @param int $quantity Quantity.
+	 * @param array $meta Meta.
 	 */
 	public function track( $user_id, $event, $quantity = 1, $meta = array() ) {
 		$usage  = $this->get_user_usage( $user_id );
@@ -77,6 +82,9 @@ class FLOSC_Usage_Tracker {
 
 	/**
 	 * Get user's usage data
+	 *
+	 * @param int $user_id User ID.
+	 * @param mixed $period Period.
 	 */
 	public function get_user_usage( $user_id, $period = null ) {
 		$usage = get_user_meta( $user_id, $this->meta_key, true ) ?: array();
@@ -90,6 +98,8 @@ class FLOSC_Usage_Tracker {
 
 	/**
 	 * Get usage for current period
+	 *
+	 * @param int $user_id User ID.
 	 */
 	public function get_current_usage( $user_id ) {
 		return $this->get_user_usage( $user_id, $this->get_current_period() );
@@ -97,6 +107,10 @@ class FLOSC_Usage_Tracker {
 
 	/**
 	 * Get usage count for a specific event
+	 *
+	 * @param int $user_id User ID.
+	 * @param mixed $event Event.
+	 * @param mixed $period Period.
 	 */
 	public function get_event_count( $user_id, $event, $period = null ) {
 		$period = $period ?: $this->get_current_period();
@@ -107,6 +121,10 @@ class FLOSC_Usage_Tracker {
 
 	/**
 	 * Get usage quantity for a specific event
+	 *
+	 * @param int $user_id User ID.
+	 * @param mixed $event Event.
+	 * @param mixed $period Period.
 	 */
 	public function get_event_quantity( $user_id, $event, $period = null ) {
 		$period = $period ?: $this->get_current_period();
@@ -117,6 +135,8 @@ class FLOSC_Usage_Tracker {
 
 	/**
 	 * Get summary of user's usage across all periods
+	 *
+	 * @param int $user_id User ID.
 	 */
 	public function get_user_summary( $user_id ) {
 		$all_usage = $this->get_user_usage( $user_id );
@@ -150,6 +170,9 @@ class FLOSC_Usage_Tracker {
 
 	/**
 	 * Set usage limits for a user
+	 *
+	 * @param int $user_id User ID.
+	 * @param mixed $limits Limits.
 	 */
 	public function set_limits( $user_id, $limits ) {
 		update_user_meta( $user_id, $this->limits_meta_key, $limits );
@@ -157,6 +180,8 @@ class FLOSC_Usage_Tracker {
 
 	/**
 	 * Get user's usage limits
+	 *
+	 * @param int $user_id User ID.
 	 */
 	public function get_limits( $user_id ) {
 		$limits = get_user_meta( $user_id, $this->limits_meta_key, true );
@@ -186,6 +211,10 @@ class FLOSC_Usage_Tracker {
 
 	/**
 	 * Check if user has remaining quota for an event
+	 *
+	 * @param int $user_id User ID.
+	 * @param mixed $event Event.
+	 * @param int $quantity Quantity.
 	 */
 	public function has_quota( $user_id, $event, $quantity = 1 ) {
 		$limits = $this->get_limits( $user_id );
@@ -202,6 +231,9 @@ class FLOSC_Usage_Tracker {
 
 	/**
 	 * Get remaining quota for an event
+	 *
+	 * @param int $user_id User ID.
+	 * @param mixed $event Event.
 	 */
 	public function get_remaining( $user_id, $event ) {
 		$limits = $this->get_limits( $user_id );
@@ -217,6 +249,11 @@ class FLOSC_Usage_Tracker {
 
 	/**
 	 * Consume quota (track + check limit in one call)
+	 *
+	 * @param int $user_id User ID.
+	 * @param mixed $event Event.
+	 * @param int $quantity Quantity.
+	 * @param array $meta Meta.
 	 */
 	public function consume( $user_id, $event, $quantity = 1, $meta = array() ) {
 		// Check quota first.
@@ -239,6 +276,9 @@ class FLOSC_Usage_Tracker {
 
 	/**
 	 * Grant unlimited quota for specific events
+	 *
+	 * @param int $user_id User ID.
+	 * @param mixed $events Events.
 	 */
 	public function grant_unlimited( $user_id, $events ) {
 		$limits = $this->get_limits( $user_id );
@@ -252,6 +292,8 @@ class FLOSC_Usage_Tracker {
 
 	/**
 	 * Reset usage for a user (new billing period)
+	 *
+	 * @param int $user_id User ID.
 	 */
 	public function reset_period_usage( $user_id ) {
 		$usage   = $this->get_user_usage( $user_id );
@@ -285,6 +327,8 @@ class FLOSC_Usage_Tracker {
 
 	/**
 	 * Get period for a specific date
+	 *
+	 * @param mixed $date Date.
 	 */
 	public function get_period_for_date( $date ) {
 		return gmdate( 'Y-m', strtotime( $date ) );
@@ -292,6 +336,9 @@ class FLOSC_Usage_Tracker {
 
 	/**
 	 * Clean up old usage data (keep last N periods)
+	 *
+	 * @param int $user_id User ID.
+	 * @param int $keep_periods Keep periods.
 	 */
 	public function cleanup_old_data( $user_id, $keep_periods = 12 ) {
 		$usage = $this->get_user_usage( $user_id );
@@ -315,6 +362,8 @@ class FLOSC_Usage_Tracker {
 
 	/**
 	 * Get aggregate usage across all users for a period
+	 *
+	 * @param mixed $period Period.
 	 */
 	public function get_global_usage( $period = null ) {
 		$period = $period ?: $this->get_current_period();
@@ -358,6 +407,10 @@ class FLOSC_Usage_Tracker {
 
 	/**
 	 * Get top users by usage
+	 *
+	 * @param mixed $event Event.
+	 * @param mixed $period Period.
+	 * @param int $limit Limit.
 	 */
 	public function get_top_users( $event, $period = null, $limit = 10 ) {
 		$period = $period ?: $this->get_current_period();

@@ -954,7 +954,7 @@ if ( 'rebuilt' === $flosc_sci_action ) {
 							<?php
 							echo esc_html(
 								sprintf(
-									/* translators: %d: posts in this flow category that appear in the site index */
+									/* translators: %d: posts in this flow category that appear in the site index. */
 									__( '%d indexed post(s) are in this flow’s category (freeline / sell slice).', 'flosc' ),
 									(int) $flosc_sci_in_flow
 								)
@@ -983,7 +983,7 @@ if ( 'rebuilt' === $flosc_sci_action ) {
 					<?php
 					echo esc_html(
 						sprintf(
-							/* translators: 1: indexed count 2: excluded count */
+							/* translators: 1: indexed count 2: excluded count. */
 							__( '%1$d posts in site index (%2$d excluded).', 'flosc' ),
 							(int) $flosc_sci_count,
 							(int) $flosc_sci_excl
@@ -1023,7 +1023,7 @@ if ( 'rebuilt' === $flosc_sci_action ) {
 			<?php
 			echo esc_html(
 				sprintf(
-					/* translators: %d: number of indexed posts */
+					/* translators: %d: number of indexed posts. */
 					__( 'Showing %d posts.', 'flosc' ),
 					(int) $flosc_sci_count
 				)

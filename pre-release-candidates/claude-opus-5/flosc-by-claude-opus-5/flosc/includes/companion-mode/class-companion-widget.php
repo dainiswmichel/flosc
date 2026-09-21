@@ -109,7 +109,7 @@ class FLOSC_Companion_Widget {
 	 *
 	 * Falls back to global defaults when no flow or when use_global is true.
 	 *
-	 * @param  string|null $flow_id  Optional flow ID
+	 * @param  string|null $flow_id  Optional flow ID.
 	 * @return array {
 	 *     @type string $content_display_mode  'in_chat'|'companion'|'both'
 	 *     @type bool   $enabled               Whether companion is active
@@ -392,8 +392,8 @@ class FLOSC_Companion_Widget {
 	/**
 	 * Check if a post belongs to the configured lessons category
 	 *
-	 * @param  int    $post_id
-	 * @param  string $lesson_category  Category slug or ID
+	 * @param  int    $post_id Post ID.
+	 * @param  string $lesson_category  Category slug or ID.
 	 * @return bool
 	 */
 	private function post_is_lesson( $post_id, $lesson_category ) {
@@ -493,8 +493,8 @@ class FLOSC_Companion_Widget {
 	/**
 	 * Adjust hex color brightness
 	 *
-	 * @param  string $hex     Hex color (#RRGGBB)
-	 * @param  int    $percent Negative = darker, positive = lighter
+	 * @param  string $hex     Hex color (#RRGGBB).
+	 * @param  int    $percent Negative = darker, positive = lighter.
 	 * @return string          Adjusted hex color
 	 */
 	private function adjust_brightness( $hex, $percent ) {

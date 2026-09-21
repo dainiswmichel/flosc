@@ -31,6 +31,11 @@ class FLOSC_RAG_Manager {
 	private static $instance = null;
 	private $content_filter;
 
+	/**
+	 * Instance.
+	 *
+	 * @return mixed
+	 */
 	public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
@@ -38,6 +43,9 @@ class FLOSC_RAG_Manager {
 		return self::$instance;
 	}
 
+	/**
+	 * Construct.
+	 */
 	private function __construct() {
 		$this->content_filter = flosc_content_filter::instance();
 	}
@@ -111,10 +119,10 @@ class FLOSC_RAG_Manager {
 	/**
 	 * Execute a tool call from the AI
 	 *
-	 * @param string $tool_name
-	 * @param array  $input Tool parameters
-	 * @param string $access_level User's access level
-	 * @param int    $category_id WordPress category ID for the flow (0 for none)
+	 * @param string $tool_name Tool name.
+	 * @param array  $input Tool parameters.
+	 * @param string $access_level User's access level.
+	 * @param int    $category_id WordPress category ID for the flow (0 for none).
 	 * @return string Tool result
 	 */
 	public function execute_tool( $tool_name, $input, $access_level, $category_id = 0 ) {
@@ -164,9 +172,9 @@ class FLOSC_RAG_Manager {
 	/**
 	 * Search knowledge base files
 	 *
-	 * @param string $query
-	 * @param string $access_level
-	 * @param string $category
+	 * @param string $query Query.
+	 * @param string $access_level Access level.
+	 * @param string $category Category.
 	 * @return string
 	 */
 	private function search_knowledge_base( $query, $access_level, $category = 'all' ) {
@@ -229,10 +237,10 @@ class FLOSC_RAG_Manager {
 	/**
 	 * Search WordPress posts in flow's configured category
 	 *
-	 * @param string $keywords
-	 * @param int    $limit
-	 * @param string $access_level
-	 * @param int    $category_id WordPress category ID (0 for all categories)
+	 * @param string $keywords Keywords.
+	 * @param int    $limit Limit.
+	 * @param string $access_level Access level.
+	 * @param int    $category_id WordPress category ID (0 for all categories).
 	 * @return string
 	 */
 	private function search_posts( $keywords, $limit, $access_level, $category_id = 0 ) {
@@ -324,9 +332,9 @@ class FLOSC_RAG_Manager {
 	/**
 	 * Get specific lesson content
 	 *
-	 * @param int    $lesson_number
-	 * @param int    $post_id
-	 * @param string $access_level
+	 * @param int    $lesson_number Lesson number.
+	 * @param int    $post_id Post ID.
+	 * @param string $access_level Access level.
 	 * @return string
 	 */
 	private function get_lesson_content( $lesson_number, $post_id, $access_level ) {
@@ -368,7 +376,7 @@ class FLOSC_RAG_Manager {
 	 * Get available lessons list
 	 * Used to tell AI what content exists
 	 *
-	 * @param string $access_level
+	 * @param string $access_level Access level.
 	 * @return string
 	 */
 	public function get_available_lessons( $access_level ) {
@@ -463,8 +471,8 @@ class FLOSC_RAG_Manager {
 	/**
 	 * Helper to check access hierarchy
 	 *
-	 * @param string $user_level
-	 * @param string $required_level
+	 * @param string $user_level User level.
+	 * @param string $required_level Required level.
 	 * @return bool
 	 */
 	private function can_user_access_level( $user_level, $required_level ) {

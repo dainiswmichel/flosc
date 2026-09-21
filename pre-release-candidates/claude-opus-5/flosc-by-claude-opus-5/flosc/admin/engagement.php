@@ -150,10 +150,10 @@ $flosc_email_templates = array(
 /**
  * One rule as a collapsible accordion (title in summary).
  *
- * @param array  $rule
- * @param string $audience visitor|guest|member
- * @param int    $index
- * @param bool   $open
+ * @param array  $rule Rule.
+ * @param string $audience visitor|guest|member.
+ * @param int    $index Index.
+ * @param bool   $open Open.
  */
 $flosc_render_rule = static function ( $rule, $audience, $index, $open = false ) use ( $flosc_triggers, $flosc_email_templates ) {
 	$rid         = sanitize_key( (string) ( $rule['id'] ?? ( 'rule_' . $index ) ) );

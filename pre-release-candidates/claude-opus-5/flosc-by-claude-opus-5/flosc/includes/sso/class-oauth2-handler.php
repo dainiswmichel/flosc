@@ -41,7 +41,7 @@ class OAuth2_Handler {
 	/**
 	 * Constructor
 	 *
-	 * @param SSO_Manager $manager SSO Manager instance
+	 * @param SSO_Manager $manager SSO Manager instance.
 	 */
 	public function __construct( $manager ) {
 		$this->manager = $manager;
@@ -149,7 +149,7 @@ class OAuth2_Handler {
 	/**
 	 * Validate provider parameter
 	 *
-	 * @param string $provider Provider ID
+	 * @param string $provider Provider ID.
 	 * @return bool
 	 */
 	public function validate_provider( $provider ) {
@@ -159,7 +159,7 @@ class OAuth2_Handler {
 	/**
 	 * Handle OAuth authorization redirect
 	 *
-	 * @param WP_REST_Request $request
+	 * @param WP_REST_Request $request Request.
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function handle_authorize( $request ) {
@@ -254,7 +254,7 @@ class OAuth2_Handler {
 	/**
 	 * Handle OAuth callback
 	 *
-	 * @param WP_REST_Request $request
+	 * @param WP_REST_Request $request Request.
 	 * @return void Redirects on completion
 	 */
 	public function handle_callback( $request ) {
@@ -691,7 +691,7 @@ class OAuth2_Handler {
 	 * get_current_flow() fails because the current request host is the WordPress host,
 	 * not the flow's custom domain.
 	 *
-	 * @param string $flow_id Flow ID (e.g. 'flow_ivr')
+	 * @param string $flow_id Flow ID (e.g. 'flow_ivr').
 	 * @return string|false App URL (e.g. 'https://the flow domain/') or false if not found
 	 */
 	private function resolve_app_url_from_flow_id( $flow_id ) {
@@ -725,7 +725,7 @@ class OAuth2_Handler {
 	/**
 	 * Get available SSO providers for frontend
 	 *
-	 * @param WP_REST_Request $request
+	 * @param WP_REST_Request $request Request.
 	 * @return WP_REST_Response
 	 */
 	public function get_providers( $request ) {
@@ -748,9 +748,9 @@ class OAuth2_Handler {
 	/**
 	 * Generate state token for CSRF protection
 	 *
-	 * @param string $provider_id Provider ID
-	 * @param string $redirect_to Redirect URL after login
-	 * @param string $flow_id Flow ID for per-flow credential loading (v1.4.9)
+	 * @param string $provider_id Provider ID.
+	 * @param string $redirect_to Redirect URL after login.
+	 * @param string $flow_id Flow ID for per-flow credential loading (v1.4.9).
 	 * @return string State token
 	 */
 	private function generate_state( $provider_id, $redirect_to = '', $flow_id = '' ) {
@@ -790,7 +790,7 @@ class OAuth2_Handler {
 	/**
 	 * Verify state token
 	 *
-	 * @param string $state State token
+	 * @param string $state State token.
 	 * @return array|false State data or false if invalid
 	 */
 	private function verify_state( $state ) {
@@ -849,9 +849,9 @@ class OAuth2_Handler {
 	/**
 	 * Process SSO login - create or link user
 	 *
-	 * @param SSO_Provider_Base $provider Provider instance
-	 * @param array             $user_data Normalized user data
-	 * @param array             $token_data Token response data
+	 * @param SSO_Provider_Base $provider Provider instance.
+	 * @param array             $user_data Normalized user data.
+	 * @param array             $token_data Token response data.
 	 * @return int|WP_Error User ID or error
 	 */
 	private function process_sso_login( $provider, $user_data, $token_data ) {
@@ -931,7 +931,7 @@ class OAuth2_Handler {
 	/**
 	 * Log a user in programmatically
 	 *
-	 * @param int $user_id User ID
+	 * @param int $user_id User ID.
 	 */
 	private function log_user_in( $user_id ) {
 		wp_set_current_user( $user_id );
@@ -950,7 +950,7 @@ class OAuth2_Handler {
 	 * doesn't travel to flosc.ai/the flow domain. Token lets the target domain
 	 * authenticate the user on arrival.
 	 *
-	 * @param int $user_id User ID
+	 * @param int $user_id User ID.
 	 * @return string Token
 	 */
 	private function generate_login_token( $user_id ) {
@@ -966,8 +966,8 @@ class OAuth2_Handler {
 	 * v8.0.1: Accept optional redirect_to so user returns to the app page
 	 * (where FLOSC JS is running), not the homepage where it isn't.
 	 *
-	 * @param string $message Error message
-	 * @param string $redirect_to URL to redirect to (falls back to home_url())
+	 * @param string $message Error message.
+	 * @param string $redirect_to URL to redirect to (falls back to home_url()).
 	 */
 	private function redirect_with_error( $message, $redirect_to = '' ) {
 		// Store error in transient for display.

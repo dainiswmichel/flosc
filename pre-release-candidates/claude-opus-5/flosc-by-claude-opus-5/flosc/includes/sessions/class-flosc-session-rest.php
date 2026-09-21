@@ -13,10 +13,21 @@ class FLOSC_Session_Rest {
 	/** @var FLOSC_Framework */
 	private $flosc;
 
+	/**
+	 * Construct.
+	 *
+	 * @param mixed $flosc Flosc.
+	 */
 	public function __construct( $flosc ) {
 		$this->flosc = $flosc;
 	}
 
+	/**
+	 * Get sessions.
+	 *
+	 * @param mixed $request Request.
+	 * @return mixed
+	 */
 	public function get_sessions( $request ) {
 		$user_id = get_current_user_id();
 		if ( $user_id <= 0 ) {
@@ -48,6 +59,8 @@ class FLOSC_Session_Rest {
 
 	/**
 	 * Get a single session by ID (owner + flow scoped; fail closed).
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function get_single_session( $request ) {
 		$user_id = get_current_user_id();
@@ -96,6 +109,12 @@ class FLOSC_Session_Rest {
 		);
 	}
 
+	/**
+	 * Create session.
+	 *
+	 * @param mixed $request Request.
+	 * @return mixed
+	 */
 	public function create_session( $request ) {
 		// New chat = new session on THIS flow only.
 		$title   = 'New Chat';
@@ -230,6 +249,8 @@ class FLOSC_Session_Rest {
 
 	/**
 	 * v8.0.11: Delete a session
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function delete_session( $request ) {
 		$session_id = absint( $request->get_param( 'id' ) );
@@ -275,6 +296,8 @@ class FLOSC_Session_Rest {
 
 	/**
 	 * Rename a session (owner + flow scoped).
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function rename_session( $request ) {
 		$session_id = absint( $request->get_param( 'id' ) );
@@ -361,6 +384,8 @@ class FLOSC_Session_Rest {
 	/**
 	 * Delete a DO session directory after its data has been pulled to WP.
 	 * Fire-and-forget: failures are logged but do not block the login flow.
+	 *
+	 * @param int $session_id Session ID.
 	 */
 	public function delete_session_from_do( $session_id ) {
 		if ( ! preg_match( '/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $session_id ) ) {
@@ -384,6 +409,8 @@ class FLOSC_Session_Rest {
 	/**
 	 * Normalize client session id values (numeric, hex, opaque strings)
 	 * into a stable positive integer for storage/log/token accounting.
+	 *
+	 * @param mixed $session_id_raw Session ID raw.
 	 */
 	public function flosc_normalize_session_id( $session_id_raw ) {
 		$raw = trim( (string) $session_id_raw );

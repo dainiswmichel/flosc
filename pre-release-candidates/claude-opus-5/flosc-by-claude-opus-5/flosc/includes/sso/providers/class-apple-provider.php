@@ -76,12 +76,12 @@ class Apple_Provider extends SSO_Provider_Base {
 	 * v1.5.0: Set flow-specific Apple credentials (overrides global options)
 	 * Extends the base set_flow_credentials to include Apple's extra fields.
 	 *
-	 * @param string $client_id    Flow-specific Client/Service ID
-	 * @param string $client_secret Flow-specific Client Secret (unused for Apple, generated from keys)
-	 * @param bool   $enabled      Whether Apple SSO is enabled for this flow
-	 * @param string $team_id      Flow-specific Apple Team ID
-	 * @param string $key_id       Flow-specific Apple Key ID
-	 * @param string $private_key  Flow-specific Apple Private Key (.p8 contents)
+	 * @param string $client_id    Flow-specific Client/Service ID.
+	 * @param string $client_secret Flow-specific Client Secret (unused for Apple, generated from keys).
+	 * @param bool   $enabled      Whether Apple SSO is enabled for this flow.
+	 * @param string $team_id      Flow-specific Apple Team ID.
+	 * @param string $key_id       Flow-specific Apple Key ID.
+	 * @param string $private_key  Flow-specific Apple Private Key (.p8 contents).
 	 */
 	public function set_flow_apple_credentials( $client_id, $client_secret, $enabled, $team_id, $key_id, $private_key ) {
 		// Set base credentials (client_id, client_secret, enabled)
@@ -115,7 +115,7 @@ class Apple_Provider extends SSO_Provider_Base {
 	/**
 	 * Customize authorization parameters for Apple
 	 *
-	 * @param array $params Default parameters
+	 * @param array $params Default parameters.
 	 * @return array Modified parameters
 	 */
 	protected function customize_auth_params( $params ) {
@@ -132,8 +132,8 @@ class Apple_Provider extends SSO_Provider_Base {
 	 * Exchange authorization code for access token
 	 * Apple requires a dynamically generated JWT as client_secret
 	 *
-	 * @param string $code Authorization code
-	 * @param string $redirect_uri Callback URL
+	 * @param string $code Authorization code.
+	 * @param string $redirect_uri Callback URL.
 	 * @return array|WP_Error Token data or error
 	 */
 	public function exchange_code_for_token( $code, $redirect_uri ) {
@@ -185,9 +185,9 @@ class Apple_Provider extends SSO_Provider_Base {
 	 * Get user info from Apple
 	 * Apple embeds user info in the id_token JWT
 	 *
-	 * @param string $access_token OAuth access token (we use id_token instead)
+	 * @param string $access_token OAuth access token (we use id_token instead).
 	 * @param array  $token_data   Token response payload.
-	 * @param string $user_post_raw Raw JSON 'user' POST body from the OAuth callback
+	 * @param string $user_post_raw Raw JSON 'user' POST body from the OAuth callback.
 	 *                              (Apple form_post sends it separately on first auth).
 	 * @return array|WP_Error User data or error
 	 */
@@ -472,7 +472,7 @@ class Apple_Provider extends SSO_Provider_Base {
 	}
 
 	/**
-	 * @param int $length
+	 * @param int $length Length.
 	 * @return string ASN.1 length encoding
 	 */
 	private function asn1_length( $length ) {
@@ -486,7 +486,7 @@ class Apple_Provider extends SSO_Provider_Base {
 	/**
 	 * Base64url decode (JWT).
 	 *
-	 * @param string $data
+	 * @param string $data Data.
 	 * @return string|false
 	 */
 	private function base64_url_decode( $data ) {
@@ -501,7 +501,7 @@ class Apple_Provider extends SSO_Provider_Base {
 	/**
 	 * Normalize Apple user data to standard format
 	 *
-	 * @param array $raw_data Raw user data from Apple
+	 * @param array $raw_data Raw user data from Apple.
 	 * @return array Normalized user data
 	 */
 	protected function normalize_user_data( $raw_data ) {
@@ -541,7 +541,7 @@ class Apple_Provider extends SSO_Provider_Base {
 	/**
 	 * Get provider-specific user ID
 	 *
-	 * @param array $raw_data Raw user data
+	 * @param array $raw_data Raw user data.
 	 * @return string Provider user ID
 	 */
 	public function get_provider_user_id( $raw_data ) {
@@ -595,7 +595,7 @@ class Apple_Provider extends SSO_Provider_Base {
 	/**
 	 * Sign data with ES256 algorithm
 	 *
-	 * @param string $data Data to sign
+	 * @param string $data Data to sign.
 	 * @return string|WP_Error Base64 URL encoded signature or error
 	 */
 	private function sign_es256( $data ) {
@@ -624,7 +624,7 @@ class Apple_Provider extends SSO_Provider_Base {
 	/**
 	 * Convert DER signature to raw format
 	 *
-	 * @param string $der DER encoded signature
+	 * @param string $der DER encoded signature.
 	 * @return string Raw signature
 	 */
 	private function der_to_raw( $der ) {
@@ -661,7 +661,7 @@ class Apple_Provider extends SSO_Provider_Base {
 	/**
 	 * Base64 URL encode
 	 *
-	 * @param string $data Data to encode
+	 * @param string $data Data to encode.
 	 * @return string Encoded data
 	 */
 	private function base64_url_encode( $data ) {

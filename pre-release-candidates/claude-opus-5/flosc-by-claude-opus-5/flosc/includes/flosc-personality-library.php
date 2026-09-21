@@ -1699,7 +1699,7 @@ if ( ! function_exists( 'flosc_render_ai_tab_nav' ) ) {
 	/**
 	 * This flow / All Flows buttons on the AI tab.
 	 *
-	 * @param string $current_view single|all
+	 * @param string $current_view single|all.
 	 * @param string $ivr          Optional current IVR filename.
 	 * @return void
 	 */
@@ -2272,8 +2272,8 @@ if ( ! function_exists( 'flosc_render_personality_designer_accordion' ) ) {
 		<?php
 		if ( '' !== $label ) {
 			echo '' !== $flow_name
-			? esc_html( sprintf( /* translators: 1: personality label, 2: flow name */ __( 'Personality: %1$s · Flow: %2$s', 'flosc' ), $label, $flow_name ) )
-			: esc_html( sprintf( /* translators: %s: attached personality label */ __( 'Personality: %s', 'flosc' ), $label ) );
+			? esc_html( sprintf( /* translators: 1: personality label, 2: flow name. */ __( 'Personality: %1$s · Flow: %2$s', 'flosc' ), $label, $flow_name ) )
+			: esc_html( sprintf( /* translators: %s: attached personality label. */ __( 'Personality: %s', 'flosc' ), $label ) );
 		} else {
 			esc_html_e( 'Attach a library personality above to design it here.', 'flosc' );
 		}
@@ -2286,7 +2286,7 @@ if ( ! function_exists( 'flosc_render_personality_designer_accordion' ) ) {
 		<button type="button" class="button button-primary" id="flosc-personality-builder-save">
 			<?php
 			echo '' !== $label
-				? esc_html( sprintf( /* translators: %s: personality name */ __( 'Save changes to %s', 'flosc' ), $label ) )
+				? esc_html( sprintf( /* translators: %s: personality name. */ __( 'Save changes to %s', 'flosc' ), $label ) )
 				: esc_html__( 'Save to FLOSC library', 'flosc' );
 			?>
 		</button>

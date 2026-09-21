@@ -22,6 +22,9 @@ class FLOSC_Quiz_Registry {
 	/** @var FLOSC_Abstract_Quiz_Type[]|null */
 	private static $quizzes = null;
 
+	/**
+	 * Init.
+	 */
 	private static function init() {
 		if ( null !== self::$quizzes ) {
 			return;
@@ -35,7 +38,7 @@ class FLOSC_Quiz_Registry {
 	/**
 	 * Normalize a quiz id for lookup (sanitize only — no rename table).
 	 *
-	 * @param string $quiz_id
+	 * @param string $quiz_id Quiz ID.
 	 * @return string
 	 */
 	private static function normalize_quiz_id( $quiz_id ) {
@@ -45,7 +48,7 @@ class FLOSC_Quiz_Registry {
 	/**
 	 * Public helper: same normalize as get_quiz / quiz_exists.
 	 *
-	 * @param string $quiz_id
+	 * @param string $quiz_id Quiz ID.
 	 * @return string
 	 */
 	public static function resolve_id( $quiz_id ) {
@@ -55,7 +58,7 @@ class FLOSC_Quiz_Registry {
 	/**
 	 * Get a quiz by its ID.
 	 *
-	 * @param  string $quiz_id
+	 * @param  string $quiz_id Quiz ID.
 	 * @return FLOSC_Abstract_Quiz_Type|null  Null if the ID is not registered.
 	 */
 	public static function get_quiz( $quiz_id ) {
@@ -77,7 +80,7 @@ class FLOSC_Quiz_Registry {
 	/**
 	 * Check whether a quiz with the given ID is registered.
 	 *
-	 * @param  string $quiz_id
+	 * @param  string $quiz_id Quiz ID.
 	 * @return bool
 	 */
 	public static function quiz_exists( $quiz_id ) {

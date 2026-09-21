@@ -102,7 +102,7 @@ class FLOSC_Quiz_Manager {
 	/**
 	 * Handle REST API quiz submission
 	 *
-	 * @param WP_REST_Request $request
+	 * @param WP_REST_Request $request Request.
 	 * @return WP_REST_Response
 	 */
 	public function handle_external_quiz_rest( $request ) {
@@ -149,8 +149,8 @@ class FLOSC_Quiz_Manager {
 	 *
 	 * Optional but recommended for richer personalization.
 	 *
-	 * @param string $quiz_id Unique quiz identifier
-	 * @param array  $metadata Quiz metadata:
+	 * @param string $quiz_id Unique quiz identifier.
+	 * @param array  $metadata Quiz metadata:.
 	 *    - title: (string) Display title
 	 *    - description: (string) Quiz description
 	 *    - category: (string) Category for weakness analysis
@@ -183,7 +183,7 @@ class FLOSC_Quiz_Manager {
 	/**
 	 * Get quiz metadata
 	 *
-	 * @param string $quiz_id
+	 * @param string $quiz_id Quiz ID.
 	 * @return array|null
 	 */
 	public static function get_quiz( $quiz_id ) {
@@ -203,7 +203,7 @@ class FLOSC_Quiz_Manager {
 	/**
 	 * Unregister a quiz
 	 *
-	 * @param string $quiz_id
+	 * @param string $quiz_id Quiz ID.
 	 * @return bool
 	 */
 	public static function unregister_quiz( $quiz_id ) {
@@ -223,9 +223,9 @@ class FLOSC_Quiz_Manager {
 	 *
 	 * Main API for external plugins to submit scores to FLOSC.
 	 *
-	 * @param int    $user_id WordPress user ID
-	 * @param string $quiz_id Quiz identifier (should be registered first)
-	 * @param array  $score_data Score data:
+	 * @param int    $user_id WordPress user ID.
+	 * @param string $quiz_id Quiz identifier (should be registered first).
+	 * @param array  $score_data Score data:.
 	 *    - score: (int) Percentage score 0-100 (required)
 	 *    - correct_items: (array) IDs/names of correct answers
 	 *    - incorrect_items: (array) IDs/names of incorrect answers
@@ -281,8 +281,8 @@ class FLOSC_Quiz_Manager {
 	 *
 	 * Converts question IDs to lesson numbers based on registered mapping.
 	 *
-	 * @param array $score_data Original score data
-	 * @param array $mapping Question ID → Lesson number mapping
+	 * @param array $score_data Original score data.
+	 * @param array $mapping Question ID → Lesson number mapping.
 	 * @return array Modified score data
 	 */
 	private static function apply_lesson_mapping( $score_data, $mapping ) {
@@ -310,8 +310,8 @@ class FLOSC_Quiz_Manager {
 	/**
 	 * Get user's quiz history
 	 *
-	 * @param int    $user_id
-	 * @param string $quiz_id Optional specific quiz
+	 * @param int    $user_id User ID.
+	 * @param string $quiz_id Optional specific quiz.
 	 * @return array
 	 */
 	public static function get_user_quiz_history( $user_id, $quiz_id = null ) {
@@ -328,8 +328,8 @@ class FLOSC_Quiz_Manager {
 	/**
 	 * Check if user passed a quiz
 	 *
-	 * @param int    $user_id
-	 * @param string $quiz_id
+	 * @param int    $user_id User ID.
+	 * @param string $quiz_id Quiz ID.
 	 * @return bool|null True if passed, false if failed, null if not taken
 	 */
 	public static function user_passed_quiz( $user_id, $quiz_id ) {
@@ -349,8 +349,8 @@ class FLOSC_Quiz_Manager {
 	/**
 	 * Get user's best score for a quiz
 	 *
-	 * @param int    $user_id
-	 * @param string $quiz_id
+	 * @param int    $user_id User ID.
+	 * @param string $quiz_id Quiz ID.
 	 * @return int|null Best score or null if never taken
 	 */
 	public static function get_best_score( $user_id, $quiz_id = null ) {
@@ -365,7 +365,7 @@ class FLOSC_Quiz_Manager {
 	 *
 	 * Usage: [flosc_quiz_results quiz_id="my_quiz"]
 	 *
-	 * @param array $atts Shortcode attributes
+	 * @param array $atts Shortcode attributes.
 	 * @return string HTML output
 	 */
 	public static function shortcode_quiz_results( $atts ) {

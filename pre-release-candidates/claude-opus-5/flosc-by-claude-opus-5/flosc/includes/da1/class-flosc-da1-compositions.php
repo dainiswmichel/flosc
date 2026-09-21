@@ -13,6 +13,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class FLOSC_DA1_Compositions {
 
+	/**
+	 * Build composition reply.
+	 *
+	 * @param mixed $message Message.
+	 * @param int $flow_id Flow ID.
+	 * @param mixed $ivr_file IVR file.
+	 * @return mixed
+	 */
 	public function build_composition_reply( $message, $flow_id, $ivr_file ) {
 		if ( ! $this->is_composition_query( $message ) ) {
 			return '';
@@ -90,21 +98,45 @@ class FLOSC_DA1_Compositions {
 		return $this->limit_chat_response_length( implode( "\n", $lines ) );
 	}
 
+	/**
+	 * Is composition query.
+	 *
+	 * @param mixed $message Message.
+	 * @return mixed
+	 */
 	public function is_composition_query( $message ) {
 		$text = strtolower( (string) $message );
 		return (bool) preg_match( '/\b(composition|compositions|song|songs|works|track|tracks|list of works|my works|your works|music works|dziesm|daina|dainas|dainu|skaņdarb|kompoz|melodij)\b/u', $text );
 	}
 
+	/**
+	 * Is count request.
+	 *
+	 * @param mixed $message Message.
+	 * @return mixed
+	 */
 	public function is_count_request( $message ) {
 		$text = strtolower( (string) $message );
 		return (bool) preg_match( '/\b(how many|number of|count|total|cik)\b/u', $text );
 	}
 
+	/**
+	 * Is full list request.
+	 *
+	 * @param mixed $message Message.
+	 * @return mixed
+	 */
 	public function is_full_list_request( $message ) {
 		$text = strtolower( (string) $message );
 		return (bool) preg_match( '/\b(full list|complete list|all compositions|all songs|all works|entire catalog|show all|everything)\b/u', $text );
 	}
 
+	/**
+	 * Detect batch size.
+	 *
+	 * @param mixed $message Message.
+	 * @return mixed
+	 */
 	public function detect_batch_size( $message ) {
 		$text = strtolower( (string) $message );
 		if ( preg_match( '/\b(one|1|single)\b/u', $text ) ) {
@@ -116,6 +148,11 @@ class FLOSC_DA1_Compositions {
 		return 2;
 	}
 
+	/**
+	 * Get works list URL.
+	 *
+	 * @return mixed
+	 */
 	public function get_works_list_url() {
 		$configured = trim( (string) get_option( 'flosc_da1_works_list_url', '' ) );
 		if ( '' !== $configured && filter_var( $configured, FILTER_VALIDATE_URL ) ) {
@@ -124,6 +161,13 @@ class FLOSC_DA1_Compositions {
 		return trailingslashit( home_url( '/music/list-of-works/' ) );
 	}
 
+	/**
+	 * Load rows for flow.
+	 *
+	 * @param int $flow_id Flow ID.
+	 * @param mixed $ivr_file IVR file.
+	 * @return mixed
+	 */
 	public function load_rows_for_flow( $flow_id, $ivr_file ) {
 		$upload_dir  = wp_upload_dir();
 		$catalog_dir = trailingslashit( (string) ( $upload_dir['basedir'] ?? '' ) ) . 'flosc-catalogs';
@@ -228,6 +272,12 @@ class FLOSC_DA1_Compositions {
 		return $rows_out;
 	}
 
+	/**
+	 * Extract composition items.
+	 *
+	 * @param mixed $rows Rows.
+	 * @return mixed
+	 */
 	public function extract_composition_items( $rows ) {
 		$children_by_parent = array();
 		foreach ( $rows as $row ) {
@@ -281,6 +331,12 @@ class FLOSC_DA1_Compositions {
 		return $items;
 	}
 
+	/**
+	 * Extract primary media URL.
+	 *
+	 * @param mixed $text Text.
+	 * @return mixed
+	 */
 	public function extract_primary_media_url( $text ) {
 		$text = trim( (string) $text );
 		if ( '' === $text ) {
@@ -292,6 +348,12 @@ class FLOSC_DA1_Compositions {
 		return '';
 	}
 
+	/**
+	 * Parse tsv content.
+	 *
+	 * @param mixed $content Content.
+	 * @return mixed
+	 */
 	public function parse_tsv_content( $content ) {
 		$rows      = array();
 		$row       = array();
@@ -335,6 +397,13 @@ class FLOSC_DA1_Compositions {
 		return $rows;
 	}
 
+	/**
+	 * Shorten text.
+	 *
+	 * @param mixed $text Text.
+	 * @param mixed $limit Limit.
+	 * @return mixed
+	 */
 	public function shorten_text( $text, $limit ) {
 		$text = trim( (string) $text );
 		if ( '' === $text ) {
@@ -352,6 +421,12 @@ class FLOSC_DA1_Compositions {
 		return rtrim( substr( $text, 0, max( 1, $limit - 1 ) ) ) . '...';
 	}
 
+	/**
+	 * Limit chat response length.
+	 *
+	 * @param mixed $text Text.
+	 * @return mixed
+	 */
 	public function limit_chat_response_length( $text ) {
 		$raw_limit = (string) flosc_get_setting( 'ai_max_response_length', '' );
 		$numeric   = preg_replace( '/[^0-9]/', '', $raw_limit );

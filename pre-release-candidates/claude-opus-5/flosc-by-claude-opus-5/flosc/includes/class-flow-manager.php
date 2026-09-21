@@ -16,6 +16,11 @@ class FLOSC_Flow_Manager {
 
 	const OPTION_KEY = 'flosc_flows';
 
+	/**
+	 * Instance.
+	 *
+	 * @return mixed
+	 */
 	public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
@@ -23,6 +28,9 @@ class FLOSC_Flow_Manager {
 		return self::$instance;
 	}
 
+	/**
+	 * Construct.
+	 */
 	private function __construct() {
 		// Constructor.
 	}
@@ -36,6 +44,8 @@ class FLOSC_Flow_Manager {
 
 	/**
 	 * Get flows accessible by a user
+	 *
+	 * @param mixed $user_id User ID.
 	 */
 	public function get_user_flows( $user_id = null ) {
 		$user_id   = $user_id ?: get_current_user_id();
@@ -63,6 +73,8 @@ class FLOSC_Flow_Manager {
 
 	/**
 	 * Get a single flow by ID
+	 *
+	 * @param int $flow_id Flow ID.
 	 */
 	public function get_flow( $flow_id ) {
 		$flows = $this->get_all_flows();
@@ -71,6 +83,8 @@ class FLOSC_Flow_Manager {
 
 	/**
 	 * Get flow by slug
+	 *
+	 * @param mixed $slug Slug.
 	 */
 	public function get_flow_by_slug( $slug ) {
 		$flows = $this->get_all_flows();
@@ -84,6 +98,8 @@ class FLOSC_Flow_Manager {
 
 	/**
 	 * Get flow by custom domain
+	 *
+	 * @param mixed $domain Domain.
 	 */
 	public function get_flow_by_domain( $domain ) {
 		$domain = strtolower( preg_replace( '#^https?://#', '', trim( $domain ) ) );
@@ -107,6 +123,8 @@ class FLOSC_Flow_Manager {
 
 	/**
 	 * Create a new flow
+	 *
+	 * @param mixed $data Data.
 	 */
 	public function create_flow( $data ) {
 		$flows = $this->get_all_flows();
@@ -147,6 +165,9 @@ class FLOSC_Flow_Manager {
 
 	/**
 	 * Update an existing flow
+	 *
+	 * @param int $flow_id Flow ID.
+	 * @param mixed $data Data.
 	 */
 	public function update_flow( $flow_id, $data ) {
 		$flows = $this->get_all_flows();
@@ -182,6 +203,8 @@ class FLOSC_Flow_Manager {
 
 	/**
 	 * Delete a flow
+	 *
+	 * @param int $flow_id Flow ID.
 	 */
 	public function delete_flow( $flow_id ) {
 		$flows = $this->get_all_flows();
@@ -212,6 +235,8 @@ class FLOSC_Flow_Manager {
 	/**
 	 * Normalize flow data with defaults
 	 * v1.2.3: Added 'overrides' for per-flow settings
+	 *
+	 * @param mixed $data Data.
 	 */
 	private function normalize_flow_data( $data ) {
 		$defaults = array(
@@ -291,6 +316,9 @@ class FLOSC_Flow_Manager {
 
 	/**
 	 * Check if user can access flow admin
+	 *
+	 * @param int $flow_id Flow ID.
+	 * @param mixed $user_id User ID.
 	 */
 	public function can_access_flow_admin( $flow_id, $user_id = null ) {
 		$user_id = $user_id ?: get_current_user_id();
@@ -312,6 +340,9 @@ class FLOSC_Flow_Manager {
 
 	/**
 	 * Grant user access to a flow
+	 *
+	 * @param int $user_id User ID.
+	 * @param int $flow_id Flow ID.
 	 */
 	public function grant_flow_access( $user_id, $flow_id ) {
 		$allowed = get_user_meta( $user_id, '_flosc_flow_access', true ) ?: array();
@@ -330,6 +361,9 @@ class FLOSC_Flow_Manager {
 
 	/**
 	 * Revoke user access to a flow
+	 *
+	 * @param int $user_id User ID.
+	 * @param int $flow_id Flow ID.
 	 */
 	public function revoke_flow_access( $user_id, $flow_id ) {
 		$allowed = get_user_meta( $user_id, '_flosc_flow_access', true ) ?: array();
@@ -353,6 +387,8 @@ class FLOSC_Flow_Manager {
 	/**
 	 * Get users with access to a flow
 	 * v1.2.3: More robust serialized array handling
+	 *
+	 * @param int $flow_id Flow ID.
 	 */
 	public function get_flow_users( $flow_id ) {
 		$candidate_ids = function_exists( 'flosc_get_user_ids_for_meta' )
@@ -475,11 +511,11 @@ class FLOSC_Flow_Manager {
 	 * Get setting value with flow override support
 	 * v1.2.3: Checks flow override first, falls back to global option
 	 *
-	 * @param string      $option_name The wp_options key
-	 * @param string      $override_group Which override group (style, ai, email, etc.)
-	 * @param string      $override_key Key within the override group (optional, defaults to option_name)
-	 * @param mixed       $default Default value if neither found
-	 * @param string|null $flow_id Flow ID (null = use current flow)
+	 * @param string      $option_name The wp_options key.
+	 * @param string      $override_group Which override group (style, ai, email, etc.).
+	 * @param string      $override_key Key within the override group (optional, defaults to option_name).
+	 * @param mixed       $default Default value if neither found.
+	 * @param string|null $flow_id Flow ID (null = use current flow).
 	 * @return mixed The setting value
 	 */
 	public function get_setting( $option_name, $override_group, $override_key = null, $default = null, $flow_id = null ) {
@@ -523,10 +559,10 @@ class FLOSC_Flow_Manager {
 	 * Update flow override settings
 	 * v1.2.3: Sets override values for a specific group
 	 *
-	 * @param string $flow_id The flow ID
-	 * @param string $override_group Which override group (style, ai, email, etc.)
-	 * @param array  $values The settings values
-	 * @param bool   $use_global Whether to use global settings
+	 * @param string $flow_id The flow ID.
+	 * @param string $override_group Which override group (style, ai, email, etc.).
+	 * @param array  $values The settings values.
+	 * @param bool   $use_global Whether to use global settings.
 	 * @return bool|WP_Error
 	 */
 	public function update_override( $flow_id, $override_group, $values, $use_global = false ) {

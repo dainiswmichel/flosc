@@ -19,8 +19,8 @@ class FLOSC_User_Session {
 	/**
 	 * Constructor - builds unified state object
 	 *
-	 * @param int    $flosc_user_id WordPress user ID (0 for visitors)
-	 * @param string $flosc_flow_id FLOSC flow ID (2-digit: 01, 02, etc.)
+	 * @param int    $flosc_user_id WordPress user ID (0 for visitors).
+	 * @param string $flosc_flow_id FLOSC flow ID (2-digit: 01, 02, etc.).
 	 */
 	public function __construct( $flosc_user_id, $flosc_flow_id ) {
 		$this->flosc_user_id = $flosc_user_id;
@@ -94,7 +94,7 @@ class FLOSC_User_Session {
 	/**
 	 * Get state value by key, or entire state if no key provided
 	 *
-	 * @param string|null $flosc_key State key to retrieve
+	 * @param string|null $flosc_key State key to retrieve.
 	 * @return mixed State value or entire state array
 	 */
 	public function flosc_get( $flosc_key = null ) {
@@ -125,7 +125,7 @@ class FLOSC_User_Session {
 	 * Determine user type based on context
 	 * Returns: flosc_admin, flosc_member, flosc_guest, or flosc_visitor
 	 *
-	 * @param array $flosc_context Condition evaluator context
+	 * @param array $flosc_context Condition evaluator context.
 	 * @return string User type with flosc_ prefix
 	 */
 	private function flosc_determine_user_type( $flosc_context ) {
@@ -151,7 +151,7 @@ class FLOSC_User_Session {
 	/**
 	 * Determine access level based on context
 	 *
-	 * @param array $flosc_context Condition evaluator context
+	 * @param array $flosc_context Condition evaluator context.
 	 * @return string Access level: member|guest|user|visitor
 	 */
 	private function flosc_determine_access_level( $flosc_context ) {
@@ -170,8 +170,8 @@ class FLOSC_User_Session {
 	/**
 	 * Get visible autoprompts for current phase and conditions
 	 *
-	 * @param array $flosc_context Condition evaluator context
-	 * @param array $flosc_flow Flow configuration
+	 * @param array $flosc_context Condition evaluator context.
+	 * @param array $flosc_flow Flow configuration.
 	 * @return array Visible autoprompt options
 	 */
 	private function flosc_get_visible_autoprompts( $flosc_context, $flosc_flow ) {
@@ -202,7 +202,7 @@ class FLOSC_User_Session {
 	 * Get boundary rules based on user type
 	 * Policy ladder: what can this user see/do?
 	 *
-	 * @param array $flosc_context Condition evaluator context
+	 * @param array $flosc_context Condition evaluator context.
 	 * @return array Boundary rules for current user type
 	 */
 	private function flosc_get_boundary_rules( $flosc_context ) {
@@ -252,7 +252,7 @@ class FLOSC_User_Session {
 	/**
 	 * Check if user has specific capability based on boundary rules
 	 *
-	 * @param string $flosc_capability Capability to check (e.g., 'flosc_can_see_all_lessons')
+	 * @param string $flosc_capability Capability to check (e.g., 'flosc_can_see_all_lessons').
 	 * @return bool Whether user has this capability
 	 */
 	public function flosc_can( $flosc_capability ) {
@@ -272,7 +272,7 @@ class FLOSC_User_Session {
 	/**
 	 * Build full visitor ID with flow context
 	 *
-	 * @param string $flosc_flow_id 2-digit flow ID
+	 * @param string $flosc_flow_id 2-digit flow ID.
 	 * @return string Full visitor ID: flosc_flow_01_visitor_abc12
 	 */
 	public static function flosc_build_visitor_id( $flosc_flow_id ) {

@@ -30,6 +30,9 @@ class FLOSC_Site_Content_Index {
 		return self::$instance;
 	}
 
+	/**
+	 * Construct.
+	 */
 	private function __construct() {
 		add_action( 'admin_post_flosc_site_index_rebuild', array( $this, 'handle_rebuild' ) );
 		add_action( 'admin_post_flosc_site_index_exclude', array( $this, 'handle_exclude' ) );
@@ -41,7 +44,7 @@ class FLOSC_Site_Content_Index {
 	/**
 	 * Flow stem from IVR filename.
 	 *
-	 * @param string $ivr_file e.g. flosc_default_technical_ivr.md
+	 * @param string $ivr_file e.g. flosc_default_technical_ivr.md.
 	 * @return string
 	 */
 	public function stem_from_ivr( $ivr_file ) {
@@ -126,8 +129,8 @@ class FLOSC_Site_Content_Index {
 	/**
 	 * Persist index document.
 	 *
-	 * @param string $flow_stem
-	 * @param array  $doc
+	 * @param string $flow_stem Flow stem.
+	 * @param array  $doc Doc.
 	 * @return bool
 	 */
 	public function save( $flow_stem, array $doc ) {
@@ -214,7 +217,7 @@ class FLOSC_Site_Content_Index {
 	}
 
 	/**
-	 * @param string[] $slugs
+	 * @param string[] $slugs Slugs.
 	 * @return int[]
 	 */
 	public function category_ids_from_slugs( array $slugs ) {
@@ -294,7 +297,7 @@ class FLOSC_Site_Content_Index {
 
 		return array(
 			'ok'      => true,
-			/* translators: %d: number of posts indexed */
+			/* translators: %d: number of posts indexed. */
 			'message' => sprintf( __( 'Site index built: %d published posts stored for selective AI retrieval.', 'flosc' ), count( $indexed ) ),
 			'count'   => count( $indexed ),
 		);
@@ -303,7 +306,7 @@ class FLOSC_Site_Content_Index {
 	/**
 	 * How many indexed posts belong to this flow's content category (for admin stats).
 	 *
-	 * @param string $flow_stem
+	 * @param string $flow_stem Flow stem.
 	 * @return int
 	 */
 	public function count_in_flow_category( $flow_stem ) {
@@ -330,9 +333,9 @@ class FLOSC_Site_Content_Index {
 	}
 
 	/**
-	 * @param WP_Post $post
-	 * @param string  $keywords_manual
-	 * @param bool    $excluded
+	 * @param WP_Post $post Post.
+	 * @param string  $keywords_manual Keywords manual.
+	 * @param bool    $excluded Excluded.
 	 * @return array
 	 */
 	public function build_row_from_post( WP_Post $post, $keywords_manual = '', $excluded = false ) {
@@ -391,8 +394,8 @@ class FLOSC_Site_Content_Index {
 	}
 
 	/**
-	 * @param WP_Post $post
-	 * @param string  $body
+	 * @param WP_Post $post Post.
+	 * @param string  $body Body.
 	 * @return string comma-separated
 	 */
 	private function derive_keywords( WP_Post $post, $body ) {
@@ -441,8 +444,8 @@ class FLOSC_Site_Content_Index {
 	}
 
 	/**
-	 * @param string $base
-	 * @param string $extra
+	 * @param string $base Base.
+	 * @param string $extra Extra.
 	 * @return string
 	 */
 	private function merge_keywords( $base, $extra ) {
@@ -463,8 +466,8 @@ class FLOSC_Site_Content_Index {
 	/**
 	 * Light hierarchy map for AI (titles / ids / access) — no full bodies.
 	 *
-	 * @param string $flow_stem
-	 * @param string $access_level visitor|guest|member
+	 * @param string $flow_stem Flow stem.
+	 * @param string $access_level visitor|guest|member.
 	 * @return string
 	 */
 	public function format_map_for_ai( $flow_stem, $access_level = 'visitor' ) {
@@ -495,10 +498,10 @@ class FLOSC_Site_Content_Index {
 	/**
 	 * Selective full-text retrieval from the index.
 	 *
-	 * @param string $flow_stem
-	 * @param string $keywords
-	 * @param string $access_level
-	 * @param int    $limit
+	 * @param string $flow_stem Flow stem.
+	 * @param string $keywords Keywords.
+	 * @param string $access_level Access level.
+	 * @param int    $limit Limit.
 	 * @return string Human-readable block for the model
 	 */
 	public function search( $flow_stem, $keywords, $access_level = 'visitor', $limit = self::DEFAULT_RETRIEVE_LIMIT ) {
@@ -606,8 +609,8 @@ class FLOSC_Site_Content_Index {
 	}
 
 	/**
-	 * @param string $user_level
-	 * @param string $required
+	 * @param string $user_level User level.
+	 * @param string $required Required.
 	 * @return bool
 	 */
 	public function access_allows( $user_level, $required ) {
@@ -624,9 +627,9 @@ class FLOSC_Site_Content_Index {
 	/**
 	 * Set excluded flag and save.
 	 *
-	 * @param string $flow_stem
-	 * @param int    $post_id
-	 * @param bool   $excluded
+	 * @param string $flow_stem Flow stem.
+	 * @param int    $post_id Post ID.
+	 * @param bool   $excluded Excluded.
 	 * @return bool
 	 */
 	public function set_excluded( $flow_stem, $post_id, $excluded ) {
@@ -640,9 +643,9 @@ class FLOSC_Site_Content_Index {
 	}
 
 	/**
-	 * @param string $flow_stem
-	 * @param int    $post_id
-	 * @param string $manual_keywords
+	 * @param string $flow_stem Flow stem.
+	 * @param int    $post_id Post ID.
+	 * @param string $manual_keywords Manual keywords.
 	 * @return bool
 	 */
 	public function set_manual_keywords( $flow_stem, $post_id, $manual_keywords ) {
@@ -664,8 +667,8 @@ class FLOSC_Site_Content_Index {
 	/**
 	 * Reindex a single post if still in category.
 	 *
-	 * @param string $flow_stem
-	 * @param int    $post_id
+	 * @param string $flow_stem Flow stem.
+	 * @param int    $post_id Post ID.
 	 * @return bool
 	 */
 	public function reindex_one( $flow_stem, $post_id ) {
@@ -698,6 +701,7 @@ class FLOSC_Site_Content_Index {
 
 	/**
 	 * @return string
+	 * @param mixed $request Request.
 	 */
 	private function ivr_from_request( $request ) {
 		$ivr = isset( $request['flosc_return_ivr'] ) ? sanitize_file_name( (string) $request['flosc_return_ivr'] ) : '';
@@ -705,9 +709,9 @@ class FLOSC_Site_Content_Index {
 	}
 
 	/**
-	 * @param string $ivr
-	 * @param string $action
-	 * @param string $error
+	 * @param string $ivr IVR.
+	 * @param string $action Action.
+	 * @param string $error Error.
 	 * @return void
 	 */
 	private function redirect_ai( $ivr, $action, $error = '' ) {

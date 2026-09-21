@@ -37,6 +37,10 @@ class FLOSC_Request_Guard {
 	/**
 	 * Rate Limiting Helper
 	 * Prevents API abuse on public endpoints
+	 *
+	 * @param mixed $endpoint Endpoint.
+	 * @param int $limit Limit.
+	 * @param int $window Window.
 	 */
 	public function check_rate_limit( $endpoint, $limit = 20, $window = 3600 ) {
 		// v1.7.7: Use real client IP behind CDN/proxy (Cloudflare, AWS ALB, etc.)
@@ -63,7 +67,7 @@ class FLOSC_Request_Guard {
 	 * Create a signed cookie value
 	 * Format: base64(data)|signature
 	 *
-	 * @param array $data Data to store in cookie
+	 * @param array $data Data to store in cookie.
 	 * @return string Signed cookie value
 	 */
 	public function sign_cookie_data( $data ) {
@@ -77,7 +81,7 @@ class FLOSC_Request_Guard {
 	/**
 	 * Verify and decode a signed cookie
 	 *
-	 * @param string $cookie_value Raw cookie value
+	 * @param string $cookie_value Raw cookie value.
 	 * @return array|false Decoded data or false if invalid
 	 */
 	public function verify_signed_cookie( $cookie_value ) {
@@ -118,9 +122,9 @@ class FLOSC_Request_Guard {
 	/**
 	 * Set a signed cookie
 	 *
-	 * @param string $name Cookie name
-	 * @param array  $data Data to store
-	 * @param int    $expiry Expiry time (timestamp or seconds from now)
+	 * @param string $name Cookie name.
+	 * @param array  $data Data to store.
+	 * @param int    $expiry Expiry time (timestamp or seconds from now).
 	 */
 	public function set_signed_cookie( $name, $data, $expiry = 0 ) {
 		$value = $this->sign_cookie_data( $data );
@@ -148,7 +152,7 @@ class FLOSC_Request_Guard {
 	/**
 	 * Get data from a signed cookie
 	 *
-	 * @param string $name Cookie name
+	 * @param string $name Cookie name.
 	 * @return array|false Decoded data or false if invalid/missing
 	 */
 	public function get_signed_cookie( $name ) {

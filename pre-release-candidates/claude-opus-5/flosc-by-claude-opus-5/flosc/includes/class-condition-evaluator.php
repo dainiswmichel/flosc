@@ -19,6 +19,8 @@ class FLOSC_Condition_Evaluator {
 
 	/**
 	 * Constructor
+	 *
+	 * @param array $context Context.
 	 */
 	public function __construct( $context = array() ) {
 		$this->context = $context;
@@ -27,6 +29,8 @@ class FLOSC_Condition_Evaluator {
 
 	/**
 	 * Set context
+	 *
+	 * @param mixed $context Context.
 	 */
 	public function set_context( $context ) {
 		$this->context = $context;
@@ -34,6 +38,9 @@ class FLOSC_Condition_Evaluator {
 
 	/**
 	 * Update context value
+	 *
+	 * @param mixed $key Key.
+	 * @param mixed $value Value.
 	 */
 	public function update_context( $key, $value ) {
 		$this->context[ $key ] = $value;
@@ -41,6 +48,8 @@ class FLOSC_Condition_Evaluator {
 
 	/**
 	 * Evaluate a condition string
+	 *
+	 * @param mixed $condition_string Condition string.
 	 */
 	public function evaluate( $condition_string ) {
 		$condition_string = trim( $condition_string );
@@ -61,6 +70,8 @@ class FLOSC_Condition_Evaluator {
 
 	/**
 	 * Evaluate a complex expression with && || ! ()
+	 *
+	 * @param mixed $expr Expr.
 	 */
 	private function evaluate_expression( $expr ) {
 		$expr = trim( $expr );
@@ -112,6 +123,8 @@ class FLOSC_Condition_Evaluator {
 
 	/**
 	 * Evaluate a single condition
+	 *
+	 * @param mixed $condition Condition.
 	 */
 	private function evaluate_single( $condition ) {
 		$condition = trim( $condition );
@@ -289,6 +302,8 @@ class FLOSC_Condition_Evaluator {
 	 * - UTC
 	 * - UTC+2, UTC+02, UTC+02:00, UTC-5, UTC-05:30
 	 * - No explicit token: fallback to site timezone, then system timezone
+	 *
+	 * @param mixed $raw_value Raw value.
 	 */
 	private function parse_mts_with_timezone( $raw_value ) {
 		$raw_value = trim( (string) $raw_value );
@@ -330,6 +345,8 @@ class FLOSC_Condition_Evaluator {
 	 * 2) site timezone (WordPress)
 	 * 3) system timezone
 	 * 4) UTC
+	 *
+	 * @param string $token Token.
 	 */
 	private function resolve_timezone( $token = '' ) {
 		$token = strtoupper( trim( (string) $token ) );
@@ -392,6 +409,10 @@ class FLOSC_Condition_Evaluator {
 
 	/**
 	 * Compare values with operator
+	 *
+	 * @param mixed $left Left.
+	 * @param mixed $operator Operator.
+	 * @param mixed $right Right.
 	 */
 	private function compare( $left, $operator, $right ) {
 		switch ( $operator ) {
@@ -412,6 +433,9 @@ class FLOSC_Condition_Evaluator {
 
 	/**
 	 * Check offer state
+	 *
+	 * @param int $offer_id Offer ID.
+	 * @param mixed $state State.
 	 */
 	private function check_offer_state( $offer_id, $state ) {
 		if ( ! $this->user_id ) {
@@ -423,6 +447,9 @@ class FLOSC_Condition_Evaluator {
 
 	/**
 	 * Mark offer state
+	 *
+	 * @param int $offer_id Offer ID.
+	 * @param mixed $state State.
 	 */
 	public function mark_offer_state( $offer_id, $state ) {
 		if ( ! $this->user_id ) {
@@ -434,6 +461,8 @@ class FLOSC_Condition_Evaluator {
 
 	/**
 	 * Check if message was shown this session
+	 *
+	 * @param mixed $message_name Message name.
 	 */
 	public function was_shown_this_session( $message_name ) {
 		return isset( $this->session_shown[ $message_name ] );
@@ -441,6 +470,8 @@ class FLOSC_Condition_Evaluator {
 
 	/**
 	 * Mark message as shown this session
+	 *
+	 * @param mixed $message_name Message name.
 	 */
 	public function mark_shown_this_session( $message_name ) {
 		$this->session_shown[ $message_name ] = true;
@@ -448,6 +479,8 @@ class FLOSC_Condition_Evaluator {
 
 	/**
 	 * Check if message was ever shown to user
+	 *
+	 * @param mixed $message_name Message name.
 	 */
 	public function was_ever_shown( $message_name ) {
 		if ( ! $this->user_id ) {
@@ -459,6 +492,8 @@ class FLOSC_Condition_Evaluator {
 
 	/**
 	 * Mark message as shown to user (persistent)
+	 *
+	 * @param mixed $message_name Message name.
 	 */
 	public function mark_shown( $message_name ) {
 		if ( ! $this->user_id ) {
@@ -470,6 +505,9 @@ class FLOSC_Condition_Evaluator {
 
 	/**
 	 * Get all applicable messages for current state
+	 *
+	 * @param mixed $messages Messages.
+	 * @param mixed $type Type.
 	 */
 	public function get_applicable_messages( $messages, $type = null ) {
 		$applicable = array();
@@ -496,6 +534,9 @@ class FLOSC_Condition_Evaluator {
 
 	/**
 	 * Build context from user state
+	 *
+	 * @param mixed $user_id User ID.
+	 * @param array $additional Additional.
 	 */
 	public static function build_context( $user_id = null, $additional = array() ) {
 		$user_id = $user_id ?: get_current_user_id();

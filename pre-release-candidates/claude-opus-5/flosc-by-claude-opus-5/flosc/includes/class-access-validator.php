@@ -16,6 +16,11 @@ class FLOSC_Access_Validator {
 
 	private static $instance = null;
 
+	/**
+	 * Instance.
+	 *
+	 * @return mixed
+	 */
 	public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
@@ -27,8 +32,8 @@ class FLOSC_Access_Validator {
 	 * Validate AI response before sending to user
 	 * CRITICAL: This catches any content leakage
 	 *
-	 * @param string $ai_response The AI's proposed response
-	 * @param string $access_level User's access level
+	 * @param string $ai_response The AI's proposed response.
+	 * @param string $access_level User's access level.
 	 * @return array ['valid' => bool, 'response' => string, 'violations' => array]
 	 */
 	public function validate_response( $ai_response, $access_level ) {
@@ -87,6 +92,8 @@ class FLOSC_Access_Validator {
 
 	/**
 	 * Get forbidden keywords for access level
+	 *
+	 * @param mixed $access_level Access level.
 	 */
 	private function get_forbidden_keywords( $access_level ) {
 
@@ -113,6 +120,8 @@ class FLOSC_Access_Validator {
 	/**
 	 * Check VISITOR-specific violations
 	 * VISITORS should ONLY see quiz prompts
+	 *
+	 * @param mixed $response Response.
 	 */
 	private function check_visitor_violations( $response ) {
 
@@ -149,6 +158,8 @@ class FLOSC_Access_Validator {
 	/**
 	 * Check GUEST-specific violations
 	 * GUESTS should see offers but NOT member content
+	 *
+	 * @param mixed $response Response.
 	 */
 	private function check_guest_violations( $response ) {
 
@@ -172,6 +183,8 @@ class FLOSC_Access_Validator {
 	/**
 	 * Get safe fallback response for access level
 	 * This is shown when AI tries to leak content
+	 *
+	 * @param mixed $access_level Access level.
 	 */
 	private function get_safe_fallback_response( $access_level ) {
 
@@ -189,6 +202,9 @@ class FLOSC_Access_Validator {
 	/**
 	 * Validate system prompt for access level
 	 * Ensures AI is instructed correctly
+	 *
+	 * @param mixed $system_prompt System prompt.
+	 * @param mixed $access_level Access level.
 	 */
 	public function validate_system_prompt( $system_prompt, $access_level ) {
 
@@ -220,6 +236,8 @@ class FLOSC_Access_Validator {
 
 	/**
 	 * Get required phrases in system prompt
+	 *
+	 * @param mixed $access_level Access level.
 	 */
 	private function get_required_prompt_phrases( $access_level ) {
 
@@ -246,6 +264,8 @@ class FLOSC_Access_Validator {
 	/**
 	 * Get access level enforcement rules
 	 * Returns what AI CAN and CANNOT do at each level
+	 *
+	 * @param mixed $access_level Access level.
 	 */
 	public function get_enforcement_rules( $access_level ) {
 

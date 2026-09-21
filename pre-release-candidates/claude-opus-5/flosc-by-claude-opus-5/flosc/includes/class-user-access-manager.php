@@ -14,6 +14,11 @@ class FLOSC_User_Access_Manager {
 
 	private static $instance = null;
 
+	/**
+	 * Instance.
+	 *
+	 * @return mixed
+	 */
 	public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
@@ -25,6 +30,7 @@ class FLOSC_User_Access_Manager {
 	 * Get current user's access level
 	 *
 	 * @return string 'visitor', 'guest', or 'member'
+	 * @param mixed $user_id User ID.
 	 */
 	public function get_access_level( $user_id = null ) {
 
@@ -57,11 +63,11 @@ class FLOSC_User_Access_Manager {
 	 * Bridges legacy keys plus FLOSC_Member_Access and sale-side access so RAG
 	 * and AI userState match content gates (sandbox grants, roles, offers).
 	 *
-	 * @param int $user_id
+	 * @param int $user_id User ID.
 	 * @return bool
 	 */
 	/**
-	 * @param int         $user_id
+	 * @param int         $user_id User ID.
 	 * @param string|null $flow_id Per-flow stem when known.
 	 */
 	public function is_member( $user_id, $flow_id = null ) {
@@ -115,8 +121,8 @@ class FLOSC_User_Access_Manager {
 	/**
 	 * Grant member access to user
 	 *
-	 * @param int    $user_id
-	 * @param string $reason 'quiz_completion', 'payment', 'admin_grant'
+	 * @param int    $user_id User ID.
+	 * @param string $reason 'quiz_completion', 'payment', 'admin_grant'.
 	 */
 	public function grant_member_access( $user_id, $reason = 'quiz_completion' ) {
 
@@ -136,7 +142,7 @@ class FLOSC_User_Access_Manager {
 	/**
 	 * Revoke member access
 	 *
-	 * @param int $user_id
+	 * @param int $user_id User ID.
 	 */
 	public function revoke_member_access( $user_id ) {
 
@@ -153,7 +159,7 @@ class FLOSC_User_Access_Manager {
 	 * Get user context for AI
 	 * Returns all relevant user data
 	 *
-	 * @param int $user_id
+	 * @param int $user_id User ID.
 	 * @return array
 	 */
 	public function get_user_context( $user_id = null ) {
@@ -245,8 +251,8 @@ class FLOSC_User_Access_Manager {
 	/**
 	 * Check if user can access specific content level
 	 *
-	 * @param string $required_level 'visitor', 'guest', or 'member'
-	 * @param int    $user_id
+	 * @param string $required_level 'visitor', 'guest', or 'member'.
+	 * @param int    $user_id User ID.
 	 * @return bool
 	 */
 	public function can_access_level( $required_level, $user_id = null ) {

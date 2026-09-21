@@ -61,8 +61,8 @@ function flosc_guest_followup_slots() {
  * Read a follow-up setting with legacy key fallback.
  *
  * @param array  $settings Flow settings.
- * @param string $slot_id  guest_followup_1|2|3
- * @param string $suffix   subject|body|min_day|max_day
+ * @param string $slot_id  guest_followup_1|2|3.
+ * @param string $suffix   subject|body|min_day|max_day.
  * @param mixed  $default  Default if neither key set.
  * @return mixed
  */
@@ -91,7 +91,7 @@ function flosc_guest_followup_get( array $settings, $slot_id, $suffix, $default 
  * Whether this follow-up was already sent (new or legacy sent-meta key).
  *
  * @param array  $sent    Values from user meta _flosc_guest_emails_sent.
- * @param string $slot_id guest_followup_N
+ * @param string $slot_id guest_followup_N.
  * @return bool
  */
 function flosc_guest_followup_was_sent( array $sent, $slot_id ) {

@@ -20,11 +20,17 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Tab Header Helper - displays consistent header across all tabs
  * Format: {emoji} {Tab Name} Configuration for {FlowName} ({filename})
  *
- * @param string $emoji Tab emoji
- * @param string $tab_name Tab display name
+ * @param string $emoji Tab emoji.
+ * @param string $tab_name Tab display name.
  * @return void
  */
 if ( ! function_exists( 'flosc_tab_header' ) ) {
+	/**
+	 * Flosc tab header.
+	 *
+	 * @param mixed $emoji Emoji.
+	 * @param mixed $tab_name Tab name.
+	 */
 	function flosc_tab_header( $emoji, $tab_name ) {
 		$flosc_ivr_file = $GLOBALS['flosc_current_ivr'] ?? '';
 		$flosc_settings = $GLOBALS['flosc_current_settings'] ?? array();
@@ -48,6 +54,9 @@ if ( ! function_exists( 'flosc_tab_header' ) ) {
  * @return void
  */
 if ( ! function_exists( 'flosc_tab_footer' ) ) {
+	/**
+	 * Flosc tab footer.
+	 */
 	function flosc_tab_footer() {
 		$flosc_version = defined( 'FLOSC_VERSION' ) ? FLOSC_VERSION : '?.?.?';
 		echo '<div class="flosc-tab-footer">';
@@ -63,6 +72,11 @@ if ( ! function_exists( 'flosc_tab_footer' ) ) {
  * @return string
  */
 if ( ! function_exists( 'flosc_michel_timestamp' ) ) {
+	/**
+	 * Flosc michel timestamp.
+	 *
+	 * @return mixed
+	 */
 	function flosc_michel_timestamp() {
 		return gmdate( 'Y' ) . 'y-' . gmdate( 'm' ) . 'm-' . gmdate( 'd' ) . 'd-UTC' . gmdate( 'H' ) . 'h-' . gmdate( 'i' ) . 'm-' . gmdate( 's' ) . 's';
 	}
@@ -71,10 +85,16 @@ if ( ! function_exists( 'flosc_michel_timestamp' ) ) {
 /**
  * Check if a flow's slug is registered in rewrite rules
  *
- * @param string $slug The slug to check
+ * @param string $slug The slug to check.
  * @return string 'ok', 'missing', or 'unknown'
  */
 if ( ! function_exists( 'flosc_check_permalink_status' ) ) {
+	/**
+	 * Flosc check permalink status.
+	 *
+	 * @param mixed $slug Slug.
+	 * @return mixed
+	 */
 	function flosc_check_permalink_status( $slug ) {
 		if ( empty( $slug ) ) {
 			return 'unknown';
@@ -106,10 +126,15 @@ if ( ! function_exists( 'flosc_check_permalink_status' ) ) {
  * Render permalink status indicator
  * Green = OK, Yellow = Unknown, Red = Needs Flush
  *
- * @param string $slug The flow slug
+ * @param string $slug The flow slug.
  * @return void
  */
 if ( ! function_exists( 'flosc_permalink_status_indicator' ) ) {
+	/**
+	 * Flosc permalink status indicator.
+	 *
+	 * @param mixed $slug Slug.
+	 */
 	function flosc_permalink_status_indicator( $slug ) {
 		$flosc_status = flosc_check_permalink_status( $slug );
 		$last_flush   = get_option( 'flosc_last_permalink_flush', null );
@@ -159,10 +184,16 @@ if ( ! function_exists( 'flosc_permalink_status_indicator' ) ) {
  * Resolve the canonical flow option key for a given IVR file.
  * Prevents duplicate flow option construction for the same file.
  *
- * @param string $flosc_ivr_filename
+ * @param string $flosc_ivr_filename Flosc IVR filename.
  * @return string
  */
 if ( ! function_exists( 'flosc_resolve_flow_option_key_for_ivr' ) ) {
+	/**
+	 * Flosc resolve flow option key for IVR.
+	 *
+	 * @param mixed $flosc_ivr_filename Flosc IVR filename.
+	 * @return mixed
+	 */
 	function flosc_resolve_flow_option_key_for_ivr( $flosc_ivr_filename ) {
 		$flosc_ivr_filename = basename( (string) $flosc_ivr_filename );
 		$target_stem        = sanitize_key( pathinfo( $flosc_ivr_filename, PATHINFO_FILENAME ) );
@@ -238,6 +269,11 @@ if ( ! function_exists( 'flosc_resolve_flow_option_key_for_ivr' ) ) {
  * @return string[]
  */
 if ( ! function_exists( 'flosc_known_flow_option_keys' ) ) {
+	/**
+	 * Flosc known flow option keys.
+	 *
+	 * @return mixed
+	 */
 	function flosc_known_flow_option_keys() {
 		$keys = array();
 		if ( function_exists( 'flosc_flows' ) ) {

@@ -85,6 +85,9 @@ class FLOSC_Pronunciation_Analyzer {
 
 	/**
 	 * Analyze transcript against expected text
+	 *
+	 * @param mixed $transcript Transcript.
+	 * @param mixed $expected Expected.
 	 */
 	public function analyze( $transcript, $expected ) {
 		$transcript = $this->normalize( $transcript );
@@ -154,6 +157,8 @@ class FLOSC_Pronunciation_Analyzer {
 
 	/**
 	 * Normalize text for comparison
+	 *
+	 * @param mixed $text Text.
 	 */
 	private function normalize( $text ) {
 		// Lowercase.
@@ -182,6 +187,9 @@ class FLOSC_Pronunciation_Analyzer {
 
 	/**
 	 * Check if two items match (with fuzzy matching)
+	 *
+	 * @param mixed $expected Expected.
+	 * @param mixed $actual Actual.
 	 */
 	private function items_match( $expected, $actual ) {
 		// Exact match.
@@ -204,6 +212,8 @@ class FLOSC_Pronunciation_Analyzer {
 
 	/**
 	 * Generate human-readable feedback
+	 *
+	 * @param mixed $results Results.
 	 */
 	private function generate_feedback( $results ) {
 		$score        = $results['score'];

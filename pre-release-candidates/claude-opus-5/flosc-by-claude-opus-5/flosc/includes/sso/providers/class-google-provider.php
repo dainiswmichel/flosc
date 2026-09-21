@@ -47,7 +47,7 @@ class Google_Provider extends SSO_Provider_Base {
 	/**
 	 * Customize authorization parameters for Google
 	 *
-	 * @param array $params Default parameters
+	 * @param array $params Default parameters.
 	 * @return array Modified parameters
 	 */
 	protected function customize_auth_params( $params ) {
@@ -63,8 +63,9 @@ class Google_Provider extends SSO_Provider_Base {
 	 * Get user info from Google
 	 * v1.4.6: Override to request explicit fields (BuddyBoss pattern)
 	 *
-	 * @param string $access_token OAuth access token
+	 * @param string $access_token OAuth access token.
 	 * @return array|WP_Error User data or error
+	 * @param array $token_data Token data.
 	 */
 	public function get_user_info( $access_token, $token_data = array() ) {
 		$url = add_query_arg(
@@ -105,7 +106,7 @@ class Google_Provider extends SSO_Provider_Base {
 	/**
 	 * Normalize Google user data to standard format
 	 *
-	 * @param array $raw_data Raw user data from Google
+	 * @param array $raw_data Raw user data from Google.
 	 * @return array Normalized user data
 	 */
 	protected function normalize_user_data( $raw_data ) {
@@ -141,7 +142,7 @@ class Google_Provider extends SSO_Provider_Base {
 	/**
 	 * Get provider-specific user ID
 	 *
-	 * @param array $raw_data Raw user data
+	 * @param array $raw_data Raw user data.
 	 * @return string Provider user ID
 	 */
 	public function get_provider_user_id( $raw_data ) {

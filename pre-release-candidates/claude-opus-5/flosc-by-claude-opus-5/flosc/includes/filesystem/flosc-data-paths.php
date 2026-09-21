@@ -44,7 +44,7 @@ if ( ! function_exists( 'flosc_safe_remote_request' ) ) {
 	 * Outbound HTTP for admin-configurable URLs.
 	 * Validates URL then uses wp_safe_remote_* (no private/loopback hosts).
 	 *
-	 * @param string $method GET|POST|DELETE|…
+	 * @param string $method GET|POST|DELETE|….
 	 * @param string $url    Absolute URL.
 	 * @param array  $args   wp_remote_* args (sslverify cannot be forced off).
 	 * @return array|WP_Error
@@ -551,6 +551,12 @@ if ( ! function_exists( 'flosc_is_allowed_ivr_source_path' ) ) {
  * and created on first use. $flow_stem is the flow id (e.g. 'flow_ivr').
  * ========================================================================== */
 if ( ! function_exists( 'flosc_flow_kb_dir' ) ) {
+	/**
+	 * Flosc flow kb dir.
+	 *
+	 * @param mixed $flow_stem Flow stem.
+	 * @return mixed
+	 */
 	function flosc_flow_kb_dir( $flow_stem ) {
 		$base = flosc_data_dir();
 		if ( '' === $base ) {
@@ -619,6 +625,11 @@ if ( ! function_exists( 'flosc_chat_archive_dir' ) ) {
  * key uses this instead of wp_salt('auth').
  * ========================================================================== */
 if ( ! function_exists( 'flosc_token_secret' ) ) {
+	/**
+	 * Flosc token secret.
+	 *
+	 * @return mixed
+	 */
 	function flosc_token_secret() {
 		$secret = get_option( 'flosc_token_secret' );
 		if ( ! $secret ) {
@@ -725,7 +736,7 @@ if ( ! function_exists( 'flosc_checkout_binding_verify' ) ) {
  */
 if ( ! function_exists( 'flosc_paypal_purchase_intent_create' ) ) {
 	/**
-	 * @param array $data offer_id, plan_id, plan_type, amount, currency, flow_id, user_id, session_id, mode
+	 * @param array $data offer_id, plan_id, plan_type, amount, currency, flow_id, user_id, session_id, mode.
 	 * @return array|WP_Error Intent record including purchase_uuid
 	 */
 	function flosc_paypal_purchase_intent_create( array $data ) {
@@ -762,7 +773,7 @@ if ( ! function_exists( 'flosc_paypal_purchase_intent_create' ) ) {
 
 if ( ! function_exists( 'flosc_paypal_purchase_intent_get' ) ) {
 	/**
-	 * @param string $uuid
+	 * @param string $uuid Uuid.
 	 * @return array|false
 	 */
 	function flosc_paypal_purchase_intent_get( $uuid ) {
@@ -777,9 +788,9 @@ if ( ! function_exists( 'flosc_paypal_purchase_intent_get' ) ) {
 
 if ( ! function_exists( 'flosc_paypal_purchase_intent_mark_fulfilled' ) ) {
 	/**
-	 * @param string $uuid
-	 * @param string $subscription_id
-	 * @param int    $user_id
+	 * @param string $uuid Uuid.
+	 * @param string $subscription_id Subscription ID.
+	 * @param int    $user_id User ID.
 	 * @return bool
 	 */
 	function flosc_paypal_purchase_intent_mark_fulfilled( $uuid, $subscription_id, $user_id = 0 ) {
@@ -867,6 +878,12 @@ if ( ! function_exists( 'flosc_config_file' ) ) {
 	// Single config file: the uploads copy if it exists, else the shipped.
 	// default. The plugin path is a READ-ONLY resolution — every write goes.
 	// through flosc_write_data_file(), which only accepts uploads targets.
+	/**
+	 * Flosc config file.
+	 *
+	 * @param mixed $filename Filename.
+	 * @return mixed
+	 */
 	function flosc_config_file( $filename ) {
 		$filename = ltrim( (string) $filename, '/' );
 		$base     = flosc_data_dir();
@@ -884,6 +901,11 @@ if ( ! function_exists( 'flosc_config_file' ) ) {
  * @return string[]
  */
 if ( ! function_exists( 'flosc_lesson_catalog_basenames' ) ) {
+	/**
+	 * Flosc lesson catalog basenames.
+	 *
+	 * @return mixed
+	 */
 	function flosc_lesson_catalog_basenames() {
 		// Ship core: neutral name only. Instances may add legacy basenames via filter.
 		$names = array( 'lesson_catalog.md' );
@@ -902,6 +924,11 @@ if ( ! function_exists( 'flosc_lesson_catalog_basenames' ) ) {
  * @return string Absolute path or empty string.
  */
 if ( ! function_exists( 'flosc_resolve_lesson_catalog_path' ) ) {
+	/**
+	 * Flosc resolve lesson catalog path.
+	 *
+	 * @return mixed
+	 */
 	function flosc_resolve_lesson_catalog_path() {
 		if ( ! function_exists( 'flosc_config_file' ) ) {
 			return '';
@@ -932,6 +959,11 @@ if ( ! function_exists( 'flosc_resolve_lesson_catalog_path' ) ) {
  * @return string[] Absolute paths under flosc_data_dir(), or empty if uploads unavailable.
  */
 if ( ! function_exists( 'flosc_lesson_catalog_write_paths' ) ) {
+	/**
+	 * Flosc lesson catalog write paths.
+	 *
+	 * @return mixed
+	 */
 	function flosc_lesson_catalog_write_paths() {
 		$dir = function_exists( 'flosc_data_dir' ) ? flosc_data_dir() : '';
 		if ( '' === $dir ) {
@@ -951,6 +983,12 @@ if ( ! function_exists( 'flosc_lesson_catalog_write_paths' ) ) {
 if ( ! function_exists( 'flosc_config_glob' ) ) {
 	// Union of glob matches across uploads + plugin dirs, deduped by basename.
 	// (uploads wins, since it is scanned first). $patterns is one pattern or a list.
+	/**
+	 * Flosc config glob.
+	 *
+	 * @param mixed $patterns Patterns.
+	 * @return mixed
+	 */
 	function flosc_config_glob( $patterns ) {
 		$patterns = (array) $patterns;
 		$dirs     = array();

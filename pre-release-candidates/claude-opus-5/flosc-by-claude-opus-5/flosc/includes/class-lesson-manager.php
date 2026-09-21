@@ -18,6 +18,11 @@ class FLOSC_Lesson_Manager {
 
 	private static $instance = null;
 
+	/**
+	 * Instance.
+	 *
+	 * @return mixed
+	 */
 	public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
@@ -218,6 +223,8 @@ class FLOSC_Lesson_Manager {
 	 * v3.0.8: Search lessons by keyword within all configured categories.
 	 * Matches against post title and content so "vowel sounds", "TH", "rhotic R", etc. work naturally.
 	 * Results are scoped to the flow's lesson categories so members can't accidentally browse other content.
+	 *
+	 * @param mixed $search Search.
 	 */
 	public function search_lessons( $search ) {
 		if ( empty( trim( $search ) ) ) {
@@ -279,6 +286,8 @@ class FLOSC_Lesson_Manager {
 
 	/**
 	 * Get a single lesson by ID
+	 *
+	 * @param int $lesson_id Lesson ID.
 	 */
 	public function get_lesson( $lesson_id ) {
 		$post = get_post( $lesson_id );
@@ -293,7 +302,7 @@ class FLOSC_Lesson_Manager {
 	/**
 	 * Get lessons that match quiz results (missed items)
 	 *
-	 * @param array $missed_items Items the user got wrong
+	 * @param array $missed_items Items the user got wrong.
 	 * @return array Matching lessons
 	 */
 	public function get_lessons_for_missed_items( $missed_items ) {
@@ -356,6 +365,8 @@ class FLOSC_Lesson_Manager {
 
 	/**
 	 * Get the first (free) lesson for a set of missed items
+	 *
+	 * @param array $missed_items Missed items.
 	 */
 	public function get_free_lesson( $missed_items ) {
 		$lessons = $this->get_lessons_for_missed_items( $missed_items );
@@ -371,6 +382,9 @@ class FLOSC_Lesson_Manager {
 
 	/**
 	 * Format a post as a lesson array
+	 *
+	 * @param mixed $post Post.
+	 * @param bool $include_content Include content.
 	 */
 	private function format_lesson( $post, $include_content = false ) {
 		// v1.9.5: Decode HTML entities in title and excerpt.
@@ -413,6 +427,10 @@ class FLOSC_Lesson_Manager {
 
 	/**
 	 * Check if user has access to a lesson
+	 *
+	 * @param int $user_id User ID.
+	 * @param int $lesson_id Lesson ID.
+	 * @param bool $is_free_lesson Is free lesson.
 	 */
 	public function user_can_access( $user_id, $lesson_id, $is_free_lesson = false ) {
 		// Free lesson is always accessible to logged-in users.

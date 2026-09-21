@@ -26,6 +26,8 @@ class FLOSC_Access_Manager {
 
 	/**
 	 * Get user's complete access state
+	 *
+	 * @param int $user_id User ID.
 	 */
 	public function get_user_access( $user_id ) {
 		$access = get_user_meta( $user_id, $this->meta_key, true ) ?: array();
@@ -144,7 +146,7 @@ class FLOSC_Access_Manager {
 	 * - Active offer / purchase history for that flow
 	 * - Does NOT treat global _flosc_member_access or any other-flow roles as membership on other flows
 	 *
-	 * @param int         $user_id
+	 * @param int         $user_id User ID.
 	 * @param string|null $flow_id Flow id / ivr / stem. Null = resolve current flow when possible.
 	 * @return bool
 	 */
@@ -175,8 +177,8 @@ class FLOSC_Access_Manager {
 	 * 1) per-flow grant meta, 2) offers/purchases for this flow, 3) member
 	 * levels declared on this flow only (never a global product brand branch).
 	 *
-	 * @param int    $user_id
-	 * @param string $stem
+	 * @param int    $user_id User ID.
+	 * @param string $stem Stem.
 	 * @return bool
 	 */
 	public function is_member_of_flow( $user_id, $stem ) {
@@ -216,8 +218,8 @@ class FLOSC_Access_Manager {
 	}
 
 	/**
-	 * @param int    $user_id
-	 * @param string $stem
+	 * @param int    $user_id User ID.
+	 * @param string $stem Stem.
 	 * @return bool
 	 */
 	private function has_purchase_history_for_flow( $user_id, $stem ) {
@@ -245,7 +247,7 @@ class FLOSC_Access_Manager {
 	/**
 	 * True when the user holds paid access on at least one flow (legacy / no-context).
 	 *
-	 * @param int $user_id
+	 * @param int $user_id User ID.
 	 * @return bool
 	 */
 	public function is_member_any_flow( $user_id ) {
@@ -305,8 +307,8 @@ class FLOSC_Access_Manager {
 	/**
 	 * Whether an active _flosc_access offer belongs to this flow.
 	 *
-	 * @param int    $user_id
-	 * @param string $stem
+	 * @param int    $user_id User ID.
+	 * @param string $stem Stem.
 	 * @return bool
 	 */
 	private function has_active_offer_for_flow( $user_id, $stem ) {
@@ -344,6 +346,9 @@ class FLOSC_Access_Manager {
 
 	/**
 	 * Check if user has a specific feature
+	 *
+	 * @param int $user_id User ID.
+	 * @param mixed $feature Feature.
 	 */
 	public function has_feature( $user_id, $feature ) {
 		$access  = $this->get_user_access( $user_id );
@@ -378,8 +383,8 @@ class FLOSC_Access_Manager {
 		/**
 		 * Extra feature slugs that count as full-member content for a flow instance.
 		 *
-		 * @param string[] $features
-		 * @param int      $user_id
+		 * @param string[] $features Features.
+		 * @param int      $user_id User ID.
 		 */
 		$member_content_features = apply_filters( 'flosc_member_content_features', $member_content_features, $user_id );
 		if ( ! is_array( $member_content_features ) ) {
@@ -398,6 +403,9 @@ class FLOSC_Access_Manager {
 	 * String aliases:
 	 * - 'full' / 'member' → any full member (offer, subscription, or FLOSC_Member_Access)
 	 * - other strings → feature flag via has_feature()
+	 *
+	 * @param int $user_id User ID.
+	 * @param mixed $requirement Requirement.
 	 */
 	public function can_access( $user_id, $requirement ) {
 		// If requirement is a feature name
@@ -434,6 +442,10 @@ class FLOSC_Access_Manager {
 
 	/**
 	 * Grant access from an offer purchase
+	 *
+	 * @param int $user_id User ID.
+	 * @param mixed $offer Offer.
+	 * @param array $transaction Transaction.
 	 */
 	public function grant_from_offer( $user_id, $offer, $transaction = array() ) {
 		$access = $this->get_user_access( $user_id );
@@ -559,6 +571,9 @@ class FLOSC_Access_Manager {
 
 	/**
 	 * Grant feature directly
+	 *
+	 * @param int $user_id User ID.
+	 * @param mixed $feature Feature.
 	 */
 	public function grant_feature( $user_id, $feature ) {
 		$access = $this->get_user_access( $user_id );
@@ -574,6 +589,9 @@ class FLOSC_Access_Manager {
 
 	/**
 	 * Revoke feature
+	 *
+	 * @param int $user_id User ID.
+	 * @param mixed $feature Feature.
 	 */
 	public function revoke_feature( $user_id, $feature ) {
 		$access = $this->get_user_access( $user_id );
@@ -593,6 +611,9 @@ class FLOSC_Access_Manager {
 
 	/**
 	 * Check if user has purchased a specific offer
+	 *
+	 * @param int $user_id User ID.
+	 * @param int $offer_id Offer ID.
 	 */
 	public function has_offer( $user_id, $offer_id ) {
 		$access = $this->get_user_access( $user_id );
@@ -606,6 +627,8 @@ class FLOSC_Access_Manager {
 
 	/**
 	 * Revoke all access (reset to guest)
+	 *
+	 * @param int $user_id User ID.
 	 */
 	public function revoke_all( $user_id ) {
 		$access = array(
@@ -626,6 +649,9 @@ class FLOSC_Access_Manager {
 
 	/**
 	 * Update subscription status
+	 *
+	 * @param int $user_id User ID.
+	 * @param array $subscription_data Subscription data.
 	 */
 	public function update_subscription( $user_id, $subscription_data ) {
 		$access = $this->get_user_access( $user_id );
@@ -644,6 +670,8 @@ class FLOSC_Access_Manager {
 
 	/**
 	 * Cancel subscription access
+	 *
+	 * @param int $user_id User ID.
 	 */
 	public function cancel_subscription( $user_id ) {
 		$access = $this->get_user_access( $user_id );
@@ -667,6 +695,8 @@ class FLOSC_Access_Manager {
 
 	/**
 	 * Calculate expiration date from offer
+	 *
+	 * @param mixed $offer Offer.
 	 */
 	private function calculate_expiration( $offer ) {
 		$duration = $offer['grants']['duration_days'] ?? 0;
@@ -680,6 +710,8 @@ class FLOSC_Access_Manager {
 
 	/**
 	 * Check if an offer is still active (not expired)
+	 *
+	 * @param array $offer_data Offer data.
 	 */
 	private function is_offer_active( $offer_data ) {
 		if ( empty( $offer_data['expires_at'] ) ) {
@@ -691,6 +723,8 @@ class FLOSC_Access_Manager {
 
 	/**
 	 * Check if subscription is active
+	 *
+	 * @param mixed $subscription Subscription.
 	 */
 	private function is_subscription_active( $subscription ) {
 		if ( ! $subscription ) {
@@ -711,8 +745,8 @@ class FLOSC_Access_Manager {
 	 * A non-zero $user_id MUST NEVER return visitor. Multi-host same-user testing
 	 * is rare; do not invent visitor UI for a known WP user.
 	 *
-	 * @param int         $user_id 0 = anonymous
-	 * @param string|null $flow_id Flow id / ivr / stem for paid-tier check
+	 * @param int         $user_id 0 = anonymous.
+	 * @param string|null $flow_id Flow id / ivr / stem for paid-tier check.
 	 * @return string visitor|guest|member
 	 */
 	public function get_simple_state( $user_id, $flow_id = null ) {

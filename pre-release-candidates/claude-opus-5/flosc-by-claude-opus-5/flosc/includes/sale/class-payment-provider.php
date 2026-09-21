@@ -47,6 +47,8 @@ abstract class FLOSC_Payment_Provider {
 
 	/**
 	 * Enable/disable the provider
+	 *
+	 * @param mixed $enabled Enabled.
 	 */
 	public function set_enabled( $enabled ) {
 		update_option( 'flosc_provider_' . $this->get_id() . '_enabled', (bool) $enabled );
@@ -60,15 +62,19 @@ abstract class FLOSC_Payment_Provider {
 	/**
 	 * Process a payment
 	 *
-	 * @param int   $user_id
-	 * @param array $offer The offer being purchased
-	 * @param array $payment_data Provider-specific data
+	 * @param int   $user_id User ID.
+	 * @param array $offer The offer being purchased.
+	 * @param array $payment_data Provider-specific data.
 	 * @return array|WP_Error Transaction result or error
 	 */
 	abstract public function process_payment( $user_id, $offer, $payment_data = array() );
 
 	/**
 	 * Handle refund
+	 *
+	 * @param int $user_id User ID.
+	 * @param int $transaction_id Transaction ID.
+	 * @param mixed $amount Amount.
 	 */
 	public function process_refund( $user_id, $transaction_id, $amount = null ) {
 		return new WP_Error( 'not_supported', __( 'Refunds not supported by this provider', 'flosc' ) );
@@ -76,6 +82,8 @@ abstract class FLOSC_Payment_Provider {
 
 	/**
 	 * Get transaction status
+	 *
+	 * @param int $transaction_id Transaction ID.
 	 */
 	public function get_transaction_status( $transaction_id ) {
 		return null;
@@ -83,6 +91,9 @@ abstract class FLOSC_Payment_Provider {
 
 	/**
 	 * Handle webhooks (if applicable)
+	 *
+	 * @param mixed $payload Payload.
+	 * @param array $headers Headers.
 	 */
 	public function handle_webhook( $payload, $headers = array() ) {
 		return new WP_Error( 'not_supported', __( 'Webhooks not supported by this provider', 'flosc' ) );
@@ -97,6 +108,8 @@ abstract class FLOSC_Payment_Provider {
 
 	/**
 	 * Render payment form/UI (if needed)
+	 *
+	 * @param mixed $offer Offer.
 	 */
 	public function render_payment_ui( $offer ) {
 		return '';
@@ -111,6 +124,8 @@ abstract class FLOSC_Payment_Provider {
 
 	/**
 	 * Cancel a subscription
+	 *
+	 * @param int $subscription_id Subscription ID.
 	 */
 	public function cancel_subscription( $subscription_id ) {
 		return new WP_Error( 'not_supported', __( 'Subscriptions not supported by this provider', 'flosc' ) );
@@ -118,6 +133,8 @@ abstract class FLOSC_Payment_Provider {
 
 	/**
 	 * Get user's active subscriptions
+	 *
+	 * @param int $user_id User ID.
 	 */
 	public function get_user_subscriptions( $user_id ) {
 		return array();
@@ -125,6 +142,9 @@ abstract class FLOSC_Payment_Provider {
 
 	/**
 	 * Helper: Save a setting
+	 *
+	 * @param mixed $key Key.
+	 * @param mixed $value Value.
 	 */
 	protected function save_setting( $key, $value ) {
 		update_option( 'flosc_' . $this->get_id() . '_' . $key, $value );
@@ -132,6 +152,9 @@ abstract class FLOSC_Payment_Provider {
 
 	/**
 	 * Helper: Get a setting
+	 *
+	 * @param mixed $key Key.
+	 * @param string $default Default.
 	 */
 	protected function get_setting( $key, $default = '' ) {
 		return get_option( 'flosc_' . $this->get_id() . '_' . $key, $default );

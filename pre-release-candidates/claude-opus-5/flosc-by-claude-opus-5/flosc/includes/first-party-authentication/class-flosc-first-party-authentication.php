@@ -21,6 +21,11 @@ class FLOSC_First_Party_Authentication {
 	 */
 	private $flosc_token_auth_used = false;
 
+	/**
+	 * Construct.
+	 *
+	 * @param mixed $flosc Flosc.
+	 */
 	public function __construct( $flosc ) {
 		$this->flosc = $flosc;
 	}
@@ -42,8 +47,8 @@ class FLOSC_First_Party_Authentication {
 	/**
 	 * Block WP password login for pending email-registered accounts until verification.
 	 *
-	 * @param WP_User|WP_Error $user
-	 * @param string           $password
+	 * @param WP_User|WP_Error $user User.
+	 * @param string           $password Password.
 	 * @return WP_User|WP_Error
 	 */
 	public function flosc_block_pending_email_login( $user, $password ) {
@@ -60,6 +65,11 @@ class FLOSC_First_Party_Authentication {
 		return $user;
 	}
 
+	/**
+	 * Handle user registration.
+	 *
+	 * @param int $user_id User ID.
+	 */
 	public function handle_user_registration( $user_id ) {
 		// Pending email registrants receive tokens only after verification/activation.
 		// Flag is set on the framework instance by MagicLink / email registration paths.
@@ -101,6 +111,9 @@ class FLOSC_First_Party_Authentication {
 
 	/**
 	 * Handle user login - process pre-login quiz scores
+	 *
+	 * @param mixed $user_login User login.
+	 * @param mixed $user User.
 	 */
 	public function handle_user_login( $user_login, $user ) {
 		$token_provider = $this->get_token_provider();
@@ -221,6 +234,10 @@ class FLOSC_First_Party_Authentication {
 	 *
 	 * IMPORTANT: This function does NOT hijack normal WordPress logins.
 	 * Only redirects to FLOSC app when there's a clear FLOSC context.
+	 *
+	 * @param mixed $redirect_to Redirect to.
+	 * @param mixed $requested_redirect_to Requested redirect to.
+	 * @param mixed $user User.
 	 */
 	public function handle_login_redirect( $redirect_to, $requested_redirect_to, $user ) {
 		$app_slug = get_option( 'flosc_app_slug', 'flosc' );
@@ -311,6 +328,9 @@ class FLOSC_First_Party_Authentication {
 	 * v9.5.7: Handle WooCommerce-specific login redirect
 	 * v1.0.0: ONLY redirect to FLOSC app if there's FLOSC context
 	 * v1.4.9: Custom domain support
+	 *
+	 * @param mixed $redirect Redirect.
+	 * @param mixed $user User.
 	 */
 	public function handle_woocommerce_login_redirect( $redirect, $user ) {
 		$app_slug = get_option( 'flosc_app_slug', 'flosc' );
@@ -400,8 +420,8 @@ class FLOSC_First_Party_Authentication {
 	 * Generate a FLOSC auth token for the given user.
 	 * Token is stateless — no database storage needed.
 	 *
-	 * @param int $user_id WordPress user ID
-	 * @param int $ttl Token lifetime in seconds (default: 24 hours)
+	 * @param int $user_id WordPress user ID.
+	 * @param int $ttl Token lifetime in seconds (default: 24 hours).
 	 * @return string Base64-encoded token
 	 */
 	public function generate_flosc_auth_token( $user_id, $ttl = DAY_IN_SECONDS ) {
@@ -415,7 +435,7 @@ class FLOSC_First_Party_Authentication {
 	/**
 	 * Validate a FLOSC auth token and return the user ID.
 	 *
-	 * @param string $token Base64-encoded token
+	 * @param string $token Base64-encoded token.
 	 * @return int|false User ID if valid, false otherwise
 	 */
 	public function validate_flosc_auth_token( $token ) {
@@ -461,8 +481,8 @@ class FLOSC_First_Party_Authentication {
 	 * Do not use get_app_url() host: that can point at a different flow
 	 * domain than the current request and the browser will reject the cookie.
 	 *
-	 * @param string $token The auth token
-	 * @param int    $ttl Lifetime in seconds
+	 * @param string $token The auth token.
+	 * @param int    $ttl Lifetime in seconds.
 	 */
 	public function set_flosc_auth_cookie( $token, $ttl = DAY_IN_SECONDS ) {
 		if ( headers_sent() ) {
@@ -491,7 +511,7 @@ class FLOSC_First_Party_Authentication {
 	 * 1. X-FLOSC-Token request header (for API calls from JS)
 	 * 2. flosc_auth_token cookie (for page loads on custom domains)
 	 *
-	 * @param int $user_id Current user ID (0 if not authenticated)
+	 * @param int $user_id Current user ID (0 if not authenticated).
 	 * @return int Authenticated user ID
 	 */
 	public function authenticate_flosc_token( $user_id ) {
@@ -667,7 +687,7 @@ class FLOSC_First_Party_Authentication {
 	 * By returning true at priority 99, rest_cookie_check_errors receives
 	 * a non-empty $result and short-circuits without checking the nonce.
 	 *
-	 * @param WP_Error|null|true $result Current auth result
+	 * @param WP_Error|null|true $result Current auth result.
 	 * @return WP_Error|null|true Modified auth result
 	 */
 	public function allow_flosc_token_auth( $result ) {

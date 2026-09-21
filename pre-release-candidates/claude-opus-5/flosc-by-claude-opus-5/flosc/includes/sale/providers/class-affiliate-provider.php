@@ -29,22 +29,47 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 	private $intents_meta_key = '_flosc_purchase_intents';
 	private $credits_meta_key = '_flosc_affiliate_credits';
 
+	/**
+	 * Get ID.
+	 *
+	 * @return mixed
+	 */
 	public function get_id() {
 		return 'affiliate';
 	}
 
+	/**
+	 * Get name.
+	 *
+	 * @return mixed
+	 */
 	public function get_name() {
 		return 'Purchase Intent';
 	}
 
+	/**
+	 * Get description.
+	 *
+	 * @return mixed
+	 */
 	public function get_description() {
 		return 'Users earn access by declaring purchase intent. When they buy through affiliate links, the commission funds their access.';
 	}
 
+	/**
+	 * Get icon.
+	 *
+	 * @return mixed
+	 */
 	public function get_icon() {
 		return '🎁';
 	}
 
+	/**
+	 * Is configured.
+	 *
+	 * @return mixed
+	 */
 	public function is_configured() {
 		// Check if any affiliate network is configured.
 		return ! empty( $this->get_setting( 'amazon_tag', '' ) ) ||
@@ -136,6 +161,10 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Process payment via affiliate credits
+	 *
+	 * @param int $user_id User ID.
+	 * @param mixed $offer Offer.
+	 * @param array $payment_data Payment data.
 	 */
 	public function process_payment( $user_id, $offer, $payment_data = array() ) {
 		if ( ! is_array( $offer['pricing']['affiliate'] ?? null )
@@ -209,8 +238,8 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 	/**
 	 * User declares a purchase intent
 	 *
-	 * @param int   $user_id
-	 * @param array $intent [
+	 * @param int   $user_id User ID.
+	 * @param array $intent [.
 	 *   'description' => 'MacBook Pro 14"',
 	 *   'category' => 'electronics',
 	 *   'expected_price' => 2000,
@@ -250,6 +279,9 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Get user's purchase intents
+	 *
+	 * @param int $user_id User ID.
+	 * @param mixed $status Status.
 	 */
 	public function get_intents( $user_id, $status = null ) {
 		$intents = get_user_meta( $user_id, $this->intents_meta_key, true ) ?: array();
@@ -268,6 +300,10 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Update intent status
+	 *
+	 * @param int $user_id User ID.
+	 * @param int $intent_id Intent ID.
+	 * @param mixed $updates Updates.
 	 */
 	public function update_intent( $user_id, $intent_id, $updates ) {
 		$intents = $this->get_intents( $user_id );
@@ -288,6 +324,8 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Find affiliate offers for an intent
+	 *
+	 * @param mixed $intent Intent.
 	 */
 	public function find_offers_for_intent( $intent ) {
 		$offers = array();
@@ -329,6 +367,9 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Search Amazon for products
+	 *
+	 * @param mixed $query Query.
+	 * @param mixed $category Category.
 	 */
 	private function search_amazon( $query, $category = null ) {
 		$tag = $this->get_setting( 'amazon_tag' );
@@ -362,6 +403,9 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Search CJ (Commission Junction)
+	 *
+	 * @param mixed $query Query.
+	 * @param mixed $category Category.
 	 */
 	private function search_cj( $query, $category = null ) {
 		$cj_id   = $this->get_setting( 'cj_id' );
@@ -379,6 +423,9 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Search ShareASale
+	 *
+	 * @param mixed $query Query.
+	 * @param mixed $category Category.
 	 */
 	private function search_shareasale( $query, $category = null ) {
 		$sas_id = $this->get_setting( 'shareasale_id' );
@@ -394,6 +441,8 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Search custom endpoint (your own aggregation service)
+	 *
+	 * @param mixed $intent Intent.
 	 */
 	private function search_custom( $intent ) {
 		$endpoint = $this->get_setting( 'custom_endpoint' );
@@ -437,6 +486,10 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Track a click on an affiliate offer
+	 *
+	 * @param int $user_id User ID.
+	 * @param int $intent_id Intent ID.
+	 * @param mixed $offer Offer.
 	 */
 	public function track_click( $user_id, $intent_id, $offer ) {
 		$user_id    = absint( $user_id );
@@ -464,6 +517,8 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Record a conversion (called by webhook or postback)
+	 *
+	 * @param array $tracking_data Tracking data.
 	 */
 	public function record_conversion( $tracking_data ) {
 		// Tracking data comes from affiliate network postback.
@@ -535,6 +590,8 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Get user's affiliate credits (in dollars)
+	 *
+	 * @param int $user_id User ID.
 	 */
 	public function get_credits( $user_id ) {
 		$credits = get_user_meta( $user_id, $this->credits_meta_key, true );
@@ -543,6 +600,10 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Add affiliate credits
+	 *
+	 * @param int $user_id User ID.
+	 * @param mixed $amount Amount.
+	 * @param array $meta Meta.
 	 */
 	public function add_credits( $user_id, $amount, $meta = array() ) {
 		$current     = $this->get_credits( $user_id );
@@ -558,6 +619,10 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Deduct affiliate credits (atomic conditional debit — PAY-ACC-01).
+	 *
+	 * @param int $user_id User ID.
+	 * @param mixed $amount Amount.
+	 * @param string $reason Reason.
 	 */
 	public function deduct_credits( $user_id, $amount, $reason = '' ) {
 		$user_id = absint( $user_id );
@@ -651,6 +716,11 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Log credit changes
+	 *
+	 * @param int $user_id User ID.
+	 * @param mixed $type Type.
+	 * @param mixed $amount Amount.
+	 * @param array $meta Meta.
 	 */
 	private function log_credit_change( $user_id, $type, $amount, $meta = array() ) {
 		$log = get_user_meta( $user_id, '_flosc_affiliate_credit_log', true ) ?: array();
@@ -672,6 +742,9 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Handle webhook from affiliate networks
+	 *
+	 * @param mixed $payload Payload.
+	 * @param array $headers Headers.
 	 */
 	public function handle_webhook( $payload, $headers = array() ) {
 		// Determine source from headers or payload.
@@ -687,11 +760,25 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 		return $this->record_conversion( $tracking_data );
 	}
 
+	/**
+	 * Detect webhook source.
+	 *
+	 * @param mixed $headers Headers.
+	 * @param mixed $payload Payload.
+	 * @return mixed
+	 */
 	private function detect_webhook_source( $headers, $payload ) {
 		// Logic to detect Amazon, CJ, ShareASale, etc. from webhook.
 		return 'custom';
 	}
 
+	/**
+	 * Parse webhook payload.
+	 *
+	 * @param mixed $source Source.
+	 * @param mixed $payload Payload.
+	 * @return mixed
+	 */
 	private function parse_webhook_payload( $source, $payload ) {
 		// Pass 8: field-sanitize after json_decode of untrusted webhook body.
 		$data = array();
