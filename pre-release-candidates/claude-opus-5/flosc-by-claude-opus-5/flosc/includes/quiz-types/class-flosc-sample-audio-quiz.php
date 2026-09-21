@@ -52,7 +52,7 @@ class FLOSC_Sample_Audio_Quiz extends FLOSC_Abstract_Quiz_Type {
 	}
 
 	public function validate_input( $input ) {
-		// Input is audio file path or STT transcript.
+		// Input is audio file path or STT transcript
 		if ( empty( $input ) ) {
 			return new WP_Error( 'invalid_input', __( 'No audio input received.', 'flosc' ) );
 		}
@@ -62,20 +62,20 @@ class FLOSC_Sample_Audio_Quiz extends FLOSC_Abstract_Quiz_Type {
 
 	public function analyze( $input, $expected_content, $context = array() ) {
 		// If input is already a transcript (from STT), use it
-		// Otherwise, input would be audio file path (handled by main plugin).
+		// Otherwise, input would be audio file path (handled by main plugin)
 		$transcript = is_string( $input ) ? $input : '';
 
-		// Use existing pronunciation analyzer.
-		require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-pronunciation-analyzer.php';
+		// Use existing pronunciation analyzer
+		require_once FLOSC_PLUGIN_DIR . 'includes/class-pronunciation-analyzer.php';
 		$analyzer        = new FLOSC_Pronunciation_Analyzer();
 		$analysis_result = $analyzer->analyze( $transcript, $expected_content );
 
-		// Convert to standard format.
+		// Convert to standard format
 		$correct   = $analysis_result['correct_items'];
 		$incorrect = $analysis_result['missed_items'];
 		$score     = $analysis_result['score'];
 
-		// Map to lessons.
+		// Map to lessons
 		$lessons = array();
 		if ( ! empty( $analysis_result['suggested_lessons'] ) ) {
 			foreach ( $analysis_result['suggested_lessons'] as $item => $lesson_data ) {
@@ -106,7 +106,7 @@ class FLOSC_Sample_Audio_Quiz extends FLOSC_Abstract_Quiz_Type {
 	}
 
 	public function map_to_lessons( $analysis ) {
-		// Already done in analyze().
+		// Already done in analyze()
 		return $analysis['lessons'] ?? array();
 	}
 
@@ -155,29 +155,29 @@ class FLOSC_Sample_Audio_Quiz extends FLOSC_Abstract_Quiz_Type {
 		$response_key = $analysis['response_key'];
 		$details      = $analysis['details'];
 
-		// Get template.
+		// Get template
 		$template = $response_templates[ $response_key ] ?? $response_templates['31-60'] ?? 'Score: {score}%';
 
-		// Build lesson text.
+		// Build lesson text
 		$lesson_text = '';
 
-		// Show what they said.
+		// Show what they said
 		if ( ! empty( $details['transcript'] ) ) {
 			$lesson_text .= "**You said:** {$details['transcript']}\n";
 			$lesson_text .= "**Expected:** {$details['expected']}\n\n";
 		}
 
-		// Show correct items.
+		// Show correct items
 		if ( ! empty( $analysis['correct'] ) ) {
 			$lesson_text .= '✅ **Correct:** ' . implode( ', ', $analysis['correct'] ) . "\n\n";
 		}
 
-		// Show missed items.
+		// Show missed items
 		if ( ! empty( $analysis['incorrect'] ) ) {
 			$lesson_text .= '❌ **Needs Practice:** ' . implode( ', ', $analysis['incorrect'] ) . "\n\n";
 		}
 
-		// Lesson recommendations.
+		// Lesson recommendations
 		if ( ! empty( $lessons ) ) {
 			$free_lesson  = $lessons[0];
 			$paid_lessons = array_slice( $lessons, 1 );
@@ -194,7 +194,7 @@ class FLOSC_Sample_Audio_Quiz extends FLOSC_Abstract_Quiz_Type {
 			}
 		}
 
-		// Replace placeholders.
+		// Replace placeholders
 		$message = str_replace(
 			array( '{score}', '{lesson_recommendations}' ),
 			array( $score, $lesson_text ),

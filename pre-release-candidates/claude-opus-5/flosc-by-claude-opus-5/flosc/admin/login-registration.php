@@ -8,8 +8,6 @@
  * 3. Guest Access Link (MagicLink) — convenience login for existing users only
  *
  * Defaults are product-neutral. Never hardcode a single product brand for all flows.
- *
- * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -39,7 +37,7 @@ $flosc_login_docs_url = add_query_arg(
 // Prefer one-shot transient; fall back to sanitized query flag from parent $flosc_get.
 $flosc_guest_request_notice = '';
 $flosc_guest_notice_t       = get_transient( 'flosc_guest_request_notice_' . get_current_user_id() );
-if ( is_string( $flosc_guest_notice_t ) && '' !== $flosc_guest_notice_t ) {
+if ( is_string( $flosc_guest_notice_t ) && $flosc_guest_notice_t !== '' ) {
 	delete_transient( 'flosc_guest_request_notice_' . get_current_user_id() );
 	$flosc_guest_request_notice = sanitize_key( $flosc_guest_notice_t );
 } elseif ( isset( $flosc_get['flosc_guest_request_notice'] ) ) {
@@ -73,7 +71,7 @@ $flosc_guest_request_messages = array(
 );
 if ( isset( $flosc_guest_request_messages[ $flosc_guest_request_notice ] ) ) {
 	$flosc_notice       = $flosc_guest_request_messages[ $flosc_guest_request_notice ];
-	$flosc_notice_class = ( 'error' === $flosc_notice['type'] ) ? 'notice notice-error' : 'notice notice-success';
+	$flosc_notice_class = ( $flosc_notice['type'] === 'error' ) ? 'notice notice-error' : 'notice notice-success';
 	echo '<div class="' . esc_attr( $flosc_notice_class ) . '"><p>' . esc_html( $flosc_notice['text'] ) . '</p></div>';
 }
 ?>
@@ -748,7 +746,7 @@ if ( empty( $flosc_queue_rows ) ) {
 
 	foreach ( $flosc_queue_rows as $flosc_request_row ) {
 		$flosc_email = sanitize_email( (string) ( $flosc_request_row['email'] ?? '' ) );
-		if ( '' === $flosc_email ) {
+		if ( $flosc_email === '' ) {
 			continue;
 		}
 		$flosc_status = sanitize_key( (string) ( $flosc_request_row['status'] ?? 'pending' ) );
@@ -759,13 +757,13 @@ if ( empty( $flosc_queue_rows ) ) {
 		$flosc_requested_at   = intval( $flosc_request_row['last_requested_at'] ?? ( $flosc_request_row['requested_at'] ?? 0 ) );
 		$flosc_requested_text = $flosc_requested_at > 0 ? wp_date( 'Y-m-d H:i', $flosc_requested_at ) : '—';
 		$flosc_note           = sanitize_textarea_field( (string) ( $flosc_request_row['last_message_excerpt'] ?? '' ) );
-		$flosc_note           = '' !== $flosc_note ? wp_html_excerpt( $flosc_note, 120, '...' ) : '—';
+		$flosc_note           = $flosc_note !== '' ? wp_html_excerpt( $flosc_note, 120, '...' ) : '—';
 		$flosc_blocked        = isset( $flosc_request_denylist[ md5( strtolower( $flosc_email ) ) ] );
 		$flosc_status_display = ucfirst( $flosc_status ) . ( $flosc_blocked ? ' (blocked)' : '' );
 
 		echo '<tr>';
 		echo '<td>' . esc_html( $flosc_email ) . '</td>';
-		echo '<td>' . esc_html( '' !== $flosc_flow_id ? $flosc_flow_id : '—' ) . '</td>';
+		echo '<td>' . esc_html( $flosc_flow_id !== '' ? $flosc_flow_id : '—' ) . '</td>';
 		echo '<td>' . esc_html( $flosc_requested_text ) . '</td>';
 		echo '<td>' . esc_html( $flosc_status_display ) . '</td>';
 		echo '<td>' . esc_html( $flosc_note ) . '</td>';
@@ -805,7 +803,7 @@ $flosc_guest_log = get_option( 'flosc_guest_link_log', array() );
 if ( empty( $flosc_guest_log ) ) {
 	echo '<p class="flosc-login-empty-log">No guest link requests recorded yet.</p>';
 } else {
-	// Sort by count descending.
+	// Sort by count descending
 	uasort( $flosc_guest_log, fn( $a, $b ) => $b['count'] <=> $a['count'] );
 	echo '<table class="widefat striped flosc-login-activity-table">';
 	echo '<thead><tr><th>Email</th><th>Links Sent</th><th>First Request</th><th>Last Request</th></tr></thead>';
@@ -815,7 +813,7 @@ if ( empty( $flosc_guest_log ) ) {
 		$flosc_first_sent  = isset( $flosc_entry['first_sent'] ) ? wp_date( 'Y-m-d H:i', $flosc_entry['first_sent'] ) : '—';
 		$flosc_last_sent   = isset( $flosc_entry['last_sent'] ) ? wp_date( 'Y-m-d H:i', $flosc_entry['last_sent'] ) : '—';
 		$flosc_count_class = $flosc_count >= 6 ? 'flosc-login-count-cell flosc-login-count-cell--warn' : 'flosc-login-count-cell';
-		// Link to WP user profile if user exists.
+		// Link to WP user profile if user exists
 		$flosc_wp_user       = get_user_by( 'email', $flosc_entry['email'] );
 		$flosc_email_display = $flosc_wp_user
 			? '<a href="' . esc_url( get_edit_user_link( $flosc_wp_user->ID ) ) . '">' . esc_html( $flosc_entry['email'] ) . '</a>'

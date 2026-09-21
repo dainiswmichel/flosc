@@ -4,7 +4,6 @@
  *
  * @package FLOSC
  */
-
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -24,26 +23,23 @@ class FLOSC_Full_Page_Mode {
 		// forced_flow on normal WP pages (e.g. /category/lessons/) so settings resolve
 		// to the owning flow; those pages must keep the theme shell + companion widget,
 		// not the full-app nuclear dequeue / flosc-app.js surface.
-		return null !== $this->flosc->detect_flow_from_request_route();
+		return $this->flosc->detect_flow_from_request_route() !== null;
 	}
 
 	/**
-	 * Check if currently serving via custom domain
+	 * v1.1.9: Check if currently serving via custom domain
 	 *
 	 * @deprecated Use is_flosc_request() instead for most cases
-	 * @since 1.1.9
 	 */
 	public static function is_custom_domain() {
 		return defined( 'FLOSC_CUSTOM_DOMAIN_ACTIVE' ) && FLOSC_CUSTOM_DOMAIN_ACTIVE;
 	}
 
 	/**
-	 * Get the appropriate app URL for current or specified flow
-	 *
-	 * @since 1.2.2
+	 * v1.2.2: Get the appropriate app URL for current or specified flow
 	 */
 	public function get_app_url( $flow = null ) {
-		if ( null === $flow ) {
+		if ( $flow === null ) {
 			$flow = $this->flosc->get_current_flow();
 		}
 
@@ -65,7 +61,7 @@ class FLOSC_Full_Page_Mode {
 			return home_url( '/' . $flow['slug'] . '/' );
 		}
 
-		// Fallback to legacy settings.
+		// Fallback to legacy settings
 		$custom_domain = get_option( 'flosc_custom_domain', '' );
 
 		if ( ! empty( $custom_domain ) ) {
@@ -74,7 +70,7 @@ class FLOSC_Full_Page_Mode {
 			return ( is_ssl() ? 'https://' : 'http://' ) . $custom_domain . '/';
 		}
 
-		// Fall back to slug-based URL.
+		// Fall back to slug-based URL
 		$slug = get_option( 'flosc_app_slug', 'flosc' );
 		return home_url( '/' . $slug . '/' );
 	}
@@ -89,13 +85,13 @@ class FLOSC_Full_Page_Mode {
 
 	public function handle_app_route() {
 		// v1.2.1: Use centralized is_flosc_request() helper
-		// This reads from flosc_custom_domain setting (not hardcoded).
+		// This reads from flosc_custom_domain setting (not hardcoded)
 		if ( ! $this->is_flosc_request() ) {
 			return;
 		}
 
 		$legal_page = $this->get_requested_legal_page();
-		if ( null !== $legal_page ) {
+		if ( $legal_page !== null ) {
 			$this->render_legal_page( $legal_page );
 			exit;
 		}
@@ -113,7 +109,7 @@ class FLOSC_Full_Page_Mode {
 		// Instead: clear everything, re-add only the three core WP functions:
 		// 1. wp_enqueue_scripts (priority 1) — fires our nuclear dequeue
 		// 2. wp_print_styles (priority 8) — outputs surviving CSS
-		// 3. wp_print_head_scripts (priority 9) — outputs surviving head JS.
+		// 3. wp_print_head_scripts (priority 9) — outputs surviving head JS
 		remove_all_actions( 'wp_head' );
 		add_action( 'wp_head', 'wp_enqueue_scripts', 1 );
 		add_action( 'wp_head', 'wp_print_styles', 8 );
@@ -175,12 +171,12 @@ class FLOSC_Full_Page_Mode {
 
 	public function get_requested_legal_page() {
 		$request_uri = sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ?? '' ) );
-		if ( '' === $request_uri ) {
+		if ( $request_uri === '' ) {
 			return null;
 		}
 
 		$path = trim( (string) wp_parse_url( $request_uri, PHP_URL_PATH ), '/' );
-		if ( '' === $path ) {
+		if ( $path === '' ) {
 			return null;
 		}
 
@@ -197,7 +193,7 @@ class FLOSC_Full_Page_Mode {
 
 	public function get_current_request_base_url() {
 		$host = sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ?? '' ) );
-		if ( '' === $host ) {
+		if ( $host === '' ) {
 			return home_url( '/' );
 		}
 
@@ -282,7 +278,7 @@ class FLOSC_Full_Page_Mode {
 		echo '</nav>';
 		echo '<section class="flosc-legal-card">';
 		echo '<h1>' . esc_html( $current['headline'] ) . '</h1>';
-		if ( '' !== $current['content'] ) {
+		if ( $current['content'] !== '' ) {
 			echo wp_kses_post( $current['content'] );
 		}
 		echo '</section>';
@@ -292,63 +288,54 @@ class FLOSC_Full_Page_Mode {
 	}
 
 	public function get_codex_charter_content() {
-		return implode(
-			"\n",
-			array(
-				'<p>This page is a public promise for FLOSC release execution.</p>',
-				'<p><strong>Humans lead with clarity and kindness.</strong> FLOSC-Codex executes with discipline, speed, and technical precision.</p>',
-				'<h2>Role and Expertise</h2>',
-				'<ul>',
-				'    <li>Best-in-class coding execution for WordPress plugin delivery.</li>',
-				'    <li>Release-focused engineering with regression protection first.</li>',
-				'    <li>Verification-first workflow before any completion claim.</li>',
-				'</ul>',
-				'<h2>Role Boundaries</h2>',
-				'<ul>',
-				'    <li>Humans are the decision authority. FLOSC-Codex executes in a subordinate engineering role.</li>',
-				'    <li>FLOSC-Codex does not use commanding grammatical structures toward humans.</li>',
-				'    <li>FLOSC-Codex does not assign tasks to humans; it follows human sequencing and pacing.</li>',
-				'    <li>FLOSC-Codex does not expand scope without explicit human authorization.</li>',
-				'    <li>FLOSC-Codex confirms understanding in language that is helpful, subservient, and subordinate, and awaits human direction before new actions.</li>',
-				'    <li>If communication misaligns with role boundaries, FLOSC-Codex immediately realigns and returns to execution.</li>',
-				'    <li>FLOSC-Codex uses subordinate formulations such as: Suggested next step, Recommended option, and If approved, I can proceed with.</li>',
-				'</ul>',
-				'<h2>Submission Day Commitments</h2>',
-				'<ul>',
-				'    <li>Preserve working FLOSC functionality while preparing WordPress.org submission artifacts.</li>',
-				'    <li><strong>Anti-destructacode promise:</strong> I will not damage unrelated, already-working parts of the codebase while we focus on a specific task.</li>',
-				'    <li>Implement only requested changes, with no runaway scope expansion.</li>',
-				'    <li>Keep each change coded properly in accordance with industry best practices, reviewable, and reversible.</li>',
-				'    <li>If a requested change risks collateral breakage, I will stop, report the risk clearly, and wait for your decision before proceeding.</li>',
-				'    <li>Report what was verified, what was not verified, and any residual risk.</li>',
-				'</ul>',
-				'<h2>Truth and Likability Check</h2>',
-				'<ul>',
-				'    <li><strong>Truth:</strong> No inflated claims, no hidden assumptions, no false completion signals.</li>',
-				'    <li><strong>Likability:</strong> Respectful tone, clear structure, supportive partnership, and reliable follow-through.</li>',
-				'</ul>',
-				'<p><strong>Closing:</strong> We move today toward a clean, verified, professional WordPress.org submission for FLOSC. The direction is clear, and the work is steady.</p>',
-				'',
-			)
-		);
+		return <<<'HTML'
+<p>This page is a public promise for FLOSC release execution.</p>
+<p><strong>Humans lead with clarity and kindness.</strong> FLOSC-Codex executes with discipline, speed, and technical precision.</p>
+<h2>Role and Expertise</h2>
+<ul>
+    <li>Best-in-class coding execution for WordPress plugin delivery.</li>
+    <li>Release-focused engineering with regression protection first.</li>
+    <li>Verification-first workflow before any completion claim.</li>
+</ul>
+<h2>Role Boundaries</h2>
+<ul>
+    <li>Humans are the decision authority. FLOSC-Codex executes in a subordinate engineering role.</li>
+    <li>FLOSC-Codex does not use commanding grammatical structures toward humans.</li>
+    <li>FLOSC-Codex does not assign tasks to humans; it follows human sequencing and pacing.</li>
+    <li>FLOSC-Codex does not expand scope without explicit human authorization.</li>
+    <li>FLOSC-Codex confirms understanding in language that is helpful, subservient, and subordinate, and awaits human direction before new actions.</li>
+    <li>If communication misaligns with role boundaries, FLOSC-Codex immediately realigns and returns to execution.</li>
+    <li>FLOSC-Codex uses subordinate formulations such as: Suggested next step, Recommended option, and If approved, I can proceed with.</li>
+</ul>
+<h2>Submission Day Commitments</h2>
+<ul>
+    <li>Preserve working FLOSC functionality while preparing WordPress.org submission artifacts.</li>
+    <li><strong>Anti-destructacode promise:</strong> I will not damage unrelated, already-working parts of the codebase while we focus on a specific task.</li>
+    <li>Implement only requested changes, with no runaway scope expansion.</li>
+    <li>Keep each change coded properly in accordance with industry best practices, reviewable, and reversible.</li>
+    <li>If a requested change risks collateral breakage, I will stop, report the risk clearly, and wait for your decision before proceeding.</li>
+    <li>Report what was verified, what was not verified, and any residual risk.</li>
+</ul>
+<h2>Truth and Likability Check</h2>
+<ul>
+    <li><strong>Truth:</strong> No inflated claims, no hidden assumptions, no false completion signals.</li>
+    <li><strong>Likability:</strong> Respectful tone, clear structure, supportive partnership, and reliable follow-through.</li>
+</ul>
+<p><strong>Closing:</strong> We move today toward a clean, verified, professional WordPress.org submission for FLOSC. The direction is clear, and the work is steady.</p>
+HTML;
 	}
 
 	/**
-	 * Extracted app rendering to separate method
+	 * v1.2.0: Extracted app rendering to separate method
 	 * Called by handle_app_route() for both custom domain and slug routing
-	 *
-	 * @since 1.2.0
 	 */
 	public function render_flosc_app() {
-		// v2.0.0: Prevent page caching — identity data is dynamic per-flow.
+		// v2.0.0: Prevent page caching — identity data is dynamic per-flow
 		nocache_headers();
 
-		// Track referral (v1.0.7: use array syntax with SameSite).
+		// Track referral (v1.0.7: use array syntax with SameSite)
 		$get = wp_unslash( $_GET );
-		$ref = get_query_var( 'ref' );
-		if ( ! $ref ) {
-			$ref = ( $get['ref'] ?? '' );
-		}
+		$ref = get_query_var( 'ref' ) ?: ( $get['ref'] ?? '' );
 		if ( $ref && ! is_user_logged_in() ) {
 			setcookie(
 				'flosc_referrer',
@@ -363,7 +350,7 @@ class FLOSC_Full_Page_Mode {
 
 		// Real-world state on this host only:
 		// not logged in → visitor
-		// logged in     → guest | member for THIS flow (never visitor).
+		// logged in     → guest | member for THIS flow (never visitor)
 		$user_state             = 'visitor';
 		$user_data              = array();
 		$current_flow_for_state = $this->flosc->get_current_flow();
@@ -371,7 +358,7 @@ class FLOSC_Full_Page_Mode {
 		if ( is_array( $current_flow_for_state ) ) {
 			$ivr_for_state       = (string) ( $current_flow_for_state['ivr_file'] ?? $current_flow_for_state['ivr'] ?? $current_flow_for_state['id'] ?? '' );
 			$flow_stem_for_state = $this->flosc->flosc_normalize_flow_stem( $ivr_for_state );
-			if ( '' === $flow_stem_for_state || 'default' === $flow_stem_for_state ) {
+			if ( $flow_stem_for_state === '' || $flow_stem_for_state === 'default' ) {
 				$flow_stem_for_state = $this->flosc->flosc_normalize_flow_stem( (string) ( $current_flow_for_state['id'] ?? '' ) );
 			}
 		}
@@ -387,13 +374,13 @@ class FLOSC_Full_Page_Mode {
 				)
 			);
 			$user_state = (string) ( $user_data['state'] ?? 'guest' );
-			if ( 'member' !== $user_state && 'guest' !== $user_state ) {
+			if ( $user_state !== 'member' && $user_state !== 'guest' ) {
 				$user_state = 'guest';
 			}
 			$user_data['state'] = $user_state;
 		}
 
-		// v1.3.5: Add admin verification data for in-chat message.
+		// v1.3.5: Add admin verification data for in-chat message
 		$flow     = $this->flosc->get_current_flow();
 		$ivr_file = $flow['ivr_file'] ?? '';
 
@@ -409,7 +396,7 @@ class FLOSC_Full_Page_Mode {
 			$ivr_basename      = basename( $ivr_file );
 			$flow_settings_key = 'flosc_flow_' . sanitize_key( pathinfo( $ivr_basename, PATHINFO_FILENAME ) );
 
-			// v2.0.0: Read from identity sub-array (where settings.php saves them).
+			// v2.0.0: Read from identity sub-array (where settings.php saves them)
 			$av_identity                    = $flow_settings['identity'] ?? array();
 			$user_data['adminVerification'] = array(
 				'ivrFile' => $ivr_basename,
@@ -421,11 +408,11 @@ class FLOSC_Full_Page_Mode {
 			);
 		}
 
-		// Get flow identity (name, logo, favicon, brand color, pricing).
+		// Get flow identity (name, logo, favicon, brand color, pricing)
 		$identity = $this->flosc->get_floscflow_identity();
 
 		// Get available offers
-		// v1.6.2: Pass flow_id so offers load from per-flow storage.
+		// v1.6.2: Pass flow_id so offers load from per-flow storage
 		$flow_id = null;
 		if ( $flow && ! empty( $flow['ivr_file'] ) ) {
 			$flow_id = pathinfo( basename( $flow['ivr_file'] ), PATHINFO_FILENAME );
@@ -438,7 +425,7 @@ class FLOSC_Full_Page_Mode {
 			)
 			: array();
 
-		// Admin test-offer mode: bypass conditions/draft status to preview any offer.
+		// Admin test-offer mode: bypass conditions/draft status to preview any offer
 		$test_offer_id = '';
 		$get           = wp_unslash( $_GET );
 		if ( current_user_can( 'manage_options' ) && ! empty( $get['flosc_test_offer'] ) ) {
@@ -456,7 +443,7 @@ class FLOSC_Full_Page_Mode {
 			}
 		}
 
-		// v4.0.0: Admin test mode — expose ALL offers (incl. drafts) for direct testing in chat.
+		// v4.0.0: Admin test mode — expose ALL offers (incl. drafts) for direct testing in chat
 		$admin_test_offers = array();
 		if ( is_user_logged_in() && current_user_can( 'manage_options' ) && $sale && method_exists( $sale, 'offers' ) ) {
 			$all_raw = $sale->offers()->get_all_offers( $flow_id );
@@ -465,7 +452,7 @@ class FLOSC_Full_Page_Mode {
 			}
 		}
 
-		// Get payment providers config for frontend.
+		// Get payment providers config for frontend
 		$providers = array();
 		if ( $sale && method_exists( $sale, 'get_active_providers' ) ) {
 			foreach ( $sale->get_active_providers() as $id => $provider ) {
@@ -489,7 +476,7 @@ class FLOSC_Full_Page_Mode {
 			$this->flosc->set_flosc_auth_cookie( $flosc_auth_token );
 		}
 
-		// Load template.
+		// Load template
 		include FLOSC_PLUGIN_DIR . 'admin/flosc-app.php';
 		exit;
 	}

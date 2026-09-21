@@ -1,22 +1,4 @@
 <?php
-/**
- * Flow runtime configuration — reading and writing a floscFlow's live settings.
- *
- * A floscFlow has two representations and they are NOT interchangeable:
- *
- *   runtime   a WordPress option named flosc_flow_{stem}, holding
- *             flow_messages, flow_phases and flow_styles. This is what the
- *             chat actually reads on every turn.
- *   portable  a markdown file. Import and export only, never read at runtime.
- *
- * Keeping them apart is the point of this file. Runtime message, phase and
- * style lists must not be stored under ivr_* keys: those belong to the portable
- * form, and a flow that mixes the two has two sources of truth and no way to
- * tell which one answered.
- *
- * @package FLOSC
- */
-
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -152,7 +134,7 @@ function flosc_flow_set_runtime( array &$fs, array $messages, array $phases = ar
 /**
  * Load flosc_flow_{stem} option, migrate legacy keys in memory, optionally persist cleanup.
  *
- * @param string $flow_key e.g. flosc_flow_{stem}.
+ * @param string $flow_key e.g. flosc_flow_{stem}
  * @param bool   $persist  If true and migration removed legacy keys, update_option once.
  * @return array
  */
@@ -164,7 +146,7 @@ function flosc_flow_get_option_array( $flow_key, $persist = false ) {
 	}
 
 	$changed = flosc_flow_migrate_legacy_runtime_keys( $fs );
-	if ( $persist && $changed && '' !== $flow_key ) {
+	if ( $persist && $changed && $flow_key !== '' ) {
 		update_option( $flow_key, $fs, false );
 	}
 
@@ -189,39 +171,39 @@ function flosc_resolve_flow_runtime( $flow_id = '', $ivr_file = '' ) {
 	$styles   = array();
 
 	$stem = '';
-	if ( '' !== $flow_id && null !== $flow_id ) {
+	if ( $flow_id !== '' && $flow_id !== null ) {
 		$stem = sanitize_key( pathinfo( basename( (string) $flow_id ), PATHINFO_FILENAME ) );
-		if ( '' === $stem ) {
+		if ( $stem === '' ) {
 			$stem = sanitize_key( (string) $flow_id );
 		}
 	}
 
-	if ( '' === $stem && '' !== $ivr_file && null !== $ivr_file ) {
+	if ( $stem === '' && $ivr_file !== '' && $ivr_file !== null ) {
 		$stem = sanitize_key( pathinfo( (string) $ivr_file, PATHINFO_FILENAME ) );
 	}
 
-	if ( '' === $stem && function_exists( 'flosc' ) && method_exists( flosc(), 'get_current_flow' ) ) {
+	if ( $stem === '' && function_exists( 'flosc' ) && method_exists( flosc(), 'get_current_flow' ) ) {
 		$flow = flosc()->get_current_flow();
 		if ( is_array( $flow ) ) {
 			$from_id  = (string) ( $flow['id'] ?? '' );
 			$from_ivr = (string) ( $flow['ivr_file'] ?? $flow['ivr'] ?? '' );
 
-			if ( '' !== $from_id ) {
+			if ( $from_id !== '' ) {
 				$stem = sanitize_key( pathinfo( basename( $from_id ), PATHINFO_FILENAME ) );
 			}
 
-			if ( '' === $stem && '' !== $from_ivr ) {
+			if ( $stem === '' && $from_ivr !== '' ) {
 				$stem = sanitize_key( pathinfo( basename( $from_ivr ), PATHINFO_FILENAME ) );
-				if ( '' === $ivr_file ) {
+				if ( $ivr_file === '' ) {
 					$ivr_file = basename( $from_ivr );
 				}
 			}
 		}
 	}
 
-	if ( '' === $stem ) {
+	if ( $stem === '' ) {
 		$stem = 'flosc_default_technical_ivr';
-		if ( '' === $ivr_file ) {
+		if ( $ivr_file === '' ) {
 			$ivr_file = 'flosc_default_technical_ivr.md';
 		}
 	}
@@ -238,11 +220,11 @@ function flosc_resolve_flow_runtime( $flow_id = '', $ivr_file = '' ) {
 	}
 
 	// Portable markdown fallback only when the option has no messages.
-	if ( empty( $messages ) && '' !== $ivr_file && function_exists( 'flosc_config_file' ) ) {
+	if ( empty( $messages ) && $ivr_file !== '' && function_exists( 'flosc_config_file' ) ) {
 		$path = flosc_config_file( $ivr_file );
 		if ( $path && file_exists( $path ) ) {
 			if ( ! class_exists( 'FLOSC_IVR_Parser' ) ) {
-				require_once FLOSC_PLUGIN_DIR . 'includes/portability/class-flosc-ivr-parser.php';
+				require_once FLOSC_PLUGIN_DIR . 'includes/portability/class-ivr-parser.php';
 			}
 
 			$parser   = FLOSC_IVR_Parser::flosc_instance();
@@ -263,7 +245,7 @@ function flosc_resolve_flow_runtime( $flow_id = '', $ivr_file = '' ) {
 				continue;
 			}
 			$type = strtolower( trim( (string) ( $msg['type'] ?? '' ) ) );
-			if ( 'offer' === $type && empty( $msg['display_format'] ) ) {
+			if ( $type === 'offer' && empty( $msg['display_format'] ) ) {
 				$messages[ $k ]['display_format'] = 'card';
 			}
 		}
@@ -319,7 +301,7 @@ function flosc_flow_styles_css( array $config ) {
 	foreach ( $styles as $style ) {
 		if ( is_array( $style ) && ! empty( $style['css'] ) ) {
 			$css .= $style['css'] . "\n";
-		} elseif ( is_string( $style ) && '' !== $style ) {
+		} elseif ( is_string( $style ) && $style !== '' ) {
 			$css .= $style . "\n";
 		}
 	}

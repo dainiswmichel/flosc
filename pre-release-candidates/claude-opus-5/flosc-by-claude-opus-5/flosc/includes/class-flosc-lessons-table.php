@@ -52,7 +52,7 @@ class FLOSC_Lessons_Table {
 
 		$charset_collate = $wpdb->get_charset_collate();
 
-		// Use utf8mb4 explicitly for IPA characters.
+		// Use utf8mb4 explicitly for IPA characters
 		if ( empty( $charset_collate ) ) {
 			$charset_collate = 'DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci';
 		}
@@ -141,7 +141,7 @@ class FLOSC_Lessons_Table {
 	/**
 	 * Insert a single lesson
 	 *
-	 * @param array $data Associative array with lesson fields.
+	 * @param array $data Associative array with lesson fields
 	 * @return int|false Inserted ID or false on failure
 	 */
 	public function insert_lesson( $data ) {
@@ -165,7 +165,7 @@ class FLOSC_Lessons_Table {
 			array( '%s', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' )
 		);
 
-		if ( false !== $result ) {
+		if ( $result !== false ) {
 			$this->flosc_bust_lessons_cache();
 			return $wpdb->insert_id;
 		}
@@ -355,8 +355,8 @@ class FLOSC_Lessons_Table {
 	/**
 	 * Format a lesson row for REST API output
 	 *
-	 * @param array $row Raw DB row.
-	 * @param bool  $include_content Include how_to and full word lists.
+	 * @param array $row Raw DB row
+	 * @param bool  $include_content Include how_to and full word lists
 	 * @return array Formatted lesson
 	 */
 	public function format_for_api( $row, $include_content = false ) {

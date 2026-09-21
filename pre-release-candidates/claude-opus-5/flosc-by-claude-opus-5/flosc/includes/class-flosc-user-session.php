@@ -19,8 +19,8 @@ class FLOSC_User_Session {
 	/**
 	 * Constructor - builds unified state object
 	 *
-	 * @param int    $flosc_user_id WordPress user ID (0 for visitors).
-	 * @param string $flosc_flow_id FLOSC flow ID (2-digit: 01, 02, etc.).
+	 * @param int    $flosc_user_id WordPress user ID (0 for visitors)
+	 * @param string $flosc_flow_id FLOSC flow ID (2-digit: 01, 02, etc.)
 	 */
 	public function __construct( $flosc_user_id, $flosc_flow_id ) {
 		$this->flosc_user_id = $flosc_user_id;
@@ -36,23 +36,23 @@ class FLOSC_User_Session {
 	 */
 	private function flosc_build_state() {
 		// Use existing Condition Evaluator's build_context()
-		// Pass flow_id in additional context.
+		// Pass flow_id in additional context
 		$flosc_additional = array( 'flow_id' => $this->flosc_flow_id );
 		$flosc_context    = FLOSC_Condition_Evaluator::build_context( $this->flosc_user_id, $flosc_additional );
 
-		// Get current flow configuration (use singleton instance, not new).
+		// Get current flow configuration (use singleton instance, not new)
 		$flosc_flow_manager = FLOSC_Flow_Manager::instance();
 		$flosc_flow         = $flosc_flow_manager->get_flow( $this->flosc_flow_id );
 
 		return array(
-			// Identity & Access.
+			// Identity & Access
 			'flosc_user_id'      => $this->flosc_user_id,
 			'flosc_flow_id'      => $this->flosc_flow_id,
 			'flosc_phase'        => $flosc_context['phase'] ?? 'freeline',
 			'flosc_access_level' => $this->flosc_determine_access_level( $flosc_context ),
 			'flosc_user_type'    => $this->flosc_determine_user_type( $flosc_context ),
 
-			// Flow Configuration.
+			// Flow Configuration
 			'flosc_flow'         => array(
 				'flosc_name'           => $flosc_flow['name'] ?? 'Unknown',
 				'flosc_slug'           => $flosc_flow['slug'] ?? '',
@@ -61,7 +61,7 @@ class FLOSC_User_Session {
 				'flosc_custom_domain'  => $flosc_flow['custom_domain'] ?? '',
 			),
 
-			// Quiz State.
+			// Quiz State
 			'flosc_quiz'         => array(
 				'flosc_taken'                => $flosc_context['quiz_taken'] ?? false,
 				'flosc_score'                => $flosc_context['score'] ?? 0,
@@ -71,21 +71,21 @@ class FLOSC_User_Session {
 				'flosc_free_lesson_viewed'   => $flosc_context['free_lesson_viewed'] ?? false,
 			),
 
-			// IVR Context.
+			// IVR Context
 			'flosc_ivr'          => array(
 				'flosc_active_conditions'   => $flosc_context['active_conditions'] ?? array(),
 				'flosc_visible_autoprompts' => $this->flosc_get_visible_autoprompts( $flosc_context, $flosc_flow ),
 				'flosc_boundary_rules'      => $this->flosc_get_boundary_rules( $flosc_context ),
 			),
 
-			// Learning Progress.
+			// Learning Progress
 			'flosc_progress'     => array(
 				'flosc_lessons_completed' => $flosc_context['lessons_completed'] ?? 0,
 				'flosc_current_lesson'    => $flosc_context['current_lesson'] ?? null,
 				'flosc_last_activity'     => $flosc_context['last_activity'] ?? null,
 			),
 
-			// Session.
+			// Session
 			'flosc_session_id'   => $flosc_context['session_id'] ?? null,
 			'flosc_visitor_id'   => $flosc_context['visitor_id'] ?? null,
 		);
@@ -94,11 +94,11 @@ class FLOSC_User_Session {
 	/**
 	 * Get state value by key, or entire state if no key provided
 	 *
-	 * @param string|null $flosc_key State key to retrieve.
+	 * @param string|null $flosc_key State key to retrieve
 	 * @return mixed State value or entire state array
 	 */
 	public function flosc_get( $flosc_key = null ) {
-		if ( null === $flosc_key ) {
+		if ( $flosc_key === null ) {
 			return $this->flosc_state;
 		}
 		return $this->flosc_state[ $flosc_key ] ?? null;
@@ -125,33 +125,33 @@ class FLOSC_User_Session {
 	 * Determine user type based on context
 	 * Returns: flosc_admin, flosc_member, flosc_guest, or flosc_visitor
 	 *
-	 * @param array $flosc_context Condition evaluator context.
+	 * @param array $flosc_context Condition evaluator context
 	 * @return string User type with flosc_ prefix
 	 */
 	private function flosc_determine_user_type( $flosc_context ) {
-		// Admin: has manage_options capability (global).
+		// Admin: has manage_options capability (global)
 		if ( $this->flosc_user_id > 0 && current_user_can( 'manage_options' ) ) {
 			return 'flosc_admin';
 		}
 
-		// Member: purchased full access (per-flow).
-		if ( 'member' === ( $flosc_context['access_level'] ?? '' ) || ( $flosc_context['purchased'] ?? false ) ) {
+		// Member: purchased full access (per-flow)
+		if ( ( $flosc_context['access_level'] ?? '' ) === 'member' || ( $flosc_context['purchased'] ?? false ) ) {
 			return 'flosc_member';
 		}
 
-		// Guest: completed quiz (per-flow).
+		// Guest: completed quiz (per-flow)
 		if ( $flosc_context['quiz_taken'] ?? false ) {
 			return 'flosc_guest';
 		}
 
-		// Visitor: default (per-flow).
+		// Visitor: default (per-flow)
 		return 'flosc_visitor';
 	}
 
 	/**
 	 * Determine access level based on context
 	 *
-	 * @param array $flosc_context Condition evaluator context.
+	 * @param array $flosc_context Condition evaluator context
 	 * @return string Access level: member|guest|user|visitor
 	 */
 	private function flosc_determine_access_level( $flosc_context ) {
@@ -170,21 +170,21 @@ class FLOSC_User_Session {
 	/**
 	 * Get visible autoprompts for current phase and conditions
 	 *
-	 * @param array $flosc_context Condition evaluator context.
-	 * @param array $flosc_flow Flow configuration.
+	 * @param array $flosc_context Condition evaluator context
+	 * @param array $flosc_flow Flow configuration
 	 * @return array Visible autoprompt options
 	 */
 	private function flosc_get_visible_autoprompts( $flosc_context, $flosc_flow ) {
 		$flosc_autoprompts = array();
 
-		// Parse IVR file if it exists.
+		// Parse IVR file if it exists
 		$flosc_ivr_file = $flosc_flow['ivr_file'] ?? 'flosc_default_technical_ivr.md';
 		if ( ! empty( $flosc_ivr_file ) && class_exists( 'FLOSC_IVR_Parser' ) ) {
 			try {
 				$flosc_ivr_parser = new FLOSC_IVR_Parser( $flosc_ivr_file );
 				$flosc_phase      = $this->flosc_state['flosc_phase'] ?? 'freeline';
 
-				// Get autoprompts for current phase.
+				// Get autoprompts for current phase
 				if ( method_exists( $flosc_ivr_parser, 'get_visible_autoprompts' ) ) {
 					$flosc_autoprompts = $flosc_ivr_parser->get_visible_autoprompts( $flosc_phase, $flosc_context );
 				}
@@ -202,7 +202,7 @@ class FLOSC_User_Session {
 	 * Get boundary rules based on user type
 	 * Policy ladder: what can this user see/do?
 	 *
-	 * @param array $flosc_context Condition evaluator context.
+	 * @param array $flosc_context Condition evaluator context
 	 * @return array Boundary rules for current user type
 	 */
 	private function flosc_get_boundary_rules( $flosc_context ) {
@@ -252,7 +252,7 @@ class FLOSC_User_Session {
 	/**
 	 * Check if user has specific capability based on boundary rules
 	 *
-	 * @param string $flosc_capability Capability to check (e.g., 'flosc_can_see_all_lessons').
+	 * @param string $flosc_capability Capability to check (e.g., 'flosc_can_see_all_lessons')
 	 * @return bool Whether user has this capability
 	 */
 	public function flosc_can( $flosc_capability ) {
@@ -272,7 +272,7 @@ class FLOSC_User_Session {
 	/**
 	 * Build full visitor ID with flow context
 	 *
-	 * @param string $flosc_flow_id 2-digit flow ID.
+	 * @param string $flosc_flow_id 2-digit flow ID
 	 * @return string Full visitor ID: flosc_flow_01_visitor_abc12
 	 */
 	public static function flosc_build_visitor_id( $flosc_flow_id ) {

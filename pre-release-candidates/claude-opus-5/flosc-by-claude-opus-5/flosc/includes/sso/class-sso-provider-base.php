@@ -85,18 +85,14 @@ abstract class SSO_Provider_Base {
 	protected $client_secret;
 
 	/**
-	 * Whether flow-specific credentials have been set.
-	 *
-	 * @since 1.4.9
+	 * v1.4.9: Whether flow-specific credentials have been set
 	 *
 	 * @var bool
 	 */
 	protected $flow_credentials_set = false;
 
 	/**
-	 * Flow-specific enabled flag. Null means not set, so the global applies.
-	 *
-	 * @since 1.4.9
+	 * v1.4.9: Flow-specific enabled flag (null = not set, use global)
 	 *
 	 * @var bool|null
 	 */
@@ -138,13 +134,12 @@ abstract class SSO_Provider_Base {
 
 	/**
 	 * Check if provider is enabled and configured
-	 * Checks flow-specific enabled flag if set, otherwise falls back to global
+	 * v1.4.9: Checks flow-specific enabled flag if set, otherwise falls back to global
 	 *
 	 * @return bool
-	 * @since 1.4.9
 	 */
 	public function is_enabled() {
-		if ( null !== $this->flow_enabled ) {
+		if ( $this->flow_enabled !== null ) {
 			return $this->flow_enabled && $this->is_configured();
 		}
 		$enabled = get_option( "flosc_sso_{$this->provider_id}_enabled", false );
@@ -169,15 +164,12 @@ abstract class SSO_Provider_Base {
 	}
 
 	/**
-	 * Set flow-specific credentials, overriding the global options.
+	 * v1.4.9: Set flow-specific credentials (overrides global options)
+	 * Called at runtime when we know which flow triggered the SSO login.
 	 *
-	 * Called at runtime, once the flow that triggered the SSO login is known.
-	 *
-	 * @since 1.4.9
-	 *
-	 * @param string $client_id Flow-specific Client ID.
-	 * @param string $client_secret Flow-specific Client Secret.
-	 * @param bool   $enabled Whether this provider is enabled for this flow.
+	 * @param string $client_id Flow-specific Client ID
+	 * @param string $client_secret Flow-specific Client Secret
+	 * @param bool   $enabled Whether this provider is enabled for this flow
 	 */
 	public function set_flow_credentials( $client_id, $client_secret, $enabled = true ) {
 		$this->client_id            = $client_id;
@@ -189,8 +181,8 @@ abstract class SSO_Provider_Base {
 	/**
 	 * Get OAuth2 authorization URL
 	 *
-	 * @param string $state CSRF protection state.
-	 * @param string $redirect_uri Callback URL.
+	 * @param string $state CSRF protection state
+	 * @param string $redirect_uri Callback URL
 	 * @return string
 	 */
 	public function get_authorization_url( $state, $redirect_uri ) {
@@ -202,7 +194,7 @@ abstract class SSO_Provider_Base {
 			'state'         => $state,
 		);
 
-		// Allow providers to add custom parameters.
+		// Allow providers to add custom parameters
 		$params = $this->customize_auth_params( $params );
 
 		return $this->auth_url . '?' . http_build_query( $params );
@@ -211,7 +203,7 @@ abstract class SSO_Provider_Base {
 	/**
 	 * Customize authorization parameters (override in subclasses)
 	 *
-	 * @param array $params Default parameters.
+	 * @param array $params Default parameters
 	 * @return array Modified parameters
 	 */
 	protected function customize_auth_params( $params ) {
@@ -221,8 +213,8 @@ abstract class SSO_Provider_Base {
 	/**
 	 * Exchange authorization code for access token
 	 *
-	 * @param string $code Authorization code.
-	 * @param string $redirect_uri Callback URL.
+	 * @param string $code Authorization code
+	 * @param string $redirect_uri Callback URL
 	 * @return array|WP_Error Token data or error
 	 */
 	public function exchange_code_for_token( $code, $redirect_uri ) {
@@ -253,7 +245,7 @@ abstract class SSO_Provider_Base {
 		if ( isset( $body['error'] ) ) {
 			// v1.4.6: Handle both flat and nested error formats
 			// Flat: { "error": "invalid_grant", "error_description": "Code expired" }
-			// Nested (Facebook/Google): { "error": { "message": "...", "code": 190 } }.
+			// Nested (Facebook/Google): { "error": { "message": "...", "code": 190 } }
 			if ( is_array( $body['error'] ) && isset( $body['error']['message'] ) ) {
 				$error_msg = $body['error']['message'];
 			} elseif ( isset( $body['error_description'] ) ) {
@@ -274,17 +266,11 @@ abstract class SSO_Provider_Base {
 	/**
 	 * Get user info from provider
 	 *
-	 * @param string $access_token OAuth access token.
-	 * @param array  $token_data   Full token response (needed by Apple for id_token).
+	 * @param string $access_token OAuth access token
+	 * @param array  $token_data   Full token response (needed by Apple for id_token)
 	 * @return array|WP_Error User data or error
 	 */
 	public function get_user_info( $access_token, $token_data = array() ) {
-		// The base implementation reads its claims from user_info_url and has no
-		// use for the token response. The parameter is part of the contract
-		// because Apple overrides this method and takes its id_token and
-		// form_post claims from there.
-		unset( $token_data );
-
 		$response = wp_remote_get(
 			$this->user_info_url,
 			array(
@@ -316,7 +302,7 @@ abstract class SSO_Provider_Base {
 	 * Normalize user data to standard format
 	 * Override in each provider to map provider-specific fields
 	 *
-	 * @param array $raw_data Raw user data from provider.
+	 * @param array $raw_data Raw user data from provider
 	 * @return array Normalized user data with standard keys
 	 */
 	abstract protected function normalize_user_data( $raw_data );
@@ -324,7 +310,7 @@ abstract class SSO_Provider_Base {
 	/**
 	 * Get provider-specific user ID from raw data
 	 *
-	 * @param array $raw_data Raw user data.
+	 * @param array $raw_data Raw user data
 	 * @return string Provider user ID
 	 */
 	abstract public function get_provider_user_id( $raw_data );
@@ -408,7 +394,7 @@ abstract class SSO_Provider_Base {
 	 * @return array ['background' => '#xxx', 'text' => '#xxx']
 	 */
 	public function get_button_colors() {
-		// Override in subclasses for provider-specific colors.
+		// Override in subclasses for provider-specific colors
 		return array(
 			'background' => '#4285f4',
 			'text'       => '#ffffff',

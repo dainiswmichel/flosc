@@ -15,10 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 wp_enqueue_media();
 
-// Parent settings.php defines $flosc_flow_settings; never assume it when
-// included alone. The name it is read under has to match the name settings.php
-// writes: this read said $flow_settings, which settings.php has never assigned,
-// so the isset() was always false and this page always fell back to array().
+// Parent settings.php defines $flow_settings; never assume it when included alone.
 $flosc_flow_settings = ( isset( $flosc_flow_settings ) && is_array( $flosc_flow_settings ) ) ? $flosc_flow_settings : array();
 
 $flosc_profile_bar = get_option(

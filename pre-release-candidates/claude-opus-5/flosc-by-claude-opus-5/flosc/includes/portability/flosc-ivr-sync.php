@@ -42,7 +42,7 @@ function flosc_portable_settings_runtime_excludes() {
  */
 function flosc_portable_is_secret_segment( $segment ) {
 	$segment = strtolower( (string) $segment );
-	if ( '' === $segment ) {
+	if ( $segment === '' ) {
 		return false;
 	}
 	return (bool) preg_match(
@@ -78,14 +78,14 @@ function flosc_portable_collect_exportable_settings( array $fs ) {
 
 	foreach ( $fs as $key => $value ) {
 		$key = (string) $key;
-		if ( '' === $key || isset( $excluded[ $key ] ) ) {
+		if ( $key === '' || isset( $excluded[ $key ] ) ) {
 			continue;
 		}
 		if ( flosc_portable_is_secret_path( array( $key ) ) ) {
 			continue;
 		}
 		$filtered = flosc_portable_filter_secret_values( $value, array( $key ) );
-		if ( null === $filtered && null !== $value ) {
+		if ( $filtered === null && $value !== null ) {
 			continue;
 		}
 		$out[ $key ] = $filtered;
@@ -116,7 +116,7 @@ function flosc_portable_filter_secret_values( $value, array $path ) {
 		$child_path   = $path;
 		$child_path[] = (string) $k;
 		$filtered     = flosc_portable_filter_secret_values( $v, $child_path );
-		if ( null !== $filtered || null === $v ) {
+		if ( $filtered !== null || $v === null ) {
 			$result[ $k ] = $filtered;
 		}
 	}
@@ -211,7 +211,7 @@ function flosc_portable_yaml_key( $key ) {
  * @return string
  */
 function flosc_portable_yaml_scalar( $value ) {
-	if ( null === $value ) {
+	if ( $value === null ) {
 		return 'null';
 	}
 	if ( is_bool( $value ) ) {
@@ -278,7 +278,7 @@ function flosc_portable_build_settings_block( array $settings ) {
  */
 function flosc_portable_extract_settings_yaml( $markdown ) {
 	$markdown = (string) $markdown;
-	if ( '' === $markdown ) {
+	if ( $markdown === '' ) {
 		return '';
 	}
 
@@ -297,7 +297,7 @@ function flosc_portable_extract_settings_yaml( $markdown ) {
  */
 function flosc_portable_strip_settings_block( $markdown ) {
 	$markdown = (string) $markdown;
-	if ( '' === $markdown ) {
+	if ( $markdown === '' ) {
 		return $markdown;
 	}
 	return preg_replace( '/^\s*#{1,2}\s+Settings(?:\s*\(YAML\))?\s*\R```yaml\R.*?\R```\s*\R?/ims', '', $markdown );
@@ -311,7 +311,7 @@ function flosc_portable_strip_settings_block( $markdown ) {
  */
 function flosc_portable_parse_yaml_map( $yaml ) {
 	$yaml = (string) $yaml;
-	if ( '' === trim( $yaml ) ) {
+	if ( trim( $yaml ) === '' ) {
 		return array(
 			'success' => true,
 			'data'    => array(),
@@ -329,7 +329,7 @@ function flosc_portable_parse_yaml_map( $yaml ) {
 
 	foreach ( $lines as $raw_line ) {
 		$line = rtrim( (string) $raw_line, "\r\n" );
-		if ( '' === trim( $line ) || preg_match( '/^\s*#/', $line ) ) {
+		if ( trim( $line ) === '' || preg_match( '/^\s*#/', $line ) ) {
 			continue;
 		}
 
@@ -342,7 +342,7 @@ function flosc_portable_parse_yaml_map( $yaml ) {
 		}
 
 		$indent = strlen( $m[1] );
-		if ( 0 !== ( $indent % 2 ) ) {
+		if ( ( $indent % 2 ) !== 0 ) {
 			return array(
 				'success' => false,
 				'data'    => array(),
@@ -350,8 +350,7 @@ function flosc_portable_parse_yaml_map( $yaml ) {
 			);
 		}
 
-		// The stack shrinks inside the loop, so its depth is re-taken each pass.
-		for ( $depth = count( $stack ); $depth > 0 && $stack[ $depth - 1 ]['indent'] >= $indent; $depth = count( $stack ) ) {
+		while ( count( $stack ) > 0 && $stack[ count( $stack ) - 1 ]['indent'] >= $indent ) {
 			array_pop( $stack );
 		}
 		if ( empty( $stack ) ) {
@@ -370,7 +369,7 @@ function flosc_portable_parse_yaml_map( $yaml ) {
 		$tail       = ltrim( (string) $m[3] );
 		$parent_ref = &$stack[ count( $stack ) - 1 ]['ref'];
 
-		if ( '' === $tail ) {
+		if ( $tail === '' ) {
 			$parent_ref[ $key ] = array();
 			$stack[]            = array(
 				'indent' => $indent,
@@ -379,7 +378,7 @@ function flosc_portable_parse_yaml_map( $yaml ) {
 			continue;
 		}
 
-		if ( '{}' === $tail ) {
+		if ( $tail === '{}' ) {
 			$parent_ref[ $key ] = array();
 			continue;
 		}
@@ -404,13 +403,13 @@ function flosc_portable_parse_yaml_scalar( $tail ) {
 	$tail  = trim( (string) $tail );
 	$lower = strtolower( $tail );
 
-	if ( 'null' === $lower ) {
+	if ( $lower === 'null' ) {
 		return null;
 	}
-	if ( 'true' === $lower ) {
+	if ( $lower === 'true' ) {
 		return true;
 	}
-	if ( 'false' === $lower ) {
+	if ( $lower === 'false' ) {
 		return false;
 	}
 	if ( preg_match( '/^-?\d+$/', $tail ) ) {
@@ -655,6 +654,8 @@ function flosc_portable_settings_bootstrap_allowlist() {
 		'feedback_user_message',
 		'file_access_level',
 		'file_content',
+		'flosc_account_plan',
+		'flosc_account_purchases_manual',
 		'flosc_add_feedback',
 		'flosc_add_praise',
 		'flosc_clear_ivr_db',
@@ -939,7 +940,7 @@ function flosc_portable_apply_yaml_settings( array $current_fs, array $incoming_
 
 	foreach ( $incoming_settings as $key => $value ) {
 		$key = (string) $key;
-		if ( '' === $key ) {
+		if ( $key === '' ) {
 			continue;
 		}
 
@@ -957,7 +958,7 @@ function flosc_portable_apply_yaml_settings( array $current_fs, array $incoming_
 		}
 
 		$filtered = flosc_portable_filter_secret_values( $value, array( $key ) );
-		if ( null === $filtered && null !== $value ) {
+		if ( $filtered === null && $value !== null ) {
 			$skipped[ $key ] = 'secret';
 			continue;
 		}
@@ -1016,18 +1017,17 @@ function flosc_flow_load_runtime_triplet( $flow_key = null ) {
 
 /**
  * Import IVR from ivr.md to database (REPLACE MODE - ivr.md is source of truth)
- * IVR Database Integration
+ * v9.2.2: IVR Database Integration
  * v1.6.4: Added $custom_ivr_file and $flow_key params for per-flow storage
  *
- * @param bool        $preview_only If true, returns preview without making changes.
- * @param string|null $custom_ivr_file Optional path to IVR file (defaults to flosc_default_technical_ivr.md).
- * @param string|null $flow_key Optional per-flow option key (e.g. 'flosc_flow_flosc_default_ivr').
+ * @param bool        $preview_only If true, returns preview without making changes
+ * @param string|null $custom_ivr_file Optional path to IVR file (defaults to flosc_default_technical_ivr.md)
+ * @param string|null $flow_key Optional per-flow option key (e.g. 'flosc_flow_flosc_default_ivr')
  * @return array Result with success, stats, message, and preview data
- * @since 9.2.2
  */
 function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file = null, $flow_key = null, $mode = 'merge' ) {
 	$ivr_file = $custom_ivr_file ?? flosc_config_file( 'flosc_default_technical_ivr.md' );
-	$mode     = ( 'replace' === $mode ) ? 'replace' : 'merge';
+	$mode     = ( $mode === 'replace' ) ? 'replace' : 'merge';
 
 	if ( ! file_exists( $ivr_file ) ) {
 		return array(
@@ -1045,9 +1045,9 @@ function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file =
 	}
 
 	// flow_key must be a per-flow option name, never an arbitrary options row.
-	if ( null !== $flow_key && '' !== $flow_key ) {
+	if ( $flow_key !== null && $flow_key !== '' ) {
 		$flow_key = (string) $flow_key;
-		if ( 0 !== strpos( $flow_key, 'flosc_flow_' ) || 'flosc_flow_' === $flow_key ) {
+		if ( strpos( $flow_key, 'flosc_flow_' ) !== 0 || $flow_key === 'flosc_flow_' ) {
 			return array(
 				'success' => false,
 				'message' => 'Invalid flow option key',
@@ -1055,7 +1055,7 @@ function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file =
 		}
 	}
 
-	require_once FLOSC_PLUGIN_DIR . 'includes/portability/class-flosc-ivr-parser.php';
+	require_once FLOSC_PLUGIN_DIR . 'includes/portability/class-ivr-parser.php';
 	$parser   = FLOSC_IVR_Parser::flosc_instance();
 	$markdown = flosc_fs_get_contents( $ivr_file );
 
@@ -1102,7 +1102,7 @@ function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file =
 	// Normalize DB defaults so compare logic matches runtime/export behavior.
 	foreach ( $current_messages as &$current_msg ) {
 		$msg_type = strtolower( trim( (string) ( $current_msg['type'] ?? '' ) ) );
-		if ( 'offer' === $msg_type && empty( $current_msg['display_format'] ) ) {
+		if ( $msg_type === 'offer' && empty( $current_msg['display_format'] ) ) {
 			$current_msg['display_format'] = 'card';
 		}
 	}
@@ -1113,13 +1113,13 @@ function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file =
 	// Normalize defaults so preview/compare and runtime storage use the same shape.
 	foreach ( $incoming_messages as &$incoming_msg ) {
 		$msg_type = strtolower( trim( (string) ( $incoming_msg['type'] ?? '' ) ) );
-		if ( 'offer' === $msg_type && empty( $incoming_msg['display_format'] ) ) {
+		if ( $msg_type === 'offer' && empty( $incoming_msg['display_format'] ) ) {
 			$incoming_msg['display_format'] = 'card';
 		}
 	}
 	unset( $incoming_msg );
 
-	// Calculate changes.
+	// Calculate changes
 	$current_ids  = array_keys( $current_messages );
 	$incoming_ids = array_keys( $incoming_messages );
 
@@ -1140,9 +1140,9 @@ function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file =
 		'settings_skipped'  => $settings_apply['skipped'],
 	);
 
-	// PREVIEW MODE: Return analysis without making changes.
+	// PREVIEW MODE: Return analysis without making changes
 	if ( $preview_only ) {
-		// v2.0.0: Build field-level diffs for updated messages.
+		// v2.0.0: Build field-level diffs for updated messages
 		$field_diffs    = array();
 		$compare_fields = array(
 			'title',
@@ -1192,7 +1192,7 @@ function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file =
 
 			$normalized['title'] = (string) ( $msg['title'] ?? $normalized['name'] );
 
-			if ( 'offer' === strtolower( trim( $normalized['type'] ) ) && '' === $normalized['display_format'] ) {
+			if ( strtolower( trim( $normalized['type'] ) ) === 'offer' && $normalized['display_format'] === '' ) {
 				$normalized['display_format'] = 'card';
 			}
 
@@ -1228,25 +1228,25 @@ function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file =
 		);
 	}
 
-	// EXECUTE IMPORT: Auto-backup first, then merge or replace database.
+	// EXECUTE IMPORT: Auto-backup first, then merge or replace database
 	$backup_file = '';
 	if ( ! empty( $current_messages ) ) {
 		$backup_file = flosc_export_ivr_backup( $flow_key );
 	}
 
-	// Extract autoprompt pills from IVR messages and organize by state.
+	// Extract autoprompt pills from IVR messages and organize by state
 	$autoprompts_from_ivr = array(
 		'visitor' => array(),
 		'guest'   => array(),
 		'member'  => array(),
 	);
 	foreach ( $incoming_messages as $msg ) {
-		if ( 'suggested_user_autoprompt' !== ( $msg['type'] ?? '' ) ) {
+		if ( ( $msg['type'] ?? '' ) !== 'suggested_user_autoprompt' ) {
 			continue;
 		}
 		$cond = $msg['conditions'] ?? $msg['condition'] ?? '';
 		foreach ( array( 'visitor', 'guest', 'member' ) as $s ) {
-			if ( 'always' === $cond || false !== strpos( $cond, 'is_' . $s ) ) {
+			if ( $cond === 'always' || strpos( $cond, 'is_' . $s ) !== false ) {
 				$autoprompts_from_ivr[ $s ][] = array(
 					'icon'          => $msg['icon'] ?? '',
 					'label'         => $msg['label'] ?? ( $msg['name'] ?? '' ),
@@ -1264,7 +1264,7 @@ function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file =
 	$final_messages = $incoming_messages;
 	$final_phases   = $config['phases'] ?? array();
 
-	if ( 'merge' === $mode ) {
+	if ( $mode === 'merge' ) {
 		$final_messages = $current_messages;
 		foreach ( $incoming_messages as $msg_id => $incoming_msg ) {
 			$final_messages[ $msg_id ] = $incoming_msg;
@@ -1280,7 +1280,7 @@ function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file =
 				continue;
 			}
 			$phase_name = $current_msg['phase'] ?? '';
-			if ( '' === $phase_name ) {
+			if ( $phase_name === '' ) {
 				continue;
 			}
 			if ( ! isset( $final_phases[ $phase_name ] ) ) {
@@ -1319,7 +1319,7 @@ function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file =
 				continue;
 			}
 			$oid = sanitize_key( (string) ( $yaml_offer['id'] ?? $offer_key ) );
-			if ( '' === $oid ) {
+			if ( $oid === '' ) {
 				continue;
 			}
 			$yaml_offer['id']       = $oid;
@@ -1330,8 +1330,8 @@ function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file =
 		update_option( $flow_key, $fs_after );
 	}
 
-	// Generate success message.
-	if ( 'replace' === $mode ) {
+	// Generate success message
+	if ( $mode === 'replace' ) {
 		$message = sprintf(
 			'Database replaced from IVR file. Added: %d, Updated: %d, Deleted: %d',
 			count( $stats['added'] ),
@@ -1362,11 +1362,10 @@ function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file =
 
 /**
  * Create timestamped backup of current IVR database state
- * Added $flow_key param for per-flow storage
+ * v1.6.4: Added $flow_key param for per-flow storage
  *
- * @param string|null $flow_key Optional per-flow option key.
+ * @param string|null $flow_key Optional per-flow option key
  * @return string|false Backup filename on success, false on failure
- * @since 1.6.4
  */
 function flosc_export_ivr_backup( $flow_key = null ) {
 	list($messages, $phases, $styles, $flow_key) = flosc_flow_load_runtime_triplet( $flow_key );
@@ -1375,7 +1374,7 @@ function flosc_export_ivr_backup( $flow_key = null ) {
 		return false; // No data to backup
 	}
 
-	// Generate markdown (same format as export).
+	// Generate markdown (same format as export)
 	$markdown  = "# FLOSC IVR Configuration (AUTO-BACKUP)\n\n";
 	$markdown .= 'Backup created: ' . current_time( 'mysql' ) . "\n\n";
 
@@ -1386,7 +1385,7 @@ function flosc_export_ivr_backup( $flow_key = null ) {
 	$portable_settings = flosc_portable_collect_exportable_settings( $flow_settings );
 	$markdown         .= flosc_portable_build_settings_block( $portable_settings );
 
-	// Add styles.
+	// Add styles
 	foreach ( $styles as $style_name => $style_css ) {
 		$markdown .= "## MessageStyle: $style_name\n";
 		$markdown .= $style_css . "\n\n";
@@ -1397,7 +1396,7 @@ function flosc_export_ivr_backup( $flow_key = null ) {
 
 	$markdown .= "---\n\n";
 
-	// Add messages by phase.
+	// Add messages by phase
 	foreach ( $phases as $phase_name => $message_ids ) {
 		$markdown .= '# ' . ucfirst( $phase_name ) . " Messages\n\n";
 
@@ -1451,10 +1450,9 @@ function flosc_export_ivr_backup( $flow_key = null ) {
 
 /**
  * Auto-export IVR database to ivr.md file (write-through)
- * Called after every save/delete to keep DB and file in sync
+ * v9.2.8: Called after every save/delete to keep DB and file in sync
  *
  * @return bool Success
- * @since 9.2.8
  */
 function flosc_auto_export_ivr_to_file( $flow_key = null, $target_ivr_file = null ) {
 	list($messages, $phases, $styles, $flow_key) = flosc_flow_load_runtime_triplet( $flow_key );
@@ -1490,7 +1488,7 @@ function flosc_auto_export_ivr_to_file( $flow_key = null, $target_ivr_file = nul
 
 	foreach ( $messages as $msg_id => $msg ) {
 		$msg_phase = sanitize_key( (string) ( $msg['phase'] ?? '' ) );
-		if ( '' === $msg_phase || ! isset( $normalized_phases[ $msg_phase ] ) ) {
+		if ( $msg_phase === '' || ! isset( $normalized_phases[ $msg_phase ] ) ) {
 			$msg_phase = 'freeline';
 		}
 		if ( ! in_array( $msg_id, $normalized_phases[ $msg_phase ], true ) ) {
@@ -1506,11 +1504,11 @@ function flosc_auto_export_ivr_to_file( $flow_key = null, $target_ivr_file = nul
 	}
 	$portable_settings = flosc_portable_collect_exportable_settings( $flow_settings );
 
-	// Build markdown in proper ivr.md format.
+	// Build markdown in proper ivr.md format
 	$markdown  = "# FLOSC IVR Configuration\n\n";
 	$markdown .= flosc_portable_build_settings_block( $portable_settings );
 
-	// Add styles.
+	// Add styles
 	foreach ( $styles as $style_name => $style_data ) {
 		$markdown .= "## MessageStyle: $style_name\n";
 		if ( is_array( $style_data ) ) {
@@ -1538,7 +1536,7 @@ function flosc_auto_export_ivr_to_file( $flow_key = null, $target_ivr_file = nul
 
 	$markdown .= "---\n\n";
 
-	// Phase descriptions.
+	// Phase descriptions
 	$phase_descriptions = array(
 		'freeline' => 'Visitor (not logged in) → Take quiz → MUST login to see score.',
 		'login'    => 'Guest (logged in, not purchased) → See score → 1 free lesson → Offers → No quiz retake.',
@@ -1547,7 +1545,7 @@ function flosc_auto_export_ivr_to_file( $flow_key = null, $target_ivr_file = nul
 		'content'  => 'Ongoing users - Support, encouragement, engagement',
 	);
 
-	// Add messages by phase.
+	// Add messages by phase
 	foreach ( $phases as $phase_name => $message_ids ) {
 		if ( empty( $message_ids ) ) {
 			continue;
@@ -1565,13 +1563,13 @@ function flosc_auto_export_ivr_to_file( $flow_key = null, $target_ivr_file = nul
 			}
 			$msg = $messages[ $msg_id ];
 
-			// Use title/display name if available.
+			// Use title/display name if available
 			$title     = $msg['title'] ?? $msg['name'] ?? $msg_id;
 			$markdown .= '## ' . $title . "\n";
 			$markdown .= 'MessageName: ' . $msg_id . "\n";
 			$markdown .= 'MessageType: ' . ( $msg['type'] ?? 'auto' ) . "\n";
 
-			if ( ! empty( $msg['style'] ) && 'default' !== $msg['style'] ) {
+			if ( ! empty( $msg['style'] ) && $msg['style'] !== 'default' ) {
 				$markdown .= 'MessageStyle: ' . $msg['style'] . "\n";
 			}
 			if ( ! empty( $msg['panel'] ) ) {
@@ -1606,12 +1604,12 @@ function flosc_auto_export_ivr_to_file( $flow_key = null, $target_ivr_file = nul
 			if ( ! empty( $msg['password_retry_messages'] ) && is_array( $msg['password_retry_messages'] ) ) {
 				foreach ( $msg['password_retry_messages'] as $retry_line ) {
 					$retry_line = trim( (string) $retry_line );
-					if ( '' !== $retry_line ) {
+					if ( $retry_line !== '' ) {
 						$markdown .= 'PasswordRetry: ' . $retry_line . "\n";
 					}
 				}
 			}
-			// v1.6.2: Offer-specific fields — offers are IVR entries.
+			// v1.6.2: Offer-specific fields — offers are IVR entries
 			if ( ! empty( $msg['offer_id'] ) ) {
 				$markdown .= 'OfferID: ' . $msg['offer_id'] . "\n";
 			}
@@ -1625,13 +1623,13 @@ function flosc_auto_export_ivr_to_file( $flow_key = null, $target_ivr_file = nul
 				$markdown .= 'Timer: ' . $msg['timer'] . "\n";
 			}
 			$display_format = trim( (string) ( $msg['display_format'] ?? '' ) );
-			if ( 'offer' === strtolower( trim( (string) ( $msg['type'] ?? '' ) ) ) && '' === $display_format ) {
+			if ( strtolower( trim( (string) ( $msg['type'] ?? '' ) ) ) === 'offer' && $display_format === '' ) {
 				$display_format = 'card';
 			}
-			if ( '' !== $display_format ) {
+			if ( $display_format !== '' ) {
 				$markdown .= 'DisplayFormat: ' . $display_format . "\n";
 			}
-			// v1.6.2: Offer content source fields.
+			// v1.6.2: Offer content source fields
 			if ( ! empty( $msg['html_file'] ) ) {
 				$markdown .= 'HtmlFile: ' . $msg['html_file'] . "\n";
 			}
@@ -1644,7 +1642,7 @@ function flosc_auto_export_ivr_to_file( $flow_key = null, $target_ivr_file = nul
 
 			$markdown .= 'MessageContent: ' . ( $msg['content'] ?? '' ) . "\n";
 
-			if ( ! empty( $msg['conditions'] ) && 'always' !== $msg['conditions'] ) {
+			if ( ! empty( $msg['conditions'] ) && $msg['conditions'] !== 'always' ) {
 				$markdown .= 'MessageConditions: ' . $msg['conditions'] . "\n";
 			}
 
@@ -1670,13 +1668,13 @@ function flosc_auto_export_ivr_to_file( $flow_key = null, $target_ivr_file = nul
 		$ivr_file = $data_dir . 'flosc_default_technical_ivr.md';
 	}
 
-	if ( 0 !== strpos( $ivr_file, $data_dir ) ) {
+	if ( strpos( $ivr_file, $data_dir ) !== 0 ) {
 		$ivr_file = $data_dir . basename( $ivr_file );
 	}
 	$result = flosc_write_data_file( $ivr_file, $markdown );
 
 	if ( $result ) {
-		// Update last export timestamp.
+		// Update last export timestamp
 		update_option( 'flosc_ivr_last_export', current_time( 'mysql' ) );
 		if ( ! empty( $flow_key ) ) {
 			$fs                    = get_option( $flow_key, array() );
@@ -1709,11 +1707,11 @@ function flosc_sync_flow_option_to_ivr_file( $option ) {
 	if ( $mirroring ) {
 		return;
 	}
-	if ( 0 !== strpos( (string) $option, 'flosc_flow_' ) ) {
+	if ( strpos( (string) $option, 'flosc_flow_' ) !== 0 ) {
 		return;
 	}
 	$stem = substr( $option, strlen( 'flosc_flow_' ) );
-	if ( '' === $stem ) {
+	if ( $stem === '' ) {
 		return;
 	}
 	$mirroring = true;
@@ -1822,12 +1820,12 @@ function flosc_sync_flow_offers_with_ivr_messages( $flow_key, $messages ) {
 	$referenced_offers = array();
 	foreach ( $messages as $msg_id => $msg ) {
 		$msg_type = strtolower( trim( (string) ( $msg['type'] ?? '' ) ) );
-		if ( 'offer' !== $msg_type ) {
+		if ( $msg_type !== 'offer' ) {
 			continue;
 		}
 
 		$offer_id = sanitize_key( (string) ( $msg['offer_id'] ?? $msg_id ) );
-		if ( '' === $offer_id ) {
+		if ( $offer_id === '' ) {
 			continue;
 		}
 
@@ -1847,7 +1845,7 @@ function flosc_sync_flow_offers_with_ivr_messages( $flow_key, $messages ) {
 
 		// Optional commercial hints from IVR lines (Price / DiscountPrice).
 		$price_raw = trim( (string) ( $msg['price'] ?? '' ) );
-		if ( '' !== $price_raw && is_numeric( $price_raw ) ) {
+		if ( $price_raw !== '' && is_numeric( $price_raw ) ) {
 			$price_val             = (float) $price_raw;
 			$seed['price']         = $price_val;
 			$seed['pricing']       = array(
@@ -1856,7 +1854,7 @@ function flosc_sync_flow_offers_with_ivr_messages( $flow_key, $messages ) {
 			$seed['display_price'] = '$' . rtrim( rtrim( number_format( $price_val, 2, '.', '' ), '0' ), '.' );
 		}
 		$discount_raw = trim( (string) ( $msg['discount_price'] ?? '' ) );
-		if ( '' !== $discount_raw && is_numeric( $discount_raw ) ) {
+		if ( $discount_raw !== '' && is_numeric( $discount_raw ) ) {
 			$seed['discount_price'] = (float) $discount_raw;
 		}
 
@@ -1869,7 +1867,7 @@ function flosc_sync_flow_offers_with_ivr_messages( $flow_key, $messages ) {
 		// Portable Settings / prior admin values keep commercial fields; IVR wins on message copy + display.
 		$merged_offer = array_merge( $seed_offer, $existing_offer );
 		foreach ( array( 'name', 'description', 'display_format', 'condition', 'reveal_phrase' ) as $msg_field ) {
-			if ( isset( $seed_offer[ $msg_field ] ) && '' !== (string) $seed_offer[ $msg_field ] ) {
+			if ( isset( $seed_offer[ $msg_field ] ) && (string) $seed_offer[ $msg_field ] !== '' ) {
 				$merged_offer[ $msg_field ] = $seed_offer[ $msg_field ];
 			}
 		}
@@ -1884,7 +1882,7 @@ function flosc_sync_flow_offers_with_ivr_messages( $flow_key, $messages ) {
 
 		// If Settings YAML already activated the offer, do not force draft from the seed default.
 		$existing_status = strtolower( trim( (string) ( $existing_offer['status'] ?? '' ) ) );
-		if ( '' !== $existing_status && 'draft' !== $existing_status ) {
+		if ( $existing_status !== '' && $existing_status !== 'draft' ) {
 			$merged_offer['status'] = $existing_offer['status'];
 			if ( array_key_exists( 'active', $existing_offer ) ) {
 				$merged_offer['active'] = $existing_offer['active'];

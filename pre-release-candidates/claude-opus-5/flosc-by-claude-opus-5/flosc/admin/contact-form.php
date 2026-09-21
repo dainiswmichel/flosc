@@ -1,8 +1,6 @@
 <?php
 /**
  * FLOSC Contact Form Tab
- *
- * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
