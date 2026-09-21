@@ -1,7 +1,7 @@
 # Claude Code instructions for FLOSC
 
-The canonical, authoritative rules for this project live in **`AGENTS.md`** in
-this directory. Read `AGENTS.md` before writing any code and obey it in full.
+The canonical, authoritative rules for this project live in **`agents.md`** in
+this directory. Read `agents.md` before writing any code and obey it in full.
 
 Short version:
 - WordPress Coding Standards (WPCS) via `vendor/bin/phpcs` — the release gate

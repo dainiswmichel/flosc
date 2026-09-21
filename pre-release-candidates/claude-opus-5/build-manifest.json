@@ -14,7 +14,7 @@
     "zip": "pre-release-candidates/claude-opus-5/flosc.zip"
   },
   "artifact": {
-    "sha256": "05510183c8812ee9798b65e9493afb6070240de69ba26ff4028a21b96ef24621",
+    "sha256": "6f1b7e7f229756c20c137a01dae8ad6ae30f34c678fd1de5290458f557bea9ff",
     "size_bytes": 2130303,
     "entries": 240,
     "root": "flosc/",
@@ -32,7 +32,8 @@
       "includes/magic-link/class-flosc-magic-link-trait.php - build_guest_request_admin_redirect() takes the flow file as an argument and reads no superglobal; all 12 call sites updated to pass the value their own verified payload carried.",
       "includes/flosc-admin.php - maybe_process_flosc_settings_post() verifies the nonce each branch's form emitted before routing, and gates on edit_others_posts (the capability the FLOSC menu itself registers).",
       "phpcs.xml.dist - declares the two project sanitizers via customSanitizingFunctions so the sniff credits them by name.",
-      "admin/{settings,flow,flows,offers,ivr-messages,ai-configuration}.php + includes/request-guard/class-flosc-request-guard.php - the eleven file-scope wp_unslash($_GET/$_POST) reads are gone. Query values come from FLOSC_Request_Guard::query_params(), which reads only the 36 declared admin keys and sanitizes each on the read. POST comes from admin_post_payload(), which returns an empty array unless the request is a POST from a user with edit_others_posts."
+      "admin/{settings,flow,flows,offers,ivr-messages,ai-configuration}.php + includes/request-guard/class-flosc-request-guard.php - the eleven file-scope wp_unslash($_GET/$_POST) reads are gone. Query values come from FLOSC_Request_Guard::query_params(), which reads only the 36 declared admin keys and sanitizes each on the read. POST comes from admin_post_payload(), which returns an empty array unless the request is a POST from a user with edit_others_posts.",
+      "build-dist-zip.sh - the dev-file exclusions were case-sensitive -name patterns. LOCAL carries agents.md (lowercase) while the pattern said AGENTS.md, so find matched nothing and the file would have shipped in the release zip. All eleven exclusions are now -iname. AGENTS.md is renamed to agents.md to match, and .distignore, CLAUDE.md and WORDPRESS-ORG-RELEASE.md follow it."
     ],
     "suppressions_removed": 16,
     "suppressions_added": 0

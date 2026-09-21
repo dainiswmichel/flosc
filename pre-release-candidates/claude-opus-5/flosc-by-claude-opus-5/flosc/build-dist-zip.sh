@@ -131,17 +131,17 @@ done < <(find "$STAGE/flosc" \( \
   -path '*/.github/*' -o \
   -path '*/zip-files' -o \
   -path '*/zip-files/*' -o \
-  -name 'composer.json' -o \
-  -name 'composer.lock' -o \
-  -name 'build-dist-zip.sh' -o \
-  -name '.distignore' -o \
-  -name 'AGENTS.md' -o \
-  -name 'CLAUDE.md' -o \
-  -name '.cursorrules' -o \
-  -name 'WORDPRESS-ORG-RELEASE.md' -o \
-  -name 'phpcs.xml.dist' -o \
-  -name '*.zip' -o \
-  -name '*.bundle' \
+  -iname 'composer.json' -o \
+  -iname 'composer.lock' -o \
+  -iname 'build-dist-zip.sh' -o \
+  -iname '.distignore' -o \
+  -iname 'AGENTS.md' -o \
+  -iname 'CLAUDE.md' -o \
+  -iname '.cursorrules' -o \
+  -iname 'WORDPRESS-ORG-RELEASE.md' -o \
+  -iname 'phpcs.xml.dist' -o \
+  -iname '*.zip' -o \
+  -iname '*.bundle' \
 \) -print0 2>/dev/null)
 
 # Filename/content red flags inside staged PHP/md/txt

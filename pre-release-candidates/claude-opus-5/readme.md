@@ -219,7 +219,7 @@ anyone calls it submittable.
 
 ```
 flosc.zip
-  sha256  05510183c8812ee9798b65e9493afb6070240de69ba26ff4028a21b96ef24621
+  sha256  6f1b7e7f229756c20c137a01dae8ad6ae30f34c678fd1de5290458f557bea9ff
   bytes   2130303
   entries 240
   root    flosc/
