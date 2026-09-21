@@ -183,7 +183,7 @@ class OAuth2_Handler {
 
 			if ( ! empty( $flow_client_id ) ) {
 				// v1.5.0: Apple has extra fields (team_id, key_id, private_key)
-				if ( $provider_id === 'apple' && method_exists( $provider, 'set_flow_apple_credentials' ) ) {
+				if ( 'apple' === $provider_id && method_exists( $provider, 'set_flow_apple_credentials' ) ) {
 					$provider->set_flow_apple_credentials(
 						$flow_client_id,
 						$flow_client_secret,
@@ -209,7 +209,7 @@ class OAuth2_Handler {
 
 		// Only store allowlisted redirects (never arbitrary attacker-controlled hosts).
 		$redirect_to = is_string( $redirect_to ) ? $redirect_to : '';
-		if ( $redirect_to !== '' && ! $this->is_allowed_sso_redirect( $redirect_to, $flow_id ) ) {
+		if ( '' !== $redirect_to && ! $this->is_allowed_sso_redirect( $redirect_to, $flow_id ) ) {
 			$redirect_to = '';
 		}
 
@@ -236,7 +236,7 @@ class OAuth2_Handler {
 	private function flosc_safe_external_redirect( $url ) {
 		$url  = esc_url_raw( (string) $url );
 		$host = strtolower( (string) ( wp_parse_url( $url, PHP_URL_HOST ) ?? '' ) );
-		if ( $url === '' || $host === '' || ! wp_http_validate_url( $url ) ) {
+		if ( '' === $url || '' === $host || ! wp_http_validate_url( $url ) ) {
 			wp_safe_redirect( home_url( '/' ) );
 			exit;
 		}
@@ -264,7 +264,7 @@ class OAuth2_Handler {
 		$payload = array();
 		foreach ( array( 'code', 'state', 'error', 'error_description' ) as $flosc_pk ) {
 			$param = $request->get_param( $flosc_pk );
-			if ( is_string( $param ) && $param !== '' ) {
+			if ( is_string( $param ) && '' !== $param ) {
 				$payload[ $flosc_pk ] = sanitize_text_field( $param );
 			}
 		}
@@ -450,7 +450,7 @@ class OAuth2_Handler {
 			$flow_enabled       = ! empty( $flow_settings[ "sso_{$provider_id}_enabled" ] );
 
 			if ( ! empty( $flow_client_id ) ) {
-				if ( $provider_id === 'apple' && method_exists( $provider, 'set_flow_apple_credentials' ) ) {
+				if ( 'apple' === $provider_id && method_exists( $provider, 'set_flow_apple_credentials' ) ) {
 					$provider->set_flow_apple_credentials(
 						$flow_client_id,
 						$flow_client_secret,
@@ -533,7 +533,7 @@ class OAuth2_Handler {
 
 		// Fail closed: unapproved redirect_to never receives a login token or redirect.
 		if ( ! $this->is_allowed_sso_redirect( $redirect_to, $flow_id_for_redirect ) ) {
-			$fallback = is_string( $app_url ) && $app_url !== '' ? $app_url : home_url( '/' );
+			$fallback = is_string( $app_url ) && '' !== $app_url ? $app_url : home_url( '/' );
 			if ( ! $this->is_allowed_sso_redirect( $fallback, $flow_id_for_redirect ) ) {
 				$fallback = home_url( '/' );
 			}
@@ -558,7 +558,7 @@ class OAuth2_Handler {
 		}
 
 		$home_host = strtolower( (string) ( wp_parse_url( home_url( '/' ), PHP_URL_HOST ) ?? '' ) );
-		if ( $redirect_host === '' || $redirect_host === $home_host || $redirect_host === $callback_host ) {
+		if ( '' === $redirect_host || $redirect_host === $home_host || $redirect_host === $callback_host ) {
 			wp_safe_redirect( $redirect_to );
 			exit;
 		}
@@ -578,7 +578,7 @@ class OAuth2_Handler {
 	 */
 	private function is_allowed_sso_redirect( $url, $flow_id = '' ) {
 		$url = trim( (string) $url );
-		if ( $url === '' ) {
+		if ( '' === $url ) {
 			return false;
 		}
 		// Protocol-relative and dangerous schemes.
@@ -593,7 +593,7 @@ class OAuth2_Handler {
 		}
 
 		// Relative path → same origin (safe).
-		if ( isset( $url[0] ) && $url[0] === '/' && ( ! isset( $url[1] ) || $url[1] !== '/' ) ) {
+		if ( isset( $url[0] ) && '/' === $url[0] && ( ! isset( $url[1] ) || '/' !== $url[1] ) ) {
 			return true;
 		}
 
@@ -602,15 +602,15 @@ class OAuth2_Handler {
 			return false;
 		}
 		$scheme = strtolower( (string) ( $parsed['scheme'] ?? '' ) );
-		if ( $scheme !== 'https' && $scheme !== 'http' ) {
+		if ( 'https' !== $scheme && 'http' !== $scheme ) {
 			return false;
 		}
 		// Production preference: allow http only for localhost.
 		$host = strtolower( (string) $parsed['host'] );
-		if ( $scheme === 'http' && $host !== 'localhost' && $host !== '127.0.0.1' ) {
+		if ( 'http' === $scheme && 'localhost' !== $host && '127.0.0.1' !== $host ) {
 			// Still allow if site itself is http (local/dev).
 			$site_scheme = strtolower( (string) ( wp_parse_url( home_url( '/' ), PHP_URL_SCHEME ) ?? 'https' ) );
-			if ( $site_scheme !== 'http' ) {
+			if ( 'http' !== $site_scheme ) {
 				return false;
 			}
 		}
@@ -629,7 +629,7 @@ class OAuth2_Handler {
 		$hosts = array();
 		$add   = static function ( $url_or_host ) use ( &$hosts ) {
 			$url_or_host = trim( (string) $url_or_host );
-			if ( $url_or_host === '' ) {
+			if ( '' === $url_or_host ) {
 				return;
 			}
 			if ( strpos( $url_or_host, '://' ) === false ) {
@@ -638,7 +638,7 @@ class OAuth2_Handler {
 				$host = strtolower( (string) ( wp_parse_url( $url_or_host, PHP_URL_HOST ) ?? '' ) );
 			}
 			$host = preg_replace( '#^www\.#', '', $host );
-			if ( $host !== '' ) {
+			if ( '' !== $host ) {
 				$hosts[ $host ] = true;
 			}
 		};
@@ -651,7 +651,7 @@ class OAuth2_Handler {
 
 		if ( function_exists( 'flosc' ) ) {
 			$app = flosc()->get_app_url();
-			if ( is_string( $app ) && $app !== '' ) {
+			if ( is_string( $app ) && '' !== $app ) {
 				$add( $app );
 			}
 		}
@@ -659,7 +659,7 @@ class OAuth2_Handler {
 		// Flow-scoped allowlist only: the current flow's configured domains/app URLs.
 		// This prevents one flow's configured redirect host from implicitly approving.
 		// a different flow's post-login target.
-		if ( $flow_id !== '' ) {
+		if ( '' !== $flow_id ) {
 			$settings = get_option( 'flosc_flow_' . sanitize_key( $flow_id ), array() );
 			if ( is_array( $settings ) ) {
 				foreach ( array( 'domain', 'custom_domain', 'sso_post_login_redirect_url', 'app_url' ) as $field ) {
@@ -670,7 +670,7 @@ class OAuth2_Handler {
 			}
 
 			$resolved_app_url = $this->resolve_app_url_from_flow_id( $flow_id );
-			if ( is_string( $resolved_app_url ) && $resolved_app_url !== '' ) {
+			if ( is_string( $resolved_app_url ) && '' !== $resolved_app_url ) {
 				$add( $resolved_app_url );
 			}
 		}
@@ -1003,7 +1003,7 @@ class OAuth2_Handler {
 
 		$base_host = strtolower( (string) ( wp_parse_url( $redirect_url, PHP_URL_HOST ) ?? '' ) );
 		$home_host = strtolower( (string) ( wp_parse_url( home_url( '/' ), PHP_URL_HOST ) ?? '' ) );
-		if ( $base_host === '' || $base_host === $home_host ) {
+		if ( '' === $base_host || $base_host === $home_host ) {
 			wp_safe_redirect( $redirect_url );
 			exit;
 		}

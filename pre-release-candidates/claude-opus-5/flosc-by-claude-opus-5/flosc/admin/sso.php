@@ -124,10 +124,10 @@ $flosc_sso_docs_inventory_url = add_query_arg(
 	admin_url( 'admin.php' )
 ) . '#inventory-auth-family';
 $flosc_flow_display_name      = trim( (string) ( $flosc_flow_settings['identity']['name'] ?? '' ) );
-if ( $flosc_flow_display_name === '' ) {
+if ( '' === $flosc_flow_display_name ) {
 	$flosc_flow_display_name = trim( (string) ( $flosc_flow_settings['name'] ?? '' ) );
 }
-if ( $flosc_flow_display_name === '' ) {
+if ( '' === $flosc_flow_display_name ) {
 	$flosc_flow_display_name = $flosc_selected_ivr;
 }
 $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key( pathinfo( $flosc_selected_ivr, PATHINFO_FILENAME ) ) : '';
@@ -159,7 +159,7 @@ $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key( pathinfo( $flosc_se
 		$flosc_configured_domain = trim( $flosc_configured_domain, " \t\n\r\0\x0B/" );
 		$flosc_flow_slug         = trim( (string) ( $flosc_flow_settings['slug'] ?? '' ), '/' );
 
-		if ( $flosc_flow_slug === 'chat' ) {
+		if ( 'chat' === $flosc_flow_slug ) {
 			$flosc_flow_fallback_url = home_url( '/chat' );
 			$flosc_redirect_source   = '/chat slug shortcut';
 		} elseif ( ! empty( $flosc_configured_domain ) ) {
@@ -238,7 +238,7 @@ $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key( pathinfo( $flosc_se
 								name="flow_sso_<?php echo esc_attr( $flosc_provider_id ); ?>_client_id" 
 								value="<?php echo esc_attr( $flosc_client_id ); ?>" 
 								class="regular-text"
-								placeholder="<?php echo esc_attr( $flosc_provider_id === 'apple' ? 'Service ID (e.g., com.example.app)' : 'Your ' . $flosc_provider['name'] . ' Client/App ID' ); ?>">
+								placeholder="<?php echo esc_attr( 'apple' === $flosc_provider_id ? 'Service ID (e.g., com.example.app)' : 'Your ' . $flosc_provider['name'] . ' Client/App ID' ); ?>">
 					</td>
 				</tr>
 				
@@ -248,13 +248,13 @@ $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key( pathinfo( $flosc_se
 							<input type="password" 
 								name="flow_sso_<?php echo esc_attr( $flosc_provider_id ); ?>_client_secret" 
 								value="<?php echo esc_attr( $flosc_client_secret ); ?>" 
-								class="regular-text <?php echo esc_attr( $flosc_provider_id === 'apple' ? 'flosc-sso-apple-secret' : '' ); ?>"
-								placeholder="<?php echo esc_attr( $flosc_provider_id === 'apple' ? 'Leave empty - auto-generated from keys' : 'Your ' . $flosc_provider['name'] . ' Client Secret' ); ?>"
+								class="regular-text <?php echo esc_attr( 'apple' === $flosc_provider_id ? 'flosc-sso-apple-secret' : '' ); ?>"
+								placeholder="<?php echo esc_attr( 'apple' === $flosc_provider_id ? 'Leave empty - auto-generated from keys' : 'Your ' . $flosc_provider['name'] . ' Client Secret' ); ?>"
 								<?php
-								if ( $flosc_provider_id === 'apple' ) :
+								if ( 'apple' === $flosc_provider_id ) :
 									?>
 									readonly <?php endif; ?>>
-						<?php if ( $flosc_provider_id === 'apple' ) : ?>
+						<?php if ( 'apple' === $flosc_provider_id ) : ?>
 							<p class="description">Apple client secrets are automatically generated from Team ID, Key ID, and Private Key below.</p>
 						<?php endif; ?>
 					</td>

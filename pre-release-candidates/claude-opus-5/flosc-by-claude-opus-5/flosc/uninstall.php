@@ -20,7 +20,7 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 function flosc_uninstall_delete_options_by_prefix( $prefix ) {
 	global $wpdb;
 	$prefix = (string) $prefix;
-	if ( $prefix === '' ) {
+	if ( '' === $prefix ) {
 		return;
 	}
 	$wpdb->query(
@@ -43,7 +43,7 @@ function flosc_uninstall_delete_sitemeta_by_prefix( $prefix ) {
 	}
 	global $wpdb;
 	$prefix = (string) $prefix;
-	if ( $prefix === '' ) {
+	if ( '' === $prefix ) {
 		return;
 	}
 	$wpdb->query(
@@ -65,7 +65,7 @@ function flosc_uninstall_delete_meta_table_prefix( $table, $prefix ) {
 	global $wpdb;
 	$table  = (string) $table;
 	$prefix = (string) $prefix;
-	if ( $table === '' || $prefix === '' ) {
+	if ( '' === $table || '' === $prefix ) {
 		return;
 	}
 	$wpdb->query(
@@ -126,7 +126,7 @@ if ( function_exists( 'wp_clear_scheduled_hook' ) ) {
  */
 function flosc_uninstall_rm_rf( $dir ) {
 	$dir = untrailingslashit( (string) $dir );
-	if ( $dir === '' || ! is_dir( $dir ) ) {
+	if ( '' === $dir || ! is_dir( $dir ) ) {
 		return;
 	}
 

@@ -6,7 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 $flosc_visitor_name = function_exists( 'flosc_personality_name' )
 	? flosc_personality_name()
 	: ( function_exists( 'flosc_visitor_assistant_name' ) ? flosc_visitor_assistant_name() : 'FLOSC' );
-if ( $flosc_visitor_name === '' ) {
+if ( '' === $flosc_visitor_name ) {
 	$flosc_visitor_name = 'FLOSC';
 }
 
@@ -243,7 +243,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 			$flosc_new_chat_btn_label = function_exists( 'flosc_get_setting' )
 			? (string) flosc_get_setting( 'new_chat_button_label', 'New chat' )
 			: 'New chat';
-			if ( $flosc_new_chat_btn_label === '' ) {
+			if ( '' === $flosc_new_chat_btn_label ) {
 				$flosc_new_chat_btn_label = 'New chat';
 			}
 			?>
@@ -301,13 +301,13 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 
 		foreach ( array( 'visitor', 'guest', 'member' ) as $flosc_pb_state ) {
 			if ( ! isset( $flosc_profile_bar[ $flosc_pb_state ]['avatar_radius'] ) || ! in_array( (string) $flosc_profile_bar[ $flosc_pb_state ]['avatar_radius'], array( '8px', '50%', '4px', '0' ), true ) ) {
-				if ( $flosc_pb_state === 'visitor' ) {
+				if ( 'visitor' === $flosc_pb_state ) {
 					$flosc_pb_visitor['avatar_radius'] = '8px';
 				}
-				if ( $flosc_pb_state === 'guest' ) {
+				if ( 'guest' === $flosc_pb_state ) {
 					$flosc_pb_guest['avatar_radius'] = '8px';
 				}
-				if ( $flosc_pb_state === 'member' ) {
+				if ( 'member' === $flosc_pb_state ) {
 					$flosc_pb_member['avatar_radius'] = '8px';
 				}
 			}
@@ -328,7 +328,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 		$flosc_visitor_label_base = trim( (string) ( $flosc_pb_visitor['name'] ?? 'Visitor' ) );
 		$flosc_visitor_label_base = preg_replace( '/\s*\(?\d+[kmb]?\)?$/i', '', $flosc_visitor_label_base );
 		$flosc_visitor_label_base = trim( $flosc_visitor_label_base );
-		if ( $flosc_visitor_label_base === '' ) {
+		if ( '' === $flosc_visitor_label_base ) {
 			$flosc_visitor_label_base = 'Visitor';
 		}
 
@@ -408,7 +408,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 				// Server-side flosc-hidden so wrong-branch nodes never paint.
 				// CSS alone failed: .flosc-app .user-profile-bar img.flosc-profile-avatar.
 				// {display:block} beat [data-show="logged-in"]{display:none} → 👋 + blue square.
-				$flosc_is_visitor          = ( $user_state === 'visitor' );
+				$flosc_is_visitor          = ( 'visitor' === $user_state );
 				$flosc_pb_visitor_hidden   = $flosc_is_visitor ? '' : ' flosc-hidden';
 				$flosc_pb_logged_in_hidden = $flosc_is_visitor ? ' flosc-hidden' : '';
 				// Icon XOR image: both stay hidden until setupUI setDisplayState picks one.
@@ -419,7 +419,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 					<span class="flosc-visitor-avatar-fallback" aria-hidden="true">
 					<?php
 						echo esc_html(
-							( $flosc_pb_visitor['icon'] !== '' && $flosc_pb_visitor['icon'] !== null )
+							( '' !== $flosc_pb_visitor['icon'] && null !== $flosc_pb_visitor['icon'] )
 							? $flosc_pb_visitor['icon']
 							: '👋'
 						);
@@ -456,8 +456,8 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 					foreach ( $flosc_visitor_menu as $flosc_item ) :
 						$flosc_is_offer = (
 							strpos( (string) $flosc_item['action'], 'show_offer' ) === 0
-							|| (string) $flosc_item['action'] === 'show_upgrade'
-							|| (string) $flosc_item['action'] === 'open_sandbox_purchase'
+							|| (string) 'show_upgrade' === $flosc_item['action']
+							|| (string) 'open_sandbox_purchase' === $flosc_item['action']
 						);
 						?>
 						<?php if ( $flosc_is_offer ) : ?>
@@ -496,11 +496,11 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 					</div>
 					<?php
 					// Read admin-configured menu for the current user state.
-					$flosc_li_menu = ( $user_state === 'member' )
+					$flosc_li_menu = ( 'member' === $user_state )
 						? get_option( 'flosc_member_menu_items', array() )
 						: get_option( 'flosc_guest_menu_items', array() );
 					if ( empty( $flosc_li_menu ) ) {
-						$flosc_li_menu = ( $user_state === 'member' )
+						$flosc_li_menu = ( 'member' === $user_state )
 							? array(
 								array(
 									'label'  => 'Log Out',
@@ -522,7 +522,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 						$flosc_li_action = (string) ( $flosc_li_item['action'] ?? '' );
 						// Purchase/offer lives on the Upgrade feature button, not as a plain menu link.
 						if (
-							$flosc_li_action === 'open_sandbox_purchase'
+							'open_sandbox_purchase' === $flosc_li_action
 							|| strpos( $flosc_li_action, 'show_offer' ) === 0
 						) {
 							continue;
@@ -698,10 +698,10 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 					$flosc_enabled_quizzes = array();
 				}
 				$flosc_quiz_id       = ! empty( $flosc_enabled_quizzes ) ? sanitize_key( (string) $flosc_enabled_quizzes[0] ) : '';
-				$flosc_quiz_content  = $flosc_quiz_id !== ''
+				$flosc_quiz_content  = '' !== $flosc_quiz_id
 					? (string) flosc_get_setting( 'quiz_content_' . $flosc_quiz_id, '' )
 					: '';
-				$flosc_items         = $flosc_quiz_content !== ''
+				$flosc_items         = '' !== $flosc_quiz_content
 					? array_map( 'trim', explode( ',', $flosc_quiz_content ) )
 					: array();
 				$flosc_items_display = implode( ', ', $flosc_items );
@@ -709,7 +709,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 				
 				<!-- Quiz Prompt -->
 				<div class="quiz-prompt">
-					<?php if ( $flosc_quiz_id === '' ) : ?>
+					<?php if ( '' === $flosc_quiz_id ) : ?>
 					<p class="quiz-prompt-label"><?php echo esc_html__( 'No quiz is enabled for this flow.', 'flosc' ); ?></p>
 					<p class="quiz-sequence" id="floscQuizSequence"></p>
 					<?php else : ?>
@@ -943,7 +943,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 
 		// v10.0.0: Record the entry flow (first visit only) so logout can recall.
 		// the per-flow logout destination. Non-blocking; idempotent server-side.
-		if ( $flosc_flow_id !== '' && method_exists( flosc(), 'set_entry_flow_cookie' ) ) {
+		if ( '' !== $flosc_flow_id && method_exists( flosc(), 'set_entry_flow_cookie' ) ) {
 			flosc()->set_entry_flow_cookie( $flosc_flow_id );
 		}
 
@@ -1048,7 +1048,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 			$flosc_ajax_url = admin_url( 'admin-ajax.php' );
 			// v10.0.0: Resolve logout destination per-flow, then legacy, then flow app URL.
 			$flosc_logout_dest = flosc_get_setting( 'logout_destination', '' );
-		if ( $flosc_logout_dest === '' ) {
+		if ( '' === $flosc_logout_dest ) {
 			$flosc_logout_dest = flosc_get_setting( 'logout_redirect_url', $flosc_app_url );
 		}
 			$flosc_logout_url = wp_logout_url( $flosc_logout_dest );
@@ -1113,17 +1113,17 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 					'companion'  => home_url( '/' ),
 				);
 			$flosc_hub_fullscreen_url = esc_url_raw( (string) ( $flosc_companion_source['companion_hub_fullscreen_url'] ?? ( $flosc_hub_defaults_rt['fullscreen'] ?? $flosc_app_url ) ) );
-			if ( $flosc_hub_fullscreen_url === '' ) {
+			if ( '' === $flosc_hub_fullscreen_url ) {
 				$flosc_hub_fullscreen_url = esc_url_raw( (string) ( $flosc_hub_defaults_rt['fullscreen'] ?? $flosc_app_url ) );
 			}
 			$flosc_hub_companion_url = esc_url_raw( (string) ( $flosc_companion_source['companion_hub_companion_url'] ?? ( $flosc_hub_defaults_rt['companion'] ?? home_url( '/' ) ) ) );
-			if ( $flosc_hub_companion_url === '' ) {
+			if ( '' === $flosc_hub_companion_url ) {
 				$flosc_hub_companion_url = esc_url_raw( (string) ( $flosc_hub_defaults_rt['companion'] ?? home_url( '/' ) ) );
 			}
-			$flosc_companion_collapse_url           = ( $flosc_companion_routing_mode === 'hub' )
+			$flosc_companion_collapse_url           = ( 'hub' === $flosc_companion_routing_mode )
 				? $flosc_hub_companion_url
 				: esc_url_raw( home_url( '/' ) );
-			$flosc_companion_collapse_target_policy = ( $flosc_companion_routing_mode === 'domain_persistence' )
+			$flosc_companion_collapse_target_policy = ( 'domain_persistence' === $flosc_companion_routing_mode )
 				? 'origin'
 				: 'fallback';
 			$flosc_companion_contextual_prompt      = sanitize_text_field( (string) ( $flosc_companion_source['companion_contextual_prompt'] ?? 'What do you want to explore together?' ) );
@@ -1132,7 +1132,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 				$code = strtoupper( sanitize_text_field( (string) $raw ) );
 				$code = preg_replace( '/[^A-Z0-9]/', '', $code );
 				$code = substr( (string) $code, 0, 3 );
-				return $code !== '' ? $code : $fallback;
+				return '' !== $code ? $code : $fallback;
 			};
 			$flosc_companion_tier_visitor       = $flosc_tier_code( $flosc_companion_source['companion_profile_tier_visitor'] ?? 'V', 'V' );
 			$flosc_companion_tier_guest         = $flosc_tier_code( $flosc_companion_source['companion_profile_tier_guest'] ?? 'G', 'G' );
@@ -1140,13 +1140,13 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 			$flosc_companion_tier_visitor_label = sanitize_text_field( (string) ( $flosc_companion_source['companion_profile_tier_visitor_label'] ?? 'Visitor' ) );
 			$flosc_companion_tier_guest_label   = sanitize_text_field( (string) ( $flosc_companion_source['companion_profile_tier_guest_label'] ?? 'Guest' ) );
 			$flosc_companion_tier_member_label  = sanitize_text_field( (string) ( $flosc_companion_source['companion_profile_tier_member_label'] ?? 'Member' ) );
-			if ( $flosc_companion_tier_visitor_label === '' ) {
+			if ( '' === $flosc_companion_tier_visitor_label ) {
 				$flosc_companion_tier_visitor_label = 'Visitor';
 			}
-			if ( $flosc_companion_tier_guest_label === '' ) {
+			if ( '' === $flosc_companion_tier_guest_label ) {
 				$flosc_companion_tier_guest_label = 'Guest';
 			}
-			if ( $flosc_companion_tier_member_label === '' ) {
+			if ( '' === $flosc_companion_tier_member_label ) {
 				$flosc_companion_tier_member_label = 'Member';
 			}
 
@@ -1204,12 +1204,12 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 						if ( is_array( $flow ) ) {
 							$ivr  = (string) ( $flow['ivr_file'] ?? $flow['ivr'] ?? $flow['id'] ?? '' );
 							$stem = sanitize_key( pathinfo( basename( $ivr ), PATHINFO_FILENAME ) );
-							if ( $stem === '' && ! empty( $flow['id'] ) ) {
+							if ( '' === $stem && ! empty( $flow['id'] ) ) {
 								$stem = sanitize_key( (string) $flow['id'] );
 							}
 						}
 						$offers = array();
-						if ( $stem !== '' ) {
+						if ( '' !== $stem ) {
 							$flosc_flow_settings = get_option( 'flosc_flow_' . $stem, array() );
 							$offers              = is_array( $flosc_flow_settings['offers'] ?? null ) ? $flosc_flow_settings['offers'] : array();
 						}
@@ -1222,7 +1222,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 								continue;
 							}
 							$flosc_type = strtolower( (string) ( $o['type'] ?? 'one_time' ) );
-							if ( $flosc_type === 'subscription' || ! empty( $o['subscription']['plans'] ) ) {
+							if ( 'subscription' === $flosc_type || ! empty( $o['subscription']['plans'] ) ) {
 								return 'subscription';
 							}
 						}
@@ -1274,7 +1274,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 					// Per-flow Lessons tab only — never fall back to global flosc_content_item_category.
 					'lessonsCategory'                => ( function () use ( $flosc_current_flow, $flow_settings ) {
 						$flosc_cat = trim( (string) ( $flow_settings['content_item_category'] ?? '' ) );
-						if ( $flosc_cat === '' && is_array( $flosc_current_flow ) ) {
+						if ( '' === $flosc_cat && is_array( $flosc_current_flow ) ) {
 							$flosc_cat = trim( (string) ( $flosc_current_flow['content_item_category'] ?? '' ) );
 						}
 						return $flosc_cat;
@@ -1285,7 +1285,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 						if ( is_array( $flosc_current_flow ) ) {
 							$ivr  = (string) ( $flosc_current_flow['ivr_file'] ?? $flosc_current_flow['ivr'] ?? $flosc_current_flow['id'] ?? '' );
 							$stem = sanitize_key( pathinfo( basename( $ivr ), PATHINFO_FILENAME ) );
-							if ( $stem === '' || $stem === 'default' ) {
+							if ( '' === $stem || 'default' === $stem ) {
 								$stem = sanitize_key( (string) ( $flosc_current_flow['id'] ?? '' ) );
 							}
 						}
@@ -1348,7 +1348,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 						$fid                 = $flosc_current_flow ? ( $flosc_current_flow['id'] ?? '' ) : '';
 						$flosc_flow_settings = $fid ? get_option( 'flosc_flow_' . sanitize_key( $fid ), array() ) : array();
 						$p                   = $flosc_flow_settings['ai']['provider'] ?? ( $flosc_flow_settings['ai_provider'] ?? '' );
-						return ( $p !== '' ) ? $p : flosc_get_setting( 'ai_provider', 'ivr' );
+						return ( '' !== $p ) ? $p : flosc_get_setting( 'ai_provider', 'ivr' );
 					} )(),
 					// v1.4.0: SSO Providers.
 					'ssoProviders'                   => $flosc_sso_providers,
@@ -1432,11 +1432,11 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 					// Between-phrase escape hatch (upgrade / softer tier) — per-flow admin params.
 					'audioQuizEscapeEnabled'         => ( function () {
 						$v = flosc_get_setting( 'audio_quiz_escape_enabled', '1' );
-						return $v === '' || $v === null ? true : (bool) $v;
+						return '' === $v || null === $v ? true : (bool) $v;
 					} )(),
 					'audioQuizEscapeOnce'            => ( function () {
 						$v = flosc_get_setting( 'audio_quiz_escape_once', '1' );
-						return $v === '' || $v === null ? true : (bool) $v;
+						return '' === $v || null === $v ? true : (bool) $v;
 					} )(),
 					'audioQuizEscapeAfterPhrase'     => max( 0, min( 99, (int) flosc_get_setting( 'audio_quiz_escape_after_phrase', 3 ) ) ),
 					'ipaApiBaseUrl'                  => untrailingslashit( flosc_get_setting( 'ipa_api_base_url', '' ) ),
@@ -1452,7 +1452,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 						$out = array();
 						foreach ( $raw as $qid ) {
 							$qid = sanitize_key( (string) $qid );
-							if ( $qid === '' ) {
+							if ( '' === $qid ) {
 								continue;
 							}
 							if ( class_exists( 'FLOSC_Quiz_Registry' ) ) {
@@ -1469,7 +1469,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 						$id = (string) ( $flow_settings['default_text_quiz_id']
 						?? $flosc_current_flow['default_text_quiz_id']
 						?? '' );
-						if ( $id !== '' && class_exists( 'FLOSC_Quiz_Registry' ) ) {
+						if ( '' !== $id && class_exists( 'FLOSC_Quiz_Registry' ) ) {
 							$id = FLOSC_Quiz_Registry::resolve_id( $id );
 						}
 						return $id;
@@ -1622,19 +1622,19 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 					'guestLinkUpgradeUrl'            => flosc_get_setting( 'guest_link_upgrade_url', '' ),
 					// One-time injection after redirect-back login (via short-lived transient)
 					'guestLinkRemaining'             => ( function () use ( $user_state ) {
-						if ( ! is_user_logged_in() || $user_state !== 'guest' ) {
+						if ( ! is_user_logged_in() || 'guest' !== $user_state ) {
 							return null;
 						}
 						$key       = 'flosc_just_guest_login_' . get_current_user_id();
 						$remaining = get_transient( $key );
-						if ( $remaining === false || ! is_numeric( $remaining ) ) {
+						if ( false === $remaining || ! is_numeric( $remaining ) ) {
 							return null;
 						}
 						delete_transient( $key );
 						return (int) $remaining;
 					} )(),
 					'memberLinkLogin'                => ( function () use ( $user_state ) {
-						if ( ! is_user_logged_in() || $user_state !== 'member' ) {
+						if ( ! is_user_logged_in() || 'member' !== $user_state ) {
 							return null;
 						}
 						$key = 'flosc_just_guest_login_' . get_current_user_id();
@@ -1721,7 +1721,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 							} )()
 							: 0,
 					// Days of guest access remaining — only for THIS flow when it defines a guest window.
-					'guestDaysRemaining'             => ( $user_state === 'guest' && is_user_logged_in() )
+					'guestDaysRemaining'             => ( 'guest' === $user_state && is_user_logged_in() )
 					? ( function () {
 						$window = intval( flosc_get_setting( 'guest_access_days', 0 ) );
 						if ( $window <= 0 ) {
@@ -1745,12 +1745,12 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 							$ivr  = (string) ( $flow['ivr_file'] ?? $flow['ivr'] ?? $flow['id'] ?? '' );
 							$stem = sanitize_key( pathinfo( basename( $ivr ), PATHINFO_FILENAME ) );
 						}
-						$flosc_flow_settings = $stem !== '' ? get_option( 'flosc_flow_' . $stem, array() ) : array();
+						$flosc_flow_settings = '' !== $stem ? get_option( 'flosc_flow_' . $stem, array() ) : array();
 						if ( ! is_array( $flosc_flow_settings ) || ! array_key_exists( 'guest_can_delete_chats', $flosc_flow_settings ) ) {
 							return true;
 						}
 						$v = $flosc_flow_settings['guest_can_delete_chats'];
-						return ! ( $v === '' || $v === '0' || $v === 0 || $v === false || $v === null );
+						return ! ( '' === $v || '0' === $v || 0 === $v || false === $v || null === $v );
 					} )(),
 					'guestCanRenameChats'            => ( function () {
 						$flow = function_exists( 'flosc' ) ? flosc()->get_current_flow() : null;
@@ -1759,12 +1759,12 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 							$ivr  = (string) ( $flow['ivr_file'] ?? $flow['ivr'] ?? $flow['id'] ?? '' );
 							$stem = sanitize_key( pathinfo( basename( $ivr ), PATHINFO_FILENAME ) );
 						}
-						$flosc_flow_settings = $stem !== '' ? get_option( 'flosc_flow_' . $stem, array() ) : array();
+						$flosc_flow_settings = '' !== $stem ? get_option( 'flosc_flow_' . $stem, array() ) : array();
 						if ( ! is_array( $flosc_flow_settings ) || ! array_key_exists( 'guest_can_rename_chats', $flosc_flow_settings ) ) {
 							return true;
 						}
 						$v = $flosc_flow_settings['guest_can_rename_chats'];
-						return ! ( $v === '' || $v === '0' || $v === 0 || $v === false || $v === null );
+						return ! ( '' === $v || '0' === $v || 0 === $v || false === $v || null === $v );
 					} )(),
 					'guestNewChatLimitMessage'       => ( function () {
 						$v = flosc_get_setting(
@@ -1785,7 +1785,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 							$p = $v;
 							$v = stripslashes_deep( $v );
 						}
-						return $v !== '' ? $v : 'New chat';
+						return '' !== $v ? $v : 'New chat';
 					} )(),
 					'emptyChatListMessage'           => ( function () {
 						$v = flosc_get_setting( 'empty_chat_list_message', 'No chats yet' );
@@ -1794,7 +1794,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 							$p = $v;
 							$v = stripslashes_deep( $v );
 						}
-						return $v !== '' ? $v : 'No chats yet';
+						return '' !== $v ? $v : 'No chats yet';
 					} )(),
 					'guestNewChatWelcomeMessage'     => ( function () {
 						$v = flosc_get_setting( 'guest_new_chat_welcome_message', 'Welcome back, what would you like to work on?' );

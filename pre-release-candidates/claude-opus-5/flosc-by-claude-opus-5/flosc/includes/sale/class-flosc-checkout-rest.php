@@ -87,7 +87,7 @@ class FLOSC_Checkout_Rest {
 					return new WP_REST_Response( array( 'error' => 'Missing post ID' ), 400 );
 				}
 				$post = get_post( $post_id );
-				if ( ! $post || $post->post_status !== 'publish' ) {
+				if ( ! $post || 'publish' !== $post->post_status ) {
 					return new WP_REST_Response( array( 'error' => 'Post not found' ), 404 );
 				}
 				// REST is not is_singular(); content protection filters do not apply.
@@ -163,11 +163,11 @@ class FLOSC_Checkout_Rest {
 		$is_free_offer = $sale->offer_is_explicitly_free( $offer );
 
 		// PAY-01A: Free path only for explicitly free + active offers. Missing price ≠ free.
-		if ( $method === 'free' || empty( $provider_id ) ) {
+		if ( 'free' === $method || empty( $provider_id ) ) {
 			$free_ok = $sale->validate_offer_for_purchase( $offer, 'free' );
 			if ( is_wp_error( $free_ok ) ) {
 				// Empty provider on a non-free offer → provider_required (not a free-claim error).
-				if ( empty( $provider_id ) && $method !== 'free' && $free_ok->get_error_code() === 'not_free' ) {
+				if ( empty( $provider_id ) && 'free' !== $method && $free_ok->get_error_code() === 'not_free' ) {
 					return new WP_Error(
 						'provider_required',
 						__( 'A payment provider is required for this offer', 'flosc' ),
@@ -251,7 +251,7 @@ class FLOSC_Checkout_Rest {
 	 */
 	private function flosc_apply_offer_price_coupon( array $offer, $code ) {
 		$code = strtoupper( trim( (string) $code ) );
-		if ( $code === '' ) {
+		if ( '' === $code ) {
 			return new WP_Error( 'missing_code', __( 'No coupon code provided', 'flosc' ), array( 'status' => 400 ) );
 		}
 		$coupons = $offer['coupons'] ?? array();
@@ -273,18 +273,18 @@ class FLOSC_Checkout_Rest {
 			}
 			$from  = $this->flosc_parse_utc_mts_timestamp( (string) ( $c['valid_from_utc'] ?? '' ) );
 			$until = $this->flosc_parse_utc_mts_timestamp( (string) ( $c['valid_until_utc'] ?? '' ) );
-			if ( $from === false || $until === false ) {
+			if ( false === $from || false === $until ) {
 				continue;
 			}
-			if ( $from !== null && $now < $from ) {
+			if ( null !== $from && $now < $from ) {
 				continue;
 			}
-			if ( $until !== null && $now > $until ) {
+			if ( null !== $until && $now > $until ) {
 				continue;
 			}
 			$type  = sanitize_key( (string) ( $c['type'] ?? 'fixed_price' ) );
 			$value = floatval( $c['value'] ?? 0 );
-			if ( $type === 'percent' ) {
+			if ( 'percent' === $type ) {
 				$payable = max( 0.0, round( $list * ( 1.0 - ( max( 0.0, min( 100.0, $value ) ) / 100.0 ) ), 2 ) );
 			} else {
 				// fixed_price = final charge (admin does not reverse-% from list).
@@ -294,7 +294,7 @@ class FLOSC_Checkout_Rest {
 				'payable'    => $payable,
 				'list_price' => $list,
 				'code'       => $code,
-				'type'       => $type === 'percent' ? 'percent' : 'fixed_price',
+				'type'       => 'percent' === $type ? 'percent' : 'fixed_price',
 				'value'      => $value,
 			);
 		}
@@ -311,7 +311,7 @@ class FLOSC_Checkout_Rest {
 	private function flosc_resolve_native_payable_amount( array $offer, $coupon_code = '' ) {
 		$list        = $this->flosc_offer_list_price( $offer );
 		$coupon_code = trim( (string) $coupon_code );
-		if ( $coupon_code === '' ) {
+		if ( '' === $coupon_code ) {
 			if ( $list <= 0 ) {
 				return new WP_Error( 'no_price', __( 'No price configured for this offer.', 'flosc' ), array( 'status' => 400 ) );
 			}
@@ -374,7 +374,7 @@ class FLOSC_Checkout_Rest {
 	private function flosc_resolve_subscription_coupon_prices( array $offer, $coupon_code = '' ) {
 		$list        = $this->flosc_offer_subscription_list_prices( $offer );
 		$coupon_code = trim( (string) $coupon_code );
-		if ( $coupon_code === '' ) {
+		if ( '' === $coupon_code ) {
 			if ( $list['monthly'] <= 0 && $list['yearly'] <= 0 ) {
 				return new WP_Error( 'no_price', __( 'No subscription prices on this offer.', 'flosc' ), array( 'status' => 400 ) );
 			}
@@ -406,7 +406,7 @@ class FLOSC_Checkout_Rest {
 		}
 		$type  = $applied['type'] ?? 'fixed_price';
 		$value = floatval( $applied['value'] ?? 0 );
-		if ( $type === 'percent' ) {
+		if ( 'percent' === $type ) {
 			$factor  = 1.0 - ( max( 0.0, min( 100.0, $value ) ) / 100.0 );
 			$monthly = max( 0.0, round( $list['monthly'] * $factor, 2 ) );
 			$yearly  = max( 0.0, round( $list['yearly'] * $factor, 2 ) );
@@ -450,7 +450,7 @@ class FLOSC_Checkout_Rest {
 		$offer_id = sanitize_text_field( $request->get_param( 'offer_id' ) ?? '' );
 		$flow_id  = sanitize_text_field( $request->get_param( 'flow_id' ) ?? '' );
 		$code     = sanitize_text_field( $request->get_param( 'code' ) ?? '' );
-		if ( $flow_id !== '' ) {
+		if ( '' !== $flow_id ) {
 			$this->flosc->set_flow_context( $flow_id );
 		}
 		$offer = $this->flosc->sale()->offers()->get_offer( $offer_id, $flow_id ?: null );
@@ -458,7 +458,7 @@ class FLOSC_Checkout_Rest {
 			return new WP_Error( 'invalid_offer', __( 'Offer not found', 'flosc' ), array( 'status' => 404 ) );
 		}
 		$proc = strtolower( (string) ( $offer['pricing']['processor'] ?? $offer['processor'] ?? 'paypal' ) );
-		if ( $proc === 'redirect' ) {
+		if ( 'redirect' === $proc ) {
 			return new WP_Error(
 				'external_shop',
 				__( 'Coupons for external checkout are handled by the shop (Woo/Shopify/etc.).', 'flosc' ),
@@ -587,7 +587,7 @@ class FLOSC_Checkout_Rest {
 		$product_icon  = '🎁';
 
 		// Try the offer (flow-aware lookup)
-		if ( ! empty( $offer_id ) && $offer_id !== 'sandbox' ) {
+		if ( ! empty( $offer_id ) && 'sandbox' !== $offer_id ) {
 			$offer = $offer_manager->get_offer( $offer_id, $flow_id ?: null );
 			if ( $offer && ! empty( $offer['grants']['level'] ) ) {
 				$member_level = $offer['grants']['level'];
@@ -695,7 +695,7 @@ class FLOSC_Checkout_Rest {
 		$offer_id    = sanitize_text_field( $request->get_param( 'offer_id' ) );
 		$coupon_code = sanitize_text_field( $request->get_param( 'coupon_code' ) ?? '' );
 		$flow_id     = sanitize_text_field( $request->get_param( 'flow_id' ) ?? '' );
-		if ( $flow_id !== '' ) {
+		if ( '' !== $flow_id ) {
 			$this->flosc->set_flow_context( $flow_id );
 		}
 		$offer = $this->flosc->sale()->offers()->get_offer( $offer_id, $flow_id ?: null );
@@ -713,7 +713,7 @@ class FLOSC_Checkout_Rest {
 		$currency = strtolower( (string) ( $offer['pricing']['currency'] ?? 'usd' ) ) ?: 'usd';
 
 		// With a coupon, always charge dynamic amount (cents) — Stripe Price ID is full list price.
-		if ( $coupon_code !== '' ) {
+		if ( '' !== $coupon_code ) {
 			$payable = $this->flosc_resolve_native_payable_amount( $offer, $coupon_code );
 			if ( is_wp_error( $payable ) ) {
 				return $payable;
@@ -762,7 +762,7 @@ class FLOSC_Checkout_Rest {
 		}
 
 		$flow_id_param = sanitize_text_field( $request->get_param( 'flow_id' ) ?? '' );
-		if ( $flow_id_param !== '' ) {
+		if ( '' !== $flow_id_param ) {
 			$this->flosc->set_flow_context( $flow_id_param );
 		}
 
@@ -799,7 +799,7 @@ class FLOSC_Checkout_Rest {
 
 		// PAY-02: Offer must be cryptographically bound via PI metadata set at intent creation.
 		$bound_offer_id = sanitize_text_field( (string) ( $meta['offer_id'] ?? '' ) );
-		if ( $bound_offer_id === '' ) {
+		if ( '' === $bound_offer_id ) {
 			return new WP_Error(
 				'unbound_payment',
 				__( 'Payment is not bound to an offer and cannot grant access', 'flosc' ),
@@ -843,7 +843,7 @@ class FLOSC_Checkout_Rest {
 
 		$current_flow = $this->flosc->get_current_flow();
 		$flow_id      = $current_flow ? ( $current_flow['id'] ?? '' ) : '';
-		if ( $flow_id === '' && $flow_id_param !== '' ) {
+		if ( '' === $flow_id && '' !== $flow_id_param ) {
 			$flow_id = $flow_id_param;
 		}
 		if ( $flow_id ) {
@@ -904,12 +904,12 @@ class FLOSC_Checkout_Rest {
 		// Collect provider-specific authenticity headers for signature verification.
 		// Webhook routes are public by design; crypto verification lives in each provider.
 		$headers = array();
-		if ( $provider_id === 'stripe' ) {
+		if ( 'stripe' === $provider_id ) {
 			$stripe_sig = $request->get_header( 'stripe-signature' );
 			if ( $stripe_sig ) {
 				$headers['stripe-signature'] = is_array( $stripe_sig ) ? $stripe_sig[0] : $stripe_sig;
 			}
-		} elseif ( $provider_id === 'paypal' ) {
+		} elseif ( 'paypal' === $provider_id ) {
 			// Single source of truth: FLOSC_PayPal_Provider::collect_transmission_headers_from_request()
 			// (also re-run as fallback inside the provider so this path cannot go unwired).
 			if ( class_exists( 'FLOSC_PayPal_Provider' )
@@ -945,7 +945,7 @@ class FLOSC_Checkout_Rest {
 		$access        = $this->flosc->sale()->access();
 		$member_access = $this->flosc->member_access();
 		$flow_id       = sanitize_key( (string) ( $request->get_param( 'flow_id' ) ?? '' ) );
-		if ( $flow_id === '' ) {
+		if ( '' === $flow_id ) {
 			$flow = $this->flosc->get_current_flow();
 			if ( is_array( $flow ) ) {
 				$flow_id = $this->flosc->flosc_normalize_flow_stem(
@@ -973,7 +973,7 @@ class FLOSC_Checkout_Rest {
 	 */
 	private function flosc_parse_utc_mts_timestamp( $raw ) {
 		$raw = trim( (string) $raw );
-		if ( $raw === '' ) {
+		if ( '' === $raw ) {
 			return null;
 		}
 		// MTS: 2026-07m-27d-UTC08h:26m13s.

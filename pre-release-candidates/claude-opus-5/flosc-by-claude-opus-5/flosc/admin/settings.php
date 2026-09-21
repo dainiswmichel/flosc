@@ -180,7 +180,7 @@ if ( ! function_exists( 'flosc_resolve_flow_option_key_for_ivr' ) ) {
 
 		foreach ( $flosc_rows as $flosc_row ) {
 			$option_name = (string) ( $flosc_row['option_name'] ?? '' );
-			if ( $option_name === '' || strpos( $option_name, 'flosc_flow_' ) !== 0 ) {
+			if ( '' === $option_name || strpos( $option_name, 'flosc_flow_' ) !== 0 ) {
 				continue;
 			}
 
@@ -191,8 +191,8 @@ if ( ! function_exists( 'flosc_resolve_flow_option_key_for_ivr' ) ) {
 
 			$active          = basename( (string) ( $flosc_settings['active_ivr_file'] ?? '' ) );
 			$primary         = basename( (string) ( $flosc_settings['ivr_file'] ?? '' ) );
-			$matches_active  = ( $active !== '' && $active === $flosc_ivr_filename );
-			$matches_primary = ( $primary !== '' && $primary === $flosc_ivr_filename );
+			$matches_active  = ( '' !== $active && $active === $flosc_ivr_filename );
+			$matches_primary = ( '' !== $primary && $primary === $flosc_ivr_filename );
 
 			// Only consider keys that are explicitly tied to this IVR filename.
 			if ( ! $matches_active && ! $matches_primary && $option_name !== $default_key ) {
@@ -243,7 +243,7 @@ if ( ! function_exists( 'flosc_known_flow_option_keys' ) ) {
 		if ( function_exists( 'flosc_flows' ) ) {
 			foreach ( flosc_flows()->get_all_flows() as $flow ) {
 				$ivr = (string) ( $flow['ivr_file'] ?? '' );
-				if ( $ivr === '' ) {
+				if ( '' === $ivr ) {
 					continue;
 				}
 				$keys[] = flosc_resolve_flow_option_key_for_ivr( $ivr );
@@ -272,7 +272,7 @@ $flosc_ivr_files = array_values( array_unique( $flosc_ivr_files ) );
 
 $flosc_get_early = FLOSC_Request_Guard::query_params( array( 'ivr' ) );
 $flosc_keep_ivr  = isset( $flosc_get_early['ivr'] ) ? sanitize_file_name( (string) $flosc_get_early['ivr'] ) : '';
-if ( $flosc_keep_ivr === '' && is_user_logged_in() ) {
+if ( '' === $flosc_keep_ivr && is_user_logged_in() ) {
 	$flosc_keep_ivr = sanitize_file_name( (string) get_user_meta( get_current_user_id(), '_flosc_admin_default_ivr', true ) );
 }
 if ( function_exists( 'flosc_filter_switch_flow_ivr_files' ) ) {
@@ -315,16 +315,16 @@ $flosc_current_user_id      = get_current_user_id();
 // Selected IVR file (flow)
 $flosc_selected_ivr  = '';
 $flosc_requested_ivr = isset( $flosc_get['ivr'] ) ? sanitize_file_name( $flosc_get['ivr'] ) : '';
-if ( $flosc_requested_ivr !== '' && in_array( $flosc_requested_ivr, $flosc_ivr_files, true ) ) {
+if ( '' !== $flosc_requested_ivr && in_array( $flosc_requested_ivr, $flosc_ivr_files, true ) ) {
 	$flosc_selected_ivr = $flosc_requested_ivr;
 }
 
 $flosc_user_default_ivr = sanitize_file_name( (string) get_user_meta( $flosc_current_user_id, $flosc_default_ivr_meta_key, true ) );
-if ( $flosc_selected_ivr === '' && $flosc_user_default_ivr !== '' && in_array( $flosc_user_default_ivr, $flosc_ivr_files, true ) ) {
+if ( '' === $flosc_selected_ivr && '' !== $flosc_user_default_ivr && in_array( $flosc_user_default_ivr, $flosc_ivr_files, true ) ) {
 	$flosc_selected_ivr = $flosc_user_default_ivr;
 }
 
-if ( $flosc_selected_ivr === '' && ! empty( $flosc_ivr_files ) ) {
+if ( '' === $flosc_selected_ivr && ! empty( $flosc_ivr_files ) ) {
 	$flosc_selected_ivr = $flosc_ivr_files[0];
 }
 
@@ -355,7 +355,7 @@ if ( function_exists( 'flosc_normalize_content_item_flow_settings' ) ) {
 
 // v1.3.5: Preserve underscores in default slug (don't use sanitize_title which converts to hyphens)
 $flosc_default_slug = strtolower( preg_replace( '/[^a-z0-9_-]/i', '', pathinfo( $flosc_selected_ivr, PATHINFO_FILENAME ) ) );
-if ( $flosc_default_slug === '' ) {
+if ( '' === $flosc_default_slug ) {
 	$flosc_default_slug = 'flosc';
 }
 
@@ -365,7 +365,7 @@ $flosc_flow_seed_needed = false;
 $flosc_shipped_name     = function_exists( 'flosc_shipped_flow_display_name' )
 	? flosc_shipped_flow_display_name( $flosc_selected_ivr )
 	: '';
-$flosc_fallback_name    = $flosc_shipped_name !== ''
+$flosc_fallback_name    = '' !== $flosc_shipped_name
 	? $flosc_shipped_name
 	: ucwords( str_replace( array( '_', '-', 'ivr', '.md' ), array( ' ', ' ', '', '' ), $flosc_selected_ivr ) );
 
@@ -392,10 +392,10 @@ if ( empty( $flosc_flow_settings ) ) {
 		$flosc_flow_seed_needed        = true;
 	}
 	// Upgrade ugly filename-stem names for shipped samples only (leave custom names alone).
-	if ( $flosc_shipped_name !== '' ) {
+	if ( '' !== $flosc_shipped_name ) {
 		$flosc_cur_name  = trim( (string) ( $flosc_flow_settings['name'] ?? ( $flosc_flow_settings['identity']['name'] ?? '' ) ) );
 		$flosc_stem_ugly = ucwords( str_replace( array( '_', '-', 'ivr', '.md' ), array( ' ', ' ', '', '' ), $flosc_selected_ivr ) );
-		if ( $flosc_cur_name === '' || strcasecmp( $flosc_cur_name, $flosc_stem_ugly ) === 0 || strcasecmp( $flosc_cur_name, $flosc_default_slug ) === 0 ) {
+		if ( '' === $flosc_cur_name || strcasecmp( $flosc_cur_name, $flosc_stem_ugly ) === 0 || strcasecmp( $flosc_cur_name, $flosc_default_slug ) === 0 ) {
 			$flosc_flow_settings['name'] = $flosc_shipped_name;
 			if ( isset( $flosc_flow_settings['identity'] ) && is_array( $flosc_flow_settings['identity'] ) ) {
 				$flosc_flow_settings['identity']['name'] = $flosc_shipped_name;
@@ -412,7 +412,7 @@ $flosc_get                       = FLOSC_Request_Guard::query_params( FLOSC_Requ
 $flosc_post                      = FLOSC_Request_Guard::admin_post_payload();
 $flosc_active_tab                = isset( $flosc_get['tab'] ) ? sanitize_text_field( $flosc_get['tab'] ) : 'identity';
 $flosc_can_manage_administration = current_user_can( 'manage_options' );
-if ( $flosc_active_tab === 'administration' && ! $flosc_can_view_administration ) {
+if ( 'administration' === $flosc_active_tab && ! $flosc_can_view_administration ) {
 	$flosc_active_tab = 'identity';
 }
 $flosc_identity_view = isset( $flosc_get['view'] ) ? sanitize_text_field( $flosc_get['view'] ) : 'single';
@@ -431,7 +431,7 @@ if ( isset( $flosc_post['flosc_toggle_trajectory_post'] ) && wp_verify_nonce( sa
 
 	$flosc_trj_post_id       = absint( $flosc_post['flosc_toggle_trajectory_post'] );
 	$flosc_trj_set           = sanitize_key( $flosc_post['flosc_trajectory_set'] ?? '' );
-	$flosc_trj_next_status   = ( $flosc_trj_set === 'on' ) ? 'private' : 'draft';
+	$flosc_trj_next_status   = ( 'on' === $flosc_trj_set ) ? 'private' : 'draft';
 	$flosc_trj_redirect_args = array(
 		'page' => 'flosc-settings',
 		'ivr'  => $flosc_selected_ivr,
@@ -456,7 +456,7 @@ if ( isset( $flosc_post['flosc_toggle_trajectory_post'] ) && wp_verify_nonce( sa
 			);
 
 			if ( ! is_wp_error( $flosc_trj_update ) ) {
-				if ( $flosc_trj_next_status === 'private' ) {
+				if ( 'private' === $flosc_trj_next_status ) {
 					FLOSC_Trajectory::sync_post( $flosc_trj_post_id );
 					$flosc_trj_redirect_args['trajectory_toggled'] = 'on';
 				} else {
@@ -495,11 +495,11 @@ if ( isset( $flosc_post['flosc_create_concierge_post'] ) && wp_verify_nonce( san
 	}
 	$flosc_cncrg_content = sanitize_textarea_field( $flosc_post['flosc_cncrg_content'] ?? '' );
 
-	if ( $flosc_cncrg_title === '' ) {
+	if ( '' === $flosc_cncrg_title ) {
 		$flosc_cncrg_title = 'Concierge Note';
 	}
 
-	if ( $flosc_cncrg_keyword === '' || $flosc_cncrg_content === '' ) {
+	if ( '' === $flosc_cncrg_keyword || '' === $flosc_cncrg_content ) {
 		$flosc_redirect_url = add_query_arg(
 			array(
 				'page'            => 'flosc-settings',
@@ -600,11 +600,11 @@ if ( isset( $flosc_post['flosc_create_trajectory_post'] ) && wp_verify_nonce( sa
 		$flosc_trj_off_ramp_exactness = 'preferred';
 	}
 
-	if ( $flosc_trj_title === '' ) {
+	if ( '' === $flosc_trj_title ) {
 		$flosc_trj_title = 'Trajectory Note';
 	}
 
-	if ( $flosc_trj_instructions === '' ) {
+	if ( '' === $flosc_trj_instructions ) {
 		$flosc_redirect_url = add_query_arg(
 			array(
 				'page'             => 'flosc-settings',
@@ -766,7 +766,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 				|| substr( $flosc_setting_key, -5 ) === '_body'; // email bodies (guest/member/newsletter) — preserve newlines.
 			if ( in_array( $flosc_setting_key, $flosc_identity_html_keys, true ) ) {
 				$flosc_new_settings[ $flosc_setting_key ] = wp_kses_post( $flosc_value );
-			} elseif ( $flosc_setting_key === 'ai_base_prompt' && function_exists( 'flosc_sanitize_personality_profile_text' ) ) {
+			} elseif ( 'ai_base_prompt' === $flosc_setting_key && function_exists( 'flosc_sanitize_personality_profile_text' ) ) {
 				$flosc_new_settings[ $flosc_setting_key ] = flosc_sanitize_personality_profile_text( is_string( $flosc_value ) ? $flosc_value : '' );
 			} elseif ( $flosc_is_textarea ) {
 				$flosc_new_settings[ $flosc_setting_key ] = sanitize_textarea_field( $flosc_value );
@@ -780,7 +780,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 
 	// v1.5.0: Handle checkbox unchecking — checkboxes don't POST when unchecked.
 	// Only handle checkboxes for the current tab to avoid wiping other tabs' values.
-	if ( $flosc_active_tab === 'sso' ) {
+	if ( 'sso' === $flosc_active_tab ) {
 		$flosc_sso_providers = array( 'google', 'apple', 'facebook', 'microsoft', 'linkedin' );
 		foreach ( $flosc_sso_providers as $flosc_provider ) {
 			if ( ! isset( $flosc_post[ "flow_sso_{$flosc_provider}_enabled" ] ) ) {
@@ -788,7 +788,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 			}
 		}
 	}
-	if ( $flosc_active_tab === 'login' ) {
+	if ( 'login' === $flosc_active_tab ) {
 		// MagicLink per-flow enable (default off). Unchecked checkboxes omit POST key.
 		if ( ! isset( $flosc_post['flow_magic_access_links_enabled'] ) ) {
 			$flosc_new_settings['magic_access_links_enabled'] = '';
@@ -807,7 +807,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		}
 		// Store the global fallback option (non-flow) so non-BuddyBoss installs.
 		// have a working default without an IVR-flow settings bag.
-		if ( isset( $flosc_new_settings['login_destination'] ) && $flosc_new_settings['login_destination'] !== '' ) {
+		if ( isset( $flosc_new_settings['login_destination'] ) && '' !== $flosc_new_settings['login_destination'] ) {
 			update_option( 'flosc_login_destination', esc_url_raw( $flosc_new_settings['login_destination'] ) );
 		}
 		foreach ( array( 'login_destination', 'logout_destination', 'login_destination_accounts_url', 'logout_destination_fallback' ) as $flosc_url_key ) {
@@ -825,7 +825,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 			$flosc_new_settings['logout_farewell_message'] = sanitize_textarea_field( $flosc_new_settings['logout_farewell_message'] );
 		}
 	}
-	if ( $flosc_active_tab === 'engagement' ) {
+	if ( 'engagement' === $flosc_active_tab ) {
 		if ( isset( $flosc_new_settings['guest_access_days'] ) ) {
 			$flosc_new_settings['guest_access_days'] = max( 0, min( 365, intval( $flosc_new_settings['guest_access_days'] ) ) );
 		}
@@ -848,7 +848,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 			: array( '', 'reengagement', 'guest_welcome', 'guest_followup_1', 'guest_followup_2', 'guest_followup_3', 'guest_day10', 'guest_day20', 'guest_day28' );
 		foreach ( $flosc_r_ids as $flosc_ri => $flosc_rid ) {
 			$flosc_rid = sanitize_key( (string) $flosc_rid );
-			if ( $flosc_rid === '' ) {
+			if ( '' === $flosc_rid ) {
 				$flosc_rid = 'rule_' . (int) $flosc_ri;
 			}
 			$flosc_aud = sanitize_key( (string) ( $flosc_r_aud[ $flosc_ri ] ?? 'guest' ) );
@@ -864,7 +864,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 				$flosc_tpl = '';
 			}
 			$flosc_rtitle = sanitize_text_field( (string) ( $flosc_r_title[ $flosc_ri ] ?? '' ) );
-			if ( $flosc_rtitle === '' ) {
+			if ( '' === $flosc_rtitle ) {
 				$flosc_rtitle = $flosc_rid;
 			}
 			$flosc_rules_out[] = array(
@@ -903,28 +903,28 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		$flosc_new_settings['email_reengagement_enabled'] = $flosc_reeng_on;
 		$flosc_new_settings['email_reengagement_days']    = $flosc_reeng_days;
 	}
-	if ( $flosc_active_tab === 'ai' ) {
+	if ( 'ai' === $flosc_active_tab ) {
 		foreach ( array( 'ai_enable_ivr_context', 'ai_enable_content_access', 'ai_enable_chaining' ) as $flosc_cb ) {
 			if ( ! isset( $flosc_post[ "flow_{$flosc_cb}" ] ) ) {
 				$flosc_new_settings[ $flosc_cb ] = '';
 			}
 		}
 	}
-	if ( $flosc_active_tab === 'knowledge-base' && $flosc_identity_view === 'single' ) {
+	if ( 'knowledge-base' === $flosc_active_tab && 'single' === $flosc_identity_view ) {
 		if ( ! isset( $flosc_post['flow_knowledge_base_ids'] ) || ! is_array( $flosc_post['flow_knowledge_base_ids'] ) ) {
 			$flosc_new_settings['knowledge_base_ids'] = array();
 		} else {
 			$flosc_kb_ids = array();
 			foreach ( $flosc_post['flow_knowledge_base_ids'] as $flosc_kb_posted ) {
 				$flosc_kb_one = sanitize_key( (string) $flosc_kb_posted );
-				if ( $flosc_kb_one !== '' && ! in_array( $flosc_kb_one, $flosc_kb_ids, true ) ) {
+				if ( '' !== $flosc_kb_one && ! in_array( $flosc_kb_one, $flosc_kb_ids, true ) ) {
 					$flosc_kb_ids[] = $flosc_kb_one;
 				}
 			}
 			$flosc_new_settings['knowledge_base_ids'] = $flosc_kb_ids;
 		}
 	}
-	if ( $flosc_active_tab === 'email' ) {
+	if ( 'email' === $flosc_active_tab ) {
 		foreach ( array( 'email_on_quiz_complete', 'email_reengagement_enabled', 'email_weekly_summary' ) as $flosc_cb ) {
 			if ( ! isset( $flosc_post[ "flow_{$flosc_cb}" ] ) ) {
 				$flosc_new_settings[ $flosc_cb ] = '';
@@ -935,7 +935,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		$flosc_fu_prefixes = array( 'newsletter' );
 		foreach ( (array) ( $flosc_flow_settings['member_levels'] ?? array() ) as $flosc_lk => $flosc_lv ) {
 			$flosc_slug = sanitize_key( $flosc_lv['slug'] ?? $flosc_lk );
-			if ( $flosc_slug !== '' ) {
+			if ( '' !== $flosc_slug ) {
 				$flosc_fu_prefixes[] = 'member_' . $flosc_slug; }
 		}
 		foreach ( $flosc_fu_prefixes as $flosc_pfx ) {
@@ -946,7 +946,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 			foreach ( $flosc_days as $flosc_i => $flosc_d ) {
 				$flosc_subject = sanitize_text_field( $flosc_subs[ $flosc_i ] ?? '' );
 				$flosc_body    = sanitize_textarea_field( $flosc_bods[ $flosc_i ] ?? '' );
-				if ( $flosc_subject === '' && $flosc_body === '' ) {
+				if ( '' === $flosc_subject && '' === $flosc_body ) {
 					continue; }
 				$flosc_rows[] = array(
 					'day'     => max( 0, min( 365, (int) $flosc_d ) ),
@@ -957,7 +957,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 			$flosc_new_settings[ $flosc_pfx . '_followups' ] = $flosc_rows;
 		}
 	}
-	if ( $flosc_active_tab === 'contact-form' ) {
+	if ( 'contact-form' === $flosc_active_tab ) {
 		$flosc_new_settings['contact_form_title']                    = sanitize_text_field( (string) ( $flosc_new_settings['contact_form_title'] ?? '' ) );
 		$flosc_new_settings['contact_form_intro']                    = sanitize_text_field( (string) ( $flosc_new_settings['contact_form_intro'] ?? '' ) );
 		$flosc_new_settings['contact_form_submit_text']              = sanitize_text_field( (string) ( $flosc_new_settings['contact_form_submit_text'] ?? '' ) );
@@ -971,7 +971,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 
 		foreach ( array( 'contact_form_button_bg_color', 'contact_form_button_text_color', 'contact_form_card_background', 'contact_form_accent_color' ) as $flosc_color_key ) {
 			$flosc_color_value = sanitize_hex_color( (string) ( $flosc_new_settings[ $flosc_color_key ] ?? '' ) );
-			if ( $flosc_color_value !== null ) {
+			if ( null !== $flosc_color_value ) {
 				$flosc_new_settings[ $flosc_color_key ] = $flosc_color_value;
 			}
 		}
@@ -979,20 +979,20 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		$flosc_font_family                                      = trim( (string) ( $flosc_new_settings['contact_form_message_font_family'] ?? "'Courier New', Courier, monospace" ) );
 		$flosc_new_settings['contact_form_message_font_family'] = preg_replace( '/[^a-zA-Z0-9\s,\-\'\"]/', '', $flosc_font_family );
 	}
-	if ( $flosc_active_tab === 'payments' ) {
+	if ( 'payments' === $flosc_active_tab ) {
 		foreach ( array( 'stripe_enabled', 'paypal_enabled', 'manual_payments_enabled' ) as $flosc_cb ) {
 			if ( ! isset( $flosc_post[ "flow_{$flosc_cb}" ] ) ) {
 				$flosc_new_settings[ $flosc_cb ] = '';
 			}
 		}
 	}
-	if ( $flosc_active_tab === 'token-management' ) {
+	if ( 'token-management' === $flosc_active_tab ) {
 		if ( ! isset( $flosc_post['flow_chat_token_enforcement'] ) ) {
 			$flosc_new_settings['chat_token_enforcement'] = '';
 		}
 		$flosc_decimal_to_rational = static function ( $flosc_raw_value ) {
 			$flosc_normalized = str_replace( ',', '.', trim( (string) $flosc_raw_value ) );
-			if ( $flosc_normalized === '' ) {
+			if ( '' === $flosc_normalized ) {
 				return array( 1, 1 );
 			}
 			if ( ! preg_match( '/^\d+(?:\.\d{1,3})?$/', $flosc_normalized ) ) {
@@ -1012,7 +1012,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 			} else {
 				$flosc_a = $flosc_num;
 				$flosc_b = $flosc_den;
-				while ( $flosc_b !== 0 ) {
+				while ( 0 !== $flosc_b ) {
 					$flosc_tmp = $flosc_a % $flosc_b;
 					$flosc_a   = $flosc_b;
 					$flosc_b   = $flosc_tmp;
@@ -1082,7 +1082,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 			$flosc_offers = is_array( $flosc_new_settings['offers'] ?? null ) ? $flosc_new_settings['offers'] : array();
 			foreach ( $flosc_post['flosc_product_tokens'] as $flosc_pt_id => $flosc_pt_row ) {
 				$flosc_pt_id = sanitize_key( (string) $flosc_pt_id );
-				if ( $flosc_pt_id === '' || ! is_array( $flosc_pt_row ) ) {
+				if ( '' === $flosc_pt_id || ! is_array( $flosc_pt_row ) ) {
 					continue;
 				}
 				if ( ! isset( $flosc_offers[ $flosc_pt_id ] ) || ! is_array( $flosc_offers[ $flosc_pt_id ] ) ) {
@@ -1124,18 +1124,18 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 				$flosc_tokens['mode']     = $flosc_mode;
 				$flosc_tokens['cap_mode'] = $flosc_cap_mode;
 
-				if ( $flosc_source === 'none' ) {
+				if ( 'none' === $flosc_source ) {
 					$flosc_tokens['amount'] = 0;
 					$flosc_tokens['cap']    = 0;
-				} elseif ( $flosc_source === 'custom' ) {
-					if ( isset( $flosc_pt_row['amount'] ) && $flosc_pt_row['amount'] !== '' ) {
+				} elseif ( 'custom' === $flosc_source ) {
+					if ( isset( $flosc_pt_row['amount'] ) && '' !== $flosc_pt_row['amount'] ) {
 						$flosc_tokens['amount'] = max( 0, intval( $flosc_pt_row['amount'] ) );
 					} else {
 						unset( $flosc_tokens['amount'] ); // inherit flow default for mode.
 					}
-					if ( $flosc_cap_mode === 'none' ) {
+					if ( 'none' === $flosc_cap_mode ) {
 						$flosc_tokens['cap'] = 0;
-					} elseif ( $flosc_cap_mode === 'custom' && isset( $flosc_pt_row['cap'] ) && $flosc_pt_row['cap'] !== '' ) {
+					} elseif ( 'custom' === $flosc_cap_mode && isset( $flosc_pt_row['cap'] ) && '' !== $flosc_pt_row['cap'] ) {
 						$flosc_tokens['cap'] = max( 0, intval( $flosc_pt_row['cap'] ) );
 					} else {
 						unset( $flosc_tokens['cap'] ); // flow cap.
@@ -1166,10 +1166,10 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		}
 		if ( isset( $flosc_new_settings['visitor_session_end_redirect_url'] ) ) {
 			$flosc_redirect = trim( (string) $flosc_new_settings['visitor_session_end_redirect_url'] );
-			if ( $flosc_redirect !== '' && strpos( $flosc_redirect, '/' ) === 0 && strpos( $flosc_redirect, '//' ) !== 0 ) {
+			if ( '' !== $flosc_redirect && strpos( $flosc_redirect, '/' ) === 0 && strpos( $flosc_redirect, '//' ) !== 0 ) {
 				$flosc_redirect = home_url( $flosc_redirect );
 			}
-			$flosc_new_settings['visitor_session_end_redirect_url'] = ( $flosc_redirect === '' )
+			$flosc_new_settings['visitor_session_end_redirect_url'] = ( '' === $flosc_redirect )
 				? ''
 				: esc_url_raw( $flosc_redirect, array( 'http', 'https' ) );
 		}
@@ -1180,7 +1180,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 				: 'message';
 		}
 	}
-	if ( $flosc_active_tab === 'quiz' ) {
+	if ( 'quiz' === $flosc_active_tab ) {
 		foreach ( array( 'wpq_integration', 'ld_integration', 'qsm_integration' ) as $flosc_cb ) {
 			if ( ! isset( $flosc_post[ "flow_{$flosc_cb}" ] ) ) {
 				$flosc_new_settings[ $flosc_cb ] = '';
@@ -1207,7 +1207,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 			);
 		}
 	}
-	if ( $flosc_active_tab === 'style' ) {
+	if ( 'style' === $flosc_active_tab ) {
 		// Visitor visibility uses 0/1 so "off" is not confused with unset (sales default = on).
 		$flosc_new_settings['companion_show_for_visitors'] = isset( $flosc_post['flow_companion_show_for_visitors'] ) ? 1 : 0;
 
@@ -1238,27 +1238,27 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 			);
 
 		$flosc_hub_fullscreen_url = trim( (string) ( $flosc_new_settings['companion_hub_fullscreen_url'] ?? '' ) );
-		if ( $flosc_hub_fullscreen_url === '' ) {
+		if ( '' === $flosc_hub_fullscreen_url ) {
 			$flosc_hub_fullscreen_url = (string) ( $flosc_hub_defaults['fullscreen'] ?? home_url( '/' ) );
 		}
 		$flosc_hub_fullscreen_url = esc_url_raw( $flosc_hub_fullscreen_url, array( 'http', 'https' ) );
-		if ( $flosc_hub_fullscreen_url === '' ) {
+		if ( '' === $flosc_hub_fullscreen_url ) {
 			$flosc_hub_fullscreen_url = esc_url_raw( (string) ( $flosc_hub_defaults['fullscreen'] ?? home_url( '/' ) ), array( 'http', 'https' ) );
 		}
 		$flosc_new_settings['companion_hub_fullscreen_url'] = $flosc_hub_fullscreen_url;
 
 		$flosc_hub_companion_url = trim( (string) ( $flosc_new_settings['companion_hub_companion_url'] ?? '' ) );
-		if ( $flosc_hub_companion_url === '' ) {
+		if ( '' === $flosc_hub_companion_url ) {
 			$flosc_hub_companion_url = (string) ( $flosc_hub_defaults['companion'] ?? home_url( '/' ) );
 		}
 		$flosc_hub_companion_url = esc_url_raw( $flosc_hub_companion_url, array( 'http', 'https' ) );
-		if ( $flosc_hub_companion_url === '' ) {
+		if ( '' === $flosc_hub_companion_url ) {
 			$flosc_hub_companion_url = esc_url_raw( (string) ( $flosc_hub_defaults['companion'] ?? home_url( '/' ) ), array( 'http', 'https' ) );
 		}
 		$flosc_new_settings['companion_hub_companion_url'] = $flosc_hub_companion_url;
 
 		$flosc_companion_flow_slug = sanitize_title( (string) ( $flosc_new_settings['companion_flow_slug'] ?? '' ) );
-		if ( $flosc_companion_flow_slug === '' ) {
+		if ( '' === $flosc_companion_flow_slug ) {
 			$flosc_companion_flow_slug = sanitize_title( (string) ( $flosc_hub_defaults['flow_slug'] ?? '' ) );
 		}
 		$flosc_new_settings['companion_flow_slug'] = $flosc_companion_flow_slug;
@@ -1270,11 +1270,11 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 			: $flosc_hub_defaults;
 
 		$flosc_chat_app_url = trim( (string) ( $flosc_new_settings['companion_chat_app_url'] ?? '' ) );
-		if ( $flosc_chat_app_url === '' ) {
+		if ( '' === $flosc_chat_app_url ) {
 			$flosc_chat_app_url = (string) ( $flosc_hub_defaults['chat_app'] ?? home_url( '/' ) );
 		}
 		$flosc_chat_app_url = esc_url_raw( $flosc_chat_app_url, array( 'http', 'https' ) );
-		if ( $flosc_chat_app_url === '' ) {
+		if ( '' === $flosc_chat_app_url ) {
 			$flosc_chat_app_url = esc_url_raw( (string) ( $flosc_hub_defaults['chat_app'] ?? home_url( '/' ) ), array( 'http', 'https' ) );
 		}
 		$flosc_new_settings['companion_chat_app_url'] = $flosc_chat_app_url;
@@ -1424,15 +1424,15 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		$flosc_trigger_min_page_time_ms = max( $flosc_companion_numeric_limits['trigger_min_page_time_min_ms'], min( $flosc_companion_numeric_limits['trigger_min_page_time_max_ms'], $flosc_trigger_min_page_time_ms ) );
 		$flosc_keyboard_shortcut_key    = sanitize_text_field( (string) ( $flosc_post['flow_companion_keyboard_shortcut_key'] ?? $flosc_companion_defaults['keyboard_shortcut_key'] ) );
 		$flosc_keyboard_shortcut_key    = strtolower( substr( trim( $flosc_keyboard_shortcut_key ), 0, 1 ) );
-		if ( $flosc_keyboard_shortcut_key === '' || ! preg_match( '/^[a-z0-9]$/', $flosc_keyboard_shortcut_key ) ) {
+		if ( '' === $flosc_keyboard_shortcut_key || ! preg_match( '/^[a-z0-9]$/', $flosc_keyboard_shortcut_key ) ) {
 			$flosc_keyboard_shortcut_key = 'k';
 		}
 		$flosc_launcher_aria_label = sanitize_text_field( (string) ( $flosc_post['flow_companion_launcher_aria_label'] ?? $flosc_companion_defaults['launcher_aria_label'] ) );
-		if ( $flosc_launcher_aria_label === '' ) {
+		if ( '' === $flosc_launcher_aria_label ) {
 			$flosc_launcher_aria_label = 'Open Chat';
 		}
 		$flosc_close_aria_label = sanitize_text_field( (string) ( $flosc_post['flow_companion_close_aria_label'] ?? $flosc_companion_defaults['close_aria_label'] ) );
-		if ( $flosc_close_aria_label === '' ) {
+		if ( '' === $flosc_close_aria_label ) {
 			$flosc_close_aria_label = 'Collapse Chat';
 		}
 		$flosc_state_storage = sanitize_text_field( (string) ( $flosc_post['flow_companion_state_storage'] ?? $flosc_companion_defaults['state_storage'] ) );
@@ -1453,7 +1453,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 			$code = strtoupper( sanitize_text_field( (string) $raw ) );
 			$code = preg_replace( '/[^A-Z0-9]/', '', $code );
 			$code = substr( (string) $code, 0, 3 );
-			return $code !== '' ? $code : $fallback;
+			return '' !== $code ? $code : $fallback;
 		};
 		$flosc_new_settings['companion_profile_tier_visitor']       = $flosc_sanitize_tier_code(
 			$flosc_post['flow_companion_profile_tier_visitor'] ?? ( $flosc_companion_defaults['profile_tier_visitor'] ?? 'V' ),
@@ -1508,7 +1508,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 
 			foreach ( $chunks as $chunk ) {
 				$chunk = trim( (string) $chunk );
-				if ( $chunk === '' ) {
+				if ( '' === $chunk ) {
 					continue;
 				}
 
@@ -1567,7 +1567,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		$flosc_member_levels      = array();
 		foreach ( $flosc_level_slugs as $flosc_i => $flosc_slug ) {
 			$flosc_slug = sanitize_key( $flosc_slug );
-			if ( $flosc_slug === '' ) {
+			if ( '' === $flosc_slug ) {
 				continue;
 			}
 			$flosc_member_levels[ $flosc_slug ] = array(
@@ -1587,7 +1587,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 			$flosc_type  = sanitize_text_field( $flosc_type );
 			$flosc_value = sanitize_text_field( $flosc_prot_values[ $flosc_i ] ?? '' );
 			$flosc_level = sanitize_key( $flosc_prot_levels[ $flosc_i ] ?? '' );
-			if ( $flosc_value === '' ) {
+			if ( '' === $flosc_value ) {
 				continue;
 			}
 			$flosc_item = array(
@@ -1634,14 +1634,14 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		// First clear old protection flags from categories no longer protected.
 		$flosc_old_protected = $flosc_flow_settings['protected_content'] ?? array();
 		foreach ( $flosc_old_protected as $flosc_old_item ) {
-			if ( $flosc_old_item['type'] === 'category' ) {
+			if ( 'category' === $flosc_old_item['type'] ) {
 				delete_term_meta( intval( $flosc_old_item['id'] ), '_flosc_protected' );
 				delete_term_meta( intval( $flosc_old_item['id'] ), '_flosc_required_level' );
 			}
 		}
 		// Set new protection flags.
 		foreach ( $flosc_protected_content as $flosc_item ) {
-			if ( $flosc_item['type'] === 'category' ) {
+			if ( 'category' === $flosc_item['type'] ) {
 				update_term_meta( intval( $flosc_item['id'] ), '_flosc_protected', 'yes' );
 				if ( ! empty( $flosc_item['level'] ) ) {
 					update_term_meta( intval( $flosc_item['id'] ), '_flosc_required_level', $flosc_item['level'] );
@@ -1658,7 +1658,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		$flosc_content_item_groups = array();
 		foreach ( $flosc_group_categories as $flosc_i => $flosc_cat ) {
 			$flosc_cat = sanitize_text_field( $flosc_cat );
-			if ( $flosc_cat === '' ) {
+			if ( '' === $flosc_cat ) {
 				continue; // Skip rows with no category selected.
 			}
 			$flosc_quiz                  = sanitize_text_field( $flosc_group_quizzes[ $flosc_i ] ?? '' );
@@ -1708,13 +1708,13 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 			foreach ( $flosc_ct_singular as $flosc_i => $flosc_s ) {
 				$flosc_s = sanitize_text_field( wp_unslash( (string) $flosc_s ) );
 				$flosc_p = sanitize_text_field( wp_unslash( (string) ( $flosc_ct_plural[ $flosc_i ] ?? '' ) ) );
-				if ( $flosc_s === '' && $flosc_p === '' ) {
+				if ( '' === $flosc_s && '' === $flosc_p ) {
 					continue;
 				}
-				if ( $flosc_s === '' && $flosc_p !== '' ) {
+				if ( '' === $flosc_s && '' !== $flosc_p ) {
 					$flosc_s = $flosc_p;
 				}
-				if ( $flosc_p === '' ) {
+				if ( '' === $flosc_p ) {
 					$flosc_p = $flosc_s;
 				}
 				$flosc_content_types[] = array(
@@ -1735,7 +1735,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 	}
 
 	// Chat navigation settings are managed from the Profile Bar tab.
-	if ( $flosc_active_tab === 'ui' ) {
+	if ( 'ui' === $flosc_active_tab ) {
 		// Chat list chrome (flow-scoped labels / new-chat welcome copy).
 		if ( isset( $flosc_post['flow_new_chat_button_label'] ) ) {
 			$flosc_new_settings['new_chat_button_label'] = sanitize_text_field(
@@ -1766,7 +1766,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		foreach ( $flosc_menu_labels as $flosc_i => $flosc_label ) {
 			$flosc_label  = sanitize_text_field( $flosc_label );
 			$flosc_action = sanitize_text_field( $flosc_menu_actions[ $flosc_i ] ?? '' );
-			if ( $flosc_label !== '' && $flosc_action !== '' ) {
+			if ( '' !== $flosc_label && '' !== $flosc_action ) {
 				$flosc_new_menu[] = array(
 					'label'  => $flosc_label,
 					'action' => $flosc_action,
@@ -1783,10 +1783,10 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		foreach ( $flosc_guest_labels as $flosc_i => $flosc_label ) {
 			$flosc_label  = sanitize_text_field( $flosc_label );
 			$flosc_action = sanitize_text_field( $flosc_guest_actions[ $flosc_i ] ?? '' );
-			if ( $flosc_label === '' || $flosc_action === '' ) {
+			if ( '' === $flosc_label || '' === $flosc_action ) {
 				continue;
 			}
-			if ( $flosc_action === 'open_sandbox_purchase' || strpos( $flosc_action, 'show_offer' ) === 0 ) {
+			if ( 'open_sandbox_purchase' === $flosc_action || strpos( $flosc_action, 'show_offer' ) === 0 ) {
 				continue;
 			}
 			$flosc_new_guest_menu[] = array(
@@ -1803,10 +1803,10 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		foreach ( $flosc_member_labels as $flosc_i => $flosc_label ) {
 			$flosc_label  = sanitize_text_field( $flosc_label );
 			$flosc_action = sanitize_text_field( $flosc_member_actions[ $flosc_i ] ?? '' );
-			if ( $flosc_label === '' || $flosc_action === '' ) {
+			if ( '' === $flosc_label || '' === $flosc_action ) {
 				continue;
 			}
-			if ( $flosc_action === 'open_sandbox_purchase' || strpos( $flosc_action, 'show_offer' ) === 0 ) {
+			if ( 'open_sandbox_purchase' === $flosc_action || strpos( $flosc_action, 'show_offer' ) === 0 ) {
 				continue;
 			}
 			$flosc_new_member_menu[] = array(
@@ -1818,11 +1818,11 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 
 		// Login destination — v1.9.8: now a URL, not a key.
 		$flosc_login_dest = trim( $flosc_post['flosc_login_destination'] ?? '' );
-		update_option( 'flosc_login_destination', $flosc_login_dest !== '' ? esc_url_raw( $flosc_login_dest ) : '' );
+		update_option( 'flosc_login_destination', '' !== $flosc_login_dest ? esc_url_raw( $flosc_login_dest ) : '' );
 	}
 
 	// v8.0.1: Profile Bar tab now manages profile-bar state labels and badges only.
-	if ( $flosc_active_tab === 'ui' ) {
+	if ( 'ui' === $flosc_active_tab ) {
 
 		$flosc_allowed_avatar_radii  = array( '8px', '50%', '4px', '0' );
 		$flosc_visitor_avatar_radius = sanitize_text_field( (string) ( $flosc_post['profile_bar_visitor_avatar_radius'] ?? ( $flosc_post['flow_avatar_radius'] ?? '8px' ) ) );
@@ -1846,7 +1846,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 				'icon'          => sanitize_text_field( $flosc_post['profile_bar_visitor_icon'] ?? '👋' ),
 				'icon_url'      => esc_url_raw( $flosc_post['profile_bar_visitor_icon_url'] ?? '' ),
 				'avatar_radius' => $flosc_visitor_avatar_radius,
-				'show_upgrade'  => isset( $flosc_post['profile_bar_visitor_show_upgrade'] ) && $flosc_post['profile_bar_visitor_show_upgrade'] === '1',
+				'show_upgrade'  => isset( $flosc_post['profile_bar_visitor_show_upgrade'] ) && '1' === $flosc_post['profile_bar_visitor_show_upgrade'],
 				'upgrade_label' => sanitize_text_field( $flosc_post['profile_bar_visitor_upgrade_label'] ?? 'Upgrade' ),
 			),
 			'guest'   => array(
@@ -1855,7 +1855,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 				'icon'          => sanitize_text_field( $flosc_post['profile_bar_guest_icon'] ?? '' ),
 				'icon_url'      => esc_url_raw( $flosc_post['profile_bar_guest_icon_url'] ?? '' ),
 				'avatar_radius' => $flosc_guest_avatar_radius,
-				'show_upgrade'  => isset( $flosc_post['profile_bar_guest_show_upgrade'] ) && $flosc_post['profile_bar_guest_show_upgrade'] === '1',
+				'show_upgrade'  => isset( $flosc_post['profile_bar_guest_show_upgrade'] ) && '1' === $flosc_post['profile_bar_guest_show_upgrade'],
 				'upgrade_label' => sanitize_text_field( $flosc_post['profile_bar_guest_upgrade'] ?? 'Upgrade to Pro' ),
 			),
 			'member'  => array(
@@ -1864,7 +1864,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 				'icon'          => sanitize_text_field( $flosc_post['profile_bar_member_icon'] ?? '' ),
 				'icon_url'      => esc_url_raw( $flosc_post['profile_bar_member_icon_url'] ?? '' ),
 				'avatar_radius' => $flosc_member_avatar_radius,
-				'show_upgrade'  => isset( $flosc_post['profile_bar_member_show_upgrade'] ) && $flosc_post['profile_bar_member_show_upgrade'] === '1',
+				'show_upgrade'  => isset( $flosc_post['profile_bar_member_show_upgrade'] ) && '1' === $flosc_post['profile_bar_member_show_upgrade'],
 				'upgrade_label' => sanitize_text_field( $flosc_post['profile_bar_member_upgrade_label'] ?? 'Upgrade' ),
 			),
 		);
@@ -1874,7 +1874,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		$flosc_new_settings['avatar_radius'] = $flosc_visitor_avatar_radius;
 	}
 
-	if ( $flosc_active_tab === 'administration' ) {
+	if ( 'administration' === $flosc_active_tab ) {
 		if ( current_user_can( 'manage_options' ) ) {
 			$flosc_allowed_plans = array( 'free', 'paid', 'enterprise' );
 			$flosc_plan          = sanitize_key( $flosc_post['flosc_account_plan'] ?? 'free' );
@@ -2009,12 +2009,12 @@ foreach ( $flosc_ivr_files as $flosc_selector_file ) {
 
 	if ( is_array( $flosc_selector_settings ) ) {
 		$flosc_selector_name = trim( (string) ( $flosc_selector_settings['identity']['name'] ?? '' ) );
-		if ( $flosc_selector_name === '' ) {
+		if ( '' === $flosc_selector_name ) {
 			$flosc_selector_name = trim( (string) ( $flosc_selector_settings['name'] ?? '' ) );
 		}
 	}
 
-	if ( $flosc_selector_name === '' ) {
+	if ( '' === $flosc_selector_name ) {
 		$flosc_selector_name = ucwords( str_replace( array( '_', '-', 'ivr', '.md' ), array( ' ', ' ', '', '' ), $flosc_selector_file ) );
 	}
 
@@ -2023,7 +2023,7 @@ foreach ( $flosc_ivr_files as $flosc_selector_file ) {
 
 $flosc_selected_flow_name = $flosc_flow_selector_labels[ $flosc_selected_ivr ]
 	?? trim( (string) ( $flosc_flow_settings['identity']['name'] ?? ( $flosc_flow_settings['name'] ?? '' ) ) );
-if ( $flosc_selected_flow_name === '' ) {
+if ( '' === $flosc_selected_flow_name ) {
 	$flosc_selected_flow_name = $flosc_selected_ivr;
 }
 
@@ -2113,7 +2113,7 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 				// (font-weight/color on <option> is OS-dependent and often ignored).
 				foreach ( $flosc_ivr_files as $flosc_file ) :
 					$flosc_opt_label = (string) ( $flosc_flow_selector_labels[ $flosc_file ] ?? $flosc_file );
-					if ( $flosc_user_default_ivr !== '' && $flosc_user_default_ivr === $flosc_file ) {
+					if ( '' !== $flosc_user_default_ivr && $flosc_user_default_ivr === $flosc_file ) {
 						$flosc_opt_label .= ' (default)';
 					}
 					?>
@@ -2129,7 +2129,7 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 				</a>
 			<?php endif; ?>
 
-			<?php if ( $flosc_user_default_ivr === $flosc_selected_ivr && $flosc_user_default_ivr !== '' ) : ?>
+			<?php if ( $flosc_user_default_ivr === $flosc_selected_ivr && '' !== $flosc_user_default_ivr ) : ?>
 				<span class="flosc-flow-selector__default-btn"
 						title="<?php echo esc_attr__( 'Opens this flow when you enter FLOSC Settings without a flow URL', 'flosc' ); ?>">
 					<?php echo esc_html__( 'Default', 'flosc' ); ?>
@@ -2284,7 +2284,7 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 				class="nav-tab 
 				<?php
 				$flosc_tab_is_active = ( $flosc_active_tab === $flosc_tab_id )
-					|| ( $flosc_tab_id === 'content' && in_array( $flosc_active_tab, array( 'member-levels', 'lessons' ), true ) );
+					|| ( 'content' === $flosc_tab_id && in_array( $flosc_active_tab, array( 'member-levels', 'lessons' ), true ) );
 				echo esc_attr( $flosc_tab_is_active ? 'nav-tab-active' : '' );
 				?>
 			">
@@ -2293,7 +2293,7 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 		<?php endforeach; ?>
 	</nav>
 
-	<?php if ( $flosc_active_tab === 'da1' ) : ?>
+	<?php if ( 'da1' === $flosc_active_tab ) : ?>
 		<?php include FLOSC_PLUGIN_DIR . 'admin/da1.php'; ?>
 		<?php flosc_tab_footer(); ?>
 </div>
@@ -2304,10 +2304,10 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 	<form method="post" class="flosc-settings-form" id="flosc-settings-form">
 		<?php wp_nonce_field( 'flosc_save_settings' ); ?>
 		
-		<?php if ( $flosc_active_tab === 'flow' ) : ?>
+		<?php if ( 'flow' === $flosc_active_tab ) : ?>
 			<?php include FLOSC_PLUGIN_DIR . 'admin/flow.php'; ?>
 
-		<?php elseif ( $flosc_active_tab === 'identity' ) : ?>
+		<?php elseif ( 'identity' === $flosc_active_tab ) : ?>
 			<!-- Identity Tab v1.3.3 - All Flows = fully expanded inline editing -->
 			
 			<?php
@@ -2448,11 +2448,11 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 			<!-- View Toggle -->
 			<div class="flosc-view-toggle-row">
 				<a href="<?php echo esc_url( '?page=flosc-settings&ivr=' . rawurlencode( $flosc_selected_ivr ) . '&tab=identity&view=single' ); ?>" 
-					class="button <?php echo esc_attr( $flosc_view_mode === 'single' ? 'button-primary' : '' ); ?>">
+					class="button <?php echo esc_attr( 'single' === $flosc_view_mode ? 'button-primary' : '' ); ?>">
 					Single Flow
 				</a>
 				<a href="<?php echo esc_url( '?page=flosc-settings&ivr=' . rawurlencode( $flosc_selected_ivr ) . '&tab=identity&view=all' ); ?>" 
-					class="button <?php echo esc_attr( $flosc_view_mode === 'all' ? 'button-primary' : '' ); ?>">
+					class="button <?php echo esc_attr( 'all' === $flosc_view_mode ? 'button-primary' : '' ); ?>">
 					All Flows (<?php echo count( $flosc_ivr_files ); ?>)
 				</a>
 			</div>
@@ -2464,7 +2464,7 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 				<div class="notice notice-success is-dismissible"><p>✓ Saved: <?php echo esc_html( $flosc_individual_saved ); ?></p></div>
 			<?php endif; ?>
 			
-			<?php if ( $flosc_view_mode === 'all' ) : ?>
+			<?php if ( 'all' === $flosc_view_mode ) : ?>
 				<?php
 				$flosc_identity_docs_url_all = add_query_arg(
 					array(
@@ -2509,7 +2509,7 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 					$flosc_flow_url           = home_url( '/' . $flosc_slug . '/' );
 					$flosc_full_url           = ! empty( $flosc_settings['domain'] ) ? 'https://' . $flosc_settings['domain'] . '/' : $flosc_flow_url;
 					$flosc_status_value       = $flosc_settings['status'] ?? 'active';
-					$flosc_status_badge_class = 'flosc-flow-status-badge' . ( $flosc_status_value === 'active' ? ' is-active' : ' is-draft' );
+					$flosc_status_badge_class = 'flosc-flow-status-badge' . ( 'active' === $flosc_status_value ? ' is-active' : ' is-draft' );
 					?>
 				
 				<div class="<?php echo esc_attr( $flosc_flow_block_classes ); ?>">
@@ -2998,86 +2998,86 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 			
 			<?php endif; ?>
 			
-		<?php elseif ( $flosc_active_tab === 'ivr-messages' ) : ?>
+		<?php elseif ( 'ivr-messages' === $flosc_active_tab ) : ?>
 			<?php include FLOSC_PLUGIN_DIR . 'admin/ivr-messages.php'; ?>
 			
-		<?php elseif ( $flosc_active_tab === 'style' ) : ?>
+		<?php elseif ( 'style' === $flosc_active_tab ) : ?>
 			<?php include FLOSC_PLUGIN_DIR . 'admin/chat-styling.php'; ?>
 			<?php include FLOSC_PLUGIN_DIR . 'admin/companion.php'; ?>
 			
-		<?php elseif ( $flosc_active_tab === 'ai' ) : ?>
+		<?php elseif ( 'ai' === $flosc_active_tab ) : ?>
 			<?php include FLOSC_PLUGIN_DIR . 'admin/ai-configuration.php'; ?>
-		<?php elseif ( $flosc_active_tab === 'token-management' ) : ?>
+		<?php elseif ( 'token-management' === $flosc_active_tab ) : ?>
 			<?php include FLOSC_PLUGIN_DIR . 'admin/token-management.php'; ?>
-		<?php elseif ( $flosc_active_tab === 'ai-knowledge' ) : ?>
+		<?php elseif ( 'ai-knowledge' === $flosc_active_tab ) : ?>
 			<?php $flosc_redirect_url = admin_url( 'admin.php?page=flosc-settings&ivr=' . rawurlencode( $flosc_selected_ivr ) . '&tab=knowledge-base&view=single' ); ?>
 			<?php wp_add_inline_script( 'flosc-admin', 'window.location.replace(' . wp_json_encode( $flosc_redirect_url ) . ');' ); ?>
 			<p>Redirecting to <a href="<?php echo esc_url( $flosc_redirect_url ); ?>">Knowledge Base</a>&hellip;</p>
-		<?php elseif ( $flosc_active_tab === 'ai-guide' ) : ?>
+		<?php elseif ( 'ai-guide' === $flosc_active_tab ) : ?>
 			<?php $flosc_redirect_url = admin_url( 'admin.php?page=flosc-settings&ivr=' . rawurlencode( $flosc_selected_ivr ) . '&tab=documentation&doc=ref-ai-config' ); ?>
 			<?php wp_add_inline_script( 'flosc-admin', 'window.location.replace(' . wp_json_encode( $flosc_redirect_url ) . ');' ); ?>
 			<p>Redirecting to <a href="<?php echo esc_url( $flosc_redirect_url ); ?>">AI Configuration Guide in Documentation</a>&hellip;</p>
-		<?php elseif ( $flosc_active_tab === 'knowledge' ) : ?>
+		<?php elseif ( 'knowledge' === $flosc_active_tab ) : ?>
 			<?php $flosc_redirect_url = admin_url( 'admin.php?page=flosc-settings&ivr=' . rawurlencode( $flosc_selected_ivr ) . '&tab=knowledge-base&view=single' ); ?>
 			<?php wp_add_inline_script( 'flosc-admin', 'window.location.replace(' . wp_json_encode( $flosc_redirect_url ) . ');' ); ?>
 			<p>Redirecting to <a href="<?php echo esc_url( $flosc_redirect_url ); ?>">Knowledge Base</a>&hellip;</p>
 			
-		<?php elseif ( $flosc_active_tab === 'quiz' ) : ?>
+		<?php elseif ( 'quiz' === $flosc_active_tab ) : ?>
 			<?php include FLOSC_PLUGIN_DIR . 'admin/quiz.php'; ?>
 			
-		<?php elseif ( $flosc_active_tab === 'email' ) : ?>
+		<?php elseif ( 'email' === $flosc_active_tab ) : ?>
 			<?php include FLOSC_PLUGIN_DIR . 'admin/email.php'; ?>
 
-		<?php elseif ( $flosc_active_tab === 'contact-form' ) : ?>
+		<?php elseif ( 'contact-form' === $flosc_active_tab ) : ?>
 			<?php include FLOSC_PLUGIN_DIR . 'admin/contact-form.php'; ?>
 			
 		<?php elseif ( in_array( $flosc_active_tab, array( 'content', 'member-levels', 'lessons' ), true ) ) : ?>
 			<?php include FLOSC_PLUGIN_DIR . 'admin/content.php'; ?>
 
-		<?php elseif ( $flosc_active_tab === 'knowledge-base' ) : ?>
+		<?php elseif ( 'knowledge-base' === $flosc_active_tab ) : ?>
 			<?php include FLOSC_PLUGIN_DIR . 'admin/knowledge-base.php'; ?>
 			
-		<?php elseif ( $flosc_active_tab === 'autoprompts' ) : ?>
+		<?php elseif ( 'autoprompts' === $flosc_active_tab ) : ?>
 			<?php include FLOSC_PLUGIN_DIR . 'admin/autoprompts.php'; ?>
 
-		<?php elseif ( $flosc_active_tab === 'trajectories' ) : ?>
+		<?php elseif ( 'trajectories' === $flosc_active_tab ) : ?>
 			<?php include FLOSC_PLUGIN_DIR . 'admin/trajectories.php'; ?>
 
-		<?php elseif ( $flosc_active_tab === 'offers' ) : ?>
+		<?php elseif ( 'offers' === $flosc_active_tab ) : ?>
 			<?php include FLOSC_PLUGIN_DIR . 'admin/offers.php'; ?>
 
-		<?php elseif ( $flosc_active_tab === 'login' ) : ?>
+		<?php elseif ( 'login' === $flosc_active_tab ) : ?>
 			<?php include FLOSC_PLUGIN_DIR . 'admin/login-registration.php'; ?>
 			
-		<?php elseif ( $flosc_active_tab === 'payments' ) : ?>
+		<?php elseif ( 'payments' === $flosc_active_tab ) : ?>
 			<?php include FLOSC_PLUGIN_DIR . 'admin/payments.php'; ?>
 			
-		<?php elseif ( $flosc_active_tab === 'sso' ) : ?>
+		<?php elseif ( 'sso' === $flosc_active_tab ) : ?>
 			<?php include FLOSC_PLUGIN_DIR . 'admin/sso.php'; ?>
 
-		<?php elseif ( $flosc_active_tab === 'engagement' ) : ?>
+		<?php elseif ( 'engagement' === $flosc_active_tab ) : ?>
 			<?php include FLOSC_PLUGIN_DIR . 'admin/engagement.php'; ?>
 
-		<?php elseif ( $flosc_active_tab === 'administration' ) : ?>
+		<?php elseif ( 'administration' === $flosc_active_tab ) : ?>
 			<?php include FLOSC_PLUGIN_DIR . 'admin/administration.php'; ?>
 
-		<?php elseif ( $flosc_active_tab === 'ui' ) : ?>
+		<?php elseif ( 'ui' === $flosc_active_tab ) : ?>
 			<?php include FLOSC_PLUGIN_DIR . 'admin/ui-navigation.php'; ?>
 			<?php include FLOSC_PLUGIN_DIR . 'admin/chat-navigation.php'; ?>
 
-		<?php elseif ( $flosc_active_tab === 'concierge' ) : ?>
+		<?php elseif ( 'concierge' === $flosc_active_tab ) : ?>
 			<?php include FLOSC_PLUGIN_DIR . 'admin/concierge.php'; ?>
 
-		<?php elseif ( $flosc_active_tab === 'chat-logs' ) : ?>
+		<?php elseif ( 'chat-logs' === $flosc_active_tab ) : ?>
 			<?php include FLOSC_PLUGIN_DIR . 'admin/chat-logs.php'; ?>
 			<?php include FLOSC_PLUGIN_DIR . 'admin/ai-feedback.php'; ?>
 
-		<?php elseif ( $flosc_active_tab === 'documentation' ) : ?>
+		<?php elseif ( 'documentation' === $flosc_active_tab ) : ?>
 			<?php include FLOSC_PLUGIN_DIR . 'admin/documentation.php'; ?>
 
 		<?php endif; ?>
 
-		<?php if ( $flosc_active_tab !== 'documentation' && $flosc_active_tab !== 'autoprompts' && $flosc_active_tab !== 'da1' && $flosc_active_tab !== 'trajectories' && $flosc_active_tab !== 'concierge' ) : ?>
+		<?php if ( 'documentation' !== $flosc_active_tab && 'autoprompts' !== $flosc_active_tab && 'da1' !== $flosc_active_tab && 'trajectories' !== $flosc_active_tab && 'concierge' !== $flosc_active_tab ) : ?>
 		<p class="submit flosc-settings-submit-row">
 			<?php // form= keeps submit bound if AI tab closed #flosc-settings-form early (no nested forms). ?>
 			<button type="submit" name="flosc_save" value="1" form="flosc-settings-form" class="button button-primary button-large">

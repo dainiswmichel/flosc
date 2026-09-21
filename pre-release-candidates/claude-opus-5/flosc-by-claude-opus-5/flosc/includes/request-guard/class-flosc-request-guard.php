@@ -102,7 +102,7 @@ class FLOSC_Request_Guard {
 		// Decode and return data.
         // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- binary/JWT token decoding, not obfuscation
 		$json = base64_decode( $encoded );
-		if ( $json === false ) {
+		if ( false === $json ) {
 			return false;
 		}
 
@@ -157,7 +157,7 @@ class FLOSC_Request_Guard {
 		}
 		// base64|hmac hex — sanitize_text_field preserves charset; signature still verified below.
 		$value = sanitize_text_field( wp_unslash( $_COOKIE[ $name ] ) );
-		if ( $value === '' ) {
+		if ( '' === $value ) {
 			return false;
 		}
 		return $this->verify_signed_cookie( $value );
@@ -241,7 +241,7 @@ class FLOSC_Request_Guard {
 		$params = array();
 		foreach ( $keys as $key ) {
 			$key = (string) $key;
-			if ( $key === '' || ! isset( $_GET[ $key ] ) ) {
+			if ( '' === $key || ! isset( $_GET[ $key ] ) ) {
 				continue;
 			}
 			$params[ $key ] = is_array( $_GET[ $key ] )
@@ -273,7 +273,7 @@ class FLOSC_Request_Guard {
 		$method = isset( $_SERVER['REQUEST_METHOD'] )
 			? strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) )
 			: '';
-		if ( $method !== 'POST' ) {
+		if ( 'POST' !== $method ) {
 			return array();
 		}
 		if ( ! current_user_can( 'edit_others_posts' ) ) {

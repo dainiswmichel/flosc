@@ -74,7 +74,7 @@ class FLOSC_Sample_Assessment_Quiz extends FLOSC_Abstract_Quiz_Type {
 			}
 			$lines[] = 'CORRECT: ' . $q['correct'];
 			foreach ( (array) ( $q['correct_content'] ?? array() ) as $ref ) {
-				if ( $ref !== '' ) {
+				if ( '' !== $ref ) {
 					$lines[] = 'CorrectContent: ' . $ref;
 				}
 			}
@@ -124,12 +124,12 @@ class FLOSC_Sample_Assessment_Quiz extends FLOSC_Abstract_Quiz_Type {
 				} elseif ( preg_match( '/^TOPIC:\s*(.+)$/i', $line, $m ) ) {
 					$parts  = array_map( 'trim', explode( ',', $m[1] ) );
 					$topics = array_merge( $topics, $parts );
-				} elseif ( $question_text === '' ) {
+				} elseif ( '' === $question_text ) {
 					$question_text = $line;
 				}
 			}
 
-			if ( $question_text !== '' && ! empty( $options ) && $correct !== '' ) {
+			if ( '' !== $question_text && ! empty( $options ) && '' !== $correct ) {
 				$questions[] = array(
 					'id'              => 'q' . ( count( $questions ) + 1 ),
 					'text'            => $question_text,
@@ -152,7 +152,7 @@ class FLOSC_Sample_Assessment_Quiz extends FLOSC_Abstract_Quiz_Type {
 	 * @return true|WP_Error
 	 */
 	public function validate_input( $input ) {
-		if ( $input === null || $input === '' || $input === array() ) {
+		if ( null === $input || '' === $input || $input === array() ) {
 			return new WP_Error( 'invalid_input', __( 'Please answer the questions before submitting.', 'flosc' ) );
 		}
 		if ( ! is_string( $input ) && ! is_array( $input ) ) {
@@ -195,7 +195,7 @@ class FLOSC_Sample_Assessment_Quiz extends FLOSC_Abstract_Quiz_Type {
 			$qid         = $question['id'] ?? ( 'q' . ( $i + 1 ) );
 			$correct_key = strtoupper( trim( (string) $question['correct'] ) );
 			$user_key    = $this->lookup_user_answer( $user_answers, $qid, $i );
-			$is_correct  = ( $user_key !== '' && $user_key === $correct_key );
+			$is_correct  = ( '' !== $user_key && $user_key === $correct_key );
 
 			$item = array(
 				'question_index'  => $i + 1,
@@ -355,12 +355,12 @@ class FLOSC_Sample_Assessment_Quiz extends FLOSC_Abstract_Quiz_Type {
 		}
 
 		$trim = trim( $input );
-		if ( $trim === '' ) {
+		if ( '' === $trim ) {
 			return array();
 		}
 
 		// JSON object/array of answers.
-		if ( ( $trim[0] === '{' || $trim[0] === '[' ) ) {
+		if ( ( '{' === $trim[0] || '[' === $trim[0] ) ) {
 			$decoded = json_decode( $trim, true );
 			if ( is_array( $decoded ) ) {
 				return $decoded;

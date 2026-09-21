@@ -130,7 +130,7 @@ class Microsoft_Provider extends SSO_Provider_Base {
 		}
 
 		$code = wp_remote_retrieve_response_code( $response );
-		if ( $code !== 200 ) {
+		if ( 200 !== $code ) {
 			return '';
 		}
 

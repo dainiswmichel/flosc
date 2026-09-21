@@ -389,9 +389,9 @@ class SSO_Manager {
 	public function handle_sso_error_display() {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- The random SSO error token is a short-lived capability used only to consume and display its transient; this is not a form action.
 		$err_raw = isset( $_GET['flosc_sso_error'] ) && is_string( $_GET['flosc_sso_error'] ) ? sanitize_key( wp_unslash( $_GET['flosc_sso_error'] ) ) : '';
-		if ( $err_raw !== '' ) {
+		if ( '' !== $err_raw ) {
 			$error_token = $err_raw;
-			if ( $error_token === '' ) {
+			if ( '' === $error_token ) {
 				return;
 			}
 
@@ -443,9 +443,9 @@ class SSO_Manager {
 				// PEM / private keys: always secret pass-through (even when UI type is textarea).
 				// Must be checked before the generic textarea branch (Pass 2 audit).
 				$is_pem_field    = ( false !== strpos( $field_id, 'private_key' ) );
-				$is_secret_field = ( $field_type === 'password' || $field_type === 'secret' || $is_pem_field );
+				$is_secret_field = ( 'password' === $field_type || 'secret' === $field_type || $is_pem_field );
 
-				if ( $field_type === 'checkbox' ) {
+				if ( 'checkbox' === $field_type ) {
 					$setting_args = array(
 						'type'              => 'integer',
 						'sanitize_callback' => array( $this, 'sanitize_checkbox_setting' ),
@@ -458,7 +458,7 @@ class SSO_Manager {
 						'sanitize_callback' => array( $this, 'sanitize_secret_setting' ),
 						'default'           => $field['default'] ?? '',
 					);
-				} elseif ( $field_type === 'textarea' ) {
+				} elseif ( 'textarea' === $field_type ) {
 					$setting_args = array(
 						'type'              => 'string',
 						'sanitize_callback' => array( $this, 'sanitize_textarea_setting' ),
@@ -541,12 +541,12 @@ class SSO_Manager {
 		}
 
 		if ( ! is_string( $value ) ) {
-			return $option_name !== '' ? (string) get_option( $option_name, '' ) : '';
+			return '' !== $option_name ? (string) get_option( $option_name, '' ) : '';
 		}
 
 		$value = wp_unslash( $value );
 		if ( '' === $value ) {
-			return $option_name !== '' ? (string) get_option( $option_name, '' ) : '';
+			return '' !== $option_name ? (string) get_option( $option_name, '' ) : '';
 		}
 
 		return $value;
@@ -589,7 +589,7 @@ class SSO_Manager {
 					esc_attr( $field['id'] ),
 					esc_textarea( $flosc_ta_value )
 				);
-				if ( $flosc_is_pem && ! flosc_admin_may_view_secrets() && (string) $value !== '' ) {
+				if ( $flosc_is_pem && ! flosc_admin_may_view_secrets() && (string) '' !== $value ) {
 					echo '<p class="description">' . esc_html__( 'Key is saved. Leave blank to keep the current value.', 'flosc' ) . '</p>';
 				}
 				break;
@@ -599,7 +599,7 @@ class SSO_Manager {
 				$flosc_show_secret = function_exists( 'flosc_admin_secret_input_value' )
 					? flosc_admin_secret_input_value( $value )
 					: ( current_user_can( 'manage_options' ) ? (string) $value : '' );
-				$flosc_has_saved   = ( (string) $value !== '' && ! flosc_admin_may_view_secrets() );
+				$flosc_has_saved   = ( (string) '' !== $value && ! flosc_admin_may_view_secrets() );
 				printf(
 					'<input type="password" id="%s" name="%s" value="%s" class="regular-text" autocomplete="new-password" placeholder="%s" />',
 					esc_attr( $field['id'] ),

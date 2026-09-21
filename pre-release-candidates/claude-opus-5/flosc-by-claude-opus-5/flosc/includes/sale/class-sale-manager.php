@@ -152,13 +152,13 @@ class FLOSC_Sale_Manager {
 		}
 
 		$txn = isset( $result['transaction_id'] ) ? (string) $result['transaction_id'] : '';
-		if ( $txn === '' ) {
+		if ( '' === $txn ) {
 			return false;
 		}
 
 		// trialing is not settled payment unless the provider set settled/paid explicitly.
 		// after an offer-level allow_trial check (see Stripe create_subscription).
-		if ( $status === 'trialing' && empty( $result['settled'] ) && empty( $result['paid'] ) ) {
+		if ( 'trialing' === $status && empty( $result['settled'] ) && empty( $result['paid'] ) ) {
 			return false;
 		}
 
@@ -185,10 +185,10 @@ class FLOSC_Sale_Manager {
 		if ( ! empty( $offer['is_free'] ) ) {
 			return true;
 		}
-		if ( isset( $offer['pricing']['type'] ) && (string) $offer['pricing']['type'] === 'free' ) {
+		if ( isset( $offer['pricing']['type'] ) && (string) 'free' === $offer['pricing']['type'] ) {
 			return true;
 		}
-		if ( isset( $offer['type'] ) && (string) $offer['type'] === 'free' ) {
+		if ( isset( $offer['type'] ) && (string) 'free' === $offer['type'] ) {
 			return true;
 		}
 		// Explicit numeric zero only when the price key is present.
@@ -209,11 +209,11 @@ class FLOSC_Sale_Manager {
 	 */
 	public function offer_is_active_for_purchase( array $offer ) {
 		$status = sanitize_key( (string) ( $offer['status'] ?? '' ) );
-		if ( $status === 'active' ) {
+		if ( 'active' === $status ) {
 			return true;
 		}
 		// Legacy boolean flag when status is omitted.
-		if ( $status === '' && ! empty( $offer['active'] ) ) {
+		if ( '' === $status && ! empty( $offer['active'] ) ) {
 			return true;
 		}
 		return false;
@@ -236,7 +236,7 @@ class FLOSC_Sale_Manager {
 			);
 		}
 		$is_free = $this->offer_is_explicitly_free( $offer );
-		if ( $mode === 'free' ) {
+		if ( 'free' === $mode ) {
 			if ( ! $is_free ) {
 				return new WP_Error(
 					'not_free',
@@ -277,7 +277,7 @@ class FLOSC_Sale_Manager {
 		$user_id        = absint( $user_id );
 		$extra          = is_array( $extra ) ? $extra : array();
 
-		if ( $provider === '' || $transaction_id === '' || $offer_id === '' || $user_id <= 0 ) {
+		if ( '' === $provider || '' === $transaction_id || '' === $offer_id || $user_id <= 0 ) {
 			return new WP_Error(
 				'invalid_fulfillment',
 				__( 'Missing fulfillment binding fields', 'flosc' ),
@@ -342,7 +342,7 @@ class FLOSC_Sale_Manager {
 		$offer_id    = sanitize_text_field( (string) ( $offer['id'] ?? '' ) );
 		$txn_id      = sanitize_text_field( (string) ( $transaction['transaction_id'] ?? '' ) );
 
-		if ( $user_id <= 0 || $offer_id === '' || $txn_id === '' || $provider_id === '' ) {
+		if ( $user_id <= 0 || '' === $offer_id || '' === $txn_id || '' === $provider_id ) {
 			return new WP_Error(
 				'invalid_fulfillment',
 				__( 'Cannot fulfill purchase with incomplete binding', 'flosc' ),
@@ -370,7 +370,7 @@ class FLOSC_Sale_Manager {
 			return $claim;
 		}
 
-		if ( $claim === 'already' ) {
+		if ( 'already' === $claim ) {
 			return array(
 				'success'           => true,
 				'already_fulfilled' => true,
@@ -528,7 +528,7 @@ class FLOSC_Sale_Manager {
 			$all_offers,
 			function ( $offer ) use ( $user_access ) {
 				// Don't show one-time offers they already purchased.
-				if ( $offer['type'] === 'one_time' && isset( $user_access['offers'][ $offer['id'] ] ) ) {
+				if ( 'one_time' === $offer['type'] && isset( $user_access['offers'][ $offer['id'] ] ) ) {
 					return false;
 				}
 				return true;

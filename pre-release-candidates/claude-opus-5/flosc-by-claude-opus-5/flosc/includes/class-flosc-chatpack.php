@@ -183,7 +183,7 @@ class FLOSC_Chatpack {
 						$src     = is_array( $msg['meta'] ?? null )
 						? sanitize_key( (string) ( $msg['meta']['source'] ?? '' ) )
 						: '';
-						if ( $src === 'engagement_admin' && $content !== ''
+						if ( 'engagement_admin' === $src && '' !== $content
 						&& strpos( $content, '[Admin engagement message]' ) === false ) {
 							$content = '[Admin engagement message] ' . $content;
 						}
@@ -322,7 +322,7 @@ class FLOSC_Chatpack {
 		$sections[]    = self::build_user_section( $eval_context );
 		$sections[]    = self::build_flow_section( $phase, $eval_context, $followup_flow );
 		$kb_section    = self::build_knowledge_section( $eval_context );
-		if ( $kb_section !== '' ) {
+		if ( '' !== $kb_section ) {
 			$sections[] = $kb_section;
 		}
 
@@ -382,7 +382,7 @@ class FLOSC_Chatpack {
 		// entirely. Re-anchoring it here keeps the bot aware of the current page on.
 		// every turn, for visitors, guests, and members alike.
 		$page_context_section = self::build_page_context_section( $eval_context );
-		if ( $page_context_section !== '' ) {
+		if ( '' !== $page_context_section ) {
 			$sections[] = $page_context_section;
 		}
 
@@ -409,20 +409,20 @@ class FLOSC_Chatpack {
 		$page_content     = trim( (string) ( $eval_context['browsing_page_content'] ?? '' ) );
 		$browsing_post_id = absint( $eval_context['browsing_page_post_id'] ?? 0 );
 
-		$has_page = ( $browsing_url !== '' || $browsing_title !== '' || $browsing_post_id > 0 );
+		$has_page = ( '' !== $browsing_url || '' !== $browsing_title || $browsing_post_id > 0 );
 		// Companion turns always carry the on-site policy, even with no resolved page.
-		if ( ! $has_page && $page_content === '' && $surface !== 'companion' ) {
+		if ( ! $has_page && '' === $page_content && 'companion' !== $surface ) {
 			return '';
 		}
 
 		$section = '';
 
-		if ( $page_content !== '' ) {
+		if ( '' !== $page_content ) {
 			$section .= "**PAGE CONTENT (source of truth for this turn):**\n";
 			$section .= "- The user is asking about a specific page/post. Use ONLY the content below for page-specific facts.\n";
 			$section .= "- Reply in 2-4 short, conversational sentences. Do NOT paste or summarize the whole page.\n";
 			$section .= "- You may quote one short phrase if it helps. Stay human and guided.\n";
-			if ( $browsing_title !== '' ) {
+			if ( '' !== $browsing_title ) {
 				$section .= "- Page title: {$browsing_title}\n";
 			}
 			$section .= "\n--- PAGE BODY (background context, not for display) ---\n";
@@ -434,17 +434,17 @@ class FLOSC_Chatpack {
 			if ( $browsing_post_id > 0 ) {
 				$section .= "- Current WordPress post/page ID: {$browsing_post_id}\n";
 			}
-			if ( $browsing_title !== '' ) {
+			if ( '' !== $browsing_title ) {
 				$section .= "- Current page title in context: {$browsing_title}\n";
 			}
-			if ( $browsing_url !== '' ) {
+			if ( '' !== $browsing_url ) {
 				$section .= "- Current page URL in context: {$browsing_url}\n";
 			}
 			$section .= "- For page-specific facts beyond title/URL, rely on PAGE BODY when it appears in this prompt\n";
 			$section .= "- After confirming page awareness, continue with a concrete help question relevant to that page\n";
 		}
 
-		if ( $surface === 'companion' ) {
+		if ( 'companion' === $surface ) {
 			$section  .= "\n**COMPANION MODE POLICY (strict):**\n";
 			$section  .= "- The visitor opened chat from the page they are browsing right now\n";
 			$section  .= "- Page title/URL are always in context; full PAGE BODY appears only when injected for this turn\n";
@@ -454,7 +454,7 @@ class FLOSC_Chatpack {
 			$section  .= "- Do NOT provide external links, external tools, or external resource recommendations\n";
 			$section  .= "- Keep navigation guidance inside this site only\n";
 			$site_host = wp_parse_url( home_url(), PHP_URL_HOST );
-			if ( ! is_string( $site_host ) || $site_host === '' ) {
+			if ( ! is_string( $site_host ) || '' === $site_host ) {
 				$site_host = 'this site';
 			}
 			$section .= "- Use the exact off-topic reply ONLY when the user is treating this as a general AI resource (for example: \"what is the capital of France\") and the question is not about {$site_host} content\n";
@@ -489,7 +489,7 @@ class FLOSC_Chatpack {
 	 * Reads from floscAdmin-configurable settings.
 	 */
 	private static function build_identity_section( $flow_id = '' ) {
-		$flow_id = ( $flow_id !== null && $flow_id !== '' ) ? $flow_id : null;
+		$flow_id = ( null !== $flow_id && '' !== $flow_id ) ? $flow_id : null;
 		// Fix 12: Library attach (one personality) or flow bag / legacy keys.
 		$res               = function_exists( 'flosc_personality_library_resolve_field' ) ? 'flosc_personality_library_resolve_field' : null;
 		$ai_name           = function_exists( 'flosc_personality_name' )
@@ -516,7 +516,7 @@ class FLOSC_Chatpack {
 
 		$section = "## 1. IDENTITY\n\n";
 
-		if ( $compiled_profile !== '' ) {
+		if ( '' !== $compiled_profile ) {
 			$section .= 'This chat is on a FLOSC flow';
 			if ( $site_url ) {
 				$section .= " at {$site_url}";
@@ -559,7 +559,7 @@ class FLOSC_Chatpack {
 			. 'FLOSC is a white-label WordPress plugin framework. '
 			. "That is ALL it stands for. Do not expand it any other way.\n\n";
 
-		if ( $compiled_profile === '' ) {
+		if ( '' === $compiled_profile ) {
 			$section .= "\n**Your Persona:**\n";
 			$section .= "- Name: {$ai_name}\n";
 			$section .= "- Role: {$ai_role}\n";
@@ -609,7 +609,7 @@ class FLOSC_Chatpack {
 			$section .= '**Recommended External Resources:** ' . $ai_referral_links . "\n";
 		}
 
-		if ( $compiled_profile === '' && $ai_base_prompt ) {
+		if ( '' === $compiled_profile && $ai_base_prompt ) {
 			$section .= "\n**FloscAdmin Advanced Override:**\n" . $ai_base_prompt . "\n";
 		}
 
@@ -911,7 +911,7 @@ class FLOSC_Chatpack {
 		$section  = "## 7. CONVERSATION RULES\n\n";
 		$section .= "- This is message pair **#{$pair_number}** in this session\n";
 
-		if ( $pair_number === 1 ) {
+		if ( 1 === $pair_number ) {
 			$section .= "- This is the **opening message** — greet the user appropriately\n";
 		}
 
@@ -929,13 +929,13 @@ class FLOSC_Chatpack {
 		// not only on message #1. $page_content is still read here for the grounding branch below.
 		$page_content = trim( (string) ( $eval_context['browsing_page_content'] ?? '' ) );
 		$page_context = self::build_page_context_section( $eval_context );
-		if ( $page_context !== '' ) {
+		if ( '' !== $page_context ) {
 			$section .= "\n" . $page_context;
 		}
 
 		// v8.0.10: Anti-hallucination anchor — reinforced at end of prompt for recency bias.
 		$section .= "\n**FACTUAL GROUNDING (final reminder):**\n";
-		if ( $page_content !== '' ) {
+		if ( '' !== $page_content ) {
 			$section .= "- For questions about the current page, the PAGE BODY section above is authoritative\n";
 			$section .= "- For broader product/platform questions, use this system prompt and the knowledge base files above\n";
 		} else {
@@ -945,7 +945,7 @@ class FLOSC_Chatpack {
 		$section .= "- If this prompt doesn't tell you something, you don't know it. Say so.\n";
 		$section .= "- NEVER invent acronym expansions. FLOSC = Freeline, Login, Offer, Sale, Content. That's it.\n";
 		// COMPANION MODE POLICY now lives in build_page_context_section() (shared with follow-ups).
-		if ( $phase === 'freeline' ) {
+		if ( 'freeline' === $phase ) {
 			$section .= "- You are NOT the quiz. The quiz is a separate audio-recording widget. Do not simulate it.\n";
 		}
 
@@ -1000,7 +1000,7 @@ class FLOSC_Chatpack {
 		}
 
 		$catalog = self::load_knowledge_files( $eval_context );
-		if ( $catalog === '' ) {
+		if ( '' === $catalog ) {
 			return '';
 		}
 
@@ -1161,7 +1161,7 @@ class FLOSC_Chatpack {
 			$items = $raw;
 		} elseif ( is_string( $raw ) ) {
 			$trimmed = trim( $raw );
-			if ( $trimmed === '' ) {
+			if ( '' === $trimmed ) {
 				return array();
 			}
 
@@ -1182,7 +1182,7 @@ class FLOSC_Chatpack {
 				continue;
 			}
 			$v = sanitize_text_field( trim( (string) $item ) );
-			if ( $v !== '' ) {
+			if ( '' !== $v ) {
 				$normalized[] = $v;
 			}
 		}
@@ -1236,13 +1236,13 @@ class FLOSC_Chatpack {
 	 */
 	private static function load_knowledge_files( $eval_context ) {
 		$flow_stem = sanitize_key( (string) ( $eval_context['flow_id'] ?? '' ) );
-		if ( $flow_stem === '' && function_exists( 'flosc' ) && is_object( flosc() ) && method_exists( flosc(), 'get_current_flow' ) ) {
+		if ( '' === $flow_stem && function_exists( 'flosc' ) && is_object( flosc() ) && method_exists( flosc(), 'get_current_flow' ) ) {
 			$flow = flosc()->get_current_flow();
 			if ( is_array( $flow ) && ! empty( $flow['id'] ) ) {
 				$flow_stem = sanitize_key( (string) $flow['id'] );
 			}
 		}
-		if ( $flow_stem === '' || ! function_exists( 'flosc_knowledge_bases_prompt_text' ) ) {
+		if ( '' === $flow_stem || ! function_exists( 'flosc_knowledge_bases_prompt_text' ) ) {
 			return '';
 		}
 		$user_level = $eval_context['access_level'] ?? 'visitor';

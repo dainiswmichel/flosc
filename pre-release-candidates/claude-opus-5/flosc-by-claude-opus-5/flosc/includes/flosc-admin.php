@@ -429,7 +429,7 @@ trait FLOSC_Admin_Trait {
 				$option_name = 'flosc_quiz_' . $quiz_id . '_' . $field_key;
 				$field_type  = $field_config['type'] ?? 'text';
 
-				if ( $field_type === 'select' ) {
+				if ( 'select' === $field_type ) {
 					$this->register_select_setting_value(
 						$option_name,
 						array_keys( $field_config['options'] ?? array() )
@@ -437,11 +437,11 @@ trait FLOSC_Admin_Trait {
 					continue;
 				}
 
-				if ( $field_type === 'checkbox' ) {
+				if ( 'checkbox' === $field_type ) {
 					$field_type = 'bool';
 				}
 				// Pass 2: map password/secret field types to secret pass-through sanitizer.
-				if ( $field_type === 'password' || $field_type === 'secret' ) {
+				if ( 'password' === $field_type || 'secret' === $field_type ) {
 					$field_type = 'secret';
 				}
 
@@ -539,7 +539,7 @@ trait FLOSC_Admin_Trait {
 					}
 
 					$sanitized = sanitize_key( wp_unslash( (string) $value ) );
-					if ( $sanitized !== '' && in_array( $sanitized, $allowed_keys, true ) ) {
+					if ( '' !== $sanitized && in_array( $sanitized, $allowed_keys, true ) ) {
 						return $sanitized;
 					}
 
@@ -557,11 +557,11 @@ trait FLOSC_Admin_Trait {
 	 * @return string
 	 */
 	private function get_setting_registration_type( $sanitize_type ) {
-		if ( $sanitize_type === 'array' ) {
+		if ( 'array' === $sanitize_type ) {
 			return 'array';
 		}
 
-		if ( $sanitize_type === 'bool' ) {
+		if ( 'bool' === $sanitize_type ) {
 			return 'integer';
 		}
 
@@ -575,11 +575,11 @@ trait FLOSC_Admin_Trait {
 	 * @return mixed
 	 */
 	private function get_setting_default_value( $sanitize_type ) {
-		if ( $sanitize_type === 'array' ) {
+		if ( 'array' === $sanitize_type ) {
 			return array();
 		}
 
-		if ( $sanitize_type === 'bool' ) {
+		if ( 'bool' === $sanitize_type ) {
 			return 0;
 		}
 
@@ -627,12 +627,12 @@ trait FLOSC_Admin_Trait {
 		}
 
 		if ( ! is_string( $value ) ) {
-			return $option_name !== '' ? (string) get_option( $option_name, '' ) : '';
+			return '' !== $option_name ? (string) get_option( $option_name, '' ) : '';
 		}
 
 		$value = wp_unslash( $value );
 		if ( '' === $value ) {
-			return $option_name !== '' ? (string) get_option( $option_name, '' ) : '';
+			return '' !== $option_name ? (string) get_option( $option_name, '' ) : '';
 		}
 
 		return $value;
@@ -746,7 +746,7 @@ trait FLOSC_Admin_Trait {
 		}
 
 		$flow_id = sanitize_key( (string) $flow_id );
-		if ( $flow_id === '' ) {
+		if ( '' === $flow_id ) {
 			return false;
 		}
 
@@ -775,7 +775,7 @@ trait FLOSC_Admin_Trait {
 		// §12: Post-visibility metabox styles render on the post editor (post.php / post-new.php),
 		// which is a different screen than the FLOSC settings pages. Enqueue them there via an.
 		// inline-only style handle instead of echoing a <style> tag inside the metabox markup.
-		if ( $hook === 'post.php' || $hook === 'post-new.php' ) {
+		if ( 'post.php' === $hook || 'post-new.php' === $hook ) {
 			wp_register_style( 'flosc-metabox', false, array(), FLOSC_VERSION );
 			wp_enqueue_style( 'flosc-metabox' );
 			wp_add_inline_style(
@@ -803,7 +803,7 @@ trait FLOSC_Admin_Trait {
 		// Only load on FLOSC admin pages.
 		// v1.2.8: Simplified - just check for 'flosc'.
 		if ( strpos( $hook, 'flosc' ) === false &&
-			$hook !== 'toplevel_page_flosc-settings' ) {
+			'toplevel_page_flosc-settings' !== $hook ) {
 			return;
 		}
 
@@ -841,14 +841,14 @@ trait FLOSC_Admin_Trait {
 		$flosc_page = isset( $_GET['page'] ) && is_string( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
 		$flosc_view = isset( $_GET['view'] ) && is_string( $_GET['view'] ) ? sanitize_key( wp_unslash( $_GET['view'] ) ) : '';
 		// phpcs:enable WordPress.Security.NonceVerification.Recommended
-		if ( $flosc_page === 'flosc-settings' && $flosc_tab === 'ai' && $flosc_view !== 'all' ) {
+		if ( 'flosc-settings' === $flosc_page && 'ai' === $flosc_tab && 'all' !== $flosc_view ) {
 			if ( function_exists( 'flosc_enqueue_personality_builder_assets' ) ) {
 				flosc_enqueue_personality_builder_assets();
 			}
 		}
 
 		// Dedicated AutoPrompts admin runtime (externalized from inline tab template JS).
-		if ( $flosc_tab === 'autoprompts' ) {
+		if ( 'autoprompts' === $flosc_tab ) {
 			$flosc_autoprompts_js_path = FLOSC_PLUGIN_DIR . 'assets/js/flosc-autoprompts-admin.js';
 			if ( file_exists( $flosc_autoprompts_js_path ) ) {
 				wp_enqueue_script(
@@ -873,7 +873,7 @@ trait FLOSC_Admin_Trait {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin view selection controls asset enqueueing and does not mutate state.
 		$flosc_view = isset( $_GET['view'] ) && is_string( $_GET['view'] ) ? sanitize_key( wp_unslash( $_GET['view'] ) ) : '';
 
-		if ( $flosc_tab === 'flow' && $flosc_view === 'all' ) {
+		if ( 'flow' === $flosc_tab && 'all' === $flosc_view ) {
 			$flosc_port_css = FLOSC_PLUGIN_DIR . 'assets/css/flosc-portability-admin.css';
 			$flosc_port_js  = FLOSC_PLUGIN_DIR . 'assets/js/flosc-portability-admin.js';
 			if ( file_exists( $flosc_port_css ) ) {
@@ -895,7 +895,7 @@ trait FLOSC_Admin_Trait {
 			}
 		}
 
-		if ( $flosc_tab === 'email' ) {
+		if ( 'email' === $flosc_tab ) {
 			$flosc_email_css_path = FLOSC_PLUGIN_DIR . 'assets/css/flosc-email.css';
 			if ( file_exists( $flosc_email_css_path ) ) {
 				wp_enqueue_style(
@@ -994,7 +994,7 @@ trait FLOSC_Admin_Trait {
 		// slug only; never mutates options. Read via wp_unslash; sanitized next line.
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only menu routing is capability-checked below and does not mutate state.
 		$page = isset( $_GET['page'] ) && is_string( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
-		if ( $page === '' || $page === 'flosc-settings' ) {
+		if ( '' === $page || 'flosc-settings' === $page ) {
 			return;
 		}
 
@@ -1043,10 +1043,10 @@ trait FLOSC_Admin_Trait {
 			'tab'  => $tab,
 		);
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- These sanitized GET values are copied into a capability-checked, read-only admin redirect.
-		if ( isset( $_GET['ivr'] ) && is_string( $_GET['ivr'] ) && $_GET['ivr'] !== '' ) {
+		if ( isset( $_GET['ivr'] ) && is_string( $_GET['ivr'] ) && '' !== $_GET['ivr'] ) {
 			$args['ivr'] = sanitize_file_name( wp_unslash( $_GET['ivr'] ) );
 		}
-		if ( isset( $_GET['view'] ) && is_string( $_GET['view'] ) && $_GET['view'] !== '' ) {
+		if ( isset( $_GET['view'] ) && is_string( $_GET['view'] ) && '' !== $_GET['view'] ) {
 			$view = sanitize_text_field( wp_unslash( $_GET['view'] ) );
 			if ( in_array( $view, array( 'single', 'all' ), true ) ) {
 				$args['view'] = $view;
@@ -1069,7 +1069,7 @@ trait FLOSC_Admin_Trait {
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only dispatcher routing; every state-changing downstream branch verifies its own action-specific nonce and capability.
 		$page = isset( $_GET['page'] ) && is_string( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
-		if ( $page !== 'flosc-settings' ) {
+		if ( 'flosc-settings' !== $page ) {
 			return;
 		}
 
@@ -1104,7 +1104,7 @@ trait FLOSC_Admin_Trait {
 			$flosc_nonce = isset( $_POST[ $flosc_field ] )
 				? sanitize_text_field( wp_unslash( $_POST[ $flosc_field ] ) )
 				: '';
-			if ( $flosc_nonce === '' || ! wp_verify_nonce( $flosc_nonce, $flosc_action ) ) {
+			if ( '' === $flosc_nonce || ! wp_verify_nonce( $flosc_nonce, $flosc_action ) ) {
 				continue;
 			}
 			if ( ! empty( $_POST[ $flosc_button ] ) ) {
@@ -1213,7 +1213,7 @@ trait FLOSC_Admin_Trait {
 			$view = 'single';
 		}
 
-		if ( $ivr === '' ) {
+		if ( '' === $ivr ) {
 			wp_die( esc_html__( 'Missing flow file.', 'flosc' ) );
 		}
 
@@ -1248,7 +1248,7 @@ trait FLOSC_Admin_Trait {
 	 */
 	private function redirect_to_settings_tab( $tab ) {
 		$tab = sanitize_key( (string) $tab );
-		if ( $tab === '' ) {
+		if ( '' === $tab ) {
 			$tab = 'flow';
 		}
 
@@ -1442,7 +1442,7 @@ trait FLOSC_Admin_Trait {
 		$user_id   = get_current_user_id();
 		$is_member = get_user_meta( $user_id, '_flosc_member_access', true );
 
-		if ( $is_member === 'true' || $is_member === true ) {
+		if ( 'true' === $is_member || true === $is_member ) {
 			return wp_kses_post( do_shortcode( $content ) );
 		}
 
@@ -1487,20 +1487,20 @@ trait FLOSC_Admin_Trait {
 		$current_url   = home_url( add_query_arg( array(), $GLOBALS['wp']->request ?? '' ) );
 		$rendered_at   = time();
 		$honeypot_name = 'flosc_contact_company';
-		$show_form     = ( $status !== 'success' );
+		$show_form     = ( 'success' !== $status );
 
 		ob_start();
 		?>
 		<section class="flosc-contact-form-wrap" aria-label="Contact Form">
 			<div class="flosc-contact-form-card">
 				<h2 class="flosc-contact-form-title"><?php echo esc_html( $settings['form_title'] ); ?></h2>
-				<?php if ( $settings['form_intro'] !== '' ) : ?>
+				<?php if ( '' !== $settings['form_intro'] ) : ?>
 					<p class="flosc-contact-form-intro"><?php echo esc_html( $settings['form_intro'] ); ?></p>
 				<?php endif; ?>
 
-				<?php if ( $status === 'success' ) : ?>
+				<?php if ( 'success' === $status ) : ?>
 					<p class="flosc-contact-notice flosc-contact-notice-success"><?php echo esc_html( $settings['success_message'] ); ?></p>
-				<?php elseif ( $status === 'error' ) : ?>
+				<?php elseif ( 'error' === $status ) : ?>
 					<p class="flosc-contact-notice flosc-contact-notice-error"><?php esc_html_e( 'Please review the form and try again.', 'flosc' ); ?></p>
 				<?php endif; ?>
 
@@ -1594,7 +1594,7 @@ trait FLOSC_Admin_Trait {
 		$enforce_timing = ! empty( $options['enforce_timing'] );
 		$source         = sanitize_key( (string) ( $options['source'] ?? 'contact_form' ) );
 
-		if ( $honeypot !== '' ) {
+		if ( '' !== $honeypot ) {
 			return array(
 				'success' => false,
 				'error'   => 'spam_honeypot',
@@ -1610,7 +1610,7 @@ trait FLOSC_Admin_Trait {
 			}
 		}
 
-		if ( $first_name === '' || $last_name === '' || $email === '' || $phone === '' || $message === '' || ! is_email( $email ) ) {
+		if ( '' === $first_name || '' === $last_name || '' === $email || '' === $phone || '' === $message || ! is_email( $email ) ) {
 			return array(
 				'success' => false,
 				'error'   => 'validation',
@@ -1646,7 +1646,7 @@ trait FLOSC_Admin_Trait {
 		}
 
 		$subject = trim( (string) $settings['email_subject'] );
-		if ( $subject === '' ) {
+		if ( '' === $subject ) {
 			$subject = 'New Contact Form Message';
 		}
 
@@ -1656,7 +1656,7 @@ trait FLOSC_Admin_Trait {
 			. "Last Name: {$last_name}\n"
 			. "Email: {$email}\n"
 			. "Phone: {$phone}\n"
-			. 'Flow: ' . ( $flow_id !== '' ? $flow_id : 'default' ) . "\n"
+			. 'Flow: ' . ( '' !== $flow_id ? $flow_id : 'default' ) . "\n"
 			. "IP Hash: {$ip_hash}\n"
 			. "\nMessage:\n{$message}\n";
 
@@ -1690,7 +1690,7 @@ trait FLOSC_Admin_Trait {
 		$flow_id  = sanitize_key( (string) $flow_id );
 		$settings = array();
 
-		if ( $flow_id !== '' ) {
+		if ( '' !== $flow_id ) {
 			$flow_settings = get_option( 'flosc_flow_' . $flow_id, array() );
 			if ( is_array( $flow_settings ) ) {
 				$settings = $flow_settings;
@@ -1758,13 +1758,13 @@ trait FLOSC_Admin_Trait {
 		$accent      = $this->get_setting( 'companion_accent_color', '#2563eb' );
 		$title       = $this->get_setting( 'companion_greeting', 'Chat with us' );
 		$header_icon = $this->get_setting( 'companion_header_icon_url', '' );
-		if ( $header_icon === '' && function_exists( 'flosc_get_chatlogo_url' ) ) {
+		if ( '' === $header_icon && function_exists( 'flosc_get_chatlogo_url' ) ) {
 			$header_icon = flosc_get_chatlogo_url();
 		}
 		$product_name = function_exists( 'flosc_personality_name' )
 			? sanitize_text_field( flosc_personality_name() )
 			: '';
-		if ( $product_name === '' && function_exists( 'flosc' ) && method_exists( flosc(), 'get_floscflow_identity' ) ) {
+		if ( '' === $product_name && function_exists( 'flosc' ) && method_exists( flosc(), 'get_floscflow_identity' ) ) {
 			$id           = flosc()->get_floscflow_identity();
 			$product_name = sanitize_text_field( (string) ( $id['name'] ?? '' ) );
 		}
@@ -1868,7 +1868,7 @@ trait FLOSC_Admin_Trait {
 		// ===========================================
 		// PRESET LOADING.
 		// ===========================================
-		if ( $preset === 'auto' ) {
+		if ( 'auto' === $preset ) {
 			// Auto mode: Light by default, dark via prefers-color-scheme.
 			if ( file_exists( $light_path ) && file_exists( $dark_path ) ) {
 				$light_content = flosc_fs_get_contents( $light_path );
@@ -1912,7 +1912,7 @@ trait FLOSC_Admin_Trait {
 		$overrides[] = "--flosc-assistant-message-radius: {$bubble_config['assistant']}";
 
 		// v1.6.1: Full accent color cascade (5→15 derived variables)
-		if ( ! empty( $accent ) && $accent !== '#2563eb' ) {
+		if ( ! empty( $accent ) && '#2563eb' !== $accent ) {
 			// Compute derived colors from hex accent.
 			$hover   = $this->adjust_color_brightness( $accent, -15 );
 			$subtle  = $this->hex_to_rgba( $accent, 0.06 );
@@ -1941,13 +1941,13 @@ trait FLOSC_Admin_Trait {
 		}
 
 		// Scale factor.
-		if ( $scale !== 100 && $scale > 0 ) {
+		if ( 100 !== $scale && $scale > 0 ) {
 			$scale_factor = $scale / 100;
 			$overrides[]  = "--flosc-scale: {$scale_factor}";
 		}
 
 		// Font family.
-		if ( $font !== 'system' && isset( $font_families[ $font ] ) && ! empty( $font_families[ $font ] ) ) {
+		if ( 'system' !== $font && isset( $font_families[ $font ] ) && ! empty( $font_families[ $font ] ) ) {
 			$overrides[] = "--flosc-font-family: {$font_families[$font]}";
 		}
 
@@ -1956,7 +1956,7 @@ trait FLOSC_Admin_Trait {
 		}
 
 		// Font application.
-		if ( $font !== 'system' && isset( $font_families[ $font ] ) && ! empty( $font_families[ $font ] ) ) {
+		if ( 'system' !== $font && isset( $font_families[ $font ] ) && ! empty( $font_families[ $font ] ) ) {
 			$inline_css .= "/* Font Application */\n";
 			$inline_css .= ".flosc-app,\n.flosc-app .messages,\n.flosc-app .message-text {\n";
 			$inline_css .= "    font-family: var(--flosc-font-family) !important;\n}\n\n";

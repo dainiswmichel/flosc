@@ -23,9 +23,9 @@ define( 'FLOSC_VERSION', '8.0.0' );
 // v8.0.1: Runtime debug mode override from Administration tab.
 // Modes: inherit (follow WP_DEBUG), on (force), off (disable).
 $flosc_debug_mode = function_exists( 'get_option' ) ? get_option( 'flosc_debug_mode', 'inherit' ) : 'inherit';
-if ( $flosc_debug_mode === 'on' ) {
+if ( 'on' === $flosc_debug_mode ) {
 	$flosc_debug_enabled = true;
-} elseif ( $flosc_debug_mode === 'off' ) {
+} elseif ( 'off' === $flosc_debug_mode ) {
 	$flosc_debug_enabled = false;
 } else {
 	$flosc_debug_enabled = defined( 'WP_DEBUG' ) && WP_DEBUG;
@@ -45,7 +45,7 @@ if ( ! function_exists( 'flosc_log' ) ) {
 			return;
 		}
 		$line = is_scalar( $msg ) ? (string) $msg : wp_json_encode( $msg );
-		if ( ! is_string( $line ) || $line === '' ) {
+		if ( ! is_string( $line ) || '' === $line ) {
 			return;
 		}
 		if ( ! class_exists( 'FLOSC_Filesystem', false ) ) {
@@ -137,12 +137,12 @@ if ( ! function_exists( 'flosc_legacy_autoprompt_is_sandbox_pill' ) ) {
 			array_filter(
 				$fields,
 				static function ( $value ) {
-					return $value !== '';
+					return '' !== $value;
 				}
 			)
 		);
 
-		if ( $haystack === '' ) {
+		if ( '' === $haystack ) {
 			return false;
 		}
 
@@ -257,7 +257,7 @@ if ( ! get_option( 'flosc_ivr_reparse_800' ) ) {
 						}
 							$cond = $msg['conditions'] ?? $msg['condition'] ?? '';
 						foreach ( array( 'visitor', 'guest', 'member' ) as $s ) {
-							if ( $cond === 'always' || strpos( $cond, 'is_' . $s ) !== false ) {
+							if ( 'always' === $cond || strpos( $cond, 'is_' . $s ) !== false ) {
 								$pills[ $s ][] = array(
 									'icon'          => $msg['icon'] ?? '',
 									'label'         => $msg['label'] ?? ( $msg['name'] ?? '' ),
@@ -289,7 +289,7 @@ if ( ! get_option( 'flosc_ivr_reparse_800' ) ) {
 					// Fresh install: re-parse used to write messages-only options, skipping.
 					// admin seed (empty() false) and hiding View Flow (needs status+slug).
 					$stem_slug = strtolower( preg_replace( '/[^a-z0-9_-]/i', '', pathinfo( $fname, PATHINFO_FILENAME ) ) );
-					if ( $stem_slug === '' ) {
+					if ( '' === $stem_slug ) {
 						$stem_slug = 'flosc';
 					}
 					if ( empty( $fs['slug'] ) || ! is_string( $fs['slug'] ) ) {
@@ -304,11 +304,11 @@ if ( ! get_option( 'flosc_ivr_reparse_800' ) ) {
 						$shipped    = function_exists( 'flosc_shipped_flow_display_name' )
 						? flosc_shipped_flow_display_name( $fname )
 						: '';
-						$fs['name'] = $shipped !== ''
+						$fs['name'] = '' !== $shipped
 						? $shipped
 						: ucwords( str_replace( array( '_', '-', 'ivr', '.md' ), array( ' ', ' ', '', '' ), $fname ) );
 					}
-					if ( ! isset( $fs['primary_color'] ) || $fs['primary_color'] === '' ) {
+					if ( ! isset( $fs['primary_color'] ) || '' === $fs['primary_color'] ) {
 						$fs['primary_color'] = '#4f46e5';
 					}
 					update_option( $key, $fs );
@@ -336,7 +336,7 @@ function flosc_michel_timestamp_global() {
  */
 function flosc_shipped_flow_display_name( $ivr_filename_or_stem ) {
 	$stem = sanitize_key( pathinfo( basename( (string) $ivr_filename_or_stem ), PATHINFO_FILENAME ) );
-	if ( $stem === '' ) {
+	if ( '' === $stem ) {
 		$stem = sanitize_key( (string) $ivr_filename_or_stem );
 	}
 	$map = array(
@@ -356,7 +356,7 @@ function flosc_shipped_flow_display_name( $ivr_filename_or_stem ) {
  */
 function flosc_is_shipped_personality_sample_ivr( $ivr_filename_or_stem ) {
 	$stem = sanitize_key( pathinfo( basename( (string) $ivr_filename_or_stem ), PATHINFO_FILENAME ) );
-	if ( $stem === '' ) {
+	if ( '' === $stem ) {
 		$stem = sanitize_key( (string) $ivr_filename_or_stem );
 	}
 	$samples = array(
@@ -413,7 +413,7 @@ function flosc_filter_switch_flow_ivr_files( $files, $keep = '' ) {
 	$samples = array();
 	foreach ( $files as $file ) {
 		$file = basename( (string) $file );
-		if ( $file === '' ) {
+		if ( '' === $file ) {
 			continue;
 		}
 		if ( function_exists( 'flosc_is_shipped_personality_sample_ivr' ) && flosc_is_shipped_personality_sample_ivr( $file ) ) {
@@ -425,7 +425,7 @@ function flosc_filter_switch_flow_ivr_files( $files, $keep = '' ) {
 	if ( $real === array() ) {
 		return array_values( array_unique( $files ) );
 	}
-	if ( $keep !== '' && in_array( $keep, $samples, true ) && ! in_array( $keep, $real, true ) ) {
+	if ( '' !== $keep && in_array( $keep, $samples, true ) && ! in_array( $keep, $real, true ) ) {
 		$real[] = $keep;
 	}
 	return array_values( array_unique( $real ) );
@@ -758,14 +758,14 @@ class FLOSC_Framework {
 		$flow_id    = sanitize_key( (string) ( $request->get_param( 'flow_id' ) ?? '' ) );
 		$session_id = sanitize_text_field( (string) ( $request->get_param( 'session_id' ) ?? '' ) );
 
-		if ( $offer_id === '' ) {
+		if ( '' === $offer_id ) {
 			return new WP_Error( 'missing_offer', __( 'Offer id is required', 'flosc' ), array( 'status' => 400 ) );
 		}
-		if ( $plan_type !== 'monthly' && $plan_type !== 'yearly' ) {
+		if ( 'monthly' !== $plan_type && 'yearly' !== $plan_type ) {
 			return new WP_Error( 'invalid_plan_type', __( 'plan_type must be monthly or yearly', 'flosc' ), array( 'status' => 400 ) );
 		}
 
-		if ( $flow_id !== '' ) {
+		if ( '' !== $flow_id ) {
 			$this->set_flow_context( $flow_id );
 		}
 
@@ -800,12 +800,12 @@ class FLOSC_Framework {
 		$offer_monthly = sanitize_text_field( (string) ( $offer['pricing']['paypal']['monthly_plan_id'] ?? $offer['paypal_monthly_plan_id'] ?? '' ) );
 		$offer_yearly  = sanitize_text_field( (string) ( $offer['pricing']['paypal']['yearly_plan_id'] ?? $offer['paypal_yearly_plan_id'] ?? '' ) );
 
-		if ( $plan_type === 'yearly' ) {
-			$plan_id = $offer_yearly !== '' ? $offer_yearly : sanitize_text_field( (string) ( $plans['yearly_plan_id'] ?? '' ) );
+		if ( 'yearly' === $plan_type ) {
+			$plan_id = '' !== $offer_yearly ? $offer_yearly : sanitize_text_field( (string) ( $plans['yearly_plan_id'] ?? '' ) );
 		} else {
-			$plan_id = $offer_monthly !== '' ? $offer_monthly : sanitize_text_field( (string) ( $plans['monthly_plan_id'] ?? '' ) );
+			$plan_id = '' !== $offer_monthly ? $offer_monthly : sanitize_text_field( (string) ( $plans['monthly_plan_id'] ?? '' ) );
 		}
-		if ( $plan_id === '' ) {
+		if ( '' === $plan_id ) {
 			return new WP_Error(
 				'plan_unconfigured',
 				__( 'PayPal plan is not configured for this offer', 'flosc' ),
@@ -821,7 +821,7 @@ class FLOSC_Framework {
 		if ( $yearly_amt <= 0 ) {
 			$yearly_amt = $monthly_amt > 0 ? ( $monthly_amt * 10 ) : 0;
 		}
-		$amount = number_format( $plan_type === 'yearly' ? $yearly_amt : $monthly_amt, 2, '.', '' );
+		$amount = number_format( 'yearly' === $plan_type ? $yearly_amt : $monthly_amt, 2, '.', '' );
 		if ( (float) $amount <= 0 ) {
 			return new WP_Error( 'invalid_amount', __( 'Offer amount is not configured', 'flosc' ), array( 'status' => 400 ) );
 		}
@@ -1000,7 +1000,7 @@ class FLOSC_Framework {
 	 */
 	private function build_flosc_signed_headers( $payload_json ) {
 		$site = wp_parse_url( home_url(), PHP_URL_HOST );
-		$site = is_string( $site ) && $site !== '' ? strtolower( $site ) : 'unknown';
+		$site = is_string( $site ) && '' !== $site ? strtolower( $site ) : 'unknown';
 		$mts  = $this->get_utc_mts();
 
 		$signature_base = (string) $payload_json . "\n" . $mts . "\n" . $site;
@@ -1027,7 +1027,7 @@ class FLOSC_Framework {
 		}
 
 		$provider = strtolower( (string) flosc_get_setting( 'audio_conversion_provider', 'none' ) );
-		if ( $provider !== 'external' ) {
+		if ( 'external' !== $provider ) {
 			return array(
 				'ok'     => false,
 				'status' => 'provider_none',
@@ -1035,7 +1035,7 @@ class FLOSC_Framework {
 		}
 
 		$api_base = untrailingslashit( (string) flosc_get_setting( 'ipa_api_base_url', '' ) );
-		if ( $api_base === '' ) {
+		if ( '' === $api_base ) {
 			return array(
 				'ok'     => false,
 				'status' => 'missing_api_base',
@@ -1340,7 +1340,7 @@ class FLOSC_Framework {
 						$_menu,
 						static function ( $item ) {
 							$action = is_array( $item ) ? (string) ( $item['action'] ?? '' ) : '';
-							return $action !== 'open_sandbox_purchase' && strpos( $action, 'show_offer' ) !== 0;
+							return 'open_sandbox_purchase' !== $action && strpos( $action, 'show_offer' ) !== 0;
 						}
 					)
 				);
@@ -1764,7 +1764,7 @@ The Team',
 	 */
 	public function is_user_new_to_flow( $user_id, $flow_id ) {
 		$flow_stem = sanitize_key( pathinfo( basename( (string) $flow_id ), PATHINFO_FILENAME ) );
-		if ( $flow_stem === '' ) {
+		if ( '' === $flow_stem ) {
 			// Fallback path: if flow context is missing, allow one welcome send per user.
 			$sent_without_flow = (int) get_user_meta( (int) $user_id, '_flosc_sso_welcome_email_sent', true );
 			return ( $sent_without_flow <= 0 );
@@ -1789,7 +1789,7 @@ The Team',
 		}
 
 		$flow_stem = sanitize_key( pathinfo( basename( (string) $flow_id ), PATHINFO_FILENAME ) );
-		if ( $flow_stem === '' ) {
+		if ( '' === $flow_stem ) {
 			return;
 		}
 
@@ -1798,7 +1798,7 @@ The Team',
 		if ( is_array( $flow_settings ) && ! empty( $flow_settings['domain'] ) ) {
 			$flow_host = strtolower( trim( (string) $flow_settings['domain'] ) );
 		}
-		if ( $flow_host === '' ) {
+		if ( '' === $flow_host ) {
 			$flow_host = strtolower( (string) wp_parse_url( home_url( '/' ), PHP_URL_HOST ) );
 		}
 
@@ -1839,7 +1839,7 @@ The Team',
 	 */
 	private function resolve_flow_settings_by_stem( $flow_stem ) {
 		$flow_stem = sanitize_key( (string) $flow_stem );
-		if ( $flow_stem === '' ) {
+		if ( '' === $flow_stem ) {
 			return array();
 		}
 
@@ -1865,7 +1865,7 @@ The Team',
 		$with_flosc = array();
 		foreach ( $columns as $key => $label ) {
 			$with_flosc[ $key ] = $label;
-			if ( $key === 'email' ) {
+			if ( 'email' === $key ) {
 				$with_flosc['flosc_source'] = 'FLOSC Source';
 				$with_flosc['flosc_flows']  = 'Flow Use';
 			}
@@ -1883,24 +1883,24 @@ The Team',
 	 * Users list: render FLOSC attribution cells.
 	 */
 	public function flosc_render_users_custom_column( $value, $column_name, $user_id ) {
-		if ( $column_name === 'flosc_source' ) {
+		if ( 'flosc_source' === $column_name ) {
 			$host   = (string) get_user_meta( $user_id, '_flosc_source_latest_host', true );
 			$flow   = (string) get_user_meta( $user_id, '_flosc_last_flow', true );
 			$method = (string) get_user_meta( $user_id, '_flosc_source_latest_method', true );
 			$at     = (string) get_user_meta( $user_id, '_flosc_last_flow_at', true );
 
-			if ( $host === '' && $flow === '' && $method === '' ) {
+			if ( '' === $host && '' === $flow && '' === $method ) {
 				return '—';
 			}
 
 			$parts = array();
-			if ( $host !== '' ) {
+			if ( '' !== $host ) {
 				$parts[] = esc_html( $host );
 			}
-			if ( $flow !== '' ) {
+			if ( '' !== $flow ) {
 				$parts[] = esc_html( $flow );
 			}
-			if ( $method !== '' ) {
+			if ( '' !== $method ) {
 				$parts[] = esc_html( $method );
 			}
 
@@ -1913,11 +1913,11 @@ The Team',
 				admin_url( 'admin.php' )
 			);
 
-			$time_html = $at !== '' ? '<br><small class="flosc-muted-meta">' . esc_html( $at ) . '</small>' : '';
+			$time_html = '' !== $at ? '<br><small class="flosc-muted-meta">' . esc_html( $at ) . '</small>' : '';
 			return implode( ' | ', $parts ) . $time_html . '<br><a href="' . esc_url( $chat_logs_url ) . '">View chats</a>';
 		}
 
-		if ( $column_name === 'flosc_flows' ) {
+		if ( 'flosc_flows' === $column_name ) {
 			$counts = get_user_meta( $user_id, '_flosc_flow_use_counts', true );
 			if ( ! is_array( $counts ) || empty( $counts ) ) {
 				return '—';
@@ -2052,7 +2052,7 @@ The Team',
 
 				$status = $flow_settings['status'] ?? 'active';
 
-				if ( $status === 'active' ) {
+				if ( 'active' === $status ) {
 					add_rewrite_rule(
 						'^' . preg_quote( $slug, '/' ) . '/?$',
 						'index.php?flosc_app=1&flosc_ivr=' . rawurlencode( $filename ),
@@ -2109,7 +2109,7 @@ The Team',
 			// Note: enabled_quizzes intentionally omitted — admin configures which quizzes.
 			// are active; no default should be forced on any flow.
 			$stem_slug = strtolower( preg_replace( '/[^a-z0-9_-]/i', '', pathinfo( $basename, PATHINFO_FILENAME ) ) );
-			if ( $stem_slug === '' ) {
+			if ( '' === $stem_slug ) {
 				$stem_slug = 'flosc';
 			}
 			$defaults = array(
@@ -2121,7 +2121,7 @@ The Team',
 			);
 
 			foreach ( $defaults as $key => $default ) {
-				if ( ! isset( $settings[ $key ] ) || $settings[ $key ] === '' || $settings[ $key ] === null ) {
+				if ( ! isset( $settings[ $key ] ) || '' === $settings[ $key ] || null === $settings[ $key ] ) {
 					$settings[ $key ] = $default;
 					$changed          = true;
 				}
@@ -2197,7 +2197,7 @@ The Team',
 		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
 			return;
 		}
-		if ( $post->post_status !== 'publish' ) {
+		if ( 'publish' !== $post->post_status ) {
 			return;
 		}
 		// Regenerate only when the post is in this flow's configured lessons category.
@@ -2205,11 +2205,11 @@ The Team',
 		$category = '';
 		if ( function_exists( 'flosc_get_setting' ) ) {
 			$category = sanitize_title( (string) flosc_get_setting( 'content_item_category', '' ) );
-			if ( $category === '' ) {
+			if ( '' === $category ) {
 				$category = sanitize_title( (string) flosc_get_setting( 'free_content_item_pool_category', '' ) );
 			}
 		}
-		if ( $category === '' ) {
+		if ( '' === $category ) {
 			return;
 		}
 		if ( ! has_category( $category, $post_id ) ) {
@@ -2264,11 +2264,11 @@ The Team',
 		$category = '';
 		if ( function_exists( 'flosc_get_setting' ) ) {
 			$category = sanitize_title( (string) flosc_get_setting( 'content_item_category', '' ) );
-			if ( $category === '' ) {
+			if ( '' === $category ) {
 				$category = sanitize_title( (string) flosc_get_setting( 'free_content_item_pool_category', '' ) );
 			}
 		}
-		if ( $category === '' ) {
+		if ( '' === $category ) {
 			return; // No lessons category configured for this flow — nothing to generate.
 		}
 
@@ -2311,13 +2311,13 @@ The Team',
 		$product_label = function_exists( 'flosc_get_setting' )
 			? trim( (string) ( flosc_get_setting( 'identity', array() )['name'] ?? '' ) )
 			: '';
-		if ( $product_label === '' && function_exists( 'flosc' ) && is_object( flosc() ) && method_exists( flosc(), 'get_current_flow' ) ) {
+		if ( '' === $product_label && function_exists( 'flosc' ) && is_object( flosc() ) && method_exists( flosc(), 'get_current_flow' ) ) {
 			$flow = flosc()->get_current_flow();
 			if ( is_array( $flow ) ) {
 				$product_label = trim( (string) ( $flow['identity']['name'] ?? $flow['name'] ?? '' ) );
 			}
 		}
-		if ( $product_label === '' ) {
+		if ( '' === $product_label ) {
 			$product_label = 'Lesson';
 		}
 
@@ -2379,7 +2379,7 @@ The Team',
 				'flosc_kb_notice_' . $uid,
 				array(
 					'action' => sanitize_key( (string) $action ),
-					'error'  => $error !== '' ? sanitize_text_field( (string) $error ) : '',
+					'error'  => '' !== $error ? sanitize_text_field( (string) $error ) : '',
 				),
 				MINUTE_IN_SECONDS
 			);
@@ -2396,7 +2396,7 @@ The Team',
 	 */
 	private function kb_request_id( $ivr, $kb_id ) {
 		$kb_id = sanitize_key( (string) $kb_id );
-		if ( $kb_id !== '' ) {
+		if ( '' !== $kb_id ) {
 			return $kb_id;
 		}
 		return sanitize_key( pathinfo( (string) $ivr, PATHINFO_FILENAME ) );
@@ -2411,7 +2411,7 @@ The Team',
 
 		$ivr   = sanitize_file_name( $post['flosc_return_ivr'] ?? '' );
 		$kb_id = $this->kb_request_id( $ivr, $post['kb_id'] ?? '' );
-		if ( $kb_id === '' || ! function_exists( 'flosc_knowledge_base_dir' ) ) {
+		if ( '' === $kb_id || ! function_exists( 'flosc_knowledge_base_dir' ) ) {
 			wp_safe_redirect( $this->kb_return_url( $ivr, 'error', 'No knowledge base selected.' ) );
 			exit;
 		}
@@ -2464,7 +2464,7 @@ The Team',
 				}
 			}
 		}
-		if ( $names === array() || ( count( $names ) === 1 && (string) $names[0] === '' ) ) {
+		if ( $names === array() || ( count( $names ) === 1 && (string) '' === $names[0] ) ) {
 			wp_safe_redirect( $this->kb_return_url( $ivr, 'error', 'No file selected.' ) );
 			exit;
 		}
@@ -2489,7 +2489,7 @@ The Team',
 		foreach ( $names as $i => $raw_name ) {
 			$filename = sanitize_file_name( (string) $raw_name );
 			$ext      = strtolower( pathinfo( $filename, PATHINFO_EXTENSION ) );
-			if ( $filename === '' || ! in_array( $ext, array( 'md', 'txt' ), true ) ) {
+			if ( '' === $filename || ! in_array( $ext, array( 'md', 'txt' ), true ) ) {
 				$err = 'Only .md and .txt files are supported.';
 				continue;
 			}
@@ -2528,8 +2528,8 @@ The Team',
 			++$ok;
 		}
 
-		if ( $ok === 0 ) {
-			wp_safe_redirect( $this->kb_return_url( $ivr, 'error', $err !== '' ? $err : 'Upload failed.' ) );
+		if ( 0 === $ok ) {
+			wp_safe_redirect( $this->kb_return_url( $ivr, 'error', '' !== $err ? $err : 'Upload failed.' ) );
 			exit;
 		}
 		wp_safe_redirect( $this->kb_return_url( $ivr, 'uploaded' ) );
@@ -2621,12 +2621,12 @@ The Team',
 		}
 		$ivr   = sanitize_file_name( $post['flosc_return_ivr'] ?? '' );
 		$label = sanitize_text_field( (string) ( $post['kb_label'] ?? '' ) );
-		if ( $label === '' ) {
+		if ( '' === $label ) {
 			wp_safe_redirect( $this->kb_return_url( $ivr, 'error', 'Name is required.' ) );
 			exit;
 		}
 		$id = sanitize_key( $label );
-		if ( $id === '' ) {
+		if ( '' === $id ) {
 			$id = 'kb_' . wp_generate_password( 8, false, false );
 		}
 		if ( function_exists( 'flosc_knowledge_base_get' ) && flosc_knowledge_base_get( $id ) ) {
@@ -2662,7 +2662,7 @@ The Team',
 		// Pass 8: bound + field-sanitize after json_decode of request history JSON.
 		$history_raw = (string) ( $post['history'] ?? '[]' );
 		$history     = array();
-		if ( $history_raw !== '' && strlen( $history_raw ) <= 200000 ) {
+		if ( '' !== $history_raw && strlen( $history_raw ) <= 200000 ) {
 			$decoded_history = json_decode( $history_raw, true, 16 );
 			if ( JSON_ERROR_NONE === json_last_error() && is_array( $decoded_history ) ) {
 				$sanitized_history = array();
@@ -2704,7 +2704,7 @@ The Team',
 		$session_hash = FLOSC_Chatpack::generate_session_hash( $flosc_hash, get_current_user_id(), 'accuracy_test' );
 		$pair_num     = $msg_idx + 1;
 
-		if ( $msg_idx === 0 ) {
+		if ( 0 === $msg_idx ) {
 			$system_prompt = FLOSC_Chatpack::build_full_chatpack( 'content', $eval_context, $ivr, $flosc_hash, $session_hash, $pair_num );
 		} else {
 			$system_prompt = FLOSC_Chatpack::build_followup_chatpack( 'content', $eval_context, $session_hash, $pair_num );
@@ -2885,7 +2885,7 @@ The Team',
 		}
 
 		// ── Check 5: Apple-specific extra fields ──.
-		if ( $provider_id === 'apple' ) {
+		if ( 'apple' === $provider_id ) {
 			if ( ! empty( $flow_id ) && ! empty( $flow_settings ) ) {
 				$apple_team_id     = $flow_settings['sso_apple_team_id'] ?? '';
 				$apple_key_id      = $flow_settings['sso_apple_key_id'] ?? '';
@@ -2914,9 +2914,9 @@ The Team',
 
 		// ── Check 6: Provider-specific credential verification ──.
 		if ( $has_id && $has_secret ) {
-			if ( $provider_id === 'facebook' ) {
+			if ( 'facebook' === $provider_id ) {
 				$checks = array_merge( $checks, $this->test_facebook_credentials( $client_id, $client_secret ) );
-			} elseif ( $provider_id === 'google' ) {
+			} elseif ( 'google' === $provider_id ) {
 				$checks = array_merge( $checks, $this->test_google_credentials( $client_id, $client_secret, $callback_url ) );
 			}
 		}
@@ -2987,7 +2987,7 @@ The Team',
 
 			// Check if app is in live mode (if the field is available)
 			if ( isset( $body['status'] ) ) {
-				$is_live  = ( $body['status'] === 'live' );
+				$is_live  = ( 'live' === $body['status'] );
 				$checks[] = array(
 					'label'  => 'App mode',
 					'pass'   => $is_live,
@@ -3037,23 +3037,23 @@ The Team',
 		$error      = $body['error'] ?? '';
 		$error_desc = $body['error_description'] ?? '';
 
-		if ( $error === 'invalid_client' ) {
+		if ( 'invalid_client' === $error ) {
 			$checks[] = array(
 				'label'  => 'Credentials verification',
 				'pass'   => false,
 				'detail' => 'INVALID — Client ID or Secret is wrong',
 			);
-		} elseif ( $error === 'invalid_grant' || $error === 'redirect_uri_mismatch' ) {
+		} elseif ( 'invalid_grant' === $error || 'redirect_uri_mismatch' === $error ) {
 			// invalid_grant = creds work, code is fake (expected)
 			// redirect_uri_mismatch = creds work, but redirect URI doesn't match.
-			$creds_ok = ( $error !== 'redirect_uri_mismatch' );
+			$creds_ok = ( 'redirect_uri_mismatch' !== $error );
 			$checks[] = array(
 				'label'  => 'Credentials verification',
 				'pass'   => true,
 				'detail' => 'VALID — Client ID and Secret accepted by Google',
 			);
 
-			if ( $error === 'redirect_uri_mismatch' ) {
+			if ( 'redirect_uri_mismatch' === $error ) {
 				$checks[] = array(
 					'label'  => 'Redirect URI match',
 					'pass'   => false,
@@ -3199,7 +3199,7 @@ The Team',
 		update_post_meta( $post_id, '_flosc_protection_mode', $mode );
 
 		// Backward compat: also update _flosc_public_post for existing code that checks it.
-		if ( $mode === 'full' ) {
+		if ( 'full' === $mode ) {
 			update_post_meta( $post_id, '_flosc_public_post', 'yes' );
 		} else {
 			delete_post_meta( $post_id, '_flosc_public_post' );
@@ -3226,7 +3226,7 @@ The Team',
 		$flows = get_option( 'flosc_flows', array() );
 
 		foreach ( $flows as $flow ) {
-			if ( $flow['status'] !== 'active' || empty( $flow['custom_domain'] ) ) {
+			if ( 'active' !== $flow['status'] || empty( $flow['custom_domain'] ) ) {
 				continue;
 			}
 
@@ -3505,7 +3505,7 @@ The Team',
 		// v1.7.5: If flow was explicitly set (e.g., from REST API with flow_id param,
 		// or companion knowledge-hub resolution), use that instead of domain/slug detection.
 		// Supports purchases from any host and companion settings on hub archives.
-		if ( $this->forced_flow !== null ) {
+		if ( null !== $this->forced_flow ) {
 			return $this->forced_flow;
 		}
 
@@ -3535,7 +3535,7 @@ The Team',
 		// A custom-domain host owns its flow even when a shared-host rewrite.
 		// supplies a different flosc_ivr value for paths such as /chat.
 		$current_host = strtolower( sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ?? '' ) ) );
-		if ( $current_host !== '' ) {
+		if ( '' !== $current_host ) {
 			$ivr_files = array_unique( array_map( 'basename', flosc_config_glob( array( '*_ivr.md', 'ivr*.md' ) ) ) );
 			foreach ( $ivr_files as $filename ) {
 				if ( strpos( $filename, 'backup' ) !== false ) {
@@ -3700,7 +3700,7 @@ The Team',
 			$key = flosc_content_item_canonical_option_key( $key );
 		}
 		// Get flow context.
-		if ( $flow_id !== null ) {
+		if ( null !== $flow_id ) {
 			$flow = flosc_flows()->get_flow( $flow_id );
 			if ( ! $flow ) {
 				// IVR-file flows live outside the flows registry; read their.
@@ -3708,7 +3708,7 @@ The Team',
 				$flosc_ivr_candidates = array_unique( array( basename( (string) $flow_id ), basename( (string) $flow_id ) . '.md' ) );
 				$flosc_ivr_files      = array_map( 'basename', (array) flosc_config_glob( array( '*_ivr.md', 'ivr*.md' ) ) );
 				foreach ( $flosc_ivr_candidates as $flosc_ivr_candidate ) {
-					if ( $flosc_ivr_candidate !== '' && in_array( $flosc_ivr_candidate, $flosc_ivr_files, true ) ) {
+					if ( '' !== $flosc_ivr_candidate && in_array( $flosc_ivr_candidate, $flosc_ivr_files, true ) ) {
 						$flow = $this->build_flow_from_ivr_file( $flosc_ivr_candidate );
 						break;
 					}
@@ -3727,28 +3727,28 @@ The Team',
 			&& isset( $flow['identity'] )
 			&& is_array( $flow['identity'] )
 			&& array_key_exists( $key, $flow['identity'] )
-			&& $flow['identity'][ $key ] !== ''
-			&& $flow['identity'][ $key ] !== null
+			&& '' !== $flow['identity'][ $key ]
+			&& null !== $flow['identity'][ $key ]
 		) {
 			return $flow['identity'][ $key ];
 		}
 
 		// Flat flow key (seed / older bags that have not been nested yet).
-		if ( $flow && isset( $flow[ $key ] ) && $flow[ $key ] !== '' && $flow[ $key ] !== null ) {
+		if ( $flow && isset( $flow[ $key ] ) && '' !== $flow[ $key ] && null !== $flow[ $key ] ) {
 			return $flow[ $key ];
 		}
 
 		// Fallback to global wp_option (canonical then legacy)
 		$val = get_option( 'flosc_' . $key, null );
-		if ( $val !== null && $val !== false && $val !== '' ) {
+		if ( null !== $val && false !== $val && '' !== $val ) {
 			return $val;
 		}
 		if ( function_exists( 'flosc_content_item_option_key_map' ) ) {
 			$map = flosc_content_item_option_key_map();
 			$old = $map[ $key ] ?? '';
-			if ( $old !== '' ) {
+			if ( '' !== $old ) {
 				$legacy = get_option( 'flosc_' . $old, null );
-				if ( $legacy !== null && $legacy !== false && $legacy !== '' ) {
+				if ( null !== $legacy && false !== $legacy && '' !== $legacy ) {
 					return $legacy;
 				}
 			}
@@ -3809,13 +3809,13 @@ The Team',
 			$primary  = (string) ( $id['primary_color'] ?? $flow['primary_color'] ?? '#4f46e5' );
 
 			return array(
-				'name'            => $name !== '' ? $name : 'FLOSC App',
+				'name'            => '' !== $name ? $name : 'FLOSC App',
 				'title'           => $id['title'] ?? ( $flow['title'] ?? '' ),
 				'tagline'         => $id['tagline'] ?? ( $flow['tagline'] ?? '' ),
 				'chatlogo_url'    => $chatlogo,
 				'favicon_url'     => $favicon,
 				'badgeUrl'        => $id['badgeUrl'] ?? ( $flow['badgeUrl'] ?? '' ),
-				'primary_color'   => $primary !== '' ? $primary : '#4f46e5',
+				'primary_color'   => '' !== $primary ? $primary : '#4f46e5',
 				'share_text'      => $id['share_text'] ?? ( $flow['share_text'] ?? '' ),
 				'flow_id'         => $flow['id'] ?? 'default',
 				'currency_symbol' => $id['currency_symbol'] ?? get_option( 'flosc_currency_symbol', '$' ),
@@ -3911,8 +3911,8 @@ The Team',
 				// Keep backend member elevation; allow frontend to elevate only if backend guest and frontend claims member (unlikely / ignored for demote).
 				if ( in_array( $pkey, array( 'purchased', 'is_member', 'access_level' ), true ) ) {
 					$backend_member = (
-						$pval === true || $pval === 'Yes' || $pval === 'member'
-						|| $pval === 1 || $pval === '1'
+						true === $pval || 'Yes' === $pval || 'member' === $pval
+						|| 1 === $pval || '1' === $pval
 					);
 					if ( $backend_member ) {
 						$context[ $pkey ] = $pval;
@@ -4039,7 +4039,7 @@ The Team',
 	private function flosc_enforce_no_hedge_response( $response_text, $user_message, $flow_id, $ivr_file, $phase, $eval_context ) {
 		$response_text = trim( (string) $response_text );
 
-		if ( $response_text === '' || $this->flosc_contains_forbidden_hedge( $response_text ) ) {
+		if ( '' === $response_text || $this->flosc_contains_forbidden_hedge( $response_text ) ) {
 			return $this->flosc_build_professional_replacement( $user_message, $flow_id, $ivr_file, $phase, $eval_context );
 		}
 
@@ -4070,7 +4070,7 @@ The Team',
 
 		if ( $this->flosc_is_composition_query( $user_message ) ) {
 			$catalog_reply = $this->flosc_build_da1_composition_reply( $user_message, $flow_id, $ivr_file );
-			if ( $catalog_reply !== '' ) {
+			if ( '' !== $catalog_reply ) {
 				return $catalog_reply;
 			}
 		}
@@ -4078,9 +4078,9 @@ The Team',
 		if ( $this->flosc_is_bio_query( $user_message ) ) {
 			// Flow identity settings only — no hard-coded personal brand defaults (WP.org).
 			$bio_summary = trim( (string) flosc_get_setting( 'identity_bio_summary', '' ) );
-			if ( $bio_summary === '' ) {
+			if ( '' === $bio_summary ) {
 				$identity_name = trim( (string) flosc_get_setting( 'name', '' ) );
-				if ( $identity_name === '' ) {
+				if ( '' === $identity_name ) {
 					$identity_name = 'this host';
 				}
 				$bio_summary = sprintf(
@@ -4092,7 +4092,7 @@ The Team',
 
 			$bio_url = trim( (string) flosc_get_setting( 'identity_bio_url', '' ) );
 			$reply   = $bio_summary;
-			if ( $bio_url !== '' && filter_var( $bio_url, FILTER_VALIDATE_URL ) ) {
+			if ( '' !== $bio_url && filter_var( $bio_url, FILTER_VALIDATE_URL ) ) {
 				$reply .= "\n" . sprintf(
 					/* translators: %s: biography URL */
 					__( 'More info: %s', 'flosc' ),
@@ -4106,7 +4106,7 @@ The Team',
 		$default_response = $this->get_phase_default_response( (string) $phase, is_array( $eval_context ) ? $eval_context : array() );
 		$default_response = trim( (string) $default_response );
 
-		if ( $default_response !== '' ) {
+		if ( '' !== $default_response ) {
 			return $default_response;
 		}
 
@@ -4374,7 +4374,7 @@ You are a GUIDE, not a teacher. Your job is to:
 				$price        = $offer['display_price'] ?? 'Not set';
 				$grants_level = $offer['grants']['level'] ?? 'none';
 
-				$status_icon = ( $status === 'active' ) ? '✅' : '⏸️';
+				$status_icon = ( 'active' === $status ) ? '✅' : '⏸️';
 
 				$output .= "{$status_icon} **{$offer['name']}** (`{$id}`)\n";
 				$output .= "  - Type: {$type}\n";
@@ -4616,7 +4616,7 @@ You are a GUIDE, not a teacher. Your job is to:
 		} elseif ( $this->member_access && method_exists( $this->member_access, 'is_member' ) ) {
 			$is_member = (bool) $this->member_access->is_member( $user_id, $status_stem );
 		}
-		$output .= '  - Flow: ' . ( $status_stem !== '' ? $status_stem : '_unknown_' ) . "\n";
+		$output .= '  - Flow: ' . ( '' !== $status_stem ? $status_stem : '_unknown_' ) . "\n";
 		$output .= '  - Member Access (this flow): ' . ( $is_member ? '✅ Yes' : '❌ No (guest if logged in)' ) . "\n";
 		$output .= '  - Member Levels: ' . ( empty( $member_levels ) ? '_none_' : implode( ', ', $member_levels ) ) . "\n";
 
@@ -4804,7 +4804,7 @@ Example good response:
 
 		// v1.9.1: Check which provider is configured — this method only supports Anthropic.
 		$provider = flosc_get_setting( 'ai_provider', 'ivr' );
-		if ( $provider !== 'anthropic' ) {
+		if ( 'anthropic' !== $provider ) {
 			return "RAG tools require Anthropic as the AI provider. Current provider: {$provider}. Switch to Anthropic in AI Configuration, or use standard chat which works with all providers.";
 		}
 
@@ -4853,7 +4853,7 @@ Example good response:
 		}
 
 		$text = isset( $result['text'] ) ? (string) $result['text'] : '';
-		return $text !== '' ? $text : 'I encountered an issue processing your request. Please try again.';
+		return '' !== $text ? $text : 'I encountered an issue processing your request. Please try again.';
 	}
 
 	/**
@@ -4903,7 +4903,7 @@ Example good response:
 		// v9.3.4: If 'default', rotate through ENABLED quizzes (ABAB pattern)
 		// v3.0.2: Use flosc_get_setting to check flow settings first, then global option.
 		// Resolve 'default' via this flow's enabled quizzes / default_text_quiz_id.
-		if ( $quiz_id === 'default' ) {
+		if ( 'default' === $quiz_id ) {
 			// Set flow context from request so flosc_get_setting() finds per-flow settings.
 			$req_flow_id  = sanitize_text_field( $request->get_param( 'flow_id' ) ?? '' );
 			$req_ivr_file = sanitize_file_name( $request->get_param( 'ivr_file' ) ?? '' );
@@ -4922,7 +4922,7 @@ Example good response:
 						array_map(
 							static function ( $id ) {
 								$id = sanitize_key( (string) $id );
-								return $id !== '' ? FLOSC_Quiz_Registry::resolve_id( $id ) : '';
+								return '' !== $id ? FLOSC_Quiz_Registry::resolve_id( $id ) : '';
 							},
 							$enabled_quizzes
 						)
@@ -4953,17 +4953,17 @@ Example good response:
 		if ( $quiz_type ) {
 			// Prefer flow settings (quiz_content_{id}), then global option, then type default.
 			$content = flosc_get_setting( 'quiz_content_' . $resolved_id, '' );
-			if ( $content === '' || $content === null ) {
+			if ( '' === $content || null === $content ) {
 				$content = get_option( 'flosc_quiz_content_' . $resolved_id, $quiz_type->get_default_content() );
 			}
 
 			// Check if this is a TEXT SEQUENCE quiz (type: 1,2,3...10)
-			if ( $resolved_id === 'flosc_sample_data_numbers_quiz' ) {
+			if ( 'flosc_sample_data_numbers_quiz' === $resolved_id ) {
 				// Parse expected values - ensure we have valid content.
 				$expected = array_filter(
 					array_map( 'trim', explode( ',', $content ) ),
 					function ( $v ) {
-						return $v !== '';
+						return '' !== $v;
 					}
 				);
 				// Fallback to default if empty.
@@ -4985,7 +4985,7 @@ Example good response:
 			}
 
 			// Check if this is AUDIO quiz.
-			if ( $resolved_id === 'flosc_sample_audio_quiz' ) {
+			if ( 'flosc_sample_audio_quiz' === $resolved_id ) {
 				return new WP_REST_Response(
 					array(
 						'success'      => true,
@@ -5000,7 +5000,7 @@ Example good response:
 			}
 
 			// Check if this is MULTIPLE CHOICE (pipe format)
-			if ( $resolved_id === 'multiplechoice' ) {
+			if ( 'multiplechoice' === $resolved_id ) {
 				// Parse content as JSON or structured format.
 				$questions = $this->parse_multiplechoice_content( $content );
 				return new WP_REST_Response(
@@ -5020,10 +5020,10 @@ Example good response:
 				$questions = array();
 				// Content key for this quiz id only: quiz_content_{id}
 				$saved_content = $content;
-				if ( ( $saved_content === '' || $saved_content === null ) && $resolved_id !== '' ) {
+				if ( ( '' === $saved_content || null === $saved_content ) && '' !== $resolved_id ) {
 					$saved_content = flosc_get_setting( 'quiz_content_' . $resolved_id, '' );
 				}
-				if ( is_string( $saved_content ) && $saved_content !== '' ) {
+				if ( is_string( $saved_content ) && '' !== $saved_content ) {
 					$questions = $quiz_type->parse_content_to_questions( $saved_content );
 				}
 				if ( empty( $questions ) ) {
@@ -5289,7 +5289,7 @@ Example good response:
 
 		// v1.0.8: If not found in current phase, check freeline phase for 'always' condition messages.
 		// This ensures global input-output pairs (like "Are you there?") work across all phases.
-		if ( $phase !== 'freeline' ) {
+		if ( 'freeline' !== $phase ) {
 			$freeline_message_names = $ivr_config['phases']['freeline'] ?? array();
 			$freeline_messages      = array();
 			foreach ( $freeline_message_names as $msg_name ) {
@@ -5319,7 +5319,7 @@ Example good response:
 		$assistant_name = function_exists( 'flosc_personality_name' )
 			? flosc_personality_name()
 			: ( function_exists( 'flosc_visitor_assistant_name' ) ? flosc_visitor_assistant_name() : '' );
-		if ( $assistant_name === '' ) {
+		if ( '' === $assistant_name ) {
 			$assistant_name = 'our course';
 		}
 
@@ -5329,7 +5329,7 @@ Example good response:
 			'{correct_items}'     => $context['correct_items'] ?? '',
 			'{missed_items}'      => $context['missed_items'] ?? '',
 			'{product_name}'      => $assistant_name,
-			'{title}'             => $public_title !== '' ? $public_title : $assistant_name,
+			'{title}'             => '' !== $public_title ? $public_title : $assistant_name,
 			'{tagline}'           => $public_tagline,
 			'{price}'             => get_option( 'flosc_main_price', '$100' ),
 			'{discount_price}'    => get_option( 'flosc_discount_price', '$25' ),
@@ -5390,7 +5390,7 @@ Example good response:
 
 			$flow_id   = sanitize_key( (string) ( $flow['id'] ?? ( is_string( $flow_key ) ? $flow_key : '' ) ) );
 			$flow_stem = $this->flosc_normalize_flow_stem( (string) ( $flow['ivr_file'] ?? $flow['ivr'] ?? $flow_id ) );
-			if ( $flow_stem === '' || $flow_stem === 'default' ) {
+			if ( '' === $flow_stem || 'default' === $flow_stem ) {
 				continue;
 			}
 
@@ -5398,37 +5398,37 @@ Example good response:
 			if ( $this->sale_manager && method_exists( $this->sale_manager, 'access' ) ) {
 				$state = (string) $this->sale_manager->access()->get_simple_state( $user_id, $flow_stem );
 			}
-			if ( $state !== 'member' && $state !== 'guest' ) {
+			if ( 'member' !== $state && 'guest' !== $state ) {
 				$state = 'guest';
 			}
 
 			$tokens     = max( 0, intval( $this->flosc_get_user_flow_token_balance( $user_id, $flow_stem ) ) );
-			$is_current = ( $current_stem !== '' && $flow_stem === $current_stem );
-			$include    = $is_current || $state === 'member' || $tokens > 0 || ( $registration_stem !== '' && $registration_stem === $flow_stem );
+			$is_current = ( '' !== $current_stem && $flow_stem === $current_stem );
+			$include    = $is_current || 'member' === $state || $tokens > 0 || ( '' !== $registration_stem && $registration_stem === $flow_stem );
 			if ( ! $include ) {
 				continue;
 			}
 
 			$name = trim( (string) ( $flow['name'] ?? '' ) );
-			if ( $name === '' ) {
+			if ( '' === $name ) {
 				$identity = is_array( $flow['identity'] ?? null ) ? $flow['identity'] : array();
 				$name     = trim( (string) ( $identity['name'] ?? '' ) );
 			}
-			if ( $name === '' ) {
+			if ( '' === $name ) {
 				$bag = get_option( 'flosc_flow_' . $flow_stem, array() );
 				if ( is_array( $bag ) ) {
 					$name = trim( (string) ( $bag['name'] ?? $bag['product_name'] ?? '' ) );
-					if ( $name === '' && is_array( $bag['identity'] ?? null ) ) {
+					if ( '' === $name && is_array( $bag['identity'] ?? null ) ) {
 						$name = trim( (string) ( $bag['identity']['name'] ?? '' ) );
 					}
 				}
 			}
-			if ( $name === '' ) {
+			if ( '' === $name ) {
 				$name = strtoupper( $flow_stem );
 			}
 
 			$rows[] = array(
-				'id'      => $flow_id !== '' ? $flow_id : $flow_stem,
+				'id'      => '' !== $flow_id ? $flow_id : $flow_stem,
 				'stem'    => $flow_stem,
 				'name'    => $name,
 				'state'   => $state,
@@ -5478,10 +5478,10 @@ Example good response:
 
 		$state_label = static function ( $state ) {
 			$state = strtolower( (string) $state );
-			if ( $state === 'member' ) {
+			if ( 'member' === $state ) {
 				return 'Member';
 			}
-			if ( $state === 'guest' ) {
+			if ( 'guest' === $state ) {
 				return 'Guest';
 			}
 			return 'Visitor';
@@ -5544,12 +5544,12 @@ Example good response:
 
 			if ( $only_always ) {
 				$conditions = $msg['conditions'] ?? 'always';
-				if ( $conditions !== 'always' ) {
+				if ( 'always' !== $conditions ) {
 					continue;
 				}
 			}
 
-			if ( isset( $msg['conditions'] ) && $msg['conditions'] !== 'always' ) {
+			if ( isset( $msg['conditions'] ) && 'always' !== $msg['conditions'] ) {
 				$evaluator = new FLOSC_Condition_Evaluator( $context );
 				if ( ! $evaluator->evaluate( $msg['conditions'] ) ) {
 					continue;
@@ -5595,12 +5595,12 @@ Example good response:
 
 			if ( $only_always ) {
 				$conditions = $msg['conditions'] ?? 'always';
-				if ( $conditions !== 'always' ) {
+				if ( 'always' !== $conditions ) {
 					continue;
 				}
 			}
 
-			if ( isset( $msg['conditions'] ) && $msg['conditions'] !== 'always' ) {
+			if ( isset( $msg['conditions'] ) && 'always' !== $msg['conditions'] ) {
 				$evaluator = new FLOSC_Condition_Evaluator( $context );
 				if ( ! $evaluator->evaluate( $msg['conditions'] ) ) {
 					continue;
@@ -5933,7 +5933,7 @@ Example good response:
 			}
 			// Only match "exact" type server-side; AI interpretation goes through AI prompt.
 			$match_type = $offer['match_type'] ?? 'exact';
-			if ( $match_type !== 'exact' ) {
+			if ( 'exact' !== $match_type ) {
 				continue;
 			}
 			if ( ( $offer['status'] ?? 'active' ) !== 'active' ) {
@@ -5985,9 +5985,9 @@ Example good response:
 				continue;
 			}
 
-			if ( isset( $msg['type'] ) && $msg['type'] === 'suggested_user_autoprompt' ) {
+			if ( isset( $msg['type'] ) && 'suggested_user_autoprompt' === $msg['type'] ) {
 				// Check conditions if present.
-				if ( isset( $msg['conditions'] ) && $msg['conditions'] !== 'always' ) {
+				if ( isset( $msg['conditions'] ) && 'always' !== $msg['conditions'] ) {
 					$evaluator = new FLOSC_Condition_Evaluator( $context );
 					if ( ! $evaluator->evaluate( $msg['conditions'] ) ) {
 						continue;
@@ -6131,10 +6131,10 @@ Example good response:
 		// Flow settings first, then global option, then type default.
 		$qid              = $quiz_type->get_id();
 		$expected_content = flosc_get_setting( 'quiz_content_' . $qid, '' );
-		if ( $expected_content === '' || $expected_content === null ) {
+		if ( '' === $expected_content || null === $expected_content ) {
 			$expected_content = get_option( 'flosc_quiz_content_' . $qid, $quiz_type->get_default_content() );
 		}
-		if ( ( $expected_content === '' || $expected_content === null ) && method_exists( $quiz_type, 'get_default_content' ) ) {
+		if ( ( '' === $expected_content || null === $expected_content ) && method_exists( $quiz_type, 'get_default_content' ) ) {
 			$expected_content = $quiz_type->get_default_content();
 		}
 
@@ -6229,10 +6229,10 @@ Example good response:
 		// Flow settings first, then global option, then type default.
 		$qid              = $quiz_type->get_id();
 		$expected_content = flosc_get_setting( 'quiz_content_' . $qid, '' );
-		if ( $expected_content === '' || $expected_content === null ) {
+		if ( '' === $expected_content || null === $expected_content ) {
 			$expected_content = get_option( 'flosc_quiz_content_' . $qid, $quiz_type->get_default_content() );
 		}
-		if ( ( $expected_content === '' || $expected_content === null ) && method_exists( $quiz_type, 'get_default_content' ) ) {
+		if ( ( '' === $expected_content || null === $expected_content ) && method_exists( $quiz_type, 'get_default_content' ) ) {
 			$expected_content = $quiz_type->get_default_content();
 		}
 
@@ -6324,7 +6324,7 @@ Example good response:
 		$stem = $this->flosc_normalize_flow_stem( $stem );
 		$flow = null;
 
-		if ( $stem !== '' ) {
+		if ( '' !== $stem ) {
 			$flows = get_option( 'flosc_flows', array() );
 			if ( is_array( $flows ) ) {
 				foreach ( $flows as $f ) {
@@ -6333,11 +6333,11 @@ Example good response:
 					}
 					$id  = sanitize_key( (string) ( $f['id'] ?? '' ) );
 					$ivr = (string) ( $f['ivr_file'] ?? $f['ivr'] ?? '' );
-					$fs  = $this->flosc_normalize_flow_stem( $ivr !== '' ? $ivr : $id );
+					$fs  = $this->flosc_normalize_flow_stem( '' !== $ivr ? $ivr : $id );
 					if ( $fs === $stem || $id === $stem ) {
 						$flow = $f;
-						if ( $stem === '' || $stem === 'default' ) {
-							$stem = $fs !== '' ? $fs : $id;
+						if ( '' === $stem || 'default' === $stem ) {
+							$stem = '' !== $fs ? $fs : $id;
 						}
 						break;
 					}
@@ -6346,7 +6346,7 @@ Example good response:
 		}
 		if ( ! is_array( $flow ) ) {
 			$flow = $this->get_current_flow();
-			if ( is_array( $flow ) && ( $stem === '' || $stem === 'default' ) ) {
+			if ( is_array( $flow ) && ( '' === $stem || 'default' === $stem ) ) {
 				$stem = $this->flosc_normalize_flow_stem(
 					(string) ( $flow['ivr_file'] ?? $flow['ivr'] ?? $flow['id'] ?? '' )
 				);
@@ -6354,7 +6354,7 @@ Example good response:
 		}
 
 		$settings = array();
-		if ( $stem !== '' && $stem !== 'default' ) {
+		if ( '' !== $stem && 'default' !== $stem ) {
 			$bag = get_option( 'flosc_flow_' . $stem, array() );
 			if ( is_array( $bag ) ) {
 				$settings = $bag;
@@ -6373,7 +6373,7 @@ Example good response:
 				continue;
 			}
 			$gcat = trim( (string) ( $group['category'] ?? '' ) );
-			if ( $gcat !== '' && $gcat !== '0' ) {
+			if ( '' !== $gcat && '0' !== $gcat ) {
 				return true;
 			}
 		}
@@ -6384,17 +6384,17 @@ Example good response:
 			$cat = trim( (string) $settings['content_item_category'] );
 		} elseif ( is_array( $flow ) ) {
 			$cat = trim( (string) ( $flow['content_item_category'] ?? '' ) );
-			if ( $cat === '' && ! empty( $flow['wp_category_id'] ) ) {
+			if ( '' === $cat && ! empty( $flow['wp_category_id'] ) ) {
 				$cat = (string) (int) $flow['wp_category_id'];
 			}
 		}
-		if ( $cat !== '' && $cat !== '0' ) {
+		if ( '' !== $cat && '0' !== $cat ) {
 			return true;
 		}
 
 		// 3) Complimentary pool category (free lessons) configured for this flow.
 		$pool = sanitize_title( (string) ( $settings['free_content_item_pool_category'] ?? '' ) );
-		if ( $pool !== '' ) {
+		if ( '' !== $pool ) {
 			return true;
 		}
 
@@ -6413,7 +6413,7 @@ Example good response:
 		$stem = $this->flosc_normalize_flow_stem( $stem );
 		$ids  = array();
 
-		$settings = ( $stem !== '' && $stem !== 'default' )
+		$settings = ( '' !== $stem && 'default' !== $stem )
 			? get_option( 'flosc_flow_' . $stem, array() )
 			: array();
 		if ( ! is_array( $settings ) ) {
@@ -6429,8 +6429,8 @@ Example good response:
 				}
 				$id  = sanitize_key( (string) ( $f['id'] ?? '' ) );
 				$ivr = (string) ( $f['ivr_file'] ?? $f['ivr'] ?? '' );
-				$fs  = $this->flosc_normalize_flow_stem( $ivr !== '' ? $ivr : $id );
-				if ( $stem !== '' && ( $fs === $stem || $id === $stem ) ) {
+				$fs  = $this->flosc_normalize_flow_stem( '' !== $ivr ? $ivr : $id );
+				if ( '' !== $stem && ( $fs === $stem || $id === $stem ) ) {
 					$flow = $f;
 					break;
 				}
@@ -6448,7 +6448,7 @@ Example good response:
 		if ( is_array( $enabled ) ) {
 			foreach ( $enabled as $qid ) {
 				$qid = sanitize_key( (string) $qid );
-				if ( $qid !== '' ) {
+				if ( '' !== $qid ) {
 					$ids[] = $qid;
 				}
 			}
@@ -6463,10 +6463,10 @@ Example good response:
 				$v = (string) $flow[ $key ];
 			}
 			$v = sanitize_key( pathinfo( basename( trim( $v ) ), PATHINFO_FILENAME ) );
-			if ( $v === '' ) {
+			if ( '' === $v ) {
 				$v = sanitize_key( trim( (string) ( $settings[ $key ] ?? $flow[ $key ] ?? '' ) ) );
 			}
-			if ( $v !== '' ) {
+			if ( '' !== $v ) {
 				$ids[] = $v;
 			}
 		}
@@ -6498,34 +6498,34 @@ Example good response:
 		$qid  = sanitize_key( (string) $quiz_id_meta );
 
 		if ( is_array( $quiz_data ) ) {
-			if ( $qid === '' && ! empty( $quiz_data['quiz_id'] ) ) {
+			if ( '' === $qid && ! empty( $quiz_data['quiz_id'] ) ) {
 				$qid = sanitize_key( (string) $quiz_data['quiz_id'] );
 			}
-			if ( $qid === '' && ! empty( $quiz_data['quizId'] ) ) {
+			if ( '' === $qid && ! empty( $quiz_data['quizId'] ) ) {
 				$qid = sanitize_key( (string) $quiz_data['quizId'] );
 			}
 			if ( ! empty( $quiz_data['flow_id'] ) ) {
 				$data_stem = $this->flosc_normalize_flow_stem( (string) $quiz_data['flow_id'] );
-				if ( $data_stem !== '' && $stem !== '' && $data_stem !== $stem ) {
+				if ( '' !== $data_stem && '' !== $stem && $data_stem !== $stem ) {
 					return false;
 				}
 			}
 		}
 
-		if ( $qid !== '' ) {
+		if ( '' !== $qid ) {
 			return in_array( $qid, $configured, true );
 		}
 
 		// Legacy untagged IPA payload: require this flow explicitly sets default_audio_quiz_id.
 		if ( is_array( $quiz_data ) && ! empty( $quiz_data['phrase_results'] ) ) {
-			$settings = ( $stem !== '' && $stem !== 'default' )
+			$settings = ( '' !== $stem && 'default' !== $stem )
 				? get_option( 'flosc_flow_' . $stem, array() )
 				: array();
 			$audio    = '';
 			if ( is_array( $settings ) && ! empty( $settings['default_audio_quiz_id'] ) ) {
 				$audio = sanitize_key( (string) $settings['default_audio_quiz_id'] );
 			}
-			if ( $audio === '' ) {
+			if ( '' === $audio ) {
 				$flows = get_option( 'flosc_flows', array() );
 				if ( is_array( $flows ) ) {
 					foreach ( $flows as $f ) {
@@ -6534,7 +6534,7 @@ Example good response:
 						}
 						$id  = sanitize_key( (string) ( $f['id'] ?? '' ) );
 						$ivr = (string) ( $f['ivr_file'] ?? $f['ivr'] ?? '' );
-						$fs  = $this->flosc_normalize_flow_stem( $ivr !== '' ? $ivr : $id );
+						$fs  = $this->flosc_normalize_flow_stem( '' !== $ivr ? $ivr : $id );
 						if ( $fs === $stem || $id === $stem ) {
 							$audio = sanitize_key( (string) ( $f['default_audio_quiz_id'] ?? '' ) );
 							break;
@@ -6542,7 +6542,7 @@ Example good response:
 					}
 				}
 			}
-			return $audio !== '' && in_array( $audio, $configured, true );
+			return '' !== $audio && in_array( $audio, $configured, true );
 		}
 
 		return false;
@@ -6559,7 +6559,7 @@ Example good response:
 		if ( $request && method_exists( $request, 'get_param' ) ) {
 			$raw = (string) ( $request->get_param( 'flow_id' ) ?? $request->get_param( 'ivr_file' ) ?? '' );
 		}
-		if ( $raw === '' ) {
+		if ( '' === $raw ) {
 			$flow = $this->get_current_flow();
 			if ( is_array( $flow ) ) {
 				$raw = (string) ( $flow['ivr_file'] ?? $flow['ivr'] ?? $flow['id'] ?? '' );
@@ -6607,12 +6607,12 @@ Example good response:
 			$ai_response = substr( $ai_response, 0, 80000 ) . "\n<!-- truncated -->";
 		}
 
-		if ( $user_message === '' && $ai_response === '' ) {
+		if ( '' === $user_message && '' === $ai_response ) {
 			return new WP_Error( 'empty', __( 'Nothing to log', 'flosc' ), array( 'status' => 400 ) );
 		}
 
 		$flow_id = sanitize_text_field( (string) ( $request->get_param( 'flow_id' ) ?? '' ) );
-		if ( $flow_id === '' && method_exists( $this, 'get_current_flow' ) ) {
+		if ( '' === $flow_id && method_exists( $this, 'get_current_flow' ) ) {
 			$flow = $this->get_current_flow();
 			if ( is_array( $flow ) ) {
 				$ivr     = (string) ( $flow['ivr_file'] ?? $flow['ivr'] ?? '' );
@@ -6620,7 +6620,7 @@ Example good response:
 			}
 		}
 		$flow_id = $this->flosc_normalize_flow_stem( $flow_id );
-		if ( $flow_id === '' ) {
+		if ( '' === $flow_id ) {
 			return new WP_Error( 'flow_id_required', __( 'flow_id required', 'flosc' ), array( 'status' => 400 ) );
 		}
 
@@ -6635,16 +6635,16 @@ Example good response:
 		// add_flosc_message already requires the session to belong to this user + flow.
 		if ( $user_id > 0 && $session_id > 0 && $this->session_manager ) {
 			$hist_flow = $flow_id;
-			$hist_meta = ( $source === 'engagement_admin' )
+			$hist_meta = ( 'engagement_admin' === $source )
 				? array(
 					'source' => 'engagement_admin',
 					'name'   => 'Engagement',
 				)
 				: null;
-			if ( $user_message !== '' ) {
+			if ( '' !== $user_message ) {
 				$this->session_manager->add_flosc_message( $session_id, 'user', $user_message, $user_id, null, $hist_flow );
 			}
-			if ( $ai_response !== '' ) {
+			if ( '' !== $ai_response ) {
 				$this->session_manager->add_flosc_message(
 					$session_id,
 					'assistant',
@@ -6659,14 +6659,14 @@ Example good response:
 		$insert_id = FLOSC_Chat_Logger::instance()->flosc_log_chat(
 			array(
 				'flow_id'          => $flow_id,
-				'phase'            => $phase !== '' ? $phase : 'content',
+				'phase'            => '' !== $phase ? $phase : 'content',
 				'user_id'          => $user_id,
 				'session_id'       => $session_id,
 				'user_message'     => $user_message,
 				'ai_response'      => $ai_response,
-				'provider'         => $provider !== '' ? $provider : 'client',
+				'provider'         => '' !== $provider ? $provider : 'client',
 				'chain_detail'     => array( 'client_ui' ),
-				'response_source'  => $source !== '' ? $source : 'client_ui',
+				'response_source'  => '' !== $source ? $source : 'client_ui',
 				'response_time_ms' => 0,
 				'billing_source'   => 'none',
 			)
@@ -6706,20 +6706,20 @@ Example good response:
 
 		// 1) Flow-level access code (legacy).
 		$stored_code = strtoupper( trim( (string) ( $flow_option['access_code'] ?? '' ) ) );
-		if ( $stored_code !== '' && $code_norm === $stored_code ) {
+		if ( '' !== $stored_code && $code_norm === $stored_code ) {
 			$grants_level     = $flow_option['access_code_role']
 				?? flosc_get_setting( 'default_member_level', '', $flow_id ?: null );
 			$matched_offer_id = 'access_code';
 		}
 
 		// 2) Per-offer access_codes (prefer offer_id when provided).
-		if ( $matched_offer_id === '' ) {
+		if ( '' === $matched_offer_id ) {
 			$offers = $flow_option['offers'] ?? array();
 			if ( ! is_array( $offers ) ) {
 				$offers = array();
 			}
 			$scan = $offers;
-			if ( $offer_id_param !== '' && isset( $offers[ $offer_id_param ] ) ) {
+			if ( '' !== $offer_id_param && isset( $offers[ $offer_id_param ] ) ) {
 				$scan = array( $offer_id_param => $offers[ $offer_id_param ] );
 			}
 			foreach ( $scan as $oid => $off ) {
@@ -6741,7 +6741,7 @@ Example good response:
 			}
 		}
 
-		if ( $matched_offer_id === '' ) {
+		if ( '' === $matched_offer_id ) {
 			return new WP_Error( 'invalid_code', __( 'Invalid access code', 'flosc' ), array( 'status' => 403 ) );
 		}
 
@@ -6754,11 +6754,11 @@ Example good response:
 			update_user_meta( $user_id, '_flosc_registration_flow', sanitize_key( $flow_id ) );
 		}
 
-		if ( $grants_level === '' ) {
+		if ( '' === $grants_level ) {
 			$grants_level = sanitize_key( (string) flosc_get_setting( 'default_member_level', '', $flow_id ?: null ) );
 		}
 		// Product-neutral: only apply level meta when this flow configured one.
-		if ( $grants_level !== '' ) {
+		if ( '' !== $grants_level ) {
 			update_user_meta( $user_id, '_flosc_member_level', $grants_level );
 		}
 		update_user_meta( $user_id, '_flosc_purchased', true );
@@ -6778,7 +6778,7 @@ Example good response:
 		);
 
 		// Also grant offer tokens/features when we matched a real offer.
-		if ( $matched_offer_id !== 'access_code' && $this->sale_manager ) {
+		if ( 'access_code' !== $matched_offer_id && $this->sale_manager ) {
 			$offer = $this->sale_manager->offers()->get_offer( $matched_offer_id, $flow_id ?: null );
 			if ( $offer && method_exists( $this->sale_manager->access(), 'grant_from_offer' ) ) {
 				$this->sale_manager->access()->grant_from_offer(
@@ -6967,7 +6967,7 @@ Example good response:
 		$token = sanitize_text_field( rawurldecode( $token ) );
 		setcookie( 'flosc_quiz_stash', '', time() - 3600, '/' );
 
-		if ( $token === '' ) {
+		if ( '' === $token ) {
 			return false;
 		}
 
@@ -7115,7 +7115,7 @@ Example good response:
 				$incorrect = array();
 				foreach ( $answers as $i => $a ) {
 					$lesson = $i + 1;
-					if ( isset( $a['correct'] ) && $a['correct'] === true ) {
+					if ( isset( $a['correct'] ) && true === $a['correct'] ) {
 						$correct[] = $lesson;
 					} else {
 						$incorrect[] = $lesson;
@@ -7216,7 +7216,7 @@ Example good response:
 
 		// Only flows with Lessons tab config (content_item_groups / category / pool) deliver lessons.
 		$flow_raw = (string) ( $request->get_param( 'flow_id' ) ?? $request->get_param( 'ivr_file' ) ?? '' );
-		if ( $flow_raw === '' ) {
+		if ( '' === $flow_raw ) {
 			$cf = $this->get_current_flow();
 			if ( is_array( $cf ) ) {
 				$flow_raw = (string) ( $cf['ivr_file'] ?? $cf['ivr'] ?? $cf['id'] ?? '' );
@@ -7315,7 +7315,7 @@ Example good response:
 		if ( empty( $secret ) ) {
 			$secret = get_option( 'flosc_paypal_secret', '' );
 		}
-		$api_base = $mode === 'live' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com';
+		$api_base = 'live' === $mode ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com';
 
 		$response = wp_remote_post(
 			$api_base . '/v1/oauth2/token',
@@ -7337,7 +7337,7 @@ Example good response:
 		$body   = json_decode( wp_remote_retrieve_body( $response ), true );
 		$status = wp_remote_retrieve_response_code( $response );
 
-		if ( $status !== 200 || empty( $body['access_token'] ) ) {
+		if ( 200 !== $status || empty( $body['access_token'] ) ) {
 			$err = $body['error_description'] ?? $body['error'] ?? 'HTTP ' . $status;
 			wp_send_json_error( 'Auth failed: ' . $err );
 		}
@@ -7437,7 +7437,7 @@ Example good response:
 		$coupon_code = sanitize_text_field( $request->get_param( 'coupon_code' ) ?? '' );
 
 		// Coupon path: create/cache PayPal plans at discounted recurring amounts.
-		if ( $offer_id !== '' && $coupon_code !== '' ) {
+		if ( '' !== $offer_id && '' !== $coupon_code ) {
 			$offer = $this->sale_manager->offers()->get_offer( $offer_id, $flow_id ?: null );
 			if ( ! $offer ) {
 				return new WP_Error( 'invalid_offer', __( 'Offer not found', 'flosc' ), array( 'status' => 404 ) );
@@ -7447,7 +7447,7 @@ Example good response:
 				return $sub;
 			}
 			$product_name = trim( (string) ( $offer['name'] ?? $offer['headline'] ?? 'Subscription' ) );
-			if ( $product_name === '' ) {
+			if ( '' === $product_name ) {
 				$product_name = 'Subscription';
 			}
 			if ( ! method_exists( $paypal, 'ensure_plans_for_prices' ) ) {
@@ -7514,7 +7514,7 @@ Example good response:
 		// Promo / coupon plan IDs (monthly/yearly at discounted amounts).
 		if ( $paypal && method_exists( $paypal, 'resolve_plan_type_for_id' ) ) {
 			$promo_type = $paypal->resolve_plan_type_for_id( $subscription_plan_id );
-			if ( $promo_type === 'monthly' || $promo_type === 'yearly' ) {
+			if ( 'monthly' === $promo_type || 'yearly' === $promo_type ) {
 				return $promo_type;
 			}
 		}
@@ -7558,7 +7558,7 @@ Example good response:
 		$binding_token   = sanitize_text_field( (string) $request->get_param( 'binding_token' ) );
 		$binding_session = sanitize_text_field( (string) $request->get_param( 'session_id' ) );
 
-		if ( $subscription_id === '' ) {
+		if ( '' === $subscription_id ) {
 			return new WP_Error( 'missing_params', __( 'Missing subscription_id', 'flosc' ), array( 'status' => 400 ) );
 		}
 
@@ -7567,7 +7567,7 @@ Example good response:
 		$auth_token     = '';
 		$binding_record = null;
 
-		if ( $flow_id !== '' ) {
+		if ( '' !== $flow_id ) {
 			$this->set_flow_context( $flow_id );
 		}
 
@@ -7586,13 +7586,13 @@ Example good response:
 		}
 
 		$status = strtoupper( (string) ( $sub['status'] ?? '' ) );
-		if ( $status !== 'ACTIVE' ) {
+		if ( 'ACTIVE' !== $status ) {
 			return new WP_Error(
 				'subscription_not_active',
 				sprintf(
 					/* translators: %s: PayPal subscription status */
 					__( 'Subscription is not ACTIVE (status: %s). Access is granted only after ACTIVE status.', 'flosc' ),
-					$status !== '' ? $status : 'empty'
+					'' !== $status ? $status : 'empty'
 				),
 				array( 'status' => 400 )
 			);
@@ -7600,7 +7600,7 @@ Example good response:
 
 		// 2) Server purchase intent via custom_id (minted by prepare-subscription).
 		$purchase_uuid = sanitize_text_field( (string) ( $sub['custom_id'] ?? '' ) );
-		if ( $purchase_uuid !== '' && isset( $purchase_uuid[0] ) && $purchase_uuid[0] === '{' ) {
+		if ( '' !== $purchase_uuid && isset( $purchase_uuid[0] ) && '{' === $purchase_uuid[0] ) {
 			$decoded_custom = json_decode( $purchase_uuid, true, 8 );
 			if ( JSON_ERROR_NONE === json_last_error() && is_array( $decoded_custom ) ) {
 				$purchase_uuid = sanitize_text_field( (string) ( $decoded_custom['purchase_uuid'] ?? $decoded_custom['uuid'] ?? '' ) );
@@ -7609,10 +7609,10 @@ Example good response:
 			}
 		}
 		// Optional client echo of purchase_uuid if PayPal omitted custom_id (should not happen).
-		if ( $purchase_uuid === '' ) {
+		if ( '' === $purchase_uuid ) {
 			$purchase_uuid = sanitize_text_field( (string) ( $request->get_param( 'purchase_uuid' ) ?? '' ) );
 		}
-		if ( $purchase_uuid === '' || ! function_exists( 'flosc_paypal_purchase_intent_get' ) ) {
+		if ( '' === $purchase_uuid || ! function_exists( 'flosc_paypal_purchase_intent_get' ) ) {
 			return new WP_Error(
 				'missing_purchase_intent',
 				__( 'PayPal subscription is missing a server purchase intent (custom_id). Restart checkout.', 'flosc' ),
@@ -7648,7 +7648,7 @@ Example good response:
 
 		$intent_plan_id = sanitize_text_field( (string) ( $intent['plan_id'] ?? '' ) );
 		$sub_plan_id    = sanitize_text_field( (string) ( $sub['plan_id'] ?? ( $sub['plan']['id'] ?? '' ) ) );
-		if ( $intent_plan_id === '' || $sub_plan_id === '' || ! hash_equals( $intent_plan_id, $sub_plan_id ) ) {
+		if ( '' === $intent_plan_id || '' === $sub_plan_id || ! hash_equals( $intent_plan_id, $sub_plan_id ) ) {
 			return new WP_Error(
 				'plan_mismatch',
 				__( 'PayPal plan does not match the purchase intent', 'flosc' ),
@@ -7657,15 +7657,15 @@ Example good response:
 		}
 
 		$plan_type = sanitize_key( (string) ( $intent['plan_type'] ?? '' ) );
-		if ( $plan_type !== 'monthly' && $plan_type !== 'yearly' ) {
+		if ( 'monthly' !== $plan_type && 'yearly' !== $plan_type ) {
 			$plan_type = 'monthly';
 		}
 
 		$sold_offer_id = sanitize_text_field( (string) ( $intent['offer_id'] ?? '' ) );
-		if ( $sold_offer_id === '' ) {
+		if ( '' === $sold_offer_id ) {
 			return new WP_Error( 'missing_offer', __( 'Purchase intent has no offer', 'flosc' ), array( 'status' => 400 ) );
 		}
-		if ( $client_offer !== '' && ! hash_equals( $sold_offer_id, $client_offer ) ) {
+		if ( '' !== $client_offer && ! hash_equals( $sold_offer_id, $client_offer ) ) {
 			return new WP_Error(
 				'offer_mismatch',
 				__( 'Offer does not match the purchase intent', 'flosc' ),
@@ -7674,7 +7674,7 @@ Example good response:
 		}
 
 		$intent_flow = sanitize_key( (string) ( $intent['flow_id'] ?? '' ) );
-		if ( $intent_flow !== '' ) {
+		if ( '' !== $intent_flow ) {
 			$flow_id = $intent_flow;
 			$this->set_flow_context( $flow_id );
 		}
@@ -7692,7 +7692,7 @@ Example good response:
 			$paid_amt   = isset( $last_payment['value'] ) ? (float) $last_payment['value'] : -1.0;
 			$paid_cur   = strtoupper( sanitize_text_field( (string) ( $last_payment['currency_code'] ?? '' ) ) );
 			$expect_amt = (float) $amount;
-			if ( $paid_cur !== '' && $currency !== '' && $paid_cur !== $currency ) {
+			if ( '' !== $paid_cur && '' !== $currency && $paid_cur !== $currency ) {
 				return new WP_Error(
 					'payment_mismatch',
 					__( 'PayPal subscription currency does not match the purchase intent', 'flosc' ),
@@ -7726,14 +7726,14 @@ Example good response:
 				return new WP_Error( 'invalid_checkout_binding', __( 'Missing or invalid checkout binding token.', 'flosc' ), array( 'status' => 403 ) );
 			}
 			$binding_offer = sanitize_text_field( (string) ( $binding_record['offer_id'] ?? '' ) );
-			if ( $binding_offer !== '' && ! hash_equals( $sold_offer_id, $binding_offer ) ) {
+			if ( '' !== $binding_offer && ! hash_equals( $sold_offer_id, $binding_offer ) ) {
 				return new WP_Error(
 					'offer_mismatch',
 					__( 'Checkout binding offer does not match the purchase intent', 'flosc' ),
 					array( 'status' => 403 )
 				);
 			}
-		} elseif ( $binding_token !== '' ) {
+		} elseif ( '' !== $binding_token ) {
 			$binding_record = flosc_checkout_binding_verify( $binding_token, $binding_session );
 		}
 
@@ -7744,7 +7744,7 @@ Example good response:
 		);
 
 		if ( $user_id > 0 ) {
-			if ( $subscriber_email === '' ) {
+			if ( '' === $subscriber_email ) {
 				return new WP_Error(
 					'buyer_proof_missing',
 					__( 'PayPal did not return a subscriber email; cannot verify the buyer', 'flosc' ),
@@ -7763,7 +7763,7 @@ Example good response:
 		}
 
 		if ( $user_id <= 0 ) {
-			if ( $subscriber_email === '' ) {
+			if ( '' === $subscriber_email ) {
 				return new WP_Error( 'no_email', __( 'Could not retrieve email from PayPal subscription.', 'flosc' ), array( 'status' => 400 ) );
 			}
 			$existing_user = get_user_by( 'email', $subscriber_email );
@@ -7785,7 +7785,7 @@ Example good response:
 				if ( $user ) {
 					$user->set_role( apply_filters( 'flosc_default_user_role', 'subscriber' ) );
 				}
-				if ( $subscriber_name !== '' ) {
+				if ( '' !== $subscriber_name ) {
 					$name_parts = explode( ' ', $subscriber_name, 2 );
 					wp_update_user(
 						array(
@@ -7816,11 +7816,11 @@ Example good response:
 		if ( ! isset( $offer['grants'] ) || ! is_array( $offer['grants'] ) ) {
 			$offer['grants'] = array();
 		}
-		$offer['grants']['duration_days'] = ( $plan_type === 'yearly' ) ? 365 : 30;
+		$offer['grants']['duration_days'] = ( 'yearly' === $plan_type ) ? 365 : 30;
 		$resolved_offer_id                = sanitize_text_field( (string) ( $offer['id'] ?? $sold_offer_id ) );
 
 		$capture_flow_id = $flow_id;
-		if ( $capture_flow_id === '' ) {
+		if ( '' === $capture_flow_id ) {
 			$current_flow    = $this->get_current_flow();
 			$capture_flow_id = $current_flow ? sanitize_key( (string) ( $current_flow['id'] ?? '' ) ) : '';
 		}
@@ -7838,7 +7838,7 @@ Example good response:
 		);
 
 		$fulfill_offer = $offer;
-		if ( empty( $fulfill_offer['id'] ) && $resolved_offer_id !== '' ) {
+		if ( empty( $fulfill_offer['id'] ) && '' !== $resolved_offer_id ) {
 			$fulfill_offer['id'] = $resolved_offer_id;
 		}
 		$fulfill = $this->sale_manager->fulfill_settled_purchase( $user_id, $fulfill_offer, 'paypal', $transaction );
@@ -7858,7 +7858,7 @@ Example good response:
 		if ( class_exists( 'FLOSC_PayPal_Provider' ) && method_exists( 'FLOSC_PayPal_Provider', 'index_subscription' ) ) {
 			FLOSC_PayPal_Provider::index_subscription( $user_id, $subscription_id );
 		}
-		if ( $resolved_offer_id !== '' ) {
+		if ( '' !== $resolved_offer_id ) {
 			update_user_meta( $user_id, '_flosc_purchased_offer_id', $resolved_offer_id );
 			update_user_meta( $user_id, '_flosc_subscription_offer_id', $resolved_offer_id );
 		}
@@ -7880,7 +7880,7 @@ Example good response:
 		$token_topup = $this->flosc_apply_product_token_credit(
 			$user_id,
 			$capture_flow_id,
-			$plan_type === 'yearly' ? 'recurring_yearly' : 'recurring',
+			'yearly' === $plan_type ? 'recurring_yearly' : 'recurring',
 			array(
 				'idempotency_key' => 'activate_' . $subscription_id,
 				'subscription_id' => $subscription_id,
@@ -7953,7 +7953,7 @@ Example good response:
 		if ( is_array( $current_flow_welcome ) ) {
 			$product_name = trim( (string) ( $current_flow_welcome['identity']['name'] ?? $current_flow_welcome['product']['name'] ?? '' ) );
 		}
-		if ( $product_name === '' ) {
+		if ( '' === $product_name ) {
 			$product_name = 'membership';
 		}
 
@@ -8073,7 +8073,7 @@ Example good response:
 			return $result;
 		}
 
-		if ( is_array( $result ) && $purchase_uuid !== '' ) {
+		if ( is_array( $result ) && '' !== $purchase_uuid ) {
 			$result['purchase_uuid'] = $purchase_uuid;
 		}
 
@@ -8153,7 +8153,7 @@ Example good response:
 		}
 
 		// Forward PayPal error details (e.g. INSTRUMENT_DECLINED) to frontend.
-		if ( isset( $capture_result['success'] ) && $capture_result['success'] === false ) {
+		if ( isset( $capture_result['success'] ) && false === $capture_result['success'] ) {
 			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
 				flosc_log( '[FLOSC-PAYPAL] capture_order: PayPal error forwarded — ' . ( $capture_result['issue'] ?? $capture_result['message'] ?? 'unknown' ) );
 			}
@@ -8164,7 +8164,7 @@ Example good response:
 		$purchase_uuid  = sanitize_text_field( (string) ( $capture_result['purchase_uuid'] ?? '' ) );
 		$bound_offer_id = sanitize_text_field( (string) ( $capture_result['offer_id'] ?? '' ) );
 		$intent         = false;
-		if ( $purchase_uuid !== '' && function_exists( 'flosc_paypal_purchase_intent_get' ) ) {
+		if ( '' !== $purchase_uuid && function_exists( 'flosc_paypal_purchase_intent_get' ) ) {
 			$intent = flosc_paypal_purchase_intent_get( $purchase_uuid );
 			if ( is_array( $intent ) && ! empty( $intent['offer_id'] ) ) {
 				$bound_offer_id = sanitize_text_field( (string) $intent['offer_id'] );
@@ -8181,14 +8181,14 @@ Example good response:
 				);
 			}
 		}
-		if ( $bound_offer_id === '' ) {
+		if ( '' === $bound_offer_id ) {
 			return new WP_Error(
 				'unbound_payment',
 				__( 'PayPal order is not bound to an offer and cannot grant access', 'flosc' ),
 				array( 'status' => 400 )
 			);
 		}
-		if ( $offer_id !== '' && ! hash_equals( $bound_offer_id, $offer_id ) ) {
+		if ( '' !== $offer_id && ! hash_equals( $bound_offer_id, $offer_id ) ) {
 			return new WP_Error(
 				'offer_mismatch',
 				__( 'Payment does not match the requested offer', 'flosc' ),
@@ -8229,7 +8229,7 @@ Example good response:
 				array( 'status' => 403 )
 			);
 		}
-		if ( $expected > 0 && $expected_cur !== '' && $captured_cur !== '' && $expected_cur !== $captured_cur ) {
+		if ( $expected > 0 && '' !== $expected_cur && '' !== $captured_cur && $expected_cur !== $captured_cur ) {
 			return new WP_Error(
 				'payment_mismatch',
 				__( 'PayPal capture currency does not match the offer', 'flosc' ),
@@ -8250,7 +8250,7 @@ Example good response:
 		if ( ! $user_id ) {
 			$payer_email = sanitize_email( (string) ( $capture_result['payer_email'] ?? '' ) );
 			$payer_name  = sanitize_text_field( (string) ( $capture_result['payer_name'] ?? '' ) );
-			if ( $payer_email === '' ) {
+			if ( '' === $payer_email ) {
 				return new WP_Error( 'no_email', __( 'Could not retrieve email from PayPal payment.', 'flosc' ), array( 'status' => 400 ) );
 			}
 
@@ -8269,7 +8269,7 @@ Example good response:
 				if ( $user ) {
 					$user->set_role( apply_filters( 'flosc_default_user_role', 'subscriber' ) );
 				}
-				if ( $payer_name !== '' ) {
+				if ( '' !== $payer_name ) {
 					$name_parts = explode( ' ', $payer_name, 2 );
 					wp_update_user(
 						array(
@@ -8296,7 +8296,7 @@ Example good response:
 
 		$current_flow    = $this->get_current_flow();
 		$capture_flow_id = $current_flow ? ( $current_flow['id'] ?? '' ) : '';
-		if ( $capture_flow_id === '' && ! empty( $flow_id ) ) {
+		if ( '' === $capture_flow_id && ! empty( $flow_id ) ) {
 			$capture_flow_id = sanitize_key( $flow_id );
 		}
 
@@ -8320,7 +8320,7 @@ Example good response:
 			return $fulfill;
 		}
 
-		if ( $purchase_uuid !== '' && function_exists( 'flosc_paypal_purchase_intent_mark_fulfilled' ) ) {
+		if ( '' !== $purchase_uuid && function_exists( 'flosc_paypal_purchase_intent_mark_fulfilled' ) ) {
 			flosc_paypal_purchase_intent_mark_fulfilled( $purchase_uuid, (string) ( $capture_result['transaction_id'] ?? $order_id ), $user_id );
 		}
 
@@ -8434,10 +8434,10 @@ Example good response:
 			if ( ! empty( $_SERVER['HTTP_X_FLOSC_TOKEN'] ) ) {
 				$token = sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FLOSC_TOKEN'] ) );
 			}
-			if ( $token === '' ) {
+			if ( '' === $token ) {
 				$token = sanitize_text_field( (string) ( $request->get_param( 'auth_token' ) ?? '' ) );
 			}
-			if ( $token !== '' ) {
+			if ( '' !== $token ) {
 				$uid = $this->validate_flosc_auth_token( $token );
 				if ( $uid ) {
 					wp_set_current_user( $uid );
@@ -8462,14 +8462,14 @@ Example good response:
 
 		$user_id  = get_current_user_id();
 		$flow_raw = (string) ( $request->get_param( 'flow_id' ) ?? '' );
-		if ( $flow_raw === '' ) {
+		if ( '' === $flow_raw ) {
 			$flow = $this->get_current_flow();
 			if ( is_array( $flow ) ) {
 				$flow_raw = (string) ( $flow['ivr_file'] ?? $flow['ivr'] ?? $flow['id'] ?? '' );
 			}
 		}
 		$flow_stem = $this->flosc_normalize_flow_stem( $flow_raw );
-		if ( $flow_stem === '' || $flow_stem === 'default' ) {
+		if ( '' === $flow_stem || 'default' === $flow_stem ) {
 			$this->set_flow_context( $flow_raw );
 			$flow = $this->get_current_flow();
 			if ( is_array( $flow ) ) {
@@ -8529,7 +8529,7 @@ Example good response:
 		}
 
 		$flow_stem = $this->flosc_normalize_flow_stem( $flow_stem );
-		if ( $flow_stem === '' || $flow_stem === 'default' ) {
+		if ( '' === $flow_stem || 'default' === $flow_stem ) {
 			$current = $this->get_current_flow();
 			if ( is_array( $current ) ) {
 				$flow_stem = $this->flosc_normalize_flow_stem(
@@ -8540,7 +8540,7 @@ Example good response:
 
 		// Authenticated payload path: guest or member only (never visitor).
 		$user_state = $this->sale_manager->access()->get_simple_state( $user_id, $flow_stem );
-		if ( $user_state !== 'member' ) {
+		if ( 'member' !== $user_state ) {
 			$user_state = 'guest';
 		}
 
@@ -8561,7 +8561,7 @@ Example good response:
 
 		$actually_purchased = (bool) get_user_meta( $user_id, '_flosc_purchased', true );
 		$flow_id_for_tokens = $flow_stem;
-		if ( $flow_id_for_tokens === '' || $flow_id_for_tokens === 'default' ) {
+		if ( '' === $flow_id_for_tokens || 'default' === $flow_id_for_tokens ) {
 			$flow_id_for_tokens = $this->flosc_normalize_flow_stem(
 				(string) get_user_meta( $user_id, '_flosc_registration_flow', true )
 			);
@@ -8670,7 +8670,7 @@ Example good response:
 		}
 		if ( $this->flosc_flow_should_surface_quiz_data( $flow_stem, $quiz_data, $quiz_id ) ) {
 			$payload['lastQuizData']     = $quiz_data;
-			$payload['lastQuizId']       = $quiz_id !== '' ? $quiz_id : null;
+			$payload['lastQuizId']       = '' !== $quiz_id ? $quiz_id : null;
 			$payload['lastQuizScore']    = get_user_meta( $user_id, '_flosc_last_quiz_score', true );
 			$payload['initialScore']     = get_user_meta( $user_id, '_flosc_initial_score', true );
 			$payload['initialQuizId']    = get_user_meta( $user_id, '_flosc_initial_quiz_id', true );
@@ -8849,7 +8849,7 @@ Example good response:
 		}
 		$is_admin = current_user_can( 'manage_options' );
 
-		if ( $phase === 'content' && ! $is_member && ! $is_admin ) {
+		if ( 'content' === $phase && ! $is_member && ! $is_admin ) {
 			return new WP_Error(
 				'flosc_content_phase_forbidden',
 				__( 'Content phase requires membership.', 'flosc' ),
@@ -8858,14 +8858,14 @@ Example good response:
 		}
 
 		$phases_to_check = array( $phase );
-		if ( $phase === 'sale' || $phase === 'content' ) {
+		if ( 'sale' === $phase || 'content' === $phase ) {
 			if ( $is_member || $is_admin ) {
 				$phases_to_check = array( 'sale', 'content' );
 			} else {
 				// Public sale funnel: sale only (no content-phase leak).
 				$phases_to_check = array( 'sale' );
 			}
-		} elseif ( $phase === 'login' || $phase === 'offer' ) {
+		} elseif ( 'login' === $phase || 'offer' === $phase ) {
 			$phases_to_check = array( 'login', 'offer' );
 		}
 
@@ -8999,7 +8999,7 @@ Example good response:
 		}
 
 		$flow_stem = $this->flosc_request_flow_stem( $request );
-		if ( $flow_stem === '' ) {
+		if ( '' === $flow_stem ) {
 			return new WP_Error(
 				'flosc_flow_required',
 				__( 'Flow is required.', 'flosc' ),
@@ -9013,7 +9013,7 @@ Example good response:
 
 		if ( $quiz_only ) {
 			$lessons = $this->lesson_manager->get_quiz_lessons();
-		} elseif ( $search !== '' ) {
+		} elseif ( '' !== $search ) {
 			$lessons = $this->lesson_manager->search_lessons( $search );
 		} else {
 			$lessons = $this->lesson_manager->get_all_lessons();
@@ -9046,7 +9046,7 @@ Example good response:
 		return new WP_REST_Response(
 			array(
 				'lessons' => $out,
-				'search'  => $search !== '' ? $search : null,
+				'search'  => '' !== $search ? $search : null,
 				'flow_id' => $flow_stem,
 			)
 		);
@@ -9066,7 +9066,7 @@ Example good response:
 		}
 
 		$flow_stem = $this->flosc_request_flow_stem( $request );
-		if ( $flow_stem === '' ) {
+		if ( '' === $flow_stem ) {
 			return new WP_Error(
 				'flosc_flow_required',
 				__( 'Flow is required.', 'flosc' ),
@@ -9247,7 +9247,7 @@ Example good response:
 		}
 
 		$uploaded_audio = flosc_fs_get_contents( $tmp_audio );
-		if ( $uploaded_audio === false || ! $this->write_file_safely( $filepath, $uploaded_audio ) ) {
+		if ( false === $uploaded_audio || ! $this->write_file_safely( $filepath, $uploaded_audio ) ) {
 			return new WP_Error( 'write_failed', __( 'Could not save audio', 'flosc' ), array( 'status' => 500 ) );
 		}
 
@@ -9454,7 +9454,7 @@ Example good response:
 				break;
 			}
 			$key = is_string( $k ) ? sanitize_key( $k ) : ( is_int( $k ) ? $k : sanitize_key( (string) $k ) );
-			if ( $key === '' && ! is_int( $k ) ) {
+			if ( '' === $key && ! is_int( $k ) ) {
 				continue;
 			}
 			$clean = $this->flosc_sanitize_quiz_nested_value( $v, $depth + 1, $max );
@@ -9558,7 +9558,7 @@ Example good response:
 						$name = 'phrase-' . $num . '.' . $ext;
 						if ( file_exists( $session_dir . '/' . $name ) ) {
 							$has_source = true;
-							if ( $current_file === '' || ! file_exists( $session_dir . '/' . $current_file ) ) {
+							if ( '' === $current_file || ! file_exists( $session_dir . '/' . $current_file ) ) {
 								$phrase['file']   = $name;
 								$phrase['format'] = $ext;
 								$updated          = true;
@@ -9687,7 +9687,7 @@ Example good response:
 		}
 
 		$status = wp_remote_retrieve_response_code( $response );
-		if ( $status !== 200 ) {
+		if ( 200 !== $status ) {
 			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
 				flosc_log( "FLOSC: pull_session_from_do — GET /session returned HTTP {$status}" );
 			}
@@ -10000,7 +10000,7 @@ Example good response:
 				'format'      => $phrase_info['format'],
 			);
 
-			if ( $endpoint === '/analyze-phrase' && ! empty( $phrase_info['target_ipa'] ) ) {
+			if ( '/analyze-phrase' === $endpoint && ! empty( $phrase_info['target_ipa'] ) ) {
 				$body['target_ipa'] = $phrase_info['target_ipa'];
 			}
 
@@ -10060,7 +10060,7 @@ Example good response:
 		$phoneme_scores = array();
 		foreach ( $all_phonemes as $ph ) {
 			$ipa = $ph['ipa'] ?? '';
-			if ( $ipa === '' ) {
+			if ( '' === $ipa ) {
 				continue;
 			}
 			$phoneme_scores[ $ipa ][] = $ph['confidence'];
@@ -10254,11 +10254,11 @@ Example good response:
 
 		// v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves)
 		$provider = flosc_get_setting( 'ai_provider', 'ivr' );
-		if ( $provider === '' || $provider === null ) {
+		if ( '' === $provider || null === $provider ) {
 			$provider = 'ivr';
 		}
 
-		if ( $provider === 'ivr' ) {
+		if ( 'ivr' === $provider ) {
 			return new WP_REST_Response(
 				array(
 					'success'    => false,
@@ -10339,12 +10339,12 @@ Example good response:
 		$start_time   = microtime( true );
 		$test_message = "Hello, this is a connection test. Please respond with 'Connection successful'.";
 		$provider     = flosc_get_setting( 'ai_provider', 'ivr' );
-		if ( $provider === '' || $provider === null ) {
+		if ( '' === $provider || null === $provider ) {
 			$provider = 'ivr';
 		}
 
 		// IVR is scripted local copy — not an external API. Do not report as API success.
-		if ( $provider === 'ivr' ) {
+		if ( 'ivr' === $provider ) {
 			wp_send_json_error(
 				array(
 					'provider' => 'ivr',
@@ -10372,7 +10372,7 @@ Example good response:
 		$key_raw           = function_exists( 'flosc_get_provider_api_key' )
 			? (string) flosc_get_provider_api_key( $provider )
 			: (string) flosc_get_setting( $provider . '_api_key', '' );
-		$key_present       = ( $key_raw !== '' );
+		$key_present       = ( '' !== $key_raw );
 		$key_suffix        = $key_present && strlen( $key_raw ) >= 4
 			? substr( $key_raw, -4 )
 			: '';
@@ -10414,7 +10414,7 @@ Example good response:
 				: array();
 			$usage      = is_array( $billing['usage'] ?? null ) ? $billing['usage'] : array();
 			$model_used = (string) ( $billing['model'] ?? $configured_model );
-			if ( $model_used === '' ) {
+			if ( '' === $model_used ) {
 				$model_used = $configured_model;
 			}
 
@@ -10427,7 +10427,7 @@ Example good response:
 			if ( is_array( $flow ) ) {
 				$flow_label = trim( (string) ( $flow['identity']['name'] ?? $flow['name'] ?? '' ) );
 			}
-			if ( $flow_label === '' && $ivr !== '' ) {
+			if ( '' === $flow_label && '' !== $ivr ) {
 				$flow_label = pathinfo( $ivr, PATHINFO_FILENAME );
 			}
 
@@ -10569,7 +10569,7 @@ Example good response:
 		$by    = sanitize_text_field( $post['by'] ?? '' );
 		$value = sanitize_text_field( $post['value'] ?? '' );
 
-		if ( $by === '' || $value === '' ) {
+		if ( '' === $by || '' === $value ) {
 			wp_send_json_error( array( 'message' => 'Missing session identifier' ) );
 		}
 
@@ -10597,7 +10597,7 @@ Example good response:
 		// Pass 8: bound + field-sanitize after json_decode of sessions list.
 		$sessions_json = (string) ( $post['sessions'] ?? '[]' );
 		$sessions      = array();
-		if ( $sessions_json !== '' && strlen( $sessions_json ) <= 100000 ) {
+		if ( '' !== $sessions_json && strlen( $sessions_json ) <= 100000 ) {
 			$decoded_sessions = json_decode( $sessions_json, true, 16 );
 			if ( JSON_ERROR_NONE === json_last_error() && is_array( $decoded_sessions ) ) {
 				$sessions = $decoded_sessions;
@@ -10618,18 +10618,18 @@ Example good response:
 
 			$by    = sanitize_key( (string) ( $session['by'] ?? '' ) );
 			$value = sanitize_text_field( (string) ( $session['value'] ?? '' ) );
-			if ( $by === '' || $value === '' ) {
+			if ( '' === $by || '' === $value ) {
 				continue;
 			}
 
-			if ( $operation === 'delete' ) {
+			if ( 'delete' === $operation ) {
 				$affected_rows += max( 0, intval( $logger->flosc_delete_session( $by, $value, $flow ) ) );
 				++$processed;
 				continue;
 			}
 
-			$result = $logger->flosc_set_session_archived( $by, $value, $flow, $operation === 'archive' );
-			if ( $result !== false ) {
+			$result = $logger->flosc_set_session_archived( $by, $value, $flow, 'archive' === $operation );
+			if ( false !== $result ) {
 				++$processed;
 			}
 		}
@@ -10663,7 +10663,7 @@ Example good response:
 		if ( ! empty( $request['sessions'] ) ) {
 			// Pass 8: bound + field-sanitize after json_decode.
 			$sessions_raw = (string) $request['sessions'];
-			if ( $sessions_raw !== '' && strlen( $sessions_raw ) <= 100000 ) {
+			if ( '' !== $sessions_raw && strlen( $sessions_raw ) <= 100000 ) {
 				$decoded = json_decode( $sessions_raw, true, 16 );
 				if ( JSON_ERROR_NONE === json_last_error() && is_array( $decoded ) ) {
 					$sessions = $decoded;
@@ -10689,7 +10689,7 @@ Example good response:
 
 			$by    = sanitize_key( (string) ( $session['by'] ?? '' ) );
 			$value = sanitize_text_field( (string) ( $session['value'] ?? '' ) );
-			if ( $by === '' || $value === '' ) {
+			if ( '' === $by || '' === $value ) {
 				continue;
 			}
 
@@ -10762,20 +10762,20 @@ Example good response:
 		$session_id = intval( $post['session_id'] ?? 0 );
 		$text       = sanitize_textarea_field( $post['text'] ?? '' );
 		$as         = ( sanitize_text_field( $post['as'] ?? 'admin' ) === 'bot' ) ? 'bot' : 'admin';
-		if ( $session_id <= 0 || $text === '' ) {
+		if ( $session_id <= 0 || '' === $text ) {
 			wp_send_json_error( array( 'message' => 'A session and a message are required.' ) );
 		}
 
 		// "as admin" → the admin's own name, shown "(admin)"; "as bot" → the flow's.
 		// AI name (e.g. assistant), rendered as a normal assistant message.
-		if ( $flow !== '' ) {
+		if ( '' !== $flow ) {
 			$this->set_flow_context( $flow );
 		}
-		if ( $as === 'bot' ) {
+		if ( 'bot' === $as ) {
 			$name = flosc_get_setting( 'ai_personality_name', flosc_get_setting( 'ai_identity_name', __( 'Site Assistant', 'flosc' ) ) );
 		} else {
 			$name = wp_get_current_user()->display_name;
-			if ( $name === '' ) {
+			if ( '' === $name ) {
 				$name = 'Admin';
 			}
 		}
@@ -10903,7 +10903,7 @@ Example good response:
 		$messages = FLOSC_Chat_Logger::instance()->flosc_get_admin_messages_since( $session_id, $since_id );
 
 		$token_balance_payload = null;
-		if ( $flow_id !== '' ) {
+		if ( '' !== $flow_id ) {
 			$token_provider = $this->sale_manager->get_provider( 'tokens' );
 			if ( $token_provider ) {
 				$value                 = intval( $this->flosc_get_visitor_session_token_balance( $flow_id, $session_id, $token_provider ) );
@@ -11238,7 +11238,7 @@ Example good response:
 		// P0-E: public content phase forbidden (same matrix as get_ivr_messages).
 		$is_member = ! empty( $context['is_member'] )
 			|| ( isset( $context['access_level'] ) && in_array( (string) $context['access_level'], array( 'member', 'full' ), true ) );
-		if ( $phase === 'content' && ! $is_member && ! current_user_can( 'manage_options' ) ) {
+		if ( 'content' === $phase && ! $is_member && ! current_user_can( 'manage_options' ) ) {
 			return new WP_Error(
 				'flosc_content_phase_forbidden',
 				__( 'Content phase requires membership.', 'flosc' ),
@@ -11423,10 +11423,10 @@ Example good response:
 					);
 
 					$mime = 'audio/webm';
-					if ( $format === 'mp4' ) {
+					if ( 'mp4' === $format ) {
 						$mime = 'audio/mp4';
 					}
-					if ( $format === 'ogg' ) {
+					if ( 'ogg' === $format ) {
 						$mime = 'audio/ogg';
 					}
 
@@ -11649,7 +11649,7 @@ Example good response:
 		$profile_completed = (bool) get_user_meta( $user_id, '_flosc_magic_link_user_credentials_set', true )
 			|| ! empty( get_user_meta( $user_id, '_flosc_sso_linked_providers', true ) );
 		$is_guest_user     = $bb_user && (
-			( $guest_level !== '' && in_array( $guest_level, (array) $bb_user->roles, true ) ) ||
+			( '' !== $guest_level && in_array( $guest_level, (array) $bb_user->roles, true ) ) ||
 			! empty( get_user_meta( $user_id, '_flosc_sso_linked_providers', true ) )
 		);
 
@@ -11665,8 +11665,8 @@ Example good response:
 		if ( ! $profile_completed && $is_guest_user ) {
 			// Anonymous public page notice — shown until guest completes profile.
 			$upgrade_link = $upgrade_url ? ' <a href="' . esc_url( $upgrade_url ) . '" class="flosc-guest-warning-link">Upgrade for full access.</a>' : '';
-			$days_note    = ( $days_remaining !== null )
-				? 'This page and all associated data will be removed from our servers in <strong>' . esc_html( $days_remaining ) . '</strong> day' . ( $days_remaining !== 1 ? 's' : '' ) . ' if you don\'t upgrade.' . $upgrade_link
+			$days_note    = ( null !== $days_remaining )
+				? 'This page and all associated data will be removed from our servers in <strong>' . esc_html( $days_remaining ) . '</strong> day' . ( 1 !== $days_remaining ? 's' : '' ) . ' if you don\'t upgrade.' . $upgrade_link
 				: '';
 			echo '<div class="flosc-guest-warning-card">';
 			echo '<p class="flosc-guest-warning-title">This is your anonymous, public quiz score page.</p>';
@@ -11675,10 +11675,10 @@ Example good response:
 				echo '<p class="flosc-guest-warning-copy flosc-guest-warning-copy--tight">' . wp_kses_post( $days_note ) . '</p>';
 			}
 			echo '</div>';
-		} elseif ( $profile_completed && $is_guest_user && $days_remaining !== null ) {
+		} elseif ( $profile_completed && $is_guest_user && null !== $days_remaining ) {
 			// Profile completed — show simple days remaining banner.
 			$upgrade_link = $upgrade_url ? ' <a href="' . esc_url( $upgrade_url ) . '" class="flosc-guest-remaining-link">Upgrade for full access here.</a>' : '';
-			echo '<p class="flosc-guest-remaining">You have <strong>' . esc_html( $days_remaining ) . '</strong> day' . ( $days_remaining !== 1 ? 's' : '' ) . ' of guest access remaining — we hope you are enjoying your complimentary guest access!' . wp_kses_post( $upgrade_link ) . '</p>';
+			echo '<p class="flosc-guest-remaining">You have <strong>' . esc_html( $days_remaining ) . '</strong> day' . ( 1 !== $days_remaining ? 's' : '' ) . ' of guest access remaining — we hope you are enjoying your complimentary guest access!' . wp_kses_post( $upgrade_link ) . '</p>';
 		}
 
 		// Sessions: 1 session → display the result card directly; 2+ → wrap each in an accordion.
@@ -11822,7 +11822,7 @@ Example good response:
 				$current_sid = '';
 				foreach ( $recording_items as $item ) {
 					if ( $item['sid'] !== $current_sid ) {
-						if ( $current_sid !== '' ) {
+						if ( '' !== $current_sid ) {
 							echo '</ul>';
 						}
 						$current_sid = $item['sid'];
@@ -11834,7 +11834,7 @@ Example good response:
 					echo ' <span class="flosc-my-files-name">' . esc_html( $item['name'] ) . '</span>';
 					echo '</li>';
 				}
-				if ( $current_sid !== '' ) {
+				if ( '' !== $current_sid ) {
 					echo '</ul>';
 				}
 
@@ -12270,7 +12270,7 @@ Example good response:
 		if ( $stripe && method_exists( $stripe, 'get_client_config' ) ) {
 			$stripe_cfg = $stripe->get_client_config();
 			$stripe_pk  = (string) ( $stripe_cfg['publishableKey'] ?? '' );
-			if ( $stripe_pk !== '' ) {
+			if ( '' !== $stripe_pk ) {
 				wp_enqueue_script( 'stripe-js', 'https://js.stripe.com/v3/', array(), defined( 'FLOSC_VERSION' ) ? FLOSC_VERSION : '1', true );
 				$flosc_app_deps[] = 'stripe-js';
 			}
@@ -12291,11 +12291,11 @@ Example good response:
 				if ( is_array( $flow ) ) {
 					$ivr  = (string) ( $flow['ivr_file'] ?? $flow['ivr'] ?? $flow['id'] ?? '' );
 					$stem = sanitize_key( pathinfo( basename( $ivr ), PATHINFO_FILENAME ) );
-					if ( $stem === '' && ! empty( $flow['id'] ) ) {
+					if ( '' === $stem && ! empty( $flow['id'] ) ) {
 						$stem = sanitize_key( (string) $flow['id'] );
 					}
 				}
-				if ( $stem !== '' ) {
+				if ( '' !== $stem ) {
 					$fs          = get_option( 'flosc_flow_' . $stem, array() );
 					$flow_offers = is_array( $fs['offers'] ?? null ) ? $fs['offers'] : array();
 					foreach ( $flow_offers as $o ) {
@@ -12308,7 +12308,7 @@ Example good response:
 						}
 						$type      = strtolower( (string) ( $o['type'] ?? 'one_time' ) );
 						$has_plans = ! empty( $o['subscription']['plans'] ) && is_array( $o['subscription']['plans'] );
-						if ( $type === 'subscription' || $has_plans ) {
+						if ( 'subscription' === $type || $has_plans ) {
 							$pp_intent = 'subscription';
 							break;
 						}
@@ -12317,7 +12317,7 @@ Example good response:
 				$pp_sdk = 'https://www.paypal.com/sdk/js?client-id=' . rawurlencode( $pp_client_id )
 					. '&currency=' . rawurlencode( $pp_currency )
 					. '&intent=' . rawurlencode( $pp_intent );
-				if ( $pp_intent === 'subscription' ) {
+				if ( 'subscription' === $pp_intent ) {
 					$pp_sdk .= '&vault=true';
 				}
 				// Explicit version for Plugin Check; ver is stripped for this handle below.
@@ -12331,7 +12331,7 @@ Example good response:
 			add_filter(
 				'script_loader_src',
 				static function ( $src, $handle ) {
-					if ( in_array( $handle, array( 'paypal-js', 'stripe-js' ), true ) && is_string( $src ) && $src !== '' ) {
+					if ( in_array( $handle, array( 'paypal-js', 'stripe-js' ), true ) && is_string( $src ) && '' !== $src ) {
 						return remove_query_arg( 'ver', $src );
 					}
 					return $src;
@@ -12512,7 +12512,7 @@ Example good response:
 		// ===========================================
 		// PRESET LOADING.
 		// ===========================================
-		if ( $preset === 'auto' ) {
+		if ( 'auto' === $preset ) {
 			// Auto mode: Light by default, dark via prefers-color-scheme.
 			if ( file_exists( $light_path ) && file_exists( $dark_path ) ) {
 				$light_content = flosc_fs_get_contents( $light_path );
@@ -12556,7 +12556,7 @@ Example good response:
 		$overrides[] = "--flosc-assistant-message-radius: {$bubble_config['assistant']}";
 
 		// v1.6.1: Full accent color cascade (5->15 derived variables)
-		if ( ! empty( $accent ) && $accent !== '#2563eb' ) {
+		if ( ! empty( $accent ) && '#2563eb' !== $accent ) {
 			// Compute derived colors from hex accent.
 			$hover   = $this->adjust_color_brightness( $accent, -15 );
 			$subtle  = $this->hex_to_rgba( $accent, 0.06 );
@@ -12585,13 +12585,13 @@ Example good response:
 		}
 
 		// Scale factor.
-		if ( $scale !== 100 && $scale > 0 ) {
+		if ( 100 !== $scale && $scale > 0 ) {
 			$scale_factor = $scale / 100;
 			$overrides[]  = "--flosc-scale: {$scale_factor}";
 		}
 
 		// Font family.
-		if ( $font !== 'system' && isset( $font_families[ $font ] ) && ! empty( $font_families[ $font ] ) ) {
+		if ( 'system' !== $font && isset( $font_families[ $font ] ) && ! empty( $font_families[ $font ] ) ) {
 			$overrides[] = "--flosc-font-family: {$font_families[$font]}";
 		}
 
@@ -12600,7 +12600,7 @@ Example good response:
 		}
 
 		// Font application.
-		if ( $font !== 'system' && isset( $font_families[ $font ] ) && ! empty( $font_families[ $font ] ) ) {
+		if ( 'system' !== $font && isset( $font_families[ $font ] ) && ! empty( $font_families[ $font ] ) ) {
 			$inline_css .= "/* Font Application */\n";
 			$inline_css .= ".flosc-app,\n.flosc-app .messages,\n.flosc-app .message-text {\n";
 			$inline_css .= "    font-family: var(--flosc-font-family) !important;\n}\n\n";
@@ -12764,12 +12764,12 @@ function flosc_resolve_chatlogo_url( $flow_settings = null, $use_plugin_default 
 		if ( ! empty( $flow_settings['identity'] ) && is_array( $flow_settings['identity'] ) ) {
 			$url = (string) ( $flow_settings['identity']['chatlogo_url'] ?? '' );
 		}
-		if ( $url === '' && ! empty( $flow_settings['chatlogo_url'] ) ) {
+		if ( '' === $url && ! empty( $flow_settings['chatlogo_url'] ) ) {
 			$url = (string) $flow_settings['chatlogo_url'];
 		}
 	}
 
-	if ( $url === '' && function_exists( 'flosc' ) && is_object( flosc() ) && method_exists( flosc(), 'get_floscflow_identity' ) ) {
+	if ( '' === $url && function_exists( 'flosc' ) && is_object( flosc() ) && method_exists( flosc(), 'get_floscflow_identity' ) ) {
 		$identity = flosc()->get_floscflow_identity();
 		if ( is_array( $identity ) && ! empty( $identity['chatlogo_url'] ) ) {
 			$url = (string) $identity['chatlogo_url'];
@@ -12777,7 +12777,7 @@ function flosc_resolve_chatlogo_url( $flow_settings = null, $use_plugin_default 
 	}
 
 	$url = esc_url_raw( trim( $url ) );
-	if ( $url !== '' ) {
+	if ( '' !== $url ) {
 		return $url;
 	}
 

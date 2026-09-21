@@ -297,3 +297,50 @@ decision needing a written justification), the `the_content`/shortcode return
 escaping, one `json_decode(stripslashes())` in `class-clickbank-provider.php`,
 the HMAC-signed `ajax_serve_user_audio` endpoint, and confirming the external
 host list against the 16 readme entries.
+
+---
+
+## The style number, actually fixed
+
+"That number is nothing" was a poor answer to 7,094 errors. It is true that
+WordPress.org checks none of it — Plugin Check's ruleset contains not one of
+these sniffs — but "it does not matter" is not the same as "it is fine", and
+if it is trivial then it should be fixed rather than explained away.
+
+`phpcbf` handles 960 of them. The two largest categories it has no fixer for
+are now handled by two scripts at candidate level, neither of which ever ships:
+
+**`fix-comment-punctuation.php`** — ends inline comments with a full stop.
+PHP's tokenizer, not a regex, so it cannot touch a `//` inside a string, a URL
+or a heredoc. It only ever appends a `.`, never removes or rewrites. It skips
+`phpcs:` and `@` directives, block comments, commented-out code, separator
+rules, comments already ending in `. ! ? :`, and comments ending in a URL. The
+first dry run wanted to put a full stop after
+`// ── Gather live data ────────`; the separator rule only covered ASCII
+dashes, and now covers U+2500–257F too. **1,924 comments in 104 files.**
+
+**`fix-yoda-conditions.php`** — puts the literal on the left of `== != === !==`.
+Also tokenizer-based, and deliberately conservative: it rewrites only
+`<variable expression> <op> <single literal>`, where the left side is a
+variable with optional `->prop` and `['key']` chains. It refuses anything with
+a function call on either side, because reordering those changes evaluation
+order — a behaviour change, not a style fix. It **declined 952** comparisons on
+that basis, and re-parses every file with `php -l` before writing it, refusing
+any file that would not parse. **2,246 comparisons in 104 files; 36 remain**,
+all of them the call-bearing kind that should not be touched mechanically.
+
+| | v89.1 base | v90.2 |
+|---|---|---|
+| WPCS total, project ruleset | 7094 errors / 511 warnings | **3517 / 514** |
+| Yoda conditions | 2282 | **36** |
+| Inline comment end char | ~1703 | **0** |
+| WPCS security, suppressions off | 12 errors / 145 warnings | 1 / 142 |
+| **Plugin Check ruleset, shipped zip** | **2 errors / 69 warnings** | **0 / 73** |
+| `php -l` | 139/139 | **139/139** |
+
+Half the style total is gone, the security posture did not move, and Plugin
+Check — the only one WordPress.org enforces — is still at zero errors.
+
+What is left is mostly missing docblocks (~1,560 across MissingParamTag,
+FunctionComment.Missing and ParamCommentFullStop). Those need real prose about
+what each parameter means, not a mechanical pass, so they are not scripted here.

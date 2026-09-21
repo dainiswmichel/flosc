@@ -139,7 +139,7 @@ abstract class SSO_Provider_Base {
 	 * @return bool
 	 */
 	public function is_enabled() {
-		if ( $this->flow_enabled !== null ) {
+		if ( null !== $this->flow_enabled ) {
 			return $this->flow_enabled && $this->is_configured();
 		}
 		$enabled = get_option( "flosc_sso_{$this->provider_id}_enabled", false );

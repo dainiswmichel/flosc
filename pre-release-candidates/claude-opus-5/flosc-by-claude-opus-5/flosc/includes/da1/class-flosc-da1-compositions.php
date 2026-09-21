@@ -49,7 +49,7 @@ class FLOSC_DA1_Compositions {
 		$title_matches = array();
 		foreach ( $items as $item ) {
 			$title_norm = trim( (string) preg_replace( '/\s+/', ' ', strtolower( (string) preg_replace( '/[^a-z0-9 ]+/iu', ' ', (string) $item['title'] ) ) ) );
-			if ( $title_norm !== '' && strpos( $message_norm, $title_norm ) !== false ) {
+			if ( '' !== $title_norm && strpos( $message_norm, $title_norm ) !== false ) {
 				$title_matches[] = $item;
 			}
 		}
@@ -57,11 +57,11 @@ class FLOSC_DA1_Compositions {
 			$lines = array( count( $title_matches ) === 1 ? 'Here it is:' : 'Here are the matches:' );
 			foreach ( array_slice( $title_matches, 0, 3 ) as $idx => $item ) {
 				$line = ( $idx + 1 ) . '. ' . $item['title'];
-				if ( $item['description'] !== '' ) {
+				if ( '' !== $item['description'] ) {
 					$line .= ' - ' . $this->shorten_text( $item['description'], 120 );
 				}
 				$lines[] = $line;
-				if ( $item['media'] !== '' ) {
+				if ( '' !== $item['media'] ) {
 					$lines[] = 'Link: ' . $item['media'];
 				}
 			}
@@ -71,17 +71,17 @@ class FLOSC_DA1_Compositions {
 		$max_items = $this->detect_batch_size( $message );
 		$slice     = array_slice( $items, 0, $max_items );
 		$lines     = array(
-			$max_items === 1
+			1 === $max_items
 				? 'Here is one composition to start:'
 				: 'Here are ' . count( $slice ) . ' compositions to start:',
 		);
 		foreach ( $slice as $idx => $item ) {
 			$line = ( $idx + 1 ) . '. ' . $item['title'];
-			if ( $item['description'] !== '' ) {
+			if ( '' !== $item['description'] ) {
 				$line .= ' - ' . $this->shorten_text( $item['description'], 120 );
 			}
 			$lines[] = $line;
-			if ( $item['media'] !== '' ) {
+			if ( '' !== $item['media'] ) {
 				$lines[] = 'Link: ' . $item['media'];
 			}
 		}
@@ -118,7 +118,7 @@ class FLOSC_DA1_Compositions {
 
 	public function get_works_list_url() {
 		$configured = trim( (string) get_option( 'flosc_da1_works_list_url', '' ) );
-		if ( $configured !== '' && filter_var( $configured, FILTER_VALIDATE_URL ) ) {
+		if ( '' !== $configured && filter_var( $configured, FILTER_VALIDATE_URL ) ) {
 			return $configured;
 		}
 		return trailingslashit( home_url( '/music/list-of-works/' ) );
@@ -142,7 +142,7 @@ class FLOSC_DA1_Compositions {
 		 */
 		$assignments  = get_option( 'flosc_da1_flow_catalogs', array() );
 		$catalog_keys = array();
-		if ( is_array( $assignments ) && $ivr_file !== '' && ! empty( $assignments[ $ivr_file ] ) && is_array( $assignments[ $ivr_file ] ) ) {
+		if ( is_array( $assignments ) && '' !== $ivr_file && ! empty( $assignments[ $ivr_file ] ) && is_array( $assignments[ $ivr_file ] ) ) {
 			$catalog_keys = array_values(
 				array_unique(
 					array_filter(
@@ -161,10 +161,10 @@ class FLOSC_DA1_Compositions {
 		}
 
 		$flow_scope_tokens = array();
-		if ( $flow_id !== '' ) {
+		if ( '' !== $flow_id ) {
 			$flow_scope_tokens[] = strtolower( trim( (string) $flow_id ) );
 		}
-		if ( $ivr_file !== '' ) {
+		if ( '' !== $ivr_file ) {
 			$flow_scope_tokens[] = strtolower( trim( (string) pathinfo( $ivr_file, PATHINFO_FILENAME ) ) );
 		}
 		$flow_scope_tokens = array_values( array_unique( array_filter( $flow_scope_tokens ) ) );
@@ -195,19 +195,19 @@ class FLOSC_DA1_Compositions {
 				}
 				$assoc = array();
 				foreach ( $header as $i => $col ) {
-					if ( $col === '' ) {
+					if ( '' === $col ) {
 						continue;
 					}
 					$assoc[ $col ] = isset( $row[ $i ] ) ? trim( (string) $row[ $i ] ) : '';
 				}
 
 				$status = strtolower( (string) ( $assoc['Status'] ?? 'active' ) );
-				if ( $status !== '' && $status !== 'active' ) {
+				if ( '' !== $status && 'active' !== $status ) {
 					continue;
 				}
 
 				$scope = strtolower( (string) ( $assoc['Flow Scope'] ?? 'all' ) );
-				if ( $scope !== '' && $scope !== 'all' && ! empty( $flow_scope_tokens ) ) {
+				if ( '' !== $scope && 'all' !== $scope && ! empty( $flow_scope_tokens ) ) {
 					$allowed_scopes = array_filter( array_map( 'trim', explode( ',', $scope ) ) );
 					$scope_match    = false;
 					foreach ( $allowed_scopes as $allowed_scope ) {
@@ -232,7 +232,7 @@ class FLOSC_DA1_Compositions {
 		$children_by_parent = array();
 		foreach ( $rows as $row ) {
 			$parent_key = trim( (string) ( $row['Parent Key'] ?? '' ) );
-			if ( $parent_key === '' ) {
+			if ( '' === $parent_key ) {
 				continue;
 			}
 			if ( ! isset( $children_by_parent[ $parent_key ] ) ) {
@@ -245,12 +245,12 @@ class FLOSC_DA1_Compositions {
 		$seen_titles = array();
 		foreach ( $rows as $row ) {
 			$parent_key = trim( (string) ( $row['Parent Key'] ?? '' ) );
-			if ( $parent_key !== '' ) {
+			if ( '' !== $parent_key ) {
 				continue;
 			}
 
 			$title = trim( (string) ( $row['Title'] ?? '' ) );
-			if ( $title === '' ) {
+			if ( '' === $title ) {
 				continue;
 			}
 			$title_key = strtolower( $title );
@@ -261,10 +261,10 @@ class FLOSC_DA1_Compositions {
 
 			$row_key = trim( (string) ( $row['Row Key'] ?? '' ) );
 			$media   = $this->extract_primary_media_url( trim( (string) ( $row['Media'] ?? '' ) ) );
-			if ( $media === '' && $row_key !== '' && ! empty( $children_by_parent[ $row_key ] ) ) {
+			if ( '' === $media && '' !== $row_key && ! empty( $children_by_parent[ $row_key ] ) ) {
 				foreach ( $children_by_parent[ $row_key ] as $child ) {
 					$child_media = $this->extract_primary_media_url( trim( (string) ( $child['Media'] ?? '' ) ) );
-					if ( $child_media !== '' ) {
+					if ( '' !== $child_media ) {
 						$media = $child_media;
 						break;
 					}
@@ -283,7 +283,7 @@ class FLOSC_DA1_Compositions {
 
 	public function extract_primary_media_url( $text ) {
 		$text = trim( (string) $text );
-		if ( $text === '' ) {
+		if ( '' === $text ) {
 			return '';
 		}
 		if ( preg_match( '/https?:\/\/[^\s"<>]+/i', $text, $m ) ) {
@@ -302,8 +302,8 @@ class FLOSC_DA1_Compositions {
 		for ( $i = 0; $i < $len; $i++ ) {
 			$ch = $content[ $i ];
 			if ( $in_quotes ) {
-				if ( $ch === '"' ) {
-					if ( $i + 1 < $len && $content[ $i + 1 ] === '"' ) {
+				if ( '"' === $ch ) {
+					if ( $i + 1 < $len && '"' === $content[ $i + 1 ] ) {
 						$field .= '"';
 						++$i;
 					} else {
@@ -312,22 +312,22 @@ class FLOSC_DA1_Compositions {
 				} else {
 					$field .= $ch;
 				}
-			} elseif ( $ch === '"' ) {
+			} elseif ( '"' === $ch ) {
 				$in_quotes = true;
-			} elseif ( $ch === "\t" ) {
+			} elseif ( "\t" === $ch ) {
 				$row[] = $field;
 				$field = '';
-			} elseif ( $ch === "\n" ) {
+			} elseif ( "\n" === $ch ) {
 				$row[]  = $field;
 				$rows[] = $row;
 				$row    = array();
 				$field  = '';
-			} elseif ( $ch !== "\r" ) {
+			} elseif ( "\r" !== $ch ) {
 				$field .= $ch;
 			}
 		}
 
-		if ( $field !== '' || ! empty( $row ) ) {
+		if ( '' !== $field || ! empty( $row ) ) {
 			$row[]  = $field;
 			$rows[] = $row;
 		}
@@ -337,7 +337,7 @@ class FLOSC_DA1_Compositions {
 
 	public function shorten_text( $text, $limit ) {
 		$text = trim( (string) $text );
-		if ( $text === '' ) {
+		if ( '' === $text ) {
 			return '';
 		}
 		if ( function_exists( 'mb_strlen' ) && function_exists( 'mb_substr' ) ) {

@@ -51,7 +51,7 @@ class FLOSC_STT_Dispatch {
 		$cache_key = 'flosc_stt_' . md5_file( $audio_path );
 		$cached    = get_transient( $cache_key );
 
-		if ( $cached !== false ) {
+		if ( false !== $cached ) {
 			return $cached;
 		}
 
@@ -169,11 +169,11 @@ class FLOSC_STT_Dispatch {
 			$poll_body = json_decode( wp_remote_retrieve_body( $poll_response ), true );
 			$status    = $poll_body['status'] ?? '';
 
-			if ( $status === 'completed' ) {
+			if ( 'completed' === $status ) {
 				return $poll_body['text'] ?? '';
 			}
 
-			if ( $status === 'error' ) {
+			if ( 'error' === $status ) {
 				return new WP_Error( 'transcription_error', $poll_body['error'] ?? __( 'Transcription failed', 'flosc' ) );
 			}
 		}

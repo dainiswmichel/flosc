@@ -41,7 +41,7 @@ if ( ! in_array( $flosc_debug_mode, array( 'inherit', 'on', 'off' ), true ) ) {
 }
 
 $flosc_wp_debug        = defined( 'WP_DEBUG' ) && WP_DEBUG;
-$flosc_effective_debug = ( $flosc_debug_mode === 'on' ) ? true : ( ( $flosc_debug_mode === 'off' ) ? false : $flosc_wp_debug );
+$flosc_effective_debug = ( 'on' === $flosc_debug_mode ) ? true : ( ( 'off' === $flosc_debug_mode ) ? false : $flosc_wp_debug );
 
 $flosc_runtime_access = 'visitor';
 if ( $flosc_user_id > 0 ) {
@@ -52,7 +52,7 @@ if ( $flosc_user_id > 0 ) {
 }
 
 $flosc_flow_id             = sanitize_key( pathinfo( $flosc_current_ivr, PATHINFO_FILENAME ) );
-$flosc_can_assign_editors  = current_user_can( 'manage_options' ) && $flosc_flow_id !== '';
+$flosc_can_assign_editors  = current_user_can( 'manage_options' ) && '' !== $flosc_flow_id;
 $flosc_assignable_users    = array();
 $flosc_assigned_editor_ids = array();
 
@@ -168,19 +168,19 @@ if ( $flosc_can_assign_editors ) {
 			</tr>
 			<tr>
 				<td>First name</td>
-				<td><?php echo esc_html( $flosc_first_name !== '' ? $flosc_first_name : 'Not set' ); ?></td>
+				<td><?php echo esc_html( '' !== $flosc_first_name ? $flosc_first_name : 'Not set' ); ?></td>
 			</tr>
 			<tr>
 				<td>Last name</td>
-				<td><?php echo esc_html( $flosc_last_name !== '' ? $flosc_last_name : 'Not set' ); ?></td>
+				<td><?php echo esc_html( '' !== $flosc_last_name ? $flosc_last_name : 'Not set' ); ?></td>
 			</tr>
 			<tr>
 				<td>Roles</td>
-				<td><?php echo esc_html( $flosc_roles !== '' ? $flosc_roles : 'None' ); ?></td>
+				<td><?php echo esc_html( '' !== $flosc_roles ? $flosc_roles : 'None' ); ?></td>
 			</tr>
 			<tr>
 				<td>Registered</td>
-				<td><?php echo esc_html( $flosc_user->user_registered && $flosc_user->user_registered !== '0000-00-00 00:00:00' ? $flosc_user->user_registered : 'Not set' ); ?></td>
+				<td><?php echo esc_html( $flosc_user->user_registered && '0000-00-00 00:00:00' !== $flosc_user->user_registered ? $flosc_user->user_registered : 'Not set' ); ?></td>
 			</tr>
 		</tbody>
 	</table>

@@ -165,7 +165,7 @@ class FLOSC_Lessons_Table {
 			array( '%s', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s' )
 		);
 
-		if ( $result !== false ) {
+		if ( false !== $result ) {
 			$this->flosc_bust_lessons_cache();
 			return $wpdb->insert_id;
 		}

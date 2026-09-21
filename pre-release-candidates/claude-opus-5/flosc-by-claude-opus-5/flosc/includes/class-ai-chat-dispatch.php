@@ -301,7 +301,7 @@ class FLOSC_AI_Chat_Dispatch {
 			? flosc_get_setting( 'ai_brand_facts', '' )
 			: '' )
 		);
-		if ( $brand_facts !== '' ) {
+		if ( '' !== $brand_facts ) {
 			$prompt .= "## Product facts\n";
 			$prompt .= "Configured facts about this product. These override any guess you could make. Never invent or substitute expansions, categories, or claims.\n\n";
 			$prompt .= $brand_facts . "\n\n";
@@ -320,7 +320,7 @@ class FLOSC_AI_Chat_Dispatch {
 		$compiled_profile = function_exists( 'flosc_personality_compiled_profile' )
 			? flosc_personality_compiled_profile()
 			: '';
-		if ( $compiled_profile !== '' ) {
+		if ( '' !== $compiled_profile ) {
 			$prompt .= "## Personality\n";
 			$prompt .= "The following profile is who you are. Speak as this person. Do not describe how you were made.\n\n";
 			$prompt .= $compiled_profile . "\n";
@@ -584,13 +584,13 @@ class FLOSC_AI_Chat_Dispatch {
 		if ( ! empty( $context['flow_id'] ) && is_string( $context['flow_id'] ) ) {
 			$flow_stem = sanitize_key( pathinfo( basename( $context['flow_id'] ), PATHINFO_FILENAME ) );
 		}
-		if ( $flow_stem === '' && function_exists( 'flosc' ) && is_object( flosc() ) && method_exists( flosc(), 'get_current_flow' ) ) {
+		if ( '' === $flow_stem && function_exists( 'flosc' ) && is_object( flosc() ) && method_exists( flosc(), 'get_current_flow' ) ) {
 			$flow = flosc()->get_current_flow();
 			if ( is_array( $flow ) && ! empty( $flow['id'] ) ) {
 				$flow_stem = sanitize_key( (string) $flow['id'] );
 			}
 		}
-		if ( $flow_stem === '' || ! function_exists( 'flosc_knowledge_bases_prompt_text' ) ) {
+		if ( '' === $flow_stem || ! function_exists( 'flosc_knowledge_bases_prompt_text' ) ) {
 			return '';
 		}
 		$user_level = $context['access_level'] ?? ( ! empty( $context['logged_in'] ) ? 'guest' : 'visitor' );
@@ -613,7 +613,7 @@ class FLOSC_AI_Chat_Dispatch {
 		}
 
 		$level = strtolower( (string) ( $context['access_level'] ?? '' ) );
-		if ( $level === 'member' ) {
+		if ( 'member' === $level ) {
 			return true;
 		}
 
@@ -624,7 +624,7 @@ class FLOSC_AI_Chat_Dispatch {
 		// purchased may be bool true, 1, or strings Yes/true/1 from various builders.
 		if ( array_key_exists( 'purchased', $context ) ) {
 			$purchased = $context['purchased'];
-			if ( $purchased === true || $purchased === 1 || $purchased === '1' ) {
+			if ( true === $purchased || 1 === $purchased || '1' === $purchased ) {
 				return true;
 			}
 			if ( is_string( $purchased ) ) {
@@ -678,9 +678,9 @@ class FLOSC_AI_Chat_Dispatch {
 			$context['is_member']    = true;
 			// Display-friendly; keep separate from actual-purchase meta when present.
 			if ( ! array_key_exists( 'purchased', $context )
-				|| $context['purchased'] === false
-				|| $context['purchased'] === 'No'
-				|| $context['purchased'] === ''
+				|| false === $context['purchased']
+				|| 'No' === $context['purchased']
+				|| '' === $context['purchased']
 			) {
 				// Has full access even if _flosc_purchased is empty (admin/sandbox grant).
 				$context['member_entitlement'] = 'Member (full member access)';
@@ -698,7 +698,7 @@ class FLOSC_AI_Chat_Dispatch {
 				continue;
 			}
 			$formatted_value = $this->format_context_value( $context[ $pkey ] );
-			if ( $formatted_value === null || $formatted_value === '' ) {
+			if ( null === $formatted_value || '' === $formatted_value ) {
 				continue;
 			}
 			$label   = ucwords( str_replace( '_', ' ', $pkey ) );
@@ -713,7 +713,7 @@ class FLOSC_AI_Chat_Dispatch {
 				continue;
 			}
 			$formatted_value = $this->format_context_value( $value );
-			if ( $formatted_value === null || $formatted_value === '' ) {
+			if ( null === $formatted_value || '' === $formatted_value ) {
 				continue; // Skip null values.
 			}
 			// Format key: flosc_version → Flosc Version, quiz_score → Quiz Score.
@@ -733,7 +733,7 @@ class FLOSC_AI_Chat_Dispatch {
 	 * @return string|null
 	 */
 	private function format_context_value( $value, $depth = 0 ) {
-		if ( $value === null ) {
+		if ( null === $value ) {
 			return null;
 		}
 
@@ -760,7 +760,7 @@ class FLOSC_AI_Chat_Dispatch {
 		$parts = array();
 		foreach ( array_slice( $value, 0, 10, true ) as $item_key => $item_value ) {
 			$item = $this->format_context_value( $item_value, $depth + 1 );
-			if ( $item === null || $item === '' ) {
+			if ( null === $item || '' === $item ) {
 				continue;
 			}
 
@@ -786,7 +786,7 @@ class FLOSC_AI_Chat_Dispatch {
 			? flosc_flow_public_title()
 			: trim( (string) ( $identity['title'] ?? '' ) );
 		$line         = "You are {$assistant}, the AI assistant";
-		if ( $public_title !== '' ) {
+		if ( '' !== $public_title ) {
 			$line .= " for {$public_title}";
 		}
 		$line .= ". Your mission is to help users learn and improve through personalized guidance and encouragement. Be helpful, friendly, specific, and action-oriented. Always reference the user's quiz results and progress when available.";
@@ -825,7 +825,7 @@ class FLOSC_AI_Chat_Dispatch {
 			$cache_key    = 'flosc_ai_' . md5( $provider . $message . $system_prompt . $context_hash . $user_id );
 			$cached       = get_transient( $cache_key );
 
-			if ( $cached !== false ) {
+			if ( false !== $cached ) {
 				return $cached;
 			}
 		}
@@ -904,7 +904,7 @@ class FLOSC_AI_Chat_Dispatch {
 			$usd_cost = floatval( $raw['total_cost_usd'] );
 		}
 
-		if ( $usd_cost !== null && $usd_cost > 0 ) {
+		if ( null !== $usd_cost && $usd_cost > 0 ) {
 			$real_millicents = max( 1, intval( round( $usd_cost * 100000 ) ) );
 			$source          = 'provider_cost';
 		} else {
@@ -1037,7 +1037,7 @@ class FLOSC_AI_Chat_Dispatch {
 		$chain = array();
 		for ( $i = 1; $i <= 3; $i++ ) {
 			$p = flosc_get_setting( "ai_chain_provider_{$i}", '' );
-			if ( ! empty( $p ) && $p !== 'none' ) {
+			if ( ! empty( $p ) && 'none' !== $p ) {
 				$chain[] = $p;
 			}
 		}
@@ -1084,7 +1084,7 @@ class FLOSC_AI_Chat_Dispatch {
 		$name          = function_exists( 'flosc_visitor_assistant_name' )
 			? flosc_visitor_assistant_name()
 			: (string) ( $identity['name'] ?? '' );
-		if ( $name === '' ) {
+		if ( '' === $name ) {
 			$name = 'this app';
 		}
 
@@ -1158,7 +1158,7 @@ class FLOSC_AI_Chat_Dispatch {
 		);
 		$model_pair = isset( $model_keys[ $provider ] ) ? $model_keys[ $provider ] : array( 'ai_openai_model', 'gpt-4o-mini' );
 		$model      = (string) flosc_get_setting( $model_pair[0], $model_pair[1] );
-		if ( $model === '' ) {
+		if ( '' === $model ) {
 			$model = $model_pair[1];
 		}
 		$temperature = (float) flosc_get_setting( 'ai_temperature', '0.3' );
@@ -1199,7 +1199,7 @@ class FLOSC_AI_Chat_Dispatch {
 		$this->capture_billing_meta( $provider, $used_model, $usage, array() );
 
 		$text = isset( $result['text'] ) ? (string) $result['text'] : '';
-		return $text !== '' ? $text : null;
+		return '' !== $text ? $text : null;
 	}
 
 	/**
@@ -1257,7 +1257,7 @@ class FLOSC_AI_Chat_Dispatch {
 		// v1.8.7: Per-flow model, temperature, max_tokens.
 		// Default tracks current xAI chat flagship (see docs.x.ai/developers/models).
 		$model = (string) flosc_get_setting( 'ai_xai_model', 'grok-4.5' );
-		if ( $model === '' ) {
+		if ( '' === $model ) {
 			$model = 'grok-4.5';
 		}
 		// Retired slugs still stored on older installs — remap so chat works without re-save.
@@ -1411,7 +1411,7 @@ class FLOSC_AI_Chat_Dispatch {
 			: '';
 
 		return array(
-			'name'            => $assistant !== '' ? $assistant : 'FLOSC App',
+			'name'            => '' !== $assistant ? $assistant : 'FLOSC App',
 			'title'           => trim( (string) ( $fw_id['title'] ?? flosc_get_setting( 'title', '' ) ) ),
 			'tagline'         => trim( (string) ( $fw_id['tagline'] ?? flosc_get_setting( 'tagline', '' ) ) ),
 			'price'           => flosc_get_setting( 'product_price', '' ),

@@ -46,7 +46,7 @@ class FLOSC_Site_Content_Index {
 	 */
 	public function stem_from_ivr( $ivr_file ) {
 		$stem = sanitize_key( pathinfo( basename( (string) $ivr_file ), PATHINFO_FILENAME ) );
-		return $stem !== '' ? $stem : 'default';
+		return '' !== $stem ? $stem : 'default';
 	}
 
 	/**
@@ -79,12 +79,12 @@ class FLOSC_Site_Content_Index {
 			'posts'          => array(),
 		);
 		$path  = $this->index_path( $flow_stem );
-		if ( $path === '' || ! is_readable( $path ) ) {
+		if ( '' === $path || ! is_readable( $path ) ) {
 			// Legacy: one earlier build wrote per-flow files — try once if site file missing.
 			$legacy_stem = sanitize_key( (string) $flow_stem );
-			if ( $legacy_stem !== '' && function_exists( 'flosc_data_file_path' ) ) {
+			if ( '' !== $legacy_stem && function_exists( 'flosc_data_file_path' ) ) {
 				$legacy = flosc_data_file_path( 'content-index-' . $legacy_stem . '.json' );
-				if ( $legacy !== '' && is_readable( $legacy ) ) {
+				if ( '' !== $legacy && is_readable( $legacy ) ) {
 					$path = $legacy;
 				} else {
 					return $empty;
@@ -94,7 +94,7 @@ class FLOSC_Site_Content_Index {
 			}
 		}
 		$raw = function_exists( 'flosc_fs_get_contents' ) ? flosc_fs_get_contents( $path ) : file_get_contents( $path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- reads index JSON under uploads via flosc_data_file_path
-		if ( ! is_string( $raw ) || $raw === '' ) {
+		if ( ! is_string( $raw ) || '' === $raw ) {
 			return $empty;
 		}
 		$data = json_decode( $raw, true );
@@ -132,7 +132,7 @@ class FLOSC_Site_Content_Index {
 	 */
 	public function save( $flow_stem, array $doc ) {
 		$path = $this->index_path( $flow_stem );
-		if ( $path === '' || ! function_exists( 'flosc_write_data_file' ) ) {
+		if ( '' === $path || ! function_exists( 'flosc_write_data_file' ) ) {
 			return false;
 		}
 		$payload = wp_json_encode( $doc, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
@@ -157,7 +157,7 @@ class FLOSC_Site_Content_Index {
 			$fs = $GLOBALS['flosc_current_settings'];
 		}
 
-		if ( empty( $fs ) && $flow_stem !== '' ) {
+		if ( empty( $fs ) && '' !== $flow_stem ) {
 			$candidates = array(
 				'flosc_flow_' . sanitize_key( $flow_stem ),
 				sanitize_key( $flow_stem ),
@@ -166,7 +166,7 @@ class FLOSC_Site_Content_Index {
 				$candidates[] = flosc_resolve_flow_option_key_for_ivr( (string) $GLOBALS['flosc_current_ivr'] );
 			}
 			foreach ( $candidates as $key ) {
-				if ( ! is_string( $key ) || $key === '' ) {
+				if ( ! is_string( $key ) || '' === $key ) {
 					continue;
 				}
 				$opt = get_option( $key, null );
@@ -190,7 +190,7 @@ class FLOSC_Site_Content_Index {
 
 		if ( empty( $slugs ) && function_exists( 'flosc_get_setting' ) ) {
 			$cat = flosc_get_setting( 'content_item_category', '' );
-			if ( is_string( $cat ) && $cat !== '' ) {
+			if ( is_string( $cat ) && '' !== $cat ) {
 				$slugs[] = sanitize_title( $cat );
 			}
 			$groups = flosc_get_setting( 'content_item_groups', array() );
@@ -205,7 +205,7 @@ class FLOSC_Site_Content_Index {
 
 		if ( empty( $slugs ) ) {
 			$global = get_option( 'flosc_content_item_category', '' );
-			if ( is_string( $global ) && $global !== '' ) {
+			if ( is_string( $global ) && '' !== $global ) {
 				$slugs[] = sanitize_title( $global );
 			}
 		}
@@ -345,10 +345,10 @@ class FLOSC_Site_Content_Index {
 
 		$auto_kw = $this->derive_keywords( $post, $body );
 		$manual  = sanitize_text_field( (string) $keywords_manual );
-		$merged  = $manual !== '' ? $this->merge_keywords( $auto_kw, $manual ) : $auto_kw;
+		$merged  = '' !== $manual ? $this->merge_keywords( $auto_kw, $manual ) : $auto_kw;
 
 		$access = get_post_meta( $post->ID, '_flosc_access_level', true );
-		if ( ! is_string( $access ) || $access === '' ) {
+		if ( ! is_string( $access ) || '' === $access ) {
 			// Content subcategory visitor|guest|member if used by sample packs.
 			$sub = get_post_meta( $post->ID, '_flosc_content_subcategory', true );
 			if ( in_array( $sub, array( 'visitor', 'guest', 'member' ), true ) ) {
@@ -398,7 +398,7 @@ class FLOSC_Site_Content_Index {
 	private function derive_keywords( WP_Post $post, $body ) {
 		$parts = array();
 		$title = get_the_title( $post );
-		if ( $title !== '' ) {
+		if ( '' !== $title ) {
 			$parts[] = $title;
 		}
 		$tags = get_the_tags( $post->ID );
@@ -450,7 +450,7 @@ class FLOSC_Site_Content_Index {
 		foreach ( array( $base, $extra ) as $chunk ) {
 			foreach ( preg_split( '/\s*,\s*/', (string) $chunk ) as $piece ) {
 				$piece = sanitize_text_field( trim( $piece ) );
-				if ( $piece === '' ) {
+				if ( '' === $piece ) {
 					continue;
 				}
 				$key         = function_exists( 'mb_strtolower' ) ? mb_strtolower( $piece ) : strtolower( $piece );
@@ -528,7 +528,7 @@ class FLOSC_Site_Content_Index {
 				: strtolower( (string) ( $row['title'] ?? '' ) . ' ' . (string) ( $row['keywords'] ?? '' ) . ' ' . (string) ( $row['content'] ?? '' ) );
 
 			$score = 0;
-			if ( $q !== '' && $hay !== '' ) {
+			if ( '' !== $q && '' !== $hay ) {
 				if ( false !== strpos( $hay, function_exists( 'mb_strtolower' ) ? mb_strtolower( $q ) : strtolower( $q ) ) ) {
 					$score += 50;
 				}
@@ -553,7 +553,7 @@ class FLOSC_Site_Content_Index {
 				}
 			}
 			// Prefer posts in the active flow's content category when one is set (same library, product slice first).
-			if ( $score > 0 && $flow_stem !== '' ) {
+			if ( $score > 0 && '' !== $flow_stem ) {
 				static $flow_slugs_cache = null;
 				if ( null === $flow_slugs_cache ) {
 					$flow_slugs_cache = $this->resolve_category_slugs( $flow_stem );
@@ -657,7 +657,7 @@ class FLOSC_Site_Content_Index {
 		$content                                 = (string) ( $doc['posts'][ $key ]['content'] ?? '' );
 		// Re-derive light auto keywords from title + body, then fold in manual overrides.
 		$auto                             = $this->merge_keywords( $title, implode( ', ', array_slice( preg_split( '/\s+/', $content ) ?: array(), 0, 24 ) ) );
-		$doc['posts'][ $key ]['keywords'] = $manual !== '' ? $this->merge_keywords( $auto, $manual ) : $auto;
+		$doc['posts'][ $key ]['keywords'] = '' !== $manual ? $this->merge_keywords( $auto, $manual ) : $auto;
 		return $this->save( $flow_stem, $doc );
 	}
 
@@ -670,7 +670,7 @@ class FLOSC_Site_Content_Index {
 	 */
 	public function reindex_one( $flow_stem, $post_id ) {
 		$post = get_post( (int) $post_id );
-		if ( ! $post || $post->post_status !== 'publish' ) {
+		if ( ! $post || 'publish' !== $post->post_status ) {
 			return false;
 		}
 		$doc                  = $this->load( $flow_stem );
@@ -716,10 +716,10 @@ class FLOSC_Site_Content_Index {
 			'tab'               => 'ai',
 			'site_index_action' => sanitize_key( $action ),
 		);
-		if ( $ivr !== '' ) {
+		if ( '' !== $ivr ) {
 			$args['ivr'] = $ivr;
 		}
-		if ( $error !== '' ) {
+		if ( '' !== $error ) {
 			$args['site_index_error'] = rawurlencode( $error );
 		}
 		wp_safe_redirect( add_query_arg( $args, admin_url( 'admin.php' ) ) . '#flosc-site-index-section' );

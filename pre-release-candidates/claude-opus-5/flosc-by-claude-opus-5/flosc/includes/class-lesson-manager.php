@@ -283,7 +283,7 @@ class FLOSC_Lesson_Manager {
 	public function get_lesson( $lesson_id ) {
 		$post = get_post( $lesson_id );
 
-		if ( ! $post || $post->post_status !== 'publish' ) {
+		if ( ! $post || 'publish' !== $post->post_status ) {
 			return null;
 		}
 

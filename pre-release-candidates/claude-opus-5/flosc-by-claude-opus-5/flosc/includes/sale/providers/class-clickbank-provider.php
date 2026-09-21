@@ -112,7 +112,7 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
 			return new WP_Error( 'clickbank_not_configured', __( 'ClickBank is not configured', 'flosc' ), array( 'status' => 503 ) );
 		}
 		$url = $this->get_checkout_url( $payment_data['affiliate_id'] ?? null, $payment_data['vtid'] ?? null );
-		if ( $url === '' ) {
+		if ( '' === $url ) {
 			return new WP_Error( 'clickbank_link', __( 'ClickBank vendor and product item number are required', 'flosc' ), array( 'status' => 400 ) );
 		}
 		return array(
@@ -141,7 +141,7 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
 		$product = sanitize_text_field( (string) $this->get_setting( 'product', '' ) );
 		$mode    = $this->get_setting( 'mode', 'sandbox' );
 
-		if ( $vendor === '' || $product === '' ) {
+		if ( '' === $vendor || '' === $product ) {
 			return '';
 		}
 
@@ -149,13 +149,13 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
 		$url = 'https://' . strtolower( $vendor ) . '.pay.clickbank.net/?cbitems=' . rawurlencode( $product );
 
 		// Sandbox still uses ClickBank's sandbox host when mode=sandbox.
-		if ( $mode === 'sandbox' ) {
+		if ( 'sandbox' === $mode ) {
 			$url = 'https://sandbox.clickbank.net/checkout/order/hop.php?vendor='
 				. rawurlencode( $vendor ) . '&product=' . rawurlencode( $product );
 		}
 
 		$vtid = sanitize_text_field( (string) ( $vtid ?? '' ) );
-		if ( $vtid !== '' && preg_match( '/^[A-Za-z0-9][A-Za-z0-9_]{0,99}$/', $vtid ) ) {
+		if ( '' !== $vtid && preg_match( '/^[A-Za-z0-9][A-Za-z0-9_]{0,99}$/', $vtid ) ) {
 			$url = add_query_arg( 'vtid', $vtid, $url );
 		}
 
@@ -187,7 +187,7 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
 	public function handle_webhook( $payload, $headers = array() ) {
 		unset( $headers );
 		$secret_key = (string) $this->get_setting( 'secret', '' );
-		if ( $secret_key === '' ) {
+		if ( '' === $secret_key ) {
 			return new WP_Error( 'clickbank_not_configured', __( 'ClickBank secret is not configured', 'flosc' ), array( 'status' => 500 ) );
 		}
 
@@ -209,7 +209,7 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
 		}
 
 		// --- Legacy form IPN (requires cverify). CB-01: never accept unsigned plaintext JSON. ---
-		if ( $params === null ) {
+		if ( null === $params ) {
 			$raw_params = array();
 			parse_str( $payload, $raw_params );
 			if ( ! is_array( $raw_params ) || empty( $raw_params ) ) {
@@ -246,10 +246,10 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
 		// CB-01: vendor is mandatory and must match exactly (empty incoming is not a pass).
 		$our_vendor = strtolower( preg_replace( '/[^a-z0-9]/', '', (string) $this->get_setting( 'vendor', '' ) ) );
 		$msg_vendor = strtolower( preg_replace( '/[^a-z0-9]/', '', (string) ( $params['cvendor'] ?? '' ) ) );
-		if ( $our_vendor === '' ) {
+		if ( '' === $our_vendor ) {
 			return new WP_Error( 'vendor_unconfigured', __( 'ClickBank vendor is not configured', 'flosc' ), array( 'status' => 500 ) );
 		}
-		if ( $msg_vendor === '' ) {
+		if ( '' === $msg_vendor ) {
 			return new WP_Error( 'vendor_missing', __( 'ClickBank notification missing vendor', 'flosc' ), array( 'status' => 400 ) );
 		}
 		if ( $msg_vendor !== $our_vendor ) {
@@ -335,14 +335,14 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
 		$encrypted = base64_decode( (string) $encrypted_b64, true );
 		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- ClickBank INS transports the AES initialization vector as base64; strict decoding is required by the protocol.
 		$iv = base64_decode( (string) $iv_b64, true );
-		if ( $encrypted === false || $iv === false || $iv === '' ) {
+		if ( false === $encrypted || false === $iv || '' === $iv ) {
 			return new WP_Error( 'invalid_ins_encoding', __( 'Invalid ClickBank INS encoding', 'flosc' ), array( 'status' => 400 ) );
 		}
 
 		// Key = first 32 hex chars of sha1(secret) as raw key bytes (ClickBank sample).
 		$key       = substr( sha1( (string) $secret_key ), 0, 32 );
 		$decrypted = openssl_decrypt( $encrypted, 'AES-256-CBC', $key, OPENSSL_RAW_DATA, $iv );
-		if ( $decrypted === false ) {
+		if ( false === $decrypted ) {
 			return new WP_Error( 'ins_decrypt_failed', __( 'Could not decrypt ClickBank INS notification', 'flosc' ), array( 'status' => 401 ) );
 		}
 
@@ -386,7 +386,7 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
 
 		$type = strtoupper( (string) ( $order['transactionType'] ?? $order['ctransaction'] ?? '' ) );
 		// Normalize BILL (INS) to REBILL for internal switch where needed.
-		if ( $type === 'BILL' ) {
+		if ( 'BILL' === $type ) {
 			$type = 'REBILL';
 		}
 
@@ -451,7 +451,7 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
 				break;
 			}
 			$k = sanitize_key( (string) $key );
-			if ( $k === '' ) {
+			if ( '' === $k ) {
 				continue;
 			}
 			if ( is_array( $value ) ) {
@@ -479,10 +479,10 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
 		$product  = sanitize_text_field( (string) ( $params['cproditem'] ?? '' ) );
 		$txn_type = strtoupper( (string) ( $params['ctransaction'] ?? '' ) );
 
-		if ( $email === '' || ! is_email( $email ) ) {
+		if ( '' === $email || ! is_email( $email ) ) {
 			return new WP_Error( 'invalid_email', __( 'ClickBank sale missing valid customer email', 'flosc' ), array( 'status' => 400 ) );
 		}
-		if ( $receipt === '' ) {
+		if ( '' === $receipt ) {
 			return new WP_Error( 'invalid_payload', __( 'ClickBank sale missing receipt', 'flosc' ), array( 'status' => 400 ) );
 		}
 
@@ -501,14 +501,14 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
 
 		// CB-01: product item is mandatory and must match configured cbitems exactly.
 		$our_product = sanitize_text_field( (string) $this->get_setting( 'product', '' ) );
-		if ( $our_product === '' ) {
+		if ( '' === $our_product ) {
 			return new WP_Error(
 				'product_unconfigured',
 				__( 'ClickBank product item number is not configured', 'flosc' ),
 				array( 'status' => 500 )
 			);
 		}
-		if ( $product === '' ) {
+		if ( '' === $product ) {
 			return new WP_Error(
 				'product_missing',
 				__( 'ClickBank notification missing product item', 'flosc' ),
@@ -528,7 +528,7 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
 
 		// Fail-closed: admin must map ClickBank → a real FLOSC offer id.
 		$offer_id = sanitize_text_field( (string) $this->get_setting( 'offer_id', '' ) );
-		if ( $offer_id === '' ) {
+		if ( '' === $offer_id ) {
 			return new WP_Error(
 				'clickbank_offer_unconfigured',
 				__( 'Configure ClickBank FLOSC Offer ID before granting access', 'flosc' ),
@@ -774,7 +774,7 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
 		$user = get_user_by( 'email', $email );
 
 		if ( $user ) {
-			if ( $transaction_type === 'CANCEL-REBILL' ) {
+			if ( 'CANCEL-REBILL' === $transaction_type ) {
 				update_user_meta( $user->ID, '_flosc_subscription_status', 'cancelled' );
 				update_user_meta( $user->ID, '_flosc_cancel_date', current_time( 'mysql' ) );
 			} else {

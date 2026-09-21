@@ -68,22 +68,22 @@ class FLOSC_Member_Access {
 
 		// Fallback without sale manager: per-flow flag, else legacy global.
 		$stem = '';
-		if ( $flow_id !== null && $flow_id !== '' ) {
+		if ( null !== $flow_id && '' !== $flow_id ) {
 			$stem = sanitize_key( pathinfo( basename( (string) $flow_id ), PATHINFO_FILENAME ) );
-			if ( $stem === '' ) {
+			if ( '' === $stem ) {
 				$stem = sanitize_key( (string) $flow_id );
 			}
 		}
-		if ( $stem !== '' ) {
+		if ( '' !== $stem ) {
 			$flag = get_user_meta( $user_id, '_flosc_member_access_' . $stem, true );
-			if ( $flag === 'true' || $flag === true || $flag === '1' || $flag === 'yes' ) {
+			if ( 'true' === $flag || true === $flag || '1' === $flag || 'yes' === $flag ) {
 				return true;
 			}
 			return false;
 		}
 
 		$member_status = get_user_meta( $user_id, '_flosc_member_access', true );
-		return $member_status === 'true' || $member_status === true || $member_status === '1';
+		return 'true' === $member_status || true === $member_status || '1' === $member_status;
 	}
 
 	/**
@@ -102,17 +102,17 @@ class FLOSC_Member_Access {
 
 		// Per-flow membership — required for multi-flow (flow member ≠ flosc.ai member).
 		$flow_raw = (string) ( $purchase_data['flow_id'] ?? '' );
-		if ( $flow_raw === '' && function_exists( 'flosc' ) && is_object( flosc() ) && method_exists( flosc(), 'get_current_flow' ) ) {
+		if ( '' === $flow_raw && function_exists( 'flosc' ) && is_object( flosc() ) && method_exists( flosc(), 'get_current_flow' ) ) {
 			$flow = flosc()->get_current_flow();
 			if ( is_array( $flow ) ) {
 				$flow_raw = (string) ( $flow['ivr_file'] ?? $flow['ivr'] ?? $flow['id'] ?? '' );
 			}
 		}
 		$stem = sanitize_key( pathinfo( basename( $flow_raw ), PATHINFO_FILENAME ) );
-		if ( $stem === '' && $flow_raw !== '' ) {
+		if ( '' === $stem && '' !== $flow_raw ) {
 			$stem = sanitize_key( $flow_raw );
 		}
-		if ( $stem !== '' ) {
+		if ( '' !== $stem ) {
 			update_user_meta( $user_id, '_flosc_member_access_' . $stem, 'true' );
 			update_user_meta( $user_id, '_flosc_member_access_' . $stem . '_since', time() );
 			if ( empty( $purchase_data['flow_id'] ) ) {
@@ -121,7 +121,7 @@ class FLOSC_Member_Access {
 		}
 
 		if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
-			flosc_log( "FLOSC: Granted member access to user {$user_id}" . ( $stem !== '' ? " flow={$stem}" : '' ) );
+			flosc_log( "FLOSC: Granted member access to user {$user_id}" . ( '' !== $stem ? " flow={$stem}" : '' ) );
 		}
 
 		// Grant specific membership level if offer specifies one (v1.0.1)
@@ -212,7 +212,7 @@ class FLOSC_Member_Access {
 	 */
 	public function get_level_aliases( $level ) {
 		$level = sanitize_key( (string) $level );
-		if ( $level === '' ) {
+		if ( '' === $level ) {
 			return array();
 		}
 
@@ -269,7 +269,7 @@ class FLOSC_Member_Access {
 		foreach ( $this->get_level_aliases( $level ) as $candidate ) {
 			$meta_key = '_flosc_memberlevel_' . $candidate;
 			$value    = get_user_meta( $user_id, $meta_key, true );
-			if ( $value === 'yes' || $value === 'true' || $value === true || $value === '1' ) {
+			if ( 'yes' === $value || 'true' === $value || true === $value || '1' === $value ) {
 				return true;
 			}
 			// Role-only grants (older accounts / admin-assigned roles without meta).
@@ -309,7 +309,7 @@ class FLOSC_Member_Access {
 				if ( is_array( $guest_aliases ) ) {
 					foreach ( $guest_aliases as $guest_alias ) {
 						$guest_alias = sanitize_key( (string) $guest_alias );
-						if ( $guest_alias !== '' && in_array( $guest_alias, $user->roles, true ) ) {
+						if ( '' !== $guest_alias && in_array( $guest_alias, $user->roles, true ) ) {
 							$user->remove_role( $guest_alias );
 						}
 					}
@@ -471,7 +471,7 @@ class FLOSC_Member_Access {
 		$meta_key = '_flosc_guest_access_post_' . intval( $post_id );
 		$access   = get_user_meta( $user_id, $meta_key, true );
 
-		if ( $access !== 'yes' ) {
+		if ( 'yes' !== $access ) {
 			return false;
 		}
 
@@ -554,7 +554,7 @@ class FLOSC_Member_Access {
 		$flow_manager = FLOSC_Flow_Manager::instance();
 		$mode         = $flow_manager->get_setting( 'flosc_free_content_item_mode', 'lessons', 'free_content_item_mode', 'fixed' );
 
-		if ( $mode === 'fixed' ) {
+		if ( 'fixed' === $mode ) {
 			return intval( $flow_manager->get_setting( 'flosc_free_content_item_count', 'lessons', 'free_content_item_count', 1 ) );
 		}
 

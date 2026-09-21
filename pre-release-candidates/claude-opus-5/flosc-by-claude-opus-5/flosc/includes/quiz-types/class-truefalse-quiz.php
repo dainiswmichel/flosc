@@ -158,14 +158,14 @@ class FLOSC_TrueFalse_Quiz extends FLOSC_Abstract_Quiz_Type {
 				if ( stripos( $seg, 'correctcontent:' ) === 0 ) {
 					// Appends — multiple |CorrectContent: segments are all tier-1.
 					foreach ( array_map( 'trim', explode( ',', trim( substr( $seg, strlen( 'correctcontent:' ) ) ) ) ) as $r ) {
-						if ( $r !== '' ) {
+						if ( '' !== $r ) {
 							$correct_content[] = $r;
 						}
 					}
 				} elseif ( stripos( $seg, 'relatedcontent:' ) === 0 ) {
 					// Appends — multiple |RelatedContent: pipe segments are cumulative.
 					foreach ( array_map( 'trim', explode( ',', trim( substr( $seg, strlen( 'relatedcontent:' ) ) ) ) ) as $r ) {
-						if ( $r !== '' ) {
+						if ( '' !== $r ) {
 							$related_content[] = $r;
 						}
 					}

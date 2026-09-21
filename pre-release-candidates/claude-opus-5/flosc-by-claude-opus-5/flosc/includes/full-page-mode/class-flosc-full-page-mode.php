@@ -39,7 +39,7 @@ class FLOSC_Full_Page_Mode {
 	 * v1.2.2: Get the appropriate app URL for current or specified flow
 	 */
 	public function get_app_url( $flow = null ) {
-		if ( $flow === null ) {
+		if ( null === $flow ) {
 			$flow = $this->flosc->get_current_flow();
 		}
 
@@ -91,7 +91,7 @@ class FLOSC_Full_Page_Mode {
 		}
 
 		$legal_page = $this->get_requested_legal_page();
-		if ( $legal_page !== null ) {
+		if ( null !== $legal_page ) {
 			$this->render_legal_page( $legal_page );
 			exit;
 		}
@@ -171,12 +171,12 @@ class FLOSC_Full_Page_Mode {
 
 	public function get_requested_legal_page() {
 		$request_uri = sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ?? '' ) );
-		if ( $request_uri === '' ) {
+		if ( '' === $request_uri ) {
 			return null;
 		}
 
 		$path = trim( (string) wp_parse_url( $request_uri, PHP_URL_PATH ), '/' );
-		if ( $path === '' ) {
+		if ( '' === $path ) {
 			return null;
 		}
 
@@ -193,7 +193,7 @@ class FLOSC_Full_Page_Mode {
 
 	public function get_current_request_base_url() {
 		$host = sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ?? '' ) );
-		if ( $host === '' ) {
+		if ( '' === $host ) {
 			return home_url( '/' );
 		}
 
@@ -278,7 +278,7 @@ class FLOSC_Full_Page_Mode {
 		echo '</nav>';
 		echo '<section class="flosc-legal-card">';
 		echo '<h1>' . esc_html( $current['headline'] ) . '</h1>';
-		if ( $current['content'] !== '' ) {
+		if ( '' !== $current['content'] ) {
 			echo wp_kses_post( $current['content'] );
 		}
 		echo '</section>';
@@ -358,7 +358,7 @@ HTML;
 		if ( is_array( $current_flow_for_state ) ) {
 			$ivr_for_state       = (string) ( $current_flow_for_state['ivr_file'] ?? $current_flow_for_state['ivr'] ?? $current_flow_for_state['id'] ?? '' );
 			$flow_stem_for_state = $this->flosc->flosc_normalize_flow_stem( $ivr_for_state );
-			if ( $flow_stem_for_state === '' || $flow_stem_for_state === 'default' ) {
+			if ( '' === $flow_stem_for_state || 'default' === $flow_stem_for_state ) {
 				$flow_stem_for_state = $this->flosc->flosc_normalize_flow_stem( (string) ( $current_flow_for_state['id'] ?? '' ) );
 			}
 		}
@@ -374,7 +374,7 @@ HTML;
 				)
 			);
 			$user_state = (string) ( $user_data['state'] ?? 'guest' );
-			if ( $user_state !== 'member' && $user_state !== 'guest' ) {
+			if ( 'member' !== $user_state && 'guest' !== $user_state ) {
 				$user_state = 'guest';
 			}
 			$user_data['state'] = $user_state;

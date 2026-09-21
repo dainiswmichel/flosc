@@ -390,7 +390,7 @@ $flosc_member_levels = $flosc_flow_settings['member_levels'] ?? array();
 $flosc_has_levels    = false;
 foreach ( (array) $flosc_member_levels as $flosc_lvl_key => $flosc_lvl ) {
 	$flosc_slug = sanitize_key( $flosc_lvl['slug'] ?? $flosc_lvl_key );
-	if ( $flosc_slug === '' ) {
+	if ( '' === $flosc_slug ) {
 		continue; }
 	$flosc_has_levels = true;
 	$flosc_lname      = trim( (string) ( $flosc_lvl['name'] ?? '' ) ) ?: $flosc_slug;

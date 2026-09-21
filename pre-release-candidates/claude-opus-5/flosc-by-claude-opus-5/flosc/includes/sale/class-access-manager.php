@@ -51,14 +51,14 @@ class FLOSC_Access_Manager {
 	 */
 	public function normalize_flow_stem( $flow_id = null ) {
 		$raw = is_string( $flow_id ) || is_numeric( $flow_id ) ? (string) $flow_id : '';
-		if ( $raw === '' && function_exists( 'flosc' ) && is_object( flosc() ) && method_exists( flosc(), 'get_current_flow' ) ) {
+		if ( '' === $raw && function_exists( 'flosc' ) && is_object( flosc() ) && method_exists( flosc(), 'get_current_flow' ) ) {
 			$flow = flosc()->get_current_flow();
 			if ( is_array( $flow ) ) {
 				$raw = (string) ( $flow['ivr_file'] ?? $flow['ivr'] ?? $flow['id'] ?? '' );
 			}
 		}
 		$stem = sanitize_key( pathinfo( basename( $raw ), PATHINFO_FILENAME ) );
-		if ( $stem === '' && $raw !== '' ) {
+		if ( '' === $stem && '' !== $raw ) {
 			$stem = sanitize_key( $raw );
 		}
 		return $stem;
@@ -73,7 +73,7 @@ class FLOSC_Access_Manager {
 	public function get_flow_member_levels( $stem ) {
 		$stem   = sanitize_key( (string) $stem );
 		$levels = array();
-		if ( $stem === '' ) {
+		if ( '' === $stem ) {
 			return $levels;
 		}
 
@@ -86,21 +86,21 @@ class FLOSC_Access_Manager {
 				$id        = sanitize_key( (string) ( $flow['id'] ?? '' ) );
 				$ivr       = (string) ( $flow['ivr_file'] ?? $flow['ivr'] ?? '' );
 				$flow_stem = sanitize_key( pathinfo( basename( $ivr ), PATHINFO_FILENAME ) );
-				if ( $flow_stem === '' ) {
+				if ( '' === $flow_stem ) {
 					$flow_stem = $id;
 				}
 				if ( $flow_stem !== $stem && $id !== $stem ) {
 					continue;
 				}
 				$default = sanitize_key( (string) ( $flow['default_member_level'] ?? '' ) );
-				if ( $default !== '' ) {
+				if ( '' !== $default ) {
 					$levels[] = $default;
 				}
 				$ml = $flow['member_levels'] ?? array();
 				if ( is_array( $ml ) ) {
 					foreach ( array_keys( $ml ) as $k ) {
 						$k = sanitize_key( (string) $k );
-						if ( $k !== '' ) {
+						if ( '' !== $k ) {
 							$levels[] = $k;
 						}
 					}
@@ -111,7 +111,7 @@ class FLOSC_Access_Manager {
 		$settings = get_option( 'flosc_flow_' . $stem, array() );
 		if ( is_array( $settings ) ) {
 			$default = sanitize_key( (string) ( $settings['default_member_level'] ?? '' ) );
-			if ( $default !== '' ) {
+			if ( '' !== $default ) {
 				$levels[] = $default;
 			}
 			if ( ! empty( $settings['member_level'] ) ) {
@@ -129,7 +129,7 @@ class FLOSC_Access_Manager {
 			array_filter(
 				$levels,
 				static function ( $level ) {
-					return $level !== '' && strpos( $level, 'guest' ) === false;
+					return '' !== $level && strpos( $level, 'guest' ) === false;
 				}
 			)
 		);
@@ -159,7 +159,7 @@ class FLOSC_Access_Manager {
 		}
 
 		$stem = $this->normalize_flow_stem( $flow_id );
-		if ( $stem !== '' ) {
+		if ( '' !== $stem ) {
 			return $this->is_member_of_flow( (int) $user_id, $stem );
 		}
 
@@ -182,13 +182,13 @@ class FLOSC_Access_Manager {
 	public function is_member_of_flow( $user_id, $stem ) {
 		$user_id = (int) $user_id;
 		$stem    = sanitize_key( (string) $stem );
-		if ( $user_id <= 0 || $stem === '' ) {
+		if ( $user_id <= 0 || '' === $stem ) {
 			return false;
 		}
 
 		// 1) Explicit per-flow grant (purchase / access code / sandbox for this flow).
 		$flag = get_user_meta( $user_id, '_flosc_member_access_' . $stem, true );
-		if ( $flag === 'true' || $flag === true || $flag === '1' || $flag === 'yes' ) {
+		if ( 'true' === $flag || true === $flag || '1' === $flag || 'yes' === $flag ) {
 			return true;
 		}
 
@@ -232,10 +232,10 @@ class FLOSC_Access_Manager {
 			}
 			$row_raw  = (string) ( $row['flow_id'] ?? '' );
 			$row_stem = sanitize_key( pathinfo( basename( $row_raw ), PATHINFO_FILENAME ) );
-			if ( $row_stem === '' ) {
+			if ( '' === $row_stem ) {
 				$row_stem = sanitize_key( $row_raw );
 			}
-			if ( $row_stem !== '' && $row_stem === $stem ) {
+			if ( '' !== $row_stem && $row_stem === $stem ) {
 				return true;
 			}
 		}
@@ -284,7 +284,7 @@ class FLOSC_Access_Manager {
 
 		// Legacy global flag or any non-guest member level meta.
 		$global = get_user_meta( $user_id, '_flosc_member_access', true );
-		if ( $global === 'true' || $global === true || $global === '1' ) {
+		if ( 'true' === $global || true === $global || '1' === $global ) {
 			return true;
 		}
 
@@ -293,7 +293,7 @@ class FLOSC_Access_Manager {
 			$ma = FLOSC_Member_Access::instance();
 			foreach ( (array) $ma->get_user_levels( $user_id ) as $level ) {
 				$level = sanitize_key( (string) $level );
-				if ( $level !== '' && strpos( $level, 'guest' ) === false ) {
+				if ( '' !== $level && strpos( $level, 'guest' ) === false ) {
 					return true;
 				}
 			}
@@ -327,11 +327,11 @@ class FLOSC_Access_Manager {
 			// Require explicit flow_id on the grant — do not treat "offer id exists.
 			// in this flow's catalog" as purchase of this flow (cross-flow bleed).
 			$offer_flow = sanitize_key( (string) ( $offer_data['flow_id'] ?? '' ) );
-			if ( $offer_flow === '' ) {
+			if ( '' === $offer_flow ) {
 				continue;
 			}
 			$offer_stem = sanitize_key( pathinfo( basename( $offer_flow ), PATHINFO_FILENAME ) );
-			if ( $offer_stem === '' ) {
+			if ( '' === $offer_stem ) {
 				$offer_stem = $offer_flow;
 			}
 			if ( $offer_stem === $stem || $offer_flow === $stem ) {
@@ -404,7 +404,7 @@ class FLOSC_Access_Manager {
 		if ( is_string( $requirement ) ) {
 			$requirement = strtolower( trim( $requirement ) );
 			// Full membership (not a narrow feature id) — keep userState consistent for AI/IVR.
-			if ( $requirement === 'full' || $requirement === 'member' ) {
+			if ( 'full' === $requirement || 'member' === $requirement ) {
 				return $this->is_member( $user_id );
 			}
 			return $this->has_feature( $user_id, $requirement );
@@ -440,7 +440,7 @@ class FLOSC_Access_Manager {
 
 		// Record the offer purchase.
 		$offer_flow_id = (string) ( $transaction['flow_id'] ?? $offer['flow_id'] ?? '' );
-		if ( $offer_flow_id === '' ) {
+		if ( '' === $offer_flow_id ) {
 			$offer_flow_id = $this->normalize_flow_stem( null );
 		}
 		$access['offers'][ $offer['id'] ] = array(
@@ -482,7 +482,7 @@ class FLOSC_Access_Manager {
 		}
 
 		// Handle subscription.
-		if ( $offer['type'] === 'subscription' && isset( $transaction['subscription_id'] ) ) {
+		if ( 'subscription' === $offer['type'] && isset( $transaction['subscription_id'] ) ) {
 			$access['subscription'] = array(
 				'id'         => $transaction['subscription_id'],
 				'provider'   => $transaction['provider'] ?? 'stripe',
@@ -492,7 +492,7 @@ class FLOSC_Access_Manager {
 		}
 
 		// Handle token grants.
-		if ( $offer['type'] === 'tokens' && ! empty( $offer['tokens']['amount'] ) ) {
+		if ( 'tokens' === $offer['type'] && ! empty( $offer['tokens']['amount'] ) ) {
 			$token_provider = flosc_sale()->get_provider( 'tokens' );
 			if ( $token_provider ) {
 				$total = ( $offer['tokens']['amount'] ?? 0 ) + ( $offer['tokens']['bonus'] ?? 0 );
@@ -535,7 +535,7 @@ class FLOSC_Access_Manager {
 
 		$history      = get_user_meta( $user_id, '_flosc_purchase_history', true ) ?: array();
 		$history_flow = (string) ( $transaction['flow_id'] ?? $offer['flow_id'] ?? '' );
-		if ( $history_flow === '' ) {
+		if ( '' === $history_flow ) {
 			$history_flow = $this->normalize_flow_stem( null );
 		}
 		$history[] = array(

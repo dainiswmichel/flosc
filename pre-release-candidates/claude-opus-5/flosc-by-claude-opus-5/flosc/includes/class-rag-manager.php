@@ -249,14 +249,14 @@ class FLOSC_RAG_Manager {
 					$stem = sanitize_key( (string) $flow['id'] );
 				}
 			}
-			if ( $stem === '' && ! empty( $GLOBALS['flosc_current_ivr'] ) ) {
+			if ( '' === $stem && ! empty( $GLOBALS['flosc_current_ivr'] ) ) {
 				$stem = $index->stem_from_ivr( (string) $GLOBALS['flosc_current_ivr'] );
 			}
-			if ( $stem !== '' ) {
+			if ( '' !== $stem ) {
 				$doc = $index->load( $stem );
 				if ( ! empty( $doc['posts'] ) ) {
 					$from_index = $index->search( $stem, (string) $keywords, (string) $access_level, (int) $limit );
-					if ( is_string( $from_index ) && $from_index !== '' ) {
+					if ( is_string( $from_index ) && '' !== $from_index ) {
 						return $from_index;
 					}
 				}
@@ -396,7 +396,7 @@ class FLOSC_RAG_Manager {
 		}
 		if ( empty( $categories ) ) {
 			$global = get_option( 'flosc_content_item_category', '' );
-			if ( $global !== '' ) {
+			if ( '' !== $global ) {
 				$categories[] = $global;
 			}
 		}

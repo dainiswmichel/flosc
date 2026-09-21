@@ -51,7 +51,7 @@ class FLOSC_First_Party_Authentication {
 			return $user;
 		}
 		$status = (string) get_user_meta( $user->ID, '_flosc_email_account_status', true );
-		if ( $status === 'pending' ) {
+		if ( 'pending' === $status ) {
 			return new WP_Error(
 				'flosc_email_pending',
 				__( 'Please verify your email address before signing in. Check your inbox for the verification link.', 'flosc' )
@@ -73,10 +73,10 @@ class FLOSC_First_Party_Authentication {
 		}
 
 		$flow_id = sanitize_key( (string) get_user_meta( $user_id, '_flosc_registration_flow', true ) );
-		if ( $flow_id === '' ) {
+		if ( '' === $flow_id ) {
 			$current_flow = $this->flosc->get_current_flow();
 			$ivr_file     = (string) ( $current_flow['ivr_file'] ?? $current_flow['ivr'] ?? '' );
-			$flow_id      = $this->flosc->flosc_normalize_flow_stem( $ivr_file !== '' ? $ivr_file : (string) ( $current_flow['id'] ?? '' ) );
+			$flow_id      = $this->flosc->flosc_normalize_flow_stem( '' !== $ivr_file ? $ivr_file : (string) ( $current_flow['id'] ?? '' ) );
 		}
 		if ( $this->flosc->flosc_user_should_receive_guest_tokens( $user_id, $flow_id ) ) {
 			$this->flosc->flosc_ensure_guest_token_baseline( $user_id, $token_provider, $flow_id, 'Guest registration baseline' );
@@ -105,10 +105,10 @@ class FLOSC_First_Party_Authentication {
 	public function handle_user_login( $user_login, $user ) {
 		$token_provider = $this->get_token_provider();
 		$flow_id        = sanitize_key( (string) get_user_meta( $user->ID, '_flosc_registration_flow', true ) );
-		if ( $flow_id === '' ) {
+		if ( '' === $flow_id ) {
 			$current_flow = $this->flosc->get_current_flow();
 			$ivr_file     = (string) ( $current_flow['ivr_file'] ?? $current_flow['ivr'] ?? '' );
-			$flow_id      = $this->flosc->flosc_normalize_flow_stem( $ivr_file !== '' ? $ivr_file : (string) ( $current_flow['id'] ?? '' ) );
+			$flow_id      = $this->flosc->flosc_normalize_flow_stem( '' !== $ivr_file ? $ivr_file : (string) ( $current_flow['id'] ?? '' ) );
 		}
 		if ( $this->flosc->flosc_user_should_receive_guest_tokens( $user->ID, $flow_id ) ) {
 			$this->flosc->flosc_ensure_guest_token_baseline( $user->ID, $token_provider, $flow_id, 'Guest login baseline' );
@@ -162,7 +162,7 @@ class FLOSC_First_Party_Authentication {
 				$incorrect = array();
 				foreach ( $answers as $i => $a ) {
 					$lesson = $i + 1;
-					if ( isset( $a['correct'] ) && $a['correct'] === true ) {
+					if ( isset( $a['correct'] ) && true === $a['correct'] ) {
 						$correct[] = $lesson;
 					} else {
 						$incorrect[] = $lesson;
@@ -232,7 +232,7 @@ class FLOSC_First_Party_Authentication {
 		// Slice 2: explicit login_destination wins first; then multi-flow.
 		// routing per login_destination_mode; else single-flow app URL.
 		$explicit_dest = flosc_get_setting( 'login_destination', '' );
-		if ( $explicit_dest !== '' ) {
+		if ( '' !== $explicit_dest ) {
 			$dest_url = esc_url_raw( $explicit_dest );
 		} else {
 			$dest_user_id = ( $user instanceof WP_User ) ? (int) $user->ID : 0;
@@ -246,11 +246,11 @@ class FLOSC_First_Party_Authentication {
 			}
 			if ( $flow_count > 1 ) {
 				$mode = flosc_get_setting( 'login_destination_mode', 'auto' );
-				if ( $mode === 'core_profile' ) {
+				if ( 'core_profile' === $mode ) {
 					$dest_url = admin_url( 'profile.php' );
-				} elseif ( $mode === 'custom_url' ) {
+				} elseif ( 'custom_url' === $mode ) {
 					$accounts = flosc_get_setting( 'login_destination_accounts_url', '' );
-					$dest_url = $accounts !== '' ? esc_url_raw( $accounts ) : admin_url( 'profile.php' );
+					$dest_url = '' !== $accounts ? esc_url_raw( $accounts ) : admin_url( 'profile.php' );
 				} elseif ( function_exists( 'bp_core_get_user_domain' ) && $dest_user_id ) {
 					$dest_url = bp_core_get_user_domain( $dest_user_id );
 				} else {
@@ -379,7 +379,7 @@ class FLOSC_First_Party_Authentication {
 	private function get_front_current_url() {
 		if ( $this->is_takeover_enabled() && ! is_admin() && ! empty( $_SERVER['REQUEST_URI'] ) ) {
 			$request_path = explode( '?', sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ), 2 )[0];
-			if ( $request_path !== '' && $request_path !== false ) {
+			if ( '' !== $request_path && false !== $request_path ) {
 				return home_url( $request_path );
 			}
 		}
@@ -393,7 +393,7 @@ class FLOSC_First_Party_Authentication {
 	 */
 	private function is_takeover_enabled() {
 		$setting = flosc_get_setting( 'takeover_wp_auth', '' );
-		return $setting !== '' && filter_var( (string) $setting, FILTER_VALIDATE_BOOLEAN );
+		return '' !== $setting && filter_var( (string) $setting, FILTER_VALIDATE_BOOLEAN );
 	}
 
 	/**
@@ -421,7 +421,7 @@ class FLOSC_First_Party_Authentication {
 	public function validate_flosc_auth_token( $token ) {
         // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- binary/JWT token decoding, not obfuscation
 		$decoded = base64_decode( $token, true );
-		if ( $decoded === false ) {
+		if ( false === $decoded ) {
 			return false;
 		}
 
@@ -563,25 +563,25 @@ class FLOSC_First_Party_Authentication {
 			$entry_flow = sanitize_key( (string) wp_unslash( $_COOKIE['flosc_entry_flow'] ) );
 		}
 
-		if ( $mode === 'fallback' ) {
-			return $fallback !== '' ? esc_url_raw( $fallback ) : $this->flosc->get_app_url();
+		if ( 'fallback' === $mode ) {
+			return '' !== $fallback ? esc_url_raw( $fallback ) : $this->flosc->get_app_url();
 		}
 
-		if ( $mode === 'flow' ) {
+		if ( 'flow' === $mode ) {
 			$flow_dest = flosc_get_setting( 'logout_destination', '' );
-			return $flow_dest !== '' ? esc_url_raw( $flow_dest ) : $this->flosc->get_app_url();
+			return '' !== $flow_dest ? esc_url_raw( $flow_dest ) : $this->flosc->get_app_url();
 		}
 
 		// entry_flow (default)
-		if ( $entry_flow !== '' ) {
+		if ( '' !== $entry_flow ) {
 			$recall = flosc_get_setting( 'logout_destination', '', $entry_flow );
-			if ( $recall !== '' ) {
+			if ( '' !== $recall ) {
 				return esc_url_raw( $recall );
 			}
 			return $this->flosc->get_app_url();
 		}
 
-		return $fallback !== '' ? esc_url_raw( $fallback ) : $this->flosc->get_app_url();
+		return '' !== $fallback ? esc_url_raw( $fallback ) : $this->flosc->get_app_url();
 	}
 
 	/**
@@ -595,7 +595,7 @@ class FLOSC_First_Party_Authentication {
 			return;
 		}
 		$flow_id = sanitize_key( (string) $flow_id );
-		if ( $flow_id === '' ) {
+		if ( '' === $flow_id ) {
 			return;
 		}
 		// First visit only — don't overwrite the original entry flow mid-session.
@@ -707,7 +707,7 @@ class FLOSC_First_Party_Authentication {
 			}
 		}
 
-		if ( $route === '' && isset( $GLOBALS['wp']->query_vars['rest_route'] ) ) {
+		if ( '' === $route && isset( $GLOBALS['wp']->query_vars['rest_route'] ) ) {
 			$route = (string) $GLOBALS['wp']->query_vars['rest_route'];
 		}
 

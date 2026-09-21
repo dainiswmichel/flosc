@@ -38,7 +38,7 @@ class FLOSC_Email {
 		}
 
 		$product_name = trim( (string) ( $flow_settings['name'] ?? $context['app_name'] ?? '' ) );
-		if ( $product_name === '' ) {
+		if ( '' === $product_name ) {
 			$product_name = get_option( 'flosc_product_name', 'FLOSC App' );
 		}
 
@@ -112,17 +112,17 @@ class FLOSC_Email {
 
 		$identity = is_array( $settings['identity'] ?? null ) ? $settings['identity'] : array();
 		$app_name = trim( (string) ( $identity['name'] ?? ( $settings['name'] ?? '' ) ) );
-		if ( $app_name === '' ) {
+		if ( '' === $app_name ) {
 			$app_name = 'FLOSC';
 		}
 
 		$link_name = trim( (string) ( $settings['guest_link_name'] ?? '' ) );
-		if ( $link_name === '' ) {
+		if ( '' === $link_name ) {
 			$link_name = 'Guest Access Link';
 		}
 
 		$upgrade_url = trim( (string) ( $settings['guest_link_upgrade_url'] ?? '' ) );
-		if ( $upgrade_url !== '' ) {
+		if ( '' !== $upgrade_url ) {
 			$upgrade_url = esc_url_raw( $upgrade_url );
 			if ( ! wp_http_validate_url( $upgrade_url ) ) {
 				$upgrade_url = '';
@@ -165,7 +165,7 @@ class FLOSC_Email {
 		$settings = is_array( $context['settings'] ?? null ) ? $context['settings'] : array();
 
 		$from_name = trim( (string) ( $settings['email_from_name'] ?? ( $context['app_name'] ?? 'FLOSC' ) ) );
-		if ( $from_name === '' ) {
+		if ( '' === $from_name ) {
 			$from_name = 'FLOSC';
 		}
 		$from_name = trim( str_replace( array( "\r", "\n" ), '', $from_name ) );
@@ -292,7 +292,7 @@ class FLOSC_Email {
 		);
 		if ( $sent ) {
 			$flow_stem = sanitize_key( pathinfo( basename( (string) $flow_id ), PATHINFO_FILENAME ) );
-			if ( $flow_stem !== '' ) {
+			if ( '' !== $flow_stem ) {
 				$sent_by_flow = get_user_meta( $user_id, '_flosc_sso_welcome_email_sent_flows', true );
 				if ( ! is_array( $sent_by_flow ) ) {
 					$sent_by_flow = array();
@@ -408,9 +408,9 @@ class FLOSC_Email {
 			. '<div class="flosc-email-wrap">'
 			. '<div class="flosc-email-card">'
 			. '<p class="flosc-email-lead">' . $body_html . '</p>';
-		if ( $button_url !== '' ) {
+		if ( '' !== $button_url ) {
 			$safe_url = esc_url( $button_url );
-			$label    = esc_html( $button_label !== '' ? $button_label : (string) ( $context['link_name'] ?? 'Open' ) );
+			$label    = esc_html( '' !== $button_label ? $button_label : (string) ( $context['link_name'] ?? 'Open' ) );
 			$html    .= '<p class="flosc-email-cta-wrap"><a class="flosc-email-cta" href="' . $safe_url . '">' . $label . '</a></p>'
 				. '<p class="flosc-email-copy">If the button does not work, copy and paste this link into your browser:</p>'
 				. '<p class="flosc-email-url"><a href="' . $safe_url . '">' . $safe_url . '</a></p>';
@@ -431,7 +431,7 @@ class FLOSC_Email {
 
 		$flow_id = sanitize_key( (string) ( $purchase_data['flow_id'] ?? get_user_meta( $user_id, '_flosc_registration_flow', true ) ) );
 		$level   = sanitize_key( (string) ( $purchase_data['grants_level'] ?? get_user_meta( $user_id, '_flosc_member_level', true ) ) );
-		if ( $level === '' ) {
+		if ( '' === $level ) {
 			$level = 'member';
 		}
 		$flow_stem = sanitize_key( pathinfo( basename( (string) $flow_id ), PATHINFO_FILENAME ) );
@@ -547,7 +547,7 @@ class FLOSC_Email {
 		if ( ! wp_verify_nonce( $flosc_nonce, 'update-user_' . $user_id ) ) {
 			return;
 		}
-		$opted = isset( $_POST['flosc_newsletter_optin'] ) && $_POST['flosc_newsletter_optin'] !== '';
+		$opted = isset( $_POST['flosc_newsletter_optin'] ) && '' !== $_POST['flosc_newsletter_optin'];
 		if ( $opted ) {
 			$this->subscribe_to_newsletter( $user_id );
 		} else {
@@ -592,9 +592,9 @@ class FLOSC_Email {
 			if ( $days_elapsed >= $day && ! in_array( $i, $done, true ) ) {
 				$subject = $this->replace_guest_email_placeholders( (string) ( $fu['subject'] ?? '' ), $user, 0 );
 				$body    = $this->replace_guest_email_placeholders( (string) ( $fu['body'] ?? '' ), $user, 0 );
-				if ( $subject !== '' || $body !== '' ) {
+				if ( '' !== $subject || '' !== $body ) {
 					$ok = $this->send_email_throttled( $user->user_email, $subject, $body, $this->get_flosc_mail_headers( $flow_id, (int) $user->ID, false ) );
-					if ( $ok === false ) {
+					if ( false === $ok ) {
 						break; } // per-run send cap reached — resume on the next cron run.
 				}
 				$done[]  = $i;
@@ -713,7 +713,7 @@ The {product_name} Team';
 		}
 
 		$flow_id = sanitize_key( (string) ( $user_data['flow_id'] ?? '' ) );
-		if ( $flow_id !== '' ) {
+		if ( '' !== $flow_id ) {
 			update_user_meta( $user_id, '_flosc_registration_flow', $flow_id );
 		}
 

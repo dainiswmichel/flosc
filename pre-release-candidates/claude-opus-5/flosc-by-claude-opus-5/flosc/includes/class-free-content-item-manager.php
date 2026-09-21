@@ -199,7 +199,7 @@ class FLOSC_Free_Content_Item_Manager {
 			return array();
 		}
 		$raw = (string) flosc_get_setting( 'exclude_items_from_freeline', '' );
-		if ( $raw === '' ) {
+		if ( '' === $raw ) {
 			return array();
 		}
 		$parts = preg_split( '/[\s,;]+/', $raw ) ?: array();
@@ -232,7 +232,7 @@ class FLOSC_Free_Content_Item_Manager {
 	private function find_lesson_post_in_category( $lesson_num, $category_slug ) {
 		$lesson_num    = intval( $lesson_num );
 		$category_slug = sanitize_title( (string) $category_slug );
-		if ( $lesson_num <= 0 || $category_slug === '' ) {
+		if ( $lesson_num <= 0 || '' === $category_slug ) {
 			return null;
 		}
 
@@ -278,7 +278,7 @@ class FLOSC_Free_Content_Item_Manager {
 	 */
 	private function find_free_eligible_lesson_post( $lesson_num, $quiz_id = '' ) {
 		$pool = $this->get_free_content_item_pool_category();
-		if ( $pool !== '' ) {
+		if ( '' !== $pool ) {
 			return $this->find_lesson_post_in_category( $lesson_num, $pool );
 		}
 		// No pool configured: any published post in the quiz's lesson group category.
@@ -565,7 +565,7 @@ class FLOSC_Free_Content_Item_Manager {
 		$title_pat  = '/^Lesson\s+' . preg_quote( (string) intval( $lesson_num ), '/' ) . '\b/i';
 		foreach ( (array) $candidates as $p ) {
 			$name = isset( $p->post_name ) ? (string) $p->post_name : '';
-			if ( $name !== '' && 0 === strpos( $name, $slug_prefix ) ) {
+			if ( '' !== $name && 0 === strpos( $name, $slug_prefix ) ) {
 				update_post_meta( $p->ID, '_flosc_lesson_number', intval( $lesson_num ) );
 				return $p;
 			}
@@ -692,7 +692,7 @@ class FLOSC_Free_Content_Item_Manager {
 
 		$count = count( $lessons );
 
-		if ( $delivery_mode === 'redirect' ) {
+		if ( 'redirect' === $delivery_mode ) {
 			return array(
 				'success' => true,
 				'mode'    => 'redirect',
@@ -712,7 +712,7 @@ class FLOSC_Free_Content_Item_Manager {
 			'title'         => $lessons[0]['title'],
 			'content'       => $lessons[0]['content'],
 			'url'           => $lessons[0]['url'],
-			'message'       => $count === 1
+			'message'       => 1 === $count
 				? "Here's your free lesson on {$lessons[0]['title']}!"
 				: "Here are your {$count} free lessons!",
 		);

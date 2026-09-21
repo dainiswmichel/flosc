@@ -87,7 +87,7 @@ class FLOSC_WP_AI_Client {
 	 */
 	public static function plugin_directory_url( $flosc_provider ) {
 		$slug = self::plugin_slug( $flosc_provider );
-		return $slug !== '' ? 'https://wordpress.org/plugins/' . $slug . '/' : '';
+		return '' !== $slug ? 'https://wordpress.org/plugins/' . $slug . '/' : '';
 	}
 
 	/**
@@ -98,7 +98,7 @@ class FLOSC_WP_AI_Client {
 	 */
 	public static function plugin_install_url( $flosc_provider ) {
 		$slug = self::plugin_slug( $flosc_provider );
-		if ( $slug === '' ) {
+		if ( '' === $slug ) {
 			return '';
 		}
 		return add_query_arg(
@@ -147,7 +147,7 @@ class FLOSC_WP_AI_Client {
 			return false;
 		}
 		$wp_id = self::wordpress_provider_id( $flosc_provider );
-		if ( $wp_id === '' ) {
+		if ( '' === $wp_id ) {
 			return false;
 		}
 		try {
@@ -168,7 +168,7 @@ class FLOSC_WP_AI_Client {
 		foreach ( self::client_provider_slugs() as $slug ) {
 			$rows[] = array(
 				'slug'       => $slug,
-				'label'      => $slug === 'gemini' ? 'Gemini' : ucfirst( $slug ),
+				'label'      => 'gemini' === $slug ? 'Gemini' : ucfirst( $slug ),
 				'plugin'     => self::plugin_name( $slug ),
 				'registered' => self::is_provider_registered( $slug ),
 				'directory'  => self::plugin_directory_url( $slug ),
@@ -230,7 +230,7 @@ class FLOSC_WP_AI_Client {
 		$test_mode = ! empty( $args['test_mode'] );
 		$wp_id     = self::wordpress_provider_id( $provider );
 
-		if ( $wp_id === '' ) {
+		if ( '' === $wp_id ) {
 			return new WP_Error(
 				'flosc_wp_ai_unsupported_provider',
 				sprintf( 'FLOSC provider "%s" is not a WordPress AI Client hop.', $provider )
@@ -260,7 +260,7 @@ class FLOSC_WP_AI_Client {
 		$api_key = function_exists( 'flosc_get_provider_api_key' )
 			? flosc_get_provider_api_key( $provider )
 			: flosc_get_setting( $provider . '_api_key', '' );
-		if ( $api_key === '' || $api_key === null ) {
+		if ( '' === $api_key || null === $api_key ) {
 			return self::no_key_error( $provider, $test_mode );
 		}
 
@@ -326,7 +326,7 @@ class FLOSC_WP_AI_Client {
 		for ( $i = 0; $i < 5; $i++ ) {
 			$hop_args            = $args;
 			$hop_args['history'] = $history;
-			if ( $i === 0 ) {
+			if ( 0 === $i ) {
 				$hop_args['message'] = $message;
 				unset( $hop_args['function_responses'] );
 			} else {
@@ -356,7 +356,7 @@ class FLOSC_WP_AI_Client {
 				return new WP_Error( 'flosc_wp_ai_no_tool_executor', 'RAG tools were requested but no executor is available.' );
 			}
 
-			if ( $i === 0 && $message !== '' ) {
+			if ( 0 === $i && '' !== $message ) {
 				$history[] = new Message(
 					MessageRoleEnum::user(),
 					array( new MessagePart( $message ) )
@@ -388,7 +388,7 @@ class FLOSC_WP_AI_Client {
 				}
 				$responses[] = new FunctionResponse(
 					is_string( $id ) ? $id : null,
-					$name !== '' ? $name : null,
+					'' !== $name ? $name : null,
 					(string) $out
 				);
 			}
@@ -426,7 +426,7 @@ class FLOSC_WP_AI_Client {
 				}
 			}
 		} else {
-			if ( $message === '' ) {
+			if ( '' === $message ) {
 				return new WP_Error( 'flosc_wp_ai_empty_prompt', 'Cannot generate from an empty prompt.' );
 			}
 			$builder = wp_ai_client_prompt( $message );
@@ -434,7 +434,7 @@ class FLOSC_WP_AI_Client {
 
 		$builder->using_provider( $wp_id );
 
-		if ( $model !== '' ) {
+		if ( '' !== $model ) {
 			$pinned = self::pin_model( $wp_id, $model );
 			if ( $pinned ) {
 				$builder->using_model( $pinned );
@@ -443,7 +443,7 @@ class FLOSC_WP_AI_Client {
 			}
 		}
 
-		if ( $system !== '' ) {
+		if ( '' !== $system ) {
 			$builder->using_system_instruction( $system );
 		}
 		if ( $max_tokens > 0 ) {
@@ -485,13 +485,13 @@ class FLOSC_WP_AI_Client {
 	 */
 	private static function bind_flosc_key( $flosc_provider, $api_key ) {
 		$wp_id = self::wordpress_provider_id( $flosc_provider );
-		if ( $wp_id === '' ) {
+		if ( '' === $wp_id ) {
 			return new WP_Error( 'flosc_wp_ai_unsupported_provider', 'No WordPress provider id.' );
 		}
 
-		if ( $wp_id === 'anthropic' && class_exists( AnthropicApiKeyRequestAuthentication::class ) ) {
+		if ( 'anthropic' === $wp_id && class_exists( AnthropicApiKeyRequestAuthentication::class ) ) {
 			$auth = new AnthropicApiKeyRequestAuthentication( $api_key );
-		} elseif ( $wp_id === 'google' && class_exists( GoogleApiKeyRequestAuthentication::class ) ) {
+		} elseif ( 'google' === $wp_id && class_exists( GoogleApiKeyRequestAuthentication::class ) ) {
 			$auth = new GoogleApiKeyRequestAuthentication( $api_key );
 		} else {
 			$auth = new ApiKeyRequestAuthentication( $api_key );
@@ -543,14 +543,14 @@ class FLOSC_WP_AI_Client {
 				continue;
 			}
 			$text = (string) ( $turn['content'] ?? '' );
-			if ( $text === '' ) {
+			if ( '' === $text ) {
 				continue;
 			}
 			$role = (string) ( $turn['role'] ?? 'user' );
-			if ( $role === 'assistant' ) {
+			if ( 'assistant' === $role ) {
 				$role = 'model';
 			}
-			$enum  = ( $role === 'model' ) ? MessageRoleEnum::model() : MessageRoleEnum::user();
+			$enum  = ( 'model' === $role ) ? MessageRoleEnum::model() : MessageRoleEnum::user();
 			$out[] = new Message( $enum, array( new MessagePart( $text ) ) );
 		}
 
@@ -572,7 +572,7 @@ class FLOSC_WP_AI_Client {
 				continue;
 			}
 			$name = (string) ( $tool['name'] ?? '' );
-			if ( $name === '' ) {
+			if ( '' === $name ) {
 				continue;
 			}
 			$params = null;
@@ -626,7 +626,7 @@ class FLOSC_WP_AI_Client {
 
 			$model_id = $requested_model;
 			$got      = (string) $result->getModelMetadata()->getId();
-			if ( $got !== '' ) {
+			if ( '' !== $got ) {
 				$model_id = $got;
 			}
 		} else {

@@ -332,7 +332,7 @@ class FLOSC_Usage_Tracker {
 			}
 
 			foreach ( $usage[ $period ] as $event => $data ) {
-				if ( ! is_string( $event ) || $event === '' || $event[0] === '_' ) {
+				if ( ! is_string( $event ) || '' === $event || '_' === $event[0] ) {
 					continue;
 				}
 				if ( ! is_array( $data ) ) {

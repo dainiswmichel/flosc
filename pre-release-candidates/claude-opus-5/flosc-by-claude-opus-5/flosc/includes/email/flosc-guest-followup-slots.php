@@ -74,13 +74,13 @@ function flosc_guest_followup_get( array $settings, $slot_id, $suffix, $default 
 		return $default;
 	}
 	$new_key = $slot_id . '_' . $suffix;
-	if ( array_key_exists( $new_key, $settings ) && $settings[ $new_key ] !== '' && $settings[ $new_key ] !== null ) {
+	if ( array_key_exists( $new_key, $settings ) && '' !== $settings[ $new_key ] && null !== $settings[ $new_key ] ) {
 		return $settings[ $new_key ];
 	}
 	$legacy = (string) ( $slots[ $slot_id ]['legacy_prefix'] ?? '' );
-	if ( $legacy !== '' ) {
+	if ( '' !== $legacy ) {
 		$old_key = $legacy . '_' . $suffix;
-		if ( array_key_exists( $old_key, $settings ) && $settings[ $old_key ] !== '' && $settings[ $old_key ] !== null ) {
+		if ( array_key_exists( $old_key, $settings ) && '' !== $settings[ $old_key ] && null !== $settings[ $old_key ] ) {
 			return $settings[ $old_key ];
 		}
 	}
@@ -101,12 +101,12 @@ function flosc_guest_followup_was_sent( array $sent, $slot_id ) {
 	}
 	$slots  = flosc_guest_followup_slots();
 	$legacy = (string) ( $slots[ $slot_id ]['legacy_sent_key'] ?? '' );
-	if ( $legacy !== '' && in_array( $legacy, $sent, true ) ) {
+	if ( '' !== $legacy && in_array( $legacy, $sent, true ) ) {
 		return true;
 	}
 	// Also accept legacy full prefix without underscore day token.
 	$legacy_prefix = (string) ( $slots[ $slot_id ]['legacy_prefix'] ?? '' );
-	if ( $legacy_prefix !== '' && in_array( $legacy_prefix, $sent, true ) ) {
+	if ( '' !== $legacy_prefix && in_array( $legacy_prefix, $sent, true ) ) {
 		return true;
 	}
 	return false;
@@ -122,7 +122,7 @@ function flosc_guest_followup_textarea_keys() {
 	foreach ( flosc_guest_followup_slots() as $slot_id => $meta ) {
 		$keys[] = $slot_id . '_body';
 		$legacy = (string) ( $meta['legacy_prefix'] ?? '' );
-		if ( $legacy !== '' ) {
+		if ( '' !== $legacy ) {
 			$keys[] = $legacy . '_body';
 		}
 	}
@@ -139,7 +139,7 @@ function flosc_guest_followup_template_ids() {
 	foreach ( flosc_guest_followup_slots() as $slot_id => $meta ) {
 		$ids[]  = $slot_id;
 		$legacy = (string) ( $meta['legacy_prefix'] ?? '' );
-		if ( $legacy !== '' ) {
+		if ( '' !== $legacy ) {
 			$ids[] = $legacy;
 		}
 	}

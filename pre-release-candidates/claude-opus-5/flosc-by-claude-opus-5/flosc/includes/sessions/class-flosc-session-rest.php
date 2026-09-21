@@ -28,7 +28,7 @@ class FLOSC_Session_Rest {
 		}
 
 		$flow_stem = $this->flosc->flosc_request_flow_stem( $request );
-		if ( $flow_stem === '' ) {
+		if ( '' === $flow_stem ) {
 			return new WP_Error(
 				'flosc_flow_required',
 				__( 'Flow is required.', 'flosc' ),
@@ -61,7 +61,7 @@ class FLOSC_Session_Rest {
 
 		$session_id = absint( $request->get_param( 'id' ) );
 		$flow_stem  = $this->flosc->flosc_request_flow_stem( $request );
-		if ( $flow_stem === '' ) {
+		if ( '' === $flow_stem ) {
 			return new WP_Error(
 				'flosc_flow_required',
 				__( 'Flow is required.', 'flosc' ),
@@ -109,7 +109,7 @@ class FLOSC_Session_Rest {
 		}
 
 		$flow_stem = $this->flosc->flosc_request_flow_stem( $request );
-		if ( $flow_stem === '' ) {
+		if ( '' === $flow_stem ) {
 			return new WP_Error(
 				'flosc_flow_required',
 				__( 'Flow is required.', 'flosc' ),
@@ -119,7 +119,7 @@ class FLOSC_Session_Rest {
 
 		// Guest chat cap (0 = unlimited). Members are not capped by guest_max_chats.
 		$user_state = $this->get_user_state_for_session_limits( $user_id, $flow_stem );
-		if ( $user_state === 'guest' ) {
+		if ( 'guest' === $user_state ) {
 			$max_chats = max( 0, intval( flosc_get_setting( 'guest_max_chats', 0 ) ) );
 			$count     = $this->flosc->sessions()->get_flosc_session_count( $user_id, $flow_stem );
 			if ( $max_chats > 0 && $count >= $max_chats ) {
@@ -188,7 +188,7 @@ class FLOSC_Session_Rest {
 		}
 		if ( $this->flosc->sale() && method_exists( $this->flosc->sale(), 'access' ) ) {
 			$state = $this->flosc->sale()->access()->get_simple_state( $user_id, $flow_id );
-			return ( $state === 'member' ) ? 'member' : 'guest';
+			return ( 'member' === $state ) ? 'member' : 'guest';
 		}
 		$member_access = $this->flosc->member_access();
 		if ( is_object( $member_access )
@@ -215,17 +215,17 @@ class FLOSC_Session_Rest {
 			$ivr  = (string) ( $flow['ivr_file'] ?? $flow['ivr'] ?? $flow['id'] ?? '' );
 			$stem = sanitize_key( pathinfo( basename( $ivr ), PATHINFO_FILENAME ) );
 		}
-		if ( $stem !== '' ) {
+		if ( '' !== $stem ) {
 			$fs = get_option( 'flosc_flow_' . $stem, array() );
 			if ( is_array( $fs ) && array_key_exists( $key, $fs ) ) {
 				$v = $fs[ $key ];
-				return ! ( $v === '' || $v === '0' || $v === 0 || $v === false || $v === null );
+				return ! ( '' === $v || '0' === $v || 0 === $v || false === $v || null === $v );
 			}
 		}
-		if ( $val === null || $val === false ) {
+		if ( null === $val || false === $val ) {
 			return true;
 		}
-		return ! ( $val === '' || $val === '0' || $val === 0 );
+		return ! ( '' === $val || '0' === $val || 0 === $val );
 	}
 
 	/**
@@ -242,7 +242,7 @@ class FLOSC_Session_Rest {
 			);
 		}
 		$flow_stem = $this->flosc->flosc_request_flow_stem( $request );
-		if ( $flow_stem === '' ) {
+		if ( '' === $flow_stem ) {
 			return new WP_Error(
 				'flosc_flow_required',
 				__( 'Flow is required.', 'flosc' ),
@@ -250,7 +250,7 @@ class FLOSC_Session_Rest {
 			);
 		}
 		$state = $this->get_user_state_for_session_limits( $user_id, $flow_stem );
-		if ( $state === 'guest' && ! $this->flosc_guest_chat_flag_enabled( 'guest_can_delete_chats' ) ) {
+		if ( 'guest' === $state && ! $this->flosc_guest_chat_flag_enabled( 'guest_can_delete_chats' ) ) {
 			return new WP_Error(
 				'flosc_guest_delete_disabled',
 				__( 'Deleting chats is not available for this account.', 'flosc' ),
@@ -287,7 +287,7 @@ class FLOSC_Session_Rest {
 				array( 'status' => 401 )
 			);
 		}
-		if ( $title === '' ) {
+		if ( '' === $title ) {
 			return new WP_Error(
 				'flosc_title_required',
 				__( 'Title is required.', 'flosc' ),
@@ -295,7 +295,7 @@ class FLOSC_Session_Rest {
 			);
 		}
 		$flow_stem = $this->flosc->flosc_request_flow_stem( $request );
-		if ( $flow_stem === '' ) {
+		if ( '' === $flow_stem ) {
 			return new WP_Error(
 				'flosc_flow_required',
 				__( 'Flow is required.', 'flosc' ),
@@ -324,10 +324,10 @@ class FLOSC_Session_Rest {
 				);
 			}
 			$old            = trim( (string) ( $s['title'] ?? '' ) );
-			$is_placeholder = ( $old === '' || $old === 'New Chat' );
+			$is_placeholder = ( '' === $old || 'New Chat' === $old );
 			// Manual rename: guests need guest_can_rename_chats.
 			// Auto-title from first user message while still "New Chat": always allowed.
-			if ( $state === 'guest'
+			if ( 'guest' === $state
 				&& ! $is_placeholder
 				&& ! $this->flosc_guest_chat_flag_enabled( 'guest_can_rename_chats' )
 			) {
@@ -387,7 +387,7 @@ class FLOSC_Session_Rest {
 	 */
 	public function flosc_normalize_session_id( $session_id_raw ) {
 		$raw = trim( (string) $session_id_raw );
-		if ( $raw === '' ) {
+		if ( '' === $raw ) {
 			return 0;
 		}
 

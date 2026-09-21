@@ -450,7 +450,7 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 		);
 		$intents    = $this->get_intents( $user_id );
 
-		if ( $user_id > 0 && $intent_id !== '' && isset( $intents[ $intent_id ] ) ) {
+		if ( $user_id > 0 && '' !== $intent_id && isset( $intents[ $intent_id ] ) ) {
 			$intents[ $intent_id ]['clicks'][] = array(
 				'offer_source' => $safe_offer['source'],
 				'offer_url'    => $safe_offer['url'],
@@ -500,7 +500,7 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 		);
 
 		// Update intent if provided.
-		if ( $safe['intent_id'] !== '' ) {
+		if ( '' !== $safe['intent_id'] ) {
 			$this->update_intent(
 				$user_id,
 				$safe['intent_id'],
@@ -696,7 +696,7 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
 		// Pass 8: field-sanitize after json_decode of untrusted webhook body.
 		$data = array();
 		if ( is_string( $payload ) ) {
-			if ( $payload !== '' && strlen( $payload ) <= 65536 ) {
+			if ( '' !== $payload && strlen( $payload ) <= 65536 ) {
 				$decoded = json_decode( $payload, true, 16 );
 				if ( JSON_ERROR_NONE === json_last_error() && is_array( $decoded ) ) {
 					$data = $decoded;

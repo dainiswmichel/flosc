@@ -473,7 +473,7 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 		$costs = $this->get_action_costs();
 		$cost  = $costs[ $action ] ?? 0;
 
-		if ( $cost === 0 ) {
+		if ( 0 === $cost ) {
 			return true;
 		}
 
@@ -487,7 +487,7 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 		$costs = $this->get_action_costs();
 		$cost  = $costs[ $action ] ?? 0;
 
-		if ( $cost === 0 ) {
+		if ( 0 === $cost ) {
 			return true;
 		}
 

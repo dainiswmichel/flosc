@@ -11,7 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $flosc_is_admin = current_user_can( 'manage_options' );
 $flosc_flow_id  = sanitize_key( wp_unslash( $_GET['flow_id'] ?? '' ) );
-$flosc_is_new   = ( $flosc_flow_id === 'new' );
+$flosc_is_new   = ( 'new' === $flosc_flow_id );
 $flosc_flow     = $flosc_is_new ? null : flosc_flows()->get_flow( $flosc_flow_id );
 
 // Permission check.
@@ -75,7 +75,7 @@ if ( isset( $_POST['flosc_save_flow'] ) && wp_verify_nonce( sanitize_text_field(
 		foreach ( $flosc_visitor_menu_items_post as $flosc_key => $flosc_item ) {
 			$flosc_visitor_menu_items[ $flosc_key ] = array(
 				'label'   => sanitize_text_field( $flosc_item['label'] ?? '' ),
-				'enabled' => isset( $flosc_item['enabled'] ) && $flosc_item['enabled'] === '1',
+				'enabled' => isset( $flosc_item['enabled'] ) && '1' === $flosc_item['enabled'],
 			);
 		}
 		update_option( 'flosc_visitor_menu_items', $flosc_visitor_menu_items );
@@ -194,7 +194,7 @@ $flosc_categories = get_categories( array( 'hide_empty' => false ) );
 	
 	<div class="card flosc-flow-edit-card">
 		
-		<?php if ( $flosc_current_tab === 'identity' || $flosc_is_new ) : ?>
+		<?php if ( 'identity' === $flosc_current_tab || $flosc_is_new ) : ?>
 			<!-- IDENTITY TAB -->
 			<form method="post">
 				<?php wp_nonce_field( 'flosc_save_flow' ); ?>
@@ -449,7 +449,7 @@ $flosc_categories = get_categories( array( 'hide_empty' => false ) );
 				</p>
 			</form>
 			
-		<?php elseif ( $flosc_current_tab === 'ivr' ) : ?>
+		<?php elseif ( 'ivr' === $flosc_current_tab ) : ?>
 			<!-- IVR TAB -->
 			<form method="post">
 				<?php wp_nonce_field( 'flosc_save_flow' ); ?>
@@ -491,7 +491,7 @@ $flosc_categories = get_categories( array( 'hide_empty' => false ) );
 				<p class="description">The IVR editor currently edits the global IVR messages. In a future version, it will be flow-aware.</p>
 			</form>
 			
-		<?php elseif ( $flosc_current_tab === 'content' ) : ?>
+		<?php elseif ( 'content' === $flosc_current_tab ) : ?>
 			<!-- CONTENT TAB -->
 			<form method="post">
 				<?php wp_nonce_field( 'flosc_save_flow' ); ?>
@@ -534,7 +534,7 @@ $flosc_categories = get_categories( array( 'hide_empty' => false ) );
 				</p>
 			</form>
 			
-		<?php elseif ( $flosc_current_tab === 'team' && $flosc_is_admin ) : ?>
+		<?php elseif ( 'team' === $flosc_current_tab && $flosc_is_admin ) : ?>
 			<!-- TEAM TAB (Admin only) -->
 			<form method="post">
 				<?php wp_nonce_field( 'flosc_update_team' ); ?>

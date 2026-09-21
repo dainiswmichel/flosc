@@ -50,12 +50,12 @@ class FLOSC_Access_Validator {
 		}
 
 		// Check for VISITOR-specific violations.
-		if ( $access_level === 'visitor' ) {
+		if ( 'visitor' === $access_level ) {
 			$violations = array_merge( $violations, $this->check_visitor_violations( $ai_response ) );
 		}
 
 		// Check for GUEST-specific violations.
-		if ( $access_level === 'guest' ) {
+		if ( 'guest' === $access_level ) {
 			$violations = array_merge( $violations, $this->check_guest_violations( $ai_response ) );
 		}
 
@@ -103,7 +103,7 @@ class FLOSC_Access_Validator {
 			'complete guide' => 'Member guide reference',
 		);
 
-		if ( $access_level === 'visitor' || $access_level === 'guest' ) {
+		if ( 'visitor' === $access_level || 'guest' === $access_level ) {
 			return $all_forbidden;
 		}
 

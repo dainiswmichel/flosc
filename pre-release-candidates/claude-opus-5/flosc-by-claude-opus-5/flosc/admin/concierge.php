@@ -13,13 +13,13 @@ $flosc_files        = function_exists( 'flosc_config_glob' ) ? flosc_config_glob
 $flosc_flow_options = array();
 foreach ( (array) $flosc_files as $flosc_file ) {
 	$flosc_name = basename( (string) $flosc_file );
-	if ( $flosc_name === '' || strpos( $flosc_name, 'backup' ) !== false ) {
+	if ( '' === $flosc_name || strpos( $flosc_name, 'backup' ) !== false ) {
 		continue;
 	}
 	$flosc_key      = 'flosc_flow_' . sanitize_key( pathinfo( $flosc_name, PATHINFO_FILENAME ) );
 	$flosc_settings = get_option( $flosc_key, array() );
 	$flosc_label    = trim( (string) ( $flosc_settings['identity']['name'] ?? '' ) );
-	if ( $flosc_label === '' ) {
+	if ( '' === $flosc_label ) {
 		$flosc_label = ucwords( str_replace( array( '_', '-', '.md' ), array( ' ', ' ', '' ), $flosc_name ) );
 	}
 	$flosc_flow_options[ $flosc_name ] = $flosc_label;
@@ -61,7 +61,7 @@ $flosc_concierge_posts = array_values(
 			}
 			$flosc_cfg  = FLOSC_Concierge::config_from_post( $flosc_post );
 			$flosc_flow = sanitize_file_name( (string) ( $flosc_cfg['flow'] ?? '' ) );
-			return $flosc_flow !== '' && $flosc_flow === $flosc_selected_ivr;
+			return '' !== $flosc_flow && $flosc_flow === $flosc_selected_ivr;
 		}
 	)
 );
@@ -222,13 +222,13 @@ Would you like to continue this concierge exchange, or would you like to chat ab
 					<span class="flosc-cncrg-accordion__chevron" aria-hidden="true">▸</span>
 					<span class="flosc-cncrg-accordion__title"><?php echo esc_html( get_the_title( $flosc_post ) ); ?></span>
 					<span class="flosc-status <?php echo esc_attr( $flosc_is_live ? 'flosc-status--active' : 'flosc-status--inactive' ); ?>"><?php echo esc_html( $flosc_is_live ? 'LIVE' : 'OFF' ); ?></span>
-					<span class="flosc-cncrg-accordion__meta"><?php echo esc_html( $flosc_flow !== '' ? $flosc_flow : 'No flow' ); ?></span>
-					<span class="flosc-cncrg-accordion__meta">Keyword: <?php echo esc_html( $flosc_keyword !== '' ? $flosc_keyword : '-' ); ?></span>
+					<span class="flosc-cncrg-accordion__meta"><?php echo esc_html( '' !== $flosc_flow ? $flosc_flow : 'No flow' ); ?></span>
+					<span class="flosc-cncrg-accordion__meta">Keyword: <?php echo esc_html( '' !== $flosc_keyword ? $flosc_keyword : '-' ); ?></span>
 					<span class="flosc-cncrg-accordion__meta"><?php echo esc_html( $flosc_has_password ? 'Password: Yes' : 'Password: No' ); ?></span>
 					<span class="flosc-cncrg-accordion__when"><?php echo esc_html( get_the_modified_date( 'Y-m-d H:i', $flosc_post ) ); ?></span>
 				</summary>
 				<div class="flosc-cncrg-accordion__body">
-					<p><strong>Preview:</strong> <?php echo esc_html( $flosc_preview !== '' ? $flosc_preview : '(empty)' ); ?></p>
+					<p><strong>Preview:</strong> <?php echo esc_html( '' !== $flosc_preview ? $flosc_preview : '(empty)' ); ?></p>
 					<p>
 						<a class="button button-small" href="<?php echo esc_url( get_edit_post_link( $flosc_post->ID ) ); ?>">Edit Post</a>
 					</p>

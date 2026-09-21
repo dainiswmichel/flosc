@@ -70,7 +70,7 @@ $flosc_flow_all_url    = add_query_arg(
 );
 
 $flosc_available_ivr_files = array();
-if ( $flosc_flow_view === 'all' ) {
+if ( 'all' === $flosc_flow_view ) {
 	/*
 	 * The kit upload itself runs on admin_init, in
 	 * FLOSC_Admin::maybe_process_flosc_settings_post(). It has to: a successful
@@ -87,7 +87,7 @@ if ( $flosc_flow_view === 'all' ) {
 		add_settings_error(
 			'flosc_settings',
 			'upload_success',
-			$flosc_up_name !== ''
+			'' !== $flosc_up_name
 				? sprintf(
 					/* translators: %s: IVR filename for the new flow */
 					esc_html__( 'New flow ready: %s. It is selected in Switch Flow.', 'flosc' ),
@@ -105,10 +105,10 @@ if ( $flosc_flow_view === 'all' ) {
 		if ( is_array( $flosc_port_notice ) ) {
 			$flosc_port_msg  = isset( $flosc_port_notice['message'] ) ? (string) $flosc_port_notice['message'] : '';
 			$flosc_port_type = ( isset( $flosc_port_notice['type'] ) && 'error' === $flosc_port_notice['type'] ) ? 'error' : 'success';
-		} elseif ( is_string( $flosc_port_notice ) && $flosc_port_notice !== '' ) {
+		} elseif ( is_string( $flosc_port_notice ) && '' !== $flosc_port_notice ) {
 			$flosc_port_msg = $flosc_port_notice;
 		}
-		if ( $flosc_port_msg !== '' ) {
+		if ( '' !== $flosc_port_msg ) {
 			add_settings_error( 'flosc_settings', 'portability_done', esc_html( $flosc_port_msg ), $flosc_port_type );
 		} else {
 			add_settings_error(
@@ -131,14 +131,14 @@ if ( $flosc_flow_view === 'all' ) {
 			$flosc_download_path = function_exists( 'flosc_resolve_ivr_file_path' )
 				? flosc_resolve_ivr_file_path( $flosc_download_file )
 				: '';
-			if ( $flosc_download_path !== '' && file_exists( $flosc_download_path ) && is_readable( $flosc_download_path ) ) {
+			if ( '' !== $flosc_download_path && file_exists( $flosc_download_path ) && is_readable( $flosc_download_path ) ) {
 				if ( ! function_exists( 'WP_Filesystem' ) ) {
 					require_once ABSPATH . 'wp-admin/includes/file.php';
 				}
 				global $wp_filesystem;
 				WP_Filesystem();
 				$flosc_download_content = is_object( $wp_filesystem ) ? $wp_filesystem->get_contents( $flosc_download_path ) : '';
-				if ( $flosc_download_content === false ) {
+				if ( false === $flosc_download_content ) {
 					$flosc_download_content = '';
 				}
 				$flosc_fs_dl = class_exists( 'FLOSC_Filesystem' ) ? new FLOSC_Filesystem() : null;
@@ -205,27 +205,27 @@ if ( $flosc_flow_view === 'all' ) {
 		if ( function_exists( 'flosc_resolve_ivr_file_path' ) ) {
 			$flosc_source_path = (string) flosc_resolve_ivr_file_path( $flosc_source_file );
 		}
-		if ( $flosc_source_path === '' && function_exists( 'flosc_data_file_path' ) ) {
+		if ( '' === $flosc_source_path && function_exists( 'flosc_data_file_path' ) ) {
 			$flosc_source_path = (string) flosc_data_file_path( $flosc_source_file );
 		}
-		$flosc_work_file = $flosc_selected_ivr !== '' ? $flosc_selected_ivr : $flosc_source_file;
+		$flosc_work_file = '' !== $flosc_selected_ivr ? $flosc_selected_ivr : $flosc_source_file;
 		$flosc_work_path = function_exists( 'flosc_data_file_path' )
 			? flosc_data_file_path( $flosc_work_file )
 			: '';
 		$flosc_work_key  = $flosc_flow_key;
-		if ( $flosc_work_key === '' && $flosc_work_file !== '' ) {
+		if ( '' === $flosc_work_key && '' !== $flosc_work_file ) {
 			$flosc_work_key = 'flosc_flow_' . sanitize_key( pathinfo( $flosc_work_file, PATHINFO_FILENAME ) );
 		}
 
-		if ( $flosc_source_path === '' || ! file_exists( $flosc_source_path ) ) {
+		if ( '' === $flosc_source_path || ! file_exists( $flosc_source_path ) ) {
 			add_settings_error( 'flosc_settings', 'import_selected_failed', 'Selected IVR file not found: ' . $flosc_source_file, 'error' );
-		} elseif ( $flosc_work_key === '' ) {
+		} elseif ( '' === $flosc_work_key ) {
 			add_settings_error( 'flosc_settings', 'import_selected_failed', esc_html__( 'No current flow selected (Switch Flow).', 'flosc' ), 'error' );
 		} else {
 			$flosc_result = flosc_import_ivr_to_database( false, $flosc_source_path, $flosc_work_key, 'merge' );
 			if ( ! empty( $flosc_result['success'] ) ) {
 				$flosc_export_ok = false;
-				if ( $flosc_work_path !== '' && function_exists( 'flosc_auto_export_ivr_to_file' ) ) {
+				if ( '' !== $flosc_work_path && function_exists( 'flosc_auto_export_ivr_to_file' ) ) {
 					$flosc_export_ok = (bool) flosc_auto_export_ivr_to_file( $flosc_work_key, $flosc_work_path );
 				}
 				$flosc_fs = get_option( $flosc_work_key, array() );
@@ -340,8 +340,8 @@ if ( ! is_array( $flosc_enabled_quizzes ) ) {
 $flosc_enabled_quizzes = array_values( array_filter( array_map( 'sanitize_key', $flosc_enabled_quizzes ) ) );
 $flosc_quiz_configured = ! empty( $flosc_enabled_quizzes );
 $flosc_quiz_count      = count( $flosc_enabled_quizzes );
-$flosc_quiz_word       = $flosc_quiz_count === 1 ? 'Quiz' : 'Quizzes';
-$flosc_edit_quiz_label = $flosc_quiz_count === 1 ? 'Edit Quiz →' : 'Edit Quizzes →';
+$flosc_quiz_word       = 1 === $flosc_quiz_count ? 'Quiz' : 'Quizzes';
+$flosc_edit_quiz_label = 1 === $flosc_quiz_count ? 'Edit Quiz →' : 'Edit Quizzes →';
 
 if ( $flosc_quiz_configured && class_exists( 'FLOSC_Quiz_Registry' ) ) {
 	$flosc_names = array();
@@ -393,7 +393,7 @@ $flosc_paypal_cfg  = ! empty( $flosc_flow_settings['paypal_enabled'] )
 $flosc_paypal_mode = $flosc_flow_settings['paypal_mode'] ?? 'sandbox';
 
 $flosc_stripe_mode = $flosc_flow_settings['stripe_mode'] ?? 'test';
-$flosc_stripe_sk   = $flosc_stripe_mode === 'live'
+$flosc_stripe_sk   = 'live' === $flosc_stripe_mode
 				? ( $flosc_flow_settings['stripe_live_sk'] ?? '' )
 				: ( $flosc_flow_settings['stripe_test_sk'] ?? '' );
 $flosc_stripe_cfg  = ! empty( $flosc_flow_settings['stripe_enabled'] ) && ! empty( $flosc_stripe_sk );
@@ -404,7 +404,7 @@ if ( empty( $flosc_content_item_groups ) && ! empty( $flosc_flow_settings['conte
 	$flosc_content_item_groups = array( array( 'category' => $flosc_flow_settings['content_item_category'] ) );
 }
 $flosc_lesson_count  = count( $flosc_content_item_groups );
-$flosc_lessons_label = $flosc_lesson_count ? $flosc_lesson_count . ' lesson group' . ( $flosc_lesson_count !== 1 ? 's' : '' ) : 'Not configured';
+$flosc_lessons_label = $flosc_lesson_count ? $flosc_lesson_count . ' lesson group' . ( 1 !== $flosc_lesson_count ? 's' : '' ) : 'Not configured';
 
 $flosc_member_pills = count( $flosc_flow_settings['autoprompts']['member'] ?? array() ) + $flosc_ivr_pill_counts['content'];
 
@@ -417,7 +417,7 @@ $flosc_companion_mode_labels             = array(
 );
 $flosc_companion_sitewide_profile_active = (
 	$flosc_companion_enabled
-	&& ( $flosc_companion_mode === 'companion' || $flosc_companion_mode === 'both' )
+	&& ( 'companion' === $flosc_companion_mode || 'both' === $flosc_companion_mode )
 	&& ! empty( $flosc_flow_settings['companion_show_for_visitors'] )
 	&& ! empty( $flosc_flow_settings['companion_allow_fullscreen'] )
 	&& ! empty( $flosc_flow_settings['companion_default_fullscreen'] )
@@ -426,7 +426,7 @@ $flosc_companion_mode_label              = $flosc_companion_mode_labels[ $flosc_
 if ( $flosc_companion_sitewide_profile_active ) {
 	$flosc_companion_mode_label = 'Sitewide ON Profile (' . $flosc_companion_mode_label . ')';
 }
-$flosc_companion_status          = ( $flosc_companion_mode === 'companion' || $flosc_companion_mode === 'both' )
+$flosc_companion_status          = ( 'companion' === $flosc_companion_mode || 'both' === $flosc_companion_mode )
 	? ( $flosc_companion_enabled ? 'Widget enabled' : 'Widget disabled' )
 	: 'Full-page only (no companion widget)';
 $flosc_companion_auto            = ! empty( $flosc_flow_settings['companion_auto_open_enabled'] ) ? 'Auto open' : 'Manual open';
@@ -443,7 +443,7 @@ $flosc_companion_state_storage   = sanitize_text_field( (string) ( $flosc_flow_s
 $flosc_companion_storage_label   = ucfirst( $flosc_companion_state_storage );
 $flosc_companion_effective_parts = array();
 
-if ( ! $flosc_companion_enabled || ( $flosc_companion_mode !== 'companion' && $flosc_companion_mode !== 'both' ) ) {
+if ( ! $flosc_companion_enabled || ( 'companion' !== $flosc_companion_mode && 'both' !== $flosc_companion_mode ) ) {
 	$flosc_companion_effective_parts[] = 'Companion widget inactive in current mode';
 } else {
 	$flosc_companion_effective_parts[] = 'Companion widget active';
@@ -522,7 +522,7 @@ $flosc_prompt_panel_counts    = array(
 	'member'  => $flosc_member_pills,
 );
 $flosc_diagnostics_flow_name  = trim( (string) ( $flosc_flow_settings['identity']['name'] ?? '' ) );
-$flosc_diagnostics_flow_label = $flosc_diagnostics_flow_name !== '' ? $flosc_diagnostics_flow_name : ( $flosc_selected_ivr ?: 'this flow' );
+$flosc_diagnostics_flow_label = '' !== $flosc_diagnostics_flow_name ? $flosc_diagnostics_flow_name : ( $flosc_selected_ivr ?: 'this flow' );
 
 $flosc_ai_provider = $flosc_flow_settings['ai_provider'] ?? 'ivr';
 $flosc_ai_labels   = function_exists( 'flosc_chat_provider_labels' )
@@ -535,7 +535,7 @@ $flosc_ai_labels   = function_exists( 'flosc_chat_provider_labels' )
 		'gemini'    => 'Google Gemini',
 	);
 $flosc_ai_label    = $flosc_ai_labels[ $flosc_ai_provider ] ?? ucfirst( $flosc_ai_provider );
-if ( $flosc_ai_provider === 'anthropic' ) {
+if ( 'anthropic' === $flosc_ai_provider ) {
 	$flosc_ai_model  = $flosc_flow_settings['ai_model'] ?? flosc_get_setting( 'ai_model', 'claude-sonnet-4-6' );
 	$flosc_ai_label .= ' (' . esc_html( $flosc_ai_model ) . ')';
 }
@@ -579,11 +579,11 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 		<p class="flosc-flow-overview-summary">Read-only snapshot of the five flow phases for <strong><?php echo esc_html( $flosc_selected_ivr ?: 'this flow' ); ?></strong>. Click any Edit button to jump to that tab.</p>
 
 		<div class="flosc-view-toggle-row">
-			<a href="<?php echo esc_url( $flosc_flow_single_url ); ?>" class="button <?php echo esc_attr( $flosc_flow_view === 'single' ? 'button-primary' : '' ); ?>"><?php echo esc_html__( 'Overview', 'flosc' ); ?></a>
-			<a href="<?php echo esc_url( $flosc_flow_all_url ); ?>" class="button <?php echo esc_attr( $flosc_flow_view === 'all' ? 'button-primary' : '' ); ?>"><?php echo esc_html__( 'Portability', 'flosc' ); ?></a>
+			<a href="<?php echo esc_url( $flosc_flow_single_url ); ?>" class="button <?php echo esc_attr( 'single' === $flosc_flow_view ? 'button-primary' : '' ); ?>"><?php echo esc_html__( 'Overview', 'flosc' ); ?></a>
+			<a href="<?php echo esc_url( $flosc_flow_all_url ); ?>" class="button <?php echo esc_attr( 'all' === $flosc_flow_view ? 'button-primary' : '' ); ?>"><?php echo esc_html__( 'Portability', 'flosc' ); ?></a>
 		</div>
 		<p class="description flosc-flow-view-hint">
-			<?php if ( $flosc_flow_view === 'all' ) : ?>
+			<?php if ( 'all' === $flosc_flow_view ) : ?>
 				<?php echo esc_html__( 'Portability: manage all flow files. Apply always targets the current flow in Switch Flow above.', 'flosc' ); ?>
 			<?php else : ?>
 				<?php echo esc_html__( 'Overview: phase snapshot for the current flow selected in Switch Flow.', 'flosc' ); ?>
@@ -635,7 +635,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 	$flosc_ml_registry = $flosc_flow_settings['member_levels'] ?? array();
 	$flosc_ml_count    = count( array_filter( $flosc_ml_registry, fn( $l ) => ! empty( $l['slug'] ?? '' ) ) );
 	$flosc_ml_names    = array_map( fn( $l ) => $l['name'] ?: ( $l['slug'] ?? '?' ), array_filter( $flosc_ml_registry, fn( $l ) => ! empty( $l['slug'] ?? '' ) ) );
-	$flosc_ml_label    = $flosc_ml_count ? $flosc_ml_count . ' level' . ( $flosc_ml_count !== 1 ? 's' : '' ) . ' (' . implode( ', ', $flosc_ml_names ) . ')' : 'None configured';
+	$flosc_ml_label    = $flosc_ml_count ? $flosc_ml_count . ' level' . ( 1 !== $flosc_ml_count ? 's' : '' ) . ' (' . implode( ', ', $flosc_ml_names ) . ')' : 'None configured';
 
 	flosc_flow_card(
 		'O',
@@ -744,7 +744,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 	echo '</div>';
 	?>
 
-	<?php if ( $flosc_flow_view === 'all' ) : ?>
+	<?php if ( 'all' === $flosc_flow_view ) : ?>
 		<?php
 		/*
 		 * HTML forbids nested forms, and this template renders inside
@@ -896,7 +896,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 				<button type="submit" name="flosc_portability_submit" value="create" class="button button-primary flosc-flow-portability-primary-btn" id="flosc-portability-btn-create">
 					<?php echo esc_html__( 'Create new flow', 'flosc' ); ?>
 				</button>
-				<button type="submit" name="flosc_portability_submit" value="apply" class="button flosc-flow-portability-primary-btn" id="flosc-portability-btn-apply" <?php disabled( $flosc_selected_ivr === '' ); ?>>
+				<button type="submit" name="flosc_portability_submit" value="apply" class="button flosc-flow-portability-primary-btn" id="flosc-portability-btn-apply" <?php disabled( '' === $flosc_selected_ivr ); ?>>
 					<?php echo esc_html__( 'Apply to current flow', 'flosc' ); ?>
 				</button>
 			</div>
@@ -920,7 +920,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 		if ( ! is_array( $flosc_da1_index ) ) {
 			$flosc_da1_index = array();
 		}
-		$flosc_pack_has_rows = ( $flosc_selected_ivr !== '' )
+		$flosc_pack_has_rows = ( '' !== $flosc_selected_ivr )
 			&& (
 				! empty( $flosc_pack_assets['catalogs'] )
 				|| ! empty( $flosc_pack_assets['wxr'] )
@@ -935,7 +935,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 			</div>
 			<a href="<?php echo esc_url( $flosc_flow_all_url ); ?>" class="button button-small"><?php echo esc_html__( 'Refresh list', 'flosc' ); ?></a>
 		</div>
-		<?php if ( $flosc_selected_ivr === '' ) : ?>
+		<?php if ( '' === $flosc_selected_ivr ) : ?>
 			<p class="description"><?php echo esc_html__( 'Select a flow in Switch Flow to see its data set (catalogs, WXR, media).', 'flosc' ); ?></p>
 		<?php elseif ( ! $flosc_pack_has_rows ) : ?>
 			<p class="description"><?php echo esc_html__( 'No data set files on this flow yet. Drop .tsv / WXR / media above (Apply), or Create with a .md plus data files.', 'flosc' ); ?></p>
@@ -953,7 +953,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 			<?php
 			foreach ( $flosc_pack_assets['catalogs'] as $flosc_pack_cat_key ) :
 				$flosc_pack_cat_key = sanitize_key( (string) $flosc_pack_cat_key );
-				if ( $flosc_pack_cat_key === '' ) {
+				if ( '' === $flosc_pack_cat_key ) {
 					continue;
 				}
 				$flosc_pack_cat_label = isset( $flosc_da1_index[ $flosc_pack_cat_key ]['label'] )
@@ -993,7 +993,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 				$flosc_wxr_status  = isset( $flosc_pack_wxr['status'] ) ? sanitize_key( (string) $flosc_pack_wxr['status'] ) : 'staged';
 				$flosc_wxr_url     = isset( $flosc_pack_wxr['url'] ) ? (string) $flosc_pack_wxr['url'] : '';
 				$flosc_wxr_path_ok = ! empty( $flosc_pack_wxr['path'] ) && is_string( $flosc_pack_wxr['path'] ) && file_exists( $flosc_pack_wxr['path'] );
-				if ( $flosc_wxr_name === '' ) {
+				if ( '' === $flosc_wxr_name ) {
 					continue;
 				}
 				$flosc_status_label = ( 'imported' === $flosc_wxr_status )
@@ -1006,7 +1006,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 					<td><?php echo esc_html( $flosc_status_label ); ?></td>
 					<td>
 						<div class="flosc-ivr-file-action-group">
-							<?php if ( $flosc_wxr_url !== '' ) : ?>
+							<?php if ( '' !== $flosc_wxr_url ) : ?>
 								<a href="<?php echo esc_url( $flosc_wxr_url ); ?>" class="button button-small" download><?php echo esc_html__( 'Download', 'flosc' ); ?></a>
 							<?php endif; ?>
 							<?php if ( $flosc_wxr_path_ok && 'imported' !== $flosc_wxr_status ) : ?>
@@ -1038,10 +1038,10 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 				$flosc_media_id   = isset( $flosc_pack_media['attachment_id'] ) ? (int) $flosc_pack_media['attachment_id'] : 0;
 				$flosc_media_name = isset( $flosc_pack_media['filename'] ) ? (string) $flosc_pack_media['filename'] : '';
 				$flosc_media_url  = isset( $flosc_pack_media['url'] ) ? (string) $flosc_pack_media['url'] : '';
-				if ( $flosc_media_id > 0 && $flosc_media_url === '' ) {
+				if ( $flosc_media_id > 0 && '' === $flosc_media_url ) {
 					$flosc_media_url = (string) wp_get_attachment_url( $flosc_media_id );
 				}
-				if ( $flosc_media_id <= 0 && $flosc_media_name === '' ) {
+				if ( $flosc_media_id <= 0 && '' === $flosc_media_name ) {
 					continue;
 				}
 				$flosc_edit_media  = $flosc_media_id > 0 ? get_edit_post_link( $flosc_media_id, 'raw' ) : '';
@@ -1050,12 +1050,12 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 				<tr>
 					<td><span class="flosc-portability-chip flosc-portability-chip--dataset"><?php echo esc_html__( 'Media', 'flosc' ); ?></span></td>
 					<td>
-						<code><?php echo esc_html( $flosc_media_name !== '' ? $flosc_media_name : ( 'attachment:' . $flosc_media_id ) ); ?></code>
+						<code><?php echo esc_html( '' !== $flosc_media_name ? $flosc_media_name : ( 'attachment:' . $flosc_media_id ) ); ?></code>
 					</td>
 					<td><?php echo esc_html( $flosc_media_alive ? __( 'In Media Library', 'flosc' ) : __( 'Missing attachment', 'flosc' ) ); ?></td>
 					<td>
 						<div class="flosc-ivr-file-action-group">
-							<?php if ( $flosc_media_url !== '' ) : ?>
+							<?php if ( '' !== $flosc_media_url ) : ?>
 								<a href="<?php echo esc_url( $flosc_media_url ); ?>" class="button button-small" target="_blank" rel="noopener noreferrer"><?php echo esc_html__( 'View', 'flosc' ); ?></a>
 							<?php endif; ?>
 							<?php if ( $flosc_edit_media ) : ?>

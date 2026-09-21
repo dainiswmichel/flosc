@@ -261,7 +261,7 @@ class flosc_content_filter {
 		// Find position of query.
 		$pos = strpos( $content_lower, $query_lower );
 
-		if ( $pos === false ) {
+		if ( false === $pos ) {
 			// Query not found, return beginning.
 			return substr( $content, 0, $context_chars ) . '...';
 		}

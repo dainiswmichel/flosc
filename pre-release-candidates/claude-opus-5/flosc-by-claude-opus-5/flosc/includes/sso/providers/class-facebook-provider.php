@@ -145,7 +145,7 @@ class Facebook_Provider extends SSO_Provider_Base {
 		return array(
 			'provider_id'    => sanitize_text_field( (string) ( $raw_data['id'] ?? '' ) ),
 			'email'          => $email,
-			'email_verified' => $email !== '', // Facebook only returns verified emails.
+			'email_verified' => '' !== $email, // Facebook only returns verified emails.
 			'name'           => sanitize_text_field( (string) ( $raw_data['name'] ?? '' ) ),
 			'first_name'     => sanitize_text_field( $first ),
 			'last_name'      => sanitize_text_field( $last ),

@@ -159,14 +159,14 @@ $flosc_protected_items = $flosc_flow_settings['protected_content'] ?? array();
 					<?php else : ?>
 							<select name="protection_value[]" class="flosc-protection-value flosc-width-full">
 							<option value="">— Select —</option>
-							<?php if ( $flosc_item_type === 'category' ) : ?>
+							<?php if ( 'category' === $flosc_item_type ) : ?>
 								<?php foreach ( $flosc_categories as $flosc_cat ) : ?>
 									<option value="<?php echo esc_attr( $flosc_cat->term_id ); ?>" 
 											<?php selected( $flosc_item['id'] ?? '', $flosc_cat->term_id ); ?>>
 										<?php echo esc_html( $flosc_cat->name ); ?> (<?php echo esc_html( (string) $flosc_cat->count ); ?> posts)
 									</option>
 								<?php endforeach; ?>
-							<?php elseif ( $flosc_item_type === 'tag' ) : ?>
+							<?php elseif ( 'tag' === $flosc_item_type ) : ?>
 								<?php foreach ( $flosc_tags as $flosc_tag ) : ?>
 									<option value="<?php echo esc_attr( $flosc_tag->term_id ); ?>" 
 											<?php selected( $flosc_item['id'] ?? '', $flosc_tag->term_id ); ?>>

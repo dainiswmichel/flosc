@@ -28,7 +28,7 @@ class FLOSC_User_Access_Manager {
 	 */
 	public function get_access_level( $user_id = null ) {
 
-		if ( $user_id === null ) {
+		if ( null === $user_id ) {
 			$user_id = get_current_user_id();
 		}
 
@@ -94,17 +94,17 @@ class FLOSC_User_Access_Manager {
 		}
 
 		// Without a flow context only: legacy global markers (do not use when flow_id set).
-		if ( $flow_id === null || $flow_id === '' ) {
+		if ( null === $flow_id || '' === $flow_id ) {
 			$user = get_user_by( 'id', $user_id );
 			if ( $user && in_array( 'flosc_member', (array) $user->roles, true ) ) {
 				return true;
 			}
 			$member_status = get_user_meta( $user_id, 'flosc_member_status', true );
-			if ( $member_status === 'active' ) {
+			if ( 'active' === $member_status ) {
 				return true;
 			}
 			$member_access = get_user_meta( $user_id, '_flosc_member_access', true );
-			if ( $member_access === 'true' || $member_access === true || $member_access === '1' ) {
+			if ( 'true' === $member_access || true === $member_access || '1' === $member_access ) {
 				return true;
 			}
 		}
@@ -158,7 +158,7 @@ class FLOSC_User_Access_Manager {
 	 */
 	public function get_user_context( $user_id = null ) {
 
-		if ( $user_id === null ) {
+		if ( null === $user_id ) {
 			$user_id = get_current_user_id();
 		}
 
@@ -168,9 +168,9 @@ class FLOSC_User_Access_Manager {
 			'user_id'      => $user_id,
 			'access_level' => $access_level,
 			'is_logged_in' => $user_id > 0,
-			'is_visitor'   => $access_level === 'visitor',
-			'is_guest'     => $access_level === 'guest',
-			'is_member'    => $access_level === 'member',
+			'is_visitor'   => 'visitor' === $access_level,
+			'is_guest'     => 'guest' === $access_level,
+			'is_member'    => 'member' === $access_level,
 			'logged_in'    => $user_id > 0, // Alias for backward compatibility.
 		);
 

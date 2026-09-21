@@ -63,7 +63,7 @@ $flosc_guest_menu = array_values(
 		$flosc_guest_menu,
 		static function ( $item ) {
 			$action = is_array( $item ) ? (string) ( $item['action'] ?? '' ) : '';
-			return $action !== 'open_sandbox_purchase' && strpos( $action, 'show_offer' ) !== 0;
+			return 'open_sandbox_purchase' !== $action && strpos( $action, 'show_offer' ) !== 0;
 		}
 	)
 );

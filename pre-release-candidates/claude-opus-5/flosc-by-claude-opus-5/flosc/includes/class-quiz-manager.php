@@ -92,7 +92,7 @@ class FLOSC_Quiz_Manager {
 		$api_key    = sanitize_text_field( (string) $request->get_header( 'X-FLOSC-API-Key' ) );
 		$stored_key = (string) get_option( 'flosc_external_api_key', '' );
 
-		if ( $api_key !== '' && $stored_key !== '' && hash_equals( $stored_key, $api_key ) ) {
+		if ( '' !== $api_key && '' !== $stored_key && hash_equals( $stored_key, $api_key ) ) {
 			return true;
 		}
 
@@ -112,7 +112,7 @@ class FLOSC_Quiz_Manager {
 
 		$api_key       = sanitize_text_field( (string) $request->get_header( 'X-FLOSC-API-Key' ) );
 		$stored_key    = (string) get_option( 'flosc_external_api_key', '' );
-		$using_api_key = ( $api_key !== '' && $stored_key !== '' && hash_equals( $stored_key, $api_key ) );
+		$using_api_key = ( '' !== $api_key && '' !== $stored_key && hash_equals( $stored_key, $api_key ) );
 
 		if ( ! $using_api_key && ! current_user_can( 'manage_options' ) && $user_id !== get_current_user_id() ) {
 			return new WP_REST_Response(
@@ -395,7 +395,7 @@ class FLOSC_Quiz_Manager {
 		$output .= '<p><strong>' . esc_html__( 'Score:', 'flosc' ) . '</strong> ' . esc_html( (string) ( $data['score'] ?? '' ) ) . '%</p>';
 		$output .= '<p><strong>' . esc_html__( 'Date:', 'flosc' ) . '</strong> ' . esc_html( (string) ( $data['date'] ?? '' ) ) . '</p>';
 
-		if ( $atts['show_correct'] === 'yes' && ! empty( $data['correct_items'] ) ) {
+		if ( 'yes' === $atts['show_correct'] && ! empty( $data['correct_items'] ) ) {
 			$output .= '<h4>' . esc_html__( 'Correct', 'flosc' ) . '</h4><ul>';
 			foreach ( (array) $data['correct_items'] as $item ) {
 				$output .= '<li>' . esc_html( (string) $item ) . '</li>';
@@ -403,7 +403,7 @@ class FLOSC_Quiz_Manager {
 			$output .= '</ul>';
 		}
 
-		if ( $atts['show_incorrect'] === 'yes' && ! empty( $data['incorrect_items'] ) ) {
+		if ( 'yes' === $atts['show_incorrect'] && ! empty( $data['incorrect_items'] ) ) {
 			$output .= '<h4>' . esc_html__( 'Needs Practice', 'flosc' ) . '</h4><ul>';
 			foreach ( (array) $data['incorrect_items'] as $item ) {
 				$output .= '<li>' . esc_html( (string) $item ) . '</li>';

@@ -20,7 +20,7 @@ class FLOSC_Chat_Logger {
 	private $table_name;
 
 	public static function instance() {
-		if ( self::$instance === null ) {
+		if ( null === self::$instance ) {
 			self::$instance = new self();
 		}
 		return self::$instance;
@@ -50,27 +50,27 @@ class FLOSC_Chat_Logger {
 
 	private function flosc_archive_bucket_key( $flow_id = '' ) {
 		$flow_id = sanitize_text_field( (string) $flow_id );
-		return $flow_id !== '' ? $flow_id : '__all';
+		return '' !== $flow_id ? $flow_id : '__all';
 	}
 
 	public static function flosc_session_key_from_descriptor( $by, $value ) {
 		$by = in_array( $by, array( 'session', 'user', 'ip' ), true ) ? $by : '';
-		if ( $by === '' ) {
+		if ( '' === $by ) {
 			return '';
 		}
 
-		if ( $by === 'session' ) {
+		if ( 'session' === $by ) {
 			$session_id = intval( $value );
 			return $session_id > 0 ? 's' . $session_id : '';
 		}
 
-		if ( $by === 'user' ) {
+		if ( 'user' === $by ) {
 			$user_id = intval( $value );
 			return $user_id > 0 ? 'u' . $user_id : '';
 		}
 
 		$ip = sanitize_text_field( (string) $value );
-		return $ip !== '' ? 'ip' . $ip : '';
+		return '' !== $ip ? 'ip' . $ip : '';
 	}
 
 	public function flosc_get_archived_session_keys( $flow_id = '' ) {
@@ -91,7 +91,7 @@ class FLOSC_Chat_Logger {
 
 	public function flosc_set_session_archived( $by, $value, $flow_id = '', $archived = true ) {
 		$key = self::flosc_session_key_from_descriptor( $by, $value );
-		if ( $key === '' ) {
+		if ( '' === $key ) {
 			return false;
 		}
 
@@ -197,7 +197,7 @@ class FLOSC_Chat_Logger {
 		$rating = max( -10, min( 10, intval( $rating ) ) );
 
 		// Any non-zero rating auto-protects the row from auto-expunge.
-		$is_protected = ( $rating !== 0 ) ? 1 : 0;
+		$is_protected = ( 0 !== $rating ) ? 1 : 0;
 
 		$this->flosc_ensure_table();
 
@@ -215,13 +215,13 @@ class FLOSC_Chat_Logger {
 			array( '%d' )
 		);
 
-		if ( $result !== false ) {
+		if ( false !== $result ) {
 			wp_cache_delete( 'rated_logs_50', 'flosc_chat_logs' );
 			wp_cache_delete( 'log_count_' . md5( '' ), 'flosc_chat_logs' );
 			$this->flosc_bust_log_caches();
 		}
 
-		return $result !== false;
+		return false !== $result;
 	}
 
 	/**
@@ -246,7 +246,7 @@ class FLOSC_Chat_Logger {
 		if ( $session_id <= 0 ) {
 			return array();
 		}
-		if ( $raw === '' || ( ctype_digit( $raw ) && strlen( $raw ) <= 9 ) ) {
+		if ( '' === $raw || ( ctype_digit( $raw ) && strlen( $raw ) <= 9 ) ) {
 			return array();
 		}
 		if ( ! $this->flosc_current_request_owns_session( $session_id ) ) {
@@ -296,13 +296,13 @@ class FLOSC_Chat_Logger {
 		foreach ( $rows as $row ) {
 			$user = trim( (string) ( $row['user_message'] ?? '' ) );
 			$ai   = trim( (string) ( $row['ai_response'] ?? '' ) );
-			if ( $user !== '' ) {
+			if ( '' !== $user ) {
 				$out[] = array(
 					'role'    => 'user',
 					'content' => $user,
 				);
 			}
-			if ( $ai !== '' ) {
+			if ( '' !== $ai ) {
 				$out[] = array(
 					'role'    => 'assistant',
 					'content' => $ai,
@@ -494,7 +494,7 @@ class FLOSC_Chat_Logger {
 		if ( is_int( $cached ) || ( is_numeric( $cached ) && false !== $cached ) ) {
 			return (int) $cached;
 		}
-		if ( $flow_id !== '' ) {
+		if ( '' !== $flow_id ) {
 			$count = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE flow_id = %s', $this->table_name, $flow_id ) );
 		} else {
 			$count = (int) $wpdb->get_var(
@@ -552,13 +552,13 @@ class FLOSC_Chat_Logger {
 
 		$session_id = intval( $session_id );
 		$text       = trim( (string) $text );
-		if ( $session_id <= 0 || $text === '' ) {
+		if ( $session_id <= 0 || '' === $text ) {
 			return false;
 		}
 
 		// 'admin' → renders pale-green "(admin)"; 'bot' → renders as a normal AI.
 		// (assistant) message, but still admin-authored and delivered via the poll.
-		$response_source = ( $source === 'bot' ) ? 'admin_bot' : 'admin';
+		$response_source = ( 'bot' === $source ) ? 'admin_bot' : 'admin';
 
 		$result = $wpdb->insert(
 			$this->table_name,
@@ -620,7 +620,7 @@ class FLOSC_Chat_Logger {
 				'text'      => (string) $r['ai_response'],
 				'name'      => (string) $r['provider'],
 				// 'bot' → render as a normal assistant message; 'admin' → pale-green "(admin)".
-				'source'    => ( $r['response_source'] === 'admin_bot' ) ? 'bot' : 'admin',
+				'source'    => ( 'admin_bot' === $r['response_source'] ) ? 'bot' : 'admin',
 				'timestamp' => (string) $r['timestamp'],
 			);
 		}
@@ -750,7 +750,7 @@ class FLOSC_Chat_Logger {
 				'code'  => $code,
 			);
 		}
-		$code = ( $ip !== '' ) ? substr( $ip, 0, 6 ) : 'unknwn';
+		$code = ( '' !== $ip ) ? substr( $ip, 0, 6 ) : 'unknwn';
 		return array(
 			'by'    => 'ip',
 			'value' => $ip,
@@ -801,10 +801,10 @@ class FLOSC_Chat_Logger {
 			$d           = self::flosc_session_descriptor( $r );
 			$k           = $d['key'];
 			$is_archived = isset( $archived_lookup[ $k ] );
-			if ( $archive_status === 'active' && $is_archived ) {
+			if ( 'active' === $archive_status && $is_archived ) {
 				continue;
 			}
-			if ( $archive_status === 'archived' && ! $is_archived ) {
+			if ( 'archived' === $archive_status && ! $is_archived ) {
 				continue;
 			}
 			if ( ! isset( $sessions[ $k ] ) ) {
@@ -865,11 +865,11 @@ class FLOSC_Chat_Logger {
 
 		$by      = in_array( $by, array( 'session', 'user', 'ip' ), true ) ? $by : '';
 		$flow_id = sanitize_text_field( (string) $flow_id );
-		if ( $by === '' ) {
+		if ( '' === $by ) {
 			return 0;
 		}
 
-		if ( $by === 'session' ) {
+		if ( 'session' === $by ) {
 			$sid = intval( $value );
 			if ( $sid <= 0 ) {
 				return 0;
@@ -886,7 +886,7 @@ class FLOSC_Chat_Logger {
 			);
 		}
 
-		if ( $by === 'user' ) {
+		if ( 'user' === $by ) {
 			$uid = intval( $value );
 			if ( $uid <= 0 ) {
 				return 0;
@@ -904,7 +904,7 @@ class FLOSC_Chat_Logger {
 		}
 
 		$ip = sanitize_text_field( (string) $value );
-		if ( $ip === '' ) {
+		if ( '' === $ip ) {
 			return 0;
 		}
 		$this->flosc_set_session_archived( $by, $ip, $flow_id, false );
@@ -926,11 +926,11 @@ class FLOSC_Chat_Logger {
 
 		$by      = in_array( $by, array( 'session', 'user', 'ip' ), true ) ? $by : '';
 		$flow_id = sanitize_text_field( (string) $flow_id );
-		if ( $by === '' ) {
+		if ( '' === $by ) {
 			return array();
 		}
 
-		if ( $by === 'session' ) {
+		if ( 'session' === $by ) {
 			$sid = intval( $value );
 			if ( $sid <= 0 ) {
 				return array();
@@ -949,7 +949,7 @@ class FLOSC_Chat_Logger {
 			) ?: array();
 		}
 
-		if ( $by === 'user' ) {
+		if ( 'user' === $by ) {
 			$uid = intval( $value );
 			if ( $uid <= 0 ) {
 				return array();
@@ -968,7 +968,7 @@ class FLOSC_Chat_Logger {
 		}
 
 		$ip = sanitize_text_field( (string) $value );
-		if ( $ip === '' ) {
+		if ( '' === $ip ) {
 			return array();
 		}
 
@@ -993,7 +993,7 @@ class FLOSC_Chat_Logger {
 		if ( isset( $_SERVER['REMOTE_ADDR'] ) ) {
 			$ip = sanitize_text_field( wp_unslash( (string) $_SERVER['REMOTE_ADDR'] ) );
 		}
-		if ( $ip === '' ) {
+		if ( '' === $ip ) {
 			$ip = 'unknown';
 		}
 		return substr( hash( 'sha256', $ip . wp_salt() ), 0, 16 );

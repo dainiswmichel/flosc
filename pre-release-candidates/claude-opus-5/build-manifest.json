@@ -14,7 +14,7 @@
     "zip": "pre-release-candidates/claude-opus-5/flosc.zip"
   },
   "artifact": {
-    "sha256": "92f0f3a72db4fdba7393bee4d5db6e8fb40a24ad09a4e1ef5897f95a1b1914e4",
+    "sha256": "87482fd7bb654d484a8f43e9638c85a28cb5b99131d3455ac5aee524559542d9",
     "size_bytes": 2130303,
     "entries": 240,
     "root": "flosc/",
@@ -33,7 +33,8 @@
       "includes/flosc-admin.php - maybe_process_flosc_settings_post() verifies the nonce each branch's form emitted before routing, and gates on edit_others_posts (the capability the FLOSC menu itself registers).",
       "phpcs.xml.dist - declares the two project sanitizers via customSanitizingFunctions so the sniff credits them by name.",
       "admin/{settings,flow,flows,offers,ivr-messages,ai-configuration}.php + includes/request-guard/class-flosc-request-guard.php - the eleven file-scope wp_unslash($_GET/$_POST) reads are gone. Query values come from FLOSC_Request_Guard::query_params(), which reads only the 36 declared admin keys and sanitizes each on the read. POST comes from admin_post_payload(), which returns an empty array unless the request is a POST from a user with edit_others_posts.",
-      "build-dist-zip.sh - the dev-file exclusions were case-sensitive -name patterns. LOCAL carries agents.md (lowercase) while the pattern said AGENTS.md, so find matched nothing and the file would have shipped in the release zip. All eleven exclusions are now -iname. AGENTS.md is renamed to agents.md to match, and .distignore, CLAUDE.md and WORDPRESS-ORG-RELEASE.md follow it."
+      "build-dist-zip.sh - the dev-file exclusions were case-sensitive -name patterns. LOCAL carries agents.md (lowercase) while the pattern said AGENTS.md, so find matched nothing and the file would have shipped in the release zip. All eleven exclusions are now -iname. AGENTS.md is renamed to agents.md to match, and .distignore, CLAUDE.md and WORDPRESS-ORG-RELEASE.md follow it.",
+      "fix-comment-punctuation.php and fix-yoda-conditions.php (candidate level, never shipped) clear the two largest style categories that phpcbf has no fixer for: 1,924 inline comments given a terminal full stop, and 2,246 comparisons flipped to Yoda order. Both use PHP tokenizers rather than regexes; the Yoda pass declines any comparison it cannot prove safe to reorder and re-parses every file with php -l before writing it."
     ],
     "suppressions_removed": 16,
     "suppressions_added": 0
@@ -52,7 +53,7 @@
     },
     "wpcs_total_project_ruleset": {
       "v89.1_base": "7094 errors / 511 warnings",
-      "v90.2": "5763 errors / 514 warnings"
+      "v90.2": "3517 errors / 514 warnings"
     },
     "phpcbf_fixable": {
       "v89.1_base": 960,
@@ -68,7 +69,11 @@
       "v89.1_base": "2 errors / 69 warnings",
       "v90.2": "0 errors / 72 warnings"
     },
-    "wporg_audit": "17 PASS / 0 FAIL / 5 READ against every category raised in review rounds T7 through T13"
+    "wporg_audit": "17 PASS / 0 FAIL / 5 READ against every category raised in review rounds T7 through T13",
+    "yoda_conditions": {
+      "v89.1_base": 2282,
+      "v90.2": 36
+    }
   },
   "not_verified": [
     "No WordPress runtime was available in the build container: activation, admin screens and the FLOSC journeys are untested.",

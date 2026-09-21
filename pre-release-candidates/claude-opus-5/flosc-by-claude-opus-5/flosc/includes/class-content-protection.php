@@ -119,7 +119,7 @@ class FLOSC_Content_Protection {
 			$post_id     = (int) $post_id;
 			$public      = (string) get_post_meta( $post_id, '_flosc_public_post', true );
 			$mode        = (string) get_post_meta( $post_id, '_flosc_protection_mode', true );
-			$is_override = ( 'yes' === $public ) || ( $mode !== '' && 'protected' !== $mode );
+			$is_override = ( 'yes' === $public ) || ( '' !== $mode && 'protected' !== $mode );
 			if ( $is_override ) {
 				$override_post_ids[] = $post_id;
 			} else {
@@ -155,7 +155,7 @@ class FLOSC_Content_Protection {
 	 */
 	public function get_protected_category_ids() {
 		static $cached = null;
-		if ( $cached !== null ) {
+		if ( null !== $cached ) {
 			return $cached;
 		}
 
@@ -196,7 +196,7 @@ class FLOSC_Content_Protection {
 	 */
 	public function is_category_protected( $category_id ) {
 		$protected = get_term_meta( $category_id, '_flosc_protected', true );
-		return $protected === 'yes' || $protected === 'true' || $protected === true || $protected === '1';
+		return 'yes' === $protected || 'true' === $protected || true === $protected || '1' === $protected;
 	}
 
 	/**
@@ -293,7 +293,7 @@ class FLOSC_Content_Protection {
 			return true;
 		}
 
-		if ( $user_id === null ) {
+		if ( null === $user_id ) {
 			$user_id = get_current_user_id();
 		}
 		$user_id = absint( $user_id );
@@ -352,14 +352,14 @@ class FLOSC_Content_Protection {
 				continue;
 			}
 			$default_member = sanitize_key( (string) ( $flow['default_member_level'] ?? '' ) );
-			if ( $default_member !== '' && $member_access->has_level( $user_id, $default_member ) ) {
+			if ( '' !== $default_member && $member_access->has_level( $user_id, $default_member ) ) {
 				return true;
 			}
 			$levels = $flow['member_levels'] ?? array();
 			if ( is_array( $levels ) ) {
 				foreach ( array_keys( $levels ) as $level_key ) {
 					$level_key = sanitize_key( (string) $level_key );
-					if ( $level_key === '' || strpos( $level_key, 'guest' ) !== false ) {
+					if ( '' === $level_key || strpos( $level_key, 'guest' ) !== false ) {
 						continue;
 					}
 					if ( $member_access->has_level( $user_id, $level_key ) ) {
@@ -380,7 +380,7 @@ class FLOSC_Content_Protection {
 	 */
 	private function get_flows_owning_content_item_category( $category_slug ) {
 		$category_slug = sanitize_title( (string) $category_slug );
-		if ( $category_slug === '' || ! function_exists( 'flosc_config_glob' ) ) {
+		if ( '' === $category_slug || ! function_exists( 'flosc_config_glob' ) ) {
 			return array();
 		}
 
@@ -424,7 +424,7 @@ class FLOSC_Content_Protection {
 	public function user_can_access( $post_id ) {
 		// v1.8.2: Check 4-tier protection mode — 'full' always accessible.
 		$protection_mode = get_post_meta( $post_id, '_flosc_protection_mode', true );
-		if ( $protection_mode === 'full' ) {
+		if ( 'full' === $protection_mode ) {
 			return true;
 		}
 
@@ -435,7 +435,7 @@ class FLOSC_Content_Protection {
 
 		// v1.4.3: Check explicit public visibility.
 		$visibility = get_post_meta( $post_id, '_flosc_post_visibility', true );
-		if ( $visibility === 'public' ) {
+		if ( 'public' === $visibility ) {
 			return true;
 		}
 
@@ -497,7 +497,7 @@ class FLOSC_Content_Protection {
 						}
 					}
 					$default_member = sanitize_key( (string) ( $flow['default_member_level'] ?? '' ) );
-					if ( $default_member !== '' && $member_access->has_level( $user_id, $default_member ) ) {
+					if ( '' !== $default_member && $member_access->has_level( $user_id, $default_member ) ) {
 						return true;
 					}
 				}

@@ -17,7 +17,7 @@ class FLOSC_IVR_Parser {
 	private $flosc_config          = null;
 
 	public static function flosc_instance() {
-		if ( self::$flosc_instance === null ) {
+		if ( null === self::$flosc_instance ) {
 			self::$flosc_instance = new self();
 		}
 		return self::$flosc_instance;
@@ -132,7 +132,7 @@ class FLOSC_IVR_Parser {
 			}
 
 			// Section divider - save current message.
-			if ( $trimmed === '---' ) {
+			if ( '---' === $trimmed ) {
 				if ( $current_message ) {
 					if ( $in_message_content ) {
 						$current_message['content'] = trim( implode( "\n", $message_content_lines ) );
@@ -287,7 +287,7 @@ class FLOSC_IVR_Parser {
 			if ( $in_message_content ) {
 				// Check if we hit the next property or section.
 				if ( preg_match( '/^(MessageName|MessageType|MessageStyle|MessagePanel|Icon|UserInput|Keywords|Action|OfferID|Price|DiscountPrice|Timer|DisplayFormat|HtmlFile|WooProduct|PostID|MessageConditions|IndividualMessagePassword|PasswordPrompt|PasswordSuccess|PasswordMaxTries|PasswordRetry|##|---):/i', $trimmed ) ||
-					strpos( $trimmed, '##' ) === 0 || $trimmed === '---' ) {
+					strpos( $trimmed, '##' ) === 0 || '---' === $trimmed ) {
 					// End of content.
 					$current_message['content'] = trim( implode( "\n", $message_content_lines ) );
 					$in_message_content         = false;
@@ -334,7 +334,7 @@ class FLOSC_IVR_Parser {
 	 * Get parsed config
 	 */
 	public function get_flosc_config() {
-		if ( $this->flosc_config === null ) {
+		if ( null === $this->flosc_config ) {
 			$this->flosc_load_config();
 		}
 		return $this->flosc_config;
@@ -530,7 +530,7 @@ class FLOSC_IVR_Parser {
 		return array_filter(
 			$messages,
 			function ( $m ) {
-				return $m['type'] === 'suggested_user_autoprompt';
+				return 'suggested_user_autoprompt' === $m['type'];
 			}
 		);
 	}
@@ -543,7 +543,7 @@ class FLOSC_IVR_Parser {
 		return array_filter(
 			$messages,
 			function ( $m ) {
-				return $m['type'] === 'auto';
+				return 'auto' === $m['type'];
 			}
 		);
 	}
