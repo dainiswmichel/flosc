@@ -35,7 +35,7 @@ class LinkedIn_Provider extends SSO_Provider_Base {
 		$this->token_url     = 'https://www.linkedin.com/oauth/v2/accessToken';
 		$this->user_info_url = 'https://api.linkedin.com/v2/userinfo';
 
-		// Use OpenID Connect scopes (replaces legacy r_liteprofile, r_emailaddress)
+		// Use OpenID Connect scopes (replaces legacy r_liteprofile, r_emailaddress).
 		$this->scopes = array(
 			'openid',
 			'profile',
@@ -46,11 +46,17 @@ class LinkedIn_Provider extends SSO_Provider_Base {
 	}
 
 	/**
-	 * Get user info from LinkedIn
+	 * Get user info from LinkedIn.
+	 *
+	 * LinkedIn returns its claims from the userinfo endpoint, so the token
+	 * response is not consulted here.
 	 *
 	 * @param string $access_token OAuth access token.
-	 * @return array|WP_Error User data or error
-	 * @param array $token_data Token data.
+	 * @param array  $token_data   Full token response. Unused by this provider;
+	 *                             present because OAuth2_Handler passes the same
+	 *                             arguments to every provider, and Apple reads
+	 *                             its id_token and form_post claims from it.
+	 * @return array|WP_Error User data, or WP_Error if the call fails.
 	 */
 	public function get_user_info( $access_token, $token_data = array() ) {
 		// LinkedIn now supports OpenID Connect userinfo endpoint.

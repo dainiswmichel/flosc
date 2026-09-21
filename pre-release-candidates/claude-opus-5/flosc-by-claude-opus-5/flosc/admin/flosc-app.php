@@ -10,11 +10,19 @@ if ( '' === $flosc_visitor_name ) {
 	$flosc_visitor_name = 'FLOSC';
 }
 
-// v9.0.8: Chat styling data attributes (font, theme, preset, scale)
+// Resolved at render time from the personality attached right now, so an IVR
+// greeting written once introduces whoever is currently attached. The welcome
+// bubble is flow-owned, not model-generated: without this a flow that switched
+// from Br3nda to DadJokeDan still opened in Br3nda's name.
+$flosc_visitor_role = function_exists( 'flosc_personality_library_resolve_field' )
+	? trim( (string) flosc_personality_library_resolve_field( 'ai_personality_role', '' ) )
+	: '';
+
+// v9.0.8: Chat styling data attributes (font, theme, preset, scale).
 $flosc_chat_font   = get_option( 'flosc_chat_style_font', 'system' );
 $flosc_chat_theme  = get_option( 'flosc_chat_style_theme', 'default' );
 $flosc_chat_preset = get_option( 'flosc_chat_style_preset', 'flosc' );
-$flosc_chat_scale  = intval( get_option( 'flosc_chat_style_scale', 112 ) ); // percent.
+$flosc_chat_scale  = intval( get_option( 'flosc_chat_style_scale', 112 ) ); // percent
 ?>
 <!DOCTYPE html>
 <?php
@@ -70,7 +78,8 @@ ICON & BUTTON CHECKLIST (verify all work before deployment):
 □ Recording controls (circle, square) - quiz audio panel
 
 ================================================================================
-==== end source documentation ==== */
+==== end source documentation ====
+ */
 ?>
 <html lang="en">
 <head>
@@ -102,9 +111,14 @@ ICON & BUTTON CHECKLIST (verify all work before deployment):
 	<link rel="apple-touch-icon" sizes="180x180" href="<?php echo esc_url( $flosc_favicon_180 ); ?>">
 
 	<?php
-	// Companion embed: FOUC guard via wp_add_inline_style on flosc-layout (same handle as.
+	// Companion embed: FOUC guard via wp_add_inline_style on flosc-layout (same handle as
 	// theme vars below). Hides chrome and caps logos when ?flosc_companion is present.
-	$flosc_is_companion_embed = ( null !== filter_input( INPUT_GET, 'flosc_companion' ) );
+	// Presence of the parameter is the whole signal; its value is never read.
+	// A previous pass replaced this with `null !== filter_input(...)`, which is
+	// always true for an absent parameter and made every page an embed. The
+	// right primitive for "is this present" is filter_has_var(), which is what
+	// flosc_nav_param_present() wraps.
+	$flosc_is_companion_embed = flosc_nav_param_present( 'flosc_companion' );
 	if ( $flosc_is_companion_embed ) {
 		$flosc_companion_critical_css = '
 body.flosc-companion-embed .flosc-sidebar,
@@ -164,7 +178,7 @@ body.flosc-companion-embed img.landing-icon {
 	<?php wp_head(); ?>
 </head>
 <?php
-// Determine if funnel is completed (for conditional rendering)
+// Determine if funnel is completed (for conditional rendering).
 $flosc_flow_completed = is_user_logged_in() && get_user_meta( get_current_user_id(), '_flosc_funnel_completed', true );
 ?>
 <?php
@@ -314,7 +328,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 		}
 
 		// Render visitor label with token count only at first paint.
-		// JS also normalizes this on init, but server-side output guarantees.
+		// JS also normalizes this on init, but server-side output guarantees
 		// correctness on refresh even before any client logic runs.
 		$flosc_tokens_per_message = max( 1, intval( get_option( 'flosc_tokens_communication_tokens_per_message', 5000 ) ) );
 		$flosc_economics          = array();
@@ -406,7 +420,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 			<button class="profile-button" id="flosc_profile_button">
 				<?php
 				// Server-side flosc-hidden so wrong-branch nodes never paint.
-				// CSS alone failed: .flosc-app .user-profile-bar img.flosc-profile-avatar.
+				// CSS alone failed: .flosc-app .user-profile-bar img.flosc-profile-avatar
 				// {display:block} beat [data-show="logged-in"]{display:none} → 👋 + blue square.
 				$flosc_is_visitor          = ( 'visitor' === $user_state );
 				$flosc_pb_visitor_hidden   = $flosc_is_visitor ? '' : ' flosc-hidden';
@@ -455,9 +469,9 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 					<?php
 					foreach ( $flosc_visitor_menu as $flosc_item ) :
 						$flosc_is_offer = (
-							strpos( (string) $flosc_item['action'], 'show_offer' ) === 0
-							|| (string) 'show_upgrade' === $flosc_item['action']
-							|| (string) 'open_sandbox_purchase' === $flosc_item['action']
+							0 === strpos( (string) $flosc_item['action'], 'show_offer' )
+							|| 'show_upgrade' === (string) $flosc_item['action']
+							|| 'open_sandbox_purchase' === (string) $flosc_item['action']
 						);
 						?>
 						<?php if ( $flosc_is_offer ) : ?>
@@ -467,7 +481,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 								<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
 							</svg>
-								<?php echo esc_html( $flosc_pb_visitor['upgrade_label'] ?: $flosc_item['label'] ); ?>
+								<?php echo esc_html( '' !== (string) $flosc_pb_visitor['upgrade_label'] ? $flosc_pb_visitor['upgrade_label'] : $flosc_item['label'] ); ?>
 						</button>
 					</div>
 					<?php endif; ?>
@@ -523,7 +537,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 						// Purchase/offer lives on the Upgrade feature button, not as a plain menu link.
 						if (
 							'open_sandbox_purchase' === $flosc_li_action
-							|| strpos( $flosc_li_action, 'show_offer' ) === 0
+							|| 0 === strpos( $flosc_li_action, 'show_offer' )
 						) {
 							continue;
 						}
@@ -601,9 +615,6 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 					?>
 						<img src="<?php echo esc_url( $flosc_landing_logo ); ?>" alt="" class="landing-icon" width="36" height="36" decoding="async">
 					<span class="landing-title"><?php echo esc_html( $flosc_visitor_name ); ?></span>
-					<?php if ( ! empty( $identity['title'] ) ) : ?>
-						<span class="landing-subtitle"><?php echo esc_html( $identity['title'] ); ?></span>
-					<?php endif; ?>
 				</div>
 				<?php if ( ! empty( $identity['tagline'] ) ) : ?>
 					<div class="landing-tagline"><?php echo esc_html( $identity['tagline'] ); ?></div>
@@ -941,7 +952,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 			: 'flosc_default_technical_ivr.md';
 		$flosc_flow_id      = $flosc_current_flow['id'] ?? '';
 
-		// v10.0.0: Record the entry flow (first visit only) so logout can recall.
+		// v10.0.0: Record the entry flow (first visit only) so logout can recall
 		// the per-flow logout destination. Non-blocking; idempotent server-side.
 		if ( '' !== $flosc_flow_id && method_exists( flosc(), 'set_entry_flow_cookie' ) ) {
 			flosc()->set_entry_flow_cookie( $flosc_flow_id );
@@ -953,7 +964,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 		$flosc_ivr_file    = flosc_config_file( $flosc_ivr_filename );
 		$flosc_ivr_version = file_exists( $flosc_ivr_file ) ? filemtime( $flosc_ivr_file ) : time();
 
-			// v1.0.7: DEBUG - Check if messages loaded (only when FLOSC_DEBUG enabled)
+			// v1.0.7: DEBUG - Check if messages loaded (only when FLOSC_DEBUG enabled).
 		if ( empty( $flosc_ivr_config['messages'] ) ) {
 			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
 				if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
@@ -976,7 +987,19 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 		?>
 		window.FLOSC_CONFIG = 
 		<?php
-			// v1.4.9: Get SSO providers from per-flow settings (not global options)
+			/*
+			 * The phoneme-to-lesson map is decoded here rather than inside the
+			 * config array, because json_decode() returns null for a malformed
+			 * setting and an empty array for the '{}' default -- and the front
+			 * end reads this with dot notation, so it has to arrive as an object
+			 * either way, not as a JSON list.
+			 */
+			$flosc_phoneme_lesson_map = json_decode( flosc_get_setting( 'audio_quiz_phoneme_lesson_map', '{}' ), true );
+		if ( ! $flosc_phoneme_lesson_map ) {
+			$flosc_phoneme_lesson_map = (object) array();
+		}
+
+			// v1.4.9: Get SSO providers from per-flow settings (not global options).
 			$flosc_sso_providers = array();
 		if ( class_exists( '\FLOSC\SSO\SSO_Manager' ) ) {
 			$flosc_sso_manager     = \FLOSC\SSO\SSO_Manager::get_instance();
@@ -1030,8 +1053,8 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 			// v1.4.9: Use flow-aware app URL for custom domain support.
 			$flosc_app_url = flosc()->get_app_url();
 
-			// v1.7.5: REST API URL must use the SAME origin as the page.
-			// so cookies/nonce travel with the request. When on a custom domain.
+			// v1.7.5: REST API URL must use the SAME origin as the page
+			// so cookies/nonce travel with the request. When on a custom domain
 			// (flosc.ai), rest_url() returns the WordPress host which is cross-origin.
 			$flosc_rest_base = rest_url( 'flosc/v1' );
 		if ( defined( 'FLOSC_CUSTOM_DOMAIN_ACTIVE' ) && FLOSC_CUSTOM_DOMAIN_ACTIVE ) {
@@ -1041,7 +1064,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 			if ( isset( $_SERVER['HTTP_HOST'] ) ) {
 				$flosc_current_host = sanitize_text_field( wp_unslash( (string) $_SERVER['HTTP_HOST'] ) );
 			}
-			$flosc_rest_prefix = rest_get_url_prefix(); // usually "wp-json".
+			$flosc_rest_prefix = rest_get_url_prefix(); // usually "wp-json"
 			$flosc_rest_base   = $flosc_scheme . $flosc_current_host . '/' . $flosc_rest_prefix . '/flosc/v1';
 		}
 
@@ -1056,7 +1079,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 			$flosc_request_host = strtolower( sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ?? '' ) ) );
 			$flosc_flow_domain  = strtolower( preg_replace( '#^https?://#', '', trim( (string) ( $flosc_current_flow['custom_domain'] ?? '' ) ) ) );
 			$flosc_flow_domain  = rtrim( $flosc_flow_domain, '/' );
-			if ( $flosc_request_host === $flosc_flow_domain || $flosc_request_host === 'www.' . $flosc_flow_domain ) {
+			if ( $flosc_flow_domain === $flosc_request_host || 'www.' . $flosc_flow_domain === $flosc_request_host ) {
 				$flosc_same_host_base = ( is_ssl() ? 'https://' : 'http://' ) . $flosc_request_host;
 				$flosc_ajax_url       = $flosc_same_host_base . '/wp-admin/admin-ajax.php';
 				$flosc_logout_parts   = wp_parse_url( html_entity_decode( $flosc_logout_url ) );
@@ -1076,7 +1099,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 		} elseif ( ! empty( $flosc_current_flow ) && is_array( $flosc_current_flow ) ) {
 			// Fill missing companion_* keys from live flow object.
 			foreach ( $flosc_current_flow as $flosc_ck => $flosc_cv ) {
-				if ( strpos( (string) $flosc_ck, 'companion_' ) === 0 && ! isset( $flosc_companion_source[ $flosc_ck ] ) ) {
+				if ( 0 === strpos( (string) $flosc_ck, 'companion_' ) && ! isset( $flosc_companion_source[ $flosc_ck ] ) ) {
 					$flosc_companion_source[ $flosc_ck ] = $flosc_cv;
 				}
 			}
@@ -1155,16 +1178,26 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 					'restUrl'                        => $flosc_rest_base . '/',
 					'apiUrl'                         => $flosc_rest_base,
 					'nonce'                          => wp_create_nonce( 'wp_rest' ),
+					// Off by default. A 429 is the site saying "slow down"; retrying
+					// it immediately spends a second request from the same bucket and
+					// makes the limit arrive twice as fast.
+					'retryAfter429'                  => ( static function () {
+						$protection = get_option( 'flosc_public_request_protection', array() );
+						return is_array( $protection ) && '1' === ( $protection['retry_after_429'] ?? '0' );
+					} )(),
 					// Stripe publishable key from Payments tab (WPDB per-flow) — first-class, not disabled.
 					'stripeKey'                      => ( static function () {
 						$stripe = FLOSC_Sale_Manager::instance()->get_provider( 'stripe' );
 						if ( ! $stripe || ! method_exists( $stripe, 'get_client_config' ) ) {
 							return '';
 						}
-						// Only expose when Stripe is enabled for this flow (or legacy configured).
-						if ( method_exists( $stripe, 'is_enabled' ) && ! $stripe->is_enabled() ) {
-							// Still allow if publishable key present (admin may enable per-offer only).
-						}
+
+						/*
+						 * The publishable key is exposed even when Stripe is
+						 * off for the flow as a whole, because an operator may
+						 * have enabled it on individual offers only. It is a
+						 * publishable key; the secret is never sent here.
+						 */
 						$cfg = $stripe->get_client_config();
 						return (string) ( $cfg['publishableKey'] ?? '' );
 					} )(),
@@ -1217,7 +1250,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 							if ( ! is_array( $o ) ) {
 								continue;
 							}
-							$active = ! empty( $o['active'] ) || ( ( $o['status'] ?? '' ) === 'active' );
+							$active = ! empty( $o['active'] ) || ( 'active' === ( $o['status'] ?? '' ) );
 							if ( ! $active ) {
 								continue;
 							}
@@ -1233,9 +1266,11 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 					// productName is an alias of personalityName so older JS does not read identity.name as the speaker.
 					'productName'                    => $flosc_visitor_name,
 					'personalityName'                => $flosc_visitor_name,
+					'personalityRole'                => $flosc_visitor_role,
 					'flowDisplayName'                => function_exists( 'flosc_flow_name' )
 							? flosc_flow_name()
 							: ( is_array( $identity ) ? (string) ( $identity['name'] ?? '' ) : '' ),
+					'siteName'                       => get_bloginfo( 'name' ),
 					'offers'                         => array_values( $offers ),
 					'appUrl'                         => $flosc_app_url,
 					// Dock/collapse handoff when companion mode is companion|both and enabled.
@@ -1330,18 +1365,18 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 					'ivrMessages'                    => array_filter(
 						$flosc_ivr_config['messages'] ?? array(),
 						static function ( $m ) {
-							// Concierge messages are server-only (keyword-gated, AI-hosted, revealed.
-							// in fragments). Shipping them here would leak the note into the browser.
+							// Concierge messages are server-only (keyword-gated, AI-hosted, revealed
+							// in fragments). Shipping them here would leak the note into the browser
 							// and let the client matcher serve it raw — exactly the dump we forbid.
-							return ( $m['type'] ?? '' ) !== 'concierge';
+							return 'concierge' !== ( $m['type'] ?? '' );
 						}
 					),
 					'ivrStyles'                      => $flosc_ivr_config['styles'] ?? array(),
 					'ivrStylesCss'                   => flosc_flow_styles_css( $flosc_ivr_config ),
 					'ivrVersion'                     => $flosc_ivr_version,
-					// v8.0.0: AI provider is PER-FLOW (the global flosc_ai_provider is.
-					// intentionally empty in the per-flow model). Read it from THIS flow's.
-					// settings so the browser correctly knows AI is active and routes every.
+					// v8.0.0: AI provider is PER-FLOW (the global flosc_ai_provider is
+					// intentionally empty in the per-flow model). Read it from THIS flow's
+					// settings so the browser correctly knows AI is active and routes every
 					// message through the server (where concierge / RAG / hosting live)
 					// instead of resolving matches client-side.
 					'aiProvider'                     => ( static function () use ( $flosc_current_flow ) {
@@ -1352,12 +1387,12 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 					} )(),
 					// v1.4.0: SSO Providers.
 					'ssoProviders'                   => $flosc_sso_providers,
-					// v3.0.0: FLOSC auth token for cross-domain authentication.
-					// Cookie-based auth (flosc_auth_token cookie set at login by.
-					// set_flosc_auth_cookie) handles this. The cookie is on the current.
+					// v3.0.0: FLOSC auth token for cross-domain authentication
+					// Cookie-based auth (flosc_auth_token cookie set at login by
+					// set_flosc_auth_cookie) handles this. The cookie is on the current
 					// domain (the flow domain) and travels with same-origin REST requests.
 					// DO NOT generate a token here for the header — authenticate_flosc_token()
-					// checks the header BEFORE the cookie, and if the header token is.
+					// checks the header BEFORE the cookie, and if the header token is
 					// present but fails validation, it blocks the valid cookie fallback.
 					'authToken'                      => '',
 					// Per-flow autoprompt pills — written to WP DB on IVR import, served here.
@@ -1384,12 +1419,12 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 							foreach ( ( $raw[ $flosc_s ] ?? array() ) as $i => $p ) {
 								$flosc_name = 'for_' . $flosc_s . 's_' . $i;
 								// v8.0.0: If pill has an Action but no explicit trigger_type,
-								// route it as 'action' type so the JS click handler calls.
+								// route it as 'action' type so the JS click handler calls
 								// performIVRAction() instead of sending text to AI.
 								$action           = $p['action'] ?? '';
 								$explicit_trigger = $p['trigger_type'] ?? '';
-								$trigger_type     = $explicit_trigger ?: ( $action ? 'action' : 'ai' );
-								$trigger_value    = $p['trigger_value'] ?? ( $action ?: '' );
+								$trigger_type     = $explicit_trigger ? $explicit_trigger : ( $action ? 'action' : 'ai' );
+								$trigger_value    = $p['trigger_value'] ?? ( $action ? $action : '' );
 								$out[ $flosc_name ] = array(
 									'name'           => $flosc_name,
 									'type'           => 'suggested_user_autoprompt',
@@ -1418,7 +1453,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 						'guest'   => (bool) ( $flow_settings['autoprompt_panel_enabled']['guest'] ?? true ),
 						'member'  => (bool) ( $flow_settings['autoprompt_panel_enabled']['member'] ?? true ),
 					),
-					// Companion widget panel should be parameterized separately from.
+					// Companion widget panel should be parameterized separately from
 					// full-page behavior. Default is disabled for ship readiness.
 					'autopromptCompanionEnabled'     => (bool) ( $flow_settings['autoprompt_companion_enabled'] ?? false ),
 					// v4.0.0: Admin test mode — all offers (incl. drafts) for in-chat testing.
@@ -1428,7 +1463,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 					'audioQuizCompleteMessage'       => flosc_get_setting( 'audio_quiz_complete_message', 'Pronunciation assessment complete! All {total} phrases recorded and analyzed. Sign up to see your results.' ),
 					'audioQuizResultsMessage'        => flosc_get_setting( 'audio_quiz_results_message', 'Welcome! Here are your assessment results.' ),
 					'audioQuizUpsellMessage'         => flosc_get_setting( 'audio_quiz_upsell_message', 'Our accent analysis shows you would benefit from lessons on {1st}, {2nd}, and {4th}. Upgrade today for full access to all lessons.' ),
-					'audioQuizPhonemeLessonMap'      => json_decode( flosc_get_setting( 'audio_quiz_phoneme_lesson_map', '{}' ), true ) ?: (object) array(),
+					'audioQuizPhonemeLessonMap'      => $flosc_phoneme_lesson_map,
 					// Between-phrase escape hatch (upgrade / softer tier) — per-flow admin params.
 					'audioQuizEscapeEnabled'         => ( function () {
 						$v = flosc_get_setting( 'audio_quiz_escape_enabled', '1' );
@@ -1597,7 +1632,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 						)
 					),
 					// Guest link config — product-neutral defaults (never hardcode a brand for all flows)
-					// Strip all accumulated backslash layers from stored strings (same idiom as autoprompts)
+					// Strip all accumulated backslash layers from stored strings (same idiom as autoprompts).
 					'guestLinkName'                  => ( function () {
 						$v = flosc_get_setting( 'guest_link_name', 'Guest Access Link' );
 						$p = null;
@@ -1620,7 +1655,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 									$v = stripslashes_deep( $v );
 						} return $v; } )(),
 					'guestLinkUpgradeUrl'            => flosc_get_setting( 'guest_link_upgrade_url', '' ),
-					// One-time injection after redirect-back login (via short-lived transient)
+					// One-time injection after redirect-back login (via short-lived transient).
 					'guestLinkRemaining'             => ( function () use ( $user_state ) {
 						if ( ! is_user_logged_in() || 'guest' !== $user_state ) {
 							return null;
@@ -1638,7 +1673,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 							return null;
 						}
 						$key = 'flosc_just_guest_login_' . get_current_user_id();
-						if ( get_transient( $key ) === false ) {
+						if ( false === get_transient( $key ) ) {
 							return null;
 						}
 						delete_transient( $key );
@@ -1652,13 +1687,13 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 									$v = stripslashes_deep( $v );
 						} return $v;
 					} )(),
-					// True if the current user has any SSO provider linked (FB, Google, etc.)
+					// True if the current user has any SSO provider linked (FB, Google, etc.).
 					'hasSsoProvider'                 => ( is_user_logged_in()
 					&& ! empty( get_user_meta( get_current_user_id(), '_flosc_sso_linked_providers', true ) ) ),
 					// Shows credential setup card to magic-link users who have not yet set their password and display name.
 					// Scoped by registration method — not applicable to SSO users or admin/other user types.
 					'pendingCredentialSetup'         => ( is_user_logged_in()
-					&& get_user_meta( get_current_user_id(), '_flosc_registration_method', true ) === 'email'
+					&& 'email' === get_user_meta( get_current_user_id(), '_flosc_registration_method', true )
 					&& ! get_user_meta( get_current_user_id(), '_flosc_magic_link_user_credentials_set', true )
 					&& empty( get_user_meta( get_current_user_id(), '_flosc_sso_linked_providers', true ) ) ),
 					'guestLinkProfileConfirmMessage' => ( function () {
@@ -1668,7 +1703,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 									$p = $v;
 									$v = stripslashes_deep( $v );
 						} return $v; } )(),
-					// Engagement tab: profile completion nudge (product-neutral default; per-flow override)
+					// Engagement tab: profile completion nudge (product-neutral default; per-flow override).
 					'engagementProfileNudgeMessage'  => ( function () {
 						$v = flosc_get_setting(
 							'engagement_profile_nudge_message',
@@ -1735,7 +1770,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 						return max( 0, $window - $days_elapsed );
 					} )()
 					: null,
-					// Guest/member chat list (flow params — not brand hardcodes)
+					// Guest/member chat list (flow params — not brand hardcodes).
 					'guestMaxChats'                  => max( 0, intval( flosc_get_setting( 'guest_max_chats', 0 ) ) ),
 					// Default true when never saved; explicit '' / '0' = off (must not treat '' as true).
 					'guestCanDeleteChats'            => ( function () {

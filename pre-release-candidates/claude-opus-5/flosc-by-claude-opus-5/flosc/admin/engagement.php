@@ -8,6 +8,8 @@
  * language as Offers (FLOSC_Condition_Evaluator).
  *
  * Not: offer builder (→ Offers). Not: letter body editor (→ Email). Not: F→L→O→S→C map (→ Flow).
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -150,10 +152,10 @@ $flosc_email_templates = array(
 /**
  * One rule as a collapsible accordion (title in summary).
  *
- * @param array  $rule Rule.
- * @param string $audience visitor|guest|member.
- * @param int    $index Index.
- * @param bool   $open Open.
+ * @param array  $rule
+ * @param string $audience visitor|guest|member
+ * @param int    $index
+ * @param bool   $open
  */
 $flosc_render_rule = static function ( $rule, $audience, $index, $open = false ) use ( $flosc_triggers, $flosc_email_templates ) {
 	$rid         = sanitize_key( (string) ( $rule['id'] ?? ( 'rule_' . $index ) ) );
@@ -299,7 +301,7 @@ $flosc_render_rule = static function ( $rule, $audience, $index, $open = false )
 	<?php
 };
 
-// Split rules by audience (form index assigned when rendering so arrays stay aligned)
+// Split rules by audience (form index assigned when rendering so arrays stay aligned).
 $flosc_visitor_rules = array();
 $flosc_guest_rules   = array();
 $flosc_member_rules  = array();
@@ -338,7 +340,7 @@ $flosc_count_active = static function ( $rules ) {
 };
 
 // Profile activity (this flow only).
-// Match registration_flow / last_flow against stem variants — writers sometimes.
+// Match registration_flow / last_flow against stem variants — writers sometimes
 // sanitize_key() a full "file.md" (becomes filmd) while the admin stem is pathinfo().
 $flosc_summary_users = array();
 if ( '' !== $flosc_flow_id || '' !== $flosc_current_ivr ) {
@@ -355,7 +357,7 @@ if ( '' !== $flosc_flow_id || '' !== $flosc_current_ivr ) {
 					$flosc_flow_id,
 					$flosc_ivr_base,
 					pathinfo( $flosc_ivr_base, PATHINFO_FILENAME ),
-					sanitize_key( $flosc_ivr_base ), // e.g. flow_ivrmd when source was …ivr.md.
+					sanitize_key( $flosc_ivr_base ), // For example flow_ivrmd when the source was …ivr.md.
 					sanitize_key( (string) $flosc_current_ivr ),
 				),
 				static function ( $v ) {

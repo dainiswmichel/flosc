@@ -3,6 +3,8 @@
  * Visitor token runtime helpers.
  *
  * Keeps token grant and depletion copy logic out of the main framework file.
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -15,9 +17,6 @@ trait FLOSC_Visitor_Token_Trait {
 	 *
 	 * This is the runtime baseline for anonymous visitor sessions and should
 	 * match the Token Management "Visitor Wallet Initial Amount" setting.
-	 *
-	 * @param string $flow_id Flow ID.
-	 * @param mixed $token_provider Token provider.
 	 */
 	private function flosc_get_visitor_wallet_initial_amount( $flow_id = '', $token_provider = null ) {
 		$flow_stem = $this->flosc_normalize_flow_stem( (string) $flow_id );
@@ -57,11 +56,8 @@ trait FLOSC_Visitor_Token_Trait {
 	 * NOTE: Do NOT fall back to the full visitor wallet size. That made a balance
 	 * of e.g. 3876 fail the gate when the wallet baseline was 5000, while the UI
 	 * still showed thousands remaining ("Token limit reached" false positive).
-	 *
-	 * @param string $flow_id Flow ID.
-	 * @param mixed $token_provider Token provider.
 	 */
-	private function flosc_get_ai_query_token_cost( $flow_id = '', $token_provider = null ) {
+	private function flosc_get_ai_query_token_cost( $flow_id = '' ) {
 		$flow_stem = $this->flosc_normalize_flow_stem( (string) $flow_id );
 		$settings  = get_option( 'flosc_flow_' . $flow_stem, array() );
 		if ( is_array( $settings ) && isset( $settings['cost_ai_query'] ) ) {
@@ -85,13 +81,9 @@ trait FLOSC_Visitor_Token_Trait {
 	 * When provider billing data is available, convert the reported real
 	 * millicent cost into tokens using the configured real factor. Otherwise,
 	 * fall back to the configured/default AI query token cost.
-	 *
-	 * @param int $flow_id Flow ID.
-	 * @param mixed $token_provider Token provider.
-	 * @param array $billing_meta Billing meta.
 	 */
 	public function flosc_resolve_chat_charge_tokens( $flow_id, $token_provider, $billing_meta = array() ) {
-		// Primary: debit the REAL provider cost, converted to floscTokens via the.
+		// Primary: debit the REAL provider cost, converted to floscTokens via the
 		// configured ratio (Token Management -> Real Millicents per Token).
 		$real_millicents = max( 0, intval( $billing_meta['real_millicents'] ?? 0 ) );
 		if ( $real_millicents > 0 && $token_provider && method_exists( $token_provider, 'convert_real_millicents_to_tokens' ) ) {
@@ -101,8 +93,8 @@ trait FLOSC_Visitor_Token_Trait {
 			}
 		}
 
-		// No billing metadata (the AI API reported no usage/cost). If an admin set an.
-		// explicit flat per-turn cost, use it; otherwise debit 1 as a deliberate.
+		// No billing metadata (the AI API reported no usage/cost). If an admin set an
+		// explicit flat per-turn cost, use it; otherwise debit 1 as a deliberate
 		// "billing unavailable" signal.
 		$flow_stem = $this->flosc_normalize_flow_stem( (string) $flow_id );
 		$settings  = get_option( 'flosc_flow_' . $flow_stem, array() );
@@ -118,9 +110,6 @@ trait FLOSC_Visitor_Token_Trait {
 	 *
 	 * Falls back to guest grant for backward compatibility until a dedicated
 	 * member amount is configured for the flow.
-	 *
-	 * @param string $flow_id Flow ID.
-	 * @param int $user_id User ID.
 	 */
 	private function flosc_get_member_token_grant_amount( $flow_id = '', $user_id = 0 ) {
 		$flow_id = sanitize_key( (string) $flow_id );
@@ -138,9 +127,6 @@ trait FLOSC_Visitor_Token_Trait {
 
 	/**
 	 * Initial logged-in wallet amount for this flow.
-	 *
-	 * @param int $user_id User ID.
-	 * @param string $flow_id Flow ID.
 	 */
 	private function flosc_get_user_flow_initial_amount( $user_id, $flow_id = '' ) {
 		$user_id = absint( $user_id );
@@ -165,8 +151,6 @@ trait FLOSC_Visitor_Token_Trait {
 	/**
 	 * Whether chat token charging is enforced for the given flow.
 	 * Default is enabled unless the flow explicitly disables it.
-	 *
-	 * @param string $flow_id Flow ID.
 	 */
 	private function flosc_is_flow_chat_token_enforced( $flow_id = '' ) {
 		$flow_stem = $this->flosc_normalize_flow_stem( $flow_id );
@@ -185,9 +169,6 @@ trait FLOSC_Visitor_Token_Trait {
 	/**
 	 * Initial visitor token balance for a flow.
 	 * Uses visitor wallet initial amount configured in Token Management.
-	 *
-	 * @param string $flow_id Flow ID.
-	 * @param mixed $token_provider Token provider.
 	 */
 	public function flosc_get_initial_visitor_token_balance( $flow_id = '', $token_provider = null ) {
 		return max( 0, intval( $this->flosc_get_visitor_wallet_initial_amount( (string) $flow_id, $token_provider ) ) );
@@ -195,8 +176,6 @@ trait FLOSC_Visitor_Token_Trait {
 
 	/**
 	 * Normalize flow id to a stable stem used in meta/transient keys.
-	 *
-	 * @param string $flow_id Flow ID.
 	 */
 	public function flosc_normalize_flow_stem( $flow_id = '' ) {
 		$flow_id = (string) $flow_id;
@@ -209,8 +188,6 @@ trait FLOSC_Visitor_Token_Trait {
 
 	/**
 	 * Per-flow user token balance meta key.
-	 *
-	 * @param string $flow_id Flow ID.
 	 */
 	private function flosc_user_flow_token_meta_key( $flow_id = '' ) {
 		return '_flosc_flow_tokens_' . $this->flosc_normalize_flow_stem( $flow_id );
@@ -219,9 +196,6 @@ trait FLOSC_Visitor_Token_Trait {
 	/**
 	 * Read logged-in user's per-flow token balance (0 if not yet granted).
 	 * Does not invent a floor baseline — grants are additive (remaining + grant).
-	 *
-	 * @param int $user_id User ID.
-	 * @param string $flow_id Flow ID.
 	 */
 	public function flosc_get_user_flow_token_balance( $user_id, $flow_id = '' ) {
 		$user_id = absint( $user_id );
@@ -240,10 +214,6 @@ trait FLOSC_Visitor_Token_Trait {
 
 	/**
 	 * Persist logged-in user's per-flow token balance.
-	 *
-	 * @param int $user_id User ID.
-	 * @param string $flow_id Flow ID.
-	 * @param int $balance Balance.
 	 */
 	private function flosc_set_user_flow_token_balance( $user_id, $flow_id = '', $balance = 0 ) {
 		$user_id = absint( $user_id );
@@ -258,8 +228,6 @@ trait FLOSC_Visitor_Token_Trait {
 
 	/**
 	 * Meta flag: guest additive grant already applied for this flow.
-	 *
-	 * @param string $flow_id Flow ID.
 	 */
 	public function flosc_guest_token_grant_flag_key( $flow_id = '' ) {
 		return '_flosc_guest_token_grant_applied_' . $this->flosc_normalize_flow_stem( $flow_id );
@@ -267,8 +235,6 @@ trait FLOSC_Visitor_Token_Trait {
 
 	/**
 	 * Meta flag: member additive grant already applied for this flow.
-	 *
-	 * @param string $flow_id Flow ID.
 	 */
 	private function flosc_member_token_grant_flag_key( $flow_id = '' ) {
 		return '_flosc_member_token_grant_applied_' . $this->flosc_normalize_flow_stem( $flow_id );
@@ -280,8 +246,6 @@ trait FLOSC_Visitor_Token_Trait {
 	 *
 	 * Tries the normalized flow stem first, then the raw sanitized id, so V→G
 	 * carry still works if chat charged under a slightly different flow_id form.
-	 *
-	 * @param int $flow_id Flow ID.
 	 */
 	public function flosc_get_visitor_remaining_for_session( $flow_id, $session_id_raw ) {
 		$session_id_raw = trim( (string) $session_id_raw );
@@ -328,9 +292,11 @@ trait FLOSC_Visitor_Token_Trait {
 	 */
 	public function flosc_resolve_visitor_session_id_for_grant() {
 		foreach ( array( 'flosc_visitor_session', 'flosc_vtok_session' ) as $cookie_name ) {
-			if ( isset( $_COOKIE[ $cookie_name ] ) && is_string( $_COOKIE[ $cookie_name ] ) && '' !== $_COOKIE[ $cookie_name ] ) {
-				$cookie_value = sanitize_text_field( wp_unslash( $_COOKIE[ $cookie_name ] ) );
-				return sanitize_text_field( rawurldecode( $cookie_value ) );
+			$raw = ( isset( $_COOKIE[ $cookie_name ] ) && is_scalar( $_COOKIE[ $cookie_name ] )
+				? sanitize_text_field( wp_unslash( $_COOKIE[ $cookie_name ] ) )
+				: '' );
+			if ( is_string( $raw ) && '' !== $raw ) {
+				return sanitize_text_field( rawurldecode( $raw ) );
 			}
 		}
 		return '';
@@ -343,9 +309,6 @@ trait FLOSC_Visitor_Token_Trait {
 	 * If $session_id_raw is empty and no cookie, defers (does not set flag) so the
 	 * guest app can call again with visitor_session_id after SSO return.
 	 * Pass $allow_without_session true only when a client explicitly confirms.
-	 *
-	 * @param int $user_id User ID.
-	 * @param string $flow_id Flow ID.
 	 */
 	public function flosc_apply_guest_token_grant_once( $user_id, $flow_id = '', $session_id_raw = '', $allow_without_session = false ) {
 		$user_id = absint( $user_id );
@@ -376,7 +339,7 @@ trait FLOSC_Visitor_Token_Trait {
 		$grant       = max( 0, intval( $this->flosc_get_guest_token_grant_amount( $flow_stem, $user_id ) ) );
 		$new_balance = $remaining + $grant;
 
-		// Safety: never lock a guest at 0 when Token Management configured a positive.
+		// Safety: never lock a guest at 0 when Token Management configured a positive
 		// guest grant (mis-resolved flow / missing settings would otherwise brick the wallet).
 		if ( $new_balance <= 0 && $grant <= 0 ) {
 			$fallback = max( 0, intval( $this->flosc_get_visitor_wallet_initial_amount( $flow_stem, null ) ) );
@@ -418,7 +381,6 @@ trait FLOSC_Visitor_Token_Trait {
 	 * Legacy keys subscription_* still read for backward compatibility.
 	 *
 	 * @return array{onetime:int,recurring:int,recurring_yearly:int,cap:int}
-	 * @param string $flow_id Flow ID.
 	 */
 	private function flosc_get_product_token_params( $flow_id = '' ) {
 		$flow_stem = $this->flosc_normalize_flow_stem( $flow_id );
@@ -450,7 +412,7 @@ trait FLOSC_Visitor_Token_Trait {
 
 		$onetime = array_key_exists( 'product_token_grant_onetime', $settings )
 			? max( 0, intval( $settings['product_token_grant_onetime'] ) )
-			: $recurring; // sensible default: same as one recurring pack.
+			: $recurring; // sensible default: same as one recurring pack
 
 		return array(
 			'onetime'          => $onetime,
@@ -471,8 +433,8 @@ trait FLOSC_Visitor_Token_Trait {
 	 * Payment success is independent of credit amount: if already at cap, credit 0.
 	 * Context overrides: grant (int), cap (int|null), offer tokens.amount / tokens.cap.
 	 *
-	 * @param int    $user_id User ID.
-	 * @param string $flow_id Flow ID.
+	 * @param int    $user_id
+	 * @param string $flow_id
 	 * @param string $mode    onetime|recurring|recurring_yearly|monthly|yearly.
 	 * @param array  $context idempotency_key, reason, grant, cap, offer, subscription_id.
 	 * @return array{credited:int,balance:int,cap:int,grant:int,capped:bool,skipped:bool,mode:string}
@@ -543,7 +505,7 @@ trait FLOSC_Visitor_Token_Trait {
 		if ( in_array( $offer_mode, array( 'onetime', 'recurring', 'recurring_yearly' ), true )
 			&& ( 'custom' === $source || '' === $source )
 		) {
-			// Only force offer mode when custom; for flow source, keep caller mode.
+			// Only force offer mode when custom; for flow source, keep caller mode
 			// (subscription activate already passes recurring / yearly).
 			if ( 'custom' === $source ) {
 				$mode           = $offer_mode;
@@ -669,10 +631,6 @@ trait FLOSC_Visitor_Token_Trait {
 
 	/**
 	 * @deprecated Prefer flosc_apply_product_token_credit — kept as alias for subscription call sites.
-	 * @param int $user_id User ID.
-	 * @param string $flow_id Flow ID.
-	 * @param string $plan_type Plan type.
-	 * @param array $context Context.
 	 */
 	private function flosc_apply_subscription_token_topup( $user_id, $flow_id = '', $plan_type = 'monthly', $context = array() ) {
 		return $this->flosc_apply_product_token_credit( $user_id, $flow_id, $plan_type, $context );
@@ -681,9 +639,6 @@ trait FLOSC_Visitor_Token_Trait {
 	/**
 	 * G→M once per flow: member_balance = guest_remaining + member_token_grant.
 	 * Idempotent via per-flow user meta flag.
-	 *
-	 * @param int $user_id User ID.
-	 * @param string $flow_id Flow ID.
 	 */
 	public function flosc_apply_member_token_grant_once( $user_id, $flow_id = '' ) {
 		$user_id = absint( $user_id );
@@ -723,8 +678,6 @@ trait FLOSC_Visitor_Token_Trait {
 	/**
 	 * @deprecated Use flosc_apply_guest_token_grant_once — kept as alias for call sites.
 	 * Ensure logged-in guest has received the per-flow additive guest grant (once).
-	 * @param int $user_id User ID.
-	 * @param string $flow_id Flow ID.
 	 */
 	private function flosc_ensure_user_flow_token_baseline( $user_id, $flow_id = '' ) {
 		return $this->flosc_apply_guest_token_grant_once( $user_id, $flow_id );
@@ -732,11 +685,6 @@ trait FLOSC_Visitor_Token_Trait {
 
 	/**
 	 * Apply one spend event against logged-in user's per-flow balance.
-	 *
-	 * @param int $user_id User ID.
-	 * @param int $flow_id Flow ID.
-	 * @param mixed $token_provider Token provider.
-	 * @param array $billing_meta Billing meta.
 	 */
 	private function flosc_charge_user_flow_tokens( $user_id, $flow_id, $token_provider, $billing_meta = array() ) {
 		$user_id = absint( $user_id );
@@ -773,9 +721,6 @@ trait FLOSC_Visitor_Token_Trait {
 
 	/**
 	 * Flow-scoped guest token grant parameter.
-	 *
-	 * @param string $flow_id Flow ID.
-	 * @param int $user_id User ID.
 	 */
 	public function flosc_get_guest_token_grant_amount( $flow_id = '', $user_id = 0 ) {
 		$flow_id = sanitize_key( (string) $flow_id );
@@ -800,8 +745,6 @@ trait FLOSC_Visitor_Token_Trait {
 
 	/**
 	 * Flow-scoped low-token threshold parameter (0 = disabled).
-	 *
-	 * @param string $flow_id Flow ID.
 	 */
 	public function flosc_get_low_token_threshold( $flow_id = '' ) {
 		$flow_stem = $this->flosc_normalize_flow_stem( (string) $flow_id );
@@ -814,8 +757,6 @@ trait FLOSC_Visitor_Token_Trait {
 
 	/**
 	 * Visitor low-token warning copy with flow-specific grant amount.
-	 *
-	 * @param string $flow_id Flow ID.
 	 */
 	public function flosc_get_visitor_low_tokens_message( $flow_id = '' ) {
 		$grant = $this->flosc_get_guest_token_grant_amount( (string) $flow_id, 0 );
@@ -836,8 +777,6 @@ trait FLOSC_Visitor_Token_Trait {
 
 	/**
 	 * Visitor token-depleted copy with flow-specific grant amount.
-	 *
-	 * @param string $flow_id Flow ID.
 	 */
 	private function flosc_get_visitor_token_depleted_message( $flow_id = '' ) {
 		$grant = $this->flosc_get_guest_token_grant_amount( (string) $flow_id, 0 );
@@ -858,8 +797,6 @@ trait FLOSC_Visitor_Token_Trait {
 
 	/**
 	 * Optional URL to redirect after visitor depleted-session contact capture.
-	 *
-	 * @param string $flow_id Flow ID.
 	 */
 	private function flosc_get_visitor_session_end_redirect_url( $flow_id = '' ) {
 		$flow_stem = $this->flosc_normalize_flow_stem( (string) $flow_id );
@@ -879,8 +816,6 @@ trait FLOSC_Visitor_Token_Trait {
 	/**
 	 * Contact capture mode once visitor tokens are depleted.
 	 * Public: flosc-app.php / full-page shell need this for FLOSC_CONFIG.
-	 *
-	 * @param string $flow_id Flow ID.
 	 */
 	public function flosc_get_visitor_depleted_contact_mode( $flow_id = '' ) {
 		$flow_stem = $this->flosc_normalize_flow_stem( (string) $flow_id );

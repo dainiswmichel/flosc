@@ -4,6 +4,7 @@
  *
  * @package FLOSC
  */
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -13,21 +14,10 @@ class FLOSC_Checkout_Rest {
 	/** @var FLOSC_Framework */
 	private $flosc;
 
-	/**
-	 * Construct.
-	 *
-	 * @param mixed $flosc Flosc.
-	 */
 	public function __construct( $flosc ) {
 		$this->flosc = $flosc;
 	}
 
-	/**
-	 * Get offers.
-	 *
-	 * @param mixed $request Request.
-	 * @return mixed
-	 */
 	public function get_offers( $request ) {
 		$user_id = is_user_logged_in() ? get_current_user_id() : null;
 		// v1.6.2: Flow-aware offer loading.
@@ -38,16 +28,16 @@ class FLOSC_Checkout_Rest {
 				$flow_id = pathinfo( basename( $flow['ivr_file'] ), PATHINFO_FILENAME );
 			}
 		}
-		$offers = $this->flosc->sale()->get_available_offers( $user_id, $flow_id ?: null );
+		$offers = $this->flosc->sale()->get_available_offers( $user_id, $flow_id ? $flow_id : null );
 		return new WP_REST_Response( array( 'offers' => array_values( $offers ) ) );
 	}
 
 	/**
-	 * v1.6.2: Serve offer content from external sources
+	 * Serve offer content from external sources
 	 * Supports: HtmlFile (static HTML in plugin), WooProduct (WooCommerce), PostID (WP post)
 	 * Sanitizes output to prevent XSS.
 	 *
-	 * @param mixed $request Request.
+	 * @since 1.6.2
 	 */
 	public function get_offer_content( $request ) {
 		$source = sanitize_text_field( $request->get_param( 'source' ) );
@@ -105,7 +95,7 @@ class FLOSC_Checkout_Rest {
 				}
 				// REST is not is_singular(); content protection filters do not apply.
 				// Enforce FLOSC entitlement before returning post body.
-				require_once FLOSC_PLUGIN_DIR . 'includes/class-content-protection.php';
+				require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-content-protection.php';
 				if ( ! FLOSC_Content_Protection::instance()->user_can_access( $post_id )
 					&& ! current_user_can( 'manage_options' ) ) {
 					return new WP_REST_Response(
@@ -117,7 +107,7 @@ class FLOSC_Checkout_Rest {
 					);
 				}
 				// WordPress content filters (shortcodes, embeds, blocks, etc.).
-                // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- core WP content filter required for oEmbed/shortcodes
+				// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- core WP content filter required for oEmbed/shortcodes
 				$html = apply_filters( 'the_content', $post->post_content );
 				return new WP_REST_Response(
 					array(
@@ -141,8 +131,6 @@ class FLOSC_Checkout_Rest {
 	 * - User can now access ALL 10 posts ✅
 	 *
 	 * TESTING: Use 'tokens' provider for sandbox testing
-	 *
-	 * @param mixed $request Request.
 	 */
 	public function handle_purchase( $request ) {
 		$user_id = get_current_user_id();
@@ -152,7 +140,10 @@ class FLOSC_Checkout_Rest {
 		}
 
 		// Verify nonce for REST security.
-		$nonce = $request->get_header( 'X-WP-Nonce' ) ?: $request->get_param( '_wpnonce' );
+		$nonce = $request->get_header( 'X-WP-Nonce' );
+		if ( ! $nonce ) {
+			$nonce = $request->get_param( '_wpnonce' );
+		}
 		if ( ! wp_verify_nonce( sanitize_text_field( (string) $nonce ), 'wp_rest' ) ) {
 			return new WP_Error( 'invalid_nonce', __( 'Security token invalid. Please refresh.', 'flosc' ), array( 'status' => 403 ) );
 		}
@@ -169,7 +160,7 @@ class FLOSC_Checkout_Rest {
 		if ( ! empty( $flow_id ) ) {
 			$this->flosc->set_flow_context( $flow_id );
 		}
-		$offer = $this->flosc->sale()->offers()->get_offer( $offer_id, $flow_id ?: null );
+		$offer = $this->flosc->sale()->offers()->get_offer( $offer_id, $flow_id ? $flow_id : null );
 		if ( ! $offer ) {
 			return new WP_Error( 'invalid_offer', __( 'Offer not found', 'flosc' ), array( 'status' => 404 ) );
 		}
@@ -182,7 +173,7 @@ class FLOSC_Checkout_Rest {
 			$free_ok = $sale->validate_offer_for_purchase( $offer, 'free' );
 			if ( is_wp_error( $free_ok ) ) {
 				// Empty provider on a non-free offer → provider_required (not a free-claim error).
-				if ( empty( $provider_id ) && 'free' !== $method && $free_ok->get_error_code() === 'not_free' ) {
+				if ( empty( $provider_id ) && 'free' !== $method && 'not_free' === $free_ok->get_error_code() ) {
 					return new WP_Error(
 						'provider_required',
 						__( 'A payment provider is required for this offer', 'flosc' ),
@@ -273,7 +264,7 @@ class FLOSC_Checkout_Rest {
 		if ( ! is_array( $coupons ) || empty( $coupons ) ) {
 			return new WP_Error( 'invalid_coupon', __( 'Invalid or expired coupon', 'flosc' ), array( 'status' => 403 ) );
 		}
-		$now  = time(); // UTC unix.
+		$now  = time(); // UTC unix
 		$list = $this->flosc_offer_list_price( $offer );
 
 		foreach ( $coupons as $c ) {
@@ -449,11 +440,9 @@ class FLOSC_Checkout_Rest {
 
 	/**
 	 * Whether offer is treated as subscription for checkout coupons.
-	 *
-	 * @param array $offer Offer.
 	 */
 	private function flosc_offer_is_subscription( array $offer ) {
-		if ( ( $offer['type'] ?? '' ) === 'subscription' ) {
+		if ( 'subscription' === ( $offer['type'] ?? '' ) ) {
 			return true;
 		}
 		$plans = $offer['subscription']['plans'] ?? null;
@@ -462,8 +451,6 @@ class FLOSC_Checkout_Rest {
 
 	/**
 	 * Preview coupon for payment modal (native only). Does not charge.
-	 *
-	 * @param mixed $request Request.
 	 */
 	public function handle_apply_offer_coupon( $request ) {
 		$offer_id = sanitize_text_field( $request->get_param( 'offer_id' ) ?? '' );
@@ -472,7 +459,7 @@ class FLOSC_Checkout_Rest {
 		if ( '' !== $flow_id ) {
 			$this->flosc->set_flow_context( $flow_id );
 		}
-		$offer = $this->flosc->sale()->offers()->get_offer( $offer_id, $flow_id ?: null );
+		$offer = $this->flosc->sale()->offers()->get_offer( $offer_id, $flow_id ? $flow_id : null );
 		if ( ! $offer ) {
 			return new WP_Error( 'invalid_offer', __( 'Offer not found', 'flosc' ), array( 'status' => 404 ) );
 		}
@@ -500,7 +487,10 @@ class FLOSC_Checkout_Rest {
 				}
 			}
 		}
-		$currency = strtoupper( (string) ( $offer['pricing']['currency'] ?? 'USD' ) ) ?: 'USD';
+		$currency = strtoupper( (string) ( $offer['pricing']['currency'] ?? 'USD' ) );
+		if ( ! $currency ) {
+			$currency = 'USD';
+		}
 
 		// Subscription: return monthly/yearly payable (for plan UI + PayPal plan create).
 		if ( $this->flosc_offer_is_subscription( $offer ) ) {
@@ -547,7 +537,7 @@ class FLOSC_Checkout_Rest {
 	}
 
 	/**
-	 * v1.4.4: Product-Aware Sandbox Purchase
+	 * Product-Aware Sandbox Purchase
 	 * Grants product-specific membership level based on product_id
 	 * Fun "Pay What You Want" for testing the full purchase flow
 	 *
@@ -556,7 +546,7 @@ class FLOSC_Checkout_Rest {
 	 * Previous bug: sandbox set _flosc_member_level but content protection
 	 * checks _flosc_memberlevel_{level} via has_level(). Mismatch = no access.
 	 *
-	 * @param mixed $request Request.
+	 * @since 1.4.4
 	 */
 	public function handle_sandbox_purchase( $request ) {
 		$user_id = get_current_user_id();
@@ -572,7 +562,10 @@ class FLOSC_Checkout_Rest {
 		}
 
 		// Verify nonce for REST security.
-		$nonce = $request->get_header( 'X-WP-Nonce' ) ?: $request->get_param( '_wpnonce' );
+		$nonce = $request->get_header( 'X-WP-Nonce' );
+		if ( ! $nonce ) {
+			$nonce = $request->get_param( '_wpnonce' );
+		}
 		if ( ! wp_verify_nonce( sanitize_text_field( (string) $nonce ), 'wp_rest' ) ) {
 			return new WP_REST_Response(
 				array(
@@ -603,13 +596,13 @@ class FLOSC_Checkout_Rest {
 
 		// v3.0.5: Determine member level — check offer first (flow-aware), then product fallback.
 		$offer_manager = $this->flosc->sale()->offers();
-		$member_level  = 'member'; // Default fallback.
+		$member_level  = 'member'; // Default fallback
 		$product_name  = 'Full Access';
 		$product_icon  = '🎁';
 
-		// Try the offer (flow-aware lookup)
+		// Try the offer (flow-aware lookup).
 		if ( ! empty( $offer_id ) && 'sandbox' !== $offer_id ) {
-			$offer = $offer_manager->get_offer( $offer_id, $flow_id ?: null );
+			$offer = $offer_manager->get_offer( $offer_id, $flow_id ? $flow_id : null );
 			if ( $offer && ! empty( $offer['grants']['level'] ) ) {
 				$member_level = $offer['grants']['level'];
 				$product_name = $offer['name'];
@@ -619,7 +612,7 @@ class FLOSC_Checkout_Rest {
 		}
 
 		$sandbox_offer = array(
-			'id'     => $offer_id ?: 'flosc_sandbox',
+			'id'     => $offer_id ? $offer_id : 'flosc_sandbox',
 			'name'   => $product_name,
 			'grants' => array(
 				'level'    => $member_level,
@@ -666,7 +659,10 @@ class FLOSC_Checkout_Rest {
 			)
 		);
 
-		$existing_levels = get_user_meta( $user_id, '_flosc_member_levels', true ) ?: array();
+		$existing_levels = get_user_meta( $user_id, '_flosc_member_levels', true );
+		if ( ! $existing_levels ) {
+			$existing_levels = array();
+		}
 		if ( ! in_array( $member_level, $existing_levels, true ) ) {
 			$existing_levels[] = $member_level;
 			update_user_meta( $user_id, '_flosc_member_levels', $existing_levels );
@@ -706,12 +702,6 @@ class FLOSC_Checkout_Rest {
 		);
 	}
 
-	/**
-	 * Create payment intent.
-	 *
-	 * @param mixed $request Request.
-	 * @return mixed
-	 */
 	public function create_payment_intent( $request ) {
 		// Stripe is first-class: requires publishable + secret keys on Payments (per-flow WPDB).
 		$stripe = $this->flosc->sale()->get_provider( 'stripe' );
@@ -725,7 +715,7 @@ class FLOSC_Checkout_Rest {
 		if ( '' !== $flow_id ) {
 			$this->flosc->set_flow_context( $flow_id );
 		}
-		$offer = $this->flosc->sale()->offers()->get_offer( $offer_id, $flow_id ?: null );
+		$offer = $this->flosc->sale()->offers()->get_offer( $offer_id, $flow_id ? $flow_id : null );
 
 		if ( ! $offer ) {
 			return new WP_Error( 'invalid_offer', __( 'Offer not found', 'flosc' ), array( 'status' => 404 ) );
@@ -737,7 +727,10 @@ class FLOSC_Checkout_Rest {
 		}
 
 		$price_id = $offer['pricing']['stripe']['price_id'] ?? '';
-		$currency = strtolower( (string) ( $offer['pricing']['currency'] ?? 'usd' ) ) ?: 'usd';
+		$currency = strtolower( (string) ( $offer['pricing']['currency'] ?? 'usd' ) );
+		if ( ! $currency ) {
+			$currency = 'usd';
+		}
 
 		// With a coupon, always charge dynamic amount (cents) — Stripe Price ID is full list price.
 		if ( '' !== $coupon_code ) {
@@ -772,10 +765,10 @@ class FLOSC_Checkout_Rest {
 	}
 
 	/**
-	 * v1.4.1: Complete purchase after client-side payment confirmation
+	 * Complete purchase after client-side payment confirmation
 	 * Verifies payment with Stripe and grants access (fallback if webhook is slow)
 	 *
-	 * @param mixed $request Request.
+	 * @since 1.4.1
 	 */
 	public function complete_purchase( $request ) {
 		$payment_intent_id = sanitize_text_field( $request->get_param( 'payment_intent_id' ) );
@@ -796,7 +789,7 @@ class FLOSC_Checkout_Rest {
 		}
 
 		// Get offer (client-supplied offer_id is only a hint until PI metadata binds it).
-		$offer = $this->flosc->sale()->offers()->get_offer( $offer_id, $flow_id_param ?: null );
+		$offer = $this->flosc->sale()->offers()->get_offer( $offer_id, $flow_id_param ? $flow_id_param : null );
 		if ( ! $offer ) {
 			return new WP_Error( 'invalid_offer', __( 'Offer not found', 'flosc' ), array( 'status' => 404 ) );
 		}
@@ -813,7 +806,7 @@ class FLOSC_Checkout_Rest {
 		}
 
 		// Only succeeded payments fulfill. requires_action / processing / etc. are incomplete.
-		if ( ( $payment_intent['status'] ?? '' ) !== 'succeeded' ) {
+		if ( 'succeeded' !== ( $payment_intent['status'] ?? '' ) ) {
 			return new WP_Error( 'payment_not_succeeded', __( 'Payment not completed', 'flosc' ), array( 'status' => 400 ) );
 		}
 
@@ -844,7 +837,7 @@ class FLOSC_Checkout_Rest {
 		}
 
 		// Re-load offer from bound id (authoritative).
-		$offer = $this->flosc->sale()->offers()->get_offer( $bound_offer_id, $flow_id_param ?: null );
+		$offer = $this->flosc->sale()->offers()->get_offer( $bound_offer_id, $flow_id_param ? $flow_id_param : null );
 		if ( ! $offer ) {
 			return new WP_Error( 'invalid_offer', __( 'Offer not found', 'flosc' ), array( 'status' => 404 ) );
 		}
@@ -898,7 +891,7 @@ class FLOSC_Checkout_Rest {
 	 * completion, where flosc_checkout_binding_verify() consumes it as proof the
 	 * completion request is this same browser. See §5b for the full rationale.
 	 *
-	 * @param WP_REST_Request $request Request.
+	 * @param WP_REST_Request $request
 	 * @return WP_REST_Response
 	 */
 	public function handle_checkout_binding( $request ) {
@@ -922,12 +915,6 @@ class FLOSC_Checkout_Rest {
 		);
 	}
 
-	/**
-	 * Handle webhook.
-	 *
-	 * @param mixed $request Request.
-	 * @return mixed
-	 */
 	public function handle_webhook( $request ) {
 		$provider_id = $request->get_param( 'provider' );
 		$provider    = $this->flosc->sale()->get_provider( $provider_id );
@@ -966,12 +953,6 @@ class FLOSC_Checkout_Rest {
 		return new WP_REST_Response( $result );
 	}
 
-	/**
-	 * Check access.
-	 *
-	 * @param mixed $request Request.
-	 * @return mixed
-	 */
 	public function check_access( $request ) {
 		if ( ! is_user_logged_in() ) {
 			return new WP_REST_Response(

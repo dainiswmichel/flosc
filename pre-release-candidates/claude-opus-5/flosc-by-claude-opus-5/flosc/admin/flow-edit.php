@@ -2,7 +2,10 @@
 /**
  * FLOSC Flow Edit Page
  *
- * v1.2.2: Create/edit a single flow
+ * Create/edit a single flow
+ *
+ * @package FLOSC
+ * @since 1.2.2
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -32,13 +35,13 @@ if ( ! $flosc_is_new && ! $flosc_flow ) {
 
 // Get current tab.
 $flosc_current_tab = sanitize_key( wp_unslash( $_GET['tab'] ?? 'identity' ) );
-$flosc_tabs        = array(
+$flosc_flow_tabs   = array(
 	'identity' => 'Identity',
 	'ivr'      => 'IVR',
 	'content'  => 'Content',
 );
 if ( $flosc_is_admin && ! $flosc_is_new ) {
-	$flosc_tabs['team'] = 'Team';
+	$flosc_flow_tabs['team'] = 'Team';
 }
 
 // Handle form submission.
@@ -51,7 +54,7 @@ if ( isset( $_POST['flosc_save_flow'] ) && wp_verify_nonce( sanitize_text_field(
 		wp_die( esc_html__( 'You do not have permission to edit this flow.', 'flosc' ) );
 	}
 
-	// Save visitor profile bar settings (global settings) — only if posted from Identity tab.
+	// Save visitor profile bar settings (global settings) — only if posted from Identity tab
 	// v1.8.0: Now writes to unified flosc_profile_bar option. Global options require manage_options.
 	if ( $flosc_is_admin && ( isset( $_POST['visitor_bar_text'] ) || isset( $_POST['visitor_bar_icon'] ) ) ) {
 		$flosc_profile_bar = get_option( 'flosc_profile_bar', array() );
@@ -65,7 +68,7 @@ if ( isset( $_POST['flosc_save_flow'] ) && wp_verify_nonce( sanitize_text_field(
 	}
 
 	// Save visitor menu items — preserve associative keys (signup, login, quiz).
-	// map_deep() sanitizes every leaf value at intake; the loop below shapes.
+	// map_deep() sanitizes every leaf value at intake; the loop below shapes
 	// the structure and applies the final per-field types. Global option: admin only.
 	$flosc_visitor_menu_items_post = ( $flosc_is_admin && isset( $_POST['visitor_menu_items'] ) )
 		? map_deep( wp_unslash( $_POST['visitor_menu_items'] ), 'sanitize_text_field' )
@@ -124,7 +127,7 @@ if ( isset( $_POST['flosc_save_flow'] ) && wp_verify_nonce( sanitize_text_field(
 	}
 }
 
-// Handle team updates (admin only)
+// Handle team updates (admin only).
 if ( isset( $_POST['flosc_update_team'] ) && $flosc_is_admin && ! $flosc_is_new && wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ?? '' ) ), 'flosc_update_team' ) ) {
 	// Sanitize at intake: every submitted value becomes an integer user ID.
 	$flosc_selected_users = isset( $_POST['team_users'] ) ? array_map( 'intval', (array) wp_unslash( $_POST['team_users'] ) ) : array();
@@ -138,16 +141,22 @@ if ( isset( $_POST['flosc_update_team'] ) && $flosc_is_admin && ! $flosc_is_new 
 		$flosc_current_users
 	);
 
+	// Both lists are compared as integers. A strict test between an id stored
+	// as a string by an older save and one read back as an int would revoke
+	// every current member and re-grant every selected one.
+	$flosc_selected_ids = array_map( 'intval', $flosc_selected_users );
+
 	// Revoke from users no longer selected.
 	foreach ( $flosc_current_user_ids as $flosc_uid ) {
-		if ( ! in_array( $flosc_uid, $flosc_selected_users ) ) {
+		if ( ! in_array( (int) $flosc_uid, $flosc_selected_ids, true ) ) {
 			flosc_flows()->revoke_flow_access( $flosc_uid, $flosc_flow_id );
 		}
 	}
 
 	// Grant to newly selected users.
+	$flosc_current_ids = array_map( 'intval', $flosc_current_user_ids );
 	foreach ( $flosc_selected_users as $flosc_uid ) {
-		if ( ! in_array( $flosc_uid, $flosc_current_user_ids ) ) {
+		if ( ! in_array( (int) $flosc_uid, $flosc_current_ids, true ) ) {
 			flosc_flows()->grant_flow_access( $flosc_uid, $flosc_flow_id );
 		}
 	}
@@ -183,7 +192,7 @@ $flosc_categories = get_categories( array( 'hide_empty' => false ) );
 	<?php if ( ! $flosc_is_new ) : ?>
 		<!-- Tabs -->
 		<nav class="nav-tab-wrapper">
-			<?php foreach ( $flosc_tabs as $flosc_tab_id => $flosc_tab_label ) : ?>
+			<?php foreach ( $flosc_flow_tabs as $flosc_tab_id => $flosc_tab_label ) : ?>
 				<a href="<?php echo esc_url( admin_url( 'admin.php?page=flosc-flow-edit&flow_id=' . rawurlencode( $flosc_flow_id ) . '&tab=' . $flosc_tab_id ) ); ?>"
 					class="nav-tab <?php echo esc_attr( $flosc_current_tab === $flosc_tab_id ? 'nav-tab-active' : '' ); ?>">
 					<?php echo esc_html( $flosc_tab_label ); ?>
@@ -417,9 +426,9 @@ $flosc_categories = get_categories( array( 'hide_empty' => false ) );
 								$flosc_legacy       = $flosc_visitor_menu;
 								$flosc_visitor_menu = array();
 								foreach ( $flosc_legacy as $flosc_item ) {
-									$flosc_action = $flosc_item['action'] ?? '';
-									if ( $flosc_action ) {
-										$flosc_visitor_menu[ $flosc_action ] = array(
+									$flosc_item_action = $flosc_item['action'] ?? '';
+									if ( $flosc_item_action ) {
+										$flosc_visitor_menu[ $flosc_item_action ] = array(
 											'label'   => $flosc_item['label'] ?? '',
 											'enabled' => (bool) ( $flosc_item['enabled'] ?? false ),
 										);
@@ -577,7 +586,7 @@ $flosc_categories = get_categories( array( 'hide_empty' => false ) );
 								<tr>
 									<td>
 										<input type="checkbox" name="team_users[]" value="<?php echo esc_attr( $flosc_user->ID ); ?>"
-												<?php checked( in_array( $flosc_user->ID, $flosc_current_team_ids ) ); ?>>
+												<?php checked( in_array( (int) $flosc_user->ID, array_map( 'intval', $flosc_current_team_ids ), true ) ); ?>>
 									</td>
 									<td>
 										<strong><?php echo esc_html( $flosc_user->display_name ); ?></strong><br>

@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-require_once FLOSC_PLUGIN_DIR . 'includes/class-bridge-data-manager.php';
+require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-bridge-data-manager.php';
 
 /**
  * Count users matching a meta_query (admin analytics).

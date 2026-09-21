@@ -1,4 +1,22 @@
 <?php
+/**
+ * Flow runtime configuration — reading and writing a floscFlow's live settings.
+ *
+ * A floscFlow has two representations and they are NOT interchangeable:
+ *
+ *   runtime   a WordPress option named flosc_flow_{stem}, holding
+ *             flow_messages, flow_phases and flow_styles. This is what the
+ *             chat actually reads on every turn.
+ *   portable  a markdown file. Import and export only, never read at runtime.
+ *
+ * Keeping them apart is the point of this file. Runtime message, phase and
+ * style lists must not be stored under ivr_* keys: those belong to the portable
+ * form, and a flow that mixes the two has two sources of truth and no way to
+ * tell which one answered.
+ *
+ * @package FLOSC
+ */
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -224,7 +242,7 @@ function flosc_resolve_flow_runtime( $flow_id = '', $ivr_file = '' ) {
 		$path = flosc_config_file( $ivr_file );
 		if ( $path && file_exists( $path ) ) {
 			if ( ! class_exists( 'FLOSC_IVR_Parser' ) ) {
-				require_once FLOSC_PLUGIN_DIR . 'includes/portability/class-ivr-parser.php';
+				require_once FLOSC_PLUGIN_DIR . 'includes/portability/class-flosc-ivr-parser.php';
 			}
 
 			$parser   = FLOSC_IVR_Parser::flosc_instance();

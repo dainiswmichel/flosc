@@ -12,11 +12,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 flosc_tab_header( '📚', 'Knowledge Base' );
 
 $flosc_current_ivr = (string) ( $GLOBALS['flosc_current_ivr'] ?? '' );
-$flosc_get         = isset( $GLOBALS['flosc_get'] ) && is_array( $GLOBALS['flosc_get'] ) ? $GLOBALS['flosc_get'] : array();
-$flosc_kb_view     = isset( $flosc_get['view'] ) ? sanitize_key( (string) $flosc_get['view'] ) : 'single';
-if ( ! in_array( $flosc_kb_view, array( 'single', 'all' ), true ) ) {
-	$flosc_kb_view = 'single';
-}
+
+/*
+ * PRE-EXISTING DEFECT, not introduced by v78 -- present in every candidate
+ * commit in this repository. $GLOBALS['flosc_get'] is never written anywhere in
+ * the plugin, so the ternary that stood here always took its array() branch and
+ * every read below it was permanently empty: the Knowledge Base tab could not
+ * see ?view, ?kb_edit or ?kb_id at all, which is the whole edit-a-KB route.
+ * Read through the request boundary instead, same as the rest of the tab code.
+ */
+$flosc_kb_view = flosc_nav_param( 'view', array( 'single', 'all' ), 'single' );
 
 $flosc_stem = sanitize_key( pathinfo( $flosc_current_ivr, PATHINFO_FILENAME ) );
 if ( function_exists( 'flosc_knowledge_bases_migrate_legacy_flow' ) ) {
@@ -25,8 +30,8 @@ if ( function_exists( 'flosc_knowledge_bases_migrate_legacy_flow' ) ) {
 
 $flosc_all_kbs  = function_exists( 'flosc_knowledge_bases_get_all' ) ? flosc_knowledge_bases_get_all() : array();
 $flosc_attached = function_exists( 'flosc_flow_knowledge_base_ids' ) ? flosc_flow_knowledge_base_ids( $flosc_stem ) : array();
-$flosc_editing  = isset( $flosc_get['kb_edit'] ) ? sanitize_file_name( (string) $flosc_get['kb_edit'] ) : '';
-$flosc_edit_kb  = isset( $flosc_get['kb_id'] ) ? sanitize_key( (string) $flosc_get['kb_id'] ) : '';
+$flosc_editing  = flosc_nav_param( 'kb_edit', array(), '', 'sanitize_file_name' );
+$flosc_edit_kb  = flosc_nav_param( 'kb_id' );
 
 $flosc_single_url = add_query_arg(
 	array(
@@ -233,7 +238,7 @@ foreach ( $flosc_list_ids as $flosc_kid ) :
 				<td>
 					<a class="button button-small" href="<?php echo esc_url( $flosc_edit ); ?>"><?php echo esc_html__( 'Edit', 'flosc' ); ?></a>
 					<a class="button button-small" href="<?php echo esc_url( $flosc_toggle ); ?>"><?php echo esc_html__( 'Toggle Access', 'flosc' ); ?></a>
-					<a class="button button-small" href="<?php echo esc_url( $flosc_delete ); ?>" data-confirm-message="<?php echo esc_attr( sprintf( /* translators: %s: filename. */ __( 'Delete %s? This cannot be undone.', 'flosc' ), $flosc_kbf ) ); ?>"><?php echo esc_html__( 'Delete', 'flosc' ); ?></a>
+					<a class="button button-small" href="<?php echo esc_url( $flosc_delete ); ?>" data-confirm-message="<?php echo esc_attr( sprintf( /* translators: %s: filename */ __( 'Delete %s? This cannot be undone.', 'flosc' ), $flosc_kbf ) ); ?>"><?php echo esc_html__( 'Delete', 'flosc' ); ?></a>
 				</td>
 			</tr>
 		<?php endforeach; ?>
@@ -252,7 +257,7 @@ foreach ( $flosc_list_ids as $flosc_kid ) :
 		<input type="hidden" name="flosc_return_ivr" value="<?php echo esc_attr( $flosc_current_ivr ); ?>">
 		<input type="hidden" name="kb_id" value="<?php echo esc_attr( $flosc_kid ); ?>">
 		<input type="hidden" name="editing_file" value="<?php echo esc_attr( $flosc_editing ); ?>">
-		<h4><?php echo esc_html( sprintf( /* translators: %s: filename. */ __( 'Editing %s', 'flosc' ), $flosc_editing ) ); ?></h4>
+		<h4><?php echo esc_html( sprintf( /* translators: %s: filename */ __( 'Editing %s', 'flosc' ), $flosc_editing ) ); ?></h4>
 		<textarea name="file_content" rows="24" class="large-text code"><?php echo esc_textarea( (string) $flosc_edit_body ); ?></textarea>
 		<p>
 			<button type="submit" class="button button-primary"><?php echo esc_html__( 'Save file', 'flosc' ); ?></button>

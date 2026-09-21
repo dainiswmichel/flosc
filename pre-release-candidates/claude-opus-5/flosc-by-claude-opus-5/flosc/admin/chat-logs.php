@@ -1,7 +1,7 @@
 <?php
 /**
  * FLOSC Chat Logs Admin Page
- * v1.9.0: Real-time chat log viewer with AJAX polling.
+ * Real-time chat log viewer with AJAX polling.
  * v8.0.0: Session view — conversations grouped, click to expand the thread, the
  *         auto-welcome "[SYSTEM: …]" greetings filtered out, and a per-session
  *         delete. The original flat table lives on under the "All entries" view.
@@ -10,6 +10,9 @@
  * Front-end CSS for the flat table is in assets/css/flosc-admin.css; the small,
  * self-contained session-view styling is scoped inline below so the feature is
  * one file.
+ *
+ * @package FLOSC
+ * @since 1.9.0
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -32,13 +35,13 @@ if ( ! isset( $flosc_get ) || ! is_array( $flosc_get ) ) {
 	$flosc_get = array();
 }
 $flosc_selected_user_id = isset( $flosc_get['flosc_user_id'] ) ? absint( $flosc_get['flosc_user_id'] ) : 0;
-// Scope chat logs to the selected flow. Stored flow_id has no file extension.
+// Scope chat logs to the selected flow. Stored flow_id has no file extension
 // (e.g. "flow_ivr"), while $current_ivr is the filename ("flow_ivr.md").
 $flosc_current_flow_id = '' !== $flosc_current_ivr ? pathinfo( $flosc_current_ivr, PATHINFO_FILENAME ) : '';
 $flosc_total_logs      = $flosc_logger->flosc_get_log_count( $flosc_current_flow_id );
 $flosc_chat_logs_nonce = wp_create_nonce( 'flosc_chat_logs' );
 
-// Two ways to read the same logs: grouped by conversation (default) or the flat.
+// Two ways to read the same logs: grouped by conversation (default) or the flat
 // chronological table. The flat view keeps the live 5s poll + rating widgets.
 $flosc_logview               = ( isset( $flosc_get['logview'] ) && 'flat' === $flosc_get['logview'] ) ? 'flat' : 'sessions';
 $flosc_view_base             = add_query_arg(
@@ -465,7 +468,12 @@ $flosc_sessions_archived_url = add_query_arg(
 		function buildRow(log) {
 			var time = log.timestamp ? log.timestamp.substring(11, 19) : '';
 			var date = log.timestamp ? log.timestamp.substring(0, 10) : '';
-			var user = log.user_id > 0 ? ('User #' + log.user_id) : ('Visitor');
+			// user_tier is the VGM tier the turn was answered at. Rows written
+			// before the column existed have none, and are shown exactly as
+			// they were before: a blank tier is unknown, not a Visitor.
+			var tier = log.user_tier || '';
+			var user = log.user_id > 0 ? ('User #' + log.user_id) : 'Visitor';
+			if (tier) { user += ' \u00b7 ' + tier.charAt(0).toUpperCase() + tier.slice(1); }
 			var source = log.response_source || 'ivr';
 			var provider = log.provider || '';
 			var chain = log.chain_detail || '';
@@ -582,13 +590,19 @@ $flosc_sessions_archived_url = add_query_arg(
 <?php
 /**
  * Render a single chat log table row (flat "All entries" view).
- *
- * @param mixed $log Log.
  */
 function flosc_render_chat_log_row( $log ) {
-	$time  = substr( $log['timestamp'] ?? '', 11, 8 );
-	$date  = substr( $log['timestamp'] ?? '', 0, 10 );
-	$user  = $log['user_id'] > 0 ? ( 'User #' . intval( $log['user_id'] ) ) : 'Visitor';
+	$time = substr( $log['timestamp'] ?? '', 11, 8 );
+	$date = substr( $log['timestamp'] ?? '', 0, 10 );
+	// Same rule as the JS row builder: the tier is appended when the row
+	// recorded one, and a row from before the column keeps the old label.
+	// user_id alone cannot tell a Guest from a Member, which is why the
+	// question "is anyone farming Guest access?" had no column to ask.
+	$user = $log['user_id'] > 0 ? ( 'User #' . intval( $log['user_id'] ) ) : 'Visitor';
+	$tier = sanitize_key( (string) ( $log['user_tier'] ?? '' ) );
+	if ( in_array( $tier, array( 'visitor', 'guest', 'member' ), true ) ) {
+		$user .= ' · ' . ucfirst( $tier );
+	}
 	$phase = esc_html( $log['phase'] ?? '' );
 	$msg   = esc_html( $log['user_message'] ?? '' );
 	$resp  = esc_html( mb_substr( $log['ai_response'] ?? '', 0, 200 ) );
@@ -696,8 +710,6 @@ function flosc_chat_session_allowed_html() {
 /**
  * Format a MySQL timestamp into Michel Date Stamp (UTC).
  * Example: 2026-07m-10d-UTC08h:26m13s
- *
- * @param mixed $timestamp Timestamp.
  */
 function flosc_format_mts_utc( $timestamp ) {
 	$raw = trim( (string) $timestamp );
@@ -717,20 +729,17 @@ function flosc_format_mts_utc( $timestamp ) {
 
 /**
  * Extract one context token from chain_detail.
- *
- * @param mixed $chain_detail Chain detail.
- * @param mixed $key Key.
  */
 function flosc_get_chain_context_value( $chain_detail, $key ) {
 	$chain_detail = (string) $chain_detail;
 	$needle       = $key . ':';
-	if ( '' === $chain_detail || strpos( $chain_detail, $needle ) === false ) {
+	if ( '' === $chain_detail || false === strpos( $chain_detail, $needle ) ) {
 		return '';
 	}
 
 	$parts = array_map( 'trim', explode( '→', $chain_detail ) );
 	foreach ( $parts as $part ) {
-		if ( strpos( $part, $needle ) === 0 ) {
+		if ( 0 === strpos( $part, $needle ) ) {
 			return trim( substr( $part, strlen( $needle ) ) );
 		}
 	}
@@ -758,8 +767,8 @@ function flosc_get_chain_context_value( $chain_detail, $key ) {
  * @return string
  */
 function flosc_render_msg_bubbles( $code, $letter, $n, $content, $who, $time, $rid, $css, $context_url = '' ) {
-	// One stored field = ONE message = ONE bubble, shown verbatim. We do NOT split.
-	// it into sub-bubbles — the chat shows each response as a single message (internal.
+	// One stored field = ONE message = ONE bubble, shown verbatim. We do NOT split
+	// it into sub-bubbles — the chat shows each response as a single message (internal
 	// line breaks and all), so the log must mirror that, not fragment it.
 	$flosc_id = $code . '-' . $letter . '-' . $n;
 	$meta     = '<div class="flosc-msg-meta">';
@@ -772,8 +781,8 @@ function flosc_render_msg_bubbles( $code, $letter, $n, $content, $who, $time, $r
 	$hint            = '';
 	$trimmed_content = trim( (string) $content );
 	if (
-		strncmp( $trimmed_content, '[GUEST ACCOUNT REQUEST SUBMITTED]', 33 ) === 0
-		|| strncmp( $trimmed_content, '[CONTACT FORM SUBMITTED]', 24 ) === 0
+		0 === strncmp( $trimmed_content, '[GUEST ACCOUNT REQUEST SUBMITTED]', 33 )
+		|| 0 === strncmp( $trimmed_content, '[CONTACT FORM SUBMITTED]', 24 )
 	) {
 		$current_ivr        = sanitize_file_name( (string) ( $GLOBALS['flosc_current_ivr'] ?? '' ) );
 		$register_login_url = add_query_arg(
@@ -806,8 +815,6 @@ function flosc_render_msg_bubbles( $code, $letter, $n, $content, $who, $time, $r
  *
  * The auto-welcome "[SYSTEM: …]" rows are skipped so only the real back-and-forth
  * shows. The header carries a Delete control that removes the whole conversation.
- *
- * @param mixed $flosc_s Flosc s.
  */
 function flosc_render_chat_session( $flosc_s ) {
 	$when        = esc_html( flosc_format_mts_utc( (string) ( $flosc_s['last_ts'] ?? '' ) ) );
@@ -819,7 +826,7 @@ function flosc_render_chat_session( $flosc_s ) {
 	$flosc_preview = '';
 	foreach ( ( $flosc_s['rows'] ?? array() ) as $r ) {
 		$um = (string) ( $r['user_message'] ?? '' );
-		if ( '' !== $um && strncmp( $um, '[SYSTEM:', 8 ) !== 0 ) {
+		if ( '' !== $um && 0 !== strncmp( $um, '[SYSTEM:', 8 ) ) {
 			$flosc_preview = mb_substr( $um, 0, 70 );
 			break;
 		}
@@ -857,7 +864,7 @@ function flosc_render_chat_session( $flosc_s ) {
 	$label_raw = (string) ( $flosc_s['label'] ?? '' );
 	$thread    = '<div class="flosc-session-thread">';
 	$shown     = 0;
-	// Per-speaker counters: bot welcome b-001, visitor reply u-001, bot reply b-002….
+	// Per-speaker counters: bot welcome b-001, visitor reply u-001, bot reply b-002…
 	// Admin-joined human lines get their own 'a' counter (a-001…), pale green.
 	$u_seq = 0;
 	$b_seq = 0;
@@ -869,11 +876,26 @@ function flosc_render_chat_session( $flosc_s ) {
 		$t   = flosc_format_mts_utc( (string) ( $r['timestamp'] ?? '' ) );
 		$src = (string) ( $r['response_source'] ?? '' );
 
+		// VGM state change — a divider, not a message. It has no speaker, so it
+		// gets no u-/b-/a- sequence number and does not count as a turn.
+		// +G  account created just now      G  signed in, account already existed
+		// +M  became a member just now      M  signed in, already a member here.
+		if ( 'state_change' === $src ) {
+			$thread .= '<div class="flosc-msg flosc-msg-state" title="row ' . $rid . '">'
+				. '<span class="flosc-msg-state-rule" aria-hidden="true"></span>'
+				. '<span class="flosc-msg-state-label">' . esc_html( trim( $ar ) ) . '</span>'
+				. '<span class="flosc-msg-state-t">' . esc_html( $t ) . '</span>'
+				. '<span class="flosc-msg-state-rule" aria-hidden="true"></span>'
+				. '</div>';
+			++$shown;
+			continue;
+		}
+
 		// Admin-joined human message — pale green, "Name (admin)" (italic), letter 'a'.
 		if ( 'admin' === $src ) {
 			++$a_seq;
 			$aid     = $code . '-a-' . str_pad( (string) $a_seq, 3, '0', STR_PAD_LEFT );
-			$aname   = esc_html( ( $r['provider'] ?? '' ) !== '' ? $r['provider'] : 'Admin' );
+			$aname   = esc_html( '' !== ( $r['provider'] ?? '' ) ? $r['provider'] : 'Admin' );
 			$thread .= '<div class="flosc-msg flosc-msg-admin" data-msg-id="' . esc_attr( $aid ) . '" title="row ' . $rid . '">'
 				. '<div class="flosc-msg-meta"><span class="flosc-msg-t">' . esc_html( $t ) . '</span> '
 				. '<span class="flosc-msg-id">' . esc_html( $aid ) . '</span> '
@@ -887,12 +909,13 @@ function flosc_render_chat_session( $flosc_s ) {
 		// Admin posted AS the bot — renders like a normal assistant message.
 		if ( 'admin_bot' === $src ) {
 			++$b_seq;
-			$thread .= flosc_render_msg_bubbles(
+			$admin_bot_name = trim( (string) ( $r['personality_name'] ?? '' ) );
+			$thread        .= flosc_render_msg_bubbles(
 				$code,
 				'b',
 				str_pad( (string) $b_seq, 3, '0', STR_PAD_LEFT ),
 				$ar,
-				'AI',
+				( '' !== $admin_bot_name ? $admin_bot_name : 'AI' ),
 				$t,
 				$rid,
 				'flosc-msg-ai'
@@ -901,13 +924,26 @@ function flosc_render_chat_session( $flosc_s ) {
 			continue;
 		}
 
-		$is_system = ( strncmp( $um, '[SYSTEM:', 8 ) === 0 ); // the auto-welcome row.
+		// Who actually answered this turn, from the row itself. Bot bubbles used
+		// to be labelled with the literal string 'AI', so a transcript could not
+		// show that the personality changed mid-conversation — the one thing a
+		// switching test needs to read back. Older rows have no name and keep
+		// the old label.
+		$speaker = trim( (string) ( $r['personality_name'] ?? '' ) );
+		if ( '' === $speaker ) {
+			$speaker = 'AI';
+		}
+
+		$is_system = ( 0 === strncmp( $um, '[SYSTEM:', 8 ) ); // the auto-welcome row
 
 		// The visitor's message — hidden only for the auto-welcome's "[SYSTEM:…]" prompt.
 		if ( ! $is_system ) {
 			++$u_seq;
-			$visitor_context_url = flosc_get_chain_context_value( (string) ( $r['chain_detail'] ?? '' ), 'ctx_url' );
-			$thread             .= flosc_render_msg_bubbles(
+			$visitor_context_url = trim( (string) ( $r['page_url'] ?? '' ) );
+			if ( '' === $visitor_context_url ) {
+				$visitor_context_url = flosc_get_chain_context_value( (string) ( $r['chain_detail'] ?? '' ), 'ctx_url' );
+			}
+			$thread .= flosc_render_msg_bubbles(
 				$code,
 				'u',
 				str_pad( (string) $u_seq, 3, '0', STR_PAD_LEFT ),
@@ -920,7 +956,7 @@ function flosc_render_chat_session( $flosc_s ) {
 			);
 		}
 
-		// The bot's message — shown for EVERY row, including the opening welcome the.
+		// The bot's message — shown for EVERY row, including the opening welcome the
 		// visitor actually saw (we just don't echo the internal "[SYSTEM:…]" prompt).
 		++$b_seq;
 		$thread .= flosc_render_msg_bubbles(
@@ -928,7 +964,7 @@ function flosc_render_chat_session( $flosc_s ) {
 			'b',
 			str_pad( (string) $b_seq, 3, '0', STR_PAD_LEFT ),
 			$ar,
-			'AI',
+			$speaker,
 			( $is_system ? $t : '' ),
 			$rid,
 			'flosc-msg-ai'
@@ -940,11 +976,21 @@ function flosc_render_chat_session( $flosc_s ) {
 	}
 	$thread .= '</div>';
 
-	// Admin-join composer — shown when the conversation has a deliverable session id.
-	// (visitors now carry one). Posting drops a pale-green "(admin)" line at the.
+	// Admin-join composer — shown when the conversation has a deliverable session id
+	// (visitors now carry one). Posting drops a pale-green "(admin)" line at the
 	// bottom; the visitor's widget shows it on its next poll.
+	//
+	// A journey-grouped conversation is keyed by its journey id, but delivery
+	// still needs the numeric session id, so read it from deliver_session_id
+	// (which flosc_get_sessions() fills from the newest row that carries one).
+	// For a session-grouped conversation the two are the same value.
+	$flosc_deliver_session = intval( $flosc_s['deliver_session_id'] ?? 0 );
+	if ( $flosc_deliver_session <= 0 && 'session' === ( $flosc_s['by'] ?? '' ) ) {
+		$flosc_deliver_session = intval( $flosc_s['value'] ?? 0 );
+	}
+
 	$composer = '';
-	if ( ( $flosc_s['by'] ?? '' ) === 'session' && intval( $flosc_s['value'] ?? 0 ) > 0 ) {
+	if ( $flosc_deliver_session > 0 ) {
 		$admin_name = wp_get_current_user()->display_name;
 		if ( '' === $admin_name ) {
 			$admin_name = 'Admin';
@@ -968,7 +1014,7 @@ function flosc_render_chat_session( $flosc_s ) {
 			}
 
 			$chain_detail = (string) ( $row['chain_detail'] ?? '' );
-			if ( ! is_array( $latest_context_row ) && strpos( $chain_detail, 'ctx_' ) !== false ) {
+			if ( ! is_array( $latest_context_row ) && false !== strpos( $chain_detail, 'ctx_' ) ) {
 				$latest_context_row = $row;
 			}
 
@@ -988,15 +1034,15 @@ function flosc_render_chat_session( $flosc_s ) {
 				'ref'     => '',
 			);
 			foreach ( $ctx_parts as $part ) {
-				if ( strpos( $part, 'ctx_surface:' ) === 0 ) {
+				if ( 0 === strpos( $part, 'ctx_surface:' ) ) {
 					$ctx['surface'] = trim( substr( $part, strlen( 'ctx_surface:' ) ) );
-				} elseif ( strpos( $part, 'ctx_url:' ) === 0 ) {
+				} elseif ( 0 === strpos( $part, 'ctx_url:' ) ) {
 					$ctx['url'] = trim( substr( $part, strlen( 'ctx_url:' ) ) );
-				} elseif ( strpos( $part, 'ctx_path:' ) === 0 ) {
+				} elseif ( 0 === strpos( $part, 'ctx_path:' ) ) {
 					$ctx['path'] = trim( substr( $part, strlen( 'ctx_path:' ) ) );
-				} elseif ( strpos( $part, 'ctx_title:' ) === 0 ) {
+				} elseif ( 0 === strpos( $part, 'ctx_title:' ) ) {
 					$ctx['title'] = trim( substr( $part, strlen( 'ctx_title:' ) ) );
-				} elseif ( strpos( $part, 'ctx_ref:' ) === 0 ) {
+				} elseif ( 0 === strpos( $part, 'ctx_ref:' ) ) {
 					$ctx['ref'] = trim( substr( $part, strlen( 'ctx_ref:' ) ) );
 				}
 			}
@@ -1066,12 +1112,12 @@ function flosc_render_chat_session( $flosc_s ) {
 				. '<option value="bot">' . esc_html( $bot_name ) . '</option>'
 			. '</select>'
 			. '<input type="text" class="flosc-admin-join-input" placeholder="' . esc_attr( 'Type a message to join the chat…' ) . '">'
-			. '<button type="button" class="button button-small flosc-admin-join-send" data-session="' . esc_attr( $flosc_s['value'] ) . '" data-flow="' . esc_attr( $flosc_s['flow_id'] ?? '' ) . '">Send</button>'
+			. '<button type="button" class="button button-small flosc-admin-join-send" data-session="' . esc_attr( (string) $flosc_deliver_session ) . '" data-flow="' . esc_attr( $flosc_s['flow_id'] ?? '' ) . '">Send</button>'
 			. '</div>';
 
 		$composer .= '<div class="flosc-admin-assign-tokens">'
 			. '<input type="number" class="flosc-admin-token-amount" min="1" step="1" value="" placeholder="Token amount">'
-			. '<button type="button" class="button button-small flosc-admin-assign-send" data-session="' . esc_attr( $flosc_s['value'] ) . '" data-flow="' . esc_attr( $flosc_s['flow_id'] ?? '' ) . '">Assign Tokens</button>'
+			. '<button type="button" class="button button-small flosc-admin-assign-send" data-session="' . esc_attr( (string) $flosc_deliver_session ) . '" data-flow="' . esc_attr( $flosc_s['flow_id'] ?? '' ) . '">Assign Tokens</button>'
 			. '</div>';
 	}
 

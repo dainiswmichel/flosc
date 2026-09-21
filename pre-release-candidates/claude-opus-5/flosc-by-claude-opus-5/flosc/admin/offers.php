@@ -13,10 +13,24 @@
  *       'banner' => ['enabled'=>false],
  *       ...
  *   ]
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
+}
+
+/*
+ * This tab is reached only through the FLOSC menu, which requires
+ * edit_others_posts, and admin/settings.php checks can_access_flow_admin()
+ * before including it. Both of those are true, and neither is visible from
+ * inside this file -- to a reviewer or to a scanner reading it on its own, and
+ * to anything that ever includes it from somewhere new. An included file does
+ * not get to assume its caller gated it.
+ */
+if ( ! current_user_can( 'edit_others_posts' ) ) {
+	wp_die( esc_html__( 'You do not have permission to access this page.', 'flosc' ), 403 );
 }
 
 // v1.2.9: Output tab header.
@@ -103,8 +117,11 @@ function flosc_parse_offer_access_codes_from_post( array $flosc_post ) {
 	if ( '' === $raw ) {
 		return array();
 	}
-	$parts = preg_split( '/[\s,;]+/', $raw ) ?: array();
-	$out   = array();
+	$parts = preg_split( '/[\s,;]+/', $raw );
+	if ( ! $parts ) {
+		$parts = array();
+	}
+	$out = array();
 	foreach ( $parts as $p ) {
 		$c = strtoupper( sanitize_text_field( $p ) );
 		if ( '' !== $c ) {
@@ -116,13 +133,8 @@ function flosc_parse_offer_access_codes_from_post( array $flosc_post ) {
 
 // ============================================
 // SAVE HANDLER — runs at include time (same as delete/toggle handlers below)
-// v1.6.5: Removed dead add_action('init',...) — file loads after init fires.
+// v1.6.5: Removed dead add_action('init',...) — file loads after init fires
 // ============================================
-/**
- * Flosc handle offer save.
- *
- * @return mixed
- */
 function flosc_handle_offer_save() {
 	$flosc_post = wp_unslash( $_POST );
 
@@ -174,6 +186,14 @@ function flosc_handle_offer_save() {
 		$display_formats['card']['enabled'] = true;
 	}
 
+	// The currency is named here rather than inside the array below, because
+	// sanitising an operator-typed value can leave nothing, and a purchase
+	// record with an empty currency is worse than one that says USD.
+	$flosc_offer_currency = strtoupper( sanitize_text_field( $flosc_post['offer_currency'] ?? 'USD' ) );
+	if ( '' === $flosc_offer_currency ) {
+		$flosc_offer_currency = 'USD';
+	}
+
 	$offer_data = array(
 		'id'                    => $flosc_offer_id,
 		'name'                  => sanitize_text_field( $flosc_post['offer_name'] ?? '' ),
@@ -198,7 +218,7 @@ function flosc_handle_offer_save() {
 		),
 		'pricing'               => array(
 			'price'        => floatval( $flosc_post['offer_price'] ?? 0 ),
-			'currency'     => strtoupper( sanitize_text_field( $flosc_post['offer_currency'] ?? 'USD' ) ) ?: 'USD',
+			'currency'     => $flosc_offer_currency,
 			'processor'    => sanitize_key( $flosc_post['offer_processor'] ?? 'paypal' ),
 			'stripe'       => array(
 				'price_id'   => sanitize_text_field( $flosc_post['offer_stripe_price_id'] ?? '' ),
@@ -245,7 +265,7 @@ function flosc_handle_offer_save() {
 		$offer_data['conversions'] = $existing_offer['conversions'] ?? 0;
 		$offer_data['views']       = $existing_offer['views'] ?? 0;
 		$offer_data['created']     = $existing_offer['created'] ?? current_time( 'mysql' );
-		if ( strtolower( (string) ( $existing_offer['status'] ?? '' ) ) !== 'draft' && empty( $flosc_post['offer_active'] ) ) {
+		if ( 'draft' !== strtolower( (string) ( $existing_offer['status'] ?? '' ) ) && empty( $flosc_post['offer_active'] ) ) {
 			$offer_data['status'] = 'inactive';
 		}
 	}
@@ -316,24 +336,46 @@ function flosc_handle_offer_save() {
 	wp_safe_redirect( esc_url_raw( admin_url( 'admin.php?page=flosc-settings&ivr=' . rawurlencode( $ivr ) . '&tab=offers&saved=1' ) ) );
 	exit;
 }
-flosc_handle_offer_save(); // v1.6.5: Execute at include time.
-$flosc_get = FLOSC_Request_Guard::query_params( FLOSC_Request_Guard::admin_query_keys() );
+flosc_handle_offer_save(); // v1.6.5: Execute at include time
+
+/*
+ * There was an unconditional `$flosc_get = wp_unslash($_GET);` here, before any
+ * of the gates below. Every branch that follows re-reads $_GET for itself after
+ * its own checks, and the display block further down does the same, so nothing
+ * used this value -- it only made the file read request input before proving
+ * anything about the request. Removed.
+ */
 
 // Handle delete.
 if ( isset( $_GET['delete_offer'] ) && isset( $_GET['_wpnonce'] ) ) {
+	/*
+	 * Capability and nonce as two separate refusals, matching the toggle_status
+	 * and set_status branches below.
+	 *
+	 * These two tests used to be joined with && inside a single if, and a
+	 * failure fell through to "do nothing" rather than stopping. One combined
+	 * condition governing a destructive action is exactly the shape the plugin
+	 * review warns about: it is harder to read, harder to prove, and it fails
+	 * open into the rest of the page instead of ending the request.
+	 */
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_die( 'Unauthorized action.', 'Insufficient permissions', array( 'response' => 403 ) );
+	}
 	$flosc_get    = wp_unslash( $_GET );
 	$flosc_del_id = sanitize_text_field( $flosc_get['delete_offer'] ?? '' );
-	if ( wp_verify_nonce( sanitize_text_field( $flosc_get['_wpnonce'] ?? '' ), 'flosc_delete_offer_' . $flosc_del_id ) && current_user_can( 'manage_options' ) ) {
-		if ( $flosc_flow_key ) {
-			$flosc_fs  = get_option( $flosc_flow_key, array() );
-			$flosc_all = $flosc_fs['offers'] ?? array();
-			unset( $flosc_all[ $flosc_del_id ] );
-			$flosc_fs['offers'] = $flosc_all;
-			update_option( $flosc_flow_key, $flosc_fs );
-			$flosc_flow_settings = $flosc_fs;
-		}
-		add_settings_error( 'flosc_settings', 'offer_deleted', 'Offer deleted.', 'success' );
+	if ( ! wp_verify_nonce( sanitize_text_field( $flosc_get['_wpnonce'] ?? '' ), 'flosc_delete_offer_' . $flosc_del_id ) ) {
+		wp_die( 'Nonce verification failed.', 'Invalid token', array( 'response' => 403 ) );
 	}
+
+	if ( $flosc_flow_key ) {
+		$flosc_fs  = get_option( $flosc_flow_key, array() );
+		$flosc_all = $flosc_fs['offers'] ?? array();
+		unset( $flosc_all[ $flosc_del_id ] );
+		$flosc_fs['offers'] = $flosc_all;
+		update_option( $flosc_flow_key, $flosc_fs );
+		$flosc_flow_settings = $flosc_fs;
+	}
+	add_settings_error( 'flosc_settings', 'offer_deleted', 'Offer deleted.', 'success' );
 }
 
 // Handle toggle status.
@@ -373,7 +415,7 @@ if ( isset( $_GET['toggle_status'] ) ) {
 	}
 }
 
-// Handle explicit status set (draft|inactive|active)
+// Handle explicit status set (draft|inactive|active).
 if ( isset( $_GET['set_status'] ) && isset( $_GET['status'] ) ) {
 	// Task 6: Verify nonce and capability.
 	if ( ! current_user_can( 'manage_options' ) ) {
@@ -406,7 +448,7 @@ if ( ! empty( $flosc_flow_key ) ) {
 	$flosc_flow_id_for_offers = str_replace( 'flosc_flow_', '', $flosc_flow_key );
 }
 $flosc_offers    = flosc()->sale()->offers()->get_all_offers( $flosc_flow_id_for_offers );
-$flosc_get       = FLOSC_Request_Guard::query_params( FLOSC_Request_Guard::admin_query_keys() );
+$flosc_get       = wp_unslash( $_GET );
 $flosc_expand_id = $flosc_get['edit_offer'] ?? $flosc_get['expand'] ?? null;
 
 // All 7 display formats with metadata.
@@ -462,7 +504,7 @@ $flosc_all_format_meta = array(
 
 <?php
 // ============================================
-// ACTIVE OFFERS SUMMARY.
+// ACTIVE OFFERS SUMMARY
 // ============================================
 $flosc_active_offers = array();
 foreach ( $flosc_offers as $flosc_offer_id => $flosc_offer ) {
@@ -516,8 +558,8 @@ foreach ( $flosc_offers as $flosc_offer_id => $flosc_offer ) {
 			<tr>
 				<td class="pill-source"><?php echo esc_html( $flosc_item['name'] ); ?></td>
 				<td><?php echo esc_html( $flosc_item['formats'] ); ?></td>
-				<td><code><?php echo esc_html( $flosc_item['cta'] ?: '(none)' ); ?></code></td>
-				<td><code><?php echo esc_html( $flosc_item['condition'] ?: 'always' ); ?></code></td>
+				<td><code><?php echo esc_html( '' !== (string) $flosc_item['cta'] ? $flosc_item['cta'] : '(none)' ); ?></code></td>
+				<td><code><?php echo esc_html( '' !== (string) $flosc_item['condition'] ? $flosc_item['condition'] : 'always' ); ?></code></td>
 				<td><a class="button button-small" href="<?php echo esc_url( admin_url( 'admin.php?page=flosc-settings&ivr=' . rawurlencode( $flosc_current_ivr ) . '&tab=offers&edit_offer=' . rawurlencode( $flosc_item['id'] ) ) ); ?>">Edit</a></td>
 				<td>
 					<select data-flosc-action="redirect-on-change">
@@ -568,8 +610,6 @@ foreach ( $flosc_offers as $flosc_offer ) :
 	$flosc_views             = $flosc_offer['views'] ?? 0;
 	$flosc_rate              = $flosc_views > 0 ? round( ( $flosc_conversions / $flosc_views ) * 100, 1 ) : 0;
 	$flosc_safe_id           = esc_attr( $flosc_offer['id'] );
-	$flosc_price             = (float) ( $flosc_offer['price'] ?? 0 );
-	$flosc_original_price    = (float) ( $flosc_offer['original_price'] ?? 0 );
 
 	// Determine enabled formats.
 	$flosc_df           = $flosc_offer['display_formats'] ?? array();
@@ -595,7 +635,7 @@ foreach ( $flosc_offers as $flosc_offer ) :
 		<span class="toggle">▶</span>
 		<span class="offer-name"><?php echo esc_html( $flosc_offer['name'] ); ?></span>
 		<span class="offer-price">
-			<?php if ( ! empty( $flosc_offer['original_price'] ) && $flosc_original_price !== $flosc_price ) : ?>
+			<?php if ( ! empty( $flosc_offer['original_price'] ) && (float) ( $flosc_offer['price'] ?? 0 ) !== (float) $flosc_offer['original_price'] ) : ?>
 				<span class="original">$<?php echo esc_html( number_format( $flosc_offer['original_price'], 2 ) ); ?></span>
 			<?php endif; ?>
 			$<?php echo esc_html( number_format( $flosc_offer['price'] ?? 0, 2 ) ); ?>
@@ -907,16 +947,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <?php
 // ============================================
-// OFFER EDITOR RENDER FUNCTION.
+// OFFER EDITOR RENDER FUNCTION
 // ============================================
-/**
- * Flosc render offer editor v2.
- *
- * @param mixed $flosc_offer Flosc offer.
- * @param mixed $flosc_flow_key Flosc flow key.
- * @param mixed $flosc_current_ivr Flosc current IVR.
- * @param mixed $flosc_all_format_meta Flosc all format meta.
- */
 function flosc_render_offer_editor_v2( $flosc_offer, $flosc_flow_key, $flosc_current_ivr, $flosc_all_format_meta ) {
 	$is_new         = empty( $flosc_offer );
 	$flosc_offer_id = $flosc_offer['id'] ?? 'new';
@@ -1103,7 +1135,8 @@ function flosc_render_offer_editor_v2( $flosc_offer, $flosc_flow_key, $flosc_cur
 						$flosc_coupons = array();
 					}
 					// Always show 3 rows (existing + blanks).
-					while ( count( $flosc_coupons ) < 3 ) {
+					// Grows inside the loop; the count is re-taken each pass.
+					for ( $flosc_coupon_count = count( $flosc_coupons ); $flosc_coupon_count < 3; $flosc_coupon_count = count( $flosc_coupons ) ) {
 						$flosc_coupons[] = array(
 							'code'            => '',
 							'type'            => 'fixed_price',
@@ -1243,7 +1276,7 @@ function flosc_render_offer_editor_v2( $flosc_offer, $flosc_flow_key, $flosc_cur
 								continue;
 							}
 							$flosc_pid = (string) ( $flosc_poff['id'] ?? $flosc_pid );
-							if ( '' === $flosc_pid || $flosc_pid === (string) ( $flosc_offer['id'] ?? '' ) ) {
+							if ( '' === $flosc_pid || (string) ( $flosc_offer['id'] ?? '' ) === $flosc_pid ) {
 								continue;
 							}
 							$flosc_plabel = (string) ( $flosc_poff['name'] ?? $flosc_pid );
@@ -1291,7 +1324,7 @@ function flosc_render_offer_editor_v2( $flosc_offer, $flosc_flow_key, $flosc_cur
 				<th><label>Grants Level</label></th>
 				<td>
 					<?php
-					// v8.1.0: Dropdown from Member Levels registry (single source of truth)
+					// v8.1.0: Dropdown from Member Levels registry (single source of truth).
 					if ( ! isset( $flosc_fs_for_editor ) || ! is_array( $flosc_fs_for_editor ) ) {
 						$flosc_fs_for_editor = get_option( $flosc_flow_key, array() );
 						if ( ! is_array( $flosc_fs_for_editor ) ) {
@@ -1306,7 +1339,10 @@ function flosc_render_offer_editor_v2( $flosc_offer, $flosc_flow_key, $flosc_cur
 						<?php
 						foreach ( $ml_registry as $lk => $lv ) :
 							$slug  = $lv['slug'] ?? $lk;
-							$label = ( $lv['name'] ?? '' ) ?: $slug;
+							$label = ( $lv['name'] ?? '' );
+							if ( ! $label ) {
+								$label = $slug;
+							}
 							if ( empty( $slug ) ) {
 								continue;
 							}
@@ -1344,7 +1380,7 @@ function flosc_render_offer_editor_v2( $flosc_offer, $flosc_flow_key, $flosc_cur
 		$tok_mode       = sanitize_key( (string) ( $tok['mode'] ?? '' ) );
 		$offer_type_raw = strtolower( (string) ( $flosc_offer['type'] ?? 'one_time' ) );
 		if ( '' === $tok_mode ) {
-			$tok_mode = ( strpos( $offer_type_raw, 'sub' ) !== false ) ? 'recurring' : 'onetime';
+			$tok_mode = ( false !== strpos( $offer_type_raw, 'sub' ) ) ? 'recurring' : 'onetime';
 		}
 		if ( ! in_array( $tok_mode, array( 'onetime', 'recurring', 'recurring_yearly' ), true ) ) {
 			$tok_mode = 'onetime';
@@ -1730,7 +1766,7 @@ function flosc_render_offer_editor_v2( $flosc_offer, $flosc_flow_key, $flosc_cur
 					</div>
 					<?php endif; ?>
 					
-					<?php if ( in_array( $fmt_id, array( 'card', 'featured', 'banner' ) ) ) : ?>
+					<?php if ( in_array( $fmt_id, array( 'card', 'featured', 'banner' ), true ) ) : ?>
 					<div class="field-row">
 						<label>Headline override:</label>
 						<input type="text" name="fmt_<?php echo esc_attr( $flosc_fmt_key ); ?>_headline" 

@@ -177,8 +177,8 @@ $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key( pathinfo( $flosc_se
 
 	<div class="card flosc-sso-flow-card">
 		<h3 class="flosc-sso-flow-title">Flow Redirect Context <a href="<?php echo esc_url( $flosc_sso_docs_url ); ?>" class="flosc-sso-docs-link">Docs</a></h3>
-		<p class="flosc-sso-flow-row"><strong>IVR file:</strong> <code><?php echo esc_html( $flosc_selected_ivr ?: '(none selected)' ); ?></code></p>
-		<p class="flosc-sso-flow-row"><strong>flow_id parameter:</strong> <code><?php echo esc_html( $flosc_current_flow_id ?: '(none)' ); ?></code></p>
+		<p class="flosc-sso-flow-row"><strong>IVR file:</strong> <code><?php echo esc_html( $flosc_selected_ivr ? $flosc_selected_ivr : '(none selected)' ); ?></code></p>
+		<p class="flosc-sso-flow-row"><strong>flow_id parameter:</strong> <code><?php echo esc_html( $flosc_current_flow_id ? $flosc_current_flow_id : '(none)' ); ?></code></p>
 		<p class="flosc-sso-flow-row"><strong>Runtime redirect_to (primary):</strong> <code>window.location.href</code> from chat page at click-time</p>
 		<p class="flosc-sso-flow-row"><strong>Configured Post-login redirect URL:</strong>
 			<input type="url"
@@ -260,7 +260,7 @@ $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key( pathinfo( $flosc_se
 					</td>
 				</tr>
 				
-				<?php if ( isset( $flosc_provider['extra_fields'] ) && in_array( 'team_id', $flosc_provider['extra_fields'] ) ) : ?>
+				<?php if ( isset( $flosc_provider['extra_fields'] ) && in_array( 'team_id', $flosc_provider['extra_fields'], true ) ) : ?>
 					<?php
 					$flosc_team_id     = $flosc_flow_settings[ "sso_{$flosc_provider_id}_team_id" ] ?? '';
 					$flosc_key_id      = $flosc_flow_settings[ "sso_{$flosc_provider_id}_key_id" ] ?? '';

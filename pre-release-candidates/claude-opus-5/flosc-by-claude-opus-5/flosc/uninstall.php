@@ -5,6 +5,8 @@
  * Runs only when the plugin is deleted from WordPress admin.
  * Keep this fast and dependency-free so Delete can finish removing plugins/flosc/.
  * Do not load the main plugin, loop all users/posts, or call optional helpers.
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
@@ -117,10 +119,6 @@ if ( function_exists( 'wp_clear_scheduled_hook' ) ) {
 /**
  * Recursively remove a directory under uploads.
  *
- * Every step goes through WP_Filesystem and wp_delete_file(). Raw unlink(),
- * rmdir() and scandir() are not used at all: the plugin guidelines treat the
- * first two as errors, and dirlist() covers the case the third served.
- *
  * @param string $dir Absolute path.
  * @return void
  */
@@ -138,38 +136,37 @@ function flosc_uninstall_rm_rf( $dir ) {
 		// Direct method: uninstall has no form credentials for FTP.
 		WP_Filesystem();
 	}
-	if ( ! is_object( $wp_filesystem ) || ! method_exists( $wp_filesystem, 'rmdir' ) ) {
-		/*
-		 * No filesystem API to work through. Options, meta and the custom
-		 * tables are already gone by this point; the upload tree is left in
-		 * place rather than reaching for raw filesystem calls to remove it.
-		 */
+	if ( is_object( $wp_filesystem ) && method_exists( $wp_filesystem, 'rmdir' ) && $wp_filesystem->rmdir( $dir, true ) ) {
 		return;
 	}
 
-	// The recursive form empties and removes the whole tree in one call.
-	if ( $wp_filesystem->rmdir( $dir, true ) ) {
+	if ( ! is_readable( $dir ) ) {
 		return;
 	}
-
-	/*
-	 * The recursive call fell through — a permission change, or a race during
-	 * a long uninstall. Walk the tree a level at a time instead, still
-	 * entirely through the filesystem API, and remove what is reachable.
-	 */
-	$items = method_exists( $wp_filesystem, 'dirlist' ) ? $wp_filesystem->dirlist( $dir ) : false;
-	if ( is_array( $items ) ) {
-		foreach ( $items as $flosc_name => $flosc_item ) {
-			$path = $dir . '/' . $flosc_name;
-			if ( isset( $flosc_item['type'] ) && 'd' === $flosc_item['type'] ) {
-				flosc_uninstall_rm_rf( $path );
-			} else {
-				wp_delete_file( $path );
-			}
+	$items = scandir( $dir );
+	if ( ! is_array( $items ) ) {
+		return;
+	}
+	foreach ( $items as $item ) {
+		if ( '.' === $item || '..' === $item ) {
+			continue;
+		}
+		$path = $dir . DIRECTORY_SEPARATOR . $item;
+		if ( is_dir( $path ) ) {
+			flosc_uninstall_rm_rf( $path );
+		} elseif ( function_exists( 'wp_delete_file' ) ) {
+			wp_delete_file( $path );
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_is_writable -- this branch runs only because WP_Filesystem is unavailable.
+		} elseif ( is_writable( $path ) ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- uninstall fallback when WP_Filesystem rmdir unavailable
+			unlink( $path );
 		}
 	}
-
-	$wp_filesystem->rmdir( $dir );
+	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_is_writable -- as above: the WP_Filesystem path was already tried and failed.
+	if ( is_dir( $dir ) && is_writable( $dir ) ) {
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- uninstall fallback when WP_Filesystem rmdir unavailable
+		rmdir( $dir );
+	}
 }
 
 // FLOSC data under uploads only (never touch plugins/flosc — core removes that).

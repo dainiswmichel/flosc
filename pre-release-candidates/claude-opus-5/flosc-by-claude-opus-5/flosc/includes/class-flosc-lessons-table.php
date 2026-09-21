@@ -25,11 +25,6 @@ class FLOSC_Lessons_Table {
 	private $db_version        = '1.0.0';
 	private $db_version_option = 'flosc_lessons_table_db_version';
 
-	/**
-	 * Instance.
-	 *
-	 * @return mixed
-	 */
 	public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
@@ -37,9 +32,6 @@ class FLOSC_Lessons_Table {
 		return self::$instance;
 	}
 
-	/**
-	 * Construct.
-	 */
 	private function __construct() {
 		global $wpdb;
 		$this->table_name = $wpdb->prefix . 'flosc_lessons';
@@ -139,9 +131,6 @@ class FLOSC_Lessons_Table {
 		return $count;
 	}
 
-	/**
-	 * Flosc bust lessons cache.
-	 */
 	private function flosc_bust_lessons_cache() {
 		wp_cache_delete( 'count_' . $this->table_name, 'flosc_lessons' );
 		wp_cache_delete( 'all_' . $this->table_name, 'flosc_lessons' );
@@ -218,7 +207,7 @@ class FLOSC_Lessons_Table {
 	/**
 	 * Get a single lesson by lesson_number (e.g. "1", "20.1")
 	 *
-	 * @param string $lesson_number Lesson number.
+	 * @param string $lesson_number
 	 * @return array|null
 	 */
 	public function get_lesson_by_number( $lesson_number ) {
@@ -250,7 +239,7 @@ class FLOSC_Lessons_Table {
 	/**
 	 * Get a single lesson by database ID
 	 *
-	 * @param int $id ID.
+	 * @param int $id
 	 * @return array|null
 	 */
 	public function get_lesson_by_id( $id ) {
@@ -282,7 +271,7 @@ class FLOSC_Lessons_Table {
 	/**
 	 * Get lessons by sound category (e.g. "vowel", "consonant")
 	 *
-	 * @param string $category Category.
+	 * @param string $category
 	 * @return array
 	 */
 	public function get_lessons_by_category( $category ) {

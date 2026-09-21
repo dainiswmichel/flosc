@@ -5,25 +5,52 @@
  * Configures AI provider connections, model tuning, personality,
  * and phase-specific behavior for each FLOSC flow.
  *
- * v1.9.0: Moved all inline styles to assets/css/flosc-admin.css
+ * Moved all inline styles to assets/css/flosc-admin.css
  *         Removed hardcoded default prompts (floscAdmin configures all)
  *         Added provider-aware show/hide for API key sections
  *         Cleaned up unbuilt feature UI
+ *
+ * @package FLOSC
+ * @since 1.9.0
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/*
+ * Identity before input.
+ *
+ * WordPress.org, 14 Sep 2026: "No nonce check found validating input origin on
+ * lines 1-116". Their scanner measures whether a check appears BEFORE the
+ * request is read, not merely whether one exists somewhere in the file. Several
+ * files here verified correctly and verified late, and late did not count -- an
+ * unauthorized request still walked the whole parser before being refused.
+ *
+ * This is the capability the FLOSC menu itself requires. Flow-level access is
+ * still checked further down where the flow is known; this only establishes
+ * that somebody who may administer FLOSC at all is asking.
+ */
+if ( ! current_user_can( 'edit_others_posts' ) ) {
+	wp_die( esc_html__( 'You do not have permission to access this page.', 'flosc' ), 403 );
+}
+
 flosc_tab_header( '🤖', 'AI' );
 
 $flosc_flow_settings = $GLOBALS['flosc_current_settings'] ?? array();
 $flosc_current_ivr   = $GLOBALS['flosc_current_ivr'] ?? '';
-$flosc_get           = isset( $GLOBALS['flosc_get'] ) && is_array( $GLOBALS['flosc_get'] ) ? $GLOBALS['flosc_get'] : FLOSC_Request_Guard::query_params( FLOSC_Request_Guard::admin_query_keys() );
-$flosc_ai_view       = isset( $flosc_get['view'] ) ? sanitize_key( (string) $flosc_get['view'] ) : 'single';
-if ( ! in_array( $flosc_ai_view, array( 'single', 'all' ), true ) ) {
-	$flosc_ai_view = 'single';
-}
+
+/*
+ * Which view of the AI tab to paint.
+ *
+ * A $GLOBALS['flosc_get'] indirection stood here, with a bulk wp_unslash( $_GET )
+ * fallback behind it. Nothing in the plugin ever writes that global, so the
+ * indirection was always false and the fallback was always the real read -- it
+ * pulled in the entire query string to select one of two words. The allowlist
+ * below is the whole rule now, including the default, so no corrective if()
+ * follows it.
+ */
+$flosc_ai_view        = flosc_nav_param( 'view', array( 'single', 'all' ), 'single' );
 $flosc_personality_id = sanitize_key( (string) ( $flosc_flow_settings['personality_library_id'] ?? '' ) );
 if ( '' === $flosc_personality_id && function_exists( 'flosc_personality_library_id_for_flow' ) ) {
 	$flosc_personality_id = flosc_personality_library_id_for_flow(
@@ -128,14 +155,15 @@ if ( (float) $flosc_ai_temperature > 0.5 ) {
 <?php
 /*
 Fail-closed visibility: if this flow has no resolvable personality
-	profile, the chat refuses unpersonified answers — tell the admin why. */
+	profile, the chat refuses unpersonified answers — tell the admin why.
+ */
 $flosc_admin_stem    = sanitize_key( pathinfo( (string) $flosc_current_ivr, PATHINFO_FILENAME ) );
 $flosc_admin_profile = ( '' !== $flosc_admin_stem && function_exists( 'flosc_personality_compiled_profile' ) )
 	? trim( (string) flosc_personality_compiled_profile( $flosc_admin_stem ) )
 	: '';
 if ( '' === $flosc_admin_profile ) :
 	?>
-<div class="notice notice-error flosc-ai-personality-notice">
+<div class="notice notice-error flosc-inline-notice">
 	<p><strong><?php esc_html_e( 'Personality not configured.', 'flosc' ); ?></strong>
 	<?php echo esc_html__( 'This flow refuses AI replies until a personality loads — visitors see a setup notice instead of answers. Attach one above (applies instantly), or write a custom profile and save.', 'flosc' ); ?></p>
 </div>
@@ -2969,8 +2997,27 @@ $flosc_sci_notice = get_transient( 'flosc_site_index_notice_' . get_current_user
 if ( is_array( $flosc_sci_notice ) ) {
 	delete_transient( 'flosc_site_index_notice_' . get_current_user_id() );
 }
-$flosc_sci_action = is_array( $flosc_sci_notice ) ? sanitize_key( (string) ( $flosc_sci_notice['action'] ?? '' ) ) : ( isset( $flosc_get['site_index_action'] ) ? sanitize_key( (string) $flosc_get['site_index_action'] ) : '' );
-$flosc_sci_err    = is_array( $flosc_sci_notice ) ? sanitize_text_field( (string) ( $flosc_sci_notice['message'] ?? '' ) ) : ( isset( $flosc_get['site_index_error'] ) ? sanitize_text_field( rawurldecode( (string) $flosc_get['site_index_error'] ) ) : '' );
+
+/*
+ * The URL is the fallback, and it is the ONLY carrier for nine of the ten
+ * outcomes. FLOSC_Site_Content_Index::redirect_ai() puts site_index_action --
+ * and site_index_error when the action failed -- in the query string on every
+ * path; set_transient() runs on exactly one of them, the successful full
+ * rebuild. So the read below is what makes "Excluded.", "Keywords saved.",
+ * "Could not reindex that post." and the rest appear at all.
+ *
+ * v78 changed $flosc_get's fallback from wp_unslash( $_GET ) to array() and
+ * nothing writes $GLOBALS['flosc_get'], so these two reads silently became
+ * permanently empty and those nine notices stopped rendering. Sourcing them
+ * through the request boundary restores the notice without restoring the bulk
+ * superglobal read.
+ */
+$flosc_sci_action = is_array( $flosc_sci_notice )
+	? sanitize_key( (string) ( $flosc_sci_notice['action'] ?? '' ) )
+	: flosc_nav_param( 'site_index_action' );
+$flosc_sci_err    = is_array( $flosc_sci_notice )
+	? sanitize_text_field( (string) ( $flosc_sci_notice['message'] ?? '' ) )
+	: sanitize_text_field( rawurldecode( flosc_nav_param( 'site_index_error', array(), '', 'sanitize_text_field' ) ) );
 $flosc_sci_msg    = '';
 if ( 'rebuilt' === $flosc_sci_action ) {
 	$flosc_sci_msg = '' !== $flosc_sci_err ? $flosc_sci_err : __( 'Site content index rebuilt.', 'flosc' );
@@ -3355,7 +3402,7 @@ if ( empty( $GLOBALS['flosc_settings_form_closed_early'] ) ) {
 </div>
 </details>
 
-<details class="flosc-ai-acc" id="flosc-kb-section" open>
+<details class="flosc-ai-acc" id="flosc-kb-section">
 <summary class="flosc-ai-acc__summary">
 	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'Knowledge Base', 'flosc' ); ?></span>
 	<span class="flosc-ai-acc__hint"><?php echo esc_html__( 'Attached on the Knowledge Base tab.', 'flosc' ); ?></span>
@@ -3380,7 +3427,7 @@ $flosc_kb_ids     = function_exists( 'flosc_flow_knowledge_base_ids' ) ? flosc_f
 	<?php echo esc_html__( 'Markdown knowledge bases this flow may inject into chat, gated by Visitor / Guest / Member. Upload and attach them on the Knowledge Base tab.', 'flosc' ); ?>
 	<a href="<?php echo esc_url( $flosc_kb_tab_url ); ?>"><?php echo esc_html__( 'Open Knowledge Base tab', 'flosc' ); ?></a>
 </p>
-<?php if ( $flosc_kb_ids === array() ) : ?>
+<?php if ( array() === $flosc_kb_ids ) : ?>
 <p class="description"><?php echo esc_html__( 'None attached to this flow.', 'flosc' ); ?></p>
 <?php else : ?>
 <ul>
@@ -3451,7 +3498,7 @@ if ( '' === $flosc_acc_site ) {
 }
 
 // Content-agnostic templates (placeholders). Expanded for this flow for defaults / Reset.
-$flosc_acc_templates       = array(
+$flosc_acc_templates        = array(
 	'Hello — what is the name of this floscFlow ({flow_name}), and who are you in this chat?',
 	'What does the Title of this floscFlow ({title}) mean?',
 	'What does the Tagline of this floscFlow ({tagline}) mean or convey?',
@@ -3463,17 +3510,20 @@ $flosc_acc_templates       = array(
 	'If someone asks for details you do not have about this floscFlow, what do you do instead of inventing them?',
 	'What is this floscFlow about: title {title}, tagline {tagline}, and how you help? Based on the title and tagline, what is going on here?',
 );
-$flosc_acc_var_map         = array(
+$flosc_acc_title_for_prompt = '' !== $flosc_acc_title
+	? $flosc_acc_title
+	: '(none)';
+$flosc_acc_var_map          = array(
 	'{flow_name}'   => $flosc_acc_flow_name,
-	'{title}'       => $flosc_acc_title,
+	'{title}'       => $flosc_acc_title_for_prompt,
 	'{tagline}'     => $flosc_acc_tagline,
 	'{topic_scope}' => $flosc_acc_scope,
 	'{site_name}'   => $flosc_acc_site,
 );
-$flosc_acc_expand          = static function ( $text, $map ) {
+$flosc_acc_expand           = static function ( $text, $map ) {
 	return str_replace( array_keys( $map ), array_values( $map ), (string) $text );
 };
-$flosc_acc_defaults_filled = array();
+$flosc_acc_defaults_filled  = array();
 foreach ( $flosc_acc_templates as $flosc_acc_t ) {
 	$flosc_acc_defaults_filled[] = $flosc_acc_expand( $flosc_acc_t, $flosc_acc_var_map );
 }
@@ -3481,14 +3531,17 @@ foreach ( $flosc_acc_templates as $flosc_acc_t ) {
 // Saved suite: prefer templates with {placeholders}. Expanded-only legacy saves map back to templates when they match.
 $flosc_acc_saved_raw   = (string) ( $flosc_flow_settings['ai_accuracy_test_questions'] ?? '' );
 $flosc_acc_saved_lines = array();
-if ( trim( $flosc_acc_saved_raw ) !== '' ) {
-	if ( strpos( $flosc_acc_saved_raw, "\n" ) === false && strpos( $flosc_acc_saved_raw, "\r" ) === false ) {
+if ( '' !== trim( $flosc_acc_saved_raw ) ) {
+	if ( false === strpos( $flosc_acc_saved_raw, "\n" ) && false === strpos( $flosc_acc_saved_raw, "\r" ) ) {
 		// Mangled one-line save — use content-agnostic templates.
 		$flosc_acc_saved_lines = $flosc_acc_templates;
 	} else {
+		// preg_split() returns false on a pattern error rather than an empty
+		// list, and array_map() cannot take false.
+		$flosc_acc_split       = preg_split( '/\r\n|\r|\n/', $flosc_acc_saved_raw );
 		$flosc_acc_saved_lines = array_values(
 			array_filter(
-				array_map( 'trim', preg_split( '/\r\n|\r|\n/', $flosc_acc_saved_raw ) ?: array() ),
+				array_map( 'trim', $flosc_acc_split ? $flosc_acc_split : array() ),
 				static function ( $l ) {
 					return '' !== $l;
 				}
@@ -3498,7 +3551,7 @@ if ( trim( $flosc_acc_saved_raw ) !== '' ) {
 }
 // Edit fields hold templates (with {vars}). If a saved line equals the expanded default, show the template instead.
 $flosc_acc_edit_lines = array();
-if ( $flosc_acc_saved_lines === array() ) {
+if ( array() === $flosc_acc_saved_lines ) {
 	$flosc_acc_edit_lines = $flosc_acc_templates;
 } else {
 	foreach ( $flosc_acc_saved_lines as $flosc_acc_si => $flosc_acc_line ) {
@@ -3512,8 +3565,9 @@ if ( $flosc_acc_saved_lines === array() ) {
 	}
 }
 $flosc_acc_row_count = max( count( $flosc_acc_templates ), count( $flosc_acc_edit_lines ) );
-while ( count( $flosc_acc_edit_lines ) < $flosc_acc_row_count ) {
-	$flosc_idx              = count( $flosc_acc_edit_lines );
+// The list grows inside the loop, so the count is re-taken after each pass
+// rather than hoisted -- hoisting it would never terminate.
+for ( $flosc_idx = count( $flosc_acc_edit_lines ); $flosc_idx < $flosc_acc_row_count; $flosc_idx = count( $flosc_acc_edit_lines ) ) {
 	$flosc_acc_edit_lines[] = $flosc_acc_templates[ $flosc_idx ] ?? '';
 }
 $flosc_acc_line_count             = max( 1, count( array_filter( $flosc_acc_edit_lines ) ) );

@@ -1,13 +1,64 @@
 <?php
-if (!defined('ABSPATH')) exit;
 /**
- * Field-level techref: portable flow settings (Settings YAML).
- * Generated 2026-08-11 from inventory + code-derived descriptions.
- * Secrets are listed separately and are never portable.
+ * Documentation, Part 3 reference: every portable flow setting, field by field.
+ *
+ * Compiled 11 Aug 2026 from the settings inventory and the descriptions carried
+ * in the code that reads each field. API keys and other secrets are listed in a
+ * separate section and never travel in a portable flow file.
+ *
+ * Included by admin/documentation.php inside the Documentation tab's markup.
+ * $flosc_selected_ivr (or $flosc_selected_ivr) is read out of the includer's scope
+ * rather than passed in, because an include shares the caller's scope and this
+ * page is only ever reached through that one caller. It names the flow the
+ * "Open admin tab" links should point at. Either name is accepted because the
+ * Documentation tab has used both; absent, the links fall back to no flow and
+ * still resolve to the tab.
+ *
+ * @package FLOSC
  */
 
-$flosc_ref_ivr = isset($flosc_selected_ivr) ? sanitize_file_name((string) $flosc_selected_ivr) : '';
-if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_feature_links = []; }
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+if ( isset( $flosc_selected_ivr ) ) {
+	$flosc_ref_ivr = sanitize_file_name( (string) $flosc_selected_ivr );
+} elseif ( isset( $flosc_selected_ivr ) ) {
+	$flosc_ref_ivr = sanitize_file_name( (string) $flosc_selected_ivr );
+} else {
+	$flosc_ref_ivr = '';
+}
+
+if ( ! function_exists( 'flosc_ref_settings_tab_url' ) ) {
+	/**
+	 * URL of one Settings tab, for the "Open admin tab" link under each field.
+	 *
+	 * Twenty-three of these links appear below. Until v82.9 each one built its
+	 * own URL inside the href attribute, which a formatting pass then split
+	 * across eleven lines -- putting a newline inside the attribute value on
+	 * every link. Naming the work here keeps each link on the line it belongs
+	 * on and keeps the rendered markup clean.
+	 *
+	 * The flow is passed in rather than reached for. $flosc_ref_ivr lives in the
+	 * scope of whatever called this template, which is not the global scope, so
+	 * a function cannot see it -- reaching for it would silently yield an empty
+	 * flow on every link.
+	 *
+	 * @param string $tab Settings tab slug, e.g. 'flow' or 'token-management'.
+	 * @param string $ivr Flow the link should open, or '' for none selected.
+	 * @return string Admin URL for that tab in that flow.
+	 */
+	function flosc_ref_settings_tab_url( $tab, $ivr ) {
+		return add_query_arg(
+			array(
+				'page' => 'flosc-settings',
+				'ivr'  => (string) $ivr,
+				'tab'  => $tab,
+			),
+			admin_url( 'admin.php' )
+		);
+	}
+}
 ?>
 <h1 id="ref-settings-fields">Part 3: Reference — Flow settings fields</h1>
 <p>Each entry is a flow option key. <strong>Portable: yes</strong> means the value may travel in the flow IVR file under <code>## Settings (YAML)</code>. Secrets never appear in the pack.</p>
@@ -28,7 +79,7 @@ if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_fe
 </ul>
 <h2 id="settings-portable-index">Portable fields by tab</h2>
 <h3 id="settings-tab-flow">Flow <code>flow</code></h3>
-<p><a href="<?php echo esc_url( add_query_arg( array( 'page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'flow' ), admin_url( 'admin.php' ) ) ); ?>">Open admin tab</a></p>
+<p><a href="<?php echo esc_url( flosc_ref_settings_tab_url( 'flow', $flosc_ref_ivr ) ); ?>">Open admin tab</a></p>
 <h4 id="field-delete_ivr_file"><code>delete_ivr_file</code></h4>
 <p>Flow option used on the <strong>Flow</strong> admin tab. Stored as <code>delete_ivr_file</code> on the flow settings array.</p>
 <ul>
@@ -90,7 +141,7 @@ if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_fe
 <li><strong>Admin tab:</strong> Flow</li>
 </ul>
 <h3 id="settings-tab-identity">Identity <code>identity</code></h3>
-<p><a href="<?php echo esc_url( add_query_arg( array( 'page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'identity' ), admin_url( 'admin.php' ) ) ); ?>">Open admin tab</a></p>
+<p><a href="<?php echo esc_url( flosc_ref_settings_tab_url( 'identity', $flosc_ref_ivr ) ); ?>">Open admin tab</a></p>
 <h4 id="field-badgeUrl"><code>badgeUrl</code></h4>
 <p>Flow option used on the <strong>Identity</strong> admin tab. Stored as <code>badgeUrl</code> on the flow settings array.</p>
 <ul>
@@ -200,7 +251,7 @@ if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_fe
 <li><strong>Admin tab:</strong> Identity</li>
 </ul>
 <h3 id="settings-tab-ivr-messages">IVR Management <code>ivr-messages</code></h3>
-<p><a href="<?php echo esc_url( add_query_arg( array( 'page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'ivr-messages' ), admin_url( 'admin.php' ) ) ); ?>">Open admin tab</a></p>
+<p><a href="<?php echo esc_url( flosc_ref_settings_tab_url( 'ivr-messages', $flosc_ref_ivr ) ); ?>">Open admin tab</a></p>
 <h4 id="field-flosc_clear_ivr_db"><code>flosc_clear_ivr_db</code></h4>
 <p>Flow option used on the <strong>IVR Management</strong> admin tab. Stored as <code>flosc_clear_ivr_db</code> on the flow settings array.</p>
 <ul>
@@ -394,7 +445,7 @@ if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_fe
 <li><strong>Admin tab:</strong> IVR Management</li>
 </ul>
 <h3 id="settings-tab-autoprompts">AutoPrompts <code>autoprompts</code></h3>
-<p><a href="<?php echo esc_url( add_query_arg( array( 'page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'autoprompts' ), admin_url( 'admin.php' ) ) ); ?>">Open admin tab</a></p>
+<p><a href="<?php echo esc_url( flosc_ref_settings_tab_url( 'autoprompts', $flosc_ref_ivr ) ); ?>">Open admin tab</a></p>
 <h4 id="field-flosc_flow_key"><code>flosc_flow_key</code></h4>
 <p>Flow option used on the <strong>AutoPrompts</strong> admin tab. Stored as <code>flosc_flow_key</code> on the flow settings array.</p>
 <ul>
@@ -414,7 +465,7 @@ if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_fe
 <li><strong>Admin tab:</strong> AutoPrompts</li>
 </ul>
 <h3 id="settings-tab-content">Content <code>content</code></h3>
-<p><a href="<?php echo esc_url( add_query_arg( array( 'page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'content' ), admin_url( 'admin.php' ) ) ); ?>">Open admin tab</a></p>
+<p><a href="<?php echo esc_url( flosc_ref_settings_tab_url( 'content', $flosc_ref_ivr ) ); ?>">Open admin tab</a></p>
 <h4 id="field-content_item_group_category"><code>content_item_group_category</code></h4>
 <p>Flow option used on the <strong>Content</strong> admin tab. Stored as <code>content_item_group_category</code> on the flow settings array.</p>
 <ul>
@@ -542,7 +593,7 @@ if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_fe
 <li><strong>Admin tab:</strong> Content</li>
 </ul>
 <h3 id="settings-tab-trajectories">Trajectories <code>trajectories</code></h3>
-<p><a href="<?php echo esc_url( add_query_arg( array( 'page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'trajectories' ), admin_url( 'admin.php' ) ) ); ?>">Open admin tab</a></p>
+<p><a href="<?php echo esc_url( flosc_ref_settings_tab_url( 'trajectories', $flosc_ref_ivr ) ); ?>">Open admin tab</a></p>
 <h4 id="field-flosc_create_trajectory_post"><code>flosc_create_trajectory_post</code></h4>
 <p>Flow option used on the <strong>Trajectories</strong> admin tab. Stored as <code>flosc_create_trajectory_post</code> on the flow settings array.</p>
 <ul>
@@ -604,7 +655,7 @@ if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_fe
 <li><strong>Admin tab:</strong> Trajectories</li>
 </ul>
 <h3 id="settings-tab-offers">Offers <code>offers</code></h3>
-<p><a href="<?php echo esc_url( add_query_arg( array( 'page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'offers' ), admin_url( 'admin.php' ) ) ); ?>">Open admin tab</a></p>
+<p><a href="<?php echo esc_url( flosc_ref_settings_tab_url( 'offers', $flosc_ref_ivr ) ); ?>">Open admin tab</a></p>
 <h4 id="field-flosc_offer_token_amount"><code>flosc_offer_token_amount</code></h4>
 <p>Flow option used on the <strong>Offers</strong> admin tab. Stored as <code>flosc_offer_token_amount</code> on the flow settings array.</p>
 <ul>
@@ -924,7 +975,7 @@ if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_fe
 <li><strong>Admin tab:</strong> Offers</li>
 </ul>
 <h3 id="settings-tab-login">Register &amp; Login <code>login</code></h3>
-<p><a href="<?php echo esc_url( add_query_arg( array( 'page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'login' ), admin_url( 'admin.php' ) ) ); ?>">Open admin tab</a></p>
+<p><a href="<?php echo esc_url( flosc_ref_settings_tab_url( 'login', $flosc_ref_ivr ) ); ?>">Open admin tab</a></p>
 <h4 id="field-auth_login_modal_button_text"><code>auth_login_modal_button_text</code></h4>
 <p>Flow option used on the <strong>Register &amp; Login</strong> admin tab. Stored as <code>auth_login_modal_button_text</code> on the flow settings array.</p>
 <ul>
@@ -1184,7 +1235,7 @@ if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_fe
 <li><strong>Admin tab:</strong> Register &amp; Login</li>
 </ul>
 <h3 id="settings-tab-style">Style &amp; Nav <code>style</code></h3>
-<p><a href="<?php echo esc_url( add_query_arg( array( 'page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'style' ), admin_url( 'admin.php' ) ) ); ?>">Open admin tab</a></p>
+<p><a href="<?php echo esc_url( flosc_ref_settings_tab_url( 'style', $flosc_ref_ivr ) ); ?>">Open admin tab</a></p>
 <h4 id="field-chat_style_accent"><code>chat_style_accent</code></h4>
 <p>Chat appearance setting (preset, bubble, accent, font, or scale). Stored as <code>chat_style_accent</code>.</p>
 <ul>
@@ -1594,7 +1645,7 @@ if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_fe
 <li><strong>Admin tab:</strong> Style &amp; Nav</li>
 </ul>
 <h3 id="settings-tab-ui">Profile Bar <code>ui</code></h3>
-<p><a href="<?php echo esc_url( add_query_arg( array( 'page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'ui' ), admin_url( 'admin.php' ) ) ); ?>">Open admin tab</a></p>
+<p><a href="<?php echo esc_url( flosc_ref_settings_tab_url( 'ui', $flosc_ref_ivr ) ); ?>">Open admin tab</a></p>
 <h4 id="field-empty_chat_list_message"><code>empty_chat_list_message</code></h4>
 <p>Flow option used on the <strong>Profile Bar</strong> admin tab. Stored as <code>empty_chat_list_message</code> on the flow settings array.</p>
 <ul>
@@ -1788,7 +1839,7 @@ if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_fe
 <li><strong>Admin tab:</strong> Profile Bar</li>
 </ul>
 <h3 id="settings-tab-ai">AI <code>ai</code></h3>
-<p><a href="<?php echo esc_url( add_query_arg( array( 'page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'ai' ), admin_url( 'admin.php' ) ) ); ?>">Open admin tab</a></p>
+<p><a href="<?php echo esc_url( flosc_ref_settings_tab_url( 'ai', $flosc_ref_ivr ) ); ?>">Open admin tab</a></p>
 <h4 id="field-ai_anthropic_model"><code>ai_anthropic_model</code></h4>
 <p>AI / STT configuration for this flow (non-secret fields only in portable packs). Stored as <code>ai_anthropic_model</code>.</p>
 <ul>
@@ -1898,7 +1949,7 @@ if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_fe
 <li><strong>Admin tab:</strong> AI</li>
 </ul>
 <h4 id="field-personality_library_id"><code>personality_library_id</code></h4>
-<p>Install personality library entry id attached to this floscFlow. Empty string means custom fields on this flow only. Exactly one personality per flow — not a chain. Library entries themselves live on the install (All Flows AI API Management → Personalities, plus Personality Designer). YAML carries the id only — never the compiled profile or workshop JSON. Stored as <code>personality_library_id</code>.</p>
+<p>Install personality library entry id attached to this floscFlow. Empty string means custom fields on this flow only. Exactly one personality per flow — not a chain. Library entries themselves live on the install (All Flows AI API Management → Personalities, plus the DA1 AI Personality Builder). YAML carries the id only — never the compiled profile or workshop JSON. Stored as <code>personality_library_id</code>.</p>
 <ul>
 <li><strong>Portable:</strong> yes (Settings YAML) — id only; target install must already have that library entry or use custom fields</li>
 <li><strong>Admin tab:</strong> AI → This flow: AI settings → Attached personality</li>
@@ -2060,7 +2111,7 @@ if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_fe
 <li><strong>Admin tab:</strong> AI</li>
 </ul>
 <h3 id="settings-tab-token-management">Token Management <code>token-management</code></h3>
-<p><a href="<?php echo esc_url( add_query_arg( array( 'page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'token-management' ), admin_url( 'admin.php' ) ) ); ?>">Open admin tab</a></p>
+<p><a href="<?php echo esc_url( flosc_ref_settings_tab_url( 'token-management', $flosc_ref_ivr ) ); ?>">Open admin tab</a></p>
 <h4 id="field-chat_token_enforcement"><code>chat_token_enforcement</code></h4>
 <p>Flow option used on the <strong>Token Management</strong> admin tab. Stored as <code>chat_token_enforcement</code> on the flow settings array.</p>
 <ul>
@@ -2152,7 +2203,7 @@ if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_fe
 <li><strong>Admin tab:</strong> Token Management</li>
 </ul>
 <h3 id="settings-tab-concierge">Concierge <code>concierge</code></h3>
-<p><a href="<?php echo esc_url( add_query_arg( array( 'page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'concierge' ), admin_url( 'admin.php' ) ) ); ?>">Open admin tab</a></p>
+<p><a href="<?php echo esc_url( flosc_ref_settings_tab_url( 'concierge', $flosc_ref_ivr ) ); ?>">Open admin tab</a></p>
 <h4 id="field-flosc_cncrg_content"><code>flosc_cncrg_content</code></h4>
 <p>Flow option used on the <strong>Concierge</strong> admin tab. Stored as <code>flosc_cncrg_content</code> on the flow settings array.</p>
 <ul>
@@ -2220,7 +2271,7 @@ if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_fe
 <li><strong>Admin tab:</strong> Concierge</li>
 </ul>
 <h3 id="settings-tab-quiz">Quiz <code>quiz</code></h3>
-<p><a href="<?php echo esc_url( add_query_arg( array( 'page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'quiz' ), admin_url( 'admin.php' ) ) ); ?>">Open admin tab</a></p>
+<p><a href="<?php echo esc_url( flosc_ref_settings_tab_url( 'quiz', $flosc_ref_ivr ) ); ?>">Open admin tab</a></p>
 <h4 id="field-audio_conversion_provider"><code>audio_conversion_provider</code></h4>
 <p>Flow option used on the <strong>Quiz</strong> admin tab. Stored as <code>audio_conversion_provider</code> on the flow settings array.</p>
 <ul>
@@ -2282,7 +2333,7 @@ if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_fe
 <li><strong>Admin tab:</strong> Quiz</li>
 </ul>
 <h3 id="settings-tab-email">Email <code>email</code></h3>
-<p><a href="<?php echo esc_url( add_query_arg( array( 'page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'email' ), admin_url( 'admin.php' ) ) ); ?>">Open admin tab</a></p>
+<p><a href="<?php echo esc_url( flosc_ref_settings_tab_url( 'email', $flosc_ref_ivr ) ); ?>">Open admin tab</a></p>
 <h4 id="field-email_body"><code>email_body</code></h4>
 <p>Email or contact-form copy/routing setting for this flow. Stored as <code>email_body</code>.</p>
 <ul>
@@ -2362,7 +2413,7 @@ if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_fe
 <li><strong>Admin tab:</strong> Email</li>
 </ul>
 <h3 id="settings-tab-contact-form">Contact Form <code>contact-form</code></h3>
-<p><a href="<?php echo esc_url( add_query_arg( array( 'page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'contact-form' ), admin_url( 'admin.php' ) ) ); ?>">Open admin tab</a></p>
+<p><a href="<?php echo esc_url( flosc_ref_settings_tab_url( 'contact-form', $flosc_ref_ivr ) ); ?>">Open admin tab</a></p>
 <h4 id="field-contact_form_accent_color"><code>contact_form_accent_color</code></h4>
 <p>Email or contact-form copy/routing setting for this flow. Stored as <code>contact_form_accent_color</code>.</p>
 <ul>
@@ -2454,7 +2505,7 @@ if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_fe
 <li><strong>Admin tab:</strong> Contact Form</li>
 </ul>
 <h3 id="settings-tab-payments">Payments <code>payments</code></h3>
-<p><a href="<?php echo esc_url( add_query_arg( array( 'page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'payments' ), admin_url( 'admin.php' ) ) ); ?>">Open admin tab</a></p>
+<p><a href="<?php echo esc_url( flosc_ref_settings_tab_url( 'payments', $flosc_ref_ivr ) ); ?>">Open admin tab</a></p>
 <h4 id="field-manual_payment_instructions"><code>manual_payment_instructions</code></h4>
 <p>Flow option used on the <strong>Payments</strong> admin tab. Stored as <code>manual_payment_instructions</code> on the flow settings array.</p>
 <ul>
@@ -2516,7 +2567,7 @@ if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_fe
 <li><strong>Admin tab:</strong> Payments</li>
 </ul>
 <h3 id="settings-tab-sso">SSO <code>sso</code></h3>
-<p><a href="<?php echo esc_url( add_query_arg( array( 'page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'sso' ), admin_url( 'admin.php' ) ) ); ?>">Open admin tab</a></p>
+<p><a href="<?php echo esc_url( flosc_ref_settings_tab_url( 'sso', $flosc_ref_ivr ) ); ?>">Open admin tab</a></p>
 <h4 id="field-sso_post_login_redirect_url"><code>sso_post_login_redirect_url</code></h4>
 <p>SSO / OAuth flow setting. Client secrets are never portable. Stored as <code>sso_post_login_redirect_url</code>.</p>
 <ul>
@@ -2524,7 +2575,7 @@ if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_fe
 <li><strong>Admin tab:</strong> SSO</li>
 </ul>
 <h3 id="settings-tab-engagement">Engagement <code>engagement</code></h3>
-<p><a href="<?php echo esc_url( add_query_arg( array( 'page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'engagement' ), admin_url( 'admin.php' ) ) ); ?>">Open admin tab</a></p>
+<p><a href="<?php echo esc_url( flosc_ref_settings_tab_url( 'engagement', $flosc_ref_ivr ) ); ?>">Open admin tab</a></p>
 <h4 id="field-engagement_rule_audience"><code>engagement_rule_audience</code></h4>
 <p>Engagement rule or threshold for visitor/guest/member transitions. Stored as <code>engagement_rule_audience</code>.</p>
 <ul>
@@ -2574,7 +2625,7 @@ if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_fe
 <li><strong>Admin tab:</strong> Engagement</li>
 </ul>
 <h3 id="settings-tab-chat-logs">Chat Logs <code>chat-logs</code></h3>
-<p><a href="<?php echo esc_url( add_query_arg( array( 'page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'chat-logs' ), admin_url( 'admin.php' ) ) ); ?>">Open admin tab</a></p>
+<p><a href="<?php echo esc_url( flosc_ref_settings_tab_url( 'chat-logs', $flosc_ref_ivr ) ); ?>">Open admin tab</a></p>
 <h4 id="field-feedback_admin_note"><code>feedback_admin_note</code></h4>
 <p>Flow option used on the <strong>Chat Logs</strong> admin tab. Stored as <code>feedback_admin_note</code> on the flow settings array.</p>
 <ul>
@@ -2648,17 +2699,21 @@ if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_fe
 <li><strong>Admin tab:</strong> Chat Logs</li>
 </ul>
 <h3 id="settings-tab-administration">Administration <code>administration</code></h3>
-<p><a href="<?php echo esc_url( add_query_arg( array( 'page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'administration' ), admin_url( 'admin.php' ) ) ); ?>">Open admin tab</a></p>
-<h4 id="field-flosc_account_plan"><code>flosc_account_plan</code></h4>
-<p>Flow option used on the <strong>Administration</strong> admin tab. Stored as <code>flosc_account_plan</code> on the flow settings array.</p>
+<p><a href="<?php echo esc_url( flosc_ref_settings_tab_url( 'administration', $flosc_ref_ivr ) ); ?>">Open admin tab</a></p>
+<h4 id="field-flosc_public_request_protection"><code>flosc_public_request_protection</code></h4>
+<p>How often one visitor may call the public REST endpoints. Set on the <strong>Administration</strong> admin tab and stored as the WordPress option <code>flosc_public_request_protection</code>.</p>
+<p><strong>Global for this FLOSC installation, not per floscFlow.</strong> The counters are keyed by visitor IP and endpoint, so a per-flow limit would be a promise the storage cannot keep.</p>
 <ul>
-<li><strong>Portable:</strong> yes (Settings YAML)</li>
-<li><strong>Admin tab:</strong> Administration</li>
+<li><code>enabled</code> — <code>'1'</code> or <code>'0'</code>. Off removes every limit below; public endpoints are then bounded only by your host.</li>
+<li><code>anonymous_chat_limit</code> — chat requests an hour from a visitor who is not logged in. Default 60. Chat has its own budget because a conversation costs more requests than reading does.</li>
+<li><code>authenticated_chat_limit</code> — chat requests an hour from a logged-in person. Default 120.</li>
+<li><code>anonymous_ivr_limit</code> — requests an hour to the other public endpoints. Default 120.</li>
+<li><code>metered_compute_limit</code> — requests an hour to endpoints that spend tokens. Default 20.</li>
+<li><code>visitor_compute_limit</code> — the stricter ceiling for metered compute from someone not logged in. Default 5.</li>
+<li><code>retry_after_429</code> — <code>'1'</code> lets the chat client retry once after a refused request. Default <code>'0'</code>: a refusal means the visitor is already at the limit, so retrying spends a second request from the same bucket.</li>
 </ul>
-<h4 id="field-flosc_account_purchases_manual"><code>flosc_account_purchases_manual</code></h4>
-<p>Flow option used on the <strong>Administration</strong> admin tab. Stored as <code>flosc_account_purchases_manual</code> on the flow settings array.</p>
 <ul>
-<li><strong>Portable:</strong> yes (Settings YAML)</li>
+<li><strong>Portable:</strong> no (install-wide, not carried in Settings YAML)</li>
 <li><strong>Admin tab:</strong> Administration</li>
 </ul>
 <h4 id="field-flosc_debug_mode"><code>flosc_debug_mode</code></h4>
@@ -2680,7 +2735,7 @@ if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_fe
 <li><strong>Admin tab:</strong> Administration</li>
 </ul>
 <h3 id="settings-tab-da1">DA1 <code>da1</code></h3>
-<p><a href="<?php echo esc_url( add_query_arg( array( 'page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'da1' ), admin_url( 'admin.php' ) ) ); ?>">Open admin tab</a></p>
+<p><a href="<?php echo esc_url( flosc_ref_settings_tab_url( 'da1', $flosc_ref_ivr ) ); ?>">Open admin tab</a></p>
 <h4 id="field-catalog"><code>catalog</code></h4>
 <p>Flow option used on the <strong>DA1</strong> admin tab. Stored as <code>catalog</code> on the flow settings array.</p>
 <ul>
@@ -2742,7 +2797,7 @@ if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_fe
 <li><strong>Admin tab:</strong> DA1</li>
 </ul>
 <h3 id="settings-tab-settings-save">Settings save <code>settings-save</code></h3>
-<p><a href="<?php echo esc_url( add_query_arg( array( 'page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'content' ), admin_url( 'admin.php' ) ) ); ?>">Open admin tab</a></p>
+<p><a href="<?php echo esc_url( flosc_ref_settings_tab_url( 'content', $flosc_ref_ivr ) ); ?>">Open admin tab</a></p>
 <h4 id="field-avatar_radius"><code>avatar_radius</code></h4>
 <p>Legacy avatar corner radius for profile UI.</p>
 <ul>

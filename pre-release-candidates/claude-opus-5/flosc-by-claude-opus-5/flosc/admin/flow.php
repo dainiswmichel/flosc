@@ -5,18 +5,38 @@
  * Shows live counts and edit links for each of the five FLOSC flow phases.
  * Data sourced from $flosc_flow_settings (via $GLOBALS) and flosc() helper objects.
  *
- * v4.0.0: Initial implementation
+ * Initial implementation
+ *
+ * @package FLOSC
+ * @since 4.0.0
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/*
+ * Identity before input.
+ *
+ * WordPress.org, 14 Sep 2026: "No nonce check found validating input origin on
+ * lines 1-116". Their scanner measures whether a check appears BEFORE the
+ * request is read, not merely whether one exists somewhere in the file. Several
+ * files here verified correctly and verified late, and late did not count -- an
+ * unauthorized request still walked the whole parser before being refused.
+ *
+ * This is the capability the FLOSC menu itself requires. Flow-level access is
+ * still checked further down where the flow is known; this only establishes
+ * that somebody who may administer FLOSC at all is asking.
+ */
+if ( ! current_user_can( 'edit_others_posts' ) ) {
+	wp_die( esc_html__( 'You do not have permission to access this page.', 'flosc' ), 403 );
+}
+
 $flosc_flow_settings           = $GLOBALS['flosc_current_settings'] ?? array();
 $flosc_selected_ivr            = $GLOBALS['flosc_current_ivr'] ?? '';
 $flosc_flow_key                = $GLOBALS['flosc_settings_key'] ?? '';
-$flosc_get                     = FLOSC_Request_Guard::query_params( FLOSC_Request_Guard::admin_query_keys() );
-$flosc_post                    = FLOSC_Request_Guard::admin_post_payload();
+$flosc_get                     = wp_unslash( $_GET );
+$flosc_post                    = wp_unslash( $_POST );
 $flosc_ivr_param               = rawurlencode( $flosc_selected_ivr );
 $flosc_base_url                = admin_url( 'admin.php?page=flosc-settings&ivr=' . $flosc_ivr_param . '&tab=' );
 $flosc_flow_docs_url           = add_query_arg(
@@ -89,7 +109,7 @@ if ( 'all' === $flosc_flow_view ) {
 			'upload_success',
 			'' !== $flosc_up_name
 				? sprintf(
-					/* translators: %s: IVR filename for the new flow. */
+					/* translators: %s: IVR filename for the new flow */
 					esc_html__( 'New flow ready: %s. It is selected in Switch Flow.', 'flosc' ),
 					esc_html( $flosc_up_name )
 				)
@@ -247,7 +267,7 @@ if ( 'all' === $flosc_flow_view ) {
 						'flosc_settings',
 						'import_selected_success',
 						sprintf(
-							/* translators: 1: source file 2: current flow file. */
+							/* translators: 1: source file 2: current flow file */
 							esc_html__( 'Merged %1$s into current flow %2$s (settings merge; secrets unchanged).', 'flosc' ),
 							esc_html( $flosc_source_file ),
 							esc_html( $flosc_work_file )
@@ -259,7 +279,7 @@ if ( 'all' === $flosc_flow_view ) {
 						'flosc_settings',
 						'import_selected_partial',
 						sprintf(
-							/* translators: %s: current flow file. */
+							/* translators: %s: current flow file */
 							esc_html__( 'Merged into current flow, but file sync failed for: %s', 'flosc' ),
 							esc_html( $flosc_work_file )
 						),
@@ -287,7 +307,7 @@ if ( 'all' === $flosc_flow_view ) {
 			add_settings_error( 'flosc_settings', 'delete_blocked_current', 'Cannot delete the currently selected flow file. Switch flow first, then delete if needed.', 'error' );
 		} elseif ( '' === $flosc_delete_path || ! file_exists( $flosc_delete_path ) ) {
 			add_settings_error( 'flosc_settings', 'delete_invalid', 'File not found or not a managed IVR file.', 'error' );
-		} elseif ( wp_delete_file( $flosc_delete_path ) === false ) {
+		} elseif ( false === wp_delete_file( $flosc_delete_path ) ) {
 			add_settings_error( 'flosc_settings', 'delete_failed', 'Failed to delete IVR file. Check file permissions.', 'error' );
 		} else {
 			add_settings_error( 'flosc_settings', 'delete_success', 'Deleted IVR file: ' . $flosc_delete_file, 'success' );
@@ -303,7 +323,7 @@ if ( 'all' === $flosc_flow_view ) {
 		sort( $flosc_files );
 		foreach ( $flosc_files as $flosc_file ) {
 			$flosc_filename = basename( $flosc_file );
-			if ( strpos( $flosc_filename, 'backup' ) === false ) {
+			if ( false === strpos( $flosc_filename, 'backup' ) ) {
 				$flosc_available_ivr_files[] = $flosc_filename;
 			}
 		}
@@ -324,14 +344,14 @@ if ( $flosc_selected_ivr && file_exists( $flosc_ivr_path ) && class_exists( 'FLO
 	$flosc_ivr_data   = $flosc_ivr_parser->flosc_parse( flosc_fs_get_contents( $flosc_ivr_path ) );
 	foreach ( array_keys( $flosc_ivr_pill_counts ) as $flosc_phase ) {
 		foreach ( $flosc_ivr_data['phases'][ $flosc_phase ] ?? array() as $flosc_name ) {
-			if ( ( $flosc_ivr_data['messages'][ $flosc_name ]['type'] ?? '' ) === 'suggested_user_autoprompt' ) {
+			if ( 'suggested_user_autoprompt' === ( $flosc_ivr_data['messages'][ $flosc_name ]['type'] ?? '' ) ) {
 				++$flosc_ivr_pill_counts[ $flosc_phase ];
 			}
 		}
 	}
 }
 
-// F — Freeline: quiz + visitor pills + IVR file.
+// F — Freeline: quiz + visitor pills + IVR file
 // Empty enabled_quizzes = no quiz for this flow. Never invent a sample quiz.
 $flosc_enabled_quizzes = $flosc_flow_settings['enabled_quizzes'] ?? array();
 if ( ! is_array( $flosc_enabled_quizzes ) ) {
@@ -376,7 +396,7 @@ $flosc_draft_count  = 0;
 if ( function_exists( 'flosc' ) && $flosc_flow_id_key ) {
 	$flosc_all_offers = flosc()->sale()->offers()->get_all_offers( $flosc_flow_id_key );
 	foreach ( $flosc_all_offers as $flosc_o ) {
-		if ( ( $flosc_o['status'] ?? 'draft' ) === 'active' ) {
+		if ( 'active' === ( $flosc_o['status'] ?? 'draft' ) ) {
 			++$flosc_active_count;
 		} else {
 			++$flosc_draft_count;
@@ -386,7 +406,7 @@ if ( function_exists( 'flosc' ) && $flosc_flow_id_key ) {
 $flosc_offers_label = $flosc_active_count . ' active' . ( $flosc_draft_count ? ', ' . $flosc_draft_count . ' draft' : '' );
 $flosc_guest_pills  = count( $flosc_flow_settings['autoprompts']['guest'] ?? array() ) + $flosc_ivr_pill_counts['offer'];
 
-// S — Sale: payment providers (read directly from flow_settings — same source as Payments tab)
+// S — Sale: payment providers (read directly from flow_settings — same source as Payments tab).
 $flosc_paypal_cfg  = ! empty( $flosc_flow_settings['paypal_enabled'] )
 				&& ! empty( $flosc_flow_settings['paypal_client_id'] )
 				&& ! empty( $flosc_flow_settings['paypal_secret'] );
@@ -522,7 +542,7 @@ $flosc_prompt_panel_counts    = array(
 	'member'  => $flosc_member_pills,
 );
 $flosc_diagnostics_flow_name  = trim( (string) ( $flosc_flow_settings['identity']['name'] ?? '' ) );
-$flosc_diagnostics_flow_label = '' !== $flosc_diagnostics_flow_name ? $flosc_diagnostics_flow_name : ( $flosc_selected_ivr ?: 'this flow' );
+$flosc_diagnostics_flow_label = '' !== $flosc_diagnostics_flow_name ? $flosc_diagnostics_flow_name : ( $flosc_selected_ivr ? $flosc_selected_ivr : 'this flow' );
 
 $flosc_ai_provider = $flosc_flow_settings['ai_provider'] ?? 'ivr';
 $flosc_ai_labels   = function_exists( 'flosc_chat_provider_labels' )
@@ -540,14 +560,15 @@ if ( 'anthropic' === $flosc_ai_provider ) {
 	$flosc_ai_label .= ' (' . esc_html( $flosc_ai_model ) . ')';
 }
 
-// ── Helper: render a phase card ───────────────────────────────────────────────
 /**
- * Flosc flow card.
+ * Render one phase card on the Flow tab.
  *
- * @param mixed $letter Letter.
- * @param mixed $flosc_phase_name Flosc phase name.
- * @param mixed $subtitle Subtitle.
- * @param mixed $rows Rows.
+ * @param string $letter           Single-letter phase code. Lowercased for the
+ *                                 CSS modifier, so the card is coloured by phase.
+ * @param string $flosc_phase_name Phase name shown as the card heading.
+ * @param string $subtitle         Line under the heading.
+ * @param array  $rows             Rows to list inside the card.
+ * @return void Echoes the card markup.
  */
 function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 	$phase_class = strtolower( $letter );
@@ -584,7 +605,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 			<a href="<?php echo esc_url( $flosc_flow_docs_url ); ?>" class="flosc-docs-link">Docs</a>
 			<a href="<?php echo esc_url( $flosc_flow_docs_inventory_url ); ?>" class="flosc-docs-link">Parameter Docs</a>
 		</h2>
-		<p class="flosc-flow-overview-summary">Read-only snapshot of the five flow phases for <strong><?php echo esc_html( $flosc_selected_ivr ?: 'this flow' ); ?></strong>. Click any Edit button to jump to that tab.</p>
+		<p class="flosc-flow-overview-summary">Read-only snapshot of the five flow phases for <strong><?php echo esc_html( $flosc_selected_ivr ? $flosc_selected_ivr : 'this flow' ); ?></strong>. Click any Edit button to jump to that tab.</p>
 
 		<div class="flosc-view-toggle-row">
 			<a href="<?php echo esc_url( $flosc_flow_single_url ); ?>" class="button <?php echo esc_attr( 'single' === $flosc_flow_view ? 'button-primary' : '' ); ?>"><?php echo esc_html__( 'Overview', 'flosc' ); ?></a>
@@ -639,10 +660,10 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 	);
 
 	// ── O — Offer ─────────────────────────────────────────────────────────────
-	// v8.1.0: Member levels summary.
+	// v8.1.0: Member levels summary
 	$flosc_ml_registry = $flosc_flow_settings['member_levels'] ?? array();
 	$flosc_ml_count    = count( array_filter( $flosc_ml_registry, fn( $l ) => ! empty( $l['slug'] ?? '' ) ) );
-	$flosc_ml_names    = array_map( fn( $l ) => $l['name'] ?: ( $l['slug'] ?? '?' ), array_filter( $flosc_ml_registry, fn( $l ) => ! empty( $l['slug'] ?? '' ) ) );
+	$flosc_ml_names    = array_map( fn( $l ) => $l['name'] ? $l['name'] : ( $l['slug'] ?? '?' ), array_filter( $flosc_ml_registry, fn( $l ) => ! empty( $l['slug'] ?? '' ) ) );
 	$flosc_ml_label    = $flosc_ml_count ? $flosc_ml_count . ' level' . ( 1 !== $flosc_ml_count ? 's' : '' ) . ' (' . implode( ', ', $flosc_ml_names ) . ')' : 'None configured';
 
 	flosc_flow_card(
@@ -656,7 +677,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 				'edit_label' => 'Edit Levels →',
 			),
 			array(
-				'label'      => 'Offers: ' . esc_html( $flosc_offers_label ?: 'None configured' ),
+				'label'      => 'Offers: ' . esc_html( $flosc_offers_label ? $flosc_offers_label : 'None configured' ),
 				'edit_url'   => $flosc_base_url . 'offers',
 				'edit_label' => 'Edit Offers →',
 			),
@@ -743,7 +764,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 	echo '<h3 class="flosc-flow-diagnostics__title">Diagnostics <a href="' . esc_url( $flosc_flow_docs_url ) . '" class="flosc-docs-link">Docs</a></h3>';
 	echo '<p class="flosc-flow-diagnostics__hashes">Open <code>#' . esc_html( $flosc_diagnostics_start ) . '</code> to jump here, and <code>#' . esc_html( $flosc_diagnostics_end ) . '</code> to jump past the diagnostics block.</p>';
 	echo '<ul class="flosc-flow-diagnostics__list">';
-	echo '<li><strong>Flow:</strong> ' . esc_html( $flosc_diagnostics_flow_label ) . ' <code>' . esc_html( $flosc_selected_ivr ?: '(no IVR selected)' ) . '</code></li>';
+	echo '<li><strong>Flow:</strong> ' . esc_html( $flosc_diagnostics_flow_label ) . ' <code>' . esc_html( $flosc_selected_ivr ? $flosc_selected_ivr : '(no IVR selected)' ) . '</code></li>';
 	echo '<li><strong>Prompt panels:</strong> Visitor ' . esc_html( (string) $flosc_prompt_panel_counts['visitor'] ) . ', Guest ' . esc_html( (string) $flosc_prompt_panel_counts['guest'] ) . ', Member ' . esc_html( (string) $flosc_prompt_panel_counts['member'] ) . '</li>';
 	echo '<li><strong>AI:</strong> ' . esc_html( $flosc_ai_label ) . '</li>';
 	echo '<li><strong>Companion:</strong> ' . esc_html( $flosc_companion_mode_label . ' · ' . $flosc_companion_status . ' · ' . $flosc_companion_effective_label ) . '</li>';
@@ -811,7 +832,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 		<div class="flosc-flow-portability-target">
 			<div class="flosc-flow-portability-target__line">
 				<strong><?php echo esc_html__( 'Current flow (Apply target):', 'flosc' ); ?></strong>
-				<code><?php echo esc_html( $flosc_selected_ivr ?: '(none — use Switch Flow)' ); ?></code>
+				<code><?php echo esc_html( $flosc_selected_ivr ? $flosc_selected_ivr : '(none — use Switch Flow)' ); ?></code>
 			</div>
 			<p class="flosc-flow-portability-target__hint">
 				<?php echo esc_html__( 'Switch Flow picks which flow receives Apply. Personality (.md) and data set files can travel together; secrets never come from files.', 'flosc' ); ?>
@@ -1143,7 +1164,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 								<input type="hidden" name="import_ivr_file" value="<?php echo esc_attr( $flosc_ivr_filename ); ?>">
 								<button type="submit" name="flosc_import_selected_ivr_file" class="button button-small" title="<?php echo esc_attr__( 'Merge this file into the current flow', 'flosc' ); ?>"><?php echo esc_html__( 'Apply', 'flosc' ); ?></button>
 							</form>
-							<form method="post" action="<?php echo esc_url( $flosc_flow_all_url ); ?>" class="flosc-ivr-inline-form flosc-ivr-inline-form--warn" data-confirm-message="<?php echo esc_attr( sprintf( /* translators: %s filename. */ __( 'Delete IVR file %s? This cannot be undone from this panel.', 'flosc' ), $flosc_ivr_filename ) ); ?>">
+							<form method="post" action="<?php echo esc_url( $flosc_flow_all_url ); ?>" class="flosc-ivr-inline-form flosc-ivr-inline-form--warn" data-confirm-message="<?php echo esc_attr( sprintf( /* translators: %s filename */ __( 'Delete IVR file %s? This cannot be undone from this panel.', 'flosc' ), $flosc_ivr_filename ) ); ?>">
 								<?php wp_nonce_field( 'flosc_delete_ivr_file' ); ?>
 								<input type="hidden" name="delete_ivr_file" value="<?php echo esc_attr( $flosc_ivr_filename ); ?>">
 								<button type="submit" name="flosc_delete_ivr_file" class="button button-small"><?php echo esc_html__( 'Delete', 'flosc' ); ?></button>
@@ -1161,23 +1182,13 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 	</div>
 
 		<?php
-		// Table delete/duplicate confirm only.
-		ob_start();
-		?>
-	(function () {
-		document.addEventListener('submit', function (event) {
-			var formEl = event.target.closest('form[data-confirm-message]');
-			if (!formEl) {
-				return;
-			}
-			if (!window.confirm(formEl.dataset.confirmMessage || 'Are you sure?')) {
-				event.preventDefault();
-				event.stopPropagation();
-			}
-		});
-	})();
-		<?php
-		wp_add_inline_script( 'flosc-admin', ob_get_clean() );
+		/*
+		* No confirm handler here. assets/js/flosc-admin-events.js is enqueued on
+		* every FLOSC admin screen and already confirms any submit of a
+		* form[data-confirm-message]. A second listener on document does not
+		* override the first — both run, both call confirm(), and the floscAdmin
+		* is asked twice to delete one flow.
+		 */
 		?>
 	<?php endif; ?>
 

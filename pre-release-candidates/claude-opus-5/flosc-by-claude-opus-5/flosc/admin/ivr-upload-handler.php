@@ -153,7 +153,7 @@ if ( ! function_exists( 'flosc_portability_ingest_da1_tsv' ) ) {
 		if ( '' === $tmp_name || ! is_uploaded_file( $tmp_name ) ) {
 			return new WP_Error( 'flosc_da1_tmp', __( 'DA1 upload could not be verified.', 'flosc' ) );
 		}
-		if ( strtolower( (string) pathinfo( $raw_name, PATHINFO_EXTENSION ) ) !== 'tsv' ) {
+		if ( 'tsv' !== strtolower( (string) pathinfo( $raw_name, PATHINFO_EXTENSION ) ) ) {
 			return new WP_Error( 'flosc_da1_ext', __( 'DA1 catalog must be a .tsv file.', 'flosc' ) );
 		}
 		if ( '' === $ivr_file ) {
@@ -163,7 +163,7 @@ if ( ! function_exists( 'flosc_portability_ingest_da1_tsv' ) ) {
 		$body = function_exists( 'flosc_fs_get_contents' )
 			? flosc_fs_get_contents( $tmp_name )
 			: file_get_contents( $tmp_name ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- upload temp after is_uploaded_file.
-		if ( false === $body || trim( (string) $body ) === '' ) {
+		if ( false === $body || '' === trim( (string) $body ) ) {
 			return new WP_Error( 'flosc_da1_empty', __( 'DA1 catalog is empty or unreadable.', 'flosc' ) );
 		}
 		if ( strlen( (string) $body ) > 1024 * 1024 ) {
@@ -338,7 +338,7 @@ if ( ! function_exists( 'flosc_portability_pack_dir' ) ) {
 		if ( ! wp_mkdir_p( $base ) ) {
 			return '';
 		}
-		// Block directory listing. Do not write Deny-from-all here: pack files.
+		// Block directory listing. Do not write Deny-from-all here: pack files
 		// are addressed by URL for admin download of staged WXR.
 		$silence = "<?php\n// Silence is golden.\n";
 		if ( ! file_exists( $base . '/index.php' ) ) {
@@ -405,7 +405,7 @@ if ( ! function_exists( 'flosc_portability_ingest_wxr' ) ) {
 		if ( '' === $tmp_name || ! is_uploaded_file( $tmp_name ) ) {
 			return new WP_Error( 'flosc_wxr_tmp', __( 'WXR upload could not be verified.', 'flosc' ) );
 		}
-		if ( strtolower( (string) pathinfo( $raw_name, PATHINFO_EXTENSION ) ) !== 'xml' ) {
+		if ( 'xml' !== strtolower( (string) pathinfo( $raw_name, PATHINFO_EXTENSION ) ) ) {
 			return new WP_Error( 'flosc_wxr_ext', __( 'WordPress content export must be a .xml (WXR) file.', 'flosc' ) );
 		}
 		if ( '' === $ivr_file ) {
@@ -419,11 +419,11 @@ if ( ! function_exists( 'flosc_portability_ingest_wxr' ) ) {
 		$body = function_exists( 'flosc_fs_get_contents' )
 			? flosc_fs_get_contents( $tmp_name )
 			: file_get_contents( $tmp_name ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- upload temp after is_uploaded_file.
-		if ( false === $body || trim( (string) $body ) === '' ) {
+		if ( false === $body || '' === trim( (string) $body ) ) {
 			return new WP_Error( 'flosc_wxr_empty', __( 'WXR file is empty or unreadable.', 'flosc' ) );
 		}
 		// Light sanity: real WXR / RSS-ish export, not random XML.
-		if ( stripos( (string) $body, '<rss' ) === false && stripos( (string) $body, 'xmlns:wp' ) === false && stripos( (string) $body, '<channel' ) === false ) {
+		if ( false === stripos( (string) $body, '<rss' ) && false === stripos( (string) $body, 'xmlns:wp' ) && false === stripos( (string) $body, '<channel' ) ) {
 			return new WP_Error( 'flosc_wxr_format', __( 'File does not look like a WordPress WXR export.', 'flosc' ) );
 		}
 
@@ -433,7 +433,7 @@ if ( ! function_exists( 'flosc_portability_ingest_wxr' ) ) {
 		}
 
 		$filename = $raw_name;
-		if ( strtolower( (string) pathinfo( $filename, PATHINFO_EXTENSION ) ) !== 'xml' ) {
+		if ( 'xml' !== strtolower( (string) pathinfo( $filename, PATHINFO_EXTENSION ) ) ) {
 			$filename = sanitize_file_name( pathinfo( $filename, PATHINFO_FILENAME ) . '.xml' );
 		}
 		$path = trailingslashit( $pack_dir ) . $filename;
@@ -594,16 +594,41 @@ if ( ! function_exists( 'flosc_portability_run_wxr_import' ) ) {
 			return new WP_Error( 'flosc_wxr_path', __( 'Staged WXR path is not inside this flow’s pack directory.', 'flosc' ) );
 		}
 
-		// The importer runs only when the WordPress Importer plugin is genuinely.
-		// active and has bootstrapped WP_Import through its own normal load path.
-		// Nothing here hardcodes a plugin path or force-loads core import files,
-		// and no unactivated plugin code is included directly.
+		/*
+		 * The WordPress Importer has to be ACTIVE. FLOSC does not load it.
+		 *
+		 * This used to build a path from WP_PLUGIN_DIR and require the file
+		 * directly, to serve an importer that was installed but not activated.
+		 * WordPress.org returned both halves on 13 Sep 2026: the constant-built
+		 * path "can fail if that plugin is installed in a differently named
+		 * directory", and loading another plugin's main file out of band is not
+		 * FLOSC's business. Resolving the path some other way would keep the
+		 * second problem, so the load is gone rather than rewritten.
+		 *
+		 * WP_Import exists whenever the importer is active, which is what the
+		 * error below has always told the floscAdmin to do.
+		 */
 		if ( ! class_exists( 'WP_Import' ) ) {
 			return new WP_Error(
 				'flosc_wxr_importer',
 				__( 'Install and activate the WordPress Importer plugin, then use Import posts again — or use Tools → Import.', 'flosc' )
 			);
 		}
+
+		if ( ! defined( 'WP_LOAD_IMPORTERS' ) ) {
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- WordPress core importer bootstrap flag.
+			define( 'WP_LOAD_IMPORTERS', true );
+		}
+
+		/*
+		 * wp-admin/includes/import.php is NOT loaded here.
+		 *
+		 * It was, under a guard that then used nothing from it. WordPress.org,
+		 * 13 Sep 2026: "Loads the core importer bootstrap even though no
+		 * function from import.php is subsequently used by this import path."
+		 * The guideline permits loading a core file when a function from it is
+		 * used immediately after. Nothing here is, so it is not loaded.
+		 */
 
 		// Suppress HTML output from the importer UI classes.
 		ob_start();
@@ -637,7 +662,15 @@ if ( ! function_exists( 'flosc_admin_handle_portability_pack_actions' ) ) {
 	 * @return void
 	 */
 	function flosc_admin_handle_portability_pack_actions() {
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified via check_admin_referer in this handler
+		/*
+		 * Who, before what. check_admin_referer() runs further down for each
+		 * action, and that is still true -- but nothing established the caller's
+		 * identity before the POST body was read at all.
+		 */
+		if ( ! current_user_can( 'edit_others_posts' ) ) {
+			return;
+		}
+
 		$action = isset( $_POST['flosc_portability_pack_action'] )
 			? sanitize_key( (string) wp_unslash( $_POST['flosc_portability_pack_action'] ) )
 			: '';
@@ -649,15 +682,12 @@ if ( ! function_exists( 'flosc_admin_handle_portability_pack_actions' ) ) {
 		}
 		check_admin_referer( 'flosc_portability_pack' );
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified via check_admin_referer in this handler
-		$ivr_file = isset( $_POST['flosc_working_ivr'] )
+		$ivr_file      = isset( $_POST['flosc_working_ivr'] )
 			? sanitize_file_name( (string) wp_unslash( $_POST['flosc_working_ivr'] ) )
 			: '';
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified via check_admin_referer in this handler
-		$filename = isset( $_POST['flosc_pack_filename'] )
+		$filename      = isset( $_POST['flosc_pack_filename'] )
 			? sanitize_file_name( (string) wp_unslash( $_POST['flosc_pack_filename'] ) )
 			: '';
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified via check_admin_referer in this handler
 		$attachment_id = isset( $_POST['flosc_pack_attachment_id'] )
 			? (int) $_POST['flosc_pack_attachment_id']
 			: 0;
@@ -671,7 +701,7 @@ if ( ! function_exists( 'flosc_admin_handle_portability_pack_actions' ) ) {
 				$notes[]  = $result->get_error_message();
 			} else {
 				$notes[] = sprintf(
-					/* translators: %s: WXR filename. */
+					/* translators: %s: WXR filename */
 					__( 'Imported posts from %s.', 'flosc' ),
 					$filename
 				);
@@ -750,14 +780,12 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 			return;
 		}
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- checked below.
 		// Submit value is create|apply (clicked button) — no JS required.
 		$submit_raw = isset( $_POST['flosc_portability_submit'] )
 			? sanitize_key( (string) wp_unslash( $_POST['flosc_portability_submit'] ) )
 			: '';
 		$is_kit     = in_array( $submit_raw, array( 'create', 'apply' ), true );
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified via check_admin_referer in this handler
-		$is_legacy = ! empty( $_POST['flosc_upload_ivr_file'] ) && ! empty( $_FILES['ivr_file_upload']['name'] );
+		$is_legacy  = ! empty( $_POST['flosc_upload_ivr_file'] ) && ! empty( $_FILES['ivr_file_upload']['name'] );
 
 		if ( ! $is_kit && ! $is_legacy ) {
 			return;
@@ -775,8 +803,8 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 			wp_die( esc_html__( 'You do not have permission to upload flow files.', 'flosc' ) );
 		}
 
-		// The clicked button is the only source of intent, already narrowed to.
-		// create|apply by the $is_kit test above. Create is the safe default: it.
+		// The clicked button is the only source of intent, already narrowed to
+		// create|apply by the $is_kit test above. Create is the safe default: it
 		// writes a new flow rather than merging into an existing one.
 		$action = $submit_raw;
 		if ( ! in_array( $action, array( 'create', 'apply' ), true ) ) {
@@ -852,7 +880,7 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 				'flosc_settings',
 				'upload_failed',
 				sprintf(
-					/* translators: %d: max tsv count. */
+					/* translators: %d: max tsv count */
 					esc_html__( 'At most %d DA1 .tsv catalogs per upload. Use the DA1 tab for bulk catalog work beyond that.', 'flosc' ),
 					(int) $max_tsv
 				),
@@ -865,7 +893,7 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 				'flosc_settings',
 				'upload_failed',
 				sprintf(
-					/* translators: %d: max wxr count. */
+					/* translators: %d: max wxr count */
 					esc_html__( 'At most %d WXR (.xml) files per upload.', 'flosc' ),
 					(int) $max_wxr
 				),
@@ -878,7 +906,7 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 				'flosc_settings',
 				'upload_failed',
 				sprintf(
-					/* translators: %d: max media count. */
+					/* translators: %d: max media count */
 					esc_html__( 'At most %d media files per upload.', 'flosc' ),
 					(int) $max_media
 				),
@@ -891,7 +919,7 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 				'flosc_settings',
 				'upload_failed',
 				sprintf(
-					/* translators: %s: filenames. */
+					/* translators: %s: filenames */
 					esc_html__( 'Unsupported file type(s): %s. Use .md, .tsv, .xml (WXR), or media (PDF/images/audio).', 'flosc' ),
 					esc_html( implode( ', ', $unknown ) )
 				),
@@ -921,11 +949,10 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 		}
 
 		// Current flow for Apply (and for DA1 assign after create).
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified via check_admin_referer in this handler
 		$working_ivr = isset( $_POST['flosc_working_ivr'] )
 			? sanitize_file_name( (string) wp_unslash( $_POST['flosc_working_ivr'] ) )
 			: '';
-		if ( '' === $working_ivr && isset( $_GET['ivr'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- admin GET context after POST kit handler; ivr is sanitized_file_name only
+		if ( '' === $working_ivr && isset( $_GET['ivr'] ) ) {
 			$working_ivr = sanitize_file_name( (string) wp_unslash( $_GET['ivr'] ) );
 		}
 
@@ -979,7 +1006,7 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 						'flosc_settings',
 						'upload_failed',
 						sprintf(
-							/* translators: %s: IVR filename. */
+							/* translators: %s: IVR filename */
 							esc_html__( 'An IVR file named %s already exists. Choose Apply to current flow, or use a different filename.', 'flosc' ),
 							esc_html( $filename )
 						),
@@ -1019,7 +1046,7 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 						'flosc_settings',
 						'upload_failed',
 						sprintf(
-							/* translators: %s: reason. */
+							/* translators: %s: reason */
 							esc_html__( 'Flow creation failed: %s', 'flosc' ),
 							esc_html( (string) ( $import['message'] ?? __( 'Unknown error', 'flosc' ) ) )
 						),
@@ -1037,7 +1064,7 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 				$created_file = $filename;
 				$working_ivr  = $filename;
 				$notes[]      = sprintf(
-					/* translators: %s: filename. */
+					/* translators: %s: filename */
 					__( 'Created new flow from %s.', 'flosc' ),
 					$filename
 				);
@@ -1071,7 +1098,7 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 						'flosc_settings',
 						'upload_failed',
 						sprintf(
-							/* translators: %s: reason. */
+							/* translators: %s: reason */
 							esc_html__( 'Apply failed: %s', 'flosc' ),
 							esc_html( (string) ( $import['message'] ?? __( 'Unknown error', 'flosc' ) ) )
 						),
@@ -1087,7 +1114,7 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 				}
 				$redirect_ivr = $working_ivr;
 				$notes[]      = sprintf(
-					/* translators: %s: current flow filename. */
+					/* translators: %s: current flow filename */
 					__( 'Merged IVR + Settings YAML into current flow %s (other settings kept).', 'flosc' ),
 					$working_ivr
 				);
@@ -1113,7 +1140,7 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 			}
 			if ( $da1_ok > 0 ) {
 				$notes[] = sprintf(
-					/* translators: 1: count 2: flow ivr filename. */
+					/* translators: 1: count 2: flow ivr filename */
 					_n(
 						'%1$d DA1 catalog stored and assigned to %2$s.',
 						'%1$d DA1 catalogs stored and assigned to %2$s.',
@@ -1162,7 +1189,7 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 			}
 			if ( $wxr_ok > 0 ) {
 				$notes[] = sprintf(
-					/* translators: 1: count 2: flow ivr filename. */
+					/* translators: 1: count 2: flow ivr filename */
 					_n(
 						'%1$d WXR file staged for %2$s (Import posts from the pack list below, or Tools → Import).',
 						'%1$d WXR files staged for %2$s (Import posts from the pack list below, or Tools → Import).',
@@ -1198,7 +1225,7 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 			}
 			if ( $media_ok > 0 ) {
 				$notes[] = sprintf(
-					/* translators: 1: count 2: flow ivr filename. */
+					/* translators: 1: count 2: flow ivr filename */
 					_n(
 						'%1$d media file added to the Media Library and listed on %2$s.',
 						'%1$d media files added to the Media Library and listed on %2$s.',
@@ -1233,14 +1260,12 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 			);
 		}
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified via check_admin_referer in this handler
 		$redirect_tab = isset( $_POST['flosc_upload_redirect_tab'] )
 			? sanitize_key( (string) wp_unslash( $_POST['flosc_upload_redirect_tab'] ) )
 			: 'flow';
 		if ( ! in_array( $redirect_tab, array( 'ivr-messages', 'flow', 'da1' ), true ) ) {
 			$redirect_tab = 'flow';
 		}
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified via check_admin_referer in this handler
 		$redirect_view = isset( $_POST['flosc_upload_redirect_view'] )
 			? sanitize_key( (string) wp_unslash( $_POST['flosc_upload_redirect_view'] ) )
 			: 'all';

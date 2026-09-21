@@ -72,7 +72,7 @@ class User_Linker {
 			)
 		);
 
-		// Store tokens (encrypted)
+		// Store tokens (encrypted).
 		$this->store_tokens( $user_id, $provider_id, $token_data );
 
 		// Update linked providers list.
@@ -80,7 +80,7 @@ class User_Linker {
 		if ( ! is_array( $linked_providers ) ) {
 			$linked_providers = array();
 		}
-		if ( ! in_array( $provider_id, $linked_providers ) ) {
+		if ( ! in_array( (string) $provider_id, array_map( 'strval', $linked_providers ), true ) ) {
 			$linked_providers[] = $provider_id;
 			update_user_meta( $user_id, self::META_PREFIX . 'linked_providers', $linked_providers );
 		}
@@ -134,7 +134,7 @@ class User_Linker {
 	 * @return bool
 	 */
 	public function is_provider_linked( $user_id, $provider_id ) {
-		return in_array( $provider_id, $this->get_linked_providers( $user_id ) );
+		return in_array( (string) $provider_id, array_map( 'strval', $this->get_linked_providers( $user_id ) ), true );
 	}
 
 	/**
@@ -154,14 +154,14 @@ class User_Linker {
 		// Generate username from email or name.
 		$username = $this->generate_unique_username( $email, $name );
 
-		// Generate secure random password (user won't need it for SSO)
+		// Generate secure random password (user won't need it for SSO).
 		$password = wp_generate_password( 24, true, true );
 
 		$user_data_wp = array(
 			'user_login'   => $username,
 			'user_email'   => $email,
 			'user_pass'    => $password,
-			'display_name' => $name ?: $username,
+			'display_name' => $name ? $name : $username,
 			'first_name'   => $first_name,
 			'last_name'    => $last_name,
 			'role'         => apply_filters( 'flosc_sso_default_role', 'subscriber' ),
@@ -310,15 +310,17 @@ class User_Linker {
 	 */
 	private function encrypt_tokens( $tokens ) {
 		$json = wp_json_encode( $tokens );
-		$key  = flosc_token_secret(); // §5: dedicated secret, not the auth salt.
+		$key  = flosc_token_secret(); // §5: dedicated secret, not the auth salt
 
 		// Simple XOR encryption with base64 encoding.
-		$encrypted = '';
-		for ( $i = 0; $i < strlen( $json ); $i++ ) {
-			$encrypted .= chr( ord( $json[ $i ] ) ^ ord( $key[ $i % strlen( $key ) ] ) );
+		$encrypted   = '';
+		$json_length = strlen( $json );
+		$key_length  = strlen( $key );
+		for ( $i = 0; $i < $json_length; $i++ ) {
+			$encrypted .= chr( ord( $json[ $i ] ) ^ ord( $key[ $i % $key_length ] ) );
 		}
 
-        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- binary/JWT token encoding, not obfuscation
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- binary/JWT token encoding, not obfuscation
 		return base64_encode( $encrypted );
 	}
 
@@ -329,16 +331,19 @@ class User_Linker {
 	 * @return array Token data
 	 */
 	private function decrypt_tokens( $encrypted ) {
-        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- binary/JWT token decoding, not obfuscation
+		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- binary/JWT token decoding, not obfuscation
 		$encrypted = base64_decode( $encrypted );
-		$key       = flosc_token_secret(); // §5: dedicated secret, not the auth salt.
+		$key       = flosc_token_secret(); // §5: dedicated secret, not the auth salt
 
-		$decrypted = '';
-		for ( $i = 0; $i < strlen( $encrypted ); $i++ ) {
-			$decrypted .= chr( ord( $encrypted[ $i ] ) ^ ord( $key[ $i % strlen( $key ) ] ) );
+		$decrypted        = '';
+		$encrypted_length = strlen( $encrypted );
+		$key_length       = strlen( $key );
+		for ( $i = 0; $i < $encrypted_length; $i++ ) {
+			$decrypted .= chr( ord( $encrypted[ $i ] ) ^ ord( $key[ $i % $key_length ] ) );
 		}
 
-		return json_decode( $decrypted, true ) ?: array();
+		$flosc_value = json_decode( $decrypted, true );
+		return $flosc_value ? $flosc_value : array();
 	}
 
 	/**

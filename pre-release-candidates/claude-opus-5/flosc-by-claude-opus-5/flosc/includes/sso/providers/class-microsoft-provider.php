@@ -71,11 +71,17 @@ class Microsoft_Provider extends SSO_Provider_Base {
 	}
 
 	/**
-	 * Get user info from Microsoft Graph
+	 * Get user info from Microsoft Graph.
+	 *
+	 * Microsoft serves its claims from the Graph /me endpoint, so the token
+	 * response is not consulted here.
 	 *
 	 * @param string $access_token OAuth access token.
-	 * @return array|WP_Error User data or error
-	 * @param array $token_data Token data.
+	 * @param array  $token_data   Full token response. Unused by this provider;
+	 *                             present because OAuth2_Handler passes the same
+	 *                             arguments to every provider, and Apple reads
+	 *                             its id_token and form_post claims from it.
+	 * @return array|WP_Error User data, or WP_Error if the call fails.
 	 */
 	public function get_user_info( $access_token, $token_data = array() ) {
 		$response = wp_remote_get(
@@ -140,7 +146,7 @@ class Microsoft_Provider extends SSO_Provider_Base {
 		$content_type = wp_remote_retrieve_header( $response, 'content-type' );
 
 		if ( $image_data && $content_type ) {
-            // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- binary/JWT token encoding, not obfuscation
+			// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- binary/JWT token encoding, not obfuscation
 			return 'data:' . $content_type . ';base64,' . base64_encode( $image_data );
 		}
 
@@ -158,7 +164,7 @@ class Microsoft_Provider extends SSO_Provider_Base {
 		return array(
 			'provider_id'    => sanitize_text_field( (string) ( $raw_data['id'] ?? '' ) ),
 			'email'          => sanitize_email( (string) ( $raw_data['mail'] ?? $raw_data['userPrincipalName'] ?? '' ) ),
-			'email_verified' => true, // Microsoft verifies emails.
+			'email_verified' => true, // Microsoft verifies email addresses before returning them.
 			'name'           => sanitize_text_field( (string) ( $raw_data['displayName'] ?? '' ) ),
 			'first_name'     => sanitize_text_field( (string) ( $raw_data['givenName'] ?? '' ) ),
 			'last_name'      => sanitize_text_field( (string) ( $raw_data['surname'] ?? '' ) ),

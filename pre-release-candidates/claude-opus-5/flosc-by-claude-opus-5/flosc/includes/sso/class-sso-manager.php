@@ -126,13 +126,13 @@ class SSO_Manager {
 	 */
 	private function register_hooks() {
 		// Avatar filter.
-		add_filter( 'get_avatar_url', array( $this, 'filter_avatar_url' ), 10, 3 );
+		add_filter( 'get_avatar_url', array( $this, 'filter_avatar_url' ), 10, 2 );
 
 		// v1.4.8: FLOSC SSO buttons only appear inside FLOSC flows (chat widget auth modal).
-		// Removed login_form and register_form hooks to prevent interference with.
+		// Removed login_form and register_form hooks to prevent interference with
 		// BuddyBoss or other site-wide login systems.
 
-		// Handle SSO errors on frontend (only on FLOSC pages)
+		// Handle SSO errors on frontend (only on FLOSC pages).
 		add_action( 'wp_loaded', array( $this, 'handle_sso_error_display' ) );
 
 		// Admin settings.
@@ -220,10 +220,9 @@ class SSO_Manager {
 	 *
 	 * @param string $url Current avatar URL.
 	 * @param mixed  $id_or_email User ID or email.
-	 * @param array  $args Avatar arguments.
 	 * @return string
 	 */
-	public function filter_avatar_url( $url, $id_or_email, $args ) {
+	public function filter_avatar_url( $url, $id_or_email ) {
 		// Get user ID.
 		$user_id = null;
 
@@ -353,7 +352,7 @@ class SSO_Manager {
         '
 		);
 
-		// Add click handler script.
+		// Add click handler script
 		// v1.4.6: Use URL-safe separator (handles non-pretty permalinks)
 		// §12: attached via an inline-only script handle instead of a raw <script> tag.
 		wp_register_script( 'flosc-sso', false, array(), FLOSC_VERSION, true );
@@ -382,15 +381,19 @@ class SSO_Manager {
 	/**
 	 * Handle SSO error display on frontend
 	 *
-	 * v8.0.1: Instead of a browser alert(), output a JS variable that flosc-app.js
+	 * Instead of a browser alert(), output a JS variable that flosc-app.js
 	 * picks up on init. This lets the app show the error in-chat and re-show the
 	 * auth modal so the user can try a different login method.
+	 *
+	 * @since 8.0.1
 	 */
 	public function handle_sso_error_display() {
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- The random SSO error token is a short-lived capability used only to consume and display its transient; this is not a form action.
-		$err_raw = isset( $_GET['flosc_sso_error'] ) && is_string( $_GET['flosc_sso_error'] ) ? sanitize_key( wp_unslash( $_GET['flosc_sso_error'] ) ) : '';
+		// Which failure notice to paint after a provider bounced the user back.
+		// Display only: the token selects a translated string from a fixed table
+		// below and never reaches a mutation or a redirect target.
+		$err_raw = flosc_nav_param( 'flosc_sso_error' );
 		if ( '' !== $err_raw ) {
-			$error_token = $err_raw;
+			$error_token = sanitize_key( $err_raw );
 			if ( '' === $error_token ) {
 				return;
 			}
@@ -406,7 +409,7 @@ class SSO_Manager {
 				$error_message = 'Login didn\'t complete. Please try again — if the issue persists, try a different login method or contact support.';
 			}
 
-			// v8.0.1: Set a JS variable instead of alert() so flosc-app.js can.
+			// v8.0.1: Set a JS variable instead of alert() so flosc-app.js can
 			// show the error in-chat and re-present the auth modal.
 			add_action(
 				'wp_footer',
@@ -544,7 +547,6 @@ class SSO_Manager {
 			return '' !== $option_name ? (string) get_option( $option_name, '' ) : '';
 		}
 
-		$value = wp_unslash( $value );
 		if ( '' === $value ) {
 			return '' !== $option_name ? (string) get_option( $option_name, '' ) : '';
 		}
@@ -589,7 +591,7 @@ class SSO_Manager {
 					esc_attr( $field['id'] ),
 					esc_textarea( $flosc_ta_value )
 				);
-				if ( $flosc_is_pem && ! flosc_admin_may_view_secrets() && (string) '' !== $value ) {
+				if ( $flosc_is_pem && ! flosc_admin_may_view_secrets() && '' !== (string) $value ) {
 					echo '<p class="description">' . esc_html__( 'Key is saved. Leave blank to keep the current value.', 'flosc' ) . '</p>';
 				}
 				break;
@@ -599,7 +601,7 @@ class SSO_Manager {
 				$flosc_show_secret = function_exists( 'flosc_admin_secret_input_value' )
 					? flosc_admin_secret_input_value( $value )
 					: ( current_user_can( 'manage_options' ) ? (string) $value : '' );
-				$flosc_has_saved   = ( (string) '' !== $value && ! flosc_admin_may_view_secrets() );
+				$flosc_has_saved   = ( '' !== (string) $value && ! flosc_admin_may_view_secrets() );
 				printf(
 					'<input type="password" id="%s" name="%s" value="%s" class="regular-text" autocomplete="new-password" placeholder="%s" />',
 					esc_attr( $field['id'] ),
@@ -697,13 +699,4 @@ class SSO_Manager {
 			)
 		);
 	}
-}
-
-/**
- * Get SSO Manager instance
- *
- * @return SSO_Manager
- */
-function flosc_sso() {
-	return SSO_Manager::get_instance();
 }

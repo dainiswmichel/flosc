@@ -60,7 +60,7 @@ class FLOSC_Chatpack {
 				. gmdate( 'i', $now ) . 'm'
 				. gmdate( 's', $now ) . 's';
 
-		// 7-char hex suffix: seeded from domain + exact timestamp for global uniqueness.
+		// 7-char hex suffix: seeded from domain + exact timestamp for global uniqueness
 		$seed   = $domain . ':' . $now . ':' . wp_generate_password( 16, false );
 		$suffix = substr( md5( $seed ), 0, 7 );
 
@@ -92,7 +92,7 @@ class FLOSC_Chatpack {
 		// Extract parent fingerprint: last 7 chars of flosc_hash.
 		$parent_fingerprint = substr( $flosc_hash, -7 );
 
-		// MTS: Michel Time Stamp with seconds (session birth time)
+		// MTS: Michel Time Stamp with seconds (session birth time).
 		$now     = time();
 			$mts = gmdate( 'y', $now ) . '_'
 				. gmdate( 'm', $now ) . 'm_'
@@ -101,7 +101,7 @@ class FLOSC_Chatpack {
 				. gmdate( 'i', $now ) . 'm'
 				. gmdate( 's', $now ) . 's';
 
-		// 5-char hex suffix: seeded from user + session + microtime for same-second disambiguation.
+		// 5-char hex suffix: seeded from user + session + microtime for same-second disambiguation
 		$seed   = $user_id . ':' . ( $session_id ?? 0 ) . ':' . microtime( true );
 		$suffix = substr( md5( $seed ), 0, 5 );
 
@@ -115,8 +115,6 @@ class FLOSC_Chatpack {
 	 * @param int $session_id FLOSC session ID.
 	 * @param int $user_id WordPress user ID.
 	 * @return int Number of completed pairs before this message
-	 * @param string $flow_id Flow ID.
-	 * @param string $session_id_raw Session ID raw.
 	 */
 	public static function count_message_pairs( $session_id, $user_id, $flow_id = '', $session_id_raw = '' ) {
 		if ( ! $session_id ) {
@@ -141,17 +139,17 @@ class FLOSC_Chatpack {
 			$user_messages = array_filter(
 				$turns,
 				function ( $msg ) {
-					return ( $msg['role'] ?? '' ) === 'user';
+					return 'user' === ( $msg['role'] ?? '' );
 				}
 			);
 			return count( $user_messages );
 		}
 
-		// Count user messages (each has a paired assistant response)
+		// Count user messages (each has a paired assistant response).
 		$user_messages = array_filter(
 			$session['messages'],
 			function ( $msg ) {
-				return ( $msg['role'] ?? '' ) === 'user';
+				return 'user' === ( $msg['role'] ?? '' );
 			}
 		);
 
@@ -166,8 +164,6 @@ class FLOSC_Chatpack {
 	 * @param int $user_id WordPress user ID.
 	 * @param int $max_messages Maximum messages to return (default 10).
 	 * @return array Messages in [role, content] format for AI API
-	 * @param string $flow_id Flow ID.
-	 * @param string $session_id_raw Session ID raw.
 	 */
 	public static function load_conversation_history( $session_id, $user_id, $max_messages = 10, $flow_id = '', $session_id_raw = '' ) {
 		$session_id   = absint( $session_id );
@@ -177,7 +173,7 @@ class FLOSC_Chatpack {
 		}
 
 		$map_messages = static function ( $messages, $max_messages ) {
-			if ( ! is_array( $messages ) || $messages === array() ) {
+			if ( ! is_array( $messages ) || array() === $messages ) {
 				return array();
 			}
 			return array_slice(
@@ -188,7 +184,7 @@ class FLOSC_Chatpack {
 						? sanitize_key( (string) ( $msg['meta']['source'] ?? '' ) )
 						: '';
 						if ( 'engagement_admin' === $src && '' !== $content
-						&& strpos( $content, '[Admin engagement message]' ) === false ) {
+						&& false === strpos( $content, '[Admin engagement message]' ) ) {
 							$content = '[Admin engagement message] ' . $content;
 						}
 						return array(
@@ -231,10 +227,9 @@ class FLOSC_Chatpack {
 	 * @param int $session_id FLOSC session ID.
 	 * @param int $user_id WordPress user ID.
 	 * @return bool True if no prior messages exist
-	 * @param string $flow_id Flow ID.
 	 */
 	public static function is_first_message( $session_id, $user_id, $flow_id = '' ) {
-		return self::count_message_pairs( $session_id, $user_id, $flow_id ) === 0;
+		return 0 === self::count_message_pairs( $session_id, $user_id, $flow_id );
 	}
 
 	/**
@@ -258,7 +253,7 @@ class FLOSC_Chatpack {
 		$sections[] = self::build_header( $flosc_hash, $session_hash, $pair_number, $flow_id );
 
 		// ── 1. FLOSC IDENTITY ───────────────────────────────
-		$sections[] = self::build_identity_section( (string) $flow_id );
+		$sections[] = self::build_identity_section( (string) $flow_id, false, $eval_context );
 
 		// ── 2. WordPress ENVIRONMENT ────────────────────────
 		$sections[] = self::build_wordpress_section();
@@ -274,7 +269,7 @@ class FLOSC_Chatpack {
 
 		// ── 6. IVR GUIDANCE ─────────────────────────────────
 		if ( $ivr_guidance ) {
-			$sections[] = self::build_ivr_section( $ivr_guidance, $flow_id, $eval_context );
+			$sections[] = self::build_ivr_section( $ivr_guidance );
 		}
 
 		// ── 7. CONVERSATION RULES ───────────────────────────
@@ -302,8 +297,8 @@ class FLOSC_Chatpack {
 		$flosc_hash = self::generate_flosc_hash();
 
 		// Fix 4: Anchor definitions — always present regardless of message number.
-		// These live only in message 1's full chatpack. Conversation history carries.
-		// what was *said*, not what the system prompt *instructed*. By message 2 the.
+		// These live only in message 1's full chatpack. Conversation history carries
+		// what was *said*, not what the system prompt *instructed*. By message 2 the
 		// definitions are gone from authoritative context unless we anchor them here.
 		$anchor_line = 'FLOSC = Freeline, Login, Offer, Sale, Content. (Fixed — never changes.)';
 
@@ -315,14 +310,32 @@ class FLOSC_Chatpack {
 			. $anchor_line;
 
 		// ── FLOW IDENTITY (re-anchored EVERY turn) ──────────
-		// The first message sends the full identity, but follow-ups previously.
-		// dropped it and leaned on conversation history to carry the persona. That.
-		// holds for logged-in users (server-side memory) but NOT for visitors, whose.
-		// browser only replays message TEXT — so by message 2 the persona thinned to.
-		// a generic FLOSC voice, i.e. one flow bleeding into another. The identity.
-		// section is flow-scoped, so re-sending it on every turn keeps each chatbot.
+		// The first message sends the full identity, but follow-ups previously
+		// dropped it and leaned on conversation history to carry the persona. That
+		// holds for logged-in users (server-side memory) but NOT for visitors, whose
+		// browser only replays message TEXT — so by message 2 the persona thinned to
+		// a generic FLOSC voice, i.e. one flow bleeding into another. The identity
+		// section is flow-scoped, so re-sending it on every turn keeps each chatbot
 		// firmly inside its own flow. (Cheap insurance; flow isolation is the point.)
-		$sections[]    = self::build_identity_section( (string) ( $eval_context['flow_id'] ?? '' ) );
+		// The full compiled profile goes on EVERY turn, including this one.
+		//
+		// Sending a short anchor instead saved input tokens and cost the product
+		// its point. Two things broke at once. The character thinned from turn 2
+		// — name, role and traits are a label, not a voice, and Betty stopped
+		// being bubbly the moment the profile stopped arriving. And switching
+		// personality mid-conversation became impossible: the anchor told the
+		// model it was "the same person as the opening turn", so changing the
+		// attached personality changed the name on the bubble and nothing else.
+		// That switch is the demonstration this release is built around.
+		//
+		// Identity can change between any two turns, so it cannot be inferred
+		// from an earlier one. The answer to an expensive profile is a smaller
+		// profile, decided when it is compiled — not a prompt that leaves out
+		// the part that makes the personality a personality. The four shipped
+		// profiles went from ~6.3KB to ~1KB each by moving the sales trajectory
+		// back to the flow section that already sends it, which costs less per
+		// turn than the anchor did and keeps the character.
+		$sections[]    = self::build_identity_section( (string) ( $eval_context['flow_id'] ?? '' ), false, $eval_context );
 		$followup_flow = (string) ( $eval_context['flow_id'] ?? '' );
 		$sections[]    = self::build_user_section( $eval_context );
 		$sections[]    = self::build_flow_section( $phase, $eval_context, $followup_flow );
@@ -332,8 +345,8 @@ class FLOSC_Chatpack {
 		}
 
 		// ── SESSION CONTINUITY (mandatory) ──────────────────
-		// The session ID owns the conversation; the display surface (full page vs.
-		// companion) and any page navigation are just views onto it. Follow-up turns.
+		// The session ID owns the conversation; the display surface (full page vs
+		// companion) and any page navigation are just views onto it. Follow-up turns
 		// previously carried no continuity discipline, so the model re-greeted,
 		// re-introduced itself, and re-asked language every turn. Anchor it here.
 		$sections[] = "**SESSION CONTINUITY (mandatory):**\n"
@@ -347,11 +360,11 @@ class FLOSC_Chatpack {
 		if ( $previous_phase && $previous_phase !== $phase ) {
 			$sections[] = "**PHASE CHANGED:** {$previous_phase} → {$phase}\n"
 				. 'Adjust your behavior to the new phase rules. '
-				. self::get_phase_one_liner( $phase, $eval_context );
+				. self::get_phase_one_liner( $phase );
 		}
 
 		// ── UPDATED USER STATE ──────────────────────────────
-		// Only include state that could have changed mid-conversation.
+		// Only include state that could have changed mid-conversation
 		$state_updates = array();
 
 		// Quiz just taken?
@@ -367,8 +380,15 @@ class FLOSC_Chatpack {
 		}
 
 		// Just purchased?
+		//
+		// What the purchase contains is the flow's to say, never the
+		// framework's. v4 removed "full access to all content" from the phase
+		// list in build_flow_section(); this line said the same thing on the
+		// turn straight after a purchase and was missed. A Member of a flow
+		// selling one PDF bought that PDF — FLOSC has no idea what any
+		// membership includes, and a model told otherwise will promise it.
 		if ( ! empty( $eval_context['first_message_after_purchase'] ) ) {
-			$state_updates[] = 'User just purchased — now a member with full access';
+			$state_updates[] = "User just completed a purchase in this flow — they are now a Member. What that grants is whatever this flow's own content and offers say; do not describe it in wider terms.";
 		}
 
 		if ( ! empty( $state_updates ) ) {
@@ -377,14 +397,14 @@ class FLOSC_Chatpack {
 
 		// ── IVR GUIDANCE ────────────────────────────────────
 		if ( $ivr_guidance ) {
-			$sections[] = self::build_ivr_section( $ivr_guidance, null, $eval_context );
+			$sections[] = self::build_ivr_section( $ivr_guidance );
 		}
 
 		// ── PAGE CONTEXT (must ride EVERY turn) ─────────────
-		// Page awareness + on-demand page body previously lived only in the rules.
-		// section, which build_full_chatpack() sends on message #1 only. Visitors chat.
-		// first and ask "what is this?" several turns in, so follow-ups lost the page.
-		// entirely. Re-anchoring it here keeps the bot aware of the current page on.
+		// Page awareness + on-demand page body previously lived only in the rules
+		// section, which build_full_chatpack() sends on message #1 only. Visitors chat
+		// first and ask "what is this?" several turns in, so follow-ups lost the page
+		// entirely. Re-anchoring it here keeps the bot aware of the current page on
 		// every turn, for visitors, guests, and members alike.
 		$page_context_section = self::build_page_context_section( $eval_context );
 		if ( '' !== $page_context_section ) {
@@ -404,7 +424,7 @@ class FLOSC_Chatpack {
 	 *     asked about the page (server sets browsing_page_content for that turn only).
 	 * COMPANION MODE POLICY is appended when the surface is the docked companion.
 	 *
-	 * @param array $eval_context Eval context.
+	 * @param array $eval_context
 	 * @return string Section text, or '' when there is no page context to add.
 	 */
 	private static function build_page_context_section( $eval_context ) {
@@ -470,20 +490,16 @@ class FLOSC_Chatpack {
 	}
 
 	// ─────────────────────────────────────────────────────────
-	// SECTION BUILDERS — each builds one piece of the chatpack.
+	// SECTION BUILDERS — each builds one piece of the chatpack
 	// ─────────────────────────────────────────────────────────
 
 	/**
 	 * Chatpack header with installation + session tracking metadata.
 	 *
 	 * @since 1.9.4: Added flosc_hash (installation ID)
-	 * @param mixed $flosc_hash Flosc hash.
-	 * @param mixed $session_hash Session hash.
-	 * @param mixed $pair_number Pair number.
-	 * @param int $flow_id Flow ID.
 	 */
 	private static function build_header( $flosc_hash, $session_hash, $pair_number, $flow_id ) {
-		$flow_name = $flow_id ?: 'default';
+		$flow_name = $flow_id ? $flow_id : 'default';
 
 		return "## FLOSC CHATPACK v1\n"
 			. "FLOSC-HASH: {$flosc_hash}\n"
@@ -497,9 +513,11 @@ class FLOSC_Chatpack {
 	 * Section 1: FLOSC Identity — what FLOSC is, product info, AI persona.
 	 * Reads from floscAdmin-configurable settings.
 	 *
-	 * @param string $flow_id Flow ID.
+	 * @param string $flow_id       Flow stem.
+	 * @param bool   $compact       True on follow-ups: name/role/scope only, not the compiled profile.
+	 * @param array  $eval_context  Backend-authoritative turn context (user_id, flow_id).
 	 */
-	private static function build_identity_section( $flow_id = '' ) {
+	private static function build_identity_section( $flow_id = '', $compact = false, $eval_context = array() ) {
 		$flow_id = ( null !== $flow_id && '' !== $flow_id ) ? $flow_id : null;
 		// Fix 12: Library attach (one personality) or flow bag / legacy keys.
 		$res               = function_exists( 'flosc_personality_library_resolve_field' ) ? 'flosc_personality_library_resolve_field' : null;
@@ -521,9 +539,80 @@ class FLOSC_Chatpack {
 		$ai_referral_links = $res ? call_user_func( $res, 'ai_off_topic_links', '', $flow_id ) : flosc_get_setting( 'ai_off_topic_links', '', $flow_id );
 		$ai_base_prompt    = $res ? call_user_func( $res, 'ai_base_prompt', '', $flow_id ) : flosc_get_setting( 'ai_base_prompt', '', $flow_id );
 		$site_url          = function_exists( 'get_bloginfo' ) ? get_bloginfo( 'url' ) : '';
+		$public_title      = function_exists( 'flosc_flow_public_title' )
+			? flosc_flow_public_title( $flow_id )
+			: '';
+		$public_tagline    = function_exists( 'flosc_flow_public_tagline' )
+			? flosc_flow_public_tagline( $flow_id )
+			: '';
 		$compiled_profile  = function_exists( 'flosc_personality_compiled_profile' )
 			? flosc_personality_compiled_profile( $flow_id )
 			: trim( (string) $ai_base_prompt );
+
+		// Expand only the request copy and only when the profile uses a token.
+		// User, page, quiz, and session values come from the context FLOSC has
+		// already built for this turn; this path performs no second user lookup.
+		$profile_tokens = function_exists( 'flosc_personality_variable_tokens' )
+			? flosc_personality_variable_tokens( $compiled_profile )
+			: array();
+		if ( ! empty( $profile_tokens ) && function_exists( 'flosc_personality_expand_variables' ) ) {
+			$flow_variables   = function_exists( 'flosc_personality_flow_variable_context' )
+				? flosc_personality_flow_variable_context(
+					$flow_id,
+					array(
+						'site_url'         => $site_url,
+						'public_title'     => $public_title,
+						'tagline'          => $public_tagline,
+						'topic_scope'      => $ai_topic_scope,
+						'personality_name' => $ai_name,
+						'personality_role' => $ai_role,
+					),
+					$profile_tokens
+				)
+				: array();
+			$turn_variables   = function_exists( 'flosc_personality_turn_variable_context' )
+				? flosc_personality_turn_variable_context( $eval_context )
+				: array();
+			$compiled_profile = flosc_personality_expand_variables( $compiled_profile, array_merge( $flow_variables, $turn_variables ) );
+		}
+
+		$personalization = self::build_user_sticky_section( $eval_context );
+		if ( '' !== $compiled_profile && '' !== $personalization ) {
+			$compiled_profile = self::insert_user_personalization( $compiled_profile, $personalization );
+		}
+
+		if ( $compact ) {
+			// No claim about an earlier turn: the attached personality may have
+			// been changed since, and asserting continuity would tell the model
+			// to keep being whoever it was before the switch.
+			$section  = "## 1. IDENTITY\n\n";
+			$section .= "You are {$ai_name}";
+			if ( $ai_role ) {
+				$section .= " — {$ai_role}";
+			}
+			$section .= ".\n";
+			if ( $ai_traits ) {
+				$section .= "Traits: {$ai_traits}\n";
+			}
+			if ( $ai_mission ) {
+				$section .= "Mission: {$ai_mission}\n";
+			}
+			if ( '' !== $public_title ) {
+				$section .= "Public title: {$public_title}\n";
+			} else {
+				$section .= "Public title: (none).\n";
+			}
+			if ( '' !== $public_tagline ) {
+				$section .= "Tagline: {$public_tagline}\n";
+			}
+			if ( $ai_topic_scope ) {
+				$section .= "Topic scope: {$ai_topic_scope}\n";
+			}
+			$section .= "FLOSC = Freeline, Login, Offer, Sale, Content only when the software is the topic.\n";
+			$section .= "Never invent facts, titles, URLs, prices, or contact details. Never guess.\n";
+			$section .= "Do not leak contact details until name + email + phone are in this conversation.\n";
+			return $section;
+		}
 
 		$section = "## 1. IDENTITY\n\n";
 
@@ -570,6 +659,16 @@ class FLOSC_Chatpack {
 			. 'FLOSC is a white-label WordPress plugin framework. '
 			. "That is ALL it stands for. Do not expand it any other way.\n\n";
 
+		if ( '' !== $public_title ) {
+			$section .= "**Public title:** {$public_title}\n";
+		} else {
+			$section .= "**Public title:** (none).\n";
+		}
+		if ( '' !== $public_tagline ) {
+			$section .= "**Tagline:** {$public_tagline}\n";
+		}
+		$section .= "\n";
+
 		if ( '' === $compiled_profile ) {
 			$section .= "\n**Your Persona:**\n";
 			$section .= "- Name: {$ai_name}\n";
@@ -609,7 +708,7 @@ class FLOSC_Chatpack {
 		$section .= '5. HONESTY OVER INVENTION: Prefer verified context over speculation. '
 			. "A scoped, in-character answer is better than a plausible fabrication.\n";
 
-		// Fix 12: Topic scope + referral links (admin-configured, were collected but never injected)
+		// Fix 12: Topic scope + referral links (admin-configured, were collected but never injected).
 		if ( $ai_topic_scope ) {
 			$section .= "\n**Topic Scope:** " . $ai_topic_scope . "\n";
 		}
@@ -628,11 +727,50 @@ class FLOSC_Chatpack {
 	}
 
 	/**
+	 * Administrator-authored guidance for this authenticated user only.
+	 *
+	 * @param array $eval_context Backend-authoritative evaluation context.
+	 * @return string
+	 */
+	private static function build_user_sticky_section( $eval_context ) {
+		return function_exists( 'flosc_get_user_sticky_prompt' )
+			? flosc_get_user_sticky_prompt( $eval_context['user_id'] ?? 0, $eval_context )
+			: '';
+	}
+
+	/**
+	 * Add runtime-only personalization near the top of a compiled personality.
+	 *
+	 * @param string $profile         Compiled personality Markdown.
+	 * @param string $personalization Expanded per-user guidance.
+	 * @return string
+	 */
+	private static function insert_user_personalization( $profile, $personalization ) {
+		if ( preg_match( '/^#\s*1\s+Personalization\s*$/m', $profile ) ) {
+			return preg_replace(
+				'/^(#\s*1\s+Personalization)[ \t]*\n(?:(?!^# ).*\n?)*/m',
+				"$1\n\n" . $personalization . "\n\n",
+				$profile,
+				1
+			);
+		}
+		if ( false === strpos( $profile, '- Personalization' ) ) {
+			$profile = preg_replace( '/^(Contents:\s*)$/m', "$1\n- Personalization", $profile, 1 );
+		}
+		$section = "# 1 Personalization\n\n" . $personalization . "\n\n";
+		if ( preg_match( '/^#\s+\d+\s+/m', $profile, $first, PREG_OFFSET_CAPTURE ) ) {
+			$offset = (int) $first[0][1];
+			return substr( $profile, 0, $offset ) . $section . substr( $profile, $offset );
+		}
+		return rtrim( $profile ) . "\n\n" . $section;
+	}
+
+	/**
 	 * Section 2: WordPress Environment — site info the AI should know.
 	 * All from WordPress core functions — not configurable (it's factual).
 	 */
 	private static function build_wordpress_section() {
-		// These are WordPress functions — they'll be available at runtime.
+		// These are WordPress functions — they'll be available at runtime
 		// but we need to guard against CLI/test environments.
 		if ( ! function_exists( 'get_bloginfo' ) ) {
 			return '';
@@ -661,8 +799,6 @@ class FLOSC_Chatpack {
 	/**
 	 * Section 3: User Identity — who is talking to the AI.
 	 * Backend-authoritative, not spoofable.
-	 *
-	 * @param mixed $eval_context Eval context.
 	 */
 	private static function build_user_section( $eval_context ) {
 		$section = "## 3. USER IDENTITY\n\n";
@@ -720,7 +856,7 @@ class FLOSC_Chatpack {
 				}
 			}
 
-			// Fallback: use quiz data from frontend context (visitors/guests without bridge data)
+			// Fallback: use quiz data from frontend context (visitors/guests without bridge data).
 			if ( ! $got_bridge_data ) {
 				$fc_correct   = $eval_context['correct_items'] ?? $eval_context['correctItems'] ?? array();
 				$fc_incorrect = $eval_context['incorrect_items'] ?? $eval_context['incorrectItems'] ?? array();
@@ -749,7 +885,7 @@ class FLOSC_Chatpack {
 			}
 		}
 
-		// Fix 11b: Server-generated lesson recommendations (only when quiz taken)
+		// Fix 11b: Server-generated lesson recommendations (only when quiz taken).
 		if ( $quiz_taken ) {
 			$recs = self::build_personalized_recommendations( $eval_context );
 			if ( $recs ) {
@@ -784,12 +920,16 @@ class FLOSC_Chatpack {
 
 	/**
 	 * Section 4: Flow Context — current phase and phase-specific instructions.
-	 *
-	 * @param mixed $phase Phase.
-	 * @param mixed $eval_context Eval context.
-	 * @param mixed $flow_id Flow ID.
 	 */
 	private static function build_flow_section( $phase, $eval_context, $flow_id = null ) {
+		// build_followup_chatpack() hands us $eval_context['flow_id'] cast to a
+		// string, which is '' when the turn carries no flow. Settings lookups
+		// treat '' as "a flow named empty string" and skip the flow bag entirely,
+		// so normalize it back to null and keep the get_current_flow() fallback.
+		if ( '' === $flow_id ) {
+			$flow_id = null;
+		}
+
 		$section = "## 4. FLOW CONTEXT\n\n";
 
 		$is_admin = $eval_context['is_admin'] ?? false;
@@ -806,13 +946,30 @@ class FLOSC_Chatpack {
 			$section .= "- Phase: **{$phase}**\n";
 		}
 
-		// Phase descriptions (the 5 FLOSC phases)
+		/*
+		 * The five phases describe the journey, not the product.
+		 *
+		 * This list used to say "Sale — Member (purchased). Full access to all
+		 * content." A guest asked how to become a member and was told that
+		 * membership "opens up everything Dainis has created here", which is
+		 * not true of that site and is not true of most flows. The model was
+		 * reporting faithfully: it had been handed a claim about what a tier
+		 * includes, on every turn, by the framework.
+		 *
+		 * FLOSC does not know what any particular membership contains. The
+		 * floscAdmin does, and says so in Sticky aspects and the phase
+		 * instructions. Nothing here may promise on their behalf.
+		 */
 		$section .= "\n**FLOSC Phases:**\n";
-		$section .= "1. **Freeline** — Visitor (not logged in). Goal: get them to take the quiz.\n";
-		$section .= "2. **Login** — Guest (logged in, quiz done). Goal: show score, deliver free lesson.\n";
-		$section .= "3. **Offer** — Guest (free lesson viewed). Goal: present upgrade offer.\n";
-		$section .= "4. **Sale** — Member (purchased). Full access to all content.\n";
+		$section .= "1. **Freeline** — Visitor, not logged in. Goal: earn a first step.\n";
+		$section .= "2. **Login** — Guest, logged in. Goal: deliver what registering opened.\n";
+		$section .= "3. **Offer** — Guest who has seen the free content. Goal: name the next step and ask.\n";
+		$section .= "4. **Sale** — Member. They hold the member tier on this flow.\n";
 		$section .= "5. **Content** — Ongoing member engagement, support, encouragement.\n";
+		$section .= "\nThese name access tiers, not what any tier contains. Never state or imply\n";
+		$section .= "what membership includes beyond what this flow has told you — no \"everything\",\n";
+		$section .= "no \"full access\", no scope you were not given. If you do not know what a tier\n";
+		$section .= "opens, say what you do know and invite the question.\n";
 
 		$phase_outcomes = self::get_phase_outcomes( $phase, $eval_context, $flow_id );
 		if ( ! empty( $phase_outcomes ) ) {
@@ -826,8 +983,11 @@ class FLOSC_Chatpack {
 		// Phase-specific instructions.
 		$section .= "\n" . self::get_phase_instructions( $phase, $eval_context, $flow_id );
 
-		// Access-level instructions (floscAdmin-configurable via ai_prompt_{phase})
-		$phase_prompt = flosc_get_setting( "ai_prompt_{$phase}", '' );
+		// Access-level instructions (floscAdmin-configurable via ai_prompt_{phase}).
+		// Pass $flow_id: without it flosc_get_setting() falls back to
+		// get_current_flow(), so a turn on one flow could be handed another
+		// flow's phase instructions.
+		$phase_prompt = flosc_get_setting( "ai_prompt_{$phase}", '', $flow_id );
 		if ( $phase_prompt ) {
 			$section .= "\n**FloscAdmin Phase Instructions:**\n" . $phase_prompt . "\n";
 		}
@@ -838,13 +998,32 @@ class FLOSC_Chatpack {
 	/**
 	 * Section 5: Knowledge Base — feedback, praise, KB files.
 	 * Feedback and praise are floscAdmin-managed training data.
-	 *
-	 * @param mixed $eval_context Eval context.
 	 */
 	private static function build_knowledge_section( $eval_context ) {
 		$section = '';
 
-		// Feedback (floscAdmin-flagged bad responses)
+		/*
+		 * BuddyBoss groups, when this flow indexes them.
+		 *
+		 * Keyword retrieval over post bodies will never produce
+		 * /groups/lesaep-learners/, so the groups this person is allowed to
+		 * hear about ride on the turn as a short list. The index does the
+		 * filtering — tier, exclusions, and BuddyBoss privacy, which FLOSC can
+		 * tighten and never loosen.
+		 *
+		 * Empty string when the flow does not index groups, so a site without
+		 * BuddyBoss pays nothing for this.
+		 */
+		if ( class_exists( 'FLOSC_Site_Content_Index' ) ) {
+			$flosc_group_flow = (string) ( $eval_context['flow_id'] ?? '' );
+			$flosc_group_tier = (string) ( $eval_context['access_level'] ?? $eval_context['user_level'] ?? 'visitor' );
+			$flosc_groups     = FLOSC_Site_Content_Index::instance()->format_groups_for_ai( $flosc_group_flow, $flosc_group_tier );
+			if ( '' !== $flosc_groups ) {
+				$section .= "## 5c. GROUPS\n\n" . $flosc_groups . "\n";
+			}
+		}
+
+		// Feedback (floscAdmin-flagged bad responses).
 		$feedback_items = flosc_get_setting( 'ai_feedback', array() );
 		if ( ! empty( $feedback_items ) && is_array( $feedback_items ) ) {
 			$section .= "## 5a. ADMIN FEEDBACK — Avoid These Mistakes\n\n";
@@ -862,7 +1041,7 @@ class FLOSC_Chatpack {
 			}
 		}
 
-		// Praise (floscAdmin-flagged good responses)
+		// Praise (floscAdmin-flagged good responses).
 		$praises = flosc_get_setting( 'ai_praises', array() );
 		if ( ! empty( $praises ) && is_array( $praises ) ) {
 			$section .= "## 5b. ADMIN PRAISE — Keep Doing This\n\n";
@@ -879,11 +1058,11 @@ class FLOSC_Chatpack {
 			}
 		}
 
-		// Knowledge Base files (.md files from ai_configuration_files/)
+		// Knowledge Base files (.md files from ai_configuration_files/).
 		$kb_content = self::load_knowledge_files( $eval_context );
 		if ( $kb_content ) {
 			// Fix 7: Authoritative framing — AI must use these files as source of truth.
-			$section .= "## 5c. KNOWLEDGE BASE — AUTHORITATIVE CONTENT\n\n";
+			$section .= "## 5d. KNOWLEDGE BASE — AUTHORITATIVE CONTENT\n\n";
 			// Fix 12: Inject ai_context_awareness — FloscAdmin describes what the KB contains.
 			$context_awareness = flosc_get_setting( 'ai_context_awareness', '' );
 			if ( $context_awareness ) {
@@ -906,12 +1085,8 @@ class FLOSC_Chatpack {
 
 	/**
 	 * Section 6: IVR Guidance — scripted response the AI should rewrite.
-	 *
-	 * @param mixed $ivr_guidance IVR guidance.
-	 * @param mixed $flow_id Flow ID.
-	 * @param array $eval_context Eval context.
 	 */
-	private static function build_ivr_section( $ivr_guidance, $flow_id = null, $eval_context = array() ) {
+	private static function build_ivr_section( $ivr_guidance ) {
 		return "## IVR RESPONSE GUIDANCE\n\n"
 			. "The scripted system matched the following reference material for the user's input. "
 			. 'This is AUTHORITATIVE product information written by the site administrator. '
@@ -928,9 +1103,6 @@ class FLOSC_Chatpack {
 
 	/**
 	 * Section 7: Conversation Rules — meta-instructions about the session.
-	 *
-	 * @param mixed $pair_number Pair number.
-	 * @param mixed $eval_context Eval context.
 	 */
 	private static function build_rules_section( $pair_number, $eval_context ) {
 		$phase    = $eval_context['phase'] ?? 'freeline';
@@ -950,7 +1122,7 @@ class FLOSC_Chatpack {
 		$section .= "- Vary your language and structure across responses — do not use the same phrasing twice\n";
 		$section .= "- NEVER claim prior output with phrases like 'already shared above', 'as noted above', or similar if that exact text is not verifiably present\n";
 
-		// Page awareness + on-demand page body live in build_page_context_section() so the.
+		// Page awareness + on-demand page body live in build_page_context_section() so the
 		// follow-up chatpack reuses the identical block on EVERY turn (see build_followup_chatpack),
 		// not only on message #1. $page_content is still read here for the grounding branch below.
 		$page_content = trim( (string) ( $eval_context['browsing_page_content'] ?? '' ) );
@@ -975,7 +1147,7 @@ class FLOSC_Chatpack {
 			$section .= "- You are NOT the quiz. The quiz is a separate audio-recording widget. Do not simulate it.\n";
 		}
 
-		// Response format preferences (floscAdmin-configurable)
+		// Response format preferences (floscAdmin-configurable).
 		$response_style = flosc_get_setting( 'ai_response_style', '' );
 		if ( $response_style ) {
 			$section .= "- Response style: {$response_style}\n";
@@ -986,7 +1158,7 @@ class FLOSC_Chatpack {
 			$section .= "- Maximum response length: {$max_length}\n";
 		}
 
-		// Topic boundaries (floscAdmin-configurable)
+		// Topic boundaries (floscAdmin-configurable).
 		$topic_scope       = flosc_get_setting( 'ai_topic_scope', '' );
 		$off_topic_message = flosc_get_setting( 'ai_off_topic_message', '' );
 		$off_topic_links   = flosc_get_setting( 'ai_off_topic_links', '' );
@@ -1008,7 +1180,7 @@ class FLOSC_Chatpack {
 	}
 
 	// ─────────────────────────────────────────────────────────
-	// HELPER METHODS.
+	// HELPER METHODS
 	// ─────────────────────────────────────────────────────────
 
 	/**
@@ -1016,7 +1188,7 @@ class FLOSC_Chatpack {
 	 * PHP makes the connection between quiz weak sounds and specific lessons.
 	 * The AI receives a generated recommendation — no inference required.
 	 *
-	 * @param array $eval_context Eval context.
+	 * @param array $eval_context
 	 * @return string Recommendation block, or empty string if not applicable.
 	 */
 	private static function build_personalized_recommendations( $eval_context ) {
@@ -1054,10 +1226,6 @@ class FLOSC_Chatpack {
 
 	/**
 	 * Get phase-specific behavioral instructions.
-	 *
-	 * @param mixed $phase Phase.
-	 * @param mixed $eval_context Eval context.
-	 * @param mixed $flow_id Flow ID.
 	 */
 	private static function get_phase_instructions( $phase, $eval_context, $flow_id = null ) {
 		$access_level = $eval_context['access_level'] ?? 'visitor';
@@ -1141,11 +1309,8 @@ class FLOSC_Chatpack {
 
 	/**
 	 * Get a one-liner description for phase change notifications.
-	 *
-	 * @param mixed $phase Phase.
-	 * @param array $eval_context Eval context.
 	 */
-	private static function get_phase_one_liner( $phase, $eval_context = array() ) {
+	private static function get_phase_one_liner( $phase ) {
 		$liners = array(
 			'freeline' => 'Goal: encourage quiz.',
 			'login'    => 'Goal: celebrate score, deliver free lesson.',
@@ -1159,13 +1324,9 @@ class FLOSC_Chatpack {
 	/**
 	 * Resolve phase outcomes from per-flow/global settings with safe defaults.
 	 * Accepts either a map (phase_outcomes[phase]) or per-phase keys.
-	 *
-	 * @param mixed $phase Phase.
-	 * @param array $eval_context Eval context.
-	 * @param mixed $flow_id Flow ID.
 	 */
 	private static function get_phase_outcomes( $phase, $eval_context = array(), $flow_id = null ) {
-		$raw_map = flosc_get_setting( 'phase_outcomes', array() );
+		$raw_map = flosc_get_setting( 'phase_outcomes', array(), $flow_id );
 		if ( is_array( $raw_map ) && isset( $raw_map[ $phase ] ) ) {
 			$parsed = self::normalize_outcomes( $raw_map[ $phase ] );
 			if ( ! empty( $parsed ) ) {
@@ -1180,20 +1341,18 @@ class FLOSC_Chatpack {
 			"behaviors_{$phase}",
 		);
 		foreach ( $candidate_keys as $key ) {
-			$raw    = flosc_get_setting( $key, '' );
+			$raw    = flosc_get_setting( $key, '', $flow_id );
 			$parsed = self::normalize_outcomes( $raw );
 			if ( ! empty( $parsed ) ) {
 				return $parsed;
 			}
 		}
 
-		return self::get_default_phase_outcomes( $phase, $eval_context, $flow_id );
+		return self::get_default_phase_outcomes( $phase, $eval_context );
 	}
 
 	/**
 	 * Normalize outcomes from string/array formats into a clean string list.
-	 *
-	 * @param mixed $raw Raw.
 	 */
 	private static function normalize_outcomes( $raw ) {
 		if ( is_array( $raw ) ) {
@@ -1231,8 +1390,6 @@ class FLOSC_Chatpack {
 
 	/**
 	 * Detect if an outcome list includes quiz-oriented intent.
-	 *
-	 * @param mixed $outcomes Outcomes.
 	 */
 	private static function outcomes_include_quiz( $outcomes ) {
 		if ( ! is_array( $outcomes ) || empty( $outcomes ) ) {
@@ -1240,7 +1397,7 @@ class FLOSC_Chatpack {
 		}
 		foreach ( $outcomes as $outcome ) {
 			$needle = strtolower( (string) $outcome );
-			if ( strpos( $needle, 'quiz' ) !== false || strpos( $needle, 'assessment' ) !== false ) {
+			if ( false !== strpos( $needle, 'quiz' ) || false !== strpos( $needle, 'assessment' ) ) {
 				return true;
 			}
 		}
@@ -1249,12 +1406,8 @@ class FLOSC_Chatpack {
 
 	/**
 	 * Backward-compatible defaults when no explicit outcomes are configured.
-	 *
-	 * @param mixed $phase Phase.
-	 * @param array $eval_context Eval context.
-	 * @param mixed $flow_id Flow ID.
 	 */
-	private static function get_default_phase_outcomes( $phase, $eval_context = array(), $flow_id = null ) {
+	private static function get_default_phase_outcomes( $phase, $eval_context = array() ) {
 		$quiz_in_progress = ! empty( $eval_context['quiz_in_progress'] );
 
 		switch ( $phase ) {
@@ -1278,8 +1431,6 @@ class FLOSC_Chatpack {
 	/**
 	 * Load knowledge base .md files from ai_configuration_files/ directory.
 	 * Access-filtered: visitors get public files, members get everything.
-	 *
-	 * @param mixed $eval_context Eval context.
 	 */
 	private static function load_knowledge_files( $eval_context ) {
 		$flow_stem = sanitize_key( (string) ( $eval_context['flow_id'] ?? '' ) );

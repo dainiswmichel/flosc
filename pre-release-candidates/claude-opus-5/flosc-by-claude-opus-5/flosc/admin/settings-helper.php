@@ -1,12 +1,15 @@
 <?php
 /**
  * FLOSC Admin Settings Helper
- * v1.2.4: Helper for flow-aware settings in admin tabs
+ * Helper for flow-aware settings in admin tabs
  *
  * Usage in tab files:
  *   $value = flosc_admin_get_value('ai_provider', 'ivr');
  *   - When editing a flow: returns flow[$key] if set, else global
  *   - When editing global: returns global wp_option value
+ *
+ * @package FLOSC
+ * @since 1.2.4
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -17,15 +20,15 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Get the appropriate value for an admin settings field
  *
  * @param string $key Setting key (without 'flosc_' prefix).
- * @param mixed  $default Default value.
+ * @param mixed  $fallback Default value.
  * @return mixed The value to display in the form
  */
-function flosc_admin_get_value( $key, $default = '' ) {
+function flosc_admin_get_value( $key, $fallback = '' ) {
 	// Check if we're editing a specific flow.
 	if ( isset( $GLOBALS['flosc_editing_flow'] ) && isset( $GLOBALS['flosc_editing_flow_data'] ) ) {
 		$flow = $GLOBALS['flosc_editing_flow_data'];
 
-		// Return flow-specific value if it exists
+		// Return flow-specific value if it exists.
 		if ( isset( $flow[ $key ] ) && '' !== $flow[ $key ] && null !== $flow[ $key ] ) {
 			return $flow[ $key ];
 		}
@@ -36,18 +39,18 @@ function flosc_admin_get_value( $key, $default = '' ) {
 	}
 
 	// Editing global settings - return wp_option.
-	return get_option( 'flosc_' . $key, $default );
+	return get_option( 'flosc_' . $key, $fallback );
 }
 
 /**
  * Get the global value for showing as placeholder when editing flow
  *
  * @param string $key Setting key (without 'flosc_' prefix).
- * @param mixed  $default Default value.
+ * @param mixed  $fallback Default value.
  * @return mixed The global value for placeholder text
  */
-function flosc_admin_get_global( $key, $default = '' ) {
-	return get_option( 'flosc_' . $key, $default );
+function flosc_admin_get_global( $key, $fallback = '' ) {
+	return get_option( 'flosc_' . $key, $fallback );
 }
 
 /**
@@ -72,17 +75,17 @@ function flosc_admin_get_editing_flow_id() {
  * Render a text input with "using global" placeholder when editing flow
  *
  * @param string $key Setting key (without 'flosc_' prefix).
- * @param string $default Default value.
- * @param string $class CSS class.
+ * @param string $fallback Default value.
+ * @param string $css_class CSS class.
  * @param string $placeholder Custom placeholder (overrides global value).
  */
-function flosc_admin_text_input( $key, $default = '', $class = 'regular-text', $placeholder = null ) {
-	$value      = flosc_admin_get_value( $key, $default );
+function flosc_admin_text_input( $key, $fallback = '', $css_class = 'regular-text', $placeholder = null ) {
+	$value      = flosc_admin_get_value( $key, $fallback );
 	$flosc_name = 'flosc_' . $key;
 
 	// When editing flow, show global value as placeholder.
 	if ( flosc_admin_is_editing_flow() && null === $placeholder ) {
-		$global_value = flosc_admin_get_global( $key, $default );
+		$global_value = flosc_admin_get_global( $key, $fallback );
 		$placeholder  = $global_value ? 'Using global: ' . $global_value : '';
 	}
 
@@ -91,26 +94,21 @@ function flosc_admin_text_input( $key, $default = '', $class = 'regular-text', $
 		esc_attr( $flosc_name ),
 		esc_attr( $flosc_name ),
 		esc_attr( $value ),
-		esc_attr( $class ),
+		esc_attr( $css_class ),
 		esc_attr( $placeholder ?? '' )
 	);
 }
 
 /**
  * Render a textarea with "using global" placeholder when editing flow
- *
- * @param mixed $key Key.
- * @param string $default Default.
- * @param int $rows Rows.
- * @param string $class Class.
  */
-function flosc_admin_textarea( $key, $default = '', $rows = 5, $class = 'large-text' ) {
-	$value      = flosc_admin_get_value( $key, $default );
+function flosc_admin_textarea( $key, $fallback = '', $rows = 5, $css_class = 'large-text' ) {
+	$value      = flosc_admin_get_value( $key, $fallback );
 	$flosc_name = 'flosc_' . $key;
 
 	$placeholder = '';
 	if ( flosc_admin_is_editing_flow() ) {
-		$global_value = flosc_admin_get_global( $key, $default );
+		$global_value = flosc_admin_get_global( $key, $fallback );
 		$placeholder  = $global_value ? 'Using global setting...' : '';
 	}
 
@@ -119,7 +117,7 @@ function flosc_admin_textarea( $key, $default = '', $rows = 5, $class = 'large-t
 		esc_attr( $flosc_name ),
 		esc_attr( $flosc_name ),
 		absint( $rows ),
-		esc_attr( $class ),
+		esc_attr( $css_class ),
 		esc_attr( $placeholder ),
 		esc_textarea( $value )
 	);
@@ -127,18 +125,14 @@ function flosc_admin_textarea( $key, $default = '', $rows = 5, $class = 'large-t
 
 /**
  * Render a select dropdown
- *
- * @param mixed $key Key.
- * @param mixed $options Options.
- * @param string $default Default.
  */
-function flosc_admin_select( $key, $options, $default = '' ) {
-	$value      = flosc_admin_get_value( $key, $default );
+function flosc_admin_select( $key, $options, $fallback = '' ) {
+	$value      = flosc_admin_get_value( $key, $fallback );
 	$flosc_name = 'flosc_' . $key;
 
 	// When editing flow and no value set, show "Use Global" option.
 	$show_use_global = flosc_admin_is_editing_flow();
-	$global_value    = flosc_admin_get_global( $key, $default );
+	$global_value    = flosc_admin_get_global( $key, $fallback );
 
 	echo '<select id="' . esc_attr( $flosc_name ) . '" name="' . esc_attr( $flosc_name ) . '">';
 
@@ -264,25 +258,6 @@ function flosc_companion_hub_defaults_from_flow( array $flow_settings ) {
 	);
 }
 
-/*
- * Visitor/Guest/Member label and option helpers. Restored in v92 from the
- * v87 candidate, where these were last present.
- */
-
-/**
- * How much of a post a tier gets.
- *
- * @return array<string,string>
- */
-function flosc_vgm_depth_labels() {
-	return array(
-		'title'    => __( 'Title only', 'flosc' ),
-		'excerpt'  => __( 'Title and excerpt', 'flosc' ),
-		'readmore' => __( 'Through the read-more break', 'flosc' ),
-		'full'     => __( 'The whole post', 'flosc' ),
-	);
-}
-
 /**
  * The two axes of content access, as the admin selects present them.
  *
@@ -305,6 +280,20 @@ function flosc_vgm_tier_labels() {
 }
 
 /**
+ * How much of a post a tier gets.
+ *
+ * @return array<string,string>
+ */
+function flosc_vgm_depth_labels() {
+	return array(
+		'title'    => __( 'Title only', 'flosc' ),
+		'excerpt'  => __( 'Title and excerpt', 'flosc' ),
+		'readmore' => __( 'Through the read-more break', 'flosc' ),
+		'full'     => __( 'The whole post', 'flosc' ),
+	);
+}
+
+/**
  * Render <option> markup for one of the two vocabularies.
  *
  * @param array  $labels   From flosc_vgm_tier_labels() or flosc_vgm_depth_labels().
@@ -320,4 +309,3 @@ function flosc_vgm_options_markup( array $labels, $selected ) {
 	}
 	return $out;
 }
-

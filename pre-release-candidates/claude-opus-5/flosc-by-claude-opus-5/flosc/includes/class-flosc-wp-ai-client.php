@@ -1,13 +1,13 @@
 <?php
 /**
- * WordPress AI Client hop for OpenAI, Anthropic, and Gemini.
+ * WordPress 7.0 AI Client hop for OpenAI, Anthropic, and Gemini.
  *
  * Entry: wp_ai_client_prompt(). Vendor HTTP lives in the official provider
  * plugins. FLOSC binds this install’s BYOK key onto the core registry
  * (ApiKeyRequestAuthentication / Anthropic x-api-key / Google X-Goog-Api-Key)
  * and does not read Settings → Connectors.
  *
- * Requires at least WordPress 7.1. Operators attach one provider per flow
+ * Requires at least WordPress 7.0.4. Operators attach one provider per flow
  * and install that plugin. A developer testing all three activates all three.
  *
  * xAI has no official plugin. Whisper transcription is not in AI Provider
@@ -287,11 +287,11 @@ class FLOSC_WP_AI_Client {
 	public static function plugin_status_table_html() {
 		if ( ! self::core_client_exists() ) {
 			return '<div class="notice notice-error inline"><p>'
-				. esc_html__( 'WordPress AI Client is not available. FLOSC requires WordPress 7.1.', 'flosc' )
+				. esc_html__( 'WordPress 7.0 AI Client is not available. FLOSC requires WordPress 7.0.4 or later.', 'flosc' )
 				. '</p></div>';
 		}
 
-		$html  = '<table class="widefat striped flosc-wp-ai-status-table">';
+		$html  = '<table class="widefat striped flosc-provider-status-table">';
 		$html .= '<thead><tr>';
 		$html .= '<th>' . esc_html__( 'FLOSC provider', 'flosc' ) . '</th>';
 		$html .= '<th>' . esc_html__( 'Official plugin', 'flosc' ) . '</th>';
@@ -374,7 +374,7 @@ class FLOSC_WP_AI_Client {
 			return new WP_Error(
 				'flosc_wp_ai_missing_core',
 				$test_mode
-					? "WordPress AI Client is not available.\n\nFLOSC requires WordPress 7.1."
+					? "WordPress 7.0 AI Client is not available.\n\nFLOSC Requires at least WordPress 7.0.4."
 					: 'WordPress AI Client is not available.'
 			);
 		}

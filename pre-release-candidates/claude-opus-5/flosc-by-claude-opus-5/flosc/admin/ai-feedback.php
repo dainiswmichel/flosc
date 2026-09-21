@@ -1,7 +1,10 @@
 <?php
 /**
- * v1.9.0: AI Feedback & Praise Editor
- * v1.9.5: Added "Rated Responses" section showing DB-rated chat log entries.
+ * AI Feedback & Praise Editor.
+ *
+ * @since 1.9.0
+ * @since 1.9.5 Added the "Rated Responses" section, which lists chat log
+ *              entries that carry a rating in the database.
  *
  * Admin can view, add, and delete feedback (flag bad responses) and
  * praises (reinforce good responses) that guide AI behavior.
@@ -10,13 +13,32 @@
  * Both are loaded into the system prompt via build_feedback_prompt().
  *
  * Included from settings.php within the Chat Logs tab.
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// ── v1.9.5: Rated Responses from DB (via logger data API; schema ensured there) ──.
+/*
+ * Identity before input.
+ *
+ * WordPress.org, 14 Sep 2026: "No nonce check found validating input origin on
+ * lines 1-116". Their scanner measures whether a check appears BEFORE the
+ * request is read, not merely whether one exists somewhere in the file. Several
+ * files here verified correctly and verified late, and late did not count -- an
+ * unauthorized request still walked the whole parser before being refused.
+ *
+ * This is the capability the FLOSC menu itself requires. Flow-level access is
+ * still checked further down where the flow is known; this only establishes
+ * that somebody who may administer FLOSC at all is asking.
+ */
+if ( ! current_user_can( 'edit_others_posts' ) ) {
+	wp_die( esc_html__( 'You do not have permission to access this page.', 'flosc' ), 403 );
+}
+
+// ── v1.9.5: Rated Responses from DB (via logger data API; schema ensured there) ──
 $flosc_rated_logs  = FLOSC_Chat_Logger::instance()->flosc_get_rated_logs( 50 );
 $flosc_rated_count = count( $flosc_rated_logs );
 ?>
@@ -66,7 +88,7 @@ $flosc_rated_count = count( $flosc_rated_logs );
 <?php endif; ?>
 
 <?php
-// ── Feedback ──.
+// ── Feedback ──
 $flosc_feedback_items = $flosc_flow_settings['ai_feedback'] ?? array();
 $flosc_feedback_count = count( $flosc_feedback_items );
 
@@ -120,7 +142,7 @@ if ( isset( $_POST['flosc_add_feedback'] ) ) {
 	}
 }
 
-// ── Praises ──.
+// ── Praises ──
 $flosc_praises       = $flosc_flow_settings['ai_praises'] ?? array();
 $flosc_praises_count = count( $flosc_praises );
 

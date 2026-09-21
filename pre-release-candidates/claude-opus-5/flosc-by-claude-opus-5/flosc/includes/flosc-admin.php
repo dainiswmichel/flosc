@@ -9,7 +9,7 @@ trait FLOSC_Admin_Trait {
 	 * v05_02: Menu shortcuts to Settings tabs in logical order
 	 */
 	public function add_admin_menu() {
-		// v1.2.8: Simplified - Settings page IS the main page.
+		// v1.2.8: Simplified - Settings page IS the main page
 		// IVR file dropdown selects which flow to edit.
 
 		// Main FLOSC menu - goes directly to Settings.
@@ -73,7 +73,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_autoprompts_tab' )
 		);
 
-		// Content (levels + groups + pool; replaces Member Levels + Lessons)
+		// Content (levels + groups + pool; replaces Member Levels + Lessons).
 		add_submenu_page(
 			'flosc-settings',
 			'Content',
@@ -131,7 +131,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_login_tab' )
 		);
 
-		// 3. Chat Styling.
+		// 3. Chat Styling
 		add_submenu_page(
 			'flosc-settings',
 			'Style',
@@ -151,7 +151,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'render_ui_navigation_page' )
 		);
 
-		// 4. AI Configuration.
+		// 4. AI Configuration
 		add_submenu_page(
 			'flosc-settings',
 			'AI',
@@ -221,7 +221,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_payments_tab' )
 		);
 
-		// Legacy Lessons slug → Content (hidden from menu)
+		// Legacy Lessons slug → Content (hidden from menu).
 		add_submenu_page(
 			null,
 			'Lessons',
@@ -231,7 +231,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_content_tab' )
 		);
 
-		// SSO / Social Login (v1.4.0)
+		// SSO / Social Login (v1.4.0).
 		add_submenu_page(
 			'flosc-settings',
 			'SSO / Social Login',
@@ -241,7 +241,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_sso_tab' )
 		);
 
-		// Engagement (journey parameters + profile summary; between SSO and Chat Logs)
+		// Engagement (journey parameters + profile summary; between SSO and Chat Logs).
 		add_submenu_page(
 			'flosc-settings',
 			'Engagement',
@@ -261,7 +261,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_chat_logs_tab' )
 		);
 
-		// Administration (global account/debug controls)
+		// Administration (global account/debug controls).
 		add_submenu_page(
 			'flosc-settings',
 			'Administration',
@@ -281,7 +281,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_docs_tab' )
 		);
 
-		// DA1 Catalog — standalone page (not flow-specific)
+		// DA1 Catalog — standalone page (not flow-specific).
 		add_submenu_page(
 			'flosc-settings',
 			'DA1 Catalog',
@@ -307,8 +307,6 @@ trait FLOSC_Admin_Trait {
 				'flosc_share_text'                   => 'text',
 				'flosc_email_subject'                => 'text',
 				'flosc_email_body'                   => 'textarea',
-				'flosc_account_plan'                 => 'text',
-				'flosc_account_purchases_manual'     => 'text',
 				'flosc_ai_provider'                  => 'text',
 				'flosc_openai_api_key'               => 'secret',
 				'flosc_anthropic_api_key'            => 'secret',
@@ -397,7 +395,7 @@ trait FLOSC_Admin_Trait {
 				'flosc_ai_context_awareness'        => 'textarea',
 				'flosc_ai_freeline_restrictions'    => 'textarea',
 				'flosc_ai_member_access'            => 'textarea',
-				// Global communication-token economics (integer/rational, saved by Payments tab)
+				// Global communication-token economics (integer/rational, saved by Payments tab).
 				'flosc_tokens_communication_tokens_per_message' => 'text',
 				'flosc_tokens_nominal_millicents_per_token_numerator' => 'text',
 				'flosc_tokens_nominal_millicents_per_token_denominator' => 'text',
@@ -406,7 +404,7 @@ trait FLOSC_Admin_Trait {
 			)
 		);
 
-		// User Profile Bar (v1.8.0: unified 3-state bar replaces v1.7.8 visitor-only settings)
+		// User Profile Bar (v1.8.0: unified 3-state bar replaces v1.7.8 visitor-only settings).
 
 		// v1.8.0: UI & Navigation.
 
@@ -417,7 +415,7 @@ trait FLOSC_Admin_Trait {
 
 		// Quiz Type System.
 
-		// Third-party quiz plugin integrations (v9.3.4)
+		// Third-party quiz plugin integrations (v9.3.4).
 
 		// Register quiz content settings for each quiz type dynamically.
 		$quiz_types = FLOSC_Quiz_Registry::get_all_quizzes();
@@ -630,7 +628,6 @@ trait FLOSC_Admin_Trait {
 			return '' !== $option_name ? (string) get_option( $option_name, '' ) : '';
 		}
 
-		$value = wp_unslash( $value );
 		if ( '' === $value ) {
 			return '' !== $option_name ? (string) get_option( $option_name, '' ) : '';
 		}
@@ -754,28 +751,32 @@ trait FLOSC_Admin_Trait {
 	}
 
 	/**
-	 * v1.2.2: Render Flows list page
+	 * Render Flows list page
+	 *
+	 * @since 1.2.2
 	 */
 	public function render_flows_page() {
 		include FLOSC_PLUGIN_DIR . 'admin/flows.php';
 	}
 
 	/**
-	 * v1.2.2: Render Flow edit page
+	 * Render Flow edit page
+	 *
+	 * @since 1.2.2
 	 */
 	public function render_flow_edit_page() {
 		include FLOSC_PLUGIN_DIR . 'admin/flow-edit.php';
 	}
 
 	/**
-	 * v1.0.4: Enqueue admin assets (TASK-006)
+	 * Enqueue admin assets (TASK-006)
 	 * Loads flosc-admin.css on FLOSC admin pages
 	 *
-	 * @param mixed $hook Hook.
+	 * @since 1.0.4
 	 */
 	public function enqueue_admin_assets( $hook ) {
 		// §12: Post-visibility metabox styles render on the post editor (post.php / post-new.php),
-		// which is a different screen than the FLOSC settings pages. Enqueue them there via an.
+		// which is a different screen than the FLOSC settings pages. Enqueue them there via an
 		// inline-only style handle instead of echoing a <style> tag inside the metabox markup.
 		if ( 'post.php' === $hook || 'post-new.php' === $hook ) {
 			wp_register_style( 'flosc-metabox', false, array(), FLOSC_VERSION );
@@ -788,9 +789,9 @@ trait FLOSC_Admin_Trait {
 				'.flosc-post-visibility-meta-box .flosc-protection-options label:hover { background: #f0f0f1; }' .
 				'.flosc-post-visibility-meta-box .flosc-protection-options .option-desc { color: #666; font-size: 11px; display: block; margin-left: 22px; }'
 			);
-			// Concierge metabox rules ride the same handle. They must be added.
+			// Concierge metabox rules ride the same handle. They must be added
 			// HERE (admin_enqueue_scripts) and not inside render_meta_box():
-			// by metabox render time the head styles have already printed, and.
+			// by metabox render time the head styles have already printed, and
 			// inline data attached to a printed handle is silently discarded.
 			wp_add_inline_style(
 				'flosc-metabox',
@@ -802,9 +803,9 @@ trait FLOSC_Admin_Trait {
 			return;
 		}
 
-		// Only load on FLOSC admin pages.
+		// Only load on FLOSC admin pages
 		// v1.2.8: Simplified - just check for 'flosc'.
-		if ( strpos( $hook, 'flosc' ) === false &&
+		if ( false === strpos( $hook, 'flosc' ) &&
 			'toplevel_page_flosc-settings' !== $hook ) {
 			return;
 		}
@@ -819,10 +820,10 @@ trait FLOSC_Admin_Trait {
 			);
 		}
 
-		// §12: Footer-printed script handle (no src) that FLOSC admin page templates.
-		// attach their page JS to via wp_add_inline_script('flosc-admin', ...), instead.
+		// §12: Footer-printed script handle (no src) that FLOSC admin page templates
+		// attach their page JS to via wp_add_inline_script('flosc-admin', ...), instead
 		// of echoing raw <script> tags. Registering it here (on admin_enqueue_scripts)
-		// means the handle is enqueued before render, so inline JS added during the page.
+		// means the handle is enqueued before render, so inline JS added during the page
 		// body still prints in the admin footer. jQuery dep covers the existing jQuery use.
 		wp_register_script( 'flosc-admin', false, array( 'jquery' ), FLOSC_VERSION, true );
 		wp_enqueue_script( 'flosc-admin' );
@@ -838,11 +839,11 @@ trait FLOSC_Admin_Trait {
 			);
 		}
 
-		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only admin route values select assets; they do not mutate state.
-		$flosc_tab  = isset( $_GET['tab'] ) && is_string( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : '';
-		$flosc_page = isset( $_GET['page'] ) && is_string( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
-		$flosc_view = isset( $_GET['view'] ) && is_string( $_GET['view'] ) ? sanitize_key( wp_unslash( $_GET['view'] ) ) : '';
-		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+		// Which screen is being painted. Selection only -- nothing here writes.
+		// 'view' is a closed set now; it used to accept any string the URL carried.
+		$flosc_tab  = flosc_nav_param( 'tab' );
+		$flosc_page = flosc_nav_param( 'page' );
+		$flosc_view = flosc_nav_param( 'view', array( 'single', 'all' ) );
 		if ( 'flosc-settings' === $flosc_page && 'ai' === $flosc_tab && 'all' !== $flosc_view ) {
 			if ( function_exists( 'flosc_enqueue_personality_builder_assets' ) ) {
 				flosc_enqueue_personality_builder_assets();
@@ -872,8 +873,7 @@ trait FLOSC_Admin_Trait {
 		 * The zone markup only renders on the "all" view of the Flow tab, so the
 		 * view is read here and the assets are skipped on the single-flow view.
 		 */
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only admin view selection controls asset enqueueing and does not mutate state.
-		$flosc_view = isset( $_GET['view'] ) && is_string( $_GET['view'] ) ? sanitize_key( wp_unslash( $_GET['view'] ) ) : '';
+		$flosc_view = flosc_nav_param( 'view', array( 'single', 'all' ) );
 
 		if ( 'flow' === $flosc_tab && 'all' === $flosc_view ) {
 			$flosc_port_css = FLOSC_PLUGIN_DIR . 'assets/css/flosc-portability-admin.css';
@@ -933,7 +933,7 @@ trait FLOSC_Admin_Trait {
 		}
 
 		// Tame WordPress admin footer (#wpfooter) on FLOSC pages.
-		// WP core uses position:fixed/absolute which causes the "Version X.X.X" text.
+		// WP core uses position:fixed/absolute which causes the "Version X.X.X" text
 		// to float over FLOSC admin content at various zoom levels.
 		// Fix: make it flow normally in the document, properly positioned at the bottom.
 		wp_add_inline_style(
@@ -945,16 +945,16 @@ trait FLOSC_Admin_Trait {
 	}
 
 	/**
-	 * v8.0.0: Relabel right side of WP admin footer on FLOSC pages.
+	 * Relabel right side of WP admin footer on FLOSC pages.
 	 * WordPress shows "Version 6.9.3" — we relabel to "WordPress 6.9.3 | FLOSC v8.0.0"
 	 * so it's clear what each version number refers to.
 	 * Only applies on FLOSC admin pages (checked via current screen).
 	 *
-	 * @param mixed $text Text.
+	 * @since 8.0.0
 	 */
 	public function relabel_admin_footer( $text ) {
 		$screen = get_current_screen();
-		if ( $screen && strpos( $screen->id, 'flosc' ) !== false ) {
+		if ( $screen && false !== strpos( $screen->id, 'flosc' ) ) {
 			global $wp_version;
 			return 'WordPress ' . esc_html( $wp_version ) . ' | FLOSC v' . esc_html( FLOSC_VERSION );
 		}
@@ -962,14 +962,14 @@ trait FLOSC_Admin_Trait {
 	}
 
 	/**
-	 * v8.0.0: Replace left-side "Thank you for creating with WordPress" with FLOSC branding
+	 * Replace left-side "Thank you for creating with WordPress" with FLOSC branding
 	 * on FLOSC admin pages only.
 	 *
-	 * @param mixed $text Text.
+	 * @since 8.0.0
 	 */
 	public function relabel_admin_footer_left( $text ) {
 		$screen = get_current_screen();
-		if ( $screen && strpos( $screen->id, 'flosc' ) !== false ) {
+		if ( $screen && false !== strpos( $screen->id, 'flosc' ) ) {
 			return '<span id="footer-thankyou">FLOSC &mdash; Flow-Oriented Sales Companion</span>';
 		}
 		return $text;
@@ -996,10 +996,10 @@ trait FLOSC_Admin_Trait {
 			return;
 		}
 
-		// Read-only admin menu routing (capability-checked below). No nonce: GET page.
-		// slug only; never mutates options. Read via wp_unslash; sanitized next line.
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only menu routing is capability-checked below and does not mutate state.
-		$page = isset( $_GET['page'] ) && is_string( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		// Read-only admin menu routing, capability-checked below. The comment that
+		// stood here claimed filter_input was used to avoid PHPCS noise; the code
+		// read $_GET directly and the warning was reported anyway.
+		$page = flosc_nav_param( 'page' );
 		if ( '' === $page || 'flosc-settings' === $page ) {
 			return;
 		}
@@ -1048,17 +1048,14 @@ trait FLOSC_Admin_Trait {
 			'page' => 'flosc-settings',
 			'tab'  => $tab,
 		);
-		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- These sanitized GET values are copied into a capability-checked, read-only admin redirect.
-		if ( isset( $_GET['ivr'] ) && is_string( $_GET['ivr'] ) && '' !== $_GET['ivr'] ) {
-			$args['ivr'] = sanitize_file_name( wp_unslash( $_GET['ivr'] ) );
+		$ivr  = flosc_nav_param( 'ivr', array(), '', 'sanitize_file_name' );
+		if ( '' !== $ivr ) {
+			$args['ivr'] = $ivr;
 		}
-		if ( isset( $_GET['view'] ) && is_string( $_GET['view'] ) && '' !== $_GET['view'] ) {
-			$view = sanitize_text_field( wp_unslash( $_GET['view'] ) );
-			if ( in_array( $view, array( 'single', 'all' ), true ) ) {
-				$args['view'] = $view;
-			}
+		$view = flosc_nav_param( 'view', array( 'single', 'all' ) );
+		if ( '' !== $view ) {
+			$args['view'] = $view;
 		}
-		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		wp_safe_redirect( add_query_arg( $args, admin_url( 'admin.php' ) ) );
 		exit;
@@ -1073,28 +1070,42 @@ trait FLOSC_Admin_Trait {
 			return;
 		}
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only dispatcher routing; every state-changing downstream branch verifies its own action-specific nonce and capability.
-		$page = isset( $_GET['page'] ) && is_string( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
-		if ( 'flosc-settings' !== $page ) {
+		// Which admin screen this is. Selection only; the POST body below is what
+		// carries intent, and each handler verifies its own nonce before writing.
+		if ( 'flosc-settings' !== flosc_nav_param( 'page' ) ) {
 			return;
 		}
 
-		// The screen this dispatcher serves is registered with edit_others_posts.
+		/*
+		 * Capability first, then the body.
+		 *
+		 * Every individual handler below verifies its own nonce, and that is
+		 * still true -- but nothing established WHO was asking before the POST
+		 * body was unslashed and dispatched on. On a page that stores
+		 * administrative settings, the identity check belongs before the parse,
+		 * not distributed among the things the parse leads to. This is the same
+		 * capability the FLOSC menu itself requires.
+		 */
 		if ( ! current_user_can( 'edit_others_posts' ) ) {
 			return;
 		}
 
 		/*
-		 * Every submit button below travels with the nonce its own form emitted.
-		 * Verifying that nonce here means an unverified POST is never routed at
-		 * all, instead of being routed and refused further down. The handler each
-		 * branch calls still verifies the same nonce, so both gates remain.
+		 * Origin, at dispatch, before the body is read.
 		 *
-		 * A branch is taken only when its nonce verifies AND its button is
-		 * present, so the order of this list does not matter.
+		 * Every handler this function routes to verifies its own nonce, and that
+		 * was the whole defence: nothing in here proved the request came from
+		 * this site until control had already reached a handler. On a screen
+		 * that stores administrative settings that is the wrong place for it.
+		 *
+		 * Each route is now declared with the nonce action and field its own
+		 * form prints, and the match is verified here. The handlers still verify
+		 * again -- check_admin_referer() is idempotent and defence in depth on a
+		 * settings writer is worth the microsecond.
 		 */
-		$flosc_post_routes = array(
-			'flosc_upload_ivr_file'         => array( 'flosc_portability_kit', '_wpnonce' ),
+		$flosc_routes = array(
+			// POST key                      => array( nonce action, nonce field ).
+			'flosc_upload_ivr_file'         => array( 'flosc_upload_ivr_file', '_wpnonce' ),
 			'flosc_portability_submit'      => array( 'flosc_portability_kit', '_wpnonce' ),
 			'flosc_portability_pack_action' => array( 'flosc_portability_pack', '_wpnonce' ),
 			'flosc_save'                    => array( 'flosc_save_settings', '_wpnonce' ),
@@ -1103,32 +1114,25 @@ trait FLOSC_Admin_Trait {
 			'flosc_create_trajectory_post'  => array( 'flosc_create_trajectory_post', 'flosc_trajectory_create_nonce' ),
 		);
 
-		$flosc_route_verified = false;
-		foreach ( $flosc_post_routes as $flosc_button => $flosc_route ) {
-			list( $flosc_action, $flosc_field ) = $flosc_route;
-
-			$flosc_nonce = isset( $_POST[ $flosc_field ] )
-				? sanitize_text_field( wp_unslash( $_POST[ $flosc_field ] ) )
-				: '';
-			if ( '' === $flosc_nonce || ! wp_verify_nonce( $flosc_nonce, $flosc_action ) ) {
-				continue;
-			}
-			if ( ! empty( $_POST[ $flosc_button ] ) ) {
-				$flosc_route_verified = true;
+		$flosc_route = '';
+		foreach ( $flosc_routes as $flosc_key => $flosc_spec ) {
+			if ( ! empty( $_POST[ $flosc_key ] ) ) {
+				$flosc_route = $flosc_key;
 				break;
 			}
 		}
-		if ( ! $flosc_route_verified ) {
+		if ( '' === $flosc_route ) {
 			return;
 		}
 
-		$post = wp_unslash( $_POST );
-		if ( $post === array() ) {
-			return;
-		}
+		// Ends the request on a bad or missing nonce. Nothing below runs unless
+		// this passes, so every $_POST read after it is verified input.
+		check_admin_referer( $flosc_routes[ $flosc_route ][0], $flosc_routes[ $flosc_route ][1] );
+
+		$post = isset( $_POST ) && is_array( $_POST ) ? wp_unslash( $_POST ) : array();
 
 		// IVR new-flow upload: must redirect before admin chrome (Set-as-default class of bug).
-		if ( ! empty( $post['flosc_upload_ivr_file'] ) && ! empty( $_FILES['ivr_file_upload'] ) ) {
+		if ( 'flosc_upload_ivr_file' === $flosc_route && ! empty( $_FILES['ivr_file_upload'] ) ) {
 			if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 				require_once FLOSC_PLUGIN_DIR . 'admin/ivr-upload-handler.php';
 			}
@@ -1145,46 +1149,29 @@ trait FLOSC_Admin_Trait {
 		 *
 		 * The clicked button carries the intent, so the button value alone decides
 		 * the route. Also requiring $_FILES would let a drop that arrived without
-		 * its files — an oversized post, or a submission with nothing staged —
+		 * its files -- an oversized post, or a submission with nothing staged --
 		 * fall straight through to a silent page reload, instead of reaching the
-		 * handler and being named. Nonce (flosc_portability_kit) and the
-		 * manage_options capability are verified inside the handler.
+		 * handler and being named.
 		 */
-		$kit_action = isset( $post['flosc_portability_submit'] )
-			? sanitize_key( (string) $post['flosc_portability_submit'] )
-			: '';
-		if ( in_array( $kit_action, array( 'create', 'apply' ), true ) ) {
-			if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
-				require_once FLOSC_PLUGIN_DIR . 'admin/ivr-upload-handler.php';
+		if ( 'flosc_portability_submit' === $flosc_route ) {
+			$kit_action = sanitize_key( (string) $post['flosc_portability_submit'] );
+			if ( in_array( $kit_action, array( 'create', 'apply' ), true ) ) {
+				if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
+					require_once FLOSC_PLUGIN_DIR . 'admin/ivr-upload-handler.php';
+				}
+				flosc_admin_handle_ivr_file_upload();
+				// Success exits inside handler. Failure: continue so the settings page can show errors.
+				return;
 			}
-			flosc_admin_handle_ivr_file_upload();
-			// Success exits inside handler. Failure: continue so the settings page can show errors.
 			return;
 		}
 
 		// Pack list actions (import staged WXR, remove WXR, unlink media).
-		if ( ! empty( $post['flosc_portability_pack_action'] ) ) {
+		if ( 'flosc_portability_pack_action' === $flosc_route ) {
 			if ( ! function_exists( 'flosc_admin_handle_portability_pack_actions' ) ) {
 				require_once FLOSC_PLUGIN_DIR . 'admin/ivr-upload-handler.php';
 			}
 			flosc_admin_handle_portability_pack_actions();
-			return;
-		}
-
-		$redirect_post_keys = array(
-			'flosc_save',
-			'flosc_toggle_trajectory_post',
-			'flosc_create_concierge_post',
-			'flosc_create_trajectory_post',
-		);
-		$hit                = false;
-		foreach ( $redirect_post_keys as $key ) {
-			if ( ! empty( $post[ $key ] ) ) {
-				$hit = true;
-				break;
-			}
-		}
-		if ( ! $hit ) {
 			return;
 		}
 
@@ -1278,11 +1265,16 @@ trait FLOSC_Admin_Trait {
 			exit;
 		}
 
-		// Fallback: paint Settings with the requested tab (no blank exit).
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- admin redirect copies sanitized GET routing keys only
-		$_GET['page'] = 'flosc-settings';
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- admin redirect copies sanitized GET routing keys only
-		$_GET['tab'] = $tab;
+		/*
+		 * Fallback: paint Settings with the requested tab, no blank exit.
+		 *
+		 * This used to assign into $_GET to carry the tab down to settings.php.
+		 * Mutating a superglobal to pass a parameter is what PHPCS was flagging,
+		 * and it is worth flagging: anything reading $_GET after this point sees
+		 * a value the browser never sent. settings.php consults this global the
+		 * same way it already consults flosc_current_ivr and flosc_settings_view.
+		 */
+		$GLOBALS['flosc_forced_tab'] = $tab;
 		$this->render_admin_page();
 	}
 
@@ -1293,184 +1285,106 @@ trait FLOSC_Admin_Trait {
 		$this->redirect_to_settings_tab( 'product' );
 	}
 
-	/**
-	 * Redirect to flow tab.
-	 */
 	public function redirect_to_flow_tab() {
 		$this->redirect_to_settings_tab( 'flow' );
 	}
 
-	/**
-	 * Redirect to identity tab.
-	 */
 	public function redirect_to_identity_tab() {
 		$this->redirect_to_settings_tab( 'identity' );
 	}
 
-	/**
-	 * Redirect to IVR tab.
-	 */
 	public function redirect_to_ivr_tab() {
 		$this->redirect_to_settings_tab( 'ivr-messages' );
 	}
 
-	/**
-	 * Redirect to autoprompts tab.
-	 */
 	public function redirect_to_autoprompts_tab() {
 		$this->redirect_to_settings_tab( 'autoprompts' );
 	}
 
-	/**
-	 * Redirect to content tab.
-	 */
 	public function redirect_to_content_tab() {
 		$this->redirect_to_settings_tab( 'content' );
 	}
 
-	/**
-	 * Redirect to knowledge base tab.
-	 */
 	public function redirect_to_knowledge_base_tab() {
 		$this->redirect_to_settings_tab( 'knowledge-base' );
 	}
 
-	/**
-	 * Redirect to member levels tab.
-	 */
 	public function redirect_to_member_levels_tab() {
 		$this->redirect_to_content_tab();
 	}
 
-	/**
-	 * Redirect to trajectories tab.
-	 */
 	public function redirect_to_trajectories_tab() {
 		$this->redirect_to_settings_tab( 'trajectories' );
 	}
 
-	/**
-	 * Redirect to style tab.
-	 */
 	public function redirect_to_style_tab() {
 		$this->redirect_to_settings_tab( 'style' );
 	}
 
-	/**
-	 * Redirect to AI tab.
-	 */
 	public function redirect_to_ai_tab() {
 		$this->redirect_to_settings_tab( 'ai' );
 	}
 
-	/**
-	 * Redirect to token management tab.
-	 */
 	public function redirect_to_token_management_tab() {
 		$this->redirect_to_settings_tab( 'token-management' );
 	}
 
-	/**
-	 * Redirect to concierge tab.
-	 */
 	public function redirect_to_concierge_tab() {
 		$this->redirect_to_settings_tab( 'concierge' );
 	}
 
-	/**
-	 * Redirect to quiz tab.
-	 */
 	public function redirect_to_quiz_tab() {
 		$this->redirect_to_settings_tab( 'quiz' );
 	}
 
-	/**
-	 * Redirect to email tab.
-	 */
 	public function redirect_to_email_tab() {
 		$this->redirect_to_settings_tab( 'email' );
 	}
 
-	/**
-	 * Redirect to contact form tab.
-	 */
 	public function redirect_to_contact_form_tab() {
 		$this->redirect_to_settings_tab( 'contact-form' );
 	}
 
-	/**
-	 * Redirect to AI knowledge tab.
-	 */
 	public function redirect_to_ai_knowledge_tab() {
 		$this->redirect_to_settings_tab( 'ai' );
 	}
 
-	/**
-	 * Redirect to login tab.
-	 */
 	public function redirect_to_login_tab() {
 		$this->redirect_to_settings_tab( 'login' );
 	}
 
-	/**
-	 * Redirect to offers tab.
-	 */
 	public function redirect_to_offers_tab() {
 		$this->redirect_to_settings_tab( 'offers' );
 	}
 
-	/**
-	 * Redirect to payments tab.
-	 */
 	public function redirect_to_payments_tab() {
 		$this->redirect_to_settings_tab( 'payments' );
 	}
 
-	/**
-	 * Redirect to lessons tab.
-	 */
 	public function redirect_to_lessons_tab() {
 		$this->redirect_to_content_tab();
 	}
 
-	/**
-	 * Redirect to SSO tab.
-	 */
 	public function redirect_to_sso_tab() {
 		$this->redirect_to_settings_tab( 'sso' );
 	}
 
-	/**
-	 * Redirect to engagement tab.
-	 */
 	public function redirect_to_engagement_tab() {
 		$this->redirect_to_settings_tab( 'engagement' );
 	}
 
-	/**
-	 * Redirect to administration tab.
-	 */
 	public function redirect_to_administration_tab() {
 		$this->redirect_to_settings_tab( 'administration' );
 	}
 
-	/**
-	 * Redirect to chat logs tab.
-	 */
 	public function redirect_to_chat_logs_tab() {
 		$this->redirect_to_settings_tab( 'chat-logs' );
 	}
 
-	/**
-	 * Redirect to docs tab.
-	 */
 	public function redirect_to_docs_tab() {
 		$this->redirect_to_settings_tab( 'documentation' );
 	}
 
-	/**
-	 * Redirect to da1 tab.
-	 */
 	public function redirect_to_da1_tab() {
 		$this->redirect_to_settings_tab( 'da1' );
 	}
@@ -1483,9 +1397,6 @@ trait FLOSC_Admin_Trait {
 		$this->redirect_to_settings_tab( 'ui' );
 	}
 
-	/**
-	 * Render da1 page.
-	 */
 	public function render_da1_page() {
 		echo '<div class="wrap">';
 		include FLOSC_PLUGIN_DIR . 'admin/da1.php';
@@ -1495,9 +1406,6 @@ trait FLOSC_Admin_Trait {
 	/**
 	 * Shortcode: [flosc_visitor_only]
 	 * Shows content only to non-logged-in visitors
-	 *
-	 * @param mixed $atts Atts.
-	 * @param string $content Content.
 	 */
 	public function shortcode_visitor_only( $atts, $content = '' ) {
 		if ( ! is_user_logged_in() ) {
@@ -1520,7 +1428,7 @@ trait FLOSC_Admin_Trait {
 		// Parse attributes.
 		$atts = shortcode_atts(
 			array(
-				'fallback' => '', // Optional fallback message for non-members.
+				'fallback' => '', // Optional fallback message for non-members
 			),
 			$atts
 		);
@@ -1542,8 +1450,6 @@ trait FLOSC_Admin_Trait {
 
 	/**
 	 * Shortcode: [flosc_contact_form_01] and [flosc-contact-form-01]
-	 *
-	 * @param array $atts Atts.
 	 */
 	public function shortcode_contact_form_01( $atts = array() ) {
 		$atts = shortcode_atts(
@@ -1554,9 +1460,8 @@ trait FLOSC_Admin_Trait {
 		);
 
 		$settings = $this->get_contact_form_settings( (string) $atts['flow'] );
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only shortcode status selects feedback text after the separately protected contact submission.
-		$status_raw = isset( $_GET['flosc_contact_status'] ) && is_string( $_GET['flosc_contact_status'] ) ? sanitize_key( wp_unslash( $_GET['flosc_contact_status'] ) ) : '';
-		$status     = $status_raw;
+		// Which notice to paint after a contact-form round trip. Closed set now.
+		$status = flosc_nav_param( 'flosc_contact_status', array( 'sent', 'error' ) );
 
 		wp_enqueue_style(
 			'flosc-contact-form',
@@ -1640,9 +1545,6 @@ trait FLOSC_Admin_Trait {
 		return ob_get_clean();
 	}
 
-	/**
-	 * Handle contact form submit.
-	 */
 	public function handle_contact_form_submit() {
 		$return_url = esc_url_raw( (string) wp_unslash( $_POST['flosc_contact_return'] ?? home_url( '/' ) ) );
 		$nonce      = sanitize_text_field( (string) wp_unslash( $_POST['flosc_contact_nonce'] ?? '' ) );
@@ -1675,14 +1577,6 @@ trait FLOSC_Admin_Trait {
 		$this->redirect_contact_form_result( $return_url, 'success' );
 	}
 
-	/**
-	 * Process contact form submission.
-	 *
-	 * @param mixed $data Data.
-	 * @param string $flow_id Flow ID.
-	 * @param array $options Options.
-	 * @return mixed
-	 */
 	public function process_contact_form_submission( $data, $flow_id = '', $options = array() ) {
 		$flow_id  = sanitize_key( (string) $flow_id );
 		$settings = $this->get_contact_form_settings( $flow_id );
@@ -1782,25 +1676,13 @@ trait FLOSC_Admin_Trait {
 		);
 	}
 
-	/**
-	 * Redirect contact form result.
-	 *
-	 * @param mixed $return_url Return URL.
-	 * @param mixed $status Status.
-	 */
 	private function redirect_contact_form_result( $return_url, $status ) {
-		$target = $return_url ?: home_url( '/' );
+		$target = $return_url ? $return_url : home_url( '/' );
 		$target = add_query_arg( 'flosc_contact_status', sanitize_key( $status ), $target );
 		wp_safe_redirect( $target );
 		exit;
 	}
 
-	/**
-	 * Get contact form settings.
-	 *
-	 * @param string $flow_id Flow ID.
-	 * @return mixed
-	 */
 	private function get_contact_form_settings( $flow_id = '' ) {
 		$flow_id  = sanitize_key( (string) $flow_id );
 		$settings = array();
@@ -1842,22 +1724,17 @@ trait FLOSC_Admin_Trait {
 		);
 	}
 
-	/**
-	 * Sanitize contact color.
-	 *
-	 * @param mixed $color Color.
-	 * @param mixed $fallback Fallback.
-	 * @return mixed
-	 */
 	private function sanitize_contact_color( $color, $fallback ) {
 		$clean = sanitize_hex_color( $color );
 		return $clean ? $clean : $fallback;
 	}
 
 	/**
-	 * v1.6.1: Enqueue companion widget on non-app WordPress pages.
+	 * Enqueue companion widget on non-app WordPress pages.
 	 * Only loads if companion mode is enabled for the current flow.
 	 * v1.6.3: Fixed to read from flat per-flow settings (matching admin save pattern)
+	 *
+	 * @since 1.6.1
 	 */
 	public function enqueue_companion() {
 		// Production path is FLOSC_Companion_Mode::enqueue_companion (app-route-only iframe).
@@ -1866,7 +1743,7 @@ trait FLOSC_Admin_Trait {
 			return;
 		}
 
-		// Read from per-flow settings (flat keys, not overrides)
+		// Read from per-flow settings (flat keys, not overrides).
 		$enabled = $this->get_setting( 'companion_enabled', false );
 		if ( ! $enabled ) {
 			return;
@@ -1916,10 +1793,10 @@ trait FLOSC_Admin_Trait {
 						'title'            => $title,
 						'productName'      => $product_name,
 						'headerIconUrl'    => $header_icon,
-						'assistantTitle'   => $product_name ?: $title,
+						'assistantTitle'   => $product_name ? $product_name : $title,
 						'showHeaderTokens' => false,
 						'headerTokenText'  => '',
-						'accentColor'      => $accent ?: '#2563eb',
+						'accentColor'      => $accent ? $accent : '#2563eb',
 					)
 				)
 			)
@@ -1938,7 +1815,7 @@ trait FLOSC_Admin_Trait {
 	 * Customization: bubble style, accent color, font, scale
 	 */
 	private function enqueue_chat_style() {
-		// v1.6.1: Per-flow settings via FLOSC_Flow_Manager::get_setting()
+		// v1.6.1: Per-flow settings via FLOSC_Flow_Manager::get_setting().
 		$fm     = FLOSC_Flow_Manager::instance();
 		$preset = $fm->get_setting( 'flosc_chat_style_preset', 'style', 'preset', 'light' );
 		$bubble = $fm->get_setting( 'flosc_chat_style_bubble', 'style', 'bubble', 'subtle-notch' );
@@ -1946,7 +1823,7 @@ trait FLOSC_Admin_Trait {
 		$font   = $fm->get_setting( 'flosc_chat_style_font', 'style', 'font', 'system' );
 		$scale  = intval( $fm->get_setting( 'flosc_chat_style_scale', 'style', 'scale', 100 ) );
 
-		// Bubble style presets (border-radius values per FLOSC_STYLE_GUIDE.md)
+		// Bubble style presets (border-radius values per FLOSC_STYLE_GUIDE.md).
 		$bubble_styles = array(
 			'subtle-notch' => array(
 				'user'      => '18px 18px 4px 18px',
@@ -1988,7 +1865,7 @@ trait FLOSC_Admin_Trait {
 		$inline_css = '';
 
 		// ===========================================
-		// PRESET LOADING.
+		// PRESET LOADING
 		// ===========================================
 		if ( 'auto' === $preset ) {
 			// Auto mode: Light by default, dark via prefers-color-scheme.
@@ -2025,7 +1902,7 @@ trait FLOSC_Admin_Trait {
 		}
 
 		// ===========================================
-		// DYNAMIC OVERRIDES.
+		// DYNAMIC OVERRIDES
 		// ===========================================
 		$bubble_config = $bubble_styles[ $bubble ] ?? $bubble_styles['subtle-notch'];
 
@@ -2033,7 +1910,7 @@ trait FLOSC_Admin_Trait {
 		$overrides[] = "--flosc-user-message-radius: {$bubble_config['user']}";
 		$overrides[] = "--flosc-assistant-message-radius: {$bubble_config['assistant']}";
 
-		// v1.6.1: Full accent color cascade (5→15 derived variables)
+		// v1.6.1: Full accent color cascade (5→15 derived variables).
 		if ( ! empty( $accent ) && '#2563eb' !== $accent ) {
 			// Compute derived colors from hex accent.
 			$hover   = $this->adjust_color_brightness( $accent, -15 );
@@ -2084,7 +1961,7 @@ trait FLOSC_Admin_Trait {
 			$inline_css .= "    font-family: var(--flosc-font-family) !important;\n}\n\n";
 		}
 
-		// Attach inline styles to flosc-chat handle (always exists on app requests)
+		// Attach inline styles to flosc-chat handle (always exists on app requests).
 		if ( ! empty( trim( $inline_css ) ) ) {
 			wp_add_inline_style( 'flosc-chat', $inline_css );
 		}
@@ -2105,7 +1982,7 @@ trait FLOSC_Admin_Trait {
 		// Remove CSS comments.
 		$css = preg_replace( '/\/\*[\s\S]*?\*\//', '', $css_content );
 
-		// Extract content inside :root { }
+		// Extract content inside :root { }.
 		if ( preg_match( '/:root\s*\{([^}]+)\}/s', $css, $matches ) ) {
 			return trim( $matches[1] ) . "\n";
 		}
@@ -2116,14 +1993,13 @@ trait FLOSC_Admin_Trait {
 	/**
 	 * Adjust hex color brightness by a percentage (-100 to +100).
 	 * Negative = darker, positive = lighter.
-	 * v1.6.1: Used for accent color cascade.
+	 * Used for accent color cascade.
 	 *
-	 * @param mixed $hex Hex.
-	 * @param mixed $percent Percent.
+	 * @since 1.6.1
 	 */
 	private function adjust_color_brightness( $hex, $percent ) {
 		$hex = ltrim( $hex, '#' );
-		if ( strlen( $hex ) === 3 ) {
+		if ( 3 === strlen( $hex ) ) {
 			$hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
 		}
 		$r = hexdec( substr( $hex, 0, 2 ) );
@@ -2139,14 +2015,13 @@ trait FLOSC_Admin_Trait {
 
 	/**
 	 * Convert hex color to rgba string.
-	 * v1.6.1: Used for accent-subtle generation.
+	 * Used for accent-subtle generation.
 	 *
-	 * @param mixed $hex Hex.
-	 * @param mixed $alpha Alpha.
+	 * @since 1.6.1
 	 */
 	private function hex_to_rgba( $hex, $alpha ) {
 		$hex = ltrim( $hex, '#' );
-		if ( strlen( $hex ) === 3 ) {
+		if ( 3 === strlen( $hex ) ) {
 			$hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
 		}
 		$r = hexdec( substr( $hex, 0, 2 ) );

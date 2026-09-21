@@ -5,10 +5,29 @@
  * Per-flow wallet economics + product token grants.
  * Products (offers) are editable accordion rows — set grant mode, amount, and cap
  * per product, or inherit flow defaults.
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
+}
+
+/*
+ * Identity before input.
+ *
+ * WordPress.org, 14 Sep 2026: "No nonce check found validating input origin on
+ * lines 1-116". Their scanner measures whether a check appears BEFORE the
+ * request is read, not merely whether one exists somewhere in the file. Several
+ * files here verified correctly and verified late, and late did not count -- an
+ * unauthorized request still walked the whole parser before being refused.
+ *
+ * This is the capability the FLOSC menu itself requires. Flow-level access is
+ * still checked further down where the flow is known; this only establishes
+ * that somebody who may administer FLOSC at all is asking.
+ */
+if ( ! current_user_can( 'edit_others_posts' ) ) {
+	wp_die( esc_html__( 'You do not have permission to access this page.', 'flosc' ), 403 );
 }
 
 flosc_tab_header( '🪙', 'Token Management' );
@@ -153,7 +172,7 @@ foreach ( $flosc_offers as $flosc_oid => $flosc_offer ) {
 	$flosc_cap_mode = sanitize_key( (string) ( $flosc_tokens['cap_mode'] ?? 'flow' ) );
 	if ( ! in_array( $flosc_cap_mode, array( 'flow', 'none', 'custom' ), true ) ) {
 		if ( array_key_exists( 'cap', $flosc_tokens ) && '' !== $flosc_tokens['cap'] && null !== $flosc_tokens['cap'] ) {
-			$flosc_cap_mode = ( intval( $flosc_tokens['cap'] ) === 0 && array_key_exists( 'cap', $flosc_tokens ) ) ? 'none' : 'custom';
+			$flosc_cap_mode = ( 0 === intval( $flosc_tokens['cap'] ) && array_key_exists( 'cap', $flosc_tokens ) ) ? 'none' : 'custom';
 		} else {
 			$flosc_cap_mode = 'flow';
 		}
@@ -235,11 +254,9 @@ $flosc_active_count = count(
 		}
 	)
 );
-// Admin list filter (read-only navigation, not a form submission).
-$flosc_filter = sanitize_key( (string) filter_input( INPUT_GET, 'flosc_product_filter' ) );
-if ( ! in_array( $flosc_filter, array( 'active', 'all' ), true ) ) {
-	$flosc_filter = 'active';
-}
+// Which rows to list. Read-only navigation; the allowlist and the default are
+// now one expression instead of a read followed by a corrective if.
+$flosc_filter           = flosc_nav_param( 'flosc_product_filter', array( 'active', 'all' ), 'active' );
 $flosc_visible_products = array_values(
 	array_filter(
 		$flosc_product_rows,

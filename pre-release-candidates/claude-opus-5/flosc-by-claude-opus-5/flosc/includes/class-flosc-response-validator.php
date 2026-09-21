@@ -15,11 +15,6 @@ class FLOSC_Response_Validator {
 
 	private $flosc_user_session;
 
-	/**
-	 * Construct.
-	 *
-	 * @param mixed $flosc_user_session Flosc user session.
-	 */
 	public function __construct( $flosc_user_session ) {
 		$this->flosc_user_session = $flosc_user_session;
 	}
@@ -42,7 +37,7 @@ class FLOSC_Response_Validator {
 
 		// Check 2: Pricing to visitors.
 		if ( $this->flosc_contains_pricing( $flosc_response ) &&
-			$this->flosc_user_session->flosc_get( 'flosc_user_type' ) === 'flosc_visitor' ) {
+			'flosc_visitor' === $this->flosc_user_session->flosc_get( 'flosc_user_type' ) ) {
 			$flosc_violations[] = 'premature_pricing';
 		}
 
@@ -62,58 +57,34 @@ class FLOSC_Response_Validator {
 		return array(
 			'flosc_valid'      => false,
 			'flosc_violations' => $flosc_violations,
-			'flosc_response'   => $this->flosc_get_override_response( $flosc_violations ),
+			'flosc_response'   => $this->flosc_get_override_response(),
 		);
 	}
 
-	/**
-	 * Flosc contains lesson content.
-	 *
-	 * @param mixed $flosc_response Flosc response.
-	 * @return mixed
-	 */
 	private function flosc_contains_lesson_content( $flosc_response ) {
 		return strlen( $flosc_response ) > 3000 || preg_match( '/^Lesson \d+:/m', $flosc_response );
 	}
 
-	/**
-	 * Flosc used lesson tool.
-	 *
-	 * @param mixed $flosc_tool_calls Flosc tool calls.
-	 * @return mixed
-	 */
 	private function flosc_used_lesson_tool( $flosc_tool_calls ) {
 		foreach ( $flosc_tool_calls as $flosc_call ) {
-			if ( in_array( $flosc_call['name'], array( 'flosc_get_lesson_content', 'flosc_deliver_free_lesson' ) ) ) {
+			if ( in_array( $flosc_call['name'], array( 'flosc_get_lesson_content', 'flosc_deliver_free_lesson' ), true ) ) {
 				return true;
 			}
 		}
 		return false;
 	}
 
-	/**
-	 * Flosc contains pricing.
-	 *
-	 * @param mixed $flosc_response Flosc response.
-	 * @return mixed
-	 */
 	private function flosc_contains_pricing( $flosc_response ) {
 		$flosc_keywords = array( '$', 'price', 'cost', 'pay', 'purchase', 'buy' );
 		foreach ( $flosc_keywords as $flosc_keyword ) {
-			if ( stripos( $flosc_response, $flosc_keyword ) !== false ) {
+			if ( false !== stripos( $flosc_response, $flosc_keyword ) ) {
 				return true;
 			}
 		}
 		return false;
 	}
 
-	/**
-	 * Flosc get override response.
-	 *
-	 * @param mixed $flosc_violations Flosc violations.
-	 * @return mixed
-	 */
-	private function flosc_get_override_response( $flosc_violations ) {
+	private function flosc_get_override_response() {
 		$flosc_user_type = $this->flosc_user_session->flosc_get( 'flosc_user_type' );
 
 		$flosc_overrides = array(

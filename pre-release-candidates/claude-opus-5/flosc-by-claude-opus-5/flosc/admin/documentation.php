@@ -8,6 +8,8 @@
  * Content status: ✅ = written, 🔲 = placeholder (heading structure only)
  *
  * @since 8.0.1
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -318,12 +320,12 @@ foreach ( $flosc_doc_topics as $flosc_topic ) {
 
 		<?php elseif ( 'ref-core' === $flosc_doc_topic ) : ?>
 			<div class="flosc-doc-article flosc-doc-card">
-				<?php include FLOSC_PLUGIN_DIR . 'admin/docs/ref_core_skeleton.php'; ?>
+				<?php include FLOSC_PLUGIN_DIR . 'admin/docs/ref-core-skeleton.php'; ?>
 			</div>
 
 		<?php elseif ( 'ref-admin' === $flosc_doc_topic ) : ?>
 			<div class="flosc-doc-article flosc-doc-card">
-				<?php include FLOSC_PLUGIN_DIR . 'admin/docs/ref_admin_skeleton.php'; ?>
+				<?php include FLOSC_PLUGIN_DIR . 'admin/docs/ref-admin-skeleton.php'; ?>
 			</div>
 
 		<?php elseif ( 'ref-personality' === $flosc_doc_topic ) : ?>
@@ -363,8 +365,23 @@ foreach ( $flosc_doc_topics as $flosc_topic ) {
 					<strong>🔲 Content pending</strong> — This section has a heading structure prepared. Content will be written as the corresponding features stabilize.
 				</div>
 				<?php
-				// Load the skeleton file if it exists.
-				$flosc_skeleton_file = FLOSC_PLUGIN_DIR . 'admin/docs/' . str_replace( '-', '_', $flosc_doc_topic ) . '_skeleton.php';
+				/*
+				 * A topic with no branch of its own can still carry an outline:
+				 * drop admin/docs/<topic id>-skeleton.php in beside the written
+				 * pages and it renders under the "content pending" note. The
+				 * path is built from $flosc_doc_topic, but only after the loop
+				 * above matched it against $flosc_doc_topics, so it is one of
+				 * the ids declared at the top of this file and not free text
+				 * from the query string.
+				 *
+				 * Until v82.9 the name was assembled as <topic with hyphens
+				 * turned to underscores>_skeleton.php, which no longer matches
+				 * anything: WordPress requires hyphenated lowercase file names,
+				 * so the two skeletons were renamed to ref-admin-skeleton.php
+				 * and ref-core-skeleton.php. Both of those have explicit
+				 * branches above and never reached this line either way.
+				 */
+				$flosc_skeleton_file = FLOSC_PLUGIN_DIR . 'admin/docs/' . $flosc_doc_topic . '-skeleton.php';
 				if ( file_exists( $flosc_skeleton_file ) ) {
 					include $flosc_skeleton_file;
 				}

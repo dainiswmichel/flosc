@@ -29,8 +29,10 @@ class Facebook_Provider extends SSO_Provider_Base {
 
 	/**
 	 * Graph API version
-	 * v1.4.6: Aligned with BuddyBoss proven working version (v19.0)
+	 * Aligned with BuddyBoss proven working version (v19.0)
 	 * Facebook deprecates versions ~2 years after release
+	 *
+	 * @since 1.4.6
 	 */
 	const GRAPH_VERSION = 'v19.0';
 
@@ -71,12 +73,18 @@ class Facebook_Provider extends SSO_Provider_Base {
 	}
 
 	/**
-	 * Get user info from Facebook
-	 * Facebook requires specifying fields explicitly
+	 * Get user info from Facebook.
+	 *
+	 * Facebook returns nothing by default: the fields wanted have to be named
+	 * explicitly in the request, which is why this method builds a field list
+	 * rather than simply calling the endpoint.
 	 *
 	 * @param string $access_token OAuth access token.
-	 * @return array|WP_Error User data or error
-	 * @param array $token_data Token data.
+	 * @param array  $token_data   Full token response. Unused by this provider;
+	 *                             present because OAuth2_Handler passes the same
+	 *                             arguments to every provider, and Apple reads
+	 *                             its id_token and form_post claims from it.
+	 * @return array|WP_Error User data, or WP_Error if the call fails.
 	 */
 	public function get_user_info( $access_token, $token_data = array() ) {
 		// Facebook requires explicit field requests.
@@ -146,7 +154,7 @@ class Facebook_Provider extends SSO_Provider_Base {
 		return array(
 			'provider_id'    => sanitize_text_field( (string) ( $raw_data['id'] ?? '' ) ),
 			'email'          => $email,
-			'email_verified' => '' !== $email, // Facebook only returns verified emails.
+			'email_verified' => '' !== $email, // Facebook only returns verified email addresses.
 			'name'           => sanitize_text_field( (string) ( $raw_data['name'] ?? '' ) ),
 			'first_name'     => sanitize_text_field( $first ),
 			'last_name'      => sanitize_text_field( $last ),
@@ -228,11 +236,12 @@ class Facebook_Provider extends SSO_Provider_Base {
 
 	/**
 	 * Exchange authorization code for access token
-	 * v1.4.6: Override to add long-lived token exchange (BuddyBoss pattern)
+	 * Override to add long-lived token exchange (BuddyBoss pattern)
 	 *
 	 * @param string $code Authorization code.
 	 * @param string $redirect_uri Callback URL.
 	 * @return array|WP_Error Token data or error
+	 * @since 1.4.6
 	 */
 	public function exchange_code_for_token( $code, $redirect_uri ) {
 		// Standard token exchange first.
@@ -245,7 +254,7 @@ class Facebook_Provider extends SSO_Provider_Base {
 		// Add created timestamp.
 		$token_data['created'] = time();
 
-		// Try to get long-lived token if current one expires soon (< 2 hours)
+		// Try to get long-lived token if current one expires soon (< 2 hours).
 		if ( isset( $token_data['expires_in'] ) && ( $token_data['created'] + $token_data['expires_in'] < time() + 7200 ) ) {
 			$long_lived = $this->request_long_lived_token( $token_data['access_token'] );
 			if ( ! is_wp_error( $long_lived ) ) {
@@ -258,10 +267,11 @@ class Facebook_Provider extends SSO_Provider_Base {
 
 	/**
 	 * Request long-lived access token from Facebook
-	 * v1.4.6: BuddyBoss pattern — exchanges short-lived token for ~60 day token
+	 * BuddyBoss pattern — exchanges short-lived token for ~60 day token
 	 *
 	 * @param string $short_lived_token The short-lived access token.
 	 * @return array|WP_Error Long-lived token data or error
+	 * @since 1.4.6
 	 */
 	private function request_long_lived_token( $short_lived_token ) {
 		// v1.4.6: Use add_query_arg, NOT wp_remote_get body — GET request bodies are ignored by Facebook.
@@ -286,7 +296,7 @@ class Facebook_Provider extends SSO_Provider_Base {
 			return $response;
 		}
 
-		if ( wp_remote_retrieve_response_code( $response ) !== 200 ) {
+		if ( 200 !== wp_remote_retrieve_response_code( $response ) ) {
 			return new \WP_Error( 'long_lived_token_error', 'Failed to exchange for long-lived token' );
 		}
 

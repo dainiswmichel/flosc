@@ -12,15 +12,14 @@
  * Run via: wp eval-file admin/create-sample-data.php
  *
  * @since 9.1.8
+ *
+ * @package FLOSC
  */
 
-if ( ! defined( 'ABSPATH' ) ) {
-	// Allow running from WP-CLI.
-	if ( defined( 'WP_CLI' ) && WP_CLI ) {
-		// Running from CLI is OK.
-	} else {
-		exit( 'Direct access not allowed' );
-	}
+// Reachable without WordPress loaded only under WP-CLI, which is how the
+// sample data is installed from a terminal.
+if ( ! defined( 'ABSPATH' ) && ! ( defined( 'WP_CLI' ) && WP_CLI ) ) {
+	exit( 'Direct access not allowed' );
 }
 
 /**
@@ -103,7 +102,7 @@ function flosc_create_sample_posts() {
 			'post_status'   => 'publish',
 			'post_category' => array( $cat_id ),
 			'post_type'     => 'post',
-			'post_author'   => 1, // Admin user.
+			'post_author'   => 1, // Admin user
 		);
 
 		$post_id = wp_insert_post( $post_data );
@@ -111,7 +110,7 @@ function flosc_create_sample_posts() {
 		if ( $post_id && ! is_wp_error( $post_id ) ) {
 			// Add custom meta.
 			update_post_meta( $post_id, '_flosc_lesson_number', $num );
-			update_post_meta( $post_id, '_flosc_access_level', 'member' ); // Default: member-only.
+			update_post_meta( $post_id, '_flosc_access_level', 'member' ); // Default: member-only
 
 			WP_CLI::success( "Created post {$num}: ID {$post_id}" );
 			++$created;
@@ -127,9 +126,6 @@ function flosc_create_sample_posts() {
 /**
  * Generate post content with <!--more--> tag
  * MAGNIFICENT, ENTERTAINING, JOYFUL lessons with real IPA transcriptions
- *
- * @param mixed $num Num.
- * @param mixed $word Word.
  */
 function flosc_generate_post_content( $num, $word ) {
 
@@ -140,9 +136,18 @@ function flosc_generate_post_content( $num, $word ) {
 			'teaser'   => "Ever wonder why \"one\" doesn't rhyme with \"bone\"? Buckle up, language nerds—this seemingly simple word has a pronunciation plot twist that'll make you question everything you thought you knew about English vowels.",
 			'ipa'      => '/wʌn/',
 			'sounds'   => array(
-				'/w/' => 'The "w" sound - Round your lips like you\'re about to whistle, then release into the next sound. Your vocal cords vibrate (it\'s voiced). Try it: "wuh-wuh-wuh"',
-				'/ʌ/' => 'The "uh" sound (called "schwa" or "wedge") - This is THE most common vowel in English. Drop your jaw slightly, relax your tongue in the middle of your mouth. It\'s the sound you make when you get punched in the gut: "uh!"',
-				'/n/' => 'The "n" sound - Touch your tongue tip to the ridge behind your top teeth. Air flows through your nose (it\'s nasal). Hum it: "nnnnn"',
+				array(
+					'ipa'  => '/w/',
+					'note' => 'The "w" sound - Round your lips like you\'re about to whistle, then release into the next sound. Your vocal cords vibrate (it\'s voiced). Try it: "wuh-wuh-wuh"',
+				),
+				array(
+					'ipa'  => '/ʌ/',
+					'note' => 'The "uh" sound (called "schwa" or "wedge") - This is THE most common vowel in English. Drop your jaw slightly, relax your tongue in the middle of your mouth. It\'s the sound you make when you get punched in the gut: "uh!"',
+				),
+				array(
+					'ipa'  => '/n/',
+					'note' => 'The "n" sound - Touch your tongue tip to the ridge behind your top teeth. Air flows through your nose (it\'s nasal). Hum it: "nnnnn"',
+				),
 			),
 			'fun_fact' => 'In Old English, "one" was "ān" (pronounced "ahn"). The "w" sound appeared in Middle English to prevent confusion with "own." English: making things complicated since 1066!',
 		),
@@ -151,8 +156,14 @@ function flosc_generate_post_content( $num, $word ) {
 			'teaser'   => 'Why does \"two\" sound EXACTLY like \"too\" and \"to\"? Is this a conspiracy? A cosmic joke? Welcome to the wild world of homophones, where three words walk into a bar and sound identical.',
 			'ipa'      => '/tuː/',
 			'sounds'   => array(
-				'/t/'  => 'The "t" sound - Press your tongue tip against the ridge behind your top teeth. Build up air pressure, then release explosively. It\'s voiceless (no vocal cord vibration). Pop it: "t-t-t"',
-				'/uː/' => 'The "oo" sound (long) - Round your lips tightly and push them forward like you\'re kissing someone across the room. Your tongue pulls back high in your mouth. Hold it: "oooooo"',
+				array(
+					'ipa'  => '/t/',
+					'note' => 'The "t" sound - Press your tongue tip against the ridge behind your top teeth. Build up air pressure, then release explosively. It\'s voiceless (no vocal cord vibration). Pop it: "t-t-t"',
+				),
+				array(
+					'ipa'  => '/uː/',
+					'note' => 'The "oo" sound (long) - Round your lips tightly and push them forward like you\'re kissing someone across the room. Your tongue pulls back high in your mouth. Hold it: "oooooo"',
+				),
 			),
 			'fun_fact' => 'The "w" in "two" hasn\'t been pronounced since the 1500s, but we keep writing it because English spelling is where logic goes to die. Fun fact: in Middle English, people DID pronounce it "twoh"!',
 		),
@@ -161,9 +172,18 @@ function flosc_generate_post_content( $num, $word ) {
 			'teaser'   => 'If you\'re not spraying a little when you say "three," you\'re doing it wrong. This lesson reveals why the TH sound is the ultimate test of English pronunciation mastery—and why so many languages just... don\'t have it.',
 			'ipa'      => '/θriː/',
 			'sounds'   => array(
-				'/θ/'  => 'The "th" sound (voiceless) - Stick your tongue between your teeth and blow air out. Do NOT vibrate your vocal cords. It should sound like air escaping a tire: "thhhh." This sound doesn\'t exist in most languages!',
-				'/r/'  => 'The American "r" sound - Curl your tongue back WITHOUT touching the roof of your mouth. Your tongue tip shouldn\'t touch anything. It\'s the most distinctive sound in American English: "rrrr"',
-				'/iː/' => 'The "ee" sound (long) - Spread your lips wide like you\'re smiling. Your tongue is high and forward in your mouth. Stretch it: "eeeeee"',
+				array(
+					'ipa'  => '/θ/',
+					'note' => 'The "th" sound (voiceless) - Stick your tongue between your teeth and blow air out. Do NOT vibrate your vocal cords. It should sound like air escaping a tire: "thhhh." This sound doesn\'t exist in most languages!',
+				),
+				array(
+					'ipa'  => '/r/',
+					'note' => 'The American "r" sound - Curl your tongue back WITHOUT touching the roof of your mouth. Your tongue tip shouldn\'t touch anything. It\'s the most distinctive sound in American English: "rrrr"',
+				),
+				array(
+					'ipa'  => '/iː/',
+					'note' => 'The "ee" sound (long) - Spread your lips wide like you\'re smiling. Your tongue is high and forward in your mouth. Stretch it: "eeeeee"',
+				),
 			),
 			'fun_fact' => 'The θ sound (called "theta") only exists in about 10% of world languages. That\'s why "three" becomes "tree" in many accents. The Ancient Greeks had it—that\'s why their letter is θ (theta)!',
 		),
@@ -172,9 +192,18 @@ function flosc_generate_post_content( $num, $word ) {
 			'teaser'   => 'You think you\'re saying one vowel, but your mouth is secretly doing TWO. That\'s right, "four" contains a vowel combo move so smooth you probably never noticed it. Prepare to have your mind blown.',
 			'ipa'      => '/fɔːr/',
 			'sounds'   => array(
-				'/f/'  => 'The "f" sound - Bite your bottom lip with your top teeth. Blow air through the gap. It\'s voiceless and feels like a gentle breeze: "fffff"',
-				'/ɔː/' => 'The "aw" sound (long) - Open your mouth wider than for "oh." Your jaw drops, lips round slightly. This is the sound of realization: "Awwww, I get it now!"',
-				'/r/'  => 'The American "r" sound (again!) - Remember: curl back, don\'t touch. In American English, we ALWAYS pronounce "r" at the end of words (unlike British "faw")',
+				array(
+					'ipa'  => '/f/',
+					'note' => 'The "f" sound - Bite your bottom lip with your top teeth. Blow air through the gap. It\'s voiceless and feels like a gentle breeze: "fffff"',
+				),
+				array(
+					'ipa'  => '/ɔː/',
+					'note' => 'The "aw" sound (long) - Open your mouth wider than for "oh." Your jaw drops, lips round slightly. This is the sound of realization: "Awwww, I get it now!"',
+				),
+				array(
+					'ipa'  => '/r/',
+					'note' => 'The American "r" sound (again!) - Remember: curl back, don\'t touch. In American English, we ALWAYS pronounce "r" at the end of words (unlike British "faw")',
+				),
 			),
 			'fun_fact' => 'British speakers say "faw" (no R sound). Americans say "four" (with the R). This difference—called "rhoticity"—is how you spot an American from 100 yards away. Linguists call Americans "rhotic." Pirates call us "arrrrr-speakers."',
 		),
@@ -183,9 +212,18 @@ function flosc_generate_post_content( $num, $word ) {
 			'teaser'   => 'Why does "five" sound like you\'re halfway through saying "eye" before you remember there\'s more word left? Because DIPHTHONGS, baby! Your tongue is about to go on a journey.',
 			'ipa'      => '/faɪv/',
 			'sounds'   => array(
-				'/f/'  => 'The "f" sound (you know this one now!) - Top teeth, bottom lip, blow air. Like whispering a secret: "fffff"',
-				'/aɪ/' => 'The "eye" diphthong - Start with your jaw dropped and tongue low (like "ah"), then glide up toward "ee." Your mouth moves WHILE making the sound: "ahhh-eee" blended together. This is the sound of surprise!',
-				'/v/'  => 'The "v" sound - Same mouth position as /f/, but NOW vibrate your vocal cords. It\'s like /f/\'s younger, louder sibling: "vvvvv"',
+				array(
+					'ipa'  => '/f/',
+					'note' => 'The "f" sound (you know this one now!) - Top teeth, bottom lip, blow air. Like whispering a secret: "fffff"',
+				),
+				array(
+					'ipa'  => '/aɪ/',
+					'note' => 'The "eye" diphthong - Start with your jaw dropped and tongue low (like "ah"), then glide up toward "ee." Your mouth moves WHILE making the sound: "ahhh-eee" blended together. This is the sound of surprise!',
+				),
+				array(
+					'ipa'  => '/v/',
+					'note' => 'The "v" sound - Same mouth position as /f/, but NOW vibrate your vocal cords. It\'s like /f/\'s younger, louder sibling: "vvvvv"',
+				),
 			),
 			'fun_fact' => 'The "eye" sound /aɪ/ is found in: five, eye, I, my, high, fly, die, pie, and literally any word that makes you sound excited. It\'s called the "Great Vowel Shift diphthong" because English vowels couldn\'t just stay in one place like NORMAL languages.',
 		),
@@ -194,10 +232,22 @@ function flosc_generate_post_content( $num, $word ) {
 			'teaser'   => 'Ssssssssix. Feel that? That\'s the sound of a snake, a leaking tire, and the number after five. Welcome to the world of fricatives—sounds that make you sound perpetually annoyed.',
 			'ipa'      => '/sɪks/',
 			'sounds'   => array(
-				'/s/' => 'The "s" sound - Place your tongue close to the ridge behind your teeth, but DON\'T touch. Force air through the narrow gap. It\'s voiceless and sounds like escaping steam: "sssss"',
-				'/ɪ/' => 'The "ih" sound (short) - Relax your tongue in a mid-high position. Your mouth is slightly open. This is NOT "ee"—it\'s shorter, lazier. Say "bit" not "beat." This is the sound of mild disappointment.',
-				'/k/' => 'The "k" sound - Press the back of your tongue against the soft part of your roof (velum). Build pressure, release explosively. It\'s voiceless and sounds like you\'re choking (politely): "k-k-k"',
-				'/s/' => 'Another "s" sound! - Yes, "six" has TWO hissing sounds. We start with one, end with one. Maximum hiss achieved.',
+				array(
+					'ipa'  => '/s/',
+					'note' => 'The "s" sound - Place your tongue close to the ridge behind your teeth, but DON\'T touch. Force air through the narrow gap. It\'s voiceless and sounds like escaping steam: "sssss"',
+				),
+				array(
+					'ipa'  => '/ɪ/',
+					'note' => 'The "ih" sound (short) - Relax your tongue in a mid-high position. Your mouth is slightly open. This is NOT "ee"—it\'s shorter, lazier. Say "bit" not "beat." This is the sound of mild disappointment.',
+				),
+				array(
+					'ipa'  => '/k/',
+					'note' => 'The "k" sound - Press the back of your tongue against the soft part of your roof (velum). Build pressure, release explosively. It\'s voiceless and sounds like you\'re choking (politely): "k-k-k"',
+				),
+				array(
+					'ipa'  => '/s/',
+					'note' => 'Another "s" sound! - Yes, "six" has TWO hissing sounds. We start with one, end with one. Maximum hiss achieved.',
+				),
 			),
 			'fun_fact' => '"Six" is spelled with an X, but there\'s NO /z/ sound—it\'s /ks/! X is a LIAR. It\'s actually TWO sounds disguised as one letter. English spelling strikes again!',
 		),
@@ -206,11 +256,26 @@ function flosc_generate_post_content( $num, $word ) {
 			'teaser'   => 'Is it "SEH-ven" or "SEH-vun"? Trick question—it\'s both, and nobody cares which one you use. Welcome to the beautiful chaos of the schwa sound, where vowels go to retire.',
 			'ipa'      => '/ˈsɛv.ən/',
 			'sounds'   => array(
-				'/s/' => 'The "s" sound (you\'re a pro at this now!) - Tongue near ridge, air through gap, sound like a hiss',
-				'/ɛ/' => 'The "eh" sound - Open your mouth slightly more than for /ɪ/. Your tongue is mid-height, forward. This is the sound of "meh" and mild confusion. Say "bed" not "bid."',
-				'/v/' => 'The "v" sound (returning champion!) - Top teeth on bottom lip, vibrate vocal cords',
-				'/ə/' => 'The schwa (uh) sound - The LAZIEST vowel. Your mouth barely moves. Every unstressed syllable eventually becomes schwa. It\'s the most common sound in English because we\'re all too tired to pronounce things properly.',
-				'/n/' => 'The "n" sound (again!) - Tongue tip to ridge, air through nose',
+				array(
+					'ipa'  => '/s/',
+					'note' => 'The "s" sound (you\'re a pro at this now!) - Tongue near ridge, air through gap, sound like a hiss',
+				),
+				array(
+					'ipa'  => '/ɛ/',
+					'note' => 'The "eh" sound - Open your mouth slightly more than for /ɪ/. Your tongue is mid-height, forward. This is the sound of "meh" and mild confusion. Say "bed" not "bid."',
+				),
+				array(
+					'ipa'  => '/v/',
+					'note' => 'The "v" sound (returning champion!) - Top teeth on bottom lip, vibrate vocal cords',
+				),
+				array(
+					'ipa'  => '/ə/',
+					'note' => 'The schwa (uh) sound - The LAZIEST vowel. Your mouth barely moves. Every unstressed syllable eventually becomes schwa. It\'s the most common sound in English because we\'re all too tired to pronounce things properly.',
+				),
+				array(
+					'ipa'  => '/n/',
+					'note' => 'The "n" sound (again!) - Tongue tip to ridge, air through nose',
+				),
 			),
 			'fun_fact' => 'Most people actually say "SEV-un" not "SEV-en." The second syllable gets so unstressed it turns into schwa /ə/. Linguists call this "vowel reduction." Normal people call it "talking like a human."',
 		),
@@ -219,8 +284,14 @@ function flosc_generate_post_content( $num, $word ) {
 			'teaser'   => 'Once upon a time, "eight" had a totally different vowel sound. Then the Great Vowel Shift happened (1400-1700), English went through puberty, and now we\'re stuck with this glorious diphthong disaster.',
 			'ipa'      => '/eɪt/',
 			'sounds'   => array(
-				'/eɪ/' => 'The "ay" diphthong - Start with your mouth half-open, tongue mid-height (like "eh"), then glide upward toward "ee." It\'s smooth, sophisticated, the sound of agreement: "Aaaayyyy!" Also found in: day, say, may, bae.',
-				'/t/'  => 'The "t" sound (final position) - In American English, final /t/ can be: (1) fully released with a puff of air, (2) unreleased (tongue stops but doesn\'t pop), or (3) glottalized (throat stops the air). Say "eight" three times and notice what YOUR mouth does!',
+				array(
+					'ipa'  => '/eɪ/',
+					'note' => 'The "ay" diphthong - Start with your mouth half-open, tongue mid-height (like "eh"), then glide upward toward "ee." It\'s smooth, sophisticated, the sound of agreement: "Aaaayyyy!" Also found in: day, say, may, bae.',
+				),
+				array(
+					'ipa'  => '/t/',
+					'note' => 'The "t" sound (final position) - In American English, final /t/ can be: (1) fully released with a puff of air, (2) unreleased (tongue stops but doesn\'t pop), or (3) glottalized (throat stops the air). Say "eight" three times and notice what YOUR mouth does!',
+				),
 			),
 			'fun_fact' => 'In Middle English (Chaucer times), "eight" was pronounced more like "AKH-tuh." The Great Vowel Shift changed EVERYTHING. If you time-traveled to 1400, you couldn\'t understand English. You\'d need subtitles in your own language!',
 		),
@@ -229,9 +300,18 @@ function flosc_generate_post_content( $num, $word ) {
 			'teaser'   => 'Thought you understood diphthongs after "five"? THINK AGAIN. "Nine" takes that /aɪ/ sound and adds a nasal finale that\'ll make your nose vibrate like a tuning fork.',
 			'ipa'      => '/naɪn/',
 			'sounds'   => array(
-				'/n/'  => 'The "n" sound (opening position) - Tongue tip to ridge, air through nose. When /n/ starts a word, it\'s more forceful than when it ends one.',
-				'/aɪ/' => 'The "eye" diphthong (AGAIN!) - Jaw drops (ah) then glides up (ee). Same as in "five." You\'re basically saying "nah-een" really fast.',
-				'/n/'  => 'The "n" sound (final position) - Ends with tongue touching ridge, holding it there while air flows through your nose. Hold the "nnnnn" and feel the nasal vibration!',
+				array(
+					'ipa'  => '/n/',
+					'note' => 'The "n" sound (opening position) - Tongue tip to ridge, air through nose. When /n/ starts a word, it\'s more forceful than when it ends one.',
+				),
+				array(
+					'ipa'  => '/aɪ/',
+					'note' => 'The "eye" diphthong (AGAIN!) - Jaw drops (ah) then glides up (ee). Same as in "five." You\'re basically saying "nah-een" really fast.',
+				),
+				array(
+					'ipa'  => '/n/',
+					'note' => 'The "n" sound (final position) - Ends with tongue touching ridge, holding it there while air flows through your nose. Hold the "nnnnn" and feel the nasal vibration!',
+				),
 			),
 			'fun_fact' => '"Nine" is one of the few English numbers that rhymes with tons of words: fine, mine, line, wine, pine, shine, divine, feline, alkaline... The /aɪn/ ending is SUPER productive in English. Meanwhile "orange" is over there rhyming with nothing like a loser.',
 		),
@@ -240,9 +320,18 @@ function flosc_generate_post_content( $num, $word ) {
 			'teaser'   => 'Congratulations! You made it to double digits. "Ten" is refreshingly simple after all those diphthongs and schwas. Just three sounds, boom, you\'re done. You\'ve earned this.',
 			'ipa'      => '/tɛn/',
 			'sounds'   => array(
-				'/t/' => 'The "t" sound (you\'re basically a /t/ expert now) - Tongue tip to ridge, build pressure, explosive release, voiceless',
-				'/ɛ/' => 'The "eh" sound (from "seven"!) - Mid-open mouth, tongue mid-height forward. The sound of "meh" but also "ten." Say "pen" not "pin."',
-				'/n/' => 'The "n" sound (final bow) - Tongue to ridge, nasal airflow, hold it with pride. You made it to TEN!',
+				array(
+					'ipa'  => '/t/',
+					'note' => 'The "t" sound (you\'re basically a /t/ expert now) - Tongue tip to ridge, build pressure, explosive release, voiceless',
+				),
+				array(
+					'ipa'  => '/ɛ/',
+					'note' => 'The "eh" sound (from "seven"!) - Mid-open mouth, tongue mid-height forward. The sound of "meh" but also "ten." Say "pen" not "pin."',
+				),
+				array(
+					'ipa'  => '/n/',
+					'note' => 'The "n" sound (final bow) - Tongue to ridge, nasal airflow, hold it with pride. You made it to TEN!',
+				),
 			),
 			'fun_fact' => 'We have a base-10 number system (decimal) because humans have 10 fingers. If we had 8 fingers, we\'d count in base-8 (octal). Computers count in base-2 (binary) because they only have two fingers: 0 and 1. Life is weird.',
 		),
@@ -260,9 +349,15 @@ function flosc_generate_post_content( $num, $word ) {
 	$content .= "---\n\n";
 	$content .= "## 🔊 Sound-by-Sound Breakdown\n\n";
 
-	foreach ( $lesson['sounds'] as $ipa => $description ) {
-		$content .= "### {$ipa}\n\n";
-		$content .= "{$description}\n\n";
+	/*
+	 * A list, not a map keyed by the phoneme. "Six" has two /s/ sounds and
+	 * "nine" has two /n/ sounds, one at each end of the word, and each carries
+	 * its own note about position. Keyed by phoneme, the second note silently
+	 * replaced the first and the lesson shipped with one of the two missing.
+	 */
+	foreach ( $lesson['sounds'] as $sound ) {
+		$content .= "### {$sound['ipa']}\n\n";
+		$content .= "{$sound['note']}\n\n";
 	}
 
 	$content .= "---\n\n";
@@ -286,10 +381,7 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	flosc_create_sample_posts();
 }
 
-// Provide admin UI button (future enhancement)
-/**
- * Flosc sample data admin ui.
- */
+// Provide admin UI button (future enhancement).
 function flosc_sample_data_admin_ui() {
 	if ( ! current_user_can( 'manage_options' ) ) {
 		return;

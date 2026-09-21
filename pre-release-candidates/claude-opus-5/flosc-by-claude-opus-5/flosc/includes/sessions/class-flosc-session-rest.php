@@ -4,6 +4,7 @@
  *
  * @package FLOSC
  */
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -13,21 +14,10 @@ class FLOSC_Session_Rest {
 	/** @var FLOSC_Framework */
 	private $flosc;
 
-	/**
-	 * Construct.
-	 *
-	 * @param mixed $flosc Flosc.
-	 */
 	public function __construct( $flosc ) {
 		$this->flosc = $flosc;
 	}
 
-	/**
-	 * Get sessions.
-	 *
-	 * @param mixed $request Request.
-	 * @return mixed
-	 */
 	public function get_sessions( $request ) {
 		$user_id = get_current_user_id();
 		if ( $user_id <= 0 ) {
@@ -59,8 +49,6 @@ class FLOSC_Session_Rest {
 
 	/**
 	 * Get a single session by ID (owner + flow scoped; fail closed).
-	 *
-	 * @param mixed $request Request.
 	 */
 	public function get_single_session( $request ) {
 		$user_id = get_current_user_id();
@@ -109,12 +97,6 @@ class FLOSC_Session_Rest {
 		);
 	}
 
-	/**
-	 * Create session.
-	 *
-	 * @param mixed $request Request.
-	 * @return mixed
-	 */
 	public function create_session( $request ) {
 		// New chat = new session on THIS flow only.
 		$title   = 'New Chat';
@@ -150,7 +132,7 @@ class FLOSC_Session_Rest {
 				$identity  = method_exists( $this, 'get_floscflow_identity' )
 					? $this->flosc->get_floscflow_identity()
 					: array();
-				$name      = $user ? (string) ( $user->display_name ?: $user->user_login ) : '';
+				$name      = $user ? (string) ( $user->display_name ? $user->display_name : $user->user_login ) : '';
 				$flow_name = is_array( $identity ) ? (string) ( $identity['name'] ?? 'FLOSC' ) : 'FLOSC';
 				$limit_msg = str_replace(
 					array( '{max}', '{count}', '{flow_name}', '{name}', '{NickName}' ),
@@ -171,7 +153,31 @@ class FLOSC_Session_Rest {
 			}
 		}
 
-		$session = $this->flosc->sessions()->flosc_create_session( $user_id, $title, $flow_stem );
+		// v10.1.0: A visitor who authenticates mid-conversation hands over the turns
+		// they already had, so the thread lands on the account instead of being
+		// stranded on the device. Absent param = previous behaviour, unchanged.
+		$seed_messages = $request->get_param( 'messages' );
+		$seed_messages = is_array( $seed_messages ) ? $seed_messages : array();
+
+		if ( ! empty( $seed_messages ) ) {
+			$first_user_line = '';
+			foreach ( $seed_messages as $seed_row ) {
+				if ( ! is_array( $seed_row ) || 'user' !== ( $seed_row['role'] ?? '' ) ) {
+					continue;
+				}
+				$first_user_line = trim( wp_strip_all_tags( (string) ( $seed_row['content'] ?? '' ) ) );
+				if ( '' !== $first_user_line ) {
+					break;
+				}
+			}
+			if ( '' !== $first_user_line ) {
+				$title = function_exists( 'mb_substr' )
+					? mb_substr( $first_user_line, 0, 60 )
+					: substr( $first_user_line, 0, 60 );
+			}
+		}
+
+		$session = $this->flosc->sessions()->flosc_create_session( $user_id, $title, $flow_stem, $seed_messages );
 		if ( ! $session ) {
 			return new WP_REST_Response(
 				array(
@@ -248,9 +254,9 @@ class FLOSC_Session_Rest {
 	}
 
 	/**
-	 * v8.0.11: Delete a session
+	 * Delete a session
 	 *
-	 * @param mixed $request Request.
+	 * @since 8.0.11
 	 */
 	public function delete_session( $request ) {
 		$session_id = absint( $request->get_param( 'id' ) );
@@ -296,8 +302,6 @@ class FLOSC_Session_Rest {
 
 	/**
 	 * Rename a session (owner + flow scoped).
-	 *
-	 * @param mixed $request Request.
 	 */
 	public function rename_session( $request ) {
 		$session_id = absint( $request->get_param( 'id' ) );
@@ -384,8 +388,6 @@ class FLOSC_Session_Rest {
 	/**
 	 * Delete a DO session directory after its data has been pulled to WP.
 	 * Fire-and-forget: failures are logged but do not block the login flow.
-	 *
-	 * @param int $session_id Session ID.
 	 */
 	public function delete_session_from_do( $session_id ) {
 		if ( ! preg_match( '/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $session_id ) ) {
@@ -409,8 +411,6 @@ class FLOSC_Session_Rest {
 	/**
 	 * Normalize client session id values (numeric, hex, opaque strings)
 	 * into a stable positive integer for storage/log/token accounting.
-	 *
-	 * @param mixed $session_id_raw Session ID raw.
 	 */
 	public function flosc_normalize_session_id( $session_id_raw ) {
 		$raw = trim( (string) $session_id_raw );

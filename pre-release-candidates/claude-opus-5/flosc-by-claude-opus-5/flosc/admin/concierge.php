@@ -1,4 +1,15 @@
 <?php
+/**
+ * Concierge tab — the FLOSC admin screen for concierge posts.
+ *
+ * Included by admin/settings.php, which has already resolved the flow being
+ * edited and prepared $flosc_get. This file renders and does not bootstrap:
+ * requesting it directly does nothing, because the ABSPATH guard below stops
+ * it before anything else runs.
+ *
+ * @package FLOSC
+ */
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -13,7 +24,7 @@ $flosc_files        = function_exists( 'flosc_config_glob' ) ? flosc_config_glob
 $flosc_flow_options = array();
 foreach ( (array) $flosc_files as $flosc_file ) {
 	$flosc_name = basename( (string) $flosc_file );
-	if ( '' === $flosc_name || strpos( $flosc_name, 'backup' ) !== false ) {
+	if ( '' === $flosc_name || false !== strpos( $flosc_name, 'backup' ) ) {
 		continue;
 	}
 	$flosc_key      = 'flosc_flow_' . sanitize_key( pathinfo( $flosc_name, PATHINFO_FILENAME ) );
@@ -37,6 +48,12 @@ $flosc_concierge_default_off_ramp_exactness = 'preferred';
 $flosc_concierge_default_off_ramp_phrases   = "Do you want to continue trying to enter the correct password for {keyword}, or would you like to chat about something else?\nWould you like to continue this concierge exchange, or would you like to chat about something else?\nWould you like to continue with this, or are you interested in something else?";
 $flosc_concierge_default_content            = "https://example.com/private-resource\n\nWould you like to continue this concierge exchange, or would you like to chat about something else?";
 
+/*
+ * 200 is a deliberate ceiling, not an oversight. This feeds the concierge
+ * picker below, so anything the query drops is a post the admin cannot choose.
+ * WPCS warns above 100; a lower number here would hide content rather than save
+ * work, and the query is admin-only, category-scoped and ordered by modified.
+ */
 $flosc_concierge_posts = get_posts(
 	array(
 		'post_type'      => 'post',
@@ -72,9 +89,9 @@ $flosc_concierge_posts = array_values(
 	<?php if ( ! empty( $flosc_get['concierge_created'] ) ) : ?>
 		<div class="notice notice-success"><p>Concierge post created and synced to chat.</p></div>
 	<?php endif; ?>
-	<?php if ( ( $flosc_get['concierge_error'] ?? '' ) === 'missing_required' ) : ?>
+	<?php if ( 'missing_required' === ( $flosc_get['concierge_error'] ?? '' ) ) : ?>
 		<div class="notice notice-error"><p>Keyword and content are required.</p></div>
-	<?php elseif ( ( $flosc_get['concierge_error'] ?? '' ) === 'create_failed' ) : ?>
+	<?php elseif ( 'create_failed' === ( $flosc_get['concierge_error'] ?? '' ) ) : ?>
 		<div class="notice notice-error"><p>Could not create concierge post. Please try again.</p></div>
 	<?php endif; ?>
 
@@ -212,7 +229,7 @@ Would you like to continue this concierge exchange, or would you like to chat ab
 			$flosc_cfg            = class_exists( 'FLOSC_Concierge' ) ? FLOSC_Concierge::config_from_post( $flosc_post ) : null;
 			$flosc_flow           = is_array( $flosc_cfg ) ? (string) ( $flosc_cfg['flow'] ?? '' ) : '';
 			$flosc_keyword        = is_array( $flosc_cfg ) ? (string) ( $flosc_cfg['keyword'] ?? '' ) : '';
-			$flosc_has_password   = is_array( $flosc_cfg ) ? ( trim( (string) ( $flosc_cfg['password'] ?? '' ) ) !== '' ) : false;
+			$flosc_has_password   = is_array( $flosc_cfg ) ? ( '' !== trim( (string) ( $flosc_cfg['password'] ?? '' ) ) ) : false;
 			$flosc_preview_source = is_array( $flosc_cfg ) ? (string) ( $flosc_cfg['content'] ?? '' ) : '';
 			$flosc_preview        = wp_html_excerpt( trim( preg_replace( '/\s+/', ' ', $flosc_preview_source ) ), 140, '...' );
 			$flosc_is_live        = in_array( (string) ( $flosc_post->post_status ?? '' ), array( 'private', 'publish' ), true );

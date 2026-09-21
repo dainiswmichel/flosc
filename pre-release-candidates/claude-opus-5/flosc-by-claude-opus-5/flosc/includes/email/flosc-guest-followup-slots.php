@@ -13,7 +13,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * @return array<string, array<string, mixed>>
+ * The follow-up slots a guest can be emailed into, keyed by slot id.
+ *
+ * Computed once per request and held in a static, because the list is derived
+ * from settings that cannot change mid-request and several callers ask for it
+ * on the same page load.
+ *
+ * @return array<string, array<string, mixed>> Slot id => slot definition.
  */
 function flosc_guest_followup_slots() {
 	static $slots = null;
@@ -63,15 +69,15 @@ function flosc_guest_followup_slots() {
  * @param array  $settings Flow settings.
  * @param string $slot_id  guest_followup_1|2|3.
  * @param string $suffix   subject|body|min_day|max_day.
- * @param mixed  $default  Default if neither key set.
+ * @param mixed  $fallback Returned when neither the current nor the legacy key is set.
  * @return mixed
  */
-function flosc_guest_followup_get( array $settings, $slot_id, $suffix, $default = '' ) {
+function flosc_guest_followup_get( array $settings, $slot_id, $suffix, $fallback = '' ) {
 	$slot_id = sanitize_key( (string) $slot_id );
 	$suffix  = sanitize_key( (string) $suffix );
 	$slots   = flosc_guest_followup_slots();
 	if ( ! isset( $slots[ $slot_id ] ) ) {
-		return $default;
+		return $fallback;
 	}
 	$new_key = $slot_id . '_' . $suffix;
 	if ( array_key_exists( $new_key, $settings ) && '' !== $settings[ $new_key ] && null !== $settings[ $new_key ] ) {
@@ -84,7 +90,7 @@ function flosc_guest_followup_get( array $settings, $slot_id, $suffix, $default 
 			return $settings[ $old_key ];
 		}
 	}
-	return $default;
+	return $fallback;
 }
 
 /**

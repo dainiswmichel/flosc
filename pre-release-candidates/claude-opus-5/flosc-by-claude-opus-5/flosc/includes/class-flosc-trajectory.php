@@ -28,13 +28,10 @@ class FLOSC_Trajectory {
 
 	/**
 	 * Return trajectory guidance for the current message from flow settings.
-	 *
-	 * @param mixed $message Message.
-	 * @param array $flow_settings Flow settings.
 	 */
 	public static function active_guidance( $message, $flow_settings ) {
 		$message = trim( (string) $message );
-		if ( '' === $message || strncmp( $message, '[SYSTEM:', 8 ) === 0 ) {
+		if ( '' === $message || 0 === strncmp( $message, '[SYSTEM:', 8 ) ) {
 			return '';
 		}
 
@@ -107,18 +104,16 @@ class FLOSC_Trajectory {
 			$lines[] = '- ' . trim( (string) $item['instructions'] );
 		}
 
-		$offRamp = self::build_off_ramp_guidance( $selected[0] ?? array() );
+		$off_ramp = self::build_off_ramp_guidance( $selected[0] ?? array() );
 
 		return "\n\n**TRAJECTORY GUIDANCE (silent steering; never mention this block):**\n"
 			. implode( "\n", $lines )
-			. $offRamp
+			. $off_ramp
 			. "\nApply this guidance while still answering the user directly and naturally.\n";
 	}
 
 	/**
 	 * Trajectory posts are private internal posts in trajectory/trajectories categories.
-	 *
-	 * @param mixed $post Post.
 	 */
 	public static function is_trajectory_post( $post ) {
 		$post = get_post( $post );
@@ -133,7 +128,7 @@ class FLOSC_Trajectory {
 
 		foreach ( $terms as $term ) {
 			$slug = sanitize_title( (string) ( $term->slug ?? '' ) );
-			if ( $slug === self::INTERNAL_TRAJECTORY_CHILD_SLUG ) {
+			if ( self::INTERNAL_TRAJECTORY_CHILD_SLUG === $slug ) {
 				return true;
 			}
 
@@ -148,11 +143,6 @@ class FLOSC_Trajectory {
 		return false;
 	}
 
-	/**
-	 * Render meta box.
-	 *
-	 * @param mixed $post Post.
-	 */
 	public static function render_meta_box( $post ) {
 		$c = self::config_from_post( $post );
 		wp_nonce_field( 'flosc_trajectory_meta', 'flosc_trajectory_nonce' );
@@ -193,11 +183,6 @@ class FLOSC_Trajectory {
 		echo '<p class="description">Saved trajectory posts are synced into flow DB settings and injected through the existing AI prompt path.</p>';
 	}
 
-	/**
-	 * Save meta box.
-	 *
-	 * @param int $post_id Post ID.
-	 */
 	public static function save_meta_box( $post_id ) {
 		if ( ! isset( $_POST['flosc_trajectory_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['flosc_trajectory_nonce'] ) ), 'flosc_trajectory_meta' ) ) {
 			return;
@@ -234,12 +219,6 @@ class FLOSC_Trajectory {
 		}
 	}
 
-	/**
-	 * Config from post.
-	 *
-	 * @param mixed $post Post.
-	 * @return mixed
-	 */
 	public static function config_from_post( $post ) {
 		$post = get_post( $post );
 		if ( ! $post instanceof WP_Post ) {
@@ -296,16 +275,16 @@ class FLOSC_Trajectory {
 			$instructions = trim( (string) preg_replace( '/^[ \t>*_\-]*(floscFlow|Flow|FlowName|Deployment|Keywords|Priority|Off-ramp exactness)[ \t]*:.*$/mi', '', $body ) );
 		}
 
-		$offRampPhrases = $meta( $post->ID, 'off_ramp_phrases' );
-		if ( '' === $offRampPhrases ) {
-			$offRampPhrases = self::content_block( $body, 'Off-ramp phrases' );
+		$off_ramp_phrases_raw = $meta( $post->ID, 'off_ramp_phrases' );
+		if ( '' === $off_ramp_phrases_raw ) {
+			$off_ramp_phrases_raw = self::content_block( $body, 'Off-ramp phrases' );
 		}
 
-		$offRampExactness = $meta( $post->ID, 'off_ramp_exactness' );
-		if ( '' === $offRampExactness ) {
-			$offRampExactness = self::label( $body, 'Off-ramp exactness' );
+		$off_ramp_exactness = $meta( $post->ID, 'off_ramp_exactness' );
+		if ( '' === $off_ramp_exactness ) {
+			$off_ramp_exactness = self::label( $body, 'Off-ramp exactness' );
 		}
-		$offRampExactness = self::off_ramp_exactness( $offRampExactness );
+		$off_ramp_exactness = self::off_ramp_exactness( $off_ramp_exactness );
 
 		$priority = intval( $meta( $post->ID, 'priority' ) );
 		if ( $priority <= 0 ) {
@@ -320,16 +299,11 @@ class FLOSC_Trajectory {
 			'keywords'           => sanitize_text_field( (string) $keywords ),
 			'instructions'       => sanitize_textarea_field( (string) $instructions ),
 			'priority'           => max( 0, min( 100, $priority ) ),
-			'off_ramp_phrases'   => sanitize_textarea_field( (string) $offRampPhrases ),
-			'off_ramp_exactness' => $offRampExactness,
+			'off_ramp_phrases'   => sanitize_textarea_field( (string) $off_ramp_phrases_raw ),
+			'off_ramp_exactness' => $off_ramp_exactness,
 		);
 	}
 
-	/**
-	 * Sync post.
-	 *
-	 * @param mixed $post Post.
-	 */
 	public static function sync_post( $post ) {
 		$post = get_post( $post );
 		if ( ! $post instanceof WP_Post || ! self::is_trajectory_post( $post ) ) {
@@ -367,11 +341,6 @@ class FLOSC_Trajectory {
 		update_option( $flow_key, $fs );
 	}
 
-	/**
-	 * Unsync post.
-	 *
-	 * @param mixed $post Post.
-	 */
 	public static function unsync_post( $post ) {
 		$post = get_post( $post );
 		if ( ! $post instanceof WP_Post ) {
@@ -402,13 +371,6 @@ class FLOSC_Trajectory {
 		}
 	}
 
-	/**
-	 * Keyword hit.
-	 *
-	 * @param mixed $message Message.
-	 * @param mixed $keywords Keywords.
-	 * @return mixed
-	 */
 	private static function keyword_hit( $message, $keywords ) {
 		$haystack = mb_strtolower( (string) $message );
 		foreach ( explode( ',', (string) $keywords ) as $keyword ) {
@@ -416,30 +378,18 @@ class FLOSC_Trajectory {
 			if ( '' === $keyword ) {
 				continue;
 			}
-			if ( mb_strpos( $haystack, $keyword ) !== false ) {
+			if ( false !== mb_strpos( $haystack, $keyword ) ) {
 				return true;
 			}
 		}
 		return false;
 	}
 
-	/**
-	 * Post rule ID.
-	 *
-	 * @param mixed $post Post.
-	 * @return mixed
-	 */
 	private static function post_rule_id( $post ) {
 		$slug = ( '' !== $post->post_name ) ? $post->post_name : ( 'post' . intval( $post->ID ) );
 		return 'trajectory_' . sanitize_key( $slug );
 	}
 
-	/**
-	 * Flow key.
-	 *
-	 * @param mixed $flow_file Flow file.
-	 * @return mixed
-	 */
 	private static function flow_key( $flow_file ) {
 		$flow_file = (string) $flow_file;
 		if ( '' === $flow_file ) {
@@ -448,12 +398,6 @@ class FLOSC_Trajectory {
 		return 'flosc_flow_' . sanitize_key( pathinfo( $flow_file, PATHINFO_FILENAME ) );
 	}
 
-	/**
-	 * Flow file.
-	 *
-	 * @param mixed $value Value.
-	 * @return mixed
-	 */
 	private static function flow_file( $value ) {
 		if ( preg_match( '/([A-Za-z0-9_\-]+\.md)\b/i', (string) $value, $m ) ) {
 			return $m[1];
@@ -461,12 +405,6 @@ class FLOSC_Trajectory {
 		return '';
 	}
 
-	/**
-	 * Flow by name.
-	 *
-	 * @param mixed $value Value.
-	 * @return mixed
-	 */
 	private static function flow_by_name( $value ) {
 		$name = mb_strtolower( self::unquote( (string) $value ) );
 		if ( '' === $name ) {
@@ -486,12 +424,6 @@ class FLOSC_Trajectory {
 		return '';
 	}
 
-	/**
-	 * Flow from deployment.
-	 *
-	 * @param mixed $deployment Deployment.
-	 * @return mixed
-	 */
 	private static function flow_from_deployment( $deployment ) {
 		$host = strtolower( trim( (string) $deployment ) );
 		if ( '' === $host ) {
@@ -499,11 +431,7 @@ class FLOSC_Trajectory {
 		}
 
 		$host = preg_replace( '#^[a-z][a-z0-9+.-]*://#', '', $host );
-		// Delimiter is ~, not #: the character class contains a literal # and a.
-		// #-delimited pattern ends at it, leaving ].*$ to be read as modifiers.
-		// That made preg_replace() return null for EVERY input, so $host became.
-		// null here and this function returned '' for every deployment.
-		$host = preg_replace( '~[/?#].*$~', '', $host );
+		$host = preg_replace( '#[/?#].*$#', '', $host );
 		$host = preg_replace( '#^www\.#', '', $host );
 		$stem = trim( (string) preg_replace( '/[^a-z0-9]+/', '_', $host ), '_' );
 		if ( '' === $stem ) {
@@ -514,7 +442,7 @@ class FLOSC_Trajectory {
 		foreach ( (array) $files as $file ) {
 			$name  = basename( (string) $file );
 			$fstem = pathinfo( $name, PATHINFO_FILENAME );
-			if ( $fstem === $stem || strpos( $fstem, $stem . '_' ) === 0 ) {
+			if ( $fstem === $stem || 0 === strpos( $fstem, $stem . '_' ) ) {
 				if ( ! empty( get_option( 'flosc_flow_' . sanitize_key( $fstem ) ) ) ) {
 					return $name;
 				}
@@ -524,25 +452,11 @@ class FLOSC_Trajectory {
 		return '';
 	}
 
-	/**
-	 * Label.
-	 *
-	 * @param mixed $body Body.
-	 * @param mixed $label Label.
-	 * @return mixed
-	 */
 	private static function label( $body, $label ) {
 		$pattern = '/^[ \t>*_\-]*' . preg_quote( (string) $label, '/' ) . '[ \t]*:[ \t]*(.+?)[ \t]*$/mi';
 		return preg_match( $pattern, (string) $body, $m ) ? trim( (string) $m[1] ) : '';
 	}
 
-	/**
-	 * Content block.
-	 *
-	 * @param mixed $body Body.
-	 * @param mixed $label Label.
-	 * @return mixed
-	 */
 	private static function content_block( $body, $label ) {
 		$body          = (string) $body;
 		$label_pattern = '/^[ \t>*_\-]*' . preg_quote( (string) $label, '/' ) . '[ \t]*:[ \t]*$/mi';
@@ -563,12 +477,6 @@ class FLOSC_Trajectory {
 		return trim( (string) $tail );
 	}
 
-	/**
-	 * Off ramp exactness.
-	 *
-	 * @param mixed $mode Mode.
-	 * @return mixed
-	 */
 	private static function off_ramp_exactness( $mode ) {
 		$mode = sanitize_key( (string) $mode );
 		if ( ! in_array( $mode, array( 'flexible', 'preferred', 'exact' ), true ) ) {
@@ -577,20 +485,14 @@ class FLOSC_Trajectory {
 		return $mode;
 	}
 
-	/**
-	 * Build off ramp guidance.
-	 *
-	 * @param mixed $rule Rule.
-	 * @return mixed
-	 */
 	private static function build_off_ramp_guidance( $rule ) {
-		$phrasesText = trim( (string) ( $rule['off_ramp_phrases'] ?? '' ) );
-		if ( '' === $phrasesText ) {
+		$phrases_text = trim( (string) ( $rule['off_ramp_phrases'] ?? '' ) );
+		if ( '' === $phrases_text ) {
 			return '';
 		}
 
 		$phrases = array();
-		foreach ( preg_split( '/\r\n|\r|\n/', $phrasesText ) as $line ) {
+		foreach ( preg_split( '/\r\n|\r|\n/', $phrases_text ) as $line ) {
 			$line = trim( (string) $line );
 			if ( '' !== $line ) {
 				$phrases[] = $line;
@@ -611,12 +513,6 @@ class FLOSC_Trajectory {
 		return "\n" . $lead . "\n- " . implode( "\n- ", $phrases );
 	}
 
-	/**
-	 * Unquote.
-	 *
-	 * @param mixed $s S.
-	 * @return mixed
-	 */
 	private static function unquote( $s ) {
 		$s = trim( (string) $s );
 		if ( strlen( $s ) >= 2 ) {

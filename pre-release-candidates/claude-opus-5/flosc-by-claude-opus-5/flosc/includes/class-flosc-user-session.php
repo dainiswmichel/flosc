@@ -40,7 +40,7 @@ class FLOSC_User_Session {
 		$flosc_additional = array( 'flow_id' => $this->flosc_flow_id );
 		$flosc_context    = FLOSC_Condition_Evaluator::build_context( $this->flosc_user_id, $flosc_additional );
 
-		// Get current flow configuration (use singleton instance, not new)
+		// Get current flow configuration (use singleton instance, not new).
 		$flosc_flow_manager = FLOSC_Flow_Manager::instance();
 		$flosc_flow         = $flosc_flow_manager->get_flow( $this->flosc_flow_id );
 
@@ -129,22 +129,22 @@ class FLOSC_User_Session {
 	 * @return string User type with flosc_ prefix
 	 */
 	private function flosc_determine_user_type( $flosc_context ) {
-		// Admin: has manage_options capability (global)
+		// Admin: has manage_options capability (global).
 		if ( $this->flosc_user_id > 0 && current_user_can( 'manage_options' ) ) {
 			return 'flosc_admin';
 		}
 
-		// Member: purchased full access (per-flow)
-		if ( ( $flosc_context['access_level'] ?? '' ) === 'member' || ( $flosc_context['purchased'] ?? false ) ) {
+		// Member: purchased full access (per-flow).
+		if ( 'member' === ( $flosc_context['access_level'] ?? '' ) || ( $flosc_context['purchased'] ?? false ) ) {
 			return 'flosc_member';
 		}
 
-		// Guest: completed quiz (per-flow)
+		// Guest: completed quiz (per-flow).
 		if ( $flosc_context['quiz_taken'] ?? false ) {
 			return 'flosc_guest';
 		}
 
-		// Visitor: default (per-flow)
+		// Visitor: default (per-flow).
 		return 'flosc_visitor';
 	}
 
@@ -218,21 +218,21 @@ class FLOSC_User_Session {
 			),
 			'flosc_member'  => array(
 				'flosc_can_see_all_lessons' => true,
-				'flosc_can_see_pricing'     => false, // Already purchased.
+				'flosc_can_see_pricing'     => false, // Already purchased
 				'flosc_can_see_catalog'     => true,
 				'flosc_description'         => 'Full lesson access, supportive learning coach mode',
 			),
 			'flosc_guest'   => array(
 				'flosc_can_see_free_lesson'     => true,
-				'flosc_can_see_catalog'         => true, // Titles only.
+				'flosc_can_see_catalog'         => true, // Titles only
 				'flosc_can_see_pricing'         => true,
 				'flosc_must_encourage_purchase' => true,
 				'flosc_description'             => 'Quiz completed - can access assigned free lesson only',
 			),
 			'flosc_visitor' => array(
-				'flosc_can_see_catalog'     => true, // Titles only.
+				'flosc_can_see_catalog'     => true, // Titles only
 				'flosc_must_encourage_quiz' => true,
-				'flosc_can_see_pricing'     => false, // Only after quiz.
+				'flosc_can_see_pricing'     => false, // Only after quiz
 				'flosc_description'         => 'New visitor - primary goal is quiz completion',
 			),
 		);

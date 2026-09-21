@@ -1,4 +1,15 @@
 <?php
+/**
+ * Trajectories tab — the FLOSC admin screen for trajectory posts.
+ *
+ * Included by admin/settings.php, which has already resolved the flow being
+ * edited and prepared $flosc_get. This file renders and does not bootstrap:
+ * requesting it directly does nothing, because the ABSPATH guard below stops
+ * it before anything else runs.
+ *
+ * @package FLOSC
+ */
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -13,7 +24,7 @@ $flosc_files        = function_exists( 'flosc_config_glob' ) ? flosc_config_glob
 $flosc_flow_options = array();
 foreach ( (array) $flosc_files as $flosc_file ) {
 	$flosc_name = basename( (string) $flosc_file );
-	if ( '' === $flosc_name || strpos( $flosc_name, 'backup' ) !== false ) {
+	if ( '' === $flosc_name || false !== strpos( $flosc_name, 'backup' ) ) {
 		continue;
 	}
 	$flosc_key      = 'flosc_flow_' . sanitize_key( pathinfo( $flosc_name, PATHINFO_FILENAME ) );
@@ -33,6 +44,12 @@ $flosc_contact_trj_default_off_ramp_exactness = 'preferred';
 $flosc_contact_trj_default_off_ramp_phrases   = "Would you like me to continue facilitating human-to-human connection between you and the site operator, or would you like to chat about something else?\nDo you want to keep chatting about this trajectory, or would you like to chat about something else?\nDo you have any other questions, or are you interested in something else?";
 $flosc_contact_trj_default_instructions       = "Encourage direct human-to-human connection when relevant.\nInvite exchange of contact information (email, phone, or message).\nAsk for one concrete next step and keep tone warm, concise, and natural.\nOffer a clear off-ramp: Would you like me to continue facilitating human-to-human connection between you and the site operator, or would you like to chat about something else?";
 
+/*
+ * 200 is a deliberate ceiling, not an oversight. This feeds the trajectory
+ * picker below, so anything the query drops is a post the admin cannot choose.
+ * WPCS warns above 100; a lower number here would hide content rather than save
+ * work, and the query is admin-only, category-scoped and ordered by modified.
+ */
 $flosc_trajectory_posts = get_posts(
 	array(
 		'post_type'      => 'post',
@@ -68,17 +85,17 @@ $flosc_trajectory_posts = array_values(
 	<?php if ( ! empty( $flosc_get['trajectory_created'] ) ) : ?>
 		<div class="notice notice-success"><p>Trajectory post created and synced to flow guidance.</p></div>
 	<?php endif; ?>
-	<?php if ( ( $flosc_get['trajectory_error'] ?? '' ) === 'missing_required' ) : ?>
+	<?php if ( 'missing_required' === ( $flosc_get['trajectory_error'] ?? '' ) ) : ?>
 		<div class="notice notice-error"><p>Trajectory instructions are required.</p></div>
-	<?php elseif ( ( $flosc_get['trajectory_error'] ?? '' ) === 'create_failed' ) : ?>
+	<?php elseif ( 'create_failed' === ( $flosc_get['trajectory_error'] ?? '' ) ) : ?>
 		<div class="notice notice-error"><p>Could not create trajectory post. Please try again.</p></div>
-	<?php elseif ( ( $flosc_get['trajectory_error'] ?? '' ) === 'toggle_failed' ) : ?>
+	<?php elseif ( 'toggle_failed' === ( $flosc_get['trajectory_error'] ?? '' ) ) : ?>
 		<div class="notice notice-error"><p>Could not update trajectory status. Please try again.</p></div>
 	<?php endif; ?>
 
-	<?php if ( ( $flosc_get['trajectory_toggled'] ?? '' ) === 'on' ) : ?>
+	<?php if ( 'on' === ( $flosc_get['trajectory_toggled'] ?? '' ) ) : ?>
 		<div class="notice notice-success"><p>Trajectory entry set to LIVE.</p></div>
-	<?php elseif ( ( $flosc_get['trajectory_toggled'] ?? '' ) === 'off' ) : ?>
+	<?php elseif ( 'off' === ( $flosc_get['trajectory_toggled'] ?? '' ) ) : ?>
 		<div class="notice notice-success"><p>Trajectory entry set to OFF.</p></div>
 	<?php endif; ?>
 

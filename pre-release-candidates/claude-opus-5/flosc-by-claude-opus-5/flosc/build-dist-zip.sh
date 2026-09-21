@@ -42,10 +42,8 @@ if [[ -d "$ROOT/vendor" ]]; then
 fi
 
 # Always write flosc.zip (overwrite). No timestamped / prod-* names.
-# Default (local in the lead): <project>/zip-files/flosc.zip
-# From this plugin root → ../../../zip-files is flosc_project_folder/zip-files.
-# Named pre-release candidate: set FLOSC_ZIP_OUT_DIR to that candidate folder
-# (e.g. pre-release-candidates/grok-4-6).
+# Operator install path: <project>/zip-files/flosc.zip (only zip we use).
+# From plugin root flosc/ → ../../../zip-files relative to repo root flosc_project_folder.
 if [[ -n "${FLOSC_ZIP_OUT_DIR:-}" ]]; then
   OUT_DIR="${FLOSC_ZIP_OUT_DIR}"
 else
@@ -61,8 +59,6 @@ trap cleanup EXIT
 DENY_PATTERNS=(
   'flosc_development_worknotes'
   'flosc_development_archives'
-  'pre-release-candidates'
-  'tests'
   'sample-data'
   'admin/create-sample-data.php'
   'vendor'
@@ -80,6 +76,11 @@ DENY_PATTERNS=(
   'da1ni5_personal_profitability'
   'build-dist-zip.sh'
   '.distignore'
+  'tests'
+  # Four full plugin trees plus their ZIPs live here on main. They are
+  # comparison candidates, not runtime code, and a ZIP that carried them would
+  # be four times the size and contain three other people's builds.
+  'pre-release-candidates'
 )
 
 rsync_excludes=()
@@ -118,10 +119,10 @@ done < <(find "$STAGE/flosc" \( \
   -path '*/flosc_development_worknotes/*' -o \
   -path '*/flosc_development_archives' -o \
   -path '*/flosc_development_archives/*' -o \
-  -path '*/pre-release-candidates' -o \
-  -path '*/pre-release-candidates/*' -o \
   -path '*/sample-data' -o \
   -path '*/sample-data/*' -o \
+  -path '*/tests' -o \
+  -path '*/tests/*' -o \
   -name 'create-sample-data.php' -o \
   -path '*/vendor' -o \
   -path '*/vendor/*' -o \
@@ -131,17 +132,12 @@ done < <(find "$STAGE/flosc" \( \
   -path '*/.github/*' -o \
   -path '*/zip-files' -o \
   -path '*/zip-files/*' -o \
-  -iname 'composer.json' -o \
-  -iname 'composer.lock' -o \
-  -iname 'build-dist-zip.sh' -o \
-  -iname '.distignore' -o \
-  -iname 'AGENTS.md' -o \
-  -iname 'CLAUDE.md' -o \
-  -iname '.cursorrules' -o \
-  -iname 'WORDPRESS-ORG-RELEASE.md' -o \
-  -iname 'phpcs.xml.dist' -o \
-  -iname '*.zip' -o \
-  -iname '*.bundle' \
+  -name 'composer.json' -o \
+  -name 'composer.lock' -o \
+  -name 'build-dist-zip.sh' -o \
+  -name '.distignore' -o \
+  -name '*.zip' -o \
+  -name '*.bundle' \
 \) -print0 2>/dev/null)
 
 # Filename/content red flags inside staged PHP/md/txt

@@ -135,7 +135,7 @@ $flosc_parse_target_rules = static function ( $raw_rules ) {
 			continue;
 		}
 
-		if ( strpos( $raw_rule, ':' ) === false ) {
+		if ( false === strpos( $raw_rule, ':' ) ) {
 			$rules[] = array(
 				'type'  => 'path',
 				'value' => '/' . ltrim( $raw_rule, '/' ),
@@ -262,6 +262,12 @@ $flosc_target_pages = get_pages(
 	)
 );
 
+/*
+ * 500 is a deliberate ceiling, not an oversight. This builds the list of pages a
+ * companion can be attached to, so anything dropped is a page the admin cannot
+ * pick. It asks for ids only, which is why the limit can be this high without
+ * loading post bodies. WPCS warns above 100.
+ */
 $flosc_target_posts = get_posts(
 	array(
 		'post_type'      => 'post',
@@ -518,23 +524,31 @@ $flosc_companion_extension_hooks = array(
 	),
 );
 
-$flosc_companion_snippet_numeric_limits = <<<'FLOSC_COMPANION_SNIPPET_NUMERIC_LIMITS'
-add_filter('flosc_companion_numeric_limits', function ($limits) {
-    $limits['panel_width_min'] = 320;
-    $limits['panel_width_max'] = 640;
-    $limits['trigger_cooldown_min_ms'] = 15000;
-    $limits['trigger_cooldown_max_ms'] = 3600000;
-    return $limits;
-});
-FLOSC_COMPANION_SNIPPET_NUMERIC_LIMITS;
+$flosc_companion_snippet_numeric_limits = implode(
+	"\n",
+	array(
+		'add_filter(\'flosc_companion_numeric_limits\', function ($limits) {',
+		'    $limits[\'panel_width_min\'] = 320;',
+		'    $limits[\'panel_width_max\'] = 640;',
+		'    $limits[\'trigger_cooldown_min_ms\'] = 15000;',
+		'    $limits[\'trigger_cooldown_max_ms\'] = 3600000;',
+		'    return $limits;',
+		'});',
+		'',
+	)
+);
 
-$flosc_companion_snippet_frontend_config = <<<'FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG'
-add_filter('flosc_companion_frontend_config', function ($config, $framework) {
-    $config['autoOpenDelayMs'] = max(2000, (int) ($config['autoOpenDelayMs'] ?? 0));
-    $config['launcherAriaLabel'] = 'Open chat companion';
-    return $config;
-}, 10, 2);
-FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
+$flosc_companion_snippet_frontend_config = implode(
+	"\n",
+	array(
+		'add_filter(\'flosc_companion_frontend_config\', function ($config, $framework) {',
+		'    $config[\'autoOpenDelayMs\'] = max(2000, (int) ($config[\'autoOpenDelayMs\'] ?? 0));',
+		'    $config[\'launcherAriaLabel\'] = \'Open chat companion\';',
+		'    return $config;',
+		'}, 10, 2);',
+		'',
+	)
+);
 ?>
 
 <h2>Display Mode</h2>
@@ -694,7 +708,7 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
 							<?php foreach ( (array) $flosc_target_pages as $flosc_target_page ) : ?>
 								<?php $flosc_target_page_id = (int) ( $flosc_target_page->ID ?? 0 ); ?>
 								<option value="<?php echo esc_attr( $flosc_target_page_id ); ?>" <?php selected( in_array( $flosc_target_page_id, $flosc_target_include_pages, true ) ); ?>>
-									<?php echo esc_html( ( $flosc_target_page->post_title ?: '(untitled)' ) . ' (#' . $flosc_target_page_id . ')' ); ?>
+									<?php echo esc_html( ( $flosc_target_page->post_title ? $flosc_target_page->post_title : '(untitled)' ) . ' (#' . $flosc_target_page_id . ')' ); ?>
 								</option>
 							<?php endforeach; ?>
 						</select>
@@ -705,7 +719,7 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
 						<select name="flow_companion_include_posts[]" id="flow_companion_include_posts" multiple size="6" class="widefat">
 							<?php foreach ( $flosc_target_posts_map as $flosc_target_post_id => $flosc_target_post_title ) : ?>
 								<option value="<?php echo esc_attr( (int) $flosc_target_post_id ); ?>" <?php selected( in_array( (int) $flosc_target_post_id, $flosc_target_include_posts, true ) ); ?>>
-									<?php echo esc_html( ( $flosc_target_post_title ?: '(untitled)' ) . ' (#' . (int) $flosc_target_post_id . ')' ); ?>
+									<?php echo esc_html( ( $flosc_target_post_title ? $flosc_target_post_title : '(untitled)' ) . ' (#' . (int) $flosc_target_post_id . ')' ); ?>
 								</option>
 							<?php endforeach; ?>
 						</select>
@@ -749,7 +763,7 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
 							<?php foreach ( (array) $flosc_target_pages as $flosc_target_page ) : ?>
 								<?php $flosc_target_page_id = (int) ( $flosc_target_page->ID ?? 0 ); ?>
 								<option value="<?php echo esc_attr( $flosc_target_page_id ); ?>" <?php selected( in_array( $flosc_target_page_id, $flosc_target_exclude_pages, true ) ); ?>>
-									<?php echo esc_html( ( $flosc_target_page->post_title ?: '(untitled)' ) . ' (#' . $flosc_target_page_id . ')' ); ?>
+									<?php echo esc_html( ( $flosc_target_page->post_title ? $flosc_target_page->post_title : '(untitled)' ) . ' (#' . $flosc_target_page_id . ')' ); ?>
 								</option>
 							<?php endforeach; ?>
 						</select>
@@ -760,7 +774,7 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
 						<select name="flow_companion_exclude_posts[]" id="flow_companion_exclude_posts" multiple size="6" class="widefat">
 							<?php foreach ( $flosc_target_posts_map as $flosc_target_post_id => $flosc_target_post_title ) : ?>
 								<option value="<?php echo esc_attr( (int) $flosc_target_post_id ); ?>" <?php selected( in_array( (int) $flosc_target_post_id, $flosc_target_exclude_posts, true ) ); ?>>
-									<?php echo esc_html( ( $flosc_target_post_title ?: '(untitled)' ) . ' (#' . (int) $flosc_target_post_id . ')' ); ?>
+									<?php echo esc_html( ( $flosc_target_post_title ? $flosc_target_post_title : '(untitled)' ) . ' (#' . (int) $flosc_target_post_id . ')' ); ?>
 								</option>
 							<?php endforeach; ?>
 						</select>
@@ -974,8 +988,8 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
 		<tr>
 			<th scope="row"><label for="flow_companion_accent_color">Accent Color</label></th>
 			<td>
-				<input type="color" name="flow_companion_accent_color" id="flow_companion_accent_color" value="<?php echo esc_attr( $flosc_accent_color ?: '#6366f1' ); ?>" class="flosc-companion-color-input">
-				<input type="text" id="companion_accent_hex" value="<?php echo esc_attr( $flosc_accent_color ?: '#6366f1' ); ?>" class="flosc-companion-color-hex" readonly>
+				<input type="color" name="flow_companion_accent_color" id="flow_companion_accent_color" value="<?php echo esc_attr( $flosc_accent_color ? $flosc_accent_color : '#6366f1' ); ?>" class="flosc-companion-color-input">
+				<input type="text" id="companion_accent_hex" value="<?php echo esc_attr( $flosc_accent_color ? $flosc_accent_color : '#6366f1' ); ?>" class="flosc-companion-color-hex" readonly>
 				<button type="button" id="flosc-companion-color-reset" class="button flosc-companion-color-reset">Reset</button>
 				<p class="description">The primary color for the widget button and highlights. Leave as default for the FLOSC indigo.</p>
 			</td>

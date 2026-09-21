@@ -17,6 +17,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 class FLOSC_Filesystem {
 
 	/**
+	 * The initialised WordPress filesystem, or null if it cannot be brought up.
+	 *
+	 * Callers must handle null rather than assume an object: on a host where the
+	 * filesystem API needs credentials FLOSC does not have, there is nothing to
+	 * return and a fatal would be the wrong answer.
+	 *
 	 * @return WP_Filesystem_Base|null
 	 */
 	public function get_wp_filesystem() {
@@ -54,6 +60,13 @@ class FLOSC_Filesystem {
 			return false;
 		}
 
+		// Never follow a pre-existing destination symlink. WP_Filesystem writes
+		// and moves would otherwise modify the link target outside uploads after
+		// the parent directory itself had passed this containment check.
+		if ( is_link( $path ) ) {
+			return false;
+		}
+
 		$parent = dirname( $path );
 		if ( ! is_dir( $parent ) ) {
 			wp_mkdir_p( $parent );
@@ -64,7 +77,20 @@ class FLOSC_Filesystem {
 			return false;
 		}
 
-		return 0 === strpos( trailingslashit( $dir_real ), trailingslashit( $base_real ) );
+		$base_prefix = trailingslashit( $base_real );
+		if ( 0 !== strpos( trailingslashit( $dir_real ), $base_prefix ) ) {
+			return false;
+		}
+
+		// Existing ordinary destinations must resolve under uploads too. This is
+		// redundant for regular files with a real parent, but keeps the boundary
+		// explicit if another filesystem implementation resolves paths differently.
+		$path_real = realpath( $path );
+		if ( false !== $path_real && 0 !== strpos( trailingslashit( $path_real ), $base_prefix ) ) {
+			return false;
+		}
+
+		return true;
 	}
 
 	/**
@@ -115,7 +141,7 @@ class FLOSC_Filesystem {
 			return $filesystem->delete( $path, false, 'f' );
 		}
 
-		return wp_delete_file( $path ) !== false;
+		return false !== wp_delete_file( $path );
 	}
 
 	/**

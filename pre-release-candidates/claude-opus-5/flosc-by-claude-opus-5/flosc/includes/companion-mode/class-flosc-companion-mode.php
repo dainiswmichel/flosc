@@ -14,31 +14,30 @@ class FLOSC_Companion_Mode {
 	/** @var FLOSC_Framework */
 	private $flosc;
 
-	/**
-	 * Construct.
-	 *
-	 * @param mixed $flosc Flosc.
-	 */
 	public function __construct( $flosc ) {
 		$this->flosc = $flosc;
 	}
 
 	/**
-	 * v1.6.1: Enqueue companion widget on non-app WordPress pages.
+	 * Enqueue companion widget on non-app WordPress pages.
 	 * Only loads if companion mode is enabled for the current flow.
 	 * v1.6.3: Fixed to read from flat per-flow settings (matching admin save pattern)
 	 * v8.0.0: Knowledge hubs — resolve flow by handoff param, hub companion URL, or lessons category.
+	 *
+	 * @since 1.6.1
 	 */
 	public function enqueue_companion() {
 		// Outer chrome is for normal WP host pages only.
-		// FLOSC app routes (is_flosc_request) never load outer chrome — by construction.
+		// FLOSC app routes (is_flosc_request) never load outer chrome — by construction
 		// the companion iframe may only target an app route, so nesting cannot occur.
 		if ( $this->flosc->is_flosc_request() ) {
 			return;
 		}
 
-		// Public handoff flag from full-page dock (not a form POST — no nonce applies).
-		$handoff_request = ( '1' === sanitize_text_field( (string) filter_input( INPUT_GET, 'flosc_companion_handoff' ) ) );
+		// Public handoff flag from the full-page dock. A display switch on a public
+		// page: it decides whether the companion widget renders, and nothing else.
+		// Closed to the single value that means anything.
+		$handoff_request = ( '1' === flosc_nav_param( 'flosc_companion_handoff', array( '1' ) ) );
 
 		// Cross-domain knowledge hub: pick the owning flow before reading settings.
 		$this->resolve_companion_flow_context( $handoff_request );
@@ -46,7 +45,7 @@ class FLOSC_Companion_Mode {
 		$defaults       = $this->get_companion_defaults();
 		$numeric_limits = $this->get_companion_numeric_limits();
 
-		// Read from per-flow settings (flat keys, not overrides)
+		// Read from per-flow settings (flat keys, not overrides).
 		$enabled = filter_var( $this->flosc->get_setting( 'companion_enabled', $defaults['enabled'] ), FILTER_VALIDATE_BOOLEAN );
 		if ( ! $enabled ) {
 			return;
@@ -63,7 +62,7 @@ class FLOSC_Companion_Mode {
 		}
 
 		// Visitor gate: when disabled, only logged-in users should see companion.
-		// Handoff from full-page chat always allowed — dock may land cross-domain.
+		// Handoff from full-page chat always allowed — dock may land cross-domain
 		// (e.g. the flow domain → the WordPress host knowledge hub) without a shared login cookie.
 		// Sales default is on (see get_companion_defaults). Stored 0/1 after Style save;
 		// legacy empty string falls through get_setting to the default (on).
@@ -113,7 +112,7 @@ class FLOSC_Companion_Mode {
 		if ( '' === $title ) {
 			$title = '' !== $product_name
 				? sprintf(
-					/* translators: %s: product / flow name. */
+					/* translators: %s: product / flow name */
 					__( '%s Companion', 'flosc' ),
 					$product_name
 				)
@@ -338,7 +337,7 @@ class FLOSC_Companion_Mode {
 			// Parameterized brand icon (Chat Logo / companion_header_icon_url). No emoji default.
 			'headerIconUrl'                 => $header_icon_url,
 			'avatar'                        => '',
-			'accentColor'                   => $accent ?: $defaults['accent_color'],
+			'accentColor'                   => $accent ? $accent : $defaults['accent_color'],
 			'position'                      => $position,
 			'mode'                          => $mode,
 			'width'                         => $panel_width . 'px',
@@ -524,19 +523,21 @@ class FLOSC_Companion_Mode {
 		// Normalize so site-root "/" is not collapsed to "" (WP untrailingslashit('/')).
 		$req_path = $this->companion_normalize_url_path( $request_path );
 
-		// Optional dock hint from full-page chat (public query string, not a form).
-		$hint = sanitize_text_field( (string) filter_input( INPUT_GET, 'flosc_flow_id' ) );
+		// Optional dock hint from full-page chat: which flow the visitor came from.
+		// Used only to look up an existing flow's display settings; a hint naming
+		// no known flow falls through to the normal resolution below.
+		$hint = flosc_nav_param( 'flosc_flow_id' );
 		if ( '' === $hint ) {
-			$hint = sanitize_text_field( (string) filter_input( INPUT_GET, 'flosc_ivr' ) );
+			$hint = flosc_nav_param( 'flosc_ivr', array(), '', 'sanitize_file_name' );
 		}
 		$hint = sanitize_key( preg_replace( '/\.md$/i', '', (string) $hint ) );
 
 		$matches        = $this->find_companion_flows_for_request( $req_path, $category_slugs );
 		$hub_match      = $matches['hub'] ?? null;
 		$category_match = $matches['category'] ?? null;
-		$page_owner     = $hub_match ?: $category_match;
+		$page_owner     = $hub_match ? $hub_match : $category_match;
 
-		// Hint may only select a companion-enabled flow that either owns this page.
+		// Hint may only select a companion-enabled flow that either owns this page
 		// or is an explicit handoff to a real flow (dock from full-page chat).
 		if ( '' !== $hint ) {
 			$hint_flow = $this->flosc->build_flow_from_ivr_file( $hint . '.md' );
@@ -581,7 +582,7 @@ class FLOSC_Companion_Mode {
 
 		$ivr_files = array_unique( array_map( 'basename', flosc_config_glob( array( '*_ivr.md', 'ivr*.md' ) ) ) );
 		foreach ( $ivr_files as $filename ) {
-			if ( strpos( $filename, 'backup' ) !== false ) {
+			if ( false !== strpos( $filename, 'backup' ) ) {
 				continue;
 			}
 			$flow = $this->flosc->build_flow_from_ivr_file( $filename );
@@ -607,7 +608,7 @@ class FLOSC_Companion_Mode {
 					// Longer hub paths always win (e.g. /category/lesaep/).
 					$matches_hub = ( '/' === $hub_path )
 						|| $req_path === $hub_path
-						|| strpos( $req_path . '/', $hub_path . '/' ) === 0;
+						|| 0 === strpos( $req_path . '/', $hub_path . '/' );
 					if ( $matches_hub ) {
 						$len = ( '/' === $hub_path ) ? 1 : strlen( $hub_path );
 						if ( $len > $hub_match_len ) {
@@ -714,11 +715,11 @@ class FLOSC_Companion_Mode {
 		if ( function_exists( 'flosc_config_glob' ) ) {
 			$ivr_files = array_unique( array_map( 'basename', flosc_config_glob( array( '*_ivr.md', 'ivr*.md' ) ) ) );
 			foreach ( $ivr_files as $filename ) {
-				if ( strpos( (string) $filename, 'backup' ) !== false ) {
+				if ( false !== strpos( (string) $filename, 'backup' ) ) {
 					continue;
 				}
 				$flow = $this->flosc->build_flow_from_ivr_file( $filename );
-				if ( ! $flow || ( ( $flow['status'] ?? 'active' ) !== 'active' ) ) {
+				if ( ! $flow || ( 'active' !== ( $flow['status'] ?? 'active' ) ) ) {
 					continue;
 				}
 
@@ -761,8 +762,8 @@ class FLOSC_Companion_Mode {
 			return true;
 		}
 
-		// Resolved flow after hub/handoff context (forced_flow). Session dock handoff.
-		// sets this before enqueue; must still accept that flow's app surface so.
+		// Resolved flow after hub/handoff context (forced_flow). Session dock handoff
+		// sets this before enqueue; must still accept that flow's app surface so
 		// flosc_session_id / visitor continuity can load into the iframe.
 		$flow = $this->flosc->get_current_flow();
 		if ( is_array( $flow ) ) {
@@ -829,7 +830,7 @@ class FLOSC_Companion_Mode {
 		if ( $host_a === $host_b ) {
 			return true;
 		}
-		return $host_a === 'www.' . $host_b || $host_b === 'www.' . $host_a;
+		return 'www.' . $host_b === $host_a || 'www.' . $host_a === $host_b;
 	}
 
 	/**
@@ -854,7 +855,7 @@ class FLOSC_Companion_Mode {
 			}
 		}
 		$prefix = '/' . $slug;
-		return $path === $prefix || strpos( $path . '/', $prefix . '/' ) === 0;
+		return $path === $prefix || 0 === strpos( $path . '/', $prefix . '/' );
 	}
 
 	/**
@@ -881,7 +882,7 @@ class FLOSC_Companion_Mode {
 		$flow_settings = is_array( $flow ) ? $flow : array();
 		if ( function_exists( 'flosc_companion_hub_defaults_from_flow' ) ) {
 			$defaults = flosc_companion_hub_defaults_from_flow( $flow_settings );
-			// chat_app only — same as HEAD. Do not prefer fullscreen for the iframe.
+			// chat_app only — same as HEAD. Do not prefer fullscreen for the iframe
 			// (wrong surface can drop guest/member continuity onto another route).
 			$from_defaults = esc_url_raw( (string) ( $defaults['chat_app'] ?? '' ), array( 'http', 'https' ) );
 			if ( '' !== $from_defaults ) {
@@ -913,8 +914,6 @@ class FLOSC_Companion_Mode {
 
 	/**
 	 * Find active flow by slug for companion URL hardening.
-	 *
-	 * @param mixed $slug Slug.
 	 */
 	private function get_flow_by_slug_for_companion( $slug ) {
 		$slug = sanitize_title( (string) $slug );
@@ -924,7 +923,7 @@ class FLOSC_Companion_Mode {
 
 		$ivr_files = array_unique( array_map( 'basename', flosc_config_glob( array( '*_ivr.md', 'ivr*.md' ) ) ) );
 		foreach ( $ivr_files as $filename ) {
-			if ( strpos( $filename, 'backup' ) !== false ) {
+			if ( false !== strpos( $filename, 'backup' ) ) {
 				continue;
 			}
 
@@ -933,7 +932,7 @@ class FLOSC_Companion_Mode {
 				continue;
 			}
 
-			if ( ( $flow['status'] ?? 'active' ) !== 'active' ) {
+			if ( 'active' !== ( $flow['status'] ?? 'active' ) ) {
 				continue;
 			}
 
@@ -1154,8 +1153,6 @@ class FLOSC_Companion_Mode {
 
 	/**
 	 * Build context parameters passed into companion iframe URL.
-	 *
-	 * @param mixed $scope Scope.
 	 */
 	private function build_companion_context_params( $scope ) {
 		global $wp;
@@ -1195,8 +1192,6 @@ class FLOSC_Companion_Mode {
 
 	/**
 	 * Parse path-pattern textarea into normalized prefix list.
-	 *
-	 * @param mixed $raw_patterns Raw patterns.
 	 */
 	private function parse_companion_path_patterns( $raw_patterns ) {
 		$patterns = array();
@@ -1251,8 +1246,6 @@ class FLOSC_Companion_Mode {
 
 	/**
 	 * Parse multiline/csv companion targeting input into normalized rule objects.
-	 *
-	 * @param mixed $raw_rules Raw rules.
 	 */
 	private function parse_companion_target_rules( $raw_rules ) {
 		$rules  = array();
@@ -1267,7 +1260,7 @@ class FLOSC_Companion_Mode {
 				continue;
 			}
 
-			if ( strpos( $raw_rule, ':' ) === false ) {
+			if ( false === strpos( $raw_rule, ':' ) ) {
 				$rules[] = array(
 					'type'  => 'path',
 					'value' => '/' . ltrim( $raw_rule, '/' ),
@@ -1301,8 +1294,6 @@ class FLOSC_Companion_Mode {
 
 	/**
 	 * Determine whether any targeting rule matches the current request context.
-	 *
-	 * @param mixed $rules Rules.
 	 */
 	private function companion_target_matches_any_rule( $rules ) {
 		if ( empty( $rules ) ) {
@@ -1340,7 +1331,7 @@ class FLOSC_Companion_Mode {
 				if ( '' === $normalized_rule ) {
 					$normalized_rule = '/';
 				}
-				if ( $normalized_path === $normalized_rule || strpos( $normalized_path . '/', $normalized_rule . '/' ) === 0 ) {
+				if ( $normalized_path === $normalized_rule || 0 === strpos( $normalized_path . '/', $normalized_rule . '/' ) ) {
 					return true;
 				}
 				continue;

@@ -1,4 +1,18 @@
-<?php if (!defined('ABSPATH')) exit; // Part 1: The Journey — FLOSC Documentation.?>
+<?php
+/**
+ * Documentation, Part 1: the journey.
+ *
+ * Prose only — no settings are read and nothing is written. Included by
+ * admin/documentation.php inside the Documentation tab's markup, so the file
+ * opens at heading level 1 and inherits the surrounding page wrapper.
+ *
+ * @package FLOSC
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+?>
 
 <h1 id="the-journey">Part 1: The Journey</h1>
 <p>Where FLOSC came from, why it exists, and the decisions that shaped it. Not just what the code does, but <em>why</em> it ended up this way.</p>
@@ -30,20 +44,20 @@
 <h4 id="flosc-five-phases">Freeline → Login → Offer → Sale → Content</h4>
 
 <dl>
-    <dt><strong>F — Freeline</strong></dt>
-    <dd>The visitor phase. They've arrived but haven't logged in. They get the free sample — a quiz, a taste of the content, a limited conversation. "Freeline" is the coined word for it: the line you can cast without a license.</dd>
+	<dt><strong>F — Freeline</strong></dt>
+	<dd>The visitor phase. They've arrived but haven't logged in. They get the free sample — a quiz, a taste of the content, a limited conversation. "Freeline" is the coined word for it: the line you can cast without a license.</dd>
 
-    <dt><strong>L — Login</strong></dt>
-    <dd>Account creation. A visitor who wants to keep their results or go further creates an account and becomes a Guest. Anything they did as a visitor — a quiz score, for example — carries over: it's held client-side as bridge data and attached to the new account on registration.</dd>
+	<dt><strong>L — Login</strong></dt>
+	<dd>Account creation. A visitor who wants to keep their results or go further creates an account and becomes a Guest. Anything they did as a visitor — a quiz score, for example — carries over: it's held client-side as bridge data and attached to the new account on registration.</dd>
 
-    <dt><strong>O — Offer</strong></dt>
-    <dd>The Guest phase. Logged in, not yet a customer. They can see their results, continue the conversation, and sample more — but the paid content sits behind an upgrade. The offer is timed to appear after value has been delivered, not before.</dd>
+	<dt><strong>O — Offer</strong></dt>
+	<dd>The Guest phase. Logged in, not yet a customer. They can see their results, continue the conversation, and sample more — but the paid content sits behind an upgrade. The offer is timed to appear after value has been delivered, not before.</dd>
 
-    <dt><strong>S — Sale</strong></dt>
-    <dd>The payment phase. Stripe or PayPal handles the transaction. On success the account's access level upgrades and the user moves straight into Content.</dd>
+	<dt><strong>S — Sale</strong></dt>
+	<dd>The payment phase. Stripe or PayPal handles the transaction. On success the account's access level upgrades and the user moves straight into Content.</dd>
 
-    <dt><strong>C — Content</strong></dt>
-    <dd>The Member phase. Full access. Whatever was gated is now open, and the conversation shifts from selling to delivering.</dd>
+	<dt><strong>C — Content</strong></dt>
+	<dd>The Member phase. Full access. Whatever was gated is now open, and the conversation shifts from selling to delivering.</dd>
 </dl>
 
 <p>Every scripted message, offer trigger, and AI instruction is tagged to one of these phases. The system always knows where in F→L→O→S→C the current user is, and behaves accordingly.</p>
@@ -56,11 +70,11 @@
 
 <p>The AI in FLOSC isn't a chat bubble bolted onto a content site. It's the primary interface — content, offers, results, and user state all flow through the conversation. The AI is given enough context to be specifically relevant rather than generic:</p>
 <ul>
-    <li>What the visitor has done so far (e.g. which quiz, which answers)</li>
-    <li>What content is available and what they've already seen</li>
-    <li>Which phase of the flow they're in</li>
-    <li>The full text of every scripted message that could apply</li>
-    <li>The deployment's identity: name, voice, and purpose</li>
+	<li>What the visitor has done so far (e.g. which quiz, which answers)</li>
+	<li>What content is available and what they've already seen</li>
+	<li>Which phase of the flow they're in</li>
+	<li>The full text of every scripted message that could apply</li>
+	<li>The deployment's identity: name, voice, and purpose</li>
 </ul>
 
 <p>In an educational deployment, the AI acts like a tutor; for a storefront it acts like a knowledgeable guide; for a sales funnel it qualifies and routes. Same mechanism, different content.</p>
@@ -95,18 +109,18 @@
 
 <h4 id="wp-tradeoffs">Tradeoffs Accepted</h4>
 <ul>
-    <li><strong>No build step</strong> means no tree-shaking and no TypeScript. Accepted — the code stays readable to anyone who knows PHP and vanilla JS.</li>
-    <li><strong>WordPress nonces expire,</strong> which requires client-side retry logic. Accepted, documented, and handled.</li>
-    <li><strong>The options table</strong> is used for settings rather than a custom schema. Accepted — WordPress's update APIs are well-tested.</li>
-    <li><strong>PHP version diversity.</strong> Accepted — the code targets PHP 7.4+ and avoids features that break on common hosting.</li>
+	<li><strong>No build step</strong> means no tree-shaking and no TypeScript. Accepted — the code stays readable to anyone who knows PHP and vanilla JS.</li>
+	<li><strong>WordPress nonces expire,</strong> which requires client-side retry logic. Accepted, documented, and handled.</li>
+	<li><strong>The options table</strong> is used for settings rather than a custom schema. Accepted — WordPress's update APIs are well-tested.</li>
+	<li><strong>PHP version diversity.</strong> Accepted — the code targets PHP 7.4+ and avoids features that break on common hosting.</li>
 </ul>
 
 <h4 id="wp-advantages">Advantages That Came for Free</h4>
 <ul>
-    <li><strong>The content API</strong> (<code>wp_insert_post</code>, <code>wp_create_category</code>, <code>get_posts</code>) makes content-as-posts a natural fit, with taxonomy and search built in.</li>
-    <li><strong>User management</strong> — registration, login, password reset, roles — is handled by WordPress core.</li>
-    <li><strong>WXR import</strong> ships sample data as a standard WordPress import file, so a fresh install can have a working demo in a few minutes.</li>
-    <li><strong>Category protection</strong> maps cleanly onto access control: mark a category as FLOSC-protected and only paid members see those posts.</li>
+	<li><strong>The content API</strong> (<code>wp_insert_post</code>, <code>wp_create_category</code>, <code>get_posts</code>) makes content-as-posts a natural fit, with taxonomy and search built in.</li>
+	<li><strong>User management</strong> — registration, login, password reset, roles — is handled by WordPress core.</li>
+	<li><strong>WXR import</strong> ships sample data as a standard WordPress import file, so a fresh install can have a working demo in a few minutes.</li>
+	<li><strong>Category protection</strong> maps cleanly onto access control: mark a category as FLOSC-protected and only paid members see those posts.</li>
 </ul>
 
 <h2 id="evolution-timeline">How It Got Here</h2>
@@ -155,9 +169,9 @@
 <h4 id="visitor-guest-member">Visitor → Guest → Member</h4>
 <p>Three user states, each with different access, scripted messages, AI context, and prompt pills:</p>
 <ul>
-    <li><strong>Visitor:</strong> not logged in. Gets the free sample and a limited conversation; must create an account to see full results.</li>
-    <li><strong>Guest:</strong> logged in, no purchase. Gets full results, free content, and the upgrade offer.</li>
-    <li><strong>Member:</strong> logged in, purchased. Gets everything that was gated and the full delivery experience.</li>
+	<li><strong>Visitor:</strong> not logged in. Gets the free sample and a limited conversation; must create an account to see full results.</li>
+	<li><strong>Guest:</strong> logged in, no purchase. Gets full results, free content, and the upgrade offer.</li>
+	<li><strong>Member:</strong> logged in, purchased. Gets everything that was gated and the full delivery experience.</li>
 </ul>
 
 <h3 id="principle-no-build-step">No Build Step, No Dependencies</h3>

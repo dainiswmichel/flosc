@@ -85,14 +85,18 @@ abstract class SSO_Provider_Base {
 	protected $client_secret;
 
 	/**
-	 * v1.4.9: Whether flow-specific credentials have been set
+	 * Whether flow-specific credentials have been set.
+	 *
+	 * @since 1.4.9
 	 *
 	 * @var bool
 	 */
 	protected $flow_credentials_set = false;
 
 	/**
-	 * v1.4.9: Flow-specific enabled flag (null = not set, use global)
+	 * Flow-specific enabled flag. Null means not set, so the global applies.
+	 *
+	 * @since 1.4.9
 	 *
 	 * @var bool|null
 	 */
@@ -134,9 +138,10 @@ abstract class SSO_Provider_Base {
 
 	/**
 	 * Check if provider is enabled and configured
-	 * v1.4.9: Checks flow-specific enabled flag if set, otherwise falls back to global
+	 * Checks flow-specific enabled flag if set, otherwise falls back to global
 	 *
 	 * @return bool
+	 * @since 1.4.9
 	 */
 	public function is_enabled() {
 		if ( null !== $this->flow_enabled ) {
@@ -164,8 +169,11 @@ abstract class SSO_Provider_Base {
 	}
 
 	/**
-	 * v1.4.9: Set flow-specific credentials (overrides global options)
-	 * Called at runtime when we know which flow triggered the SSO login.
+	 * Set flow-specific credentials, overriding the global options.
+	 *
+	 * Called at runtime, once the flow that triggered the SSO login is known.
+	 *
+	 * @since 1.4.9
 	 *
 	 * @param string $client_id Flow-specific Client ID.
 	 * @param string $client_secret Flow-specific Client Secret.
@@ -243,9 +251,9 @@ abstract class SSO_Provider_Base {
 		$body = json_decode( wp_remote_retrieve_body( $response ), true );
 
 		if ( isset( $body['error'] ) ) {
-			// v1.4.6: Handle both flat and nested error formats.
+			// v1.4.6: Handle both flat and nested error formats
 			// Flat: { "error": "invalid_grant", "error_description": "Code expired" }
-			// Nested (Facebook/Google): { "error": { "message": "...", "code": 190 } }
+			// Nested (Facebook/Google): { "error": { "message": "...", "code": 190 } }.
 			if ( is_array( $body['error'] ) && isset( $body['error']['message'] ) ) {
 				$error_msg = $body['error']['message'];
 			} elseif ( isset( $body['error_description'] ) ) {
@@ -271,6 +279,12 @@ abstract class SSO_Provider_Base {
 	 * @return array|WP_Error User data or error
 	 */
 	public function get_user_info( $access_token, $token_data = array() ) {
+		// The base implementation reads its claims from user_info_url and has no
+		// use for the token response. The parameter is part of the contract
+		// because Apple overrides this method and takes its id_token and
+		// form_post claims from there.
+		unset( $token_data );
+
 		$response = wp_remote_get(
 			$this->user_info_url,
 			array(

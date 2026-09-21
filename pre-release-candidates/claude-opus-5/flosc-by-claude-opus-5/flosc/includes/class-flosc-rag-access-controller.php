@@ -16,11 +16,6 @@ class FLOSC_RAG_Access_Controller {
 	private $flosc_user_session;
 	private $flosc_rag_manager;
 
-	/**
-	 * Construct.
-	 *
-	 * @param mixed $flosc_user_session Flosc user session.
-	 */
 	public function __construct( $flosc_user_session ) {
 		$this->flosc_user_session = $flosc_user_session;
 		$this->flosc_rag_manager  = FLOSC_RAG_Manager::instance();
@@ -64,8 +59,8 @@ class FLOSC_RAG_Access_Controller {
 	/**
 	 * Check tool access based on user session
 	 *
-	 * @param string $flosc_tool_name Flosc tool name.
-	 * @param array  $flosc_args Flosc arguments.
+	 * @param string $flosc_tool_name
+	 * @param array  $flosc_args
 	 * @return array Access check result
 	 */
 	private function flosc_check_tool_access( $flosc_tool_name, $flosc_args ) {
@@ -77,7 +72,7 @@ class FLOSC_RAG_Access_Controller {
 
 			case 'search_posts':
 			case 'search_knowledge_base':
-				// Always allowed (but results filtered by access level)
+				// Always allowed (but results filtered by access level).
 				return array( 'flosc_allowed' => true );
 
 			default:
@@ -93,8 +88,8 @@ class FLOSC_RAG_Access_Controller {
 	/**
 	 * Check lesson access
 	 *
-	 * @param int|null $flosc_lesson_number Flosc lesson number.
-	 * @param array    $flosc_state Flosc state.
+	 * @param int|null $flosc_lesson_number
+	 * @param array    $flosc_state
 	 * @return array Access check result
 	 */
 	private function flosc_check_lesson_access( $flosc_lesson_number, $flosc_state ) {
@@ -113,9 +108,9 @@ class FLOSC_RAG_Access_Controller {
 
 		// Guest: ONLY their free lesson.
 		if ( 'flosc_guest' === $flosc_user_type ) {
-			$flosc_lesson_number = intval( $flosc_lesson_number );
-			$flosc_free_lesson   = intval( $flosc_state['flosc_quiz']['flosc_free_lesson_number'] );
-			if ( $flosc_lesson_number === $flosc_free_lesson ) {
+			$flosc_free_lesson = $flosc_state['flosc_quiz']['flosc_free_lesson_number'];
+			if ( null !== $flosc_free_lesson && null !== $flosc_lesson_number
+				&& (int) $flosc_lesson_number === (int) $flosc_free_lesson ) {
 				return array( 'flosc_allowed' => true );
 			}
 			return array(
@@ -136,8 +131,8 @@ class FLOSC_RAG_Access_Controller {
 	/**
 	 * Create denial payload
 	 *
-	 * @param string $flosc_reason Flosc reason.
-	 * @param string $flosc_cta Flosc cta.
+	 * @param string $flosc_reason
+	 * @param string $flosc_cta
 	 * @return array Denial payload
 	 */
 	private function flosc_denial_payload( $flosc_reason, $flosc_cta ) {
@@ -158,12 +153,12 @@ class FLOSC_RAG_Access_Controller {
 	/**
 	 * Validate tool output
 	 *
-	 * @param mixed  $flosc_result Flosc result.
-	 * @param string $flosc_tool_name Flosc tool name.
+	 * @param mixed  $flosc_result
+	 * @param string $flosc_tool_name
 	 * @return mixed
 	 */
 	private function flosc_validate_output( $flosc_result, $flosc_tool_name ) {
-		// If already denied, pass through
+		// If already denied, pass through.
 		if ( isset( $flosc_result['flosc_denied'] ) ) {
 			return $flosc_result;
 		}

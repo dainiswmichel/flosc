@@ -37,7 +37,7 @@ function flosc_portable_settings_runtime_excludes() {
 /**
  * Return true when a setting path segment should be treated as secret.
  *
- * @param string $segment Segment.
+ * @param string $segment
  * @return bool
  */
 function flosc_portable_is_secret_segment( $segment ) {
@@ -54,7 +54,7 @@ function flosc_portable_is_secret_segment( $segment ) {
 /**
  * Return true when a full setting path contains secret-looking segments.
  *
- * @param string[] $path Path.
+ * @param string[] $path
  * @return bool
  */
 function flosc_portable_is_secret_path( array $path ) {
@@ -69,7 +69,7 @@ function flosc_portable_is_secret_path( array $path ) {
 /**
  * Deep clone + filter to exportable settings (non-secret, non-runtime).
  *
- * @param array $fs Fs.
+ * @param array $fs
  * @return array
  */
 function flosc_portable_collect_exportable_settings( array $fs ) {
@@ -98,8 +98,8 @@ function flosc_portable_collect_exportable_settings( array $fs ) {
 /**
  * Remove secret subkeys recursively.
  *
- * @param mixed    $value Value.
- * @param string[] $path Path.
+ * @param mixed    $value
+ * @param string[] $path
  * @return mixed|null
  */
 function flosc_portable_filter_secret_values( $value, array $path ) {
@@ -126,7 +126,7 @@ function flosc_portable_filter_secret_values( $value, array $path ) {
 /**
  * Convert arrays to scalar-friendly YAML using maps only (no '-' list syntax).
  *
- * @param mixed $value Value.
+ * @param mixed $value
  * @return mixed
  */
 function flosc_portable_to_yaml_shape( $value ) {
@@ -151,7 +151,7 @@ function flosc_portable_to_yaml_shape( $value ) {
 /**
  * Convert numeric-key maps back to indexed arrays.
  *
- * @param mixed $value Value.
+ * @param mixed $value
  * @return mixed
  */
 function flosc_portable_from_yaml_shape( $value ) {
@@ -193,7 +193,7 @@ function flosc_portable_from_yaml_shape( $value ) {
 /**
  * YAML key formatter.
  *
- * @param string $key Key.
+ * @param string $key
  * @return string
  */
 function flosc_portable_yaml_key( $key ) {
@@ -207,7 +207,7 @@ function flosc_portable_yaml_key( $key ) {
 /**
  * YAML scalar formatter.
  *
- * @param mixed $value Value.
+ * @param mixed $value
  * @return string
  */
 function flosc_portable_yaml_scalar( $value ) {
@@ -230,8 +230,8 @@ function flosc_portable_yaml_scalar( $value ) {
 /**
  * Emit YAML from a map-only array shape.
  *
- * @param array $map Map.
- * @param int   $depth Depth.
+ * @param array $map
+ * @param int   $depth
  * @return string
  */
 function flosc_portable_emit_yaml_map( array $map, $depth = 0 ) {
@@ -256,7 +256,7 @@ function flosc_portable_emit_yaml_map( array $map, $depth = 0 ) {
 /**
  * Build YAML settings block text.
  *
- * @param array $settings Settings.
+ * @param array $settings
  * @return string
  */
 function flosc_portable_build_settings_block( array $settings ) {
@@ -273,7 +273,7 @@ function flosc_portable_build_settings_block( array $settings ) {
 /**
  * Extract YAML settings block from markdown.
  *
- * @param string $markdown Markdown.
+ * @param string $markdown
  * @return string
  */
 function flosc_portable_extract_settings_yaml( $markdown ) {
@@ -292,7 +292,7 @@ function flosc_portable_extract_settings_yaml( $markdown ) {
 /**
  * Remove settings block from markdown before IVR message parsing.
  *
- * @param string $markdown Markdown.
+ * @param string $markdown
  * @return string
  */
 function flosc_portable_strip_settings_block( $markdown ) {
@@ -306,12 +306,12 @@ function flosc_portable_strip_settings_block( $markdown ) {
 /**
  * Parse simple map-based YAML (emitted by flosc_portable_emit_yaml_map).
  *
- * @param string $yaml Yaml.
+ * @param string $yaml
  * @return array{success:bool,data:array,error:string}
  */
 function flosc_portable_parse_yaml_map( $yaml ) {
 	$yaml = (string) $yaml;
-	if ( trim( $yaml ) === '' ) {
+	if ( '' === trim( $yaml ) ) {
 		return array(
 			'success' => true,
 			'data'    => array(),
@@ -329,7 +329,7 @@ function flosc_portable_parse_yaml_map( $yaml ) {
 
 	foreach ( $lines as $raw_line ) {
 		$line = rtrim( (string) $raw_line, "\r\n" );
-		if ( trim( $line ) === '' || preg_match( '/^\s*#/', $line ) ) {
+		if ( '' === trim( $line ) || preg_match( '/^\s*#/', $line ) ) {
 			continue;
 		}
 
@@ -342,7 +342,7 @@ function flosc_portable_parse_yaml_map( $yaml ) {
 		}
 
 		$indent = strlen( $m[1] );
-		if ( ( $indent % 2 ) !== 0 ) {
+		if ( 0 !== ( $indent % 2 ) ) {
 			return array(
 				'success' => false,
 				'data'    => array(),
@@ -350,7 +350,8 @@ function flosc_portable_parse_yaml_map( $yaml ) {
 			);
 		}
 
-		while ( count( $stack ) > 0 && $stack[ count( $stack ) - 1 ]['indent'] >= $indent ) {
+		// The stack shrinks inside the loop, so its depth is re-taken each pass.
+		for ( $depth = count( $stack ); $depth > 0 && $stack[ $depth - 1 ]['indent'] >= $indent; $depth = count( $stack ) ) {
 			array_pop( $stack );
 		}
 		if ( empty( $stack ) ) {
@@ -396,7 +397,7 @@ function flosc_portable_parse_yaml_map( $yaml ) {
 /**
  * Parse scalar values emitted by flosc_portable_yaml_scalar().
  *
- * @param string $tail Tail.
+ * @param string $tail
  * @return mixed
  */
 function flosc_portable_parse_yaml_scalar( $tail ) {
@@ -432,8 +433,8 @@ function flosc_portable_parse_yaml_scalar( $tail ) {
 /**
  * Merge settings recursively (incoming overrides existing values).
  *
- * @param array $base Base.
- * @param array $incoming Incoming.
+ * @param array $base
+ * @param array $incoming
  * @return array
  */
 function flosc_portable_deep_merge( array $base, array $incoming ) {
@@ -654,8 +655,6 @@ function flosc_portable_settings_bootstrap_allowlist() {
 		'feedback_user_message',
 		'file_access_level',
 		'file_content',
-		'flosc_account_plan',
-		'flosc_account_purchases_manual',
 		'flosc_add_feedback',
 		'flosc_add_praise',
 		'flosc_clear_ivr_db',
@@ -925,8 +924,8 @@ function flosc_portable_settings_bootstrap_allowlist() {
 /**
  * Apply parsed YAML settings to a flow settings array using top-level allow-list and secret deny-list.
  *
- * @param array $current_fs Current fs.
- * @param array $incoming_settings Incoming settings.
+ * @param array $current_fs
+ * @param array $incoming_settings
  * @return array{applied:array,skipped:array,fs:array}
  */
 function flosc_portable_apply_yaml_settings( array $current_fs, array $incoming_settings ) {
@@ -982,7 +981,7 @@ function flosc_portable_apply_yaml_settings( array $current_fs, array $incoming_
  * Load messages/phases/styles for import/export.
  * Prefer flosc_flow_* option. Fall back once to legacy global options if empty.
  *
- * @param string|null $flow_key Flow key.
+ * @param string|null $flow_key
  * @return array{0:array,1:array,2:array,3:string} messages, phases, styles, flow_key used
  */
 function flosc_flow_load_runtime_triplet( $flow_key = null ) {
@@ -1017,14 +1016,14 @@ function flosc_flow_load_runtime_triplet( $flow_key = null ) {
 
 /**
  * Import IVR from ivr.md to database (REPLACE MODE - ivr.md is source of truth)
- * v9.2.2: IVR Database Integration
+ * IVR Database Integration
  * v1.6.4: Added $custom_ivr_file and $flow_key params for per-flow storage
  *
  * @param bool        $preview_only If true, returns preview without making changes.
  * @param string|null $custom_ivr_file Optional path to IVR file (defaults to flosc_default_technical_ivr.md).
  * @param string|null $flow_key Optional per-flow option key (e.g. 'flosc_flow_flosc_default_ivr').
  * @return array Result with success, stats, message, and preview data
- * @param string $mode Mode.
+ * @since 9.2.2
  */
 function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file = null, $flow_key = null, $mode = 'merge' ) {
 	$ivr_file = $custom_ivr_file ?? flosc_config_file( 'flosc_default_technical_ivr.md' );
@@ -1048,7 +1047,7 @@ function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file =
 	// flow_key must be a per-flow option name, never an arbitrary options row.
 	if ( null !== $flow_key && '' !== $flow_key ) {
 		$flow_key = (string) $flow_key;
-		if ( strpos( $flow_key, 'flosc_flow_' ) !== 0 || 'flosc_flow_' === $flow_key ) {
+		if ( 0 !== strpos( $flow_key, 'flosc_flow_' ) || 'flosc_flow_' === $flow_key ) {
 			return array(
 				'success' => false,
 				'message' => 'Invalid flow option key',
@@ -1056,7 +1055,7 @@ function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file =
 		}
 	}
 
-	require_once FLOSC_PLUGIN_DIR . 'includes/portability/class-ivr-parser.php';
+	require_once FLOSC_PLUGIN_DIR . 'includes/portability/class-flosc-ivr-parser.php';
 	$parser   = FLOSC_IVR_Parser::flosc_instance();
 	$markdown = flosc_fs_get_contents( $ivr_file );
 
@@ -1165,7 +1164,7 @@ function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file =
 			'content',
 		);
 
-		// Normalize messages to a compare shape so sparse DB rows and parser-defaulted.
+		// Normalize messages to a compare shape so sparse DB rows and parser-defaulted
 		// file rows can be compared semantically instead of by raw array structure.
 		$normalize_for_compare = static function ( $msg ) {
 			if ( ! is_array( $msg ) ) {
@@ -1193,7 +1192,7 @@ function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file =
 
 			$normalized['title'] = (string) ( $msg['title'] ?? $normalized['name'] );
 
-			if ( strtolower( trim( $normalized['type'] ) ) === 'offer' && '' === $normalized['display_format'] ) {
+			if ( 'offer' === strtolower( trim( $normalized['type'] ) ) && '' === $normalized['display_format'] ) {
 				$normalized['display_format'] = 'card';
 			}
 
@@ -1242,12 +1241,12 @@ function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file =
 		'member'  => array(),
 	);
 	foreach ( $incoming_messages as $msg ) {
-		if ( ( $msg['type'] ?? '' ) !== 'suggested_user_autoprompt' ) {
+		if ( 'suggested_user_autoprompt' !== ( $msg['type'] ?? '' ) ) {
 			continue;
 		}
 		$cond = $msg['conditions'] ?? $msg['condition'] ?? '';
 		foreach ( array( 'visitor', 'guest', 'member' ) as $s ) {
-			if ( 'always' === $cond || strpos( $cond, 'is_' . $s ) !== false ) {
+			if ( 'always' === $cond || false !== strpos( $cond, 'is_' . $s ) ) {
 				$autoprompts_from_ivr[ $s ][] = array(
 					'icon'          => $msg['icon'] ?? '',
 					'label'         => $msg['label'] ?? ( $msg['name'] ?? '' ),
@@ -1363,19 +1362,20 @@ function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file =
 
 /**
  * Create timestamped backup of current IVR database state
- * v1.6.4: Added $flow_key param for per-flow storage
+ * Added $flow_key param for per-flow storage
  *
  * @param string|null $flow_key Optional per-flow option key.
  * @return string|false Backup filename on success, false on failure
+ * @since 1.6.4
  */
 function flosc_export_ivr_backup( $flow_key = null ) {
 	list($messages, $phases, $styles, $flow_key) = flosc_flow_load_runtime_triplet( $flow_key );
 
 	if ( empty( $messages ) ) {
-		return false; // No data to backup.
+		return false; // No data to backup
 	}
 
-	// Generate markdown (same format as export)
+	// Generate markdown (same format as export).
 	$markdown  = "# FLOSC IVR Configuration (AUTO-BACKUP)\n\n";
 	$markdown .= 'Backup created: ' . current_time( 'mysql' ) . "\n\n";
 
@@ -1451,11 +1451,10 @@ function flosc_export_ivr_backup( $flow_key = null ) {
 
 /**
  * Auto-export IVR database to ivr.md file (write-through)
- * v9.2.8: Called after every save/delete to keep DB and file in sync
+ * Called after every save/delete to keep DB and file in sync
  *
  * @return bool Success
- * @param mixed $flow_key Flow key.
- * @param mixed $target_ivr_file Target IVR file.
+ * @since 9.2.8
  */
 function flosc_auto_export_ivr_to_file( $flow_key = null, $target_ivr_file = null ) {
 	list($messages, $phases, $styles, $flow_key) = flosc_flow_load_runtime_triplet( $flow_key );
@@ -1626,7 +1625,7 @@ function flosc_auto_export_ivr_to_file( $flow_key = null, $target_ivr_file = nul
 				$markdown .= 'Timer: ' . $msg['timer'] . "\n";
 			}
 			$display_format = trim( (string) ( $msg['display_format'] ?? '' ) );
-			if ( strtolower( trim( (string) ( $msg['type'] ?? '' ) ) ) === 'offer' && '' === $display_format ) {
+			if ( 'offer' === strtolower( trim( (string) ( $msg['type'] ?? '' ) ) ) && '' === $display_format ) {
 				$display_format = 'card';
 			}
 			if ( '' !== $display_format ) {
@@ -1671,7 +1670,7 @@ function flosc_auto_export_ivr_to_file( $flow_key = null, $target_ivr_file = nul
 		$ivr_file = $data_dir . 'flosc_default_technical_ivr.md';
 	}
 
-	if ( strpos( $ivr_file, $data_dir ) !== 0 ) {
+	if ( 0 !== strpos( $ivr_file, $data_dir ) ) {
 		$ivr_file = $data_dir . basename( $ivr_file );
 	}
 	$result = flosc_write_data_file( $ivr_file, $markdown );
@@ -1710,7 +1709,7 @@ function flosc_sync_flow_option_to_ivr_file( $option ) {
 	if ( $mirroring ) {
 		return;
 	}
-	if ( strpos( (string) $option, 'flosc_flow_' ) !== 0 ) {
+	if ( 0 !== strpos( (string) $option, 'flosc_flow_' ) ) {
 		return;
 	}
 	$stem = substr( $option, strlen( 'flosc_flow_' ) );
@@ -1724,9 +1723,9 @@ function flosc_sync_flow_option_to_ivr_file( $option ) {
 add_action( 'updated_option', 'flosc_sync_flow_option_to_ivr_file', 20, 1 );
 add_action( 'added_option', 'flosc_sync_flow_option_to_ivr_file', 20, 1 );
 
-// v8.0.0: Concierge posts. A private post in the concierge category gets an admin.
-// "FLOSC Concierge" meta box (editable settings); on save the plugin syncs it into.
-// the post's flow as a concierge IVR message (which mirrors to the .md); on trash it.
+// v8.0.0: Concierge posts. A private post in the concierge category gets an admin
+// "FLOSC Concierge" meta box (editable settings); on save the plugin syncs it into
+// the post's flow as a concierge IVR message (which mirrors to the .md); on trash it
 // is removed. Admins also see a read-only "what FLOSC understands" summary on the post.
 add_action(
 	'add_meta_boxes_post',
@@ -1808,9 +1807,6 @@ add_filter(
 /**
  * Align per-flow offers registry with offer messages currently present in IVR messages.
  * Keeps referenced offers and snapshots removed extras for recovery.
- *
- * @param mixed $flow_key Flow key.
- * @param mixed $messages Messages.
  */
 function flosc_sync_flow_offers_with_ivr_messages( $flow_key, $messages ) {
 	if ( empty( $flow_key ) || ! is_array( $messages ) ) {
@@ -1873,7 +1869,7 @@ function flosc_sync_flow_offers_with_ivr_messages( $flow_key, $messages ) {
 		// Portable Settings / prior admin values keep commercial fields; IVR wins on message copy + display.
 		$merged_offer = array_merge( $seed_offer, $existing_offer );
 		foreach ( array( 'name', 'description', 'display_format', 'condition', 'reveal_phrase' ) as $msg_field ) {
-			if ( isset( $seed_offer[ $msg_field ] ) && (string) '' !== $seed_offer[ $msg_field ] ) {
+			if ( isset( $seed_offer[ $msg_field ] ) && '' !== (string) $seed_offer[ $msg_field ] ) {
 				$merged_offer[ $msg_field ] = $seed_offer[ $msg_field ];
 			}
 		}

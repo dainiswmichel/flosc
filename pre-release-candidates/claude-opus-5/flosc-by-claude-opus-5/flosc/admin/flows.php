@@ -1,7 +1,10 @@
 <?php
 /**
  * FLOSC Flows Overview Page
- * v1.2.5: Simple list of flows with quick actions
+ * Simple list of flows with quick actions
+ *
+ * @package FLOSC
+ * @since 1.2.5
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -10,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $flosc_flows    = flosc_flows()->get_user_flows();
 $flosc_is_admin = current_user_can( 'manage_options' );
-$flosc_get      = FLOSC_Request_Guard::query_params( FLOSC_Request_Guard::admin_query_keys() );
+$flosc_get      = wp_unslash( $_GET );
 
 // Handle delete.
 if ( isset( $flosc_get['delete_flow'] ) && $flosc_is_admin && isset( $flosc_get['_wpnonce'] ) && wp_verify_nonce( sanitize_text_field( $flosc_get['_wpnonce'] ), 'flosc_delete_flow' ) ) {

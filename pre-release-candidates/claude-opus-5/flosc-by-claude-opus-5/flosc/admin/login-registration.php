@@ -8,6 +8,8 @@
  * 3. Guest Access Link (MagicLink) — convenience login for existing users only
  *
  * Defaults are product-neutral. Never hardcode a single product brand for all flows.
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -491,7 +493,7 @@ $flosc_signup_action  = $flosc_flow_settings['header_signup_action'] ?? 'open_lo
 
 <?php
 // ─── Guest Access Link (MagicLink) ─────────────────────────────────────────
-// Neutral product defaults. Never hardcode a site-specific brand name here —.
+// Neutral product defaults. Never hardcode a site-specific brand name here —
 // each flow sets its own labels. MagicLink logs in an EXISTING WP user only;
 // it never creates accounts on click.
 $flosc_guest_link_name_default = 'Guest Access Link';

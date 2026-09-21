@@ -41,20 +41,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 trait FLOSC_Magic_Link_Trait {
 
 	/**
-	 * Suppress registration-time token grants while a MagicLink consume is in flight.
-	 *
-	 * Set true/false around that window here, and read from outside as
-	 * $this->flosc->flosc_skip_registration_token_grants by
-	 * FLOSC_First_Party_Authentication. It is declared because PHP 8.2
-	 * deprecated creating a property that was never declared: without this line
-	 * every consume emitted "Creation of dynamic property" on modern PHP, and a
-	 * later PHP makes that an Error.
-	 *
-	 * @var bool
-	 */
-	public $flosc_skip_registration_token_grants = false;
-
-	/**
 	 * Whether guest MagicLink access (flosc_magic) is enabled.
 	 *
 	 * Requires package-level allow AND per-flow enable (both default false).
@@ -68,18 +54,18 @@ trait FLOSC_Magic_Link_Trait {
 	private function flosc_magic_access_links_enabled( $flow_id = '' ) {
 		// Package-level gate: constant wins when defined; else filter (default false).
 		if ( defined( 'FLOSC_ENABLE_MAGIC_ACCESS_LINKS' ) ) {
-			if ( ! (bool) FLOSC_ENABLE_MAGIC_ACCESS_LINKS ) {
-				return false;
-			}
+			$flosc_package_enabled = (bool) FLOSC_ENABLE_MAGIC_ACCESS_LINKS;
 		} else {
 			/**
 			 * Filter: package-level enable/disable MagicLink (mint + consume + guest emails + wp_sync).
 			 *
 			 * @param bool $enabled Default false for directory-safe ship.
 			 */
-			if ( ! (bool) apply_filters( 'flosc_enable_magic_access_links', false ) ) {
-				return false;
-			}
+			$flosc_package_enabled = (bool) apply_filters( 'flosc_enable_magic_access_links', false );
+		}
+
+		if ( ! $flosc_package_enabled ) {
+			return false;
 		}
 
 		// Cookie sync hop: Case 0 already validated the flow; package gate is enough.
@@ -98,7 +84,7 @@ trait FLOSC_Magic_Link_Trait {
 	/**
 	 * Max MagicLink uses for non-members (members unlimited). Default 10.
 	 *
-	 * @param string $flow_id Flow ID.
+	 * @param string $flow_id
 	 * @return int 1–100
 	 */
 	private function flosc_magic_link_max_uses( $flow_id = '' ) {
@@ -112,7 +98,7 @@ trait FLOSC_Magic_Link_Trait {
 	/**
 	 * MagicLink active window in days after first click. Default 30.
 	 *
-	 * @param string $flow_id Flow ID.
+	 * @param string $flow_id
 	 * @return int 1–365
 	 */
 	private function flosc_magic_link_window_days( $flow_id = '' ) {
@@ -133,8 +119,90 @@ trait FLOSC_Magic_Link_Trait {
 	}
 
 	/**
-	 * Handle login token.
+	 * Hash a MagicLink bearer so transients are not keyed by the raw URL token.
+	 *
+	 * @param string $token Raw token from the URL.
+	 * @return string 64-char hex HMAC, or empty string.
 	 */
+	private function flosc_magic_token_hash( $token ) {
+		$token = (string) $token;
+		if ( '' === $token ) {
+			return '';
+		}
+		$secret = function_exists( 'flosc_token_secret' ) ? (string) flosc_token_secret() : 'flosc-magic';
+		return hash_hmac( 'sha256', $token, $secret );
+	}
+
+	/**
+	 * Transient option name for a MagicLink token (hashed).
+	 *
+	 * @param string $token Raw token.
+	 * @return string
+	 */
+	private function flosc_magic_transient_key( $token ) {
+		$hash = $this->flosc_magic_token_hash( $token );
+		return '' === $hash ? '' : 'flosc_magic_' . $hash;
+	}
+
+	/**
+	 * Load payload by hashed key, then by legacy raw-token key.
+	 *
+	 * @param string $token Raw token from the URL.
+	 * @return array{0:string,1:array|false} Transient key used, payload or false.
+	 */
+	private function flosc_magic_load_payload( $token ) {
+		$hashed = $this->flosc_magic_transient_key( $token );
+		if ( '' !== $hashed ) {
+			$payload = get_transient( $hashed );
+			if ( is_array( $payload ) ) {
+				$stored_hash = isset( $payload['token_hash'] ) ? (string) $payload['token_hash'] : '';
+				if ( '' === $stored_hash || hash_equals( $stored_hash, $this->flosc_magic_token_hash( $token ) ) ) {
+					return array( $hashed, $payload );
+				}
+			}
+		}
+		$legacy  = 'flosc_magic_' . $token;
+		$payload = get_transient( $legacy );
+		if ( is_array( $payload ) ) {
+			return array( $legacy, $payload );
+		}
+		return array( $hashed, false );
+	}
+
+	/**
+	 * Delete hashed and legacy transients for a token.
+	 *
+	 * @param string $token Raw token.
+	 * @return void
+	 */
+	private function flosc_magic_delete_token_store( $token ) {
+		$token = (string) $token;
+		if ( '' === $token ) {
+			return;
+		}
+		$hashed = $this->flosc_magic_transient_key( $token );
+		if ( '' !== $hashed ) {
+			delete_transient( $hashed );
+		}
+		delete_transient( 'flosc_magic_' . $token );
+	}
+
+	/**
+	 * Kind fallback: not a 403, not a ban. Same copy for invalid, rate-limit, two-places.
+	 *
+	 * @return void
+	 */
+	private function flosc_magic_unrecognized() {
+		$login = wp_login_url( home_url( '/' ) );
+		$msg   = __( 'Hey, looks like you\'re trying to use your magic link in a way that our system does not recognize. Please feel free to log in the regular way.', 'flosc' );
+		$link  = __( 'Log in the regular way', 'flosc' );
+		wp_die(
+			'<p>' . esc_html( $msg ) . '</p><p><a href="' . esc_url( $login ) . '">' . esc_html( $link ) . '</a></p>',
+			esc_html__( 'Magic link', 'flosc' ),
+			array( 'response' => 200 )
+		);
+	}
+
 	public function handle_login_token() {
 		// Auth/callback routing via query string (not a WP form nonce action).
 		$get = array();
@@ -146,10 +214,19 @@ trait FLOSC_Magic_Link_Trait {
 			'flosc_sso_success',
 			'redirect_to',
 		) as $flosc_qk ) {
-			// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- These GET values route capability-token login/verification callbacks; token validation below is the authentication control.
-			if ( isset( $_GET[ $flosc_qk ] ) && is_string( $_GET[ $flosc_qk ] ) && '' !== $_GET[ $flosc_qk ] ) {
-				// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Sanitizing a capability-token callback value after the routing check; no form nonce applies.
-				$get[ $flosc_qk ] = sanitize_text_field( wp_unslash( $_GET[ $flosc_qk ] ) );
+			/*
+			 * Magic-link and email-verification callbacks. The credential on
+			 * these URLs is the token itself, which is verified further down
+			 * before any session is established; a WordPress nonce would be the
+			 * wrong control, because the link arrives from the user's inbox on a
+			 * request this site did not compose. Read as a bounded, sanitized
+			 * boundary -- untrusted until the token verifies.
+			 */
+			$val = ( isset( $_GET[ $flosc_qk ] ) && is_scalar( $_GET[ $flosc_qk ] ) )
+				? sanitize_text_field( wp_unslash( $_GET[ $flosc_qk ] ) )
+				: '';
+			if ( '' !== $val ) {
+				$get[ $flosc_qk ] = $val;
 			}
 		}
 
@@ -170,7 +247,7 @@ trait FLOSC_Magic_Link_Trait {
 				exit;
 			}
 			$payload_email = sanitize_email( (string) ( $payload['email'] ?? '' ) );
-			if ( '' !== $payload_email && strcasecmp( $payload_email, (string) $user->user_email ) !== 0 ) {
+			if ( '' !== $payload_email && 0 !== strcasecmp( $payload_email, (string) $user->user_email ) ) {
 				delete_transient( $transient_key );
 				wp_safe_redirect( add_query_arg( 'flosc_email_status', 'verify_invalid', home_url( '/' ) ) );
 				exit;
@@ -206,31 +283,28 @@ trait FLOSC_Magic_Link_Trait {
 			exit;
 		}
 
-		// Case 0: Guest MagicLink access (existing users only; never creates accounts)
+		// Case 0: Guest MagicLink access (existing users only; never creates accounts).
 		if ( ! empty( $get['flosc_magic'] ) ) {
-			$token         = sanitize_text_field( $get['flosc_magic'] );
-			$transient_key = 'flosc_magic_' . $token;
-			$payload       = get_transient( $transient_key );
-			$_payload_flow = is_array( $payload )
+			$token = sanitize_text_field( $get['flosc_magic'] );
+			if ( ! $this->check_rate_limit( 'magic_consume', 30, 15 * MINUTE_IN_SECONDS ) ) {
+				$this->flosc_magic_unrecognized();
+			}
+			list($transient_key, $payload) = $this->flosc_magic_load_payload( $token );
+			$_payload_flow                 = is_array( $payload )
 				? sanitize_key( (string) ( $payload['flow_id'] ?? '' ) )
 				: '';
 			if ( ! $this->flosc_magic_access_links_enabled( $_payload_flow ) ) {
 				$this->flosc_magic_access_disabled_redirect();
 			}
-			$offer_url   = flosc_get_setting( 'guest_link_expired_offer_url', '', $_payload_flow ?: null );
+			$offer_url   = flosc_get_setting( 'guest_link_expired_offer_url', '', $_payload_flow ? $_payload_flow : null );
 			$max_uses    = $this->flosc_magic_link_max_uses( $_payload_flow );
 			$window_days = $this->flosc_magic_link_window_days( $_payload_flow );
 			$window_ttl  = $window_days * DAY_IN_SECONDS;
 
-			// Invalid or expired token — redirect to offer page or show expired status.
+			// Invalid token — kind fallback. Window/use expiry still uses the offer URL.
 			if ( ! $payload || ! isset( $payload['status'] ) ) {
-				delete_transient( $transient_key );
-				if ( ! empty( $offer_url ) ) {
-					wp_safe_redirect( $offer_url );
-					exit;
-				}
-				wp_safe_redirect( add_query_arg( 'flosc_guest_status', 'expired', remove_query_arg( 'flosc_magic' ) ) );
-				exit;
+				$this->flosc_magic_delete_token_store( $token );
+				$this->flosc_magic_unrecognized();
 			}
 
 			$email          = sanitize_email( $payload['email'] );
@@ -240,7 +314,7 @@ trait FLOSC_Magic_Link_Trait {
 			$_pre_user      = get_user_by( 'email', $email );
 			$_link_flow     = sanitize_key( (string) ( $payload['flow_id'] ?? get_user_meta( $_pre_user ? $_pre_user->ID : 0, '_flosc_registration_flow', true ) ) );
 			$is_member_user = $_pre_user &&
-				$this->sale_manager->access()->get_simple_state( $_pre_user->ID, $_link_flow ) === 'member';
+				'member' === $this->sale_manager->access()->get_simple_state( $_pre_user->ID, $_link_flow );
 
 			if ( $is_first_click ) {
 				// Phase 1 → Phase 2: Activate link on first click.
@@ -258,7 +332,7 @@ trait FLOSC_Magic_Link_Trait {
 					( ! $is_member_user && $payload['use_count'] >= $max_uses )
 				);
 				if ( $expired ) {
-					delete_transient( $transient_key );
+					$this->flosc_magic_delete_token_store( $token );
 					if ( ! empty( $offer_url ) ) {
 						wp_safe_redirect( $offer_url );
 						exit;
@@ -283,7 +357,7 @@ trait FLOSC_Magic_Link_Trait {
 			$payload_uid = absint( $payload['user_id'] ?? 0 );
 			if ( $payload_uid > 0 ) {
 				$by_id = get_userdata( $payload_uid );
-				if ( $by_id && ( ! $email || strcasecmp( (string) $by_id->user_email, (string) $email ) === 0 ) ) {
+				if ( $by_id && ( ! $email || 0 === strcasecmp( (string) $by_id->user_email, (string) $email ) ) ) {
 					$user_id = (int) $by_id->ID;
 				}
 			}
@@ -295,23 +369,17 @@ trait FLOSC_Magic_Link_Trait {
 			}
 			if ( $user_id <= 0 ) {
 				// Token without a known account: mint was wrong or data was purged. Fail closed.
-				delete_transient( $transient_key );
+				$this->flosc_magic_delete_token_store( $token );
 				if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
 					flosc_log( 'FLOSC MagicLink: refuse login — no existing WP user for token email/user_id' );
 				}
-				if ( ! empty( $offer_url ) ) {
-					wp_safe_redirect( $offer_url );
-					exit;
-				}
-				wp_safe_redirect( add_query_arg( 'flosc_guest_status', 'error', remove_query_arg( 'flosc_magic' ) ) );
-				exit;
+				$this->flosc_magic_unrecognized();
 			}
 
 			$existing_user = get_userdata( $user_id );
 			if ( ! $existing_user ) {
-				delete_transient( $transient_key );
-				wp_safe_redirect( add_query_arg( 'flosc_guest_status', 'error', remove_query_arg( 'flosc_magic' ) ) );
-				exit;
+				$this->flosc_magic_delete_token_store( $token );
+				$this->flosc_magic_unrecognized();
 			}
 
 			// MagicLink only for active accounts (email pending must verify first).
@@ -324,17 +392,48 @@ trait FLOSC_Magic_Link_Trait {
 			// Optional: promote bare subscriber to THIS flow's configured guest role only.
 			// Never hardcode product roles — set per floscFlow. Never demote privileged users.
 			$level_flow    = sanitize_key( (string) ( $_link_flow ?? '' ) );
-			$member_level  = sanitize_key( (string) flosc_get_setting( 'default_member_level', '', $level_flow ?: null ) );
-			$guest_level   = sanitize_key( (string) flosc_get_setting( 'default_guest_level', '', $level_flow ?: null ) );
+			$member_level  = sanitize_key( (string) flosc_get_setting( 'default_member_level', '', $level_flow ? $level_flow : null ) );
+			$guest_level   = sanitize_key( (string) flosc_get_setting( 'default_guest_level', '', $level_flow ? $level_flow : null ) );
 			$roles_now     = (array) $existing_user->roles;
 			$has_member    = ( '' !== $member_level && in_array( $member_level, $roles_now, true ) );
 			$has_guest     = ( '' !== $guest_level && in_array( $guest_level, $roles_now, true ) );
 			$is_privileged = user_can( $user_id, 'manage_options' ) || user_can( $user_id, 'edit_users' );
 			$is_bare       = empty( $roles_now )
-				|| ( count( $roles_now ) === 1 && in_array( 'subscriber', $roles_now, true ) );
+				|| ( 1 === count( $roles_now ) && in_array( 'subscriber', $roles_now, true ) );
 			if ( ! $has_member && ! $has_guest && '' !== $guest_level && ! $is_privileged && $is_bare ) {
 				$existing_user->set_role( $guest_level );
 			}
+
+			// Two places at once: different IP within 15 minutes fails this click.
+			// Travel later is fine. No geo vendor. Membership is not revoked.
+			$ip      = (string) $this->get_client_ip();
+			$last_ip = isset( $payload['last_ip'] ) ? (string) $payload['last_ip'] : '';
+			$last_at = isset( $payload['last_at'] ) ? absint( $payload['last_at'] ) : 0;
+			if (
+				'' !== $last_ip
+				&& '' !== $ip
+				&& $last_ip !== $ip
+				&& $last_at > 0
+				&& ( time() - $last_at ) < ( 15 * MINUTE_IN_SECONDS )
+			) {
+				$this->flosc_magic_unrecognized();
+			}
+			$payload['last_ip'] = $ip;
+			$payload['last_at'] = time();
+			if ( ! isset( $payload['token_hash'] ) || '' === $payload['token_hash'] ) {
+				$payload['token_hash'] = $this->flosc_magic_token_hash( $token );
+			}
+			$hashed_key = $this->flosc_magic_transient_key( $token );
+			if ( '' !== $hashed_key && $hashed_key !== $transient_key ) {
+				delete_transient( $transient_key );
+				$transient_key = $hashed_key;
+			}
+			$elapsed_save = isset( $payload['first_clicked_at'] ) ? ( time() - absint( $payload['first_clicked_at'] ) ) : 0;
+			$ttl_save     = $window_ttl;
+			if ( $elapsed_save > 0 ) {
+				$ttl_save = max( $window_ttl - $elapsed_save, DAY_IN_SECONDS );
+			}
+			set_transient( $transient_key, $payload, $ttl_save );
 
 			// Log in the known user only.
 			wp_set_current_user( $user_id );
@@ -347,7 +446,7 @@ trait FLOSC_Magic_Link_Trait {
 			}
 			$this->process_prelogin_data_for_user( $user_id );
 
-			// Store token for credential-save email (email-registered users)
+			// Store token for credential-save email (email-registered users).
 			update_user_meta( $user_id, '_flosc_magic_link_token', $token );
 
 			// First click only: snapshot send count to user meta for admin profile visibility.
@@ -359,7 +458,7 @@ trait FLOSC_Magic_Link_Trait {
 				}
 			}
 
-			// Persist quiz/session data on first click, or on later clicks when user.
+			// Persist quiz/session data on first click, or on later clicks when user
 			// meta still lacks scored IPA results (email-scanner prefetch, DO race).
 			$session_id        = sanitize_text_field( $payload['session_id'] ?? '' );
 			$body_temp_id      = sanitize_text_field( $payload['temp_id'] ?? '' );
@@ -389,7 +488,7 @@ trait FLOSC_Magic_Link_Trait {
 				}
 			}
 
-			// Short-lived transients consumed by FLOSC_CONFIG on next page render.
+			// Short-lived transients consumed by FLOSC_CONFIG on next page render
 			// Members receive a marker value ('member') so memberLinkLogin can detect the magic-link login;
 			// guests receive the remaining-use count for guestLinkRemaining.
 			$_login_transient_val = $is_member_user ? 'member' : (int) $remaining_after_use;
@@ -481,7 +580,7 @@ trait FLOSC_Magic_Link_Trait {
 			$flosc_token = $this->generate_flosc_auth_token( $user_id );
 			$this->set_flosc_auth_cookie( $flosc_token );
 
-			// v1.5.3: Call FLOSC's login handler directly (not do_action)
+			// v1.5.3: Call FLOSC's login handler directly (not do_action).
 			$this->handle_user_login( $user->user_login, $user );
 
 			// v8.0.0: Pull quiz session from DO if pending.
@@ -490,18 +589,18 @@ trait FLOSC_Magic_Link_Trait {
 			// Pull now so FLOSC_USER.lastQuizData is ready when the page renders.
 			$this->pull_pending_session_from_do( $user_id );
 
-			// Redirect to clean URL (strip token + sso_success params)
+			// Redirect to clean URL (strip token + sso_success params).
 			$clean_url = remove_query_arg( array( 'flosc_login_token', 'flosc_sso_success' ) );
 			wp_safe_redirect( $clean_url );
 			exit;
 		}
 
-		// Case 2: Same-domain SSO success (no token needed, cookie already valid)
+		// Case 2: Same-domain SSO success (no token needed, cookie already valid).
 		if ( ! empty( $get['flosc_sso_success'] ) && is_user_logged_in() ) {
 			$user = wp_get_current_user();
 			$this->handle_user_login( $user->user_login, $user );
 
-			// v8.0.0: Pull quiz session from DO if pending (same as Case 1)
+			// v8.0.0: Pull quiz session from DO if pending (same as Case 1).
 			$this->pull_pending_session_from_do( $user->ID );
 
 			$clean_url = remove_query_arg( 'flosc_sso_success' );
@@ -511,7 +610,7 @@ trait FLOSC_Magic_Link_Trait {
 	}
 
 	/**
-	 * v8.0.0: Pull quiz session from DO at login time.
+	 * Pull quiz session from DO at login time.
 	 *
 	 * Called during handle_login_token() — before the page renders.
 	 * JS sets a flosc_pending_session cookie before SSO redirect with the
@@ -525,6 +624,8 @@ trait FLOSC_Magic_Link_Trait {
 	 * Even with FLOSC token auth, the timing is fragile. The server knows
 	 * the user is logged in (we just set the cookie) and knows the session_id
 	 * (from the cookie). Pull now, no client help needed.
+	 *
+	 * @since 8.0.0
 	 */
 
 
@@ -532,7 +633,7 @@ trait FLOSC_Magic_Link_Trait {
 	 * Resolve an EXISTING WP user for convenience-link mint only.
 	 * Never creates an account (admin send / approve / mint must not provision users).
 	 *
-	 * @param string $email Email.
+	 * @param string $email
 	 * @return int|WP_Error User ID.
 	 */
 	private function flosc_resolve_existing_user_for_convenience_link( $email ) {
@@ -554,8 +655,8 @@ trait FLOSC_Magic_Link_Trait {
 	 * Email registration only: create a pending subscriber (or return existing pending/active id).
 	 * Not used by convenience-link mint / admin send access link.
 	 *
-	 * @param string $email Email.
-	 * @param string $flow_id Flow ID.
+	 * @param string $email
+	 * @param string $flow_id
 	 * @return int|WP_Error User ID.
 	 */
 	private function flosc_create_pending_email_registrant( $email, $flow_id = '' ) {
@@ -602,8 +703,6 @@ trait FLOSC_Magic_Link_Trait {
 
 	/**
 	 * Whether an email-registered account is still pending verification.
-	 *
-	 * @param int $user_id User ID.
 	 */
 	private function flosc_email_account_is_pending( $user_id ) {
 		$user_id = absint( $user_id );
@@ -621,8 +720,8 @@ trait FLOSC_Magic_Link_Trait {
 	/**
 	 * Send email-registration verification message (not MagicLink).
 	 *
-	 * @param int    $user_id User ID.
-	 * @param string $flow_id Flow ID.
+	 * @param int    $user_id
+	 * @param string $flow_id
 	 * @param array  $attach temp_id, quiz_data, session_id, redirect_to, flow_id.
 	 * @return bool
 	 */
@@ -659,7 +758,7 @@ trait FLOSC_Magic_Link_Trait {
 		$safe_url   = esc_url( $verify_url );
 		$safe_email = esc_html( $user->user_email );
 
-		/* translators: %s: application / product name. */
+		/* translators: %s: application / product name */
 		$subject = sprintf( __( 'Verify your email for %s', 'flosc' ), $app_name );
 		$body    = '<!doctype html><html><body class="flosc-email-body">'
 			. '<div class="flosc-email-wrap"><div class="flosc-email-card">'
@@ -683,7 +782,7 @@ trait FLOSC_Magic_Link_Trait {
 	 * Activate a pending email-registered account (verification click or admin).
 	 * Applies guest role/tokens, attaches optional quiz payload, sends welcome + MagicLink when enabled.
 	 *
-	 * @param int   $user_id User ID.
+	 * @param int   $user_id
 	 * @param array $attach Optional override; otherwise user meta _flosc_email_pending_attach.
 	 * @return true|WP_Error
 	 */
@@ -710,7 +809,7 @@ trait FLOSC_Magic_Link_Trait {
 		$has_guest     = ( '' !== $guest_level && in_array( $guest_level, $roles, true ) );
 		$is_privileged = user_can( $user_id, 'manage_options' ) || user_can( $user_id, 'edit_users' );
 		$is_bare       = empty( $roles )
-			|| ( count( $roles ) === 1 && in_array( 'subscriber', $roles, true ) );
+			|| ( 1 === count( $roles ) && in_array( 'subscriber', $roles, true ) );
 		if ( ! $has_member && ! $has_guest && '' !== $guest_level && ! $is_privileged && $is_bare ) {
 			$user->set_role( $guest_level );
 		}
@@ -776,10 +875,6 @@ trait FLOSC_Magic_Link_Trait {
 
 	/**
 	 * Welcome email after email verification. Includes MagicLink when enabled.
-	 *
-	 * @param int $user_id User ID.
-	 * @param string $flow_id Flow ID.
-	 * @param array $attach Attach.
 	 */
 	private function flosc_send_email_registration_welcome( $user_id, $flow_id = '', $attach = array() ) {
 		$user = get_userdata( $user_id );
@@ -822,11 +917,11 @@ trait FLOSC_Magic_Link_Trait {
 
 		$safe_url   = esc_url( $cta_url );
 		$safe_email = esc_html( $user->user_email );
-		/* translators: %s: application / product name. */
+		/* translators: %s: application / product name */
 		$subject = sprintf( __( 'Welcome to %s', 'flosc' ), $app_name );
 		$body    = '<!doctype html><html><body class="flosc-email-body">'
 			. '<div class="flosc-email-wrap"><div class="flosc-email-card">'
-			/* translators: %s: application / product name. */
+			/* translators: %s: application / product name */
 			. '<h1 class="flosc-email-title">' . esc_html( sprintf( __( 'Welcome to %s', 'flosc' ), $app_name ) ) . '</h1>'
 			. '<p class="flosc-email-lead">' . esc_html__( 'Your email is verified and your account is active.', 'flosc' ) . '</p>'
 			. $magic_line
@@ -854,7 +949,7 @@ trait FLOSC_Magic_Link_Trait {
 	/**
 	 * Mint a MagicLink access token for an EXISTING WordPress user only.
 	 *
-	 * @param int   $user_id User ID.
+	 * @param int   $user_id
 	 * @param array $args flow_id, redirect_to, temp_id, quiz_data, session_id, status, ttl, reuse_token.
 	 * @return string|WP_Error Token string on success.
 	 */
@@ -914,7 +1009,8 @@ trait FLOSC_Magic_Link_Trait {
 			$payload['use_count']        = 0;
 		}
 
-		$transient_key = 'flosc_magic_' . $token;
+		$payload['token_hash'] = $this->flosc_magic_token_hash( $token );
+		$transient_key         = $this->flosc_magic_transient_key( $token );
 		set_transient( $transient_key, $payload, $ttl );
 		update_user_meta( $user_id, '_flosc_magic_link_token', $token );
 
@@ -929,11 +1025,15 @@ trait FLOSC_Magic_Link_Trait {
 	 * - If magic links are enabled, a fresh token is minted and seeded as active.
 	 * - Optional refresh email can be enabled via filter.
 	 *
-	 * @param string       $password      New password (unused).
-	 * @param int          $user_id       User ID.
-	 * @param WP_User|null $old_user_data Previous user object.
+	 * Nothing in the plugin registers this on a hook; it is reached only by a
+	 * site that wires it up itself, which is why the signature keeps the leading
+	 * $password that WordPress password hooks pass first.
+	 *
+	 * @param string $password New password. Not read -- the decision is made from
+	 *                         the user's stored magic-link state.
+	 * @param int    $user_id  The user whose password changed.
 	 */
-	public function flosc_handle_password_change_revoke_magic_access( $password, $user_id, $old_user_data = null ) {
+	public function flosc_handle_password_change_revoke_magic_access( $password, $user_id ) {
 		$user_id = absint( $user_id );
 		if ( $user_id <= 0 ) {
 			return;
@@ -948,7 +1048,7 @@ trait FLOSC_Magic_Link_Trait {
 
 		// Always invalidate the prior token payload so previously sent links cannot be replayed.
 		if ( '' !== $had_token ) {
-			delete_transient( 'flosc_magic_' . $had_token );
+			$this->flosc_magic_delete_token_store( $had_token );
 		}
 
 		$flow_id = sanitize_key( (string) get_user_meta( $user_id, '_flosc_registration_flow', true ) );
@@ -982,7 +1082,8 @@ trait FLOSC_Magic_Link_Trait {
 			'use_count'        => 0,
 		);
 
-		set_transient( 'flosc_magic_' . $new_token, $payload, 30 * DAY_IN_SECONDS );
+		$payload['token_hash'] = $this->flosc_magic_token_hash( $new_token );
+		set_transient( $this->flosc_magic_transient_key( $new_token ), $payload, 30 * DAY_IN_SECONDS );
 		update_user_meta( $user_id, '_flosc_magic_link_token', $new_token );
 
 		$send_refresh = (bool) apply_filters( 'flosc_magic_link_send_on_password_change', false, $user_id, $flow_id );
@@ -1001,10 +1102,6 @@ trait FLOSC_Magic_Link_Trait {
 	 */
 	/**
 	 * Collaborator API: FLOSC_Email member welcome magic link.
-	 *
-	 * @param mixed $user User.
-	 * @param mixed $context Context.
-	 * @param int $flow_id Flow ID.
 	 */
 	public function flosc_user_magic_url( $user, $context, $flow_id ) {
 		if ( ! $user || empty( $user->ID ) ) {
@@ -1030,12 +1127,6 @@ trait FLOSC_Magic_Link_Trait {
 		return add_query_arg( 'flosc_magic', rawurlencode( $token ), $chat_url );
 	}
 
-	/**
-	 * Handle email registration.
-	 *
-	 * @param mixed $request Request.
-	 * @return mixed
-	 */
 	public function handle_email_registration( $request ) {
 		$email           = sanitize_email( $request->get_param( 'email' ) );
 		$flow_id         = sanitize_key( (string) $request->get_param( 'flow_id' ) );
@@ -1160,7 +1251,7 @@ trait FLOSC_Magic_Link_Trait {
 		// Extract flow context.
 		$flow_id = sanitize_key( (string) ( $purchase_data['flow_id'] ?? get_user_meta( $user_id, '_flosc_registration_flow', true ) ) );
 		if ( empty( $flow_id ) ) {
-			return; // No flow context — skip.
+			return; // No flow context — skip
 		}
 
 		$context     = $this->get_guest_email_context( $flow_id, $user_id );
@@ -1169,7 +1260,7 @@ trait FLOSC_Magic_Link_Trait {
 		$body_tpl    = trim( (string) ( $settings['purchase_confirmation_body'] ?? "Hi {name}!\n\nThank you for your purchase!\n\nYour access is now active. Log in with the account email used at checkout to continue.\n\n{chat_url}\n\n— The {team_name}" ) );
 
 		// Pass 2 / E1: passwordless post-purchase login token is OFF by default.
-		// Private deploys: add_filter( 'flosc_post_purchase_login_token', '__return_true' );
+		// Private deploys: add_filter( 'flosc_post_purchase_login_token', '__return_true' );.
 		$mint_login_token = (bool) apply_filters( 'flosc_post_purchase_login_token', false, $user_id, $purchase_data );
 		$login_url        = '';
 		$button_url       = $context['chat_url'];
@@ -1209,10 +1300,6 @@ trait FLOSC_Magic_Link_Trait {
 	/**
 	 * Subscribe a user to the newsletter (idempotent); sends the welcome on first opt-in.
 	 * The chatbot opt-in flow can call this for a logged-in user.
-	 *
-	 * @param mixed $email Email.
-	 * @param mixed $token Token.
-	 * @param string $flow_id Flow ID.
 	 */
 	private function send_guest_link_email( $email, $token, $flow_id = '' ) {
 		$context     = $this->get_guest_email_context( $flow_id );
@@ -1259,8 +1346,6 @@ trait FLOSC_Magic_Link_Trait {
 	 */
 	/**
 	 * Collaborator API: FLOSC_Email guest context / redirects.
-	 *
-	 * @param string $flow_id Flow ID.
 	 */
 	public function get_guest_link_base_url( $flow_id = '' ) {
 		$flow_id = sanitize_key( (string) $flow_id );
@@ -1298,9 +1383,6 @@ trait FLOSC_Magic_Link_Trait {
 	/**
 	 * Send a warning email when an email has requested 6+ guest links.
 	 * Friendly but firm — covers both genuine learners and potential abusers.
-	 *
-	 * @param mixed $email Email.
-	 * @param mixed $count Count.
 	 */
 	private function send_guest_link_warning_email( $email, $count ) {
 		$context     = $this->get_guest_email_context( '' );
@@ -1333,8 +1415,6 @@ trait FLOSC_Magic_Link_Trait {
 	/**
 	 * Delete a DO session directory after its data has been pulled to WP.
 	 * Fire-and-forget: failures are logged but do not block the login flow.
-	 *
-	 * @param mixed $email Email.
 	 */
 	private function record_guest_link_send( $email ) {
 		$email = sanitize_email( $email );
@@ -1373,7 +1453,7 @@ trait FLOSC_Magic_Link_Trait {
 		}
 		update_option( 'flosc_guest_link_log', $log, false );
 
-		if ( intval( $log[ $hash ]['count'] ?? 0 ) === 6 ) {
+		if ( 6 === intval( $log[ $hash ]['count'] ?? 0 ) ) {
 			$this->send_guest_link_warning_email( $email, 6 );
 		}
 	}
@@ -1381,67 +1461,33 @@ trait FLOSC_Magic_Link_Trait {
 
 	/**
 	 * Send the Guest Access Link email.
-	 *
-	 * @param mixed $email Email.
 	 */
 	private function normalize_guest_request_email( $email ) {
 		return strtolower( trim( (string) $email ) );
 	}
 
-	/**
-	 * Get guest request key.
-	 *
-	 * @param mixed $email Email.
-	 * @return mixed
-	 */
 	private function get_guest_request_key( $email ) {
 		return md5( $this->normalize_guest_request_email( $email ) );
 	}
 
-	/**
-	 * Get guest account request queue.
-	 *
-	 * @return mixed
-	 */
 	private function get_guest_account_request_queue() {
 		$queue = get_option( 'flosc_guest_account_request_queue', array() );
 		return is_array( $queue ) ? $queue : array();
 	}
 
-	/**
-	 * Save guest account request queue.
-	 *
-	 * @param array $queue Queue.
-	 */
 	private function save_guest_account_request_queue( array $queue ) {
 		update_option( 'flosc_guest_account_request_queue', $queue, false );
 	}
 
-	/**
-	 * Get guest account request denylist.
-	 *
-	 * @return mixed
-	 */
 	private function get_guest_account_request_denylist() {
 		$denylist = get_option( 'flosc_guest_account_request_denylist', array() );
 		return is_array( $denylist ) ? $denylist : array();
 	}
 
-	/**
-	 * Save guest account request denylist.
-	 *
-	 * @param array $denylist Denylist.
-	 */
 	private function save_guest_account_request_denylist( array $denylist ) {
 		update_option( 'flosc_guest_account_request_denylist', $denylist, false );
 	}
 
-	/**
-	 * Is guest request email blocked.
-	 *
-	 * @param mixed $email Email.
-	 * @return mixed
-	 */
 	private function is_guest_request_email_blocked( $email ) {
 		$email = $this->normalize_guest_request_email( $email );
 		if ( '' === $email ) {
@@ -1451,13 +1497,6 @@ trait FLOSC_Magic_Link_Trait {
 		return isset( $denylist[ $this->get_guest_request_key( $email ) ] );
 	}
 
-	/**
-	 * Upsert guest account request.
-	 *
-	 * @param mixed $email Email.
-	 * @param string $flow_id Flow ID.
-	 * @param string $message Message.
-	 */
 	private function upsert_guest_account_request( $email, $flow_id = '', $message = '' ) {
 		$email = sanitize_email( $email );
 		if ( empty( $email ) || ! is_email( $email ) ) {
@@ -1499,14 +1538,6 @@ trait FLOSC_Magic_Link_Trait {
 		$this->save_guest_account_request_queue( $queue );
 	}
 
-	/**
-	 * Set guest account request status.
-	 *
-	 * @param mixed $email Email.
-	 * @param mixed $status Status.
-	 * @param int $actor_id Actor ID.
-	 * @return mixed
-	 */
 	private function set_guest_account_request_status( $email, $status, $actor_id = 0 ) {
 		$email = sanitize_email( $email );
 		if ( empty( $email ) || ! is_email( $email ) ) {
@@ -1541,12 +1572,6 @@ trait FLOSC_Magic_Link_Trait {
 		return true;
 	}
 
-	/**
-	 * Delete guest account request.
-	 *
-	 * @param mixed $email Email.
-	 * @return mixed
-	 */
 	private function delete_guest_account_request( $email ) {
 		$email = sanitize_email( $email );
 		if ( empty( $email ) || ! is_email( $email ) ) {
@@ -1562,13 +1587,6 @@ trait FLOSC_Magic_Link_Trait {
 		return true;
 	}
 
-	/**
-	 * Deny and block guest account request.
-	 *
-	 * @param mixed $email Email.
-	 * @param int $actor_id Actor ID.
-	 * @return mixed
-	 */
 	private function deny_and_block_guest_account_request( $email, $actor_id = 0 ) {
 		$email = sanitize_email( $email );
 		if ( empty( $email ) || ! is_email( $email ) ) {
@@ -1587,12 +1605,6 @@ trait FLOSC_Magic_Link_Trait {
 		return true;
 	}
 
-	/**
-	 * Unblock guest account request email.
-	 *
-	 * @param mixed $email Email.
-	 * @return mixed
-	 */
 	private function unblock_guest_account_request_email( $email ) {
 		$email = sanitize_email( $email );
 		if ( empty( $email ) || ! is_email( $email ) ) {
@@ -1610,36 +1622,51 @@ trait FLOSC_Magic_Link_Trait {
 	}
 
 	/**
-	 * Build the settings-screen redirect for a guest-request action.
+	 * Build the admin redirect a guest-request action returns to.
 	 *
-	 * The flow file arrives as an argument rather than being read from the
-	 * request here. Every caller is an admin-post handler that has already
-	 * verified flosc_guest_request_nonce and manage_options, and it takes the
-	 * value from the payload it verified, so this helper reads no superglobal.
+	 * WHY $ivr_hint IS A PARAMETER
 	 *
-	 * @param string $notice_key Notice slug stored for the current user.
-	 * @param string $ivr        Flow file the calling handler resolved.
-	 * @return string Admin URL to redirect to.
+	 * This read $_POST['ivr'] itself, and carried a comment saying "there is no
+	 * form here to carry a nonce". That was wrong twice. Every caller --
+	 * handle_guest_request_approve(), _approve_send(), _deny_block() and
+	 * _delete() -- checks manage_options and then
+	 * check_admin_referer( 'flosc_guest_request_action', ... ) before reaching
+	 * this line, so the request IS nonce-verified. And a URL builder has no
+	 * business reading the request at all: its inputs belong in its signature.
+	 *
+	 * The callers now read that value in their own scope, where the
+	 * verification they perform is visible to a reader and to a scanner alike,
+	 * and hand it in.
+	 *
+	 * @param string $notice_key Transient notice to set for this admin.
+	 * @param string $ivr_hint   Flow file the caller was working in, already
+	 *                           sanitized. Used only when the trait has no
+	 *                           current flow of its own.
+	 * @return string
 	 */
-	private function build_guest_request_admin_redirect( $notice_key, $ivr = '' ) {
+	private function build_guest_request_admin_redirect( $notice_key, $ivr_hint = '' ) {
 		$notice_key = sanitize_key( (string) $notice_key );
 		$uid        = get_current_user_id();
 		if ( $uid > 0 && '' !== $notice_key ) {
 			set_transient( 'flosc_guest_request_notice_' . $uid, $notice_key, MINUTE_IN_SECONDS );
 		}
-		// Prefer the flow already resolved on the framework; else the caller's value.
-		$flow = '';
+		// Which flow to return the admin to. A routing hint only: it picks which
+		// tab to land on and writes nothing.
+		$ivr = '';
 		if ( isset( $this->current_ivr_file ) && is_string( $this->current_ivr_file ) ) {
-			$flow = sanitize_file_name( $this->current_ivr_file );
+			$ivr = sanitize_file_name( $this->current_ivr_file );
 		}
-		if ( '' === $flow ) {
-			$flow = sanitize_file_name( (string) $ivr );
+		if ( '' === $ivr ) {
+			$ivr = sanitize_file_name( (string) $ivr_hint );
+		}
+		if ( '' === $ivr ) {
+			$ivr = flosc_nav_param( 'ivr', array(), '', 'sanitize_file_name' );
 		}
 		return add_query_arg(
 			array(
 				'page' => 'flosc-settings',
 				'tab'  => 'login',
-				'ivr'  => $flow,
+				'ivr'  => $ivr,
 			),
 			admin_url( 'admin.php' )
 		);
@@ -1652,7 +1679,7 @@ trait FLOSC_Magic_Link_Trait {
 	 * FLOSC_Condition_Evaluator must pass. manage_options may force-bypass.
 	 *
 	 * @param int    $user_id Existing WP user (0 = none).
-	 * @param string $flow_id Flow ID.
+	 * @param string $flow_id
 	 * @param bool   $force   Bypass condition (admin only caller).
 	 * @return true|WP_Error
 	 */
@@ -1703,8 +1730,12 @@ trait FLOSC_Magic_Link_Trait {
 	 * Works for SSO-registered users (existing account) the same as email-registered.
 	 */
 	public function ajax_send_guest_link() {
-		$post = wp_unslash( $_POST );
+		// Origin, then identity, then the body. The nonce ran after $_POST had
+		// already been unslashed, so an off-site request was parsed before being
+		// refused.
 		check_ajax_referer( 'flosc_send_guest_link', 'nonce' );
+
+		$post = wp_unslash( $_POST );
 
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
@@ -1757,7 +1788,7 @@ trait FLOSC_Magic_Link_Trait {
 
 		$sent = $this->send_guest_link_email( $email, $token, $flow_id );
 		if ( ! $sent ) {
-			delete_transient( 'flosc_magic_' . $token );
+			$this->flosc_magic_delete_token_store( $token );
 			wp_send_json_error( array( 'message' => 'Email could not be sent. Check your mail configuration.' ) );
 		}
 
@@ -1771,9 +1802,6 @@ trait FLOSC_Magic_Link_Trait {
 		);
 	}
 
-	/**
-	 * Handle guest request approve.
-	 */
 	public function handle_guest_request_approve() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'Unauthorized', 'flosc' ), '', array( 'response' => 403 ) );
@@ -1781,25 +1809,28 @@ trait FLOSC_Magic_Link_Trait {
 
 		check_admin_referer( 'flosc_guest_request_action', 'flosc_guest_request_nonce' );
 
+		// Read here, not in the URL builder: this scope is the one that just
+		// verified the nonce above, so the verification and the read are
+		// visible together.
+		$flosc_ivr_hint = ( isset( $_POST['ivr'] ) && is_scalar( $_POST['ivr'] ) )
+			? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
+			: '';
+
 		$post  = wp_unslash( $_POST );
 		$email = sanitize_email( (string) ( $post['email'] ?? '' ) );
-		$ivr   = sanitize_file_name( (string) ( $post['ivr'] ?? '' ) );
 		$actor = get_current_user_id();
 		if ( empty( $email ) || ! is_email( $email ) ) {
-			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'invalid_email', $ivr ) );
+			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'invalid_email', $flosc_ivr_hint ) );
 			exit;
 		}
 
 		$this->unblock_guest_account_request_email( $email );
 		$this->set_guest_account_request_status( $email, 'approved', $actor );
 
-		wp_safe_redirect( $this->build_guest_request_admin_redirect( 'approved', $ivr ) );
+		wp_safe_redirect( $this->build_guest_request_admin_redirect( 'approved', $flosc_ivr_hint ) );
 		exit;
 	}
 
-	/**
-	 * Handle guest request approve send.
-	 */
 	public function handle_guest_request_approve_send() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'Unauthorized', 'flosc' ), '', array( 'response' => 403 ) );
@@ -1807,19 +1838,25 @@ trait FLOSC_Magic_Link_Trait {
 
 		check_admin_referer( 'flosc_guest_request_action', 'flosc_guest_request_nonce' );
 
+		// Read here, not in the URL builder: this scope is the one that just
+		// verified the nonce above, so the verification and the read are
+		// visible together.
+		$flosc_ivr_hint = ( isset( $_POST['ivr'] ) && is_scalar( $_POST['ivr'] ) )
+			? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
+			: '';
+
 		$post    = wp_unslash( $_POST );
 		$email   = sanitize_email( (string) ( $post['email'] ?? '' ) );
 		$flow_id = sanitize_key( (string) ( $post['flow_id'] ?? '' ) );
-		$ivr     = sanitize_file_name( (string) ( $post['ivr'] ?? '' ) );
 		$actor   = get_current_user_id();
 
 		if ( ! $this->flosc_magic_access_links_enabled( $flow_id ) ) {
-			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'approve_send_failed', $ivr ) );
+			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'approve_send_failed', $flosc_ivr_hint ) );
 			exit;
 		}
 
 		if ( empty( $email ) || ! is_email( $email ) ) {
-			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'invalid_email', $ivr ) );
+			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'invalid_email', $flosc_ivr_hint ) );
 			exit;
 		}
 
@@ -1829,7 +1866,7 @@ trait FLOSC_Magic_Link_Trait {
 		// Convenience link only: existing account required (never create user here).
 		$user_id = $this->flosc_resolve_existing_user_for_convenience_link( $email );
 		if ( is_wp_error( $user_id ) ) {
-			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'approve_send_failed', $ivr ) );
+			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'approve_send_failed', $flosc_ivr_hint ) );
 			exit;
 		}
 
@@ -1842,26 +1879,23 @@ trait FLOSC_Magic_Link_Trait {
 			)
 		);
 		if ( is_wp_error( $token ) ) {
-			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'approve_send_failed', $ivr ) );
+			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'approve_send_failed', $flosc_ivr_hint ) );
 			exit;
 		}
 
 		$sent = $this->send_guest_link_email( $email, $token, $flow_id );
 		if ( ! $sent ) {
-			delete_transient( 'flosc_magic_' . $token );
-			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'approve_send_failed', $ivr ) );
+			$this->flosc_magic_delete_token_store( $token );
+			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'approve_send_failed', $flosc_ivr_hint ) );
 			exit;
 		}
 
 		$this->record_guest_link_send( $email );
 
-		wp_safe_redirect( $this->build_guest_request_admin_redirect( 'approve_sent', $ivr ) );
+		wp_safe_redirect( $this->build_guest_request_admin_redirect( 'approve_sent', $flosc_ivr_hint ) );
 		exit;
 	}
 
-	/**
-	 * Handle guest request deny block.
-	 */
 	public function handle_guest_request_deny_block() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'Unauthorized', 'flosc' ), '', array( 'response' => 403 ) );
@@ -1869,24 +1903,27 @@ trait FLOSC_Magic_Link_Trait {
 
 		check_admin_referer( 'flosc_guest_request_action', 'flosc_guest_request_nonce' );
 
+		// Read here, not in the URL builder: this scope is the one that just
+		// verified the nonce above, so the verification and the read are
+		// visible together.
+		$flosc_ivr_hint = ( isset( $_POST['ivr'] ) && is_scalar( $_POST['ivr'] ) )
+			? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
+			: '';
+
 		$post  = wp_unslash( $_POST );
 		$email = sanitize_email( (string) ( $post['email'] ?? '' ) );
-		$ivr   = sanitize_file_name( (string) ( $post['ivr'] ?? '' ) );
 		$actor = get_current_user_id();
 		if ( empty( $email ) || ! is_email( $email ) ) {
-			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'invalid_email', $ivr ) );
+			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'invalid_email', $flosc_ivr_hint ) );
 			exit;
 		}
 
 		$this->deny_and_block_guest_account_request( $email, $actor );
 
-		wp_safe_redirect( $this->build_guest_request_admin_redirect( 'denied_blocked', $ivr ) );
+		wp_safe_redirect( $this->build_guest_request_admin_redirect( 'denied_blocked', $flosc_ivr_hint ) );
 		exit;
 	}
 
-	/**
-	 * Handle guest request delete.
-	 */
 	public function handle_guest_request_delete() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'Unauthorized', 'flosc' ), '', array( 'response' => 403 ) );
@@ -1894,31 +1931,37 @@ trait FLOSC_Magic_Link_Trait {
 
 		check_admin_referer( 'flosc_guest_request_action', 'flosc_guest_request_nonce' );
 
+		// Read here, not in the URL builder: this scope is the one that just
+		// verified the nonce above, so the verification and the read are
+		// visible together.
+		$flosc_ivr_hint = ( isset( $_POST['ivr'] ) && is_scalar( $_POST['ivr'] ) )
+			? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
+			: '';
+
 		$post  = wp_unslash( $_POST );
 		$email = sanitize_email( (string) ( $post['email'] ?? '' ) );
-		$ivr   = sanitize_file_name( (string) ( $post['ivr'] ?? '' ) );
 		if ( empty( $email ) || ! is_email( $email ) ) {
-			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'invalid_email', $ivr ) );
+			wp_safe_redirect( $this->build_guest_request_admin_redirect( 'invalid_email', $flosc_ivr_hint ) );
 			exit;
 		}
 
 		$this->delete_guest_account_request( $email );
 
-		wp_safe_redirect( $this->build_guest_request_admin_redirect( 'deleted', $ivr ) );
+		wp_safe_redirect( $this->build_guest_request_admin_redirect( 'deleted', $flosc_ivr_hint ) );
 		exit;
 	}
 
 	/**
-	 * v1.9.0: AJAX handler for chat logs polling
+	 * AJAX handler for chat logs polling
 	 * Returns recent chat log entries for the admin Chat Logs tab.
 	 * Supports since_id for incremental polling (new entries only).
+	 *
+	 * @since 1.9.0
 	 */
 
 
 	/**
 	 * Admin UI: show pending email status + activate control on user profile.
-	 *
-	 * @param mixed $user User.
 	 */
 	public function render_email_account_status_profile( $user ) {
 		if ( ! current_user_can( 'edit_user', $user->ID ) ) {
@@ -1939,7 +1982,7 @@ trait FLOSC_Magic_Link_Trait {
 					<?php if ( '' !== $verified_at ) : ?>
 						<p class="description">
 						<?php
-						/* translators: %s: local date/time when email was verified. */
+						/* translators: %s: local date/time when email was verified */
 						echo esc_html( sprintf( __( 'Verified at: %s', 'flosc' ), $verified_at ) );
 						?>
 						</p>
@@ -1966,18 +2009,33 @@ trait FLOSC_Magic_Link_Trait {
 	}
 
 	/**
-	 * admin-post: floscAdmin activates a pending email-registered user.
+	 * Admin-post: floscAdmin activates a pending email-registered user.
 	 */
 	public function handle_admin_activate_email_account() {
 		if ( ! current_user_can( 'promote_users' ) ) {
 			wp_die( esc_html__( 'Unauthorized', 'flosc' ), '', array( 'response' => 403 ) );
 		}
-		$user_id = isset( $_GET['user_id'] ) ? absint( wp_unslash( $_GET['user_id'] ) ) : 0;
-		check_admin_referer( 'flosc_activate_email_' . $user_id );
-		if ( $user_id <= 0 || ! get_userdata( $user_id ) ) {
+
+		/*
+		 * The nonce action is per-user, so the id has to be read before the
+		 * nonce can be named. That is unavoidable and safe, but only if the id
+		 * is validated as an id first: absint() turned "9abc" into 9 and "" into
+		 * 0, and a 0 produced the action 'flosc_activate_email_0', which is a
+		 * real action name a caller could mint a nonce for. It is validated as a
+		 * positive integer now, and a request that fails that stops here rather
+		 * than continuing into a nonce check for a user that does not exist.
+		 */
+		$user_id = filter_input(
+			INPUT_GET,
+			'user_id',
+			FILTER_VALIDATE_INT,
+			array( 'options' => array( 'min_range' => 1 ) )
+		);
+		if ( ! is_int( $user_id ) || ! get_userdata( $user_id ) ) {
 			wp_safe_redirect( admin_url( 'users.php' ) );
 			exit;
 		}
+		check_admin_referer( 'flosc_activate_email_' . $user_id );
 		$result = $this->flosc_activate_email_account( $user_id );
 		$redir  = get_edit_user_link( $user_id );
 		if ( ! $redir ) {

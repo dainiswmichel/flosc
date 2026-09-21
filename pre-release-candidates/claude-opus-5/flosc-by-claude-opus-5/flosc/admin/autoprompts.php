@@ -16,10 +16,29 @@
  *   trigger_value — offer_id (for offer), action key (for action), empty for ai
  *   conditions    — when to show (is_visitor, is_guest, is_member, custom expression)
  *   style         — pill | button | chip
+ *
+ * @package FLOSC
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
+}
+
+/*
+ * Identity before input.
+ *
+ * WordPress.org, 14 Sep 2026: "No nonce check found validating input origin on
+ * lines 1-116". Their scanner measures whether a check appears BEFORE the
+ * request is read, not merely whether one exists somewhere in the file. Several
+ * files here verified correctly and verified late, and late did not count -- an
+ * unauthorized request still walked the whole parser before being refused.
+ *
+ * This is the capability the FLOSC menu itself requires. Flow-level access is
+ * still checked further down where the flow is known; this only establishes
+ * that somebody who may administer FLOSC at all is asking.
+ */
+if ( ! current_user_can( 'edit_others_posts' ) ) {
+	wp_die( esc_html__( 'You do not have permission to access this page.', 'flosc' ), 403 );
 }
 
 flosc_tab_header( '💊', 'AutoPrompts' );
@@ -29,7 +48,7 @@ if ( ! function_exists( 'flosc_autoprompt_is_machine_label' ) ) {
 	 * Detect technical key-style labels (e.g., host_flow_music_overview)
 	 * that should not be shown as user-facing autoprompt labels.
 	 *
-	 * @param string $label Label.
+	 * @param string $label
 	 * @return bool
 	 */
 	function flosc_autoprompt_is_machine_label( $label ) {
@@ -37,7 +56,7 @@ if ( ! function_exists( 'flosc_autoprompt_is_machine_label' ) ) {
 		if ( '' === $label ) {
 			return false;
 		}
-		return (bool) ( strpos( $label, '_' ) !== false && preg_match( '/^[a-z0-9_]+$/', $label ) );
+		return (bool) ( false !== strpos( $label, '_' ) && preg_match( '/^[a-z0-9_]+$/', $label ) );
 	}
 }
 
@@ -61,11 +80,8 @@ $flosc_autoprompt_docs_anchor = array(
 );
 
 // ============================================
-// SAVE HANDLER.
+// SAVE HANDLER
 // ============================================
-/**
- * Flosc handle autoprompts save.
- */
 function flosc_handle_autoprompts_save() {
 	$flosc_post = wp_unslash( $_POST );
 
@@ -93,13 +109,13 @@ function flosc_handle_autoprompts_save() {
 		$flosc_panel_headers[ $state ] = sanitize_text_field( $flosc_post[ 'panel_header_' . $state ] ?? 'Try these AutoPrompts!' );
 	}
 
-	// Save panel show/hide toggle per state (checkbox — absent means unchecked = 0)
+	// Save panel show/hide toggle per state (checkbox — absent means unchecked = 0).
 	$flosc_panel_enabled = array();
 	foreach ( $states as $state ) {
 		$flosc_panel_enabled[ $state ] = isset( $flosc_post[ 'panel_enabled_' . $state ] ) ? 1 : 0;
 	}
 
-	// Companion Mode panel visibility (ship default: off)
+	// Companion Mode panel visibility (ship default: off).
 	$flosc_companion_panel_enabled = isset( $flosc_post['panel_enabled_companion'] ) ? 1 : 0;
 
 	foreach ( $states as $state ) {
@@ -132,7 +148,10 @@ function flosc_handle_autoprompts_save() {
 				continue;
 			}
 
-			$flosc_ttype   = sanitize_key( $trigger_types[ $i ] ?? 'ai' ) ?: 'ai';
+			$flosc_ttype = sanitize_key( $trigger_types[ $i ] ?? 'ai' );
+			if ( ! $flosc_ttype ) {
+				$flosc_ttype = 'ai';
+			}
 			$flosc_tval    = sanitize_text_field( $trigger_values[ $i ] ?? '' );
 			$flosc_pills[] = array(
 				'icon'          => sanitize_text_field( $icons[ $i ] ?? '' ),
@@ -165,7 +184,7 @@ if ( ! isset( $flosc_get ) || ! is_array( $flosc_get ) ) {
 }
 
 // ============================================
-// LOAD CURRENT DATA.
+// LOAD CURRENT DATA
 // ============================================
 $flosc_fs = $flosc_flow_key ? get_option( $flosc_flow_key, array() ) : array();
 
@@ -284,13 +303,6 @@ $flosc_available_conditions = array(
 
 // Declare before table rendering so expected-behavior rows can call it safely.
 if ( ! function_exists( 'flosc_autoprompt_expected_behavior_text' ) ) {
-	/**
-	 * Flosc autoprompt expected behavior text.
-	 *
-	 * @param mixed $flosc_state Flosc state.
-	 * @param array $flosc_item Flosc item.
-	 * @return mixed
-	 */
 	function flosc_autoprompt_expected_behavior_text( $flosc_state, array $flosc_item ) {
 		$flosc_label         = trim( (string) ( $flosc_item['label'] ?? '' ) );
 		$flosc_user_input    = trim( (string) ( $flosc_item['user_input'] ?? '' ) );
@@ -438,7 +450,7 @@ foreach ( $flosc_state_config as $flosc_state => $flosc_sc ) :
 			$flosc_tval  = $flosc_pill['trigger_value'] ?? '';
 			// Back-compat: derive trigger_type from action field.
 			if ( ! isset( $flosc_pill['trigger_type'] ) && ! empty( $flosc_pill['action'] ) ) {
-				if ( strpos( $flosc_pill['action'], 'show_offer_' ) === 0 ) {
+				if ( 0 === strpos( $flosc_pill['action'], 'show_offer_' ) ) {
 					$flosc_ttype = 'offer';
 					$flosc_tval  = str_replace( 'show_offer_', '', $flosc_pill['action'] );
 				} else {
@@ -808,7 +820,7 @@ $flosc_pill_demos = array(
 							<?php foreach ( (array) $flosc_set['pills'] as $flosc_item_index => $flosc_item ) : ?>
 								<?php
 								$flosc_behavior_text = flosc_autoprompt_expected_behavior_text( $flosc_state, (array) $flosc_item );
-								$flosc_pair_class    = ( (int) $flosc_item_index % 2 === 0 ) ? 'is-even' : 'is-odd';
+								$flosc_pair_class    = ( 0 === (int) $flosc_item_index % 2 ) ? 'is-even' : 'is-odd';
 								?>
 							<tr class="flosc-demo-item-row <?php echo esc_attr( $flosc_pair_class ); ?>">
 								<td><?php echo esc_html( (string) ( $flosc_item['icon'] ?? '' ) ); ?></td>

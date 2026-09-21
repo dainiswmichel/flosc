@@ -19,74 +19,34 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class FLOSC_Sample_Assessment_Quiz extends FLOSC_Abstract_Quiz_Type {
 
-	/**
-	 * Get ID.
-	 *
-	 * @return mixed
-	 */
 	public function get_id() {
 		return 'sample_assessment_quiz';
 	}
 
-	/**
-	 * Get name.
-	 *
-	 * @return mixed
-	 */
 	public function get_name() {
 		return 'Sample Assessment Quiz';
 	}
 
-	/**
-	 * Get description.
-	 *
-	 * @return mixed
-	 */
 	public function get_description() {
 		return 'Sample multi-topic assessment (10 generic questions). Replace with your own items; topics drive freeline, guest gifts, and member content via admin config.';
 	}
 
-	/**
-	 * Get icon.
-	 *
-	 * @return mixed
-	 */
 	public function get_icon() {
 		return '📋';
 	}
 
-	/**
-	 * Needs audio.
-	 *
-	 * @return mixed
-	 */
 	public function needs_audio() {
 		return false;
 	}
 
-	/**
-	 * Needs stt.
-	 *
-	 * @return mixed
-	 */
 	public function needs_stt() {
 		return false;
 	}
 
-	/**
-	 * Needs AI analysis.
-	 *
-	 * @return mixed
-	 */
 	public function needs_ai_analysis() {
 		return false;
 	}
 
-	/**
-	 * Get instructions.
-	 *
-	 * @return mixed
-	 */
 	public function get_instructions() {
 		return "One question per block, separated by a blank line.\n\n"
 			. "Each block:\n"
@@ -192,7 +152,7 @@ class FLOSC_Sample_Assessment_Quiz extends FLOSC_Abstract_Quiz_Type {
 	 * @return true|WP_Error
 	 */
 	public function validate_input( $input ) {
-		if ( null === $input || '' === $input || $input === array() ) {
+		if ( null === $input || '' === $input || array() === $input ) {
 			return new WP_Error( 'invalid_input', __( 'Please answer the questions before submitting.', 'flosc' ) );
 		}
 		if ( ! is_string( $input ) && ! is_array( $input ) ) {
@@ -347,7 +307,7 @@ class FLOSC_Sample_Assessment_Quiz extends FLOSC_Abstract_Quiz_Type {
 			$out[] = array(
 				'id'              => 'q' . $n,
 				'text'            => sprintf(
-					/* translators: %s: topic label. */
+					/* translators: %s: topic label */
 					__( 'Sample question for %s. (Replace this entire quiz in FLOSC → Quiz with your own items.) Which statement is true?', 'flosc' ),
 					$meta['label']
 				),
@@ -408,7 +368,7 @@ class FLOSC_Sample_Assessment_Quiz extends FLOSC_Abstract_Quiz_Type {
 		}
 
 		// Comma- or newline-separated letter list: A,B,C or A\nB\nC.
-		if ( strpos( $trim, ',' ) !== false ) {
+		if ( false !== strpos( $trim, ',' ) ) {
 			$parts = explode( ',', $trim );
 		} else {
 			$parts = preg_split( "/\r\n|\n|\r/", $trim );

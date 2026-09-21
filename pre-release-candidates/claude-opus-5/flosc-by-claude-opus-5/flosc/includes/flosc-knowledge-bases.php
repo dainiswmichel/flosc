@@ -228,7 +228,7 @@ if ( ! function_exists( 'flosc_knowledge_bases_migrate_legacy_flow' ) ) {
 			}
 		}
 
-		if ( $files === array() ) {
+		if ( array() === $files ) {
 			$settings['knowledge_base_ids'] = array();
 			update_option( $settings_key, $settings );
 			return;
@@ -311,7 +311,7 @@ if ( ! function_exists( 'flosc_knowledge_bases_prompt_text' ) ) {
 	function flosc_knowledge_bases_prompt_text( $flow_stem, $user_level ) {
 		$flow_stem = sanitize_key( $flow_stem );
 		$ids       = flosc_flow_knowledge_base_ids( $flow_stem );
-		if ( $ids === array() ) {
+		if ( array() === $ids ) {
 			return '';
 		}
 
