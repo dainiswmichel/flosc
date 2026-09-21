@@ -1,0 +1,75 @@
+<?xml version="1.0"?>
+<ruleset name="FLOSC WordPress">
+    <description>WordPress Coding Standards + PHP 7.4 compatibility for FLOSC. Authoritative check: run vendor/bin/phpcs . from this directory.</description>
+
+    <!-- Scan PHP everywhere we ship code. -->
+    <file>.</file>
+    <arg name="basepath" value="."/>
+    <arg name="colors"/>
+    <arg value="ps"/>
+    <arg name="extensions" value="php"/>
+
+    <!-- Never scan dependency trees or archive-only foldfers. -->
+    <exclude-pattern>*/vendor/*</exclude-pattern>
+    <exclude-pattern>*/pre-release-candidates/*</exclude-pattern>
+    <exclude-pattern>*/flosc_development_archives/*</exclude-pattern>
+
+    <!-- Thresholds -->
+    <rule ref="WordPress">
+        <exclude name="WordPress.Files.FileName.InvalidClassFileName"/>
+    </rule>
+    <rule ref="WordPress-Docs"/>
+    <rule ref="WordPress-Extra"/>
+
+    <!-- Text domain -->
+    <rule ref="WordPress.WP.I18n">
+        <properties>
+            <property name="text_domain" type="array">
+                <element value="flosc"/>
+            </property>
+        </properties>
+    </rule>
+
+    <!--
+        Project sanitizers, declared so the sniff can credit them.
+
+        These are not exemptions: both functions validate and rebuild their
+        input, and both are listed here rather than annotated at each call site
+        so one declaration covers every use and a reviewer checks two functions
+        instead of scattered comments.
+
+        flosc_sanitize_personality_profile_text - rejects invalid UTF-8, strips
+        C0 control characters, caps length. Keeps Markdown on purpose: the value
+        is an AI prompt, and it is escaped at every output point.
+
+        flosc_sanitize_personality_workshop - rejects invalid UTF-8, strips
+        control characters, caps length, requires the payload to decode to a
+        non-empty associative array, and returns only the result of
+        wp_json_encode() on that decoded structure. Anything else returns ''.
+    -->
+    <rule ref="WordPress.Security.ValidatedSanitizedInput">
+        <properties>
+            <property name="customSanitizingFunctions" type="array">
+                <element value="flosc_sanitize_personality_profile_text"/>
+                <element value="flosc_sanitize_personality_workshop"/>
+            </property>
+        </properties>
+    </rule>
+
+    <!-- Function/class prefixes -->
+    <rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+        <properties>
+            <property name="prefixes" type="array">
+                <element value="flosc"/>
+                <element value="FLOSC"/>
+            </property>
+        </properties>
+    </rule>
+
+    <!-- PHP floor safety net. TARGET = the same 7.4 name in flosc.php/readme.txt. -->
+    <rule ref="PHPCompatibilityWP"/>
+    <config name="testVersion" value="7.4-"/>
+
+    <!-- Keep the build and evidence out of the scan -->
+    <exclude-pattern>*/build/*</exclude-pattern>
+</ruleset>

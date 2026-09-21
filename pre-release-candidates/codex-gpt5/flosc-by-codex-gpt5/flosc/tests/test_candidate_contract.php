@@ -22,6 +22,26 @@ if ( PHP_SAPI !== 'cli' ) {
 	exit;
 }
 
+if ( ! function_exists( 'flosc_nows' ) ) {
+	/**
+	 * Strip every whitespace character.
+	 *
+	 * Source-text assertions below compare code, not the way it is laid out. A
+	 * WordPress Coding Standards pass reformatted the plugin -- tabs for spaces,
+	 * spaces inside call parentheses, realigned array arrows -- and every literal
+	 * match went red on behaviour that had not changed. Both sides of those
+	 * comparisons now pass through here, so the assertion is the same and the
+	 * formatting no longer decides it. Assertions that use a regular expression
+	 * are deliberately left reading the raw source.
+	 *
+	 * @param string $s Source text.
+	 * @return string
+	 */
+	function flosc_nows( $s ) {
+		return (string) preg_replace( '/\s+/', '', (string) $s );
+	}
+}
+
 $root = dirname( __DIR__ );
 $fail = 0;
 
@@ -33,7 +53,7 @@ function ok( $label, $actual, $expected ) {
 }
 
 $chatpack = (string) file_get_contents( $root . '/includes/class-flosc-chatpack.php' );
-$dispatch = (string) file_get_contents( $root . '/includes/class-ai-chat-dispatch.php' );
+$dispatch = (string) file_get_contents( $root . '/includes/class-flosc-ai-chat-dispatch.php' );
 $turn     = (string) file_get_contents( $root . '/includes/chat-turn/trait-flosc-chat-turn.php' );
 $library  = (string) file_get_contents( $root . '/includes/flosc-personality-library.php' );
 
@@ -58,17 +78,17 @@ require_once $root . '/includes/flosc-personality-library.php';
 
 echo "The personality reaches the model whole, every turn\n";
 ok( 'follow-ups send the complete current profile',
-	strpos( $chatpack, "build_identity_section((string) (\$eval_context['flow_id'] ?? ''), false, \$eval_context)" ) !== false, true );
+	strpos( flosc_nows( $chatpack ), flosc_nows( "build_identity_section((string) (\$eval_context['flow_id'] ?? ''), false, \$eval_context)"  )) !== false, true );
 
 echo "\nA failed provider call is distinguishable from a quiet one\n";
 ok( 'dispatch reports a structured outcome',
 	strpos( $dispatch, 'public function get_response_result(' ) !== false, true );
 ok( 'the turn asks for it',
-	strpos( $turn, "method_exists(\$this->ai_chat_dispatch, 'get_response_result')" ) !== false, true );
+	strpos( flosc_nows( $turn ), flosc_nows( "method_exists(\$this->ai_chat_dispatch, 'get_response_result')"  )) !== false, true );
 ok( 'failure raises an event for admin monitors',
-	strpos( $turn, "do_action('flosc_ai_dispatch_failed'" ) !== false, true );
+	strpos( flosc_nows( $turn ), flosc_nows( "do_action('flosc_ai_dispatch_failed'"  )) !== false, true );
 ok( 'and response_source is read from the dispatch, not from a non-empty string',
-	strpos( $turn, "\$dispatch_source === 'ai' && \$ai_response !== ''" ) !== false, true );
+	strpos( flosc_nows( $turn ), flosc_nows( "'ai' === \$dispatch_source && '' !== \$ai_response" ) ) !== false, true );
 
 echo "\nRetrieval is optional, scripted copy is the last resort\n";
 ok( 'a RAG miss falls through to the ordinary provider',

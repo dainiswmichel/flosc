@@ -40,14 +40,14 @@ if ( isset( $_POST['flosc_sp_action'] ) || isset( $_POST['flosc_sp_slug'] ) ) {
 		$flosc_sp_personality = isset( $_POST['flosc_sp_personality'] )
 			? sanitize_key( wp_unslash( $_POST['flosc_sp_personality'] ) )
 			: '';
-		$flosc_sp_notice = FLOSC_Starter_Packs::set_personality( $flosc_sp_slug, $flosc_sp_personality );
+		$flosc_sp_notice      = FLOSC_Starter_Packs::set_personality( $flosc_sp_slug, $flosc_sp_personality );
 	}
 }
 
-$flosc_sp_packs   = FLOSC_Starter_Packs::discover();
-$flosc_sp_state   = FLOSC_Starter_Packs::state();
-$flosc_sp_voices  = function_exists( 'flosc_personality_library_get_all' ) ? flosc_personality_library_get_all() : array();
-$flosc_sp_seeds   = FLOSC_Starter_Packs::personality_seeds();
+$flosc_sp_packs  = FLOSC_Starter_Packs::discover();
+$flosc_sp_state  = FLOSC_Starter_Packs::state();
+$flosc_sp_voices = function_exists( 'flosc_personality_library_get_all' ) ? flosc_personality_library_get_all() : array();
+$flosc_sp_seeds  = FLOSC_Starter_Packs::personality_seeds();
 
 if ( ! function_exists( 'flosc_sp_tab_url' ) ) {
 	/**

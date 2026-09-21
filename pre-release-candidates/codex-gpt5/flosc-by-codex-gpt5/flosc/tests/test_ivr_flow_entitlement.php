@@ -245,8 +245,8 @@ function flosc_flow_phase_messages( $config, $phase ) {
 	return $out;
 }
 
-require dirname( __DIR__ ) . '/includes/class-user-access-manager.php';
-require dirname( __DIR__ ) . '/includes/class-condition-evaluator.php';
+require dirname( __DIR__ ) . '/includes/class-flosc-user-access-manager.php';
+require dirname( __DIR__ ) . '/includes/class-flosc-condition-evaluator.php';
 require dirname( __DIR__ ) . '/includes/flosc-rest.php';
 
 function flosc_test_cut_method( $source, $signature ) {
@@ -271,7 +271,7 @@ function flosc_test_cut_method( $source, $signature ) {
 	exit( 1 );
 }
 
-$flosc_source  = (string) file_get_contents( dirname( __DIR__ ) . '/flosc.php' );
+$flosc_source  = (string) file_get_contents( dirname( __DIR__ ) . '/includes/class-flosc-framework.php' );
 $flosc_methods = flosc_test_cut_method( $flosc_source, 'public function flosc_request_flow_stem' ) . "\n";
 $flosc_methods .= flosc_test_cut_method( $flosc_source, 'public function get_ivr_messages' ) . "\n";
 $flosc_methods .= flosc_test_cut_method( $flosc_source, 'public function handle_ivr_get_messages' );

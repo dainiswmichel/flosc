@@ -25,3 +25,6 @@ flosc_development_worknotes/
 flosc_development_archives/
 tmp/
 zip-files/
+
+# Transcripts from tests/verify-standards.sh — run artifacts, never committed.
+tests/verify-standards-*.log

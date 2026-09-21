@@ -21,6 +21,13 @@ handoff*.md
 .gitignore
 .distignore
 build-dist-zip.sh
+.cursorrules
+agents.md
+AGENTS.md
+CLAUDE.md
+WORDPRESS-ORG-RELEASE.md
+phpcs.xml
+phpcs.xml.dist
 .claude/
 .vscode/
 .idea/
@@ -50,11 +57,7 @@ ai_configuration_files/simplified_solfeggio_ivr.md
 ai_configuration_files/flosc_ai_ivr.md
 ai_configuration_files/flosc_default_br3nda_emotional_support_ivr.md
 
-# Workspace-only plans, generated reference output, and scratch.
-# admin/docs/ is the maintained WordPress-admin documentation. The separate
-# flosc_documentation/ tree is an unreferenced static-site export and ships
-# executable/presentation HTML assets, so it is not part of the plugin.
-flosc_documentation/
+# Workspace-only plans and scratch (documentation ships — see flosc_documentation/ + admin/docs/)
 sample-data/
 dev_notes.md
 claude.md
@@ -100,6 +103,8 @@ pre-restore-*/
 vendor/
 composer.json
 composer.lock
+
+# Static tech-ref (flosc_documentation/) ships with plugin; admin/docs/ is WP admin UI
 
 # WP-CLI sample seeder — not runtime; do not ship to .org
 admin/create-sample-data.php

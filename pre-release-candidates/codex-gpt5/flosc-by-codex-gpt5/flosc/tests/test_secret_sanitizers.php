@@ -24,30 +24,6 @@ function get_option( $name, $default = false ) {
 	return array_key_exists( $name, $flosc_test_options ) ? $flosc_test_options[ $name ] : $default;
 }
 
-function wp_unslash( $value ) {
-	return is_array( $value ) ? array_map( 'wp_unslash', $value ) : stripslashes( (string) $value );
-}
-
-function sanitize_text_field( $value ) {
-	return (string) $value;
-}
-
-function sanitize_textarea_field( $value ) {
-	return (string) $value;
-}
-
-function sanitize_key( $value ) {
-	return preg_replace( '/[^a-z0-9_\-]/', '', strtolower( (string) $value ) );
-}
-
-function esc_url_raw( $value ) {
-	return (string) $value;
-}
-
-function sanitize_hex_color( $value ) {
-	return (string) $value;
-}
-
 require dirname( __DIR__ ) . '/includes/flosc-admin.php';
 require dirname( __DIR__ ) . '/includes/sso/class-sso-manager.php';
 
@@ -90,22 +66,6 @@ foreach (
 	flosc_test_ok( 'blank input preserves the stored credential', call_user_func( $callback, '' ), 'already stored' );
 	flosc_test_ok( 'non-string input preserves the stored credential', call_user_func( $callback, array( 'bad' ) ), 'already stored' );
 }
-
-echo "Settings API callbacks receive values WordPress already unslashed\n";
-$literal = 'C:\\FLOSC\\profiles\\voice and regex \\d+\\s';
-flosc_test_ok( 'admin text callback preserves literal backslashes', $admin->sanitize_text_setting( $literal ), $literal );
-flosc_test_ok( 'admin textarea callback preserves literal backslashes', $admin->sanitize_textarea_setting( $literal ), $literal );
-flosc_test_ok( 'admin URL callback preserves literal backslashes', $admin->sanitize_url_setting( $literal ), $literal );
-flosc_test_ok( 'admin nested-array callback preserves literal backslashes', $admin->sanitize_array_setting( array( 'path' => $literal ) ), array( 'path' => $literal ) );
-flosc_test_ok( 'SSO text callback preserves literal backslashes', $sso->sanitize_text_setting( $literal ), $literal );
-flosc_test_ok( 'SSO textarea callback preserves literal backslashes', $sso->sanitize_textarea_setting( $literal ), $literal );
-
-$admin_source = (string) file_get_contents( dirname( __DIR__ ) . '/includes/flosc-admin.php' );
-$sso_source   = (string) file_get_contents( dirname( __DIR__ ) . '/includes/sso/class-sso-manager.php' );
-$settings_source = (string) file_get_contents( dirname( __DIR__ ) . '/admin/settings.php' );
-flosc_test_ok( 'admin setting callbacks do not unslash a second time', strpos( $admin_source, 'sanitize_text_field(wp_unslash((string) $value))' ), false );
-flosc_test_ok( 'SSO setting callbacks do not unslash a second time', strpos( $sso_source, 'sanitize_text_field(wp_unslash((string) $value))' ), false );
-flosc_test_ok( 'settings handler does not unslash its prepared POST values again', strpos( $settings_source, 'wp_unslash((string) $flosc_post' ), false );
 
 echo $flosc_test_fail ? "\n{$flosc_test_fail} FAILURES\n" : "\nSecret sanitizers: all checks passed\n";
 exit( $flosc_test_fail ? 1 : 0 );

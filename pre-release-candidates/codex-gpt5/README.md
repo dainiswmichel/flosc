@@ -1,69 +1,73 @@
-# FLOSC 8.0.0 — Home run candidate v68
+# FLOSC 8.0.0 — Codex candidate v94.1
 
-Built by Codex in `pre-release-candidates/codex-gpt5/`. Claude Opus 5 v67 was
-used as a read-only reference and was not modified. The plugin version remains
-8.0.0.
+Source base: the latest Claude Opus 5 v94 commit available during this pass,
+`922882317158cf1a558c1a7ac4cdcd53c2faa269`. The Claude candidate was not
+modified. The Codex plugin source differs from it in exactly one file:
+`includes/flosc-request.php`. The plugin version remains 8.0.0.
 
-    artifact   flosc.zip
-    sha256     5b0724a5111cd41e3be094d51a81e5a755286cf62076360066af975c0c593064
-    bytes      2696623
-    entries    259, single flosc/ root
-    php files  149 in the artifact
-    source     flosc-by-codex-gpt5/flosc
+Claude's v94 code had already removed the five file-scope bulk `$_GET` reads.
+Its central `flosc_nav_param_keys()` list omitted `catalog` and `da1_export`,
+although `admin/da1.php` reads both through the inherited `$flosc_get` array.
+This candidate adds those two literal keys. Without them, selecting a DA1
+catalog by URL and the nonce-protected DA1 export silently fall back. No POST
+read, endpoint, or other runtime file was changed.
 
-## Why v66 was not an adequate final candidate
+## Measured checks
 
-v66 was declared ready before a complete semantic trace of request data to
-storage and external-service sinks. That trace found real omissions: uploaded
-knowledge text, nested Personality Workshop JSON, extensible model parameters,
-quiz payloads, and the legacy visitor-audio route did not all cross equally
-explicit, bounded boundaries. Several Settings API callbacks also unslashed
-values a second time after WordPress had already done so, which could corrupt
-legitimate backslashes.
+Commands run from `flosc-by-codex-gpt5/flosc/`:
 
-The historical nine-rule checker still produces deliberate false positives for
-WordPress core class files and for aliases whose individual fields are sanitized
-after assignment. v68 does not alter correct filesystem or SSO allowlist code to
-silence those patterns.
+```text
+find admin includes -type f -name '*.php' -print0 | xargs -0 grep -HnE '^\$[A-Za-z_][A-Za-z0-9_]*[[:space:]]*=[[:space:]]*wp_unslash[[:space:]]*\([[:space:]]*\$_GET[[:space:]]*\)'
+output: none (0 file-scope GET bulk reads)
 
-## What changed in v68
+find admin includes -type f -name '*.php' -print0 | xargs -0 grep -HnE '^\$[A-Za-z_][A-Za-z0-9_]*[[:space:]]*=[[:space:]]*wp_unslash[[:space:]]*\([[:space:]]*\$_POST[[:space:]]*\)'
+admin/settings.php:370:$flosc_post = wp_unslash( $_POST );
+admin/flow.php:39:$flosc_post                    = wp_unslash( $_POST );
 
-- Knowledge uploads and editor saves use one shared, bounded,
-  Markdown-preserving sanitizer before disk writes.
-- Personality Workshop and model-parameter JSON recursively sanitize strings
-  and keys, retain scalar types, and reject excessive or unsupported shapes.
-- Quiz request payloads are bounded and sanitized before hooks, transients,
-  signed cookies, or user metadata; the direct bridge hook cannot bypass this.
-- The legacy public audio-upload route checks actual byte length and WebM, Ogg,
-  or MP4 container signatures instead of trusting labels or extensions.
-- Nested quiz-map keys use Unicode-safe text sanitation, preserving multilingual
-  words instead of erasing Latvian or German characters with `sanitize_key()`.
-- Settings API callbacks no longer double-unslash values already prepared by
-  WordPress. Secret values retain the tested exact-value policy.
-- Public IVR offer-state input is allowlisted before forming metadata keys.
-- Generic flat `flow_*` arrays ignore forged nested values and sanitize every
-  accepted scalar without `Array to string` warnings.
+find . -type f -name '*.php' -print0 | xargs -0 -n1 php -l | awk '/^No syntax errors detected/{ok++} !/^No syntax errors detected/{print; fail++} END{printf "PHP lint clean: %d; failures: %d\n", ok, fail}'
+PHP lint clean: 195; failures: 0
 
-All v66 personality create/edit/attach, provider-neutral grounding, live VGM,
-Content-tab, editor-control, SSO, importer, and packaging repairs are retained.
+flosc_pass=0; flosc_fail=0; for flosc_test in tests/check_*.php tests/test_*.php; do if php "$flosc_test" > /tmp/flosc-v94-latest-php-test.log 2>&1; then flosc_pass=$((flosc_pass+1)); else flosc_fail=$((flosc_fail+1)); printf 'FAIL %s\n' "$flosc_test"; fi; done; printf 'PHP tests: %d passed; %d failed\n' "$flosc_pass" "$flosc_fail"
+PHP tests: 40 passed; 0 failed
 
-## Verification completed
+flosc_pass=0; flosc_fail=0; for flosc_test in tests/check_*.js; do if node "$flosc_test" > /tmp/flosc-v94-latest-js-test.log 2>&1; then flosc_pass=$((flosc_pass+1)); else flosc_fail=$((flosc_fail+1)); printf 'FAIL %s\n' "$flosc_test"; fi; done; printf 'JS tests: %d passed; %d failed\n' "$flosc_pass" "$flosc_fail"
+JS tests: 2 passed; 0 failed
 
-    PHP regression/check scripts                  39 passed, 0 failed
-    JavaScript test scripts                        2 passed, 0 failed
-    changed PHP and executed PHP tests             syntax clean
-    official Plugin Review PHPCS, shipping source  0 errors, 0 warnings
-    official Plugin Check PHPCS, shipping source   0 errors, 0 warnings
-    both official rulesets on extracted ZIP        passed
-    artifact entries                               259
-    artifact root                                  flosc/
-    artifact PHP files                             149
-    forbidden test/vendor/.git ZIP entries         0
-    plugin version                                 8.0.0
+php -d memory_limit=2G /Users/dainismichel/.composer/vendor/bin/phpcs --standard=WordPress --extensions=php --report=json . > /tmp/flosc-v94-latest-codex-wpcs.json
+python3 -c 'import json; print(json.load(open("/tmp/flosc-v94-latest-codex-wpcs.json"))["totals"])'
+{'errors': 5125, 'warnings': 557, 'fixable': 3030}
+Same scan on unchanged v94 source:
+{'errors': 5125, 'warnings': 557, 'fixable': 3030}
 
-## Boundaries not falsely claimed
+php -d memory_limit=2G /Users/dainismichel/.composer/vendor/bin/phpcs --standard=PHPCompatibilityWP --extensions=php --runtime-set testVersion 7.4-7.4 --report=json . > /tmp/flosc-v94-latest-codex-php74.json
+errors: 0; warnings: 0; fixable: 0
+```
 
-This candidate has not been deployed and has not touched a website database.
-A clean WordPress `WP_DEBUG` browser pass, the database-backed Plugin Check UI,
-and Dainis's human personality create/edit/chat tests have not been run in this
-workspace. Those are live validation gates, not claims made by this build.
+Static GET-key inventory: 29 consumed keys, 32 declared keys. Before this
+change, `catalog` and `da1_export` were the two consumer keys missing from the
+declaration; after it, the only undeclared consumer key is `deleted`, which
+`admin/flows.php` reads directly and does not use the helper. A direct helper
+execution with `catalog=membership`, `da1_export=1`, and an undeclared key
+returned `{"catalog":"membership","da1_export":"1"}`.
+
+Source inventory before and after: 308 files, 195 PHP files, 2,447 textual
+named-function matches, 171 textual class matches. All four Starter Pack
+manifests and the five required UI strings remain.
+
+The two-line source diff against v94 passes `git diff --no-index --check`.
+The staged whole-candidate diff against the older Codex v68 snapshot produces
+738 `git diff --cached --check` warnings from inherited v94 whitespace in
+other files. This pass did not run a formatting sweep or claim that whole-tree
+diff check passes.
+
+## Artifact and limits
+
+`./build-dist-zip.sh` produced `flosc.zip`: 281 entries, 2,795,691 bytes, one
+`flosc/` root, and `unzip -t` clean. The edited helper in the ZIP matches the
+source. The ZIP's SHA-256 is recorded in `SHA256SUMS` and the manifest.
+
+The inherited v94 build script excludes `admin/create-sample-data.php` even
+though the source contains it. Whether that exclusion preserves the intended
+sample-data workflow needs a separate functional review. This candidate was
+not deployed or tested in a booting WordPress installation, and the WPCS
+findings remain; it is not submission-ready.

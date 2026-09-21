@@ -1,155 +1,160 @@
 <?php
 /**
  * FLOSC Admin Settings Helper
- * v1.2.4: Helper for flow-aware settings in admin tabs
- * 
+ * Helper for flow-aware settings in admin tabs
+ *
  * Usage in tab files:
  *   $value = flosc_admin_get_value('ai_provider', 'ivr');
  *   - When editing a flow: returns flow[$key] if set, else global
  *   - When editing global: returns global wp_option value
+ *
+ * @package FLOSC
+ * @since 1.2.4
  */
 
-if (!defined('ABSPATH')) exit;
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 
 /**
  * Get the appropriate value for an admin settings field
- * 
- * @param string $key Setting key (without 'flosc_' prefix)
- * @param mixed $default Default value
+ *
+ * @param string $key Setting key (without 'flosc_' prefix).
+ * @param mixed  $fallback Default value.
  * @return mixed The value to display in the form
  */
-function flosc_admin_get_value($key, $default = '') {
-    // Check if we're editing a specific flow
-    if (isset($GLOBALS['flosc_editing_flow']) && isset($GLOBALS['flosc_editing_flow_data'])) {
-        $flow = $GLOBALS['flosc_editing_flow_data'];
-        
-        // Return flow-specific value if it exists
-        if (isset($flow[$key]) && $flow[$key] !== '' && $flow[$key] !== null) {
-            return $flow[$key];
-        }
-        
-        // Return empty to indicate "using global"
-        // The placeholder will show the global value
-        return '';
-    }
-    
-    // Editing global settings - return wp_option
-    return get_option('flosc_' . $key, $default);
+function flosc_admin_get_value( $key, $fallback = '' ) {
+	// Check if we're editing a specific flow.
+	if ( isset( $GLOBALS['flosc_editing_flow'] ) && isset( $GLOBALS['flosc_editing_flow_data'] ) ) {
+		$flow = $GLOBALS['flosc_editing_flow_data'];
+
+		// Return flow-specific value if it exists.
+		if ( isset( $flow[ $key ] ) && '' !== $flow[ $key ] && null !== $flow[ $key ] ) {
+			return $flow[ $key ];
+		}
+
+		// Return empty to indicate "using global"
+		// The placeholder will show the global value.
+		return '';
+	}
+
+	// Editing global settings - return wp_option.
+	return get_option( 'flosc_' . $key, $fallback );
 }
 
 /**
  * Get the global value for showing as placeholder when editing flow
- * 
- * @param string $key Setting key (without 'flosc_' prefix)
- * @param mixed $default Default value
+ *
+ * @param string $key Setting key (without 'flosc_' prefix).
+ * @param mixed  $fallback Default value.
  * @return mixed The global value for placeholder text
  */
-function flosc_admin_get_global($key, $default = '') {
-    return get_option('flosc_' . $key, $default);
+function flosc_admin_get_global( $key, $fallback = '' ) {
+	return get_option( 'flosc_' . $key, $fallback );
 }
 
 /**
  * Check if currently editing a specific flow (vs global)
- * 
+ *
  * @return bool True if editing a flow, false if editing global
  */
 function flosc_admin_is_editing_flow() {
-    return isset($GLOBALS['flosc_editing_flow']) && !empty($GLOBALS['flosc_editing_flow']);
+	return isset( $GLOBALS['flosc_editing_flow'] ) && ! empty( $GLOBALS['flosc_editing_flow'] );
 }
 
 /**
  * Get the flow ID being edited (or empty string if global)
- * 
+ *
  * @return string Flow ID or empty string
  */
 function flosc_admin_get_editing_flow_id() {
-    return $GLOBALS['flosc_editing_flow'] ?? '';
+	return $GLOBALS['flosc_editing_flow'] ?? '';
 }
 
 /**
  * Render a text input with "using global" placeholder when editing flow
- * 
- * @param string $key Setting key (without 'flosc_' prefix)
- * @param string $default Default value
- * @param string $class CSS class
- * @param string $placeholder Custom placeholder (overrides global value)
+ *
+ * @param string $key Setting key (without 'flosc_' prefix).
+ * @param string $fallback Default value.
+ * @param string $css_class CSS class.
+ * @param string $placeholder Custom placeholder (overrides global value).
  */
-function flosc_admin_text_input($key, $default = '', $class = 'regular-text', $placeholder = null) {
-    $value = flosc_admin_get_value($key, $default);
-    $flosc_name = 'flosc_' . $key;
-    
-    // When editing flow, show global value as placeholder
-    if (flosc_admin_is_editing_flow() && $placeholder === null) {
-        $global_value = flosc_admin_get_global($key, $default);
-        $placeholder = $global_value ? "Using global: " . $global_value : '';
-    }
-    
-    printf(
-        '<input type="text" id="%s" name="%s" value="%s" class="%s" placeholder="%s">',
-        esc_attr($flosc_name),
-        esc_attr($flosc_name),
-        esc_attr($value),
-        esc_attr($class),
-        esc_attr($placeholder ?? '')
-    );
+function flosc_admin_text_input( $key, $fallback = '', $css_class = 'regular-text', $placeholder = null ) {
+	$value      = flosc_admin_get_value( $key, $fallback );
+	$flosc_name = 'flosc_' . $key;
+
+	// When editing flow, show global value as placeholder.
+	if ( flosc_admin_is_editing_flow() && null === $placeholder ) {
+		$global_value = flosc_admin_get_global( $key, $fallback );
+		$placeholder  = $global_value ? 'Using global: ' . $global_value : '';
+	}
+
+	printf(
+		'<input type="text" id="%s" name="%s" value="%s" class="%s" placeholder="%s">',
+		esc_attr( $flosc_name ),
+		esc_attr( $flosc_name ),
+		esc_attr( $value ),
+		esc_attr( $css_class ),
+		esc_attr( $placeholder ?? '' )
+	);
 }
 
 /**
  * Render a textarea with "using global" placeholder when editing flow
  */
-function flosc_admin_textarea($key, $default = '', $rows = 5, $class = 'large-text') {
-    $value = flosc_admin_get_value($key, $default);
-    $flosc_name = 'flosc_' . $key;
-    
-    $placeholder = '';
-    if (flosc_admin_is_editing_flow()) {
-        $global_value = flosc_admin_get_global($key, $default);
-        $placeholder = $global_value ? "Using global setting..." : '';
-    }
-    
-    printf(
-        '<textarea id="%s" name="%s" rows="%d" class="%s" placeholder="%s">%s</textarea>',
-        esc_attr($flosc_name),
-        esc_attr($flosc_name),
-        absint( $rows ),
-        esc_attr($class),
-        esc_attr($placeholder),
-        esc_textarea($value)
-    );
+function flosc_admin_textarea( $key, $fallback = '', $rows = 5, $css_class = 'large-text' ) {
+	$value      = flosc_admin_get_value( $key, $fallback );
+	$flosc_name = 'flosc_' . $key;
+
+	$placeholder = '';
+	if ( flosc_admin_is_editing_flow() ) {
+		$global_value = flosc_admin_get_global( $key, $fallback );
+		$placeholder  = $global_value ? 'Using global setting...' : '';
+	}
+
+	printf(
+		'<textarea id="%s" name="%s" rows="%d" class="%s" placeholder="%s">%s</textarea>',
+		esc_attr( $flosc_name ),
+		esc_attr( $flosc_name ),
+		absint( $rows ),
+		esc_attr( $css_class ),
+		esc_attr( $placeholder ),
+		esc_textarea( $value )
+	);
 }
 
 /**
  * Render a select dropdown
  */
-function flosc_admin_select($key, $options, $default = '') {
-    $value = flosc_admin_get_value($key, $default);
-    $flosc_name = 'flosc_' . $key;
-    
-    // When editing flow and no value set, show "Use Global" option
-    $show_use_global = flosc_admin_is_editing_flow();
-    $global_value = flosc_admin_get_global($key, $default);
-    
-    echo '<select id="' . esc_attr($flosc_name) . '" name="' . esc_attr($flosc_name) . '">';
-    
-    if ($show_use_global) {
-        $global_label = isset($options[$global_value]) ? $options[$global_value] : $global_value;
-        printf(
-            '<option value="" %s>— Use Global (%s) —</option>',
-            selected($value, '', false),
-            esc_html($global_label)
-        );
-    }
-    
-    foreach ($options as $opt_value => $opt_label) {
-        printf(
-            '<option value="%s" %s>%s</option>',
-            esc_attr($opt_value),
-            selected($value, $opt_value, false),
-            esc_html($opt_label)
-        );
-    }
-    
-    echo '</select>';
+function flosc_admin_select( $key, $options, $fallback = '' ) {
+	$value      = flosc_admin_get_value( $key, $fallback );
+	$flosc_name = 'flosc_' . $key;
+
+	// When editing flow and no value set, show "Use Global" option.
+	$show_use_global = flosc_admin_is_editing_flow();
+	$global_value    = flosc_admin_get_global( $key, $fallback );
+
+	echo '<select id="' . esc_attr( $flosc_name ) . '" name="' . esc_attr( $flosc_name ) . '">';
+
+	if ( $show_use_global ) {
+		$global_label = isset( $options[ $global_value ] ) ? $options[ $global_value ] : $global_value;
+		printf(
+			'<option value="" %s>— Use Global (%s) —</option>',
+			selected( $value, '', false ),
+			esc_html( $global_label )
+		);
+	}
+
+	foreach ( $options as $opt_value => $opt_label ) {
+		printf(
+			'<option value="%s" %s>%s</option>',
+			esc_attr( $opt_value ),
+			selected( $value, $opt_value, false ),
+			esc_html( $opt_label )
+		);
+	}
+
+	echo '</select>';
 }
 
 /**
@@ -171,86 +176,86 @@ function flosc_admin_select($key, $options, $default = '') {
  *   include_rules: string
  * }
  */
-function flosc_companion_hub_defaults_from_flow(array $flow_settings) {
-    $slug = sanitize_title((string) ($flow_settings['slug'] ?? ''));
-    $domain = trim((string) ($flow_settings['domain'] ?? $flow_settings['custom_domain'] ?? ''));
-    $domain = preg_replace('#^https?://#i', '', $domain);
-    $domain = rtrim((string) $domain, '/');
+function flosc_companion_hub_defaults_from_flow( array $flow_settings ) {
+	$slug   = sanitize_title( (string) ( $flow_settings['slug'] ?? '' ) );
+	$domain = trim( (string) ( $flow_settings['domain'] ?? $flow_settings['custom_domain'] ?? '' ) );
+	$domain = preg_replace( '#^https?://#i', '', $domain );
+	$domain = rtrim( (string) $domain, '/' );
 
-    $lessons_cat = sanitize_title((string) ($flow_settings['content_item_category'] ?? ''));
-    if ($lessons_cat === '' && !empty($flow_settings['content_item_groups']) && is_array($flow_settings['content_item_groups'])) {
-        foreach ($flow_settings['content_item_groups'] as $group) {
-            if (!empty($group['category'])) {
-                $lessons_cat = sanitize_title((string) $group['category']);
-                break;
-            }
-        }
-    }
+	$lessons_cat = sanitize_title( (string) ( $flow_settings['content_item_category'] ?? '' ) );
+	if ( '' === $lessons_cat && ! empty( $flow_settings['content_item_groups'] ) && is_array( $flow_settings['content_item_groups'] ) ) {
+		foreach ( $flow_settings['content_item_groups'] as $group ) {
+			if ( ! empty( $group['category'] ) ) {
+				$lessons_cat = sanitize_title( (string) $group['category'] );
+				break;
+			}
+		}
+	}
 
-    $flow_for_app = $flow_settings;
-    if (empty($flow_for_app['custom_domain']) && $domain !== '') {
-        $flow_for_app['custom_domain'] = $domain;
-    }
-    if (empty($flow_for_app['slug']) && $slug !== '') {
-        $flow_for_app['slug'] = $slug;
-    }
+	$flow_for_app = $flow_settings;
+	if ( empty( $flow_for_app['custom_domain'] ) && '' !== $domain ) {
+		$flow_for_app['custom_domain'] = $domain;
+	}
+	if ( empty( $flow_for_app['slug'] ) && '' !== $slug ) {
+		$flow_for_app['slug'] = $slug;
+	}
 
-    // Full-page chat surface must be a FLOSC app route (flow slug or custom domain).
-    // Never default to site home — that is not an app route and must not be iframe src.
-    $fullscreen = '';
-    if (function_exists('flosc') && is_object(flosc()) && method_exists(flosc(), 'get_app_url')) {
-        $fullscreen = (string) flosc()->get_app_url($flow_for_app);
-    }
-    if ($fullscreen === '' && $slug !== '') {
-        $fullscreen = home_url('/' . $slug . '/');
-    }
-    $fullscreen = esc_url_raw($fullscreen, ['http', 'https']);
+	// Full-page chat surface must be a FLOSC app route (flow slug or custom domain).
+	// Never default to site home — that is not an app route and must not be iframe src.
+	$fullscreen = '';
+	if ( function_exists( 'flosc' ) && is_object( flosc() ) && method_exists( flosc(), 'get_app_url' ) ) {
+		$fullscreen = (string) flosc()->get_app_url( $flow_for_app );
+	}
+	if ( '' === $fullscreen && '' !== $slug ) {
+		$fullscreen = home_url( '/' . $slug . '/' );
+	}
+	$fullscreen = esc_url_raw( $fullscreen, array( 'http', 'https' ) );
 
-    // Collapse/hub destination (WP content) — not an iframe chat target.
-    $companion = $lessons_cat !== ''
-        ? home_url('/category/' . $lessons_cat . '/')
-        : home_url('/');
-    $companion = esc_url_raw($companion, ['http', 'https']);
-    if ($companion === '') {
-        $companion = home_url('/');
-    }
+	// Collapse/hub destination (WP content) — not an iframe chat target.
+	$companion = '' !== $lessons_cat
+		? home_url( '/category/' . $lessons_cat . '/' )
+		: home_url( '/' );
+	$companion = esc_url_raw( $companion, array( 'http', 'https' ) );
+	if ( '' === $companion ) {
+		$companion = home_url( '/' );
+	}
 
-    $flow_slug = sanitize_title((string) ($flow_settings['companion_flow_slug'] ?? $slug));
+	$flow_slug = sanitize_title( (string) ( $flow_settings['companion_flow_slug'] ?? $slug ) );
 
-    // Iframe chat route: flow slug on this host, else full-page app URL from get_app_url.
-    $chat_app = '';
-    if ($flow_slug !== '') {
-        $chat_app = esc_url_raw(home_url('/' . $flow_slug . '/'), ['http', 'https']);
-    }
-    if ($chat_app === '' && $fullscreen !== '') {
-        $chat_app = $fullscreen;
-    }
-    $chat_app = esc_url_raw((string) $chat_app, ['http', 'https']);
+	// Iframe chat route: flow slug on this host, else full-page app URL from get_app_url.
+	$chat_app = '';
+	if ( '' !== $flow_slug ) {
+		$chat_app = esc_url_raw( home_url( '/' . $flow_slug . '/' ), array( 'http', 'https' ) );
+	}
+	if ( '' === $chat_app && '' !== $fullscreen ) {
+		$chat_app = $fullscreen;
+	}
+	$chat_app = esc_url_raw( (string) $chat_app, array( 'http', 'https' ) );
 
-    // Suggested include rules from Content → lessons category (still editable in admin).
-    $include = [];
-    if ($lessons_cat !== '') {
-        if (function_exists('get_term_by')) {
-            $term = get_term_by('slug', $lessons_cat, 'category');
-            if ($term && !is_wp_error($term) && !empty($term->term_id)) {
-                $include[] = 'category:' . (int) $term->term_id;
-            } else {
-                $include[] = 'category:' . $lessons_cat;
-            }
-        } else {
-            $include[] = 'category:' . $lessons_cat;
-        }
-        $include[] = 'path:/category/' . $lessons_cat;
-    }
+	// Suggested include rules from Content → lessons category (still editable in admin).
+	$include = array();
+	if ( '' !== $lessons_cat ) {
+		if ( function_exists( 'get_term_by' ) ) {
+			$term = get_term_by( 'slug', $lessons_cat, 'category' );
+			if ( $term && ! is_wp_error( $term ) && ! empty( $term->term_id ) ) {
+				$include[] = 'category:' . (int) $term->term_id;
+			} else {
+				$include[] = 'category:' . $lessons_cat;
+			}
+		} else {
+			$include[] = 'category:' . $lessons_cat;
+		}
+		$include[] = 'path:/category/' . $lessons_cat;
+	}
 
-    return [
-        'fullscreen'       => $fullscreen,
-        'companion'        => $companion,
-        'chat_app'         => $chat_app,
-        'flow_slug'        => $flow_slug,
-        'content_item_category' => $lessons_cat,
-        'include_rules'    => implode("\n", $include),
-    ];
+	return array(
+		'fullscreen'            => $fullscreen,
+		'companion'             => $companion,
+		'chat_app'              => $chat_app,
+		'flow_slug'             => $flow_slug,
+		'content_item_category' => $lessons_cat,
+		'include_rules'         => implode( "\n", $include ),
+	);
 }
 
 /**
@@ -267,11 +272,11 @@ function flosc_companion_hub_defaults_from_flow(array $flow_settings) {
  * @return array<string,string>
  */
 function flosc_vgm_tier_labels() {
-    return [
-        'visitor' => __( 'Visitors (everyone)', 'flosc' ),
-        'guest'   => __( 'Guests and members', 'flosc' ),
-        'member'  => __( 'Members only', 'flosc' ),
-    ];
+	return array(
+		'visitor' => __( 'Visitors (everyone)', 'flosc' ),
+		'guest'   => __( 'Guests and members', 'flosc' ),
+		'member'  => __( 'Members only', 'flosc' ),
+	);
 }
 
 /**
@@ -280,12 +285,12 @@ function flosc_vgm_tier_labels() {
  * @return array<string,string>
  */
 function flosc_vgm_depth_labels() {
-    return [
-        'title'    => __( 'Title only', 'flosc' ),
-        'excerpt'  => __( 'Title and excerpt', 'flosc' ),
-        'readmore' => __( 'Through the read-more break', 'flosc' ),
-        'full'     => __( 'The whole post', 'flosc' ),
-    ];
+	return array(
+		'title'    => __( 'Title only', 'flosc' ),
+		'excerpt'  => __( 'Title and excerpt', 'flosc' ),
+		'readmore' => __( 'Through the read-more break', 'flosc' ),
+		'full'     => __( 'The whole post', 'flosc' ),
+	);
 }
 
 /**
@@ -296,12 +301,11 @@ function flosc_vgm_depth_labels() {
  * @return string Escaped markup.
  */
 function flosc_vgm_options_markup( array $labels, $selected ) {
-    $out = '';
-    foreach ( $labels as $key => $label ) {
-        $out .= '<option value="' . esc_attr( $key ) . '"'
-            . selected( $selected, $key, false ) . '>'
-            . esc_html( $label ) . '</option>';
-    }
-    return $out;
+	$out = '';
+	foreach ( $labels as $key => $label ) {
+		$out .= '<option value="' . esc_attr( $key ) . '"'
+			. selected( $selected, $key, false ) . '>'
+			. esc_html( $label ) . '</option>';
+	}
+	return $out;
 }
-

@@ -62,33 +62,33 @@ if ( ! function_exists( 'flosc_provider_api_profile' ) ) {
 		$profiles = array(
 			'anthropic' => array(
 				// phpcs:ignore PluginCheck.CodeAnalysis.AIProvider.DirectIntegration -- model metadata, not a prompt: this reads one model's context window, maximum reply length and capabilities so the admin screen can show them. wp_ai_client_prompt() sends prompts and cannot describe a model. Requested only when an administrator clicks "Describe this model"; declared in readme.txt External Services.
-				'model_detail_url' => 'https://api.anthropic.com/v1/models/%s',
+				'model_detail_url'      => 'https://api.anthropic.com/v1/models/%s',
 				// Measured 2026-08-30 against a live key: of the ten models it
 				// lists, Opus 5, Sonnet 5, Fable 5, Opus 4.8 and Opus 4.7 answer
 				// 400 "`temperature` is deprecated for this model", and all ten
 				// answer 200 without it.
-				'rejects_tuning'   => array( 'temperature' ),
+				'rejects_tuning'        => array( 'temperature' ),
 				// Measured 2026-08-30 on claude-sonnet-4-5-20250929: each of
 				// temperature and top_p is accepted alone; the pair is 400
 				// "`temperature` and `top_p` cannot both be specified".
-				'sampling_exclusive' => array( 'temperature', 'top_p' ),
-				'tuning_note'      => __( 'Anthropic has deprecated temperature on its newer models, so FLOSC leaves sampling to Claude. Temperature and top_p cannot be sent together.', 'flosc' ),
+				'sampling_exclusive'    => array( 'temperature', 'top_p' ),
+				'tuning_note'           => __( 'Anthropic has deprecated temperature on its newer models, so FLOSC leaves sampling to Claude. Temperature and top_p cannot be sent together.', 'flosc' ),
 				// Measured against a live key on 2026-08-30: Sonnet 4.5 takes
 				// top_p and top_k, Sonnet 5 refuses them and takes thinking,
 				// stop_sequences works on both.
-				'example_params'   => "top_p: 0.9\ntop_k: 40\nstop_sequences: [\"User:\"]\nthinking: {\"type\":\"adaptive\"}",
-				'docs_url'         => 'https://platform.claude.com/docs/en/api/messages/create',
+				'example_params'        => "top_p: 0.9\ntop_k: 40\nstop_sequences: [\"User:\"]\nthinking: {\"type\":\"adaptive\"}",
+				'docs_url'              => 'https://platform.claude.com/docs/en/api/messages/create',
 				// Read off that page on 2026-08-30: every top-level body
 				// parameter it documents is anchored #create.<name>, all
 				// nineteen of them, so a parameter added later is reachable by
 				// the same template rather than by another edit here.
-				'param_doc_url'    => 'https://platform.claude.com/docs/en/api/messages/create#create.%s',
+				'param_doc_url'         => 'https://platform.claude.com/docs/en/api/messages/create#create.%s',
 				// Measured 2026-08-30 against a live key, one request per
 				// parameter per model, reading the 200 or the 400 back.
 				'model_parameter_notes' => array(
 					'claude-sonnet-4-5' => array(
-						'accepts' => array( 'temperature', 'top_p', 'top_k', 'stop_sequences' ),
-						'refuses' => array( 'thinking' ),
+						'accepts'   => array( 'temperature', 'top_p', 'top_k', 'stop_sequences' ),
+						'refuses'   => array( 'thinking' ),
 						// Each accepts-entry is true alone. The pair is not.
 						'exclusive' => array( array( 'temperature', 'top_p' ) ),
 					),
@@ -119,42 +119,42 @@ if ( ! function_exists( 'flosc_provider_api_profile' ) ) {
 			'openai'    => array(
 				// OpenAI's spec documents no per-model capability endpoint of
 				// this kind, and nothing here has measured its tuning limits.
-				'model_detail_url' => '',
-				'rejects_tuning'   => array(),
-				'tuning_note'      => '',
-				'example_params'   => "top_p: 0.9\npresence_penalty: 0.5\nfrequency_penalty: 0.3\nseed: 42",
-				'docs_url'         => 'https://platform.openai.com/docs/api-reference/chat/create',
+				'model_detail_url'      => '',
+				'rejects_tuning'        => array(),
+				'tuning_note'           => '',
+				'example_params'        => "top_p: 0.9\npresence_penalty: 0.5\nfrequency_penalty: 0.3\nseed: 42",
+				'docs_url'              => 'https://platform.openai.com/docs/api-reference/chat/create',
 				// Anchor scheme not read off the live page, so no per-parameter
 				// link is offered and the reader is sent to the page itself.
-				'param_doc_url'    => '',
+				'param_doc_url'         => '',
 				'model_parameter_notes' => array(),
 			),
 			'xai'       => array(
 				// /v1/language-models/{id} exists per xAI's reference but has
 				// not been measured here, so FLOSC does not call it yet.
-				'model_detail_url' => '',
-				'rejects_tuning'   => array(),
-				'tuning_note'      => '',
-				'example_params'   => "top_p: 0.9\npresence_penalty: 0.0\nfrequency_penalty: 0.0\nseed: 12345",
-				'docs_url'         => 'https://docs.x.ai/docs/api-reference',
+				'model_detail_url'      => '',
+				'rejects_tuning'        => array(),
+				'tuning_note'           => '',
+				'example_params'        => "top_p: 0.9\npresence_penalty: 0.0\nfrequency_penalty: 0.0\nseed: 12345",
+				'docs_url'              => 'https://docs.x.ai/docs/api-reference',
 				// Anchor scheme not read off the live page, so no per-parameter
 				// link is offered and the reader is sent to the page itself.
-				'param_doc_url'    => '',
+				'param_doc_url'         => '',
 				'model_parameter_notes' => array(),
 			),
 			'gemini'    => array(
 				// GET /v1beta/models/{model} exists per Google's reference but
 				// has not been measured here.
-				'model_detail_url' => '',
-				'rejects_tuning'   => array(),
-				'tuning_note'      => '',
+				'model_detail_url'      => '',
+				'rejects_tuning'        => array(),
+				'tuning_note'           => '',
 				// Gemini nests sampling inside generationConfig rather than
 				// putting it at the top level.
-				'example_params'   => "generationConfig: {\"temperature\":0.4,\"topP\":0.95}",
-				'docs_url'         => 'https://ai.google.dev/api/generate-content',
+				'example_params'        => 'generationConfig: {"temperature":0.4,"topP":0.95}',
+				'docs_url'              => 'https://ai.google.dev/api/generate-content',
 				// Anchor scheme not read off the live page, so no per-parameter
 				// link is offered and the reader is sent to the page itself.
-				'param_doc_url'    => '',
+				'param_doc_url'         => '',
 				'model_parameter_notes' => array(),
 			),
 		);
@@ -361,16 +361,16 @@ if ( ! function_exists( 'flosc_sampling_conflicts_with_applied' ) ) {
 	 * first, so this is how top_p from the request is held back rather than
 	 * sent and failed.
 	 *
-	 * @param string        $provider FLOSC provider slug.
-	 * @param string        $param    Parameter about to be applied.
+	 * @param string            $provider FLOSC provider slug.
+	 * @param string            $param    Parameter about to be applied.
 	 * @param array<int,string> $already_applied Names already on the builder.
 	 * @return bool
 	 */
 	function flosc_sampling_conflicts_with_applied( $provider, $param, $already_applied ) {
-		$param    = (string) $param;
-		$applied  = is_array( $already_applied ) ? $already_applied : array();
-		$profile  = flosc_provider_api_profile( $provider );
-		$group    = ( null !== $profile && isset( $profile['sampling_exclusive'] ) )
+		$param   = (string) $param;
+		$applied = is_array( $already_applied ) ? $already_applied : array();
+		$profile = flosc_provider_api_profile( $provider );
+		$group   = ( null !== $profile && isset( $profile['sampling_exclusive'] ) )
 			? (array) $profile['sampling_exclusive']
 			: array();
 

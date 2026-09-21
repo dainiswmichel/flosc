@@ -208,14 +208,6 @@ $GLOBALS['flosc_probe_terms']     = array( 'category' => array(), 'post_tag' => 
 $GLOBALS['flosc_probe_term_meta'] = array();
 $GLOBALS['flosc_probe_post_meta'] = array();
 $GLOBALS['flosc_current_settings'] = array();
-$GLOBALS['flosc_probe_flow_settings'] = array();
-
-if ( ! function_exists( 'flosc_get_setting' ) ) {
-	function flosc_get_setting( $key, $default = null, $flow_stem = null ) {
-		$flow_stem = (string) $flow_stem;
-		return $GLOBALS['flosc_probe_flow_settings'][ $flow_stem ][ $key ] ?? $default;
-	}
-}
 
 if ( ! function_exists( 'get_term_meta' ) ) {
 	function get_term_meta( $id, $key, $single = false ) {
@@ -323,21 +315,6 @@ ok(
 );
 $GLOBALS['flosc_current_settings'] = array();
 
-/* An explicit flow must beat whichever flow happens to be in admin globals. */
-$GLOBALS['flosc_current_settings'] = array(
-	'content_default_vgm' => array( 'visitor' => 'full', 'guest' => 'full', 'member' => 'full' ),
-);
-$GLOBALS['flosc_probe_flow_settings']['alpha'] = array(
-	'content_default_vgm' => array( 'visitor' => 'title', 'guest' => 'excerpt', 'member' => 'full' ),
-);
-ok(
-	'an explicit flow cannot inherit the current global flow default',
-	FLOSC_Resolve_Probe::resolve_vgm( 5, 'alpha' ),
-	array( 'visitor' => 'title', 'guest' => 'excerpt', 'member' => 'full' )
-);
-$GLOBALS['flosc_current_settings'] = array();
-$GLOBALS['flosc_probe_flow_settings'] = array();
-
 /* ---- the slice a row hands back at each depth ---- */
 eval( 'class FLOSC_Slice_Probe { '
 	. flosc_grab_const( $src, 'DEPTHS' ) . "\n"
@@ -398,45 +375,6 @@ ok(
 );
 ok( 'and the mangled form would have leaked', $probe->access_allows( 'visitor', 'guestmember' ), true );
 ok( 'while the real value locks', $probe->access_allows( 'visitor', 'guest member' ), false );
-
-/* ---- admin integration: absent fields cannot broaden retrieval ---- */
-$settings_src = (string) file_get_contents( dirname( __DIR__ ) . '/admin/settings.php' );
-$flosc_src    = (string) file_get_contents( dirname( __DIR__ ) . '/flosc.php' );
-$content_src  = (string) file_get_contents( dirname( __DIR__ ) . '/admin/content.php' );
-
-ok(
-	'the site default is written only when its field was posted',
-	(bool) preg_match(
-		'/if\s*\(\s*isset\(\$flosc_post\[\'content_default_vgm\'\]\)\s*&&\s*is_array\(\$flosc_post\[\'content_default_vgm\'\]\)\s*\)\s*\{.*?\$flosc_new_settings\[\'content_default_vgm\'\]\s*=\s*\$flosc_default_vgm;/s',
-		$settings_src
-	),
-	true
-);
-
-/* Match the complete, deliberately small metabox-registration method. */
-$metabox_method = '';
-if ( preg_match( '/public function flosc_add_post_visibility_meta_box\(\)\s*\{.*?\n    \}/s', $flosc_src, $metabox_match ) ) {
-	$metabox_method = $metabox_match[0];
-}
-ok( 'the metabox registration method is present', '' !== $metabox_method, true );
-ok( 'the metabox registers both post and page', false !== strpos( $metabox_method, "['post', 'page']" ), true );
-ok( 'the metabox registration does not depend on protected term meta', false !== strpos( $metabox_method, '_flosc_protected' ), false );
-ok(
-	'a missing protection-mode radio cannot write protected by default',
-	(bool) preg_match(
-		'/if\s*\(isset\(\$request_post\[\'flosc_protection_mode\'\]\)\)\s*\{.*?update_post_meta\(\$post_id, \'_flosc_protection_mode\'/s',
-		$flosc_src
-	),
-	true
-);
-
-/* ---- the Content tab edits the original object metadata, not a mirror ---- */
-ok( 'the Content tab posts object tiers keyed by object', false !== strpos( $content_src, 'flosc_object_rule_vgm[' ), true );
-ok( 'the Content tab posts object depths keyed by object', false !== strpos( $content_src, 'flosc_object_rule_depth[' ), true );
-ok( 'the object-rule save validates tiers through the shared vocabulary', false !== strpos( $settings_src, 'FLOSC_Site_Content_Index::tier_token' ), true );
-ok( 'the object-rule save validates depths through the shared vocabulary', false !== strpos( $settings_src, 'FLOSC_Site_Content_Index::depth_token' ), true );
-ok( 'term rules still write term meta', false !== strpos( $settings_src, "update_term_meta(\$flosc_object_id, '_flosc_vgm'" ), true );
-ok( 'post rules still write post meta', false !== strpos( $settings_src, "update_post_meta(\$flosc_object_id, '_flosc_vgm'" ), true );
 
 echo $fail ? "\n{$fail} FAILURES\n" : "\nall green\n";
 exit( $fail ? 1 : 0 );

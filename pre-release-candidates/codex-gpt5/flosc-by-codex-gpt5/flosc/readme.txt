@@ -2,7 +2,7 @@
 Contributors: dainismichel
 Donate link: https://dainis.net/donate/
 Tags: leads, sales, access, ai, chatbot
-Requires at least: 7.0
+Requires at least: 7.1
 Requires PHP: 7.4
 Tested up to: 7.1
 Stable tag: 8.0.0
@@ -58,14 +58,16 @@ A new install has nothing to say. A starter pack fixes that in one click, so you
 
 Installing a pack creates a flow file in the FLOSC configuration folder, its categories, its example posts each stamped with the access level it is gated at, and — where the pack has one — its DA1 catalog and product file. Nothing is written to the plugin folder. A pack refuses rather than overwrites: if a flow file, a flow's settings, or a category of the same name already exists, FLOSC tells you instead of replacing your work. Removing a pack deletes exactly what that pack created, found by its own stamp — never by title, date or category name.
 
-Two packs ship with FLOSC:
+Four packs ship with FLOSC:
 
-* **WordPress Content Membership Journey** - 100 deliberately silly WordPress posts gated as a real membership library: visitors read items 1-10, guests reach 1-30, members reach all 100. Curated by BubblyBetty. The journey sells membership; you set the price.
-* **DA1 Catalog Sales Journey** - 50 over-serious instruction manuals for ordinary household tasks, served as a content-agnostic DA1 catalog: 4 items for visitors, 8 for guests, all 50 for members. Curated by DadJokeDan. The journey sells the compiled UberManual PDF for $10.
+* **WordPress Content Membership Journey** - One hundred deliberately silly WordPress posts, gated as a real membership library. Visitors read items 1–10, guests reach 1–30, members reach all 100 — including item 46, Why Pigeons Never Pay Parking Tickets.
+* **Membership Craft** - A hundred short articles about running a membership site — and the library itself is gated like one, so you are reading it from inside the example. Visitors read 15 articles, guests read 40, members read all 100.
+* **DA1 Catalog Sales Journey** - Fifty over-serious instruction manuals for ordinary household tasks, served as a content-agnostic DA1 catalog. Visitors browse four, guests browse eight, members reach all fifty — and the journey sells the compiled UberManual PDF for $10.
+* **Vegan Latvian Kitchen** - Fourteen classic Latvian dishes, fully plant-based, served as a bilingual recipe journey. Visitors cook two, guests cook four, members reach all fourteen plus the cookbook PDF.
 
 Each pack references a personality from the FLOSC library rather than bundling one, so you can swap the voice curating the journey at any time and watch the whole experience change.
 
-Both are example content. Delete them, or take them apart and replace the subject with your own.
+All four are example content. Delete them, or take them apart and replace the subject with your own.
 
 = How It Works =
 
@@ -77,7 +79,7 @@ Both are example content. Delete them, or take them apart and replace the subjec
 
 = Technical Details =
 
-* Requires WordPress 7.0+ (see header Requires at least)
+* Requires WordPress 7.1+ (see header Requires at least)
 * No external services required for core functionality (flows run locally)
 * BYOK AI: one WordPress AI Client (`wp_ai_client_prompt()`), plus official provider plugins for OpenAI, Anthropic, and Google. xAI has no official plugin yet (FLOSC hop). IVR is scripted and calls none of them.
 * Payment integration
@@ -195,21 +197,19 @@ FLOSC core flow logic runs locally in WordPress. The services below power specif
 
 Note on "Ask the model what it does": in Settings -> AI, an administrator can ask the flow's own configured model what one of that provider's request parameters means. This sends a one-sentence question containing the parameter name to whichever provider is selected below, through the same chat path that provider's row already describes. It is never automatic; it happens only on that button click, and no visitor or site content is included.
 
-Note on how FLOSC identifies itself: FLOSC installs a site-wide WordPress HTTP filter that is limited to these exact destination hosts: api.anthropic.com, api.openai.com, api.x.ai, generativelanguage.googleapis.com, and api.assemblyai.com. While identity is enabled, the filter adds the two identity values below to every WordPress HTTP API request to one of those hosts, including a request made by another plugin. It does not add them to browser-direct requests or to arbitrary custom, payment, OAuth, or oEmbed hosts. Developers can alter the allow-list with the `flosc_provider_identity_hosts` filter. Administrators can turn identity off, or turn off only the site-domain field, in Settings -> Administration -> What FLOSC Tells Your AI Provider.
+Note on how FLOSC identifies itself: every call to the providers below carries two headers so the provider can tell which software is calling. Administrators can turn both off in Settings -> Administration -> What FLOSC Tells Your AI Provider.
 
 `User-Agent` names FLOSC and its version, the DA1 AI Personality Builder and its version, WordPress and PHP.
 
 `X-DA1-Trace` is a single line of `key=value` pairs: `v` (header format version), `app` (FLOSC version), `bld` (builder version), `ed` (edition), `inst` (a random code identifying this FLOSC installation, generated once and not derived from the site address), `site` (this site's domain — included by default, and the only field naming the site), `flow` (the floscFlow), `prof` (the personality profile), `kb` (the knowledge bases in use), `tier` (whether the person was a Visitor, Guest or Member, as one letter), and `pair` (which message pair of the conversation this is). The `flow`, `prof` and `kb` values are one-way codes computed with a secret this installation generates and keeps, so a provider can see that two requests came from the same flow, personality or knowledge base without learning what any of them is named.
 
-Not sent in these headers: the visitor's user id, name, email address, IP address, or the page they were reading. Nothing that identifies an individual visitor. These values go only to one of the exact allow-listed hosts when this WordPress site makes an HTTP request there. FLOSC sends no identity request to flosc.ai, da1.fm, or another FLOSC-operated service.
-
-Note on model discovery and connection tests: "Fetch models this key can use" makes an administrator-triggered catalogue request containing provider authentication: `x-api-key` plus `anthropic-version` for Anthropic, `Authorization: Bearer <key>` for OpenAI and xAI, or `x-goog-api-key` for Gemini. The optional FLOSC User-Agent and X-DA1-Trace described above are also attached because all four catalogue hosts are on the identity allow-list. A catalogue request contains no prompt, conversation, or visitor content; X-DA1-Trace may contain the site domain when that optional field is enabled. "Test connection" first makes the same no-prompt catalogue request, then makes a separate generation request containing FLOSC's fixed diagnostic sentence and the selected flow's system instruction. Both actions occur only when a floscAdmin clicks the respective button.
+Not sent in these headers: the visitor's user id, name, email address, IP address, or the page they were reading. Nothing that identifies an individual visitor. These headers go only to the AI provider the administrator configured; FLOSC sends nothing to flosc.ai, da1.fm, or any FLOSC-operated service.
 
 Note on what FLOSC records locally: when a provider returns an identifier for a request (`request-id`, `x-request-id`), FLOSC stores it in its own chat log table in this site's database, alongside the model and token counts it already records. It lets an administrator ask their provider to look up one specific call. It is stored only, never transmitted anywhere.
 
 1. OpenAI (via WordPress AI Client + AI Provider for OpenAI, and FLOSC Whisper STT)
 Chat: when this flow attaches OpenAI, FLOSC sends prompts through `wp_ai_client_prompt()` to the official AI Provider for OpenAI plugin, which communicates with OpenAI. FLOSC does not call OpenAI chat endpoints itself.
-Model list: when an administrator clicks "Fetch models this key can use", or runs the AI connection test, FLOSC requests https://api.openai.com/v1/models directly so the saved key can be offered the models it is entitled to. This request carries the key in an Authorization Bearer header and the optional identity values described above; it carries no prompt, conversation, or visitor content.
+Model list: when an administrator clicks "Fetch models this key can use", or runs the AI connection test, FLOSC requests https://api.openai.com/v1/models directly so the saved key can be offered the models it is entitled to. Only the API key is sent; no visitor or site content is included.
 Whisper: when OpenAI Whisper is selected as the STT provider, FLOSC transcribes audio at https://api.openai.com/v1/audio/transcriptions (the official OpenAI provider plugin does not implement transcription).
 Data sent: visitor prompt text, conversation context, and model parameters for chat; uploaded audio payloads for Whisper.
 Service terms: https://openai.com/policies/terms-of-use
@@ -217,8 +217,8 @@ Privacy policy: https://openai.com/policies/privacy-policy
 
 2. Anthropic (via WordPress AI Client + AI Provider for Anthropic)
 When this flow attaches Anthropic, FLOSC sends prompts (including RAG tool declarations) through `wp_ai_client_prompt()` to the official AI Provider for Anthropic plugin, which communicates with Anthropic. FLOSC does not call Anthropic chat endpoints itself.
-Model list: when an administrator clicks "Fetch models this key can use", or runs the AI connection test, FLOSC requests https://api.anthropic.com/v1/models directly so the saved key can be offered the models it is entitled to. This request carries the key in `x-api-key`, the `anthropic-version` header, and the optional identity values described above; it carries no prompt, conversation, or visitor content.
-Model description: when an administrator clicks "Describe this model", FLOSC requests https://api.anthropic.com/v1/models/{model_id} to read that model's context window, maximum reply length and capabilities. It carries the same authentication, version, and optional identity headers as the model-list request, but no prompt, conversation, or visitor content.
+Model list: when an administrator clicks "Fetch models this key can use", or runs the AI connection test, FLOSC requests https://api.anthropic.com/v1/models directly so the saved key can be offered the models it is entitled to. Only the API key and the anthropic-version header are sent; no visitor or site content is included.
+Model description: when an administrator clicks "Describe this model", FLOSC requests https://api.anthropic.com/v1/models/{model_id} to read that model's context window, maximum reply length and capabilities. Only the API key and the anthropic-version header are sent.
 Data sent: visitor prompt text, conversation context, model parameters, and tool results when RAG is active.
 Service terms: https://www.anthropic.com/legal/consumer-terms
 Privacy policy: https://www.anthropic.com/legal/privacy
@@ -226,13 +226,13 @@ Privacy policy: https://www.anthropic.com/legal/privacy
 3. xAI (for AI chat responses)
 Endpoints: https://api.x.ai/v1/chat/completions and https://api.x.ai/v1/language-models
 Purpose: generate real-time AI chat responses when xAI/Grok is selected as the AI provider. There is no official WordPress xAI provider plugin yet, so this hop is FLOSC-owned. The language-models endpoint is requested only when an administrator clicks "Fetch models this key can use" or runs the AI connection test, to list the chat models the saved key can use.
-Data sent: visitor prompt text, conversation context, and model parameters for chat. The model-list request carries Bearer-key authentication and optional FLOSC identity values, but no prompt, conversation, or visitor content.
+Data sent: visitor prompt text, conversation context, and model parameters for chat; only the API key for the model list.
 Service terms: https://x.ai/legal/terms-of-service
 Privacy policy: https://x.ai/legal/privacy-policy
 
 4. Google Gemini (via WordPress AI Client + AI Provider for Google)
 When this flow attaches Gemini, FLOSC sends prompts through `wp_ai_client_prompt()` to the official AI Provider for Google plugin, which communicates with Google. FLOSC does not call Gemini generateContent itself. The compiled personality profile is sent as the system instruction.
-Model list: when an administrator clicks "Fetch models this key can use", or runs the AI connection test, FLOSC requests https://generativelanguage.googleapis.com/v1beta/models directly so the saved key can be offered the models it is entitled to. This request carries the key in `x-goog-api-key` and the optional identity values described above; it carries no prompt, conversation, or visitor content.
+Model list: when an administrator clicks "Fetch models this key can use", or runs the AI connection test, FLOSC requests https://generativelanguage.googleapis.com/v1beta/models directly so the saved key can be offered the models it is entitled to. Only the API key is sent; no visitor or site content is included.
 Data sent: visitor prompt text, conversation context, and model parameters.
 Service terms: https://developers.google.com/terms
 Privacy policy: https://policies.google.com/privacy
@@ -307,41 +307,19 @@ Data sent: OAuth/OpenID authorization data and account profile fields returned b
 Service terms: https://www.linkedin.com/legal/user-agreement
 Privacy policy: https://www.linkedin.com/legal/privacy-policy
 
-15. Flow-configured external pronunciation scoring and audio service
-Endpoint: the administrator-supplied IPA API base URL, with `/analyze`, `/analyze-phrase`, `/finalize-session`, `/session/{session_id}`, `/session/{session_id}/audio/{phrase_number}`, and `/convert-session-playback` paths.
-Purpose and trigger: when a flow runs an IPA audio quiz, each recorded phrase is sent for pronunciation scoring and the resulting session is finalized. After registration/login, WordPress may retrieve the session summary and audio files and may delete the remote session after a successful local pull. When Audio Conversion Provider is set to `external`, WordPress may request playback-copy conversion for a stored session. None of these requests occurs when the flow does not run the IPA audio quiz and audio conversion is set to `none`.
-Data sent: the visitor's browser POSTs base64-encoded recorded audio, target text, audio format, phrase number, optional target IPA, and an opaque session id to `/analyze` or `/analyze-phrase`; it POSTs the session id to `/finalize-session`. Because those calls are browser-direct, the configured service also receives ordinary network data such as the visitor's IP address and user agent. Server-side fallback scoring sends the audio, target text, format, and optional target IPA from WordPress. Session retrieval sends the opaque session id and phrase number in the URL. Playback conversion sends the session id and conversion targets (phrase number and source format), not an audio body.
-Request authentication: server-side scoring and conversion POSTs include X-FLOSC-Site, X-FLOSC-MTS (UTC Michel timestamp), and X-FLOSC-Signature (HMAC-SHA256 over payload_json + newline + mts + newline + site). Browser-direct scoring/finalization requests and server-side session GET/DELETE requests do not include those signing headers.
-Service terms: determined by the scoring/audio service selected and configured by the site administrator.
-Privacy policy: determined by the scoring/audio service selected and configured by the site administrator.
+15. Flow-configured external quiz or pronunciation scoring provider
+Endpoint examples: https://api.yourdomain.tld/analyze, https://api.yourdomain.tld/analyze-phrase, https://api.yourdomain.tld/finalize-session, https://api.yourdomain.tld/session/{id}
+Purpose: score quiz submissions and finalize/retrieve session scoring data for flows that use an external scoring provider.
+Data sent: quiz audio, answer payloads, and session-finalization data required by the configured provider. FLOSC also sends request-signing headers: X-FLOSC-Site, X-FLOSC-MTS (UTC Michel timestamp), and X-FLOSC-Signature (HMAC-SHA256 over payload_json + newline + mts + newline + site).
+Configuration note: floscAdmins can configure a per-flow external scoring endpoint. If a flow uses an external scoring provider, quiz audio and related scoring payloads may be sent to that provider. Audio playback conversion dispatch is optional and flow-scoped through the Audio Conversion Provider setting (none|external).
 
-16. Amazon product search links (optional affiliate offers)
-Endpoint examples: https://www.amazon.com/s (search results URL with affiliate tag when Amazon affiliate is enabled)
-Purpose: generate outbound search links so visitors can find products; FLOSC does not call Amazon Product Advertising API by default.
-Data sent: search keywords and the site's Amazon associate tag in the query string when the visitor follows the link.
-Service terms: https://affiliate-program.amazon.com/help/operating/agreement
-Privacy policy: https://www.amazon.com/gp/help/customer/display.html?nodeId=GX7NJQ4ZB8MHFRNJ
 
-17. Custom affiliate offer aggregation API
-Endpoint: the Custom Affiliate API Endpoint entered by the site administrator.
-Purpose and trigger: retrieve matching affiliate offers only after an authenticated user has declared a purchase intent and requests offers for that intent, and only when the administrator configured this endpoint.
-Data sent: a server-to-server JSON POST containing the user's intent description as `query`, the intent category, and expected price as `price_range`; the configured custom API key is sent as a Bearer Authorization header. FLOSC does not add the user's WordPress id, name, or email, although free-text intent descriptions can themselves contain information the user typed.
-Service terms: determined by the custom affiliate service selected and configured by the site administrator.
-Privacy policy: determined by the custom affiliate service selected and configured by the site administrator.
-
-18. WordPress core oEmbed (in-chat media players)
+17. WordPress core oEmbed (in-chat media players)
 Endpoint: this site's `/flosc/v1/oembed` (GET). Resolution uses WordPress core `wp_oembed_get()` against core's provider allow-list; results are cached in a transient.
 Purpose: render provider-native players under media links in assistant messages for YouTube, TikTok, Spotify, SoundCloud, Apple Music, and Vimeo.
 Data sent: the media URL. The visitor's browser then loads the provider player. FLOSC does not send visitor identity, email, or IP to these providers on this path.
 Service terms: https://www.youtube.com/t/terms , https://www.tiktok.com/legal/page/us/terms-of-service , https://www.spotify.com/legal/end-user-agreement/ , https://soundcloud.com/terms-of-use , https://www.apple.com/legal/internet-services/itunes/dev/stdeula/ , https://vimeo.com/terms
 Privacy policy: https://policies.google.com/privacy , https://www.tiktok.com/legal/page/us/privacy-policy , https://www.spotify.com/legal/privacy-policy/ , https://soundcloud.com/pages/privacy , https://www.apple.com/legal/privacy/ , https://vimeo.com/privacy
-
-19. WordPress core avatars / Gravatar
-Endpoint: the avatar URL returned by WordPress core `get_avatar_url()`; on a standard WordPress configuration this is a Gravatar image URL, while an SSO provider image or another site filter can replace it.
-Purpose and trigger: show the signed-in user's avatar in FLOSC profile and companion/session UI. FLOSC requests the URL from WordPress while building that UI; the visitor's browser loads the returned image when the UI displays it. WordPress administrators can disable avatars under Settings -> Discussion, and an SSO avatar can use the applicable identity provider's image host instead.
-Data sent: for standard Gravatar behavior, WordPress derives the image URL from a hash of the user's email plus display parameters such as size/default/rating. Loading the image discloses ordinary browser request data, including IP address and user agent, to the image host. FLOSC does not send the plain email address to Gravatar.
-Service terms: https://automattic.com/terms-of-service/
-Privacy policy: https://automattic.com/privacy/
 
 = FLOSC Site Policies =
 

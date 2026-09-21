@@ -350,7 +350,7 @@ if ( ! function_exists( 'flosc_available_providers_get_all' ) ) {
 		}
 		$out = array();
 		foreach ( flosc_available_provider_slugs() as $slug ) {
-			$row = isset( $raw[ $slug ] ) && is_array( $raw[ $slug ] ) ? $raw[ $slug ] : array();
+			$row          = isset( $raw[ $slug ] ) && is_array( $raw[ $slug ] ) ? $raw[ $slug ] : array();
 			$out[ $slug ] = array(
 				'api_key'    => isset( $row['api_key'] ) ? (string) $row['api_key'] : '',
 				'label'      => isset( $row['label'] ) ? (string) $row['label'] : '',
@@ -375,14 +375,14 @@ if ( ! function_exists( 'flosc_available_providers_save_all' ) ) {
 			$row = isset( $providers[ $slug ] ) && is_array( $providers[ $slug ] ) ? $providers[ $slug ] : array();
 			$key = isset( $row['api_key'] ) ? (string) $row['api_key'] : '';
 			// Preserve existing secret when empty submit (password field blank).
-			if ( $key === '' && isset( $row['keep_existing'] ) && $row['keep_existing'] ) {
+			if ( '' === $key && isset( $row['keep_existing'] ) && $row['keep_existing'] ) {
 				$existing = flosc_available_providers_get_all();
 				$key      = (string) ( $existing[ $slug ]['api_key'] ?? '' );
 			}
 			$clean[ $slug ] = array(
 				'api_key'    => $key,
 				'label'      => isset( $row['label'] ) ? sanitize_text_field( (string) $row['label'] ) : '',
-				'updated_at' => $key !== '' ? current_time( 'mysql' ) : (string) ( $row['updated_at'] ?? '' ),
+				'updated_at' => '' !== $key ? current_time( 'mysql' ) : (string) ( $row['updated_at'] ?? '' ),
 			);
 		}
 		update_option( flosc_available_providers_option_key(), $clean, false );
@@ -400,9 +400,9 @@ if ( ! function_exists( 'flosc_available_providers_set_key' ) ) {
 		if ( ! in_array( $provider, flosc_available_provider_slugs(), true ) ) {
 			return;
 		}
-		$all = flosc_available_providers_get_all();
+		$all                            = flosc_available_providers_get_all();
 		$all[ $provider ]['api_key']    = (string) $api_key;
-		$all[ $provider ]['updated_at'] = $api_key !== '' ? current_time( 'mysql' ) : '';
+		$all[ $provider ]['updated_at'] = '' !== $api_key ? current_time( 'mysql' ) : '';
 		flosc_available_providers_save_all( $all );
 	}
 }
@@ -413,9 +413,9 @@ if ( ! function_exists( 'flosc_available_providers_has_key' ) ) {
 	 * @return bool
 	 */
 	function flosc_available_providers_has_key( $provider ) {
-		$all = flosc_available_providers_get_all();
+		$all      = flosc_available_providers_get_all();
 		$provider = sanitize_key( (string) $provider );
-		return $provider !== '' && ! empty( $all[ $provider ]['api_key'] );
+		return '' !== $provider && ! empty( $all[ $provider ]['api_key'] );
 	}
 }
 
@@ -434,7 +434,7 @@ if ( ! function_exists( 'flosc_available_providers_promote_from_flow' ) ) {
 		$map = flosc_available_providers_flow_key_map();
 		foreach ( $map as $provider => $flow_key ) {
 			$val = isset( $flow_settings[ $flow_key ] ) ? trim( (string) $flow_settings[ $flow_key ] ) : '';
-			if ( $val !== '' ) {
+			if ( '' !== $val ) {
 				flosc_available_providers_set_key( $provider, $val );
 			}
 		}
@@ -450,14 +450,14 @@ if ( ! function_exists( 'flosc_get_provider_api_key' ) ) {
 	 * @return string
 	 */
 	function flosc_get_provider_api_key( $provider, $flow_id = null ) {
-		$provider = sanitize_key( (string) $provider );
-		$map      = flosc_available_providers_flow_key_map();
-		$flow_key = $map[ $provider ] ?? '';
+		$provider  = sanitize_key( (string) $provider );
+		$map       = flosc_available_providers_flow_key_map();
+		$flow_key  = $map[ $provider ] ?? '';
 		$from_flow = '';
-		if ( $flow_key !== '' && function_exists( 'flosc_get_setting' ) ) {
+		if ( '' !== $flow_key && function_exists( 'flosc_get_setting' ) ) {
 			$from_flow = trim( (string) flosc_get_setting( $flow_key, '', $flow_id ) );
 		}
-		if ( $from_flow !== '' ) {
+		if ( '' !== $from_flow ) {
 			return $from_flow;
 		}
 		$all = flosc_available_providers_get_all();
@@ -467,7 +467,7 @@ if ( ! function_exists( 'flosc_get_provider_api_key' ) ) {
 
 if ( ! function_exists( 'flosc_admin_save_available_providers' ) ) {
 	/**
-	 * admin-post.php?action=flosc_save_available_providers
+	 * Admin-post.php?action=flosc_save_available_providers
 	 *
 	 * @return void
 	 */
@@ -494,11 +494,11 @@ if ( ! function_exists( 'flosc_admin_save_available_providers' ) ) {
 				continue;
 			}
 			$new = isset( $posted[ $slug ] ) ? trim( (string) $posted[ $slug ] ) : '';
-			if ( $new !== '' ) {
+			if ( '' !== $new ) {
 				$all[ $slug ]['api_key']    = $new;
 				$all[ $slug ]['updated_at'] = current_time( 'mysql' );
 			}
-			// blank password field = keep existing
+			// blank password field = keep existing.
 		}
 		flosc_available_providers_save_all( $all );
 
@@ -511,8 +511,11 @@ if ( ! function_exists( 'flosc_admin_save_available_providers' ) ) {
 			60
 		);
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing
-		$ivr = isset( $_POST['flosc_return_ivr'] ) ? sanitize_file_name( wp_unslash( (string) $_POST['flosc_return_ivr'] ) ) : '';
+		// Redirect target after the save above, which verified its own nonce and
+		// capability before writing. Only picks a tab on this site's admin.php.
+		$ivr = ( isset( $_POST['flosc_return_ivr'] ) && is_scalar( $_POST['flosc_return_ivr'] ) )
+			? sanitize_file_name( wp_unslash( $_POST['flosc_return_ivr'] ) )
+			: '';
 		wp_safe_redirect(
 			add_query_arg(
 				array(

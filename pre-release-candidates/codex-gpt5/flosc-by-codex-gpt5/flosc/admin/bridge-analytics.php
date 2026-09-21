@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-require_once FLOSC_PLUGIN_DIR . 'includes/class-bridge-data-manager.php';
+require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-bridge-data-manager.php';
 
 /**
  * Count users matching a meta_query (admin analytics).
@@ -21,7 +21,7 @@ require_once FLOSC_PLUGIN_DIR . 'includes/class-bridge-data-manager.php';
  * @return int
  */
 // Users who have bridge payload stored.
-$flosc_bridge_ids = function_exists( 'flosc_get_user_ids_for_meta' )
+$flosc_bridge_ids        = function_exists( 'flosc_get_user_ids_for_meta' )
 	? flosc_get_user_ids_for_meta( '_flosc_bridge_data' )
 	: array();
 $flosc_users_with_bridge = count( $flosc_bridge_ids );
@@ -31,7 +31,7 @@ $flosc_users_in_bridge = 0;
 foreach ( $flosc_bridge_ids as $flosc_bid ) {
 	$flosc_purchased = get_user_meta( (int) $flosc_bid, '_flosc_purchased', true );
 	if ( '1' !== (string) $flosc_purchased && true !== $flosc_purchased ) {
-		$flosc_users_in_bridge++;
+		++$flosc_users_in_bridge;
 	}
 }
 
@@ -40,7 +40,7 @@ $flosc_users_converted = 0;
 foreach ( $flosc_bridge_ids as $flosc_bid ) {
 	$flosc_purchased = get_user_meta( (int) $flosc_bid, '_flosc_purchased', true );
 	if ( '1' === (string) $flosc_purchased || true === $flosc_purchased ) {
-		$flosc_users_converted++;
+		++$flosc_users_converted;
 	}
 }
 
@@ -52,22 +52,22 @@ $flosc_conversion_rate = $flosc_users_with_bridge > 0
 $flosc_weakness_user_ids = function_exists( 'flosc_get_user_ids_for_meta' )
 	? array_slice( flosc_get_user_ids_for_meta( '_flosc_weakest_category' ), 0, 500 )
 	: array();
-$flosc_weakness_counts = array();
+$flosc_weakness_counts   = array();
 foreach ( (array) $flosc_weakness_user_ids as $flosc_uid ) {
 	$flosc_category = sanitize_text_field( (string) get_user_meta( (int) $flosc_uid, '_flosc_weakest_category', true ) );
-	if ( $flosc_category === '' ) {
+	if ( '' === $flosc_category ) {
 		continue;
 	}
 	if ( ! isset( $flosc_weakness_counts[ $flosc_category ] ) ) {
 		$flosc_weakness_counts[ $flosc_category ] = 0;
 	}
-	$flosc_weakness_counts[ $flosc_category ]++;
+	++$flosc_weakness_counts[ $flosc_category ];
 }
 arsort( $flosc_weakness_counts );
 
 // Recent bridge users.
-$flosc_recent_ids = array_slice( array_reverse( $flosc_bridge_ids ), 0, 10 );
-$flosc_recent_objs = ! empty( $flosc_recent_ids )
+$flosc_recent_ids          = array_slice( array_reverse( $flosc_bridge_ids ), 0, 10 );
+$flosc_recent_objs         = ! empty( $flosc_recent_ids )
 	? get_users(
 		array(
 			'include' => $flosc_recent_ids,

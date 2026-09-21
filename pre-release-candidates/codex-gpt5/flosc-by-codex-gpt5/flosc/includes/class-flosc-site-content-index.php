@@ -14,9 +14,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class FLOSC_Site_Content_Index {
 
-	const MAX_BODY_CHARS = 200000;
+	const MAX_BODY_CHARS         = 200000;
 	const DEFAULT_RETRIEVE_LIMIT = 5;
-	const MAX_RETRIEVAL_CHARS_PER_HIT = 4000;
 
 	/** @var self|null */
 	private static $instance = null;
@@ -50,9 +49,6 @@ class FLOSC_Site_Content_Index {
 		add_action( 'admin_post_flosc_site_index_include', array( $this, 'handle_include' ) );
 		add_action( 'admin_post_flosc_site_index_keywords', array( $this, 'handle_keywords' ) );
 		add_action( 'admin_post_flosc_site_index_reindex_one', array( $this, 'handle_reindex_one' ) );
-
-		/* Keep an existing index accurate after ordinary post edits. */
-		add_action( 'save_post', array( $this, 'sync_saved_post' ), 30, 3 );
 	}
 
 	/**
@@ -158,12 +154,12 @@ class FLOSC_Site_Content_Index {
 	/**
 	 * Flow stem from IVR filename.
 	 *
-	 * @param string $ivr_file e.g. flosc_default_technical_ivr.md
+	 * @param string $ivr_file e.g. flosc_default_technical_ivr.md.
 	 * @return string
 	 */
 	public function stem_from_ivr( $ivr_file ) {
 		$stem = sanitize_key( pathinfo( basename( (string) $ivr_file ), PATHINFO_FILENAME ) );
-		return $stem !== '' ? $stem : 'default';
+		return '' !== $stem ? $stem : 'default';
 	}
 
 	/**
@@ -195,13 +191,13 @@ class FLOSC_Site_Content_Index {
 			'category_ids'   => array(),
 			'posts'          => array(),
 		);
-		$path = $this->index_path( $flow_stem );
-		if ( $path === '' || ! is_readable( $path ) ) {
+		$path  = $this->index_path( $flow_stem );
+		if ( '' === $path || ! is_readable( $path ) ) {
 			// Legacy: one earlier build wrote per-flow files — try once if site file missing.
 			$legacy_stem = sanitize_key( (string) $flow_stem );
-			if ( $legacy_stem !== '' && function_exists( 'flosc_data_file_path' ) ) {
+			if ( '' !== $legacy_stem && function_exists( 'flosc_data_file_path' ) ) {
 				$legacy = flosc_data_file_path( 'content-index-' . $legacy_stem . '.json' );
-				if ( $legacy !== '' && is_readable( $legacy ) ) {
+				if ( '' !== $legacy && is_readable( $legacy ) ) {
 					$path = $legacy;
 				} else {
 					return $empty;
@@ -211,7 +207,7 @@ class FLOSC_Site_Content_Index {
 			}
 		}
 		$raw = function_exists( 'flosc_fs_get_contents' ) ? flosc_fs_get_contents( $path ) : file_get_contents( $path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- reads index JSON under uploads via flosc_data_file_path
-		if ( ! is_string( $raw ) || $raw === '' ) {
+		if ( ! is_string( $raw ) || '' === $raw ) {
 			return $empty;
 		}
 		$data = json_decode( $raw, true );
@@ -219,6 +215,7 @@ class FLOSC_Site_Content_Index {
 			return $empty;
 		}
 		$posts = isset( $data['posts'] ) && is_array( $data['posts'] ) ? $data['posts'] : array();
+
 		/*
 		 * Row keys are strings, not post IDs.
 		 *
@@ -271,7 +268,7 @@ class FLOSC_Site_Content_Index {
 	 */
 	public function save( $flow_stem, array $doc ) {
 		$path = $this->index_path( $flow_stem );
-		if ( $path === '' || ! function_exists( 'flosc_write_data_file' ) ) {
+		if ( '' === $path || ! function_exists( 'flosc_write_data_file' ) ) {
 			return false;
 		}
 		$payload = wp_json_encode( $doc, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
@@ -296,7 +293,7 @@ class FLOSC_Site_Content_Index {
 			$fs = $GLOBALS['flosc_current_settings'];
 		}
 
-		if ( empty( $fs ) && $flow_stem !== '' ) {
+		if ( empty( $fs ) && '' !== $flow_stem ) {
 			$candidates = array(
 				'flosc_flow_' . sanitize_key( $flow_stem ),
 				sanitize_key( $flow_stem ),
@@ -305,7 +302,7 @@ class FLOSC_Site_Content_Index {
 				$candidates[] = flosc_resolve_flow_option_key_for_ivr( (string) $GLOBALS['flosc_current_ivr'] );
 			}
 			foreach ( $candidates as $key ) {
-				if ( ! is_string( $key ) || $key === '' ) {
+				if ( ! is_string( $key ) || '' === $key ) {
 					continue;
 				}
 				$opt = get_option( $key, null );
@@ -329,7 +326,7 @@ class FLOSC_Site_Content_Index {
 
 		if ( empty( $slugs ) && function_exists( 'flosc_get_setting' ) ) {
 			$cat = flosc_get_setting( 'content_item_category', '' );
-			if ( is_string( $cat ) && $cat !== '' ) {
+			if ( is_string( $cat ) && '' !== $cat ) {
 				$slugs[] = sanitize_title( $cat );
 			}
 			$groups = flosc_get_setting( 'content_item_groups', array() );
@@ -344,7 +341,7 @@ class FLOSC_Site_Content_Index {
 
 		if ( empty( $slugs ) ) {
 			$global = get_option( 'flosc_content_item_category', '' );
-			if ( is_string( $global ) && $global !== '' ) {
+			if ( is_string( $global ) && '' !== $global ) {
 				$slugs[] = sanitize_title( $global );
 			}
 		}
@@ -409,8 +406,8 @@ class FLOSC_Site_Content_Index {
 		$rows = isset( $doc['posts'] ) && is_array( $doc['posts'] ) ? $doc['posts'] : array();
 		$tier = in_array( $user_level, array( 'visitor', 'guest', 'member' ), true ) ? $user_level : 'visitor';
 
-		$open   = array();
-		$gated  = array();
+		$open  = array();
+		$gated = array();
 
 		foreach ( $rows as $row ) {
 			if ( ! is_array( $row ) || 'bb_group' !== ( $row['kind'] ?? '' ) ) {
@@ -420,7 +417,10 @@ class FLOSC_Site_Content_Index {
 				continue;
 			}
 
-			$allowed = preg_split( '/\s+/', (string) ( $row['access'] ?? '' ) ) ?: array();
+			$allowed = preg_split( '/\s+/', (string) ( $row['access'] ?? '' ) );
+			if ( ! $allowed ) {
+				$allowed = array();
+			}
 			if ( ! in_array( $tier, $allowed, true ) ) {
 				continue;
 			}
@@ -434,8 +434,8 @@ class FLOSC_Site_Content_Index {
 			}
 
 			if ( 'public' === $status ) {
-				$desc    = (string) ( $row['snippet'] ?? '' );
-				$open[]  = '- ' . $name . ( '' !== $desc ? ' — ' . $desc : '' ) . ' Public.'
+				$desc   = (string) ( $row['snippet'] ?? '' );
+				$open[] = '- ' . $name . ( '' !== $desc ? ' — ' . $desc : '' ) . ' Public.'
 					. ( '' !== $url ? "\n  " . $url : '' );
 				continue;
 			}
@@ -511,7 +511,7 @@ class FLOSC_Site_Content_Index {
 
 		$saved = array();
 		if ( function_exists( 'flosc_get_setting' ) ) {
-			$saved = flosc_get_setting( 'buddyboss_index', array(), $flow_stem !== '' ? $flow_stem : null );
+			$saved = flosc_get_setting( 'buddyboss_index', array(), '' !== $flow_stem ? $flow_stem : null );
 		}
 		if ( ! is_array( $saved ) ) {
 			$saved = array();
@@ -667,6 +667,7 @@ class FLOSC_Site_Content_Index {
 			if ( 'flosc-internal' === $slug || 0 === strpos( $slug, 'flosc-internal-' ) ) {
 				return true;
 			}
+
 			/*
 			 * The bare aliases the readers themselves accept.
 			 *
@@ -804,12 +805,10 @@ class FLOSC_Site_Content_Index {
 	public static function default_depth_map( $flow_stem = '' ) {
 		$saved = null;
 
-		if ( $flow_stem !== '' && function_exists( 'flosc_get_setting' ) ) {
-			$saved = flosc_get_setting( 'content_default_vgm', null, $flow_stem !== '' ? $flow_stem : null );
-		} elseif ( ! empty( $GLOBALS['flosc_current_settings']['content_default_vgm'] ) ) {
+		if ( ! empty( $GLOBALS['flosc_current_settings']['content_default_vgm'] ) ) {
 			$saved = $GLOBALS['flosc_current_settings']['content_default_vgm'];
 		} elseif ( function_exists( 'flosc_get_setting' ) ) {
-			$saved = flosc_get_setting( 'content_default_vgm', null, null );
+			$saved = flosc_get_setting( 'content_default_vgm', null, '' !== $flow_stem ? $flow_stem : null );
 		}
 
 		if ( ! is_array( $saved ) || empty( $saved ) ) {
@@ -828,12 +827,10 @@ class FLOSC_Site_Content_Index {
 	public static function protection_rules( $flow_stem = '' ) {
 		$rules = array();
 
-		if ( $flow_stem !== '' && function_exists( 'flosc_get_setting' ) ) {
-			$rules = flosc_get_setting( 'protected_content', array(), $flow_stem !== '' ? $flow_stem : null );
-		} elseif ( ! empty( $GLOBALS['flosc_current_settings']['protected_content'] ) ) {
+		if ( ! empty( $GLOBALS['flosc_current_settings']['protected_content'] ) ) {
 			$rules = $GLOBALS['flosc_current_settings']['protected_content'];
 		} elseif ( function_exists( 'flosc_get_setting' ) ) {
-			$rules = flosc_get_setting( 'protected_content', array(), null );
+			$rules = flosc_get_setting( 'protected_content', array(), '' !== $flow_stem ? $flow_stem : null );
 		}
 
 		return is_array( $rules ) ? $rules : array();
@@ -852,8 +849,8 @@ class FLOSC_Site_Content_Index {
 	 * @return array<string,string>|null Null when no rule in the set applies.
 	 */
 	public static function fold_rules( array $rules ) {
-		$map   = self::depth_map( 'title' );
-		$any   = false;
+		$map = self::depth_map( 'title' );
+		$any = false;
 
 		foreach ( $rules as $rule ) {
 			if ( ! is_array( $rule ) ) {
@@ -999,8 +996,6 @@ class FLOSC_Site_Content_Index {
 				}
 				$out[] = array(
 					'kind'     => 'category' === $term->taxonomy ? __( 'Category', 'flosc' ) : __( 'Tag', 'flosc' ),
-					'object_kind' => 'term',
-					'rule_key' => 'term:' . (int) $term->term_id,
 					'id'       => (int) $term->term_id,
 					'name'     => (string) $term->name,
 					'vgm'      => $rule[0]['vgm'],
@@ -1010,6 +1005,17 @@ class FLOSC_Site_Content_Index {
 			}
 		}
 
+		/*
+		 * 200 is a deliberate ceiling, and unlike the admin pickers elsewhere it
+		 * is a real limit rather than a generous one: this is the Site Index
+		 * overview, and a site with more than 200 posts carrying a _flosc_vgm
+		 * rule sees the first 200 by post order and no indication that there are
+		 * more. Raising it trades a truncated overview for a slower admin page;
+		 * paginating it is the proper answer and is not done here.
+		 *
+		 * WPCS warns above 100. no_found_rows is set because nothing counts the
+		 * total, which is also why the truncation is invisible.
+		 */
 		$posts = get_posts(
 			array(
 				'post_type'      => 'any',
@@ -1028,9 +1034,7 @@ class FLOSC_Site_Content_Index {
 				continue;
 			}
 			$out[] = array(
-				'kind'     => 'page' === $post->post_type ? __( 'Page', 'flosc' ) : __( 'Post', 'flosc' ),
-				'object_kind' => 'post',
-				'rule_key' => 'post:' . (int) $post->ID,
+				'kind'     => __( 'Post', 'flosc' ),
 				'id'       => (int) $post->ID,
 				'name'     => (string) get_the_title( $post ),
 				'vgm'      => $rule[0]['vgm'],
@@ -1049,7 +1053,7 @@ class FLOSC_Site_Content_Index {
 	 * no depth is somebody half-way through a thought, not a rule, and treating
 	 * it as one would silently gate the post.
 	 *
-	 * @param string $kind 'post' or 'term'
+	 * @param string $kind 'post' or 'term'.
 	 * @param int    $id
 	 * @return array[]
 	 */
@@ -1069,7 +1073,12 @@ class FLOSC_Site_Content_Index {
 			return array();
 		}
 
-		return array( array( 'vgm' => $tier, 'depth' => $depth ) );
+		return array(
+			array(
+				'vgm'   => $tier,
+				'depth' => $depth,
+			),
+		);
 	}
 
 	public static function vgm_list( $raw ) {
@@ -1077,9 +1086,15 @@ class FLOSC_Site_Content_Index {
 		if ( '' === $raw ) {
 			return array();
 		}
-		$parts = preg_split( '/[\s,]+/', $raw ) ?: array();
-		/* array_intersect keeps the first array's order, so the list always
-		   reads visitor, guest, member however it was typed. */
+		$parts = preg_split( '/[\s,]+/', $raw );
+		if ( ! $parts ) {
+			$parts = array();
+		}
+
+		/*
+		 * array_intersect() keeps the first array's order, so the list always
+		 * reads visitor, guest, member however it was typed.
+		 */
 		return array_values( array_intersect( array( 'visitor', 'guest', 'member' ), $parts ) );
 	}
 
@@ -1088,10 +1103,15 @@ class FLOSC_Site_Content_Index {
 		$raw = isset( $policy['vgm_rows'][ $key ] ) ? $policy['vgm_rows'][ $key ] : $policy['vgm_default'];
 		$raw = strtolower( trim( (string) $raw ) );
 
-		$allowed = array_values( array_intersect(
-			array( 'visitor', 'guest', 'member' ),
-			preg_split( '/[\s,]+/', $raw ) ?: array()
-		) );
+		// preg_split() returns false on a pattern error, which
+		// array_intersect() cannot take.
+		$named   = preg_split( '/[\s,]+/', $raw );
+		$allowed = array_values(
+			array_intersect(
+				array( 'visitor', 'guest', 'member' ),
+				$named ? $named : array()
+			)
+		);
 
 		return empty( $allowed ) ? '' : implode( ' ', $allowed );
 	}
@@ -1128,7 +1148,7 @@ class FLOSC_Site_Content_Index {
 		$types = array();
 
 		if ( function_exists( 'flosc_get_setting' ) ) {
-			$saved = flosc_get_setting( 'site_index_post_types', array(), $flow_stem !== '' ? $flow_stem : null );
+			$saved = flosc_get_setting( 'site_index_post_types', array(), '' !== $flow_stem ? $flow_stem : null );
 			if ( is_string( $saved ) ) {
 				$saved = preg_split( '/[\s,]+/', $saved );
 			}
@@ -1143,9 +1163,14 @@ class FLOSC_Site_Content_Index {
 
 		// Only types this site actually registers. A stale saved value for a
 		// plugin that has since been deactivated must not break the rebuild.
-		$types = array_values( array_filter( $types, static function ( $type ) {
-			return post_type_exists( $type );
-		} ) );
+		$types = array_values(
+			array_filter(
+				$types,
+				static function ( $type ) {
+					return post_type_exists( $type );
+				}
+			)
+		);
 
 		if ( empty( $types ) ) {
 			$types = array( 'post' );
@@ -1198,9 +1223,12 @@ class FLOSC_Site_Content_Index {
 			if ( ! $post instanceof WP_Post ) {
 				continue;
 			}
-			/* FLOSC's own plumbing is not site content. Skipping it here also
-			   drops any internal row an earlier build wrote, because $indexed
-			   is what gets saved. */
+
+			/*
+			FLOSC's own plumbing is not site content. Skipping it here also
+				drops any internal row an earlier build wrote, because $indexed
+				is what gets saved.
+			 */
 			if ( self::is_internal_post( $post->ID ) ) {
 				continue;
 			}
@@ -1209,7 +1237,7 @@ class FLOSC_Site_Content_Index {
 			$excluded = ! empty( $prev['excluded'] );
 			$manual   = isset( $prev['keywords_manual'] ) ? (string) $prev['keywords_manual'] : '';
 
-			$indexed[ $id_key ] = $this->build_row_from_post( $post, $manual, $excluded, $flow_stem );
+			$indexed[ $id_key ] = $this->build_row_from_post( $post, $manual, $excluded );
 		}
 
 		/*
@@ -1284,10 +1312,9 @@ class FLOSC_Site_Content_Index {
 	 * @param WP_Post $post
 	 * @param string  $keywords_manual
 	 * @param bool    $excluded
-	 * @param string  $flow_stem Flow whose VGM map is stored as a compatibility snapshot.
 	 * @return array
 	 */
-	public function build_row_from_post( WP_Post $post, $keywords_manual = '', $excluded = false, $flow_stem = '' ) {
+	public function build_row_from_post( WP_Post $post, $keywords_manual = '', $excluded = false ) {
 		/*
 		 * Shortcodes out before tags out. wp_strip_all_tags() removes HTML and
 		 * leaves shortcodes whole, so a page built with Divi indexed as its
@@ -1312,6 +1339,7 @@ class FLOSC_Site_Content_Index {
 		}
 
 		$body = strip_shortcodes( $raw_body );
+
 		/*
 		 * strip_shortcodes() only knows shortcodes that are REGISTERED, and a page
 		 * builder registers its own only when the builder loads. A rebuild runs in
@@ -1330,16 +1358,16 @@ class FLOSC_Site_Content_Index {
 			$body = substr( $body, 0, self::MAX_BODY_CHARS );
 		}
 
-		$teaser = strip_shortcodes( $teaser_raw );
-		$teaser = preg_replace( '/\[[^\]]*\]/', ' ', (string) $teaser );
-		$teaser = wp_strip_all_tags( (string) $teaser );
-		$teaser = preg_replace( '/\s+/u', ' ', $teaser );
-		$teaser = is_string( $teaser ) ? trim( $teaser ) : '';
+		$teaser      = strip_shortcodes( $teaser_raw );
+		$teaser      = preg_replace( '/\[[^\]]*\]/', ' ', (string) $teaser );
+		$teaser      = wp_strip_all_tags( (string) $teaser );
+		$teaser      = preg_replace( '/\s+/u', ' ', $teaser );
+		$teaser      = is_string( $teaser ) ? trim( $teaser ) : '';
 		$more_offset = min( strlen( $teaser ), strlen( $body ) );
 
 		$auto_kw = $this->derive_keywords( $post, $body );
 		$manual  = sanitize_text_field( (string) $keywords_manual );
-		$merged  = $manual !== '' ? $this->merge_keywords( $auto_kw, $manual ) : $auto_kw;
+		$merged  = '' !== $manual ? $this->merge_keywords( $auto_kw, $manual ) : $auto_kw;
 
 		/*
 		 * Access is derived, never defaulted.
@@ -1356,7 +1384,31 @@ class FLOSC_Site_Content_Index {
 		 * the_content, so the index and the page can never disagree — then what
 		 * WordPress itself says. Published is public.
 		 */
-		$access = self::resolve_post_access( $post );
+		$access = implode( ' ', self::vgm_list( get_post_meta( $post->ID, '_flosc_access_level', true ) ) );
+
+		if ( '' === $access ) {
+			$access = implode( ' ', self::vgm_list( get_post_meta( $post->ID, '_flosc_content_subcategory', true ) ) );
+		}
+
+		if ( '' === $access && 'full' === get_post_meta( $post->ID, '_flosc_protection_mode', true ) ) {
+			/* The floscAdmin marked it public outright. */
+			$access = 'visitor';
+		}
+
+		if ( '' === $access && class_exists( 'FLOSC_Content_Protection' ) ) {
+			$protection = FLOSC_Content_Protection::instance()->check_post_protection( (int) $post->ID );
+			if ( ! empty( $protection['protected'] ) ) {
+				$access = implode( ' ', self::vgm_list( $protection['required_level'] ) );
+				if ( '' === $access ) {
+					$access = 'member';
+				}
+			}
+		}
+
+		if ( '' === $access ) {
+			$private = ( 'publish' !== $post->post_status ) || ( '' !== (string) $post->post_password );
+			$access  = $private ? 'member' : 'visitor';
+		}
 
 		/*
 		 * Depth, the second axis.
@@ -1369,7 +1421,7 @@ class FLOSC_Site_Content_Index {
 		 * the post's own visibility override, which lands on 'visitor' here and
 		 * clamps nothing.
 		 */
-		$vgm   = self::resolve_vgm( (int) $post->ID, $flow_stem );
+		$vgm   = self::resolve_vgm( (int) $post->ID );
 		$floor = self::vgm_list( $access );
 		$floor = empty( $floor ) ? 'visitor' : $floor[0];
 		$open  = self::tiers_from( $floor );
@@ -1399,69 +1451,29 @@ class FLOSC_Site_Content_Index {
 			// Every row now carries an id and a kind. For a WordPress post the
 			// id is the post id as a string, so nothing that keyed on post_id
 			// changes meaning.
-			'id'               => (string) (int) $post->ID,
-			'kind'             => 'post',
-			'source'           => 'wordpress',
-			'post_type'        => sanitize_key( (string) $post->post_type ),
-			'post_id'          => (int) $post->ID,
-			'title'            => sanitize_text_field( get_the_title( $post ) ),
-			'content'          => $body,
-			'snippet'          => sanitize_text_field( $snippet ),
-			'keywords'         => $merged,
-			'keywords_manual'  => $manual,
-			'access'           => $access,
+			'id'              => (string) (int) $post->ID,
+			'kind'            => 'post',
+			'source'          => 'wordpress',
+			'post_type'       => sanitize_key( (string) $post->post_type ),
+			'post_id'         => (int) $post->ID,
+			'title'           => sanitize_text_field( get_the_title( $post ) ),
+			'content'         => $body,
+			'snippet'         => sanitize_text_field( $snippet ),
+			'keywords'        => $merged,
+			'keywords_manual' => $manual,
+			'access'          => $access,
 			// What each tier gets: title | excerpt | readmore | full.
-			'vgm'              => $vgm,
-			'excerpt'          => $excerpt,
-			'more_offset'      => (int) $more_offset,
-			'excluded'         => (bool) $excluded,
-			'parent'           => $parent,
-			'categories'       => $cats,
-			'modified'         => (string) $post->post_modified_gmt,
-			'indexed_at'       => gmdate( 'c' ),
-			'url'              => esc_url_raw( (string) get_permalink( $post ) ),
-			'lesson_number'    => sanitize_text_field( (string) get_post_meta( $post->ID, '_flosc_lesson_number', true ) ),
+			'vgm'             => $vgm,
+			'excerpt'         => $excerpt,
+			'more_offset'     => (int) $more_offset,
+			'excluded'        => (bool) $excluded,
+			'parent'          => $parent,
+			'categories'      => $cats,
+			'modified'        => (string) $post->post_modified_gmt,
+			'indexed_at'      => gmdate( 'c' ),
+			'url'             => esc_url_raw( (string) get_permalink( $post ) ),
+			'lesson_number'   => sanitize_text_field( (string) get_post_meta( $post->ID, '_flosc_lesson_number', true ) ),
 		);
-	}
-
-	/**
-	 * Resolve a post's current FLOSC/WordPress access floor.
-	 *
-	 * The index is a searchable copy, not an authorization cache. This method
-	 * is called while building and while retrieving so tightened protection
-	 * takes effect on the next chat turn even before a filesystem refresh.
-	 *
-	 * @param WP_Post $post Post whose current access is required.
-	 * @return string Space-separated VGM tiers.
-	 */
-	public static function resolve_post_access( WP_Post $post ) {
-		$access = implode( ' ', self::vgm_list( get_post_meta( $post->ID, '_flosc_access_level', true ) ) );
-
-		if ( '' === $access ) {
-			$access = implode( ' ', self::vgm_list( get_post_meta( $post->ID, '_flosc_content_subcategory', true ) ) );
-		}
-
-		if ( '' === $access && 'full' === get_post_meta( $post->ID, '_flosc_protection_mode', true ) ) {
-			/* The floscAdmin marked it public outright. */
-			$access = 'visitor';
-		}
-
-		if ( '' === $access && class_exists( 'FLOSC_Content_Protection' ) ) {
-			$protection = FLOSC_Content_Protection::instance()->check_post_protection( (int) $post->ID );
-			if ( ! empty( $protection['protected'] ) ) {
-				$access = implode( ' ', self::vgm_list( $protection['required_level'] ) );
-				if ( '' === $access ) {
-					$access = 'member';
-				}
-			}
-		}
-
-		if ( '' === $access ) {
-			$private = ( 'publish' !== $post->post_status ) || ( '' !== (string) $post->post_password );
-			$access  = $private ? 'member' : 'visitor';
-		}
-
-		return $access;
 	}
 
 	/**
@@ -1472,7 +1484,7 @@ class FLOSC_Site_Content_Index {
 	private function derive_keywords( WP_Post $post, $body ) {
 		$parts = array();
 		$title = get_the_title( $post );
-		if ( $title !== '' ) {
+		if ( '' !== $title ) {
 			$parts[] = $title;
 		}
 		$tags = get_the_tags( $post->ID );
@@ -1499,7 +1511,7 @@ class FLOSC_Site_Content_Index {
 				if ( function_exists( 'mb_strlen' ) ? mb_strlen( $w ) < 5 : strlen( $w ) < 5 ) {
 					continue;
 				}
-				$lw = function_exists( 'mb_strtolower' ) ? mb_strtolower( $w ) : strtolower( $w );
+				$lw          = function_exists( 'mb_strtolower' ) ? mb_strtolower( $w ) : strtolower( $w );
 				$freq[ $lw ] = ( $freq[ $lw ] ?? 0 ) + 1;
 			}
 			arsort( $freq );
@@ -1524,10 +1536,10 @@ class FLOSC_Site_Content_Index {
 		foreach ( array( $base, $extra ) as $chunk ) {
 			foreach ( preg_split( '/\s*,\s*/', (string) $chunk ) as $piece ) {
 				$piece = sanitize_text_field( trim( $piece ) );
-				if ( $piece === '' ) {
+				if ( '' === $piece ) {
 					continue;
 				}
-				$key = function_exists( 'mb_strtolower' ) ? mb_strtolower( $piece ) : strtolower( $piece );
+				$key         = function_exists( 'mb_strtolower' ) ? mb_strtolower( $piece ) : strtolower( $piece );
 				$all[ $key ] = $piece;
 			}
 		}
@@ -1538,7 +1550,7 @@ class FLOSC_Site_Content_Index {
 	 * Light hierarchy map for AI (titles / ids / access) — no full bodies.
 	 *
 	 * @param string $flow_stem
-	 * @param string $access_level visitor|guest|member
+	 * @param string $access_level visitor|guest|member.
 	 * @return string
 	 */
 	public function format_map_for_ai( $flow_stem, $access_level = 'visitor' ) {
@@ -1547,12 +1559,12 @@ class FLOSC_Site_Content_Index {
 		if ( empty( $posts ) ) {
 			return '';
 		}
-		$live_posts = $this->live_public_posts_for_rows( $posts );
 		$lines = array( '**Site content index (titles):**', '' );
 		foreach ( $posts as $row ) {
-			if ( ! is_array( $row ) || ! empty( $row['excluded'] ) || ! $this->row_is_currently_public( $row, $live_posts ) ) {
+			if ( ! empty( $row['excluded'] ) ) {
 				continue;
 			}
+
 			/*
 			 * No sanitize_key() on the way in.
 			 *
@@ -1563,11 +1575,9 @@ class FLOSC_Site_Content_Index {
 			 * handed to a logged-out visitor, body and all. vgm_list() is the
 			 * sanitizer: it lowercases, trims, splits and whitelists.
 			 */
-			$post_id   = (int) ( $row['post_id'] ?? 0 );
-			$live_post = isset( $live_posts[ $post_id ] ) ? $live_posts[ $post_id ] : null;
-			$req       = $live_post instanceof WP_Post ? self::resolve_post_access( $live_post ) : (string) ( $row['access'] ?? 'visitor' );
-			$depth     = $this->row_depth( $row, $access_level, $flow_stem, $live_post );
-			$lock  = ( 'title' === $depth ) ? ' [locked]' : '';
+			$req     = (string) ( $row['access'] ?? 'visitor' );
+			$depth   = $this->row_depth( $row, $access_level );
+			$lock    = ( 'title' === $depth ) ? ' [locked]' : '';
 			$lines[] = sprintf(
 				'- #%d %s%s (access: %s, available: %s)',
 				(int) ( $row['post_id'] ?? 0 ),
@@ -1593,20 +1603,20 @@ class FLOSC_Site_Content_Index {
 		$doc   = $this->load( $flow_stem );
 		$posts = $doc['posts'];
 		if ( empty( $posts ) ) {
-			return 'No verified indexed site content is available for this turn.';
+			return '';
 		}
 
 		$limit = max( 1, min( 20, (int) $limit ) );
 		$q     = trim( (string) $keywords );
-		$terms = preg_split( '/[^\p{L}\p{N}]+/u', function_exists( 'mb_strtolower' ) ? mb_strtolower( $q ) : strtolower( $q ) );
+		$terms = preg_split( '/\s+/', function_exists( 'mb_strtolower' ) ? mb_strtolower( $q ) : strtolower( $q ) );
 		$terms = is_array( $terms ) ? array_filter( $terms ) : array();
 
-		$live_posts = $this->live_public_posts_for_rows( $posts );
-		$scored     = array();
+		$scored = array();
 		foreach ( $posts as $row ) {
-			if ( ! is_array( $row ) || ! empty( $row['excluded'] ) || ! $this->row_is_currently_public( $row, $live_posts ) ) {
+			if ( ! is_array( $row ) || ! empty( $row['excluded'] ) ) {
 				continue;
 			}
+
 			/*
 			 * A post the visitor may not READ is still a post that EXISTS.
 			 *
@@ -1622,6 +1632,7 @@ class FLOSC_Site_Content_Index {
 			 * the gate. That is what the comment here always said it wanted:
 			 * "list locked title only".
 			 */
+
 			/*
 			 * No sanitize_key() on the way in.
 			 *
@@ -1632,11 +1643,10 @@ class FLOSC_Site_Content_Index {
 			 * handed to a logged-out visitor, body and all. vgm_list() is the
 			 * sanitizer: it lowercases, trims, splits and whitelists.
 			 */
-			$post_id   = (int) ( $row['post_id'] ?? 0 );
-			$live_post = isset( $live_posts[ $post_id ] ) ? $live_posts[ $post_id ] : null;
-			$depth  = $this->row_depth( $row, $access_level, $flow_stem, $live_post );
+			$depth  = $this->row_depth( $row, $access_level );
 			$slice  = $this->row_body_at( $row, $depth );
 			$locked = ( 'title' === $depth );
+
 			/*
 			 * A row is searched at the depth it is returned at, never deeper.
 			 * At title depth the body is not searched and not returned; at
@@ -1644,22 +1654,12 @@ class FLOSC_Site_Content_Index {
 			 * appears solely past the gate would pull up a row the reader then
 			 * cannot see the reason for.
 			 */
-			/*
-			 * Title-only means title-only in both directions. The generated keyword
-			 * list contains terms derived from the post body; searching it would let
-			 * a hidden body term reveal which locked title it belongs to. At deeper
-			 * levels, keywords may rank a row but are never evidence and are never
-			 * printed into the model prompt below.
-			 */
-			$hay_src = (string) ( $row['title'] ?? '' );
-			if ( ! $locked ) {
-				$hay_src .= ' ' . (string) ( $row['keywords'] ?? '' );
-				$hay_src .= '' !== $slice ? ' ' . $slice : '';
-			}
-			$hay = function_exists( 'mb_strtolower' ) ? mb_strtolower( $hay_src ) : strtolower( $hay_src );
+			$hay_src = (string) ( $row['title'] ?? '' ) . ' ' . (string) ( $row['keywords'] ?? '' )
+				. ( '' !== $slice ? ' ' . $slice : '' );
+			$hay     = function_exists( 'mb_strtolower' ) ? mb_strtolower( $hay_src ) : strtolower( $hay_src );
 
 			$score = 0;
-			if ( $q !== '' && $hay !== '' ) {
+			if ( '' !== $q && '' !== $hay ) {
 				if ( false !== strpos( $hay, function_exists( 'mb_strtolower' ) ? mb_strtolower( $q ) : strtolower( $q ) ) ) {
 					$score += 50;
 				}
@@ -1676,24 +1676,22 @@ class FLOSC_Site_Content_Index {
 			}
 			// Numeric lesson / post id match.
 			if ( is_numeric( $q ) ) {
-				if ( (int) $q === (int) ( $row['post_id'] ?? 0 ) ) {
+				if ( (int) ( $row['post_id'] ?? 0 ) === (int) $q ) {
 					$score += 100;
 				}
-				if ( (string) $q === (string) ( $row['lesson_number'] ?? '' ) ) {
+				if ( (string) ( $row['lesson_number'] ?? '' ) === (string) $q ) {
 					$score += 80;
 				}
 			}
 			// Prefer posts in the active flow's content category when one is set (same library, product slice first).
-			if ( $score > 0 && $flow_stem !== '' ) {
-				static $flow_slugs_cache = array();
-				$flow_cache_key = sanitize_key( (string) $flow_stem );
-				if ( ! array_key_exists( $flow_cache_key, $flow_slugs_cache ) ) {
-					$flow_slugs_cache[ $flow_cache_key ] = $this->resolve_category_slugs( $flow_stem );
+			if ( $score > 0 && '' !== $flow_stem ) {
+				static $flow_slugs_cache = null;
+				if ( null === $flow_slugs_cache ) {
+					$flow_slugs_cache = $this->resolve_category_slugs( $flow_stem );
 				}
-				$flow_slugs = $flow_slugs_cache[ $flow_cache_key ];
-				if ( ! empty( $flow_slugs ) ) {
+				if ( ! empty( $flow_slugs_cache ) ) {
 					$rcats = isset( $row['categories'] ) && is_array( $row['categories'] ) ? $row['categories'] : array();
-					foreach ( $flow_slugs as $fs_slug ) {
+					foreach ( $flow_slugs_cache as $fs_slug ) {
 						if ( in_array( $fs_slug, $rcats, true ) ) {
 							$score += 15;
 							break;
@@ -1718,41 +1716,26 @@ class FLOSC_Site_Content_Index {
 				return $b['score'] <=> $a['score'];
 			}
 		);
-		if ( ! empty( $scored ) ) {
-			/*
-			 * Keep weak incidental matches from riding beside a clearly better one.
-			 * This matters for natural questions containing a site owner's name:
-			 * one distinctive term should select the relevant post, not two other
-			 * posts which merely repeat the owner's name.
-			 */
-			$best_score = (int) $scored[0]['score'];
-			$minimum_score = max( 5, (int) ceil( $best_score * 0.6 ) );
-			$scored = array_values(
-				array_filter(
-					$scored,
-					static function ( $hit ) use ( $minimum_score ) {
-						return (int) $hit['score'] >= $minimum_score;
-					}
-				)
-			);
-		}
 		$scored = array_slice( $scored, 0, $limit );
 
 		if ( empty( $scored ) ) {
-			return 'No verified indexed site content matched the current message.';
+			return "No indexed posts matched: {$keywords}";
 		}
 
-		$out = '**Verified site retrieval (' . count( $scored ) . "):**\n\n";
+		$out = '**Site content index — full posts (' . count( $scored ) . "):**\n\n";
 		foreach ( $scored as $hit ) {
-			$row = $hit['row'];
+			$row  = $hit['row'];
 			$out .= '**' . (string) ( $row['title'] ?? '' ) . "**\n";
 			$out .= 'ID: ' . (string) ( $row['id'] ?? (int) ( $row['post_id'] ?? 0 ) );
 			if ( ! empty( $row['url'] ) ) {
 				$out .= ' | URL: ' . (string) $row['url'];
 			}
 			$out .= "\n";
+			if ( ! empty( $row['keywords'] ) ) {
+				$out .= 'Keywords: ' . (string) $row['keywords'] . "\n";
+			}
 			if ( ! empty( $hit['locked'] ) ) {
-				$out .= "Access: title only. Verified facts are limited to this title, ID, and URL. The body is unavailable. Do not infer or claim its description, audience, instrumentation, format, genre, authorship details, or meaning. You may only say the item exists and link to it.\n";
+				$out .= "Access: title only. This piece exists and may be named and linked. Its content is not available at this access level, so do not quote or summarise it — say it is there and point to it.\n";
 				$out .= "\n---\n\n";
 				continue;
 			}
@@ -1769,18 +1752,7 @@ class FLOSC_Site_Content_Index {
 					: "Access: opening section only, up to the read-more break. Quote this much and point to the post for the rest.\n";
 			}
 
-			$slice_for_prompt = (string) ( $hit['slice'] ?? ( $row['content'] ?? '' ) );
-			$was_truncated = strlen( $slice_for_prompt ) > self::MAX_RETRIEVAL_CHARS_PER_HIT;
-			if ( $was_truncated ) {
-				$slice_for_prompt = function_exists( 'mb_substr' )
-					? mb_substr( $slice_for_prompt, 0, self::MAX_RETRIEVAL_CHARS_PER_HIT )
-					: substr( $slice_for_prompt, 0, self::MAX_RETRIEVAL_CHARS_PER_HIT );
-			}
-			$out .= "\n" . $slice_for_prompt;
-			if ( $was_truncated ) {
-				$out .= "\n[Authorized body truncated to the per-result prompt budget.]";
-			}
-			$out .= "\n\n---\n\n";
+			$out .= "\n" . (string) ( $hit['slice'] ?? ( $row['content'] ?? '' ) ) . "\n\n---\n\n";
 		}
 		return $out;
 	}
@@ -1794,42 +1766,13 @@ class FLOSC_Site_Content_Index {
 	 * file written by an older build keeps working until it is rebuilt.
 	 *
 	 * @param array  $row
-	 * @param string $tier      visitor|guest|member
-	 * @param string $flow_stem Explicit flow whose live VGM rules should win.
-	 * @param WP_Post|null $live_post Live post from the bulk publication query.
+	 * @param string $tier visitor|guest|member.
 	 * @return string title|excerpt|readmore|full
 	 */
-	public function row_depth( array $row, $tier, $flow_stem = '', $live_post = null ) {
+	public function row_depth( array $row, $tier ) {
 		$tier = self::tier_token( $tier );
 		if ( '' === $tier ) {
 			$tier = 'visitor';
-		}
-
-		/*
-		 * A single site index serves every flow, while VGM policy is saved per
-		 * flow. Resolve that policy at read time so changing a Content-tab rule
-		 * takes effect on the next turn and one flow cannot inherit the VGM map
-		 * which happened to be stored when another flow rebuilt the index.
-		 */
-		if ( $flow_stem !== '' && 'post' === (string) ( $row['kind'] ?? 'post' ) && ! empty( $row['post_id'] ) ) {
-			$map = self::resolve_vgm( (int) $row['post_id'], $flow_stem );
-			if ( ! $live_post instanceof WP_Post ) {
-				$live_post = get_post( (int) $row['post_id'] );
-			}
-			$access = $live_post instanceof WP_Post
-				? self::resolve_post_access( $live_post )
-				: (string) ( $row['access'] ?? '' );
-			$floor = self::vgm_list( $access );
-			if ( ! empty( $floor ) ) {
-				$open = self::tiers_from( $floor[0] );
-				foreach ( self::TIERS as $level ) {
-					if ( ! in_array( $level, $open, true ) ) {
-						$map[ $level ] = 'title';
-					}
-				}
-			}
-			$map = self::normalize_depth_map( $map );
-			return $map[ $tier ];
 		}
 
 		if ( ! empty( $row['vgm'] ) && is_array( $row['vgm'] ) ) {
@@ -1838,91 +1781,6 @@ class FLOSC_Site_Content_Index {
 		}
 
 		return $this->access_allows( $tier, (string) ( $row['access'] ?? 'visitor' ) ) ? 'full' : 'title';
-	}
-
-	/**
-	 * Whether an indexed WordPress row still represents a public post.
-	 *
-	 * Missing, non-published, and password-protected WordPress rows are omitted
-	 * entirely rather than exposing stale indexed text. Non-post adapters such
-	 * as BuddyBoss groups retain their own VGM policy.
-	 *
-	 * @param array                    $row        Indexed row.
-	 * @param array<int,WP_Post>|null $live_posts Bulk map, or null for one-off use.
-	 * @return bool
-	 */
-	private function row_is_currently_public( array $row, $live_posts = null ) {
-		if ( 'post' !== (string) ( $row['kind'] ?? 'post' ) ) {
-			return true;
-		}
-
-		$post_id = (int) ( $row['post_id'] ?? 0 );
-		if ( $post_id <= 0 ) {
-			return false;
-		}
-
-		$post = is_array( $live_posts )
-			? ( $live_posts[ $post_id ] ?? null )
-			: get_post( $post_id );
-		return $post instanceof WP_Post
-			&& 'publish' === $post->post_status
-			&& '' === (string) $post->post_password;
-	}
-
-	/**
-	 * Bulk-load current public WordPress rows and prime their meta/term caches.
-	 *
-	 * A per-row get_post() turns a 1,000-row index into 1,000 database queries on
-	 * sites without a persistent object cache. One bounded query keeps the live
-	 * authorization check practical on every chat turn.
-	 *
-	 * @param array $rows Indexed rows.
-	 * @return array<int,WP_Post> Post ID to live post.
-	 */
-	private function live_public_posts_for_rows( array $rows ) {
-		$post_ids  = array();
-		$post_types = array();
-		foreach ( $rows as $row ) {
-			if ( ! is_array( $row ) || 'post' !== (string) ( $row['kind'] ?? 'post' ) ) {
-				continue;
-			}
-			$post_id = (int) ( $row['post_id'] ?? 0 );
-			if ( $post_id > 0 ) {
-				$post_ids[] = $post_id;
-			}
-			$post_type = sanitize_key( (string) ( $row['post_type'] ?? '' ) );
-			if ( '' !== $post_type ) {
-				$post_types[] = $post_type;
-			}
-		}
-
-		$post_ids = array_values( array_unique( $post_ids ) );
-		if ( empty( $post_ids ) ) {
-			return array();
-		}
-
-		$found = get_posts(
-			array(
-				'post__in'               => $post_ids,
-				'post_type'              => empty( $post_types ) ? 'any' : array_values( array_unique( $post_types ) ),
-				'post_status'            => 'publish',
-				'has_password'           => false,
-				'posts_per_page'         => count( $post_ids ),
-				'orderby'                => 'post__in',
-				'no_found_rows'          => true,
-				'update_post_meta_cache' => true,
-				'update_post_term_cache' => true,
-				'suppress_filters'       => true,
-			)
-		);
-
-		$public = array();
-		foreach ( (array) $found as $post ) {
-			if ( $post instanceof WP_Post && 'publish' === $post->post_status && '' === (string) $post->post_password ) {
-				$public[ (int) $post->ID ] = $post;
-			}
-		}
-		return $public;
 	}
 
 	/**
@@ -1970,7 +1828,7 @@ class FLOSC_Site_Content_Index {
 			'guest'   => 2,
 			'member'  => 3,
 		);
-		$u = $hierarchy[ sanitize_key( (string) $user_level ) ] ?? 1;
+		$u         = $hierarchy[ sanitize_key( (string) $user_level ) ] ?? 1;
 
 		/*
 		 * access is a VGM list, not one word.
@@ -2033,16 +1891,19 @@ class FLOSC_Site_Content_Index {
 		if ( ! isset( $doc['posts'][ $key ] ) ) {
 			return false;
 		}
-		$manual = sanitize_text_field( (string) $manual_keywords );
+		$manual                                  = sanitize_text_field( (string) $manual_keywords );
 		$doc['posts'][ $key ]['keywords_manual'] = $manual;
-		$title   = (string) ( $doc['posts'][ $key ]['title'] ?? '' );
-		$content = (string) ( $doc['posts'][ $key ]['content'] ?? '' );
+		$title                                   = (string) ( $doc['posts'][ $key ]['title'] ?? '' );
+		$content                                 = (string) ( $doc['posts'][ $key ]['content'] ?? '' );
 		// Re-derive light auto keywords from title + body, then fold in manual overrides.
-		/* Saving a keyword rebuilt the row's searchable field from the first 24
-		   words of the body, throwing away everything derive_keywords() had
-		   built from the whole post. Adding one word quietly shrank the row. */
-		$auto = $this->merge_keywords( $title, (string) ( $doc['posts'][ $key ]['keywords'] ?? '' ) );
-		$doc['posts'][ $key ]['keywords'] = $manual !== '' ? $this->merge_keywords( $auto, $manual ) : $auto;
+
+		/*
+		Saving a keyword rebuilt the row's searchable field from the first 24
+			words of the body, throwing away everything derive_keywords() had
+			built from the whole post. Adding one word quietly shrank the row.
+		 */
+		$auto                             = $this->merge_keywords( $title, (string) ( $doc['posts'][ $key ]['keywords'] ?? '' ) );
+		$doc['posts'][ $key ]['keywords'] = '' !== $manual ? $this->merge_keywords( $auto, $manual ) : $auto;
 		return $this->save( $flow_stem, $doc );
 	}
 
@@ -2055,61 +1916,24 @@ class FLOSC_Site_Content_Index {
 	 */
 	public function reindex_one( $flow_stem, $post_id ) {
 		$post = get_post( (int) $post_id );
-		$doc  = $this->load( $flow_stem );
-		$key  = (string) (int) $post_id;
-		if ( ! $post instanceof WP_Post || 'publish' !== $post->post_status || '' !== (string) $post->post_password ) {
-			if ( ! isset( $doc['posts'][ $key ] ) ) {
-				return true;
-			}
-			unset( $doc['posts'][ $key ] );
-			return $this->save( $flow_stem, $doc );
+		if ( ! $post || 'publish' !== $post->post_status ) {
+			return false;
 		}
+		$doc = $this->load( $flow_stem );
+		$key = (string) (int) $post_id;
 		/* Reindexing an internal post removes it rather than refreshing it. */
 		if ( self::is_internal_post( $post->ID ) ) {
 			unset( $doc['posts'][ $key ] );
 			return $this->save( $flow_stem, $doc );
 		}
-		$prev = isset( $doc['posts'][ $key ] ) ? $doc['posts'][ $key ] : array();
-		$manual   = isset( $prev['keywords_manual'] ) ? (string) $prev['keywords_manual'] : '';
-		$excluded = ! empty( $prev['excluded'] );
-		$doc['posts'][ $key ] = $this->build_row_from_post( $post, $manual, $excluded, $flow_stem );
+		$prev                 = isset( $doc['posts'][ $key ] ) ? $doc['posts'][ $key ] : array();
+		$manual               = isset( $prev['keywords_manual'] ) ? (string) $prev['keywords_manual'] : '';
+		$excluded             = ! empty( $prev['excluded'] );
+		$doc['posts'][ $key ] = $this->build_row_from_post( $post, $manual, $excluded );
 		if ( empty( $doc['built_at'] ) ) {
 			$doc['built_at'] = gmdate( 'c' );
 		}
 		return $this->save( $flow_stem, $doc );
-	}
-
-	/**
-	 * Refresh an existing index row after WordPress save callbacks finish.
-	 *
-	 * This hook is dormant until an administrator has built the site index. It
-	 * never creates an index implicitly, and reindex_one() preserves a row's
-	 * manual keywords and exclusion flag.
-	 *
-	 * @param int     $post_id Post ID.
-	 * @param WP_Post $post    Saved post.
-	 * @param bool    $update  Whether WordPress updated an existing post.
-	 * @return void
-	 */
-	public function sync_saved_post( $post_id, $post, $update ) {
-		unset( $update );
-
-		if ( ! $post instanceof WP_Post || wp_is_post_revision( $post_id ) || wp_is_post_autosave( $post_id ) ) {
-			return;
-		}
-
-		$path = $this->index_path();
-		if ( '' === $path || ! is_readable( $path ) ) {
-			return;
-		}
-
-		$doc = $this->load();
-		$key = (string) (int) $post_id;
-		if ( ! isset( $doc['posts'][ $key ] ) && ! in_array( $post->post_type, self::indexed_post_types(), true ) ) {
-			return;
-		}
-
-		$this->reindex_one( '', $post_id );
 	}
 
 	// ─── Admin POST handlers ─────────────────────────────────────────────
@@ -2139,14 +1963,14 @@ class FLOSC_Site_Content_Index {
 	 */
 	private function redirect_ai( $ivr, $action, $error = '' ) {
 		$args = array(
-			'page'             => 'flosc-settings',
-			'tab'              => 'ai',
-			'site_index_action'=> sanitize_key( $action ),
+			'page'              => 'flosc-settings',
+			'tab'               => 'ai',
+			'site_index_action' => sanitize_key( $action ),
 		);
-		if ( $ivr !== '' ) {
+		if ( '' !== $ivr ) {
 			$args['ivr'] = $ivr;
 		}
-		if ( $error !== '' ) {
+		if ( '' !== $error ) {
 			$args['site_index_error'] = rawurlencode( $error );
 		}
 		wp_safe_redirect( add_query_arg( $args, admin_url( 'admin.php' ) ) . '#flosc-site-index-section' );
@@ -2162,8 +1986,8 @@ class FLOSC_Site_Content_Index {
 		// same page as the settings form, and two fields called _wpnonce in one
 		// submission leave PHP holding only the last of them.
 		check_admin_referer( 'flosc_site_index_rebuild', 'flosc_sci_nonce' );
-		$ivr  = $this->ivr_from_request( wp_unslash( $_POST ) );
-		$stem = $this->stem_from_ivr( $ivr );
+		$ivr    = $this->ivr_from_request( wp_unslash( $_POST ) );
+		$stem   = $this->stem_from_ivr( $ivr );
 		$result = $this->rebuild( $stem );
 		if ( empty( $result['ok'] ) ) {
 			$this->redirect_ai( $ivr, 'error', (string) ( $result['message'] ?? 'Rebuild failed.' ) );
@@ -2185,8 +2009,7 @@ class FLOSC_Site_Content_Index {
 	public function handle_exclude() {
 		$this->require_admin();
 		check_admin_referer( 'flosc_site_index_exclude' );
-		$ivr = $this->ivr_from_request( wp_unslash( $_POST ) );
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified by check_admin_referer in this method before read
+		$ivr     = $this->ivr_from_request( wp_unslash( $_POST ) );
 		$post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
 		$stem    = $this->stem_from_ivr( $ivr );
 		if ( $post_id && $this->set_excluded( $stem, $post_id, true ) ) {
@@ -2201,8 +2024,7 @@ class FLOSC_Site_Content_Index {
 	public function handle_include() {
 		$this->require_admin();
 		check_admin_referer( 'flosc_site_index_include' );
-		$ivr = $this->ivr_from_request( wp_unslash( $_POST ) );
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified by check_admin_referer in this method before read
+		$ivr     = $this->ivr_from_request( wp_unslash( $_POST ) );
 		$post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
 		$stem    = $this->stem_from_ivr( $ivr );
 		if ( $post_id && $this->set_excluded( $stem, $post_id, false ) ) {
@@ -2217,10 +2039,8 @@ class FLOSC_Site_Content_Index {
 	public function handle_keywords() {
 		$this->require_admin();
 		check_admin_referer( 'flosc_site_index_keywords' );
-		$ivr = $this->ivr_from_request( wp_unslash( $_POST ) );
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified by check_admin_referer in this method before read
+		$ivr     = $this->ivr_from_request( wp_unslash( $_POST ) );
 		$post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified by check_admin_referer in this method before read
 		$kw      = isset( $_POST['keywords_manual'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['keywords_manual'] ) ) : '';
 		$stem    = $this->stem_from_ivr( $ivr );
 		if ( $post_id && $this->set_manual_keywords( $stem, $post_id, $kw ) ) {
@@ -2235,8 +2055,7 @@ class FLOSC_Site_Content_Index {
 	public function handle_reindex_one() {
 		$this->require_admin();
 		check_admin_referer( 'flosc_site_index_reindex_one' );
-		$ivr = $this->ivr_from_request( wp_unslash( $_POST ) );
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified by check_admin_referer in this method before read
+		$ivr     = $this->ivr_from_request( wp_unslash( $_POST ) );
 		$post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
 		$stem    = $this->stem_from_ivr( $ivr );
 		if ( $post_id && $this->reindex_one( $stem, $post_id ) ) {
@@ -2244,11 +2063,4 @@ class FLOSC_Site_Content_Index {
 		}
 		$this->redirect_ai( $ivr, 'error', __( 'Could not reindex that post.', 'flosc' ) );
 	}
-}
-
-/**
- * Bootstrap singleton (admin hooks).
- */
-function flosc_site_content_index() {
-	return FLOSC_Site_Content_Index::instance();
 }

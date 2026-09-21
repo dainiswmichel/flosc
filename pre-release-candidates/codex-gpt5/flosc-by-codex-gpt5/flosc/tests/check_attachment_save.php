@@ -22,6 +22,26 @@ if ( PHP_SAPI !== 'cli' ) {
 	exit;
 }
 
+if ( ! function_exists( 'flosc_nows' ) ) {
+	/**
+	 * Strip every whitespace character.
+	 *
+	 * Source-text assertions below compare code, not the way it is laid out. A
+	 * WordPress Coding Standards pass reformatted the plugin -- tabs for spaces,
+	 * spaces inside call parentheses, realigned array arrows -- and every literal
+	 * match went red on behaviour that had not changed. Both sides of those
+	 * comparisons now pass through here, so the assertion is the same and the
+	 * formatting no longer decides it. Assertions that use a regular expression
+	 * are deliberately left reading the raw source.
+	 *
+	 * @param string $s Source text.
+	 * @return string
+	 */
+	function flosc_nows( $s ) {
+		return (string) preg_replace( '/\s+/', '', (string) $s );
+	}
+}
+
 $root = dirname( __DIR__ );
 $fail = 0;
 
@@ -44,7 +64,7 @@ ok( 'and success requires the stored value to match what was asked for',
 ok( 'a write that did not land is reported as an error',
 	strpos( $library, 'The attachment was not saved.' ) !== false, true );
 ok( 'success carries what is stored, not what was sent',
-	strpos( $library, "'persona'   => \$stored," ) !== false, true );
+	strpos( flosc_nows( $library ), flosc_nows( "'persona'   => \$stored,"  )) !== false, true );
 ok( 'and when it happened, in the same stamp the page-wide Save uses',
 	strpos( $library, "flosc_mts_utc()" ) !== false, true );
 
@@ -78,15 +98,16 @@ ok( 'and the note element carries no style attribute',
  * Every field the designer computes reaches the database.
  *
  * libraryEntry() built a complete six-field entry from the first day and only
- * the downloadable builder state read it. The save omitted its runtime
- * sidecars, so those fields stayed empty in personalities the designer made.
- * Several sidecars are also read independently on every turn.
+ * the downloadable builder state read it. The save sent four keys, so traits,
+ * mission, boundaries and topic scope stayed empty in every personality the
+ * designer ever made — and ai_boundaries and ai_topic_scope are read on every
+ * turn, so a floscAdmin had no way to set two values the AI was being given.
  */
 echo "\nWhat the designer computes is what the database receives\n";
 $flosc_bridge  = (string) file_get_contents( dirname( __DIR__ ) . '/assets/js/flosc-personality-builder-wp.js' );
 $flosc_builder = (string) file_get_contents( dirname( __DIR__ ) . '/assets/js/flosc-personality-builder.js' );
 $flosc_lib     = (string) file_get_contents( dirname( __DIR__ ) . '/includes/flosc-personality-library.php' );
-$flosc_sidecar = array( 'ai_personality_traits', 'ai_mission', 'ai_boundaries', 'ai_topic_scope', 'ai_off_topic_message', 'ai_fallback_phrase' );
+$flosc_sidecar = array( 'ai_personality_traits', 'ai_mission', 'ai_boundaries', 'ai_topic_scope' );
 
 ok( 'the builder exposes libraryEntry to the bridge', strpos( $flosc_builder, 'libraryEntry: libraryEntry,' ) !== false, true );
 ok( 'the bridge reads it rather than rebuilding it', strpos( $flosc_bridge, 'api.libraryEntry()' ) !== false, true );

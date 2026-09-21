@@ -7,7 +7,7 @@
  * (ApiKeyRequestAuthentication / Anthropic x-api-key / Google X-Goog-Api-Key)
  * and does not read Settings → Connectors.
  *
- * Requires at least WordPress 7.0. Operators attach one provider per flow
+ * Requires at least WordPress 7.0.4. Operators attach one provider per flow
  * and install that plugin. A developer testing all three activates all three.
  *
  * xAI has no official plugin. Whisper transcription is not in AI Provider
@@ -58,7 +58,7 @@ class FLOSC_WP_AI_Client {
 	 * @return string wordpress.org plugin slug, or empty.
 	 */
 	public static function plugin_slug( $flosc_provider ) {
-		$map = array(
+		$map            = array(
 			'openai'    => 'ai-provider-for-openai',
 			'anthropic' => 'ai-provider-for-anthropic',
 			'gemini'    => 'ai-provider-for-google',
@@ -72,7 +72,7 @@ class FLOSC_WP_AI_Client {
 	 * @return string
 	 */
 	public static function plugin_name( $flosc_provider ) {
-		$map = array(
+		$map            = array(
 			'openai'    => __( 'AI Provider for OpenAI', 'flosc' ),
 			'anthropic' => __( 'AI Provider for Anthropic', 'flosc' ),
 			'gemini'    => __( 'AI Provider for Google', 'flosc' ),
@@ -87,7 +87,7 @@ class FLOSC_WP_AI_Client {
 	 */
 	public static function plugin_directory_url( $flosc_provider ) {
 		$slug = self::plugin_slug( $flosc_provider );
-		return $slug !== '' ? 'https://wordpress.org/plugins/' . $slug . '/' : '';
+		return '' !== $slug ? 'https://wordpress.org/plugins/' . $slug . '/' : '';
 	}
 
 	/**
@@ -98,7 +98,7 @@ class FLOSC_WP_AI_Client {
 	 */
 	public static function plugin_install_url( $flosc_provider ) {
 		$slug = self::plugin_slug( $flosc_provider );
-		if ( $slug === '' ) {
+		if ( '' === $slug ) {
 			return '';
 		}
 		return add_query_arg(
@@ -116,7 +116,7 @@ class FLOSC_WP_AI_Client {
 	 * @return string WordPress AI Client provider id, or empty.
 	 */
 	public static function wordpress_provider_id( $flosc_provider ) {
-		$map = self::provider_id_map();
+		$map            = self::provider_id_map();
 		$flosc_provider = sanitize_key( (string) $flosc_provider );
 		return isset( $map[ $flosc_provider ] ) ? $map[ $flosc_provider ] : '';
 	}
@@ -126,7 +126,7 @@ class FLOSC_WP_AI_Client {
 	 * @return bool
 	 */
 	public static function uses_official_plugin( $flosc_provider ) {
-		return self::wordpress_provider_id( $flosc_provider ) !== '';
+		return '' !== self::wordpress_provider_id( $flosc_provider );
 	}
 
 	/**
@@ -248,7 +248,7 @@ class FLOSC_WP_AI_Client {
 			return false;
 		}
 		$wp_id = self::wordpress_provider_id( $flosc_provider );
-		if ( $wp_id === '' ) {
+		if ( '' === $wp_id ) {
 			return false;
 		}
 		try {
@@ -269,7 +269,7 @@ class FLOSC_WP_AI_Client {
 		foreach ( self::client_provider_slugs() as $slug ) {
 			$rows[] = array(
 				'slug'       => $slug,
-				'label'      => $slug === 'gemini' ? 'Gemini' : ucfirst( $slug ),
+				'label'      => 'gemini' === $slug ? 'Gemini' : ucfirst( $slug ),
 				'plugin'     => self::plugin_name( $slug ),
 				'registered' => self::is_provider_registered( $slug ),
 				'directory'  => self::plugin_directory_url( $slug ),
@@ -287,7 +287,7 @@ class FLOSC_WP_AI_Client {
 	public static function plugin_status_table_html() {
 		if ( ! self::core_client_exists() ) {
 			return '<div class="notice notice-error inline"><p>'
-				. esc_html__( 'WordPress 7.0 AI Client is not available. FLOSC requires WordPress 7.0 or later.', 'flosc' )
+				. esc_html__( 'WordPress 7.0 AI Client is not available. FLOSC requires WordPress 7.0.4 or later.', 'flosc' )
 				. '</p></div>';
 		}
 
@@ -358,12 +358,12 @@ class FLOSC_WP_AI_Client {
 	 * @return array|WP_Error
 	 */
 	private static function generate_inner( $args ) {
-		$args        = is_array( $args ) ? $args : array();
-		$provider    = sanitize_key( (string) ( $args['provider'] ?? '' ) );
-		$test_mode   = ! empty( $args['test_mode'] );
-		$wp_id       = self::wordpress_provider_id( $provider );
+		$args      = is_array( $args ) ? $args : array();
+		$provider  = sanitize_key( (string) ( $args['provider'] ?? '' ) );
+		$test_mode = ! empty( $args['test_mode'] );
+		$wp_id     = self::wordpress_provider_id( $provider );
 
-		if ( $wp_id === '' ) {
+		if ( '' === $wp_id ) {
 			return new WP_Error(
 				'flosc_wp_ai_unsupported_provider',
 				sprintf( 'FLOSC provider "%s" is not a WordPress AI Client hop.', $provider )
@@ -374,7 +374,7 @@ class FLOSC_WP_AI_Client {
 			return new WP_Error(
 				'flosc_wp_ai_missing_core',
 				$test_mode
-					? "WordPress 7.0 AI Client is not available.\n\nFLOSC Requires at least WordPress 7.0."
+					? "WordPress 7.0 AI Client is not available.\n\nFLOSC Requires at least WordPress 7.0.4."
 					: 'WordPress AI Client is not available.'
 			);
 		}
@@ -393,7 +393,7 @@ class FLOSC_WP_AI_Client {
 		$api_key = function_exists( 'flosc_get_provider_api_key' )
 			? flosc_get_provider_api_key( $provider )
 			: flosc_get_setting( $provider . '_api_key', '' );
-		if ( $api_key === '' || $api_key === null ) {
+		if ( '' === $api_key || null === $api_key ) {
 			return self::no_key_error( $provider, $test_mode );
 		}
 
@@ -591,9 +591,9 @@ class FLOSC_WP_AI_Client {
 	 * @return array|WP_Error
 	 */
 	private static function generate_with_tools_inner( $args, $executor ) {
-		$args     = is_array( $args ) ? $args : array();
-		$history  = self::history_to_messages( isset( $args['history'] ) && is_array( $args['history'] ) ? $args['history'] : array() );
-		$message  = (string) ( $args['message'] ?? '' );
+		$args      = is_array( $args ) ? $args : array();
+		$history   = self::history_to_messages( isset( $args['history'] ) && is_array( $args['history'] ) ? $args['history'] : array() );
+		$message   = (string) ( $args['message'] ?? '' );
 		$total_in  = 0;
 		$total_out = 0;
 		$last      = null;
@@ -601,7 +601,7 @@ class FLOSC_WP_AI_Client {
 		for ( $i = 0; $i < 5; $i++ ) {
 			$hop_args            = $args;
 			$hop_args['history'] = $history;
-			if ( $i === 0 ) {
+			if ( 0 === $i ) {
 				$hop_args['message'] = $message;
 				unset( $hop_args['function_responses'] );
 			} else {
@@ -613,15 +613,15 @@ class FLOSC_WP_AI_Client {
 				return $hop;
 			}
 
-			$usage      = isset( $hop['usage'] ) && is_array( $hop['usage'] ) ? $hop['usage'] : array();
-			$total_in  += (int) ( $usage['prompt_tokens'] ?? 0 );
-			$total_out += (int) ( $usage['completion_tokens'] ?? 0 );
+			$usage        = isset( $hop['usage'] ) && is_array( $hop['usage'] ) ? $hop['usage'] : array();
+			$total_in    += (int) ( $usage['prompt_tokens'] ?? 0 );
+			$total_out   += (int) ( $usage['completion_tokens'] ?? 0 );
 			$hop['usage'] = array(
 				'prompt_tokens'     => $total_in,
 				'completion_tokens' => $total_out,
 				'total_tokens'      => $total_in + $total_out,
 			);
-			$last = $hop;
+			$last         = $hop;
 
 			$calls = isset( $hop['function_calls'] ) && is_array( $hop['function_calls'] ) ? $hop['function_calls'] : array();
 			if ( empty( $calls ) ) {
@@ -631,7 +631,7 @@ class FLOSC_WP_AI_Client {
 				return new WP_Error( 'flosc_wp_ai_no_tool_executor', 'RAG tools were requested but no executor is available.' );
 			}
 
-			if ( $i === 0 && $message !== '' ) {
+			if ( 0 === $i && '' !== $message ) {
 				$history[] = new Message(
 					MessageRoleEnum::user(),
 					array( new MessagePart( $message ) )
@@ -663,7 +663,7 @@ class FLOSC_WP_AI_Client {
 				}
 				$responses[] = new FunctionResponse(
 					is_string( $id ) ? $id : null,
-					$name !== '' ? $name : null,
+					'' !== $name ? $name : null,
 					(string) $out
 				);
 			}
@@ -686,13 +686,13 @@ class FLOSC_WP_AI_Client {
 	 */
 	private static function make_builder( $args, $wp_id, &$model_resolved = null ) {
 		$model_resolved = true;
-		$message   = (string) ( $args['message'] ?? '' );
-		$system    = (string) ( $args['system_prompt'] ?? '' );
-		$model     = (string) ( $args['model'] ?? '' );
-		$max_tokens = isset( $args['max_tokens'] ) ? (int) $args['max_tokens'] : 500;
-		$tools     = isset( $args['tools'] ) && is_array( $args['tools'] ) ? $args['tools'] : array();
-		$fn_resps  = isset( $args['function_responses'] ) && is_array( $args['function_responses'] ) ? $args['function_responses'] : array();
-		$history   = self::history_to_messages( isset( $args['history'] ) && is_array( $args['history'] ) ? $args['history'] : array() );
+		$message        = (string) ( $args['message'] ?? '' );
+		$system         = (string) ( $args['system_prompt'] ?? '' );
+		$model          = (string) ( $args['model'] ?? '' );
+		$max_tokens     = isset( $args['max_tokens'] ) ? (int) $args['max_tokens'] : 500;
+		$tools          = isset( $args['tools'] ) && is_array( $args['tools'] ) ? $args['tools'] : array();
+		$fn_resps       = isset( $args['function_responses'] ) && is_array( $args['function_responses'] ) ? $args['function_responses'] : array();
+		$history        = self::history_to_messages( isset( $args['history'] ) && is_array( $args['history'] ) ? $args['history'] : array() );
 
 		if ( ! empty( $fn_resps ) ) {
 			$builder = wp_ai_client_prompt();
@@ -702,7 +702,7 @@ class FLOSC_WP_AI_Client {
 				}
 			}
 		} else {
-			if ( $message === '' ) {
+			if ( '' === $message ) {
 				return new WP_Error( 'flosc_wp_ai_empty_prompt', 'Cannot generate from an empty prompt.' );
 			}
 			$builder = wp_ai_client_prompt( $message );
@@ -710,7 +710,7 @@ class FLOSC_WP_AI_Client {
 
 		$builder->using_provider( $wp_id );
 
-		if ( $model !== '' ) {
+		if ( '' !== $model ) {
 			$pinned = self::pin_model( $wp_id, $model );
 			if ( $pinned ) {
 				$builder->using_model( $pinned );
@@ -722,7 +722,7 @@ class FLOSC_WP_AI_Client {
 			}
 		}
 
-		if ( $system !== '' ) {
+		if ( '' !== $system ) {
 			$builder->using_system_instruction( $system );
 		}
 		if ( $max_tokens > 0 ) {
@@ -765,13 +765,13 @@ class FLOSC_WP_AI_Client {
 	 */
 	private static function bind_flosc_key( $flosc_provider, $api_key ) {
 		$wp_id = self::wordpress_provider_id( $flosc_provider );
-		if ( $wp_id === '' ) {
+		if ( '' === $wp_id ) {
 			return new WP_Error( 'flosc_wp_ai_unsupported_provider', 'No WordPress provider id.' );
 		}
 
-		if ( $wp_id === 'anthropic' && class_exists( AnthropicApiKeyRequestAuthentication::class ) ) {
+		if ( 'anthropic' === $wp_id && class_exists( AnthropicApiKeyRequestAuthentication::class ) ) {
 			$auth = new AnthropicApiKeyRequestAuthentication( $api_key );
-		} elseif ( $wp_id === 'google' && class_exists( GoogleApiKeyRequestAuthentication::class ) ) {
+		} elseif ( 'google' === $wp_id && class_exists( GoogleApiKeyRequestAuthentication::class ) ) {
 			$auth = new GoogleApiKeyRequestAuthentication( $api_key );
 		} else {
 			$auth = new ApiKeyRequestAuthentication( $api_key );
@@ -823,14 +823,14 @@ class FLOSC_WP_AI_Client {
 				continue;
 			}
 			$text = (string) ( $turn['content'] ?? '' );
-			if ( $text === '' ) {
+			if ( '' === $text ) {
 				continue;
 			}
 			$role = (string) ( $turn['role'] ?? 'user' );
-			if ( $role === 'assistant' ) {
+			if ( 'assistant' === $role ) {
 				$role = 'model';
 			}
-			$enum  = ( $role === 'model' ) ? MessageRoleEnum::model() : MessageRoleEnum::user();
+			$enum  = ( 'model' === $role ) ? MessageRoleEnum::model() : MessageRoleEnum::user();
 			$out[] = new Message( $enum, array( new MessagePart( $text ) ) );
 		}
 
@@ -852,7 +852,7 @@ class FLOSC_WP_AI_Client {
 				continue;
 			}
 			$name = (string) ( $tool['name'] ?? '' );
-			if ( $name === '' ) {
+			if ( '' === $name ) {
 				continue;
 			}
 			$params = null;
@@ -906,7 +906,7 @@ class FLOSC_WP_AI_Client {
 
 			$model_id = $requested_model;
 			$got      = (string) $result->getModelMetadata()->getId();
-			if ( $got !== '' ) {
+			if ( '' !== $got ) {
 				$model_id = $got;
 			}
 		} else {

@@ -1,0 +1,19 @@
+# Reviewed exceptions to tests/check_wporg_rules.php
+#
+# Format:  path:line:RULE-ID:reason
+#
+# A line with no written reason is counted as a FINDING, not an exception, and
+# the active count prints on every run. An exceptions file is how a gate quietly
+# stops testing, so each entry has to be argued in writing and stays visible.
+
+includes/filesystem/class-flosc-filesystem.php:185:WPORG-02:file.php is loaded under `! function_exists( 'WP_Filesystem' )` so the filesystem API exists around the WP_Filesystem_Direct fallback four lines below. WordPress.org reviewed this exact tree on 13 Sep 2026 and flagged only the import.php include, not this one. Removing it risks the direct-write path used when the global filesystem is not ready.
+includes/filesystem/class-flosc-filesystem.php:259:WPORG-02:Same shape as :185 in the sibling method. Same reasoning, same review evidence.
+includes/filesystem/flosc-data-paths.php:384:WPORG-02:Same shape again: file.php loaded to bring up the filesystem API before the WP_Filesystem_Direct fallback. Not flagged by WordPress.org on 13 Sep 2026.
+
+# REMOVED 17 Sep 2026 — admin/flosc-app.php:110:WPORG-10.
+# The exception was written when that file read $_GET['flosc_companion']
+# directly. v79 replaced that with flosc_nav_param_present(), so WPORG-10
+# stopped firing there and the entry became dead weight. A dead exception is
+# worse than none: it reads as though a suppression is load-bearing when it
+# is not. Found by the gate's new stale-exception report, not by anyone
+# noticing.

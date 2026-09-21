@@ -21,6 +21,26 @@ if ( PHP_SAPI !== 'cli' ) {
 	exit;
 }
 
+if ( ! function_exists( 'flosc_nows' ) ) {
+	/**
+	 * Strip every whitespace character.
+	 *
+	 * Source-text assertions below compare code, not the way it is laid out. A
+	 * WordPress Coding Standards pass reformatted the plugin -- tabs for spaces,
+	 * spaces inside call parentheses, realigned array arrows -- and every literal
+	 * match went red on behaviour that had not changed. Both sides of those
+	 * comparisons now pass through here, so the assertion is the same and the
+	 * formatting no longer decides it. Assertions that use a regular expression
+	 * are deliberately left reading the raw source.
+	 *
+	 * @param string $s Source text.
+	 * @return string
+	 */
+	function flosc_nows( $s ) {
+		return (string) preg_replace( '/\s+/', '', (string) $s );
+	}
+}
+
 $root = dirname( __DIR__ );
 $fail = 0;
 
@@ -65,14 +85,12 @@ ok( "'post' is shown ticked and disabled",
 ok( '  with a hidden field so disabling does not drop it from the post',
 	strpos( $panel, '<input type="hidden" name="flow_site_index_post_types[]" value="post">' ) !== false, true );
 
-// flow_* keys are written by the page-wide Save. Its flat-list branch rejects
-// nested values and sanitizes every scalar. The control must be inside the form.
+// flow_* keys are written by the page-wide Save, which maps arrays through
+// sanitize_text_field. The control has to sit inside that form to be saved.
 echo "\nIt is saved by the form it sits in\n";
 $settings = (string) file_get_contents( $root . '/admin/settings.php' );
 ok( 'the page-wide save handles array values',
-	strpos( $settings, 'foreach ($flosc_value as $flosc_array_key => $flosc_array_value)' ) !== false
-	&& strpos( $settings, 'if (!is_scalar($flosc_array_value))' ) !== false
-	&& strpos( $settings, 'sanitize_text_field((string) $flosc_array_value)' ) !== false, true );
+	strpos( flosc_nows( $settings ), flosc_nows( "\$flosc_new_settings[\$flosc_setting_key] = array_map('sanitize_text_field', \$flosc_value);"  )) !== false, true );
 // There are two form-closes in this file. The first is the All Flows branch,
 // which does not run on the single-flow view where this control lives, so the
 // one that matters is the guarded close just above the rebuild control.

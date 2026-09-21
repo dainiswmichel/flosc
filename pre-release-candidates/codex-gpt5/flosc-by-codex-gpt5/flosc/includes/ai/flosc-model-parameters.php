@@ -74,7 +74,7 @@ if ( ! function_exists( 'flosc_parse_model_parameters' ) ) {
 
 			$parts = explode( ':', $line, 2 );
 
-			if ( count( $parts ) !== 2 ) {
+			if ( 2 !== count( $parts ) ) {
 				return new WP_Error(
 					'flosc_params_line',
 					sprintf(
@@ -148,61 +148,6 @@ if ( ! function_exists( 'flosc_coerce_model_parameter_value' ) ) {
 
 if ( ! function_exists( 'flosc_validate_model_parameter_keys' ) ) {
 	/**
-	 * Sanitize one model-parameter value without changing its JSON type.
-	 *
-	 * Provider parameters are extensible, so FLOSC cannot impose a fixed schema.
-	 * It can still bound the structure, validate nested keys and sanitize every
-	 * string before the value is stored or sent to a third-party API.
-	 *
-	 * @param mixed    $value  Candidate value.
-	 * @param int      $depth  Current nesting depth.
-	 * @param int|null $budget Remaining value budget.
-	 * @return mixed|WP_Error Sanitized value or validation error.
-	 */
-	function flosc_sanitize_model_parameter_value( $value, $depth = 0, &$budget = null ) {
-		if ( null === $budget ) {
-			$budget = 1000;
-		}
-		if ( $depth > 8 || $budget < 1 ) {
-			return new WP_Error( 'flosc_params_shape', __( 'The parameter structure is too large or deeply nested.', 'flosc' ) );
-		}
-		--$budget;
-
-		if ( is_array( $value ) ) {
-			$clean = array();
-			foreach ( $value as $key => $item ) {
-				if ( is_int( $key ) ) {
-					$clean_key = $key;
-				} else {
-					$clean_key = (string) $key;
-					if ( ! preg_match( '/^[A-Za-z_][A-Za-z0-9_.-]{0,127}$/', $clean_key ) ) {
-						return new WP_Error( 'flosc_params_nested_key', __( 'A nested parameter name contains unsupported characters.', 'flosc' ) );
-					}
-				}
-
-				$clean_item = flosc_sanitize_model_parameter_value( $item, $depth + 1, $budget );
-				if ( is_wp_error( $clean_item ) ) {
-					return $clean_item;
-				}
-				$clean[ $clean_key ] = $clean_item;
-			}
-			return $clean;
-		}
-
-		if ( is_string( $value ) ) {
-			return sanitize_textarea_field( $value );
-		}
-		if ( is_int( $value ) || is_bool( $value ) || null === $value ) {
-			return $value;
-		}
-		if ( is_float( $value ) && is_finite( $value ) ) {
-			return $value;
-		}
-
-		return new WP_Error( 'flosc_params_value', __( 'A parameter value has an unsupported type.', 'flosc' ) );
-	}
-
-	/**
 	 * Refuse only what would make the request malformed.
 	 *
 	 * The parameter set is the payload. Temperature and Max Tokens above are a
@@ -222,9 +167,8 @@ if ( ! function_exists( 'flosc_validate_model_parameter_keys' ) ) {
 	function flosc_validate_model_parameter_keys( $params ) {
 		// Not "FLOSC owns these" — "the request stops working without these".
 		$structural = array( 'messages', 'contents', 'stream' );
-		$budget     = 1000;
 
-		foreach ( $params as $key => $value ) {
+		foreach ( $params as $key => $unused ) {
 			if ( ! is_string( $key ) || '' === trim( $key ) ) {
 				return new WP_Error( 'flosc_params_key', __( 'A parameter with no name cannot be sent.', 'flosc' ) );
 			}
@@ -250,12 +194,6 @@ if ( ! function_exists( 'flosc_validate_model_parameter_keys' ) ) {
 					)
 				);
 			}
-
-			$clean_value = flosc_sanitize_model_parameter_value( $value, 0, $budget );
-			if ( is_wp_error( $clean_value ) ) {
-				return $clean_value;
-			}
-			$params[ $key ] = $clean_value;
 		}
 
 		return $params;
@@ -502,7 +440,7 @@ if ( ! function_exists( 'flosc_model_parameter_recipes' ) ) {
 				array(
 					'name'   => __( 'Never writes the visitor\'s line', 'flosc' ),
 					'why'    => __( 'Cuts the reply the moment the model starts inventing the other half of the conversation. The classic chat-bubble fix.', 'flosc' ),
-					'params' => "stop_sequences: [\"User:\", \"Visitor:\", \"Human:\"]",
+					'params' => 'stop_sequences: ["User:", "Visitor:", "Human:"]',
 					'models' => __( 'Every Anthropic model tested.', 'flosc' ),
 				),
 				array(
@@ -550,7 +488,7 @@ if ( ! function_exists( 'flosc_model_parameter_recipes' ) ) {
 				array(
 					'name'   => __( 'Tight and factual', 'flosc' ),
 					'why'    => __( 'Gemini keeps its sampling inside generationConfig rather than at the top level, so a whole block is set at once.', 'flosc' ),
-					'params' => "generationConfig: {\"temperature\":0.2,\"topP\":0.8}",
+					'params' => 'generationConfig: {"temperature":0.2,"topP":0.8}',
 					'models' => '',
 				),
 			),
@@ -592,7 +530,7 @@ if ( ! function_exists( 'flosc_format_model_parameter_value' ) ) {
 	/**
 	 * One parameter value, written the way a person would write it.
 	 *
-	 * var_export() on a float prints its full binary expansion — 0.9 comes back
+	 * Var_export() on a float prints its full binary expansion — 0.9 comes back
 	 * as 0.90000000000000002220446049250313080847263336181640625, which is the
 	 * same number and an unusable thing to show anybody. json_encode gives the
 	 * shortest decimal that round-trips, which is what was typed.

@@ -24,102 +24,117 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 flosc_tab_header( '📦', 'Content' );
 
-$flosc_flow_settings = $GLOBALS['flosc_current_settings'] ?? [];
+$flosc_flow_settings = $GLOBALS['flosc_current_settings'] ?? array();
 $flosc_settings_key  = $GLOBALS['flosc_settings_key'] ?? '';
 $flosc_current_ivr   = $GLOBALS['flosc_current_ivr'] ?? '';
 
-$flosc_content_docs_url = add_query_arg(
-	[
+$flosc_content_docs_url           = add_query_arg(
+	array(
 		'page' => 'flosc-settings',
 		'ivr'  => $flosc_current_ivr,
 		'tab'  => 'documentation',
 		'doc'  => 'ref-admin',
-	],
+	),
 	admin_url( 'admin.php' )
 ) . '#tab-content';
 $flosc_content_docs_inventory_url = add_query_arg(
-	[
+	array(
 		'page' => 'flosc-settings',
 		'ivr'  => $flosc_current_ivr,
 		'tab'  => 'documentation',
 		'doc'  => 'ref-admin',
-	],
+	),
 	admin_url( 'admin.php' )
 ) . '#inventory-content-family';
 
 // Content types: list of { singular, plural }. Migrate legacy single-label fields.
-$flosc_content_types = $flosc_flow_settings['content_types'] ?? [];
+$flosc_content_types = $flosc_flow_settings['content_types'] ?? array();
 if ( ! is_array( $flosc_content_types ) ) {
-	$flosc_content_types = [];
+	$flosc_content_types = array();
 }
 if ( empty( $flosc_content_types ) ) {
 	$flosc_legacy_s = trim( (string) ( $flosc_flow_settings['content_item_label_singular'] ?? '' ) );
 	$flosc_legacy_p = trim( (string) ( $flosc_flow_settings['content_item_label_plural'] ?? '' ) );
-	if ( $flosc_legacy_s !== '' || $flosc_legacy_p !== '' ) {
-		$flosc_content_types[] = [
+	if ( '' !== $flosc_legacy_s || '' !== $flosc_legacy_p ) {
+		$flosc_content_types[] = array(
 			'singular' => $flosc_legacy_s,
-			'plural'   => $flosc_legacy_p !== '' ? $flosc_legacy_p : $flosc_legacy_s,
-		];
+			'plural'   => '' !== $flosc_legacy_p ? $flosc_legacy_p : $flosc_legacy_s,
+		);
 	}
 }
 if ( empty( $flosc_content_types ) ) {
-	$flosc_content_types[] = [ 'singular' => '', 'plural' => '' ];
+	$flosc_content_types[] = array(
+		'singular' => '',
+		'plural'   => '',
+	);
 }
 $flosc_item_s_disp = '';
 $flosc_item_p_disp = '';
 foreach ( $flosc_content_types as $flosc_ct ) {
 	$flosc_s = trim( (string) ( $flosc_ct['singular'] ?? '' ) );
 	$flosc_p = trim( (string) ( $flosc_ct['plural'] ?? '' ) );
-	if ( $flosc_s !== '' ) {
+	if ( '' !== $flosc_s ) {
 		$flosc_item_s_disp = $flosc_s;
-		$flosc_item_p_disp = $flosc_p !== '' ? $flosc_p : $flosc_s;
+		$flosc_item_p_disp = '' !== $flosc_p ? $flosc_p : $flosc_s;
 		break;
 	}
 }
-if ( $flosc_item_s_disp === '' ) {
+if ( '' === $flosc_item_s_disp ) {
 	$flosc_item_s_disp = __( 'content item', 'flosc' );
 	$flosc_item_p_disp = __( 'content items', 'flosc' );
 }
 
-$flosc_member_levels = $flosc_flow_settings['member_levels'] ?? [];
+$flosc_member_levels = $flosc_flow_settings['member_levels'] ?? array();
 if ( empty( $flosc_member_levels ) ) {
-	$flosc_member_levels[''] = [ 'slug' => '', 'name' => '', 'description' => '' ];
+	$flosc_member_levels[''] = array(
+		'slug'        => '',
+		'name'        => '',
+		'description' => '',
+	);
 }
 
-$flosc_categories = get_categories( [ 'hide_empty' => false ] );
-$flosc_tags       = get_tags( [ 'hide_empty' => false ] );
+$flosc_categories = get_categories( array( 'hide_empty' => false ) );
+$flosc_tags       = get_tags( array( 'hide_empty' => false ) );
 if ( ! is_array( $flosc_tags ) ) {
-	$flosc_tags = [];
+	$flosc_tags = array();
 }
 
 // Empty = no quizzes for this flow. Never invent a sample quiz ID.
-$flosc_enabled_quizzes = $flosc_flow_settings['enabled_quizzes'] ?? [];
+$flosc_enabled_quizzes = $flosc_flow_settings['enabled_quizzes'] ?? array();
 if ( ! is_array( $flosc_enabled_quizzes ) ) {
-	$flosc_enabled_quizzes = [];
+	$flosc_enabled_quizzes = array();
 }
 $flosc_enabled_quizzes = array_values( array_filter( array_map( 'sanitize_key', $flosc_enabled_quizzes ) ) );
-$flosc_quiz_label_map = [];
+$flosc_quiz_label_map  = array();
 if ( class_exists( 'FLOSC_Quiz_Registry' ) ) {
 	$flosc_all_quiz_types = FLOSC_Quiz_Registry::get_all_quizzes();
 	foreach ( $flosc_all_quiz_types as $flosc_qid => $flosc_qt ) {
 		$flosc_quiz_label_map[ $flosc_qid ] = ( $flosc_qt instanceof FLOSC_Abstract_Quiz_Type )
 			? $flosc_qt->get_name()
-			: ucwords( str_replace( [ '_', 'flosc-', 'flosc_' ], [ ' ', '', '' ], $flosc_qid ) );
+			: ucwords( str_replace( array( '_', 'flosc-', 'flosc_' ), array( ' ', '', '' ), $flosc_qid ) );
 	}
 }
 
-$flosc_content_item_groups = $flosc_flow_settings['content_item_groups'] ?? [];
+$flosc_content_item_groups = $flosc_flow_settings['content_item_groups'] ?? array();
 if ( empty( $flosc_content_item_groups ) && ! empty( $flosc_flow_settings['content_item_category'] ) ) {
-	$flosc_content_item_groups = [
-		[ 'quiz_id' => '', 'category' => $flosc_flow_settings['content_item_category'] ],
-	];
+	$flosc_content_item_groups = array(
+		array(
+			'quiz_id'  => '',
+			'category' => $flosc_flow_settings['content_item_category'],
+		),
+	);
 }
 if ( empty( $flosc_content_item_groups ) ) {
-	$flosc_content_item_groups = [ [ 'quiz_id' => '', 'category' => '' ] ];
+	$flosc_content_item_groups = array(
+		array(
+			'quiz_id'  => '',
+			'category' => '',
+		),
+	);
 }
 
-$flosc_saved_levels      = $flosc_flow_settings['member_levels'] ?? $flosc_member_levels;
-$flosc_protected_items   = $flosc_flow_settings['protected_content'] ?? [];
+$flosc_saved_levels    = $flosc_flow_settings['member_levels'] ?? $flosc_member_levels;
+$flosc_protected_items = $flosc_flow_settings['protected_content'] ?? array();
 
 /*
  * The two axes of access, as the selects present them.
@@ -132,34 +147,34 @@ $flosc_protected_items   = $flosc_flow_settings['protected_content'] ?? [];
 $flosc_vgm_tiers  = flosc_vgm_tier_labels();
 $flosc_vgm_depths = flosc_vgm_depth_labels();
 
-$flosc_default_vgm = $flosc_flow_settings['content_default_vgm'] ?? [];
+$flosc_default_vgm = $flosc_flow_settings['content_default_vgm'] ?? array();
 foreach ( array_keys( $flosc_vgm_tiers ) as $flosc_tier_key ) {
-	$flosc_d = (string) ( $flosc_default_vgm[ $flosc_tier_key ] ?? '' );
+	$flosc_d                              = (string) ( $flosc_default_vgm[ $flosc_tier_key ] ?? '' );
 	$flosc_default_vgm[ $flosc_tier_key ] = isset( $flosc_vgm_depths[ $flosc_d ] ) ? $flosc_d : 'full';
 }
-$flosc_free_content_item_mode  = $flosc_flow_settings['free_content_item_mode'] ?? 'fixed';
-$flosc_free_content_item_count = $flosc_flow_settings['free_content_item_count'] ?? 1;
-$flosc_free_content_item_proportion = $flosc_flow_settings['free_content_item_proportion'] ?? '1/3';
-$flosc_guest_access_days = $flosc_flow_settings['guest_access_days'] ?? 0;
-$flosc_free_content_item_guaranteed = $flosc_flow_settings['free_content_item_guaranteed'] ?? 0;
+$flosc_free_content_item_mode          = $flosc_flow_settings['free_content_item_mode'] ?? 'fixed';
+$flosc_free_content_item_count         = $flosc_flow_settings['free_content_item_count'] ?? 1;
+$flosc_free_content_item_proportion    = $flosc_flow_settings['free_content_item_proportion'] ?? '1/3';
+$flosc_guest_access_days               = $flosc_flow_settings['guest_access_days'] ?? 0;
+$flosc_free_content_item_guaranteed    = $flosc_flow_settings['free_content_item_guaranteed'] ?? 0;
 $flosc_free_content_item_pool_category = sanitize_title( (string) ( $flosc_flow_settings['free_content_item_pool_category'] ?? '' ) );
-$flosc_pool_exclude = (string) ( $flosc_flow_settings['exclude_items_from_freeline'] ?? '' );
-$flosc_guest_max_chats = isset( $flosc_flow_settings['guest_max_chats'] )
+$flosc_pool_exclude                    = (string) ( $flosc_flow_settings['exclude_items_from_freeline'] ?? '' );
+$flosc_guest_max_chats                 = isset( $flosc_flow_settings['guest_max_chats'] )
 	? max( 0, intval( $flosc_flow_settings['guest_max_chats'] ) )
 	: 0;
-$flosc_guest_can_delete_chats = ! isset( $flosc_flow_settings['guest_can_delete_chats'] )
+$flosc_guest_can_delete_chats          = ! isset( $flosc_flow_settings['guest_can_delete_chats'] )
 	|| ! empty( $flosc_flow_settings['guest_can_delete_chats'] );
-$flosc_guest_can_rename_chats = ! isset( $flosc_flow_settings['guest_can_rename_chats'] )
+$flosc_guest_can_rename_chats          = ! isset( $flosc_flow_settings['guest_can_rename_chats'] )
 	|| ! empty( $flosc_flow_settings['guest_can_rename_chats'] );
-$flosc_guest_new_chat_limit_message = (string) ( $flosc_flow_settings['guest_new_chat_limit_message']
+$flosc_guest_new_chat_limit_message    = (string) ( $flosc_flow_settings['guest_new_chat_limit_message']
 	?? 'Your guest account allows {max} chats listed below. If you would like to start a new chat, you can delete one below.' );
-$flosc_chat_list_settings_url = add_query_arg(
-	[
+$flosc_chat_list_settings_url          = add_query_arg(
+	array(
 		'page' => 'flosc-settings',
 		'ivr'  => $flosc_current_ivr,
 		'tab'  => 'ui',
 		'view' => 'single',
-	],
+	),
 	admin_url( 'admin.php' )
 );
 ?>
@@ -387,7 +402,7 @@ $flosc_chat_list_settings_url = add_query_arg(
 				<td>
 					<?php
 					$flosc_item_type = $flosc_item['type'] ?? 'category';
-					if ( in_array( $flosc_item_type, [ 'post', 'page' ], true ) ) :
+					if ( in_array( $flosc_item_type, array( 'post', 'page' ), true ) ) :
 						?>
 						<input type="text" name="protection_value[]"
 							value="<?php echo esc_attr( $flosc_item['id'] ?? '' ); ?>"
@@ -433,7 +448,7 @@ $flosc_chat_list_settings_url = add_query_arg(
 							}
 							?>
 							<option value="<?php echo esc_attr( $flosc_slug ); ?>" <?php selected( $flosc_item['level'] ?? '', $flosc_slug ); ?>>
-								<?php echo esc_html( ( $flosc_lv['name'] ?? '' ) ?: $flosc_slug ); ?>
+								<?php echo esc_html( ( $flosc_lv['name'] ?? '' ) ? $flosc_lv['name'] : $flosc_slug ); ?>
 							</option>
 						<?php endforeach; ?>
 					</select>
@@ -458,11 +473,11 @@ $flosc_chat_list_settings_url = add_query_arg(
  */
 $flosc_object_rules = class_exists( 'FLOSC_Site_Content_Index' )
 	? FLOSC_Site_Content_Index::rules_written_on_objects()
-	: [];
+	: array();
 ?>
 <?php if ( ! empty( $flosc_object_rules ) ) : ?>
 	<h3><?php echo esc_html__( 'Set on the object itself', 'flosc' ); ?></h3>
-	<p class="description"><?php echo esc_html__( 'These use the same post or term metadata as the object screen. Change either value here and save this tab; clear either value to remove the rule.', 'flosc' ); ?></p>
+	<p class="description"><?php echo esc_html__( 'These were set on a post, category or tag screen. Edit them there.', 'flosc' ); ?></p>
 	<table class="widefat flosc-protection-table">
 		<thead>
 			<tr>
@@ -483,19 +498,8 @@ $flosc_object_rules = class_exists( 'FLOSC_Site_Content_Index' )
 							<?php echo esc_html( $flosc_obj_rule['name'] ); ?>
 						<?php endif; ?>
 					</td>
-					<?php $flosc_object_rule_key = (string) ( $flosc_obj_rule['rule_key'] ?? '' ); ?>
-					<td>
-						<select name="flosc_object_rule_vgm[<?php echo esc_attr( $flosc_object_rule_key ); ?>]" class="flosc-width-full">
-							<option value=""><?php echo esc_html__( '— Remove rule —', 'flosc' ); ?></option>
-							<?php echo flosc_vgm_options_markup( $flosc_vgm_tiers, (string) $flosc_obj_rule['vgm'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built escaped in flosc_vgm_options_markup() ?>
-						</select>
-					</td>
-					<td>
-						<select name="flosc_object_rule_depth[<?php echo esc_attr( $flosc_object_rule_key ); ?>]" class="flosc-width-full">
-							<option value=""><?php echo esc_html__( '— Remove rule —', 'flosc' ); ?></option>
-							<?php echo flosc_vgm_options_markup( $flosc_vgm_depths, (string) $flosc_obj_rule['depth'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built escaped in flosc_vgm_options_markup() ?>
-						</select>
-					</td>
+					<td><?php echo esc_html( $flosc_vgm_tiers[ $flosc_obj_rule['vgm'] ] ?? $flosc_obj_rule['vgm'] ); ?></td>
+					<td><?php echo esc_html( $flosc_vgm_depths[ $flosc_obj_rule['depth'] ] ?? $flosc_obj_rule['depth'] ); ?></td>
 				</tr>
 			<?php endforeach; ?>
 		</tbody>
@@ -526,7 +530,8 @@ $flosc_object_rules = class_exists( 'FLOSC_Site_Content_Index' )
 		<td>
 			<select name="flow_free_content_item_pool_category" id="flow_free_content_item_pool_category" class="regular-text">
 				<option value=""><?php echo esc_html__( '— Same as content group category —', 'flosc' ); ?></option>
-				<?php foreach ( $flosc_categories as $flosc_cat ) :
+				<?php
+				foreach ( $flosc_categories as $flosc_cat ) :
 					$flosc_cat_label = $flosc_cat->name;
 					if ( ! empty( $flosc_cat->parent ) ) {
 						$flosc_cat_parent = get_category( (int) $flosc_cat->parent );
@@ -710,21 +715,25 @@ jQuery(document).ready(function($) {
 		$(this).val($(this).val().toLowerCase().replace(/[^a-z0-9_]+/g, '_').replace(/^_|_$/g, ''));
 	});
 
-	var quizOptions = <?php
+	var quizOptions = 
+	<?php
 		$flosc_opts = '<option value="">— No Quiz (Standalone) —</option>';
-		foreach ( $flosc_enabled_quizzes as $flosc_eq ) {
-			$flosc_label = esc_html( $flosc_quiz_label_map[ $flosc_eq ] ?? $flosc_eq );
-			$flosc_opts .= '<option value="' . esc_attr( $flosc_eq ) . '">' . $flosc_label . '</option>';
-		}
+	foreach ( $flosc_enabled_quizzes as $flosc_eq ) {
+		$flosc_label = esc_html( $flosc_quiz_label_map[ $flosc_eq ] ?? $flosc_eq );
+		$flosc_opts .= '<option value="' . esc_attr( $flosc_eq ) . '">' . $flosc_label . '</option>';
+	}
 		echo wp_json_encode( $flosc_opts );
-	?>;
-	var catOptions = <?php
+	?>
+	;
+	var catOptions = 
+	<?php
 		$flosc_opts = '<option value="">— Select Category —</option>';
-		foreach ( $flosc_categories as $flosc_cat ) {
-			$flosc_opts .= '<option value="' . esc_attr( $flosc_cat->slug ) . '">' . esc_html( $flosc_cat->name ) . ' (' . esc_html( (string) $flosc_cat->count ) . ' posts)</option>';
-		}
+	foreach ( $flosc_categories as $flosc_cat ) {
+		$flosc_opts .= '<option value="' . esc_attr( $flosc_cat->slug ) . '">' . esc_html( $flosc_cat->name ) . ' (' . esc_html( (string) $flosc_cat->count ) . ' posts)</option>';
+	}
 		echo wp_json_encode( $flosc_opts );
-	?>;
+	?>
+	;
 	$('#flosc-add-lesson-group').on('click', function() {
 		var row = '<tr class="flosc-lesson-group-row">'
 			+ '<td><select name="content_item_group_quiz[]" class="regular-text flosc-width-full">' + quizOptions + '</select></td>'
@@ -739,32 +748,38 @@ jQuery(document).ready(function($) {
 		}
 	});
 
-	var categoryOptions = <?php
+	var categoryOptions = 
+	<?php
 		$flosc_opts = '<option value="">— Select —</option>';
-		foreach ( $flosc_categories as $flosc_cat ) {
-			$flosc_opts .= '<option value="' . esc_attr( $flosc_cat->term_id ) . '">' . esc_html( $flosc_cat->name ) . '</option>';
-		}
+	foreach ( $flosc_categories as $flosc_cat ) {
+		$flosc_opts .= '<option value="' . esc_attr( $flosc_cat->term_id ) . '">' . esc_html( $flosc_cat->name ) . '</option>';
+	}
 		echo wp_json_encode( $flosc_opts );
-	?>;
-	var tagOptions = <?php
+	?>
+	;
+	var tagOptions = 
+	<?php
 		$flosc_opts = '<option value="">— Select —</option>';
-		foreach ( $flosc_tags as $flosc_tag ) {
-			$flosc_opts .= '<option value="' . esc_attr( $flosc_tag->term_id ) . '">' . esc_html( $flosc_tag->name ) . '</option>';
-		}
+	foreach ( $flosc_tags as $flosc_tag ) {
+		$flosc_opts .= '<option value="' . esc_attr( $flosc_tag->term_id ) . '">' . esc_html( $flosc_tag->name ) . '</option>';
+	}
 		echo wp_json_encode( $flosc_opts );
-	?>;
-	var levelOptions = <?php
+	?>
+	;
+	var levelOptions = 
+	<?php
 		$flosc_opts = '<option value="">— Any Member —</option>';
-		foreach ( $flosc_saved_levels as $flosc_lk => $flosc_lv ) {
-			$flosc_slug = $flosc_lv['slug'] ?? $flosc_lk;
-			if ( empty( $flosc_slug ) ) {
-				continue;
-			}
-			$flosc_label = ( $flosc_lv['name'] ?? '' ) ?: $flosc_slug;
-			$flosc_opts .= '<option value="' . esc_attr( $flosc_slug ) . '">' . esc_html( $flosc_label ) . '</option>';
+	foreach ( $flosc_saved_levels as $flosc_lk => $flosc_lv ) {
+		$flosc_slug = $flosc_lv['slug'] ?? $flosc_lk;
+		if ( empty( $flosc_slug ) ) {
+			continue;
 		}
+		$flosc_label = ( $flosc_lv['name'] ?? '' ) ? $flosc_lv['name'] : $flosc_slug;
+		$flosc_opts .= '<option value="' . esc_attr( $flosc_slug ) . '">' . esc_html( $flosc_label ) . '</option>';
+	}
 		echo wp_json_encode( $flosc_opts );
-	?>;
+	?>
+	;
 	function buildContentField(type) {
 		if (type === 'post' || type === 'page') {
 			return '<input type="text" name="protection_value[]" class="regular-text flosc-protection-value" placeholder="Post/Page ID">';
@@ -775,7 +790,7 @@ jQuery(document).ready(function($) {
 		return '<select name="protection_value[]" class="flosc-protection-value flosc-width-full">' + categoryOptions + '</select>';
 	}
 	/* A new rule starts where every rule stored before these columns existed
-	   already sits: members only, whole body. */
+		already sits: members only, whole body. */
 	var vgmOptions = <?php echo wp_json_encode( flosc_vgm_options_markup( $flosc_vgm_tiers, 'member' ) ); ?>;
 	var depthOptions = <?php echo wp_json_encode( flosc_vgm_options_markup( $flosc_vgm_depths, 'full' ) ); ?>;
 	$('#flosc-add-protection').on('click', function() {
