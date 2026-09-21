@@ -75,6 +75,7 @@ DENY_PATTERNS=(
   'da1ni5_personal_profitability'
   'build-dist-zip.sh'
   '.distignore'
+  '.cursorrules'
   'agents.md'
   'AGENTS.md'
   'CLAUDE.md'
@@ -140,6 +141,7 @@ done < <(find "$STAGE/flosc" \( \
   -name 'composer.lock' -o \
   -name 'build-dist-zip.sh' -o \
   -name '.distignore' -o \
+  -name '.cursorrules' -o \
   -name 'agents.md' -o \
   -name 'AGENTS.md' -o \
   -name 'CLAUDE.md' -o \

@@ -14,7 +14,7 @@ Source base: v93 commit `9ce0c0a5e6ffaed48590434c93c98b02554613ac`
 - Read OAuth callback query and form fields through `WP_REST_Request`, retaining POST-over-GET precedence, Apple `user` support, ChemiCloud query-string fallbacks, and OAuth `state` verification before authentication.
 - Restored bounded callback input lengths from the earlier security work without restoring `FILTER_UNSAFE_RAW` or nonce suppressions.
 - Restored `admin/create-sample-data.php` to the installable artifact.
-- Excluded internal agent, release, and PHPCS files from the artifact.
+- Excluded internal agent, editor, release, and PHPCS files from the artifact.
 
 The candidate source differs from v93 in exactly five files:
 
@@ -29,9 +29,9 @@ readme.txt
 ## Artifact
 
 ```text
-sha256       0cc9a3d292d8e1c959a34316fa37486e5b64ff39ceac2d850d8a889c0d0211d5
-size_bytes   2801684
-zip_entries  283
+sha256       44ccd005669e072e0e7510fb829f92fe04a3e602a07bb92ccf40dca6b404b2d6
+size_bytes   2801120
+zip_entries  282
 root         flosc/
 ```
 
@@ -74,7 +74,7 @@ No errors detected in compressed data of flosc.zip.
 $ unzip -l flosc.zip | grep 'admin/create-sample-data.php'
 19010  09-21-2026 14:56   flosc/admin/create-sample-data.php
 
-$ unzip -l flosc.zip | grep -E 'agents\.md|AGENTS\.md|CLAUDE\.md|WORDPRESS-ORG-RELEASE|phpcs\.xml'
+$ unzip -l flosc.zip | grep -E '\.cursorrules|agents\.md|AGENTS\.md|CLAUDE\.md|WORDPRESS-ORG-RELEASE|phpcs\.xml'
 [no output]
 ```
 

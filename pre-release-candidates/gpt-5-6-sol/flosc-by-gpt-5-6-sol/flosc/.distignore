@@ -21,6 +21,7 @@ handoff*.md
 .gitignore
 .distignore
 build-dist-zip.sh
+.cursorrules
 agents.md
 AGENTS.md
 CLAUDE.md

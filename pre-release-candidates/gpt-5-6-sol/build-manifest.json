@@ -2,7 +2,7 @@
   "candidate": "v93.1",
   "agent": "GPT-5.6-sol",
   "slug": "gpt-5-6-sol",
-  "build_time_utc": "2026-09-21T12:34:23Z",
+  "build_time_utc": "2026-09-21T12:43:00Z",
   "source": {
     "commit": "9ce0c0a5e6ffaed48590434c93c98b02554613ac",
     "working_tree_changes_included": true,
@@ -16,9 +16,9 @@
     "zip": "pre-release-candidates/gpt-5-6-sol/flosc.zip"
   },
   "artifact": {
-    "sha256": "0cc9a3d292d8e1c959a34316fa37486e5b64ff39ceac2d850d8a889c0d0211d5",
-    "size_bytes": 2801684,
-    "entries": 283,
+    "sha256": "44ccd005669e072e0e7510fb829f92fe04a3e602a07bb92ccf40dca6b404b2d6",
+    "size_bytes": 2801120,
+    "entries": 282,
     "root": "flosc/",
     "plugin_version": "8.0.0",
     "requires_at_least": "7.0",
