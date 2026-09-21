@@ -2265,7 +2265,8 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 			'chat-logs': 'Chat Logs',
 			'administration': 'Administration',
 			'documentation': 'Docs',
-			'da1': 'DA1'
+			'da1': 'DA1',
+			'starter-packs': 'Starter Packs'
 		};
 
 		const section = tabTitles[tab] || 'Settings';
@@ -2301,20 +2302,28 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 			'administration'   => 'Administration',
 			'documentation'    => '📖 Docs',
 			'da1'              => 'DA1',
+			'starter-packs'    => 'Starter Packs',
 		);
 		if ( ! $flosc_can_view_administration ) {
 			unset( $flosc_tabs['administration'] );
 		}
+
+		/*
+		 * Tabs that are global rather than per-flow do not carry the flow
+		 * selection, so their URL never implies Switch Flow changes what they do.
+		 */
+		$flosc_global_tabs = array( 'starter-packs' );
+
 		foreach ( $flosc_tabs as $flosc_tab_id => $flosc_tab_label ) :
-			$flosc_tab_url = add_query_arg(
-				array(
-					'page' => 'flosc-settings',
-					'ivr'  => $flosc_selected_ivr,
-					'tab'  => $flosc_tab_id,
-					'view' => $flosc_identity_view,
-				),
-				admin_url( 'admin.php' )
+			$flosc_tab_args = array(
+				'page' => 'flosc-settings',
+				'tab'  => $flosc_tab_id,
 			);
+			if ( ! in_array( $flosc_tab_id, $flosc_global_tabs, true ) ) {
+				$flosc_tab_args['ivr']  = $flosc_selected_ivr;
+				$flosc_tab_args['view'] = $flosc_identity_view;
+			}
+			$flosc_tab_url = add_query_arg( $flosc_tab_args, admin_url( 'admin.php' ) );
 			?>
 			<a href="<?php echo esc_url( $flosc_tab_url ); ?>" 
 				class="nav-tab 
@@ -2329,8 +2338,12 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 		<?php endforeach; ?>
 	</nav>
 
-	<?php if ( 'da1' === $flosc_active_tab ) : ?>
-		<?php include FLOSC_PLUGIN_DIR . 'admin/da1.php'; ?>
+	<?php if ( 'da1' === $flosc_active_tab || 'starter-packs' === $flosc_active_tab ) : ?>
+		<?php if ( 'da1' === $flosc_active_tab ) : ?>
+			<?php include FLOSC_PLUGIN_DIR . 'admin/da1.php'; ?>
+		<?php else : ?>
+			<?php include FLOSC_PLUGIN_DIR . 'admin/starter-packs.php'; ?>
+		<?php endif; ?>
 		<?php flosc_tab_footer(); ?>
 </div>
 		<?php return; ?>

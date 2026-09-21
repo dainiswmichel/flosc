@@ -545,9 +545,26 @@ trait FLOSC_Chat_Turn_Trait {
 			$flosc_response_source = 'concierge';
 		}
 
+		/*
+		 * DA1 catalog path: content-agnostic and access-aware across all phases.
+		 * Rows are filtered by Status, parent Status, Flow Scope and VGM before
+		 * any catalog payload can reach the conversational layer. Restored in
+		 * v92. It is asked first because it is the one that knows what this
+		 * visitor is allowed to be told; the composition path below answers
+		 * only where this one declines.
+		 */
+		$da1_catalog_reply = $this->flosc_build_da1_catalog_reply(
+			$message,
+			$flow_id,
+			$ivr_file,
+			(string) ( $eval_context['access_level'] ?? 'visitor' )
+		);
+
 		// DA1 compositions path: available across all phases and all user levels.
 		// This gives deterministic, bounded catalog answers before IVR/AI fallbacks.
-		$da1_catalog_reply = $this->flosc_build_da1_composition_reply( $message, $flow_id, $ivr_file );
+		if ( '' === $da1_catalog_reply ) {
+			$da1_catalog_reply = $this->flosc_build_da1_composition_reply( $message, $flow_id, $ivr_file );
+		}
 		if ( '' !== $da1_catalog_reply ) {
 			$response_message      = array(
 				'content'          => $da1_catalog_reply,
@@ -565,6 +582,36 @@ trait FLOSC_Chat_Turn_Trait {
 		$chatpack_session_hash     = FLOSC_Chatpack::generate_session_hash( $chatpack_flosc_hash, $chatpack_user_id, $session_id );
 		$chatpack_pair_number      = FLOSC_Chatpack::count_message_pairs( $session_id, $chatpack_user_id, $flow_id, $session_id_raw ) + 1;
 		$chatpack_is_first         = ( 1 === $chatpack_pair_number );
+
+		/*
+		 * Facts worth carrying past this point, for the provider identity the
+		 * outbound request will announce. The client below talks to WordPress AI
+		 * Client and knows nothing about flows or personalities, so they are left
+		 * here on the way past. Restored in v92.
+		 *
+		 * Nothing in this block touches the prompt. If a single token of any
+		 * chatpack section moves because of it, it has been written wrongly.
+		 */
+		if ( function_exists( 'flosc_provider_identity_context' ) ) {
+			$flosc_identity_kb = function_exists( 'flosc_flow_knowledge_base_ids' )
+				? implode( ',', (array) flosc_flow_knowledge_base_ids( (string) $flow_id ) )
+				: '';
+			flosc_provider_identity_context(
+				array(
+					'flow'    => (string) $flow_id,
+					'profile' => function_exists( 'flosc_personality_resolved_fingerprint' )
+						? (string) flosc_personality_resolved_fingerprint( $flow_id )
+						: '',
+					'pair'    => (int) $chatpack_pair_number,
+					// From eval_context directly: $flosc_ctx_surface is not
+					// assigned until the logging block far below this one.
+					'surface' => sanitize_key( (string) ( $eval_context['browsing_surface'] ?? '' ) ),
+					'kb'      => $flosc_identity_kb,
+					'tier'    => (string) ( $eval_context['access_level'] ?? '' ),
+				)
+			);
+		}
+
 		$chatpack_conv_history     = FLOSC_Chatpack::load_conversation_history( $session_id, $chatpack_user_id, 10, $flow_id, $session_id_raw );
 		$flosc_prior_opening_block = '';
 

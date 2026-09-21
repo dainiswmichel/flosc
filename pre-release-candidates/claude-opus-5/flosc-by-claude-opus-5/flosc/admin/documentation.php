@@ -87,6 +87,12 @@ $flosc_doc_topics = array(
 		'status' => 'ready',
 	),
 	array(
+		'id'     => 'ref-personality',
+		'group'  => 'reference',
+		'title'  => 'Personality Profiles',
+		'status' => 'ready',
+	),
+	array(
 		'id'     => 'ref-payments',
 		'group'  => 'reference',
 		'title'  => 'Payments & Offers Reference',
@@ -318,6 +324,11 @@ foreach ( $flosc_doc_topics as $flosc_topic ) {
 		<?php elseif ( 'ref-admin' === $flosc_doc_topic ) : ?>
 			<div class="flosc-doc-article flosc-doc-card">
 				<?php include FLOSC_PLUGIN_DIR . 'admin/docs/ref_admin_skeleton.php'; ?>
+			</div>
+
+		<?php elseif ( 'ref-personality' === $flosc_doc_topic ) : ?>
+			<div class="flosc-doc-article flosc-doc-card">
+				<?php include FLOSC_PLUGIN_DIR . 'admin/docs/part3-ref-personality-profile.php'; ?>
 			</div>
 
 		<?php elseif ( 'ref-settings-fields' === $flosc_doc_topic ) : ?>
