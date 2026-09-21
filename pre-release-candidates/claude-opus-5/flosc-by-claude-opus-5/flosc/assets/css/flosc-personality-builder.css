@@ -1011,3 +1011,299 @@
   .pair-row{
     display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;
   }
+
+
+/* ---------------------------------------------------------------------
+ * Restored in v92 from the v87 candidate.
+ *
+ * These rules style UI that was removed from this tree along with its
+ * markup. Every selector below is one this stylesheet did not already
+ * carry, so nothing here overrides a rule that was here before.
+ * --------------------------------------------------------------------- */
+
+.flosc-personality-workshop .field-group
+{
+    border-top: 1px solid var(--line);
+    padding-top: 10px;
+    margin: 0 0 14px;
+  }
+
+.flosc-personality-workshop .field-group:first-of-type
+{ border-top: 0; padding-top: 0; }
+
+.flosc-personality-workshop .field-group-label
+{
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin: 0 0 6px;
+  }
+
+.flosc-personality-workshop .acc > summary.row-sum > .drag-handle
+{ grid-column: 1; }
+
+.flosc-personality-workshop .acc > summary.row-sum > .row-lab
+{
+    grid-column: 2;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+.flosc-personality-workshop .acc > summary.row-sum > .meta-bit
+{
+    grid-column: 3;
+    min-width: 0;
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+.flosc-personality-workshop .acc > summary:not(.row-sum) .row-lab
+{
+    flex: 0 0 auto;
+    max-width: 45%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+.flosc-personality-workshop .acc > summary:not(.row-sum) .meta-bit
+{
+    flex: 1 1 auto;
+    min-width: 0;
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+.flosc-personality-workshop .builder-notice
+{
+    margin: 8px 0 10px;
+    padding: 7px 10px;
+    border-left: 3px solid var(--accent-2);
+    background: #f0f6fc;
+    font-family: var(--ui);
+    font-size: 0.8rem;
+  }
+
+.flosc-personality-workshop .builder-notice.is-error
+{
+    border-left-color: var(--bad);
+    background: #fcf0f1;
+  }
+
+.flosc-personality-workshop .cadmin-field
+{
+    display: inline-flex;
+    flex-direction: column;
+    gap: 2px;
+    font-family: var(--ui);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    color: var(--accent-2);
+  }
+
+.flosc-personality-workshop .cadmin-field input
+{ font-weight: 400; text-transform: none; letter-spacing: 0; }
+
+.flosc-personality-workshop .card-param
+{
+    display: block;
+    margin: 0 0 10px;
+    padding: 0 0 8px;
+    border-bottom: 1px solid var(--line);
+  }
+
+.flosc-personality-workshop .card-param:last-of-type
+{ border-bottom: 0; }
+
+.flosc-personality-workshop .card-param > .excerpt-lab
+{ display: block; margin-bottom: 4px; }
+
+.flosc-personality-workshop .card-param .wrow
+{ display: flex; align-items: center; gap: 8px; }
+
+.flosc-personality-workshop .card-param .wrow input[type="range"]
+{ flex: 1 1 auto; min-width: 0; }
+
+.flosc-personality-workshop .card-param input[type="text"], .flosc-personality-workshop .card-param select
+{ width: 100%; max-width: 26rem; }
+
+.flosc-personality-workshop .field-dest
+{
+    display: block;
+    margin-top: 4px;
+    font-family: var(--ui);
+    font-size: 0.72rem;
+    color: var(--ink-soft);
+  }
+
+.flosc-personality-workshop .card-members
+{
+    margin: 6px 0 6px 14px;
+    padding-left: 10px;
+    border-left: 3px solid var(--member-rule, var(--line));
+  }
+
+.flosc-personality-workshop .acc.is-group > summary.row-sum
+{ font-weight: 700; }
+
+.flosc-personality-workshop .cat-edit
+{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: flex-end;
+    padding: 8px 10px;
+    background: var(--paper-2);
+    border-bottom: 1px solid var(--line);
+  }
+
+.flosc-personality-workshop .cat-edit .figure-readout
+{ flex: 1 1 100%; margin: 0; }
+
+.flosc-personality-workshop .card-footer
+{
+    margin: 10px 0 0;
+    padding: 7px 9px;
+    border-top: 1px solid var(--line);
+    background: var(--paper-2);
+    border-radius: 0 0 8px 8px;
+    font-family: var(--ui);
+    font-size: 0.76rem;
+    line-height: 1.45;
+    color: var(--ink-soft);
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+.flosc-personality-workshop .card-footer b
+{ color: var(--ink); }
+
+.flosc-personality-workshop .new-personality
+{
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;
+    margin: 10px 0 0; padding: 10px 12px;
+    border: 1px solid var(--accent-2); border-radius: 10px; background: #f0f6fc;
+  }
+
+.flosc-personality-workshop .new-personality input[type="text"]
+{ min-width: 18rem; }
+
+.flosc-personality-workshop .new-personality__from
+{
+    font-family: var(--ui); font-size: 0.78rem; color: var(--ink-soft); padding-bottom: 6px;
+  }
+
+.flosc-personality-workshop .new-personality .figure-readout
+{ flex: 1 1 100%; margin: 0; }
+
+.flosc-personality-workshop .col-empty
+{ margin: 6px 8px 8px; opacity: .8; }
+
+.flosc-personality-workshop .fam-den
+{
+    font-family: var(--ui); font-size: 0.7rem; font-weight: 700;
+    color: var(--accent-2); margin-left: auto; padding-right: 6px; white-space: nowrap;
+  }
+
+.flosc-personality-workshop .trib-edit
+{ margin: 4px 0 0; }
+
+.flosc-personality-workshop .trib-edit > summary
+{
+    cursor: pointer; list-style: none;
+    font-family: var(--ui); font-size: 0.72rem; font-weight: 700;
+    letter-spacing: .03em; text-transform: uppercase; color: var(--accent-2);
+    padding: 4px 0 4px 18px; position: relative;
+  }
+
+.flosc-personality-workshop .trib-edit > summary::-webkit-details-marker, .flosc-personality-workshop .trib-edit > summary::marker
+{ display: none; content: ""; }
+
+.flosc-personality-workshop .trib-edit > summary::before
+{
+    content: "\25B8"; position: absolute; left: 4px; transition: transform .12s ease;
+  }
+
+.flosc-personality-workshop .trib-edit[open] > summary::before
+{ transform: rotate(90deg); }
+
+.flosc-personality-workshop .trib-edit > .acc-body
+{
+    padding: 8px 0 4px; border-top: 1px solid var(--line); margin-top: 2px;
+  }
+
+.flosc-personality-workshop .nest-empty
+{ margin: 4px 0 6px; opacity: .8; }
+
+.flosc-personality-workshop .row-gap--first
+{ min-height: 6px; }
+
+.flosc-personality-workshop .app.drag-active [data-drop-layer]
+{
+    outline: 1px dashed var(--accent-2); outline-offset: 2px;
+  }
+
+.flosc-personality-workshop .app.drag-active .row-gap--first
+{
+    min-height: 16px; background: rgba(34,113,177,.10);
+  }
+
+.flosc-personality-workshop .traj-pair .spec-panel
+{ border-radius: 14px 14px 0 0; }
+
+.flosc-personality-workshop .traj-pair .spec-panel h2
+{ border-radius: 14px 14px 0 0; }
+
+.flosc-personality-workshop .builder-workspace .panel h2, .flosc-personality-workshop #savePanel h2, .flosc-personality-workshop .traj-pair .spec-panel h2
+{
+    border-radius: 0;
+    background: #f6f7f7;
+    color: #1d2327;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 11px 13px;
+  }
+
+.builder-attribution
+{ margin: 2px 0 0; font-size: 12px; opacity: .7; }
+
+.flosc-personality-workshop .identity-row
+{ display: flex; gap: 12px; margin: 10px 0 6px; flex-wrap: wrap; }
+
+.flosc-personality-workshop .identity-row .field
+{ display: flex; flex-direction: column; gap: 3px; min-width: 180px; }
+
+.flosc-personality-workshop .identity-row .field--wide
+{ flex: 1 1 320px; }
+
+.flosc-personality-workshop .identity-row label
+{ font-size: 12px; opacity: .75; font-weight: 600; }
+
+.flosc-personality-workshop .identity-row input
+{ padding: 6px 8px; font: inherit; width: 100%; box-sizing: border-box; }
+
+.identity-note
+{ margin: 0 0 10px; }
+
+.identity-row #soulFilename
+{ font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+
+.export-toggle
+{ display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+
+.export-toggle input
+{ margin: 0; }
+
+.output-view-note
+{ border-left: 3px solid currentColor; padding-left: 10px; opacity: .85; margin: 8px 0 6px; }
+
