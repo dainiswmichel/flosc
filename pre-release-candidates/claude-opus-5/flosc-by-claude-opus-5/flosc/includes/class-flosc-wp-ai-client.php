@@ -126,7 +126,108 @@ class FLOSC_WP_AI_Client {
 	 * @return bool
 	 */
 	public static function uses_official_plugin( $flosc_provider ) {
-		return self::wordpress_provider_id( $flosc_provider ) !== '';
+		return '' !== self::wordpress_provider_id( $flosc_provider );
+	}
+
+	/**
+	 * Parameters the last request could not send, and why.
+	 *
+	 * Reported by the connection test. An operator who typed a parameter is
+	 * owed an answer about whether it arrived.
+	 *
+	 * @var array<int,string>
+	 */
+	private static $unapplied_parameters = array();
+
+	/**
+	 * Parameters this request actually carried, as opposed to configured.
+	 *
+	 * @var array<int,string>
+	 */
+	private static $applied_parameters = array();
+
+	/**
+	 * @return array<int,string>
+	 */
+	public static function unapplied_parameters() {
+		return self::$unapplied_parameters;
+	}
+
+	/**
+	 * @return array<int,string>
+	 */
+	public static function applied_parameters() {
+		return self::$applied_parameters;
+	}
+
+	/**
+	 * Put one operator-named parameter onto the request builder.
+	 *
+	 * The builder is asked to do it rather than interrogated about whether it
+	 * can. method_exists() is the wrong question here: the WordPress AI Client's
+	 * Prompt_Builder routes its snake_case setters through __call(), so
+	 * method_exists( $builder, 'using_top_p' ) answers false for a call that is
+	 * exactly the supported API. FLOSC used to believe that answer and drop
+	 * top_p, top_k and stop_sequences without ever attempting them.
+	 *
+	 * Calling and catching is also strictly safer than asking: a setter that
+	 * genuinely does not exist raises Error, which is a Throwable, so the
+	 * failure is reported either way — and reported in the integration's own
+	 * words rather than as FLOSC's guess about it.
+	 *
+	 * @param object $builder Prompt builder.
+	 * @param string $name    Parameter name as the operator wrote it.
+	 * @param mixed  $value   Parsed value.
+	 * @return true|WP_Error
+	 */
+	private static function apply_extra_parameter( $builder, $name, $value ) {
+		$name = preg_replace( '/[^a-z0-9_]/', '', strtolower( (string) $name ) );
+
+		if ( '' === $name ) {
+			return new WP_Error( 'flosc_ai_param_name', __( 'That is not a parameter name.', 'flosc' ) );
+		}
+
+		$setter = 'using_' . $name;
+
+		try {
+			// A few setters take their values one per argument rather than as
+			// one array — using_stop_sequences( 'User:', 'Visitor:' ). Passing
+			// the array whole raises a TypeError, so the splat is tried first
+			// and the whole array kept as the fallback for any setter that does
+			// want it. Which of the two a given client wants is the client's
+			// business, and this asks it rather than assuming.
+			if ( is_array( $value ) && array_values( $value ) === $value ) {
+				try {
+					$builder->$setter( ...array_values( $value ) );
+				} catch ( TypeError $splat_failed ) {
+					$builder->$setter( $value );
+				} catch ( ArgumentCountError $splat_failed ) {
+					$builder->$setter( $value );
+				}
+			} else {
+				$builder->$setter( $value );
+			}
+		} catch ( Throwable $e ) {
+			return new WP_Error( 'flosc_ai_param_unapplied', $e->getMessage(), array( 'parameter' => $name ) );
+		}
+
+		return true;
+	}
+
+	/**
+	 * Anthropic 400 when temperature and top_p are on the same request.
+	 *
+	 * @param WP_Error $error Generation error.
+	 * @return bool
+	 */
+	private static function is_temperature_top_p_conflict( $error ) {
+		if ( ! is_wp_error( $error ) ) {
+			return false;
+		}
+		$msg = $error->get_error_message();
+		return false !== stripos( $msg, 'temperature' )
+			&& false !== stripos( $msg, 'top_p' )
+			&& false !== stripos( $msg, 'cannot both' );
 	}
 
 	/**
@@ -225,6 +326,38 @@ class FLOSC_WP_AI_Client {
 	 * @return array|WP_Error { text, function_calls, model_message, usage, model, provider }
 	 */
 	public static function generate( $args ) {
+		// The provider plugins are third-party code reached through a builder
+		// that throws. Anything escaping this method becomes a WordPress fatal
+		// in the middle of a visitor's conversation, so nothing escapes it.
+		try {
+			return self::generate_inner( $args );
+		} catch ( Throwable $e ) {
+			$test_mode = is_array( $args ) && ! empty( $args['test_mode'] );
+
+			return new WP_Error(
+				'flosc_wp_ai_provider_exception',
+				$test_mode
+					? sprintf(
+						"The provider integration threw an error.\n\nProvider message:\n%s\n\n📝 Next steps:\n1. Confirm the provider plugin is activated and up to date\n2. Confirm the model id is in that provider's catalog\n3. Test again",
+						$e->getMessage()
+					)
+					: 'The AI provider could not answer that.',
+				array(
+					'exception' => get_class( $e ),
+					'detail'    => $e->getMessage(),
+				)
+			);
+		}
+	}
+
+	/**
+	 * The chat hop itself. Only ever called from generate(), which owns the
+	 * guarantee that no provider exception reaches WordPress.
+	 *
+	 * @param array $args See generate().
+	 * @return array|WP_Error
+	 */
+	private static function generate_inner( $args ) {
 		$args      = is_array( $args ) ? $args : array();
 		$provider  = sanitize_key( (string) ( $args['provider'] ?? '' ) );
 		$test_mode = ! empty( $args['test_mode'] );
@@ -269,32 +402,140 @@ class FLOSC_WP_AI_Client {
 			return $bound;
 		}
 
-		$builder = self::make_builder( $args, $wp_id );
+		$model_resolved = true;
+		$builder        = self::make_builder( $args, $wp_id, $model_resolved );
 		if ( is_wp_error( $builder ) ) {
 			return $builder;
 		}
 
 		$temperature = isset( $args['temperature'] ) ? (float) $args['temperature'] : 0.3;
-		$builder->using_temperature( $temperature );
+
+		// What this one request carried, gathered as it is built.
+		self::$applied_parameters   = array();
+		self::$unapplied_parameters = array();
+
+		// Whether temperature is accepted is a fact about the model first and
+		// the provider only second: Anthropic's Sonnet 4.5 takes it and its
+		// Sonnet 5 refuses it, and both are Anthropic. The resolver in
+		// includes/ai/flosc-provider-profiles.php answers from what has been
+		// measured on this model where anything has, and falls back to the
+		// provider-wide measurement where nothing has.
+		$flosc_model_id = (string) ( $args['model'] ?? '' );
+
+		$flosc_skip_temperature = function_exists( 'flosc_model_rejects_tuning' )
+			? flosc_model_rejects_tuning( $provider, $flosc_model_id, 'temperature' )
+			: ( function_exists( 'flosc_provider_rejects_tuning' )
+				&& flosc_provider_rejects_tuning( $provider, 'temperature' ) );
+
+		if ( ! $flosc_skip_temperature ) {
+			try {
+				$builder->using_temperature( $temperature );
+				self::$applied_parameters[] = 'temperature';
+			} catch ( Throwable $e ) {
+				self::$unapplied_parameters[] = 'temperature (' . $e->getMessage() . ')';
+			}
+		}
+
+		// Extra model parameters, named by the operator. FLOSC keeps no list of
+		// valid parameters — providers add them faster than any list survives —
+		// so each one is applied by convention: the builder names its setters
+		// using_<parameter>, so top_p reaches using_top_p. What each one is
+		// worth is recorded either way, so the connection test can say what the
+		// request carried rather than what was configured.
+		if ( function_exists( 'flosc_get_model_parameters' ) ) {
+			foreach ( flosc_get_model_parameters( $provider ) as $flosc_param => $flosc_value ) {
+				// temperature and max_tokens have first-class setters above and
+				// were already applied from the fields that mirror them.
+				// Applying them twice would send one of them twice.
+				if ( in_array( (string) $flosc_param, array( 'temperature', 'max_tokens' ), true ) ) {
+					continue;
+				}
+
+				// Anthropic 400: temperature and top_p cannot both be specified.
+				// Inline so this does not depend on a helper PHP-FPM may still
+				// be serving from an older cached copy of the profiles file.
+				if ( 'anthropic' === $provider
+					&& 'top_p' === (string) $flosc_param
+					&& in_array( 'temperature', self::$applied_parameters, true ) ) {
+					self::$unapplied_parameters[] = 'top_p (cannot be sent with temperature on this model)';
+					continue;
+				}
+
+				$flosc_applied = self::apply_extra_parameter( $builder, $flosc_param, $flosc_value );
+
+				if ( is_wp_error( $flosc_applied ) ) {
+					// The integration refused it. That is its answer to give,
+					// so carry it up rather than deciding on its behalf.
+					self::$unapplied_parameters[] = (string) $flosc_param . ' (' . $flosc_applied->get_error_message() . ')';
+					continue;
+				}
+
+				self::$applied_parameters[] = (string) $flosc_param;
+			}
+		}
+
 		if ( ! $builder->is_supported_for_text_generation() ) {
-			$builder = self::make_builder( $args, $wp_id );
+			$builder = self::make_builder( $args, $wp_id, $model_resolved );
 			if ( is_wp_error( $builder ) ) {
 				return $builder;
 			}
 		}
 
-		$plugin_name = self::plugin_name( $provider );
+		$plugin_name  = self::plugin_name( $provider );
+		$model_wanted = (string) ( $args['model'] ?? '' );
+
+		// The provider could not resolve this model id. FLOSC does not quietly
+		// answer as some other model — the flow would then be curated by
+		// something nobody chose. It names the id that failed and stops.
+		if ( ! $model_resolved ) {
+			return new WP_Error(
+				'flosc_wp_ai_unknown_model',
+				$test_mode
+					? sprintf(
+						"%s could not resolve the model id \"%s\".\n\n📝 Next steps:\n1. Click \"Fetch models this key can use\" beside the model field\n2. Pick one of the ids it lists\n3. Save AI Settings, then test again",
+						$plugin_name,
+						$model_wanted
+					)
+					: sprintf( 'The configured AI model is not available from %s.', $plugin_name ),
+				array( 'model' => $model_wanted )
+			);
+		}
 
 		if ( ! $builder->is_supported_for_text_generation() ) {
 			return new WP_Error(
 				'flosc_wp_ai_not_supported',
 				$test_mode
-					? "This prompt is not supported for text generation with {$plugin_name}.\n\n📝 Next steps:\n1. Confirm the plugin is activated\n2. Confirm the model id is in that provider’s catalog\n3. Test again"
+					? "This prompt is not supported for text generation with {$plugin_name}.\n\n📝 Next steps:\n1. Confirm the plugin is activated and up to date\n2. Confirm the model id is one the plugin offers\n3. Test again"
 					: 'This prompt is not supported by the active AI provider.'
 			);
 		}
 
 		$result = $builder->generate_text_result();
+		if ( is_wp_error( $result ) && self::is_temperature_top_p_conflict( $result ) ) {
+			self::$applied_parameters = array_values( array_diff( self::$applied_parameters, array( 'top_p' ) ) );
+			if ( ! in_array( 'top_p (cannot be sent with temperature on this model)', self::$unapplied_parameters, true ) ) {
+				self::$unapplied_parameters[] = 'top_p (cannot be sent with temperature on this model)';
+			}
+			$retry = self::make_builder( $args, $wp_id, $model_resolved );
+			if ( ! is_wp_error( $retry ) ) {
+				if ( ! $flosc_skip_temperature ) {
+					try {
+						$retry->using_temperature( $temperature );
+					} catch ( Throwable $e ) {
+						unset( $e );
+					}
+				}
+				if ( function_exists( 'flosc_get_model_parameters' ) ) {
+					foreach ( flosc_get_model_parameters( $provider ) as $flosc_param => $flosc_value ) {
+						if ( in_array( (string) $flosc_param, array( 'temperature', 'max_tokens', 'top_p' ), true ) ) {
+							continue;
+						}
+						self::apply_extra_parameter( $retry, $flosc_param, $flosc_value );
+					}
+				}
+				$result = $retry->generate_text_result();
+			}
+		}
 		if ( is_wp_error( $result ) ) {
 			if ( $test_mode ) {
 				return new WP_Error(
@@ -309,13 +550,47 @@ class FLOSC_WP_AI_Client {
 	}
 
 	/**
+	 * Tool-calling chat loop. No provider/tool Throwable may escape into REST.
+	 *
+	 * @param array    $args     Generate args plus tools.
+	 * @param callable $executor Tool runner.
+	 * @return array|WP_Error
+	 */
+	public static function generate_with_tools( $args, $executor ) {
+		try {
+			return self::generate_with_tools_inner( $args, $executor );
+		} catch ( Throwable $e ) {
+			if ( function_exists( 'flosc_log' ) ) {
+				flosc_log(
+					sprintf(
+						'AI tool loop failed: %s in %s:%d — %s',
+						get_class( $e ),
+						$e->getFile(),
+						$e->getLine(),
+						$e->getMessage()
+					)
+				);
+			}
+
+			return new WP_Error(
+				'flosc_wp_ai_tool_exception',
+				__( 'The AI tool request could not be completed.', 'flosc' ),
+				array(
+					'exception' => get_class( $e ),
+					'detail'    => $e->getMessage(),
+				)
+			);
+		}
+	}
+
+	/**
 	 * Tool loop. $executor is function( $name, $input_array, $call_id ): string.
 	 *
 	 * @param array    $args     Same as generate(), plus tools.
 	 * @param callable $executor Tool runner.
 	 * @return array|WP_Error
 	 */
-	public static function generate_with_tools( $args, $executor ) {
+	private static function generate_with_tools_inner( $args, $executor ) {
 		$args      = is_array( $args ) ? $args : array();
 		$history   = self::history_to_messages( isset( $args['history'] ) && is_array( $args['history'] ) ? $args['history'] : array() );
 		$message   = (string) ( $args['message'] ?? '' );
@@ -409,14 +684,15 @@ class FLOSC_WP_AI_Client {
 	 * @param string $wp_id WordPress provider id.
 	 * @return WP_AI_Client_Prompt_Builder|WP_Error
 	 */
-	private static function make_builder( $args, $wp_id ) {
-		$message    = (string) ( $args['message'] ?? '' );
-		$system     = (string) ( $args['system_prompt'] ?? '' );
-		$model      = (string) ( $args['model'] ?? '' );
-		$max_tokens = isset( $args['max_tokens'] ) ? (int) $args['max_tokens'] : 500;
-		$tools      = isset( $args['tools'] ) && is_array( $args['tools'] ) ? $args['tools'] : array();
-		$fn_resps   = isset( $args['function_responses'] ) && is_array( $args['function_responses'] ) ? $args['function_responses'] : array();
-		$history    = self::history_to_messages( isset( $args['history'] ) && is_array( $args['history'] ) ? $args['history'] : array() );
+	private static function make_builder( $args, $wp_id, &$model_resolved = null ) {
+		$model_resolved = true;
+		$message        = (string) ( $args['message'] ?? '' );
+		$system         = (string) ( $args['system_prompt'] ?? '' );
+		$model          = (string) ( $args['model'] ?? '' );
+		$max_tokens     = isset( $args['max_tokens'] ) ? (int) $args['max_tokens'] : 500;
+		$tools          = isset( $args['tools'] ) && is_array( $args['tools'] ) ? $args['tools'] : array();
+		$fn_resps       = isset( $args['function_responses'] ) && is_array( $args['function_responses'] ) ? $args['function_responses'] : array();
+		$history        = self::history_to_messages( isset( $args['history'] ) && is_array( $args['history'] ) ? $args['history'] : array() );
 
 		if ( ! empty( $fn_resps ) ) {
 			$builder = wp_ai_client_prompt();
@@ -439,6 +715,9 @@ class FLOSC_WP_AI_Client {
 			if ( $pinned ) {
 				$builder->using_model( $pinned );
 			} else {
+				// This id did not resolve. Say so upward rather than letting a
+				// preference silently answer as some other model.
+				$model_resolved = false;
 				$builder->using_model_preference( array( $wp_id, $model ) );
 			}
 		}
@@ -461,6 +740,7 @@ class FLOSC_WP_AI_Client {
 		return $builder;
 	}
 
+
 	/**
 	 * Exact model instance from the official plugin, or null if the id is not in its catalog.
 	 *
@@ -471,7 +751,7 @@ class FLOSC_WP_AI_Client {
 	private static function pin_model( $wp_id, $model_id ) {
 		try {
 			return AiClient::defaultRegistry()->getProviderModel( $wp_id, $model_id );
-		} catch ( Exception $e ) {
+		} catch ( Throwable $e ) {
 			return null;
 		}
 	}
@@ -499,7 +779,7 @@ class FLOSC_WP_AI_Client {
 
 		try {
 			AiClient::defaultRegistry()->setProviderRequestAuthentication( $wp_id, $auth );
-		} catch ( Exception $e ) {
+		} catch ( Throwable $e ) {
 			return new WP_Error( 'flosc_wp_ai_auth_bind', $e->getMessage() );
 		}
 		return true;

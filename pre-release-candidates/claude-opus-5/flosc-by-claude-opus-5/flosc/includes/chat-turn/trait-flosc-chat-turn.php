@@ -545,9 +545,26 @@ trait FLOSC_Chat_Turn_Trait {
 			$flosc_response_source = 'concierge';
 		}
 
+		/*
+		 * DA1 catalog path: content-agnostic and access-aware across all phases.
+		 * Rows are filtered by Status, parent Status, Flow Scope and VGM before
+		 * any catalog payload can reach the conversational layer. Restored in
+		 * v92. It is asked first because it is the one that knows what this
+		 * visitor is allowed to be told; the composition path below answers
+		 * only where this one declines.
+		 */
+		$da1_catalog_reply = $this->flosc_build_da1_catalog_reply(
+			$message,
+			$flow_id,
+			$ivr_file,
+			(string) ( $eval_context['access_level'] ?? 'visitor' )
+		);
+
 		// DA1 compositions path: available across all phases and all user levels.
 		// This gives deterministic, bounded catalog answers before IVR/AI fallbacks.
-		$da1_catalog_reply = $this->flosc_build_da1_composition_reply( $message, $flow_id, $ivr_file );
+		if ( '' === $da1_catalog_reply ) {
+			$da1_catalog_reply = $this->flosc_build_da1_composition_reply( $message, $flow_id, $ivr_file );
+		}
 		if ( '' !== $da1_catalog_reply ) {
 			$response_message      = array(
 				'content'          => $da1_catalog_reply,

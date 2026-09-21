@@ -1,0 +1,1098 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  FLOSC sample — Vegan Latvian Kitchen
+  Bodies restored from virtulielatviei.WordPress.2026-08-10.xml export.
+  Model: 14 recipes · 2 visitor · 2 guest · 10 member + PDF
+  Member: $10 one-time or access code garšīgs
+  PDF: https://www.vlat.lv/wp-content/uploads/2026/08/vegan-latvian-kitchen-cookbook-r.pdf
+-->
+<rss version="2.0"
+	xmlns:excerpt="http://wordpress.org/export/1.2/excerpt/"
+	xmlns:content="http://purl.org/rss/1.0/modules/content/"
+	xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+	xmlns:wp="http://wordpress.org/export/1.2/">
+
+<channel>
+	<title>Vegan Latvian Kitchen — FLOSC sample</title>
+	<link>https://example.com</link>
+	<description>Vegan Latvian Kitchen — 14 recipes (2 visitor · 2 guest · 10 member) + PDF</description>
+	<pubDate>Sat, 09 Aug 2026 12:00:00 +0000</pubDate>
+	<language>en-US</language>
+	<wp:wxr_version>1.2</wp:wxr_version>
+	<wp:base_site_url>https://example.com</wp:base_site_url>
+	<wp:base_blog_url>https://example.com</wp:base_blog_url>
+
+	<wp:category>
+		<wp:term_id>9101</wp:term_id>
+		<wp:category_nicename><![CDATA[vegan_latvian_recipes]]></wp:category_nicename>
+		<wp:category_parent></wp:category_parent>
+		<wp:cat_name><![CDATA[Vegan Latvian Recipes]]></wp:cat_name>
+		<wp:category_description><![CDATA[Vegan Latvian Kitchen — 14 recipes freeline ladder + member PDF.]]></wp:category_description>
+		<wp:termmeta>
+			<wp:meta_key><![CDATA[_flosc_protected]]></wp:meta_key>
+			<wp:meta_value><![CDATA[yes]]></wp:meta_value>
+		</wp:termmeta>
+	</wp:category>
+
+	
+<item>
+		<title><![CDATA[Pelēkie zirņi ar “speķi”]]></title>
+		<link>https://example.com/pelekie-zirni-ar-speki/</link>
+		<pubDate>Sat, 09 Aug 2026 12:00:00 +0000</pubDate>
+		<dc:creator><![CDATA[admin]]></dc:creator>
+		<guid isPermaLink="false">https://example.com/?p=2001</guid>
+		<description></description>
+		<content:encoded><![CDATA[<p><strong>Grey peas with smoky onions, mushrooms and tofu</strong></p>
+<p>Latvia’s national dish — veganized. Smoky “speķis” from mushrooms and tofu over tender grey peas.</p>
+<p><em>Access tier: Visitor freeline. Part of Vegan Latvian Kitchen (14 recipes · 2 visitor · 2 guest · all for members + PDF).</em></p>
+
+<!--flosc_read_more-->
+
+<h2>Ingredients</h2>
+<ul>
+<li>500 g dried Latvian grey peas</li>
+<li>2 large onions, diced</li>
+<li>250 g mushrooms, preferably brown</li>
+<li>150 g smoked tofu</li>
+<li>2 tbsp rapeseed or sunflower oil</li>
+<li>1 tsp smoked paprika</li>
+<li>1–2 tsp liquid smoke</li>
+<li>Black pepper, salt</li>
+</ul>
+
+<h2>Method</h2>
+<ol>
+<li>Soak the grey peas overnight.</li>
+<li>Boil in fresh salted water until tender, about 45–60 minutes.</li>
+<li>Dice mushrooms and smoked tofu small.</li>
+<li>Fry onions slowly in oil until golden.</li>
+<li>Add mushrooms; cook until browned.</li>
+<li>Add tofu, smoked paprika and liquid smoke.</li>
+<li>Season with black pepper; fry until dark and slightly crisp.</li>
+<li>Spoon the smoky mixture over hot peas.</li>
+</ol>
+<p><em>Key:</em> the topping should be salty, rich and strongly smoky — the contrast speķis used to give.</p>
+
+<p><em>Fully plant-based adaptation for FLOSC client UAT. Adjust salt, smoke, and timing to taste.</em></p>
+]]></content:encoded>
+		<excerpt:encoded><![CDATA[Latvia’s national dish — veganized. Smoky “speķis” from mushrooms and tofu over tender grey peas.]]></excerpt:encoded>
+		<wp:post_id>2001</wp:post_id>
+		<wp:post_date><![CDATA[2026-08-09 12:00:00]]></wp:post_date>
+		<wp:post_date_gmt><![CDATA[2026-08-09 12:00:00]]></wp:post_date_gmt>
+		<wp:post_modified><![CDATA[2026-08-09 12:00:00]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-08-09 12:00:00]]></wp:post_modified_gmt>
+		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
+		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
+		<wp:post_name><![CDATA[pelekie-zirni-ar-speki]]></wp:post_name>
+		<wp:status><![CDATA[publish]]></wp:status>
+		<wp:post_parent>0</wp:post_parent>
+		<wp:menu_order>1</wp:menu_order>
+		<wp:post_type><![CDATA[post]]></wp:post_type>
+		<wp:post_password><![CDATA[]]></wp:post_password>
+		<wp:is_sticky>0</wp:is_sticky>
+		<category domain="category" nicename="vegan_latvian_recipes"><![CDATA[Vegan Latvian Recipes]]></category>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_lesson_number]]></wp:meta_key>
+			<wp:meta_value><![CDATA[1]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_protection_mode]]></wp:meta_key>
+			<wp:meta_value><![CDATA[full]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_public_post]]></wp:meta_key>
+			<wp:meta_value><![CDATA[yes]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_visibility]]></wp:meta_key>
+			<wp:meta_value><![CDATA[public]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_vgm_tier]]></wp:meta_key>
+			<wp:meta_value><![CDATA[visitor]]></wp:meta_value>
+		</wp:postmeta>
+	</item>
+	
+<item>
+		<title><![CDATA[Kartupeļu pankūkas]]></title>
+		<link>https://example.com/kartupelu-pankukas/</link>
+		<pubDate>Sat, 09 Aug 2026 12:00:00 +0000</pubDate>
+		<dc:creator><![CDATA[admin]]></dc:creator>
+		<guid isPermaLink="false">https://example.com/?p=2002</guid>
+		<description></description>
+		<content:encoded><![CDATA[<p><strong>Latvian potato pancakes</strong></p>
+<p>Crispy grated potato pancakes — everyday comfort, member library.</p>
+<p><em>Access tier: Member / full cookbook. Part of Vegan Latvian Kitchen (14 recipes · 2 visitor · 2 guest · all for members + PDF).</em></p>
+
+<p><em>Open to everyone — visitor freeline recipe 2 of 2.</em></p>
+
+<!--flosc_read_more-->
+
+<h2>Ingredients</h2>
+<ul>
+<li>1 kg potatoes</li>
+<li>1 small onion</li>
+<li>3 tbsp flour</li>
+<li>1 tbsp potato starch</li>
+<li>1 tsp salt, black pepper</li>
+<li>Oil for frying</li>
+</ul>
+
+<h2>Method</h2>
+<ol>
+<li>Finely grate potatoes and onion; squeeze only some liquid so mixture stays moist.</li>
+<li>Stir in flour, potato starch, salt and pepper.</li>
+<li>Fry thin pancakes in hot oil until deeply golden and crispy.</li>
+<li>Serve with vegan sour cream, mushroom sauce or applesauce.</li>
+</ol>
+
+<p><em>Fully plant-based adaptation for FLOSC client UAT. Adjust salt, smoke, and timing to taste.</em></p>
+]]></content:encoded>
+		<excerpt:encoded><![CDATA[Crispy grated potato pancakes — everyday comfort, member library.]]></excerpt:encoded>
+		<wp:post_id>2002</wp:post_id>
+		<wp:post_date><![CDATA[2026-08-09 12:00:00]]></wp:post_date>
+		<wp:post_date_gmt><![CDATA[2026-08-09 12:00:00]]></wp:post_date_gmt>
+		<wp:post_modified><![CDATA[2026-08-09 12:00:00]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-08-09 12:00:00]]></wp:post_modified_gmt>
+		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
+		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
+		<wp:post_name><![CDATA[kartupelu-pankukas]]></wp:post_name>
+		<wp:status><![CDATA[publish]]></wp:status>
+		<wp:post_parent>0</wp:post_parent>
+		<wp:menu_order>2</wp:menu_order>
+		<wp:post_type><![CDATA[post]]></wp:post_type>
+		<wp:post_password><![CDATA[]]></wp:post_password>
+		<wp:is_sticky>0</wp:is_sticky>
+		<category domain="category" nicename="vegan_latvian_recipes"><![CDATA[Vegan Latvian Recipes]]></category>
+	
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_lesson_number]]></wp:meta_key>
+			<wp:meta_value><![CDATA[2]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_protection_mode]]></wp:meta_key>
+			<wp:meta_value><![CDATA[full]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_public_post]]></wp:meta_key>
+			<wp:meta_value><![CDATA[yes]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_visibility]]></wp:meta_key>
+			<wp:meta_value><![CDATA[public]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_vgm_tier]]></wp:meta_key>
+			<wp:meta_value><![CDATA[visitor]]></wp:meta_value>
+		</wp:postmeta>
+
+	</item>
+	
+<item>
+		<title><![CDATA[Ķimeņu siers (Jāņu siers)]]></title>
+		<link>https://example.com/kimenu-siers-janu-siers/</link>
+		<pubDate>Sat, 09 Aug 2026 12:00:00 +0000</pubDate>
+		<dc:creator><![CDATA[admin]]></dc:creator>
+		<guid isPermaLink="false">https://example.com/?p=2003</guid>
+		<description></description>
+		<content:encoded><![CDATA[<p><strong>Plant-based caraway cheese for Midsummer</strong></p>
+<p>Jāņi on a plate — caraway “cheese” without dairy. Login freeline sample.</p>
+<p><em>Access tier: Guest freeline (login). Part of Vegan Latvian Kitchen (14 recipes · 2 visitor · 2 guest · all for members + PDF).</em></p>
+
+<!--flosc_read_more-->
+
+<h2>Ingredients</h2>
+<ul>
+<li>500 g firm tofu</li>
+<li>250 g unsweetened soy yogurt</li>
+<li>3 tbsp tapioca starch</li>
+<li>2 tbsp potato starch</li>
+<li>3 tbsp nutritional yeast</li>
+<li>3 tbsp vegan butter</li>
+<li>2 tbsp lemon juice</li>
+<li>2–3 tsp caraway seeds</li>
+<li>1½ tsp salt</li>
+<li>¼ tsp turmeric</li>
+</ul>
+
+<h2>Method</h2>
+<ol>
+<li>Blend everything except caraway until completely smooth.</li>
+<li>Stir in caraway seeds.</li>
+<li>Cook in a heavy saucepan, stirring constantly, until very thick and stretchy.</li>
+<li>Transfer into a cheesecloth-lined bowl; fold cloth; weight lightly.</li>
+<li>Refrigerate overnight; unmold and slice.</li>
+</ol>
+
+<p><em>Fully plant-based adaptation for FLOSC client UAT. Adjust salt, smoke, and timing to taste.</em></p>
+]]></content:encoded>
+		<excerpt:encoded><![CDATA[Jāņi on a plate — caraway “cheese” without dairy. Login freeline sample.]]></excerpt:encoded>
+		<wp:post_id>2003</wp:post_id>
+		<wp:post_date><![CDATA[2026-08-09 12:00:00]]></wp:post_date>
+		<wp:post_date_gmt><![CDATA[2026-08-09 12:00:00]]></wp:post_date_gmt>
+		<wp:post_modified><![CDATA[2026-08-09 12:00:00]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-08-09 12:00:00]]></wp:post_modified_gmt>
+		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
+		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
+		<wp:post_name><![CDATA[kimenu-siers-janu-siers]]></wp:post_name>
+		<wp:status><![CDATA[publish]]></wp:status>
+		<wp:post_parent>0</wp:post_parent>
+		<wp:menu_order>3</wp:menu_order>
+		<wp:post_type><![CDATA[post]]></wp:post_type>
+		<wp:post_password><![CDATA[]]></wp:post_password>
+		<wp:is_sticky>0</wp:is_sticky>
+		<category domain="category" nicename="vegan_latvian_recipes"><![CDATA[Vegan Latvian Recipes]]></category>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_lesson_number]]></wp:meta_key>
+			<wp:meta_value><![CDATA[3]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_protection_mode]]></wp:meta_key>
+			<wp:meta_value><![CDATA[protected]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_visibility]]></wp:meta_key>
+			<wp:meta_value><![CDATA[hidden]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_vgm_tier]]></wp:meta_key>
+			<wp:meta_value><![CDATA[guest]]></wp:meta_value>
+		</wp:postmeta>
+	</item>
+	
+<item>
+		<title><![CDATA[Aukstā zupa]]></title>
+		<link>https://example.com/auksta-zupa/</link>
+		<pubDate>Sat, 09 Aug 2026 12:00:00 +0000</pubDate>
+		<dc:creator><![CDATA[admin]]></dc:creator>
+		<guid isPermaLink="false">https://example.com/?p=2004</guid>
+		<description></description>
+		<content:encoded><![CDATA[<p><strong>Latvian cold beet soup</strong></p>
+<p>Pink summer classic — plant kefir, beets, cucumber, dill. Second guest freeline recipe.</p>
+<p><em>Access tier: Guest freeline (login). Part of Vegan Latvian Kitchen (14 recipes · 2 visitor · 2 guest · all for members + PDF).</em></p>
+
+<!--flosc_read_more-->
+
+<h2>Ingredients</h2>
+<ul>
+<li>500 g cooked or pickled beetroot, grated</li>
+<li>750 ml unsweetened plant kefir, or 500 g plain soy yogurt plus 250 ml cold water</li>
+<li>1 large cucumber, diced</li>
+<li>5 spring onions</li>
+<li>A large handful of fresh dill</li>
+<li>1 tbsp mustard</li>
+<li>1–2 tbsp beet pickle liquid or vinegar</li>
+<li>Salt and black pepper</li>
+<li>½ tsp sugar, optional</li>
+<li>Firm tofu and kala namak, optional egg stand-in</li>
+</ul>
+
+<h2>Method</h2>
+<ol>
+<li>Combine all ingredients in a large bowl.</li>
+<li>Season to taste.</li>
+<li>Refrigerate at least one hour.</li>
+<li>Serve very cold with boiled new potatoes.</li>
+</ol>
+
+<p><em>Fully plant-based adaptation for FLOSC client UAT. Adjust salt, smoke, and timing to taste.</em></p>
+]]></content:encoded>
+		<excerpt:encoded><![CDATA[Pink summer classic — plant kefir, beets, cucumber, dill. Second guest freeline recipe.]]></excerpt:encoded>
+		<wp:post_id>2004</wp:post_id>
+		<wp:post_date><![CDATA[2026-08-09 12:00:00]]></wp:post_date>
+		<wp:post_date_gmt><![CDATA[2026-08-09 12:00:00]]></wp:post_date_gmt>
+		<wp:post_modified><![CDATA[2026-08-09 12:00:00]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-08-09 12:00:00]]></wp:post_modified_gmt>
+		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
+		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
+		<wp:post_name><![CDATA[auksta-zupa]]></wp:post_name>
+		<wp:status><![CDATA[publish]]></wp:status>
+		<wp:post_parent>0</wp:post_parent>
+		<wp:menu_order>4</wp:menu_order>
+		<wp:post_type><![CDATA[post]]></wp:post_type>
+		<wp:post_password><![CDATA[]]></wp:post_password>
+		<wp:is_sticky>0</wp:is_sticky>
+		<category domain="category" nicename="vegan_latvian_recipes"><![CDATA[Vegan Latvian Recipes]]></category>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_lesson_number]]></wp:meta_key>
+			<wp:meta_value><![CDATA[4]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_protection_mode]]></wp:meta_key>
+			<wp:meta_value><![CDATA[protected]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_visibility]]></wp:meta_key>
+			<wp:meta_value><![CDATA[hidden]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_vgm_tier]]></wp:meta_key>
+			<wp:meta_value><![CDATA[guest]]></wp:meta_value>
+		</wp:postmeta>
+	</item>
+	
+<item>
+		<title><![CDATA[Rasols]]></title>
+		<link>https://example.com/rasols/</link>
+		<pubDate>Sat, 09 Aug 2026 12:00:00 +0000</pubDate>
+		<dc:creator><![CDATA[admin]]></dc:creator>
+		<guid isPermaLink="false">https://example.com/?p=2005</guid>
+		<description></description>
+		<content:encoded><![CDATA[<p><strong>Latvian potato salad (vegan)</strong></p>
+<p>Party salad — potatoes, pickles, peas, smoky tofu, vegan mayo. Full cookbook unlock.</p>
+<p><em>Access tier: Member / full cookbook. Part of Vegan Latvian Kitchen (14 recipes · 2 visitor · 2 guest · all for members + PDF).</em></p>
+
+<!--flosc_read_more-->
+
+<h2>Ingredients</h2>
+<ul>
+<li>Diced potatoes and carrots, boiled tender</li>
+<li>Peas</li>
+<li>Chopped dill pickles</li>
+<li>Diced smoked tofu or marinated tempeh</li>
+<li>Turmeric-seasoned crumbled firm tofu (“egg”)</li>
+<li>Vegan mayo, salt, pepper, pickle brine</li>
+</ul>
+
+<h2>Method</h2>
+<ol>
+<li>Boil diced potatoes and carrots until tender; cool.</li>
+<li>Fold in peas, pickles, smoked tofu, and turmeric tofu crumble.</li>
+<li>Bind with vegan mayo; season with salt, pepper, and a little pickle brine.</li>
+<li>Chill before serving.</li>
+</ol>
+
+<p><em>Fully plant-based adaptation for FLOSC client UAT. Adjust salt, smoke, and timing to taste.</em></p>
+]]></content:encoded>
+		<excerpt:encoded><![CDATA[Party salad — potatoes, pickles, peas, smoky tofu, vegan mayo. Full cookbook unlock.]]></excerpt:encoded>
+		<wp:post_id>2005</wp:post_id>
+		<wp:post_date><![CDATA[2026-08-09 12:00:00]]></wp:post_date>
+		<wp:post_date_gmt><![CDATA[2026-08-09 12:00:00]]></wp:post_date_gmt>
+		<wp:post_modified><![CDATA[2026-08-09 12:00:00]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-08-09 12:00:00]]></wp:post_modified_gmt>
+		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
+		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
+		<wp:post_name><![CDATA[rasols]]></wp:post_name>
+		<wp:status><![CDATA[publish]]></wp:status>
+		<wp:post_parent>0</wp:post_parent>
+		<wp:menu_order>5</wp:menu_order>
+		<wp:post_type><![CDATA[post]]></wp:post_type>
+		<wp:post_password><![CDATA[]]></wp:post_password>
+		<wp:is_sticky>0</wp:is_sticky>
+		<category domain="category" nicename="vegan_latvian_recipes"><![CDATA[Vegan Latvian Recipes]]></category>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_lesson_number]]></wp:meta_key>
+			<wp:meta_value><![CDATA[5]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_protection_mode]]></wp:meta_key>
+			<wp:meta_value><![CDATA[protected]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_visibility]]></wp:meta_key>
+			<wp:meta_value><![CDATA[hidden]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_vgm_tier]]></wp:meta_key>
+			<wp:meta_value><![CDATA[member]]></wp:meta_value>
+		</wp:postmeta>
+	</item>
+	
+<item>
+		<title><![CDATA[Vegānie pīrāgi]]></title>
+		<link>https://example.com/vegan-piragi/</link>
+		<pubDate>Sat, 09 Aug 2026 12:00:00 +0000</pubDate>
+		<dc:creator><![CDATA[admin]]></dc:creator>
+		<guid isPermaLink="false">https://example.com/?p=2006</guid>
+		<description></description>
+		<content:encoded><![CDATA[<p><strong>Latvian crescent buns with smoky filling</strong></p>
+<p>Classic celebration buns — yeast dough, smoky mushroom–tofu filling, no bacon required.</p>
+<p><em>Member access — full site recipe 6 of 14. Members also get the cookbook PDF.</em></p>
+
+<!--flosc_read_more-->
+
+<h2>Ingredients</h2>
+<h4>Dough</h4><ul>
+<li>500 ml unsweetened soy milk</li>
+<li>100 g vegan butter</li>
+<li>2 tbsp sugar</li>
+<li>10 g dry yeast</li>
+<li>100 g unsweetened soy yogurt</li>
+<li>About 850–950 g wheat flour</li>
+<li>1 tbsp salt</li>
+</ul>
+<h4>Filling</h4><ul>
+<li>300 g smoked tofu</li>
+<li>250 g mushrooms</li>
+<li>2 onions</li>
+<li>2 tbsp oil</li>
+<li>Black pepper</li>
+<li>1 tsp liquid smoke, optional</li>
+</ul>
+
+<h2>Method</h2>
+<ol>
+<li>Warm soy milk until lukewarm; add sugar and yeast; rest ~10 minutes.</li>
+<li>Mix in melted vegan butter, yogurt and salt.</li>
+<li>Knead in flour to a soft dough; rise until doubled.</li>
+<li>Finely dice filling; fry until browned and fairly dry.</li>
+<li>Roll dough into small circles; add about a tablespoon of filling.</li>
+<li>Fold into crescent pīrāgs shapes; pinch shut.</li>
+<li>Brush with soy milk; bake at 200°C about 15–18 minutes until golden.</li>
+</ol>
+
+<p><em>Fully plant-based adaptation for FLOSC client UAT. Adjust salt, smoke, and timing to taste.</em></p>
+]]></content:encoded>
+		<excerpt:encoded><![CDATA[Classic celebration buns — yeast dough, smoky mushroom–tofu filling, no bacon required.]]></excerpt:encoded>
+		<wp:post_id>2006</wp:post_id>
+		<wp:post_date><![CDATA[2026-08-09 12:00:00]]></wp:post_date>
+		<wp:post_date_gmt><![CDATA[2026-08-09 12:00:00]]></wp:post_date_gmt>
+		<wp:post_modified><![CDATA[2026-08-09 12:00:00]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-08-09 12:00:00]]></wp:post_modified_gmt>
+		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
+		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
+		<wp:post_name><![CDATA[vegan-piragi]]></wp:post_name>
+		<wp:status><![CDATA[publish]]></wp:status>
+		<wp:post_parent>0</wp:post_parent>
+		<wp:menu_order>6</wp:menu_order>
+		<wp:post_type><![CDATA[post]]></wp:post_type>
+		<wp:post_password><![CDATA[]]></wp:post_password>
+		<wp:is_sticky>0</wp:is_sticky>
+		<category domain="category" nicename="vegan_latvian_recipes"><![CDATA[Vegan Latvian Recipes]]></category>
+	
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_lesson_number]]></wp:meta_key>
+			<wp:meta_value><![CDATA[6]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_protection_mode]]></wp:meta_key>
+			<wp:meta_value><![CDATA[protected]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_visibility]]></wp:meta_key>
+			<wp:meta_value><![CDATA[hidden]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_vgm_tier]]></wp:meta_key>
+			<wp:meta_value><![CDATA[member]]></wp:meta_value>
+		</wp:postmeta>
+
+	</item>
+	
+<item>
+		<title><![CDATA[Sklandrausis]]></title>
+		<link>https://example.com/sklandrausis/</link>
+		<pubDate>Sat, 09 Aug 2026 12:00:00 +0000</pubDate>
+		<dc:creator><![CDATA[admin]]></dc:creator>
+		<guid isPermaLink="false">https://example.com/?p=2007</guid>
+		<description></description>
+		<content:encoded><![CDATA[<p><strong>Kurzeme rye tarts with potato and carrot filling</strong></p>
+<p>Open rye tarts — potato layer, sweet carrot top. Livonian classic, full access.</p>
+<p><em>Access tier: Member / full cookbook. Part of Vegan Latvian Kitchen (14 recipes · 2 visitor · 2 guest · all for members + PDF).</em></p>
+
+<!--flosc_read_more-->
+
+<h2>Ingredients</h2>
+<h4>Rye shells</h4><ul>
+<li>250 g rye flour</li>
+<li>50 g wheat flour</li>
+<li>40 ml oil or melted vegan butter</li>
+<li>150–170 ml warm water</li>
+<li>½ tsp salt</li>
+</ul>
+<h4>Potato layer</h4><ul>
+<li>400 g potatoes</li>
+<li>60 ml unsweetened soy milk</li>
+<li>Salt</li>
+</ul>
+<h4>Carrot layer</h4><ul>
+<li>500 g carrots</li>
+<li>2–3 tbsp sugar</li>
+<li>100 g soy yogurt or vegan sour cream</li>
+<li>½ tsp caraway seeds</li>
+<li>Pinch of cinnamon</li>
+</ul>
+
+<h2>Method</h2>
+<ol>
+<li>Boil potatoes and carrots separately.</li>
+<li>Mash potatoes with soy milk and salt.</li>
+<li>Purée carrots with sugar, yogurt, caraway and cinnamon.</li>
+<li>Mix rye-shell ingredients into a firm dough; form tart shells with raised edges.</li>
+<li>Potato layer first, then carrot mixture.</li>
+<li>Bake at 190°C about 20–25 minutes; serve cool or slightly warm.</li>
+</ol>
+
+<p><em>Fully plant-based adaptation for FLOSC client UAT. Adjust salt, smoke, and timing to taste.</em></p>
+]]></content:encoded>
+		<excerpt:encoded><![CDATA[Open rye tarts — potato layer, sweet carrot top. Livonian classic, full access.]]></excerpt:encoded>
+		<wp:post_id>2007</wp:post_id>
+		<wp:post_date><![CDATA[2026-08-09 12:00:00]]></wp:post_date>
+		<wp:post_date_gmt><![CDATA[2026-08-09 12:00:00]]></wp:post_date_gmt>
+		<wp:post_modified><![CDATA[2026-08-09 12:00:00]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-08-09 12:00:00]]></wp:post_modified_gmt>
+		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
+		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
+		<wp:post_name><![CDATA[sklandrausis]]></wp:post_name>
+		<wp:status><![CDATA[publish]]></wp:status>
+		<wp:post_parent>0</wp:post_parent>
+		<wp:menu_order>7</wp:menu_order>
+		<wp:post_type><![CDATA[post]]></wp:post_type>
+		<wp:post_password><![CDATA[]]></wp:post_password>
+		<wp:is_sticky>0</wp:is_sticky>
+		<category domain="category" nicename="vegan_latvian_recipes"><![CDATA[Vegan Latvian Recipes]]></category>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_lesson_number]]></wp:meta_key>
+			<wp:meta_value><![CDATA[7]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_protection_mode]]></wp:meta_key>
+			<wp:meta_value><![CDATA[protected]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_visibility]]></wp:meta_key>
+			<wp:meta_value><![CDATA[hidden]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_vgm_tier]]></wp:meta_key>
+			<wp:meta_value><![CDATA[member]]></wp:meta_value>
+		</wp:postmeta>
+	</item>
+	
+<item>
+		<title><![CDATA[Rupjmaizes kārtojums]]></title>
+		<link>https://example.com/rupjmaizes-kartojums/</link>
+		<pubDate>Sat, 09 Aug 2026 12:00:00 +0000</pubDate>
+		<dc:creator><![CDATA[admin]]></dc:creator>
+		<guid isPermaLink="false">https://example.com/?p=2008</guid>
+		<description></description>
+		<content:encoded><![CDATA[<p><strong>Layered Latvian rye-bread dessert</strong></p>
+<p>Dark rye crumbs, berry jam, plant cream — layered and chilled.</p>
+<p><em>Access tier: Member / full cookbook. Part of Vegan Latvian Kitchen (14 recipes · 2 visitor · 2 guest · all for members + PDF).</em></p>
+
+<!--flosc_read_more-->
+
+<h2>Ingredients</h2>
+<ul>
+<li>300 g dark Latvian rye bread</li>
+<li>3 tbsp brown sugar</li>
+<li>1 tsp cinnamon</li>
+<li>300 g lingonberry, cranberry or blackcurrant jam</li>
+<li>400 ml vegan whipping cream</li>
+<li>2 tbsp icing sugar, vanilla</li>
+</ul>
+
+<h2>Method</h2>
+<ol>
+<li>Dry rye bread in the oven until crisp; grind into coarse crumbs.</li>
+<li>Mix crumbs with brown sugar and cinnamon.</li>
+<li>Whip vegan cream with icing sugar and vanilla.</li>
+<li>Layer rye crumbs, berry jam and cream; repeat.</li>
+<li>Refrigerate several hours or overnight.</li>
+</ol>
+<p><em>Use genuine dark Latvian rupjmaize when you can.</em></p>
+
+<p><em>Fully plant-based adaptation for FLOSC client UAT. Adjust salt, smoke, and timing to taste.</em></p>
+]]></content:encoded>
+		<excerpt:encoded><![CDATA[Dark rye crumbs, berry jam, plant cream — layered and chilled.]]></excerpt:encoded>
+		<wp:post_id>2008</wp:post_id>
+		<wp:post_date><![CDATA[2026-08-09 12:00:00]]></wp:post_date>
+		<wp:post_date_gmt><![CDATA[2026-08-09 12:00:00]]></wp:post_date_gmt>
+		<wp:post_modified><![CDATA[2026-08-09 12:00:00]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-08-09 12:00:00]]></wp:post_modified_gmt>
+		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
+		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
+		<wp:post_name><![CDATA[rupjmaizes-kartojums]]></wp:post_name>
+		<wp:status><![CDATA[publish]]></wp:status>
+		<wp:post_parent>0</wp:post_parent>
+		<wp:menu_order>8</wp:menu_order>
+		<wp:post_type><![CDATA[post]]></wp:post_type>
+		<wp:post_password><![CDATA[]]></wp:post_password>
+		<wp:is_sticky>0</wp:is_sticky>
+		<category domain="category" nicename="vegan_latvian_recipes"><![CDATA[Vegan Latvian Recipes]]></category>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_lesson_number]]></wp:meta_key>
+			<wp:meta_value><![CDATA[8]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_protection_mode]]></wp:meta_key>
+			<wp:meta_value><![CDATA[protected]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_visibility]]></wp:meta_key>
+			<wp:meta_value><![CDATA[hidden]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_vgm_tier]]></wp:meta_key>
+			<wp:meta_value><![CDATA[member]]></wp:meta_value>
+		</wp:postmeta>
+	</item>
+	
+<item>
+		<title><![CDATA[Skābeņu zupa]]></title>
+		<link>https://example.com/skabenu-zupa/</link>
+		<pubDate>Sat, 09 Aug 2026 12:00:00 +0000</pubDate>
+		<dc:creator><![CDATA[admin]]></dc:creator>
+		<guid isPermaLink="false">https://example.com/?p=2009</guid>
+		<description></description>
+		<content:encoded><![CDATA[<p><strong>Latvian sorrel soup</strong></p>
+<p>Spring green soup — sorrel, potatoes, smoky tofu, plant cream finish.</p>
+<p><em>Access tier: Member / full cookbook. Part of Vegan Latvian Kitchen (14 recipes · 2 visitor · 2 guest · all for members + PDF).</em></p>
+
+<!--flosc_read_more-->
+
+<h2>Ingredients</h2>
+<ul>
+<li>400–500 g sorrel</li>
+<li>5 potatoes</li>
+<li>1 onion</li>
+<li>150 g smoked tofu</li>
+<li>2 litres vegetable stock</li>
+<li>1 bay leaf, black pepper, salt</li>
+<li>1 tbsp oil</li>
+<li>Vegan sour cream, fresh dill</li>
+</ul>
+
+<h2>Method</h2>
+<ol>
+<li>Dice and fry smoked tofu until browned; remove.</li>
+<li>Fry onion briefly; add stock, bay leaf and diced potatoes.</li>
+<li>Cook until potatoes are tender.</li>
+<li>Chop sorrel; add for final 3–5 minutes.</li>
+<li>Return tofu; season; serve with vegan sour cream and dill.</li>
+</ol>
+
+<p><em>Fully plant-based adaptation for FLOSC client UAT. Adjust salt, smoke, and timing to taste.</em></p>
+]]></content:encoded>
+		<excerpt:encoded><![CDATA[Spring green soup — sorrel, potatoes, smoky tofu, plant cream finish.]]></excerpt:encoded>
+		<wp:post_id>2009</wp:post_id>
+		<wp:post_date><![CDATA[2026-08-09 12:00:00]]></wp:post_date>
+		<wp:post_date_gmt><![CDATA[2026-08-09 12:00:00]]></wp:post_date_gmt>
+		<wp:post_modified><![CDATA[2026-08-09 12:00:00]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-08-09 12:00:00]]></wp:post_modified_gmt>
+		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
+		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
+		<wp:post_name><![CDATA[skabenu-zupa]]></wp:post_name>
+		<wp:status><![CDATA[publish]]></wp:status>
+		<wp:post_parent>0</wp:post_parent>
+		<wp:menu_order>9</wp:menu_order>
+		<wp:post_type><![CDATA[post]]></wp:post_type>
+		<wp:post_password><![CDATA[]]></wp:post_password>
+		<wp:is_sticky>0</wp:is_sticky>
+		<category domain="category" nicename="vegan_latvian_recipes"><![CDATA[Vegan Latvian Recipes]]></category>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_lesson_number]]></wp:meta_key>
+			<wp:meta_value><![CDATA[9]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_protection_mode]]></wp:meta_key>
+			<wp:meta_value><![CDATA[protected]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_visibility]]></wp:meta_key>
+			<wp:meta_value><![CDATA[hidden]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_vgm_tier]]></wp:meta_key>
+			<wp:meta_value><![CDATA[member]]></wp:meta_value>
+		</wp:postmeta>
+	</item>
+	
+<item>
+		<title><![CDATA[Debesmanna]]></title>
+		<link>https://example.com/debesmanna/</link>
+		<pubDate>Sat, 09 Aug 2026 12:00:00 +0000</pubDate>
+		<dc:creator><![CDATA[admin]]></dc:creator>
+		<guid isPermaLink="false">https://example.com/?p=2010</guid>
+		<description></description>
+		<content:encoded><![CDATA[<p><strong>Whipped semolina berry dessert</strong></p>
+<p>Cloud-light berry dessert — aquafaba instead of egg whites.</p>
+<p><em>Access tier: Member / full cookbook. Part of Vegan Latvian Kitchen (14 recipes · 2 visitor · 2 guest · all for members + PDF).</em></p>
+
+<!--flosc_read_more-->
+
+<h2>Ingredients</h2>
+<ul>
+<li>Semolina</li>
+<li>Cranberry or lingonberry juice</li>
+<li>Aquafaba (chickpea brine)</li>
+<li>Sugar</li>
+<li>Berry sauce for serving</li>
+</ul>
+
+<h2>Method</h2>
+<ol>
+<li>Cook semolina with berry juice until thickened; cool slightly.</li>
+<li>Whip aquafaba to stiff peaks with a little sugar.</li>
+<li>Fold together and whip until light and fluffy.</li>
+<li>Chill; serve with berry sauce.</li>
+</ol>
+
+<p><em>Fully plant-based adaptation for FLOSC client UAT. Adjust salt, smoke, and timing to taste.</em></p>
+]]></content:encoded>
+		<excerpt:encoded><![CDATA[Cloud-light berry dessert — aquafaba instead of egg whites.]]></excerpt:encoded>
+		<wp:post_id>2010</wp:post_id>
+		<wp:post_date><![CDATA[2026-08-09 12:00:00]]></wp:post_date>
+		<wp:post_date_gmt><![CDATA[2026-08-09 12:00:00]]></wp:post_date_gmt>
+		<wp:post_modified><![CDATA[2026-08-09 12:00:00]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-08-09 12:00:00]]></wp:post_modified_gmt>
+		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
+		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
+		<wp:post_name><![CDATA[debesmanna]]></wp:post_name>
+		<wp:status><![CDATA[publish]]></wp:status>
+		<wp:post_parent>0</wp:post_parent>
+		<wp:menu_order>10</wp:menu_order>
+		<wp:post_type><![CDATA[post]]></wp:post_type>
+		<wp:post_password><![CDATA[]]></wp:post_password>
+		<wp:is_sticky>0</wp:is_sticky>
+		<category domain="category" nicename="vegan_latvian_recipes"><![CDATA[Vegan Latvian Recipes]]></category>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_lesson_number]]></wp:meta_key>
+			<wp:meta_value><![CDATA[10]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_protection_mode]]></wp:meta_key>
+			<wp:meta_value><![CDATA[protected]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_visibility]]></wp:meta_key>
+			<wp:meta_value><![CDATA[hidden]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_vgm_tier]]></wp:meta_key>
+			<wp:meta_value><![CDATA[member]]></wp:meta_value>
+		</wp:postmeta>
+	</item>
+	
+<item>
+		<title><![CDATA[Kotletes]]></title>
+		<link>https://example.com/vegan-kotletes/</link>
+		<pubDate>Sat, 09 Aug 2026 12:00:00 +0000</pubDate>
+		<dc:creator><![CDATA[admin]]></dc:creator>
+		<guid isPermaLink="false">https://example.com/?p=2011</guid>
+		<description></description>
+		<content:encoded><![CDATA[<p><strong>Plant-based Latvian-style patties</strong></p>
+<p>Home-style kotletes — lentils, mushrooms, herbs, pan-fried crisp.</p>
+<p><em>Access tier: Member / full cookbook. Part of Vegan Latvian Kitchen (14 recipes · 2 visitor · 2 guest · all for members + PDF).</em></p>
+
+<!--flosc_read_more-->
+
+<h2>Ingredients</h2>
+<ul>
+<li>400 g cooked lentils, mushrooms, or mix + cooked potato or oats for binding</li>
+<li>1–2 onions, grated/sautéed</li>
+<li>Flour or breadcrumbs</li>
+<li>Salt, pepper, dill, parsley, optional smoked paprika</li>
+<li>Oil for frying</li>
+</ul>
+
+<h2>Method</h2>
+<ol>
+<li>Mash or pulse into a firm mixture that holds shape.</li>
+<li>Form patties; coat lightly in flour/breadcrumbs if desired.</li>
+<li>Pan-fry until crisp and browned.</li>
+<li>Serve with potatoes, vegan gravy, or mushroom sauce.</li>
+</ol>
+
+<p><em>Fully plant-based adaptation for FLOSC client UAT. Adjust salt, smoke, and timing to taste.</em></p>
+]]></content:encoded>
+		<excerpt:encoded><![CDATA[Home-style kotletes — lentils, mushrooms, herbs, pan-fried crisp.]]></excerpt:encoded>
+		<wp:post_id>2011</wp:post_id>
+		<wp:post_date><![CDATA[2026-08-09 12:00:00]]></wp:post_date>
+		<wp:post_date_gmt><![CDATA[2026-08-09 12:00:00]]></wp:post_date_gmt>
+		<wp:post_modified><![CDATA[2026-08-09 12:00:00]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-08-09 12:00:00]]></wp:post_modified_gmt>
+		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
+		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
+		<wp:post_name><![CDATA[vegan-kotletes]]></wp:post_name>
+		<wp:status><![CDATA[publish]]></wp:status>
+		<wp:post_parent>0</wp:post_parent>
+		<wp:menu_order>11</wp:menu_order>
+		<wp:post_type><![CDATA[post]]></wp:post_type>
+		<wp:post_password><![CDATA[]]></wp:post_password>
+		<wp:is_sticky>0</wp:is_sticky>
+		<category domain="category" nicename="vegan_latvian_recipes"><![CDATA[Vegan Latvian Recipes]]></category>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_lesson_number]]></wp:meta_key>
+			<wp:meta_value><![CDATA[11]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_protection_mode]]></wp:meta_key>
+			<wp:meta_value><![CDATA[protected]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_visibility]]></wp:meta_key>
+			<wp:meta_value><![CDATA[hidden]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_vgm_tier]]></wp:meta_key>
+			<wp:meta_value><![CDATA[member]]></wp:meta_value>
+		</wp:postmeta>
+	</item>
+	
+<item>
+		<title><![CDATA[Bukstiņbiezputra]]></title>
+		<link>https://example.com/bukstinbiezputra/</link>
+		<pubDate>Sat, 09 Aug 2026 12:00:00 +0000</pubDate>
+		<dc:creator><![CDATA[admin]]></dc:creator>
+		<guid isPermaLink="false">https://example.com/?p=2012</guid>
+		<description></description>
+		<content:encoded><![CDATA[<p><strong>Barley and potato porridge</strong></p>
+<p>Comfort porridge — pearl barley, potatoes, plant cream, dill.</p>
+<p><em>Access tier: Member / full cookbook. Part of Vegan Latvian Kitchen (14 recipes · 2 visitor · 2 guest · all for members + PDF).</em></p>
+
+<!--flosc_read_more-->
+
+<h2>Ingredients</h2>
+<ul>
+<li>Pearl barley</li>
+<li>Potatoes, diced</li>
+<li>Onion</li>
+<li>Plant milk or cream + oil/vegan butter</li>
+<li>Salt, pepper, dill</li>
+</ul>
+
+<h2>Method</h2>
+<ol>
+<li>Cook barley until nearly tender.</li>
+<li>Add diced potatoes and onion; cook until soft.</li>
+<li>Stir in plant milk/cream and fat for richness.</li>
+<li>Season; finish with dill.</li>
+</ol>
+
+<p><em>Fully plant-based adaptation for FLOSC client UAT. Adjust salt, smoke, and timing to taste.</em></p>
+]]></content:encoded>
+		<excerpt:encoded><![CDATA[Comfort porridge — pearl barley, potatoes, plant cream, dill.]]></excerpt:encoded>
+		<wp:post_id>2012</wp:post_id>
+		<wp:post_date><![CDATA[2026-08-09 12:00:00]]></wp:post_date>
+		<wp:post_date_gmt><![CDATA[2026-08-09 12:00:00]]></wp:post_date_gmt>
+		<wp:post_modified><![CDATA[2026-08-09 12:00:00]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-08-09 12:00:00]]></wp:post_modified_gmt>
+		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
+		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
+		<wp:post_name><![CDATA[bukstinbiezputra]]></wp:post_name>
+		<wp:status><![CDATA[publish]]></wp:status>
+		<wp:post_parent>0</wp:post_parent>
+		<wp:menu_order>12</wp:menu_order>
+		<wp:post_type><![CDATA[post]]></wp:post_type>
+		<wp:post_password><![CDATA[]]></wp:post_password>
+		<wp:is_sticky>0</wp:is_sticky>
+		<category domain="category" nicename="vegan_latvian_recipes"><![CDATA[Vegan Latvian Recipes]]></category>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_lesson_number]]></wp:meta_key>
+			<wp:meta_value><![CDATA[12]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_protection_mode]]></wp:meta_key>
+			<wp:meta_value><![CDATA[protected]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_visibility]]></wp:meta_key>
+			<wp:meta_value><![CDATA[hidden]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_vgm_tier]]></wp:meta_key>
+			<wp:meta_value><![CDATA[member]]></wp:meta_value>
+		</wp:postmeta>
+	</item>
+	
+<item>
+		<title><![CDATA[Burkānlaša smalkmaizītes ar paštaisītu burkānlasi]]></title>
+		<link>https://example.com/burkanlasa-smalkmaizites/</link>
+		<pubDate>Sat, 09 Aug 2026 12:00:00 +0000</pubDate>
+		<dc:creator><![CDATA[admin]]></dc:creator>
+		<guid isPermaLink="false">https://example.com/?p=2013</guid>
+		<description></description>
+		<content:encoded><![CDATA[<p><strong>Canapés with homemade carrot “lox”</strong></p>
+<p>Modern café classic — silky smoked carrot on rye or smalkmaizītes.</p>
+<p><em>Access tier: Member / full cookbook. Part of Vegan Latvian Kitchen (14 recipes · 2 visitor · 2 guest · all for members + PDF).</em></p>
+
+<!--flosc_read_more-->
+
+<h2>Ingredients</h2>
+<h4>Burkānlaša</h4><ul>
+<li>3–4 large carrots</li>
+<li>2 tbsp soy sauce or tamari</li>
+<li>1 tbsp maple syrup or sugar</li>
+<li>1–2 tsp liquid smoke</li>
+<li>1 tbsp oil</li>
+<li>Nori flakes or dulse optional (sea note)</li>
+<li>Black pepper</li>
+</ul>
+<h4>To serve</h4><ul>
+<li>Dark rye or smalkmaizītes</li>
+<li>Vegan cream cheese or cashew cream</li>
+<li>Dill, capers, red onion</li>
+</ul>
+
+<h2>Method</h2>
+<ol>
+<li>Peel carrots into long ribbons with a peeler.</li>
+<li>Toss with soy sauce, maple, liquid smoke, oil, nori, pepper.</li>
+<li>Marinate 30+ minutes (better overnight); optionally roast or pan-warm briefly until pliable.</li>
+<li>Spread cream on bread; fold carrot “lox” on top.</li>
+<li>Finish with dill, capers, onion.</li>
+</ol>
+
+<p><em>Fully plant-based adaptation for FLOSC client UAT. Adjust salt, smoke, and timing to taste.</em></p>
+]]></content:encoded>
+		<excerpt:encoded><![CDATA[Modern café classic — silky smoked carrot on rye or smalkmaizītes.]]></excerpt:encoded>
+		<wp:post_id>2013</wp:post_id>
+		<wp:post_date><![CDATA[2026-08-09 12:00:00]]></wp:post_date>
+		<wp:post_date_gmt><![CDATA[2026-08-09 12:00:00]]></wp:post_date_gmt>
+		<wp:post_modified><![CDATA[2026-08-09 12:00:00]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-08-09 12:00:00]]></wp:post_modified_gmt>
+		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
+		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
+		<wp:post_name><![CDATA[burkanlasa-smalkmaizites]]></wp:post_name>
+		<wp:status><![CDATA[publish]]></wp:status>
+		<wp:post_parent>0</wp:post_parent>
+		<wp:menu_order>13</wp:menu_order>
+		<wp:post_type><![CDATA[post]]></wp:post_type>
+		<wp:post_password><![CDATA[]]></wp:post_password>
+		<wp:is_sticky>0</wp:is_sticky>
+		<category domain="category" nicename="vegan_latvian_recipes"><![CDATA[Vegan Latvian Recipes]]></category>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_lesson_number]]></wp:meta_key>
+			<wp:meta_value><![CDATA[13]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_protection_mode]]></wp:meta_key>
+			<wp:meta_value><![CDATA[protected]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_visibility]]></wp:meta_key>
+			<wp:meta_value><![CDATA[hidden]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_vgm_tier]]></wp:meta_key>
+			<wp:meta_value><![CDATA[member]]></wp:meta_value>
+		</wp:postmeta>
+	</item>
+	
+<item>
+		<title><![CDATA[Tofu–mushroom “roast beef”]]></title>
+		<link>https://example.com/tofu-mushroom-roast-beef/</link>
+		<pubDate>Sat, 09 Aug 2026 12:00:00 +0000</pubDate>
+		<dc:creator><![CDATA[admin]]></dc:creator>
+		<guid isPermaLink="false">https://example.com/?p=2014</guid>
+		<description></description>
+		<content:encoded><![CDATA[<p><strong>Smoky seared tofu–mushroom roast</strong></p>
+<p>Ridiculously delicious plant roast — umami, smoke, sliceable centerpiece.</p>
+<p><em>Access tier: Member / full cookbook. Part of Vegan Latvian Kitchen (14 recipes · 2 visitor · 2 guest · all for members + PDF).</em></p>
+
+<!--flosc_read_more-->
+
+<h2>Ingredients</h2>
+<ul>
+<li>400 g firm or extra-firm tofu, pressed</li>
+<li>300 g mushrooms (brown or mixed), finely chopped</li>
+<li>2 tbsp soy sauce or tamari</li>
+<li>1–2 tsp liquid smoke</li>
+<li>1 tbsp tomato paste</li>
+<li>1 tsp smoked paprika</li>
+<li>2 tbsp oil</li>
+<li>1 small onion or shallot, minced</li>
+<li>2 cloves garlic</li>
+<li>1–2 tbsp nutritional yeast optional</li>
+<li>Black pepper, salt</li>
+<li>Optional: beet juice or paprika for “roast” colour</li>
+</ul>
+
+<h2>Method</h2>
+<ol>
+<li>Sauté mushrooms and onion until deeply browned and dry; add garlic.</li>
+<li>Crumble or pulse tofu; mix with mushrooms, soy, smoke, tomato paste, paprika, yeast, pepper.</li>
+<li>Pack into a loaf shape or tightly wrapped log; rest 20 minutes.</li>
+<li>Sear in oil on all sides until dark crust forms; finish in oven ~180°C 15–25 min if needed.</li>
+<li>Rest, slice thin; serve with potatoes, horseradish-style cashew cream, or pickle.</li>
+</ol>
+<p><em>Member showpiece — full cookbook unlock.</em></p>
+
+<p><em>Fully plant-based adaptation for FLOSC client UAT. Adjust salt, smoke, and timing to taste.</em></p>
+]]></content:encoded>
+		<excerpt:encoded><![CDATA[Ridiculously delicious plant roast — umami, smoke, sliceable centerpiece.]]></excerpt:encoded>
+		<wp:post_id>2014</wp:post_id>
+		<wp:post_date><![CDATA[2026-08-09 12:00:00]]></wp:post_date>
+		<wp:post_date_gmt><![CDATA[2026-08-09 12:00:00]]></wp:post_date_gmt>
+		<wp:post_modified><![CDATA[2026-08-09 12:00:00]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-08-09 12:00:00]]></wp:post_modified_gmt>
+		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
+		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
+		<wp:post_name><![CDATA[tofu-mushroom-roast-beef]]></wp:post_name>
+		<wp:status><![CDATA[publish]]></wp:status>
+		<wp:post_parent>0</wp:post_parent>
+		<wp:menu_order>14</wp:menu_order>
+		<wp:post_type><![CDATA[post]]></wp:post_type>
+		<wp:post_password><![CDATA[]]></wp:post_password>
+		<wp:is_sticky>0</wp:is_sticky>
+		<category domain="category" nicename="vegan_latvian_recipes"><![CDATA[Vegan Latvian Recipes]]></category>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_lesson_number]]></wp:meta_key>
+			<wp:meta_value><![CDATA[14]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_protection_mode]]></wp:meta_key>
+			<wp:meta_value><![CDATA[protected]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_visibility]]></wp:meta_key>
+			<wp:meta_value><![CDATA[hidden]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_vgm_tier]]></wp:meta_key>
+			<wp:meta_value><![CDATA[member]]></wp:meta_value>
+		</wp:postmeta>
+	</item>
+	
+<item>
+		<title><![CDATA[Cookbook PDF — full pack]]></title>
+		<link>https://example.com/vegan-latvian-kitchen-pdf/</link>
+		<pubDate>Sat, 09 Aug 2026 12:00:00 +0000</pubDate>
+		<dc:creator><![CDATA[admin]]></dc:creator>
+		<guid isPermaLink="false">https://example.com/?p=2015</guid>
+		<description></description>
+		<content:encoded><![CDATA[<p><strong>Member pack:</strong> full 14-recipe bilingual cookbook (PDF).</p>
+<p>After import: upload <code>vegan-latvian-kitchen-cookbook.pdf</code> to Media Library, then replace the link below with that Media URL (or insert the Media file into this post).</p>
+<p><a class="flosc-member-pdf" href="https://www.vlat.lv/wp-content/uploads/2026/08/vegan-latvian-kitchen-cookbook-r.pdf">Download Vegan Latvian Kitchen cookbook (PDF)</a></p>
+<!--flosc_read_more-->
+<p>This post is <code>protected</code> in the FLOSC content category. Visitors and unpaid guests do not get the file. Members (purchase / member grant for this flow) do.</p>
+]]></content:encoded>
+		<excerpt:encoded><![CDATA[Full cookbook PDF for members.]]></excerpt:encoded>
+		<wp:post_id>2015</wp:post_id>
+		<wp:post_date><![CDATA[2026-08-09 12:00:00]]></wp:post_date>
+		<wp:post_date_gmt><![CDATA[2026-08-09 12:00:00]]></wp:post_date_gmt>
+		<wp:post_modified><![CDATA[2026-08-09 12:00:00]]></wp:post_modified>
+		<wp:post_modified_gmt><![CDATA[2026-08-09 12:00:00]]></wp:post_modified_gmt>
+		<wp:comment_status><![CDATA[closed]]></wp:comment_status>
+		<wp:ping_status><![CDATA[closed]]></wp:ping_status>
+		<wp:post_name><![CDATA[vegan-latvian-kitchen-pdf]]></wp:post_name>
+		<wp:status><![CDATA[publish]]></wp:status>
+		<wp:post_parent>0</wp:post_parent>
+		<wp:menu_order>15</wp:menu_order>
+		<wp:post_type><![CDATA[post]]></wp:post_type>
+		<wp:post_password><![CDATA[]]></wp:post_password>
+		<wp:is_sticky>0</wp:is_sticky>
+		<category domain="category" nicename="vegan_latvian_recipes"><![CDATA[Vegan Latvian Recipes]]></category>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_lesson_number]]></wp:meta_key>
+			<wp:meta_value><![CDATA[15]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_protection_mode]]></wp:meta_key>
+			<wp:meta_value><![CDATA[protected]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_visibility]]></wp:meta_key>
+			<wp:meta_value><![CDATA[hidden]]></wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key><![CDATA[_flosc_vgm_tier]]></wp:meta_key>
+			<wp:meta_value><![CDATA[member]]></wp:meta_value>
+		</wp:postmeta>
+	</item>
+
+
+</channel>
+</rss>

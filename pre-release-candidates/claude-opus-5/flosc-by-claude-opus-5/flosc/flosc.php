@@ -86,6 +86,18 @@ require_once FLOSC_PLUGIN_DIR . 'includes/filesystem/class-flosc-filesystem.php'
 require_once FLOSC_PLUGIN_DIR . 'includes/filesystem/flosc-data-paths.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-available-providers.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-wp-ai-client.php';
+
+/*
+ * Provider metadata, loaded in dependency order: the catalog names the models,
+ * the profiles describe each provider, the parameter table is keyed by both,
+ * and the key store and identity helper read from all three.
+ */
+require_once FLOSC_PLUGIN_DIR . 'includes/ai/flosc-model-catalog.php';
+require_once FLOSC_PLUGIN_DIR . 'includes/ai/flosc-provider-profiles.php';
+require_once FLOSC_PLUGIN_DIR . 'includes/ai/flosc-model-parameters.php';
+require_once FLOSC_PLUGIN_DIR . 'includes/ai/flosc-provider-keys.php';
+require_once FLOSC_PLUGIN_DIR . 'includes/ai/flosc-provider-identity.php';
+
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-personality-library.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-knowledge-bases.php';
 
@@ -465,7 +477,9 @@ require_once FLOSC_PLUGIN_DIR . 'includes/tokens/class-flosc-visitor-token-trait
 require_once FLOSC_PLUGIN_DIR . 'includes/magic-link/class-flosc-magic-link-trait.php';
 // FLOSC_Filesystem already required above (before flosc-data-paths.php).
 require_once FLOSC_PLUGIN_DIR . 'includes/request-guard/class-flosc-request-guard.php';
+require_once FLOSC_PLUGIN_DIR . 'includes/da1/class-flosc-da1-catalogs.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/da1/class-flosc-da1-compositions.php';
+require_once FLOSC_PLUGIN_DIR . 'includes/starter-packs/class-flosc-starter-packs.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/chat-turn/trait-flosc-chat-turn.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/companion-mode/class-flosc-companion-mode.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/full-page-mode/class-flosc-full-page-mode.php';
@@ -495,6 +509,17 @@ class FLOSC_Framework {
 	private $filesystem;
 	private $request_guard;
 	private $da1_compositions;
+
+	/**
+	 * Content-agnostic, access-aware DA1 catalog engine.
+	 *
+	 * Rows are filtered by Status, parent Status, Flow Scope and VGM before any
+	 * payload can reach the conversational layer. Restored in v92; the
+	 * composition engine beside it answers only where this one declines.
+	 *
+	 * @var FLOSC_DA1_Catalogs
+	 */
+	private $da1_catalogs;
 	private $companion_mode;
 	private $full_page_mode;
 	private $first_party_auth;
@@ -1671,6 +1696,7 @@ class FLOSC_Framework {
 		$this->filesystem       = new FLOSC_Filesystem();
 		$this->request_guard    = new FLOSC_Request_Guard();
 		$this->da1_compositions = new FLOSC_DA1_Compositions();
+		$this->da1_catalogs     = new FLOSC_DA1_Catalogs();
 		$this->companion_mode   = new FLOSC_Companion_Mode( $this );
 		$this->full_page_mode   = new FLOSC_Full_Page_Mode( $this );
 		$this->first_party_auth = new FLOSC_First_Party_Authentication( $this );
@@ -2010,6 +2036,12 @@ class FLOSC_Framework {
 
 		// v1.9.0: AI connection test AJAX.
 		add_action( 'wp_ajax_flosc_test_ai_connection', array( $this, 'ajax_test_ai_connection' ) );
+		add_action( 'wp_ajax_flosc_fetch_ai_models', array( $this, 'ajax_fetch_ai_models' ) );
+		add_action( 'wp_ajax_flosc_save_ai_provider_key', array( $this, 'ajax_save_ai_provider_key' ) );
+		add_action( 'wp_ajax_flosc_save_ai_provider_model', array( $this, 'ajax_save_ai_provider_model' ) );
+		add_action( 'wp_ajax_flosc_describe_ai_model', array( $this, 'ajax_describe_ai_model' ) );
+		add_action( 'wp_ajax_flosc_explain_ai_parameter', array( $this, 'ajax_explain_ai_parameter' ) );
+		add_action( 'wp_ajax_flosc_save_model_tuning', array( $this, 'ajax_save_model_tuning' ) );
 
 		// Admin: send Guest Access Link to any email (Register & Login tab)
 		add_action( 'wp_ajax_flosc_send_guest_link', array( $this, 'ajax_send_guest_link' ) );
@@ -4831,6 +4863,41 @@ The Team',
 	 * @param mixed $ivr_file IVR file.
 	 * @return mixed
 	 */
+	/**
+	 * The DA1 catalog answer for this message, or '' when it is not a catalog query.
+	 *
+	 * Restored in v92. Delegates to FLOSC_DA1_Catalogs, which filters rows by
+	 * Status, parent Status, Flow Scope and VGM before answering.
+	 *
+	 * @param string $message      What the visitor said.
+	 * @param string $flow_id      Flow stem.
+	 * @param string $ivr_file     The flow's IVR file.
+	 * @param string $access_level One of visitor, guest or member.
+	 * @return string The catalog answer, or '' when the message is not a catalog query.
+	 */
+	private function flosc_build_da1_catalog_reply( $message, $flow_id, $ivr_file, $access_level = 'visitor' ) {
+		return $this->da1_catalogs->build_catalog_reply( $message, $flow_id, $ivr_file, $access_level );
+	}
+
+	/**
+	 * Whether a visitor's message is asking about this flow's catalog.
+	 *
+	 * The rows are loaded and their items extracted first, because the test is
+	 * against what this flow actually carries rather than against a fixed
+	 * vocabulary. The access level decides which rows are visible to ask about.
+	 *
+	 * @param string $message      What the visitor said.
+	 * @param string $flow_id      Flow stem; '' for the current one.
+	 * @param string $ivr_file     The flow's IVR file.
+	 * @param string $access_level One of visitor, guest or member.
+	 * @return bool True when the message is a catalog query.
+	 */
+	private function flosc_is_catalog_query( $message, $flow_id = '', $ivr_file = '', $access_level = 'visitor' ) {
+		$rows  = $this->da1_catalogs->load_rows_for_flow( $flow_id, $ivr_file, $access_level );
+		$items = $this->da1_catalogs->extract_items( $rows );
+		return $this->da1_catalogs->is_catalog_query( $message, $items );
+	}
+
 	private function flosc_load_da1_rows_for_flow( $flow_id, $ivr_file ) {
 		return $this->da1_compositions->load_rows_for_flow( $flow_id, $ivr_file );
 	}
@@ -11521,6 +11588,310 @@ Example good response:
 	/**
 	 * Ajax flosc get chat logs.
 	 */
+	/*
+	 * AI provider discovery, per-provider key/model saving and model tuning.
+	 * Restored in v92 from the v87 candidate, where these six handlers were
+	 * last present. They back the AI tab controls of the same names.
+	 */
+
+/**
+	 * Ask the selected provider which models this key can use, and say which
+	 * of them the installed provider plugin can actually pin.
+	 *
+	 * @return void
+	 */
+	public function ajax_fetch_ai_models() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Unauthorized', 'flosc' ) ), 403 );
+		}
+
+		check_ajax_referer( 'flosc_test_ai', 'nonce' );
+
+		$post     = wp_unslash( $_POST );
+		$provider = isset( $post['provider'] ) ? sanitize_key( $post['provider'] ) : '';
+		$ivr      = isset( $post['ivr'] ) ? sanitize_file_name( $post['ivr'] ) : '';
+
+		// Same flow context the connection test establishes. admin-ajax has no
+		// URL to detect the flow from, so without this the per-flow key is
+		// invisible and the install-wide one answers in its place — the button
+		// would then report "no key saved", or list models for a different key,
+		// while the test standing next to it reads the right one.
+		if ( '' !== $ivr ) {
+			$GLOBALS['flosc_current_ivr'] = $ivr;
+			$this->set_flow_context( pathinfo( $ivr, PATHINFO_FILENAME ) );
+		}
+
+		// The key on screen, if there is one, outranks the saved key. Asking an
+		// operator to save a whole settings page before FLOSC will read a key
+		// sitting directly above the button is a loop with no purpose: paste,
+		// fetch, "no key saved".
+		$typed = isset( $post['api_key'] ) ? trim( (string) $post['api_key'] ) : '';
+
+		if ( '' !== $typed && ( strlen( $typed ) > 4096 || preg_match( '/[\x00-\x1F\x7F]/', $typed ) ) ) {
+			wp_send_json_error( array( 'message' => __( 'That API key contains characters an API key cannot contain.', 'flosc' ) ) );
+		}
+
+		$api_key = $typed;
+
+		if ( '' === $api_key ) {
+			$api_key = function_exists( 'flosc_get_provider_api_key' )
+				? flosc_get_provider_api_key( $provider )
+				: (string) flosc_get_setting( $provider . '_api_key', '' );
+		}
+
+		$result = flosc_fetch_model_catalog( $provider, (string) $api_key );
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error(
+				array(
+					'message' => $result->get_error_message(),
+				)
+			);
+		}
+
+		wp_send_json_success( $result );
+	}
+
+/**
+	 * Save one provider's API key on its own, without saving the whole tab.
+	 *
+	 * A key is the one setting an operator wants to commit the moment they
+	 * paste it, and the only one where "did that save?" has to have an answer.
+	 * The full-page Save is at the foot of a long tab and its confirmation
+	 * banner renders at the top, so the answer arrived somewhere the operator
+	 * was not looking. This writes the key, to this flow, and says so where
+	 * the button is.
+	 */
+	public function ajax_save_ai_provider_key() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Unauthorized', 'flosc' ) ), 403 );
+		}
+
+		check_ajax_referer( 'flosc_test_ai', 'nonce' );
+
+		$post     = wp_unslash( $_POST );
+		$provider = isset( $post['provider'] ) ? sanitize_key( (string) $post['provider'] ) : '';
+		$ivr      = isset( $post['ivr'] ) ? sanitize_file_name( (string) $post['ivr'] ) : '';
+		$api_key  = isset( $post['api_key'] ) ? trim( (string) $post['api_key'] ) : '';
+
+		$stored = flosc_store_provider_api_key( $ivr, $provider, $api_key );
+
+		if ( is_wp_error( $stored ) ) {
+			wp_send_json_error( array( 'message' => $stored->get_error_message() ), 400 );
+		}
+
+		wp_send_json_success(
+			array(
+				'provider' => $provider,
+				'suffix'   => $stored['suffix'],
+				'message'  => __( 'API key saved for this flow.', 'flosc' ),
+			)
+		);
+	}
+
+/**
+	 * Save one provider's model id on its own.
+	 *
+	 * Choosing from the fetched list has to be the end of the job. A pick that
+	 * only fills a form field, and is then lost unless the operator finds a
+	 * page-wide Save, is not a choice — it is a suggestion.
+	 */
+	public function ajax_save_ai_provider_model() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Unauthorized', 'flosc' ) ), 403 );
+		}
+
+		check_ajax_referer( 'flosc_test_ai', 'nonce' );
+
+		$post     = wp_unslash( $_POST );
+		$provider = isset( $post['provider'] ) ? sanitize_key( (string) $post['provider'] ) : '';
+		$ivr      = isset( $post['ivr'] ) ? sanitize_file_name( (string) $post['ivr'] ) : '';
+		$model    = isset( $post['model'] ) ? trim( (string) $post['model'] ) : '';
+
+		$stored = flosc_store_provider_model( $ivr, $provider, $model );
+
+		if ( is_wp_error( $stored ) ) {
+			wp_send_json_error( array( 'message' => $stored->get_error_message() ), 400 );
+		}
+
+		wp_send_json_success(
+			array(
+				'provider' => $provider,
+				'model'    => $stored['model'],
+				'message'  => __( 'Model saved for this flow.', 'flosc' ),
+			)
+		);
+	}
+
+/**
+	 * Ask the provider to describe the chosen model, and report it verbatim.
+	 *
+	 * Everything shown comes from the provider. FLOSC adds no judgement about
+	 * which model is better, and does not claim the list is complete —
+	 * sampling support, for one, is not in it.
+	 */
+	public function ajax_describe_ai_model() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Unauthorized', 'flosc' ) ), 403 );
+		}
+
+		check_ajax_referer( 'flosc_test_ai', 'nonce' );
+
+		$post     = wp_unslash( $_POST );
+		$provider = isset( $post['provider'] ) ? sanitize_key( (string) $post['provider'] ) : '';
+		$ivr      = isset( $post['ivr'] ) ? sanitize_file_name( (string) $post['ivr'] ) : '';
+		$model    = isset( $post['model'] ) ? trim( (string) $post['model'] ) : '';
+		$typed    = isset( $post['api_key'] ) ? trim( (string) $post['api_key'] ) : '';
+
+		if ( '' !== $ivr ) {
+			$GLOBALS['flosc_current_ivr'] = $ivr;
+			$this->set_flow_context( pathinfo( $ivr, PATHINFO_FILENAME ) );
+		}
+
+		$api_key = $typed;
+
+		if ( '' === $api_key ) {
+			$api_key = function_exists( 'flosc_get_provider_api_key' )
+				? flosc_get_provider_api_key( $provider )
+				: (string) flosc_get_setting( $provider . '_api_key', '' );
+		}
+
+		$details = flosc_fetch_model_details( $provider, (string) $api_key, $model );
+
+		if ( is_wp_error( $details ) ) {
+			wp_send_json_error( array( 'message' => $details->get_error_message() ) );
+		}
+
+		wp_send_json_success( $details );
+	}
+
+/**
+	 * Ask the configured model what one of its own request parameters does.
+	 *
+	 * FLOSC ships notes on the parameters it has measured, and that list is out
+	 * of date the day a provider adds one. This is the answer to that: the
+	 * operator types a name FLOSC has never heard of, and the provider's own
+	 * model is asked what it is. The answer is labelled as the model's, never
+	 * as FLOSC's, because a model can be wrong about its own API and the
+	 * operator has to know which of the two they are reading.
+	 */
+	public function ajax_explain_ai_parameter() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Unauthorized', 'flosc' ) ), 403 );
+		}
+
+		check_ajax_referer( 'flosc_test_ai', 'nonce' );
+
+		$post  = wp_unslash( $_POST );
+		$ivr   = isset( $post['ivr'] ) ? sanitize_file_name( (string) $post['ivr'] ) : '';
+		$param = isset( $post['param'] ) ? trim( (string) $post['param'] ) : '';
+
+		// A parameter name, not a prompt. Anything that is not one is refused
+		// rather than passed through to the provider as free text.
+		if ( '' === $param || ! preg_match( '/^[A-Za-z0-9_.\[\]-]{1,64}$/', $param ) ) {
+			wp_send_json_error( array( 'message' => __( 'That is not a parameter name.', 'flosc' ) ) );
+		}
+
+		if ( '' !== $ivr ) {
+			$GLOBALS['flosc_current_ivr'] = $ivr;
+			$this->set_flow_context( pathinfo( $ivr, PATHINFO_FILENAME ) );
+		}
+
+		$provider = (string) flosc_get_setting( 'ai_provider', 'ivr' );
+
+		if ( '' === $provider || 'ivr' === $provider ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'Pick an AI provider for this flow first — the answer comes from the provider\'s own model.', 'flosc' ),
+				)
+			);
+		}
+
+		$model_setting_key = array(
+			'openai'    => 'ai_openai_model',
+			'anthropic' => 'ai_anthropic_model',
+			'xai'       => 'ai_xai_model',
+			'gemini'    => 'ai_gemini_model',
+		);
+		$model             = isset( $model_setting_key[ $provider ] )
+			? (string) flosc_get_setting( $model_setting_key[ $provider ], '' )
+			: '';
+
+		// Not the flow's personality. A factual question deserves the plainest
+		// system prompt available, and the flow's bot voice would only get in
+		// the way of it.
+		$system_prompt = 'You are answering a developer question about your own HTTP API. '
+			. 'Answer in at most four sentences of plain prose, no markdown, no code fences. '
+			. 'Say what the parameter does, what values are valid, and one situation it is worth setting. '
+			. 'If the named parameter is not part of this API, say so plainly in one sentence.';
+
+		$question = sprintf(
+			'In the %1$s API request body for model %2$s, what is the parameter "%3$s"?',
+			$provider,
+			'' !== $model ? $model : 'the model in use',
+			$param
+		);
+
+		$answer = $this->ai_chat_dispatch->get_response( $question, $system_prompt, array(), true );
+
+		if ( is_wp_error( $answer ) ) {
+			wp_send_json_error( array( 'message' => $answer->get_error_message() ) );
+		}
+
+		$answer = trim( wp_strip_all_tags( (string) $answer ) );
+
+		if ( '' === $answer ) {
+			wp_send_json_error( array( 'message' => __( 'The model returned nothing.', 'flosc' ) ) );
+		}
+
+		wp_send_json_success(
+			array(
+				'param'    => $param,
+				'provider' => $provider,
+				'model'    => $model,
+				'answer'   => $answer,
+				'docs_url' => function_exists( 'flosc_provider_docs_url' ) ? flosc_provider_docs_url( $provider ) : '',
+			)
+		);
+	}
+
+/**
+	 * Save Step 2b where it is typed, rather than at the foot of the page.
+	 */
+	public function ajax_save_model_tuning() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Unauthorized', 'flosc' ) ), 403 );
+		}
+
+		check_ajax_referer( 'flosc_test_ai', 'nonce' );
+
+		$post     = wp_unslash( $_POST );
+		$ivr      = isset( $post['ivr'] ) ? sanitize_file_name( (string) $post['ivr'] ) : '';
+		$provider = isset( $post['provider'] ) ? sanitize_key( (string) $post['provider'] ) : '';
+
+		if ( ! function_exists( 'flosc_store_model_tuning' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Model tuning storage is unavailable on this install.', 'flosc' ) ) );
+		}
+
+		// Only what was posted is written. A field the form did not send is a
+		// field this save has no opinion about, and it is left as it stands.
+		$tuning = array();
+
+		foreach ( array( 'temperature', 'max_tokens', 'params' ) as $field ) {
+			if ( isset( $post[ $field ] ) ) {
+				$tuning[ $field ] = (string) $post[ $field ];
+			}
+		}
+
+		$stored = flosc_store_model_tuning( $ivr, $provider, $tuning );
+
+		if ( is_wp_error( $stored ) ) {
+			wp_send_json_error( array( 'message' => $stored->get_error_message() ) );
+		}
+
+		wp_send_json_success( $stored );
+	}
+
 	public function ajax_flosc_get_chat_logs() {
 		$post    = wp_unslash( $_POST );
 		$flow_id = sanitize_key( (string) ( $post['flow_id'] ?? '' ) );
@@ -14042,3 +14413,87 @@ function flosc_resolve_chatlogo_url( $flow_settings = null, $use_plugin_default 
 function flosc_get_chatlogo_url() {
 	return flosc_resolve_chatlogo_url( null, true );
 }
+
+/*
+ * Sticky personalities for signed-in users. Restored in v92 from the v87
+ * candidate, where these were last present.
+ */
+
+/**
+ * Personality labels that have Enable Sticky for User on.
+ *
+ * @return string[]
+ */
+function flosc_get_user_sticky_enabled_personalities() {
+	if ( ! function_exists( 'flosc_personality_library_get_all' ) ) {
+		return array();
+	}
+	$out = array();
+	foreach ( (array) flosc_personality_library_get_all() as $id => $row ) {
+		if ( ! is_array( $row ) || empty( $row['enable_user_sticky'] ) ) {
+			continue;
+		}
+		$label = trim( (string) ( $row['label'] ?? $row['ai_personality_name'] ?? $id ) );
+		$out[] = '' !== $label ? $label : (string) $id;
+	}
+	return array_values( array_unique( $out ) );
+}
+
+/**
+ * Expanded Sticky-for-User prompt fragment, or empty.
+ *
+ * Enable is per attached personality. Content is per WordPress user.
+ *
+ * @param int   $user_id WordPress user ID.
+ * @param array $context Turn context (flow_id, access_level, flow_name).
+ * @return string
+ */
+function flosc_get_user_sticky_prompt( $user_id, $context = array() ) {
+	$user_id = absint( $user_id );
+	if ( $user_id <= 0 || ! is_user_logged_in() || get_current_user_id() !== $user_id ) {
+		return '';
+	}
+	$flow_id = sanitize_key( (string) ( $context['flow_id'] ?? '' ) );
+	$enabled = function_exists( 'flosc_personality_library_resolve_field' )
+		? (string) flosc_personality_library_resolve_field( 'enable_user_sticky', '', '' !== $flow_id ? $flow_id : null )
+		: '';
+	if ( '1' !== $enabled ) {
+		return '';
+	}
+	$sticky = trim( (string) get_user_meta( $user_id, '_flosc_user_sticky', true ) );
+	if ( '' === $sticky ) {
+		return '';
+	}
+	$sticky = substr( $sticky, 0, 4000 );
+
+	$user         = get_userdata( $user_id );
+	$quiz_data    = get_user_meta( $user_id, '_flosc_last_quiz_data', true );
+	$weakest      = is_array( $quiz_data ) && is_array( $quiz_data['ranked_phonemes'] ?? null )
+		? implode( ', ', array_map( 'sanitize_text_field', $quiz_data['ranked_phonemes'] ) )
+		: '';
+	$flow_name    = trim( (string) ( $context['flow_name'] ?? '' ) );
+	$access_level = sanitize_key( (string) ( $context['access_level'] ?? '' ) );
+	$member_level = sanitize_key( (string) get_user_meta( $user_id, '_flosc_member_level', true ) );
+	if ( '' === $flow_name && function_exists( 'flosc_get_setting' ) ) {
+		$flow_name = trim( (string) flosc_get_setting( 'title', '', '' !== $flow_id ? $flow_id : null ) );
+	}
+
+	$variables = array(
+		'{userName}'        => $user ? (string) $user->display_name : '',
+		'{firstName}'       => $user ? (string) $user->first_name : '',
+		'{lastName}'        => $user ? (string) $user->last_name : '',
+		'{email}'           => $user ? (string) $user->user_email : '',
+		'{userId}'          => (string) $user_id,
+		'{accessLevel}'     => $access_level,
+		'{memberLevel}'     => $member_level,
+		'{quizScore}'       => (string) get_user_meta( $user_id, '_flosc_last_quiz_score', true ),
+		'{weakestPhonemes}' => $weakest,
+		'{flowName}'        => $flow_name,
+		'{siteName}'        => (string) get_bloginfo( 'name' ),
+	);
+	$sticky    = strtr( $sticky, $variables );
+
+	return "Private administrator guidance for this signed-in user. Use it when relevant; do not recite it, mention this field, or claim it applies to anyone else.\n\n"
+		. $sticky;
+}
+

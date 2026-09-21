@@ -15,6 +15,68 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+if ( ! function_exists( 'flosc_ai_key_state_line' ) ) {
+	/**
+	 * Say, on the page and permanently, whether a key is stored for this provider.
+	 *
+	 * The save confirmation is a banner at the top of a long tab. Pressing Save at
+	 * the foot of the page and being scrolled to a notice you never see is not
+	 * feedback — it leaves "did that work?" unanswered, and a key that is fine
+	 * looks like a key that never saved. The field answers for itself instead.
+	 *
+	 * It also separates two things that look identical in an empty box: no key
+	 * anywhere, and no key on THIS flow while an install-wide one is doing the work.
+	 *
+	 * @param string              $provider FLOSC provider slug.
+	 * @param array<string,mixed> $bag      This flow's settings.
+	 * @return void
+	 */
+	function flosc_ai_key_state_line( $provider, $bag ) {
+		$provider = sanitize_key( (string) $provider );
+		$on_flow  = trim( (string) ( $bag[ $provider . '_api_key' ] ?? '' ) );
+		$in_use   = function_exists( 'flosc_get_provider_api_key' )
+		? trim( (string) flosc_get_provider_api_key( $provider ) )
+		: $on_flow;
+
+		$tail = static function ( $key ) {
+			return strlen( $key ) >= 4 ? substr( $key, -4 ) : '';
+		};
+
+		if ( '' !== $on_flow ) {
+			printf(
+				'<p class="flosc-key-state flosc-key-state--ok">%s</p>',
+				esc_html(
+					sprintf(
+					/* translators: %s: last four characters of the saved key. */
+						__( 'Saved on this flow — ends %s', 'flosc' ),
+						$tail( $on_flow )
+					)
+				)
+			);
+			return;
+		}
+
+		if ( '' !== $in_use ) {
+			printf(
+				'<p class="flosc-key-state flosc-key-state--ok">%s</p>',
+				esc_html(
+					sprintf(
+					/* translators: %s: last four characters of the key in use. */
+						__( 'Nothing saved on this flow. The install-wide key is being used — ends %s', 'flosc' ),
+						$tail( $in_use )
+					)
+				)
+			);
+			return;
+		}
+
+		printf(
+			'<p class="flosc-key-state flosc-key-state--none">%s</p>',
+			esc_html__( 'No key saved yet. Paste one, then Save AI Settings.', 'flosc' )
+		);
+	}
+}
+
 flosc_tab_header( '🤖', 'AI' );
 
 $flosc_flow_settings = $GLOBALS['flosc_current_settings'] ?? array();

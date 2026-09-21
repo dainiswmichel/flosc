@@ -1962,3 +1962,34 @@ if ( 'single' === $flosc_da1_view ) :
 	<?php
 	wp_add_inline_script( 'flosc-admin', ob_get_clean() );
 endif;
+
+/**
+ * Keep only the payload columns a DA1 catalog declares as required.
+ *
+ * Restored in v92 from the v87 candidate. The v87 copy carried no docblock;
+ * this one is written to the same standard as the rest of the tree.
+ *
+ * @param mixed                $value            Raw payload column value.
+ * @param array<int,string>    $required_columns Column names the catalog requires.
+ * @return array<string,mixed> The sanitized column set.
+ */
+function flosc_da1_sanitize_payload_columns( $value, $required_columns ) {
+	$columns = preg_split( '/[,\r\n]+/', (string) $value );
+	$clean   = array();
+
+	foreach ( (array) $columns as $column ) {
+		$column = sanitize_text_field( trim( (string) $column ) );
+		if ( '' === $column ) {
+			continue;
+		}
+		if ( 'Record Type' === $column ) {
+			$column = 'Item Type';
+		}
+		if ( ! in_array( $column, $required_columns, true ) && ! in_array( $column, $clean, true ) ) {
+			$clean[] = $column;
+		}
+	}
+
+	return $clean;
+}
+
