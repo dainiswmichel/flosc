@@ -270,7 +270,7 @@ if ( ! empty( $flosc_files ) ) {
 // so the same flow file can appear twice. Keep one entry per filename.
 $flosc_ivr_files = array_values( array_unique( $flosc_ivr_files ) );
 
-$flosc_get_early = isset( $_GET ) && is_array( $_GET ) ? wp_unslash( $_GET ) : array(); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only initial tab/IVR selection; no state change.
+$flosc_get_early = FLOSC_Request_Guard::query_params( array( 'ivr' ) );
 $flosc_keep_ivr  = isset( $flosc_get_early['ivr'] ) ? sanitize_file_name( (string) $flosc_get_early['ivr'] ) : '';
 if ( $flosc_keep_ivr === '' && is_user_logged_in() ) {
 	$flosc_keep_ivr = sanitize_file_name( (string) get_user_meta( get_current_user_id(), '_flosc_admin_default_ivr', true ) );
@@ -307,7 +307,7 @@ if ( empty( $flosc_ivr_files ) ) {
 // Read request vars early. The flow selector below reads $flosc_get['ivr'] to know
 // which flow is selected. ($get was previously first defined further down — after
 // this point — so the selector always fell back to $flosc_ivr_files[0] and ignored the URL.)
-$flosc_get = wp_unslash( $_GET );
+$flosc_get = FLOSC_Request_Guard::query_params( FLOSC_Request_Guard::admin_query_keys() );
 
 $flosc_default_ivr_meta_key = '_flosc_admin_default_ivr';
 $flosc_current_user_id      = get_current_user_id();
@@ -408,8 +408,8 @@ if ( $flosc_flow_seed_needed ) {
 	update_option( $flosc_settings_key, $flosc_flow_settings );
 }
 
-$flosc_get                       = wp_unslash( $_GET );
-$flosc_post                      = wp_unslash( $_POST );
+$flosc_get                       = FLOSC_Request_Guard::query_params( FLOSC_Request_Guard::admin_query_keys() );
+$flosc_post                      = FLOSC_Request_Guard::admin_post_payload();
 $flosc_active_tab                = isset( $flosc_get['tab'] ) ? sanitize_text_field( $flosc_get['tab'] ) : 'identity';
 $flosc_can_manage_administration = current_user_can( 'manage_options' );
 if ( $flosc_active_tab === 'administration' && ! $flosc_can_view_administration ) {

@@ -1,4 +1,4 @@
-# Home run candidate v90.1 — Claude Opus 5
+# Home run candidate v90.2 — Claude Opus 5
 
 Base: **v89.1** (`5f5c094`, dwm-local). v89.2 (`84f26d0`, GPT-5.6-sol) is a
 byte-identical tree and an identical zip, so either is the same starting point.
@@ -6,19 +6,18 @@ byte-identical tree and an identical zip, so either is the same starting point.
 Scope of this candidate: **the security errors, and nothing else.** No formatting
 pass, no file moves, no version bump. Plugin version stays 8.0.0.
 
-This candidate is **v90.1**. It landed across four commits rather than one, and
-they are kept separate on purpose — each records a distinct finding, and the
-point of this candidate is that its claims can be checked:
+This candidate is **v90.2**. It landed across several commits rather than one,
+and they are kept separate on purpose — each records a distinct finding, and
+the point of this candidate is that its claims can be checked:
 
 | commit | what it found |
 |---|---|
-| `d3d2aa7` v90 | 13 WPCS security errors the base tree reported as 0 |
-| `a7af32d` v90.1 | the 2 errors WordPress.org actually blocks on, in `uninstall.php` |
-| `b9665d3` v90.2 | stale v86 `readme.md`/`sha256sums` shadowing the real ones on macOS |
-| `77416d8` v90.3 | lowercase filenames |
-
-`.2` and `.3` changed no source file. The shipped code is what `a7af32d` left,
-which is why the candidate is numbered v90.1 rather than v90.3.
+| `d3d2aa7` | 13 WPCS security errors the base tree reported as 0 |
+| `a7af32d` | the 2 errors WordPress.org actually blocks on, in `uninstall.php` |
+| `b9665d3` | stale v86 `readme.md`/`sha256sums` shadowing the real ones on macOS |
+| `77416d8` | lowercase filenames |
+| `59fd42a` | `wporg-audit.sh` — every category from review rounds T7 → T13 |
+| this one | the 11 file-scope superglobal reads the reviewer quoted twice |
 
 ---
 
@@ -45,7 +44,7 @@ Measured that way, the base tree had **12 errors and 145 warnings**, not 0.
 
 PHPCS 3.13.6 + WPCS 3.4.0, both trees, identical rulesets and identical method.
 
-| | v89.1 base | v90.1 |
+| | v89.1 base | v90.1 |   (superseded by the v90.2 table at the end)
 |---|---|---|
 | Security errors, suppressions switched off | **12** | **0** |
 | Security warnings, suppressions switched off | 145 | 139 |
@@ -218,8 +217,8 @@ anyone calls it submittable.
 
 ```
 flosc.zip
-  sha256  6a7696b1c58074e6370232404d6285f0fc5aa05d75a0bcc0a743b271db5b3334
-  bytes   2128809
+  sha256  05510183c8812ee9798b65e9493afb6070240de69ba26ff4028a21b96ef24621
+  bytes   2130303
   entries 240
   root    flosc/
 ```
@@ -229,3 +228,70 @@ script's deny list and its post-build zip inspection both passed; a separate
 check for `tests/`, `vendor/`, `composer.*`, `.git*`, `phpcs.xml*`, `CLAUDE.md`,
 `AGENTS.md`, `.cursorrules`, worknotes, `create-sample-data.php`,
 `push-allowlist.txt` and `build-dist-zip.sh` inside the archive returned nothing.
+
+
+---
+
+## v90.2 — the file-scope superglobal reads
+
+The reviewer quoted `$flosc_get = wp_unslash($_GET);` in **T7 (11 Jun)** and
+again in **T13 (14 Sep)**, three months apart, and objected on two grounds:
+CSRF, and performance — *"Don't check for post submission outside of functions.
+Doing so means that the check will run on every single load of the plugin."*
+
+Eleven such reads are gone, across `admin/settings.php`, `admin/flow.php`,
+`admin/flows.php`, `admin/offers.php`, `admin/ivr-messages.php` and
+`admin/ai-configuration.php`.
+
+**Query values** now come from `FLOSC_Request_Guard::query_params()`, which
+reads only the keys the admin screens actually use and sanitizes each one on
+the read. The list of keys was derived mechanically, not by hand, and is
+verified to cover every literal key used anywhere in `admin/` — **36 used, 36
+declared, none missing**. It lives in one method, so a reviewer checks one list
+instead of eleven scattered reads.
+
+**POST** comes from `FLOSC_Request_Guard::admin_post_payload()`, which returns
+an empty array unless the request really is a POST from a user holding
+`edit_others_posts`. An ordinary page view now does no POST work at all, which
+is the performance objection answered directly.
+
+### Why the WPCS error count went 0 → 1
+
+`admin_post_payload()` reports `NonceVerification.Missing`. It is reported here
+rather than suppressed.
+
+The settings screen reads 146 POST fields, iterates the entire payload three
+times (`settings.php:759, 2354, 2406`) and builds 24 keys dynamically. An
+allowlist is not possible there without rewriting the save logic, which is not
+a safe change to make in the same pass as everything else. Every branch that
+writes still verifies its own nonce.
+
+The count moved from 0 to 1 **because the code got better, not worse.** Before,
+the read sat at file scope, where WPCS treats the whole file as one scope — a
+`check_admin_referer()` at `ivr-messages.php:593` silenced a read at line 114.
+That is the exact quirk that let a locally clean tree keep coming back flagged:
+WPCS looks at scope, the reviewer's analysis looks at execution order, and at
+line 114 nothing had been verified yet. Moving the read into a function put it
+somewhere WPCS genuinely checks, and it immediately said so.
+
+Plugin Check — the ruleset WordPress.org actually enforces — treats
+`NonceVerification` as a warning and reports **0 errors** on the shipped zip.
+
+### Measured
+
+| | v89.1 base | v90.1 | v90.2 |
+|---|---|---|---|
+| Plugin Check ruleset, shipped zip | 2 errors / 69 warnings | 0 / 69 | **0 / 72** |
+| WPCS security set, suppressions off | 12 errors / 145 warnings | 0 / 139 | **1 / 142** |
+| Suppression directives | 103 | 89 | **87** |
+| File-scope superglobal reads | 11 | 11 | **0** |
+| `php -l` | 139/139 | 139/139 | **139/139** |
+
+`wporg-audit.sh` — every category raised across rounds T7 through T13:
+**17 PASS, 0 FAIL, 5 READ.**
+
+The five READs are not code changes. They are the 16 user-login sites (a design
+decision needing a written justification), the `the_content`/shortcode return
+escaping, one `json_decode(stripslashes())` in `class-clickbank-provider.php`,
+the HMAC-signed `ajax_serve_user_audio` endpoint, and confirming the external
+host list against the 16 readme entries.

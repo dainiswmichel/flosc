@@ -15,8 +15,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 $flosc_flow_settings           = $GLOBALS['flosc_current_settings'] ?? array();
 $flosc_selected_ivr            = $GLOBALS['flosc_current_ivr'] ?? '';
 $flosc_flow_key                = $GLOBALS['flosc_settings_key'] ?? '';
-$flosc_get                     = wp_unslash( $_GET );
-$flosc_post                    = wp_unslash( $_POST );
+$flosc_get                     = FLOSC_Request_Guard::query_params( FLOSC_Request_Guard::admin_query_keys() );
+$flosc_post                    = FLOSC_Request_Guard::admin_post_payload();
 $flosc_ivr_param               = rawurlencode( $flosc_selected_ivr );
 $flosc_base_url                = admin_url( 'admin.php?page=flosc-settings&ivr=' . $flosc_ivr_param . '&tab=' );
 $flosc_flow_docs_url           = add_query_arg(

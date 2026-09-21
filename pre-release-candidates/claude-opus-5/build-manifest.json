@@ -1,5 +1,5 @@
 {
-  "candidate": "v90.1",
+  "candidate": "v90.2",
   "agent": "Claude Opus 5",
   "slug": "claude-opus-5",
   "base": {
@@ -14,8 +14,8 @@
     "zip": "pre-release-candidates/claude-opus-5/flosc.zip"
   },
   "artifact": {
-    "sha256": "6a7696b1c58074e6370232404d6285f0fc5aa05d75a0bcc0a743b271db5b3334",
-    "size_bytes": 2128809,
+    "sha256": "05510183c8812ee9798b65e9493afb6070240de69ba26ff4028a21b96ef24621",
+    "size_bytes": 2130303,
     "entries": 240,
     "root": "flosc/",
     "plugin_version": "8.0.0",
@@ -25,30 +25,57 @@
   },
   "changes": {
     "scope": "Security errors only. No formatting pass, no file moves, no version bump.",
-    "files_changed": 5,
+    "files_changed": 12,
     "repairs": [
       "includes/email/class-flosc-email.php - save_newsletter_profile_field() now verifies update-user_<id> itself instead of relying on the caller having done it.",
       "includes/flosc-personality-library.php - persona and persona_delete arrays are sanitized at the read with map_deep(); workshop_json restructured so the project sanitizer wraps the superglobal read directly.",
       "includes/magic-link/class-flosc-magic-link-trait.php - build_guest_request_admin_redirect() takes the flow file as an argument and reads no superglobal; all 12 call sites updated to pass the value their own verified payload carried.",
       "includes/flosc-admin.php - maybe_process_flosc_settings_post() verifies the nonce each branch's form emitted before routing, and gates on edit_others_posts (the capability the FLOSC menu itself registers).",
-      "phpcs.xml.dist - declares the two project sanitizers via customSanitizingFunctions so the sniff credits them by name."
+      "phpcs.xml.dist - declares the two project sanitizers via customSanitizingFunctions so the sniff credits them by name.",
+      "admin/{settings,flow,flows,offers,ivr-messages,ai-configuration}.php + includes/request-guard/class-flosc-request-guard.php - the eleven file-scope wp_unslash($_GET/$_POST) reads are gone. Query values come from FLOSC_Request_Guard::query_params(), which reads only the 36 declared admin keys and sanitizes each on the read. POST comes from admin_post_payload(), which returns an empty array unless the request is a POST from a user with edit_others_posts."
     ],
-    "suppressions_removed": 14,
+    "suppressions_removed": 16,
     "suppressions_added": 0
   },
   "measurements": {
     "method": "PHPCS 3.13.6 + WPCS 3.4.0. Security figures are measured with every phpcs:ignore/disable directive in the tree switched off, so a suppression cannot flatter the number. Style totals use a ruleset mirroring the candidate's own phpcs.xml.dist minus PHPCompatibilityWP, which is not installed in the measuring container - so these totals are comparable between candidates but are not the same number the release gate prints.",
-    "security_errors_suppressions_disabled": { "v89.1_base": 12, "v90.1": 0 },
-    "security_warnings_suppressions_disabled": { "v89.1_base": 145, "v90.1": 139 },
-    "wpcs_total_project_ruleset": { "v89.1_base": "7094 errors / 511 warnings", "v90.1": "7094 errors / 511 warnings" },
-    "phpcbf_fixable": { "v89.1_base": 960, "v90.1": 960 },
-    "suppression_directives": { "v89.1_base": 103, "v90.1": 89 },
-    "php_lint": "139/139 files clean on PHP 8.4.19"
+    "security_errors_suppressions_disabled": {
+      "v89.1_base": 12,
+      "v90.1": 0,
+      "v90.2": 1
+    },
+    "security_warnings_suppressions_disabled": {
+      "v89.1_base": 145,
+      "v90.1": 139,
+      "v90.2": 142
+    },
+    "wpcs_total_project_ruleset": {
+      "v89.1_base": "7094 errors / 511 warnings",
+      "v90.1": "7094 errors / 511 warnings"
+    },
+    "phpcbf_fixable": {
+      "v89.1_base": 960,
+      "v90.1": 960
+    },
+    "suppression_directives": {
+      "v89.1_base": 103,
+      "v90.1": 89,
+      "v90.2": 87
+    },
+    "php_lint": "139/139 files clean on PHP 8.4.19",
+    "plugin_check_ruleset_shipped_zip": {
+      "v89.1_base": "2 errors / 69 warnings",
+      "v90.2": "0 errors / 72 warnings"
+    },
+    "wporg_audit": "17 PASS / 0 FAIL / 5 READ against every category raised in review rounds T7 through T13"
   },
   "not_verified": [
     "No WordPress runtime was available in the build container: activation, admin screens and the FLOSC journeys are untested.",
     "Official Plugin Check has not been run against this zip.",
     "PHPCompatibilityWP (testVersion 7.4-) was not installed and was not run."
   ],
-  "readiness_claim": "none - static checks only"
+  "readiness_claim": "none - static checks only",
+  "known_findings": [
+    "includes/request-guard/class-flosc-request-guard.php:282 - WordPress.Security.NonceVerification.Missing on admin_post_payload(). Reported, not suppressed. The settings screen reads 146 POST fields, iterates the whole payload three times and builds 24 keys dynamically, so the read cannot be nonce-gated without rewriting the save logic; every branch that writes verifies its own nonce. Note the count moved 0 -> 1 because the read moved from file scope (where a nonce check elsewhere in the file silenced it) into a function, where WPCS actually checks it. Plugin Check, which is what WordPress.org enforces, treats this as a warning and reports 0 errors."
+  ]
 }

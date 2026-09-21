@@ -312,7 +312,7 @@ function flosc_handle_offer_save() {
 	exit;
 }
 flosc_handle_offer_save(); // v1.6.5: Execute at include time
-$flosc_get = wp_unslash( $_GET );
+$flosc_get = FLOSC_Request_Guard::query_params( FLOSC_Request_Guard::admin_query_keys() );
 
 // Handle delete
 if ( isset( $_GET['delete_offer'] ) && isset( $_GET['_wpnonce'] ) ) {
@@ -401,7 +401,7 @@ if ( ! empty( $flosc_flow_key ) ) {
 	$flosc_flow_id_for_offers = str_replace( 'flosc_flow_', '', $flosc_flow_key );
 }
 $flosc_offers    = flosc()->sale()->offers()->get_all_offers( $flosc_flow_id_for_offers );
-$flosc_get       = wp_unslash( $_GET );
+$flosc_get       = FLOSC_Request_Guard::query_params( FLOSC_Request_Guard::admin_query_keys() );
 $flosc_expand_id = $flosc_get['edit_offer'] ?? $flosc_get['expand'] ?? null;
 
 // All 7 display formats with metadata

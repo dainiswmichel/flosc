@@ -19,7 +19,7 @@ flosc_tab_header( '🤖', 'AI' );
 
 $flosc_flow_settings = $GLOBALS['flosc_current_settings'] ?? array();
 $flosc_current_ivr   = $GLOBALS['flosc_current_ivr'] ?? '';
-$flosc_get           = isset( $GLOBALS['flosc_get'] ) && is_array( $GLOBALS['flosc_get'] ) ? $GLOBALS['flosc_get'] : wp_unslash( $_GET ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only rendering of the current admin view; no state change.
+$flosc_get           = isset( $GLOBALS['flosc_get'] ) && is_array( $GLOBALS['flosc_get'] ) ? $GLOBALS['flosc_get'] : FLOSC_Request_Guard::query_params( FLOSC_Request_Guard::admin_query_keys() );
 $flosc_ai_view       = isset( $flosc_get['view'] ) ? sanitize_key( (string) $flosc_get['view'] ) : 'single';
 if ( ! in_array( $flosc_ai_view, array( 'single', 'all' ), true ) ) {
 	$flosc_ai_view = 'single';

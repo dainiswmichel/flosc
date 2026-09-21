@@ -111,8 +111,8 @@ if ( ! function_exists( 'flosc_sanitize_ivr_markdown' ) ) {
 	}
 }
 
-$flosc_get  = wp_unslash( $_GET );
-$flosc_post = wp_unslash( $_POST );
+$flosc_get  = FLOSC_Request_Guard::query_params( FLOSC_Request_Guard::admin_query_keys() );
+$flosc_post = FLOSC_Request_Guard::admin_post_payload();
 
 // v1.2.8: Resolve active IVR file from explicit request first, then context fallback.
 $flosc_requested_ivr_file     = sanitize_file_name( (string) ( $flosc_get['ivr'] ?? '' ) );
