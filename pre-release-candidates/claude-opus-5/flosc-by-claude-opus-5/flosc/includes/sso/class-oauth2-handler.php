@@ -277,22 +277,25 @@ class OAuth2_Handler {
 		 * trustworthy flow-domain URL. An abandoned login that previously
 		 * resumed on the flow URL now lands there. That is deliberate.
 		 */
-		$get  = array();
-		$post = array();
+		$get          = array();
+		$post         = array();
+		$query_params = $request->get_query_params();
+		$body_params  = $request->get_body_params();
 		// 'user' is Apple's form_post extra, sent on first authorization only.
 		// It is collected HERE, in the scope where verify_state() runs, and
 		// handed to the provider adapter, so no provider reads the request.
 		foreach ( array( 'code', 'state', 'error', 'error_description', 'user' ) as $flosc_k ) {
-			$g = ( isset( $_GET[ $flosc_k ] ) && is_scalar( $_GET[ $flosc_k ] ) )
-				? sanitize_text_field( wp_unslash( $_GET[ $flosc_k ] ) )
+			$max_length = ( 'user' === $flosc_k ) ? 20000 : 2048;
+			$g = ( isset( $query_params[ $flosc_k ] ) && is_scalar( $query_params[ $flosc_k ] ) )
+				? sanitize_text_field( wp_unslash( $query_params[ $flosc_k ] ) )
 				: '';
-			if ( '' !== $g ) {
+			if ( '' !== $g && strlen( $g ) <= $max_length ) {
 				$get[ $flosc_k ] = $g;
 			}
-			$p = ( isset( $_POST[ $flosc_k ] ) && is_scalar( $_POST[ $flosc_k ] ) )
-				? sanitize_text_field( wp_unslash( $_POST[ $flosc_k ] ) )
+			$p = ( isset( $body_params[ $flosc_k ] ) && is_scalar( $body_params[ $flosc_k ] ) )
+				? sanitize_text_field( wp_unslash( $body_params[ $flosc_k ] ) )
 				: '';
-			if ( '' !== $p ) {
+			if ( '' !== $p && strlen( $p ) <= $max_length ) {
 				$post[ $flosc_k ] = $p;
 			}
 		}

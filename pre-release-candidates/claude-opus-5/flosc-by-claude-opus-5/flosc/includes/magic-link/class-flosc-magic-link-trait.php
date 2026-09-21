@@ -225,7 +225,7 @@ trait FLOSC_Magic_Link_Trait {
 			$val = ( isset( $_GET[ $flosc_qk ] ) && is_scalar( $_GET[ $flosc_qk ] ) )
 				? sanitize_text_field( wp_unslash( $_GET[ $flosc_qk ] ) )
 				: '';
-			if ( '' !== $val ) {
+			if ( '' !== $val && strlen( $val ) <= 2048 ) {
 				$get[ $flosc_qk ] = $val;
 			}
 		}

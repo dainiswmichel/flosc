@@ -21,6 +21,13 @@ handoff*.md
 .gitignore
 .distignore
 build-dist-zip.sh
+.cursorrules
+agents.md
+AGENTS.md
+CLAUDE.md
+WORDPRESS-ORG-RELEASE.md
+phpcs.xml
+phpcs.xml.dist
 .claude/
 .vscode/
 .idea/

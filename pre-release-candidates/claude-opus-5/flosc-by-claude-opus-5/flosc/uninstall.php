@@ -117,7 +117,37 @@ if ( function_exists( 'wp_clear_scheduled_hook' ) ) {
 }
 
 /**
+ * The WordPress filesystem abstraction, or null when it cannot be had.
+ *
+ * Uninstall runs without form credentials, so the direct transport is the
+ * only one that can apply. Bootstrapping is done once and the result reused.
+ *
+ * @return WP_Filesystem_Base|null The filesystem object, or null.
+ */
+function flosc_uninstall_filesystem() {
+	if ( ! function_exists( 'WP_Filesystem' ) ) {
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+	}
+
+	global $wp_filesystem;
+	if ( ! is_object( $wp_filesystem ) ) {
+		// Direct method: uninstall has no form credentials for FTP.
+		WP_Filesystem();
+	}
+
+	return is_object( $wp_filesystem ) ? $wp_filesystem : null;
+}
+
+/**
  * Recursively remove a directory under uploads.
+ *
+ * Everything here goes through WP_Filesystem and wp_delete_file(). There is
+ * deliberately no raw scandir/unlink/rmdir fallback: WordPress.org promotes
+ * WordPress.WP.AlternativeFunctions to an error, and those three calls were
+ * the only genuine Plugin Check errors this plugin had. When the filesystem
+ * abstraction cannot be had at all, the tree is left in place. Files left
+ * under uploads after an uninstall are recoverable by hand; a release that
+ * bypasses the filesystem API is not shippable.
  *
  * @param string $dir Absolute path.
  * @return void
@@ -128,45 +158,40 @@ function flosc_uninstall_rm_rf( $dir ) {
 		return;
 	}
 
-	if ( ! function_exists( 'WP_Filesystem' ) ) {
-		require_once ABSPATH . 'wp-admin/includes/file.php';
-	}
-	global $wp_filesystem;
-	if ( ! is_object( $wp_filesystem ) ) {
-		// Direct method: uninstall has no form credentials for FTP.
-		WP_Filesystem();
-	}
-	if ( is_object( $wp_filesystem ) && method_exists( $wp_filesystem, 'rmdir' ) && $wp_filesystem->rmdir( $dir, true ) ) {
+	$flosc_fs = flosc_uninstall_filesystem();
+	if ( null === $flosc_fs || ! method_exists( $flosc_fs, 'rmdir' ) ) {
 		return;
 	}
 
-	if ( ! is_readable( $dir ) ) {
+	// The recursive form handles the whole tree wherever the transport
+	// supports it, which is the common case.
+	if ( $flosc_fs->rmdir( $dir, true ) ) {
 		return;
 	}
-	$items = scandir( $dir );
-	if ( ! is_array( $items ) ) {
-		return;
-	}
-	foreach ( $items as $item ) {
-		if ( '.' === $item || '..' === $item ) {
-			continue;
+
+	// It declined. Walk the tree through the same abstraction instead.
+	$flosc_entries = method_exists( $flosc_fs, 'dirlist' )
+		? $flosc_fs->dirlist( $dir, true, false )
+		: false;
+
+	if ( is_array( $flosc_entries ) ) {
+		foreach ( $flosc_entries as $flosc_entry ) {
+			$flosc_name = isset( $flosc_entry['name'] ) ? (string) $flosc_entry['name'] : '';
+			if ( '' === $flosc_name || '.' === $flosc_name || '..' === $flosc_name ) {
+				continue;
+			}
+
+			$flosc_path = $dir . '/' . $flosc_name;
+			if ( isset( $flosc_entry['type'] ) && 'd' === $flosc_entry['type'] ) {
+				flosc_uninstall_rm_rf( $flosc_path );
+			} else {
+				wp_delete_file( $flosc_path );
+			}
 		}
-		$path = $dir . DIRECTORY_SEPARATOR . $item;
-		if ( is_dir( $path ) ) {
-			flosc_uninstall_rm_rf( $path );
-		} elseif ( function_exists( 'wp_delete_file' ) ) {
-			wp_delete_file( $path );
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_is_writable -- this branch runs only because WP_Filesystem is unavailable.
-		} elseif ( is_writable( $path ) ) {
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- uninstall fallback when WP_Filesystem rmdir unavailable
-			unlink( $path );
-		}
 	}
-	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_is_writable -- as above: the WP_Filesystem path was already tried and failed.
-	if ( is_dir( $dir ) && is_writable( $dir ) ) {
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- uninstall fallback when WP_Filesystem rmdir unavailable
-		rmdir( $dir );
-	}
+
+	// The directory is empty now, so the non-recursive form can take it.
+	$flosc_fs->rmdir( $dir, false );
 }
 
 // FLOSC data under uploads only (never touch plugins/flosc — core removes that).
