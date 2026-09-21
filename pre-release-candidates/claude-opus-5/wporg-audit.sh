@@ -41,16 +41,16 @@ echo "$H" | grep -qE '^[0-9]+\.[0-9]+$' \
   || bad "must be major.minor only — '7.0.4' is what got rejected"
 
 head2 "2. register_setting() sanitize_callback  (T9,T10,T11 — CHANGESNOTMADE)"
-TOTAL=$(grep -rc 'register_setting(' --include='*.php' . 2>/dev/null | grep -v ':0$' | awk -F: '{s+=$2} END {print s+0}')
+TOTAL=$(grep -rc --exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=flosc_development_archives 'register_setting(' --include='*.php' . 2>/dev/null | grep -v ':0$' | awk -F: '{s+=$2} END {print s+0}')
 echo "        register_setting() calls: ${TOTAL:-0}"
-grep -rA6 'register_setting(' --include='*.php' . 2>/dev/null | grep -q 'sanitize_callback' \
+grep -rA6 --exclude-dir=vendor --exclude-dir=node_modules 'register_setting(' --include='*.php' . 2>/dev/null | grep -q 'sanitize_callback' \
   && ok "sanitize_callback present" || bad "a register_setting() lacks sanitize_callback"
 grep -q 'sanitize_secret_setting' includes/sso/class-sso-manager.php 2>/dev/null \
   && ok "password/secret fields have their own sanitizer (the T11 complaint)" \
   || bad "secret fields fall through to a text sanitizer — T11 named this exactly"
 
 head2 "3. REST permission_callback  (T7,T10,T11 — CHANGESNOTMADE)"
-WEAK=$(grep -rhoE "permission_callback'[[:space:]]*=>[[:space:]]*'(is_user_logged_in|__return_true)'" --include='*.php' . 2>/dev/null | wc -l | tr -d ' ')
+WEAK=$(grep -rhoE --exclude-dir=vendor --exclude-dir=node_modules "permission_callback'[[:space:]]*=>[[:space:]]*'(is_user_logged_in|__return_true)'" --include='*.php' . 2>/dev/null | wc -l | tr -d ' ')
 echo "        bare is_user_logged_in / __return_true: $WEAK"
 [ "$WEAK" -eq 0 ] && ok "no bare weak callbacks" || review "$WEAK bare callback(s) — public ones are allowed, but each needs to be deliberate"
 for EP in 'debug/funnel-state' "'/lessons'" 'admin-messages'; do
@@ -58,41 +58,41 @@ for EP in 'debug/funnel-state' "'/lessons'" 'admin-messages'; do
 done
 
 head2 "4. Callback return values escaped  (T7,T8 — CHANGESNOTMADE)"
-grep -rn "add_filter( *'the_content'\|add_shortcode(" --include='*.php' . 2>/dev/null | sed 's/^/        /' | head -12
+grep -rn --exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=flosc_development_archives "add_filter( *'the_content'\|add_shortcode(" --include='*.php' . 2>/dev/null | sed 's/^/        /' | head -12
 review "each callback above must escape everything it RETURNS — read them, a grep cannot decide this"
 
 head2 "5. Core loading files included directly  (T12)"
-N=$(grep -rn "require.*wp-admin/includes/import\.php\|require.*wp-load\.php\|require.*wp-config\.php\|require.*wp-blog-header\.php" --include='*.php' . 2>/dev/null | wc -l | tr -d ' ')
-[ "$N" -eq 0 ] && ok "no direct core-file includes" || { bad "$N direct core-file include(s)"; grep -rn "require.*wp-admin/includes/import\.php\|require.*wp-load\.php" --include='*.php' . | sed 's/^/        /'; }
+N=$(grep -rn --exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=flosc_development_archives "require.*wp-admin/includes/import\.php\|require.*wp-load\.php\|require.*wp-config\.php\|require.*wp-blog-header\.php" --include='*.php' . 2>/dev/null | wc -l | tr -d ' ')
+[ "$N" -eq 0 ] && ok "no direct core-file includes" || { bad "$N direct core-file include(s)"; grep -rn --exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=flosc_development_archives "require.*wp-admin/includes/import\.php\|require.*wp-load\.php" --include='*.php' . | sed 's/^/        /'; }
 
 head2 "6. File and directory locations  (T12)"
-N=$(grep -rn 'WP_PLUGIN_DIR' --include='*.php' . 2>/dev/null | wc -l | tr -d ' ')
-[ "$N" -eq 0 ] && ok "no WP_PLUGIN_DIR references" || { bad "$N WP_PLUGIN_DIR reference(s) — use plugin_dir_path()/plugins_url()"; grep -rn 'WP_PLUGIN_DIR' --include='*.php' . | sed 's/^/        /'; }
+N=$(grep -rn --exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=flosc_development_archives 'WP_PLUGIN_DIR' --include='*.php' . 2>/dev/null | wc -l | tr -d ' ')
+[ "$N" -eq 0 ] && ok "no WP_PLUGIN_DIR references" || { bad "$N WP_PLUGIN_DIR reference(s) — use plugin_dir_path()/plugins_url()"; grep -rn --exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=flosc_development_archives 'WP_PLUGIN_DIR' --include='*.php' . | sed 's/^/        /'; }
 
 head2 "7. Writing into the plugin folder  (T7)"
-N=$(grep -rn 'file_put_contents\|[^_a-z]fwrite(\|[^_a-z]copy(' --include='*.php' . 2>/dev/null | grep -v flosc_documentation | wc -l | tr -d ' ')
-[ "$N" -eq 0 ] && ok "no raw write calls (writes go through WP_Filesystem / uploads)" || { bad "$N raw write call(s)"; grep -rn 'file_put_contents\|[^_a-z]fwrite(\|[^_a-z]copy(' --include='*.php' . | grep -v flosc_documentation | sed 's/^/        /' | head; }
+N=$(grep -rn --exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=flosc_development_archives 'file_put_contents\|[^_a-z]fwrite(\|[^_a-z]copy(' --include='*.php' . 2>/dev/null | grep -v flosc_documentation | wc -l | tr -d ' ')
+[ "$N" -eq 0 ] && ok "no raw write calls (writes go through WP_Filesystem / uploads)" || { bad "$N raw write call(s)"; grep -rn --exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=flosc_development_archives 'file_put_contents\|[^_a-z]fwrite(\|[^_a-z]copy(' --include='*.php' . | grep -v flosc_documentation | sed 's/^/        /' | head; }
 
 head2 "8. FILTER_UNSAFE_RAW / FILTER_DEFAULT  (T12 — 31 incidences)"
-N=$(grep -rn 'FILTER_UNSAFE_RAW\|FILTER_DEFAULT' --include='*.php' . 2>/dev/null | wc -l | tr -d ' ')
-[ "$N" -eq 0 ] && ok "zero — these sanitize nothing and AGENTS.md forbids them" || { bad "$N use(s)"; grep -rn 'FILTER_UNSAFE_RAW\|FILTER_DEFAULT' --include='*.php' . | sed 's/^/        /' | head; }
+N=$(grep -rn --exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=flosc_development_archives 'FILTER_UNSAFE_RAW\|FILTER_DEFAULT' --include='*.php' . 2>/dev/null | wc -l | tr -d ' ')
+[ "$N" -eq 0 ] && ok "zero — these sanitize nothing and AGENTS.md forbids them" || { bad "$N use(s)"; grep -rn --exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=flosc_development_archives 'FILTER_UNSAFE_RAW\|FILTER_DEFAULT' --include='*.php' . | sed 's/^/        /' | head; }
 
 head2 "9. HTTP_HOST in the SSO redirect allowlist  (T12)"
-N=$(grep -rn 'HTTP_HOST' includes/sso/ 2>/dev/null | wc -l | tr -d ' ')
-[ "$N" -eq 0 ] && ok "no HTTP_HOST in SSO" || { bad "$N HTTP_HOST use(s) in SSO — attacker-controllable"; grep -rn 'HTTP_HOST' includes/sso/ | sed 's/^/        /'; }
+N=$(grep -rn --exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=flosc_development_archives 'HTTP_HOST' includes/sso/ 2>/dev/null | wc -l | tr -d ' ')
+[ "$N" -eq 0 ] && ok "no HTTP_HOST in SSO" || { bad "$N HTTP_HOST use(s) in SSO — attacker-controllable"; grep -rn --exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=flosc_development_archives 'HTTP_HOST' includes/sso/ | sed 's/^/        /'; }
 
 head2 "10. json_decode( stripslashes( ... ) )  (T7, T11)"
-N=$(grep -rn 'json_decode( *stripslashes\|json_decode(stripslashes' --include='*.php' . 2>/dev/null | wc -l | tr -d ' ')
-[ "$N" -eq 0 ] && ok "pattern absent" || { review "$N site(s) — json_decode does not sanitize; validate the decoded structure"; grep -rn 'json_decode( *stripslashes\|json_decode(stripslashes' --include='*.php' . | sed 's/^/        /'; }
+N=$(grep -rn --exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=flosc_development_archives 'json_decode( *stripslashes\|json_decode(stripslashes' --include='*.php' . 2>/dev/null | wc -l | tr -d ' ')
+[ "$N" -eq 0 ] && ok "pattern absent" || { review "$N site(s) — json_decode does not sanitize; validate the decoded structure"; grep -rn --exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=flosc_development_archives 'json_decode( *stripslashes\|json_decode(stripslashes' --include='*.php' . | sed 's/^/        /'; }
 
 head2 "11. Inline <script> / <style> in PHP  (every round)"
-HITS=$(grep -rnE '<script[ >]|<style[ >]' --include='*.php' . 2>/dev/null | grep -vE ':[[:space:]]*(//|\*|/\*|<\?php //)' | wc -l | tr -d ' ')
-[ "$HITS" -eq 0 ] && ok "zero real tags (comments mentioning them do not count)" || { bad "$HITS real inline tag(s)"; grep -rnE '<script[ >]|<style[ >]' --include='*.php' . | grep -vE ':[[:space:]]*(//|\*|/\*|<\?php //)' | sed 's/^/        /'; }
+HITS=$(grep -rn --exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=flosc_development_archives -E '<script[ >]|<style[ >]' --include='*.php' . 2>/dev/null | grep -vE ':[[:space:]]*(//|\*|/\*|<\?php //)' | wc -l | tr -d ' ')
+[ "$HITS" -eq 0 ] && ok "zero real tags (comments mentioning them do not count)" || { bad "$HITS real inline tag(s)"; grep -rn --exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=flosc_development_archives -E '<script[ >]|<style[ >]' --include='*.php' . | grep -vE ':[[:space:]]*(//|\*|/\*|<\?php //)' | sed 's/^/        /'; }
 
 head2 "12. External services documented  (every round)"
 DECL=$(sed -n '/^== External Services ==/,/^== [A-Z]/p' readme.txt 2>/dev/null | grep -cE '^[0-9]+\. ')
 echo "        entries declared in readme.txt: $DECL"
-HOSTS=$(grep -rhoE 'https://[a-z0-9.-]+' --include='*.php' includes/ admin/ flosc.php 2>/dev/null \
+HOSTS=$(grep -rhoE --exclude-dir=vendor --exclude-dir=node_modules 'https://[a-z0-9.-]+' --include='*.php' includes/ admin/ flosc.php 2>/dev/null \
   | sort -u | grep -vE 'dainis\.net|flosc\.ai|example\.com|w3\.org|wordpress\.org|gnu\.org|schema\.org')
 echo "        distinct external hosts called by code:"
 echo "$HOSTS" | sed 's/^/          /'
@@ -100,7 +100,7 @@ echo "$HOSTS" | sed 's/^/          /'
 review "every host listed above must map to one of those entries"
 
 head2 "13. Creating / logging in users  (T7, T11 — 16 incidences)"
-N=$(grep -rn 'wp_set_auth_cookie\|wp_create_user\|wp_set_password' --include='*.php' . 2>/dev/null | wc -l | tr -d ' ')
+N=$(grep -rn --exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=flosc_development_archives 'wp_set_auth_cookie\|wp_create_user\|wp_set_password' --include='*.php' . 2>/dev/null | wc -l | tr -d ' ')
 echo "        sites: $N"
 review "not a bug — a design decision (magic links, SSO, post-purchase). The reviewer"
 review "accepts these ONLY with a written justification in your reply email."
@@ -108,12 +108,12 @@ review "accepts these ONLY with a written justification in your reply email."
 head2 "14. Bulk superglobal reads at FILE SCOPE  (T7, T13 — the live blocker)"
 echo "        The reviewer flags these twice over: CSRF, and performance"
 echo "        (\"don't check for post submission outside of functions\")."
-FS=$(grep -rnE '^\$[a-z_]+ *= *(isset\( *\$_(GET|POST) *\).*)?wp_unslash\( *\$_(GET|POST|REQUEST) *\)' --include='*.php' . 2>/dev/null)
+FS=$(grep -rn --exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=flosc_development_archives -E '^\$[a-z_]+ *= *(isset\( *\$_(GET|POST) *\).*)?wp_unslash\( *\$_(GET|POST|REQUEST) *\)' --include='*.php' . 2>/dev/null)
 FSN=$(echo "$FS" | grep -c . )
 [ -z "$FS" ] && FSN=0
 echo "        file-scope slurps: $FSN"
 [ "$FSN" -eq 0 ] && ok "none at file scope" || { bad "$FSN file-scope slurp(s)"; echo "$FS" | sed 's/^/        /'; }
-INF=$(grep -rnE '^[[:space:]]+\$[a-z_]+ *= *wp_unslash\( *\$_(GET|POST|REQUEST) *\)' --include='*.php' . 2>/dev/null | wc -l | tr -d ' ')
+INF=$(grep -rn --exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=flosc_development_archives -E '^[[:space:]]+\$[a-z_]+ *= *wp_unslash\( *\$_(GET|POST|REQUEST) *\)' --include='*.php' . 2>/dev/null | wc -l | tr -d ' ')
 echo "        inside functions (fine when a nonce is verified first): $INF"
 
 head2 "15. PHP syntax"
