@@ -491,7 +491,7 @@ $flosc_signup_action  = $flosc_flow_settings['header_signup_action'] ?? 'open_lo
 
 <?php
 // ─── Guest Access Link (MagicLink) ─────────────────────────────────────────
-// Neutral product defaults. Never hardcode a site-specific brand name here —
+// Neutral product defaults. Never hardcode a site-specific brand name here —.
 // each flow sets its own labels. MagicLink logs in an EXISTING WP user only;
 // it never creates accounts on click.
 $flosc_guest_link_name_default = 'Guest Access Link';
@@ -803,7 +803,7 @@ $flosc_guest_log = get_option( 'flosc_guest_link_log', array() );
 if ( empty( $flosc_guest_log ) ) {
 	echo '<p class="flosc-login-empty-log">No guest link requests recorded yet.</p>';
 } else {
-	// Sort by count descending
+	// Sort by count descending.
 	uasort( $flosc_guest_log, fn( $a, $b ) => $b['count'] <=> $a['count'] );
 	echo '<table class="widefat striped flosc-login-activity-table">';
 	echo '<thead><tr><th>Email</th><th>Links Sent</th><th>First Request</th><th>Last Request</th></tr></thead>';
@@ -813,7 +813,7 @@ if ( empty( $flosc_guest_log ) ) {
 		$flosc_first_sent  = isset( $flosc_entry['first_sent'] ) ? wp_date( 'Y-m-d H:i', $flosc_entry['first_sent'] ) : '—';
 		$flosc_last_sent   = isset( $flosc_entry['last_sent'] ) ? wp_date( 'Y-m-d H:i', $flosc_entry['last_sent'] ) : '—';
 		$flosc_count_class = $flosc_count >= 6 ? 'flosc-login-count-cell flosc-login-count-cell--warn' : 'flosc-login-count-cell';
-		// Link to WP user profile if user exists
+		// Link to WP user profile if user exists.
 		$flosc_wp_user       = get_user_by( 'email', $flosc_entry['email'] );
 		$flosc_email_display = $flosc_wp_user
 			? '<a href="' . esc_url( get_edit_user_link( $flosc_wp_user->ID ) ) . '">' . esc_html( $flosc_entry['email'] ) . '</a>'

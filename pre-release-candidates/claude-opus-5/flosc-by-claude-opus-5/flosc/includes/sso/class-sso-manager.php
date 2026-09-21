@@ -73,13 +73,13 @@ class SSO_Manager {
 	 * Initialize the SSO system
 	 */
 	public function init() {
-		// Load provider classes
+		// Load provider classes.
 		$this->load_providers();
 
-		// Initialize OAuth2 handler
+		// Initialize OAuth2 handler.
 		$this->oauth2_handler->init();
 
-		// Register hooks
+		// Register hooks.
 		$this->register_hooks();
 
 		do_action( 'flosc_sso_initialized', $this );
@@ -91,7 +91,7 @@ class SSO_Manager {
 	private function load_providers() {
 		$providers_dir = FLOSC_PLUGIN_DIR . 'includes/sso/providers/';
 
-		// Define available providers
+		// Define available providers.
 		$provider_classes = array(
 			'google'    => 'Google_Provider',
 			'apple'     => 'Apple_Provider',
@@ -100,7 +100,7 @@ class SSO_Manager {
 			'linkedin'  => 'LinkedIn_Provider',
 		);
 
-		// Allow filtering of available providers
+		// Allow filtering of available providers.
 		$provider_classes = apply_filters( 'flosc_sso_providers', $provider_classes );
 
 		foreach ( $provider_classes as $provider_id => $class_name ) {
@@ -117,7 +117,7 @@ class SSO_Manager {
 			}
 		}
 
-		// Allow manual provider registration
+		// Allow manual provider registration.
 		do_action( 'flosc_sso_register_providers', $this );
 	}
 
@@ -125,20 +125,20 @@ class SSO_Manager {
 	 * Register hooks
 	 */
 	private function register_hooks() {
-		// Avatar filter
+		// Avatar filter.
 		add_filter( 'get_avatar_url', array( $this, 'filter_avatar_url' ), 10, 3 );
 
 		// v1.4.8: FLOSC SSO buttons only appear inside FLOSC flows (chat widget auth modal).
-		// Removed login_form and register_form hooks to prevent interference with
+		// Removed login_form and register_form hooks to prevent interference with.
 		// BuddyBoss or other site-wide login systems.
 
 		// Handle SSO errors on frontend (only on FLOSC pages)
 		add_action( 'wp_loaded', array( $this, 'handle_sso_error_display' ) );
 
-		// Admin settings
+		// Admin settings.
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 
-		// AJAX endpoints for frontend
+		// AJAX endpoints for frontend.
 		add_action( 'wp_ajax_flosc_unlink_sso', array( $this, 'ajax_unlink_provider' ) );
 		add_action( 'wp_ajax_flosc_get_linked_accounts', array( $this, 'ajax_get_linked_accounts' ) );
 	}
@@ -224,7 +224,7 @@ class SSO_Manager {
 	 * @return string
 	 */
 	public function filter_avatar_url( $url, $id_or_email, $args ) {
-		// Get user ID
+		// Get user ID.
 		$user_id = null;
 
 		if ( is_numeric( $id_or_email ) ) {
@@ -244,7 +244,7 @@ class SSO_Manager {
 			return $url;
 		}
 
-		// Check for SSO avatar
+		// Check for SSO avatar.
 		$sso_avatar = $this->user_linker->get_sso_avatar( $user_id );
 
 		if ( $sso_avatar ) {
@@ -273,7 +273,7 @@ class SSO_Manager {
 
 		echo '</div>';
 
-		// Add inline styles
+		// Add inline styles.
 		$this->output_login_button_styles();
 	}
 
@@ -353,7 +353,7 @@ class SSO_Manager {
         '
 		);
 
-		// Add click handler script
+		// Add click handler script.
 		// v1.4.6: Use URL-safe separator (handles non-pretty permalinks)
 		// §12: attached via an inline-only script handle instead of a raw <script> tag.
 		wp_register_script( 'flosc-sso', false, array(), FLOSC_VERSION, true );
@@ -406,8 +406,8 @@ class SSO_Manager {
 				$error_message = 'Login didn\'t complete. Please try again — if the issue persists, try a different login method or contact support.';
 			}
 
-			// v8.0.1: Set a JS variable instead of alert() so flosc-app.js can
-			// show the error in-chat and re-present the auth modal
+			// v8.0.1: Set a JS variable instead of alert() so flosc-app.js can.
+			// show the error in-chat and re-present the auth modal.
 			add_action(
 				'wp_footer',
 				function () use ( $error_message ) {
@@ -424,7 +424,7 @@ class SSO_Manager {
 	 * Register admin settings
 	 */
 	public function register_settings() {
-		// Register setting section
+		// Register setting section.
 		add_settings_section(
 			'flosc_sso_settings',
 			__( 'Social Login Settings', 'flosc' ),
@@ -432,7 +432,7 @@ class SSO_Manager {
 			'flosc-sso'
 		);
 
-		// Register settings for each provider
+		// Register settings for each provider.
 		foreach ( $this->providers as $provider ) {
 			$fields = $provider->get_settings_fields();
 
@@ -644,7 +644,7 @@ class SSO_Manager {
 
 		$user_id = get_current_user_id();
 
-		// Check if this is their only login method
+		// Check if this is their only login method.
 		$linked = $this->user_linker->get_linked_providers( $user_id );
 		$user   = get_userdata( $user_id );
 		// v1.4.9: wp_hash_password() generates random salt each call, so direct comparison never works.

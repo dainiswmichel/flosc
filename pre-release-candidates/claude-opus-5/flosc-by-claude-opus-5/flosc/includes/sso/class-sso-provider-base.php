@@ -194,7 +194,7 @@ abstract class SSO_Provider_Base {
 			'state'         => $state,
 		);
 
-		// Allow providers to add custom parameters
+		// Allow providers to add custom parameters.
 		$params = $this->customize_auth_params( $params );
 
 		return $this->auth_url . '?' . http_build_query( $params );
@@ -243,7 +243,7 @@ abstract class SSO_Provider_Base {
 		$body = json_decode( wp_remote_retrieve_body( $response ), true );
 
 		if ( isset( $body['error'] ) ) {
-			// v1.4.6: Handle both flat and nested error formats
+			// v1.4.6: Handle both flat and nested error formats.
 			// Flat: { "error": "invalid_grant", "error_description": "Code expired" }
 			// Nested (Facebook/Google): { "error": { "message": "...", "code": 190 } }
 			if ( is_array( $body['error'] ) && isset( $body['error']['message'] ) ) {
@@ -394,7 +394,7 @@ abstract class SSO_Provider_Base {
 	 * @return array ['background' => '#xxx', 'text' => '#xxx']
 	 */
 	public function get_button_colors() {
-		// Override in subclasses for provider-specific colors
+		// Override in subclasses for provider-specific colors.
 		return array(
 			'background' => '#4285f4',
 			'text'       => '#ffffff',

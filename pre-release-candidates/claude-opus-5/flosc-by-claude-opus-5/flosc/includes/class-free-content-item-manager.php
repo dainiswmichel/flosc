@@ -40,7 +40,7 @@ class FLOSC_Free_Content_Item_Manager {
 	}
 
 	private function __construct() {
-		// Hook into quiz completion
+		// Hook into quiz completion.
 		add_action( 'flosc_quiz_completed', array( $this, 'handle_quiz_completion' ), 10, 2 );
 	}
 
@@ -67,7 +67,7 @@ class FLOSC_Free_Content_Item_Manager {
 			return;
 		}
 
-		// Get missed lessons
+		// Get missed lessons.
 		$missed = $this->get_missed_lessons( $quiz_result );
 
 		if ( empty( $missed ) ) {
@@ -100,7 +100,7 @@ class FLOSC_Free_Content_Item_Manager {
 
 			$selected_lessons = $this->pick_eligible_lessons_from_tiers( $tiers, $quiz_id, $count );
 		} else {
-			// Non-IPA quiz: shuffle missed lessons, pick admin-configured count from pool
+			// Non-IPA quiz: shuffle missed lessons, pick admin-configured count from pool.
 			shuffle( $missed );
 			$selected_lessons = array();
 			foreach ( $missed as $lesson_num ) {
@@ -117,7 +117,7 @@ class FLOSC_Free_Content_Item_Manager {
 			}
 		}
 
-		// Bonus free lesson (admin: free_content_item_guaranteed) — in pool, not never-free
+		// Bonus free lesson (admin: free_content_item_guaranteed) — in pool, not never-free.
 		$guaranteed = intval(
 			function_exists( 'flosc_get_setting' )
 			? flosc_get_setting( 'free_content_item_guaranteed', 35 )
@@ -281,7 +281,7 @@ class FLOSC_Free_Content_Item_Manager {
 		if ( $pool !== '' ) {
 			return $this->find_lesson_post_in_category( $lesson_num, $pool );
 		}
-		// No pool configured: any published post in the quiz's lesson group category
+		// No pool configured: any published post in the quiz's lesson group category.
 		return $this->find_lesson_post( $lesson_num, $quiz_id );
 	}
 
@@ -390,7 +390,7 @@ class FLOSC_Free_Content_Item_Manager {
 	 * @return array Array of missed lesson numbers
 	 */
 	private function get_missed_lessons( $quiz_result ) {
-		// Quiz types may return either plain lesson numbers or structured rows
+		// Quiz types may return either plain lesson numbers or structured rows.
 		// (question_index / topics / correct_content) from analyze().
 		$incorrect = $quiz_result['incorrect'] ?? $quiz_result['missed'] ?? array();
 		if ( ! empty( $incorrect ) && is_array( $incorrect ) ) {
@@ -426,7 +426,7 @@ class FLOSC_Free_Content_Item_Manager {
 			}
 		}
 
-		// Fallback: comma-separated number parsing
+		// Fallback: comma-separated number parsing.
 		$user_answer    = $quiz_result['user_answer'] ?? '';
 		$correct_answer = $quiz_result['correct_answer'] ?? '1,2,3,4,5,6,7,8,9,10';
 
@@ -457,22 +457,22 @@ class FLOSC_Free_Content_Item_Manager {
 			$flow = flosc()->get_current_flow();
 		}
 
-		// v3.0.0: Check content_item_groups first
+		// v3.0.0: Check content_item_groups first.
 		if ( $flow && ! empty( $flow['content_item_groups'] ) && is_array( $flow['content_item_groups'] ) ) {
-			// First pass: exact quiz_id match
+			// First pass: exact quiz_id match.
 			foreach ( $flow['content_item_groups'] as $group ) {
 				if ( ! empty( $group['quiz_id'] ) && $group['quiz_id'] === $quiz_id && ! empty( $group['category'] ) ) {
 					return $group['category'];
 				}
 			}
-			// Second pass: if quiz_id is empty or not found, use the first group
-			// that has no quiz (standalone) or just the first group as fallback
+			// Second pass: if quiz_id is empty or not found, use the first group.
+			// that has no quiz (standalone) or just the first group as fallback.
 			foreach ( $flow['content_item_groups'] as $group ) {
 				if ( empty( $group['quiz_id'] ) && ! empty( $group['category'] ) ) {
 					return $group['category'];
 				}
 			}
-			// Last resort: first group with any category
+			// Last resort: first group with any category.
 			foreach ( $flow['content_item_groups'] as $group ) {
 				if ( ! empty( $group['category'] ) ) {
 					return $group['category'];
@@ -480,12 +480,12 @@ class FLOSC_Free_Content_Item_Manager {
 			}
 		}
 
-		// v1.8.2 backward compat: single content_item_category
+		// v1.8.2 backward compat: single content_item_category.
 		if ( $flow && ! empty( $flow['content_item_category'] ) ) {
 			return $flow['content_item_category'];
 		}
 
-		// Global fallback
+		// Global fallback.
 		return get_option( 'flosc_content_item_category', '' );
 	}
 
@@ -500,10 +500,10 @@ class FLOSC_Free_Content_Item_Manager {
 	 * @return WP_Post|null
 	 */
 	private function find_lesson_post( $lesson_num, $quiz_id = '' ) {
-		// v3.0.0: Resolve category through content_item_groups → legacy → global → scan
+		// v3.0.0: Resolve category through content_item_groups → legacy → global → scan.
 		$configured_cat = $this->resolve_category_for_quiz( $quiz_id );
 
-		// Scan all IVR flow settings if category still not resolved
+		// Scan all IVR flow settings if category still not resolved.
 		if ( empty( $configured_cat ) ) {
 			// §2: union shipped defaults with uploaded/edited IVR files (uploads wins).
 			$files = function_exists( 'flosc_config_glob' ) ? flosc_config_glob( array( '*_ivr.md', 'ivr*.md' ) ) : array();
@@ -548,7 +548,7 @@ class FLOSC_Free_Content_Item_Manager {
 		}
 
 		// 2. Slug / title fallback via get_posts (no direct $wpdb).
-		// lesson posts follow the convention: lesson-{N}-description
+		// lesson posts follow the convention: lesson-{N}-description.
 		$slug_prefix = 'lesson-' . intval( $lesson_num ) . '-';
 		$list_args   = array(
 			'posts_per_page'         => -1,
@@ -601,7 +601,7 @@ class FLOSC_Free_Content_Item_Manager {
 	public function get_free_lessons( $user_id ) {
 		$lesson_nums = get_user_meta( $user_id, '_flosc_free_content_item_numbers', true );
 
-		// Backward compat: fall back to single lesson number
+		// Backward compat: fall back to single lesson number.
 		if ( empty( $lesson_nums ) ) {
 			$single      = get_user_meta( $user_id, '_flosc_free_content_item_number', true );
 			$lesson_nums = $single ? array( $single ) : array();
@@ -611,7 +611,7 @@ class FLOSC_Free_Content_Item_Manager {
 			return array();
 		}
 
-		// v3.0.0: Read the quiz_id that was stored at completion time
+		// v3.0.0: Read the quiz_id that was stored at completion time.
 		$quiz_id = get_user_meta( $user_id, '_flosc_free_content_item_quiz_id', true ) ?: '';
 
 		$lessons = array();
@@ -687,7 +687,7 @@ class FLOSC_Free_Content_Item_Manager {
 			);
 		}
 
-		// Mark as delivered
+		// Mark as delivered.
 		update_user_meta( $user_id, '_flosc_free_content_item_delivered', time() );
 
 		$count = count( $lessons );
@@ -701,13 +701,13 @@ class FLOSC_Free_Content_Item_Manager {
 			);
 		}
 
-		// Chat delivery — return all lessons
+		// Chat delivery — return all lessons.
 		return array(
 			'success'       => true,
 			'mode'          => 'chat',
 			'lessons'       => $lessons,
 			'count'         => $count,
-			// Backward compat: single lesson fields
+			// Backward compat: single lesson fields.
 			'lesson_number' => $lessons[0]['lesson_number'],
 			'title'         => $lessons[0]['title'],
 			'content'       => $lessons[0]['content'],

@@ -105,7 +105,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 				return $value;
 			}
 		}
-		// 2. Global option
+		// 2. Global option.
 		$global = get_option( 'flosc_paypal_' . $key, null );
 		if ( $global !== null && $global !== false && $global !== '' ) {
 			return $global;
@@ -483,7 +483,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 			return;
 		}
 
-		// Keep global webhook id aligned with the credential mode that registered it
+		// Keep global webhook id aligned with the credential mode that registered it.
 		// (prevents global sandbox client + live webhook_id mismatch on verify).
 		update_option( 'flosc_paypal_webhook_id', $webhook_id, false );
 		$mode = (string) $this->get_mode();
@@ -663,7 +663,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 		}
 
 		if ( empty( $body['access_token'] ) ) {
-			// Clear any stale cached token
+			// Clear any stale cached token.
 			delete_transient( $cache_key );
 			$err_desc = $body['error_description'] ?? $body['error'] ?? __( 'HTTP', 'flosc' ) . ' ' . $status_code;
 			return new WP_Error( 'paypal_auth_failed', __( 'PayPal OAuth failed: ', 'flosc' ) . $err_desc );
@@ -754,7 +754,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 			flosc_log( '[FLOSC-PAYPAL] create_order response: HTTP ' . $status_code . ', order_id=' . ( $body['id'] ?? 'NONE' ) . ', status=' . ( $body['status'] ?? 'NONE' ) );
 		}
 
-		// v5.0.7: If 401 Unauthorized, the cached token is stale — refresh and retry once
+		// v5.0.7: If 401 Unauthorized, the cached token is stale — refresh and retry once.
 		if ( $status_code === 401 ) {
 			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
 				flosc_log( '[FLOSC-PAYPAL] create_order got 401 — clearing cached token and retrying' );
@@ -988,7 +988,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 	}
 
 	// ================================================================
-	// PayPal Subscriptions API — Products, Plans, Subscriptions
+	// PayPal Subscriptions API — Products, Plans, Subscriptions.
 	// ================================================================
 
 	/**
@@ -1577,7 +1577,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 			);
 		}
 
-		// Event-level idempotency (after auth only). Claim lock before mutation to
+		// Event-level idempotency (after auth only). Claim lock before mutation to.
 		// prevent concurrent double-processing; sale/cycle keys still protect credits.
 		$event_id = sanitize_text_field( (string) ( $data['id'] ?? '' ) );
 		if ( $event_id !== '' && $this->is_paypal_event_processed( $event_id ) ) {
@@ -1994,7 +1994,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 				);
 			}
 
-			// Industry standard for PHP: splice the raw event JSON into the verify
+			// Industry standard for PHP: splice the raw event JSON into the verify.
 			// request so field order / unicode is not altered by a second encode.
 			// PayPal signs the original body; re-encoding webhook_event can fail verify.
 			$flags   = JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE;

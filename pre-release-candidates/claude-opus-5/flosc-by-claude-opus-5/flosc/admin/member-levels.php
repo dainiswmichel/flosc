@@ -41,7 +41,7 @@ $flosc_member_levels_docs_url = add_query_arg(
 
 $flosc_member_levels = $flosc_flow_settings['member_levels'] ?? array();
 
-// Empty row so the admin has something to fill in on first visit
+// Empty row so the admin has something to fill in on first visit.
 if ( empty( $flosc_member_levels ) ) {
 	$flosc_member_levels[''] = array(
 		'slug'        => '',
@@ -114,11 +114,11 @@ if ( empty( $flosc_member_levels ) ) {
 // Build the level list for dropdowns (from saved levels, not from the form — form hasn't been submitted yet)
 $flosc_saved_levels = $flosc_flow_settings['member_levels'] ?? $flosc_member_levels;
 
-// Gather all WordPress categories and tags
+// Gather all WordPress categories and tags.
 $flosc_categories = get_categories( array( 'hide_empty' => false ) );
 $flosc_tags       = get_tags( array( 'hide_empty' => false ) );
 
-// Load existing protection data
+// Load existing protection data.
 $flosc_protected_items = $flosc_flow_settings['protected_content'] ?? array();
 ?>
 

@@ -45,7 +45,7 @@ class FLOSC_Lesson_Manager {
 			return $global;
 		}
 
-		// 3. Last resort: scan all flow settings for any configured category
+		// 3. Last resort: scan all flow settings for any configured category.
 		// §2: union shipped defaults with uploaded/edited IVR files (uploads wins).
 		$files = function_exists( 'flosc_config_glob' ) ? flosc_config_glob( array( '*_ivr.md', 'ivr*.md' ) ) : array();
 		if ( ! empty( $files ) ) {
@@ -159,7 +159,7 @@ class FLOSC_Lesson_Manager {
 		}
 
 		if ( empty( $categories ) ) {
-			// No quiz-linked groups — fall back to all lessons
+			// No quiz-linked groups — fall back to all lessons.
 			return $this->get_all_lessons();
 		}
 
@@ -306,7 +306,7 @@ class FLOSC_Lesson_Manager {
 			return array();
 		}
 
-		// Build tag query from missed items
+		// Build tag query from missed items.
 		// Tags should match the quiz item (e.g., "5" or "phoneme-ai")
 		$tag_slugs = array();
 		foreach ( $missed_items as $item ) {
@@ -325,7 +325,7 @@ class FLOSC_Lesson_Manager {
 			'order'          => 'ASC',
 		);
 
-		// Filter by category
+		// Filter by category.
 		if ( is_numeric( $category ) ) {
 			$args['cat'] = intval( $category );
 		} else {
@@ -338,7 +338,7 @@ class FLOSC_Lesson_Manager {
 		foreach ( $query->posts as $post ) {
 			$lesson = $this->format_lesson( $post );
 
-			// Find which missed item this lesson addresses
+			// Find which missed item this lesson addresses.
 			$post_tags = wp_get_post_tags( $post->ID, array( 'fields' => 'slugs' ) );
 			foreach ( $missed_items as $item ) {
 				$item_slug = sanitize_title( $item );
@@ -361,7 +361,7 @@ class FLOSC_Lesson_Manager {
 		$lessons = $this->get_lessons_for_missed_items( $missed_items );
 
 		if ( empty( $lessons ) ) {
-			// Fallback: get first lesson in category
+			// Fallback: get first lesson in category.
 			$all_lessons = $this->get_all_lessons();
 			return ! empty( $all_lessons ) ? $all_lessons[0] : null;
 		}
@@ -375,9 +375,9 @@ class FLOSC_Lesson_Manager {
 	private function format_lesson( $post, $include_content = false ) {
 		// v1.9.5: Decode HTML entities in title and excerpt.
 		// WordPress may store curly quotes as &#8217; or &rsquo; in the DB.
-		// The JS client calls escapeHtml() which would double-encode these
+		// The JS client calls escapeHtml() which would double-encode these.
 		// (e.g. &#8217; → &amp;#8217; rendering as literal "&#8217;" on screen).
-		// html_entity_decode() converts entities back to UTF-8 characters
+		// html_entity_decode() converts entities back to UTF-8 characters.
 		// so the JSON→JS→escapeHtml() pipeline produces clean output.
 		$title   = html_entity_decode( $post->post_title, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
 		$excerpt = html_entity_decode( get_the_excerpt( $post ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
@@ -391,7 +391,7 @@ class FLOSC_Lesson_Manager {
 			'thumbnail' => get_the_post_thumbnail_url( $post, 'medium' ),
 		);
 
-		// Get custom fields for phoneme data
+		// Get custom fields for phoneme data.
 		$phoneme        = get_post_meta( $post->ID, '_flosc_phoneme', true );
 		$phoneme_symbol = get_post_meta( $post->ID, '_flosc_phoneme_symbol', true );
 
@@ -415,21 +415,21 @@ class FLOSC_Lesson_Manager {
 	 * Check if user has access to a lesson
 	 */
 	public function user_can_access( $user_id, $lesson_id, $is_free_lesson = false ) {
-		// Free lesson is always accessible to logged-in users
+		// Free lesson is always accessible to logged-in users.
 		if ( $is_free_lesson && $user_id ) {
 			return true;
 		}
 
-		// Check if user has paid access
+		// Check if user has paid access.
 		$access_manager = flosc()->sale()->access();
 		$user_access    = $access_manager->get_user_access( $user_id );
 
-		// Check for all_lessons feature or paid level
+		// Check for all_lessons feature or paid level.
 		if ( $access_manager->has_feature( $user_id, 'all_lessons' ) ) {
 			return true;
 		}
 
-		// v1.8.2: Use FLOSC_Member_Access which has actual level/member checking
+		// v1.8.2: Use FLOSC_Member_Access which has actual level/member checking.
 		require_once FLOSC_PLUGIN_DIR . 'includes/class-member-access.php';
 		$member_access = FLOSC_Member_Access::instance();
 		if ( $member_access->is_member( $user_id ) ) {
@@ -449,7 +449,7 @@ class FLOSC_Lesson_Manager {
 
 		foreach ( $lessons as $lesson ) {
 			foreach ( $lesson['tags'] as $tag ) {
-				// Check if tag is numeric or phoneme-X format
+				// Check if tag is numeric or phoneme-X format.
 				$item = null;
 				if ( is_numeric( $tag ) ) {
 					$item = $tag;

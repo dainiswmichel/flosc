@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class FLOSC_Pronunciation_Analyzer {
 
-	// Number words to digits mapping
+	// Number words to digits mapping.
 	private $number_words = array(
 		'one'   => '1',
 		'won'   => '1',
@@ -72,7 +72,7 @@ class FLOSC_Pronunciation_Analyzer {
 	 * Get lesson mapping (from WP posts or fallback to defaults)
 	 */
 	private function get_lesson_mapping() {
-		// Try to get from lesson manager
+		// Try to get from lesson manager.
 		if ( function_exists( 'flosc' ) && flosc()->lessons() ) {
 			$wp_mapping = flosc()->lessons()->get_lesson_mapping();
 			if ( ! empty( $wp_mapping ) ) {
@@ -106,7 +106,7 @@ class FLOSC_Pronunciation_Analyzer {
 			'free_lesson'           => null,
 		);
 
-		// Compare each expected item
+		// Compare each expected item.
 		foreach ( $expected_items as $index => $expected_item ) {
 			$found = false;
 
@@ -121,7 +121,7 @@ class FLOSC_Pronunciation_Analyzer {
 			if ( ! $found ) {
 				$results['missed_items'][] = $expected_item;
 
-				// Map to lesson if available
+				// Map to lesson if available.
 				if ( isset( $lesson_mapping[ $expected_item ] ) ) {
 					$lesson = $lesson_mapping[ $expected_item ];
 					$results['suggested_lessons'][ $expected_item ] = $lesson;
@@ -129,7 +129,7 @@ class FLOSC_Pronunciation_Analyzer {
 			}
 		}
 
-		// Calculate score
+		// Calculate score.
 		$correct_count    = count( $results['correct_items'] );
 		$results['score'] = round( ( $correct_count / $results['total_items'] ) * 100 );
 
@@ -146,7 +146,7 @@ class FLOSC_Pronunciation_Analyzer {
 			}
 		}
 
-		// Generate feedback message
+		// Generate feedback message.
 		$results['feedback'] = $this->generate_feedback( $results );
 
 		return $results;
@@ -156,13 +156,13 @@ class FLOSC_Pronunciation_Analyzer {
 	 * Normalize text for comparison
 	 */
 	private function normalize( $text ) {
-		// Lowercase
+		// Lowercase.
 		$text = strtolower( trim( $text ) );
 
-		// Remove punctuation
+		// Remove punctuation.
 		$text = preg_replace( '/[^\w\s]/', '', $text );
 
-		// Convert number words to digits
+		// Convert number words to digits.
 		$words      = explode( ' ', $text );
 		$normalized = array();
 
@@ -172,7 +172,7 @@ class FLOSC_Pronunciation_Analyzer {
 			} elseif ( is_numeric( $word ) ) {
 				$normalized[] = $word;
 			} elseif ( ! empty( $word ) ) {
-				// Keep non-number words for sentence mode
+				// Keep non-number words for sentence mode.
 				$normalized[] = $word;
 			}
 		}
@@ -184,12 +184,12 @@ class FLOSC_Pronunciation_Analyzer {
 	 * Check if two items match (with fuzzy matching)
 	 */
 	private function items_match( $expected, $actual ) {
-		// Exact match
+		// Exact match.
 		if ( $expected === $actual ) {
 			return true;
 		}
 
-		// Number variations
+		// Number variations.
 		if ( is_numeric( $expected ) && is_numeric( $actual ) ) {
 			return $expected === $actual;
 		}

@@ -7,20 +7,20 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Plugin activation (v3.0.9 - Resolved: moved outside class so hook fires correctly)
  */
 function flosc_activate() {
-	// Specialty product roles are created when that flow/product
+	// Specialty product roles are created when that flow/product.
 	// is deliberately imported or configured — not on every generic activate.
 
-	// v1.2.2: Migrate legacy settings to flows system
+	// v1.2.2: Migrate legacy settings to flows system.
 	require_once FLOSC_PLUGIN_DIR . 'includes/class-flow-manager.php';
 	flosc_flows()->maybe_migrate_from_legacy();
 
-	// Flush rewrite rules to register REST API routes
+	// Flush rewrite rules to register REST API routes.
 	flush_rewrite_rules();
 
 	// First-install defaults only — never clobber floscAdmin choices on reactivate.
 	$defaults = array(
-		'flosc_app_slug'                                   => 'flosc', // v1.1.9: Changed default from 'app' to 'flosc'
-		'flosc_custom_domain'                              => '', // v1.1.9: Optional custom domain mapping
+		'flosc_app_slug'                                   => 'flosc', // v1.1.9: Changed default from 'app' to 'flosc'.
+		'flosc_custom_domain'                              => '', // v1.1.9: Optional custom domain mapping.
 		'flosc_product_name'                               => '',
 		'flosc_product_title'                              => '',
 		'flosc_product_tagline'                            => '',
@@ -49,14 +49,14 @@ function flosc_activate() {
 		update_option( 'flosc_paypal_mode', 'sandbox' );
 	}
 
-	// v1.2.3: Ensure default flosc_default_technical_ivr.md exists in the uploads data
-	// directory. When uploads are unavailable the seed is skipped — readers
+	// v1.2.3: Ensure default flosc_default_technical_ivr.md exists in the uploads data.
+	// directory. When uploads are unavailable the seed is skipped — readers.
 	// fall back to the shipped read-only default via flosc_config_file().
 	$seed_dir = flosc_data_dir();
 	$ivr_file = '' !== $seed_dir ? $seed_dir . 'flosc_default_technical_ivr.md' : '';
 	if ( '' !== $ivr_file && ! file_exists( $ivr_file ) ) {
 
-		// Copy the shipped canonical default if present, otherwise create minimal version
+		// Copy the shipped canonical default if present, otherwise create minimal version.
 		$default_ivr = FLOSC_PLUGIN_DIR . 'ai_configuration_files/flosc_default_technical_ivr.md';
 		if ( file_exists( $default_ivr ) ) {
 			// Pass 5: read shipped default (plugin dir is read-only source); write only under uploads.
@@ -65,7 +65,7 @@ function flosc_activate() {
 				flosc_write_data_file( $ivr_file, $default_body );
 			}
 		} else {
-			// Create minimal working ivr.md
+			// Create minimal working ivr.md.
 			$minimal_ivr = <<<'MD'
 # FLOSC IVR Configuration
 
@@ -116,22 +116,22 @@ MD;
 		}
 	}
 
-	// v9.2.3: Import IVR messages to database on first activation
+	// v9.2.3: Import IVR messages to database on first activation.
 	flosc_import_ivr_to_database( false ); // Execute import (not preview)
 
-	// v1.9.0: Create chat logs table
+	// v1.9.0: Create chat logs table.
 	// Must require the file here — activation hook fires before plugins_loaded,
 	// so the FLOSC_Framework constructor hasn't loaded class files yet.
 	require_once FLOSC_PLUGIN_DIR . 'includes/logging/class-flosc-chat-logger.php';
 	FLOSC_Chat_Logger::instance()->flosc_ensure_table();
 
-	// v1.4.7: Auto-protect flosc_sample_data category
+	// v1.4.7: Auto-protect flosc_sample_data category.
 	$sample_cat = get_category_by_slug( 'flosc_sample_data' );
 	if ( $sample_cat ) {
 		update_term_meta( $sample_cat->term_id, '_flosc_protected', 'yes' );
 	}
 
-	// Flush rewrite rules
+	// Flush rewrite rules.
 	flush_rewrite_rules();
 }
 

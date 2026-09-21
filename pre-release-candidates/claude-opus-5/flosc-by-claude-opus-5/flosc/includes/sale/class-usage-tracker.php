@@ -52,12 +52,12 @@ class FLOSC_Usage_Tracker {
 			$usage[ $period ][ $event ]['first_at'] = current_time( 'mysql' );
 		}
 
-		// Store event detail if meta provided
+		// Store event detail if meta provided.
 		if ( ! empty( $meta ) ) {
 			if ( ! isset( $usage[ $period ][ $event ]['details'] ) ) {
 				$usage[ $period ][ $event ]['details'] = array();
 			}
-			// Keep last 50 details per event
+			// Keep last 50 details per event.
 			$usage[ $period ][ $event ]['details'][] = array_merge(
 				$meta,
 				array(
@@ -127,7 +127,7 @@ class FLOSC_Usage_Tracker {
 			'periods'        => array_keys( $all_usage ),
 		);
 
-		// Aggregate totals
+		// Aggregate totals.
 		foreach ( $all_usage as $period => $events ) {
 			foreach ( $events as $event => $data ) {
 				if ( ! isset( $summary['total'][ $event ] ) ) {
@@ -145,7 +145,7 @@ class FLOSC_Usage_Tracker {
 	}
 
 	// =========================================================================
-	// USAGE LIMITS
+	// USAGE LIMITS.
 	// =========================================================================
 
 	/**
@@ -176,9 +176,9 @@ class FLOSC_Usage_Tracker {
 		return apply_filters(
 			'flosc_default_usage_limits',
 			array(
-				'ai_queries'  => 10,         // Per period
-				'stt_minutes' => 2,         // Per period
-				'quizzes'     => 3,             // Per period
+				'ai_queries'  => 10,         // Per period.
+				'stt_minutes' => 2,         // Per period.
+				'quizzes'     => 3,             // Per period.
 				'lessons'     => 1,             // Total (one free lesson)
 			)
 		);
@@ -190,7 +190,7 @@ class FLOSC_Usage_Tracker {
 	public function has_quota( $user_id, $event, $quantity = 1 ) {
 		$limits = $this->get_limits( $user_id );
 
-		// No limit for this event
+		// No limit for this event.
 		if ( ! isset( $limits[ $event ] ) || $limits[ $event ] === -1 ) {
 			return true;
 		}
@@ -207,7 +207,7 @@ class FLOSC_Usage_Tracker {
 		$limits = $this->get_limits( $user_id );
 
 		if ( ! isset( $limits[ $event ] ) || $limits[ $event ] === -1 ) {
-			return PHP_INT_MAX; // Unlimited
+			return PHP_INT_MAX; // Unlimited.
 		}
 
 		$used = $this->get_event_quantity( $user_id, $event );
@@ -219,7 +219,7 @@ class FLOSC_Usage_Tracker {
 	 * Consume quota (track + check limit in one call)
 	 */
 	public function consume( $user_id, $event, $quantity = 1, $meta = array() ) {
-		// Check quota first
+		// Check quota first.
 		if ( ! $this->has_quota( $user_id, $event, $quantity ) ) {
 			return new WP_Error(
 				'quota_exceeded',
@@ -233,7 +233,7 @@ class FLOSC_Usage_Tracker {
 			);
 		}
 
-		// Track usage
+		// Track usage.
 		return $this->track( $user_id, $event, $quantity, $meta );
 	}
 
@@ -244,7 +244,7 @@ class FLOSC_Usage_Tracker {
 		$limits = $this->get_limits( $user_id );
 
 		foreach ( (array) $events as $event ) {
-			$limits[ $event ] = -1; // -1 = unlimited
+			$limits[ $event ] = -1; // -1 = unlimited.
 		}
 
 		$this->set_limits( $user_id, $limits );
@@ -257,12 +257,12 @@ class FLOSC_Usage_Tracker {
 		$usage   = $this->get_user_usage( $user_id );
 		$current = $this->get_current_period();
 
-		// Archive current period
+		// Archive current period.
 		if ( isset( $usage[ $current ] ) ) {
 			$usage[ $current ]['_archived'] = true;
 		}
 
-		// Start fresh for new period
+		// Start fresh for new period.
 		$new_period           = $this->get_current_period();
 		$usage[ $new_period ] = array();
 
@@ -272,14 +272,14 @@ class FLOSC_Usage_Tracker {
 	}
 
 	// =========================================================================
-	// PERIODS
+	// PERIODS.
 	// =========================================================================
 
 	/**
 	 * Get current billing period identifier
 	 */
 	private function get_current_period() {
-		// Monthly periods: YYYY-MM
+		// Monthly periods: YYYY-MM.
 		return gmdate( 'Y-m' );
 	}
 
@@ -303,14 +303,14 @@ class FLOSC_Usage_Tracker {
 		// Sort by period (newest first)
 		krsort( $usage );
 
-		// Keep only recent periods
+		// Keep only recent periods.
 		$usage = array_slice( $usage, 0, $keep_periods, true );
 
 		update_user_meta( $user_id, $this->meta_key, $usage );
 	}
 
 	// =========================================================================
-	// ANALYTICS
+	// ANALYTICS.
 	// =========================================================================
 
 	/**
@@ -380,7 +380,7 @@ class FLOSC_Usage_Tracker {
 			);
 		}
 
-		// Sort by quantity descending
+		// Sort by quantity descending.
 		usort(
 			$users,
 			function ( $a, $b ) {

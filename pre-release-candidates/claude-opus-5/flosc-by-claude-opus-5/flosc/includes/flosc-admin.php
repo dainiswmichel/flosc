@@ -9,10 +9,10 @@ trait FLOSC_Admin_Trait {
 	 * v05_02: Menu shortcuts to Settings tabs in logical order
 	 */
 	public function add_admin_menu() {
-		// v1.2.8: Simplified - Settings page IS the main page
-		// IVR file dropdown selects which flow to edit
+		// v1.2.8: Simplified - Settings page IS the main page.
+		// IVR file dropdown selects which flow to edit.
 
-		// Main FLOSC menu - goes directly to Settings
+		// Main FLOSC menu - goes directly to Settings.
 		add_menu_page(
 			'FLOSC',
 			'FLOSC',
@@ -43,7 +43,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_flow_tab' )
 		);
 
-		// Identity
+		// Identity.
 		add_submenu_page(
 			'flosc-settings',
 			'Identity',
@@ -63,7 +63,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_ivr_tab' )
 		);
 
-		// AutoPrompt Panel
+		// AutoPrompt Panel.
 		add_submenu_page(
 			'flosc-settings',
 			'AutoPrompt Panel',
@@ -82,7 +82,7 @@ trait FLOSC_Admin_Trait {
 			'flosc-content',
 			array( $this, 'redirect_to_content_tab' )
 		);
-		// Legacy submenu slugs → Content
+		// Legacy submenu slugs → Content.
 		add_submenu_page(
 			null,
 			'Member Levels',
@@ -101,7 +101,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_knowledge_base_tab' )
 		);
 
-		// Trajectories
+		// Trajectories.
 		add_submenu_page(
 			'flosc-settings',
 			'Trajectories',
@@ -111,7 +111,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_trajectories_tab' )
 		);
 
-		// Offers
+		// Offers.
 		add_submenu_page(
 			'flosc-settings',
 			'Offers',
@@ -121,7 +121,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_offers_tab' )
 		);
 
-		// Register & Login
+		// Register & Login.
 		add_submenu_page(
 			'flosc-settings',
 			'Register & Login',
@@ -131,7 +131,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_login_tab' )
 		);
 
-		// 3. Chat Styling
+		// 3. Chat Styling.
 		add_submenu_page(
 			'flosc-settings',
 			'Style',
@@ -141,7 +141,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_style_tab' )
 		);
 
-		// v1.8.0: UI & Navigation
+		// v1.8.0: UI & Navigation.
 		add_submenu_page(
 			'flosc-settings',
 			'UI & Nav',
@@ -151,7 +151,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'render_ui_navigation_page' )
 		);
 
-		// 4. AI Configuration
+		// 4. AI Configuration.
 		add_submenu_page(
 			'flosc-settings',
 			'AI',
@@ -161,7 +161,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_ai_tab' )
 		);
 
-		// Token Management
+		// Token Management.
 		add_submenu_page(
 			'flosc-settings',
 			'Token Management',
@@ -171,7 +171,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_token_management_tab' )
 		);
 
-		// Concierge
+		// Concierge.
 		add_submenu_page(
 			'flosc-settings',
 			'Concierge',
@@ -181,7 +181,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_concierge_tab' )
 		);
 
-		// Quiz
+		// Quiz.
 		add_submenu_page(
 			'flosc-settings',
 			'Quiz Settings',
@@ -191,7 +191,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_quiz_tab' )
 		);
 
-		// Email
+		// Email.
 		add_submenu_page(
 			'flosc-settings',
 			'Email Settings',
@@ -201,7 +201,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_email_tab' )
 		);
 
-		// Contact Form
+		// Contact Form.
 		add_submenu_page(
 			'flosc-settings',
 			'Contact Form',
@@ -211,7 +211,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_contact_form_tab' )
 		);
 
-		// Payments
+		// Payments.
 		add_submenu_page(
 			'flosc-settings',
 			'Payments',
@@ -251,7 +251,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_engagement_tab' )
 		);
 
-		// Chat Logs
+		// Chat Logs.
 		add_submenu_page(
 			'flosc-settings',
 			'Chat Logs',
@@ -271,7 +271,7 @@ trait FLOSC_Admin_Trait {
 			array( $this, 'redirect_to_administration_tab' )
 		);
 
-		// Docs
+		// Docs.
 		add_submenu_page(
 			'flosc-settings',
 			'Docs',
@@ -408,18 +408,18 @@ trait FLOSC_Admin_Trait {
 
 		// User Profile Bar (v1.8.0: unified 3-state bar replaces v1.7.8 visitor-only settings)
 
-		// v1.8.0: UI & Navigation
+		// v1.8.0: UI & Navigation.
 
 		// v1.7.7: Removed duplicate AI settings registration (was under both flosc_settings and flosc_ai_settings)
-		// All settings now live under flosc_settings only
+		// All settings now live under flosc_settings only.
 
-		// STT Provider
+		// STT Provider.
 
-		// Quiz Type System
+		// Quiz Type System.
 
 		// Third-party quiz plugin integrations (v9.3.4)
 
-		// Register quiz content settings for each quiz type dynamically
+		// Register quiz content settings for each quiz type dynamically.
 		$quiz_types = FLOSC_Quiz_Registry::get_all_quizzes();
 		foreach ( $quiz_types as $quiz_id => $quiz_type ) {
 			$this->register_setting_value( 'flosc_quiz_content_' . $quiz_id, 'textarea' );
@@ -455,7 +455,7 @@ trait FLOSC_Admin_Trait {
 		}
 
 		// v1.7.7: Removed auto-seeded PayPal sandbox credentials (security)
-		// PayPal credentials must be configured via Settings > FLOSC > PayPal
+		// PayPal credentials must be configured via Settings > FLOSC > PayPal.
 	}
 
 	/**
@@ -773,7 +773,7 @@ trait FLOSC_Admin_Trait {
 	 */
 	public function enqueue_admin_assets( $hook ) {
 		// §12: Post-visibility metabox styles render on the post editor (post.php / post-new.php),
-		// which is a different screen than the FLOSC settings pages. Enqueue them there via an
+		// which is a different screen than the FLOSC settings pages. Enqueue them there via an.
 		// inline-only style handle instead of echoing a <style> tag inside the metabox markup.
 		if ( $hook === 'post.php' || $hook === 'post-new.php' ) {
 			wp_register_style( 'flosc-metabox', false, array(), FLOSC_VERSION );
@@ -786,9 +786,9 @@ trait FLOSC_Admin_Trait {
 				'.flosc-post-visibility-meta-box .flosc-protection-options label:hover { background: #f0f0f1; }' .
 				'.flosc-post-visibility-meta-box .flosc-protection-options .option-desc { color: #666; font-size: 11px; display: block; margin-left: 22px; }'
 			);
-			// Concierge metabox rules ride the same handle. They must be added
+			// Concierge metabox rules ride the same handle. They must be added.
 			// HERE (admin_enqueue_scripts) and not inside render_meta_box():
-			// by metabox render time the head styles have already printed, and
+			// by metabox render time the head styles have already printed, and.
 			// inline data attached to a printed handle is silently discarded.
 			wp_add_inline_style(
 				'flosc-metabox',
@@ -800,8 +800,8 @@ trait FLOSC_Admin_Trait {
 			return;
 		}
 
-		// Only load on FLOSC admin pages
-		// v1.2.8: Simplified - just check for 'flosc'
+		// Only load on FLOSC admin pages.
+		// v1.2.8: Simplified - just check for 'flosc'.
 		if ( strpos( $hook, 'flosc' ) === false &&
 			$hook !== 'toplevel_page_flosc-settings' ) {
 			return;
@@ -817,10 +817,10 @@ trait FLOSC_Admin_Trait {
 			);
 		}
 
-		// §12: Footer-printed script handle (no src) that FLOSC admin page templates
-		// attach their page JS to via wp_add_inline_script('flosc-admin', ...), instead
+		// §12: Footer-printed script handle (no src) that FLOSC admin page templates.
+		// attach their page JS to via wp_add_inline_script('flosc-admin', ...), instead.
 		// of echoing raw <script> tags. Registering it here (on admin_enqueue_scripts)
-		// means the handle is enqueued before render, so inline JS added during the page
+		// means the handle is enqueued before render, so inline JS added during the page.
 		// body still prints in the admin footer. jQuery dep covers the existing jQuery use.
 		wp_register_script( 'flosc-admin', false, array( 'jquery' ), FLOSC_VERSION, true );
 		wp_enqueue_script( 'flosc-admin' );
@@ -907,7 +907,7 @@ trait FLOSC_Admin_Trait {
 			}
 		}
 
-		// Debug mode badge
+		// Debug mode badge.
 		if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
 			wp_add_inline_style(
 				'flosc-admin',
@@ -931,7 +931,7 @@ trait FLOSC_Admin_Trait {
 		}
 
 		// Tame WordPress admin footer (#wpfooter) on FLOSC pages.
-		// WP core uses position:fixed/absolute which causes the "Version X.X.X" text
+		// WP core uses position:fixed/absolute which causes the "Version X.X.X" text.
 		// to float over FLOSC admin content at various zoom levels.
 		// Fix: make it flow normally in the document, properly positioned at the bottom.
 		wp_add_inline_style(
@@ -969,15 +969,15 @@ trait FLOSC_Admin_Trait {
 		return $text;
 	}
 
-	// Offers now integrated into main settings page
+	// Offers now integrated into main settings page.
 
-	// Payments now integrated into main settings page
+	// Payments now integrated into main settings page.
 
-	// AI Config now integrated into main settings page
+	// AI Config now integrated into main settings page.
 
-	// AI Knowledge now integrated into main settings page
+	// AI Knowledge now integrated into main settings page.
 
-	// Chat Style now integrated into main settings page
+	// Chat Style now integrated into main settings page.
 
 	/**
 	 * Early admin_init redirects for FLOSC sidebar shortcuts.
@@ -990,7 +990,7 @@ trait FLOSC_Admin_Trait {
 			return;
 		}
 
-		// Read-only admin menu routing (capability-checked below). No nonce: GET page
+		// Read-only admin menu routing (capability-checked below). No nonce: GET page.
 		// slug only; never mutates options. Read via wp_unslash; sanitized next line.
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only menu routing is capability-checked below and does not mutate state.
 		$page = isset( $_GET['page'] ) && is_string( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
@@ -1427,10 +1427,10 @@ trait FLOSC_Admin_Trait {
 	 * @return string
 	 */
 	public function shortcode_member_only( $atts, $content = '' ) {
-		// Parse attributes
+		// Parse attributes.
 		$atts = shortcode_atts(
 			array(
-				'fallback' => '', // Optional fallback message for non-members
+				'fallback' => '', // Optional fallback message for non-members.
 			),
 			$atts
 		);
@@ -1446,7 +1446,7 @@ trait FLOSC_Admin_Trait {
 			return wp_kses_post( do_shortcode( $content ) );
 		}
 
-		// Not a member - show fallback if provided
+		// Not a member - show fallback if provided.
 		return $atts['fallback'] ? wp_kses_post( '<div class="flosc-member-only-fallback">' . esc_html( $atts['fallback'] ) . '</div>' ) : '';
 	}
 
@@ -1848,7 +1848,7 @@ trait FLOSC_Admin_Trait {
 			),
 		);
 
-		// Font family map
+		// Font family map.
 		$font_families = array(
 			'system'        => '',
 			'inter'         => '"Inter", -apple-system, sans-serif',
@@ -1859,17 +1859,17 @@ trait FLOSC_Admin_Trait {
 			'fira-code'     => '"Fira Code", "SF Mono", Monaco, monospace',
 		);
 
-		// File paths
+		// File paths.
 		$light_path = FLOSC_PLUGIN_DIR . 'assets/css/chat-style-light.css';
 		$dark_path  = FLOSC_PLUGIN_DIR . 'assets/css/chat-style-dark.css';
 
 		$inline_css = '';
 
 		// ===========================================
-		// PRESET LOADING
+		// PRESET LOADING.
 		// ===========================================
 		if ( $preset === 'auto' ) {
-			// Auto mode: Light by default, dark via prefers-color-scheme
+			// Auto mode: Light by default, dark via prefers-color-scheme.
 			if ( file_exists( $light_path ) && file_exists( $dark_path ) ) {
 				$light_content = flosc_fs_get_contents( $light_path );
 				$dark_content  = flosc_fs_get_contents( $dark_path );
@@ -1889,7 +1889,7 @@ trait FLOSC_Admin_Trait {
 				}
 			}
 		} else {
-			// Named preset (light, dark, chatgpt, claude, grok): load as external stylesheet
+			// Named preset (light, dark, chatgpt, claude, grok): load as external stylesheet.
 			$safe_preset = preg_replace( '/[^a-z0-9-]/', '', $preset );
 			$preset_path = FLOSC_PLUGIN_DIR . 'assets/css/chat-style-' . $safe_preset . '.css';
 			if ( file_exists( $preset_path ) ) {
@@ -1903,7 +1903,7 @@ trait FLOSC_Admin_Trait {
 		}
 
 		// ===========================================
-		// DYNAMIC OVERRIDES
+		// DYNAMIC OVERRIDES.
 		// ===========================================
 		$bubble_config = $bubble_styles[ $bubble ] ?? $bubble_styles['subtle-notch'];
 
@@ -1913,18 +1913,18 @@ trait FLOSC_Admin_Trait {
 
 		// v1.6.1: Full accent color cascade (5→15 derived variables)
 		if ( ! empty( $accent ) && $accent !== '#2563eb' ) {
-			// Compute derived colors from hex accent
+			// Compute derived colors from hex accent.
 			$hover   = $this->adjust_color_brightness( $accent, -15 );
 			$subtle  = $this->hex_to_rgba( $accent, 0.06 );
 			$subtle4 = $this->hex_to_rgba( $accent, 0.04 );
 			$light   = $this->adjust_color_brightness( $accent, 40 );
 
-			// Core accent
+			// Core accent.
 			$overrides[] = "--flosc-accent: {$accent}";
 			$overrides[] = "--flosc-accent-hover: {$hover}";
 			$overrides[] = "--flosc-accent-subtle: {$subtle}";
 
-			// Components that derive from accent
+			// Components that derive from accent.
 			$overrides[] = "--flosc-user-message-bg: {$accent}";
 			$overrides[] = "--flosc-user-avatar-bg: {$accent}";
 			$overrides[] = "--flosc-send-btn-bg: {$accent}";
@@ -1940,13 +1940,13 @@ trait FLOSC_Admin_Trait {
 			$overrides[] = "--flosc-quiz-input-focus-border: {$accent}";
 		}
 
-		// Scale factor
+		// Scale factor.
 		if ( $scale !== 100 && $scale > 0 ) {
 			$scale_factor = $scale / 100;
 			$overrides[]  = "--flosc-scale: {$scale_factor}";
 		}
 
-		// Font family
+		// Font family.
 		if ( $font !== 'system' && isset( $font_families[ $font ] ) && ! empty( $font_families[ $font ] ) ) {
 			$overrides[] = "--flosc-font-family: {$font_families[$font]}";
 		}
@@ -1955,7 +1955,7 @@ trait FLOSC_Admin_Trait {
 			$inline_css .= "/* Dynamic Overrides */\n:root {\n    " . implode( ";\n    ", $overrides ) . ";\n}\n\n";
 		}
 
-		// Font application
+		// Font application.
 		if ( $font !== 'system' && isset( $font_families[ $font ] ) && ! empty( $font_families[ $font ] ) ) {
 			$inline_css .= "/* Font Application */\n";
 			$inline_css .= ".flosc-app,\n.flosc-app .messages,\n.flosc-app .message-text {\n";
@@ -1980,7 +1980,7 @@ trait FLOSC_Admin_Trait {
 			return '';
 		}
 
-		// Remove CSS comments
+		// Remove CSS comments.
 		$css = preg_replace( '/\/\*[\s\S]*?\*\//', '', $css_content );
 
 		// Extract content inside :root { }

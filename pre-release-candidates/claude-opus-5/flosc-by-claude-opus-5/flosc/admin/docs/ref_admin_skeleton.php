@@ -1,4 +1,4 @@
-<?php if (!defined('ABSPATH')) exit; // Admin docs pass order and navigation map ?>
+<?php if (!defined('ABSPATH')) exit; // Admin docs pass order and navigation map.?>
 
 <?php
 $flosc_ref_ivr = isset($flosc_selected_ivr) ? sanitize_file_name((string) $flosc_selected_ivr) : '';

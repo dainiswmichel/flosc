@@ -32,13 +32,13 @@ if ( ! isset( $flosc_get ) || ! is_array( $flosc_get ) ) {
 	$flosc_get = array();
 }
 $flosc_selected_user_id = isset( $flosc_get['flosc_user_id'] ) ? absint( $flosc_get['flosc_user_id'] ) : 0;
-// Scope chat logs to the selected flow. Stored flow_id has no file extension
+// Scope chat logs to the selected flow. Stored flow_id has no file extension.
 // (e.g. "flow_ivr"), while $current_ivr is the filename ("flow_ivr.md").
 $flosc_current_flow_id = $flosc_current_ivr !== '' ? pathinfo( $flosc_current_ivr, PATHINFO_FILENAME ) : '';
 $flosc_total_logs      = $flosc_logger->flosc_get_log_count( $flosc_current_flow_id );
 $flosc_chat_logs_nonce = wp_create_nonce( 'flosc_chat_logs' );
 
-// Two ways to read the same logs: grouped by conversation (default) or the flat
+// Two ways to read the same logs: grouped by conversation (default) or the flat.
 // chronological table. The flat view keeps the live 5s poll + rating widgets.
 $flosc_logview               = ( isset( $flosc_get['logview'] ) && $flosc_get['logview'] === 'flat' ) ? 'flat' : 'sessions';
 $flosc_view_base             = add_query_arg(
@@ -606,7 +606,7 @@ function flosc_render_chat_log_row( $log ) {
 	}
 	$ms = intval( $log['response_time_ms'] ?? 0 );
 
-	// v1.9.5: Rating widget
+	// v1.9.5: Rating widget.
 	$rating       = intval( $log['admin_rating'] ?? 0 );
 	$note         = esc_attr( $log['admin_note'] ?? '' );
 	$log_id       = intval( $log['id'] );
@@ -751,8 +751,8 @@ function flosc_get_chain_context_value( $chain_detail, $key ) {
  * @return string
  */
 function flosc_render_msg_bubbles( $code, $letter, $n, $content, $who, $time, $rid, $css, $context_url = '' ) {
-	// One stored field = ONE message = ONE bubble, shown verbatim. We do NOT split
-	// it into sub-bubbles — the chat shows each response as a single message (internal
+	// One stored field = ONE message = ONE bubble, shown verbatim. We do NOT split.
+	// it into sub-bubbles — the chat shows each response as a single message (internal.
 	// line breaks and all), so the log must mirror that, not fragment it.
 	$flosc_id = $code . '-' . $letter . '-' . $n;
 	$meta     = '<div class="flosc-msg-meta">';
@@ -848,7 +848,7 @@ function flosc_render_chat_session( $flosc_s ) {
 	$label_raw = (string) ( $flosc_s['label'] ?? '' );
 	$thread    = '<div class="flosc-session-thread">';
 	$shown     = 0;
-	// Per-speaker counters: bot welcome b-001, visitor reply u-001, bot reply b-002…
+	// Per-speaker counters: bot welcome b-001, visitor reply u-001, bot reply b-002….
 	// Admin-joined human lines get their own 'a' counter (a-001…), pale green.
 	$u_seq = 0;
 	$b_seq = 0;
@@ -892,7 +892,7 @@ function flosc_render_chat_session( $flosc_s ) {
 			continue;
 		}
 
-		$is_system = ( strncmp( $um, '[SYSTEM:', 8 ) === 0 ); // the auto-welcome row
+		$is_system = ( strncmp( $um, '[SYSTEM:', 8 ) === 0 ); // the auto-welcome row.
 
 		// The visitor's message — hidden only for the auto-welcome's "[SYSTEM:…]" prompt.
 		if ( ! $is_system ) {
@@ -911,7 +911,7 @@ function flosc_render_chat_session( $flosc_s ) {
 			);
 		}
 
-		// The bot's message — shown for EVERY row, including the opening welcome the
+		// The bot's message — shown for EVERY row, including the opening welcome the.
 		// visitor actually saw (we just don't echo the internal "[SYSTEM:…]" prompt).
 		++$b_seq;
 		$thread .= flosc_render_msg_bubbles(
@@ -931,8 +931,8 @@ function flosc_render_chat_session( $flosc_s ) {
 	}
 	$thread .= '</div>';
 
-	// Admin-join composer — shown when the conversation has a deliverable session id
-	// (visitors now carry one). Posting drops a pale-green "(admin)" line at the
+	// Admin-join composer — shown when the conversation has a deliverable session id.
+	// (visitors now carry one). Posting drops a pale-green "(admin)" line at the.
 	// bottom; the visitor's widget shows it on its next poll.
 	$composer = '';
 	if ( ( $flosc_s['by'] ?? '' ) === 'session' && intval( $flosc_s['value'] ?? 0 ) > 0 ) {

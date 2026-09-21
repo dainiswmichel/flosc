@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// v1.2.9: Output tab header
+// v1.2.9: Output tab header.
 flosc_tab_header( '💰', 'Offers' );
 
 $flosc_flow_settings = $GLOBALS['flosc_current_settings'] ?? array();
@@ -116,7 +116,7 @@ function flosc_parse_offer_access_codes_from_post( array $flosc_post ) {
 
 // ============================================
 // SAVE HANDLER — runs at include time (same as delete/toggle handlers below)
-// v1.6.5: Removed dead add_action('init',...) — file loads after init fires
+// v1.6.5: Removed dead add_action('init',...) — file loads after init fires.
 // ============================================
 function flosc_handle_offer_save() {
 	$flosc_post = wp_unslash( $_POST );
@@ -311,10 +311,10 @@ function flosc_handle_offer_save() {
 	wp_safe_redirect( esc_url_raw( admin_url( 'admin.php?page=flosc-settings&ivr=' . rawurlencode( $ivr ) . '&tab=offers&saved=1' ) ) );
 	exit;
 }
-flosc_handle_offer_save(); // v1.6.5: Execute at include time
+flosc_handle_offer_save(); // v1.6.5: Execute at include time.
 $flosc_get = FLOSC_Request_Guard::query_params( FLOSC_Request_Guard::admin_query_keys() );
 
-// Handle delete
+// Handle delete.
 if ( isset( $_GET['delete_offer'] ) && isset( $_GET['_wpnonce'] ) ) {
 	$flosc_get    = wp_unslash( $_GET );
 	$flosc_del_id = sanitize_text_field( $flosc_get['delete_offer'] ?? '' );
@@ -331,9 +331,9 @@ if ( isset( $_GET['delete_offer'] ) && isset( $_GET['_wpnonce'] ) ) {
 	}
 }
 
-// Handle toggle status
+// Handle toggle status.
 if ( isset( $_GET['toggle_status'] ) ) {
-	// Task 6: Verify nonce and capability
+	// Task 6: Verify nonce and capability.
 	if ( ! current_user_can( 'manage_options' ) ) {
 		wp_die( 'Unauthorized action.', 'Insufficient permissions', array( 'response' => 403 ) );
 	}
@@ -370,7 +370,7 @@ if ( isset( $_GET['toggle_status'] ) ) {
 
 // Handle explicit status set (draft|inactive|active)
 if ( isset( $_GET['set_status'] ) && isset( $_GET['status'] ) ) {
-	// Task 6: Verify nonce and capability
+	// Task 6: Verify nonce and capability.
 	if ( ! current_user_can( 'manage_options' ) ) {
 		wp_die( 'Unauthorized action.', 'Insufficient permissions', array( 'response' => 403 ) );
 	}
@@ -395,7 +395,7 @@ if ( isset( $_GET['set_status'] ) && isset( $_GET['status'] ) ) {
 	}
 }
 
-// Load offers
+// Load offers.
 $flosc_flow_id_for_offers = null;
 if ( ! empty( $flosc_flow_key ) ) {
 	$flosc_flow_id_for_offers = str_replace( 'flosc_flow_', '', $flosc_flow_key );
@@ -404,7 +404,7 @@ $flosc_offers    = flosc()->sale()->offers()->get_all_offers( $flosc_flow_id_for
 $flosc_get       = FLOSC_Request_Guard::query_params( FLOSC_Request_Guard::admin_query_keys() );
 $flosc_expand_id = $flosc_get['edit_offer'] ?? $flosc_get['expand'] ?? null;
 
-// All 7 display formats with metadata
+// All 7 display formats with metadata.
 $flosc_all_format_meta = array(
 	'card'            => array(
 		'icon'  => '🃏',
@@ -457,7 +457,7 @@ $flosc_all_format_meta = array(
 
 <?php
 // ============================================
-// ACTIVE OFFERS SUMMARY
+// ACTIVE OFFERS SUMMARY.
 // ============================================
 $flosc_active_offers = array();
 foreach ( $flosc_offers as $flosc_offer_id => $flosc_offer ) {
@@ -566,7 +566,7 @@ foreach ( $flosc_offers as $flosc_offer ) :
 	$flosc_price             = (float) ( $flosc_offer['price'] ?? 0 );
 	$flosc_original_price    = (float) ( $flosc_offer['original_price'] ?? 0 );
 
-	// Determine enabled formats
+	// Determine enabled formats.
 	$flosc_df           = $flosc_offer['display_formats'] ?? array();
 	$flosc_enabled_fmts = array();
 	foreach ( $flosc_all_format_meta as $flosc_fid => $flosc_fm ) {
@@ -574,7 +574,7 @@ foreach ( $flosc_offers as $flosc_offer ) :
 			$flosc_enabled_fmts[] = $flosc_fm['icon'] . ' ' . $flosc_fm['label'];
 		}
 	}
-	// Backward compat: old single display_format
+	// Backward compat: old single display_format.
 	if ( empty( $flosc_enabled_fmts ) && ! empty( $flosc_offer['display_format'] ) ) {
 		$flosc_bf = $flosc_offer['display_format'];
 		if ( isset( $flosc_all_format_meta[ $flosc_bf ] ) ) {
@@ -902,16 +902,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <?php
 // ============================================
-// OFFER EDITOR RENDER FUNCTION
+// OFFER EDITOR RENDER FUNCTION.
 // ============================================
 function flosc_render_offer_editor_v2( $flosc_offer, $flosc_flow_key, $flosc_current_ivr, $flosc_all_format_meta ) {
 	$is_new         = empty( $flosc_offer );
 	$flosc_offer_id = $flosc_offer['id'] ?? 'new';
 	$flosc_safe_id  = esc_attr( $flosc_offer_id );
 
-	// Merge display_formats with defaults
+	// Merge display_formats with defaults.
 	$flosc_df = $flosc_offer['display_formats'] ?? array();
-	// Backward compat
+	// Backward compat.
 	if ( empty( $flosc_df ) && ! empty( $flosc_offer['display_format'] ) ) {
 		$flosc_df[ $flosc_offer['display_format'] ] = array( 'enabled' => true );
 	}

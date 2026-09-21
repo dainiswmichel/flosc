@@ -141,7 +141,7 @@ abstract class FLOSC_Abstract_Quiz_Type {
 		$lessons = array();
 
 		// Tier 1 — CorrectContent (primary lesson references per incorrect question)
-		// correct_content may be a string (single ref) or array (multiple refs) — both handled via (array) cast
+		// correct_content may be a string (single ref) or array (multiple refs) — both handled via (array) cast.
 		foreach ( $analysis['incorrect'] ?? array() as $item ) {
 			foreach ( (array) ( $item['correct_content'] ?? array() ) as $ref ) {
 				$ref = trim( $ref );
@@ -208,7 +208,7 @@ abstract class FLOSC_Abstract_Quiz_Type {
 			return array();
 		}
 
-		// Sort by tier so tier-1 (primary) lessons appear first
+		// Sort by tier so tier-1 (primary) lessons appear first.
 		$result = array_values( $lessons );
 		usort(
 			$result,
@@ -244,7 +244,7 @@ abstract class FLOSC_Abstract_Quiz_Type {
 			return array();
 		}
 
-		// Typed dispatch — prefix:value
+		// Typed dispatch — prefix:value.
 		if ( strpos( $ref, ':' ) !== false ) {
 			list( $type, $value ) = explode( ':', $ref, 2 );
 			$type                 = strtolower( trim( $type ) );
@@ -253,8 +253,8 @@ abstract class FLOSC_Abstract_Quiz_Type {
 			switch ( $type ) {
 				case 'post':
 					if ( strpos( $value, '/' ) !== false ) {
-						// Hierarchical path (e.g. vowels/lesson-1) — try all public post types
-						// because the same slug can exist under different parents
+						// Hierarchical path (e.g. vowels/lesson-1) — try all public post types.
+						// because the same slug can exist under different parents.
 						foreach ( get_post_types( array( 'public' => true ), 'names' ) as $pt ) {
 							$post = get_page_by_path( $value, OBJECT, $pt );
 							if ( $post && $post->post_status === 'publish' ) {
@@ -263,7 +263,7 @@ abstract class FLOSC_Abstract_Quiz_Type {
 						}
 						return array();
 					}
-					// Flat slug — globally unique within 'post' type
+					// Flat slug — globally unique within 'post' type.
 					$post = get_page_by_path( $value, OBJECT, 'post' );
 					if ( $post && $post->post_status === 'publish' ) {
 						return array( $post );
@@ -280,7 +280,7 @@ abstract class FLOSC_Abstract_Quiz_Type {
 					return array();
 
 				case 'category':
-					// Supports parent/child path: category:parent-slug/child-slug
+					// Supports parent/child path: category:parent-slug/child-slug.
 					$cat = null;
 					if ( strpos( $value, '/' ) !== false ) {
 						$parent_id = 0;
@@ -342,7 +342,7 @@ abstract class FLOSC_Abstract_Quiz_Type {
 						)
 					) ?: array();
 			}
-			// Unrecognised prefix — fall through to legacy auto-resolve
+			// Unrecognised prefix — fall through to legacy auto-resolve.
 		}
 
 		// Legacy auto-resolve (no prefix — supports old saved content only)
@@ -353,7 +353,7 @@ abstract class FLOSC_Abstract_Quiz_Type {
 			}
 		}
 		if ( strpos( $ref, '/' ) !== false ) {
-			// Hierarchical path — try all public post types
+			// Hierarchical path — try all public post types.
 			foreach ( get_post_types( array( 'public' => true ), 'names' ) as $pt ) {
 				$post = get_page_by_path( $ref, OBJECT, $pt );
 				if ( $post && $post->post_status === 'publish' ) {
@@ -414,10 +414,10 @@ abstract class FLOSC_Abstract_Quiz_Type {
 		$score        = $analysis['score'];
 		$response_key = $analysis['response_key'];
 
-		// Get appropriate template
+		// Get appropriate template.
 		$template = $response_templates[ $response_key ] ?? $response_templates['31-60'] ?? 'Your score: {score}%';
 
-		// Build lesson text
+		// Build lesson text.
 		$lesson_text = '';
 		if ( ! empty( $lessons ) ) {
 			$free_lesson  = $lessons[0];
@@ -435,7 +435,7 @@ abstract class FLOSC_Abstract_Quiz_Type {
 			}
 		}
 
-		// Replace placeholders
+		// Replace placeholders.
 		$message = str_replace(
 			array( '{score}', '{lesson_recommendations}' ),
 			array( $score, $lesson_text ),

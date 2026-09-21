@@ -19,8 +19,8 @@ class FLOSC_Full_Page_Mode {
 
 	public function is_flosc_request() {
 		// Full-page chat SPA only: custom domain, flow slug, or flosc_ivr rewrite.
-		// Intentionally ignores forced_flow — companion knowledge-hub resolution sets
-		// forced_flow on normal WP pages (e.g. /category/lessons/) so settings resolve
+		// Intentionally ignores forced_flow — companion knowledge-hub resolution sets.
+		// forced_flow on normal WP pages (e.g. /category/lessons/) so settings resolve.
 		// to the owning flow; those pages must keep the theme shell + companion widget,
 		// not the full-app nuclear dequeue / flosc-app.js surface.
 		return $this->flosc->detect_flow_from_request_route() !== null;
@@ -45,7 +45,7 @@ class FLOSC_Full_Page_Mode {
 
 		if ( $flow && ! empty( $flow['custom_domain'] ) ) {
 			// Normalize and return custom domain URL.
-			// Prefer https for public chat hosts so companion iframes on https hubs
+			// Prefer https for public chat hosts so companion iframes on https hubs.
 			// (e.g. the WordPress host/category/lessons/) are not mixed-content blocked.
 			$custom_domain         = preg_replace( '#^https?://#', '', $flow['custom_domain'] );
 			$custom_domain         = rtrim( $custom_domain, '/' );
@@ -61,7 +61,7 @@ class FLOSC_Full_Page_Mode {
 			return home_url( '/' . $flow['slug'] . '/' );
 		}
 
-		// Fallback to legacy settings
+		// Fallback to legacy settings.
 		$custom_domain = get_option( 'flosc_custom_domain', '' );
 
 		if ( ! empty( $custom_domain ) ) {
@@ -70,21 +70,21 @@ class FLOSC_Full_Page_Mode {
 			return ( is_ssl() ? 'https://' : 'http://' ) . $custom_domain . '/';
 		}
 
-		// Fall back to slug-based URL
+		// Fall back to slug-based URL.
 		$slug = get_option( 'flosc_app_slug', 'flosc' );
 		return home_url( '/' . $slug . '/' );
 	}
 
 	public function add_query_vars( $vars ) {
 		$vars[] = 'flosc_app';
-		$vars[] = 'flosc_flow'; // v1.2.2: Multi-flow support
-		$vars[] = 'flosc_ivr';  // v1.2.9: IVR-file-based flows
+		$vars[] = 'flosc_flow'; // v1.2.2: Multi-flow support.
+		$vars[] = 'flosc_ivr';  // v1.2.9: IVR-file-based flows.
 		$vars[] = 'ref';
 		return $vars;
 	}
 
 	public function handle_app_route() {
-		// v1.2.1: Use centralized is_flosc_request() helper
+		// v1.2.1: Use centralized is_flosc_request() helper.
 		// This reads from flosc_custom_domain setting (not hardcoded)
 		if ( ! $this->is_flosc_request() ) {
 			return;
@@ -104,19 +104,19 @@ class FLOSC_Full_Page_Mode {
 
 		// v1.9.5: Clean up wp_head() output — strip ALL theme/plugin hooks.
 		// BuddyBoss hooks HTML templates (link-preview, profile-card, group-card),
-		// inline scripts (ajaxurl), and late-enqueues (child theme CSS/JS) into wp_head
+		// inline scripts (ajaxurl), and late-enqueues (child theme CSS/JS) into wp_head.
 		// at various priorities. Removing individual actions is whack-a-mole.
 		// Instead: clear everything, re-add only the three core WP functions:
-		// 1. wp_enqueue_scripts (priority 1) — fires our nuclear dequeue
-		// 2. wp_print_styles (priority 8) — outputs surviving CSS
-		// 3. wp_print_head_scripts (priority 9) — outputs surviving head JS
+		// 1. wp_enqueue_scripts (priority 1) — fires our nuclear dequeue.
+		// 2. wp_print_styles (priority 8) — outputs surviving CSS.
+		// 3. wp_print_head_scripts (priority 9) — outputs surviving head JS.
 		remove_all_actions( 'wp_head' );
 		add_action( 'wp_head', 'wp_enqueue_scripts', 1 );
 		add_action( 'wp_head', 'wp_print_styles', 8 );
 		add_action( 'wp_head', 'wp_print_head_scripts', 9 );
 
-		// v1.9.5: Second dequeue pass — catch styles/scripts enqueued AFTER
-		// our nuclear dequeue (BuddyBoss child theme enqueues via wp_head
+		// v1.9.5: Second dequeue pass — catch styles/scripts enqueued AFTER.
+		// our nuclear dequeue (BuddyBoss child theme enqueues via wp_head.
 		// callbacks at priority > 1, which fires after do_action('wp_enqueue_scripts')).
 		// These hooks fire inside wp_print_styles()/wp_print_head_scripts()
 		// just before the actual output, catching anything that slipped through.
@@ -148,17 +148,17 @@ class FLOSC_Full_Page_Mode {
 			0
 		);
 
-		// v1.9.5: Clean up wp_footer() output — BuddyBoss hooks modals
+		// v1.9.5: Clean up wp_footer() output — BuddyBoss hooks modals.
 		// (Report, Block Member, etc.) into wp_footer as hidden HTML.
-		// With theme CSS removed, these become visible. Solution: strip
-		// wp_footer down to ONLY wp_print_footer_scripts (which outputs our
+		// With theme CSS removed, these become visible. Solution: strip.
+		// wp_footer down to ONLY wp_print_footer_scripts (which outputs our.
 		// enqueued JS). This also fires did_action('wp_footer') correctly.
 		remove_all_actions( 'wp_footer' );
 		add_action( 'wp_footer', 'wp_print_footer_scripts', 20 );
 
 		// v1.9.5: Also clear wp_print_footer_scripts action hooks.
 		// wp_print_footer_scripts() fires do_action('wp_print_footer_scripts').
-		// _wp_footer_scripts() is hooked there — it's the core function that calls
+		// _wp_footer_scripts() is hooked there — it's the core function that calls.
 		// $wp_scripts->do_footer_items() to output enqueued JS (flosc-app, paypal-js).
 		// BuddyBoss/Jetpack ALSO hook inline JS + HTML templates on this action,
 		// bypassing our wp_footer cleanup. Fix: clear all, re-add only _wp_footer_scripts.
@@ -330,7 +330,7 @@ HTML;
 	 * Called by handle_app_route() for both custom domain and slug routing
 	 */
 	public function render_flosc_app() {
-		// v2.0.0: Prevent page caching — identity data is dynamic per-flow
+		// v2.0.0: Prevent page caching — identity data is dynamic per-flow.
 		nocache_headers();
 
 		// Track referral (v1.0.7: use array syntax with SameSite)
@@ -349,7 +349,7 @@ HTML;
 		}
 
 		// Real-world state on this host only:
-		// not logged in → visitor
+		// not logged in → visitor.
 		// logged in     → guest | member for THIS flow (never visitor)
 		$user_state             = 'visitor';
 		$user_data              = array();
@@ -380,7 +380,7 @@ HTML;
 			$user_data['state'] = $user_state;
 		}
 
-		// v1.3.5: Add admin verification data for in-chat message
+		// v1.3.5: Add admin verification data for in-chat message.
 		$flow     = $this->flosc->get_current_flow();
 		$ivr_file = $flow['ivr_file'] ?? '';
 
@@ -411,8 +411,8 @@ HTML;
 		// Get flow identity (name, logo, favicon, brand color, pricing)
 		$identity = $this->flosc->get_floscflow_identity();
 
-		// Get available offers
-		// v1.6.2: Pass flow_id so offers load from per-flow storage
+		// Get available offers.
+		// v1.6.2: Pass flow_id so offers load from per-flow storage.
 		$flow_id = null;
 		if ( $flow && ! empty( $flow['ivr_file'] ) ) {
 			$flow_id = pathinfo( basename( $flow['ivr_file'] ), PATHINFO_FILENAME );
@@ -425,7 +425,7 @@ HTML;
 			)
 			: array();
 
-		// Admin test-offer mode: bypass conditions/draft status to preview any offer
+		// Admin test-offer mode: bypass conditions/draft status to preview any offer.
 		$test_offer_id = '';
 		$get           = wp_unslash( $_GET );
 		if ( current_user_can( 'manage_options' ) && ! empty( $get['flosc_test_offer'] ) ) {
@@ -436,14 +436,14 @@ HTML;
 				$all_raw_offers = $sale->offers()->get_all_offers( $flow_id );
 				foreach ( $all_raw_offers as $o ) {
 					if ( ( $o['id'] ?? '' ) === $oid ) {
-						$offers[ $oid ] = $o; // inject even if draft/inactive
+						$offers[ $oid ] = $o; // inject even if draft/inactive.
 						break;
 					}
 				}
 			}
 		}
 
-		// v4.0.0: Admin test mode — expose ALL offers (incl. drafts) for direct testing in chat
+		// v4.0.0: Admin test mode — expose ALL offers (incl. drafts) for direct testing in chat.
 		$admin_test_offers = array();
 		if ( is_user_logged_in() && current_user_can( 'manage_options' ) && $sale && method_exists( $sale, 'offers' ) ) {
 			$all_raw = $sale->offers()->get_all_offers( $flow_id );
@@ -452,7 +452,7 @@ HTML;
 			}
 		}
 
-		// Get payment providers config for frontend
+		// Get payment providers config for frontend.
 		$providers = array();
 		if ( $sale && method_exists( $sale, 'get_active_providers' ) ) {
 			foreach ( $sale->get_active_providers() as $id => $provider ) {
@@ -465,10 +465,10 @@ HTML;
 			}
 		}
 
-		// v3.0.0: Generate FLOSC auth token for cross-domain compatibility
+		// v3.0.0: Generate FLOSC auth token for cross-domain compatibility.
 		// On every page load for logged-in users, generate a fresh token.
 		// This token is included in FLOSC_CONFIG and set as a cookie.
-		// It enables authentication when WordPress's native cookies fail
+		// It enables authentication when WordPress's native cookies fail.
 		// due to COOKIE_DOMAIN mismatch on custom domains.
 		$flosc_auth_token = '';
 		if ( is_user_logged_in() ) {
@@ -476,7 +476,7 @@ HTML;
 			$this->flosc->set_flosc_auth_cookie( $flosc_auth_token );
 		}
 
-		// Load template
+		// Load template.
 		include FLOSC_PLUGIN_DIR . 'admin/flosc-app.php';
 		exit;
 	}

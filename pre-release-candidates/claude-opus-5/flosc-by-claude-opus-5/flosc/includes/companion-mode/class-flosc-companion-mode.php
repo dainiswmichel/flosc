@@ -26,7 +26,7 @@ class FLOSC_Companion_Mode {
 	 */
 	public function enqueue_companion() {
 		// Outer chrome is for normal WP host pages only.
-		// FLOSC app routes (is_flosc_request) never load outer chrome — by construction
+		// FLOSC app routes (is_flosc_request) never load outer chrome — by construction.
 		// the companion iframe may only target an app route, so nesting cannot occur.
 		if ( $this->flosc->is_flosc_request() ) {
 			return;
@@ -58,7 +58,7 @@ class FLOSC_Companion_Mode {
 		}
 
 		// Visitor gate: when disabled, only logged-in users should see companion.
-		// Handoff from full-page chat always allowed — dock may land cross-domain
+		// Handoff from full-page chat always allowed — dock may land cross-domain.
 		// (e.g. the flow domain → the WordPress host knowledge hub) without a shared login cookie.
 		// Sales default is on (see get_companion_defaults). Stored 0/1 after Style save;
 		// legacy empty string falls through get_setting to the default (on).
@@ -531,7 +531,7 @@ class FLOSC_Companion_Mode {
 		$category_match = $matches['category'] ?? null;
 		$page_owner     = $hub_match ?: $category_match;
 
-		// Hint may only select a companion-enabled flow that either owns this page
+		// Hint may only select a companion-enabled flow that either owns this page.
 		// or is an explicit handoff to a real flow (dock from full-page chat).
 		if ( $hint !== '' ) {
 			$hint_flow = $this->flosc->build_flow_from_ivr_file( $hint . '.md' );
@@ -756,8 +756,8 @@ class FLOSC_Companion_Mode {
 			return true;
 		}
 
-		// Resolved flow after hub/handoff context (forced_flow). Session dock handoff
-		// sets this before enqueue; must still accept that flow's app surface so
+		// Resolved flow after hub/handoff context (forced_flow). Session dock handoff.
+		// sets this before enqueue; must still accept that flow's app surface so.
 		// flosc_session_id / visitor continuity can load into the iframe.
 		$flow = $this->flosc->get_current_flow();
 		if ( is_array( $flow ) ) {
@@ -876,7 +876,7 @@ class FLOSC_Companion_Mode {
 		$flow_settings = is_array( $flow ) ? $flow : array();
 		if ( function_exists( 'flosc_companion_hub_defaults_from_flow' ) ) {
 			$defaults = flosc_companion_hub_defaults_from_flow( $flow_settings );
-			// chat_app only — same as HEAD. Do not prefer fullscreen for the iframe
+			// chat_app only — same as HEAD. Do not prefer fullscreen for the iframe.
 			// (wrong surface can drop guest/member continuity onto another route).
 			$from_defaults = esc_url_raw( (string) ( $defaults['chat_app'] ?? '' ), array( 'http', 'https' ) );
 			if ( $from_defaults !== '' ) {

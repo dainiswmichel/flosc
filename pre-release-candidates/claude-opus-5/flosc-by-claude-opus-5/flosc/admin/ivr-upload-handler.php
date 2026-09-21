@@ -171,7 +171,7 @@ if ( ! function_exists( 'flosc_portability_ingest_da1_tsv' ) ) {
 		}
 
 		$stem = (string) pathinfo( $raw_name, PATHINFO_FILENAME );
-		// flosc_da1_catalog_vegan_latvian_kitchen → vegan_latvian_kitchen
+		// flosc_da1_catalog_vegan_latvian_kitchen → vegan_latvian_kitchen.
 		$stem = preg_replace( '/^flosc_da1_catalog_/i', '', $stem );
 		$stem = preg_replace( '/^flosc_da1_/i', '', (string) $stem );
 		$key  = sanitize_key( str_replace( array( ' ', '-' ), '_', (string) $stem ) );
@@ -338,7 +338,7 @@ if ( ! function_exists( 'flosc_portability_pack_dir' ) ) {
 		if ( ! wp_mkdir_p( $base ) ) {
 			return '';
 		}
-		// Block directory listing. Do not write Deny-from-all here: pack files
+		// Block directory listing. Do not write Deny-from-all here: pack files.
 		// are addressed by URL for admin download of staged WXR.
 		$silence = "<?php\n// Silence is golden.\n";
 		if ( ! file_exists( $base . '/index.php' ) ) {
@@ -594,7 +594,7 @@ if ( ! function_exists( 'flosc_portability_run_wxr_import' ) ) {
 			return new WP_Error( 'flosc_wxr_path', __( 'Staged WXR path is not inside this flow’s pack directory.', 'flosc' ) );
 		}
 
-		// The importer runs only when the WordPress Importer plugin is genuinely
+		// The importer runs only when the WordPress Importer plugin is genuinely.
 		// active and has bootstrapped WP_Import through its own normal load path.
 		// Nothing here hardcodes a plugin path or force-loads core import files,
 		// and no unactivated plugin code is included directly.
@@ -775,8 +775,8 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 			wp_die( esc_html__( 'You do not have permission to upload flow files.', 'flosc' ) );
 		}
 
-		// The clicked button is the only source of intent, already narrowed to
-		// create|apply by the $is_kit test above. Create is the safe default: it
+		// The clicked button is the only source of intent, already narrowed to.
+		// create|apply by the $is_kit test above. Create is the safe default: it.
 		// writes a new flow rather than merging into an existing one.
 		$action = $submit_raw;
 		if ( ! in_array( $action, array( 'create', 'apply' ), true ) ) {

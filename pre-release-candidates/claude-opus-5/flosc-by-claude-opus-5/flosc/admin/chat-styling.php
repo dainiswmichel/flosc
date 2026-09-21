@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// v8.0.1: Output tab header
+// v8.0.1: Output tab header.
 flosc_tab_header( '🎨', 'Style & Nav' );
 
 $flosc_current_ivr    = $GLOBALS['flosc_current_ivr'] ?? '';
@@ -75,7 +75,7 @@ $flosc_current_accent = $flosc_flow_settings['chat_style_accent'] ?? '#2563eb';
 $flosc_current_font   = $flosc_flow_settings['chat_style_font'] ?? 'system';
 $flosc_current_scale  = $flosc_flow_settings['chat_style_scale'] ?? 100;
 
-// Bubble style presets
+// Bubble style presets.
 $flosc_bubble_styles = array(
 	'subtle-notch' => array(
 		'name'      => 'Subtle Notch',

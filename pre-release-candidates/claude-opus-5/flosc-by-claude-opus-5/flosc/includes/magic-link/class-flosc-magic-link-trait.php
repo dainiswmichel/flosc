@@ -219,7 +219,7 @@ trait FLOSC_Magic_Link_Trait {
 			$window_days = $this->flosc_magic_link_window_days( $_payload_flow );
 			$window_ttl  = $window_days * DAY_IN_SECONDS;
 
-			// Invalid or expired token — redirect to offer page or show expired status
+			// Invalid or expired token — redirect to offer page or show expired status.
 			if ( ! $payload || ! isset( $payload['status'] ) ) {
 				delete_transient( $transient_key );
 				if ( ! empty( $offer_url ) ) {
@@ -233,14 +233,14 @@ trait FLOSC_Magic_Link_Trait {
 			$email          = sanitize_email( $payload['email'] );
 			$is_first_click = ( $payload['status'] === 'pending' );
 
-			// Check membership before applying use-count limits — members of this guest-link flow get unlimited access
+			// Check membership before applying use-count limits — members of this guest-link flow get unlimited access.
 			$_pre_user      = get_user_by( 'email', $email );
 			$_link_flow     = sanitize_key( (string) ( $payload['flow_id'] ?? get_user_meta( $_pre_user ? $_pre_user->ID : 0, '_flosc_registration_flow', true ) ) );
 			$is_member_user = $_pre_user &&
 				$this->sale_manager->access()->get_simple_state( $_pre_user->ID, $_link_flow ) === 'member';
 
 			if ( $is_first_click ) {
-				// Phase 1 → Phase 2: Activate link on first click
+				// Phase 1 → Phase 2: Activate link on first click.
 				$payload['status']           = 'active';
 				$payload['first_clicked_at'] = time();
 				if ( ! $is_member_user ) {
@@ -248,7 +248,7 @@ trait FLOSC_Magic_Link_Trait {
 				}
 				set_transient( $transient_key, $payload, $window_ttl );
 			} else {
-				// Phase 2: Enforce active window; enforce max-use limit only for non-members
+				// Phase 2: Enforce active window; enforce max-use limit only for non-members.
 				$expired = (
 					$payload['status'] !== 'active' ||
 					( time() - $payload['first_clicked_at'] ) > $window_ttl ||
@@ -264,7 +264,7 @@ trait FLOSC_Magic_Link_Trait {
 					exit;
 				}
 				if ( ! $is_member_user ) {
-					// Increment use_count and re-save with remaining TTL
+					// Increment use_count and re-save with remaining TTL.
 					++$payload['use_count'];
 				}
 				$elapsed       = time() - $payload['first_clicked_at'];
@@ -333,7 +333,7 @@ trait FLOSC_Magic_Link_Trait {
 				$existing_user->set_role( $guest_level );
 			}
 
-			// Log in the known user only
+			// Log in the known user only.
 			wp_set_current_user( $user_id );
 			wp_set_auth_cookie( $user_id, true );
 			$flosc_token = $this->generate_flosc_auth_token( $user_id );
@@ -347,7 +347,7 @@ trait FLOSC_Magic_Link_Trait {
 			// Store token for credential-save email (email-registered users)
 			update_user_meta( $user_id, '_flosc_magic_link_token', $token );
 
-			// First click only: snapshot send count to user meta for admin profile visibility
+			// First click only: snapshot send count to user meta for admin profile visibility.
 			if ( $is_first_click ) {
 				$log  = get_option( 'flosc_guest_link_log', array() );
 				$hash = md5( strtolower( $email ) );
@@ -356,7 +356,7 @@ trait FLOSC_Magic_Link_Trait {
 				}
 			}
 
-			// Persist quiz/session data on first click, or on later clicks when user
+			// Persist quiz/session data on first click, or on later clicks when user.
 			// meta still lacks scored IPA results (email-scanner prefetch, DO race).
 			$session_id        = sanitize_text_field( $payload['session_id'] ?? '' );
 			$body_temp_id      = sanitize_text_field( $payload['temp_id'] ?? '' );
@@ -386,7 +386,7 @@ trait FLOSC_Magic_Link_Trait {
 				}
 			}
 
-			// Short-lived transients consumed by FLOSC_CONFIG on next page render
+			// Short-lived transients consumed by FLOSC_CONFIG on next page render.
 			// Members receive a marker value ('member') so memberLinkLogin can detect the magic-link login;
 			// guests receive the remaining-use count for guestLinkRemaining.
 			$_login_transient_val = $is_member_user ? 'member' : (int) $remaining_after_use;
@@ -450,7 +450,7 @@ trait FLOSC_Magic_Link_Trait {
 			exit;
 		}
 
-		// Case 1: Cross-domain login token
+		// Case 1: Cross-domain login token.
 		if ( ! empty( $get['flosc_login_token'] ) ) {
 			$token         = sanitize_text_field( $get['flosc_login_token'] );
 			$transient_key = 'flosc_login_token_' . $token;
@@ -460,7 +460,7 @@ trait FLOSC_Magic_Link_Trait {
 				return;
 			}
 
-			// One-time use — delete immediately
+			// One-time use — delete immediately.
 			delete_transient( $transient_key );
 
 			$user_id = absint( is_array( $user_id ) ? ( $user_id['user_id'] ?? $user_id['uid'] ?? 0 ) : $user_id );
@@ -474,7 +474,7 @@ trait FLOSC_Magic_Link_Trait {
 			wp_set_auth_cookie( $user_id, true );
 
 			// v3.0.0: Set FLOSC auth token cookie (empty domain = current host)
-			// This works even when COOKIE_DOMAIN doesn't match the custom domain
+			// This works even when COOKIE_DOMAIN doesn't match the custom domain.
 			$flosc_token = $this->generate_flosc_auth_token( $user_id );
 			$this->set_flosc_auth_cookie( $flosc_token );
 
@@ -1138,10 +1138,10 @@ trait FLOSC_Magic_Link_Trait {
 			$purchase_data = array();
 		}
 
-		// Extract flow context
+		// Extract flow context.
 		$flow_id = sanitize_key( (string) ( $purchase_data['flow_id'] ?? get_user_meta( $user_id, '_flosc_registration_flow', true ) ) );
 		if ( empty( $flow_id ) ) {
-			return; // No flow context — skip
+			return; // No flow context — skip.
 		}
 
 		$context     = $this->get_guest_email_context( $flow_id, $user_id );
@@ -1617,7 +1617,7 @@ trait FLOSC_Magic_Link_Trait {
 			wp_send_json_error( array( 'message' => 'Please enter a valid email address.' ) );
 		}
 
-		// Set flow context so flosc_get_setting reads the correct per-flow settings
+		// Set flow context so flosc_get_setting reads the correct per-flow settings.
 		$ivr = sanitize_file_name( $post['ivr'] ?? '' );
 		if ( ! empty( $ivr ) ) {
 			$this->set_flow_context( pathinfo( $ivr, PATHINFO_FILENAME ) );

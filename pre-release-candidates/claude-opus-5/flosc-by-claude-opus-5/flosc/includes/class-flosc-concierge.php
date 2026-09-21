@@ -107,9 +107,9 @@ class FLOSC_Concierge {
 				return self::prompt( self::text( $msg, 'password_prompt', 'I’ve got something for you — what’s the password?' ) );
 			}
 
-			// Right password → open the AI-hosted desk and hand the conversation to
-			// the AI path. We return the authoritative source content so the AI can
-			// host the reveal, but the chat handler can still fall back to that exact
+			// Right password → open the AI-hosted desk and hand the conversation to.
+			// the AI path. We return the authoritative source content so the AI can.
+			// host the reveal, but the chat handler can still fall back to that exact.
 			// content if the provider is unavailable on this turn.
 			if ( self::password_matches( $message, $password ) ) {
 				delete_transient( $gate_key );
@@ -123,8 +123,8 @@ class FLOSC_Concierge {
 				);
 			}
 
-			// Wrong password → show this miss's retry line. The final allowed miss
-			// shows its line (typically the "reach out to me" escape note) and then
+			// Wrong password → show this miss's retry line. The final allowed miss.
+			// shows its line (typically the "reach out to me" escape note) and then.
 			// the gate closes — the conversation falls back to normal chat.
 			$tries = (int) ( $pending['tries'] ?? 0 ) + 1;
 			$line  = self::retry_line( $msg, $tries, $max );
@@ -166,10 +166,10 @@ class FLOSC_Concierge {
 				);
 				return self::prompt( self::text( $msg, 'password_prompt', 'I’ve got something for you — what’s the password?' ) );
 			}
-			// No gate → open the concierge desk for this guest and hand off to the AI
-			// path (return null, no short-circuit). The AI then hosts the reveal in
+			// No gate → open the concierge desk for this guest and hand off to the AI.
+			// path (return null, no short-circuit). The AI then hosts the reveal in.
 			// its own voice, offer by offer, using the desk's brief (active_guidance).
-			// There is deliberately NO canned-dump fallback: dumping the raw brief is
+			// There is deliberately NO canned-dump fallback: dumping the raw brief is.
 			// exactly the behaviour we must never produce.
 			self::open_session( $session_key, $msg, 'revealing', true );
 			return null;
@@ -262,7 +262,7 @@ class FLOSC_Concierge {
 			if ( '' === $keyword ) {
 				continue;
 			}
-			// Approximate: case- and position-insensitive containment, so "Narcissist"
+			// Approximate: case- and position-insensitive containment, so "Narcissist".
 			// matches "you're a narcissist" and "narcissistic" without an exact phrase.
 			if ( false !== mb_strpos( $haystack, $keyword ) ) {
 				return true;
@@ -401,9 +401,9 @@ class FLOSC_Concierge {
 		set_transient(
 			self::open_key( $session_key ),
 			array(
-				// The full note is the AI's authoritative SOURCE. It is given as
+				// The full note is the AI's authoritative SOURCE. It is given as.
 				// reference every turn so the AI can quote facts (phone, email)
-				// EXACTLY and never invent them — while the guidance instructs it to
+				// EXACTLY and never invent them — while the guidance instructs it to.
 				// reveal only 1–3 sentences per turn rather than paste the whole note.
 				'brief'              => (string) ( $msg['content'] ?? '' ),
 				'stage'              => $start_stage,
@@ -479,7 +479,7 @@ class FLOSC_Concierge {
 				. '----- end SOURCE -----';
 		}
 
-		// Reveal stage: the AI gets the full SOURCE so every fact it states is
+		// Reveal stage: the AI gets the full SOURCE so every fact it states is.
 		// accurate, but it must reveal only a little per turn and never fabricate.
 		return $head
 			. "Reveal the SOURCE below GRADUALLY — only 1–3 sentences per reply, in order, continuing from what you have already shared (check the conversation so far), and end by inviting them to hear more. NEVER paste, list, or summarise the whole note at once.\n"
@@ -668,8 +668,8 @@ class FLOSC_Concierge {
 	public static function render_meta_box( $post ) {
 		$c = self::config_from_post( $post );
 		wp_nonce_field( 'flosc_concierge_meta', 'flosc_concierge_nonce' );
-		// Styles for .flosc-cncrg-* live on the 'flosc-metabox' handle, added in
-		// enqueue_admin_assets() during admin_enqueue_scripts — the only moment
+		// Styles for .flosc-cncrg-* live on the 'flosc-metabox' handle, added in.
+		// enqueue_admin_assets() during admin_enqueue_scripts — the only moment.
 		// inline style data still reaches the page (see the §12 note there).
 		echo '<div class="flosc-cncrg-row"><label>Flow</label><select name="flosc_cncrg_flow">';
 		$current  = $c['flow'];
@@ -1002,17 +1002,17 @@ class FLOSC_Concierge {
 		if ( '' === $host ) {
 			return '';
 		}
-		$host = preg_replace( '#^[a-z][a-z0-9+.\-]*://#', '', $host ); // drop scheme
-		$host = preg_replace( '#[/?\#].*$#', '', $host );              // drop path/query/fragment
+		$host = preg_replace( '#^[a-z][a-z0-9+.\-]*://#', '', $host ); // drop scheme.
+		$host = preg_replace( '#[/?\#].*$#', '', $host );              // drop path/query/fragment.
 		$host = preg_replace( '#^www\.#', '', $host );                 // drop www.
-		$stem = trim( (string) preg_replace( '/[^a-z0-9]+/', '_', $host ), '_' ); // the WordPress host -> host_flow
+		$stem = trim( (string) preg_replace( '/[^a-z0-9]+/', '_', $host ), '_' ); // the WordPress host -> host_flow.
 		if ( '' === $stem ) {
 			return '';
 		}
 		$files = function_exists( 'flosc_config_glob' ) ? flosc_config_glob( '*_ivr.md' ) : array();
 		foreach ( (array) $files as $file ) {
 			$name  = basename( (string) $file );
-			$fstem = pathinfo( $name, PATHINFO_FILENAME );             // e.g. flow_ivr
+			$fstem = pathinfo( $name, PATHINFO_FILENAME );             // e.g. flow_ivr.
 			if ( $fstem === $stem || 0 === strpos( $fstem, $stem . '_' ) ) {
 				if ( ! empty( get_option( 'flosc_flow_' . sanitize_key( $fstem ) ) ) ) {
 					return $name;
@@ -1047,7 +1047,7 @@ class FLOSC_Concierge {
 			return $block;
 		}
 
-		// Safety net only (no label present): serve the body with the config lines
+		// Safety net only (no label present): serve the body with the config lines.
 		// removed, so a password is never handed to the guest.
 		$stripped = preg_replace( '/^[ \t>*_\-]*(floscFlow|Deployment|Keyword|Password)[ \t]*:.*$/mi', '', $body );
 		return trim( (string) $stripped );

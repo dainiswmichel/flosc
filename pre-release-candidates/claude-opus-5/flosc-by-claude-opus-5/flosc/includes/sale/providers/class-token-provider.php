@@ -32,7 +32,7 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 	}
 
 	public function is_configured() {
-		// Tokens are always "configured" - it's an internal system
+		// Tokens are always "configured" - it's an internal system.
 		return true;
 	}
 
@@ -371,7 +371,7 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 	private function log_transaction( $user_id, $transaction ) {
 		$ledger = get_user_meta( $user_id, $this->ledger_meta_key, true ) ?: array();
 
-		// Keep last 100 transactions
+		// Keep last 100 transactions.
 		$ledger   = array_slice( $ledger, -99 );
 		$ledger[] = $transaction;
 
@@ -421,8 +421,8 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 	 * Convert tokens from affiliate earnings
 	 */
 	public function credit_from_affiliate( $user_id, $affiliate_amount, $affiliate_meta = array() ) {
-		// Conversion rate: $1 affiliate commission = X tokens
-		$rate   = intval( $this->get_setting( 'affiliate_conversion_rate', 10 ) ); // Default: $1 = 10 tokens
+		// Conversion rate: $1 affiliate commission = X tokens.
+		$rate   = intval( $this->get_setting( 'affiliate_conversion_rate', 10 ) ); // Default: $1 = 10 tokens.
 		$tokens = round( $affiliate_amount * $rate );
 
 		if ( $tokens > 0 ) {
@@ -447,10 +447,10 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 	 * Token costs for actions (configurable)
 	 */
 	public function get_action_costs() {
-		// Default per-turn AI cost = the configured per-message budget. Real cost
-		// is applied separately when provider billing is available; this default
-		// is only the fallback when no billing metadata exists. A hardcoded "1"
-		// silently caps every turn at one token — the budget default is sensible
+		// Default per-turn AI cost = the configured per-message budget. Real cost.
+		// is applied separately when provider billing is available; this default.
+		// is only the fallback when no billing metadata exists. A hardcoded "1".
+		// silently caps every turn at one token — the budget default is sensible.
 		// and admin-overridable via the cost_ai_query setting.
 		$communication   = $this->get_communication_economics();
 		$default_ai_cost = max( 1, intval( $communication['tokens_per_message'] ?? 5000 ) );

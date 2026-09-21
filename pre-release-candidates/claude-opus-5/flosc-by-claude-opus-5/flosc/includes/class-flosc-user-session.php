@@ -36,7 +36,7 @@ class FLOSC_User_Session {
 	 */
 	private function flosc_build_state() {
 		// Use existing Condition Evaluator's build_context()
-		// Pass flow_id in additional context
+		// Pass flow_id in additional context.
 		$flosc_additional = array( 'flow_id' => $this->flosc_flow_id );
 		$flosc_context    = FLOSC_Condition_Evaluator::build_context( $this->flosc_user_id, $flosc_additional );
 
@@ -45,14 +45,14 @@ class FLOSC_User_Session {
 		$flosc_flow         = $flosc_flow_manager->get_flow( $this->flosc_flow_id );
 
 		return array(
-			// Identity & Access
+			// Identity & Access.
 			'flosc_user_id'      => $this->flosc_user_id,
 			'flosc_flow_id'      => $this->flosc_flow_id,
 			'flosc_phase'        => $flosc_context['phase'] ?? 'freeline',
 			'flosc_access_level' => $this->flosc_determine_access_level( $flosc_context ),
 			'flosc_user_type'    => $this->flosc_determine_user_type( $flosc_context ),
 
-			// Flow Configuration
+			// Flow Configuration.
 			'flosc_flow'         => array(
 				'flosc_name'           => $flosc_flow['name'] ?? 'Unknown',
 				'flosc_slug'           => $flosc_flow['slug'] ?? '',
@@ -61,7 +61,7 @@ class FLOSC_User_Session {
 				'flosc_custom_domain'  => $flosc_flow['custom_domain'] ?? '',
 			),
 
-			// Quiz State
+			// Quiz State.
 			'flosc_quiz'         => array(
 				'flosc_taken'                => $flosc_context['quiz_taken'] ?? false,
 				'flosc_score'                => $flosc_context['score'] ?? 0,
@@ -71,21 +71,21 @@ class FLOSC_User_Session {
 				'flosc_free_lesson_viewed'   => $flosc_context['free_lesson_viewed'] ?? false,
 			),
 
-			// IVR Context
+			// IVR Context.
 			'flosc_ivr'          => array(
 				'flosc_active_conditions'   => $flosc_context['active_conditions'] ?? array(),
 				'flosc_visible_autoprompts' => $this->flosc_get_visible_autoprompts( $flosc_context, $flosc_flow ),
 				'flosc_boundary_rules'      => $this->flosc_get_boundary_rules( $flosc_context ),
 			),
 
-			// Learning Progress
+			// Learning Progress.
 			'flosc_progress'     => array(
 				'flosc_lessons_completed' => $flosc_context['lessons_completed'] ?? 0,
 				'flosc_current_lesson'    => $flosc_context['current_lesson'] ?? null,
 				'flosc_last_activity'     => $flosc_context['last_activity'] ?? null,
 			),
 
-			// Session
+			// Session.
 			'flosc_session_id'   => $flosc_context['session_id'] ?? null,
 			'flosc_visitor_id'   => $flosc_context['visitor_id'] ?? null,
 		);
@@ -177,14 +177,14 @@ class FLOSC_User_Session {
 	private function flosc_get_visible_autoprompts( $flosc_context, $flosc_flow ) {
 		$flosc_autoprompts = array();
 
-		// Parse IVR file if it exists
+		// Parse IVR file if it exists.
 		$flosc_ivr_file = $flosc_flow['ivr_file'] ?? 'flosc_default_technical_ivr.md';
 		if ( ! empty( $flosc_ivr_file ) && class_exists( 'FLOSC_IVR_Parser' ) ) {
 			try {
 				$flosc_ivr_parser = new FLOSC_IVR_Parser( $flosc_ivr_file );
 				$flosc_phase      = $this->flosc_state['flosc_phase'] ?? 'freeline';
 
-				// Get autoprompts for current phase
+				// Get autoprompts for current phase.
 				if ( method_exists( $flosc_ivr_parser, 'get_visible_autoprompts' ) ) {
 					$flosc_autoprompts = $flosc_ivr_parser->get_visible_autoprompts( $flosc_phase, $flosc_context );
 				}
@@ -218,21 +218,21 @@ class FLOSC_User_Session {
 			),
 			'flosc_member'  => array(
 				'flosc_can_see_all_lessons' => true,
-				'flosc_can_see_pricing'     => false, // Already purchased
+				'flosc_can_see_pricing'     => false, // Already purchased.
 				'flosc_can_see_catalog'     => true,
 				'flosc_description'         => 'Full lesson access, supportive learning coach mode',
 			),
 			'flosc_guest'   => array(
 				'flosc_can_see_free_lesson'     => true,
-				'flosc_can_see_catalog'         => true, // Titles only
+				'flosc_can_see_catalog'         => true, // Titles only.
 				'flosc_can_see_pricing'         => true,
 				'flosc_must_encourage_purchase' => true,
 				'flosc_description'             => 'Quiz completed - can access assigned free lesson only',
 			),
 			'flosc_visitor' => array(
-				'flosc_can_see_catalog'     => true, // Titles only
+				'flosc_can_see_catalog'     => true, // Titles only.
 				'flosc_must_encourage_quiz' => true,
-				'flosc_can_see_pricing'     => false, // Only after quiz
+				'flosc_can_see_pricing'     => false, // Only after quiz.
 				'flosc_description'         => 'New visitor - primary goal is quiz completion',
 			),
 		);

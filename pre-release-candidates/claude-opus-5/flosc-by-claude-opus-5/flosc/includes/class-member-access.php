@@ -33,7 +33,7 @@ class FLOSC_Member_Access {
 	}
 
 	private function __construct() {
-		// Hook into purchase completion
+		// Hook into purchase completion.
 		add_action( 'flosc_purchase_completed', array( $this, 'grant_member_access' ), 10, 2 );
 	}
 
@@ -128,7 +128,7 @@ class FLOSC_Member_Access {
 		if ( ! empty( $purchase_data['grants_level'] ) ) {
 			$this->grant_level( $user_id, $purchase_data['grants_level'] );
 		} elseif ( ! empty( $purchase_data['offer_id'] ) ) {
-			// Look up offer to get grants_level
+			// Look up offer to get grants_level.
 			$offers = get_option( 'flosc_offers', array() );
 			if ( isset( $offers[ $purchase_data['offer_id'] ]['grants_level'] ) ) {
 				$level = $offers[ $purchase_data['offer_id'] ]['grants_level'];
@@ -138,7 +138,7 @@ class FLOSC_Member_Access {
 			}
 		}
 
-		// Trigger any additional member welcome actions
+		// Trigger any additional member welcome actions.
 		do_action( 'flosc_member_access_granted', $user_id, $purchase_data );
 	}
 
@@ -296,7 +296,7 @@ class FLOSC_Member_Access {
 		update_user_meta( $user_id, $meta_key, 'yes' );
 		update_user_meta( $user_id, $meta_key . '_since', time() );
 
-		// v8.0.0: Also add as WP role so the level appears in admin Users list filter
+		// v8.0.0: Also add as WP role so the level appears in admin Users list filter.
 		$sanitized_level = sanitize_key( $level );
 		if ( get_role( $sanitized_level ) ) {
 			$user = get_user_by( 'id', $user_id );
@@ -342,7 +342,7 @@ class FLOSC_Member_Access {
 		update_user_meta( $user_id, $meta_key . '_revoked', time() );
 		update_user_meta( $user_id, $meta_key . '_revoke_reason', $reason );
 
-		// v8.0.0: Remove WP role so user no longer appears under this level in admin
+		// v8.0.0: Remove WP role so user no longer appears under this level in admin.
 		$sanitized_level = sanitize_key( $level );
 		$user            = get_user_by( 'id', $user_id );
 		if ( $user && in_array( $sanitized_level, $user->roles, true ) ) {
@@ -441,7 +441,7 @@ class FLOSC_Member_Access {
 		$meta_key = '_flosc_guest_access_post_' . intval( $post_id );
 		update_user_meta( $user_id, $meta_key, 'yes' );
 
-		// Set expiration if configured
+		// Set expiration if configured.
 		$days = intval( get_option( 'flosc_guest_access_days', 0 ) );
 		if ( $days > 0 ) {
 			$expires = time() + ( $days * DAY_IN_SECONDS );
@@ -475,10 +475,10 @@ class FLOSC_Member_Access {
 			return false;
 		}
 
-		// Check expiration
+		// Check expiration.
 		$expires = get_user_meta( $user_id, $meta_key . '_expires', true );
 		if ( $expires && intval( $expires ) < time() ) {
-			// Access expired
+			// Access expired.
 			return false;
 		}
 
@@ -550,7 +550,7 @@ class FLOSC_Member_Access {
 	 * @return int Number of free lessons to grant
 	 */
 	public function calculate_free_content_item_count( $missed_count ) {
-		// v1.5.4: Read from per-flow settings via flow manager
+		// v1.5.4: Read from per-flow settings via flow manager.
 		$flow_manager = FLOSC_Flow_Manager::instance();
 		$mode         = $flow_manager->get_setting( 'flosc_free_content_item_mode', 'lessons', 'free_content_item_mode', 'fixed' );
 
@@ -558,7 +558,7 @@ class FLOSC_Member_Access {
 			return intval( $flow_manager->get_setting( 'flosc_free_content_item_count', 'lessons', 'free_content_item_count', 1 ) );
 		}
 
-		// Proportion mode
+		// Proportion mode.
 		$proportion = $flow_manager->get_setting( 'flosc_free_content_item_proportion', 'lessons', 'free_content_item_proportion', '1/3' );
 		$parts      = explode( '/', $proportion );
 
@@ -568,11 +568,11 @@ class FLOSC_Member_Access {
 
 			if ( $denominator > 0 ) {
 				$calculated = ceil( $missed_count * $numerator / $denominator );
-				return max( 1, $calculated ); // At least 1
+				return max( 1, $calculated ); // At least 1.
 			}
 		}
 
-		return 1; // Default fallback
+		return 1; // Default fallback.
 	}
 
 	/**
@@ -589,7 +589,7 @@ class FLOSC_Member_Access {
 
 		$count = $this->calculate_free_content_item_count( count( $missed_post_ids ) );
 
-		// Shuffle and pick random lessons
+		// Shuffle and pick random lessons.
 		shuffle( $missed_post_ids );
 		$selected = array_slice( $missed_post_ids, 0, $count );
 
@@ -600,7 +600,7 @@ class FLOSC_Member_Access {
 			}
 		}
 
-		// Store which lessons were granted as free
+		// Store which lessons were granted as free.
 		update_user_meta( $user_id, '_flosc_free_lessons', $granted );
 		update_user_meta( $user_id, '_flosc_free_lessons_granted', time() );
 

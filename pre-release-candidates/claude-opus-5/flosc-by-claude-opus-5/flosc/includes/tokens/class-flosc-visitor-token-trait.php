@@ -81,7 +81,7 @@ trait FLOSC_Visitor_Token_Trait {
 	 * fall back to the configured/default AI query token cost.
 	 */
 	public function flosc_resolve_chat_charge_tokens( $flow_id, $token_provider, $billing_meta = array() ) {
-		// Primary: debit the REAL provider cost, converted to floscTokens via the
+		// Primary: debit the REAL provider cost, converted to floscTokens via the.
 		// configured ratio (Token Management -> Real Millicents per Token).
 		$real_millicents = max( 0, intval( $billing_meta['real_millicents'] ?? 0 ) );
 		if ( $real_millicents > 0 && $token_provider && method_exists( $token_provider, 'convert_real_millicents_to_tokens' ) ) {
@@ -91,8 +91,8 @@ trait FLOSC_Visitor_Token_Trait {
 			}
 		}
 
-		// No billing metadata (the AI API reported no usage/cost). If an admin set an
-		// explicit flat per-turn cost, use it; otherwise debit 1 as a deliberate
+		// No billing metadata (the AI API reported no usage/cost). If an admin set an.
+		// explicit flat per-turn cost, use it; otherwise debit 1 as a deliberate.
 		// "billing unavailable" signal.
 		$flow_stem = $this->flosc_normalize_flow_stem( (string) $flow_id );
 		$settings  = get_option( 'flosc_flow_' . $flow_stem, array() );
@@ -335,7 +335,7 @@ trait FLOSC_Visitor_Token_Trait {
 		$grant       = max( 0, intval( $this->flosc_get_guest_token_grant_amount( $flow_stem, $user_id ) ) );
 		$new_balance = $remaining + $grant;
 
-		// Safety: never lock a guest at 0 when Token Management configured a positive
+		// Safety: never lock a guest at 0 when Token Management configured a positive.
 		// guest grant (mis-resolved flow / missing settings would otherwise brick the wallet).
 		if ( $new_balance <= 0 && $grant <= 0 ) {
 			$fallback = max( 0, intval( $this->flosc_get_visitor_wallet_initial_amount( $flow_stem, null ) ) );
@@ -408,7 +408,7 @@ trait FLOSC_Visitor_Token_Trait {
 
 		$onetime = array_key_exists( 'product_token_grant_onetime', $settings )
 			? max( 0, intval( $settings['product_token_grant_onetime'] ) )
-			: $recurring; // sensible default: same as one recurring pack
+			: $recurring; // sensible default: same as one recurring pack.
 
 		return array(
 			'onetime'          => $onetime,
@@ -501,7 +501,7 @@ trait FLOSC_Visitor_Token_Trait {
 		if ( in_array( $offer_mode, array( 'onetime', 'recurring', 'recurring_yearly' ), true )
 			&& ( $source === 'custom' || $source === '' )
 		) {
-			// Only force offer mode when custom; for flow source, keep caller mode
+			// Only force offer mode when custom; for flow source, keep caller mode.
 			// (subscription activate already passes recurring / yearly).
 			if ( $source === 'custom' ) {
 				$mode           = $offer_mode;

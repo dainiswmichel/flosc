@@ -34,9 +34,9 @@ class FLOSC_Access_Manager {
 			$access,
 			array(
 				'features'     => array(),
-				'offers'       => array(),          // Purchased offers and their grants
-				'subscription' => null,  // Active subscription details
-				'expires_at'   => null,    // Overall access expiration
+				'offers'       => array(),          // Purchased offers and their grants.
+				'subscription' => null,  // Active subscription details.
+				'expires_at'   => null,    // Overall access expiration.
 				'granted_at'   => null,
 				'updated_at'   => null,
 			)
@@ -119,8 +119,8 @@ class FLOSC_Access_Manager {
 			}
 		}
 
-		// Do NOT call flosc_get_setting() here: without a real flow row it falls back
-		// to global flosc_default_member_level (often pronunciation_learners) and
+		// Do NOT call flosc_get_setting() here: without a real flow row it falls back.
+		// to global flosc_default_member_level (often pronunciation_learners) and.
 		// incorrectly treats every flow as member-eligible.
 
 		$levels = array_values( array_unique( array_filter( $levels ) ) );
@@ -200,7 +200,7 @@ class FLOSC_Access_Manager {
 			return true;
 		}
 
-		// 3) Levels listed on THIS flow only — prevents cross-flow bleed when
+		// 3) Levels listed on THIS flow only — prevents cross-flow bleed when.
 		// several flows share a similar default level name in config.
 		if ( class_exists( 'FLOSC_Member_Access' ) ) {
 			require_once FLOSC_PLUGIN_DIR . 'includes/class-member-access.php';
@@ -324,7 +324,7 @@ class FLOSC_Access_Manager {
 			if ( ! $this->is_offer_active( $offer_data ) ) {
 				continue;
 			}
-			// Require explicit flow_id on the grant — do not treat "offer id exists
+			// Require explicit flow_id on the grant — do not treat "offer id exists.
 			// in this flow's catalog" as purchase of this flow (cross-flow bleed).
 			$offer_flow = sanitize_key( (string) ( $offer_data['flow_id'] ?? '' ) );
 			if ( $offer_flow === '' ) {
@@ -349,17 +349,17 @@ class FLOSC_Access_Manager {
 		$access  = $this->get_user_access( $user_id );
 		$feature = (string) $feature;
 
-		// Check explicit feature flags
+		// Check explicit feature flags.
 		if ( in_array( $feature, $access['features'], true ) ) {
 			return true;
 		}
 
-		// Check offers for feature grants
+		// Check offers for feature grants.
 		foreach ( $access['offers'] as $offer_id => $offer_data ) {
 			if ( isset( $offer_data['grants']['features'] ) &&
 				in_array( $feature, $offer_data['grants']['features'], true ) ) {
 
-				// Check if offer has expired
+				// Check if offer has expired.
 				if ( $this->is_offer_active( $offer_data ) ) {
 					return true;
 				}
@@ -412,14 +412,14 @@ class FLOSC_Access_Manager {
 
 		// If requirement is an array with conditions
 		if ( is_array( $requirement ) ) {
-			// Check feature requirement
+			// Check feature requirement.
 			if ( isset( $requirement['feature'] ) ) {
 				if ( ! $this->has_feature( $user_id, $requirement['feature'] ) ) {
 					return false;
 				}
 			}
 
-			// Check offer requirement
+			// Check offer requirement.
 			if ( isset( $requirement['offer'] ) ) {
 				if ( ! $this->has_offer( $user_id, $requirement['offer'] ) ) {
 					return false;
@@ -438,7 +438,7 @@ class FLOSC_Access_Manager {
 	public function grant_from_offer( $user_id, $offer, $transaction = array() ) {
 		$access = $this->get_user_access( $user_id );
 
-		// Record the offer purchase
+		// Record the offer purchase.
 		$offer_flow_id = (string) ( $transaction['flow_id'] ?? $offer['flow_id'] ?? '' );
 		if ( $offer_flow_id === '' ) {
 			$offer_flow_id = $this->normalize_flow_stem( null );
@@ -451,10 +451,10 @@ class FLOSC_Access_Manager {
 			'flow_id'      => $offer_flow_id,
 		);
 
-		// Apply grants
+		// Apply grants.
 		$grants = $offer['grants'];
 
-		// Merge features
+		// Merge features.
 		if ( ! empty( $grants['features'] ) ) {
 			$access['features'] = array_unique(
 				array_merge(
@@ -464,11 +464,11 @@ class FLOSC_Access_Manager {
 			);
 		}
 
-		// Set/extend expiration
+		// Set/extend expiration.
 		if ( ! empty( $grants['duration_days'] ) && $grants['duration_days'] > 0 ) {
 			$new_expiration = gmdate( 'Y-m-d H:i:s', strtotime( '+' . $grants['duration_days'] . ' days' ) );
 
-			// Extend if already has access
+			// Extend if already has access.
 			if ( $access['expires_at'] ) {
 				$current              = strtotime( $access['expires_at'] );
 				$new                  = strtotime( $new_expiration );
@@ -477,11 +477,11 @@ class FLOSC_Access_Manager {
 				$access['expires_at'] = $new_expiration;
 			}
 		} elseif ( empty( $grants['duration_days'] ) ) {
-			// Lifetime access
+			// Lifetime access.
 			$access['expires_at'] = null;
 		}
 
-		// Handle subscription
+		// Handle subscription.
 		if ( $offer['type'] === 'subscription' && isset( $transaction['subscription_id'] ) ) {
 			$access['subscription'] = array(
 				'id'         => $transaction['subscription_id'],
@@ -491,7 +491,7 @@ class FLOSC_Access_Manager {
 			);
 		}
 
-		// Handle token grants
+		// Handle token grants.
 		if ( $offer['type'] === 'tokens' && ! empty( $offer['tokens']['amount'] ) ) {
 			$token_provider = flosc_sale()->get_provider( 'tokens' );
 			if ( $token_provider ) {
@@ -500,13 +500,13 @@ class FLOSC_Access_Manager {
 			}
 		}
 
-		// Apply usage limits from offer
+		// Apply usage limits from offer.
 		if ( ! empty( $grants['usage_limits'] ) ) {
 			$usage_tracker  = flosc_sale()->usage();
 			$current_limits = $usage_tracker->get_limits( $user_id );
 
 			foreach ( $grants['usage_limits'] as $event => $limit ) {
-				// -1 means unlimited
+				// -1 means unlimited.
 				if ( $limit === -1 || ! isset( $current_limits[ $event ] ) || $limit > $current_limits[ $event ] ) {
 					$current_limits[ $event ] = $limit;
 				}
@@ -520,8 +520,8 @@ class FLOSC_Access_Manager {
 
 		update_user_meta( $user_id, $this->meta_key, $access );
 
-		// v9.5.5: Store member level for IVR conditions
-		// v8.0.1: Fixed — offer schema stores level at grants.level, not member_level
+		// v9.5.5: Store member level for IVR conditions.
+		// v8.0.1: Fixed — offer schema stores level at grants.level, not member_level.
 		$member_level = $offer['grants']['level'] ?? $offer['member_level'] ?? $offer['id'] ?? 'member';
 		update_user_meta( $user_id, '_flosc_member_level', $member_level );
 		update_user_meta( $user_id, '_flosc_purchased', true );
@@ -662,7 +662,7 @@ class FLOSC_Access_Manager {
 	}
 
 	// =========================================================================
-	// HELPERS
+	// HELPERS.
 	// =========================================================================
 
 	/**
@@ -672,7 +672,7 @@ class FLOSC_Access_Manager {
 		$duration = $offer['grants']['duration_days'] ?? 0;
 
 		if ( $duration <= 0 ) {
-			return null; // Lifetime
+			return null; // Lifetime.
 		}
 
 		return gmdate( 'Y-m-d H:i:s', strtotime( '+' . $duration . ' days' ) );
@@ -683,7 +683,7 @@ class FLOSC_Access_Manager {
 	 */
 	private function is_offer_active( $offer_data ) {
 		if ( empty( $offer_data['expires_at'] ) ) {
-			return true; // Lifetime
+			return true; // Lifetime.
 		}
 
 		return strtotime( $offer_data['expires_at'] ) > time();

@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// Visitor menu
+// Visitor menu.
 $flosc_visitor_menu_raw = get_option( 'flosc_visitor_menu_items', array() );
 $flosc_visitor_menu     = array();
 if ( ! empty( $flosc_visitor_menu_raw ) ) {

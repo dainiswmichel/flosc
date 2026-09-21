@@ -64,7 +64,7 @@ class FLOSC_Companion_Widget {
 	 * Private constructor — register hooks
 	 */
 	private function __construct() {
-		// Only hook on frontend, not admin
+		// Only hook on frontend, not admin.
 		if ( ! is_admin() ) {
 			add_action( 'template_redirect', array( $this, 'apply_companion_cache_policy' ), 0 );
 			add_action( 'wp_enqueue_scripts', array( $this, 'maybe_enqueue_assets' ) );
@@ -85,7 +85,7 @@ class FLOSC_Companion_Widget {
 			return;
 		}
 
-		// Cache plugins (WP Super Cache, W3TC, LiteSpeed, etc.) look for this
+		// Cache plugins (WP Super Cache, W3TC, LiteSpeed, etc.) look for this.
 		// exact unprefixed constant — cannot use a flosc_ prefix.
 		if ( ! defined( 'DONOTCACHEPAGE' ) ) {
             // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- industry-standard cache-bypass flag; name is not under our control
@@ -101,7 +101,7 @@ class FLOSC_Companion_Widget {
 	}
 
 	// ──────────────────────────────────────────────────────────────
-	// Settings
+	// Settings.
 	// ──────────────────────────────────────────────────────────────
 
 	/**
@@ -133,7 +133,7 @@ class FLOSC_Companion_Widget {
 			'show_for_visitors'    => true,
 		);
 
-		// Attempt per-flow resolution
+		// Attempt per-flow resolution.
 		$flow_manager = $this->get_flow_manager();
 		if ( $flow_manager ) {
 			foreach ( $defaults as $key => $default ) {
@@ -148,7 +148,7 @@ class FLOSC_Companion_Widget {
 			}
 		}
 
-		// Type coercion for booleans
+		// Type coercion for booleans.
 		$defaults['enabled']           = filter_var( $defaults['enabled'], FILTER_VALIDATE_BOOLEAN );
 		$defaults['show_for_visitors'] = filter_var( $defaults['show_for_visitors'], FILTER_VALIDATE_BOOLEAN );
 
@@ -171,7 +171,7 @@ class FLOSC_Companion_Widget {
 	 * @return bool
 	 */
 	public function should_load() {
-		// Never load on admin pages
+		// Never load on admin pages.
 		if ( is_admin() ) {
 			return false;
 		}
@@ -183,18 +183,18 @@ class FLOSC_Companion_Widget {
 
 		$settings = $this->get_settings();
 
-		// Must be enabled
+		// Must be enabled.
 		if ( ! $settings['enabled'] ) {
 			return false;
 		}
 
-		// Content display mode must include companion
+		// Content display mode must include companion.
 		$mode = $settings['content_display_mode'];
 		if ( $mode !== 'companion' && $mode !== 'both' ) {
 			return false;
 		}
 
-		// Visibility check
+		// Visibility check.
 		if ( ! $settings['show_for_visitors'] && ! is_user_logged_in() ) {
 			return false;
 		}
@@ -203,7 +203,7 @@ class FLOSC_Companion_Widget {
 	}
 
 	// ──────────────────────────────────────────────────────────────
-	// Asset Enqueueing
+	// Asset Enqueueing.
 	// ──────────────────────────────────────────────────────────────
 
 	/**
@@ -221,7 +221,7 @@ class FLOSC_Companion_Widget {
 		$css_path = FLOSC_PLUGIN_DIR . 'assets/css/flosc-companion.css';
 		$js_path  = FLOSC_PLUGIN_DIR . 'assets/js/flosc-companion.js';
 
-		// Companion CSS — standalone, no dependencies on FLOSC layout/theme
+		// Companion CSS — standalone, no dependencies on FLOSC layout/theme.
 		if ( file_exists( $css_path ) ) {
 			wp_enqueue_style(
 				'flosc-companion',
@@ -231,20 +231,20 @@ class FLOSC_Companion_Widget {
 			);
 		}
 
-		// Companion JS — standalone, no dependencies on flosc-app.js
+		// Companion JS — standalone, no dependencies on flosc-app.js.
 		if ( file_exists( $js_path ) ) {
 			wp_enqueue_script(
 				'flosc-companion',
 				FLOSC_PLUGIN_URL . 'assets/js/flosc-companion.js',
 				array(),
 				defined( 'FLOSC_VERSION' ) ? FLOSC_VERSION : '8.0.0',
-				true // footer
+				true // footer.
 			);
 		}
 	}
 
 	// ──────────────────────────────────────────────────────────────
-	// Widget Rendering
+	// Widget Rendering.
 	// ──────────────────────────────────────────────────────────────
 
 	/**
@@ -265,9 +265,9 @@ class FLOSC_Companion_Widget {
 		$page_context = $this->detect_page_context();
 		$user_data    = $this->get_companion_user_data();
 
-		// §12: Attach the accent override + config to the enqueued flosc-companion handles
-		// (wp_add_inline_style/script) rather than echoing raw <style>/<script> tags. This runs
-		// on wp_footer before wp_print_footer_scripts, so the data prints with — and just before —
+		// §12: Attach the accent override + config to the enqueued flosc-companion handles.
+		// (wp_add_inline_style/script) rather than echoing raw <style>/<script> tags. This runs.
+		// on wp_footer before wp_print_footer_scripts, so the data prints with — and just before —.
 		// flosc-companion.js. WordPress prints the late inline style via print_late_styles().
 		if ( ! empty( $settings['accent_color'] ) ) {
 			$accent = sanitize_hex_color( $settings['accent_color'] );
@@ -313,7 +313,7 @@ class FLOSC_Companion_Widget {
 	}
 
 	// ──────────────────────────────────────────────────────────────
-	// Page Context Detection
+	// Page Context Detection.
 	// ──────────────────────────────────────────────────────────────
 
 	/**
@@ -346,7 +346,7 @@ class FLOSC_Companion_Widget {
 			return $context;
 		}
 
-		// Check if we're on a lesson post
+		// Check if we're on a lesson post.
 		$lesson_category = get_option( 'flosc_content_item_category', '' );
 
 		if ( is_singular( 'post' ) || is_singular( 'page' ) ) {
@@ -359,7 +359,7 @@ class FLOSC_Companion_Widget {
 			$context['title']  = $post->post_title;
 			$context['tags']   = wp_get_post_tags( $post->ID, array( 'fields' => 'slugs' ) );
 
-			// Determine if this post is in the lessons category
+			// Determine if this post is in the lessons category.
 			if ( ! empty( $lesson_category ) && $this->post_is_lesson( $post->ID, $lesson_category ) ) {
 				$context['type']     = 'lesson';
 				$context['category'] = $lesson_category;
@@ -370,7 +370,7 @@ class FLOSC_Companion_Widget {
 			return $context;
 		}
 
-		// Check if on a lesson category archive
+		// Check if on a lesson category archive.
 		if ( is_category() && ! empty( $lesson_category ) ) {
 			$cat = get_queried_object();
 			if ( $cat ) {
@@ -404,7 +404,7 @@ class FLOSC_Companion_Widget {
 	}
 
 	// ──────────────────────────────────────────────────────────────
-	// User Data
+	// User Data.
 	// ──────────────────────────────────────────────────────────────
 
 	/**
@@ -428,7 +428,7 @@ class FLOSC_Companion_Widget {
 		$user    = wp_get_current_user();
 		$user_id = $user->ID;
 
-		// Check member status via the existing member access system
+		// Check member status via the existing member access system.
 		$is_member  = false;
 		$has_access = false;
 
@@ -437,7 +437,7 @@ class FLOSC_Companion_Widget {
 			$is_member     = $member_access->is_member( $user_id );
 		}
 
-		// Check lesson access via lesson manager
+		// Check lesson access via lesson manager.
 		if ( class_exists( 'FLOSC_Lesson_Manager' ) && is_singular() ) {
 			$post = get_queried_object();
 			if ( $post ) {
@@ -457,7 +457,7 @@ class FLOSC_Companion_Widget {
 	}
 
 	// ──────────────────────────────────────────────────────────────
-	// Utilities
+	// Utilities.
 	// ──────────────────────────────────────────────────────────────
 
 	/**

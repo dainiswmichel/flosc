@@ -142,7 +142,7 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 
 		$offer_id = sanitize_text_field( (string) ( $offer['id'] ?? ( $payment_data['offer_id'] ?? '' ) ) );
 
-		// Handle based on offer type
+		// Handle based on offer type.
 		if ( ( $offer['type'] ?? '' ) === 'subscription' ) {
 			return $this->create_subscription( $user, $price_id, $payment_data, $offer_id );
 		}
@@ -173,7 +173,7 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 	 * v1.4.1: Added offer_id parameter to track which offer is being purchased
 	 */
 	public function create_payment_intent( $user, $price_id_or_amount, $currency = 'usd', $offer_id = '' ) {
-		// First, get the price details from Stripe
+		// First, get the price details from Stripe.
 		if ( strpos( $price_id_or_amount, 'price_' ) === 0 ) {
 			$price = $this->api_request( 'GET', '/prices/' . $price_id_or_amount );
 			if ( is_wp_error( $price ) ) {
@@ -190,7 +190,7 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 			'user_email' => $user->user_email,
 		);
 
-		// v1.4.1: Include offer_id for webhook to grant correct access
+		// v1.4.1: Include offer_id for webhook to grant correct access.
 		if ( $offer_id ) {
 			$metadata['offer_id'] = $offer_id;
 		}
@@ -226,7 +226,7 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 	 * @param string  $offer_id
 	 */
 	private function confirm_payment( $user, $price_id, $payment_method_id, $offer_id = '' ) {
-		// Get price details
+		// Get price details.
 		$price = $this->api_request( 'GET', '/prices/' . $price_id );
 		if ( is_wp_error( $price ) ) {
 			return $price;
@@ -240,7 +240,7 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 			$metadata['offer_id'] = $offer_id;
 		}
 
-		// Create and confirm PaymentIntent
+		// Create and confirm PaymentIntent.
 		$response = $this->api_request(
 			'POST',
 			'/payment_intents',
@@ -453,14 +453,14 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 		$customer_id = get_user_meta( $user->ID, '_flosc_stripe_customer', true );
 
 		if ( $customer_id ) {
-			// Verify customer still exists
+			// Verify customer still exists.
 			$customer = $this->api_request( 'GET', '/customers/' . $customer_id );
 			if ( ! is_wp_error( $customer ) && empty( $customer['deleted'] ) ) {
 				return $customer_id;
 			}
 		}
 
-		// Create new customer
+		// Create new customer.
 		$response = $this->api_request(
 			'POST',
 			'/customers',
@@ -506,7 +506,7 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 	public function handle_webhook( $payload, $headers = array() ) {
 		$webhook_secret = $this->get_flow_setting( 'webhook_secret', '' );
 
-		// SECURITY: Require webhook secret in production
+		// SECURITY: Require webhook secret in production.
 		if ( empty( $webhook_secret ) ) {
 			return new WP_Error( 'webhook_not_configured', __( 'Stripe webhook secret required', 'flosc' ), array( 'status' => 400 ) );
 		}
@@ -518,7 +518,7 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 
 		$sig = $headers['stripe-signature'];
 
-		// Parse signature
+		// Parse signature.
 		$timestamp = null;
 		$signature = null;
 		foreach ( explode( ',', $sig ) as $part ) {
@@ -532,12 +532,12 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 		}
 
 		// SECURITY: Validate timestamp (prevent replay attacks)
-		$tolerance = 300; // 5 minutes
+		$tolerance = 300; // 5 minutes.
 		if ( empty( $timestamp ) || abs( time() - intval( $timestamp ) ) > $tolerance ) {
 			return new WP_Error( 'expired_webhook', __( 'Webhook timestamp too old or invalid', 'flosc' ), array( 'status' => 400 ) );
 		}
 
-		// Verify signature
+		// Verify signature.
 		$signed_payload = $timestamp . '.' . $payload;
 		$expected       = hash_hmac( 'sha256', $signed_payload, $webhook_secret );
 
@@ -551,7 +551,7 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 			return new WP_Error( 'invalid_payload', __( 'Invalid Stripe webhook JSON', 'flosc' ), array( 'status' => 400 ) );
 		}
 
-		// SECURITY: Idempotency - check if already processed
+		// SECURITY: Idempotency - check if already processed.
 		$event_id = sanitize_text_field( (string) ( $event['id'] ?? '' ) );
 		if ( $event_id !== '' ) {
 			$processed_key = 'flosc_stripe_event_' . $event_id;

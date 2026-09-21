@@ -19,7 +19,7 @@ class FLOSC_Checkout_Rest {
 
 	public function get_offers( $request ) {
 		$user_id = is_user_logged_in() ? get_current_user_id() : null;
-		// v1.6.2: Flow-aware offer loading
+		// v1.6.2: Flow-aware offer loading.
 		$flow_id = sanitize_text_field( $request->get_param( 'flow_id' ) ?? '' );
 		if ( empty( $flow_id ) ) {
 			$flow = $this->flosc->get_current_flow();
@@ -45,12 +45,12 @@ class FLOSC_Checkout_Rest {
 				if ( empty( $file ) ) {
 					return new WP_REST_Response( array( 'error' => 'Missing file parameter' ), 400 );
 				}
-				// Only allow files from the offer_content directory
+				// Only allow files from the offer_content directory.
 				$path = flosc_config_file( 'offer_content/' . $file );
 				if ( ! file_exists( $path ) || ! is_readable( $path ) ) {
 					return new WP_REST_Response( array( 'error' => 'File not found' ), 404 );
 				}
-				// Only allow .html and .htm extensions
+				// Only allow .html and .htm extensions.
 				$ext = strtolower( pathinfo( $file, PATHINFO_EXTENSION ) );
 				if ( ! in_array( $ext, array( 'html', 'htm' ), true ) ) {
 					return new WP_REST_Response( array( 'error' => 'Invalid file type' ), 400 );
@@ -136,7 +136,7 @@ class FLOSC_Checkout_Rest {
 			return new WP_Error( 'not_logged_in', __( 'You must be logged in to make a purchase', 'flosc' ), array( 'status' => 401 ) );
 		}
 
-		// Verify nonce for REST security
+		// Verify nonce for REST security.
 		$nonce = $request->get_header( 'X-WP-Nonce' ) ?: $request->get_param( '_wpnonce' );
 		if ( ! wp_verify_nonce( sanitize_text_field( (string) $nonce ), 'wp_rest' ) ) {
 			return new WP_Error( 'invalid_nonce', __( 'Security token invalid. Please refresh.', 'flosc' ), array( 'status' => 403 ) );
@@ -258,7 +258,7 @@ class FLOSC_Checkout_Rest {
 		if ( ! is_array( $coupons ) || empty( $coupons ) ) {
 			return new WP_Error( 'invalid_coupon', __( 'Invalid or expired coupon', 'flosc' ), array( 'status' => 403 ) );
 		}
-		$now  = time(); // UTC unix
+		$now  = time(); // UTC unix.
 		$list = $this->flosc_offer_list_price( $offer );
 
 		foreach ( $coupons as $c ) {
@@ -550,7 +550,7 @@ class FLOSC_Checkout_Rest {
 			);
 		}
 
-		// Verify nonce for REST security
+		// Verify nonce for REST security.
 		$nonce = $request->get_header( 'X-WP-Nonce' ) ?: $request->get_param( '_wpnonce' );
 		if ( ! wp_verify_nonce( sanitize_text_field( (string) $nonce ), 'wp_rest' ) ) {
 			return new WP_REST_Response(
@@ -562,27 +562,27 @@ class FLOSC_Checkout_Rest {
 			);
 		}
 
-		// v3.0.5: Set flow context so offer lookup finds per-flow data
+		// v3.0.5: Set flow context so offer lookup finds per-flow data.
 		$flow_id = sanitize_text_field( $request->get_param( 'flow_id' ) ?? '' );
 		if ( ! empty( $flow_id ) ) {
 			$this->flosc->set_flow_context( $flow_id );
 		}
 
-		// v1.4.0: Get product_id for product-specific purchase
+		// v1.4.0: Get product_id for product-specific purchase.
 		$product_id = sanitize_text_field( $request->get_param( 'product_id' ) ?? '' );
 		$offer_id   = sanitize_text_field( $request->get_param( 'offer_id' ) ?? 'sandbox' );
 		$amount     = sanitize_text_field( $request->get_param( 'amount' ) ?? '1,000,000,000' );
 
-		// Format amount for display
+		// Format amount for display.
 		$numeric_amount   = intval( str_replace( ',', '', $amount ) );
 		$formatted_amount = '$' . number_format( $numeric_amount );
 
 		// Admin sandbox only (route is check_admin_endpoint_permission). Unique txn per call.
 		$transaction_id = 'sandbox_' . $user_id . '_' . time() . '_' . wp_rand( 1000, 9999 );
 
-		// v3.0.5: Determine member level — check offer first (flow-aware), then product fallback
+		// v3.0.5: Determine member level — check offer first (flow-aware), then product fallback.
 		$offer_manager = $this->flosc->sale()->offers();
-		$member_level  = 'member'; // Default fallback
+		$member_level  = 'member'; // Default fallback.
 		$product_name  = 'Full Access';
 		$product_icon  = '🎁';
 
@@ -734,7 +734,7 @@ class FLOSC_Checkout_Rest {
 
 		$user = wp_get_current_user();
 
-		// v1.4.1: Pass offer_id to include in metadata for webhook processing
+		// v1.4.1: Pass offer_id to include in metadata for webhook processing.
 		$result = $stripe->create_payment_intent( $user, $price_or_amount, $currency, $offer_id );
 
 		if ( is_wp_error( $result ) ) {
@@ -772,7 +772,7 @@ class FLOSC_Checkout_Rest {
 			return new WP_Error( 'invalid_offer', __( 'Offer not found', 'flosc' ), array( 'status' => 404 ) );
 		}
 
-		// Verify payment with Stripe
+		// Verify payment with Stripe.
 		$stripe = $this->flosc->sale()->get_provider( 'stripe' );
 		if ( ! $stripe || ! $stripe->is_configured() ) {
 			return new WP_Error( 'stripe_not_configured', __( 'Stripe is not configured', 'flosc' ), array( 'status' => 500 ) );
@@ -976,7 +976,7 @@ class FLOSC_Checkout_Rest {
 		if ( $raw === '' ) {
 			return null;
 		}
-		// MTS: 2026-07m-27d-UTC08h:26m13s
+		// MTS: 2026-07m-27d-UTC08h:26m13s.
 		if ( preg_match( '/^(\d{4})-(\d{2})m-(\d{2})d-UTC(\d{2})h:(\d{2})m(\d{2})s$/i', $raw, $m ) ) {
 			return gmmktime( (int) $m[4], (int) $m[5], (int) $m[6], (int) $m[2], (int) $m[3], (int) $m[1] );
 		}

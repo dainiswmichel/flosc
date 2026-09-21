@@ -428,7 +428,7 @@ class FLOSC_Token_Ledger {
 			: 0;
 		$grant_amount     = max( 0, intval( $this->flosc->flosc_get_guest_token_grant_amount( $flow_id, $user_id ) ) );
 
-		// Client always sends visitor_session_id when available; allow 0 remaining + grant
+		// Client always sends visitor_session_id when available; allow 0 remaining + grant.
 		// even if session id is missing (first load without localStorage).
 		$balance = $this->flosc->flosc_apply_guest_token_grant_once( $user_id, $flow_id, $session_raw, true );
 
@@ -462,7 +462,7 @@ class FLOSC_Token_Ledger {
 	 * @return WP_REST_Response { success, token_balance|null }
 	 */
 	public function handle_visitor_session_balance( $request ) {
-		nocache_headers(); // belt-and-suspenders against any caching layer
+		nocache_headers(); // belt-and-suspenders against any caching layer.
 
 		$session_id = $this->flosc->flosc_normalize_session_id( (string) ( $request->get_param( 'session_id' ) ?? '' ) );
 		$flow_id    = $this->flosc->flosc_normalize_flow_stem( (string) ( $request->get_param( 'flow_id' ) ?? '' ) );
@@ -488,7 +488,7 @@ class FLOSC_Token_Ledger {
 
 		$value = intval( $this->flosc_get_visitor_session_token_balance( $flow_id, $session_id, $token_provider ) );
 
-		// Same low-balance resolution the chat response uses, so the header can
+		// Same low-balance resolution the chat response uses, so the header can.
 		// show the low-tokens nudge consistently across surfaces.
 		$low_token_threshold = $this->flosc->flosc_get_low_token_threshold( $flow_id );
 		$low_tokens_message  = $this->flosc->flosc_get_visitor_low_tokens_message( $flow_id );

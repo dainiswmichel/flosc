@@ -338,7 +338,7 @@ $flosc_count_active = static function ( $rules ) {
 };
 
 // Profile activity (this flow only).
-// Match registration_flow / last_flow against stem variants — writers sometimes
+// Match registration_flow / last_flow against stem variants — writers sometimes.
 // sanitize_key() a full "file.md" (becomes filmd) while the admin stem is pathinfo().
 $flosc_summary_users = array();
 if ( $flosc_flow_id !== '' || $flosc_current_ivr !== '' ) {
@@ -355,7 +355,7 @@ if ( $flosc_flow_id !== '' || $flosc_current_ivr !== '' ) {
 					$flosc_flow_id,
 					$flosc_ivr_base,
 					pathinfo( $flosc_ivr_base, PATHINFO_FILENAME ),
-					sanitize_key( $flosc_ivr_base ), // e.g. flow_ivrmd when source was …ivr.md
+					sanitize_key( $flosc_ivr_base ), // e.g. flow_ivrmd when source was …ivr.md.
 					sanitize_key( (string) $flosc_current_ivr ),
 				),
 				static function ( $v ) {

@@ -27,7 +27,7 @@ class FLOSC_Request_Guard {
 			$ips = explode( ',', sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) );
 			return sanitize_text_field( trim( $ips[0] ) );
 		}
-		// AWS ALB / generic proxy
+		// AWS ALB / generic proxy.
 		if ( ! empty( $_SERVER['HTTP_X_REAL_IP'] ) ) {
 			return sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_REAL_IP'] ) );
 		}
@@ -92,14 +92,14 @@ class FLOSC_Request_Guard {
 
 		list($encoded, $signature) = $parts;
 
-		// Verify signature
+		// Verify signature.
 		$expected_signature = hash_hmac( 'sha256', $encoded, flosc_token_secret() );
 		if ( ! hash_equals( $expected_signature, $signature ) ) {
-			// Invalid signature - possible tampering
+			// Invalid signature - possible tampering.
 			return false;
 		}
 
-		// Decode and return data
+		// Decode and return data.
         // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- binary/JWT token decoding, not obfuscation
 		$json = base64_decode( $encoded );
 		if ( $json === false ) {
@@ -125,13 +125,13 @@ class FLOSC_Request_Guard {
 	public function set_signed_cookie( $name, $data, $expiry = 0 ) {
 		$value = $this->sign_cookie_data( $data );
 
-		// v1.7.7: Explicit threshold — values under 1 year are treated as seconds-from-now
-		// Values over 1 year (31536000) are treated as absolute Unix timestamps
+		// v1.7.7: Explicit threshold — values under 1 year are treated as seconds-from-now.
+		// Values over 1 year (31536000) are treated as absolute Unix timestamps.
 		if ( $expiry > 0 && $expiry < 31536000 ) {
 			$expiry = time() + $expiry;
 		}
 
-		// v1.0.7: Use array syntax with SameSite for security
+		// v1.0.7: Use array syntax with SameSite for security.
 		setcookie(
 			$name,
 			$value,

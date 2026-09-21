@@ -57,7 +57,7 @@ class Apple_Provider extends SSO_Provider_Base {
 
 		$this->auth_url      = 'https://appleid.apple.com/auth/authorize';
 		$this->token_url     = 'https://appleid.apple.com/auth/token';
-		$this->user_info_url = ''; // Apple includes user info in ID token
+		$this->user_info_url = ''; // Apple includes user info in ID token.
 
 		$this->scopes = array(
 			'name',
@@ -87,7 +87,7 @@ class Apple_Provider extends SSO_Provider_Base {
 		// Set base credentials (client_id, client_secret, enabled)
 		$this->set_flow_credentials( $client_id, $client_secret, $enabled );
 
-		// Override Apple-specific fields
+		// Override Apple-specific fields.
 		if ( ! empty( $team_id ) ) {
 			$this->team_id = $team_id;
 		}
@@ -119,10 +119,10 @@ class Apple_Provider extends SSO_Provider_Base {
 	 * @return array Modified parameters
 	 */
 	protected function customize_auth_params( $params ) {
-		// Apple uses 'response_mode' parameter
-		$params['response_mode'] = 'form_post'; // Apple sends POST response
+		// Apple uses 'response_mode' parameter.
+		$params['response_mode'] = 'form_post'; // Apple sends POST response.
 
-		// Apple scopes are space-separated
+		// Apple scopes are space-separated.
 		$params['scope'] = implode( ' ', $this->scopes );
 
 		return $params;
@@ -137,7 +137,7 @@ class Apple_Provider extends SSO_Provider_Base {
 	 * @return array|WP_Error Token data or error
 	 */
 	public function exchange_code_for_token( $code, $redirect_uri ) {
-		// Generate the client secret JWT
+		// Generate the client secret JWT.
 		$client_secret = $this->generate_client_secret();
 
 		if ( is_wp_error( $client_secret ) ) {
@@ -441,7 +441,7 @@ class Apple_Provider extends SSO_Provider_Base {
 		$exponent  = $this->asn1_integer( $e );
 		$sequence  = $this->asn1_sequence( $modulus . $exponent );
 		$bitstring = "\x03" . $this->asn1_length( strlen( $sequence ) + 1 ) . "\x00" . $sequence;
-		$rsa_oid   = pack( 'H*', '300d06092a864886f70d0101010500' ); // rsaEncryption
+		$rsa_oid   = pack( 'H*', '300d06092a864886f70d0101010500' ); // rsaEncryption.
 		$pubkey    = $this->asn1_sequence( $rsa_oid . $bitstring );
 
 		$pem = "-----BEGIN PUBLIC KEY-----\n";
@@ -508,7 +508,7 @@ class Apple_Provider extends SSO_Provider_Base {
 		$payload   = $raw_data['id_token_payload'] ?? array();
 		$user_data = $raw_data['user_data'] ?? array();
 
-		// Apple only sends name on first authorization
+		// Apple only sends name on first authorization.
 		$first_name = '';
 		$last_name  = '';
 		$name       = '';
@@ -530,7 +530,7 @@ class Apple_Provider extends SSO_Provider_Base {
 			'name'           => $name,
 			'first_name'     => $first_name,
 			'last_name'      => $last_name,
-			'avatar'         => '', // Apple doesn't provide avatars
+			'avatar'         => '', // Apple doesn't provide avatars.
 			'locale'         => '',
 			// Pass 8 / WPORG: never pass through the full decoded POST user JSON.
 			// Only sanitized fields above are exposed to hooks and storage.
@@ -555,18 +555,18 @@ class Apple_Provider extends SSO_Provider_Base {
 	 * @return string|WP_Error JWT client secret or error
 	 */
 	private function generate_client_secret() {
-		// Check if we have the required credentials
+		// Check if we have the required credentials.
 		if ( ! $this->is_configured() ) {
 			return new \WP_Error( 'missing_credentials', 'Apple Sign In is not fully configured' );
 		}
 
-		// JWT header
+		// JWT header.
 		$header = array(
 			'alg' => 'ES256',
 			'kid' => $this->key_id,
 		);
 
-		// JWT claims
+		// JWT claims.
 		$time   = time();
 		$claims = array(
 			'iss' => $this->team_id,
@@ -576,13 +576,13 @@ class Apple_Provider extends SSO_Provider_Base {
 			'sub' => $this->client_id,
 		);
 
-		// Encode header and claims
+		// Encode header and claims.
 		$header_encoded = $this->base64_url_encode( wp_json_encode( $header ) );
 		$claims_encoded = $this->base64_url_encode( wp_json_encode( $claims ) );
 
 		$signature_input = $header_encoded . '.' . $claims_encoded;
 
-		// Sign with ES256
+		// Sign with ES256.
 		$signature = $this->sign_es256( $signature_input );
 
 		if ( is_wp_error( $signature ) ) {
@@ -631,11 +631,11 @@ class Apple_Provider extends SSO_Provider_Base {
 		$pos  = 0;
 		$size = strlen( $der );
 
-		// Skip SEQUENCE
+		// Skip SEQUENCE.
 		$pos += 2;
 
-		// Get R
-		++$pos; // Skip INTEGER tag
+		// Get R.
+		++$pos; // Skip INTEGER tag.
 		$r_len = ord( $der[ $pos++ ] );
 		if ( $r_len > 128 ) {
 			$r_len = ord( $der[ $pos++ ] );
@@ -643,15 +643,15 @@ class Apple_Provider extends SSO_Provider_Base {
 		$r    = substr( $der, $pos, $r_len );
 		$pos += $r_len;
 
-		// Get S
-		++$pos; // Skip INTEGER tag
+		// Get S.
+		++$pos; // Skip INTEGER tag.
 		$s_len = ord( $der[ $pos++ ] );
 		if ( $s_len > 128 ) {
 			$s_len = ord( $der[ $pos++ ] );
 		}
 		$s = substr( $der, $pos, $s_len );
 
-		// Pad to 32 bytes each
+		// Pad to 32 bytes each.
 		$r = str_pad( ltrim( $r, "\x00" ), 32, "\x00", STR_PAD_LEFT );
 		$s = str_pad( ltrim( $s, "\x00" ), 32, "\x00", STR_PAD_LEFT );
 
@@ -691,7 +691,7 @@ class Apple_Provider extends SSO_Provider_Base {
 	public function get_settings_fields() {
 		$fields = parent::get_settings_fields();
 
-		// Add Apple-specific fields
+		// Add Apple-specific fields.
 		$apple_fields = array(
 			array(
 				'id'          => 'flosc_sso_apple_team_id',
@@ -710,7 +710,7 @@ class Apple_Provider extends SSO_Provider_Base {
 			array(
 				'id'          => 'flosc_sso_apple_private_key',
 				'title'       => __( 'Private Key', 'flosc' ),
-				// UI: multi-line textarea for .p8 body. Sanitizer: class-sso-manager maps
+				// UI: multi-line textarea for .p8 body. Sanitizer: class-sso-manager maps.
 				// field ids containing "private_key" to sanitize_secret_setting (Pass 2).
 				'type'        => 'textarea',
 				'default'     => '',

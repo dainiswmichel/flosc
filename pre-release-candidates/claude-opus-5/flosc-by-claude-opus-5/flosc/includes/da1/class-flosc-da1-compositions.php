@@ -43,7 +43,7 @@ class FLOSC_DA1_Compositions {
 			return $this->limit_chat_response_length( $reply );
 		}
 
-		// Title lookup: if the visitor names a specific composition, serve that
+		// Title lookup: if the visitor names a specific composition, serve that.
 		// exact one (with its real link) instead of the generic opening list.
 		$message_norm  = trim( (string) preg_replace( '/\s+/', ' ', strtolower( (string) preg_replace( '/[^a-z0-9 ]+/iu', ' ', (string) $message ) ) ) );
 		$title_matches = array();

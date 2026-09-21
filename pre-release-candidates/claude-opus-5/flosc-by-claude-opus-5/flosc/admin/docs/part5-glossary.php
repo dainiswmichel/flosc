@@ -1,4 +1,4 @@
-<?php if (!defined('ABSPATH')) exit; // Part 5: Glossary — FLOSC Documentation ?>
+<?php if (!defined('ABSPATH')) exit; // Part 5: Glossary — FLOSC Documentation.?>
 
 <h1 id="glossary">Part 5: Glossary</h1>
 <p>Every FLOSC-specific term defined once. When a term appears in the codebase or documentation, its definition is here.</p>

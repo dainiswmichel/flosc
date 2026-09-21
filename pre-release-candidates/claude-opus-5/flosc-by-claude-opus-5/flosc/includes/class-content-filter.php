@@ -19,8 +19,8 @@ class flosc_content_filter {
 	private static $instance = null;
 
 	private function __construct() {
-		// Register WordPress content filter hook
-		// Only applies when content contains FLOSC markers
+		// Register WordPress content filter hook.
+		// Only applies when content contains FLOSC markers.
 		add_filter( 'the_content', array( $this, 'apply_content_filter' ), 10 );
 	}
 
@@ -42,24 +42,24 @@ class flosc_content_filter {
 	 * @return string Filtered content (or original if no FLOSC markers)
 	 */
 	public function apply_content_filter( $content ) {
-		// SAFEGUARD 1: Skip if we're in the admin area
+		// SAFEGUARD 1: Skip if we're in the admin area.
 		if ( is_admin() ) {
 			return $content;
 		}
 
-		// SAFEGUARD 2: Admin users on the frontend see everything unfiltered
+		// SAFEGUARD 2: Admin users on the frontend see everything unfiltered.
 		if ( current_user_can( 'manage_options' ) ) {
 			return $content;
 		}
 
-		// SAFEGUARD 3: Only filter on singular pages, not archives/indexes
+		// SAFEGUARD 3: Only filter on singular pages, not archives/indexes.
 		if ( ! is_singular() ) {
 			return $content;
 		}
 
 		// SAFEGUARD 4: Skip if this is a REST API request (unless FLOSC-specific)
 		if ( defined( 'REST_REQUEST' ) && REST_REQUEST ) {
-			// Only process if this is a FLOSC REST endpoint
+			// Only process if this is a FLOSC REST endpoint.
 			$request_uri = '';
 			if ( isset( $_SERVER['REQUEST_URI'] ) ) {
 				$request_uri = sanitize_text_field( wp_unslash( (string) $_SERVER['REQUEST_URI'] ) );
@@ -69,17 +69,17 @@ class flosc_content_filter {
 			}
 		}
 
-		// SAFEGUARD 5: Skip if content doesn't contain FLOSC markers
-		// This is the PRIMARY check - if no FLOSC tag, return content unchanged
+		// SAFEGUARD 5: Skip if content doesn't contain FLOSC markers.
+		// This is the PRIMARY check - if no FLOSC tag, return content unchanged.
 		if ( strpos( $content, '<!--flosc_read_more' ) === false &&
 			strpos( $content, '### ACCESS LEVEL:' ) === false ) {
 			return $content;
 		}
 
-		// Content has FLOSC markers, proceed with filtering
+		// Content has FLOSC markers, proceed with filtering.
 		try {
 			// v8.1.0: Unified — use FLOSC_Member_Access (single source of truth)
-			// Previously used FLOSC_User_Access_Manager which checked flosc_member_status meta
+			// Previously used FLOSC_User_Access_Manager which checked flosc_member_status meta.
 			// that was never written by any purchase flow.
 			require_once FLOSC_PLUGIN_DIR . 'includes/class-member-access.php';
 			$member_access = FLOSC_Member_Access::instance();
@@ -87,7 +87,7 @@ class flosc_content_filter {
 			// Get current user's access level (visitor/guest/member)
 			$access_level = $member_access->get_access_level( get_current_user_id() );
 
-			// Apply filtering using existing method
+			// Apply filtering using existing method.
 			return $this->filter_post_content( $content, $access_level );
 		} catch ( \Throwable $e ) {
 			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
@@ -111,7 +111,7 @@ class flosc_content_filter {
 
 		$sections = $this->parse_markdown_sections( $content );
 
-		// Determine which sections user can access
+		// Determine which sections user can access.
 		$allowed_sections = array();
 		switch ( $access_level ) {
 			case 'visitor':
@@ -125,7 +125,7 @@ class flosc_content_filter {
 				break;
 		}
 
-		// Combine allowed sections
+		// Combine allowed sections.
 		$filtered = array();
 		foreach ( $allowed_sections as $level ) {
 			if ( isset( $sections[ $level ] ) && ! empty( $sections[ $level ] ) ) {
@@ -150,22 +150,22 @@ class flosc_content_filter {
 			'member'  => array(),
 		);
 
-		$current_level   = 'visitor'; // Default
+		$current_level   = 'visitor'; // Default.
 		$current_content = '';
 
 		$lines = explode( "\n", $content );
 
 		foreach ( $lines as $line ) {
-			// Check for access level marker
-			// Matches: ### ACCESS LEVEL: VISITOR or ## ACCESS LEVEL: MEMBER etc
+			// Check for access level marker.
+			// Matches: ### ACCESS LEVEL: VISITOR or ## ACCESS LEVEL: MEMBER etc.
 			if ( preg_match( '/^###?\s*ACCESS LEVEL:\s*(VISITOR|GUEST|MEMBER)/i', $line, $matches ) ) {
 
-				// Save previous section
+				// Save previous section.
 				if ( trim( $current_content ) ) {
 					$sections[ $current_level ][] = trim( $current_content );
 				}
 
-				// Start new section
+				// Start new section.
 				$current_level   = strtolower( $matches[1] );
 				$current_content = '';
 				continue;
@@ -174,7 +174,7 @@ class flosc_content_filter {
 			$current_content .= $line . "\n";
 		}
 
-		// Save last section
+		// Save last section.
 		if ( trim( $current_content ) ) {
 			$sections[ $current_level ][] = trim( $current_content );
 		}
@@ -213,11 +213,11 @@ class flosc_content_filter {
 	 */
 	public function filter_post_content( $content, $access_level ) {
 
-		// Split by <!--flosc_read_more--> tag
+		// Split by <!--flosc_read_more--> tag.
 		$parts = preg_split( '/<!--flosc_read_more(.*?)?-->/', $content, -1 );
 
 		if ( count( $parts ) <= 1 ) {
-			// No <!--flosc_read_more--> tag, return all content
+			// No <!--flosc_read_more--> tag, return all content.
 			return $content;
 		}
 
@@ -237,7 +237,7 @@ class flosc_content_filter {
 				return $public_content . wp_kses_post( $notice );
 
 			case 'member':
-				// Everything
+				// Everything.
 				return $content;
 		}
 
@@ -258,19 +258,19 @@ class flosc_content_filter {
 		$query_lower   = strtolower( $query );
 		$content_lower = strtolower( $content );
 
-		// Find position of query
+		// Find position of query.
 		$pos = strpos( $content_lower, $query_lower );
 
 		if ( $pos === false ) {
-			// Query not found, return beginning
+			// Query not found, return beginning.
 			return substr( $content, 0, $context_chars ) . '...';
 		}
 
-		// Get context around the query
+		// Get context around the query.
 		$start     = max( 0, $pos - ( $context_chars / 2 ) );
 		$extracted = substr( $content, $start, $context_chars );
 
-		// Add ellipsis if truncated
+		// Add ellipsis if truncated.
 		if ( $start > 0 ) {
 			$extracted = '...' . $extracted;
 		}
@@ -290,11 +290,11 @@ class flosc_content_filter {
 	 */
 	public function get_excerpt( $content, $length = 50 ) {
 
-		// Strip HTML and shortcodes
+		// Strip HTML and shortcodes.
 		$content = wp_strip_all_tags( $content );
 		$content = strip_shortcodes( $content );
 
-		// Get words
+		// Get words.
 		$words = explode( ' ', $content );
 
 		if ( count( $words ) <= $length ) {

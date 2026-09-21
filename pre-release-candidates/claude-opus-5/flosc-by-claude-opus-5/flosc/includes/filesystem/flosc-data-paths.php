@@ -554,7 +554,7 @@ if ( ! function_exists( 'flosc_flow_kb_dir' ) ) {
 	function flosc_flow_kb_dir( $flow_stem ) {
 		$base = flosc_data_dir();
 		if ( '' === $base ) {
-			// Uploads unavailable — propagate the empty path so callers fail
+			// Uploads unavailable — propagate the empty path so callers fail.
 			// safely instead of building a path relative to nowhere.
 			return '';
 		}
@@ -675,7 +675,7 @@ if ( ! function_exists( 'flosc_checkout_binding_create' ) ) {
 			'user_id'    => isset( $context['user_id'] ) ? absint( $context['user_id'] ) : get_current_user_id(),
 			'created_at' => time(),
 		);
-		// 1-hour lifetime: long enough to complete a payment, short enough that a
+		// 1-hour lifetime: long enough to complete a payment, short enough that a.
 		// leaked token expires quickly. autoload is irrelevant for transients.
 		set_transient( 'flosc_checkout_binding_' . $hash, $record, HOUR_IN_SECONDS );
 		return $token;
@@ -833,9 +833,9 @@ if ( ! function_exists( 'flosc_issue_post_purchase_session' ) ) {
         // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- core WP action wp_login
 		do_action( 'wp_login', $user->user_login, $user );
 
-		// FLOSC's own cross-domain auth cookie rides alongside the WP cookie so a
-		// flow served on flosc.ai / the flow domain / the WordPress host authenticates even when
-		// COOKIE_DOMAIN does not match the custom domain. The methods live on the
+		// FLOSC's own cross-domain auth cookie rides alongside the WP cookie so a.
+		// flow served on flosc.ai / the flow domain / the WordPress host authenticates even when.
+		// COOKIE_DOMAIN does not match the custom domain. The methods live on the.
 		// framework singleton (flosc()), not a separate session class.
 		if ( function_exists( 'flosc' ) && method_exists( flosc(), 'generate_flosc_auth_token' ) ) {
 			$auth_token = flosc()->generate_flosc_auth_token( $user_id );
@@ -864,8 +864,8 @@ if ( ! function_exists( 'flosc_issue_post_purchase_session' ) ) {
  * THIS install's dirs only — no cross-flow or cross-install bleeding.
  * ========================================================================== */
 if ( ! function_exists( 'flosc_config_file' ) ) {
-	// Single config file: the uploads copy if it exists, else the shipped
-	// default. The plugin path is a READ-ONLY resolution — every write goes
+	// Single config file: the uploads copy if it exists, else the shipped.
+	// default. The plugin path is a READ-ONLY resolution — every write goes.
 	// through flosc_write_data_file(), which only accepts uploads targets.
 	function flosc_config_file( $filename ) {
 		$filename = ltrim( (string) $filename, '/' );
@@ -949,7 +949,7 @@ if ( ! function_exists( 'flosc_lesson_catalog_write_paths' ) ) {
 }
 
 if ( ! function_exists( 'flosc_config_glob' ) ) {
-	// Union of glob matches across uploads + plugin dirs, deduped by basename
+	// Union of glob matches across uploads + plugin dirs, deduped by basename.
 	// (uploads wins, since it is scanned first). $patterns is one pattern or a list.
 	function flosc_config_glob( $patterns ) {
 		$patterns = (array) $patterns;

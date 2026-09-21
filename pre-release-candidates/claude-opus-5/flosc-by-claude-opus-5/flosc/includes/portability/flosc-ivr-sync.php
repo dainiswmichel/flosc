@@ -1119,7 +1119,7 @@ function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file =
 	}
 	unset( $incoming_msg );
 
-	// Calculate changes
+	// Calculate changes.
 	$current_ids  = array_keys( $current_messages );
 	$incoming_ids = array_keys( $incoming_messages );
 
@@ -1140,9 +1140,9 @@ function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file =
 		'settings_skipped'  => $settings_apply['skipped'],
 	);
 
-	// PREVIEW MODE: Return analysis without making changes
+	// PREVIEW MODE: Return analysis without making changes.
 	if ( $preview_only ) {
-		// v2.0.0: Build field-level diffs for updated messages
+		// v2.0.0: Build field-level diffs for updated messages.
 		$field_diffs    = array();
 		$compare_fields = array(
 			'title',
@@ -1164,7 +1164,7 @@ function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file =
 			'content',
 		);
 
-		// Normalize messages to a compare shape so sparse DB rows and parser-defaulted
+		// Normalize messages to a compare shape so sparse DB rows and parser-defaulted.
 		// file rows can be compared semantically instead of by raw array structure.
 		$normalize_for_compare = static function ( $msg ) {
 			if ( ! is_array( $msg ) ) {
@@ -1228,13 +1228,13 @@ function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file =
 		);
 	}
 
-	// EXECUTE IMPORT: Auto-backup first, then merge or replace database
+	// EXECUTE IMPORT: Auto-backup first, then merge or replace database.
 	$backup_file = '';
 	if ( ! empty( $current_messages ) ) {
 		$backup_file = flosc_export_ivr_backup( $flow_key );
 	}
 
-	// Extract autoprompt pills from IVR messages and organize by state
+	// Extract autoprompt pills from IVR messages and organize by state.
 	$autoprompts_from_ivr = array(
 		'visitor' => array(),
 		'guest'   => array(),
@@ -1330,7 +1330,7 @@ function flosc_import_ivr_to_database( $preview_only = false, $custom_ivr_file =
 		update_option( $flow_key, $fs_after );
 	}
 
-	// Generate success message
+	// Generate success message.
 	if ( $mode === 'replace' ) {
 		$message = sprintf(
 			'Database replaced from IVR file. Added: %d, Updated: %d, Deleted: %d',
@@ -1371,7 +1371,7 @@ function flosc_export_ivr_backup( $flow_key = null ) {
 	list($messages, $phases, $styles, $flow_key) = flosc_flow_load_runtime_triplet( $flow_key );
 
 	if ( empty( $messages ) ) {
-		return false; // No data to backup
+		return false; // No data to backup.
 	}
 
 	// Generate markdown (same format as export)
@@ -1385,7 +1385,7 @@ function flosc_export_ivr_backup( $flow_key = null ) {
 	$portable_settings = flosc_portable_collect_exportable_settings( $flow_settings );
 	$markdown         .= flosc_portable_build_settings_block( $portable_settings );
 
-	// Add styles
+	// Add styles.
 	foreach ( $styles as $style_name => $style_css ) {
 		$markdown .= "## MessageStyle: $style_name\n";
 		$markdown .= $style_css . "\n\n";
@@ -1396,7 +1396,7 @@ function flosc_export_ivr_backup( $flow_key = null ) {
 
 	$markdown .= "---\n\n";
 
-	// Add messages by phase
+	// Add messages by phase.
 	foreach ( $phases as $phase_name => $message_ids ) {
 		$markdown .= '# ' . ucfirst( $phase_name ) . " Messages\n\n";
 
@@ -1504,11 +1504,11 @@ function flosc_auto_export_ivr_to_file( $flow_key = null, $target_ivr_file = nul
 	}
 	$portable_settings = flosc_portable_collect_exportable_settings( $flow_settings );
 
-	// Build markdown in proper ivr.md format
+	// Build markdown in proper ivr.md format.
 	$markdown  = "# FLOSC IVR Configuration\n\n";
 	$markdown .= flosc_portable_build_settings_block( $portable_settings );
 
-	// Add styles
+	// Add styles.
 	foreach ( $styles as $style_name => $style_data ) {
 		$markdown .= "## MessageStyle: $style_name\n";
 		if ( is_array( $style_data ) ) {
@@ -1536,7 +1536,7 @@ function flosc_auto_export_ivr_to_file( $flow_key = null, $target_ivr_file = nul
 
 	$markdown .= "---\n\n";
 
-	// Phase descriptions
+	// Phase descriptions.
 	$phase_descriptions = array(
 		'freeline' => 'Visitor (not logged in) → Take quiz → MUST login to see score.',
 		'login'    => 'Guest (logged in, not purchased) → See score → 1 free lesson → Offers → No quiz retake.',
@@ -1545,7 +1545,7 @@ function flosc_auto_export_ivr_to_file( $flow_key = null, $target_ivr_file = nul
 		'content'  => 'Ongoing users - Support, encouragement, engagement',
 	);
 
-	// Add messages by phase
+	// Add messages by phase.
 	foreach ( $phases as $phase_name => $message_ids ) {
 		if ( empty( $message_ids ) ) {
 			continue;
@@ -1563,7 +1563,7 @@ function flosc_auto_export_ivr_to_file( $flow_key = null, $target_ivr_file = nul
 			}
 			$msg = $messages[ $msg_id ];
 
-			// Use title/display name if available
+			// Use title/display name if available.
 			$title     = $msg['title'] ?? $msg['name'] ?? $msg_id;
 			$markdown .= '## ' . $title . "\n";
 			$markdown .= 'MessageName: ' . $msg_id . "\n";
@@ -1609,7 +1609,7 @@ function flosc_auto_export_ivr_to_file( $flow_key = null, $target_ivr_file = nul
 					}
 				}
 			}
-			// v1.6.2: Offer-specific fields — offers are IVR entries
+			// v1.6.2: Offer-specific fields — offers are IVR entries.
 			if ( ! empty( $msg['offer_id'] ) ) {
 				$markdown .= 'OfferID: ' . $msg['offer_id'] . "\n";
 			}
@@ -1629,7 +1629,7 @@ function flosc_auto_export_ivr_to_file( $flow_key = null, $target_ivr_file = nul
 			if ( $display_format !== '' ) {
 				$markdown .= 'DisplayFormat: ' . $display_format . "\n";
 			}
-			// v1.6.2: Offer content source fields
+			// v1.6.2: Offer content source fields.
 			if ( ! empty( $msg['html_file'] ) ) {
 				$markdown .= 'HtmlFile: ' . $msg['html_file'] . "\n";
 			}
@@ -1674,7 +1674,7 @@ function flosc_auto_export_ivr_to_file( $flow_key = null, $target_ivr_file = nul
 	$result = flosc_write_data_file( $ivr_file, $markdown );
 
 	if ( $result ) {
-		// Update last export timestamp
+		// Update last export timestamp.
 		update_option( 'flosc_ivr_last_export', current_time( 'mysql' ) );
 		if ( ! empty( $flow_key ) ) {
 			$fs                    = get_option( $flow_key, array() );
@@ -1721,9 +1721,9 @@ function flosc_sync_flow_option_to_ivr_file( $option ) {
 add_action( 'updated_option', 'flosc_sync_flow_option_to_ivr_file', 20, 1 );
 add_action( 'added_option', 'flosc_sync_flow_option_to_ivr_file', 20, 1 );
 
-// v8.0.0: Concierge posts. A private post in the concierge category gets an admin
-// "FLOSC Concierge" meta box (editable settings); on save the plugin syncs it into
-// the post's flow as a concierge IVR message (which mirrors to the .md); on trash it
+// v8.0.0: Concierge posts. A private post in the concierge category gets an admin.
+// "FLOSC Concierge" meta box (editable settings); on save the plugin syncs it into.
+// the post's flow as a concierge IVR message (which mirrors to the .md); on trash it.
 // is removed. Admins also see a read-only "what FLOSC understands" summary on the post.
 add_action(
 	'add_meta_boxes_post',

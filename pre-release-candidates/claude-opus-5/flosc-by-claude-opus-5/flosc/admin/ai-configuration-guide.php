@@ -14,7 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// Suppress tab header when included from documentation.php
+// Suppress tab header when included from documentation.php.
 if ( empty( $GLOBALS['flosc_suppress_tab_header'] ) ) {
 	flosc_tab_header( '📖', 'AI Guide' );
 }

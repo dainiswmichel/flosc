@@ -69,7 +69,7 @@ class FLOSC_STT_Dispatch {
 				return new WP_Error( 'invalid_provider', __( 'Invalid STT provider', 'flosc' ) );
 		}
 
-		// Cache successful transcriptions for 24 hours
+		// Cache successful transcriptions for 24 hours.
 		if ( ! is_wp_error( $result ) ) {
 			set_transient( $cache_key, $result, DAY_IN_SECONDS );
 		}
@@ -89,7 +89,7 @@ class FLOSC_STT_Dispatch {
 			return new WP_Error( 'no_api_key', __( 'AssemblyAI API key not configured', 'flosc' ) );
 		}
 
-		// Step 1: Upload audio file
+		// Step 1: Upload audio file.
 		$audio_data = flosc_fs_get_contents( $audio_path );
 
 		$upload_response = wp_remote_post(
@@ -117,7 +117,7 @@ class FLOSC_STT_Dispatch {
 			return new WP_Error( 'upload_failed', __( 'Failed to upload audio to AssemblyAI', 'flosc' ) );
 		}
 
-		// Step 2: Request transcription
+		// Step 2: Request transcription.
 		$transcribe_response = wp_remote_post(
 			'https://api.assemblyai.com/v2/transcript',
 			array(
@@ -194,23 +194,23 @@ class FLOSC_STT_Dispatch {
 			return new WP_Error( 'no_api_key', __( 'OpenAI API key not configured', 'flosc' ) );
 		}
 
-		// Prepare multipart form data
+		// Prepare multipart form data.
 		$boundary    = wp_generate_password( 24, false );
 		$body        = '';
 		$upload_meta = $this->resolve_audio_upload_meta( $audio_path );
 
-		// Add file
+		// Add file.
 		$body .= "--{$boundary}\r\n";
 		$body .= "Content-Disposition: form-data; name=\"file\"; filename=\"{$upload_meta['filename']}\"\r\n";
 		$body .= "Content-Type: {$upload_meta['mime']}\r\n\r\n";
 		$body .= flosc_fs_get_contents( $audio_path ) . "\r\n";
 
-		// Add model
+		// Add model.
 		$body .= "--{$boundary}\r\n";
 		$body .= "Content-Disposition: form-data; name=\"model\"\r\n\r\n";
 		$body .= "whisper-1\r\n";
 
-		// Add language hint
+		// Add language hint.
 		$body .= "--{$boundary}\r\n";
 		$body .= "Content-Disposition: form-data; name=\"language\"\r\n\r\n";
 		$body .= "en\r\n";
@@ -257,7 +257,7 @@ class FLOSC_STT_Dispatch {
 			return new WP_Error( 'no_endpoint', __( 'Custom STT endpoint not configured', 'flosc' ) );
 		}
 
-		// Prepare multipart form data
+		// Prepare multipart form data.
 		$boundary    = wp_generate_password( 24, false );
 		$body        = '';
 		$upload_meta = $this->resolve_audio_upload_meta( $audio_path );
@@ -286,7 +286,7 @@ class FLOSC_STT_Dispatch {
 
 		$result = json_decode( wp_remote_retrieve_body( $response ), true );
 
-		// Support common response formats
+		// Support common response formats.
 		return $result['text'] ?? $result['transcript'] ?? $result['transcription'] ?? '';
 	}
 

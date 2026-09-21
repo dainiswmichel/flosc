@@ -193,10 +193,10 @@ class FLOSC_Chat_Logger {
 	public function flosc_rate_log( $log_id, $rating, $note = '' ) {
 		global $wpdb;
 
-		// Clamp to -10..+10
+		// Clamp to -10..+10.
 		$rating = max( -10, min( 10, intval( $rating ) ) );
 
-		// Any non-zero rating auto-protects the row from auto-expunge
+		// Any non-zero rating auto-protects the row from auto-expunge.
 		$is_protected = ( $rating !== 0 ) ? 1 : 0;
 
 		$this->flosc_ensure_table();
@@ -396,13 +396,13 @@ class FLOSC_Chat_Logger {
 
 		$this->flosc_ensure_table();
 
-		// Every filter is optional. Rather than assemble a dynamic WHERE string
-		// (which a static analyser cannot prove is injection-safe, even when the
-		// pieces are all hardcoded), the query uses a single fully-literal format
-		// string with "pass-through" guards. For each filter we bind a neutral
-		// sentinel ('' or 0) when it is inactive: the guard's left side is then
-		// true, so that column is not filtered. When the filter is active we bind
-		// the real value (twice), and the column filters normally. Nothing is
+		// Every filter is optional. Rather than assemble a dynamic WHERE string.
+		// (which a static analyser cannot prove is injection-safe, even when the.
+		// pieces are all hardcoded), the query uses a single fully-literal format.
+		// string with "pass-through" guards. For each filter we bind a neutral.
+		// sentinel ('' or 0) when it is inactive: the guard's left side is then.
+		// true, so that column is not filtered. When the filter is active we bind.
+		// the real value (twice), and the column filters normally. Nothing is.
 		// interpolated into the SQL — every value travels through prepare().
 		$flow_id  = ! empty( $filters['flow_id'] ) ? sanitize_text_field( $filters['flow_id'] ) : '';
 		$phase    = ! empty( $filters['phase'] ) ? sanitize_text_field( $filters['phase'] ) : '';
@@ -556,7 +556,7 @@ class FLOSC_Chat_Logger {
 			return false;
 		}
 
-		// 'admin' → renders pale-green "(admin)"; 'bot' → renders as a normal AI
+		// 'admin' → renders pale-green "(admin)"; 'bot' → renders as a normal AI.
 		// (assistant) message, but still admin-authored and delivered via the poll.
 		$response_source = ( $source === 'bot' ) ? 'admin_bot' : 'admin';
 
@@ -725,9 +725,9 @@ class FLOSC_Chat_Logger {
 		$user_id    = intval( $row['user_id'] ?? 0 );
 		$ip         = (string) ( $row['visitor_ip'] ?? '' );
 
-		// Every conversation gets a stable 6-char "code" — shown in the label and
-		// used as the prefix of each message id (e.g. 4f09a2-b-002). For IP-keyed
-		// visitors it's the first 6 of their (already hashed) IP, so it matches the
+		// Every conversation gets a stable 6-char "code" — shown in the label and.
+		// used as the prefix of each message id (e.g. 4f09a2-b-002). For IP-keyed.
+		// visitors it's the first 6 of their (already hashed) IP, so it matches the.
 		// pretty code you've seen; for session/user it's a short md5 of the key.
 		if ( $session_id > 0 ) {
 			$code  = substr( md5( 's' . $session_id ), 0, 6 );

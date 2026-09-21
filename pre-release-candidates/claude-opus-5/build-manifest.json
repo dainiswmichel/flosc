@@ -14,7 +14,7 @@
     "zip": "pre-release-candidates/claude-opus-5/flosc.zip"
   },
   "artifact": {
-    "sha256": "6f1b7e7f229756c20c137a01dae8ad6ae30f34c678fd1de5290458f557bea9ff",
+    "sha256": "92f0f3a72db4fdba7393bee4d5db6e8fb40a24ad09a4e1ef5897f95a1b1914e4",
     "size_bytes": 2130303,
     "entries": 240,
     "root": "flosc/",
@@ -52,7 +52,7 @@
     },
     "wpcs_total_project_ruleset": {
       "v89.1_base": "7094 errors / 511 warnings",
-      "v90.1": "7094 errors / 511 warnings"
+      "v90.2": "5763 errors / 514 warnings"
     },
     "phpcbf_fixable": {
       "v89.1_base": 960,

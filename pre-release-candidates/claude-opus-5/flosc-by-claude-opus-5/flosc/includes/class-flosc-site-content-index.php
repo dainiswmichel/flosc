@@ -541,7 +541,7 @@ class FLOSC_Site_Content_Index {
 					}
 				}
 			} else {
-				$score = 1; // empty query: allow first N
+				$score = 1; // empty query: allow first N.
 			}
 			// Numeric lesson / post id match.
 			if ( is_numeric( $q ) ) {

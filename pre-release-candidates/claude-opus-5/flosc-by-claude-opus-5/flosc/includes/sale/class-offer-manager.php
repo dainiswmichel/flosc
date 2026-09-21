@@ -64,10 +64,10 @@ class FLOSC_Offer_Manager {
 			}
 		}
 
-		// Fallback to global option for backward compat
+		// Fallback to global option for backward compat.
 		$offers = get_option( $this->option_key, array() );
 
-		// Ensure default structure
+		// Ensure default structure.
 		if ( empty( $offers ) ) {
 			$offers = $this->get_default_offers();
 			update_option( $this->option_key, $offers );
@@ -75,7 +75,7 @@ class FLOSC_Offer_Manager {
 
 		$offers = $this->sync_ivr_offers_into_offers( $offers, $flow_id );
 
-		// v1.6.5: Seed defaults into per-flow storage so admin UI can see/edit them
+		// v1.6.5: Seed defaults into per-flow storage so admin UI can see/edit them.
 		if ( $flow_id ) {
 			$flow_key                = 'flosc_flow_' . sanitize_key( $flow_id );
 			$flow_settings           = get_option( $flow_key, array() );
@@ -414,25 +414,25 @@ class FLOSC_Offer_Manager {
 			// Pricing (provider-specific)
 			'pricing'        => array(
 				'stripe'       => array(
-					'price_id'   => '',       // Stripe Price ID
-					'product_id' => '',     // Stripe Product ID
+					'price_id'   => '',       // Stripe Price ID.
+					'product_id' => '',     // Stripe Product ID.
 				),
 				'tokens'       => array(
-					'cost' => 0,            // Cost in tokens
+					'cost' => 0,            // Cost in tokens.
 				),
 				'affiliate'    => array(
-					'credit_amount' => 0,   // How much affiliate credit unlocks this
+					'credit_amount' => 0,   // How much affiliate credit unlocks this.
 				),
-				'redirect_url' => '',       // MTS-2026-02-03: External checkout URL
+				'redirect_url' => '',       // MTS-2026-02-03: External checkout URL.
 			),
 
 			// Display pricing (for UI, not for charging)
-			'display_price'  => '',          // e.g., "€144" or "500 tokens" or "Free with purchase"
+			'display_price'  => '',          // e.g., "€144" or "500 tokens" or "Free with purchase".
 			'original_price' => '',         // MTS-2026-02-03: Original price (for strikethrough)
 
-			// MTS-2026-02-03: [DISPLAY-OPTIONS] Configurable display format
-			'display_format' => 'card',     // pill, card, compact, banner, featured, text, inline-checkout
-			'cta'            => '',                    // Custom CTA button text
+			// MTS-2026-02-03: [DISPLAY-OPTIONS] Configurable display format.
+			'display_format' => 'card',     // pill, card, compact, banner, featured, text, inline-checkout.
+			'cta'            => '',                    // Custom CTA button text.
 			'timer_seconds'  => 3600,        // Countdown timer (0 = no timer)
 			'guarantee'      => '',              // Guarantee text (e.g., "30-day money-back guarantee")
 
@@ -445,23 +445,23 @@ class FLOSC_Offer_Manager {
 
 			// For token packs
 			'tokens'         => array(
-				'amount' => 0,              // How many tokens this grants
-				'bonus'  => 0,               // Bonus tokens
+				'amount' => 0,              // How many tokens this grants.
+				'bonus'  => 0,               // Bonus tokens.
 			),
 
-			// Access grants
+			// Access grants.
 			'grants'         => array(
-				'features'      => array(),           // Feature flags to enable
+				'features'      => array(),           // Feature flags to enable.
 				'level'         => '',              // Member level to grant (MTS-2026-02-03)
-				'duration_days' => 0,       // 0 = lifetime
+				'duration_days' => 0,       // 0 = lifetime.
 				'usage_limits'  => array(),       // e.g., ['ai_queries' => 1000]
 			),
 
-			// Metadata
+			// Metadata.
 			'meta'           => array(
 				'badge'   => '',              // Badge text (e.g., "Most Popular")
 				'savings' => '',            // Savings text (e.g., "Save 20%")
-				'icon'    => '',               // Emoji or icon
+				'icon'    => '',               // Emoji or icon.
 			),
 
 			'sort_order'     => 0,
@@ -522,7 +522,7 @@ class FLOSC_Offer_Manager {
 				'pricing'        => array(
 					'price'     => 49.00,
 					'currency'  => 'USD',
-					'processor' => 'paypal',  // Change to 'stripe' when Stripe is configured
+					'processor' => 'paypal',  // Change to 'stripe' when Stripe is configured.
 					'stripe'    => array(
 						'price_id'   => '',
 						'product_id' => '',
@@ -533,7 +533,7 @@ class FLOSC_Offer_Manager {
 				'grants'         => array(
 					'features'      => array( 'quiz', 'all_lessons', 'ai_coach', 'certificates' ),
 					'level'         => 'full_access',
-					'duration_days' => 0, // Lifetime
+					'duration_days' => 0, // Lifetime.
 					'usage_limits'  => array(),
 				),
 				'grants_level'   => 'full_access',
@@ -551,7 +551,7 @@ class FLOSC_Offer_Manager {
 				'name'          => '100 Tokens',
 				'description'   => 'Pay-per-use credits',
 				'type'          => self::TYPE_TOKENS,
-				'status'        => 'draft', // Not active by default
+				'status'        => 'draft', // Not active by default.
 				'display_price' => 'Configure in Stripe',
 				'pricing'       => array(
 					'stripe'    => array( 'price_id' => '' ),
@@ -576,7 +576,7 @@ class FLOSC_Offer_Manager {
 				'name'          => 'Monthly Access',
 				'description'   => 'Full access, billed monthly',
 				'type'          => self::TYPE_SUBSCRIPTION,
-				'status'        => 'draft', // Not active by default
+				'status'        => 'draft', // Not active by default.
 				'display_price' => 'Configure in Stripe',
 				'pricing'       => array(
 					'stripe'    => array( 'price_id' => '' ),
@@ -599,7 +599,7 @@ class FLOSC_Offer_Manager {
 
 			// ============================================
 			// Example site-owner content offers only.
-			// Never seed a paid "buy the FLOSC plugin" / plugin-feature unlock
+			// Never seed a paid "buy the FLOSC plugin" / plugin-feature unlock.
 			// (WordPress.org guidelines 5 and 9 — WPORG-01).
 			// ============================================
 
@@ -627,7 +627,7 @@ class FLOSC_Offer_Manager {
 				'grants'         => array(
 					'features'      => array( 'solfeggio_lessons', 'solfeggio_exercises', 'ai_coach', 'all_quizzes' ),
 					'level'         => 'simplified_solfeggio_member',
-					'duration_days' => 0, // Lifetime
+					'duration_days' => 0, // Lifetime.
 					'usage_limits'  => array(),
 				),
 				'meta'           => array(

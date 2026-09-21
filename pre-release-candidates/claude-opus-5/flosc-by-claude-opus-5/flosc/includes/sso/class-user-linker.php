@@ -55,10 +55,10 @@ class User_Linker {
 	 * @return bool Success
 	 */
 	public function link_account( $user_id, $provider_id, $user_data, $token_data ) {
-		// Store provider user ID
+		// Store provider user ID.
 		update_user_meta( $user_id, self::META_PREFIX . $provider_id . '_id', $user_data['provider_id'] );
 
-		// Store linked timestamp
+		// Store linked timestamp.
 		update_user_meta( $user_id, self::META_PREFIX . $provider_id . '_linked_at', time() );
 
 		// Store user data snapshot (re-sanitize at sink; never store decoded raw_data blobs).
@@ -75,7 +75,7 @@ class User_Linker {
 		// Store tokens (encrypted)
 		$this->store_tokens( $user_id, $provider_id, $token_data );
 
-		// Update linked providers list
+		// Update linked providers list.
 		$linked_providers = get_user_meta( $user_id, self::META_PREFIX . 'linked_providers', true );
 		if ( ! is_array( $linked_providers ) ) {
 			$linked_providers = array();
@@ -103,7 +103,7 @@ class User_Linker {
 		delete_user_meta( $user_id, self::META_PREFIX . $provider_id . '_data' );
 		delete_user_meta( $user_id, self::META_PREFIX . $provider_id . '_tokens' );
 
-		// Update linked providers list
+		// Update linked providers list.
 		$linked_providers = get_user_meta( $user_id, self::META_PREFIX . 'linked_providers', true );
 		if ( is_array( $linked_providers ) ) {
 			$linked_providers = array_diff( $linked_providers, array( $provider_id ) );
@@ -151,7 +151,7 @@ class User_Linker {
 		$first_name = isset( $user_data['first_name'] ) ? sanitize_text_field( $user_data['first_name'] ) : '';
 		$last_name  = isset( $user_data['last_name'] ) ? sanitize_text_field( $user_data['last_name'] ) : '';
 
-		// Generate username from email or name
+		// Generate username from email or name.
 		$username = $this->generate_unique_username( $email, $name );
 
 		// Generate secure random password (user won't need it for SSO)
@@ -167,7 +167,7 @@ class User_Linker {
 			'role'         => apply_filters( 'flosc_sso_default_role', 'subscriber' ),
 		);
 
-		// Allow filtering before creation
+		// Allow filtering before creation.
 		$user_data_wp = apply_filters( 'flosc_sso_new_user_data', $user_data_wp, $provider_id, $user_data );
 
 		// Best-in-class: re-sanitize after filter so third-party hooks cannot inject raw fields.
@@ -196,15 +196,15 @@ class User_Linker {
 			return $user_id;
 		}
 
-		// Link the SSO account
+		// Link the SSO account.
 		$this->link_account( $user_id, $provider_id, $user_data, $token_data );
 
-		// Store avatar if available
+		// Store avatar if available.
 		if ( ! empty( $user_data['avatar'] ) ) {
 			update_user_meta( $user_id, self::META_PREFIX . 'avatar', esc_url_raw( (string) $user_data['avatar'] ) );
 		}
 
-		// Mark as SSO-created user
+		// Mark as SSO-created user.
 		update_user_meta( $user_id, self::META_PREFIX . 'created_via', $provider_id );
 		update_user_meta( $user_id, self::META_PREFIX . 'created_at', time() );
 		// Canonical registration method for condition evaluator / Engagement summary.
@@ -226,7 +226,7 @@ class User_Linker {
 	 * @return string Unique username
 	 */
 	private function generate_unique_username( $email, $name = '' ) {
-		// Try email-based username first
+		// Try email-based username first.
 		if ( $email ) {
 			$base = strstr( $email, '@', true );
 			$base = sanitize_user( $base, true );
@@ -236,12 +236,12 @@ class User_Linker {
 			$base = 'user';
 		}
 
-		// Ensure minimum length
+		// Ensure minimum length.
 		if ( strlen( $base ) < 3 ) {
 			$base = 'user_' . $base;
 		}
 
-		// Make unique
+		// Make unique.
 		$username = $base;
 		$counter  = 1;
 
@@ -268,7 +268,7 @@ class User_Linker {
 			'token_type'    => isset( $token_data['token_type'] ) ? $token_data['token_type'] : 'Bearer',
 		);
 
-		// Simple encryption using WP salts
+		// Simple encryption using WP salts.
 		$encrypted = $this->encrypt_tokens( $tokens );
 
 		update_user_meta( $user_id, self::META_PREFIX . $provider_id . '_tokens', $encrypted );
@@ -310,9 +310,9 @@ class User_Linker {
 	 */
 	private function encrypt_tokens( $tokens ) {
 		$json = wp_json_encode( $tokens );
-		$key  = flosc_token_secret(); // §5: dedicated secret, not the auth salt
+		$key  = flosc_token_secret(); // §5: dedicated secret, not the auth salt.
 
-		// Simple XOR encryption with base64 encoding
+		// Simple XOR encryption with base64 encoding.
 		$encrypted = '';
 		for ( $i = 0; $i < strlen( $json ); $i++ ) {
 			$encrypted .= chr( ord( $json[ $i ] ) ^ ord( $key[ $i % strlen( $key ) ] ) );
@@ -331,7 +331,7 @@ class User_Linker {
 	private function decrypt_tokens( $encrypted ) {
         // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- binary/JWT token decoding, not obfuscation
 		$encrypted = base64_decode( $encrypted );
-		$key       = flosc_token_secret(); // §5: dedicated secret, not the auth salt
+		$key       = flosc_token_secret(); // §5: dedicated secret, not the auth salt.
 
 		$decrypted = '';
 		for ( $i = 0; $i < strlen( $encrypted ); $i++ ) {
@@ -372,13 +372,13 @@ class User_Linker {
 	 * @return string|false Avatar URL or false
 	 */
 	public function get_sso_avatar( $user_id ) {
-		// Try stored avatar first
+		// Try stored avatar first.
 		$avatar = get_user_meta( $user_id, self::META_PREFIX . 'avatar', true );
 		if ( $avatar ) {
 			return $avatar;
 		}
 
-		// Try linked provider avatars
+		// Try linked provider avatars.
 		$providers = $this->get_linked_providers( $user_id );
 		foreach ( $providers as $provider_id ) {
 			$data = get_user_meta( $user_id, self::META_PREFIX . $provider_id . '_data', true );

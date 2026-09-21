@@ -916,7 +916,7 @@ if ( isset( $flosc_da1_col_idx['Row Key'] ) ) {
 if ( isset( $flosc_da1_post['da1_save_catalog'] ) ) {
 	$flosc_post = $flosc_da1_post;
 	// Large catalogs exceed PHP max_input_vars when posted as per-cell fields.
-	// The grid submits the whole table as one JSON field instead; decode it
+	// The grid submits the whole table as one JSON field instead; decode it.
 	// into the shape the rest of this handler expects.
 	if ( ! empty( $flosc_post['da1_payload'] ) ) {
 		$flosc_da1_decoded = flosc_da1_safe_json_decode( (string) $flosc_post['da1_payload'] );
@@ -978,7 +978,7 @@ if ( isset( $flosc_da1_post['da1_save_catalog'] ) ) {
 				}
 
 				// Never block a floscAdmin's save on a missing control value:
-				// fill the column's safe default so edits always save. Status is
+				// fill the column's safe default so edits always save. Status is.
 				// always "active" unless explicitly "paused".
 				if ( trim( $flosc_da1_val ) === '' && isset( $flosc_control_defaults[ $flosc_da1_col ] ) ) {
 					$flosc_da1_val = $flosc_control_defaults[ $flosc_da1_col ];

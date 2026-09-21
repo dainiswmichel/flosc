@@ -1,4 +1,4 @@
-<?php if (!defined('ABSPATH')) exit; // Part 1: The Journey — FLOSC Documentation ?>
+<?php if (!defined('ABSPATH')) exit; // Part 1: The Journey — FLOSC Documentation.?>
 
 <h1 id="the-journey">Part 1: The Journey</h1>
 <p>Where FLOSC came from, why it exists, and the decisions that shaped it. Not just what the code does, but <em>why</em> it ended up this way.</p>

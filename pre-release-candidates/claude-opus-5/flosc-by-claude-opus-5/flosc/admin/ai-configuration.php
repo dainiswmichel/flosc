@@ -1194,7 +1194,7 @@ $flosc_kb_ids     = function_exists( 'flosc_flow_knowledge_base_ids' ) ? flosc_f
 <?php endif; ?>
 
 <?php
-// Fix 6: Regenerate Lesson Catalog button
+// Fix 6: Regenerate Lesson Catalog button.
 $flosc_catalog_file   = function_exists( 'flosc_resolve_lesson_catalog_path' )
 	? flosc_resolve_lesson_catalog_path()
 	: ( function_exists( 'flosc_config_file' ) ? flosc_config_file( 'lesson_catalog.md' ) : '' );

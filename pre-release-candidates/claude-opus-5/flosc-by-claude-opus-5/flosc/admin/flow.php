@@ -331,7 +331,7 @@ if ( $flosc_selected_ivr && file_exists( $flosc_ivr_path ) && class_exists( 'FLO
 	}
 }
 
-// F — Freeline: quiz + visitor pills + IVR file
+// F — Freeline: quiz + visitor pills + IVR file.
 // Empty enabled_quizzes = no quiz for this flow. Never invent a sample quiz.
 $flosc_enabled_quizzes = $flosc_flow_settings['enabled_quizzes'] ?? array();
 if ( ! is_array( $flosc_enabled_quizzes ) ) {
@@ -359,7 +359,7 @@ if ( $flosc_quiz_configured && class_exists( 'FLOSC_Quiz_Registry' ) ) {
 $flosc_visitor_pills  = count( $flosc_flow_settings['autoprompts']['visitor'] ?? array() );
 $flosc_ivr_file_label = $flosc_selected_ivr ? esc_html( $flosc_selected_ivr ) : 'None configured';
 
-// L — Login: SSO providers
+// L — Login: SSO providers.
 $flosc_sso_providers = array();
 foreach ( array( 'google', 'apple', 'facebook', 'microsoft', 'linkedin' ) as $flosc_p ) {
 	if ( ! empty( $flosc_flow_settings[ 'sso_' . $flosc_p . '_enabled' ] ) ) {
@@ -368,7 +368,7 @@ foreach ( array( 'google', 'apple', 'facebook', 'microsoft', 'linkedin' ) as $fl
 }
 $flosc_sso_label = $flosc_sso_providers ? implode( ', ', $flosc_sso_providers ) : 'WordPress native';
 
-// O — Offer: offers count + guest pills
+// O — Offer: offers count + guest pills.
 $flosc_flow_id_key  = $flosc_selected_ivr ? pathinfo( $flosc_selected_ivr, PATHINFO_FILENAME ) : null;
 $flosc_all_offers   = array();
 $flosc_active_count = 0;
@@ -398,7 +398,7 @@ $flosc_stripe_sk   = $flosc_stripe_mode === 'live'
 				: ( $flosc_flow_settings['stripe_test_sk'] ?? '' );
 $flosc_stripe_cfg  = ! empty( $flosc_flow_settings['stripe_enabled'] ) && ! empty( $flosc_stripe_sk );
 
-// C — Content: lessons + member pills + AI provider
+// C — Content: lessons + member pills + AI provider.
 $flosc_content_item_groups = $flosc_flow_settings['content_item_groups'] ?? array();
 if ( empty( $flosc_content_item_groups ) && ! empty( $flosc_flow_settings['content_item_category'] ) ) {
 	$flosc_content_item_groups = array( array( 'category' => $flosc_flow_settings['content_item_category'] ) );
@@ -631,7 +631,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 	);
 
 	// ── O — Offer ─────────────────────────────────────────────────────────────
-	// v8.1.0: Member levels summary
+	// v8.1.0: Member levels summary.
 	$flosc_ml_registry = $flosc_flow_settings['member_levels'] ?? array();
 	$flosc_ml_count    = count( array_filter( $flosc_ml_registry, fn( $l ) => ! empty( $l['slug'] ?? '' ) ) );
 	$flosc_ml_names    = array_map( fn( $l ) => $l['name'] ?: ( $l['slug'] ?? '?' ), array_filter( $flosc_ml_registry, fn( $l ) => ! empty( $l['slug'] ?? '' ) ) );

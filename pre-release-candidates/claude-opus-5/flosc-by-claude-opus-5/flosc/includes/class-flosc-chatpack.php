@@ -45,13 +45,13 @@ class FLOSC_Chatpack {
 			return $stored;
 		}
 
-		// Domain: strip scheme, replace dots with underscores
+		// Domain: strip scheme, replace dots with underscores.
 		$raw_url = get_bloginfo( 'url' );
 		$domain  = preg_replace( '#^https?://#', '', $raw_url );
 		$domain  = rtrim( $domain, '/' );
 		$domain  = str_replace( '.', '_', $domain );
 
-		// MTS: Michel Time Stamp with seconds
+		// MTS: Michel Time Stamp with seconds.
 		$now     = time();
 			$mts = gmdate( 'y', $now ) . '_'
 				. gmdate( 'm', $now ) . 'm_'
@@ -60,7 +60,7 @@ class FLOSC_Chatpack {
 				. gmdate( 'i', $now ) . 'm'
 				. gmdate( 's', $now ) . 's';
 
-		// 7-char hex suffix: seeded from domain + exact timestamp for global uniqueness
+		// 7-char hex suffix: seeded from domain + exact timestamp for global uniqueness.
 		$seed   = $domain . ':' . $now . ':' . wp_generate_password( 16, false );
 		$suffix = substr( md5( $seed ), 0, 7 );
 
@@ -89,7 +89,7 @@ class FLOSC_Chatpack {
 	 * @since 1.9.4
 	 */
 	public static function generate_session_hash( $flosc_hash, $user_id, $session_id = null ) {
-		// Extract parent fingerprint: last 7 chars of flosc_hash
+		// Extract parent fingerprint: last 7 chars of flosc_hash.
 		$parent_fingerprint = substr( $flosc_hash, -7 );
 
 		// MTS: Michel Time Stamp with seconds (session birth time)
@@ -101,7 +101,7 @@ class FLOSC_Chatpack {
 				. gmdate( 'i', $now ) . 'm'
 				. gmdate( 's', $now ) . 's';
 
-		// 5-char hex suffix: seeded from user + session + microtime for same-second disambiguation
+		// 5-char hex suffix: seeded from user + session + microtime for same-second disambiguation.
 		$seed   = $user_id . ':' . ( $session_id ?? 0 ) . ':' . microtime( true );
 		$suffix = substr( md5( $seed ), 0, 5 );
 
@@ -297,8 +297,8 @@ class FLOSC_Chatpack {
 		$flosc_hash = self::generate_flosc_hash();
 
 		// Fix 4: Anchor definitions — always present regardless of message number.
-		// These live only in message 1's full chatpack. Conversation history carries
-		// what was *said*, not what the system prompt *instructed*. By message 2 the
+		// These live only in message 1's full chatpack. Conversation history carries.
+		// what was *said*, not what the system prompt *instructed*. By message 2 the.
 		// definitions are gone from authoritative context unless we anchor them here.
 		$anchor_line = 'FLOSC = Freeline, Login, Offer, Sale, Content. (Fixed — never changes.)';
 
@@ -310,12 +310,12 @@ class FLOSC_Chatpack {
 			. $anchor_line;
 
 		// ── FLOW IDENTITY (re-anchored EVERY turn) ──────────
-		// The first message sends the full identity, but follow-ups previously
-		// dropped it and leaned on conversation history to carry the persona. That
-		// holds for logged-in users (server-side memory) but NOT for visitors, whose
-		// browser only replays message TEXT — so by message 2 the persona thinned to
-		// a generic FLOSC voice, i.e. one flow bleeding into another. The identity
-		// section is flow-scoped, so re-sending it on every turn keeps each chatbot
+		// The first message sends the full identity, but follow-ups previously.
+		// dropped it and leaned on conversation history to carry the persona. That.
+		// holds for logged-in users (server-side memory) but NOT for visitors, whose.
+		// browser only replays message TEXT — so by message 2 the persona thinned to.
+		// a generic FLOSC voice, i.e. one flow bleeding into another. The identity.
+		// section is flow-scoped, so re-sending it on every turn keeps each chatbot.
 		// firmly inside its own flow. (Cheap insurance; flow isolation is the point.)
 		$sections[]    = self::build_identity_section( (string) ( $eval_context['flow_id'] ?? '' ) );
 		$followup_flow = (string) ( $eval_context['flow_id'] ?? '' );
@@ -327,8 +327,8 @@ class FLOSC_Chatpack {
 		}
 
 		// ── SESSION CONTINUITY (mandatory) ──────────────────
-		// The session ID owns the conversation; the display surface (full page vs
-		// companion) and any page navigation are just views onto it. Follow-up turns
+		// The session ID owns the conversation; the display surface (full page vs.
+		// companion) and any page navigation are just views onto it. Follow-up turns.
 		// previously carried no continuity discipline, so the model re-greeted,
 		// re-introduced itself, and re-asked language every turn. Anchor it here.
 		$sections[] = "**SESSION CONTINUITY (mandatory):**\n"
@@ -346,7 +346,7 @@ class FLOSC_Chatpack {
 		}
 
 		// ── UPDATED USER STATE ──────────────────────────────
-		// Only include state that could have changed mid-conversation
+		// Only include state that could have changed mid-conversation.
 		$state_updates = array();
 
 		// Quiz just taken?
@@ -376,10 +376,10 @@ class FLOSC_Chatpack {
 		}
 
 		// ── PAGE CONTEXT (must ride EVERY turn) ─────────────
-		// Page awareness + on-demand page body previously lived only in the rules
-		// section, which build_full_chatpack() sends on message #1 only. Visitors chat
-		// first and ask "what is this?" several turns in, so follow-ups lost the page
-		// entirely. Re-anchoring it here keeps the bot aware of the current page on
+		// Page awareness + on-demand page body previously lived only in the rules.
+		// section, which build_full_chatpack() sends on message #1 only. Visitors chat.
+		// first and ask "what is this?" several turns in, so follow-ups lost the page.
+		// entirely. Re-anchoring it here keeps the bot aware of the current page on.
 		// every turn, for visitors, guests, and members alike.
 		$page_context_section = self::build_page_context_section( $eval_context );
 		if ( $page_context_section !== '' ) {
@@ -465,7 +465,7 @@ class FLOSC_Chatpack {
 	}
 
 	// ─────────────────────────────────────────────────────────
-	// SECTION BUILDERS — each builds one piece of the chatpack
+	// SECTION BUILDERS — each builds one piece of the chatpack.
 	// ─────────────────────────────────────────────────────────
 
 	/**
@@ -554,7 +554,7 @@ class FLOSC_Chatpack {
 
 		$section .= "--- EXACT DEFINITIONS (do not paraphrase or invent) ---\n\n";
 
-		// FLOSC definition — spelled out unambiguously
+		// FLOSC definition — spelled out unambiguously.
 		$section .= '**FLOSC** = Freeline, Login, Offer, Sale, Content. Those are the 5 phases. '
 			. 'FLOSC is a white-label WordPress plugin framework. '
 			. "That is ALL it stands for. Do not expand it any other way.\n\n";
@@ -621,8 +621,8 @@ class FLOSC_Chatpack {
 	 * All from WordPress core functions — not configurable (it's factual).
 	 */
 	private static function build_wordpress_section() {
-		// These are WordPress functions — they'll be available at runtime
-		// but we need to guard against CLI/test environments
+		// These are WordPress functions — they'll be available at runtime.
+		// but we need to guard against CLI/test environments.
 		if ( ! function_exists( 'get_bloginfo' ) ) {
 			return '';
 		}
@@ -661,7 +661,7 @@ class FLOSC_Chatpack {
 		$section .= "- Access Level: **{$access_level}**" . ( $is_admin ? ' (floscAdmin)' : '' ) . "\n";
 		$section .= "- Name: {$user_name}\n";
 
-		// Admin-specific details
+		// Admin-specific details.
 		if ( $is_admin && ! empty( $eval_context['user_id'] ) && is_user_logged_in() ) {
 			$user_id    = $eval_context['user_id'];
 			$admin_user = get_userdata( $user_id );
@@ -673,7 +673,7 @@ class FLOSC_Chatpack {
 			$section .= "\n**Admin Note:** Admin users are not funnel participants. They have full access to all phases, lessons, and configuration. Do not treat them as visitors or guide them through the funnel.\n";
 		}
 
-		// Quiz data
+		// Quiz data.
 		$quiz_taken = $eval_context['quiz_taken'] ?? false;
 		if ( $quiz_taken ) {
 			$score    = $eval_context['score'] ?? $eval_context['quiz_score'] ?? '?';
@@ -719,7 +719,7 @@ class FLOSC_Chatpack {
 				}
 			}
 
-			// v8.0.11: IPA pronunciation quiz results from frontend context
+			// v8.0.11: IPA pronunciation quiz results from frontend context.
 			$ipa_score   = $eval_context['ipa_quiz_score'] ?? 0;
 			$ipa_tier    = $eval_context['ipa_quiz_tier'] ?? '';
 			$ipa_weakest = $eval_context['ipa_weakest_sounds'] ?? array();
@@ -744,7 +744,7 @@ class FLOSC_Chatpack {
 			}
 		}
 
-		// Progress & access data
+		// Progress & access data.
 		if ( ! empty( $eval_context['user_id'] ) && is_user_logged_in() ) {
 			$user_id        = $eval_context['user_id'];
 			$bridge_mgr     = FLOSC_Bridge_Data_Manager::instance();
@@ -778,7 +778,7 @@ class FLOSC_Chatpack {
 		$is_admin = $eval_context['is_admin'] ?? false;
 
 		if ( $is_admin ) {
-			// Admin uses backend-determined phase
+			// Admin uses backend-determined phase.
 			if ( function_exists( 'flosc' ) ) {
 				$backend_phase = flosc()->determine_flosc_phase();
 				$section      .= "- Phase: admin (backend: {$backend_phase}, frontend sent: {$phase})\n";
@@ -806,7 +806,7 @@ class FLOSC_Chatpack {
 			$section .= "Choose one or more outcomes that fit the user's current intent and readiness. Do not force outcomes that do not match the conversation.\n";
 		}
 
-		// Phase-specific instructions
+		// Phase-specific instructions.
 		$section .= "\n" . self::get_phase_instructions( $phase, $eval_context, $flow_id );
 
 		// Access-level instructions (floscAdmin-configurable via ai_prompt_{phase})
@@ -863,9 +863,9 @@ class FLOSC_Chatpack {
 		// Knowledge Base files (.md files from ai_configuration_files/)
 		$kb_content = self::load_knowledge_files( $eval_context );
 		if ( $kb_content ) {
-			// Fix 7: Authoritative framing — AI must use these files as source of truth
+			// Fix 7: Authoritative framing — AI must use these files as source of truth.
 			$section .= "## 5c. KNOWLEDGE BASE — AUTHORITATIVE CONTENT\n\n";
-			// Fix 12: Inject ai_context_awareness — FloscAdmin describes what the KB contains
+			// Fix 12: Inject ai_context_awareness — FloscAdmin describes what the KB contains.
 			$context_awareness = flosc_get_setting( 'ai_context_awareness', '' );
 			if ( $context_awareness ) {
 				$section .= $context_awareness . "\n\n";
@@ -915,7 +915,7 @@ class FLOSC_Chatpack {
 			$section .= "- This is the **opening message** — greet the user appropriately\n";
 		}
 
-		// v2.0.7: Conversation-awareness — prevent AI from repeating itself
+		// v2.0.7: Conversation-awareness — prevent AI from repeating itself.
 		$section .= "\n**CONVERSATION AWARENESS (mandatory):**\n";
 		$section .= "- ALWAYS review the conversation history before responding\n";
 		$section .= "- NEVER repeat information you have already told the user in this conversation\n";
@@ -924,7 +924,7 @@ class FLOSC_Chatpack {
 		$section .= "- Vary your language and structure across responses — do not use the same phrasing twice\n";
 		$section .= "- NEVER claim prior output with phrases like 'already shared above', 'as noted above', or similar if that exact text is not verifiably present\n";
 
-		// Page awareness + on-demand page body live in build_page_context_section() so the
+		// Page awareness + on-demand page body live in build_page_context_section() so the.
 		// follow-up chatpack reuses the identical block on EVERY turn (see build_followup_chatpack),
 		// not only on message #1. $page_content is still read here for the grounding branch below.
 		$page_content = trim( (string) ( $eval_context['browsing_page_content'] ?? '' ) );
@@ -933,7 +933,7 @@ class FLOSC_Chatpack {
 			$section .= "\n" . $page_context;
 		}
 
-		// v8.0.10: Anti-hallucination anchor — reinforced at end of prompt for recency bias
+		// v8.0.10: Anti-hallucination anchor — reinforced at end of prompt for recency bias.
 		$section .= "\n**FACTUAL GROUNDING (final reminder):**\n";
 		if ( $page_content !== '' ) {
 			$section .= "- For questions about the current page, the PAGE BODY section above is authoritative\n";
@@ -982,7 +982,7 @@ class FLOSC_Chatpack {
 	}
 
 	// ─────────────────────────────────────────────────────────
-	// HELPER METHODS
+	// HELPER METHODS.
 	// ─────────────────────────────────────────────────────────
 
 	/**

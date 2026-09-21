@@ -46,7 +46,7 @@ class FLOSC_Email {
 		$correct   = $score_data['correct'] ?? array();
 		$incorrect = $score_data['incorrect'] ?? array();
 
-		// Get OTO offer
+		// Get OTO offer.
 		$oto_offer_id = sanitize_text_field( (string) ( $flow_settings['oto_offer_id'] ?? get_option( 'flosc_oto_offer_id', '' ) ) );
 		$oto_offer    = null;
 		$oto_link     = $context['chat_url'] ?: home_url( '/' . get_option( 'flosc_app_slug', 'flosc' ) . '/' );
@@ -58,11 +58,11 @@ class FLOSC_Email {
 			}
 		}
 
-		// Build email
+		// Build email.
 		$subject = (string) ( $flow_settings['email_subject'] ?? get_option( 'flosc_email_subject', "Your {$product_name} Quiz Results: {$score}%" ) );
 		$subject = str_replace( array( '{score}', '{product_name}' ), array( $score, $product_name ), $subject );
 
-		// Email body
+		// Email body.
 		$body_template = (string) ( $flow_settings['email_body'] ?? get_option( 'flosc_email_body', $this->get_default_email_template() ) );
 
 		$correct_list   = ! empty( $correct ) ? implode( ', ', $correct ) : 'None';
@@ -82,14 +82,14 @@ class FLOSC_Email {
 			$body_template
 		);
 
-		// Send
+		// Send.
 		$headers = array_merge(
 			array( 'Content-Type: text/plain; charset=UTF-8' ),
 			$this->get_flosc_mail_headers( $flow_id, (int) $user->ID, false )
 		);
 		wp_mail( $user->user_email, $subject, $body, $headers );
 
-		// Track
+		// Track.
 		do_action( 'flosc_score_email_sent', $user->ID, $score_data );
 	}
 
@@ -442,7 +442,7 @@ class FLOSC_Email {
 			$sent = array();
 		}
 		if ( ! empty( $sent[ $dedup_key ] ) ) {
-			return; // already welcomed for this flow+level
+			return; // already welcomed for this flow+level.
 		}
 
 		$context     = $this->get_guest_email_context( $flow_id, (int) $user_id );
@@ -510,7 +510,7 @@ class FLOSC_Email {
 			return;
 		}
 		if ( get_user_meta( $user_id, 'flosc_newsletter_optin', true ) ) {
-			return; // already subscribed
+			return; // already subscribed.
 		}
 		update_user_meta( $user_id, 'flosc_newsletter_optin', time() );
 		$this->dispatch_newsletter_welcome_email( $user_id, $flow_id );
@@ -566,7 +566,7 @@ class FLOSC_Email {
 		}
 		$anchor_ts = (int) $anchor_ts;
 		if ( $anchor_ts <= 0 ) {
-			return; // follow-ups only start once the welcome has been sent
+			return; // follow-ups only start once the welcome has been sent.
 		}
 
 		$context   = $this->get_guest_email_context( $flow_id, (int) $user->ID );
@@ -595,7 +595,7 @@ class FLOSC_Email {
 				if ( $subject !== '' || $body !== '' ) {
 					$ok = $this->send_email_throttled( $user->user_email, $subject, $body, $this->get_flosc_mail_headers( $flow_id, (int) $user->ID, false ) );
 					if ( $ok === false ) {
-						break; } // per-run send cap reached — resume on the next cron run
+						break; } // per-run send cap reached — resume on the next cron run.
 				}
 				$done[]  = $i;
 				$updated = true;
@@ -615,7 +615,7 @@ class FLOSC_Email {
 	 * Member/newsletter follow-up day offsets are measured from the welcome-email send time.
 	 */
 	public function run_guest_followup_emails() {
-		$this->flosc_email_sent_this_run = 0; // reset per-run rate-limit counter
+		$this->flosc_email_sent_this_run = 0; // reset per-run rate-limit counter.
 		// Guest pass: SSO/email guests (excludes purchased) — existing behavior.
 		$guest_ids = function_exists( 'flosc_get_user_ids_for_meta' )
 			? flosc_get_user_ids_for_meta( '_flosc_sso_linked_providers' )

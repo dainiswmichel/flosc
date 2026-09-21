@@ -20,7 +20,7 @@ class FLOSC_RAG_Chat_Handler {
 
 	public function __construct() {
 		$this->flosc_rag_manager = FLOSC_RAG_Manager::instance();
-		// Access controller will be set when handle_with_state is called
+		// Access controller will be set when handle_with_state is called.
 	}
 
 	/**
@@ -35,16 +35,16 @@ class FLOSC_RAG_Chat_Handler {
 	public function flosc_handle_with_state( $flosc_message, $flosc_user_session, $flosc_session_id = null, $flosc_chatpack_prompt = null, $flosc_conv_history = null ) {
 		$this->flosc_last_billing_meta = array();
 
-		// Set user session and create access controller
+		// Set user session and create access controller.
 		$this->flosc_user_session      = $flosc_user_session;
 		$this->flosc_access_controller = new FLOSC_RAG_Access_Controller( $flosc_user_session );
 
 		// Load conversation history (server-side; populated for logged-in users).
 		$flosc_history = $this->flosc_load_conversation_history( $flosc_user_session, $flosc_session_id );
 
-		// Visitors have no server-side history, so the caller reconstructs it from the
-		// client's localStorage transcript and passes it in. Without this, the session
-		// continuity prompt ("continue the conversation, don't re-greet") has no history
+		// Visitors have no server-side history, so the caller reconstructs it from the.
+		// client's localStorage transcript and passes it in. Without this, the session.
+		// continuity prompt ("continue the conversation, don't re-greet") has no history.
 		// to act on and the model re-greets/repeats on every visitor follow-up.
 		if ( empty( $flosc_history ) && is_array( $flosc_conv_history ) && ! empty( $flosc_conv_history ) ) {
 			$flosc_normalized = array_map(
@@ -57,9 +57,9 @@ class FLOSC_RAG_Chat_Handler {
 				$flosc_conv_history
 			);
 			$flosc_normalized = array_slice( $flosc_normalized, -10 );
-			// Anthropic requires the messages array to begin with a user turn, so drop
-			// any leading assistant messages (e.g. the opening greeting). Preserve text
-			// in the system prompt so the model does not re-greet when history is only
+			// Anthropic requires the messages array to begin with a user turn, so drop.
+			// any leading assistant messages (e.g. the opening greeting). Preserve text.
+			// in the system prompt so the model does not re-greet when history is only.
 			// [opening assistant, current user].
 			$flosc_stripped_openings = array();
 			while ( ! empty( $flosc_normalized ) && $flosc_normalized[0]['role'] !== 'user' ) {
@@ -82,15 +82,15 @@ class FLOSC_RAG_Chat_Handler {
 		}
 
 		// v1.9.2: Use chatpack prompt if provided (includes feedback, praise, KB, WP info)
-		// Falls back to internal builder for backward compatibility
+		// Falls back to internal builder for backward compatibility.
 		$flosc_system_prompt = $flosc_chatpack_prompt
 			? $flosc_chatpack_prompt
 			: $this->flosc_build_system_prompt_from_state( $flosc_user_session );
 
-		// Get AI tools
+		// Get AI tools.
 		$flosc_tools = $this->flosc_rag_manager->get_ai_tools();
 
-		// Execute RAG loop with tools
+		// Execute RAG loop with tools.
 		$flosc_response = $this->flosc_execute_rag_loop(
 			$flosc_message,
 			$flosc_system_prompt,
@@ -104,10 +104,10 @@ class FLOSC_RAG_Chat_Handler {
 			return null;
 		}
 
-		// Store conversation
+		// Store conversation.
 		$this->flosc_store_conversation( $flosc_user_session, $flosc_session_id, $flosc_message, $flosc_response );
 
-		// Get contextual autoprompts
+		// Get contextual autoprompts.
 		$flosc_autoprompts = $this->flosc_get_contextual_autoprompts( $flosc_user_session, $flosc_response );
 
 		return array(
@@ -138,7 +138,7 @@ class FLOSC_RAG_Chat_Handler {
 		$flosc_quiz       = $flosc_state['flosc_quiz'];
 		$flosc_boundaries = $flosc_state['flosc_ivr']['flosc_boundary_rules'];
 
-		// Persona-aware prompt based on user type
+		// Persona-aware prompt based on user type.
 		$flosc_persona_prompts = array(
 			'flosc_admin'   => "🎯 ADMIN MODE: You're speaking with a floscAdmin. Be technical and direct. Discuss configuration, debugging, backend operations.",
 
@@ -160,7 +160,7 @@ class FLOSC_RAG_Chat_Handler {
 		$flosc_prompt .= "Phase: {$flosc_state['flosc_phase']}\n";
 		$flosc_prompt .= "User Type: {$flosc_user_type}\n";
 
-		// Add boundary rules
+		// Add boundary rules.
 		$flosc_prompt .= "\n**YOUR BOUNDARIES:**\n";
 		foreach ( $flosc_boundaries as $flosc_rule => $flosc_value ) {
 			if ( is_bool( $flosc_value ) ) {
@@ -169,7 +169,7 @@ class FLOSC_RAG_Chat_Handler {
 			}
 		}
 
-		// Off-topic handling: only included if floscAdmin configured it
+		// Off-topic handling: only included if floscAdmin configured it.
 		$flosc_topic_scope       = flosc_get_setting( 'ai_topic_scope', '' );
 		$flosc_off_topic_message = flosc_get_setting( 'ai_off_topic_message', '' );
 		$flosc_off_topic_links   = flosc_get_setting( 'ai_off_topic_links', '' );
@@ -209,11 +209,11 @@ class FLOSC_RAG_Chat_Handler {
 			$flosc_session  = $flosc_session_manager->get_flosc_session( $flosc_session_id, $flosc_user_id, $flosc_flow );
 			$flosc_messages = is_array( $flosc_session ) ? ( $flosc_session['messages'] ?? array() ) : array();
 		} else {
-			// Visitor: no persistent chat history
+			// Visitor: no persistent chat history.
 			$flosc_messages = array();
 		}
 
-		// Convert to API format and return last 10 messages
+		// Convert to API format and return last 10 messages.
 		return array_slice(
 			array_map(
 				function ( $flosc_msg ) {
@@ -250,7 +250,7 @@ class FLOSC_RAG_Chat_Handler {
 		$flosc_api_key = function_exists( 'flosc_get_provider_api_key' ) ? flosc_get_provider_api_key( 'anthropic' ) : flosc_get_setting( 'anthropic_api_key', '' );
 
 		if ( empty( $flosc_api_key ) ) {
-			return null; // No key — let handle_chat() fall through to dispatch
+			return null; // No key — let handle_chat() fall through to dispatch.
 		}
 
 		if ( ! class_exists( 'FLOSC_WP_AI_Client' ) || ! FLOSC_WP_AI_Client::is_provider_registered( 'anthropic' ) ) {
@@ -394,7 +394,7 @@ class FLOSC_RAG_Chat_Handler {
 		// Start with IVR's suggestions (max 3)
 		$flosc_prompts = array_slice( $flosc_ivr_prompts, 0, 3 );
 
-		// Add funnel-advancing prompts
+		// Add funnel-advancing prompts.
 		$flosc_funnel_prompts = array(
 			'flosc_visitor' => array(
 				array(
@@ -429,6 +429,6 @@ class FLOSC_RAG_Chat_Handler {
 		);
 
 		$flosc_prompts = array_merge( $flosc_prompts, array_slice( $flosc_funnel_prompts[ $flosc_user_type ] ?? array(), 0, 2 ) );
-		return array_slice( $flosc_prompts, 0, 4 ); // Max 4 pills
+		return array_slice( $flosc_prompts, 0, 4 ); // Max 4 pills.
 	}
 }

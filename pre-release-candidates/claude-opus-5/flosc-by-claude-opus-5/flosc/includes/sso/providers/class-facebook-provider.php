@@ -61,10 +61,10 @@ class Facebook_Provider extends SSO_Provider_Base {
 	 * @return array Modified parameters
 	 */
 	protected function customize_auth_params( $params ) {
-		// Facebook uses comma-separated scopes, not spaces
+		// Facebook uses comma-separated scopes, not spaces.
 		$params['scope'] = implode( ',', $this->scopes );
 
-		// Request re-authorization if needed
+		// Request re-authorization if needed.
 		$params['auth_type'] = 'rerequest';
 
 		return $params;
@@ -78,11 +78,11 @@ class Facebook_Provider extends SSO_Provider_Base {
 	 * @return array|WP_Error User data or error
 	 */
 	public function get_user_info( $access_token, $token_data = array() ) {
-		// Facebook requires explicit field requests
+		// Facebook requires explicit field requests.
 		$fields = 'id,name,first_name,last_name,email,picture.type(large)';
 
 		// v1.4.6: Send appsecret_proof on every Graph API request (BuddyBoss pattern)
-		// This is required when "Require App Secret" is enabled in Facebook App settings
+		// This is required when "Require App Secret" is enabled in Facebook App settings.
 		$appsecret_proof = hash_hmac( 'sha256', $access_token, $this->client_secret );
 
 		$url = add_query_arg(
@@ -130,7 +130,7 @@ class Facebook_Provider extends SSO_Provider_Base {
 		// Pass 8: field-sanitize after provider JSON decode; do not keep raw blob.
 		$avatar = '';
 		if ( isset( $raw_data['picture']['data'] ) && is_array( $raw_data['picture']['data'] ) ) {
-			// Skip default silhouette avatars — only use real profile pictures
+			// Skip default silhouette avatars — only use real profile pictures.
 			if ( isset( $raw_data['picture']['data']['is_silhouette'] ) && ! $raw_data['picture']['data']['is_silhouette'] ) {
 				$avatar = esc_url_raw( (string) ( $raw_data['picture']['data']['url'] ?? '' ) );
 			}
@@ -145,7 +145,7 @@ class Facebook_Provider extends SSO_Provider_Base {
 		return array(
 			'provider_id'    => sanitize_text_field( (string) ( $raw_data['id'] ?? '' ) ),
 			'email'          => $email,
-			'email_verified' => $email !== '', // Facebook only returns verified emails
+			'email_verified' => $email !== '', // Facebook only returns verified emails.
 			'name'           => sanitize_text_field( (string) ( $raw_data['name'] ?? '' ) ),
 			'first_name'     => sanitize_text_field( $first ),
 			'last_name'      => sanitize_text_field( $last ),
@@ -234,14 +234,14 @@ class Facebook_Provider extends SSO_Provider_Base {
 	 * @return array|WP_Error Token data or error
 	 */
 	public function exchange_code_for_token( $code, $redirect_uri ) {
-		// Standard token exchange first
+		// Standard token exchange first.
 		$token_data = parent::exchange_code_for_token( $code, $redirect_uri );
 
 		if ( is_wp_error( $token_data ) ) {
 			return $token_data;
 		}
 
-		// Add created timestamp
+		// Add created timestamp.
 		$token_data['created'] = time();
 
 		// Try to get long-lived token if current one expires soon (< 2 hours)
@@ -263,7 +263,7 @@ class Facebook_Provider extends SSO_Provider_Base {
 	 * @return array|WP_Error Long-lived token data or error
 	 */
 	private function request_long_lived_token( $short_lived_token ) {
-		// v1.4.6: Use add_query_arg, NOT wp_remote_get body — GET request bodies are ignored by Facebook
+		// v1.4.6: Use add_query_arg, NOT wp_remote_get body — GET request bodies are ignored by Facebook.
 		$url = add_query_arg(
 			array(
 				'grant_type'        => 'fb_exchange_token',
@@ -331,7 +331,7 @@ class Facebook_Provider extends SSO_Provider_Base {
 			return new \WP_Error( 'invalid_token', 'Facebook access token is invalid' );
 		}
 
-		// Verify app_id matches
+		// Verify app_id matches.
 		if ( isset( $body['data']['app_id'] ) && $body['data']['app_id'] !== $this->client_id ) {
 			return new \WP_Error( 'app_mismatch', 'Token belongs to a different app' );
 		}

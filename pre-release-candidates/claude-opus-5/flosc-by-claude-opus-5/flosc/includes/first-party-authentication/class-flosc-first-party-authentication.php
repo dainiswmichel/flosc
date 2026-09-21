@@ -66,7 +66,7 @@ class FLOSC_First_Party_Authentication {
 		if ( ! empty( $this->flosc->flosc_skip_registration_token_grants ) ) {
 			return;
 		}
-		// Grant signup bonus tokens + flow-specific guest token baseline
+		// Grant signup bonus tokens + flow-specific guest token baseline.
 		$token_provider = $this->get_token_provider();
 		if ( $token_provider && method_exists( $token_provider, 'grant_signup_bonus' ) ) {
 			$token_provider->grant_signup_bonus( $user_id );
@@ -82,7 +82,7 @@ class FLOSC_First_Party_Authentication {
 			$this->flosc->flosc_ensure_guest_token_baseline( $user_id, $token_provider, $flow_id, 'Guest registration baseline' );
 		}
 
-		// Check for referrer
+		// Check for referrer.
 		$referrer = isset( $_COOKIE['flosc_referrer'] ) ? sanitize_text_field( wp_unslash( $_COOKIE['flosc_referrer'] ) ) : null;
 		if ( $referrer && preg_match( '/^REF(\d+)$/', $referrer, $matches ) ) {
 			$referrer_id = intval( $matches[1] );
@@ -91,10 +91,10 @@ class FLOSC_First_Party_Authentication {
 			}
 		}
 
-		// v8.0.5: Audio scoring is NOT done here. This hook fires for ALL registration
+		// v8.0.5: Audio scoring is NOT done here. This hook fires for ALL registration.
 		// methods (email, SSO, WP form) and has no reliable access to the temp_id.
 		// Instead, scoring is called DIRECTLY by the function that has the temp_id:
-		// - Email registration: handle_email_registration() calls score_visitor_audio() directly
+		// - Email registration: handle_email_registration() calls score_visitor_audio() directly.
 		// - SSO registration: handle_user_login() reads the browser cookie (reliable for SSO)
 		// This hook handles signup bonus + referral only.
 	}
@@ -114,7 +114,7 @@ class FLOSC_First_Party_Authentication {
 			$this->flosc->flosc_ensure_guest_token_baseline( $user->ID, $token_provider, $flow_id, 'Guest login baseline' );
 		}
 
-		// v07.09: Set justLoggedIn flag for IVR
+		// v07.09: Set justLoggedIn flag for IVR.
 		set_transient( 'flosc_just_logged_in_' . $user->ID, true, MINUTE_IN_SECONDS * 5 );
 
 		// Restore browser-computed quiz data stashed before SSO redirect.
@@ -128,14 +128,14 @@ class FLOSC_First_Party_Authentication {
 		// If WP-Cron is delayed, process welcome/follow-up checks when an SSO user logs in.
 		$this->flosc->maybe_run_sso_email_sequence_for_user( $user->ID );
 
-		// v9.4.2: Check for pre-login score in SIGNED cookie
+		// v9.4.2: Check for pre-login score in SIGNED cookie.
 		$score_data = $this->flosc->get_signed_cookie( 'flosc_prelogin_score' );
 
-		// v8.0.5: Score visitor audio on login — covers SSO path (Google/Facebook) where
+		// v8.0.5: Score visitor audio on login — covers SSO path (Google/Facebook) where.
 		// the browser sends the visitor_temp_id cookie set during audio recording.
 		// Email registration scoring is handled directly in handle_email_registration().
 		// Don't re-score server-side (times out on shared hosting).
-		// Instead, store temp_id in user meta and let JS send browser-computed
+		// Instead, store temp_id in user meta and let JS send browser-computed.
 		// results via /store-quiz-data after the page reloads.
 		$temp_id = $this->flosc->get_signed_cookie( 'flosc_visitor_temp_id' );
 		if ( $temp_id && is_string( $temp_id ) ) {
@@ -175,7 +175,7 @@ class FLOSC_First_Party_Authentication {
 					'incorrect' => $incorrect,
 					'timestamp' => isset( $raw['completed_at'] ) ? intval( $raw['completed_at'] / 1000 ) : time(),
 				);
-				// Clear the fallback cookie
+				// Clear the fallback cookie.
 				setcookie(
 					'flosc_quiz_result',
 					'',
@@ -189,16 +189,16 @@ class FLOSC_First_Party_Authentication {
 		}
 
 		if ( $score_data && isset( $score_data['score'] ) ) {
-			// v8.0.3: Store score with quiz_id tracking
+			// v8.0.3: Store score with quiz_id tracking.
 			$this->flosc->store_quiz_score( $user->ID, $score_data );
 
-			// v1.8.2: Fire flosc_quiz_completed so Free Lesson Manager assigns lessons
+			// v1.8.2: Fire flosc_quiz_completed so Free Lesson Manager assigns lessons.
 			do_action( 'flosc_quiz_completed', $score_data, $user->ID );
 
-			// v07.09: Set justCompletedQuiz flag for IVR
+			// v07.09: Set justCompletedQuiz flag for IVR.
 			set_transient( 'flosc_just_completed_quiz_' . $user->ID, true, MINUTE_IN_SECONDS * 5 );
 
-			// Send email with score and OTO
+			// Send email with score and OTO.
 			$this->flosc->send_score_email( $user, $score_data );
 
 			// Clear the cookie (v1.0.7: use array syntax)
@@ -224,12 +224,12 @@ class FLOSC_First_Party_Authentication {
 	 */
 	public function handle_login_redirect( $redirect_to, $requested_redirect_to, $user ) {
 		$app_slug = get_option( 'flosc_app_slug', 'flosc' );
-		// v1.4.9: Use flow-aware URL so custom domains redirect correctly
+		// v1.4.9: Use flow-aware URL so custom domains redirect correctly.
 		$app_url = $this->flosc->get_app_url();
 		// v1.9.8: FloscAdmin-configured destination URL (empty = use app_url)
-		// v10.0.0: Per-flow login_destination is resolved first; global
+		// v10.0.0: Per-flow login_destination is resolved first; global.
 		// flosc_login_destination remains the fallback via get_setting().
-		// Slice 2: explicit login_destination wins first; then multi-flow
+		// Slice 2: explicit login_destination wins first; then multi-flow.
 		// routing per login_destination_mode; else single-flow app URL.
 		$explicit_dest = flosc_get_setting( 'login_destination', '' );
 		if ( $explicit_dest !== '' ) {
@@ -237,8 +237,8 @@ class FLOSC_First_Party_Authentication {
 		} else {
 			$dest_user_id = ( $user instanceof WP_User ) ? (int) $user->ID : 0;
 			$flow_count   = 0;
-			// is_callable() is visibility-aware: the builder is private, so a
-			// cross-class call is intentionally skipped (no fatal) until the
+			// is_callable() is visibility-aware: the builder is private, so a.
+			// cross-class call is intentionally skipped (no fatal) until the.
 			// method becomes callable. Multi-flow routing stays inert meanwhile.
 			if ( $dest_user_id > 0 && is_callable( array( $this->flosc, 'flosc_build_user_flow_statuses' ) ) ) {
 				$rows       = $this->flosc->flosc_build_user_flow_statuses( $dest_user_id );
@@ -261,12 +261,12 @@ class FLOSC_First_Party_Authentication {
 			}
 		}
 
-		// Check 1: If requested redirect is already to FLOSC app, allow it
+		// Check 1: If requested redirect is already to FLOSC app, allow it.
 		if ( ! empty( $requested_redirect_to ) && strpos( $requested_redirect_to, '/' . $app_slug ) !== false ) {
 			return $requested_redirect_to;
 		}
 
-		// v1.4.9: Also check if requested redirect is to a custom domain flow
+		// v1.4.9: Also check if requested redirect is to a custom domain flow.
 		if ( ! empty( $requested_redirect_to ) ) {
 			$flows = get_option( 'flosc_flows', array() );
 			foreach ( $flows as $flow ) {
@@ -276,20 +276,20 @@ class FLOSC_First_Party_Authentication {
 			}
 		}
 
-		// Check 2: If user has a pre-login quiz score cookie, redirect to configured destination
+		// Check 2: If user has a pre-login quiz score cookie, redirect to configured destination.
 		$score_data = $this->flosc->get_signed_cookie( 'flosc_prelogin_score' );
 		if ( $score_data && isset( $score_data['score'] ) ) {
 			return $dest_url;
 		}
 
-		// Check 3: If referrer was the FLOSC app, redirect to configured destination
+		// Check 3: If referrer was the FLOSC app, redirect to configured destination.
 		$referer = wp_get_referer();
 		if ( $referer ) {
-			// Check slug-based URL
+			// Check slug-based URL.
 			if ( strpos( $referer, '/' . $app_slug ) !== false ) {
 				return $dest_url;
 			}
-			// v1.4.9: Check custom domain referrers
+			// v1.4.9: Check custom domain referrers.
 			$referer_host = wp_parse_url( $referer, PHP_URL_HOST );
 			if ( $referer_host ) {
 				$current_flow = $this->flosc->get_current_flow();
@@ -302,8 +302,8 @@ class FLOSC_First_Party_Authentication {
 			}
 		}
 
-		// Otherwise, respect WordPress's default redirect behavior
-		// This allows normal WordPress posts/pages to work properly
+		// Otherwise, respect WordPress's default redirect behavior.
+		// This allows normal WordPress posts/pages to work properly.
 		return $redirect_to;
 	}
 
@@ -315,13 +315,13 @@ class FLOSC_First_Party_Authentication {
 	public function handle_woocommerce_login_redirect( $redirect, $user ) {
 		$app_slug = get_option( 'flosc_app_slug', 'flosc' );
 
-		// Only redirect if referrer was FLOSC app
+		// Only redirect if referrer was FLOSC app.
 		$referer = wp_get_referer();
 		if ( $referer && strpos( $referer, '/' . $app_slug ) !== false ) {
 			return $this->flosc->get_app_url();
 		}
 
-		// Otherwise, let WooCommerce handle it normally
+		// Otherwise, let WooCommerce handle it normally.
 		return $redirect;
 	}
 
@@ -346,25 +346,25 @@ class FLOSC_First_Party_Authentication {
 			return $url;
 		}
 
-		// Never break the password-reset surface. WP's lost-password screen is a
+		// Never break the password-reset surface. WP's lost-password screen is a.
 		// distinct surface; we only take over the SIGN-IN entry point, not recovery.
 		if ( defined( 'WP_CLI' ) && WP_CLI ) {
 			return $url;
 		}
 
-		// Keep a direct escape hatch for admins who must hit wp-login.php
+		// Keep a direct escape hatch for admins who must hit wp-login.php.
 		// (e.g. an expired interactive session forces a deliberate re-auth).
 		// FLOSC's own auth still works for those users via the normal login path,
-		// but we must not loop the admin back into a modal that can't complete
+		// but we must not loop the admin back into a modal that can't complete.
 		// a re-login from a non-FLOSC-context screen.
 		$in_admin = ( is_admin() && ! wp_doing_ajax() ) || ( function_exists( 'wp_get_referer' ) && strpos( (string) wp_get_referer(), '/wp-admin/' ) !== false );
 		if ( $in_admin || $force_reauth ) {
 			return $url;
 		}
 
-		// Open the FLOSC Register/Log-in modal IN PLACE (email + SSO) rather than
-		// navigating the user away to the full-page app. We point at the current
-		// front-end page URL with ?flosc_open_login=1, which flosc-app.js consumes
+		// Open the FLOSC Register/Log-in modal IN PLACE (email + SSO) rather than.
+		// navigating the user away to the full-page app. We point at the current.
+		// front-end page URL with ?flosc_open_login=1, which flosc-app.js consumes.
 		// to auto-open the combined auth modal without a cross-page jump.
 		return add_query_arg( 'flosc_open_login', '1', $this->get_front_current_url() );
 	}
@@ -434,18 +434,18 @@ class FLOSC_First_Party_Authentication {
 		$user_id                            = intval( $user_id );
 		$expiry                             = intval( $expiry );
 
-		// Check expiry
+		// Check expiry.
 		if ( time() > $expiry ) {
 			return false;
 		}
 
-		// Verify HMAC signature
+		// Verify HMAC signature.
 		$expected = hash_hmac( 'sha256', $user_id . ':' . $expiry, flosc_token_secret() );
 		if ( ! hash_equals( $expected, $signature ) ) {
 			return false;
 		}
 
-		// Verify user exists
+		// Verify user exists.
 		$user = get_userdata( $user_id );
 		if ( ! $user || ! $user->exists() ) {
 			return false;
@@ -506,8 +506,8 @@ class FLOSC_First_Party_Authentication {
 			$token = sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FLOSC_TOKEN'] ) );
 		}
 
-		// Fall back to the cookie for page loads. REST requests must present
-		// the explicit X-FLOSC-Token header so a browser cookie does not
+		// Fall back to the cookie for page loads. REST requests must present.
+		// the explicit X-FLOSC-Token header so a browser cookie does not.
 		// silently become a REST authentication credential.
 		$is_rest_request = defined( 'REST_REQUEST' ) && REST_REQUEST;
 		if ( ! $is_rest_request && empty( $token ) && ! empty( $_COOKIE['flosc_auth_token'] ) ) {
@@ -520,7 +520,7 @@ class FLOSC_First_Party_Authentication {
 
 		$validated_user_id = $this->validate_flosc_auth_token( $token );
 		if ( $validated_user_id ) {
-			// Set flag so allow_flosc_token_auth() can bypass WordPress nonce check
+			// Set flag so allow_flosc_token_auth() can bypass WordPress nonce check.
 			$this->flosc_token_auth_used = true;
 
 			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
@@ -638,7 +638,7 @@ class FLOSC_First_Party_Authentication {
 			)
 		);
 
-		// v10.0.0: Entry-flow recall is single-session state; wipe it on logout so
+		// v10.0.0: Entry-flow recall is single-session state; wipe it on logout so.
 		// a later login starts a fresh entry-flow journey.
 		setcookie(
 			'flosc_entry_flow',
@@ -671,12 +671,12 @@ class FLOSC_First_Party_Authentication {
 	 * @return WP_Error|null|true Modified auth result
 	 */
 	public function allow_flosc_token_auth( $result ) {
-		// Don't override existing errors from other auth systems
+		// Don't override existing errors from other auth systems.
 		if ( is_wp_error( $result ) ) {
 			return $result;
 		}
 
-		// Limit the nonce short-circuit to FLOSC REST routes. A FLOSC token
+		// Limit the nonce short-circuit to FLOSC REST routes. A FLOSC token.
 		// must not alter authentication for unrelated WordPress endpoints.
 		if ( ! $this->is_flosc_rest_request() ) {
 			return $result;

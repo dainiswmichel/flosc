@@ -284,7 +284,7 @@ class FLOSC_Session_Manager {
 			if ( (int) ( $session['id'] ?? 0 ) !== (int) $session_id ) {
 				continue;
 			}
-			// Keep the existing session even when the destination floscDomain/flow
+			// Keep the existing session even when the destination floscDomain/flow.
 			// differs. Sidebar listing stays flow-filtered; this append is the live journey.
 			if ( empty( $session['flow_id'] ) && $stem !== '' ) {
 				$session['flow_id'] = $stem;
@@ -354,9 +354,9 @@ class FLOSC_Session_Manager {
 						return true;
 					}
 					if ( ! $this->session_belongs_to_flow( $s, $stem, $user_id ) ) {
-						return true; // wrong flow — do not delete
+						return true; // wrong flow — do not delete.
 					}
-					return false; // drop matching session
+					return false; // drop matching session.
 				}
 			)
 		);

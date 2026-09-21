@@ -52,7 +52,7 @@ class FLOSC_Lessons_Table {
 
 		$charset_collate = $wpdb->get_charset_collate();
 
-		// Use utf8mb4 explicitly for IPA characters
+		// Use utf8mb4 explicitly for IPA characters.
 		if ( empty( $charset_collate ) ) {
 			$charset_collate = 'DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci';
 		}

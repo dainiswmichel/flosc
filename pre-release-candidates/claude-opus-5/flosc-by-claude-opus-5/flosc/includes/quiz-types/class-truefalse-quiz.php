@@ -61,7 +61,7 @@ class FLOSC_TrueFalse_Quiz extends FLOSC_Abstract_Quiz_Type {
 	}
 
 	public function analyze( $input, $expected_content, $context = array() ) {
-		// Parse questions
+		// Parse questions.
 		$questions = $this->parse_questions( $expected_content );
 
 		// Parse answers (can be "T,F,T" or "True,False,True")
@@ -75,7 +75,7 @@ class FLOSC_TrueFalse_Quiz extends FLOSC_Abstract_Quiz_Type {
 			$correct_answer = strtolower( $question['answer'] );
 			$user_answer    = isset( $user_answers[ $index ] ) ? strtolower( $user_answers[ $index ] ) : '';
 
-			// Normalize
+			// Normalize.
 			$correct_answer = $this->normalize_answer( $correct_answer );
 			$user_answer    = $this->normalize_answer( $user_answer );
 
@@ -156,14 +156,14 @@ class FLOSC_TrueFalse_Quiz extends FLOSC_Abstract_Quiz_Type {
 			for ( $i = 2; $i < count( $parts ); $i++ ) {
 				$seg = trim( $parts[ $i ] );
 				if ( stripos( $seg, 'correctcontent:' ) === 0 ) {
-					// Appends — multiple |CorrectContent: segments are all tier-1
+					// Appends — multiple |CorrectContent: segments are all tier-1.
 					foreach ( array_map( 'trim', explode( ',', trim( substr( $seg, strlen( 'correctcontent:' ) ) ) ) ) as $r ) {
 						if ( $r !== '' ) {
 							$correct_content[] = $r;
 						}
 					}
 				} elseif ( stripos( $seg, 'relatedcontent:' ) === 0 ) {
-					// Appends — multiple |RelatedContent: pipe segments are cumulative
+					// Appends — multiple |RelatedContent: pipe segments are cumulative.
 					foreach ( array_map( 'trim', explode( ',', trim( substr( $seg, strlen( 'relatedcontent:' ) ) ) ) ) as $r ) {
 						if ( $r !== '' ) {
 							$related_content[] = $r;
@@ -191,11 +191,11 @@ class FLOSC_TrueFalse_Quiz extends FLOSC_Abstract_Quiz_Type {
 	 * Accepts: "T,F,T" or "True,False,True" or "true\nfalse\ntrue"
 	 */
 	private function parse_user_answers( $input ) {
-		// Try comma-separated first
+		// Try comma-separated first.
 		if ( strpos( $input, ',' ) !== false ) {
 			$answers = explode( ',', $input );
 		} else {
-			// Try newline-separated
+			// Try newline-separated.
 			$answers = explode( "\n", $input );
 		}
 
