@@ -1,5 +1,5 @@
 {
-  "candidate": "v90",
+  "candidate": "v90.1",
   "agent": "Claude Opus 5",
   "slug": "claude-opus-5",
   "base": {
@@ -38,11 +38,11 @@
   },
   "measurements": {
     "method": "PHPCS 3.13.6 + WPCS 3.4.0. Security figures are measured with every phpcs:ignore/disable directive in the tree switched off, so a suppression cannot flatter the number. Style totals use a ruleset mirroring the candidate's own phpcs.xml.dist minus PHPCompatibilityWP, which is not installed in the measuring container - so these totals are comparable between candidates but are not the same number the release gate prints.",
-    "security_errors_suppressions_disabled": { "v89.1_base": 12, "v90": 0 },
-    "security_warnings_suppressions_disabled": { "v89.1_base": 145, "v90": 139 },
-    "wpcs_total_project_ruleset": { "v89.1_base": "7094 errors / 511 warnings", "v90": "7094 errors / 511 warnings" },
-    "phpcbf_fixable": { "v89.1_base": 960, "v90": 960 },
-    "suppression_directives": { "v89.1_base": 103, "v90": 89 },
+    "security_errors_suppressions_disabled": { "v89.1_base": 12, "v90.1": 0 },
+    "security_warnings_suppressions_disabled": { "v89.1_base": 145, "v90.1": 139 },
+    "wpcs_total_project_ruleset": { "v89.1_base": "7094 errors / 511 warnings", "v90.1": "7094 errors / 511 warnings" },
+    "phpcbf_fixable": { "v89.1_base": 960, "v90.1": 960 },
+    "suppression_directives": { "v89.1_base": 103, "v90.1": 89 },
     "php_lint": "139/139 files clean on PHP 8.4.19"
   },
   "not_verified": [

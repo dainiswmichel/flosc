@@ -1,10 +1,24 @@
-# Home run candidate v90 — Claude Opus 5
+# Home run candidate v90.1 — Claude Opus 5
 
 Base: **v89.1** (`5f5c094`, dwm-local). v89.2 (`84f26d0`, GPT-5.6-sol) is a
 byte-identical tree and an identical zip, so either is the same starting point.
 
 Scope of this candidate: **the security errors, and nothing else.** No formatting
 pass, no file moves, no version bump. Plugin version stays 8.0.0.
+
+This candidate is **v90.1**. It landed across four commits rather than one, and
+they are kept separate on purpose — each records a distinct finding, and the
+point of this candidate is that its claims can be checked:
+
+| commit | what it found |
+|---|---|
+| `d3d2aa7` v90 | 13 WPCS security errors the base tree reported as 0 |
+| `a7af32d` v90.1 | the 2 errors WordPress.org actually blocks on, in `uninstall.php` |
+| `b9665d3` v90.2 | stale v86 `readme.md`/`sha256sums` shadowing the real ones on macOS |
+| `77416d8` v90.3 | lowercase filenames |
+
+`.2` and `.3` changed no source file. The shipped code is what `a7af32d` left,
+which is why the candidate is numbered v90.1 rather than v90.3.
 
 ---
 
@@ -31,7 +45,7 @@ Measured that way, the base tree had **12 errors and 145 warnings**, not 0.
 
 PHPCS 3.13.6 + WPCS 3.4.0, both trees, identical rulesets and identical method.
 
-| | v89.1 base | v90 |
+| | v89.1 base | v90.1 |
 |---|---|---|
 | Security errors, suppressions switched off | **12** | **0** |
 | Security warnings, suppressions switched off | 145 | 139 |
