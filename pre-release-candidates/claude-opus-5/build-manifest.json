@@ -14,8 +14,8 @@
     "zip": "pre-release-candidates/claude-opus-5/flosc.zip"
   },
   "artifact": {
-    "sha256": "66e769ea8a0ea5e53e6b64db57151dc760be437ff9e7dd23351122e03bca0993",
-    "size_bytes": 2128593,
+    "sha256": "6a7696b1c58074e6370232404d6285f0fc5aa05d75a0bcc0a743b271db5b3334",
+    "size_bytes": 2128809,
     "entries": 240,
     "root": "flosc/",
     "plugin_version": "8.0.0",
@@ -33,16 +33,16 @@
       "includes/flosc-admin.php - maybe_process_flosc_settings_post() verifies the nonce each branch's form emitted before routing, and gates on edit_others_posts (the capability the FLOSC menu itself registers).",
       "phpcs.xml.dist - declares the two project sanitizers via customSanitizingFunctions so the sniff credits them by name."
     ],
-    "suppressions_removed": 11,
+    "suppressions_removed": 14,
     "suppressions_added": 0
   },
   "measurements": {
-    "method": "PHPCS 3.13.6 + WPCS 3.4.0. Security figures are measured with every phpcs:ignore/disable directive in the tree neutered, so a suppression cannot flatter the number. Style totals use a ruleset mirroring the candidate's own phpcs.xml.dist minus PHPCompatibilityWP, which is not installed in the measuring container - so these totals are comparable between candidates but are not the same number the release gate prints.",
-    "security_errors_suppressions_neutered": { "v89.1_base": 12, "v90": 0 },
-    "security_warnings_suppressions_neutered": { "v89.1_base": 145, "v90": 139 },
+    "method": "PHPCS 3.13.6 + WPCS 3.4.0. Security figures are measured with every phpcs:ignore/disable directive in the tree switched off, so a suppression cannot flatter the number. Style totals use a ruleset mirroring the candidate's own phpcs.xml.dist minus PHPCompatibilityWP, which is not installed in the measuring container - so these totals are comparable between candidates but are not the same number the release gate prints.",
+    "security_errors_suppressions_disabled": { "v89.1_base": 12, "v90": 0 },
+    "security_warnings_suppressions_disabled": { "v89.1_base": 145, "v90": 139 },
     "wpcs_total_project_ruleset": { "v89.1_base": "7094 errors / 511 warnings", "v90": "7094 errors / 511 warnings" },
     "phpcbf_fixable": { "v89.1_base": 960, "v90": 960 },
-    "suppression_directives": { "v89.1_base": 103, "v90": 92 },
+    "suppression_directives": { "v89.1_base": 103, "v90": 89 },
     "php_lint": "139/139 files clean on PHP 8.4.19"
   },
   "not_verified": [

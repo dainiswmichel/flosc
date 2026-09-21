@@ -16,7 +16,7 @@ suppression annotations: the base tree carries **103 `phpcs:ignore` /
 `WordPress.DB.*` sniff.** A suppressed finding is not a repaired one.
 
 Every security figure below is therefore measured **with every directive in the
-tree neutered**, so no annotation can flatter the result:
+tree switched off**, so no annotation can flatter the result:
 
 ```
 grep -rl "phpcs:ignore\|phpcs:disable\|phpcs:enable" --include="*.php" . \
@@ -33,17 +33,29 @@ PHPCS 3.13.6 + WPCS 3.4.0, both trees, identical rulesets and identical method.
 
 | | v89.1 base | v90 |
 |---|---|---|
-| Security errors, suppressions neutered | **12** | **0** |
-| Security warnings, suppressions neutered | 145 | 139 |
+| Security errors, suppressions switched off | **12** | **0** |
+| Security warnings, suppressions switched off | 145 | 139 |
 | WPCS total, project ruleset | 7094 errors / 511 warnings | 7094 errors / 511 warnings |
 | phpcbf fixable | 960 | 960 |
-| Suppression directives in tree | 103 | 92 |
+| Suppression directives in tree | 103 | 89 |
 | `php -l` | 139/139 clean | 139/139 clean |
+| **Plugin Check ruleset, on the shipped zip** | **2 errors / 69 warnings** | **0 errors / 69 warnings** |
+
+That last row is the one WordPress.org actually enforces. It is the official
+ruleset from `WordPress/plugin-check`
+(`phpcs-rulesets/plugin-check.ruleset.xml`), run against the contents of the
+built zip rather than the source tree.
+
+Worth knowing how different it is from WPCS: Plugin Check downgrades
+`NonceVerification` and `ValidatedSanitizedInput` to **warnings**, and promotes
+`WordPress.WP.AlternativeFunctions` to **error**. So the thirteen WPCS errors
+repaired above were never the blocking ones — and the two that *were* blocking
+sat in `uninstall.php` behind annotations, in every candidate, unnoticed.
 
 The style totals being identical is the point: the 13 error sites were repaired
 without adding a single new style violation.
 
-Eleven suppressions were removed and **none were added**.
+Fourteen suppressions were removed and **none were added**.
 
 ### Reproducing the security number
 
@@ -51,7 +63,7 @@ Eleven suppressions were removed and **none were added**.
 php phpcs.phar -d memory_limit=2G --standard=<ruleset> --report=summary .
 ```
 
-against a copy of the tree with the directives neutered as above. The ruleset is
+against a copy of the tree with the directives switched off as above. The ruleset is
 `WordPress.Security.{NonceVerification,ValidatedSanitizedInput,EscapeOutput,
 SafeRedirect,PluginMenuSlug}`, `WordPress.DB.{PreparedSQL,DirectDatabaseQuery}`,
 `WordPress.WP.GlobalVariablesOverride`, `WordPress.PHP.NoSilencedErrors` — the
@@ -145,15 +157,39 @@ downstream checks were already silent on failure.
 
 ---
 
+**6. `uninstall.php` — the two actual WordPress.org blockers**
+
+Found by running the official Plugin Check ruleset rather than WPCS. Two raw
+filesystem calls, both masked by annotations, both **errors** under the ruleset
+the directory enforces:
+
+| line | call | sniff |
+|---|---|---|
+| 157 | `@unlink( $path )` | `WordPress.WP.AlternativeFunctions.unlink_unlink` |
+| 161 | `@rmdir( $dir )` | `AlternativeFunctions.file_system_operations_rmdir` |
+
+`flosc_uninstall_rm_rf()` now works entirely through `WP_Filesystem` and
+`wp_delete_file()`. The recursive `rmdir( $dir, true )` runs first; if it fails,
+the fallback walks the tree with `dirlist()` instead of `scandir()`, removes
+files with `wp_delete_file()` and directories with `$wp_filesystem->rmdir()`.
+No `unlink`, no `rmdir`, no `scandir`, no `@`. Three suppressions removed.
+
+If `WP_Filesystem` is unavailable the function now returns without deleting,
+rather than reaching for raw calls. Options, user meta, post meta and the custom
+tables are already gone at that point; an upload directory surviving on a host
+with no filesystem API is the correct trade against an error that blocks review.
+
+---
+
 ## What is NOT verified
 
 - **No WordPress runtime was available.** Activation, the admin screens, and the
   FLOSC journeys are untested. Every claim above is static.
-- **Official Plugin Check has not been run** against this zip.
+- **Plugin Check's PHPCS half has been run** against the shipped zip (0 errors). Its runtime checks — activation, enqueue behaviour, readme and header validation — need a booting WordPress and have NOT been run.
 - **PHPCompatibilityWP was not installed**, so `testVersion 7.4-` did not run
   here. The project ruleset totals above exclude it and are therefore not the
   number the release gate prints.
-- The **139 remaining warnings** and the **92 remaining suppressions** were not
+- The **139 remaining warnings** and the **89 remaining suppressions** were not
   touched. Most are `DirectDatabaseQuery.NoCaching` and
   `NonceVerification.Recommended` on read-only admin routing. They are the next
   piece of work, not a claim of cleanliness.
@@ -168,8 +204,8 @@ anyone calls it submittable.
 
 ```
 flosc.zip
-  sha256  66e769ea8a0ea5e53e6b64db57151dc760be437ff9e7dd23351122e03bca0993
-  bytes   2128593
+  sha256  6a7696b1c58074e6370232404d6285f0fc5aa05d75a0bcc0a743b271db5b3334
+  bytes   2128809
   entries 240
   root    flosc/
 ```
