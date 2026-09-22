@@ -1032,23 +1032,18 @@ class FLOSC_Site_Content_Index {
 		}
 
 		/*
-		 * 200 is a deliberate ceiling, and unlike the admin pickers elsewhere it
-		 * is a real limit rather than a generous one: this is the Site Index
-		 * overview, and a site with more than 200 posts carrying a _flosc_vgm
-		 * rule sees the first 200 by post order and no indication that there are
-		 * more. Raising it trades a truncated overview for a slower admin page;
-		 * paginating it is the proper answer and is not done here.
-		 *
-		 * WPCS warns above 100. no_found_rows is set because nothing counts the
-		 * total, which is also why the truncation is invisible.
+		 * This used to ask for 200 in one query, with a comment saying that a
+		 * site with more than 200 posts carrying a _flosc_vgm rule saw the first
+		 * 200 and no indication there were more, and that paginating it was the
+		 * proper answer and was not being done. It is done now:
+		 * flosc_get_posts_all() pages through in hundreds, so the Site Index
+		 * overview lists every rule rather than the first 200 of them.
 		 */
-		$posts = get_posts(
+		$posts = flosc_get_posts_all(
 			array(
-				'post_type'      => 'any',
-				'post_status'    => 'any',
-				'posts_per_page' => 200,
-				'meta_key'       => '_flosc_vgm', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- admin overview, runs once per page load
-				'no_found_rows'  => true,
+				'post_type'   => 'any',
+				'post_status' => 'any',
+				'meta_key'    => '_flosc_vgm', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- admin overview, runs once per page load
 			)
 		);
 		foreach ( (array) $posts as $post ) {

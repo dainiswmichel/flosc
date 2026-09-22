@@ -95,6 +95,7 @@ if ( ! function_exists( 'flosc_log' ) ) {
 require_once FLOSC_PLUGIN_DIR . 'includes/filesystem/class-flosc-filesystem.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/filesystem/flosc-data-paths.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-request.php';
+require_once FLOSC_PLUGIN_DIR . 'includes/flosc-post-queries.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-accessors.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-available-providers.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-wp-ai-client.php';

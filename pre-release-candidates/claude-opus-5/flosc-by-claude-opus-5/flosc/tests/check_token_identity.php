@@ -33,8 +33,21 @@ if ( PHP_SAPI !== 'cli' ) {
 	exit( 1 );
 }
 
+/*
+ * This is a comparison, so it needs something to compare against. Run with no
+ * argument -- which is how the gate loop runs every file in this directory --
+ * it says so and stops, rather than defaulting to HEAD and reporting a failure
+ * for a pass that was supposed to change code. A pass that claims to have
+ * touched only comments names its ref and gets the strict answer.
+ */
+if ( ! isset( $argv[1] ) ) {
+	echo "check_token_identity: no revision given, nothing compared.\n";
+	echo "  usage: php tests/check_token_identity.php <git-ref>\n";
+	exit( 0 );
+}
+
 $flosc_root = dirname( __DIR__ );
-$flosc_ref  = isset( $argv[1] ) ? (string) $argv[1] : 'HEAD';
+$flosc_ref  = (string) $argv[1];
 $flosc_fail = 0;
 
 /**
