@@ -396,8 +396,32 @@ if ( $flosc_flow_seed_needed ) {
 	update_option( $flosc_settings_key, $flosc_flow_settings );
 }
 
-$flosc_get  = flosc_nav_params();
-$flosc_post = wp_unslash( $_POST );
+$flosc_get = flosc_nav_params();
+
+/*
+ * The posted body, read only when this request actually is a POST.
+ *
+ * The T13 review's objection to file-scope reads was not only about nonces:
+ * "Don't check for post submission outside of functions. Doing so means that
+ * the check will run on every single load of the plugin." On a GET -- every
+ * render of every tab -- the old line unslashed the whole superglobal to
+ * produce an empty array.
+ *
+ * On a GET, $_POST is empty, so wp_unslash( $_POST ) and array() are the same
+ * value. This changes when the read happens, not what any caller receives.
+ * It deliberately stays at file scope: the six nonce checks below satisfy
+ * WPCS for this scope, and moving the read into a function would take it out
+ * of that scope and report an error where there is no defect.
+ *
+ * It is not converted to a declared key list. $flosc_post is read with 251
+ * distinct keys here and in seven tab includes, ten of them built at runtime
+ * such as $flosc_post[ $state . '_pill_icon' ]. An allowlist would silently
+ * drop whichever field nobody declared.
+ */
+$flosc_method = isset( $_SERVER['REQUEST_METHOD'] )
+	? strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) )
+	: '';
+$flosc_post   = ( 'POST' === $flosc_method ) ? wp_unslash( $_POST ) : array();
 // redirect_to_settings_tab() sets flosc_forced_tab when headers are already
 // sent and it cannot redirect. It takes precedence over the URL because it is
 // the tab the admin actually asked for.
