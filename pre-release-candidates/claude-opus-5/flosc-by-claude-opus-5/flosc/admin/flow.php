@@ -78,81 +78,155 @@ $flosc_get           = flosc_nav_params();
  * file because there is no longer one to report.
  */
 
-if ( ! function_exists( 'flosc_flow_requested_file_action' ) ) {
+if ( ! function_exists( 'flosc_flow_file_name' ) ) {
 	/**
-	 * Which flow-file action this request asks for.
+	 * A posted value reduced to a bare filename.
 	 *
-	 * @return string One of 'duplicate', 'import', 'delete', or '' for none.
+	 * Takes a value rather than a key, so it reaches into no superglobal and can
+	 * be reasoned about on its own: request access and filename sanitizing stay
+	 * separate jobs.
+	 *
+	 * Expects a value that has already been through wp_unslash(). Unslashing
+	 * belongs at the read, beside the superglobal it came from, and doing it
+	 * here as well would strip a second layer of backslashes from a filename
+	 * that legitimately contains one.
+	 *
+	 * @param mixed $value Unslashed posted value.
+	 * @return string Sanitized basename, or '' when the value is not a scalar.
 	 */
-	function flosc_flow_requested_file_action() {
+	function flosc_flow_file_name( $value ) {
+		if ( ! is_scalar( $value ) ) {
+			return '';
+		}
+
+		return basename( sanitize_file_name( (string) $value ) );
+	}
+}
+
+if ( ! function_exists( 'flosc_flow_file_request' ) ) {
+	/**
+	 * The flow-file action and filename this request carries, once verified.
+	 *
+	 * Returns two keys: 'action' is 'duplicate', 'import', 'delete' or '' for
+	 * none, and 'file' is the sanitized basename that action applies to, or ''.
+	 *
+	 * ORDER IS THE POINT
+	 *
+	 * The nonce is read and verified against the three known actions BEFORE any
+	 * action payload is looked at. Nothing about which button was pressed, and
+	 * nothing about the filename, is examined until a nonce has succeeded. That
+	 * is what the reviewer's "don't check for post submission outside of
+	 * functions" objection is really about, and it is a stronger property than
+	 * the one PHPCS measures: the sniff is satisfied by a nonce check anywhere
+	 * in a function's scope, including after the read. Execution order here does
+	 * not rely on that leniency.
+	 *
+	 * All three forms use wp_nonce_field( $action ), so the nonce arrives in the
+	 * default _wpnonce field and verifies against exactly one of the three
+	 * actions. Trying each in turn identifies the action from the nonce itself.
+	 *
+	 * THE SECOND LOOP IS NOT REDUNDANT
+	 *
+	 * A request carrying a button and its filename with a bad or missing nonce
+	 * used to reach the branch's check_admin_referer() and be rejected there,
+	 * with the WordPress "link you followed has expired" screen. Without the
+	 * fallback it would become silently ignored instead, which is a worse answer
+	 * for a person whose admin session simply timed out. The fallback re-creates
+	 * that rejection without reading any field value.
+	 *
+	 * @return array Keys 'action' and 'file', both strings.
+	 */
+	function flosc_flow_file_request() {
+		$flosc_none = array(
+			'action' => '',
+			'file'   => '',
+		);
+
 		$flosc_method = isset( $_SERVER['REQUEST_METHOD'] )
 			? strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) )
 			: '';
 		if ( 'POST' !== $flosc_method ) {
-			return '';
+			return $flosc_none;
 		}
 
 		// The capability the FLOSC menu itself registers. Each action re-checks
 		// manage_options after its own nonce; this is the outer refusal.
 		if ( ! current_user_can( 'edit_others_posts' ) ) {
-			return '';
+			return $flosc_none;
 		}
 
 		$flosc_actions = array(
-			'duplicate' => array( 'flosc_duplicate_ivr_file', 'duplicate_ivr_file' ),
-			'import'    => array( 'flosc_import_selected_ivr_file', 'import_ivr_file' ),
-			'delete'    => array( 'flosc_delete_ivr_file', 'delete_ivr_file' ),
+			'duplicate' => array(
+				'nonce'  => 'flosc_duplicate_ivr_file',
+				'button' => 'flosc_duplicate_ivr_file',
+				'field'  => 'duplicate_ivr_file',
+			),
+			'import'    => array(
+				'nonce'  => 'flosc_import_selected_ivr_file',
+				'button' => 'flosc_import_selected_ivr_file',
+				'field'  => 'import_ivr_file',
+			),
+			'delete'    => array(
+				'nonce'  => 'flosc_delete_ivr_file',
+				'button' => 'flosc_delete_ivr_file',
+				'field'  => 'delete_ivr_file',
+			),
 		);
 
-		foreach ( $flosc_actions as $flosc_action => $flosc_fields ) {
-			list( $flosc_button, $flosc_field ) = $flosc_fields;
-			if ( ! isset( $_POST[ $flosc_button ] ) || ! isset( $_POST[ $flosc_field ] ) ) {
-				continue;
+		$flosc_nonce = isset( $_POST['_wpnonce'] )
+			? sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) )
+			: '';
+
+		$flosc_verified = '';
+		foreach ( $flosc_actions as $flosc_action => $flosc_spec ) {
+			if ( wp_verify_nonce( $flosc_nonce, $flosc_spec['nonce'] ) ) {
+				$flosc_verified = $flosc_action;
+				break;
 			}
-
-			/*
-			 * The nonce is verified here, the moment the action is known, and
-			 * with the same action string the branch below uses. A request that
-			 * fails it dies on wp_nonce_ays() exactly as before -- this moved
-			 * the check a few lines earlier in the same execution path, it did
-			 * not replace or weaken it. Each branch still runs its own
-			 * check_admin_referer(), so a branch stays safe on its own terms.
-			 */
-			check_admin_referer( $flosc_button );
-			return $flosc_action;
 		}
 
-		return '';
+		// Only now is anything action-specific read.
+		if ( '' !== $flosc_verified ) {
+			$flosc_spec = $flosc_actions[ $flosc_verified ];
+			if ( isset( $_POST[ $flosc_spec['button'] ] ) && isset( $_POST[ $flosc_spec['field'] ] ) ) {
+				/*
+				 * Unslashed and sanitized here, at the read, rather than inside
+				 * flosc_flow_file_name(). WPCS cannot follow a sanitizer across a
+				 * function call and reported this as unsanitized input when it
+				 * was only sanitized one frame down -- the same complaint, in the
+				 * same file, that this whole rewrite exists to answer. The helper
+				 * still reduces the result to a basename; sanitize_file_name() is
+				 * idempotent, so applying it in both places costs nothing.
+				 */
+				$flosc_raw = is_scalar( $_POST[ $flosc_spec['field'] ] )
+					? sanitize_file_name( wp_unslash( $_POST[ $flosc_spec['field'] ] ) )
+					: '';
+
+				return array(
+					'action' => $flosc_verified,
+					'file'   => flosc_flow_file_name( $flosc_raw ),
+				);
+			}
+		}
+
+		/*
+		 * Bad or missing nonce, but the shape of a real submission: reject it
+		 * the way the branch used to, rather than ignoring it. Presence only --
+		 * no field value is read here.
+		 */
+		foreach ( $flosc_actions as $flosc_spec ) {
+			if ( isset( $_POST[ $flosc_spec['button'] ] ) && isset( $_POST[ $flosc_spec['field'] ] ) ) {
+				check_admin_referer( $flosc_spec['nonce'] );
+			}
+		}
+
+		return $flosc_none;
 	}
 }
 
-if ( ! function_exists( 'flosc_flow_posted_file_name' ) ) {
-	/**
-	 * One posted filename, reduced to a bare basename.
-	 *
-	 * This used to say "call only after check_admin_referer()" and leave that to
-	 * the caller. It now takes the action and verifies the nonce itself, so the
-	 * rule is enforced by the code rather than written above it. Callers already
-	 * ran the same check for the same action, and check_admin_referer() is
-	 * idempotent -- re-verifying a valid nonce passes, and an invalid one would
-	 * already have died in the caller.
-	 *
-	 * @param string $key    POST field name.
-	 * @param string $action Nonce action this field arrives under.
-	 * @return string Sanitized basename, or '' when absent or not a scalar.
-	 */
-	function flosc_flow_posted_file_name( $key, $action ) {
-		check_admin_referer( $action );
-
-		if ( ! isset( $_POST[ $key ] ) || ! is_scalar( $_POST[ $key ] ) ) {
-			return '';
-		}
-
-		return basename( sanitize_file_name( wp_unslash( (string) $_POST[ $key ] ) ) );
-	}
-}
-
-$flosc_flow_file_action = flosc_flow_requested_file_action();
+$flosc_flow_file_request = flosc_flow_file_request();
+$flosc_flow_file_action  = $flosc_flow_file_request['action'];
+$flosc_flow_file_name    = $flosc_flow_file_request['file'];
 
 $flosc_ivr_param               = rawurlencode( $flosc_selected_ivr );
 $flosc_base_url                = admin_url( 'admin.php?page=flosc-settings&ivr=' . $flosc_ivr_param . '&tab=' );
@@ -299,7 +373,7 @@ if ( 'all' === $flosc_flow_view ) {
 			wp_die( esc_html__( 'You do not have permission to duplicate IVR files.', 'flosc' ) );
 		}
 
-		$flosc_source_file = flosc_flow_posted_file_name( 'duplicate_ivr_file', 'flosc_duplicate_ivr_file' );
+		$flosc_source_file = $flosc_flow_file_name;
 		$flosc_source_path = function_exists( 'flosc_resolve_ivr_file_path' )
 			? flosc_resolve_ivr_file_path( $flosc_source_file )
 			: '';
@@ -337,7 +411,7 @@ if ( 'all' === $flosc_flow_view ) {
 			wp_die( esc_html__( 'You do not have permission to import IVR files.', 'flosc' ) );
 		}
 
-		$flosc_source_file = flosc_flow_posted_file_name( 'import_ivr_file', 'flosc_import_selected_ivr_file' );
+		$flosc_source_file = $flosc_flow_file_name;
 		$flosc_source_path = '';
 		if ( function_exists( 'flosc_resolve_ivr_file_path' ) ) {
 			$flosc_source_path = (string) flosc_resolve_ivr_file_path( $flosc_source_file );
@@ -415,7 +489,7 @@ if ( 'all' === $flosc_flow_view ) {
 			wp_die( esc_html__( 'You do not have permission to delete IVR files.', 'flosc' ) );
 		}
 
-		$flosc_delete_file = flosc_flow_posted_file_name( 'delete_ivr_file', 'flosc_delete_ivr_file' );
+		$flosc_delete_file = $flosc_flow_file_name;
 		$flosc_delete_path = function_exists( 'flosc_data_file_path' )
 			? flosc_data_file_path( $flosc_delete_file )
 			: '';
