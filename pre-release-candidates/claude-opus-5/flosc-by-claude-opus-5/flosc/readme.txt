@@ -314,7 +314,7 @@ Data sent: quiz audio, answer payloads, and session-finalization data required b
 Configuration note: floscAdmins can configure a per-flow external scoring endpoint. If a flow uses an external scoring provider, quiz audio and related scoring payloads may be sent to that provider. Audio playback conversion dispatch is optional and flow-scoped through the Audio Conversion Provider setting (none|external).
 
 
-17. WordPress core oEmbed (in-chat media players)
+16. WordPress core oEmbed (in-chat media players)
 Endpoint: this site's `/flosc/v1/oembed` (GET). Resolution uses WordPress core `wp_oembed_get()` against core's provider allow-list; results are cached in a transient.
 Purpose: render provider-native players under media links in assistant messages for YouTube, TikTok, Spotify, SoundCloud, Apple Music, and Vimeo.
 Data sent: the media URL. The visitor's browser then loads the provider player. FLOSC does not send visitor identity, email, or IP to these providers on this path.
