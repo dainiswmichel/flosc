@@ -157,7 +157,7 @@ class OAuth2_Handler {
 	/**
 	 * Handle OAuth authorization redirect
 	 *
-	 * @param WP_REST_Request $request
+	 * @param WP_REST_Request $request Request.
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function handle_authorize( $request ) {
@@ -252,7 +252,7 @@ class OAuth2_Handler {
 	/**
 	 * Handle OAuth callback
 	 *
-	 * @param WP_REST_Request $request
+	 * @param WP_REST_Request $request Request.
 	 * @return void Redirects on completion
 	 */
 	public function handle_callback( $request ) {
@@ -286,7 +286,7 @@ class OAuth2_Handler {
 		// handed to the provider adapter, so no provider reads the request.
 		foreach ( array( 'code', 'state', 'error', 'error_description', 'user' ) as $flosc_k ) {
 			$max_length = ( 'user' === $flosc_k ) ? 20000 : 2048;
-			$g = ( isset( $query_params[ $flosc_k ] ) && is_scalar( $query_params[ $flosc_k ] ) )
+			$g          = ( isset( $query_params[ $flosc_k ] ) && is_scalar( $query_params[ $flosc_k ] ) )
 				? sanitize_text_field( wp_unslash( $query_params[ $flosc_k ] ) )
 				: '';
 			if ( '' !== $g && strlen( $g ) <= $max_length ) {
@@ -767,7 +767,7 @@ class OAuth2_Handler {
 		$state_data = array(
 			'provider'    => $provider_id,
 			'redirect_to' => $redirect_to,
-			'flow_id'     => $flow_id, // v1.4.9: Per-flow SSO
+			'flow_id'     => $flow_id, // v1.4.9: Per-flow SSO.
 			'timestamp'   => time(),
 			'nonce'       => wp_create_nonce( 'flosc_sso_' . $provider_id ),
 		);

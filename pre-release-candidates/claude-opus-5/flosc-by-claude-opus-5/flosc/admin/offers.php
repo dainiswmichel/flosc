@@ -131,10 +131,10 @@ function flosc_parse_offer_access_codes_from_post( array $flosc_post ) {
 	return array_values( array_unique( $out ) );
 }
 
-// ============================================
-// SAVE HANDLER — runs at include time (same as delete/toggle handlers below)
-// v1.6.5: Removed dead add_action('init',...) — file loads after init fires
-// ============================================
+/**
+ * SAVE HANDLER — runs at include time (same as delete/toggle handlers below)
+ * v1.6.5: Removed dead add_action('init',...) — file loads after init fires.
+ */
 function flosc_handle_offer_save() {
 	$flosc_post = wp_unslash( $_POST );
 
@@ -336,7 +336,7 @@ function flosc_handle_offer_save() {
 	wp_safe_redirect( esc_url_raw( admin_url( 'admin.php?page=flosc-settings&ivr=' . rawurlencode( $ivr ) . '&tab=offers&saved=1' ) ) );
 	exit;
 }
-flosc_handle_offer_save(); // v1.6.5: Execute at include time
+flosc_handle_offer_save(); // v1.6.5: Execute at include time.
 
 /*
  * There was an unconditional `$flosc_get = wp_unslash($_GET);` here, before any
@@ -946,9 +946,14 @@ document.addEventListener('DOMContentLoaded', function() {
 <?php wp_add_inline_script( 'flosc-admin', ob_get_clean() ); ?>
 
 <?php
-// ============================================
-// OFFER EDITOR RENDER FUNCTION
-// ============================================
+/**
+ * OFFER EDITOR RENDER FUNCTION.
+ *
+ * @param mixed $flosc_offer           Offer.
+ * @param mixed $flosc_flow_key        Flow key.
+ * @param mixed $flosc_current_ivr     Current IVR.
+ * @param mixed $flosc_all_format_meta All format meta.
+ */
 function flosc_render_offer_editor_v2( $flosc_offer, $flosc_flow_key, $flosc_current_ivr, $flosc_all_format_meta ) {
 	$is_new         = empty( $flosc_offer );
 	$flosc_offer_id = $flosc_offer['id'] ?? 'new';

@@ -19,40 +19,88 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Sample text based quiz.
+ */
 class FLOSC_Sample_Text_Based_Quiz extends FLOSC_Abstract_Quiz_Type {
 
+	/**
+	 * Get ID.
+	 *
+	 * @return mixed
+	 */
 	public function get_id() {
 		return 'flosc_sample_data_numbers_quiz';
 	}
 
+	/**
+	 * Get name.
+	 *
+	 * @return mixed
+	 */
 	public function get_name() {
 		return 'FLOSC Sample 1-10 Numbers Quiz';
 	}
 
+	/**
+	 * Get description.
+	 *
+	 * @return mixed
+	 */
 	public function get_description() {
 		return 'Input the following numbers: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10';
 	}
 
+	/**
+	 * Get icon.
+	 *
+	 * @return mixed
+	 */
 	public function get_icon() {
 		return '✍️';
 	}
 
+	/**
+	 * Needs audio.
+	 *
+	 * @return mixed
+	 */
 	public function needs_audio() {
 		return false;
 	}
 
+	/**
+	 * Needs STT.
+	 *
+	 * @return mixed
+	 */
 	public function needs_stt() {
 		return false;
 	}
 
+	/**
+	 * Needs AI analysis.
+	 *
+	 * @return mixed
+	 */
 	public function needs_ai_analysis() {
 		return false;
 	}
 
+	/**
+	 * Get instructions.
+	 *
+	 * @return mixed
+	 */
 	public function get_instructions() {
 		return "One answer per block, separated by a blank line.\n\nEach block:\n  answer value\n  CorrectContent: post:my-post-slug\n  RelatedContent: post:slug-one, tag:my-tag\n\nScoring: set-based — order doesn't matter. Score = how many correct answers the user included / total.\n\nPrefixes — always required, no quotes:\n  post:slug         — post by URL slug; use post:parent/child if the same slug exists under multiple parents\n  id:1042           — one post by numeric ID\n  category:slug     — posts in a category; category:parent/child for sub-categories\n  tag:slug          — posts with a tag (use the tag slug, not the display name)\n  search:any words  — keyword search (avoid: unreliable, may match wrong posts)\n\nMultiple CorrectContent: and RelatedContent: lines all accumulate. CorrectContent items are shown first (tier 1) when a learner asks to review what they missed.\n\nLegacy flat format also accepted (no content refs): 1,2,3,4,5,6,7,8,9,10";
 	}
 
+	/**
+	 * Get default content.
+	 *
+	 * @return mixed
+	 */
 	public function get_default_content() {
 		$blocks = array(
 			"1\nCorrectContent: post:lesson-one\nRelatedContent: post:lesson-two, post:lesson-three",
@@ -69,6 +117,12 @@ class FLOSC_Sample_Text_Based_Quiz extends FLOSC_Abstract_Quiz_Type {
 		return implode( "\n\n", $blocks );
 	}
 
+	/**
+	 * Validate input.
+	 *
+	 * @param mixed $input Input.
+	 * @return mixed
+	 */
 	public function validate_input( $input ) {
 		if ( empty( $input ) || ! is_string( $input ) ) {
 			return new WP_Error( 'invalid_input', __( 'Please enter your answers.', 'flosc' ) );
@@ -84,6 +138,14 @@ class FLOSC_Sample_Text_Based_Quiz extends FLOSC_Abstract_Quiz_Type {
 		return true;
 	}
 
+	/**
+	 * Analyze.
+	 *
+	 * @param mixed $input            Input.
+	 * @param mixed $expected_content Expected content.
+	 * @param mixed $context          Context.
+	 * @return mixed
+	 */
 	public function analyze( $input, $expected_content, $context = array() ) {
 		$separator      = $this->get_setting( 'separator', ',' );
 		$case_sensitive = $this->get_setting( 'case_sensitive', false );
@@ -157,6 +219,11 @@ class FLOSC_Sample_Text_Based_Quiz extends FLOSC_Abstract_Quiz_Type {
 		);
 	}
 
+	/**
+	 * Get settings fields.
+	 *
+	 * @return mixed
+	 */
 	public function get_settings_fields() {
 		return array(
 			'separator'      => array(
@@ -180,6 +247,11 @@ class FLOSC_Sample_Text_Based_Quiz extends FLOSC_Abstract_Quiz_Type {
 		);
 	}
 
+	/**
+	 * Get default response templates.
+	 *
+	 * @return mixed
+	 */
 	public function get_default_response_templates() {
 		return array(
 			'0-30'   => "**Score: {score}%**\n\nYou got {total_correct} out of {total_possible} correct.\n\n{lesson_recommendations}",
@@ -189,6 +261,13 @@ class FLOSC_Sample_Text_Based_Quiz extends FLOSC_Abstract_Quiz_Type {
 		);
 	}
 
+	/**
+	 * Format results.
+	 *
+	 * @param mixed $analysis           Analysis.
+	 * @param mixed $lessons            Lessons.
+	 * @param mixed $response_templates Response templates.
+	 */
 	public function format_results( $analysis, $lessons, $response_templates ) {
 		$score        = $analysis['score'];
 		$response_key = $analysis['response_key'];
@@ -242,6 +321,8 @@ class FLOSC_Sample_Text_Based_Quiz extends FLOSC_Abstract_Quiz_Type {
 	 * Legacy formats still accepted (backward compat):
 	 *   Flat:  1,2,3,4,5,6,7,8,9,10
 	 *   Pipe:  1|CorrectContent: post:lesson-one|RelatedContent: post:lesson-two
+	 *
+	 * @param mixed $expected_content Expected content.
 	 */
 	private function parse_content( $expected_content ) {
 		$answers     = array();
@@ -341,6 +422,9 @@ class FLOSC_Sample_Text_Based_Quiz extends FLOSC_Abstract_Quiz_Type {
 	/**
 	 * Parse a flat input string into an array of answer strings.
 	 * Used for user input only (never for expected_content).
+	 *
+	 * @param mixed $input     Input.
+	 * @param mixed $separator Separator.
 	 */
 	private function parse_input( $input, $separator ) {
 		if ( empty( $input ) ) {

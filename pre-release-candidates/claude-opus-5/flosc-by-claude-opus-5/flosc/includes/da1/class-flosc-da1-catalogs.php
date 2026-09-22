@@ -15,6 +15,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Catalogs.
+ */
 class FLOSC_DA1_Catalogs {
 
 	/**
@@ -110,6 +113,9 @@ class FLOSC_DA1_Catalogs {
 	/**
 	 * Conservative catalog-intent check. The runtime is called on every chat
 	 * turn, so it must not hijack unrelated conversation.
+	 *
+	 * @param mixed $message Message.
+	 * @param mixed $items   Items.
 	 */
 	public function is_catalog_query( $message, $items = array() ) {
 		$text = $this->normalize_search_text( $message );
@@ -149,16 +155,34 @@ class FLOSC_DA1_Catalogs {
 		return false;
 	}
 
+	/**
+	 * Is count request.
+	 *
+	 * @param mixed $message Message.
+	 * @return mixed
+	 */
 	public function is_count_request( $message ) {
 		$text = $this->normalize_search_text( $message );
 		return (bool) preg_match( '/\b(how many|number of|count|total|cik)\b/u', $text );
 	}
 
+	/**
+	 * Is full list request.
+	 *
+	 * @param mixed $message Message.
+	 * @return mixed
+	 */
 	public function is_full_list_request( $message ) {
 		$text = $this->normalize_search_text( $message );
 		return (bool) preg_match( '/\b(full list|complete list|entire catalog|entire catalogue|show all|list all|everything)\b/u', $text );
 	}
 
+	/**
+	 * Detect batch size.
+	 *
+	 * @param mixed $message Message.
+	 * @return mixed
+	 */
 	public function detect_batch_size( $message ) {
 		$text = $this->normalize_search_text( $message );
 		if ( preg_match( '/\b(one|1|single)\b/u', $text ) ) {
@@ -173,6 +197,10 @@ class FLOSC_DA1_Catalogs {
 	/**
 	 * Load assigned catalog rows and enforce DA1 controls before any row can be
 	 * exposed to the chat layer.
+	 *
+	 * @param mixed  $flow_id      Flow ID.
+	 * @param mixed  $ivr_file     IVR file.
+	 * @param string $access_level Access level.
 	 */
 	public function load_rows_for_flow( $flow_id, $ivr_file, $access_level = 'visitor' ) {
 		$upload_dir  = wp_upload_dir();
@@ -283,6 +311,8 @@ class FLOSC_DA1_Catalogs {
 
 	/**
 	 * Convert visible rows into content-agnostic catalog items.
+	 *
+	 * @param mixed $rows Rows.
 	 */
 	public function extract_items( $rows ) {
 		$children_by_parent = array();
@@ -340,6 +370,8 @@ class FLOSC_DA1_Catalogs {
 	 * Dublin Core compatibility layer. It recognizes DC/DCMI field names without
 	 * forcing them into the source catalog. Categories and Tags can supplement
 	 * Subject when a catalog chooses to use those DA1-friendly fields.
+	 *
+	 * @param mixed $payload Payload.
 	 */
 	public function extract_dublin_core_metadata( $payload ) {
 		$dc_fields = array(
@@ -384,6 +416,13 @@ class FLOSC_DA1_Catalogs {
 		return $dc;
 	}
 
+	/**
+	 * Find matching items.
+	 *
+	 * @param mixed $message Message.
+	 * @param mixed $items   Items.
+	 * @return mixed
+	 */
 	public function find_matching_items( $message, $items ) {
 		$query_tokens = $this->search_tokens( $message );
 		if ( empty( $query_tokens ) ) {
@@ -447,6 +486,12 @@ class FLOSC_DA1_Catalogs {
 		);
 	}
 
+	/**
+	 * Parse TSV content.
+	 *
+	 * @param mixed $content Content.
+	 * @return mixed
+	 */
 	public function parse_tsv_content( $content ) {
 		$rows      = array();
 		$row       = array();
@@ -490,6 +535,13 @@ class FLOSC_DA1_Catalogs {
 		return $rows;
 	}
 
+	/**
+	 * Shorten text.
+	 *
+	 * @param mixed $text  Text.
+	 * @param mixed $limit Limit.
+	 * @return mixed
+	 */
 	public function shorten_text( $text, $limit ) {
 		$text = trim( (string) $text );
 		if ( '' === $text ) {
@@ -507,6 +559,12 @@ class FLOSC_DA1_Catalogs {
 		return rtrim( substr( $text, 0, max( 1, $limit - 1 ) ) ) . '...';
 	}
 
+	/**
+	 * Limit chat response length.
+	 *
+	 * @param mixed $text Text.
+	 * @return mixed
+	 */
 	public function limit_chat_response_length( $text ) {
 		$raw_limit = (string) flosc_get_setting( 'ai_max_response_length', '' );
 		$numeric   = preg_replace( '/[^0-9]/', '', $raw_limit );
@@ -517,6 +575,12 @@ class FLOSC_DA1_Catalogs {
 		return $this->shorten_text( $text, $max );
 	}
 
+	/**
+	 * Canonicalize column name.
+	 *
+	 * @param mixed $column Column.
+	 * @return mixed
+	 */
 	private function canonicalize_column_name( $column ) {
 		$column = trim( (string) $column );
 		if ( 'Record Type' === $column ) {
@@ -525,6 +589,12 @@ class FLOSC_DA1_Catalogs {
 		return $column;
 	}
 
+	/**
+	 * Normalize access level.
+	 *
+	 * @param mixed $access_level Access level.
+	 * @return mixed
+	 */
 	private function normalize_access_level( $access_level ) {
 		$access_level = strtolower( trim( (string) $access_level ) );
 		return in_array( $access_level, array( 'visitor', 'guest', 'member' ), true ) ? $access_level : 'visitor';
@@ -597,6 +667,13 @@ class FLOSC_DA1_Catalogs {
 		return null === $lowest ? 3 : (int) $lowest;
 	}
 
+	/**
+	 * Row allows audience.
+	 *
+	 * @param mixed $row          Row.
+	 * @param mixed $access_level Access level.
+	 * @return mixed
+	 */
 	private function row_allows_audience( $row, $access_level ) {
 		return $this->access_rank( $access_level ) >= $this->vgm_rank( $row['VGM'] ?? '' );
 	}
@@ -630,6 +707,13 @@ class FLOSC_DA1_Catalogs {
 		return false;
 	}
 
+	/**
+	 * Row matches flow scope.
+	 *
+	 * @param mixed $row               Row.
+	 * @param mixed $flow_scope_tokens Flow scope tokens.
+	 * @return mixed
+	 */
 	private function row_matches_flow_scope( $row, $flow_scope_tokens ) {
 		$scope = strtolower( trim( (string) ( $row['Flow Scope'] ?? 'all' ) ) );
 		if ( '' === $scope || 'all' === $scope ) {
@@ -648,6 +732,13 @@ class FLOSC_DA1_Catalogs {
 		return false;
 	}
 
+	/**
+	 * Render item lines.
+	 *
+	 * @param mixed $item   Item.
+	 * @param mixed $number Number.
+	 * @return mixed
+	 */
 	private function render_item_lines( $item, $number ) {
 		$label = $this->get_item_label( $item );
 		$dc    = (array) ( $item['dublin_core'] ?? array() );
@@ -669,6 +760,12 @@ class FLOSC_DA1_Catalogs {
 		return $lines;
 	}
 
+	/**
+	 * Get item label.
+	 *
+	 * @param mixed $item Item.
+	 * @return mixed
+	 */
 	private function get_item_label( $item ) {
 		$dc      = (array) ( $item['dublin_core'] ?? array() );
 		$payload = (array) ( $item['payload'] ?? array() );
@@ -689,6 +786,12 @@ class FLOSC_DA1_Catalogs {
 		return '' !== $row_key ? 'Item ' . $row_key : 'Catalog item';
 	}
 
+	/**
+	 * Extract primary URL from payload.
+	 *
+	 * @param mixed $payload Payload.
+	 * @return mixed
+	 */
 	private function extract_primary_url_from_payload( $payload ) {
 		foreach ( (array) $payload as $value ) {
 			$text = trim( (string) $value );
@@ -699,12 +802,24 @@ class FLOSC_DA1_Catalogs {
 		return '';
 	}
 
+	/**
+	 * Normalize search text.
+	 *
+	 * @param mixed $text Text.
+	 * @return mixed
+	 */
 	private function normalize_search_text( $text ) {
 		$text = function_exists( 'mb_strtolower' ) ? mb_strtolower( (string) $text, 'UTF-8' ) : strtolower( (string) $text );
 		$text = preg_replace( '/[^\p{L}\p{N}]+/u', ' ', $text );
 		return trim( (string) preg_replace( '/\s+/', ' ', (string) $text ) );
 	}
 
+	/**
+	 * Search tokens.
+	 *
+	 * @param mixed $text Text.
+	 * @return mixed
+	 */
 	private function search_tokens( $text ) {
 		$normalized = $this->normalize_search_text( $text );
 		if ( '' === $normalized ) {

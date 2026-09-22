@@ -17,11 +17,29 @@ if ( ! defined( 'ABSPATH' ) ) {
 // Custom table {prefix}flosc_chat_logs — no WP API equivalent for schema/CRUD.
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange -- custom table flosc_chat_logs; no WP API
 
+/**
+ * Chat logger.
+ */
 class FLOSC_Chat_Logger {
 
+	/**
+	 * Instance.
+	 *
+	 * @var mixed
+	 */
 	private static $instance = null;
+	/**
+	 * Table name.
+	 *
+	 * @var mixed
+	 */
 	private $table_name;
 
+	/**
+	 * Instance.
+	 *
+	 * @return mixed
+	 */
 	public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
@@ -29,6 +47,9 @@ class FLOSC_Chat_Logger {
 		return self::$instance;
 	}
 
+	/**
+	 * Construct.
+	 */
 	private function __construct() {
 		global $wpdb;
 		$this->table_name = $wpdb->prefix . 'flosc_chat_logs';
@@ -47,10 +68,21 @@ class FLOSC_Chat_Logger {
 		wp_cache_delete( 'log_count_' . md5( '' ), 'flosc_chat_logs' );
 	}
 
+	/**
+	 * Archived sessions option name.
+	 *
+	 * @return mixed
+	 */
 	private function flosc_archived_sessions_option_name() {
 		return 'flosc_archived_chat_sessions';
 	}
 
+	/**
+	 * Archive bucket key.
+	 *
+	 * @param string $flow_id Flow ID.
+	 * @return mixed
+	 */
 	private function flosc_archive_bucket_key( $flow_id = '' ) {
 		$flow_id = sanitize_text_field( (string) $flow_id );
 		return '' !== $flow_id ? $flow_id : '__all';
@@ -74,6 +106,13 @@ class FLOSC_Chat_Logger {
 		return substr( (string) $raw, 0, 64 );
 	}
 
+	/**
+	 * Session key from descriptor.
+	 *
+	 * @param mixed $by    By.
+	 * @param mixed $value Value.
+	 * @return mixed
+	 */
 	public static function flosc_session_key_from_descriptor( $by, $value ) {
 		$by = in_array( $by, array( 'journey', 'session', 'user', 'ip' ), true ) ? $by : '';
 		if ( '' === $by ) {
@@ -99,6 +138,12 @@ class FLOSC_Chat_Logger {
 		return '' !== $ip ? 'ip' . $ip : '';
 	}
 
+	/**
+	 * Get archived session keys.
+	 *
+	 * @param string $flow_id Flow ID.
+	 * @return mixed
+	 */
 	public function flosc_get_archived_session_keys( $flow_id = '' ) {
 		$bucket = $this->flosc_archive_bucket_key( $flow_id );
 		$all    = get_option( $this->flosc_archived_sessions_option_name(), array() );
@@ -115,6 +160,15 @@ class FLOSC_Chat_Logger {
 		return array_values( array_unique( $keys ) );
 	}
 
+	/**
+	 * Set session archived.
+	 *
+	 * @param mixed  $by       By.
+	 * @param mixed  $value    Value.
+	 * @param string $flow_id  Flow ID.
+	 * @param bool   $archived Archived.
+	 * @return mixed
+	 */
 	public function flosc_set_session_archived( $by, $value, $flow_id = '', $archived = true ) {
 		$key = self::flosc_session_key_from_descriptor( $by, $value );
 		if ( '' === $key ) {
@@ -373,7 +427,7 @@ class FLOSC_Chat_Logger {
 	/**
 	 * Normalize a flow id to the stem the log table and the grant meta both use.
 	 *
-	 * @param string $flow_id
+	 * @param string $flow_id Flow ID.
 	 * @return string Stem, or '' when there is no flow.
 	 */
 	public static function flosc_journey_flow_stem( $flow_id ) {
@@ -397,7 +451,7 @@ class FLOSC_Chat_Logger {
 	 * member of any one flow once, so a re-grant or a renewal must not queue a
 	 * second "+M".
 	 *
-	 * @param int    $user_id
+	 * @param int    $user_id User ID.
 	 * @param string $mark    '+G' or '+M'.
 	 * @param string $flow_id Flow the acquisition belongs to. '' = account-wide.
 	 * @return void
@@ -584,6 +638,8 @@ class FLOSC_Chat_Logger {
 	 */
 	/**
 	 * A turn id is opaque and browser-minted; accept only what we mint.
+	 *
+	 * @param mixed $raw Raw.
 	 */
 	public static function flosc_sanitize_turn_id( $raw ) {
 		$raw = strtolower( trim( (string) $raw ) );
@@ -597,6 +653,8 @@ class FLOSC_Chat_Logger {
 	 * request in flight: the browser drops the connection, PHP runs to
 	 * completion and writes the answer, and nobody reads it. The reply exists.
 	 * This is how the reloaded page finds it.
+	 *
+	 * @param mixed $turn_id Turn ID.
 	 */
 	public function flosc_find_turn( $turn_id ) {
 		global $wpdb;
@@ -625,6 +683,8 @@ class FLOSC_Chat_Logger {
 	 * Mark a turn abandoned. An abandoned turn is not conversation history:
 	 * replaying it makes the next prompt look like a question nobody answered,
 	 * which is how a normal follow-up came back as scripted IVR copy.
+	 *
+	 * @param mixed $turn_id Turn ID.
 	 */
 	public function flosc_mark_turn_abandoned( $turn_id ) {
 		global $wpdb;
@@ -652,6 +712,12 @@ class FLOSC_Chat_Logger {
 		return (bool) $updated;
 	}
 
+	/**
+	 * Log chat.
+	 *
+	 * @param mixed $data Data.
+	 * @return mixed
+	 */
 	public function flosc_log_chat( $data ) {
 		global $wpdb;
 
@@ -912,6 +978,8 @@ class FLOSC_Chat_Logger {
 
 	/**
 	 * Get total log count (for admin stats).
+	 *
+	 * @param string $flow_id Flow ID.
 	 */
 	public function flosc_get_log_count( $flow_id = '' ) {
 		global $wpdb;
@@ -971,6 +1039,7 @@ class FLOSC_Chat_Logger {
 	 * @param string $flow_id    Flow the conversation belongs to.
 	 * @param string $admin_name The admin's display name (shown as "Name (admin)").
 	 * @param string $text       The message text.
+	 * @param string $source     Source.
 	 * @return int|false New row id, or false.
 	 */
 	public function flosc_insert_admin_message( $session_id, $flow_id, $admin_name, $text, $source = 'admin' ) {
@@ -1072,6 +1141,9 @@ class FLOSC_Chat_Logger {
 
 	/**
 	 * Resolve the most recent logged-in user associated with a chat session.
+	 *
+	 * @param mixed  $session_id Session ID.
+	 * @param string $flow_id    Flow ID.
 	 */
 	public function flosc_get_session_owner_user_id( $session_id, $flow_id = '' ) {
 		global $wpdb;
@@ -1231,6 +1303,7 @@ class FLOSC_Chat_Logger {
 	 *
 	 * @param string $flow_id  Restrict to a flow (no extension), or '' for all.
 	 * @param int    $max_rows Safety cap on rows scanned (default 800).
+	 * @param string $archive_status Archive status.
 	 * @return array List of session arrays.
 	 */
 	public function flosc_get_sessions( $flow_id = '', $max_rows = 800, $archive_status = 'active' ) {
@@ -1413,6 +1486,14 @@ class FLOSC_Chat_Logger {
 		);
 	}
 
+	/**
+	 * Get session rows.
+	 *
+	 * @param mixed  $by      By.
+	 * @param mixed  $value   Value.
+	 * @param string $flow_id Flow ID.
+	 * @return mixed
+	 */
 	public function flosc_get_session_rows( $by, $value, $flow_id = '' ) {
 		global $wpdb;
 		$flosc_cache_probe = wp_cache_get( 'flosc_chat_logs_list', 'flosc_chat_logs' );

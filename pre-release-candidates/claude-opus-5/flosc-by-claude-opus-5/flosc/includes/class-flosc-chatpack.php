@@ -2,7 +2,7 @@
 /**
  * FLOSC Chatpack — Unified AI Context Builder
  *
- * v1.9.2: First-contact vs subsequent-message prompt strategy.
+ * V1.9.2: First-contact vs subsequent-message prompt strategy.
  *
  * On the FIRST message of a session, sends a comprehensive "chatpack" containing:
  *   - FLOSC identity, WordPress environment, user identity, flow context,
@@ -24,6 +24,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Chatpack.
+ */
 class FLOSC_Chatpack {
 
 	/**
@@ -112,8 +115,10 @@ class FLOSC_Chatpack {
 	 * Count message pairs from stored session data (backend-authoritative).
 	 * One pair = user message + assistant response.
 	 *
-	 * @param int $session_id FLOSC session ID.
-	 * @param int $user_id WordPress user ID.
+	 * @param int    $session_id FLOSC session ID.
+	 * @param int    $user_id WordPress user ID.
+	 * @param string $flow_id        Flow ID.
+	 * @param string $session_id_raw Session ID raw.
 	 * @return int Number of completed pairs before this message
 	 */
 	public static function count_message_pairs( $session_id, $user_id, $flow_id = '', $session_id_raw = '' ) {
@@ -160,9 +165,11 @@ class FLOSC_Chatpack {
 	 * Load conversation history from stored session (for dispatch path).
 	 * RAG handler has its own loader; this gives dispatch parity.
 	 *
-	 * @param int $session_id FLOSC session ID.
-	 * @param int $user_id WordPress user ID.
-	 * @param int $max_messages Maximum messages to return (default 10).
+	 * @param int    $session_id FLOSC session ID.
+	 * @param int    $user_id WordPress user ID.
+	 * @param int    $max_messages Maximum messages to return (default 10).
+	 * @param string $flow_id        Flow ID.
+	 * @param string $session_id_raw Session ID raw.
 	 * @return array Messages in [role, content] format for AI API
 	 */
 	public static function load_conversation_history( $session_id, $user_id, $max_messages = 10, $flow_id = '', $session_id_raw = '' ) {
@@ -224,8 +231,9 @@ class FLOSC_Chatpack {
 	/**
 	 * Detect if this is the first message in a session.
 	 *
-	 * @param int $session_id FLOSC session ID.
-	 * @param int $user_id WordPress user ID.
+	 * @param int    $session_id FLOSC session ID.
+	 * @param int    $user_id WordPress user ID.
+	 * @param string $flow_id    Flow ID.
 	 * @return bool True if no prior messages exist
 	 */
 	public static function is_first_message( $session_id, $user_id, $flow_id = '' ) {
@@ -424,7 +432,7 @@ class FLOSC_Chatpack {
 	 *     asked about the page (server sets browsing_page_content for that turn only).
 	 * COMPANION MODE POLICY is appended when the surface is the docked companion.
 	 *
-	 * @param array $eval_context
+	 * @param array $eval_context Eval context.
 	 * @return string Section text, or '' when there is no page context to add.
 	 */
 	private static function build_page_context_section( $eval_context ) {
@@ -497,6 +505,11 @@ class FLOSC_Chatpack {
 	 * Chatpack header with installation + session tracking metadata.
 	 *
 	 * @since 1.9.4: Added flosc_hash (installation ID)
+	 *
+	 * @param mixed $flosc_hash   Hash.
+	 * @param mixed $session_hash Session hash.
+	 * @param mixed $pair_number  Pair number.
+	 * @param mixed $flow_id      Flow ID.
 	 */
 	private static function build_header( $flosc_hash, $session_hash, $pair_number, $flow_id ) {
 		$flow_name = $flow_id ? $flow_id : 'default';
@@ -799,6 +812,8 @@ class FLOSC_Chatpack {
 	/**
 	 * Section 3: User Identity — who is talking to the AI.
 	 * Backend-authoritative, not spoofable.
+	 *
+	 * @param mixed $eval_context Eval context.
 	 */
 	private static function build_user_section( $eval_context ) {
 		$section = "## 3. USER IDENTITY\n\n";
@@ -920,6 +935,10 @@ class FLOSC_Chatpack {
 
 	/**
 	 * Section 4: Flow Context — current phase and phase-specific instructions.
+	 *
+	 * @param mixed $phase        Phase.
+	 * @param mixed $eval_context Eval context.
+	 * @param mixed $flow_id      Flow ID.
 	 */
 	private static function build_flow_section( $phase, $eval_context, $flow_id = null ) {
 		// build_followup_chatpack() hands us $eval_context['flow_id'] cast to a
@@ -998,6 +1017,8 @@ class FLOSC_Chatpack {
 	/**
 	 * Section 5: Knowledge Base — feedback, praise, KB files.
 	 * Feedback and praise are floscAdmin-managed training data.
+	 *
+	 * @param mixed $eval_context Eval context.
 	 */
 	private static function build_knowledge_section( $eval_context ) {
 		$section = '';
@@ -1085,6 +1106,8 @@ class FLOSC_Chatpack {
 
 	/**
 	 * Section 6: IVR Guidance — scripted response the AI should rewrite.
+	 *
+	 * @param mixed $ivr_guidance IVR guidance.
 	 */
 	private static function build_ivr_section( $ivr_guidance ) {
 		return "## IVR RESPONSE GUIDANCE\n\n"
@@ -1103,6 +1126,9 @@ class FLOSC_Chatpack {
 
 	/**
 	 * Section 7: Conversation Rules — meta-instructions about the session.
+	 *
+	 * @param mixed $pair_number  Pair number.
+	 * @param mixed $eval_context Eval context.
 	 */
 	private static function build_rules_section( $pair_number, $eval_context ) {
 		$phase    = $eval_context['phase'] ?? 'freeline';
@@ -1188,7 +1214,7 @@ class FLOSC_Chatpack {
 	 * PHP makes the connection between quiz weak sounds and specific lessons.
 	 * The AI receives a generated recommendation — no inference required.
 	 *
-	 * @param array $eval_context
+	 * @param array $eval_context Eval context.
 	 * @return string Recommendation block, or empty string if not applicable.
 	 */
 	private static function build_personalized_recommendations( $eval_context ) {
@@ -1226,6 +1252,10 @@ class FLOSC_Chatpack {
 
 	/**
 	 * Get phase-specific behavioral instructions.
+	 *
+	 * @param mixed $phase        Phase.
+	 * @param mixed $eval_context Eval context.
+	 * @param mixed $flow_id      Flow ID.
 	 */
 	private static function get_phase_instructions( $phase, $eval_context, $flow_id = null ) {
 		$access_level = $eval_context['access_level'] ?? 'visitor';
@@ -1309,6 +1339,8 @@ class FLOSC_Chatpack {
 
 	/**
 	 * Get a one-liner description for phase change notifications.
+	 *
+	 * @param mixed $phase Phase.
 	 */
 	private static function get_phase_one_liner( $phase ) {
 		$liners = array(
@@ -1324,6 +1356,10 @@ class FLOSC_Chatpack {
 	/**
 	 * Resolve phase outcomes from per-flow/global settings with safe defaults.
 	 * Accepts either a map (phase_outcomes[phase]) or per-phase keys.
+	 *
+	 * @param mixed $phase        Phase.
+	 * @param mixed $eval_context Eval context.
+	 * @param mixed $flow_id      Flow ID.
 	 */
 	private static function get_phase_outcomes( $phase, $eval_context = array(), $flow_id = null ) {
 		$raw_map = flosc_get_setting( 'phase_outcomes', array(), $flow_id );
@@ -1353,6 +1389,8 @@ class FLOSC_Chatpack {
 
 	/**
 	 * Normalize outcomes from string/array formats into a clean string list.
+	 *
+	 * @param mixed $raw Raw.
 	 */
 	private static function normalize_outcomes( $raw ) {
 		if ( is_array( $raw ) ) {
@@ -1390,6 +1428,8 @@ class FLOSC_Chatpack {
 
 	/**
 	 * Detect if an outcome list includes quiz-oriented intent.
+	 *
+	 * @param mixed $outcomes Outcomes.
 	 */
 	private static function outcomes_include_quiz( $outcomes ) {
 		if ( ! is_array( $outcomes ) || empty( $outcomes ) ) {
@@ -1406,6 +1446,9 @@ class FLOSC_Chatpack {
 
 	/**
 	 * Backward-compatible defaults when no explicit outcomes are configured.
+	 *
+	 * @param mixed $phase        Phase.
+	 * @param mixed $eval_context Eval context.
 	 */
 	private static function get_default_phase_outcomes( $phase, $eval_context = array() ) {
 		$quiz_in_progress = ! empty( $eval_context['quiz_in_progress'] );
@@ -1431,6 +1474,8 @@ class FLOSC_Chatpack {
 	/**
 	 * Load knowledge base .md files from ai_configuration_files/ directory.
 	 * Access-filtered: visitors get public files, members get everything.
+	 *
+	 * @param mixed $eval_context Eval context.
 	 */
 	private static function load_knowledge_files( $eval_context ) {
 		$flow_stem = sanitize_key( (string) ( $eval_context['flow_id'] ?? '' ) );

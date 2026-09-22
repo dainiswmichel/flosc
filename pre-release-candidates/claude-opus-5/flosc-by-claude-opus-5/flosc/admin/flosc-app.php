@@ -1,4 +1,10 @@
 <?php
+/**
+ * Full-page floscFlow app template: <head>, body classes, sidebar and chat shell.
+ *
+ * @package FLOSC
+ */
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -22,7 +28,7 @@ $flosc_visitor_role = function_exists( 'flosc_personality_library_resolve_field'
 $flosc_chat_font   = get_option( 'flosc_chat_style_font', 'system' );
 $flosc_chat_theme  = get_option( 'flosc_chat_style_theme', 'default' );
 $flosc_chat_preset = get_option( 'flosc_chat_style_preset', 'flosc' );
-$flosc_chat_scale  = intval( get_option( 'flosc_chat_style_scale', 112 ) ); // percent
+$flosc_chat_scale  = intval( get_option( 'flosc_chat_style_scale', 112 ) ); // percent.
 ?>
 <!DOCTYPE html>
 <?php
@@ -1064,7 +1070,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 			if ( isset( $_SERVER['HTTP_HOST'] ) ) {
 				$flosc_current_host = sanitize_text_field( wp_unslash( (string) $_SERVER['HTTP_HOST'] ) );
 			}
-			$flosc_rest_prefix = rest_get_url_prefix(); // usually "wp-json"
+			$flosc_rest_prefix = rest_get_url_prefix(); // usually "wp-json".
 			$flosc_rest_base   = $flosc_scheme . $flosc_current_host . '/' . $flosc_rest_prefix . '/flosc/v1';
 		}
 

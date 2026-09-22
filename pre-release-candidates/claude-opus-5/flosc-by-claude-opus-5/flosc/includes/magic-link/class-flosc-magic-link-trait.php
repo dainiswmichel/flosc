@@ -1,4 +1,10 @@
 <?php
+/**
+ * MagicLink / guest access-link and related one-time login tokens.
+ *
+ * @package FLOSC
+ */
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -84,7 +90,7 @@ trait FLOSC_Magic_Link_Trait {
 	/**
 	 * Max MagicLink uses for non-members (members unlimited). Default 10.
 	 *
-	 * @param string $flow_id
+	 * @param string $flow_id Flow ID.
 	 * @return int 1–100
 	 */
 	private function flosc_magic_link_max_uses( $flow_id = '' ) {
@@ -98,7 +104,7 @@ trait FLOSC_Magic_Link_Trait {
 	/**
 	 * MagicLink active window in days after first click. Default 30.
 	 *
-	 * @param string $flow_id
+	 * @param string $flow_id Flow ID.
 	 * @return int 1–365
 	 */
 	private function flosc_magic_link_window_days( $flow_id = '' ) {
@@ -203,6 +209,9 @@ trait FLOSC_Magic_Link_Trait {
 		);
 	}
 
+	/**
+	 * Handle login token.
+	 */
 	public function handle_login_token() {
 		// Auth/callback routing via query string (not a WP form nonce action).
 		$get = array();
@@ -633,7 +642,7 @@ trait FLOSC_Magic_Link_Trait {
 	 * Resolve an EXISTING WP user for convenience-link mint only.
 	 * Never creates an account (admin send / approve / mint must not provision users).
 	 *
-	 * @param string $email
+	 * @param string $email Email.
 	 * @return int|WP_Error User ID.
 	 */
 	private function flosc_resolve_existing_user_for_convenience_link( $email ) {
@@ -655,8 +664,8 @@ trait FLOSC_Magic_Link_Trait {
 	 * Email registration only: create a pending subscriber (or return existing pending/active id).
 	 * Not used by convenience-link mint / admin send access link.
 	 *
-	 * @param string $email
-	 * @param string $flow_id
+	 * @param string $email Email.
+	 * @param string $flow_id Flow ID.
 	 * @return int|WP_Error User ID.
 	 */
 	private function flosc_create_pending_email_registrant( $email, $flow_id = '' ) {
@@ -703,6 +712,8 @@ trait FLOSC_Magic_Link_Trait {
 
 	/**
 	 * Whether an email-registered account is still pending verification.
+	 *
+	 * @param mixed $user_id User ID.
 	 */
 	private function flosc_email_account_is_pending( $user_id ) {
 		$user_id = absint( $user_id );
@@ -720,8 +731,8 @@ trait FLOSC_Magic_Link_Trait {
 	/**
 	 * Send email-registration verification message (not MagicLink).
 	 *
-	 * @param int    $user_id
-	 * @param string $flow_id
+	 * @param int    $user_id User ID.
+	 * @param string $flow_id Flow ID.
 	 * @param array  $attach temp_id, quiz_data, session_id, redirect_to, flow_id.
 	 * @return bool
 	 */
@@ -782,7 +793,7 @@ trait FLOSC_Magic_Link_Trait {
 	 * Activate a pending email-registered account (verification click or admin).
 	 * Applies guest role/tokens, attaches optional quiz payload, sends welcome + MagicLink when enabled.
 	 *
-	 * @param int   $user_id
+	 * @param int   $user_id User ID.
 	 * @param array $attach Optional override; otherwise user meta _flosc_email_pending_attach.
 	 * @return true|WP_Error
 	 */
@@ -875,6 +886,10 @@ trait FLOSC_Magic_Link_Trait {
 
 	/**
 	 * Welcome email after email verification. Includes MagicLink when enabled.
+	 *
+	 * @param mixed  $user_id User ID.
+	 * @param string $flow_id Flow ID.
+	 * @param mixed  $attach  Attach.
 	 */
 	private function flosc_send_email_registration_welcome( $user_id, $flow_id = '', $attach = array() ) {
 		$user = get_userdata( $user_id );
@@ -949,7 +964,7 @@ trait FLOSC_Magic_Link_Trait {
 	/**
 	 * Mint a MagicLink access token for an EXISTING WordPress user only.
 	 *
-	 * @param int   $user_id
+	 * @param int   $user_id User ID.
 	 * @param array $args flow_id, redirect_to, temp_id, quiz_data, session_id, status, ttl, reuse_token.
 	 * @return string|WP_Error Token string on success.
 	 */
@@ -1102,6 +1117,10 @@ trait FLOSC_Magic_Link_Trait {
 	 */
 	/**
 	 * Collaborator API: FLOSC_Email member welcome magic link.
+	 *
+	 * @param mixed $user    User.
+	 * @param mixed $context Context.
+	 * @param mixed $flow_id Flow ID.
 	 */
 	public function flosc_user_magic_url( $user, $context, $flow_id ) {
 		if ( ! $user || empty( $user->ID ) ) {
@@ -1127,6 +1146,12 @@ trait FLOSC_Magic_Link_Trait {
 		return add_query_arg( 'flosc_magic', rawurlencode( $token ), $chat_url );
 	}
 
+	/**
+	 * Handle email registration.
+	 *
+	 * @param mixed $request Request.
+	 * @return mixed
+	 */
 	public function handle_email_registration( $request ) {
 		$email           = sanitize_email( $request->get_param( 'email' ) );
 		$flow_id         = sanitize_key( (string) $request->get_param( 'flow_id' ) );
@@ -1251,7 +1276,7 @@ trait FLOSC_Magic_Link_Trait {
 		// Extract flow context.
 		$flow_id = sanitize_key( (string) ( $purchase_data['flow_id'] ?? get_user_meta( $user_id, '_flosc_registration_flow', true ) ) );
 		if ( empty( $flow_id ) ) {
-			return; // No flow context — skip
+			return; // No flow context — skip.
 		}
 
 		$context     = $this->get_guest_email_context( $flow_id, $user_id );
@@ -1300,6 +1325,10 @@ trait FLOSC_Magic_Link_Trait {
 	/**
 	 * Subscribe a user to the newsletter (idempotent); sends the welcome on first opt-in.
 	 * The chatbot opt-in flow can call this for a logged-in user.
+	 *
+	 * @param mixed  $email   Email.
+	 * @param mixed  $token   Token.
+	 * @param string $flow_id Flow ID.
 	 */
 	private function send_guest_link_email( $email, $token, $flow_id = '' ) {
 		$context     = $this->get_guest_email_context( $flow_id );
@@ -1346,6 +1375,8 @@ trait FLOSC_Magic_Link_Trait {
 	 */
 	/**
 	 * Collaborator API: FLOSC_Email guest context / redirects.
+	 *
+	 * @param string $flow_id Flow ID.
 	 */
 	public function get_guest_link_base_url( $flow_id = '' ) {
 		$flow_id = sanitize_key( (string) $flow_id );
@@ -1383,6 +1414,9 @@ trait FLOSC_Magic_Link_Trait {
 	/**
 	 * Send a warning email when an email has requested 6+ guest links.
 	 * Friendly but firm — covers both genuine learners and potential abusers.
+	 *
+	 * @param mixed $email Email.
+	 * @param mixed $count Count.
 	 */
 	private function send_guest_link_warning_email( $email, $count ) {
 		$context     = $this->get_guest_email_context( '' );
@@ -1415,6 +1449,8 @@ trait FLOSC_Magic_Link_Trait {
 	/**
 	 * Delete a DO session directory after its data has been pulled to WP.
 	 * Fire-and-forget: failures are logged but do not block the login flow.
+	 *
+	 * @param mixed $email Email.
 	 */
 	private function record_guest_link_send( $email ) {
 		$email = sanitize_email( $email );
@@ -1461,33 +1497,67 @@ trait FLOSC_Magic_Link_Trait {
 
 	/**
 	 * Send the Guest Access Link email.
+	 *
+	 * @param mixed $email Email.
 	 */
 	private function normalize_guest_request_email( $email ) {
 		return strtolower( trim( (string) $email ) );
 	}
 
+	/**
+	 * Get guest request key.
+	 *
+	 * @param mixed $email Email.
+	 * @return mixed
+	 */
 	private function get_guest_request_key( $email ) {
 		return md5( $this->normalize_guest_request_email( $email ) );
 	}
 
+	/**
+	 * Get guest account request queue.
+	 *
+	 * @return mixed
+	 */
 	private function get_guest_account_request_queue() {
 		$queue = get_option( 'flosc_guest_account_request_queue', array() );
 		return is_array( $queue ) ? $queue : array();
 	}
 
+	/**
+	 * Save guest account request queue.
+	 *
+	 * @param array $queue Queue.
+	 */
 	private function save_guest_account_request_queue( array $queue ) {
 		update_option( 'flosc_guest_account_request_queue', $queue, false );
 	}
 
+	/**
+	 * Get guest account request denylist.
+	 *
+	 * @return mixed
+	 */
 	private function get_guest_account_request_denylist() {
 		$denylist = get_option( 'flosc_guest_account_request_denylist', array() );
 		return is_array( $denylist ) ? $denylist : array();
 	}
 
+	/**
+	 * Save guest account request denylist.
+	 *
+	 * @param array $denylist Denylist.
+	 */
 	private function save_guest_account_request_denylist( array $denylist ) {
 		update_option( 'flosc_guest_account_request_denylist', $denylist, false );
 	}
 
+	/**
+	 * Is guest request email blocked.
+	 *
+	 * @param mixed $email Email.
+	 * @return mixed
+	 */
 	private function is_guest_request_email_blocked( $email ) {
 		$email = $this->normalize_guest_request_email( $email );
 		if ( '' === $email ) {
@@ -1497,6 +1567,13 @@ trait FLOSC_Magic_Link_Trait {
 		return isset( $denylist[ $this->get_guest_request_key( $email ) ] );
 	}
 
+	/**
+	 * Upsert guest account request.
+	 *
+	 * @param mixed  $email   Email.
+	 * @param string $flow_id Flow ID.
+	 * @param string $message Message.
+	 */
 	private function upsert_guest_account_request( $email, $flow_id = '', $message = '' ) {
 		$email = sanitize_email( $email );
 		if ( empty( $email ) || ! is_email( $email ) ) {
@@ -1538,6 +1615,14 @@ trait FLOSC_Magic_Link_Trait {
 		$this->save_guest_account_request_queue( $queue );
 	}
 
+	/**
+	 * Set guest account request status.
+	 *
+	 * @param mixed $email    Email.
+	 * @param mixed $status   Status.
+	 * @param int   $actor_id Actor ID.
+	 * @return mixed
+	 */
 	private function set_guest_account_request_status( $email, $status, $actor_id = 0 ) {
 		$email = sanitize_email( $email );
 		if ( empty( $email ) || ! is_email( $email ) ) {
@@ -1572,6 +1657,12 @@ trait FLOSC_Magic_Link_Trait {
 		return true;
 	}
 
+	/**
+	 * Delete guest account request.
+	 *
+	 * @param mixed $email Email.
+	 * @return mixed
+	 */
 	private function delete_guest_account_request( $email ) {
 		$email = sanitize_email( $email );
 		if ( empty( $email ) || ! is_email( $email ) ) {
@@ -1587,6 +1678,13 @@ trait FLOSC_Magic_Link_Trait {
 		return true;
 	}
 
+	/**
+	 * Deny and block guest account request.
+	 *
+	 * @param mixed $email    Email.
+	 * @param int   $actor_id Actor ID.
+	 * @return mixed
+	 */
 	private function deny_and_block_guest_account_request( $email, $actor_id = 0 ) {
 		$email = sanitize_email( $email );
 		if ( empty( $email ) || ! is_email( $email ) ) {
@@ -1605,6 +1703,12 @@ trait FLOSC_Magic_Link_Trait {
 		return true;
 	}
 
+	/**
+	 * Unblock guest account request email.
+	 *
+	 * @param mixed $email Email.
+	 * @return mixed
+	 */
 	private function unblock_guest_account_request_email( $email ) {
 		$email = sanitize_email( $email );
 		if ( empty( $email ) || ! is_email( $email ) ) {
@@ -1679,7 +1783,7 @@ trait FLOSC_Magic_Link_Trait {
 	 * FLOSC_Condition_Evaluator must pass. manage_options may force-bypass.
 	 *
 	 * @param int    $user_id Existing WP user (0 = none).
-	 * @param string $flow_id
+	 * @param string $flow_id Flow ID.
 	 * @param bool   $force   Bypass condition (admin only caller).
 	 * @return true|WP_Error
 	 */
@@ -1802,6 +1906,9 @@ trait FLOSC_Magic_Link_Trait {
 		);
 	}
 
+	/**
+	 * Handle guest request approve.
+	 */
 	public function handle_guest_request_approve() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'Unauthorized', 'flosc' ), '', array( 'response' => 403 ) );
@@ -1831,6 +1938,9 @@ trait FLOSC_Magic_Link_Trait {
 		exit;
 	}
 
+	/**
+	 * Handle guest request approve send.
+	 */
 	public function handle_guest_request_approve_send() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'Unauthorized', 'flosc' ), '', array( 'response' => 403 ) );
@@ -1896,6 +2006,9 @@ trait FLOSC_Magic_Link_Trait {
 		exit;
 	}
 
+	/**
+	 * Handle guest request deny block.
+	 */
 	public function handle_guest_request_deny_block() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'Unauthorized', 'flosc' ), '', array( 'response' => 403 ) );
@@ -1924,6 +2037,9 @@ trait FLOSC_Magic_Link_Trait {
 		exit;
 	}
 
+	/**
+	 * Handle guest request delete.
+	 */
 	public function handle_guest_request_delete() {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'Unauthorized', 'flosc' ), '', array( 'response' => 403 ) );
@@ -1962,6 +2078,8 @@ trait FLOSC_Magic_Link_Trait {
 
 	/**
 	 * Admin UI: show pending email status + activate control on user profile.
+	 *
+	 * @param mixed $user User.
 	 */
 	public function render_email_account_status_profile( $user ) {
 		if ( ! current_user_can( 'edit_user', $user->ID ) ) {

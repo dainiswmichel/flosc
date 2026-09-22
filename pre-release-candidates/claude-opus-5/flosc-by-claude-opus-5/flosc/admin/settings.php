@@ -45,6 +45,12 @@ if ( ! current_user_can( 'edit_others_posts' ) ) {
  * @return void
  */
 if ( ! function_exists( 'flosc_tab_header' ) ) {
+	/**
+	 * Tab header.
+	 *
+	 * @param mixed $emoji    Emoji.
+	 * @param mixed $tab_name Tab name.
+	 */
 	function flosc_tab_header( $emoji, $tab_name ) {
 		$flosc_ivr_file = $GLOBALS['flosc_current_ivr'] ?? '';
 		$flosc_settings = $GLOBALS['flosc_current_settings'] ?? array();
@@ -68,6 +74,9 @@ if ( ! function_exists( 'flosc_tab_header' ) ) {
  * @return void
  */
 if ( ! function_exists( 'flosc_tab_footer' ) ) {
+	/**
+	 * Tab footer.
+	 */
 	function flosc_tab_footer() {
 		$flosc_version = defined( 'FLOSC_VERSION' ) ? FLOSC_VERSION : '?.?.?';
 		echo '<div class="flosc-tab-footer">';
@@ -83,6 +92,11 @@ if ( ! function_exists( 'flosc_tab_footer' ) ) {
  * @return string
  */
 if ( ! function_exists( 'flosc_michel_timestamp' ) ) {
+	/**
+	 * Michel timestamp.
+	 *
+	 * @return mixed
+	 */
 	function flosc_michel_timestamp() {
 		return gmdate( 'Y' ) . 'y-' . gmdate( 'm' ) . 'm-' . gmdate( 'd' ) . 'd-UTC' . gmdate( 'H' ) . 'h-' . gmdate( 'i' ) . 'm-' . gmdate( 's' ) . 's';
 	}
@@ -95,6 +109,12 @@ if ( ! function_exists( 'flosc_michel_timestamp' ) ) {
  * @return string 'ok', 'missing', or 'unknown'
  */
 if ( ! function_exists( 'flosc_check_permalink_status' ) ) {
+	/**
+	 * Check permalink status.
+	 *
+	 * @param mixed $slug Slug.
+	 * @return mixed
+	 */
 	function flosc_check_permalink_status( $slug ) {
 		if ( empty( $slug ) ) {
 			return 'unknown';
@@ -130,6 +150,11 @@ if ( ! function_exists( 'flosc_check_permalink_status' ) ) {
  * @return void
  */
 if ( ! function_exists( 'flosc_permalink_status_indicator' ) ) {
+	/**
+	 * Permalink status indicator.
+	 *
+	 * @param mixed $slug Slug.
+	 */
 	function flosc_permalink_status_indicator( $slug ) {
 		$flosc_status = flosc_check_permalink_status( $slug );
 		$last_flush   = get_option( 'flosc_last_permalink_flush', null );
@@ -195,6 +220,11 @@ if ( ! function_exists( 'flosc_permalink_status_indicator' ) ) {
  * @return string[]
  */
 if ( ! function_exists( 'flosc_known_flow_option_keys' ) ) {
+	/**
+	 * Known flow option keys.
+	 *
+	 * @return mixed
+	 */
 	function flosc_known_flow_option_keys() {
 		$keys = array();
 		if ( function_exists( 'flosc_flows' ) ) {
@@ -654,7 +684,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 	}
 
 	// Collect all POST data for this flow.
-	$flosc_new_settings = $flosc_flow_settings; // Start with existing
+	$flosc_new_settings = $flosc_flow_settings; // Start with existing.
 
 	// v1.5.0: Keys that contain multiline content (stored in flow settings via flow_ prefix).
 	$flosc_textarea_flow_keys = array(
@@ -730,7 +760,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 				// newlines are the format. sanitize_text_field would collapse
 				// a four-line request into one unreadable line and lose it.
 				|| (bool) preg_match( '/^ai_[a-z0-9_]+_params$/', $flosc_setting_key )
-				|| '_body' === substr( $flosc_setting_key, -5 ); // email bodies (guest/member/newsletter) — preserve newlines
+				|| '_body' === substr( $flosc_setting_key, -5 ); // email bodies (guest/member/newsletter) — preserve newlines.
 			if ( in_array( $flosc_setting_key, $flosc_identity_html_keys, true ) ) {
 				$flosc_new_settings[ $flosc_setting_key ] = wp_kses_post( $flosc_value );
 			} elseif ( 'ai_base_prompt' === $flosc_setting_key && function_exists( 'flosc_sanitize_personality_profile_text' ) ) {
@@ -1154,14 +1184,14 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 					if ( isset( $flosc_pt_row['amount'] ) && '' !== $flosc_pt_row['amount'] ) {
 						$flosc_tokens['amount'] = max( 0, intval( $flosc_pt_row['amount'] ) );
 					} else {
-						unset( $flosc_tokens['amount'] ); // inherit flow default for mode
+						unset( $flosc_tokens['amount'] ); // inherit flow default for mode.
 					}
 					if ( 'none' === $flosc_cap_mode ) {
 						$flosc_tokens['cap'] = 0;
 					} elseif ( 'custom' === $flosc_cap_mode && isset( $flosc_pt_row['cap'] ) && '' !== $flosc_pt_row['cap'] ) {
 						$flosc_tokens['cap'] = max( 0, intval( $flosc_pt_row['cap'] ) );
 					} else {
-						unset( $flosc_tokens['cap'] ); // flow cap
+						unset( $flosc_tokens['cap'] ); // flow cap.
 					}
 				} else {
 					// flow defaults — clear overrides so runtime uses flow params.
@@ -1713,7 +1743,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		foreach ( $flosc_group_categories as $flosc_i => $flosc_cat ) {
 			$flosc_cat = sanitize_text_field( $flosc_cat );
 			if ( '' === $flosc_cat ) {
-				continue; // Skip rows with no category selected
+				continue; // Skip rows with no category selected.
 			}
 			$flosc_quiz                  = sanitize_text_field( $flosc_group_quizzes[ $flosc_i ] ?? '' );
 			$flosc_content_item_groups[] = array(

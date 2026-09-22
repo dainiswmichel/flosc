@@ -15,30 +15,63 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Click bank provider.
+ */
 class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
 
+	/**
+	 * Get ID.
+	 *
+	 * @return mixed
+	 */
 	public function get_id() {
 		return 'clickbank';
 	}
 
+	/**
+	 * Get name.
+	 *
+	 * @return mixed
+	 */
 	public function get_name() {
 		return 'ClickBank';
 	}
 
+	/**
+	 * Get description.
+	 *
+	 * @return mixed
+	 */
 	public function get_description() {
 		return 'Accept payments via ClickBank marketplace with affiliate support.';
 	}
 
+	/**
+	 * Get icon.
+	 *
+	 * @return mixed
+	 */
 	public function get_icon() {
 		return '🛒';
 	}
 
+	/**
+	 * Is configured.
+	 *
+	 * @return mixed
+	 */
 	public function is_configured() {
 		$vendor = $this->get_setting( 'vendor', '' );
 		$secret = $this->get_setting( 'secret', '' );
 		return ! empty( $vendor ) && ! empty( $secret );
 	}
 
+	/**
+	 * Supports subscriptions.
+	 *
+	 * @return mixed
+	 */
 	public function supports_subscriptions() {
 		return true;
 	}
@@ -107,6 +140,10 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
 	 *
 	 * PAY-01: Must not report settled payment. Redirect initiation only;
 	 * IPN/INS webhook is the sole fulfillment path.
+	 *
+	 * @param mixed $user_id      User ID.
+	 * @param mixed $offer        Offer.
+	 * @param mixed $payment_data Payment data.
 	 */
 	public function process_payment( $user_id, $offer, $payment_data = array() ) {
 		// Redirect only — never settled. Webhook is the only grant path.
@@ -336,7 +373,7 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
 		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- ClickBank sends the INS payload and IV base64-encoded; this is transport decoding, not obfuscation.
 		$encrypted = base64_decode( (string) $encrypted_b64, true );
 		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- as above.
-		$iv        = base64_decode( (string) $iv_b64, true );
+		$iv = base64_decode( (string) $iv_b64, true );
 		if ( false === $encrypted || false === $iv || '' === $iv ) {
 			return new WP_Error( 'invalid_ins_encoding', __( 'Invalid ClickBank INS encoding', 'flosc' ), array( 'status' => 400 ) );
 		}
@@ -472,6 +509,8 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
 	 * 1) product item matches configured cbitems when both present
 	 * 2) FLOSC offer_id setting is required (no synthetic grant)
 	 * 3) claim receipt → fulfill_settled_purchase once
+	 *
+	 * @param mixed $params Params.
 	 */
 	private function handle_sale( $params ) {
 		$email    = sanitize_email( (string) ( $params['ccustemail'] ?? '' ) );
@@ -614,6 +653,9 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Create new user from ClickBank purchase
+	 *
+	 * @param mixed $email Email.
+	 * @param mixed $name  Name.
 	 */
 	private function create_user_from_purchase( $email, $name ) {
 		$base_username = sanitize_user( explode( '@', $email )[0], true );
@@ -655,6 +697,8 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Get unique username
+	 *
+	 * @param mixed $base Base.
 	 */
 	private function get_unique_username( $base ) {
 		if ( ! username_exists( $base ) ) {
@@ -677,10 +721,10 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
 	/**
 	 * Send welcome email (no plaintext password — use WordPress reset link).
 	 *
-	 * @param int    $user_id
-	 * @param string $email
-	 * @param string $name
-	 * @param string $username
+	 * @param int    $user_id User ID.
+	 * @param string $email Email.
+	 * @param string $name Name.
+	 * @param string $username Username.
 	 */
 	private function send_welcome_email( $user_id, $email, $name, $username ) {
 		$product_name = get_option( 'flosc_product_name', 'Our Product' );
@@ -717,6 +761,8 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Handle refund/chargeback
+	 *
+	 * @param mixed $params Params.
 	 */
 	private function handle_refund( $params ) {
 		$email = sanitize_email( $params['ccustemail'] );
@@ -743,6 +789,8 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Handle subscription rebill
+	 *
+	 * @param mixed $params Params.
 	 */
 	private function handle_rebill( $params ) {
 		$email   = sanitize_email( $params['ccustemail'] );
@@ -768,6 +816,8 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Handle subscription cancellation/uncancellation
+	 *
+	 * @param mixed $params Params.
 	 */
 	private function handle_subscription_change( $params ) {
 		$email            = sanitize_email( $params['ccustemail'] );

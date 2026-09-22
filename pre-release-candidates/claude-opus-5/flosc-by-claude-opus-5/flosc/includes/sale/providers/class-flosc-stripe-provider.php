@@ -11,28 +11,61 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Stripe provider.
+ */
 class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 
+	/**
+	 * Get ID.
+	 *
+	 * @return mixed
+	 */
 	public function get_id() {
 		return 'stripe';
 	}
 
+	/**
+	 * Get name.
+	 *
+	 * @return mixed
+	 */
 	public function get_name() {
 		return 'Stripe';
 	}
 
+	/**
+	 * Get description.
+	 *
+	 * @return mixed
+	 */
 	public function get_description() {
 		return 'Accept credit cards, Apple Pay, Google Pay, and subscriptions via Stripe.';
 	}
 
+	/**
+	 * Get icon.
+	 *
+	 * @return mixed
+	 */
 	public function get_icon() {
 		return '💳';
 	}
 
+	/**
+	 * Is configured.
+	 *
+	 * @return mixed
+	 */
 	public function is_configured() {
 		return ! empty( $this->get_secret_key() ) && ! empty( $this->get_publishable_key() );
 	}
 
+	/**
+	 * Supports subscriptions.
+	 *
+	 * @return mixed
+	 */
 	public function supports_subscriptions() {
 		return true;
 	}
@@ -91,11 +124,21 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 		return $this->get_flow_setting( 'mode', 'test' );
 	}
 
+	/**
+	 * Get publishable key.
+	 *
+	 * @return mixed
+	 */
 	private function get_publishable_key() {
 		$mode = $this->get_mode();
 		return $this->get_flow_setting( $mode . '_pk', '' );
 	}
 
+	/**
+	 * Get secret key.
+	 *
+	 * @return mixed
+	 */
 	private function get_secret_key() {
 		$mode = $this->get_mode();
 		return $this->get_flow_setting( $mode . '_sk', '' );
@@ -107,6 +150,9 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 	 * All under the per-flow array option (flosc_flow_{name})
 	 *
 	 * @since 1.6.3
+	 *
+	 * @param mixed  $key      Key.
+	 * @param string $fallback Fallback.
 	 */
 	private function get_flow_setting( $key, $fallback = '' ) {
 		// Try per-flow via flosc()->get_setting() (checks flow array first, then global).
@@ -132,6 +178,10 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Process payment
+	 *
+	 * @param mixed $user_id      User ID.
+	 * @param mixed $offer        Offer.
+	 * @param mixed $payment_data Payment data.
 	 */
 	public function process_payment( $user_id, $offer, $payment_data = array() ) {
 		$pricing  = $offer['pricing']['stripe'] ?? array();
@@ -159,9 +209,9 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 	/**
 	 * Create one-time payment
 	 *
-	 * @param WP_User $user
-	 * @param string  $price_id
-	 * @param array   $payment_data
+	 * @param WP_User $user User.
+	 * @param string  $price_id Price ID.
+	 * @param array   $payment_data Payment data.
 	 * @param string  $offer_id Bound offer for metadata (PAY-02).
 	 */
 	private function create_payment( $user, $price_id, $payment_data, $offer_id = '' ) {
@@ -179,6 +229,11 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 	 * Added offer_id parameter to track which offer is being purchased
 	 *
 	 * @since 1.4.1
+	 *
+	 * @param mixed  $user               User.
+	 * @param mixed  $price_id_or_amount Price ID or amount.
+	 * @param string $currency           Currency.
+	 * @param string $offer_id           Offer ID.
 	 */
 	public function create_payment_intent( $user, $price_id_or_amount, $currency = 'usd', $offer_id = '' ) {
 		// First, get the price details from Stripe.
@@ -228,10 +283,10 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 	/**
 	 * Confirm a payment (server-side)
 	 *
-	 * @param WP_User $user
-	 * @param string  $price_id
-	 * @param string  $payment_method_id
-	 * @param string  $offer_id
+	 * @param WP_User $user User.
+	 * @param string  $price_id Price ID.
+	 * @param string  $payment_method_id Payment method ID.
+	 * @param string  $offer_id Offer ID.
 	 */
 	private function confirm_payment( $user, $price_id, $payment_method_id, $offer_id = '' ) {
 		// Get price details.
@@ -297,9 +352,9 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 	 * status=incomplete + PaymentIntent client_secret for the client to confirm.
 	 * Only status=active is settled for process_purchase fulfillment.
 	 *
-	 * @param WP_User $user
+	 * @param WP_User $user User.
 	 * @param string  $price_id Stripe Price id.
-	 * @param array   $payment_data
+	 * @param array   $payment_data Payment data.
 	 * @param string  $offer_id Bound offer for metadata (PAY-02).
 	 * @return array|WP_Error
 	 */
@@ -456,6 +511,8 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Get or create Stripe Customer
+	 *
+	 * @param mixed $user User.
 	 */
 	private function get_or_create_customer( $user ) {
 		$customer_id = get_user_meta( $user->ID, '_flosc_stripe_customer', true );
@@ -493,6 +550,8 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Cancel subscription
+	 *
+	 * @param mixed $subscription_id Subscription ID.
 	 */
 	public function cancel_subscription( $subscription_id ) {
 		$response = $this->api_request( 'DELETE', '/subscriptions/' . $subscription_id );
@@ -510,6 +569,9 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Handle Stripe webhook
+	 *
+	 * @param mixed $payload Payload.
+	 * @param mixed $headers Headers.
 	 */
 	public function handle_webhook( $payload, $headers = array() ) {
 		$webhook_secret = $this->get_flow_setting( 'webhook_secret', '' );
@@ -600,6 +662,8 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 	 * PAY-01/PAY-02: only metadata-bound offer; claim txn before grant (idempotent with complete_purchase).
 	 *
 	 * @since 1.4.1
+	 *
+	 * @param mixed $payment_intent Payment intent.
 	 */
 	private function handle_payment_succeeded( $payment_intent ) {
 		$meta           = ( isset( $payment_intent['metadata'] ) && is_array( $payment_intent['metadata'] ) )
@@ -646,6 +710,12 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 		return array( 'success' => true );
 	}
 
+	/**
+	 * Handle subscription updated.
+	 *
+	 * @param mixed $subscription Subscription.
+	 * @return mixed
+	 */
 	private function handle_subscription_updated( $subscription ) {
 		$meta    = ( isset( $subscription['metadata'] ) && is_array( $subscription['metadata'] ) )
 			? $subscription['metadata']
@@ -661,6 +731,12 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 		return array( 'success' => true );
 	}
 
+	/**
+	 * Handle subscription deleted.
+	 *
+	 * @param mixed $subscription Subscription.
+	 * @return mixed
+	 */
 	private function handle_subscription_deleted( $subscription ) {
 		$meta    = ( isset( $subscription['metadata'] ) && is_array( $subscription['metadata'] ) )
 			? $subscription['metadata']
@@ -676,6 +752,12 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 		return array( 'success' => true );
 	}
 
+	/**
+	 * Handle payment failed.
+	 *
+	 * @param mixed $invoice Invoice.
+	 * @return mixed
+	 */
 	private function handle_payment_failed( $invoice ) {
 		$customer_id = sanitize_text_field( (string) ( $invoice['customer'] ?? '' ) );
 
@@ -695,6 +777,8 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 	 * Retrieve a PaymentIntent to verify payment status
 	 *
 	 * @since 1.4.1
+	 *
+	 * @param mixed $payment_intent_id Payment intent ID.
 	 */
 	public function retrieve_payment_intent( $payment_intent_id ) {
 		return $this->api_request( 'GET', '/payment_intents/' . $payment_intent_id );
@@ -702,6 +786,10 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Make Stripe API request
+	 *
+	 * @param mixed $method   Method.
+	 * @param mixed $endpoint Endpoint.
+	 * @param mixed $data     Data.
 	 */
 	private function api_request( $method, $endpoint, $data = array() ) {
 		$url = 'https://api.stripe.com/v1' . $endpoint;

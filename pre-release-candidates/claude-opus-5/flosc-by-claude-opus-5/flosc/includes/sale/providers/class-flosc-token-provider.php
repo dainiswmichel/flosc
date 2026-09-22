@@ -12,27 +12,65 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Token provider.
+ */
 class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 
+	/**
+	 * Balance meta key.
+	 *
+	 * @var string
+	 */
 	private $balance_meta_key = '_flosc_token_balance';
-	private $ledger_meta_key  = '_flosc_token_ledger';
+	/**
+	 * Ledger meta key.
+	 *
+	 * @var string
+	 */
+	private $ledger_meta_key = '_flosc_token_ledger';
 
+	/**
+	 * Get ID.
+	 *
+	 * @return mixed
+	 */
 	public function get_id() {
 		return 'tokens';
 	}
 
+	/**
+	 * Get name.
+	 *
+	 * @return mixed
+	 */
 	public function get_name() {
 		return 'Tokens';
 	}
 
+	/**
+	 * Get description.
+	 *
+	 * @return mixed
+	 */
 	public function get_description() {
 		return 'Internal credit system for pay-per-use features. Users earn or purchase tokens.';
 	}
 
+	/**
+	 * Get icon.
+	 *
+	 * @return mixed
+	 */
 	public function get_icon() {
 		return '🪙';
 	}
 
+	/**
+	 * Is configured.
+	 *
+	 * @return mixed
+	 */
 	public function is_configured() {
 		// Tokens are always "configured" - it's an internal system.
 		return true;
@@ -83,6 +121,9 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Read a positive integer token-economics setting.
+	 *
+	 * @param mixed $key      Key.
+	 * @param mixed $fallback Fallback.
 	 */
 	private function get_positive_setting_int( $key, $fallback ) {
 		if ( function_exists( 'flosc_get_setting' ) ) {
@@ -127,6 +168,8 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Convert real millicents to tokens using configured real-millicents ratio.
+	 *
+	 * @param mixed $real_millicents Real millicents.
 	 */
 	public function convert_real_millicents_to_tokens( $real_millicents ) {
 		$real_millicents = max( 0, intval( $real_millicents ) );
@@ -143,6 +186,10 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Process payment (spend tokens)
+	 *
+	 * @param mixed $user_id      User ID.
+	 * @param mixed $offer        Offer.
+	 * @param mixed $payment_data Payment data.
 	 */
 	public function process_payment( $user_id, $offer, $payment_data = array() ) {
 		// PAY-01B: token provider never treats missing/zero cost as free unlock of a paid offer.
@@ -196,6 +243,8 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Get user's token balance
+	 *
+	 * @param mixed $user_id User ID.
 	 */
 	public function get_balance( $user_id ) {
 		$balance     = get_user_meta( $user_id, $this->balance_meta_key, true );
@@ -205,6 +254,11 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Add tokens to user's balance
+	 *
+	 * @param mixed  $user_id User ID.
+	 * @param mixed  $amount  Amount.
+	 * @param string $reason  Reason.
+	 * @param mixed  $meta    Meta.
 	 */
 	public function credit( $user_id, $amount, $reason = '', $meta = array() ) {
 		if ( $amount <= 0 ) {
@@ -239,6 +293,11 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 	 *
 	 * Uses a row lock on usermeta when available so two concurrent purchases
 	 * that can only afford one debit cannot both succeed (PAY-ACC-01).
+	 *
+	 * @param mixed  $user_id User ID.
+	 * @param mixed  $amount  Amount.
+	 * @param string $reason  Reason.
+	 * @param mixed  $meta    Meta.
 	 */
 	public function deduct( $user_id, $amount, $reason = '', $meta = array() ) {
 		$user_id = absint( $user_id );
@@ -347,6 +406,10 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Set balance directly (admin function)
+	 *
+	 * @param mixed  $user_id User ID.
+	 * @param mixed  $amount  Amount.
+	 * @param string $reason  Reason.
 	 */
 	public function set_balance( $user_id, $amount, $reason = 'Admin adjustment' ) {
 		$current = $this->get_balance( $user_id );
@@ -370,6 +433,9 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Log transaction to ledger
+	 *
+	 * @param mixed $user_id     User ID.
+	 * @param mixed $transaction Transaction.
 	 */
 	private function log_transaction( $user_id, $transaction ) {
 		$ledger = get_user_meta( $user_id, $this->ledger_meta_key, true );
@@ -386,6 +452,9 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Get user's transaction ledger
+	 *
+	 * @param mixed $user_id User ID.
+	 * @param int   $limit   Limit.
 	 */
 	public function get_ledger( $user_id, $limit = 50 ) {
 		$ledger = get_user_meta( $user_id, $this->ledger_meta_key, true );
@@ -397,6 +466,8 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Grant signup bonus
+	 *
+	 * @param mixed $user_id User ID.
 	 */
 	public function grant_signup_bonus( $user_id ) {
 		$bonus = intval( $this->get_setting( 'signup_bonus', 10 ) );
@@ -410,6 +481,9 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Grant referral bonus
+	 *
+	 * @param mixed $referrer_id Referrer ID.
+	 * @param mixed $referred_id Referred ID.
 	 */
 	public function grant_referral_bonus( $referrer_id, $referred_id ) {
 		$bonus = intval( $this->get_setting( 'referral_bonus', 25 ) );
@@ -428,6 +502,10 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Convert tokens from affiliate earnings
+	 *
+	 * @param mixed $user_id          User ID.
+	 * @param mixed $affiliate_amount Affiliate amount.
+	 * @param mixed $affiliate_meta   Affiliate meta.
 	 */
 	public function credit_from_affiliate( $user_id, $affiliate_amount, $affiliate_meta = array() ) {
 		// How many tokens one unit of affiliate commission buys. Ten by default.
@@ -477,6 +555,9 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Check if user can afford an action
+	 *
+	 * @param mixed $user_id User ID.
+	 * @param mixed $action  Action.
 	 */
 	public function can_afford( $user_id, $action ) {
 		$costs = $this->get_action_costs();
@@ -491,6 +572,10 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
 
 	/**
 	 * Charge for an action
+	 *
+	 * @param mixed $user_id User ID.
+	 * @param mixed $action  Action.
+	 * @param mixed $meta    Meta.
 	 */
 	public function charge_for_action( $user_id, $action, $meta = array() ) {
 		$costs = $this->get_action_costs();

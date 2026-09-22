@@ -31,6 +31,9 @@ use WordPress\AiClient\Tools\DTO\FunctionResponse;
 use WordPress\AnthropicAiProvider\Authentication\AnthropicApiKeyRequestAuthentication;
 use WordPress\GoogleAiProvider\Authentication\GoogleApiKeyRequestAuthentication;
 
+/**
+ * WP AI client.
+ */
 class FLOSC_WP_AI_Client {
 
 	/**
@@ -43,6 +46,8 @@ class FLOSC_WP_AI_Client {
 	}
 
 	/**
+	 * Provider ID map.
+	 *
 	 * @return array<string,string> FLOSC slug => WordPress provider id.
 	 */
 	public static function provider_id_map() {
@@ -54,6 +59,8 @@ class FLOSC_WP_AI_Client {
 	}
 
 	/**
+	 * Plugin slug.
+	 *
 	 * @param string $flosc_provider FLOSC slug.
 	 * @return string wordpress.org plugin slug, or empty.
 	 */
@@ -68,6 +75,8 @@ class FLOSC_WP_AI_Client {
 	}
 
 	/**
+	 * Plugin name.
+	 *
 	 * @param string $flosc_provider FLOSC slug.
 	 * @return string
 	 */
@@ -82,6 +91,8 @@ class FLOSC_WP_AI_Client {
 	}
 
 	/**
+	 * Plugin directory URL.
+	 *
 	 * @param string $flosc_provider FLOSC slug.
 	 * @return string
 	 */
@@ -112,6 +123,8 @@ class FLOSC_WP_AI_Client {
 	}
 
 	/**
+	 * WordPress provider ID.
+	 *
 	 * @param string $flosc_provider FLOSC slug.
 	 * @return string WordPress AI Client provider id, or empty.
 	 */
@@ -122,6 +135,8 @@ class FLOSC_WP_AI_Client {
 	}
 
 	/**
+	 * Uses official plugin.
+	 *
 	 * @param string $flosc_provider FLOSC slug.
 	 * @return bool
 	 */
@@ -147,6 +162,8 @@ class FLOSC_WP_AI_Client {
 	private static $applied_parameters = array();
 
 	/**
+	 * Unapplied parameters.
+	 *
 	 * @return array<int,string>
 	 */
 	public static function unapplied_parameters() {
@@ -154,6 +171,8 @@ class FLOSC_WP_AI_Client {
 	}
 
 	/**
+	 * Applied parameters.
+	 *
 	 * @return array<int,string>
 	 */
 	public static function applied_parameters() {
@@ -231,6 +250,8 @@ class FLOSC_WP_AI_Client {
 	}
 
 	/**
+	 * Core client exists.
+	 *
 	 * @return bool
 	 */
 	public static function core_client_exists() {
@@ -682,6 +703,7 @@ class FLOSC_WP_AI_Client {
 	 *
 	 * @param array  $args  generate() args.
 	 * @param string $wp_id WordPress provider id.
+	 * @param mixed  $model_resolved Model resolved.
 	 * @return WP_AI_Client_Prompt_Builder|WP_Error
 	 */
 	private static function make_builder( $args, $wp_id, &$model_resolved = null ) {
@@ -786,6 +808,8 @@ class FLOSC_WP_AI_Client {
 	}
 
 	/**
+	 * No key error.
+	 *
 	 * @param string $provider  FLOSC slug.
 	 * @param bool   $test_mode Rich copy.
 	 * @return WP_Error
@@ -842,6 +866,8 @@ class FLOSC_WP_AI_Client {
 	}
 
 	/**
+	 * Tools to declarations.
+	 *
 	 * @param array $tools FLOSC RAG tool arrays (name, description, input_schema).
 	 * @return FunctionDeclaration[]
 	 */
@@ -871,6 +897,8 @@ class FLOSC_WP_AI_Client {
 	}
 
 	/**
+	 * Parse result.
+	 *
 	 * @param GenerativeAiResult $result         Core result.
 	 * @param string             $provider       FLOSC slug.
 	 * @param string             $requested_model Preferred model id.

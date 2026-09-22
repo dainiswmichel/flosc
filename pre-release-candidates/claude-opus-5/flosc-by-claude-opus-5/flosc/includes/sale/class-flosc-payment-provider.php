@@ -21,6 +21,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Payment provider.
+ */
 abstract class FLOSC_Payment_Provider {
 
 	/**
@@ -59,6 +62,8 @@ abstract class FLOSC_Payment_Provider {
 
 	/**
 	 * Enable/disable the provider
+	 *
+	 * @param mixed $enabled Enabled.
 	 */
 	public function set_enabled( $enabled ) {
 		update_option( 'flosc_provider_' . $this->get_id() . '_enabled', (bool) $enabled );
@@ -72,7 +77,7 @@ abstract class FLOSC_Payment_Provider {
 	/**
 	 * Process a payment
 	 *
-	 * @param int   $user_id
+	 * @param int   $user_id User ID.
 	 * @param array $offer The offer being purchased.
 	 * @param array $payment_data Provider-specific data.
 	 * @return array|WP_Error Transaction result or error
@@ -215,6 +220,9 @@ abstract class FLOSC_Payment_Provider {
 
 	/**
 	 * Helper: Save a setting
+	 *
+	 * @param mixed $key   Key.
+	 * @param mixed $value Value.
 	 */
 	protected function save_setting( $key, $value ) {
 		update_option( 'flosc_' . $this->get_id() . '_' . $key, $value );
@@ -222,6 +230,9 @@ abstract class FLOSC_Payment_Provider {
 
 	/**
 	 * Helper: Get a setting
+	 *
+	 * @param mixed  $key      Key.
+	 * @param string $fallback Fallback.
 	 */
 	protected function get_setting( $key, $fallback = '' ) {
 		return get_option( 'flosc_' . $this->get_id() . '_' . $key, $fallback );

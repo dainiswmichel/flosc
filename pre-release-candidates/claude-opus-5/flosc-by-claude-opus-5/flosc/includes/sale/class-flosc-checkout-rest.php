@@ -9,15 +9,33 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Checkout REST.
+ */
 class FLOSC_Checkout_Rest {
 
-	/** @var FLOSC_Framework */
+	/**
+	 * Construct.
+	 *
+	 * @var FLOSC_Framework
+	 */
 	private $flosc;
 
+	/**
+	 * Construct.
+	 *
+	 * @param mixed $flosc FLOSC.
+	 */
 	public function __construct( $flosc ) {
 		$this->flosc = $flosc;
 	}
 
+	/**
+	 * Get offers.
+	 *
+	 * @param mixed $request Request.
+	 * @return mixed
+	 */
 	public function get_offers( $request ) {
 		$user_id = is_user_logged_in() ? get_current_user_id() : null;
 		// v1.6.2: Flow-aware offer loading.
@@ -38,6 +56,8 @@ class FLOSC_Checkout_Rest {
 	 * Sanitizes output to prevent XSS.
 	 *
 	 * @since 1.6.2
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function get_offer_content( $request ) {
 		$source = sanitize_text_field( $request->get_param( 'source' ) );
@@ -131,6 +151,8 @@ class FLOSC_Checkout_Rest {
 	 * - User can now access ALL 10 posts ✅
 	 *
 	 * TESTING: Use 'tokens' provider for sandbox testing
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function handle_purchase( $request ) {
 		$user_id = get_current_user_id();
@@ -264,7 +286,7 @@ class FLOSC_Checkout_Rest {
 		if ( ! is_array( $coupons ) || empty( $coupons ) ) {
 			return new WP_Error( 'invalid_coupon', __( 'Invalid or expired coupon', 'flosc' ), array( 'status' => 403 ) );
 		}
-		$now  = time(); // UTC unix
+		$now  = time(); // UTC unix.
 		$list = $this->flosc_offer_list_price( $offer );
 
 		foreach ( $coupons as $c ) {
@@ -440,6 +462,8 @@ class FLOSC_Checkout_Rest {
 
 	/**
 	 * Whether offer is treated as subscription for checkout coupons.
+	 *
+	 * @param array $offer Offer.
 	 */
 	private function flosc_offer_is_subscription( array $offer ) {
 		if ( 'subscription' === ( $offer['type'] ?? '' ) ) {
@@ -451,6 +475,8 @@ class FLOSC_Checkout_Rest {
 
 	/**
 	 * Preview coupon for payment modal (native only). Does not charge.
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function handle_apply_offer_coupon( $request ) {
 		$offer_id = sanitize_text_field( $request->get_param( 'offer_id' ) ?? '' );
@@ -541,12 +567,14 @@ class FLOSC_Checkout_Rest {
 	 * Grants product-specific membership level based on product_id
 	 * Fun "Pay What You Want" for testing the full purchase flow
 	 *
-	 * v1.4.4 FIX: Now fires flosc_purchase_completed AND directly calls
+	 * V1.4.4 FIX: Now fires flosc_purchase_completed AND directly calls
 	 * FLOSC_Member_Access::grant_level() so content protection works immediately.
 	 * Previous bug: sandbox set _flosc_member_level but content protection
 	 * checks _flosc_memberlevel_{level} via has_level(). Mismatch = no access.
 	 *
 	 * @since 1.4.4
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function handle_sandbox_purchase( $request ) {
 		$user_id = get_current_user_id();
@@ -596,7 +624,7 @@ class FLOSC_Checkout_Rest {
 
 		// v3.0.5: Determine member level — check offer first (flow-aware), then product fallback.
 		$offer_manager = $this->flosc->sale()->offers();
-		$member_level  = 'member'; // Default fallback
+		$member_level  = 'member'; // Default fallback.
 		$product_name  = 'Full Access';
 		$product_icon  = '🎁';
 
@@ -702,6 +730,12 @@ class FLOSC_Checkout_Rest {
 		);
 	}
 
+	/**
+	 * Create payment intent.
+	 *
+	 * @param mixed $request Request.
+	 * @return mixed
+	 */
 	public function create_payment_intent( $request ) {
 		// Stripe is first-class: requires publishable + secret keys on Payments (per-flow WPDB).
 		$stripe = $this->flosc->sale()->get_provider( 'stripe' );
@@ -769,6 +803,8 @@ class FLOSC_Checkout_Rest {
 	 * Verifies payment with Stripe and grants access (fallback if webhook is slow)
 	 *
 	 * @since 1.4.1
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function complete_purchase( $request ) {
 		$payment_intent_id = sanitize_text_field( $request->get_param( 'payment_intent_id' ) );
@@ -891,7 +927,7 @@ class FLOSC_Checkout_Rest {
 	 * completion, where flosc_checkout_binding_verify() consumes it as proof the
 	 * completion request is this same browser. See §5b for the full rationale.
 	 *
-	 * @param WP_REST_Request $request
+	 * @param WP_REST_Request $request Request.
 	 * @return WP_REST_Response
 	 */
 	public function handle_checkout_binding( $request ) {
@@ -915,6 +951,12 @@ class FLOSC_Checkout_Rest {
 		);
 	}
 
+	/**
+	 * Handle webhook.
+	 *
+	 * @param mixed $request Request.
+	 * @return mixed
+	 */
 	public function handle_webhook( $request ) {
 		$provider_id = $request->get_param( 'provider' );
 		$provider    = $this->flosc->sale()->get_provider( $provider_id );
@@ -953,6 +995,12 @@ class FLOSC_Checkout_Rest {
 		return new WP_REST_Response( $result );
 	}
 
+	/**
+	 * Check access.
+	 *
+	 * @param mixed $request Request.
+	 * @return mixed
+	 */
 	public function check_access( $request ) {
 		if ( ! is_user_logged_in() ) {
 			return new WP_REST_Response(

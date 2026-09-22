@@ -10,12 +10,33 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * AI chat dispatch.
+ */
 class FLOSC_AI_Chat_Dispatch {
 
+	/**
+	 * Provider.
+	 *
+	 * @var mixed
+	 */
 	private $provider;
-	public $last_chain_detail  = array();
+	/**
+	 * Last chain detail.
+	 *
+	 * @var array
+	 */
+	public $last_chain_detail = array();
+	/**
+	 * Last billing meta.
+	 *
+	 * @var array
+	 */
 	private $last_billing_meta = array();
 
+	/**
+	 * Construct.
+	 */
 	public function __construct() {
 		// v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves),
 		// then falls back to global options.
@@ -24,6 +45,9 @@ class FLOSC_AI_Chat_Dispatch {
 
 	/**
 	 * Build system prompt by merging identity + phase + knowledge + FLOSC process (v1.4.1)
+	 *
+	 * @param string $phase   Phase.
+	 * @param mixed  $context Context.
 	 */
 	public function build_system_prompt( $phase = '', $context = array() ) {
 		// 1. Build AI Identity section from Knowledge tab settings
@@ -276,6 +300,8 @@ class FLOSC_AI_Chat_Dispatch {
 	 * v1.9.2: Added FLOSC framework description to prevent identity hallucination
 	 *
 	 * @since 1.4.1
+	 *
+	 * @param mixed $context Context.
 	 */
 	private function build_identity_prompt( $context = array() ) {
 		// Personality: attached library entry (one per flow) wins when set; else flow bag.
@@ -498,6 +524,9 @@ class FLOSC_AI_Chat_Dispatch {
 
 	/**
 	 * Get FLOSC process instructions based on user phase and role
+	 *
+	 * @param mixed $phase   Phase.
+	 * @param mixed $context Context.
 	 */
 	private function get_flosc_process_prompt( $phase, $context = array() ) {
 		$is_admin = $context['is_admin'] ?? false;
@@ -607,6 +636,8 @@ class FLOSC_AI_Chat_Dispatch {
 
 	/**
 	 * Load phase-specific prompt from admin settings
+	 *
+	 * @param mixed $phase Phase.
 	 */
 	private function load_phase_prompt( $phase ) {
 		// v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves).
@@ -617,6 +648,8 @@ class FLOSC_AI_Chat_Dispatch {
 	 * Load AI knowledge files with access-level filtering (v1.4.1)
 	 * Public files: available to all users
 	 * Members files: only loaded for logged-in users
+	 *
+	 * @param mixed $context Context.
 	 */
 	private function load_orientation_files( $context = array() ) {
 		// Per-flow basket only — mirrors FLOSC_Chatpack::load_knowledge_files so both
@@ -709,6 +742,8 @@ class FLOSC_AI_Chat_Dispatch {
 	 * Handle arrays and nested values gracefully
 	 *
 	 * @since 1.9.2
+	 *
+	 * @param mixed $context Context.
 	 */
 	private function build_context_string( $context ) {
 		if ( empty( $context ) ) {
@@ -758,7 +793,7 @@ class FLOSC_AI_Chat_Dispatch {
 			}
 			$formatted_value = $this->format_context_value( $value );
 			if ( null === $formatted_value || '' === $formatted_value ) {
-				continue; // Skip null values
+				continue; // Skip null values.
 			}
 			// Format key: flosc_version → Flosc Version, quiz_score → Quiz Score.
 			$label   = ucwords( str_replace( '_', ' ', $key ) );
@@ -772,8 +807,8 @@ class FLOSC_AI_Chat_Dispatch {
 	 * Format nested context values into readable strings for prompts.
 	 * Prevents nested arrays from collapsing into literal "Array" strings.
 	 *
-	 * @param mixed $value
-	 * @param int   $depth
+	 * @param mixed $value Value.
+	 * @param int   $depth Depth.
 	 * @return string|null
 	 */
 	private function format_context_value( $value, $depth = 0 ) {
@@ -927,7 +962,7 @@ class FLOSC_AI_Chat_Dispatch {
 	/**
 	 * Production dispatch with an explicit, inspectable outcome.
 	 *
-	 * get_response() answers with a string, so an empty answer and a provider
+	 * Get_response() answers with a string, so an empty answer and a provider
 	 * that refused the request are indistinguishable at the call site. That is
 	 * how a 400 could read as a working chatbot with nothing to say. This keeps
 	 * production caching and chaining intact and reports what happened.
@@ -935,6 +970,9 @@ class FLOSC_AI_Chat_Dispatch {
 	 * Provider detail stays internal. The chat-turn layer decides separately
 	 * what a visitor sees, what an administrator sees, and what is logged.
 	 *
+	 * @param mixed  $message       Message.
+	 * @param string $system_prompt System prompt.
+	 * @param mixed  $context       Context.
 	 * @return array{content:string,source:string,provider:string,error_code:string,error:string}
 	 */
 	public function get_response_result( $message, $system_prompt = '', $context = array() ) {
@@ -970,6 +1008,11 @@ class FLOSC_AI_Chat_Dispatch {
 
 	/**
 	 * Capture normalized billing metrics from provider responses.
+	 *
+	 * @param mixed $provider Provider.
+	 * @param mixed $model    Model.
+	 * @param mixed $usage    Usage.
+	 * @param mixed $raw      Raw.
 	 */
 	private function capture_billing_meta( $provider, $model, $usage = array(), $raw = array() ) {
 		$usage = is_array( $usage ) ? $usage : array();
@@ -1053,7 +1096,7 @@ class FLOSC_AI_Chat_Dispatch {
 		$seed = array(
 			'input'  => 300000,
 			'output' => 1500000,
-		); // conservative default (Sonnet-tier)
+		); // conservative default (Sonnet-tier).
 		if ( false !== strpos( $m, 'haiku' ) ) {
 			$seed = array(
 				'input'  => 100000,
@@ -1095,6 +1138,12 @@ class FLOSC_AI_Chat_Dispatch {
 
 	/**
 	 * One hop: IVR locally; OpenAI/Anthropic/Gemini via WordPress AI Client; xAI via FLOSC HTTP.
+	 *
+	 * @param mixed $provider      Provider.
+	 * @param mixed $message       Message.
+	 * @param mixed $system_prompt System prompt.
+	 * @param mixed $context       Context.
+	 * @param mixed $test_mode     Test mode.
 	 */
 	private function call_provider( $provider, $message, $system_prompt, $context, $test_mode ) {
 		switch ( $provider ) {
@@ -1107,7 +1156,7 @@ class FLOSC_AI_Chat_Dispatch {
 			case 'gemini':
 				return $this->gemini_request( $message, $system_prompt, $context, $test_mode );
 			case 'ivr':
-				return $this->ivr_response( $message ); // Explicit IVR mode — correct
+				return $this->ivr_response( $message ); // Explicit IVR mode — correct.
 			default:
 				// v1.9.3: Unknown/misconfigured provider — return null, not silent IVR.
 				if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
@@ -1124,6 +1173,10 @@ class FLOSC_AI_Chat_Dispatch {
 	 * Example: OpenAI drafts → Anthropic refines → final response.
 	 *
 	 * @since 1.9.0
+	 *
+	 * @param mixed $message       Message.
+	 * @param mixed $system_prompt System prompt.
+	 * @param mixed $context       Context.
 	 */
 	private function get_chained_response( $message, $system_prompt, $context ) {
 		$chain = array();
@@ -1169,6 +1222,8 @@ class FLOSC_AI_Chat_Dispatch {
 
 	/**
 	 * IVR - Scripted Responses (Free)
+	 *
+	 * @param mixed $message Message.
 	 */
 	private function ivr_response( $message ) {
 		$message_lower = strtolower( $message );
@@ -1241,6 +1296,12 @@ class FLOSC_AI_Chat_Dispatch {
 	/**
 	 * OpenAI, Anthropic, and Gemini chat: WordPress 7.1 AI Client.
 	 * Official provider plugins own the vendor HTTP. FLOSC binds this flow's key.
+	 *
+	 * @param mixed $provider      Provider.
+	 * @param mixed $message       Message.
+	 * @param mixed $system_prompt System prompt.
+	 * @param mixed $context       Context.
+	 * @param bool  $test_mode     Test mode.
 	 */
 	private function wp_ai_chat_request( $provider, $message, $system_prompt, $context = array(), $test_mode = false ) {
 		$model_keys = array(
@@ -1296,6 +1357,11 @@ class FLOSC_AI_Chat_Dispatch {
 
 	/**
 	 * OpenAI chat via WordPress AI Client + AI Provider for OpenAI.
+	 *
+	 * @param mixed $message       Message.
+	 * @param mixed $system_prompt System prompt.
+	 * @param mixed $context       Context.
+	 * @param bool  $test_mode     Test mode.
 	 */
 	private function openai_request( $message, $system_prompt, $context = array(), $test_mode = false ) {
 		return $this->wp_ai_chat_request( 'openai', $message, $system_prompt, $context, $test_mode );
@@ -1303,13 +1369,23 @@ class FLOSC_AI_Chat_Dispatch {
 
 	/**
 	 * Anthropic Claude via WordPress AI Client + AI Provider for Anthropic.
+	 *
+	 * @param mixed $message       Message.
+	 * @param mixed $system_prompt System prompt.
+	 * @param mixed $context       Context.
+	 * @param bool  $test_mode     Test mode.
 	 */
 	private function anthropic_request( $message, $system_prompt, $context = array(), $test_mode = false ) {
 		return $this->wp_ai_chat_request( 'anthropic', $message, $system_prompt, $context, $test_mode );
 	}
 
 	/**
-	 * xAI Grok
+	 * XAI Grok
+	 *
+	 * @param mixed $message       Message.
+	 * @param mixed $system_prompt System prompt.
+	 * @param mixed $context       Context.
+	 * @param bool  $test_mode     Test mode.
 	 */
 	private function xai_request( $message, $system_prompt, $context = array(), $test_mode = false ) {
 		// v1.9.0: Use flosc_get_setting() — reads flow settings first.
@@ -1322,7 +1398,7 @@ class FLOSC_AI_Chat_Dispatch {
 					"No xAI API key configured.\n\n📝 Next steps:\n1. Go to https://console.x.ai\n2. Sign up or log in to your xAI account\n3. Navigate to API keys section\n4. Create a new API key\n5. Copy the key (starts with xai-...)\n6. Paste it in the 'xAI API Key' field above\n7. Click 'Save AI Configuration'\n8. Try testing again!"
 				);
 			}
-			return null; // v1.9.3: No silent IVR substitution
+			return null; // v1.9.3: No silent IVR substitution.
 		}
 
 		$messages = array();
@@ -1409,7 +1485,7 @@ class FLOSC_AI_Chat_Dispatch {
 					"Could not connect to xAI API.\n\n❌ Error: " . $response->get_error_message() . "\n\n📝 Next steps:\n1. Check your internet connection\n2. Verify xAI services are operational\n3. Try again in a few moments"
 				);
 			}
-			return null; // v1.9.3: No silent IVR substitution
+			return null; // v1.9.3: No silent IVR substitution.
 		}
 
 		$body = json_decode( wp_remote_retrieve_body( $response ), true );
@@ -1445,7 +1521,7 @@ class FLOSC_AI_Chat_Dispatch {
 					'xAI API Error: ' . $error_msg . $help_text
 				);
 			}
-			return null; // v1.9.3: No silent IVR substitution
+			return null; // v1.9.3: No silent IVR substitution.
 		}
 
 		$this->capture_billing_meta( 'xai', $model, $body['usage'] ?? array(), $body );
@@ -1455,11 +1531,22 @@ class FLOSC_AI_Chat_Dispatch {
 
 	/**
 	 * Gemini chat via WordPress AI Client + AI Provider for Google.
+	 *
+	 * @param mixed $message       Message.
+	 * @param mixed $system_prompt System prompt.
+	 * @param mixed $context       Context.
+	 * @param bool  $test_mode     Test mode.
 	 */
 	private function gemini_request( $message, $system_prompt, $context = array(), $test_mode = false ) {
 		return $this->wp_ai_chat_request( 'gemini', $message, $system_prompt, $context, $test_mode );
 	}
 
+	/**
+	 * Validate AI response.
+	 *
+	 * @param mixed $response Response.
+	 * @return mixed
+	 */
 	private function validate_ai_response( $response ) {
 		if ( empty( $response ) ) {
 			return $response;

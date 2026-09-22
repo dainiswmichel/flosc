@@ -32,10 +32,10 @@ if ( ! current_user_can( 'edit_others_posts' ) ) {
 	wp_die( esc_html__( 'You do not have permission to access this page.', 'flosc' ), 403 );
 }
 
-$flosc_flow_settings           = $GLOBALS['flosc_current_settings'] ?? array();
-$flosc_selected_ivr            = $GLOBALS['flosc_current_ivr'] ?? '';
-$flosc_flow_key                = $GLOBALS['flosc_settings_key'] ?? '';
-$flosc_get                     = flosc_nav_params();
+$flosc_flow_settings = $GLOBALS['flosc_current_settings'] ?? array();
+$flosc_selected_ivr  = $GLOBALS['flosc_current_ivr'] ?? '';
+$flosc_flow_key      = $GLOBALS['flosc_settings_key'] ?? '';
+$flosc_get           = flosc_nav_params();
 
 /*
  * Flow-file actions: duplicate, import, delete.

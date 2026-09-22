@@ -1,10 +1,16 @@
 <?php
+/**
+ * REST routes for chat, sessions and quizzes, and the public request throttles.
+ *
+ * @package FLOSC
+ */
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 trait FLOSC_REST_Trait {
-	/*
+	/**
 	 * Public throttles, owned by the floscAdmin instead of the source.
 	 *
 	 * These were fixed numbers in this file. A live visitor hit "Rate limit
@@ -65,6 +71,8 @@ trait FLOSC_REST_Trait {
 	 * Limits: 60 requests/hour for logged-in users, 30/hour for visitors
 	 *
 	 * @since 9.4.2
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function check_public_endpoint_permission( $request ) {
 		$endpoint   = $request->get_route();
@@ -119,6 +127,8 @@ trait FLOSC_REST_Trait {
 	 * §4: Permission callback for buyer-scoped checkout/payment REST actions.
 	 * Requires a valid checkout-issued wp_rest nonce: X-WP-Nonce header first,
 	 * falling back to the _wpnonce request param. Handler then binds to the buyer.
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function check_checkout_endpoint_permission( $request ) {
 		$nonce = $request->get_header( 'X-WP-Nonce' );
@@ -138,6 +148,8 @@ trait FLOSC_REST_Trait {
 	 * Requires the same REST nonce gate as checkout-start endpoints, plus a
 	 * server-issued checkout binding token that matches the browser session and,
 	 * when present, route/provider/flow/offer context.
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function check_checkout_finalization_permission( $request ) {
 		$nonce_result = $this->check_checkout_endpoint_permission( $request );
@@ -222,6 +234,8 @@ trait FLOSC_REST_Trait {
 	 *
 	 * Payment providers cannot present WordPress auth; signature checks happen in
 	 * the webhook handler itself.
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function check_webhook_endpoint_permission( $request ) {
 		$provider = sanitize_key( (string) $request->get_param( 'provider' ) );
@@ -257,6 +271,8 @@ trait FLOSC_REST_Trait {
 	 * Permission callback for /ivr-messages and /ivr/messages.
 	 * Public rate limiting for visitor funnel phases (including sale/offer).
 	 * Content phase requires membership entitlement.
+	 *
+	 * @param mixed $request Request.
 	 */
 	public function check_ivr_messages_permission( $request ) {
 		// Keep the existing public rate-limit behavior for the visitor funnel.

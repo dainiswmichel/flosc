@@ -16,16 +16,32 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Content filter.
+ */
 class FLOSC_Content_Filter {
 
+	/**
+	 * Instance.
+	 *
+	 * @var mixed
+	 */
 	private static $instance = null;
 
+	/**
+	 * Construct.
+	 */
 	private function __construct() {
 		// Register WordPress content filter hook
 		// Only applies when content contains FLOSC markers.
 		add_filter( 'the_content', array( $this, 'apply_content_filter' ), 10 );
 	}
 
+	/**
+	 * Instance.
+	 *
+	 * @return mixed
+	 */
 	public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
@@ -176,7 +192,7 @@ class FLOSC_Content_Filter {
 	/**
 	 * Parse markdown content into sections by access level
 	 *
-	 * @param string $content
+	 * @param string $content Content.
 	 * @return array Sections organized by level
 	 */
 	private function parse_markdown_sections( $content ) {
@@ -187,7 +203,7 @@ class FLOSC_Content_Filter {
 			'member'  => array(),
 		);
 
-		$current_level   = 'visitor'; // Default
+		$current_level   = 'visitor'; // Default.
 		$current_content = '';
 
 		$lines = explode( "\n", $content );
@@ -245,7 +261,7 @@ class FLOSC_Content_Filter {
 	 * Uses custom tag to avoid conflicts with WordPress core <!--more-->
 	 *
 	 * @param string $content Post content.
-	 * @param string $access_level
+	 * @param string $access_level Access level.
 	 * @return string Filtered content
 	 */
 	public function filter_post_content( $content, $access_level ) {
@@ -285,8 +301,8 @@ class FLOSC_Content_Filter {
 	 * Extract relevant section from content based on query
 	 * Used for RAG to return focused results
 	 *
-	 * @param string $content
-	 * @param string $query
+	 * @param string $content Content.
+	 * @param string $query Query.
 	 * @param int    $context_chars Number of characters of context.
 	 * @return string
 	 */
@@ -321,7 +337,7 @@ class FLOSC_Content_Filter {
 	/**
 	 * Get excerpt from content
 	 *
-	 * @param string $content
+	 * @param string $content Content.
 	 * @param int    $length Word count.
 	 * @return string
 	 */

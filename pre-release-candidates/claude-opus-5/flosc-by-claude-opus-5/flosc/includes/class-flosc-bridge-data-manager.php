@@ -31,6 +31,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Bridge data manager.
+ */
 class FLOSC_Bridge_Data_Manager {
 
 	/**
@@ -105,7 +108,7 @@ class FLOSC_Bridge_Data_Manager {
 		$total     = ( is_array( $correct ) ? count( $correct ) : 0 )
 			+ ( is_array( $incorrect ) ? count( $incorrect ) : 0 );
 		if ( $total < 1 ) {
-			$total = 10; // legacy fallback when callers omit item lists
+			$total = 10; // legacy fallback when callers omit item lists.
 		}
 
 		// Build scoring results from quiz data.
@@ -130,11 +133,11 @@ class FLOSC_Bridge_Data_Manager {
 	 *
 	 * @param int    $user_id WordPress user ID.
 	 * @param string $quiz_id External quiz identifier.
-	 * @param array  $score_data Score data with keys:.
+	 * @param array  $score_data Score data with keys:
 	 *    - score: (int) Percentage score 0-100
 	 *    - correct_items: (array) IDs/names of correct answers
 	 *    - incorrect_items: (array) IDs/names of incorrect answers
-	 *    - categories: (array) Optional category breakdown
+	 *    - categories: (array) Optional category breakdown.
 	 */
 	public function handle_external_quiz( $user_id, $quiz_id, $score_data ) {
 		if ( ! $user_id || ! is_array( $score_data ) ) {
@@ -168,7 +171,7 @@ class FLOSC_Bridge_Data_Manager {
 
 		$score_data = array(
 			'score'           => $quiz_data['percentage'] ?? 0,
-			'correct_items'   => array(), // LearnDash structure varies
+			'correct_items'   => array(), // LearnDash structure varies.
 			'incorrect_items' => array(),
 			'plugin'          => 'learndash',
 		);
@@ -237,7 +240,7 @@ class FLOSC_Bridge_Data_Manager {
 	/**
 	 * Stable string key for bridge item_results (supports structured analyze rows).
 	 *
-	 * @param mixed $item
+	 * @param mixed $item Item.
 	 * @return string
 	 */
 	private function item_result_key( $item ) {
@@ -301,12 +304,12 @@ class FLOSC_Bridge_Data_Manager {
 	 *
 	 * @param int    $user_id WordPress user ID.
 	 * @param string $quiz_id Quiz ID.
-	 * @param array  $scoring_results Scoring data with keys:.
+	 * @param array  $scoring_results Scoring data with keys:
 	 *    - score: (int) Total score
 	 *    - percentage: (float) Percentage correct
 	 *    - correct_items: (array) IDs of correct answers
 	 *    - incorrect_items: (array) IDs of incorrect answers
-	 *    - item_results: (array) Detailed per-item results
+	 *    - item_results: (array) Detailed per-item results.
 	 * @return bool Success
 	 */
 	public function flosc_create_bridge_data( $user_id, $quiz_id, $scoring_results ) {

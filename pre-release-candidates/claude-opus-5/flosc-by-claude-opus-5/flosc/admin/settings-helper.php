@@ -101,6 +101,11 @@ function flosc_admin_text_input( $key, $fallback = '', $css_class = 'regular-tex
 
 /**
  * Render a textarea with "using global" placeholder when editing flow
+ *
+ * @param mixed  $key       Key.
+ * @param string $fallback  Fallback.
+ * @param int    $rows      Rows.
+ * @param string $css_class CSS class.
  */
 function flosc_admin_textarea( $key, $fallback = '', $rows = 5, $css_class = 'large-text' ) {
 	$value      = flosc_admin_get_value( $key, $fallback );
@@ -125,6 +130,10 @@ function flosc_admin_textarea( $key, $fallback = '', $rows = 5, $css_class = 'la
 
 /**
  * Render a select dropdown
+ *
+ * @param mixed  $key      Key.
+ * @param mixed  $options  Options.
+ * @param string $fallback Fallback.
  */
 function flosc_admin_select( $key, $options, $fallback = '' ) {
 	$value      = flosc_admin_get_value( $key, $fallback );

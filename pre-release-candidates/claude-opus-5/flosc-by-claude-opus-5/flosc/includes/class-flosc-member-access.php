@@ -23,10 +23,23 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Member access.
+ */
 class FLOSC_Member_Access {
 
+	/**
+	 * Instance.
+	 *
+	 * @var mixed
+	 */
 	private static $instance = null;
 
+	/**
+	 * Instance.
+	 *
+	 * @return mixed
+	 */
 	public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
@@ -34,6 +47,9 @@ class FLOSC_Member_Access {
 		return self::$instance;
 	}
 
+	/**
+	 * Construct.
+	 */
 	private function __construct() {
 		// Hook into purchase completion.
 		add_action( 'flosc_purchase_completed', array( $this, 'grant_member_access' ), 10, 2 );
@@ -44,7 +60,7 @@ class FLOSC_Member_Access {
 	 *
 	 * Prefer FLOSC_Access_Manager when available so UI, tokens, and IVR share one rule.
 	 *
-	 * @param int         $user_id
+	 * @param int         $user_id User ID.
 	 * @param string|null $flow_id Flow id / ivr / stem. Null = current flow when possible.
 	 * @return bool
 	 */
@@ -91,7 +107,7 @@ class FLOSC_Member_Access {
 	/**
 	 * Grant member access after purchase
 	 *
-	 * @param int   $user_id
+	 * @param int   $user_id User ID.
 	 * @param array $purchase_data Contains offer_id, grants_level, flow_id, etc.
 	 */
 	public function grant_member_access( $user_id, $purchase_data = array() ) {
@@ -147,8 +163,8 @@ class FLOSC_Member_Access {
 	/**
 	 * Get user's access level for a flow.
 	 *
-	 * @param int         $user_id
-	 * @param string|null $flow_id
+	 * @param int         $user_id User ID.
+	 * @param string|null $flow_id Flow ID.
 	 * @return string 'visitor', 'guest', or 'member'
 	 */
 	public function get_access_level( $user_id, $flow_id = null ) {
@@ -166,7 +182,7 @@ class FLOSC_Member_Access {
 	/**
 	 * Check if user can access specific content
 	 *
-	 * @param int    $user_id
+	 * @param int    $user_id User ID.
 	 * @param string $required_level 'visitor', 'guest', or 'member'.
 	 * @return bool
 	 */
@@ -189,8 +205,8 @@ class FLOSC_Member_Access {
 	/**
 	 * Revoke member access (for refunds, etc.)
 	 *
-	 * @param int    $user_id
-	 * @param string $reason
+	 * @param int    $user_id User ID.
+	 * @param string $reason Reason.
 	 */
 	public function revoke_member_access( $user_id, $reason = '' ) {
 
@@ -209,7 +225,7 @@ class FLOSC_Member_Access {
 	 * Equivalent membership level slugs (instance-specific aliases via filter only).
 	 * FLOSC core does not ship product brand level pairs — instances add their own.
 	 *
-	 * @param string $level
+	 * @param string $level Level.
 	 * @return string[]
 	 */
 	public function get_level_aliases( $level ) {
@@ -256,7 +272,7 @@ class FLOSC_Member_Access {
 	 * Check if user has a specific membership level
 	 * Checks _flosc_memberlevel_{level} user meta, WP role, and legacy aliases.
 	 *
-	 * @param int    $user_id
+	 * @param int    $user_id User ID.
 	 * @param string $level e.g. 'samplecourse', 'spanishcourse', 'pronunciation_learners'.
 	 * @return bool
 	 */
@@ -286,8 +302,8 @@ class FLOSC_Member_Access {
 	/**
 	 * Grant a specific membership level to user
 	 *
-	 * @param int    $user_id
-	 * @param string $level
+	 * @param int    $user_id User ID.
+	 * @param string $level Level.
 	 */
 	public function grant_level( $user_id, $level ) {
 		if ( ! $user_id || ! $level ) {
@@ -330,9 +346,9 @@ class FLOSC_Member_Access {
 	/**
 	 * Revoke a specific membership level from user
 	 *
-	 * @param int    $user_id
-	 * @param string $level
-	 * @param string $reason
+	 * @param int    $user_id User ID.
+	 * @param string $level Level.
+	 * @param string $reason Reason.
 	 */
 	public function revoke_level( $user_id, $level, $reason = '' ) {
 		if ( ! $user_id || ! $level ) {
@@ -362,7 +378,7 @@ class FLOSC_Member_Access {
 	/**
 	 * Get all membership levels for a user
 	 *
-	 * @param int $user_id
+	 * @param int $user_id User ID.
 	 * @return array List of level names
 	 */
 	public function get_user_levels( $user_id ) {
@@ -397,7 +413,7 @@ class FLOSC_Member_Access {
 	/**
 	 * Get member statistics
 	 *
-	 * @param int $user_id
+	 * @param int $user_id User ID.
 	 * @return array
 	 */
 	public function get_member_stats( $user_id ) {
@@ -431,8 +447,8 @@ class FLOSC_Member_Access {
 	 * Grant guest access to a specific post
 	 * Used for free lessons after quiz completion
 	 *
-	 * @param int $user_id
-	 * @param int $post_id
+	 * @param int $user_id User ID.
+	 * @param int $post_id Post ID.
 	 * @return bool
 	 */
 	public function grant_guest_access( $user_id, $post_id ) {
@@ -461,8 +477,8 @@ class FLOSC_Member_Access {
 	/**
 	 * Check if user has guest access to a specific post
 	 *
-	 * @param int $user_id
-	 * @param int $post_id
+	 * @param int $user_id User ID.
+	 * @param int $post_id Post ID.
 	 * @return bool
 	 */
 	public function has_guest_access( $user_id, $post_id ) {
@@ -490,8 +506,8 @@ class FLOSC_Member_Access {
 	/**
 	 * Revoke guest access to a specific post
 	 *
-	 * @param int $user_id
-	 * @param int $post_id
+	 * @param int $user_id User ID.
+	 * @param int $post_id Post ID.
 	 * @return bool
 	 */
 	public function revoke_guest_access( $user_id, $post_id ) {
@@ -510,7 +526,7 @@ class FLOSC_Member_Access {
 	/**
 	 * Get all posts a user has guest access to
 	 *
-	 * @param int $user_id
+	 * @param int $user_id User ID.
 	 * @return array Array of post IDs
 	 */
 	public function get_guest_access_posts( $user_id ) {
@@ -570,17 +586,17 @@ class FLOSC_Member_Access {
 
 			if ( $denominator > 0 ) {
 				$calculated = ceil( $missed_count * $numerator / $denominator );
-				return max( 1, $calculated ); // At least 1
+				return max( 1, $calculated ); // At least 1.
 			}
 		}
 
-		return 1; // Default fallback
+		return 1; // Default fallback.
 	}
 
 	/**
 	 * Grant free lesson access to a user based on missed quiz items
 	 *
-	 * @param int   $user_id
+	 * @param int   $user_id User ID.
 	 * @param array $missed_post_ids Array of post IDs for missed items.
 	 * @return array Array of post IDs that were granted
 	 */
@@ -614,7 +630,7 @@ class FLOSC_Member_Access {
 	/**
 	 * Get the free lessons that were granted to a user
 	 *
-	 * @param int $user_id
+	 * @param int $user_id User ID.
 	 * @return array Array of post IDs
 	 */
 	public function get_free_lessons( $user_id ) {

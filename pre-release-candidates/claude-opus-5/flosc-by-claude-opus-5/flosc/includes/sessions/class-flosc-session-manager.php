@@ -13,14 +13,22 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Session manager.
+ */
 class FLOSC_Session_Manager {
 
+	/**
+	 * Session meta key.
+	 *
+	 * @var string
+	 */
 	private $flosc_session_meta_key = '_flosc_sessions';
 
 	/**
 	 * Normalize a flow id / ivr path to a stable stem.
 	 *
-	 * @param string $flow_id
+	 * @param string $flow_id Flow ID.
 	 * @return string
 	 */
 	public function normalize_flow_stem( $flow_id = '' ) {
@@ -35,7 +43,7 @@ class FLOSC_Session_Manager {
 	/**
 	 * Resolve current request flow stem when not passed explicitly.
 	 *
-	 * @param string $flow_id
+	 * @param string $flow_id Flow ID.
 	 * @return string
 	 */
 	public function resolve_flow_stem( $flow_id = '' ) {
@@ -57,7 +65,7 @@ class FLOSC_Session_Manager {
 	/**
 	 * Whether a session belongs to the requested flow.
 	 *
-	 * @param array  $session
+	 * @param array  $session Session.
 	 * @param string $stem Requested flow stem (empty = no filter / all flows).
 	 * @param int    $user_id For legacy untagged sessions.
 	 * @return bool
@@ -89,7 +97,7 @@ class FLOSC_Session_Manager {
 	/**
 	 * Get sessions for a user, optionally filtered to one flow (grouped by date).
 	 *
-	 * @param int    $user_id
+	 * @param int    $user_id User ID.
 	 * @param string $flow_id Flow stem / ivr / id. Empty = all (admin only use).
 	 * @return array
 	 */
@@ -151,9 +159,10 @@ class FLOSC_Session_Manager {
 	/**
 	 * Create a new session on a flow.
 	 *
-	 * @param int    $user_id
-	 * @param string $title
+	 * @param int    $user_id User ID.
+	 * @param string $title Title.
 	 * @param string $flow_id Flow stem for isolation.
+	 * @param mixed  $seed_messages Seed messages.
 	 * @return array
 	 */
 	public function flosc_create_session( $user_id, $title = 'New Chat', $flow_id = '', $seed_messages = array() ) {
@@ -239,8 +248,8 @@ class FLOSC_Session_Manager {
 	/**
 	 * Get a specific session (must belong to user; optional flow match).
 	 *
-	 * @param int         $session_id
-	 * @param int|null    $user_id
+	 * @param int         $session_id Session ID.
+	 * @param int|null    $user_id User ID.
 	 * @param string|null $flow_id When set, reject sessions from other flows.
 	 * @return array|null
 	 */
@@ -277,8 +286,8 @@ class FLOSC_Session_Manager {
 	 * Replacement security boundary: the session must belong to this WordPress user.
 	 * Sidebar listing stays flow-filtered; history/handoff restore may cross floscDomains.
 	 *
-	 * @param int      $session_id
-	 * @param int|null $user_id
+	 * @param int      $session_id Session ID.
+	 * @param int|null $user_id User ID.
 	 * @return array|null
 	 */
 	public function get_flosc_session_by_id( $session_id, $user_id = null ) {
@@ -308,11 +317,11 @@ class FLOSC_Session_Manager {
 	/**
 	 * Add message to session.
 	 *
-	 * @param int         $session_id
-	 * @param string      $role
-	 * @param string      $content
-	 * @param int|null    $user_id
-	 * @param array|null  $meta
+	 * @param int         $session_id Session ID.
+	 * @param string      $role Role.
+	 * @param string      $content Content.
+	 * @param int|null    $user_id User ID.
+	 * @param array|null  $meta Meta.
 	 * @param string|null $flow_id Optional flow guard.
 	 * @return bool
 	 */
@@ -376,9 +385,9 @@ class FLOSC_Session_Manager {
 	/**
 	 * Delete a session (optional flow guard).
 	 *
-	 * @param int         $session_id
-	 * @param int|null    $user_id
-	 * @param string|null $flow_id
+	 * @param int         $session_id Session ID.
+	 * @param int|null    $user_id User ID.
+	 * @param string|null $flow_id Flow ID.
 	 * @return bool
 	 */
 	public function flosc_delete_session( $session_id, $user_id = null, $flow_id = null ) {
@@ -405,9 +414,9 @@ class FLOSC_Session_Manager {
 						return true;
 					}
 					if ( ! $this->session_belongs_to_flow( $s, $stem, $user_id ) ) {
-						return true; // wrong flow — do not delete
+						return true; // wrong flow — do not delete.
 					}
-					return false; // drop matching session
+					return false; // drop matching session.
 				}
 			)
 		);
@@ -423,7 +432,7 @@ class FLOSC_Session_Manager {
 	/**
 	 * Generate session title from first message.
 	 *
-	 * @param string $content
+	 * @param string $content Content.
 	 * @return string
 	 */
 	private function generate_flosc_session_title( $content ) {
@@ -448,8 +457,8 @@ class FLOSC_Session_Manager {
 	/**
 	 * Session count for user (optional per-flow).
 	 *
-	 * @param int    $user_id
-	 * @param string $flow_id
+	 * @param int    $user_id User ID.
+	 * @param string $flow_id Flow ID.
 	 * @return int
 	 */
 	public function get_flosc_session_count( $user_id, $flow_id = '' ) {

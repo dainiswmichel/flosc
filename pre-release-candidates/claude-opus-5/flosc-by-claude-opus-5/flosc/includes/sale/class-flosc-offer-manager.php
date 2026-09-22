@@ -15,13 +15,27 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Offer manager.
+ */
 class FLOSC_Offer_Manager {
 
+	/**
+	 * Option key.
+	 *
+	 * @var string
+	 */
 	private $option_key = 'flosc_offers';
-	/** @var array Offer id aliases (empty in core; instances may filter). */
+	/**
+	 * Offer aliases.
+	 *
+	 * @var array Offer id aliases (empty in core; instances may filter).
+	 */
 	private $offer_aliases = array();
 
 	/**
+	 * Get offer aliases.
+	 *
 	 * @return array<string,string>
 	 */
 	private function get_offer_aliases() {
@@ -50,6 +64,8 @@ class FLOSC_Offer_Manager {
 	 * v1.6.5: Seeds defaults into per-flow storage on first access so admin can edit them
 	 *
 	 * @since 1.6.2
+	 *
+	 * @param mixed $flow_id Flow ID.
 	 */
 	public function get_all_offers( $flow_id = null ) {
 		// v1.6.2: Try per-flow storage first (where admin offers.php saves).
@@ -95,6 +111,8 @@ class FLOSC_Offer_Manager {
 	 * Flow-aware
 	 *
 	 * @since 1.6.2
+	 *
+	 * @param mixed $flow_id Flow ID.
 	 */
 	public function get_active_offers( $flow_id = null ) {
 		$offers = $this->get_all_offers( $flow_id );
@@ -111,6 +129,9 @@ class FLOSC_Offer_Manager {
 	 * Flow-aware
 	 *
 	 * @since 1.6.2
+	 *
+	 * @param mixed $offer_id Offer ID.
+	 * @param mixed $flow_id  Flow ID.
 	 */
 	public function get_offer( $offer_id, $flow_id = null ) {
 		$offers = $this->get_all_offers( $flow_id );
@@ -124,6 +145,8 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Get offers by type
+	 *
+	 * @param mixed $type Type.
 	 */
 	public function get_offers_by_type( $type ) {
 		$offers = $this->get_active_offers();
@@ -137,6 +160,8 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Create a new offer
+	 *
+	 * @param mixed $data Data.
 	 */
 	public function create_offer( $data ) {
 		$offers = $this->get_all_offers();
@@ -163,6 +188,9 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Update an offer
+	 *
+	 * @param mixed $offer_id Offer ID.
+	 * @param mixed $data     Data.
 	 */
 	public function update_offer( $offer_id, $data ) {
 		$offers = $this->get_all_offers();
@@ -189,6 +217,8 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Delete an offer
+	 *
+	 * @param mixed $offer_id Offer ID.
 	 */
 	public function delete_offer( $offer_id ) {
 		$offers = $this->get_all_offers();
@@ -209,6 +239,9 @@ class FLOSC_Offer_Manager {
 	/**
 	 * Sync IVR-defined offer messages into the editable offer registry.
 	 * Keeps the IVR file as the source of truth for visible offer copy/format.
+	 *
+	 * @param mixed $offers  Offers.
+	 * @param mixed $flow_id Flow ID.
 	 */
 	private function sync_ivr_offers_into_offers( $offers, $flow_id = null ) {
 		if ( empty( $flow_id ) ) {
@@ -279,6 +312,10 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Build a normalized offer record from an IVR offer message.
+	 *
+	 * @param mixed $existing Existing.
+	 * @param mixed $msg      Msg.
+	 * @param mixed $offer_id Offer ID.
 	 */
 	private function normalize_ivr_offer_message( $existing, $msg, $offer_id ) {
 		$name = trim( (string) ( $msg['title'] ?? '' ) );
@@ -364,6 +401,8 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Resolve the active IVR file for a flow.
+	 *
+	 * @param mixed $flow_id Flow ID.
 	 */
 	private function get_flow_ivr_file( $flow_id ) {
 		$flow_key        = 'flosc_flow_' . sanitize_key( $flow_id );
@@ -410,6 +449,8 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Validate and normalize offer data
+	 *
+	 * @param mixed $data Data.
 	 */
 	private function validate_offer_data( $data ) {
 		$defaults = array(
@@ -422,27 +463,27 @@ class FLOSC_Offer_Manager {
 			// Pricing (provider-specific).
 			'pricing'        => array(
 				'stripe'       => array(
-					'price_id'   => '',       // Stripe Price ID
-					'product_id' => '',     // Stripe Product ID
+					'price_id'   => '',       // Stripe Price ID.
+					'product_id' => '',     // Stripe Product ID.
 				),
 				'tokens'       => array(
-					'cost' => 0,            // Cost in tokens
+					'cost' => 0,            // Cost in tokens.
 				),
 				'affiliate'    => array(
-					'credit_amount' => 0,   // How much affiliate credit unlocks this
+					'credit_amount' => 0,   // How much affiliate credit unlocks this.
 				),
-				'redirect_url' => '',       // MTS-2026-02-03: External checkout URL
+				'redirect_url' => '',       // MTS-2026-02-03: External checkout URL.
 			),
 
 			// Display pricing (for UI, not for charging).
-			'display_price'  => '',          // e.g., "€144" or "500 tokens" or "Free with purchase"
-			'original_price' => '',         // MTS-2026-02-03: Original price (for strikethrough)
+			'display_price'  => '',          // e.g., "€144" or "500 tokens" or "Free with purchase".
+			'original_price' => '',         // MTS-2026-02-03: Original price (for strikethrough).
 
 			// MTS-2026-02-03: [DISPLAY-OPTIONS] Configurable display format.
-			'display_format' => 'card',     // pill, card, compact, banner, featured, text, inline-checkout
-			'cta'            => '',                    // Custom CTA button text
-			'timer_seconds'  => 3600,        // Countdown timer (0 = no timer)
-			'guarantee'      => '',              // Guarantee text (e.g., "30-day money-back guarantee")
+			'display_format' => 'card',     // pill, card, compact, banner, featured, text, inline-checkout.
+			'cta'            => '',                    // Custom CTA button text.
+			'timer_seconds'  => 3600,        // Countdown timer (0 = no timer).
+			'guarantee'      => '',              // Guarantee text (e.g., "30-day money-back guarantee").
 
 			// For subscriptions.
 			'subscription'   => array(
@@ -453,8 +494,8 @@ class FLOSC_Offer_Manager {
 
 			// For token packs.
 			'tokens'         => array(
-				'amount' => 0,              // How many tokens this grants
-				'bonus'  => 0,               // Bonus tokens
+				'amount' => 0,              // How many tokens this grants.
+				'bonus'  => 0,               // Bonus tokens.
 			),
 
 			// Access grants.
@@ -471,9 +512,9 @@ class FLOSC_Offer_Manager {
 
 			// Metadata.
 			'meta'           => array(
-				'badge'   => '',              // Badge text (e.g., "Most Popular")
-				'savings' => '',            // Savings text (e.g., "Save 20%")
-				'icon'    => '',               // Emoji or icon
+				'badge'   => '',              // Badge text (e.g., "Most Popular").
+				'savings' => '',            // Savings text (e.g., "Save 20%").
+				'icon'    => '',               // Emoji or icon.
 			),
 
 			'sort_order'     => 0,
@@ -534,7 +575,7 @@ class FLOSC_Offer_Manager {
 				'pricing'        => array(
 					'price'     => 49.00,
 					'currency'  => 'USD',
-					'processor' => 'paypal',  // Change to 'stripe' when Stripe is configured
+					'processor' => 'paypal',  // Change to 'stripe' when Stripe is configured.
 					'stripe'    => array(
 						'price_id'   => '',
 						'product_id' => '',
@@ -545,7 +586,7 @@ class FLOSC_Offer_Manager {
 				'grants'         => array(
 					'features'      => array( 'quiz', 'all_lessons', 'ai_coach', 'certificates' ),
 					'level'         => 'full_access',
-					'duration_days' => 0, // Lifetime
+					'duration_days' => 0, // Lifetime.
 					'usage_limits'  => array(),
 				),
 				'grants_level'   => 'full_access',
@@ -563,7 +604,7 @@ class FLOSC_Offer_Manager {
 				'name'          => '100 Tokens',
 				'description'   => 'Pay-per-use credits',
 				'type'          => self::TYPE_TOKENS,
-				'status'        => 'draft', // Not active by default
+				'status'        => 'draft', // Not active by default.
 				'display_price' => 'Configure in Stripe',
 				'pricing'       => array(
 					'stripe'    => array( 'price_id' => '' ),
@@ -588,7 +629,7 @@ class FLOSC_Offer_Manager {
 				'name'          => 'Monthly Access',
 				'description'   => 'Full access, billed monthly',
 				'type'          => self::TYPE_SUBSCRIPTION,
-				'status'        => 'draft', // Not active by default
+				'status'        => 'draft', // Not active by default.
 				'display_price' => 'Configure in Stripe',
 				'pricing'       => array(
 					'stripe'    => array( 'price_id' => '' ),
@@ -639,7 +680,7 @@ class FLOSC_Offer_Manager {
 				'grants'         => array(
 					'features'      => array( 'solfeggio_lessons', 'solfeggio_exercises', 'ai_coach', 'all_quizzes' ),
 					'level'         => 'simplified_solfeggio_member',
-					'duration_days' => 0, // Lifetime
+					'duration_days' => 0, // Lifetime.
 					'usage_limits'  => array(),
 				),
 				'meta'           => array(
@@ -791,6 +832,9 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Calculate effective price from an offer for a provider
+	 *
+	 * @param mixed $offer_id    Offer ID.
+	 * @param mixed $provider_id Provider ID.
 	 */
 	public function get_offer_price( $offer_id, $provider_id ) {
 		$offer = $this->get_offer( $offer_id );
@@ -805,6 +849,8 @@ class FLOSC_Offer_Manager {
 	/**
 	 * Get offer by product ID (site-owner content products only).
 	 * Does not map a paid unlock of the FLOSC plugin itself.
+	 *
+	 * @param mixed $product_id Product ID.
 	 */
 	public function get_offer_by_product( $product_id ) {
 		$product_id = sanitize_key( (string) $product_id );
@@ -831,6 +877,8 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Get member level for a site-owner content product (flow default level).
+	 *
+	 * @param mixed $product_id Product ID.
 	 */
 	public function get_member_level_for_product( $product_id ) {
 		$product_id = sanitize_key( (string) $product_id );
@@ -882,6 +930,8 @@ class FLOSC_Offer_Manager {
 
 	/**
 	 * Product metadata from a configured flow (instance), not hard-coded brands.
+	 *
+	 * @param mixed $product_id Product ID.
 	 */
 	public function get_product_metadata( $product_id ) {
 		$product_id = sanitize_key( (string) $product_id );

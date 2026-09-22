@@ -11,6 +11,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Request guard.
+ */
 class FLOSC_Request_Guard {
 
 	/**
@@ -39,6 +42,10 @@ class FLOSC_Request_Guard {
 	/**
 	 * Rate Limiting Helper
 	 * Prevents API abuse on public endpoints
+	 *
+	 * @param mixed $endpoint Endpoint.
+	 * @param int   $limit    Limit.
+	 * @param int   $window   Window.
 	 */
 	public function check_rate_limit( $endpoint, $limit = 20, $window = 3600 ) {
 		// v1.7.7: Use real client IP behind CDN/proxy (Cloudflare, AWS ALB, etc.).

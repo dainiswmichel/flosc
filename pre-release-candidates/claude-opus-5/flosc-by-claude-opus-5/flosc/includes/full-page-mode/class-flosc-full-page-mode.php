@@ -9,15 +9,32 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Full page mode.
+ */
 class FLOSC_Full_Page_Mode {
 
-	/** @var FLOSC_Framework */
+	/**
+	 * Construct.
+	 *
+	 * @var FLOSC_Framework
+	 */
 	private $flosc;
 
+	/**
+	 * Construct.
+	 *
+	 * @param mixed $flosc FLOSC.
+	 */
 	public function __construct( $flosc ) {
 		$this->flosc = $flosc;
 	}
 
+	/**
+	 * Is FLOSC request.
+	 *
+	 * @return mixed
+	 */
 	public function is_flosc_request() {
 		// Full-page chat SPA only: custom domain, flow slug, or flosc_ivr rewrite.
 		// Intentionally ignores forced_flow — companion knowledge-hub resolution sets
@@ -41,6 +58,8 @@ class FLOSC_Full_Page_Mode {
 	 * Get the appropriate app URL for current or specified flow
 	 *
 	 * @since 1.2.2
+	 *
+	 * @param mixed $flow Flow.
 	 */
 	public function get_app_url( $flow = null ) {
 		if ( null === $flow ) {
@@ -79,14 +98,23 @@ class FLOSC_Full_Page_Mode {
 		return home_url( '/' . $slug . '/' );
 	}
 
+	/**
+	 * Add query vars.
+	 *
+	 * @param mixed $vars Vars.
+	 * @return mixed
+	 */
 	public function add_query_vars( $vars ) {
 		$vars[] = 'flosc_app';
-		$vars[] = 'flosc_flow'; // v1.2.2: Multi-flow support
-		$vars[] = 'flosc_ivr';  // v1.2.9: IVR-file-based flows
+		$vars[] = 'flosc_flow'; // v1.2.2: Multi-flow support.
+		$vars[] = 'flosc_ivr';  // v1.2.9: IVR-file-based flows.
 		$vars[] = 'ref';
 		return $vars;
 	}
 
+	/**
+	 * Handle app route.
+	 */
 	public function handle_app_route() {
 		// v1.2.1: Use centralized is_flosc_request() helper
 		// This reads from flosc_custom_domain setting (not hardcoded).
@@ -173,6 +201,11 @@ class FLOSC_Full_Page_Mode {
 		exit;
 	}
 
+	/**
+	 * Get requested legal page.
+	 *
+	 * @return mixed
+	 */
 	public function get_requested_legal_page() {
 		$request_uri = sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ?? '' ) );
 		if ( '' === $request_uri ) {
@@ -195,6 +228,11 @@ class FLOSC_Full_Page_Mode {
 		return in_array( $path, $legal_pages, true ) ? $path : null;
 	}
 
+	/**
+	 * Get current request base URL.
+	 *
+	 * @return mixed
+	 */
 	public function get_current_request_base_url() {
 		$host = sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ?? '' ) );
 		if ( '' === $host ) {
@@ -204,6 +242,11 @@ class FLOSC_Full_Page_Mode {
 		return ( is_ssl() ? 'https://' : 'http://' ) . $host . '/';
 	}
 
+	/**
+	 * Render legal page.
+	 *
+	 * @param mixed $page Page.
+	 */
 	public function render_legal_page( $page ) {
 		status_header( 200 );
 		nocache_headers();
@@ -291,6 +334,11 @@ class FLOSC_Full_Page_Mode {
 		echo '</html>';
 	}
 
+	/**
+	 * Get codex charter content.
+	 *
+	 * @return mixed
+	 */
 	public function get_codex_charter_content() {
 		return implode(
 			"\n",
@@ -449,7 +497,7 @@ class FLOSC_Full_Page_Mode {
 				$all_raw_offers = $sale->offers()->get_all_offers( $flow_id );
 				foreach ( $all_raw_offers as $o ) {
 					if ( ( $o['id'] ?? '' ) === $oid ) {
-						$offers[ $oid ] = $o; // inject even if draft/inactive
+						$offers[ $oid ] = $o; // inject even if draft/inactive.
 						break;
 					}
 				}

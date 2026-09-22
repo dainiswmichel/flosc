@@ -27,6 +27,14 @@ if ( ! current_user_can( 'manage_options' ) ) {
 }
 
 if ( ! function_exists( 'flosc_da1_safe_json_decode' ) ) {
+	/**
+	 * Safe JSON decode.
+	 *
+	 * @param mixed $raw       Raw.
+	 * @param int   $max_bytes Max bytes.
+	 * @param int   $depth     Depth.
+	 * @return mixed
+	 */
 	function flosc_da1_safe_json_decode( $raw, $max_bytes = 200000, $depth = 32 ) {
 		$raw = (string) $raw;
 		if ( '' === $raw || strlen( $raw ) > $max_bytes ) {
@@ -112,6 +120,12 @@ if ( ! isset( $flosc_post ) || ! is_array( $flosc_post ) ) {
 $flosc_da1_get  = $flosc_get;
 $flosc_da1_post = $flosc_post;
 
+/**
+ * Slugify.
+ *
+ * @param mixed $value Value.
+ * @return mixed
+ */
 function flosc_da1_slugify( $value ) {
 	$value = strtolower( trim( (string) $value ) );
 	$value = preg_replace( '/[^a-z0-9_-]+/', '-', $value );
@@ -119,6 +133,12 @@ function flosc_da1_slugify( $value ) {
 	return '' === $value ? 'catalog' : $value;
 }
 
+/**
+ * Normalize key.
+ *
+ * @param mixed $value Value.
+ * @return mixed
+ */
 function flosc_da1_normalize_key( $value ) {
 	$value = strtolower( trim( (string) $value ) );
 	if ( '' === $value ) {
@@ -127,6 +147,12 @@ function flosc_da1_normalize_key( $value ) {
 	return preg_replace( '/[^a-z0-9._-]/', '', $value );
 }
 
+/**
+ * Parse TSV.
+ *
+ * @param mixed $flosc_da1_content Content.
+ * @return mixed
+ */
 function flosc_da1_parse_tsv( $flosc_da1_content ) {
 	$flosc_da1_rows = array();
 	$flosc_da1_row  = array();
@@ -172,6 +198,12 @@ function flosc_da1_parse_tsv( $flosc_da1_content ) {
 	return $flosc_da1_rows;
 }
 
+/**
+ * TSV cell.
+ *
+ * @param mixed $value Value.
+ * @return mixed
+ */
 function flosc_da1_tsv_cell( $value ) {
 	$value = str_replace( array( "\r\n", "\r" ), "\n", (string) $value );
 	if ( false !== strpos( $value, "\t" ) || false !== strpos( $value, "\n" ) || false !== strpos( $value, '"' ) ) {
@@ -180,6 +212,13 @@ function flosc_da1_tsv_cell( $value ) {
 	return $value;
 }
 
+/**
+ * Normalize columns.
+ *
+ * @param mixed $flosc_da1_columns Columns.
+ * @param mixed $required_columns  Required columns.
+ * @return mixed
+ */
 function flosc_da1_normalize_columns( $flosc_da1_columns, $required_columns ) {
 	$payload_columns = array();
 
@@ -205,6 +244,13 @@ function flosc_da1_normalize_columns( $flosc_da1_columns, $required_columns ) {
 	return array_merge( $required_columns, $payload_columns );
 }
 
+/**
+ * Sanitize payload columns.
+ *
+ * @param mixed $value            Value.
+ * @param mixed $required_columns Required columns.
+ * @return mixed
+ */
 function flosc_da1_sanitize_payload_columns( $value, $required_columns ) {
 	$columns = preg_split( '/[,\r\n]+/', (string) $value );
 	$clean   = array();
@@ -225,6 +271,12 @@ function flosc_da1_sanitize_payload_columns( $value, $required_columns ) {
 	return $clean;
 }
 
+/**
+ * Col index map.
+ *
+ * @param mixed $flosc_da1_columns Columns.
+ * @return mixed
+ */
 function flosc_da1_col_index_map( $flosc_da1_columns ) {
 	$map = array();
 	foreach ( $flosc_da1_columns as $flosc_da1_i => $flosc_da1_col ) {
@@ -233,6 +285,13 @@ function flosc_da1_col_index_map( $flosc_da1_columns ) {
 	return $map;
 }
 
+/**
+ * Next parent key.
+ *
+ * @param mixed $flosc_da1_rows Rows.
+ * @param mixed $row_idx_key    Row idx key.
+ * @return mixed
+ */
 function flosc_da1_next_parent_key( $flosc_da1_rows, $row_idx_key ) {
 	$max = 0;
 	foreach ( $flosc_da1_rows as $flosc_da1_row ) {
@@ -247,6 +306,14 @@ function flosc_da1_next_parent_key( $flosc_da1_rows, $row_idx_key ) {
 	return (string) ( $max + 1 );
 }
 
+/**
+ * Next child key.
+ *
+ * @param mixed $flosc_da1_rows       Rows.
+ * @param mixed $row_idx_key          Row idx key.
+ * @param mixed $flosc_da1_parent_key Parent key.
+ * @return mixed
+ */
 function flosc_da1_next_child_key( $flosc_da1_rows, $row_idx_key, $flosc_da1_parent_key ) {
 	$max    = 0;
 	$prefix = trim( (string) $flosc_da1_parent_key ) . '.';
@@ -265,6 +332,12 @@ function flosc_da1_next_child_key( $flosc_da1_rows, $row_idx_key, $flosc_da1_par
 	return $prefix . ( $max + 1 );
 }
 
+/**
+ * Normalize vgm.
+ *
+ * @param mixed $value Value.
+ * @return mixed
+ */
 function flosc_da1_normalize_vgm( $value ) {
 	$flosc_da1_raw = strtolower( trim( (string) $value ) );
 	if ( '' === $flosc_da1_raw ) {
@@ -331,6 +404,15 @@ function flosc_da1_normalize_vgm( $value ) {
 	return implode( ' ', $out );
 }
 
+/**
+ * Apply defaults.
+ *
+ * @param mixed $flosc_da1_row     Row.
+ * @param mixed $flosc_da1_columns Columns.
+ * @param mixed $flosc_da1_col_idx Col idx.
+ * @param mixed $defaults          Defaults.
+ * @param mixed $catalog_key       Catalog key.
+ */
 function flosc_da1_apply_defaults( &$flosc_da1_row, $flosc_da1_columns, $flosc_da1_col_idx, $defaults, $catalog_key ) {
 	foreach ( $flosc_da1_columns as $flosc_da1_ci => $column ) {
 		if ( ! isset( $flosc_da1_row[ $flosc_da1_ci ] ) ) {
@@ -363,10 +445,24 @@ function flosc_da1_apply_defaults( &$flosc_da1_row, $flosc_da1_columns, $flosc_d
 	}
 }
 
+/**
+ * Catalog file.
+ *
+ * @param mixed $catalog_dir Catalog dir.
+ * @param mixed $catalog_key Catalog key.
+ * @return mixed
+ */
 function flosc_da1_catalog_file( $catalog_dir, $catalog_key ) {
 	return trailingslashit( $catalog_dir ) . 'flosc_da1_catalog_' . $catalog_key . '.tsv';
 }
 
+/**
+ * Is allowed catalog path.
+ *
+ * @param mixed $path        Path.
+ * @param mixed $catalog_dir Catalog dir.
+ * @return mixed
+ */
 function flosc_da1_is_allowed_catalog_path( $path, $catalog_dir ) {
 	$catalog_dir = wp_normalize_path( trailingslashit( (string) $catalog_dir ) );
 	$path        = wp_normalize_path( (string) $path );

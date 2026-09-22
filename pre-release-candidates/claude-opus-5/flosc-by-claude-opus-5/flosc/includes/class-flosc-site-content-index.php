@@ -12,15 +12,24 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Site content index.
+ */
 class FLOSC_Site_Content_Index {
 
 	const MAX_BODY_CHARS         = 200000;
 	const DEFAULT_RETRIEVE_LIMIT = 5;
 
-	/** @var self|null */
+	/**
+	 * Instance.
+	 *
+	 * @var self|null
+	 */
 	private static $instance = null;
 
 	/**
+	 * Instance.
+	 *
 	 * @return self
 	 */
 	public static function instance() {
@@ -30,6 +39,9 @@ class FLOSC_Site_Content_Index {
 		return self::$instance;
 	}
 
+	/**
+	 * Construct.
+	 */
 	private function __construct() {
 		/*
 		 * Categories and tags get the same two fields the post metabox and the
@@ -54,8 +66,8 @@ class FLOSC_Site_Content_Index {
 	/**
 	 * The two selects, shared by the add and edit forms.
 	 *
-	 * @param string $tier
-	 * @param string $depth
+	 * @param string $tier Tier.
+	 * @param string $depth Depth.
 	 * @return void
 	 */
 	private function term_vgm_selects( $tier, $depth ) {
@@ -78,6 +90,8 @@ class FLOSC_Site_Content_Index {
 	}
 
 	/**
+	 * Render term vgm add fields.
+	 *
 	 * @return void
 	 */
 	public function render_term_vgm_add_fields() {
@@ -93,7 +107,9 @@ class FLOSC_Site_Content_Index {
 	}
 
 	/**
-	 * @param WP_Term $term
+	 * Render term vgm edit fields.
+	 *
+	 * @param WP_Term $term Term.
 	 * @return void
 	 */
 	public function render_term_vgm_edit_fields( $term ) {
@@ -115,9 +131,11 @@ class FLOSC_Site_Content_Index {
 	}
 
 	/**
-	 * @param int    $term_id
-	 * @param int    $tt_id
-	 * @param string $taxonomy
+	 * Save term vgm.
+	 *
+	 * @param int    $term_id Term ID.
+	 * @param int    $tt_id Tt ID.
+	 * @param string $taxonomy Taxonomy.
 	 * @return void
 	 */
 	public function save_term_vgm( $term_id, $tt_id = 0, $taxonomy = '' ) {
@@ -262,8 +280,8 @@ class FLOSC_Site_Content_Index {
 	/**
 	 * Persist index document.
 	 *
-	 * @param string $flow_stem
-	 * @param array  $doc
+	 * @param string $flow_stem Flow stem.
+	 * @param array  $doc Doc.
 	 * @return bool
 	 */
 	public function save( $flow_stem, array $doc ) {
@@ -350,7 +368,9 @@ class FLOSC_Site_Content_Index {
 	}
 
 	/**
-	 * @param string[] $slugs
+	 * Category IDs from slugs.
+	 *
+	 * @param string[] $slugs Slugs.
 	 * @return int[]
 	 */
 	public function category_ids_from_slugs( array $slugs ) {
@@ -618,7 +638,7 @@ class FLOSC_Site_Content_Index {
 	/**
 	 * FLOSC's own plumbing, which is not site content.
 	 *
-	 * settings.php creates a flosc-internal category and hangs
+	 * Settings.php creates a flosc-internal category and hangs
 	 * flosc-internal-concierge and flosc-internal-trajectories under it. Those
 	 * posts are how FLOSC stores its own working parts — they are not writing
 	 * about the site and chat has no business citing them at any access level.
@@ -654,6 +674,12 @@ class FLOSC_Site_Content_Index {
 	 */
 	const INTERNAL_CATEGORY_ALIASES = array( 'internal', 'trajectory', 'trajectories', 'concierge' );
 
+	/**
+	 * Is internal post.
+	 *
+	 * @param mixed $post_id Post ID.
+	 * @return mixed
+	 */
 	public static function is_internal_post( $post_id ) {
 		$terms = get_the_terms( (int) $post_id, 'category' );
 		if ( ! is_array( $terms ) ) {
@@ -701,7 +727,7 @@ class FLOSC_Site_Content_Index {
 	/**
 	 * A depth token, or '' when it is not one.
 	 *
-	 * @param mixed $raw
+	 * @param mixed $raw Raw.
 	 * @return string
 	 */
 	public static function depth_token( $raw ) {
@@ -712,7 +738,7 @@ class FLOSC_Site_Content_Index {
 	/**
 	 * Position on the depth ladder. -1 for anything that is not a depth.
 	 *
-	 * @param mixed $raw
+	 * @param mixed $raw Raw.
 	 * @return int
 	 */
 	public static function depth_rank( $raw ) {
@@ -723,7 +749,7 @@ class FLOSC_Site_Content_Index {
 	/**
 	 * A tier token, or '' when it is not one.
 	 *
-	 * @param mixed $raw
+	 * @param mixed $raw Raw.
 	 * @return string
 	 */
 	public static function tier_token( $raw ) {
@@ -734,7 +760,7 @@ class FLOSC_Site_Content_Index {
 	/**
 	 * Every tier at or above $tier. The floor, expressed as a list.
 	 *
-	 * @param string $tier
+	 * @param string $tier Tier.
 	 * @return string[]
 	 */
 	public static function tiers_from( $tier ) {
@@ -771,7 +797,7 @@ class FLOSC_Site_Content_Index {
 	 * includes VGM" means — so each tier is raised to the deepest depth granted
 	 * at or below it.
 	 *
-	 * @param mixed $raw
+	 * @param mixed $raw Raw.
 	 * @return array<string,string>
 	 */
 	public static function normalize_depth_map( $raw ) {
@@ -799,7 +825,7 @@ class FLOSC_Site_Content_Index {
 	 * floscAdmin who wants "all titles VGM" or "all excerpts VGM" sets it here
 	 * once and every post with no rule of its own follows.
 	 *
-	 * @param string $flow_stem
+	 * @param string $flow_stem Flow stem.
 	 * @return array<string,string>
 	 */
 	public static function default_depth_map( $flow_stem = '' ) {
@@ -821,7 +847,7 @@ class FLOSC_Site_Content_Index {
 	/**
 	 * Protection rules for this flow, as the Content tab stores them.
 	 *
-	 * @param string $flow_stem
+	 * @param string $flow_stem Flow stem.
 	 * @return array[]
 	 */
 	public static function protection_rules( $flow_stem = '' ) {
@@ -845,7 +871,7 @@ class FLOSC_Site_Content_Index {
 	 * mentions fall to title: the post still exists and may be named, which is
 	 * the locked stub behaviour that was already there.
 	 *
-	 * @param array[] $rules
+	 * @param array[] $rules Rules.
 	 * @return array<string,string>|null Null when no rule in the set applies.
 	 */
 	public static function fold_rules( array $rules ) {
@@ -892,8 +918,8 @@ class FLOSC_Site_Content_Index {
 	 * and it can close one its category left open. Merging instead of deciding
 	 * would make the second of those impossible.
 	 *
-	 * @param int    $post_id
-	 * @param string $flow_stem
+	 * @param int    $post_id Post ID.
+	 * @param string $flow_stem Flow stem.
 	 * @return array<string,string>
 	 */
 	public static function resolve_vgm( $post_id, $flow_stem = '' ) {
@@ -1054,7 +1080,7 @@ class FLOSC_Site_Content_Index {
 	 * it as one would silently gate the post.
 	 *
 	 * @param string $kind 'post' or 'term'.
-	 * @param int    $id
+	 * @param int    $id ID.
 	 * @return array[]
 	 */
 	public static function meta_rules( $kind, $id ) {
@@ -1081,6 +1107,12 @@ class FLOSC_Site_Content_Index {
 		);
 	}
 
+	/**
+	 * Vgm list.
+	 *
+	 * @param mixed $raw Raw.
+	 * @return mixed
+	 */
 	public static function vgm_list( $raw ) {
 		$raw = strtolower( trim( (string) $raw ) );
 		if ( '' === $raw ) {
@@ -1098,6 +1130,13 @@ class FLOSC_Site_Content_Index {
 		return array_values( array_intersect( array( 'visitor', 'guest', 'member' ), $parts ) );
 	}
 
+	/**
+	 * Group vgm.
+	 *
+	 * @param array $policy   Policy.
+	 * @param mixed $group_id Group ID.
+	 * @return mixed
+	 */
 	public static function group_vgm( array $policy, $group_id ) {
 		$key = 'bb_group:' . (int) $group_id;
 		$raw = isset( $policy['vgm_rows'][ $key ] ) ? $policy['vgm_rows'][ $key ] : $policy['vgm_default'];
@@ -1179,6 +1218,12 @@ class FLOSC_Site_Content_Index {
 		return (array) apply_filters( 'flosc_site_content_index_post_types', $types, $flow_stem );
 	}
 
+	/**
+	 * Rebuild.
+	 *
+	 * @param string $flow_stem Flow stem.
+	 * @return mixed
+	 */
 	public function rebuild( $flow_stem = '' ) {
 		$previous   = $this->load( $flow_stem );
 		$prev_posts = is_array( $previous['posts'] ) ? $previous['posts'] : array();
@@ -1282,7 +1327,7 @@ class FLOSC_Site_Content_Index {
 	/**
 	 * How many indexed posts belong to this flow's content category (for admin stats).
 	 *
-	 * @param string $flow_stem
+	 * @param string $flow_stem Flow stem.
 	 * @return int
 	 */
 	public function count_in_flow_category( $flow_stem ) {
@@ -1309,9 +1354,11 @@ class FLOSC_Site_Content_Index {
 	}
 
 	/**
-	 * @param WP_Post $post
-	 * @param string  $keywords_manual
-	 * @param bool    $excluded
+	 * Build row from post.
+	 *
+	 * @param WP_Post $post Post.
+	 * @param string  $keywords_manual Keywords manual.
+	 * @param bool    $excluded Excluded.
 	 * @return array
 	 */
 	public function build_row_from_post( WP_Post $post, $keywords_manual = '', $excluded = false ) {
@@ -1477,8 +1524,10 @@ class FLOSC_Site_Content_Index {
 	}
 
 	/**
-	 * @param WP_Post $post
-	 * @param string  $body
+	 * Derive keywords.
+	 *
+	 * @param WP_Post $post Post.
+	 * @param string  $body Body.
 	 * @return string comma-separated
 	 */
 	private function derive_keywords( WP_Post $post, $body ) {
@@ -1527,8 +1576,10 @@ class FLOSC_Site_Content_Index {
 	}
 
 	/**
-	 * @param string $base
-	 * @param string $extra
+	 * Merge keywords.
+	 *
+	 * @param string $base Base.
+	 * @param string $extra Extra.
 	 * @return string
 	 */
 	private function merge_keywords( $base, $extra ) {
@@ -1549,7 +1600,7 @@ class FLOSC_Site_Content_Index {
 	/**
 	 * Light hierarchy map for AI (titles / ids / access) — no full bodies.
 	 *
-	 * @param string $flow_stem
+	 * @param string $flow_stem Flow stem.
 	 * @param string $access_level visitor|guest|member.
 	 * @return string
 	 */
@@ -1593,10 +1644,10 @@ class FLOSC_Site_Content_Index {
 	/**
 	 * Selective full-text retrieval from the index.
 	 *
-	 * @param string $flow_stem
-	 * @param string $keywords
-	 * @param string $access_level
-	 * @param int    $limit
+	 * @param string $flow_stem Flow stem.
+	 * @param string $keywords Keywords.
+	 * @param string $access_level Access level.
+	 * @param int    $limit Limit.
 	 * @return string Human-readable block for the model
 	 */
 	public function search( $flow_stem, $keywords, $access_level = 'visitor', $limit = self::DEFAULT_RETRIEVE_LIMIT ) {
@@ -1672,7 +1723,7 @@ class FLOSC_Site_Content_Index {
 					}
 				}
 			} else {
-				$score = 1; // empty query: allow first N
+				$score = 1; // empty query: allow first N.
 			}
 			// Numeric lesson / post id match.
 			if ( is_numeric( $q ) ) {
@@ -1765,7 +1816,7 @@ class FLOSC_Site_Content_Index {
 	 * body for a tier that clears it, title for one that does not. So an index
 	 * file written by an older build keeps working until it is rebuilt.
 	 *
-	 * @param array  $row
+	 * @param array  $row Row.
 	 * @param string $tier visitor|guest|member.
 	 * @return string title|excerpt|readmore|full
 	 */
@@ -1786,8 +1837,8 @@ class FLOSC_Site_Content_Index {
 	/**
 	 * The slice of body this depth returns. Empty string at title depth.
 	 *
-	 * @param array  $row
-	 * @param string $depth
+	 * @param array  $row Row.
+	 * @param string $depth Depth.
 	 * @return string
 	 */
 	public function row_body_at( array $row, $depth ) {
@@ -1818,8 +1869,10 @@ class FLOSC_Site_Content_Index {
 	}
 
 	/**
-	 * @param string $user_level
-	 * @param string $required
+	 * Access allows.
+	 *
+	 * @param string $user_level User level.
+	 * @param string $required Required.
 	 * @return bool
 	 */
 	public function access_allows( $user_level, $required ) {
@@ -1858,9 +1911,9 @@ class FLOSC_Site_Content_Index {
 	/**
 	 * Set excluded flag and save.
 	 *
-	 * @param string $flow_stem
-	 * @param int    $post_id
-	 * @param bool   $excluded
+	 * @param string $flow_stem Flow stem.
+	 * @param int    $post_id Post ID.
+	 * @param bool   $excluded Excluded.
 	 * @return bool
 	 */
 	public function set_excluded( $flow_stem, $post_id, $excluded ) {
@@ -1877,9 +1930,11 @@ class FLOSC_Site_Content_Index {
 	}
 
 	/**
-	 * @param string $flow_stem
-	 * @param int    $post_id
-	 * @param string $manual_keywords
+	 * Set manual keywords.
+	 *
+	 * @param string $flow_stem Flow stem.
+	 * @param int    $post_id Post ID.
+	 * @param string $manual_keywords Manual keywords.
 	 * @return bool
 	 */
 	public function set_manual_keywords( $flow_stem, $post_id, $manual_keywords ) {
@@ -1910,8 +1965,8 @@ class FLOSC_Site_Content_Index {
 	/**
 	 * Reindex a single post if still in category.
 	 *
-	 * @param string $flow_stem
-	 * @param int    $post_id
+	 * @param string $flow_stem Flow stem.
+	 * @param int    $post_id Post ID.
 	 * @return bool
 	 */
 	public function reindex_one( $flow_stem, $post_id ) {
@@ -1939,6 +1994,8 @@ class FLOSC_Site_Content_Index {
 	// ─── Admin POST handlers ─────────────────────────────────────────────
 
 	/**
+	 * Require admin.
+	 *
 	 * @return void
 	 */
 	private function require_admin() {
@@ -1948,6 +2005,9 @@ class FLOSC_Site_Content_Index {
 	}
 
 	/**
+	 * IVR from request.
+	 *
+	 * @param mixed $request Request.
 	 * @return string
 	 */
 	private function ivr_from_request( $request ) {
@@ -1956,9 +2016,11 @@ class FLOSC_Site_Content_Index {
 	}
 
 	/**
-	 * @param string $ivr
-	 * @param string $action
-	 * @param string $error
+	 * Redirect AI.
+	 *
+	 * @param string $ivr IVR.
+	 * @param string $action Action.
+	 * @param string $error Error.
 	 * @return void
 	 */
 	private function redirect_ai( $ivr, $action, $error = '' ) {
@@ -1978,6 +2040,8 @@ class FLOSC_Site_Content_Index {
 	}
 
 	/**
+	 * Handle rebuild.
+	 *
 	 * @return void
 	 */
 	public function handle_rebuild() {
@@ -2004,6 +2068,8 @@ class FLOSC_Site_Content_Index {
 	}
 
 	/**
+	 * Handle exclude.
+	 *
 	 * @return void
 	 */
 	public function handle_exclude() {
@@ -2019,6 +2085,8 @@ class FLOSC_Site_Content_Index {
 	}
 
 	/**
+	 * Handle include.
+	 *
 	 * @return void
 	 */
 	public function handle_include() {
@@ -2034,6 +2102,8 @@ class FLOSC_Site_Content_Index {
 	}
 
 	/**
+	 * Handle keywords.
+	 *
 	 * @return void
 	 */
 	public function handle_keywords() {
@@ -2050,6 +2120,8 @@ class FLOSC_Site_Content_Index {
 	}
 
 	/**
+	 * Handle reindex one.
+	 *
 	 * @return void
 	 */
 	public function handle_reindex_one() {

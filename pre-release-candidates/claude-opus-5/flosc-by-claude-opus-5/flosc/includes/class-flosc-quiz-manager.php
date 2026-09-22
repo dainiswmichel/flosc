@@ -26,6 +26,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Quiz manager.
+ */
 class FLOSC_Quiz_Manager {
 
 	/**
@@ -102,7 +105,7 @@ class FLOSC_Quiz_Manager {
 	/**
 	 * Handle REST API quiz submission
 	 *
-	 * @param WP_REST_Request $request
+	 * @param WP_REST_Request $request Request.
 	 * @return WP_REST_Response
 	 */
 	public function handle_external_quiz_rest( $request ) {
@@ -151,13 +154,13 @@ class FLOSC_Quiz_Manager {
 	 * Optional but recommended for richer personalization.
 	 *
 	 * @param string $quiz_id Unique quiz identifier.
-	 * @param array  $metadata Quiz metadata:.
+	 * @param array  $metadata Quiz metadata:
 	 *    - title: (string) Display title
 	 *    - description: (string) Quiz description
 	 *    - category: (string) Category for weakness analysis
 	 *    - lesson_mapping: (array) Maps question IDs to lesson numbers
 	 *    - pass_score: (int) Score needed to pass (default: 70)
-	 *    - source: (string) Plugin name ('learndash', 'tutor', 'custom')
+	 *    - source: (string) Plugin name ('learndash', 'tutor', 'custom').
 	 * @return bool
 	 */
 	public static function register_quiz( $quiz_id, $metadata = array() ) {
@@ -184,6 +187,7 @@ class FLOSC_Quiz_Manager {
 	/**
 	 * Get quiz metadata
 	 *
+	 * @param mixed $quiz_id Quiz ID.
 	 * @return array|null
 	 */
 	public static function get_quiz( $quiz_id ) {
@@ -203,7 +207,7 @@ class FLOSC_Quiz_Manager {
 	/**
 	 * Unregister a quiz
 	 *
-	 * @param string $quiz_id
+	 * @param string $quiz_id Quiz ID.
 	 * @return bool
 	 */
 	public static function unregister_quiz( $quiz_id ) {
@@ -225,12 +229,12 @@ class FLOSC_Quiz_Manager {
 	 *
 	 * @param int    $user_id WordPress user ID.
 	 * @param string $quiz_id Quiz identifier (should be registered first).
-	 * @param array  $score_data Score data:.
+	 * @param array  $score_data Score data:
 	 *    - score: (int) Percentage score 0-100 (required)
 	 *    - correct_items: (array) IDs/names of correct answers
 	 *    - incorrect_items: (array) IDs/names of incorrect answers
 	 *    - answers: (array) All user answers keyed by question ID
-	 *    - time_spent: (int) Seconds spent on quiz
+	 *    - time_spent: (int) Seconds spent on quiz.
 	 * @return bool Success
 	 */
 	public static function submit_score( $user_id, $quiz_id, $score_data ) {
@@ -310,7 +314,7 @@ class FLOSC_Quiz_Manager {
 	/**
 	 * Get user's quiz history
 	 *
-	 * @param int    $user_id
+	 * @param int    $user_id User ID.
 	 * @param string $quiz_id Optional specific quiz.
 	 * @return array
 	 */
@@ -328,8 +332,8 @@ class FLOSC_Quiz_Manager {
 	/**
 	 * Check if user passed a quiz
 	 *
-	 * @param int    $user_id
-	 * @param string $quiz_id
+	 * @param int    $user_id User ID.
+	 * @param string $quiz_id Quiz ID.
 	 * @return bool|null True if passed, false if failed, null if not taken
 	 */
 	public static function user_passed_quiz( $user_id, $quiz_id ) {

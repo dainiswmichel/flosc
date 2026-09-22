@@ -49,7 +49,7 @@ function flosc_content_item_user_meta_key_map() {
 /**
  * Whether a flow settings value is "present" for migrate-from-legacy.
  *
- * @param mixed $value
+ * @param mixed $value Value.
  * @return bool
  */
 function flosc_content_item_value_present( $value ) {
@@ -115,7 +115,7 @@ function flosc_normalize_content_item_flow_settings( array $fs, $option_key = ''
 /**
  * Resolve setting key for reads: accept legacy key name, return canonical.
  *
- * @param string $key
+ * @param string $key Key.
  * @return string
  */
 function flosc_content_item_canonical_option_key( $key ) {
@@ -134,9 +134,9 @@ function flosc_content_item_canonical_option_key( $key ) {
 /**
  * Get_user_meta with legacy freeline meta fallback.
  *
- * @param int    $user_id
+ * @param int    $user_id User ID.
  * @param string $new_key Canonical meta key.
- * @param bool   $single
+ * @param bool   $single Single.
  * @return mixed
  */
 function flosc_content_item_get_user_meta( $user_id, $new_key, $single = true ) {
@@ -161,9 +161,9 @@ function flosc_content_item_get_user_meta( $user_id, $new_key, $single = true ) 
 /**
  * Update_user_meta for freeline state (writes new key only).
  *
- * @param int    $user_id
- * @param string $new_key
- * @param mixed  $value
+ * @param int    $user_id User ID.
+ * @param string $new_key New key.
+ * @param mixed  $value Value.
  * @return int|bool
  */
 function flosc_content_item_update_user_meta( $user_id, $new_key, $value ) {

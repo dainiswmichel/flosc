@@ -9,11 +9,23 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Companion mode.
+ */
 class FLOSC_Companion_Mode {
 
-	/** @var FLOSC_Framework */
+	/**
+	 * Construct.
+	 *
+	 * @var FLOSC_Framework
+	 */
 	private $flosc;
 
+	/**
+	 * Construct.
+	 *
+	 * @param mixed $flosc FLOSC.
+	 */
 	public function __construct( $flosc ) {
 		$this->flosc = $flosc;
 	}
@@ -817,6 +829,8 @@ class FLOSC_Companion_Mode {
 	}
 
 	/**
+	 * Companion hosts match.
+	 *
 	 * @param string $host_a Host A.
 	 * @param string $host_b Host B.
 	 * @return bool
@@ -914,6 +928,8 @@ class FLOSC_Companion_Mode {
 
 	/**
 	 * Find active flow by slug for companion URL hardening.
+	 *
+	 * @param mixed $slug Slug.
 	 */
 	private function get_flow_by_slug_for_companion( $slug ) {
 		$slug = sanitize_title( (string) $slug );
@@ -1153,6 +1169,8 @@ class FLOSC_Companion_Mode {
 
 	/**
 	 * Build context parameters passed into companion iframe URL.
+	 *
+	 * @param mixed $scope Scope.
 	 */
 	private function build_companion_context_params( $scope ) {
 		global $wp;
@@ -1192,6 +1210,8 @@ class FLOSC_Companion_Mode {
 
 	/**
 	 * Parse path-pattern textarea into normalized prefix list.
+	 *
+	 * @param mixed $raw_patterns Raw patterns.
 	 */
 	private function parse_companion_path_patterns( $raw_patterns ) {
 		$patterns = array();
@@ -1246,6 +1266,8 @@ class FLOSC_Companion_Mode {
 
 	/**
 	 * Parse multiline/csv companion targeting input into normalized rule objects.
+	 *
+	 * @param mixed $raw_rules Raw rules.
 	 */
 	private function parse_companion_target_rules( $raw_rules ) {
 		$rules  = array();
@@ -1294,6 +1316,8 @@ class FLOSC_Companion_Mode {
 
 	/**
 	 * Determine whether any targeting rule matches the current request context.
+	 *
+	 * @param mixed $rules Rules.
 	 */
 	private function companion_target_matches_any_rule( $rules ) {
 		if ( empty( $rules ) ) {

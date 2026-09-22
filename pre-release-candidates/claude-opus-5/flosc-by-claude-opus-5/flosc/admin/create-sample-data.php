@@ -102,7 +102,7 @@ function flosc_create_sample_posts() {
 			'post_status'   => 'publish',
 			'post_category' => array( $cat_id ),
 			'post_type'     => 'post',
-			'post_author'   => 1, // Admin user
+			'post_author'   => 1, // Admin user.
 		);
 
 		$post_id = wp_insert_post( $post_data );
@@ -110,7 +110,7 @@ function flosc_create_sample_posts() {
 		if ( $post_id && ! is_wp_error( $post_id ) ) {
 			// Add custom meta.
 			update_post_meta( $post_id, '_flosc_lesson_number', $num );
-			update_post_meta( $post_id, '_flosc_access_level', 'member' ); // Default: member-only
+			update_post_meta( $post_id, '_flosc_access_level', 'member' ); // Default: member-only.
 
 			WP_CLI::success( "Created post {$num}: ID {$post_id}" );
 			++$created;
@@ -126,6 +126,9 @@ function flosc_create_sample_posts() {
 /**
  * Generate post content with <!--more--> tag
  * MAGNIFICENT, ENTERTAINING, JOYFUL lessons with real IPA transcriptions
+ *
+ * @param mixed $num  Num.
+ * @param mixed $word Word.
  */
 function flosc_generate_post_content( $num, $word ) {
 
@@ -381,7 +384,9 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	flosc_create_sample_posts();
 }
 
-// Provide admin UI button (future enhancement).
+/**
+ * Provide admin UI button (future enhancement).
+ */
 function flosc_sample_data_admin_ui() {
 	if ( ! current_user_can( 'manage_options' ) ) {
 		return;

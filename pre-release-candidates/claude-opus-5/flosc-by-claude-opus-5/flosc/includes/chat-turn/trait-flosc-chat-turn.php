@@ -18,7 +18,7 @@ trait FLOSC_Chat_Turn_Trait {
 	 * so the whole turn is wrapped: any Throwable becomes a controlled FLOSC
 	 * reply, with the technical reason kept for the log rather than the visitor.
 	 *
-	 * @param WP_REST_Request $request
+	 * @param WP_REST_Request $request Request.
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function handle_chat( $request ) {
@@ -53,9 +53,16 @@ trait FLOSC_Chat_Turn_Trait {
 		}
 	}
 
+	/**
+	 * Handle chat turn.
+	 *
+	 * @param mixed $request Request.
+	 * @return mixed
+	 * @throws \Throwable Re-thrown after the visitor's token reservation is settled.
+	 */
 	private function handle_chat_turn( $request ) {
 		$flosc_chat_start_time = microtime( true );
-		$flosc_response_source = 'ivr'; // Track how response was generated
+		$flosc_response_source = 'ivr'; // Track how response was generated.
 
 		$message = sanitize_text_field( $request->get_param( 'message' ) );
 
@@ -366,7 +373,7 @@ trait FLOSC_Chat_Turn_Trait {
 
 		// v1.1.0: Start with frontend context, then OVERRIDE with authoritative backend values
 		// This prevents frontend from spoofing logged_in, user_id, etc.
-		$eval_context = $context; // Frontend context first
+		$eval_context = $context; // Frontend context first.
 
 		// Authoritative backend values (cannot be overridden by frontend).
 		$eval_context['logged_in']     = is_user_logged_in();
@@ -743,7 +750,7 @@ trait FLOSC_Chat_Turn_Trait {
 					function ( $msg ) {
 						return array(
 							'role'    => in_array( $msg['role'] ?? '', array( 'user', 'assistant' ), true ) ? $msg['role'] : 'user',
-							'content' => sanitize_textarea_field( substr( $msg['content'] ?? '', 0, 1500 ) ), // Fix 10: raised from 500
+							'content' => sanitize_textarea_field( substr( $msg['content'] ?? '', 0, 1500 ) ), // Fix 10: raised from 500.
 						);
 					},
 					array_slice( $visitor_history, -10 )
@@ -1288,7 +1295,7 @@ trait FLOSC_Chat_Turn_Trait {
 			array(
 				'success'          => true,
 				'message'          => $response_message['content'],
-				'action'           => $response_message['action'] ?? null, // v3.0.5: offer phrase actions
+				'action'           => $response_message['action'] ?? null, // v3.0.5: offer phrase actions.
 				'user_autoprompts' => $response_message['user_autoprompts'] ?? array(),
 				'phaseChange'      => $response_message['phase_change'] ?? null,
 				'token_balance'    => $token_balance_payload,
@@ -1306,7 +1313,7 @@ trait FLOSC_Chat_Turn_Trait {
 	 * so the whole turn is wrapped: any Throwable becomes a controlled FLOSC
 	 * reply, with the technical reason kept for the log rather than the visitor.
 	 *
-	 * @param WP_REST_Request $request
+	 * @param WP_REST_Request $request Request.
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function handle_chat_with_rag( $request ) {
@@ -1341,6 +1348,12 @@ trait FLOSC_Chat_Turn_Trait {
 		}
 	}
 
+	/**
+	 * Handle chat with RAG turn.
+	 *
+	 * @param mixed $request Request.
+	 * @return mixed
+	 */
 	private function handle_chat_with_rag_turn( $request ) {
 		$message = sanitize_text_field( $request->get_param( 'message' ) );
 		$context = $request->get_param( 'context' ) ?? array();
@@ -1566,7 +1579,7 @@ trait FLOSC_Chat_Turn_Trait {
 					'access_level' => $user_context['access_level'],
 					'is_member'    => $user_context['is_member'],
 				),
-				'validated'    => $validation_result['valid'], // For debugging
+				'validated'    => $validation_result['valid'], // For debugging.
 			)
 		);
 	}

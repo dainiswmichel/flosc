@@ -10,13 +10,26 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Page context.
+ */
 class FLOSC_Page_Context {
 
+	/**
+	 * Instance.
+	 *
+	 * @var mixed
+	 */
 	private static $instance = null;
 
 	const MAX_CONTENT_CHARS = 12000;
 	const SESSION_TTL       = HOUR_IN_SECONDS;
 
+	/**
+	 * Instance.
+	 *
+	 * @return mixed
+	 */
 	public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
@@ -125,10 +138,22 @@ class FLOSC_Page_Context {
 		}
 	}
 
+	/**
+	 * Session transient key.
+	 *
+	 * @param mixed $session_key Session key.
+	 * @return mixed
+	 */
 	private function session_transient_key( $session_key ) {
 		return 'flosc_page_focus_' . md5( sanitize_text_field( (string) $session_key ) );
 	}
 
+	/**
+	 * Get session focus post ID.
+	 *
+	 * @param mixed $session_key Session key.
+	 * @return mixed
+	 */
 	private function get_session_focus_post_id( $session_key ) {
 		if ( '' === $session_key ) {
 			return 0;
@@ -136,11 +161,22 @@ class FLOSC_Page_Context {
 		return absint( get_transient( $this->session_transient_key( $session_key ) ) );
 	}
 
+	/**
+	 * Is page context handoff enabled.
+	 *
+	 * @return mixed
+	 */
 	private function is_page_context_handoff_enabled() {
 		$pass_page_context = flosc_get_setting( 'companion_pass_page_context', '1' );
 		return filter_var( $pass_page_context, FILTER_VALIDATE_BOOLEAN );
 	}
 
+	/**
+	 * Resolve current browsing post ID.
+	 *
+	 * @param array $eval_context Eval context.
+	 * @return mixed
+	 */
 	private function resolve_current_browsing_post_id( array $eval_context ) {
 		// Companion already hands off the post ID — trust it when valid.
 		$explicit_id = absint( $eval_context['browsing_page_post_id'] ?? 0 );
@@ -159,6 +195,14 @@ class FLOSC_Page_Context {
 		return 0;
 	}
 
+	/**
+	 * Resolve post ID for content injection.
+	 *
+	 * @param array $eval_context Eval context.
+	 * @param mixed $message      Message.
+	 * @param mixed $session_key  Session key.
+	 * @return mixed
+	 */
 	private function resolve_post_id_for_content_injection( array $eval_context, $message, $session_key ) {
 		$current_id = absint( $eval_context['browsing_page_post_id'] ?? 0 );
 		if ( $current_id <= 0 ) {
@@ -181,6 +225,12 @@ class FLOSC_Page_Context {
 		return 0;
 	}
 
+	/**
+	 * Resolve post ID.
+	 *
+	 * @param mixed $explicit_id Explicit ID.
+	 * @return mixed
+	 */
 	private function resolve_post_id( $explicit_id ) {
 		if ( $explicit_id > 0 ) {
 			$post = get_post( $explicit_id );
@@ -192,6 +242,12 @@ class FLOSC_Page_Context {
 		return 0;
 	}
 
+	/**
+	 * Resolve post ID from URL.
+	 *
+	 * @param mixed $url URL.
+	 * @return mixed
+	 */
 	private function resolve_post_id_from_url( $url ) {
 		$url = esc_url_raw( (string) $url );
 		if ( '' === $url ) {
@@ -223,6 +279,12 @@ class FLOSC_Page_Context {
 		return 0;
 	}
 
+	/**
+	 * Message is page location query.
+	 *
+	 * @param mixed $message Message.
+	 * @return mixed
+	 */
 	private function message_is_page_location_query( $message ) {
 		$msg = strtolower( trim( (string) $message ) );
 		if ( '' === $msg ) {
@@ -235,6 +297,13 @@ class FLOSC_Page_Context {
 		);
 	}
 
+	/**
+	 * Message targets current page.
+	 *
+	 * @param mixed $message Message.
+	 * @param mixed $title   Title.
+	 * @return mixed
+	 */
 	private function message_targets_current_page( $message, $title ) {
 		$msg = strtolower( trim( $message ) );
 
@@ -350,6 +419,12 @@ class FLOSC_Page_Context {
 		return is_array( $phrases ) ? $phrases : $defaults;
 	}
 
+	/**
+	 * Message is short followup.
+	 *
+	 * @param mixed $message Message.
+	 * @return mixed
+	 */
 	private function message_is_short_followup( $message ) {
 		$msg = strtolower( trim( $message ) );
 
@@ -384,6 +459,13 @@ class FLOSC_Page_Context {
 		return false;
 	}
 
+	/**
+	 * Load post content.
+	 *
+	 * @param mixed $post_id      Post ID.
+	 * @param mixed $access_level Access level.
+	 * @return mixed
+	 */
 	private function load_post_content( $post_id, $access_level ) {
 		$post = get_post( $post_id );
 		if ( ! $post || 'publish' !== $post->post_status ) {

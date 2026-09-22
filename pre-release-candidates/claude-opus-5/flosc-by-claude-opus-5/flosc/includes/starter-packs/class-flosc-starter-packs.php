@@ -16,6 +16,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Starter packs.
+ */
 class FLOSC_Starter_Packs {
 
 	/** Post meta stamped on every post a pack creates. */
@@ -1766,6 +1769,13 @@ class FLOSC_Starter_Packs {
 		return ( '' !== $display ) ? ucwords( $display ) : $stem;
 	}
 
+	/**
+	 * Flow label.
+	 *
+	 * @param mixed $stem Stem.
+	 * @param mixed $bag  Bag.
+	 * @return mixed
+	 */
 	private static function flow_label( $stem, $bag ) {
 		$stem = sanitize_key( (string) $stem );
 

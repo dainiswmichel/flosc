@@ -17,36 +17,79 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Sample assessment quiz.
+ */
 class FLOSC_Sample_Assessment_Quiz extends FLOSC_Abstract_Quiz_Type {
 
+	/**
+	 * Get ID.
+	 *
+	 * @return mixed
+	 */
 	public function get_id() {
 		return 'sample_assessment_quiz';
 	}
 
+	/**
+	 * Get name.
+	 *
+	 * @return mixed
+	 */
 	public function get_name() {
 		return 'Sample Assessment Quiz';
 	}
 
+	/**
+	 * Get description.
+	 *
+	 * @return mixed
+	 */
 	public function get_description() {
 		return 'Sample multi-topic assessment (10 generic questions). Replace with your own items; topics drive freeline, guest gifts, and member content via admin config.';
 	}
 
+	/**
+	 * Get icon.
+	 *
+	 * @return mixed
+	 */
 	public function get_icon() {
 		return '📋';
 	}
 
+	/**
+	 * Needs audio.
+	 *
+	 * @return mixed
+	 */
 	public function needs_audio() {
 		return false;
 	}
 
+	/**
+	 * Needs STT.
+	 *
+	 * @return mixed
+	 */
 	public function needs_stt() {
 		return false;
 	}
 
+	/**
+	 * Needs AI analysis.
+	 *
+	 * @return mixed
+	 */
 	public function needs_ai_analysis() {
 		return false;
 	}
 
+	/**
+	 * Get instructions.
+	 *
+	 * @return mixed
+	 */
 	public function get_instructions() {
 		return "One question per block, separated by a blank line.\n\n"
 			. "Each block:\n"
