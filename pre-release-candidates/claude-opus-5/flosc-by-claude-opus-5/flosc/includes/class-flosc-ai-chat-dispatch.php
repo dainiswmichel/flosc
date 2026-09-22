@@ -1239,7 +1239,7 @@ class FLOSC_AI_Chat_Dispatch {
 	}
 
 	/**
-	 * OpenAI, Anthropic, and Gemini chat: WordPress 7.0 AI Client.
+	 * OpenAI, Anthropic, and Gemini chat: WordPress 7.1 AI Client.
 	 * Official provider plugins own the vendor HTTP. FLOSC binds this flow's key.
 	 */
 	private function wp_ai_chat_request( $provider, $message, $system_prompt, $context = array(), $test_mode = false ) {

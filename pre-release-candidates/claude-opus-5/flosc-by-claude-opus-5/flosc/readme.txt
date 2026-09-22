@@ -26,7 +26,7 @@ Instead of "Are you interested in buying?" FLOSC asks "What should I help you wi
 * **DA1 Catalogs** - Attach structured TSV catalogs to flows so floscAdmins can serve curated, flow-scoped datasets without hard-coding project-specific content
 * **Starter Packs** - Install a complete working journey in one click: a flow, the example posts it talks about, and the visitor / guest / member gating already wired
 * **Locally Stored** - All visitor data stays in your WordPress database by default
-* **AI-Ready** - Bring-your-own-key chat with Anthropic, OpenAI, xAI, or Gemini (or IVR scripted only). OpenAI, Anthropic, and Gemini chat use the WordPress 7.0 AI Client — install the official provider plugin for the agent this flow attaches. Speech-to-text: AssemblyAI, OpenAI Whisper, or a custom endpoint.
+* **AI-Ready** - Bring-your-own-key chat with Anthropic, OpenAI, xAI, or Gemini (or IVR scripted only). OpenAI, Anthropic, and Gemini chat use the WordPress 7.1 AI Client — install the official provider plugin for the agent this flow attaches. Speech-to-text: AssemblyAI, OpenAI Whisper, or a custom endpoint.
 * **WordPress Native** - Built as a standard WordPress plugin; no external platform required
 
 == Other Notes ==
@@ -180,7 +180,7 @@ In Settings → FLOSC → AI:
 
 = Is there one WordPress AI Client or three? =
 
-One client. WordPress 7.0 ships a single AI Client (`wp_ai_client_prompt()`). It does not bundle vendors. Three official plugins register with that one client: AI Provider for OpenAI, AI Provider for Anthropic, and AI Provider for Google. FLOSC calls the client; those plugins own the vendor HTTP. A flow attaches one provider. A developer testing all three activates all three plugins. IVR uses none. xAI is still a FLOSC hop because WordPress has no official xAI plugin.
+One client. WordPress 7.1 ships a single AI Client (`wp_ai_client_prompt()`). It does not bundle vendors. Three official plugins register with that one client: AI Provider for OpenAI, AI Provider for Anthropic, and AI Provider for Google. FLOSC calls the client; those plugins own the vendor HTTP. A flow attaches one provider. A developer testing all three activates all three plugins. IVR uses none. xAI is still a FLOSC hop because WordPress has no official xAI plugin.
 
 = Do I have to install all three official AI Provider plugins? =
 
