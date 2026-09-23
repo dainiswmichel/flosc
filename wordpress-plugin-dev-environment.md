@@ -73,12 +73,35 @@ throwaway install, and fetching the real ones needs wordpress.org.
 ## 4. Serve it
 
 ```
-php -S 127.0.0.1:8099 -t /tmp/wp
+PHP_CLI_SERVER_WORKERS=8 php -S 127.0.0.1:8099 -t /tmp/wp /tmp/wp-router.php
 ```
 
-Run it in the background. The built-in server is single-threaded: a request that
-triggers a second request to itself will deadlock. If a page hangs forever, that
-is usually why, not a bug in the plugin.
+Two things that single line fixes, both of which cost me a diagnosis each.
+
+**Workers.** Without `PHP_CLI_SERVER_WORKERS` the built-in server is one
+process, so a request that triggers a second request to itself deadlocks. A
+front end that calls its own REST API — which is most of them — hangs forever,
+and the hang reads like a plugin bug. Eight workers is plenty. Confirm they
+exist rather than assuming: `pgrep -c -f "php -S 127.0.0.1:8099"` should print
+more than one.
+
+**Pretty permalinks.** `-t` alone serves the filesystem, so `/2026/09/23/slug/`
+is a 404 and every test runs against plain `?p=123` addresses the live site
+never uses. A router script gives you the same addresses the real host serves:
+
+```php
+<?php
+$path = parse_url( $_SERVER['REQUEST_URI'], PHP_URL_PATH );
+$file = __DIR__ . '/wp' . $path;
+if ( '/' !== $path && file_exists( $file ) && ! is_dir( $file ) ) {
+    return false;
+}
+require __DIR__ . '/wp/index.php';
+return true;
+```
+
+Set `permalink_structure` and flush the rules from a PHP script that requires
+`wp-load.php`, then check a permalink prints the shape you expect.
 
 It also dies quietly when the container is reclaimed. Before trusting any
 result, confirm it is up:
@@ -163,6 +186,36 @@ php $P/vendor/bin/phpcs \
 
 Run that from `wp-content/plugins`, with the plugin directory name as the target.
 
+## 8. Drive a real browser for anything with frames or scripts
+
+Some defects have no textual trace. A widget that loads the wrong page into its
+own iframe produces valid HTML at every level, so curl, PHPCS and the debug log
+all read clean while the reader sees the site repeating inside itself. The frame
+tree is the evidence, and only a browser has one.
+
+Chromium and Playwright are already here — `/opt/pw-browsers`, and Playwright
+under the global node modules, so `require` it by absolute path and never run
+`playwright install`. Log in through `wp-login.php` in the browser context
+rather than reusing a curl cookie jar, then print the tree after each step:
+
+```js
+const tree = p => p.frames().map(f => {
+  let d = 0, q = f.parentFrame();
+  while (q) { d++; q = q.parentFrame(); }
+  return '  '.repeat(d) + '[' + d + '] ' + f.url();
+}).join('\n');
+```
+
+Two depth-1 frames is a widget. Depth 2 and beyond is a widget inside itself.
+
+`waitUntil: 'networkidle'` never settles on a page that polls or streams, and
+the navigation times out after 30 seconds with nothing to show for it. Use
+`domcontentloaded` and an explicit wait.
+
+Reproduce the defect first, with the tree printed, and only then write the fix —
+and run the same script afterwards, plus one for the path that must keep
+working, because a guard that stops the bad case usually stops a good one too.
+
 ---
 
 ## Traps that cost me hours
@@ -172,6 +225,13 @@ Run that from `wp-content/plugins`, with the plugin directory name as the target
 run in ~90ms that means nothing. Always print the file count and fail the run
 if it is implausibly low. `--report=summary` shows it at the bottom; read it
 every time.
+
+The way this bites hardest is a working copy that lives under an excluded path.
+FLOSC's ruleset excludes `*/pre-release-candidates/*`, and every candidate lives
+inside `pre-release-candidates/`, so the project's own standard cannot scan the
+code anyone is actually writing. Copy the tree somewhere the pattern does not
+match and scan the copy — and scan the previous version the same way, because a
+number with no baseline beside it says nothing about the change you just made.
 
 **Negative-control every ruleset.** Before believing a pass, reintroduce a
 defect you know the ruleset catches and confirm it fails. I put `7.0.4` back
