@@ -425,6 +425,10 @@
                     self.navigateTopLevelForAuth(data.authUrl);
                     return;
                 }
+                if (data.type === 'flosc_companion_navigate_top') {
+                    self.navigateTopLevel(data.url);
+                    return;
+                }
                 if (data.type === 'flosc_app_ready') {
                     self._frameAlive = true;
                     window.clearTimeout(self._frameHealthTimer);
@@ -1356,6 +1360,34 @@
 
         // Only the flow's own authorize endpoint may move the host page, and the parent
         // supplies redirect_to so the visitor returns to the page they were reading.
+        /**
+         * Take the tab somewhere the chat asked for on the reader's behalf.
+         *
+         * The chat sends this rather than navigating itself, because the frame
+         * it lives in is the panel: a page loaded there replaces the
+         * conversation instead of opening beside it. Checkout is the reason
+         * this accepts an address off this site — a payment page is somewhere
+         * the reader genuinely goes.
+         *
+         * The message reaching this point has already been checked by the
+         * listener: it came from this panel's own frame and from the chat's
+         * origin. Only the scheme is left to establish, so javascript: and
+         * data: addresses cannot ride in on a chat that has been tampered with.
+         *
+         * @param {string} rawUrl Destination from the chat.
+         */
+        navigateTopLevel: function(rawUrl) {
+            try {
+                var target = new URL(String(rawUrl || ''), window.location.origin);
+                if (!/^https?:$/.test(target.protocol)) {
+                    return;
+                }
+                window.location.href = target.toString();
+            } catch (e) {
+                // Unparseable destination: stay where we are.
+            }
+        },
+
         navigateTopLevelForAuth: function(rawAuthUrl) {
             try {
                 var appOrigin = new URL(this.config.appUrl, window.location.origin).origin;

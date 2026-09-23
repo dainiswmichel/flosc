@@ -122,6 +122,20 @@ class FLOSC_Full_Page_Mode {
 			return;
 		}
 
+		// WordPress has already resolved the query by now, and a flow address it
+		// has no rewrite rule for came out of that as a 404. The page below is a
+		// real page and this plugin is about to serve it, so the 404 that was
+		// decided before we were asked is withdrawn here. Left alone, the chat
+		// answers "not found": browsers render it, caches and crawlers throw it
+		// away, and the flow looks broken to everything that reads the status
+		// rather than the pixels.
+		global $wp_query;
+
+		if ( $wp_query instanceof WP_Query && $wp_query->is_404() ) {
+			$wp_query->is_404 = false;
+			status_header( 200 );
+		}
+
 		$legal_page = $this->get_requested_legal_page();
 		if ( null !== $legal_page ) {
 			$this->render_legal_page( $legal_page );

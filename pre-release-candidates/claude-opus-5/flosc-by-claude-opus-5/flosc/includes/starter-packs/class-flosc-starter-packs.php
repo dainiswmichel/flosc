@@ -465,6 +465,20 @@ class FLOSC_Starter_Packs {
 
 			$record['flow_option'] = $registered['record']['flow_option'];
 			$detail[]              = $registered['message'];
+
+			// A flow that WordPress has no rewrite rule for is a 404, and core
+			// answers a 404 by guessing: redirect_guess_404_permalink() sends the
+			// visitor to the nearest post whose slug starts the same way. With
+			// this pack that is /vegan-latvian-kitchen/ redirecting to the post
+			// /2026/09/23/vegan-latvian-kitchen-pdf/, which is how a companion
+			// asking for the chat ends up displaying a blog page inside its
+			// panel. The flow upload screen has always flushed here
+			// (admin/ivr-upload-handler.php); installing a pack did not, so a
+			// flow you uploaded got a working address and a flow from a pack did
+			// not. Soft flush: rules are rewritten, .htaccess is left alone.
+			if ( function_exists( 'flush_rewrite_rules' ) ) {
+				flush_rewrite_rules( false );
+			}
 		}
 
 		// --- content index ---

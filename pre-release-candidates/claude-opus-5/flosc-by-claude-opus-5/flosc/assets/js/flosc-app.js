@@ -5103,7 +5103,7 @@ class floscApp {
                     }
 
                     setTimeout(() => {
-                        window.location.href = targetUrl || (this.config.appUrl || '/');
+                        this.leavePanel(targetUrl || (this.config.appUrl || '/'));
                     }, 2000);
                 };
 
@@ -7690,7 +7690,7 @@ class floscApp {
 
         // Providers refuse to render consent inside a frame, so companion mode asks
         // the parent to run the whole OAuth hop at top level and supply its own return URL.
-        if (this.isCompanionEmbed()) {
+        if (this.isFramed()) {
             let targetOrigin = '*';
             try {
                 if (document.referrer) {
@@ -7712,7 +7712,7 @@ class floscApp {
         const redirectTo = window.location.href;
         const separator = authUrl.includes('?') ? '&' : '?';
         const fullAuthUrl = `${authUrl}${separator}redirect_to=${encodeURIComponent(redirectTo)}`;
-        window.location.href = fullAuthUrl;
+        this.leavePanel(fullAuthUrl);
     }
 
     isCompanionEmbed() {
@@ -7766,6 +7766,61 @@ class floscApp {
         }
 
         window.location.href = target;
+    }
+
+    /**
+     * Send the reader somewhere that must not live inside the panel.
+     *
+     * The companion panel holds the conversation and nothing else. A page
+     * loaded into it replaces the chat with a document wearing the site's
+     * theme and admin bar, and the reader loses the conversation without
+     * having asked to.
+     *
+     * The parent owns the tab, so when framed this asks the parent to make the
+     * move and never makes it here. That is the same channel the codebase
+     * already uses for the SSO hop and for logout teardown; unlike a new tab it
+     * cannot be refused by a popup blocker, which matters because most of these
+     * calls arrive from a timer or after an await, by which time the click that
+     * started them is no longer the active gesture.
+     *
+     * navigateToHostPage() remains the right call for a destination opened
+     * straight from a click that should keep the conversation open behind it.
+     *
+     * @param {string} url Absolute or site-relative destination.
+     */
+    leavePanel(url) {
+        const target = String(url || '').trim();
+
+        if (!target) {
+            return;
+        }
+
+        if (!this.isFramed()) {
+            window.location.href = target;
+            return;
+        }
+
+        let targetOrigin = '*';
+
+        try {
+            if (document.referrer) {
+                const ref = new URL(document.referrer, window.location.origin);
+                if (/^https?:$/.test(ref.protocol)) {
+                    targetOrigin = ref.origin;
+                }
+            }
+        } catch (e) {
+            // Unparseable referrer: fall through with the wildcard origin.
+        }
+
+        try {
+            window.parent.postMessage({
+                type: 'flosc_companion_navigate_top',
+                url: target,
+            }, targetOrigin);
+        } catch (e) {
+            this.logWarn?.('[FLOSC] Could not hand navigation to the companion parent:', e);
+        }
     }
 
     /**
@@ -8567,7 +8622,7 @@ class floscApp {
                 timestamp: Date.now(),
                 return_url: window.location.href
             }));
-            setTimeout(() => { window.location.href = redirectUrl; }, 800);
+            setTimeout(() => { this.leavePanel(redirectUrl); }, 800);
             return;
         }
 
@@ -11534,7 +11589,7 @@ Purchased: ${ctx.purchased}
         const safeRedirect = String(redirectUrl || '').trim();
         if (safeRedirect) {
             setTimeout(() => {
-                window.location.href = safeRedirect;
+                this.leavePanel(safeRedirect);
             }, 1200);
         }
     }

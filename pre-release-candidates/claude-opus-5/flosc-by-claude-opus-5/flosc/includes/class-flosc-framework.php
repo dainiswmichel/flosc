@@ -1963,7 +1963,23 @@ class FLOSC_Framework {
 		// Virtual page routing.
 		add_action( 'init', array( $this, 'add_rewrite_rules' ) );
 		add_filter( 'query_vars', array( $this, 'add_query_vars' ) );
-		add_action( 'template_redirect', array( $this, 'handle_app_route' ) );
+
+		// Priority 1, ahead of WordPress's own redirect_canonical at 10.
+		//
+		// A flow address is a 404 to WordPress whenever the rewrite rules were
+		// written before the flow existed -- which is every starter pack install,
+		// every imported flow, every flow renamed since the last flush. Core
+		// answers a 404 by guessing: redirect_guess_404_permalink() looks for the
+		// nearest post whose slug starts the same way and redirects there,
+		// carrying the query string. /vegan-latvian-kitchen/ becomes the post
+		// /2026/09/23/vegan-latvian-kitchen-pdf/, and a companion asking for the
+		// chat is handed a blog page, admin bar and all, inside its panel.
+		//
+		// Registering later at the same priority is not enough: core registers
+		// redirect_canonical in default-filters.php, long before any plugin, so
+		// at equal priority core always goes first. A flow route is this
+		// plugin's to answer, and it answers before anything is guessed.
+		add_action( 'template_redirect', array( $this, 'handle_app_route' ), 1 );
 
 		// v1.2.9: Check if we need to flush after activation (MUST run AFTER add_rewrite_rules).
 		add_action( 'init', array( $this, 'check_activation_rewrite_flush' ), 99 );
