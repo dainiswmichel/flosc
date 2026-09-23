@@ -1059,6 +1059,23 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 			// v1.4.9: Use flow-aware app URL for custom domain support.
 			$flosc_app_url = flosc()->get_app_url();
 
+			// A login started in the companion panel has to come back to the
+			// panel. wp_login_url() sends the reader to the bare app address,
+			// which arrives without the parameter this surface is recognised
+			// by, so the app returns into the panel wearing its full-page
+			// chrome — sidebar, header, and the controls that go with a page
+			// that owns its window.
+			$flosc_login_return_url = $flosc_app_url;
+		if ( $flosc_is_companion_embed ) {
+			$flosc_login_return_url = add_query_arg(
+				array(
+					'flosc_surface'   => 'companion',
+					'flosc_companion' => '1',
+				),
+				$flosc_app_url
+			);
+		}
+
 			// v1.7.5: REST API URL must use the SAME origin as the page
 			// so cookies/nonce travel with the request. When on a custom domain
 			// (flosc.ai), rest_url() returns the WordPress host which is cross-origin.
@@ -1306,7 +1323,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 					'logoutFarewell'                 => flosc_get_setting( 'logout_farewell_message', '' ),
 					'profileUrl'                     => ( $flosc_user && function_exists( 'bp_core_get_user_domain' ) ) ? bp_core_get_user_domain( $flosc_user->ID ) : admin_url( 'profile.php' ),
 					'dashboardUrl'                   => admin_url(),
-					'loginUrl'                       => wp_login_url( $flosc_app_url ),
+					'loginUrl'                       => wp_login_url( $flosc_login_return_url ),
 					'logoutUrl'                      => $flosc_logout_url,
 					'registerUrl'                    => wp_registration_url(),
 					'registrationUrl'                => wp_registration_url(),

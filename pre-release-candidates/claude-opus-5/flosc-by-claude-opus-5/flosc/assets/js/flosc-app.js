@@ -5047,10 +5047,10 @@ class floscApp {
                 this.openSupport();
                 break;
             case 'view_profile':
-                window.location.href = this.config.profileUrl || '/';
+                this.navigateToHostPage(this.config.profileUrl || '/');
                 break;
             case 'view_dashboard':
-                window.location.href = this.config.dashboardUrl || '/wp-admin/';
+                this.navigateToHostPage(this.config.dashboardUrl || '/wp-admin/');
                 break;
             case 'logout': {
                 // Brand-neutral: product name comes from flow Identity params, never hard-coded.
@@ -7721,6 +7721,54 @@ class floscApp {
     }
 
     /**
+     * Whether this document is inside a frame.
+     *
+     * isCompanionEmbed() answers a narrower question: the embed *surface*, which
+     * also needs the body class PHP writes from the flosc_companion parameter on
+     * the iframe address. The app drops that parameter whenever it navigates
+     * itself — returning from wp-login, opening a profile — and is then still
+     * inside the companion frame while the class says it is not. Anything that
+     * would take the frame away from the chat asks this instead, because being
+     * framed is the fact that decides whether such a navigation is ours to make.
+     *
+     * @returns {boolean} True when a parent document surrounds this one.
+     */
+    isFramed() {
+        try {
+            return window.self !== window.top;
+        } catch (e) {
+            // A cross-origin parent throws on access, which answers the question.
+            return true;
+        }
+    }
+
+    /**
+     * Send the reader to a page of the surrounding WordPress site.
+     *
+     * The companion frame holds the conversation and nothing else, so a
+     * WordPress page loaded into it replaces the chat with a page that mounts
+     * its own companion — a chat panel inside a chat panel, each with the site's
+     * admin bar across the top of it. From the panel these open in a new tab,
+     * and the conversation stays where the reader left it.
+     *
+     * @param {string} url Absolute or site-relative address.
+     */
+    navigateToHostPage(url) {
+        const target = String(url || '').trim();
+
+        if (!target) {
+            return;
+        }
+
+        if (this.isFramed()) {
+            window.open(target, '_blank', 'noopener');
+            return;
+        }
+
+        window.location.href = target;
+    }
+
+    /**
      * v8.0.1: Handle return from a failed SSO attempt.
      * Shows a friendly error in chat, cleans the URL, and re-shows the auth modal
      * so the user can try a different login method (email, different provider, etc.)
@@ -7969,7 +8017,7 @@ class floscApp {
     }
 
     openPersonalizedPath() {
-        window.location.href = this.config.pathUrl || '/my-path/';
+        this.navigateToHostPage(this.config.pathUrl || '/my-path/');
     }
 
     /**
@@ -9280,9 +9328,19 @@ Purchased: ${ctx.purchased}
         }
 
         if (this.dockCompanionBtn) {
-            this.dockCompanionBtn.addEventListener('click', () => {
-                void this.handoffToCompanion();
-            });
+            if (this.isFramed()) {
+                // "Minimize to companion" belongs to a full page. PHP leaves it
+                // out of the embed surface, and it returns once the app has
+                // navigated itself and lost the parameter that surface is
+                // recognised by — by then the page is still in the panel. A
+                // control that would only be refused does not belong on screen.
+                this.dockCompanionBtn.remove();
+                this.dockCompanionBtn = null;
+            } else {
+                this.dockCompanionBtn.addEventListener('click', () => {
+                    void this.handoffToCompanion();
+                });
+            }
         }
 
         window.addEventListener('message', (event) => {
@@ -10908,6 +10966,18 @@ Purchased: ${ctx.purchased}
     }
 
     async handoffToCompanion() {
+        // Inside the companion frame the hub is already the page around us, so
+        // this navigation would load that WordPress page into the chat panel.
+        // The page mounts a companion of its own, which opens its own chat
+        // frame, and the reader sees the site's admin bar repeating inside the
+        // panel one level per repetition. The control this runs from is absent
+        // from the embed surface; this stands when an earlier self-navigation
+        // has dropped the parameter that surface is recognised by.
+        if (this.isFramed()) {
+            this.log?.('FLOSC: companion handoff refused — already inside the companion frame');
+            return false;
+        }
+
         if (!this.isCompanionHandoffAvailable()) {
             this.log?.('FLOSC: companion handoff not enabled for this flow');
             return false;
