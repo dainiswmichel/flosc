@@ -735,11 +735,11 @@ class FLOSC_Offer_Manager {
 				'guarantee'      => '',
 				'grants'         => array(
 					'features'      => array( 'all_lessons', 'pronunciation_exercises', 'audio_recordings', 'ipa_training', 'ai_coach' ),
-					'level'         => 'pronunciation_learners',
+					'level'         => 'flosc_learners',
 					'duration_days' => 30,
 					'usage_limits'  => array(),
 				),
-				'grants_level'   => 'pronunciation_learners',
+				'grants_level'   => 'flosc_learners',
 				'meta'           => array(
 					'icon'    => '🎤',
 					'badge'   => 'Pre-Launch Price',

@@ -49,7 +49,7 @@ class FLOSC_Page_Context {
 
 		/*
 		 * A BuddyBoss group page is not a WordPress post, so resolving a post
-		 * id for https://dainis.net/groups/lesaep-learners/ returns nothing and
+		 * id for a site's own BuddyBoss group URL returns nothing and
 		 * the companion arrives on that page knowing nothing about it.
 		 *
 		 * Record the group instead. The chatpack's group catalogue already

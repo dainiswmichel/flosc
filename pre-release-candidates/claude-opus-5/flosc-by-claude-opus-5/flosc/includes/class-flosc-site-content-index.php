@@ -399,7 +399,7 @@ class FLOSC_Site_Content_Index {
 	/**
 	 * The group catalogue for one turn, filtered to what this person may see.
 	 *
-	 * Retrieval by keyword will not produce "/groups/lesaep-learners/" from a
+	 * Retrieval by keyword will not produce a BuddyBoss group URL from a
 	 * blog post, so the groups a visitor is allowed to hear about ride on the
 	 * turn as a short list. Thirteen rows is one or two kilobytes.
 	 *

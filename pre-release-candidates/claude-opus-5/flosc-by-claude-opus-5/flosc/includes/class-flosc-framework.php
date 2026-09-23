@@ -2266,7 +2266,7 @@ class FLOSC_Framework {
 		// v8.0.0: BuddyBoss/BuddyPress "Quiz Results" profile tab.
 		add_action( 'bp_setup_nav', array( $this, 'setup_buddyboss_quiz_tab' ), 100 );
 
-		// Historical member/guest role renames on this install (pronunciation_learners ↔ lesaep_learners).
+		// FLOSC's own member/guest level slugs; site-specific renames go on the filter.
 		add_filter( 'flosc_member_level_alias_groups', array( $this, 'member_level_alias_groups' ) );
 		add_filter( 'flosc_guest_level_slugs_to_clear_on_member_grant', array( $this, 'guest_level_slugs_to_clear_on_member_grant' ), 10, 2 );
 	}
@@ -13810,8 +13810,16 @@ Example good response:
 	}
 
 	/**
-	 * Historical same-product role pairs (old pronunciation_* names ↔ current lesaep_* names).
-	 * Empty on installs that never created those WP roles.
+	 * FLOSC's own member and guest level slugs, declared as alias groups.
+	 *
+	 * A site that renames a level keeps both names recognised, so a member
+	 * granted under one slug is not locked out when the other is in force.
+	 * Returns the groups untouched on installs that never created these roles.
+	 *
+	 * Site-specific slugs belong on the flosc_member_level_alias_groups filter,
+	 * not in here -- this method previously hardcoded one deployment's own role
+	 * names, which meant every install carried them and no install but that one
+	 * could use them.
 	 *
 	 * @param array $groups The alias groups so far.
 	 * @return array The groups with FLOSC's levels added.
@@ -13820,11 +13828,11 @@ Example good response:
 		if ( ! is_array( $groups ) ) {
 			$groups = array();
 		}
-		if ( get_role( 'lesaep_learners' ) || get_role( 'pronunciation_learners' ) ) {
-			$groups[] = array( 'pronunciation_learners', 'lesaep_learners' );
+		if ( get_role( 'flosc_learners' ) ) {
+			$groups[] = array( 'flosc_learners' );
 		}
-		if ( get_role( 'guest_lesaep_learner' ) || get_role( 'guest_pronunciation_learner' ) ) {
-			$groups[] = array( 'guest_pronunciation_learner', 'guest_lesaep_learner' );
+		if ( get_role( 'guest_flosc_learner' ) ) {
+			$groups[] = array( 'guest_flosc_learner' );
 		}
 		return $groups;
 	}
@@ -13842,9 +13850,9 @@ Example good response:
 			$slugs = array();
 		}
 		$member_level = sanitize_key( (string) $member_level );
-		$paid         = array( 'lesaep_learners', 'pronunciation_learners' );
+		$paid         = array( 'flosc_learners' );
 		if ( in_array( $member_level, $paid, true ) ) {
-			$slugs = array_merge( $slugs, array( 'guest_lesaep_learner', 'guest_pronunciation_learner' ) );
+			$slugs = array_merge( $slugs, array( 'guest_flosc_learner' ) );
 		}
 		return array_values( array_unique( array_filter( array_map( 'sanitize_key', $slugs ) ) ) );
 	}
@@ -13895,7 +13903,7 @@ Example good response:
 					return true;
 				}
 			}
-			foreach ( array( 'lesaep_learners', 'pronunciation_learners' ) as $level ) {
+			foreach ( array( 'flosc_learners' ) as $level ) {
 				if ( $ma->has_level( $user_id, $level ) ) {
 					return true;
 				}

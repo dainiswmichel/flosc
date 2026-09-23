@@ -273,7 +273,7 @@ class FLOSC_Member_Access {
 	 * Checks _flosc_memberlevel_{level} user meta, WP role, and legacy aliases.
 	 *
 	 * @param int    $user_id User ID.
-	 * @param string $level e.g. 'samplecourse', 'spanishcourse', 'pronunciation_learners'.
+	 * @param string $level e.g. 'samplecourse', 'spanishcourse', 'flosc_learners'.
 	 * @return bool
 	 */
 	public function has_level( $user_id, $level ) {

@@ -617,7 +617,7 @@ class FLOSC_Companion_Mode {
 				$hub_path     = is_string( $hub_path_raw ) ? $this->companion_normalize_url_path( $hub_path_raw ) : '';
 				if ( '' !== $hub_path ) {
 					// Site-root hub ("/") is a low-priority sitewide owner (e.g. dainis.net).
-					// Longer hub paths always win (e.g. /category/lesaep/).
+					// Longer hub paths always win (e.g. /category/lessons/).
 					$matches_hub = ( '/' === $hub_path )
 						|| $req_path === $hub_path
 						|| 0 === strpos( $req_path . '/', $hub_path . '/' );

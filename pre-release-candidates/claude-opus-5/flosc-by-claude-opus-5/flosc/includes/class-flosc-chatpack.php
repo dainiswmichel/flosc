@@ -1081,7 +1081,7 @@ class FLOSC_Chatpack {
 		 * BuddyBoss groups, when this flow indexes them.
 		 *
 		 * Keyword retrieval over post bodies will never produce
-		 * /groups/lesaep-learners/, so the groups this person is allowed to
+		 * a BuddyBoss group URL, so the groups this person is allowed to
 		 * hear about ride on the turn as a short list. The index does the
 		 * filtering — tier, exclusions, and BuddyBoss privacy, which FLOSC can
 		 * tighten and never loosen.
