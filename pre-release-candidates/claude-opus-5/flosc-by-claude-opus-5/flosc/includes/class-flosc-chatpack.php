@@ -1324,9 +1324,9 @@ class FLOSC_Chatpack {
 				$phase_outcomes                       = self::get_phase_outcomes( 'freeline', $eval_context, $flow_id );
 								$quiz_outcome_enabled = self::outcomes_include_quiz( $phase_outcomes );
 				$freeline_intro                       = $quiz_in_progress
-					? "This visitor is CURRENTLY TAKING the pronunciation quiz (in progress right now).\n"
+					? "This visitor is CURRENTLY TAKING the quiz (in progress right now).\n"
 						. "- The quiz is managed by a SEPARATE recording/analysis system — NOT by you.\n"
-						. "- NEVER fabricate quiz questions, words, phrases, or pronunciation exercises.\n"
+						. "- NEVER fabricate quiz questions, words, phrases, or exercises.\n"
 						. "- NEVER pretend you are administering the quiz or suggest words to say.\n"
 						. "- If asked about status: tell them they're a Visitor taking the quiz, and encourage them to finish it.\n"
 						. "- Keep answers brief — the user should get back to their quiz.\n"
@@ -1338,7 +1338,7 @@ class FLOSC_Chatpack {
 													. "- Lead with inquiry-first responses\n"
 													. "- Give honest, direct answers before nudging to an outcome\n" );
 								$visitor_redirect     = $quiz_outcome_enabled
-										? 'a pronunciation quiz that tests your Standard American English pronunciation'
+										? 'the quiz this flow offers'
 										: 'the next best step in this flow';
 				return "**CURRENT PHASE INSTRUCTIONS (Freeline):**\n"
 					. $freeline_intro
@@ -1384,7 +1384,7 @@ class FLOSC_Chatpack {
 					. $member_line
 					. "- DO: Be their supportive learning coach\n"
 					. "- DO: When asked what to work on, use the Personalized Lesson Recommendations below as your starting point\n"
-					. "- DO: If the user describes a pronunciation difficulty, cross-reference it with their known weak sounds and the recommended lessons\n"
+					. "- DO: If the user describes a difficulty, cross-reference it with what their results show and the recommended lessons\n"
 					. "- DO: Celebrate progress and milestones — every lesson completed is a win worth acknowledging\n"
 					. "- DO: Answer detailed content questions that this access level is allowed to receive\n"
 					. ( $is_member ? "- Full access to this flow's permitted materials\n" : "- Do not invent or unlock member-only materials\n" )

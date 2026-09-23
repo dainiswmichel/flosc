@@ -2857,7 +2857,7 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 								<label class="flosc-flow-field__label"><?php echo esc_html__( 'Title', 'flosc' ); ?></label>
 								<input type="text" name="<?php echo esc_attr( $flosc_prefix ); ?>title" 
 										value="<?php echo esc_attr( $flosc_settings['title'] ?? '' ); ?>"
-										placeholder="<?php echo esc_attr__( 'e.g., Standard American English Pronunciation', 'flosc' ); ?>"
+										placeholder="<?php echo esc_attr__( 'e.g., Everything you need to get started', 'flosc' ); ?>"
 										class="flosc-flow-input">
 								<p class="flosc-flow-field__hint"><?php echo esc_html__( 'Public flow description name. Shown under the personality; sent to the AI as this flow’s flow description.', 'flosc' ); ?></p>
 							</div>
@@ -3225,7 +3225,7 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 						<td>
 							<input type="text" id="flow_title" name="flow_title" class="regular-text"
 									value="<?php echo esc_attr( $flosc_fi['title'] ?? '' ); ?>"
-									placeholder="<?php echo esc_attr__( 'e.g., Standard American English Pronunciation', 'flosc' ); ?>">
+									placeholder="<?php echo esc_attr__( 'e.g., Everything you need to get started', 'flosc' ); ?>">
 							<p class="description">
 								<?php echo esc_html__( 'Public flow description name. Visitors see it under the personality on the landing screen and as the browser-tab suffix. The AI uses it as this flow’s flow description — not the floscFlow name and not the personality.', 'flosc' ); ?>
 							</p>
