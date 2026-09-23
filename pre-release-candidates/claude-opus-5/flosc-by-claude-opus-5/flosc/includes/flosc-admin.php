@@ -1226,6 +1226,120 @@ trait FLOSC_Admin_Trait {
 	 *
 	 * @return void
 	 */
+	/**
+	 * Offer delete, toggle and status-set, before any HTML is printed.
+	 *
+	 * These three ran at file scope in admin/offers.php, which is included
+	 * while the settings page is already streaming. Their refusals called
+	 * wp_die() with 'response' => 403, and PHP cannot send a status header
+	 * after output has started -- so a request with a bad nonce was correctly
+	 * refused, wrote nothing, and answered HTTP 200 with the error spliced
+	 * into a half-rendered page. Anything reading that endpoint saw success.
+	 *
+	 * Running on admin_init, before output, lets those same wp_die() calls
+	 * send the 403 they always asked for. A successful action redirects back
+	 * to the tab, which also drops the action out of the URL so a refresh
+	 * cannot replay it.
+	 *
+	 * @return void
+	 */
+	public function maybe_process_offer_actions() {
+		if ( ! is_admin() || wp_doing_ajax() || ( defined( 'DOING_CRON' ) && DOING_CRON ) ) {
+			return;
+		}
+		if ( 'flosc-settings' !== flosc_nav_param( 'page' ) || 'offers' !== flosc_nav_param( 'tab' ) ) {
+			return;
+		}
+
+		/*
+		 * Which action this is. Read through flosc_nav_param(), the same
+		 * accessor the rest of the admin uses for request values, so the
+		 * selection needs no suppression to sit ahead of the nonce check --
+		 * and it cannot carry anything but a sanitized string either way.
+		 */
+		$flosc_action = '';
+		$flosc_target = '';
+		foreach ( array( 'delete_offer', 'toggle_status', 'set_status' ) as $flosc_candidate ) {
+			$flosc_value = flosc_nav_param( $flosc_candidate, array(), '', 'sanitize_text_field' );
+			if ( '' !== $flosc_value ) {
+				$flosc_action = $flosc_candidate;
+				$flosc_target = $flosc_value;
+				break;
+			}
+		}
+		if ( '' === $flosc_action ) {
+			return;
+		}
+
+		// Who, then whether they meant to, before the request body is read.
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'Unauthorized action.', 'flosc' ), esc_html__( 'Insufficient permissions', 'flosc' ), array( 'response' => 403 ) );
+		}
+
+		$flosc_nonce = flosc_nav_param( '_wpnonce', array(), '', 'sanitize_text_field' );
+
+		$flosc_nonce_action = 'set_status' === $flosc_action
+			? 'flosc_set_status'
+			: ( 'toggle_status' === $flosc_action ? 'flosc_toggle_status' : 'flosc_delete_offer_' . $flosc_target );
+
+		if ( ! wp_verify_nonce( $flosc_nonce, $flosc_nonce_action ) ) {
+			wp_die( esc_html__( 'Nonce verification failed.', 'flosc' ), esc_html__( 'Invalid token', 'flosc' ), array( 'response' => 403 ) );
+		}
+
+		// Verified input from here down.
+		$flosc_ivr = flosc_nav_param( 'ivr', array(), '', 'sanitize_file_name' );
+		if ( '' === $flosc_ivr || ! function_exists( 'flosc_resolve_flow_option_key_for_ivr' ) ) {
+			return;
+		}
+		$flosc_flow_key = flosc_resolve_flow_option_key_for_ivr( $flosc_ivr );
+		if ( '' === $flosc_flow_key ) {
+			return;
+		}
+
+		$flosc_settings = get_option( $flosc_flow_key, array() );
+		if ( ! is_array( $flosc_settings ) ) {
+			$flosc_settings = array();
+		}
+		$flosc_offers = isset( $flosc_settings['offers'] ) && is_array( $flosc_settings['offers'] ) ? $flosc_settings['offers'] : array();
+		$flosc_notice = '';
+
+		if ( 'delete_offer' === $flosc_action ) {
+			unset( $flosc_offers[ $flosc_target ] );
+			$flosc_notice = 'offer_deleted';
+		} elseif ( 'toggle_status' === $flosc_action && isset( $flosc_offers[ $flosc_target ] ) ) {
+			$flosc_status = strtolower( (string) ( $flosc_offers[ $flosc_target ]['status'] ?? 'active' ) );
+			$flosc_on     = ! empty( $flosc_offers[ $flosc_target ]['active'] );
+			// A draft becomes active; anything already active goes inactive.
+			$flosc_next   = ( 'draft' === $flosc_status || ! $flosc_on ) ? 'active' : 'inactive';
+
+			$flosc_offers[ $flosc_target ]['status'] = $flosc_next;
+			$flosc_offers[ $flosc_target ]['active'] = ( 'active' === $flosc_next );
+		} elseif ( 'set_status' === $flosc_action && isset( $flosc_offers[ $flosc_target ] ) ) {
+			$flosc_next = flosc_nav_param( 'status', array( 'draft', 'inactive', 'active' ), '' );
+			if ( '' === $flosc_next ) {
+				return;
+			}
+			$flosc_offers[ $flosc_target ]['status'] = $flosc_next;
+			$flosc_offers[ $flosc_target ]['active'] = ( 'active' === $flosc_next );
+		} else {
+			return;
+		}
+
+		$flosc_settings['offers'] = $flosc_offers;
+		update_option( $flosc_flow_key, $flosc_settings );
+
+		$flosc_args = array(
+			'page' => 'flosc-settings',
+			'tab'  => 'offers',
+			'ivr'  => $flosc_ivr,
+		);
+		if ( '' !== $flosc_notice ) {
+			$flosc_args['flosc_notice'] = $flosc_notice;
+		}
+		wp_safe_redirect( add_query_arg( $flosc_args, admin_url( 'admin.php' ) ) );
+		exit;
+	}
+
 	public function maybe_serve_ivr_file_download() {
 		if ( ! is_admin() || wp_doing_ajax() || ( defined( 'DOING_CRON' ) && DOING_CRON ) ) {
 			return;

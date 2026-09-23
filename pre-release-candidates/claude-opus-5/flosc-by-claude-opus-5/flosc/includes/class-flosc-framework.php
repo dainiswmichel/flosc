@@ -2193,6 +2193,7 @@ class FLOSC_Framework {
 		add_action( 'admin_init', array( $this, 'maybe_process_flosc_settings_post' ), 1 );
 		// A download replaces the page, so it has to run before the page starts.
 		add_action( 'admin_init', array( $this, 'maybe_serve_ivr_file_download' ), 1 );
+		add_action( 'admin_init', array( $this, 'maybe_process_offer_actions' ), 1 );
 
 		// Sidebar shortcuts (UI & Nav, Style, AI, …) must redirect before admin chrome.
 		// Late menu callbacks + headers_sent + exit = blank main content area.

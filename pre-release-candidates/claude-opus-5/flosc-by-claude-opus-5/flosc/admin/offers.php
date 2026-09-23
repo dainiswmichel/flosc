@@ -346,101 +346,17 @@ flosc_handle_offer_save(); // v1.6.5: Execute at include time.
  * anything about the request. Removed.
  */
 
-// Handle delete.
-if ( isset( $_GET['delete_offer'] ) && isset( $_GET['_wpnonce'] ) ) {
-	/*
-	 * Capability and nonce as two separate refusals, matching the toggle_status
-	 * and set_status branches below.
-	 *
-	 * These two tests used to be joined with && inside a single if, and a
-	 * failure fell through to "do nothing" rather than stopping. One combined
-	 * condition governing a destructive action is exactly the shape the plugin
-	 * review warns about: it is harder to read, harder to prove, and it fails
-	 * open into the rest of the page instead of ending the request.
-	 */
-	if ( ! current_user_can( 'manage_options' ) ) {
-		wp_die( 'Unauthorized action.', 'Insufficient permissions', array( 'response' => 403 ) );
-	}
-	$flosc_get    = wp_unslash( $_GET );
-	$flosc_del_id = sanitize_text_field( $flosc_get['delete_offer'] ?? '' );
-	if ( ! wp_verify_nonce( sanitize_text_field( $flosc_get['_wpnonce'] ?? '' ), 'flosc_delete_offer_' . $flosc_del_id ) ) {
-		wp_die( 'Nonce verification failed.', 'Invalid token', array( 'response' => 403 ) );
-	}
-
-	if ( $flosc_flow_key ) {
-		$flosc_fs  = get_option( $flosc_flow_key, array() );
-		$flosc_all = $flosc_fs['offers'] ?? array();
-		unset( $flosc_all[ $flosc_del_id ] );
-		$flosc_fs['offers'] = $flosc_all;
-		update_option( $flosc_flow_key, $flosc_fs );
-		$flosc_flow_settings = $flosc_fs;
-	}
-	add_settings_error( 'flosc_settings', 'offer_deleted', 'Offer deleted.', 'success' );
-}
-
-// Handle toggle status.
-if ( isset( $_GET['toggle_status'] ) ) {
-	// Task 6: Verify nonce and capability.
-	if ( ! current_user_can( 'manage_options' ) ) {
-		wp_die( 'Unauthorized action.', 'Insufficient permissions', array( 'response' => 403 ) );
-	}
-	$flosc_nonce = sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ?? '' ) );
-	if ( ! wp_verify_nonce( $flosc_nonce, 'flosc_toggle_status' ) ) {
-		wp_die( 'Nonce verification failed.', 'Invalid token', array( 'response' => 403 ) );
-	}
-
-	$flosc_get       = wp_unslash( $_GET );
-	$flosc_toggle_id = sanitize_text_field( $flosc_get['toggle_status'] ?? '' );
-	if ( $flosc_flow_key ) {
-		$flosc_fs  = get_option( $flosc_flow_key, array() );
-		$flosc_all = $flosc_fs['offers'] ?? array();
-		if ( isset( $flosc_all[ $flosc_toggle_id ] ) ) {
-			$flosc_current_status   = strtolower( (string) ( $flosc_all[ $flosc_toggle_id ]['status'] ?? 'active' ) );
-			$flosc_currently_active = ! empty( $flosc_all[ $flosc_toggle_id ]['active'] );
-
-			if ( 'draft' === $flosc_current_status ) {
-				$flosc_all[ $flosc_toggle_id ]['active'] = true;
-				$flosc_all[ $flosc_toggle_id ]['status'] = 'active';
-			} elseif ( $flosc_currently_active ) {
-				$flosc_all[ $flosc_toggle_id ]['active'] = false;
-				$flosc_all[ $flosc_toggle_id ]['status'] = 'inactive';
-			} else {
-				$flosc_all[ $flosc_toggle_id ]['active'] = true;
-				$flosc_all[ $flosc_toggle_id ]['status'] = 'active';
-			}
-			$flosc_fs['offers'] = $flosc_all;
-			update_option( $flosc_flow_key, $flosc_fs );
-			$flosc_flow_settings = $flosc_fs;
-		}
-	}
-}
-
-// Handle explicit status set (draft|inactive|active).
-if ( isset( $_GET['set_status'] ) && isset( $_GET['status'] ) ) {
-	// Task 6: Verify nonce and capability.
-	if ( ! current_user_can( 'manage_options' ) ) {
-		wp_die( 'Unauthorized action.', 'Insufficient permissions', array( 'response' => 403 ) );
-	}
-	$flosc_nonce = sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ?? '' ) );
-	if ( ! wp_verify_nonce( $flosc_nonce, 'flosc_set_status' ) ) {
-		wp_die( 'Nonce verification failed.', 'Invalid token', array( 'response' => 403 ) );
-	}
-
-	$flosc_get           = wp_unslash( $_GET );
-	$flosc_target_id     = sanitize_text_field( $flosc_get['set_status'] ?? '' );
-	$flosc_target_status = sanitize_key( $flosc_get['status'] ?? '' );
-	if ( in_array( $flosc_target_status, array( 'draft', 'inactive', 'active' ), true ) && $flosc_flow_key ) {
-		$flosc_fs  = get_option( $flosc_flow_key, array() );
-		$flosc_all = $flosc_fs['offers'] ?? array();
-		if ( isset( $flosc_all[ $flosc_target_id ] ) ) {
-			$flosc_all[ $flosc_target_id ]['status'] = $flosc_target_status;
-			$flosc_all[ $flosc_target_id ]['active'] = ( 'active' === $flosc_target_status );
-			$flosc_fs['offers']                      = $flosc_all;
-			update_option( $flosc_flow_key, $flosc_fs );
-			$flosc_flow_settings = $flosc_fs;
-		}
-	}
-}
+/*
+ * Offer delete / toggle / set-status used to run here, at file scope, while
+ * this template was already streaming. Their wp_die() refusals asked for a 403
+ * and could not send one -- PHP cannot set a status after output has started --
+ * so a bad nonce was refused, wrote nothing, and answered 200 with the message
+ * spliced into a half-rendered page.
+ *
+ * They now run in FLOSC_Admin_Trait::maybe_process_offer_actions() on
+ * admin_init, before any output, where the 403 is real and a successful action
+ * redirects instead of falling through into this template.
+ */
 
 // Load offers.
 $flosc_flow_id_for_offers = null;
