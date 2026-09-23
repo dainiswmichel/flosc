@@ -4918,7 +4918,7 @@ The Team',
 	 * Which legal page this request is for, if any.
 	 *
 	 * Delegates to FLOSC_Full_Page_Mode. A flow domain serves its own privacy policy, terms,
-	 * data-deletion page, platform-compliance page and codex charter, because a
+	 * data-deletion page and platform-compliance page, because a
 	 * provider reviewing an SSO integration looks for them on the domain the
 	 * login happens on. Matched against a fixed list, so the path cannot name an
 	 * arbitrary template.
@@ -4953,19 +4953,6 @@ The Team',
 		return $this->full_page_mode->render_legal_page( $page );
 	}
 
-	/**
-	 * The body of the FLOSC Codex Charter page.
-	 *
-	 * Delegates to FLOSC_Full_Page_Mode. A public statement of how this codebase is worked on --
-	 * who decides, what gets verified before anything is called done, and what
-	 * will not be touched in the course of a change. Served at
-	 * /flosc-codex-charter.html on a flow's own domain.
-	 *
-	 * @return string The page body as HTML.
-	 */
-	private function get_codex_charter_content() {
-		return $this->full_page_mode->get_codex_charter_content();
-	}
 
 	/**
 	 * Print the full-page chat app and end the response.
