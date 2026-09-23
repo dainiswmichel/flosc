@@ -222,37 +222,3 @@ function flosc_nav_params( array $keys = array() ) {
 
 	return $flosc_out;
 }
-
-/**
- * Where a login started inside the companion panel should come back to.
- *
- * WordPress sends the reader to the bare chat address after login, which arrives
- * without the parameter the panel surface is recognised by, so the chat returns
- * into the panel wearing its full-page chrome -- sidebar, header, and the
- * controls that belong to a page owning its own window. Off the panel the bare
- * address is right and nothing is added.
- *
- * A function rather than a variable because the two surfaces that need it sit at
- * opposite ends of the app template: the Login Gate, which is the login most
- * visitors ever see, and the script configuration. They were built separately
- * from different values, and only the second was ever corrected.
- *
- * @return string The address to return to after logging in.
- */
-function flosc_companion_login_return_url() {
-	$flosc_app_url = ( function_exists( 'flosc' ) && is_object( flosc() ) && method_exists( flosc(), 'get_app_url' ) )
-		? (string) flosc()->get_app_url()
-		: home_url( '/' );
-
-	if ( ! flosc_nav_param_present( 'flosc_companion' ) ) {
-		return $flosc_app_url;
-	}
-
-	return add_query_arg(
-		array(
-			'flosc_surface'   => 'companion',
-			'flosc_companion' => '1',
-		),
-		$flosc_app_url
-	);
-}
