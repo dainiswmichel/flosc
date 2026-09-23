@@ -20,9 +20,29 @@
 (function(window, document) {
     'use strict';
 
-    // Single boot: PHP enqueues this only on host pages with a validated FLOSC app
-    // route as iframe target. App routes never load this script (is_flosc_request).
-    // Nesting is impossible by that invariant — not by runtime "nest guards."
+    // A chat inside a chat is never wanted, so this refuses to be one.
+    //
+    // A companion in a frame is a chat inside a chat, whatever put it there: a
+    // chat panel whose page navigated itself somewhere else, a preview pane, a
+    // site embedding this one. The old wording here claimed nesting was already
+    // impossible because PHP leaves this script off app routes and only gives the
+    // panel a validated app address to load. Both of those are still true and
+    // still do their job -- and neither one governs what the page inside the panel
+    // does afterwards, which is how a WordPress page, its admin bar and a second
+    // bubble ended up inside the first one.
+    //
+    // So the rule lives here now, at the one place a bubble comes into being,
+    // where no door anywhere else can get around it.
+    try {
+        if (window.self !== window.top) {
+            return;
+        }
+    } catch (e) {
+        // A cross-origin parent throws on access, which answers the question.
+        return;
+    }
+
+    // Single boot: one bubble per page, however many times this file is enqueued.
     if (window.__FLOSC_COMPANION_BOOTED__) {
         return;
     }
