@@ -1200,6 +1200,83 @@ trait FLOSC_Admin_Trait {
 	}
 
 	/**
+	 * Serve an IVR file as a download, before any admin HTML is printed.
+	 *
+	 * WHY THIS IS NOT IN THE TAB TEMPLATE ANY MORE
+	 *
+	 * admin/flow.php used to do this itself. It cannot. That file is a settings
+	 * tab, included while the admin page is already streaming, so by the time it
+	 * runs the response headers are gone. Content-Type and Content-Disposition
+	 * were discarded and the file's bytes were written into the middle of the
+	 * page: the browser received the admin screen with an IVR file spliced into
+	 * it, at HTTP 200, and no download ever started.
+	 *
+	 * Nothing reported it. php -l, 44 gates, WPCS and Plugin Check were all
+	 * clean, because none of them renders a page. It was found by clicking
+	 * Download on a real WordPress install and reading the bytes that came back.
+	 *
+	 * flow.php already carried the warning that explains it, about the
+	 * set-as-default handler: "Do not redirect here -- headers are already sent
+	 * during page render". The same constraint applies to any response that
+	 * replaces the page, and a download is one of those.
+	 *
+	 * admin_init runs before output, which is the only place this can work. The
+	 * checks are unchanged in kind and order: the nonce is verified against the
+	 * action that names this exact file, then the capability, then the path.
+	 *
+	 * @return void
+	 */
+	public function maybe_serve_ivr_file_download() {
+		if ( ! is_admin() || wp_doing_ajax() || ( defined( 'DOING_CRON' ) && DOING_CRON ) ) {
+			return;
+		}
+		if ( 'flosc-settings' !== flosc_nav_param( 'page' ) ) {
+			return;
+		}
+
+		// sanitize_file_name, never sanitize_key: the latter eats the .md.
+		$flosc_file = flosc_nav_param( 'flosc_download_ivr', array(), '', 'sanitize_file_name' );
+		if ( '' === $flosc_file ) {
+			return;
+		}
+
+		$flosc_nonce = flosc_nav_param( '_wpnonce' );
+		if ( ! wp_verify_nonce( $flosc_nonce, 'flosc_download_ivr_' . $flosc_file ) ) {
+			return; // flow.php reports "Could not download IVR file." when we decline.
+		}
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to download IVR files.', 'flosc' ), 403 );
+		}
+
+		$flosc_path = function_exists( 'flosc_resolve_ivr_file_path' )
+			? (string) flosc_resolve_ivr_file_path( $flosc_file )
+			: '';
+		if ( '' === $flosc_path || ! file_exists( $flosc_path ) || ! is_readable( $flosc_path ) ) {
+			return;
+		}
+
+		if ( ! function_exists( 'WP_Filesystem' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+		}
+		global $wp_filesystem;
+		WP_Filesystem();
+		$flosc_body = is_object( $wp_filesystem ) ? $wp_filesystem->get_contents( $flosc_path ) : false;
+		if ( false === $flosc_body ) {
+			return;
+		}
+
+		if ( class_exists( 'FLOSC_Filesystem' ) ) {
+			$flosc_fs = new FLOSC_Filesystem();
+			$flosc_fs->stream_plain_download_and_exit(
+				(string) $flosc_body,
+				'text/markdown; charset=UTF-8',
+				basename( $flosc_file )
+			);
+		}
+	}
+
+	/**
 	 * Admin-post: set current user's default FLOSC flow (Settings chrome).
 	 * Runs before any admin HTML so wp_safe_redirect works (not mid-render).
 	 */

@@ -333,37 +333,22 @@ if ( 'all' === $flosc_flow_view ) {
 
 	$flosc_ivr_dir = function_exists( 'flosc_data_dir' ) ? flosc_data_dir() : '';
 
-	if ( isset( $flosc_get['flosc_download_ivr'] ) && isset( $flosc_get['_wpnonce'] ) ) {
-		$flosc_download_file = sanitize_file_name( (string) $flosc_get['flosc_download_ivr'] );
-		if ( wp_verify_nonce( sanitize_text_field( (string) $flosc_get['_wpnonce'] ), 'flosc_download_ivr_' . $flosc_download_file ) ) {
-			if ( ! current_user_can( 'manage_options' ) ) {
-				wp_die( esc_html__( 'You do not have permission to download IVR files.', 'flosc' ) );
-			}
-			$flosc_download_path = function_exists( 'flosc_resolve_ivr_file_path' )
-				? flosc_resolve_ivr_file_path( $flosc_download_file )
-				: '';
-			if ( '' !== $flosc_download_path && file_exists( $flosc_download_path ) && is_readable( $flosc_download_path ) ) {
-				if ( ! function_exists( 'WP_Filesystem' ) ) {
-					require_once ABSPATH . 'wp-admin/includes/file.php';
-				}
-				global $wp_filesystem;
-				WP_Filesystem();
-				$flosc_download_content = is_object( $wp_filesystem ) ? $wp_filesystem->get_contents( $flosc_download_path ) : '';
-				if ( false === $flosc_download_content ) {
-					$flosc_download_content = '';
-				}
-				$flosc_fs_dl = class_exists( 'FLOSC_Filesystem' ) ? new FLOSC_Filesystem() : null;
-				if ( $flosc_fs_dl ) {
-					$flosc_fs_dl->stream_plain_download_and_exit(
-						(string) $flosc_download_content,
-						'text/markdown; charset=UTF-8',
-						basename( (string) $flosc_download_file )
-					);
-				}
-				status_header( 500 );
-				exit;
-			}
-		}
+	/*
+	 * The download itself is NOT done here.
+	 *
+	 * This block used to verify the nonce, read the file and stream it with
+	 * Content-Disposition. That could never work: this file is a settings tab,
+	 * included while the admin page is already being sent, so those headers were
+	 * discarded and the file's bytes were spliced into the middle of the page.
+	 * The browser received the admin screen at HTTP 200 with an IVR file inside
+	 * it, and no download ever started.
+	 *
+	 * FLOSC_Admin::maybe_serve_ivr_file_download() now does it on admin_init,
+	 * before any output, and exits on success. Reaching this line therefore means
+	 * that handler declined -- bad nonce, missing capability, or no readable file
+	 * -- and the only thing left to do is say so.
+	 */
+	if ( isset( $flosc_get['flosc_download_ivr'] ) ) {
 		add_settings_error( 'flosc_settings', 'download_failed', 'Could not download IVR file.', 'error' );
 	}
 
@@ -383,14 +368,34 @@ if ( 'all' === $flosc_flow_view ) {
 		} elseif ( ! function_exists( 'flosc_data_file_path' ) || ! function_exists( 'flosc_write_data_file' ) ) {
 			add_settings_error( 'flosc_settings', 'duplicate_failed', 'Uploads data directory is not available. Cannot duplicate IVR file.', 'error' );
 		} else {
+			/*
+			 * The copy has to keep the _ivr suffix, or nothing can see it.
+			 *
+			 * The file list on this screen is built with glob( '*_ivr.md' ), and
+			 * so is flosc_config_glob(). Naming the copy
+			 * "flosc_default_ivr-copy.md" put the suffix in the middle, so the
+			 * file was written, the success notice named it, and it appeared in
+			 * no list: it could not be selected, edited, downloaded or deleted
+			 * through the UI, only found on disk. Pressing Duplicate on a real
+			 * install is how that surfaced.
+			 *
+			 * The suffix now goes before _ivr, giving "flosc_default-copy_ivr.md",
+			 * which the same glob finds. Names that do not end in _ivr keep the
+			 * old shape, since there is no convention to preserve for them.
+			 */
 			$flosc_extension      = pathinfo( $flosc_source_file, PATHINFO_EXTENSION );
 			$flosc_base_name      = pathinfo( $flosc_source_file, PATHINFO_FILENAME );
-			$flosc_duplicate_file = $flosc_base_name . '-copy.' . $flosc_extension;
+			$flosc_ivr_suffixed   = (bool) preg_match( '/_ivr$/', $flosc_base_name );
+			$flosc_stem           = $flosc_ivr_suffixed
+				? preg_replace( '/_ivr$/', '', $flosc_base_name )
+				: $flosc_base_name;
+			$flosc_tail           = $flosc_ivr_suffixed ? '_ivr' : '';
+			$flosc_duplicate_file = $flosc_stem . '-copy' . $flosc_tail . '.' . $flosc_extension;
 			$flosc_duplicate_path = flosc_data_file_path( $flosc_duplicate_file );
 			$flosc_counter        = 2;
 
 			while ( '' !== $flosc_duplicate_path && file_exists( $flosc_duplicate_path ) ) {
-				$flosc_duplicate_file = $flosc_base_name . '-copy-' . $flosc_counter . '.' . $flosc_extension;
+				$flosc_duplicate_file = $flosc_stem . '-copy-' . $flosc_counter . $flosc_tail . '.' . $flosc_extension;
 				$flosc_duplicate_path = flosc_data_file_path( $flosc_duplicate_file );
 				++$flosc_counter;
 			}
@@ -1322,18 +1327,36 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 			foreach ( $flosc_available_ivr_files as $flosc_ivr_filename ) :
 				$flosc_is_active_row = ( $flosc_ivr_filename === $flosc_selected_ivr );
 				$flosc_edit_url      = esc_url( admin_url( 'admin.php?page=flosc-settings&tab=ivr-messages&ivr=' . rawurlencode( $flosc_ivr_filename ) . '&view=single' ) );
-				$flosc_download_url  = wp_nonce_url(
-					esc_url(
-						add_query_arg(
-							array(
-								'page'               => 'flosc-settings',
-								'tab'                => 'flow',
-								'ivr'                => $flosc_selected_ivr,
-								'view'               => 'all',
-								'flosc_download_ivr' => $flosc_ivr_filename,
-							),
-							admin_url( 'admin.php' )
-						)
+
+				/*
+				 * No esc_url() inside wp_nonce_url().
+				 *
+				 * esc_url() encodes every separator as &#038;. wp_nonce_url()
+				 * normalises &amp; back to & before appending the nonce, but it
+				 * does not know about &#038;, so the pre-escaped separators
+				 * survive and the URL it returns is escaped a second time. The
+				 * rendered href came out as
+				 *
+				 *   ...&#038;_wpnonce=16e795246a#038;tab=flow&#038;ivr=...
+				 *
+				 * with the & missing in front of that one #038;. A browser reads
+				 * everything from there on as a fragment, so tab, ivr, view and
+				 * flosc_download_ivr are never sent and Download does nothing.
+				 * Found by clicking it on a real install.
+				 *
+				 * Build the URL raw, add the nonce, and escape exactly once at
+				 * output on the line below.
+				 */
+				$flosc_download_url = wp_nonce_url(
+					add_query_arg(
+						array(
+							'page'               => 'flosc-settings',
+							'tab'                => 'flow',
+							'ivr'                => $flosc_selected_ivr,
+							'view'               => 'all',
+							'flosc_download_ivr' => $flosc_ivr_filename,
+						),
+						admin_url( 'admin.php' )
 					),
 					'flosc_download_ivr_' . $flosc_ivr_filename
 				);

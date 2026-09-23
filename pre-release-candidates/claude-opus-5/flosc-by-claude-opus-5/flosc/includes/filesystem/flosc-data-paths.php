@@ -1033,6 +1033,64 @@ if ( ! function_exists( 'flosc_config_glob' ) ) {
 	}
 }
 
+if ( ! function_exists( 'flosc_resolve_ivr_file_path' ) ) {
+	/**
+	 * Where an IVR file actually lives: uploads first, shipped defaults second.
+	 *
+	 * WHY THIS IS HERE AND NOT IN A TAB TEMPLATE
+	 *
+	 * This function was defined only inside admin/ivr-messages.php, which is one
+	 * settings tab. admin/flow.php is a different tab, so on the Flow screen the
+	 * definition had never been loaded and three call sites guarded with
+	 * function_exists() all took their else branch:
+	 *
+	 *   flow.php:342  Download  -> empty path, "Could not download IVR file."
+	 *   flow.php:377  Duplicate -> empty path, "Source IVR file not found."
+	 *   flow.php:416  Import    -> empty path, import skipped
+	 *
+	 * All three failed with a polite notice rather than an error, which is why
+	 * no scanner and no gate caught it. It was found by pressing Duplicate on a
+	 * real WordPress install and watching no file appear.
+	 *
+	 * The body is unchanged from the ivr-messages.php version. That file keeps
+	 * its own `if ( ! function_exists() )` guard, so it now sees this definition
+	 * already present and declares nothing -- no file loses anything, and one
+	 * file gains the definition early enough for every screen to use it.
+	 * includes/filesystem/flosc-data-paths.php is required from flosc.php on
+	 * every request.
+	 *
+	 * @param mixed $flosc_ivr_filename IVR filename.
+	 * @return string Absolute path; the uploads path when nothing exists yet, so
+	 *                a caller creating the file writes to a permitted location.
+	 */
+	function flosc_resolve_ivr_file_path( $flosc_ivr_filename ) {
+		$flosc_ivr_filename = sanitize_file_name( trim( (string) $flosc_ivr_filename ) );
+		// Per WordPress.org policy: runtime-generated files must be written to uploads only.
+		// flosc_data_dir() returns the writable uploads directory or '' when unavailable.
+		$uploads_dir      = function_exists( 'flosc_data_dir' ) ? flosc_data_dir() : '';
+		$flosc_plugin_dir = FLOSC_PLUGIN_DIR . 'ai_configuration_files/';
+
+		$uploads_path = ( '' !== $uploads_dir ) ? $uploads_dir . $flosc_ivr_filename : '';
+		if ( '' !== $uploads_path && file_exists( $uploads_path ) ) {
+			return $uploads_path;
+		}
+
+		if ( function_exists( 'flosc_config_file' ) ) {
+			$resolved = flosc_config_file( $flosc_ivr_filename );
+			if ( ! empty( $resolved ) && file_exists( $resolved ) ) {
+				return $resolved;
+			}
+		}
+
+		$flosc_plugin_path = $flosc_plugin_dir . $flosc_ivr_filename;
+		if ( '' !== $flosc_ivr_filename && file_exists( $flosc_plugin_path ) ) {
+			return $flosc_plugin_path;
+		}
+
+		return $uploads_path;
+	}
+}
+
 if ( ! function_exists( 'flosc_resolve_flow_option_key_for_ivr' ) ) {
 	/**
 	 * Resolve flow option key for IVR.

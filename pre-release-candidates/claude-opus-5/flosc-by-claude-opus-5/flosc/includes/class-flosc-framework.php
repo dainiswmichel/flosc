@@ -2191,6 +2191,8 @@ class FLOSC_Framework {
 		// Settings Save / trajectory / concierge POSTs redirect — must run before admin HTML
 		// or wp_safe_redirect fails and exit leaves a white content pane.
 		add_action( 'admin_init', array( $this, 'maybe_process_flosc_settings_post' ), 1 );
+		// A download replaces the page, so it has to run before the page starts.
+		add_action( 'admin_init', array( $this, 'maybe_serve_ivr_file_download' ), 1 );
 
 		// Sidebar shortcuts (UI & Nav, Style, AI, …) must redirect before admin chrome.
 		// Late menu callbacks + headers_sent + exit = blank main content area.
