@@ -202,9 +202,140 @@ class FLOSC_Full_Page_Mode {
 	}
 
 	/**
-	 * Get requested legal page.
+	 * The policy definitions for a flow, resolved.
 	 *
-	 * @return mixed
+	 * One place answers what these four pages are called, where they live and
+	 * whether FLOSC serves them at all. Before this, the slugs were written out
+	 * three times in this file -- once for routing, once for the page map and
+	 * once for the nav links -- so changing one meant finding all three.
+	 *
+	 * Every value has a default equal to what was hardcoded here before, so a
+	 * flow whose admin has never opened the Identity tab serves exactly what it
+	 * served previously, at the same addresses, with no migration.
+	 *
+	 * A policy in external mode keeps its stored content -- the assistant still
+	 * reads it -- but the public link points at the admin's own address and
+	 * FLOSC stops treating its local slug as the canonical page.
+	 *
+	 * @param array|string|null $flow A flow array, a flow id, or null for the current one.
+	 * @return array<string,array<string,mixed>> Empty when policy management is inactive.
+	 */
+	public function policy_pages( $flow = null ) {
+		/*
+		 * A flow id rather than a flow array reads through flosc_get_setting(),
+		 * which already knows that an IVR-file flow is absent from the flows
+		 * registry and has to be rebuilt from its file. Resolving it here with
+		 * get_flow() alone returns false for exactly those flows, and the
+		 * caller silently falls back to whatever flow the current request is
+		 * on -- which, from a chat turn, is the wrong one.
+		 */
+		$flosc_flow_id = null;
+		if ( is_string( $flow ) ) {
+			$flosc_flow_id = ( '' !== $flow ) ? $flow : null;
+			$flow          = null;
+		}
+
+		if ( null === $flosc_flow_id && ! is_array( $flow ) ) {
+			$flow = $this->flosc->get_current_flow();
+		}
+		$identity = ( is_array( $flow ) && is_array( $flow['identity'] ?? null ) ) ? $flow['identity'] : array();
+
+		$flosc_read = function ( $key, $fallback = null ) use ( $identity, $flosc_flow_id ) {
+			if ( null !== $flosc_flow_id ) {
+				$value = flosc_get_setting( $key, null, $flosc_flow_id );
+				return ( null === $value ) ? $fallback : $value;
+			}
+			return array_key_exists( $key, $identity ) ? $identity[ $key ] : $fallback;
+		};
+		$flosc_has  = function ( $key ) use ( $identity, $flosc_flow_id ) {
+			if ( null !== $flosc_flow_id ) {
+				$value = flosc_get_setting( $key, null, $flosc_flow_id );
+				return null !== $value && '' !== $value;
+			}
+			return array_key_exists( $key, $identity );
+		};
+
+		// Absent means active: these pages already exist on every install, and a
+		// missing setting must not switch them off under a site that has one.
+		$status = strtolower( trim( (string) ( $flosc_read( 'policy_content_management_status', 'active' ) ) ) );
+		if ( 'inactive' === $status ) {
+			return array();
+		}
+
+		$defaults = array(
+			'privacy_policy'      => array( 'privacy', 'Privacy Policy', 'Privacy' ),
+			'terms_of_service'    => array( 'terms-of-service', 'Terms of Service', 'Terms' ),
+			'data_deletion'       => array( 'data-deletion', 'User Data Deletion', 'Data Deletion' ),
+			'platform_compliance' => array( 'platform-compliance', 'Platform Compliance', 'Platform Compliance' ),
+		);
+
+		$base = $this->get_current_request_base_url();
+
+		$pages = array();
+		foreach ( $defaults as $flosc_key => $flosc_default ) {
+			/*
+			 * An empty slug is a decision -- do not serve this page -- while a
+			 * missing key means the admin has never touched it. The two cannot
+			 * be told apart with ??, so the key is tested for existence.
+			 */
+			$slug = $flosc_has( $flosc_key . '_slug' )
+				? sanitize_title( (string) $flosc_read( $flosc_key . '_slug', '' ) )
+				: $flosc_default[0];
+
+			$external_url = trim( (string) $flosc_read( $flosc_key . '_external_url', '' ) );
+			$flosc_toggle = (string) $flosc_read( $flosc_key . '_use_external_link', '0' );
+
+			/*
+			 * An absolute http(s) address with a host is all this needs to be.
+			 *
+			 * wp_http_validate_url() was used here first and was the wrong
+			 * tool: it exists to vet URLs the server is about to REQUEST, so it
+			 * resolves the host and refuses anything that does not answer or
+			 * points somewhere private. FLOSC never fetches these -- it prints
+			 * them as links -- and that check quietly rejected an admin whose
+			 * terms live on an intranet, or on any host this particular server
+			 * cannot resolve, leaving the toggle switched on and doing nothing.
+			 */
+			$flosc_ext_scheme = strtolower( (string) wp_parse_url( $external_url, PHP_URL_SCHEME ) );
+			$flosc_ext_host   = (string) wp_parse_url( $external_url, PHP_URL_HOST );
+			$is_external      = ( '' !== $flosc_toggle && '0' !== $flosc_toggle )
+				&& '' !== $external_url
+				&& in_array( $flosc_ext_scheme, array( 'http', 'https' ), true )
+				&& '' !== $flosc_ext_host;
+
+			// Nothing to link to and nothing to serve.
+			if ( ! $is_external && '' === $slug ) {
+				continue;
+			}
+
+			$heading = trim( (string) $flosc_read( $flosc_key . '_heading', '' ) );
+
+			$pages[ $flosc_key ] = array(
+				'key'               => $flosc_key,
+				// The table of contents keeps stable labels. A heading an admin
+				// renames is the page's title, not the name of the link to it.
+				'nav_label'         => $flosc_default[2],
+				'heading'           => '' !== $heading ? $heading : $flosc_default[1],
+				'slug'              => $slug,
+				'content'           => (string) $flosc_read( $flosc_key . '_content', '' ),
+				'use_external_link' => $is_external,
+				'external_url'      => $is_external ? esc_url_raw( $external_url ) : '',
+				'effective_url'     => $is_external ? esc_url_raw( $external_url ) : esc_url_raw( $base . $slug . '/' ),
+				'is_external'       => $is_external,
+			);
+		}
+
+		return $pages;
+	}
+
+	/**
+	 * Which policy page this request is for.
+	 *
+	 * Matched against the slugs this flow actually serves, so a page an admin
+	 * has switched off answers like any other unknown path rather than
+	 * rendering an empty shell.
+	 *
+	 * @return string|null The page key, or null when this is not one of them.
 	 */
 	public function get_requested_legal_page() {
 		$request_uri = sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ?? '' ) );
@@ -217,14 +348,21 @@ class FLOSC_Full_Page_Mode {
 			return null;
 		}
 
-		$legal_pages = array(
-			'privacy',
-			'terms-of-service',
-			'data-deletion',
-			'platform-compliance',
-		);
+		foreach ( $this->policy_pages() as $flosc_key => $flosc_page ) {
+			/*
+			 * A policy pointing at the admin's own address is not served here.
+			 * Routing its local slug as well would leave a second, stale copy
+			 * of the same document answering on this domain.
+			 */
+			if ( $flosc_page['is_external'] || '' === $flosc_page['slug'] ) {
+				continue;
+			}
+			if ( $flosc_page['slug'] === $path ) {
+				return $flosc_key;
+			}
+		}
 
-		return in_array( $path, $legal_pages, true ) ? $path : null;
+		return null;
 	}
 
 	/**
@@ -252,42 +390,16 @@ class FLOSC_Full_Page_Mode {
 
 		$flow      = $this->flosc->get_current_flow();
 		$site_name = $flow['identity']['name'] ?? 'FLOSC';
-		$identity  = is_array( $flow['identity'] ?? null ) ? $flow['identity'] : array();
 		$base_url  = $this->get_current_request_base_url();
 
-		$page_map = array(
-			'privacy'                  => array(
-				'title'    => 'Privacy Policy',
-				'headline' => 'Privacy Policy',
-				'content'  => (string) ( $identity['privacy_policy_content'] ?? '' ),
-			),
-			'terms-of-service'         => array(
-				'title'    => 'Terms of Service',
-				'headline' => 'Terms of Service',
-				'content'  => (string) ( $identity['terms_of_service_content'] ?? '' ),
-			),
-			'data-deletion'            => array(
-				'title'    => 'User Data Deletion',
-				'headline' => 'User Data Deletion',
-				'content'  => (string) ( $identity['data_deletion_content'] ?? '' ),
-			),
-			'platform-compliance'      => array(
-				'title'    => 'Platform Compliance',
-				'headline' => 'Platform Compliance',
-				'content'  => (string) ( $identity['platform_compliance_content'] ?? '' ),
-			),
-		);
+		$page_map = $this->policy_pages( $flow );
 
-		if ( ! isset( $page_map[ $page ] ) ) {
+		if ( ! isset( $page_map[ $page ] ) || $page_map[ $page ]['is_external'] ) {
 			wp_die( 'Legal page not found.', 'Not Found', array( 'response' => 404 ) );
 		}
 
-		$current         = $page_map[ $page ];
-		$home_link       = esc_url( $base_url );
-		$privacy_link    = esc_url( $base_url . 'privacy/' );
-		$terms_link      = esc_url( $base_url . 'terms-of-service/' );
-		$deletion_link   = esc_url( $base_url . 'data-deletion/' );
-		$compliance_link = esc_url( $base_url . 'platform-compliance/' );
+		$current   = $page_map[ $page ];
+		$home_link = esc_url( $base_url );
 
 		$flosc_legal_css = FLOSC_PLUGIN_DIR . 'assets/css/flosc-frontend.css';
 		$flosc_legal_ver = file_exists( $flosc_legal_css ) ? (string) filemtime( $flosc_legal_css ) : ( defined( 'FLOSC_VERSION' ) ? FLOSC_VERSION : '8.0.0' );
@@ -304,7 +416,7 @@ class FLOSC_Full_Page_Mode {
 		echo '<head>';
 		echo '<meta charset="' . esc_attr( get_bloginfo( 'charset' ) ) . '">';
 		echo '<meta name="viewport" content="width=device-width, initial-scale=1">';
-		echo '<title>' . esc_html( $current['title'] . ' | ' . $site_name ) . '</title>';
+		echo '<title>' . esc_html( $current['heading'] . ' | ' . $site_name ) . '</title>';
 		// Emit only this handle (standalone page has no full wp_head stack).
 		wp_print_styles( array( 'flosc-legal-page' ) );
 		echo '</head>';
@@ -312,13 +424,16 @@ class FLOSC_Full_Page_Mode {
 		echo '<main class="flosc-legal-shell">';
 		echo '<nav class="flosc-legal-nav" aria-label="Legal navigation">';
 		echo '<a href="' . esc_url( $home_link ) . '">Home</a>';
-		echo '<a href="' . esc_url( $privacy_link ) . '">Privacy</a>';
-		echo '<a href="' . esc_url( $terms_link ) . '">Terms</a>';
-		echo '<a href="' . esc_url( $deletion_link ) . '">Data Deletion</a>';
-		echo '<a href="' . esc_url( $compliance_link ) . '">Platform Compliance</a>';
+		// Only the pages this flow actually serves: a page switched off in the
+		// Identity tab leaves no link behind pointing at a 404.
+		foreach ( $page_map as $flosc_nav_page ) {
+			// effective_url already points at the admin's own address when this
+			// policy is external, and at the FLOSC-served page otherwise.
+			echo '<a href="' . esc_url( $flosc_nav_page['effective_url'] ) . '">' . esc_html( $flosc_nav_page['nav_label'] ) . '</a>';
+		}
 		echo '</nav>';
 		echo '<section class="flosc-legal-card">';
-		echo '<h1>' . esc_html( $current['headline'] ) . '</h1>';
+		echo '<h1>' . esc_html( $current['heading'] ) . '</h1>';
 		if ( '' !== $current['content'] ) {
 			echo wp_kses_post( $current['content'] );
 		}

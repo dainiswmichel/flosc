@@ -4915,6 +4915,23 @@ The Team',
 	}
 
 	/**
+	 * The policy pages this flow serves, with their addresses.
+	 *
+	 * Delegates to FLOSC_Full_Page_Mode. Public because the chat turn hands
+	 * these to the assistant: nothing told it where this flow's privacy policy
+	 * or terms live, so asked for them it had nothing to cite and guessed.
+	 *
+	 * A page an admin has switched off is absent from the array, so the
+	 * assistant is never given an address that answers 404.
+	 *
+	 * @param array|null $flow The flow, or null for the current one.
+	 * @return array<string,array<string,string>> Keyed by page, each with slug, heading and content.
+	 */
+	public function policy_pages( $flow = null ) {
+		return $this->full_page_mode->policy_pages( $flow );
+	}
+
+	/**
 	 * Which legal page this request is for, if any.
 	 *
 	 * Delegates to FLOSC_Full_Page_Mode. A flow domain serves its own privacy policy, terms,

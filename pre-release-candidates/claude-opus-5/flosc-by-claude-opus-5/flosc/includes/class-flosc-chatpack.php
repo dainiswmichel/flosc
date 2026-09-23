@@ -940,6 +940,60 @@ class FLOSC_Chatpack {
 	 * @param mixed $eval_context Eval context.
 	 * @param mixed $flow_id      Flow ID.
 	 */
+	/**
+	 * Where this flow's policy pages live.
+	 *
+	 * A subsection of KNOWLEDGE, beside the knowledge base and the site index,
+	 * because that is what it is: a short list of resources on this site the
+	 * assistant should know exist. It is not guidance and it is not a rule.
+	 *
+	 * Addresses only. An earlier draft sent the full body of all four documents
+	 * on every turn -- thousands of words of legal text riding alongside a
+	 * personality written in a few hundred. That crowds out the voice the
+	 * floscAdmin authored and hands the model a large block of policy prose to
+	 * drift toward. A companion that answers a question about lessons by
+	 * volunteering the data-retention period is worse than one that cannot
+	 * quote a URL.
+	 *
+	 * Four lines answer the question that was actually broken: asked where the
+	 * terms are, the model had nothing and invented "scroll to the footer".
+	 * Whoever wants the text follows the link, which is what a link is for.
+	 *
+	 * Returns '' when policy management is inactive for the flow.
+	 *
+	 * @param string|null $flow_id The flow, or null for the current one.
+	 * @return string The subsection, or '' when there is nothing to list.
+	 */
+	private static function build_policy_pages_subsection( $flow_id = null ) {
+		if ( ! function_exists( 'flosc' ) ) {
+			return '';
+		}
+		if ( '' === $flow_id ) {
+			$flow_id = null;
+		}
+
+		/*
+		 * The flow id goes straight through. An earlier version resolved it with
+		 * get_flow() first, which returns false for an IVR-file flow -- every
+		 * flow on most installs -- and then quietly passed null, so this read
+		 * whichever flow the request happened to be on instead of the flow the
+		 * conversation belongs to. policy_pages() resolves an id through
+		 * flosc_get_setting(), which knows how to rebuild those flows.
+		 */
+		$pages = flosc()->policy_pages( null !== $flow_id ? (string) $flow_id : null );
+		if ( empty( $pages ) ) {
+			return '';
+		}
+
+		$subsection = "## 5e. POLICY PAGES\n\n";
+		$subsection .= "These pages exist on this site. Give the address if someone asks for one; do not raise them or describe their contents unprompted.\n\n";
+		foreach ( $pages as $page ) {
+			$subsection .= '- ' . $page['heading'] . ': ' . $page['effective_url'] . "\n";
+		}
+
+		return $subsection . "\n";
+	}
+
 	private static function build_flow_section( $phase, $eval_context, $flow_id = null ) {
 		// build_followup_chatpack() hands us $eval_context['flow_id'] cast to a
 		// string, which is '' when the turn carries no flow. Settings lookups
@@ -1043,6 +1097,10 @@ class FLOSC_Chatpack {
 				$section .= "## 5c. GROUPS\n\n" . $flosc_groups . "\n";
 			}
 		}
+
+		// Policy pages, listed beside the other things on this site the
+		// assistant should know exist.
+		$section .= self::build_policy_pages_subsection( (string) ( $eval_context['flow_id'] ?? '' ) );
 
 		// Feedback (floscAdmin-flagged bad responses).
 		$feedback_items = flosc_get_setting( 'ai_feedback', array() );

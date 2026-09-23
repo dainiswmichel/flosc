@@ -383,6 +383,7 @@ trait FLOSC_Chat_Turn_Trait {
 		$eval_context['last_message']  = $message;
 		$eval_context['flow_id']       = $flow_id;
 
+
 		if ( is_user_logged_in() ) {
 			$user_id                           = get_current_user_id();
 			$user_data                         = get_userdata( $user_id );
