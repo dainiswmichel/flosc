@@ -24,6 +24,12 @@ if ( ! current_user_can( 'edit_others_posts' ) ) {
 }
 
 if ( ! function_exists( 'flosc_resolve_ivr_file_path' ) ) {
+	/**
+	 * Resolve IVR file path.
+	 *
+	 * @param mixed $flosc_ivr_filename IVR filename.
+	 * @return mixed
+	 */
 	function flosc_resolve_ivr_file_path( $flosc_ivr_filename ) {
 		$flosc_ivr_filename = sanitize_file_name( trim( (string) $flosc_ivr_filename ) );
 		// Per WordPress.org policy: runtime-generated files must be written to uploads only.
@@ -453,7 +459,7 @@ function flosc_run_ivr_diagnostics() {
 				foreach ( $compare_fields as $field ) {
 					if ( (string) ( $file_msg[ $field ] ?? '' ) !== (string) ( $db_msg[ $field ] ?? '' ) ) {
 						$mismatches[] = $flosc_id;
-						break; // one differing field is enough to flag this message
+						break; // one differing field is enough to flag this message.
 					}
 				}
 			}
@@ -1014,7 +1020,7 @@ if ( isset( $flosc_post['flosc_preview_import'] ) ) {
 	if ( ! file_exists( $flosc_ivr_file_path ) ) {
 		add_settings_error( 'flosc_settings', 'preview_file_missing', 'Compare unavailable: active IVR file is missing. Next step: Save DB → IVR File, then run Compare again.', 'warning' );
 	} else {
-		$flosc_result = flosc_import_ivr_to_database( true, $flosc_ivr_file_path, $flosc_flow_key, 'merge' ); // Preview only
+		$flosc_result = flosc_import_ivr_to_database( true, $flosc_ivr_file_path, $flosc_flow_key, 'merge' ); // Preview only.
 		if ( $flosc_result['success'] && isset( $flosc_result['preview'] ) ) {
 			$flosc_import_preview = $flosc_result['stats'];
 		} else {
@@ -1224,8 +1230,8 @@ if ( is_dir( $flosc_ivr_files_dir ) ) {
 		glob( $flosc_ivr_files_dir . '*_ivr.md' ),
 		glob( $flosc_ivr_files_dir . 'ivr*.md' )
 	);
-	$flosc_files = array_unique( $flosc_files ); // Remove duplicates
-	sort( $flosc_files ); // Alphabetical order
+	$flosc_files = array_unique( $flosc_files ); // Remove duplicates.
+	sort( $flosc_files ); // Alphabetical order.
 	foreach ( $flosc_files as $flosc_file ) {
 		$flosc_filename = basename( $flosc_file );
 		// Skip backup files.
@@ -1741,8 +1747,8 @@ function floscTestAPI() {
 if ( null !== $flosc_import_preview ) :
 	// v3.0.9: Pre-compute field_diffs early so we can split "updated" into changed vs unchanged.
 	$flosc_field_diffs           = $flosc_import_preview['field_diffs'] ?? array();
-	$flosc_changed_ids           = array_keys( $flosc_field_diffs );                                          // IDs with actual field differences
-	$flosc_unchanged_ids         = array_values( array_diff( $flosc_import_preview['updated'] ?? array(), $flosc_changed_ids ) ); // IDs in both, content identical
+	$flosc_changed_ids           = array_keys( $flosc_field_diffs );                                          // IDs with actual field differences.
+	$flosc_unchanged_ids         = array_values( array_diff( $flosc_import_preview['updated'] ?? array(), $flosc_changed_ids ) ); // IDs in both, content identical.
 	$flosc_after_merge_count     = (int) ( $flosc_import_preview['current_count'] ?? 0 ) + count( $flosc_import_preview['added'] ?? array() );
 	$flosc_after_replace_count   = (int) ( $flosc_import_preview['incoming_count'] ?? 0 );
 	$flosc_replace_removed_count = count( $flosc_import_preview['deleted'] ?? array() );

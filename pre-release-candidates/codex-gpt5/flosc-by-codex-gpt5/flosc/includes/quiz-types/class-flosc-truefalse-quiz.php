@@ -13,45 +13,99 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * True false quiz.
+ */
 class FLOSC_TrueFalse_Quiz extends FLOSC_Abstract_Quiz_Type {
 
+	/**
+	 * Get ID.
+	 *
+	 * @return mixed
+	 */
 	public function get_id() {
 		return 'truefalse';
 	}
 
+	/**
+	 * Get name.
+	 *
+	 * @return mixed
+	 */
 	public function get_name() {
 		return 'True/False';
 	}
 
+	/**
+	 * Get description.
+	 *
+	 * @return mixed
+	 */
 	public function get_description() {
 		return 'User answers True or False to statements. Perfect for knowledge checks.';
 	}
 
+	/**
+	 * Get icon.
+	 *
+	 * @return mixed
+	 */
 	public function get_icon() {
 		return '✓✗';
 	}
 
+	/**
+	 * Needs audio.
+	 *
+	 * @return mixed
+	 */
 	public function needs_audio() {
 		return false;
 	}
 
+	/**
+	 * Needs STT.
+	 *
+	 * @return mixed
+	 */
 	public function needs_stt() {
 		return false;
 	}
 
+	/**
+	 * Needs AI analysis.
+	 *
+	 * @return mixed
+	 */
 	public function needs_ai_analysis() {
 		return false;
 	}
 
+	/**
+	 * Get instructions.
+	 *
+	 * @return mixed
+	 */
 	public function get_instructions() {
 		return "One statement per line. Format: Statement.|True or Statement.|False\n\nOptional pipe segments (add as many as you like — they all accumulate):\n  |CorrectContent: post:my-post-slug\n  |CorrectContent: tag:my-tag, id:1042\n  |RelatedContent: post:slug-one, category:parent/child\n  |RelatedContent: tag:another-tag, id:1043\n  |RelatedContent: search:distinctive words from title\n\nPrefixes — always required, no quotes:\n  post:slug              — post by URL slug; use post:parent/child if the same slug exists under multiple parents\n  id:1042           — one post by numeric ID\n  category:slug     — posts in a category; category:parent/child for sub-categories\n  tag:slug          — posts with a tag (use the tag slug, not the display name)\n  search:any words  — keyword search (avoid: unreliable, may match wrong posts)\n\nMultiple |CorrectContent: and |RelatedContent: segments accumulate. CorrectContent items are tier 1 — shown first when a learner asks to review what they got wrong.";
 	}
 
+	/**
+	 * Get default content.
+	 *
+	 * @return mixed
+	 */
 	public function get_default_content() {
 		// Subject-neutral sample — replace with your own statements in FLOSC → Quiz.
 		return "Sample statement for Topic 1 — Getting started: this product ships ready for any subject.|True|CorrectContent: post:sample-topic-1-getting-started|RelatedContent: post:sample-topic-1-getting-started-extra|Topic: topic-1-getting-started\nSample statement for Topic 2 — Core ideas: admins configure freeline, guest gifts, and member gates in the flow.|True|CorrectContent: post:sample-topic-2-core-ideas|RelatedContent: category:sample_lessons|Topic: topic-2-core-ideas\nSample statement for Topic 3 — Practice basics: wrong answers must always unlock the full member library.|False|CorrectContent: post:sample-topic-3-practice-basics|RelatedContent: post:sample-topic-3-practice-basics-extra|Topic: topic-3-practice-basics";
 	}
 
+	/**
+	 * Validate input.
+	 *
+	 * @param mixed $input Input.
+	 * @return mixed
+	 */
 	public function validate_input( $input ) {
 		if ( empty( $input ) || ! is_string( $input ) ) {
 			return new WP_Error( 'invalid_input', __( 'Please enter your answers.', 'flosc' ) );
@@ -60,6 +114,14 @@ class FLOSC_TrueFalse_Quiz extends FLOSC_Abstract_Quiz_Type {
 		return true;
 	}
 
+	/**
+	 * Analyze.
+	 *
+	 * @param mixed $input            Input.
+	 * @param mixed $expected_content Expected content.
+	 * @param mixed $context          Context.
+	 * @return mixed
+	 */
 	public function analyze( $input, $expected_content, $context = array() ) {
 		// Parse questions.
 		$questions = $this->parse_questions( $expected_content );
@@ -114,6 +176,11 @@ class FLOSC_TrueFalse_Quiz extends FLOSC_Abstract_Quiz_Type {
 		);
 	}
 
+	/**
+	 * Get settings fields.
+	 *
+	 * @return mixed
+	 */
 	public function get_settings_fields() {
 		return array(
 			'answer_format' => array(
@@ -134,6 +201,8 @@ class FLOSC_TrueFalse_Quiz extends FLOSC_Abstract_Quiz_Type {
 	 * Parse questions from content.
 	 * Format: "Statement.|True|Topic: slug1, slug2"
 	 * Topic segment is optional.
+	 *
+	 * @param mixed $content Content.
 	 */
 	private function parse_questions( $content ) {
 		$lines     = explode( "\n", $content );
@@ -190,6 +259,8 @@ class FLOSC_TrueFalse_Quiz extends FLOSC_Abstract_Quiz_Type {
 	/**
 	 * Parse user answers
 	 * Accepts: "T,F,T" or "True,False,True" or "true\nfalse\ntrue"
+	 *
+	 * @param mixed $input Input.
 	 */
 	private function parse_user_answers( $input ) {
 		// Try comma-separated first.
@@ -205,6 +276,8 @@ class FLOSC_TrueFalse_Quiz extends FLOSC_Abstract_Quiz_Type {
 
 	/**
 	 * Normalize answer (T/True/Yes → true, F/False/No → false)
+	 *
+	 * @param mixed $answer Answer.
 	 */
 	private function normalize_answer( $answer ) {
 		$answer = strtolower( trim( $answer ) );

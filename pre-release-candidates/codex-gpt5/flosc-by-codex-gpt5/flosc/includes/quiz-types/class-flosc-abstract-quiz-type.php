@@ -13,6 +13,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Abstract quiz type.
+ */
 abstract class FLOSC_Abstract_Quiz_Type {
 
 	/**
@@ -235,7 +238,7 @@ abstract class FLOSC_Abstract_Quiz_Type {
 	 *
 	 * A missing or non-existent reference always returns [] — never an error.
 	 *
-	 * @param string $ref
+	 * @param string $ref Ref.
 	 * @return WP_Post[]
 	 */
 	protected function lookup_lesson_by_tag( $ref ) {
@@ -460,6 +463,9 @@ abstract class FLOSC_Abstract_Quiz_Type {
 
 	/**
 	 * Helper: Calculate percentage score
+	 *
+	 * @param mixed $correct_count Correct count.
+	 * @param mixed $total_count   Total count.
 	 */
 	protected function calculate_percentage( $correct_count, $total_count ) {
 		if ( 0 === $total_count ) {
@@ -470,6 +476,8 @@ abstract class FLOSC_Abstract_Quiz_Type {
 
 	/**
 	 * Helper: Determine response key from score
+	 *
+	 * @param mixed $score Score.
 	 */
 	protected function get_response_key_from_score( $score ) {
 		if ( $score <= 30 ) {

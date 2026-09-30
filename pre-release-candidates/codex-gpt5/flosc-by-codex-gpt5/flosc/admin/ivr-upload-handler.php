@@ -19,6 +19,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 if ( ! function_exists( 'flosc_portability_normalize_ivr_filename' ) ) {
 	/**
+	 * Portability normalize IVR filename.
+	 *
 	 * @param string $raw_name Original upload basename.
 	 * @return string Sanitized *_ivr.md name.
 	 */
@@ -35,6 +37,8 @@ if ( ! function_exists( 'flosc_portability_normalize_ivr_filename' ) ) {
 
 if ( ! function_exists( 'flosc_portability_display_name_from_stem' ) ) {
 	/**
+	 * Portability display name from stem.
+	 *
 	 * @param string $stem Flow stem (e.g. vegan_latvian_kitchen_ivr).
 	 * @return string
 	 */
@@ -246,6 +250,8 @@ if ( ! function_exists( 'flosc_portability_ingest_da1_tsv' ) ) {
 
 if ( ! function_exists( 'flosc_portability_pack_assets_option_key' ) ) {
 	/**
+	 * Portability pack assets option key.
+	 *
 	 * @return string
 	 */
 	function flosc_portability_pack_assets_option_key() {
@@ -296,6 +302,8 @@ if ( ! function_exists( 'flosc_portability_get_pack_assets' ) ) {
 
 if ( ! function_exists( 'flosc_portability_save_pack_assets' ) ) {
 	/**
+	 * Portability save pack assets.
+	 *
 	 * @param string              $ivr_file Flow IVR basename.
 	 * @param array<string,mixed> $row      Pack row (wxr + media; catalogs stay in DA1 options).
 	 * @return void
@@ -381,6 +389,8 @@ if ( ! function_exists( 'flosc_portability_path_is_in_pack_dir' ) ) {
 
 if ( ! function_exists( 'flosc_portability_allowed_media_ext' ) ) {
 	/**
+	 * Portability allowed media ext.
+	 *
 	 * @return array<int,string>
 	 */
 	function flosc_portability_allowed_media_ext() {

@@ -1,73 +1,86 @@
-# FLOSC 8.0.0 — Codex candidate v94.1
+# FLOSC 8.0.0 — Codex candidate v114
 
-Source base: the latest Claude Opus 5 v94 commit available during this pass,
-`922882317158cf1a558c1a7ac4cdcd53c2faa269`. The Claude candidate was not
-modified. The Codex plugin source differs from it in exactly one file:
-`includes/flosc-request.php`. The plugin version remains 8.0.0.
+Built 2026-09m-30d from the last companion implementation verified on the live
+site, v107 (`d28003f1`), plus the bounded content work from v108 (`17338160`).
+The plugin version remains 8.0.0. Nothing was deployed or submitted.
 
-Claude's v94 code had already removed the five file-scope bulk `$_GET` reads.
-Its central `flosc_nav_param_keys()` list omitted `catalog` and `da1_export`,
-although `admin/da1.php` reads both through the inherited `$flosc_get` array.
-This candidate adds those two literal keys. Without them, selecting a DA1
-catalog by URL and the nonce-protected DA1 export silently fall back. No POST
-read, endpoint, or other runtime file was changed.
+## What happened in v108–v113
 
-## Measured checks
+v108 was the requested light edit: neutral FLOSC quiz templates and default
+copy in four files. v109–v113 were a repair cascade after the panel stopped
+obeying its basic contract.
 
-Commands run from `flosc-by-codex-gpt5/flosc/`:
+- v109 patched selected navigation call sites after a page loaded inside the
+  chat frame and mounted another companion.
+- v110 prevented a companion from mounting inside any frame, but its acceptance
+  check proved only that nesting stopped. It still passed when the panel held a
+  WordPress page instead of the chat.
+- v111 found two additional causes: a missing flow rewrite could let WordPress
+  redirect the requested app route to a similarly named post, and several
+  remaining app call sites could still navigate the frame away from chat.
+- v112 rearranged app-template execution and added a helper in another file
+  while guessing at an undiagnosed wp-admin fatal.
+- v113 removed that cross-file helper because a partial live unzip could expose
+  the caller before the definition. The fatal itself never had an error trace
+  and therefore remains undiagnosed.
 
-```text
-find admin includes -type f -name '*.php' -print0 | xargs -0 grep -HnE '^\$[A-Za-z_][A-Za-z0-9_]*[[:space:]]*=[[:space:]]*wp_unslash[[:space:]]*\([[:space:]]*\$_GET[[:space:]]*\)'
-output: none (0 file-scope GET bulk reads)
+The quality failure was the acceptance criterion: “no nested frame” was treated
+as equivalent to “the panel contains chat.” It is not. A one-level iframe
+containing a blog post satisfies the former and violates the latter.
 
-find admin includes -type f -name '*.php' -print0 | xargs -0 grep -HnE '^\$[A-Za-z_][A-Za-z0-9_]*[[:space:]]*=[[:space:]]*wp_unslash[[:space:]]*\([[:space:]]*\$_POST[[:space:]]*\)'
-admin/settings.php:370:$flosc_post = wp_unslash( $_POST );
-admin/flow.php:39:$flosc_post                    = wp_unslash( $_POST );
+## v114 implementation
 
-find . -type f -name '*.php' -print0 | xargs -0 -n1 php -l | awk '/^No syntax errors detected/{ok++} !/^No syntax errors detected/{print; fail++} END{printf "PHP lint clean: %d; failures: %d\n", ok, fail}'
-PHP lint clean: 195; failures: 0
+v114 does not copy the v109–v113 implementation. It reimplements the required
+outcomes on the v107/live companion base:
 
-flosc_pass=0; flosc_fail=0; for flosc_test in tests/check_*.php tests/test_*.php; do if php "$flosc_test" > /tmp/flosc-v94-latest-php-test.log 2>&1; then flosc_pass=$((flosc_pass+1)); else flosc_fail=$((flosc_fail+1)); printf 'FAIL %s\n' "$flosc_test"; fi; done; printf 'PHP tests: %d passed; %d failed\n' "$flosc_pass" "$flosc_fail"
-PHP tests: 40 passed; 0 failed
+- Companion chrome returns before boot in every iframe.
+- The chat iframe stays hidden until `flosc-app.js` identifies the document as
+  the FLOSC app. A normal WordPress page, redirect target, or server error is
+  never exposed as chat. One clean retry is allowed; a second failure closes
+  the frame and shows an error instead of the wrong document.
+- Profile, dashboard, and personalized-path actions open outside the panel.
+- Checkout, visitor-depletion, and SSO moves are handed to the verified parent
+  window; the iframe never performs those navigations itself.
+- “Minimize to companion” refuses before any state mutation when the app is
+  already framed.
+- Both login entry points return to the companion app surface.
+- FLOSC handles its app route before WordPress canonical 404 guessing, clears
+  404 state only after identifying a FLOSC request, and refreshes rewrite rules
+  after a starter-pack flow is registered.
+- The v108 neutral quiz/default-copy edits remain intact.
 
-flosc_pass=0; flosc_fail=0; for flosc_test in tests/check_*.js; do if node "$flosc_test" > /tmp/flosc-v94-latest-js-test.log 2>&1; then flosc_pass=$((flosc_pass+1)); else flosc_fail=$((flosc_fail+1)); printf 'FAIL %s\n' "$flosc_test"; fi; done; printf 'JS tests: %d passed; %d failed\n' "$flosc_pass" "$flosc_fail"
-JS tests: 2 passed; 0 failed
+Against v107 this is 11 source files, +299/−75. Against v108 it is eight source
+files, +243/−19; one of those is a non-shipping regression test. No v109–v113
+file was accepted wholesale.
 
-php -d memory_limit=2G /Users/dainismichel/.composer/vendor/bin/phpcs --standard=WordPress --extensions=php --report=json . > /tmp/flosc-v94-latest-codex-wpcs.json
-python3 -c 'import json; print(json.load(open("/tmp/flosc-v94-latest-codex-wpcs.json"))["totals"])'
-{'errors': 5125, 'warnings': 557, 'fixable': 3030}
-Same scan on unchanged v94 source:
-{'errors': 5125, 'warnings': 557, 'fixable': 3030}
+## Verification
 
-php -d memory_limit=2G /Users/dainismichel/.composer/vendor/bin/phpcs --standard=PHPCompatibilityWP --extensions=php --runtime-set testVersion 7.4-7.4 --report=json . > /tmp/flosc-v94-latest-codex-php74.json
-errors: 0; warnings: 0; fixable: 0
+- Live ChemiCloud: 242 files. All six companion-critical live files matched
+  v107 byte-for-byte by SHA-256 on 2026-09m-30d.
+- `tests/check_companion_surface_contract.js`: 16/16 assertions pass.
+- Existing suite: 44 PHP tests and 3 JavaScript tests pass.
+- PHP lint: 200/200 files clean.
+- `node --check`: both changed runtime JavaScript files clean.
+- WordPress PHPCS on the four changed PHP files, measured from the extracted
+  artifact: 0 errors, 12 inherited warnings in `class-flosc-framework.php`.
+- PHPCompatibilityWP 7.4 on those files: 0 findings.
+- Zip: 282 entries / 242 files, `unzip -t` clean, ten changed shipped files
+  checksum-match their source counterparts.
+
+Artifact SHA-256:
+
+```
+51680c09cee4580bb41d720efba98201411e07a8bba941c0f1b4ab2af69a77a2  flosc.zip
 ```
 
-Static GET-key inventory: 29 consumed keys, 32 declared keys. Before this
-change, `catalog` and `da1_export` were the two consumer keys missing from the
-declaration; after it, the only undeclared consumer key is `deleted`, which
-`admin/flows.php` reads directly and does not use the helper. A direct helper
-execution with `catalog=membership`, `da1_export=1`, and an undeclared key
-returned `{"catalog":"membership","da1_export":"1"}`.
+## Not yet established
 
-Source inventory before and after: 308 files, 195 PHP files, 2,447 textual
-named-function matches, 171 textual class matches. All four Starter Pack
-manifests and the five required UI strings remain.
+v114 has not been installed in a browser-running WordPress environment. The
+required next gate is the real companion matrix: normal post, flow route with
+healthy and deliberately stale rewrite rules, login return, profile/dashboard,
+external checkout, depletion redirect, full-page minimize, and a forced
+non-app iframe response. The panel must contain the app and chat input or fail
+closed; frame depth alone is not evidence.
 
-The two-line source diff against v94 passes `git diff --no-index --check`.
-The staged whole-candidate diff against the older Codex v68 snapshot produces
-738 `git diff --cached --check` warnings from inherited v94 whitespace in
-other files. This pass did not run a formatting sweep or claim that whole-tree
-diff check passes.
-
-## Artifact and limits
-
-`./build-dist-zip.sh` produced `flosc.zip`: 281 entries, 2,795,691 bytes, one
-`flosc/` root, and `unzip -t` clean. The edited helper in the ZIP matches the
-source. The ZIP's SHA-256 is recorded in `SHA256SUMS` and the manifest.
-
-The inherited v94 build script excludes `admin/create-sample-data.php` even
-though the source contains it. Whether that exclusion preserves the intended
-sample-data workflow needs a separate functional review. This candidate was
-not deployed or tested in a booting WordPress installation, and the WPCS
-findings remain; it is not submission-ready.
+Official Plugin Check and the full WordPress.org release gate have not been run.
+This is a test candidate, not authorization to deploy or resubmit.

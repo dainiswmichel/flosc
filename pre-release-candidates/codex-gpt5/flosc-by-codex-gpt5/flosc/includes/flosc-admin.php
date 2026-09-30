@@ -1,4 +1,10 @@
 <?php
+/**
+ * Admin menu, submenu pages and the request helpers the admin screens share.
+ *
+ * @package FLOSC
+ */
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -773,6 +779,8 @@ trait FLOSC_Admin_Trait {
 	 * Loads flosc-admin.css on FLOSC admin pages
 	 *
 	 * @since 1.0.4
+	 *
+	 * @param mixed $hook Hook.
 	 */
 	public function enqueue_admin_assets( $hook ) {
 		// §12: Post-visibility metabox styles render on the post editor (post.php / post-new.php),
@@ -951,6 +959,8 @@ trait FLOSC_Admin_Trait {
 	 * Only applies on FLOSC admin pages (checked via current screen).
 	 *
 	 * @since 8.0.0
+	 *
+	 * @param mixed $text Text.
 	 */
 	public function relabel_admin_footer( $text ) {
 		$screen = get_current_screen();
@@ -966,6 +976,8 @@ trait FLOSC_Admin_Trait {
 	 * on FLOSC admin pages only.
 	 *
 	 * @since 8.0.0
+	 *
+	 * @param mixed $text Text.
 	 */
 	public function relabel_admin_footer_left( $text ) {
 		$screen = get_current_screen();
@@ -1188,6 +1200,197 @@ trait FLOSC_Admin_Trait {
 	}
 
 	/**
+	 * Serve an IVR file as a download, before any admin HTML is printed.
+	 *
+	 * WHY THIS IS NOT IN THE TAB TEMPLATE ANY MORE
+	 *
+	 * admin/flow.php used to do this itself. It cannot. That file is a settings
+	 * tab, included while the admin page is already streaming, so by the time it
+	 * runs the response headers are gone. Content-Type and Content-Disposition
+	 * were discarded and the file's bytes were written into the middle of the
+	 * page: the browser received the admin screen with an IVR file spliced into
+	 * it, at HTTP 200, and no download ever started.
+	 *
+	 * Nothing reported it. php -l, 44 gates, WPCS and Plugin Check were all
+	 * clean, because none of them renders a page. It was found by clicking
+	 * Download on a real WordPress install and reading the bytes that came back.
+	 *
+	 * flow.php already carried the warning that explains it, about the
+	 * set-as-default handler: "Do not redirect here -- headers are already sent
+	 * during page render". The same constraint applies to any response that
+	 * replaces the page, and a download is one of those.
+	 *
+	 * admin_init runs before output, which is the only place this can work. The
+	 * checks are unchanged in kind and order: the nonce is verified against the
+	 * action that names this exact file, then the capability, then the path.
+	 *
+	 * @return void
+	 */
+	/**
+	 * Offer delete, toggle and status-set, before any HTML is printed.
+	 *
+	 * These three ran at file scope in admin/offers.php, which is included
+	 * while the settings page is already streaming. Their refusals called
+	 * wp_die() with 'response' => 403, and PHP cannot send a status header
+	 * after output has started -- so a request with a bad nonce was correctly
+	 * refused, wrote nothing, and answered HTTP 200 with the error spliced
+	 * into a half-rendered page. Anything reading that endpoint saw success.
+	 *
+	 * Running on admin_init, before output, lets those same wp_die() calls
+	 * send the 403 they always asked for. A successful action redirects back
+	 * to the tab, which also drops the action out of the URL so a refresh
+	 * cannot replay it.
+	 *
+	 * @return void
+	 */
+	public function maybe_process_offer_actions() {
+		if ( ! is_admin() || wp_doing_ajax() || ( defined( 'DOING_CRON' ) && DOING_CRON ) ) {
+			return;
+		}
+		if ( 'flosc-settings' !== flosc_nav_param( 'page' ) || 'offers' !== flosc_nav_param( 'tab' ) ) {
+			return;
+		}
+
+		/*
+		 * Which action this is. Read through flosc_nav_param(), the same
+		 * accessor the rest of the admin uses for request values, so the
+		 * selection needs no suppression to sit ahead of the nonce check --
+		 * and it cannot carry anything but a sanitized string either way.
+		 */
+		$flosc_action = '';
+		$flosc_target = '';
+		foreach ( array( 'delete_offer', 'toggle_status', 'set_status' ) as $flosc_candidate ) {
+			$flosc_value = flosc_nav_param( $flosc_candidate, array(), '', 'sanitize_text_field' );
+			if ( '' !== $flosc_value ) {
+				$flosc_action = $flosc_candidate;
+				$flosc_target = $flosc_value;
+				break;
+			}
+		}
+		if ( '' === $flosc_action ) {
+			return;
+		}
+
+		// Who, then whether they meant to, before the request body is read.
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'Unauthorized action.', 'flosc' ), esc_html__( 'Insufficient permissions', 'flosc' ), array( 'response' => 403 ) );
+		}
+
+		$flosc_nonce = flosc_nav_param( '_wpnonce', array(), '', 'sanitize_text_field' );
+
+		$flosc_nonce_action = 'set_status' === $flosc_action
+			? 'flosc_set_status'
+			: ( 'toggle_status' === $flosc_action ? 'flosc_toggle_status' : 'flosc_delete_offer_' . $flosc_target );
+
+		if ( ! wp_verify_nonce( $flosc_nonce, $flosc_nonce_action ) ) {
+			wp_die( esc_html__( 'Nonce verification failed.', 'flosc' ), esc_html__( 'Invalid token', 'flosc' ), array( 'response' => 403 ) );
+		}
+
+		// Verified input from here down.
+		$flosc_ivr = flosc_nav_param( 'ivr', array(), '', 'sanitize_file_name' );
+		if ( '' === $flosc_ivr || ! function_exists( 'flosc_resolve_flow_option_key_for_ivr' ) ) {
+			return;
+		}
+		$flosc_flow_key = flosc_resolve_flow_option_key_for_ivr( $flosc_ivr );
+		if ( '' === $flosc_flow_key ) {
+			return;
+		}
+
+		$flosc_settings = get_option( $flosc_flow_key, array() );
+		if ( ! is_array( $flosc_settings ) ) {
+			$flosc_settings = array();
+		}
+		$flosc_offers = isset( $flosc_settings['offers'] ) && is_array( $flosc_settings['offers'] ) ? $flosc_settings['offers'] : array();
+		$flosc_notice = '';
+
+		if ( 'delete_offer' === $flosc_action ) {
+			unset( $flosc_offers[ $flosc_target ] );
+			$flosc_notice = 'offer_deleted';
+		} elseif ( 'toggle_status' === $flosc_action && isset( $flosc_offers[ $flosc_target ] ) ) {
+			$flosc_status = strtolower( (string) ( $flosc_offers[ $flosc_target ]['status'] ?? 'active' ) );
+			$flosc_on     = ! empty( $flosc_offers[ $flosc_target ]['active'] );
+			// A draft becomes active; anything already active goes inactive.
+			$flosc_next   = ( 'draft' === $flosc_status || ! $flosc_on ) ? 'active' : 'inactive';
+
+			$flosc_offers[ $flosc_target ]['status'] = $flosc_next;
+			$flosc_offers[ $flosc_target ]['active'] = ( 'active' === $flosc_next );
+		} elseif ( 'set_status' === $flosc_action && isset( $flosc_offers[ $flosc_target ] ) ) {
+			$flosc_next = flosc_nav_param( 'status', array( 'draft', 'inactive', 'active' ), '' );
+			if ( '' === $flosc_next ) {
+				return;
+			}
+			$flosc_offers[ $flosc_target ]['status'] = $flosc_next;
+			$flosc_offers[ $flosc_target ]['active'] = ( 'active' === $flosc_next );
+		} else {
+			return;
+		}
+
+		$flosc_settings['offers'] = $flosc_offers;
+		update_option( $flosc_flow_key, $flosc_settings );
+
+		$flosc_args = array(
+			'page' => 'flosc-settings',
+			'tab'  => 'offers',
+			'ivr'  => $flosc_ivr,
+		);
+		if ( '' !== $flosc_notice ) {
+			$flosc_args['flosc_notice'] = $flosc_notice;
+		}
+		wp_safe_redirect( add_query_arg( $flosc_args, admin_url( 'admin.php' ) ) );
+		exit;
+	}
+
+	public function maybe_serve_ivr_file_download() {
+		if ( ! is_admin() || wp_doing_ajax() || ( defined( 'DOING_CRON' ) && DOING_CRON ) ) {
+			return;
+		}
+		if ( 'flosc-settings' !== flosc_nav_param( 'page' ) ) {
+			return;
+		}
+
+		// sanitize_file_name, never sanitize_key: the latter eats the .md.
+		$flosc_file = flosc_nav_param( 'flosc_download_ivr', array(), '', 'sanitize_file_name' );
+		if ( '' === $flosc_file ) {
+			return;
+		}
+
+		$flosc_nonce = flosc_nav_param( '_wpnonce' );
+		if ( ! wp_verify_nonce( $flosc_nonce, 'flosc_download_ivr_' . $flosc_file ) ) {
+			return; // flow.php reports "Could not download IVR file." when we decline.
+		}
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to download IVR files.', 'flosc' ), 403 );
+		}
+
+		$flosc_path = function_exists( 'flosc_resolve_ivr_file_path' )
+			? (string) flosc_resolve_ivr_file_path( $flosc_file )
+			: '';
+		if ( '' === $flosc_path || ! file_exists( $flosc_path ) || ! is_readable( $flosc_path ) ) {
+			return;
+		}
+
+		if ( ! function_exists( 'WP_Filesystem' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+		}
+		global $wp_filesystem;
+		WP_Filesystem();
+		$flosc_body = is_object( $wp_filesystem ) ? $wp_filesystem->get_contents( $flosc_path ) : false;
+		if ( false === $flosc_body ) {
+			return;
+		}
+
+		if ( class_exists( 'FLOSC_Filesystem' ) ) {
+			$flosc_fs = new FLOSC_Filesystem();
+			$flosc_fs->stream_plain_download_and_exit(
+				(string) $flosc_body,
+				'text/markdown; charset=UTF-8',
+				basename( $flosc_file )
+			);
+		}
+	}
+
+	/**
 	 * Admin-post: set current user's default FLOSC flow (Settings chrome).
 	 * Runs before any admin HTML so wp_safe_redirect works (not mid-render).
 	 */
@@ -1285,118 +1488,199 @@ trait FLOSC_Admin_Trait {
 		$this->redirect_to_settings_tab( 'product' );
 	}
 
+	/**
+	 * Redirect to flow tab.
+	 */
 	public function redirect_to_flow_tab() {
 		$this->redirect_to_settings_tab( 'flow' );
 	}
 
+	/**
+	 * Redirect to identity tab.
+	 */
 	public function redirect_to_identity_tab() {
 		$this->redirect_to_settings_tab( 'identity' );
 	}
 
+	/**
+	 * Redirect to IVR tab.
+	 */
 	public function redirect_to_ivr_tab() {
 		$this->redirect_to_settings_tab( 'ivr-messages' );
 	}
 
+	/**
+	 * Redirect to autoprompts tab.
+	 */
 	public function redirect_to_autoprompts_tab() {
 		$this->redirect_to_settings_tab( 'autoprompts' );
 	}
 
+	/**
+	 * Redirect to content tab.
+	 */
 	public function redirect_to_content_tab() {
 		$this->redirect_to_settings_tab( 'content' );
 	}
 
+	/**
+	 * Redirect to knowledge base tab.
+	 */
 	public function redirect_to_knowledge_base_tab() {
 		$this->redirect_to_settings_tab( 'knowledge-base' );
 	}
 
+	/**
+	 * Redirect to member levels tab.
+	 */
 	public function redirect_to_member_levels_tab() {
 		$this->redirect_to_content_tab();
 	}
 
+	/**
+	 * Redirect to trajectories tab.
+	 */
 	public function redirect_to_trajectories_tab() {
 		$this->redirect_to_settings_tab( 'trajectories' );
 	}
 
+	/**
+	 * Redirect to style tab.
+	 */
 	public function redirect_to_style_tab() {
 		$this->redirect_to_settings_tab( 'style' );
 	}
 
+	/**
+	 * Redirect to AI tab.
+	 */
 	public function redirect_to_ai_tab() {
 		$this->redirect_to_settings_tab( 'ai' );
 	}
 
+	/**
+	 * Redirect to token management tab.
+	 */
 	public function redirect_to_token_management_tab() {
 		$this->redirect_to_settings_tab( 'token-management' );
 	}
 
+	/**
+	 * Redirect to concierge tab.
+	 */
 	public function redirect_to_concierge_tab() {
 		$this->redirect_to_settings_tab( 'concierge' );
 	}
 
+	/**
+	 * Redirect to quiz tab.
+	 */
 	public function redirect_to_quiz_tab() {
 		$this->redirect_to_settings_tab( 'quiz' );
 	}
 
+	/**
+	 * Redirect to email tab.
+	 */
 	public function redirect_to_email_tab() {
 		$this->redirect_to_settings_tab( 'email' );
 	}
 
+	/**
+	 * Redirect to contact form tab.
+	 */
 	public function redirect_to_contact_form_tab() {
 		$this->redirect_to_settings_tab( 'contact-form' );
 	}
 
+	/**
+	 * Redirect to AI knowledge tab.
+	 */
 	public function redirect_to_ai_knowledge_tab() {
 		$this->redirect_to_settings_tab( 'ai' );
 	}
 
+	/**
+	 * Redirect to login tab.
+	 */
 	public function redirect_to_login_tab() {
 		$this->redirect_to_settings_tab( 'login' );
 	}
 
+	/**
+	 * Redirect to offers tab.
+	 */
 	public function redirect_to_offers_tab() {
 		$this->redirect_to_settings_tab( 'offers' );
 	}
 
+	/**
+	 * Redirect to payments tab.
+	 */
 	public function redirect_to_payments_tab() {
 		$this->redirect_to_settings_tab( 'payments' );
 	}
 
+	/**
+	 * Redirect to lessons tab.
+	 */
 	public function redirect_to_lessons_tab() {
 		$this->redirect_to_content_tab();
 	}
 
+	/**
+	 * Redirect to SSO tab.
+	 */
 	public function redirect_to_sso_tab() {
 		$this->redirect_to_settings_tab( 'sso' );
 	}
 
+	/**
+	 * Redirect to engagement tab.
+	 */
 	public function redirect_to_engagement_tab() {
 		$this->redirect_to_settings_tab( 'engagement' );
 	}
 
+	/**
+	 * Redirect to administration tab.
+	 */
 	public function redirect_to_administration_tab() {
 		$this->redirect_to_settings_tab( 'administration' );
 	}
 
+	/**
+	 * Redirect to chat logs tab.
+	 */
 	public function redirect_to_chat_logs_tab() {
 		$this->redirect_to_settings_tab( 'chat-logs' );
 	}
 
+	/**
+	 * Redirect to docs tab.
+	 */
 	public function redirect_to_docs_tab() {
 		$this->redirect_to_settings_tab( 'documentation' );
 	}
 
+	/**
+	 * Redirect to DA1 tab.
+	 */
 	public function redirect_to_da1_tab() {
 		$this->redirect_to_settings_tab( 'da1' );
 	}
 
 	/**
-	 * v1.8.0 → v1.8.2: UI & Navigation → Settings tab=ui (Profile Bar + chat menus).
+	 * V1.8.0 → v1.8.2: UI & Navigation → Settings tab=ui (Profile Bar + chat menus).
 	 * Early admin_init also maps flosc-ui-navigation; this is the menu callback fallback.
 	 */
 	public function render_ui_navigation_page() {
 		$this->redirect_to_settings_tab( 'ui' );
 	}
 
+	/**
+	 * Render DA1 page.
+	 */
 	public function render_da1_page() {
 		echo '<div class="wrap">';
 		include FLOSC_PLUGIN_DIR . 'admin/da1.php';
@@ -1406,6 +1690,9 @@ trait FLOSC_Admin_Trait {
 	/**
 	 * Shortcode: [flosc_visitor_only]
 	 * Shows content only to non-logged-in visitors
+	 *
+	 * @param mixed  $atts    Atts.
+	 * @param string $content Content.
 	 */
 	public function shortcode_visitor_only( $atts, $content = '' ) {
 		if ( ! is_user_logged_in() ) {
@@ -1428,7 +1715,7 @@ trait FLOSC_Admin_Trait {
 		// Parse attributes.
 		$atts = shortcode_atts(
 			array(
-				'fallback' => '', // Optional fallback message for non-members
+				'fallback' => '', // Optional fallback message for non-members.
 			),
 			$atts
 		);
@@ -1450,6 +1737,8 @@ trait FLOSC_Admin_Trait {
 
 	/**
 	 * Shortcode: [flosc_contact_form_01] and [flosc-contact-form-01]
+	 *
+	 * @param mixed $atts Atts.
 	 */
 	public function shortcode_contact_form_01( $atts = array() ) {
 		$atts = shortcode_atts(
@@ -1545,6 +1834,9 @@ trait FLOSC_Admin_Trait {
 		return ob_get_clean();
 	}
 
+	/**
+	 * Handle contact form submit.
+	 */
 	public function handle_contact_form_submit() {
 		$return_url = esc_url_raw( (string) wp_unslash( $_POST['flosc_contact_return'] ?? home_url( '/' ) ) );
 		$nonce      = sanitize_text_field( (string) wp_unslash( $_POST['flosc_contact_nonce'] ?? '' ) );
@@ -1577,6 +1869,14 @@ trait FLOSC_Admin_Trait {
 		$this->redirect_contact_form_result( $return_url, 'success' );
 	}
 
+	/**
+	 * Process contact form submission.
+	 *
+	 * @param mixed  $data    Data.
+	 * @param string $flow_id Flow ID.
+	 * @param mixed  $options Options.
+	 * @return mixed
+	 */
 	public function process_contact_form_submission( $data, $flow_id = '', $options = array() ) {
 		$flow_id  = sanitize_key( (string) $flow_id );
 		$settings = $this->get_contact_form_settings( $flow_id );
@@ -1676,6 +1976,12 @@ trait FLOSC_Admin_Trait {
 		);
 	}
 
+	/**
+	 * Redirect contact form result.
+	 *
+	 * @param mixed $return_url Return URL.
+	 * @param mixed $status     Status.
+	 */
 	private function redirect_contact_form_result( $return_url, $status ) {
 		$target = $return_url ? $return_url : home_url( '/' );
 		$target = add_query_arg( 'flosc_contact_status', sanitize_key( $status ), $target );
@@ -1683,6 +1989,12 @@ trait FLOSC_Admin_Trait {
 		exit;
 	}
 
+	/**
+	 * Get contact form settings.
+	 *
+	 * @param string $flow_id Flow ID.
+	 * @return mixed
+	 */
 	private function get_contact_form_settings( $flow_id = '' ) {
 		$flow_id  = sanitize_key( (string) $flow_id );
 		$settings = array();
@@ -1724,6 +2036,13 @@ trait FLOSC_Admin_Trait {
 		);
 	}
 
+	/**
+	 * Sanitize contact color.
+	 *
+	 * @param mixed $color    Color.
+	 * @param mixed $fallback Fallback.
+	 * @return mixed
+	 */
 	private function sanitize_contact_color( $color, $fallback ) {
 		$clean = sanitize_hex_color( $color );
 		return $clean ? $clean : $fallback;
@@ -1996,6 +2315,9 @@ trait FLOSC_Admin_Trait {
 	 * Used for accent color cascade.
 	 *
 	 * @since 1.6.1
+	 *
+	 * @param mixed $hex     Hex.
+	 * @param mixed $percent Percent.
 	 */
 	private function adjust_color_brightness( $hex, $percent ) {
 		$hex = ltrim( $hex, '#' );
@@ -2018,6 +2340,9 @@ trait FLOSC_Admin_Trait {
 	 * Used for accent-subtle generation.
 	 *
 	 * @since 1.6.1
+	 *
+	 * @param mixed $hex   Hex.
+	 * @param mixed $alpha Alpha.
 	 */
 	private function hex_to_rgba( $hex, $alpha ) {
 		$hex = ltrim( $hex, '#' );

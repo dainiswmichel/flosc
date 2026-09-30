@@ -15,6 +15,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 if ( ! function_exists( 'flosc_personality_library_option_key' ) ) {
 	/**
+	 * Personality library option key.
+	 *
 	 * @return string
 	 */
 	function flosc_personality_library_option_key() {
@@ -43,7 +45,7 @@ if ( ! function_exists( 'flosc_personality_resolved_fingerprint' ) ) {
 	/**
 	 * The fingerprint of whatever personality this flow resolves to now.
 	 *
-	 * profile_hash is written when a personality is saved, so a row that has
+	 * Profile_hash is written when a personality is saved, so a row that has
 	 * not been saved since the field existed has none — which is every shipped
 	 * default on a fresh install. The live chat log showed an empty column for
 	 * exactly that reason: the mechanism was right and had nothing to read.
@@ -1908,6 +1910,8 @@ if ( ! function_exists( 'flosc_personality_library_defaults' ) ) {
 
 if ( ! function_exists( 'flosc_personality_library_get_all' ) ) {
 	/**
+	 * Personality library get all.
+	 *
 	 * @return array<string,array<string,string>>
 	 */
 	function flosc_personality_library_get_all() {
@@ -1944,6 +1948,8 @@ if ( ! function_exists( 'flosc_personality_library_get_all' ) ) {
 
 if ( ! function_exists( 'flosc_personality_library_get' ) ) {
 	/**
+	 * Personality library get.
+	 *
 	 * @param string $id Personality id.
 	 * @return array<string,string>|null
 	 */
@@ -1956,6 +1962,8 @@ if ( ! function_exists( 'flosc_personality_library_get' ) ) {
 
 if ( ! function_exists( 'flosc_personality_library_save_all' ) ) {
 	/**
+	 * Personality library save all.
+	 *
 	 * @param array<string,array<string,mixed>> $library Full map.
 	 * @return void
 	 */
@@ -2962,6 +2970,8 @@ if ( ! function_exists( 'flosc_personality_builder_url' ) ) {
 
 if ( ! function_exists( 'flosc_personality_library_url' ) ) {
 	/**
+	 * Personality library URL.
+	 *
 	 * @param string $ivr Optional current IVR filename.
 	 * @return string
 	 */
@@ -3811,6 +3821,8 @@ if ( ! function_exists( 'flosc_admin_personality_builder_page' ) ) {
 
 if ( ! function_exists( 'flosc_personality_builder_admin_body_class' ) ) {
 	/**
+	 * Personality builder admin body class.
+	 *
 	 * @param string $classes Body classes.
 	 * @return string
 	 */

@@ -13,12 +13,25 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Flow manager.
+ */
 class FLOSC_Flow_Manager {
 
+	/**
+	 * Instance.
+	 *
+	 * @var mixed
+	 */
 	private static $instance = null;
 
 	const OPTION_KEY = 'flosc_flows';
 
+	/**
+	 * Instance.
+	 *
+	 * @return mixed
+	 */
 	public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
@@ -26,6 +39,9 @@ class FLOSC_Flow_Manager {
 		return self::$instance;
 	}
 
+	/**
+	 * Construct.
+	 */
 	private function __construct() {
 		// Constructor.
 	}
@@ -39,6 +55,8 @@ class FLOSC_Flow_Manager {
 
 	/**
 	 * Get flows accessible by a user
+	 *
+	 * @param mixed $user_id User ID.
 	 */
 	public function get_user_flows( $user_id = null ) {
 		$user_id   = $user_id ? $user_id : get_current_user_id();
@@ -71,6 +89,8 @@ class FLOSC_Flow_Manager {
 
 	/**
 	 * Get a single flow by ID
+	 *
+	 * @param mixed $flow_id Flow ID.
 	 */
 	public function get_flow( $flow_id ) {
 		$flows = $this->get_all_flows();
@@ -79,6 +99,8 @@ class FLOSC_Flow_Manager {
 
 	/**
 	 * Get flow by slug
+	 *
+	 * @param mixed $slug Slug.
 	 */
 	public function get_flow_by_slug( $slug ) {
 		$flows = $this->get_all_flows();
@@ -92,6 +114,8 @@ class FLOSC_Flow_Manager {
 
 	/**
 	 * Get flow by custom domain
+	 *
+	 * @param mixed $domain Domain.
 	 */
 	public function get_flow_by_domain( $domain ) {
 		$domain = strtolower( preg_replace( '#^https?://#', '', trim( $domain ) ) );
@@ -115,6 +139,8 @@ class FLOSC_Flow_Manager {
 
 	/**
 	 * Create a new flow
+	 *
+	 * @param mixed $data Data.
 	 */
 	public function create_flow( $data ) {
 		$flows = $this->get_all_flows();
@@ -155,6 +181,9 @@ class FLOSC_Flow_Manager {
 
 	/**
 	 * Update an existing flow
+	 *
+	 * @param mixed $flow_id Flow ID.
+	 * @param mixed $data    Data.
 	 */
 	public function update_flow( $flow_id, $data ) {
 		$flows = $this->get_all_flows();
@@ -175,7 +204,7 @@ class FLOSC_Flow_Manager {
 		// Merge with existing data.
 		$flow               = array_merge( $flows[ $flow_id ], $data );
 		$flow               = $this->normalize_flow_data( $flow );
-		$flow['id']         = $flow_id; // Preserve ID
+		$flow['id']         = $flow_id; // Preserve ID.
 		$flow['updated_at'] = current_time( 'mysql' );
 
 		// Save.
@@ -190,6 +219,8 @@ class FLOSC_Flow_Manager {
 
 	/**
 	 * Delete a flow
+	 *
+	 * @param mixed $flow_id Flow ID.
 	 */
 	public function delete_flow( $flow_id ) {
 		$flows = $this->get_all_flows();
@@ -222,6 +253,8 @@ class FLOSC_Flow_Manager {
 	 * Added 'overrides' for per-flow settings
 	 *
 	 * @since 1.2.3
+	 *
+	 * @param mixed $data Data.
 	 */
 	private function normalize_flow_data( $data ) {
 		$defaults = array(
@@ -304,6 +337,9 @@ class FLOSC_Flow_Manager {
 
 	/**
 	 * Check if user can access flow admin
+	 *
+	 * @param mixed $flow_id Flow ID.
+	 * @param mixed $user_id User ID.
 	 */
 	public function can_access_flow_admin( $flow_id, $user_id = null ) {
 		$user_id = $user_id ? $user_id : get_current_user_id();
@@ -325,6 +361,9 @@ class FLOSC_Flow_Manager {
 
 	/**
 	 * Grant user access to a flow
+	 *
+	 * @param mixed $user_id User ID.
+	 * @param mixed $flow_id Flow ID.
 	 */
 	public function grant_flow_access( $user_id, $flow_id ) {
 		$allowed = get_user_meta( $user_id, '_flosc_flow_access', true );
@@ -346,6 +385,9 @@ class FLOSC_Flow_Manager {
 
 	/**
 	 * Revoke user access to a flow
+	 *
+	 * @param mixed $user_id User ID.
+	 * @param mixed $flow_id Flow ID.
 	 */
 	public function revoke_flow_access( $user_id, $flow_id ) {
 		$allowed = get_user_meta( $user_id, '_flosc_flow_access', true );
@@ -374,6 +416,8 @@ class FLOSC_Flow_Manager {
 	 * More robust serialized array handling
 	 *
 	 * @since 1.2.3
+	 *
+	 * @param mixed $flow_id Flow ID.
 	 */
 	public function get_flow_users( $flow_id ) {
 		$candidate_ids = function_exists( 'flosc_get_user_ids_for_meta' )

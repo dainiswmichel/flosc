@@ -30,10 +30,23 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Free content item manager.
+ */
 class FLOSC_Free_Content_Item_Manager {
 
+	/**
+	 * Instance.
+	 *
+	 * @var mixed
+	 */
 	private static $instance = null;
 
+	/**
+	 * Instance.
+	 *
+	 * @return mixed
+	 */
 	public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
@@ -41,6 +54,9 @@ class FLOSC_Free_Content_Item_Manager {
 		return self::$instance;
 	}
 
+	/**
+	 * Construct.
+	 */
 	private function __construct() {
 		// Hook into quiz completion.
 		add_action( 'flosc_quiz_completed', array( $this, 'handle_quiz_completion' ), 10, 2 );
@@ -220,6 +236,8 @@ class FLOSC_Free_Content_Item_Manager {
 	}
 
 	/**
+	 * Is excluded from freeline.
+	 *
 	 * @param int $lesson_num Lesson number.
 	 * @return bool
 	 */
@@ -231,8 +249,8 @@ class FLOSC_Free_Content_Item_Manager {
 	/**
 	 * Find a published lesson post by number inside a specific category slug.
 	 *
-	 * @param int    $lesson_num
-	 * @param string $category_slug
+	 * @param int    $lesson_num Lesson num.
+	 * @param string $category_slug Category slug.
 	 * @return WP_Post|null
 	 */
 	private function find_lesson_post_in_category( $lesson_num, $category_slug ) {
@@ -278,8 +296,8 @@ class FLOSC_Free_Content_Item_Manager {
 	/**
 	 * Resolve free-sample post: only from free_content_item_pool_category when set.
 	 *
-	 * @param int    $lesson_num
-	 * @param string $quiz_id
+	 * @param int    $lesson_num Lesson num.
+	 * @param string $quiz_id Quiz ID.
 	 * @return WP_Post|null
 	 */
 	private function find_free_eligible_lesson_post( $lesson_num, $quiz_id = '' ) {
@@ -292,8 +310,10 @@ class FLOSC_Free_Content_Item_Manager {
 	}
 
 	/**
-	 * @param int    $lesson_num
-	 * @param string $quiz_id
+	 * Lesson number is free eligible.
+	 *
+	 * @param int    $lesson_num Lesson num.
+	 * @param string $quiz_id Quiz ID.
 	 * @return bool
 	 */
 	private function lesson_number_is_free_eligible( $lesson_num, $quiz_id = '' ) {
@@ -308,8 +328,8 @@ class FLOSC_Free_Content_Item_Manager {
 	/**
 	 * Collect eligible lesson numbers from a score tier (shuffled).
 	 *
-	 * @param array  $tier_entries
-	 * @param string $quiz_id
+	 * @param array  $tier_entries Tier entries.
+	 * @param string $quiz_id Quiz ID.
 	 * @param int[]  $exclude Already selected numbers.
 	 * @return int[]
 	 */
@@ -334,9 +354,9 @@ class FLOSC_Free_Content_Item_Manager {
 	 * Tier-walk free-lesson pick limited to the free lesson pool + never-free rules.
 	 * Returns up to $count lesson numbers (admin free_content_item_count).
 	 *
-	 * @param array  $tiers
-	 * @param string $quiz_id
-	 * @param int    $count
+	 * @param array  $tiers Tiers.
+	 * @param string $quiz_id Quiz ID.
+	 * @param int    $count Count.
 	 * @return int[]
 	 */
 	private function pick_eligible_lessons_from_tiers( array $tiers, $quiz_id = '', $count = 1 ) {
@@ -382,10 +402,12 @@ class FLOSC_Free_Content_Item_Manager {
 	}
 
 	/**
+	 * Pick eligible lesson from tiers.
+	 *
 	 * @deprecated Use pick_eligible_lessons_from_tiers — kept for any external callers.
 	 *
-	 * @param array  $tiers
-	 * @param string $quiz_id
+	 * @param array  $tiers Tiers.
+	 * @param string $quiz_id Quiz ID.
 	 * @return int[]
 	 */
 	private function pick_eligible_lesson_from_tiers( array $tiers, $quiz_id = '' ) {
@@ -395,7 +417,7 @@ class FLOSC_Free_Content_Item_Manager {
 	/**
 	 * Get missed lesson numbers from quiz result
 	 *
-	 * @param array $quiz_result
+	 * @param array $quiz_result Quiz result.
 	 * @return array Array of missed lesson numbers
 	 */
 	private function get_missed_lessons( $quiz_result ) {
@@ -594,7 +616,7 @@ class FLOSC_Free_Content_Item_Manager {
 	/**
 	 * Get free lesson content for user (single — backward compatible)
 	 *
-	 * @param int $user_id
+	 * @param int $user_id User ID.
 	 * @return array|false Post data or false
 	 */
 	public function get_free_lesson( $user_id ) {
@@ -606,7 +628,7 @@ class FLOSC_Free_Content_Item_Manager {
 	 * Get all free lessons for user
 	 * v3.0.0: Uses stored quiz_id to resolve the correct category
 	 *
-	 * @param int $user_id
+	 * @param int $user_id User ID.
 	 * @return array Array of lesson data arrays
 	 * @since 1.5.4
 	 */
@@ -658,7 +680,7 @@ class FLOSC_Free_Content_Item_Manager {
 	/**
 	 * Check if user has already received free lesson
 	 *
-	 * @param int $user_id
+	 * @param int $user_id User ID.
 	 * @return bool
 	 */
 	public function has_received_free_lesson( $user_id ) {
@@ -670,7 +692,7 @@ class FLOSC_Free_Content_Item_Manager {
 	 * Deliver free lesson(s) via chat or redirect
 	 * Supports multiple lessons
 	 *
-	 * @param int    $user_id
+	 * @param int    $user_id User ID.
 	 * @param string $delivery_mode 'chat' or 'redirect'.
 	 * @return array Response data
 	 * @since 1.5.4

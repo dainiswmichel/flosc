@@ -34,8 +34,8 @@ function flosc_activate() {
 
 	// First-install defaults only — never clobber floscAdmin choices on reactivate.
 	$defaults = array(
-		'flosc_app_slug'                                   => 'flosc', // Since 1.1.9 the default is 'flosc'; was 'app' to 'flosc'
-		'flosc_custom_domain'                              => '', // Since 1.1.9. Optional custom domain mapping
+		'flosc_app_slug'                                   => 'flosc', // Since 1.1.9 the default is 'flosc'; was 'app' to 'flosc'.
+		'flosc_custom_domain'                              => '', // Since 1.1.9. Optional custom domain mapping.
 		'flosc_product_name'                               => '',
 		'flosc_product_title'                              => '',
 		'flosc_product_tagline'                            => '',

@@ -49,19 +49,19 @@ $flosc_concierge_default_off_ramp_phrases   = "Do you want to continue trying to
 $flosc_concierge_default_content            = "https://example.com/private-resource\n\nWould you like to continue this concierge exchange, or would you like to chat about something else?";
 
 /*
- * 200 is a deliberate ceiling, not an oversight. This feeds the concierge
- * picker below, so anything the query drops is a post the admin cannot choose.
- * WPCS warns above 100; a lower number here would hide content rather than save
- * work, and the query is admin-only, category-scoped and ordered by modified.
+ * This feeds the concierge picker below, so anything the query drops is a post
+ * the admin cannot choose, and nothing on the page says anything was dropped.
+ * It used to ask for 200 in one query and defend the number;
+ * flosc_get_posts_all() pages through in hundreds instead, so the ceiling is
+ * gone rather than argued with.
  */
-$flosc_concierge_posts = get_posts(
+$flosc_concierge_posts = flosc_get_posts_all(
 	array(
-		'post_type'      => 'post',
-		'post_status'    => array( 'private', 'publish', 'draft' ),
-		'posts_per_page' => 200,
-		'category_name'  => 'flosc-internal-concierge,concierge',
-		'orderby'        => 'modified',
-		'order'          => 'DESC',
+		'post_type'     => 'post',
+		'post_status'   => array( 'private', 'publish', 'draft' ),
+		'category_name' => 'flosc-internal-concierge,concierge',
+		'orderby'       => 'modified',
+		'order'         => 'DESC',
 	)
 );
 

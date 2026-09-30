@@ -16,6 +16,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Starter packs.
+ */
 class FLOSC_Starter_Packs {
 
 	/** Post meta stamped on every post a pack creates. */
@@ -462,6 +465,11 @@ class FLOSC_Starter_Packs {
 
 			$record['flow_option'] = $registered['record']['flow_option'];
 			$detail[]              = $registered['message'];
+
+			// The newly registered flow must be routable immediately.
+			if ( function_exists( 'flush_rewrite_rules' ) ) {
+				flush_rewrite_rules( false );
+			}
 		}
 
 		// --- content index ---
@@ -1766,6 +1774,13 @@ class FLOSC_Starter_Packs {
 		return ( '' !== $display ) ? ucwords( $display ) : $stem;
 	}
 
+	/**
+	 * Flow label.
+	 *
+	 * @param mixed $stem Stem.
+	 * @param mixed $bag  Bag.
+	 * @return mixed
+	 */
 	private static function flow_label( $stem, $bag ) {
 		$stem = sanitize_key( (string) $stem );
 

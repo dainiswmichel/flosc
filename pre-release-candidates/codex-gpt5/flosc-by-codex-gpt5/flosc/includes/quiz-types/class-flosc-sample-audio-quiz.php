@@ -13,44 +13,98 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Sample audio quiz.
+ */
 class FLOSC_Sample_Audio_Quiz extends FLOSC_Abstract_Quiz_Type {
 
+	/**
+	 * Get ID.
+	 *
+	 * @return mixed
+	 */
 	public function get_id() {
 		return 'flosc_sample_audio_quiz';
 	}
 
+	/**
+	 * Get name.
+	 *
+	 * @return mixed
+	 */
 	public function get_name() {
 		return 'FLOSC Sample Audio Quiz';
 	}
 
+	/**
+	 * Get description.
+	 *
+	 * @return mixed
+	 */
 	public function get_description() {
 		return 'Read the following series of numbers in order: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10';
 	}
 
+	/**
+	 * Get icon.
+	 *
+	 * @return mixed
+	 */
 	public function get_icon() {
 		return '🎤';
 	}
 
+	/**
+	 * Needs audio.
+	 *
+	 * @return mixed
+	 */
 	public function needs_audio() {
 		return true;
 	}
 
+	/**
+	 * Needs STT.
+	 *
+	 * @return mixed
+	 */
 	public function needs_stt() {
 		return true;
 	}
 
+	/**
+	 * Needs AI analysis.
+	 *
+	 * @return mixed
+	 */
 	public function needs_ai_analysis() {
-		return false; // Uses phoneme analysis, not AI
+		return false; // Uses phoneme analysis, not AI.
 	}
 
+	/**
+	 * Get instructions.
+	 *
+	 * @return mixed
+	 */
 	public function get_instructions() {
 		return "Read the following series of numbers in order:\n\n1, 2, 3, 4, 5, 6, 7, 8, 9, 10";
 	}
 
+	/**
+	 * Get default content.
+	 *
+	 * @return mixed
+	 */
 	public function get_default_content() {
 		return '1,2,3,4,5,6,7,8,9,10';
 	}
 
+	/**
+	 * Validate input.
+	 *
+	 * @param mixed $input Input.
+	 * @return mixed
+	 */
 	public function validate_input( $input ) {
 		// Input is audio file path or STT transcript.
 		if ( empty( $input ) ) {
@@ -60,6 +114,13 @@ class FLOSC_Sample_Audio_Quiz extends FLOSC_Abstract_Quiz_Type {
 		return true;
 	}
 
+	/**
+	 * Analyze.
+	 *
+	 * @param mixed $input            Input.
+	 * @param mixed $expected_content Expected content.
+	 * @param mixed $context          Context.
+	 */
 	public function analyze( $input, $expected_content, $context = array() ) {
 		// If input is already a transcript (from STT), use it
 		// Otherwise, input would be audio file path (handled by main plugin).
@@ -105,11 +166,22 @@ class FLOSC_Sample_Audio_Quiz extends FLOSC_Abstract_Quiz_Type {
 		);
 	}
 
+	/**
+	 * Map to lessons.
+	 *
+	 * @param mixed $analysis Analysis.
+	 * @return mixed
+	 */
 	public function map_to_lessons( $analysis ) {
 		// Already done in analyze().
 		return $analysis['lessons'] ?? array();
 	}
 
+	/**
+	 * Get settings fields.
+	 *
+	 * @return mixed
+	 */
 	public function get_settings_fields() {
 		return array(
 			'language'      => array(
@@ -141,6 +213,11 @@ class FLOSC_Sample_Audio_Quiz extends FLOSC_Abstract_Quiz_Type {
 		);
 	}
 
+	/**
+	 * Get default response templates.
+	 *
+	 * @return mixed
+	 */
 	public function get_default_response_templates() {
 		return array(
 			'0-30'   => "**Pronunciation Score: {score}%**\n\nYou need significant practice with these sounds.\n\n{lesson_recommendations}",
@@ -150,6 +227,13 @@ class FLOSC_Sample_Audio_Quiz extends FLOSC_Abstract_Quiz_Type {
 		);
 	}
 
+	/**
+	 * Format results.
+	 *
+	 * @param mixed $analysis           Analysis.
+	 * @param mixed $lessons            Lessons.
+	 * @param mixed $response_templates Response templates.
+	 */
 	public function format_results( $analysis, $lessons, $response_templates ) {
 		$score        = $analysis['score'];
 		$response_key = $analysis['response_key'];

@@ -1,6 +1,6 @@
 <?php
 /**
- * floscAvailableProviders — install-scoped AI credentials available to any floscFlow.
+ * FloscAvailableProviders — install-scoped AI credentials available to any floscFlow.
  *
  * Product model:
  * - Keys configured here (or promoted from a flow save) are AVAILABLE install-wide.
@@ -18,6 +18,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 if ( ! function_exists( 'flosc_available_providers_option_key' ) ) {
 	/**
+	 * Available providers option key.
+	 *
 	 * @return string
 	 */
 	function flosc_available_providers_option_key() {
@@ -182,6 +184,8 @@ if ( ! function_exists( 'flosc_personality_pack_catalog' ) ) {
 
 if ( ! function_exists( 'flosc_personality_pack_label_list' ) ) {
 	/**
+	 * Personality pack label list.
+	 *
 	 * @return string
 	 */
 	function flosc_personality_pack_label_list() {
@@ -341,6 +345,8 @@ if ( ! function_exists( 'flosc_available_providers_flow_key_map' ) ) {
 
 if ( ! function_exists( 'flosc_available_providers_get_all' ) ) {
 	/**
+	 * Available providers get all.
+	 *
 	 * @return array<string,array<string,mixed>>
 	 */
 	function flosc_available_providers_get_all() {
@@ -363,6 +369,8 @@ if ( ! function_exists( 'flosc_available_providers_get_all' ) ) {
 
 if ( ! function_exists( 'flosc_available_providers_save_all' ) ) {
 	/**
+	 * Available providers save all.
+	 *
 	 * @param array<string,array<string,mixed>> $providers Full map.
 	 * @return void
 	 */
@@ -391,6 +399,8 @@ if ( ! function_exists( 'flosc_available_providers_save_all' ) ) {
 
 if ( ! function_exists( 'flosc_available_providers_set_key' ) ) {
 	/**
+	 * Available providers set key.
+	 *
 	 * @param string $provider Provider slug.
 	 * @param string $api_key  Secret (empty clears).
 	 * @return void
@@ -409,6 +419,8 @@ if ( ! function_exists( 'flosc_available_providers_set_key' ) ) {
 
 if ( ! function_exists( 'flosc_available_providers_has_key' ) ) {
 	/**
+	 * Available providers has key.
+	 *
 	 * @param string $provider Provider slug.
 	 * @return bool
 	 */

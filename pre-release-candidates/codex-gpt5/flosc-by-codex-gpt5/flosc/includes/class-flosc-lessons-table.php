@@ -18,13 +18,41 @@ if ( ! defined( 'ABSPATH' ) ) {
 // Custom table {prefix}flosc_lessons — no WP API equivalent for schema/CRUD.
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange -- custom table flosc_lessons; no WP API
 
+/**
+ * Lessons table.
+ */
 class FLOSC_Lessons_Table {
 
+	/**
+	 * Instance.
+	 *
+	 * @var mixed
+	 */
 	private static $instance = null;
+	/**
+	 * Table name.
+	 *
+	 * @var mixed
+	 */
 	private $table_name;
-	private $db_version        = '1.0.0';
+	/**
+	 * DB version.
+	 *
+	 * @var string
+	 */
+	private $db_version = '1.0.0';
+	/**
+	 * DB version option.
+	 *
+	 * @var string
+	 */
 	private $db_version_option = 'flosc_lessons_table_db_version';
 
+	/**
+	 * Instance.
+	 *
+	 * @return mixed
+	 */
 	public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
@@ -32,6 +60,9 @@ class FLOSC_Lessons_Table {
 		return self::$instance;
 	}
 
+	/**
+	 * Construct.
+	 */
 	private function __construct() {
 		global $wpdb;
 		$this->table_name = $wpdb->prefix . 'flosc_lessons';
@@ -131,6 +162,9 @@ class FLOSC_Lessons_Table {
 		return $count;
 	}
 
+	/**
+	 * Bust lessons cache.
+	 */
 	private function flosc_bust_lessons_cache() {
 		wp_cache_delete( 'count_' . $this->table_name, 'flosc_lessons' );
 		wp_cache_delete( 'all_' . $this->table_name, 'flosc_lessons' );
@@ -207,7 +241,7 @@ class FLOSC_Lessons_Table {
 	/**
 	 * Get a single lesson by lesson_number (e.g. "1", "20.1")
 	 *
-	 * @param string $lesson_number
+	 * @param string $lesson_number Lesson number.
 	 * @return array|null
 	 */
 	public function get_lesson_by_number( $lesson_number ) {
@@ -239,7 +273,7 @@ class FLOSC_Lessons_Table {
 	/**
 	 * Get a single lesson by database ID
 	 *
-	 * @param int $id
+	 * @param int $id ID.
 	 * @return array|null
 	 */
 	public function get_lesson_by_id( $id ) {
@@ -271,7 +305,7 @@ class FLOSC_Lessons_Table {
 	/**
 	 * Get lessons by sound category (e.g. "vowel", "consonant")
 	 *
-	 * @param string $category
+	 * @param string $category Category.
 	 * @return array
 	 */
 	public function get_lessons_by_category( $category ) {

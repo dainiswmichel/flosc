@@ -16,6 +16,8 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange -- uninstall purge
 
 /**
+ * Uninstall delete options by prefix.
+ *
  * @param string $prefix Option name prefix.
  * @return void
  */
@@ -36,6 +38,8 @@ function flosc_uninstall_delete_options_by_prefix( $prefix ) {
 }
 
 /**
+ * Uninstall delete sitemeta by prefix.
+ *
  * @param string $prefix Meta key prefix.
  * @return void
  */

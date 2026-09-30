@@ -20,9 +20,17 @@
 (function(window, document) {
     'use strict';
 
-    // Single boot: PHP enqueues this only on host pages with a validated FLOSC app
-    // route as iframe target. App routes never load this script (is_flosc_request).
-    // Nesting is impossible by that invariant — not by runtime "nest guards."
+    // A companion is host-page chrome. It must never mount inside another frame,
+    // even if a framed document accidentally enqueues this script.
+    try {
+        if (window.self !== window.top) {
+            return;
+        }
+    } catch (e) {
+        return;
+    }
+
+    // Single boot on the host page.
     if (window.__FLOSC_COMPANION_BOOTED__) {
         return;
     }
@@ -220,6 +228,7 @@
             this.iframe.className = 'flosc-companion-body';
             this.iframe.setAttribute('loading', 'lazy');
             this.iframe.setAttribute('title', this.config.assistantTitle || this.config.productName || 'Assistant');
+            this.iframe.hidden = true;
 
             window_el.appendChild(header);
             window_el.appendChild(this.iframe);
@@ -405,9 +414,16 @@
                     self.navigateTopLevelForAuth(data.authUrl);
                     return;
                 }
+                if (data.type === 'flosc_companion_navigate_top') {
+                    self.navigateTopLevel(data.url);
+                    return;
+                }
                 if (data.type === 'flosc_app_ready') {
                     self._frameAlive = true;
+                    self._frameFailed = false;
                     window.clearTimeout(self._frameHealthTimer);
+                    self.clearFrameFailure();
+                    self.iframe.hidden = false;
                     return;
                 }
                 if (data.type === 'flosc_companion_logout_complete') {
@@ -612,6 +628,9 @@
             if (!this.iframe.src) {
                 this._frameAlive = false;
                 this._frameRecovered = false;
+                this._frameFailed = false;
+                this.clearFrameFailure();
+                this.iframe.hidden = true;
                 this.lastIframeContextSignature = signature;
                 var iframeSrc = this.buildIframeUrl();
                 if (iframeSrc) {
@@ -654,14 +673,20 @@
             var self = this;
             window.clearTimeout(this._frameHealthTimer);
 
-            if (this._frameAlive || this._frameRecovered) {
+            if (this._frameAlive || this._frameFailed || !this.iframe || this.iframe.hidden === false) {
                 return;
             }
 
             this._frameHealthTimer = window.setTimeout(function() {
-                if (self._frameAlive || self._frameRecovered || !self.iframe) {
+                if (self._frameAlive || self._frameFailed || !self.iframe) {
                     return;
                 }
+
+                if (self._frameRecovered) {
+                    self.showFrameFailure();
+                    return;
+                }
+
                 self._frameRecovered = true;
 
                 // Drop everything that could have inflated the request, then rebuild.
@@ -683,6 +708,34 @@
                     // Nothing further we can do from here.
                 }
             }, 4000);
+        },
+
+        clearFrameFailure: function() {
+            if (!this.container) {
+                return;
+            }
+            var error = this.container.querySelector('.flosc-companion-frame-error');
+            if (error) {
+                error.remove();
+            }
+        },
+
+        showFrameFailure: function() {
+            window.clearTimeout(this._frameHealthTimer);
+            if (!this.iframe || !this.container) {
+                return;
+            }
+
+            this.iframe.hidden = true;
+            this._frameFailed = true;
+            this.iframe.removeAttribute('src');
+            this.clearFrameFailure();
+
+            var error = document.createElement('div');
+            error.className = 'flosc-companion-frame-error';
+            error.setAttribute('role', 'alert');
+            error.textContent = 'Chat could not be loaded. Please try again later.';
+            this.iframe.parentNode.insertBefore(error, this.iframe.nextSibling);
         },
 
         /**
@@ -1332,6 +1385,17 @@
                 return { kind: 'visitor', sessionId: visitorSid, journeyId: journeyId, messages: messages };
             }
             return {};
+        },
+
+        navigateTopLevel: function(rawUrl) {
+            try {
+                var target = new URL(String(rawUrl || ''), window.location.origin);
+                if (/^https?:$/.test(target.protocol)) {
+                    window.location.href = target.toString();
+                }
+            } catch (e) {
+                // Invalid destinations leave the host page where it is.
+            }
         },
 
         // Only the flow's own authorize endpoint may move the host page, and the parent

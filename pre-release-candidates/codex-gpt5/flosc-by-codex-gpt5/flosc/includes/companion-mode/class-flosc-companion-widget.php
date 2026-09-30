@@ -32,6 +32,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Companion widget.
+ */
 class FLOSC_Companion_Widget {
 
 	/**
@@ -248,7 +251,7 @@ class FLOSC_Companion_Widget {
 				FLOSC_PLUGIN_URL . 'assets/js/flosc-companion.js',
 				array(),
 				$js_ver ? $js_ver : ( defined( 'FLOSC_VERSION' ) ? FLOSC_VERSION : '8.0.0' ),
-				true // footer
+				true // footer.
 			);
 		}
 	}
@@ -402,7 +405,7 @@ class FLOSC_Companion_Widget {
 	/**
 	 * Check if a post belongs to the configured lessons category
 	 *
-	 * @param  int    $post_id
+	 * @param  int    $post_id Post ID.
 	 * @param  string $lesson_category  Category slug or ID.
 	 * @return bool
 	 */

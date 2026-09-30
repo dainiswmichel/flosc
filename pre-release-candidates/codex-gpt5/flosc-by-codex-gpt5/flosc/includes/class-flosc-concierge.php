@@ -27,6 +27,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Concierge.
+ */
 class FLOSC_Concierge {
 
 	/** The IVR message type that marks a concierge message. */
@@ -380,7 +383,11 @@ class FLOSC_Concierge {
 	 * ========================================================================
 	 */
 
-	/** Per-session transient key for an open desk. */
+	/**
+	 * Per-session transient key for an open desk.
+	 *
+	 * @param mixed $session_key Session key.
+	 */
 	protected static function open_key( $session_key ) {
 		return 'flosc_concierge_open_' . md5( (string) $session_key );
 	}
@@ -418,7 +425,11 @@ class FLOSC_Concierge {
 		);
 	}
 
-	/** Is a concierge desk currently open for this guest's session? */
+	/**
+	 * Is a concierge desk currently open for this guest's session?
+	 *
+	 * @param mixed $session_key Session key.
+	 */
 	public static function has_active_session( $session_key ) {
 		$data = get_transient( self::open_key( $session_key ) );
 		return is_array( $data ) && '' !== trim( (string) ( $data['brief'] ?? '' ) );
@@ -906,7 +917,11 @@ class FLOSC_Concierge {
 		return $content . wp_kses_post( $html );
 	}
 
-	/** Is this post in the concierge category? */
+	/**
+	 * Is this post in the concierge category?
+	 *
+	 * @param mixed $post Post.
+	 */
 	public static function is_concierge_post( $post ) {
 		$post = get_post( $post );
 		if ( ! $post instanceof WP_Post ) {
@@ -938,13 +953,21 @@ class FLOSC_Concierge {
 		return false;
 	}
 
-	/** Stable, slug-derived message id for a post-sourced concierge message. */
+	/**
+	 * Stable, slug-derived message id for a post-sourced concierge message.
+	 *
+	 * @param mixed $post Post.
+	 */
 	protected static function post_message_id( $post ) {
 		$slug = ( '' !== $post->post_name ) ? $post->post_name : ( 'post' . $post->ID );
 		return 'concierge_' . sanitize_key( $slug );
 	}
 
-	/** Resolve a flow option key from a flow file ('flow_ivr.md' -> 'flosc_flow_flow_ivr'). */
+	/**
+	 * Resolve a flow option key from a flow file ('flow_ivr.md' -> 'flosc_flow_flow_ivr').
+	 *
+	 * @param mixed $flow_file Flow file.
+	 */
 	protected static function flow_key( $flow_file ) {
 		$flow_file = (string) $flow_file;
 		if ( '' === $flow_file ) {
@@ -953,7 +976,11 @@ class FLOSC_Concierge {
 		return 'flosc_flow_' . sanitize_key( pathinfo( $flow_file, PATHINFO_FILENAME ) );
 	}
 
-	/** Pull a '*.md' flow file out of a floscFlow value ('assistant (flow_ivr.md)' -> 'flow_ivr.md'). */
+	/**
+	 * Pull a '*.md' flow file out of a floscFlow value ('assistant (flow_ivr.md)' -> 'flow_ivr.md').
+	 *
+	 * @param mixed $value Value.
+	 */
 	protected static function flow_file( $value ) {
 		if ( preg_match( '/([A-Za-z0-9_\-]+\.md)\b/i', (string) $value, $m ) ) {
 			return $m[1];
@@ -1004,17 +1031,17 @@ class FLOSC_Concierge {
 		if ( '' === $host ) {
 			return '';
 		}
-		$host = preg_replace( '#^[a-z][a-z0-9+.\-]*://#', '', $host ); // drop scheme
-		$host = preg_replace( '#[/?\#].*$#', '', $host );              // drop path/query/fragment
+		$host = preg_replace( '#^[a-z][a-z0-9+.\-]*://#', '', $host ); // drop scheme.
+		$host = preg_replace( '#[/?\#].*$#', '', $host );              // drop path/query/fragment.
 		$host = preg_replace( '#^www\.#', '', $host );                 // drop www.
-		$stem = trim( (string) preg_replace( '/[^a-z0-9]+/', '_', $host ), '_' ); // the WordPress host -> host_flow
+		$stem = trim( (string) preg_replace( '/[^a-z0-9]+/', '_', $host ), '_' ); // the WordPress host -> host_flow.
 		if ( '' === $stem ) {
 			return '';
 		}
 		$files = function_exists( 'flosc_config_glob' ) ? flosc_config_glob( '*_ivr.md' ) : array();
 		foreach ( (array) $files as $file ) {
 			$name  = basename( (string) $file );
-			$fstem = pathinfo( $name, PATHINFO_FILENAME );             // e.g. flow_ivr
+			$fstem = pathinfo( $name, PATHINFO_FILENAME );             // e.g. flow_ivr.
 			if ( $fstem === $stem || 0 === strpos( $fstem, $stem . '_' ) ) {
 				if ( ! empty( get_option( 'flosc_flow_' . sanitize_key( $fstem ) ) ) ) {
 					return $name;
@@ -1024,7 +1051,12 @@ class FLOSC_Concierge {
 		return '';
 	}
 
-	/** Read a single-line "Label: value", quotes preserved, returning the trimmed value. */
+	/**
+	 * Read a single-line "Label: value", quotes preserved, returning the trimmed value.
+	 *
+	 * @param mixed $body  Body.
+	 * @param mixed $label Label.
+	 */
 	protected static function label( $body, $label ) {
 		$pattern = '/^[ \t>*_\-]*' . preg_quote( $label, '/' ) . '[ \t]*:[ \t]*(.+?)[ \t]*$/mi';
 		return preg_match( $pattern, (string) $body, $m ) ? trim( $m[1] ) : '';
@@ -1055,7 +1087,11 @@ class FLOSC_Concierge {
 		return trim( (string) $stripped );
 	}
 
-	/** Parse parameters text (key=value per line) into an associative array. */
+	/**
+	 * Parse parameters text (key=value per line) into an associative array.
+	 *
+	 * @param mixed $text Text.
+	 */
 	protected static function parse_parameters_text( $text ) {
 		$params = array();
 		foreach ( preg_split( '/\r\n|\r|\n/', (string) $text ) as $line ) {
@@ -1073,7 +1109,13 @@ class FLOSC_Concierge {
 		return $params;
 	}
 
-	/** Replace {parameter_name} placeholders in a template. */
+	/**
+	 * Replace {parameter_name} placeholders in a template.
+	 *
+	 * @param mixed  $text            Text.
+	 * @param mixed  $params          Params.
+	 * @param string $expires_utc_mts Expires utc mts.
+	 */
 	protected static function apply_template_parameters( $text, $params, $expires_utc_mts = '' ) {
 		$text = (string) $text;
 		if ( '' === $text ) {
@@ -1096,7 +1138,11 @@ class FLOSC_Concierge {
 		return gmdate( 'Y' ) . '-' . gmdate( 'm' ) . 'm-' . gmdate( 'd' ) . 'd-T' . gmdate( 'H' ) . 'h:' . gmdate( 'i' ) . 'm:' . gmdate( 's' ) . 's';
 	}
 
-	/** Normalize accepted UTC MTS variants to canonical format; returns '' when invalid. */
+	/**
+	 * Normalize accepted UTC MTS variants to canonical format; returns '' when invalid.
+	 *
+	 * @param mixed $value Value.
+	 */
 	protected static function normalize_utc_mts( $value ) {
 		$ts = self::utc_mts_to_unix( (string) $value );
 		if ( null === $ts ) {
@@ -1105,7 +1151,11 @@ class FLOSC_Concierge {
 		return gmdate( 'Y', $ts ) . '-' . gmdate( 'm', $ts ) . 'm-' . gmdate( 'd', $ts ) . 'd-T' . gmdate( 'H', $ts ) . 'h:' . gmdate( 'i', $ts ) . 'm:' . gmdate( 's', $ts ) . 's';
 	}
 
-	/** Convert UTC MTS to unix timestamp. Supports date-only and date-time forms. */
+	/**
+	 * Convert UTC MTS to unix timestamp. Supports date-only and date-time forms.
+	 *
+	 * @param mixed $value Value.
+	 */
 	protected static function utc_mts_to_unix( $value ) {
 		$value = trim( (string) $value );
 		if ( '' === $value ) {
@@ -1138,7 +1188,11 @@ class FLOSC_Concierge {
 		return null;
 	}
 
-	/** Is this concierge message expired for UTC now? */
+	/**
+	 * Is this concierge message expired for UTC now?
+	 *
+	 * @param mixed $msg Msg.
+	 */
 	protected static function is_expired( $msg ) {
 		$expires = trim( (string) ( $msg['end_utc_mts'] ?? ( $msg['expires_utc_mts'] ?? '' ) ) );
 		if ( '' === $expires ) {
@@ -1151,7 +1205,11 @@ class FLOSC_Concierge {
 		return time() > $ts;
 	}
 
-	/** Is this concierge message currently active within its optional UTC window? */
+	/**
+	 * Is this concierge message currently active within its optional UTC window?
+	 *
+	 * @param mixed $msg Msg.
+	 */
 	protected static function is_active_now( $msg ) {
 		$start = trim( (string) ( $msg['start_utc_mts'] ?? '' ) );
 		if ( '' !== $start ) {
@@ -1168,7 +1226,12 @@ class FLOSC_Concierge {
 		return true;
 	}
 
-	/** Read everything from a "Label:" to the end of the body. */
+	/**
+	 * Read everything from a "Label:" to the end of the body.
+	 *
+	 * @param mixed $body  Body.
+	 * @param mixed $label Label.
+	 */
 	protected static function content_block( $body, $label ) {
 		$pattern = '/^[ \t>*_\-]*' . preg_quote( $label, '/' ) . '[ \t]*:[ \t]*/mi';
 		if ( preg_match( $pattern, (string) $body, $m, PREG_OFFSET_CAPTURE ) ) {
@@ -1177,7 +1240,11 @@ class FLOSC_Concierge {
 		return '';
 	}
 
-	/** Strip one pair of matching surrounding quotes. */
+	/**
+	 * Strip one pair of matching surrounding quotes.
+	 *
+	 * @param mixed $value Value.
+	 */
 	protected static function unquote( $value ) {
 		$value = trim( (string) $value );
 		if ( strlen( $value ) >= 2 ) {
@@ -1190,6 +1257,12 @@ class FLOSC_Concierge {
 		return $value;
 	}
 
+	/**
+	 * Off ramp exactness.
+	 *
+	 * @param mixed $mode Mode.
+	 * @return mixed
+	 */
 	private static function off_ramp_exactness( $mode ) {
 		$mode = sanitize_key( (string) $mode );
 		if ( ! in_array( $mode, array( 'flexible', 'preferred', 'exact' ), true ) ) {
@@ -1198,6 +1271,13 @@ class FLOSC_Concierge {
 		return $mode;
 	}
 
+	/**
+	 * Off ramp guidance.
+	 *
+	 * @param mixed $phrases_text Phrases text.
+	 * @param mixed $exactness    Exactness.
+	 * @return mixed
+	 */
 	private static function off_ramp_guidance( $phrases_text, $exactness ) {
 		$phrases = array();
 		foreach ( preg_split( '/\r\n|\r|\n/', (string) $phrases_text ) as $line ) {

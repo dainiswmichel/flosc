@@ -1963,7 +1963,8 @@ class FLOSC_Framework {
 		// Virtual page routing.
 		add_action( 'init', array( $this, 'add_rewrite_rules' ) );
 		add_filter( 'query_vars', array( $this, 'add_query_vars' ) );
-		add_action( 'template_redirect', array( $this, 'handle_app_route' ) );
+		// FLOSC owns its app route; answer before WordPress guesses a 404 permalink.
+		add_action( 'template_redirect', array( $this, 'handle_app_route' ), 1 );
 
 		// v1.2.9: Check if we need to flush after activation (MUST run AFTER add_rewrite_rules).
 		add_action( 'init', array( $this, 'check_activation_rewrite_flush' ), 99 );
@@ -2191,6 +2192,9 @@ class FLOSC_Framework {
 		// Settings Save / trajectory / concierge POSTs redirect — must run before admin HTML
 		// or wp_safe_redirect fails and exit leaves a white content pane.
 		add_action( 'admin_init', array( $this, 'maybe_process_flosc_settings_post' ), 1 );
+		// A download replaces the page, so it has to run before the page starts.
+		add_action( 'admin_init', array( $this, 'maybe_serve_ivr_file_download' ), 1 );
+		add_action( 'admin_init', array( $this, 'maybe_process_offer_actions' ), 1 );
 
 		// Sidebar shortcuts (UI & Nav, Style, AI, …) must redirect before admin chrome.
 		// Late menu callbacks + headers_sent + exit = blank main content area.
@@ -2263,7 +2267,7 @@ class FLOSC_Framework {
 		// v8.0.0: BuddyBoss/BuddyPress "Quiz Results" profile tab.
 		add_action( 'bp_setup_nav', array( $this, 'setup_buddyboss_quiz_tab' ), 100 );
 
-		// Historical member/guest role renames on this install (pronunciation_learners ↔ lesaep_learners).
+		// FLOSC's own member/guest level slugs; site-specific renames go on the filter.
 		add_filter( 'flosc_member_level_alias_groups', array( $this, 'member_level_alias_groups' ) );
 		add_filter( 'flosc_guest_level_slugs_to_clear_on_member_grant', array( $this, 'guest_level_slugs_to_clear_on_member_grant' ), 10, 2 );
 	}
@@ -4913,10 +4917,27 @@ The Team',
 	}
 
 	/**
+	 * The policy pages this flow serves, with their addresses.
+	 *
+	 * Delegates to FLOSC_Full_Page_Mode. Public because the chat turn hands
+	 * these to the assistant: nothing told it where this flow's privacy policy
+	 * or terms live, so asked for them it had nothing to cite and guessed.
+	 *
+	 * A page an admin has switched off is absent from the array, so the
+	 * assistant is never given an address that answers 404.
+	 *
+	 * @param array|null $flow The flow, or null for the current one.
+	 * @return array<string,array<string,string>> Keyed by page, each with slug, heading and content.
+	 */
+	public function policy_pages( $flow = null ) {
+		return $this->full_page_mode->policy_pages( $flow );
+	}
+
+	/**
 	 * Which legal page this request is for, if any.
 	 *
 	 * Delegates to FLOSC_Full_Page_Mode. A flow domain serves its own privacy policy, terms,
-	 * data-deletion page, platform-compliance page and codex charter, because a
+	 * data-deletion page and platform-compliance page, because a
 	 * provider reviewing an SSO integration looks for them on the domain the
 	 * login happens on. Matched against a fixed list, so the path cannot name an
 	 * arbitrary template.
@@ -4951,19 +4972,6 @@ The Team',
 		return $this->full_page_mode->render_legal_page( $page );
 	}
 
-	/**
-	 * The body of the FLOSC Codex Charter page.
-	 *
-	 * Delegates to FLOSC_Full_Page_Mode. A public statement of how this codebase is worked on --
-	 * who decides, what gets verified before anything is called done, and what
-	 * will not be touched in the course of a change. Served at
-	 * /flosc-codex-charter.html on a flow's own domain.
-	 *
-	 * @return string The page body as HTML.
-	 */
-	private function get_codex_charter_content() {
-		return $this->full_page_mode->get_codex_charter_content();
-	}
 
 	/**
 	 * Print the full-page chat app and end the response.
@@ -13803,8 +13811,16 @@ Example good response:
 	}
 
 	/**
-	 * Historical same-product role pairs (old pronunciation_* names ↔ current lesaep_* names).
-	 * Empty on installs that never created those WP roles.
+	 * FLOSC's own member and guest level slugs, declared as alias groups.
+	 *
+	 * A site that renames a level keeps both names recognised, so a member
+	 * granted under one slug is not locked out when the other is in force.
+	 * Returns the groups untouched on installs that never created these roles.
+	 *
+	 * Site-specific slugs belong on the flosc_member_level_alias_groups filter,
+	 * not in here -- this method previously hardcoded one deployment's own role
+	 * names, which meant every install carried them and no install but that one
+	 * could use them.
 	 *
 	 * @param array $groups The alias groups so far.
 	 * @return array The groups with FLOSC's levels added.
@@ -13813,11 +13829,11 @@ Example good response:
 		if ( ! is_array( $groups ) ) {
 			$groups = array();
 		}
-		if ( get_role( 'lesaep_learners' ) || get_role( 'pronunciation_learners' ) ) {
-			$groups[] = array( 'pronunciation_learners', 'lesaep_learners' );
+		if ( get_role( 'flosc_learners' ) ) {
+			$groups[] = array( 'flosc_learners' );
 		}
-		if ( get_role( 'guest_lesaep_learner' ) || get_role( 'guest_pronunciation_learner' ) ) {
-			$groups[] = array( 'guest_pronunciation_learner', 'guest_lesaep_learner' );
+		if ( get_role( 'guest_flosc_learner' ) ) {
+			$groups[] = array( 'guest_flosc_learner' );
 		}
 		return $groups;
 	}
@@ -13835,9 +13851,9 @@ Example good response:
 			$slugs = array();
 		}
 		$member_level = sanitize_key( (string) $member_level );
-		$paid         = array( 'lesaep_learners', 'pronunciation_learners' );
+		$paid         = array( 'flosc_learners' );
 		if ( in_array( $member_level, $paid, true ) ) {
-			$slugs = array_merge( $slugs, array( 'guest_lesaep_learner', 'guest_pronunciation_learner' ) );
+			$slugs = array_merge( $slugs, array( 'guest_flosc_learner' ) );
 		}
 		return array_values( array_unique( array_filter( array_map( 'sanitize_key', $slugs ) ) ) );
 	}
@@ -13888,7 +13904,7 @@ Example good response:
 					return true;
 				}
 			}
-			foreach ( array( 'lesaep_learners', 'pronunciation_learners' ) as $level ) {
+			foreach ( array( 'flosc_learners' ) as $level ) {
 				if ( $ma->has_level( $user_id, $level ) ) {
 					return true;
 				}
