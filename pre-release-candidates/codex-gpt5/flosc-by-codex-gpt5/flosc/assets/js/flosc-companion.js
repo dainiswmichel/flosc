@@ -927,6 +927,17 @@
                     if (carriedPack && this.stashHandoffPack(carriedPack)) {
                         url.searchParams.set('flosc_handoff_ref', '1');
                     }
+
+                    // Full-page → companion uses sessionStorage for the visitor
+                    // transcript and puts only this marker on the hub URL. Preserve
+                    // the marker on the inner app URL so that app can collect the
+                    // parked pack. Without it, the embed starts as a new visitor;
+                    // its empty landing state is intentionally hidden and the panel
+                    // therefore appears completely blank.
+                    var handoffRef = cont.flosc_handoff_ref || parentParams.get('flosc_handoff_ref');
+                    if (String(handoffRef || '') === '1') {
+                        url.searchParams.set('flosc_handoff_ref', '1');
+                    }
                 } catch (eFwd) {
                     // Ignore parent URL parse failures.
                 }
@@ -1979,7 +1990,7 @@
             var out = {};
             try {
                 var params = new URLSearchParams(window.location.search || '');
-                ['flosc_session_id', 'flosc_visitor_session', 'flosc_handoff'].forEach(function(key) {
+                ['flosc_session_id', 'flosc_visitor_session', 'flosc_handoff', 'flosc_handoff_ref'].forEach(function(key) {
                     var val = params.get(key);
                     if (val) {
                         out[key] = String(val);
@@ -2006,6 +2017,7 @@
                 url.searchParams.delete('flosc_session_id');
                 url.searchParams.delete('flosc_visitor_session');
                 url.searchParams.delete('flosc_handoff');
+                url.searchParams.delete('flosc_handoff_ref');
                 window.history.replaceState({}, document.title, url.toString());
             } catch (e) {
                 // Ignore URL update failures.

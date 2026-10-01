@@ -49,6 +49,31 @@ ok(companion.includes('this.iframe.hidden = true;')
 ok(companion.includes('if (self._frameRecovered) {\n                    self.showFrameFailure();'),
     'a failed retry closes the frame instead of displaying a website or error page');
 
+const companionIframeUrlStart = companion.indexOf('buildIframeUrl: function()');
+const companionIframeUrlEnd = companion.indexOf('normalizeUrl: function(value)', companionIframeUrlStart);
+const companionIframeUrl = companion.slice(companionIframeUrlStart, companionIframeUrlEnd);
+ok(companionIframeUrl.includes("cont.flosc_handoff_ref || parentParams.get('flosc_handoff_ref')")
+    && companionIframeUrl.includes("url.searchParams.set('flosc_handoff_ref', '1')"),
+    'full-page to companion forwards the parked visitor handoff into the iframe');
+
+const captureContinuityStart = companion.indexOf('captureContinuityParamsFromPage: function()');
+const captureContinuityEnd = companion.indexOf('consumeHandoffRequest: function()', captureContinuityStart);
+const captureContinuity = companion.slice(captureContinuityStart, captureContinuityEnd);
+ok(captureContinuity.includes("'flosc_handoff_ref'"),
+    'the hub snapshots the handoff marker before cleaning its address bar');
+
+const consumeHandoffStart = companion.indexOf('consumeHandoffRequest: function()');
+const consumeHandoffEnd = companion.indexOf('forceMinimizedStateForHandoff: function()', consumeHandoffStart);
+const consumeHandoff = companion.slice(consumeHandoffStart, consumeHandoffEnd);
+ok(consumeHandoff.includes("url.searchParams.delete('flosc_handoff_ref')"),
+    'the hub removes the consumed visitor handoff marker from its own URL');
+
+const fullPageExpandStart = companion.indexOf('openFullPage: function()');
+const fullPageExpand = companion.slice(fullPageExpandStart);
+ok(fullPageExpand.includes("target.searchParams.set('flosc_handoff_ref', '1')")
+    && fullPageExpand.includes('self.stashHandoffPack(packed)'),
+    'companion to full-page parks the visitor transcript and forwards its marker');
+
 const handoffStart = app.indexOf('async handoffToCompanion()');
 const handoffEnd = app.indexOf('restoreSidebarCollapsedState()', handoffStart);
 const handoff = app.slice(handoffStart, handoffEnd);

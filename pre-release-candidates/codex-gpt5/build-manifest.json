@@ -1,10 +1,10 @@
 {
   "schema_version": 6,
   "candidate": "codex-gpt5",
-  "candidate_label": "FLOSC 8.0.0 candidate V115",
+  "candidate_label": "FLOSC 8.0.0 candidate V116",
   "owner": "Codex",
-  "parent_candidate_commit": "727419bc316f3eae32b5f10a62d263d10e679472",
-  "built_at_utc": "2026-10-01T11:34:57Z",
+  "parent_candidate_commit": "9b1126d29ac42c69c87cb5730753131ad1a07205",
+  "built_at_utc": "2026-10-01T11:58:19Z",
   "plugin_version": "8.0.0",
   "trusted_companion_base": {
     "candidate": "v107",
@@ -17,36 +17,39 @@
     "scope": "neutral quiz templates and default copy"
   },
   "recovery_base": {
-    "candidate": "v114.1",
-    "commit": "727419bc316f3eae32b5f10a62d263d10e679472",
-    "scope": "v107 companion baseline, v108 content edits, bounded routing and fail-closed recovery"
+    "candidate": "v115",
+    "commit": "9b1126d29ac42c69c87cb5730753131ad1a07205",
+    "scope": "verified V114.1 recovery candidate plus standards-only V115 cleanup"
   },
-  "v115_delta": {
-    "scope": "WordPress Coding Standards documentation, whitespace, and alignment only",
-    "shipped_files": 4,
-    "insertions": 24,
-    "deletions": 12,
-    "behavior_change": false
+  "v116_delta": {
+    "scope": "complete the existing visitor transcript handoff across full-page and companion surfaces",
+    "shipped_files": 1,
+    "insertions": 13,
+    "deletions": 1,
+    "behavior_change": true,
+    "ui_change": false
   },
   "plugin_source": "flosc-by-codex-gpt5/flosc",
-  "source_file_count": 315,
+  "source_file_count": 316,
   "source_php_file_count": 200,
   "artifact": {
     "path": "flosc.zip",
     "root": "flosc/",
     "entries": 282,
     "files": 242,
-    "bytes": 2817982,
-    "sha256": "6862a7f61f8a5356af6fc7061fcbaaf643ae5594a37ea38773840eacb952fc02",
+    "bytes": 2818215,
+    "sha256": "6ff0788de10dcde8245f80b457742910910cad8e031b8008b87e026ab87a7002",
     "integrity": "passed",
     "starter_pack_assets": "passed"
   },
   "verification": {
-    "companion_contract_assertions_passed": 17,
+    "companion_contract_assertions_passed": 21,
     "companion_contract_assertions_failed": 0,
+    "handoff_roundtrip_assertions_passed": 5,
+    "handoff_roundtrip_assertions_failed": 0,
     "php_tests_passed": 44,
     "php_tests_failed": 0,
-    "javascript_tests_passed": 3,
+    "javascript_tests_passed": 4,
     "javascript_tests_failed": 0,
     "php_lint_clean": 200,
     "php_lint_failures": 0,
@@ -67,25 +70,14 @@
     "ordinary_post_http_200": true,
     "unknown_route_http_404": true,
     "php_debug_log_created": false,
+    "artifact_canonical_tree_sha256": "e3ce48eb8b91671642f23d14272963dbfad648df346264e3663b3f1428d271ac",
     "live_verification": {
       "site": "https://dainis.net",
-      "plugin_active": true,
-      "live_file_count": 242,
-      "canonical_tree_sha256": "7ed8eec7f5f8de679d65f44edc5e8045445f3d8439c86935b679ba62e51de4ff",
-      "artifact_tree_match": true,
-      "companion_http_200": true,
-      "companion_redirects": 0,
-      "companion_has_app_and_input_markup": true,
-      "companion_has_post_content": false,
-      "companion_has_website_chrome": false,
-      "real_post_http_200": true,
-      "real_post_has_app_marker": false,
-      "unknown_route_http_404": true,
-      "php_debug_log_created": false,
-      "visual_browser_clickthrough": "not run; no browser instance exposed"
+      "status": "pending deployment",
+      "visual_browser_clickthrough": "pending Dainis confirmation"
     }
   },
-  "status": "LIVE_DEPLOYED_AND_VERIFIED",
-  "live_deployed": true,
-  "submission_ready": true
+  "status": "VERIFIED_ARTIFACT_PENDING_LIVE_CONFIRMATION",
+  "live_deployed": false,
+  "submission_ready": false
 }
