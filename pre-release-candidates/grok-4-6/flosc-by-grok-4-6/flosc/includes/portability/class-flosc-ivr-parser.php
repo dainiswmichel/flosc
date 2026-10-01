@@ -13,11 +13,29 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * IVR parser.
+ */
 class FLOSC_IVR_Parser {
 
+	/**
+	 * Instance.
+	 *
+	 * @var mixed
+	 */
 	private static $flosc_instance = null;
-	private $flosc_config          = null;
+	/**
+	 * Config.
+	 *
+	 * @var mixed
+	 */
+	private $flosc_config = null;
 
+	/**
+	 * Instance.
+	 *
+	 * @return mixed
+	 */
 	public static function flosc_instance() {
 		if ( null === self::$flosc_instance ) {
 			self::$flosc_instance = new self();
@@ -27,6 +45,8 @@ class FLOSC_IVR_Parser {
 
 	/**
 	 * Parse IVR markdown content
+	 *
+	 * @param mixed $markdown Markdown.
 	 */
 	public function flosc_parse( $markdown ) {
 		$config = array(
@@ -81,10 +101,10 @@ class FLOSC_IVR_Parser {
 				$phase_map       = array(
 					'freeline' => 'freeline',
 					'login'    => 'login',
-					'guest'    => 'login',      // v1.0.9: Guest Messages → login phase
+					'guest'    => 'login',      // v1.0.9: Guest Messages → login phase.
 					'offer'    => 'offer',
 					'sale'     => 'sale',
-					'member'   => 'content',   // v1.1.0: Member Messages → content phase
+					'member'   => 'content',   // v1.1.0: Member Messages → content phase.
 					'content'  => 'content',
 				);
 				$current_phase   = $phase_map[ $section ] ?? $section;
@@ -164,7 +184,7 @@ class FLOSC_IVR_Parser {
 					'name'       => '',
 					'type'       => 'auto',
 					'style'      => 'pill',
-					'panel'      => '', // v1.2.5: intro or prompt
+					'panel'      => '', // v1.2.5: intro or prompt.
 					'icon'       => '',
 					'user_input' => '',
 					'keywords'   => '',
@@ -319,6 +339,10 @@ class FLOSC_IVR_Parser {
 
 	/**
 	 * Add message to config
+	 *
+	 * @param mixed $config  Config.
+	 * @param mixed $message Message.
+	 * @param mixed $phase   Phase.
 	 */
 	private function flosc_add_message_to_config( &$config, $message, $phase ) {
 		if ( empty( $message['name'] ) ) {
@@ -410,6 +434,11 @@ class FLOSC_IVR_Parser {
 		return FLOSC_PLUGIN_DIR . 'ai_configuration_files/flosc_default_technical_ivr.md';
 	}
 
+	/**
+	 * Load config.
+	 *
+	 * @return mixed
+	 */
 	public function flosc_load_config() {
 		// v1.2.3: Always reload from file - multi-flow aware, no global caching.
 
@@ -468,6 +497,8 @@ class FLOSC_IVR_Parser {
 
 	/**
 	 * Get messages for a phase
+	 *
+	 * @param mixed $phase Phase.
 	 */
 	public function get_flosc_phase_messages( $phase ) {
 		$config = $this->get_flosc_config();
@@ -486,6 +517,8 @@ class FLOSC_IVR_Parser {
 
 	/**
 	 * Get message by name
+	 *
+	 * @param mixed $name Name.
 	 */
 	public function get_flosc_message( $name ) {
 		$config = $this->get_flosc_config();
@@ -514,6 +547,8 @@ class FLOSC_IVR_Parser {
 
 	/**
 	 * Get messages by type
+	 *
+	 * @param mixed $type Type.
 	 */
 	public function get_flosc_messages_by_type( $type ) {
 		$config   = $this->get_flosc_config();
@@ -528,6 +563,8 @@ class FLOSC_IVR_Parser {
 
 	/**
 	 * Get user autoprompts for a phase
+	 *
+	 * @param mixed $phase Phase.
 	 */
 	public function get_flosc_user_autoprompts( $phase ) {
 		$messages = $this->get_flosc_phase_messages( $phase );
@@ -541,6 +578,8 @@ class FLOSC_IVR_Parser {
 
 	/**
 	 * Get auto messages for a phase
+	 *
+	 * @param mixed $phase Phase.
 	 */
 	public function get_flosc_auto_messages( $phase ) {
 		$messages = $this->get_flosc_phase_messages( $phase );

@@ -5047,10 +5047,10 @@ class floscApp {
                 this.openSupport();
                 break;
             case 'view_profile':
-                window.location.href = this.config.profileUrl || '/';
+                this.navigateToHostPage(this.config.profileUrl || '/');
                 break;
             case 'view_dashboard':
-                window.location.href = this.config.dashboardUrl || '/wp-admin/';
+                this.navigateToHostPage(this.config.dashboardUrl || '/wp-admin/');
                 break;
             case 'logout': {
                 // Brand-neutral: product name comes from flow Identity params, never hard-coded.
@@ -7690,7 +7690,7 @@ class floscApp {
 
         // Providers refuse to render consent inside a frame, so companion mode asks
         // the parent to run the whole OAuth hop at top level and supply its own return URL.
-        if (this.isCompanionEmbed()) {
+        if (this.isFramed()) {
             let targetOrigin = '*';
             try {
                 if (document.referrer) {
@@ -7705,8 +7705,9 @@ class floscApp {
                 }, targetOrigin);
                 return;
             } catch (e) {
-                this.logWarn('[FLOSC SSO] Companion top-level handoff failed; continuing in frame:', e);
+                this.logWarn('[FLOSC SSO] Companion top-level handoff failed:', e);
             }
+            return;
         }
 
         const redirectTo = window.location.href;
@@ -7716,8 +7717,51 @@ class floscApp {
     }
 
     isCompanionEmbed() {
-        return window.self !== window.top
+        return this.isFramed()
             && document.body.classList.contains('flosc-companion-embed');
+    }
+
+    isFramed() {
+        try {
+            return window.self !== window.top;
+        } catch (e) {
+            return true;
+        }
+    }
+
+    companionParentOrigin() {
+        try {
+            const referrer = new URL(document.referrer, window.location.origin);
+            return /^https?:$/.test(referrer.protocol) ? referrer.origin : '*';
+        } catch (e) {
+            return '*';
+        }
+    }
+
+    navigateToHostPage(url) {
+        const target = String(url || '').trim();
+        if (!target) return;
+
+        if (this.isFramed()) {
+            window.open(target, '_blank', 'noopener');
+            return;
+        }
+        window.location.href = target;
+    }
+
+    leavePanel(url) {
+        const target = String(url || '').trim();
+        if (!target) return;
+
+        if (!this.isFramed()) {
+            window.location.href = target;
+            return;
+        }
+
+        window.parent.postMessage({
+            type: 'flosc_companion_navigate_top',
+            url: target,
+        }, this.companionParentOrigin());
     }
 
     /**
@@ -7969,7 +8013,7 @@ class floscApp {
     }
 
     openPersonalizedPath() {
-        window.location.href = this.config.pathUrl || '/my-path/';
+        this.navigateToHostPage(this.config.pathUrl || '/my-path/');
     }
 
     /**
@@ -8519,7 +8563,7 @@ class floscApp {
                 timestamp: Date.now(),
                 return_url: window.location.href
             }));
-            setTimeout(() => { window.location.href = redirectUrl; }, 800);
+            setTimeout(() => { this.leavePanel(redirectUrl); }, 800);
             return;
         }
 
@@ -9280,9 +9324,14 @@ Purchased: ${ctx.purchased}
         }
 
         if (this.dockCompanionBtn) {
-            this.dockCompanionBtn.addEventListener('click', () => {
-                void this.handoffToCompanion();
-            });
+            if (this.isFramed()) {
+                this.dockCompanionBtn.remove();
+                this.dockCompanionBtn = null;
+            } else {
+                this.dockCompanionBtn.addEventListener('click', () => {
+                    void this.handoffToCompanion();
+                });
+            }
         }
 
         window.addEventListener('message', (event) => {
@@ -10908,6 +10957,10 @@ Purchased: ${ctx.purchased}
     }
 
     async handoffToCompanion() {
+        if (this.isFramed()) {
+            return false;
+        }
+
         if (!this.isCompanionHandoffAvailable()) {
             this.log?.('FLOSC: companion handoff not enabled for this flow');
             return false;
@@ -11464,7 +11517,7 @@ Purchased: ${ctx.purchased}
         const safeRedirect = String(redirectUrl || '').trim();
         if (safeRedirect) {
             setTimeout(() => {
-                window.location.href = safeRedirect;
+                this.leavePanel(safeRedirect);
             }, 1200);
         }
     }

@@ -1,4 +1,10 @@
 <?php
+/**
+ * Full-page floscFlow app template: <head>, body classes, sidebar and chat shell.
+ *
+ * @package FLOSC
+ */
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -22,7 +28,7 @@ $flosc_visitor_role = function_exists( 'flosc_personality_library_resolve_field'
 $flosc_chat_font   = get_option( 'flosc_chat_style_font', 'system' );
 $flosc_chat_theme  = get_option( 'flosc_chat_style_theme', 'default' );
 $flosc_chat_preset = get_option( 'flosc_chat_style_preset', 'flosc' );
-$flosc_chat_scale  = intval( get_option( 'flosc_chat_style_scale', 112 ) ); // percent
+$flosc_chat_scale  = intval( get_option( 'flosc_chat_style_scale', 112 ) ); // percent.
 ?>
 <!DOCTYPE html>
 <?php
@@ -119,6 +125,17 @@ ICON & BUTTON CHECKLIST (verify all work before deployment):
 	// right primitive for "is this present" is filter_has_var(), which is what
 	// flosc_nav_param_present() wraps.
 	$flosc_is_companion_embed = flosc_nav_param_present( 'flosc_companion' );
+	$flosc_app_url            = flosc()->get_app_url();
+	$flosc_login_return_url   = $flosc_app_url;
+	if ( $flosc_is_companion_embed ) {
+		$flosc_login_return_url = add_query_arg(
+			array(
+				'flosc_surface'   => 'companion',
+				'flosc_companion' => '1',
+			),
+			$flosc_app_url
+		);
+	}
 	if ( $flosc_is_companion_embed ) {
 		$flosc_companion_critical_css = '
 body.flosc-companion-embed .flosc-sidebar,
@@ -932,7 +949,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 				<p>Create a free account to save your progress and continue the conversation.</p>
 				<div class="flosc-login-gate-buttons">
 					<a href="<?php echo esc_url( wp_registration_url() ); ?>" class="btn-primary btn-large">Create Free Account</a>
-					<a href="<?php echo esc_url( wp_login_url( flosc()->get_app_url() ) ); ?>" class="btn-secondary btn-large">Log In</a>
+					<a href="<?php echo esc_url( wp_login_url( $flosc_login_return_url ) ); ?>" class="btn-secondary btn-large">Log In</a>
 				</div>
 			</div>
 		</div>
@@ -1064,7 +1081,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 			if ( isset( $_SERVER['HTTP_HOST'] ) ) {
 				$flosc_current_host = sanitize_text_field( wp_unslash( (string) $_SERVER['HTTP_HOST'] ) );
 			}
-			$flosc_rest_prefix = rest_get_url_prefix(); // usually "wp-json"
+			$flosc_rest_prefix = rest_get_url_prefix(); // usually "wp-json".
 			$flosc_rest_base   = $flosc_scheme . $flosc_current_host . '/' . $flosc_rest_prefix . '/flosc/v1';
 		}
 
@@ -1300,7 +1317,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 					'logoutFarewell'                 => flosc_get_setting( 'logout_farewell_message', '' ),
 					'profileUrl'                     => ( $flosc_user && function_exists( 'bp_core_get_user_domain' ) ) ? bp_core_get_user_domain( $flosc_user->ID ) : admin_url( 'profile.php' ),
 					'dashboardUrl'                   => admin_url(),
-					'loginUrl'                       => wp_login_url( $flosc_app_url ),
+					'loginUrl'                       => wp_login_url( $flosc_login_return_url ),
 					'logoutUrl'                      => $flosc_logout_url,
 					'registerUrl'                    => wp_registration_url(),
 					'registrationUrl'                => wp_registration_url(),
@@ -1460,7 +1477,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 					'adminTestOffers'                => $admin_test_offers ?? array(),
 					// Audio quiz configurable messages.
 					'audioQuizPhraseCompleteMessage' => flosc_get_setting( 'audio_quiz_phrase_complete_message', 'Thank you. {current} of {total} recorded.' ),
-					'audioQuizCompleteMessage'       => flosc_get_setting( 'audio_quiz_complete_message', 'Pronunciation assessment complete! All {total} phrases recorded and analyzed. Sign up to see your results.' ),
+					'audioQuizCompleteMessage'       => flosc_get_setting( 'audio_quiz_complete_message', 'Assessment complete! All {total} recordings captured and analyzed. Sign up to see your results.' ),
 					'audioQuizResultsMessage'        => flosc_get_setting( 'audio_quiz_results_message', 'Welcome! Here are your assessment results.' ),
 					'audioQuizUpsellMessage'         => flosc_get_setting( 'audio_quiz_upsell_message', 'Our accent analysis shows you would benefit from lessons on {1st}, {2nd}, and {4th}. Upgrade today for full access to all lessons.' ),
 					'audioQuizPhonemeLessonMap'      => $flosc_phoneme_lesson_map,

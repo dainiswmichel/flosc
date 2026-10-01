@@ -28,10 +28,23 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Content protection.
+ */
 class FLOSC_Content_Protection {
 
+	/**
+	 * Instance.
+	 *
+	 * @var mixed
+	 */
 	private static $instance = null;
 
+	/**
+	 * Instance.
+	 *
+	 * @return mixed
+	 */
 	public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
@@ -39,6 +52,9 @@ class FLOSC_Content_Protection {
 		return self::$instance;
 	}
 
+	/**
+	 * Construct.
+	 */
 	private function __construct() {
 		// Hook into the_content with high priority (runs after other filters).
 		add_filter( 'the_content', array( $this, 'filter_by_visibility' ), 20 );
@@ -60,7 +76,7 @@ class FLOSC_Content_Protection {
 	 * unless the post has _flosc_public_post override set to 'yes'.
 	 * Skips admin, single post views, and users with manage_options.
 	 *
-	 * @param WP_Query $query
+	 * @param WP_Query $query Query.
 	 * @since 1.4.7
 	 */
 	public function hide_protected_from_public_queries( $query ) {
@@ -197,7 +213,7 @@ class FLOSC_Content_Protection {
 	/**
 	 * Check if a category is FLOSC protected
 	 *
-	 * @param int $category_id
+	 * @param int $category_id Category ID.
 	 * @return bool
 	 */
 	public function is_category_protected( $category_id ) {
@@ -208,7 +224,7 @@ class FLOSC_Content_Protection {
 	/**
 	 * Get required membership level for a category
 	 *
-	 * @param int $category_id
+	 * @param int $category_id Category ID.
 	 * @return string|null Level name or null if not set
 	 */
 	public function get_category_required_level( $category_id ) {
@@ -219,7 +235,7 @@ class FLOSC_Content_Protection {
 	/**
 	 * Check if a post is in a protected category
 	 *
-	 * @param int $post_id
+	 * @param int $post_id Post ID.
 	 * @return array ['protected' => bool, 'required_level' => string|null, 'category_id' => int|null]
 	 */
 	public function check_post_protection( $post_id ) {
@@ -246,7 +262,7 @@ class FLOSC_Content_Protection {
 	 * Get visibility tier for a post
 	 * Check _flosc_protection_mode first (4-tier: protected, title_excerpt, title_readmore, full)
 	 *
-	 * @param int $post_id
+	 * @param int $post_id Post ID.
 	 * @return string 'hidden' | 'teaser' | 'preview' | 'public'
 	 * @since 1.8.2
 	 */
@@ -342,9 +358,9 @@ class FLOSC_Content_Protection {
 	/**
 	 * True when the user holds a non-guest member level for a flow that owns this category.
 	 *
-	 * @param int                 $user_id
-	 * @param int                 $category_id
-	 * @param FLOSC_Member_Access $member_access
+	 * @param int                 $user_id User ID.
+	 * @param int                 $category_id Category ID.
+	 * @param FLOSC_Member_Access $member_access Member access.
 	 * @return bool
 	 */
 	private function user_has_flow_member_level_for_category( $user_id, $category_id, $member_access ) {
@@ -383,7 +399,7 @@ class FLOSC_Content_Protection {
 	/**
 	 * Find flow option payloads whose content_item_category / content_item_groups use this category slug.
 	 *
-	 * @param string $category_slug
+	 * @param string $category_slug Category slug.
 	 * @return array[]
 	 */
 	private function get_flows_owning_content_item_category( $category_slug ) {
@@ -426,7 +442,7 @@ class FLOSC_Content_Protection {
 	 * Check if current user can access a post
 	 * Check _flosc_protection_mode for granular access
 	 *
-	 * @param int $post_id
+	 * @param int $post_id Post ID.
 	 * @return bool
 	 * @since 1.8.2
 	 */
@@ -524,7 +540,7 @@ class FLOSC_Content_Protection {
 	/**
 	 * Main content filter - applies visibility tier
 	 *
-	 * @param string $content
+	 * @param string $content Content.
 	 * @return string Filtered content
 	 */
 	public function filter_by_visibility( $content ) {
@@ -585,7 +601,7 @@ class FLOSC_Content_Protection {
 	 *
 	 * @param string $content Full content.
 	 * @param string $visibility 'hidden' | 'teaser' | 'preview' | 'public'.
-	 * @param int    $post_id
+	 * @param int    $post_id Post ID.
 	 * @return string Filtered content
 	 */
 	public function apply_visibility_tier( $content, $visibility, $post_id ) {
@@ -616,8 +632,8 @@ class FLOSC_Content_Protection {
 	 * Add CTAs to public posts
 	 * Guides visitors to the chat for engagement
 	 *
-	 * @param string $content
-	 * @param int    $post_id
+	 * @param string $content Content.
+	 * @param int    $post_id Post ID.
 	 * @return string
 	 * @since 1.4.3
 	 */
@@ -654,7 +670,7 @@ class FLOSC_Content_Protection {
 	 * Get message for hidden content
 	 * Added post_id tracking
 	 *
-	 * @param int $post_id
+	 * @param int $post_id Post ID.
 	 * @return string
 	 * @since 1.4.3
 	 */
@@ -671,7 +687,7 @@ class FLOSC_Content_Protection {
 	 * Get teaser content (title + excerpt only)
 	 * Added post_id tracking to CTA
 	 *
-	 * @param int $post_id
+	 * @param int $post_id Post ID.
 	 * @return string
 	 * @since 1.4.3
 	 */
@@ -699,8 +715,8 @@ class FLOSC_Content_Protection {
 	 * Get preview content (up to <!--flosc_read_more-->)
 	 * Added post_id tracking to CTA
 	 *
-	 * @param string $content
-	 * @param int    $post_id
+	 * @param string $content Content.
+	 * @param int    $post_id Post ID.
 	 * @return string
 	 * @since 1.4.3
 	 */
@@ -723,7 +739,7 @@ class FLOSC_Content_Protection {
 			$notice_and_cta  = '<div class="flosc-protected-notice">';
 			$notice_and_cta .= '<p>' . esc_html__( 'The rest of this lesson is for members only.', 'flosc' ) . '</p>';
 			$notice_and_cta .= '</div>';
-			$notice_and_cta .= $this->get_chatbot_cta( $post_id ); // already wp_kses_post inside helper
+			$notice_and_cta .= $this->get_chatbot_cta( $post_id ); // already wp_kses_post inside helper.
 			$notice_and_cta  = wp_kses_post( $notice_and_cta );
 		}
 
@@ -778,7 +794,7 @@ class FLOSC_Content_Protection {
 	 * Get chat URL with tracking for a specific post
 	 * Used for redirect-to-chat functionality
 	 *
-	 * @param int $post_id
+	 * @param int $post_id Post ID.
 	 * @return string
 	 * @since 1.4.3
 	 */
@@ -799,8 +815,8 @@ class FLOSC_Content_Protection {
 	/**
 	 * Filter excerpt for teaser tier
 	 *
-	 * @param string  $excerpt
-	 * @param WP_Post $post
+	 * @param string  $excerpt Excerpt.
+	 * @param WP_Post $post Post.
 	 * @return string
 	 */
 	public function filter_excerpt( $excerpt, $post = null ) {
@@ -828,7 +844,7 @@ class FLOSC_Content_Protection {
 	/**
 	 * Set category as protected
 	 *
-	 * @param int    $category_id
+	 * @param int    $category_id Category ID.
 	 * @param string $required_level Optional membership level required.
 	 * @return bool
 	 */
@@ -845,7 +861,7 @@ class FLOSC_Content_Protection {
 	/**
 	 * Unprotect a category
 	 *
-	 * @param int $category_id
+	 * @param int $category_id Category ID.
 	 * @return bool
 	 */
 	public function unprotect_category( $category_id ) {
@@ -858,7 +874,7 @@ class FLOSC_Content_Protection {
 	/**
 	 * Set post visibility
 	 *
-	 * @param int    $post_id
+	 * @param int    $post_id Post ID.
 	 * @param string $visibility 'hidden' | 'teaser' | 'preview' | 'public'.
 	 * @return bool
 	 */

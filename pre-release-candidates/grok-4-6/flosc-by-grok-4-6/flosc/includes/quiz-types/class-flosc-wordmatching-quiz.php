@@ -13,44 +13,98 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Word matching quiz.
+ */
 class FLOSC_WordMatching_Quiz extends FLOSC_Abstract_Quiz_Type {
 
+	/**
+	 * Get ID.
+	 *
+	 * @return mixed
+	 */
 	public function get_id() {
 		return 'wordmatching';
 	}
 
+	/**
+	 * Get name.
+	 *
+	 * @return mixed
+	 */
 	public function get_name() {
 		return 'Word Matching';
 	}
 
+	/**
+	 * Get description.
+	 *
+	 * @return mixed
+	 */
 	public function get_description() {
 		return 'Match words to categories or definitions. Great for vocabulary and classification.';
 	}
 
+	/**
+	 * Get icon.
+	 *
+	 * @return mixed
+	 */
 	public function get_icon() {
 		return '🔗';
 	}
 
+	/**
+	 * Needs audio.
+	 *
+	 * @return mixed
+	 */
 	public function needs_audio() {
 		return false;
 	}
 
+	/**
+	 * Needs STT.
+	 *
+	 * @return mixed
+	 */
 	public function needs_stt() {
 		return false;
 	}
 
+	/**
+	 * Needs AI analysis.
+	 *
+	 * @return mixed
+	 */
 	public function needs_ai_analysis() {
 		return false;
 	}
 
+	/**
+	 * Get instructions.
+	 *
+	 * @return mixed
+	 */
 	public function get_instructions() {
 		return 'Match each word to its category (format: word:category).';
 	}
 
+	/**
+	 * Get default content.
+	 *
+	 * @return mixed
+	 */
 	public function get_default_content() {
 		return "cat:mammal\ndog:mammal\nfish:aquatic\nbird:avian\nsnake:reptile";
 	}
 
+	/**
+	 * Validate input.
+	 *
+	 * @param mixed $input Input.
+	 * @return mixed
+	 */
 	public function validate_input( $input ) {
 		if ( empty( $input ) || ! is_string( $input ) ) {
 			return new WP_Error( 'invalid_input', __( 'Please enter your matches.', 'flosc' ) );
@@ -59,6 +113,14 @@ class FLOSC_WordMatching_Quiz extends FLOSC_Abstract_Quiz_Type {
 		return true;
 	}
 
+	/**
+	 * Analyze.
+	 *
+	 * @param mixed $input            Input.
+	 * @param mixed $expected_content Expected content.
+	 * @param mixed $context          Context.
+	 * @return mixed
+	 */
 	public function analyze( $input, $expected_content, $context = array() ) {
 		$case_sensitive = $this->get_setting( 'case_sensitive', false );
 
@@ -111,6 +173,11 @@ class FLOSC_WordMatching_Quiz extends FLOSC_Abstract_Quiz_Type {
 		);
 	}
 
+	/**
+	 * Get settings fields.
+	 *
+	 * @return mixed
+	 */
 	public function get_settings_fields() {
 		return array(
 			'case_sensitive'  => array(
@@ -132,6 +199,9 @@ class FLOSC_WordMatching_Quiz extends FLOSC_Abstract_Quiz_Type {
 	 * Parse matches from content
 	 * Format: "word:category\nanotherword:category"
 	 * Returns: ['word' => 'category', ...]
+	 *
+	 * @param mixed $content        Content.
+	 * @param bool  $case_sensitive Case sensitive.
 	 */
 	private function parse_matches( $content, $case_sensitive = false ) {
 		$matches = array();
@@ -160,6 +230,13 @@ class FLOSC_WordMatching_Quiz extends FLOSC_Abstract_Quiz_Type {
 		return $matches;
 	}
 
+	/**
+	 * Format results.
+	 *
+	 * @param mixed $analysis           Analysis.
+	 * @param mixed $lessons            Lessons.
+	 * @param mixed $response_templates Response templates.
+	 */
 	public function format_results( $analysis, $lessons, $response_templates ) {
 		$score        = $analysis['score'];
 		$response_key = $analysis['response_key'];

@@ -9,9 +9,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * First party authentication.
+ */
 class FLOSC_First_Party_Authentication {
 
-	/** @var FLOSC_Framework */
+	/**
+	 * FLOSC.
+	 *
+	 * @var FLOSC_Framework
+	 */
 	private $flosc;
 
 	/**
@@ -22,11 +29,20 @@ class FLOSC_First_Party_Authentication {
 	 */
 	private $flosc_token_auth_used = false;
 
+	/**
+	 * Construct.
+	 *
+	 * @param mixed $flosc FLOSC.
+	 */
 	public function __construct( $flosc ) {
 		$this->flosc = $flosc;
 	}
 
-	/** @return object|null Token provider from framework sale manager. */
+	/**
+	 * Get token provider.
+	 *
+	 * @return object|null Token provider from framework sale manager.
+	 */
 	private function get_token_provider() {
 		$sale = method_exists( $this->flosc, 'sale' ) ? $this->flosc->sale() : null;
 		return ( $sale && method_exists( $sale, 'get_provider' ) ) ? $sale->get_provider( 'tokens' ) : null;
@@ -43,7 +59,7 @@ class FLOSC_First_Party_Authentication {
 	/**
 	 * Block WP password login for pending email-registered accounts until verification.
 	 *
-	 * @param WP_User|WP_Error $user
+	 * @param WP_User|WP_Error $user User.
 	 * @return WP_User|WP_Error
 	 */
 	public function flosc_block_pending_email_login( $user ) {
@@ -60,6 +76,11 @@ class FLOSC_First_Party_Authentication {
 		return $user;
 	}
 
+	/**
+	 * Handle user registration.
+	 *
+	 * @param mixed $user_id User ID.
+	 */
 	public function handle_user_registration( $user_id ) {
 		// Pending email registrants receive tokens only after verification/activation.
 		// Flag is set on the framework instance by MagicLink / email registration paths.
@@ -101,6 +122,9 @@ class FLOSC_First_Party_Authentication {
 
 	/**
 	 * Handle user login - process pre-login quiz scores
+	 *
+	 * @param mixed $user_login User login.
+	 * @param mixed $user       User.
 	 */
 	public function handle_user_login( $user_login, $user ) {
 		$token_provider = $this->get_token_provider();
@@ -223,6 +247,10 @@ class FLOSC_First_Party_Authentication {
 	 * Only redirects to FLOSC app when there's a clear FLOSC context.
 	 *
 	 * @since 9.5.7
+	 *
+	 * @param mixed $redirect_to           Redirect to.
+	 * @param mixed $requested_redirect_to Requested redirect to.
+	 * @param mixed $user                  User.
 	 */
 	public function handle_login_redirect( $redirect_to, $requested_redirect_to, $user ) {
 		$app_slug = get_option( 'flosc_app_slug', 'flosc' );
@@ -315,6 +343,8 @@ class FLOSC_First_Party_Authentication {
 	 * v1.4.9: Custom domain support
 	 *
 	 * @since 9.5.7
+	 *
+	 * @param mixed $redirect Redirect.
 	 */
 	public function handle_woocommerce_login_redirect( $redirect ) {
 		$app_slug = get_option( 'flosc_app_slug', 'flosc' );
@@ -717,6 +747,8 @@ class FLOSC_First_Party_Authentication {
 
 	/**
 	 * Action: wp_logout — Clear FLOSC auth token + entry-flow recall cookies.
+	 *
+	 * @param int $user_id User ID.
 	 */
 	public function clear_flosc_auth_token( $user_id = 0 ) {
 		// Logging out has to end the session everywhere, not only in this

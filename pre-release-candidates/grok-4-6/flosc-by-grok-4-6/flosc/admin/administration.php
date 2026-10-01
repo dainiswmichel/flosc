@@ -63,6 +63,14 @@ $flosc_identity_defaults = array(
 $flosc_identity          = get_option( 'flosc_provider_identity', array() );
 $flosc_identity          = is_array( $flosc_identity ) ? array_merge( $flosc_identity_defaults, $flosc_identity ) : $flosc_identity_defaults;
 
+$flosc_account_plan = get_option( 'flosc_account_plan', 'free' );
+if ( ! in_array( $flosc_account_plan, array( 'free', 'paid', 'enterprise' ), true ) ) {
+	$flosc_account_plan = 'free';
+}
+
+$flosc_manual_purchases_raw  = (string) get_option( 'flosc_account_purchases_manual', '' );
+$flosc_manual_purchase_lines = array_values( array_filter( array_map( 'trim', preg_split( '/\r\n|\r|\n/', $flosc_manual_purchases_raw ) ) ) );
+
 $flosc_debug_mode = get_option( 'flosc_debug_mode', 'inherit' );
 if ( ! in_array( $flosc_debug_mode, array( 'inherit', 'on', 'off' ), true ) ) {
 	$flosc_debug_mode = 'inherit';
@@ -212,6 +220,41 @@ if ( $flosc_can_assign_editors ) {
 			</tr>
 		</tbody>
 	</table>
+
+	<h3 class="flosc-admin-section-title flosc-admin-section-title-topless">Account Management</h3>
+	<table class="form-table flosc-admin-form-table">
+		<tr>
+			<th scope="row"><label for="flosc_account_plan">Account plan</label></th>
+			<td>
+				<select id="flosc_account_plan" name="flosc_account_plan">
+					<option value="free" <?php selected( $flosc_account_plan, 'free' ); ?>>Free</option>
+					<option value="paid" <?php selected( $flosc_account_plan, 'paid' ); ?>>Paid</option>
+					<option value="enterprise" <?php selected( $flosc_account_plan, 'enterprise' ); ?>>Enterprise</option>
+				</select>
+				<p class="description">Stored as FLOSC account metadata.</p>
+			</td>
+		</tr>
+		<tr>
+			<th scope="row"><label for="flosc_account_purchases_manual">Purchased items (manual)</label></th>
+			<td>
+				<textarea id="flosc_account_purchases_manual" name="flosc_account_purchases_manual" rows="6" class="large-text" placeholder="One item per line, e.g.&#10;Pronunciation Advanced Bundle&#10;Member Access"><?php echo esc_textarea( $flosc_manual_purchases_raw ); ?></textarea>
+				<p class="description">Enter one item per line.</p>
+			</td>
+		</tr>
+	</table>
+
+	<h3 class="flosc-admin-section-title">Configured Purchased Items</h3>
+	<div class="card flosc-admin-purchases-card">
+		<?php if ( ! empty( $flosc_manual_purchase_lines ) ) : ?>
+			<ol class="flosc-admin-purchases-list">
+				<?php foreach ( $flosc_manual_purchase_lines as $flosc_item ) : ?>
+					<li><?php echo esc_html( $flosc_item ); ?></li>
+				<?php endforeach; ?>
+			</ol>
+		<?php else : ?>
+			<p class="flosc-admin-purchases-empty">No items listed.</p>
+		<?php endif; ?>
+	</div>
 
 	<h3 class="flosc-admin-section-title flosc-admin-section-title-topless">Public Request Protection</h3>
 	<p class="description flosc-admin-subtitle">

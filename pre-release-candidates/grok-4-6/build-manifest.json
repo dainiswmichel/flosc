@@ -1,38 +1,50 @@
 {
-  "agent": {
-    "name": "Grok",
-    "exact_agent_model": "grok-4.6",
-    "slug": "grok-4-6"
+  "schema_version": 1,
+  "candidate": "grok-4-6",
+  "candidate_label": "FLOSC 8.0.0 candidate V117",
+  "owner": "Grok",
+  "parent": {
+    "candidate": "V116",
+    "commit": "c8c324464dc87ba13abf3268a04a9de1fd74c100",
+    "scope": "Codex V116 tree, including the flosc_handoff_ref iframe forward"
   },
-  "candidate": "v87",
+  "built_at_utc": "2026-10-01T12:42:11Z",
   "plugin_version": "8.0.0",
-  "base": "claude-opus-5 v86 146409c",
-  "source_path": "pre-release-candidates/grok-4-6/flosc-by-grok-4-6/flosc",
-  "artifact_path": "pre-release-candidates/grok-4-6/flosc.zip",
-  "pass": 1,
-  "shipping_changes": [
-    "includes/sso/class-oauth2-handler.php — verify_state() first; peek/delete removed; home_url() on invalid state",
-    "includes/class-flosc-framework.php — comment only, HMAC reason replaces false nonce-cannot-travel sentences"
-  ],
-  "new_gate": "tests/check_oauth_state_ordering.php",
-  "unchanged": [
-    "includes/flosc-request.php",
-    "includes/magic-link/class-flosc-magic-link-trait.php"
-  ],
+  "plugin_source": "flosc-by-grok-4-6/flosc",
+  "source_file_count": 316,
+  "source_php_file_count": 200,
+  "php_byte_identical_to_v116": true,
+  "v117_delta": {
+    "shipped_files": ["assets/js/flosc-companion.js"],
+    "behavior_change": true,
+    "ui_change": false,
+    "cause": "Safari does not fetch an iframe that is hidden and loading=lazy, so flosc_app_ready never arrives and the companion body stays white. A health retry also deleted flosc_handoff_pack and the snapshotted marker.",
+    "change": "Fetch the chat iframe when its URL is assigned. Arm the health timer at assignment. Keep the parked transcript and flosc_handoff_ref on the single retry."
+  },
   "artifact": {
-    "filename": "flosc.zip",
-    "sha256": "c106c84612bbb003d18485042e5bbe02265813d2135039342b6254bfd28f78e3",
-    "entry_count": 281,
-    "size_bytes": 2793712,
-    "top_level_dirs": ["flosc"],
-    "tests_entries": 0
+    "path": "flosc.zip",
+    "root": "flosc/",
+    "entries": 282,
+    "files": 242,
+    "bytes": 2818312,
+    "sha256": "f22a5612479454b948d2ed80539179cd36cd884579f92f76dbc6be64aaf77709",
+    "integrity": "unzip -t passed",
+    "tests_entries": 0,
+    "version": "8.0.0",
+    "stable_tag": "8.0.0"
   },
-  "measured": {
-    "php_l": "195 files, 0 errors",
-    "gates": "42 of 42 (40 PHP + 2 JS)",
-    "phpcs_nonceverification_four_files": "25 remaining (6 oauth + 12 audio + 4 request + 3 magic-link)"
+  "verification": {
+    "companion_contract_assertions_passed": 24,
+    "companion_contract_assertions_failed": 0,
+    "handoff_roundtrip_assertions_passed": 7,
+    "handoff_roundtrip_assertions_failed": 0,
+    "companion_js_syntax": "node --check passed",
+    "safari_hidden_iframe_fixture": "hidden eager fetched and posted ready; hidden lazy was not requested",
+    "dainis_net_clickthrough": "not run",
+    "official_plugin_check": "not run on this zip",
+    "deployed": false
   },
-  "named_behaviour_change": "Invalid or expired OAuth state redirects to home_url(). Abandoned login that previously resumed on the flow URL lands on the WordPress site root.",
-  "plugin_check": "not run here",
-  "suppressions_added": 0
+  "status": "PACKAGED_NOT_DEPLOYED",
+  "live_deployed": false,
+  "submission_ready": false
 }

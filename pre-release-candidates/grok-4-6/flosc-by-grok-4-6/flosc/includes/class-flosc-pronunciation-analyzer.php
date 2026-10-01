@@ -10,9 +10,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Pronunciation analyzer.
+ */
 class FLOSC_Pronunciation_Analyzer {
 
-	// Number words to digits mapping.
+	/**
+	 * Number words to digits mapping.
+	 *
+	 * @var array
+	 */
 	private $number_words = array(
 		'one'   => '1',
 		'won'   => '1',
@@ -36,7 +43,11 @@ class FLOSC_Pronunciation_Analyzer {
 		'ten'   => '10',
 	);
 
-	// Default phoneme lessons mapping (fallback if no WP posts).
+	/**
+	 * Default phoneme lessons mapping (fallback if no WP posts).
+	 *
+	 * @var array
+	 */
 	private $default_lesson_mapping = array(
 		'5'  => array(
 			'phoneme'   => '/aɪ/',
@@ -87,6 +98,9 @@ class FLOSC_Pronunciation_Analyzer {
 
 	/**
 	 * Analyze transcript against expected text
+	 *
+	 * @param mixed $transcript Transcript.
+	 * @param mixed $expected   Expected.
 	 */
 	public function analyze( $transcript, $expected ) {
 		$transcript = $this->normalize( $transcript );
@@ -156,6 +170,8 @@ class FLOSC_Pronunciation_Analyzer {
 
 	/**
 	 * Normalize text for comparison
+	 *
+	 * @param mixed $text Text.
 	 */
 	private function normalize( $text ) {
 		// Lowercase.
@@ -184,6 +200,9 @@ class FLOSC_Pronunciation_Analyzer {
 
 	/**
 	 * Check if two items match (with fuzzy matching)
+	 *
+	 * @param mixed $expected Expected.
+	 * @param mixed $actual   Actual.
 	 */
 	private function items_match( $expected, $actual ) {
 		// Exact match.
@@ -206,6 +225,8 @@ class FLOSC_Pronunciation_Analyzer {
 
 	/**
 	 * Generate human-readable feedback
+	 *
+	 * @param mixed $results Results.
 	 */
 	private function generate_feedback( $results ) {
 		$score        = $results['score'];

@@ -15,7 +15,7 @@
  * WHAT IS SENT, exactly:
  *
  *   User-Agent: FLOSC/8.0.0 (+https://flosc.ai) DA1-Personality-Builder/3.1.2
- *               (FLOSC edition) WordPress/7.0.4 PHP/8.2.0
+ *               (FLOSC edition; +https://da1.fm) WordPress/7.1.2 PHP/8.4.19
  *
  *   X-DA1-Trace: v=1;app=flosc/8.0.0;bld=da1pb/3.1.2;ed=flosc;
  *                inst=<12 hex>;site=<domain>;flow=<8 hex>;prof=<8 hex>;

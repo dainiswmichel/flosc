@@ -1,46 +1,43 @@
-# FLOSC — Grok 4.6 v87
+# FLOSC 8.0.0 — Grok candidate V117
 
-**Agent:** Grok 4.6
-**Plugin version:** 8.0.0
-**Candidate:** v87
-**Base:** Claude Opus 5 v86 (`146409c`)
+Plugin header stays 8.0.0. This folder is candidate V117.
 
-Pass 1 of the Plugin Check nonce findings. Not a live hotfix.
+V117 is the Codex V116 tree plus one companion-frame correction. Personalities, flows, starter packs, conversations, logs, the v108 copy, the v114 frame contract, and the v114.1 rewrite flush are unchanged. PHP is byte-identical to V116.
 
-## What this is
+## What was broken
 
-Claude v86 shipping tree, with:
+Full-page chat at `/chat` kept the conversation. Collapse landed on the configured hub, `https://dainis.net/?flosc_flow_id=dainis_net_ivr&flosc_handoff_ref=1`, with the companion chrome open and a white panel body.
 
-- `includes/sso/class-oauth2-handler.php` — `handle_callback()` calls `verify_state()` once, immediately after `$state` is resolved. The unverified peek/delete is gone. Invalid or expired state redirects to `home_url()`. That is a named behaviour change: an abandoned login that previously resumed on the flow URL now lands on the WordPress site root.
-- `includes/class-flosc-framework.php` — comment only. The false “a nonce cannot travel in an `<audio src>`” sentences are replaced with the HMAC/capability-URL reason.
-- `tests/check_oauth_state_ordering.php` — new gate. Red on the v86 body; green after the repair. Does not ship in the zip.
+The chat iframe is created with the `hidden` attribute and stays that way until the app posts `flosc_app_ready`. V116 still set `loading="lazy"` on that iframe. A local Safari check on 2026-10-01 fetched a hidden eager iframe and did not fetch a hidden lazy iframe. The app therefore never announced itself, the health timer (armed only on `load`) never started, and the panel stayed white. There was no error line and no composer.
 
-`includes/flosc-request.php` and `includes/magic-link/class-flosc-magic-link-trait.php` are unchanged.
+V116 already forwards `flosc_handoff_ref=1` onto the inner `/chat/` URL and leaves the transcript in same-origin `sessionStorage`. That forward remains. It can restore the thread only after the iframe is actually fetched.
 
-No `phpcs:ignore`, `phpcs:disable`, severity changes, or WordPress nonce added on OAuth / audio / magic / nav GET.
+## Runtime delta from V116
 
-## Named behaviour change
+`assets/js/flosc-companion.js`:
 
-Invalid or expired OAuth state → `home_url()`. Unverified state cannot name a trustworthy flow-domain redirect.
+- The chat iframe is no longer `loading="lazy"`. Its URL is still assigned only when the panel opens.
+- `watchFrameHealth()` starts when that URL is assigned, so a frame that never loads does not sit on a white panel.
+- A single retry keeps `continuityParams` and `flosc_handoff_pack`. Logout still clears the pack.
 
-## Measured here
+No PHP, CSS, template, setting, or navigation target changed.
 
-- `php -l` 195 files, 0 errors
-- gates 42 of 42 (40 PHP + 2 JS)
-- PHPCS `WordPress.Security.NonceVerification` on the four Plugin Check files: still 25 warnings/errors (expected; sniff does not treat `verify_state()` or HMAC as a nonce)
-- Plugin Check: not run here
-
-## Artifact
+## Exact artifact
 
 ```text
-pre-release-candidates/grok-4-6/flosc.zip
-sha256  c106c84612bbb003d18485042e5bbe02265813d2135039342b6254bfd28f78e3
-size    2,793,712
-entries 281
-root    flosc/
-tests/  0
-version 8.0.0
+f22a5612479454b948d2ed80539179cd36cd884579f92f76dbc6be64aaf77709  flosc.zip
 ```
+
+282 entries, 242 files, one `flosc/` root, `tests/` absent, `unzip -t` clean. Version and Stable tag 8.0.0. 2,818,312 bytes.
+
+## Measured in this build
+
+- Companion surface contract: 24/24.
+- Handoff round-trip test: 7/7, including a silent-frame rebuild that keeps the parked transcript and the marker.
+- `node --check` on `assets/js/flosc-companion.js`.
+- Safari, local fixture only: hidden + `loading=lazy` produced no request; hidden + default eager loading posted its ready message. This was not a click-through on dainis.net.
+- Plugin Check was not run on this zip.
+- This candidate was not deployed.
 
 ```sh
 shasum -a 256 -c SHA256SUMS

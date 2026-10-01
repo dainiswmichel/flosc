@@ -96,11 +96,8 @@ This file provides the AI assistant with a complete overview of available lesson
 
 ## Notes
 
-This is PLACEHOLDER content. Replace these 10 skeleton lessons with:
-- LeSAEP (Standard American English)
-- Simplified solfeggio chatbot lessons
-- Roadmapping outcomes modules
-- Scripture reading guides
-- Any educational curriculum
+This is PLACEHOLDER content. Replace these 10 skeleton lessons with whatever
+your site teaches -- a language course, a music course, a training programme,
+a reading guide, an onboarding sequence. Any subject at all.
 
 FLOSC framework is content-independent. This proves it works with ANY subject matter.

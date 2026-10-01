@@ -112,7 +112,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 <p>Primary chat selection per flow on <strong>AI → This flow: AI settings</strong>. Slugs: <code>ivr</code>, <code>anthropic</code>, <code>openai</code>, <code>xai</code>, <code>gemini</code>. There is one WordPress AI Client (<code>wp_ai_client_prompt()</code>). OpenAI, Anthropic, and Gemini register with that client through their official plugins. xAI has no official plugin; FLOSC calls xAI. IVR calls none. Credentials come from floscAvailableProviders (All Flows) or this flow. IVR still runs first; AI handles unmatched messages. Personality is the system instruction. Speech-to-text is separate (AssemblyAI, OpenAI Whisper, or custom).</p>
 
 <h3 id="term-wordpress-ai-client">WordPress AI Client</h3>
-<p>The single core API in WordPress 7.0. FLOSC calls <code>wp_ai_client_prompt()</code>. It is not three clients. Official plugins AI Provider for OpenAI, AI Provider for Anthropic, and AI Provider for Google register providers on that one client and own vendor HTTP. FLOSC binds the FLOSC BYOK key onto the registry for the prompt and does not read Settings → Connectors.</p>
+<p>The single core API in WordPress 7.1. FLOSC calls <code>wp_ai_client_prompt()</code>. It is not three clients. Official plugins AI Provider for OpenAI, AI Provider for Anthropic, and AI Provider for Google register providers on that one client and own vendor HTTP. FLOSC binds the FLOSC BYOK key onto the registry for the prompt and does not read Settings → Connectors.</p>
 
 <h3 id="term-anthropic">Anthropic (Claude)</h3>
 <p>FLOSC chat provider via the WordPress AI Client and AI Provider for Anthropic. Personality is the system instruction. Key in FLOSC (All Flows or this flow). Requires that official plugin to be registered.</p>

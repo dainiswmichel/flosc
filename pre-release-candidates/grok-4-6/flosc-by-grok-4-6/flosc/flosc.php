@@ -4,7 +4,7 @@
  * Plugin URI: https://flosc.ai
  * Description: (F)reeline --> (L)ogin --> (O)ffer --> (S)ale --> (C)ontent: try-before-you-buy WordPress journeys.
  * Version: 8.0.0
- * Requires at least: 7.0
+ * Requires at least: 7.1
  * Requires PHP: 7.4
  * Author: Dainis W. Michel
  * Author URI: https://dainis.net
@@ -95,6 +95,7 @@ if ( ! function_exists( 'flosc_log' ) ) {
 require_once FLOSC_PLUGIN_DIR . 'includes/filesystem/class-flosc-filesystem.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/filesystem/flosc-data-paths.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-request.php';
+require_once FLOSC_PLUGIN_DIR . 'includes/flosc-post-queries.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-accessors.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-available-providers.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-wp-ai-client.php';

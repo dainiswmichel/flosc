@@ -12,6 +12,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Trajectory.
+ */
 class FLOSC_Trajectory {
 
 	const INTERNAL_PARENT_SLUG           = 'flosc-internal';
@@ -28,6 +31,9 @@ class FLOSC_Trajectory {
 
 	/**
 	 * Return trajectory guidance for the current message from flow settings.
+	 *
+	 * @param mixed $message       Message.
+	 * @param mixed $flow_settings Flow settings.
 	 */
 	public static function active_guidance( $message, $flow_settings ) {
 		$message = trim( (string) $message );
@@ -114,6 +120,8 @@ class FLOSC_Trajectory {
 
 	/**
 	 * Trajectory posts are private internal posts in trajectory/trajectories categories.
+	 *
+	 * @param mixed $post Post.
 	 */
 	public static function is_trajectory_post( $post ) {
 		$post = get_post( $post );
@@ -143,6 +151,11 @@ class FLOSC_Trajectory {
 		return false;
 	}
 
+	/**
+	 * Render meta box.
+	 *
+	 * @param mixed $post Post.
+	 */
 	public static function render_meta_box( $post ) {
 		$c = self::config_from_post( $post );
 		wp_nonce_field( 'flosc_trajectory_meta', 'flosc_trajectory_nonce' );
@@ -183,6 +196,11 @@ class FLOSC_Trajectory {
 		echo '<p class="description">Saved trajectory posts are synced into flow DB settings and injected through the existing AI prompt path.</p>';
 	}
 
+	/**
+	 * Save meta box.
+	 *
+	 * @param mixed $post_id Post ID.
+	 */
 	public static function save_meta_box( $post_id ) {
 		if ( ! isset( $_POST['flosc_trajectory_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['flosc_trajectory_nonce'] ) ), 'flosc_trajectory_meta' ) ) {
 			return;
@@ -219,6 +237,12 @@ class FLOSC_Trajectory {
 		}
 	}
 
+	/**
+	 * Config from post.
+	 *
+	 * @param mixed $post Post.
+	 * @return mixed
+	 */
 	public static function config_from_post( $post ) {
 		$post = get_post( $post );
 		if ( ! $post instanceof WP_Post ) {
@@ -304,6 +328,11 @@ class FLOSC_Trajectory {
 		);
 	}
 
+	/**
+	 * Sync post.
+	 *
+	 * @param mixed $post Post.
+	 */
 	public static function sync_post( $post ) {
 		$post = get_post( $post );
 		if ( ! $post instanceof WP_Post || ! self::is_trajectory_post( $post ) ) {
@@ -341,6 +370,11 @@ class FLOSC_Trajectory {
 		update_option( $flow_key, $fs );
 	}
 
+	/**
+	 * Unsync post.
+	 *
+	 * @param mixed $post Post.
+	 */
 	public static function unsync_post( $post ) {
 		$post = get_post( $post );
 		if ( ! $post instanceof WP_Post ) {
@@ -371,6 +405,13 @@ class FLOSC_Trajectory {
 		}
 	}
 
+	/**
+	 * Keyword hit.
+	 *
+	 * @param mixed $message  Message.
+	 * @param mixed $keywords Keywords.
+	 * @return mixed
+	 */
 	private static function keyword_hit( $message, $keywords ) {
 		$haystack = mb_strtolower( (string) $message );
 		foreach ( explode( ',', (string) $keywords ) as $keyword ) {
@@ -385,11 +426,23 @@ class FLOSC_Trajectory {
 		return false;
 	}
 
+	/**
+	 * Post rule ID.
+	 *
+	 * @param mixed $post Post.
+	 * @return mixed
+	 */
 	private static function post_rule_id( $post ) {
 		$slug = ( '' !== $post->post_name ) ? $post->post_name : ( 'post' . intval( $post->ID ) );
 		return 'trajectory_' . sanitize_key( $slug );
 	}
 
+	/**
+	 * Flow key.
+	 *
+	 * @param mixed $flow_file Flow file.
+	 * @return mixed
+	 */
 	private static function flow_key( $flow_file ) {
 		$flow_file = (string) $flow_file;
 		if ( '' === $flow_file ) {
@@ -398,6 +451,12 @@ class FLOSC_Trajectory {
 		return 'flosc_flow_' . sanitize_key( pathinfo( $flow_file, PATHINFO_FILENAME ) );
 	}
 
+	/**
+	 * Flow file.
+	 *
+	 * @param mixed $value Value.
+	 * @return mixed
+	 */
 	private static function flow_file( $value ) {
 		if ( preg_match( '/([A-Za-z0-9_\-]+\.md)\b/i', (string) $value, $m ) ) {
 			return $m[1];
@@ -405,6 +464,12 @@ class FLOSC_Trajectory {
 		return '';
 	}
 
+	/**
+	 * Flow by name.
+	 *
+	 * @param mixed $value Value.
+	 * @return mixed
+	 */
 	private static function flow_by_name( $value ) {
 		$name = mb_strtolower( self::unquote( (string) $value ) );
 		if ( '' === $name ) {
@@ -424,6 +489,12 @@ class FLOSC_Trajectory {
 		return '';
 	}
 
+	/**
+	 * Flow from deployment.
+	 *
+	 * @param mixed $deployment Deployment.
+	 * @return mixed
+	 */
 	private static function flow_from_deployment( $deployment ) {
 		$host = strtolower( trim( (string) $deployment ) );
 		if ( '' === $host ) {
@@ -452,11 +523,25 @@ class FLOSC_Trajectory {
 		return '';
 	}
 
+	/**
+	 * Label.
+	 *
+	 * @param mixed $body  Body.
+	 * @param mixed $label Label.
+	 * @return mixed
+	 */
 	private static function label( $body, $label ) {
 		$pattern = '/^[ \t>*_\-]*' . preg_quote( (string) $label, '/' ) . '[ \t]*:[ \t]*(.+?)[ \t]*$/mi';
 		return preg_match( $pattern, (string) $body, $m ) ? trim( (string) $m[1] ) : '';
 	}
 
+	/**
+	 * Content block.
+	 *
+	 * @param mixed $body  Body.
+	 * @param mixed $label Label.
+	 * @return mixed
+	 */
 	private static function content_block( $body, $label ) {
 		$body          = (string) $body;
 		$label_pattern = '/^[ \t>*_\-]*' . preg_quote( (string) $label, '/' ) . '[ \t]*:[ \t]*$/mi';
@@ -477,6 +562,12 @@ class FLOSC_Trajectory {
 		return trim( (string) $tail );
 	}
 
+	/**
+	 * Off ramp exactness.
+	 *
+	 * @param mixed $mode Mode.
+	 * @return mixed
+	 */
 	private static function off_ramp_exactness( $mode ) {
 		$mode = sanitize_key( (string) $mode );
 		if ( ! in_array( $mode, array( 'flexible', 'preferred', 'exact' ), true ) ) {
@@ -485,6 +576,12 @@ class FLOSC_Trajectory {
 		return $mode;
 	}
 
+	/**
+	 * Build off ramp guidance.
+	 *
+	 * @param mixed $rule Rule.
+	 * @return mixed
+	 */
 	private static function build_off_ramp_guidance( $rule ) {
 		$phrases_text = trim( (string) ( $rule['off_ramp_phrases'] ?? '' ) );
 		if ( '' === $phrases_text ) {
@@ -513,6 +610,12 @@ class FLOSC_Trajectory {
 		return "\n" . $lead . "\n- " . implode( "\n- ", $phrases );
 	}
 
+	/**
+	 * Unquote.
+	 *
+	 * @param mixed $s S.
+	 * @return mixed
+	 */
 	private static function unquote( $s ) {
 		$s = trim( (string) $s );
 		if ( strlen( $s ) >= 2 ) {

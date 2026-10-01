@@ -32,11 +32,202 @@ if ( ! current_user_can( 'edit_others_posts' ) ) {
 	wp_die( esc_html__( 'You do not have permission to access this page.', 'flosc' ), 403 );
 }
 
-$flosc_flow_settings           = $GLOBALS['flosc_current_settings'] ?? array();
-$flosc_selected_ivr            = $GLOBALS['flosc_current_ivr'] ?? '';
-$flosc_flow_key                = $GLOBALS['flosc_settings_key'] ?? '';
-$flosc_get                     = wp_unslash( $_GET );
-$flosc_post                    = wp_unslash( $_POST );
+$flosc_flow_settings = $GLOBALS['flosc_current_settings'] ?? array();
+$flosc_selected_ivr  = $GLOBALS['flosc_current_ivr'] ?? '';
+$flosc_flow_key      = $GLOBALS['flosc_settings_key'] ?? '';
+$flosc_get           = flosc_nav_params();
+
+/*
+ * Flow-file actions: duplicate, import, delete.
+ *
+ * This screen used to read wp_unslash( $_POST ) at file scope and then test
+ * that array in three branch conditions. WordPress.org raised that shape twice,
+ * in the T7 and T13 reviews -- "don't check for post submission outside of
+ * functions" -- and WPCS never reported it, because the nonce checks further
+ * down satisfy the sniff for the whole file scope.
+ *
+ * The two functions below put the request behind an origin check instead. The
+ * detector refuses anything that is not a POST from a user who can reach this
+ * screen, and it names an action only when BOTH the submit button and its file
+ * field are present, which is the condition the branches always used.
+ *
+ * Neither belongs in includes/flosc-request.php: that file is for read-only
+ * navigation parameters and says so, and these feed writes.
+ *
+ * EACH FUNCTION VERIFIES ITS OWN NONCE
+ *
+ * An earlier version of these helpers left the nonce to the caller and carried
+ * a note here saying WPCS reported five NonceVerification.Missing findings that
+ * were true but safe. That was an argument where a change belonged, so both now
+ * verify:
+ *
+ *   - The detector calls check_admin_referer() the moment it knows which action
+ *     was submitted, with the same action string the branch below uses. It runs
+ *     a few lines earlier in the same execution path than the branch's own
+ *     check did, and dies on wp_nonce_ays() in exactly the same way.
+ *   - The reader takes the action as an argument and verifies it, so "call only
+ *     after check_admin_referer()" is enforced by the code instead of written
+ *     above it.
+ *
+ * The three branches keep their own check_admin_referer(), their own
+ * manage_options check and their wp_die() messages unchanged, so each stays
+ * safe on its own terms. check_admin_referer() re-verifying a valid nonce
+ * passes; an invalid one has already died.
+ *
+ * Nothing here is suppressed. WPCS reports no NonceVerification finding in this
+ * file because there is no longer one to report.
+ */
+
+if ( ! function_exists( 'flosc_flow_file_name' ) ) {
+	/**
+	 * A posted value reduced to a bare filename.
+	 *
+	 * Takes a value rather than a key, so it reaches into no superglobal and can
+	 * be reasoned about on its own: request access and filename sanitizing stay
+	 * separate jobs.
+	 *
+	 * Expects a value that has already been through wp_unslash(). Unslashing
+	 * belongs at the read, beside the superglobal it came from, and doing it
+	 * here as well would strip a second layer of backslashes from a filename
+	 * that legitimately contains one.
+	 *
+	 * @param mixed $value Unslashed posted value.
+	 * @return string Sanitized basename, or '' when the value is not a scalar.
+	 */
+	function flosc_flow_file_name( $value ) {
+		if ( ! is_scalar( $value ) ) {
+			return '';
+		}
+
+		return basename( sanitize_file_name( (string) $value ) );
+	}
+}
+
+if ( ! function_exists( 'flosc_flow_file_request' ) ) {
+	/**
+	 * The flow-file action and filename this request carries, once verified.
+	 *
+	 * Returns two keys: 'action' is 'duplicate', 'import', 'delete' or '' for
+	 * none, and 'file' is the sanitized basename that action applies to, or ''.
+	 *
+	 * ORDER IS THE POINT
+	 *
+	 * The nonce is read and verified against the three known actions BEFORE any
+	 * action payload is looked at. Nothing about which button was pressed, and
+	 * nothing about the filename, is examined until a nonce has succeeded. That
+	 * is what the reviewer's "don't check for post submission outside of
+	 * functions" objection is really about, and it is a stronger property than
+	 * the one PHPCS measures: the sniff is satisfied by a nonce check anywhere
+	 * in a function's scope, including after the read. Execution order here does
+	 * not rely on that leniency.
+	 *
+	 * All three forms use wp_nonce_field( $action ), so the nonce arrives in the
+	 * default _wpnonce field and verifies against exactly one of the three
+	 * actions. Trying each in turn identifies the action from the nonce itself.
+	 *
+	 * THE SECOND LOOP IS NOT REDUNDANT
+	 *
+	 * A request carrying a button and its filename with a bad or missing nonce
+	 * used to reach the branch's check_admin_referer() and be rejected there,
+	 * with the WordPress "link you followed has expired" screen. Without the
+	 * fallback it would become silently ignored instead, which is a worse answer
+	 * for a person whose admin session simply timed out. The fallback re-creates
+	 * that rejection without reading any field value.
+	 *
+	 * @return array Keys 'action' and 'file', both strings.
+	 */
+	function flosc_flow_file_request() {
+		$flosc_none = array(
+			'action' => '',
+			'file'   => '',
+		);
+
+		$flosc_method = isset( $_SERVER['REQUEST_METHOD'] )
+			? strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) )
+			: '';
+		if ( 'POST' !== $flosc_method ) {
+			return $flosc_none;
+		}
+
+		// The capability the FLOSC menu itself registers. Each action re-checks
+		// manage_options after its own nonce; this is the outer refusal.
+		if ( ! current_user_can( 'edit_others_posts' ) ) {
+			return $flosc_none;
+		}
+
+		$flosc_actions = array(
+			'duplicate' => array(
+				'nonce'  => 'flosc_duplicate_ivr_file',
+				'button' => 'flosc_duplicate_ivr_file',
+				'field'  => 'duplicate_ivr_file',
+			),
+			'import'    => array(
+				'nonce'  => 'flosc_import_selected_ivr_file',
+				'button' => 'flosc_import_selected_ivr_file',
+				'field'  => 'import_ivr_file',
+			),
+			'delete'    => array(
+				'nonce'  => 'flosc_delete_ivr_file',
+				'button' => 'flosc_delete_ivr_file',
+				'field'  => 'delete_ivr_file',
+			),
+		);
+
+		$flosc_nonce = isset( $_POST['_wpnonce'] )
+			? sanitize_text_field( wp_unslash( $_POST['_wpnonce'] ) )
+			: '';
+
+		$flosc_verified = '';
+		foreach ( $flosc_actions as $flosc_action => $flosc_spec ) {
+			if ( wp_verify_nonce( $flosc_nonce, $flosc_spec['nonce'] ) ) {
+				$flosc_verified = $flosc_action;
+				break;
+			}
+		}
+
+		// Only now is anything action-specific read.
+		if ( '' !== $flosc_verified ) {
+			$flosc_spec = $flosc_actions[ $flosc_verified ];
+			if ( isset( $_POST[ $flosc_spec['button'] ] ) && isset( $_POST[ $flosc_spec['field'] ] ) ) {
+				/*
+				 * Unslashed and sanitized here, at the read, rather than inside
+				 * flosc_flow_file_name(). WPCS cannot follow a sanitizer across a
+				 * function call and reported this as unsanitized input when it
+				 * was only sanitized one frame down -- the same complaint, in the
+				 * same file, that this whole rewrite exists to answer. The helper
+				 * still reduces the result to a basename; sanitize_file_name() is
+				 * idempotent, so applying it in both places costs nothing.
+				 */
+				$flosc_raw = is_scalar( $_POST[ $flosc_spec['field'] ] )
+					? sanitize_file_name( wp_unslash( $_POST[ $flosc_spec['field'] ] ) )
+					: '';
+
+				return array(
+					'action' => $flosc_verified,
+					'file'   => flosc_flow_file_name( $flosc_raw ),
+				);
+			}
+		}
+
+		/*
+		 * Bad or missing nonce, but the shape of a real submission: reject it
+		 * the way the branch used to, rather than ignoring it. Presence only --
+		 * no field value is read here.
+		 */
+		foreach ( $flosc_actions as $flosc_spec ) {
+			if ( isset( $_POST[ $flosc_spec['button'] ] ) && isset( $_POST[ $flosc_spec['field'] ] ) ) {
+				check_admin_referer( $flosc_spec['nonce'] );
+			}
+		}
+
+		return $flosc_none;
+	}
+}
+
+$flosc_flow_file_request = flosc_flow_file_request();
+$flosc_flow_file_action  = $flosc_flow_file_request['action'];
+$flosc_flow_file_name    = $flosc_flow_file_request['file'];
+
 $flosc_ivr_param               = rawurlencode( $flosc_selected_ivr );
 $flosc_base_url                = admin_url( 'admin.php?page=flosc-settings&ivr=' . $flosc_ivr_param . '&tab=' );
 $flosc_flow_docs_url           = add_query_arg(
@@ -142,47 +333,32 @@ if ( 'all' === $flosc_flow_view ) {
 
 	$flosc_ivr_dir = function_exists( 'flosc_data_dir' ) ? flosc_data_dir() : '';
 
-	if ( isset( $flosc_get['flosc_download_ivr'] ) && isset( $flosc_get['_wpnonce'] ) ) {
-		$flosc_download_file = sanitize_file_name( (string) $flosc_get['flosc_download_ivr'] );
-		if ( wp_verify_nonce( sanitize_text_field( (string) $flosc_get['_wpnonce'] ), 'flosc_download_ivr_' . $flosc_download_file ) ) {
-			if ( ! current_user_can( 'manage_options' ) ) {
-				wp_die( esc_html__( 'You do not have permission to download IVR files.', 'flosc' ) );
-			}
-			$flosc_download_path = function_exists( 'flosc_resolve_ivr_file_path' )
-				? flosc_resolve_ivr_file_path( $flosc_download_file )
-				: '';
-			if ( '' !== $flosc_download_path && file_exists( $flosc_download_path ) && is_readable( $flosc_download_path ) ) {
-				if ( ! function_exists( 'WP_Filesystem' ) ) {
-					require_once ABSPATH . 'wp-admin/includes/file.php';
-				}
-				global $wp_filesystem;
-				WP_Filesystem();
-				$flosc_download_content = is_object( $wp_filesystem ) ? $wp_filesystem->get_contents( $flosc_download_path ) : '';
-				if ( false === $flosc_download_content ) {
-					$flosc_download_content = '';
-				}
-				$flosc_fs_dl = class_exists( 'FLOSC_Filesystem' ) ? new FLOSC_Filesystem() : null;
-				if ( $flosc_fs_dl ) {
-					$flosc_fs_dl->stream_plain_download_and_exit(
-						(string) $flosc_download_content,
-						'text/markdown; charset=UTF-8',
-						basename( (string) $flosc_download_file )
-					);
-				}
-				status_header( 500 );
-				exit;
-			}
-		}
+	/*
+	 * The download itself is NOT done here.
+	 *
+	 * This block used to verify the nonce, read the file and stream it with
+	 * Content-Disposition. That could never work: this file is a settings tab,
+	 * included while the admin page is already being sent, so those headers were
+	 * discarded and the file's bytes were spliced into the middle of the page.
+	 * The browser received the admin screen at HTTP 200 with an IVR file inside
+	 * it, and no download ever started.
+	 *
+	 * FLOSC_Admin::maybe_serve_ivr_file_download() now does it on admin_init,
+	 * before any output, and exits on success. Reaching this line therefore means
+	 * that handler declined -- bad nonce, missing capability, or no readable file
+	 * -- and the only thing left to do is say so.
+	 */
+	if ( isset( $flosc_get['flosc_download_ivr'] ) ) {
 		add_settings_error( 'flosc_settings', 'download_failed', 'Could not download IVR file.', 'error' );
 	}
 
-	if ( isset( $flosc_post['flosc_duplicate_ivr_file'] ) && isset( $flosc_post['duplicate_ivr_file'] ) ) {
+	if ( 'duplicate' === $flosc_flow_file_action ) {
 		check_admin_referer( 'flosc_duplicate_ivr_file' );
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have permission to duplicate IVR files.', 'flosc' ) );
 		}
 
-		$flosc_source_file = basename( sanitize_file_name( (string) $flosc_post['duplicate_ivr_file'] ) );
+		$flosc_source_file = $flosc_flow_file_name;
 		$flosc_source_path = function_exists( 'flosc_resolve_ivr_file_path' )
 			? flosc_resolve_ivr_file_path( $flosc_source_file )
 			: '';
@@ -192,14 +368,34 @@ if ( 'all' === $flosc_flow_view ) {
 		} elseif ( ! function_exists( 'flosc_data_file_path' ) || ! function_exists( 'flosc_write_data_file' ) ) {
 			add_settings_error( 'flosc_settings', 'duplicate_failed', 'Uploads data directory is not available. Cannot duplicate IVR file.', 'error' );
 		} else {
+			/*
+			 * The copy has to keep the _ivr suffix, or nothing can see it.
+			 *
+			 * The file list on this screen is built with glob( '*_ivr.md' ), and
+			 * so is flosc_config_glob(). Naming the copy
+			 * "flosc_default_ivr-copy.md" put the suffix in the middle, so the
+			 * file was written, the success notice named it, and it appeared in
+			 * no list: it could not be selected, edited, downloaded or deleted
+			 * through the UI, only found on disk. Pressing Duplicate on a real
+			 * install is how that surfaced.
+			 *
+			 * The suffix now goes before _ivr, giving "flosc_default-copy_ivr.md",
+			 * which the same glob finds. Names that do not end in _ivr keep the
+			 * old shape, since there is no convention to preserve for them.
+			 */
 			$flosc_extension      = pathinfo( $flosc_source_file, PATHINFO_EXTENSION );
 			$flosc_base_name      = pathinfo( $flosc_source_file, PATHINFO_FILENAME );
-			$flosc_duplicate_file = $flosc_base_name . '-copy.' . $flosc_extension;
+			$flosc_ivr_suffixed   = (bool) preg_match( '/_ivr$/', $flosc_base_name );
+			$flosc_stem           = $flosc_ivr_suffixed
+				? preg_replace( '/_ivr$/', '', $flosc_base_name )
+				: $flosc_base_name;
+			$flosc_tail           = $flosc_ivr_suffixed ? '_ivr' : '';
+			$flosc_duplicate_file = $flosc_stem . '-copy' . $flosc_tail . '.' . $flosc_extension;
 			$flosc_duplicate_path = flosc_data_file_path( $flosc_duplicate_file );
 			$flosc_counter        = 2;
 
 			while ( '' !== $flosc_duplicate_path && file_exists( $flosc_duplicate_path ) ) {
-				$flosc_duplicate_file = $flosc_base_name . '-copy-' . $flosc_counter . '.' . $flosc_extension;
+				$flosc_duplicate_file = $flosc_stem . '-copy-' . $flosc_counter . $flosc_tail . '.' . $flosc_extension;
 				$flosc_duplicate_path = flosc_data_file_path( $flosc_duplicate_file );
 				++$flosc_counter;
 			}
@@ -214,13 +410,13 @@ if ( 'all' === $flosc_flow_view ) {
 	}
 
 	// Table "Apply": merge SOURCE file into CURRENT flow (Switch Flow); do not re-point current flow to the source filename.
-	if ( isset( $flosc_post['flosc_import_selected_ivr_file'] ) && isset( $flosc_post['import_ivr_file'] ) ) {
+	if ( 'import' === $flosc_flow_file_action ) {
 		check_admin_referer( 'flosc_import_selected_ivr_file' );
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have permission to import IVR files.', 'flosc' ) );
 		}
 
-		$flosc_source_file = basename( sanitize_file_name( (string) $flosc_post['import_ivr_file'] ) );
+		$flosc_source_file = $flosc_flow_file_name;
 		$flosc_source_path = '';
 		if ( function_exists( 'flosc_resolve_ivr_file_path' ) ) {
 			$flosc_source_path = (string) flosc_resolve_ivr_file_path( $flosc_source_file );
@@ -292,13 +488,13 @@ if ( 'all' === $flosc_flow_view ) {
 		}
 	}
 
-	if ( isset( $flosc_post['flosc_delete_ivr_file'] ) && isset( $flosc_post['delete_ivr_file'] ) ) {
+	if ( 'delete' === $flosc_flow_file_action ) {
 		check_admin_referer( 'flosc_delete_ivr_file' );
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have permission to delete IVR files.', 'flosc' ) );
 		}
 
-		$flosc_delete_file = basename( sanitize_file_name( (string) $flosc_post['delete_ivr_file'] ) );
+		$flosc_delete_file = $flosc_flow_file_name;
 		$flosc_delete_path = function_exists( 'flosc_data_file_path' )
 			? flosc_data_file_path( $flosc_delete_file )
 			: '';
@@ -1131,18 +1327,36 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 			foreach ( $flosc_available_ivr_files as $flosc_ivr_filename ) :
 				$flosc_is_active_row = ( $flosc_ivr_filename === $flosc_selected_ivr );
 				$flosc_edit_url      = esc_url( admin_url( 'admin.php?page=flosc-settings&tab=ivr-messages&ivr=' . rawurlencode( $flosc_ivr_filename ) . '&view=single' ) );
-				$flosc_download_url  = wp_nonce_url(
-					esc_url(
-						add_query_arg(
-							array(
-								'page'               => 'flosc-settings',
-								'tab'                => 'flow',
-								'ivr'                => $flosc_selected_ivr,
-								'view'               => 'all',
-								'flosc_download_ivr' => $flosc_ivr_filename,
-							),
-							admin_url( 'admin.php' )
-						)
+
+				/*
+				 * No esc_url() inside wp_nonce_url().
+				 *
+				 * esc_url() encodes every separator as &#038;. wp_nonce_url()
+				 * normalises &amp; back to & before appending the nonce, but it
+				 * does not know about &#038;, so the pre-escaped separators
+				 * survive and the URL it returns is escaped a second time. The
+				 * rendered href came out as
+				 *
+				 *   ...&#038;_wpnonce=16e795246a#038;tab=flow&#038;ivr=...
+				 *
+				 * with the & missing in front of that one #038;. A browser reads
+				 * everything from there on as a fragment, so tab, ivr, view and
+				 * flosc_download_ivr are never sent and Download does nothing.
+				 * Found by clicking it on a real install.
+				 *
+				 * Build the URL raw, add the nonce, and escape exactly once at
+				 * output on the line below.
+				 */
+				$flosc_download_url = wp_nonce_url(
+					add_query_arg(
+						array(
+							'page'               => 'flosc-settings',
+							'tab'                => 'flow',
+							'ivr'                => $flosc_selected_ivr,
+							'view'               => 'all',
+							'flosc_download_ivr' => $flosc_ivr_filename,
+						),
+						admin_url( 'admin.php' )
 					),
 					'flosc_download_ivr_' . $flosc_ivr_filename
 				);

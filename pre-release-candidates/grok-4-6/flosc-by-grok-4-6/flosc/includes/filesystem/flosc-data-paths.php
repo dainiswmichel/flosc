@@ -402,7 +402,7 @@ if ( ! function_exists( 'flosc_protect_uploads_directory' ) ) {
 	/**
 	 * Drops lightweight access-control files into a FLOSC uploads folder.
 	 *
-	 * index.php blanks directory listings everywhere; .htaccess denies direct
+	 * Index.php blanks directory listings everywhere; .htaccess denies direct
 	 * reads on Apache/LiteSpeed hosts. These complement — never replace —
 	 * server-level security; they exist so a casual URL guess returns nothing.
 	 *
@@ -553,6 +553,12 @@ if ( ! function_exists( 'flosc_is_allowed_ivr_source_path' ) ) {
  * ==========================================================================
  */
 if ( ! function_exists( 'flosc_flow_kb_dir' ) ) {
+	/**
+	 * Flow kb dir.
+	 *
+	 * @param mixed $flow_stem Flow stem.
+	 * @return mixed
+	 */
 	function flosc_flow_kb_dir( $flow_stem ) {
 		$base = flosc_data_dir();
 		if ( '' === $base ) {
@@ -622,6 +628,11 @@ if ( ! function_exists( 'flosc_chat_archive_dir' ) ) {
  * ==========================================================================
  */
 if ( ! function_exists( 'flosc_token_secret' ) ) {
+	/**
+	 * Token secret.
+	 *
+	 * @return mixed
+	 */
 	function flosc_token_secret() {
 		$secret = get_option( 'flosc_token_secret' );
 		if ( ! $secret ) {
@@ -729,6 +740,8 @@ if ( ! function_exists( 'flosc_checkout_binding_verify' ) ) {
  */
 if ( ! function_exists( 'flosc_paypal_purchase_intent_create' ) ) {
 	/**
+	 * Paypal purchase intent create.
+	 *
 	 * @param array $data offer_id, plan_id, plan_type, amount, currency, flow_id, user_id, session_id, mode.
 	 * @return array|WP_Error Intent record including purchase_uuid
 	 */
@@ -773,7 +786,9 @@ if ( ! function_exists( 'flosc_paypal_purchase_intent_create' ) ) {
 
 if ( ! function_exists( 'flosc_paypal_purchase_intent_get' ) ) {
 	/**
-	 * @param string $uuid
+	 * Paypal purchase intent get.
+	 *
+	 * @param string $uuid UUID.
 	 * @return array|false
 	 */
 	function flosc_paypal_purchase_intent_get( $uuid ) {
@@ -788,9 +803,11 @@ if ( ! function_exists( 'flosc_paypal_purchase_intent_get' ) ) {
 
 if ( ! function_exists( 'flosc_paypal_purchase_intent_mark_fulfilled' ) ) {
 	/**
-	 * @param string $uuid
-	 * @param string $subscription_id
-	 * @param int    $user_id
+	 * Paypal purchase intent mark fulfilled.
+	 *
+	 * @param string $uuid UUID.
+	 * @param string $subscription_id Subscription ID.
+	 * @param int    $user_id User ID.
 	 * @return bool
 	 */
 	function flosc_paypal_purchase_intent_mark_fulfilled( $uuid, $subscription_id, $user_id = 0 ) {
@@ -876,9 +893,13 @@ if ( ! function_exists( 'flosc_issue_post_purchase_session' ) ) {
  * ==========================================================================
  */
 if ( ! function_exists( 'flosc_config_file' ) ) {
-	// Single config file: the uploads copy if it exists, else the shipped
-	// default. The plugin path is a READ-ONLY resolution — every write goes
-	// through flosc_write_data_file(), which only accepts uploads targets.
+	/**
+	 * Single config file: the uploads copy if it exists, else the shipped
+	 * default. The plugin path is a READ-ONLY resolution — every write goes
+	 * through flosc_write_data_file(), which only accepts uploads targets.
+	 *
+	 * @param mixed $filename Filename.
+	 */
 	function flosc_config_file( $filename ) {
 		$filename = ltrim( (string) $filename, '/' );
 		$base     = flosc_data_dir();
@@ -896,10 +917,17 @@ if ( ! function_exists( 'flosc_config_file' ) ) {
  * @return string[]
  */
 if ( ! function_exists( 'flosc_lesson_catalog_basenames' ) ) {
+	/**
+	 * Lesson catalog basenames.
+	 *
+	 * @return mixed
+	 */
 	function flosc_lesson_catalog_basenames() {
 		// Ship core: neutral name only. Instances may add legacy basenames via filter.
 		$names = array( 'lesson_catalog.md' );
 		/**
+		 * Filters the basenames FLOSC accepts for the lesson catalog.
+		 *
 		 * @param string[] $names Basename candidates, first match wins for reads.
 		 */
 		$names = apply_filters( 'flosc_lesson_catalog_basenames', $names );
@@ -914,6 +942,11 @@ if ( ! function_exists( 'flosc_lesson_catalog_basenames' ) ) {
  * @return string Absolute path or empty string.
  */
 if ( ! function_exists( 'flosc_resolve_lesson_catalog_path' ) ) {
+	/**
+	 * Resolve lesson catalog path.
+	 *
+	 * @return mixed
+	 */
 	function flosc_resolve_lesson_catalog_path() {
 		if ( ! function_exists( 'flosc_config_file' ) ) {
 			return '';
@@ -944,6 +977,11 @@ if ( ! function_exists( 'flosc_resolve_lesson_catalog_path' ) ) {
  * @return string[] Absolute paths under flosc_data_dir(), or empty if uploads unavailable.
  */
 if ( ! function_exists( 'flosc_lesson_catalog_write_paths' ) ) {
+	/**
+	 * Lesson catalog write paths.
+	 *
+	 * @return mixed
+	 */
 	function flosc_lesson_catalog_write_paths() {
 		$dir = function_exists( 'flosc_data_dir' ) ? flosc_data_dir() : '';
 		if ( '' === $dir ) {
@@ -961,8 +999,12 @@ if ( ! function_exists( 'flosc_lesson_catalog_write_paths' ) ) {
 }
 
 if ( ! function_exists( 'flosc_config_glob' ) ) {
-	// Union of glob matches across uploads + plugin dirs, deduped by basename
-	// (uploads wins, since it is scanned first). $patterns is one pattern or a list.
+	/**
+	 * Union of glob matches across uploads + plugin dirs, deduped by basename
+	 * (uploads wins, since it is scanned first). $patterns is one pattern or a list.
+	 *
+	 * @param mixed $patterns Patterns.
+	 */
 	function flosc_config_glob( $patterns ) {
 		$patterns = (array) $patterns;
 		$dirs     = array();
@@ -991,7 +1033,71 @@ if ( ! function_exists( 'flosc_config_glob' ) ) {
 	}
 }
 
+if ( ! function_exists( 'flosc_resolve_ivr_file_path' ) ) {
+	/**
+	 * Where an IVR file actually lives: uploads first, shipped defaults second.
+	 *
+	 * WHY THIS IS HERE AND NOT IN A TAB TEMPLATE
+	 *
+	 * This function was defined only inside admin/ivr-messages.php, which is one
+	 * settings tab. admin/flow.php is a different tab, so on the Flow screen the
+	 * definition had never been loaded and three call sites guarded with
+	 * function_exists() all took their else branch:
+	 *
+	 *   flow.php:342  Download  -> empty path, "Could not download IVR file."
+	 *   flow.php:377  Duplicate -> empty path, "Source IVR file not found."
+	 *   flow.php:416  Import    -> empty path, import skipped
+	 *
+	 * All three failed with a polite notice rather than an error, which is why
+	 * no scanner and no gate caught it. It was found by pressing Duplicate on a
+	 * real WordPress install and watching no file appear.
+	 *
+	 * The body is unchanged from the ivr-messages.php version. That file keeps
+	 * its own `if ( ! function_exists() )` guard, so it now sees this definition
+	 * already present and declares nothing -- no file loses anything, and one
+	 * file gains the definition early enough for every screen to use it.
+	 * includes/filesystem/flosc-data-paths.php is required from flosc.php on
+	 * every request.
+	 *
+	 * @param mixed $flosc_ivr_filename IVR filename.
+	 * @return string Absolute path; the uploads path when nothing exists yet, so
+	 *                a caller creating the file writes to a permitted location.
+	 */
+	function flosc_resolve_ivr_file_path( $flosc_ivr_filename ) {
+		$flosc_ivr_filename = sanitize_file_name( trim( (string) $flosc_ivr_filename ) );
+		// Per WordPress.org policy: runtime-generated files must be written to uploads only.
+		// flosc_data_dir() returns the writable uploads directory or '' when unavailable.
+		$uploads_dir      = function_exists( 'flosc_data_dir' ) ? flosc_data_dir() : '';
+		$flosc_plugin_dir = FLOSC_PLUGIN_DIR . 'ai_configuration_files/';
+
+		$uploads_path = ( '' !== $uploads_dir ) ? $uploads_dir . $flosc_ivr_filename : '';
+		if ( '' !== $uploads_path && file_exists( $uploads_path ) ) {
+			return $uploads_path;
+		}
+
+		if ( function_exists( 'flosc_config_file' ) ) {
+			$resolved = flosc_config_file( $flosc_ivr_filename );
+			if ( ! empty( $resolved ) && file_exists( $resolved ) ) {
+				return $resolved;
+			}
+		}
+
+		$flosc_plugin_path = $flosc_plugin_dir . $flosc_ivr_filename;
+		if ( '' !== $flosc_ivr_filename && file_exists( $flosc_plugin_path ) ) {
+			return $flosc_plugin_path;
+		}
+
+		return $uploads_path;
+	}
+}
+
 if ( ! function_exists( 'flosc_resolve_flow_option_key_for_ivr' ) ) {
+	/**
+	 * Resolve flow option key for IVR.
+	 *
+	 * @param mixed $flosc_ivr_filename IVR filename.
+	 * @return mixed
+	 */
 	function flosc_resolve_flow_option_key_for_ivr( $flosc_ivr_filename ) {
 		$flosc_ivr_filename = basename( (string) $flosc_ivr_filename );
 		$target_stem        = sanitize_key( pathinfo( $flosc_ivr_filename, PATHINFO_FILENAME ) );

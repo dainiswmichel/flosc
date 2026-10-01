@@ -45,6 +45,12 @@ if ( ! current_user_can( 'edit_others_posts' ) ) {
  * @return void
  */
 if ( ! function_exists( 'flosc_tab_header' ) ) {
+	/**
+	 * Tab header.
+	 *
+	 * @param mixed $emoji    Emoji.
+	 * @param mixed $tab_name Tab name.
+	 */
 	function flosc_tab_header( $emoji, $tab_name ) {
 		$flosc_ivr_file = $GLOBALS['flosc_current_ivr'] ?? '';
 		$flosc_settings = $GLOBALS['flosc_current_settings'] ?? array();
@@ -68,6 +74,9 @@ if ( ! function_exists( 'flosc_tab_header' ) ) {
  * @return void
  */
 if ( ! function_exists( 'flosc_tab_footer' ) ) {
+	/**
+	 * Tab footer.
+	 */
 	function flosc_tab_footer() {
 		$flosc_version = defined( 'FLOSC_VERSION' ) ? FLOSC_VERSION : '?.?.?';
 		echo '<div class="flosc-tab-footer">';
@@ -83,6 +92,11 @@ if ( ! function_exists( 'flosc_tab_footer' ) ) {
  * @return string
  */
 if ( ! function_exists( 'flosc_michel_timestamp' ) ) {
+	/**
+	 * Michel timestamp.
+	 *
+	 * @return mixed
+	 */
 	function flosc_michel_timestamp() {
 		return gmdate( 'Y' ) . 'y-' . gmdate( 'm' ) . 'm-' . gmdate( 'd' ) . 'd-UTC' . gmdate( 'H' ) . 'h-' . gmdate( 'i' ) . 'm-' . gmdate( 's' ) . 's';
 	}
@@ -95,6 +109,12 @@ if ( ! function_exists( 'flosc_michel_timestamp' ) ) {
  * @return string 'ok', 'missing', or 'unknown'
  */
 if ( ! function_exists( 'flosc_check_permalink_status' ) ) {
+	/**
+	 * Check permalink status.
+	 *
+	 * @param mixed $slug Slug.
+	 * @return mixed
+	 */
 	function flosc_check_permalink_status( $slug ) {
 		if ( empty( $slug ) ) {
 			return 'unknown';
@@ -130,6 +150,11 @@ if ( ! function_exists( 'flosc_check_permalink_status' ) ) {
  * @return void
  */
 if ( ! function_exists( 'flosc_permalink_status_indicator' ) ) {
+	/**
+	 * Permalink status indicator.
+	 *
+	 * @param mixed $slug Slug.
+	 */
 	function flosc_permalink_status_indicator( $slug ) {
 		$flosc_status = flosc_check_permalink_status( $slug );
 		$last_flush   = get_option( 'flosc_last_permalink_flush', null );
@@ -195,6 +220,11 @@ if ( ! function_exists( 'flosc_permalink_status_indicator' ) ) {
  * @return string[]
  */
 if ( ! function_exists( 'flosc_known_flow_option_keys' ) ) {
+	/**
+	 * Known flow option keys.
+	 *
+	 * @return mixed
+	 */
 	function flosc_known_flow_option_keys() {
 		$keys = array();
 		if ( function_exists( 'flosc_flows' ) ) {
@@ -265,7 +295,7 @@ if ( empty( $flosc_ivr_files ) ) {
 // Read request vars early. The flow selector below reads $flosc_get['ivr'] to know
 // which flow is selected. ($get was previously first defined further down — after
 // this point — so the selector always fell back to $flosc_ivr_files[0] and ignored the URL.).
-$flosc_get = wp_unslash( $_GET );
+$flosc_get = flosc_nav_params();
 
 $flosc_default_ivr_meta_key = '_flosc_admin_default_ivr';
 $flosc_current_user_id      = get_current_user_id();
@@ -366,8 +396,32 @@ if ( $flosc_flow_seed_needed ) {
 	update_option( $flosc_settings_key, $flosc_flow_settings );
 }
 
-$flosc_get  = wp_unslash( $_GET );
-$flosc_post = wp_unslash( $_POST );
+$flosc_get = flosc_nav_params();
+
+/*
+ * The posted body, read only when this request actually is a POST.
+ *
+ * The T13 review's objection to file-scope reads was not only about nonces:
+ * "Don't check for post submission outside of functions. Doing so means that
+ * the check will run on every single load of the plugin." On a GET -- every
+ * render of every tab -- the old line unslashed the whole superglobal to
+ * produce an empty array.
+ *
+ * On a GET, $_POST is empty, so wp_unslash( $_POST ) and array() are the same
+ * value. This changes when the read happens, not what any caller receives.
+ * It deliberately stays at file scope: the six nonce checks below satisfy
+ * WPCS for this scope, and moving the read into a function would take it out
+ * of that scope and report an error where there is no defect.
+ *
+ * It is not converted to a declared key list. $flosc_post is read with 251
+ * distinct keys here and in seven tab includes, ten of them built at runtime
+ * such as $flosc_post[ $state . '_pill_icon' ]. An allowlist would silently
+ * drop whichever field nobody declared.
+ */
+$flosc_method = isset( $_SERVER['REQUEST_METHOD'] )
+	? strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) )
+	: '';
+$flosc_post   = ( 'POST' === $flosc_method ) ? wp_unslash( $_POST ) : array();
 // redirect_to_settings_tab() sets flosc_forced_tab when headers are already
 // sent and it cannot redirect. It takes precedence over the URL because it is
 // the tab the admin actually asked for.
@@ -654,10 +708,10 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 	}
 
 	// Collect all POST data for this flow.
-	$flosc_new_settings = $flosc_flow_settings; // Start with existing
+	$flosc_new_settings = $flosc_flow_settings; // Start with existing.
 
 	// v1.5.0: Keys that contain multiline content (stored in flow settings via flow_ prefix).
-	$flosc_textarea_flow_keys = array(
+	$flosc_textarea_flow_keys       = array(
 		'sso_apple_private_key',
 		// AI tab: brand facts are a multiline prompt injection — keep newlines.
 		'ai_brand_facts',
@@ -717,7 +771,10 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		'user_status_member_level',
 		'user_status_admin',
 	);
-	$flosc_identity_html_keys = array( 'privacy_policy_content', 'terms_of_service_content', 'data_deletion_content', 'platform_compliance_content' );
+	$flosc_identity_html_keys       = array( 'privacy_policy_content', 'terms_of_service_content', 'data_deletion_content', 'platform_compliance_content' );
+	$flosc_identity_slug_keys       = array( 'privacy_policy_slug', 'terms_of_service_slug', 'data_deletion_slug', 'platform_compliance_slug' );
+	$flosc_identity_policy_url_keys = array( 'privacy_policy_external_url', 'terms_of_service_external_url', 'data_deletion_external_url', 'platform_compliance_external_url' );
+	$flosc_identity_bool_keys       = array( 'privacy_policy_use_external_link', 'terms_of_service_use_external_link', 'data_deletion_use_external_link', 'platform_compliance_use_external_link' );
 
 	foreach ( $flosc_post as $flosc_key => $flosc_value ) {
 		if ( 0 === strpos( $flosc_key, 'flow_' ) ) {
@@ -730,9 +787,20 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 				// newlines are the format. sanitize_text_field would collapse
 				// a four-line request into one unreadable line and lose it.
 				|| (bool) preg_match( '/^ai_[a-z0-9_]+_params$/', $flosc_setting_key )
-				|| '_body' === substr( $flosc_setting_key, -5 ); // email bodies (guest/member/newsletter) — preserve newlines
+				|| '_body' === substr( $flosc_setting_key, -5 ); // email bodies (guest/member/newsletter) — preserve newlines.
 			if ( in_array( $flosc_setting_key, $flosc_identity_html_keys, true ) ) {
 				$flosc_new_settings[ $flosc_setting_key ] = wp_kses_post( $flosc_value );
+			} elseif ( in_array( $flosc_setting_key, $flosc_identity_slug_keys, true ) ) {
+				// An empty slug means the page is not served, so an empty value is
+				// kept rather than replaced with a default.
+				$flosc_new_settings[ $flosc_setting_key ] = sanitize_title( (string) $flosc_value );
+			} elseif ( in_array( $flosc_setting_key, $flosc_identity_policy_url_keys, true ) ) {
+				$flosc_new_settings[ $flosc_setting_key ] = esc_url_raw( trim( (string) $flosc_value ) );
+			} elseif ( in_array( $flosc_setting_key, $flosc_identity_bool_keys, true ) ) {
+				// A hidden 0 precedes each checkbox, so an unchecked box arrives as '0'.
+				$flosc_new_settings[ $flosc_setting_key ] = ( '1' === (string) $flosc_value ) ? '1' : '0';
+			} elseif ( 'policy_content_management_status' === $flosc_setting_key ) {
+				$flosc_new_settings[ $flosc_setting_key ] = ( 'inactive' === (string) $flosc_value ) ? 'inactive' : 'active';
 			} elseif ( 'ai_base_prompt' === $flosc_setting_key && function_exists( 'flosc_sanitize_personality_profile_text' ) ) {
 				$flosc_new_settings[ $flosc_setting_key ] = flosc_sanitize_personality_profile_text( is_string( $flosc_value ) ? $flosc_value : '' );
 			} elseif ( $flosc_is_textarea ) {
@@ -1154,14 +1222,14 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 					if ( isset( $flosc_pt_row['amount'] ) && '' !== $flosc_pt_row['amount'] ) {
 						$flosc_tokens['amount'] = max( 0, intval( $flosc_pt_row['amount'] ) );
 					} else {
-						unset( $flosc_tokens['amount'] ); // inherit flow default for mode
+						unset( $flosc_tokens['amount'] ); // inherit flow default for mode.
 					}
 					if ( 'none' === $flosc_cap_mode ) {
 						$flosc_tokens['cap'] = 0;
 					} elseif ( 'custom' === $flosc_cap_mode && isset( $flosc_pt_row['cap'] ) && '' !== $flosc_pt_row['cap'] ) {
 						$flosc_tokens['cap'] = max( 0, intval( $flosc_pt_row['cap'] ) );
 					} else {
-						unset( $flosc_tokens['cap'] ); // flow cap
+						unset( $flosc_tokens['cap'] ); // flow cap.
 					}
 				} else {
 					// flow defaults — clear overrides so runtime uses flow params.
@@ -1713,7 +1781,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		foreach ( $flosc_group_categories as $flosc_i => $flosc_cat ) {
 			$flosc_cat = sanitize_text_field( $flosc_cat );
 			if ( '' === $flosc_cat ) {
-				continue; // Skip rows with no category selected
+				continue; // Skip rows with no category selected.
 			}
 			$flosc_quiz                  = sanitize_text_field( $flosc_group_quizzes[ $flosc_i ] ?? '' );
 			$flosc_content_item_groups[] = array(
@@ -2047,6 +2115,23 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		'terms_of_service_content',
 		'data_deletion_content',
 		'platform_compliance_content',
+		'privacy_policy_slug',
+		'privacy_policy_heading',
+		'terms_of_service_slug',
+		'terms_of_service_heading',
+		'data_deletion_slug',
+		'data_deletion_heading',
+		'platform_compliance_slug',
+		'platform_compliance_heading',
+		'policy_content_management_status',
+		'privacy_policy_use_external_link',
+		'privacy_policy_external_url',
+		'terms_of_service_use_external_link',
+		'terms_of_service_external_url',
+		'data_deletion_use_external_link',
+		'data_deletion_external_url',
+		'platform_compliance_use_external_link',
+		'platform_compliance_external_url',
 	);
 	$flosc_identity      = $flosc_new_settings['identity'] ?? array();
 	foreach ( $flosc_identity_keys as $flosc_k ) {
@@ -2463,13 +2548,27 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 					$flosc_new_settings = $flosc_all_flows[ $flosc_save_ivr ]['settings'];
 
 					// Update from POST data (fields prefixed with ivr filename hash).
-					$flosc_prefix             = 'flow_' . md5( $flosc_save_ivr ) . '_';
-					$flosc_identity_html_keys = array( 'privacy_policy_content', 'terms_of_service_content', 'data_deletion_content', 'platform_compliance_content' );
+					$flosc_prefix                   = 'flow_' . md5( $flosc_save_ivr ) . '_';
+					$flosc_identity_html_keys       = array( 'privacy_policy_content', 'terms_of_service_content', 'data_deletion_content', 'platform_compliance_content' );
+					$flosc_identity_slug_keys       = array( 'privacy_policy_slug', 'terms_of_service_slug', 'data_deletion_slug', 'platform_compliance_slug' );
+					$flosc_identity_policy_url_keys = array( 'privacy_policy_external_url', 'terms_of_service_external_url', 'data_deletion_external_url', 'platform_compliance_external_url' );
+					$flosc_identity_bool_keys       = array( 'privacy_policy_use_external_link', 'terms_of_service_use_external_link', 'data_deletion_use_external_link', 'platform_compliance_use_external_link' );
 					foreach ( $flosc_post as $flosc_key => $flosc_value ) {
 						if ( 0 === strpos( $flosc_key, $flosc_prefix ) ) {
 							$flosc_setting_key = substr( $flosc_key, strlen( $flosc_prefix ) );
 							if ( in_array( $flosc_setting_key, $flosc_identity_html_keys, true ) ) {
 								$flosc_new_settings[ $flosc_setting_key ] = wp_kses_post( $flosc_value );
+							} elseif ( in_array( $flosc_setting_key, $flosc_identity_slug_keys, true ) ) {
+								// An empty slug means the page is not served, so an empty value is
+								// kept rather than replaced with a default.
+								$flosc_new_settings[ $flosc_setting_key ] = sanitize_title( (string) $flosc_value );
+							} elseif ( in_array( $flosc_setting_key, $flosc_identity_policy_url_keys, true ) ) {
+								$flosc_new_settings[ $flosc_setting_key ] = esc_url_raw( trim( (string) $flosc_value ) );
+							} elseif ( in_array( $flosc_setting_key, $flosc_identity_bool_keys, true ) ) {
+								// A hidden 0 precedes each checkbox, so an unchecked box arrives as '0'.
+								$flosc_new_settings[ $flosc_setting_key ] = ( '1' === (string) $flosc_value ) ? '1' : '0';
+							} elseif ( 'policy_content_management_status' === $flosc_setting_key ) {
+								$flosc_new_settings[ $flosc_setting_key ] = ( 'inactive' === (string) $flosc_value ) ? 'inactive' : 'active';
 							} else {
 								$flosc_new_settings[ $flosc_setting_key ] = sanitize_text_field( $flosc_value );
 							}
@@ -2490,6 +2589,23 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 						'terms_of_service_content',
 						'data_deletion_content',
 						'platform_compliance_content',
+						'privacy_policy_slug',
+						'privacy_policy_heading',
+						'terms_of_service_slug',
+						'terms_of_service_heading',
+						'data_deletion_slug',
+						'data_deletion_heading',
+						'platform_compliance_slug',
+						'platform_compliance_heading',
+						'policy_content_management_status',
+						'privacy_policy_use_external_link',
+						'privacy_policy_external_url',
+						'terms_of_service_use_external_link',
+						'terms_of_service_external_url',
+						'data_deletion_use_external_link',
+						'data_deletion_external_url',
+						'platform_compliance_use_external_link',
+						'platform_compliance_external_url',
 					);
 					$flosc_id      = $flosc_new_settings['identity'] ?? array();
 					foreach ( $flosc_id_keys as $flosc_ik ) {
@@ -2515,13 +2631,27 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 					$flosc_flow_key     = $flosc_flow_data['key'];
 					$flosc_new_settings = $flosc_flow_data['settings'];
 
-					$flosc_prefix             = 'flow_' . md5( $flosc_ivr_file ) . '_';
-					$flosc_identity_html_keys = array( 'privacy_policy_content', 'terms_of_service_content', 'data_deletion_content', 'platform_compliance_content' );
+					$flosc_prefix                   = 'flow_' . md5( $flosc_ivr_file ) . '_';
+					$flosc_identity_html_keys       = array( 'privacy_policy_content', 'terms_of_service_content', 'data_deletion_content', 'platform_compliance_content' );
+					$flosc_identity_slug_keys       = array( 'privacy_policy_slug', 'terms_of_service_slug', 'data_deletion_slug', 'platform_compliance_slug' );
+					$flosc_identity_policy_url_keys = array( 'privacy_policy_external_url', 'terms_of_service_external_url', 'data_deletion_external_url', 'platform_compliance_external_url' );
+					$flosc_identity_bool_keys       = array( 'privacy_policy_use_external_link', 'terms_of_service_use_external_link', 'data_deletion_use_external_link', 'platform_compliance_use_external_link' );
 					foreach ( $flosc_post as $flosc_key => $flosc_value ) {
 						if ( 0 === strpos( $flosc_key, $flosc_prefix ) ) {
 							$flosc_setting_key = substr( $flosc_key, strlen( $flosc_prefix ) );
 							if ( in_array( $flosc_setting_key, $flosc_identity_html_keys, true ) ) {
 								$flosc_new_settings[ $flosc_setting_key ] = wp_kses_post( $flosc_value );
+							} elseif ( in_array( $flosc_setting_key, $flosc_identity_slug_keys, true ) ) {
+								// An empty slug means the page is not served, so an empty value is
+								// kept rather than replaced with a default.
+								$flosc_new_settings[ $flosc_setting_key ] = sanitize_title( (string) $flosc_value );
+							} elseif ( in_array( $flosc_setting_key, $flosc_identity_policy_url_keys, true ) ) {
+								$flosc_new_settings[ $flosc_setting_key ] = esc_url_raw( trim( (string) $flosc_value ) );
+							} elseif ( in_array( $flosc_setting_key, $flosc_identity_bool_keys, true ) ) {
+								// A hidden 0 precedes each checkbox, so an unchecked box arrives as '0'.
+								$flosc_new_settings[ $flosc_setting_key ] = ( '1' === (string) $flosc_value ) ? '1' : '0';
+							} elseif ( 'policy_content_management_status' === $flosc_setting_key ) {
+								$flosc_new_settings[ $flosc_setting_key ] = ( 'inactive' === (string) $flosc_value ) ? 'inactive' : 'active';
 							} else {
 								$flosc_new_settings[ $flosc_setting_key ] = sanitize_text_field( $flosc_value );
 							}
@@ -2542,6 +2672,23 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 						'terms_of_service_content',
 						'data_deletion_content',
 						'platform_compliance_content',
+						'privacy_policy_slug',
+						'privacy_policy_heading',
+						'terms_of_service_slug',
+						'terms_of_service_heading',
+						'data_deletion_slug',
+						'data_deletion_heading',
+						'platform_compliance_slug',
+						'platform_compliance_heading',
+						'policy_content_management_status',
+						'privacy_policy_use_external_link',
+						'privacy_policy_external_url',
+						'terms_of_service_use_external_link',
+						'terms_of_service_external_url',
+						'data_deletion_use_external_link',
+						'data_deletion_external_url',
+						'platform_compliance_use_external_link',
+						'platform_compliance_external_url',
 					);
 					$flosc_id      = $flosc_new_settings['identity'] ?? array();
 					foreach ( $flosc_id_keys as $flosc_ik ) {
@@ -2609,7 +2756,7 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 					// v2.0.0: Merge identity sub-array up for form display
 					// Identity fields are stored nested but form fields read flat.
 					$flosc_si = $flosc_settings['identity'] ?? array();
-					foreach ( array( 'name', 'title', 'tagline', 'primary_color', 'chatlogo_url', 'favicon_url', 'badgeUrl', 'share_text', 'privacy_policy_content', 'terms_of_service_content', 'data_deletion_content', 'platform_compliance_content' ) as $flosc__ik ) {
+					foreach ( array( 'name', 'title', 'tagline', 'primary_color', 'chatlogo_url', 'favicon_url', 'badgeUrl', 'share_text', 'privacy_policy_content', 'terms_of_service_content', 'data_deletion_content', 'platform_compliance_content', 'privacy_policy_slug', 'privacy_policy_heading', 'terms_of_service_slug', 'terms_of_service_heading', 'data_deletion_slug', 'data_deletion_heading', 'platform_compliance_slug', 'platform_compliance_heading', 'policy_content_management_status', 'privacy_policy_use_external_link', 'privacy_policy_external_url', 'terms_of_service_use_external_link', 'terms_of_service_external_url', 'data_deletion_use_external_link', 'data_deletion_external_url', 'platform_compliance_use_external_link', 'platform_compliance_external_url' ) as $flosc__ik ) {
 						if ( isset( $flosc_si[ $flosc__ik ] ) && ! isset( $flosc_settings[ $flosc__ik ] ) ) {
 							$flosc_settings[ $flosc__ik ] = $flosc_si[ $flosc__ik ];
 						}
@@ -2710,7 +2857,7 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 								<label class="flosc-flow-field__label"><?php echo esc_html__( 'Title', 'flosc' ); ?></label>
 								<input type="text" name="<?php echo esc_attr( $flosc_prefix ); ?>title" 
 										value="<?php echo esc_attr( $flosc_settings['title'] ?? '' ); ?>"
-										placeholder="<?php echo esc_attr__( 'e.g., Standard American English Pronunciation', 'flosc' ); ?>"
+										placeholder="<?php echo esc_attr__( 'e.g., Everything you need to get started', 'flosc' ); ?>"
 										class="flosc-flow-input">
 								<p class="flosc-flow-field__hint"><?php echo esc_html__( 'Public flow description name. Shown under the personality; sent to the AI as this flow’s flow description.', 'flosc' ); ?></p>
 							</div>
@@ -2781,12 +2928,83 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 					</div>
 
 					<div class="flosc-flow-policies">
-						<h4 class="flosc-flow-policies__title">Policy Pages Content (Per Flow)</h4>
+						<h4 class="flosc-flow-policies__title">FLOSC Policy Content Management</h4>
+
+						<div class="flosc-flow-field flosc-flow-field--tight">
+							<label class="flosc-flow-field__label">Status</label>
+							<select name="<?php echo esc_attr( $flosc_prefix ); ?>policy_content_management_status" class="flosc-flow-input flosc-flow-input--status">
+								<?php $flosc_pcm_status = (string) ( $flosc_settings['policy_content_management_status'] ?? 'active' ); ?>
+								<option value="active" <?php selected( $flosc_pcm_status, 'active' ); ?>>Active</option>
+								<option value="inactive" <?php selected( $flosc_pcm_status, 'inactive' ); ?>>Inactive</option>
+							</select>
+							<p class="flosc-flow-field__hint">Inactive stops FLOSC routing these four pages and stops sending them to the assistant. Saved settings are kept.</p>
+						</div>
+
+
+						<div class="flosc-flow-field flosc-flow-field--tight">
+							<label class="flosc-flow-field__label">
+								<input type="hidden" name="<?php echo esc_attr( $flosc_prefix ); ?>privacy_policy_use_external_link" value="0">
+								<input type="checkbox" name="<?php echo esc_attr( $flosc_prefix ); ?>privacy_policy_use_external_link" value="1" <?php checked( '1', (string) ( $flosc_settings['privacy_policy_use_external_link'] ?? '0' ) ); ?>>
+								Use external link
+							</label>
+							<input type="url" name="<?php echo esc_attr( $flosc_prefix ); ?>privacy_policy_external_url"
+								value="<?php echo esc_attr( $flosc_settings['privacy_policy_external_url'] ?? '' ); ?>"
+								class="flosc-flow-input">
+							<p class="flosc-flow-field__hint">When ticked with a full address, the table of contents links there and FLOSC stops serving this page locally.</p>
+						</div>
+
+						<div class="flosc-flow-field flosc-flow-field--tight">
+							<label class="flosc-flow-field__label">Privacy Policy Slug</label>
+							<input type="text" name="<?php echo esc_attr( $flosc_prefix ); ?>privacy_policy_slug"
+								value="<?php echo esc_attr( $flosc_settings['privacy_policy_slug'] ?? 'privacy' ); ?>"
+								placeholder="privacy"
+								class="flosc-flow-input flosc-flow-input--slug">
+							<p class="flosc-flow-field__hint">Leave the slug empty to not serve this page at all.</p>
+						</div>
+
+						<div class="flosc-flow-field flosc-flow-field--tight">
+							<label class="flosc-flow-field__label">Privacy Policy Heading</label>
+							<input type="text" name="<?php echo esc_attr( $flosc_prefix ); ?>privacy_policy_heading"
+								value="<?php echo esc_attr( $flosc_settings['privacy_policy_heading'] ?? '' ); ?>"
+								placeholder="Privacy Policy"
+								class="flosc-flow-input">
+							<p class="flosc-flow-field__hint">Title shown on the page and in the nav. Empty uses the default.</p>
+						</div>
 
 						<div class="flosc-flow-field flosc-flow-field--tight">
 							<label class="flosc-flow-field__label">Privacy Policy Content</label>
 							<textarea name="<?php echo esc_attr( $flosc_prefix ); ?>privacy_policy_content" rows="8" class="flosc-flow-textarea"><?php echo esc_textarea( $flosc_settings['privacy_policy_content'] ?? '' ); ?></textarea>
 							<p class="flosc-flow-field__hint">Shown at /privacy for this flow domain. HTML is allowed.</p>
+						</div>
+
+						<div class="flosc-flow-field flosc-flow-field--tight">
+							<label class="flosc-flow-field__label">
+								<input type="hidden" name="<?php echo esc_attr( $flosc_prefix ); ?>terms_of_service_use_external_link" value="0">
+								<input type="checkbox" name="<?php echo esc_attr( $flosc_prefix ); ?>terms_of_service_use_external_link" value="1" <?php checked( '1', (string) ( $flosc_settings['terms_of_service_use_external_link'] ?? '0' ) ); ?>>
+								Use external link
+							</label>
+							<input type="url" name="<?php echo esc_attr( $flosc_prefix ); ?>terms_of_service_external_url"
+								value="<?php echo esc_attr( $flosc_settings['terms_of_service_external_url'] ?? '' ); ?>"
+								class="flosc-flow-input">
+							<p class="flosc-flow-field__hint">When ticked with a full address, the table of contents links there and FLOSC stops serving this page locally.</p>
+						</div>
+
+						<div class="flosc-flow-field flosc-flow-field--tight">
+							<label class="flosc-flow-field__label">Terms of Service Slug</label>
+							<input type="text" name="<?php echo esc_attr( $flosc_prefix ); ?>terms_of_service_slug"
+								value="<?php echo esc_attr( $flosc_settings['terms_of_service_slug'] ?? 'terms-of-service' ); ?>"
+								placeholder="terms-of-service"
+								class="flosc-flow-input flosc-flow-input--slug">
+							<p class="flosc-flow-field__hint">Leave the slug empty to not serve this page at all.</p>
+						</div>
+
+						<div class="flosc-flow-field flosc-flow-field--tight">
+							<label class="flosc-flow-field__label">Terms of Service Heading</label>
+							<input type="text" name="<?php echo esc_attr( $flosc_prefix ); ?>terms_of_service_heading"
+								value="<?php echo esc_attr( $flosc_settings['terms_of_service_heading'] ?? '' ); ?>"
+								placeholder="Terms of Service"
+								class="flosc-flow-input">
+							<p class="flosc-flow-field__hint">Title shown on the page and in the nav. Empty uses the default.</p>
 						</div>
 
 						<div class="flosc-flow-field flosc-flow-field--tight">
@@ -2796,9 +3014,69 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 						</div>
 
 						<div class="flosc-flow-field flosc-flow-field--tight">
+							<label class="flosc-flow-field__label">
+								<input type="hidden" name="<?php echo esc_attr( $flosc_prefix ); ?>data_deletion_use_external_link" value="0">
+								<input type="checkbox" name="<?php echo esc_attr( $flosc_prefix ); ?>data_deletion_use_external_link" value="1" <?php checked( '1', (string) ( $flosc_settings['data_deletion_use_external_link'] ?? '0' ) ); ?>>
+								Use external link
+							</label>
+							<input type="url" name="<?php echo esc_attr( $flosc_prefix ); ?>data_deletion_external_url"
+								value="<?php echo esc_attr( $flosc_settings['data_deletion_external_url'] ?? '' ); ?>"
+								class="flosc-flow-input">
+							<p class="flosc-flow-field__hint">When ticked with a full address, the table of contents links there and FLOSC stops serving this page locally.</p>
+						</div>
+
+						<div class="flosc-flow-field flosc-flow-field--tight">
+							<label class="flosc-flow-field__label">Data Deletion Slug</label>
+							<input type="text" name="<?php echo esc_attr( $flosc_prefix ); ?>data_deletion_slug"
+								value="<?php echo esc_attr( $flosc_settings['data_deletion_slug'] ?? 'data-deletion' ); ?>"
+								placeholder="data-deletion"
+								class="flosc-flow-input flosc-flow-input--slug">
+							<p class="flosc-flow-field__hint">Leave the slug empty to not serve this page at all.</p>
+						</div>
+
+						<div class="flosc-flow-field flosc-flow-field--tight">
+							<label class="flosc-flow-field__label">Data Deletion Heading</label>
+							<input type="text" name="<?php echo esc_attr( $flosc_prefix ); ?>data_deletion_heading"
+								value="<?php echo esc_attr( $flosc_settings['data_deletion_heading'] ?? '' ); ?>"
+								placeholder="Data Deletion"
+								class="flosc-flow-input">
+							<p class="flosc-flow-field__hint">Title shown on the page and in the nav. Empty uses the default.</p>
+						</div>
+
+						<div class="flosc-flow-field flosc-flow-field--tight">
 							<label class="flosc-flow-field__label">Data Deletion Content</label>
 							<textarea name="<?php echo esc_attr( $flosc_prefix ); ?>data_deletion_content" rows="8" class="flosc-flow-textarea"><?php echo esc_textarea( $flosc_settings['data_deletion_content'] ?? '' ); ?></textarea>
 							<p class="flosc-flow-field__hint">Shown at /data-deletion for this flow domain. HTML is allowed.</p>
+						</div>
+
+						<div class="flosc-flow-field flosc-flow-field--tight">
+							<label class="flosc-flow-field__label">
+								<input type="hidden" name="<?php echo esc_attr( $flosc_prefix ); ?>platform_compliance_use_external_link" value="0">
+								<input type="checkbox" name="<?php echo esc_attr( $flosc_prefix ); ?>platform_compliance_use_external_link" value="1" <?php checked( '1', (string) ( $flosc_settings['platform_compliance_use_external_link'] ?? '0' ) ); ?>>
+								Use external link
+							</label>
+							<input type="url" name="<?php echo esc_attr( $flosc_prefix ); ?>platform_compliance_external_url"
+								value="<?php echo esc_attr( $flosc_settings['platform_compliance_external_url'] ?? '' ); ?>"
+								class="flosc-flow-input">
+							<p class="flosc-flow-field__hint">When ticked with a full address, the table of contents links there and FLOSC stops serving this page locally.</p>
+						</div>
+
+						<div class="flosc-flow-field flosc-flow-field--tight">
+							<label class="flosc-flow-field__label">Platform Compliance Slug</label>
+							<input type="text" name="<?php echo esc_attr( $flosc_prefix ); ?>platform_compliance_slug"
+								value="<?php echo esc_attr( $flosc_settings['platform_compliance_slug'] ?? 'platform-compliance' ); ?>"
+								placeholder="platform-compliance"
+								class="flosc-flow-input flosc-flow-input--slug">
+							<p class="flosc-flow-field__hint">Leave the slug empty to not serve this page at all.</p>
+						</div>
+
+						<div class="flosc-flow-field flosc-flow-field--tight">
+							<label class="flosc-flow-field__label">Platform Compliance Heading</label>
+							<input type="text" name="<?php echo esc_attr( $flosc_prefix ); ?>platform_compliance_heading"
+								value="<?php echo esc_attr( $flosc_settings['platform_compliance_heading'] ?? '' ); ?>"
+								placeholder="Platform Compliance"
+								class="flosc-flow-input">
+							<p class="flosc-flow-field__hint">Title shown on the page and in the nav. Empty uses the default.</p>
 						</div>
 
 						<div>
@@ -2947,7 +3225,7 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 						<td>
 							<input type="text" id="flow_title" name="flow_title" class="regular-text"
 									value="<?php echo esc_attr( $flosc_fi['title'] ?? '' ); ?>"
-									placeholder="<?php echo esc_attr__( 'e.g., Standard American English Pronunciation', 'flosc' ); ?>">
+									placeholder="<?php echo esc_attr__( 'e.g., Everything you need to get started', 'flosc' ); ?>">
 							<p class="description">
 								<?php echo esc_html__( 'Public flow description name. Visitors see it under the personality on the landing screen and as the browser-tab suffix. The AI uses it as this flow’s flow description — not the floscFlow name and not the personality.', 'flosc' ); ?>
 							</p>
@@ -3049,10 +3327,73 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 						</td>
 					</tr>
 					<tr>
+						<th><label for="flow_policy_content_management_status">FLOSC Policy Content Management</label></th>
+						<td>
+							<?php $flosc_pcm_status_flat = (string) ( $flosc_fi['policy_content_management_status'] ?? 'active' ); ?>
+							<select id="flow_policy_content_management_status" name="flow_policy_content_management_status">
+								<option value="active" <?php selected( $flosc_pcm_status_flat, 'active' ); ?>>Active</option>
+								<option value="inactive" <?php selected( $flosc_pcm_status_flat, 'inactive' ); ?>>Inactive</option>
+							</select>
+							<p class="description">Inactive stops FLOSC routing these four pages and stops sending them to the assistant. Saved settings are kept.</p>
+						</td>
+					</tr>
+					<tr>
+						<th><label for="flow_privacy_policy_external_url">Privacy Policy External Link</label></th>
+						<td>
+							<label>
+								<input type="hidden" name="flow_privacy_policy_use_external_link" value="0">
+								<input type="checkbox" name="flow_privacy_policy_use_external_link" value="1" <?php checked( '1', (string) ( $flosc_fi['privacy_policy_use_external_link'] ?? '0' ) ); ?>>
+								Use external link
+							</label>
+							<input type="url" id="flow_privacy_policy_external_url" name="flow_privacy_policy_external_url" class="regular-text" value="<?php echo esc_attr( $flosc_fi['privacy_policy_external_url'] ?? '' ); ?>">
+							<p class="description">When ticked with a full address, the table of contents links there and FLOSC stops serving this page locally.</p>
+						</td>
+					</tr>
+					<tr>
+						<th><label for="flow_privacy_policy_slug">Privacy Policy Slug</label></th>
+						<td>
+							<input type="text" id="flow_privacy_policy_slug" name="flow_privacy_policy_slug" class="regular-text" value="<?php echo esc_attr( $flosc_fi['privacy_policy_slug'] ?? 'privacy' ); ?>" placeholder="privacy">
+							<p class="description">Leave the slug empty to not serve this page at all.</p>
+						</td>
+					</tr>
+					<tr>
+						<th><label for="flow_privacy_policy_heading">Privacy Policy Heading</label></th>
+						<td>
+							<input type="text" id="flow_privacy_policy_heading" name="flow_privacy_policy_heading" class="regular-text" value="<?php echo esc_attr( $flosc_fi['privacy_policy_heading'] ?? '' ); ?>" placeholder="Privacy Policy">
+							<p class="description">Title shown on the page and in the nav. Empty uses the default.</p>
+						</td>
+					</tr>
+					<tr>
 						<th><label for="flow_privacy_policy_content">Privacy Policy Content</label></th>
 						<td>
 							<textarea id="flow_privacy_policy_content" name="flow_privacy_policy_content" class="large-text" rows="8"><?php echo esc_textarea( $flosc_fi['privacy_policy_content'] ?? '' ); ?></textarea>
 							<p class="description">Per-flow content shown at /privacy. HTML is allowed.</p>
+						</td>
+					</tr>
+					<tr>
+						<th><label for="flow_terms_of_service_external_url">Terms of Service External Link</label></th>
+						<td>
+							<label>
+								<input type="hidden" name="flow_terms_of_service_use_external_link" value="0">
+								<input type="checkbox" name="flow_terms_of_service_use_external_link" value="1" <?php checked( '1', (string) ( $flosc_fi['terms_of_service_use_external_link'] ?? '0' ) ); ?>>
+								Use external link
+							</label>
+							<input type="url" id="flow_terms_of_service_external_url" name="flow_terms_of_service_external_url" class="regular-text" value="<?php echo esc_attr( $flosc_fi['terms_of_service_external_url'] ?? '' ); ?>">
+							<p class="description">When ticked with a full address, the table of contents links there and FLOSC stops serving this page locally.</p>
+						</td>
+					</tr>
+					<tr>
+						<th><label for="flow_terms_of_service_slug">Terms of Service Slug</label></th>
+						<td>
+							<input type="text" id="flow_terms_of_service_slug" name="flow_terms_of_service_slug" class="regular-text" value="<?php echo esc_attr( $flosc_fi['terms_of_service_slug'] ?? 'terms-of-service' ); ?>" placeholder="terms-of-service">
+							<p class="description">Leave the slug empty to not serve this page at all.</p>
+						</td>
+					</tr>
+					<tr>
+						<th><label for="flow_terms_of_service_heading">Terms of Service Heading</label></th>
+						<td>
+							<input type="text" id="flow_terms_of_service_heading" name="flow_terms_of_service_heading" class="regular-text" value="<?php echo esc_attr( $flosc_fi['terms_of_service_heading'] ?? '' ); ?>" placeholder="Terms of Service">
+							<p class="description">Title shown on the page and in the nav. Empty uses the default.</p>
 						</td>
 					</tr>
 					<tr>
@@ -3063,10 +3404,62 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 						</td>
 					</tr>
 					<tr>
+						<th><label for="flow_data_deletion_external_url">Data Deletion External Link</label></th>
+						<td>
+							<label>
+								<input type="hidden" name="flow_data_deletion_use_external_link" value="0">
+								<input type="checkbox" name="flow_data_deletion_use_external_link" value="1" <?php checked( '1', (string) ( $flosc_fi['data_deletion_use_external_link'] ?? '0' ) ); ?>>
+								Use external link
+							</label>
+							<input type="url" id="flow_data_deletion_external_url" name="flow_data_deletion_external_url" class="regular-text" value="<?php echo esc_attr( $flosc_fi['data_deletion_external_url'] ?? '' ); ?>">
+							<p class="description">When ticked with a full address, the table of contents links there and FLOSC stops serving this page locally.</p>
+						</td>
+					</tr>
+					<tr>
+						<th><label for="flow_data_deletion_slug">Data Deletion Slug</label></th>
+						<td>
+							<input type="text" id="flow_data_deletion_slug" name="flow_data_deletion_slug" class="regular-text" value="<?php echo esc_attr( $flosc_fi['data_deletion_slug'] ?? 'data-deletion' ); ?>" placeholder="data-deletion">
+							<p class="description">Leave the slug empty to not serve this page at all.</p>
+						</td>
+					</tr>
+					<tr>
+						<th><label for="flow_data_deletion_heading">Data Deletion Heading</label></th>
+						<td>
+							<input type="text" id="flow_data_deletion_heading" name="flow_data_deletion_heading" class="regular-text" value="<?php echo esc_attr( $flosc_fi['data_deletion_heading'] ?? '' ); ?>" placeholder="Data Deletion">
+							<p class="description">Title shown on the page and in the nav. Empty uses the default.</p>
+						</td>
+					</tr>
+					<tr>
 						<th><label for="flow_data_deletion_content">Data Deletion Content</label></th>
 						<td>
 							<textarea id="flow_data_deletion_content" name="flow_data_deletion_content" class="large-text" rows="8"><?php echo esc_textarea( $flosc_fi['data_deletion_content'] ?? '' ); ?></textarea>
 							<p class="description">Per-flow content shown at /data-deletion. HTML is allowed.</p>
+						</td>
+					</tr>
+					<tr>
+						<th><label for="flow_platform_compliance_external_url">Platform Compliance External Link</label></th>
+						<td>
+							<label>
+								<input type="hidden" name="flow_platform_compliance_use_external_link" value="0">
+								<input type="checkbox" name="flow_platform_compliance_use_external_link" value="1" <?php checked( '1', (string) ( $flosc_fi['platform_compliance_use_external_link'] ?? '0' ) ); ?>>
+								Use external link
+							</label>
+							<input type="url" id="flow_platform_compliance_external_url" name="flow_platform_compliance_external_url" class="regular-text" value="<?php echo esc_attr( $flosc_fi['platform_compliance_external_url'] ?? '' ); ?>">
+							<p class="description">When ticked with a full address, the table of contents links there and FLOSC stops serving this page locally.</p>
+						</td>
+					</tr>
+					<tr>
+						<th><label for="flow_platform_compliance_slug">Platform Compliance Slug</label></th>
+						<td>
+							<input type="text" id="flow_platform_compliance_slug" name="flow_platform_compliance_slug" class="regular-text" value="<?php echo esc_attr( $flosc_fi['platform_compliance_slug'] ?? 'platform-compliance' ); ?>" placeholder="platform-compliance">
+							<p class="description">Leave the slug empty to not serve this page at all.</p>
+						</td>
+					</tr>
+					<tr>
+						<th><label for="flow_platform_compliance_heading">Platform Compliance Heading</label></th>
+						<td>
+							<input type="text" id="flow_platform_compliance_heading" name="flow_platform_compliance_heading" class="regular-text" value="<?php echo esc_attr( $flosc_fi['platform_compliance_heading'] ?? '' ); ?>" placeholder="Platform Compliance">
+							<p class="description">Title shown on the page and in the nav. Empty uses the default.</p>
 						</td>
 					</tr>
 					<tr>

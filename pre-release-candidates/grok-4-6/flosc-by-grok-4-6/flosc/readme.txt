@@ -2,7 +2,7 @@
 Contributors: dainismichel
 Donate link: https://dainis.net/donate/
 Tags: leads, sales, access, ai, chatbot
-Requires at least: 7.0
+Requires at least: 7.1
 Requires PHP: 7.4
 Tested up to: 7.1
 Stable tag: 8.0.0
@@ -26,7 +26,7 @@ Instead of "Are you interested in buying?" FLOSC asks "What should I help you wi
 * **DA1 Catalogs** - Attach structured TSV catalogs to flows so floscAdmins can serve curated, flow-scoped datasets without hard-coding project-specific content
 * **Starter Packs** - Install a complete working journey in one click: a flow, the example posts it talks about, and the visitor / guest / member gating already wired
 * **Locally Stored** - All visitor data stays in your WordPress database by default
-* **AI-Ready** - Bring-your-own-key chat with Anthropic, OpenAI, xAI, or Gemini (or IVR scripted only). OpenAI, Anthropic, and Gemini chat use the WordPress 7.0 AI Client — install the official provider plugin for the agent this flow attaches. Speech-to-text: AssemblyAI, OpenAI Whisper, or a custom endpoint.
+* **AI-Ready** - Bring-your-own-key chat with Anthropic, OpenAI, xAI, or Gemini (or IVR scripted only). OpenAI, Anthropic, and Gemini chat use the WordPress 7.1 AI Client — install the official provider plugin for the agent this flow attaches. Speech-to-text: AssemblyAI, OpenAI Whisper, or a custom endpoint.
 * **WordPress Native** - Built as a standard WordPress plugin; no external platform required
 
 == Other Notes ==
@@ -58,14 +58,16 @@ A new install has nothing to say. A starter pack fixes that in one click, so you
 
 Installing a pack creates a flow file in the FLOSC configuration folder, its categories, its example posts each stamped with the access level it is gated at, and — where the pack has one — its DA1 catalog and product file. Nothing is written to the plugin folder. A pack refuses rather than overwrites: if a flow file, a flow's settings, or a category of the same name already exists, FLOSC tells you instead of replacing your work. Removing a pack deletes exactly what that pack created, found by its own stamp — never by title, date or category name.
 
-Two packs ship with FLOSC:
+Four packs ship with FLOSC:
 
-* **WordPress Content Membership Journey** - 100 deliberately silly WordPress posts gated as a real membership library: visitors read items 1-10, guests reach 1-30, members reach all 100. Curated by BubblyBetty. The journey sells membership; you set the price.
-* **DA1 Catalog Sales Journey** - 50 over-serious instruction manuals for ordinary household tasks, served as a content-agnostic DA1 catalog: 4 items for visitors, 8 for guests, all 50 for members. Curated by DadJokeDan. The journey sells the compiled UberManual PDF for $10.
+* **WordPress Content Membership Journey** - One hundred deliberately silly WordPress posts, gated as a real membership library. Visitors read items 1–10, guests reach 1–30, members reach all 100 — including item 46, Why Pigeons Never Pay Parking Tickets.
+* **Membership Craft** - A hundred short articles about running a membership site — and the library itself is gated like one, so you are reading it from inside the example. Visitors read 15 articles, guests read 40, members read all 100.
+* **DA1 Catalog Sales Journey** - Fifty over-serious instruction manuals for ordinary household tasks, served as a content-agnostic DA1 catalog. Visitors browse four, guests browse eight, members reach all fifty — and the journey sells the compiled UberManual PDF for $10.
+* **Vegan Latvian Kitchen** - Fourteen classic Latvian dishes, fully plant-based, served as a bilingual recipe journey. Visitors cook two, guests cook four, members reach all fourteen plus the cookbook PDF.
 
 Each pack references a personality from the FLOSC library rather than bundling one, so you can swap the voice curating the journey at any time and watch the whole experience change.
 
-Both are example content. Delete them, or take them apart and replace the subject with your own.
+All four are example content. Delete them, or take them apart and replace the subject with your own.
 
 = How It Works =
 
@@ -77,7 +79,7 @@ Both are example content. Delete them, or take them apart and replace the subjec
 
 = Technical Details =
 
-* Requires WordPress 7.0+ (see header Requires at least)
+* Requires WordPress 7.1+ (see header Requires at least)
 * No external services required for core functionality (flows run locally)
 * BYOK AI: one WordPress AI Client (`wp_ai_client_prompt()`), plus official provider plugins for OpenAI, Anthropic, and Google. xAI has no official plugin yet (FLOSC hop). IVR is scripted and calls none of them.
 * Payment integration
@@ -178,7 +180,7 @@ In Settings → FLOSC → AI:
 
 = Is there one WordPress AI Client or three? =
 
-One client. WordPress 7.0 ships a single AI Client (`wp_ai_client_prompt()`). It does not bundle vendors. Three official plugins register with that one client: AI Provider for OpenAI, AI Provider for Anthropic, and AI Provider for Google. FLOSC calls the client; those plugins own the vendor HTTP. A flow attaches one provider. A developer testing all three activates all three plugins. IVR uses none. xAI is still a FLOSC hop because WordPress has no official xAI plugin.
+One client. WordPress 7.1 ships a single AI Client (`wp_ai_client_prompt()`). It does not bundle vendors. Three official plugins register with that one client: AI Provider for OpenAI, AI Provider for Anthropic, and AI Provider for Google. FLOSC calls the client; those plugins own the vendor HTTP. A flow attaches one provider. A developer testing all three activates all three plugins. IVR uses none. xAI is still a FLOSC hop because WordPress has no official xAI plugin.
 
 = Do I have to install all three official AI Provider plugins? =
 
@@ -310,15 +312,10 @@ Endpoint examples: https://api.yourdomain.tld/analyze, https://api.yourdomain.tl
 Purpose: score quiz submissions and finalize/retrieve session scoring data for flows that use an external scoring provider.
 Data sent: quiz audio, answer payloads, and session-finalization data required by the configured provider. FLOSC also sends request-signing headers: X-FLOSC-Site, X-FLOSC-MTS (UTC Michel timestamp), and X-FLOSC-Signature (HMAC-SHA256 over payload_json + newline + mts + newline + site).
 Configuration note: floscAdmins can configure a per-flow external scoring endpoint. If a flow uses an external scoring provider, quiz audio and related scoring payloads may be sent to that provider. Audio playback conversion dispatch is optional and flow-scoped through the Audio Conversion Provider setting (none|external).
+Service terms: determined by the configured endpoint provider.
+Privacy policy: determined by the configured endpoint provider.
 
-16. Amazon product search links (optional affiliate offers)
-Endpoint examples: https://www.amazon.com/s (search results URL with affiliate tag when Amazon affiliate is enabled)
-Purpose: generate outbound search links so visitors can find products; FLOSC does not call Amazon Product Advertising API by default.
-Data sent: search keywords and the site's Amazon associate tag in the query string when the visitor follows the link.
-Service terms: https://affiliate-program.amazon.com/help/operating/agreement
-Privacy policy: https://www.amazon.com/gp/help/customer/display.html?nodeId=GX7NJQ4ZB8MHFRNJ
-
-17. WordPress core oEmbed (in-chat media players)
+16. WordPress core oEmbed (in-chat media players)
 Endpoint: this site's `/flosc/v1/oembed` (GET). Resolution uses WordPress core `wp_oembed_get()` against core's provider allow-list; results are cached in a transient.
 Purpose: render provider-native players under media links in assistant messages for YouTube, TikTok, Spotify, SoundCloud, Apple Music, and Vimeo.
 Data sent: the media URL. The visitor's browser then loads the provider player. FLOSC does not send visitor identity, email, or IP to these providers on this path.
@@ -342,7 +339,7 @@ Production-ready 8.x release with guided IVR flows, offer gating, BYOK AI suppor
 == Changelog ==
 
 = 8.0.0 =
-* Initial stable 8.0.0 release for WordPress 7.0+ and PHP 7.4+
+* Initial stable 8.0.0 release for WordPress 7.1+ and PHP 7.4+
 * Guided flow architecture with IVR routes, quiz branching, and offer/content gating
 * Optional BYOK chat: one WordPress AI Client; official provider plugins for OpenAI, Anthropic, and Google; FLOSC hop for xAI; IVR scripted
 * Payment providers (including Stripe, PayPal, and ClickBank) and social sign-in

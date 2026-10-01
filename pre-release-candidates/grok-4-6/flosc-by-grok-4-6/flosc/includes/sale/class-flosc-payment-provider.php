@@ -21,6 +21,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Payment provider.
+ */
 abstract class FLOSC_Payment_Provider {
 
 	/**
@@ -59,6 +62,8 @@ abstract class FLOSC_Payment_Provider {
 
 	/**
 	 * Enable/disable the provider
+	 *
+	 * @param mixed $enabled Enabled.
 	 */
 	public function set_enabled( $enabled ) {
 		update_option( 'flosc_provider_' . $this->get_id() . '_enabled', (bool) $enabled );
@@ -72,7 +77,7 @@ abstract class FLOSC_Payment_Provider {
 	/**
 	 * Process a payment
 	 *
-	 * @param int   $user_id
+	 * @param int   $user_id User ID.
 	 * @param array $offer The offer being purchased.
 	 * @param array $payment_data Provider-specific data.
 	 * @return array|WP_Error Transaction result or error
@@ -109,16 +114,25 @@ abstract class FLOSC_Payment_Provider {
 	 * The default reports nothing, which callers read as "this provider does not
 	 * track status" rather than as "the transaction is missing".
 	 *
-	 * $transaction_id is not read here and is not meant to be: it is part of the
-	 * contract every provider implements against, and a provider that can answer
-	 * overrides this. Dropping it would leave subclasses overriding a method with
-	 * a different shape from the one the base declares.
+	 * $transaction_id is part of the contract every provider implements against,
+	 * and a provider that can answer overrides this. Dropping it would leave
+	 * subclasses overriding a method with a different shape from the one the base
+	 * declares. Rather than accept it and ignore it, the default hands it to a
+	 * filter, so a site can answer for a provider that cannot answer for itself.
+	 * Returning null unchanged is the same behaviour as before.
 	 *
 	 * @param string $transaction_id The transaction to ask about.
 	 * @return array|null The status, or null when the provider does not report one.
 	 */
 	public function get_transaction_status( $transaction_id ) {
-		return null;
+		/**
+		 * Filters the transaction status reported by a provider that has no lookup of its own.
+		 *
+		 * @param array|null $status         Null by default.
+		 * @param string     $transaction_id The transaction being asked about.
+		 * @param string     $provider_id    The provider handling it.
+		 */
+		return apply_filters( 'flosc_payment_transaction_status', null, $transaction_id, $this->get_id() );
 	}
 
 	/**
@@ -160,13 +174,21 @@ abstract class FLOSC_Payment_Provider {
 	 * buyer away to its own hosted page.
 	 *
 	 * $offer is part of the contract rather than something this default reads;
-	 * see get_transaction_status() above.
+	 * see get_transaction_status() above. It is handed to a filter for the same
+	 * reason. Returning '' unchanged is the same behaviour as before.
 	 *
 	 * @param array $offer The offer being bought.
 	 * @return string The markup, or '' when the provider needs none.
 	 */
 	public function render_payment_ui( $offer ) {
-		return '';
+		/**
+		 * Filters the payment markup for a provider that renders none of its own.
+		 *
+		 * @param string $markup      Empty by default.
+		 * @param array  $offer       The offer being bought.
+		 * @param string $provider_id The provider handling it.
+		 */
+		return (string) apply_filters( 'flosc_payment_ui_markup', '', $offer, $this->get_id() );
 	}
 
 	/**
@@ -204,17 +226,28 @@ abstract class FLOSC_Payment_Provider {
 	 * supports_subscriptions() says false.
 	 *
 	 * $user_id is part of the contract rather than something this default reads;
-	 * see get_transaction_status() above.
+	 * see get_transaction_status() above. It is handed to a filter for the same
+	 * reason. Returning an empty array unchanged is the same behaviour as before.
 	 *
 	 * @param int $user_id The user to ask about.
 	 * @return array The subscriptions, empty when there are none.
 	 */
 	public function get_user_subscriptions( $user_id ) {
-		return array();
+		/**
+		 * Filters the subscriptions reported for a provider that tracks none.
+		 *
+		 * @param array  $subscriptions Empty by default.
+		 * @param int    $user_id       The user being asked about.
+		 * @param string $provider_id   The provider handling them.
+		 */
+		return (array) apply_filters( 'flosc_payment_user_subscriptions', array(), $user_id, $this->get_id() );
 	}
 
 	/**
 	 * Helper: Save a setting
+	 *
+	 * @param mixed $key   Key.
+	 * @param mixed $value Value.
 	 */
 	protected function save_setting( $key, $value ) {
 		update_option( 'flosc_' . $this->get_id() . '_' . $key, $value );
@@ -222,6 +255,9 @@ abstract class FLOSC_Payment_Provider {
 
 	/**
 	 * Helper: Get a setting
+	 *
+	 * @param mixed  $key      Key.
+	 * @param string $fallback Fallback.
 	 */
 	protected function get_setting( $key, $fallback = '' ) {
 		return get_option( 'flosc_' . $this->get_id() . '_' . $key, $fallback );

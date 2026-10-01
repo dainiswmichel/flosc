@@ -11,13 +11,39 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * RAG chat handler.
+ */
 class FLOSC_RAG_Chat_Handler {
 
+	/**
+	 * RAG manager.
+	 *
+	 * @var mixed
+	 */
 	private $flosc_rag_manager;
+	/**
+	 * Access controller.
+	 *
+	 * @var mixed
+	 */
 	private $flosc_access_controller;
+	/**
+	 * User session.
+	 *
+	 * @var mixed
+	 */
 	private $flosc_user_session;
+	/**
+	 * Last billing meta.
+	 *
+	 * @var array
+	 */
 	private $flosc_last_billing_meta = array();
 
+	/**
+	 * Construct.
+	 */
 	public function __construct() {
 		$this->flosc_rag_manager = FLOSC_RAG_Manager::instance();
 		// Access controller will be set when handle_with_state is called.
@@ -30,6 +56,7 @@ class FLOSC_RAG_Chat_Handler {
 	 * @param FLOSC_User_Session $flosc_user_session User session with full context.
 	 * @param int|null           $flosc_session_id Session ID for conversation history.
 	 * @param string|null        $flosc_chatpack_prompt v1.9.2: Optional chatpack system prompt (overrides internal builder).
+	 * @param mixed              $flosc_conv_history    Conv history.
 	 * @return array Response with content and autoprompts
 	 */
 	public function flosc_handle_with_state( $flosc_message, $flosc_user_session, $flosc_session_id = null, $flosc_chatpack_prompt = null, $flosc_conv_history = null ) {
@@ -127,6 +154,7 @@ class FLOSC_RAG_Chat_Handler {
 	/**
 	 * Build system prompt from FLOSC User Session
 	 *
+	 * @param mixed $flosc_user_session User session.
 	 * @return string System prompt
 	 */
 	private function flosc_build_system_prompt_from_state( $flosc_user_session ) {
@@ -191,8 +219,8 @@ class FLOSC_RAG_Chat_Handler {
 	/**
 	 * Load conversation history
 	 *
-	 * @param FLOSC_User_Session $flosc_user_session
-	 * @param int|null           $flosc_session_id
+	 * @param FLOSC_User_Session $flosc_user_session User session.
+	 * @param int|null           $flosc_session_id Session ID.
 	 * @return array Message history
 	 */
 	private function flosc_load_conversation_history( $flosc_user_session, $flosc_session_id ) {
@@ -247,7 +275,7 @@ class FLOSC_RAG_Chat_Handler {
 		$flosc_api_key = function_exists( 'flosc_get_provider_api_key' ) ? flosc_get_provider_api_key( 'anthropic' ) : flosc_get_setting( 'anthropic_api_key', '' );
 
 		if ( empty( $flosc_api_key ) ) {
-			return null; // No key — let handle_chat() fall through to dispatch
+			return null; // No key — let handle_chat() fall through to dispatch.
 		}
 
 		if ( ! class_exists( 'FLOSC_WP_AI_Client' ) || ! FLOSC_WP_AI_Client::is_provider_registered( 'anthropic' ) ) {
@@ -318,6 +346,8 @@ class FLOSC_RAG_Chat_Handler {
 	/**
 	 * Resolve Anthropics pricing (real millicents per 1M tokens) for billing math.
 	 * Flow-level overrides win when configured.
+	 *
+	 * @param mixed $flosc_model Model.
 	 */
 	private function flosc_resolve_anthropic_price_per_1m( $flosc_model ) {
 		$override_in  = max( 0, intval( flosc_get_setting( 'ai_billing_anthropic_input_millicents_per_1m', 0 ) ) );
@@ -360,9 +390,10 @@ class FLOSC_RAG_Chat_Handler {
 	/**
 	 * Store conversation
 	 *
-	 * @param FLOSC_User_Session $flosc_user_session
-	 * @param int|null           $flosc_session_id
-	 * @param string             $flosc_message
+	 * @param FLOSC_User_Session $flosc_user_session User session.
+	 * @param int|null           $flosc_session_id Session ID.
+	 * @param string             $flosc_message Message.
+	 * @param mixed              $flosc_response     Response.
 	 */
 	private function flosc_store_conversation( $flosc_user_session, $flosc_session_id, $flosc_message, $flosc_response ) {
 		$flosc_state   = $flosc_user_session->flosc_get();
@@ -425,6 +456,6 @@ class FLOSC_RAG_Chat_Handler {
 		);
 
 		$flosc_prompts = array_merge( $flosc_prompts, array_slice( $flosc_funnel_prompts[ $flosc_user_type ] ?? array(), 0, 2 ) );
-		return array_slice( $flosc_prompts, 0, 4 ); // Max 4 pills
+		return array_slice( $flosc_prompts, 0, 4 ); // Max 4 pills.
 	}
 }

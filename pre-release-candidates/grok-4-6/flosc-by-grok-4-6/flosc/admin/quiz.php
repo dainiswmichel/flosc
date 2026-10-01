@@ -97,42 +97,42 @@ $flosc_quiz_demos = array(
 	'multiplechoice'                 => array(
 
 		array(
-			'name'    => 'American Idioms',
-			'desc'    => '10 common American English idioms with 4 choices each.',
+			'name'    => 'FLOSC Basics',
+			'desc'    => '10 multiple-choice questions on what FLOSC is and how a floscFlow works.',
 			'content' => implode(
 				"\n",
 				array(
-					'What does "break a leg" mean?|A) Get injured|B) Good luck|C) Work very hard|D) Stop trying|Correct: B',
-					'To "hit the sack" means to:|A) Win a fight|B) Pack for travel|C) Go to bed|D) Lose something|Correct: C',
-					'What does "under the weather" mean?|A) It\'s raining|B) Feeling sick|C) Working outdoors|D) Running late|Correct: B',
-					'"Bite the bullet" means to:|A) Lose a fight|B) Eat something tough|C) Endure pain without complaining|D) Give up|Correct: C',
-					'What does "cost an arm and a leg" mean?|A) Injury compensation|B) Very expensive|C) A fair trade|D) Worth the price|Correct: B',
-					'To "spill the beans" means to:|A) Make a mess|B) Cook a meal|C) Reveal a secret|D) Waste food|Correct: C',
-					'"Hit the nail on the head" means to:|A) Use tools correctly|B) Be exactly right|C) Work in construction|D) Get lucky|Correct: B',
-					'To "burn the midnight oil" means to:|A) Forget to turn off lights|B) Cook late at night|C) Work late into the night|D) Waste energy|Correct: C',
-					'What does "bite off more than you can chew" mean?|A) Eat too fast|B) Take on more than you can handle|C) Be greedy|D) Speak with a full mouth|Correct: B',
-					'To "get cold feet" means to:|A) Need warmer socks|B) Go swimming|C) Feel nervous and hesitate|D) Feel physically cold|Correct: C',
+					'What does FLOSC stand for?|A) Free Login Offer Sale Content|B) Freeline, Login, Offer, Sale, Content|C) Flow Logic Order System Core|D) Flexible Online Sales Chat|Correct: B',
+					'A floscFlow is:|A) A WordPress theme|B) One configured journey with its own identity, messages and offers|C) A payment gateway|D) A page builder block|Correct: B',
+					'In the Freeline phase, a person is:|A) A paying member|B) A visitor who has not signed up|C) An administrator|D) A refunded customer|Correct: B',
+					'What happens in the Login phase?|A) The visitor pays|B) The visitor becomes a guest by creating an account|C) The flow is published|D) The AI key is saved|Correct: B',
+					'The Offer phase is where:|A) Content is delivered|B) The guest is shown what they can buy|C) The site is installed|D) Messages are written|Correct: B',
+					'After the Sale phase, a person is a:|A) Visitor|B) Guest|C) Member|D) Subscriber only|Correct: C',
+					'BYOK means:|A) Buy Your Own Key|B) Bring Your Own Key -- you supply the AI provider key|C) Build Your Own Kit|D) Basic Yearly Onboarding Kit|Correct: B',
+					'IVR messages in FLOSC are:|A) Voice recordings|B) Scripted messages that guide the assistant and answer without an AI key|C) Email templates|D) Payment receipts|Correct: B',
+					'How many floscFlows can one FLOSC install run?|A) One|B) Three|C) Ten|D) As many as you like|Correct: D',
+					'A Starter Pack installs:|A) Only a theme|B) A working flow with example posts and the gating that makes the journey legible|C) A payment plugin|D) Nothing until you buy a licence|Correct: B',
 					'',
 				)
 			),
 		),
 
 		array(
-			'name'    => 'Business English Communication',
-			'desc'    => '10 questions on professional American English vocabulary and email etiquette.',
+			'name'    => 'Setting Up Your First Flow',
+			'desc'    => '10 multiple-choice questions on configuring a floscFlow in the FLOSC admin.',
 			'content' => implode(
 				"\n",
 				array(
-					'"Please advise" in a business email typically means:|A) Give me your address|B) Let me know your thoughts or decision|C) Tell me what to do immediately|D) Send me an invoice|Correct: B',
-					'To "circle back" in business jargon means to:|A) Return to an earlier topic or person|B) Walk around the office|C) Send a follow-up invoice|D) Cancel a meeting|Correct: A',
-					'What does "let\'s take this offline" mean in a meeting?|A) Turn off the internet|B) Discuss privately, outside the group|C) Stop working|D) Schedule a video call later|Correct: B',
-					'"Moving the needle" means:|A) Sewing a garment|B) Making measurable progress|C) Changing a policy|D) Starting a new project|Correct: B',
-					'A "pain point" in business refers to:|A) Back pain from desk work|B) A specific problem that frustrates customers|C) A budget shortfall|D) A difficult employee|Correct: B',
-					'"Low-hanging fruit" means:|A) Fruit from short trees|B) Easy tasks or opportunities with quick results|C) A summer sale|D) Entry-level employees|Correct: B',
-					'To "get everyone on the same page" means:|A) Use the same document format|B) Ensure all team members share the same understanding|C) Work on one project at a time|D) Agree on a meeting date|Correct: B',
-					'"bandwidth" in a business context usually means:|A) Internet connection speed|B) Available time and capacity to take on new work|C) The width of a presentation screen|D) Budget allocation|Correct: B',
-					'A "deliverable" is:|A) A package shipped to a client|B) A specific result or output expected from a project|C) An employee ready to work remotely|D) A promised discount|Correct: B',
-					'"Touch base" means to:|A) Play baseball at work|B) Briefly check in or make contact with someone|C) Review the basics|D) Start from the beginning|Correct: B',
+					'Where do you set a flow\'s name, slug and colours?|A) The AI tab|B) The Identity tab|C) The Payments tab|D) The Docs tab|Correct: B',
+					'Where do you paste an AI provider key?|A) Settings -> Connectors|B) The FLOSC AI tab, for this flow or All Flows|C) wp-config.php|D) The theme customizer|Correct: B',
+					'Which providers need their official WordPress AI Provider plugin installed?|A) None of them|B) OpenAI, Anthropic and Gemini|C) Only xAI|D) All four|Correct: B',
+					'A flow with no AI key configured will:|A) Show an error page|B) Still answer, using its IVR messages|C) Refuse to load|D) Disable the whole plugin|Correct: B',
+					'The Flow tab is where you:|A) Edit CSS|B) Switch between flows and manage their files|C) Configure SMTP|D) Write the privacy policy|Correct: B',
+					'Where do you write the messages the assistant uses?|A) IVR Management|B) Chat Logs|C) Token Management|D) Engagement|Correct: A',
+					'Offers are configured on:|A) The Offers tab|B) The Quiz tab|C) The Identity tab|D) The Style tab|Correct: A',
+					'A flow can be served on its own domain by setting:|A) A custom domain in the flow settings|B) A WordPress permalink|C) An .htaccess rule only|D) A DNS record only|Correct: A',
+					'Display Mode Hybrid means:|A) Two AI providers at once|B) Full-page chat and a floating companion bubble, sharing one conversation|C) Half the messages are scripted|D) Desktop and mobile themes|Correct: B',
+					'Chat Logs let an administrator:|A) Edit the AI model|B) Review conversations, archive and export them|C) Change the site language|D) Issue refunds|Correct: B',
 					'',
 				)
 			),
@@ -143,42 +143,42 @@ $flosc_quiz_demos = array(
 	'truefalse'                      => array(
 
 		array(
-			'name'    => 'Pronunciation Myths vs Facts',
-			'desc'    => '10 True/False statements debunking common American English pronunciation myths.',
+			'name'    => 'FLOSC True or False',
+			'desc'    => '10 True/False statements about how FLOSC works.',
 			'content' => implode(
 				"\n",
 				array(
-					'In American English, the "r" in "car" is silent.|False',
-					'The TH sound in "think" (/θ/) is the same as in "this" (/ð/).|False',
-					'In natural connected speech, Americans often link words together smoothly.|True',
-					'Every syllable in an English word should be pronounced with equal stress.|False',
-					'The word "butter" contains the same /t/ sound as the /t/ in "stop".|False',
-					'Reducing unstressed vowels to schwa /ə/ is considered poor pronunciation.|False',
-					'The word "comfortable" is commonly pronounced as 3 syllables in American English.|True',
-					'In American English, the letter "p" in "spin" sounds slightly different from "p" in "pin".|True',
-					'Rhotic accents (like General American) fully pronounce the "r" after vowels.|True',
-					'Slowing down your speech is the only technique needed to improve American English clarity.|False',
+					'A FLOSC install can run more than one floscFlow.|True',
+					'FLOSC requires an AI provider key before it will answer anything.|False',
+					'The five phases are Freeline, Login, Offer, Sale and Content.|True',
+					'BYOK means FLOSC supplies the AI credits for you.|False',
+					'A floscFlow can be served on its own domain.|True',
+					'IVR messages are written by the site administrator, not generated.|True',
+					'Visitors have the same content access as members.|False',
+					'A Starter Pack can install a flow, example posts and their gating in one step.|True',
+					'FLOSC stores visitor conversation data on an external FLOSC server.|False',
+					'The same compiled personality can be attached to more than one flow.|True',
 					'',
 				)
 			),
 		),
 
 		array(
-			'name'    => 'Grammar Confidence Check',
-			'desc'    => '10 True/False statements about common American English grammar points.',
+			'name'    => 'Flow Configuration Check',
+			'desc'    => '10 True/False statements about configuring a flow in the FLOSC admin.',
 			'content' => implode(
 				"\n",
 				array(
-					'"I have been living here for five years" is grammatically correct.|True',
-					'"Could you please send me the report?" is a polite and grammatically correct request.|True',
-					'"Between you and I" is grammatically correct in standard American English.|False',
-					'The sentence "She don\'t know" uses standard American English grammar.|False',
-					'"I look forward to hearing from you" is correct American business English.|True',
-					'"Me and my friend went to the store" is considered standard formal English.|False',
-					'In American English, collective nouns like "team" and "staff" take singular verbs.|True',
-					'"I could care less" and "I couldn\'t care less" mean the same thing in American usage.|False',
-					'The Oxford comma (final comma in a list) is widely used in American English writing.|True',
-					'"Literally" is only used in American English to describe things that are factually true.|False',
+					'A flow\'s name, slug and colours live on the Identity tab.|True',
+					'An AI key pasted on the AI tab can apply to one flow or to all flows.|True',
+					'OpenAI, Anthropic and Gemini each need their official WordPress AI Provider plugin.|True',
+					'xAI needs an official provider plugin installed before it will work.|False',
+					'Offers are configured on the Style tab.|False',
+					'Hybrid display mode gives a full-page chat and a companion bubble sharing one conversation.|True',
+					'Chat Logs can be exported and archived from the admin.|True',
+					'Deleting the plugin leaves all FLOSC data behind in the database.|False',
+					'Each flow can have its own privacy policy, terms and data-deletion pages.|True',
+					'Changing a policy page slug moves the page FLOSC serves for that flow.|True',
 					'',
 				)
 			),
@@ -287,7 +287,7 @@ $flosc_quiz_demos = array(
 		<tr>
 			<th scope="row"><label for="flow_audio_quiz_complete_message">Quiz Complete (Visitors)</label></th>
 			<td>
-				<input type="text" id="flow_audio_quiz_complete_message" name="flow_audio_quiz_complete_message" class="large-text" value="<?php echo esc_attr( $flosc_flow_settings['audio_quiz_complete_message'] ?? 'Pronunciation assessment complete! All {total} phrases recorded and analyzed. Sign up to see your results.' ); ?>">
+				<input type="text" id="flow_audio_quiz_complete_message" name="flow_audio_quiz_complete_message" class="large-text" value="<?php echo esc_attr( $flosc_flow_settings['audio_quiz_complete_message'] ?? 'Assessment complete! All {total} recordings captured and analyzed. Sign up to see your results.' ); ?>">
 				<p class="description">Shown to visitors after all phrases are done.</p>
 			</td>
 		</tr>

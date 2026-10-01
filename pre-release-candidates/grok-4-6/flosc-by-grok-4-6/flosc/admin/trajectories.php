@@ -45,19 +45,19 @@ $flosc_contact_trj_default_off_ramp_phrases   = "Would you like me to continue f
 $flosc_contact_trj_default_instructions       = "Encourage direct human-to-human connection when relevant.\nInvite exchange of contact information (email, phone, or message).\nAsk for one concrete next step and keep tone warm, concise, and natural.\nOffer a clear off-ramp: Would you like me to continue facilitating human-to-human connection between you and the site operator, or would you like to chat about something else?";
 
 /*
- * 200 is a deliberate ceiling, not an oversight. This feeds the trajectory
- * picker below, so anything the query drops is a post the admin cannot choose.
- * WPCS warns above 100; a lower number here would hide content rather than save
- * work, and the query is admin-only, category-scoped and ordered by modified.
+ * This feeds the trajectory picker below, so anything the query drops is a post
+ * the admin cannot choose, and nothing on the page says anything was dropped.
+ * It used to ask for 200 in one query and defend the number;
+ * flosc_get_posts_all() pages through in hundreds instead, so the ceiling is
+ * gone rather than argued with.
  */
-$flosc_trajectory_posts = get_posts(
+$flosc_trajectory_posts = flosc_get_posts_all(
 	array(
-		'post_type'      => 'post',
-		'post_status'    => array( 'private', 'publish', 'draft' ),
-		'posts_per_page' => 200,
-		'category_name'  => 'flosc-internal-trajectories,trajectory,trajectories',
-		'orderby'        => 'modified',
-		'order'          => 'DESC',
+		'post_type'     => 'post',
+		'post_status'   => array( 'private', 'publish', 'draft' ),
+		'category_name' => 'flosc-internal-trajectories,trajectory,trajectories',
+		'orderby'       => 'modified',
+		'order'         => 'DESC',
 	)
 );
 

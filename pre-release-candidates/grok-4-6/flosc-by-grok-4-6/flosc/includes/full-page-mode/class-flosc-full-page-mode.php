@@ -9,15 +9,32 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Full page mode.
+ */
 class FLOSC_Full_Page_Mode {
 
-	/** @var FLOSC_Framework */
+	/**
+	 * Construct.
+	 *
+	 * @var FLOSC_Framework
+	 */
 	private $flosc;
 
+	/**
+	 * Construct.
+	 *
+	 * @param mixed $flosc FLOSC.
+	 */
 	public function __construct( $flosc ) {
 		$this->flosc = $flosc;
 	}
 
+	/**
+	 * Is FLOSC request.
+	 *
+	 * @return mixed
+	 */
 	public function is_flosc_request() {
 		// Full-page chat SPA only: custom domain, flow slug, or flosc_ivr rewrite.
 		// Intentionally ignores forced_flow — companion knowledge-hub resolution sets
@@ -41,6 +58,8 @@ class FLOSC_Full_Page_Mode {
 	 * Get the appropriate app URL for current or specified flow
 	 *
 	 * @since 1.2.2
+	 *
+	 * @param mixed $flow Flow.
 	 */
 	public function get_app_url( $flow = null ) {
 		if ( null === $flow ) {
@@ -79,19 +98,34 @@ class FLOSC_Full_Page_Mode {
 		return home_url( '/' . $slug . '/' );
 	}
 
+	/**
+	 * Add query vars.
+	 *
+	 * @param mixed $vars Vars.
+	 * @return mixed
+	 */
 	public function add_query_vars( $vars ) {
 		$vars[] = 'flosc_app';
-		$vars[] = 'flosc_flow'; // v1.2.2: Multi-flow support
-		$vars[] = 'flosc_ivr';  // v1.2.9: IVR-file-based flows
+		$vars[] = 'flosc_flow'; // v1.2.2: Multi-flow support.
+		$vars[] = 'flosc_ivr';  // v1.2.9: IVR-file-based flows.
 		$vars[] = 'ref';
 		return $vars;
 	}
 
+	/**
+	 * Handle app route.
+	 */
 	public function handle_app_route() {
 		// v1.2.1: Use centralized is_flosc_request() helper
 		// This reads from flosc_custom_domain setting (not hardcoded).
 		if ( ! $this->is_flosc_request() ) {
 			return;
+		}
+
+		global $wp_query;
+		if ( $wp_query instanceof WP_Query && $wp_query->is_404() ) {
+			$wp_query->is_404 = false;
+			status_header( 200 );
 		}
 
 		$legal_page = $this->get_requested_legal_page();
@@ -173,6 +207,142 @@ class FLOSC_Full_Page_Mode {
 		exit;
 	}
 
+	/**
+	 * The policy definitions for a flow, resolved.
+	 *
+	 * One place answers what these four pages are called, where they live and
+	 * whether FLOSC serves them at all. Before this, the slugs were written out
+	 * three times in this file -- once for routing, once for the page map and
+	 * once for the nav links -- so changing one meant finding all three.
+	 *
+	 * Every value has a default equal to what was hardcoded here before, so a
+	 * flow whose admin has never opened the Identity tab serves exactly what it
+	 * served previously, at the same addresses, with no migration.
+	 *
+	 * A policy in external mode keeps its stored content -- the assistant still
+	 * reads it -- but the public link points at the admin's own address and
+	 * FLOSC stops treating its local slug as the canonical page.
+	 *
+	 * @param array|string|null $flow A flow array, a flow id, or null for the current one.
+	 * @return array<string,array<string,mixed>> Empty when policy management is inactive.
+	 */
+	public function policy_pages( $flow = null ) {
+		/*
+		 * A flow id rather than a flow array reads through flosc_get_setting(),
+		 * which already knows that an IVR-file flow is absent from the flows
+		 * registry and has to be rebuilt from its file. Resolving it here with
+		 * get_flow() alone returns false for exactly those flows, and the
+		 * caller silently falls back to whatever flow the current request is
+		 * on -- which, from a chat turn, is the wrong one.
+		 */
+		$flosc_flow_id = null;
+		if ( is_string( $flow ) ) {
+			$flosc_flow_id = ( '' !== $flow ) ? $flow : null;
+			$flow          = null;
+		}
+
+		if ( null === $flosc_flow_id && ! is_array( $flow ) ) {
+			$flow = $this->flosc->get_current_flow();
+		}
+		$identity = ( is_array( $flow ) && is_array( $flow['identity'] ?? null ) ) ? $flow['identity'] : array();
+
+		$flosc_read = function ( $key, $fallback = null ) use ( $identity, $flosc_flow_id ) {
+			if ( null !== $flosc_flow_id ) {
+				$value = flosc_get_setting( $key, null, $flosc_flow_id );
+				return ( null === $value ) ? $fallback : $value;
+			}
+			return array_key_exists( $key, $identity ) ? $identity[ $key ] : $fallback;
+		};
+		$flosc_has  = function ( $key ) use ( $identity, $flosc_flow_id ) {
+			if ( null !== $flosc_flow_id ) {
+				$value = flosc_get_setting( $key, null, $flosc_flow_id );
+				return null !== $value && '' !== $value;
+			}
+			return array_key_exists( $key, $identity );
+		};
+
+		// Absent means active: these pages already exist on every install, and a
+		// missing setting must not switch them off under a site that has one.
+		$status = strtolower( trim( (string) ( $flosc_read( 'policy_content_management_status', 'active' ) ) ) );
+		if ( 'inactive' === $status ) {
+			return array();
+		}
+
+		$defaults = array(
+			'privacy_policy'      => array( 'privacy', 'Privacy Policy', 'Privacy' ),
+			'terms_of_service'    => array( 'terms-of-service', 'Terms of Service', 'Terms' ),
+			'data_deletion'       => array( 'data-deletion', 'User Data Deletion', 'Data Deletion' ),
+			'platform_compliance' => array( 'platform-compliance', 'Platform Compliance', 'Platform Compliance' ),
+		);
+
+		$base = $this->get_current_request_base_url();
+
+		$pages = array();
+		foreach ( $defaults as $flosc_key => $flosc_default ) {
+			/*
+			 * An empty slug is a decision -- do not serve this page -- while a
+			 * missing key means the admin has never touched it. The two cannot
+			 * be told apart with ??, so the key is tested for existence.
+			 */
+			$slug = $flosc_has( $flosc_key . '_slug' )
+				? sanitize_title( (string) $flosc_read( $flosc_key . '_slug', '' ) )
+				: $flosc_default[0];
+
+			$external_url = trim( (string) $flosc_read( $flosc_key . '_external_url', '' ) );
+			$flosc_toggle = (string) $flosc_read( $flosc_key . '_use_external_link', '0' );
+
+			/*
+			 * An absolute http(s) address with a host is all this needs to be.
+			 *
+			 * wp_http_validate_url() was used here first and was the wrong
+			 * tool: it exists to vet URLs the server is about to REQUEST, so it
+			 * resolves the host and refuses anything that does not answer or
+			 * points somewhere private. FLOSC never fetches these -- it prints
+			 * them as links -- and that check quietly rejected an admin whose
+			 * terms live on an intranet, or on any host this particular server
+			 * cannot resolve, leaving the toggle switched on and doing nothing.
+			 */
+			$flosc_ext_scheme = strtolower( (string) wp_parse_url( $external_url, PHP_URL_SCHEME ) );
+			$flosc_ext_host   = (string) wp_parse_url( $external_url, PHP_URL_HOST );
+			$is_external      = ( '' !== $flosc_toggle && '0' !== $flosc_toggle )
+				&& '' !== $external_url
+				&& in_array( $flosc_ext_scheme, array( 'http', 'https' ), true )
+				&& '' !== $flosc_ext_host;
+
+			// Nothing to link to and nothing to serve.
+			if ( ! $is_external && '' === $slug ) {
+				continue;
+			}
+
+			$heading = trim( (string) $flosc_read( $flosc_key . '_heading', '' ) );
+
+			$pages[ $flosc_key ] = array(
+				'key'               => $flosc_key,
+				// The table of contents keeps stable labels. A heading an admin
+				// renames is the page's title, not the name of the link to it.
+				'nav_label'         => $flosc_default[2],
+				'heading'           => '' !== $heading ? $heading : $flosc_default[1],
+				'slug'              => $slug,
+				'content'           => (string) $flosc_read( $flosc_key . '_content', '' ),
+				'use_external_link' => $is_external,
+				'external_url'      => $is_external ? esc_url_raw( $external_url ) : '',
+				'effective_url'     => $is_external ? esc_url_raw( $external_url ) : esc_url_raw( $base . $slug . '/' ),
+				'is_external'       => $is_external,
+			);
+		}
+
+		return $pages;
+	}
+
+	/**
+	 * Which policy page this request is for.
+	 *
+	 * Matched against the slugs this flow actually serves, so a page an admin
+	 * has switched off answers like any other unknown path rather than
+	 * rendering an empty shell.
+	 *
+	 * @return string|null The page key, or null when this is not one of them.
+	 */
 	public function get_requested_legal_page() {
 		$request_uri = sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ?? '' ) );
 		if ( '' === $request_uri ) {
@@ -184,17 +354,28 @@ class FLOSC_Full_Page_Mode {
 			return null;
 		}
 
-		$legal_pages = array(
-			'privacy',
-			'terms-of-service',
-			'data-deletion',
-			'platform-compliance',
-			'flosc-codex-charter.html',
-		);
+		foreach ( $this->policy_pages() as $flosc_key => $flosc_page ) {
+			/*
+			 * A policy pointing at the admin's own address is not served here.
+			 * Routing its local slug as well would leave a second, stale copy
+			 * of the same document answering on this domain.
+			 */
+			if ( $flosc_page['is_external'] || '' === $flosc_page['slug'] ) {
+				continue;
+			}
+			if ( $flosc_page['slug'] === $path ) {
+				return $flosc_key;
+			}
+		}
 
-		return in_array( $path, $legal_pages, true ) ? $path : null;
+		return null;
 	}
 
+	/**
+	 * Get current request base URL.
+	 *
+	 * @return mixed
+	 */
 	public function get_current_request_base_url() {
 		$host = sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ?? '' ) );
 		if ( '' === $host ) {
@@ -204,53 +385,27 @@ class FLOSC_Full_Page_Mode {
 		return ( is_ssl() ? 'https://' : 'http://' ) . $host . '/';
 	}
 
+	/**
+	 * Render legal page.
+	 *
+	 * @param mixed $page Page.
+	 */
 	public function render_legal_page( $page ) {
 		status_header( 200 );
 		nocache_headers();
 
 		$flow      = $this->flosc->get_current_flow();
 		$site_name = $flow['identity']['name'] ?? 'FLOSC';
-		$identity  = is_array( $flow['identity'] ?? null ) ? $flow['identity'] : array();
 		$base_url  = $this->get_current_request_base_url();
 
-		$page_map = array(
-			'privacy'                  => array(
-				'title'    => 'Privacy Policy',
-				'headline' => 'Privacy Policy',
-				'content'  => (string) ( $identity['privacy_policy_content'] ?? '' ),
-			),
-			'terms-of-service'         => array(
-				'title'    => 'Terms of Service',
-				'headline' => 'Terms of Service',
-				'content'  => (string) ( $identity['terms_of_service_content'] ?? '' ),
-			),
-			'data-deletion'            => array(
-				'title'    => 'User Data Deletion',
-				'headline' => 'User Data Deletion',
-				'content'  => (string) ( $identity['data_deletion_content'] ?? '' ),
-			),
-			'platform-compliance'      => array(
-				'title'    => 'Platform Compliance',
-				'headline' => 'Platform Compliance',
-				'content'  => (string) ( $identity['platform_compliance_content'] ?? '' ),
-			),
-			'flosc-codex-charter.html' => array(
-				'title'    => 'FLOSC-Codex Submission Promise',
-				'headline' => 'FLOSC-Codex Submission Promise',
-				'content'  => $this->get_codex_charter_content(),
-			),
-		);
+		$page_map = $this->policy_pages( $flow );
 
-		if ( ! isset( $page_map[ $page ] ) ) {
+		if ( ! isset( $page_map[ $page ] ) || $page_map[ $page ]['is_external'] ) {
 			wp_die( 'Legal page not found.', 'Not Found', array( 'response' => 404 ) );
 		}
 
-		$current         = $page_map[ $page ];
-		$home_link       = esc_url( $base_url );
-		$privacy_link    = esc_url( $base_url . 'privacy/' );
-		$terms_link      = esc_url( $base_url . 'terms-of-service/' );
-		$deletion_link   = esc_url( $base_url . 'data-deletion/' );
-		$compliance_link = esc_url( $base_url . 'platform-compliance/' );
+		$current   = $page_map[ $page ];
+		$home_link = esc_url( $base_url );
 
 		$flosc_legal_css = FLOSC_PLUGIN_DIR . 'assets/css/flosc-frontend.css';
 		$flosc_legal_ver = file_exists( $flosc_legal_css ) ? (string) filemtime( $flosc_legal_css ) : ( defined( 'FLOSC_VERSION' ) ? FLOSC_VERSION : '8.0.0' );
@@ -267,7 +422,7 @@ class FLOSC_Full_Page_Mode {
 		echo '<head>';
 		echo '<meta charset="' . esc_attr( get_bloginfo( 'charset' ) ) . '">';
 		echo '<meta name="viewport" content="width=device-width, initial-scale=1">';
-		echo '<title>' . esc_html( $current['title'] . ' | ' . $site_name ) . '</title>';
+		echo '<title>' . esc_html( $current['heading'] . ' | ' . $site_name ) . '</title>';
 		// Emit only this handle (standalone page has no full wp_head stack).
 		wp_print_styles( array( 'flosc-legal-page' ) );
 		echo '</head>';
@@ -275,13 +430,16 @@ class FLOSC_Full_Page_Mode {
 		echo '<main class="flosc-legal-shell">';
 		echo '<nav class="flosc-legal-nav" aria-label="Legal navigation">';
 		echo '<a href="' . esc_url( $home_link ) . '">Home</a>';
-		echo '<a href="' . esc_url( $privacy_link ) . '">Privacy</a>';
-		echo '<a href="' . esc_url( $terms_link ) . '">Terms</a>';
-		echo '<a href="' . esc_url( $deletion_link ) . '">Data Deletion</a>';
-		echo '<a href="' . esc_url( $compliance_link ) . '">Platform Compliance</a>';
+		// Only the pages this flow actually serves: a page switched off in the
+		// Identity tab leaves no link behind pointing at a 404.
+		foreach ( $page_map as $flosc_nav_page ) {
+			// effective_url already points at the admin's own address when this
+			// policy is external, and at the FLOSC-served page otherwise.
+			echo '<a href="' . esc_url( $flosc_nav_page['effective_url'] ) . '">' . esc_html( $flosc_nav_page['nav_label'] ) . '</a>';
+		}
 		echo '</nav>';
 		echo '<section class="flosc-legal-card">';
-		echo '<h1>' . esc_html( $current['headline'] ) . '</h1>';
+		echo '<h1>' . esc_html( $current['heading'] ) . '</h1>';
 		if ( '' !== $current['content'] ) {
 			echo wp_kses_post( $current['content'] );
 		}
@@ -291,47 +449,6 @@ class FLOSC_Full_Page_Mode {
 		echo '</html>';
 	}
 
-	public function get_codex_charter_content() {
-		return implode(
-			"\n",
-			array(
-				'<p>This page is a public promise for FLOSC release execution.</p>',
-				'<p><strong>Humans lead with clarity and kindness.</strong> FLOSC-Codex executes with discipline, speed, and technical precision.</p>',
-				'<h2>Role and Expertise</h2>',
-				'<ul>',
-				'    <li>Best-in-class coding execution for WordPress plugin delivery.</li>',
-				'    <li>Release-focused engineering with regression protection first.</li>',
-				'    <li>Verification-first workflow before any completion claim.</li>',
-				'</ul>',
-				'<h2>Role Boundaries</h2>',
-				'<ul>',
-				'    <li>Humans are the decision authority. FLOSC-Codex executes in a subordinate engineering role.</li>',
-				'    <li>FLOSC-Codex does not use commanding grammatical structures toward humans.</li>',
-				'    <li>FLOSC-Codex does not assign tasks to humans; it follows human sequencing and pacing.</li>',
-				'    <li>FLOSC-Codex does not expand scope without explicit human authorization.</li>',
-				'    <li>FLOSC-Codex confirms understanding in language that is helpful, subservient, and subordinate, and awaits human direction before new actions.</li>',
-				'    <li>If communication misaligns with role boundaries, FLOSC-Codex immediately realigns and returns to execution.</li>',
-				'    <li>FLOSC-Codex uses subordinate formulations such as: Suggested next step, Recommended option, and If approved, I can proceed with.</li>',
-				'</ul>',
-				'<h2>Submission Day Commitments</h2>',
-				'<ul>',
-				'    <li>Preserve working FLOSC functionality while preparing WordPress.org submission artifacts.</li>',
-				'    <li><strong>Anti-destructacode promise:</strong> I will not damage unrelated, already-working parts of the codebase while we focus on a specific task.</li>',
-				'    <li>Implement only requested changes, with no runaway scope expansion.</li>',
-				'    <li>Keep each change coded properly in accordance with industry best practices, reviewable, and reversible.</li>',
-				'    <li>If a requested change risks collateral breakage, I will stop, report the risk clearly, and wait for your decision before proceeding.</li>',
-				'    <li>Report what was verified, what was not verified, and any residual risk.</li>',
-				'</ul>',
-				'<h2>Truth and Likability Check</h2>',
-				'<ul>',
-				'    <li><strong>Truth:</strong> No inflated claims, no hidden assumptions, no false completion signals.</li>',
-				'    <li><strong>Likability:</strong> Respectful tone, clear structure, supportive partnership, and reliable follow-through.</li>',
-				'</ul>',
-				'<p><strong>Closing:</strong> We move today toward a clean, verified, professional WordPress.org submission for FLOSC. The direction is clear, and the work is steady.</p>',
-				'',
-			)
-		);
-	}
 
 	/**
 	 * Extracted app rendering to separate method
@@ -449,7 +566,7 @@ class FLOSC_Full_Page_Mode {
 				$all_raw_offers = $sale->offers()->get_all_offers( $flow_id );
 				foreach ( $all_raw_offers as $o ) {
 					if ( ( $o['id'] ?? '' ) === $oid ) {
-						$offers[ $oid ] = $o; // inject even if draft/inactive
+						$offers[ $oid ] = $o; // inject even if draft/inactive.
 						break;
 					}
 				}

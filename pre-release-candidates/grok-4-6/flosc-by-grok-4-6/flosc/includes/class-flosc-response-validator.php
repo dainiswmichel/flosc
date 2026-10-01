@@ -11,10 +11,23 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+/**
+ * Response validator.
+ */
 class FLOSC_Response_Validator {
 
+	/**
+	 * User session.
+	 *
+	 * @var mixed
+	 */
 	private $flosc_user_session;
 
+	/**
+	 * Construct.
+	 *
+	 * @param mixed $flosc_user_session User session.
+	 */
 	public function __construct( $flosc_user_session ) {
 		$this->flosc_user_session = $flosc_user_session;
 	}
@@ -61,10 +74,22 @@ class FLOSC_Response_Validator {
 		);
 	}
 
+	/**
+	 * Contains lesson content.
+	 *
+	 * @param mixed $flosc_response Response.
+	 * @return mixed
+	 */
 	private function flosc_contains_lesson_content( $flosc_response ) {
 		return strlen( $flosc_response ) > 3000 || preg_match( '/^Lesson \d+:/m', $flosc_response );
 	}
 
+	/**
+	 * Used lesson tool.
+	 *
+	 * @param mixed $flosc_tool_calls Tool calls.
+	 * @return mixed
+	 */
 	private function flosc_used_lesson_tool( $flosc_tool_calls ) {
 		foreach ( $flosc_tool_calls as $flosc_call ) {
 			if ( in_array( $flosc_call['name'], array( 'flosc_get_lesson_content', 'flosc_deliver_free_lesson' ), true ) ) {
@@ -74,6 +99,12 @@ class FLOSC_Response_Validator {
 		return false;
 	}
 
+	/**
+	 * Contains pricing.
+	 *
+	 * @param mixed $flosc_response Response.
+	 * @return mixed
+	 */
 	private function flosc_contains_pricing( $flosc_response ) {
 		$flosc_keywords = array( '$', 'price', 'cost', 'pay', 'purchase', 'buy' );
 		foreach ( $flosc_keywords as $flosc_keyword ) {
@@ -84,6 +115,11 @@ class FLOSC_Response_Validator {
 		return false;
 	}
 
+	/**
+	 * Get override response.
+	 *
+	 * @return mixed
+	 */
 	private function flosc_get_override_response() {
 		$flosc_user_type = $this->flosc_user_session->flosc_get( 'flosc_user_type' );
 

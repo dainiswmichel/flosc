@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 $flosc_flows    = flosc_flows()->get_user_flows();
 $flosc_is_admin = current_user_can( 'manage_options' );
-$flosc_get      = wp_unslash( $_GET );
+$flosc_get      = flosc_nav_params();
 
 // Handle delete.
 if ( isset( $flosc_get['delete_flow'] ) && $flosc_is_admin && isset( $flosc_get['_wpnonce'] ) && wp_verify_nonce( sanitize_text_field( $flosc_get['_wpnonce'] ), 'flosc_delete_flow' ) ) {

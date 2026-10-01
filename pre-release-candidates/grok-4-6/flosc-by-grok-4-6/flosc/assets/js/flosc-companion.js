@@ -20,9 +20,17 @@
 (function(window, document) {
     'use strict';
 
-    // Single boot: PHP enqueues this only on host pages with a validated FLOSC app
-    // route as iframe target. App routes never load this script (is_flosc_request).
-    // Nesting is impossible by that invariant — not by runtime "nest guards."
+    // A companion is host-page chrome. It must never mount inside another frame,
+    // even if a framed document accidentally enqueues this script.
+    try {
+        if (window.self !== window.top) {
+            return;
+        }
+    } catch (e) {
+        return;
+    }
+
+    // Single boot on the host page.
     if (window.__FLOSC_COMPANION_BOOTED__) {
         return;
     }
@@ -215,11 +223,16 @@
                     '<button class="flosc-companion-close" aria-label="' + this.escapeHtml(this.config.closeAriaLabel) + '"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg></button>' +
                 '</div>';
 
-            // Iframe
+            // Iframe. Src is assigned only when the panel opens, so there is
+            // nothing to defer. loading=lazy on a frame that stays hidden
+            // until flosc_app_ready is display:none, and Safari does not
+            // fetch an iframe in that state. The panel then stays white:
+            // the app never announces itself, and the health timer (armed
+            // on load) never starts.
             this.iframe = document.createElement('iframe');
             this.iframe.className = 'flosc-companion-body';
-            this.iframe.setAttribute('loading', 'lazy');
             this.iframe.setAttribute('title', this.config.assistantTitle || this.config.productName || 'Assistant');
+            this.iframe.hidden = true;
 
             window_el.appendChild(header);
             window_el.appendChild(this.iframe);
@@ -405,9 +418,16 @@
                     self.navigateTopLevelForAuth(data.authUrl);
                     return;
                 }
+                if (data.type === 'flosc_companion_navigate_top') {
+                    self.navigateTopLevel(data.url);
+                    return;
+                }
                 if (data.type === 'flosc_app_ready') {
                     self._frameAlive = true;
+                    self._frameFailed = false;
                     window.clearTimeout(self._frameHealthTimer);
+                    self.clearFrameFailure();
+                    self.iframe.hidden = false;
                     return;
                 }
                 if (data.type === 'flosc_companion_logout_complete') {
@@ -612,10 +632,16 @@
             if (!this.iframe.src) {
                 this._frameAlive = false;
                 this._frameRecovered = false;
+                this._frameFailed = false;
+                this.clearFrameFailure();
+                this.iframe.hidden = true;
                 this.lastIframeContextSignature = signature;
                 var iframeSrc = this.buildIframeUrl();
                 if (iframeSrc) {
                     this.iframe.src = iframeSrc;
+                    // Start the clock at assignment. A frame that never
+                    // fires 'load' would otherwise stay hidden with no error.
+                    this.watchFrameHealth();
                 }
             } else {
                 this.lastIframeContextSignature = signature;
@@ -639,39 +665,37 @@
         },
 
         /**
-         * v10.1.0: Confirm the frame that just loaded is actually the FLOSC app.
+         * Confirm the frame is actually the FLOSC app.
          *
-         * A 414, a 500 or any other error page fires 'load' exactly like the app
-         * does, so the reader was shown raw server output inside a branded panel
-         * with no way back. The app announces itself on boot; silence means the
-         * frame is not the app, and we rebuild it once without the continuity
-         * params that are the likeliest cause of an over-long request.
+         * A 414, a 500, or any other error page fires 'load' exactly like the
+         * app does. The app announces itself on boot. Silence means this frame
+         * is not the app. Rebuild once, then stop, so a down backend cannot loop.
          *
-         * Rebuilds at most once per open, so a genuinely down backend cannot put
-         * the panel in a reload loop.
+         * The visitor transcript is in sessionStorage (flosc_handoff_pack). The
+         * URL carries only flosc_handoff_ref=1. A retry has to keep both.
+         * Clearing them opens a new empty visitor, companion mode hides that
+         * empty landing state, and the panel body is white again.
          */
         watchFrameHealth: function() {
             var self = this;
             window.clearTimeout(this._frameHealthTimer);
 
-            if (this._frameAlive || this._frameRecovered) {
+            if (this._frameAlive || this._frameFailed || !this.iframe || this.iframe.hidden === false) {
                 return;
             }
 
             this._frameHealthTimer = window.setTimeout(function() {
-                if (self._frameAlive || self._frameRecovered || !self.iframe) {
+                if (self._frameAlive || self._frameFailed || !self.iframe) {
                     return;
                 }
-                self._frameRecovered = true;
 
-                // Drop everything that could have inflated the request, then rebuild.
-                self.continuityParams = {};
-                self.lastIframeContextSignature = '';
-                try {
-                    window.sessionStorage.removeItem('flosc_handoff_pack');
-                } catch (e) {
-                    // Storage unavailable in this context.
+                if (self._frameRecovered) {
+                    self.showFrameFailure();
+                    return;
                 }
+
+                self._frameRecovered = true;
+                self.lastIframeContextSignature = '';
 
                 try {
                     self.iframe.src = '';
@@ -683,6 +707,34 @@
                     // Nothing further we can do from here.
                 }
             }, 4000);
+        },
+
+        clearFrameFailure: function() {
+            if (!this.container) {
+                return;
+            }
+            var error = this.container.querySelector('.flosc-companion-frame-error');
+            if (error) {
+                error.remove();
+            }
+        },
+
+        showFrameFailure: function() {
+            window.clearTimeout(this._frameHealthTimer);
+            if (!this.iframe || !this.container) {
+                return;
+            }
+
+            this.iframe.hidden = true;
+            this._frameFailed = true;
+            this.iframe.removeAttribute('src');
+            this.clearFrameFailure();
+
+            var error = document.createElement('div');
+            error.className = 'flosc-companion-frame-error';
+            error.setAttribute('role', 'alert');
+            error.textContent = 'Chat could not be loaded. Please try again later.';
+            this.iframe.parentNode.insertBefore(error, this.iframe.nextSibling);
         },
 
         /**
@@ -872,6 +924,17 @@
 
                     var carriedPack = cont.flosc_handoff || parentParams.get('flosc_handoff');
                     if (carriedPack && this.stashHandoffPack(carriedPack)) {
+                        url.searchParams.set('flosc_handoff_ref', '1');
+                    }
+
+                    // Full-page → companion uses sessionStorage for the visitor
+                    // transcript and puts only this marker on the hub URL. Preserve
+                    // the marker on the inner app URL so that app can collect the
+                    // parked pack. Without it, the embed starts as a new visitor;
+                    // its empty landing state is intentionally hidden and the panel
+                    // therefore appears completely blank.
+                    var handoffRef = cont.flosc_handoff_ref || parentParams.get('flosc_handoff_ref');
+                    if (String(handoffRef || '') === '1') {
                         url.searchParams.set('flosc_handoff_ref', '1');
                     }
                 } catch (eFwd) {
@@ -1332,6 +1395,17 @@
                 return { kind: 'visitor', sessionId: visitorSid, journeyId: journeyId, messages: messages };
             }
             return {};
+        },
+
+        navigateTopLevel: function(rawUrl) {
+            try {
+                var target = new URL(String(rawUrl || ''), window.location.origin);
+                if (/^https?:$/.test(target.protocol)) {
+                    window.location.href = target.toString();
+                }
+            } catch (e) {
+                // Invalid destinations leave the host page where it is.
+            }
         },
 
         // Only the flow's own authorize endpoint may move the host page, and the parent
@@ -1915,7 +1989,7 @@
             var out = {};
             try {
                 var params = new URLSearchParams(window.location.search || '');
-                ['flosc_session_id', 'flosc_visitor_session', 'flosc_handoff'].forEach(function(key) {
+                ['flosc_session_id', 'flosc_visitor_session', 'flosc_handoff', 'flosc_handoff_ref'].forEach(function(key) {
                     var val = params.get(key);
                     if (val) {
                         out[key] = String(val);
@@ -1942,6 +2016,7 @@
                 url.searchParams.delete('flosc_session_id');
                 url.searchParams.delete('flosc_visitor_session');
                 url.searchParams.delete('flosc_handoff');
+                url.searchParams.delete('flosc_handoff_ref');
                 window.history.replaceState({}, document.title, url.toString());
             } catch (e) {
                 // Ignore URL update failures.

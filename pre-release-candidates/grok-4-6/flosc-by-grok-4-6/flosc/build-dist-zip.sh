@@ -136,6 +136,13 @@ done < <(find "$STAGE/flosc" \( \
   -name 'composer.lock' -o \
   -name 'build-dist-zip.sh' -o \
   -name '.distignore' -o \
+  -name '.cursorrules' -o \
+  -name 'agents.md' -o \
+  -name 'AGENTS.md' -o \
+  -name 'CLAUDE.md' -o \
+  -name 'WORDPRESS-ORG-RELEASE.md' -o \
+  -name 'phpcs.xml' -o \
+  -name 'phpcs.xml.dist' -o \
   -name '*.zip' -o \
   -name '*.bundle' \
 \) -print0 2>/dev/null)
