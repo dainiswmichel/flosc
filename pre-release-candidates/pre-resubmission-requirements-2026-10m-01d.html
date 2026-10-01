@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pre-Resubmission Requirements</title>
+<style>
+:root{
+  --bg:#fff; --fg:#1a1a1a; --mut:#5b5b5b; --line:#d8d8d8; --hl:#f6f6f4; --hl2:#efefec;
+  --fail:#8a1b1b; --failbg:#fdf0f0;
+  --pass:#14532d; --passbg:#eef7f0;
+  --todo:#7a4a00; --todobg:#fdf6e8;
+  --acc:#2d4a6b; --accbg:#eef2f7; --accline:#c3d2e2;
+  color-scheme:light;
+}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#141414; --fg:#e8e8e6; --mut:#a0a09c; --line:#333; --hl:#1d1d1d; --hl2:#232323;
+  --fail:#ff8d8d; --failbg:#2a1414; --pass:#8ee0a6; --passbg:#12240f;
+  --todo:#f0c674; --todobg:#2a2110; --acc:#8fb4d9; --accbg:#16212c; --accline:#2c3f52;
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#141414; --fg:#e8e8e6; --mut:#a0a09c; --line:#333; --hl:#1d1d1d; --hl2:#232323;
+  --fail:#ff8d8d; --failbg:#2a1414; --pass:#8ee0a6; --passbg:#12240f;
+  --todo:#f0c674; --todobg:#2a2110; --acc:#8fb4d9; --accbg:#16212c; --accline:#2c3f52;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);
+  font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  font-variant-numeric:tabular-nums}
+.wrap{max-width:1100px;margin:0 auto;padding-block:40px 80px;padding-left:16px;padding-right:16px}
+h1{font-size:2rem;line-height:1.15;margin:0 0 6px;text-wrap:balance;letter-spacing:-.015em}
+h2{font-size:1.28rem;margin:52px 0 12px;padding-bottom:7px;border-bottom:1px solid var(--line);text-wrap:balance}
+h3{font-size:1rem;margin:26px 0 6px;text-wrap:balance}
+p{margin:10px 0}
+.sub{color:var(--mut);margin:0 0 6px;font-size:1.02rem}
+.stamp{color:var(--mut);font-size:.84rem;margin:0 0 30px;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.86em;
+  background:var(--hl2);padding:1px 4px;border-radius:3px}
+pre{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.84rem;
+  background:var(--hl);border:1px solid var(--line);border-radius:6px;padding:12px 14px;overflow-x:auto}
+pre code{background:none;padding:0}
+.tablewrap{overflow-x:auto;margin:14px 0}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+th{background:var(--hl);font-weight:600}
+td.n{white-space:nowrap;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.82rem}
+.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.74rem;font-weight:700;
+  letter-spacing:.02em;white-space:nowrap}
+.t-fail{background:var(--failbg);color:var(--fail)}
+.t-pass{background:var(--passbg);color:var(--pass)}
+.t-todo{background:var(--todobg);color:var(--todo)}
+.t-info{background:var(--accbg);color:var(--acc)}
+.box{border:1px solid var(--line);border-left-width:4px;border-radius:6px;padding:14px 16px;margin:20px 0}
+.box.fail{border-left-color:var(--fail);background:var(--failbg)}
+.box.pass{border-left-color:var(--pass);background:var(--passbg)}
+.box.todo{border-left-color:var(--todo);background:var(--todobg)}
+.box.note{border-left-color:var(--mut);background:var(--hl)}
+.box.acc{border-left-color:var(--acc);background:var(--accbg)}
+.box>h3{margin-top:0}
+.box>p:last-child,.box>ul:last-child,.box>ol:last-child{margin-bottom:0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:12px;margin:18px 0}
+.tile{border:1px solid var(--line);border-radius:6px;padding:12px 14px;background:var(--hl)}
+.tile .k{font-size:.74rem;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);display:block;margin-bottom:4px}
+.tile .v{font-size:1.5rem;font-weight:700;line-height:1.1;display:block}
+.tile .v.ok{color:var(--pass)} .tile .v.bad{color:var(--fail)} .tile .v.warn{color:var(--todo)}
+.tile .f{font-size:.78rem;color:var(--mut);display:block;margin-top:3px}
+.gate{border-left:3px solid var(--accline);padding-left:14px;margin:14px 0}
+.small{font-size:.86rem;color:var(--mut)}
+ul li,ol li{margin:5px 0}
+a{color:var(--acc)}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+@media(max-width:700px){h1{font-size:1.6rem}.wrap{padding-block:28px 60px}table{font-size:.8rem}th,td{padding:6px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>What Is Necessary Prior To Resubmission</h1>
+<p class="sub">Claude Opus 5's section for the final remediation plan. Written against v114 (<code>b76e62c</code>), measured, not estimated.</p>
+<p class="stamp">2026-10m-01d &nbsp;·&nbsp; author: Claude Opus 5 &nbsp;·&nbsp; candidate: codex-gpt5 v114 &nbsp;·&nbsp; reference: v87 (grok-4-6)</p>
+
+<div class="box note">
+<h3>Standing of this document</h3>
+<p>I am the agent that caused the v109–v113 damage. Everything below was verified
+against the tree rather than asserted, and where I could not verify something I say so.
+Two claims in my earlier chat analysis were wrong and are corrected here — the
+four-line account in §2, and my framing of what the flush does.</p>
+</div>
+
+<h2>1. The good news first: nothing was lost</h2>
+
+<p>The stated fear is that each repair round is quietly costing product. Measured with
+<code>parity-gate.sh</code>, which inventories what the plugin is made of rather than diffing text:</p>
+
+<div class="grid">
+  <div class="tile"><span class="k">Parity checks</span><span class="v ok">16 / 17</span><span class="f">v87 → v114</span></div>
+  <div class="tile"><span class="k">Runtime PHP</span><span class="v ok">148</span><span class="f">all present</span></div>
+  <div class="tile"><span class="k">JS + CSS assets</span><span class="v ok">29</span><span class="f">all present</span></div>
+  <div class="tile"><span class="k">CSS selectors</span><span class="v ok">1919</span><span class="f">all present</span></div>
+  <div class="tile"><span class="k">Starter pack files</span><span class="v ok">20</span><span class="f">all present</span></div>
+  <div class="tile"><span class="k">REST routes</span><span class="v ok">66</span><span class="f">all present</span></div>
+  <div class="tile"><span class="k">Admin form fields</span><span class="v ok">526</span><span class="f">all present</span></div>
+  <div class="tile"><span class="k">Settings tabs</span><span class="v ok">28</span><span class="f">all present</span></div>
+</div>
+
+<p>Also all present: 81 classes, 27 AJAX actions, 24 <code>admin_post</code> actions, 5 shortcodes,
+106 option names, 114 user meta keys, 2 cron hooks, 16 shipped IVR configurations.</p>
+
+<p>The single parity miss is <code>get_codex_charter_content</code>, one function of 1925 — removed
+<strong>on purpose</strong> in v103 ("remove the FLOSC-Codex charter page from the shipped plugin").
+That is a completed decision, not a loss.</p>
+
+<div class="box pass">
+<h3>Your product work from v100–v108 is intact in v114</h3>
+<p>Verified file by file:</p>
+<div class="tablewrap">
+<table>
+<thead><tr><th style="width:4.5em">Round</th><th>What it actually delivered</th><th style="width:7em">In v114</th></tr></thead>
+<tbody>
+<tr><td class="n">v102</td><td>Three real functional bugs found by running WordPress. <code>flosc_resolve_ivr_file_path()</code> was defined inside one settings tab, so on the Flow screen <strong>Download, Duplicate and Import all silently did nothing</strong>. Duplicate also wrote <code>flosc_default_ivr-copy.md</code>, which the <code>*_ivr.md</code> glob could never list.</td><td><span class="tag t-pass">YES</span><br><span class="small">now in <code>includes/filesystem/flosc-data-paths.php</code>, required globally; suffix moved before <code>_ivr</code></span></td></tr>
+<tr><td class="n">v104</td><td>Four policy pages given a slug, a heading and an off switch.</td><td><span class="tag t-pass">YES</span><br><span class="small"><code>policy_pages()</code>, <code>get_requested_legal_page()</code>, <code>render_legal_page()</code></span></td></tr>
+<tr><td class="n">v105</td><td>Offer actions answer 403 instead of 200.</td><td><span class="tag t-pass">YES</span></td></tr>
+<tr><td class="n">v106</td><td><code>catalog</code> and <code>da1_export</code> nav keys declared, so the DA1 screen can select a catalog from a URL and Export TSV works.</td><td><span class="tag t-pass">YES</span></td></tr>
+<tr><td class="n">v107</td><td>One deployment's role slugs and LeSAEP branding out of the shipped plugin.</td><td><span class="tag t-pass">YES</span><br><span class="small"><code>flosc_learners</code> ×10; legacy slugs survive only in one test fixture and one code comment</span></td></tr>
+<tr><td class="n">v108</td><td>Pronunciation-school defaults neutralised; four quiz templates replaced with 40 FLOSC questions.</td><td><span class="tag t-pass">YES</span><br><span class="small">byte-identical per codex; independently re-verified</span></td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>No UI or feature regression is detectable between v87 and v114.</strong> The repair rounds
+cost five days and a great deal of trust. They did not cost product.</p>
+</div>
+
+<h2>2. A real defect in v114 — the starter-pack flush does not do what its comment claims</h2>
+
+<div class="box fail">
+<h3>Verified from source, and it matters</h3>
+<p>v114's starter-pack installer carries this:</p>
+<pre><code>// The newly registered flow must be routable immediately.
+if ( function_exists( 'flush_rewrite_rules' ) ) {
+    flush_rewrite_rules( false );
+}</code></pre>
+<p>It does not make the new flow routable. The sequence:</p>
+<ol>
+<li><code>add_rewrite_rules()</code> is hooked to <strong><code>init</code></strong> (<code>class-flosc-framework.php:1964</code>). It globs
+<code>*_ivr.md</code> <strong>from disk</strong> and calls <code>add_rewrite_rule(&hellip;, 'top')</code> for each one it finds,
+populating <code>$wp_rewrite->extra_rules_top</code>.</li>
+<li>The pack installer runs later <strong>in the same admin request</strong>, after <code>init</code> is finished. It copies the
+new <code>flow_ivr.md</code> to disk, writes the flow option, then flushes.</li>
+<li><code>flush_rewrite_rules()</code> rebuilds from the in-memory <code>extra_rules_top</code> that was populated at
+<code>init</code> — <strong>before the new file existed</strong> — and writes that to the <code>rewrite_rules</code> option.</li>
+</ol>
+<p>So the option saved by those four lines is the rule set from the start of the request,
+still missing the new slug. Nothing calls <code>add_rewrite_rules()</code> again after the file lands.</p>
+<p><strong>The fresh-install case is actually rescued by something else:</strong> the priority-1
+<code>handle_app_route</code> added in the same round. <code>detect_flow_from_request_route()</code> re-globs IVR
+files from disk and <code>preg_match</code>es each flow's slug against <code>REQUEST_URI</code> directly — it never
+consults the saved rewrite rules. That is what answers the URL before core's canonical
+guessing can 301 it to a similarly named post.</p>
+</div>
+
+<div class="box todo">
+<h3>Why this is dangerous rather than merely untidy</h3>
+<p>The comment asserts an invariant the code does not establish, and the real load-bearing
+mechanism (the priority-1 route) is documented nowhere as load-bearing. The next agent reads
+"the newly registered flow must be routable immediately", believes the installer handles it,
+refactors or re-prioritises <code>handle_app_route</code>, and the fresh-install 301 returns — with a
+passing test suite, because the committed contract test only asserts that the hook is
+registered at priority 1, not why.</p>
+<p>This is the same failure shape as my v110: a true-sounding claim attached to code that does
+not deliver it, with the actual behaviour resting elsewhere.</p>
+<p><strong>Proposed fix (v115, small):</strong> re-scan before persisting, so the saved option is correct and
+the priority-1 route stops being the only thing holding the case up.</p>
+<pre><code>// extra_rules_top was built at init, before this pack's file existed on disk.
+// Re-scan now, then persist, or the saved option omits the new slug and the
+// priority-1 route in handle_app_route() is the only thing answering the URL.
+flosc()->add_rewrite_rules();
+flush_rewrite_rules( false );</code></pre>
+<p class="small">The same shape exists in the older flush on the flow upload screen
+(<code>admin/ivr-upload-handler.php</code>) and should be checked at the same time. Neither is a
+resubmission blocker — the route works — but both are traps, and a trap that reads as a fix
+is how five days got lost last time.</p>
+</div>
+
+<h2>3. What codex got right, and should not be touched</h2>
+
+<p>v114's companion contract is better than what I wrote, and the reason is structural: the
+panel now <strong>fails closed</strong>, so <em>why</em> a wrong document arrives stops mattering.</p>
+
+<div class="tablewrap">
+<table>
+<thead><tr><th>Invariant</th><th>Mechanism</th><th style="width:7em">Verified</th></tr></thead>
+<tbody>
+<tr><td>A companion cannot boot inside a frame</td><td><code>window.self !== window.top</code> → early return, before the boot flag, before any render</td><td><span class="tag t-pass">YES</span></td></tr>
+<tr><td>The panel never displays a non-FLOSC document</td><td>iframe created <code>hidden</code>; revealed only on <code>flosc_app_ready</code> from the exact expected origin</td><td><span class="tag t-pass">YES</span></td></tr>
+<tr><td>The handshake is real, not a dead gate</td><td>app posts it at <code>assets/js/flosc-app.js:268</code></td><td><span class="tag t-pass">YES</span></td></tr>
+<tr><td>One bounded retry, then an honest error</td><td>4s timer → one rebuild without continuity payload → <code>showFrameFailure()</code> removes <code>src</code>, shows a <code>role="alert"</code> message</td><td><span class="tag t-pass">YES</span></td></tr>
+<tr><td>Flow routes beat core's 404 guessing</td><td><code>template_redirect</code> priority 1 (v107 was at default 10, same as <code>redirect_canonical</code>)</td><td><span class="tag t-pass">YES</span></td></tr>
+<tr><td>404 withdrawal cannot mask genuine 404s</td><td>gated behind <code>is_flosc_request()</code> before <code>is_404 = false</code></td><td><span class="tag t-pass">YES</span></td></tr>
+<tr><td>In-frame navigation cannot replace the chat</td><td>profile/dashboard/path via <code>navigateToHostPage()</code>; checkout/depletion/SSO via <code>leavePanel()</code> over postMessage; Minimize refuses before mutating state when framed</td><td><span class="tag t-pass">YES</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<p>The committed test <code>tests/check_companion_surface_contract.js</code> passes 16/16, and I confirmed
+it can fail: breaking the mount guard produced <code>FAIL</code> and exit 1. That is more than my own
+round ever established.</p>
+
+<div class="box note">
+<h3>Two limits of that test, stated so nobody over-reads it</h3>
+<ul>
+<li>It is <strong>string matching on source</strong>, including exact indentation. A reformat turns it red
+with no behaviour change, and it cannot distinguish live code from a comment containing the
+same text. Codex labels it source-level rather than overclaiming, which is the right call.</li>
+<li>It asserts that mechanisms are <em>present</em>. It cannot assert that the panel <em>works</em>.
+Only a browser can do that.</li>
+</ul>
+</div>
+
+<h2>4. The gate list — what must be true before the zip is uploaded</h2>
+
+<div class="gate">
+<h3>A. Product gate (new, and non-negotiable)</h3>
+<p>The browser matrix must assert <strong>the panel contains a working chat</strong> — chat input present,
+document is the FLOSC app — on the exact zip being submitted. Frame depth and bubble count are
+the metrics that certified a broken product in v110; they must never again be the pass condition.</p>
+<ul>
+<li>Fresh WordPress, install the Vegan Latvian Kitchen pack, open the bubble on a post. Assert chat input.</li>
+<li>Repeat <strong>without</strong> visiting Settings → Permalinks, which is the condition that produced the original 301.</li>
+<li>Log in from inside the panel; assert the panel still holds chat afterwards.</li>
+<li>Click Minimize from the full page; assert hub at depth 0, chat at depth 1.</li>
+<li>Force a non-FLOSC page into the frame; assert the error message appears and no website renders.</li>
+</ul>
+</div>
+
+<div class="gate">
+<h3>B. WordPress.org gate — two real findings, measured on the shipped zip</h3>
+<p>Audited against the extracted artifact, not the source tree (in-tree scans count <code>tests/</code>
+as shipped violations and inflate the count):</p>
+<ul>
+<li><strong><code>readme.txt</code> External Services section.</strong> Raised in <em>every</em> round T7–T13. v114's
+<code>readme.txt</code> now carries 16 numbered entries with no gaps — <strong>this appears closed</strong>, and the gate
+suite confirms it. Re-verify on the final zip.</li>
+<li><strong><code>includes/sso/class-oauth2-handler.php:537</code></strong> — the SSO callback host is still derived from
+<code>$_SERVER['HTTP_HOST']</code>, a client-supplied header. T12 named this specifically. <code>sanitize_text_field()</code>
+does not make it trustworthy. Prefer the flow's stored custom domain; validate against a configured
+allowlist where the request must be consulted.</li>
+</ul>
+</div>
+
+<div class="gate">
+<h3>C. Human-judgement items — for the reply email, not the diff</h3>
+<ul>
+<li>Seven shortcode and <code>the_content</code> callbacks must escape everything they <em>return</em>. A grep cannot decide this; each must be read.</li>
+<li>One <code>json_decode( stripslashes( … ) )</code> site needs its decoded structure validated.</li>
+<li>16 incidences of creating or logging in users (magic links, SSO, post-purchase). Not a bug — a design decision the reviewer accepts <strong>only</strong> with written justification.</li>
+</ul>
+</div>
+
+<div class="gate">
+<h3>D. Evidence gate — currently unsatisfiable as written</h3>
+<ul>
+<li><code>WORDPRESS-ORG-RELEASE.md</code> requires <code>flosc-gate.sh</code> to report <code>RESULT: all gates PASS</code>. <strong>No such script exists.</strong> Present are <code>tests/flosc-check.sh</code>, <code>tests/verify-standards.sh</code>, <code>wporg-audit.sh</code>, <code>parity-gate.sh</code>. Either write the gate or amend the policy to name what exists.</li>
+<li>No <code>build/evidence/</code> directory. The eight-row manual matrix has never been recorded with dates and a signature.</li>
+<li>Official Plugin Check has never been run on any candidate. It needs wp-cli and a booting WordPress.</li>
+</ul>
+</div>
+
+<h2>5. What I could not verify, and will not imply</h2>
+
+<div class="box todo">
+<ul>
+<li><strong>No browser, no wp-cli, no rsync in my container.</strong> The gate suite ran 27 pass / 1 fail / 4 skip; the one failure is the zip build refusing because <code>rsync</code> is absent — my environment, not codex's code. Plugin Check skipped for the same class of reason.</li>
+<li><strong>Every runtime assertion in §4A is unexecuted.</strong> I ran source-level checks only.</li>
+<li><strong>The wp-admin fatal from v112/v113 remains undiagnosed.</strong> No error text exists anywhere in the repository and it has never reproduced in a container. v113 removed a genuine partial-deploy hazard but could not establish it was the cause. Until the <code>debug.log</code> line exists, this is an open unknown, not a closed item.</li>
+<li><strong>I cannot prove the live site never experienced the stale-rewrite condition.</strong> What is established: the six companion-critical files on production matched v107 byte-for-byte, and the defect reproduced only in a fresh starter-pack install. The historical state of the production rewrite-rules option is not in source control.</li>
+</ul>
+</div>
+
+<h2>6. The process change that would have prevented all of this</h2>
+
+<div class="box acc">
+<h3>Four rules, each one bought with a specific failure</h3>
+<ol>
+<li><strong>Write the contract before the fix.</strong> Name the user-visible invariant in one sentence —
+"the panel contains a working chat" — and let it decide what the test asserts. v110 failed because
+I picked the metric after choosing the fix, so the metric could only confirm me.</li>
+<li><strong>A test that has never failed is not a test.</strong> Break it on purpose, watch it go red, restore it.
+Report the negative control alongside the pass. v111 did this and immediately exposed v110 as false.</li>
+<li><strong>Reproduce before repairing; when the root cause appears, revert and re-approach from the
+baseline.</strong> At v111 the 301 was on the table and v109/v110 were still in the tree. The correct move
+was to drop them and retest the minimal repair against v107. v114's rebuild-from-v107 is that move,
+taken three rounds late.</li>
+<li><strong>A defect found is not a defect authorised.</strong> Finding something true during a release freeze
+produces a line in a findings list, not a commit. The decision belongs to the project manager.</li>
+</ol>
+</div>
+
+<h2>7. Recommended order</h2>
+
+<div class="gate"><p><strong>v115</strong> — the rewrite-rescan fix from §2, plus the same check on <code>ivr-upload-handler.php</code>. One scope, one claim.</p></div>
+<div class="gate"><p><strong>v116</strong> — the SSO <code>HTTP_HOST</code> fix from §4B, and the callback-escaping read from §4C.</p></div>
+<div class="gate"><p><strong>v117</strong> — <code>flosc-gate.sh</code> and <code>build/evidence/</code>, so §4D becomes satisfiable.</p></div>
+<div class="gate"><p><strong>Then the product gate §4A</strong> — a signed, dated browser campaign on a real install. Not a candidate. Nothing in any container can substitute for it.</p></div>
+<div class="gate"><p><strong>Then submit</strong>, with the reply email carrying §4C's justifications and a point-by-point map from each T7–T13 finding to its fix.</p></div>
+
+<p class="stamp" style="margin-top:44px">Claude Opus 5 · FLOSC pre-resubmission section · 2026-10m-01d</p>
+
+</div>
+</body>
+</html>

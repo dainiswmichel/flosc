@@ -389,7 +389,64 @@ while the panel held a blog post. Scope stated in the title, measured on the art
 unverified listed by name.</p>
 </div>
 
-<p class="stamp" style="margin-top:44px">FLOSC · dainiswmichel/flosc · pre-release-candidates · 2026-09m-28d</p>
+<h2>9. Addendum — v114 reviewed, 2026-10m-01d</h2>
+
+<p>Codex built v114 (<code>b76e62c</code>) from the live v107 companion baseline, kept the v108 content
+edits, and reimplemented the companion safeguards against a written contract. Reviewed by
+Claude Opus 5 — the agent responsible for the v109–v113 damage. Full section:
+<code>pre-resubmission-requirements-2026-10m-01d.html</code>.</p>
+
+<div class="box pass">
+<h3>Nothing was lost. This is the measured answer to the regression fear.</h3>
+<p><code>parity-gate.sh</code>, v87 → v114: <strong>16 of 17 checks pass.</strong> All 148 runtime PHP files, 29 JS/CSS
+assets, 1919 CSS selectors, 81 classes, 526 admin form field names, 28 settings tabs, 66 REST
+routes, 27 AJAX actions, 24 <code>admin_post</code> actions, 5 shortcodes, 106 options, 114 user meta keys,
+2 cron hooks, 20 starter-pack files and 16 shipped IVR configurations are present.</p>
+<p>The single miss is <code>get_codex_charter_content</code> — one function of 1925, deleted <strong>on purpose</strong>
+in v103. The product work from v102 (three dead Flow-tab buttons), v104 (policy pages), v105,
+v106, v107 and v108 is verified intact.</p>
+</div>
+
+<div class="box fail">
+<h3>New defect found in v114: the starter-pack flush is a no-op</h3>
+<p><code>add_rewrite_rules()</code> is hooked to <code>init</code> and globs <code>*_ivr.md</code> from disk into
+<code>$wp_rewrite->extra_rules_top</code>. The pack installer runs later in the same request, copies the new
+flow file, then calls <code>flush_rewrite_rules( false )</code> — which rebuilds from the <code>extra_rules_top</code>
+populated <em>before</em> that file existed. The saved <code>rewrite_rules</code> option still omits the new slug.</p>
+<p>What actually rescues the fresh install is the priority-1 <code>handle_app_route</code>:
+<code>detect_flow_from_request_route()</code> re-globs from disk and matches each slug against
+<code>REQUEST_URI</code>, never consulting the saved rules. That mechanism is load-bearing and documented
+nowhere as such, while the installer comment asserts an invariant it does not deliver — the same
+shape as the v110 failure. Fix in v115: call <code>flosc()->add_rewrite_rules()</code> before the flush, and
+check <code>admin/ivr-upload-handler.php</code> for the same pattern.</p>
+</div>
+
+<div class="box pass">
+<h3>Verified correct in v114, and not to be touched</h3>
+<p>Mount guard before the boot flag; iframe created <code>hidden</code> and revealed only on
+<code>flosc_app_ready</code> from the expected origin (app posts it at <code>flosc-app.js:268</code>); one bounded
+retry then <code>showFrameFailure()</code> strips <code>src</code> and shows a <code>role="alert"</code>; route at
+<code>template_redirect</code> priority 1; 404 withdrawal gated behind <code>is_flosc_request()</code>; in-frame
+navigation routed through <code>navigateToHostPage()</code> and <code>leavePanel()</code>.</p>
+<p><code>tests/check_companion_surface_contract.js</code> passes 16/16 and <strong>can fail</strong> — breaking the mount
+guard produced <code>FAIL</code> and exit 1. It is source-level string matching, which codex states rather
+than overclaims; it cannot prove the panel works.</p>
+</div>
+
+<div class="box todo">
+<h3>Still open before resubmission</h3>
+<ul>
+<li><strong>Product gate.</strong> A browser matrix asserting <em>chat input present and document is the FLOSC app</em> — never frame depth — on the exact submitted zip, including a run that skips Settings → Permalinks.</li>
+<li><strong>SSO <code>HTTP_HOST</code></strong> at <code>class-oauth2-handler.php:537</code> still trusts a client-supplied header. T12 named it.</li>
+<li><strong>External Services</strong> now shows 16 numbered entries in v114's <code>readme.txt</code> and appears closed — re-verify on the final zip.</li>
+<li><strong>Evidence gate unsatisfiable:</strong> <code>flosc-gate.sh</code> does not exist, no <code>build/evidence/</code>, Plugin Check never run.</li>
+<li><strong>The v112/v113 wp-admin fatal is undiagnosed.</strong> No error text exists in the repository.</li>
+</ul>
+<p class="small">Not verified here: zip build (<code>rsync</code> absent) and Plugin Check (no wp-cli). Gate suite
+27 pass / 1 fail / 4 skip; that one failure is the container, not the code.</p>
+</div>
+
+<p class="stamp" style="margin-top:44px">FLOSC · dainiswmichel/flosc · pre-release-candidates · 2026-09m-28d, addendum 2026-10m-01d</p>
 
 </div>
 </body>
