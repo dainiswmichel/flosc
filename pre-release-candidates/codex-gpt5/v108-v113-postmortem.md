@@ -133,3 +133,20 @@ After the product gate is green, the WordPress.org gate still has independent
 open work: official Plugin Check, the missing External Services disclosure, the
 SSO `HTTP_HOST` trust issue, callback-return escaping review, decoded-JSON
 validation, and durable signed evidence for the exact submitted zip.
+
+## 2026-10m-01d correction
+
+The preceding final sentence repeated stale conclusions from the older release
+roadmap. Current `readme.txt` does contain an External Services section with 16
+numbered services. The specific T12 defect that added `HTTP_HOST` to the SSO
+redirect allowlist is also absent; remaining uses of that request header require
+their own present-tense review and must not be mislabeled as the closed finding.
+
+Candidate v114 also flushed rewrite rules after creating a flow without first
+registering the rule for the file created later in that same request. v114.1
+adds `flosc()->add_rewrite_rules()` immediately before the existing soft flush
+at the starter-pack and uploaded-flow creation sites. Its runtime delta is two
+added lines; the non-shipping contract test now requires registration before
+flush at both sites. Browser WordPress testing, official Plugin Check, the
+current callback/decoded-JSON/remaining-host review, and checksum-bound release
+evidence remain open.

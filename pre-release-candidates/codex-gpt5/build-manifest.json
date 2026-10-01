@@ -1,8 +1,9 @@
 {
-  "schema_version": 4,
+  "schema_version": 5,
   "candidate": "codex-gpt5",
-  "candidate_label": "FLOSC 8.0.0 candidate v114",
-  "built_at_utc": "2026-09-30T09:02:25Z",
+  "candidate_label": "FLOSC 8.0.0 candidate v114.1",
+  "parent_candidate_commit": "b76e62cf28e7854f0a00ab26a224072441930496",
+  "built_at_utc": "2026-10-01T07:03:55Z",
   "plugin_version": "8.0.0",
   "trusted_companion_base": {
     "candidate": "v107",
@@ -19,9 +20,9 @@
   "plugin_source": "flosc-by-codex-gpt5/flosc",
   "source_file_count": 315,
   "source_php_file_count": 200,
-  "files_changed_from_v107": 11,
+  "files_changed_from_v107": 12,
   "lines_changed_from_v107": {
-    "insertions": 299,
+    "insertions": 310,
     "deletions": 75
   },
   "artifact": {
@@ -29,13 +30,13 @@
     "root": "flosc/",
     "entries": 282,
     "files": 242,
-    "bytes": 2817805,
-    "sha256": "51680c09cee4580bb41d720efba98201411e07a8bba941c0f1b4ab2af69a77a2",
+    "bytes": 2817829,
+    "sha256": "79b959b9c82c7ff8aacff3ca6af7771a534def85e973b45c74c86e3bcb9c2bf3",
     "integrity": "passed",
-    "changed_source_matches": "10 of 10 shipped files"
+    "changed_source_matches": "11 of 11 shipped files"
   },
   "verification": {
-    "companion_contract_assertions_passed": 16,
+    "companion_contract_assertions_passed": 17,
     "companion_contract_assertions_failed": 0,
     "php_tests_passed": 44,
     "php_tests_failed": 0,
@@ -46,6 +47,12 @@
     "changed_php_wpcs_errors": 0,
     "changed_php_wpcs_warnings": 12,
     "changed_php_php74_compatibility_findings": 0,
+    "v114_1_delta_files": 2,
+    "v114_1_delta_insertions": 2,
+    "v114_1_nonshipping_test_insertions": 9,
+    "v114_1_delta_wpcs_errors": 0,
+    "v114_1_delta_wpcs_warnings": 0,
+    "v114_1_delta_php74_compatibility_findings": 0,
     "browser_wordpress_matrix": "not run",
     "official_plugin_check": "not run"
   },

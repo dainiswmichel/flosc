@@ -468,6 +468,7 @@ class FLOSC_Starter_Packs {
 
 			// The newly registered flow must be routable immediately.
 			if ( function_exists( 'flush_rewrite_rules' ) ) {
+				flosc()->add_rewrite_rules();
 				flush_rewrite_rules( false );
 			}
 		}

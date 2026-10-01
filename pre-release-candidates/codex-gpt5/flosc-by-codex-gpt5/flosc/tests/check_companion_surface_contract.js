@@ -12,6 +12,7 @@ const template = read('admin/flosc-app.php');
 const framework = read('includes/class-flosc-framework.php');
 const fullPage = read('includes/full-page-mode/class-flosc-full-page-mode.php');
 const packs = read('includes/starter-packs/class-flosc-starter-packs.php');
+const upload = read('admin/ivr-upload-handler.php');
 
 let failures = 0;
 function ok(condition, label) {
@@ -66,7 +67,15 @@ const routeGuard = fullPage.indexOf("if ( ! $this->is_flosc_request() )");
 const clear404 = fullPage.indexOf('$wp_query->is_404 = false;');
 ok(routeGuard !== -1 && clear404 > routeGuard,
     '404 state is cleared only after the request is identified as FLOSC');
-ok(packs.includes('flush_rewrite_rules( false );'),
-    'starter-pack flow registration refreshes rewrite rules');
+function registersBeforeFlush(source) {
+    const register = source.indexOf('flosc()->add_rewrite_rules();');
+    const flush = source.indexOf('flush_rewrite_rules( false );', register);
+    return register !== -1 && flush > register;
+}
+
+ok(registersBeforeFlush(packs),
+    'starter-pack flow registration adds the new rule before flushing');
+ok(registersBeforeFlush(upload),
+    'uploaded flow registration adds the new rule before flushing');
 
 process.exit(failures === 0 ? 0 : 1);

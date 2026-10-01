@@ -1068,6 +1068,7 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 					flosc_auto_export_ivr_to_file( $flow_key, $target_path );
 				}
 				if ( function_exists( 'flush_rewrite_rules' ) ) {
+					flosc()->add_rewrite_rules();
 					flush_rewrite_rules( false );
 				}
 				$redirect_ivr = $filename;
