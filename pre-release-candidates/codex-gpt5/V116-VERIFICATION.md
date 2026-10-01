@@ -9,7 +9,7 @@ Owner: Codex. Date: 2026-10m-01d. Artifact SHA-256:
 | Full-page → companion | The hub snapshots `flosc_handoff_ref=1`, the actual `buildIframeUrl()` passes it to `/chat/`, and the app consumes the parked same-origin transcript. | Pass: automated actual-method test |
 | Companion → full-page | The actual `openFullPage()` requests the iframe payload, parks the visitor transcript, adds the marker, and opens the full surface. | Pass: automated actual-method test |
 | Same conversation, not URL payload | Both directions keep the transcript in `sessionStorage`; the URL carries only session identifiers and `flosc_handoff_ref=1`. | Pass |
-| Correct hub behavior | `https://dainis.net/` is the configured Hub Companion URL, so Blog is the expected outer page after collapse. The inner companion frame remains the `/chat/` FLOSC app. | Pass: configuration/code contract |
+| Correct hub behavior | `https://dainis.net/` is the configured Hub Companion URL, so the homepage is the expected outer destination after collapse. The visible “Blog” heading is page/theme content, not the setting. The inner companion frame remains the `/chat/` FLOSC app. | Pass: configuration/code contract |
 | Do not display website as chat | The existing fail-closed frame/app-identification protections remain unchanged; companion surface contract is 21/21. | Pass |
 | No nested companion | The existing top-frame mount guard remains unchanged and passes the surface contract. | Pass |
 | FLOSC regression gates | 44/44 PHP gates and 4/4 JavaScript gates passed. | Pass |

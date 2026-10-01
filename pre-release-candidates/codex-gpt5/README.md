@@ -25,10 +25,11 @@ marker into its inner `/chat/` iframe. The iframe therefore opened as a new,
 empty visitor. Because companion mode intentionally hides the empty landing
 state, the panel appeared blank.
 
-The outer page after collapse is expected to be the Blog because floscAdmin's
-Hub Companion URL is `https://dainis.net/`. That page is the configured hub;
-the companion's inner frame must still load the FLOSC `/chat/` app with the
-same conversation. V116 restores that missing connection. The reverse
+The outer page after collapse is expected to be the configured homepage URL,
+`https://dainis.net/`. The visible “Blog” heading is content/theme output at
+that URL; it is not the FLOSC setting and V116 does not alter it. The
+companion's inner frame must still load the FLOSC `/chat/` app with the same
+conversation. V116 restores that missing connection. The reverse
 companion-to-full-page path remains intact and is covered by the round-trip
 test.
 
