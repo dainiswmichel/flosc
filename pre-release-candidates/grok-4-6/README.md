@@ -1,37 +1,35 @@
-# FLOSC 8.0.0 — Grok candidate V117
+# FLOSC 8.0.0 — Grok candidate V118
 
-Plugin header stays 8.0.0. This folder is candidate V117.
+Plugin header stays 8.0.0. This folder is candidate V118.
 
-V117 is the Codex V116 tree with the companion chat frame visible again. Personalities, flows, starter packs, conversations, logs, the v108 copy, and the v114.1 rewrite flush are unchanged. PHP is byte-identical to V116.
+V118 is the V117 tree. The companion frame stays visible. Personality attach now answers as soon as the flow row is stored.
 
 ## What was broken
 
-Fullscreen and companion already continued the same chat. Minimize on the full page and Open full chat page on the bubble are that round trip.
+On AI → This flow, choosing a personality disables the dropdown and shows “Attaching…”. The handler writes `personality_library_id`, then `updated_option` rewrites that flow’s `.md` before any JSON is sent. The designer reloads only after that response. The row for `dainis_net_ivr` was already `dadjokedan` while the header still read Br3nda and the control still read “Attaching…”.
 
-The frame was then hidden until `flosc_app_ready`, and it stayed `loading="lazy"`. A hidden lazy frame is not fetched, so the bubble had no chat to show and no chat to expand. V117 leaves the frame visible when the panel opens, which is how that round trip ran. The handoff marker is still copied onto the inner app URL. Nesting guards, in-frame navigation guards, the v108 copy, and the rewrite flush stay.
+## Runtime delta from V117
 
-## Runtime delta from V116
+`includes/flosc-personality-library.php`: nonce is checked first. The IVR file mirror is detached for the option write. The stored id is read back. JSON is sent. On shutdown the response is flushed with `fastcgi_finish_request()` when that function exists, and then `flosc_sync_flow_option_to_ivr_file()` mirrors the file.
 
-`assets/js/flosc-companion.js`: the chat iframe is not hidden while it waits for the app. `loading="lazy"` is restored because the frame is on screen. The ready handler no longer toggles visibility. Health retry matches the previous working frame: one rebuild when the app never announces itself.
+`admin/ai-configuration.php`: the same request times out at 20 seconds. A timeout, or an HTTP 200 body that is not JSON, reloads the page onto the stored personality. A 4xx or 5xx response re-enables the dropdown and shows the server message.
 
-No PHP, CSS, template, setting, or navigation target changed.
+Chat turns already resolve the attached library row on each prompt. That path is unchanged.
 
 ## Exact artifact
 
 ```text
-cbf7abdd68373200f495ca4fdba51a794b720113508ac726d2853092f4ed849b  flosc.zip
+916762c2f9a681559371c290b49cfb8711f2230a34dc7bd68cc7f78e0401b3f7  flosc.zip
 ```
 
-282 entries, 242 files, one `flosc/` root, `tests/` absent, `unzip -t` clean. Version and Stable tag 8.0.0. 2,818,026 bytes.
+282 entries, 242 files, one `flosc/` root, `tests/` absent, `unzip -t` clean. Version and Stable tag 8.0.0. 2,818,472 bytes.
 
 ## Measured in this build
 
-- Companion surface contract: 22/22.
-- Handoff round-trip test: 5/5.
-- `node --check` on `assets/js/flosc-companion.js`.
+- Attachment contract: passed, including the mirror-after-response assertions.
 - Plugin Check was not run on this zip.
-- A live expand/collapse click-through on dainis.net was not run.
-- This candidate was not deployed.
+- The AI settings dropdown was not click-tested on dainis.net.
+- This candidate was not deployed. Live dainis.net remains V117.
 
 ```sh
 shasum -a 256 -c SHA256SUMS

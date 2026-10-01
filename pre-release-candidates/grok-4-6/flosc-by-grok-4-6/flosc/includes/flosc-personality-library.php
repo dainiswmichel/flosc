@@ -3373,10 +3373,10 @@ if ( ! function_exists( 'flosc_ajax_attach_personality' ) ) {
 	 * @return void
 	 */
 	function flosc_ajax_attach_personality() {
+		check_ajax_referer( 'flosc_attach_personality', 'nonce' );
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to change this flow.', 'flosc' ) ), 403 );
 		}
-		check_ajax_referer( 'flosc_attach_personality', 'nonce' );
 
 		$ivr     = isset( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( (string) $_POST['ivr'] ) ) : '';
 		$persona = isset( $_POST['persona'] ) ? sanitize_key( wp_unslash( (string) $_POST['persona'] ) ) : '';
@@ -3390,6 +3390,16 @@ if ( ! function_exists( 'flosc_ajax_attach_personality' ) ) {
 			$settings = array();
 		}
 		$settings['personality_library_id'] = $persona;
+		/*
+		 * The portable .md is rewritten from updated_option, inside this
+		 * request, before any JSON goes out. The dropdown stays on
+		 * "Attaching…" for that whole rewrite, so the designer below never
+		 * reloads onto the personality just stored. The option row is what
+		 * the page and the next chat turn read. Detach the mirror, store
+		 * the row, answer, then mirror.
+		 */
+		remove_action( 'updated_option', 'flosc_sync_flow_option_to_ivr_file', 20 );
+		remove_action( 'added_option', 'flosc_sync_flow_option_to_ivr_file', 20 );
 		update_option( $option_key, $settings );
 
 		/*
@@ -3423,6 +3433,21 @@ if ( ! function_exists( 'flosc_ajax_attach_personality' ) ) {
 				}
 			}
 		}
+		add_action( 'updated_option', 'flosc_sync_flow_option_to_ivr_file', 20, 1 );
+		add_action( 'added_option', 'flosc_sync_flow_option_to_ivr_file', 20, 1 );
+		$flosc_mirror_key = $option_key;
+		add_action(
+			'shutdown',
+			static function () use ( $flosc_mirror_key ) {
+				if ( function_exists( 'fastcgi_finish_request' ) ) {
+					fastcgi_finish_request();
+				}
+				if ( function_exists( 'flosc_sync_flow_option_to_ivr_file' ) ) {
+					flosc_sync_flow_option_to_ivr_file( $flosc_mirror_key );
+				}
+			},
+			0
+		);
 
 		/*
 		 * Read the row back before reporting success.
