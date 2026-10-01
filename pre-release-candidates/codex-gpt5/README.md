@@ -63,5 +63,20 @@ It contains 282 entries / 242 files under one `flosc/` root and passes
   markup; a normal post remained a normal post; an unknown route remained a
   404; no PHP debug log was produced.
 
-See `V115-VERIFICATION.md` for the evidence matrix. Live deployment results
-are recorded there after the byte-identical artifact is installed.
+## Live deployment
+
+The exact artifact above is deployed and active on `https://dainis.net`.
+The canonical SHA-256 of the 242-file live tree matches the canonical hash of
+the extracted ZIP:
+
+```text
+7ed8eec7f5f8de679d65f44edc5e8045445f3d8439c86935b679ba62e51de4ff
+```
+
+The live companion URL returned HTTP 200 with no redirect, FLOSC app and chat
+input markup, no ordinary-post content, and no website chrome. A real post
+returned HTTP 200 with website chrome and no app marker. An unknown route
+returned 404. `debug.log` remained absent. No browser instance was exposed to
+this Codex session, so no visual click-through is claimed.
+
+See `V115-VERIFICATION.md` for the full evidence matrix.

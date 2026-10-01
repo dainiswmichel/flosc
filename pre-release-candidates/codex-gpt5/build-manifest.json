@@ -67,9 +67,25 @@
     "ordinary_post_http_200": true,
     "unknown_route_http_404": true,
     "php_debug_log_created": false,
-    "live_verification": "pending byte-identical deployment"
+    "live_verification": {
+      "site": "https://dainis.net",
+      "plugin_active": true,
+      "live_file_count": 242,
+      "canonical_tree_sha256": "7ed8eec7f5f8de679d65f44edc5e8045445f3d8439c86935b679ba62e51de4ff",
+      "artifact_tree_match": true,
+      "companion_http_200": true,
+      "companion_redirects": 0,
+      "companion_has_app_and_input_markup": true,
+      "companion_has_post_content": false,
+      "companion_has_website_chrome": false,
+      "real_post_http_200": true,
+      "real_post_has_app_marker": false,
+      "unknown_route_http_404": true,
+      "php_debug_log_created": false,
+      "visual_browser_clickthrough": "not run; no browser instance exposed"
+    }
   },
-  "status": "LOCAL_AND_OFFICIAL_GATES_PASSED_LIVE_DEPLOYMENT_PENDING",
-  "live_deployed": false,
-  "submission_ready": false
+  "status": "LIVE_DEPLOYED_AND_VERIFIED",
+  "live_deployed": true,
+  "submission_ready": true
 }

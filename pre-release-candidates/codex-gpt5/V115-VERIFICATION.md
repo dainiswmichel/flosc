@@ -20,7 +20,11 @@ Owner: Codex. Date: 2026-10-01. Artifact SHA-256:
 | PHP 7.4 floor | PHPCompatibilityWP: 0 findings. | Pass |
 | Official WordPress Plugin Check | Plugin Check 2.1.0 with experimental checks, exact ZIP mounted in WordPress: exit 0, 0 errors, the same 22 nonce recommendations. | Pass with 22 disclosed warnings |
 | Artifact integrity | 282 entries / 242 files, one `flosc/` root, `unzip -t` clean, all promised starter-pack assets present. | Pass |
-| Live ChemiCloud | Pending publication and byte-identical deployment. | Pending |
+| Live ChemiCloud artifact | FLOSC is active on WordPress 7.1.2 / PHP 8.4.26. The canonical hash of all 242 live files is `7ed8eec7…de4ff`, exactly matching the extracted published ZIP. | Pass |
+| Live companion HTTP/DOM | `/chat/?flosc_surface=companion&flosc_companion=1` returned 200 with zero redirects, FLOSC app and chat-input markup, no real-post content, and no website-chrome markers. | Pass |
+| Live ordinary page and 404 | A real published post returned 200 with website chrome and no app marker; an invented route returned 404. | Pass |
+| Live PHP log | `wp-content/debug.log` remained absent after deployment and public HTTP checks. | Pass |
+| Rendered browser click-through | No in-app or external browser instance was exposed to the Codex session. No visual click-through is claimed. | Not run |
 
 The 22 warnings are not represented as “zero findings.” They are
 `WordPress.Security.NonceVerification.Recommended` findings in
