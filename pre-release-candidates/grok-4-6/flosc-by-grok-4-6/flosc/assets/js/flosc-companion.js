@@ -416,7 +416,7 @@
                     return;
                 }
                 if (data.type === 'flosc_companion_navigate_top') {
-                    self.navigateTopLevel(data.url);
+                    self.navigateTopLevel(data.url, { keepCompanion: data.keepCompanion === true });
                     return;
                 }
                 if (data.type === 'flosc_app_ready') {
@@ -1379,12 +1379,26 @@
             return {};
         },
 
-        navigateTopLevel: function(rawUrl) {
+        navigateTopLevel: function(rawUrl, opts) {
+            opts = opts || {};
             try {
                 var target = new URL(String(rawUrl || ''), window.location.origin);
-                if (/^https?:$/.test(target.protocol)) {
-                    window.location.href = target.toString();
+                if (!/^https?:$/.test(target.protocol)) {
+                    return;
                 }
+                // Same-site chat links stay in this tab. The next document
+                // opens the same flow's panel over the page the link named.
+                if (opts.keepCompanion && target.origin === window.location.origin) {
+                    this.isOpen = true;
+                    this.saveNavigationState();
+                    var flowId = String(this.config.flowId || '').trim();
+                    if (flowId && !target.searchParams.get('flosc_flow_id')) {
+                        target.searchParams.set('flosc_flow_id', flowId);
+                    }
+                    target.searchParams.set('flosc_companion_handoff', '1');
+                    target.searchParams.set('flosc_companion_mode', String(this.panelMode || 'panel'));
+                }
+                window.location.href = target.toString();
             } catch (e) {
                 // Invalid destinations leave the host page where it is.
             }

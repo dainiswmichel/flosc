@@ -1,41 +1,42 @@
 {
   "schema_version": 1,
   "candidate": "grok-4-6",
-  "candidate_label": "FLOSC 8.0.0 candidate V118",
+  "candidate_label": "FLOSC 8.0.0 candidate V119",
   "owner": "Grok",
   "parent": {
-    "candidate": "V117",
-    "commit": "46e3cc179f41178271359bb6d2767011385c4307",
-    "scope": "V117 tree. Companion frame stays visible. Personality attach is the V118 delta."
+    "candidate": "V118",
+    "commit": "e9323938726cde8bd9527ea8a5acf8c6a77b680f",
+    "scope": "V118 tree. Same-site companion chat links are the V119 delta."
   },
-  "built_at_utc": "2026-10-01T14:12:50Z",
+  "built_at_utc": "2026-10-01T14:23:58Z",
   "plugin_version": "8.0.0",
   "plugin_source": "flosc-by-grok-4-6/flosc",
-  "php_byte_identical_to_v117": false,
-  "v118_delta": {
+  "php_byte_identical_to_v118": true,
+  "v119_delta": {
     "shipped_files": [
-      "includes/flosc-personality-library.php",
-      "admin/ai-configuration.php"
+      "assets/js/flosc-app.js",
+      "assets/js/flosc-companion.js"
     ],
     "behavior_change": true,
     "ui_change": true,
-    "cause": "flosc_ajax_attach_personality wrote personality_library_id and then waited on updated_option, which rewrites the flow .md, before wp_send_json_success. The dropdown stayed on Attaching and the designer stayed on the previous personality.",
-    "change": "The mirror is detached for the write. JSON is sent from the stored id. Shutdown flushes the response, then flosc_sync_flow_option_to_ivr_file runs. The control reloads on success, on a 20s timeout, and on an HTTP 200 non-JSON body."
+    "cause": "Companion chat links are target=_blank, so the article opened in a new tab whose companion started closed.",
+    "change": "A plain click on a same-origin link posts flosc_companion_navigate_top with keepCompanion. The parent assigns that URL in the current tab and the next page opens the same flow panel over it."
   },
   "artifact": {
     "path": "flosc.zip",
     "root": "flosc/",
     "entries": 282,
     "files": 242,
-    "bytes": 2818472,
-    "sha256": "916762c2f9a681559371c290b49cfb8711f2230a34dc7bd68cc7f78e0401b3f7",
+    "bytes": 2819081,
+    "sha256": "06eee73667db2f40a0562cda94f50eb5ac1e6fd9681e1646b667243523c27a47",
     "integrity": "unzip -t passed",
     "tests_entries": 0,
     "version": "8.0.0",
     "stable_tag": "8.0.0"
   },
   "verification": {
-    "attachment_contract": "passed",
+    "companion_surface_contract": "passed",
+    "handoff_roundtrip": "passed",
     "dainis_net_clickthrough": "not run",
     "official_plugin_check": "not run on this zip",
     "deployed": false

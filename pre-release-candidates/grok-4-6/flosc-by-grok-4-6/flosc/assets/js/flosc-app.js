@@ -269,6 +269,7 @@ class floscApp {
             } catch (e) {
                 // No parent access; the health check will rebuild once and stop.
             }
+            this.bindCompanionHostLinks();
         }
 
         // v10.0.0: Record the entry flow in a host-global cookie (first visit only)
@@ -7749,19 +7750,64 @@ class floscApp {
         window.location.href = target;
     }
 
-    leavePanel(url) {
+    leavePanel(url, opts) {
         const target = String(url || '').trim();
         if (!target) return;
+        opts = opts || {};
 
         if (!this.isFramed()) {
             window.location.href = target;
             return;
         }
 
-        window.parent.postMessage({
+        const message = {
             type: 'flosc_companion_navigate_top',
             url: target,
-        }, this.companionParentOrigin());
+        };
+        if (opts.keepCompanion) {
+            message.keepCompanion = true;
+        }
+        window.parent.postMessage(message, this.companionParentOrigin());
+    }
+
+    /**
+     * A same-site link in the companion chat loads in the tab that already
+     * has the panel open. target="_blank" opened a second tab whose companion
+     * started closed. The iframe must not follow the link itself: that puts
+     * the website inside the chat.
+     */
+    bindCompanionHostLinks() {
+        if (this._companionHostLinksBound || !this.isFramed()) {
+            return;
+        }
+        this._companionHostLinksBound = true;
+        const self = this;
+        document.addEventListener('click', function (event) {
+            if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+                return;
+            }
+            const anchor = event.target && event.target.closest ? event.target.closest('a[href]') : null;
+            if (!anchor || anchor.hasAttribute('download') || anchor.hasAttribute('data-action')) {
+                return;
+            }
+            let url;
+            try {
+                url = new URL(anchor.getAttribute('href'), window.location.href);
+            } catch (e) {
+                return;
+            }
+            if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+                return;
+            }
+            if (url.origin !== window.location.origin) {
+                return;
+            }
+            if (url.pathname === window.location.pathname && url.search === window.location.search) {
+                return;
+            }
+            event.preventDefault();
+            self.leavePanel(url.toString(), { keepCompanion: true });
+        });
     }
 
     /**

@@ -43,6 +43,16 @@ ok(app.includes("type: 'flosc_companion_navigate_top'"),
     'the app emits the top-navigation message');
 ok(companion.includes("data.type === 'flosc_companion_navigate_top'"),
     'the companion receives the top-navigation message');
+ok(app.includes('this.bindCompanionHostLinks();')
+    && app.includes('self.leavePanel(url.toString(), { keepCompanion: true });'),
+    'a same-site chat link loads in the open companion tab');
+ok(app.includes("if (url.origin !== window.location.origin)")
+    && app.includes('anchor.hasAttribute(\'data-action\')'),
+    'off-site links and in-chat actions are not taken over');
+ok(companion.includes('opts.keepCompanion && target.origin === window.location.origin')
+    && companion.includes("target.searchParams.set('flosc_companion_handoff', '1')")
+    && companion.includes("target.searchParams.set('flosc_flow_id', flowId)"),
+    'the parent keeps the same flow panel open over the linked page');
 const renderStart = companion.indexOf('render: function()');
 const renderEnd = companion.indexOf('bindEvents: function()', renderStart);
 const renderFn = companion.slice(renderStart, renderEnd);
