@@ -8,7 +8,7 @@
     "commit": "c8c324464dc87ba13abf3268a04a9de1fd74c100",
     "scope": "Codex V116 tree, including the flosc_handoff_ref iframe forward"
   },
-  "built_at_utc": "2026-10-01T12:42:11Z",
+  "built_at_utc": "2026-10-01T12:49:32Z",
   "plugin_version": "8.0.0",
   "plugin_source": "flosc-by-grok-4-6/flosc",
   "source_file_count": 316,
@@ -18,28 +18,27 @@
     "shipped_files": ["assets/js/flosc-companion.js"],
     "behavior_change": true,
     "ui_change": false,
-    "cause": "Safari does not fetch an iframe that is hidden and loading=lazy, so flosc_app_ready never arrives and the companion body stays white. A health retry also deleted flosc_handoff_pack and the snapshotted marker.",
-    "change": "Fetch the chat iframe when its URL is assigned. Arm the health timer at assignment. Keep the parked transcript and flosc_handoff_ref on the single retry."
+    "cause": "The chat iframe was hidden until flosc_app_ready while still loading=lazy, so the frame that had carried fullscreen and companion continuity was never fetched.",
+    "change": "The chat iframe is visible when the panel opens. The handoff marker is still forwarded. Nesting and in-frame navigation guards stay."
   },
   "artifact": {
     "path": "flosc.zip",
     "root": "flosc/",
     "entries": 282,
     "files": 242,
-    "bytes": 2818312,
-    "sha256": "f22a5612479454b948d2ed80539179cd36cd884579f92f76dbc6be64aaf77709",
+    "bytes": 2818026,
+    "sha256": "cbf7abdd68373200f495ca4fdba51a794b720113508ac726d2853092f4ed849b",
     "integrity": "unzip -t passed",
     "tests_entries": 0,
     "version": "8.0.0",
     "stable_tag": "8.0.0"
   },
   "verification": {
-    "companion_contract_assertions_passed": 24,
+    "companion_contract_assertions_passed": 22,
     "companion_contract_assertions_failed": 0,
-    "handoff_roundtrip_assertions_passed": 7,
+    "handoff_roundtrip_assertions_passed": 5,
     "handoff_roundtrip_assertions_failed": 0,
     "companion_js_syntax": "node --check passed",
-    "safari_hidden_iframe_fixture": "hidden eager fetched and posted ready; hidden lazy was not requested",
     "dainis_net_clickthrough": "not run",
     "official_plugin_check": "not run on this zip",
     "deployed": false

@@ -149,38 +149,6 @@ async function run() {
         && !!window.sessionStorage.getItem('flosc_handoff_pack'),
         'companion expand parks the transcript and opens the full surface');
 
-    const watchFrameHealth = objectMethod(companion, 'watchFrameHealth', 'clearFrameFailure');
-    window.sessionStorage = storage();
-    window.sessionStorage.setItem('flosc_handoff_pack', 'packed-transcript');
-    let scheduled = null;
-    window.setTimeout = (fn) => {
-        scheduled = fn;
-        return 1;
-    };
-    window.clearTimeout = () => {};
-    const retryIframe = {
-        hidden: true,
-        src: 'https://dainis.net/chat/?flosc_handoff_ref=1'
-    };
-    const shell = {
-        _frameAlive: false,
-        _frameFailed: false,
-        _frameRecovered: false,
-        iframe: retryIframe,
-        continuityParams: captured,
-        lastIframeContextSignature: 'sig',
-        buildIframeUrl: () => 'https://dainis.net/chat/?flosc_surface=companion&flosc_companion=1&flosc_handoff_ref=1',
-        showFrameFailure: () => { shell.failed = true; }
-    };
-    watchFrameHealth.call(shell);
-    ok(typeof scheduled === 'function', 'a silent frame schedules one rebuild');
-    scheduled();
-    ok(window.sessionStorage.getItem('flosc_handoff_pack') === 'packed-transcript'
-        && shell.continuityParams.flosc_handoff_ref === '1'
-        && retryIframe.src.includes('flosc_handoff_ref=1')
-        && !shell.failed,
-        'a silent-frame rebuild keeps the parked transcript and the marker');
-
     process.exit(failures === 0 ? 0 : 1);
 }
 

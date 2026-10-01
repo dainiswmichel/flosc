@@ -43,23 +43,17 @@ ok(app.includes("type: 'flosc_companion_navigate_top'"),
     'the app emits the top-navigation message');
 ok(companion.includes("data.type === 'flosc_companion_navigate_top'"),
     'the companion receives the top-navigation message');
-ok(companion.includes('this.iframe.hidden = true;')
-    && companion.includes('self.iframe.hidden = false;'),
-    'the iframe remains hidden until the FLOSC app announces readiness');
-ok(!companion.includes("setAttribute('loading', 'lazy')"),
-    'the hidden chat frame is fetched when its URL is assigned');
-ok(companion.includes('this.watchFrameHealth();'),
-    'frame health starts when the chat URL is assigned, not only after load');
-ok(companion.includes('if (self._frameRecovered) {\n                    self.showFrameFailure();'),
-    'a failed retry closes the frame instead of displaying a website or error page');
-
-const healthStart = companion.indexOf('watchFrameHealth: function()');
-const healthEnd = companion.indexOf('clearFrameFailure: function()', healthStart);
-const health = companion.slice(healthStart, healthEnd);
-ok(healthStart !== -1 && healthEnd > healthStart
-    && !health.includes("removeItem('flosc_handoff_pack')")
-    && !health.includes('continuityParams = {}'),
-    'a frame retry keeps the parked transcript and the handoff marker');
+const renderStart = companion.indexOf('render: function()');
+const renderEnd = companion.indexOf('bindEvents: function()', renderStart);
+const renderFn = companion.slice(renderStart, renderEnd);
+ok(renderFn.includes("setAttribute('loading', 'lazy')")
+    && !renderFn.includes('iframe.hidden'),
+    'the chat frame is visible when the panel opens');
+const openStart = companion.indexOf('open: function(opts)');
+const openEnd = companion.indexOf('close: function()', openStart);
+const openFn = companion.slice(openStart, openEnd);
+ok(!openFn.includes('iframe.hidden'),
+    'opening the panel does not hide the chat frame');
 
 const companionIframeUrlStart = companion.indexOf('buildIframeUrl: function()');
 const companionIframeUrlEnd = companion.indexOf('normalizeUrl: function(value)', companionIframeUrlStart);

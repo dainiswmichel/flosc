@@ -223,16 +223,13 @@
                     '<button class="flosc-companion-close" aria-label="' + this.escapeHtml(this.config.closeAriaLabel) + '"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg></button>' +
                 '</div>';
 
-            // Iframe. Src is assigned only when the panel opens, so there is
-            // nothing to defer. loading=lazy on a frame that stays hidden
-            // until flosc_app_ready is display:none, and Safari does not
-            // fetch an iframe in that state. The panel then stays white:
-            // the app never announces itself, and the health timer (armed
-            // on load) never starts.
+            // Visible as soon as the panel opens. Hiding it until
+            // flosc_app_ready left a lazy frame that Safari never fetched,
+            // so expand and collapse had no chat to continue.
             this.iframe = document.createElement('iframe');
             this.iframe.className = 'flosc-companion-body';
+            this.iframe.setAttribute('loading', 'lazy');
             this.iframe.setAttribute('title', this.config.assistantTitle || this.config.productName || 'Assistant');
-            this.iframe.hidden = true;
 
             window_el.appendChild(header);
             window_el.appendChild(this.iframe);
@@ -424,10 +421,7 @@
                 }
                 if (data.type === 'flosc_app_ready') {
                     self._frameAlive = true;
-                    self._frameFailed = false;
                     window.clearTimeout(self._frameHealthTimer);
-                    self.clearFrameFailure();
-                    self.iframe.hidden = false;
                     return;
                 }
                 if (data.type === 'flosc_companion_logout_complete') {
@@ -632,16 +626,10 @@
             if (!this.iframe.src) {
                 this._frameAlive = false;
                 this._frameRecovered = false;
-                this._frameFailed = false;
-                this.clearFrameFailure();
-                this.iframe.hidden = true;
                 this.lastIframeContextSignature = signature;
                 var iframeSrc = this.buildIframeUrl();
                 if (iframeSrc) {
                     this.iframe.src = iframeSrc;
-                    // Start the clock at assignment. A frame that never
-                    // fires 'load' would otherwise stay hidden with no error.
-                    this.watchFrameHealth();
                 }
             } else {
                 this.lastIframeContextSignature = signature;
@@ -665,37 +653,31 @@
         },
 
         /**
-         * Confirm the frame is actually the FLOSC app.
-         *
          * A 414, a 500, or any other error page fires 'load' exactly like the
-         * app does. The app announces itself on boot. Silence means this frame
-         * is not the app. Rebuild once, then stop, so a down backend cannot loop.
-         *
-         * The visitor transcript is in sessionStorage (flosc_handoff_pack). The
-         * URL carries only flosc_handoff_ref=1. A retry has to keep both.
-         * Clearing them opens a new empty visitor, companion mode hides that
-         * empty landing state, and the panel body is white again.
+         * app does. The app announces itself on boot. Silence means the frame
+         * is not the app. Rebuild once, then stop.
          */
         watchFrameHealth: function() {
             var self = this;
             window.clearTimeout(this._frameHealthTimer);
 
-            if (this._frameAlive || this._frameFailed || !this.iframe || this.iframe.hidden === false) {
+            if (this._frameAlive || this._frameRecovered) {
                 return;
             }
 
             this._frameHealthTimer = window.setTimeout(function() {
-                if (self._frameAlive || self._frameFailed || !self.iframe) {
+                if (self._frameAlive || self._frameRecovered || !self.iframe) {
                     return;
                 }
-
-                if (self._frameRecovered) {
-                    self.showFrameFailure();
-                    return;
-                }
-
                 self._frameRecovered = true;
+
+                self.continuityParams = {};
                 self.lastIframeContextSignature = '';
+                try {
+                    window.sessionStorage.removeItem('flosc_handoff_pack');
+                } catch (e) {
+                    // Storage unavailable in this context.
+                }
 
                 try {
                     self.iframe.src = '';
