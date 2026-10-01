@@ -18,8 +18,12 @@ Owner: Codex. Date: 2026-10m-01d. Artifact SHA-256:
 | PHP 7.4 floor | Shipped PHP is byte-identical to V115, whose PHPCompatibilityWP scan had 0 findings. | Pass |
 | Official WordPress Plugin Check | Plugin Check 2.1.0 with experimental checks ran against the exact mounted V116 ZIP: exit 0, 0 errors, the same 22 nonce recommendations. | Pass with 22 disclosed warnings |
 | Artifact integrity | 282 entries / 242 files, one `flosc/` root, `unzip -t` clean; mounted runtime JS checksum equals the packaged file. | Pass |
+| Live artifact integrity | Live FLOSC is active with 242 files. Its canonical tree SHA-256 is `e3ce48eb…271ac`, exactly matching the extracted V116 ZIP; the public companion JavaScript matches the packaged file. | Pass |
+| Live HTTP/DOM | `/chat/` returned 200 with zero redirects, FLOSC app markup, and the real chat input. The configured homepage returned 200 with the companion asset, `/chat/` app URL, and Hybrid mode `both`. | Pass |
+| Live PHP log | `wp-content/debug.log` remained absent after deployment and public route checks. | Pass |
 | Visual Safari round trip | No controllable browser was exposed to this Codex session. Dainis must confirm full page → companion → full page with the same visible conversation. | Not yet confirmed |
 
 The 22 warnings are unchanged from V115 and are not represented as “zero
 findings.” No additional live rollback backup is created for V116; v107 remains
-the designated rollback target.
+the designated rollback target. The temporary deployment ZIP was removed after
+the live artifact was verified.

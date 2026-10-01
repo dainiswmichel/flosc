@@ -66,5 +66,19 @@ The exact artifact contains 282 entries / 242 files under one `flosc/` root;
 `unzip -t` passes. Its canonical 242-file tree hash is
 `e3ce48eb8b91671642f23d14272963dbfad648df346264e3663b3f1428d271ac`.
 
+## Live deployment
+
+The exact V116 artifact is deployed and active on `https://dainis.net`. The
+live 242-file canonical tree hash matches the extracted ZIP. The publicly
+served companion JavaScript also matches the packaged file. `/chat/` returned
+HTTP 200 with the FLOSC app and chat-input markup; the configured homepage
+returned HTTP 200 with the companion asset, `/chat/` iframe URL, and Hybrid
+mode (`both`). No PHP debug log was created. No additional rollback archive or
+deployment ZIP was retained on ChemiCloud.
+
+Automated verification cannot replace the final visible round trip. No
+controllable browser was exposed to this Codex session, so Dainis's Safari
+confirmation of full page → companion → full page remains outstanding.
+
 See `V116-VERIFICATION.md` for the evidence matrix and the explicit boundary
 between automated verification and Dainis's visual Safari confirmation.

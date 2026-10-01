@@ -73,11 +73,25 @@
     "artifact_canonical_tree_sha256": "e3ce48eb8b91671642f23d14272963dbfad648df346264e3663b3f1428d271ac",
     "live_verification": {
       "site": "https://dainis.net",
-      "status": "pending deployment",
+      "status": "deployed; automated checks passed; visual round trip pending",
+      "plugin_active": true,
+      "live_file_count": 242,
+      "canonical_tree_sha256": "e3ce48eb8b91671642f23d14272963dbfad648df346264e3663b3f1428d271ac",
+      "artifact_tree_match": true,
+      "public_companion_js_sha256": "eee7385ad1b4422768a10a804e0de71130fd0d341320f56725fa348db39203ec",
+      "public_companion_js_matches_artifact": true,
+      "chat_http_200": true,
+      "chat_redirects": 0,
+      "chat_has_app_and_input_markup": true,
+      "hub_http_200": true,
+      "hub_has_companion_asset": true,
+      "hub_app_url_is_chat": true,
+      "hybrid_mode_is_both": true,
+      "php_debug_log_created": false,
       "visual_browser_clickthrough": "pending Dainis confirmation"
     }
   },
-  "status": "VERIFIED_ARTIFACT_PENDING_LIVE_CONFIRMATION",
-  "live_deployed": false,
+  "status": "LIVE_DEPLOYED_AUTOMATED_VERIFIED_PENDING_VISUAL_CONFIRMATION",
+  "live_deployed": true,
   "submission_ready": false
 }
