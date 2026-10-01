@@ -1310,7 +1310,7 @@ trait FLOSC_Admin_Trait {
 			$flosc_status = strtolower( (string) ( $flosc_offers[ $flosc_target ]['status'] ?? 'active' ) );
 			$flosc_on     = ! empty( $flosc_offers[ $flosc_target ]['active'] );
 			// A draft becomes active; anything already active goes inactive.
-			$flosc_next   = ( 'draft' === $flosc_status || ! $flosc_on ) ? 'active' : 'inactive';
+			$flosc_next = ( 'draft' === $flosc_status || ! $flosc_on ) ? 'active' : 'inactive';
 
 			$flosc_offers[ $flosc_target ]['status'] = $flosc_next;
 			$flosc_offers[ $flosc_target ]['active'] = ( 'active' === $flosc_next );
@@ -1340,6 +1340,11 @@ trait FLOSC_Admin_Trait {
 		exit;
 	}
 
+	/**
+	 * Serve a verified IVR download before the admin page emits output.
+	 *
+	 * @return void
+	 */
 	public function maybe_serve_ivr_file_download() {
 		if ( ! is_admin() || wp_doing_ajax() || ( defined( 'DOING_CRON' ) && DOING_CRON ) ) {
 			return;

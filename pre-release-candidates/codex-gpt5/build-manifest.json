@@ -1,39 +1,45 @@
 {
-  "schema_version": 5,
+  "schema_version": 6,
   "candidate": "codex-gpt5",
-  "candidate_label": "FLOSC 8.0.0 candidate v114.1",
-  "parent_candidate_commit": "b76e62cf28e7854f0a00ab26a224072441930496",
-  "built_at_utc": "2026-10-01T07:03:55Z",
+  "candidate_label": "FLOSC 8.0.0 candidate V115",
+  "owner": "Codex",
+  "parent_candidate_commit": "727419bc316f3eae32b5f10a62d263d10e679472",
+  "built_at_utc": "2026-10-01T11:34:57Z",
   "plugin_version": "8.0.0",
   "trusted_companion_base": {
     "candidate": "v107",
     "commit": "d28003f1",
-    "live_verified": true,
-    "live_file_count": 242,
-    "critical_files_matching_sha256": 6
+    "live_verified_before_recovery": true
   },
   "retained_light_edit": {
     "candidate": "v108",
     "commit": "17338160",
     "scope": "neutral quiz templates and default copy"
   },
+  "recovery_base": {
+    "candidate": "v114.1",
+    "commit": "727419bc316f3eae32b5f10a62d263d10e679472",
+    "scope": "v107 companion baseline, v108 content edits, bounded routing and fail-closed recovery"
+  },
+  "v115_delta": {
+    "scope": "WordPress Coding Standards documentation, whitespace, and alignment only",
+    "shipped_files": 4,
+    "insertions": 24,
+    "deletions": 12,
+    "behavior_change": false
+  },
   "plugin_source": "flosc-by-codex-gpt5/flosc",
   "source_file_count": 315,
   "source_php_file_count": 200,
-  "files_changed_from_v107": 12,
-  "lines_changed_from_v107": {
-    "insertions": 310,
-    "deletions": 75
-  },
   "artifact": {
     "path": "flosc.zip",
     "root": "flosc/",
     "entries": 282,
     "files": 242,
-    "bytes": 2817829,
-    "sha256": "79b959b9c82c7ff8aacff3ca6af7771a534def85e973b45c74c86e3bcb9c2bf3",
+    "bytes": 2817982,
+    "sha256": "6862a7f61f8a5356af6fc7061fcbaaf643ae5594a37ea38773840eacb952fc02",
     "integrity": "passed",
-    "changed_source_matches": "11 of 11 shipped files"
+    "starter_pack_assets": "passed"
   },
   "verification": {
     "companion_contract_assertions_passed": 17,
@@ -44,19 +50,26 @@
     "javascript_tests_failed": 0,
     "php_lint_clean": 200,
     "php_lint_failures": 0,
-    "changed_php_wpcs_errors": 0,
-    "changed_php_wpcs_warnings": 12,
-    "changed_php_php74_compatibility_findings": 0,
-    "v114_1_delta_files": 2,
-    "v114_1_delta_insertions": 2,
-    "v114_1_nonshipping_test_insertions": 9,
-    "v114_1_delta_wpcs_errors": 0,
-    "v114_1_delta_wpcs_warnings": 0,
-    "v114_1_delta_php74_compatibility_findings": 0,
-    "browser_wordpress_matrix": "not run",
-    "official_plugin_check": "not run"
+    "exact_zip_wpcs_files_scanned": 144,
+    "exact_zip_wpcs_errors": 0,
+    "exact_zip_wpcs_warnings": 22,
+    "exact_zip_php74_compatibility_findings": 0,
+    "official_plugin_check_version": "2.1.0",
+    "official_plugin_check_exit": 0,
+    "official_plugin_check_errors": 0,
+    "official_plugin_check_warnings": 22,
+    "wordpress_version": "7.1.2",
+    "php_runtime": "8.3",
+    "starter_packs_installed": 4,
+    "new_personality_created": true,
+    "starter_pack_personality_switches": 4,
+    "starter_pack_routes_http_200": 4,
+    "ordinary_post_http_200": true,
+    "unknown_route_http_404": true,
+    "php_debug_log_created": false,
+    "live_verification": "pending byte-identical deployment"
   },
-  "status": "STATIC_PASS_BROWSER_GATE_REQUIRED",
+  "status": "LOCAL_AND_OFFICIAL_GATES_PASSED_LIVE_DEPLOYMENT_PENDING",
   "live_deployed": false,
   "submission_ready": false
 }
