@@ -57,19 +57,21 @@
       "removed the da1_export declaration -> nav-keys gate 2 FAILURES, exit 1 (the V95 bug)",
       "planted HTTP_HOST in the allowlist builder -> audit check 9 FAIL naming the line"
     ],
-    "official_plugin_check": "NOT RUN - no wp-cli and no docker in this container",
-    "browser_matrix": "NOT RUN - no WordPress obtainable here",
+    "official_plugin_check": "Run and passed on this project at V115 by Codex: Plugin Check 2.1.0 with experimental checks, the exact ZIP mounted in WordPress, exit 0, 0 errors, 22 nonce recommendations (see pre-release-candidates/codex-gpt5/V115-VERIFICATION.md). The owner also runs it each round on his own bench. NOT re-run on the V122 artifact, which is new: this container has no wp-cli and no docker.",
+    "browser_matrix": "V115 was verified live on ChemiCloud: companion route returned 200 with FLOSC app and chat-input markup, zero redirects, no website-chrome markers; four starter packs installed and routed; a new personality saved and switched. NOT re-run on the V122 artifact.",
     "phpstan": "733 errors at level 5, not remediated, unchanged from V121",
-    "deployed": false
+    "deployed": false,
+    "parity_v115_to_v122": "17 of 17 checks against the Plugin-Check-verified V115 tree, nothing missing"
   },
   "status": "PACKAGED_NOT_DEPLOYED",
   "live_deployed": false,
   "submission_ready": false,
   "submission_blockers": [
-    "Official Plugin Check has never been run on any candidate",
-    "No browser matrix asserting the panel holds a working chat on the exact submitted zip",
-    "Seven shortcode and the_content callbacks surfaced but never read for return escaping",
+    "The V122 artifact itself has not been Plugin-Checked or installed. V115 passed both; V122 is a new zip and needs the same pass before it is submitted. This is routine re-verification, not an unverified project.",
+    "The companion fail-closed path restored here is reasoned from the code, not observed in a browser. Confirm a non-FLOSC document in the panel is replaced by the error rather than left on screen.",
+    "Seven shortcode and the_content callbacks surfaced by the audit but never read for return escaping",
     "One json_decode site needs its decoded structure validated",
     "The 16 user-creation incidences need written justification in the reply email"
-  ]
+  ],
+  "correction": "An earlier draft of this manifest stated that official Plugin Check had never been run on any candidate. That was false. It was run and passed at V115, and the owner runs it every round. The error came from reading a SKIP in this container's gate suite as a fact about the project."
 }
