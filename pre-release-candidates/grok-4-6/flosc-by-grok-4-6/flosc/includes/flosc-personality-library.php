@@ -3390,6 +3390,7 @@ if ( ! function_exists( 'flosc_ajax_attach_personality' ) ) {
 			$settings = array();
 		}
 		$settings['personality_library_id'] = $persona;
+
 		/*
 		 * The portable .md is rewritten from updated_option, inside this
 		 * request, before any JSON goes out. The dropdown stays on

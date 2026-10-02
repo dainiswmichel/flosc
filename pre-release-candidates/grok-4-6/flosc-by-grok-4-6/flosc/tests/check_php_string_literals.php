@@ -27,7 +27,7 @@ function ok( $label, $actual, $expected ) {
 	);
 }
 
-$excluded = array( '.git', 'vendor', 'tests', 'pre-release-candidates' );
+$excluded = array( '.git', 'vendor', 'tests', 'pre-release-candidates', 'testing-environment' );
 $found    = array();
 $iterator = new RecursiveIteratorIterator(
 	new RecursiveCallbackFilterIterator(

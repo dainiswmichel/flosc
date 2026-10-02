@@ -86,6 +86,12 @@ function flosc_nav_php_files( $root ) {
 		if ( strpos( $path, DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR ) !== false ) {
 			continue;
 		}
+		if ( strpos( $path, DIRECTORY_SEPARATOR . 'pre-release-candidates' . DIRECTORY_SEPARATOR ) !== false ) {
+			continue;
+		}
+		if ( strpos( $path, DIRECTORY_SEPARATOR . 'testing-environment' . DIRECTORY_SEPARATOR ) !== false ) {
+			continue;
+		}
 		$out[] = $path;
 	}
 	sort( $out );

@@ -1,37 +1,40 @@
-# FLOSC 8.0.0 — Grok candidate V119
+# FLOSC 8.0.0 — Grok candidate V121
 
-Plugin header stays 8.0.0. This folder is candidate V119.
+Plugin header stays 8.0.0. This folder is candidate V121.
 
-V119 is the V118 tree. A same-site link in the companion chat loads in the tab that already has the panel open.
+V121 is the verified local tree of V119 (`b8d8de86333c9d77843c20069fa48a5b9de71060`), plus one comment blank line. Runtime behavior is unchanged.
 
-## What was broken
+## What the 2026-10-02 local run showed
 
-Assistant messages render links with `target="_blank"`. In the companion iframe that opens a second tab. That tab's companion starts closed, so the article appears with only the launcher button. Following the link inside the iframe would put the website in the chat.
+Run against `/Users/dainismichel/2026/flosc_project_folder/mvp_sprint/flosc_8_0_0/flosc` before this candidate was packed.
 
-## Runtime delta from V118
+Passed: PHP syntax, 44 PHP gates, 4 JS gates, PHP 7.4 compatibility, version headers (Requires at least 7.1, Requires PHP 7.4, Version and Stable tag 8.0.0), 16 external-service readme blocks, zip shape (one `flosc/` root, no `tests/`).
 
-`assets/js/flosc-app.js`: a plain click on a same-origin link in the framed chat asks the parent to navigate, with `keepCompanion: true`. Modifier-clicks, downloads, `data-action` controls, in-page anchors, and other origins are unchanged.
+Project ruleset: 1 error, 22 warnings. The error was `Squiz.Commenting.BlockComment.NoEmptyLineBefore` at `includes/flosc-personality-library.php` in `flosc_ajax_attach_personality()`. V121 adds the blank line that sniff requires. Re-scan of that file against `phpcs.xml.dist` reports no findings.
 
-`assets/js/flosc-companion.js`: `navigateTopLevel` with `keepCompanion` stores the open panel, adds `flosc_flow_id` and `flosc_companion_handoff=1`, and assigns the parent location. The next page opens that same flow's panel over the linked page.
+The 22 warnings are `WordPress.Security.NonceVerification.Recommended` on the signed-audio GET, `flosc_nav_param` reads, and magic-link GET. Those requests are not WordPress form posts. No nonce was added.
 
-Checkout and end-of-session redirects still use `leavePanel` without `keepCompanion`.
+Stripping `phpcs:ignore` surfaces 12 errors. Nine are `echo flosc_vgm_options_markup()`, which already returns `esc_attr` / `esc_html` option markup. Three are personality fields sanitized by `flosc_sanitize_personality_profile_text` and `flosc_sanitize_personality_workshop` rather than `sanitize_text_field`. Those ignores stay.
+
+PHPStan reported 733 errors. That pile is not the WordPress.org review. Semgrep reported 8 blocking findings: `esc_url` output, `file_exists` on names already passed through `sanitize_file_name` or the audio filename pattern, and `password_matches()`, which compares text and does not hash with MD5. None of those were changed.
+
+Plugin Check did not run. Colima’s Docker socket was absent, so wp-env, procedure 10, and procedure 11 did not start.
+
+## Gate walkers
+
+Six local gates skip `pre-release-candidates/` and `testing-environment/` so a check of the git root does not scan nested candidate trees. Those copies are in this candidate’s `tests/` directory. `tests/` is not in the zip.
 
 ## Exact artifact
 
 ```text
-06eee73667db2f40a0562cda94f50eb5ac1e6fd9681e1646b667243523c27a47  flosc.zip
+9537d8881ecdedcfcf544a2535b8249df74de42812b587ee35c4375ca973a232  flosc.zip
 ```
 
-282 entries, 242 files, one `flosc/` root, `tests/` absent, `unzip -t` clean. Version and Stable tag 8.0.0. 2,819,081 bytes.
+282 entries, 242 files, one `flosc/` root, `tests/` absent, `unzip -t` clean. Version and Stable tag 8.0.0. 2,819,151 bytes.
 
-## Measured in this build
+`zip-files/flosc.zip` was not rebuilt. Its sha256 remains `780b855215bfc67b71c8a22b02cea61e4204d4361334ef9a6c2b47c8de52f3fa`.
 
-- Companion surface contract passed, including the same-site link assertions.
-- Handoff round-trip test passed.
-- `node --check` on `flosc-app.js` and `flosc-companion.js`.
-- Plugin Check was not run on this zip.
-- A companion link click-through on dainis.net was not run.
-- This candidate was not deployed. Live dainis.net remains V118.
+This candidate was not deployed.
 
 ```sh
 shasum -a 256 -c SHA256SUMS

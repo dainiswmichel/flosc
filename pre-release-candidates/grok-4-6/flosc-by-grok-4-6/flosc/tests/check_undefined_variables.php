@@ -103,7 +103,7 @@ function flosc_uv_files( $root ) {
 			continue;
 		}
 		$rel = ltrim( str_replace( $root, '', $path ), '/' );
-		if ( preg_match( '#^(node_modules|vendor|tests)/#', $rel ) ) {
+		if ( preg_match( '#^(node_modules|vendor|tests|pre-release-candidates|testing-environment)/#', $rel ) ) {
 			continue;
 		}
 		$found[] = $rel;

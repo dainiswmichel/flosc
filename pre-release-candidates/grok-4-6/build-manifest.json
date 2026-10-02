@@ -1,44 +1,59 @@
 {
   "schema_version": 1,
   "candidate": "grok-4-6",
-  "candidate_label": "FLOSC 8.0.0 candidate V119",
+  "candidate_label": "FLOSC 8.0.0 candidate V121",
   "owner": "Grok",
   "parent": {
-    "candidate": "V118",
-    "commit": "e9323938726cde8bd9527ea8a5acf8c6a77b680f",
-    "scope": "V118 tree. Same-site companion chat links are the V119 delta."
+    "candidate": "V119",
+    "commit": "b8d8de86333c9d77843c20069fa48a5b9de71060",
+    "scope": "Verified local tree. V121 adds the blank line before the attach-personality block comment and copies the six gate walkers that skip nested candidate trees."
   },
-  "built_at_utc": "2026-10-01T14:23:58Z",
+  "built_at_utc": "2026-10-02T16:18:41Z",
   "plugin_version": "8.0.0",
   "plugin_source": "flosc-by-grok-4-6/flosc",
-  "php_byte_identical_to_v118": true,
-  "v119_delta": {
+  "internal_iteration": "v121",
+  "github_hashid_at_pack": "b8d8de86333c9d77843c20069fa48a5b9de71060",
+  "v121_delta": {
     "shipped_files": [
-      "assets/js/flosc-app.js",
-      "assets/js/flosc-companion.js"
+      "flosc.php",
+      "includes/flosc-personality-library.php"
     ],
-    "behavior_change": true,
-    "ui_change": true,
-    "cause": "Companion chat links are target=_blank, so the article opened in a new tab whose companion started closed.",
-    "change": "A plain click on a same-origin link posts flosc_companion_navigate_top with keepCompanion. The parent assigns that URL in the current tab and the next page opens the same flow panel over it."
+    "tests_only": [
+      "tests/check_include_paths.php",
+      "tests/check_nav_param_keys.php",
+      "tests/check_packaging.php",
+      "tests/check_php_string_literals.php",
+      "tests/check_undefined_variables.php",
+      "tests/check_wporg_rules.php"
+    ],
+    "behavior_change": false,
+    "ui_change": false,
+    "cause": "Project ruleset reported one error: Squiz.Commenting.BlockComment.NoEmptyLineBefore in flosc_ajax_attach_personality().",
+    "change": "One blank line before that block comment. NonceVerification.Recommended warnings were left in place."
   },
   "artifact": {
     "path": "flosc.zip",
     "root": "flosc/",
     "entries": 282,
     "files": 242,
-    "bytes": 2819081,
-    "sha256": "06eee73667db2f40a0562cda94f50eb5ac1e6fd9681e1646b667243523c27a47",
+    "bytes": 2819151,
+    "sha256": "9537d8881ecdedcfcf544a2535b8249df74de42812b587ee35c4375ca973a232",
     "integrity": "unzip -t passed",
     "tests_entries": 0,
     "version": "8.0.0",
     "stable_tag": "8.0.0"
   },
   "verification": {
-    "companion_surface_contract": "passed",
-    "handoff_roundtrip": "passed",
-    "dainis_net_clickthrough": "not run",
-    "official_plugin_check": "not run on this zip",
+    "local_run_date": "2026-10-02",
+    "php_syntax": "passed",
+    "php_gates": "44 passed, 0 failed",
+    "js_gates": "4 passed, 0 failed",
+    "php_74": "passed",
+    "project_ruleset_before_blank_line": "1 error, 22 warnings",
+    "personality_library_after_blank_line": "phpcs.xml.dist clean on that file",
+    "nonce_recommended_warnings": 22,
+    "phpstan": "733 errors, not remediated",
+    "official_plugin_check": "not run; Colima docker socket absent",
     "deployed": false
   },
   "status": "PACKAGED_NOT_DEPLOYED",
