@@ -125,7 +125,17 @@ ICON & BUTTON CHECKLIST (verify all work before deployment):
 	// right primitive for "is this present" is filter_has_var(), which is what
 	// flosc_nav_param_present() wraps.
 	$flosc_is_companion_embed = flosc_nav_param_present( 'flosc_companion' );
-
+	$flosc_app_url            = flosc()->get_app_url();
+	$flosc_login_return_url   = $flosc_app_url;
+	if ( $flosc_is_companion_embed ) {
+		$flosc_login_return_url = add_query_arg(
+			array(
+				'flosc_surface'   => 'companion',
+				'flosc_companion' => '1',
+			),
+			$flosc_app_url
+		);
+	}
 	if ( $flosc_is_companion_embed ) {
 		$flosc_companion_critical_css = '
 body.flosc-companion-embed .flosc-sidebar,
@@ -939,25 +949,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 				<p>Create a free account to save your progress and continue the conversation.</p>
 				<div class="flosc-login-gate-buttons">
 					<a href="<?php echo esc_url( wp_registration_url() ); ?>" class="btn-primary btn-large">Create Free Account</a>
-					<?php
-					// A login started in the panel has to come back to the panel.
-					// Without the parameter this surface is recognised by, the chat
-					// returns into the panel wearing its full-page chrome. Computed
-					// here rather than shared from elsewhere in the file: a value
-					// carried across a deploy boundary is a value that can be
-					// missing, and this anchor already made this call.
-					$flosc_gate_return_url = flosc()->get_app_url();
-					if ( $flosc_is_companion_embed ) {
-						$flosc_gate_return_url = add_query_arg(
-							array(
-								'flosc_surface'   => 'companion',
-								'flosc_companion' => '1',
-							),
-							$flosc_gate_return_url
-						);
-					}
-					?>
-					<a href="<?php echo esc_url( wp_login_url( $flosc_gate_return_url ) ); ?>" class="btn-secondary btn-large">Log In</a>
+					<a href="<?php echo esc_url( wp_login_url( $flosc_login_return_url ) ); ?>" class="btn-secondary btn-large">Log In</a>
 				</div>
 			</div>
 		</div>
@@ -1077,23 +1069,6 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 
 			// v1.4.9: Use flow-aware app URL for custom domain support.
 			$flosc_app_url = flosc()->get_app_url();
-
-			// A login started in the companion panel has to come back to the
-			// panel. wp_login_url() sends the reader to the bare app address,
-			// which arrives without the parameter this surface is recognised
-			// by, so the app returns into the panel wearing its full-page
-			// chrome — sidebar, header, and the controls that go with a page
-			// that owns its window.
-			$flosc_login_return_url = $flosc_app_url;
-		if ( $flosc_is_companion_embed ) {
-			$flosc_login_return_url = add_query_arg(
-				array(
-					'flosc_surface'   => 'companion',
-					'flosc_companion' => '1',
-				),
-				$flosc_app_url
-			);
-		}
 
 			// v1.7.5: REST API URL must use the SAME origin as the page
 			// so cookies/nonce travel with the request. When on a custom domain

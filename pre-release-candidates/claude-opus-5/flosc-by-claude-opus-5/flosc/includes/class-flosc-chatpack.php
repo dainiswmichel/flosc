@@ -985,7 +985,7 @@ class FLOSC_Chatpack {
 			return '';
 		}
 
-		$subsection = "## 5e. POLICY PAGES\n\n";
+		$subsection  = "## 5e. POLICY PAGES\n\n";
 		$subsection .= "These pages exist on this site. Give the address if someone asks for one; do not raise them or describe their contents unprompted.\n\n";
 		foreach ( $pages as $page ) {
 			$subsection .= '- ' . $page['heading'] . ': ' . $page['effective_url'] . "\n";
@@ -994,6 +994,14 @@ class FLOSC_Chatpack {
 		return $subsection . "\n";
 	}
 
+	/**
+	 * Build the current flow and user-state portion of the chatpack.
+	 *
+	 * @param string      $phase        Frontend phase hint for the current turn.
+	 * @param array       $eval_context Backend-enriched context for rule evaluation.
+	 * @param string|null $flow_id      Flow identifier, or null to resolve the current flow.
+	 * @return string The rendered flow-context section.
+	 */
 	private static function build_flow_section( $phase, $eval_context, $flow_id = null ) {
 		// build_followup_chatpack() hands us $eval_context['flow_id'] cast to a
 		// string, which is '' when the turn carries no flow. Settings lookups

@@ -711,7 +711,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 	$flosc_new_settings = $flosc_flow_settings; // Start with existing.
 
 	// v1.5.0: Keys that contain multiline content (stored in flow settings via flow_ prefix).
-	$flosc_textarea_flow_keys = array(
+	$flosc_textarea_flow_keys       = array(
 		'sso_apple_private_key',
 		// AI tab: brand facts are a multiline prompt injection — keep newlines.
 		'ai_brand_facts',
@@ -771,8 +771,8 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 		'user_status_member_level',
 		'user_status_admin',
 	);
-	$flosc_identity_html_keys = array( 'privacy_policy_content', 'terms_of_service_content', 'data_deletion_content', 'platform_compliance_content' );
-	$flosc_identity_slug_keys = array( 'privacy_policy_slug', 'terms_of_service_slug', 'data_deletion_slug', 'platform_compliance_slug' );
+	$flosc_identity_html_keys       = array( 'privacy_policy_content', 'terms_of_service_content', 'data_deletion_content', 'platform_compliance_content' );
+	$flosc_identity_slug_keys       = array( 'privacy_policy_slug', 'terms_of_service_slug', 'data_deletion_slug', 'platform_compliance_slug' );
 	$flosc_identity_policy_url_keys = array( 'privacy_policy_external_url', 'terms_of_service_external_url', 'data_deletion_external_url', 'platform_compliance_external_url' );
 	$flosc_identity_bool_keys       = array( 'privacy_policy_use_external_link', 'terms_of_service_use_external_link', 'data_deletion_use_external_link', 'platform_compliance_use_external_link' );
 
@@ -2548,9 +2548,9 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 					$flosc_new_settings = $flosc_all_flows[ $flosc_save_ivr ]['settings'];
 
 					// Update from POST data (fields prefixed with ivr filename hash).
-					$flosc_prefix             = 'flow_' . md5( $flosc_save_ivr ) . '_';
-					$flosc_identity_html_keys = array( 'privacy_policy_content', 'terms_of_service_content', 'data_deletion_content', 'platform_compliance_content' );
-					$flosc_identity_slug_keys = array( 'privacy_policy_slug', 'terms_of_service_slug', 'data_deletion_slug', 'platform_compliance_slug' );
+					$flosc_prefix                   = 'flow_' . md5( $flosc_save_ivr ) . '_';
+					$flosc_identity_html_keys       = array( 'privacy_policy_content', 'terms_of_service_content', 'data_deletion_content', 'platform_compliance_content' );
+					$flosc_identity_slug_keys       = array( 'privacy_policy_slug', 'terms_of_service_slug', 'data_deletion_slug', 'platform_compliance_slug' );
 					$flosc_identity_policy_url_keys = array( 'privacy_policy_external_url', 'terms_of_service_external_url', 'data_deletion_external_url', 'platform_compliance_external_url' );
 					$flosc_identity_bool_keys       = array( 'privacy_policy_use_external_link', 'terms_of_service_use_external_link', 'data_deletion_use_external_link', 'platform_compliance_use_external_link' );
 					foreach ( $flosc_post as $flosc_key => $flosc_value ) {
@@ -2631,9 +2631,9 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 					$flosc_flow_key     = $flosc_flow_data['key'];
 					$flosc_new_settings = $flosc_flow_data['settings'];
 
-					$flosc_prefix             = 'flow_' . md5( $flosc_ivr_file ) . '_';
-					$flosc_identity_html_keys = array( 'privacy_policy_content', 'terms_of_service_content', 'data_deletion_content', 'platform_compliance_content' );
-					$flosc_identity_slug_keys = array( 'privacy_policy_slug', 'terms_of_service_slug', 'data_deletion_slug', 'platform_compliance_slug' );
+					$flosc_prefix                   = 'flow_' . md5( $flosc_ivr_file ) . '_';
+					$flosc_identity_html_keys       = array( 'privacy_policy_content', 'terms_of_service_content', 'data_deletion_content', 'platform_compliance_content' );
+					$flosc_identity_slug_keys       = array( 'privacy_policy_slug', 'terms_of_service_slug', 'data_deletion_slug', 'platform_compliance_slug' );
 					$flosc_identity_policy_url_keys = array( 'privacy_policy_external_url', 'terms_of_service_external_url', 'data_deletion_external_url', 'platform_compliance_external_url' );
 					$flosc_identity_bool_keys       = array( 'privacy_policy_use_external_link', 'terms_of_service_use_external_link', 'data_deletion_use_external_link', 'platform_compliance_use_external_link' );
 					foreach ( $flosc_post as $flosc_key => $flosc_value ) {

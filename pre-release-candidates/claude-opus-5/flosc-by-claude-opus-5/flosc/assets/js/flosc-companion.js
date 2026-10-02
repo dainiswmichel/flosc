@@ -20,29 +20,17 @@
 (function(window, document) {
     'use strict';
 
-    // A chat inside a chat is never wanted, so this refuses to be one.
-    //
-    // A companion in a frame is a chat inside a chat, whatever put it there: a
-    // chat panel whose page navigated itself somewhere else, a preview pane, a
-    // site embedding this one. The old wording here claimed nesting was already
-    // impossible because PHP leaves this script off app routes and only gives the
-    // panel a validated app address to load. Both of those are still true and
-    // still do their job -- and neither one governs what the page inside the panel
-    // does afterwards, which is how a WordPress page, its admin bar and a second
-    // bubble ended up inside the first one.
-    //
-    // So the rule lives here now, at the one place a bubble comes into being,
-    // where no door anywhere else can get around it.
+    // A companion is host-page chrome. It must never mount inside another frame,
+    // even if a framed document accidentally enqueues this script.
     try {
         if (window.self !== window.top) {
             return;
         }
     } catch (e) {
-        // A cross-origin parent throws on access, which answers the question.
         return;
     }
 
-    // Single boot: one bubble per page, however many times this file is enqueued.
+    // Single boot on the host page.
     if (window.__FLOSC_COMPANION_BOOTED__) {
         return;
     }
@@ -235,7 +223,9 @@
                     '<button class="flosc-companion-close" aria-label="' + this.escapeHtml(this.config.closeAriaLabel) + '"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg></button>' +
                 '</div>';
 
-            // Iframe
+            // Visible as soon as the panel opens. Hiding it until
+            // flosc_app_ready left a lazy frame that Safari never fetched,
+            // so expand and collapse had no chat to continue.
             this.iframe = document.createElement('iframe');
             this.iframe.className = 'flosc-companion-body';
             this.iframe.setAttribute('loading', 'lazy');
@@ -426,7 +416,7 @@
                     return;
                 }
                 if (data.type === 'flosc_companion_navigate_top') {
-                    self.navigateTopLevel(data.url);
+                    self.navigateTopLevel(data.url, { keepCompanion: data.keepCompanion === true });
                     return;
                 }
                 if (data.type === 'flosc_app_ready') {
@@ -663,32 +653,39 @@
         },
 
         /**
-         * v10.1.0: Confirm the frame that just loaded is actually the FLOSC app.
-         *
-         * A 414, a 500 or any other error page fires 'load' exactly like the app
-         * does, so the reader was shown raw server output inside a branded panel
-         * with no way back. The app announces itself on boot; silence means the
-         * frame is not the app, and we rebuild it once without the continuity
-         * params that are the likeliest cause of an over-long request.
-         *
-         * Rebuilds at most once per open, so a genuinely down backend cannot put
-         * the panel in a reload loop.
+         * A 414, a 500, or any other error page fires 'load' exactly like the
+         * app does. The app announces itself on boot. Silence means the frame
+         * is not the app. Rebuild once, then stop.
          */
         watchFrameHealth: function() {
             var self = this;
             window.clearTimeout(this._frameHealthTimer);
 
-            if (this._frameAlive || this._frameRecovered) {
+            // _frameFailed, not _frameRecovered. Guarding on _frameRecovered
+            // ended the watch at the retry: once the retry had run, this method
+            // returned before arming anything, so showFrameFailure() had no
+            // caller and a document that never announced itself stayed on
+            // screen for good. That is the "a website is sitting where my chat
+            // should be" report. The retry is one step, not the last one.
+            if (this._frameAlive || this._frameFailed) {
                 return;
             }
 
             this._frameHealthTimer = window.setTimeout(function() {
-                if (self._frameAlive || self._frameRecovered || !self.iframe) {
+                if (self._frameAlive || self._frameFailed || !self.iframe) {
                     return;
                 }
+
+                // Silence twice. The retry did not produce the app either, so
+                // whatever is in the frame is not chat and is not going to
+                // become chat. Take it away rather than present it as chat.
+                if (self._frameRecovered) {
+                    self.showFrameFailure();
+                    return;
+                }
+
                 self._frameRecovered = true;
 
-                // Drop everything that could have inflated the request, then rebuild.
                 self.continuityParams = {};
                 self.lastIframeContextSignature = '';
                 try {
@@ -706,7 +703,41 @@
                 } catch (e) {
                     // Nothing further we can do from here.
                 }
+
+                // Arm the second window. The frame stays visible meanwhile —
+                // hiding it until flosc_app_ready is what left Safari with a
+                // lazy frame it never fetched, so that is deliberately not
+                // reintroduced here.
+                self.watchFrameHealth();
             }, 4000);
+        },
+
+        clearFrameFailure: function() {
+            if (!this.container) {
+                return;
+            }
+            var error = this.container.querySelector('.flosc-companion-frame-error');
+            if (error) {
+                error.remove();
+            }
+        },
+
+        showFrameFailure: function() {
+            window.clearTimeout(this._frameHealthTimer);
+            if (!this.iframe || !this.container) {
+                return;
+            }
+
+            this.iframe.hidden = true;
+            this._frameFailed = true;
+            this.iframe.removeAttribute('src');
+            this.clearFrameFailure();
+
+            var error = document.createElement('div');
+            error.className = 'flosc-companion-frame-error';
+            error.setAttribute('role', 'alert');
+            error.textContent = 'Chat could not be loaded. Please try again later.';
+            this.iframe.parentNode.insertBefore(error, this.iframe.nextSibling);
         },
 
         /**
@@ -896,6 +927,17 @@
 
                     var carriedPack = cont.flosc_handoff || parentParams.get('flosc_handoff');
                     if (carriedPack && this.stashHandoffPack(carriedPack)) {
+                        url.searchParams.set('flosc_handoff_ref', '1');
+                    }
+
+                    // Full-page → companion uses sessionStorage for the visitor
+                    // transcript and puts only this marker on the hub URL. Preserve
+                    // the marker on the inner app URL so that app can collect the
+                    // parked pack. Without it, the embed starts as a new visitor;
+                    // its empty landing state is intentionally hidden and the panel
+                    // therefore appears completely blank.
+                    var handoffRef = cont.flosc_handoff_ref || parentParams.get('flosc_handoff_ref');
+                    if (String(handoffRef || '') === '1') {
                         url.searchParams.set('flosc_handoff_ref', '1');
                     }
                 } catch (eFwd) {
@@ -1358,36 +1400,33 @@
             return {};
         },
 
-        // Only the flow's own authorize endpoint may move the host page, and the parent
-        // supplies redirect_to so the visitor returns to the page they were reading.
-        /**
-         * Take the tab somewhere the chat asked for on the reader's behalf.
-         *
-         * The chat sends this rather than navigating itself, because the frame
-         * it lives in is the panel: a page loaded there replaces the
-         * conversation instead of opening beside it. Checkout is the reason
-         * this accepts an address off this site — a payment page is somewhere
-         * the reader genuinely goes.
-         *
-         * The message reaching this point has already been checked by the
-         * listener: it came from this panel's own frame and from the chat's
-         * origin. Only the scheme is left to establish, so javascript: and
-         * data: addresses cannot ride in on a chat that has been tampered with.
-         *
-         * @param {string} rawUrl Destination from the chat.
-         */
-        navigateTopLevel: function(rawUrl) {
+        navigateTopLevel: function(rawUrl, opts) {
+            opts = opts || {};
             try {
                 var target = new URL(String(rawUrl || ''), window.location.origin);
                 if (!/^https?:$/.test(target.protocol)) {
                     return;
                 }
+                // Same-site chat links stay in this tab. The next document
+                // opens the same flow's panel over the page the link named.
+                if (opts.keepCompanion && target.origin === window.location.origin) {
+                    this.isOpen = true;
+                    this.saveNavigationState();
+                    var flowId = String(this.config.flowId || '').trim();
+                    if (flowId && !target.searchParams.get('flosc_flow_id')) {
+                        target.searchParams.set('flosc_flow_id', flowId);
+                    }
+                    target.searchParams.set('flosc_companion_handoff', '1');
+                    target.searchParams.set('flosc_companion_mode', String(this.panelMode || 'panel'));
+                }
                 window.location.href = target.toString();
             } catch (e) {
-                // Unparseable destination: stay where we are.
+                // Invalid destinations leave the host page where it is.
             }
         },
 
+        // Only the flow's own authorize endpoint may move the host page, and the parent
+        // supplies redirect_to so the visitor returns to the page they were reading.
         navigateTopLevelForAuth: function(rawAuthUrl) {
             try {
                 var appOrigin = new URL(this.config.appUrl, window.location.origin).origin;
@@ -1967,7 +2006,7 @@
             var out = {};
             try {
                 var params = new URLSearchParams(window.location.search || '');
-                ['flosc_session_id', 'flosc_visitor_session', 'flosc_handoff'].forEach(function(key) {
+                ['flosc_session_id', 'flosc_visitor_session', 'flosc_handoff', 'flosc_handoff_ref'].forEach(function(key) {
                     var val = params.get(key);
                     if (val) {
                         out[key] = String(val);
@@ -1994,6 +2033,7 @@
                 url.searchParams.delete('flosc_session_id');
                 url.searchParams.delete('flosc_visitor_session');
                 url.searchParams.delete('flosc_handoff');
+                url.searchParams.delete('flosc_handoff_ref');
                 window.history.replaceState({}, document.title, url.toString());
             } catch (e) {
                 // Ignore URL update failures.

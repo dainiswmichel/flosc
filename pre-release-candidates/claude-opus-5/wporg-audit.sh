@@ -25,6 +25,20 @@ head2()  { printf '\n\033[1m%s\033[0m\n' "$1"; }
 
 php_files() { find . -name '*.php' -not -path './vendor/*' -not -path './node_modules/*' -print0; }
 
+# Drop lines whose content begins with a comment marker.
+#
+# Checks 6 to 9 grepped raw and counted the remediation notes as the defect.
+# includes/sso/class-oauth2-handler.php documents, in a comment, that the T12
+# finding was fixed and that HTTP_HOST is deliberately NOT added to the SSO
+# redirect allowlist. The audit matched that comment and reported "4 HTTP_HOST
+# use(s) — attacker-controllable" on a file whose vulnerability was already
+# closed. Four of five FAILs were notes of this kind.
+#
+# An audit that reports fixed work as broken teaches its reader to skim past
+# FAIL, which is how a stripped tree reached five review rounds looking clean.
+# Check 11 already filtered this way; 6 to 9 now do the same.
+drop_comment_lines() { grep -vE ':[[:space:]]*(//|\*|/\*|#|<\?php //)'; }
+
 echo "=============================================================="
 echo " FLOSC WordPress.org audit"
 echo " tree: $ROOT"
@@ -66,20 +80,43 @@ N=$(grep -rn --exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=flosc
 [ "$N" -eq 0 ] && ok "no direct core-file includes" || { bad "$N direct core-file include(s)"; grep -rn --exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=flosc_development_archives "require.*wp-admin/includes/import\.php\|require.*wp-load\.php" --include='*.php' . | sed 's/^/        /'; }
 
 head2 "6. File and directory locations  (T12)"
-N=$(grep -rn --exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=flosc_development_archives 'WP_PLUGIN_DIR' --include='*.php' . 2>/dev/null | wc -l | tr -d ' ')
-[ "$N" -eq 0 ] && ok "no WP_PLUGIN_DIR references" || { bad "$N WP_PLUGIN_DIR reference(s) — use plugin_dir_path()/plugins_url()"; grep -rn --exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=flosc_development_archives 'WP_PLUGIN_DIR' --include='*.php' . | sed 's/^/        /'; }
+N=$(grep -rn --exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=flosc_development_archives 'WP_PLUGIN_DIR' --include='*.php' . 2>/dev/null | drop_comment_lines | wc -l | tr -d ' ')
+[ "$N" -eq 0 ] && ok "no WP_PLUGIN_DIR references" || { bad "$N WP_PLUGIN_DIR reference(s) — use plugin_dir_path()/plugins_url()"; grep -rn --exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=flosc_development_archives 'WP_PLUGIN_DIR' --include='*.php' . | drop_comment_lines | sed 's/^/        /'; }
 
 head2 "7. Writing into the plugin folder  (T7)"
-N=$(grep -rn --exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=flosc_development_archives 'file_put_contents\|[^_a-z]fwrite(\|[^_a-z]copy(' --include='*.php' . 2>/dev/null | grep -v flosc_documentation | wc -l | tr -d ' ')
-[ "$N" -eq 0 ] && ok "no raw write calls (writes go through WP_Filesystem / uploads)" || { bad "$N raw write call(s)"; grep -rn --exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=flosc_development_archives 'file_put_contents\|[^_a-z]fwrite(\|[^_a-z]copy(' --include='*.php' . | grep -v flosc_documentation | sed 's/^/        /' | head; }
+N=$(grep -rn --exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=flosc_development_archives 'file_put_contents\|[^_a-z]fwrite(\|[^_a-z]copy(' --include='*.php' . 2>/dev/null | grep -v flosc_documentation | drop_comment_lines | wc -l | tr -d ' ')
+[ "$N" -eq 0 ] && ok "no raw write calls (writes go through WP_Filesystem / uploads)" || { bad "$N raw write call(s)"; grep -rn --exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=flosc_development_archives 'file_put_contents\|[^_a-z]fwrite(\|[^_a-z]copy(' --include='*.php' . | grep -v flosc_documentation | drop_comment_lines | sed 's/^/        /' | head; }
 
 head2 "8. FILTER_UNSAFE_RAW / FILTER_DEFAULT  (T12 — 31 incidences)"
-N=$(grep -rn --exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=flosc_development_archives 'FILTER_UNSAFE_RAW\|FILTER_DEFAULT' --include='*.php' . 2>/dev/null | wc -l | tr -d ' ')
-[ "$N" -eq 0 ] && ok "zero — these sanitize nothing and AGENTS.md forbids them" || { bad "$N use(s)"; grep -rn --exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=flosc_development_archives 'FILTER_UNSAFE_RAW\|FILTER_DEFAULT' --include='*.php' . | sed 's/^/        /' | head; }
+N=$(grep -rn --exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=flosc_development_archives 'FILTER_UNSAFE_RAW\|FILTER_DEFAULT' --include='*.php' . 2>/dev/null | drop_comment_lines | wc -l | tr -d ' ')
+[ "$N" -eq 0 ] && ok "zero — these sanitize nothing and AGENTS.md forbids them" || { bad "$N use(s)"; grep -rn --exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=flosc_development_archives 'FILTER_UNSAFE_RAW\|FILTER_DEFAULT' --include='*.php' . | drop_comment_lines | sed 's/^/        /' | head; }
 
 head2 "9. HTTP_HOST in the SSO redirect allowlist  (T12)"
-N=$(grep -rn --exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=flosc_development_archives 'HTTP_HOST' includes/sso/ 2>/dev/null | wc -l | tr -d ' ')
-[ "$N" -eq 0 ] && ok "no HTTP_HOST in SSO" || { bad "$N HTTP_HOST use(s) in SSO — attacker-controllable"; grep -rn --exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=flosc_development_archives 'HTTP_HOST' includes/sso/ | sed 's/^/        /'; }
+# T12's finding was precise: "An untrusted HTTP_HOST value is also added to the
+# SSO redirect-host allowlist." The defect is HTTP_HOST reaching the ALLOWLIST,
+# not the string appearing in the file.
+#
+# Counting every occurrence reported 4 uses on a tree where the allowlist is
+# built only from home_url(), site_url(), admin_url(), rest_url(), the stored
+# custom domain and the flow's own settings — three of the four were the comment
+# recording that fix. The remaining one decides whether the already-allowlisted
+# destination is cross-domain, which is not what the reviewer flagged.
+#
+# So test the invariant: HTTP_HOST must not appear inside the function that
+# builds the allowlist. That is a real regression guard, and it goes green only
+# when the finding is actually closed.
+# Raw source lines here, with no "file:line:" prefix, so drop_comment_lines
+# (which anchors on that prefix) does not apply. Strip on leading whitespace.
+ALLOWFN=$(awk '/function get_allowed_sso_redirect_hosts/,/^\t\}/' includes/sso/class-oauth2-handler.php 2>/dev/null | grep -vE '^[[:space:]]*(//|\*|/\*|\*/|#)')
+if [ -z "$ALLOWFN" ]; then
+  review "get_allowed_sso_redirect_hosts() not found — read the SSO redirect path by hand"
+else
+  N=$(printf '%s\n' "$ALLOWFN" | grep -c 'HTTP_HOST' || true)
+  [ "$N" -eq 0 ] && ok "HTTP_HOST does not feed the SSO redirect allowlist" || { bad "$N HTTP_HOST use(s) INSIDE the allowlist builder — attacker-controllable"; printf '%s\n' "$ALLOWFN" | grep -n 'HTTP_HOST' | sed 's/^/        /'; }
+fi
+OTHER=$(grep -rn --exclude-dir=vendor --exclude-dir=node_modules 'HTTP_HOST' includes/sso/ 2>/dev/null | drop_comment_lines | wc -l | tr -d ' ')
+echo "        other HTTP_HOST reads in includes/sso/ (not the allowlist): $OTHER"
+[ "$OTHER" -eq 0 ] || review "read those $OTHER — each must not decide a redirect target or a token grant"
 
 head2 "10. json_decode( stripslashes( ... ) )  (T7, T11)"
 N=$(grep -rn --exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=flosc_development_archives 'json_decode( *stripslashes\|json_decode(stripslashes' --include='*.php' . 2>/dev/null | wc -l | tr -d ' ')
@@ -90,7 +127,11 @@ HITS=$(grep -rn --exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=fl
 [ "$HITS" -eq 0 ] && ok "zero real tags (comments mentioning them do not count)" || { bad "$HITS real inline tag(s)"; grep -rn --exclude-dir=vendor --exclude-dir=node_modules --exclude-dir=flosc_development_archives -E '<script[ >]|<style[ >]' --include='*.php' . | grep -vE ':[[:space:]]*(//|\*|/\*|<\?php //)' | sed 's/^/        /'; }
 
 head2 "12. External services documented  (every round)"
-DECL=$(sed -n '/^== External Services ==/,/^== [A-Z]/p' readme.txt 2>/dev/null | grep -cE '^[0-9]+\. ')
+# readme.txt carries this as "= External Services =" (an H3 inside == Description ==),
+# not "== External Services ==". Matching only the H2 form found nothing and reported
+# "no External Services section" on every candidate, including ones whose own gate
+# suite counted 16 numbered entries with no gap. Accept either heading level.
+DECL=$(sed -n '/^==* External Services ==*/,/^==* [A-Z]/p' readme.txt 2>/dev/null | grep -cE '^[0-9]+\. ')
 echo "        entries declared in readme.txt: $DECL"
 HOSTS=$(grep -rhoE --exclude-dir=vendor --exclude-dir=node_modules 'https://[a-z0-9.-]+' --include='*.php' includes/ admin/ flosc.php 2>/dev/null \
   | sort -u | grep -vE 'dainis\.net|flosc\.ai|example\.com|w3\.org|wordpress\.org|gnu\.org|schema\.org')

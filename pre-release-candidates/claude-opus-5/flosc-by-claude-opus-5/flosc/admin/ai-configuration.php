@@ -1175,11 +1175,17 @@ jQuery(document).ready(function($) {
 		}
 		attachSel.prop('disabled', true);
 		attachNote.removeClass('flosc-hidden flosc-attach-ok flosc-attach-bad').text('<?php echo esc_js( __( 'Attaching…', 'flosc' ) ); ?>');
-		$.post(ajaxurl, {
-			action: 'flosc_attach_personality',
-			nonce: floscAttach.nonce,
-			ivr: floscAttach.ivr,
-			persona: nextVal
+		$.ajax({
+			url: ajaxurl,
+			method: 'POST',
+			timeout: 20000,
+			dataType: 'json',
+			data: {
+				action: 'flosc_attach_personality',
+				nonce: floscAttach.nonce,
+				ivr: floscAttach.ivr,
+				persona: nextVal
+			}
 		}).done(function (res) {
 			if (res && res.success && res.data) {
 				attachSaved = res.data.persona;
@@ -1205,7 +1211,15 @@ jQuery(document).ready(function($) {
 				var failed = (res && res.data && res.data.message) ? res.data.message : floscAttach.fallback;
 				attachNote.addClass('flosc-attach-bad').text(failed);
 			}
-		}).fail(function (xhr) {
+		}).fail(function (xhr, textStatus) {
+			// The row is stored before the file mirror. A lost or late body
+			// still leaves that row in place, so reload onto it instead of
+			// sitting on "Attaching…". A refused attach (4xx/5xx) stays here
+			// and says why.
+			if (textStatus === 'timeout' || (xhr && xhr.status === 200)) {
+				window.location.reload();
+				return;
+			}
 			attachSel.prop('disabled', false);
 			var msg = floscAttach.fallback;
 			if (xhr && xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.message) {

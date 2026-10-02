@@ -67,6 +67,14 @@ ok( 'success carries what is stored, not what was sent',
 	strpos( flosc_nows( $library ), flosc_nows( "'persona'   => \$stored,"  )) !== false, true );
 ok( 'and when it happened, in the same stamp the page-wide Save uses',
 	strpos( $library, "flosc_mts_utc()" ) !== false, true );
+ok( 'the file mirror is detached before the option write',
+	strpos( $library, "remove_action( 'updated_option', 'flosc_sync_flow_option_to_ivr_file', 20 );" ) !== false
+		&& strpos( $library, "remove_action( 'updated_option', 'flosc_sync_flow_option_to_ivr_file', 20 );" ) < strpos( $library, 'update_option( $option_key, $settings );' ),
+	true );
+ok( 'and the mirror runs only after the response is flushed',
+	strpos( $library, 'fastcgi_finish_request' ) !== false
+		&& strpos( $library, 'flosc_sync_flow_option_to_ivr_file( $flosc_mirror_key )' ) !== false,
+	true );
 
 // The control reloads on purpose — the designer below renders from the
 // attached row — so the confirmation cannot simply be painted before it.

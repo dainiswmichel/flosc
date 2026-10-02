@@ -75,17 +75,51 @@ function flosc_nav_php_files( $root ) {
 	$iterator = new RecursiveIteratorIterator(
 		new RecursiveDirectoryIterator( $root, FilesystemIterator::SKIP_DOTS )
 	);
+	/*
+	 * Match on the path RELATIVE to $root, never on the absolute path.
+	 *
+	 * These skips were written against the absolute path. This plugin's own
+	 * home in git is pre-release-candidates/<agent>/flosc-by-<agent>/flosc, so
+	 * every absolute path inside it contains "/pre-release-candidates/" and the
+	 * walker skipped the entire tree. It then read 0 keys, concluded all 28
+	 * declared keys were unread, and failed — while reporting a clean run from
+	 * a ship tree that happens to live outside that directory.
+	 *
+	 * That is the same shape as the phpcs.xml.dist exclude-pattern for the
+	 * candidates directory, which matches zero files when the scan is started
+	 * inside one. A path filter written for one checkout location silently
+	 * blinds the check in another.
+	 *
+	 * The danger is not the red result. It is the green one: an agent reading
+	 * "28 declared but never read" deletes the declared keys, and the DA1 screen
+	 * loses its catalog selection and its Export TSV button again, exactly as in
+	 * v95. Relative matching skips a nested candidate tree and nothing else.
+	 */
+	$root_prefix = rtrim( $root, DIRECTORY_SEPARATOR ) . DIRECTORY_SEPARATOR;
+	$skip_dirs   = array( 'tests', 'vendor', 'pre-release-candidates', 'testing-environment' );
+
 	foreach ( $iterator as $file ) {
 		$path = $file->getPathname();
 		if ( substr( $path, -4 ) !== '.php' ) {
 			continue;
 		}
-		if ( strpos( $path, DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR ) !== false ) {
+
+		$relative = ( 0 === strpos( $path, $root_prefix ) )
+			? substr( $path, strlen( $root_prefix ) )
+			: $path;
+		$relative = DIRECTORY_SEPARATOR . ltrim( $relative, DIRECTORY_SEPARATOR );
+
+		$skip = false;
+		foreach ( $skip_dirs as $dir ) {
+			if ( strpos( $relative, DIRECTORY_SEPARATOR . $dir . DIRECTORY_SEPARATOR ) !== false ) {
+				$skip = true;
+				break;
+			}
+		}
+		if ( $skip ) {
 			continue;
 		}
-		if ( strpos( $path, DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR ) !== false ) {
-			continue;
-		}
+
 		$out[] = $path;
 	}
 	sort( $out );
