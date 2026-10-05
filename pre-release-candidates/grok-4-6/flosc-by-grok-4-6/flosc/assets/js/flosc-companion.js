@@ -421,7 +421,17 @@
                 }
                 if (data.type === 'flosc_app_ready') {
                     self._frameAlive = true;
+                    self._frameFailed = false;
                     window.clearTimeout(self._frameHealthTimer);
+                    // The app announced itself, so whatever the panel was
+                    // showing before, a live chat is in the frame now. Clear
+                    // the failure screen and make sure the frame is visible:
+                    // the only thing that ever hides it is showFrameFailure(),
+                    // and this message proves that verdict is stale.
+                    self.clearFrameFailure();
+                    if (self.iframe) {
+                        self.iframe.hidden = false;
+                    }
                     return;
                 }
                 if (data.type === 'flosc_companion_logout_complete') {
@@ -624,8 +634,7 @@
             // context updates go via postMessage only. First src includes
             // continuityParams (session_id / visitor / handoff pack).
             if (!this.iframe.src) {
-                this._frameAlive = false;
-                this._frameRecovered = false;
+                this.resetFrameHealth();
                 this.lastIframeContextSignature = signature;
                 var iframeSrc = this.buildIframeUrl();
                 if (iframeSrc) {
@@ -661,14 +670,29 @@
             var self = this;
             window.clearTimeout(this._frameHealthTimer);
 
-            if (this._frameAlive || this._frameRecovered) {
+            // _frameFailed, not _frameRecovered. Guarding on _frameRecovered
+            // ended the watch at the retry: once the retry had run, this method
+            // returned before arming anything, so showFrameFailure() had no
+            // caller and a document that never announced itself stayed on
+            // screen for good. That is the "a website is sitting where my chat
+            // should be" report. The retry is one step, not the last one.
+            if (this._frameAlive || this._frameFailed) {
                 return;
             }
 
             this._frameHealthTimer = window.setTimeout(function() {
-                if (self._frameAlive || self._frameRecovered || !self.iframe) {
+                if (self._frameAlive || self._frameFailed || !self.iframe) {
                     return;
                 }
+
+                // Silence twice. The retry did not produce the app either, so
+                // whatever is in the frame is not chat and is not going to
+                // become chat. Take it away rather than present it as chat.
+                if (self._frameRecovered) {
+                    self.showFrameFailure();
+                    return;
+                }
+
                 self._frameRecovered = true;
 
                 self.continuityParams = {};
@@ -688,7 +712,38 @@
                 } catch (e) {
                     // Nothing further we can do from here.
                 }
+
+                // Arm the second window. The frame stays visible meanwhile —
+                // hiding it until flosc_app_ready is what left Safari with a
+                // lazy frame it never fetched, so that is deliberately not
+                // reintroduced here.
+                self.watchFrameHealth();
             }, 4000);
+        },
+
+        /**
+         * Put the frame back to a state where a fresh load can be judged.
+         *
+         * A previous open may have ended in showFrameFailure(), which hid the
+         * frame, set _frameFailed, removed src and left an error node on
+         * screen. open() detects that state by src being absent, and must
+         * clear all four. Resetting _frameAlive and _frameRecovered alone left
+         * the reader stuck on the error for the life of the page: the frame
+         * reloaded invisibly, the error stayed, and watchFrameHealth()
+         * returned at once on _frameFailed.
+         *
+         * Its own method so the failure-close-reopen-ready journey can be run
+         * in a test rather than asserted against the source text.
+         */
+        resetFrameHealth: function() {
+            window.clearTimeout(this._frameHealthTimer);
+            this._frameAlive = false;
+            this._frameRecovered = false;
+            this._frameFailed = false;
+            this.clearFrameFailure();
+            if (this.iframe) {
+                this.iframe.hidden = false;
+            }
         },
 
         clearFrameFailure: function() {
