@@ -300,8 +300,12 @@ class FLOSC_Concierge {
 	 *
 	 * Concierge gates are a friendly handoff, not a security boundary, so a guest
 	 * shouldn't be tripped up by capitalization. Both sides are lower-cased and
-	 * trimmed before a constant-time compare. A blank stored password never matches —
-	 * that's the "no gate" case, handled before we reach here.
+	 * trimmed, then matched with mb_stripos(), so the guest's reply only has to
+	 * CONTAIN the password: "monki", "Monki" and "the password is monki" all pass.
+	 * That leniency is deliberate for a conversational gate. It is not an equality
+	 * check and it is not constant-time, so never reuse this for a credential.
+	 * A blank stored password never matches -- that's the "no gate" case, handled
+	 * before we reach here.
 	 *
 	 * @param string $given    What the guest typed.
 	 * @param string $expected The message's password.

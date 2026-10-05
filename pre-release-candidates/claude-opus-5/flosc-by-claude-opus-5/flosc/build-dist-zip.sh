@@ -99,14 +99,41 @@ done
 
 echo "[build-dist-zip] staging runtime tree -> $STAGE/flosc"
 mkdir -p "$STAGE/flosc"
-rsync -a \
-  --delete \
-  "${rsync_excludes[@]}" \
-  --exclude '.DS_Store' \
-  --exclude '*.zip' \
-  --exclude '*.log' \
-  --exclude '*.bundle' \
-  ./ "$STAGE/flosc/"
+
+# Extra excludes applied on top of .distignore and DENY_PATTERNS, in both
+# staging backends. Keep the two lists below in step with each other.
+extra_excludes=( '.DS_Store' '*.zip' '*.log' '*.bundle' )
+
+if command -v rsync >/dev/null 2>&1; then
+  rsync_extra=()
+  for p in "${extra_excludes[@]}"; do rsync_extra+=(--exclude "$p"); done
+  rsync -a \
+    --delete \
+    "${rsync_excludes[@]}" \
+    "${rsync_extra[@]}" \
+    ./ "$STAGE/flosc/"
+else
+  # No rsync (common in minimal containers and CI images). tar stages the
+  # same tree from the same exclude list, so the zip is built identically
+  # instead of the build refusing outright. rsync_excludes holds alternating
+  # "--exclude" / pattern entries; tar wants one --exclude=PATTERN per entry,
+  # and needs the leading "./" form plus a subtree glob to match what rsync
+  # matches by path component.
+  echo "[build-dist-zip] rsync not found -- staging with tar instead" >&2
+  tar_excludes=()
+  add_tar_exclude() {
+    local pat="${1#/}"
+    pat="${pat%/}"
+    [ -z "$pat" ] && return 0
+    tar_excludes+=( "--exclude=./${pat}" "--exclude=./${pat}/*" "--exclude=${pat}" )
+  }
+  for ((i = 0; i < ${#rsync_excludes[@]}; i++)); do
+    [ "${rsync_excludes[$i]}" = "--exclude" ] || continue
+    add_tar_exclude "${rsync_excludes[$((i + 1))]}"
+  done
+  for p in "${extra_excludes[@]}"; do add_tar_exclude "$p"; done
+  ( cd . && tar cf - "${tar_excludes[@]}" . ) | ( cd "$STAGE/flosc" && tar xf - )
+fi
 
 # --- Fail closed: scan staged tree for forbidden content ---
 fail=0

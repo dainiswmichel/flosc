@@ -26,5 +26,7 @@ flosc_development_archives/
 tmp/
 zip-files/
 
-# Transcripts from tests/verify-standards.sh — run artifacts, never committed.
-tests/verify-standards-*.log
+# Local test transcripts — the Captain's evidence, his machine, not repo content.
+testing-logs/
+testing-runtime/
+.flosc-candidate

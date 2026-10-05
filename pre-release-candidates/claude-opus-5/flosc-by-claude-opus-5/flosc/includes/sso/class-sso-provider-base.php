@@ -12,6 +12,8 @@
 
 namespace FLOSC\SSO;
 
+use WP_Error;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }

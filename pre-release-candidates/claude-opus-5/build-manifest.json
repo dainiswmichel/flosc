@@ -1,119 +1,62 @@
 {
-  "schema_version": 1,
-  "candidate": "claude-opus-5",
-  "candidate_label": "FLOSC 8.0.0 candidate V125",
-  "owner": "Claude Opus 5",
-  "parent": {
-    "candidate": "V123",
-    "commit": "30a7831",
-    "scope": "V123 made the failure screen recoverable. V125 fixes two further defects in the same state machine, both found by writing a negative control rather than by rereading the source. V124 is not a parent: it is Grok's directory holding a byte-for-byte copy of the V123 test and companion script, so the number advanced without new code. V125 skips it to keep the numbering monotonic across agents."
-  },
-  "built_at_utc": "2026-10-05T09:30:00Z",
-  "plugin_version": "8.0.0",
-  "plugin_source": "flosc-by-claude-opus-5/flosc",
-  "internal_iteration": "v125",
-  "github_hashid_at_pack": "420faaba27917b069679066613f6cbcd51239f40",
-  "v122_delta": {
-    "shipped_files": [
-      "assets/js/flosc-companion.js",
-      "flosc.php"
-    ],
-    "tests_only": [
-      "tests/check_companion_surface_contract.js",
-      "tests/check_nav_param_keys.php"
-    ],
-    "candidate_tooling_not_shipped": [
-      "wporg-audit.sh"
-    ],
-    "behavior_change": true,
-    "ui_change": false,
-    "changes": [
-      "flosc-companion.js watchFrameHealth() guarded on _frameRecovered, so after the one retry it returned before arming anything. showFrameFailure() therefore had no caller and a framed document that never announced itself stayed on screen permanently. The guard is now _frameFailed and the watch re-arms after the retry; a second silence calls showFrameFailure(), which hides the frame, strips src and shows a role=alert. The iframe is NOT re-hidden at creation - that is what left Safari with a lazy frame it never fetched, and V119 removed it deliberately.",
-      "check_companion_surface_contract.js asserts showFrameFailure() is reached rather than merely defined, that the second silence closes the frame, and that the watch re-arms. The previous suite asked only whether mechanisms were present.",
-      "check_nav_param_keys.php skipped on absolute path, so inside pre-release-candidates it skipped the whole tree, read 0 keys and failed. Matching is now relative to the plugin root.",
-      "wporg-audit.sh: checks 6-9 counted comments as findings; check 12 matched only the H2 heading; check 9 now tests the T12 invariant (HTTP_HOST must not feed get_allowed_sso_redirect_hosts) instead of counting the string."
-    ]
-  },
+  "candidate": "V128",
+  "author": "claude-opus-5",
+  "date": "2026-10-05",
+  "parent": "V127 (grok-4-6, commit 3cbb14fbe532f607fb389914d79238cd1149e6c7)",
+  "base_note": "V128 starts from grok's V127 tree byte-for-byte. That tree is the one that returned Plugin Check ERRORS: 0 on the Captain's machine, so it is the only sane base. The 6 files that differed between the claude-opus-5 and grok-4-6 candidate trees were synced TO grok's version first, including grok's correct trajectory regex and grok's admin/settings.php (which is not a regression: line 320 already gates the page on can_access_flow_admin(), and line 323 is a narrower gate for the administration tab only).",
+
   "artifact": {
-    "path": "flosc.zip",
-    "root": "flosc/",
+    "zip": "flosc.zip",
+    "sha256": "955be99cad1d0584e5bf5efbcdb44c16a0b59ae4c39e570ab2bac18771bee0be",
+    "bytes": 2820373,
     "entries": 282,
-    "bytes": 2820238,
-    "sha256": "ba128fd7ec697a210638b5eddcd9056772ab335d2cf292c27113865b62a82b84",
+    "php_files_shipped": 153,
     "tests_entries": 0,
-    "version": "8.0.0",
-    "stable_tag": "8.0.0",
-    "built_from": "flosc-by-claude-opus-5/flosc, staged with tar because rsync is absent in this container. The staging applies .distignore and build-dist-zip.sh's hard deny list, then re-runs that script's own fail-closed scans against the stage and again against the finished zip."
+    "pack_json_entries": 4,
+    "top_level": "flosc/"
   },
-  "verification": {
-    "run_date": "2026-10-05",
-    "php_syntax": "clean, 154 shipped files",
-    "js_gates": "5 of 5 pass",
-    "gate_suite": "44 gates run, 0 gate failures. 27 pass, 1 fail, 4 skip at the suite level; the one failure is the zip build refusing because rsync is absent in this container, and the skips are phpcs, PHPCompatibilityWP and wp-cli not being on PATH for the suite to call.",
-    "wpcs_and_php74": "MEASURED THIS ROUND, first time in this container. phpcs 3.13 with WPCS 3.1 (WordPress, WordPress-Docs, WordPress-Extra) plus PHPCompatibilityWP at testVersion 7.4-, installed from packagist and run against the unzipped shipped artifact: 0 ERRORS, 22 WARNINGS, 3 files. Zero PHP 7.4 incompatibilities. Run from a neutral path on purpose: phpcs.xml.dist excludes */pre-release-candidates/*, so running it inside a candidate directory scans nothing and reports clean.",
-    "the_22_warnings": "All WordPress.Security.NonceVerification.Recommended, at three sites that each carry the correct control instead of a nonce: flosc-request.php reads read-only navigation parameters, sanitized and allow-listed, changing no state; class-flosc-framework.php guards a signed media endpoint with a capability check and a 64-hex HMAC plus expiry, rejecting malformed signatures rather than stripping them; class-flosc-magic-link-trait.php reads an emailed token that is itself the credential, on a request this site did not compose. Same 22 the V115 Plugin Check pass disclosed.",
-    "duplicate_symbols": "none. 71 classes and 422 global functions scanned. The two flosc_resolve_ivr_file_path declarations are both inside function_exists guards, and the nine SSO classes that look unprefixed are namespaced FLOSC\\SSO and FLOSC\\SSO\\Providers.",
-    "wporg_audit_on_shipped_zip": "17 pass, 0 fail, 6 needs-reading",
-    "parity_v115_to_v125": "17 of 17 against the Plugin-Check-verified V115 tree",
-    "parity_grok_v124_to_v125": "17 of 17",
-    "negative_controls": [
-      "reverted the close() clearTimeout -> journey test 2 FAILs, exit 1",
-      "reverted the open() re-arm -> journey test 3 FAILs, exit 1",
-      "the first revision of the new test was BLIND to the close() half and reported exit 0. The control caught it: the test called open(), which never arms the watch, so advancing the clock proved nothing. It was corrected until it could fail."
-    ],
-    "official_plugin_check": "NOT RUN on this artifact. wordpress.org, downloads.wordpress.org and api.wordpress.org are unreachable from this container and plugin-check is not on packagist, so it could not be installed here. It was run and passed at V115 by Codex -- Plugin Check 2.1.0 with experimental checks, the exact ZIP mounted in WordPress, exit 0, 0 errors, 22 nonce recommendations -- and the owner runs it every round on his own bench. This artifact still needs that pass.",
-    "browser_matrix": "NOT RUN on this artifact.",
-    "live_install": "NOT RUN on this artifact. Never installed, never activated, never clicked.",
-    "phpstan": "733 errors at level 5, unchanged, not remediated",
-    "deployed": false
+
+  "changes_from_v127": [
+    "includes/sso/class-oauth2-handler.php: added 'use WP_REST_Request; use WP_REST_Response;'. Under 'namespace FLOSC\\SSO' the docblocks at 160/161/255/737 resolved to FLOSC\\SSO\\WP_REST_Request, which does not exist. Executable code already used the global correctly; this makes the docblocks resolve. Zero behaviour change.",
+    "includes/sso/class-sso-provider-base.php and the 5 provider classes: added 'use WP_Error;' for the same reason. Zero behaviour change.",
+    "includes/class-flosc-concierge.php: password_matches() docblock claimed 'a constant-time compare'. The code is mb_stripos(), which is a SUBSTRING search, so it is neither an equality check nor constant-time. The comment now states what the code does, including that 'the password is monki' passes. CODE NOT CHANGED -- tightening a live gate is the Captain's call, not mine. See open_decisions.",
+    "build-dist-zip.sh: added an rsync->tar staging fallback. rsync is absent from minimal containers, and without it the build refused outright ('rsync: command not found'), which took 8 zip-content gates from runnable to unrunnable. On a machine with rsync, behaviour is byte-identical.",
+    "flosc.php: header Internal Iteration v127 -> v128, Github HashID set to 3cbb14fbe532f607fb389914d79238cd1149e6c7, which is the ACTUAL commit this tree was built from. V127's header carried the V126 hash."
+  ],
+
+  "also_fixed_outside_the_shipped_tree": [
+    "includes/class-flosc-trajectory.php (repo ROOT copy, line 428): preg_replace('#[/?#].*$#', ...) -- the '#' inside the character class closes the pattern at '#[/?' and ']' becomes an invalid modifier. PROVEN fatal: php -r returns NULL with preg_last_error_msg() == 'Internal error'. Changed the delimiter to '~'. This file does NOT ship; grok had already fixed the shipping copy in V127. Fixed so the repo stops carrying a pattern that cannot compile."
+  ],
+
+  "verification_measured_not_asserted": {
+    "php_lint": "154 shipped PHP files, 0 syntax failures",
+    "phpcs_shipped_tree": "0 ERRORS, 22 WARNINGS in 3 files (WordPress + WordPress-Docs + WordPress-Extra, run from a NEUTRAL path so phpcs.xml.dist's '*/pre-release-candidates/*' exclusion could not blind it). Matches the Captain's own measurement exactly.",
+    "phpcs_warnings_identity": "All 22 are WordPress.Security.NonceVerification.Recommended -- a WARNING, not an error, and not a WordPress.org blocker. class-flosc-framework.php (12), flosc-request.php (7), class-flosc-magic-link-trait.php (3).",
+    "phpcs_suppressions_disabled": "7 real errors, every one a justified suppression: 5x EscapeOutput on flosc_vgm_options_markup() (verified -- it emits esc_attr(key) + selected(...,false) + esc_html(label), nothing unescaped), 1x WP_LOAD_IMPORTERS (a WordPress CORE constant, not FLOSC's), 1x the_content (a WordPress CORE hook being applied, not declared). A further 13 'errors' were an artifact of the neutralisation method itself and are not real.",
+    "php74_compatibility": "PHPCompatibilityWP, testVersion 7.4-, shipped tree: exit 0, zero findings",
+    "project_gate_suite": "tests/flosc-check.sh -- PASS 35, FAIL 0, SKIP 4, exit 0 (was PASS 27 / FAIL 1 before the tar fallback; the 4 SKIPs are wp-cli/Docker absent from this container)",
+    "js_gates": "5/5 pass (frame recovery, handoff roundtrip, surface contract, density nesting, palette placement)",
+    "wporg_audit": "PASS 17, FAIL 0, NEEDS READING 6",
+    "parity": "Shipped tree is identical to grok V127 except the 5 files listed in changes_from_v127"
   },
+
+  "what_this_candidate_does_NOT_prove": [
+    "Plugin Check was NOT run here -- wp-cli and Docker are not in this container. The Captain's own V127 run produced 'ERRORS: 0'; V128 changes 5 files, of which 7 edits are use-statements and docblocks with zero runtime effect, and one is a build-script fallback that does not ship. Plugin Check must still be re-run on this exact zip.",
+    "No interactive functionality was exercised. Chat continuity, logging, AI personality creation and selection, and Catalogs have NO evidence from this session. Nobody clicked anything.",
+    "No starter pack was installed and used. 4 pack.json ship and the zip passes packaging gates, but 'does not break the plugin when put into use' is untested.",
+    "PHPStan level 5 was not run here (no phpstan in this container). The Captain's V127 run reported 729 errors; the SSO use-statements added here should remove roughly 45 of them, which is a PREDICTION, not a measurement.",
+    "Semgrep was not run here. Of the 8 findings in the V127 run, the 3 new tainted-filename hits (class-flosc-framework.php:3526, :3587, :13771) were read individually and are FALSE POSITIVES: site 1 has sanitize_file_name + a nonce bound to the filename + manage_options; site 2 has sanitize_file_name + nonce + manage_options; site 3 pins the name with an anchored allowlist /^phrase-\\d+\\.(webm|mp4|m4a|ogg|wav)$/ before building the path AND an HMAC over all four values compared with hash_equals. Semgrep's rule is dataflow-based and does not model preg_match guards."
+  ],
+
+  "open_decisions_for_the_captain": [
+    "password_matches() uses mb_stripos(), so any reply CONTAINING the password opens the gate. The docblock now says so honestly. Making it a real equality check is one line -- replace the return with: return '' !== $given && hash_equals( $expected, $given ); -- which would also make a 'constant-time' claim true. It TIGHTENS a live gate, so it is not mine to decide.",
+    "verify-flosc.sh reports 'exit 0' over red blocks. It is NOT in this repo -- it lives only on the Captain's machine, so it could not be fixed from here. testing-environment/flosc-test, which IS in the repo, was inspected and is already correct: foot() sets RC=1 on any non-zero code, notrun() sets RC=1, and the dispatcher ends in 'exit $RC'. The swallowing is in the outer script."
+  ],
+
   "status": "PACKAGED_NOT_DEPLOYED",
-  "live_deployed": false,
   "submission_ready": false,
   "submission_blockers": [
-    "Plugin Check has not been run on this artifact. It could not be run in this container. Until it passes on this exact zip, nothing here says the artifact is submissible.",
-    "This artifact has never been installed or activated. Standards compliance is measured; runtime behaviour on a live WordPress is not.",
-    "The frame-recovery journey is proved by an executable test against the real open(), close() and watchdog bodies, not watched in a browser. Confirm once on an install: force a non-FLOSC document into the panel, see the error, close, reopen, confirm chat returns.",
-    "The repository root ship tree is still at v89.2, 36 iterations behind and predating the class prefix migration, so the local verification page has never tested recent code. Replacing it requires deleting the old files and was blocked in this session as irreversible; it needs the owner's go-ahead. The old root is recoverable at 84f26d0.",
-    "Seven shortcode and the_content callbacks surfaced by the audit but never read for return escaping",
-    "One json_decode site needs its decoded structure validated",
-    "The 16 user-creation incidences need written justification in the reply email"
-  ],
-  "correction": "An earlier draft of this manifest stated that official Plugin Check had never been run on any candidate. That was false. It was run and passed at V115, and the owner runs it every round. The error came from reading a SKIP in this container's gate suite as a fact about the project.",
-  "v123_delta": {
-    "shipped_files": [
-      "assets/js/flosc-companion.js",
-      "flosc.php"
-    ],
-    "tests_only": [
-      "tests/check_companion_frame_recovery.js"
-    ],
-    "behavior_change": true,
-    "ui_change": false,
-    "defect_fixed": "V122 regression, reported by Codex. showFrameFailure() hides the iframe, sets _frameFailed, removes src and inserts an error node. open() detects a rebuilt frame by src being absent and reset only _frameAlive and _frameRecovered. So after one failure the panel was stuck for the life of the page: the frame reloaded invisibly, the error node stayed, watchFrameHealth() returned at once on _frameFailed, and flosc_app_ready could not make chat reappear.",
-    "changes": [
-      "New resetFrameHealth() clears the health timer, _frameAlive, _frameRecovered, _frameFailed, the error node and iframe.hidden. open() calls it where it previously reset two flags inline. Extracted as a method so the journey can be executed in a test rather than asserted against source text.",
-      "The flosc_app_ready handler now also clears _frameFailed, removes the error node and unhides the frame. A live app is visible unconditionally; showFrameFailure() is the only thing that ever hides it, and this message proves that verdict stale.",
-      "tests/check_companion_frame_recovery.js runs the real watchFrameHealth, showFrameFailure, clearFrameFailure and resetFrameHealth bodies, extracted from the shipped file by brace matching and compiled, against a fake clock, iframe and container. It drives load, silence, retry, silence, failure, close, reopen, app ready. 19 assertions."
-    ]
-  },
-  "v125_delta": {
-    "shipped_files": [
-      "assets/js/flosc-companion.js",
-      "flosc.php"
-    ],
-    "tests_only": [
-      "tests/check_companion_frame_recovery.js"
-    ],
-    "behavior_change": true,
-    "ui_change": false,
-    "defect_fixed": "close() left the frame-health watchdog armed. The watch is armed by the iframe's own load listener, not by open(), so closing the panel mid-load left a live timer: at four seconds it rebuilt a frame nobody was looking at, and at eight it called showFrameFailure() and built an error screen behind a closed panel. The reader reopened onto an error describing a load they never saw. Clearing that timer alone would have been worse: iframe.src is kept across open/close on purpose, because reassigning it aborts in-flight turns and drops replies, so reopen takes the else branch, which did not re-arm. A frame that never announced itself would then sit unwatched for the life of the page -- the original \"a website is sitting where my chat should be\", with the recovery removed.",
-    "changes": [
-      "close() now clears _frameHealthTimer before anything else.",
-      "open() re-arms watchFrameHealth() in the branch where iframe.src survived, guarded on !_frameAlive so a live app is never re-watched.",
-      "tests/check_companion_frame_recovery.js gained a second part that extracts and runs the real open() and close() bodies against stubs for everything they touch that is not frame health, and simulates the browser firing load the way the shipped listener does. A source assertion pins that simulation to the listener, so a change to the listener fails the test instead of leaving it quietly simulating behaviour the app no longer has. 31 assertions.",
-      "flosc.php carries Internal Iteration: v125 and the packing commit hash. An earlier commit in this session removed both header lines on the theory that they risked Plugin Check, because the V115 artifact that passed did not carry them. That theory was never demonstrated -- WordPress ignores unknown plugin headers and Plugin Check does not error on them -- and the lines are the project's provenance marker, so they are restored."
-    ]
-  },
-  "stale_in_this_directory": "readme.md still describes v95 and has not been maintained since. It is not a record of this candidate."
+    "Plugin Check must be re-run on this exact zip (sha256 955be99cad1d0584e5bf5efbcdb44c16a0b59ae4c39e570ab2bac18771bee0be) on a machine with Docker.",
+    "Interactive functionality (condition 2) and starter packs in use (condition 3) have no evidence from any iteration."
+  ]
 }
