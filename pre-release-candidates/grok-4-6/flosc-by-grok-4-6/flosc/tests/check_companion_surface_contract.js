@@ -59,6 +59,23 @@ const renderFn = companion.slice(renderStart, renderEnd);
 ok(renderFn.includes("setAttribute('loading', 'lazy')")
     && !renderFn.includes('iframe.hidden'),
     'the chat frame is visible when the panel opens');
+
+// showFrameFailure() existed, was correct, and had no caller. The suite passed
+// anyway, because every assertion asked whether a mechanism was PRESENT and
+// none asked whether it RUNS. A definition nothing reaches is not a safeguard.
+const failureCalls = (companion.match(/\bself\.showFrameFailure\(\)|\bthis\.showFrameFailure\(\)/g) || []).length;
+ok(failureCalls > 0,
+    'showFrameFailure() is reached, not merely defined');
+
+const watchStart = companion.indexOf('watchFrameHealth: function()');
+const watchEnd = companion.indexOf('clearFrameFailure: function()', watchStart);
+const watchFn = companion.slice(watchStart, watchEnd);
+ok(watchStart !== -1 && watchEnd > watchStart
+    && watchFn.includes('self.showFrameFailure();')
+    && watchFn.includes('self.watchFrameHealth();'),
+    'a second silence closes the frame instead of leaving a website in the panel');
+ok(watchFn.indexOf('this._frameAlive || this._frameFailed') !== -1,
+    'the watch re-arms after the retry rather than ending at it');
 const openStart = companion.indexOf('open: function(opts)');
 const openEnd = companion.indexOf('close: function()', openStart);
 const openFn = companion.slice(openStart, openEnd);

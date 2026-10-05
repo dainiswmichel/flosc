@@ -1,48 +1,56 @@
 {
   "schema_version": 1,
   "candidate": "grok-4-6",
-  "candidate_label": "FLOSC 8.0.0 candidate V124",
+  "candidate_label": "FLOSC 8.0.0 candidate V126",
   "owner": "Grok",
   "parent": {
-    "candidate": "V123",
-    "commit": "30a78319631de1ee80d389b6b1e28925ea2eeac8",
-    "zip_sha256": "0bb1727ed078e3e251691b38902be79e27b1fbed541e3965089f8522c2e6dd29",
-    "scope": "Canonical plugin brought to the v123 bytes, then stamped v124."
+    "candidate": "V125",
+    "commit": "a7134d88ef7b0e2d0be6a859ee6de87057860d07",
+    "zip_sha256": "ba128fd7ec697a210638b5eddcd9056772ab335d2cf292c27113865b62a82b84",
+    "scope": "v124 grok tree plus the v125 companion close/reopen watchdog and the three v125 test files. v124 .distignore, .gitignore, and push-allowlist kept."
   },
-  "built_at_utc": "2026-10-05T09:00:06Z",
+  "built_at_utc": "2026-10-05T09:51:11Z",
   "plugin_version": "8.0.0",
   "plugin_source": "flosc-by-grok-4-6/flosc",
-  "internal_iteration": "v124",
-  "github_hashid_at_pack": "30a78319631de1ee80d389b6b1e28925ea2eeac8",
-  "v124_delta": {
-    "zip_entries_that_differ_from_v123": ["flosc/flosc.php"],
-    "header": {
-      "internal_iteration": "v124",
-      "github_hashid": "30a78319631de1ee80d389b6b1e28925ea2eeac8"
-    },
-    "behavior_change": false,
-    "ui_change": false
+  "internal_iteration": "v126",
+  "github_hashid_at_pack": "a7134d88ef7b0e2d0be6a859ee6de87057860d07",
+  "v126_delta": {
+    "zip_entries_that_differ_from_v124": [
+      "flosc/assets/js/flosc-companion.js",
+      "flosc/flosc.php"
+    ],
+    "v124_zip_sha256": "bc76377fef3fef6758d5613135e1ac838d442814a5649133e8105d3378e4bff1",
+    "executable_js": [
+      "close() clears _frameHealthTimer",
+      "open() calls watchFrameHealth() when iframe.src is already set and _frameAlive is false"
+    ],
+    "behavior_change": true,
+    "ui_change": false,
+    "php_logic_change": false
   },
   "artifact": {
     "path": "flosc.zip",
     "root": "flosc/",
     "entries": 282,
     "files": 242,
-    "bytes": 2819966,
-    "sha256": "bc76377fef3fef6758d5613135e1ac838d442814a5649133e8105d3378e4bff1",
+    "bytes": 2820237,
+    "sha256": "67acdcadc6413a1e7f73ffaf37f0238ef94822d4b67857fe9396063e0e881de5",
     "integrity": "unzip -t passed",
     "tests_entries": 0,
     "version": "8.0.0",
-    "stable_tag": "8.0.0"
+    "stable_tag": "8.0.0",
+    "starter_pack_directories": 4
   },
   "verification": {
-    "source_measurement": "v123 bytes before the header stamp",
-    "php_syntax": "passed",
-    "php_gates": "44 passed, 0 failed",
-    "js_gates": "5 passed, 0 failed",
-    "php_74": "passed",
-    "project_ruleset": "0 errors, 22 warnings",
-    "official_plugin_check": "not run; Colima docker socket absent",
+    "php_syntax_flosc_php": "php -l passed",
+    "js_syntax_companion": "node --check passed",
+    "frame_recovery_test": "33 PASS, exit 0",
+    "surface_contract_test": "exit 0",
+    "nav_param_keys": "28 read, 28 declared, exit 0",
+    "php_gates_44": "not run",
+    "project_ruleset": "not run",
+    "php_74": "not run",
+    "official_plugin_check": "not run",
     "deployed": false
   },
   "status": "PACKAGED_NOT_DEPLOYED",

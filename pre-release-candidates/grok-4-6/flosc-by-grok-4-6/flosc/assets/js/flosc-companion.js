@@ -643,6 +643,17 @@
             } else {
                 this.lastIframeContextSignature = signature;
                 this.deliverBrowsingContextToIframe();
+
+                // The frame is kept on purpose -- reassigning src aborts
+                // in-flight turns. But a frame that has never announced itself
+                // still needs watching: close() cleared the timer, and this
+                // branch runs whenever src survives, so without this the panel
+                // reopens onto an unwatched document with no way back. That is
+                // the "a website is sitting where my chat should be" report,
+                // minus the recovery.
+                if (!this._frameAlive) {
+                    this.watchFrameHealth();
+                }
             }
 
             if (this.config.focusOnOpen) {
@@ -654,6 +665,11 @@
         },
 
         close: function() {
+            // Stop the watchdog. Left armed, it fires against a closed panel:
+            // the retry rebuilds the frame nobody is looking at, and the second
+            // silence builds a failure screen behind a closed door. The reader
+            // then reopens onto an error that describes a load they never saw.
+            window.clearTimeout(this._frameHealthTimer);
             this.isOpen = false;
             this.container.classList.remove('is-open');
             this.updateLauncherA11y();
