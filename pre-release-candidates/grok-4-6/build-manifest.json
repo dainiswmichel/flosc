@@ -1,58 +1,47 @@
 {
   "schema_version": 1,
   "candidate": "grok-4-6",
-  "candidate_label": "FLOSC 8.0.0 candidate V121",
+  "candidate_label": "FLOSC 8.0.0 candidate V124",
   "owner": "Grok",
   "parent": {
-    "candidate": "V119",
-    "commit": "b8d8de86333c9d77843c20069fa48a5b9de71060",
-    "scope": "Verified local tree. V121 adds the blank line before the attach-personality block comment and copies the six gate walkers that skip nested candidate trees."
+    "candidate": "V123",
+    "commit": "30a78319631de1ee80d389b6b1e28925ea2eeac8",
+    "zip_sha256": "0bb1727ed078e3e251691b38902be79e27b1fbed541e3965089f8522c2e6dd29",
+    "scope": "Canonical plugin brought to the v123 bytes, then stamped v124."
   },
-  "built_at_utc": "2026-10-02T16:18:41Z",
+  "built_at_utc": "2026-10-05T09:00:06Z",
   "plugin_version": "8.0.0",
   "plugin_source": "flosc-by-grok-4-6/flosc",
-  "internal_iteration": "v121",
-  "github_hashid_at_pack": "b8d8de86333c9d77843c20069fa48a5b9de71060",
-  "v121_delta": {
-    "shipped_files": [
-      "flosc.php",
-      "includes/flosc-personality-library.php"
-    ],
-    "tests_only": [
-      "tests/check_include_paths.php",
-      "tests/check_nav_param_keys.php",
-      "tests/check_packaging.php",
-      "tests/check_php_string_literals.php",
-      "tests/check_undefined_variables.php",
-      "tests/check_wporg_rules.php"
-    ],
+  "internal_iteration": "v124",
+  "github_hashid_at_pack": "30a78319631de1ee80d389b6b1e28925ea2eeac8",
+  "v124_delta": {
+    "zip_entries_that_differ_from_v123": ["flosc/flosc.php"],
+    "header": {
+      "internal_iteration": "v124",
+      "github_hashid": "30a78319631de1ee80d389b6b1e28925ea2eeac8"
+    },
     "behavior_change": false,
-    "ui_change": false,
-    "cause": "Project ruleset reported one error: Squiz.Commenting.BlockComment.NoEmptyLineBefore in flosc_ajax_attach_personality().",
-    "change": "One blank line before that block comment. NonceVerification.Recommended warnings were left in place."
+    "ui_change": false
   },
   "artifact": {
     "path": "flosc.zip",
     "root": "flosc/",
     "entries": 282,
     "files": 242,
-    "bytes": 2819151,
-    "sha256": "9537d8881ecdedcfcf544a2535b8249df74de42812b587ee35c4375ca973a232",
+    "bytes": 2819966,
+    "sha256": "bc76377fef3fef6758d5613135e1ac838d442814a5649133e8105d3378e4bff1",
     "integrity": "unzip -t passed",
     "tests_entries": 0,
     "version": "8.0.0",
     "stable_tag": "8.0.0"
   },
   "verification": {
-    "local_run_date": "2026-10-02",
+    "source_measurement": "v123 bytes before the header stamp",
     "php_syntax": "passed",
     "php_gates": "44 passed, 0 failed",
-    "js_gates": "4 passed, 0 failed",
+    "js_gates": "5 passed, 0 failed",
     "php_74": "passed",
-    "project_ruleset_before_blank_line": "1 error, 22 warnings",
-    "personality_library_after_blank_line": "phpcs.xml.dist clean on that file",
-    "nonce_recommended_warnings": 22,
-    "phpstan": "733 errors, not remediated",
+    "project_ruleset": "0 errors, 22 warnings",
     "official_plugin_check": "not run; Colima docker socket absent",
     "deployed": false
   },

@@ -6,6 +6,11 @@
 # redeclare core functions — so they must never reach a running site.
 tests/
 
+# Local bench files. They stay in the working tree and are not part of the zip.
+TESTING-ENVIRONMENT.md
+testing-bench.sh
+wordpress-plugin-dev-environment.md
+
 # Deployment candidates: whole plugin trees kept for comparison, not shipped.
 pre-release-candidates/
 
