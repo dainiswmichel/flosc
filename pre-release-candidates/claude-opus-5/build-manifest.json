@@ -1,17 +1,17 @@
 {
   "schema_version": 1,
   "candidate": "claude-opus-5",
-  "candidate_label": "FLOSC 8.0.0 candidate V122",
+  "candidate_label": "FLOSC 8.0.0 candidate V123",
   "owner": "Claude Opus 5",
   "parent": {
-    "candidate": "V121",
-    "commit": "41c634bd16253f8b660034acb8cae92502545201",
-    "scope": "V121 verified nondestructive (parity 17/17 against V119). V122 changes two shipped files and two gates."
+    "candidate": "V122",
+    "commit": "95cd193",
+    "scope": "V122 made showFrameFailure() reachable but left the panel permanently stuck on the error screen. Codex found it in review. V123 fixes that and makes the journey executable."
   },
-  "built_at_utc": "2026-10-02T16:30:52Z",
+  "built_at_utc": "2026-10-05T08:25:11Z",
   "plugin_version": "8.0.0",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
-  "internal_iteration": "v122",
+  "internal_iteration": "v123",
   "github_hashid_at_pack": "41c634bd16253f8b660034acb8cae92502545201",
   "v122_delta": {
     "shipped_files": [
@@ -38,40 +38,61 @@
     "path": "flosc.zip",
     "root": "flosc/",
     "entries": 282,
-    "bytes": 2828586,
-    "sha256": "1b70e65c67b88ef0c5ab88fb9720a5ff74d5e5e9cafdb47afb29531a5d5e45cb",
+    "bytes": 2829019,
+    "sha256": "0bb1727ed078e3e251691b38902be79e27b1fbed541e3965089f8522c2e6dd29",
     "tests_entries": 0,
     "version": "8.0.0",
     "stable_tag": "8.0.0",
-    "built_from": "V121 artifact with the two shipped files replaced; every other entry is byte-identical to V121 (rsync absent in the build container, so build-dist-zip.sh could not run)"
+    "built_from": "V121 artifact with the two shipped files replaced; every other entry byte-identical to V121 (rsync absent here, so build-dist-zip.sh could not run)"
   },
   "verification": {
-    "run_date": "2026-10-02",
+    "run_date": "2026-10-05",
     "php_syntax": "clean, whole tree",
     "node_check": "clean on both changed JS files",
-    "gate_suite": "27 pass, 1 fail, 4 skip. The failure is the zip build refusing because rsync is absent in this container, not the code. V121 scored 26/2/4 here; the recovered gate is check_nav_param_keys.",
+    "gate_suite": "27 pass, 1 fail, 4 skip. The failure is the zip build refusing because rsync is absent in this container.",
     "parity_v121_to_v122": "17 of 17 checks, nothing missing",
-    "wporg_audit_on_shipped_zip": "17 pass, 0 fail, 6 needs-reading (V121 scored 12/5/5 under the uncorrected audit)",
+    "wporg_audit_on_shipped_zip": "17 pass, 0 fail, 6 needs-reading",
     "negative_controls": [
+      "reverted resetFrameHealth() to V122's two-flag form -> journey test 6 FAILs, exit 1, naming exactly the reopen and recovery steps",
       "removed the showFrameFailure call -> 2 contract assertions FAIL, exit 1",
-      "removed the da1_export declaration -> nav-keys gate 2 FAILURES, exit 1 (the V95 bug)",
-      "planted HTTP_HOST in the allowlist builder -> audit check 9 FAIL naming the line"
+      "removed the da1_export declaration -> nav-keys gate 2 FAILURES, exit 1",
+      "planted HTTP_HOST in the SSO allowlist builder -> audit check 9 FAIL naming the line"
     ],
     "official_plugin_check": "Run and passed on this project at V115 by Codex: Plugin Check 2.1.0 with experimental checks, the exact ZIP mounted in WordPress, exit 0, 0 errors, 22 nonce recommendations (see pre-release-candidates/codex-gpt5/V115-VERIFICATION.md). The owner also runs it each round on his own bench. NOT re-run on the V122 artifact, which is new: this container has no wp-cli and no docker.",
     "browser_matrix": "V115 was verified live on ChemiCloud: companion route returned 200 with FLOSC app and chat-input markup, zero redirects, no website-chrome markers; four starter packs installed and routed; a new personality saved and switched. NOT re-run on the V122 artifact.",
     "phpstan": "733 errors at level 5, not remediated, unchanged from V121",
     "deployed": false,
-    "parity_v115_to_v122": "17 of 17 checks against the Plugin-Check-verified V115 tree, nothing missing"
+    "parity_v115_to_v122": "17 of 17 checks against the Plugin-Check-verified V115 tree, nothing missing",
+    "js_gates": "5 of 5 pass, including the new journey test",
+    "parity_v115_to_v123": "17 of 17 against the Plugin-Check-verified V115 tree",
+    "parity_v121_to_v123": "17 of 17"
   },
   "status": "PACKAGED_NOT_DEPLOYED",
   "live_deployed": false,
   "submission_ready": false,
   "submission_blockers": [
-    "The V122 artifact itself has not been Plugin-Checked or installed. V115 passed both; V122 is a new zip and needs the same pass before it is submitted. This is routine re-verification, not an unverified project.",
-    "The companion fail-closed path restored here is reasoned from the code, not observed in a browser. Confirm a non-FLOSC document in the panel is replaced by the error rather than left on screen.",
+    "The V123 artifact has not been Plugin-Checked or installed. V115 passed both; every new zip needs the same pass.",
+    "The frame-recovery journey is proved by an executable test against the real method bodies, not watched in a browser. Confirm once on an install: force a non-FLOSC document into the panel, see the error, close, reopen, confirm chat returns.",
     "Seven shortcode and the_content callbacks surfaced by the audit but never read for return escaping",
     "One json_decode site needs its decoded structure validated",
     "The 16 user-creation incidences need written justification in the reply email"
   ],
-  "correction": "An earlier draft of this manifest stated that official Plugin Check had never been run on any candidate. That was false. It was run and passed at V115, and the owner runs it every round. The error came from reading a SKIP in this container's gate suite as a fact about the project."
+  "correction": "An earlier draft of this manifest stated that official Plugin Check had never been run on any candidate. That was false. It was run and passed at V115, and the owner runs it every round. The error came from reading a SKIP in this container's gate suite as a fact about the project.",
+  "v123_delta": {
+    "shipped_files": [
+      "assets/js/flosc-companion.js",
+      "flosc.php"
+    ],
+    "tests_only": [
+      "tests/check_companion_frame_recovery.js"
+    ],
+    "behavior_change": true,
+    "ui_change": false,
+    "defect_fixed": "V122 regression, reported by Codex. showFrameFailure() hides the iframe, sets _frameFailed, removes src and inserts an error node. open() detects a rebuilt frame by src being absent and reset only _frameAlive and _frameRecovered. So after one failure the panel was stuck for the life of the page: the frame reloaded invisibly, the error node stayed, watchFrameHealth() returned at once on _frameFailed, and flosc_app_ready could not make chat reappear.",
+    "changes": [
+      "New resetFrameHealth() clears the health timer, _frameAlive, _frameRecovered, _frameFailed, the error node and iframe.hidden. open() calls it where it previously reset two flags inline. Extracted as a method so the journey can be executed in a test rather than asserted against source text.",
+      "The flosc_app_ready handler now also clears _frameFailed, removes the error node and unhides the frame. A live app is visible unconditionally; showFrameFailure() is the only thing that ever hides it, and this message proves that verdict stale.",
+      "tests/check_companion_frame_recovery.js runs the real watchFrameHealth, showFrameFailure, clearFrameFailure and resetFrameHealth bodies, extracted from the shipped file by brace matching and compiled, against a fake clock, iframe and container. It drives load, silence, retry, silence, failure, close, reopen, app ready. 19 assertions."
+    ]
+  }
 }
