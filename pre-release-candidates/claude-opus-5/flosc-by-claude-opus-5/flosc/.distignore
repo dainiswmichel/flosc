@@ -110,7 +110,14 @@ vendor/
 composer.json
 composer.lock
 
-# Static tech-ref (flosc_documentation/) ships with plugin; admin/docs/ is WP admin UI
+# Static tech-ref (flosc_documentation/) ships with plugin; admin/docs/ is WP admin UI.
+# DO NOT "fix" index.html's <script src="techref.js"> by deleting this bundle.
+# The 14 Sep 2026 review flags script/style tags, but that note sits in its soft
+# "not yet able to make definitive judgments" section, not among the red blockers,
+# and the rule it states -- load JS through wp_enqueue_* -- cannot apply here:
+# these are standalone HTML pages WordPress never renders, so there is no hook to
+# enqueue on. Shipped PHP has zero script/style tags; this bundle is the only
+# remaining match and it is compliant. Explain it in the reply email instead.
 
 # WP-CLI sample seeder — not runtime; do not ship to .org
 admin/create-sample-data.php

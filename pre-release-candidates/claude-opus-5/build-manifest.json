@@ -1,62 +1,63 @@
 {
-  "candidate": "V128",
+  "candidate": "V129",
   "author": "claude-opus-5",
   "date": "2026-10-05",
-  "parent": "V127 (grok-4-6, commit 3cbb14fbe532f607fb389914d79238cd1149e6c7)",
-  "base_note": "V128 starts from grok's V127 tree byte-for-byte. That tree is the one that returned Plugin Check ERRORS: 0 on the Captain's machine, so it is the only sane base. The 6 files that differed between the claude-opus-5 and grok-4-6 candidate trees were synced TO grok's version first, including grok's correct trajectory regex and grok's admin/settings.php (which is not a regression: line 320 already gates the page on can_access_flow_admin(), and line 323 is a narrower gate for the administration tab only).",
-
+  "parent": "V128 (commit 3a42f8683211adb1f002dc6189d4a209ec187e13)",
+  "why_this_exists": "A full shitcode audit of V128 against the WordPress.org reviewer's own September 14 2026 email (Review ID AUTO flosc/dainismichel/2Jun26/T12 13Sep26/4.2.1) found exactly one real open defect. V129 is that one fix.",
   "artifact": {
     "zip": "flosc.zip",
-    "sha256": "955be99cad1d0584e5bf5efbcdb44c16a0b59ae4c39e570ab2bac18771bee0be",
-    "bytes": 2820373,
+    "sha256": "f68e494b59db4d7c956cba69bf54994863b6dc82644de941b52870bb6589f8e9",
+    "bytes": 2820574,
     "entries": 282,
-    "php_files_shipped": 153,
     "tests_entries": 0,
-    "pack_json_entries": 4,
-    "top_level": "flosc/"
+    "pack_json_entries": 4
   },
-
-  "changes_from_v127": [
-    "includes/sso/class-oauth2-handler.php: added 'use WP_REST_Request; use WP_REST_Response;'. Under 'namespace FLOSC\\SSO' the docblocks at 160/161/255/737 resolved to FLOSC\\SSO\\WP_REST_Request, which does not exist. Executable code already used the global correctly; this makes the docblocks resolve. Zero behaviour change.",
-    "includes/sso/class-sso-provider-base.php and the 5 provider classes: added 'use WP_Error;' for the same reason. Zero behaviour change.",
-    "includes/class-flosc-concierge.php: password_matches() docblock claimed 'a constant-time compare'. The code is mb_stripos(), which is a SUBSTRING search, so it is neither an equality check nor constant-time. The comment now states what the code does, including that 'the password is monki' passes. CODE NOT CHANGED -- tightening a live gate is the Captain's call, not mine. See open_decisions.",
-    "build-dist-zip.sh: added an rsync->tar staging fallback. rsync is absent from minimal containers, and without it the build refused outright ('rsync: command not found'), which took 8 zip-content gates from runnable to unrunnable. On a machine with rsync, behaviour is byte-identical.",
-    "flosc.php: header Internal Iteration v127 -> v128, Github HashID set to 3cbb14fbe532f607fb389914d79238cd1149e6c7, which is the ACTUAL commit this tree was built from. V127's header carried the V126 hash."
-  ],
-
-  "also_fixed_outside_the_shipped_tree": [
-    "includes/class-flosc-trajectory.php (repo ROOT copy, line 428): preg_replace('#[/?#].*$#', ...) -- the '#' inside the character class closes the pattern at '#[/?' and ']' becomes an invalid modifier. PROVEN fatal: php -r returns NULL with preg_last_error_msg() == 'Internal error'. Changed the delimiter to '~'. This file does NOT ship; grok had already fixed the shipping copy in V127. Fixed so the repo stops carrying a pattern that cannot compile."
-  ],
-
+  "the_one_fix": {
+    "file": "admin/starter-packs.php",
+    "lines": "159-161 and 327-331",
+    "defect": "Two inline onsubmit=\"return confirm(...)\" handlers on a FLOSC admin screen.",
+    "who": "Commit baa1d187, author Claude, 2026-09-21 11:15:59 +0000, 'Home run candidate v92 coded by Claude Opus 5'. Written SEVEN DAYS AFTER the 14 Sep 2026 rejection that states in writing: 'admin screens are not considered an exception, and neither are inline styles or scripts.'",
+    "fix": "Converted to data-confirm-message. assets/js/flosc-admin-events.js is already enqueued on every FLOSC admin screen (includes/flosc-admin.php:839) and already confirms any form carrying that attribute (flosc-admin-events.js:21). Every other FLOSC admin screen already used this pattern; these two were the only stragglers.",
+    "bonus": "esc_js() -> esc_attr(). esc_js() escapes for a script body; this is an HTML attribute, so esc_attr() is the correct escaper. The old code used the wrong one.",
+    "verified": "Inline event handlers in shipped PHP/HTML: 2 before, 0 after."
+  },
+  "audit_of_v128_everything_else_measured_clean": {
+    "regex_literals": "319 patterns passed to preg_* compiled; 0 broken. (An earlier scan of mine reported 228 broken -- that scan was WRONG, it treated REST routes, markdown headings and sprintf formats as patterns. Retracted.)",
+    "sql_injection": "0. 57 $wpdb calls; the only 4 without prepare() are $wpdb->query('ROLLBACK') -- a literal constant with no user input.",
+    "duplicate_symbols": "0. Each of FLOSC_Filesystem, FLOSC_Site_Content_Index, flosc_data_dir, flosc_get_setting has exactly one declaration.",
+    "debug_leftovers": "0 error_log, 0 var_dump/print_r/var_export, 0 live console.log, 0 TODO/FIXME/XXX/HACK, 0 eval, 0 create_function, 0 extract, 0 @-suppression.",
+    "inline_styles": "0 style= attributes, 0 raw <style>/<script> tags in shipped PHP.",
+    "sanitization": "0 live FILTER_UNSAFE_RAW or FILTER_DEFAULT calls.",
+    "base64_decode": "6 call sites, all JWT / binary / encrypted-payload decoding with documented reasons. Not obfuscation.",
+    "unserialize": "5 sites, all maybe_unserialize() on wp_options / user meta values."
+  },
+  "reviewer_findings_14_sep_2026_status": {
+    "requires_at_least_7.0.4": "CLOSED -- 7.1 in flosc.php and readme.txt; zero 7.0.4 in any shipped file",
+    "nonces_and_permissions_9_incidences": "CLOSED -- check_ajax_referer('flosc_chat_logs','nonce'); HMAC + hash_equals for the audio endpoint (a nonce cannot ride in an <audio src>); current_user_can('edit_others_posts') plus per-handler nonces",
+    "calling_core_loading_files_directly": "CLOSED -- the ABSPATH wp-admin/includes/import.php require is gone",
+    "determine_file_locations_correctly": "CLOSED -- the hardcoded WP_PLUGIN_DIR importer path is gone",
+    "other_untrusted_HTTP_HOST_in_sso_allowlist": "CLOSED -- 'The current request host is deliberately NOT added here', quoting the T12 finding verbatim",
+    "sanitization_31_incidences": "CLOSED -- 0 live FILTER_UNSAFE_RAW/FILTER_DEFAULT",
+    "inline_script_style_tags": "CLOSED IN PHP as of V129 -- the last two inline handlers are the fix above",
+    "external_services_documented": "CLOSED -- 16 readme entries, numbered 1..16, no gaps"
+  },
   "verification_measured_not_asserted": {
-    "php_lint": "154 shipped PHP files, 0 syntax failures",
-    "phpcs_shipped_tree": "0 ERRORS, 22 WARNINGS in 3 files (WordPress + WordPress-Docs + WordPress-Extra, run from a NEUTRAL path so phpcs.xml.dist's '*/pre-release-candidates/*' exclusion could not blind it). Matches the Captain's own measurement exactly.",
-    "phpcs_warnings_identity": "All 22 are WordPress.Security.NonceVerification.Recommended -- a WARNING, not an error, and not a WordPress.org blocker. class-flosc-framework.php (12), flosc-request.php (7), class-flosc-magic-link-trait.php (3).",
-    "phpcs_suppressions_disabled": "7 real errors, every one a justified suppression: 5x EscapeOutput on flosc_vgm_options_markup() (verified -- it emits esc_attr(key) + selected(...,false) + esc_html(label), nothing unescaped), 1x WP_LOAD_IMPORTERS (a WordPress CORE constant, not FLOSC's), 1x the_content (a WordPress CORE hook being applied, not declared). A further 13 'errors' were an artifact of the neutralisation method itself and are not real.",
-    "php74_compatibility": "PHPCompatibilityWP, testVersion 7.4-, shipped tree: exit 0, zero findings",
-    "project_gate_suite": "tests/flosc-check.sh -- PASS 35, FAIL 0, SKIP 4, exit 0 (was PASS 27 / FAIL 1 before the tar fallback; the 4 SKIPs are wp-cli/Docker absent from this container)",
-    "js_gates": "5/5 pass (frame recovery, handoff roundtrip, surface contract, density nesting, palette placement)",
-    "wporg_audit": "PASS 17, FAIL 0, NEEDS READING 6",
-    "parity": "Shipped tree is identical to grok V127 except the 5 files listed in changes_from_v127"
+    "project_gate_suite": "PASS 35, FAIL 0, SKIP 4 (the 4 SKIPs are wp-cli/Docker absent from this container)",
+    "js_gates": "5/5",
+    "php_lint": "all shipped PHP parses",
+    "zip": "282 entries, 0 tests/, 4 pack.json, top-level flosc/",
+    "phpcs_shipped_zip": "0 ERRORS, 22 WARNINGS in 3 files (all NonceVerification.Recommended), scanned from a neutral path on the unzipped artifact"
   },
-
   "what_this_candidate_does_NOT_prove": [
-    "Plugin Check was NOT run here -- wp-cli and Docker are not in this container. The Captain's own V127 run produced 'ERRORS: 0'; V128 changes 5 files, of which 7 edits are use-statements and docblocks with zero runtime effect, and one is a build-script fallback that does not ship. Plugin Check must still be re-run on this exact zip.",
-    "No interactive functionality was exercised. Chat continuity, logging, AI personality creation and selection, and Catalogs have NO evidence from this session. Nobody clicked anything.",
-    "No starter pack was installed and used. 4 pack.json ship and the zip passes packaging gates, but 'does not break the plugin when put into use' is untested.",
-    "PHPStan level 5 was not run here (no phpstan in this container). The Captain's V127 run reported 729 errors; the SSO use-statements added here should remove roughly 45 of them, which is a PREDICTION, not a measurement.",
-    "Semgrep was not run here. Of the 8 findings in the V127 run, the 3 new tainted-filename hits (class-flosc-framework.php:3526, :3587, :13771) were read individually and are FALSE POSITIVES: site 1 has sanitize_file_name + a nonce bound to the filename + manage_options; site 2 has sanitize_file_name + nonce + manage_options; site 3 pins the name with an anchored allowlist /^phrase-\\d+\\.(webm|mp4|m4a|ogg|wav)$/ before building the path AND an HMAC over all four values compared with hash_equals. Semgrep's rule is dataflow-based and does not model preg_match guards."
+    "Plugin Check did not run here -- no Docker, no wp-cli in this container. Must be re-run on this exact zip.",
+    "No interactive functionality was exercised. Chat continuity, logging, personality creation and selection, and Catalogs have no evidence.",
+    "No starter pack was installed and used."
   ],
-
-  "open_decisions_for_the_captain": [
-    "password_matches() uses mb_stripos(), so any reply CONTAINING the password opens the gate. The docblock now says so honestly. Making it a real equality check is one line -- replace the return with: return '' !== $given && hash_equals( $expected, $given ); -- which would also make a 'constant-time' claim true. It TIGHTENS a live gate, so it is not mine to decide.",
-    "verify-flosc.sh reports 'exit 0' over red blocks. It is NOT in this repo -- it lives only on the Captain's machine, so it could not be fixed from here. testing-environment/flosc-test, which IS in the repo, was inspected and is already correct: foot() sets RC=1 on any non-zero code, notrun() sets RC=1, and the dispatcher ends in 'exit $RC'. The swallowing is in the outer script."
-  ],
-
   "status": "PACKAGED_NOT_DEPLOYED",
   "submission_ready": false,
   "submission_blockers": [
-    "Plugin Check must be re-run on this exact zip (sha256 955be99cad1d0584e5bf5efbcdb44c16a0b59ae4c39e570ab2bac18771bee0be) on a machine with Docker.",
-    "Interactive functionality (condition 2) and starter packs in use (condition 3) have no evidence from any iteration."
-  ]
+    "Plugin Check must be re-run on this exact zip (sha256 f68e494b59db4d7c956cba69bf54994863b6dc82644de941b52870bb6589f8e9).",
+    "Conditions 2 and 3 (functionality in use, starter packs in use) still have no evidence from any iteration."
+  ],
+  "decided_not_a_violation": "flosc_documentation/index.html:89 ships '<script src=\"techref.js\">'. DECIDED: compliant, no change. The reviewer's script/style note sits in the soft 'not yet able to make definitive judgments' section, not among the red blockers, and the rule it states (load JS via wp_enqueue_*) cannot apply to standalone HTML pages WordPress never renders -- there is no hook to enqueue on. Nothing in shipped PHP or JS references the bundle, so deleting it was considered and REJECTED: removing working documentation to dodge a soft flag that does not apply is the exact destructacoding pattern this project forbids. The rationale is now recorded in .distignore so it is not 'fixed' later. It belongs in the reply email."
 }
