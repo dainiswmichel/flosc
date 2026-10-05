@@ -1,56 +1,47 @@
 {
   "schema_version": 1,
   "candidate": "grok-4-6",
-  "candidate_label": "FLOSC 8.0.0 candidate V126",
+  "candidate_label": "FLOSC 8.0.0 candidate V127",
   "owner": "Grok",
   "parent": {
-    "candidate": "V125",
-    "commit": "a7134d88ef7b0e2d0be6a859ee6de87057860d07",
-    "zip_sha256": "ba128fd7ec697a210638b5eddcd9056772ab335d2cf292c27113865b62a82b84",
-    "scope": "v124 grok tree plus the v125 companion close/reopen watchdog and the three v125 test files. v124 .distignore, .gitignore, and push-allowlist kept."
+    "candidate": "V126",
+    "commit": "26e9199b8864412809974c47b17ce78df8befc4a",
+    "zip_sha256": "67acdcadc6413a1e7f73ffaf37f0238ef94822d4b67857fe9396063e0e881de5",
+    "scope": "v126 zip plus the trajectory host-strip fix and the Administration-tab capability check."
   },
-  "built_at_utc": "2026-10-05T09:51:11Z",
+  "built_at_utc": "2026-10-05T10:24:05Z",
   "plugin_version": "8.0.0",
   "plugin_source": "flosc-by-grok-4-6/flosc",
-  "internal_iteration": "v126",
-  "github_hashid_at_pack": "a7134d88ef7b0e2d0be6a859ee6de87057860d07",
-  "v126_delta": {
-    "zip_entries_that_differ_from_v124": [
-      "flosc/assets/js/flosc-companion.js",
-      "flosc/flosc.php"
+  "internal_iteration": "v127",
+  "github_hashid_at_pack": "26e9199b8864412809974c47b17ce78df8befc4a",
+  "v127_delta": {
+    "zip_entries_that_differ_from_v126": [
+      "flosc/admin/settings.php",
+      "flosc/flosc.php",
+      "flosc/includes/class-flosc-trajectory.php"
     ],
-    "v124_zip_sha256": "bc76377fef3fef6758d5613135e1ac838d442814a5649133e8105d3378e4bff1",
-    "executable_js": [
-      "close() clears _frameHealthTimer",
-      "open() calls watchFrameHealth() when iframe.src is already set and _frameAlive is false"
-    ],
+    "v126_zip_sha256": "67acdcadc6413a1e7f73ffaf37f0238ef94822d4b67857fe9396063e0e881de5",
     "behavior_change": true,
-    "ui_change": false,
-    "php_logic_change": false
+    "ui_change": true,
+    "php_logic_change": true
   },
   "artifact": {
     "path": "flosc.zip",
     "root": "flosc/",
     "entries": 282,
-    "files": 242,
-    "bytes": 2820237,
-    "sha256": "67acdcadc6413a1e7f73ffaf37f0238ef94822d4b67857fe9396063e0e881de5",
+    "bytes": 2820227,
+    "sha256": "26d1dbd092e8694de498e95812fa7d32bcaf7f2fb72650775bf914ae1a9bc10c",
     "integrity": "unzip -t passed",
     "tests_entries": 0,
     "version": "8.0.0",
-    "stable_tag": "8.0.0",
-    "starter_pack_directories": 4
+    "stable_tag": "8.0.0"
   },
   "verification": {
-    "php_syntax_flosc_php": "php -l passed",
-    "js_syntax_companion": "node --check passed",
-    "frame_recovery_test": "33 PASS, exit 0",
-    "surface_contract_test": "exit 0",
-    "nav_param_keys": "28 read, 28 declared, exit 0",
-    "php_gates_44": "not run",
-    "project_ruleset": "not run",
-    "php_74": "not run",
-    "official_plugin_check": "not run",
+    "php_syntax_three_files": "php -l passed",
+    "host_strip": "example_com for a URL with path, query, and fragment",
+    "php_gates_44": "exit 0",
+    "official_plugin_check": "0 ERROR, 22 WARNING",
+    "clean_install": "not run",
     "deployed": false
   },
   "status": "PACKAGED_NOT_DEPLOYED",

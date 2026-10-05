@@ -10,6 +10,7 @@ tests/
 TESTING-ENVIRONMENT.md
 testing-bench.sh
 wordpress-plugin-dev-environment.md
+testing-environment/
 
 # Deployment candidates: whole plugin trees kept for comparison, not shipped.
 pre-release-candidates/

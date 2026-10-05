@@ -320,7 +320,7 @@ $flosc_selected_flow_id = sanitize_key( pathinfo( $flosc_selected_ivr, PATHINFO_
 if ( ! flosc_flows()->can_access_flow_admin( $flosc_selected_flow_id ) ) {
 	wp_die( esc_html__( 'You do not have access to this FLOSC flow.', 'flosc' ) );
 }
-$flosc_can_view_administration = flosc_flows()->can_access_flow_admin( $flosc_selected_flow_id );
+$flosc_can_view_administration = current_user_can( 'manage_options' );
 
 // Settings key for this flow.
 $flosc_settings_key = flosc_resolve_flow_option_key_for_ivr( $flosc_selected_ivr );
@@ -425,10 +425,9 @@ $flosc_post   = ( 'POST' === $flosc_method ) ? wp_unslash( $_POST ) : array();
 // redirect_to_settings_tab() sets flosc_forced_tab when headers are already
 // sent and it cannot redirect. It takes precedence over the URL because it is
 // the tab the admin actually asked for.
-$flosc_active_tab                = isset( $GLOBALS['flosc_forced_tab'] )
+$flosc_active_tab = isset( $GLOBALS['flosc_forced_tab'] )
 	? sanitize_key( (string) $GLOBALS['flosc_forced_tab'] )
 	: ( isset( $flosc_get['tab'] ) ? sanitize_text_field( $flosc_get['tab'] ) : 'identity' );
-$flosc_can_manage_administration = current_user_can( 'manage_options' );
 if ( 'administration' === $flosc_active_tab && ! $flosc_can_view_administration ) {
 	$flosc_active_tab = 'identity';
 }
