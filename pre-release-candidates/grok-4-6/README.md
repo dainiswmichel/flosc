@@ -1,30 +1,30 @@
-# FLOSC 8.0.0 — Grok candidate V127
+# FLOSC 8.0.0 — Grok candidate V130
 
-Plugin header stays 8.0.0. This folder is candidate V127.
+Plugin header stays 8.0.0. This folder is candidate V130.
 
-V127 is the v126 tree plus the two defects the v126 verification's PHPStan section reported. Parent of this commit is v126 `26e9199b8864412809974c47b17ce78df8befc4a`. That hash is the parent commit. It is not this commit.
+V130 is the v129 tree plus the WordPress.org Ajax-endpoint finding. Parent of this commit is `ccfc92f7ed1f62ca980044ca1572028574f27874`. That hash is the parent commit. It is not this commit.
 
-Shipped difference from the v126 zip is three files:
+Shipped difference from the v129 zip is three files:
 
-- `flosc/includes/class-flosc-trajectory.php` — `flow_from_deployment()` strips the path, query, and fragment with `~[/?#].*$~`. The v126 pattern `#[/?#].*$#` ended at the `#` inside the character class, so `preg_replace()` returned `NULL`.
-- `flosc/admin/settings.php` — `$flosc_can_view_administration` is `current_user_can( 'manage_options' )`. The v126 assignment repeated `can_access_flow_admin()` after that call had already run `wp_die()`, so the Administration tab never hid.
-- `flosc/flosc.php` — `Internal Iteration: v127` and `Github HashID: 26e9199b8864412809974c47b17ce78df8befc4a`.
+- `flosc/admin/flosc-app.php` — on a flow custom domain the Ajax URL keeps the path from `admin_url( 'admin-ajax.php' )` and changes only the origin. The logout URL rebuild is unchanged.
+- `flosc/assets/js/flosc-app.js` — logout reads `this.config.ajaxUrl`. An empty value uses `logoutUrl` from `wp_logout_url()`.
+- `flosc/flosc.php` — `Internal Iteration: v130` and `Github HashID: ccfc92f7ed1f62ca980044ca1572028574f27874`.
 
-`.distignore` keeps the v126 bench excludes and also excludes `testing-environment/`. `tests/` is not in the zip.
+`Requires at least` stays 7.1. `tests/` is not in the zip.
 
 ## Measured on this tree before packing
 
-`php -l` on the three changed PHP files reported no syntax errors. The host strip returns `example_com` for `https://Example.COM/path?q=1#x`, `example.com`, and `www.example.com/chat`. The 44 PHP gates exited 0.
+`php -l` on `admin/flosc-app.php` and `flosc.php` reported no syntax errors. `node --check` on `assets/js/flosc-app.js` passed. The shipped tree has zero `/wp-admin/admin-ajax.php` literals. The zip has the same 282 entries as v129, and the only differing entries are the three files above. `unzip -t` passed.
 
-Plugin Check on this zip recorded 0 ERROR rows and 22 WARNING rows. The clean install was not run.
+Plugin Check on this zip was not run.
 
 ## Exact artifact
 
 ```text
-26d1dbd092e8694de498e95812fa7d32bcaf7f2fb72650775bf914ae1a9bc10c  flosc.zip
+eab79e3ca93f2a457fdd7a0800a7ad10d233aa565914fa4a502c52cbbc97c95e  flosc.zip
 ```
 
-282 entries, one `flosc/` root, `tests/` absent, `unzip -t` clean. 2,820,227 bytes. Against the v126 zip, the only differing entries are the three files above. `$flosc_active_tab` uses one space before `=`.
+282 entries, one `flosc/` root, `tests/` absent. 2,820,639 bytes.
 
 ```sh
 shasum -a 256 -c SHA256SUMS

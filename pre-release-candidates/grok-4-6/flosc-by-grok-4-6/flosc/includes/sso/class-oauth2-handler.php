@@ -12,6 +12,9 @@
 
 namespace FLOSC\SSO;
 
+use WP_REST_Request;
+use WP_REST_Response;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }

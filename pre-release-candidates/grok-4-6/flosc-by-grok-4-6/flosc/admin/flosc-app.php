@@ -1098,7 +1098,14 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 			$flosc_flow_domain  = rtrim( $flosc_flow_domain, '/' );
 			if ( $flosc_flow_domain === $flosc_request_host || 'www.' . $flosc_flow_domain === $flosc_request_host ) {
 				$flosc_same_host_base = ( is_ssl() ? 'https://' : 'http://' ) . $flosc_request_host;
-				$flosc_ajax_url       = $flosc_same_host_base . '/wp-admin/admin-ajax.php';
+				// Path comes from admin_url(). Only the origin moves onto this host.
+				$flosc_ajax_parts = wp_parse_url( $flosc_ajax_url );
+				if ( ! empty( $flosc_ajax_parts['path'] ) ) {
+					$flosc_ajax_url = $flosc_same_host_base . $flosc_ajax_parts['path'];
+					if ( ! empty( $flosc_ajax_parts['query'] ) ) {
+						$flosc_ajax_url .= '?' . $flosc_ajax_parts['query'];
+					}
+				}
 				$flosc_logout_parts   = wp_parse_url( html_entity_decode( $flosc_logout_url ) );
 				if ( ! empty( $flosc_logout_parts['path'] ) ) {
 					$flosc_logout_url = $flosc_same_host_base . $flosc_logout_parts['path'];

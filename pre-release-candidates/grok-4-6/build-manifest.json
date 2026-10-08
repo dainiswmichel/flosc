@@ -1,50 +1,46 @@
 {
   "schema_version": 1,
   "candidate": "grok-4-6",
-  "candidate_label": "FLOSC 8.0.0 candidate V127",
+  "candidate_label": "FLOSC 8.0.0 candidate V130",
   "owner": "Grok",
   "parent": {
-    "candidate": "V126",
-    "commit": "26e9199b8864412809974c47b17ce78df8befc4a",
-    "zip_sha256": "67acdcadc6413a1e7f73ffaf37f0238ef94822d4b67857fe9396063e0e881de5",
-    "scope": "v126 zip plus the trajectory host-strip fix and the Administration-tab capability check."
+    "candidate": "V129",
+    "commit": "ccfc92f7ed1f62ca980044ca1572028574f27874",
+    "zip_sha256": "f68e494b59db4d7c956cba69bf54994863b6dc82644de941b52870bb6589f8e9",
+    "scope": "v129 zip plus the admin-ajax path taken from admin_url()."
   },
-  "built_at_utc": "2026-10-05T10:24:05Z",
+  "built_at_utc": "2026-10-08T11:06:14Z",
   "plugin_version": "8.0.0",
   "plugin_source": "flosc-by-grok-4-6/flosc",
-  "internal_iteration": "v127",
-  "github_hashid_at_pack": "26e9199b8864412809974c47b17ce78df8befc4a",
-  "v127_delta": {
-    "zip_entries_that_differ_from_v126": [
-      "flosc/admin/settings.php",
-      "flosc/flosc.php",
-      "flosc/includes/class-flosc-trajectory.php"
+  "internal_iteration": "v130",
+  "github_hashid_at_pack": "ccfc92f7ed1f62ca980044ca1572028574f27874",
+  "v130_delta": {
+    "zip_entries_that_differ_from_v129": [
+      "flosc/admin/flosc-app.php",
+      "flosc/assets/js/flosc-app.js",
+      "flosc/flosc.php"
     ],
-    "v126_zip_sha256": "67acdcadc6413a1e7f73ffaf37f0238ef94822d4b67857fe9396063e0e881de5",
-    "behavior_change": true,
-    "ui_change": true,
+    "v129_zip_sha256": "f68e494b59db4d7c956cba69bf54994863b6dc82644de941b52870bb6589f8e9",
+    "behavior_change": false,
+    "ui_change": false,
     "php_logic_change": true
   },
   "artifact": {
     "path": "flosc.zip",
     "root": "flosc/",
     "entries": 282,
-    "bytes": 2820227,
-    "sha256": "26d1dbd092e8694de498e95812fa7d32bcaf7f2fb72650775bf914ae1a9bc10c",
+    "bytes": 2820639,
+    "sha256": "eab79e3ca93f2a457fdd7a0800a7ad10d233aa565914fa4a502c52cbbc97c95e",
     "integrity": "unzip -t passed",
     "tests_entries": 0,
     "version": "8.0.0",
-    "stable_tag": "8.0.0"
+    "stable_tag": "8.0.0",
+    "requires_at_least": "7.1"
   },
   "verification": {
-    "php_syntax_three_files": "php -l passed",
-    "host_strip": "example_com for a URL with path, query, and fragment",
-    "php_gates_44": "exit 0",
-    "official_plugin_check": "0 ERROR, 22 WARNING",
-    "clean_install": "not run",
-    "deployed": false
-  },
-  "status": "PACKAGED_NOT_DEPLOYED",
-  "live_deployed": false,
-  "submission_ready": false
+    "php_syntax": "php -l passed on admin/flosc-app.php and flosc.php",
+    "js_syntax": "node --check passed on assets/js/flosc-app.js",
+    "shipped_admin_ajax_literals": 0,
+    "plugin_check": "not run"
+  }
 }
