@@ -1319,8 +1319,6 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 					),
 					'companionStateKey'              => $flosc_companion_state_key,
 					'companionStateStorage'          => $flosc_companion_state_storage,
-					'ajaxUrl'                        => $flosc_ajax_url,
-					'logoutNonce'                    => wp_create_nonce( 'flosc_logout' ),
 					'logoutFarewell'                 => flosc_get_setting( 'logout_farewell_message', '' ),
 					'profileUrl'                     => ( $flosc_user && function_exists( 'bp_core_get_user_domain' ) ) ? bp_core_get_user_domain( $flosc_user->ID ) : admin_url( 'profile.php' ),
 					'dashboardUrl'                   => admin_url(),
@@ -1882,6 +1880,18 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 		;
 		window.FLOSC_USER = <?php echo wp_json_encode( $user_data ); ?>;
 	<?php wp_add_inline_script( 'flosc-app', ob_get_clean(), 'before' ); ?>
+
+	<?php
+	// After the custom-domain origin swap. wp_enqueue_scripts runs before that host is known.
+	wp_localize_script(
+		'flosc-app',
+		'floscAjax',
+		array(
+			'ajaxUrl' => esc_url_raw( $flosc_ajax_url ),
+			'nonce'   => wp_create_nonce( 'flosc_logout' ),
+		)
+	);
+	?>
 
 	<?php wp_footer(); ?>
 </body>

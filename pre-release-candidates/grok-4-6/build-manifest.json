@@ -4,23 +4,22 @@
   "candidate_label": "FLOSC 8.0.0 candidate V130",
   "owner": "Grok",
   "parent": {
-    "candidate": "V129",
-    "commit": "ccfc92f7ed1f62ca980044ca1572028574f27874",
-    "zip_sha256": "f68e494b59db4d7c956cba69bf54994863b6dc82644de941b52870bb6589f8e9",
-    "scope": "v129 zip plus the admin-ajax path taken from admin_url()."
+    "candidate": "V130",
+    "commit": "0e6380e232f200e576c0cb23a590dcf39a5fb368",
+    "zip_sha256": "eab79e3ca93f2a457fdd7a0800a7ad10d233aa565914fa4a502c52cbbc97c95e",
+    "scope": "v130 zip plus wp_localize_script for the resolved admin-ajax URL and logout nonce."
   },
-  "built_at_utc": "2026-10-08T11:06:14Z",
+  "built_at_utc": "2026-10-08T11:40:00Z",
   "plugin_version": "8.0.0",
   "plugin_source": "flosc-by-grok-4-6/flosc",
   "internal_iteration": "v130",
-  "github_hashid_at_pack": "ccfc92f7ed1f62ca980044ca1572028574f27874",
+  "github_hashid_at_pack": "0e6380e232f200e576c0cb23a590dcf39a5fb368",
   "v130_delta": {
-    "zip_entries_that_differ_from_v129": [
+    "zip_entries_that_differ_from_previous_v130": [
       "flosc/admin/flosc-app.php",
       "flosc/assets/js/flosc-app.js",
       "flosc/flosc.php"
     ],
-    "v129_zip_sha256": "f68e494b59db4d7c956cba69bf54994863b6dc82644de941b52870bb6589f8e9",
     "behavior_change": false,
     "ui_change": false,
     "php_logic_change": true
@@ -29,8 +28,8 @@
     "path": "flosc.zip",
     "root": "flosc/",
     "entries": 282,
-    "bytes": 2820639,
-    "sha256": "eab79e3ca93f2a457fdd7a0800a7ad10d233aa565914fa4a502c52cbbc97c95e",
+    "bytes": 2820766,
+    "sha256": "94e246c036e3506757b096eb5ced9a15440e2514b15dac232ffd81c243f52463",
     "integrity": "unzip -t passed",
     "tests_entries": 0,
     "version": "8.0.0",
@@ -41,6 +40,7 @@
     "php_syntax": "php -l passed on admin/flosc-app.php and flosc.php",
     "js_syntax": "node --check passed on assets/js/flosc-app.js",
     "shipped_admin_ajax_literals": 0,
+    "wp_localize_script": "flosc-app / floscAjax",
     "plugin_check": "not run"
   }
 }
