@@ -157,12 +157,18 @@ body.flosc-companion-embed img.landing-icon {
 	object-fit: contain !important;
 }
 ';
-		wp_add_inline_style( 'flosc-layout', $flosc_companion_critical_css );
+		add_action(
+			'wp_enqueue_scripts',
+			static function () use ( $flosc_companion_critical_css ) {
+				wp_add_inline_style( 'flosc-layout', $flosc_companion_critical_css );
+			},
+			10000
+		);
 	}
 	?>
 	
 	<!-- Dynamic Primary Color -->
-	<?php // §12: dynamic CSS vars attached to the enqueued flosc-chat handle (prints in <head> via wp_head) instead of an inline <style> tag. ?>
+	<?php // §12: dynamic CSS vars attach to the enqueued flosc-layout handle on wp_enqueue_scripts, after that handle is queued. ?>
 	<?php ob_start(); ?>
 		:root {
 			--flosc-primary: <?php echo esc_attr( $identity['primary_color'] ); ?>;
@@ -180,7 +186,16 @@ body.flosc-companion-embed img.landing-icon {
 			--flosc-avatar-radius: <?php echo esc_attr( $flosc_avatar_radius ); ?>;
 		}
 	<?php // App enqueues flosc-layout (not flosc-chat); attach vars to the live handle. ?>
-	<?php wp_add_inline_style( 'flosc-layout', ob_get_clean() ); ?>
+	<?php
+	$flosc_dynamic_css = ob_get_clean();
+	add_action(
+		'wp_enqueue_scripts',
+		static function () use ( $flosc_dynamic_css ) {
+			wp_add_inline_style( 'flosc-layout', $flosc_dynamic_css );
+		},
+		10000
+	);
+	?>
 
 	<!-- Markdown parser fallback for IVR rendering when a parser is not already loaded. -->
 	<?php // §12: attached to flosc-app as a 'before' inline script so it still defines window.marked prior to flosc-app.js. ?>
@@ -190,7 +205,16 @@ body.flosc-companion-embed img.landing-icon {
 				return String(text || '');
 			}
 		};
-	<?php wp_add_inline_script( 'flosc-app', ob_get_clean(), 'before' ); ?>
+	<?php
+	$flosc_marked_shim = ob_get_clean();
+	add_action(
+		'wp_enqueue_scripts',
+		static function () use ( $flosc_marked_shim ) {
+			wp_add_inline_script( 'flosc-app', $flosc_marked_shim, 'before' );
+		},
+		10000
+	);
+	?>
 
 	<?php wp_head(); ?>
 </head>

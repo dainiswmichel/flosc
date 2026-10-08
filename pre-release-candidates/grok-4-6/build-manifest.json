@@ -1,34 +1,38 @@
 {
   "schema_version": 1,
   "candidate": "grok-4-6",
-  "candidate_label": "FLOSC 8.0.0 candidate V131",
+  "candidate_label": "FLOSC 8.0.0 candidate V132",
   "owner": "Grok",
   "parent": {
-    "candidate": "V130",
-    "commit": "9d5edc96da237c9628a0b91940818d02c32bafa0",
-    "zip_sha256": "94e246c036e3506757b096eb5ced9a15440e2514b15dac232ffd81c243f52463",
-    "scope": "V130 localize tree. V131 changes the iteration stamp only."
+    "candidate": "V131",
+    "commit": "9a90912e1d8f897e3685f736a45f97b56774062b",
+    "zip_sha256": "7120140ae03565f9cb954944fd202eac90ccfee7dbd58cfb40e912d28eec8d1e",
+    "scope": "V131 tree plus the enqueue comment reword and priority-10000 inline attach."
   },
-  "built_at_utc": "2026-10-08T11:16:34Z",
+  "built_at_utc": "2026-10-08T12:40:37Z",
   "plugin_version": "8.0.0",
   "plugin_source": "flosc-by-grok-4-6/flosc",
-  "internal_iteration": "v131",
-  "github_hashid_at_pack": "9d5edc96da237c9628a0b91940818d02c32bafa0",
-  "v131_delta": {
-    "zip_entries_that_differ_from_v130": [
-      "flosc/flosc.php"
+  "internal_iteration": "v132",
+  "github_hashid_at_pack": "9a90912e1d8f897e3685f736a45f97b56774062b",
+  "v132_delta": {
+    "zip_entries_that_differ_from_v131": [
+      "flosc/admin/email.php",
+      "flosc/admin/flosc-app.php",
+      "flosc/flosc.php",
+      "flosc/includes/companion-mode/class-flosc-companion-widget.php",
+      "flosc/includes/flosc-admin.php",
+      "flosc/includes/sso/class-sso-manager.php"
     ],
-    "ajax_code_changed": false,
     "behavior_change": false,
     "ui_change": false,
-    "php_logic_change": false
+    "php_logic_change": true
   },
   "artifact": {
     "path": "flosc.zip",
     "root": "flosc/",
     "entries": 282,
-    "bytes": 2820764,
-    "sha256": "7120140ae03565f9cb954944fd202eac90ccfee7dbd58cfb40e912d28eec8d1e",
+    "bytes": 2820800,
+    "sha256": "7bc4354b217ba733f1e12dfabbe27cb347e4780f6bd3257b618bfeacc67643cd",
     "integrity": "unzip -t passed",
     "tests_entries": 0,
     "version": "8.0.0",
@@ -36,9 +40,10 @@
     "requires_at_least": "7.1"
   },
   "verification": {
-    "php_syntax": "php -l passed on flosc.php",
-    "shipped_admin_ajax_literals": 0,
-    "wp_localize_script": "flosc-app / floscAjax",
-    "plugin_check": "not run"
+    "php_syntax": "php -l passed on the six edited PHP files",
+    "phpcs": "WordPress, WordPress-Docs, WordPress-Extra, PHPCompatibilityWP 7.4: no errors, no warnings",
+    "shipped_style_script_tokens": 0,
+    "plugin_check": "not run",
+    "page_load": "not run"
   }
 }
