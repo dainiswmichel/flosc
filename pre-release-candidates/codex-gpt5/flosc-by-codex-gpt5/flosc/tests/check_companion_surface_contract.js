@@ -43,11 +43,44 @@ ok(app.includes("type: 'flosc_companion_navigate_top'"),
     'the app emits the top-navigation message');
 ok(companion.includes("data.type === 'flosc_companion_navigate_top'"),
     'the companion receives the top-navigation message');
-ok(companion.includes('this.iframe.hidden = true;')
-    && companion.includes('self.iframe.hidden = false;'),
-    'the iframe remains hidden until the FLOSC app announces readiness');
-ok(companion.includes('if (self._frameRecovered) {\n                    self.showFrameFailure();'),
-    'a failed retry closes the frame instead of displaying a website or error page');
+ok(app.includes('this.bindCompanionHostLinks();')
+    && app.includes('self.leavePanel(url.toString(), { keepCompanion: true });'),
+    'a same-site chat link loads in the open companion tab');
+ok(app.includes("if (url.origin !== window.location.origin)")
+    && app.includes('anchor.hasAttribute(\'data-action\')'),
+    'off-site links and in-chat actions are not taken over');
+ok(companion.includes('opts.keepCompanion && target.origin === window.location.origin')
+    && companion.includes("target.searchParams.set('flosc_companion_handoff', '1')")
+    && companion.includes("target.searchParams.set('flosc_flow_id', flowId)"),
+    'the parent keeps the same flow panel open over the linked page');
+const renderStart = companion.indexOf('render: function()');
+const renderEnd = companion.indexOf('bindEvents: function()', renderStart);
+const renderFn = companion.slice(renderStart, renderEnd);
+ok(renderFn.includes("setAttribute('loading', 'lazy')")
+    && !renderFn.includes('iframe.hidden'),
+    'the chat frame is visible when the panel opens');
+
+// showFrameFailure() existed, was correct, and had no caller. The suite passed
+// anyway, because every assertion asked whether a mechanism was PRESENT and
+// none asked whether it RUNS. A definition nothing reaches is not a safeguard.
+const failureCalls = (companion.match(/\bself\.showFrameFailure\(\)|\bthis\.showFrameFailure\(\)/g) || []).length;
+ok(failureCalls > 0,
+    'showFrameFailure() is reached, not merely defined');
+
+const watchStart = companion.indexOf('watchFrameHealth: function()');
+const watchEnd = companion.indexOf('clearFrameFailure: function()', watchStart);
+const watchFn = companion.slice(watchStart, watchEnd);
+ok(watchStart !== -1 && watchEnd > watchStart
+    && watchFn.includes('self.showFrameFailure();')
+    && watchFn.includes('self.watchFrameHealth();'),
+    'a second silence closes the frame instead of leaving a website in the panel');
+ok(watchFn.indexOf('this._frameAlive || this._frameFailed') !== -1,
+    'the watch re-arms after the retry rather than ending at it');
+const openStart = companion.indexOf('open: function(opts)');
+const openEnd = companion.indexOf('close: function()', openStart);
+const openFn = companion.slice(openStart, openEnd);
+ok(!openFn.includes('iframe.hidden'),
+    'opening the panel does not hide the chat frame');
 
 const companionIframeUrlStart = companion.indexOf('buildIframeUrl: function()');
 const companionIframeUrlEnd = companion.indexOf('normalizeUrl: function(value)', companionIframeUrlStart);

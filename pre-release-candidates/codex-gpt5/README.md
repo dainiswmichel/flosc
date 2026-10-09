@@ -1,84 +1,96 @@
-# FLOSC 8.0.0 — Codex candidate V116
+# FLOSC 8.0.0 — Codex candidate V133
 
-Codex owns this candidate end-to-end: implementation, packaging, publication,
-deployment, and verification. Claude and Grok did not implement V116.
+V133 starts from the exact Grok V132 candidate at commit
+`0a5ac0935d8c5971e2736ded20327ede76f68569`. The plugin version and stable tag
+remain 8.0.0. The internal iteration is V133, and the plugin header records the
+V132 parent commit as its GitHub HashID.
 
-V116 is V115 plus one bounded handoff correction in the existing companion
-implementation. It preserves the working full-page chat, companion UI,
-navigation, personality, continuity, routing, logging, and V108 content edits.
+## Remediation contract
 
-## Runtime delta from V115
+The existing **Include influences** checkbox owns the provider boundary for
+personality influence material. No second URL-only checkbox was added.
 
-- `assets/js/flosc-companion.js`: snapshot `flosc_handoff_ref=1` before the
-  outer hub URL is cleaned, forward it to the inner `/chat/` iframe, then
-  remove the consumed marker from the hub address bar.
+- Checked: active influence-card character notes, works, citation labels, and
+  citation URLs compile into `ai_base_prompt` and are sent as prompt text to
+  the floscAdmin's selected AI provider.
+- Unchecked: those materials remain visible in the Personality Builder and
+  remain in the workshop/design artifacts, but are absent from
+  `ai_base_prompt` and are not sent to the provider.
+- The active card's personality instruction remains part of the personality in
+  both states.
+- FLOSC does not fetch the cited websites or transmit WordPress, profile,
+  visitor, or conversation data to them.
+- The checkbox value is now persisted in `workshop_json` and restored on load.
 
-The runtime delta is one shipped JavaScript file, +13/−1. No PHP, CSS,
-template, settings, navigation target, or visible UI was changed.
+The visible builder explanation, administration documentation, and
+`readme.txt` now describe that behavior directly. The stale “never compiles”
+character-note label was corrected.
 
-## What V116 repairs
+## Exact V132 → V133 source delta
 
-The full-page chat already parked a visitor transcript in same-origin
-`sessionStorage` before navigating to the configured companion hub. Its hub URL
-carried `flosc_handoff_ref=1`, but the companion shell failed to pass that
-marker into its inner `/chat/` iframe. The iframe therefore opened as a new,
-empty visitor. Because companion mode intentionally hides the empty landing
-state, the panel appeared blank.
+Six source entries differ:
 
-The outer page after collapse is expected to be the configured homepage URL,
-`https://dainis.net/`. The visible “Blog” heading is content/theme output at
-that URL; it is not the FLOSC setting and V116 does not alter it. The
-companion's inner frame must still load the FLOSC `/chat/` app with the same
-conversation. V116 restores that missing connection. The reverse
-companion-to-full-page path remains intact and is covered by the round-trip
-test.
+1. `flosc.php` — V133 release stamp and V132 parent hash.
+2. `assets/js/flosc-personality-builder.js` — provider-boundary gate,
+   persistence, and matching UI wording.
+3. `assets/personality-builder/flosc-personality-builder-markup.php` — concise
+   behavior disclosure beside the checkbox.
+4. `admin/docs/part3-ref-personality-profile.php` — complete influence and
+   citation behavior documentation.
+5. `readme.txt` — citation/reference disclosure for WordPress.org review.
+6. `tests/check_personality_influence_boundary.js` — regression coverage; it
+   is source-only and is intentionally excluded from the distribution ZIP.
+
+The built ZIP differs from V132 in exactly the first five shipped files.
+
+## Verification
+
+- PHP functional checks: 44/44 passed.
+- JavaScript checks: 6/6 passed.
+- Influence-boundary regression assertions: 18/18 passed on V133; the same
+  test detects all five original failures on untouched V132.
+- PHP syntax: 200/200 source files passed.
+- JavaScript syntax: 15/15 source files passed.
+- Changed PHP: WordPress, WordPress-Docs, WordPress-Extra, and
+  PHPCompatibilityWP 7.4 reported zero findings.
+- ZIP integrity: passed; one `flosc/` root, 282 entries, 242 files, no tests.
+- V133 ZIP gate results are identical to V132: both report the same inherited
+  13 security errors, 22 warnings, two bare-suppression prose matches, four
+  `HTTP_HOST` matches, two filter-token matches, and unavailable Plugin Check.
+  V133 introduces no gate regression, but the whole plugin is not represented
+  as WordPress.org submission-ready.
 
 ## Exact artifact
 
-The release artifact is `flosc.zip`:
-
 ```text
-6ff0788de10dcde8245f80b457742910910cad8e031b8008b87e026ab87a7002  flosc.zip
+718d9b1093d07c1d12f276b378a5b57449c46917110e97bf3ff45dd507654fe8  flosc.zip
 ```
 
-It contains 282 entries / 242 files under one `flosc/` root and passes
-`unzip -t`. The plugin version remains 8.0.0.
+The canonical 242-file runtime manifest SHA-256 is:
 
-## Verification completed before publication
-
-- FLOSC gates: 44/44 PHP and 4/4 JavaScript passed.
-- PHP lint: 200/200 files clean.
-- Companion surface contract: 21/21 assertions passed.
-- Actual-method handoff test: 5/5 assertions passed, covering full-page to
-  companion and companion to full-page visitor continuity.
-- Full extracted ZIP, WordPress Coding Standards: 0 errors and 22 warnings.
-  The warnings are the existing nonce-verification recommendations in three
-  files; none is hidden or waived.
-- PHPCompatibilityWP at the declared PHP 7.4 floor: 0 findings.
-- Official Plugin Check 2.1.0, including experimental checks, ran against the
-  exact mounted ZIP: exit 0, 0 errors, the same 22 nonce recommendations.
-- The V115 disposable-WordPress routing, starter-pack, personality, and PHP
-  runtime evidence remains applicable because V116 changes only the companion
-  JavaScript. The exact V116 ZIP was separately mounted in WordPress for
-  checksum and official Plugin Check verification.
-
-The exact artifact contains 282 entries / 242 files under one `flosc/` root;
-`unzip -t` passes. Its canonical 242-file tree hash is
-`e3ce48eb8b91671642f23d14272963dbfad648df346264e3663b3f1428d271ac`.
+```text
+082896dbfa28341564c39e3799f3f642e0e0706ef472fba0f975eeead7bddfda
+```
 
 ## Live deployment
 
-The exact V116 artifact is deployed and active on `https://dainis.net`. The
-live 242-file canonical tree hash matches the extracted ZIP. The publicly
-served companion JavaScript also matches the packaged file. `/chat/` returned
-HTTP 200 with the FLOSC app and chat-input markup; the configured homepage
-returned HTTP 200 with the companion asset, `/chat/` iframe URL, and Hybrid
-mode (`both`). No PHP debug log was created. No additional rollback archive or
-deployment ZIP was retained on ChemiCloud.
+The exact V133 ZIP payload is deployed and active on `https://dainis.net`.
+The live 242-file manifest matches the extracted ZIP with zero differences.
+The pre-deployment V129 plugin is retained outside the webroot at:
 
-Automated verification cannot replace the final visible round trip. No
-controllable browser was exposed to this Codex session, so Dainis's Safari
-confirmation of full page → companion → full page remains outstanding.
+```text
+/home/dainisne/flosc-deploy-backups/flosc-pre-v133-2026y-10m-09d-UTC05h-01m-37s.tgz
+```
 
-See `V116-VERIFICATION.md` for the evidence matrix and the explicit boundary
-between automated verification and Dainis's visual Safari confirmation.
+Rollback archive SHA-256:
+
+```text
+df63f6585491875b1855737a9ebbe89b931cc5a25539d6b94bae0e37351735e9
+```
+
+Automated parity and compiler behavior are verified. The remaining acceptance
+item is the focused Personality Builder interaction on dainis.net.
+
+The older V115/V116 verification documents in this candidate folder are
+retained as historical records; this README, manifest, source tree, and ZIP
+describe the current V133 candidate.

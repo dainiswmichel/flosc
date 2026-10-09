@@ -286,7 +286,7 @@ class SSO_Manager {
 		}
 		$styles_output = true;
 
-		// §12: SSO button styles via an inline-only style handle instead of a raw <style> tag.
+		// §12: SSO button styles via an inline-only style handle.
 		wp_register_style( 'flosc-sso', false, array(), FLOSC_VERSION );
 		wp_enqueue_style( 'flosc-sso' );
 		wp_add_inline_style(
@@ -354,7 +354,7 @@ class SSO_Manager {
 
 		// Add click handler script
 		// v1.4.6: Use URL-safe separator (handles non-pretty permalinks)
-		// §12: attached via an inline-only script handle instead of a raw <script> tag.
+		// §12: attached via an inline-only script handle.
 		wp_register_script( 'flosc-sso', false, array(), FLOSC_VERSION, true );
 		wp_enqueue_script( 'flosc-sso' );
 		wp_add_inline_script(
@@ -414,7 +414,7 @@ class SSO_Manager {
 			add_action(
 				'wp_footer',
 				function () use ( $error_message ) {
-					// §12: emit via an inline-only script handle instead of a raw <script> tag.
+					// §12: emit via an inline-only script handle.
 					wp_register_script( 'flosc-sso-error', false, array(), FLOSC_VERSION, true );
 					wp_enqueue_script( 'flosc-sso-error' );
 					wp_add_inline_script( 'flosc-sso-error', 'window.flosc_sso_error = ' . wp_json_encode( $error_message ) . ';' );

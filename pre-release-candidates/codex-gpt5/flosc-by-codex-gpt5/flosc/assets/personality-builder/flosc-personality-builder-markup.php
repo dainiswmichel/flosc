@@ -186,7 +186,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 		</label>
 		</div>
 		<p class="figure-readout output-view-note" id="outViewNote"></p>
-		<p class="figure-readout output-note">Influences name the works and sources this character draws on. Included, they are part of the personality like anything else here. Unchecked, they stay in the builder state and the design copy and are never sent.</p>
+		<p class="figure-readout output-note">Influences name the people, works, and cited sources this character draws on. Included, they are part of the personality like anything else here: their text, including citation URLs, is sent in the compiled profile to the selected AI provider. Unchecked, they stay in the builder state and the design copy and are never sent to an AI provider. FLOSC does not fetch or send data to the cited websites.</p>
 		<details class="acc" id="varPanel">
 		<summary class="row-sum"><span class="row-lab">Variables you can type into any card</span></summary>
 		<div id="varMount"></div>

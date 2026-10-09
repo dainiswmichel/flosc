@@ -157,12 +157,18 @@ body.flosc-companion-embed img.landing-icon {
 	object-fit: contain !important;
 }
 ';
-		wp_add_inline_style( 'flosc-layout', $flosc_companion_critical_css );
+		add_action(
+			'wp_enqueue_scripts',
+			static function () use ( $flosc_companion_critical_css ) {
+				wp_add_inline_style( 'flosc-layout', $flosc_companion_critical_css );
+			},
+			10000
+		);
 	}
 	?>
 	
 	<!-- Dynamic Primary Color -->
-	<?php // §12: dynamic CSS vars attached to the enqueued flosc-chat handle (prints in <head> via wp_head) instead of an inline <style> tag. ?>
+	<?php // §12: dynamic CSS vars attach to the enqueued flosc-layout handle on wp_enqueue_scripts, after that handle is queued. ?>
 	<?php ob_start(); ?>
 		:root {
 			--flosc-primary: <?php echo esc_attr( $identity['primary_color'] ); ?>;
@@ -180,7 +186,16 @@ body.flosc-companion-embed img.landing-icon {
 			--flosc-avatar-radius: <?php echo esc_attr( $flosc_avatar_radius ); ?>;
 		}
 	<?php // App enqueues flosc-layout (not flosc-chat); attach vars to the live handle. ?>
-	<?php wp_add_inline_style( 'flosc-layout', ob_get_clean() ); ?>
+	<?php
+	$flosc_dynamic_css = ob_get_clean();
+	add_action(
+		'wp_enqueue_scripts',
+		static function () use ( $flosc_dynamic_css ) {
+			wp_add_inline_style( 'flosc-layout', $flosc_dynamic_css );
+		},
+		10000
+	);
+	?>
 
 	<!-- Markdown parser fallback for IVR rendering when a parser is not already loaded. -->
 	<?php // §12: attached to flosc-app as a 'before' inline script so it still defines window.marked prior to flosc-app.js. ?>
@@ -190,7 +205,16 @@ body.flosc-companion-embed img.landing-icon {
 				return String(text || '');
 			}
 		};
-	<?php wp_add_inline_script( 'flosc-app', ob_get_clean(), 'before' ); ?>
+	<?php
+	$flosc_marked_shim = ob_get_clean();
+	add_action(
+		'wp_enqueue_scripts',
+		static function () use ( $flosc_marked_shim ) {
+			wp_add_inline_script( 'flosc-app', $flosc_marked_shim, 'before' );
+		},
+		10000
+	);
+	?>
 
 	<?php wp_head(); ?>
 </head>
@@ -1098,7 +1122,14 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 			$flosc_flow_domain  = rtrim( $flosc_flow_domain, '/' );
 			if ( $flosc_flow_domain === $flosc_request_host || 'www.' . $flosc_flow_domain === $flosc_request_host ) {
 				$flosc_same_host_base = ( is_ssl() ? 'https://' : 'http://' ) . $flosc_request_host;
-				$flosc_ajax_url       = $flosc_same_host_base . '/wp-admin/admin-ajax.php';
+				// Path comes from admin_url(). Only the origin moves onto this host.
+				$flosc_ajax_parts = wp_parse_url( $flosc_ajax_url );
+				if ( ! empty( $flosc_ajax_parts['path'] ) ) {
+					$flosc_ajax_url = $flosc_same_host_base . $flosc_ajax_parts['path'];
+					if ( ! empty( $flosc_ajax_parts['query'] ) ) {
+						$flosc_ajax_url .= '?' . $flosc_ajax_parts['query'];
+					}
+				}
 				$flosc_logout_parts   = wp_parse_url( html_entity_decode( $flosc_logout_url ) );
 				if ( ! empty( $flosc_logout_parts['path'] ) ) {
 					$flosc_logout_url = $flosc_same_host_base . $flosc_logout_parts['path'];
@@ -1312,8 +1343,6 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 					),
 					'companionStateKey'              => $flosc_companion_state_key,
 					'companionStateStorage'          => $flosc_companion_state_storage,
-					'ajaxUrl'                        => $flosc_ajax_url,
-					'logoutNonce'                    => wp_create_nonce( 'flosc_logout' ),
 					'logoutFarewell'                 => flosc_get_setting( 'logout_farewell_message', '' ),
 					'profileUrl'                     => ( $flosc_user && function_exists( 'bp_core_get_user_domain' ) ) ? bp_core_get_user_domain( $flosc_user->ID ) : admin_url( 'profile.php' ),
 					'dashboardUrl'                   => admin_url(),
@@ -1875,6 +1904,18 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 		;
 		window.FLOSC_USER = <?php echo wp_json_encode( $user_data ); ?>;
 	<?php wp_add_inline_script( 'flosc-app', ob_get_clean(), 'before' ); ?>
+
+	<?php
+	// After the custom-domain origin swap. wp_enqueue_scripts runs before that host is known.
+	wp_localize_script(
+		'flosc-app',
+		'floscAjax',
+		array(
+			'ajaxUrl' => esc_url_raw( $flosc_ajax_url ),
+			'nonce'   => wp_create_nonce( 'flosc_logout' ),
+		)
+	);
+	?>
 
 	<?php wp_footer(); ?>
 </body>

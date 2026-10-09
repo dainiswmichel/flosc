@@ -2715,9 +2715,14 @@
     if (t.short) bits.push("short: " + t.short);
     const inject = yamlish(tribInject(t));
     if (inject) bits.push("instruction: " + inject);
-    if (t.character) bits.push("character note: " + t.character);
-    if (t.works && t.works.length) bits.push("works: " + t.works.join("; "));
-    if (t.links && t.links.length) bits.push("resources: " + t.links.map(function (l) { return l.label + " <" + l.url + ">"; }).join(" · "));
+    /* Influence source material belongs in the runtime personality only when
+       the floscAdmin includes it. The design copy always keeps it: withMetrics
+       identifies that human-readable artifact, not the provider prompt. */
+    if (state.includeComments || withMetrics) {
+      if (t.character) bits.push("character note: " + t.character);
+      if (t.works && t.works.length) bits.push("works: " + t.works.join("; "));
+      if (t.links && t.links.length) bits.push("resources: " + t.links.map(function (l) { return l.label + " <" + l.url + ">"; }).join(" · "));
+    }
     /* 23 — a note to ourselves about a corpus feature that does not exist,
        billed on every turn. Design copy only now. */
     if (t.repo && withMetrics) bits.push("repo: " + t.repo.id + (t.repo.note ? " — " + t.repo.note : ""));
@@ -3161,6 +3166,9 @@
       note: "Designer genome. Every parameter. Import this into the floscPersonality Builder. Not the personality profile for chats or APIs.",
       compiler_version: "flosc-personality-builder/34.0",
       written_at: new Date().toISOString(),
+      /* WordPress saves workshopFile(), not fullSpec(). Keep this choice with
+         the design so an excluded influence stays excluded after reload. */
+      includeComments: state.includeComments,
       /*
        * The same facts the soul.md footer carries, as real JSON keys rather
        * than a block of text a reader would have to parse back out. Built from
@@ -3823,7 +3831,7 @@
     const repo = t.repo || null;
     if (!ch && !works.length && !links.length && !repo) return "";
     let h = '<div class="teach">';
-    if (ch) h += '<p><strong>Character note (background reference · never compiles).</strong> ' + esc(ch) + "</p>";
+    if (ch) h += '<p><strong>Character note (compiles for an active card when Include influences is checked).</strong> ' + esc(ch) + "</p>";
     if (works.length) h += "<p><strong>Comment · main works.</strong> " + works.map(esc).join("; ") + "</p>";
     if (links.length) {
       h += "<p><strong>Comment · resources.</strong> " + links.map(function (l) {

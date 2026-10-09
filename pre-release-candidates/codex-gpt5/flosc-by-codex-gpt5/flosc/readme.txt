@@ -191,6 +191,18 @@ No. Install only the plugin for the provider this flow attaches. IVR-only sites 
 Put it in FLOSC (this flow's AI tab, or All Flows AI API Management). FLOSC binds that key onto the WordPress AI Client for the prompt. Do not rely on Settings → Connectors for FLOSC chat.
 
 
+= Personality-design references and citations =
+
+The DA1 AI Personality Builder contains optional citations to people, works, and educational source material. They are personality-design inputs, not external services used by FLOSC.
+
+"Include influences" is enabled by default. When enabled, character notes, works, citation labels, and URL strings from active influence cards are compiled into `ai_base_prompt` and sent as prompt text to the AI provider selected by the floscAdmin. That provider transmission is described below under External Services. Including a URL as prompt text does not itself contact or retrieve content from the cited website.
+
+When "Include influences" is disabled, those materials remain in `workshop_json` and the design copy, but are excluded from `ai_base_prompt` and are not sent to the AI provider.
+
+FLOSC does not fetch content from, call an API at, or transmit WordPress, profile, visitor, or conversation data to the cited websites. Opening a citation is an ordinary administrator-initiated browser navigation.
+
+Current citation hosts include Internet Archive (`archive.org`), Wikipedia (`en.wikipedia.org`), the Electronic Text Corpus of Sumerian Literature (`etcsl.orinst.ox.ac.uk`), the Stanford Encyclopedia of Philosophy (`plato.stanford.edu`), the Rudolf Steiner Archive (`rsarchive.org`), BDK America (`www.bdkamerica.org`), Bible Gateway (`www.biblegateway.com`), Project Gutenberg (`www.gutenberg.org`), Nobel Prize (`www.nobelprize.org`), and the Viktor Frankl Institute (`www.viktorfrankl.org`). These are references, not FLOSC service dependencies.
+
 = External Services =
 
 FLOSC core flow logic runs locally in WordPress. The services below power specific FLOSC features. When those features are enabled, calling these services is intentional and required for full functionality.

@@ -72,7 +72,7 @@ function flosc_is_comment_line( $line ) {
 
 function flosc_source_files( $root ) {
 	$out  = array();
-	$skip = array( '/.git/', '/tests/', '/admin/docs/', '/flosc_documentation/', '/node_modules/', '/vendor/' );
+	$skip = array( '/.git/', '/tests/', '/admin/docs/', '/flosc_documentation/', '/node_modules/', '/vendor/', '/pre-release-candidates/', '/testing-environment/' );
 	$it   = new RecursiveIteratorIterator( new RecursiveDirectoryIterator( $root, FilesystemIterator::SKIP_DOTS ) );
 	foreach ( $it as $f ) {
 		$p = str_replace( $root, '', $f->getPathname() );

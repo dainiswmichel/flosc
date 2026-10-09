@@ -17,6 +17,8 @@ namespace FLOSC\SSO\Providers;
 
 use FLOSC\SSO\SSO_Provider_Base;
 
+use WP_Error;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }

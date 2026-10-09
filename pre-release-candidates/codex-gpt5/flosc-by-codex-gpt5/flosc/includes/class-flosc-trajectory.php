@@ -502,7 +502,7 @@ class FLOSC_Trajectory {
 		}
 
 		$host = preg_replace( '#^[a-z][a-z0-9+.-]*://#', '', $host );
-		$host = preg_replace( '#[/?#].*$#', '', $host );
+		$host = preg_replace( '~[/?#].*$~', '', $host );
 		$host = preg_replace( '#^www\.#', '', $host );
 		$stem = trim( (string) preg_replace( '/[^a-z0-9]+/', '_', $host ), '_' );
 		if ( '' === $stem ) {

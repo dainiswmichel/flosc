@@ -223,12 +223,13 @@
                     '<button class="flosc-companion-close" aria-label="' + this.escapeHtml(this.config.closeAriaLabel) + '"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg></button>' +
                 '</div>';
 
-            // Iframe
+            // Visible as soon as the panel opens. Hiding it until
+            // flosc_app_ready left a lazy frame that Safari never fetched,
+            // so expand and collapse had no chat to continue.
             this.iframe = document.createElement('iframe');
             this.iframe.className = 'flosc-companion-body';
             this.iframe.setAttribute('loading', 'lazy');
             this.iframe.setAttribute('title', this.config.assistantTitle || this.config.productName || 'Assistant');
-            this.iframe.hidden = true;
 
             window_el.appendChild(header);
             window_el.appendChild(this.iframe);
@@ -415,15 +416,22 @@
                     return;
                 }
                 if (data.type === 'flosc_companion_navigate_top') {
-                    self.navigateTopLevel(data.url);
+                    self.navigateTopLevel(data.url, { keepCompanion: data.keepCompanion === true });
                     return;
                 }
                 if (data.type === 'flosc_app_ready') {
                     self._frameAlive = true;
                     self._frameFailed = false;
                     window.clearTimeout(self._frameHealthTimer);
+                    // The app announced itself, so whatever the panel was
+                    // showing before, a live chat is in the frame now. Clear
+                    // the failure screen and make sure the frame is visible:
+                    // the only thing that ever hides it is showFrameFailure(),
+                    // and this message proves that verdict is stale.
                     self.clearFrameFailure();
-                    self.iframe.hidden = false;
+                    if (self.iframe) {
+                        self.iframe.hidden = false;
+                    }
                     return;
                 }
                 if (data.type === 'flosc_companion_logout_complete') {
@@ -626,11 +634,7 @@
             // context updates go via postMessage only. First src includes
             // continuityParams (session_id / visitor / handoff pack).
             if (!this.iframe.src) {
-                this._frameAlive = false;
-                this._frameRecovered = false;
-                this._frameFailed = false;
-                this.clearFrameFailure();
-                this.iframe.hidden = true;
+                this.resetFrameHealth();
                 this.lastIframeContextSignature = signature;
                 var iframeSrc = this.buildIframeUrl();
                 if (iframeSrc) {
@@ -639,6 +643,17 @@
             } else {
                 this.lastIframeContextSignature = signature;
                 this.deliverBrowsingContextToIframe();
+
+                // The frame is kept on purpose -- reassigning src aborts
+                // in-flight turns. But a frame that has never announced itself
+                // still needs watching: close() cleared the timer, and this
+                // branch runs whenever src survives, so without this the panel
+                // reopens onto an unwatched document with no way back. That is
+                // the "a website is sitting where my chat should be" report,
+                // minus the recovery.
+                if (!this._frameAlive) {
+                    this.watchFrameHealth();
+                }
             }
 
             if (this.config.focusOnOpen) {
@@ -650,6 +665,11 @@
         },
 
         close: function() {
+            // Stop the watchdog. Left armed, it fires against a closed panel:
+            // the retry rebuilds the frame nobody is looking at, and the second
+            // silence builds a failure screen behind a closed door. The reader
+            // then reopens onto an error that describes a load they never saw.
+            window.clearTimeout(this._frameHealthTimer);
             this.isOpen = false;
             this.container.classList.remove('is-open');
             this.updateLauncherA11y();
@@ -658,22 +678,21 @@
         },
 
         /**
-         * v10.1.0: Confirm the frame that just loaded is actually the FLOSC app.
-         *
-         * A 414, a 500 or any other error page fires 'load' exactly like the app
-         * does, so the reader was shown raw server output inside a branded panel
-         * with no way back. The app announces itself on boot; silence means the
-         * frame is not the app, and we rebuild it once without the continuity
-         * params that are the likeliest cause of an over-long request.
-         *
-         * Rebuilds at most once per open, so a genuinely down backend cannot put
-         * the panel in a reload loop.
+         * A 414, a 500, or any other error page fires 'load' exactly like the
+         * app does. The app announces itself on boot. Silence means the frame
+         * is not the app. Rebuild once, then stop.
          */
         watchFrameHealth: function() {
             var self = this;
             window.clearTimeout(this._frameHealthTimer);
 
-            if (this._frameAlive || this._frameFailed || !this.iframe || this.iframe.hidden === false) {
+            // _frameFailed, not _frameRecovered. Guarding on _frameRecovered
+            // ended the watch at the retry: once the retry had run, this method
+            // returned before arming anything, so showFrameFailure() had no
+            // caller and a document that never announced itself stayed on
+            // screen for good. That is the "a website is sitting where my chat
+            // should be" report. The retry is one step, not the last one.
+            if (this._frameAlive || this._frameFailed) {
                 return;
             }
 
@@ -682,6 +701,9 @@
                     return;
                 }
 
+                // Silence twice. The retry did not produce the app either, so
+                // whatever is in the frame is not chat and is not going to
+                // become chat. Take it away rather than present it as chat.
                 if (self._frameRecovered) {
                     self.showFrameFailure();
                     return;
@@ -689,7 +711,6 @@
 
                 self._frameRecovered = true;
 
-                // Drop everything that could have inflated the request, then rebuild.
                 self.continuityParams = {};
                 self.lastIframeContextSignature = '';
                 try {
@@ -707,7 +728,38 @@
                 } catch (e) {
                     // Nothing further we can do from here.
                 }
+
+                // Arm the second window. The frame stays visible meanwhile —
+                // hiding it until flosc_app_ready is what left Safari with a
+                // lazy frame it never fetched, so that is deliberately not
+                // reintroduced here.
+                self.watchFrameHealth();
             }, 4000);
+        },
+
+        /**
+         * Put the frame back to a state where a fresh load can be judged.
+         *
+         * A previous open may have ended in showFrameFailure(), which hid the
+         * frame, set _frameFailed, removed src and left an error node on
+         * screen. open() detects that state by src being absent, and must
+         * clear all four. Resetting _frameAlive and _frameRecovered alone left
+         * the reader stuck on the error for the life of the page: the frame
+         * reloaded invisibly, the error stayed, and watchFrameHealth()
+         * returned at once on _frameFailed.
+         *
+         * Its own method so the failure-close-reopen-ready journey can be run
+         * in a test rather than asserted against the source text.
+         */
+        resetFrameHealth: function() {
+            window.clearTimeout(this._frameHealthTimer);
+            this._frameAlive = false;
+            this._frameRecovered = false;
+            this._frameFailed = false;
+            this.clearFrameFailure();
+            if (this.iframe) {
+                this.iframe.hidden = false;
+            }
         },
 
         clearFrameFailure: function() {
@@ -1398,12 +1450,26 @@
             return {};
         },
 
-        navigateTopLevel: function(rawUrl) {
+        navigateTopLevel: function(rawUrl, opts) {
+            opts = opts || {};
             try {
                 var target = new URL(String(rawUrl || ''), window.location.origin);
-                if (/^https?:$/.test(target.protocol)) {
-                    window.location.href = target.toString();
+                if (!/^https?:$/.test(target.protocol)) {
+                    return;
                 }
+                // Same-site chat links stay in this tab. The next document
+                // opens the same flow's panel over the page the link named.
+                if (opts.keepCompanion && target.origin === window.location.origin) {
+                    this.isOpen = true;
+                    this.saveNavigationState();
+                    var flowId = String(this.config.flowId || '').trim();
+                    if (flowId && !target.searchParams.get('flosc_flow_id')) {
+                        target.searchParams.set('flosc_flow_id', flowId);
+                    }
+                    target.searchParams.set('flosc_companion_handoff', '1');
+                    target.searchParams.set('flosc_companion_mode', String(this.panelMode || 'panel'));
+                }
+                window.location.href = target.toString();
             } catch (e) {
                 // Invalid destinations leave the host page where it is.
             }

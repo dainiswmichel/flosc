@@ -35,7 +35,7 @@ function flosc_shipped_php( $root ) {
 		if ( substr( $rel, -4 ) !== '.php' ) {
 			continue;
 		}
-		foreach ( array( '.git/', 'tests/', 'pre-release-candidates/', 'sample-data/', 'vendor/', 'node_modules/' ) as $skip ) {
+		foreach ( array( '.git/', 'tests/', 'pre-release-candidates/', 'testing-environment/', 'sample-data/', 'vendor/', 'node_modules/' ) as $skip ) {
 			if ( strpos( $rel, $skip ) === 0 ) {
 				continue 2;
 			}

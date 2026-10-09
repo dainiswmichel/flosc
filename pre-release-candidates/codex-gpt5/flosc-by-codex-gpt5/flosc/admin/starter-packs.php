@@ -156,8 +156,15 @@ if ( ! function_exists( 'flosc_sp_tab_url' ) ) {
 								</span>
 							<?php endif; ?>
 
+							<?php
+							// No onsubmit handler. assets/js/flosc-admin-events.js is enqueued on
+							// every FLOSC admin screen and confirms any form carrying
+							// data-confirm-message, so the inline listener the WordPress.org
+							// review flagged on 13 Sep 2026 is not needed here. esc_attr(), not
+							// esc_js(), because this is an HTML attribute rather than a script body.
+							?>
 							<form method="post"
-								onsubmit="return confirm('<?php echo esc_js( __( 'Replace this personality with the version FLOSC ships? Any edits you made to it will be lost.', 'flosc' ) ); ?>');"
+								data-confirm-message="<?php echo esc_attr( __( 'Replace this personality with the version FLOSC ships? Any edits you made to it will be lost.', 'flosc' ) ); ?>"
 							>
 								<?php wp_nonce_field( 'flosc_starter_packs' ); ?>
 								<input type="hidden" name="flosc_sp_slug" value="<?php echo esc_attr( $flosc_sp_seed_id ); ?>">
@@ -324,9 +331,10 @@ if ( ! function_exists( 'flosc_sp_tab_url' ) ) {
 						<?php endif; ?>
 					<?php endif; ?>
 
+					<?php // Same as above: data-confirm-message, handled by flosc-admin-events.js. ?>
 					<form method="post" class="flosc-sp-actions"
 						<?php if ( $flosc_sp_installed ) : ?>
-							onsubmit="return confirm('<?php echo esc_js( __( 'Remove this starter pack and everything it created?', 'flosc' ) ); ?>');"
+							data-confirm-message="<?php echo esc_attr( __( 'Remove this starter pack and everything it created?', 'flosc' ) ); ?>"
 						<?php endif; ?>
 					>
 						<?php wp_nonce_field( 'flosc_starter_packs' ); ?>
