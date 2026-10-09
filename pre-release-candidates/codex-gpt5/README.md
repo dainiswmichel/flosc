@@ -1,66 +1,36 @@
-# FLOSC 8.0.0 — Codex candidate V135
+# FLOSC 8.0.0 — Codex candidate V137
 
-V135 starts from the exact completed V134 source commit
-`ddb92fc1ae966728877442cd86ef4b2f4dd8f4b2`. The public plugin version and
-stable tag remain 8.0.0.
+V137 starts from the complete V136 source at commit `cb6333a495786596ab1fca3d6f39bfe0ed7f2abc`. The public plugin version and stable tag remain 8.0.0. `Github HashID` records that V136 baseline commit.
 
 ## Scope
 
-- Removed four known incorrect or unavailable URLs from the optional sample
-  archetype catalog without removing their archetypes or personality text.
-- Kept **Include influences** enabled by default for character descriptions
-  and works.
-- Added a separate **Include reference URLs** option that defaults off.
-- A complete reference—description and URL—enters `ai_base_prompt` only after
-  the floscAdmin enables that option. FLOSC never sends a description without
-  its URL.
-- Complete references remain in the builder, `workshop_json`, and design copy
-  whether or not they are sent to the selected AI provider.
-- FLOSC does not fetch the reference websites or transmit data to them.
+WordPress.org asked FLOSC to close every output buffer within the same logical flow.
+
+- All 36 shipped `ob_start()` calls are paired: 35 existing fragment captures remain unchanged.
+- The WXR importer buffer now opens inside `try` and restores the preceding buffer level in `finally`.
+- The existing `flosc_wxr_api` error is returned only after cleanup.
+- Successful imports still update the staged pack status and return `true`.
+- No JavaScript, CSS, enqueue call, template variable, login path, personality behavior, or other runtime file changed.
 
 ## Verification
 
-- PHP functional tests: 44/44 passed.
-- JavaScript tests: 6/6 passed.
-- Influence/reference-boundary assertions: 31/31 passed.
-- PHP syntax: 200/200 source files passed.
-- JavaScript syntax: 15/15 source files passed.
-- Changed PHP files: zero findings under WordPress, WordPress-Docs,
-  WordPress-Extra, and PHPCompatibilityWP 7.4.
-- Official Plugin Check on dainis.net: zero errors and 22 inherited nonce
-  warnings.
-- The built-ZIP release gate retains five inherited failed or unavailable
-  gates: two bare-suppression prose matches, 13 security errors and 22
-  warnings, four `HTTP_HOST` matches, two filter-token matches, and locally
-  unavailable Plugin Check. V135 introduces no new release-gate finding and is
-  not represented as WordPress.org submission-ready.
+- `tests/check-output-buffer-boundaries.php` reports 36 opens, 36 paired, 0 unclosed.
+- An isolated runtime harness passed successful import, missing importer API, thrown exception, and importer callback closing FLOSC's buffer early.
+- `php -l` passed on every PHP file.
+- The three changed source files passed the project PHPCS ruleset and PHPCompatibilityWP 7.4 with no errors or warnings.
+- The V135 personality-influence regression, V136 login-action regression, and candidate contract tests passed.
+- `unzip -t` passed. The ZIP has 242 files, no `tests/` entries, and differs from the V136 ZIP only in `flosc.php` and `admin/ivr-upload-handler.php`.
+
+Plugin Check and a live WordPress WXR import were not run.
 
 ## Exact artifact
 
 ```text
-20ab4f8fd8cc2061a42dd995faa0f629446a812b452c7f20ab3390c9da8aa674  flosc.zip
+b925540d0aa83e6fa82d59392d4b4dc0bb5231e15b6950ec3e40fec017c2c92f  flosc.zip
 ```
 
-The ZIP contains 242 files. Its sorted runtime file-checksum manifest SHA-256
-is:
+282 ZIP entries, 242 files, 2,822,948 bytes. Sorted `sha256  path` manifest of those files:
 
 ```text
-1a6c66c82771c3e2b89c932ddc715a94d4db958e01b1edd82aa7ee3617d42077
+6d9612a91c93cfd4c666cd5a691ab5b33177d748b3edcb0965221be5ee89908f
 ```
-
-## Live deployment
-
-The exact V135 ZIP is deployed at
-`/home/dainisne/public_html/wp-content/plugins/flosc` on dainis.net. FLOSC is
-active, and both the homepage and `/chat/` return HTTP 200. The live 242-file
-manifest matches the ZIP and local shipped source exactly.
-
-Recoverable pre-V135 backups:
-
-```text
-/home/dainisne/flosc-deploy-backups/flosc-pre-v135-2026y-10m-09d-UTC07h-16m-55s.tgz
-/home/dainisne/flosc-deploy-backups/flosc-dir-pre-v135-2026y-10m-09d-UTC07h-16m-55s
-```
-
-The remaining acceptance item is Dainis W. Michel's focused browser test of
-the Personality Builder controls and compiled profile.
