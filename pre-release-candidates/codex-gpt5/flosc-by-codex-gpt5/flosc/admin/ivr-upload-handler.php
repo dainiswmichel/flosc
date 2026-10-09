@@ -641,28 +641,24 @@ if ( ! function_exists( 'flosc_portability_run_wxr_import' ) ) {
 		 */
 
 		/*
-		 * Suppress HTML output from the importer UI classes. Restore the
-		 * buffer level even when the importer throws or a callback closes
-		 * FLOSC's buffer before control returns here.
+		 * Suppress HTML output from the importer UI classes. The capture
+		 * helper restores the prior buffer level even when the importer throws
+		 * or a callback closes FLOSC's buffer before control returns here.
 		 */
-		$flosc_ob_level   = ob_get_level();
 		$flosc_import_api = false;
-		try {
-			ob_start();
-			$importer = new WP_Import();
-			if ( method_exists( $importer, 'fetch_attachments' ) ) {
-				$importer->fetch_attachments = true;
+		flosc_capture_output(
+			static function () use ( $path, &$flosc_import_api ) {
+				$importer = new WP_Import();
+				if ( method_exists( $importer, 'fetch_attachments' ) ) {
+					$importer->fetch_attachments = true;
+				}
+				// import() is the public entry on classic WordPress Importer.
+				$flosc_import_api = method_exists( $importer, 'import' );
+				if ( $flosc_import_api ) {
+					$importer->import( $path );
+				}
 			}
-			// import() is the public entry on classic WordPress Importer.
-			$flosc_import_api = method_exists( $importer, 'import' );
-			if ( $flosc_import_api ) {
-				$importer->import( $path );
-			}
-		} finally {
-			while ( ob_get_level() > $flosc_ob_level ) {
-				ob_end_clean();
-			}
-		}
+		);
 
 		if ( ! $flosc_import_api ) {
 			return new WP_Error( 'flosc_wxr_api', __( 'WordPress Importer API is not available on this site.', 'flosc' ) );

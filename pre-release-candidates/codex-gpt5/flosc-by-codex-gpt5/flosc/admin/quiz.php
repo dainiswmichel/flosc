@@ -561,7 +561,12 @@ $flosc_quiz_demos = array(
 
 </div>
 
-<?php ob_start(); ?>
+<?php
+wp_add_inline_script(
+	'flosc-admin',
+	flosc_capture_output(
+		static function () {
+			?>
 document.addEventListener('click', function(e) {
 	var btn = e.target.closest('.flosc-load-demo');
 	if (!btn) return;
@@ -590,4 +595,6 @@ document.addEventListener('click', function(e) {
 		btn.disabled = false;
 	}, 1800);
 });
-<?php wp_add_inline_script( 'flosc-admin', ob_get_clean() ); ?>
+	<?php }
+	)
+); ?>

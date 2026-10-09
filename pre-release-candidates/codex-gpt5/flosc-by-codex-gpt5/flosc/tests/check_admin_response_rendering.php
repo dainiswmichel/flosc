@@ -33,14 +33,17 @@ foreach ( array( 'admin/payments.php', 'admin/ivr-messages.php' ) as $relative )
 	ok( 'remote data is never assigned to innerHTML', strpos( $source, '.innerHTML' ) !== false, false );
 	ok( 'the display uses textContent', strpos( $source, '.textContent' ) !== false, true );
 
-	$start = strpos( $source, '<?php ob_start(); ?>' );
-	$end   = false === $start ? false : strpos( $source, '<?php wp_add_inline_script', $start );
-	if ( false === $start || false === $end ) {
+	$matched = preg_match(
+		'/flosc_capture_output\(\s*static function \(\) \{\s*\?>(.*?)<\?php\s*\}\s*\)\s*\)/s',
+		$source,
+		$matches
+	);
+	if ( 1 !== $matched ) {
 		ok( 'the edited inline JavaScript block was found', false, true );
 		continue;
 	}
 
-	$script = substr( $source, $start + strlen( '<?php ob_start(); ?>' ), $end - $start - strlen( '<?php ob_start(); ?>' ) );
+	$script = $matches[1];
 	$script = preg_replace( '/<\?php.*?\?>/s', 'PHPVALUE', $script );
 	$tmp    = tempnam( sys_get_temp_dir(), 'flosc_admin_response_' ) . '.js';
 	file_put_contents( $tmp, $script );

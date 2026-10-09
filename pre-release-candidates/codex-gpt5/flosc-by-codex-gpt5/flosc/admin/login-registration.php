@@ -668,7 +668,12 @@ $flosc_package_magic_on        = ( defined( 'FLOSC_ENABLE_MAGIC_ACCESS_LINKS' ) 
 </p>
 <p id="flosc-send-guest-link-result" class="flosc-login-send-result"></p>
 
-<?php ob_start(); ?>
+<?php
+wp_add_inline_script(
+	'flosc-admin',
+	flosc_capture_output(
+		static function () use ( $flosc_guest_link_name ) {
+			?>
 (function() {
 	document.getElementById('flosc-send-guest-link-btn')?.addEventListener('click', function() {
 		const emailEl  = document.getElementById('flosc-send-guest-link-email');
@@ -717,7 +722,11 @@ $flosc_package_magic_on        = ( defined( 'FLOSC_ENABLE_MAGIC_ACCESS_LINKS' ) 
 			});
 	});
 })();
-<?php wp_add_inline_script( 'flosc-admin', ob_get_clean() ); ?>
+			<?php
+		}
+	)
+);
+?>
 
 <hr class="flosc-login-divider">
 <h2>Guest Account Requests</h2>

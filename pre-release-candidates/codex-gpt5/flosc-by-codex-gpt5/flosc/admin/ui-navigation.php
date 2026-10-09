@@ -338,7 +338,12 @@ $flosc_render_icon_palette   = static function ( $flosc_target_input_id ) use ( 
 	</tr>
 </table>
 
-<?php ob_start(); ?>
+<?php
+wp_add_inline_script(
+	'flosc-admin',
+	flosc_capture_output(
+		static function () {
+			?>
 (function() {
 	function normalizeUnicodeIconInput(rawValue) {
 		var value = String(rawValue || '').trim();
@@ -458,4 +463,6 @@ $flosc_render_icon_palette   = static function ( $flosc_target_input_id ) use ( 
 		hideAllIconPalettes();
 	});
 })();
-<?php wp_add_inline_script( 'flosc-admin', ob_get_clean() ); ?>
+	<?php }
+	)
+); ?>

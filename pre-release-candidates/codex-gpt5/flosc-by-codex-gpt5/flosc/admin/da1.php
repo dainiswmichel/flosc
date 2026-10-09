@@ -1701,7 +1701,12 @@ if ( isset( $flosc_da1_get['da1_export'] ) && '1' === (string) $flosc_da1_get['d
  */
 if ( 'single' === $flosc_da1_view ) :
 	?>
-	<?php ob_start(); ?>
+	<?php
+	wp_add_inline_script(
+		'flosc-admin',
+		flosc_capture_output(
+			static function () use ( $flosc_da1_columns, $flosc_da1_ncols, $flosc_da1_multiline_idx ) {
+				?>
 (function () {
 	var COLUMNS = <?php echo wp_json_encode( array_values( $flosc_da1_columns ) ); ?>;
 	var NCOLS = <?php echo (int) $flosc_da1_ncols; ?>;
@@ -2009,6 +2014,8 @@ if ( 'single' === $flosc_da1_view ) :
 		});
 	});
 })();
-	<?php
-	wp_add_inline_script( 'flosc-admin', ob_get_clean() );
+				<?php
+			}
+		)
+	);
 endif;

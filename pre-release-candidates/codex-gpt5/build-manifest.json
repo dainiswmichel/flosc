@@ -1,31 +1,34 @@
 {
   "schema_version": 8,
   "candidate": "codex-gpt5",
-  "candidate_label": "FLOSC 8.0.0 candidate V137",
+  "candidate_label": "FLOSC 8.0.0 candidate V140",
   "owner": "Codex",
   "parent": {
-    "candidate": "V136",
-    "commit": "cb6333a495786596ab1fca3d6f39bfe0ed7f2abc"
+    "candidate": "V139",
+    "commit": "026576ea6d39b00a04822aae6762ef006190ba86"
   },
   "plugin_version": "8.0.0",
   "stable_tag": "8.0.0",
-  "internal_iteration": "v137",
-  "github_hashid_at_pack": "cb6333a495786596ab1fca3d6f39bfe0ed7f2abc",
+  "internal_iteration": "v140",
+  "github_hashid_at_pack": "026576ea6d39b00a04822aae6762ef006190ba86",
   "plugin_source": "flosc-by-codex-gpt5/flosc",
-  "baseline": "pre-release-candidates/grok-4-6 at cb6333a495786596ab1fca3d6f39bfe0ed7f2abc",
-  "v137_delta_from_v136": [
+  "baseline": "pre-release-candidates/grok-4-6 at 026576ea6d39b00a04822aae6762ef006190ba86",
+  "v140_delta_from_v139_zip": [
     "flosc.php",
-    "admin/ivr-upload-handler.php",
+    "includes/flosc-output-buffer.php"
+  ],
+  "v140_git_only": [
     "tests/check-output-buffer-boundaries.php"
   ],
+  "review_status": "The Unclosed ob_start() remediation is complete at source level. Plugin Check and the remaining unrelated review gates are not claimed complete.",
   "artifact": {
     "path": "flosc.zip",
     "root": "flosc/",
-    "entries": 282,
-    "files": 242,
-    "bytes": 2822948,
-    "sha256": "b925540d0aa83e6fa82d59392d4b4dc0bb5231e15b6950ec3e40fec017c2c92f",
-    "runtime_manifest_sha256": "6d9612a91c93cfd4c666cd5a691ab5b33177d748b3edcb0965221be5ee89908f",
+    "entries": 283,
+    "files": 243,
+    "bytes": 2824170,
+    "sha256": "7b397150b14e7b2f4ae00b477ae0ccfee690379330cc8663fe4a529baa1beaa4",
+    "runtime_manifest_sha256": "172200c7a947a8a11a59554663d108f8e8a1029e24a98d7f3822af3017705a61",
     "runtime_manifest": "sha256 of sorted lines: '<sha256>  <zip path>' for every file in the zip",
     "tests_entries": 0
   }

@@ -1,36 +1,35 @@
-# FLOSC 8.0.0 — Codex candidate V137
+# FLOSC 8.0.0 — Codex candidate V140
 
-V137 starts from the complete V136 source at commit `cb6333a495786596ab1fca3d6f39bfe0ed7f2abc`. The public plugin version and stable tag remain 8.0.0. `Github HashID` records that V136 baseline commit.
+V140 starts from V139 commit `026576ea6d39b00a04822aae6762ef006190ba86`. The public plugin version and stable tag remain 8.0.0. The plugin header records that V139 commit as `Github HashID`.
 
 ## Scope
 
-WordPress.org asked FLOSC to close every output buffer within the same logical flow.
+V140 completes the WordPress.org `Unclosed ob_start()` remediation without changing any of the 36 rendering call sites or their closure captures.
 
-- All 36 shipped `ob_start()` calls are paired: 35 existing fragment captures remain unchanged.
-- The WXR importer buffer now opens inside `try` and restores the preceding buffer level in `finally`.
-- The existing `flosc_wxr_api` error is returned only after cleanup.
-- Successful imports still update the staged pack status and return `true`.
-- No JavaScript, CSS, enqueue call, template variable, login path, personality behavior, or other runtime file changed.
+- `includes/flosc-output-buffer.php` restores the V138 helper: the plugin's sole shipped `ob_start()` opens inside `flosc_capture_output()` and is closed in that same function's `finally` block.
+- The helper removes nested buffers only above FLOSC's saved level and collects only while FLOSC's own buffer remains current, so it does not close a caller's parent buffer.
+- V139's per-capture shutdown callback and `ob_end_flush()` loop are removed because that loop could flush a buffer opened by another component after FLOSC's buffer.
+- `tests/check-output-buffer-boundaries.php` is source-only and adds negative assertions preventing shutdown cleanup from returning.
+- `flosc.php` changes only `Internal Iteration: v140` and `Github HashID: 026576ea6d39b00a04822aae6762ef006190ba86`.
 
 ## Verification
 
-- `tests/check-output-buffer-boundaries.php` reports 36 opens, 36 paired, 0 unclosed.
-- An isolated runtime harness passed successful import, missing importer API, thrown exception, and importer callback closing FLOSC's buffer early.
-- `php -l` passed on every PHP file.
-- The three changed source files passed the project PHPCS ruleset and PHPCompatibilityWP 7.4 with no errors or warnings.
-- The V135 personality-influence regression, V136 login-action regression, and candidate contract tests passed.
-- `unzip -t` passed. The ZIP has 242 files, no `tests/` entries, and differs from the V136 ZIP only in `flosc.php` and `admin/ivr-upload-handler.php`.
-
-Plugin Check and a live WordPress WXR import were not run.
+- Output-buffer boundary: 36 captures, one owner, zero leaked buffers.
+- Undefined-variable audit and admin-response rendering checks passed.
+- Login-action and personality-influence regressions passed.
+- PHP syntax passed on all 203 PHP files in the canonical source tree.
+- The 26 affected shipped PHP files passed the project WordPress ruleset and PHPCompatibilityWP 7.4.
+- ZIP integrity passed; 243 shipped files; `tests/` excluded; source-to-ZIP parity passed.
+- The ZIP gate still reports five inherited/unverified items outside this remediation: two prose matches for suppression directives, four `HTTP_HOST` matches, two filter-token matches, unavailable security-PHPCS discovery in the gate, and unavailable Plugin Check.
 
 ## Exact artifact
 
 ```text
-b925540d0aa83e6fa82d59392d4b4dc0bb5231e15b6950ec3e40fec017c2c92f  flosc.zip
+7b397150b14e7b2f4ae00b477ae0ccfee690379330cc8663fe4a529baa1beaa4  flosc.zip
 ```
 
-282 ZIP entries, 242 files, 2,822,948 bytes. Sorted `sha256  path` manifest of those files:
+283 ZIP entries, 243 files, 2,824,170 bytes. Runtime manifest SHA-256:
 
 ```text
-6d9612a91c93cfd4c666cd5a691ab5b33177d748b3edcb0965221be5ee89908f
+172200c7a947a8a11a59554663d108f8e8a1029e24a98d7f3822af3017705a61
 ```

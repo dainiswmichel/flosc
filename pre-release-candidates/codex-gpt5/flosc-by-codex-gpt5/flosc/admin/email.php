@@ -412,7 +412,12 @@ if ( ! $flosc_has_levels ) :
 <?php endif; ?>
 
 <?php // §12: page JS attaches to the registered admin handle through wp_add_inline_script. ?>
-<?php ob_start(); ?>
+<?php
+wp_add_inline_script(
+	'flosc-admin',
+	flosc_capture_output(
+		static function () {
+			?>
 (function () {
 	function addRow(prefix) {
 		var table = document.querySelector('.flosc-fu-table[data-prefix="' + prefix + '"]');
@@ -438,7 +443,11 @@ if ( ! $flosc_has_levels ) :
 		}
 	});
 })();
-<?php wp_add_inline_script( 'flosc-admin', ob_get_clean() ); ?>
+			<?php
+		}
+	)
+);
+?>
 
 <!-- ============================================ -->
 <!-- EMAIL PROVIDER SETTINGS [BACKEND NEEDED] -->

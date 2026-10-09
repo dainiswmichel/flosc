@@ -350,7 +350,12 @@ $flosc_chat_list_settings_url       = add_query_arg(
 </div>
 
 <!-- ─── JavaScript ────────────────────────────────────────────────────── -->
-<?php ob_start(); ?>
+<?php
+wp_add_inline_script(
+	'flosc-admin',
+	flosc_capture_output(
+		static function () use ( $flosc_categories, $flosc_tags, $flosc_saved_levels, $flosc_vgm_tiers, $flosc_vgm_depths ) {
+			?>
 jQuery(document).ready(function($) {
 
 	// ─── Level repeater ─────────────────────────────────────────────
@@ -396,38 +401,38 @@ jQuery(document).ready(function($) {
 
 	// Build option strings for JS-generated rows
 	var categoryOptions = 
-	<?php
-		$flosc_opts = '<option value="">— Select —</option>';
-	foreach ( $flosc_categories as $flosc_cat ) {
-		$flosc_opts .= '<option value="' . esc_attr( $flosc_cat->term_id ) . '">' . esc_html( $flosc_cat->name ) . ' (' . intval( $flosc_cat->count ) . ' posts)</option>';
-	}
-		echo wp_json_encode( $flosc_opts );
-	?>
+			<?php
+			$flosc_opts = '<option value="">— Select —</option>';
+			foreach ( $flosc_categories as $flosc_cat ) {
+				$flosc_opts .= '<option value="' . esc_attr( $flosc_cat->term_id ) . '">' . esc_html( $flosc_cat->name ) . ' (' . intval( $flosc_cat->count ) . ' posts)</option>';
+			}
+			echo wp_json_encode( $flosc_opts );
+			?>
 	;
 
 	var tagOptions = 
-	<?php
-		$flosc_opts = '<option value="">— Select —</option>';
-	foreach ( $flosc_tags as $flosc_tag ) {
-		$flosc_opts .= '<option value="' . esc_attr( $flosc_tag->term_id ) . '">' . esc_html( $flosc_tag->name ) . ' (' . intval( $flosc_tag->count ) . ' posts)</option>';
-	}
-		echo wp_json_encode( $flosc_opts );
-	?>
+			<?php
+			$flosc_opts = '<option value="">— Select —</option>';
+			foreach ( $flosc_tags as $flosc_tag ) {
+				$flosc_opts .= '<option value="' . esc_attr( $flosc_tag->term_id ) . '">' . esc_html( $flosc_tag->name ) . ' (' . intval( $flosc_tag->count ) . ' posts)</option>';
+			}
+			echo wp_json_encode( $flosc_opts );
+			?>
 	;
 
 	var levelOptions = 
-	<?php
-		$flosc_opts = '<option value="">— Any Member —</option>';
-	foreach ( $flosc_saved_levels as $flosc_lk => $flosc_lv ) {
-		$flosc_slug = $flosc_lv['slug'] ?? $flosc_lk;
-		if ( empty( $flosc_slug ) ) {
-			continue;
-		}
-		$flosc_label = ( $flosc_lv['name'] ?? '' ) ? $flosc_lv['name'] : $flosc_slug;
-		$flosc_opts .= '<option value="' . esc_attr( $flosc_slug ) . '">' . esc_html( $flosc_label ) . '</option>';
-	}
-		echo wp_json_encode( $flosc_opts );
-	?>
+			<?php
+			$flosc_opts = '<option value="">— Any Member —</option>';
+			foreach ( $flosc_saved_levels as $flosc_lk => $flosc_lv ) {
+				$flosc_slug = $flosc_lv['slug'] ?? $flosc_lk;
+				if ( empty( $flosc_slug ) ) {
+					continue;
+				}
+				$flosc_label = ( $flosc_lv['name'] ?? '' ) ? $flosc_lv['name'] : $flosc_slug;
+				$flosc_opts .= '<option value="' . esc_attr( $flosc_slug ) . '">' . esc_html( $flosc_label ) . '</option>';
+			}
+			echo wp_json_encode( $flosc_opts );
+			?>
 	;
 
 	function buildContentField(type) {
@@ -481,4 +486,6 @@ jQuery(document).ready(function($) {
 	toggleFreeLessonFields();
 	$('#flow_free_content_item_mode').on('change', toggleFreeLessonFields);
 });
-<?php wp_add_inline_script( 'flosc-admin', ob_get_clean() ); ?>
+	<?php }
+	)
+); ?>
