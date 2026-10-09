@@ -1046,6 +1046,8 @@
     open: { "layer:identity": true },
     tribOrder: {},
     includeComments: true,
+    // Reference labels and URLs leave the builder only after explicit opt-in.
+    includeReferenceUrls: false,
     // Off by default. A downloaded profile naming the site it was made on
     // carries that line to everyone the file is ever passed on to, so it is
     // the floscAdmin's to add when they are publishing, not a default.
@@ -2392,7 +2394,9 @@
     bits.push("status: " + (st.on ? "on" : "off") + (st.mode === "conditional" && st.condition ? " · when " + st.condition : ""));
     if (t.character) bits.push("character: " + t.character);
     if (t.works && t.works.length) bits.push("works: " + t.works.join("; "));
-    if (t.links && t.links.length) bits.push("resources: " + t.links.map(function (l) { return l.label + " <" + l.url + ">"; }).join(" · "));
+    if (state.includeReferenceUrls && t.links && t.links.length) {
+      bits.push("resources: " + t.links.map(function (l) { return l.label + " <" + l.url + ">"; }).join(" · "));
+    }
     if (t.repo) bits.push("repo: " + t.repo.id + (t.repo.note ? " — " + t.repo.note : ""));
     if (bits.length <= 3 && !t.character) return "";
     return "<!-- floscComment\n" + commentSafe(bits.join("\n")) + "\n-->";
@@ -2717,7 +2721,9 @@
     if (state.includeComments || withMetrics) {
       if (t.character) bits.push("character note: " + t.character);
       if (t.works && t.works.length) bits.push("works: " + t.works.join("; "));
-      if (t.links && t.links.length) bits.push("resources: " + t.links.map(function (l) { return l.label + " <" + l.url + ">"; }).join(" · "));
+      if ((state.includeReferenceUrls || withMetrics) && t.links && t.links.length) {
+        bits.push("resources: " + t.links.map(function (l) { return l.label + " <" + l.url + ">"; }).join(" · "));
+      }
     }
     /* 23 — a note to ourselves about a corpus feature that does not exist,
        billed on every turn. Design copy only now. */
@@ -3165,6 +3171,7 @@
       /* WordPress saves workshopFile(), not fullSpec(). Keep this choice with
          the design so an excluded influence stays excluded after reload. */
       includeComments: state.includeComments,
+      includeReferenceUrls: state.includeReferenceUrls,
       /*
        * The same facts the soul.md footer carries, as real JSON keys rather
        * than a block of text a reader would have to parse back out. Built from
@@ -3273,6 +3280,7 @@
       flosc_library_entry: libraryEntry(),
       recommended_flow_ai: shop.sampling_recommendation,
       includeComments: state.includeComments,
+      includeReferenceUrls: state.includeReferenceUrls,
       tribOrder: shop.family_order,
       tributaries: shop.tributaries.map(function (w) {
         return {
@@ -3377,7 +3385,7 @@
     if (floscHosted()) return;
     try {
       const payload = JSON.stringify({
-        preset: state.preset, soul: state.soul, sampling: state.sampling, trib: state.trib, custom: state.custom, clouds: cloudList(), categories: state.categories, tribOrder: state.tribOrder, denOrder: state.denOrder, denPlace: state.denPlace, includeComments: state.includeComments, include_source_site: state.include_source_site, open: state.open,
+        preset: state.preset, soul: state.soul, sampling: state.sampling, trib: state.trib, custom: state.custom, clouds: cloudList(), categories: state.categories, tribOrder: state.tribOrder, denOrder: state.denOrder, denPlace: state.denPlace, includeComments: state.includeComments, includeReferenceUrls: state.includeReferenceUrls, include_source_site: state.include_source_site, open: state.open,
         layers: ensureContainers(), tribParent: state.tribParent || {}
       });
       localStorage.setItem("flosc_personality_builder_v33_autosave", payload);
@@ -4873,6 +4881,8 @@
     if (hide) hide.checked = !!state.hideOff;
     const inc = document.getElementById("includeComments");
     if (inc) inc.checked = !!state.includeComments;
+    const incUrls = document.getElementById("includeReferenceUrls");
+    if (incUrls) incUrls.checked = !!state.includeReferenceUrls;
     const src = document.getElementById("includeSourceSite");
     if (src) src.checked = !!state.include_source_site;
     renderCols();
@@ -5649,6 +5659,7 @@
     if (spec.density && Array.isArray(spec.density.order)) state.denOrder = spec.density.order;
     if (spec.density && spec.density.drop_between) state.denPlace = spec.density.drop_between;
     if (typeof spec.includeComments === "boolean") state.includeComments = spec.includeComments;
+    if (typeof spec.includeReferenceUrls === "boolean") state.includeReferenceUrls = spec.includeReferenceUrls;
 
     /* Containers: a v2 genome carries the full container tree. A legacy
        genome leaves state.layers empty; ensureContainers() reseeds the
@@ -5769,6 +5780,11 @@
   });
   document.getElementById("includeComments").addEventListener("change", function () {
     state.includeComments = this.checked;
+    persistSoft();
+    renderOut();
+  });
+  document.getElementById("includeReferenceUrls").addEventListener("change", function () {
+    state.includeReferenceUrls = this.checked;
     persistSoft();
     renderOut();
   });
@@ -6234,6 +6250,7 @@
         state.denOrder = parsed.denOrder || [];
         if (parsed.denPlace) state.denPlace = parsed.denPlace;
         if (typeof parsed.includeComments === "boolean") state.includeComments = parsed.includeComments;
+        if (typeof parsed.includeReferenceUrls === "boolean") state.includeReferenceUrls = parsed.includeReferenceUrls;
         // Restored only when it was actually stored as a boolean, so an older
         // autosave without the key keeps the off default rather than reading
         // undefined as a choice.

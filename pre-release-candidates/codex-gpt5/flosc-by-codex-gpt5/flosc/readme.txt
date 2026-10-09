@@ -195,7 +195,7 @@ Put it in FLOSC (this flow's AI tab, or All Flows AI API Management). FLOSC bind
 
 The DA1 AI Personality Builder contains optional citations to people, works, and educational source material. They are sample personality-design inputs, not external services used by FLOSC. Reference pages are maintained by their publishers and may change, move, or become unavailable over time.
 
-"Include influences" is enabled by default. When enabled, character notes, works, citation labels, and URL strings from active influence cards are compiled into `ai_base_prompt` and sent as prompt text to the AI provider selected by the floscAdmin. That provider transmission is described below under External Services. Including a URL as prompt text does not itself contact or retrieve content from the cited website.
+"Include influences" is enabled by default. Character notes and works from active influence cards are compiled into `ai_base_prompt` and sent as prompt text to the AI provider selected by the floscAdmin. Complete reference entries—their descriptions and URLs—are excluded by default and are included only when the administrator enables the separate "Include reference URLs" option. That provider transmission is described below under External Services. Including a URL as prompt text does not itself contact or retrieve content from the cited website.
 
 When "Include influences" is disabled, those materials remain in `workshop_json` and the design copy, but are excluded from `ai_base_prompt` and are not sent to the AI provider.
 

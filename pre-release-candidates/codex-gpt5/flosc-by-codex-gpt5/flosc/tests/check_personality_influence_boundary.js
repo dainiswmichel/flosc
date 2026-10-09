@@ -60,7 +60,10 @@ const fixtureState = {
   soulSection: "",
   cloud: ""
 };
-const state = { includeComments: true };
+const state = { includeComments: true, includeReferenceUrls: false };
+
+check("new personalities include influence text by default", src.includes("includeComments: true"));
+check("new personalities exclude reference entries by default", src.includes("includeReferenceUrls: false"));
 
 function tribState() { return fixtureState; }
 function tribInject(t) { return t.inject || ""; }
@@ -76,13 +79,31 @@ function tribRole() { return ""; }
 
 eval(grab("topicBody"));
 eval(grab("workshopTributary"));
+eval(grab("commentSafe"));
+eval(grab("cardComment"));
 
 const checked = topicBody(fixture, false);
 check("checked runtime keeps character note", checked.includes(fixture.character));
 check("checked runtime keeps work", checked.includes(fixture.works[0]));
-check("checked runtime keeps citation label", checked.includes(fixture.links[0].label));
-check("checked runtime keeps citation URL", checked.includes(fixture.links[0].url));
+check("checked runtime excludes citation label by default", !checked.includes(fixture.links[0].label));
+check("checked runtime excludes citation URL by default", !checked.includes(fixture.links[0].url));
 
+state.includeReferenceUrls = true;
+const referencesEnabled = topicBody(fixture, false);
+check("reference opt-in keeps citation label", referencesEnabled.includes(fixture.links[0].label));
+check("reference opt-in keeps citation URL", referencesEnabled.includes(fixture.links[0].url));
+
+state.includeReferenceUrls = false;
+const commentReferencesHidden = cardComment(fixture);
+check("default influence comment excludes citation label", !commentReferencesHidden.includes(fixture.links[0].label));
+check("default influence comment excludes citation URL", !commentReferencesHidden.includes(fixture.links[0].url));
+
+state.includeReferenceUrls = true;
+const commentReferencesEnabled = cardComment(fixture);
+check("reference opt-in adds citation label to influence comment", commentReferencesEnabled.includes(fixture.links[0].label));
+check("reference opt-in adds citation URL to influence comment", commentReferencesEnabled.includes(fixture.links[0].url));
+
+state.includeReferenceUrls = false;
 state.includeComments = false;
 const unchecked = topicBody(fixture, false);
 check("unchecked runtime removes character note", !unchecked.includes(fixture.character));
@@ -105,6 +126,8 @@ check("workshop retains links", JSON.stringify(workshopRow.comments.links) === J
 const workshopBody = grab("workshopFile");
 check("workshop persists Include influences choice",
   workshopBody.includes("includeComments: state.includeComments"));
+check("workshop persists reference-entry choice",
+  workshopBody.includes("includeReferenceUrls: state.includeReferenceUrls"));
 check("workshop runtime derivative uses compiler",
   workshopBody.includes("const md = compilePrompt();"));
 
