@@ -1,34 +1,29 @@
-# FLOSC 8.0.0 — Grok candidate V136
+# FLOSC 8.0.0 — Grok candidate V138
 
-V136 starts from the V135 source at commit `55495807edcf21841eb0c81bda1fc6ceda6c2c02`. The public plugin version and stable tag remain 8.0.0. `Github HashID` is that V135 commit.
+V138 is the local plugin tree. It starts from the V137 source at commit `490939b6a34ffc22de3f104b001da883c8556646`. The public plugin version and stable tag remain 8.0.0. `Github HashID` is that V137 commit.
+
+The previous `grok-4-6` folder on main was V136. This commit replaces that folder with the local V138 tree.
 
 ## Scope
 
-WordPress.org asked why FLOSC creates or logs in users, and that a custom login must not hide itself from security plugins.
+The shipped plugin has one `ob_start()`, inside `flosc_capture_output()` in `includes/flosc-output-buffer.php`. `flosc.php` loads that file. The 36 fragment captures call `flosc_capture_output()`. Each callback imports or assigns the variables it reads. `$flosc_ajax_url` and `$flosc_import_api` are imported by reference.
 
-- Email verification, MagicLink, cross-domain SSO arrival, and same-domain SSO arrival each fire `wp_login` once, after FLOSC has finished its own bookkeeping and immediately before the redirect.
-- The MagicLink wp-sync hop reissues the cookie and does not fire `wp_login` again.
-- The OAuth callback still does not fire `wp_login`.
-- An authenticated password change still reissues the cookie and does not fire `wp_login`.
-- Email verification, the login-token arrival, and the wp-sync hop use the existing rate limiter. A login-token limit failure removes the token from the URL and redirects.
-- `readme.txt` states why a subscriber account is required, which paths issue a session, and that `wp_login` does not run `authenticate`.
-
-Payment account creation, profile updates, and signed-token REST authentication are unchanged. The shared request-guard proxy-header trust is unchanged and is not claimed to be spoof-proof.
+This is not a signed full remediation of the WordPress.org "Unclosed ob_start()" note. `ob_get_clean()` runs only when `ob_get_level()` is still one above the level saved before `ob_start()`. A hook that closes that buffer makes the function return an empty string and skip `ob_get_clean()`. `die()` and `wp_die()` skip `finally`, so the buffer stays open.
 
 ## Verification
 
-`tests/check_login_action_boundary.php` passed 12/12. `php -l` passed on the trait, `flosc.php`, and that test. PHPCS with the plugin ruleset reported no findings on those three files. `unzip -t` passed. The zip has 242 files and no `tests/` entries.
+`php -l` passed on `includes/flosc-output-buffer.php`. `tests/check-output-buffer-boundaries.php` passed: 36 captures, one owner, zero leaked buffers. `unzip -t` passed. The zip has 243 files, one `flosc/` root, and no `tests/` entries.
 
-Plugin Check and a browser login journey were not run.
+Plugin Check was not run. This commit is not a live deploy.
 
 ## Exact artifact
 
 ```text
-c38c67d49bc28f9b8cf22744612eabf77b747f6014bc033e50656de96d0e0022  flosc.zip
+e4cff1090c0fbda665158d88b02ef36dc7b2fcad101c68008bd0b76d086dcf73  flosc.zip
 ```
 
-282 zip entries, 242 files, 2,822,830 bytes. Sorted `sha256  path` manifest of those files:
+283 zip entries, 243 files, 2,824,172 bytes. Sorted `sha256  path` manifest of those files:
 
 ```text
-47539d12fbcbcc0d64cbb52843545f0af3c3168c537c39c4720bb9b61f588392
+b9e40c8b1b53ade2ba0f0940a2a6f20abbda01484e8c0f4769c2c60fa2f8b1df
 ```

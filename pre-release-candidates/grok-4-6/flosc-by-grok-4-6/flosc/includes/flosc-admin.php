@@ -1780,8 +1780,9 @@ trait FLOSC_Admin_Trait {
 		$honeypot_name = 'flosc_contact_company';
 		$show_form     = ( 'success' !== $status );
 
-		ob_start();
-		?>
+		return flosc_capture_output(
+			static function () use ( $settings, $status, $show_form, $current_url, $rendered_at, $honeypot_name ) {
+				?>
 		<section class="flosc-contact-form-wrap" aria-label="Contact Form">
 			<div class="flosc-contact-form-card">
 				<h2 class="flosc-contact-form-title"><?php echo esc_html( $settings['form_title'] ); ?></h2>
@@ -1835,8 +1836,9 @@ trait FLOSC_Admin_Trait {
 				<?php endif; ?>
 			</div>
 		</section>
-		<?php
-		return ob_get_clean();
+				<?php
+			}
+		);
 	}
 
 	/**

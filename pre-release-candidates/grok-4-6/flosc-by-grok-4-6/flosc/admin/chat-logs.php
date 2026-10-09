@@ -152,7 +152,12 @@ $flosc_sessions_archived_url = add_query_arg(
 		<?php endif; ?>
 	</div>
 
-	<?php ob_start(); ?>
+	<?php
+	wp_add_inline_script(
+		'flosc-admin',
+		flosc_capture_output(
+			static function () use ( $flosc_chat_logs_nonce, $flosc_session_scope, $flosc_current_flow_id ) {
+				?>
 	jQuery(function($) {
 		var nonce = '<?php echo esc_js( $flosc_chat_logs_nonce ); ?>';
 		var archiveOperation = '<?php echo esc_js( 'archived' === $flosc_session_scope ? 'restore' : 'archive' ); ?>';
@@ -386,7 +391,11 @@ $flosc_sessions_archived_url = add_query_arg(
 
 		updateSelectionStatus();
 	});
-	<?php wp_add_inline_script( 'flosc-admin', ob_get_clean() ); ?>
+				<?php
+			}
+		)
+	);
+	?>
 
 <?php else : ?>
 	<?php
@@ -422,7 +431,12 @@ $flosc_sessions_archived_url = add_query_arg(
 		</tbody>
 	</table>
 
-	<?php ob_start(); ?>
+	<?php
+	wp_add_inline_script(
+		'flosc-admin',
+		flosc_capture_output(
+			static function () use ( $flosc_recent_logs, $flosc_selected_user_id, $flosc_chat_logs_nonce, $flosc_current_flow_id ) {
+				?>
 	jQuery(function($) {
 		var maxId = <?php echo intval( $flosc_recent_logs[0]['id'] ?? 0 ); ?>;
 		var selectedUserId = <?php echo intval( $flosc_selected_user_id ); ?>;
@@ -583,7 +597,11 @@ $flosc_sessions_archived_url = add_query_arg(
 			startPolling();
 		}
 	});
-	<?php wp_add_inline_script( 'flosc-admin', ob_get_clean() ); ?>
+				<?php
+			}
+		)
+	);
+	?>
 <?php endif; ?>
 </div>
 

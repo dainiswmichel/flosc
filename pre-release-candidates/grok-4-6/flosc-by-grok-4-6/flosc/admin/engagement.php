@@ -720,8 +720,11 @@ $flosc_framework = class_exists( 'FLOSC_Framework' ) ? FLOSC_Framework::instance
 
 <?php
 // Condition chips + add/remove rules + reindex form fields.
-ob_start();
-?>
+wp_add_inline_script(
+	'flosc-admin',
+	flosc_capture_output(
+		static function () {
+			?>
 (function () {
 	var lastCond = null;
 
@@ -895,5 +898,7 @@ ob_start();
 
 	reindexRules();
 })();
-<?php
-wp_add_inline_script( 'flosc-admin', ob_get_clean() );
+			<?php
+		}
+	)
+);

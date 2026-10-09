@@ -610,7 +610,12 @@ $flosc_visible_products = array_values(
 	</details>
 </div>
 
-<?php ob_start(); ?>
+<?php
+wp_add_inline_script(
+	'flosc-admin',
+	flosc_capture_output(
+		static function () {
+			?>
 (function () {
 	function setDisabled(el, off) {
 		if (!el) return;
@@ -641,4 +646,6 @@ $flosc_visible_products = array_values(
 		sync();
 	});
 })();
-<?php wp_add_inline_script( 'flosc-admin', ob_get_clean() ); ?>
+	<?php }
+	)
+); ?>

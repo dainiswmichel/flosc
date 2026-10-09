@@ -1025,7 +1025,12 @@ endif;
 </div>
 </details>
 
-<?php ob_start(); ?>
+<?php
+wp_add_inline_script(
+	'flosc-admin',
+	flosc_capture_output(
+		static function () {
+			?>
 jQuery(document).ready(function($) {
 	// --- Provider section show/hide ---
 	// Which provider refuses which setting is data, declared once in
@@ -1037,32 +1042,32 @@ jQuery(document).ready(function($) {
 	// that looked fine. The runtime holds one back; this is so the page says so
 	// rather than displaying a request it knows will not be sent as written.
 	var floscSamplingExclusive = 
-	<?php
-		$flosc_excl = array();
-	foreach ( array( 'anthropic', 'openai', 'xai', 'gemini' ) as $flosc_excl_provider ) {
-		$flosc_excl_profile                 = function_exists( 'flosc_provider_api_profile' )
-			? flosc_provider_api_profile( $flosc_excl_provider )
-			: null;
-		$flosc_excl[ $flosc_excl_provider ] = is_array( $flosc_excl_profile )
-			? array_values( (array) ( $flosc_excl_profile['sampling_exclusive'] ?? array() ) )
-			: array();
-	}
-		echo wp_json_encode( $flosc_excl );
-	?>
+			<?php
+			$flosc_excl = array();
+			foreach ( array( 'anthropic', 'openai', 'xai', 'gemini' ) as $flosc_excl_provider ) {
+				$flosc_excl_profile                 = function_exists( 'flosc_provider_api_profile' )
+				? flosc_provider_api_profile( $flosc_excl_provider )
+				: null;
+				$flosc_excl[ $flosc_excl_provider ] = is_array( $flosc_excl_profile )
+				? array_values( (array) ( $flosc_excl_profile['sampling_exclusive'] ?? array() ) )
+				: array();
+			}
+			echo wp_json_encode( $flosc_excl );
+			?>
 	;
 
 	var floscProviderRejects = 
-	<?php
-		$flosc_rejects = array();
-	foreach ( array( 'anthropic', 'openai', 'xai', 'gemini' ) as $flosc_slug ) {
-		$flosc_profile                = function_exists( 'flosc_provider_api_profile' ) ? flosc_provider_api_profile( $flosc_slug ) : null;
-		$flosc_rejects[ $flosc_slug ] = array(
-			'params' => is_array( $flosc_profile ) ? array_values( (array) $flosc_profile['rejects_tuning'] ) : array(),
-			'note'   => is_array( $flosc_profile ) ? (string) $flosc_profile['tuning_note'] : '',
-		);
-	}
-		echo wp_json_encode( $flosc_rejects );
-	?>
+			<?php
+			$flosc_rejects = array();
+			foreach ( array( 'anthropic', 'openai', 'xai', 'gemini' ) as $flosc_slug ) {
+				$flosc_profile                = function_exists( 'flosc_provider_api_profile' ) ? flosc_provider_api_profile( $flosc_slug ) : null;
+				$flosc_rejects[ $flosc_slug ] = array(
+					'params' => is_array( $flosc_profile ) ? array_values( (array) $flosc_profile['rejects_tuning'] ) : array(),
+					'note'   => is_array( $flosc_profile ) ? (string) $flosc_profile['tuning_note'] : '',
+				);
+			}
+			echo wp_json_encode( $flosc_rejects );
+			?>
 	;
 
 	// Model first, provider second — the same order the PHP resolver uses.
@@ -1536,42 +1541,42 @@ jQuery(document).ready(function($) {
 	// that changing provider or model re-renders the menu from data already in
 	// the page rather than from another round trip.
 	var floscParamsByProvider = 
-	<?php
-		$flosc_menu = array();
-	foreach ( array( 'anthropic', 'openai', 'xai', 'gemini' ) as $flosc_menu_provider ) {
-		$flosc_menu[ $flosc_menu_provider ] = function_exists( 'flosc_model_parameters_for_provider' )
-			? flosc_model_parameters_for_provider( $flosc_menu_provider )
-			: array();
-	}
-		echo wp_json_encode( $flosc_menu );
-	?>
+			<?php
+			$flosc_menu = array();
+			foreach ( array( 'anthropic', 'openai', 'xai', 'gemini' ) as $flosc_menu_provider ) {
+				$flosc_menu[ $flosc_menu_provider ] = function_exists( 'flosc_model_parameters_for_provider' )
+				? flosc_model_parameters_for_provider( $flosc_menu_provider )
+				: array();
+			}
+			echo wp_json_encode( $flosc_menu );
+			?>
 	;
 
 	var floscParamRecipes = 
-	<?php
-		$flosc_recipes = array();
-	foreach ( array( 'anthropic', 'openai', 'xai', 'gemini' ) as $flosc_menu_provider ) {
-		$flosc_recipes[ $flosc_menu_provider ] = function_exists( 'flosc_model_parameter_recipes' )
-			? flosc_model_parameter_recipes( $flosc_menu_provider )
-			: array();
-	}
-		echo wp_json_encode( $flosc_recipes );
-	?>
+			<?php
+			$flosc_recipes = array();
+			foreach ( array( 'anthropic', 'openai', 'xai', 'gemini' ) as $flosc_menu_provider ) {
+				$flosc_recipes[ $flosc_menu_provider ] = function_exists( 'flosc_model_parameter_recipes' )
+				? flosc_model_parameter_recipes( $flosc_menu_provider )
+				: array();
+			}
+			echo wp_json_encode( $flosc_recipes );
+			?>
 	;
 
 	var floscParamModelNotes = 
-	<?php
-		$flosc_notes = array();
-	foreach ( array( 'anthropic', 'openai', 'xai', 'gemini' ) as $flosc_menu_provider ) {
-		$flosc_note_profile                  = function_exists( 'flosc_provider_api_profile' )
-			? flosc_provider_api_profile( $flosc_menu_provider )
-			: null;
-		$flosc_notes[ $flosc_menu_provider ] = is_array( $flosc_note_profile )
-			? (array) ( $flosc_note_profile['model_parameter_notes'] ?? array() )
-			: array();
-	}
-		echo wp_json_encode( $flosc_notes );
-	?>
+			<?php
+			$flosc_notes = array();
+			foreach ( array( 'anthropic', 'openai', 'xai', 'gemini' ) as $flosc_menu_provider ) {
+				$flosc_note_profile                  = function_exists( 'flosc_provider_api_profile' )
+				? flosc_provider_api_profile( $flosc_menu_provider )
+				: null;
+				$flosc_notes[ $flosc_menu_provider ] = is_array( $flosc_note_profile )
+				? (array) ( $flosc_note_profile['model_parameter_notes'] ?? array() )
+				: array();
+			}
+			echo wp_json_encode( $flosc_notes );
+			?>
 	;
 
 	// Where each provider explains one parameter, in its own words. A template
@@ -1579,30 +1584,30 @@ jQuery(document).ready(function($) {
 	// live page, '' where it has not — and the caller falls back to the
 	// provider's page rather than inventing an anchor.
 	var floscProviderParamDocs = 
-	<?php
-		$flosc_param_docs = array();
-	foreach ( array( 'anthropic', 'openai', 'xai', 'gemini' ) as $flosc_menu_provider ) {
-		$flosc_param_profile                      = function_exists( 'flosc_provider_api_profile' )
-			? flosc_provider_api_profile( $flosc_menu_provider )
-			: null;
-		$flosc_param_docs[ $flosc_menu_provider ] = is_array( $flosc_param_profile )
-			? (string) ( $flosc_param_profile['param_doc_url'] ?? '' )
-			: '';
-	}
-		echo wp_json_encode( $flosc_param_docs );
-	?>
+			<?php
+			$flosc_param_docs = array();
+			foreach ( array( 'anthropic', 'openai', 'xai', 'gemini' ) as $flosc_menu_provider ) {
+				$flosc_param_profile                      = function_exists( 'flosc_provider_api_profile' )
+				? flosc_provider_api_profile( $flosc_menu_provider )
+				: null;
+				$flosc_param_docs[ $flosc_menu_provider ] = is_array( $flosc_param_profile )
+				? (string) ( $flosc_param_profile['param_doc_url'] ?? '' )
+				: '';
+			}
+			echo wp_json_encode( $flosc_param_docs );
+			?>
 	;
 
 	var floscProviderDocs = 
-	<?php
-		$flosc_docs = array();
-	foreach ( array( 'anthropic', 'openai', 'xai', 'gemini' ) as $flosc_menu_provider ) {
-		$flosc_docs[ $flosc_menu_provider ] = function_exists( 'flosc_provider_docs_url' )
-			? flosc_provider_docs_url( $flosc_menu_provider )
-			: '';
-	}
-		echo wp_json_encode( $flosc_docs );
-	?>
+			<?php
+			$flosc_docs = array();
+			foreach ( array( 'anthropic', 'openai', 'xai', 'gemini' ) as $flosc_menu_provider ) {
+				$flosc_docs[ $flosc_menu_provider ] = function_exists( 'flosc_provider_docs_url' )
+				? flosc_provider_docs_url( $flosc_menu_provider )
+				: '';
+			}
+			echo wp_json_encode( $flosc_docs );
+			?>
 	;
 
 	var floscProviderLabels = {
@@ -2924,7 +2929,11 @@ jQuery(document).ready(function($) {
 		});
 	});
 });
-<?php wp_add_inline_script( 'flosc-admin', ob_get_clean() ); ?>
+			<?php
+		}
+	)
+);
+?>
 
 <details class="flosc-ai-acc">
 <summary class="flosc-ai-acc__summary">
@@ -3710,7 +3719,12 @@ $flosc_accuracy_personality_label = '' !== $flosc_personality_label
 	</div>
 </div>
 
-<?php ob_start(); ?>
+<?php
+wp_add_inline_script(
+	'flosc-admin',
+	flosc_capture_output(
+		static function () {
+			?>
 jQuery(document).ready(function($) {
 	function floscAccVarMap() {
 		var raw = $('#flosc-accuracy-rows').attr('data-flosc-acc-map') || '{}';
@@ -3862,7 +3876,11 @@ jQuery(document).ready(function($) {
 		runMessage(0);
 	});
 });
-<?php wp_add_inline_script( 'flosc-admin', ob_get_clean() ); ?>
+			<?php
+		}
+	)
+);
+?>
 </div>
 </details>
 
