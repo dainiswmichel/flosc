@@ -1,36 +1,34 @@
 {
-  "schema_version": 7,
+  "schema_version": 8,
   "candidate": "codex-gpt5",
-  "candidate_label": "FLOSC 8.0.0 candidate V133",
+  "candidate_label": "FLOSC 8.0.0 candidate V135",
   "owner": "Codex",
   "parent": {
-    "candidate": "V132",
-    "commit": "0a5ac0935d8c5971e2736ded20327ede76f68569",
-    "zip_sha256": "7bc4354b217ba733f1e12dfabbe27cb347e4780f6bd3257b618bfeacc67643cd"
+    "candidate": "V134",
+    "commit": "ddb92fc1ae966728877442cd86ef4b2f4dd8f4b2"
   },
-  "built_at_utc": "2026-10-09T04:56:47Z",
+  "built_at_utc": "2026-10-09T07:14:42Z",
   "plugin_version": "8.0.0",
   "stable_tag": "8.0.0",
-  "internal_iteration": "v133",
-  "github_hashid_at_pack": "0a5ac0935d8c5971e2736ded20327ede76f68569",
+  "internal_iteration": "v135",
+  "github_hashid_at_pack": "ddb92fc1ae966728877442cd86ef4b2f4dd8f4b2",
   "plugin_source": "flosc-by-codex-gpt5/flosc",
   "source_file_count": 318,
   "source_php_file_count": 200,
-  "v133_delta": {
-    "source_entries": 6,
-    "shipped_files": 5,
+  "v135_delta": {
+    "shipped_files_changed_from_v133": 5,
     "behavior_change": true,
     "ui_change": true,
-    "contract": "Include influences gates character notes, works, and citation labels/URLs at the AI-provider boundary while retaining them in workshop/design artifacts."
+    "contract": "Influence descriptions and works remain enabled by default. Complete reference entries, consisting of description and URL together, are excluded from ai_base_prompt by default and require the floscAdmin to enable Include reference URLs."
   },
   "artifact": {
     "path": "flosc.zip",
     "root": "flosc/",
     "entries": 282,
     "files": 242,
-    "bytes": 2821911,
-    "sha256": "718d9b1093d07c1d12f276b378a5b57449c46917110e97bf3ff45dd507654fe8",
-    "runtime_manifest_sha256": "082896dbfa28341564c39e3799f3f642e0e0706ef472fba0f975eeead7bddfda",
+    "bytes": 2822179,
+    "sha256": "20ab4f8fd8cc2061a42dd995faa0f629446a812b452c7f20ab3390c9da8aa674",
+    "runtime_manifest_sha256": "1a6c66c82771c3e2b89c932ddc715a94d4db958e01b1edd82aa7ee3617d42077",
     "integrity": "unzip -t passed",
     "tests_entries": 0
   },
@@ -39,32 +37,36 @@
     "php_tests_failed": 0,
     "javascript_tests_passed": 6,
     "javascript_tests_failed": 0,
-    "influence_boundary_assertions_passed": 18,
+    "influence_boundary_assertions_passed": 31,
     "influence_boundary_assertions_failed": 0,
     "php_syntax_files_passed": 200,
     "javascript_syntax_files_passed": 15,
     "changed_php_wpcs_findings": 0,
     "changed_php_php74_findings": 0,
-    "zip_gate_matches_v132": true,
+    "zip_gate_matches_v133": true,
     "zip_gate_security_errors": 13,
     "zip_gate_security_warnings": 22,
-    "official_plugin_check": "unverified in the local gate",
+    "official_plugin_check_errors": 0,
+    "official_plugin_check_warnings": 22,
     "submission_ready": false
   },
   "live_verification": {
     "site": "https://dainis.net",
     "plugin_status": "active",
     "plugin_version": "8.0.0",
-    "internal_iteration": "v133",
+    "internal_iteration": "v135",
+    "home_http_status": 200,
+    "chat_http_status": 200,
     "live_file_count": 242,
-    "runtime_manifest_sha256": "082896dbfa28341564c39e3799f3f642e0e0706ef472fba0f975eeead7bddfda",
+    "runtime_manifest_sha256": "1a6c66c82771c3e2b89c932ddc715a94d4db958e01b1edd82aa7ee3617d42077",
     "artifact_tree_match": true,
     "visual_builder_acceptance": "pending Dainis confirmation"
   },
   "rollback": {
-    "path": "/home/dainisne/flosc-deploy-backups/flosc-pre-v133-2026y-10m-09d-UTC05h-01m-37s.tgz",
-    "bytes": 2690079,
-    "sha256": "df63f6585491875b1855737a9ebbe89b931cc5a25539d6b94bae0e37351735e9"
+    "archive_path": "/home/dainisne/flosc-deploy-backups/flosc-pre-v135-2026y-10m-09d-UTC07h-16m-55s.tgz",
+    "archive_bytes": 2692608,
+    "archive_sha256": "f06cd87f708fcd82d27088792de5f30bccefb68813dbeacfef16aa3993c742f5",
+    "directory_path": "/home/dainisne/flosc-deploy-backups/flosc-dir-pre-v135-2026y-10m-09d-UTC07h-16m-55s"
   },
   "status": "LIVE_DEPLOYED_AUTOMATED_VERIFIED_PENDING_UI_ACCEPTANCE"
 }
