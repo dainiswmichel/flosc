@@ -69,6 +69,15 @@ if ( false === strpos( $flosc_helper, 'ob_get_level() > ( $flosc_parent_level + 
 if ( false === strpos( $flosc_helper, 'ob_get_level() === ( $flosc_parent_level + 1 )' ) ) {
 	$flosc_failures[] = 'the helper must close its buffer only while it remains current';
 }
+if ( false === strpos( $flosc_helper, 'register_shutdown_function( $flosc_shutdown )' ) ) {
+	$flosc_failures[] = 'exit must reach a shutdown close for the buffer finally does not close';
+}
+if ( 1 !== substr_count( $flosc_helper, 'ob_end_flush(' ) ) {
+	$flosc_failures[] = 'the shutdown close must flush the buffer opened by this call';
+}
+if ( false === strpos( $flosc_helper, 'if ( ! ob_end_clean() )' ) ) {
+	$flosc_failures[] = 'a nested buffer that cannot be removed must stop the cleanup loop';
+}
 
 $flosc_required_scope = array(
 	'admin/chat-logs.php'          => array( '$flosc_chat_logs_nonce', '$flosc_session_scope', '$flosc_current_flow_id', '$flosc_recent_logs', '$flosc_selected_user_id' ),
@@ -147,6 +156,157 @@ try {
 }
 if ( ! $flosc_thrown || ob_get_level() !== $flosc_level ) {
 	$flosc_failures[] = 'exception cleanup failed to restore the prior buffer depth';
+}
+
+ob_start();
+echo 'PARENT';
+$flosc_value = flosc_capture_output(
+	static function () {
+		echo 'CHILD';
+	}
+);
+$flosc_parent_bytes = ob_get_clean();
+if ( 'CHILD' !== $flosc_value || 'PARENT' !== $flosc_parent_bytes || ob_get_level() !== $flosc_level ) {
+	$flosc_failures[] = 'normal capture altered the parent buffer contents';
+}
+
+/**
+ * Run a CLI probe that exits inside a capture.
+ *
+ * @param string $mode Probe mode: exit, nested, normal, or stuck.
+ * @return array{0:string,1:string,2:string,3:int} Stdout, stderr, marker, and whether it finished.
+ */
+$flosc_probe = static function ( $mode ) use ( $flosc_root ) {
+	$flosc_script = tempnam( sys_get_temp_dir(), 'flosc-ob' );
+	$flosc_marker = tempnam( sys_get_temp_dir(), 'flosc-ob-mark' );
+	$flosc_code   = <<<'PHP'
+<?php
+define( 'ABSPATH', dirname( $argv[1] ) . '/' );
+require $argv[1];
+$mode   = $argv[3];
+$marker = $argv[2];
+if ( 'stuck' === $mode ) {
+	flosc_capture_output(
+		static function () {
+			ob_start( null, 0, PHP_OUTPUT_HANDLER_CLEANABLE | PHP_OUTPUT_HANDLER_FLUSHABLE );
+			echo 'STUCK';
+		}
+	);
+	fwrite( STDOUT, 'RETURNED' );
+	exit( 0 );
+}
+ob_start();
+echo 'PARENT';
+$parent = ob_get_level();
+if ( 'normal' === $mode ) {
+	$child = flosc_capture_output(
+		static function () {
+			echo 'CHILD';
+		}
+	);
+	register_shutdown_function(
+		static function () use ( $parent, $marker, $child ) {
+			file_put_contents( $marker, ob_get_level() . ':' . $parent . ':' . $child . ':' . ob_get_contents() );
+		}
+	);
+	exit( 0 );
+}
+if ( 'nested' === $mode ) {
+	flosc_capture_output(
+		static function () use ( $parent, $marker ) {
+			echo 'OUTER';
+			flosc_capture_output(
+				static function () use ( $parent, $marker ) {
+					echo 'INNER';
+					register_shutdown_function(
+						static function () use ( $parent, $marker ) {
+							file_put_contents( $marker, ob_get_level() . ':' . $parent );
+						}
+					);
+					exit( 0 );
+				}
+			);
+		}
+	);
+	exit( 2 );
+}
+flosc_capture_output(
+	static function () use ( $parent, $marker ) {
+		echo 'INNER';
+		register_shutdown_function(
+			static function () use ( $parent, $marker ) {
+				file_put_contents( $marker, ob_get_level() . ':' . $parent );
+			}
+		);
+		exit( 0 );
+	}
+);
+exit( 2 );
+PHP;
+	file_put_contents( $flosc_script, $flosc_code );
+	$flosc_command = escapeshellarg( PHP_BINARY ) . ' ' . escapeshellarg( $flosc_script ) . ' ' . escapeshellarg( $flosc_root . '/includes/flosc-output-buffer.php' ) . ' ' . escapeshellarg( $flosc_marker ) . ' ' . escapeshellarg( $mode );
+	$flosc_pipes   = array();
+	$flosc_process = proc_open(
+		$flosc_command,
+		array(
+			0 => array( 'pipe', 'r' ),
+			1 => array( 'pipe', 'w' ),
+			2 => array( 'pipe', 'w' ),
+		),
+		$flosc_pipes
+	);
+	fclose( $flosc_pipes[0] );
+	stream_set_blocking( $flosc_pipes[1], false );
+	stream_set_blocking( $flosc_pipes[2], false );
+	$flosc_stdout  = '';
+	$flosc_stderr  = '';
+	$flosc_started = microtime( true );
+	$flosc_done    = 0;
+	if ( is_resource( $flosc_process ) ) {
+		do {
+			$flosc_stdout .= (string) stream_get_contents( $flosc_pipes[1] );
+			$flosc_stderr .= (string) stream_get_contents( $flosc_pipes[2] );
+			$flosc_status  = proc_get_status( $flosc_process );
+			if ( ! $flosc_status['running'] ) {
+				$flosc_done = 1;
+				break;
+			}
+			if ( ( microtime( true ) - $flosc_started ) > 3 ) {
+				proc_terminate( $flosc_process );
+				break;
+			}
+			usleep( 10000 );
+		} while ( true );
+		$flosc_stdout .= (string) stream_get_contents( $flosc_pipes[1] );
+		$flosc_stderr .= (string) stream_get_contents( $flosc_pipes[2] );
+		fclose( $flosc_pipes[1] );
+		fclose( $flosc_pipes[2] );
+		proc_close( $flosc_process );
+	}
+	$flosc_mark = is_file( $flosc_marker ) ? (string) file_get_contents( $flosc_marker ) : '';
+	unlink( $flosc_script );
+	unlink( $flosc_marker );
+	return array( $flosc_stdout, $flosc_stderr, $flosc_mark, $flosc_done );
+};
+
+$flosc_exit_probe = $flosc_probe( 'exit' );
+if ( 1 !== $flosc_exit_probe[3] || '1:1' !== $flosc_exit_probe[2] || false === strpos( $flosc_exit_probe[0], 'PARENT' ) || false === strpos( $flosc_exit_probe[0], 'INNER' ) ) {
+	$flosc_failures[] = 'exit left the capture buffer open or dropped the parent output';
+}
+
+$flosc_nested_probe = $flosc_probe( 'nested' );
+if ( 1 !== $flosc_nested_probe[3] || '1:1' !== $flosc_nested_probe[2] || false === strpos( $flosc_nested_probe[0], 'PARENT' ) || false === strpos( $flosc_nested_probe[0], 'OUTER' ) || false === strpos( $flosc_nested_probe[0], 'INNER' ) ) {
+	$flosc_failures[] = 'nested exit did not flush both capture buffers into the parent';
+}
+
+$flosc_normal_probe = $flosc_probe( 'normal' );
+if ( 1 !== $flosc_normal_probe[3] || '1:1:CHILD:PARENT' !== $flosc_normal_probe[2] ) {
+	$flosc_failures[] = 'a finished capture flushed its caller buffer during shutdown';
+}
+
+$flosc_stuck_probe = $flosc_probe( 'stuck' );
+if ( 1 !== $flosc_stuck_probe[3] || false === strpos( $flosc_stuck_probe[0], 'RETURNED' ) ) {
+	$flosc_failures[] = 'a nested buffer that cannot be removed hung the cleanup loop';
 }
 
 if ( ! empty( $flosc_failures ) ) {

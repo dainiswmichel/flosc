@@ -1,57 +1,34 @@
 {
   "schema_version": 8,
   "candidate": "grok-4-6",
-  "candidate_label": "FLOSC 8.0.0 candidate V138",
+  "candidate_label": "FLOSC 8.0.0 candidate V139",
   "owner": "Grok",
   "parent": {
-    "candidate": "V137",
-    "commit": "490939b6a34ffc22de3f104b001da883c8556646"
+    "candidate": "V138",
+    "commit": "753bdc74204b61ba42bd5a3a6f1fdefca259a7f4"
   },
   "plugin_version": "8.0.0",
   "stable_tag": "8.0.0",
-  "internal_iteration": "v138",
-  "github_hashid_at_pack": "490939b6a34ffc22de3f104b001da883c8556646",
+  "internal_iteration": "v139",
+  "github_hashid_at_pack": "753bdc74204b61ba42bd5a3a6f1fdefca259a7f4",
   "plugin_source": "flosc-by-grok-4-6/flosc",
-  "baseline": "pre-release-candidates/codex-gpt5 at 490939b6a34ffc22de3f104b001da883c8556646",
-  "v138_delta_from_v137_zip": [
+  "baseline": "pre-release-candidates/grok-4-6 at 753bdc74204b61ba42bd5a3a6f1fdefca259a7f4",
+  "v139_delta_from_v138_zip": [
     "flosc.php",
-    "includes/flosc-output-buffer.php",
-    "includes/flosc-admin.php",
-    "admin/ai-configuration.php",
-    "admin/chat-logs.php",
-    "admin/chat-navigation.php",
-    "admin/chat-styling.php",
-    "admin/companion.php",
-    "admin/content.php",
-    "admin/da1.php",
-    "admin/email.php",
-    "admin/engagement.php",
-    "admin/flosc-app.php",
-    "admin/flow-edit.php",
-    "admin/ivr-messages.php",
-    "admin/ivr-upload-handler.php",
-    "admin/knowledge-base.php",
-    "admin/login-registration.php",
-    "admin/member-levels.php",
-    "admin/offers.php",
-    "admin/payments.php",
-    "admin/quiz.php",
-    "admin/settings.php",
-    "admin/sso.php",
-    "admin/token-management.php",
-    "admin/ui-navigation.php",
-    "tests/check-output-buffer-boundaries.php",
-    "tests/check_admin_response_rendering.php"
+    "includes/flosc-output-buffer.php"
   ],
-  "review_status": "published for inspection. Not a signed full remediation of Unclosed ob_start(). ob_get_clean() runs only when the buffer level is still the one this function opened. die() and wp_die() skip finally.",
+  "v139_git_only": [
+    "tests/check-output-buffer-boundaries.php"
+  ],
+  "review_status": "Not a signed full remediation of Unclosed ob_start(). The collect call runs only while ob_get_level() is the level this call opened. exit(), die(), and wp_die() skip finally; a shutdown callback flushes buffers above the saved parent level and is not the same-function closer.",
   "artifact": {
     "path": "flosc.zip",
     "root": "flosc/",
     "entries": 283,
     "files": 243,
-    "bytes": 2824172,
-    "sha256": "e4cff1090c0fbda665158d88b02ef36dc7b2fcad101c68008bd0b76d086dcf73",
-    "runtime_manifest_sha256": "b9e40c8b1b53ade2ba0f0940a2a6f20abbda01484e8c0f4769c2c60fa2f8b1df",
+    "bytes": 2824378,
+    "sha256": "49b0b756a71fa7da26f0b64fd75f0ae2e938047bffea539da0326766caa4245d",
+    "runtime_manifest_sha256": "93d7694e6a0c79f2d382356c3ada014626ee9843d3d3200c000a1d02d739720f",
     "runtime_manifest": "sha256 of sorted lines: '<sha256>  <zip path>' for every file in the zip",
     "tests_entries": 0
   }
