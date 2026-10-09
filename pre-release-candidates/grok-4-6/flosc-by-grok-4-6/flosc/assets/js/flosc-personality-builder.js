@@ -202,8 +202,7 @@
       character: "Hildegard braids vision, medicine, music, and reform. Influence: the reply can be luminous and practical at once — body, soul, and public order — without spiritual bypass.",
       works: ["Scivias", "Physica", "Causae et Curae", "Symphonia armonie celestium revelationum"],
       links: [
-        { label: "Hildegard of Bingen", url: "https://en.wikipedia.org/wiki/Hildegard_of_Bingen" },
-        { label: "Scivias (Internet Archive)", url: "https://archive.org/details/hildegard-of-bingen-scivias" }
+        { label: "Hildegard of Bingen", url: "https://en.wikipedia.org/wiki/Hildegard_of_Bingen" }
       ],
       repo: repo("hildegard"),
       inject: "Hold vision, medicine, and reform together. Healing light without bypass." },
@@ -238,8 +237,7 @@
       character: "Teresa maps the interior life without theater. Influence: calm, precise talk about prayer, integrity, and the soul’s rooms — never as performance.",
       works: ["The Interior Castle", "The Life of Teresa of Jesus", "The Way of Perfection"],
       links: [
-        { label: "Teresa of Ávila", url: "https://en.wikipedia.org/wiki/Teresa_of_%C3%81vila" },
-        { label: "Interior Castle (Gutenberg)", url: "https://www.gutenberg.org/ebooks/8120" }
+        { label: "Teresa of Ávila", url: "https://en.wikipedia.org/wiki/Teresa_of_%C3%81vila" }
       ],
       repo: repo("teresa"),
       inject: "Honor interior life. Radiate peace without spiritual theater." },
@@ -256,8 +254,7 @@
       character: "Maat weighs the heart against a feather. Influence: statements get measured against what is so. Falseness is named. Order is moral, not merely tidy.",
       works: ["Book of the Dead (weighing of the heart)", "Instruction of Ptahhotep", "Negative Confession"],
       links: [
-        { label: "Maat", url: "https://en.wikipedia.org/wiki/Maat" },
-        { label: "Papyrus of Ani (Gutenberg)", url: "https://www.gutenberg.org/ebooks/15121" }
+        { label: "Maat", url: "https://en.wikipedia.org/wiki/Maat" }
       ],
       repo: repo("maat"),
       inject: "Measure statements against reality. Expose falseness. Keep incorruptible order." },
@@ -316,8 +313,7 @@
       character: "They left the city to keep their mouths honest. Influence: short sayings, suspicion of status, preference for silence over spiritual display.",
       works: ["Apophthegmata Patrum (Sayings of the Desert Fathers)"],
       links: [
-        { label: "Desert Fathers", url: "https://en.wikipedia.org/wiki/Desert_Fathers" },
-        { label: "Sayings (Internet Archive)", url: "https://archive.org/details/sayings-of-the-desert-fathers" }
+        { label: "Desert Fathers", url: "https://en.wikipedia.org/wiki/Desert_Fathers" }
       ],
       repo: repo("desert"),
       inject: "Prefer silence and withdrawal from status games over performing wisdom." },
@@ -1050,6 +1046,8 @@
     open: { "layer:identity": true },
     tribOrder: {},
     includeComments: true,
+    // Reference labels and URLs leave the builder only after explicit opt-in.
+    includeReferenceUrls: false,
     // Off by default. A downloaded profile naming the site it was made on
     // carries that line to everyone the file is ever passed on to, so it is
     // the floscAdmin's to add when they are publishing, not a default.
@@ -2396,7 +2394,9 @@
     bits.push("status: " + (st.on ? "on" : "off") + (st.mode === "conditional" && st.condition ? " · when " + st.condition : ""));
     if (t.character) bits.push("character: " + t.character);
     if (t.works && t.works.length) bits.push("works: " + t.works.join("; "));
-    if (t.links && t.links.length) bits.push("resources: " + t.links.map(function (l) { return l.label + " <" + l.url + ">"; }).join(" · "));
+    if (state.includeReferenceUrls && t.links && t.links.length) {
+      bits.push("resources: " + t.links.map(function (l) { return l.label + " <" + l.url + ">"; }).join(" · "));
+    }
     if (t.repo) bits.push("repo: " + t.repo.id + (t.repo.note ? " — " + t.repo.note : ""));
     if (bits.length <= 3 && !t.character) return "";
     return "<!-- floscComment\n" + commentSafe(bits.join("\n")) + "\n-->";
@@ -2715,9 +2715,16 @@
     if (t.short) bits.push("short: " + t.short);
     const inject = yamlish(tribInject(t));
     if (inject) bits.push("instruction: " + inject);
-    if (t.character) bits.push("character note: " + t.character);
-    if (t.works && t.works.length) bits.push("works: " + t.works.join("; "));
-    if (t.links && t.links.length) bits.push("resources: " + t.links.map(function (l) { return l.label + " <" + l.url + ">"; }).join(" · "));
+    /* Influence source material belongs in the runtime personality only when
+       the floscAdmin includes it. The design copy always keeps it: withMetrics
+       identifies that human-readable artifact, not the provider prompt. */
+    if (state.includeComments || withMetrics) {
+      if (t.character) bits.push("character note: " + t.character);
+      if (t.works && t.works.length) bits.push("works: " + t.works.join("; "));
+      if ((state.includeReferenceUrls || withMetrics) && t.links && t.links.length) {
+        bits.push("resources: " + t.links.map(function (l) { return l.label + " <" + l.url + ">"; }).join(" · "));
+      }
+    }
     /* 23 — a note to ourselves about a corpus feature that does not exist,
        billed on every turn. Design copy only now. */
     if (t.repo && withMetrics) bits.push("repo: " + t.repo.id + (t.repo.note ? " — " + t.repo.note : ""));
@@ -3161,6 +3168,10 @@
       note: "Designer genome. Every parameter. Import this into the floscPersonality Builder. Not the personality profile for chats or APIs.",
       compiler_version: "flosc-personality-builder/34.0",
       written_at: new Date().toISOString(),
+      /* WordPress saves workshopFile(), not fullSpec(). Keep this choice with
+         the design so an excluded influence stays excluded after reload. */
+      includeComments: state.includeComments,
+      includeReferenceUrls: state.includeReferenceUrls,
       /*
        * The same facts the soul.md footer carries, as real JSON keys rather
        * than a block of text a reader would have to parse back out. Built from
@@ -3269,6 +3280,7 @@
       flosc_library_entry: libraryEntry(),
       recommended_flow_ai: shop.sampling_recommendation,
       includeComments: state.includeComments,
+      includeReferenceUrls: state.includeReferenceUrls,
       tribOrder: shop.family_order,
       tributaries: shop.tributaries.map(function (w) {
         return {
@@ -3373,7 +3385,7 @@
     if (floscHosted()) return;
     try {
       const payload = JSON.stringify({
-        preset: state.preset, soul: state.soul, sampling: state.sampling, trib: state.trib, custom: state.custom, clouds: cloudList(), categories: state.categories, tribOrder: state.tribOrder, denOrder: state.denOrder, denPlace: state.denPlace, includeComments: state.includeComments, include_source_site: state.include_source_site, open: state.open,
+        preset: state.preset, soul: state.soul, sampling: state.sampling, trib: state.trib, custom: state.custom, clouds: cloudList(), categories: state.categories, tribOrder: state.tribOrder, denOrder: state.denOrder, denPlace: state.denPlace, includeComments: state.includeComments, includeReferenceUrls: state.includeReferenceUrls, include_source_site: state.include_source_site, open: state.open,
         layers: ensureContainers(), tribParent: state.tribParent || {}
       });
       localStorage.setItem("flosc_personality_builder_v33_autosave", payload);
@@ -3823,7 +3835,7 @@
     const repo = t.repo || null;
     if (!ch && !works.length && !links.length && !repo) return "";
     let h = '<div class="teach">';
-    if (ch) h += '<p><strong>Character note (background reference · never compiles).</strong> ' + esc(ch) + "</p>";
+    if (ch) h += '<p><strong>Character note (compiles for an active card when Include influences is checked).</strong> ' + esc(ch) + "</p>";
     if (works.length) h += "<p><strong>Comment · main works.</strong> " + works.map(esc).join("; ") + "</p>";
     if (links.length) {
       h += "<p><strong>Comment · resources.</strong> " + links.map(function (l) {
@@ -4869,6 +4881,8 @@
     if (hide) hide.checked = !!state.hideOff;
     const inc = document.getElementById("includeComments");
     if (inc) inc.checked = !!state.includeComments;
+    const incUrls = document.getElementById("includeReferenceUrls");
+    if (incUrls) incUrls.checked = !!state.includeReferenceUrls;
     const src = document.getElementById("includeSourceSite");
     if (src) src.checked = !!state.include_source_site;
     renderCols();
@@ -5645,6 +5659,7 @@
     if (spec.density && Array.isArray(spec.density.order)) state.denOrder = spec.density.order;
     if (spec.density && spec.density.drop_between) state.denPlace = spec.density.drop_between;
     if (typeof spec.includeComments === "boolean") state.includeComments = spec.includeComments;
+    if (typeof spec.includeReferenceUrls === "boolean") state.includeReferenceUrls = spec.includeReferenceUrls;
 
     /* Containers: a v2 genome carries the full container tree. A legacy
        genome leaves state.layers empty; ensureContainers() reseeds the
@@ -5765,6 +5780,11 @@
   });
   document.getElementById("includeComments").addEventListener("change", function () {
     state.includeComments = this.checked;
+    persistSoft();
+    renderOut();
+  });
+  document.getElementById("includeReferenceUrls").addEventListener("change", function () {
+    state.includeReferenceUrls = this.checked;
     persistSoft();
     renderOut();
   });
@@ -6230,6 +6250,7 @@
         state.denOrder = parsed.denOrder || [];
         if (parsed.denPlace) state.denPlace = parsed.denPlace;
         if (typeof parsed.includeComments === "boolean") state.includeComments = parsed.includeComments;
+        if (typeof parsed.includeReferenceUrls === "boolean") state.includeReferenceUrls = parsed.includeReferenceUrls;
         // Restored only when it was actually stored as a boolean, so an older
         // autosave without the key keeps the off default rather than reading
         // undefined as a choice.

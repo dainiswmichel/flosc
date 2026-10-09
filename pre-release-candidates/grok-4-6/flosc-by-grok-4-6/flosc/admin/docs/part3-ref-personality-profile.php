@@ -248,9 +248,21 @@ the library or sent to a provider.</p>
 FLOSC profile that is sent and then disowned — no heading that costs input tokens on every turn
 only to tell the model to ignore what follows.</p>
 
-<p>Influences are the case this rule was written for. Ticked, they compile in as character under
-their own heading. Unticked, they stay in the builder state and the design copy and are never
-sent. There is no third state.</p>
+<p>Influences are the case this rule was written for. Ticked, their character notes and works
+compile in under their own heading as part of the personality. Complete reference entries—their
+descriptions and URLs—are excluded by default. They travel as prompt text inside
+<code>ai_base_prompt</code> to the AI provider selected for the flow only when the floscAdmin also
+ticks Include reference URLs.</p>
+
+<p>A model may use a citation as provenance or a conceptual anchor. A URL appearing in the prompt
+does not mean that FLOSC or the model retrieved it, and the personality must not claim that a
+source was checked unless an available retrieval tool actually completed that request.</p>
+
+<p>Unticked, the same influence material stays in <code>workshop_json</code> and the design copy but
+is absent from <code>ai_base_prompt</code> and is never sent to the AI provider. In that state, the
+reference-URL setting has no effect. These citations are not external service integrations: FLOSC
+makes no request to the cited websites and sends them no WordPress, profile, visitor or
+conversation data.</p>
 
 <h3 id="personality-what-is-not">What a personality is not</h3>
 

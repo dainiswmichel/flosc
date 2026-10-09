@@ -191,6 +191,26 @@ No. Install only the plugin for the provider this flow attaches. IVR-only sites 
 Put it in FLOSC (this flow's AI tab, or All Flows AI API Management). FLOSC binds that key onto the WordPress AI Client for the prompt. Do not rely on Settings → Connectors for FLOSC chat.
 
 
+= When does FLOSC create or log in a WordPress user? =
+
+A WordPress subscriber account is required to bind purchased access, membership state, quiz results, and protected content permissions to the customer across sessions. FLOSC creates that account for a pending email registration, for a validated SSO profile, or for a verified PayPal or ClickBank purchase. PayPal subscription amount and currency are also checked when PayPal returns last-payment amount data. New accounts receive the subscriber role, or another nonprivileged role an administrator has configured. FLOSC does not create an administrator account. A MagicLink never creates an account. A server-to-server payment notification may create the buyer's account and does not log a browser in.
+
+FLOSC issues a session after email verification, after SSO, and after an enabled MagicLink. Post-purchase browser login stays off unless `flosc_post_purchase_instant_login` or `flosc_post_purchase_login_token` is enabled. MagicLink stays off unless `flosc_enable_magic_access_links` is enabled and that flow's own switch is on. Each of those session issuances fires `wp_login` once so security plugins can observe it, and the email-verification, MagicLink, login-token, and wp-sync consume paths are rate-limited; `wp_login` does not run WordPress `authenticate` or password-attempt blockers.
+
+The wp-sync hop only reissues the cookie for a MagicLink login that already fired `wp_login`. An authenticated user setting their own password, a display-name update, and signed-token REST authentication are not new logins.
+
+= Personality-design references and citations =
+
+The DA1 AI Personality Builder contains optional citations to people, works, and educational source material. They are sample personality-design inputs, not external services used by FLOSC. Reference pages are maintained by their publishers and may change, move, or become unavailable over time.
+
+"Include influences" is enabled by default. Character notes and works from active influence cards are compiled into `ai_base_prompt` and sent as prompt text to the AI provider selected by the floscAdmin. Complete reference entries—their descriptions and URLs—are excluded by default and are included only when the administrator enables the separate "Include reference URLs" option. That provider transmission is described below under External Services. Including a URL as prompt text does not itself contact or retrieve content from the cited website.
+
+When "Include influences" is disabled, those materials remain in `workshop_json` and the design copy, but are excluded from `ai_base_prompt` and are not sent to the AI provider.
+
+FLOSC does not fetch content from, call an API at, or transmit WordPress, profile, visitor, or conversation data to the cited websites. Opening a citation is an ordinary administrator-initiated browser navigation.
+
+Current citation hosts include Wikipedia (`en.wikipedia.org`), the Electronic Text Corpus of Sumerian Literature (`etcsl.orinst.ox.ac.uk`), the Stanford Encyclopedia of Philosophy (`plato.stanford.edu`), the Rudolf Steiner Archive (`rsarchive.org`), BDK America (`www.bdkamerica.org`), Bible Gateway (`www.biblegateway.com`), Project Gutenberg (`www.gutenberg.org`), Nobel Prize (`www.nobelprize.org`), and the Viktor Frankl Institute (`www.viktorfrankl.org`). These are references, not FLOSC service dependencies.
+
 = External Services =
 
 FLOSC core flow logic runs locally in WordPress. The services below power specific FLOSC features. When those features are enabled, calling these services is intentional and required for full functionality.

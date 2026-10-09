@@ -1,49 +1,33 @@
 {
-  "schema_version": 1,
+  "schema_version": 8,
   "candidate": "grok-4-6",
-  "candidate_label": "FLOSC 8.0.0 candidate V132",
+  "candidate_label": "FLOSC 8.0.0 candidate V136",
   "owner": "Grok",
   "parent": {
-    "candidate": "V131",
-    "commit": "9a90912e1d8f897e3685f736a45f97b56774062b",
-    "zip_sha256": "7120140ae03565f9cb954944fd202eac90ccfee7dbd58cfb40e912d28eec8d1e",
-    "scope": "V131 tree plus the enqueue comment reword and priority-10000 inline attach."
+    "candidate": "V135",
+    "commit": "55495807edcf21841eb0c81bda1fc6ceda6c2c02"
   },
-  "built_at_utc": "2026-10-08T12:40:37Z",
   "plugin_version": "8.0.0",
+  "stable_tag": "8.0.0",
+  "internal_iteration": "v136",
+  "github_hashid_at_pack": "55495807edcf21841eb0c81bda1fc6ceda6c2c02",
   "plugin_source": "flosc-by-grok-4-6/flosc",
-  "internal_iteration": "v132",
-  "github_hashid_at_pack": "9a90912e1d8f897e3685f736a45f97b56774062b",
-  "v132_delta": {
-    "zip_entries_that_differ_from_v131": [
-      "flosc/admin/email.php",
-      "flosc/admin/flosc-app.php",
-      "flosc/flosc.php",
-      "flosc/includes/companion-mode/class-flosc-companion-widget.php",
-      "flosc/includes/flosc-admin.php",
-      "flosc/includes/sso/class-sso-manager.php"
-    ],
-    "behavior_change": false,
-    "ui_change": false,
-    "php_logic_change": true
-  },
+  "baseline": "pre-release-candidates/codex-gpt5 at 55495807edcf21841eb0c81bda1fc6ceda6c2c02",
+  "v136_delta_from_v135": [
+    "flosc.php",
+    "readme.txt",
+    "includes/magic-link/class-flosc-magic-link-trait.php",
+    "tests/check_login_action_boundary.php"
+  ],
   "artifact": {
     "path": "flosc.zip",
     "root": "flosc/",
     "entries": 282,
-    "bytes": 2820800,
-    "sha256": "7bc4354b217ba733f1e12dfabbe27cb347e4780f6bd3257b618bfeacc67643cd",
-    "integrity": "unzip -t passed",
-    "tests_entries": 0,
-    "version": "8.0.0",
-    "stable_tag": "8.0.0",
-    "requires_at_least": "7.1"
-  },
-  "verification": {
-    "php_syntax": "php -l passed on the six edited PHP files",
-    "phpcs": "WordPress, WordPress-Docs, WordPress-Extra, PHPCompatibilityWP 7.4: no errors, no warnings",
-    "shipped_style_script_tokens": 0,
-    "plugin_check": "not run",
-    "page_load": "not run"
+    "files": 242,
+    "bytes": 2822830,
+    "sha256": "c38c67d49bc28f9b8cf22744612eabf77b747f6014bc033e50656de96d0e0022",
+    "runtime_manifest_sha256": "47539d12fbcbcc0d64cbb52843545f0af3c3168c537c39c4720bb9b61f588392",
+    "runtime_manifest": "sha256 of sorted lines: '<sha256>  <zip path>' for every file in the zip",
+    "tests_entries": 0
   }
 }
