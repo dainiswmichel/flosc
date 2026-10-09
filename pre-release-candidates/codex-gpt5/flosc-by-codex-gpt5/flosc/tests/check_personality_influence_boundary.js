@@ -108,4 +108,13 @@ check("workshop persists Include influences choice",
 check("workshop runtime derivative uses compiler",
   workshopBody.includes("const md = compilePrompt();"));
 
+[
+  "https://archive.org/details/hildegard-of-bingen-scivias",
+  "https://www.gutenberg.org/ebooks/8120",
+  "https://www.gutenberg.org/ebooks/15121",
+  "https://archive.org/details/sayings-of-the-desert-fathers"
+].forEach(function (url) {
+  check("catalog omits bad reference " + url, !src.includes(url));
+});
+
 if (failures) process.exit(1);

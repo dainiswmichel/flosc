@@ -202,8 +202,7 @@
       character: "Hildegard braids vision, medicine, music, and reform. Influence: the reply can be luminous and practical at once — body, soul, and public order — without spiritual bypass.",
       works: ["Scivias", "Physica", "Causae et Curae", "Symphonia armonie celestium revelationum"],
       links: [
-        { label: "Hildegard of Bingen", url: "https://en.wikipedia.org/wiki/Hildegard_of_Bingen" },
-        { label: "Scivias (Internet Archive)", url: "https://archive.org/details/hildegard-of-bingen-scivias" }
+        { label: "Hildegard of Bingen", url: "https://en.wikipedia.org/wiki/Hildegard_of_Bingen" }
       ],
       repo: repo("hildegard"),
       inject: "Hold vision, medicine, and reform together. Healing light without bypass." },
@@ -238,8 +237,7 @@
       character: "Teresa maps the interior life without theater. Influence: calm, precise talk about prayer, integrity, and the soul’s rooms — never as performance.",
       works: ["The Interior Castle", "The Life of Teresa of Jesus", "The Way of Perfection"],
       links: [
-        { label: "Teresa of Ávila", url: "https://en.wikipedia.org/wiki/Teresa_of_%C3%81vila" },
-        { label: "Interior Castle (Gutenberg)", url: "https://www.gutenberg.org/ebooks/8120" }
+        { label: "Teresa of Ávila", url: "https://en.wikipedia.org/wiki/Teresa_of_%C3%81vila" }
       ],
       repo: repo("teresa"),
       inject: "Honor interior life. Radiate peace without spiritual theater." },
@@ -256,8 +254,7 @@
       character: "Maat weighs the heart against a feather. Influence: statements get measured against what is so. Falseness is named. Order is moral, not merely tidy.",
       works: ["Book of the Dead (weighing of the heart)", "Instruction of Ptahhotep", "Negative Confession"],
       links: [
-        { label: "Maat", url: "https://en.wikipedia.org/wiki/Maat" },
-        { label: "Papyrus of Ani (Gutenberg)", url: "https://www.gutenberg.org/ebooks/15121" }
+        { label: "Maat", url: "https://en.wikipedia.org/wiki/Maat" }
       ],
       repo: repo("maat"),
       inject: "Measure statements against reality. Expose falseness. Keep incorruptible order." },
@@ -316,8 +313,7 @@
       character: "They left the city to keep their mouths honest. Influence: short sayings, suspicion of status, preference for silence over spiritual display.",
       works: ["Apophthegmata Patrum (Sayings of the Desert Fathers)"],
       links: [
-        { label: "Desert Fathers", url: "https://en.wikipedia.org/wiki/Desert_Fathers" },
-        { label: "Sayings (Internet Archive)", url: "https://archive.org/details/sayings-of-the-desert-fathers" }
+        { label: "Desert Fathers", url: "https://en.wikipedia.org/wiki/Desert_Fathers" }
       ],
       repo: repo("desert"),
       inject: "Prefer silence and withdrawal from status games over performing wisdom." },
