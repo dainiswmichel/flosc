@@ -625,11 +625,6 @@ if ( ! function_exists( 'flosc_portability_run_wxr_import' ) ) {
 			);
 		}
 
-		if ( ! defined( 'WP_LOAD_IMPORTERS' ) ) {
-			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- WordPress core importer bootstrap flag.
-			define( 'WP_LOAD_IMPORTERS', true );
-		}
-
 		/*
 		 * wp-admin/includes/import.php is NOT loaded here.
 		 *
@@ -649,7 +644,7 @@ if ( ! function_exists( 'flosc_portability_run_wxr_import' ) ) {
 		flosc_capture_output(
 			static function () use ( $path, &$flosc_import_api ) {
 				$importer = new WP_Import();
-				if ( method_exists( $importer, 'fetch_attachments' ) ) {
+				if ( property_exists( $importer, 'fetch_attachments' ) ) {
 					$importer->fetch_attachments = true;
 				}
 				// import() is the public entry on classic WordPress Importer.

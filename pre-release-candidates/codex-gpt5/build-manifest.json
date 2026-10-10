@@ -1,33 +1,32 @@
 {
   "schema_version": 8,
   "candidate": "codex-gpt5",
-  "candidate_label": "FLOSC 8.0.0 candidate V142",
+  "candidate_label": "FLOSC 8.0.0 candidate V143",
   "owner": "Codex",
   "parent": {
-    "candidate": "V141",
-    "commit": "ea02004a1c8afb5945296227198349d90ce717c5"
+    "candidate": "V142",
+    "commit": "b799a72507a55a9bf2a1250d5be8989da678149d"
   },
   "plugin_version": "8.0.0",
   "stable_tag": "8.0.0",
-  "internal_iteration": "v142",
-  "github_hashid_at_pack": "ea02004a1c8afb5945296227198349d90ce717c5",
+  "internal_iteration": "v143",
+  "github_hashid_at_pack": "b799a72507a55a9bf2a1250d5be8989da678149d",
   "plugin_source": "flosc-by-codex-gpt5/flosc",
-  "baseline": "origin/main at ea02004a1c8afb5945296227198349d90ce717c5",
-  "v142_delta_from_v141": [
+  "baseline": "origin/main at b799a72507a55a9bf2a1250d5be8989da678149d",
+  "v143_delta_from_v142": [
     "flosc.php",
-    "includes/flosc-output-buffer.php",
-    "tests/check-output-buffer-boundaries.php",
-    "tests/check_oauth_state_ordering.php",
-    "tests/flosc-check.sh"
+    "admin/ivr-upload-handler.php",
+    "tests/check_wporg_rules.php",
+    "tests/check_wxr_import_global_boundary.php"
   ],
   "artifact": {
     "path": "flosc.zip",
     "root": "flosc/",
     "entries": 283,
     "files": 243,
-    "bytes": 2824788,
-    "sha256": "3f3605eb1e4be5ae7849a1dc0a4f86d4be1c7f9cced6af21e71f7787fd87dd7e",
-    "runtime_manifest_sha256": "b54f5c3ddbace6d6df5ea11f64a3040db57698b5b3986dfe9d2836c25aa0d957",
+    "bytes": 2824709,
+    "sha256": "7e174e32344846e43d7720d822daede806b4ec73b92e7869d817b51613973b2f",
+    "runtime_manifest_sha256": "bbc047294a27567d8807e3093871a6b1bad50eb0b4322f3f2c382d6d73b44996",
     "runtime_manifest": "sha256 of sorted lines: '<sha256>  <zip path>' for every file in the zip",
     "tests_entries": 0
   }

@@ -1,47 +1,58 @@
-# FLOSC 8.0.0 — Codex candidate V142
+# FLOSC 8.0.0 — Codex candidate V143
 
-V142 starts from the complete V141 source at commit
-`ea02004a1c8afb5945296227198349d90ce717c5`. The public plugin version and
-stable tag remain 8.0.0. `Github HashID` records that V141 parent commit.
+V143 starts from the published V142 candidate at commit
+`b799a72507a55a9bf2a1250d5be8989da678149d`. The public plugin version and
+stable tag remain 8.0.0. `Github HashID` records that V142 parent commit.
 
 ## Scope
 
-- Preserves V141's verified OAuth redirect behavior: post-verification redirects
-  use the flow ID from verified OAuth state, and the pre-verification failure
-  continues to use the install root without reading unverified state.
-- Preserves V141's output-buffer stop when a non-removable child buffer prevents
-  progress.
-- Corrects the output-buffer helper documentation to describe that boundary.
-- Adds executable regression coverage for the non-removable-buffer boundary and
-  the OAuth state/redirect ordering contract.
-- Makes the candidate test runner execute underscore-named tests, hyphenated
-  tests, and the journey harness instead of silently skipping them.
+- Removes the unused `WP_LOAD_IMPORTERS` definition from the WXR import path.
+  FLOSC no longer mutates that request-global WordPress importer bootstrap flag.
+- Keeps the existing active-importer requirement and calls the same public
+  `WP_Import::import()` entry with the same staged WXR path.
+- Corrects the attachment guard from `method_exists()` to `property_exists()`;
+  the official WordPress Importer exposes `fetch_attachments` as a public
+  property, so attachment fetching now follows the behavior the code intended.
+- Adds a WordPress.org source rule that rejects any reintroduced definition of
+  the importer bootstrap flag.
+- Adds a runtime regression covering the import path, attachment flag, saved
+  `imported` status, output capture, and unchanged global bootstrap state.
+
+## Changing global behaviour compliance attestation
+
+- MTS: `2026-10m-10d`
+- Signature: **Codex (OpenAI)**
+- Guarantee: I guarantee that V143 remediates the reported changing-global-
+  behaviour issue in `admin/ivr-upload-handler.php` in WordPress Coding
+  Standards-compliant shipping code. The request-global importer bootstrap flag
+  is not defined or changed. The WXR import path retains its intended behavior,
+  verified by the focused runtime regression described below.
 
 ## Verification
 
-- `php -l` passed on all 203 PHP files in the source candidate.
-- 47 PHP gates and 6 JavaScript gates passed.
-- The OAuth ordering and non-removable output-buffer regressions passed.
-- PHPCompatibilityWP 7.4 passed on all 203 PHP files.
-- Shipping-code WPCS scanned 146 PHP files with 0 errors and the standing 22
-  `NonceVerification.Recommended` warnings.
-- `git diff --check`, `bash -n tests/flosc-check.sh`, and `unzip -t` passed.
+- `php -l` passed on all 204 PHP files in the source candidate.
+- 48 PHP gates and 6 JavaScript gates passed.
+- The focused WXR runtime regression passed: the importer received the staged
+  path, attachment fetching was enabled, status was persisted as `imported`, and
+  the request-global importer bootstrap flag remained undefined.
+- The WordPress.org source rules scanned 146 shipping PHP files with 0 findings.
+- Changed shipping PHP passed the project WPCS ruleset with 0 errors or warnings.
+- All changed PHP passed PHPCompatibilityWP for PHP 7.4.
+- `git diff --check` and `unzip -t` passed.
 - The ZIP contains 243 runtime files and no tests, vendor tree, Composer files,
   Git metadata, or build scripts.
 
-The external release gate excluded this source tree because it is under
-`pre-release-candidates`, so its zero-file PHPCS and lint results are not used as
-evidence. Plugin Check, PHPStan, and a live WordPress runtime were not run.
+Plugin Check, PHPStan, and a live WordPress installation were not run.
 
 ## Exact artifact
 
 ```text
-3f3605eb1e4be5ae7849a1dc0a4f86d4be1c7f9cced6af21e71f7787fd87dd7e  flosc.zip
+7e174e32344846e43d7720d822daede806b4ec73b92e7869d817b51613973b2f  flosc.zip
 ```
 
-283 ZIP entries, 243 files, 2,824,788 bytes. Sorted `sha256  path` manifest of
+283 ZIP entries, 243 files, 2,824,709 bytes. Sorted `sha256  path` manifest of
 those files:
 
 ```text
-b54f5c3ddbace6d6df5ea11f64a3040db57698b5b3986dfe9d2836c25aa0d957
+bbc047294a27567d8807e3093871a6b1bad50eb0b4322f3f2c382d6d73b44996
 ```
