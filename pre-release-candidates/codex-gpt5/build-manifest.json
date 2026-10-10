@@ -1,34 +1,33 @@
 {
   "schema_version": 8,
   "candidate": "codex-gpt5",
-  "candidate_label": "FLOSC 8.0.0 candidate V140",
+  "candidate_label": "FLOSC 8.0.0 candidate V142",
   "owner": "Codex",
   "parent": {
-    "candidate": "V139",
-    "commit": "026576ea6d39b00a04822aae6762ef006190ba86"
+    "candidate": "V141",
+    "commit": "ea02004a1c8afb5945296227198349d90ce717c5"
   },
   "plugin_version": "8.0.0",
   "stable_tag": "8.0.0",
-  "internal_iteration": "v140",
-  "github_hashid_at_pack": "026576ea6d39b00a04822aae6762ef006190ba86",
+  "internal_iteration": "v142",
+  "github_hashid_at_pack": "ea02004a1c8afb5945296227198349d90ce717c5",
   "plugin_source": "flosc-by-codex-gpt5/flosc",
-  "baseline": "pre-release-candidates/grok-4-6 at 026576ea6d39b00a04822aae6762ef006190ba86",
-  "v140_delta_from_v139_zip": [
+  "baseline": "origin/main at ea02004a1c8afb5945296227198349d90ce717c5",
+  "v142_delta_from_v141": [
     "flosc.php",
-    "includes/flosc-output-buffer.php"
+    "includes/flosc-output-buffer.php",
+    "tests/check-output-buffer-boundaries.php",
+    "tests/check_oauth_state_ordering.php",
+    "tests/flosc-check.sh"
   ],
-  "v140_git_only": [
-    "tests/check-output-buffer-boundaries.php"
-  ],
-  "review_status": "The Unclosed ob_start() remediation is complete at source level. Plugin Check and the remaining unrelated review gates are not claimed complete.",
   "artifact": {
     "path": "flosc.zip",
     "root": "flosc/",
     "entries": 283,
     "files": 243,
-    "bytes": 2824170,
-    "sha256": "7b397150b14e7b2f4ae00b477ae0ccfee690379330cc8663fe4a529baa1beaa4",
-    "runtime_manifest_sha256": "172200c7a947a8a11a59554663d108f8e8a1029e24a98d7f3822af3017705a61",
+    "bytes": 2824788,
+    "sha256": "3f3605eb1e4be5ae7849a1dc0a4f86d4be1c7f9cced6af21e71f7787fd87dd7e",
+    "runtime_manifest_sha256": "b54f5c3ddbace6d6df5ea11f64a3040db57698b5b3986dfe9d2836c25aa0d957",
     "runtime_manifest": "sha256 of sorted lines: '<sha256>  <zip path>' for every file in the zip",
     "tests_entries": 0
   }

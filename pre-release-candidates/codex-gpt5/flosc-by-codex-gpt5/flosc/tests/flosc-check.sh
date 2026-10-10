@@ -46,7 +46,9 @@ ok "php -l failures" \
 # ----------------------------------------------------------------- 3. gates
 line; echo "3. The project's own gates"
 GATEN=0; GATEF=0
-for f in tests/check_*.php tests/test_*.php; do
+# Include both established underscore names and WPCS-style hyphenated names.
+# The latter includes the output-buffer boundary regression.
+for f in tests/check_*.php tests/check-*.php tests/test_*.php tests/journey-harness.php; do
   [ -f "$f" ] || continue
   GATEN=$((GATEN+1))
   php "$f" >/dev/null 2>&1 || { printf '        failing: %s\n' "$f"; GATEF=$((GATEF+1)); }

@@ -1,35 +1,47 @@
-# FLOSC 8.0.0 — Codex candidate V140
+# FLOSC 8.0.0 — Codex candidate V142
 
-V140 starts from V139 commit `026576ea6d39b00a04822aae6762ef006190ba86`. The public plugin version and stable tag remain 8.0.0. The plugin header records that V139 commit as `Github HashID`.
+V142 starts from the complete V141 source at commit
+`ea02004a1c8afb5945296227198349d90ce717c5`. The public plugin version and
+stable tag remain 8.0.0. `Github HashID` records that V141 parent commit.
 
 ## Scope
 
-V140 completes the WordPress.org `Unclosed ob_start()` remediation without changing any of the 36 rendering call sites or their closure captures.
-
-- `includes/flosc-output-buffer.php` restores the V138 helper: the plugin's sole shipped `ob_start()` opens inside `flosc_capture_output()` and is closed in that same function's `finally` block.
-- The helper removes nested buffers only above FLOSC's saved level and collects only while FLOSC's own buffer remains current, so it does not close a caller's parent buffer.
-- V139's per-capture shutdown callback and `ob_end_flush()` loop are removed because that loop could flush a buffer opened by another component after FLOSC's buffer.
-- `tests/check-output-buffer-boundaries.php` is source-only and adds negative assertions preventing shutdown cleanup from returning.
-- `flosc.php` changes only `Internal Iteration: v140` and `Github HashID: 026576ea6d39b00a04822aae6762ef006190ba86`.
+- Preserves V141's verified OAuth redirect behavior: post-verification redirects
+  use the flow ID from verified OAuth state, and the pre-verification failure
+  continues to use the install root without reading unverified state.
+- Preserves V141's output-buffer stop when a non-removable child buffer prevents
+  progress.
+- Corrects the output-buffer helper documentation to describe that boundary.
+- Adds executable regression coverage for the non-removable-buffer boundary and
+  the OAuth state/redirect ordering contract.
+- Makes the candidate test runner execute underscore-named tests, hyphenated
+  tests, and the journey harness instead of silently skipping them.
 
 ## Verification
 
-- Output-buffer boundary: 36 captures, one owner, zero leaked buffers.
-- Undefined-variable audit and admin-response rendering checks passed.
-- Login-action and personality-influence regressions passed.
-- PHP syntax passed on all 203 PHP files in the canonical source tree.
-- The 26 affected shipped PHP files passed the project WordPress ruleset and PHPCompatibilityWP 7.4.
-- ZIP integrity passed; 243 shipped files; `tests/` excluded; source-to-ZIP parity passed.
-- The ZIP gate still reports five inherited/unverified items outside this remediation: two prose matches for suppression directives, four `HTTP_HOST` matches, two filter-token matches, unavailable security-PHPCS discovery in the gate, and unavailable Plugin Check.
+- `php -l` passed on all 203 PHP files in the source candidate.
+- 47 PHP gates and 6 JavaScript gates passed.
+- The OAuth ordering and non-removable output-buffer regressions passed.
+- PHPCompatibilityWP 7.4 passed on all 203 PHP files.
+- Shipping-code WPCS scanned 146 PHP files with 0 errors and the standing 22
+  `NonceVerification.Recommended` warnings.
+- `git diff --check`, `bash -n tests/flosc-check.sh`, and `unzip -t` passed.
+- The ZIP contains 243 runtime files and no tests, vendor tree, Composer files,
+  Git metadata, or build scripts.
+
+The external release gate excluded this source tree because it is under
+`pre-release-candidates`, so its zero-file PHPCS and lint results are not used as
+evidence. Plugin Check, PHPStan, and a live WordPress runtime were not run.
 
 ## Exact artifact
 
 ```text
-7b397150b14e7b2f4ae00b477ae0ccfee690379330cc8663fe4a529baa1beaa4  flosc.zip
+3f3605eb1e4be5ae7849a1dc0a4f86d4be1c7f9cced6af21e71f7787fd87dd7e  flosc.zip
 ```
 
-283 ZIP entries, 243 files, 2,824,170 bytes. Runtime manifest SHA-256:
+283 ZIP entries, 243 files, 2,824,788 bytes. Sorted `sha256  path` manifest of
+those files:
 
 ```text
-172200c7a947a8a11a59554663d108f8e8a1029e24a98d7f3822af3017705a61
+b54f5c3ddbace6d6df5ea11f64a3040db57698b5b3986dfe9d2836c25aa0d957
 ```

@@ -155,6 +155,42 @@ if ( ! $flosc_thrown || ob_get_level() !== $flosc_level ) {
 	$flosc_failures[] = 'exception cleanup failed to restore the prior buffer depth';
 }
 
+// Run this boundary last: PHP does not permit userland code to remove the
+// non-removable buffer, so it and FLOSC's buffer remain for shutdown flushing.
+$flosc_level          = ob_get_level();
+$flosc_buffer_notices = array();
+// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_set_error_handler -- Captures the expected buffer notice in this CLI regression test.
+set_error_handler(
+	static function ( $flosc_severity, $flosc_message ) use ( &$flosc_buffer_notices ) {
+		if ( ( E_NOTICE === $flosc_severity || E_WARNING === $flosc_severity )
+			&& false !== strpos( $flosc_message, 'ob_end_clean(): Failed to discard buffer' )
+		) {
+			$flosc_buffer_notices[] = $flosc_message;
+			return true;
+		}
+
+		return false;
+	}
+);
+$flosc_value = flosc_capture_output(
+	static function () {
+		$flosc_flags = PHP_OUTPUT_HANDLER_STDFLAGS & ~PHP_OUTPUT_HANDLER_REMOVABLE;
+		ob_start( null, 0, $flosc_flags );
+	}
+);
+restore_error_handler();
+$flosc_expected_level = $flosc_level + 2;
+
+if ( '' !== $flosc_value ) {
+	$flosc_failures[] = 'non-removable nested buffer returned output that FLOSC does not own';
+}
+if ( ob_get_level() !== $flosc_expected_level ) {
+	$flosc_failures[] = 'non-removable nested buffer did not stop at the documented boundary';
+}
+if ( 1 !== count( $flosc_buffer_notices ) ) {
+	$flosc_failures[] = 'non-removable nested buffer did not exercise the failed-discard stop exactly once';
+}
+
 if ( ! empty( $flosc_failures ) ) {
 	foreach ( $flosc_failures as $flosc_failure ) {
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite -- Writes CLI audit output to standard error.
@@ -164,5 +200,5 @@ if ( ! empty( $flosc_failures ) ) {
 }
 
 // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite -- Writes CLI audit output to standard output.
-fwrite( STDOUT, "output buffer boundary passed: 36 captures, one owner, zero leaked buffers\n" );
+fwrite( STDOUT, "output buffer boundary passed: 36 captures, one owner, non-removable stop verified\n" );
 exit( 0 );
