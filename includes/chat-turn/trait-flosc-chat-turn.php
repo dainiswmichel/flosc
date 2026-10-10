@@ -759,7 +759,18 @@ trait FLOSC_Chat_Turn_Trait {
                     if ($concierge_guidance !== '') { $chatpack_prompt .= $concierge_guidance; }
                     if ($flosc_engagement_prompt_block !== '') { $chatpack_prompt .= $flosc_engagement_prompt_block; }
                     if ($flosc_prior_opening_block !== '') { $chatpack_prompt .= $flosc_prior_opening_block; }
-                    $flosc_rag_response = $flosc_rag_handler->flosc_handle_with_state($message, $flosc_user_session, $session_id, $chatpack_prompt, $chatpack_conv_history);
+                    try {
+                        $flosc_rag_response = $flosc_rag_handler->flosc_handle_with_state($message, $flosc_user_session, $session_id, $chatpack_prompt, $chatpack_conv_history);
+                    } catch (Throwable $flosc_rag_exception) {
+                        flosc_log(sprintf(
+                            'FLOSC RAG invocation failed; falling back to normal AI dispatch: %s in %s:%d — %s',
+                            get_class($flosc_rag_exception),
+                            $flosc_rag_exception->getFile(),
+                            $flosc_rag_exception->getLine(),
+                            $flosc_rag_exception->getMessage()
+                        ));
+                        $flosc_rag_response = null;
+                    }
 
                     if ($flosc_rag_response && !is_wp_error($flosc_rag_response)) {
                         $response_message = [
