@@ -779,7 +779,12 @@ $flosc_demo_offers = array(
 	</div>
 </details>
 
-<?php ob_start(); ?>
+<?php
+wp_add_inline_script(
+	'flosc-admin',
+	flosc_capture_output(
+		static function () {
+			?>
 function floscToggleOffer(id) {
 	const card = document.getElementById('offer-' + id);
 	if (card) card.classList.toggle('is-open');
@@ -859,7 +864,11 @@ document.addEventListener('DOMContentLoaded', function() {
 		syncCap();
 	});
 });
-<?php wp_add_inline_script( 'flosc-admin', ob_get_clean() ); ?>
+			<?php
+		}
+	)
+);
+?>
 
 <?php
 /**

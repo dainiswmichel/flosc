@@ -670,8 +670,11 @@ $flosc_object_rules = class_exists( 'FLOSC_Site_Content_Index' )
 </div>
 
 <?php
-ob_start();
-?>
+wp_add_inline_script(
+	'flosc-admin',
+	flosc_capture_output(
+		static function () use ( $flosc_enabled_quizzes, $flosc_quiz_label_map, $flosc_categories, $flosc_tags, $flosc_saved_levels, $flosc_vgm_tiers, $flosc_vgm_depths ) {
+			?>
 jQuery(document).ready(function($) {
 	$('#flosc-add-content-type').on('click', function() {
 		var row = '<tr class="flosc-content-type-row">'
@@ -716,23 +719,23 @@ jQuery(document).ready(function($) {
 	});
 
 	var quizOptions = 
-	<?php
-		$flosc_opts = '<option value="">— No Quiz (Standalone) —</option>';
-	foreach ( $flosc_enabled_quizzes as $flosc_eq ) {
-		$flosc_label = esc_html( $flosc_quiz_label_map[ $flosc_eq ] ?? $flosc_eq );
-		$flosc_opts .= '<option value="' . esc_attr( $flosc_eq ) . '">' . $flosc_label . '</option>';
-	}
-		echo wp_json_encode( $flosc_opts );
-	?>
+			<?php
+			$flosc_opts = '<option value="">— No Quiz (Standalone) —</option>';
+			foreach ( $flosc_enabled_quizzes as $flosc_eq ) {
+				$flosc_label = esc_html( $flosc_quiz_label_map[ $flosc_eq ] ?? $flosc_eq );
+				$flosc_opts .= '<option value="' . esc_attr( $flosc_eq ) . '">' . $flosc_label . '</option>';
+			}
+			echo wp_json_encode( $flosc_opts );
+			?>
 	;
 	var catOptions = 
-	<?php
-		$flosc_opts = '<option value="">— Select Category —</option>';
-	foreach ( $flosc_categories as $flosc_cat ) {
-		$flosc_opts .= '<option value="' . esc_attr( $flosc_cat->slug ) . '">' . esc_html( $flosc_cat->name ) . ' (' . esc_html( (string) $flosc_cat->count ) . ' posts)</option>';
-	}
-		echo wp_json_encode( $flosc_opts );
-	?>
+			<?php
+			$flosc_opts = '<option value="">— Select Category —</option>';
+			foreach ( $flosc_categories as $flosc_cat ) {
+				$flosc_opts .= '<option value="' . esc_attr( $flosc_cat->slug ) . '">' . esc_html( $flosc_cat->name ) . ' (' . esc_html( (string) $flosc_cat->count ) . ' posts)</option>';
+			}
+			echo wp_json_encode( $flosc_opts );
+			?>
 	;
 	$('#flosc-add-lesson-group').on('click', function() {
 		var row = '<tr class="flosc-lesson-group-row">'
@@ -749,36 +752,36 @@ jQuery(document).ready(function($) {
 	});
 
 	var categoryOptions = 
-	<?php
-		$flosc_opts = '<option value="">— Select —</option>';
-	foreach ( $flosc_categories as $flosc_cat ) {
-		$flosc_opts .= '<option value="' . esc_attr( $flosc_cat->term_id ) . '">' . esc_html( $flosc_cat->name ) . '</option>';
-	}
-		echo wp_json_encode( $flosc_opts );
-	?>
+			<?php
+			$flosc_opts = '<option value="">— Select —</option>';
+			foreach ( $flosc_categories as $flosc_cat ) {
+				$flosc_opts .= '<option value="' . esc_attr( $flosc_cat->term_id ) . '">' . esc_html( $flosc_cat->name ) . '</option>';
+			}
+			echo wp_json_encode( $flosc_opts );
+			?>
 	;
 	var tagOptions = 
-	<?php
-		$flosc_opts = '<option value="">— Select —</option>';
-	foreach ( $flosc_tags as $flosc_tag ) {
-		$flosc_opts .= '<option value="' . esc_attr( $flosc_tag->term_id ) . '">' . esc_html( $flosc_tag->name ) . '</option>';
-	}
-		echo wp_json_encode( $flosc_opts );
-	?>
+			<?php
+			$flosc_opts = '<option value="">— Select —</option>';
+			foreach ( $flosc_tags as $flosc_tag ) {
+				$flosc_opts .= '<option value="' . esc_attr( $flosc_tag->term_id ) . '">' . esc_html( $flosc_tag->name ) . '</option>';
+			}
+			echo wp_json_encode( $flosc_opts );
+			?>
 	;
 	var levelOptions = 
-	<?php
-		$flosc_opts = '<option value="">— Any Member —</option>';
-	foreach ( $flosc_saved_levels as $flosc_lk => $flosc_lv ) {
-		$flosc_slug = $flosc_lv['slug'] ?? $flosc_lk;
-		if ( empty( $flosc_slug ) ) {
-			continue;
-		}
-		$flosc_label = ( $flosc_lv['name'] ?? '' ) ? $flosc_lv['name'] : $flosc_slug;
-		$flosc_opts .= '<option value="' . esc_attr( $flosc_slug ) . '">' . esc_html( $flosc_label ) . '</option>';
-	}
-		echo wp_json_encode( $flosc_opts );
-	?>
+			<?php
+			$flosc_opts = '<option value="">— Any Member —</option>';
+			foreach ( $flosc_saved_levels as $flosc_lk => $flosc_lv ) {
+				$flosc_slug = $flosc_lv['slug'] ?? $flosc_lk;
+				if ( empty( $flosc_slug ) ) {
+					continue;
+				}
+				$flosc_label = ( $flosc_lv['name'] ?? '' ) ? $flosc_lv['name'] : $flosc_slug;
+				$flosc_opts .= '<option value="' . esc_attr( $flosc_slug ) . '">' . esc_html( $flosc_label ) . '</option>';
+			}
+			echo wp_json_encode( $flosc_opts );
+			?>
 	;
 	function buildContentField(type) {
 		if (type === 'post' || type === 'page') {
@@ -824,5 +827,7 @@ jQuery(document).ready(function($) {
 	toggleFreeLessonFields();
 	$('#flow_free_content_item_mode').on('change', toggleFreeLessonFields);
 });
-<?php
-wp_add_inline_script( 'flosc-admin', ob_get_clean() );
+			<?php
+		}
+	)
+);

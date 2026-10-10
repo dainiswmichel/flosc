@@ -1446,7 +1446,12 @@ flosc_tab_header( '💬', 'IVR Management' );
 	</div>
 </div>
 
-<?php ob_start(); ?>
+<?php
+wp_add_inline_script(
+	'flosc-admin',
+	flosc_capture_output(
+		static function () {
+			?>
 function floscAppendAPIResultNode(parent, tagName, text) {
 	const node = tagName ? document.createElement(tagName) : document.createTextNode(String(text));
 	if (tagName) {
@@ -1560,7 +1565,11 @@ function floscTestAPI() {
  * flosc-admin-events.js already owns is how all of this returns.
  */
 
-<?php wp_add_inline_script( 'flosc-admin', ob_get_clean() ); ?>
+			<?php
+		}
+	)
+);
+?>
 
 <h2><?php echo esc_html( 'all' === $flosc_ivr_management_view ? 'IVR Management - All Flows File Management' : 'IVR Management - Single Flow Message Editing' ); ?></h2>
 
@@ -1588,8 +1597,11 @@ function floscTestAPI() {
 	</div>
 	<?php
 	// Drag-and-drop for IVR upload (All Flows file management only).
-	ob_start();
-	?>
+	wp_add_inline_script(
+		'flosc-admin',
+		flosc_capture_output(
+			static function () {
+				?>
 	(function () {
 		var form = document.getElementById('flosc-ivr-upload-form');
 		var zone = document.getElementById('flosc-ivr-dropzone');
@@ -1660,8 +1672,10 @@ function floscTestAPI() {
 			}
 		});
 	})();
-	<?php
-	wp_add_inline_script( 'flosc-admin', ob_get_clean() );
+				<?php
+			}
+		)
+	);
 	?>
 
 	<table class="widefat striped flosc-ivr-file-table">
@@ -2339,7 +2353,12 @@ foreach ( $flosc_phase_meta as $flosc_phase_id => $flosc_pm ) :
 </div>
 <?php endforeach; ?>
 
-<?php ob_start(); ?>
+<?php
+wp_add_inline_script(
+	'flosc-admin',
+	flosc_capture_output(
+		static function () {
+			?>
 function floscToggleMsg(id) {
 	const card = document.getElementById('card-' + id);
 	if (!card) return;
@@ -2366,7 +2385,11 @@ document.addEventListener('DOMContentLoaded', function() {
 	const open = document.querySelector('.flosc-msg-card.is-open');
 	if (open) open.scrollIntoView({ behavior: 'smooth', block: 'center' });
 });
-<?php wp_add_inline_script( 'flosc-admin', ob_get_clean() ); ?>
+			<?php
+		}
+	)
+);
+?>
 
 <form method="post" action="options.php">
 <?php settings_fields( 'flosc_settings' ); ?>

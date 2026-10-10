@@ -157,13 +157,22 @@ body.flosc-companion-embed img.landing-icon {
 	object-fit: contain !important;
 }
 ';
-		wp_add_inline_style( 'flosc-layout', $flosc_companion_critical_css );
+		add_action(
+			'wp_enqueue_scripts',
+			static function () use ( $flosc_companion_critical_css ) {
+				wp_add_inline_style( 'flosc-layout', $flosc_companion_critical_css );
+			},
+			10000
+		);
 	}
 	?>
 	
 	<!-- Dynamic Primary Color -->
-	<?php // §12: dynamic CSS vars attached to the enqueued flosc-chat handle (prints in <head> via wp_head) instead of an inline <style> tag. ?>
-	<?php ob_start(); ?>
+	<?php // §12: dynamic CSS vars attach to the enqueued flosc-layout handle on wp_enqueue_scripts, after that handle is queued. ?>
+	<?php
+	$flosc_dynamic_css = flosc_capture_output(
+		static function () use ( $identity, $flosc_chat_scale ) {
+			?>
 		:root {
 			--flosc-primary: <?php echo esc_attr( $identity['primary_color'] ); ?>;
 			--flosc-primary-hover: <?php echo esc_attr( flosc_adjust_brightness( $identity['primary_color'], -20 ) ); ?>;
@@ -179,18 +188,41 @@ body.flosc-companion-embed img.landing-icon {
 			?>
 			--flosc-avatar-radius: <?php echo esc_attr( $flosc_avatar_radius ); ?>;
 		}
-	<?php // App enqueues flosc-layout (not flosc-chat); attach vars to the live handle. ?>
-	<?php wp_add_inline_style( 'flosc-layout', ob_get_clean() ); ?>
+			<?php // App enqueues flosc-layout (not flosc-chat); attach vars to the live handle. ?>
+			<?php
+		}
+	);
+	add_action(
+		'wp_enqueue_scripts',
+		static function () use ( $flosc_dynamic_css ) {
+			wp_add_inline_style( 'flosc-layout', $flosc_dynamic_css );
+		},
+		10000
+	);
+	?>
 
 	<!-- Markdown parser fallback for IVR rendering when a parser is not already loaded. -->
 	<?php // §12: attached to flosc-app as a 'before' inline script so it still defines window.marked prior to flosc-app.js. ?>
-	<?php ob_start(); ?>
+	<?php
+	$flosc_marked_shim = flosc_capture_output(
+		static function () {
+			?>
 		window.marked = window.marked || {
 			parse: function(text) {
 				return String(text || '');
 			}
 		};
-	<?php wp_add_inline_script( 'flosc-app', ob_get_clean(), 'before' ); ?>
+			<?php
+		}
+	);
+	add_action(
+		'wp_enqueue_scripts',
+		static function () use ( $flosc_marked_shim ) {
+			wp_add_inline_script( 'flosc-app', $flosc_marked_shim, 'before' );
+		},
+		10000
+	);
+	?>
 
 	<?php wp_head(); ?>
 </head>
@@ -364,6 +396,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 		}
 
 		$flosc_tokens_per_message_display     = number_format_i18n( $flosc_tokens_per_message );
+		$flosc_current_flow                   = null;
 		$flosc_visitor_wallet_initial         = isset( $flosc_current_flow['tokens_communication_tokens_per_message'] )
 			? max( 1, intval( $flosc_current_flow['tokens_communication_tokens_per_message'] ) )
 			: $flosc_tokens_per_message;
@@ -960,50 +993,54 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 
 	<!-- Pass config and user data to JS -->
 	<?php // §12: config built here and attached to flosc-app as a 'before' inline script, then wp_footer() runs below so flosc-app.js prints right after this config (it reads FLOSC_CONFIG on DOMContentLoaded). ?>
-	<?php ob_start(); ?>
-		<?php
-		// v1.2.3: Get flow's IVR file for version tracking.
-		$flosc_current_flow = flosc()->get_current_flow();
-		$flosc_ivr_filename = ( $flosc_current_flow && ! empty( $flosc_current_flow['ivr_file'] ) )
+	<?php
+	$flosc_ajax_url   = '';
+	$flosc_app_config = flosc_capture_output(
+		static function () use ( $flow_settings, $user_state, $user_data, $flow_id, $offers, $admin_test_offers, $identity, $flosc_user, $flosc_login_return_url, $flosc_is_companion_embed, $flosc_visitor_name, $flosc_visitor_role, $flosc_visitor_wallet_initial, $flosc_visitor_wallet_initial_display, $flosc_real_millicents_per_message, $flosc_visitor_label_base, &$flosc_ajax_url ) {
+			?>
+			<?php
+			// v1.2.3: Get flow's IVR file for version tracking.
+			$flosc_current_flow = flosc()->get_current_flow();
+			$flosc_ivr_filename = ( $flosc_current_flow && ! empty( $flosc_current_flow['ivr_file'] ) )
 			? $flosc_current_flow['ivr_file']
 			: 'flosc_default_technical_ivr.md';
-		$flosc_flow_id      = $flosc_current_flow['id'] ?? '';
+			$flosc_flow_id      = $flosc_current_flow['id'] ?? '';
 
-		// v10.0.0: Record the entry flow (first visit only) so logout can recall
-		// the per-flow logout destination. Non-blocking; idempotent server-side.
-		if ( '' !== $flosc_flow_id && method_exists( flosc(), 'set_entry_flow_cookie' ) ) {
-			flosc()->set_entry_flow_cookie( $flosc_flow_id );
-		}
+			// v10.0.0: Record the entry flow (first visit only) so logout can recall
+			// the per-flow logout destination. Non-blocking; idempotent server-side.
+			if ( '' !== $flosc_flow_id && method_exists( flosc(), 'set_entry_flow_cookie' ) ) {
+				flosc()->set_entry_flow_cookie( $flosc_flow_id );
+			}
 
-		// Flow bag runtime first, IVR file only as empty-bag fallback.
-		$flosc_ivr_config = flosc_resolve_flow_runtime( $flosc_flow_id, $flosc_ivr_filename );
+			// Flow bag runtime first, IVR file only as empty-bag fallback.
+			$flosc_ivr_config = flosc_resolve_flow_runtime( $flosc_flow_id, $flosc_ivr_filename );
 
-		$flosc_ivr_file    = flosc_config_file( $flosc_ivr_filename );
-		$flosc_ivr_version = file_exists( $flosc_ivr_file ) ? filemtime( $flosc_ivr_file ) : time();
+			$flosc_ivr_file    = flosc_config_file( $flosc_ivr_filename );
+			$flosc_ivr_version = file_exists( $flosc_ivr_file ) ? filemtime( $flosc_ivr_file ) : time();
 
 			// v1.0.7: DEBUG - Check if messages loaded (only when FLOSC_DEBUG enabled).
-		if ( empty( $flosc_ivr_config['messages'] ) ) {
-			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+			if ( empty( $flosc_ivr_config['messages'] ) ) {
 				if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
-					flosc_log( 'FLOSC v1.5.0: WARNING - No IVR messages loaded from ' . $flosc_ivr_filename );
+					if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+						flosc_log( 'FLOSC v1.5.0: WARNING - No IVR messages loaded from ' . $flosc_ivr_filename );
+					}
+					if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+						flosc_log( 'FLOSC v1.5.0: Config keys: ' . implode( ', ', array_keys( $flosc_ivr_config ) ) );
+					}
 				}
 				if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
-					flosc_log( 'FLOSC v1.5.0: Config keys: ' . implode( ', ', array_keys( $flosc_ivr_config ) ) );
+					if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+						flosc_log( 'FLOSC v1.5.0: Runtime source was ' . ( $flosc_ivr_config['source'] ?? 'unknown' ) );
+					}
 				}
-			}
-			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+			} elseif ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
 				if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
-					flosc_log( 'FLOSC v1.5.0: Runtime source was ' . ( $flosc_ivr_config['source'] ?? 'unknown' ) );
+					flosc_log( 'FLOSC v1.5.0: IVR config loaded successfully. Messages: ' . count( $flosc_ivr_config['messages'] ) . ' source=' . ( $flosc_ivr_config['source'] ?? 'unknown' ) );
 				}
 			}
-		} elseif ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
-			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
-				flosc_log( 'FLOSC v1.5.0: IVR config loaded successfully. Messages: ' . count( $flosc_ivr_config['messages'] ) . ' source=' . ( $flosc_ivr_config['source'] ?? 'unknown' ) );
-			}
-		}
-		?>
+			?>
 		window.FLOSC_CONFIG = 
-		<?php
+			<?php
 			/*
 			 * The phoneme-to-lesson map is decoded here rather than inside the
 			 * config array, because json_decode() returns null for a malformed
@@ -1012,60 +1049,60 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 			 * either way, not as a JSON list.
 			 */
 			$flosc_phoneme_lesson_map = json_decode( flosc_get_setting( 'audio_quiz_phoneme_lesson_map', '{}' ), true );
-		if ( ! $flosc_phoneme_lesson_map ) {
-			$flosc_phoneme_lesson_map = (object) array();
-		}
+			if ( ! $flosc_phoneme_lesson_map ) {
+				$flosc_phoneme_lesson_map = (object) array();
+			}
 
 			// v1.4.9: Get SSO providers from per-flow settings (not global options).
 			$flosc_sso_providers = array();
-		if ( class_exists( '\FLOSC\SSO\SSO_Manager' ) ) {
-			$flosc_sso_manager     = \FLOSC\SSO\SSO_Manager::get_instance();
-			$flosc_flow_id_for_sso = $flosc_current_flow ? ( $flosc_current_flow['id'] ?? '' ) : '';
+			if ( class_exists( '\FLOSC\SSO\SSO_Manager' ) ) {
+				$flosc_sso_manager     = \FLOSC\SSO\SSO_Manager::get_instance();
+				$flosc_flow_id_for_sso = $flosc_current_flow ? ( $flosc_current_flow['id'] ?? '' ) : '';
 
-			// Load per-flow SSO settings.
-			$flosc_sso_flow_settings = array();
-			if ( ! empty( $flosc_flow_id_for_sso ) ) {
-				$flosc_sso_settings_key  = 'flosc_flow_' . sanitize_key( $flosc_flow_id_for_sso );
-				$flosc_sso_flow_settings = get_option( $flosc_sso_settings_key, array() );
-			}
+				// Load per-flow SSO settings.
+				$flosc_sso_flow_settings = array();
+				if ( ! empty( $flosc_flow_id_for_sso ) ) {
+					$flosc_sso_settings_key  = 'flosc_flow_' . sanitize_key( $flosc_flow_id_for_sso );
+					$flosc_sso_flow_settings = get_option( $flosc_sso_settings_key, array() );
+				}
 
-			// Check each registered provider against flow settings.
-			$flosc_sso_provider_ids = array( 'google', 'facebook', 'apple', 'microsoft', 'linkedin' );
-			foreach ( $flosc_sso_provider_ids as $flosc_pid ) {
-				$flosc_flow_enabled       = ! empty( $flosc_sso_flow_settings[ "sso_{$flosc_pid}_enabled" ] );
-				$flosc_flow_client_id     = $flosc_sso_flow_settings[ "sso_{$flosc_pid}_client_id" ] ?? '';
-				$flosc_flow_client_secret = $flosc_sso_flow_settings[ "sso_{$flosc_pid}_client_secret" ] ?? '';
+				// Check each registered provider against flow settings.
+				$flosc_sso_provider_ids = array( 'google', 'facebook', 'apple', 'microsoft', 'linkedin' );
+				foreach ( $flosc_sso_provider_ids as $flosc_pid ) {
+					$flosc_flow_enabled       = ! empty( $flosc_sso_flow_settings[ "sso_{$flosc_pid}_enabled" ] );
+					$flosc_flow_client_id     = $flosc_sso_flow_settings[ "sso_{$flosc_pid}_client_id" ] ?? '';
+					$flosc_flow_client_secret = $flosc_sso_flow_settings[ "sso_{$flosc_pid}_client_secret" ] ?? '';
 
-				if ( $flosc_flow_enabled && ! empty( $flosc_flow_client_id ) && ! empty( $flosc_flow_client_secret ) ) {
-					$flosc_provider = $flosc_sso_manager->get_provider( $flosc_pid );
-					if ( $flosc_provider ) {
-						// v1.7.5: SSO auth URL must use host domain for cookie consistency.
-						if ( defined( 'FLOSC_CUSTOM_DOMAIN_ACTIVE' ) && FLOSC_CUSTOM_DOMAIN_ACTIVE ) {
-							$flosc_scheme       = is_ssl() ? 'https://' : 'http://';
-							$flosc_current_host = '';
-							if ( isset( $_SERVER['HTTP_HOST'] ) ) {
-								$flosc_current_host = sanitize_text_field( wp_unslash( (string) $_SERVER['HTTP_HOST'] ) );
+					if ( $flosc_flow_enabled && ! empty( $flosc_flow_client_id ) && ! empty( $flosc_flow_client_secret ) ) {
+						$flosc_provider = $flosc_sso_manager->get_provider( $flosc_pid );
+						if ( $flosc_provider ) {
+							// v1.7.5: SSO auth URL must use host domain for cookie consistency.
+							if ( defined( 'FLOSC_CUSTOM_DOMAIN_ACTIVE' ) && FLOSC_CUSTOM_DOMAIN_ACTIVE ) {
+								$flosc_scheme       = is_ssl() ? 'https://' : 'http://';
+								$flosc_current_host = '';
+								if ( isset( $_SERVER['HTTP_HOST'] ) ) {
+									$flosc_current_host = sanitize_text_field( wp_unslash( (string) $_SERVER['HTTP_HOST'] ) );
+								}
+								$flosc_rest_prefix = rest_get_url_prefix();
+								$flosc_auth_url    = $flosc_scheme . $flosc_current_host . '/' . $flosc_rest_prefix . "/flosc/v1/sso/authorize/{$flosc_pid}";
+							} else {
+								$flosc_auth_url = rest_url( "flosc/v1/sso/authorize/{$flosc_pid}" );
 							}
-							$flosc_rest_prefix = rest_get_url_prefix();
-							$flosc_auth_url    = $flosc_scheme . $flosc_current_host . '/' . $flosc_rest_prefix . "/flosc/v1/sso/authorize/{$flosc_pid}";
-						} else {
-							$flosc_auth_url = rest_url( "flosc/v1/sso/authorize/{$flosc_pid}" );
+							// v1.4.9: Include flow_id so OAuth handler loads per-flow credentials.
+							if ( ! empty( $flosc_flow_id_for_sso ) ) {
+								$flosc_auth_url = add_query_arg( 'flow_id', rawurlencode( $flosc_flow_id_for_sso ), $flosc_auth_url );
+							}
+							$flosc_sso_providers[] = array(
+								'id'      => $flosc_pid,
+								'name'    => $flosc_provider->get_name(),
+								'icon'    => $flosc_provider->get_icon(),
+								'colors'  => $flosc_provider->get_button_colors(),
+								'authUrl' => $flosc_auth_url,
+							);
 						}
-						// v1.4.9: Include flow_id so OAuth handler loads per-flow credentials.
-						if ( ! empty( $flosc_flow_id_for_sso ) ) {
-							$flosc_auth_url = add_query_arg( 'flow_id', rawurlencode( $flosc_flow_id_for_sso ), $flosc_auth_url );
-						}
-						$flosc_sso_providers[] = array(
-							'id'      => $flosc_pid,
-							'name'    => $flosc_provider->get_name(),
-							'icon'    => $flosc_provider->get_icon(),
-							'colors'  => $flosc_provider->get_button_colors(),
-							'authUrl' => $flosc_auth_url,
-						);
 					}
 				}
 			}
-		}
 
 			// v1.4.9: Use flow-aware app URL for custom domain support.
 			$flosc_app_url = flosc()->get_app_url();
@@ -1074,58 +1111,65 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 			// so cookies/nonce travel with the request. When on a custom domain
 			// (flosc.ai), rest_url() returns the WordPress host which is cross-origin.
 			$flosc_rest_base = rest_url( 'flosc/v1' );
-		if ( defined( 'FLOSC_CUSTOM_DOMAIN_ACTIVE' ) && FLOSC_CUSTOM_DOMAIN_ACTIVE ) {
-			// Build REST URL on current domain so it's same-origin.
-			$flosc_scheme       = is_ssl() ? 'https://' : 'http://';
-			$flosc_current_host = '';
-			if ( isset( $_SERVER['HTTP_HOST'] ) ) {
-				$flosc_current_host = sanitize_text_field( wp_unslash( (string) $_SERVER['HTTP_HOST'] ) );
+			if ( defined( 'FLOSC_CUSTOM_DOMAIN_ACTIVE' ) && FLOSC_CUSTOM_DOMAIN_ACTIVE ) {
+				// Build REST URL on current domain so it's same-origin.
+				$flosc_scheme       = is_ssl() ? 'https://' : 'http://';
+				$flosc_current_host = '';
+				if ( isset( $_SERVER['HTTP_HOST'] ) ) {
+					$flosc_current_host = sanitize_text_field( wp_unslash( (string) $_SERVER['HTTP_HOST'] ) );
+				}
+				$flosc_rest_prefix = rest_get_url_prefix(); // usually "wp-json".
+				$flosc_rest_base   = $flosc_scheme . $flosc_current_host . '/' . $flosc_rest_prefix . '/flosc/v1';
 			}
-			$flosc_rest_prefix = rest_get_url_prefix(); // usually "wp-json".
-			$flosc_rest_base   = $flosc_scheme . $flosc_current_host . '/' . $flosc_rest_prefix . '/flosc/v1';
-		}
 
 			$flosc_ajax_url = admin_url( 'admin-ajax.php' );
 			// v10.0.0: Resolve logout destination per-flow, then legacy, then flow app URL.
 			$flosc_logout_dest = flosc_get_setting( 'logout_destination', '' );
-		if ( '' === $flosc_logout_dest ) {
-			$flosc_logout_dest = flosc_get_setting( 'logout_redirect_url', $flosc_app_url );
-		}
+			if ( '' === $flosc_logout_dest ) {
+				$flosc_logout_dest = flosc_get_setting( 'logout_redirect_url', $flosc_app_url );
+			}
 			$flosc_logout_url = wp_logout_url( $flosc_logout_dest );
-		if ( defined( 'FLOSC_CUSTOM_DOMAIN_ACTIVE' ) && FLOSC_CUSTOM_DOMAIN_ACTIVE ) {
-			$flosc_request_host = strtolower( sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ?? '' ) ) );
-			$flosc_flow_domain  = strtolower( preg_replace( '#^https?://#', '', trim( (string) ( $flosc_current_flow['custom_domain'] ?? '' ) ) ) );
-			$flosc_flow_domain  = rtrim( $flosc_flow_domain, '/' );
-			if ( $flosc_flow_domain === $flosc_request_host || 'www.' . $flosc_flow_domain === $flosc_request_host ) {
-				$flosc_same_host_base = ( is_ssl() ? 'https://' : 'http://' ) . $flosc_request_host;
-				$flosc_ajax_url       = $flosc_same_host_base . '/wp-admin/admin-ajax.php';
-				$flosc_logout_parts   = wp_parse_url( html_entity_decode( $flosc_logout_url ) );
-				if ( ! empty( $flosc_logout_parts['path'] ) ) {
-					$flosc_logout_url = $flosc_same_host_base . $flosc_logout_parts['path'];
-					if ( ! empty( $flosc_logout_parts['query'] ) ) {
-						$flosc_logout_url .= '?' . $flosc_logout_parts['query'];
+			if ( defined( 'FLOSC_CUSTOM_DOMAIN_ACTIVE' ) && FLOSC_CUSTOM_DOMAIN_ACTIVE ) {
+				$flosc_request_host = strtolower( sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ?? '' ) ) );
+				$flosc_flow_domain  = strtolower( preg_replace( '#^https?://#', '', trim( (string) ( $flosc_current_flow['custom_domain'] ?? '' ) ) ) );
+				$flosc_flow_domain  = rtrim( $flosc_flow_domain, '/' );
+				if ( $flosc_flow_domain === $flosc_request_host || 'www.' . $flosc_flow_domain === $flosc_request_host ) {
+					$flosc_same_host_base = ( is_ssl() ? 'https://' : 'http://' ) . $flosc_request_host;
+					// Path comes from admin_url(). Only the origin moves onto this host.
+					$flosc_ajax_parts = wp_parse_url( $flosc_ajax_url );
+					if ( ! empty( $flosc_ajax_parts['path'] ) ) {
+						$flosc_ajax_url = $flosc_same_host_base . $flosc_ajax_parts['path'];
+						if ( ! empty( $flosc_ajax_parts['query'] ) ) {
+							$flosc_ajax_url .= '?' . $flosc_ajax_parts['query'];
+						}
+					}
+					$flosc_logout_parts = wp_parse_url( html_entity_decode( $flosc_logout_url ) );
+					if ( ! empty( $flosc_logout_parts['path'] ) ) {
+						$flosc_logout_url = $flosc_same_host_base . $flosc_logout_parts['path'];
+						if ( ! empty( $flosc_logout_parts['query'] ) ) {
+							$flosc_logout_url .= '?' . $flosc_logout_parts['query'];
+						}
 					}
 				}
 			}
-		}
 
 			// Companion params: prefer $flow_settings option, fall back to current flow merge.
 			$flosc_companion_source = is_array( $flow_settings ) ? $flow_settings : array();
-		if ( empty( $flosc_companion_source ) && ! empty( $flosc_current_flow ) && is_array( $flosc_current_flow ) ) {
-			$flosc_companion_source = $flosc_current_flow;
-		} elseif ( ! empty( $flosc_current_flow ) && is_array( $flosc_current_flow ) ) {
-			// Fill missing companion_* keys from live flow object.
-			foreach ( $flosc_current_flow as $flosc_ck => $flosc_cv ) {
-				if ( 0 === strpos( (string) $flosc_ck, 'companion_' ) && ! isset( $flosc_companion_source[ $flosc_ck ] ) ) {
-					$flosc_companion_source[ $flosc_ck ] = $flosc_cv;
+			if ( empty( $flosc_companion_source ) && ! empty( $flosc_current_flow ) && is_array( $flosc_current_flow ) ) {
+				$flosc_companion_source = $flosc_current_flow;
+			} elseif ( ! empty( $flosc_current_flow ) && is_array( $flosc_current_flow ) ) {
+				// Fill missing companion_* keys from live flow object.
+				foreach ( $flosc_current_flow as $flosc_ck => $flosc_cv ) {
+					if ( 0 === strpos( (string) $flosc_ck, 'companion_' ) && ! isset( $flosc_companion_source[ $flosc_ck ] ) ) {
+						$flosc_companion_source[ $flosc_ck ] = $flosc_cv;
+					}
+				}
+				foreach ( array( 'content_item_category', 'content_item_groups', 'slug', 'domain' ) as $flosc_ck ) {
+					if ( ! isset( $flosc_companion_source[ $flosc_ck ] ) && isset( $flosc_current_flow[ $flosc_ck ] ) ) {
+						$flosc_companion_source[ $flosc_ck ] = $flosc_current_flow[ $flosc_ck ];
+					}
 				}
 			}
-			foreach ( array( 'content_item_category', 'content_item_groups', 'slug', 'domain' ) as $flosc_ck ) {
-				if ( ! isset( $flosc_companion_source[ $flosc_ck ] ) && isset( $flosc_current_flow[ $flosc_ck ] ) ) {
-					$flosc_companion_source[ $flosc_ck ] = $flosc_current_flow[ $flosc_ck ];
-				}
-			}
-		}
 
 			$flosc_companion_mode              = sanitize_text_field( (string) ( $flosc_companion_source['companion_content_display_mode'] ?? 'in_chat' ) );
 			$flosc_companion_enabled           = ! empty( $flosc_companion_source['companion_enabled'] );
@@ -1312,8 +1356,6 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 					),
 					'companionStateKey'              => $flosc_companion_state_key,
 					'companionStateStorage'          => $flosc_companion_state_storage,
-					'ajaxUrl'                        => $flosc_ajax_url,
-					'logoutNonce'                    => wp_create_nonce( 'flosc_logout' ),
 					'logoutFarewell'                 => flosc_get_setting( 'logout_farewell_message', '' ),
 					'profileUrl'                     => ( $flosc_user && function_exists( 'bp_core_get_user_domain' ) ) ? bp_core_get_user_domain( $flosc_user->ID ) : admin_url( 'profile.php' ),
 					'dashboardUrl'                   => admin_url(),
@@ -1874,7 +1916,23 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
 			?>
 		;
 		window.FLOSC_USER = <?php echo wp_json_encode( $user_data ); ?>;
-	<?php wp_add_inline_script( 'flosc-app', ob_get_clean(), 'before' ); ?>
+			<?php
+		}
+	);
+	wp_add_inline_script( 'flosc-app', $flosc_app_config, 'before' );
+	?>
+
+	<?php
+	// After the custom-domain origin swap. wp_enqueue_scripts runs before that host is known.
+	wp_localize_script(
+		'flosc-app',
+		'floscAjax',
+		array(
+			'ajaxUrl' => esc_url_raw( $flosc_ajax_url ),
+			'nonce'   => wp_create_nonce( 'flosc_logout' ),
+		)
+	);
+	?>
 
 	<?php wp_footer(); ?>
 </body>

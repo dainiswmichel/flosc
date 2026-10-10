@@ -411,8 +411,13 @@ if ( ! $flosc_has_levels ) :
 <p class="description"><em>No member levels defined yet. Add levels in the <strong>Member Levels</strong> tab, then their email series will appear here.</em></p>
 <?php endif; ?>
 
-<?php // §12: enqueue page JS via the registered admin handle instead of a raw <script> tag. ?>
-<?php ob_start(); ?>
+<?php // §12: page JS attaches to the registered admin handle through wp_add_inline_script. ?>
+<?php
+wp_add_inline_script(
+	'flosc-admin',
+	flosc_capture_output(
+		static function () {
+			?>
 (function () {
 	function addRow(prefix) {
 		var table = document.querySelector('.flosc-fu-table[data-prefix="' + prefix + '"]');
@@ -438,7 +443,11 @@ if ( ! $flosc_has_levels ) :
 		}
 	});
 })();
-<?php wp_add_inline_script( 'flosc-admin', ob_get_clean() ); ?>
+			<?php
+		}
+	)
+);
+?>
 
 <!-- ============================================ -->
 <!-- EMAIL PROVIDER SETTINGS [BACKEND NEEDED] -->

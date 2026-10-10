@@ -5072,11 +5072,11 @@ class floscApp {
                         : 'See you later!';
                 }
                 this.addMessage('assistant', farewell);
-                const ajaxLogoutUrl = this.config.ajaxUrl || '/wp-admin/admin-ajax.php';
+                const ajaxLogoutUrl = String((window.floscAjax && window.floscAjax.ajaxUrl) || '').trim();
                 const serverLogoutUrl = this.config.logoutUrl || (this.config.appUrl || '/');
                 const logoutBody = new URLSearchParams({
                     action: 'flosc_logout',
-                    nonce: this.config.logoutNonce || '',
+                    nonce: (window.floscAjax && window.floscAjax.nonce) || '',
                 });
 
                 const redirectAfterLogout = (targetUrl) => {
@@ -5148,6 +5148,12 @@ class floscApp {
                         this.logWarn('[FLOSC Auth] Could not clear visitor journey keys:', e);
                     }
                 };
+
+                if (!ajaxLogoutUrl) {
+                    clearClientAuth();
+                    redirectAfterLogout(serverLogoutUrl);
+                    break;
+                }
 
                 fetch(ajaxLogoutUrl, {
                     method: 'POST',

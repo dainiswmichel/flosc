@@ -785,7 +785,7 @@ trait FLOSC_Admin_Trait {
 	public function enqueue_admin_assets( $hook ) {
 		// §12: Post-visibility metabox styles render on the post editor (post.php / post-new.php),
 		// which is a different screen than the FLOSC settings pages. Enqueue them there via an
-		// inline-only style handle instead of echoing a <style> tag inside the metabox markup.
+		// inline-only style handle. The metabox markup does not echo a style element.
 		if ( 'post.php' === $hook || 'post-new.php' === $hook ) {
 			wp_register_style( 'flosc-metabox', false, array(), FLOSC_VERSION );
 			wp_enqueue_style( 'flosc-metabox' );
@@ -829,8 +829,8 @@ trait FLOSC_Admin_Trait {
 		}
 
 		// §12: Footer-printed script handle (no src) that FLOSC admin page templates
-		// attach their page JS to via wp_add_inline_script('flosc-admin', ...), instead
-		// of echoing raw <script> tags. Registering it here (on admin_enqueue_scripts)
+		// attach their page JS to via wp_add_inline_script('flosc-admin', ...).
+		// Registering it here (on admin_enqueue_scripts)
 		// means the handle is enqueued before render, so inline JS added during the page
 		// body still prints in the admin footer. jQuery dep covers the existing jQuery use.
 		wp_register_script( 'flosc-admin', false, array( 'jquery' ), FLOSC_VERSION, true );
@@ -1780,8 +1780,9 @@ trait FLOSC_Admin_Trait {
 		$honeypot_name = 'flosc_contact_company';
 		$show_form     = ( 'success' !== $status );
 
-		ob_start();
-		?>
+		return flosc_capture_output(
+			static function () use ( $settings, $status, $show_form, $current_url, $rendered_at, $honeypot_name ) {
+				?>
 		<section class="flosc-contact-form-wrap" aria-label="Contact Form">
 			<div class="flosc-contact-form-card">
 				<h2 class="flosc-contact-form-title"><?php echo esc_html( $settings['form_title'] ); ?></h2>
@@ -1835,8 +1836,9 @@ trait FLOSC_Admin_Trait {
 				<?php endif; ?>
 			</div>
 		</section>
-		<?php
-		return ob_get_clean();
+				<?php
+			}
+		);
 	}
 
 	/**

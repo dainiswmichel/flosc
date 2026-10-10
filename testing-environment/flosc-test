@@ -1155,7 +1155,16 @@ main() {
     echo
     if [ "$RC" -eq 0 ]; then echo "ALL PROCEDURES RUN, NOTHING FAILED."
     else echo "SOMETHING FAILED OR DID NOT RUN. Read the blocks above; exit 1."; fi
+
+    # This block is the left side of a pipe, so bash runs it in a subshell and
+    # every RC=1 set inside it -- a failing procedure, the NOT RUN branch, an
+    # unknown procedure -- dies with that subshell. Leaving on RC makes it the
+    # subshell's own status, which PIPESTATUS below reads back. Without this the
+    # verdict printed above and the code returned to the caller disagree: v140
+    # reported "SOMETHING FAILED OR DID NOT RUN" and exited 0.
+    exit "$RC"
   } 2>&1 | tee "$log"
+  RC=${PIPESTATUS[0]}
 
   echo
   echo "transcript: $log"

@@ -1335,7 +1335,12 @@ $flosc_companion_snippet_frontend_config = implode(
 	</div>
 </div>
 
-<?php ob_start(); ?>
+<?php
+wp_add_inline_script(
+	'flosc-admin',
+	flosc_capture_output(
+		static function () {
+			?>
 jQuery(document).ready(function($) {
 	var $modeRadios = $('input[name="flow_companion_content_display_mode"]');
 
@@ -1479,4 +1484,6 @@ jQuery(document).ready(function($) {
 	updateCompanionTargetMode();
 	updateCompanionRoutingMode();
 });
-<?php wp_add_inline_script( 'flosc-admin', ob_get_clean() ); ?>
+	<?php }
+	)
+); ?>

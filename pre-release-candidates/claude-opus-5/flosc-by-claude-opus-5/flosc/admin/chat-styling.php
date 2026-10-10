@@ -266,7 +266,12 @@ $flosc_bubble_styles = array(
 	</div>
 </div>
 
-<?php ob_start(); ?>
+<?php
+wp_add_inline_script(
+	'flosc-admin',
+	flosc_capture_output(
+		static function () use ( $flosc_bubble_styles ) {
+			?>
 jQuery(document).ready(function($) {
 	// Bubble style data
 	var bubbleStyles = <?php echo wp_json_encode( $flosc_bubble_styles ); ?>;
@@ -311,4 +316,6 @@ jQuery(document).ready(function($) {
 	// Initialize
 	updateBubblePreview();
 });
-<?php wp_add_inline_script( 'flosc-admin', ob_get_clean() ); ?>
+	<?php }
+	)
+); ?>

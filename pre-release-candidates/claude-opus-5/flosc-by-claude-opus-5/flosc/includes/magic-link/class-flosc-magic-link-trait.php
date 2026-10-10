@@ -241,7 +241,11 @@ trait FLOSC_Magic_Link_Trait {
 
 		// Email registration verification (not MagicLink login).
 		if ( ! empty( $get['flosc_verify_email'] ) ) {
-			$token         = sanitize_text_field( $get['flosc_verify_email'] );
+			$token = sanitize_text_field( $get['flosc_verify_email'] );
+			if ( ! $this->check_rate_limit( 'email_verify_consume', 30, 15 * MINUTE_IN_SECONDS ) ) {
+				wp_safe_redirect( add_query_arg( 'flosc_email_status', 'verify_invalid', home_url( '/' ) ) );
+				exit;
+			}
 			$transient_key = 'flosc_verify_email_' . $token;
 			$payload       = get_transient( $transient_key );
 			if ( ! is_array( $payload ) || empty( $payload['user_id'] ) ) {
@@ -288,6 +292,8 @@ trait FLOSC_Magic_Link_Trait {
 			if ( '' !== $redir && wp_http_validate_url( $redir ) ) {
 				$dest = $redir;
 			}
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- core WP action wp_login
+			do_action( 'wp_login', $user->user_login, $user );
 			wp_safe_redirect( add_query_arg( 'flosc_email_status', 'verified', $dest ) );
 			exit;
 		}
@@ -449,10 +455,6 @@ trait FLOSC_Magic_Link_Trait {
 			wp_set_auth_cookie( $user_id, true );
 			$flosc_token = $this->generate_flosc_auth_token( $user_id );
 			$this->set_flosc_auth_cookie( $flosc_token );
-			$wp_user = get_userdata( $user_id );
-			if ( $wp_user ) {
-				$this->handle_user_login( $wp_user->user_login, $wp_user );
-			}
 			$this->process_prelogin_data_for_user( $user_id );
 
 			// Store token for credential-save email (email-registered users).
@@ -527,6 +529,11 @@ trait FLOSC_Magic_Link_Trait {
 				),
 				5 * MINUTE_IN_SECONDS
 			);
+			$wp_user = get_userdata( $user_id );
+			if ( $wp_user ) {
+				// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- core WP action wp_login
+				do_action( 'wp_login', $wp_user->user_login, $wp_user );
+			}
 			wp_safe_redirect( home_url( '/?flosc_wp_sync=' . rawurlencode( $sync_nonce ) ) );
 			exit;
 		}
@@ -538,6 +545,10 @@ trait FLOSC_Magic_Link_Trait {
 			if ( ! $this->flosc_magic_access_links_enabled( null ) ) {
 				delete_transient( 'flosc_wp_sync_' . $sync_nonce );
 				$this->flosc_magic_access_disabled_redirect();
+			}
+			if ( ! $this->check_rate_limit( 'wp_sync_consume', 30, 15 * MINUTE_IN_SECONDS ) ) {
+				wp_safe_redirect( $this->get_app_url() );
+				exit;
 			}
 			$data = get_transient( 'flosc_wp_sync_' . $sync_nonce );
 			if ( ! $data ) {
@@ -563,7 +574,12 @@ trait FLOSC_Magic_Link_Trait {
 
 		// Case 1: Cross-domain login token.
 		if ( ! empty( $get['flosc_login_token'] ) ) {
-			$token         = sanitize_text_field( $get['flosc_login_token'] );
+			$token = sanitize_text_field( $get['flosc_login_token'] );
+			if ( ! $this->check_rate_limit( 'login_token_consume', 30, 15 * MINUTE_IN_SECONDS ) ) {
+				$clean_url = remove_query_arg( array( 'flosc_login_token', 'flosc_sso_success' ) );
+				wp_safe_redirect( $clean_url );
+				exit;
+			}
 			$transient_key = 'flosc_login_token_' . $token;
 			$user_id       = get_transient( $transient_key );
 
@@ -589,14 +605,14 @@ trait FLOSC_Magic_Link_Trait {
 			$flosc_token = $this->generate_flosc_auth_token( $user_id );
 			$this->set_flosc_auth_cookie( $flosc_token );
 
-			// v1.5.3: Call FLOSC's login handler directly (not do_action).
-			$this->handle_user_login( $user->user_login, $user );
-
 			// v8.0.0: Pull quiz session from DO if pending.
 			// JS set a flosc_pending_session cookie before SSO redirect.
 			// The cookie is on this flow domain, so it survived the OAuth round-trip.
 			// Pull now so FLOSC_USER.lastQuizData is ready when the page renders.
 			$this->pull_pending_session_from_do( $user_id );
+
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- core WP action wp_login
+			do_action( 'wp_login', $user->user_login, $user );
 
 			// Redirect to clean URL (strip token + sso_success params).
 			$clean_url = remove_query_arg( array( 'flosc_login_token', 'flosc_sso_success' ) );
@@ -607,10 +623,12 @@ trait FLOSC_Magic_Link_Trait {
 		// Case 2: Same-domain SSO success (no token needed, cookie already valid).
 		if ( ! empty( $get['flosc_sso_success'] ) && is_user_logged_in() ) {
 			$user = wp_get_current_user();
-			$this->handle_user_login( $user->user_login, $user );
 
 			// v8.0.0: Pull quiz session from DO if pending (same as Case 1).
 			$this->pull_pending_session_from_do( $user->ID );
+
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- core WP action wp_login
+			do_action( 'wp_login', $user->user_login, $user );
 
 			$clean_url = remove_query_arg( 'flosc_sso_success' );
 			wp_safe_redirect( $clean_url );
