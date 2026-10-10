@@ -238,7 +238,7 @@ class OAuth2_Handler {
 		$url  = esc_url_raw( (string) $url );
 		$host = strtolower( (string) ( wp_parse_url( $url, PHP_URL_HOST ) ?? '' ) );
 		if ( '' === $url || '' === $host || ! wp_http_validate_url( $url ) ) {
-			wp_safe_redirect( home_url( '/' ) );
+			wp_safe_redirect( $this->get_sso_install_fallback_url() );
 			exit;
 		}
 		$add_host = static function ( $hosts ) use ( $host ) {
@@ -275,10 +275,10 @@ class OAuth2_Handler {
 		 * verifies. They are read and sanitized. The first use of `$state`
 		 * against the store is verify_state(); handle_callback() does not
 		 * read or write a transient or option keyed on callback state before
-		 * that call. Invalid or expired state redirects to home_url() — the
-		 * WordPress site root — because unverified state cannot name a
-		 * trustworthy flow-domain URL. An abandoned login that previously
-		 * resumed on the flow URL now lands there. That is deliberate.
+		 * that call. Invalid or expired state redirects to the relative
+		 * same-origin root because unverified state cannot name a trustworthy
+		 * flow-domain URL. An abandoned login that previously resumed on the
+		 * flow URL now lands there. That is deliberate.
 		 */
 		$get          = array();
 		$post         = array();
@@ -385,7 +385,7 @@ class OAuth2_Handler {
 		// the WordPress site root. Unverified state cannot name a trustworthy
 		// redirect target. A dedicated "try again from where you started"
 		// page is a later UX pass, not this one.
-		$app_url           = home_url();
+		$app_url           = $this->get_sso_install_fallback_url();
 		$error_redirect_to = $app_url;
 
 		// CSRF: OAuth state is the control. Consume it once, here, before
@@ -539,9 +539,9 @@ class OAuth2_Handler {
 
 		// Fail closed: unapproved redirect_to never receives a login token or redirect.
 		if ( ! $this->is_allowed_sso_redirect( $redirect_to, $flow_id_for_redirect ) ) {
-			$fallback = is_string( $app_url ) && '' !== $app_url ? $app_url : home_url( '/' );
+			$fallback = is_string( $app_url ) && '' !== $app_url ? $app_url : $this->get_sso_install_fallback_url();
 			if ( ! $this->is_allowed_sso_redirect( $fallback, $flow_id_for_redirect ) ) {
-				$fallback = home_url( '/' );
+				$fallback = $this->get_sso_install_fallback_url();
 			}
 			$redirect_to = $fallback;
 		}
@@ -983,13 +983,26 @@ class OAuth2_Handler {
 	}
 
 	/**
+	 * Same-origin install fallback for callbacks without an approved flow URL.
+	 *
+	 * A relative root cannot select an ambient or attacker-named host. WordPress
+	 * resolves it on the callback origin, and wp_safe_redirect() accepts it as a
+	 * same-origin target.
+	 *
+	 * @return string Relative install fallback.
+	 */
+	private function get_sso_install_fallback_url() {
+		return '/';
+	}
+
+	/**
 	 * Redirect with error message
 	 *
 	 * Accept optional redirect_to so user returns to the app page
 	 * (where FLOSC JS is running), not the homepage where it isn't.
 	 *
 	 * @param string $message Error message.
-	 * @param string $redirect_to URL to redirect to (falls back to home_url()).
+	 * @param string $redirect_to URL to redirect to (falls back to same-origin root).
 	 * @param string $flow_id Flow id from verified state; '' before verification.
 	 * @since 8.0.1
 	 */
@@ -1008,19 +1021,19 @@ class OAuth2_Handler {
 		}
 
 		// v8.0.2: the flow domain is where FLOSC's JS runs, so an error raised
-		// during a flow's login belongs on that flow's domain, not on the
-		// WordPress host that home_url() returns. The domain is resolved from the
-		// flow id the verified state carried, and the same id scopes the allowlist
-		// check below. Callers that run before verification pass no flow id and
-		// land on home_url(), because unverified state cannot name a target.
+		// during a flow's login belongs on that flow's domain. The domain is
+		// resolved from the flow id the verified state carried, and the same id
+		// scopes the allowlist check below. Callers that run before verification
+		// pass no flow id and land on the same-origin install fallback, because
+		// unverified state cannot name a target.
 		$flow_id = sanitize_key( (string) $flow_id );
 		if ( empty( $redirect_to ) && '' !== $flow_id ) {
 			$resolved    = $this->resolve_app_url_from_flow_id( $flow_id );
 			$redirect_to = is_string( $resolved ) ? $resolved : '';
 		}
-		$base_url = ! empty( $redirect_to ) ? $redirect_to : home_url( '/' );
+		$base_url = ! empty( $redirect_to ) ? $redirect_to : $this->get_sso_install_fallback_url();
 		if ( ! $this->is_allowed_sso_redirect( $base_url, $flow_id ) ) {
-			$base_url = home_url( '/' );
+			$base_url = $this->get_sso_install_fallback_url();
 		}
 
 		$redirect_url = add_query_arg(

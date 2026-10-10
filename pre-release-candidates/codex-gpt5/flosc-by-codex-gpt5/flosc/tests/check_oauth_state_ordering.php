@@ -90,6 +90,15 @@ flosc_ok(
 	'no live ambient get_current_flow() call remains in the OAuth handler',
 	false === strpos( $flosc_code, 'get_current_flow(' )
 );
+flosc_ok(
+	'all six direct and indirect redirect fallbacks use the same-origin helper',
+	6 === substr_count( $flosc_code, '$this->get_sso_install_fallback_url()' ),
+	'found ' . substr_count( $flosc_code, '$this->get_sso_install_fallback_url()' )
+);
+flosc_ok(
+	'same-origin fallback is a relative root and cannot select a host',
+	false !== strpos( $flosc_code, "private function get_sso_install_fallback_url() {\n\t\treturn '/';\n\t}" )
+);
 
 if ( ! preg_match( '/public function handle_callback\s*\([^)]*\)\s*\{/', $flosc_src, $flosc_m, PREG_OFFSET_CAPTURE ) ) {
 	flosc_ok( 'handle_callback() is present', false );
@@ -182,6 +191,11 @@ flosc_ok(
 flosc_ok(
 	'error redirect allowlist receives its verified flow id',
 	false !== strpos( $flosc_code, '$this->is_allowed_sso_redirect( $base_url, $flow_id )' )
+);
+flosc_ok(
+	'error redirect resolves the verified flow before using install fallback',
+	false !== strpos( $flosc_code, '$this->resolve_app_url_from_flow_id( $flow_id )' )
+		&& false !== strpos( $flosc_code, '$base_url = ! empty( $redirect_to ) ? $redirect_to : $this->get_sso_install_fallback_url();' )
 );
 
 if ( $flosc_fail > 0 ) {

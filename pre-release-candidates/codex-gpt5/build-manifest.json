@@ -1,32 +1,31 @@
 {
   "schema_version": 8,
   "candidate": "codex-gpt5",
-  "candidate_label": "FLOSC 8.0.0 candidate V143",
+  "candidate_label": "FLOSC 8.0.0 candidate V144",
   "owner": "Codex",
   "parent": {
-    "candidate": "V142",
-    "commit": "b799a72507a55a9bf2a1250d5be8989da678149d"
+    "candidate": "V143",
+    "commit": "64c7a0ee6843209403c859957c36c29e0bb480c4"
   },
   "plugin_version": "8.0.0",
   "stable_tag": "8.0.0",
-  "internal_iteration": "v143",
-  "github_hashid_at_pack": "b799a72507a55a9bf2a1250d5be8989da678149d",
+  "internal_iteration": "v144",
+  "github_hashid_at_pack": "64c7a0ee6843209403c859957c36c29e0bb480c4",
   "plugin_source": "flosc-by-codex-gpt5/flosc",
-  "baseline": "origin/main at b799a72507a55a9bf2a1250d5be8989da678149d",
-  "v143_delta_from_v142": [
+  "baseline": "origin/main at 64c7a0ee6843209403c859957c36c29e0bb480c4",
+  "v144_delta_from_v143": [
     "flosc.php",
-    "admin/ivr-upload-handler.php",
-    "tests/check_wporg_rules.php",
-    "tests/check_wxr_import_global_boundary.php"
+    "includes/sso/class-oauth2-handler.php",
+    "tests/check_oauth_state_ordering.php"
   ],
   "artifact": {
     "path": "flosc.zip",
     "root": "flosc/",
     "entries": 283,
     "files": 243,
-    "bytes": 2824709,
-    "sha256": "7e174e32344846e43d7720d822daede806b4ec73b92e7869d817b51613973b2f",
-    "runtime_manifest_sha256": "bbc047294a27567d8807e3093871a6b1bad50eb0b4322f3f2c382d6d73b44996",
+    "bytes": 2824821,
+    "sha256": "ab54fd6b35e39d207c313ca2b16d0c4e4b3201ec4a2cd58e9a0fb507d21c5e5a",
+    "runtime_manifest_sha256": "96451c22cee6aaa37a02f0bc250be619d1f7bfc5747ed509b0f4dd0e5d39a906",
     "runtime_manifest": "sha256 of sorted lines: '<sha256>  <zip path>' for every file in the zip",
     "tests_entries": 0
   }

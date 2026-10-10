@@ -1,42 +1,36 @@
-# FLOSC 8.0.0 — Codex candidate V143
+# FLOSC 8.0.0 — Codex candidate V144
 
-V143 starts from the published V142 candidate at commit
-`b799a72507a55a9bf2a1250d5be8989da678149d`. The public plugin version and
-stable tag remain 8.0.0. `Github HashID` records that V142 parent commit.
+V144 starts from the published V143 candidate at commit
+`64c7a0ee6843209403c859957c36c29e0bb480c4`. The public plugin version and
+stable tag remain 8.0.0. `Github HashID` records that V143 parent commit.
 
 ## Scope
 
-- Removes the unused `WP_LOAD_IMPORTERS` definition from the WXR import path.
-  FLOSC no longer mutates that request-global WordPress importer bootstrap flag.
-- Keeps the existing active-importer requirement and calls the same public
-  `WP_Import::import()` entry with the same staged WXR path.
-- Corrects the attachment guard from `method_exists()` to `property_exists()`;
-  the official WordPress Importer exposes `fetch_attachments` as a public
-  property, so attachment fetching now follows the behavior the code intended.
-- Adds a WordPress.org source rule that rejects any reintroduced definition of
-  the importer bootstrap flag.
-- Adds a runtime regression covering the import path, attachment flag, saved
-  `imported` status, output capture, and unchanged global bootstrap state.
-
-## Changing global behaviour compliance attestation
-
-- MTS: `2026-10m-10d`
-- Signature: **Codex (OpenAI)**
-- Guarantee: I guarantee that V143 remediates the reported changing-global-
-  behaviour issue in `admin/ivr-upload-handler.php` in WordPress Coding
-  Standards-compliant shipping code. The request-global importer bootstrap flag
-  is not defined or changed. The WXR import path retains its intended behavior,
-  verified by the focused runtime regression described below.
+- Removes all six direct and indirect `home_url()` destination fallbacks from
+  the OAuth callback path.
+- Introduces one explicit same-origin install fallback, the relative URL `/`,
+  which cannot select an ambient flow or attacker-named host.
+- Keeps verified-flow resolution first: post-verification redirects still use
+  `resolve_app_url_from_flow_id()` with the flow ID returned by `verify_state()`.
+- Keeps failed-state handling isolated: it does not read a flow ID from
+  unverified state and uses only the relative same-origin fallback.
+- Leaves the remaining `home_url()` calls intact because they read the
+  configured site host/scheme for redirect validation or add the configured
+  same-site host to the allowlist; they do not choose a redirect destination.
+- Extends the OAuth source regression to require the six scoped fallback calls,
+  the relative-root helper contract, verified-flow resolution, and flow-scoped
+  allowlist checks.
 
 ## Verification
 
 - `php -l` passed on all 204 PHP files in the source candidate.
 - 48 PHP gates and 6 JavaScript gates passed.
-- The focused WXR runtime regression passed: the importer received the staged
-  path, attachment fetching was enabled, status was persisted as `imported`, and
-  the request-global importer bootstrap flag remained undefined.
-- The WordPress.org source rules scanned 146 shipping PHP files with 0 findings.
-- Changed shipping PHP passed the project WPCS ruleset with 0 errors or warnings.
+- The OAuth regression passed all ordering, flow-resolution, fallback, and
+  allowlist assertions.
+- No redirect destination or redirect fallback in the OAuth handler calls
+  `home_url()`.
+- Changed shipping PHP passed the full WordPress PHPCS standard with 0 errors
+  or warnings; PHPCS reported 2 / 2 files scanned.
 - All changed PHP passed PHPCompatibilityWP for PHP 7.4.
 - `git diff --check` and `unzip -t` passed.
 - The ZIP contains 243 runtime files and no tests, vendor tree, Composer files,
@@ -47,12 +41,12 @@ Plugin Check, PHPStan, and a live WordPress installation were not run.
 ## Exact artifact
 
 ```text
-7e174e32344846e43d7720d822daede806b4ec73b92e7869d817b51613973b2f  flosc.zip
+ab54fd6b35e39d207c313ca2b16d0c4e4b3201ec4a2cd58e9a0fb507d21c5e5a  flosc.zip
 ```
 
-283 ZIP entries, 243 files, 2,824,709 bytes. Sorted `sha256  path` manifest of
+283 ZIP entries, 243 files, 2,824,821 bytes. Sorted `sha256  path` manifest of
 those files:
 
 ```text
-bbc047294a27567d8807e3093871a6b1bad50eb0b4322f3f2c382d6d73b44996
+96451c22cee6aaa37a02f0bc250be619d1f7bfc5747ed509b0f4dd0e5d39a906
 ```
