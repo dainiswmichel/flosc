@@ -269,7 +269,12 @@ endif;
 		<td>
 			<button type="button" id="flosc-paypal-test" class="button button-secondary">Test PayPal Connection</button>
 			<span id="flosc-paypal-test-result" class="flosc-paypal-test-result"></span>
-			<?php ob_start(); ?>
+			<?php
+			wp_add_inline_script(
+				'flosc-admin',
+				flosc_capture_output(
+					static function () {
+						?>
 			function floscSetPayPalTestResult(result, className, message) {
 				var status = document.createElement('span');
 				status.className = className;
@@ -315,7 +320,11 @@ endif;
 						floscSetPayPalTestResult(result, 'flosc-paypal-result-error-lite', '\u274c Network error');
 					});
 			});
-			<?php wp_add_inline_script( 'flosc-admin', ob_get_clean() ); ?>
+						<?php
+					}
+				)
+			);
+			?>
 		</td>
 	</tr>
 </table>

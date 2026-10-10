@@ -2254,8 +2254,11 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 		<?php
 		// One notice only (bottom duplicate removed). After PRG reload, bring it into view
 		// and drop ?saved=1 so refresh does not re-flash the banner.
-		ob_start();
-		?>
+		wp_add_inline_script(
+			'flosc-admin',
+			flosc_capture_output(
+				static function () {
+					?>
 		(function () {
 			var notice = document.getElementById('flosc-save-feedback');
 			if (notice) {
@@ -2276,8 +2279,10 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 				}
 			} catch (e3) { /* ignore */ }
 		})();
-		<?php
-		wp_add_inline_script( 'flosc-admin', ob_get_clean() );
+					<?php
+				}
+			)
+		);
 		?>
 	<?php endif; ?>
 
@@ -2357,7 +2362,12 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 		</div>
 	</div>
 	
-	<?php ob_start(); ?>
+	<?php
+	wp_add_inline_script(
+		'flosc-admin',
+		flosc_capture_output(
+			static function () use ( $flosc_active_tab, $flosc_identity_view ) {
+				?>
 	function switchIVR(ivr) {
 		const tab = '<?php echo esc_js( $flosc_active_tab ); ?>';
 		const view = '<?php echo esc_js( $flosc_identity_view ); ?>';
@@ -2422,7 +2432,11 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 		const section = tabTitles[tab] || 'Settings';
 		document.title = section + ' < Settings < FLOSC';
 	})();
-	<?php wp_add_inline_script( 'flosc-admin', ob_get_clean() ); ?>
+				<?php
+			}
+		)
+	);
+	?>
 	
 	<!-- Tabs -->
 	<nav class="nav-tab-wrapper flosc-settings-tabs" aria-label="FLOSC Settings Tabs">
@@ -3251,7 +3265,12 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 								Preview
 							</span>
 							<p class="description">Lesson highlights, form buttons, focus rings, carousel controls. Sets <code>--flosc-primary</code>.</p>
-							<?php ob_start(); ?>
+							<?php
+							wp_add_inline_script(
+								'flosc-admin',
+								flosc_capture_output(
+									static function () {
+										?>
 							(function () {
 								var input = document.getElementById('flow_primary_color');
 								var preview = document.getElementById('color-preview');
@@ -3265,7 +3284,11 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 									syncPreview(e.target.value);
 								});
 							})();
-							<?php wp_add_inline_script( 'flosc-admin', ob_get_clean() ); ?>
+										<?php
+									}
+								)
+							);
+				?>
 						</td>
 					</tr>
 					<tr>
@@ -3470,7 +3493,12 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 					</tr>
 				</table>
 				
-				<?php ob_start(); ?>
+				<?php
+				wp_add_inline_script(
+					'flosc-admin',
+					flosc_capture_output(
+						static function () {
+							?>
 				(function() {
 					function setupMediaButton(buttonId, inputId, previewId) {
 						var btn = document.getElementById(buttonId);
@@ -3492,7 +3520,11 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 					setupMediaButton('flosc_upload_favicon', 'flow_favicon_url', 'flosc_favicon_preview');
 					setupMediaButton('flosc_upload_badge', 'flow_badgeUrl', 'flosc_badge_preview');
 				})();
-				<?php wp_add_inline_script( 'flosc-admin', ob_get_clean() ); ?>
+							<?php
+						}
+					)
+				);
+				?>
 				
 				<!-- DNS Setup Info (if custom domain set) -->
 				<?php if ( ! empty( $flosc_flow_settings['domain'] ) ) : ?>

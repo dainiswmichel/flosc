@@ -269,8 +269,11 @@ foreach ( $flosc_list_ids as $flosc_kid ) :
 <?php endforeach; ?>
 
 <?php
-ob_start();
-?>
+wp_add_inline_script(
+	'flosc-admin',
+	flosc_capture_output(
+		static function () {
+			?>
 (function () {
 	document.querySelectorAll('.flosc-kb-dropzone').forEach(function (zone) {
 		var input = zone.querySelector('input[type="file"]');
@@ -293,5 +296,7 @@ ob_start();
 		});
 	});
 })();
-<?php
-wp_add_inline_script( 'flosc-admin', ob_get_clean() );
+			<?php
+		}
+	)
+);

@@ -416,7 +416,12 @@ $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key( pathinfo( $flosc_se
 <!-- Styles in assets/css/flosc-admin.css -->
 
 <!-- v1.5.0: Connection Test AJAX -->
-<?php ob_start(); ?>
+<?php
+wp_add_inline_script(
+	'flosc-admin',
+	flosc_capture_output(
+		static function () {
+			?>
 (function() {
 	var nonce = '<?php echo esc_js( wp_create_nonce( 'flosc_test_sso' ) ); ?>';
 	var ajaxUrl = '<?php echo esc_js( admin_url( 'admin-ajax.php' ) ); ?>';
@@ -496,4 +501,6 @@ $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key( pathinfo( $flosc_se
 		return div.innerHTML;
 	}
 })();
-<?php wp_add_inline_script( 'flosc-admin', ob_get_clean() ); ?>
+	<?php }
+	)
+); ?>

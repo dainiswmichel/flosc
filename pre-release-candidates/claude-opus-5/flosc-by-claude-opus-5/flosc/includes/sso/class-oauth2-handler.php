@@ -515,15 +515,28 @@ class OAuth2_Handler {
 			}
 		}
 
-		// Resolve slug-based URLs to custom domain
+		// Resolve slug-based URLs to the flow's own domain
 		// e.g. the WordPress host/flow_path/ → the flow domain/.
-		if ( function_exists( 'flosc' ) ) {
-			$app_slug = get_option( 'flosc_app_slug', 'flosc' );
-			if ( false !== strpos( $redirect_to, '/' . $app_slug ) ) {
-				$custom_url = flosc()->get_app_url();
-				if ( $custom_url && false === strpos( $custom_url, $app_slug ) ) {
-					$redirect_to = $custom_url;
+		//
+		// The domain is resolved from the flow id the verified state carries.
+		// flosc()->get_app_url() reads get_current_flow(), which on a REST
+		// callback sees the WordPress host and answers with whichever flow is
+		// default: that sends a visitor who began in flow A to flow B's domain.
+		$app_slug = get_option( 'flosc_app_slug', 'flosc' );
+		if ( false !== strpos( $redirect_to, '/' . $app_slug ) ) {
+			$custom_url = $this->resolve_app_url_from_flow_id( $flow_id_for_redirect );
+
+			// State without a flow id has nothing to resolve from, so the
+			// ambient app URL remains the only answer available there.
+			if ( ! is_string( $custom_url ) || '' === $custom_url ) {
+				$custom_url = '';
+				if ( '' === $flow_id_for_redirect && function_exists( 'flosc' ) ) {
+					$custom_url = (string) flosc()->get_app_url();
 				}
+			}
+
+			if ( '' !== $custom_url && false === strpos( $custom_url, $app_slug ) ) {
+				$redirect_to = $custom_url;
 			}
 		}
 

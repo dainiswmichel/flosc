@@ -4,8 +4,8 @@
  * Plugin URI: https://flosc.ai
  * Description: (F)reeline --> (L)ogin --> (O)ffer --> (S)ale --> (C)ontent: try-before-you-buy WordPress journeys.
  * Version: 8.0.0
- * Internal Iteration: v129
- * Github HashID: 3a42f8683211adb1f002dc6189d4a209ec187e13
+ * Internal Iteration: v141
+ * Github HashID: 6971c54747e1bf709976c4f3d7efc817554ac639
  * Requires at least: 7.1
  * Requires PHP: 7.4
  * Author: Dainis W. Michel
@@ -96,6 +96,7 @@ if ( ! function_exists( 'flosc_log' ) ) {
 // Domain: filesystem helpers then path helpers (write gate needs FLOSC_Filesystem).
 require_once FLOSC_PLUGIN_DIR . 'includes/filesystem/class-flosc-filesystem.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/filesystem/flosc-data-paths.php';
+require_once FLOSC_PLUGIN_DIR . 'includes/flosc-output-buffer.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-request.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-post-queries.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-accessors.php';

@@ -640,20 +640,29 @@ if ( ! function_exists( 'flosc_portability_run_wxr_import' ) ) {
 		 * used immediately after. Nothing here is, so it is not loaded.
 		 */
 
-		// Suppress HTML output from the importer UI classes.
-		ob_start();
-		$importer = new WP_Import();
-		if ( method_exists( $importer, 'fetch_attachments' ) ) {
-			$importer->fetch_attachments = true;
-		}
-		// import() is the public entry on classic WordPress Importer.
-		if ( method_exists( $importer, 'import' ) ) {
-			$importer->import( $path );
-		} else {
-			ob_end_clean();
+		/*
+		 * Suppress HTML output from the importer UI classes. The capture
+		 * helper restores the prior buffer level even when the importer throws
+		 * or a callback closes FLOSC's buffer before control returns here.
+		 */
+		$flosc_import_api = false;
+		flosc_capture_output(
+			static function () use ( $path, &$flosc_import_api ) {
+				$importer = new WP_Import();
+				if ( method_exists( $importer, 'fetch_attachments' ) ) {
+					$importer->fetch_attachments = true;
+				}
+				// import() is the public entry on classic WordPress Importer.
+				$flosc_import_api = method_exists( $importer, 'import' );
+				if ( $flosc_import_api ) {
+					$importer->import( $path );
+				}
+			}
+		);
+
+		if ( ! $flosc_import_api ) {
 			return new WP_Error( 'flosc_wxr_api', __( 'WordPress Importer API is not available on this site.', 'flosc' ) );
 		}
-		ob_end_clean();
 
 		if ( $idx >= 0 && isset( $pack['wxr'][ $idx ] ) && is_array( $pack['wxr'][ $idx ] ) ) {
 			$pack['wxr'][ $idx ]['status']      = 'imported';
