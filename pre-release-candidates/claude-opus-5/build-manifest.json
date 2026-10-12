@@ -1,63 +1,48 @@
 {
-  "candidate": "V129",
-  "author": "claude-opus-5",
-  "date": "2026-10-05",
-  "parent": "V128 (commit 3a42f8683211adb1f002dc6189d4a209ec187e13)",
-  "why_this_exists": "A full shitcode audit of V128 against the WordPress.org reviewer's own September 14 2026 email (Review ID AUTO flosc/dainismichel/2Jun26/T12 13Sep26/4.2.1) found exactly one real open defect. V129 is that one fix.",
+  "schema_version": 8,
+  "candidate": "claude-opus-5",
+  "candidate_label": "FLOSC 8.0.0 candidate v149",
+  "owner": "ClaudeCode",
+  "parent": {
+    "candidate": "V146",
+    "commit": "b339e64042fdcba8d4b0fb1cb465d7b41fa7fa55"
+  },
+  "plugin_version": "8.0.0",
+  "stable_tag": "8.0.0",
+  "internal_iteration": "v149",
+  "github_hashid_at_pack": "b339e64042fdcba8d4b0fb1cb465d7b41fa7fa55",
+  "plugin_source": "flosc-by-claude-opus-5/flosc",
+  "baseline": "origin/main at b339e64042fdcba8d4b0fb1cb465d7b41fa7fa55",
+  "requires_at_least": "7.1",
+  "requires_php": "7.4",
+  "v149_delta_from_v146": [
+    "flosc.php",
+    "admin/autoprompts.php",
+    "admin/content.php",
+    "admin/knowledge-base.php",
+    "admin/member-levels.php",
+    "admin/settings-helper.php",
+    "includes/ai/flosc-model-catalog.php",
+    "includes/ai/flosc-provider-keys.php",
+    "includes/class-flosc-framework.php",
+    "includes/class-flosc-site-content-index.php",
+    "includes/flosc-admin.php",
+    "includes/flosc-knowledge-bases.php",
+    "includes/flosc-personality-library.php",
+    "includes/flosc-request.php",
+    "includes/full-page-mode/class-flosc-full-page-mode.php",
+    "includes/magic-link/class-flosc-magic-link-trait.php",
+    "tests/check_tab_scope_and_nonce_binding.php"
+  ],
   "artifact": {
-    "zip": "flosc.zip",
-    "sha256": "f68e494b59db4d7c956cba69bf54994863b6dc82644de941b52870bb6589f8e9",
-    "bytes": 2820574,
-    "entries": 282,
-    "tests_entries": 0,
-    "pack_json_entries": 4
-  },
-  "the_one_fix": {
-    "file": "admin/starter-packs.php",
-    "lines": "159-161 and 327-331",
-    "defect": "Two inline onsubmit=\"return confirm(...)\" handlers on a FLOSC admin screen.",
-    "who": "Commit baa1d187, author Claude, 2026-09-21 11:15:59 +0000, 'Home run candidate v92 coded by Claude Opus 5'. Written SEVEN DAYS AFTER the 14 Sep 2026 rejection that states in writing: 'admin screens are not considered an exception, and neither are inline styles or scripts.'",
-    "fix": "Converted to data-confirm-message. assets/js/flosc-admin-events.js is already enqueued on every FLOSC admin screen (includes/flosc-admin.php:839) and already confirms any form carrying that attribute (flosc-admin-events.js:21). Every other FLOSC admin screen already used this pattern; these two were the only stragglers.",
-    "bonus": "esc_js() -> esc_attr(). esc_js() escapes for a script body; this is an HTML attribute, so esc_attr() is the correct escaper. The old code used the wrong one.",
-    "verified": "Inline event handlers in shipped PHP/HTML: 2 before, 0 after."
-  },
-  "audit_of_v128_everything_else_measured_clean": {
-    "regex_literals": "319 patterns passed to preg_* compiled; 0 broken. (An earlier scan of mine reported 228 broken -- that scan was WRONG, it treated REST routes, markdown headings and sprintf formats as patterns. Retracted.)",
-    "sql_injection": "0. 57 $wpdb calls; the only 4 without prepare() are $wpdb->query('ROLLBACK') -- a literal constant with no user input.",
-    "duplicate_symbols": "0. Each of FLOSC_Filesystem, FLOSC_Site_Content_Index, flosc_data_dir, flosc_get_setting has exactly one declaration.",
-    "debug_leftovers": "0 error_log, 0 var_dump/print_r/var_export, 0 live console.log, 0 TODO/FIXME/XXX/HACK, 0 eval, 0 create_function, 0 extract, 0 @-suppression.",
-    "inline_styles": "0 style= attributes, 0 raw <style>/<script> tags in shipped PHP.",
-    "sanitization": "0 live FILTER_UNSAFE_RAW or FILTER_DEFAULT calls.",
-    "base64_decode": "6 call sites, all JWT / binary / encrypted-payload decoding with documented reasons. Not obfuscation.",
-    "unserialize": "5 sites, all maybe_unserialize() on wp_options / user meta values."
-  },
-  "reviewer_findings_14_sep_2026_status": {
-    "requires_at_least_7.0.4": "CLOSED -- 7.1 in flosc.php and readme.txt; zero 7.0.4 in any shipped file",
-    "nonces_and_permissions_9_incidences": "CLOSED -- check_ajax_referer('flosc_chat_logs','nonce'); HMAC + hash_equals for the audio endpoint (a nonce cannot ride in an <audio src>); current_user_can('edit_others_posts') plus per-handler nonces",
-    "calling_core_loading_files_directly": "CLOSED -- the ABSPATH wp-admin/includes/import.php require is gone",
-    "determine_file_locations_correctly": "CLOSED -- the hardcoded WP_PLUGIN_DIR importer path is gone",
-    "other_untrusted_HTTP_HOST_in_sso_allowlist": "CLOSED -- 'The current request host is deliberately NOT added here', quoting the T12 finding verbatim",
-    "sanitization_31_incidences": "CLOSED -- 0 live FILTER_UNSAFE_RAW/FILTER_DEFAULT",
-    "inline_script_style_tags": "CLOSED IN PHP as of V129 -- the last two inline handlers are the fix above",
-    "external_services_documented": "CLOSED -- 16 readme entries, numbered 1..16, no gaps"
-  },
-  "verification_measured_not_asserted": {
-    "project_gate_suite": "PASS 35, FAIL 0, SKIP 4 (the 4 SKIPs are wp-cli/Docker absent from this container)",
-    "js_gates": "5/5",
-    "php_lint": "all shipped PHP parses",
-    "zip": "282 entries, 0 tests/, 4 pack.json, top-level flosc/",
-    "phpcs_shipped_zip": "0 ERRORS, 22 WARNINGS in 3 files (all NonceVerification.Recommended), scanned from a neutral path on the unzipped artifact"
-  },
-  "what_this_candidate_does_NOT_prove": [
-    "Plugin Check did not run here -- no Docker, no wp-cli in this container. Must be re-run on this exact zip.",
-    "No interactive functionality was exercised. Chat continuity, logging, personality creation and selection, and Catalogs have no evidence.",
-    "No starter pack was installed and used."
-  ],
-  "status": "PACKAGED_NOT_DEPLOYED",
-  "submission_ready": false,
-  "submission_blockers": [
-    "Plugin Check must be re-run on this exact zip (sha256 f68e494b59db4d7c956cba69bf54994863b6dc82644de941b52870bb6589f8e9).",
-    "Conditions 2 and 3 (functionality in use, starter packs in use) still have no evidence from any iteration."
-  ],
-  "decided_not_a_violation": "flosc_documentation/index.html:89 ships '<script src=\"techref.js\">'. DECIDED: compliant, no change. The reviewer's script/style note sits in the soft 'not yet able to make definitive judgments' section, not among the red blockers, and the rule it states (load JS via wp_enqueue_*) cannot apply to standalone HTML pages WordPress never renders -- there is no hook to enqueue on. Nothing in shipped PHP or JS references the bundle, so deleting it was considered and REJECTED: removing working documentation to dodge a soft flag that does not apply is the exact destructacoding pattern this project forbids. The rationale is now recorded in .distignore so it is not 'fixed' later. It belongs in the reply email."
+    "path": "flosc.zip",
+    "root": "flosc/",
+    "entries": 283,
+    "files": 243,
+    "bytes": 2828509,
+    "sha256": "f37c14d37ae1fb67bacef4200659ee6953a88c056243e724ab0dcafd28c803f2",
+    "runtime_manifest_sha256": "955d46fa697f16485d0317ca22e404205e9b22b1a41de565b5ab10b738877fe2",
+    "runtime_manifest": "sha256 of sorted lines: '<sha256>  <zip path>' for every file in the zip, newline-joined with a trailing newline",
+    "tests_entries": 0
+  }
 }
