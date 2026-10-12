@@ -358,3 +358,26 @@ if ( ! function_exists( 'flosc_knowledge_bases_prompt_text' ) ) {
 		return $content;
 	}
 }
+
+if ( ! function_exists( 'flosc_kb_target_nonce_action' ) ) {
+	/**
+	 * Nonce action naming one knowledge-base file.
+	 *
+	 * The generic action on a link proves the request came from this site. It
+	 * cannot prove WHICH file was meant, because the id and the filename travel
+	 * in the query string, so one link would verify against any other file.
+	 * This names the pair.
+	 *
+	 * The link builder and the handler both call this, so the two cannot drift:
+	 * the sanitizers here are the ones the handler applies to the request before
+	 * it verifies.
+	 *
+	 * @param string $action Generic action, e.g. flosc_kb_toggle.
+	 * @param string $kb_id  Knowledge base id.
+	 * @param string $file   File basename.
+	 * @return string
+	 */
+	function flosc_kb_target_nonce_action( $action, $kb_id, $file ) {
+		return sanitize_key( (string) $action ) . '_' . sanitize_key( (string) $kb_id ) . '_' . sanitize_file_name( (string) $file );
+	}
+}

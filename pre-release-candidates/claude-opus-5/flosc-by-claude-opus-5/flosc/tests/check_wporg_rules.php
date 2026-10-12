@@ -286,6 +286,27 @@ foreach ( $src as $file => $lines ) {
 }
 
 /* =========================================================================
+ * WPORG-11 — no request-global importer bootstrap mutation
+ *
+ * The 2026-10m-10d review identified an importer-bootstrap constant defined
+ * after the active importer class had already been verified. The definition
+ * was unused by this path and changed request-global behavior unnecessarily.
+ * ====================================================================== */
+rule( 'WPORG-11', 'Importer execution does not mutate global bootstrap state', '2026-10m-10d review' );
+
+$flosc_importer_bootstrap_flag = 'WP_LOAD_' . 'IMPORTERS';
+foreach ( $src as $file => $lines ) {
+	foreach ( $lines as $i => $line ) {
+		if ( flosc_is_comment_line( $line ) ) {
+			continue;
+		}
+		if ( preg_match( '/\bdefine\s*\(\s*[\x27"]' . preg_quote( $flosc_importer_bootstrap_flag, '/' ) . '[\x27"]/', $line ) ) {
+			finding( 'WPORG-11', $file, $i + 1, 'defines the request-global importer bootstrap flag' );
+		}
+	}
+}
+
+/* =========================================================================
  * WPORG-04 — filter_input without a sanitizing filter
  *
  * T12: "Leaving the filter parameter empty, PHP by default will apply the

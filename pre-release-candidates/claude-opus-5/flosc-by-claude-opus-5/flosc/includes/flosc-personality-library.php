@@ -3719,7 +3719,25 @@ if ( ! function_exists( 'flosc_enqueue_personality_builder_assets' ) ) {
 			(string) filemtime( $js_path ),
 			true
 		);
-		$boot       = flosc_personality_builder_boot_json( $persona, $ivr );
+		$boot = flosc_personality_builder_boot_json( $persona, $ivr );
+
+		/*
+		 * The flags add escaping; they do not remove any.
+		 *
+		 * JSON_HEX_TAG, JSON_HEX_AMP, JSON_HEX_APOS and JSON_HEX_QUOT each replace
+		 * a character that could end a script block or an attribute with its \u
+		 * escape, so < > & ' and " cannot survive into the page as themselves.
+		 * That is stricter than wp_json_encode()'s default, which is the opposite
+		 * of passing options that opt out of escaping. JSON_UNESCAPED_UNICODE
+		 * affects only how non-ASCII letters are written and none of the five.
+		 *
+		 * The result goes to wp_add_inline_script() rather than being echoed, so
+		 * WordPress owns where it lands in the document.
+		 *
+		 * wp_localize_script() is deliberately not used: WP_Scripts::localize()
+		 * runs html_entity_decode() over string values, which would rewrite a
+		 * persona that legitimately contains &amp; or &lt;.
+		 */
 		$json_flags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE;
 		wp_add_inline_script(
 			'flosc-personality-builder',

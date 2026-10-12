@@ -464,7 +464,10 @@ class FLOSC_Full_Page_Mode {
 		$get = wp_unslash( $_GET );
 		$ref = get_query_var( 'ref' );
 		if ( ! $ref ) {
-			$ref = ( $get['ref'] ?? '' );
+			// ?ref= is one value. An array sent under that name would reach
+			// sanitize_text_field() below as an array, so anything that is not a
+			// single value is treated as no referrer at all.
+			$ref = isset( $get['ref'] ) && is_scalar( $get['ref'] ) ? (string) $get['ref'] : '';
 		}
 		if ( $ref && ! is_user_logged_in() ) {
 			setcookie(
@@ -558,9 +561,26 @@ class FLOSC_Full_Page_Mode {
 		// Admin test-offer mode: bypass conditions/draft status to preview any offer.
 		$test_offer_id = '';
 		$get           = wp_unslash( $_GET );
-		if ( current_user_can( 'manage_options' ) && ! empty( $get['flosc_test_offer'] ) ) {
-			$oid   = sanitize_text_field( $get['flosc_test_offer'] );
-			$nonce = sanitize_text_field( $get['flosc_test_nonce'] ?? '' );
+		if ( current_user_can( 'manage_options' )
+			&& ! empty( $get['flosc_test_offer'] )
+			&& is_scalar( $get['flosc_test_offer'] )
+		) {
+			$oid   = sanitize_text_field( (string) $get['flosc_test_offer'] );
+			$nonce = isset( $get['flosc_test_nonce'] ) && is_scalar( $get['flosc_test_nonce'] )
+				? sanitize_text_field( (string) $get['flosc_test_nonce'] )
+				: '';
+
+			/*
+			 * The nonce answers on its own.
+			 *
+			 * It used to be one term of an && chain alongside $sale and
+			 * method_exists(), which made two unrelated questions share one
+			 * answer: whether this request is legitimate, and whether the sale
+			 * module can service it. The outcome was the same either way, so a
+			 * declined preview and an unavailable module were indistinguishable.
+			 * Verifying first keeps the origin check from depending on anything
+			 * but itself.
+			 */
 			if ( wp_verify_nonce( $nonce, 'flosc_test_offer_' . $oid ) && $sale && method_exists( $sale, 'offers' ) ) {
 				$test_offer_id  = $oid;
 				$all_raw_offers = $sale->offers()->get_all_offers( $flow_id );

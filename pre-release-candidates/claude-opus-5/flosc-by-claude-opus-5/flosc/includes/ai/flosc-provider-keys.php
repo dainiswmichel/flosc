@@ -145,11 +145,9 @@ if ( ! function_exists( 'flosc_store_provider_model' ) ) {
 			return new WP_Error( 'flosc_model_empty', __( 'Choose or type a model id before saving.', 'flosc' ) );
 		}
 
-		// Deliberately permissive. Providers invent id shapes constantly and
-		// FLOSC must never refuse one that works. Only what an id cannot be is
-		// rejected: whitespace inside it, control characters, absurd length.
-		if ( strlen( $model ) > 200 || preg_match( '/[\s\x00-\x1F\x7F]/', $model ) ) {
-			return new WP_Error( 'flosc_model_shape', __( 'That does not look like a model id.', 'flosc' ) );
+		$plausible_model = flosc_provider_model_is_plausible( $model );
+		if ( is_wp_error( $plausible_model ) ) {
+			return $plausible_model;
 		}
 
 		$option = function_exists( 'flosc_resolve_flow_option_key_for_ivr' )
@@ -351,5 +349,40 @@ if ( ! function_exists( 'flosc_store_model_tuning' ) ) {
 				? flosc_build_model_parameter_preview( $provider, $settings )
 				: '',
 		);
+	}
+}
+
+if ( ! function_exists( 'flosc_provider_model_is_plausible' ) ) {
+	/**
+	 * Whether a string could be a provider model id.
+	 *
+	 * Deliberately permissive. Providers invent id shapes constantly and FLOSC
+	 * must never refuse one that works, so this rejects only what an id cannot
+	 * be: whitespace inside it, control characters, absurd length.
+	 *
+	 * It lives here, beside the key validator, because the storage path and the
+	 * outbound description request both need it and two copies of a rule like
+	 * this drift. An id that is safe to store is the same id that is safe to put
+	 * in a request.
+	 *
+	 * @param string $model Candidate model id.
+	 * @return true|WP_Error
+	 */
+	function flosc_provider_model_is_plausible( $model ) {
+		$model = (string) $model;
+
+		if ( '' === trim( $model ) ) {
+			return new WP_Error( 'flosc_model_empty', __( 'Choose or type a model id before saving.', 'flosc' ) );
+		}
+
+		if ( strlen( $model ) > 200 ) {
+			return new WP_Error( 'flosc_model_long', __( 'That is too long to be a model id.', 'flosc' ) );
+		}
+
+		if ( preg_match( '/[\s\x00-\x1F\x7F]/', $model ) ) {
+			return new WP_Error( 'flosc_model_shape', __( 'That does not look like a model id.', 'flosc' ) );
+		}
+
+		return true;
 	}
 }

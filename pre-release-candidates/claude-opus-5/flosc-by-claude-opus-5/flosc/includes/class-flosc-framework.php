@@ -2239,6 +2239,18 @@ class FLOSC_Framework {
 		add_action( 'show_user_profile', array( $this, 'render_email_account_status_profile' ) );
 		add_action( 'edit_user_profile', array( $this, 'render_email_account_status_profile' ) );
 		add_action( 'admin_post_flosc_activate_email_account', array( $this, 'handle_admin_activate_email_account' ) );
+
+		// Admin-post submissions. Each callback calls check_admin_referer() before it reads the body.
+		add_action( 'admin_post_flosc_save_one_flow_identity', array( $this, 'handle_save_one_flow_identity' ) );
+		add_action( 'admin_post_flosc_save_all_flow_identities', array( $this, 'handle_save_all_flow_identities' ) );
+		add_action( 'admin_post_flosc_save_flow_record', array( $this, 'handle_save_flow_record' ) );
+		add_action( 'admin_post_flosc_update_flow_team', array( $this, 'handle_update_flow_team' ) );
+		add_action( 'admin_post_flosc_delete_flow', array( $this, 'handle_delete_flow' ) );
+		add_action( 'admin_post_flosc_delete_feedback', array( $this, 'handle_delete_feedback' ) );
+		add_action( 'admin_post_flosc_add_feedback', array( $this, 'handle_add_feedback' ) );
+		add_action( 'admin_post_flosc_delete_praise', array( $this, 'handle_delete_praise' ) );
+		add_action( 'admin_post_flosc_add_praise', array( $this, 'handle_add_praise' ) );
+		add_action( 'admin_post_flosc_reset_chat_style', array( $this, 'handle_reset_chat_style' ) );
 		add_filter( 'wp_authenticate_user', array( $this, 'flosc_block_pending_email_login' ), 10, 1 );
 
 		// v1.9.0: Chat logs AJAX (real-time polling).
@@ -3366,11 +3378,11 @@ The Team',
 	 * exist yet, so uploading into a new base works without a separate step.
 	 */
 	public function handle_kb_upload() {
-		$post = wp_unslash( $_POST );
 		check_admin_referer( 'flosc_kb_upload', 'flosc_kb_upload_nonce' );
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have permission to manage knowledge bases.', 'flosc' ) );
 		}
+		$post = wp_unslash( $_POST );
 
 		$ivr   = sanitize_file_name( $post['flosc_return_ivr'] ?? '' );
 		$kb_id = $this->kb_request_id( $ivr, $post['kb_id'] ?? '' );
@@ -3504,17 +3516,24 @@ The Team',
 	 *
 	 * An admin-post handler, so it ends in a redirect back to the Knowledge Base
 	 * screen carrying a notice, never in a rendered page. Origin is checked
-	 * first, then capability, as two separate refusals. The nonce action names the base and the
-	 * file, so a link for one file cannot delete another.
+	 * first, then capability, as two separate refusals.
 	 */
 	public function handle_kb_delete() {
+		check_admin_referer( 'flosc_kb_delete' );
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to manage knowledge bases.', 'flosc' ) );
+		}
 		$get   = wp_unslash( $_GET );
 		$ivr   = sanitize_file_name( $get['return_ivr'] ?? '' );
 		$file  = sanitize_file_name( $get['kb_file'] ?? '' );
 		$kb_id = $this->kb_request_id( $ivr, $get['kb_id'] ?? '' );
-		check_admin_referer( 'flosc_kb_delete_' . $kb_id . '_' . $file );
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'You do not have permission to manage knowledge bases.', 'flosc' ) );
+
+		// The generic action above proved the request came from this site. This
+		// proves the link was minted for THIS base and THIS file, which the
+		// generic action cannot: both travel in the query string, so one link
+		// would otherwise verify against any other file.
+		if ( ! wp_verify_nonce( sanitize_text_field( (string) ( $get['flosc_kb_target'] ?? '' ) ), flosc_kb_target_nonce_action( 'flosc_kb_delete', $kb_id, $file ) ) ) {
+			wp_die( esc_html__( 'That link is not valid for this knowledge base file.', 'flosc' ) );
 		}
 
 		$kb_dir = function_exists( 'flosc_knowledge_base_dir' ) ? flosc_knowledge_base_dir( $kb_id ) : '';
@@ -3535,17 +3554,25 @@ The Team',
 	 *
 	 * An admin-post handler, so it ends in a redirect back to the Knowledge Base
 	 * screen carrying a notice, never in a rendered page. Origin is checked
-	 * first, then capability, as two separate refusals. The nonce action names the base and the
-	 * file. The file stays on disk; only whether the AI is given it changes.
+	 * first, then capability, as two separate refusals. The file stays on disk;
+	 * only whether the AI is given it changes.
 	 */
 	public function handle_kb_toggle() {
+		check_admin_referer( 'flosc_kb_toggle' );
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to manage knowledge bases.', 'flosc' ) );
+		}
 		$get   = wp_unslash( $_GET );
 		$ivr   = sanitize_file_name( $get['return_ivr'] ?? '' );
 		$file  = sanitize_file_name( $get['kb_file'] ?? '' );
 		$kb_id = $this->kb_request_id( $ivr, $get['kb_id'] ?? '' );
-		check_admin_referer( 'flosc_kb_toggle_' . $kb_id . '_' . $file );
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'You do not have permission to manage knowledge bases.', 'flosc' ) );
+
+		// The generic action above proved the request came from this site. This
+		// proves the link was minted for THIS base and THIS file, which the
+		// generic action cannot: both travel in the query string, so one link
+		// would otherwise verify against any other file.
+		if ( ! wp_verify_nonce( sanitize_text_field( (string) ( $get['flosc_kb_target'] ?? '' ) ), flosc_kb_target_nonce_action( 'flosc_kb_toggle', $kb_id, $file ) ) ) {
+			wp_die( esc_html__( 'That link is not valid for this knowledge base file.', 'flosc' ) );
 		}
 
 		$current = function_exists( 'flosc_knowledge_base_file_access' )
@@ -3572,11 +3599,11 @@ The Team',
 	 * first, then capability, as two separate refusals.
 	 */
 	public function handle_kb_save_edit() {
-		$post = wp_unslash( $_POST );
 		check_admin_referer( 'flosc_kb_save_edit', 'flosc_kb_save_edit_nonce' );
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have permission to manage knowledge bases.', 'flosc' ) );
 		}
+		$post = wp_unslash( $_POST );
 
 		$ivr    = sanitize_file_name( $post['flosc_return_ivr'] ?? '' );
 		$file   = sanitize_file_name( $post['editing_file'] ?? '' );
@@ -3607,11 +3634,11 @@ The Team',
 	 * first, then capability, as two separate refusals.
 	 */
 	public function handle_kb_create() {
-		$post = wp_unslash( $_POST );
 		check_admin_referer( 'flosc_kb_create', 'flosc_kb_create_nonce' );
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have permission to manage knowledge bases.', 'flosc' ) );
 		}
+		$post = wp_unslash( $_POST );
 		$ivr   = sanitize_file_name( $post['flosc_return_ivr'] ?? '' );
 		$label = sanitize_text_field( (string) ( $post['kb_label'] ?? '' ) );
 		if ( '' === $label ) {
@@ -4223,14 +4250,14 @@ The Team',
 					<label for="flosc_vgm"><?php echo esc_html__( 'Who', 'flosc' ); ?></label><br>
 					<select name="flosc_vgm" id="flosc_vgm" class="widefat">
 						<option value=""><?php echo esc_html__( '— Follow tags and categories —', 'flosc' ); ?></option>
-						<?php echo flosc_vgm_options_markup( flosc_vgm_tier_labels(), $flosc_vgm_tier ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built escaped in flosc_vgm_options_markup() ?>
+						<?php flosc_vgm_options_render( flosc_vgm_tier_labels(), $flosc_vgm_tier ); ?>
 					</select>
 				</p>
 				<p>
 					<label for="flosc_depth"><?php echo esc_html__( 'Available', 'flosc' ); ?></label><br>
 					<select name="flosc_depth" id="flosc_depth" class="widefat">
 						<option value=""><?php echo esc_html__( '— Follow tags and categories —', 'flosc' ); ?></option>
-						<?php echo flosc_vgm_options_markup( flosc_vgm_depth_labels(), $flosc_vgm_depth ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built escaped in flosc_vgm_options_markup() ?>
+						<?php flosc_vgm_options_render( flosc_vgm_depth_labels(), $flosc_vgm_depth ); ?>
 					</select>
 				</p>
 				<p class="option-desc">

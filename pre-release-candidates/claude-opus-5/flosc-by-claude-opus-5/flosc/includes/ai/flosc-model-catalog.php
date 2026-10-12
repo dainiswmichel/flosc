@@ -446,6 +446,31 @@ if ( ! function_exists( 'flosc_fetch_model_details' ) ) {
 			return new WP_Error( 'flosc_model_details_no_key', __( 'Save an API key first — the description comes from the provider.', 'flosc' ) );
 		}
 
+		/*
+		 * Validate before sending, not only before storing.
+		 *
+		 * A key typed into the admin form reaches this function without having
+		 * passed through flosc_store_provider_api_key(), so the shape rules that
+		 * guard storage had never run on this path. The key becomes an
+		 * Authorization header below: a control character in it is a header
+		 * injection, which is why the same validator that guards the option row
+		 * guards the request. The model id is checked on the same grounds -- it
+		 * is rawurlencode()d into the path, so this is shape, not escaping.
+		 */
+		if ( function_exists( 'flosc_provider_key_is_plausible' ) ) {
+			$flosc_key_ok = flosc_provider_key_is_plausible( (string) $api_key );
+			if ( is_wp_error( $flosc_key_ok ) ) {
+				return $flosc_key_ok;
+			}
+		}
+
+		if ( function_exists( 'flosc_provider_model_is_plausible' ) ) {
+			$flosc_model_ok = flosc_provider_model_is_plausible( $model );
+			if ( is_wp_error( $flosc_model_ok ) ) {
+				return $flosc_model_ok;
+			}
+		}
+
 		if ( '' === $model ) {
 			return new WP_Error( 'flosc_model_details_no_model', __( 'Choose a model first.', 'flosc' ) );
 		}
