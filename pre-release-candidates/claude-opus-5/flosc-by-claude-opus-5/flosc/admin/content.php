@@ -365,7 +365,7 @@ $flosc_chat_list_settings_url          = add_query_arg(
 					<label for="flosc-default-vgm-<?php echo esc_attr( $flosc_tier_key ); ?>"><?php echo esc_html( $flosc_tier_label ); ?></label><br>
 					<select name="content_default_vgm[<?php echo esc_attr( $flosc_tier_key ); ?>]"
 						id="flosc-default-vgm-<?php echo esc_attr( $flosc_tier_key ); ?>" class="flosc-width-full">
-						<?php echo flosc_vgm_options_markup( $flosc_vgm_depths, (string) $flosc_default_vgm[ $flosc_tier_key ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built escaped in flosc_vgm_options_markup() ?>
+						<?php flosc_vgm_options_render( $flosc_vgm_depths, (string) $flosc_default_vgm[ $flosc_tier_key ] ); ?>
 					</select>
 				</td>
 			<?php endforeach; ?>
@@ -429,12 +429,12 @@ $flosc_chat_list_settings_url          = add_query_arg(
 				</td>
 				<td>
 					<select name="protection_vgm[]" class="flosc-protection-vgm flosc-width-full">
-						<?php echo flosc_vgm_options_markup( $flosc_vgm_tiers, (string) ( $flosc_item['vgm'] ?? 'member' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built escaped in flosc_vgm_options_markup() ?>
+						<?php flosc_vgm_options_render( $flosc_vgm_tiers, (string) ( $flosc_item['vgm'] ?? 'member' ) ); ?>
 					</select>
 				</td>
 				<td>
 					<select name="protection_depth[]" class="flosc-protection-depth flosc-width-full">
-						<?php echo flosc_vgm_options_markup( $flosc_vgm_depths, (string) ( $flosc_item['depth'] ?? 'full' ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built escaped in flosc_vgm_options_markup() ?>
+						<?php flosc_vgm_options_render( $flosc_vgm_depths, (string) ( $flosc_item['depth'] ?? 'full' ) ); ?>
 					</select>
 				</td>
 				<td>

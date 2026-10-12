@@ -2361,4 +2361,542 @@ trait FLOSC_Admin_Trait {
 		$b = hexdec( substr( $hex, 4, 2 ) );
 		return "rgba({$r}, {$g}, {$b}, {$alpha})";
 	}
+
+	/**
+	 * Redirect back to an admin screen with a Settings API notice.
+	 *
+	 * @param string $url     Destination.
+	 * @param string $message Notice text.
+	 * @param string $type    success|error.
+	 * @return void
+	 */
+	private function flosc_redirect_notice( $url, $message, $type = 'success' ) {
+		add_settings_error( 'flosc', 'flosc_notice', (string) $message, ( 'error' === $type ) ? 'error' : 'success' );
+		set_transient( 'settings_errors', get_settings_errors(), 30 );
+		wp_safe_redirect( add_query_arg( 'settings-updated', 'true', $url ) );
+		exit;
+	}
+
+	/**
+	 * IVR filenames an administrator's identity save can address.
+	 *
+	 * @return string[]
+	 */
+	private function flosc_admin_ivr_filenames() {
+		$files = array();
+		$found = function_exists( 'flosc_config_glob' ) ? flosc_config_glob( array( '*_ivr.md', 'ivr*.md' ) ) : array();
+		sort( $found );
+		foreach ( $found as $file ) {
+			$name = basename( (string) $file );
+			if ( false === strpos( $name, 'backup' ) ) {
+				$files[] = $name;
+			}
+		}
+		return array_values( array_unique( $files ) );
+	}
+
+	/**
+	 * Settings row for one IVR file, including the empty-option defaults the identity screen uses.
+	 *
+	 * @param string $ivr_file IVR filename.
+	 * @return array
+	 */
+	private function flosc_identity_flow_row( $ivr_file ) {
+		$key      = flosc_resolve_flow_option_key_for_ivr( $ivr_file );
+		$settings = get_option( $key, array() );
+		if ( empty( $settings ) || ! is_array( $settings ) ) {
+			$slug     = strtolower( (string) preg_replace( '/[^a-z0-9_-]/i', '', pathinfo( $ivr_file, PATHINFO_FILENAME ) ) );
+			$settings = array(
+				'name'          => ucwords( str_replace( array( '_', '-', 'ivr', '.md' ), array( ' ', ' ', '', '' ), $ivr_file ) ),
+				'slug'          => $slug,
+				'domain'        => '',
+				'title'         => '',
+				'tagline'       => '',
+				'primary_color' => '#4f46e5',
+				'status'        => 'active',
+			);
+		}
+		return array(
+			'key'      => $key,
+			'settings' => $settings,
+		);
+	}
+
+	/**
+	 * Apply one flow's posted identity fields and nest the identity keys.
+	 *
+	 * @param array  $settings Existing settings.
+	 * @param array  $post     Unslashed POST body.
+	 * @param string $prefix   Field prefix, including the trailing underscore.
+	 * @return array
+	 */
+	private function flosc_apply_posted_identity_fields( array $settings, array $post, $prefix ) {
+		$html_keys = array( 'privacy_policy_content', 'terms_of_service_content', 'data_deletion_content', 'platform_compliance_content' );
+		$slug_keys = array( 'privacy_policy_slug', 'terms_of_service_slug', 'data_deletion_slug', 'platform_compliance_slug' );
+		$url_keys  = array( 'privacy_policy_external_url', 'terms_of_service_external_url', 'data_deletion_external_url', 'platform_compliance_external_url' );
+		$bool_keys = array( 'privacy_policy_use_external_link', 'terms_of_service_use_external_link', 'data_deletion_use_external_link', 'platform_compliance_use_external_link' );
+		$prefix    = (string) $prefix;
+
+		foreach ( $post as $key => $value ) {
+			if ( 0 !== strpos( (string) $key, $prefix ) ) {
+				continue;
+			}
+			$setting_key = substr( (string) $key, strlen( $prefix ) );
+			if ( in_array( $setting_key, $html_keys, true ) ) {
+				$settings[ $setting_key ] = wp_kses_post( $value );
+			} elseif ( in_array( $setting_key, $slug_keys, true ) ) {
+				$settings[ $setting_key ] = sanitize_title( (string) $value );
+			} elseif ( in_array( $setting_key, $url_keys, true ) ) {
+				$settings[ $setting_key ] = esc_url_raw( trim( (string) $value ) );
+			} elseif ( in_array( $setting_key, $bool_keys, true ) ) {
+				$settings[ $setting_key ] = ( '1' === (string) $value ) ? '1' : '0';
+			} elseif ( 'policy_content_management_status' === $setting_key ) {
+				$settings[ $setting_key ] = ( 'inactive' === (string) $value ) ? 'inactive' : 'active';
+			} else {
+				$settings[ $setting_key ] = sanitize_text_field( $value );
+			}
+		}
+
+		$id_keys = array(
+			'name',
+			'title',
+			'tagline',
+			'primary_color',
+			'chatlogo_url',
+			'favicon_url',
+			'badgeUrl',
+			'share_text',
+			'privacy_policy_content',
+			'terms_of_service_content',
+			'data_deletion_content',
+			'platform_compliance_content',
+			'privacy_policy_slug',
+			'privacy_policy_heading',
+			'terms_of_service_slug',
+			'terms_of_service_heading',
+			'data_deletion_slug',
+			'data_deletion_heading',
+			'platform_compliance_slug',
+			'platform_compliance_heading',
+			'policy_content_management_status',
+			'privacy_policy_use_external_link',
+			'privacy_policy_external_url',
+			'terms_of_service_use_external_link',
+			'terms_of_service_external_url',
+			'data_deletion_use_external_link',
+			'data_deletion_external_url',
+			'platform_compliance_use_external_link',
+			'platform_compliance_external_url',
+		);
+		$identity = isset( $settings['identity'] ) && is_array( $settings['identity'] ) ? $settings['identity'] : array();
+		foreach ( $id_keys as $id_key ) {
+			if ( isset( $settings[ $id_key ] ) ) {
+				$identity[ $id_key ] = $settings[ $id_key ];
+				unset( $settings[ $id_key ] );
+			}
+		}
+		$settings['identity'] = $identity;
+		return $settings;
+	}
+
+	/**
+	 * Admin URL for a settings tab.
+	 *
+	 * @param string $ivr  IVR filename.
+	 * @param string $tab  Tab slug.
+	 * @param string $view Optional view slug.
+	 * @return string
+	 */
+	private function flosc_admin_settings_url( $ivr, $tab, $view = '' ) {
+		$args = array(
+			'page' => 'flosc-settings',
+			'ivr'  => sanitize_file_name( (string) $ivr ),
+			'tab'  => sanitize_key( (string) $tab ),
+		);
+		$view = sanitize_key( (string) $view );
+		if ( '' !== $view ) {
+			$args['view'] = $view;
+		}
+		return add_query_arg( $args, admin_url( 'admin.php' ) );
+	}
+
+	/**
+	 * Save one flow's identity fields from the all-flows screen.
+	 *
+	 * @return void
+	 */
+	public function handle_save_one_flow_identity() {
+		check_admin_referer( 'flosc_save_settings' );
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to save multi-flow identity settings.', 'flosc' ), '', array( 'response' => 403 ) );
+		}
+		$post     = wp_unslash( $_POST );
+		$save_ivr = sanitize_file_name( (string) ( $post['flosc_save_flow'] ?? '' ) );
+		$return   = isset( $_GET['ivr'] ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
+		$row      = $this->flosc_identity_flow_row( $save_ivr );
+		if ( '' === $save_ivr || ! in_array( $save_ivr, $this->flosc_admin_ivr_filenames(), true ) ) {
+			$this->flosc_redirect_notice( $this->flosc_admin_settings_url( $return, 'identity', 'all' ), 'That flow could not be saved.', 'error' );
+		}
+		$settings = $this->flosc_apply_posted_identity_fields( $row['settings'], $post, 'flow_' . md5( $save_ivr ) . '_' );
+		update_option( $row['key'], $settings );
+		$this->flosc_redirect_notice( $this->flosc_admin_settings_url( '' !== $return ? $return : $save_ivr, 'identity', 'all' ), 'Saved: ' . $save_ivr );
+	}
+
+	/**
+	 * Save every flow's identity fields from the all-flows screen.
+	 *
+	 * @return void
+	 */
+	public function handle_save_all_flow_identities() {
+		check_admin_referer( 'flosc_save_settings' );
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to save multi-flow identity settings.', 'flosc' ), '', array( 'response' => 403 ) );
+		}
+		$post   = wp_unslash( $_POST );
+		$return = isset( $_GET['ivr'] ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
+		foreach ( $this->flosc_admin_ivr_filenames() as $ivr_file ) {
+			$row      = $this->flosc_identity_flow_row( $ivr_file );
+			$settings = $this->flosc_apply_posted_identity_fields( $row['settings'], $post, 'flow_' . md5( $ivr_file ) . '_' );
+			update_option( $row['key'], $settings );
+		}
+		$this->flosc_redirect_notice( $this->flosc_admin_settings_url( $return, 'identity', 'all' ), 'All flows saved!' );
+	}
+
+	/**
+	 * Flow option for an IVR filename the caller already read.
+	 *
+	 * The caller reads the query value after check_admin_referer(). This method
+	 * does not touch the request.
+	 *
+	 * @param string $ivr IVR filename.
+	 * @return array IVR filename, option key, and settings. Refuses when the flow is not editable.
+	 */
+	private function flosc_posted_flow_settings( $ivr ) {
+		$ivr     = sanitize_file_name( (string) $ivr );
+		$flow_id = sanitize_key( pathinfo( $ivr, PATHINFO_FILENAME ) );
+		if ( '' === $flow_id || ! function_exists( 'flosc_flows' ) || ! flosc_flows()->can_access_flow_admin( $flow_id ) ) {
+			wp_die( esc_html__( 'You do not have permission to manage this flow.', 'flosc' ), '', array( 'response' => 403 ) );
+		}
+		$key      = flosc_resolve_flow_option_key_for_ivr( $ivr );
+		$settings = get_option( $key, array() );
+		if ( ! is_array( $settings ) ) {
+			$settings = array();
+		}
+		return array( $ivr, $key, $settings );
+	}
+
+	/**
+	 * Delete one manual AI feedback row.
+	 *
+	 * @return void
+	 */
+	public function handle_delete_feedback() {
+		check_admin_referer( 'flosc_save_settings' );
+		if ( ! current_user_can( 'edit_others_posts' ) ) {
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'flosc' ), '', array( 'response' => 403 ) );
+		}
+		$posted_ivr = isset( $_GET['ivr'] ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
+		list( $ivr, $key, $settings ) = $this->flosc_posted_flow_settings( $posted_ivr );
+		$post      = wp_unslash( $_POST );
+		$delete_id = sanitize_text_field( (string) ( $post['flosc_delete_feedback'] ?? '' ) );
+		$items     = isset( $settings['ai_feedback'] ) && is_array( $settings['ai_feedback'] ) ? $settings['ai_feedback'] : array();
+		$settings['ai_feedback'] = array_values(
+			array_filter(
+				$items,
+				static function ( $item ) use ( $delete_id ) {
+					return ( $item['id'] ?? '' ) !== $delete_id;
+				}
+			)
+		);
+		update_option( $key, $settings );
+		$this->flosc_redirect_notice( $this->flosc_admin_settings_url( $ivr, 'chat-logs' ), 'Feedback deleted.' );
+	}
+
+	/**
+	 * Add one manual AI feedback row.
+	 *
+	 * @return void
+	 */
+	public function handle_add_feedback() {
+		check_admin_referer( 'flosc_save_settings' );
+		if ( ! current_user_can( 'edit_others_posts' ) ) {
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'flosc' ), '', array( 'response' => 403 ) );
+		}
+		$posted_ivr = isset( $_GET['ivr'] ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
+		list( $ivr, $key, $settings ) = $this->flosc_posted_flow_settings( $posted_ivr );
+		$post = wp_unslash( $_POST );
+		$item = array(
+			'id'                 => uniqid( 'corr_' ),
+			'timestamp'          => current_time( 'mysql' ),
+			'user_message'       => sanitize_textarea_field( (string) ( $post['feedback_user_message'] ?? '' ) ),
+			'bad_response'       => sanitize_textarea_field( (string) ( $post['feedback_bad_response'] ?? '' ) ),
+			'admin_note'         => sanitize_textarea_field( (string) ( $post['feedback_admin_note'] ?? '' ) ),
+			'preferred_response' => sanitize_textarea_field( (string) ( $post['feedback_preferred_response'] ?? '' ) ),
+			'admin_user_id'      => get_current_user_id(),
+		);
+		if ( '' === $item['user_message'] || '' === $item['admin_note'] ) {
+			$this->flosc_redirect_notice( $this->flosc_admin_settings_url( $ivr, 'chat-logs' ), 'Feedback needs a user message and a note.', 'error' );
+		}
+		$items   = isset( $settings['ai_feedback'] ) && is_array( $settings['ai_feedback'] ) ? $settings['ai_feedback'] : array();
+		$items[] = $item;
+		$settings['ai_feedback'] = $items;
+		update_option( $key, $settings );
+		$this->flosc_redirect_notice( $this->flosc_admin_settings_url( $ivr, 'chat-logs' ), 'Feedback added. The AI will follow this guidance on next response.' );
+	}
+
+	/**
+	 * Delete one manual AI praise row.
+	 *
+	 * @return void
+	 */
+	public function handle_delete_praise() {
+		check_admin_referer( 'flosc_save_settings' );
+		if ( ! current_user_can( 'edit_others_posts' ) ) {
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'flosc' ), '', array( 'response' => 403 ) );
+		}
+		$posted_ivr = isset( $_GET['ivr'] ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
+		list( $ivr, $key, $settings ) = $this->flosc_posted_flow_settings( $posted_ivr );
+		$post      = wp_unslash( $_POST );
+		$delete_id = sanitize_text_field( (string) ( $post['flosc_delete_praise'] ?? '' ) );
+		$items     = isset( $settings['ai_praises'] ) && is_array( $settings['ai_praises'] ) ? $settings['ai_praises'] : array();
+		$settings['ai_praises'] = array_values(
+			array_filter(
+				$items,
+				static function ( $item ) use ( $delete_id ) {
+					return ( $item['id'] ?? '' ) !== $delete_id;
+				}
+			)
+		);
+		update_option( $key, $settings );
+		$this->flosc_redirect_notice( $this->flosc_admin_settings_url( $ivr, 'chat-logs' ), 'Praise deleted.' );
+	}
+
+	/**
+	 * Add one manual AI praise row.
+	 *
+	 * @return void
+	 */
+	public function handle_add_praise() {
+		check_admin_referer( 'flosc_save_settings' );
+		if ( ! current_user_can( 'edit_others_posts' ) ) {
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'flosc' ), '', array( 'response' => 403 ) );
+		}
+		$posted_ivr = isset( $_GET['ivr'] ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
+		list( $ivr, $key, $settings ) = $this->flosc_posted_flow_settings( $posted_ivr );
+		$post = wp_unslash( $_POST );
+		$item = array(
+			'id'            => uniqid( 'praise_' ),
+			'timestamp'     => current_time( 'mysql' ),
+			'user_message'  => sanitize_textarea_field( (string) ( $post['praise_user_message'] ?? '' ) ),
+			'good_response' => sanitize_textarea_field( (string) ( $post['praise_good_response'] ?? '' ) ),
+			'admin_note'    => sanitize_textarea_field( (string) ( $post['praise_admin_note'] ?? '' ) ),
+			'admin_user_id' => get_current_user_id(),
+		);
+		if ( '' === $item['user_message'] || '' === $item['admin_note'] ) {
+			$this->flosc_redirect_notice( $this->flosc_admin_settings_url( $ivr, 'chat-logs' ), 'Praise needs a user message and a note.', 'error' );
+		}
+		$items   = isset( $settings['ai_praises'] ) && is_array( $settings['ai_praises'] ) ? $settings['ai_praises'] : array();
+		$items[] = $item;
+		$settings['ai_praises'] = $items;
+		update_option( $key, $settings );
+		$this->flosc_redirect_notice( $this->flosc_admin_settings_url( $ivr, 'chat-logs' ), 'Praise added. The AI will reinforce this behavior.' );
+	}
+
+	/**
+	 * Reset one flow's chat style fields.
+	 *
+	 * @return void
+	 */
+	public function handle_reset_chat_style() {
+		check_admin_referer( 'flosc_reset_chat_style_nonce', 'flosc_reset_chat_style_nonce' );
+		if ( ! current_user_can( 'edit_others_posts' ) ) {
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'flosc' ), '', array( 'response' => 403 ) );
+		}
+		$posted_ivr = isset( $_GET['ivr'] ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
+		list( $ivr, $key, $settings ) = $this->flosc_posted_flow_settings( $posted_ivr );
+		unset( $settings['chat_style_preset'], $settings['chat_style_bubble'], $settings['chat_style_accent'], $settings['chat_style_font'], $settings['chat_style_scale'] );
+		update_option( $key, $settings );
+		$this->flosc_redirect_notice( $this->flosc_admin_settings_url( $ivr, 'style' ), 'Chat styling reset to defaults.' );
+	}
+
+	/**
+	 * Create or update a flow from the flow editor.
+	 *
+	 * @return void
+	 */
+	public function handle_save_flow_record() {
+		check_admin_referer( 'flosc_save_flow_record' );
+		$flow_id = isset( $_POST['flow_id'] ) ? sanitize_key( wp_unslash( $_POST['flow_id'] ) ) : '';
+		$is_new  = ( 'new' === $flow_id );
+		if ( $is_new && ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'Only administrators can create new flows.', 'flosc' ), '', array( 'response' => 403 ) );
+		}
+		if ( ! $is_new && ( ! function_exists( 'flosc_flows' ) || ! flosc_flows()->can_access_flow_admin( $flow_id ) ) ) {
+			wp_die( esc_html__( 'You do not have permission to edit this flow.', 'flosc' ), '', array( 'response' => 403 ) );
+		}
+		$post = wp_unslash( $_POST );
+		$tab  = sanitize_key( (string) ( $post['flosc_return_tab'] ?? 'identity' ) );
+		if ( '' === $tab ) {
+			$tab = 'identity';
+		}
+
+		if ( current_user_can( 'manage_options' ) && ( isset( $post['visitor_bar_text'] ) || isset( $post['visitor_bar_icon'] ) ) ) {
+			$profile_bar = get_option( 'flosc_profile_bar', array() );
+			if ( ! is_array( $profile_bar ) ) {
+				$profile_bar = array();
+			}
+			if ( isset( $post['visitor_bar_text'] ) ) {
+				$profile_bar['visitor']['badge'] = sanitize_text_field( (string) $post['visitor_bar_text'] );
+			}
+			if ( isset( $post['visitor_bar_icon'] ) ) {
+				$profile_bar['visitor']['icon'] = sanitize_text_field( (string) $post['visitor_bar_icon'] );
+			}
+			update_option( 'flosc_profile_bar', $profile_bar );
+		}
+
+		if ( current_user_can( 'manage_options' ) && isset( $post['visitor_menu_items'] ) && is_array( $post['visitor_menu_items'] ) ) {
+			$menu_post  = map_deep( $post['visitor_menu_items'], 'sanitize_text_field' );
+			$menu_items = array();
+			foreach ( $menu_post as $menu_key => $menu_item ) {
+				$menu_item = is_array( $menu_item ) ? $menu_item : array();
+				$menu_items[ $menu_key ] = array(
+					'label'   => sanitize_text_field( (string) ( $menu_item['label'] ?? '' ) ),
+					'enabled' => isset( $menu_item['enabled'] ) && '1' === $menu_item['enabled'],
+				);
+			}
+			update_option( 'flosc_visitor_menu_items', $menu_items );
+		}
+
+		/*
+		 * One tab writes one group.
+		 *
+		 * The flow editor has three forms that all post to this handler: Identity
+		 * (admin/flow-edit.php:78) carries slug, domain, status and the identity
+		 * fields; IVR (:354) carries ivr_file alone; Content (:399) carries
+		 * wp_category and quiz_type alone. update_flow() merges with
+		 * array_merge(), which overwrites every key present and replaces the
+		 * nested identity array whole rather than merging into it.
+		 *
+		 * So a key absent from this payload keeps its stored value, and a key
+		 * present overwrites it. Each group is therefore built only when its own
+		 * form posted it. Building them unconditionally made saving the IVR tab
+		 * blank the slug, the custom domain and every identity field and drop the
+		 * flow to draft -- the v146 regression this restores the guard against.
+		 * A new flow comes from the Identity form, so $is_new fills every group
+		 * with the same defaults that screen used.
+		 */
+		$data = array();
+		if ( $is_new || isset( $post['flow_slug'] ) || isset( $post['floscflow_name'] ) || isset( $post['flow_status'] ) || isset( $post['flow_domain'] ) ) {
+			$data['slug']          = sanitize_title( (string) ( $post['flow_slug'] ?? '' ) );
+			$data['custom_domain'] = sanitize_text_field( (string) ( $post['flow_domain'] ?? '' ) );
+			$data['status']        = sanitize_key( (string) ( $post['flow_status'] ?? 'draft' ) );
+			$data['identity']      = array(
+				'name'          => sanitize_text_field( (string) ( $post['floscflow_name'] ?? '' ) ),
+				'title'         => sanitize_text_field( (string) ( $post['floscflow_title'] ?? '' ) ),
+				'tagline'       => sanitize_text_field( (string) ( $post['floscflow_tagline'] ?? '' ) ),
+				'chatlogo_url'  => esc_url_raw( (string) ( $post['floscflow_chatlogo'] ?? '' ) ),
+				'favicon_url'   => esc_url_raw( (string) ( $post['floscflow_favicon'] ?? '' ) ),
+				'badgeUrl'      => esc_url_raw( (string) ( $post['floscflow_badge'] ?? '' ) ),
+				'primary_color' => sanitize_hex_color( (string) ( $post['floscflow_color'] ?? '#4f46e5' ) ),
+				'share_text'    => sanitize_text_field( (string) ( $post['floscflow_share_text'] ?? '' ) ),
+			);
+		}
+		if ( $is_new || isset( $post['ivr_file'] ) ) {
+			$data['ivr_file'] = sanitize_file_name( (string) ( $post['ivr_file'] ?? 'flosc_default_technical_ivr.md' ) );
+		}
+		if ( $is_new || isset( $post['wp_category'] ) ) {
+			$data['wp_category_id'] = intval( $post['wp_category'] ?? 0 );
+		}
+		if ( $is_new || isset( $post['quiz_type'] ) ) {
+			$data['quiz_type'] = sanitize_key( (string) ( $post['quiz_type'] ?? '' ) );
+		}
+		$return = add_query_arg(
+			array(
+				'page'    => 'flosc-flow-edit',
+				'flow_id' => $is_new ? 'new' : $flow_id,
+				'tab'     => $tab,
+			),
+			admin_url( 'admin.php' )
+		);
+
+		if ( $is_new ) {
+			$data['id'] = '' !== $data['slug'] ? sanitize_key( $data['slug'] ) : 'flow_' . wp_generate_password( 6, false, false );
+			$result     = flosc_flows()->create_flow( $data );
+			if ( is_wp_error( $result ) ) {
+				$this->flosc_redirect_notice( $return, $result->get_error_message(), 'error' );
+			}
+			wp_safe_redirect( admin_url( 'admin.php?page=flosc-flows&saved=1' ) );
+			exit;
+		}
+
+		$result = flosc_flows()->update_flow( $flow_id, $data );
+		if ( is_wp_error( $result ) ) {
+			$this->flosc_redirect_notice( $return, $result->get_error_message(), 'error' );
+		}
+		$this->flosc_redirect_notice( $return, 'Flow updated successfully.' );
+	}
+
+	/**
+	 * Replace the editors assigned to one flow.
+	 *
+	 * @return void
+	 */
+	public function handle_update_flow_team() {
+		check_admin_referer( 'flosc_update_flow_team' );
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'Only administrators can update a flow team.', 'flosc' ), '', array( 'response' => 403 ) );
+		}
+		$post    = wp_unslash( $_POST );
+		$flow_id = sanitize_key( (string) ( $post['flow_id'] ?? '' ) );
+		if ( '' === $flow_id || 'new' === $flow_id || ! function_exists( 'flosc_flows' ) ) {
+			wp_die( esc_html__( 'You do not have permission to edit this flow.', 'flosc' ), '', array( 'response' => 403 ) );
+		}
+		$selected = isset( $post['team_users'] ) ? array_map( 'intval', (array) $post['team_users'] ) : array();
+		$current  = flosc_flows()->get_flow_users( $flow_id );
+		$current_ids = array();
+		foreach ( $current as $user ) {
+			$current_ids[] = (int) $user->ID;
+		}
+		$selected_ids = array_map( 'intval', $selected );
+		foreach ( $current_ids as $user_id ) {
+			if ( ! in_array( (int) $user_id, $selected_ids, true ) ) {
+				flosc_flows()->revoke_flow_access( $user_id, $flow_id );
+			}
+		}
+		foreach ( $selected as $user_id ) {
+			if ( ! in_array( (int) $user_id, $current_ids, true ) ) {
+				flosc_flows()->grant_flow_access( $user_id, $flow_id );
+			}
+		}
+		$this->flosc_redirect_notice(
+			add_query_arg(
+				array(
+					'page'    => 'flosc-flow-edit',
+					'flow_id' => $flow_id,
+					'tab'     => 'team',
+				),
+				admin_url( 'admin.php' )
+			),
+			'Team updated successfully.'
+		);
+	}
+
+	/**
+	 * Delete one flow from the flows list.
+	 *
+	 * @return void
+	 */
+	public function handle_delete_flow() {
+		check_admin_referer( 'flosc_delete_flow' );
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'Only administrators can delete a flow.', 'flosc' ), '', array( 'response' => 403 ) );
+		}
+		$flow_id = isset( $_GET['flow_id'] ) ? sanitize_key( wp_unslash( $_GET['flow_id'] ) ) : '';
+		$result  = flosc_flows()->delete_flow( $flow_id );
+		if ( is_wp_error( $result ) ) {
+			$this->flosc_redirect_notice( admin_url( 'admin.php?page=flosc-flows' ), $result->get_error_message(), 'error' );
+		}
+		wp_safe_redirect( admin_url( 'admin.php?page=flosc-flows&deleted=1' ) );
+		exit;
+	}
 }

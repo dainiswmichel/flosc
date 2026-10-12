@@ -2129,8 +2129,12 @@ trait FLOSC_Magic_Link_Trait {
 							<?php
 							echo esc_url(
 								wp_nonce_url(
-									admin_url( 'admin-post.php?action=flosc_activate_email_account&user_id=' . (int) $user->ID ),
-									'flosc_activate_email_' . (int) $user->ID
+									add_query_arg(
+										'flosc_user_target',
+										wp_create_nonce( 'flosc_activate_email_account_' . (int) $user->ID ),
+										admin_url( 'admin-post.php?action=flosc_activate_email_account&user_id=' . (int) $user->ID )
+									),
+									'flosc_activate_email_account'
 								)
 							);
 							?>
@@ -2148,19 +2152,11 @@ trait FLOSC_Magic_Link_Trait {
 	 * Admin-post: floscAdmin activates a pending email-registered user.
 	 */
 	public function handle_admin_activate_email_account() {
+		check_admin_referer( 'flosc_activate_email_account' );
 		if ( ! current_user_can( 'promote_users' ) ) {
 			wp_die( esc_html__( 'Unauthorized', 'flosc' ), '', array( 'response' => 403 ) );
 		}
 
-		/*
-		 * The nonce action is per-user, so the id has to be read before the
-		 * nonce can be named. That is unavoidable and safe, but only if the id
-		 * is validated as an id first: absint() turned "9abc" into 9 and "" into
-		 * 0, and a 0 produced the action 'flosc_activate_email_0', which is a
-		 * real action name a caller could mint a nonce for. It is validated as a
-		 * positive integer now, and a request that fails that stops here rather
-		 * than continuing into a nonce check for a user that does not exist.
-		 */
 		$user_id = filter_input(
 			INPUT_GET,
 			'user_id',
@@ -2171,7 +2167,19 @@ trait FLOSC_Magic_Link_Trait {
 			wp_safe_redirect( admin_url( 'users.php' ) );
 			exit;
 		}
-		check_admin_referer( 'flosc_activate_email_' . $user_id );
+
+		/*
+		 * The generic action above proved the request came from this site. It
+		 * cannot prove which account was meant, because user_id travels in the
+		 * query string: one button's link would activate any pending user. This
+		 * names the id, and it is checked only after filter_input() has already
+		 * established that the id is a positive integer naming a real user --
+		 * so no action name is ever built from something that is not an id.
+		 */
+		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( (string) ( $_GET['flosc_user_target'] ?? '' ) ) ), 'flosc_activate_email_account_' . $user_id ) ) {
+			wp_die( esc_html__( 'That link is not valid for this account.', 'flosc' ), '', array( 'response' => 403 ) );
+		}
+
 		$result = $this->flosc_activate_email_account( $user_id );
 		$redir  = get_edit_user_link( $user_id );
 		if ( ! $redir ) {

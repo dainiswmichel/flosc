@@ -2550,173 +2550,6 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 				);
 			}
 
-			// Handle individual flow save via AJAX or form.
-			if ( isset( $flosc_post['flosc_save_flow'] ) && wp_verify_nonce( sanitize_text_field( $flosc_post['_wpnonce'] ?? '' ), 'flosc_save_settings' ) ) {
-				if ( ! current_user_can( 'manage_options' ) ) {
-					wp_die( esc_html__( 'You do not have permission to save multi-flow identity settings.', 'flosc' ) );
-				}
-				$flosc_save_ivr = sanitize_file_name( $flosc_post['flosc_save_flow'] );
-				if ( isset( $flosc_all_flows[ $flosc_save_ivr ] ) ) {
-					$flosc_flow_key     = $flosc_all_flows[ $flosc_save_ivr ]['key'];
-					$flosc_new_settings = $flosc_all_flows[ $flosc_save_ivr ]['settings'];
-
-					// Update from POST data (fields prefixed with ivr filename hash).
-					$flosc_prefix                   = 'flow_' . md5( $flosc_save_ivr ) . '_';
-					$flosc_identity_html_keys       = array( 'privacy_policy_content', 'terms_of_service_content', 'data_deletion_content', 'platform_compliance_content' );
-					$flosc_identity_slug_keys       = array( 'privacy_policy_slug', 'terms_of_service_slug', 'data_deletion_slug', 'platform_compliance_slug' );
-					$flosc_identity_policy_url_keys = array( 'privacy_policy_external_url', 'terms_of_service_external_url', 'data_deletion_external_url', 'platform_compliance_external_url' );
-					$flosc_identity_bool_keys       = array( 'privacy_policy_use_external_link', 'terms_of_service_use_external_link', 'data_deletion_use_external_link', 'platform_compliance_use_external_link' );
-					foreach ( $flosc_post as $flosc_key => $flosc_value ) {
-						if ( 0 === strpos( $flosc_key, $flosc_prefix ) ) {
-							$flosc_setting_key = substr( $flosc_key, strlen( $flosc_prefix ) );
-							if ( in_array( $flosc_setting_key, $flosc_identity_html_keys, true ) ) {
-								$flosc_new_settings[ $flosc_setting_key ] = wp_kses_post( $flosc_value );
-							} elseif ( in_array( $flosc_setting_key, $flosc_identity_slug_keys, true ) ) {
-								// An empty slug means the page is not served, so an empty value is
-								// kept rather than replaced with a default.
-								$flosc_new_settings[ $flosc_setting_key ] = sanitize_title( (string) $flosc_value );
-							} elseif ( in_array( $flosc_setting_key, $flosc_identity_policy_url_keys, true ) ) {
-								$flosc_new_settings[ $flosc_setting_key ] = esc_url_raw( trim( (string) $flosc_value ) );
-							} elseif ( in_array( $flosc_setting_key, $flosc_identity_bool_keys, true ) ) {
-								// A hidden 0 precedes each checkbox, so an unchecked box arrives as '0'.
-								$flosc_new_settings[ $flosc_setting_key ] = ( '1' === (string) $flosc_value ) ? '1' : '0';
-							} elseif ( 'policy_content_management_status' === $flosc_setting_key ) {
-								$flosc_new_settings[ $flosc_setting_key ] = ( 'inactive' === (string) $flosc_value ) ? 'inactive' : 'active';
-							} else {
-								$flosc_new_settings[ $flosc_setting_key ] = sanitize_text_field( $flosc_value );
-							}
-						}
-					}
-
-					// v2.0.0: Nest identity fields into identity sub-array.
-					$flosc_id_keys = array(
-						'name',
-						'title',
-						'tagline',
-						'primary_color',
-						'chatlogo_url',
-						'favicon_url',
-						'badgeUrl',
-						'share_text',
-						'privacy_policy_content',
-						'terms_of_service_content',
-						'data_deletion_content',
-						'platform_compliance_content',
-						'privacy_policy_slug',
-						'privacy_policy_heading',
-						'terms_of_service_slug',
-						'terms_of_service_heading',
-						'data_deletion_slug',
-						'data_deletion_heading',
-						'platform_compliance_slug',
-						'platform_compliance_heading',
-						'policy_content_management_status',
-						'privacy_policy_use_external_link',
-						'privacy_policy_external_url',
-						'terms_of_service_use_external_link',
-						'terms_of_service_external_url',
-						'data_deletion_use_external_link',
-						'data_deletion_external_url',
-						'platform_compliance_use_external_link',
-						'platform_compliance_external_url',
-					);
-					$flosc_id      = $flosc_new_settings['identity'] ?? array();
-					foreach ( $flosc_id_keys as $flosc_ik ) {
-						if ( isset( $flosc_new_settings[ $flosc_ik ] ) ) {
-							$flosc_id[ $flosc_ik ] = $flosc_new_settings[ $flosc_ik ];
-							unset( $flosc_new_settings[ $flosc_ik ] );
-						}
-					}
-					$flosc_new_settings['identity'] = $flosc_id;
-
-					update_option( $flosc_flow_key, $flosc_new_settings );
-					$flosc_all_flows[ $flosc_save_ivr ]['settings'] = $flosc_new_settings;
-					$flosc_individual_saved                         = $flosc_save_ivr;
-				}
-			}
-
-			// Handle save all flows.
-			if ( isset( $flosc_post['flosc_save_all_flows'] ) && wp_verify_nonce( sanitize_text_field( $flosc_post['_wpnonce'] ?? '' ), 'flosc_save_settings' ) ) {
-				if ( ! current_user_can( 'manage_options' ) ) {
-					wp_die( esc_html__( 'You do not have permission to save multi-flow identity settings.', 'flosc' ) );
-				}
-				foreach ( $flosc_all_flows as $flosc_ivr_file => $flosc_flow_data ) {
-					$flosc_flow_key     = $flosc_flow_data['key'];
-					$flosc_new_settings = $flosc_flow_data['settings'];
-
-					$flosc_prefix                   = 'flow_' . md5( $flosc_ivr_file ) . '_';
-					$flosc_identity_html_keys       = array( 'privacy_policy_content', 'terms_of_service_content', 'data_deletion_content', 'platform_compliance_content' );
-					$flosc_identity_slug_keys       = array( 'privacy_policy_slug', 'terms_of_service_slug', 'data_deletion_slug', 'platform_compliance_slug' );
-					$flosc_identity_policy_url_keys = array( 'privacy_policy_external_url', 'terms_of_service_external_url', 'data_deletion_external_url', 'platform_compliance_external_url' );
-					$flosc_identity_bool_keys       = array( 'privacy_policy_use_external_link', 'terms_of_service_use_external_link', 'data_deletion_use_external_link', 'platform_compliance_use_external_link' );
-					foreach ( $flosc_post as $flosc_key => $flosc_value ) {
-						if ( 0 === strpos( $flosc_key, $flosc_prefix ) ) {
-							$flosc_setting_key = substr( $flosc_key, strlen( $flosc_prefix ) );
-							if ( in_array( $flosc_setting_key, $flosc_identity_html_keys, true ) ) {
-								$flosc_new_settings[ $flosc_setting_key ] = wp_kses_post( $flosc_value );
-							} elseif ( in_array( $flosc_setting_key, $flosc_identity_slug_keys, true ) ) {
-								// An empty slug means the page is not served, so an empty value is
-								// kept rather than replaced with a default.
-								$flosc_new_settings[ $flosc_setting_key ] = sanitize_title( (string) $flosc_value );
-							} elseif ( in_array( $flosc_setting_key, $flosc_identity_policy_url_keys, true ) ) {
-								$flosc_new_settings[ $flosc_setting_key ] = esc_url_raw( trim( (string) $flosc_value ) );
-							} elseif ( in_array( $flosc_setting_key, $flosc_identity_bool_keys, true ) ) {
-								// A hidden 0 precedes each checkbox, so an unchecked box arrives as '0'.
-								$flosc_new_settings[ $flosc_setting_key ] = ( '1' === (string) $flosc_value ) ? '1' : '0';
-							} elseif ( 'policy_content_management_status' === $flosc_setting_key ) {
-								$flosc_new_settings[ $flosc_setting_key ] = ( 'inactive' === (string) $flosc_value ) ? 'inactive' : 'active';
-							} else {
-								$flosc_new_settings[ $flosc_setting_key ] = sanitize_text_field( $flosc_value );
-							}
-						}
-					}
-
-					// v2.0.0: Nest identity fields into identity sub-array.
-					$flosc_id_keys = array(
-						'name',
-						'title',
-						'tagline',
-						'primary_color',
-						'chatlogo_url',
-						'favicon_url',
-						'badgeUrl',
-						'share_text',
-						'privacy_policy_content',
-						'terms_of_service_content',
-						'data_deletion_content',
-						'platform_compliance_content',
-						'privacy_policy_slug',
-						'privacy_policy_heading',
-						'terms_of_service_slug',
-						'terms_of_service_heading',
-						'data_deletion_slug',
-						'data_deletion_heading',
-						'platform_compliance_slug',
-						'platform_compliance_heading',
-						'policy_content_management_status',
-						'privacy_policy_use_external_link',
-						'privacy_policy_external_url',
-						'terms_of_service_use_external_link',
-						'terms_of_service_external_url',
-						'data_deletion_use_external_link',
-						'data_deletion_external_url',
-						'platform_compliance_use_external_link',
-						'platform_compliance_external_url',
-					);
-					$flosc_id      = $flosc_new_settings['identity'] ?? array();
-					foreach ( $flosc_id_keys as $flosc_ik ) {
-						if ( isset( $flosc_new_settings[ $flosc_ik ] ) ) {
-							$flosc_id[ $flosc_ik ] = $flosc_new_settings[ $flosc_ik ];
-							unset( $flosc_new_settings[ $flosc_ik ] );
-						}
-					}
-					$flosc_new_settings['identity'] = $flosc_id;
-
-					update_option( $flosc_flow_key, $flosc_new_settings );
-					$flosc_all_flows[ $flosc_ivr_file ]['settings'] = $flosc_new_settings;
-				}
-				$flosc_all_saved = true;
-			}
 			?>
 			
 			<!-- View Toggle -->
@@ -2731,12 +2564,7 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 				</a>
 			</div>
 			
-			<?php if ( isset( $flosc_all_saved ) ) : ?>
-				<div class="notice notice-success is-dismissible"><p>✓ All flows saved!</p></div>
-			<?php endif; ?>
-			<?php if ( isset( $flosc_individual_saved ) ) : ?>
-				<div class="notice notice-success is-dismissible"><p>✓ Saved: <?php echo esc_html( $flosc_individual_saved ); ?></p></div>
-			<?php endif; ?>
+			<?php settings_errors( 'flosc' ); ?>
 			
 			<?php if ( 'all' === $flosc_view_mode ) : ?>
 				<?php
@@ -3100,8 +2928,17 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 					</div>
 					
 					<!-- Save This Flow Button -->
+					<?php
+					$flosc_save_one_identity_url = add_query_arg(
+						array(
+							'action' => 'flosc_save_one_flow_identity',
+							'ivr'    => $flosc_selected_ivr,
+						),
+						admin_url( 'admin-post.php' )
+					);
+					?>
 					<div class="flosc-flow-block__save-row">
-						<button type="submit" name="flosc_save_flow" value="<?php echo esc_attr( $flosc_ivr_file ); ?>" class="button button-secondary">
+						<button type="submit" name="flosc_save_flow" value="<?php echo esc_attr( $flosc_ivr_file ); ?>" class="button button-secondary" formaction="<?php echo esc_url( $flosc_save_one_identity_url ); ?>">
 							Save <?php echo esc_html( $flosc_settings['name'] ?? $flosc_ivr_file ); ?>
 						</button>
 					</div>
@@ -3145,8 +2982,17 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 				</div>
 				
 				<!-- Save All Flows Button -->
+				<?php
+				$flosc_save_all_identities_url = add_query_arg(
+					array(
+						'action' => 'flosc_save_all_flow_identities',
+						'ivr'    => $flosc_selected_ivr,
+					),
+					admin_url( 'admin-post.php' )
+				);
+				?>
 				<div class="flosc-flow-save-all-row">
-					<button type="submit" name="flosc_save_all_flows" value="1" class="button button-primary button-large">
+					<button type="submit" name="flosc_save_all_flows" value="1" class="button button-primary button-large" formaction="<?php echo esc_url( $flosc_save_all_identities_url ); ?>">
 						Save All Flows
 					</button>
 					<p class="flosc-flow-save-all-row__hint">Saves identity settings for all <?php echo count( $flosc_all_flows ); ?> flows at once</p>

@@ -79,6 +79,23 @@ $flosc_autoprompt_docs_anchor = array(
 	'member'  => 'member-autoprompts-memberpromptpanelshow-panel',
 );
 
+if ( ! function_exists( 'flosc_autoprompt_posted_rows' ) ) {
+	/**
+	 * One pill field from the posted body, as an array of rows.
+	 *
+	 * @param array  $posted Unslashed request body.
+	 * @param string $field  Field name, e.g. visitor_pill_label.
+	 * @return array Rows, empty when the field is absent or not an array.
+	 */
+	function flosc_autoprompt_posted_rows( $posted, $field ) {
+		if ( ! is_array( $posted ) || ! isset( $posted[ $field ] ) || ! is_array( $posted[ $field ] ) ) {
+			return array();
+		}
+
+		return $posted[ $field ];
+	}
+}
+
 /**
  * SAVE HANDLER.
  */
@@ -119,13 +136,23 @@ function flosc_handle_autoprompts_save() {
 	$flosc_companion_panel_enabled = isset( $flosc_post['panel_enabled_companion'] ) ? 1 : 0;
 
 	foreach ( $states as $state ) {
-		$icons            = $flosc_post[ $state . '_pill_icon' ] ?? array();
-		$labels           = $flosc_post[ $state . '_pill_label' ] ?? array();
-		$inputs           = $flosc_post[ $state . '_pill_user_input' ] ?? array();
-		$trigger_types    = $flosc_post[ $state . '_pill_trigger_type' ] ?? array();
-		$trigger_values   = $flosc_post[ $state . '_pill_trigger_value' ] ?? array();
-		$flosc_conditions = $flosc_post[ $state . '_pill_conditions' ] ?? array();
-		$styles           = $flosc_post[ $state . '_pill_style' ] ?? array();
+		/*
+		 * Each pill field arrives as an array keyed by row number. ?? array()
+		 * covered the field being absent but not its being present as something
+		 * else: a scalar posted under one of these names reached the foreach
+		 * below, which in PHP 8 warns and iterates nothing. The shape is
+		 * established here instead of assumed, so such a request saves no rows
+		 * rather than half of them.
+		 *
+		 * _pill_style was read here and never used -- every pill is written with
+		 * 'style' => 'pill' further down -- so it is not read at all now.
+		 */
+		$icons            = flosc_autoprompt_posted_rows( $flosc_post, $state . '_pill_icon' );
+		$labels           = flosc_autoprompt_posted_rows( $flosc_post, $state . '_pill_label' );
+		$inputs           = flosc_autoprompt_posted_rows( $flosc_post, $state . '_pill_user_input' );
+		$trigger_types    = flosc_autoprompt_posted_rows( $flosc_post, $state . '_pill_trigger_type' );
+		$trigger_values   = flosc_autoprompt_posted_rows( $flosc_post, $state . '_pill_trigger_value' );
+		$flosc_conditions = flosc_autoprompt_posted_rows( $flosc_post, $state . '_pill_conditions' );
 
 		$flosc_pills = array();
 		foreach ( $labels as $i => $label ) {

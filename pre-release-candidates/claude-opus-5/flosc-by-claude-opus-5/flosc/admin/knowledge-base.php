@@ -213,12 +213,20 @@ foreach ( $flosc_list_ids as $flosc_kid ) :
 			$flosc_tier   = function_exists( 'flosc_knowledge_base_file_access' ) ? flosc_knowledge_base_file_access( $flosc_kid, $flosc_kbf ) : 'visitor';
 			$flosc_badge  = isset( $flosc_vgm[ $flosc_tier ] ) ? $flosc_vgm[ $flosc_tier ] : $flosc_vgm['visitor'];
 			$flosc_toggle = wp_nonce_url(
-				admin_url( 'admin-post.php?action=flosc_kb_toggle&kb_id=' . rawurlencode( $flosc_kid ) . '&kb_file=' . rawurlencode( $flosc_kbf ) . '&return_ivr=' . rawurlencode( $flosc_current_ivr ) ),
-				'flosc_kb_toggle_' . $flosc_kid . '_' . $flosc_kbf
+				add_query_arg(
+					'flosc_kb_target',
+					wp_create_nonce( flosc_kb_target_nonce_action( 'flosc_kb_toggle', $flosc_kid, $flosc_kbf ) ),
+					admin_url( 'admin-post.php?action=flosc_kb_toggle&kb_id=' . rawurlencode( $flosc_kid ) . '&kb_file=' . rawurlencode( $flosc_kbf ) . '&return_ivr=' . rawurlencode( $flosc_current_ivr ) )
+				),
+				'flosc_kb_toggle'
 			);
 			$flosc_delete = wp_nonce_url(
-				admin_url( 'admin-post.php?action=flosc_kb_delete&kb_id=' . rawurlencode( $flosc_kid ) . '&kb_file=' . rawurlencode( $flosc_kbf ) . '&return_ivr=' . rawurlencode( $flosc_current_ivr ) ),
-				'flosc_kb_delete_' . $flosc_kid . '_' . $flosc_kbf
+				add_query_arg(
+					'flosc_kb_target',
+					wp_create_nonce( flosc_kb_target_nonce_action( 'flosc_kb_delete', $flosc_kid, $flosc_kbf ) ),
+					admin_url( 'admin-post.php?action=flosc_kb_delete&kb_id=' . rawurlencode( $flosc_kid ) . '&kb_file=' . rawurlencode( $flosc_kbf ) . '&return_ivr=' . rawurlencode( $flosc_current_ivr ) )
+				),
+				'flosc_kb_delete'
 			);
 			$flosc_edit   = add_query_arg(
 				array(
