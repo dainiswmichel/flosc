@@ -11,58 +11,44 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 if ( ! function_exists( 'flosc_capture_output' ) ) {
 	/**
-	 * Capture output from a renderer without closing a buffer this call did not open.
+	 * Capture output from a renderer without disturbing buffers owned elsewhere.
 	 *
-	 * Nested buffers above the one this call opens are discarded. The collect
-	 * call runs only while this call's buffer is still the current buffer. A renderer
-	 * that has already closed it gets an empty string back, and the parent buffer
-	 * stays open. exit(), die(), and wp_die() skip finally. The shutdown callback
-	 * for this call then flushes only buffers above the saved parent level, which
-	 * keeps flushed bytes, including a wp_die() message.
+	 * The buffer is opened and closed inside this function. Removable buffers
+	 * opened by the renderer are discarded before FLOSC's buffer is collected.
+	 * Cleanup stops at a non-removable buffer and leaves it for PHP to flush at
+	 * request end. If the renderer closes FLOSC's buffer, this function never
+	 * closes a parent buffer that it does not own.
 	 *
 	 * @param callable $renderer Callback that prints the content to capture.
-	 * @return string Captured output, or an empty string when the renderer closed
-	 *                this buffer before it could be collected.
+	 * @return string Captured output, or an empty string when FLOSC's buffer is no
+	 *                longer the current buffer and cannot be collected safely.
 	 */
 	function flosc_capture_output( $renderer ) {
 		$flosc_parent_level = ob_get_level();
 		$flosc_output       = '';
-		$flosc_closed       = false;
-
-		$flosc_shutdown = static function () use ( $flosc_parent_level, &$flosc_closed ) {
-			if ( $flosc_closed ) {
-				return;
-			}
-
-			while ( ob_get_level() > $flosc_parent_level ) {
-				if ( ! ob_end_flush() ) {
-					break;
-				}
-			}
-
-			$flosc_closed = true;
-		};
-		register_shutdown_function( $flosc_shutdown );
 
 		try {
 			ob_start();
 			call_user_func( $renderer );
 		} finally {
-			if ( ! $flosc_closed ) {
-				while ( ob_get_level() > ( $flosc_parent_level + 1 ) ) {
-					if ( ! ob_end_clean() ) {
-						break;
-					}
+			// A buffer opened without PHP_OUTPUT_HANDLER_REMOVABLE -- zlib
+			// compression, ob_gzhandler -- cannot be discarded: the discard
+			// returns false and the level stays where it was. Stopping at the
+			// first buffer that will not close leaves it for PHP to flush at
+			// request end; looping on it would never return.
+			while ( ob_get_level() > ( $flosc_parent_level + 1 ) ) {
+				$flosc_level_before = ob_get_level();
+				ob_end_clean();
+				if ( ob_get_level() >= $flosc_level_before ) {
+					break;
 				}
+			}
 
-				if ( ob_get_level() === ( $flosc_parent_level + 1 ) ) {
-					$flosc_captured = ob_get_clean();
-					if ( false !== $flosc_captured ) {
-						$flosc_output = $flosc_captured;
-					}
+			if ( ob_get_level() === ( $flosc_parent_level + 1 ) ) {
+				$flosc_captured = ob_get_clean();
+				if ( false !== $flosc_captured ) {
+					$flosc_output = $flosc_captured;
 				}
-
-				$flosc_closed = true;
 			}
 		}
 

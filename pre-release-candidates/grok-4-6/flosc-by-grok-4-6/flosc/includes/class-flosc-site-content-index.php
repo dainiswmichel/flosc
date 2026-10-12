@@ -144,12 +144,13 @@ class FLOSC_Site_Content_Index {
 		if ( ! in_array( (string) $taxonomy, array( 'category', 'post_tag' ), true ) ) {
 			return;
 		}
-		if ( ! current_user_can( 'manage_categories' ) ) {
+		if ( ! isset( $_POST['flosc_term_vgm_nonce'] ) ) {
 			return;
 		}
-
-		$nonce = isset( $_POST['flosc_term_vgm_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['flosc_term_vgm_nonce'] ) ) : '';
-		if ( '' === $nonce || ! wp_verify_nonce( $nonce, 'flosc_term_vgm' ) ) {
+		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['flosc_term_vgm_nonce'] ) ), 'flosc_term_vgm' ) ) {
+			return;
+		}
+		if ( ! current_user_can( 'manage_categories' ) ) {
 			return;
 		}
 

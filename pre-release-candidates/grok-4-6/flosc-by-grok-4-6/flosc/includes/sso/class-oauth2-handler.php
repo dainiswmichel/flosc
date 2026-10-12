@@ -238,7 +238,7 @@ class OAuth2_Handler {
 		$url  = esc_url_raw( (string) $url );
 		$host = strtolower( (string) ( wp_parse_url( $url, PHP_URL_HOST ) ?? '' ) );
 		if ( '' === $url || '' === $host || ! wp_http_validate_url( $url ) ) {
-			wp_safe_redirect( home_url( '/' ) );
+			wp_safe_redirect( $this->get_sso_install_fallback_url() );
 			exit;
 		}
 		$add_host = static function ( $hosts ) use ( $host ) {
@@ -275,10 +275,10 @@ class OAuth2_Handler {
 		 * verifies. They are read and sanitized. The first use of `$state`
 		 * against the store is verify_state(); handle_callback() does not
 		 * read or write a transient or option keyed on callback state before
-		 * that call. Invalid or expired state redirects to home_url() — the
-		 * WordPress site root — because unverified state cannot name a
-		 * trustworthy flow-domain URL. An abandoned login that previously
-		 * resumed on the flow URL now lands there. That is deliberate.
+		 * that call. Invalid or expired state redirects to the relative
+		 * same-origin root because unverified state cannot name a trustworthy
+		 * flow-domain URL. An abandoned login that previously resumed on the
+		 * flow URL now lands there. That is deliberate.
 		 */
 		$get          = array();
 		$post         = array();
@@ -385,7 +385,7 @@ class OAuth2_Handler {
 		// the WordPress site root. Unverified state cannot name a trustworthy
 		// redirect target. A dedicated "try again from where you started"
 		// page is a later UX pass, not this one.
-		$app_url           = home_url();
+		$app_url           = $this->get_sso_install_fallback_url();
 		$error_redirect_to = $app_url;
 
 		// CSRF: OAuth state is the control. Consume it once, here, before
@@ -400,8 +400,12 @@ class OAuth2_Handler {
 		}
 
 		// State verified — redirect targets come from the returned record.
-		if ( ! empty( $state_data['flow_id'] ) ) {
-			$resolved = $this->resolve_app_url_from_flow_id( $state_data['flow_id'] );
+		// The flow id is read once here and carried to every redirect below, the
+		// error path included, so no branch has to reach for ambient flow state on
+		// a callback where get_current_flow() only sees the WordPress host.
+		$flow_id_for_redirect = sanitize_key( (string) ( $state_data['flow_id'] ?? '' ) );
+		if ( '' !== $flow_id_for_redirect ) {
+			$resolved = $this->resolve_app_url_from_flow_id( $flow_id_for_redirect );
 			if ( $resolved ) {
 				$app_url = $resolved;
 			}
@@ -417,19 +421,19 @@ class OAuth2_Handler {
 			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
 				flosc_log( '[FLOSC SSO] Provider error: ' . $error_description );
 			}
-			$this->redirect_with_error( $error_description, $error_redirect_to );
+			$this->redirect_with_error( $error_description, $error_redirect_to, $flow_id_for_redirect );
 			return;
 		}
 
 		// ── Verify provider matches ──
 		if ( $state_data['provider'] !== $provider_id ) {
-			$this->redirect_with_error( 'Provider mismatch. Please try again.', $error_redirect_to );
+			$this->redirect_with_error( 'Provider mismatch. Please try again.', $error_redirect_to, $flow_id_for_redirect );
 			return;
 		}
 
 		$provider = $this->manager->get_provider( $provider_id );
 		if ( ! $provider ) {
-			$this->redirect_with_error( 'Invalid provider.', $error_redirect_to );
+			$this->redirect_with_error( 'Invalid provider.', $error_redirect_to, $flow_id_for_redirect );
 			return;
 		}
 
@@ -464,7 +468,7 @@ class OAuth2_Handler {
 			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
 				flosc_log( '[FLOSC SSO] Token exchange failed: ' . $token_data->get_error_message() );
 			}
-			$this->redirect_with_error( 'Authentication failed: ' . $token_data->get_error_message(), $error_redirect_to );
+			$this->redirect_with_error( 'Authentication failed: ' . $token_data->get_error_message(), $error_redirect_to, $flow_id_for_redirect );
 			return;
 		}
 
@@ -480,7 +484,7 @@ class OAuth2_Handler {
 			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
 				flosc_log( '[FLOSC SSO] User info failed: ' . $user_data->get_error_message() );
 			}
-			$this->redirect_with_error( 'Failed to get user info: ' . $user_data->get_error_message(), $error_redirect_to );
+			$this->redirect_with_error( 'Failed to get user info: ' . $user_data->get_error_message(), $error_redirect_to, $flow_id_for_redirect );
 			return;
 		}
 
@@ -496,13 +500,12 @@ class OAuth2_Handler {
 			if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
 				flosc_log( '[FLOSC SSO] Login processing failed: ' . $result->get_error_message() );
 			}
-			$this->redirect_with_error( $result->get_error_message(), $error_redirect_to );
+			$this->redirect_with_error( $result->get_error_message(), $error_redirect_to, $flow_id_for_redirect );
 			return;
 		}
 
 		// ── SUCCESS — redirect user back to origin ──
-		$flow_id_for_redirect = sanitize_key( (string) ( $state_data['flow_id'] ?? '' ) );
-		$redirect_to          = ! empty( $state_data['redirect_to'] ) ? $state_data['redirect_to'] : $app_url;
+		$redirect_to = ! empty( $state_data['redirect_to'] ) ? $state_data['redirect_to'] : $app_url;
 
 		// If redirect_to is a wp-login.php URL, extract the inner redirect_to.
 		if ( false !== strpos( $redirect_to, 'wp-login.php' ) ) {
@@ -515,23 +518,30 @@ class OAuth2_Handler {
 			}
 		}
 
-		// Resolve slug-based URLs to custom domain
+		// Resolve slug-based URLs to the flow's own domain
 		// e.g. the WordPress host/flow_path/ → the flow domain/.
-		if ( function_exists( 'flosc' ) ) {
-			$app_slug = get_option( 'flosc_app_slug', 'flosc' );
-			if ( false !== strpos( $redirect_to, '/' . $app_slug ) ) {
-				$custom_url = flosc()->get_app_url();
-				if ( $custom_url && false === strpos( $custom_url, $app_slug ) ) {
-					$redirect_to = $custom_url;
-				}
+		//
+		// The domain is resolved from the flow id the verified state carries.
+		// flosc()->get_app_url() reads get_current_flow(), which on a REST
+		// callback sees the WordPress host and answers with whichever flow is
+		// default: that sends a visitor who began in flow A to flow B's domain.
+		$app_slug = get_option( 'flosc_app_slug', 'flosc' );
+		if ( false !== strpos( $redirect_to, '/' . $app_slug ) ) {
+			$custom_url = $this->resolve_app_url_from_flow_id( $flow_id_for_redirect );
+			if ( ! is_string( $custom_url ) ) {
+				$custom_url = '';
+			}
+
+			if ( '' !== $custom_url && false === strpos( $custom_url, $app_slug ) ) {
+				$redirect_to = $custom_url;
 			}
 		}
 
 		// Fail closed: unapproved redirect_to never receives a login token or redirect.
 		if ( ! $this->is_allowed_sso_redirect( $redirect_to, $flow_id_for_redirect ) ) {
-			$fallback = is_string( $app_url ) && '' !== $app_url ? $app_url : home_url( '/' );
+			$fallback = is_string( $app_url ) && '' !== $app_url ? $app_url : $this->get_sso_install_fallback_url();
 			if ( ! $this->is_allowed_sso_redirect( $fallback, $flow_id_for_redirect ) ) {
-				$fallback = home_url( '/' );
+				$fallback = $this->get_sso_install_fallback_url();
 			}
 			$redirect_to = $fallback;
 		}
@@ -643,12 +653,12 @@ class OAuth2_Handler {
 		$add( rest_url( '/' ) );
 		$add( get_option( 'flosc_custom_domain', '' ) );
 
-		if ( function_exists( 'flosc' ) ) {
-			$app = flosc()->get_app_url();
-			if ( is_string( $app ) && '' !== $app ) {
-				$add( $app );
-			}
-		}
+		// flosc()->get_app_url() is deliberately NOT added here. It resolves
+		// through get_current_flow(), which on a REST callback sees the WordPress
+		// host and answers with whichever flow is default. Adding it put that one
+		// flow's domain on the allowlist for every other flow's callback, which is
+		// what the flow-scoped block below exists to prevent. The verified flow's
+		// own domains are added there instead.
 
 		// The current request host is deliberately NOT added here.
 		//
@@ -973,16 +983,30 @@ class OAuth2_Handler {
 	}
 
 	/**
+	 * Same-origin install fallback for callbacks without an approved flow URL.
+	 *
+	 * A relative root cannot select an ambient or attacker-named host. WordPress
+	 * resolves it on the callback origin, and wp_safe_redirect() accepts it as a
+	 * same-origin target.
+	 *
+	 * @return string Relative install fallback.
+	 */
+	private function get_sso_install_fallback_url() {
+		return '/';
+	}
+
+	/**
 	 * Redirect with error message
 	 *
 	 * Accept optional redirect_to so user returns to the app page
 	 * (where FLOSC JS is running), not the homepage where it isn't.
 	 *
 	 * @param string $message Error message.
-	 * @param string $redirect_to URL to redirect to (falls back to home_url()).
+	 * @param string $redirect_to URL to redirect to (falls back to same-origin root).
+	 * @param string $flow_id Flow id from verified state; '' before verification.
 	 * @since 8.0.1
 	 */
-	private function redirect_with_error( $message, $redirect_to = '' ) {
+	private function redirect_with_error( $message, $redirect_to = '', $flow_id = '' ) {
 		// Store error in transient for display
 		// v8.0.2: Increased TTL from 60s to 300s — slow redirects or CDN delays
 		// could cause the transient to expire before the page loads.
@@ -996,17 +1020,20 @@ class OAuth2_Handler {
 			flosc_log( '[FLOSC SSO ERROR] ' . $message . ' | redirect_to: ' . ( $redirect_to ? $redirect_to : '(empty)' ) );
 		}
 
-		// v8.0.2: Use custom domain app URL as fallback instead of home_url().
-		// home_url() returns the WordPress host, but if the user initiated SSO from
-		// the flow domain, they need to go back to the flow domain where FLOSC JS runs.
-		if ( empty( $redirect_to ) ) {
-			if ( function_exists( 'flosc' ) ) {
-				$redirect_to = flosc()->get_app_url();
-			}
+		// v8.0.2: the flow domain is where FLOSC's JS runs, so an error raised
+		// during a flow's login belongs on that flow's domain. The domain is
+		// resolved from the flow id the verified state carried, and the same id
+		// scopes the allowlist check below. Callers that run before verification
+		// pass no flow id and land on the same-origin install fallback, because
+		// unverified state cannot name a target.
+		$flow_id = sanitize_key( (string) $flow_id );
+		if ( empty( $redirect_to ) && '' !== $flow_id ) {
+			$resolved    = $this->resolve_app_url_from_flow_id( $flow_id );
+			$redirect_to = is_string( $resolved ) ? $resolved : '';
 		}
-		$base_url = ! empty( $redirect_to ) ? $redirect_to : home_url( '/' );
-		if ( ! $this->is_allowed_sso_redirect( $base_url, '' ) ) {
-			$base_url = home_url( '/' );
+		$base_url = ! empty( $redirect_to ) ? $redirect_to : $this->get_sso_install_fallback_url();
+		if ( ! $this->is_allowed_sso_redirect( $base_url, $flow_id ) ) {
+			$base_url = $this->get_sso_install_fallback_url();
 		}
 
 		$redirect_url = add_query_arg(

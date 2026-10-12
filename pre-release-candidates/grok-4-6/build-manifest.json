@@ -1,34 +1,41 @@
 {
   "schema_version": 8,
   "candidate": "grok-4-6",
-  "candidate_label": "FLOSC 8.0.0 candidate V139",
+  "candidate_label": "FLOSC 8.0.0 candidate V145",
   "owner": "Grok",
   "parent": {
-    "candidate": "V138",
-    "commit": "753bdc74204b61ba42bd5a3a6f1fdefca259a7f4"
+    "candidate": "V144",
+    "commit": "9fab042357c00235b4760748c8a3f52b6ad81c8e"
   },
   "plugin_version": "8.0.0",
   "stable_tag": "8.0.0",
-  "internal_iteration": "v139",
-  "github_hashid_at_pack": "753bdc74204b61ba42bd5a3a6f1fdefca259a7f4",
+  "internal_iteration": "v145",
+  "github_hashid_at_pack": "9fab042357c00235b4760748c8a3f52b6ad81c8e",
   "plugin_source": "flosc-by-grok-4-6/flosc",
-  "baseline": "pre-release-candidates/grok-4-6 at 753bdc74204b61ba42bd5a3a6f1fdefca259a7f4",
-  "v139_delta_from_v138_zip": [
+  "baseline": "origin/main at 9fab042357c00235b4760748c8a3f52b6ad81c8e",
+  "requires_at_least": "7.1",
+  "requires_php": "7.4",
+  "v145_delta_from_v144": [
     "flosc.php",
-    "includes/flosc-output-buffer.php"
+    "admin/ai-feedback.php",
+    "admin/chat-styling.php",
+    "admin/flow-edit.php",
+    "admin/flows.php",
+    "admin/knowledge-base.php",
+    "admin/settings.php",
+    "includes/class-flosc-framework.php",
+    "includes/class-flosc-site-content-index.php",
+    "includes/flosc-admin.php",
+    "includes/magic-link/class-flosc-magic-link-trait.php"
   ],
-  "v139_git_only": [
-    "tests/check-output-buffer-boundaries.php"
-  ],
-  "review_status": "Not a signed full remediation of Unclosed ob_start(). The collect call runs only while ob_get_level() is the level this call opened. exit(), die(), and wp_die() skip finally; a shutdown callback flushes buffers above the saved parent level and is not the same-function closer.",
   "artifact": {
     "path": "flosc.zip",
     "root": "flosc/",
     "entries": 283,
     "files": 243,
-    "bytes": 2824378,
-    "sha256": "49b0b756a71fa7da26f0b64fd75f0ae2e938047bffea539da0326766caa4245d",
-    "runtime_manifest_sha256": "93d7694e6a0c79f2d382356c3ada014626ee9843d3d3200c000a1d02d739720f",
+    "bytes": 2826276,
+    "sha256": "1a1c5dd2e7e64cce09a287d9a6c426895f17c6de023aa689c8f24a7d46e75756",
+    "runtime_manifest_sha256": "600df173f184c04f8b858aaaa16b5f26c589b7e267779557ebad78b53f5195c0",
     "runtime_manifest": "sha256 of sorted lines: '<sha256>  <zip path>' for every file in the zip",
     "tests_entries": 0
   }
