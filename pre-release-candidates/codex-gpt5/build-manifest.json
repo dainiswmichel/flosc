@@ -4,8 +4,8 @@
   "candidate_label": "FLOSC 8.0.0 home-run candidate v149.codex",
   "owner": "Codex",
   "repository_parent": {
-    "candidate": "v149 coded by ClaudeCode",
-    "commit": "42c9a221eac05043bea92f2966fc4ee1f155d75f"
+    "candidate": "v149 build package",
+    "commit": "4437ac265ece7084cc863d6e07f9aa3b5a7a5769"
   },
   "code_lineage": "v148.codex verified working candidate",
   "plugin_version": "8.0.0",
