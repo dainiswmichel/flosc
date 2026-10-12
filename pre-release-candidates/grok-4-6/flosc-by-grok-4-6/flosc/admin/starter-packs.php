@@ -13,6 +13,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+if ( ! current_user_can( 'manage_options' ) ) {
+	return;
+}
+
 if ( ! function_exists( 'flosc_starter_packs_handle_post' ) ) {
 	/**
 	 * Run one starter-pack form submission.
@@ -55,10 +59,6 @@ if ( ! function_exists( 'flosc_starter_packs_handle_post' ) ) {
 
 		return $flosc_sp_notice;
 	}
-}
-
-if ( ! current_user_can( 'manage_options' ) ) {
-	return;
 }
 
 $flosc_sp_notice = flosc_starter_packs_handle_post();

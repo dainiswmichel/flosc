@@ -1,26 +1,25 @@
 {
   "schema_version": 8,
   "candidate": "grok-4-6",
-  "candidate_label": "FLOSC 8.0.0 candidate v150",
+  "candidate_label": "FLOSC 8.0.0 candidate v151",
   "owner": "Grok",
   "parent": {
     "candidate": "origin/main",
-    "commit": "697e1e9404956f4b94f426ca008b51865cb2f383"
+    "commit": "86a7c51bd02afb7ffd05e86e24e52a870829f5af"
   },
   "plugin_version": "8.0.0",
   "stable_tag": "8.0.0",
-  "internal_iteration": "v150",
-  "github_hashid_at_pack": "697e1e9404956f4b94f426ca008b51865cb2f383",
+  "internal_iteration": "v151",
+  "github_hashid_at_pack": "86a7c51bd02afb7ffd05e86e24e52a870829f5af",
   "plugin_source": "flosc-by-grok-4-6/flosc",
-  "baseline": "origin/main at 697e1e9404956f4b94f426ca008b51865cb2f383",
-  "code_base": "v149.grok a0213cc2a77488bbc9e35e09edf87cd07cc91e1c",
+  "baseline": "origin/main at 86a7c51bd02afb7ffd05e86e24e52a870829f5af",
+  "code_base": "v150 86a7c51bd02afb7ffd05e86e24e52a870829f5af",
   "requires_at_least": "7.1",
   "requires_php": "7.4",
-  "v150_delta": [
+  "v151_delta": [
     "flosc.php",
-    "admin/ivr-messages.php",
     "admin/starter-packs.php",
-    "includes/flosc-personality-library.php",
+    "includes/flosc-request.php",
     "tests/check-nonce-scope-and-flow-preservation.php"
   ],
   "artifact": {
@@ -28,9 +27,9 @@
     "root": "flosc/",
     "entries": 283,
     "files": 243,
-    "bytes": 2826361,
-    "sha256": "c0ae7d2a2f7c816ba5a4e45f68568fc689dfe7467f57c50ec13645dba648db4a",
-    "runtime_manifest_sha256": "68f782c54421b5194631bb945c48c47e951b1cf9685eefcc77885e8e6aef81f7",
+    "bytes": 2826354,
+    "sha256": "d6267e4ce4f49d5a2c1468272fd30435d8d26667c8b9fda0f25a138dc0e39ef1",
+    "runtime_manifest_sha256": "21338d1cb24013f49da3b4533d35b62efd73f6a2fe0424f1d5caa8010e296e19",
     "runtime_manifest": "sha256 of sorted lines: '<sha256>  <zip path>' for every file in the zip",
     "tests_entries": 0
   }

@@ -4,8 +4,8 @@
  * Plugin URI: https://flosc.ai
  * Description: (F)reeline --> (L)ogin --> (O)ffer --> (S)ale --> (C)ontent: try-before-you-buy WordPress journeys.
  * Version: 8.0.0
- * Internal Iteration: v150
- * Github HashID: 697e1e9404956f4b94f426ca008b51865cb2f383
+ * Internal Iteration: v151
+ * Github HashID: 86a7c51bd02afb7ffd05e86e24e52a870829f5af
  * Requires at least: 7.1
  * Requires PHP: 7.4
  * Author: Dainis W. Michel
