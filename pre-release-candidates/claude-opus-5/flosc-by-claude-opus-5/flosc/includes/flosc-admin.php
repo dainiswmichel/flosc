@@ -1964,9 +1964,22 @@ trait FLOSC_Admin_Trait {
 			. "IP Hash: {$ip_hash}\n"
 			. "\nMessage:\n{$message}\n";
 
+		/*
+		 * The display name is quoted, and what would break the quoting is removed.
+		 *
+		 * sanitize_text_field() collapses CR and LF, so no header can be injected
+		 * on a new line. It leaves the comma, and RFC 5322 reads an unquoted
+		 * display name containing one -- "Smith, John <a@b.test>" -- as two
+		 * addresses rather than one, which turns a visitor's surname into a second
+		 * Reply-To entry. Quoting settles that, and stripping the quote and
+		 * backslash keeps the name from ending its own quoted string. $email is
+		 * already sanitize_email()'d and is_email()-validated above.
+		 */
+		$reply_name = str_replace( array( '"', '\\', ',' ), '', trim( $first_name . ' ' . $last_name ) );
+
 		$headers = array(
 			'Content-Type: text/plain; charset=UTF-8',
-			'Reply-To: ' . $first_name . ' ' . $last_name . ' <' . $email . '>',
+			'Reply-To: "' . $reply_name . '" <' . $email . '>',
 		);
 
 		$sent = wp_mail( $recipient, $subject, $body, $headers );

@@ -39,9 +39,9 @@
     "root": "flosc/",
     "entries": 283,
     "files": 243,
-    "bytes": 2828832,
-    "sha256": "c203672878103a0fb6e6ff1ee10e7d495b62d9a25f56080317d7fba595c57514",
-    "runtime_manifest_sha256": "1d976d7f24147050604a040a1a72a7aa2f2a4d893b8f7ffa0e2f5e5d76e1eba2",
+    "bytes": 2829156,
+    "sha256": "fd35ce2d65441be0f5d3d90a618c913b34fba496b85eba3df35b3b5a71257ceb",
+    "runtime_manifest_sha256": "503700b33e1ffb4e9fd9f61bc24ce63dde3342e83f441a69c09484c0af549f07",
     "runtime_manifest": "sha256 of sorted lines: '<sha256>  <zip path>' for every file in the zip, newline-joined with a trailing newline",
     "tests_entries": 0
   },
@@ -50,6 +50,7 @@
     "includes/class-flosc-framework.php",
     "includes/flosc-rest.php",
     "tests/check_tab_scope_and_nonce_binding.php",
-    "includes/full-page-mode/class-flosc-full-page-mode.php"
+    "includes/full-page-mode/class-flosc-full-page-mode.php",
+    "includes/flosc-admin.php"
   ]
 }
