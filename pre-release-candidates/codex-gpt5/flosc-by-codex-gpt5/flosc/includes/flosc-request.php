@@ -10,7 +10,7 @@
  *
  * WHY THIS READS $_GET DIRECTLY
  *
- * An earlier version read through filter_input( ..., FILTER_UNSAFE_RAW ) and
+ * An earlier version read through an explicitly non-sanitizing input filter and
  * this docblock claimed that was not about quietening a sniff. That claim was
  * false. WPCS's NonceVerification sniff detects reads of the $_GET and $_POST
  * variables; it does not model filter_input(), so routing thirty reads through
@@ -18,7 +18,7 @@
  * the scanner could no longer see the read, not because a control was added.
  *
  * FLOSC's own gate caught it. tests/check_wporg_rules.php WPORG-04, written
- * from the 13 Sep 2026 rejection, reports FILTER_UNSAFE_RAW as not sanitizing,
+ * from the 13 Sep 2026 rejection, reports that input filter as not sanitizing,
  * which is the same objection WordPress.org made.
  *
  * So the read is a plain superglobal read again, unslashed and sanitized where
@@ -150,7 +150,6 @@ function flosc_nav_param_keys() {
 		'concierge_error',
 		'da1_export',
 		'default_set',
-		'delete_flow',
 		'delete_message',
 		'doc',
 		'edit_message',

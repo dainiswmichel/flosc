@@ -1,52 +1,68 @@
-# FLOSC 8.0.0 — Codex candidate V144
+# FLOSC 8.0.0 — Codex home-run candidate v149.codex
 
-V144 starts from the published V143 candidate at commit
-`64c7a0ee6843209403c859957c36c29e0bb480c4`. The public plugin version and
-stable tag remain 8.0.0. `Github HashID` records that V143 parent commit.
+This directory contains the complete resubmission candidate, not a stripped or
+registration-disabled build. The public plugin version and stable tag remain
+8.0.0. The complete reviewable source is in `flosc-by-codex-gpt5/flosc/`; the
+exact WordPress.org distributable is `flosc.zip`.
 
-## Scope
+## User journeys retained
 
-- Removes all six direct and indirect `home_url()` destination fallbacks from
-  the OAuth callback path.
-- Introduces one explicit same-origin install fallback, the relative URL `/`,
-  which cannot select an ambient flow or attacker-named host.
-- Keeps verified-flow resolution first: post-verification redirects still use
-  `resolve_app_url_from_flow_id()` with the flow ID returned by `verify_state()`.
-- Keeps failed-state handling isolated: it does not read a flow ID from
-  unverified state and uses only the relative same-origin fallback.
-- Leaves the remaining `home_url()` calls intact because they read the
-  configured site host/scheme for redirect validation or add the configured
-  same-site host to the allowlist; they do not choose a redirect destination.
-- Extends the OAuth source regression to require the six scoped fallback calls,
-  the relative-root helper contract, verified-flow resolution, and flow-scoped
-  allowlist checks.
+- Registration: a visitor submits an email address, FLOSC creates the pending
+  account, the visitor verifies it, FLOSC activates the account, sends the
+  welcome/magic-link path, and permits login.
+- Flow editing: each tab saves only the fields owned by that submitted form, so
+  saving one tab does not erase values owned by another tab.
+- Knowledge-base and account actions: the nonce action is bound to the exact
+  file or user target and capability checks remain separate.
+
+## Remediation scope
+
+- Preserves the v148.codex flow-tab save guards and target-bound KB toggle, KB
+  delete, and account-activation nonces.
+- Sanitizes the reported AI, autoprompt, IVR, personality-editor, referral, and
+  test-offer request inputs at ingestion without flattening structured or
+  multiline values.
+- Escapes VGM option values and labels at the output boundary and replaces the
+  personality editor's inline JSON assignment with WordPress script data.
+- Keeps the complete email registration, verification, activation, welcome,
+  magic-link, and login journey.
+- Removes a stale display-navigation `delete_flow` value; deletion continues
+  through its capability- and nonce-protected `admin-post.php` action.
+- Declares the registration-token-grant control property used at runtime, which
+  avoids a PHP 8.2 dynamic-property deprecation without changing its default.
 
 ## Verification
 
-- `php -l` passed on all 204 PHP files in the source candidate.
-- 48 PHP gates and 6 JavaScript gates passed.
-- The OAuth regression passed all ordering, flow-resolution, fallback, and
-  allowlist assertions.
-- No redirect destination or redirect fallback in the OAuth handler calls
-  `home_url()`.
-- Changed shipping PHP passed the full WordPress PHPCS standard with 0 errors
-  or warnings; PHPCS reported 2 / 2 files scanned.
-- All changed PHP passed PHPCompatibilityWP for PHP 7.4.
-- `git diff --check` and `unzip -t` passed.
-- The ZIP contains 243 runtime files and no tests, vendor tree, Composer files,
-  Git metadata, or build scripts.
+- All 206 source PHP files passed `php -l` during candidate verification.
+- All 51 standalone PHP regression procedures passed.
+- Shipping source and the built ZIP passed the repository PHPCS ruleset with
+  0 errors or warnings. A separate WordPress nonce sniff with suppressions
+  disabled reported 0 errors and 25 `NonceVerification.Recommended` warnings.
+- Shipping source and the built ZIP passed PHPCompatibilityWP for PHP 7.4.
+- The sanitization and escaping sniffs passed with suppressions disabled.
+- The exact ZIP passed `unzip -t` and contains 243 files in 283 entries. Tests,
+  `vendor/`, Git metadata, and build tooling are absent from the ZIP.
+- Official Plugin Check 2.1.0 in a disposable WordPress 7.1.3 installation
+  completed with 0 errors and the same 25 nonce-recommendation warnings.
+- A live WordPress registration test passed the pending-account, verification,
+  activation, and login journey; the clean rerun wrote no WordPress debug log.
 
-Plugin Check, PHPStan, and a live WordPress installation were not run.
+The release gate still reports its literal `HTTP_HOST` grep because the OAuth
+handler retains the explicitly required login-token host comparison; that value
+is not added to the SSO redirect allowlist. The gate's Plugin Check wrapper also
+uses a command name not provided by Plugin Check 2.1.0, so Plugin Check was run
+directly with its official `wp plugin check` command. These verifier defects are
+reported rather than hidden and no full-gate-pass claim is made.
 
 ## Exact artifact
 
 ```text
-ab54fd6b35e39d207c313ca2b16d0c4e4b3201ec4a2cd58e9a0fb507d21c5e5a  flosc.zip
+6463827cc25e07b52908cfb9d53ffe83f16bc1aabac1a889da30952b9e2d85a3  flosc.zip
 ```
 
-283 ZIP entries, 243 files, 2,824,821 bytes. Sorted `sha256  path` manifest of
-those files:
+283 ZIP entries, 243 files, 2,826,566 bytes. The SHA-256 of the sorted runtime
+file manifest (`<sha256>  <zip path>`) is:
 
 ```text
-96451c22cee6aaa37a02f0bc250be619d1f7bfc5747ed509b0f4dd0e5d39a906
+bc9380819a652cd1e96e944d9889d90cd1d6217b43612232fffb15fe6df60a1b
 ```

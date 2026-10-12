@@ -77,11 +77,11 @@ class FLOSC_Site_Content_Index {
 		?>
 		<select name="flosc_vgm" id="flosc_vgm">
 			<option value="">&mdash; <?php esc_html_e( 'No rule', 'flosc' ); ?> &mdash;</option>
-			<?php echo flosc_vgm_options_markup( flosc_vgm_tier_labels(), (string) $tier ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built escaped in flosc_vgm_options_markup() ?>
+			<?php flosc_render_vgm_options( flosc_vgm_tier_labels(), (string) $tier ); ?>
 		</select>
 		<select name="flosc_depth" id="flosc_depth">
 			<option value="">&mdash; <?php esc_html_e( 'No rule', 'flosc' ); ?> &mdash;</option>
-			<?php echo flosc_vgm_options_markup( flosc_vgm_depth_labels(), (string) $depth ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built escaped in flosc_vgm_options_markup() ?>
+			<?php flosc_render_vgm_options( flosc_vgm_depth_labels(), (string) $depth ); ?>
 		</select>
 		<p class="description">
 			<?php esc_html_e( 'What the AI may retrieve of posts in this term. The tier is a floor: Visitors also covers guests and members. Both halves must be set for the rule to count. A rule on a post beats one on its tags, which beats one on its categories.', 'flosc' ); ?>
@@ -144,12 +144,14 @@ class FLOSC_Site_Content_Index {
 		if ( ! in_array( (string) $taxonomy, array( 'category', 'post_tag' ), true ) ) {
 			return;
 		}
-		if ( ! current_user_can( 'manage_categories' ) ) {
+		if ( ! isset( $_POST['flosc_term_vgm_nonce'] ) || ! is_string( $_POST['flosc_term_vgm_nonce'] ) ) {
 			return;
 		}
-
-		$nonce = isset( $_POST['flosc_term_vgm_nonce'] ) ? sanitize_text_field( wp_unslash( $_POST['flosc_term_vgm_nonce'] ) ) : '';
+		$nonce = sanitize_text_field( wp_unslash( $_POST['flosc_term_vgm_nonce'] ) );
 		if ( '' === $nonce || ! wp_verify_nonce( $nonce, 'flosc_term_vgm' ) ) {
+			return;
+		}
+		if ( ! current_user_can( 'manage_categories' ) ) {
 			return;
 		}
 
@@ -157,7 +159,7 @@ class FLOSC_Site_Content_Index {
 			'flosc_vgm'   => array( '_flosc_vgm', 'tier_token' ),
 			'flosc_depth' => array( '_flosc_depth', 'depth_token' ),
 		) as $field => $spec ) {
-			if ( ! isset( $_POST[ $field ] ) ) {
+			if ( ! isset( $_POST[ $field ] ) || ! is_string( $_POST[ $field ] ) ) {
 				continue;
 			}
 			$value = call_user_func( array( __CLASS__, $spec[1] ), sanitize_key( wp_unslash( $_POST[ $field ] ) ) );

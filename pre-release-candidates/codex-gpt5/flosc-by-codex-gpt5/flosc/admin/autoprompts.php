@@ -83,18 +83,26 @@ $flosc_autoprompt_docs_anchor = array(
  * SAVE HANDLER.
  */
 function flosc_handle_autoprompts_save() {
-	$flosc_post = wp_unslash( $_POST );
-
-	if ( ! isset( $flosc_post['save_autoprompts'] ) || ! wp_verify_nonce( sanitize_text_field( $flosc_post['flosc_autoprompts_nonce'] ?? '' ), 'flosc_save_autoprompts' ) ) {
+	if ( ! isset( $_POST['save_autoprompts'] ) ) {
+		return;
+	}
+	if ( ! isset( $_POST['flosc_autoprompts_nonce'] ) || ! is_string( $_POST['flosc_autoprompts_nonce'] ) ) {
+		return;
+	}
+	$flosc_nonce = sanitize_text_field( wp_unslash( $_POST['flosc_autoprompts_nonce'] ) );
+	if ( '' === $flosc_nonce || ! wp_verify_nonce( $flosc_nonce, 'flosc_save_autoprompts' ) ) {
 		return;
 	}
 	if ( ! current_user_can( 'manage_options' ) ) {
 		return;
 	}
+	$flosc_post = map_deep( wp_unslash( $_POST ), 'sanitize_text_field' );
 
 	// §10: accept the posted flow key only if it is a known flow option key.
 	// Validate without transforming, so the key matches where settings are stored.
-	$fk = sanitize_text_field( $flosc_post['flosc_flow_key'] ?? '' );
+	$fk = isset( $flosc_post['flosc_flow_key'] ) && is_string( $flosc_post['flosc_flow_key'] )
+		? $flosc_post['flosc_flow_key']
+		: '';
 	if ( '' === $fk || ! in_array( $fk, flosc_known_flow_option_keys(), true ) ) {
 		return;
 	}
@@ -106,7 +114,8 @@ function flosc_handle_autoprompts_save() {
 	// Save panel header text per state.
 	$flosc_panel_headers = array();
 	foreach ( $states as $state ) {
-		$flosc_panel_headers[ $state ] = sanitize_text_field( $flosc_post[ 'panel_header_' . $state ] ?? 'Try these AutoPrompts!' );
+		$header                        = $flosc_post[ 'panel_header_' . $state ] ?? 'Try these AutoPrompts!';
+		$flosc_panel_headers[ $state ] = is_string( $header ) ? $header : 'Try these AutoPrompts!';
 	}
 
 	// Save panel show/hide toggle per state (checkbox — absent means unchecked = 0).
@@ -119,18 +128,19 @@ function flosc_handle_autoprompts_save() {
 	$flosc_companion_panel_enabled = isset( $flosc_post['panel_enabled_companion'] ) ? 1 : 0;
 
 	foreach ( $states as $state ) {
-		$icons            = $flosc_post[ $state . '_pill_icon' ] ?? array();
-		$labels           = $flosc_post[ $state . '_pill_label' ] ?? array();
-		$inputs           = $flosc_post[ $state . '_pill_user_input' ] ?? array();
-		$trigger_types    = $flosc_post[ $state . '_pill_trigger_type' ] ?? array();
-		$trigger_values   = $flosc_post[ $state . '_pill_trigger_value' ] ?? array();
-		$flosc_conditions = $flosc_post[ $state . '_pill_conditions' ] ?? array();
-		$styles           = $flosc_post[ $state . '_pill_style' ] ?? array();
+		$icons            = isset( $flosc_post[ $state . '_pill_icon' ] ) && is_array( $flosc_post[ $state . '_pill_icon' ] ) ? $flosc_post[ $state . '_pill_icon' ] : array();
+		$labels           = isset( $flosc_post[ $state . '_pill_label' ] ) && is_array( $flosc_post[ $state . '_pill_label' ] ) ? $flosc_post[ $state . '_pill_label' ] : array();
+		$inputs           = isset( $flosc_post[ $state . '_pill_user_input' ] ) && is_array( $flosc_post[ $state . '_pill_user_input' ] ) ? $flosc_post[ $state . '_pill_user_input' ] : array();
+		$trigger_types    = isset( $flosc_post[ $state . '_pill_trigger_type' ] ) && is_array( $flosc_post[ $state . '_pill_trigger_type' ] ) ? $flosc_post[ $state . '_pill_trigger_type' ] : array();
+		$trigger_values   = isset( $flosc_post[ $state . '_pill_trigger_value' ] ) && is_array( $flosc_post[ $state . '_pill_trigger_value' ] ) ? $flosc_post[ $state . '_pill_trigger_value' ] : array();
+		$flosc_conditions = isset( $flosc_post[ $state . '_pill_conditions' ] ) && is_array( $flosc_post[ $state . '_pill_conditions' ] ) ? $flosc_post[ $state . '_pill_conditions' ] : array();
 
 		$flosc_pills = array();
 		foreach ( $labels as $i => $label ) {
-			$label      = sanitize_text_field( $label );
-			$input_text = sanitize_text_field( $inputs[ $i ] ?? '' );
+			if ( ! is_string( $label ) ) {
+				continue;
+			}
+			$input_text = isset( $inputs[ $i ] ) && is_string( $inputs[ $i ] ) ? $inputs[ $i ] : '';
 
 			if ( '' === $label && '' === $input_text ) {
 				continue;
@@ -148,19 +158,20 @@ function flosc_handle_autoprompts_save() {
 				continue;
 			}
 
-			$flosc_ttype = sanitize_key( $trigger_types[ $i ] ?? 'ai' );
-			if ( ! $flosc_ttype ) {
+			$flosc_ttype = isset( $trigger_types[ $i ] ) && is_string( $trigger_types[ $i ] ) ? sanitize_key( $trigger_types[ $i ] ) : 'ai';
+			if ( ! in_array( $flosc_ttype, array( 'ai', 'offer', 'action' ), true ) ) {
 				$flosc_ttype = 'ai';
 			}
-			$flosc_tval    = sanitize_text_field( $trigger_values[ $i ] ?? '' );
-			$flosc_pills[] = array(
-				'icon'          => sanitize_text_field( $icons[ $i ] ?? '' ),
+			$flosc_tval      = isset( $trigger_values[ $i ] ) && is_string( $trigger_values[ $i ] ) ? $trigger_values[ $i ] : '';
+			$flosc_condition = isset( $flosc_conditions[ $i ] ) && is_string( $flosc_conditions[ $i ] ) ? $flosc_conditions[ $i ] : ( 'is_' . $state );
+			$flosc_pills[]   = array(
+				'icon'          => isset( $icons[ $i ] ) && is_string( $icons[ $i ] ) ? $icons[ $i ] : '',
 				'label'         => $label,
 				'user_input'    => '' !== $input_text ? $input_text : $label,
 				'trigger_type'  => $flosc_ttype,
 				'trigger_value' => $flosc_tval,
 				'action'        => 'ai' === $flosc_ttype ? '' : ( 'offer' === $flosc_ttype ? 'show_offer_' . $flosc_tval : $flosc_tval ),
-				'conditions'    => sanitize_text_field( $flosc_conditions[ $i ] ?? ( 'is_' . $state ) ),
+				'conditions'    => $flosc_condition,
 				'style'         => 'pill',
 			);
 		}
@@ -173,7 +184,9 @@ function flosc_handle_autoprompts_save() {
 	$flosc_fs['autoprompt_companion_enabled'] = $flosc_companion_panel_enabled;
 	update_option( $fk, $flosc_fs );
 
-	$ivr = sanitize_file_name( $flosc_post['flosc_ivr'] ?? '' );
+	$ivr = isset( $flosc_post['flosc_ivr'] ) && is_string( $flosc_post['flosc_ivr'] )
+		? sanitize_file_name( $flosc_post['flosc_ivr'] )
+		: '';
 	wp_safe_redirect( admin_url( 'admin.php?page=flosc-settings&ivr=' . rawurlencode( $ivr ) . '&tab=autoprompts&saved=1' ) );
 	exit;
 }

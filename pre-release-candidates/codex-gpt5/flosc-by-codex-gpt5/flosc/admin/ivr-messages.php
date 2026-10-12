@@ -238,7 +238,23 @@ if ( 'POST' === $flosc_request_method ) {
 		// below this loop runs on an unverified body.
 		if ( isset( $_POST[ $flosc_submit_key ] ) ) {
 			check_admin_referer( $flosc_nonce_action );
-			$flosc_post = wp_unslash( $_POST );
+			$flosc_post = map_deep( wp_unslash( $_POST ), 'sanitize_text_field' );
+
+			/*
+			 * These fields intentionally preserve line breaks. Sanitize them for
+			 * their content context after the ordinary scalar fields are cleaned.
+			 */
+			if ( 'flosc_save_full_ivr' === $flosc_submit_key && isset( $_POST['ivr_full_text'] ) && is_string( $_POST['ivr_full_text'] ) ) {
+				$flosc_post['ivr_full_text'] = wp_kses_post( wp_unslash( $_POST['ivr_full_text'] ) );
+			}
+			if ( 'save_ivr_message' === $flosc_submit_key ) {
+				if ( isset( $_POST['message_content'] ) && is_string( $_POST['message_content'] ) ) {
+					$flosc_post['message_content'] = wp_kses_post( wp_unslash( $_POST['message_content'] ) );
+				}
+				if ( isset( $_POST['message_password_retry'] ) && is_string( $_POST['message_password_retry'] ) ) {
+					$flosc_post['message_password_retry'] = sanitize_textarea_field( wp_unslash( $_POST['message_password_retry'] ) );
+				}
+			}
 			break;
 		}
 	}
@@ -1080,7 +1096,7 @@ if ( isset( $flosc_post['save_ivr_message'] ) ) {
 	} else {
 
 		// Pass 5: message bodies use IVR markdown sanitizer (null-byte/size/UTF-8).
-		$flosc_raw_content   = (string) ( $flosc_post['message_content'] ?? '' );
+		$flosc_raw_content   = isset( $flosc_post['message_content'] ) && is_string( $flosc_post['message_content'] ) ? $flosc_post['message_content'] : '';
 		$flosc_clean_content = flosc_sanitize_ivr_markdown( $flosc_raw_content, 200000 );
 		if ( is_wp_error( $flosc_clean_content ) ) {
 			add_settings_error( 'flosc_settings', 'message_content_invalid', $flosc_clean_content->get_error_message(), 'error' );
@@ -1129,7 +1145,8 @@ if ( isset( $flosc_post['save_ivr_message'] ) ) {
 				$flosc_message_data['password_success']            = sanitize_text_field( $flosc_post['message_password_success'] ?? '' );
 				$flosc_message_data['password_max_tries']          = max( 1, intval( $flosc_post['message_password_max_tries'] ?? 3 ) );
 				$flosc_retry_list                                  = array();
-				foreach ( preg_split( '/\r\n|\r|\n/', (string) ( $flosc_post['message_password_retry'] ?? '' ) ) as $flosc_retry_line ) {
+				$flosc_retry_text                                  = isset( $flosc_post['message_password_retry'] ) && is_string( $flosc_post['message_password_retry'] ) ? $flosc_post['message_password_retry'] : '';
+				foreach ( preg_split( '/\r\n|\r|\n/', $flosc_retry_text ) as $flosc_retry_line ) {
 					$flosc_retry_line = sanitize_text_field( $flosc_retry_line );
 					if ( '' !== $flosc_retry_line ) {
 						$flosc_retry_list[] = $flosc_retry_line;

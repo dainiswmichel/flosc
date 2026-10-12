@@ -2191,7 +2191,8 @@ if ( ! function_exists( 'flosc_admin_save_personality_library' ) ) {
 		$existing = flosc_personality_library_get_all();
 		$posted   = array();
 		if ( isset( $_POST['persona'] ) && is_array( $_POST['persona'] ) ) {
-			foreach ( wp_unslash( $_POST['persona'] ) as $row ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- keys/labels sanitized below.
+			$persona_rows = map_deep( wp_unslash( $_POST['persona'] ), 'sanitize_text_field' );
+			foreach ( $persona_rows as $row ) {
 				if ( ! is_array( $row ) ) {
 					continue;
 				}
@@ -2208,15 +2209,16 @@ if ( ! function_exists( 'flosc_admin_save_personality_library' ) ) {
 		}
 		$delete = array();
 		if ( isset( $_POST['persona_delete'] ) && is_array( $_POST['persona_delete'] ) ) {
-			foreach ( wp_unslash( $_POST['persona_delete'] ) as $did => $on ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- key sanitized, value is a flag.
+			$persona_delete = map_deep( wp_unslash( $_POST['persona_delete'] ), 'sanitize_text_field' );
+			foreach ( $persona_delete as $did => $on ) {
 				$did = sanitize_key( (string) $did );
 				if ( '' !== $did && $on ) {
 					$delete[ $did ] = true;
 				}
 			}
 		}
-		$new_id  = isset( $_POST['new_persona_id'] ) ? sanitize_key( wp_unslash( (string) $_POST['new_persona_id'] ) ) : '';
-		$new_lab = isset( $_POST['new_persona_label'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['new_persona_label'] ) ) : '';
+		$new_id  = isset( $_POST['new_persona_id'] ) && is_string( $_POST['new_persona_id'] ) ? sanitize_key( wp_unslash( $_POST['new_persona_id'] ) ) : '';
+		$new_lab = isset( $_POST['new_persona_label'] ) && is_string( $_POST['new_persona_label'] ) ? sanitize_text_field( wp_unslash( $_POST['new_persona_label'] ) ) : '';
 
 		$lib = array();
 		foreach ( $posted as $id => $row ) {
@@ -3327,12 +3329,10 @@ if ( ! function_exists( 'flosc_ajax_save_personality_design' ) ) {
 			}
 		}
 		if ( isset( $_POST['ai_base_prompt'] ) && is_string( $_POST['ai_base_prompt'] ) ) {
-			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- flosc_sanitize_personality_profile_text keeps Markdown.
-			$fields['ai_base_prompt'] = flosc_sanitize_personality_profile_text( wp_unslash( $_POST['ai_base_prompt'] ) );
+			$fields['ai_base_prompt'] = flosc_sanitize_personality_profile_text( wp_kses_post( wp_unslash( $_POST['ai_base_prompt'] ) ) );
 		}
 		if ( isset( $_POST['workshop_json'] ) && is_string( $_POST['workshop_json'] ) ) {
-			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- flosc_sanitize_personality_workshop validates JSON object.
-			$workshop_raw            = wp_unslash( $_POST['workshop_json'] );
+			$workshop_raw            = sanitize_textarea_field( wp_unslash( $_POST['workshop_json'] ) );
 			$fields['workshop_json'] = flosc_sanitize_personality_workshop( $workshop_raw );
 			if ( '' === $fields['workshop_json'] && '' !== trim( $workshop_raw ) ) {
 				wp_send_json_error( array( 'message' => __( 'Workshop file was not valid JSON.', 'flosc' ) ), 400 );
@@ -3719,12 +3719,11 @@ if ( ! function_exists( 'flosc_enqueue_personality_builder_assets' ) ) {
 			(string) filemtime( $js_path ),
 			true
 		);
-		$boot       = flosc_personality_builder_boot_json( $persona, $ivr );
-		$json_flags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE;
-		wp_add_inline_script(
+		$boot = flosc_personality_builder_boot_json( $persona, $ivr );
+		wp_localize_script(
 			'flosc-personality-builder',
-			'window.floscPersonalityWp = ' . wp_json_encode( $boot, $json_flags ) . ';',
-			'before'
+			'floscPersonalityWp',
+			$boot
 		);
 		wp_enqueue_script(
 			'flosc-personality-builder-wp',

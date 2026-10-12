@@ -2124,17 +2124,16 @@ trait FLOSC_Magic_Link_Trait {
 						</p>
 					<?php endif; ?>
 					<?php if ( 'pending' === $status && current_user_can( 'promote_users' ) ) : ?>
+						<?php
+						$activation_url = wp_nonce_url(
+							admin_url( 'admin-post.php?action=flosc_activate_email_account&user_id=' . (int) $user->ID ),
+							'flosc_activate_email_' . (int) $user->ID,
+							'flosc_activate_email_target_nonce'
+						);
+						$activation_url = wp_nonce_url( $activation_url, 'flosc_activate_email_account' );
+						?>
 						<p>
-							<a class="button button-primary" href="
-							<?php
-							echo esc_url(
-								wp_nonce_url(
-									admin_url( 'admin-post.php?action=flosc_activate_email_account&user_id=' . (int) $user->ID ),
-									'flosc_activate_email_' . (int) $user->ID
-								)
-							);
-							?>
-																	"><?php esc_html_e( 'Activate email account', 'flosc' ); ?></a>
+							<a class="button button-primary" href="<?php echo esc_url( $activation_url ); ?>"><?php esc_html_e( 'Activate email account', 'flosc' ); ?></a>
 						</p>
 						<p class="description"><?php esc_html_e( 'Marks the account active and sends the welcome email (with MagicLink when enabled).', 'flosc' ); ?></p>
 					<?php endif; ?>
@@ -2148,19 +2147,11 @@ trait FLOSC_Magic_Link_Trait {
 	 * Admin-post: floscAdmin activates a pending email-registered user.
 	 */
 	public function handle_admin_activate_email_account() {
+		check_admin_referer( 'flosc_activate_email_account' );
 		if ( ! current_user_can( 'promote_users' ) ) {
 			wp_die( esc_html__( 'Unauthorized', 'flosc' ), '', array( 'response' => 403 ) );
 		}
 
-		/*
-		 * The nonce action is per-user, so the id has to be read before the
-		 * nonce can be named. That is unavoidable and safe, but only if the id
-		 * is validated as an id first: absint() turned "9abc" into 9 and "" into
-		 * 0, and a 0 produced the action 'flosc_activate_email_0', which is a
-		 * real action name a caller could mint a nonce for. It is validated as a
-		 * positive integer now, and a request that fails that stops here rather
-		 * than continuing into a nonce check for a user that does not exist.
-		 */
 		$user_id = filter_input(
 			INPUT_GET,
 			'user_id',
@@ -2171,7 +2162,7 @@ trait FLOSC_Magic_Link_Trait {
 			wp_safe_redirect( admin_url( 'users.php' ) );
 			exit;
 		}
-		check_admin_referer( 'flosc_activate_email_' . $user_id );
+		check_admin_referer( 'flosc_activate_email_' . $user_id, 'flosc_activate_email_target_nonce' );
 		$result = $this->flosc_activate_email_account( $user_id );
 		$redir  = get_edit_user_link( $user_id );
 		if ( ! $redir ) {

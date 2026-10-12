@@ -451,6 +451,33 @@ class FLOSC_Full_Page_Mode {
 
 
 	/**
+	 * Return the offer id only when an administrator's preview URL verifies.
+	 *
+	 * The target id is part of the nonce action, so a URL issued for one offer
+	 * cannot be retargeted to another offer during the nonce lifetime.
+	 *
+	 * @return string Verified offer id, or an empty string outside preview mode.
+	 */
+	private function verified_test_offer_id() {
+		if ( ! isset( $_GET['flosc_test_offer'] ) || ! current_user_can( 'manage_options' ) ) {
+			return '';
+		}
+
+		if ( ! is_string( $_GET['flosc_test_offer'] ) || ! isset( $_GET['flosc_test_nonce'] ) || ! is_string( $_GET['flosc_test_nonce'] ) ) {
+			return '';
+		}
+
+		$offer_id = sanitize_text_field( wp_unslash( $_GET['flosc_test_offer'] ) );
+		$nonce    = sanitize_text_field( wp_unslash( $_GET['flosc_test_nonce'] ) );
+
+		if ( '' === $offer_id || '' === $nonce || ! wp_verify_nonce( $nonce, 'flosc_test_offer_' . $offer_id ) ) {
+			return '';
+		}
+
+		return $offer_id;
+	}
+
+	/**
 	 * Extracted app rendering to separate method
 	 * Called by handle_app_route() for both custom domain and slug routing
 	 *
@@ -461,15 +488,11 @@ class FLOSC_Full_Page_Mode {
 		nocache_headers();
 
 		// Track referral (v1.0.7: use array syntax with SameSite).
-		$get = wp_unslash( $_GET );
-		$ref = get_query_var( 'ref' );
-		if ( ! $ref ) {
-			$ref = ( $get['ref'] ?? '' );
-		}
-		if ( $ref && ! is_user_logged_in() ) {
+		$ref = sanitize_text_field( (string) get_query_var( 'ref' ) );
+		if ( '' !== $ref && ! is_user_logged_in() ) {
 			setcookie(
 				'flosc_referrer',
-				sanitize_text_field( $ref ),
+				$ref,
 				array(
 					'expires'  => time() + ( 30 * DAY_IN_SECONDS ),
 					'path'     => '/',
@@ -556,19 +579,13 @@ class FLOSC_Full_Page_Mode {
 			: array();
 
 		// Admin test-offer mode: bypass conditions/draft status to preview any offer.
-		$test_offer_id = '';
-		$get           = wp_unslash( $_GET );
-		if ( current_user_can( 'manage_options' ) && ! empty( $get['flosc_test_offer'] ) ) {
-			$oid   = sanitize_text_field( $get['flosc_test_offer'] );
-			$nonce = sanitize_text_field( $get['flosc_test_nonce'] ?? '' );
-			if ( wp_verify_nonce( $nonce, 'flosc_test_offer_' . $oid ) && $sale && method_exists( $sale, 'offers' ) ) {
-				$test_offer_id  = $oid;
-				$all_raw_offers = $sale->offers()->get_all_offers( $flow_id );
-				foreach ( $all_raw_offers as $o ) {
-					if ( ( $o['id'] ?? '' ) === $oid ) {
-						$offers[ $oid ] = $o; // inject even if draft/inactive.
-						break;
-					}
+		$test_offer_id = $this->verified_test_offer_id();
+		if ( '' !== $test_offer_id && $sale && method_exists( $sale, 'offers' ) ) {
+			$all_raw_offers = $sale->offers()->get_all_offers( $flow_id );
+			foreach ( $all_raw_offers as $o ) {
+				if ( ( $o['id'] ?? '' ) === $test_offer_id ) {
+					$offers[ $test_offer_id ] = $o; // Inject even if draft/inactive.
+					break;
 				}
 			}
 		}

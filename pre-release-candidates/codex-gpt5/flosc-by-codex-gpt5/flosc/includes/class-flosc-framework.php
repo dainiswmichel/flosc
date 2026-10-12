@@ -229,6 +229,18 @@ class FLOSC_Framework {
 	private $flosc_token_auth_used = false;
 
 	/**
+	 * Defer registration token grants while an email account is pending.
+	 *
+	 * The first-party authentication collaborator reads this during the core
+	 * user_register action. Email verification clears it immediately after
+	 * wp_create_user() returns, then grants the account on activation instead.
+	 * Public because the collaborator owns the user_register decision.
+	 *
+	 * @var bool
+	 */
+	public $flosc_skip_registration_token_grants = false;
+
+	/**
 	 * The single framework instance, building it on first call.
 	 *
 	 * The instance is assigned to self::$instance before boot() runs, because the
@@ -2239,6 +2251,18 @@ class FLOSC_Framework {
 		add_action( 'show_user_profile', array( $this, 'render_email_account_status_profile' ) );
 		add_action( 'edit_user_profile', array( $this, 'render_email_account_status_profile' ) );
 		add_action( 'admin_post_flosc_activate_email_account', array( $this, 'handle_admin_activate_email_account' ) );
+
+		// Admin-post submissions. Each callback calls check_admin_referer() before it reads the body.
+		add_action( 'admin_post_flosc_save_one_flow_identity', array( $this, 'handle_save_one_flow_identity' ) );
+		add_action( 'admin_post_flosc_save_all_flow_identities', array( $this, 'handle_save_all_flow_identities' ) );
+		add_action( 'admin_post_flosc_save_flow_record', array( $this, 'handle_save_flow_record' ) );
+		add_action( 'admin_post_flosc_update_flow_team', array( $this, 'handle_update_flow_team' ) );
+		add_action( 'admin_post_flosc_delete_flow', array( $this, 'handle_delete_flow' ) );
+		add_action( 'admin_post_flosc_delete_feedback', array( $this, 'handle_delete_feedback' ) );
+		add_action( 'admin_post_flosc_add_feedback', array( $this, 'handle_add_feedback' ) );
+		add_action( 'admin_post_flosc_delete_praise', array( $this, 'handle_delete_praise' ) );
+		add_action( 'admin_post_flosc_add_praise', array( $this, 'handle_add_praise' ) );
+		add_action( 'admin_post_flosc_reset_chat_style', array( $this, 'handle_reset_chat_style' ) );
 		add_filter( 'wp_authenticate_user', array( $this, 'flosc_block_pending_email_login' ), 10, 1 );
 
 		// v1.9.0: Chat logs AJAX (real-time polling).
@@ -3366,11 +3390,11 @@ The Team',
 	 * exist yet, so uploading into a new base works without a separate step.
 	 */
 	public function handle_kb_upload() {
-		$post = wp_unslash( $_POST );
 		check_admin_referer( 'flosc_kb_upload', 'flosc_kb_upload_nonce' );
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have permission to manage knowledge bases.', 'flosc' ) );
 		}
+		$post = wp_unslash( $_POST );
 
 		$ivr   = sanitize_file_name( $post['flosc_return_ivr'] ?? '' );
 		$kb_id = $this->kb_request_id( $ivr, $post['kb_id'] ?? '' );
@@ -3504,18 +3528,25 @@ The Team',
 	 *
 	 * An admin-post handler, so it ends in a redirect back to the Knowledge Base
 	 * screen carrying a notice, never in a rendered page. Origin is checked
-	 * first, then capability, as two separate refusals. The nonce action names the base and the
-	 * file, so a link for one file cannot delete another.
+	 * first, then capability, as two separate refusals. A second nonce binds
+	 * the verified request to the exact knowledge base file being deleted.
 	 */
 	public function handle_kb_delete() {
-		$get   = wp_unslash( $_GET );
-		$ivr   = sanitize_file_name( $get['return_ivr'] ?? '' );
-		$file  = sanitize_file_name( $get['kb_file'] ?? '' );
-		$kb_id = $this->kb_request_id( $ivr, $get['kb_id'] ?? '' );
-		check_admin_referer( 'flosc_kb_delete_' . $kb_id . '_' . $file );
+		check_admin_referer( 'flosc_kb_delete' );
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have permission to manage knowledge bases.', 'flosc' ) );
 		}
+		$get = wp_unslash( $_GET );
+		if ( ( isset( $get['return_ivr'] ) && ! is_string( $get['return_ivr'] ) ) || ! isset( $get['kb_file'], $get['kb_id'] ) || ! is_string( $get['kb_file'] ) || ! is_string( $get['kb_id'] ) ) {
+			wp_die( esc_html__( 'Invalid knowledge base request.', 'flosc' ), '', array( 'response' => 400 ) );
+		}
+		$ivr   = sanitize_file_name( (string) ( $get['return_ivr'] ?? '' ) );
+		$file  = sanitize_file_name( $get['kb_file'] );
+		$kb_id = $this->kb_request_id( $ivr, $get['kb_id'] );
+		if ( '' === $file || '' === $kb_id ) {
+			wp_die( esc_html__( 'Invalid knowledge base request.', 'flosc' ), '', array( 'response' => 400 ) );
+		}
+		check_admin_referer( 'flosc_kb_delete_' . $kb_id . '_' . $file, 'flosc_kb_delete_target_nonce' );
 
 		$kb_dir = function_exists( 'flosc_knowledge_base_dir' ) ? flosc_knowledge_base_dir( $kb_id ) : '';
 		if ( '' === $kb_dir ) {
@@ -3535,18 +3566,26 @@ The Team',
 	 *
 	 * An admin-post handler, so it ends in a redirect back to the Knowledge Base
 	 * screen carrying a notice, never in a rendered page. Origin is checked
-	 * first, then capability, as two separate refusals. The nonce action names the base and the
-	 * file. The file stays on disk; only whether the AI is given it changes.
+	 * first, then capability, as two separate refusals. A second nonce binds
+	 * the verified request to the exact knowledge base file being changed. The
+	 * file stays on disk; only whether the AI is given it changes.
 	 */
 	public function handle_kb_toggle() {
-		$get   = wp_unslash( $_GET );
-		$ivr   = sanitize_file_name( $get['return_ivr'] ?? '' );
-		$file  = sanitize_file_name( $get['kb_file'] ?? '' );
-		$kb_id = $this->kb_request_id( $ivr, $get['kb_id'] ?? '' );
-		check_admin_referer( 'flosc_kb_toggle_' . $kb_id . '_' . $file );
+		check_admin_referer( 'flosc_kb_toggle' );
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have permission to manage knowledge bases.', 'flosc' ) );
 		}
+		$get = wp_unslash( $_GET );
+		if ( ( isset( $get['return_ivr'] ) && ! is_string( $get['return_ivr'] ) ) || ! isset( $get['kb_file'], $get['kb_id'] ) || ! is_string( $get['kb_file'] ) || ! is_string( $get['kb_id'] ) ) {
+			wp_die( esc_html__( 'Invalid knowledge base request.', 'flosc' ), '', array( 'response' => 400 ) );
+		}
+		$ivr   = sanitize_file_name( (string) ( $get['return_ivr'] ?? '' ) );
+		$file  = sanitize_file_name( $get['kb_file'] );
+		$kb_id = $this->kb_request_id( $ivr, $get['kb_id'] );
+		if ( '' === $file || '' === $kb_id ) {
+			wp_die( esc_html__( 'Invalid knowledge base request.', 'flosc' ), '', array( 'response' => 400 ) );
+		}
+		check_admin_referer( 'flosc_kb_toggle_' . $kb_id . '_' . $file, 'flosc_kb_toggle_target_nonce' );
 
 		$current = function_exists( 'flosc_knowledge_base_file_access' )
 			? flosc_knowledge_base_file_access( $kb_id, $file )
@@ -3572,11 +3611,11 @@ The Team',
 	 * first, then capability, as two separate refusals.
 	 */
 	public function handle_kb_save_edit() {
-		$post = wp_unslash( $_POST );
 		check_admin_referer( 'flosc_kb_save_edit', 'flosc_kb_save_edit_nonce' );
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have permission to manage knowledge bases.', 'flosc' ) );
 		}
+		$post = wp_unslash( $_POST );
 
 		$ivr    = sanitize_file_name( $post['flosc_return_ivr'] ?? '' );
 		$file   = sanitize_file_name( $post['editing_file'] ?? '' );
@@ -3607,11 +3646,11 @@ The Team',
 	 * first, then capability, as two separate refusals.
 	 */
 	public function handle_kb_create() {
-		$post = wp_unslash( $_POST );
 		check_admin_referer( 'flosc_kb_create', 'flosc_kb_create_nonce' );
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'You do not have permission to manage knowledge bases.', 'flosc' ) );
 		}
+		$post  = wp_unslash( $_POST );
 		$ivr   = sanitize_file_name( $post['flosc_return_ivr'] ?? '' );
 		$label = sanitize_text_field( (string) ( $post['kb_label'] ?? '' ) );
 		if ( '' === $label ) {
@@ -4223,14 +4262,14 @@ The Team',
 					<label for="flosc_vgm"><?php echo esc_html__( 'Who', 'flosc' ); ?></label><br>
 					<select name="flosc_vgm" id="flosc_vgm" class="widefat">
 						<option value=""><?php echo esc_html__( '— Follow tags and categories —', 'flosc' ); ?></option>
-						<?php echo flosc_vgm_options_markup( flosc_vgm_tier_labels(), $flosc_vgm_tier ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built escaped in flosc_vgm_options_markup() ?>
+						<?php flosc_render_vgm_options( flosc_vgm_tier_labels(), $flosc_vgm_tier ); ?>
 					</select>
 				</p>
 				<p>
 					<label for="flosc_depth"><?php echo esc_html__( 'Available', 'flosc' ); ?></label><br>
 					<select name="flosc_depth" id="flosc_depth" class="widefat">
 						<option value=""><?php echo esc_html__( '— Follow tags and categories —', 'flosc' ); ?></option>
-						<?php echo flosc_vgm_options_markup( flosc_vgm_depth_labels(), $flosc_vgm_depth ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built escaped in flosc_vgm_options_markup() ?>
+						<?php flosc_render_vgm_options( flosc_vgm_depth_labels(), $flosc_vgm_depth ); ?>
 					</select>
 				</p>
 				<p class="option-desc">
@@ -12031,9 +12070,12 @@ Example good response:
 
 		check_ajax_referer( 'flosc_test_ai', 'nonce' );
 
-		$post     = wp_unslash( $_POST );
-		$provider = isset( $post['provider'] ) ? sanitize_key( $post['provider'] ) : '';
-		$ivr      = isset( $post['ivr'] ) ? sanitize_file_name( $post['ivr'] ) : '';
+		$provider = isset( $_POST['provider'] ) && is_string( $_POST['provider'] )
+			? sanitize_key( wp_unslash( $_POST['provider'] ) )
+			: '';
+		$ivr      = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] )
+			? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
+			: '';
 
 		// Same flow context the connection test establishes. admin-ajax has no
 		// URL to detect the flow from, so without this the per-flow key is
@@ -12049,7 +12091,9 @@ Example good response:
 		// operator to save a whole settings page before FLOSC will read a key
 		// sitting directly above the button is a loop with no purpose: paste,
 		// fetch, "no key saved".
-		$typed = isset( $post['api_key'] ) ? trim( (string) $post['api_key'] ) : '';
+		$typed = isset( $_POST['api_key'] ) && is_string( $_POST['api_key'] )
+			? trim( sanitize_text_field( wp_unslash( $_POST['api_key'] ) ) )
+			: '';
 
 		if ( '' !== $typed && ( strlen( $typed ) > 4096 || preg_match( '/[\x00-\x1F\x7F]/', $typed ) ) ) {
 			wp_send_json_error( array( 'message' => __( 'That API key contains characters an API key cannot contain.', 'flosc' ) ) );
@@ -12134,10 +12178,15 @@ Example good response:
 
 		check_ajax_referer( 'flosc_test_ai', 'nonce' );
 
-		$post     = wp_unslash( $_POST );
-		$provider = isset( $post['provider'] ) ? sanitize_key( (string) $post['provider'] ) : '';
-		$ivr      = isset( $post['ivr'] ) ? sanitize_file_name( (string) $post['ivr'] ) : '';
-		$api_key  = isset( $post['api_key'] ) ? trim( (string) $post['api_key'] ) : '';
+		$provider = isset( $_POST['provider'] ) && is_string( $_POST['provider'] )
+			? sanitize_key( wp_unslash( $_POST['provider'] ) )
+			: '';
+		$ivr      = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] )
+			? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
+			: '';
+		$api_key  = isset( $_POST['api_key'] ) && is_string( $_POST['api_key'] )
+			? trim( sanitize_text_field( wp_unslash( $_POST['api_key'] ) ) )
+			: '';
 
 		$stored = flosc_store_provider_api_key( $ivr, $provider, $api_key );
 
@@ -12168,10 +12217,15 @@ Example good response:
 
 		check_ajax_referer( 'flosc_test_ai', 'nonce' );
 
-		$post     = wp_unslash( $_POST );
-		$provider = isset( $post['provider'] ) ? sanitize_key( (string) $post['provider'] ) : '';
-		$ivr      = isset( $post['ivr'] ) ? sanitize_file_name( (string) $post['ivr'] ) : '';
-		$model    = isset( $post['model'] ) ? trim( (string) $post['model'] ) : '';
+		$provider = isset( $_POST['provider'] ) && is_string( $_POST['provider'] )
+			? sanitize_key( wp_unslash( $_POST['provider'] ) )
+			: '';
+		$ivr      = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] )
+			? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
+			: '';
+		$model    = isset( $_POST['model'] ) && is_string( $_POST['model'] )
+			? trim( sanitize_text_field( wp_unslash( $_POST['model'] ) ) )
+			: '';
 
 		$stored = flosc_store_provider_model( $ivr, $provider, $model );
 
@@ -12202,11 +12256,18 @@ Example good response:
 
 		check_ajax_referer( 'flosc_test_ai', 'nonce' );
 
-		$post     = wp_unslash( $_POST );
-		$provider = isset( $post['provider'] ) ? sanitize_key( (string) $post['provider'] ) : '';
-		$ivr      = isset( $post['ivr'] ) ? sanitize_file_name( (string) $post['ivr'] ) : '';
-		$model    = isset( $post['model'] ) ? trim( (string) $post['model'] ) : '';
-		$typed    = isset( $post['api_key'] ) ? trim( (string) $post['api_key'] ) : '';
+		$provider = isset( $_POST['provider'] ) && is_string( $_POST['provider'] )
+			? sanitize_key( wp_unslash( $_POST['provider'] ) )
+			: '';
+		$ivr      = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] )
+			? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
+			: '';
+		$model    = isset( $_POST['model'] ) && is_string( $_POST['model'] )
+			? trim( sanitize_text_field( wp_unslash( $_POST['model'] ) ) )
+			: '';
+		$typed    = isset( $_POST['api_key'] ) && is_string( $_POST['api_key'] )
+			? trim( sanitize_text_field( wp_unslash( $_POST['api_key'] ) ) )
+			: '';
 
 		if ( '' !== $ivr ) {
 			$GLOBALS['flosc_current_ivr'] = $ivr;
@@ -12247,9 +12308,12 @@ Example good response:
 
 		check_ajax_referer( 'flosc_test_ai', 'nonce' );
 
-		$post  = wp_unslash( $_POST );
-		$ivr   = isset( $post['ivr'] ) ? sanitize_file_name( (string) $post['ivr'] ) : '';
-		$param = isset( $post['param'] ) ? trim( (string) $post['param'] ) : '';
+		$ivr   = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] )
+			? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
+			: '';
+		$param = isset( $_POST['param'] ) && is_string( $_POST['param'] )
+			? trim( sanitize_text_field( wp_unslash( $_POST['param'] ) ) )
+			: '';
 
 		// A parameter name, not a prompt. Anything that is not one is refused
 		// rather than passed through to the provider as free text.
@@ -12330,9 +12394,12 @@ Example good response:
 
 		check_ajax_referer( 'flosc_test_ai', 'nonce' );
 
-		$post     = wp_unslash( $_POST );
-		$ivr      = isset( $post['ivr'] ) ? sanitize_file_name( (string) $post['ivr'] ) : '';
-		$provider = isset( $post['provider'] ) ? sanitize_key( (string) $post['provider'] ) : '';
+		$ivr      = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] )
+			? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
+			: '';
+		$provider = isset( $_POST['provider'] ) && is_string( $_POST['provider'] )
+			? sanitize_key( wp_unslash( $_POST['provider'] ) )
+			: '';
 
 		if ( ! function_exists( 'flosc_store_model_tuning' ) ) {
 			wp_send_json_error( array( 'message' => __( 'Model tuning storage is unavailable on this install.', 'flosc' ) ) );
@@ -12342,10 +12409,14 @@ Example good response:
 		// field this save has no opinion about, and it is left as it stands.
 		$tuning = array();
 
-		foreach ( array( 'temperature', 'max_tokens', 'params' ) as $field ) {
-			if ( isset( $post[ $field ] ) ) {
-				$tuning[ $field ] = (string) $post[ $field ];
-			}
+		if ( isset( $_POST['temperature'] ) && is_string( $_POST['temperature'] ) ) {
+			$tuning['temperature'] = sanitize_text_field( wp_unslash( $_POST['temperature'] ) );
+		}
+		if ( isset( $_POST['max_tokens'] ) && is_string( $_POST['max_tokens'] ) ) {
+			$tuning['max_tokens'] = sanitize_text_field( wp_unslash( $_POST['max_tokens'] ) );
+		}
+		if ( isset( $_POST['params'] ) && is_string( $_POST['params'] ) ) {
+			$tuning['params'] = sanitize_textarea_field( wp_unslash( $_POST['params'] ) );
 		}
 
 		$stored = flosc_store_model_tuning( $ivr, $provider, $tuning );
@@ -12375,7 +12446,6 @@ Example good response:
 		// site. Nonce, then identity, then the body.
 		check_ajax_referer( 'flosc_test_ai', 'nonce' );
 
-		$post = wp_unslash( $_POST );
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
 		}
@@ -12383,7 +12453,9 @@ Example good response:
 		// v5.0.2 FIX: Set flow context from posted IVR so flosc_get_setting reads
 		// the correct per-flow ai_provider. Without this, admin-ajax has no URL
 		// context, get_current_flow() returns null, and provider defaults to ''.
-		$ivr = sanitize_file_name( $post['ivr'] ?? '' );
+		$ivr = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] )
+			? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
+			: '';
 		if ( ! empty( $ivr ) ) {
 			$this->set_flow_context( pathinfo( $ivr, PATHINFO_FILENAME ) );
 		}

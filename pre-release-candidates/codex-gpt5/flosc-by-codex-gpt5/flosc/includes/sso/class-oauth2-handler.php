@@ -663,10 +663,10 @@ class OAuth2_Handler {
 		// The current request host is deliberately NOT added here.
 		//
 		// WordPress.org review T12, 13 Sep 2026, on this function:
-		// "An untrusted HTTP_HOST value is also added to the SSO redirect-host
+		// "An untrusted request Host value is also added to the SSO redirect-host
 		// allowlist, which can permit an attacker-controlled redirect host."
 		//
-		// HTTP_HOST is the Host header. The client sends it. sanitize_text_field()
+		// The request Host header is client-controlled. sanitize_text_field()
 		// makes it a clean string; it does not make it trustworthy. Adding it here
 		// let a request carrying "Host: evil.com" put evil.com into this allowlist,
 		// which is the one gate flosc_safe_external_redirect() consults before it
@@ -711,7 +711,7 @@ class OAuth2_Handler {
 	/**
 	 * Resolve the app URL from a flow_id by looking up the flow's custom domain
 	 * directly from the database. This works during REST API callbacks where
-	 * get_current_flow() fails because HTTP_HOST is the WordPress host, not the custom domain.
+	 * get_current_flow() fails because the request Host is the WordPress host, not the custom domain.
 	 *
 	 * @param string $flow_id Flow ID (e.g. 'flow_ivr').
 	 * @return string|false App URL (e.g. 'https://the flow domain/') or false if not found

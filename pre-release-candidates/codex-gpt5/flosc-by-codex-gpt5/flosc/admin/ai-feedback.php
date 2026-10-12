@@ -92,109 +92,42 @@ $flosc_rated_count = count( $flosc_rated_logs );
 $flosc_feedback_items = $flosc_flow_settings['ai_feedback'] ?? array();
 $flosc_feedback_count = count( $flosc_feedback_items );
 
-// Handle delete feedback.
-if ( isset( $_POST['flosc_delete_feedback'] ) ) {
-	$flosc_post = wp_unslash( $_POST );
-	if ( wp_verify_nonce( sanitize_text_field( $flosc_post['_wpnonce'] ?? '' ), 'flosc_save_settings' ) ) {
-		if ( empty( $flosc_selected_flow_id ) || ! flosc_flows()->can_access_flow_admin( $flosc_selected_flow_id ) ) {
-			wp_die( esc_html__( 'You do not have permission to manage AI feedback for this flow.', 'flosc' ) );
-		}
-		$flosc_delete_id                    = sanitize_text_field( $flosc_post['flosc_delete_feedback'] ?? '' );
-		$flosc_feedback_items               = array_values(
-			array_filter(
-				$flosc_feedback_items,
-				function ( $c ) use ( $flosc_delete_id ) {
-					return ( $c['id'] ?? '' ) !== $flosc_delete_id;
-				}
-			)
-		);
-		$flosc_flow_settings['ai_feedback'] = $flosc_feedback_items;
-		update_option( $flosc_settings_key, $flosc_flow_settings );
-		$flosc_feedback_count = count( $flosc_feedback_items );
-		echo '<div class="notice notice-success is-dismissible"><p>Feedback deleted.</p></div>';
-	}
-}
-
-// Handle add feedback.
-if ( isset( $_POST['flosc_add_feedback'] ) ) {
-	$flosc_post = wp_unslash( $_POST );
-	if ( wp_verify_nonce( sanitize_text_field( $flosc_post['_wpnonce'] ?? '' ), 'flosc_save_settings' ) ) {
-		if ( empty( $flosc_selected_flow_id ) || ! flosc_flows()->can_access_flow_admin( $flosc_selected_flow_id ) ) {
-			wp_die( esc_html__( 'You do not have permission to manage AI feedback for this flow.', 'flosc' ) );
-		}
-		$flosc_new_feedback_item = array(
-			'id'                 => uniqid( 'corr_' ),
-			'timestamp'          => current_time( 'mysql' ),
-			'user_message'       => sanitize_textarea_field( $flosc_post['feedback_user_message'] ?? '' ),
-			'bad_response'       => sanitize_textarea_field( $flosc_post['feedback_bad_response'] ?? '' ),
-			'admin_note'         => sanitize_textarea_field( $flosc_post['feedback_admin_note'] ?? '' ),
-			'preferred_response' => sanitize_textarea_field( $flosc_post['feedback_preferred_response'] ?? '' ),
-			'admin_user_id'      => get_current_user_id(),
-		);
-
-		if ( ! empty( $flosc_new_feedback_item['user_message'] ) && ! empty( $flosc_new_feedback_item['admin_note'] ) ) {
-			$flosc_feedback_items[]             = $flosc_new_feedback_item;
-			$flosc_flow_settings['ai_feedback'] = $flosc_feedback_items;
-			update_option( $flosc_settings_key, $flosc_flow_settings );
-			$flosc_feedback_count = count( $flosc_feedback_items );
-			echo '<div class="notice notice-success is-dismissible"><p>Feedback added. The AI will follow this guidance on next response.</p></div>';
-		}
-	}
-}
-
 // ── Praises ──
 $flosc_praises       = $flosc_flow_settings['ai_praises'] ?? array();
 $flosc_praises_count = count( $flosc_praises );
 
-// Handle delete praise.
-if ( isset( $_POST['flosc_delete_praise'] ) ) {
-	$flosc_post = wp_unslash( $_POST );
-	if ( wp_verify_nonce( sanitize_text_field( $flosc_post['_wpnonce'] ?? '' ), 'flosc_save_settings' ) ) {
-		if ( empty( $flosc_selected_flow_id ) || ! flosc_flows()->can_access_flow_admin( $flosc_selected_flow_id ) ) {
-			wp_die( esc_html__( 'You do not have permission to manage AI praise for this flow.', 'flosc' ) );
-		}
-		$flosc_delete_id                   = sanitize_text_field( $flosc_post['flosc_delete_praise'] ?? '' );
-		$flosc_praises                     = array_values(
-			array_filter(
-				$flosc_praises,
-				function ( $p ) use ( $flosc_delete_id ) {
-					return ( $p['id'] ?? '' ) !== $flosc_delete_id;
-				}
-			)
-		);
-		$flosc_flow_settings['ai_praises'] = $flosc_praises;
-		update_option( $flosc_settings_key, $flosc_flow_settings );
-		$flosc_praises_count = count( $flosc_praises );
-		echo '<div class="notice notice-success is-dismissible"><p>Praise deleted.</p></div>';
-	}
-}
-
-// Handle add praise.
-if ( isset( $_POST['flosc_add_praise'] ) ) {
-	$flosc_post = wp_unslash( $_POST );
-	if ( wp_verify_nonce( sanitize_text_field( $flosc_post['_wpnonce'] ?? '' ), 'flosc_save_settings' ) ) {
-		if ( empty( $flosc_selected_flow_id ) || ! flosc_flows()->can_access_flow_admin( $flosc_selected_flow_id ) ) {
-			wp_die( esc_html__( 'You do not have permission to manage AI praise for this flow.', 'flosc' ) );
-		}
-		$flosc_new_praise = array(
-			'id'            => uniqid( 'praise_' ),
-			'timestamp'     => current_time( 'mysql' ),
-			'user_message'  => sanitize_textarea_field( $flosc_post['praise_user_message'] ?? '' ),
-			'good_response' => sanitize_textarea_field( $flosc_post['praise_good_response'] ?? '' ),
-			'admin_note'    => sanitize_textarea_field( $flosc_post['praise_admin_note'] ?? '' ),
-			'admin_user_id' => get_current_user_id(),
-		);
-
-		if ( ! empty( $flosc_new_praise['user_message'] ) && ! empty( $flosc_new_praise['admin_note'] ) ) {
-			$flosc_praises[]                   = $flosc_new_praise;
-			$flosc_flow_settings['ai_praises'] = $flosc_praises;
-			update_option( $flosc_settings_key, $flosc_flow_settings );
-			$flosc_praises_count = count( $flosc_praises );
-			echo '<div class="notice notice-success is-dismissible"><p>Praise added. The AI will reinforce this behavior.</p></div>';
-		}
-	}
-}
+$flosc_feedback_post       = admin_url( 'admin-post.php' );
+$flosc_feedback_delete_url = add_query_arg(
+	array(
+		'action' => 'flosc_delete_feedback',
+		'ivr'    => $flosc_selected_ivr,
+	),
+	$flosc_feedback_post
+);
+$flosc_feedback_add_url    = add_query_arg(
+	array(
+		'action' => 'flosc_add_feedback',
+		'ivr'    => $flosc_selected_ivr,
+	),
+	$flosc_feedback_post
+);
+$flosc_praise_delete_url   = add_query_arg(
+	array(
+		'action' => 'flosc_delete_praise',
+		'ivr'    => $flosc_selected_ivr,
+	),
+	$flosc_feedback_post
+);
+$flosc_praise_add_url      = add_query_arg(
+	array(
+		'action' => 'flosc_add_praise',
+		'ivr'    => $flosc_selected_ivr,
+	),
+	$flosc_feedback_post
+);
 ?>
+
+<?php settings_errors( 'flosc' ); ?>
 
 <div class="flosc-feedback-section">
 	<h3 class="flosc-feedback-header">
@@ -245,8 +178,9 @@ if ( isset( $_POST['flosc_add_praise'] ) ) {
 					<?php endif; ?>
 				</td>
 				<td class="flosc-feedback-col-actions">
-					<button type="submit" name="flosc_delete_feedback" value="<?php echo esc_attr( $flosc_feedback_item['id'] ); ?>" 
+					<button type="submit" name="flosc_delete_feedback" value="<?php echo esc_attr( $flosc_feedback_item['id'] ); ?>"
 							class="button button-small flosc-feedback-delete"
+							formaction="<?php echo esc_url( $flosc_feedback_delete_url ); ?>"
 							data-confirm-message="Delete this feedback?">
 						Delete
 					</button>
@@ -298,7 +232,7 @@ if ( isset( $_POST['flosc_add_praise'] ) ) {
 				</td>
 			</tr>
 		</table>
-		<button type="submit" name="flosc_add_feedback" value="1" class="button button-secondary">
+		<button type="submit" name="flosc_add_feedback" value="1" class="button button-secondary" formaction="<?php echo esc_url( $flosc_feedback_add_url ); ?>">
 			Add Feedback
 		</button>
 	</div>
@@ -347,8 +281,9 @@ if ( isset( $_POST['flosc_add_praise'] ) ) {
 					<?php echo esc_html( $flosc_praise['admin_note'] ?? '' ); ?>
 				</td>
 				<td class="flosc-feedback-col-actions">
-					<button type="submit" name="flosc_delete_praise" value="<?php echo esc_attr( $flosc_praise['id'] ); ?>" 
+					<button type="submit" name="flosc_delete_praise" value="<?php echo esc_attr( $flosc_praise['id'] ); ?>"
 							class="button button-small flosc-feedback-praise-delete"
+							formaction="<?php echo esc_url( $flosc_praise_delete_url ); ?>"
 							data-confirm-message="Delete this praise?">
 						Delete
 					</button>
@@ -392,7 +327,7 @@ if ( isset( $_POST['flosc_add_praise'] ) ) {
 				</td>
 			</tr>
 		</table>
-		<button type="submit" name="flosc_add_praise" value="1" class="button button-secondary">
+		<button type="submit" name="flosc_add_praise" value="1" class="button button-secondary" formaction="<?php echo esc_url( $flosc_praise_add_url ); ?>">
 			Add Praise
 		</button>
 	</div>

@@ -1,31 +1,26 @@
 {
   "schema_version": 8,
   "candidate": "codex-gpt5",
-  "candidate_label": "FLOSC 8.0.0 candidate V144",
+  "candidate_label": "FLOSC 8.0.0 home-run candidate v149.codex",
   "owner": "Codex",
-  "parent": {
-    "candidate": "V143",
-    "commit": "64c7a0ee6843209403c859957c36c29e0bb480c4"
+  "repository_parent": {
+    "candidate": "v149 coded by ClaudeCode",
+    "commit": "42c9a221eac05043bea92f2966fc4ee1f155d75f"
   },
+  "code_lineage": "v148.codex verified working candidate",
   "plugin_version": "8.0.0",
   "stable_tag": "8.0.0",
-  "internal_iteration": "v144",
-  "github_hashid_at_pack": "64c7a0ee6843209403c859957c36c29e0bb480c4",
+  "internal_iteration": "v149.codex",
+  "github_hashid_at_pack": "7bc31aab84f8ae5125706f8110f6d85f5c2912f4",
   "plugin_source": "flosc-by-codex-gpt5/flosc",
-  "baseline": "origin/main at 64c7a0ee6843209403c859957c36c29e0bb480c4",
-  "v144_delta_from_v143": [
-    "flosc.php",
-    "includes/sso/class-oauth2-handler.php",
-    "tests/check_oauth_state_ordering.php"
-  ],
   "artifact": {
     "path": "flosc.zip",
     "root": "flosc/",
     "entries": 283,
     "files": 243,
-    "bytes": 2824821,
-    "sha256": "ab54fd6b35e39d207c313ca2b16d0c4e4b3201ec4a2cd58e9a0fb507d21c5e5a",
-    "runtime_manifest_sha256": "96451c22cee6aaa37a02f0bc250be619d1f7bfc5747ed509b0f4dd0e5d39a906",
+    "bytes": 2826566,
+    "sha256": "6463827cc25e07b52908cfb9d53ffe83f16bc1aabac1a889da30952b9e2d85a3",
+    "runtime_manifest_sha256": "bc9380819a652cd1e96e944d9889d90cd1d6217b43612232fffb15fe6df60a1b",
     "runtime_manifest": "sha256 of sorted lines: '<sha256>  <zip path>' for every file in the zip",
     "tests_entries": 0
   }
