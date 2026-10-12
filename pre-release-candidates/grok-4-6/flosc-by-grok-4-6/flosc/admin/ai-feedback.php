@@ -96,8 +96,7 @@ $flosc_feedback_count = count( $flosc_feedback_items );
 $flosc_praises       = $flosc_flow_settings['ai_praises'] ?? array();
 $flosc_praises_count = count( $flosc_praises );
 
-$flosc_feedback_notice = function_exists( 'flosc' ) ? flosc()->flosc_take_admin_notice( 'ai_feedback' ) : array();
-$flosc_feedback_post   = admin_url( 'admin-post.php' );
+$flosc_feedback_post = admin_url( 'admin-post.php' );
 $flosc_feedback_delete_url = add_query_arg(
 	array(
 		'action' => 'flosc_delete_feedback',
@@ -128,9 +127,7 @@ $flosc_praise_add_url = add_query_arg(
 );
 ?>
 
-<?php if ( ! empty( $flosc_feedback_notice['message'] ) ) : ?>
-<div class="notice <?php echo esc_attr( ( 'error' === ( $flosc_feedback_notice['type'] ?? '' ) ) ? 'notice-error' : 'notice-success' ); ?> is-dismissible"><p><?php echo esc_html( $flosc_feedback_notice['message'] ); ?></p></div>
-<?php endif; ?>
+<?php settings_errors( 'flosc' ); ?>
 
 <div class="flosc-feedback-section">
 	<h3 class="flosc-feedback-header">

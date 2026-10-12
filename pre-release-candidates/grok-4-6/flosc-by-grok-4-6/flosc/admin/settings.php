@@ -2564,13 +2564,7 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 				</a>
 			</div>
 			
-			<?php
-			$flosc_identity_notice = function_exists( 'flosc' ) ? flosc()->flosc_take_admin_notice( 'identity' ) : array();
-			if ( ! empty( $flosc_identity_notice['message'] ) ) :
-				$flosc_identity_notice_class = ( 'error' === ( $flosc_identity_notice['type'] ?? '' ) ) ? 'notice-error' : 'notice-success';
-				?>
-				<div class="notice <?php echo esc_attr( $flosc_identity_notice_class ); ?> is-dismissible"><p><?php echo esc_html( $flosc_identity_notice['message'] ); ?></p></div>
-			<?php endif; ?>
+			<?php settings_errors( 'flosc' ); ?>
 			
 			<?php if ( 'all' === $flosc_view_mode ) : ?>
 				<?php

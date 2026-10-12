@@ -15,7 +15,6 @@ $flosc_flows    = flosc_flows()->get_user_flows();
 $flosc_is_admin = current_user_can( 'manage_options' );
 $flosc_get      = flosc_nav_params();
 
-$flosc_flows_notice = function_exists( 'flosc' ) ? flosc()->flosc_take_admin_notice( 'flows' ) : array();
 ?>
 
 <div class="wrap">
@@ -28,9 +27,7 @@ $flosc_flows_notice = function_exists( 'flosc' ) ? flosc()->flosc_take_admin_not
 	<?php if ( isset( $_GET['deleted'] ) ) : ?>
 		<div class="notice notice-success is-dismissible"><p>Flow deleted.</p></div>
 	<?php endif; ?>
-	<?php if ( ! empty( $flosc_flows_notice['message'] ) ) : ?>
-		<div class="notice notice-error is-dismissible"><p><?php echo esc_html( $flosc_flows_notice['message'] ); ?></p></div>
-	<?php endif; ?>
+	<?php settings_errors( 'flosc' ); ?>
 	
 	<p class="description flosc-flows-description">
 		Quick overview of your flows. Click <strong>Configure</strong> to edit all settings for a flow.

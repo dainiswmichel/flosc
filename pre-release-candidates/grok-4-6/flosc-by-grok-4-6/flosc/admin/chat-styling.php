@@ -70,11 +70,7 @@ $flosc_style_docs_url = add_query_arg(
 
 <?php
 
-$flosc_style_notice = function_exists( 'flosc' ) ? flosc()->flosc_take_admin_notice( 'chat_style' ) : array();
-if ( ! empty( $flosc_style_notice['message'] ) ) {
-	$flosc_style_notice_class = ( 'error' === ( $flosc_style_notice['type'] ?? '' ) ) ? 'notice-error' : 'notice-success';
-	echo '<div class="notice ' . esc_attr( $flosc_style_notice_class ) . '"><p>' . esc_html( $flosc_style_notice['message'] ) . '</p></div>';
-}
+settings_errors( 'flosc' );
 $flosc_reset_style_url = add_query_arg(
 	array(
 		'action' => 'flosc_reset_chat_style',

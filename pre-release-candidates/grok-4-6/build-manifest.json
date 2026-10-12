@@ -1,41 +1,37 @@
 {
   "schema_version": 8,
   "candidate": "grok-4-6",
-  "candidate_label": "FLOSC 8.0.0 candidate V145",
+  "candidate_label": "FLOSC 8.0.0 candidate V146",
   "owner": "Grok",
   "parent": {
-    "candidate": "V144",
-    "commit": "9fab042357c00235b4760748c8a3f52b6ad81c8e"
+    "candidate": "V145",
+    "commit": "7bc31aab84f8ae5125706f8110f6d85f5c2912f4"
   },
   "plugin_version": "8.0.0",
   "stable_tag": "8.0.0",
-  "internal_iteration": "v145",
-  "github_hashid_at_pack": "9fab042357c00235b4760748c8a3f52b6ad81c8e",
+  "internal_iteration": "v146",
+  "github_hashid_at_pack": "7bc31aab84f8ae5125706f8110f6d85f5c2912f4",
   "plugin_source": "flosc-by-grok-4-6/flosc",
-  "baseline": "origin/main at 9fab042357c00235b4760748c8a3f52b6ad81c8e",
+  "baseline": "origin/main at 7bc31aab84f8ae5125706f8110f6d85f5c2912f4",
   "requires_at_least": "7.1",
   "requires_php": "7.4",
-  "v145_delta_from_v144": [
+  "v146_delta_from_v145": [
     "flosc.php",
     "admin/ai-feedback.php",
     "admin/chat-styling.php",
     "admin/flow-edit.php",
     "admin/flows.php",
-    "admin/knowledge-base.php",
     "admin/settings.php",
-    "includes/class-flosc-framework.php",
-    "includes/class-flosc-site-content-index.php",
-    "includes/flosc-admin.php",
-    "includes/magic-link/class-flosc-magic-link-trait.php"
+    "includes/flosc-admin.php"
   ],
   "artifact": {
     "path": "flosc.zip",
     "root": "flosc/",
     "entries": 283,
     "files": 243,
-    "bytes": 2826276,
-    "sha256": "1a1c5dd2e7e64cce09a287d9a6c426895f17c6de023aa689c8f24a7d46e75756",
-    "runtime_manifest_sha256": "600df173f184c04f8b858aaaa16b5f26c589b7e267779557ebad78b53f5195c0",
+    "bytes": 2825441,
+    "sha256": "a43114fc669b92aa27386c43a23f188891e5b35e335ad6dec137f4d46051a6f9",
+    "runtime_manifest_sha256": "d1d628787a54ee38565fe164c8920dd67df85d6a897504c0c9794ca6e681fe5b",
     "runtime_manifest": "sha256 of sorted lines: '<sha256>  <zip path>' for every file in the zip",
     "tests_entries": 0
   }

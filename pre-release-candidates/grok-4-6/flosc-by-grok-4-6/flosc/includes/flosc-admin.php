@@ -2363,40 +2363,18 @@ trait FLOSC_Admin_Trait {
 	}
 
 	/**
-	 * One-request admin notice for the current user.
+	 * Redirect back to an admin screen with a Settings API notice.
 	 *
-	 * @param string $bucket  Notice bucket.
-	 * @param string $message Message.
+	 * @param string $url     Destination.
+	 * @param string $message Notice text.
 	 * @param string $type    success|error.
 	 * @return void
 	 */
-	public function flosc_set_admin_notice( $bucket, $message, $type = 'success' ) {
-		$bucket = sanitize_key( (string) $bucket );
-		$type   = ( 'error' === $type ) ? 'error' : 'success';
-		set_transient(
-			'flosc_admin_notice_' . $bucket . '_' . get_current_user_id(),
-			array(
-				'message' => sanitize_text_field( (string) $message ),
-				'type'    => $type,
-			),
-			MINUTE_IN_SECONDS
-		);
-	}
-
-	/**
-	 * Read and clear the current user's admin notice.
-	 *
-	 * @param string $bucket Notice bucket.
-	 * @return array
-	 */
-	public function flosc_take_admin_notice( $bucket ) {
-		$key    = 'flosc_admin_notice_' . sanitize_key( (string) $bucket ) . '_' . get_current_user_id();
-		$notice = get_transient( $key );
-		if ( ! is_array( $notice ) ) {
-			return array();
-		}
-		delete_transient( $key );
-		return $notice;
+	private function flosc_redirect_notice( $url, $message, $type = 'success' ) {
+		add_settings_error( 'flosc', 'flosc_notice', (string) $message, ( 'error' === $type ) ? 'error' : 'success' );
+		set_transient( 'settings_errors', get_settings_errors(), 30 );
+		wp_safe_redirect( add_query_arg( 'settings-updated', 'true', $url ) );
+		exit;
 	}
 
 	/**
@@ -2557,15 +2535,11 @@ trait FLOSC_Admin_Trait {
 		$return   = isset( $_GET['ivr'] ) ? sanitize_file_name( wp_unslash( $_GET['ivr'] ) ) : '';
 		$row      = $this->flosc_identity_flow_row( $save_ivr );
 		if ( '' === $save_ivr || ! in_array( $save_ivr, $this->flosc_admin_ivr_filenames(), true ) ) {
-			$this->flosc_set_admin_notice( 'identity', 'That flow could not be saved.', 'error' );
-			wp_safe_redirect( $this->flosc_admin_settings_url( $return, 'identity', 'all' ) );
-			exit;
+			$this->flosc_redirect_notice( $this->flosc_admin_settings_url( $return, 'identity', 'all' ), 'That flow could not be saved.', 'error' );
 		}
 		$settings = $this->flosc_apply_posted_identity_fields( $row['settings'], $post, 'flow_' . md5( $save_ivr ) . '_' );
 		update_option( $row['key'], $settings );
-		$this->flosc_set_admin_notice( 'identity', 'Saved: ' . $save_ivr );
-		wp_safe_redirect( $this->flosc_admin_settings_url( '' !== $return ? $return : $save_ivr, 'identity', 'all' ) );
-		exit;
+		$this->flosc_redirect_notice( $this->flosc_admin_settings_url( '' !== $return ? $return : $save_ivr, 'identity', 'all' ), 'Saved: ' . $save_ivr );
 	}
 
 	/**
@@ -2585,9 +2559,7 @@ trait FLOSC_Admin_Trait {
 			$settings = $this->flosc_apply_posted_identity_fields( $row['settings'], $post, 'flow_' . md5( $ivr_file ) . '_' );
 			update_option( $row['key'], $settings );
 		}
-		$this->flosc_set_admin_notice( 'identity', 'All flows saved!' );
-		wp_safe_redirect( $this->flosc_admin_settings_url( $return, 'identity', 'all' ) );
-		exit;
+		$this->flosc_redirect_notice( $this->flosc_admin_settings_url( $return, 'identity', 'all' ), 'All flows saved!' );
 	}
 
 	/**
@@ -2637,9 +2609,7 @@ trait FLOSC_Admin_Trait {
 			)
 		);
 		update_option( $key, $settings );
-		$this->flosc_set_admin_notice( 'ai_feedback', 'Feedback deleted.' );
-		wp_safe_redirect( $this->flosc_admin_settings_url( $ivr, 'chat-logs' ) );
-		exit;
+		$this->flosc_redirect_notice( $this->flosc_admin_settings_url( $ivr, 'chat-logs' ), 'Feedback deleted.' );
 	}
 
 	/**
@@ -2665,17 +2635,13 @@ trait FLOSC_Admin_Trait {
 			'admin_user_id'      => get_current_user_id(),
 		);
 		if ( '' === $item['user_message'] || '' === $item['admin_note'] ) {
-			$this->flosc_set_admin_notice( 'ai_feedback', 'Feedback needs a user message and a note.', 'error' );
-			wp_safe_redirect( $this->flosc_admin_settings_url( $ivr, 'chat-logs' ) );
-			exit;
+			$this->flosc_redirect_notice( $this->flosc_admin_settings_url( $ivr, 'chat-logs' ), 'Feedback needs a user message and a note.', 'error' );
 		}
 		$items   = isset( $settings['ai_feedback'] ) && is_array( $settings['ai_feedback'] ) ? $settings['ai_feedback'] : array();
 		$items[] = $item;
 		$settings['ai_feedback'] = $items;
 		update_option( $key, $settings );
-		$this->flosc_set_admin_notice( 'ai_feedback', 'Feedback added. The AI will follow this guidance on next response.' );
-		wp_safe_redirect( $this->flosc_admin_settings_url( $ivr, 'chat-logs' ) );
-		exit;
+		$this->flosc_redirect_notice( $this->flosc_admin_settings_url( $ivr, 'chat-logs' ), 'Feedback added. The AI will follow this guidance on next response.' );
 	}
 
 	/**
@@ -2702,9 +2668,7 @@ trait FLOSC_Admin_Trait {
 			)
 		);
 		update_option( $key, $settings );
-		$this->flosc_set_admin_notice( 'ai_feedback', 'Praise deleted.' );
-		wp_safe_redirect( $this->flosc_admin_settings_url( $ivr, 'chat-logs' ) );
-		exit;
+		$this->flosc_redirect_notice( $this->flosc_admin_settings_url( $ivr, 'chat-logs' ), 'Praise deleted.' );
 	}
 
 	/**
@@ -2729,17 +2693,13 @@ trait FLOSC_Admin_Trait {
 			'admin_user_id' => get_current_user_id(),
 		);
 		if ( '' === $item['user_message'] || '' === $item['admin_note'] ) {
-			$this->flosc_set_admin_notice( 'ai_feedback', 'Praise needs a user message and a note.', 'error' );
-			wp_safe_redirect( $this->flosc_admin_settings_url( $ivr, 'chat-logs' ) );
-			exit;
+			$this->flosc_redirect_notice( $this->flosc_admin_settings_url( $ivr, 'chat-logs' ), 'Praise needs a user message and a note.', 'error' );
 		}
 		$items   = isset( $settings['ai_praises'] ) && is_array( $settings['ai_praises'] ) ? $settings['ai_praises'] : array();
 		$items[] = $item;
 		$settings['ai_praises'] = $items;
 		update_option( $key, $settings );
-		$this->flosc_set_admin_notice( 'ai_feedback', 'Praise added. The AI will reinforce this behavior.' );
-		wp_safe_redirect( $this->flosc_admin_settings_url( $ivr, 'chat-logs' ) );
-		exit;
+		$this->flosc_redirect_notice( $this->flosc_admin_settings_url( $ivr, 'chat-logs' ), 'Praise added. The AI will reinforce this behavior.' );
 	}
 
 	/**
@@ -2756,9 +2716,7 @@ trait FLOSC_Admin_Trait {
 		list( $ivr, $key, $settings ) = $this->flosc_posted_flow_settings( $posted_ivr );
 		unset( $settings['chat_style_preset'], $settings['chat_style_bubble'], $settings['chat_style_accent'], $settings['chat_style_font'], $settings['chat_style_scale'] );
 		update_option( $key, $settings );
-		$this->flosc_set_admin_notice( 'chat_style', 'Chat styling reset to defaults.' );
-		wp_safe_redirect( $this->flosc_admin_settings_url( $ivr, 'style' ) );
-		exit;
+		$this->flosc_redirect_notice( $this->flosc_admin_settings_url( $ivr, 'style' ), 'Chat styling reset to defaults.' );
 	}
 
 	/**
@@ -2809,15 +2767,11 @@ trait FLOSC_Admin_Trait {
 			update_option( 'flosc_visitor_menu_items', $menu_items );
 		}
 
-		// Each editor tab posts only its own fields. An update writes those fields.
-		// A new flow is created from the identity form, with the same defaults the
-		// screen used when the IVR, category, or quiz fields are absent.
-		$data = array();
-		if ( $is_new || isset( $post['flow_slug'] ) || isset( $post['floscflow_name'] ) || isset( $post['flow_status'] ) || isset( $post['flow_domain'] ) ) {
-			$data['slug']          = sanitize_title( (string) ( $post['flow_slug'] ?? '' ) );
-			$data['custom_domain'] = sanitize_text_field( (string) ( $post['flow_domain'] ?? '' ) );
-			$data['status']        = sanitize_key( (string) ( $post['flow_status'] ?? 'draft' ) );
-			$data['identity']      = array(
+		$data = array(
+			'slug'           => sanitize_title( (string) ( $post['flow_slug'] ?? '' ) ),
+			'custom_domain'  => sanitize_text_field( (string) ( $post['flow_domain'] ?? '' ) ),
+			'status'         => sanitize_key( (string) ( $post['flow_status'] ?? 'draft' ) ),
+			'identity'       => array(
 				'name'          => sanitize_text_field( (string) ( $post['floscflow_name'] ?? '' ) ),
 				'title'         => sanitize_text_field( (string) ( $post['floscflow_title'] ?? '' ) ),
 				'tagline'       => sanitize_text_field( (string) ( $post['floscflow_tagline'] ?? '' ) ),
@@ -2826,17 +2780,11 @@ trait FLOSC_Admin_Trait {
 				'badgeUrl'      => esc_url_raw( (string) ( $post['floscflow_badge'] ?? '' ) ),
 				'primary_color' => sanitize_hex_color( (string) ( $post['floscflow_color'] ?? '#4f46e5' ) ),
 				'share_text'    => sanitize_text_field( (string) ( $post['floscflow_share_text'] ?? '' ) ),
-			);
-		}
-		if ( $is_new || isset( $post['ivr_file'] ) ) {
-			$data['ivr_file'] = sanitize_file_name( (string) ( $post['ivr_file'] ?? 'flosc_default_technical_ivr.md' ) );
-		}
-		if ( $is_new || isset( $post['wp_category'] ) ) {
-			$data['wp_category_id'] = intval( $post['wp_category'] ?? 0 );
-		}
-		if ( $is_new || isset( $post['quiz_type'] ) ) {
-			$data['quiz_type'] = sanitize_key( (string) ( $post['quiz_type'] ?? '' ) );
-		}
+			),
+			'ivr_file'       => sanitize_file_name( (string) ( $post['ivr_file'] ?? 'flosc_default_technical_ivr.md' ) ),
+			'wp_category_id' => intval( $post['wp_category'] ?? 0 ),
+			'quiz_type'      => sanitize_key( (string) ( $post['quiz_type'] ?? '' ) ),
+		);
 		$return = add_query_arg(
 			array(
 				'page'    => 'flosc-flow-edit',
@@ -2850,28 +2798,17 @@ trait FLOSC_Admin_Trait {
 			$data['id'] = '' !== $data['slug'] ? sanitize_key( $data['slug'] ) : 'flow_' . wp_generate_password( 6, false, false );
 			$result     = flosc_flows()->create_flow( $data );
 			if ( is_wp_error( $result ) ) {
-				$this->flosc_set_admin_notice( 'flow_edit', $result->get_error_message(), 'error' );
-				wp_safe_redirect( $return );
-				exit;
+				$this->flosc_redirect_notice( $return, $result->get_error_message(), 'error' );
 			}
 			wp_safe_redirect( admin_url( 'admin.php?page=flosc-flows&saved=1' ) );
 			exit;
 		}
 
-		if ( array() === $data ) {
-			wp_safe_redirect( $return );
-			exit;
-		}
-
 		$result = flosc_flows()->update_flow( $flow_id, $data );
 		if ( is_wp_error( $result ) ) {
-			$this->flosc_set_admin_notice( 'flow_edit', $result->get_error_message(), 'error' );
-			wp_safe_redirect( $return );
-			exit;
+			$this->flosc_redirect_notice( $return, $result->get_error_message(), 'error' );
 		}
-		$this->flosc_set_admin_notice( 'flow_edit', 'Flow updated successfully.' );
-		wp_safe_redirect( $return );
-		exit;
+		$this->flosc_redirect_notice( $return, 'Flow updated successfully.' );
 	}
 
 	/**
@@ -2906,8 +2843,7 @@ trait FLOSC_Admin_Trait {
 				flosc_flows()->grant_flow_access( $user_id, $flow_id );
 			}
 		}
-		$this->flosc_set_admin_notice( 'flow_edit', 'Team updated successfully.' );
-		wp_safe_redirect(
+		$this->flosc_redirect_notice(
 			add_query_arg(
 				array(
 					'page'    => 'flosc-flow-edit',
@@ -2915,9 +2851,9 @@ trait FLOSC_Admin_Trait {
 					'tab'     => 'team',
 				),
 				admin_url( 'admin.php' )
-			)
+			),
+			'Team updated successfully.'
 		);
-		exit;
 	}
 
 	/**
@@ -2933,9 +2869,7 @@ trait FLOSC_Admin_Trait {
 		$flow_id = isset( $_GET['flow_id'] ) ? sanitize_key( wp_unslash( $_GET['flow_id'] ) ) : '';
 		$result  = flosc_flows()->delete_flow( $flow_id );
 		if ( is_wp_error( $result ) ) {
-			$this->flosc_set_admin_notice( 'flows', $result->get_error_message(), 'error' );
-			wp_safe_redirect( admin_url( 'admin.php?page=flosc-flows' ) );
-			exit;
+			$this->flosc_redirect_notice( admin_url( 'admin.php?page=flosc-flows' ), $result->get_error_message(), 'error' );
 		}
 		wp_safe_redirect( admin_url( 'admin.php?page=flosc-flows&deleted=1' ) );
 		exit;

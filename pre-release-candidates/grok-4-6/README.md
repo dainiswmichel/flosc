@@ -1,27 +1,25 @@
-# FLOSC 8.0.0 — Grok candidate V145
+# FLOSC 8.0.0 — Grok candidate V146
 
-V145 starts from the V144 source at commit `9fab042357c00235b4760748c8a3f52b6ad81c8e`. The public plugin version and stable tag remain 8.0.0. Requires at least remains 7.1. Requires PHP remains 7.4. `Github HashID` is that V144 commit.
-
-This commit replaces the V139 `grok-4-6` folder.
+V146 starts from V145 at commit `7bc31aab84f8ae5125706f8110f6d85f5c2912f4`. Version and stable tag remain 8.0.0. Requires at least remains 7.1. Requires PHP remains 7.4. `Github HashID` is that V145 commit.
 
 ## Scope
 
-Admin submissions for flow identity, flow records, team updates, flow delete, feedback, praise, and chat-style reset post to `admin-post.php`. Each handler calls `check_admin_referer()` before it reads the request, then `current_user_can()` as its own check. Knowledge-base toggle and delete, the profile email-account activation button, and term VGM use that order. Term VGM returns early when its nonce field is absent, because `created_term` and `edited_term` also run for other term saves.
+Admin submissions call `check_admin_referer()` before the request is read, then `current_user_can()` as its own check. The screen shows the result with `add_settings_error()` and `settings_errors()`. The flow editor writes the same fields the previous save wrote.
 
 ## Verification
 
-`php -l` passed on the eleven edited PHP files. PHPCS with `phpcs.xml.dist` and `memory_limit=2G`, errors only, reported no errors on those files. `unzip -t` passed. The zip has 243 files, one `flosc/` root, and no `tests/` entries.
+`php -l` passed on the edited PHP files. PHPCS with `phpcs.xml.dist` and `memory_limit=2G`, errors only, reported no errors on those files. `unzip -t` passed. The zip has 243 files, one `flosc/` root, and no `tests/` entries.
 
 Plugin Check was not run. This commit is not a live deploy.
 
 ## Exact artifact
 
 ```text
-1a1c5dd2e7e64cce09a287d9a6c426895f17c6de023aa689c8f24a7d46e75756  flosc.zip
+a43114fc669b92aa27386c43a23f188891e5b35e335ad6dec137f4d46051a6f9  flosc.zip
 ```
 
-283 zip entries, 243 files, 2,826,276 bytes. Sorted `sha256  path` manifest of those files:
+283 zip entries, 243 files, 2,825,441 bytes. Sorted `sha256  path` manifest of those files:
 
 ```text
-600df173f184c04f8b858aaaa16b5f26c589b7e267779557ebad78b53f5195c0
+d1d628787a54ee38565fe164c8920dd67df85d6a897504c0c9794ca6e681fe5b
 ```

@@ -44,16 +44,6 @@ if ( $flosc_is_admin && ! $flosc_is_new ) {
 	$flosc_flow_tabs['team'] = 'Team';
 }
 
-// Save and team forms post to admin-post.php. This screen displays the result.
-$flosc_flow_notice = function_exists( 'flosc' ) ? flosc()->flosc_take_admin_notice( 'flow_edit' ) : array();
-if ( ! empty( $flosc_flow_notice['message'] ) ) {
-	if ( 'error' === ( $flosc_flow_notice['type'] ?? '' ) ) {
-		$flosc_error_message = $flosc_flow_notice['message'];
-	} else {
-		$flosc_success_message = $flosc_flow_notice['message'];
-	}
-}
-
 // Get available options.
 $flosc_ivr_files  = flosc_flows()->get_available_ivr_files();
 $flosc_quiz_types = flosc_flows()->get_available_quiz_types();
@@ -67,17 +57,7 @@ $flosc_categories = get_categories( array( 'hide_empty' => false ) );
 		<?php echo $flosc_is_new ? 'New Flow' : esc_html( ( $flosc_flow['identity']['name'] ?? $flosc_flow_id ) ); ?>
 	</h1>
 	
-	<?php if ( isset( $flosc_error_message ) ) : ?>
-		<div class="notice notice-error is-dismissible">
-			<p><?php echo esc_html( $flosc_error_message ); ?></p>
-		</div>
-	<?php endif; ?>
-	
-	<?php if ( isset( $flosc_success_message ) ) : ?>
-		<div class="notice notice-success is-dismissible">
-			<p><?php echo esc_html( $flosc_success_message ); ?></p>
-		</div>
-	<?php endif; ?>
+	<?php settings_errors( 'flosc' ); ?>
 	
 	<?php if ( ! $flosc_is_new ) : ?>
 		<!-- Tabs -->
