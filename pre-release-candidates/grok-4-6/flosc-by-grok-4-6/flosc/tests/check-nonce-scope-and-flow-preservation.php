@@ -159,21 +159,28 @@ flosc_v149_ok( 'identity form writes only the identity-owned group', array( 'slu
 $flosc_new = $flosc_builder->build_flow_data( array(), true );
 flosc_v149_ok( 'new flow receives all seven field groups', array( 'slug', 'custom_domain', 'status', 'identity', 'ivr_file', 'wp_category_id', 'quiz_type' ) === array_keys( $flosc_new ) );
 
-$flosc_kb_screen  = (string) file_get_contents( dirname( __DIR__ ) . '/admin/knowledge-base.php' );
-$flosc_framework  = (string) file_get_contents( dirname( __DIR__ ) . '/includes/class-flosc-framework.php' );
-$flosc_magic      = (string) file_get_contents( dirname( __DIR__ ) . '/includes/magic-link/class-flosc-magic-link-trait.php' );
-$flosc_terms      = (string) file_get_contents( dirname( __DIR__ ) . '/includes/class-flosc-site-content-index.php' );
+$flosc_kb_screen   = (string) file_get_contents( dirname( __DIR__ ) . '/admin/knowledge-base.php' );
+$flosc_framework   = (string) file_get_contents( dirname( __DIR__ ) . '/includes/class-flosc-framework.php' );
+$flosc_magic       = (string) file_get_contents( dirname( __DIR__ ) . '/includes/magic-link/class-flosc-magic-link-trait.php' );
+$flosc_terms       = (string) file_get_contents( dirname( __DIR__ ) . '/includes/class-flosc-site-content-index.php' );
+$flosc_personality = (string) file_get_contents( dirname( __DIR__ ) . '/includes/flosc-personality-library.php' );
+$flosc_starter     = (string) file_get_contents( dirname( __DIR__ ) . '/admin/starter-packs.php' );
+$flosc_ivr         = (string) file_get_contents( dirname( __DIR__ ) . '/admin/ivr-messages.php' );
 
 flosc_v149_ok( 'KB toggle URL carries static and target-bound nonces', false !== strpos( $flosc_kb_screen, "'flosc_kb_toggle_' . \$flosc_kid . '_' . \$flosc_kbf" ) && false !== strpos( $flosc_kb_screen, "'flosc_kb_toggle_target_nonce'" ) );
 flosc_v149_ok( 'KB delete URL carries static and target-bound nonces', false !== strpos( $flosc_kb_screen, "'flosc_kb_delete_' . \$flosc_kid . '_' . \$flosc_kbf" ) && false !== strpos( $flosc_kb_screen, "'flosc_kb_delete_target_nonce'" ) );
 flosc_v149_ok( 'KB handlers verify the exact file target', false !== strpos( $flosc_framework, "check_admin_referer( 'flosc_kb_toggle_' . \$kb_id . '_' . \$file, 'flosc_kb_toggle_target_nonce' )" ) && false !== strpos( $flosc_framework, "check_admin_referer( 'flosc_kb_delete_' . \$kb_id . '_' . \$file, 'flosc_kb_delete_target_nonce' )" ) );
 flosc_v149_ok( 'activation URL and handler bind the same user id', false !== strpos( $flosc_magic, "'flosc_activate_email_' . (int) \$user->ID" ) && false !== strpos( $flosc_magic, "check_admin_referer( 'flosc_activate_email_' . \$user_id, 'flosc_activate_email_target_nonce' )" ) );
 flosc_v149_ok( 'term nonce and values reject non-scalar input', false !== strpos( $flosc_terms, "! is_string( \$_POST['flosc_term_vgm_nonce'] )" ) && false !== strpos( $flosc_terms, '! is_string( $_POST[ $field ] )' ) );
+flosc_v149_ok( 'term nonce is verified on its own line', false === strpos( $flosc_terms, "'' === \$nonce || ! wp_verify_nonce" ) && false !== strpos( $flosc_terms, "wp_verify_nonce( sanitize_text_field( wp_unslash( \$_POST['flosc_term_vgm_nonce'] ) ), 'flosc_term_vgm' )" ) );
+flosc_v149_ok( 'personality boot is localized instead of echoed', false !== strpos( $flosc_personality, "wp_localize_script(" ) && false === strpos( $flosc_personality, 'window.floscPersonalityWp =' ) );
+flosc_v149_ok( 'starter-pack submission runs inside a function', false !== strpos( $flosc_starter, 'function flosc_starter_packs_handle_post' ) && false !== strpos( $flosc_starter, "check_admin_referer( 'flosc_starter_packs' )" ) );
+flosc_v149_ok( 'IVR post body is read inside a function after the nonce', false !== strpos( $flosc_ivr, 'function flosc_ivr_messages_posted_body' ) && false !== strpos( $flosc_ivr, 'check_admin_referer( $flosc_nonce_action )' ) );
 
 if ( $flosc_fail > 0 ) {
 	fwrite( STDERR, "{$flosc_fail} failing assertion(s)\n" );
 	exit( 1 );
 }
 
-fwrite( STDOUT, "check_nonce_scope_and_flow_preservation v149.grok: ok\n" );
+fwrite( STDOUT, "check_nonce_scope_and_flow_preservation v150: ok\n" );
 exit( 0 );
