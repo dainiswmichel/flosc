@@ -318,3 +318,17 @@ function flosc_vgm_options_markup( array $labels, $selected ) {
 	}
 	return $out;
 }
+
+/**
+ * Allowed HTML for one late-escaped VGM option list.
+ *
+ * @return array<string, array<string, bool>>
+ */
+function flosc_vgm_option_allowed_html() {
+	return array(
+		'option' => array(
+			'value'    => true,
+			'selected' => true,
+		),
+	);
+}

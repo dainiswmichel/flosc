@@ -2720,6 +2720,47 @@ trait FLOSC_Admin_Trait {
 	}
 
 	/**
+	 * Build only the flow fields owned by the submitted editor tab.
+	 *
+	 * An existing flow receives a key only when this form posted it. A new flow
+	 * receives the complete default structure.
+	 *
+	 * @param array $post   Unslashed request body.
+	 * @param bool  $is_new Whether a new flow is being created.
+	 * @return array Flow fields safe to pass to create_flow() or update_flow().
+	 */
+	private function flosc_flow_record_data( $post, $is_new ) {
+		$data = array();
+
+		if ( $is_new || isset( $post['flow_slug'] ) || isset( $post['floscflow_name'] ) || isset( $post['flow_status'] ) || isset( $post['flow_domain'] ) ) {
+			$data['slug']          = sanitize_title( (string) ( $post['flow_slug'] ?? '' ) );
+			$data['custom_domain'] = sanitize_text_field( (string) ( $post['flow_domain'] ?? '' ) );
+			$data['status']        = sanitize_key( (string) ( $post['flow_status'] ?? 'draft' ) );
+			$data['identity']      = array(
+				'name'          => sanitize_text_field( (string) ( $post['floscflow_name'] ?? '' ) ),
+				'title'         => sanitize_text_field( (string) ( $post['floscflow_title'] ?? '' ) ),
+				'tagline'       => sanitize_text_field( (string) ( $post['floscflow_tagline'] ?? '' ) ),
+				'chatlogo_url'  => esc_url_raw( (string) ( $post['floscflow_chatlogo'] ?? '' ) ),
+				'favicon_url'   => esc_url_raw( (string) ( $post['floscflow_favicon'] ?? '' ) ),
+				'badgeUrl'      => esc_url_raw( (string) ( $post['floscflow_badge'] ?? '' ) ),
+				'primary_color' => sanitize_hex_color( (string) ( $post['floscflow_color'] ?? '#4f46e5' ) ),
+				'share_text'    => sanitize_text_field( (string) ( $post['floscflow_share_text'] ?? '' ) ),
+			);
+		}
+		if ( $is_new || isset( $post['ivr_file'] ) ) {
+			$data['ivr_file'] = sanitize_file_name( (string) ( $post['ivr_file'] ?? 'flosc_default_technical_ivr.md' ) );
+		}
+		if ( $is_new || isset( $post['wp_category'] ) ) {
+			$data['wp_category_id'] = intval( $post['wp_category'] ?? 0 );
+		}
+		if ( $is_new || isset( $post['quiz_type'] ) ) {
+			$data['quiz_type'] = sanitize_key( (string) ( $post['quiz_type'] ?? '' ) );
+		}
+
+		return $data;
+	}
+
+	/**
 	 * Create or update a flow from the flow editor.
 	 *
 	 * @return void
@@ -2767,24 +2808,7 @@ trait FLOSC_Admin_Trait {
 			update_option( 'flosc_visitor_menu_items', $menu_items );
 		}
 
-		$data = array(
-			'slug'           => sanitize_title( (string) ( $post['flow_slug'] ?? '' ) ),
-			'custom_domain'  => sanitize_text_field( (string) ( $post['flow_domain'] ?? '' ) ),
-			'status'         => sanitize_key( (string) ( $post['flow_status'] ?? 'draft' ) ),
-			'identity'       => array(
-				'name'          => sanitize_text_field( (string) ( $post['floscflow_name'] ?? '' ) ),
-				'title'         => sanitize_text_field( (string) ( $post['floscflow_title'] ?? '' ) ),
-				'tagline'       => sanitize_text_field( (string) ( $post['floscflow_tagline'] ?? '' ) ),
-				'chatlogo_url'  => esc_url_raw( (string) ( $post['floscflow_chatlogo'] ?? '' ) ),
-				'favicon_url'   => esc_url_raw( (string) ( $post['floscflow_favicon'] ?? '' ) ),
-				'badgeUrl'      => esc_url_raw( (string) ( $post['floscflow_badge'] ?? '' ) ),
-				'primary_color' => sanitize_hex_color( (string) ( $post['floscflow_color'] ?? '#4f46e5' ) ),
-				'share_text'    => sanitize_text_field( (string) ( $post['floscflow_share_text'] ?? '' ) ),
-			),
-			'ivr_file'       => sanitize_file_name( (string) ( $post['ivr_file'] ?? 'flosc_default_technical_ivr.md' ) ),
-			'wp_category_id' => intval( $post['wp_category'] ?? 0 ),
-			'quiz_type'      => sanitize_key( (string) ( $post['quiz_type'] ?? '' ) ),
-		);
+		$data   = $this->flosc_flow_record_data( $post, $is_new );
 		$return = add_query_arg(
 			array(
 				'page'    => 'flosc-flow-edit',
@@ -2793,6 +2817,11 @@ trait FLOSC_Admin_Trait {
 			),
 			admin_url( 'admin.php' )
 		);
+
+		if ( ! $is_new && array() === $data ) {
+			wp_safe_redirect( $return );
+			exit;
+		}
 
 		if ( $is_new ) {
 			$data['id'] = '' !== $data['slug'] ? sanitize_key( $data['slug'] ) : 'flow_' . wp_generate_password( 6, false, false );

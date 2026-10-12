@@ -2124,17 +2124,16 @@ trait FLOSC_Magic_Link_Trait {
 						</p>
 					<?php endif; ?>
 					<?php if ( 'pending' === $status && current_user_can( 'promote_users' ) ) : ?>
+						<?php
+						$activation_url = wp_nonce_url(
+							admin_url( 'admin-post.php?action=flosc_activate_email_account&user_id=' . (int) $user->ID ),
+							'flosc_activate_email_' . (int) $user->ID,
+							'flosc_activate_email_target_nonce'
+						);
+						$activation_url = wp_nonce_url( $activation_url, 'flosc_activate_email_account' );
+						?>
 						<p>
-							<a class="button button-primary" href="
-							<?php
-							echo esc_url(
-								wp_nonce_url(
-									admin_url( 'admin-post.php?action=flosc_activate_email_account&user_id=' . (int) $user->ID ),
-									'flosc_activate_email_account'
-								)
-							);
-							?>
-																	"><?php esc_html_e( 'Activate email account', 'flosc' ); ?></a>
+							<a class="button button-primary" href="<?php echo esc_url( $activation_url ); ?>"><?php esc_html_e( 'Activate email account', 'flosc' ); ?></a>
 						</p>
 						<p class="description"><?php esc_html_e( 'Marks the account active and sends the welcome email (with MagicLink when enabled).', 'flosc' ); ?></p>
 					<?php endif; ?>
@@ -2163,6 +2162,7 @@ trait FLOSC_Magic_Link_Trait {
 			wp_safe_redirect( admin_url( 'users.php' ) );
 			exit;
 		}
+		check_admin_referer( 'flosc_activate_email_' . $user_id, 'flosc_activate_email_target_nonce' );
 		$result = $this->flosc_activate_email_account( $user_id );
 		$redir  = get_edit_user_link( $user_id );
 		if ( ! $redir ) {

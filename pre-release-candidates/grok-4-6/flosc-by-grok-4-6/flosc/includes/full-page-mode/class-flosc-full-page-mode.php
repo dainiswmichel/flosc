@@ -461,10 +461,9 @@ class FLOSC_Full_Page_Mode {
 		nocache_headers();
 
 		// Track referral (v1.0.7: use array syntax with SameSite).
-		$get = wp_unslash( $_GET );
-		$ref = get_query_var( 'ref' );
-		if ( ! $ref ) {
-			$ref = ( $get['ref'] ?? '' );
+		$ref = sanitize_text_field( (string) get_query_var( 'ref' ) );
+		if ( '' === $ref && isset( $_GET['ref'] ) && is_string( $_GET['ref'] ) ) {
+			$ref = sanitize_text_field( wp_unslash( $_GET['ref'] ) );
 		}
 		if ( $ref && ! is_user_logged_in() ) {
 			setcookie(
@@ -557,10 +556,9 @@ class FLOSC_Full_Page_Mode {
 
 		// Admin test-offer mode: bypass conditions/draft status to preview any offer.
 		$test_offer_id = '';
-		$get           = wp_unslash( $_GET );
-		if ( current_user_can( 'manage_options' ) && ! empty( $get['flosc_test_offer'] ) ) {
-			$oid   = sanitize_text_field( $get['flosc_test_offer'] );
-			$nonce = sanitize_text_field( $get['flosc_test_nonce'] ?? '' );
+		if ( current_user_can( 'manage_options' ) && isset( $_GET['flosc_test_offer'] ) && is_string( $_GET['flosc_test_offer'] ) ) {
+			$oid   = sanitize_text_field( wp_unslash( $_GET['flosc_test_offer'] ) );
+			$nonce = ( isset( $_GET['flosc_test_nonce'] ) && is_string( $_GET['flosc_test_nonce'] ) ) ? sanitize_text_field( wp_unslash( $_GET['flosc_test_nonce'] ) ) : '';
 			if ( wp_verify_nonce( $nonce, 'flosc_test_offer_' . $oid ) && $sale && method_exists( $sale, 'offers' ) ) {
 				$test_offer_id  = $oid;
 				$all_raw_offers = $sale->offers()->get_all_offers( $flow_id );

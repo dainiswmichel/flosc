@@ -14,6 +14,29 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+if ( ! function_exists( 'flosc_sanitize_api_secret' ) ) {
+	/**
+	 * Normalize one pasted API secret without altering its token characters.
+	 *
+	 * Valid provider keys can contain %HH sequences, which sanitize_text_field()
+	 * removes. This rejects a non-scalar, strips invalid UTF-8, and trims.
+	 * Length and control-character refusal stay with the caller.
+	 *
+	 * @param mixed $value Posted value.
+	 * @return string
+	 */
+	function flosc_sanitize_api_secret( $value ) {
+		if ( ! is_string( $value ) && ! is_numeric( $value ) ) {
+			return '';
+		}
+		$checked = wp_check_invalid_utf8( (string) $value );
+		if ( ! is_string( $checked ) ) {
+			return '';
+		}
+		return trim( $checked );
+	}
+}
+
 if ( ! function_exists( 'flosc_provider_key_is_plausible' ) ) {
 	/**
 	 * Whether a pasted string could be an API key at all.

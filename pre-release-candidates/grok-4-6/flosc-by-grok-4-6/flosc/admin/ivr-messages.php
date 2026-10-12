@@ -133,6 +133,25 @@ if ( ! function_exists( 'flosc_sanitize_ivr_markdown' ) ) {
 	}
 }
 
+if ( ! function_exists( 'flosc_sanitize_posted_text' ) ) {
+	/**
+	 * Sanitize one posted leaf while keeping Markdown newlines.
+	 *
+	 * @param mixed $value Posted leaf.
+	 * @return string
+	 */
+	function flosc_sanitize_posted_text( $value ) {
+		if ( ! is_string( $value ) && ! is_numeric( $value ) ) {
+			return '';
+		}
+		$text  = (string) $value;
+		$clean = flosc_sanitize_ivr_markdown( $text );
+		// A size or encoding failure stays intact so the handler can report it
+		// instead of storing an empty body.
+		return is_string( $clean ) ? $clean : $text;
+	}
+}
+
 /*
  * Request input for this tab.
  *
@@ -238,7 +257,7 @@ if ( 'POST' === $flosc_request_method ) {
 		// below this loop runs on an unverified body.
 		if ( isset( $_POST[ $flosc_submit_key ] ) ) {
 			check_admin_referer( $flosc_nonce_action );
-			$flosc_post = wp_unslash( $_POST );
+			$flosc_post = map_deep( wp_unslash( $_POST ), 'flosc_sanitize_posted_text' );
 			break;
 		}
 	}

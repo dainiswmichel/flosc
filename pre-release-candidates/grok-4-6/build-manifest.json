@@ -1,37 +1,46 @@
 {
   "schema_version": 8,
   "candidate": "grok-4-6",
-  "candidate_label": "FLOSC 8.0.0 candidate V146",
+  "candidate_label": "FLOSC 8.0.0 candidate v149.grok",
   "owner": "Grok",
   "parent": {
-    "candidate": "V145",
-    "commit": "7bc31aab84f8ae5125706f8110f6d85f5c2912f4"
+    "candidate": "V146",
+    "commit": "b339e64042fdcba8d4b0fb1cb465d7b41fa7fa55"
   },
   "plugin_version": "8.0.0",
   "stable_tag": "8.0.0",
-  "internal_iteration": "v146",
-  "github_hashid_at_pack": "7bc31aab84f8ae5125706f8110f6d85f5c2912f4",
+  "internal_iteration": "v149.grok",
+  "github_hashid_at_pack": "b339e64042fdcba8d4b0fb1cb465d7b41fa7fa55",
   "plugin_source": "flosc-by-grok-4-6/flosc",
-  "baseline": "origin/main at 7bc31aab84f8ae5125706f8110f6d85f5c2912f4",
+  "baseline": "origin/main at b339e64042fdcba8d4b0fb1cb465d7b41fa7fa55",
   "requires_at_least": "7.1",
   "requires_php": "7.4",
-  "v146_delta_from_v145": [
+  "v149_grok_delta_from_v146": [
     "flosc.php",
-    "admin/ai-feedback.php",
-    "admin/chat-styling.php",
-    "admin/flow-edit.php",
-    "admin/flows.php",
-    "admin/settings.php",
-    "includes/flosc-admin.php"
+    "phpcs.xml.dist",
+    "admin/autoprompts.php",
+    "admin/content.php",
+    "admin/ivr-messages.php",
+    "admin/knowledge-base.php",
+    "admin/member-levels.php",
+    "admin/settings-helper.php",
+    "includes/ai/flosc-provider-keys.php",
+    "includes/class-flosc-framework.php",
+    "includes/class-flosc-site-content-index.php",
+    "includes/flosc-admin.php",
+    "includes/flosc-personality-library.php",
+    "includes/full-page-mode/class-flosc-full-page-mode.php",
+    "includes/magic-link/class-flosc-magic-link-trait.php",
+    "tests/check-nonce-scope-and-flow-preservation.php"
   ],
   "artifact": {
     "path": "flosc.zip",
     "root": "flosc/",
     "entries": 283,
     "files": 243,
-    "bytes": 2825441,
-    "sha256": "a43114fc669b92aa27386c43a23f188891e5b35e335ad6dec137f4d46051a6f9",
-    "runtime_manifest_sha256": "d1d628787a54ee38565fe164c8920dd67df85d6a897504c0c9794ca6e681fe5b",
+    "bytes": 2826247,
+    "sha256": "74e428c4e668dbe6d66f3b9e0bc83dc4dbb3637a982a647637597759153be7ee",
+    "runtime_manifest_sha256": "b14599ae39ba966b2e4daf038a824d9fd0d5db1c004159af6abe0a5df95bc790",
     "runtime_manifest": "sha256 of sorted lines: '<sha256>  <zip path>' for every file in the zip",
     "tests_entries": 0
   }

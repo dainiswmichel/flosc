@@ -3719,11 +3719,10 @@ if ( ! function_exists( 'flosc_enqueue_personality_builder_assets' ) ) {
 			(string) filemtime( $js_path ),
 			true
 		);
-		$boot       = flosc_personality_builder_boot_json( $persona, $ivr );
-		$json_flags = JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE;
+		$boot = flosc_personality_builder_boot_json( $persona, $ivr );
 		wp_add_inline_script(
 			'flosc-personality-builder',
-			'window.floscPersonalityWp = ' . wp_json_encode( $boot, $json_flags ) . ';',
+			'window.floscPersonalityWp = ' . wp_json_encode( $boot ) . ';',
 			'before'
 		);
 		wp_enqueue_script(

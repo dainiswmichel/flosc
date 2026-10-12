@@ -83,14 +83,20 @@ $flosc_autoprompt_docs_anchor = array(
  * SAVE HANDLER.
  */
 function flosc_handle_autoprompts_save() {
-	$flosc_post = wp_unslash( $_POST );
-
-	if ( ! isset( $flosc_post['save_autoprompts'] ) || ! wp_verify_nonce( sanitize_text_field( $flosc_post['flosc_autoprompts_nonce'] ?? '' ), 'flosc_save_autoprompts' ) ) {
+	if ( ! isset( $_POST['flosc_autoprompts_nonce'] ) || ! is_string( $_POST['flosc_autoprompts_nonce'] ) ) {
+		return;
+	}
+	if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['flosc_autoprompts_nonce'] ) ), 'flosc_save_autoprompts' ) ) {
+		return;
+	}
+	if ( ! isset( $_POST['save_autoprompts'] ) ) {
 		return;
 	}
 	if ( ! current_user_can( 'manage_options' ) ) {
 		return;
 	}
+
+	$flosc_post = map_deep( wp_unslash( $_POST ), 'sanitize_text_field' );
 
 	// §10: accept the posted flow key only if it is a known flow option key.
 	// Validate without transforming, so the key matches where settings are stored.

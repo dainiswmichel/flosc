@@ -52,6 +52,9 @@
             <property name="customSanitizingFunctions" type="array">
                 <element value="flosc_sanitize_personality_profile_text"/>
                 <element value="flosc_sanitize_personality_workshop"/>
+                <element value="flosc_sanitize_api_secret"/>
+                <element value="flosc_sanitize_ivr_markdown"/>
+                <element value="flosc_sanitize_posted_text"/>
             </property>
         </properties>
     </rule>
