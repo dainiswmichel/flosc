@@ -1,18 +1,18 @@
 {
   "schema_version": 8,
   "candidate": "claude-opus-5",
-  "candidate_label": "FLOSC 8.0.0 candidate v149",
+  "candidate_label": "FLOSC 8.0.0 candidate v150",
   "owner": "ClaudeCode",
   "parent": {
-    "candidate": "V146",
-    "commit": "b339e64042fdcba8d4b0fb1cb465d7b41fa7fa55"
+    "candidate": "V149",
+    "commit": "697e1e9404956f4b94f426ca008b51865cb2f383"
   },
   "plugin_version": "8.0.0",
   "stable_tag": "8.0.0",
-  "internal_iteration": "v149",
+  "internal_iteration": "v150",
   "github_hashid_at_pack": "b339e64042fdcba8d4b0fb1cb465d7b41fa7fa55",
   "plugin_source": "flosc-by-claude-opus-5/flosc",
-  "baseline": "origin/main at b339e64042fdcba8d4b0fb1cb465d7b41fa7fa55",
+  "baseline": "origin/main at 697e1e9404956f4b94f426ca008b51865cb2f383",
   "requires_at_least": "7.1",
   "requires_php": "7.4",
   "v149_delta_from_v146": [
@@ -39,10 +39,16 @@
     "root": "flosc/",
     "entries": 283,
     "files": 243,
-    "bytes": 2828509,
-    "sha256": "f37c14d37ae1fb67bacef4200659ee6953a88c056243e724ab0dcafd28c803f2",
-    "runtime_manifest_sha256": "955d46fa697f16485d0317ca22e404205e9b22b1a41de565b5ab10b738877fe2",
+    "bytes": 2828837,
+    "sha256": "457c117e05d4a6f38aa654e44f56a82d4b7dc59b18a8b73b9b68d2490e462ee4",
+    "runtime_manifest_sha256": "f534e2ee04fb1bada33452d4a464bd033201f41dc4400e17a2fd773606a1f1b6",
     "runtime_manifest": "sha256 of sorted lines: '<sha256>  <zip path>' for every file in the zip, newline-joined with a trailing newline",
     "tests_entries": 0
-  }
+  },
+  "v150_delta_from_v149": [
+    "flosc.php",
+    "includes/class-flosc-framework.php",
+    "includes/flosc-rest.php",
+    "tests/check_tab_scope_and_nonce_binding.php"
+  ]
 }

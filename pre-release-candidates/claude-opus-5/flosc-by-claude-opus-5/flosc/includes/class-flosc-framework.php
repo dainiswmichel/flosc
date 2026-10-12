@@ -13200,12 +13200,22 @@ Example good response:
 	/**
 	 * REST handler — delete one AI feedback by ID
 	 *
+	 * Named rest_* rather than handle_*. FLOSC_Framework does `use
+	 * FLOSC_Admin_Trait`, and a method declared in the class body silently
+	 * overrides a trait method of the same name. While this was called
+	 * handle_delete_feedback it shadowed the trait's admin-post handler, so
+	 * add_action( 'admin_post_flosc_delete_feedback', ... ) bound here instead:
+	 * the hook passes no arguments, $request is required, and the Delete button
+	 * on the AI Feedback screen raised ArgumentCountError. The trait's handler,
+	 * which is the one carrying check_admin_referer() and the capability check,
+	 * was unreachable. Do not rename this back.
+	 *
 	 * @since 1.9.0
 	 *
 	 * @param WP_REST_Request $request Expects the feedback id.
 	 * @return WP_REST_Response|WP_Error Confirmation.
 	 */
-	public function handle_delete_feedback( $request ) {
+	public function rest_delete_feedback( $request ) {
 		$feedback_id = sanitize_text_field( $request->get_param( 'feedback_id' ) );
 		$flow_id     = sanitize_text_field( $request->get_param( 'flow_id' ) ?? '' );
 
@@ -13304,12 +13314,18 @@ Example good response:
 	/**
 	 * REST handler — delete one AI praise by ID
 	 *
+	 * Named rest_* for the same reason as rest_delete_feedback() above: a
+	 * class-body method silently overrides the trait method of the same name,
+	 * which left the admin-post Delete button bound to a handler requiring an
+	 * argument the hook does not pass, and the trait's nonce-checked handler
+	 * unreachable. Do not rename this back.
+	 *
 	 * @since 1.9.0
 	 *
 	 * @param WP_REST_Request $request Expects the praise id.
 	 * @return WP_REST_Response|WP_Error Confirmation.
 	 */
-	public function handle_delete_praise( $request ) {
+	public function rest_delete_praise( $request ) {
 		$praise_id = sanitize_text_field( $request->get_param( 'praise_id' ) );
 		$flow_id   = sanitize_text_field( $request->get_param( 'flow_id' ) ?? '' );
 

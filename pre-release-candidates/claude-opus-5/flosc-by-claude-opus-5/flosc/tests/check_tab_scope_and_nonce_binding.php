@@ -144,6 +144,61 @@ flosc_tabscope_assert(
 	false !== strpos( $flosc_magic, "'options' => array( 'min_range' => 1 )" )
 );
 
+echo "\nNo class-body method shadows a trait handler with a different arity\n";
+
+/*
+ * FLOSC_Framework does `use FLOSC_Admin_Trait`, and PHP lets a method declared
+ * in the class body silently override a trait method of the same name. When the
+ * two take different numbers of required arguments and the trait's version is
+ * what a hook is bound to, the override is a fatal: the hook calls with the
+ * trait's argument count and the class-body method demands its own.
+ *
+ * That is what happened to handle_delete_feedback() and handle_delete_praise().
+ * Both were declared twice, the class-body REST versions won, and the Delete
+ * buttons on the AI Feedback screen raised ArgumentCountError while the trait's
+ * nonce-checked handlers sat unreachable. Same-arity twins are harmless and are
+ * allowed through; a differing arity is not.
+ */
+$flosc_decls = static function ( $source ) {
+	$found = array();
+	if ( preg_match_all( '/^\t(?:public |private |protected |static |final )*function\s+([A-Za-z0-9_]+)\s*\(([^)]*)\)/m', $source, $m, PREG_SET_ORDER ) ) {
+		foreach ( $m as $one ) {
+			if ( isset( $found[ $one[1] ] ) ) {
+				continue;
+			}
+			$required = 0;
+			foreach ( explode( ',', $one[2] ) as $param ) {
+				$param = trim( $param );
+				if ( '' !== $param && false === strpos( $param, '=' ) ) {
+					++$required;
+				}
+			}
+			$found[ $one[1] ] = $required;
+		}
+	}
+	return $found;
+};
+
+$flosc_class_methods = $flosc_decls( $flosc_fw );
+$flosc_trait_methods = $flosc_decls( $flosc_admin );
+$flosc_arity_clash   = array();
+foreach ( $flosc_class_methods as $flosc_name => $flosc_required ) {
+	if ( isset( $flosc_trait_methods[ $flosc_name ] ) && $flosc_trait_methods[ $flosc_name ] !== $flosc_required ) {
+		$flosc_arity_clash[] = $flosc_name;
+	}
+}
+flosc_tabscope_assert(
+	'no trait method is shadowed by a class-body method of different arity',
+	array() === $flosc_arity_clash
+);
+flosc_tabscope_assert(
+	'the feedback and praise delete hooks reach the trait handlers that check the nonce',
+	false === strpos( $flosc_fw, 'function handle_delete_feedback(' )
+		&& false === strpos( $flosc_fw, 'function handle_delete_praise(' )
+		&& false !== strpos( $flosc_admin, 'function handle_delete_feedback()' )
+		&& false !== strpos( $flosc_admin, 'function handle_delete_praise()' )
+);
+
 echo "\nThe tier and depth selects escape where they print\n";
 
 flosc_tabscope_assert(

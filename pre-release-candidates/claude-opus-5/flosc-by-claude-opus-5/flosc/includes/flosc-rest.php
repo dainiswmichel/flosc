@@ -1201,7 +1201,7 @@ trait FLOSC_REST_Trait {
 			'/feedback/(?P<feedback_id>[a-z0-9]+)',
 			array(
 				'methods'             => 'DELETE',
-				'callback'            => array( $this, 'handle_delete_feedback' ),
+				'callback'            => array( $this, 'rest_delete_feedback' ),
 				'permission_callback' => array( $this, 'check_admin_endpoint_permission' ),
 			)
 		);
@@ -1222,7 +1222,7 @@ trait FLOSC_REST_Trait {
 			'/praises/(?P<praise_id>[a-z0-9_]+)',
 			array(
 				'methods'             => 'DELETE',
-				'callback'            => array( $this, 'handle_delete_praise' ),
+				'callback'            => array( $this, 'rest_delete_praise' ),
 				'permission_callback' => array( $this, 'check_admin_endpoint_permission' ),
 			)
 		);
