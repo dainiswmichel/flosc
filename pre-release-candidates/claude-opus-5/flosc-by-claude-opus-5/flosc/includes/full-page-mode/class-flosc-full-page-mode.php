@@ -571,17 +571,20 @@ class FLOSC_Full_Page_Mode {
 				: '';
 
 			/*
-			 * The nonce answers on its own.
+			 * The nonce decides on its own, in its own statement.
 			 *
-			 * It used to be one term of an && chain alongside $sale and
-			 * method_exists(), which made two unrelated questions share one
+			 * It was one term of an && chain alongside $sale and
+			 * method_exists(), which made two unrelated questions share a single
 			 * answer: whether this request is legitimate, and whether the sale
-			 * module can service it. The outcome was the same either way, so a
-			 * declined preview and an unavailable module were indistinguishable.
-			 * Verifying first keeps the origin check from depending on anything
-			 * but itself.
+			 * module can service it. Clearing $oid on a failed nonce means the
+			 * origin check depends on nothing but itself, and the branch below
+			 * is about capability only.
 			 */
-			if ( wp_verify_nonce( $nonce, 'flosc_test_offer_' . $oid ) && $sale && method_exists( $sale, 'offers' ) ) {
+			if ( ! wp_verify_nonce( $nonce, 'flosc_test_offer_' . $oid ) ) {
+				$oid = '';
+			}
+
+			if ( '' !== $oid && $sale && method_exists( $sale, 'offers' ) ) {
 				$test_offer_id  = $oid;
 				$all_raw_offers = $sale->offers()->get_all_offers( $flow_id );
 				foreach ( $all_raw_offers as $o ) {
