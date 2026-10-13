@@ -1619,7 +1619,7 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 			}
 
 			foreach ( $chunks as $chunk ) {
-				$chunk = trim( (string) $chunk );
+				$chunk = sanitize_text_field( trim( (string) $chunk ) );
 				if ( '' === $chunk ) {
 					continue;
 				}

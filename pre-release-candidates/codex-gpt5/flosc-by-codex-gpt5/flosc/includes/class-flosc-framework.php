@@ -3384,7 +3384,9 @@ The Team',
 		}
 		$post = wp_unslash( $_POST );
 
-		$ivr   = sanitize_file_name( $post['flosc_return_ivr'] ?? '' );
+		$ivr   = isset( $post['flosc_return_ivr'] ) && is_string( $post['flosc_return_ivr'] )
+			? sanitize_file_name( $post['flosc_return_ivr'] )
+			: '';
 		$kb_id = $this->kb_request_id( $ivr, $post['kb_id'] ?? '' );
 		if ( '' === $kb_id || ! function_exists( 'flosc_knowledge_base_dir' ) ) {
 			wp_safe_redirect( $this->kb_return_url( $ivr, 'error', 'No knowledge base selected.' ) );
@@ -3661,7 +3663,9 @@ The Team',
 			wp_die( esc_html__( 'You do not have permission to manage knowledge bases.', 'flosc' ) );
 		}
 		$post  = wp_unslash( $_POST );
-		$ivr   = sanitize_file_name( $post['flosc_return_ivr'] ?? '' );
+		$ivr   = isset( $post['flosc_return_ivr'] ) && is_string( $post['flosc_return_ivr'] )
+			? sanitize_file_name( $post['flosc_return_ivr'] )
+			: '';
 		$label = sanitize_text_field( (string) ( $post['kb_label'] ?? '' ) );
 		if ( '' === $label ) {
 			wp_safe_redirect( $this->kb_return_url( $ivr, 'error', 'Name is required.' ) );
@@ -12080,7 +12084,7 @@ Example good response:
 		}
 
 		$provider = isset( $_POST['provider'] ) ? sanitize_key( wp_unslash( $_POST['provider'] ) ) : '';
-		$ivr      = isset( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
+		$ivr      = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
 
 		// Same flow context the connection test establishes. admin-ajax has no
 		// URL to detect the flow from, so without this the per-flow key is
@@ -12185,7 +12189,7 @@ Example good response:
 		}
 
 		$provider = isset( $_POST['provider'] ) ? sanitize_key( wp_unslash( $_POST['provider'] ) ) : '';
-		$ivr      = isset( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
+		$ivr      = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
 		$api_key  = '';
 		if ( isset( $_POST['api_key'] ) && ( is_string( $_POST['api_key'] ) || is_numeric( $_POST['api_key'] ) ) ) {
 			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- flosc_sanitize_api_secret preserves valid key characters.
@@ -12221,7 +12225,7 @@ Example good response:
 		}
 
 		$provider = isset( $_POST['provider'] ) ? sanitize_key( wp_unslash( $_POST['provider'] ) ) : '';
-		$ivr      = isset( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
+		$ivr      = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
 		$model    = isset( $_POST['model'] ) ? sanitize_text_field( wp_unslash( $_POST['model'] ) ) : '';
 
 		$stored = flosc_store_provider_model( $ivr, $provider, $model );
@@ -12253,7 +12257,7 @@ Example good response:
 		}
 
 		$provider = isset( $_POST['provider'] ) ? sanitize_key( wp_unslash( $_POST['provider'] ) ) : '';
-		$ivr      = isset( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
+		$ivr      = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
 		$model    = isset( $_POST['model'] ) ? sanitize_text_field( wp_unslash( $_POST['model'] ) ) : '';
 		$typed    = '';
 		if ( isset( $_POST['api_key'] ) && ( is_string( $_POST['api_key'] ) || is_numeric( $_POST['api_key'] ) ) ) {
@@ -12299,7 +12303,7 @@ Example good response:
 			wp_send_json_error( array( 'message' => __( 'Unauthorized', 'flosc' ) ), 403 );
 		}
 
-		$ivr   = isset( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
+		$ivr   = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
 		$param = isset( $_POST['param'] ) ? sanitize_text_field( wp_unslash( $_POST['param'] ) ) : '';
 
 		// A parameter name, not a prompt. Anything that is not one is refused
