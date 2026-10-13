@@ -150,7 +150,6 @@ function flosc_nav_param_keys() {
 		'concierge_error',
 		'da1_export',
 		'default_set',
-		'delete_flow',
 		'delete_message',
 		'doc',
 		'edit_message',

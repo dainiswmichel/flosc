@@ -77,11 +77,11 @@ class FLOSC_Site_Content_Index {
 		?>
 		<select name="flosc_vgm" id="flosc_vgm">
 			<option value="">&mdash; <?php esc_html_e( 'No rule', 'flosc' ); ?> &mdash;</option>
-			<?php flosc_render_vgm_options( flosc_vgm_tier_labels(), (string) $tier ); ?>
+			<?php echo wp_kses( flosc_vgm_options_markup( flosc_vgm_tier_labels(), (string) $tier ), flosc_vgm_option_allowed_html() ); ?>
 		</select>
 		<select name="flosc_depth" id="flosc_depth">
 			<option value="">&mdash; <?php esc_html_e( 'No rule', 'flosc' ); ?> &mdash;</option>
-			<?php flosc_render_vgm_options( flosc_vgm_depth_labels(), (string) $depth ); ?>
+			<?php echo wp_kses( flosc_vgm_options_markup( flosc_vgm_depth_labels(), (string) $depth ), flosc_vgm_option_allowed_html() ); ?>
 		</select>
 		<p class="description">
 			<?php esc_html_e( 'What the AI may retrieve of posts in this term. The tier is a floor: Visitors also covers guests and members. Both halves must be set for the rule to count. A rule on a post beats one on its tags, which beats one on its categories.', 'flosc' ); ?>
@@ -147,8 +147,7 @@ class FLOSC_Site_Content_Index {
 		if ( ! isset( $_POST['flosc_term_vgm_nonce'] ) || ! is_string( $_POST['flosc_term_vgm_nonce'] ) ) {
 			return;
 		}
-		$nonce = sanitize_text_field( wp_unslash( $_POST['flosc_term_vgm_nonce'] ) );
-		if ( '' === $nonce || ! wp_verify_nonce( $nonce, 'flosc_term_vgm' ) ) {
+		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['flosc_term_vgm_nonce'] ) ), 'flosc_term_vgm' ) ) {
 			return;
 		}
 		if ( ! current_user_can( 'manage_categories' ) ) {

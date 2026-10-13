@@ -69,7 +69,7 @@ class FLOSC_AI_Chat_Dispatch {
 		// v1.9.0: IVR Interpreter — when IVR matched, AI uses it as response guidance.
 		$ivr_guidance = $context['ivr_guidance'] ?? '';
 
-		// v1.9.5: Unified admin feedback — reads rated chat logs from DB.
+		// Manual per-flow feedback and praise instructions.
 		$feedback_prompt = $this->build_feedback_prompt();
 
 		$user_sticky_content = function_exists( 'flosc_get_user_sticky_prompt' )
@@ -409,84 +409,18 @@ class FLOSC_AI_Chat_Dispatch {
 	}
 
 	/**
-	 * Build unified feedback prompt from rated chat log entries.
-	 * Reads directly from the flosc_chat_logs table (admin_rating != 0).
-	 * Negative ratings = feedback. Positive ratings = praise. Magnitude = weight.
+	 * Build feedback prompt from floscAdmin-approved flow feedback and praise.
 	 *
-	 * Also includes legacy ai_feedback/ai_praises from flow settings
-	 * for backward compatibility with manually-added entries.
+	 * A chat-log rating preserves an exchange and prepares editable suggestions
+	 * for the administrator. It is evidence, not an instruction, and therefore
+	 * never enters a provider prompt merely because it was rated.
 	 *
 	 * @since 1.9.5
 	 */
 	private function build_feedback_prompt() {
 		$sections = array();
 
-		// ── DB-rated entries via Chat Logger (object-cached, no direct $wpdb here) ──
-		if ( class_exists( 'FLOSC_Chat_Logger' ) ) {
-			$rated     = FLOSC_Chat_Logger::instance()->flosc_get_rated_logs( 100 );
-			$negatives = array();
-			$positives = array();
-			foreach ( (array) $rated as $row ) {
-				if ( ! is_array( $row ) ) {
-					continue;
-				}
-				$score = isset( $row['admin_rating'] ) ? (int) $row['admin_rating'] : 0;
-				if ( $score < 0 && count( $negatives ) < 20 ) {
-					$negatives[] = $row;
-				} elseif ( $score > 0 && count( $positives ) < 20 ) {
-					$positives[] = $row;
-				}
-			}
-			// Strongest first for each polarity.
-			usort(
-				$negatives,
-				static function ( $a, $b ) {
-					return (int) ( $a['admin_rating'] ?? 0 ) <=> (int) ( $b['admin_rating'] ?? 0 );
-				}
-			);
-			usort(
-				$positives,
-				static function ( $a, $b ) {
-					return (int) ( $b['admin_rating'] ?? 0 ) <=> (int) ( $a['admin_rating'] ?? 0 );
-				}
-			);
-
-			if ( ! empty( $negatives ) ) {
-				$prompt  = "## Admin Feedback (Rated Responses)\n";
-				$prompt .= "The administrator scored these responses negatively. Avoid this behavior.\n\n";
-				foreach ( $negatives as $i => $row ) {
-					$num     = $i + 1;
-					$score   = $row['admin_rating'];
-					$prompt .= "### Feedback {$num} (score: {$score}/10)\n";
-					$prompt .= '**User said:** "' . mb_substr( (string) ( $row['user_message'] ?? '' ), 0, 200 ) . "\"\n";
-					$prompt .= '**Your bad response:** "' . mb_substr( (string) ( $row['ai_response'] ?? '' ), 0, 300 ) . "\"\n";
-					if ( ! empty( $row['admin_note'] ) ) {
-						$prompt .= '**Admin note:** ' . $row['admin_note'] . "\n";
-					}
-					$prompt .= "\n";
-				}
-				$sections[] = $prompt;
-			}
-
-			if ( ! empty( $positives ) ) {
-				$prompt  = "## Admin Praise (Rated Responses)\n";
-				$prompt .= "The administrator scored these responses positively. Replicate this quality.\n\n";
-				foreach ( $positives as $i => $row ) {
-					$num     = $i + 1;
-					$score   = $row['admin_rating'];
-					$prompt .= "### Example {$num} (score: +{$score}/10)\n";
-					$prompt .= '**User said:** "' . mb_substr( (string) ( $row['user_message'] ?? '' ), 0, 200 ) . "\"\n";
-					$prompt .= '**Your excellent response:** "' . mb_substr( (string) ( $row['ai_response'] ?? '' ), 0, 300 ) . "\"\n";
-					if ( ! empty( $row['admin_note'] ) ) {
-						$prompt .= '**Why this was good:** ' . $row['admin_note'] . "\n";
-					}
-					$prompt .= "\n";
-				}
-				$sections[] = $prompt;
-			}
-		}
-
-		// ── Legacy manual feedback/praises (backward compat) ──
+		// Legacy manual feedback/praises remain active for backward compatibility.
 		$feedback_items = flosc_get_setting( 'ai_feedback', array() );
 		if ( ! empty( $feedback_items ) && is_array( $feedback_items ) ) {
 			$prompt  = "## Manual Feedback\n";
@@ -1442,7 +1376,7 @@ class FLOSC_AI_Chat_Dispatch {
 		 * The endpoint is named on its own line so the suppression below stays
 		 * attached to it. It used to sit inline in the wp_remote_post() call, and
 		 * a WordPress Coding Standards pass split that call across lines --
-		 * leaving the suppression directive above `wp_remote_post(` and the host it
+		 * leaving the phpcs:ignore above `wp_remote_post(` and the host it
 		 * annotates one line further down, where the suppression does not reach.
 		 */
 		// phpcs:ignore PluginCheck.CodeAnalysis.AIProvider.DirectIntegration -- WordPress has no official xAI provider plugin yet, so Grok chat is FLOSC-owned. Service declared in readme.txt External Services.

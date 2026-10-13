@@ -1937,7 +1937,7 @@ trait FLOSC_Magic_Link_Trait {
 		// Read here, not in the URL builder: this scope is the one that just
 		// verified the nonce above, so the verification and the read are
 		// visible together.
-		$flosc_ivr_hint = ( isset( $_POST['ivr'] ) && is_scalar( $_POST['ivr'] ) )
+		$flosc_ivr_hint = ( isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) )
 			? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
 			: '';
 
@@ -1969,7 +1969,7 @@ trait FLOSC_Magic_Link_Trait {
 		// Read here, not in the URL builder: this scope is the one that just
 		// verified the nonce above, so the verification and the read are
 		// visible together.
-		$flosc_ivr_hint = ( isset( $_POST['ivr'] ) && is_scalar( $_POST['ivr'] ) )
+		$flosc_ivr_hint = ( isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) )
 			? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
 			: '';
 
@@ -2037,7 +2037,7 @@ trait FLOSC_Magic_Link_Trait {
 		// Read here, not in the URL builder: this scope is the one that just
 		// verified the nonce above, so the verification and the read are
 		// visible together.
-		$flosc_ivr_hint = ( isset( $_POST['ivr'] ) && is_scalar( $_POST['ivr'] ) )
+		$flosc_ivr_hint = ( isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) )
 			? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
 			: '';
 
@@ -2068,7 +2068,7 @@ trait FLOSC_Magic_Link_Trait {
 		// Read here, not in the URL builder: this scope is the one that just
 		// verified the nonce above, so the verification and the read are
 		// visible together.
-		$flosc_ivr_hint = ( isset( $_POST['ivr'] ) && is_scalar( $_POST['ivr'] ) )
+		$flosc_ivr_hint = ( isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] ) )
 			? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
 			: '';
 

@@ -1965,11 +1965,11 @@ if ( ! function_exists( 'flosc_personality_library_save_all' ) ) {
 	 * Personality library save all.
 	 *
 	 * @param array<string,array<string,mixed>> $library Full map.
-	 * @return void
+	 * @return bool Whether the complete library was stored as intended.
 	 */
 	function flosc_personality_library_save_all( $library ) {
 		if ( ! is_array( $library ) ) {
-			return;
+			return false;
 		}
 		$previous = flosc_personality_library_get_all();
 		$clean    = array();
@@ -1989,7 +1989,14 @@ if ( ! function_exists( 'flosc_personality_library_save_all' ) ) {
 			foreach ( flosc_personality_library_field_keys() as $fk ) {
 				if ( 'workshop_json' === $fk ) {
 					if ( array_key_exists( 'workshop_json', $row ) ) {
-						$entry[ $fk ] = flosc_sanitize_personality_workshop( (string) $row['workshop_json'] );
+						$workshop_raw = (string) $row['workshop_json'];
+						if ( ! flosc_personality_text_is_valid_utf8( $workshop_raw ) ) {
+							return false;
+						}
+						$entry[ $fk ] = flosc_sanitize_personality_workshop( $workshop_raw );
+						if ( '' !== trim( $workshop_raw ) && '' === $entry[ $fk ] ) {
+							return false;
+						}
 					} else {
 						$entry[ $fk ] = isset( $prior['workshop_json'] ) ? (string) $prior['workshop_json'] : '';
 					}
@@ -2001,6 +2008,9 @@ if ( ! function_exists( 'flosc_personality_library_save_all' ) ) {
 					if ( '' === $incoming ) {
 						$entry[ $fk ] = isset( $prior['ai_base_prompt'] ) ? (string) $prior['ai_base_prompt'] : '';
 					} else {
+						if ( ! flosc_personality_text_is_valid_utf8( (string) $row[ $fk ] ) ) {
+							return false;
+						}
 						$entry[ $fk ] = flosc_sanitize_personality_profile_text( (string) $row[ $fk ] );
 					}
 					continue;
@@ -2039,7 +2049,10 @@ if ( ! function_exists( 'flosc_personality_library_save_all' ) ) {
 			$entry['profile_hash'] = $hash;
 			$clean[ $id ]          = $entry;
 		}
-		update_option( flosc_personality_library_option_key(), $clean, false );
+		$option_key = flosc_personality_library_option_key();
+		update_option( $option_key, $clean, false );
+
+		return get_option( $option_key, null ) === $clean;
 	}
 }
 
@@ -2217,8 +2230,8 @@ if ( ! function_exists( 'flosc_admin_save_personality_library' ) ) {
 				}
 			}
 		}
-		$new_id  = isset( $_POST['new_persona_id'] ) && is_string( $_POST['new_persona_id'] ) ? sanitize_key( wp_unslash( $_POST['new_persona_id'] ) ) : '';
-		$new_lab = isset( $_POST['new_persona_label'] ) && is_string( $_POST['new_persona_label'] ) ? sanitize_text_field( wp_unslash( $_POST['new_persona_label'] ) ) : '';
+		$new_id  = isset( $_POST['new_persona_id'] ) ? sanitize_key( wp_unslash( (string) $_POST['new_persona_id'] ) ) : '';
+		$new_lab = isset( $_POST['new_persona_label'] ) ? sanitize_text_field( wp_unslash( (string) $_POST['new_persona_label'] ) ) : '';
 
 		$lib = array();
 		foreach ( $posted as $id => $row ) {
@@ -2245,15 +2258,15 @@ if ( ! function_exists( 'flosc_admin_save_personality_library' ) ) {
 		if ( array() === $posted && '' === $new_id && array() === $delete ) {
 			$lib = null;
 		}
-		if ( is_array( $lib ) ) {
-			flosc_personality_library_save_all( $lib );
-		}
+		$saved = ! is_array( $lib ) || flosc_personality_library_save_all( $lib );
 
 		set_transient(
 			'flosc_ai_all_notice_' . get_current_user_id(),
 			array(
-				'message' => __( 'Personalities saved.', 'flosc' ),
-				'type'    => 'success',
+				'message' => $saved
+					? __( 'Personalities saved.', 'flosc' )
+					: __( 'The personalities were not saved because one contained invalid text or workshop JSON, or WordPress could not store the complete library.', 'flosc' ),
+				'type'    => $saved ? 'success' : 'error',
 			),
 			60
 		);
@@ -2283,7 +2296,7 @@ if ( ! function_exists( 'flosc_admin_save_personality_library' ) ) {
 
 if ( ! function_exists( 'flosc_personality_profile_max_bytes' ) ) {
 	/**
-	 * Compiled personality profile size cap (bytes).
+	 * Compiled personality profile warning threshold (bytes).
 	 *
 	 * @return int
 	 */
@@ -2294,12 +2307,29 @@ if ( ! function_exists( 'flosc_personality_profile_max_bytes' ) ) {
 
 if ( ! function_exists( 'flosc_personality_workshop_max_bytes' ) ) {
 	/**
-	 * Workshop JSON size cap (bytes).
+	 * Workshop JSON warning threshold (bytes).
 	 *
 	 * @return int
 	 */
 	function flosc_personality_workshop_max_bytes() {
 		return 800000;
+	}
+}
+
+if ( ! function_exists( 'flosc_personality_text_is_valid_utf8' ) ) {
+	/**
+	 * Whether personality text is valid UTF-8 without altering it.
+	 *
+	 * @param string $text Personality text.
+	 * @return bool
+	 */
+	function flosc_personality_text_is_valid_utf8( $text ) {
+		$text = (string) $text;
+		if ( function_exists( 'mb_check_encoding' ) ) {
+			return mb_check_encoding( $text, 'UTF-8' );
+		}
+
+		return wp_check_invalid_utf8( $text ) === $text;
 	}
 }
 
@@ -2313,14 +2343,12 @@ if ( ! function_exists( 'flosc_sanitize_personality_profile_text' ) ) {
 	 */
 	function flosc_sanitize_personality_profile_text( $text ) {
 		$text = (string) $text;
-		$text = wp_check_invalid_utf8( $text );
+		if ( ! flosc_personality_text_is_valid_utf8( $text ) ) {
+			return '';
+		}
 		$text = preg_replace( '/[\x00-\x08\x0B\x0C\x0E-\x1F]/', '', $text );
 		if ( ! is_string( $text ) ) {
 			$text = '';
-		}
-		$max = flosc_personality_profile_max_bytes();
-		if ( strlen( $text ) > $max ) {
-			$text = substr( $text, 0, $max );
 		}
 		return $text;
 	}
@@ -2335,17 +2363,15 @@ if ( ! function_exists( 'flosc_sanitize_personality_workshop' ) ) {
 	 */
 	function flosc_sanitize_personality_workshop( $raw ) {
 		$raw = (string) $raw;
-		$raw = wp_check_invalid_utf8( $raw );
+		if ( ! flosc_personality_text_is_valid_utf8( $raw ) ) {
+			return '';
+		}
 		$raw = preg_replace( '/[\x00-\x08\x0B\x0C\x0E-\x1F]/', '', $raw );
 		if ( ! is_string( $raw ) ) {
 			return '';
 		}
 		$raw = trim( $raw );
 		if ( '' === $raw ) {
-			return '';
-		}
-		$max = flosc_personality_workshop_max_bytes();
-		if ( strlen( $raw ) > $max ) {
 			return '';
 		}
 		$decoded = json_decode( $raw, true );
@@ -2361,9 +2387,6 @@ if ( ! function_exists( 'flosc_sanitize_personality_workshop' ) ) {
 		}
 		$encoded = wp_json_encode( $decoded );
 		if ( ! is_string( $encoded ) || '' === $encoded ) {
-			return '';
-		}
-		if ( strlen( $encoded ) > $max ) {
 			return '';
 		}
 		return $encoded;
@@ -3063,8 +3086,7 @@ if ( ! function_exists( 'flosc_personality_library_update_entry' ) ) {
 			}
 			$lib[ $id ][ $fk ] = (string) $fields[ $fk ];
 		}
-		flosc_personality_library_save_all( $lib );
-		return true;
+		return flosc_personality_library_save_all( $lib );
 	}
 }
 
@@ -3329,14 +3351,20 @@ if ( ! function_exists( 'flosc_ajax_save_personality_design' ) ) {
 			}
 		}
 		if ( isset( $_POST['ai_base_prompt'] ) && is_string( $_POST['ai_base_prompt'] ) ) {
-			$fields['ai_base_prompt'] = flosc_sanitize_personality_profile_text( wp_kses_post( wp_unslash( $_POST['ai_base_prompt'] ) ) );
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Profile sanitizer preserves Markdown after validating UTF-8.
+			$profile_raw = flosc_sanitize_personality_profile_text( wp_unslash( $_POST['ai_base_prompt'] ) );
+			if ( '' === $profile_raw && ! empty( $_POST['ai_base_prompt'] ) ) {
+				wp_send_json_error( array( 'message' => __( 'The personality profile is not valid UTF-8 text.', 'flosc' ) ), 400 );
+			}
+			$fields['ai_base_prompt'] = $profile_raw;
 		}
 		if ( isset( $_POST['workshop_json'] ) && is_string( $_POST['workshop_json'] ) ) {
-			$workshop_raw            = sanitize_textarea_field( wp_unslash( $_POST['workshop_json'] ) );
-			$fields['workshop_json'] = flosc_sanitize_personality_workshop( $workshop_raw );
-			if ( '' === $fields['workshop_json'] && '' !== trim( $workshop_raw ) ) {
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Workshop sanitizer decodes and rebuilds valid JSON.
+			$workshop_raw = flosc_sanitize_personality_workshop( wp_unslash( $_POST['workshop_json'] ) );
+			if ( '' === $workshop_raw && ! empty( $_POST['workshop_json'] ) ) {
 				wp_send_json_error( array( 'message' => __( 'Workshop file was not valid JSON.', 'flosc' ) ), 400 );
 			}
+			$fields['workshop_json'] = $workshop_raw;
 		}
 
 		if ( ! flosc_personality_library_update_entry( $id, $fields ) ) {
@@ -3352,14 +3380,35 @@ if ( ! function_exists( 'flosc_ajax_save_personality_design' ) ) {
 		$saved_at  = is_array( $saved_row ) && isset( $saved_row['profile_modified_gmt'] )
 			? (string) $saved_row['profile_modified_gmt']
 			: gmdate( 'Y-m-d H:i:s' );
-		wp_send_json_success(
-			array(
-				'message'  => __( 'Personality saved to the FLOSC library.', 'flosc' ),
-				'id'       => $id,
-				'saved_at' => $saved_at,
-				'version'  => is_array( $saved_row ) && isset( $saved_row['profile_version'] ) ? (string) $saved_row['profile_version'] : '',
-			)
+		$response  = array(
+			'message'  => __( 'Personality saved to the FLOSC library.', 'flosc' ),
+			'id'       => $id,
+			'saved_at' => $saved_at,
+			'version'  => is_array( $saved_row ) && isset( $saved_row['profile_version'] ) ? (string) $saved_row['profile_version'] : '',
 		);
+		$warnings  = array();
+		if ( isset( $fields['ai_base_prompt'] ) && strlen( $fields['ai_base_prompt'] ) > flosc_personality_profile_max_bytes() ) {
+			$profile_bytes = strlen( $fields['ai_base_prompt'] );
+			$warnings[]    = sprintf(
+				/* translators: 1: profile size in bytes, 2: approximate token count. */
+				__( 'This personality is %1$s bytes (about %2$s tokens). It is sent to the AI with every chat message.', 'flosc' ),
+				number_format_i18n( $profile_bytes ),
+				number_format_i18n( (int) ceil( $profile_bytes / 4 ) )
+			);
+		}
+		if ( isset( $fields['workshop_json'] ) && strlen( $fields['workshop_json'] ) > flosc_personality_workshop_max_bytes() ) {
+			$workshop_bytes = strlen( $fields['workshop_json'] );
+			$warnings[]     = sprintf(
+				/* translators: 1: workshop size in bytes, 2: approximate token count. */
+				__( 'This personality workshop is %1$s bytes (about %2$s tokens). It was saved in full.', 'flosc' ),
+				number_format_i18n( $workshop_bytes ),
+				number_format_i18n( (int) ceil( $workshop_bytes / 4 ) )
+			);
+		}
+		if ( ! empty( $warnings ) ) {
+			$response['warning'] = implode( ' ', $warnings );
+		}
+		wp_send_json_success( $response );
 	}
 	add_action( 'wp_ajax_flosc_save_personality_design', 'flosc_ajax_save_personality_design' );
 }

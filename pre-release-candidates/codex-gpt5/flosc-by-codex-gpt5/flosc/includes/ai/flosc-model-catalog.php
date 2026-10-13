@@ -267,13 +267,11 @@ if ( ! function_exists( 'flosc_fetch_model_catalog' ) ) {
 	 * @return array{models:array<int,array<string,mixed>>,provider:string}|WP_Error
 	 */
 	function flosc_fetch_model_catalog( $provider, $api_key ) {
-		$provider = sanitize_key( (string) $provider );
+		$provider  = sanitize_key( (string) $provider );
+		$plausible = flosc_provider_key_is_plausible( $api_key );
 
-		if ( '' === (string) $api_key ) {
-			return new WP_Error(
-				'flosc_models_no_key',
-				__( 'Save an API key for this provider first — the list comes from the provider, using that key.', 'flosc' )
-			);
+		if ( is_wp_error( $plausible ) ) {
+			return $plausible;
 		}
 
 		if ( null === flosc_model_catalog_request( $provider, (string) $api_key ) ) {
@@ -428,8 +426,13 @@ if ( ! function_exists( 'flosc_fetch_model_details' ) ) {
 	 * @return array<string,mixed>|WP_Error
 	 */
 	function flosc_fetch_model_details( $provider, $api_key, $model ) {
-		$provider = sanitize_key( (string) $provider );
-		$model    = trim( (string) $model );
+		$provider  = sanitize_key( (string) $provider );
+		$model     = trim( (string) $model );
+		$plausible = flosc_provider_key_is_plausible( $api_key );
+
+		if ( is_wp_error( $plausible ) ) {
+			return $plausible;
+		}
 
 		$url = function_exists( 'flosc_provider_model_detail_url' )
 			? flosc_provider_model_detail_url( $provider, $model )
@@ -440,10 +443,6 @@ if ( ! function_exists( 'flosc_fetch_model_details' ) ) {
 				'flosc_model_details_unsupported',
 				__( 'FLOSC has no measured way to ask this provider about one model yet.', 'flosc' )
 			);
-		}
-
-		if ( '' === (string) $api_key ) {
-			return new WP_Error( 'flosc_model_details_no_key', __( 'Save an API key first — the description comes from the provider.', 'flosc' ) );
 		}
 
 		if ( '' === $model ) {

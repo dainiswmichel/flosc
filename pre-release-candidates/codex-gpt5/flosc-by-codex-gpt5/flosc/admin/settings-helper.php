@@ -320,20 +320,15 @@ function flosc_vgm_options_markup( array $labels, $selected ) {
 }
 
 /**
- * Render one of the VGM option vocabularies directly into a select element.
+ * Allowed HTML for one late-escaped VGM option list.
  *
- * Each dynamic value is escaped at its final HTML context. The string-returning
- * helper remains available for the JavaScript templates that JSON-encode the
- * complete markup rather than printing it into HTML.
- *
- * @param array  $labels   From flosc_vgm_tier_labels() or flosc_vgm_depth_labels().
- * @param string $selected Key to mark selected.
- * @return void
+ * @return array<string, array<string, bool>>
  */
-function flosc_render_vgm_options( array $labels, $selected ) {
-	foreach ( $labels as $key => $label ) {
-		?>
-		<option value="<?php echo esc_attr( (string) $key ); ?>" <?php selected( $selected, $key ); ?>><?php echo esc_html( (string) $label ); ?></option>
-		<?php
-	}
+function flosc_vgm_option_allowed_html() {
+	return array(
+		'option' => array(
+			'value'    => true,
+			'selected' => true,
+		),
+	);
 }

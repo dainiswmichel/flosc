@@ -3720,10 +3720,10 @@ if ( ! function_exists( 'flosc_enqueue_personality_builder_assets' ) ) {
 			true
 		);
 		$boot = flosc_personality_builder_boot_json( $persona, $ivr );
-		wp_add_inline_script(
+		wp_localize_script(
 			'flosc-personality-builder',
-			'window.floscPersonalityWp = ' . wp_json_encode( $boot ) . ';',
-			'before'
+			'floscPersonalityWp',
+			$boot
 		);
 		wp_enqueue_script(
 			'flosc-personality-builder-wp',
