@@ -461,13 +461,9 @@ class FLOSC_Full_Page_Mode {
 		nocache_headers();
 
 		// Track referral (v1.0.7: use array syntax with SameSite).
-		$get = wp_unslash( $_GET );
-		$ref = get_query_var( 'ref' );
-		if ( ! $ref ) {
-			// ?ref= is one value. An array sent under that name would reach
-			// sanitize_text_field() below as an array, so anything that is not a
-			// single value is treated as no referrer at all.
-			$ref = isset( $get['ref'] ) && is_scalar( $get['ref'] ) ? (string) $get['ref'] : '';
+		$ref = sanitize_text_field( (string) get_query_var( 'ref' ) );
+		if ( '' === $ref && isset( $_GET['ref'] ) && is_string( $_GET['ref'] ) ) {
+			$ref = sanitize_text_field( wp_unslash( $_GET['ref'] ) );
 		}
 		if ( $ref && ! is_user_logged_in() ) {
 			setcookie(
@@ -560,25 +556,18 @@ class FLOSC_Full_Page_Mode {
 
 		// Admin test-offer mode: bypass conditions/draft status to preview any offer.
 		$test_offer_id = '';
-		$get           = wp_unslash( $_GET );
-		if ( current_user_can( 'manage_options' )
-			&& ! empty( $get['flosc_test_offer'] )
-			&& is_scalar( $get['flosc_test_offer'] )
-		) {
-			$oid   = sanitize_text_field( (string) $get['flosc_test_offer'] );
-			$nonce = isset( $get['flosc_test_nonce'] ) && is_scalar( $get['flosc_test_nonce'] )
-				? sanitize_text_field( (string) $get['flosc_test_nonce'] )
-				: '';
+		if ( current_user_can( 'manage_options' ) && isset( $_GET['flosc_test_offer'] ) && is_string( $_GET['flosc_test_offer'] ) ) {
+			$oid   = sanitize_text_field( wp_unslash( $_GET['flosc_test_offer'] ) );
+			$nonce = ( isset( $_GET['flosc_test_nonce'] ) && is_string( $_GET['flosc_test_nonce'] ) ) ? sanitize_text_field( wp_unslash( $_GET['flosc_test_nonce'] ) ) : '';
 
 			/*
 			 * The nonce decides on its own, in its own statement.
 			 *
-			 * It was one term of an && chain alongside $sale and
-			 * method_exists(), which made two unrelated questions share a single
-			 * answer: whether this request is legitimate, and whether the sale
-			 * module can service it. Clearing $oid on a failed nonce means the
-			 * origin check depends on nothing but itself, and the branch below
-			 * is about capability only.
+			 * It was one term of an && chain alongside $sale and method_exists(),
+			 * which made two unrelated questions share a single branch: whether the
+			 * request is genuine, and whether a sale module can service it. Clearing
+			 * $oid on a failed nonce means the origin check depends on nothing but
+			 * itself, and the branch below is about capability only.
 			 */
 			if ( ! wp_verify_nonce( $nonce, 'flosc_test_offer_' . $oid ) ) {
 				$oid = '';

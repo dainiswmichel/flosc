@@ -14,6 +14,29 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+if ( ! function_exists( 'flosc_sanitize_api_secret' ) ) {
+	/**
+	 * Normalize one pasted API secret without altering its token characters.
+	 *
+	 * Valid provider keys can contain %HH sequences, which sanitize_text_field()
+	 * removes. This rejects a non-scalar, strips invalid UTF-8, and trims.
+	 * Length and control-character refusal stay with the caller.
+	 *
+	 * @param mixed $value Posted value.
+	 * @return string
+	 */
+	function flosc_sanitize_api_secret( $value ) {
+		if ( ! is_string( $value ) && ! is_numeric( $value ) ) {
+			return '';
+		}
+		$checked = wp_check_invalid_utf8( (string) $value );
+		if ( ! is_string( $checked ) ) {
+			return '';
+		}
+		return trim( $checked );
+	}
+}
+
 if ( ! function_exists( 'flosc_provider_key_is_plausible' ) ) {
 	/**
 	 * Whether a pasted string could be an API key at all.
@@ -145,9 +168,11 @@ if ( ! function_exists( 'flosc_store_provider_model' ) ) {
 			return new WP_Error( 'flosc_model_empty', __( 'Choose or type a model id before saving.', 'flosc' ) );
 		}
 
-		$plausible_model = flosc_provider_model_is_plausible( $model );
-		if ( is_wp_error( $plausible_model ) ) {
-			return $plausible_model;
+		// Deliberately permissive. Providers invent id shapes constantly and
+		// FLOSC must never refuse one that works. Only what an id cannot be is
+		// rejected: whitespace inside it, control characters, absurd length.
+		if ( strlen( $model ) > 200 || preg_match( '/[\s\x00-\x1F\x7F]/', $model ) ) {
+			return new WP_Error( 'flosc_model_shape', __( 'That does not look like a model id.', 'flosc' ) );
 		}
 
 		$option = function_exists( 'flosc_resolve_flow_option_key_for_ivr' )
@@ -349,40 +374,5 @@ if ( ! function_exists( 'flosc_store_model_tuning' ) ) {
 				? flosc_build_model_parameter_preview( $provider, $settings )
 				: '',
 		);
-	}
-}
-
-if ( ! function_exists( 'flosc_provider_model_is_plausible' ) ) {
-	/**
-	 * Whether a string could be a provider model id.
-	 *
-	 * Deliberately permissive. Providers invent id shapes constantly and FLOSC
-	 * must never refuse one that works, so this rejects only what an id cannot
-	 * be: whitespace inside it, control characters, absurd length.
-	 *
-	 * It lives here, beside the key validator, because the storage path and the
-	 * outbound description request both need it and two copies of a rule like
-	 * this drift. An id that is safe to store is the same id that is safe to put
-	 * in a request.
-	 *
-	 * @param string $model Candidate model id.
-	 * @return true|WP_Error
-	 */
-	function flosc_provider_model_is_plausible( $model ) {
-		$model = (string) $model;
-
-		if ( '' === trim( $model ) ) {
-			return new WP_Error( 'flosc_model_empty', __( 'Choose or type a model id before saving.', 'flosc' ) );
-		}
-
-		if ( strlen( $model ) > 200 ) {
-			return new WP_Error( 'flosc_model_long', __( 'That is too long to be a model id.', 'flosc' ) );
-		}
-
-		if ( preg_match( '/[\s\x00-\x1F\x7F]/', $model ) ) {
-			return new WP_Error( 'flosc_model_shape', __( 'That does not look like a model id.', 'flosc' ) );
-		}
-
-		return true;
 	}
 }

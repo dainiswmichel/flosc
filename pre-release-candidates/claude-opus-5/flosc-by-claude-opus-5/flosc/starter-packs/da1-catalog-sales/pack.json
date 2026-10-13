@@ -15,7 +15,7 @@
     "install_as": "dcsj_ivr.md"
   },
   "catalog": {
-    "file": "catalog.tsv",
+    "file": "catalog.txt",
     "key": "dcsj_extremely_ordinary_manuals",
     "label": "The Extremely Ordinary Instruction Manual Collection"
   },
@@ -33,7 +33,7 @@
   "ships": [
     "README.txt",
     "UberManual.pdf",
-    "catalog.tsv",
+    "catalog.txt",
     "content.json",
     "flow_ivr.md",
     "pack.json"

@@ -1052,6 +1052,13 @@ class FLOSC_Chatpack {
 		$section .= "no \"full access\", no scope you were not given. If you do not know what a tier\n";
 		$section .= "opens, say what you do know and invite the question.\n";
 
+		$sticky_aspects = trim( (string) flosc_get_setting( 'ai_brand_facts', '', $flow_id ) );
+		if ( '' !== $sticky_aspects ) {
+			$section .= "\n**Sticky aspects:**\n";
+			$section .= "These flow-specific facts and instructions were written by the floscAdmin. Follow them exactly. Never invent alternatives or substitute unsupported claims.\n";
+			$section .= $sticky_aspects . "\n";
+		}
+
 		$phase_outcomes = self::get_phase_outcomes( $phase, $eval_context, $flow_id );
 		if ( ! empty( $phase_outcomes ) ) {
 			$section .= "\n**Phase Outcomes:**\n";

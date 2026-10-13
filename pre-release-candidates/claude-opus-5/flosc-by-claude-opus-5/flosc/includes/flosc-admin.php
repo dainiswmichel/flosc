@@ -1278,11 +1278,18 @@ trait FLOSC_Admin_Trait {
 
 		$flosc_nonce = flosc_nav_param( '_wpnonce', array(), '', 'sanitize_text_field' );
 
-		$flosc_nonce_action = 'set_status' === $flosc_action
-			? 'flosc_set_status'
-			: ( 'toggle_status' === $flosc_action ? 'flosc_toggle_status' : 'flosc_delete_offer_' . $flosc_target );
+		/*
+		 * The requested status is read before the nonce because it is part of
+		 * the action the nonce has to match. flosc_nav_param() constrains it to
+		 * the three literals below, so nothing unvalidated reaches the action.
+		 */
+		$flosc_requested_status = 'set_status' === $flosc_action
+			? flosc_nav_param( 'status', array( 'draft', 'inactive', 'active' ), '' )
+			: '';
 
-		if ( ! wp_verify_nonce( $flosc_nonce, $flosc_nonce_action ) ) {
+		$flosc_nonce_action = flosc_offer_action_nonce_action( $flosc_action, $flosc_target, $flosc_requested_status );
+
+		if ( '' === $flosc_nonce_action || ! wp_verify_nonce( $flosc_nonce, $flosc_nonce_action ) ) {
 			wp_die( esc_html__( 'Nonce verification failed.', 'flosc' ), esc_html__( 'Invalid token', 'flosc' ), array( 'response' => 403 ) );
 		}
 
@@ -1964,22 +1971,9 @@ trait FLOSC_Admin_Trait {
 			. "IP Hash: {$ip_hash}\n"
 			. "\nMessage:\n{$message}\n";
 
-		/*
-		 * The display name is quoted, and what would break the quoting is removed.
-		 *
-		 * sanitize_text_field() collapses CR and LF, so no header can be injected
-		 * on a new line. It leaves the comma, and RFC 5322 reads an unquoted
-		 * display name containing one -- "Smith, John <a@b.test>" -- as two
-		 * addresses rather than one, which turns a visitor's surname into a second
-		 * Reply-To entry. Quoting settles that, and stripping the quote and
-		 * backslash keeps the name from ending its own quoted string. $email is
-		 * already sanitize_email()'d and is_email()-validated above.
-		 */
-		$reply_name = str_replace( array( '"', '\\', ',' ), '', trim( $first_name . ' ' . $last_name ) );
-
 		$headers = array(
 			'Content-Type: text/plain; charset=UTF-8',
-			'Reply-To: "' . $reply_name . '" <' . $email . '>',
+			'Reply-To: ' . $email,
 		);
 
 		$sent = wp_mail( $recipient, $subject, $body, $headers );
@@ -2733,6 +2727,47 @@ trait FLOSC_Admin_Trait {
 	}
 
 	/**
+	 * Build only the flow fields owned by the submitted editor tab.
+	 *
+	 * An existing flow receives a key only when this form posted it. A new flow
+	 * receives the complete default structure.
+	 *
+	 * @param array $post   Unslashed request body.
+	 * @param bool  $is_new Whether a new flow is being created.
+	 * @return array Flow fields safe to pass to create_flow() or update_flow().
+	 */
+	private function flosc_flow_record_data( $post, $is_new ) {
+		$data = array();
+
+		if ( $is_new || isset( $post['flow_slug'] ) || isset( $post['floscflow_name'] ) || isset( $post['flow_status'] ) || isset( $post['flow_domain'] ) ) {
+			$data['slug']          = sanitize_title( (string) ( $post['flow_slug'] ?? '' ) );
+			$data['custom_domain'] = sanitize_text_field( (string) ( $post['flow_domain'] ?? '' ) );
+			$data['status']        = sanitize_key( (string) ( $post['flow_status'] ?? 'draft' ) );
+			$data['identity']      = array(
+				'name'          => sanitize_text_field( (string) ( $post['floscflow_name'] ?? '' ) ),
+				'title'         => sanitize_text_field( (string) ( $post['floscflow_title'] ?? '' ) ),
+				'tagline'       => sanitize_text_field( (string) ( $post['floscflow_tagline'] ?? '' ) ),
+				'chatlogo_url'  => esc_url_raw( (string) ( $post['floscflow_chatlogo'] ?? '' ) ),
+				'favicon_url'   => esc_url_raw( (string) ( $post['floscflow_favicon'] ?? '' ) ),
+				'badgeUrl'      => esc_url_raw( (string) ( $post['floscflow_badge'] ?? '' ) ),
+				'primary_color' => sanitize_hex_color( (string) ( $post['floscflow_color'] ?? '#4f46e5' ) ),
+				'share_text'    => sanitize_text_field( (string) ( $post['floscflow_share_text'] ?? '' ) ),
+			);
+		}
+		if ( $is_new || isset( $post['ivr_file'] ) ) {
+			$data['ivr_file'] = sanitize_file_name( (string) ( $post['ivr_file'] ?? 'flosc_default_technical_ivr.md' ) );
+		}
+		if ( $is_new || isset( $post['wp_category'] ) ) {
+			$data['wp_category_id'] = intval( $post['wp_category'] ?? 0 );
+		}
+		if ( $is_new || isset( $post['quiz_type'] ) ) {
+			$data['quiz_type'] = sanitize_key( (string) ( $post['quiz_type'] ?? '' ) );
+		}
+
+		return $data;
+	}
+
+	/**
 	 * Create or update a flow from the flow editor.
 	 *
 	 * @return void
@@ -2780,49 +2815,7 @@ trait FLOSC_Admin_Trait {
 			update_option( 'flosc_visitor_menu_items', $menu_items );
 		}
 
-		/*
-		 * One tab writes one group.
-		 *
-		 * The flow editor has three forms that all post to this handler: Identity
-		 * (admin/flow-edit.php:78) carries slug, domain, status and the identity
-		 * fields; IVR (:354) carries ivr_file alone; Content (:399) carries
-		 * wp_category and quiz_type alone. update_flow() merges with
-		 * array_merge(), which overwrites every key present and replaces the
-		 * nested identity array whole rather than merging into it.
-		 *
-		 * So a key absent from this payload keeps its stored value, and a key
-		 * present overwrites it. Each group is therefore built only when its own
-		 * form posted it. Building them unconditionally made saving the IVR tab
-		 * blank the slug, the custom domain and every identity field and drop the
-		 * flow to draft -- the v146 regression this restores the guard against.
-		 * A new flow comes from the Identity form, so $is_new fills every group
-		 * with the same defaults that screen used.
-		 */
-		$data = array();
-		if ( $is_new || isset( $post['flow_slug'] ) || isset( $post['floscflow_name'] ) || isset( $post['flow_status'] ) || isset( $post['flow_domain'] ) ) {
-			$data['slug']          = sanitize_title( (string) ( $post['flow_slug'] ?? '' ) );
-			$data['custom_domain'] = sanitize_text_field( (string) ( $post['flow_domain'] ?? '' ) );
-			$data['status']        = sanitize_key( (string) ( $post['flow_status'] ?? 'draft' ) );
-			$data['identity']      = array(
-				'name'          => sanitize_text_field( (string) ( $post['floscflow_name'] ?? '' ) ),
-				'title'         => sanitize_text_field( (string) ( $post['floscflow_title'] ?? '' ) ),
-				'tagline'       => sanitize_text_field( (string) ( $post['floscflow_tagline'] ?? '' ) ),
-				'chatlogo_url'  => esc_url_raw( (string) ( $post['floscflow_chatlogo'] ?? '' ) ),
-				'favicon_url'   => esc_url_raw( (string) ( $post['floscflow_favicon'] ?? '' ) ),
-				'badgeUrl'      => esc_url_raw( (string) ( $post['floscflow_badge'] ?? '' ) ),
-				'primary_color' => sanitize_hex_color( (string) ( $post['floscflow_color'] ?? '#4f46e5' ) ),
-				'share_text'    => sanitize_text_field( (string) ( $post['floscflow_share_text'] ?? '' ) ),
-			);
-		}
-		if ( $is_new || isset( $post['ivr_file'] ) ) {
-			$data['ivr_file'] = sanitize_file_name( (string) ( $post['ivr_file'] ?? 'flosc_default_technical_ivr.md' ) );
-		}
-		if ( $is_new || isset( $post['wp_category'] ) ) {
-			$data['wp_category_id'] = intval( $post['wp_category'] ?? 0 );
-		}
-		if ( $is_new || isset( $post['quiz_type'] ) ) {
-			$data['quiz_type'] = sanitize_key( (string) ( $post['quiz_type'] ?? '' ) );
-		}
+		$data   = $this->flosc_flow_record_data( $post, $is_new );
 		$return = add_query_arg(
 			array(
 				'page'    => 'flosc-flow-edit',
@@ -2831,6 +2824,11 @@ trait FLOSC_Admin_Trait {
 			),
 			admin_url( 'admin.php' )
 		);
+
+		if ( ! $is_new && array() === $data ) {
+			wp_safe_redirect( $return );
+			exit;
+		}
 
 		if ( $is_new ) {
 			$data['id'] = '' !== $data['slug'] ? sanitize_key( $data['slug'] ) : 'flow_' . wp_generate_password( 6, false, false );
