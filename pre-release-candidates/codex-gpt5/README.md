@@ -1,67 +1,70 @@
-# FLOSC 8.0.0 — Codex home-run candidate v153
+# FLOSC 8.0.0 — Codex home-run candidate v154
 
-This directory contains the complete v153 review candidate. The complete plugin
+This directory contains the complete v154 review candidate. The complete plugin
 source is in `flosc-by-codex-gpt5/flosc/`; `flosc.zip` is the exact distributable
 artifact built from that source. The public plugin version and stable tag remain
 8.0.0.
 
 ## Baseline and scope
 
-v153 starts from the frozen v152 Codex candidate and completes the three
-remaining Issue 10 input-boundary corrections identified after v152:
+v154 starts from the frozen v153 Codex candidate and makes the agreed chat-log
+feedback repair:
 
-- validates API keys with `flosc_provider_key_is_plausible()` before model-list
-  or model-details requests can construct authentication headers or make an
-  HTTP request;
-- sanitizes every custom companion include/exclude chunk before storing it; and
-- rejects non-string IVR filename request values before `sanitize_file_name()`
-  in the two knowledge-base handlers, five model-settings handlers, and four
-  account-management handlers.
+- separates the REST feedback/praise deletion methods from the zero-argument
+  admin-post handlers, restoring the admin deletion journey;
+- lists non-zero-rated chat exchanges for the selected flow under **Memory &
+  Feedback**, including the personality that produced the response;
+- provides two editable, manually copyable drafts for each exchange: a
+  personality Memory & Feedback item with recommended density 55, and a Flow
+  Sticky sentence;
+- keeps a rating as protected evidence only; rating a response does not inject
+  the raw conversation into an AI prompt or mutate a flow or personality;
+- sends the existing flow-specific Sticky aspects through the active Chatpack
+  on each turn; and
+- lets the existing copy action read the administrator's edited textarea value.
 
-Normal string IVR values are still sanitized and used as before. Valid API keys
-still reach the provider, and the registration/account-management functions
-were not removed or fragmented.
+Legacy manual AI Feedback and Praise entries remain active below the new
+workspace and continue to guide the AI as before.
 
 ## Verification performed for this increment
 
-- PHP syntax passed on the five changed shipping PHP files and the new
-  regression test.
-- Repository PHPCS on the five changed shipping PHP files reported 0 errors and
-  15 standing `WordPress.Security.NonceVerification.Recommended` warnings on
-  unrelated lines.
-- The five changed shipping PHP files passed PHPCompatibilityWP for PHP 7.4.
-- `tests/check-issue10-v153-boundaries.php` passed all ten assertions, including
-  refusal before HTTP for malformed keys and successful provider calls for a
-  valid key.
-- A checksum-aware dry-run confirmed the canonical local source and candidate
-  source were identical after synchronization.
-- `unzip -t` passed on the exact artifact. The ZIP contains 243 shipping files
-  in 283 entries and contains no tests.
-- The Git commit contains only the `codex-gpt5` candidate path.
-
-Per the current 11-to-1 remediation process, unchanged source was not repeatedly
-rescanned. The full release gate, official Plugin Check, WordPress runtime, and
-browser journeys were not run for this increment. Live was not changed.
+- PHP syntax passed on all 207 PHP files in the candidate source.
+- PHPCS with `phpcs.xml.dist` on the six edited shipping PHP files reported 0
+  errors and 12 standing signed-audio nonce warnings in the framework file.
+- The same six files passed PHPCompatibilityWP for PHP 7.4.
+- `tests/check_memory_feedback.php`, `tests/check_method_contract.php`,
+  `tests/check_identity_every_turn.php`, and `tests/check_log_contract.php`
+  passed.
+- `node --check assets/js/flosc-admin-events.js` passed.
+- A checksum-aware dry-run found local/candidate differences only in local
+  `.DS_Store` files and the local-only `testing-environment/` directory.
+- `unzip -t` passed. The ZIP contains 243 shipping files in 283 entries and no
+  tests.
+- The ZIP release gate passed metadata, readme disclosure, PHP syntax, and
+  packaging checks, but reported five failed or unverified gates: two bare-
+  suppression matches in explanatory comments, five security-sniff errors plus
+  25 warnings, the known HTTP_HOST and FILTER_DEFAULT comment/landmine greps,
+  and unavailable official Plugin Check. This candidate is therefore not being
+  represented as WordPress.org submission-ready.
 
 ## Exact artifact
 
 ```text
-4a4bd60c415becf3e1f2cbccb875b4eaffd9f17fa6ffd9d269a6b8e3a2a96725  flosc.zip
+b1b604adfeb5b07a9d6268d4c4b0c0b1ad89452c414ec2c8d7c033169c97c744  flosc.zip
 ```
 
 Artifact inventory:
 
-- ZIP size: 2,827,590 bytes
+- ZIP size: 2,828,118 bytes
 - ZIP entries: 283
 - Shipping files: 243
 - Runtime manifest SHA-256:
-  `872e3783b596425a6b0c3826ea799083c9ac2a5fab5d49dc3d39276db44b3123`
+  `24a0e0b0f63d9c2c17b104db3dadcde0116465f5ba684ecef5d9c3814f5bc503`
 
 ## Repository identity
 
-- Internal Iteration: v153
-- Candidate source/artifact commit:
-  `fa4a684cefc0b739e3426477f8b9e89a2bcc8c49`
-- GitHub parent at packaging:
-  `5a499154e231ab06a34373bf75b650e4cf0544d6`
+- Internal Iteration: v154
+- Header Github HashID / candidate source commit:
+  `4333777ef34591f05ce742bdf0d2e11550a14bb6`
+- GitHub parent before v154: `f46a29b64cbea816548a0aa9ecb133a7900698b7`
 - Candidate owner: Codex
