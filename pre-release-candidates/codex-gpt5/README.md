@@ -76,6 +76,8 @@ Artifact inventory:
 ## Repository identity
 
 - Internal Iteration: v152
+- Candidate source/artifact commit:
+  `1feae21b76fa30e4eba232417486760032f5c12e`
 - GitHub parent at packaging:
   `be67a108a72dee233d6b43ffc3917d2caf3b68bf`
 - Candidate owner: Codex

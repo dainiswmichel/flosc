@@ -12,6 +12,7 @@
   "stable_tag": "8.0.0",
   "internal_iteration": "v152",
   "github_hashid_at_pack": "be67a108a72dee233d6b43ffc3917d2caf3b68bf",
+  "candidate_source_artifact_commit": "1feae21b76fa30e4eba232417486760032f5c12e",
   "plugin_source": "flosc-by-codex-gpt5/flosc",
   "artifact": {
     "path": "flosc.zip",
