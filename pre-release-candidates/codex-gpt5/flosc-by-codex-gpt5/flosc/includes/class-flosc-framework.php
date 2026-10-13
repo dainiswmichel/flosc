@@ -13233,7 +13233,7 @@ Example good response:
 	 * @param WP_REST_Request $request Expects the feedback id.
 	 * @return WP_REST_Response|WP_Error Confirmation.
 	 */
-	public function handle_delete_feedback( $request ) {
+	public function rest_delete_feedback( $request ) {
 		$feedback_id = sanitize_text_field( $request->get_param( 'feedback_id' ) );
 		$flow_id     = sanitize_text_field( $request->get_param( 'flow_id' ) ?? '' );
 
@@ -13337,7 +13337,7 @@ Example good response:
 	 * @param WP_REST_Request $request Expects the praise id.
 	 * @return WP_REST_Response|WP_Error Confirmation.
 	 */
-	public function handle_delete_praise( $request ) {
+	public function rest_delete_praise( $request ) {
 		$praise_id = sanitize_text_field( $request->get_param( 'praise_id' ) );
 		$flow_id   = sanitize_text_field( $request->get_param( 'flow_id' ) ?? '' );
 
