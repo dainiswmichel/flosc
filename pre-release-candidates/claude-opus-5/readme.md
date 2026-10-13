@@ -1,143 +1,103 @@
-# FLOSC candidate v95 — Claude Opus 5
+# FLOSC 8.0.0 — ClaudeCode home-run candidate v156
 
-Built on `c0ada21` (Codex v94.1). Plugin version stays **8.0.0**. Three changes,
-nothing else. Not deployed, not uploaded, not a claim of resubmission readiness.
-
-## What changed
-
-### 1. Two DA1 navigation keys, and why they were missing
-
-`catalog` and `da1_export` are now declared in `flosc_nav_param_keys()`.
-
-v94 replaced five file-scope `wp_unslash( $_GET )` reads with
-`flosc_nav_params()`, which reads a declared list. Those two keys were left off
-it. `admin/da1.php:112` copies the array — `$flosc_da1_get = $flosc_get;` — so
-the DA1 screen stopped being able to select a catalog from a URL, and its
-**Export TSV button did nothing at all.**
-
-Nothing failed loudly. Forty-two gates passed, `php -l` passed, WPCS passed, the
-button was dead. Codex found it by reading the diff.
-
-The v94 check that should have caught it was wrong twice over: it matched only
-literal `$flosc_get['key']`, so it could not follow the alias; and its alias
-detector used `[a-z_]+`, which does not match the digits in `$flosc_da1_get`.
-
-Re-derived properly, the answer is now exact rather than lucky:
-
-```
-aliases of $flosc_get       : one pair, admin/da1.php:112-113
-keys read across all aliases: 32
-declared                    : 32
-declared but never read     : none
-```
-
-### 2. The file-scope POST read in `admin/flow.php`
-
-Gone. Two guarded helpers replace it:
-
-- `flosc_flow_requested_file_action()` refuses anything that is not a POST from
-  a user with `edit_others_posts`, then names an action only when **both** the
-  submit button and its file field are present. That is the exact condition the
-  three branches always used, so a request carrying only the button still does
-  nothing rather than newly reaching `check_admin_referer()`.
-- `flosc_flow_posted_file_name()` reads one field, and is called only after
-  `check_admin_referer()` has run for that action.
-
-The duplicate, import and delete branches keep their own nonce check, their
-`manage_options` check and their `wp_die()` messages unchanged.
-
-This is remediation against the reviewer, not a sniff. WPCS reported nothing
-here, because the nonce checks further down satisfy it for the whole file scope.
-The sniff measures scope; the reviewer reads execution order, and raised this
-shape in both T7 and T13.
-
-**Five WPCS findings are now reported rather than suppressed.** Three
-`phpcs:ignore` lines were written into these helpers while drafting and removed
-before commit. `WordPress.Security.NonceVerification.Missing` fires five times
-and is accurate about what the code does:
-
-- the detector must read `$_POST` to learn which button was pressed, because a
-  nonce cannot be verified before knowing which action was submitted. It reads
-  presence only, never a value, and writes nothing;
-- the reader does read a value, but after the caller verified the nonce, and the
-  sniff cannot follow that across a call.
-
-Both are written into the file instead of being silenced. That is why the WPCS
-error count is 1525 and not 1520. Plugin Check classes NonceVerification as a
-warning.
-
-### 3. A gate for the class of bug in (1)
-
-`tests/check_nav_param_keys.php`. It resolves aliases of `$flosc_get`, collects
-every literal key read through any of them, and requires each to be declared —
-and reports the reverse direction too.
-
-Verified by breaking it on purpose: removing `da1_export` from the declared list
-turns it red with two failures and exit 1; restoring it returns exit 0.
-
-## Numbers, and how to reproduce them
-
-`phpcs.xml.dist` carries `<exclude-pattern>*/pre-release-candidates/*</exclude-pattern>`,
-and this tree lives there. **A scan started inside the candidate folder matches
-zero files and finishes in about 90ms.** Copy the tree out first:
-
-```bash
-cp -a flosc-by-claude-opus-5/flosc/. /tmp/scan/ && cd /tmp/scan
-phpcs -d memory_limit=2G --standard=./phpcs.xml.dist --report=summary --no-colors \
-  --ignore='*/tests/*,*/vendor/*' .
-```
+This directory holds the complete v156 review candidate. The plugin source is
+`flosc-by-claude-opus-5/flosc`; `flosc.zip` is the artifact built from it with
+`./build-dist-zip.sh`, and `SHA256SUMS` and `build-manifest.json` record what it
+is.
 
 | | |
 |---|---|
-| `php -l` | 196 / 196 clean |
-| gates | 41 PHP + 2 JS, all pass |
-| WPCS, shipped code only | 1525 errors / 35 warnings, 6 fixable |
-| WPCS, including `tests/` | 5999 errors / 567 warnings, 3034 fixable |
-| PHPCompatibilityWP 7.4- | 0 findings |
-| file-scope superglobal reads | **1** (v93 had 7, v94 had 2) |
-| suppressions in the tree | 93, unchanged |
+| Internal Iteration | v156 |
+| Plugin version / stable tag | 8.0.0 |
+| Code commit | `c06e389bddec2a95a394521a900065ba03b8f9ca` |
+| ZIP SHA-256 | `8595fd580558ed60e358e664084753e5ad6a8b82ff64d9866716ec374baf1745` |
+| ZIP contents | 283 entries, 243 files, no `tests/` |
 
-`tests/` never ships, so 1525 is the figure that means anything.
+## Where this starts from
 
-```bash
-find . -name '*.php' -print0 | xargs -0 -n1 php -l | grep -v 'No syntax errors'
-for f in tests/test_*.php tests/check_*.php; do php "$f" >/dev/null || echo "FAIL $f"; done
-grep -rnE '^\$flosc_(get|post)[a-z_]* *= *(isset\( *\$_|wp_unslash\( *\$_|\$_)' --include='*.php' admin includes
-```
+Codex v154 (`4333777`), which carries review Issues 10 and 11. This lane was on
+v150 and did not, so the lane was replaced with v154 rather than forward-porting
+that work a second time. The delta from v154 is twelve modified files, two
+renames and one added test — small enough to read in full.
 
-## Artifact
+## What v156 changes
 
-```
-sha256  893c57366c84ae3155b79e4353a0fd738f34a02d9404712c8fa8f5d8f299b151
-files   241          starter packs 4          size 2.7M
-built   ./build-dist-zip.sh
-```
+**Carried back from v150, which v154 did not have.** Seven handlers read the
+return-navigation hint as `isset( $_GET['ivr'] ) ? sanitize_file_name( … )`. An
+array passes `isset()`, `wp_unslash()` returns it unchanged, and
+`sanitize_file_name()` opens at `remove_accents()`, which calls `preg_match()`.
+Measured against WordPress core on PHP 8.3: `preg_match(): Argument #2
+($subject) must be of type string, array given`. So `?ivr[]=x` was a fatal.
+All seven sit behind `check_admin_referer()` and `current_user_can()`, so an
+administrator could only crash their own request — but a 500 from a query
+parameter is what the clean-install `WP_DEBUG` pass exists to find. The
+test-offer nonce is its own statement again rather than one term of an `&&`
+chain. v154's Reply-To fix was kept over this lane's: dropping the display name
+removes the comma problem entirely, and the name is still in the mail body.
 
-Verified absent from the zip: `tests/`, `admin/create-sample-data.php`,
-`phpcs.xml.dist`, `agents.md`, `CLAUDE.md`, `.cursorrules`, `.distignore`,
-`build-dist-zip.sh`, `WORDPRESS-ORG-RELEASE.md`. Both changed source files
-checksum-match their copies inside the zip.
+**Issue 09 — nonces and permissions.** `flosc_set_status` named no offer and no
+status and `flosc_toggle_status` named no offer, so a link minted for one row
+verified for every row on the screen. A nonce proves the request came from a form
+this user was served; without the id in the action it cannot also prove which row
+that form was for. `set_status` carries the status too, because the link encodes
+the outcome — a link minted to set draft must not verify a request setting
+active. `flosc_offer_action_nonce_action()` builds the action for all three
+controls and both the eight links and the handler call it, so they cannot drift.
+Separately, submission detection is no longer folded into nonce verification at
+five sites: *did this form post* is routing, *is the request genuine* is
+security, and sharing one condition made a page that posted nothing and a forged
+save indistinguishable. Routing is now its own statement and the nonce is
+`check_admin_referer()`, which refuses rather than returns.
 
-## Not verified
+**Issue 10 — the suppression-disabled sanitization gate.** The five
+`ValidatedSanitizedInput` errors that appeared with annotations disabled were not
+hidden defects. With annotations renamed and the project ruleset in force: zero
+errors. With annotations renamed and the bare WordPress standard: five. The
+difference is the standard discarding `customSanitizingFunctions`. So the
+annotations were removed rather than defended — all five are gone, and the
+ruleset's declared list is now the only place the project tells PHPCS that a
+function of its own sanitizes. There are no `EscapeOutput` annotations either, so
+disabling every annotation for both review sniffs changes nothing they report.
 
-No WordPress runtime was available. The plugin was not activated, no admin
-screen was rendered, and **the duplicate, import and delete actions were not
-exercised against a real request.** Official Plugin Check and
-`tests/verify-standards.sh` both need wp-cli and a booting WordPress; neither
-was run. Nothing here should be read as a pass on them.
+**Issue 03 — not permitted files.** Both cited catalogs are renamed to a
+permitted extension. Nothing about DA1 changes: the runtime filename is
+`flosc_da1_catalog_{key}.tsv`, built from the catalog key in each `pack.json`,
+which is explicit in both and untouched. The shipped source filename was never
+the runtime one. The zip carries no `.tsv` at all.
 
-## Flagged, not changed
+**Issue 05 — the readme heading.** v152 promoted `= External Services =` to
+`== External Services ==`. The wordpress.org parser recognises seven section
+names and External Services is not one, so the promotion routed 130 lines
+through Description and past its 2500-word trim, truncating the published
+disclosure. The heading is back to the H3 form.
 
-**`admin/create-sample-data.php` is excluded from the artifact** by both
-`.distignore` and the hard deny list in `build-dist-zip.sh`. That rule is
-inherited and was deliberately left alone this round. It is a WP-CLI
-`eval-file` seeder — nothing requires or includes it, and its own header says
-*"Run via: `wp eval-file`"*. The Codex v94.1 candidate removed the rule, which is
-why that file sits inside its zip. Which behaviour is right is a functional
-decision, not a remediation one.
+## The gate
 
-**`admin/settings.php:370`** still reads `wp_unslash( $_POST )` at file scope,
-and is not being converted to a declared list. `$flosc_post` is read with 251
-distinct keys across the tree and ten are built at runtime, such as
-`$flosc_post[ $state . '_pill_icon' ]`. An allowlist there would silently drop
-fields and break saves — the same failure mode as (1), at much larger scale.
+`tests/check_tab_scope_and_nonce_binding.php` was rewritten. Its previous
+version asserted this lane's implementation and failed fourteen times against
+v154 — which meets every one of those guarantees by other means. Thirteen of the
+fourteen were the test being wrong. Each assertion now names a property rather
+than a shape: the emitter's and verifier's nonce prefixes are compared against
+each other, not against a literal, and escaping is checked at the echo whatever
+function performs it. Every assertion was proven to fail when its defect is
+reintroduced.
+
+## Measured
+
+| | |
+|---|---|
+| `php -l` | 155/155 shipping files |
+| Regression suite | 53/53 PHP, 6/6 JS |
+| Project PHPCS ruleset | 0 errors, 50 warnings |
+| The two review sniffs | 0 errors, 0 warnings |
+| Same, annotations disabled | 0 errors, 0 warnings |
+| PHPCompatibilityWP `7.4-` | 0 errors, 0 warnings |
+| `unzip -t` | clean |
+| Source-to-zip parity | 243/243 identical |
+
+## Not run
+
+Official Plugin Check, and a clean WordPress install with `WP_DEBUG` on. Neither
+can run in the container this was built in. No runtime click has exercised a
+repaired offer control, a split settings handler, or a renamed starter-pack
+catalog. Those three remain the open conditions on this candidate.
