@@ -229,18 +229,6 @@ class FLOSC_Framework {
 	private $flosc_token_auth_used = false;
 
 	/**
-	 * Defer registration token grants while an email account is pending.
-	 *
-	 * The first-party authentication collaborator reads this during the core
-	 * user_register action. Email verification clears it immediately after
-	 * wp_create_user() returns, then grants the account on activation instead.
-	 * Public because the collaborator owns the user_register decision.
-	 *
-	 * @var bool
-	 */
-	public $flosc_skip_registration_token_grants = false;
-
-	/**
 	 * The single framework instance, building it on first call.
 	 *
 	 * The instance is assigned to self::$instance before boot() runs, because the
@@ -3616,10 +3604,22 @@ The Team',
 			wp_die( esc_html__( 'You do not have permission to manage knowledge bases.', 'flosc' ) );
 		}
 		$post = wp_unslash( $_POST );
+		$ivr  = isset( $post['flosc_return_ivr'] ) && is_string( $post['flosc_return_ivr'] )
+			? sanitize_file_name( $post['flosc_return_ivr'] )
+			: '';
+		if (
+			( isset( $post['flosc_return_ivr'] ) && ! is_string( $post['flosc_return_ivr'] ) )
+			|| ! isset( $post['editing_file'], $post['kb_id'], $post['file_content'] )
+			|| ! is_string( $post['editing_file'] )
+			|| ! is_string( $post['kb_id'] )
+			|| ! is_string( $post['file_content'] )
+		) {
+			wp_safe_redirect( $this->kb_return_url( $ivr, 'error', 'Invalid request.' ) );
+			exit;
+		}
 
-		$ivr    = sanitize_file_name( $post['flosc_return_ivr'] ?? '' );
-		$file   = sanitize_file_name( $post['editing_file'] ?? '' );
-		$kb_id  = $this->kb_request_id( $ivr, $post['kb_id'] ?? '' );
+		$file   = sanitize_file_name( $post['editing_file'] );
+		$kb_id  = $this->kb_request_id( $ivr, $post['kb_id'] );
 		$kb_dir = function_exists( 'flosc_knowledge_base_dir' ) ? flosc_knowledge_base_dir( $kb_id ) : '';
 		$target = $kb_dir . $file;
 
@@ -3628,7 +3628,17 @@ The Team',
 			exit;
 		}
 
-		$content = $post['file_content'] ?? '';
+		$content = $post['file_content'];
+		if ( wp_check_invalid_utf8( $content ) !== $content ) {
+			wp_safe_redirect( $this->kb_return_url( $ivr, 'error', 'The file is not valid UTF-8 text.' ) );
+			exit;
+		}
+		$content = str_replace( array( "\r\n", "\r" ), "\n", $content );
+		$content = preg_replace( '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $content );
+		if ( ! is_string( $content ) ) {
+			wp_safe_redirect( $this->kb_return_url( $ivr, 'error', 'The file is not valid UTF-8 text.' ) );
+			exit;
+		}
 		if ( ! flosc_write_data_file( $target, $content ) ) {
 			wp_safe_redirect( $this->kb_return_url( $ivr, 'error', 'The file could not be written. Uploads folder permissions need attention.' ) );
 			exit;
@@ -4262,14 +4272,14 @@ The Team',
 					<label for="flosc_vgm"><?php echo esc_html__( 'Who', 'flosc' ); ?></label><br>
 					<select name="flosc_vgm" id="flosc_vgm" class="widefat">
 						<option value=""><?php echo esc_html__( '— Follow tags and categories —', 'flosc' ); ?></option>
-						<?php flosc_render_vgm_options( flosc_vgm_tier_labels(), $flosc_vgm_tier ); ?>
+						<?php echo wp_kses( flosc_vgm_options_markup( flosc_vgm_tier_labels(), $flosc_vgm_tier ), flosc_vgm_option_allowed_html() ); ?>
 					</select>
 				</p>
 				<p>
 					<label for="flosc_depth"><?php echo esc_html__( 'Available', 'flosc' ); ?></label><br>
 					<select name="flosc_depth" id="flosc_depth" class="widefat">
 						<option value=""><?php echo esc_html__( '— Follow tags and categories —', 'flosc' ); ?></option>
-						<?php flosc_render_vgm_options( flosc_vgm_depth_labels(), $flosc_vgm_depth ); ?>
+						<?php echo wp_kses( flosc_vgm_options_markup( flosc_vgm_depth_labels(), $flosc_vgm_depth ), flosc_vgm_option_allowed_html() ); ?>
 					</select>
 				</p>
 				<p class="option-desc">
@@ -12064,18 +12074,13 @@ Example good response:
 	 * @return void
 	 */
 	public function ajax_fetch_ai_models() {
+		check_ajax_referer( 'flosc_test_ai', 'nonce' );
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( array( 'message' => __( 'Unauthorized', 'flosc' ) ), 403 );
 		}
 
-		check_ajax_referer( 'flosc_test_ai', 'nonce' );
-
-		$provider = isset( $_POST['provider'] ) && is_string( $_POST['provider'] )
-			? sanitize_key( wp_unslash( $_POST['provider'] ) )
-			: '';
-		$ivr      = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] )
-			? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
-			: '';
+		$provider = isset( $_POST['provider'] ) ? sanitize_key( wp_unslash( $_POST['provider'] ) ) : '';
+		$ivr      = isset( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
 
 		// Same flow context the connection test establishes. admin-ajax has no
 		// URL to detect the flow from, so without this the per-flow key is
@@ -12091,9 +12096,11 @@ Example good response:
 		// operator to save a whole settings page before FLOSC will read a key
 		// sitting directly above the button is a loop with no purpose: paste,
 		// fetch, "no key saved".
-		$typed = isset( $_POST['api_key'] ) && is_string( $_POST['api_key'] )
-			? trim( sanitize_text_field( wp_unslash( $_POST['api_key'] ) ) )
-			: '';
+		$typed = '';
+		if ( isset( $_POST['api_key'] ) && ( is_string( $_POST['api_key'] ) || is_numeric( $_POST['api_key'] ) ) ) {
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- flosc_sanitize_api_secret preserves valid key characters.
+			$typed = flosc_sanitize_api_secret( wp_unslash( (string) $_POST['api_key'] ) );
+		}
 
 		if ( '' !== $typed && ( strlen( $typed ) > 4096 || preg_match( '/[\x00-\x1F\x7F]/', $typed ) ) ) {
 			wp_send_json_error( array( 'message' => __( 'That API key contains characters an API key cannot contain.', 'flosc' ) ) );
@@ -12172,21 +12179,18 @@ Example good response:
 	 * the button is.
 	 */
 	public function ajax_save_ai_provider_key() {
+		check_ajax_referer( 'flosc_test_ai', 'nonce' );
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( array( 'message' => __( 'Unauthorized', 'flosc' ) ), 403 );
 		}
 
-		check_ajax_referer( 'flosc_test_ai', 'nonce' );
-
-		$provider = isset( $_POST['provider'] ) && is_string( $_POST['provider'] )
-			? sanitize_key( wp_unslash( $_POST['provider'] ) )
-			: '';
-		$ivr      = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] )
-			? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
-			: '';
-		$api_key  = isset( $_POST['api_key'] ) && is_string( $_POST['api_key'] )
-			? trim( sanitize_text_field( wp_unslash( $_POST['api_key'] ) ) )
-			: '';
+		$provider = isset( $_POST['provider'] ) ? sanitize_key( wp_unslash( $_POST['provider'] ) ) : '';
+		$ivr      = isset( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
+		$api_key  = '';
+		if ( isset( $_POST['api_key'] ) && ( is_string( $_POST['api_key'] ) || is_numeric( $_POST['api_key'] ) ) ) {
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- flosc_sanitize_api_secret preserves valid key characters.
+			$api_key = flosc_sanitize_api_secret( wp_unslash( (string) $_POST['api_key'] ) );
+		}
 
 		$stored = flosc_store_provider_api_key( $ivr, $provider, $api_key );
 
@@ -12211,21 +12215,14 @@ Example good response:
 	 * page-wide Save, is not a choice — it is a suggestion.
 	 */
 	public function ajax_save_ai_provider_model() {
+		check_ajax_referer( 'flosc_test_ai', 'nonce' );
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( array( 'message' => __( 'Unauthorized', 'flosc' ) ), 403 );
 		}
 
-		check_ajax_referer( 'flosc_test_ai', 'nonce' );
-
-		$provider = isset( $_POST['provider'] ) && is_string( $_POST['provider'] )
-			? sanitize_key( wp_unslash( $_POST['provider'] ) )
-			: '';
-		$ivr      = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] )
-			? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
-			: '';
-		$model    = isset( $_POST['model'] ) && is_string( $_POST['model'] )
-			? trim( sanitize_text_field( wp_unslash( $_POST['model'] ) ) )
-			: '';
+		$provider = isset( $_POST['provider'] ) ? sanitize_key( wp_unslash( $_POST['provider'] ) ) : '';
+		$ivr      = isset( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
+		$model    = isset( $_POST['model'] ) ? sanitize_text_field( wp_unslash( $_POST['model'] ) ) : '';
 
 		$stored = flosc_store_provider_model( $ivr, $provider, $model );
 
@@ -12250,24 +12247,19 @@ Example good response:
 	 * sampling support, for one, is not in it.
 	 */
 	public function ajax_describe_ai_model() {
+		check_ajax_referer( 'flosc_test_ai', 'nonce' );
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( array( 'message' => __( 'Unauthorized', 'flosc' ) ), 403 );
 		}
 
-		check_ajax_referer( 'flosc_test_ai', 'nonce' );
-
-		$provider = isset( $_POST['provider'] ) && is_string( $_POST['provider'] )
-			? sanitize_key( wp_unslash( $_POST['provider'] ) )
-			: '';
-		$ivr      = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] )
-			? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
-			: '';
-		$model    = isset( $_POST['model'] ) && is_string( $_POST['model'] )
-			? trim( sanitize_text_field( wp_unslash( $_POST['model'] ) ) )
-			: '';
-		$typed    = isset( $_POST['api_key'] ) && is_string( $_POST['api_key'] )
-			? trim( sanitize_text_field( wp_unslash( $_POST['api_key'] ) ) )
-			: '';
+		$provider = isset( $_POST['provider'] ) ? sanitize_key( wp_unslash( $_POST['provider'] ) ) : '';
+		$ivr      = isset( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
+		$model    = isset( $_POST['model'] ) ? sanitize_text_field( wp_unslash( $_POST['model'] ) ) : '';
+		$typed    = '';
+		if ( isset( $_POST['api_key'] ) && ( is_string( $_POST['api_key'] ) || is_numeric( $_POST['api_key'] ) ) ) {
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- flosc_sanitize_api_secret preserves valid key characters.
+			$typed = flosc_sanitize_api_secret( wp_unslash( (string) $_POST['api_key'] ) );
+		}
 
 		if ( '' !== $ivr ) {
 			$GLOBALS['flosc_current_ivr'] = $ivr;
@@ -12302,18 +12294,13 @@ Example good response:
 	 * operator has to know which of the two they are reading.
 	 */
 	public function ajax_explain_ai_parameter() {
+		check_ajax_referer( 'flosc_test_ai', 'nonce' );
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( array( 'message' => __( 'Unauthorized', 'flosc' ) ), 403 );
 		}
 
-		check_ajax_referer( 'flosc_test_ai', 'nonce' );
-
-		$ivr   = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] )
-			? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
-			: '';
-		$param = isset( $_POST['param'] ) && is_string( $_POST['param'] )
-			? trim( sanitize_text_field( wp_unslash( $_POST['param'] ) ) )
-			: '';
+		$ivr   = isset( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( $_POST['ivr'] ) ) : '';
+		$param = isset( $_POST['param'] ) ? sanitize_text_field( wp_unslash( $_POST['param'] ) ) : '';
 
 		// A parameter name, not a prompt. Anything that is not one is refused
 		// rather than passed through to the provider as free text.
@@ -12394,12 +12381,9 @@ Example good response:
 
 		check_ajax_referer( 'flosc_test_ai', 'nonce' );
 
-		$ivr      = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] )
-			? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
-			: '';
-		$provider = isset( $_POST['provider'] ) && is_string( $_POST['provider'] )
-			? sanitize_key( wp_unslash( $_POST['provider'] ) )
-			: '';
+		$post     = wp_unslash( $_POST );
+		$ivr      = isset( $post['ivr'] ) ? sanitize_file_name( (string) $post['ivr'] ) : '';
+		$provider = isset( $post['provider'] ) ? sanitize_key( (string) $post['provider'] ) : '';
 
 		if ( ! function_exists( 'flosc_store_model_tuning' ) ) {
 			wp_send_json_error( array( 'message' => __( 'Model tuning storage is unavailable on this install.', 'flosc' ) ) );
@@ -12409,14 +12393,10 @@ Example good response:
 		// field this save has no opinion about, and it is left as it stands.
 		$tuning = array();
 
-		if ( isset( $_POST['temperature'] ) && is_string( $_POST['temperature'] ) ) {
-			$tuning['temperature'] = sanitize_text_field( wp_unslash( $_POST['temperature'] ) );
-		}
-		if ( isset( $_POST['max_tokens'] ) && is_string( $_POST['max_tokens'] ) ) {
-			$tuning['max_tokens'] = sanitize_text_field( wp_unslash( $_POST['max_tokens'] ) );
-		}
-		if ( isset( $_POST['params'] ) && is_string( $_POST['params'] ) ) {
-			$tuning['params'] = sanitize_textarea_field( wp_unslash( $_POST['params'] ) );
+		foreach ( array( 'temperature', 'max_tokens', 'params' ) as $field ) {
+			if ( isset( $post[ $field ] ) ) {
+				$tuning[ $field ] = (string) $post[ $field ];
+			}
 		}
 
 		$stored = flosc_store_model_tuning( $ivr, $provider, $tuning );
@@ -12446,6 +12426,7 @@ Example good response:
 		// site. Nonce, then identity, then the body.
 		check_ajax_referer( 'flosc_test_ai', 'nonce' );
 
+		$post = wp_unslash( $_POST );
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
 		}
@@ -12453,9 +12434,7 @@ Example good response:
 		// v5.0.2 FIX: Set flow context from posted IVR so flosc_get_setting reads
 		// the correct per-flow ai_provider. Without this, admin-ajax has no URL
 		// context, get_current_flow() returns null, and provider defaults to ''.
-		$ivr = isset( $_POST['ivr'] ) && is_string( $_POST['ivr'] )
-			? sanitize_file_name( wp_unslash( $_POST['ivr'] ) )
-			: '';
+		$ivr = sanitize_file_name( $post['ivr'] ?? '' );
 		if ( ! empty( $ivr ) ) {
 			$this->set_flow_context( pathinfo( $ivr, PATHINFO_FILENAME ) );
 		}

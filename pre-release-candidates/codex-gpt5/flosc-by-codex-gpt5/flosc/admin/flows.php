@@ -100,7 +100,7 @@ $flosc_get      = flosc_nav_params();
 						<?php endif; ?>
 						
 						<?php if ( $flosc_is_admin && count( $flosc_flows ) > 1 ) : ?>
-									<a href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=flosc_delete_flow&flow_id=' . rawurlencode( $flosc_flow['id'] ) ), 'flosc_delete_flow' ) ); ?>"
+									<a href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=flosc_delete_flow&flow_id=' . rawurlencode( $flosc_flow['id'] ) ), 'flosc_delete_flow' ) ); ?>" 
 								class="button button-small flosc-flows-delete-btn"
 								data-confirm-message="Delete this flow? This cannot be undone.">Delete</a>
 						<?php endif; ?>

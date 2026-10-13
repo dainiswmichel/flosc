@@ -1,68 +1,81 @@
-# FLOSC 8.0.0 — Codex home-run candidate v149.codex
+# FLOSC 8.0.0 — Codex home-run candidate v152
 
-This directory contains the complete resubmission candidate, not a stripped or
-registration-disabled build. The public plugin version and stable tag remain
-8.0.0. The complete reviewable source is in `flosc-by-codex-gpt5/flosc/`; the
-exact WordPress.org distributable is `flosc.zip`.
+This directory contains the complete v152 review candidate. The complete plugin
+source is in `flosc-by-codex-gpt5/flosc/`; `flosc.zip` is the exact distributable
+artifact built from that source. The public plugin version and stable tag remain
+8.0.0.
+
+## Baseline and scope
+
+v152 starts from the v151 candidate and contains the Issue 11 and Issue 10
+remediation increment discussed with Dainis W. Michel:
+
+- corrects the `External Services` readme heading level;
+- rejects invalid personality-profile encoding instead of silently replacing a
+  previously stored profile;
+- validates and rebuilds personality workshop JSON and reports failed writes;
+- preserves complete large personality profiles and workshops, while returning
+  visible size and estimated-token warnings instead of truncating them;
+- verifies personality-library persistence by reading back the stored option;
+- makes the IVR posted-text sanitizer fail closed instead of returning its
+  original untrusted input after sanitizer failure;
+- validates knowledge-base editor field types and UTF-8 before writing;
+- sanitizes personality-library form arrays and guards malformed autoprompt
+  arrays;
+- uses the validated contact email alone in the `Reply-To` header; and
+- documents the three API-secret sanitizer suppressions with the required
+  written reasons.
+
+The subsequently discussed **Blocked Input Events** feature is not implemented
+in v152 and is not claimed by this candidate.
 
 ## User journeys retained
 
-- Registration: a visitor submits an email address, FLOSC creates the pending
-  account, the visitor verifies it, FLOSC activates the account, sends the
-  welcome/magic-link path, and permits login.
-- Flow editing: each tab saves only the fields owned by that submitted form, so
-  saving one tab does not erase values owned by another tab.
-- Knowledge-base and account actions: the nonce action is bound to the exact
-  file or user target and capability checks remain separate.
+- Registration, verification, account activation, magic-link delivery, and
+  login remain present.
+- Flow editing retains the tab-specific save guards from the preceding
+  candidates.
+- Knowledge-base toggle/delete and pending-account activation retain their
+  capability checks and target-bound nonces.
+- Personality profiles and valid workshop JSON remain editable and saveable;
+  large valid values are retained in full and produce warnings.
 
-## Remediation scope
+## Verification performed for this increment
 
-- Preserves the v148.codex flow-tab save guards and target-bound KB toggle, KB
-  delete, and account-activation nonces.
-- Sanitizes the reported AI, autoprompt, IVR, personality-editor, referral, and
-  test-offer request inputs at ingestion without flattening structured or
-  multiline values.
-- Escapes VGM option values and labels at the output boundary and replaces the
-  personality editor's inline JSON assignment with WordPress script data.
-- Keeps the complete email registration, verification, activation, welcome,
-  magic-link, and login journey.
-- Removes a stale display-navigation `delete_flow` value; deletion continues
-  through its capability- and nonce-protected `admin-post.php` action.
-- Declares the registration-token-grant control property used at runtime, which
-  avoids a PHP 8.2 dynamic-property deprecation without changing its default.
+- PHP syntax passed on all 205 shipping PHP files.
+- The seven touched PHP files passed the repository PHPCS ruleset with 0
+  errors. PHPCS reported 37 warnings: 12 standing
+  `WordPress.Security.NonceVerification.Recommended` warnings and 25 alignment
+  warnings.
+- The seven touched PHP files passed PHPCompatibilityWP for PHP 7.4.
+- `unzip -t` passed on the exact artifact.
+- Candidate source and canonical local source matched by checksum-aware rsync.
+- The ZIP contains 243 files in 283 entries and contains no tests.
 
-## Verification
-
-- All 206 source PHP files passed `php -l` during candidate verification.
-- All 51 standalone PHP regression procedures passed.
-- Shipping source and the built ZIP passed the repository PHPCS ruleset with
-  0 errors or warnings. A separate WordPress nonce sniff with suppressions
-  disabled reported 0 errors and 25 `NonceVerification.Recommended` warnings.
-- Shipping source and the built ZIP passed PHPCompatibilityWP for PHP 7.4.
-- The sanitization and escaping sniffs passed with suppressions disabled.
-- The exact ZIP passed `unzip -t` and contains 243 files in 283 entries. Tests,
-  `vendor/`, Git metadata, and build tooling are absent from the ZIP.
-- Official Plugin Check 2.1.0 in a disposable WordPress 7.1.3 installation
-  completed with 0 errors and the same 25 nonce-recommendation warnings.
-- A live WordPress registration test passed the pending-account, verification,
-  activation, and login journey; the clean rerun wrote no WordPress debug log.
-
-The release gate still reports its literal `HTTP_HOST` grep because the OAuth
-handler retains the explicitly required login-token host comparison; that value
-is not added to the SSO redirect allowlist. The gate's Plugin Check wrapper also
-uses a command name not provided by Plugin Check 2.1.0, so Plugin Check was run
-directly with its official `wp plugin check` command. These verifier defects are
-reported rather than hidden and no full-gate-pass claim is made.
+The full-tree PHPCS attempt exhausted its default 128 MB memory limit and was
+not rerun because the current 11-to-1 remediation process defers repeated
+untouched-code scans until the final pre-resubmission pass. The release gate,
+official Plugin Check, clean-WordPress runtime, and browser journeys were not
+run for v152. This candidate therefore does not claim final submission
+readiness. It was not deployed to live; live remained v151 at publication time.
 
 ## Exact artifact
 
 ```text
-6463827cc25e07b52908cfb9d53ffe83f16bc1aabac1a889da30952b9e2d85a3  flosc.zip
+9c7f4f3d52e8549970b27b30d71d363b96e6df6e2a6b33ea63979e80132899e2  flosc.zip
 ```
 
-283 ZIP entries, 243 files, 2,826,566 bytes. The SHA-256 of the sorted runtime
-file manifest (`<sha256>  <zip path>`) is:
+Artifact inventory:
 
-```text
-bc9380819a652cd1e96e944d9889d90cd1d6217b43612232fffb15fe6df60a1b
-```
+- ZIP size: 2,827,597 bytes
+- ZIP entries: 283
+- Shipping files: 243
+- Runtime manifest SHA-256:
+  `5241307042bd5991285aa6fdb09faae2b7b784a2343d9db55bfeb6d716d959fa`
+
+## Repository identity
+
+- Internal Iteration: v152
+- GitHub parent at packaging:
+  `be67a108a72dee233d6b43ffc3917d2caf3b68bf`
+- Candidate owner: Codex

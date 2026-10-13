@@ -96,7 +96,7 @@ $flosc_feedback_count = count( $flosc_feedback_items );
 $flosc_praises       = $flosc_flow_settings['ai_praises'] ?? array();
 $flosc_praises_count = count( $flosc_praises );
 
-$flosc_feedback_post       = admin_url( 'admin-post.php' );
+$flosc_feedback_post = admin_url( 'admin-post.php' );
 $flosc_feedback_delete_url = add_query_arg(
 	array(
 		'action' => 'flosc_delete_feedback',
@@ -104,21 +104,21 @@ $flosc_feedback_delete_url = add_query_arg(
 	),
 	$flosc_feedback_post
 );
-$flosc_feedback_add_url    = add_query_arg(
+$flosc_feedback_add_url = add_query_arg(
 	array(
 		'action' => 'flosc_add_feedback',
 		'ivr'    => $flosc_selected_ivr,
 	),
 	$flosc_feedback_post
 );
-$flosc_praise_delete_url   = add_query_arg(
+$flosc_praise_delete_url = add_query_arg(
 	array(
 		'action' => 'flosc_delete_praise',
 		'ivr'    => $flosc_selected_ivr,
 	),
 	$flosc_feedback_post
 );
-$flosc_praise_add_url      = add_query_arg(
+$flosc_praise_add_url = add_query_arg(
 	array(
 		'action' => 'flosc_add_praise',
 		'ivr'    => $flosc_selected_ivr,

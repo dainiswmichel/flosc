@@ -801,7 +801,26 @@ if ( isset( $flosc_post['flosc_save'] ) && wp_verify_nonce( sanitize_text_field(
 			} elseif ( 'policy_content_management_status' === $flosc_setting_key ) {
 				$flosc_new_settings[ $flosc_setting_key ] = ( 'inactive' === (string) $flosc_value ) ? 'inactive' : 'active';
 			} elseif ( 'ai_base_prompt' === $flosc_setting_key && function_exists( 'flosc_sanitize_personality_profile_text' ) ) {
-				$flosc_new_settings[ $flosc_setting_key ] = flosc_sanitize_personality_profile_text( is_string( $flosc_value ) ? $flosc_value : '' );
+				if ( ! is_string( $flosc_value ) || ( function_exists( 'flosc_personality_text_is_valid_utf8' ) && ! flosc_personality_text_is_valid_utf8( $flosc_value ) ) ) {
+					set_transient(
+						'flosc_settings_notice_' . get_current_user_id(),
+						__( 'The personality profile was not saved because it is not valid UTF-8 text. The previous profile is unchanged.', 'flosc' ),
+						60
+					);
+					wp_safe_redirect(
+						add_query_arg(
+							array(
+								'page' => 'flosc-settings',
+								'ivr'  => $flosc_selected_ivr,
+								'tab'  => $flosc_active_tab,
+								'view' => $flosc_identity_view,
+							),
+							admin_url( 'admin.php' )
+						)
+					);
+					exit;
+				}
+				$flosc_new_settings[ $flosc_setting_key ] = flosc_sanitize_personality_profile_text( $flosc_value );
 			} elseif ( $flosc_is_textarea ) {
 				$flosc_new_settings[ $flosc_setting_key ] = sanitize_textarea_field( $flosc_value );
 			} elseif ( 'buddyboss_index' === $flosc_setting_key && is_array( $flosc_value ) ) {
@@ -2242,6 +2261,11 @@ if ( function_exists( 'wp_add_inline_style' ) ) {
 	</h1>
 
 	<?php
+	$flosc_settings_notice = get_transient( 'flosc_settings_notice_' . get_current_user_id() );
+	if ( is_string( $flosc_settings_notice ) && '' !== $flosc_settings_notice ) {
+		delete_transient( 'flosc_settings_notice_' . get_current_user_id() );
+		add_settings_error( 'flosc_settings', 'personality_profile_invalid', $flosc_settings_notice, 'error' );
+	}
 	// Portability upload, import, delete, etc. use add_settings_error( 'flosc_settings', … ).
 	settings_errors( 'flosc_settings' );
 	?>

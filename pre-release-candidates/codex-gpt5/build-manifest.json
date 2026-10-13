@@ -1,27 +1,37 @@
 {
   "schema_version": 8,
   "candidate": "codex-gpt5",
-  "candidate_label": "FLOSC 8.0.0 home-run candidate v149.codex",
+  "candidate_label": "FLOSC 8.0.0 home-run candidate v152",
   "owner": "Codex",
   "repository_parent": {
-    "candidate": "v149 build package",
-    "commit": "4437ac265ece7084cc863d6e07f9aa3b5a7a5769"
+    "candidate": "GitHub main before v152 publication",
+    "commit": "be67a108a72dee233d6b43ffc3917d2caf3b68bf"
   },
-  "code_lineage": "v148.codex verified working candidate",
+  "code_lineage": "v151 plus Issue 11 and Issue 10 remediation",
   "plugin_version": "8.0.0",
   "stable_tag": "8.0.0",
-  "internal_iteration": "v149.codex",
-  "github_hashid_at_pack": "7bc31aab84f8ae5125706f8110f6d85f5c2912f4",
+  "internal_iteration": "v152",
+  "github_hashid_at_pack": "be67a108a72dee233d6b43ffc3917d2caf3b68bf",
   "plugin_source": "flosc-by-codex-gpt5/flosc",
   "artifact": {
     "path": "flosc.zip",
     "root": "flosc/",
     "entries": 283,
     "files": 243,
-    "bytes": 2826566,
-    "sha256": "6463827cc25e07b52908cfb9d53ffe83f16bc1aabac1a889da30952b9e2d85a3",
-    "runtime_manifest_sha256": "bc9380819a652cd1e96e944d9889d90cd1d6217b43612232fffb15fe6df60a1b",
+    "bytes": 2827597,
+    "sha256": "9c7f4f3d52e8549970b27b30d71d363b96e6df6e2a6b33ea63979e80132899e2",
+    "runtime_manifest_sha256": "5241307042bd5991285aa6fdb09faae2b7b784a2343d9db55bfeb6d716d959fa",
     "runtime_manifest": "sha256 of sorted lines: '<sha256>  <zip path>' for every file in the zip",
     "tests_entries": 0
+  },
+  "verification": {
+    "shipping_php_lint": "passed: 205 files",
+    "touched_phpcs": "0 errors, 37 warnings",
+    "touched_php_compatibility_7_4": "passed",
+    "zip_integrity": "passed",
+    "full_release_gate": "not run",
+    "official_plugin_check": "not run",
+    "wordpress_runtime": "not run",
+    "live_deployment": "not performed; live remained v151"
   }
 }
